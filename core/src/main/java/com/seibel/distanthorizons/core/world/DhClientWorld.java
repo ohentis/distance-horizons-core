@@ -50,7 +50,7 @@ public class DhClientWorld extends AbstractDhWorld implements IDhClientWorld
 	}
 
     private void registerNetworkHandlers() {
-        networkClient.registerHandler(HelloMessage.class, (msg, ctx) -> {
+        networkClient.registerAckHandler(HelloMessage.class, ctx -> {
             ctx.writeAndFlush(new PlayerUUIDMessage(MC_CLIENT.getPlayerUUID()));
         });
 

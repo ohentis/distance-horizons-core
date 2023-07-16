@@ -1,10 +1,12 @@
 package com.seibel.distanthorizons.core.network;
 
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.network.messages.AckMessage;
 import com.seibel.distanthorizons.core.network.messages.CloseReasonMessage;
 import com.seibel.distanthorizons.core.network.messages.CloseMessage;
 import com.seibel.distanthorizons.core.network.messages.HelloMessage;
 import com.seibel.distanthorizons.core.network.protocol.NetworkChannelInitializer;
+import com.seibel.distanthorizons.coreapi.ModInfo;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -41,7 +43,23 @@ public class NetworkServer extends NetworkEventSource implements AutoCloseable
 		this.registerHandler(HelloMessage.class, (helloMessage, channelContext) -> 
 		{
 			LOGGER.info("Client connected: "+channelContext.channel().remoteAddress());
-			channelContext.channel().writeAndFlush(new HelloMessage());
+
+			if (helloMessage.version != ModInfo.PROTOCOL_VERSION)
+			{
+				try
+				{
+					String disconnectReason = "Version mismatch. Server version: ["+ModInfo.PROTOCOL_VERSION+"], client version: ["+helloMessage.version+"].";
+					LOGGER.info("Disconnecting the client ["+channelContext.name()+"]: "+disconnectReason);
+					this.disconnectClient(channelContext, disconnectReason);
+				}
+				catch (Exception e)
+				{
+					throw new RuntimeException(e);
+				}
+				return;
+			}
+
+			channelContext.writeAndFlush(new AckMessage(HelloMessage.class));
 		});
 		
 		this.registerHandler(CloseMessage.class, (closeMessage, channelContext) -> 
@@ -83,11 +101,6 @@ public class NetworkServer extends NetworkEventSource implements AutoCloseable
 	@Override
 	public void close()
 	{
-		if (this.closeReason != null)
-		{
-			LOGGER.error(this.closeReason);
-		}
-		
 		if (this.isClosed)
 		{
 			return;

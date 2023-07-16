@@ -59,7 +59,7 @@ public class NetworkClient extends NetworkEventSource implements AutoCloseable
 	
     private void registerHandlers() 
 	{
-		this.registerHandler(HelloMessage.class, (helloMessage, channelContext) -> 
+		this.registerAckHandler(HelloMessage.class, channelContext ->
 		{
             LOGGER.info("Connected to server: "+channelContext.channel().remoteAddress());
         });
@@ -136,11 +136,6 @@ public class NetworkClient extends NetworkEventSource implements AutoCloseable
     @Override
     public void close() 
 	{
-        if (this.closeReason != null)
-		{
-			LOGGER.error(this.closeReason);
-		}
-
         if (this.connectionState == EConnectionState.CLOSED)
 		{
 			return;
