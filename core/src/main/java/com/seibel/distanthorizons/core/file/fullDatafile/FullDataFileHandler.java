@@ -373,7 +373,7 @@ public class FullDataFileHandler implements IFullDataSourceProvider
     private void writeChunkDataToMetaFile(DhSectionPos sectionPos, ChunkSizedFullDataAccessor chunkData)
 	{
         FullDataMetaFile metaFile = this.fileBySectionPos.get(sectionPos);
-		if (metaFile == null)
+		if (metaFile == null && sectionPos.sectionDetailLevel <= this.topDetailLevel.get())
 		{
 			// create a new file if one doesn't exist,
 			// this is done so we don't end up with holes where LODs should have been generated

@@ -362,6 +362,7 @@ public class CompleteFullDataSource extends FullDataArrayAccessor implements IFu
 			// the difference in detail levels is very large,
 			// check if the posToWrite is in a corner of posToTest
 			byte sectPerData = (byte) BitShiftUtil.powerOfTwo(posToWrite.sectionDetailLevel - posToTest.sectionDetailLevel - SECTION_SIZE_OFFSET);
+			LodUtil.assertTrue(sectPerData != 0);
 			return posToTest.sectionX % sectPerData == 0 && posToTest.sectionZ % sectPerData == 0;	
 		}
 	}
