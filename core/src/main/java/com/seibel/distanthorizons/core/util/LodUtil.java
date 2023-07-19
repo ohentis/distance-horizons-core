@@ -20,6 +20,9 @@
 package com.seibel.distanthorizons.core.util;
 
 import java.util.Iterator;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.RejectedExecutionException;
 
 import com.seibel.distanthorizons.api.enums.config.EVanillaOverdraw;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
@@ -29,6 +32,7 @@ import com.seibel.distanthorizons.core.pos.Pos2D;
 import com.seibel.distanthorizons.core.render.vertexFormat.DefaultLodVertexFormats;
 import com.seibel.distanthorizons.core.render.vertexFormat.LodVertexFormat;
 import com.seibel.distanthorizons.core.util.gridList.EdgeDistanceBooleanGrid;
+import com.seibel.distanthorizons.core.util.objects.UncheckedInterruptedException;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IDimensionTypeWrapper;
@@ -297,6 +301,16 @@ public class LodUtil
 	public static void assertToDo() {
 		throw new AssertFailureException("TODO!");
 	}
-	
+
+	public static Throwable ensureUnwrap(Throwable t) {
+		return t instanceof CompletionException ? ensureUnwrap(t.getCause()) : t;
+	}
+
+	public static boolean isInterruptOrReject(Throwable t) {
+		Throwable unwrapped = LodUtil.ensureUnwrap(t);
+		return UncheckedInterruptedException.isInterrupt(unwrapped) ||
+				unwrapped instanceof RejectedExecutionException ||
+				unwrapped instanceof CancellationException;
+	}
 	
 }

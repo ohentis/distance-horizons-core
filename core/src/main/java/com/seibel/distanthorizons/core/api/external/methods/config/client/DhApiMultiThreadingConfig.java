@@ -46,7 +46,7 @@ public class DhApiMultiThreadingConfig implements IDhApiMultiThreadingConfig
 	
 	@Override
 	public IDhApiConfigValue<Integer> dataConverterThreads()
-	{ return new DhApiConfigValue<Integer, Integer>(Config.Client.Advanced.MultiThreading.numberOfDataConverterThreads); }
+	{ return new DhApiConfigValue<Integer, Integer>(Config.Client.Advanced.MultiThreading.numberOfDataTransformerThreads); }
 	
 	@Override
 	public IDhApiConfigValue<Integer> chunkLodConverterThreads()

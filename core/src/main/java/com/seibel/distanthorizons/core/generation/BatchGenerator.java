@@ -138,7 +138,15 @@ public class BatchGenerator implements IDhApiWorldGenerator
 		
 		// the consumer needs to be wrapped like this because the API can't use DH core objects (and IChunkWrapper can't be easily put into the API project)
 		Consumer<IChunkWrapper> consumerWrapper = (chunkWrapper) -> resultConsumer.accept(new Object[]{ chunkWrapper });
-		return this.generationEnvironment.generateChunks(chunkPosMinX, chunkPosMinZ, genChunkSize, targetStep, worldGeneratorThreadPool, consumerWrapper);
+		try {
+			return this.generationEnvironment.generateChunks(chunkPosMinX, chunkPosMinZ, genChunkSize, targetStep, worldGeneratorThreadPool, consumerWrapper);
+		}
+		catch (Exception e) {
+			if (!LodUtil.isInterruptOrReject(e)) LOGGER.error("Error starting future for chunk generation", e);
+			CompletableFuture<Void> future = new CompletableFuture<>();
+			future.completeExceptionally(e);
+			return future;
+		}
 	}
 	
 	@Override

@@ -27,6 +27,7 @@ import com.seibel.distanthorizons.api.enums.config.quickOptions.EThreadPreset;
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiDistantGeneratorMode;
 import com.seibel.distanthorizons.core.config.eventHandlers.QuickRenderToggleConfigEventHandler;
 import com.seibel.distanthorizons.core.config.eventHandlers.RenderCacheConfigEventHandler;
+import com.seibel.distanthorizons.core.config.eventHandlers.UnsafeValuesConfigListener;
 import com.seibel.distanthorizons.core.config.eventHandlers.presets.ThreadPresetConfigEventHandler;
 import com.seibel.distanthorizons.core.config.eventHandlers.presets.RenderQualityPresetConfigEventHandler;
 import com.seibel.distanthorizons.core.config.types.ConfigCategory;
@@ -51,7 +52,7 @@ import java.util.*;
  * Otherwise, you will have issues where only some of the config entries will exist when your listener is created.
  * 
  * @author coolGi
- * @version 2023-6-12
+ * @version 2023-7-16
  */
 
 public class Config
@@ -456,7 +457,7 @@ public class Config
 							.build();
 					
 					public static ConfigEntry<Integer> noiseSteps = new ConfigEntry.Builder<Integer>()
-							.setMinDefaultMax(0, 4, null)
+							.setMinDefaultMax(1, 4, null)
 							.comment(""
 									+ "How many steps of noise should be applied to LODs?")
 							.build();
@@ -736,6 +737,14 @@ public class Config
 						+ "CPU performance may suffer if Distant Horizons has a lot to load or generate. \n"
 						+ "This can be an issue when first loading into a world, when flying, and/or when generating new terrain.";
 				
+				public static final String THREAD_RUN_TIME_RATIO_NOTE = ""
+						+ "If this value is less than 1.0, it will be treated as a percentage \n"
+						+ "of time each thread can run before going idle. \n"
+						+ "\n"
+						+ "This can be used to reduce CPU usage if the thread count \n"
+						+ "is already set to 1 for the given option, or more finely \n"
+						+ "tune CPU performance.";
+				
 				
 				public static final ConfigEntry<Integer> numberOfWorldGenerationThreads = new ConfigEntry.Builder<Integer>()
 						.setMinDefaultMax(1,
@@ -752,6 +761,10 @@ public class Config
 								+ "\n"
 								+ THREAD_NOTE)
 						.build();
+				public static final ConfigEntry<Double> runTimeRatioForWorldGenerationThreads = new ConfigEntry.Builder<Double>()
+						.setMinDefaultMax(0.01, ThreadPresetConfigEventHandler.getWorldGenDefaultRunTimeRatio(), 1.0)
+						.comment(THREAD_RUN_TIME_RATIO_NOTE)
+						.build();
 				
 				public static ConfigEntry<Integer> numberOfBufferBuilderThreads = new ConfigEntry.Builder<Integer>()
 						.setMinDefaultMax(1,
@@ -765,6 +778,10 @@ public class Config
 								+ "LODs' transition faster when moving around the world. \n"
 								+ "\n"
 								+ THREAD_NOTE)
+						.build();
+				public static final ConfigEntry<Double> runTimeRatioForBufferBuilderThreads = new ConfigEntry.Builder<Double>()
+						.setMinDefaultMax(0.01, ThreadPresetConfigEventHandler.getBufferBuilderDefaultRunTimeRatio(), 1.0)
+						.comment(THREAD_RUN_TIME_RATIO_NOTE)
 						.build();
 				
 				public static final ConfigEntry<Integer> numberOfFileHandlerThreads = new ConfigEntry.Builder<Integer>()
@@ -780,8 +797,12 @@ public class Config
 								+ "\n"
 								+ THREAD_NOTE)
 						.build();
+				public static final ConfigEntry<Double> runTimeRatioForFileHandlerThreads = new ConfigEntry.Builder<Double>()
+						.setMinDefaultMax(0.01, ThreadPresetConfigEventHandler.getFileHandlerDefaultRunTimeRatio(), 1.0)
+						.comment(THREAD_RUN_TIME_RATIO_NOTE)
+						.build();
 				
-				public static final ConfigEntry<Integer> numberOfDataConverterThreads = new ConfigEntry.Builder<Integer>()
+				public static final ConfigEntry<Integer> numberOfDataTransformerThreads = new ConfigEntry.Builder<Integer>()
 						.setMinDefaultMax(1,
 								ThreadPresetConfigEventHandler.getDataConverterDefaultThreadCount(),
 								Runtime.getRuntime().availableProcessors())
@@ -797,10 +818,14 @@ public class Config
 								+ "\n"
 								+ THREAD_NOTE)
 						.build();
+				public static final ConfigEntry<Double> runTimeRatioForDataTransformerThreads = new ConfigEntry.Builder<Double>()
+						.setMinDefaultMax(0.01, ThreadPresetConfigEventHandler.getDataConverterDefaultRunTimeRatio(), 1.0)
+						.comment(THREAD_RUN_TIME_RATIO_NOTE)
+						.build();
 				
 				public static final ConfigEntry<Integer> numberOfChunkLodConverterThreads = new ConfigEntry.Builder<Integer>()
 						.setMinDefaultMax(1,
-								ThreadPresetConfigEventHandler.getChunkLodConvertersDefaultThreadCount(),
+								ThreadPresetConfigEventHandler.getChunkLodConverterDefaultThreadCount(),
 								Runtime.getRuntime().availableProcessors())
 						.comment(""
 								+ "How many threads should be used to convert Minecraft chunks into LOD data? \n"
@@ -809,6 +834,10 @@ public class Config
 								+ "chunks are loaded, unloaded, and modified. \n"
 								+ "\n"
 								+ THREAD_NOTE)
+						.build();
+				public static final ConfigEntry<Double> runTimeRatioForChunkLodConverterThreads = new ConfigEntry.Builder<Double>()
+						.setMinDefaultMax(0.01, ThreadPresetConfigEventHandler.getChunkLodConverterDefaultRunTimeRatio(), 1.0)
+						.comment(THREAD_RUN_TIME_RATIO_NOTE)
 						.build();
 				
 			}
@@ -877,7 +906,7 @@ public class Config
 						.build();
 				
 				public static ConfigEntry<Boolean> enableSilentUpdates = new ConfigEntry.Builder<Boolean>()
-						.set(true)
+						.set(false)
 						.comment("" 
 								+ "Should Distant Horizons silently, automatically download and install new versions? "
 								+ "")
@@ -1011,10 +1040,17 @@ public class Config
 								+ "   Additionally, only stuff that's loaded after you enable this \n"
 								+ "   will render their debug wireframes.")
 						.build();
-				
+
+				// Note: This will reset on game restart, and should have a warning on the tooltip
+				public static ConfigEntry<Boolean> allowUnsafeValues = new ConfigEntry.Builder<Boolean>()
+						.set(false)
+						.setAppearance(EConfigEntryAppearance.ONLY_IN_GUI)
+						.addListener(UnsafeValuesConfigListener.INSTANCE)
+						.build();
+
 				
 				// can be set to public inorder to show in the config file and UI
-				private static ConfigCategory exampleConfigScreen = new ConfigCategory.Builder()
+				public static ConfigCategory exampleConfigScreen = new ConfigCategory.Builder()
 						.set(ExampleConfigScreen.class)
 						.build();
 				

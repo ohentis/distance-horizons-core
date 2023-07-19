@@ -387,7 +387,13 @@ public class ColumnRenderBufferBuilder
 	}
 	public static void setThreadPoolSize(int threadPoolSize) 
 	{
-		bufferBuilderThreadPool = ThreadUtil.makeThreadPool(threadPoolSize, "Buffer Builder");
+		if (bufferBuilderThreadPool != null)
+		{
+			// close the previous thread pool if one exists
+			bufferBuilderThreadPool.shutdown();
+		}
+		
+		bufferBuilderThreadPool = ThreadUtil.makeRateLimitedThreadPool(threadPoolSize, "Buffer Builder", Config.Client.Advanced.MultiThreading.runTimeRatioForBufferBuilderThreads);
 		maxNumberOfConcurrentCalls = threadPoolSize * MAX_NUMBER_OF_CONCURRENT_CALLS_PER_THREAD;
 	}
 	

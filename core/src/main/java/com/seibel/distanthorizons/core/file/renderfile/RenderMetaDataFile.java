@@ -14,6 +14,7 @@ import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
 import com.seibel.distanthorizons.core.util.AtomicsUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
+import com.seibel.distanthorizons.core.util.objects.UncheckedInterruptedException;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataInputStream;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
@@ -138,12 +139,18 @@ public class RenderMetaDataFile extends AbstractMetaDataContainerFile implements
 		{
 			return CompletableFuture.completedFuture(null); // No need to save if the file doesn't exist.
 		}
-		CompletableFuture<ColumnRenderSource> source = getCachedDataSourceAsync(true);
+		// FIXME: TODO: Change doTriggerUpdate to true. Currently is false cause a dead future making render handler hang,
+		//   and that render cache aren't actually used really yet due to missing versioning atm. So disabling for now.
+		CompletableFuture<ColumnRenderSource> source = getCachedDataSourceAsync(false);
 		if (source == null)
 		{
 			return CompletableFuture.completedFuture(null); // If there is no cached data, there is no need to save.
 		}
-		return source.thenAccept((columnRenderSource) -> { }); // Otherwise, wait for the data to be read (which also flushes changes to the file).
+		return source.handle((columnRenderSource, ex) -> {
+			if (ex != null && !LodUtil.isInterruptOrReject(ex))
+				LOGGER.error("Failed to load render source for "+this.pos+" for flush and saving", ex);
+			return null;
+		}); // Otherwise, wait for the data to be read (which also flushes changes to the file).
 	}
 	private CacheQueryResult getOrStartCachedDataSourceAsync()
 	{
@@ -186,6 +193,9 @@ public class RenderMetaDataFile extends AbstractMetaDataContainerFile implements
 				this.fileHandler.onReadRenderSourceLoadedFromCacheAsync(this, cachedRenderDataSource)
 						// wait for the handler to finish before returning the renderSource
 						.handle((voidObj, ex) -> {
+							if (ex != null) {
+								LOGGER.error("Error while updating render source from cache", ex);
+							}
 							newFuture.complete(cachedRenderDataSource);
 							renderSourceLoadFutureRef.set(null);
 							return null;
@@ -217,12 +227,13 @@ public class RenderMetaDataFile extends AbstractMetaDataContainerFile implements
 					this.baseMetaData = this.makeMetaData(renderSource);
 					return renderSource;
 				})
-				.thenApply((renderSource) -> this.fileHandler.onRenderFileLoaded(renderSource, this))
+				.thenCompose((renderSource) -> this.fileHandler.onRenderFileLoaded(renderSource, this))
 				.whenComplete((renderSource, ex) -> 
 				{
 					if (ex != null)
 					{
-						LOGGER.error("Uncaught error on creation {}: ", this.file, ex);
+						if (!LodUtil.isInterruptOrReject(ex))
+							LOGGER.error("Uncaught error on creation {}: ", this.file, ex);
 						cachedRenderDataSource = new SoftReference<>(null);
 						renderSourceLoadFutureRef.set(null);
 						future.complete(null);
@@ -237,13 +248,13 @@ public class RenderMetaDataFile extends AbstractMetaDataContainerFile implements
 		}
 		else
 		{
-			CompletableFuture.supplyAsync(() -> 
+			CompletableFuture.supplyAsync(() ->
 				{
 					if (this.baseMetaData == null)
 					{
 						throw new IllegalStateException("Meta data not loaded!");
 					}
-					
+
 					// Load the file.
 					ColumnRenderSource renderSource;
 					try (FileInputStream fileInputStream = this.getFileInputStream();
@@ -255,15 +266,16 @@ public class RenderMetaDataFile extends AbstractMetaDataContainerFile implements
 					{
 						throw new CompletionException(ex);
 					}
-					
-					renderSource = this.fileHandler.onRenderFileLoaded(renderSource, this);
 					return renderSource;
 				}, fileReaderThreads)
+					// TODO: Check for file version and only update if needed.
+				.thenCompose((renderSource) -> this.fileHandler.onRenderFileLoaded(renderSource, this))
 				.whenComplete((renderSource, ex) ->
 				{
 					if (ex != null)
 					{
-						LOGGER.error("Error loading file {}: ", this.file, ex);
+						if (!LodUtil.isInterruptOrReject(ex))
+							LOGGER.error("Error loading file {}: ", this.file, ex);
 						cachedRenderDataSource = new SoftReference<>(null);
 						renderSourceLoadFutureRef.set(null);
 						future.complete(null);

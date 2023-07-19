@@ -17,7 +17,7 @@ import java.nio.file.Path;
  * Handles reading and writing config files.
  *
  * @author coolGi
- * @version 2022-9-9
+ * @version 2023-7-16
  */
 public class ConfigFileHandling {
 	private static final Logger LOGGER = ConfigBase.LOGGER;
@@ -136,7 +136,7 @@ public class ConfigFileHandling {
         if (workConfig.contains(entry.getNameWCategory())) {
             try {
                 if (entry.getType().isEnum()) {
-                    entry.setWithoutSaving((T) ( workConfig.getEnum(entry.getNameWCategory(), (Class<? extends Enum>) entry.getType()) ));
+                    entry.setWithoutSaving((T) ( workConfig.getEnum(entry.getNameWCategory(), (Class<? extends Enum>) entry.getType())));
                     return;
                 }
                 if (ConfigTypeConverters.convertObjects.containsKey(entry.getType())) {
@@ -146,10 +146,7 @@ public class ConfigFileHandling {
 
                 if (entry.getType() == workConfig.get(entry.getNameWCategory()).getClass()) { // If the types are the same
                     entry.setWithoutSaving((T) workConfig.get(entry.getNameWCategory()));
-
-                    if (entry.isValid() == 0) return;
-                    else if (entry.isValid() == -1) entry.setWithoutSaving(entry.getMin());
-                    else if (entry.isValid() == 1) entry.setWithoutSaving(entry.getMax());
+                    entry.clampWithinRange();
                     return;
                 }
 

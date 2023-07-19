@@ -20,8 +20,9 @@ public class ThreadPresetConfigEventHandler extends AbstractPresetConfigEventHan
 	private static final Logger LOGGER = LogManager.getLogger();
 	
 	
+	
 	public static int getWorldGenDefaultThreadCount() { return getThreadCountByPercent(0.1); } 
-	private final ConfigEntryWithPresetOptions<EThreadPreset, Integer> worldGen = new ConfigEntryWithPresetOptions<>(Config.Client.Advanced.MultiThreading.numberOfWorldGenerationThreads, 
+	private final ConfigEntryWithPresetOptions<EThreadPreset, Integer> worldGenThreadCount = new ConfigEntryWithPresetOptions<>(Config.Client.Advanced.MultiThreading.numberOfWorldGenerationThreads, 
 		new HashMap<EThreadPreset, Integer>()
 		{{
 			this.put(EThreadPreset.MINIMAL_IMPACT, 1);
@@ -30,9 +31,20 @@ public class ThreadPresetConfigEventHandler extends AbstractPresetConfigEventHan
 			this.put(EThreadPreset.AGGRESSIVE, getThreadCountByPercent(0.4));
 			this.put(EThreadPreset.I_PAID_FOR_THE_WHOLE_CPU, getThreadCountByPercent(1.0));
 		}});
+	public static double getWorldGenDefaultRunTimeRatio() { return 0.25; }
+	private final ConfigEntryWithPresetOptions<EThreadPreset, Double> worldGenRunTime = new ConfigEntryWithPresetOptions<>(Config.Client.Advanced.MultiThreading.runTimeRatioForWorldGenerationThreads,
+		new HashMap<EThreadPreset, Double>()
+		{{
+			this.put(EThreadPreset.MINIMAL_IMPACT, 0.1);
+			this.put(EThreadPreset.LOW_IMPACT, getWorldGenDefaultRunTimeRatio());
+			this.put(EThreadPreset.BALANCED, 0.5);
+			this.put(EThreadPreset.AGGRESSIVE, 0.75);
+			this.put(EThreadPreset.I_PAID_FOR_THE_WHOLE_CPU, 1.0);
+		}});
+	
 	
 	public static int getBufferBuilderDefaultThreadCount() { return getThreadCountByPercent(0.1); }
-	private final ConfigEntryWithPresetOptions<EThreadPreset, Integer> bufferBuilders = new ConfigEntryWithPresetOptions<>(Config.Client.Advanced.MultiThreading.numberOfBufferBuilderThreads, 
+	private final ConfigEntryWithPresetOptions<EThreadPreset, Integer> bufferBuilderThreadCount = new ConfigEntryWithPresetOptions<>(Config.Client.Advanced.MultiThreading.numberOfBufferBuilderThreads, 
 		new HashMap<EThreadPreset, Integer>()
 		{{
 			this.put(EThreadPreset.MINIMAL_IMPACT, 1);
@@ -41,9 +53,20 @@ public class ThreadPresetConfigEventHandler extends AbstractPresetConfigEventHan
 			this.put(EThreadPreset.AGGRESSIVE, getThreadCountByPercent(0.4));
 			this.put(EThreadPreset.I_PAID_FOR_THE_WHOLE_CPU, getThreadCountByPercent(1.0));
 		}});
+	public static double getBufferBuilderDefaultRunTimeRatio() { return 0.5; }
+	private final ConfigEntryWithPresetOptions<EThreadPreset, Double> bufferBuilderRunTime = new ConfigEntryWithPresetOptions<>(Config.Client.Advanced.MultiThreading.runTimeRatioForBufferBuilderThreads,
+		new HashMap<EThreadPreset, Double>()
+		{{
+			this.put(EThreadPreset.MINIMAL_IMPACT, 0.25);
+			this.put(EThreadPreset.LOW_IMPACT, getBufferBuilderDefaultRunTimeRatio());
+			this.put(EThreadPreset.BALANCED, 0.75);
+			this.put(EThreadPreset.AGGRESSIVE, 1.0);
+			this.put(EThreadPreset.I_PAID_FOR_THE_WHOLE_CPU, 1.0);
+		}});
+	
 	
 	public static int getFileHandlerDefaultThreadCount() { return getThreadCountByPercent(0.1); }
-	private final ConfigEntryWithPresetOptions<EThreadPreset, Integer> fileHandlers = new ConfigEntryWithPresetOptions<>(Config.Client.Advanced.MultiThreading.numberOfFileHandlerThreads, 
+	private final ConfigEntryWithPresetOptions<EThreadPreset, Integer> fileHandlerThreadCount = new ConfigEntryWithPresetOptions<>(Config.Client.Advanced.MultiThreading.numberOfFileHandlerThreads, 
 		new HashMap<EThreadPreset, Integer>()
 		{{
 			this.put(EThreadPreset.MINIMAL_IMPACT, 1);
@@ -52,9 +75,20 @@ public class ThreadPresetConfigEventHandler extends AbstractPresetConfigEventHan
 			this.put(EThreadPreset.AGGRESSIVE, getThreadCountByPercent(0.2));
 			this.put(EThreadPreset.I_PAID_FOR_THE_WHOLE_CPU, getThreadCountByPercent(1.0));
 		}});
+	public static double getFileHandlerDefaultRunTimeRatio() { return 0.5; }
+	private final ConfigEntryWithPresetOptions<EThreadPreset, Double> fileHandlerRunTime = new ConfigEntryWithPresetOptions<>(Config.Client.Advanced.MultiThreading.runTimeRatioForFileHandlerThreads,
+		new HashMap<EThreadPreset, Double>()
+		{{
+			this.put(EThreadPreset.MINIMAL_IMPACT, 0.25);
+			this.put(EThreadPreset.LOW_IMPACT, getFileHandlerDefaultRunTimeRatio());
+			this.put(EThreadPreset.BALANCED, 0.75);
+			this.put(EThreadPreset.AGGRESSIVE, 1.0);
+			this.put(EThreadPreset.I_PAID_FOR_THE_WHOLE_CPU, 1.0);
+		}});
+	
 	
 	public static int getDataConverterDefaultThreadCount() { return getThreadCountByPercent(0.1); }
-	private final ConfigEntryWithPresetOptions<EThreadPreset, Integer> dataConverters = new ConfigEntryWithPresetOptions<>(Config.Client.Advanced.MultiThreading.numberOfDataConverterThreads, 
+	private final ConfigEntryWithPresetOptions<EThreadPreset, Integer> dataTransformerThreadCount = new ConfigEntryWithPresetOptions<>(Config.Client.Advanced.MultiThreading.numberOfDataTransformerThreads, 
 		new HashMap<EThreadPreset, Integer>()
 		{{
 			this.put(EThreadPreset.MINIMAL_IMPACT, 1);
@@ -63,16 +97,37 @@ public class ThreadPresetConfigEventHandler extends AbstractPresetConfigEventHan
 			this.put(EThreadPreset.AGGRESSIVE, getThreadCountByPercent(0.2));
 			this.put(EThreadPreset.I_PAID_FOR_THE_WHOLE_CPU, getThreadCountByPercent(1.0));
 		}});
+	public static double getDataConverterDefaultRunTimeRatio() { return 0.25; }
+	private final ConfigEntryWithPresetOptions<EThreadPreset, Double> dataTransformerRunTime = new ConfigEntryWithPresetOptions<>(Config.Client.Advanced.MultiThreading.runTimeRatioForDataTransformerThreads,
+		new HashMap<EThreadPreset, Double>()
+		{{
+			this.put(EThreadPreset.MINIMAL_IMPACT, 0.1);
+			this.put(EThreadPreset.LOW_IMPACT, getDataConverterDefaultRunTimeRatio());
+			this.put(EThreadPreset.BALANCED, 0.75);
+			this.put(EThreadPreset.AGGRESSIVE, 1.0);
+			this.put(EThreadPreset.I_PAID_FOR_THE_WHOLE_CPU, 1.0);
+		}});
 	
-	public static int getChunkLodConvertersDefaultThreadCount() { return getThreadCountByPercent(0.1); }
-	private final ConfigEntryWithPresetOptions<EThreadPreset, Integer> chunkLodConverters = new ConfigEntryWithPresetOptions<>(Config.Client.Advanced.MultiThreading.numberOfChunkLodConverterThreads, 
+	
+	public static int getChunkLodConverterDefaultThreadCount() { return getThreadCountByPercent(0.1); }
+	private final ConfigEntryWithPresetOptions<EThreadPreset, Integer> chunkLodConverterThreadCount = new ConfigEntryWithPresetOptions<>(Config.Client.Advanced.MultiThreading.numberOfChunkLodConverterThreads, 
 		new HashMap<EThreadPreset, Integer>()
 		{{
 			this.put(EThreadPreset.MINIMAL_IMPACT, 1);
-			this.put(EThreadPreset.LOW_IMPACT, getChunkLodConvertersDefaultThreadCount());
+			this.put(EThreadPreset.LOW_IMPACT, getChunkLodConverterDefaultThreadCount());
 			this.put(EThreadPreset.BALANCED, getThreadCountByPercent(0.2));
 			this.put(EThreadPreset.AGGRESSIVE, getThreadCountByPercent(0.4));
 			this.put(EThreadPreset.I_PAID_FOR_THE_WHOLE_CPU, getThreadCountByPercent(1.0));
+		}});
+	public static double getChunkLodConverterDefaultRunTimeRatio() { return 0.5; }
+	private final ConfigEntryWithPresetOptions<EThreadPreset, Double> chunkLodConverterRunTime = new ConfigEntryWithPresetOptions<>(Config.Client.Advanced.MultiThreading.runTimeRatioForChunkLodConverterThreads,
+		new HashMap<EThreadPreset, Double>()
+		{{
+			this.put(EThreadPreset.MINIMAL_IMPACT, 0.25);
+			this.put(EThreadPreset.LOW_IMPACT, getDataConverterDefaultRunTimeRatio());
+			this.put(EThreadPreset.BALANCED, 0.75);
+			this.put(EThreadPreset.AGGRESSIVE, 1.0);
+			this.put(EThreadPreset.I_PAID_FOR_THE_WHOLE_CPU, 1.0);
 		}});
 	
 	
@@ -85,16 +140,25 @@ public class ThreadPresetConfigEventHandler extends AbstractPresetConfigEventHan
 	private ThreadPresetConfigEventHandler() 
 	{
 		// add each config used by this preset
-		this.configList.add(this.worldGen);
-		this.configList.add(this.bufferBuilders);
-		this.configList.add(this.fileHandlers);
-		this.configList.add(this.dataConverters);
-		this.configList.add(this.chunkLodConverters);
+		this.configList.add(this.worldGenThreadCount);
+		this.configList.add(this.worldGenRunTime);
+		
+		this.configList.add(this.bufferBuilderThreadCount);
+		this.configList.add(this.bufferBuilderRunTime);
+		
+		this.configList.add(this.fileHandlerThreadCount);
+		this.configList.add(this.fileHandlerRunTime);
+		
+		this.configList.add(this.dataTransformerThreadCount);
+		this.configList.add(this.dataTransformerRunTime);
+		
+		this.configList.add(this.chunkLodConverterThreadCount);
+		this.configList.add(this.chunkLodConverterRunTime);
 		
 		
 		for (ConfigEntryWithPresetOptions<EThreadPreset, ?> config : this.configList)
 		{
-			// ignore try-using, the listener should only ever be added once and should never be removed
+			// ignore try-using, the listeners should only ever be added once and should never be removed
 			new ConfigChangeListener<>(config.configEntry, (val) -> { this.onConfigValueChanged(); });
 		}
 	}

@@ -306,22 +306,36 @@
     "NO. of world generation threads",
   "distanthorizons.config.client.advanced.multiThreading.numberOfWorldGenerationThreads.@tooltip":
     "How many threads should be used when generating LODs \n outside the normal render distance? \n\nIf it this is less than 1, it will be treated as a percentage \nof time a single thread can run before going idle. \n\nIf you experience stuttering when generating distant LODs, \ndecrease  this number. If you want to increase LOD \ngeneration speed, increase this number. \n\nThis and the number of buffer builder threads are independent, \nif they add up to more threads than your CPU has cores \nthat is ok.",
+  "distanthorizons.config.client.advanced.multiThreading.runTimeRatioForWorldGenerationThreads":
+    "Runtime % for world generation threads",
+  
   "distanthorizons.config.client.advanced.multiThreading.numberOfBufferBuilderThreads":
     "NO. of buffer builder threads",
   "distanthorizons.config.client.advanced.multiThreading.numberOfBufferBuilderThreads.@tooltip":
     "The number of threads used when building geometry data. \nCan only be between 1 and your CPU's processor count.",
+  "distanthorizons.config.client.advanced.multiThreading.runTimeRatioForBufferBuilderThreads":
+    "Runtime % for buffer builder threads",
+  
   "distanthorizons.config.client.advanced.multiThreading.numberOfFileHandlerThreads":
     "NO. of file handler threads",
   "distanthorizons.config.client.advanced.multiThreading.numberOfFileHandlerThreads.@tooltip":
     "The number of threads used when building vertex buffers \n(The things sent to your GPU to draw the LODs). \nCan only be between 1 and your CPU's processor count.",
-  "distanthorizons.config.client.advanced.multiThreading.numberOfDataConverterThreads":
-    "NO. of data converter threads",
-  "distanthorizons.config.client.advanced.multiThreading.numberOfDataConverterThreads.@tooltip":
+  "distanthorizons.config.client.advanced.multiThreading.runTimeRatioForFileHandlerThreads":
+    "Runtime % for file handler threads",
+  
+  "distanthorizons.config.client.advanced.multiThreading.numberOfDataTransformerThreads":
+    "NO. of data transformer threads",
+  "distanthorizons.config.client.advanced.multiThreading.numberOfDataTransformerThreads.@tooltip":
     "The number of threads used when converting ID data to render-able data. \n(This generally happens when generating new terrain or changing graphics settings). \nCan only be between 1 and your CPU's processor count.",
+  "distanthorizons.config.client.advanced.multiThreading.runTimeRatioForDataTransformerThreads":
+    "Runtime % for data transformer threads",
+  
   "distanthorizons.config.client.advanced.multiThreading.numberOfChunkLodConverterThreads":
     "NO. of chunk LOD converter threads",
   "distanthorizons.config.client.advanced.multiThreading.numberOfChunkLodConverterThreads.@tooltip":
     "How many threads should be used to convert Minecraft chunks into LOD data? \nThese threads run both when terrain is generated and when \nchunks are loaded, unloaded, and modified.",
+  "distanthorizons.config.client.advanced.multiThreading.runTimeRatioForChunkLodConverterThreads":
+    "Runtime % for chunk LOD converter threads",
   
   
   
@@ -349,7 +363,11 @@
   "distanthorizons.config.client.advanced.debugging.debugWireframeRendering":
     "Enable Debug Wireframe Rendering",
   "distanthorizons.config.client.advanced.debugging.debugWireframeRendering.@tooltip":
-    "If enabled, various wireframes for debugging internal functions will be drawn.",
+    "If enabled, various wireframes for debugging internal functions will be drawn.", 
+  "distanthorizons.config.client.advanced.debugging.allowUnsafeValues":
+    "Allow Unsafe UI Values",
+  "distanthorizons.config.client.advanced.debugging.allowUnsafeValues.@tooltip":
+    "If enabled, very limited config input validation will be performed. \n\nWarning: enabling this can cause instability or crashing, use at your own risk. \nNote: this is option isn't saved between sessions.",
 
   "distanthorizons.config.client.advanced.buffers":
     "Buffers",
@@ -401,36 +419,36 @@
     
     
     
-  "distanthorizons.config.client.advanced.debugging.debugConfigScreen":
+  "distanthorizons.config.client.advanced.debugging.exampleConfigScreen":
     "Debug Config Screen",
     
-  "distanthorizons.config.client.advanced.debugging.debugConfigScreen.debugConfigScreenNote":
+  "distanthorizons.config.client.advanced.debugging.exampleConfigScreen.debugConfigScreenNote":
     "This screen is to debug features of the config screen",
-  "distanthorizons.config.client.advanced.debugging.debugConfigScreen.boolTest":
+  "distanthorizons.config.client.advanced.debugging.exampleConfigScreen.boolTest":
     "Boolean test",
-  "distanthorizons.config.client.advanced.debugging.debugConfigScreen.byteTest":
+  "distanthorizons.config.client.advanced.debugging.exampleConfigScreen.byteTest":
     "Byte test",
-  "distanthorizons.config.client.advanced.debugging.debugConfigScreen.intTest":
+  "distanthorizons.config.client.advanced.debugging.exampleConfigScreen.intTest":
     "Integer test",
-  "distanthorizons.config.client.advanced.debugging.debugConfigScreen.doubleTest":
+  "distanthorizons.config.client.advanced.debugging.exampleConfigScreen.doubleTest":
     "Double test",
-  "distanthorizons.config.client.advanced.debugging.debugConfigScreen.shortTest":
+  "distanthorizons.config.client.advanced.debugging.exampleConfigScreen.shortTest":
     "Short test",
-  "distanthorizons.config.client.advanced.debugging.debugConfigScreen.longTest":
+  "distanthorizons.config.client.advanced.debugging.exampleConfigScreen.longTest":
     "Long test",
-  "distanthorizons.config.client.advanced.debugging.debugConfigScreen.floatTest":
+  "distanthorizons.config.client.advanced.debugging.exampleConfigScreen.floatTest":
     "Float test",
-  "distanthorizons.config.client.advanced.debugging.debugConfigScreen.stringTest":
+  "distanthorizons.config.client.advanced.debugging.exampleConfigScreen.stringTest":
     "String test",
-  "distanthorizons.config.client.advanced.debugging.debugConfigScreen.listTest":
+  "distanthorizons.config.client.advanced.debugging.exampleConfigScreen.listTest":
     "List (ArrayList) test",
-  "distanthorizons.config.client.advanced.debugging.debugConfigScreen.mapTest":
+  "distanthorizons.config.client.advanced.debugging.exampleConfigScreen.mapTest":
     "Map (HashMap) test",
-  "distanthorizons.config.client.advanced.debugging.debugConfigScreen.categoryTest":
+  "distanthorizons.config.client.advanced.debugging.exampleConfigScreen.categoryTest":
     "Category test",
-  "distanthorizons.config.client.advanced.debugging.debugConfigScreen.linkableTest":
+  "distanthorizons.config.client.advanced.debugging.exampleConfigScreen.linkableTest":
     "Linkable test",
-  "distanthorizons.config.client.advanced.debugging.debugConfigScreen.linkableTest.@tooltip":
+  "distanthorizons.config.client.advanced.debugging.exampleConfigScreen.linkableTest.@tooltip":
     "The value of this should be the same as in Category Test",
 
   

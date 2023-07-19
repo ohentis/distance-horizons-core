@@ -68,7 +68,7 @@ public class ConfigBase
     }};
 
     /** Disables the minimum and maximum of any variable */
-    public boolean disableMinMax = false; // Very fun to use
+    public boolean disableMinMax = false; // Very fun to use, but should always be disabled by default
     public final List<AbstractConfigType<?, ?>> entries = new ArrayList<>();
 
 

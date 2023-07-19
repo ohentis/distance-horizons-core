@@ -4,7 +4,9 @@ import com.google.common.collect.HashMultimap;
 import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IFullDataSource;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
+import com.seibel.distanthorizons.core.level.ClientLevelModule;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.logging.f3.F3Screen;
 import com.seibel.distanthorizons.core.pos.DhLodPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSource;
@@ -14,6 +16,7 @@ import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.util.FileScanUtil;
 import com.seibel.distanthorizons.core.util.FileUtil;
+import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
 import com.seibel.distanthorizons.core.util.objects.UncheckedInterruptedException;
 import com.seibel.distanthorizons.core.config.Config;
@@ -37,6 +40,7 @@ public class RenderSourceFileHandler implements ILodRenderSourceProvider
     private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
 	private final ThreadPoolExecutor fileHandlerThreadPool;
+	private final F3Screen.NestedMessage threadPoolMsg;
 
 	private final ConcurrentHashMap<DhSectionPos, File> unloadedFiles = new ConcurrentHashMap<>();
 	private final ConcurrentHashMap<DhSectionPos, RenderMetaDataFile> filesBySectionPos = new ConcurrentHashMap<>();
@@ -46,6 +50,12 @@ public class RenderSourceFileHandler implements ILodRenderSourceProvider
 	/** This is the lowest (highest numeric) detail level that this {@link RenderSourceFileHandler} is keeping track of. */
 	AtomicInteger topDetailLevel = new AtomicInteger(DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
 	private final IFullDataSourceProvider fullDataSourceProvider;
+
+	enum TaskType {
+		Read, UpdateReadData, Update, OnLoaded,
+	}
+
+	private final WeakHashMap<CompletableFuture<?>, TaskType> taskTracker = new WeakHashMap<>();
 	
 	
 	
@@ -62,11 +72,48 @@ public class RenderSourceFileHandler implements ILodRenderSourceProvider
 		{
 			LOGGER.warn("Unable to create render data folder, file saving may fail.");
 		}
-		this.fileHandlerThreadPool = ThreadUtil.makeSingleThreadPool("Render Source File Handler ["+this.level.getClientLevelWrapper().getDimensionType().getDimensionName()+"]");
+		fileHandlerThreadPool = ThreadUtil.makeSingleThreadPool("Render Source File Handler ["+this.level.getClientLevelWrapper().getDimensionType().getDimensionName()+"]");
+
+
+		this.threadPoolMsg = new F3Screen.NestedMessage(this::f3Log);
 		
 		FileScanUtil.scanFiles(saveStructure, level.getLevelWrapper(), null, this);
     }
-	
+
+	/** Returns what should be displayed in Minecraft's F3 debug menu */
+	private String[] f3Log()
+	{
+		ArrayList<String> lines = new ArrayList<>();
+		lines.add("Render Source File Handler ["+this.level.getClientLevelWrapper().getDimensionType().getDimensionName()+"]");
+		lines.add("  Loaded files: "+this.filesBySectionPos.size() + " / " + (this.unloadedFiles.size() + this.filesBySectionPos.size()));
+		lines.add("  Thread pool tasks: "+fileHandlerThreadPool.getQueue().size() + " (completed: " + fileHandlerThreadPool.getCompletedTaskCount() + ")");
+
+		int totalFutures = taskTracker.size();
+		EnumMap<TaskType, Integer> tasksOutstanding = new EnumMap<>(TaskType.class);
+		EnumMap<TaskType, Integer> tasksCompleted = new EnumMap<>(TaskType.class);
+		for (TaskType type : TaskType.values())
+		{
+			tasksOutstanding.put(type, 0);
+			tasksCompleted.put(type, 0);
+		}
+
+		synchronized (taskTracker) {
+			for (Map.Entry<CompletableFuture<?>, TaskType> entry : taskTracker.entrySet()) {
+				if (entry.getKey().isDone()) {
+					tasksCompleted.put(entry.getValue(), tasksCompleted.get(entry.getValue()) + 1);
+				} else {
+					tasksOutstanding.put(entry.getValue(), tasksOutstanding.get(entry.getValue()) + 1);
+				}
+			}
+		}
+		int totalOutstanding = tasksOutstanding.values().stream().mapToInt(Integer::intValue).sum();
+		lines.add("  Futures: "+totalFutures + " (outstanding: " + totalOutstanding + ")");
+		for (TaskType type : TaskType.values())
+		{
+			lines.add("    " + type + ": " + tasksOutstanding.get(type) + " / " + (tasksOutstanding.get(type) + tasksCompleted.get(type)));
+		}
+		return lines.toArray(new String[0]);
+	}
 	
 	
 	//===============//
@@ -290,8 +337,8 @@ public class RenderSourceFileHandler implements ILodRenderSourceProvider
 
 		// On error, (when it returns null,) return an empty render source
 		if (metaFile == null) return CompletableFuture.completedFuture(ColumnRenderSource.createEmptyRenderSource(pos));
-		
-        return metaFile.loadOrGetCachedDataSourceAsync(this.fileHandlerThreadPool, this.level).handle(
+
+		CompletableFuture<ColumnRenderSource> future = metaFile.loadOrGetCachedDataSourceAsync(this.fileHandlerThreadPool, this.level).handle(
 			(renderSource, exception) ->
 			{
 				if (exception != null)
@@ -301,6 +348,10 @@ public class RenderSourceFileHandler implements ILodRenderSourceProvider
 				
 				return (renderSource != null) ? renderSource : ColumnRenderSource.createEmptyRenderSource(pos);
 			});
+		synchronized (taskTracker) {
+			taskTracker.put(future, TaskType.Read);
+		}
+		return future;
     }
 	
 	public CompletableFuture<ColumnRenderSource> onCreateRenderFileAsync(RenderMetaDataFile file)
@@ -378,9 +429,9 @@ public class RenderSourceFileHandler implements ILodRenderSourceProvider
 		DebugRenderer.BoxWithLife box = new DebugRenderer.BoxWithLife(new DebugRenderer.Box(renderSource.sectionPos, 74f, 86f, 0.1f, Color.red), 1.0, 32f, Color.green.darker());
 
 		// get the full data source loading future
-		CompletableFuture<IFullDataSource> fullDataSourceFuture = this.fullDataSourceProvider.read(renderSource.getSectionPos());
-		fullDataSourceFuture = fullDataSourceFuture.thenApply((fullDataSource) -> 
-			{
+		CompletableFuture<IFullDataSource> fullDataSourceFuture =
+				this.fullDataSourceProvider.read(renderSource.getSectionPos())
+				.thenApply((fullDataSource) -> {
 				// the fullDataSource can be null if the thread this was running on was interrupted
 				box.box.color = Color.yellow.darker();
 				return fullDataSource;
@@ -390,50 +441,51 @@ public class RenderSourceFileHandler implements ILodRenderSourceProvider
 				return null;
 			});
 
-		// future returned 
-		CompletableFuture<Void> transformationCompleteFuture = new CompletableFuture<>();
-		
+		synchronized (taskTracker) {
+			taskTracker.put(fullDataSourceFuture, TaskType.UpdateReadData);
+		}
+
 		// convert the full data source into a render source
 		//LOGGER.info("Recreating cache for {}", data.getSectionPos());
-		DataRenderTransformer.transformDataSourceAsync(fullDataSourceFuture, this.level)
-				.whenComplete((newRenderSource, ex) -> 
+		CompletableFuture<Void> transformFuture = DataRenderTransformer.transformDataSourceAsync(fullDataSourceFuture, this.level)
+				.handle((newRenderSource, ex) ->
 				{
 					if (ex == null)
 					{
-						this.writeRenderSourceToFile(renderSource, file, newRenderSource);
+						try {
+							this.writeRenderSourceToFile(renderSource, file, newRenderSource);
+						} catch (Throwable e) {
+							LOGGER.error("Exception when writing render data to file: ", e);
+						}
 					}
-					else
+					else if (!LodUtil.isInterruptOrReject(ex))
 					{
-						if (ex instanceof InterruptedException)
-						{
-							// expected if the transformer is shut down, the exception can be ignored
-//							LOGGER.warn("RenderSource file transforming interrupted.");
-							
-							int ignoreEmptyWarning = 0; // explicitly handling these exceptions is important so we know where they are going and if there is an issue we can easily re-enable the logging
-						}
-						else if (ex instanceof RejectedExecutionException || ex.getCause() instanceof RejectedExecutionException)
-						{
-							// expected if the transformer was already shut down, the exception can be ignored
-//							LOGGER.warn("RenderSource file transforming interrupted.");
-							
-							int ignoreEmptyWarning = 0;
-						}
-						else if (!UncheckedInterruptedException.isThrowableInterruption(ex))
-						{
-							LOGGER.error("Exception when updating render file using data source: ", ex);
-						}
+						LOGGER.error("Exception when updating render file using data source: ", ex);
+					}
+					else {
+						//LOGGER.info("Interrupted update of render file using data source: ", ex);
 					}
 					box.close();
-					transformationCompleteFuture.complete(null);
+					return null;
 				});
-		return transformationCompleteFuture;
+		synchronized (taskTracker) {
+			taskTracker.put(transformFuture, TaskType.Update);
+		}
+		return transformFuture;
 	}
-	
-	/** TODO at some point this method may need to be made "async" like {@link RenderSourceFileHandler#onReadRenderSourceLoadedFromCacheAsync} since the insides are async */ 
-    public ColumnRenderSource onRenderFileLoaded(ColumnRenderSource renderSource, RenderMetaDataFile file)
+
+    public CompletableFuture<ColumnRenderSource> onRenderFileLoaded(ColumnRenderSource renderSource, RenderMetaDataFile file)
 	{
-		this.updateCacheAsync(renderSource, file).join();
-        return renderSource;
+		CompletableFuture<ColumnRenderSource> future = this.updateCacheAsync(renderSource, file).handle((voidObj, ex) -> {
+			if (ex != null && !LodUtil.isInterruptOrReject(ex)) {
+				LOGGER.error("Exception when updating render file using data source: ", ex);
+			}
+			return renderSource;
+		});
+		synchronized (taskTracker) {
+			taskTracker.put(future, TaskType.OnLoaded);
+		}
+		return future;
     }
 	
 	public CompletableFuture<Void> onReadRenderSourceLoadedFromCacheAsync(RenderMetaDataFile file, ColumnRenderSource data) {
@@ -484,17 +536,19 @@ public class RenderSourceFileHandler implements ILodRenderSourceProvider
 	//=====================//
 	// clearing / shutdown //
 	//=====================//
-	
+
+	//private static CompletableFuture<Void> cleanupTask;
+
 	@Override
 	public void close()
 	{
 		LOGGER.info("Closing "+this.getClass().getSimpleName()+" with ["+this.filesBySectionPos.size()+"] files...");
-		
+		/*
 		// queue the file save futures
 		ArrayList<CompletableFuture<Void>> futures = new ArrayList<>();
 		for (RenderMetaDataFile metaFile : this.filesBySectionPos.values())
 		{
-			CompletableFuture<Void> saveFuture = metaFile.flushAndSaveAsync(this.fileHandlerThreadPool);
+			CompletableFuture<Void> saveFuture = metaFile.flushAndSaveAsync(fileHandlerThreadPool);
 			if (!saveFuture.isDone())
 			{
 				futures.add(saveFuture);
@@ -508,20 +562,22 @@ public class RenderSourceFileHandler implements ILodRenderSourceProvider
 			
 			// if the save futures didn't already complete, wait for them and then shut down the thread pool
 			CompletableFuture<Void> combinedFuture = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
-			combinedFuture.thenRun(() ->
+			cleanupTask = combinedFuture.handle((result, ex) -> {
+				if (ex != null && !LodUtil.isInterruptOrReject(ex)) {
+					LOGGER.error("Exception when waiting for render source files to save", ex);
+				}
+				return null;
+			}).thenRun(() ->
 			{
 				LOGGER.info("Finished closing "+this.getClass().getSimpleName()+", ["+futures.size()+"] files were saved out of ["+this.filesBySectionPos.size()+"] total files.");
-				this.fileHandlerThreadPool.shutdown();
+				fileHandlerThreadPool.shutdown();
+				threadPoolMsg.close();
 			});
 		}
-		
-		// if the save futures were already completed, the above "thenRun" won't fire,
-		// if the executor isn't currently running anything, shut it down
-		if (!this.fileHandlerThreadPool.isTerminated() && this.fileHandlerThreadPool.getActiveCount() == 0)
-		{
-			LOGGER.info("Finished closing " + this.getClass().getSimpleName() + " when files were already saved.");
-			this.fileHandlerThreadPool.shutdown();
-		}
+		else {*/
+			fileHandlerThreadPool.shutdown();
+			threadPoolMsg.close();
+		//}
 	}
 	
 	

@@ -23,10 +23,11 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.coreapi.util.math.Mat4f;
 import org.apache.logging.log4j.Logger;
 
+import java.io.Closeable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class ClientLevelModule {
+public class ClientLevelModule implements Closeable {
     private static final Logger LOGGER = DhLoggerBuilder.getLogger();
     private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
     private final IDhClientLevel parent;
@@ -192,6 +193,7 @@ public class ClientLevelModule {
                 ClientRenderState.close();
             }
         }
+        f3Message.close();
     }
 
 

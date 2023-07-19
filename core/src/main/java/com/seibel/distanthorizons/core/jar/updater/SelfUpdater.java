@@ -10,7 +10,10 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.wrapperInterfaces.IVersionConstants;
 import org.apache.logging.log4j.Logger;
 
+import java.io.File;
+import java.net.URL;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.MessageDigest;
 
 /**
@@ -23,6 +26,7 @@ public class SelfUpdater {
 
     /** As we cannot delete(or replace) the jar while the mod is running, we just have this to delete it once the game closes */
     public static boolean deleteOldOnClose = false;
+    public static File newFileLocation;
 
     /**
      * Should be called on the game starting.
@@ -49,8 +53,9 @@ public class SelfUpdater {
         LOGGER.info("New version ("+ModrinthGetter.getLatestNameForVersion(mcVersion)+") of "+ ModInfo.READABLE_NAME+" is available");
         if (Config.Client.Advanced.AutoUpdater.enableSilentUpdates.get())
 		{
+            newFileLocation = JarUtils.jarFile.getParentFile().toPath().resolve("update").resolve(ModInfo.NAME + "-" + ModrinthGetter.getLatestNameForVersion(mcVersion) + ".jar").toFile();
 			// Auto-update mod
-			updateMod(mcVersion);
+			updateMod(mcVersion, newFileLocation);
 			return false;
 		} // else
         return true;
@@ -63,6 +68,13 @@ public class SelfUpdater {
     public static void onClose() {
         if (deleteOldOnClose) {
             try {
+                Files.move(newFileLocation.toPath(), JarUtils.jarFile.getParentFile().toPath().resolve(newFileLocation.getName()));
+                Files.delete(newFileLocation.getParentFile().toPath());
+            } catch (Exception e) {
+                LOGGER.warn("Failed to move updated fire from ["+ newFileLocation.getAbsolutePath() +"] to ["+ JarUtils.jarFile.getParentFile().getAbsolutePath() +"], please move it manually");
+                e.printStackTrace();
+            }
+            try {
                 Files.delete(JarUtils.jarFile.toPath());
             } catch (Exception e) {
                 LOGGER.warn("Failed to delete previous " + ModInfo.READABLE_NAME + " file, please delete it manually at [" + JarUtils.jarFile + "]");
@@ -72,19 +84,32 @@ public class SelfUpdater {
     }
 
     public static boolean updateMod() {
+        String mcVer = SingletonInjector.INSTANCE.get(IVersionConstants.class).getMinecraftVersion();
+        newFileLocation = JarUtils.jarFile.getParentFile().toPath().resolve("update").resolve(ModInfo.NAME + "-" + ModrinthGetter.getLatestNameForVersion(mcVer) + ".jar").toFile();
         return updateMod(
-                SingletonInjector.INSTANCE.get(IVersionConstants.class).getMinecraftVersion()
+                mcVer,
+                newFileLocation
         );
     }
-    public static boolean updateMod(String minecraftVersion) {
+    public static boolean updateMod(String minecraftVersion, File file) {
         try {
             LOGGER.info("Attempting to auto update " + ModInfo.READABLE_NAME);
-            WebDownloader.downloadAsFile(ModrinthGetter.getLatestDownloadForVersion(minecraftVersion), JarUtils.jarFile.getParentFile().toPath().resolve(ModInfo.NAME + "-" + ModrinthGetter.getLatestNameForVersion(minecraftVersion) + ".jar").toFile());
+
+            Files.createDirectories(file.getParentFile().toPath());
+            WebDownloader.downloadAsFile(ModrinthGetter.getLatestDownloadForVersion(minecraftVersion), file);
+
+            // Check if the checksum of the downloaded jar is correct (not required, but good to have to prevent corruption or interception)
+            if (!JarUtils.getFileChecksum(MessageDigest.getInstance("SHA"), file).equals(ModrinthGetter.getLatestShaForVersion(minecraftVersion))) {
+                LOGGER.warn("DH update checksum failed, aborting install");
+                throw new Exception("Checksum failed");
+            }
+
             deleteOldOnClose = true;
+
             LOGGER.info(ModInfo.READABLE_NAME + " successfully updated. It will apply on game's relaunch");
             return true;
         } catch (Exception e) {
-            LOGGER.info("Failed to update "+ModInfo.READABLE_NAME+" to version "+ModrinthGetter.getLatestNameForVersion(minecraftVersion));
+            LOGGER.warn("Failed to update "+ModInfo.READABLE_NAME+" to version "+ModrinthGetter.getLatestNameForVersion(minecraftVersion));
             e.printStackTrace();
             return false;
         }

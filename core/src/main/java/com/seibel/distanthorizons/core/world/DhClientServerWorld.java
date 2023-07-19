@@ -101,7 +101,9 @@ public class DhClientServerWorld extends AbstractDhWorld implements IDhClientWor
 			}
 			else
 			{
-				// TODO why is this called here?
+				// If the level wrapper is a Client Level Wrapper, then that means the client side leaves the level,
+				// but note that the server side still has the level loaded. So, we don't want to unload the level,
+				// we just want to stop rendering it.
 				this.levelObjMap.remove(wrapper).stopRenderer(); // Ignore resource warning. The level obj is referenced elsewhere.
 			}
 		}

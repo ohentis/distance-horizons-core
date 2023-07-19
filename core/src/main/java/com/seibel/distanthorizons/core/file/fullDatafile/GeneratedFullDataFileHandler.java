@@ -17,7 +17,6 @@ import com.seibel.distanthorizons.core.util.LodUtil;
 import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nullable;
-import java.io.File;
 import java.lang.ref.WeakReference;
 import java.util.*;
 import java.util.concurrent.*;
@@ -47,10 +46,7 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandler
 	@Override
 	public CompletableFuture<IFullDataSource> read(DhSectionPos pos)
 	{
-		return super.read(pos).whenComplete((fullDataSource, ex) ->
-		{
-			//this.checkIfSectionNeedsAdditionalGeneration(pos, fullDataSource);
-		});
+		return super.read(pos);
 	}
 	
 	
@@ -124,7 +120,7 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandler
 				ArrayList<FullDataMetaFile> existingFiles = new ArrayList<>();
 				byte sectDetailLevel = (byte) (DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL + maxSectDataDetailLevel);
 				pos.forEachChildAtLevel(sectDetailLevel, p -> existingFiles.add(getLoadOrMakeFile(p, true)));
-				return sampleFromFiles(dataSource, existingFiles).thenApply(this::tryPromoteDataSource)
+				return sampleFromFileArray(dataSource, existingFiles).thenApply(this::tryPromoteDataSource)
 						.exceptionally((e) ->
 						{
 							FullDataMetaFile newMetaFile = removeCorruptedFile(pos, file, e);
@@ -156,26 +152,28 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandler
 
 	// Try update the gen queue on this data source. If null, then nothing was done.
 	@Nullable
-	private CompletableFuture<IFullDataSource> updateDataGenStatus(FullDataMetaFile file, IIncompleteFullDataSource data)
+	private CompletableFuture<IFullDataSource> updateFromExistingDataSources(FullDataMetaFile file, IIncompleteFullDataSource data)
 	{
 		DhSectionPos pos = file.pos;
 		ArrayList<FullDataMetaFile> existingFiles = new ArrayList<>();
 		ArrayList<DhSectionPos> missingPositions = new ArrayList<>();
 		this.getDataFilesForPosition(pos, pos, existingFiles, missingPositions);
-
-		if (missingPositions.size() == 1) {
+		
+		if (missingPositions.size() == 1)
+		{
 			// Only missing myself. I.e. no child file data exists yet.
-			return tryStartGenTask(file, data);
+			return this.tryStartGenTask(file, data);
 		}
-		else {
-			// Has stuff to sample.
-			makeFiles(missingPositions, existingFiles);
-			return sampleFromFiles(data, existingFiles).thenApply(this::tryPromoteDataSource)
-				.exceptionally((e) ->
-				{
-					FullDataMetaFile newMetaFile = removeCorruptedFile(pos, file, e);
-					return null;
-				});
+		else
+		{
+			// There are other data source files to sample from.
+			this.makeFiles(missingPositions, existingFiles);
+			return this.sampleFromFileArray(data, existingFiles).thenApply(this::tryPromoteDataSource)
+					.exceptionally((e) ->
+					{
+						this.removeCorruptedFile(pos, file, e);
+						return null;
+					});
 		}
 	}
 
@@ -183,8 +181,8 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandler
 	public CompletableFuture<IFullDataSource> onCreateDataFile(FullDataMetaFile file)
 	{
 		DhSectionPos pos = file.pos;
-		IIncompleteFullDataSource data = makeDataSource(pos);
-		CompletableFuture<IFullDataSource> future = updateDataGenStatus(file, data);
+		IIncompleteFullDataSource data = makeEmptyDataSource(pos);
+		CompletableFuture<IFullDataSource> future = updateFromExistingDataSources(file, data);
 		// Cant start gen task, so return the data
 		return future == null ? CompletableFuture.completedFuture(data) : future;
 	}
@@ -209,12 +207,16 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandler
 		}
 		this.fireOnGenPosSuccessListeners(source.getSectionPos());
 
-		if (source instanceof IIncompleteFullDataSource && !file.genQueueChecked) {
+		if (source instanceof IIncompleteFullDataSource && !file.genQueueChecked)
+		{
 			WorldGenerationQueue worldGenQueue = this.worldGenQueueRef.get();
-			if (worldGenQueue != null) {
-				CompletableFuture<IFullDataSource> future = updateDataGenStatus(file, (IIncompleteFullDataSource) source);
-				if (future != null) {
-					return future.thenApply((newSource) -> {
+			if (worldGenQueue != null)
+			{
+				CompletableFuture<IFullDataSource> future = this.updateFromExistingDataSources(file, (IIncompleteFullDataSource) source);
+				if (future != null)
+				{
+					return future.thenApply((newSource) ->
+					{
 						onUpdated.accept(newSource);
 						return newSource;
 					});

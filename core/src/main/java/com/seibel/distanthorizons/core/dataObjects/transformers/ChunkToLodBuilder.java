@@ -230,7 +230,7 @@ public class ChunkToLodBuilder implements AutoCloseable
 		}
 		
 		threadCount = threadPoolSize;
-		executorThreadPool = ThreadUtil.makeThreadPool(threadPoolSize, ChunkToLodBuilder.class);
+		executorThreadPool = ThreadUtil.makeRateLimitedThreadPool(threadPoolSize, ChunkToLodBuilder.class.getSimpleName(), Config.Client.Advanced.MultiThreading.runTimeRatioForChunkLodConverterThreads);
 	}
 	
 	/**

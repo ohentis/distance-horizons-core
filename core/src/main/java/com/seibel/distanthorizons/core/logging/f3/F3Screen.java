@@ -3,10 +3,7 @@ package com.seibel.distanthorizons.core.logging.f3;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 
 import java.io.Closeable;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.function.Supplier;
 
 public class F3Screen
@@ -15,22 +12,25 @@ public class F3Screen
 			"", // blank line for spacing
 			ModInfo.READABLE_NAME + " version: " + ModInfo.VERSION
 	};
-	private static final LinkedList<Message> SELF_UPDATE_MESSAGE_LIST = new LinkedList<>();
+	private static final List<Message> SELF_UPDATE_MESSAGE_LIST = Collections.synchronizedList(new LinkedList<>());
 	
 	public static void addStringToDisplay(List<String> list)
 	{
 		list.addAll(Arrays.asList(DEFAULT_STRING));
-		Iterator<Message> iterator = SELF_UPDATE_MESSAGE_LIST.iterator();
-		while (iterator.hasNext())
-		{ 
-			Message message = iterator.next();
-			if (message == null)
+		synchronized (SELF_UPDATE_MESSAGE_LIST)
+		{
+			Iterator<Message> iterator = SELF_UPDATE_MESSAGE_LIST.iterator();
+			while (iterator.hasNext())
 			{
-				iterator.remove();
-			}
-			else
-			{
-				message.printTo(list);
+				Message message = iterator.next();
+				if (message == null)
+				{
+					iterator.remove();
+				}
+				else
+				{
+					message.printTo(list);
+				}
 			}
 		}
 	}
@@ -45,12 +45,16 @@ public class F3Screen
 	// and because this class shouldn't be used in a try {} block.
 	public static abstract class Message implements Closeable
 	{
-		protected Message() { SELF_UPDATE_MESSAGE_LIST.add(this); }
+		protected Message() {
+			SELF_UPDATE_MESSAGE_LIST.add(this);
+		}
 		
 		public abstract void printTo(List<String> output);
 		
 		@Override 
-		public void close() { SELF_UPDATE_MESSAGE_LIST.remove(this); }
+		public void close() {
+			boolean removed = SELF_UPDATE_MESSAGE_LIST.remove(this);
+		}
 	}
 	
 	public static class StaticMessage extends Message

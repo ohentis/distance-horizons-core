@@ -1,6 +1,7 @@
 package com.seibel.distanthorizons.core.config.types;
 
 
+import com.seibel.distanthorizons.core.config.NumberUtil;
 import com.seibel.distanthorizons.core.config.listeners.IConfigListener;
 import com.seibel.distanthorizons.core.config.types.enums.EConfigEntryAppearance;
 import com.seibel.distanthorizons.core.config.types.enums.EConfigEntryPerformance;
@@ -14,7 +15,7 @@ import java.util.Arrays;
  * for types that are not supported by it look in ConfigBase
  *
  * @author coolGi
- * @version 2022-5-26
+ * @version 2023-7-16
  */
 public class ConfigEntry<T> extends AbstractConfigType<T, ConfigEntry<T>> implements IConfigEntry<T>
 {
@@ -111,12 +112,30 @@ public class ConfigEntry<T> extends AbstractConfigType<T, ConfigEntry<T>> implem
     /** Sets the max value */
 	@Override
     public void setMax(T newMax) { this.max = newMax; }
-    /** Sets the min and max in 1 setter */
+    /** Sets the min and max within a single setter */
 	@Override
-    public void setMinMax(T newMin, T newMax)
-	{
-        this.max = newMin;
-        this.min = newMax;
+    public void setMinMax(T newMin, T newMax) {
+        this.setMin(newMin);
+        this.setMax(newMax);
+    }
+
+    /**
+     * Clamps the value within the set range
+     * @apiNote This does not save the value
+     */
+    public void clampWithinRange() { this.clampWithinRange(this.min, this.max); }
+    /**
+     * Clamps the value within a set range
+     *
+     * @param min The minimum that the value can be
+     * @param max The maximum that the value can be
+     * @apiNote This does not save the value
+     */
+    @SuppressWarnings("unchecked") // Suppress due to its always safe
+    public void clampWithinRange(T min, T max) {
+        byte validness = this.isValid(min, max);
+        if (validness == -1) this.value = (T) NumberUtil.getMinimum(this.value.getClass());
+        if (validness == 1) this.value = (T) NumberUtil.getMaximum(this.value.getClass());
     }
 
 	@Override
@@ -150,26 +169,50 @@ public class ConfigEntry<T> extends AbstractConfigType<T, ConfigEntry<T>> implem
      *         <p> -1 == number too low
      */
 	@Override
-    public byte isValid() { return isValid(this.value); }
+    public byte isValid() { return isValid(this.value, this.min, this.max); }
     /**
      * Checks if a new value is valid
      *
+     * @param value Value that is being checked whether valid
      * @return      0 == valid
      *         <p>  2 == invalid
      *         <p>  1 == number too high
      *         <p> -1 == number too low
      */
-	@Override
-    public byte isValid(T value) {
+    @Override
+    public byte isValid(T value) { return this.isValid(value, this.min, this.max); }
+    /**
+     * Checks if a new value is valid
+     *
+     * @param min The minimum that the value can be
+     * @param max The maximum that the value can be
+     * @return      0 == valid
+     *         <p>  2 == invalid
+     *         <p>  1 == number too high
+     *         <p> -1 == number too low
+     */
+    public byte isValid(T min, T max) { return this.isValid(this.value, min, max); }
+    /**
+     * Checks if a new value is valid
+     *
+     * @param value Value that is being checked whether valid
+     * @param min The minimum that the value can be
+     * @param max The maximum that the value can be
+     * @return      0 == valid
+     *         <p>  2 == invalid
+     *         <p>  1 == number too high
+     *         <p> -1 == number too low
+     */
+    public byte isValid(T value, T min, T max) {
         if (this.configBase.disableMinMax)
             return 0;
 
-        if (value.getClass() != this.value.getClass()) // If the 2 variables aren't the same type then it will be invalid
+        if (value == null || this.value == null || value.getClass() != this.value.getClass()) // If the 2 variables aren't the same type then it will be invalid
             return 2;
         if (Number.class.isAssignableFrom(value.getClass())) { // Only check min max if it is a number
-            if (this.max != null && Float.parseFloat(value.toString()) > Float.parseFloat(max.toString()))
+            if (max != null && NumberUtil.greaterThan((Number) value, (Number) max))
                 return 1;
-            if (this.min != null && Float.parseFloat(value.toString()) < Float.parseFloat(min.toString()))
+            if (min != null && NumberUtil.lessThan((Number) value, (Number) min))
                 return -1;
 
             return 0;

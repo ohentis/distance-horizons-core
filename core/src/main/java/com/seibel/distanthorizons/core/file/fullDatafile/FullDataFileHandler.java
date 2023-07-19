@@ -30,7 +30,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static com.seibel.distanthorizons.core.util.FileScanUtil.LOD_FILE_POSTFIX;
-import static com.seibel.distanthorizons.core.util.FileScanUtil.RENDER_FILE_POSTFIX;
 
 public class FullDataFileHandler implements IFullDataSourceProvider
 {
@@ -40,24 +39,22 @@ public class FullDataFileHandler implements IFullDataSourceProvider
 	
 	protected static ExecutorService fileHandlerThreadPool;
 	protected static ConfigChangeListener<Integer> configListener;
-
+	
 	private final ConcurrentHashMap<DhSectionPos, File> unloadedFiles = new ConcurrentHashMap<>();
 	private final ConcurrentHashMap<DhSectionPos, FullDataMetaFile> fileBySectionPos = new ConcurrentHashMap<>();
 	public void ForEachFile(Consumer<FullDataMetaFile> consumer) { this.fileBySectionPos.values().forEach(consumer); }
-
+	
+	private LinkedList<Consumer<IFullDataSource>> onUpdatedListeners = new LinkedList<>();
+	
 	protected final IDhLevel level;
 	protected final File saveDir;
-	/** 
-	 * The starting value here denotes how far into the tree LOD writes should occur. <br>
-	 * This is a band-aid fix to prevent lower detail sections from not being generated until the detail level
-	 * is requested. <br><br>
-	 * 
-	 * Note: that problem may still happen at a sufficiently large render distance, 
-	 * however this should kick the problem down the road
-	 * far enough that it can be ignored for now.
-	 */
-	protected final AtomicInteger topDetailLevel = new AtomicInteger(DhSectionPos.SECTION_REGION_DETAIL_LEVEL);
+	protected final AtomicInteger topDetailLevel = new AtomicInteger(0);
 	protected final int minDetailLevel = CompleteFullDataSource.SECTION_SIZE_OFFSET;
+	
+	
+	//=============//
+	// constructor //
+	//=============//
 	
     public FullDataFileHandler(IDhLevel level, AbstractSaveStructure saveStructure)
 	{
@@ -69,7 +66,9 @@ public class FullDataFileHandler implements IFullDataSourceProvider
 		}
 		FileScanUtil.scanFiles(saveStructure, level.getLevelWrapper(), this, null);
     }
-
+	
+	// constructor helpers //
+	
 	/**
 	 * Caller must ensure that this method is called only once,
 	 *  and that the {@link FullDataFileHandler} is not used before this method is called.
@@ -179,6 +178,9 @@ public class FullDataFileHandler implements IFullDataSourceProvider
         }
     }
 	
+	
+	
+	
     protected FullDataMetaFile getLoadOrMakeFile(DhSectionPos pos, boolean allowCreateFile)
 	{
         FullDataMetaFile metaFile = this.fileBySectionPos.get(pos);
@@ -237,8 +239,9 @@ public class FullDataFileHandler implements IFullDataSourceProvider
 			return null;
 		}
 		
-		// This is a CAS with expected null value.
 		this.topDetailLevel.updateAndGet(oldDetailLevel -> Math.max(oldDetailLevel, pos.sectionDetailLevel));
+		
+		// This is a CAS with expected null value.
 		FullDataMetaFile metaFileCas = this.fileBySectionPos.putIfAbsent(pos, metaFile);
 		return metaFileCas == null ? metaFile : metaFileCas;
     }
@@ -255,6 +258,7 @@ public class FullDataFileHandler implements IFullDataSourceProvider
         byte sectionDetail = posAreaToGet.sectionDetailLevel;
         boolean allEmpty = true;
 		
+		// get all existing files for this position
         outerLoop:
         while (--sectionDetail >= this.minDetailLevel)
 		{
@@ -275,7 +279,8 @@ public class FullDataFileHandler implements IFullDataSourceProvider
 						continue;
 					}
 					
-                    if (this.fileBySectionPos.containsKey(subPos))
+					// check if a file for this pos exists, either loaded and unloaded
+					if (this.fileBySectionPos.containsKey(subPos) || this.unloadedFiles.containsKey(subPos))
 					{
                         allEmpty = false;
                         break outerLoop;
@@ -304,6 +309,13 @@ public class FullDataFileHandler implements IFullDataSourceProvider
 		DhSectionPos childPos = pos.getChildByIndex(childIndex);
 		if (CompleteFullDataSource.firstDataPosCanAffectSecond(basePos, childPos))
 		{
+			// load the file if it isn't already
+			if (this.unloadedFiles.containsKey(childPos))
+			{
+				this.getLoadOrMakeFile(childPos, true);
+			}
+			
+			
 			FullDataMetaFile metaFile = this.fileBySectionPos.get(childPos);
 			if (metaFile != null)
 			{
@@ -373,12 +385,6 @@ public class FullDataFileHandler implements IFullDataSourceProvider
     private void writeChunkDataToMetaFile(DhSectionPos sectionPos, ChunkSizedFullDataAccessor chunkData)
 	{
         FullDataMetaFile metaFile = this.fileBySectionPos.get(sectionPos);
-		if (metaFile == null && sectionPos.sectionDetailLevel <= this.topDetailLevel.get())
-		{
-			// create a new file if one doesn't exist,
-			// this is done so we don't end up with holes where LODs should have been generated
-			metaFile = this.getLoadOrMakeFile(sectionPos, true);
-		}
         if (metaFile != null)
 		{ 
 			// there is a file for this position
@@ -414,64 +420,47 @@ public class FullDataFileHandler implements IFullDataSourceProvider
 		}
 		return metaFile.flushAndSaveAsync();
 	}
-
-
-	private LinkedList<Consumer<IFullDataSource>> onUpdatedListeners = new LinkedList<>();
+	
+	
 	@Override
 	public synchronized void addOnUpdatedListener(Consumer<IFullDataSource> listener)
 	{
 		this.onUpdatedListeners.add(listener);
 	}
-
-//    @Override
-//    public long getCacheVersion(DhSectionPos sectionPos)
-//	{
-//        FullDataMetaFile file = this.files.get(sectionPos);
-//        if (file == null)
-//		{
-//			return 0;
-//		}
-//        return file.getCacheVersion();
-//    }
 	
-//    @Override
-//    public boolean isCacheVersionValid(DhSectionPos sectionPos, long cacheVersion)
-//	{
-//        FullDataMetaFile file = this.files.get(sectionPos);
-//        if (file == null)
-//		 {
-//			return cacheVersion >= 0;
-//		}
-//        return file.isCacheVersionValid(cacheVersion);
-//    }
-
-	protected IIncompleteFullDataSource makeDataSource(DhSectionPos pos)
+	protected IIncompleteFullDataSource makeEmptyDataSource(DhSectionPos pos)
 	{
 		return pos.sectionDetailLevel <= HighDetailIncompleteFullDataSource.MAX_SECTION_DETAIL ?
-				HighDetailIncompleteFullDataSource.createEmpty(pos) : LowDetailIncompleteFullDataSource.createEmpty(pos);
+				HighDetailIncompleteFullDataSource.createEmpty(pos) : 
+				LowDetailIncompleteFullDataSource.createEmpty(pos);
 	}
-
-	protected CompletableFuture<IIncompleteFullDataSource> sampleFromFiles(IIncompleteFullDataSource source, ArrayList<FullDataMetaFile> existingFiles)
+	
+	/** populates the given data source using the given array of files */
+	protected CompletableFuture<IIncompleteFullDataSource> sampleFromFileArray(IIncompleteFullDataSource recipientFullDataSource, ArrayList<FullDataMetaFile> existingFiles)
 	{
 		// read in the existing data
 		final ArrayList<CompletableFuture<Void>> loadDataFutures = new ArrayList<>(existingFiles.size());
 		for (FullDataMetaFile existingFile : existingFiles)
 		{
 			loadDataFutures.add(existingFile.loadOrGetCachedDataSourceAsync()
-					.exceptionally((ex) -> /*Ignore file read errors*/null)
-					.thenAccept((fullDataSource) ->
+				.exceptionally((ex) -> /*Ignore file read errors*/null)
+				.thenAccept((existingFullDataSource) ->
+				{
+					if (existingFullDataSource == null)
 					{
-						if (fullDataSource == null) return;
-						//this.checkIfSectionNeedsAdditionalGeneration(pos, fullDataSource);
-						//LOGGER.info("Merging data from {} into {}", data.getSectionPos(), pos);
-						source.sampleFrom(fullDataSource);
-					})
+						return;
+					}
+					
+					//LOGGER.info("Merging data from {} into {}", data.getSectionPos(), pos);
+					recipientFullDataSource.sampleFrom(existingFullDataSource);
+				})
 			);
 		}
-		return CompletableFuture.allOf(loadDataFutures.toArray(new CompletableFuture[0])).thenApply(v -> source);
+		return CompletableFuture.allOf(loadDataFutures.toArray(new CompletableFuture[0])).thenApply(voidObj -> recipientFullDataSource);
 	}
 
-	protected void makeFiles(ArrayList<DhSectionPos> posList, ArrayList<FullDataMetaFile> output) {
+	protected void makeFiles(ArrayList<DhSectionPos> posList, ArrayList<FullDataMetaFile> output)
+	{
 		for (DhSectionPos missingPos : posList)
 		{
 			FullDataMetaFile newFile = this.getLoadOrMakeFile(missingPos, true);
@@ -486,7 +475,7 @@ public class FullDataFileHandler implements IFullDataSourceProvider
     public CompletableFuture<IFullDataSource> onCreateDataFile(FullDataMetaFile file)
 	{
         DhSectionPos pos = file.pos;
-		IIncompleteFullDataSource source = this.makeDataSource(pos);
+		IIncompleteFullDataSource source = this.makeEmptyDataSource(pos);
         ArrayList<FullDataMetaFile> existFiles = new ArrayList<>();
         ArrayList<DhSectionPos> missing = new ArrayList<>();
 		this.getDataFilesForPosition(pos, pos, existFiles, missing);
@@ -498,8 +487,8 @@ public class FullDataFileHandler implements IFullDataSourceProvider
         }
 		else
 		{
-			makeFiles(missing, existFiles);
-			return sampleFromFiles(source, existFiles).thenApply(IIncompleteFullDataSource::tryPromotingToCompleteDataSource)
+			this.makeFiles(missing, existFiles);
+			return this.sampleFromFileArray(source, existFiles).thenApply(IIncompleteFullDataSource::tryPromotingToCompleteDataSource)
 				.exceptionally((e) ->
 				{
 					FullDataMetaFile newMetaFile = this.removeCorruptedFile(pos, file, e);
@@ -578,7 +567,16 @@ public class FullDataFileHandler implements IFullDataSourceProvider
 			setThreadPoolSize(Config.Client.Advanced.MultiThreading.numberOfFileHandlerThreads.get());
 		}
 	}
-	public static void setThreadPoolSize(int threadPoolSize) { fileHandlerThreadPool = ThreadUtil.makeThreadPool(threadPoolSize, FullDataFileHandler.class.getSimpleName()+"Thread"); }
+	public static void setThreadPoolSize(int threadPoolSize) 
+	{
+		if (fileHandlerThreadPool != null)
+		{
+			// close the previous thread pool if one exists
+			fileHandlerThreadPool.shutdown();
+		}
+		
+		fileHandlerThreadPool = ThreadUtil.makeRateLimitedThreadPool(threadPoolSize, FullDataFileHandler.class.getSimpleName()+"Thread", Config.Client.Advanced.MultiThreading.runTimeRatioForFileHandlerThreads); 
+	}
 	
 	/**
 	 * Stops any executing tasks and destroys the executor. <br>

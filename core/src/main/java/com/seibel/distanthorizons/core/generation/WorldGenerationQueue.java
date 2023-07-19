@@ -14,13 +14,9 @@ import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.transformers.LodDataBuilder;
 import com.seibel.distanthorizons.core.file.fullDatafile.FullDataFileHandler;
-import com.seibel.distanthorizons.core.generation.tasks.*;
-import com.seibel.distanthorizons.core.pos.*;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
-import com.seibel.distanthorizons.core.util.objects.quadTree.QuadNode;
-import com.seibel.distanthorizons.core.util.objects.quadTree.QuadTree;
 import com.seibel.distanthorizons.core.util.objects.UncheckedInterruptedException;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.IWrapperFactory;
@@ -430,8 +426,7 @@ public class WorldGenerationQueue implements Closeable, IDebugRenderable
 			if (exception != null)
 			{
 				// don't log the shutdown exceptions
-				if (!UncheckedInterruptedException.isThrowableInterruption(exception)
-					&& !(exception instanceof CancellationException || exception.getCause() instanceof CancellationException))
+				if (!LodUtil.isInterruptOrReject(exception))
 				{
 					LOGGER.error("Error generating data for section "+taskPos, exception);
 				}
@@ -515,7 +510,16 @@ public class WorldGenerationQueue implements Closeable, IDebugRenderable
 			setThreadPoolSize(Config.Client.Advanced.MultiThreading.numberOfWorldGenerationThreads.get());
 		}
 	}
-	public static void setThreadPoolSize(int threadPoolSize) { worldGeneratorThreadPool = ThreadUtil.makeThreadPool(threadPoolSize, "DH-Gen-Worker-Thread", Thread.MIN_PRIORITY); }
+	public static void setThreadPoolSize(int threadPoolSize) 
+	{
+		if (worldGeneratorThreadPool != null)
+		{
+			// close the previous thread pool if one exists
+			worldGeneratorThreadPool.shutdown();
+		}
+		
+		worldGeneratorThreadPool = ThreadUtil.makeRateLimitedThreadPool(threadPoolSize, "DH-Gen-Worker-Thread", Thread.MIN_PRIORITY, Config.Client.Advanced.MultiThreading.runTimeRatioForWorldGenerationThreads); 
+	}
 	
 	/**
 	 * Stops any executing tasks and destroys the executor. <br>
@@ -566,7 +570,7 @@ public class WorldGenerationQueue implements Closeable, IDebugRenderable
 						exception = exception.getCause();
 					}
 					
-					if (!UncheckedInterruptedException.isThrowableInterruption(exception) && !(exception instanceof CancellationException))
+					if (!UncheckedInterruptedException.isInterrupt(exception) && !(exception instanceof CancellationException))
 					{
 						LOGGER.error("Error when terminating data generation for section "+runningTaskGroup.group.pos, exception);
 					}
