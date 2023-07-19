@@ -5,6 +5,7 @@ import com.seibel.distanthorizons.core.network.messages.AckMessage;
 import com.seibel.distanthorizons.core.network.messages.CloseReasonMessage;
 import com.seibel.distanthorizons.core.network.messages.CloseMessage;
 import com.seibel.distanthorizons.core.network.messages.HelloMessage;
+import com.seibel.distanthorizons.core.network.protocol.MessageHandler;
 import com.seibel.distanthorizons.core.network.protocol.NetworkChannelInitializer;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import io.netty.bootstrap.ServerBootstrap;
@@ -74,7 +75,7 @@ public class NetworkServer extends NetworkEventSource implements AutoCloseable
 				.group(this.bossGroup, this.workerGroup)
 				.channel(NioServerSocketChannel.class)
 				.handler(new LoggingHandler(LogLevel.DEBUG))
-				.childHandler(new NetworkChannelInitializer(this.messageHandler));
+				.childHandler(new NetworkChannelInitializer(new MessageHandler(this::handleMessage)));
 		
 		ChannelFuture bindFuture = bootstrap.bind(this.port);
 		bindFuture.addListener((ChannelFuture channelFuture) -> 
@@ -111,6 +112,8 @@ public class NetworkServer extends NetworkEventSource implements AutoCloseable
 		this.workerGroup.shutdownGracefully().syncUninterruptibly();
 		this.bossGroup.shutdownGracefully().syncUninterruptibly();
 		LOGGER.info("Network server has been closed.");
+		
+		super.close();
 	}
 	
 }

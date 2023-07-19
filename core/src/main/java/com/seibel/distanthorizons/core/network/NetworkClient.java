@@ -4,6 +4,7 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.network.messages.CloseMessage;
 import com.seibel.distanthorizons.core.network.messages.CloseReasonMessage;
 import com.seibel.distanthorizons.core.network.messages.HelloMessage;
+import com.seibel.distanthorizons.core.network.protocol.MessageHandler;
 import com.seibel.distanthorizons.core.network.protocol.NetworkChannelInitializer;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
@@ -41,7 +42,7 @@ public class NetworkClient extends NetworkEventSource implements AutoCloseable
             .group(this.workerGroup)
             .channel(NioSocketChannel.class)
             .option(ChannelOption.SO_KEEPALIVE, true)
-            .handler(new NetworkChannelInitializer(this.messageHandler));
+            .handler(new NetworkChannelInitializer(new MessageHandler(this::handleMessage)));
 	
     private EConnectionState connectionState;
     private Channel channel;
@@ -132,7 +133,7 @@ public class NetworkClient extends NetworkEventSource implements AutoCloseable
 		this.connectionState = EConnectionState.RECONNECT_FORCE;
 		this.channel.disconnect();
     }
-
+	
     @Override
     public void close() 
 	{
@@ -144,6 +145,8 @@ public class NetworkClient extends NetworkEventSource implements AutoCloseable
 		this.connectionState = EConnectionState.CLOSED;
 		this.workerGroup.shutdownGracefully().syncUninterruptibly();
 		this.channel.close().syncUninterruptibly();
+		
+		super.close();
     }
 	
 }

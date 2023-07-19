@@ -216,14 +216,14 @@ public class SubDimensionLevelMatcher implements AutoCloseable
 				IClientLevelWrapper clientLevelWrapper = null;
 				if (clientLevelWrapper == null)
 				{
-					// TODO level shouldn't be null, continuing would probably cause a null pointer crash
+					// TODO Sub dimension level matcher is incomplete
 					LOGGER.info(this.getClass().getSimpleName() + " implementation incomplete. Unable to get LOD data file from generic folder without [" + IClientLevelWrapper.class.getSimpleName() + "].");
 					break;
 				}
-				IDhLevel tempLevel = new DhClientLevel(new ClientOnlySaveStructure(), clientLevelWrapper);
+				IDhLevel tempLevel = null; // new DhClientLevel(new ClientOnlySaveStructure(), clientLevelWrapper, ???);
 				IFullDataSourceProvider fileHandler = new FullDataFileHandler(tempLevel, tempLevel.getSaveStructure());
 				CompletableFuture<IFullDataSource> testDataSource = fileHandler.read(new DhSectionPos(playerChunkPos));
-				IFullDataSource lodDataSource = testDataSource.get(); 
+				IFullDataSource lodDataSource = testDataSource.get();
 				
 				
 				// convert the data source into a raw LOD data array

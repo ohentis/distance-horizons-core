@@ -4,6 +4,7 @@ import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.file.structure.ClientOnlySaveStructure;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.level.DhClientLevel;
+import com.seibel.distanthorizons.core.network.ChildNetworkEventSource;
 import com.seibel.distanthorizons.core.network.NetworkClient;
 import com.seibel.distanthorizons.core.network.messages.*;
 import com.seibel.distanthorizons.core.network.messages.PlayerUUIDMessage;
@@ -85,7 +86,7 @@ public class DhClientWorld extends AbstractDhWorld implements IDhClientWorld
 				return null;
 			}
 
-			return new DhClientLevel(this.saveStructure, clientLevelWrapper);
+			return new DhClientLevel(this.saveStructure, clientLevelWrapper, new ChildNetworkEventSource<>(networkClient));
         });
     }
 

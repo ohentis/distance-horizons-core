@@ -3,26 +3,48 @@ package com.seibel.distanthorizons.core.network;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.network.messages.AckMessage;
 import com.seibel.distanthorizons.core.network.protocol.INetworkMessage;
-import com.seibel.distanthorizons.core.network.protocol.MessageHandler;
 import io.netty.channel.ChannelHandlerContext;
 import org.apache.logging.log4j.Logger;
 
+import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-public abstract class NetworkEventSource implements AutoCloseable
+public abstract class NetworkEventSource
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	protected final Map<Class<? extends INetworkMessage>, Set<BiConsumer<INetworkMessage, ChannelHandlerContext>>> handlers = new HashMap<>();
 	
-	protected final MessageHandler messageHandler = new MessageHandler();
 	
-
+	protected boolean hasHandler(Class<? extends INetworkMessage> handlerClass)
+	{
+		return this.handlers.containsKey(handlerClass);
+	}
 	
-	public <T extends INetworkMessage> void registerHandler(Class<T> clazz, BiConsumer<T, ChannelHandlerContext> handler) { this.messageHandler.registerHandler(clazz, handler); }
+	protected void handleMessage(INetworkMessage message, ChannelHandlerContext channelContext)
+	{
+		Set<BiConsumer<INetworkMessage, ChannelHandlerContext>> handlerList = this.handlers.get(message.getClass());
+		if (handlerList == null || handlerList.isEmpty())
+		{
+			LOGGER.warn("Unhandled message type: " + message.getClass().getSimpleName());
+			return;
+		}
+		
+		for (BiConsumer<INetworkMessage, ChannelHandlerContext> handler : handlerList)
+		{
+			handler.accept(message, channelContext);
+		}
+	}
+	
+	public <T extends INetworkMessage> void registerHandler(Class<T> handlerClass, BiConsumer<T, ChannelHandlerContext> handlerImplementation)
+	{
+		this.handlers.computeIfAbsent(handlerClass, missingHandlerClass -> new HashSet<>())
+				.add((BiConsumer<INetworkMessage, ChannelHandlerContext>) handlerImplementation);
+	}
 	
 	public <T extends INetworkMessage> void registerAckHandler(Class<T> clazz, Consumer<ChannelHandlerContext> handler)
 	{
-		this.messageHandler.registerHandler(AckMessage.class, (ackMessage, channelContext) -> 
+		this.registerHandler(AckMessage.class, (ackMessage, channelContext) ->
 		{
 			if (ackMessage.messageType == clazz)
 			{
@@ -31,4 +53,14 @@ public abstract class NetworkEventSource implements AutoCloseable
 		});
 	}
 	
+	protected <T extends INetworkMessage> void removeHandler(Class<T> handlerClass, BiConsumer<T, ChannelHandlerContext> handlerImplementation)
+	{
+		this.handlers.computeIfAbsent(handlerClass, missingHandlerClass -> new HashSet<>())
+				.remove(handlerImplementation);
+	}
+	
+	public void close()
+	{
+		this.handlers.clear();
+	}
 }

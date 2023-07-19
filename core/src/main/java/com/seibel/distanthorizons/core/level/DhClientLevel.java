@@ -5,6 +5,8 @@ import com.seibel.distanthorizons.core.file.fullDatafile.IFullDataSourceProvider
 import com.seibel.distanthorizons.core.file.fullDatafile.RemoteFullDataFileHandler;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.network.ChildNetworkEventSource;
+import com.seibel.distanthorizons.core.network.NetworkClient;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrapper;
@@ -30,11 +32,11 @@ public class DhClientLevel extends DhLevel implements IDhClientLevel
 	// constructor //
 	//=============//
 	
-	public DhClientLevel(AbstractSaveStructure saveStructure, IClientLevelWrapper clientLevelWrapper)
+	public DhClientLevel(AbstractSaveStructure saveStructure, IClientLevelWrapper clientLevelWrapper, ChildNetworkEventSource<NetworkClient> eventSource)
 	{
 		this.levelWrapper = clientLevelWrapper;
 		this.saveStructure = saveStructure;
-		dataFileHandler = new RemoteFullDataFileHandler(this, saveStructure);
+		dataFileHandler = new RemoteFullDataFileHandler(this, saveStructure, eventSource);
 		clientside = new ClientLevelModule(this);
 		clientside.startRenderer();
 		LOGGER.info("Started DHLevel for "+this.levelWrapper+" with saves at "+this.saveStructure);

@@ -19,35 +19,24 @@ public class MessageHandler extends SimpleChannelInboundHandler<INetworkMessage>
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
-	private final Map<Class<? extends INetworkMessage>, List<BiConsumer<INetworkMessage, ChannelHandlerContext>>> handlers = new HashMap<>();
+	private final BiConsumer<INetworkMessage, ChannelHandlerContext> messageConsumer;
 	
-	
-	
-	public <T extends INetworkMessage> void registerHandler(Class<T> handlerClass, BiConsumer<T, ChannelHandlerContext> handlerImplementation)
+	public MessageHandler(BiConsumer<INetworkMessage, ChannelHandlerContext> messageConsumer)
 	{
-		this.handlers.computeIfAbsent(handlerClass, missingHandlerClass -> new LinkedList<>())
-				.add((BiConsumer<INetworkMessage, ChannelHandlerContext>) handlerImplementation);
+		this.messageConsumer = messageConsumer;
 	}
 	
 	@Override
 	protected void channelRead0(ChannelHandlerContext channelContext, INetworkMessage message)
 	{
-		LOGGER.trace("Received message: "+message.getClass().getSimpleName());
-		
-		List<BiConsumer<INetworkMessage, ChannelHandlerContext>> handlerList = this.handlers.get(message.getClass());
-		if (handlerList == null)
-		{
-			LOGGER.warn("Unhandled message type: "+message.getClass().getSimpleName());
-			return;
-		}
-		
-		for (BiConsumer<INetworkMessage, ChannelHandlerContext> handler : handlerList)
-		{
-			handler.accept(message, channelContext);
-		}
+		LOGGER.trace("Received message: " + message.getClass().getSimpleName());
+		this.messageConsumer.accept(message, channelContext);
 	}
 	
 	@Override
-	public void channelInactive(@NotNull ChannelHandlerContext channelContext) { this.channelRead0(channelContext, new CloseMessage()); }
+	public void channelInactive(@NotNull ChannelHandlerContext channelContext)
+	{
+		this.channelRead0(channelContext, new CloseMessage());
+	}
 	
 }
