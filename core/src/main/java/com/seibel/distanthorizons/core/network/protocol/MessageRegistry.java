@@ -30,6 +30,7 @@ public class MessageRegistry
 		this.registerMessage(PlayerUUIDMessage.class, PlayerUUIDMessage::new);
 		this.registerMessage(RemotePlayerConfigMessage.class, RemotePlayerConfigMessage::new);
 		this.registerMessage(ChunkRequestMessage.class, ChunkRequestMessage::new);
+		this.registerMessage(ChunkResponseMessage.class, ChunkResponseMessage::new);
 	}
 	
 	
@@ -51,12 +52,21 @@ public class MessageRegistry
 		}
 		catch (NullPointerException e)
 		{
-			throw new IllegalArgumentException("Invalid message ID");
+			throw new IllegalArgumentException("Invalid message ID: "+messageId);
 		}
 	}
 	
     public int getMessageId(INetworkMessage message) { return this.getMessageId(message.getClass()); }
 	
-    public int getMessageId(Class<? extends INetworkMessage> messageClass) { return this.classToId.get(messageClass); }
+    public int getMessageId(Class<? extends INetworkMessage> messageClass) {
+		try
+		{
+			return this.classToId.get(messageClass);
+		}
+		catch (NullPointerException e)
+		{
+			throw new IllegalArgumentException("Message does not have ID assigned to it: "+messageClass.getSimpleName());
+		}
+	}
 	
 }

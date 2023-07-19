@@ -66,7 +66,7 @@ public class DhClientWorld extends AbstractDhWorld implements IDhClientWorld
 
         networkClient.registerAckHandler(RemotePlayerConfigMessage.class, ctx -> {
             // TODO Actually request chunks
-            ctx.writeAndFlush(new ChunkRequestMessage(new DhSectionPos(new DhBlockPos2D(0, 0))));
+            // ctx.writeAndFlush(new ChunkRequestMessage(new DhSectionPos(new DhBlockPos2D(0, 0))));
         });
     }
 

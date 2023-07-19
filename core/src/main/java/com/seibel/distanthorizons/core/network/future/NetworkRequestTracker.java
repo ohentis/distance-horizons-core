@@ -58,9 +58,8 @@ public class NetworkRequestTracker
 	}
 	
 	private void completeAllExceptionally(Channel channel, Throwable cause) {
-		for (CompletableFuture<TResponse> responseFuture : pendingFutures.row(channel).values()) {
+		for (CompletableFuture<TResponse> responseFuture : pendingFutures.row(channel).values())
 			responseFuture.completeExceptionally(cause);
-		};
 		pendingFutures.row(channel).clear();
 	}
 	
