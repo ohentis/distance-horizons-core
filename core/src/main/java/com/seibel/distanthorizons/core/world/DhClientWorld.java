@@ -9,6 +9,8 @@ import com.seibel.distanthorizons.core.network.messages.*;
 import com.seibel.distanthorizons.core.network.messages.PlayerUUIDMessage;
 import com.seibel.distanthorizons.core.network.messages.RemotePlayerConfigMessage;
 import com.seibel.distanthorizons.core.network.objects.RemotePlayer;
+import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
+import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
 import com.seibel.distanthorizons.core.util.objects.EventLoop;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
@@ -64,7 +66,7 @@ public class DhClientWorld extends AbstractDhWorld implements IDhClientWorld
 
         networkClient.registerAckHandler(RemotePlayerConfigMessage.class, ctx -> {
             // TODO Actually request chunks
-            ctx.writeAndFlush(new ChunkRequestMessage());
+            ctx.writeAndFlush(new ChunkRequestMessage(new DhSectionPos(new DhBlockPos2D(0, 0))));
         });
     }
 

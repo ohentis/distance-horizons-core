@@ -10,6 +10,7 @@ import com.seibel.distanthorizons.core.network.messages.ChunkRequestMessage;
 import com.seibel.distanthorizons.core.network.messages.ChunkResponseMessage;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 
+import java.nio.file.FileAlreadyExistsException;
 import java.util.concurrent.CompletableFuture;
 
 public class RemoteFullDataFileHandler extends FullDataFileHandler
@@ -25,14 +26,11 @@ public class RemoteFullDataFileHandler extends FullDataFileHandler
 
     @Override
     public CompletableFuture<IFullDataSource> read(DhSectionPos pos) {
-        // TODO read and force update somehow instead ????
+        // TODO: LOD data file updating is probably incomplete
         return super.read(pos).thenCompose((fullDataSource) -> {
-            if (fullDataSource != null) {
-                return CompletableFuture.completedFuture(fullDataSource);
-            }
-
-            CompletableFuture<ChunkResponseMessage> responseFuture = chunkRequestTracker.sendRequest(networkClient.getChannel(), new ChunkRequestMessage());
-            
+            FullDataMetaFile metaFile = this.getLoadOrMakeFile(pos, true);
+            CompletableFuture<ChunkResponseMessage> responseFuture = chunkRequestTracker.sendRequest(networkClient.getChannel(), new ChunkRequestMessage(pos));
+            return onDataFileUpdate(fullDataSource, metaFile, iFullDataSource -> {}, iFullDataSource -> true);
         });
     }
 

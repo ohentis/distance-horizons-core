@@ -1,8 +1,10 @@
 package com.seibel.distanthorizons.core.pos;
 
 import com.seibel.distanthorizons.core.enums.ELodDirection;
+import com.seibel.distanthorizons.core.network.protocol.INetworkObject;
 import com.seibel.distanthorizons.coreapi.util.BitShiftUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
+import io.netty.buffer.ByteBuf;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -19,7 +21,7 @@ import java.util.function.Consumer;
  * @author Leetom
  * @version 2022-11-6
  */
-public class DhSectionPos implements Comparable<DhSectionPos>
+public class DhSectionPos implements Comparable<DhSectionPos>, INetworkObject
 {
 	/** 
 	 * The lowest detail level a Section position can hold.
@@ -32,12 +34,12 @@ public class DhSectionPos implements Comparable<DhSectionPos>
 	public final static byte SECTION_REGION_DETAIL_LEVEL = SECTION_MINIMUM_DETAIL_LEVEL + LodUtil.REGION_DETAIL_LEVEL;
 	
 	
-	public final byte sectionDetailLevel;
+	public byte sectionDetailLevel;
 	
 	/** in a sectionDetailLevel grid */
-	public final int sectionX;
+	public int sectionX;
 	/** in a sectionDetailLevel grid */
-	public final int sectionZ;
+	public int sectionZ;
 	
 	
 	
@@ -257,5 +259,19 @@ public class DhSectionPos implements Comparable<DhSectionPos>
 		return Integer.hashCode(this.sectionDetailLevel) ^ // XOR
 				Integer.hashCode(this.sectionX) ^ // XOR
 				Integer.hashCode(this.sectionZ);
+	}
+
+	@Override
+	public void encode(ByteBuf out) {
+		out.writeByte(this.sectionDetailLevel);
+		out.writeInt(this.sectionX);
+		out.writeInt(this.sectionZ);
+	}
+
+	@Override
+	public void decode(ByteBuf in) {
+		this.sectionDetailLevel = in.readByte();
+		this.sectionX = in.readInt();
+		this.sectionZ = in.readInt();
 	}
 }

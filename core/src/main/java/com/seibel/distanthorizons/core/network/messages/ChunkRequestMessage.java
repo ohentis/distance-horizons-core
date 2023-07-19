@@ -7,17 +7,23 @@ import io.netty.buffer.ByteBuf;
 public class ChunkRequestMessage implements IFutureTrackableNetworkMessage<DhSectionPos>
 {
 	public DhSectionPos dhSectionPos;
-	
+
+	public ChunkRequestMessage() {}
+
+	public ChunkRequestMessage(DhSectionPos dhSectionPos) {
+		this.dhSectionPos = dhSectionPos;
+	}
+
 	@Override public DhSectionPos getRequestKey() { return dhSectionPos; }
-	
+
     @Override
-    public void encode(ByteBuf out) 
+    public void encode(ByteBuf out)
 	{
 
     }
 
     @Override
-    public void decode(ByteBuf in) 
+    public void decode(ByteBuf in)
 	{
 
     }
