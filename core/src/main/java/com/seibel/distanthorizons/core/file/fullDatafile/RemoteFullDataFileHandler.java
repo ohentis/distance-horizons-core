@@ -1,50 +1,44 @@
 package com.seibel.distanthorizons.core.file.fullDatafile;
 
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IFullDataSource;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.network.ChildNetworkEventSource;
 import com.seibel.distanthorizons.core.network.NetworkClient;
+import com.seibel.distanthorizons.core.network.future.NetworkRequestTracker;
+import com.seibel.distanthorizons.core.network.messages.ChunkRequestMessage;
+import com.seibel.distanthorizons.core.network.messages.ChunkResponseMessage;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
-import io.netty.channel.ChannelHandlerContext;
 
 import java.util.concurrent.CompletableFuture;
 
 public class RemoteFullDataFileHandler extends FullDataFileHandler
 {
-    private final Multimap<ChannelHandlerContext, ChunkRequest> chunkRequests = HashMultimap.create();
-
-    public RemoteFullDataFileHandler(IDhLevel level, AbstractSaveStructure saveStructure, ChildNetworkEventSource<NetworkClient> eventSource) {
+    private final NetworkClient networkClient;
+    private final NetworkRequestTracker<ChunkResponseMessage, DhSectionPos> chunkRequestTracker;
+    
+    public RemoteFullDataFileHandler(IDhLevel level, AbstractSaveStructure saveStructure, NetworkClient networkClient) {
         super(level, saveStructure);
-        this.registerNetworkHandlers(eventSource);
-    }
-
-    private void registerNetworkHandlers(ChildNetworkEventSource<NetworkClient> eventSource) {
-        //eventSource.registerHandler();
+        this.networkClient = networkClient;
+        this.chunkRequestTracker = new NetworkRequestTracker<>(networkClient, ChunkResponseMessage.class);
     }
 
     @Override
     public CompletableFuture<IFullDataSource> read(DhSectionPos pos) {
         // TODO read and force update somehow instead ????
-        return super.read(pos).handle((fullDataSource, throwable) -> {
-            if (fullDataSource == null) {
-
+        return super.read(pos).thenCompose((fullDataSource) -> {
+            if (fullDataSource != null) {
+                return CompletableFuture.completedFuture(fullDataSource);
             }
 
-            return fullDataSource;
+            CompletableFuture<ChunkResponseMessage> responseFuture = chunkRequestTracker.sendRequest(networkClient.getChannel(), new ChunkRequestMessage());
+            
         });
     }
 
     @Override
     public void close() {
         super.close();
-
-
-    }
-
-    private static class ChunkRequest {
-
+        chunkRequestTracker.close();
     }
 }

@@ -134,6 +134,10 @@ public class NetworkClient extends NetworkEventSource implements AutoCloseable
 		this.channel.disconnect();
     }
 	
+	public Channel getChannel() {
+		return channel;
+	}
+	
     @Override
     public void close() 
 	{

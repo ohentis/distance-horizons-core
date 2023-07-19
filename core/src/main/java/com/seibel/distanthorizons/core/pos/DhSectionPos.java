@@ -3,6 +3,7 @@ package com.seibel.distanthorizons.core.pos;
 import com.seibel.distanthorizons.core.enums.ELodDirection;
 import com.seibel.distanthorizons.coreapi.util.BitShiftUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.function.Consumer;
@@ -18,7 +19,7 @@ import java.util.function.Consumer;
  * @author Leetom
  * @version 2022-11-6
  */
-public class DhSectionPos
+public class DhSectionPos implements Comparable<DhSectionPos>
 {
 	/** 
 	 * The lowest detail level a Section position can hold.
@@ -238,6 +239,18 @@ public class DhSectionPos
 				this.sectionZ == that.sectionZ;
 	}
 	
+	@Override public int compareTo(@NotNull DhSectionPos o)
+	{
+		if (this.sectionDetailLevel != o.sectionDetailLevel)
+			return this.sectionDetailLevel - o.sectionDetailLevel;
+		if (this.sectionX != o.sectionX)
+			return this.sectionX - o.sectionX;
+		if (this.sectionZ != o.sectionZ)
+			return this.sectionZ - o.sectionZ;
+		
+		return 0;
+	}
+	
 	@Override
 	public int hashCode()
 	{
@@ -245,5 +258,4 @@ public class DhSectionPos
 				Integer.hashCode(this.sectionX) ^ // XOR
 				Integer.hashCode(this.sectionZ);
 	}
-	
 }

@@ -32,11 +32,11 @@ public class DhClientLevel extends DhLevel implements IDhClientLevel
 	// constructor //
 	//=============//
 	
-	public DhClientLevel(AbstractSaveStructure saveStructure, IClientLevelWrapper clientLevelWrapper, ChildNetworkEventSource<NetworkClient> eventSource)
+	public DhClientLevel(AbstractSaveStructure saveStructure, IClientLevelWrapper clientLevelWrapper, NetworkClient networkClient)
 	{
 		this.levelWrapper = clientLevelWrapper;
 		this.saveStructure = saveStructure;
-		dataFileHandler = new RemoteFullDataFileHandler(this, saveStructure, eventSource);
+		dataFileHandler = new RemoteFullDataFileHandler(this, saveStructure, networkClient);
 		clientside = new ClientLevelModule(this);
 		clientside.startRenderer();
 		LOGGER.info("Started DHLevel for "+this.levelWrapper+" with saves at "+this.saveStructure);

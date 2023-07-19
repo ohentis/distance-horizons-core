@@ -7,7 +7,7 @@ import com.seibel.distanthorizons.core.level.DhServerLevel;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.network.NetworkServer;
 import com.seibel.distanthorizons.core.network.messages.*;
-import com.seibel.distanthorizons.core.network.messages.RequestChunksMessage;
+import com.seibel.distanthorizons.core.network.messages.ChunkRequestMessage;
 import com.seibel.distanthorizons.core.network.objects.RemotePlayer;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
@@ -86,7 +86,7 @@ public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 			channelContext.writeAndFlush(new AckMessage(RemotePlayerConfigMessage.class));
 		});
 		
-		this.networkServer.registerHandler(RequestChunksMessage.class, (msg, ctx) -> 
+		this.networkServer.registerHandler(ChunkRequestMessage.class, (msg, ctx) ->
 		{
 			LOGGER.info("RequestChunksMessage");
 			// hasReceivedChunkRequest should be false somewhere ???
