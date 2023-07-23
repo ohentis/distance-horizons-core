@@ -21,7 +21,7 @@ import java.util.function.Consumer;
  * @author Leetom
  * @version 2022-11-6
  */
-public class DhSectionPos implements Comparable<DhSectionPos>, INetworkObject
+public class DhSectionPos implements INetworkObject
 {
 	/** 
 	 * The lowest detail level a Section position can hold.
@@ -239,18 +239,6 @@ public class DhSectionPos implements Comparable<DhSectionPos>, INetworkObject
 		return this.sectionDetailLevel == that.sectionDetailLevel &&
 				this.sectionX == that.sectionX &&
 				this.sectionZ == that.sectionZ;
-	}
-	
-	@Override public int compareTo(@NotNull DhSectionPos o)
-	{
-		if (this.sectionDetailLevel != o.sectionDetailLevel)
-			return this.sectionDetailLevel - o.sectionDetailLevel;
-		if (this.sectionX != o.sectionX)
-			return this.sectionX - o.sectionX;
-		if (this.sectionZ != o.sectionZ)
-			return this.sectionZ - o.sectionZ;
-		
-		return 0;
 	}
 	
 	@Override

@@ -11,6 +11,7 @@ import com.seibel.distanthorizons.core.network.NetworkServer;
 import com.seibel.distanthorizons.core.network.messages.*;
 import com.seibel.distanthorizons.core.network.messages.ChunkRequestMessage;
 import com.seibel.distanthorizons.core.network.objects.RemotePlayer;
+import com.seibel.distanthorizons.core.network.protocol.FutureTrackableNetworkMessage;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
@@ -108,7 +109,7 @@ public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 			level.serverside.worldGenTick(new DhBlockPos2D(msg.dhSectionPos.sectionX, msg.dhSectionPos.sectionZ));
 
 			// Send chunk response message back
-			ctx.writeAndFlush(new ChunkResponseMessage(msg.dhSectionPos));
+			ctx.writeAndFlush(FutureTrackableNetworkMessage.makeResponse(msg, new ChunkResponseMessage()));
 		});
 	}
 

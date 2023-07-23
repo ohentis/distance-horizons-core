@@ -5,6 +5,7 @@ import com.seibel.distanthorizons.core.network.messages.AckMessage;
 import com.seibel.distanthorizons.core.network.messages.CloseReasonMessage;
 import com.seibel.distanthorizons.core.network.messages.CloseMessage;
 import com.seibel.distanthorizons.core.network.messages.HelloMessage;
+import com.seibel.distanthorizons.core.network.protocol.FutureTrackableNetworkMessage;
 import com.seibel.distanthorizons.core.network.protocol.MessageHandler;
 import com.seibel.distanthorizons.core.network.protocol.NetworkChannelInitializer;
 import com.seibel.distanthorizons.coreapi.ModInfo;
@@ -15,6 +16,8 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import org.apache.logging.log4j.Logger;
+
+import java.util.concurrent.CompletableFuture;
 
 public class NetworkServer extends NetworkEventSource implements AutoCloseable
 {
@@ -66,6 +69,7 @@ public class NetworkServer extends NetworkEventSource implements AutoCloseable
 		this.registerHandler(CloseMessage.class, (closeMessage, channelContext) -> 
 		{
 			LOGGER.info("Client disconnected: "+channelContext.channel().remoteAddress());
+			this.completeAllFuturesExceptionally(channelContext, channelContext.channel().closeFuture().cause());
 		});
 	}
 	
@@ -97,6 +101,12 @@ public class NetworkServer extends NetworkEventSource implements AutoCloseable
 		ctx.channel().config().setAutoRead(false);
 		ctx.writeAndFlush(new CloseReasonMessage(reason))
 				.addListener(ChannelFutureListener.CLOSE);
+	}
+	
+	@Override
+	public <TResponse extends FutureTrackableNetworkMessage> CompletableFuture<TResponse> sendRequest(ChannelHandlerContext ctx, FutureTrackableNetworkMessage msg)
+	{
+		return super.sendRequest(ctx, msg);
 	}
 	
 	@Override

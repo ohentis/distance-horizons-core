@@ -4,18 +4,17 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.network.messages.CloseMessage;
 import com.seibel.distanthorizons.core.network.messages.CloseReasonMessage;
 import com.seibel.distanthorizons.core.network.messages.HelloMessage;
+import com.seibel.distanthorizons.core.network.protocol.FutureTrackableNetworkMessage;
 import com.seibel.distanthorizons.core.network.protocol.MessageHandler;
 import com.seibel.distanthorizons.core.network.protocol.NetworkChannelInitializer;
 import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelOption;
-import io.netty.channel.EventLoopGroup;
+import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import org.apache.logging.log4j.Logger;
 
 import java.net.InetSocketAddress;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 public class NetworkClient extends NetworkEventSource implements AutoCloseable 
@@ -99,8 +98,10 @@ public class NetworkClient extends NetworkEventSource implements AutoCloseable
         });
 		
 		this.channel = connectFuture.channel();
-		this. channel.closeFuture().addListener((ChannelFuture channelFuture) -> 
+		this.channel.closeFuture().addListener((ChannelFuture channelFuture) ->
 		{
+			this.completeAllFuturesExceptionally(channelFuture.cause());
+			
 			switch (this.connectionState)
 			{
 				case OPEN:
@@ -134,8 +135,9 @@ public class NetworkClient extends NetworkEventSource implements AutoCloseable
 		this.channel.disconnect();
     }
 	
-	public Channel getChannel() {
-		return channel;
+	public final <TResponse extends FutureTrackableNetworkMessage> CompletableFuture<TResponse> sendRequest(FutureTrackableNetworkMessage msg)
+	{
+		return this.sendRequest(this.channel.pipeline().context(MessageHandler.class), msg);
 	}
 	
     @Override
