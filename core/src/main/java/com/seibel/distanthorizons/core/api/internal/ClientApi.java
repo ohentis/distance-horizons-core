@@ -23,6 +23,7 @@ import com.seibel.distanthorizons.api.methods.events.abstractEvents.*;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
 import com.seibel.distanthorizons.core.level.IServerKeyedClientLevel;
 import com.seibel.distanthorizons.core.level.IKeyedClientLevelManager;
+import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.world.*;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
 import com.seibel.distanthorizons.core.level.IDhClientLevel;
@@ -133,29 +134,41 @@ public class ClientApi
 		}
 	}
 
-	public void clientChunkLoadEvent(IChunkWrapper chunk, IClientLevelWrapper level)
+	public void clientChunkLoadEvent(IChunkWrapper chunk, IClientLevelWrapper level) { this.applyChunkUpdate(chunk, level); }
+	public void clientChunkSaveEvent(IChunkWrapper chunk, IClientLevelWrapper level) { this.applyChunkUpdate(chunk, level); }
+	private void applyChunkUpdate(IChunkWrapper chunk, IClientLevelWrapper level)
 	{
-		if (SharedApi.getEnvironment() == EWorldEnvironment.Client_Only)
+		// if the user is in a single player world the chunk updates are handled on the server side
+		if (SharedApi.getEnvironment() != EWorldEnvironment.Client_Only)
 		{
-			IDhLevel dhLevel = SharedApi.getAbstractDhWorld().getLevel(level);
-			if (dhLevel != null)
+			return;
+		}
+		
+		// only continue if the level is still loaded
+		IDhLevel dhLevel = SharedApi.getAbstractDhWorld().getLevel(level);
+		if (dhLevel == null)
+		{
+			return;
+		}
+		
+		
+		dhLevel.updateChunkAsync(chunk);
+		
+		// also update any existing neighbour chunks so lighting changes are propagated correctly
+		for (int xOffset = -1; xOffset <= 1; xOffset++)
+		{
+			for (int zOffset = -1; zOffset <= 1; zOffset++)
 			{
-				dhLevel.updateChunkAsync(chunk);
+				DhChunkPos neighbourPos = new DhChunkPos(chunk.getChunkPos().x+xOffset, chunk.getChunkPos().z+zOffset);
+				IChunkWrapper neighbourChunk =  dhLevel.getLevelWrapper().tryGetChunk(neighbourPos);
+				if (neighbourChunk != null)
+				{
+					dhLevel.updateChunkAsync(neighbourChunk);
+				}
 			}
 		}
 	}
-
-	public void clientChunkSaveEvent(IChunkWrapper chunk, IClientLevelWrapper level)
-	{
-		if (SharedApi.getEnvironment() == EWorldEnvironment.Client_Only)
-		{
-			IDhLevel dhLevel = SharedApi.getAbstractDhWorld().getLevel(level);
-			if (dhLevel != null)
-			{
-				dhLevel.updateChunkAsync(chunk);
-			}
-		}
-	}
+	
 
 	public void clientLevelUnloadEvent(IClientLevelWrapper level)
 	{

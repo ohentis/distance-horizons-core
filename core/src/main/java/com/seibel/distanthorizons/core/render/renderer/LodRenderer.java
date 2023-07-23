@@ -30,6 +30,9 @@ import com.seibel.distanthorizons.core.render.glObject.GLProxy;
 import com.seibel.distanthorizons.core.render.glObject.GLState;
 import com.seibel.distanthorizons.core.render.glObject.buffer.GLVertexBuffer;
 import com.seibel.distanthorizons.core.render.glObject.buffer.QuadElementBuffer;
+import com.seibel.distanthorizons.core.render.renderer.shaders.DarkShader;
+import com.seibel.distanthorizons.core.render.renderer.shaders.FogShader;
+import com.seibel.distanthorizons.core.render.renderer.shaders.SSAORenderer;
 import com.seibel.distanthorizons.core.render.renderer.shaders.SSAOShader;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.RenderUtil;
@@ -76,7 +79,10 @@ public class LodRenderer
 
 	public void setupOffset(DhBlockPos pos) {
 		Vec3d cam = MC_RENDER.getCameraExactPosition();
-		shaderProgram.setModelPos(new Vec3f((float) (pos.x - cam.x), (float) (pos.y - cam.y), (float) (pos.z - cam.z)));
+		Vec3f modelPos = new Vec3f((float) (pos.x - cam.x), (float) (pos.y - cam.y), (float) (pos.z - cam.z));
+
+		shaderProgram.setModelPos(modelPos);
+//		FogShader.INSTANCE.setModelPos(modelPos);
 	}
 
 	public void drawVbo(GLVertexBuffer vbo) {
@@ -203,6 +209,8 @@ public class LodRenderer
 			if (newConfig != null) {
 				shaderProgram.free();
 				shaderProgram = new LodRenderProgram(newConfig);
+//				FogShader.INSTANCE.free();
+//				FogShader.INSTANCE = new FogShader(newConfig);
 			}
 			shaderProgram.bind();
 		}
@@ -244,7 +252,12 @@ public class LodRenderer
 		bufferHandler.renderOpaque(this);
 
 		if (Config.Client.Advanced.Graphics.Quality.ssao.get()) {
-			SSAOShader.INSTANCE.render(partialTicks);
+//			SSAOShader.INSTANCE.render(partialTicks);
+			SSAORenderer.INSTANCE.render(partialTicks);
+		}
+		{
+//			FogShader.INSTANCE.render(partialTicks);
+//			DarkShader.INSTANCE.render(partialTicks); // A test shader to make the world darker
 		}
 
 		//======================//
@@ -348,6 +361,7 @@ public class LodRenderer
 		isSetupComplete = false;
 		EVENT_LOGGER.info("Renderer Cleanup Started");
 		shaderProgram.free();
+//		FogShader.INSTANCE.free();
 		if (quadIBO != null) quadIBO.destroy(false);
 		EVENT_LOGGER.info("Renderer Cleanup Complete");
 	}

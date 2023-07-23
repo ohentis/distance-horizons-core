@@ -2,6 +2,7 @@ package com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding;
 
 import com.seibel.distanthorizons.api.enums.config.EGpuUploadMethod;
 import com.seibel.distanthorizons.api.enums.rendering.EDebugRendering;
+import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.enums.EGLProxyContext;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.config.listeners.ConfigChangeListener;
@@ -18,7 +19,6 @@ import com.seibel.distanthorizons.core.util.ThreadUtil;
 import com.seibel.distanthorizons.core.util.objects.Reference;
 import com.seibel.distanthorizons.core.util.objects.UncheckedInterruptedException;
 import com.seibel.distanthorizons.core.dataObjects.render.columnViews.ColumnArrayView;
-import com.seibel.distanthorizons.core.enums.ELodDirection;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -215,7 +215,7 @@ public class ColumnRenderBufferBuilder
 				// We avoid cases where the adjPosition is in player chunk while the position is
 				// not
 				// to always have a wall underwater
-				for (ELodDirection lodDirection : ELodDirection.ADJ_DIRECTIONS)
+				for (EDhDirection lodDirection : EDhDirection.ADJ_DIRECTIONS)
 				{
 					try
 					{
@@ -280,8 +280,8 @@ public class ColumnRenderBufferBuilder
 							adjColumnViews[lodDirection.ordinal() - 2] = new ColumnArrayView[2];
 							adjColumnViews[lodDirection.ordinal() - 2][0] = adjRenderSource.getVerticalDataPointView(xAdj, zAdj);
 							adjColumnViews[lodDirection.ordinal() - 2][1] = adjRenderSource.getVerticalDataPointView(
-									xAdj + (lodDirection.getAxis() == ELodDirection.Axis.X ? 0 : 1),
-									zAdj + (lodDirection.getAxis() == ELodDirection.Axis.Z ? 0 : 1));
+									xAdj + (lodDirection.getAxis() == EDhDirection.Axis.X ? 0 : 1),
+									zAdj + (lodDirection.getAxis() == EDhDirection.Axis.Z ? 0 : 1));
 						}
 					}
 					catch (RuntimeException e)

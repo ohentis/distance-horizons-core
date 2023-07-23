@@ -52,7 +52,7 @@ public class DhApiWorldGenerationConfig implements IDhApiWorldGenerationConfig
 	
 	@Override
 	public IDhApiConfigValue<ELightGenerationMode> lightingEngine()
-	{ return new DhApiConfigValue<>(WorldGenerator.lightingEngine); }
+	{ return new DhApiConfigValue<>(WorldGenerator.worldGenLightingEngine); }
 	
 	
 }

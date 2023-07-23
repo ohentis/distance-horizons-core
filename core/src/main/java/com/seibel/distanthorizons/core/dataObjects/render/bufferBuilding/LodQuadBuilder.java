@@ -23,7 +23,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.*;
 
-import com.seibel.distanthorizons.core.enums.ELodDirection;
+import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.Pos2D;
 import com.seibel.distanthorizons.core.render.AbstractRenderBuffer;
@@ -136,11 +136,11 @@ public class LodQuadBuilder
 	// add quads //
 	//===========//
 	
-	public void addQuadAdj(ELodDirection dir, short x, short y, short z,
+	public void addQuadAdj(EDhDirection dir, short x, short y, short z,
 			short widthEastWest, short widthNorthSouthOrUpDown,
 			int color, byte skyLight, byte blockLight)
 	{
-		if (dir == ELodDirection.DOWN)
+		if (dir == EDhDirection.DOWN)
 		{
 			throw new IllegalArgumentException("addQuadAdj() is only for adj direction! Not UP or Down!");
 		}
@@ -174,9 +174,9 @@ public class LodQuadBuilder
 			return;
 		}
 		
-		BufferQuad quad = new BufferQuad(x, y, z, widthEastWest, widthNorthSouthOrUpDown, color, skylight, blocklight, ELodDirection.UP);
+		BufferQuad quad = new BufferQuad(x, y, z, widthEastWest, widthNorthSouthOrUpDown, color, skylight, blocklight, EDhDirection.UP);
 		boolean isTransparent = (this.doTransparency && ColorUtil.getAlpha(color) < 255);
-		ArrayList<BufferQuad> quadList = isTransparent ? this.transparentQuads[ELodDirection.UP.ordinal()] : this.opaqueQuads[ELodDirection.UP.ordinal()];
+		ArrayList<BufferQuad> quadList = isTransparent ? this.transparentQuads[EDhDirection.UP.ordinal()] : this.opaqueQuads[EDhDirection.UP.ordinal()];
 		
 		
 		// update the minimum relative height for this quad's positions
@@ -214,9 +214,9 @@ public class LodQuadBuilder
 	{
 		if (skipQuadsWithZeroSkylight && skylight == 0 && y < skyLightCullingBelow)
 			return;
-		BufferQuad quad = new BufferQuad(x, y, z, width, wz, color, skylight, blocklight, ELodDirection.DOWN);
+		BufferQuad quad = new BufferQuad(x, y, z, width, wz, color, skylight, blocklight, EDhDirection.DOWN);
 		ArrayList<BufferQuad> qs = (doTransparency && ColorUtil.getAlpha(color) < 255)
-				? transparentQuads[ELodDirection.DOWN.ordinal()] : opaqueQuads[ELodDirection.DOWN.ordinal()];
+				? transparentQuads[EDhDirection.DOWN.ordinal()] : opaqueQuads[EDhDirection.DOWN.ordinal()];
 		if (!qs.isEmpty() &&
 				(qs.get(qs.size()-1).tryMerge(quad, BufferMergeDirectionEnum.EastWest)
 						|| qs.get(qs.size()-1).tryMerge(quad, BufferMergeDirectionEnum.NorthSouthOrUpDown))
@@ -238,7 +238,7 @@ public class LodQuadBuilder
 		int[][] quadBase = DIRECTION_VERTEX_IBO_QUAD[quad.direction.ordinal()];
 		short widthEastWest = quad.widthEastWest;
 		short widthNorthSouth = quad.widthNorthSouthOrUpDown;
-		ELodDirection.Axis axis = quad.direction.getAxis();
+		EDhDirection.Axis axis = quad.direction.getAxis();
 		for (int i = 0; i < quadBase.length; i++)
 		{
 			short dx, dy, dz;
@@ -349,7 +349,7 @@ public class LodQuadBuilder
 			
 			
 			// only run the second merge if the face is the top or bottom
-			if (directionIndex == ELodDirection.UP.ordinal() || directionIndex == ELodDirection.DOWN.ordinal())
+			if (directionIndex == EDhDirection.UP.ordinal() || directionIndex == EDhDirection.DOWN.ordinal())
 			{
 				mergeCount += mergeQuadsInternal(this.opaqueQuads, directionIndex, BufferMergeDirectionEnum.NorthSouthOrUpDown);
 				if (this.doTransparency)
@@ -400,7 +400,7 @@ public class LodQuadBuilder
 	public void fixTransparencyOverVoid()
 	{
 		// make transparent LODs opaque if they are over the void
-		ListIterator<BufferQuad> iter = this.transparentQuads[ELodDirection.UP.ordinal()].listIterator();
+		ListIterator<BufferQuad> iter = this.transparentQuads[EDhDirection.UP.ordinal()].listIterator();
 		if (iter.hasNext())
 		{
 			BufferQuad currentQuad = iter.next();
@@ -422,7 +422,7 @@ public class LodQuadBuilder
 					
 					// move the now-opaque quad into the opaque list (if not done the quads may render on top of other transparent quads)
 					iter.remove();
-					this.opaqueQuads[ELodDirection.UP.ordinal()].add(currentQuad);
+					this.opaqueQuads[EDhDirection.UP.ordinal()].add(currentQuad);
 				}
 				
 				currentQuad = iter.next();

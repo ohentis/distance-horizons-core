@@ -23,10 +23,10 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.UUID;
 
+import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.coreapi.ModInfo;
-import com.seibel.distanthorizons.core.enums.ELodDirection;
 import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IBindable;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import org.apache.logging.log4j.Level;
@@ -57,7 +57,7 @@ public interface IMinecraftClientWrapper extends IBindable
 	// method wrappers //
 	//=================//
 	
-	float getShade(ELodDirection lodDirection);
+	float getShade(EDhDirection lodDirection);
 	
 	boolean hasSinglePlayerServer();
 	boolean clientConnectedToDedicatedServer();

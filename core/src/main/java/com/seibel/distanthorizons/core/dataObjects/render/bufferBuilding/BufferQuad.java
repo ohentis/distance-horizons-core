@@ -20,8 +20,8 @@
 package com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding;
 
 import com.seibel.distanthorizons.core.config.Config;
+import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.util.LodUtil;
-import com.seibel.distanthorizons.core.enums.ELodDirection;
 
 /** Represents a render-able quad. */
 public final class BufferQuad
@@ -56,7 +56,7 @@ public final class BufferQuad
 	
 	public final byte skyLight;
 	public final byte blockLight;
-	public final ELodDirection direction;
+	public final EDhDirection direction;
 	
 	public boolean hasError = false;
 	
@@ -64,7 +64,7 @@ public final class BufferQuad
 	
 	BufferQuad(short x, short y, short z, short widthEastWest, short widthNorthSouthOrUpDown,
 			int color, byte skylight, byte blockLight,
-			ELodDirection direction)
+			EDhDirection direction)
 	{
 		if (widthEastWest == 0 || widthNorthSouthOrUpDown == 0)
 			throw new IllegalArgumentException("Size 0 quad!");

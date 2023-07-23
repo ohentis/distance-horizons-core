@@ -1,6 +1,6 @@
 package com.seibel.distanthorizons.core.pos;
 
-import com.seibel.distanthorizons.core.enums.ELodDirection;
+import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.network.protocol.INetworkObject;
 import com.seibel.distanthorizons.coreapi.util.BitShiftUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
@@ -187,7 +187,7 @@ public class DhSectionPos implements Comparable<DhSectionPos>, INetworkObject
 	
 	public DhSectionPos getParentPos() { return new DhSectionPos((byte) (this.sectionDetailLevel + 1), BitShiftUtil.half(this.sectionX), BitShiftUtil.half(this.sectionZ)); }
 	
-	public DhSectionPos getAdjacentPos(ELodDirection dir)
+	public DhSectionPos getAdjacentPos(EDhDirection dir)
 	{
 		return new DhSectionPos(this.sectionDetailLevel,
 				this.sectionX + dir.getNormal().x,

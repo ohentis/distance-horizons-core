@@ -6,6 +6,7 @@ import com.seibel.distanthorizons.core.render.glObject.GLState;
 import com.seibel.distanthorizons.core.render.glObject.buffer.GLVertexBuffer;
 import com.seibel.distanthorizons.core.render.glObject.shader.ShaderProgram;
 import com.seibel.distanthorizons.core.render.glObject.vertexAttribute.VertexAttribute;
+import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL32;
@@ -14,6 +15,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 public abstract class AbstractShaderRenderer {
+    protected static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
     protected static final IMinecraftRenderWrapper MC_RENDER = SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
 
     private static final float[] box_vertices = {
@@ -106,7 +108,7 @@ public abstract class AbstractShaderRenderer {
             this.setApplyShaderUniforms(partialTicks);
         }
         GL32.glEnable(GL11.GL_BLEND);
-        GL32.glBlendFunc(GL32.GL_ZERO, GL32.GL_SRC_ALPHA);
+        GL32.glBlendFunc(GL32.GL_SRC_ALPHA, GL32.GL_ONE_MINUS_SRC_ALPHA);
         GL32.glBindFramebuffer(GL32.GL_FRAMEBUFFER, MC_RENDER.getTargetFrameBuffer());
         GL32.glActiveTexture(GL32.GL_TEXTURE0);
         GL32.glBindTexture(GL32.GL_TEXTURE_2D, shaderTexture);
@@ -148,5 +150,11 @@ public abstract class AbstractShaderRenderer {
         boxBuffer = new GLVertexBuffer(false);
         boxBuffer.bind();
         boxBuffer.uploadBuffer(buffer, box_vertices.length, EGpuUploadMethod.DATA, box_vertices.length * Float.BYTES);
+    }
+
+    public void free() {
+        this.shader.free();
+        if (this.applyShader != null)
+            this.applyShader.free();
     }
 }

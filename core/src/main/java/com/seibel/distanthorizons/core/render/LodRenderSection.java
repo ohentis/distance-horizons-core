@@ -2,6 +2,7 @@ package com.seibel.distanthorizons.core.render;
 
 import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSource;
 import com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.ColumnRenderBufferBuilder;
+import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.file.renderfile.ILodRenderSourceProvider;
 import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
@@ -11,7 +12,6 @@ import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.objects.Reference;
 import com.seibel.distanthorizons.core.util.objects.quadTree.QuadTree;
 import com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.ColumnRenderBuffer;
-import com.seibel.distanthorizons.core.enums.ELodDirection;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import org.apache.logging.log4j.Logger;
 
@@ -20,7 +20,6 @@ import java.util.Objects;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -224,8 +223,8 @@ public class LodRenderSection implements IDebugRenderable
 
 	private LodRenderSection[] getNeighbors()
 	{
-		LodRenderSection[] adjacents = new LodRenderSection[ELodDirection.ADJ_DIRECTIONS.length];
-		for (ELodDirection direction : ELodDirection.ADJ_DIRECTIONS) {
+		LodRenderSection[] adjacents = new LodRenderSection[EDhDirection.ADJ_DIRECTIONS.length];
+		for (EDhDirection direction : EDhDirection.ADJ_DIRECTIONS) {
 			try {
 				DhSectionPos adjPos = pos.getAdjacentPos(direction);
 				LodRenderSection adjRenderSection = parentQuadTree.getValue(adjPos);
@@ -285,8 +284,8 @@ public class LodRenderSection implements IDebugRenderable
 				tellNeighborsUpdated();
 			}
 			LodRenderSection[] adjacents = getNeighbors();
-			ColumnRenderSource[] adjacentSources =  new ColumnRenderSource[ELodDirection.ADJ_DIRECTIONS.length];
-			for (int i = 0; i < ELodDirection.ADJ_DIRECTIONS.length; i++) {
+			ColumnRenderSource[] adjacentSources =  new ColumnRenderSource[EDhDirection.ADJ_DIRECTIONS.length];
+			for (int i = 0; i < EDhDirection.ADJ_DIRECTIONS.length; i++) {
 				LodRenderSection adj = adjacents[i];
 				if (adj != null) {
 					adjacentSources[i] = adj.getRenderSource();

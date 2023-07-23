@@ -3,10 +3,6 @@
 in vec2 vPos;
 out vec2 TexCoord;
 
-out vec4 vertexColor;
-out vec3 vertexWorldPos;
-out float vertexYPos;
-
 
 void main()
 {

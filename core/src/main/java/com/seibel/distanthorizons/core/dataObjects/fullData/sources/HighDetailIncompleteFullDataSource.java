@@ -51,7 +51,7 @@ public class HighDetailIncompleteFullDataSource implements IIncompleteFullDataSo
 	/** aka max detail level */
     public static final byte MAX_SECTION_DETAIL = SECTION_SIZE_OFFSET + SPARSE_UNIT_DETAIL;
 	
-    public static final byte DATA_FORMAT_VERSION = 0;
+    public static final byte DATA_FORMAT_VERSION = 1;
 	/** written to the binary file to mark what {@link IFullDataSource} the binary file corresponds to */
     public static final long TYPE_ID = "HighDetailIncompleteFullDataSource".hashCode();
 	

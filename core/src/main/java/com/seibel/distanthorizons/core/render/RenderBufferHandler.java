@@ -1,11 +1,11 @@
 package com.seibel.distanthorizons.core.render;
 
+import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.pos.Pos2D;
 import com.seibel.distanthorizons.core.util.objects.SortedArraySet;
 import com.seibel.distanthorizons.core.util.objects.quadTree.QuadNode;
-import com.seibel.distanthorizons.core.enums.ELodDirection;
 import com.seibel.distanthorizons.core.render.renderer.LodRenderer;
 import com.seibel.distanthorizons.coreapi.util.math.Vec3f;
 import org.apache.logging.log4j.Logger;
@@ -45,16 +45,16 @@ public class RenderBufferHandler
 	 */
 	public void buildRenderListAndUpdateSections(Vec3f lookForwardVector)
 	{
-		ELodDirection[] axisDirections = new ELodDirection[3];
+		EDhDirection[] axisDirections = new EDhDirection[3];
 		
 		// Do the axis that are the longest first (i.e. the largest absolute value of the lookForwardVector),
 		// with the sign being the opposite of the respective lookForwardVector component's sign
 		float absX = Math.abs(lookForwardVector.x);
 		float absY = Math.abs(lookForwardVector.y);
 		float absZ = Math.abs(lookForwardVector.z);
-		ELodDirection xDir = lookForwardVector.x < 0 ? ELodDirection.EAST : ELodDirection.WEST;
-		ELodDirection yDir = lookForwardVector.y < 0 ? ELodDirection.UP : ELodDirection.DOWN;
-		ELodDirection zDir = lookForwardVector.z < 0 ? ELodDirection.SOUTH : ELodDirection.NORTH;
+		EDhDirection xDir = lookForwardVector.x < 0 ? EDhDirection.EAST : EDhDirection.WEST;
+		EDhDirection yDir = lookForwardVector.y < 0 ? EDhDirection.UP : EDhDirection.DOWN;
+		EDhDirection zDir = lookForwardVector.z < 0 ? EDhDirection.SOUTH : EDhDirection.NORTH;
 		
 		if (absX >= absY && absX >= absZ)
 		{
@@ -112,7 +112,7 @@ public class RenderBufferHandler
 				return bManhattanDistance - aManhattanDistance;
 			}
 
-			for (ELodDirection axisDirection : axisDirections)
+			for (EDhDirection axisDirection : axisDirections)
 			{
 				if (axisDirection.getAxis().isVertical())
 				{
@@ -120,7 +120,7 @@ public class RenderBufferHandler
 				}
 				
 				int abPosDifference;
-				if (axisDirection.getAxis().equals(ELodDirection.Axis.X))
+				if (axisDirection.getAxis().equals(EDhDirection.Axis.X))
 				{
 					abPosDifference = aPos.x - bPos.x;
 				}
@@ -134,7 +134,7 @@ public class RenderBufferHandler
 					continue;
 				}
 				
-				if (axisDirection.getAxisDirection().equals(ELodDirection.AxisDirection.NEGATIVE))
+				if (axisDirection.getAxisDirection().equals(EDhDirection.AxisDirection.NEGATIVE))
 				{
 					abPosDifference = -abPosDifference; // Reverse the sign
 				}

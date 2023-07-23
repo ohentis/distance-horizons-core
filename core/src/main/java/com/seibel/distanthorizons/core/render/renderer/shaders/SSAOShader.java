@@ -15,9 +15,9 @@ public class SSAOShader extends AbstractShaderRenderer {
 
     public SSAOShader() {
         super(
-                new ShaderProgram("shaders/ssao/ao.vert", "shaders/ssao/ao.frag",
+                new ShaderProgram("shaders/normal.vert", "shaders/ssao/ao.frag",
                 "fragColor", new String[]{"vPos"}),
-                new ShaderProgram("shaders/ssao/ao.vert", "shaders/ssao/apply-frag.frag",
+                new ShaderProgram("shaders/normal.vert", "shaders/ssao/apply-frag.frag",
                         "fragColor", new String[]{"vPos"})
         );
 

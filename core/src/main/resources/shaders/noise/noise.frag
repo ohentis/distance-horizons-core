@@ -81,11 +81,11 @@ void main() {
     );
 
     // For testing
-            if (vertexColor.r != 69420.) {
-                fragColor = vec4(
-                    mod(fixedVPos.x, 1),
-                    mod(fixedVPos.y, 1),
-                    mod(fixedVPos.z, 1),
-                1f);
-            }
+//    if (vertexColor.r != 69420.) {
+//        fragColor = vec4(
+//            mod(fixedVPos.x, 1),
+//            mod(fixedVPos.y, 1),
+//            mod(fixedVPos.z, 1),
+//        1f);
+//    }
 }

@@ -397,18 +397,18 @@ public class FullDataToRenderDataTransformer
 //        System.arraycopy(result, 0, data, dataOffset, maxVerticalData);
 //    }
 //
-//    public static final ELodDirection[] DIRECTIONS = new ELodDirection[] {
-//            ELodDirection.UP,
-//            ELodDirection.DOWN,
-//            ELodDirection.WEST,
-//            ELodDirection.EAST,
-//            ELodDirection.NORTH,
-//            ELodDirection.SOUTH };
+//    public static final EDhDirection[] DIRECTIONS = new EDhDirection[] {
+//            EDhDirection.UP,
+//            EDhDirection.DOWN,
+//            EDhDirection.WEST,
+//            EDhDirection.EAST,
+//            EDhDirection.NORTH,
+//            EDhDirection.SOUTH };
 //
 //    private boolean hasCliffFace(IChunkWrapper chunk, int x, int y, int z) {
-//        for (ELodDirection dir : DIRECTIONS) {
+//        for (EDhDirection dir : DIRECTIONS) {
 //            IBlockDetailWrapper block = chunk.getBlockDetailAtFace(x, y, z, dir);
-//            if (block == null || !block.hasFaceCullingFor(ELodDirection.OPPOSITE_DIRECTIONS[dir.ordinal()]))
+//            if (block == null || !block.hasFaceCullingFor(EDhDirection.OPPOSITE_DIRECTIONS[dir.ordinal()]))
 //                return true;
 //        }
 //        return false;

@@ -29,7 +29,7 @@ import com.seibel.distanthorizons.coreapi.util.math.Vec3i;
 
 /**
  * An (almost) exact copy of Minecraft's
- * Direction enum.
+ * Direction enum. <Br><Br>
  *
  * Up <Br>
  * Down <Br>
@@ -41,46 +41,57 @@ import com.seibel.distanthorizons.coreapi.util.math.Vec3i;
  * @author James Seibel
  * @version 2021-11-13
  */
-public enum ELodDirection
+public enum EDhDirection
 {
-	DOWN(0, 1, -1, "down", ELodDirection.AxisDirection.NEGATIVE, ELodDirection.Axis.Y, new Vec3i(0, -1, 0)),
-	UP(1, 0, -1, "up", ELodDirection.AxisDirection.POSITIVE, ELodDirection.Axis.Y, new Vec3i(0, 1, 0)),
-	NORTH(2, 3, 2, "north", ELodDirection.AxisDirection.NEGATIVE, ELodDirection.Axis.Z, new Vec3i(0, 0, -1)),
-	SOUTH(3, 2, 0, "south", ELodDirection.AxisDirection.POSITIVE, ELodDirection.Axis.Z, new Vec3i(0, 0, 1)),
-	WEST(4, 5, 1, "west", ELodDirection.AxisDirection.NEGATIVE, ELodDirection.Axis.X, new Vec3i(-1, 0, 0)),
-	EAST(5, 4, 3, "east", ELodDirection.AxisDirection.POSITIVE, ELodDirection.Axis.X, new Vec3i(1, 0, 0));
-	public static final ELodDirection[] DIRECTIONS = new ELodDirection[] {
-			ELodDirection.UP,
-			ELodDirection.DOWN,
-			ELodDirection.WEST,
-			ELodDirection.EAST,
-			ELodDirection.NORTH,
-			ELodDirection.SOUTH };
+	DOWN(0, 1, -1, "down", EDhDirection.AxisDirection.NEGATIVE, EDhDirection.Axis.Y, new Vec3i(0, -1, 0)),
+	UP(1, 0, -1, "up", EDhDirection.AxisDirection.POSITIVE, EDhDirection.Axis.Y, new Vec3i(0, 1, 0)),
+	NORTH(2, 3, 2, "north", EDhDirection.AxisDirection.NEGATIVE, EDhDirection.Axis.Z, new Vec3i(0, 0, -1)),
+	SOUTH(3, 2, 0, "south", EDhDirection.AxisDirection.POSITIVE, EDhDirection.Axis.Z, new Vec3i(0, 0, 1)),
+	WEST(4, 5, 1, "west", EDhDirection.AxisDirection.NEGATIVE, EDhDirection.Axis.X, new Vec3i(-1, 0, 0)),
+	EAST(5, 4, 3, "east", EDhDirection.AxisDirection.POSITIVE, EDhDirection.Axis.X, new Vec3i(1, 0, 0));
 	
-	public static final ELodDirection[] OPPOSITE_DIRECTIONS = new ELodDirection[] {
-			ELodDirection.UP,
-			ELodDirection.DOWN,
-			ELodDirection.SOUTH,
-			ELodDirection.NORTH,
-			ELodDirection.EAST,
-			ELodDirection.WEST };
-	/** North, South, East, West */
-	public static final ELodDirection[] ADJ_DIRECTIONS = new ELodDirection[] {
-			ELodDirection.EAST,
-			ELodDirection.WEST,
-			ELodDirection.SOUTH,
-			ELodDirection.NORTH };
+	/**
+	 * Up, Down, West, East, North, South <br>
+	 * Similar to {@link EDhDirection#OPPOSITE_DIRECTIONS}, just with a different order 
+	 */
+	public static final EDhDirection[] CARDINAL_DIRECTIONS = new EDhDirection[] {
+			EDhDirection.UP,
+			EDhDirection.DOWN,
+			EDhDirection.WEST,
+			EDhDirection.EAST,
+			EDhDirection.NORTH,
+			EDhDirection.SOUTH };
+	
+	/** 
+	 * Up, Down, South, North, East, West <br>
+	 * Similar to {@link EDhDirection#CARDINAL_DIRECTIONS}, just with a different order 
+	 */
+	public static final EDhDirection[] OPPOSITE_DIRECTIONS = new EDhDirection[] {
+			EDhDirection.UP,
+			EDhDirection.DOWN,
+			EDhDirection.SOUTH,
+			EDhDirection.NORTH,
+			EDhDirection.EAST,
+			EDhDirection.WEST };
+	
+	/** North, South, East, West */ // TODO rename to state this is just X/Z or flat directions
+	public static final EDhDirection[] ADJ_DIRECTIONS = new EDhDirection[] {
+			EDhDirection.EAST,
+			EDhDirection.WEST,
+			EDhDirection.SOUTH,
+			EDhDirection.NORTH };
+	
 //	private final int data3d;
 //	private final int oppositeIndex;
 //	private final int data2d;
 	
 	private final String name;
-	private final ELodDirection.Axis axis;
-	private final ELodDirection.AxisDirection axisDirection;
+	private final EDhDirection.Axis axis;
+	private final EDhDirection.AxisDirection axisDirection;
 	private final Vec3i normal;
-	private static final ELodDirection[] VALUES = values();
+	private static final EDhDirection[] VALUES = values();
 	
-	private static final Map<String, ELodDirection> BY_NAME = Arrays.stream(VALUES).collect(Collectors.toMap(ELodDirection::getName, (p_199787_0_) ->
+	private static final Map<String, EDhDirection> BY_NAME = Arrays.stream(VALUES).collect(Collectors.toMap(EDhDirection::getName, (p_199787_0_) ->
 	{
 		return p_199787_0_;
 	}));
@@ -117,7 +128,7 @@ public enum ELodDirection
 	
 	
 	
-	ELodDirection(int p_i46016_3_, int p_i46016_4_, int p_i46016_5_, String p_i46016_6_, ELodDirection.AxisDirection p_i46016_7_, ELodDirection.Axis p_i46016_8_, Vec3i p_i46016_9_)
+	EDhDirection(int p_i46016_3_, int p_i46016_4_, int p_i46016_5_, String p_i46016_6_, EDhDirection.AxisDirection p_i46016_7_, EDhDirection.Axis p_i46016_8_, Vec3i p_i46016_9_)
 	{
 //		this.data3d = p_i46016_3_;
 //		this.data2d = p_i46016_5_;
@@ -218,7 +229,7 @@ public enum ELodDirection
 //		return this.data2d;
 //	}
 	
-	public ELodDirection.AxisDirection getAxisDirection()
+	public EDhDirection.AxisDirection getAxisDirection()
 	{
 		return this.axisDirection;
 	}
@@ -228,7 +239,7 @@ public enum ELodDirection
 //		return from3DDataValue(this.oppositeIndex);
 //	}
 	
-	public ELodDirection getClockWise()
+	public EDhDirection getClockWise()
 	{
 		switch (this)
 		{
@@ -245,7 +256,7 @@ public enum ELodDirection
 		}
 	}
 	
-	public ELodDirection getCounterClockWise()
+	public EDhDirection getCounterClockWise()
 	{
 		switch (this)
 		{
@@ -267,12 +278,12 @@ public enum ELodDirection
 		return this.name;
 	}
 	
-	public ELodDirection.Axis getAxis()
+	public EDhDirection.Axis getAxis()
 	{
 		return this.axis;
 	}
 
-	public static ELodDirection byName(String name)
+	public static EDhDirection byName(String name)
 	{
 		return name == null ? null : BY_NAME.get(name.toLowerCase(Locale.ROOT));
 	}
@@ -298,17 +309,17 @@ public enum ELodDirection
 //		return from2DDataValue(MathHelper.floor(p_176733_0_ / 90.0D + 0.5D) & 3);
 //	}
 	
-	public static ELodDirection fromAxisAndDirection(ELodDirection.Axis p_211699_0_, ELodDirection.AxisDirection p_211699_1_)
+	public static EDhDirection fromAxisAndDirection(EDhDirection.Axis p_211699_0_, EDhDirection.AxisDirection p_211699_1_)
 	{
 		switch (p_211699_0_)
 		{
 		case X:
-			return p_211699_1_ == ELodDirection.AxisDirection.POSITIVE ? EAST : WEST;
+			return p_211699_1_ == EDhDirection.AxisDirection.POSITIVE ? EAST : WEST;
 		case Y:
-			return p_211699_1_ == ELodDirection.AxisDirection.POSITIVE ? UP : DOWN;
+			return p_211699_1_ == EDhDirection.AxisDirection.POSITIVE ? UP : DOWN;
 		case Z:
 		default:
-			return p_211699_1_ == ELodDirection.AxisDirection.POSITIVE ? SOUTH : NORTH;
+			return p_211699_1_ == EDhDirection.AxisDirection.POSITIVE ? SOUTH : NORTH;
 		}
 	}
 	
@@ -345,9 +356,9 @@ public enum ELodDirection
 //		return lodDirection;
 //	}
 	
-	public static ELodDirection get(ELodDirection.AxisDirection p_181076_0_, ELodDirection.Axis p_181076_1_)
+	public static EDhDirection get(EDhDirection.AxisDirection p_181076_0_, EDhDirection.Axis p_181076_1_)
 	{
-		for (ELodDirection lodDirection : VALUES)
+		for (EDhDirection lodDirection : VALUES)
 		{
 			if (lodDirection.getAxisDirection() == p_181076_0_ && lodDirection.getAxis() == p_181076_1_)
 			{
@@ -371,7 +382,7 @@ public enum ELodDirection
 //		return this.normal.getX() * f1 + this.normal.getZ() * f2 > 0.0F;
 //	}
 	
-	public enum Axis implements Predicate<ELodDirection>
+	public enum Axis implements Predicate<EDhDirection>
 	{
 		X("x")
 		{
@@ -416,9 +427,9 @@ public enum ELodDirection
 			}
 		};
 		
-		private static final ELodDirection.Axis[] VALUES = values();
+		private static final EDhDirection.Axis[] VALUES = values();
 		
-		private static final Map<String, ELodDirection.Axis> BY_NAME = Arrays.stream(VALUES).collect(Collectors.toMap(ELodDirection.Axis::getName, (p_199785_0_) ->
+		private static final Map<String, EDhDirection.Axis> BY_NAME = Arrays.stream(VALUES).collect(Collectors.toMap(EDhDirection.Axis::getName, (p_199785_0_) ->
 		{
 			return p_199785_0_;
 		}));
@@ -429,7 +440,7 @@ public enum ELodDirection
 			this.name = name;
 		}
 
-		public static ELodDirection.Axis byName(String name)
+		public static EDhDirection.Axis byName(String name)
 		{
 			return BY_NAME.get(name.toLowerCase(Locale.ROOT));
 		}
@@ -461,7 +472,7 @@ public enum ELodDirection
 //		}
 		
 		@Override
-		public boolean test(ELodDirection p_test_1_)
+		public boolean test(EDhDirection p_test_1_)
 		{
 			return p_test_1_ != null && p_test_1_.getAxis() == this;
 		}
@@ -510,7 +521,7 @@ public enum ELodDirection
 			return this.name;
 		}
 		
-		public ELodDirection.AxisDirection opposite()
+		public EDhDirection.AxisDirection opposite()
 		{
 			return this == POSITIVE ? NEGATIVE : POSITIVE;
 		}

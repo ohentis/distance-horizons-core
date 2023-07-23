@@ -4,7 +4,7 @@ import com.seibel.distanthorizons.core.file.fullDatafile.GeneratedFullDataFileHa
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
 
 public interface IDhServerLevel extends IDhLevel, GeneratedFullDataFileHandler.IOnWorldGenCompleteListener
-        {
+{
     void serverTick();
     void doWorldGen();
 	

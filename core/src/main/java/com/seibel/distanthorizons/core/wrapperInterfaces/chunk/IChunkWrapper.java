@@ -19,14 +19,20 @@
 
 package com.seibel.distanthorizons.core.wrapperInterfaces.chunk;
 
+import com.seibel.distanthorizons.core.pos.DhBlockPos;
+import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IBindable;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
 
+import java.util.List;
+
 public interface IChunkWrapper extends IBindable
 {
+	DhChunkPos getChunkPos();
+	
 	default int getHeight() { return this.getMaxBuildHeight() - this.getMinBuildHeight(); }
 	int getMinBuildHeight();
 	int getMaxBuildHeight();
@@ -39,27 +45,44 @@ public interface IChunkWrapper extends IBindable
 	 */
 	int getLightBlockingHeightMapValue(int xRel, int zRel);
 	
-	int getMaxX();
-	int getMaxZ();
-	int getMinX();
-	int getMinZ();
+	int getMaxBlockX();
+	int getMaxBlockZ();
+	int getMinBlockX();
+	int getMinBlockZ();
 
 	long getLongChunkPos();
 	
+	void setIsDhLightCorrect(boolean isDhLightCorrect);
 	boolean isLightCorrect();
 	
-	default int getBlockLight(int x, int y, int z) {return -1;}
 	
-	default int getSkyLight(int x, int y, int z) {return -1;}
+	int getDhSkyLight(int relX, int relY, int relZ);
+	void setDhSkyLight(int relX, int relY, int relZ, int lightValue);
 	
+	int getDhBlockLight(int relX, int relY, int relZ);
+	void setDhBlockLight(int relX, int relY, int relZ, int lightValue);
+	
+	int getBlockLight(int relX, int relY, int relZ);
+	int getSkyLight(int relX, int relY, int relZ);
+	
+	
+	List<DhBlockPos> getBlockLightPosList();
+	
+	
+	default boolean blockPosInsideChunk(DhBlockPos blockPos) { return this.blockPosInsideChunk(blockPos.x, blockPos.y, blockPos.z); }
 	default boolean blockPosInsideChunk(int x, int y, int z)
 	{
-		return (x >= this.getMinX() && x <= this.getMaxX()
+		return (x >= this.getMinBlockX() && x <= this.getMaxBlockX()
 				&& y >= this.getMinBuildHeight() && y < this.getMaxBuildHeight()
-				&& z >= this.getMinZ() && z <= this.getMaxZ());
+				&& z >= this.getMinBlockZ() && z <= this.getMaxBlockZ());
+	}
+	default boolean blockPosInsideChunk(DhBlockPos2D blockPos) 
+	{
+		return (blockPos.x >= this.getMinBlockX() && blockPos.x <= this.getMaxBlockX()
+				&& blockPos.z >= this.getMinBlockZ() && blockPos.z <= this.getMaxBlockZ());
 	}
 	
-	boolean doesNearbyChunksExist();
+	boolean doNearbyChunksExist();
 	String toString();
 	
 	/** This is a bad hash algorithm, but can be used for rough debugging. */
@@ -78,11 +101,12 @@ public interface IChunkWrapper extends IBindable
 		
 		return hash;
 	}
-
-	IBlockStateWrapper getBlockState(int x, int y, int z);
-	IBiomeWrapper getBiome(int x, int y, int z);
-
-	DhChunkPos getChunkPos();
+	
+	
+	default IBlockStateWrapper getBlockState(DhBlockPos pos) { return this.getBlockState(pos.x, pos.y, pos.z); }
+	IBlockStateWrapper getBlockState(int relX, int relY, int relZ);
+	
+	IBiomeWrapper getBiome(int relX, int relY, int relZ);
 
     boolean isStillValid();
 }

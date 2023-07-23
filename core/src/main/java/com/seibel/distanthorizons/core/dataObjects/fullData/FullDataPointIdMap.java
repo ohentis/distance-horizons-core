@@ -25,6 +25,9 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  */
 public class FullDataPointIdMap
 {
+	public static final String SEPARATOR_STRING = "_DH-BSW_";
+	
+	
 	// FIXME: Improve performance maybe?
 	private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
@@ -157,11 +160,11 @@ public class FullDataPointIdMap
 		}
 		
 		
-		public String serialize() { return this.biome.serialize() + " " + this.blockState.serialize(); }
+		public String serialize() { return this.biome.serialize() + SEPARATOR_STRING + this.blockState.serialize(); }
 		
 		public static Entry deserialize(String str) throws IOException, InterruptedException
 		{
-			String[] stringArray = str.split(" ");
+			String[] stringArray = str.split(SEPARATOR_STRING);
 			if (stringArray.length != 2)
 			{
 				throw new IOException("Failed to deserialize BiomeBlockStateEntry");

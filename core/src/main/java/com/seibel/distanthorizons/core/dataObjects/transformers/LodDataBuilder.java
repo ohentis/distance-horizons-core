@@ -10,15 +10,26 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.IWrapperFactory;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 
-public class LodDataBuilder {
+public class LodDataBuilder
+{
+	
     private static final IBlockStateWrapper AIR = SingletonInjector.INSTANCE.get(IWrapperFactory.class).getAirBlockStateWrapper();
-    public static ChunkSizedFullDataAccessor createChunkData(IChunkWrapper chunkWrapper) {
-        if (!canGenerateLodFromChunk(chunkWrapper)) return null;
-
+	
+	
+    public static ChunkSizedFullDataAccessor createChunkData(IChunkWrapper chunkWrapper)
+    {
+        if (!canGenerateLodFromChunk(chunkWrapper))
+        {
+			return null;
+        }
+		
+	    
         ChunkSizedFullDataAccessor chunkData = new ChunkSizedFullDataAccessor(chunkWrapper.getChunkPos());
 
-        for (int x=0; x<16; x++) {
-            for (int z=0; z<16; z++) {
+        for (int x=0; x<LodUtil.CHUNK_WIDTH; x++)
+		{
+            for (int z=0; z<LodUtil.CHUNK_WIDTH; z++)
+			{
                 LongArrayList longs = new LongArrayList(chunkWrapper.getHeight()/4);
                 int lastY = chunkWrapper.getMaxBuildHeight();
                 IBiomeWrapper biome = chunkWrapper.getBiome(x, lastY, z);
@@ -29,12 +40,14 @@ public class LodDataBuilder {
 
                 int y=chunkWrapper.getLightBlockingHeightMapValue(x, z);
 
-                for (; y>=chunkWrapper.getMinBuildHeight(); y--) {
+                for (; y>=chunkWrapper.getMinBuildHeight(); y--)
+				{
                     IBiomeWrapper newBiome = chunkWrapper.getBiome(x, y, z);
                     IBlockStateWrapper newBlockState = chunkWrapper.getBlockState(x, y, z);
                     byte newLight = (byte) ((chunkWrapper.getBlockLight(x,y+1,z) << 4) + chunkWrapper.getSkyLight(x,y+1,z));
 
-                    if (!newBiome.equals(biome) || !newBlockState.equals(blockState)) {
+                    if (!newBiome.equals(biome) || !newBlockState.equals(blockState))
+					{
                         longs.add(FullDataPointUtil.encode(mappedId, lastY-y, y+1 - chunkWrapper.getMinBuildHeight(), light));
                         biome = newBiome;
                         blockState = newBlockState;

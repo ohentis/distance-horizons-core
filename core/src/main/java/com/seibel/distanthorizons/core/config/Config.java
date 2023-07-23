@@ -644,17 +644,26 @@ public class Config
 							*/
 						.build();
 				
-				public static ConfigEntry<ELightGenerationMode> lightingEngine = new ConfigEntry.Builder<ELightGenerationMode>()
-						.set(ELightGenerationMode.MINECRAFT)
+				public static ConfigEntry<ELightGenerationMode> worldGenLightingEngine = new ConfigEntry.Builder<ELightGenerationMode>()
+						.set(ELightGenerationMode.DISTANT_HORIZONS)
 						.comment(""
-								+ " How should distant generation chunk lighting be generated? \n"
+								+ " How should Distant Horizons world generation chunk lighting be handled? \n"
 								+ "\n"
 								+ ELightGenerationMode.MINECRAFT + ": Use Minecraft's lighting engine to generate chunk lighting. \n"
 								+ "    Generally higher quality; but may crash MC's lighting engine if there is an issue. \n"
-								+ ELightGenerationMode.DISTANT_HORIZONS + ": Uses Distant Horizons' lighting engine to estimate chunk lighting. \n"
-								+ "    Generally lower quality; but more stable for large numbers of world generator threads. \n"
+								+ ELightGenerationMode.DISTANT_HORIZONS + ": Uses Distant Horizons' lighting engine to generate chunk lighting. \n"
+								+ "    May not exactly match MC's, but is more stable for large numbers of world generator threads. \n"
 								+ "\n"
 								+ "This will effect generation speed, but not rendering performance.")
+						.build();
+				
+				public static ConfigEntry<Integer> worldGenerationTimeoutLengthInSeconds = new ConfigEntry.Builder<Integer>()
+						.setMinDefaultMax(5, 60, 60*10/*10 minutes*/)
+						.comment(""
+								+ "How long should a world generator thread run for before timing out? \n"
+								+ "Note: If you are experiencing timeout errors it is better to lower your CPU usage first \n"
+								+ "via the thread config before changing this value. \n"
+								+ "")
 						.build();
 				
 				// deprecated and not implemented, can be made public if we ever re-implement it

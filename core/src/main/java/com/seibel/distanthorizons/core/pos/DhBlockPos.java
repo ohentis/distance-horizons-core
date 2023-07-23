@@ -19,6 +19,9 @@
  
 package com.seibel.distanthorizons.core.pos;
 
+import com.seibel.distanthorizons.core.enums.EDhDirection;
+import com.seibel.distanthorizons.core.util.LodUtil;
+
 import java.util.Objects;
 
 public class DhBlockPos {
@@ -110,10 +113,23 @@ public class DhBlockPos {
         return asLong(x, y, z);
     }
 
-    public DhBlockPos offset(int x, int y, int z)
-    {
-        return new DhBlockPos(this.x + x, this.y + y, this.z + z);
-    }
+    public DhBlockPos offset(EDhDirection direction) { return this.offset(direction.getNormal().x, direction.getNormal().y, direction.getNormal().z); }
+    public DhBlockPos offset(int x, int y, int z) { return new DhBlockPos(this.x + x, this.y + y, this.z + z); }
+	
+	/** Limits the block position to a value between 0 and 15 (inclusive) */
+	public DhBlockPos convertToChunkRelativePos()
+	{
+		// move the position into the range -15 and +15
+		int relX = (this.x % LodUtil.CHUNK_WIDTH);
+		// if the position is negative move it into the range 0 and 15
+		relX = (relX < 0) ? (relX + LodUtil.CHUNK_WIDTH) : relX;
+		
+		int relZ = (this.z % LodUtil.CHUNK_WIDTH);
+		relZ = (relZ < 0) ? (relZ + LodUtil.CHUNK_WIDTH) : relZ;
+		
+		// the y value shouldn't need to be changed
+		return new DhBlockPos(relX, this.y, relZ);
+	}
 	
 	/**
 	 * Can be used to quickly determine the rough distance between two points<Br>
