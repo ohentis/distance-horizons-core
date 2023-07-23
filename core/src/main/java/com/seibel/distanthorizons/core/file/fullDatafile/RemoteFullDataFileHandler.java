@@ -2,7 +2,6 @@ package com.seibel.distanthorizons.core.file.fullDatafile;
 
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IFullDataSource;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
-import com.seibel.distanthorizons.core.level.DhClientLevel;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.network.NetworkClient;
@@ -44,14 +43,9 @@ public class RemoteFullDataFileHandler extends FullDataFileHandler
                             LOGGER.info("FullDataSourceResponseMessage " + pos);
                             return response.getFullDataSource(metaFile, pos, level);
                         }
-                        catch (Exception e)
-                        {
-                            LOGGER.error(e);
-                            return null;
-                        }
                         catch (Throwable e)
                         {
-                            LOGGER.error(e.toString());
+                            LOGGER.error(e);
                             return null;
                         }
                     });

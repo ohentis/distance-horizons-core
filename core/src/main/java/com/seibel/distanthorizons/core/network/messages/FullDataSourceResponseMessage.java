@@ -1,5 +1,6 @@
 package com.seibel.distanthorizons.core.network.messages;
 
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.CompleteFullDataSource;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.HighDetailIncompleteFullDataSource;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IFullDataSource;
 import com.seibel.distanthorizons.core.file.fullDatafile.FullDataMetaFile;
@@ -51,7 +52,7 @@ public class FullDataSourceResponseMessage extends FutureTrackableNetworkMessage
 	
 	public IFullDataSource getFullDataSource(FullDataMetaFile metaFile, DhSectionPos pos, IDhLevel level) throws IOException, InterruptedException
 	{
-		IFullDataSource fullDataSource = HighDetailIncompleteFullDataSource.createEmpty(pos);
+		IFullDataSource fullDataSource = CompleteFullDataSource.createEmpty(pos);
 		fullDataSource.populateFromStream(metaFile, new DhDataInputStream(inputStream), level);
 		inputStream.close();
 		return fullDataSource;

@@ -2,6 +2,9 @@ package com.seibel.distanthorizons.core.world;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.CompleteFullDataSource;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IIncompleteFullDataSource;
+import com.seibel.distanthorizons.core.file.fullDatafile.GeneratedFullDataFileHandler;
 import com.seibel.distanthorizons.core.file.structure.LocalSaveStructure;
 import com.seibel.distanthorizons.core.level.DhServerLevel;
 import com.seibel.distanthorizons.core.level.IDhLevel;
@@ -10,6 +13,7 @@ import com.seibel.distanthorizons.core.network.messages.*;
 import com.seibel.distanthorizons.core.network.objects.RemotePlayer;
 import com.seibel.distanthorizons.core.network.protocol.FutureTrackableNetworkMessage;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
+import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
@@ -86,27 +90,37 @@ public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 			// TODO Take notice of received payload and possibly echo back a constrained version
 			channelContext.writeAndFlush(new AckMessage(RemotePlayerConfigMessage.class));
 		});
-
+		
+		// This should be at DhServerLevel I guess
 		this.networkServer.registerHandler(FullDataSourceRequestMessage.class, (msg, ctx) ->
 		{
-			if (msg.dhSectionPos == null) {
-				LOGGER.warn("FullDataSourceRequestMessage received with null msg.dhSectionPos");
-				return;
-			}
-
 			LOGGER.info("FullDataSourceRequestMessage received at pos ({}, {}) with detail level {}", msg.dhSectionPos.sectionX, msg.dhSectionPos.sectionZ, msg.dhSectionPos.sectionDetailLevel);
-			// hasReceivedChunkRequest should be false somewhere ???
-			// to avoid sending updates until client says at least something about its state
-
-			// TODO: Get level from the player that sent the packet
-			DhServerLevel level = this.getLevel(playersByConnection.get(ctx).serverPlayer.getLevel());
-
-			// TODO: Add level to packet
-			//level.serverside.worldGenTick(new DhBlockPos2D(msg.dhSectionPos.sectionX, msg.dhSectionPos.sectionZ));
 			
-			level.serverside.dataFileHandler.read(msg.dhSectionPos).thenAccept(fullDataSource -> {
-				// Send chunk response message back
-				FutureTrackableNetworkMessage.sendResponse(ctx, msg, new FullDataSourceResponseMessage(fullDataSource, level));
+			DhServerLevel level = this.getLevel(playersByConnection.get(ctx).serverPlayer.getLevel());
+			GeneratedFullDataFileHandler handler = level.serverside.dataFileHandler;
+			
+			handler.read(msg.dhSectionPos).thenAccept(fullDataSource -> {
+				if (fullDataSource instanceof CompleteFullDataSource)
+				{
+					// Send chunk response message back
+					FutureTrackableNetworkMessage.sendResponse(ctx, msg, new FullDataSourceResponseMessage(fullDataSource, level));
+					return;
+				}
+				
+				// A pretty terrible trick but does the job at least somewhat
+				// (and seems to only reply with regions)
+				handler.addWorldGenCompleteListener(new GeneratedFullDataFileHandler.IOnWorldGenCompleteListener()
+				{
+					@Override public void onWorldGenTaskComplete(DhSectionPos pos)
+					{
+						if (pos != msg.dhSectionPos) return;
+						
+						handler.removeWorldGenCompleteListener(this);
+						
+						// Send chunk response message back
+						FutureTrackableNetworkMessage.sendResponse(ctx, msg, new FullDataSourceResponseMessage(fullDataSource, level));
+					}
+				});
 			});
 		});
 	}
