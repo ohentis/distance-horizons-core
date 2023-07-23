@@ -5,13 +5,13 @@ import com.seibel.distanthorizons.core.network.protocol.INetworkObject;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import io.netty.buffer.ByteBuf;
 
-public class ChunkRequestMessage extends FutureTrackableNetworkMessage
+public class FullDataSourceRequestMessage extends FutureTrackableNetworkMessage
 {
 	public DhSectionPos dhSectionPos;
 
-	public ChunkRequestMessage() {}
+	public FullDataSourceRequestMessage() {}
 
-	public ChunkRequestMessage(DhSectionPos dhSectionPos) {
+	public FullDataSourceRequestMessage(DhSectionPos dhSectionPos) {
 		this.dhSectionPos = dhSectionPos;
 	}
 

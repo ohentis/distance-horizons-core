@@ -4,14 +4,12 @@ import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.I
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.network.ChildNetworkEventSource;
 import com.seibel.distanthorizons.core.network.NetworkClient;
-import com.seibel.distanthorizons.core.network.messages.ChunkRequestMessage;
-import com.seibel.distanthorizons.core.network.messages.ChunkResponseMessage;
+import com.seibel.distanthorizons.core.network.messages.FullDataSourceRequestMessage;
+import com.seibel.distanthorizons.core.network.messages.FullDataSourceResponseMessage;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import org.apache.logging.log4j.Logger;
 
-import java.nio.file.FileAlreadyExistsException;
 import java.util.concurrent.CompletableFuture;
 
 public class RemoteFullDataFileHandler extends FullDataFileHandler
@@ -29,7 +27,7 @@ public class RemoteFullDataFileHandler extends FullDataFileHandler
     public CompletableFuture<IFullDataSource> read(DhSectionPos pos) {
         // TODO: LOD data file updating is probably incomplete
         return super.read(pos).thenCompose((fullDataSource) -> {
-            CompletableFuture<ChunkResponseMessage> responseFuture = networkClient.<ChunkResponseMessage>sendRequest(new ChunkRequestMessage(pos))
+            CompletableFuture<FullDataSourceResponseMessage> responseFuture = networkClient.<FullDataSourceResponseMessage>sendRequest(new FullDataSourceRequestMessage(pos))
                     .exceptionally(throwable -> {
                         LOGGER.error(throwable);
                         return null;

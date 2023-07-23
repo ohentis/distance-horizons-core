@@ -2,25 +2,21 @@ package com.seibel.distanthorizons.core.world;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
-import com.seibel.distanthorizons.core.file.fullDatafile.FullDataMetaFile;
-import com.seibel.distanthorizons.core.file.fullDatafile.IFullDataSourceProvider;
 import com.seibel.distanthorizons.core.file.structure.LocalSaveStructure;
 import com.seibel.distanthorizons.core.level.DhServerLevel;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.network.NetworkServer;
 import com.seibel.distanthorizons.core.network.messages.*;
-import com.seibel.distanthorizons.core.network.messages.ChunkRequestMessage;
 import com.seibel.distanthorizons.core.network.objects.RemotePlayer;
 import com.seibel.distanthorizons.core.network.protocol.FutureTrackableNetworkMessage;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
-import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
 import io.netty.channel.ChannelHandlerContext;
 
 import java.io.File;
-import java.nio.file.FileAlreadyExistsException;
 import java.util.HashMap;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -91,7 +87,7 @@ public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 			channelContext.writeAndFlush(new AckMessage(RemotePlayerConfigMessage.class));
 		});
 
-		this.networkServer.registerHandler(ChunkRequestMessage.class, (msg, ctx) ->
+		this.networkServer.registerHandler(FullDataSourceRequestMessage.class, (msg, ctx) ->
 		{
 			if (msg.dhSectionPos == null) {
 				LOGGER.warn("RequestChunksMessage received with null msg.dhSectionPos");
@@ -107,9 +103,11 @@ public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 
 			// TODO: Add level to packet
 			level.serverside.worldGenTick(new DhBlockPos2D(msg.dhSectionPos.sectionX, msg.dhSectionPos.sectionZ));
-
-			// Send chunk response message back
-			ctx.writeAndFlush(FutureTrackableNetworkMessage.makeResponse(msg, new ChunkResponseMessage()));
+			
+			level.serverside.dataFileHandler.read(msg.dhSectionPos).thenAccept(fullDataSource -> {
+				// Send chunk response message back
+				ctx.writeAndFlush(FutureTrackableNetworkMessage.makeResponse(msg, new FullDataSourceResponseMessage(fullDataSource, level)));
+			});
 		});
 	}
 

@@ -23,6 +23,7 @@ import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.worldGeneration.AbstractBatchGenerationEnvironmentWrapper;
 import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IBindable;
 
@@ -37,7 +38,7 @@ import java.io.IOException;
 public interface IWrapperFactory extends IBindable 
 {
 	AbstractBatchGenerationEnvironmentWrapper createBatchGenerator(IDhLevel targetLevel);
-	IBiomeWrapper deserializeBiomeWrapper(String str) throws IOException;
+	IBiomeWrapper deserializeBiomeWrapper(String str, ILevelWrapper levelWrapper) throws IOException;
 	IBlockStateWrapper deserializeBlockStateWrapper(String str) throws IOException;
 	IBlockStateWrapper getAirBlockStateWrapper();
 	

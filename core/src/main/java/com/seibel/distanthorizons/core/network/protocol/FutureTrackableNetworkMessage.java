@@ -15,16 +15,30 @@ public abstract class FutureTrackableNetworkMessage implements INetworkMessage
 	
 	@Override public final void encode(ByteBuf out)
 	{
-		out.writeInt(futureId);
-		this.encode0(out);
+		try
+		{
+			out.writeInt(futureId);
+			this.encode0(out);
+		}
+		catch (Exception e)
+		{
+			throw new RuntimeException(e);
+		}
 	}
 	
 	@Override public final void decode(ByteBuf in)
 	{
-		futureId = in.readInt();
-		this.decode0(in);
+		try
+		{
+			futureId = in.readInt();
+			this.decode0(in);
+		}
+		catch (Exception e)
+		{
+			throw new RuntimeException(e);
+		}
 	}
 	
-	protected abstract void encode0(ByteBuf out);
-	protected abstract void decode0(ByteBuf in);
+	protected abstract void encode0(ByteBuf out) throws Exception;
+	protected abstract void decode0(ByteBuf in) throws Exception;
 }

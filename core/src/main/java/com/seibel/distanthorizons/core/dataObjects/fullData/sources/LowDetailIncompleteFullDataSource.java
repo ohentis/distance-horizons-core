@@ -17,6 +17,7 @@ import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataInputStream;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataOutputStream;
 import com.seibel.distanthorizons.core.dataObjects.fullData.FullDataPointIdMap;
+import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.coreapi.util.BitShiftUtil;
 import org.apache.logging.log4j.Logger;
 
@@ -237,14 +238,14 @@ public class LowDetailIncompleteFullDataSource extends FullDataArrayAccessor imp
 	
 	
 	@Override
-	public void writeIdMappings(DhDataOutputStream outputStream) throws IOException
+	public void writeIdMappings(DhDataOutputStream outputStream, ILevelWrapper levelWrapper) throws IOException
 	{
 		outputStream.writeInt(IFullDataSource.DATA_GUARD_BYTE);
-		this.mapping.serialize(outputStream);
+		this.mapping.serialize(outputStream, levelWrapper);
 		
 	}
 	@Override
-	public FullDataPointIdMap readIdMappings(StreamDataPointContainer streamDataPointContainer, DhDataInputStream inputStream) throws IOException, InterruptedException
+	public FullDataPointIdMap readIdMappings(StreamDataPointContainer streamDataPointContainer, DhDataInputStream inputStream, ILevelWrapper levelWrapper) throws IOException, InterruptedException
 	{
 		// Id mapping
 		int dataPresentFlag = inputStream.readInt();
@@ -252,7 +253,7 @@ public class LowDetailIncompleteFullDataSource extends FullDataArrayAccessor imp
 		{
 			throw new IOException("invalid ID mapping end guard");
 		}
-		return FullDataPointIdMap.deserialize(inputStream);
+		return FullDataPointIdMap.deserialize(inputStream, levelWrapper);
 	}
 	@Override
 	public void setIdMapping(FullDataPointIdMap mappings) { this.mapping.mergeAndReturnRemappedEntityIds(mappings); }

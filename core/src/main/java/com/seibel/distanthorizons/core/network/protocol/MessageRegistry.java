@@ -29,8 +29,8 @@ public class MessageRegistry
 		this.registerMessage(AckMessage.class, AckMessage::new);
 		this.registerMessage(PlayerUUIDMessage.class, PlayerUUIDMessage::new);
 		this.registerMessage(RemotePlayerConfigMessage.class, RemotePlayerConfigMessage::new);
-		this.registerMessage(ChunkRequestMessage.class, ChunkRequestMessage::new);
-		this.registerMessage(ChunkResponseMessage.class, ChunkResponseMessage::new);
+		this.registerMessage(FullDataSourceRequestMessage.class, FullDataSourceRequestMessage::new);
+		this.registerMessage(FullDataSourceResponseMessage.class, FullDataSourceResponseMessage::new);
 	}
 	
 	

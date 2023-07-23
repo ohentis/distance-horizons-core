@@ -80,7 +80,7 @@ public class ChunkToLodBuilder implements AutoCloseable
 		{
 			return;
 		}
-		else if (MC == null || !MC.playerExists())
+		else if (MC != null && !MC.playerExists())
 		{
 			// TODO handle server side properly
 
