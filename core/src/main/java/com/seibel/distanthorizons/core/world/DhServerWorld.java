@@ -90,11 +90,11 @@ public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 		this.networkServer.registerHandler(FullDataSourceRequestMessage.class, (msg, ctx) ->
 		{
 			if (msg.dhSectionPos == null) {
-				LOGGER.warn("RequestChunksMessage received with null msg.dhSectionPos");
+				LOGGER.warn("FullDataSourceRequestMessage received with null msg.dhSectionPos");
 				return;
 			}
 
-			LOGGER.info("RequestChunksMessage received at pos ({}, {}) with detail level {}", msg.dhSectionPos.sectionX, msg.dhSectionPos.sectionZ, msg.dhSectionPos.sectionDetailLevel);
+			LOGGER.info("FullDataSourceRequestMessage received at pos ({}, {}) with detail level {}", msg.dhSectionPos.sectionX, msg.dhSectionPos.sectionZ, msg.dhSectionPos.sectionDetailLevel);
 			// hasReceivedChunkRequest should be false somewhere ???
 			// to avoid sending updates until client says at least something about its state
 
@@ -102,11 +102,11 @@ public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 			DhServerLevel level = this.getLevel(playersByConnection.get(ctx).serverPlayer.getLevel());
 
 			// TODO: Add level to packet
-			level.serverside.worldGenTick(new DhBlockPos2D(msg.dhSectionPos.sectionX, msg.dhSectionPos.sectionZ));
+			//level.serverside.worldGenTick(new DhBlockPos2D(msg.dhSectionPos.sectionX, msg.dhSectionPos.sectionZ));
 			
 			level.serverside.dataFileHandler.read(msg.dhSectionPos).thenAccept(fullDataSource -> {
 				// Send chunk response message back
-				ctx.writeAndFlush(FutureTrackableNetworkMessage.makeResponse(msg, new FullDataSourceResponseMessage(fullDataSource, level)));
+				FutureTrackableNetworkMessage.sendResponse(ctx, msg, new FullDataSourceResponseMessage(fullDataSource, level));
 			});
 		});
 	}

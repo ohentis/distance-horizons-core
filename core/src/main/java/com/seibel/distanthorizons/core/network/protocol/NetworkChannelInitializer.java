@@ -21,12 +21,12 @@ public class NetworkChannelInitializer extends ChannelInitializer<SocketChannel>
         ChannelPipeline pipeline = socketChannel.pipeline();
 		
         // Encoder
-        pipeline.addLast(new LengthFieldPrepender(Short.BYTES));
+        pipeline.addLast(new LengthFieldPrepender(Integer.BYTES));
         pipeline.addLast(new MessageEncoder());
         pipeline.addLast(new NetworkOutboundExceptionRouter());
 		
         // Decoder
-        pipeline.addLast(new LengthFieldBasedFrameDecoder(Short.MAX_VALUE, 0, Short.BYTES, 0, Short.BYTES));
+        pipeline.addLast(new LengthFieldBasedFrameDecoder(Integer.MAX_VALUE, 0, Integer.BYTES, 0, Integer.BYTES));
         pipeline.addLast(new MessageDecoder());
 		
         // Handler

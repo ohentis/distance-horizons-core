@@ -2,6 +2,7 @@ package com.seibel.distanthorizons.core.file.fullDatafile;
 
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IFullDataSource;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
+import com.seibel.distanthorizons.core.level.DhClientLevel;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.network.NetworkClient;
@@ -25,17 +26,35 @@ public class RemoteFullDataFileHandler extends FullDataFileHandler
 
     @Override
     public CompletableFuture<IFullDataSource> read(DhSectionPos pos) {
-        // TODO: LOD data file updating is probably incomplete
-        return super.read(pos).thenCompose((fullDataSource) -> {
-            CompletableFuture<FullDataSourceResponseMessage> responseFuture = networkClient.<FullDataSourceResponseMessage>sendRequest(new FullDataSourceRequestMessage(pos))
-                    .exceptionally(throwable -> {
-                        LOGGER.error(throwable);
-                        return null;
-                    });
-            responseFuture.thenAccept(response -> LOGGER.info("ChunkResponseMessage "+pos));
+        return super.read(pos).thenCompose(fullDataSource -> {
+            if (fullDataSource == null)
+                return null;
+            
+            if (!fullDataSource.isEmpty())
+                return CompletableFuture.completedFuture(fullDataSource);
             
             FullDataMetaFile metaFile = this.getLoadOrMakeFile(pos, true);
-            return onDataFileUpdate(fullDataSource, metaFile, iFullDataSource -> {}, iFullDataSource -> true);
+            return networkClient.<FullDataSourceResponseMessage>sendRequest(new FullDataSourceRequestMessage(pos))
+                    .handle((response, throwable) -> {
+                        try
+                        {
+                            if (throwable != null)
+                                throw throwable;
+                            
+                            LOGGER.info("FullDataSourceResponseMessage " + pos);
+                            return response.getFullDataSource(metaFile, pos, level);
+                        }
+                        catch (Exception e)
+                        {
+                            LOGGER.error(e);
+                            return null;
+                        }
+                        catch (Throwable e)
+                        {
+                            LOGGER.error(e.toString());
+                            return null;
+                        }
+                    });
         });
     }
 
