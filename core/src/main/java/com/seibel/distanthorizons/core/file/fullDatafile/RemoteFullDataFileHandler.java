@@ -15,7 +15,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.concurrent.CompletableFuture;
 
-public class RemoteFullDataFileHandler extends FullDataFileHandler
+public class RemoteFullDataFileHandler extends GeneratedFullDataFileHandler
 {
     protected static final Logger LOGGER = DhLoggerBuilder.getLogger();
     

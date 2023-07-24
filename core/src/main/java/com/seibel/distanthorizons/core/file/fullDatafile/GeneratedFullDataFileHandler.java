@@ -9,6 +9,7 @@ import com.seibel.distanthorizons.core.generation.WorldGenerationQueue;
 import com.seibel.distanthorizons.core.generation.tasks.IWorldGenTaskTracker;
 import com.seibel.distanthorizons.core.generation.tasks.WorldGenResult;
 import com.seibel.distanthorizons.core.level.DhLevel;
+import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.level.IDhServerLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhLodPos;
@@ -35,7 +36,7 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandler
 	// Use to hold onto incomplete data sources that are waiting for generation, so that they don't get GC'd before they are generated
 	private final ConcurrentHashMap<DhSectionPos, IIncompleteFullDataSource> incompleteDataSources = new ConcurrentHashMap<>();
 	
-	public GeneratedFullDataFileHandler(IDhServerLevel level, AbstractSaveStructure saveStructure) { super(level, saveStructure); }
+	public GeneratedFullDataFileHandler(IDhLevel level, AbstractSaveStructure saveStructure) { super(level, saveStructure); }
 	
 	
 	
