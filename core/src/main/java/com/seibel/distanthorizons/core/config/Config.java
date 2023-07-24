@@ -736,6 +736,17 @@ public class Config
 								+ "")
 						.build();
 				
+				public static ConfigEntry<Boolean> enableMultiverseNetworking = new ConfigEntry.Builder<Boolean>()
+						.set(true)
+						.comment(""
+								+ "If true Distant Horizons will attempt to communicate with the connected \n"
+								+ "server in order to improve multiverse support. \n"
+								+ "If you experience network issues when attempting to join a server, disable this option. \n"
+								+ "\n"
+								+ "Note: this requires setup on the server in order to function. \n"
+								+ "")
+						.build();
+				
 			}
 			
 			public static class MultiThreading
