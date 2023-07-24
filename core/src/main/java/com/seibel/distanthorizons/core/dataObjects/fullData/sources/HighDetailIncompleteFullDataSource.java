@@ -404,8 +404,11 @@ public class HighDetailIncompleteFullDataSource implements IIncompleteFullDataSo
     public DhSectionPos getSectionPos() { return this.sectionPos; }
     @Override
     public byte getDataDetailLevel() { return (byte) (this.sectionPos.sectionDetailLevel - SECTION_SIZE_OFFSET); }
-
-    @Override
+	
+	@Override
+	public long getTypeId() { return TYPE_ID; }
+	
+	@Override
     public byte getBinaryDataFormatVersion() { return DATA_FORMAT_VERSION; }
 	
 	@Override 

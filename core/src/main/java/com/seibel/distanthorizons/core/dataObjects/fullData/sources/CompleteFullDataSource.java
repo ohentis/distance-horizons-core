@@ -380,6 +380,9 @@ public class CompleteFullDataSource extends FullDataArrayAccessor implements IFu
 	public byte getDataDetailLevel() { return (byte) (this.sectionPos.sectionDetailLevel -SECTION_SIZE_OFFSET); }
 	
 	@Override
+	public long getTypeId() { return TYPE_ID; }
+	
+	@Override
 	public byte getBinaryDataFormatVersion() { return DATA_FORMAT_VERSION; }
 	
 	@Override

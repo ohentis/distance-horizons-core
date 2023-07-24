@@ -43,6 +43,7 @@ public interface IFullDataSource
 	
 	/** Returns the detail level of the data contained by this {@link IFullDataSource}. */
 	byte getDataDetailLevel();
+	long getTypeId();
 	byte getBinaryDataFormatVersion();
 	EDhApiWorldGenerationStep getWorldGenStep();
 	

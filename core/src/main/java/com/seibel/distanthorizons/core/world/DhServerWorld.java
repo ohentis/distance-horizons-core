@@ -100,27 +100,8 @@ public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 			GeneratedFullDataFileHandler handler = level.serverside.dataFileHandler;
 			
 			handler.read(msg.dhSectionPos).thenAccept(fullDataSource -> {
-				if (fullDataSource instanceof CompleteFullDataSource)
-				{
-					// Send chunk response message back
-					FutureTrackableNetworkMessage.sendResponse(ctx, msg, new FullDataSourceResponseMessage(fullDataSource, level));
-					return;
-				}
-				
-				// A pretty terrible trick but does the job at least somewhat
-				// (and seems to only reply with regions)
-				handler.addWorldGenCompleteListener(new GeneratedFullDataFileHandler.IOnWorldGenCompleteListener()
-				{
-					@Override public void onWorldGenTaskComplete(DhSectionPos pos)
-					{
-						if (pos != msg.dhSectionPos) return;
-						
-						handler.removeWorldGenCompleteListener(this);
-						
-						// Send chunk response message back
-						FutureTrackableNetworkMessage.sendResponse(ctx, msg, new FullDataSourceResponseMessage(fullDataSource, level));
-					}
-				});
+				// Send chunk response message back
+				FutureTrackableNetworkMessage.sendResponse(ctx, msg, new FullDataSourceResponseMessage(fullDataSource, level));
 			});
 		});
 	}
