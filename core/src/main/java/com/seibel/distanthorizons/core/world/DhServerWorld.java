@@ -24,6 +24,7 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 {
@@ -33,7 +34,8 @@ public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 	private final NetworkServer networkServer;
 	private final HashMap<UUID, RemotePlayer> playersByUUID;
 	private final BiMap<ChannelHandlerContext, RemotePlayer> playersByConnection;
-
+	private final ConcurrentLinkedQueue<IServerPlayerWrapper> worldGenLoopingQueue = new ConcurrentLinkedQueue<>();
+	
 
 
 	public DhServerWorld()
@@ -109,9 +111,11 @@ public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 	public void addPlayer(IServerPlayerWrapper serverPlayer)
 	{
 		this.playersByUUID.put(serverPlayer.getUUID(), new RemotePlayer(serverPlayer));
+		this.worldGenLoopingQueue.add(serverPlayer);
 	}
 	public void removePlayer(IServerPlayerWrapper serverPlayer)
 	{
+		this.worldGenLoopingQueue.remove(serverPlayer);
 		RemotePlayer dhPlayer = this.playersByUUID.remove(serverPlayer.getUUID());
 		ChannelHandlerContext channelContext = this.playersByConnection.inverse().remove(dhPlayer);
 		if (channelContext != null)
@@ -167,7 +171,19 @@ public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 
 	public void serverTick() { this.levels.values().forEach(DhServerLevel::serverTick); }
 
-	public void doWorldGen() { this.levels.values().forEach(DhServerLevel::doWorldGen); }
+	public void doWorldGen() { this.levels.values().forEach(level -> {
+		// TODO Deal with dimensions and dimension switches
+		
+		IServerPlayerWrapper firstPlayer = this.worldGenLoopingQueue.poll();
+		if (firstPlayer == null) {
+			level.doWorldGen();
+			return;
+		}
+		this.worldGenLoopingQueue.add(firstPlayer);
+		
+		com.seibel.distanthorizons.coreapi.util.math.Vec3d position = firstPlayer.getPosition();
+		level.doWorldGen(new DhBlockPos2D((int) position.x, (int) position.z));
+	}); }
 
 	@Override
 	public CompletableFuture<Void> saveAndFlush()

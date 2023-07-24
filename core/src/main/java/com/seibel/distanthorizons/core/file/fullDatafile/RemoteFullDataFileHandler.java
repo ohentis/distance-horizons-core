@@ -10,6 +10,7 @@ import com.seibel.distanthorizons.core.network.messages.FullDataSourceRequestMes
 import com.seibel.distanthorizons.core.network.messages.FullDataSourceResponseMessage;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.concurrent.CompletableFuture;
@@ -34,34 +35,42 @@ public class RemoteFullDataFileHandler extends FullDataFileHandler
 
     @Override
     public CompletableFuture<IFullDataSource> read(DhSectionPos pos) {
-        return super.read(pos).thenCompose(fullDataSource -> {
-            if (fullDataSource == null)
-                return null;
-            
-            if (!fullDataSource.isEmpty())
-                return CompletableFuture.completedFuture(fullDataSource);
-            
-            FullDataMetaFile metaFile = this.getLoadOrMakeFile(pos, true);
-            totalRequests++;
-            return networkClient.<FullDataSourceResponseMessage>sendRequest(new FullDataSourceRequestMessage(pos))
-                    .handle((response, throwable) -> {
-                        try
-                        {
-                            finishedRequests++;
-                            if (throwable != null)
-                                throw throwable;
-                            
-                            LOGGER.info("FullDataSourceResponseMessage " + pos);
-                            return response.getFullDataSource(metaFile, level);
-                        }
-                        catch (Throwable e)
-                        {
-                            failedRequests++;
-                            LOGGER.error(e);
-                            return null;
-                        }
-                    });
-        });
+        FullDataMetaFile metaFile = this.getLoadOrMakeFile(pos, false);
+        if (metaFile != null)
+        {
+            return super.read(pos).thenCompose(fullDataSource -> requestFromServer(pos, fullDataSource));
+        }
+        else
+        {
+            return requestFromServer(pos, null).thenCompose(fullDataSource -> fullDataSource != null
+                    ? CompletableFuture.completedFuture(fullDataSource)
+                    : super.read(pos));
+        }
+    }
+    
+    @NotNull
+    private CompletableFuture<IFullDataSource> requestFromServer(DhSectionPos pos, IFullDataSource fullDataSource)
+    {
+        totalRequests++;
+        return networkClient.<FullDataSourceResponseMessage>sendRequest(new FullDataSourceRequestMessage(pos))
+                .handle((response, throwable) -> {
+                    try
+                    {
+                        finishedRequests++;
+                        if (throwable != null)
+                            throw throwable;
+                        
+                        LOGGER.info("FullDataSourceResponseMessage " + pos);
+                        FullDataMetaFile metaFile = this.getLoadOrMakeFile(pos, true);
+                        return response.getFullDataSource(metaFile, level);
+                    }
+                    catch (Throwable e)
+                    {
+                        failedRequests++;
+                        LOGGER.error("Error while fetching full data source", e);
+                        return fullDataSource;
+                    }
+                });
     }
     
     private String[] f3Log()

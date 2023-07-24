@@ -80,10 +80,14 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 			// stop world gen
 			serverside.stopWorldGen();
 		}
-
+	}
+	
+	public void doWorldGen(DhBlockPos2D pos) {
+		this.doWorldGen();
+		
 		if (serverside.isWorldGenRunning())
 		{
-			serverside.worldGenTick(new DhBlockPos2D(0, 0)); // todo;
+			serverside.worldGenTick(pos);
 		}
 	}
 	

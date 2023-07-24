@@ -103,9 +103,9 @@ public class LowDetailIncompleteFullDataSource extends FullDataArrayAccessor imp
 	public FullDataSourceSummaryData readSourceSummaryInfo(FullDataMetaFile dataFile, DhDataInputStream inputStream, IDhLevel level) throws IOException
 	{
 		int dataDetail = inputStream.readInt();
-		if(dataDetail != dataFile.baseMetaData.dataLevel)
+		if (dataFile.baseMetaData != null && dataDetail != dataFile.baseMetaData.dataLevel)
 		{
-			throw new IOException(LodUtil.formatLog("Data level mismatch: "+dataDetail+" != "+dataFile.baseMetaData.dataLevel));
+			throw new IOException(LodUtil.formatLog("Data level mismatch: " + dataDetail + " != " + dataFile.baseMetaData.dataLevel));
 		}
 		
 		int width = inputStream.readInt();
