@@ -348,7 +348,7 @@ public class LodRenderSection implements IDebugRenderable
 		}
 	}
 
-	public void disposeRenderData()
+	public synchronized void disposeRenderData() // synchronized is a band-aid solution to prevent a rare bug where the future isn't canceled in the right order
 	{
 		disposeRenderBuffer();
 		this.renderSource = null;

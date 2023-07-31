@@ -72,7 +72,7 @@ public class RenderSourceFileHandler implements ILodRenderSourceProvider
 		{
 			LOGGER.warn("Unable to create render data folder, file saving may fail.");
 		}
-		fileHandlerThreadPool = ThreadUtil.makeSingleThreadPool("Render Source File Handler ["+this.level.getClientLevelWrapper().getDimensionType().getDimensionName()+"]");
+		this.fileHandlerThreadPool = ThreadUtil.makeSingleThreadPool("Render Source File Handler ["+this.level.getLevelWrapper().getDimensionType().getDimensionName()+"]");
 
 
 		this.threadPoolMsg = new F3Screen.NestedMessage(this::f3Log);

@@ -85,7 +85,7 @@ public class ConfigTypeConverters {
                 jsonObject.add(mapObject.keySet().toArray()[i].toString(), mapObject.get(mapObject.keySet().toArray()[i]));
             }
 
-            return JsonFormat.fancyInstance().createWriter().writeToString(jsonObject);
+            return JsonFormat.minimalInstance().createWriter().writeToString(jsonObject);
         }
 
         @Override
@@ -94,7 +94,7 @@ public class ConfigTypeConverters {
 
             Config jsonObject = Config.inMemory();
             try {
-                JsonFormat.fancyInstance().createParser().parse(s, jsonObject, ParsingMode.REPLACE);
+                JsonFormat.minimalInstance().createParser().parse(s, jsonObject, ParsingMode.REPLACE);
             } catch (Exception e) { e.printStackTrace(); }
 
             return jsonObject.valueMap();

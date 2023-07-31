@@ -109,7 +109,8 @@ public class ClientOnlySaveStructure extends AbstractSaveStructure
 		List<File> folders = this.getMatchingLevelFolders(level);
 		if (!folders.isEmpty() && folders.get(0) != null)
 		{
-			LOGGER.info("Default Sub Dimension set to: [" + LodUtil.shortenString(folders.get(0).getName(), 8) + "...]");
+			String folderName = folders.get(0).getName();
+			LOGGER.info("Default Sub Dimension set to: [" + LodUtil.shortenString(folderName, 8) + "...]");
 			return folders.get(0);
 		}
 		else

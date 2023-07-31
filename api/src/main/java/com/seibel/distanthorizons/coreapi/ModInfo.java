@@ -28,6 +28,8 @@ public final class ModInfo
 	public static final String ID = "distanthorizons";
 	/** The internal protocol version used for networking */
 	public static final int PROTOCOL_VERSION = 1;
+	/** The protocol version used for multiverse networking */
+	public static final int MULTIVERSE_PLUGIN_PROTOCOL_VERSION = 1;
 	/** The internal mod name */
 	public static final String NAME = "DistantHorizons";
 	/** Human-readable version of NAME */
@@ -42,5 +44,9 @@ public final class ModInfo
 	public static final int API_MINOR_VERSION = 0;
 	/** This version should be updated whenever non-breaking fixes are added to the DH API */
 	public static final int API_PATH_VERSION = 0;
+	
+	public static final String NETWORKING_RESOURCE_NAMESPACE =  "distant_horizons";
+	public static final String MULTIVERSE_PLUGIN_NAMESPACE = "world_control";
+	
 	
 }

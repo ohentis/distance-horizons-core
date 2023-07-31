@@ -259,9 +259,9 @@
   "distanthorizons.config.client.advanced.graphics.advancedGraphics.earthCurveRatio.@tooltip":
     "A value of 1 is equivalent to the curvature of Earth in real life.",
   "distanthorizons.config.client.advanced.graphics.advancedGraphics.lodBias":
-    "LOD Bias §6(Effects vanilla terrain)§r",
+    "LOD Bias §6(Affects vanilla terrain)§r",
   "distanthorizons.config.client.advanced.graphics.advancedGraphics.lodBias.@tooltip":
-    "Sets vanilla's lod bias value\nPlease press F3+T to reload the texture packs and apply this effect",
+    "Sets vanilla's lod bias value\nPlease press F3+T to reload the texture packs and apply this affect",
   
   
   "distanthorizons.config.client.advanced.worldGenerator":
@@ -300,6 +300,14 @@
     "Multiverse Required Similarity %",
   "distanthorizons.config.client.advanced.multiplayer.multiverseSimilarityRequiredPercent.@tooltip":
     "When matching worlds of the same dimension type the\ntested chunk(s) must be at least this percent the same\nin order to be considered the same world.\n\nNote: If you use portals to enter a dimension at two\ndifferent locations this system may think it is two different worlds.\n\n§61.0:§r the chunks must be identical.\n§60.5:§r the chunks must be half the same.\n§60.0:§r disables multi-dimension support\n     only one world will be used per dimension.",
+  "distanthorizons.config.client.advanced.multiplayer.enableMultiverseNetworking":
+    "Networked Multiverse Support",
+  "distanthorizons.config.client.advanced.multiplayer.enableMultiverseNetworking.@tooltip":
+    "If true Distant Horizons will attempt to communicate with the connected \nserver in order to improve multiverse support.",
+  "distanthorizons.config.client.advanced.multiplayer.enableServerNetworking":
+  "§4Unimplemented, Dev Use Only§r - Server Support",
+  "distanthorizons.config.client.advanced.multiplayer.enableServerNetworking.@tooltip":
+  "§6Attention:§r this is only for developers and hasn't been implemented. \n\nIf true Distant Horizons will attempt to communicate with the connected \nserver in order to load LODs outside your vanilla render distance. \n\nNote: This requires DH to be installed on the server in order to function.",
   
   
   

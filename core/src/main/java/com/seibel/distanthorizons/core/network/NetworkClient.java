@@ -33,7 +33,7 @@ public class NetworkClient extends NetworkEventSource implements AutoCloseable
     }
 	
     private static final int FAILURE_RECONNECT_DELAY_SEC = 5;
-    private static final int FAILURE_RECONNECT_ATTEMPTS = 5;
+    private static final int FAILURE_RECONNECT_ATTEMPTS = 3;
 	
     // TODO move to payload of some sort
     private final InetSocketAddress address;

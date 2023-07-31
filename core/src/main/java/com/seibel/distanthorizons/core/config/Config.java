@@ -741,9 +741,18 @@ public class Config
 						.comment(""
 								+ "If true Distant Horizons will attempt to communicate with the connected \n"
 								+ "server in order to improve multiverse support. \n"
-								+ "If you experience network issues when attempting to join a server, disable this option. \n"
+								+ "")
+						.build();
+				
+				public static ConfigEntry<Boolean> enableServerNetworking = new ConfigEntry.Builder<Boolean>()
+						.set(false)
+						.comment(""
+								+ "Attention: this is only for developers and hasn't been implemented.\n"
 								+ "\n"
-								+ "Note: this requires setup on the server in order to function. \n"
+								+ "If true Distant Horizons will attempt to communicate with the connected \n"
+								+ "server in order to load LODs outside your vanilla render distance. \n"
+								+ "\n"
+								+ "Note: This requires DH to be installed on the server in order to function. \n"
 								+ "")
 						.build();
 				
@@ -1114,10 +1123,6 @@ public class Config
 					
 					public static ConfigEntry<List<String>> listTest = new ConfigEntry.Builder<List<String>>()
 							.set(new ArrayList<String>(Arrays.asList("option 1", "option 2", "option 3")))
-							.build();
-					
-					public static ConfigEntry<Map<String, String>> mapTest = new ConfigEntry.Builder<Map<String, String>>()
-							.set(new HashMap<String, String>())
 							.build();
 					
 					public static ConfigCategory categoryTest = new ConfigCategory.Builder().set(CategoryTest.class).build();
