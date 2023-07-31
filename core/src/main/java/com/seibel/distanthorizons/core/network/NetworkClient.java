@@ -1,12 +1,14 @@
 package com.seibel.distanthorizons.core.network;
 
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.network.messages.AckMessage;
 import com.seibel.distanthorizons.core.network.messages.CloseMessage;
 import com.seibel.distanthorizons.core.network.messages.CloseReasonMessage;
 import com.seibel.distanthorizons.core.network.messages.HelloMessage;
 import com.seibel.distanthorizons.core.network.protocol.FutureTrackableNetworkMessage;
 import com.seibel.distanthorizons.core.network.protocol.MessageHandler;
 import com.seibel.distanthorizons.core.network.protocol.NetworkChannelInitializer;
+import com.seibel.distanthorizons.core.network.protocol.NetworkMessage;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -59,20 +61,15 @@ public class NetworkClient extends NetworkEventSource implements AutoCloseable
 	
     private void registerHandlers() 
 	{
-		this.registerAckHandler(HelloMessage.class, channelContext ->
-		{
-            LOGGER.info("Connected to server: "+channelContext.channel().remoteAddress());
-        });
-		
-		this.registerHandler(CloseReasonMessage.class, (closeReasonMessage, channelContext) -> 
+		this.registerHandler(CloseReasonMessage.class, closeReasonMessage ->
 		{
             LOGGER.info(closeReasonMessage.reason);
 			this.connectionState = EConnectionState.CLOSE_WAIT;
         });
 		
-		this.registerHandler(CloseMessage.class, (closeMessage, channelContext) ->
+		this.registerHandler(CloseMessage.class, closeMessage ->
 		{
-            LOGGER.info("Disconnected from server: "+channelContext.channel().remoteAddress());
+            LOGGER.info("Disconnected from server: "+closeMessage.getChannelContext().channel().remoteAddress());
             if (this.connectionState == EConnectionState.CLOSE_WAIT)
 			{
 				this.close();
@@ -90,13 +87,13 @@ public class NetworkClient extends NetworkEventSource implements AutoCloseable
         ChannelFuture connectFuture = this.clientBootstrap.connect(this.address);
         connectFuture.addListener((ChannelFuture channelFuture) -> 
 		{
-            if (!channelFuture.isSuccess()) 
+            if (!channelFuture.isSuccess())
 			{
-                LOGGER.warn("Connection failed: "+channelFuture.cause());
-                return;
-            }
+				LOGGER.warn("Connection failed: "+channelFuture.cause());
+				return;
+			}
 			
-			this.channel.writeAndFlush(new HelloMessage());
+			channel.writeAndFlush(new HelloMessage());
         });
 		
 		this.channel = connectFuture.channel();
@@ -128,13 +125,6 @@ public class NetworkClient extends NetworkEventSource implements AutoCloseable
 					break;
 			}
         });
-    }
-
-    /** Kills the current connection, triggering auto-reconnection immediately. */
-    public void reconnect() 
-	{
-		this.connectionState = EConnectionState.RECONNECT_FORCE;
-		this.channel.disconnect();
     }
 	
 	public final <TResponse extends FutureTrackableNetworkMessage> CompletableFuture<TResponse> sendRequest(FutureTrackableNetworkMessage msg)

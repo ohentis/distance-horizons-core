@@ -1,11 +1,12 @@
 package com.seibel.distanthorizons.core.network.messages;
 
 import com.seibel.distanthorizons.core.dataObjects.fullData.loader.AbstractFullDataSourceLoader;
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IFullDataSource;
-import com.seibel.distanthorizons.core.file.fullDatafile.FullDataMetaFile;
+import com.seibel.distanthorizons.core.dataObjects.fullData.loader.CompleteFullDataSourceLoader;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.CompleteFullDataSource;
 import com.seibel.distanthorizons.core.level.DhServerLevel;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.network.protocol.FutureTrackableNetworkMessage;
+import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataInputStream;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataOutputStream;
 import io.netty.buffer.ByteBuf;
@@ -16,14 +17,14 @@ import java.io.IOException;
 
 public class FullDataSourceResponseMessage extends FutureTrackableNetworkMessage
 {
-	private IFullDataSource fullDataSource;
+	private CompleteFullDataSource fullDataSource;
 	private DhServerLevel level;
 	
-	private AbstractFullDataSourceLoader fullDataSourceLoader;
+	private CompleteFullDataSourceLoader fullDataSourceLoader;
 	private ByteBuf dataBuffer;
 	
 	public FullDataSourceResponseMessage() {}
-	public FullDataSourceResponseMessage(IFullDataSource fullDataSource, DhServerLevel level)
+	public FullDataSourceResponseMessage(CompleteFullDataSource fullDataSource, DhServerLevel level)
 	{
 		this.fullDataSource = fullDataSource;
 		this.level = level;
@@ -38,7 +39,6 @@ public class FullDataSourceResponseMessage extends FutureTrackableNetworkMessage
 			fullDataSource.writeToStream(dhOutputStream, level);
 			dhOutputStream.flush();
 			
-			out.writeLong(fullDataSource.getTypeId());
 			out.writeByte(fullDataSource.getBinaryDataFormatVersion());
 			out.writeInt(outputStream.size());
 			out.writeBytes(outputStream.toByteArray());
@@ -46,25 +46,21 @@ public class FullDataSourceResponseMessage extends FutureTrackableNetworkMessage
 	}
 	
 	@Override
-	public void decode0(ByteBuf in) throws IOException
+	public void decode0(ByteBuf in)
 	{
-		long typeId = in.readLong();
 		byte dataVersion = in.readByte();
 		
-		this.fullDataSourceLoader = AbstractFullDataSourceLoader.getLoader(typeId, dataVersion);
-		if (this.fullDataSourceLoader == null)
-		{
-			throw new IOException("Invalid file: Data type loader not found: "+typeId+"(v"+dataVersion +")");
-		}
+		this.fullDataSourceLoader = (CompleteFullDataSourceLoader) AbstractFullDataSourceLoader.getLoader(CompleteFullDataSource.TYPE_ID, dataVersion);
+		assert this.fullDataSourceLoader != null;
 		
 		this.dataBuffer = in.readBytes(in.readInt());
 	}
 	
-	public IFullDataSource getFullDataSource(FullDataMetaFile metaFile, IDhLevel level) throws IOException, InterruptedException
+	public CompleteFullDataSource getFullDataSource(DhSectionPos pos, IDhLevel level) throws IOException, InterruptedException
 	{
 		try (ByteBufInputStream inputStream = new ByteBufInputStream(dataBuffer))
 		{
-			return fullDataSourceLoader.loadData(metaFile, new DhDataInputStream(inputStream), level);
+			return fullDataSourceLoader.loadData(pos, new DhDataInputStream(inputStream), level);
 		}
 	}
 }

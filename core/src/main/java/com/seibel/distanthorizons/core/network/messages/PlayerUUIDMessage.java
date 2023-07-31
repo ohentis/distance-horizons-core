@@ -1,11 +1,12 @@
 package com.seibel.distanthorizons.core.network.messages;
 
-import com.seibel.distanthorizons.core.network.protocol.INetworkMessage;
+import com.seibel.distanthorizons.core.network.protocol.FutureTrackableNetworkMessage;
+import com.seibel.distanthorizons.core.network.protocol.NetworkMessage;
 import io.netty.buffer.ByteBuf;
 
 import java.util.UUID;
 
-public class PlayerUUIDMessage implements INetworkMessage
+public class PlayerUUIDMessage extends FutureTrackableNetworkMessage
 {
     public UUID playerUUID;
 	
@@ -15,13 +16,13 @@ public class PlayerUUIDMessage implements INetworkMessage
     public PlayerUUIDMessage(UUID playerUUID) { this.playerUUID = playerUUID; }
 	
     @Override
-    public void encode(ByteBuf out)
+    public void encode0(ByteBuf out)
 	{
         out.writeLong(this.playerUUID.getMostSignificantBits());
         out.writeLong(this.playerUUID.getLeastSignificantBits());
     }
 
     @Override
-    public void decode(ByteBuf in) { this.playerUUID = new UUID(in.readLong(), in.readLong()); }
+    public void decode0(ByteBuf in) { this.playerUUID = new UUID(in.readLong(), in.readLong()); }
 	
 }

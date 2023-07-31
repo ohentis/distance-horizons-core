@@ -1,14 +1,21 @@
 package com.seibel.distanthorizons.core.level;
 
+import com.seibel.distanthorizons.core.config.AppliedConfigState;
+import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
+import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.file.fullDatafile.IFullDataSourceProvider;
 import com.seibel.distanthorizons.core.file.fullDatafile.RemoteFullDataFileHandler;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
+import com.seibel.distanthorizons.core.generation.WorldRemoteGenerationQueue;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.network.ChildNetworkEventSource;
 import com.seibel.distanthorizons.core.network.NetworkClient;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
+import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
+import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
@@ -16,17 +23,34 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.coreapi.util.math.Mat4f;
 import org.apache.logging.log4j.Logger;
 
+import java.awt.*;
 import java.util.concurrent.CompletableFuture;
 
 /** The level used when connected to a server */
 public class DhClientLevel extends DhLevel implements IDhClientLevel
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
-
+	private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
+	
+	private static class WorldGenState extends WorldGenModule.WorldGenState
+	{
+		WorldGenState(IDhClientLevel level, NetworkClient client)
+		{
+			this.worldGenerationQueue = new WorldRemoteGenerationQueue(client, level);
+		}
+	}
+	
 	public final ClientLevelModule clientside;
 	public final IClientLevelWrapper levelWrapper;
 	public final AbstractSaveStructure saveStructure;
 	public final RemoteFullDataFileHandler dataFileHandler;
+	
+	private final NetworkClient networkClient;
+	public final WorldGenModule worldGenModule;
+	// TODO maybe use some other value?
+	public final AppliedConfigState<Boolean> worldGeneratorEnabledConfig;
+	
+	
 
 	//=============//
 	// constructor //
@@ -36,7 +60,12 @@ public class DhClientLevel extends DhLevel implements IDhClientLevel
 	{
 		this.levelWrapper = clientLevelWrapper;
 		this.saveStructure = saveStructure;
-		dataFileHandler = new RemoteFullDataFileHandler(this, saveStructure, networkClient);
+		this.dataFileHandler = new RemoteFullDataFileHandler(this, saveStructure);
+		
+		this.networkClient = networkClient;
+		this.worldGenModule = new WorldGenModule(dataFileHandler, this);
+		this.worldGeneratorEnabledConfig = new AppliedConfigState<>(Config.Client.Advanced.WorldGenerator.enableDistantGeneration);
+		
 		clientside = new ClientLevelModule(this);
 		clientside.startRenderer();
 		LOGGER.info("Started DHLevel for "+this.levelWrapper+" with saves at "+this.saveStructure);
@@ -51,6 +80,33 @@ public class DhClientLevel extends DhLevel implements IDhClientLevel
 	{
 		chunkToLodBuilder.tick();
 		clientside.clientTick();
+	}
+	
+	public void doWorldGen()
+	{
+		worldGeneratorEnabledConfig.pollNewValue();
+		boolean shouldDoWorldGen = worldGeneratorEnabledConfig.get() && clientside.isRendering();
+		boolean isWorldGenRunning = worldGenModule.isWorldGenRunning();
+		if (shouldDoWorldGen && !isWorldGenRunning)
+		{
+			// start world gen
+			worldGenModule.startWorldGen(this.dataFileHandler, new WorldGenState(this, this.networkClient));
+		}
+		else if (!shouldDoWorldGen && isWorldGenRunning)
+		{
+			// stop world gen
+			worldGenModule.stopWorldGen(this.dataFileHandler);
+		}
+		
+		if (worldGenModule.isWorldGenRunning())
+		{
+			ClientLevelModule.ClientRenderState renderState = clientside.ClientRenderStateRef.get();
+			if (renderState != null && renderState.quadtree != null)
+			{
+				dataFileHandler.removeGenRequestIf(p -> !renderState.quadtree.isSectionPosInBounds(p));
+			}
+			worldGenModule.worldGenTick(new DhBlockPos2D(MC_CLIENT.getPlayerBlockPos()));
+		}
 	}
 
 	@Override
@@ -92,6 +148,8 @@ public class DhClientLevel extends DhLevel implements IDhClientLevel
 	@Override
 	public void close()
 	{
+		if (worldGenModule != null)
+			worldGenModule.close();
 		clientside.close();
 		super.close();
 		dataFileHandler.close();
@@ -117,5 +175,17 @@ public class DhClientLevel extends DhLevel implements IDhClientLevel
 	public AbstractSaveStructure getSaveStructure() {
 		return saveStructure;
 	}
-
+	
+	@Override
+	public void onWorldGenTaskComplete(DhSectionPos pos)
+	{
+		//if (pos.sectionDetailLevel == DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL)
+		DebugRenderer.makeParticle(
+				new DebugRenderer.BoxParticle(
+						new DebugRenderer.Box(pos, 128f, 156f, 0.09f, Color.red.darker()),
+						0.2, 32f
+				)
+		);
+		clientside.reloadPos(pos);
+	}
 }

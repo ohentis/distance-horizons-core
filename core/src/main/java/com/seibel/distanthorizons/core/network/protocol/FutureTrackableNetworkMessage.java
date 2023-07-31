@@ -3,15 +3,15 @@ package com.seibel.distanthorizons.core.network.protocol;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 
-public abstract class FutureTrackableNetworkMessage implements INetworkMessage
+public abstract class FutureTrackableNetworkMessage extends NetworkMessage
 {
 	private static int lastId = 0;
 	public int futureId = lastId++;
 	
-	public static void sendResponse(ChannelHandlerContext ctx, FutureTrackableNetworkMessage requestMessage, FutureTrackableNetworkMessage responseMessage)
+	public void sendResponse(FutureTrackableNetworkMessage responseMessage)
 	{
-		responseMessage.futureId = requestMessage.futureId;
-		ctx.writeAndFlush(responseMessage);
+		responseMessage.futureId = futureId;
+		getChannelContext().writeAndFlush(responseMessage);
 	}
 	
 	@Override public final void encode(ByteBuf out)

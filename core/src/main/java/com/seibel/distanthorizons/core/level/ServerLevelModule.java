@@ -17,9 +17,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class ServerLevelModule {
-    private static class WorldGenState
+    public static class WorldGenState extends WorldGenModule.WorldGenState
     {
-        public final WorldGenerationQueue worldGenerationQueue;
         WorldGenState(IDhServerLevel level)
         {
             IDhApiWorldGenerator worldGenerator = WorldGeneratorInjector.INSTANCE.get(level.getLevelWrapper());
@@ -33,26 +32,6 @@ public class ServerLevelModule {
             }
             this.worldGenerationQueue = new WorldGenerationQueue(worldGenerator);
         }
-
-        CompletableFuture<Void> closeAsync(boolean doInterrupt)
-        {
-            return this.worldGenerationQueue.startClosing(true, doInterrupt)
-                    .exceptionally(ex ->
-                            {
-                                LOGGER.error("Error closing generation queue", ex);
-                                return null;
-                            }
-                    ).thenRun(this.worldGenerationQueue::close)
-                    .exceptionally(ex ->
-                    {
-                        LOGGER.error("Error closing world gen", ex);
-                        return null;
-                    });
-        }
-
-        public void tick(DhBlockPos2D targetPosForGeneration) {
-            worldGenerationQueue.runCurrentGenTasksUntilBusy(targetPosForGeneration);
-        }
     }
 
     private static final Logger LOGGER = DhLoggerBuilder.getLogger();
@@ -61,7 +40,7 @@ public class ServerLevelModule {
     public final AbstractSaveStructure saveStructure;
     public final GeneratedFullDataFileHandler dataFileHandler;
     public final AppliedConfigState<Boolean> worldGeneratorEnabledConfig;
-    private final AtomicReference<WorldGenState> worldGenStateRef = new AtomicReference<>();
+    public final WorldGenModule worldGenModule;
 
     public ServerLevelModule(IDhServerLevel parent, IServerLevelWrapper levelWrapper, AbstractSaveStructure saveStructure)
     {
@@ -70,62 +49,7 @@ public class ServerLevelModule {
         this.saveStructure = saveStructure;
         this.dataFileHandler = new GeneratedFullDataFileHandler(parent, saveStructure);
         this.worldGeneratorEnabledConfig = new AppliedConfigState<>(Config.Client.Advanced.WorldGenerator.enableDistantGeneration);
-    }
-
-    //==============//
-    // tick methods //
-    //==============//
-
-
-    public void startWorldGen()
-    {
-        // create the new world generator
-        WorldGenState newWgs = new WorldGenState(parent);
-        if (!this.worldGenStateRef.compareAndSet(null, newWgs))
-        {
-            LOGGER.warn("Failed to start world gen due to concurrency");
-            newWgs.closeAsync(false);
-        }
-        dataFileHandler.addWorldGenCompleteListener(parent);
-        dataFileHandler.setGenerationQueue(newWgs.worldGenerationQueue);
-    }
-
-    public void stopWorldGen()
-    {
-        WorldGenState worldGenState = this.worldGenStateRef.get();
-        if (worldGenState == null)
-        {
-            LOGGER.warn("Attempted to stop world gen when it was not running");
-            return;
-        }
-
-        // shut down the world generator
-        while (!this.worldGenStateRef.compareAndSet(worldGenState, null))
-        {
-            worldGenState = this.worldGenStateRef.get();
-            if (worldGenState == null)
-            {
-                return;
-            }
-        }
-        dataFileHandler.clearGenerationQueue();
-        worldGenState.closeAsync(true).join(); //TODO: Make it async.
-        dataFileHandler.removeWorldGenCompleteListener(parent);
-    }
-
-    public boolean isWorldGenRunning()
-    {
-        return this.worldGenStateRef.get() != null;
-    }
-
-    public void worldGenTick(DhBlockPos2D targetPosForGeneration)
-    {
-        WorldGenState worldGenState = this.worldGenStateRef.get();
-        if (worldGenState != null)
-        {
-            // queue new world generation requests
-            worldGenState.tick(targetPosForGeneration);
-        }
+        this.worldGenModule = new WorldGenModule(this.dataFileHandler, this.parent);
     }
 
     //===============//
@@ -134,23 +58,7 @@ public class ServerLevelModule {
     public void close()
     {
         // shutdown the world-gen
-        WorldGenState worldGenState = this.worldGenStateRef.get();
-        if (worldGenState != null)
-        {
-            while (!this.worldGenStateRef.compareAndSet(worldGenState, null))
-            {
-                worldGenState = this.worldGenStateRef.get();
-                if (worldGenState == null)
-                {
-                    break;
-                }
-            }
-
-            if (worldGenState != null)
-            {
-                worldGenState.closeAsync(true).join(); //TODO: Make it async.
-            }
-        }
+        this.worldGenModule.close();
         dataFileHandler.close();
     }
 

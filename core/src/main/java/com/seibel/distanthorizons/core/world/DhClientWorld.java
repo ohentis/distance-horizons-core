@@ -4,8 +4,10 @@ import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.file.structure.ClientOnlySaveStructure;
 import com.seibel.distanthorizons.core.level.DhClientLevel;
+import com.seibel.distanthorizons.core.level.DhClientServerLevel;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.network.NetworkClient;
+import com.seibel.distanthorizons.core.network.messages.AckMessage;
 import com.seibel.distanthorizons.core.network.messages.HelloMessage;
 import com.seibel.distanthorizons.core.network.messages.PlayerUUIDMessage;
 import com.seibel.distanthorizons.core.network.messages.RemotePlayerConfigMessage;
@@ -62,26 +64,20 @@ public class DhClientWorld extends AbstractDhWorld implements IDhClientWorld
 	}
 
     private void registerNetworkHandlers() {
-        this.networkClient.registerAckHandler(HelloMessage.class, ctx ->
-        {
-            ctx.writeAndFlush(new PlayerUUIDMessage(MC_CLIENT.getPlayerUUID()));
-        });
-
-        // TODO Proper payload handling
-	    this.networkClient.registerAckHandler(PlayerUUIDMessage.class, ctx ->
-        {
-            ctx.writeAndFlush(new RemotePlayerConfigMessage(new RemotePlayer.Payload()));
-        });
-	    this.networkClient.registerHandler(RemotePlayerConfigMessage.class, (msg, ctx) ->
-        {
-
-        });
-	    
-	    this.networkClient.registerAckHandler(RemotePlayerConfigMessage.class, ctx ->
-        {
-            // TODO Actually request chunks
-            // ctx.writeAndFlush(new ChunkRequestMessage(new DhSectionPos(new DhBlockPos2D(0, 0))));
-        });
+		this.networkClient.registerHandler(HelloMessage.class, helloMessage ->
+		{
+			LOGGER.info("Connected to server: "+helloMessage.getChannelContext().channel().remoteAddress());
+			
+			this.networkClient.sendRequest(new PlayerUUIDMessage(MC_CLIENT.getPlayerUUID()))
+					.thenCompose(ack -> this.networkClient.<RemotePlayerConfigMessage>sendRequest(new RemotePlayerConfigMessage(new RemotePlayer.Payload())))
+					.thenAccept(responseConfigMsg -> {
+						// TODO do something with received config
+					})
+					.exceptionally(throwable -> {
+						LOGGER.error("Error while fetching server's config", throwable);
+						return null;
+					});
+		});
     }
 	
 	
@@ -146,6 +142,8 @@ public class DhClientWorld extends AbstractDhWorld implements IDhClientWorld
 	}
 
     public void clientTick() { this.eventLoop.tick(); }
+	
+	public void doWorldGen() { this.levels.values().forEach(DhClientLevel::doWorldGen); }
 
     @Override
     public CompletableFuture<Void> saveAndFlush()

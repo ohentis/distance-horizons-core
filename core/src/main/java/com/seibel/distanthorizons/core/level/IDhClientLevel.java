@@ -7,7 +7,7 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrap
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 
-public interface IDhClientLevel extends IDhLevel
+public interface IDhClientLevel extends IDhWorldGenLevel
 {
     void clientTick();
 	

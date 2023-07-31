@@ -8,26 +8,22 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
 import java.util.function.BiConsumer;
 
 @ChannelHandler.Sharable
-public class MessageHandler extends SimpleChannelInboundHandler<INetworkMessage>
+public class MessageHandler extends SimpleChannelInboundHandler<NetworkMessage>
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
-	private final BiConsumer<INetworkMessage, ChannelHandlerContext> messageConsumer;
+	private final BiConsumer<NetworkMessage, ChannelHandlerContext> messageConsumer;
 	
-	public MessageHandler(BiConsumer<INetworkMessage, ChannelHandlerContext> messageConsumer)
+	public MessageHandler(BiConsumer<NetworkMessage, ChannelHandlerContext> messageConsumer)
 	{
 		this.messageConsumer = messageConsumer;
 	}
 	
 	@Override
-	protected void channelRead0(ChannelHandlerContext channelContext, INetworkMessage message)
+	protected void channelRead0(ChannelHandlerContext channelContext, NetworkMessage message)
 	{
 		LOGGER.trace("Received message: " + message.getClass().getSimpleName());
 		this.messageConsumer.accept(message, channelContext);

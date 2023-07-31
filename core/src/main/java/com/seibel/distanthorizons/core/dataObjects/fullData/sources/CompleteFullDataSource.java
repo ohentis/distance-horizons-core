@@ -21,6 +21,7 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.coreapi.util.BitShiftUtil;
 import org.apache.logging.log4j.Logger;
 
+import javax.annotation.CheckForNull;
 import java.io.*;
 
 /**
@@ -85,10 +86,10 @@ public class CompleteFullDataSource extends FullDataArrayAccessor implements IFu
 		
 	}
 	@Override
-	public FullDataSourceSummaryData readSourceSummaryInfo(FullDataMetaFile dataFile, DhDataInputStream inputStream, IDhLevel level) throws IOException
+	public FullDataSourceSummaryData readSourceSummaryInfo(@CheckForNull FullDataMetaFile dataFile, DhDataInputStream inputStream, IDhLevel level) throws IOException
 	{	
 		int dataDetail = inputStream.readInt();
-		if (dataFile.baseMetaData != null && dataDetail != dataFile.baseMetaData.dataLevel)
+		if (dataFile != null && dataFile.baseMetaData != null && dataDetail != dataFile.baseMetaData.dataLevel)
 		{
 			throw new IOException(LodUtil.formatLog("Data level mismatch: " + dataDetail + " != " + dataFile.baseMetaData.dataLevel));
 		}

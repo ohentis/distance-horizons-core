@@ -64,12 +64,7 @@ public class ServerApi
 			if (serverWorld != null)
 			{
 				serverWorld.serverTick();
-				this.lastWorldGenTickDelta--;
-				if (this.lastWorldGenTickDelta <= 0)
-				{
-					serverWorld.doWorldGen();
-					this.lastWorldGenTickDelta = 20;
-				}
+				SharedApi.worldGenTick(serverWorld::doWorldGen);
 			}
 		}
 		catch (Exception e)

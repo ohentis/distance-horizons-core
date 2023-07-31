@@ -29,7 +29,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
 
-public class WorldGenerationQueue implements Closeable, IDebugRenderable
+public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRenderable
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
@@ -47,6 +47,7 @@ public class WorldGenerationQueue implements Closeable, IDebugRenderable
 	
 	/** largest numerical detail level allowed */
 	public final byte largestDataDetail;
+	@Override public byte largestDataDetail() { return this.largestDataDetail; }
 	/** lowest numerical detail level allowed */
 	public final byte smallestDataDetail;
 	

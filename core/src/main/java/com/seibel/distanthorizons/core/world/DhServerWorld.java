@@ -2,7 +2,10 @@ package com.seibel.distanthorizons.core.world;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.MultimapBuilder;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.CompleteFullDataSource;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IFullDataSource;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IIncompleteFullDataSource;
 import com.seibel.distanthorizons.core.file.fullDatafile.GeneratedFullDataFileHandler;
 import com.seibel.distanthorizons.core.file.structure.LocalSaveStructure;
@@ -20,11 +23,10 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
 import io.netty.channel.ChannelHandlerContext;
 
+import javax.annotation.CheckForNull;
 import java.io.File;
-import java.util.HashMap;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.*;
+import java.util.concurrent.*;
 
 public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 {
@@ -34,7 +36,9 @@ public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 	private final NetworkServer networkServer;
 	private final HashMap<UUID, RemotePlayer> playersByUUID;
 	private final BiMap<ChannelHandlerContext, RemotePlayer> playersByConnection;
+	
 	private final ConcurrentLinkedQueue<IServerPlayerWrapper> worldGenLoopingQueue = new ConcurrentLinkedQueue<>();
+	private ConcurrentMap<DhSectionPos, IncompleteDataSourceEntry> incompleteDataSources = new ConcurrentHashMap<>();
 	
 
 
@@ -56,17 +60,18 @@ public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 
 	private void registerNetworkHandlers()
 	{
-		this.networkServer.registerHandler(CloseMessage.class, (closeMessage, channelContext) ->
+		this.networkServer.registerHandler(CloseMessage.class, closeMessage ->
 		{
-			RemotePlayer dhPlayer = this.playersByConnection.remove(channelContext);
+			RemotePlayer dhPlayer = this.playersByConnection.remove(closeMessage.getChannelContext());
 			if (dhPlayer != null)
 			{
 				dhPlayer.channelContext = null;
 			}
 		});
 
-		this.networkServer.registerHandler(PlayerUUIDMessage.class, (playerUUIDMessage, channelContext) ->
+		this.networkServer.registerHandler(PlayerUUIDMessage.class, playerUUIDMessage ->
 		{
+			ChannelHandlerContext channelContext = playerUUIDMessage.getChannelContext();
 			RemotePlayer dhPlayer = this.playersByUUID.get(playerUUIDMessage.playerUUID);
 
 			if (dhPlayer == null)
@@ -84,27 +89,30 @@ public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 			dhPlayer.channelContext = channelContext;
 			this.playersByConnection.put(channelContext, dhPlayer);
 
-			channelContext.writeAndFlush(new AckMessage(PlayerUUIDMessage.class));
+			playerUUIDMessage.sendResponse(new AckMessage());
 		});
 
-		this.networkServer.registerHandler(RemotePlayerConfigMessage.class, (dhRemotePlayerConfigMessage, channelContext) ->
+		this.networkServer.registerHandler(RemotePlayerConfigMessage.class, remotePlayerConfigMessage ->
 		{
-			// TODO Take notice of received payload and possibly echo back a constrained version
-			channelContext.writeAndFlush(new AckMessage(RemotePlayerConfigMessage.class));
+			// TODO Take notice of and/or constrain received payload
+			remotePlayerConfigMessage.sendResponse(remotePlayerConfigMessage);
 		});
 		
 		// This should be at DhServerLevel I guess
-		this.networkServer.registerHandler(FullDataSourceRequestMessage.class, (msg, ctx) ->
+		this.networkServer.registerHandler(FullDataSourceRequestMessage.class, msg ->
 		{
 			LOGGER.info("FullDataSourceRequestMessage received at pos ({}, {}) with detail level {}", msg.dhSectionPos.sectionX, msg.dhSectionPos.sectionZ, msg.dhSectionPos.sectionDetailLevel);
 			
-			DhServerLevel level = this.getLevel(playersByConnection.get(ctx).serverPlayer.getLevel());
+			DhServerLevel level = this.getLevel(playersByConnection.get(msg.getChannelContext()).serverPlayer.getLevel());
 			GeneratedFullDataFileHandler handler = level.serverside.dataFileHandler;
 			
-			handler.read(msg.dhSectionPos).thenAccept(fullDataSource -> {
-				// Send chunk response message back
-				FutureTrackableNetworkMessage.sendResponse(ctx, msg, new FullDataSourceResponseMessage(fullDataSource, level));
-			});
+			incompleteDataSources.computeIfAbsent(msg.dhSectionPos, pos -> {
+				IncompleteDataSourceEntry entry = new IncompleteDataSourceEntry();
+				handler.read(msg.dhSectionPos).thenAccept(fullDataSource -> {
+					entry.fullDataSource = fullDataSource;
+				});
+				return entry;
+			}).requestMessages.add(msg);
 		});
 	}
 
@@ -169,21 +177,50 @@ public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 		}
 	}
 
-	public void serverTick() { this.levels.values().forEach(DhServerLevel::serverTick); }
-
-	public void doWorldGen() { this.levels.values().forEach(level -> {
-		// TODO Deal with dimensions and dimension switches
+	public void serverTick() {
+		this.levels.values().forEach(DhServerLevel::serverTick);
 		
-		IServerPlayerWrapper firstPlayer = this.worldGenLoopingQueue.poll();
-		if (firstPlayer == null) {
-			level.doWorldGen();
-			return;
+		for (Iterator<IncompleteDataSourceEntry> it = incompleteDataSources.values().iterator(); it.hasNext(); )
+		{
+			IncompleteDataSourceEntry entry = it.next();
+			if (entry.fullDataSource instanceof IIncompleteFullDataSource)
+			{
+				IIncompleteFullDataSource incompleteSource = (IIncompleteFullDataSource) entry.fullDataSource;
+				if (!incompleteSource.hasBeenPromoted()) continue;
+				entry.fullDataSource = incompleteSource.tryPromotingToCompleteDataSource();
+			}
+			
+			if (!(entry.fullDataSource instanceof CompleteFullDataSource))
+				LodUtil.assertNotReach("Invalid full data source");
+				
+			it.remove();
+			CompleteFullDataSource completeSource = (CompleteFullDataSource) entry.fullDataSource;
+			
+			for (FullDataSourceRequestMessage msg : entry.requestMessages)
+			{
+				RemotePlayer remotePlayer = playersByConnection.get(msg.getChannelContext());
+				if (remotePlayer == null) continue;
+				DhServerLevel level = this.getLevel(remotePlayer.serverPlayer.getLevel());
+				msg.sendResponse(new FullDataSourceResponseMessage(completeSource, level));
+			}
 		}
-		this.worldGenLoopingQueue.add(firstPlayer);
-		
-		com.seibel.distanthorizons.coreapi.util.math.Vec3d position = firstPlayer.getPosition();
-		level.doWorldGen(new DhBlockPos2D((int) position.x, (int) position.z));
-	}); }
+	}
+
+	public void doWorldGen() {
+		this.levels.values().forEach(level -> {
+			// TODO Deal with dimensions and dimension switches
+			
+			IServerPlayerWrapper firstPlayer = this.worldGenLoopingQueue.poll();
+			if (firstPlayer == null) {
+				level.doWorldGen();
+				return;
+			}
+			this.worldGenLoopingQueue.add(firstPlayer);
+			
+			com.seibel.distanthorizons.coreapi.util.math.Vec3d position = firstPlayer.getPosition();
+			level.doWorldGen(new DhBlockPos2D((int) position.x, (int) position.z));
+		});
+	}
 
 	@Override
 	public CompletableFuture<Void> saveAndFlush()
@@ -206,4 +243,11 @@ public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 		LOGGER.info("Closed DhWorld of type "+this.environment);
 	}
 
+	private static class IncompleteDataSourceEntry
+	{
+		@CheckForNull
+		public IFullDataSource fullDataSource;
+		public Set<FullDataSourceRequestMessage> requestMessages = ConcurrentHashMap.newKeySet();
+	}
+	
 }

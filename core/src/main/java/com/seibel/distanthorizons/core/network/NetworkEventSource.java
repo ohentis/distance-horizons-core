@@ -5,38 +5,32 @@ import com.google.common.collect.Table;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.network.protocol.FutureTrackableNetworkMessage;
 import com.seibel.distanthorizons.core.network.messages.AckMessage;
-import com.seibel.distanthorizons.core.network.protocol.INetworkMessage;
-import io.netty.channel.Channel;
+import com.seibel.distanthorizons.core.network.protocol.NetworkMessage;
 import io.netty.channel.ChannelHandlerContext;
 import org.apache.logging.log4j.Logger;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 public abstract class NetworkEventSource
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
-	protected final Map<Class<? extends INetworkMessage>, Set<BiConsumer<INetworkMessage, ChannelHandlerContext>>> handlers = new HashMap<>();
+	protected final Map<Class<? extends NetworkMessage>, Set<Consumer<NetworkMessage>>> handlers = new HashMap<>();
 	private final Table<ChannelHandlerContext, Integer, CompletableFuture<FutureTrackableNetworkMessage>> pendingFutures = HashBasedTable.create();
 	
-	protected boolean hasHandler(Class<? extends INetworkMessage> handlerClass)
+	protected final void handleMessage(NetworkMessage message, ChannelHandlerContext channelContext)
 	{
-		return this.handlers.containsKey(handlerClass);
-	}
-	
-	protected void handleMessage(INetworkMessage message, ChannelHandlerContext channelContext)
-	{
+		message.setChannelContext(channelContext);
 		boolean handled = false;
 		
-		Set<BiConsumer<INetworkMessage, ChannelHandlerContext>> handlerList = this.handlers.get(message.getClass());
+		Set<Consumer<NetworkMessage>> handlerList = this.handlers.get(message.getClass());
 		if (handlerList != null)
 		{
-			for (BiConsumer<INetworkMessage, ChannelHandlerContext> handler : handlerList)
+			for (Consumer<NetworkMessage> handler : handlerList)
 			{
 				handled = true;
-				handler.accept(message, channelContext);
+				handler.accept(message);
 			}
 		}
 		
@@ -57,27 +51,10 @@ public abstract class NetworkEventSource
 		}
 	}
 	
-	public <T extends INetworkMessage> void registerHandler(Class<T> handlerClass, BiConsumer<T, ChannelHandlerContext> handlerImplementation)
+	public <T extends NetworkMessage> void registerHandler(Class<T> handlerClass, Consumer<T> handlerImplementation)
 	{
 		this.handlers.computeIfAbsent(handlerClass, missingHandlerClass -> new HashSet<>())
-				.add((BiConsumer<INetworkMessage, ChannelHandlerContext>) handlerImplementation);
-	}
-	
-	public <T extends INetworkMessage> void registerAckHandler(Class<T> clazz, Consumer<ChannelHandlerContext> handler)
-	{
-		this.registerHandler(AckMessage.class, (ackMessage, channelContext) ->
-		{
-			if (ackMessage.messageType == clazz)
-			{
-				handler.accept(channelContext);
-			}
-		});
-	}
-	
-	protected <T extends INetworkMessage> void removeHandler(Class<T> handlerClass, BiConsumer<T, ChannelHandlerContext> handlerImplementation)
-	{
-		this.handlers.computeIfAbsent(handlerClass, missingHandlerClass -> new HashSet<>())
-				.remove(handlerImplementation);
+				.add((Consumer<NetworkMessage>) handlerImplementation);
 	}
 	
 	protected <TResponse extends FutureTrackableNetworkMessage> CompletableFuture<TResponse> sendRequest(ChannelHandlerContext ctx, FutureTrackableNetworkMessage msg)
@@ -93,13 +70,13 @@ public abstract class NetworkEventSource
 		return responseFuture;
 	}
 	
-	protected void completeAllFuturesExceptionally(ChannelHandlerContext ctx, Throwable cause) {
+	protected final void completeAllFuturesExceptionally(ChannelHandlerContext ctx, Throwable cause) {
 		for (CompletableFuture<FutureTrackableNetworkMessage> futureData : pendingFutures.row(ctx).values())
 			futureData.completeExceptionally(cause);
 		pendingFutures.row(ctx).clear();
 	}
 	
-	protected void completeAllFuturesExceptionally(Throwable cause) {
+	protected final void completeAllFuturesExceptionally(Throwable cause) {
 		for (ChannelHandlerContext ctx : pendingFutures.rowKeySet())
 			this.completeAllFuturesExceptionally(ctx, cause);
 	}

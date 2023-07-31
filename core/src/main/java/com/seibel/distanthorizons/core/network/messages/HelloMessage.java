@@ -1,10 +1,10 @@
 package com.seibel.distanthorizons.core.network.messages;
 
-import com.seibel.distanthorizons.core.network.protocol.INetworkMessage;
+import com.seibel.distanthorizons.core.network.protocol.NetworkMessage;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import io.netty.buffer.ByteBuf;
 
-public class HelloMessage implements INetworkMessage 
+public class HelloMessage extends NetworkMessage
 {
     public int version = ModInfo.PROTOCOL_VERSION;
 	

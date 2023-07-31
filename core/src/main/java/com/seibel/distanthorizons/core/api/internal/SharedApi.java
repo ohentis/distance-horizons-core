@@ -12,6 +12,7 @@ import com.seibel.distanthorizons.core.world.*;
 public class SharedApi
 {
     private static AbstractDhWorld currentWorld;
+	private static int lastWorldGenTickDelta = 0;
 
 	
 	
@@ -46,6 +47,16 @@ public class SharedApi
 			ColumnRenderBufferBuilder.shutdownExecutorService();
 			WorldGenerationQueue.shutdownWorldGenThreadPool();
 			ChunkToLodBuilder.shutdownExecutorService();
+		}
+	}
+	
+	public static void worldGenTick(Runnable worldGenRunnable)
+	{
+		lastWorldGenTickDelta--;
+		if (lastWorldGenTickDelta <= 0)
+		{
+			worldGenRunnable.run();
+			lastWorldGenTickDelta = 20;
 		}
 	}
 	

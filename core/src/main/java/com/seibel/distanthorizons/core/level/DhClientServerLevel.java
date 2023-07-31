@@ -72,26 +72,26 @@ public class DhClientServerLevel extends DhLevel implements IDhClientLevel, IDhS
 	{
 		serverside.worldGeneratorEnabledConfig.pollNewValue();
 		boolean shouldDoWorldGen = serverside.worldGeneratorEnabledConfig.get() && clientside.isRendering();
-		boolean isWorldGenRunning = serverside.isWorldGenRunning();
+		boolean isWorldGenRunning = serverside.worldGenModule.isWorldGenRunning();
 		if (shouldDoWorldGen && !isWorldGenRunning)
 		{
 			// start world gen
-			serverside.startWorldGen();
+			serverside.worldGenModule.startWorldGen(serverside.dataFileHandler, new ServerLevelModule.WorldGenState(this));
 		}
 		else if (!shouldDoWorldGen && isWorldGenRunning)
 		{
 			// stop world gen
-			serverside.stopWorldGen();
+			serverside.worldGenModule.stopWorldGen(serverside.dataFileHandler);
 		}
 
-		if (serverside.isWorldGenRunning())
+		if (serverside.worldGenModule.isWorldGenRunning())
 		{
 			ClientLevelModule.ClientRenderState renderState = clientside.ClientRenderStateRef.get();
 			if (renderState != null && renderState.quadtree != null)
 			{
 				serverside.dataFileHandler.removeGenRequestIf(p -> !renderState.quadtree.isSectionPosInBounds(p));
 			}
-			serverside.worldGenTick(new DhBlockPos2D(MC_CLIENT.getPlayerBlockPos()));
+			serverside.worldGenModule.worldGenTick(new DhBlockPos2D(MC_CLIENT.getPlayerBlockPos()));
 		}
 	}
 

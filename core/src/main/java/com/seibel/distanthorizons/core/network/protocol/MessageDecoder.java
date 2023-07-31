@@ -11,7 +11,7 @@ public class MessageDecoder extends ByteToMessageDecoder
     @Override
     protected void decode(ChannelHandlerContext channelContext, ByteBuf inputByteBuf, List<Object> outputDecodedObjectList) 
 	{
-        INetworkMessage message = MessageRegistry.INSTANCE.createMessage(inputByteBuf.readShort());
+        NetworkMessage message = MessageRegistry.INSTANCE.createMessage(inputByteBuf.readShort());
         outputDecodedObjectList.add(INetworkObject.decode(message, inputByteBuf));
     }
 	

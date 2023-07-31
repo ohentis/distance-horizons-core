@@ -44,8 +44,9 @@ public class NetworkServer extends NetworkEventSource implements AutoCloseable
 	
 	private void registerHandlers()
 	{
-		this.registerHandler(HelloMessage.class, (helloMessage, channelContext) -> 
+		this.registerHandler(HelloMessage.class, helloMessage ->
 		{
+			ChannelHandlerContext channelContext = helloMessage.getChannelContext();
 			LOGGER.info("Client connected: "+channelContext.channel().remoteAddress());
 
 			if (helloMessage.version != ModInfo.PROTOCOL_VERSION)
@@ -63,13 +64,15 @@ public class NetworkServer extends NetworkEventSource implements AutoCloseable
 				return;
 			}
 
-			channelContext.writeAndFlush(new AckMessage(HelloMessage.class));
+			channelContext.writeAndFlush(new HelloMessage());
 		});
 		
-		this.registerHandler(CloseMessage.class, (closeMessage, channelContext) -> 
+		this.registerHandler(CloseMessage.class, closeMessage ->
 		{
-			LOGGER.info("Client disconnected: "+channelContext.channel().remoteAddress());
-			this.completeAllFuturesExceptionally(channelContext, channelContext.channel().closeFuture().cause());
+			Channel channel = closeMessage.getChannelContext().channel();
+			LOGGER.info("Client disconnected: "+channel.remoteAddress());
+			
+			this.completeAllFuturesExceptionally(closeMessage.getChannelContext(), channel.closeFuture().cause());
 		});
 	}
 	

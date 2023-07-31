@@ -271,6 +271,7 @@ public class ClientApi
 		if (clientWorld != null)
 		{
 			clientWorld.clientTick();
+			SharedApi.worldGenTick(clientWorld::doWorldGen);
 		}
 		profiler.pop();
 	}
