@@ -6,7 +6,7 @@ import io.netty.buffer.ByteBuf;
 public abstract class FutureTrackableNetworkMessage extends NetworkMessage
 {
 	private static int lastId = 0;
-	public int futureId = lastId++;
+	public long futureId = lastId++;
 	
 	public void sendResponse(FutureTrackableNetworkMessage responseMessage)
 	{
@@ -23,7 +23,7 @@ public abstract class FutureTrackableNetworkMessage extends NetworkMessage
 	{
 		try
 		{
-			out.writeInt(futureId);
+			out.writeInt((int)futureId);
 			this.encode0(out);
 		}
 		catch (Exception e)

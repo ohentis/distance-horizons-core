@@ -71,6 +71,11 @@ public class RemotePlayerConnectionHandler
 		return playersByConnection.get(msg.getChannelContext());
 	}
 	
+	public RemotePlayer getPlayer(IServerPlayerWrapper serverPlayer)
+	{
+		return playersByUUID.get(serverPlayer.getUUID());
+	}
+	
 	public void mcPlayerJoined(IServerPlayerWrapper serverPlayer)
 	{
 		this.playersByUUID.put(serverPlayer.getUUID(), new RemotePlayer(serverPlayer));

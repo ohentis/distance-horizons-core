@@ -47,9 +47,9 @@ public class NetworkClient extends NetworkEventSource implements AutoCloseable
 	public boolean isInitialState() { return this.connectionState == EConnectionState.INITIAL; }
 	/** Indicates whether the client is closed(-ing) and should not be used. */
 	public boolean isClosed() { return closedStates.contains(this.connectionState); }
-	private boolean isReady;
+	private boolean ready;
 	/** Indicates whether the connection is established and first message is sent. */
-	public boolean isReady() { return isReady; }
+	public boolean isReady() { return ready; }
 	
     private final EventLoopGroup workerGroup = new NioEventLoopGroup();
     private final Bootstrap clientBootstrap = new Bootstrap()
@@ -111,13 +111,13 @@ public class NetworkClient extends NetworkEventSource implements AutoCloseable
 			}
 			
 			channel.writeAndFlush(new HelloMessage());
-			isReady = true;
+			ready = true;
         });
 		
 		this.channel = connectFuture.channel();
 		this.channel.closeFuture().addListener((ChannelFuture channelFuture) ->
 		{
-			isReady = false;
+			ready = false;
 			this.completeAllFuturesExceptionally(channelFuture.cause() != null
 					? channelFuture.cause()
 					: new ChannelException("Channel is closed."));

@@ -48,6 +48,8 @@ public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 	{
 		this.networkServer.registerHandler(RemotePlayerConfigMessage.class, remotePlayerConfigMessage ->
 		{
+			this.remotePlayerConnectionHandler.getConnectedPlayer(remotePlayerConfigMessage).payload = remotePlayerConfigMessage.payload;
+			
 			remotePlayerConfigMessage.payload.fullDataRequestRateLimit = Math.min(rateLimitConfig.get(), remotePlayerConfigMessage.payload.fullDataRequestRateLimit);
 			remotePlayerConfigMessage.sendResponse(remotePlayerConfigMessage);
 		});
@@ -67,6 +69,9 @@ public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 	{
 		this.getLevel(origin).removePlayer(player);
 		this.getLevel(dest).addPlayer(player);
+		
+		RemotePlayer remotePlayer = this.remotePlayerConnectionHandler.getPlayer(player);
+		remotePlayer.channelContext.writeAndFlush(new RemotePlayerConfigMessage(remotePlayer.payload));
 	}
 
 	@Override

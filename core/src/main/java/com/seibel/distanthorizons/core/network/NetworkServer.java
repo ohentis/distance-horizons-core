@@ -28,7 +28,6 @@ public class NetworkServer extends NetworkEventSource implements AutoCloseable
 	
 	private final EventLoopGroup bossGroup = new NioEventLoopGroup(1);
 	private final EventLoopGroup workerGroup = new NioEventLoopGroup();
-	private Channel channel;
 	private boolean isClosed = false;
 	
 	
@@ -95,8 +94,8 @@ public class NetworkServer extends NetworkEventSource implements AutoCloseable
 			LOGGER.info("Server is started on port "+this.port);
 		});
 		
-		this.channel = bindFuture.channel();
-		this.channel.closeFuture().addListener(future -> this.close());
+		Channel channel = bindFuture.channel();
+		channel.closeFuture().addListener(future -> this.close());
 	}
 	
 	public void disconnectClient(ChannelHandlerContext ctx, String reason)

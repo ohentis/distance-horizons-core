@@ -14,6 +14,7 @@ import com.seibel.distanthorizons.core.multiplayer.RemotePlayerConnectionHandler
 import com.seibel.distanthorizons.core.network.ChildNetworkEventSource;
 import com.seibel.distanthorizons.core.network.NetworkServer;
 import com.seibel.distanthorizons.core.network.exceptions.RateLimitedException;
+import com.seibel.distanthorizons.core.network.messages.CancelMessage;
 import com.seibel.distanthorizons.core.network.messages.FullDataSourceRequestMessage;
 import com.seibel.distanthorizons.core.network.messages.FullDataSourceResponseMessage;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
@@ -44,6 +45,7 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 	
 	private final ConcurrentLinkedQueue<IServerPlayerWrapper> worldGenLoopingQueue = new ConcurrentLinkedQueue<>();
 	private final ConcurrentMap<DhSectionPos, IncompleteDataSourceEntry> incompleteDataSources = new ConcurrentHashMap<>();
+	private final ConcurrentMap<Long, FullDataSourceRequestMessage> fullDataRequests = new ConcurrentHashMap<>();
 	private final AppliedConfigState<Integer> rateLimitConfig = new AppliedConfigState<>(Config.Client.Advanced.Multiplayer.serverNetworkingRateLimit);
 	
 	
@@ -91,11 +93,19 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 				// If this fails, current entry is being drained and need create another one
 				if (entry.requestCollectionSemaphore.tryAcquire())
 				{
+					fullDataRequests.put(msg.futureId, msg);
 					entry.requestMessages.add(msg);
 					entry.requestCollectionSemaphore.release();
 					break;
 				}
 			}
+		});
+		
+		this.eventSource.registerHandler(CancelMessage.class, msg ->
+		{
+			this.fullDataRequests.remove(msg.futureId);
+			RemotePlayer remotePlayer = remotePlayerConnectionHandler.getConnectedPlayer(msg);
+			remotePlayer.pendingFullDataRequests.decrementAndGet();
 		});
 	}
 	
@@ -142,8 +152,12 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 			{
 				RemotePlayer remotePlayer = remotePlayerConnectionHandler.getConnectedPlayer(msg);
 				if (remotePlayer == null) continue;
-				remotePlayer.pendingFullDataRequests.decrementAndGet();
 				
+				// Check if cancelled
+				if (this.fullDataRequests.remove(msg.futureId) == null)
+					continue;
+				
+				remotePlayer.pendingFullDataRequests.decrementAndGet();
 				msg.sendResponse(new FullDataSourceResponseMessage(completeSource, this));
 			}
 		}

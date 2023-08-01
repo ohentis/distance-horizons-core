@@ -1,6 +1,5 @@
 package com.seibel.distanthorizons.core.generation;
 
-import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.CompleteFullDataSource;
 import com.seibel.distanthorizons.core.generation.tasks.IWorldGenTaskTracker;
@@ -8,12 +7,12 @@ import com.seibel.distanthorizons.core.generation.tasks.WorldGenResult;
 import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
+import com.seibel.distanthorizons.core.multiplayer.ClientNetworkState;
 import com.seibel.distanthorizons.core.network.ChildNetworkEventSource;
 import com.seibel.distanthorizons.core.network.NetworkClient;
 import com.seibel.distanthorizons.core.network.exceptions.RateLimitedException;
 import com.seibel.distanthorizons.core.network.messages.FullDataSourceRequestMessage;
 import com.seibel.distanthorizons.core.network.messages.FullDataSourceResponseMessage;
-import com.seibel.distanthorizons.core.network.messages.RemotePlayerConfigMessage;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.pos.DhLodPos;
@@ -25,6 +24,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -36,27 +36,25 @@ public class WorldRemoteGenerationQueue implements IWorldGenerationQueue
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
-	private final ChildNetworkEventSource<NetworkClient> eventSource;
+	private final ClientNetworkState networkState;
 	private final IDhClientLevel level;
 	
 	private final ConcurrentMap<DhSectionPos, WorldGenQueueEntry> waitingTasks = new ConcurrentHashMap<>();
 	private final Semaphore pendingTasksSemaphore = new Semaphore(Short.MAX_VALUE);
 	private int pendingTasks() { return Short.MAX_VALUE - pendingTasksSemaphore.availablePermits(); }
-	private int maxConcurrentRequests = 0;
+	private final Set<CompletableFuture<FullDataSourceResponseMessage>> pendingRequests = ConcurrentHashMap.newKeySet();
+	
+	private volatile CompletableFuture<Void> generatorClosingFuture = null;
 	
 	private final F3Screen.NestedMessage f3Message = new F3Screen.NestedMessage(this::f3Log);
 	private final AtomicInteger finishedRequests = new AtomicInteger();
 	private final AtomicInteger totalRequests = new AtomicInteger();
 	private final AtomicInteger failedRequests = new AtomicInteger();
 	
-	public WorldRemoteGenerationQueue(NetworkClient networkClient, IDhClientLevel level)
+	public WorldRemoteGenerationQueue(ClientNetworkState networkState, IDhClientLevel level)
 	{
-		this.eventSource = new ChildNetworkEventSource<>(networkClient);
+		this.networkState = networkState;
 		this.level = level;
-		
-		eventSource.registerHandler(RemotePlayerConfigMessage.class, msg -> {
-			maxConcurrentRequests = Math.min(msg.payload.fullDataRequestRateLimit, Config.Client.Advanced.Multiplayer.serverNetworkingRateLimit.get());
-		});
 	}
 	
 	@Override public byte largestDataDetail()
@@ -78,15 +76,18 @@ public class WorldRemoteGenerationQueue implements IWorldGenerationQueue
 	
 	@Override public void runCurrentGenTasksUntilBusy(DhBlockPos2D targetPos)
 	{
-		while (eventSource.parent.isReady() && pendingTasks() < maxConcurrentRequests && !waitingTasks.isEmpty())
+		while (generatorClosingFuture == null
+				&& networkState.eventSource.parent.isReady()
+				&& !waitingTasks.isEmpty()
+				&& pendingTasks() < this.networkState.config.fullDataRequestRateLimit
+				&& pendingTasksSemaphore.tryAcquire())
+		{
 			sendNewRequest(targetPos);
+		}
 	}
 	
 	private void sendNewRequest(DhBlockPos2D targetPos)
 	{
-		if (!pendingTasksSemaphore.tryAcquire())
-			return;
-		
 		DhSectionPos sectionPos = Objects.requireNonNull(waitingTasks.keySet().stream().reduce(null, (a, b)
 				-> a != null
 				&& a.getCenter().getCenterBlockPos().distSquared(targetPos)
@@ -94,9 +95,11 @@ public class WorldRemoteGenerationQueue implements IWorldGenerationQueue
 				? a : b));
 		WorldGenQueueEntry entry = waitingTasks.remove(sectionPos);
 		
-		eventSource.parent.<FullDataSourceResponseMessage>sendRequest(new FullDataSourceRequestMessage(sectionPos))
-				.handle((response, throwable) ->
+		CompletableFuture<FullDataSourceResponseMessage> request = this.networkState.eventSource.parent.sendRequest(new FullDataSourceRequestMessage(sectionPos));
+		pendingRequests.add(request);
+		request.handle((response, throwable) ->
 				{
+					pendingRequests.remove(request);
 					pendingTasksSemaphore.release();
 					finishedRequests.incrementAndGet();
 					
@@ -154,26 +157,29 @@ public class WorldRemoteGenerationQueue implements IWorldGenerationQueue
 		ArrayList<String> lines = new ArrayList<>();
 		lines.add("World Remote Generation Queue ["+level.getClientLevelWrapper().getDimensionType().getDimensionName()+"]");
 		lines.add("  Requests: "+this.finishedRequests+" / "+this.totalRequests +" (failed: "+ this.failedRequests+")");
-		lines.add("  Pending: "+this.pendingTasks()+" / "+this.maxConcurrentRequests);
+		lines.add("  Pending: "+this.pendingTasks()+" / "+this.networkState.config.fullDataRequestRateLimit);
 		return lines.toArray(new String[0]);
 	}
 	
 	@Override public CompletableFuture<Void> startClosing(boolean cancelCurrentGeneration, boolean alsoInterruptRunning)
 	{
-		pendingTasksSemaphore.acquireUninterruptibly(Short.MAX_VALUE);
-		
-		if (cancelCurrentGeneration)
-		{
-			for (WorldGenQueueEntry entry : this.waitingTasks.values())
-				entry.future.cancel(alsoInterruptRunning);
-		}
-		
-		return CompletableFuture.completedFuture(null);
+		return this.generatorClosingFuture = CompletableFuture.runAsync(() -> {
+			while (!pendingTasksSemaphore.tryAcquire(Short.MAX_VALUE))
+			{
+				for (CompletableFuture<FullDataSourceResponseMessage> request : pendingRequests)
+					request.cancel(false);
+			}
+			
+			if (cancelCurrentGeneration)
+			{
+				for (WorldGenQueueEntry entry : this.waitingTasks.values())
+					entry.future.cancel(alsoInterruptRunning);
+			}
+		});
 	}
 	
 	@Override public void close()
 	{
-		eventSource.close();
 		f3Message.close();
 	}
 	
