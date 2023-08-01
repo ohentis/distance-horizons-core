@@ -305,12 +305,16 @@
   "distanthorizons.config.client.advanced.multiplayer.enableMultiverseNetworking.@tooltip":
     "If true Distant Horizons will attempt to communicate with the connected \nserver in order to improve multiverse support.",
   "distanthorizons.config.client.advanced.multiplayer.enableServerNetworking":
-  "§4Unimplemented, Dev Use Only§r - Server Support",
+  "§4Partially implemented§r - Server Support",
   "distanthorizons.config.client.advanced.multiplayer.enableServerNetworking.@tooltip":
-  "§6Attention:§r this is only for developers and hasn't been implemented. \n\nIf true Distant Horizons will attempt to communicate with the connected \nserver in order to load LODs outside your vanilla render distance. \n\nNote: This requires DH to be installed on the server in order to function.",
-  
-  
-  
+  "§6Attention:§r this feature is not fully implemented. \n\nIf true Distant Horizons will attempt to communicate with the connected \nserver in order to load LODs outside your vanilla render distance. \n\nNote: This requires DH to be installed on the server in order to function.",
+  "distanthorizons.config.client.advanced.multiplayer.serverNetworkingRateLimit":
+  "Server Support - Request Rate Limit",
+  "distanthorizons.config.client.advanced.multiplayer.serverNetworkingRateLimit.@tooltip":
+  "Limits the amount of sent/processed LOD requests concurrently. \n\nNote: Server can set its own rate limit.",
+
+
+
   "distanthorizons.config.client.advanced.multiThreading":
     "Threading",
     

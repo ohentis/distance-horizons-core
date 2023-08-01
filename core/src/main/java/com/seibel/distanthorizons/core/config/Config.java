@@ -747,12 +747,23 @@ public class Config
 				public static ConfigEntry<Boolean> enableServerNetworking = new ConfigEntry.Builder<Boolean>()
 						.set(false)
 						.comment(""
-								+ "Attention: this is only for developers and hasn't been implemented.\n"
+								+ "Attention: \n"
+								+ "  1. This feature is not fully implemented. \n"
+								+ "  2. If you really want to use it, enable it only on trusted server/with trusted players. \n"
 								+ "\n"
 								+ "If true Distant Horizons will attempt to communicate with the connected \n"
 								+ "server in order to load LODs outside your vanilla render distance. \n"
 								+ "\n"
 								+ "Note: This requires DH to be installed on the server in order to function. \n"
+								+ "")
+						.build();
+				
+				public static ConfigEntry<Integer> serverNetworkingRateLimit = new ConfigEntry.Builder<Integer>()
+						.setMinDefaultMax(1, 20, 100)
+						.comment(""
+								+ "Limits the amount of sent/processed LOD requests concurrently. \n"
+								+ "\n"
+								+ "Note: Server can set its own rate limit. \n"
 								+ "")
 						.build();
 				

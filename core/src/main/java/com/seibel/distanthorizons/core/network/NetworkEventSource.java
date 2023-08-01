@@ -3,13 +3,16 @@ package com.seibel.distanthorizons.core.network;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.network.messages.ExceptionMessage;
 import com.seibel.distanthorizons.core.network.protocol.FutureTrackableNetworkMessage;
-import com.seibel.distanthorizons.core.network.messages.AckMessage;
 import com.seibel.distanthorizons.core.network.protocol.NetworkMessage;
 import io.netty.channel.ChannelHandlerContext;
 import org.apache.logging.log4j.Logger;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
@@ -19,9 +22,14 @@ public abstract class NetworkEventSource
 	protected final Map<Class<? extends NetworkMessage>, Set<Consumer<NetworkMessage>>> handlers = new HashMap<>();
 	private final Table<ChannelHandlerContext, Integer, CompletableFuture<FutureTrackableNetworkMessage>> pendingFutures = HashBasedTable.create();
 	
-	protected final void handleMessage(NetworkMessage message, ChannelHandlerContext channelContext)
+	protected boolean hasHandler(Class<? extends NetworkMessage> handlerClass)
 	{
-		message.setChannelContext(channelContext);
+		return this.handlers.containsKey(handlerClass);
+	}
+	
+	
+	protected void handleMessage(NetworkMessage message)
+	{
 		boolean handled = false;
 		
 		Set<Consumer<NetworkMessage>> handlerList = this.handlers.get(message.getClass());
@@ -37,11 +45,15 @@ public abstract class NetworkEventSource
 		if (message instanceof FutureTrackableNetworkMessage)
 		{
 			FutureTrackableNetworkMessage trackableMessage = (FutureTrackableNetworkMessage)message;
-			CompletableFuture<FutureTrackableNetworkMessage> future = pendingFutures.remove(channelContext, trackableMessage.futureId);
+			CompletableFuture<FutureTrackableNetworkMessage> future = pendingFutures.remove(message.getChannelContext(), trackableMessage.futureId);
 			if (future != null)
 			{
 				handled = true;
-				future.complete(trackableMessage);
+				
+				if (message instanceof ExceptionMessage)
+					future.completeExceptionally(((ExceptionMessage) message).exception);
+				else
+					future.complete(trackableMessage);
 			}
 		}
 		
@@ -56,6 +68,13 @@ public abstract class NetworkEventSource
 		this.handlers.computeIfAbsent(handlerClass, missingHandlerClass -> new HashSet<>())
 				.add((Consumer<NetworkMessage>) handlerImplementation);
 	}
+	
+	protected <T extends NetworkMessage> void removeHandler(Class<T> handlerClass, Consumer<T> handlerImplementation)
+	{
+		this.handlers.computeIfAbsent(handlerClass, missingHandlerClass -> new HashSet<>())
+				.remove(handlerImplementation);
+	}
+	
 	
 	protected <TResponse extends FutureTrackableNetworkMessage> CompletableFuture<TResponse> sendRequest(ChannelHandlerContext ctx, FutureTrackableNetworkMessage msg)
 	{

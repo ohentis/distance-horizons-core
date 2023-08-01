@@ -2,6 +2,8 @@ package com.seibel.distanthorizons.core.world;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import com.seibel.distanthorizons.core.config.AppliedConfigState;
+import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.CompleteFullDataSource;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IFullDataSource;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IIncompleteFullDataSource;
@@ -10,8 +12,9 @@ import com.seibel.distanthorizons.core.file.structure.LocalSaveStructure;
 import com.seibel.distanthorizons.core.level.DhServerLevel;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.network.NetworkServer;
+import com.seibel.distanthorizons.core.network.exceptions.RateLimitedException;
 import com.seibel.distanthorizons.core.network.messages.*;
-import com.seibel.distanthorizons.core.network.objects.RemotePlayer;
+import com.seibel.distanthorizons.core.multiplayer.RemotePlayer;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.util.LodUtil;
@@ -37,7 +40,7 @@ public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 	
 	private final ConcurrentLinkedQueue<IServerPlayerWrapper> worldGenLoopingQueue = new ConcurrentLinkedQueue<>();
 	private final ConcurrentMap<DhSectionPos, IncompleteDataSourceEntry> incompleteDataSources = new ConcurrentHashMap<>();
-	
+	private final AppliedConfigState<Integer> rateLimitConfig = new AppliedConfigState<>(Config.Client.Advanced.Multiplayer.serverNetworkingRateLimit);
 
 
 	public DhServerWorld()
@@ -92,7 +95,7 @@ public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 
 		this.networkServer.registerHandler(RemotePlayerConfigMessage.class, remotePlayerConfigMessage ->
 		{
-			// TODO Take notice of and/or constrain received payload
+			remotePlayerConfigMessage.payload.fullDataRequestRateLimit = Math.min(rateLimitConfig.get(), remotePlayerConfigMessage.payload.fullDataRequestRateLimit);
 			remotePlayerConfigMessage.sendResponse(remotePlayerConfigMessage);
 		});
 		
@@ -101,7 +104,15 @@ public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 		{
 			LOGGER.info("FullDataSourceRequestMessage received at pos ({}, {}) with detail level {}", msg.dhSectionPos.sectionX, msg.dhSectionPos.sectionZ, msg.dhSectionPos.sectionDetailLevel);
 			
-			DhServerLevel level = this.getLevel(playersByConnection.get(msg.getChannelContext()).serverPlayer.getLevel());
+			RemotePlayer remotePlayer = playersByConnection.get(msg.getChannelContext());
+			if (remotePlayer.pendingFullDataRequests.incrementAndGet() > rateLimitConfig.get())
+			{
+				remotePlayer.pendingFullDataRequests.decrementAndGet();
+				msg.sendResponse(new RateLimitedException("Max concurrent requests: "+rateLimitConfig.get()));
+				return;
+			}
+			
+			DhServerLevel level = this.getLevel(remotePlayer.serverPlayer.getLevel());
 			GeneratedFullDataFileHandler handler = level.serverside.dataFileHandler;
 			
 			while (true)
@@ -118,7 +129,7 @@ public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 				{
 					entry.requestMessages.add(msg);
 					entry.requestCollectionSemaphore.release();
-					return;
+					break;
 				}
 			}
 		});
@@ -188,6 +199,15 @@ public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 	public void serverTick() {
 		this.levels.values().forEach(DhServerLevel::serverTick);
 		
+		if (rateLimitConfig.pollNewValue())
+		{
+			for (RemotePlayer remotePlayer : playersByConnection.values())
+			{
+				remotePlayer.payload.fullDataRequestRateLimit = rateLimitConfig.get();
+				remotePlayer.channelContext.writeAndFlush(new RemotePlayerConfigMessage(remotePlayer.payload));
+			}
+		}
+		
 		for (Iterator<IncompleteDataSourceEntry> it = incompleteDataSources.values().iterator(); it.hasNext(); )
 		{
 			IncompleteDataSourceEntry entry = it.next();
@@ -211,6 +231,8 @@ public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 			{
 				RemotePlayer remotePlayer = playersByConnection.get(msg.getChannelContext());
 				if (remotePlayer == null) continue;
+				remotePlayer.pendingFullDataRequests.decrementAndGet();
+				
 				DhServerLevel level = this.getLevel(remotePlayer.serverPlayer.getLevel());
 				msg.sendResponse(new FullDataSourceResponseMessage(completeSource, level));
 			}

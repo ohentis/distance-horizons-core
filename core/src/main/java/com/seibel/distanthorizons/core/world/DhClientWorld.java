@@ -4,20 +4,17 @@ import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.file.structure.ClientOnlySaveStructure;
 import com.seibel.distanthorizons.core.level.DhClientLevel;
-import com.seibel.distanthorizons.core.level.DhClientServerLevel;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.network.NetworkClient;
-import com.seibel.distanthorizons.core.network.messages.AckMessage;
-import com.seibel.distanthorizons.core.network.messages.HelloMessage;
-import com.seibel.distanthorizons.core.network.messages.PlayerUUIDMessage;
-import com.seibel.distanthorizons.core.network.messages.RemotePlayerConfigMessage;
-import com.seibel.distanthorizons.core.network.objects.RemotePlayer;
+import com.seibel.distanthorizons.core.network.messages.*;
+import com.seibel.distanthorizons.core.multiplayer.RemotePlayer;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
 import com.seibel.distanthorizons.core.util.objects.EventLoop;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 
+import javax.annotation.CheckForNull;
 import java.io.File;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -30,6 +27,7 @@ public class DhClientWorld extends AbstractDhWorld implements IDhClientWorld
     private final ConcurrentHashMap<IClientLevelWrapper, DhClientLevel> levels;
     public final ClientOnlySaveStructure saveStructure;
 
+	@CheckForNull
     private final NetworkClient networkClient;
 
 	// TODO why does this executor have 2 threads?
@@ -64,15 +62,16 @@ public class DhClientWorld extends AbstractDhWorld implements IDhClientWorld
 	}
 
     private void registerNetworkHandlers() {
+		assert this.networkClient != null;
 		this.networkClient.registerHandler(HelloMessage.class, helloMessage ->
 		{
 			LOGGER.info("Connected to server: "+helloMessage.getChannelContext().channel().remoteAddress());
 			
-			this.networkClient.sendRequest(new PlayerUUIDMessage(MC_CLIENT.getPlayerUUID()))
-					.thenCompose(ack -> this.networkClient.<RemotePlayerConfigMessage>sendRequest(new RemotePlayerConfigMessage(new RemotePlayer.Payload())))
-					.thenAccept(responseConfigMsg -> {
-						// TODO do something with received config
-					})
+			this.networkClient.<AckMessage>sendRequest(new PlayerUUIDMessage(MC_CLIENT.getPlayerUUID()))
+					.thenCompose(ack -> this.networkClient.<RemotePlayerConfigMessage>sendRequest(new RemotePlayerConfigMessage(new RemotePlayer.Payload()
+					{{
+						fullDataRequestRateLimit = Config.Client.Advanced.Multiplayer.serverNetworkingRateLimit.get();
+					}})))
 					.exceptionally(throwable -> {
 						LOGGER.error("Error while fetching server's config", throwable);
 						return null;
@@ -143,7 +142,11 @@ public class DhClientWorld extends AbstractDhWorld implements IDhClientWorld
 
     public void clientTick() { this.eventLoop.tick(); }
 	
-	public void doWorldGen() { this.levels.values().forEach(DhClientLevel::doWorldGen); }
+	public void doWorldGen() {
+		if (networkClient != null && networkClient.isNotConnecting())
+			networkClient.startConnecting();
+		this.levels.values().forEach(DhClientLevel::doWorldGen);
+	}
 
     @Override
     public CompletableFuture<Void> saveAndFlush()

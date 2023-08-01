@@ -1,7 +1,6 @@
 package com.seibel.distanthorizons.core.network;
 
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.network.messages.AckMessage;
 import com.seibel.distanthorizons.core.network.messages.CloseMessage;
 import com.seibel.distanthorizons.core.network.messages.CloseReasonMessage;
 import com.seibel.distanthorizons.core.network.messages.HelloMessage;
@@ -16,6 +15,8 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import org.apache.logging.log4j.Logger;
 
 import java.net.InetSocketAddress;
+import java.util.EnumSet;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -25,18 +26,38 @@ public class NetworkClient extends NetworkEventSource implements AutoCloseable
 	
     private enum EConnectionState
 	{
+		NOT_CONNECTING,
         OPEN,
         RECONNECT,
         RECONNECT_FORCE,
         CLOSE_WAIT,
         CLOSED
     }
+	private static final Set<EConnectionState> workingStates = EnumSet.of(
+			EConnectionState.OPEN,
+			EConnectionState.RECONNECT,
+			EConnectionState.RECONNECT_FORCE
+	);
+	private static final Set<EConnectionState> closedStates = EnumSet.of(
+			EConnectionState.CLOSE_WAIT,
+			EConnectionState.CLOSED
+	);
 	
     private static final int FAILURE_RECONNECT_DELAY_SEC = 5;
     private static final int FAILURE_RECONNECT_ATTEMPTS = 3;
 	
     // TODO move to payload of some sort
     private final InetSocketAddress address;
+	
+	/** Indicates whether the client is initialized and not started connecting yet. */
+	public boolean isNotConnecting() { return this.connectionState == EConnectionState.NOT_CONNECTING; }
+	/** Indicates whether the client is working or in auto-recoverable state. */
+	public boolean isWorking() { return workingStates.contains(this.connectionState); }
+	/** Indicates whether the client is closed(-ing) and should not be used. */
+	public boolean isClosed() { return closedStates.contains(this.connectionState); }
+	private boolean isReady;
+	/** Indicates whether the connection is established and first message is sent. */
+	public boolean isReady() { return isReady; }
 	
     private final EventLoopGroup workerGroup = new NioEventLoopGroup();
     private final Bootstrap clientBootstrap = new Bootstrap()
@@ -45,7 +66,7 @@ public class NetworkClient extends NetworkEventSource implements AutoCloseable
             .option(ChannelOption.SO_KEEPALIVE, true)
             .handler(new NetworkChannelInitializer(new MessageHandler(this::handleMessage)));
 	
-    private EConnectionState connectionState;
+    private EConnectionState connectionState = EConnectionState.NOT_CONNECTING;
     private Channel channel;
     private int reconnectAttempts = FAILURE_RECONNECT_ATTEMPTS;
 	
@@ -54,9 +75,7 @@ public class NetworkClient extends NetworkEventSource implements AutoCloseable
     public NetworkClient(String host, int port)
 	{
         this.address = new InetSocketAddress(host, port);
-		
 		this.registerHandlers();
-		this.connect();
     }
 	
     private void registerHandlers() 
@@ -76,6 +95,12 @@ public class NetworkClient extends NetworkEventSource implements AutoCloseable
 			}
         });
     }
+	
+	public void startConnecting()
+	{
+		if (!isNotConnecting()) return;
+		this.connect();
+	}
 
     private void connect() 
 	{
@@ -94,12 +119,16 @@ public class NetworkClient extends NetworkEventSource implements AutoCloseable
 			}
 			
 			channel.writeAndFlush(new HelloMessage());
+			isReady = true;
         });
 		
 		this.channel = connectFuture.channel();
 		this.channel.closeFuture().addListener((ChannelFuture channelFuture) ->
 		{
-			this.completeAllFuturesExceptionally(channelFuture.cause());
+			isReady = false;
+			this.completeAllFuturesExceptionally(channelFuture.cause() != null
+					? channelFuture.cause()
+					: new ChannelException("Channel is closed."));
 			
 			switch (this.connectionState)
 			{

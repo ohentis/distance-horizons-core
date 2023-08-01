@@ -1,7 +1,7 @@
 package com.seibel.distanthorizons.core.network.protocol;
 
+import com.seibel.distanthorizons.core.network.messages.ExceptionMessage;
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandlerContext;
 
 public abstract class FutureTrackableNetworkMessage extends NetworkMessage
 {
@@ -12,6 +12,11 @@ public abstract class FutureTrackableNetworkMessage extends NetworkMessage
 	{
 		responseMessage.futureId = futureId;
 		getChannelContext().writeAndFlush(responseMessage);
+	}
+	
+	public void sendResponse(Exception e)
+	{
+		sendResponse(new ExceptionMessage(e));
 	}
 	
 	@Override public final void encode(ByteBuf out)

@@ -27,6 +27,7 @@ public class MessageRegistry
 		
 		// Define your messages after this line
 		this.registerMessage(AckMessage.class, AckMessage::new);
+		this.registerMessage(ExceptionMessage.class, ExceptionMessage::new);
 		this.registerMessage(PlayerUUIDMessage.class, PlayerUUIDMessage::new);
 		this.registerMessage(RemotePlayerConfigMessage.class, RemotePlayerConfigMessage::new);
 		this.registerMessage(FullDataSourceRequestMessage.class, FullDataSourceRequestMessage::new);

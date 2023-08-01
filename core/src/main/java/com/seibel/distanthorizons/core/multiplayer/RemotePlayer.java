@@ -1,15 +1,18 @@
-package com.seibel.distanthorizons.core.network.objects;
+package com.seibel.distanthorizons.core.multiplayer;
 
 import com.seibel.distanthorizons.core.network.protocol.INetworkObject;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 public class RemotePlayer 
 {
     public IServerPlayerWrapper serverPlayer;
     public Payload payload;
     public ChannelHandlerContext channelContext;
+    public final AtomicInteger pendingFullDataRequests = new AtomicInteger();
 	
 	
 	
@@ -17,17 +20,23 @@ public class RemotePlayer
 	
     public static class Payload implements INetworkObject
 	{
-        // TODO Replace this example with useful fields, 
-		//  this should include any information the server needs to know about the connected client
         public int renderDistance;
-		
+		public int fullDataRequestRateLimit;
 		
 		
         @Override
-        public void encode(ByteBuf out) { out.writeInt(this.renderDistance); }
+        public void encode(ByteBuf out)
+        {
+            out.writeInt(this.renderDistance);
+            out.writeInt(this.fullDataRequestRateLimit);
+        }
 		
         @Override
-        public void decode(ByteBuf in) { this.renderDistance = in.readInt(); }
+        public void decode(ByteBuf in)
+        {
+            this.renderDistance = in.readInt();
+            this.fullDataRequestRateLimit = in.readInt();
+        }
 		
     }
 	

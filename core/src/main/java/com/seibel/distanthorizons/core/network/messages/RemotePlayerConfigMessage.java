@@ -2,8 +2,7 @@ package com.seibel.distanthorizons.core.network.messages;
 
 import com.seibel.distanthorizons.core.network.protocol.FutureTrackableNetworkMessage;
 import com.seibel.distanthorizons.core.network.protocol.INetworkObject;
-import com.seibel.distanthorizons.core.network.protocol.NetworkMessage;
-import com.seibel.distanthorizons.core.network.objects.RemotePlayer;
+import com.seibel.distanthorizons.core.multiplayer.RemotePlayer;
 import io.netty.buffer.ByteBuf;
 
 public class RemotePlayerConfigMessage extends FutureTrackableNetworkMessage

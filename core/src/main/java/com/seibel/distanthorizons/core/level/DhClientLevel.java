@@ -22,7 +22,9 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapp
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.coreapi.util.math.Mat4f;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.Nullable;
 
+import javax.annotation.CheckForNull;
 import java.awt.*;
 import java.util.concurrent.CompletableFuture;
 
@@ -45,6 +47,7 @@ public class DhClientLevel extends DhLevel implements IDhClientLevel
 	public final AbstractSaveStructure saveStructure;
 	public final RemoteFullDataFileHandler dataFileHandler;
 	
+	@CheckForNull
 	private final NetworkClient networkClient;
 	public final WorldGenModule worldGenModule;
 	// TODO maybe use some other value?
@@ -56,7 +59,7 @@ public class DhClientLevel extends DhLevel implements IDhClientLevel
 	// constructor //
 	//=============//
 	
-	public DhClientLevel(AbstractSaveStructure saveStructure, IClientLevelWrapper clientLevelWrapper, NetworkClient networkClient)
+	public DhClientLevel(AbstractSaveStructure saveStructure, IClientLevelWrapper clientLevelWrapper, @Nullable NetworkClient networkClient)
 	{
 		this.levelWrapper = clientLevelWrapper;
 		this.saveStructure = saveStructure;
@@ -85,7 +88,8 @@ public class DhClientLevel extends DhLevel implements IDhClientLevel
 	public void doWorldGen()
 	{
 		worldGeneratorEnabledConfig.pollNewValue();
-		boolean shouldDoWorldGen = worldGeneratorEnabledConfig.get() && clientside.isRendering();
+		boolean isClientWorking = networkClient != null && networkClient.isWorking();
+		boolean shouldDoWorldGen = worldGeneratorEnabledConfig.get() && isClientWorking && clientside.isRendering();
 		boolean isWorldGenRunning = worldGenModule.isWorldGenRunning();
 		if (shouldDoWorldGen && !isWorldGenRunning)
 		{
