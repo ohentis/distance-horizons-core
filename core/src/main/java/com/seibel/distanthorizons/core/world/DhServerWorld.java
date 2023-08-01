@@ -1,33 +1,22 @@
 package com.seibel.distanthorizons.core.world;
 
-import com.google.common.collect.BiMap;
-import com.google.common.collect.HashBiMap;
 import com.seibel.distanthorizons.core.config.AppliedConfigState;
 import com.seibel.distanthorizons.core.config.Config;
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.CompleteFullDataSource;
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IFullDataSource;
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IIncompleteFullDataSource;
-import com.seibel.distanthorizons.core.file.fullDatafile.GeneratedFullDataFileHandler;
 import com.seibel.distanthorizons.core.file.structure.LocalSaveStructure;
 import com.seibel.distanthorizons.core.level.DhServerLevel;
 import com.seibel.distanthorizons.core.level.IDhLevel;
-import com.seibel.distanthorizons.core.network.NetworkServer;
-import com.seibel.distanthorizons.core.network.exceptions.RateLimitedException;
-import com.seibel.distanthorizons.core.network.messages.*;
 import com.seibel.distanthorizons.core.multiplayer.RemotePlayer;
-import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
-import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.multiplayer.RemotePlayerConnectionHandler;
+import com.seibel.distanthorizons.core.network.NetworkServer;
+import com.seibel.distanthorizons.core.network.messages.RemotePlayerConfigMessage;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
-import com.seibel.distanthorizons.coreapi.util.math.Vec3d;
-import io.netty.channel.ChannelHandlerContext;
 
-import javax.annotation.CheckForNull;
 import java.io.File;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.HashMap;
+import java.util.concurrent.CompletableFuture;
 
 public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 {
@@ -35,14 +24,11 @@ public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 	public final LocalSaveStructure saveStructure;
 
 	private final NetworkServer networkServer;
-	private final HashMap<UUID, RemotePlayer> playersByUUID;
-	private final BiMap<ChannelHandlerContext, RemotePlayer> playersByConnection;
-	
-	private final ConcurrentLinkedQueue<IServerPlayerWrapper> worldGenLoopingQueue = new ConcurrentLinkedQueue<>();
-	private final ConcurrentMap<DhSectionPos, IncompleteDataSourceEntry> incompleteDataSources = new ConcurrentHashMap<>();
+	private final RemotePlayerConnectionHandler remotePlayerConnectionHandler;
 	private final AppliedConfigState<Integer> rateLimitConfig = new AppliedConfigState<>(Config.Client.Advanced.Multiplayer.serverNetworkingRateLimit);
-
-
+	
+	
+	
 	public DhServerWorld()
 	{
 		super(EWorldEnvironment.Server_Only);
@@ -52,103 +38,35 @@ public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 
 		// TODO move to global payload once server specific configs are implemented
 		this.networkServer = new NetworkServer(25049);
-		this.playersByUUID = new HashMap<>();
-		this.playersByConnection = HashBiMap.create();
 		this.registerNetworkHandlers();
+		this.remotePlayerConnectionHandler = new RemotePlayerConnectionHandler(networkServer);
 
 		LOGGER.info("Started "+DhServerWorld.class.getSimpleName()+" of type "+this.environment);
 	}
 
 	private void registerNetworkHandlers()
 	{
-		this.networkServer.registerHandler(CloseMessage.class, closeMessage ->
-		{
-			RemotePlayer dhPlayer = this.playersByConnection.remove(closeMessage.getChannelContext());
-			if (dhPlayer != null)
-			{
-				dhPlayer.channelContext = null;
-			}
-		});
-
-		this.networkServer.registerHandler(PlayerUUIDMessage.class, playerUUIDMessage ->
-		{
-			ChannelHandlerContext channelContext = playerUUIDMessage.getChannelContext();
-			RemotePlayer dhPlayer = this.playersByUUID.get(playerUUIDMessage.playerUUID);
-
-			if (dhPlayer == null)
-			{
-				this.networkServer.disconnectClient(channelContext, "Player is not logged in.");
-				return;
-			}
-
-			if (dhPlayer.channelContext != null)
-			{
-				this.networkServer.disconnectClient(channelContext, "Another connection is already in use.");
-				return;
-			}
-
-			dhPlayer.channelContext = channelContext;
-			this.playersByConnection.put(channelContext, dhPlayer);
-
-			playerUUIDMessage.sendResponse(new AckMessage());
-		});
-
 		this.networkServer.registerHandler(RemotePlayerConfigMessage.class, remotePlayerConfigMessage ->
 		{
 			remotePlayerConfigMessage.payload.fullDataRequestRateLimit = Math.min(rateLimitConfig.get(), remotePlayerConfigMessage.payload.fullDataRequestRateLimit);
 			remotePlayerConfigMessage.sendResponse(remotePlayerConfigMessage);
 		});
-		
-		// This should be at DhServerLevel I guess
-		this.networkServer.registerHandler(FullDataSourceRequestMessage.class, msg ->
-		{
-			LOGGER.info("FullDataSourceRequestMessage received at pos ({}, {}) with detail level {}", msg.dhSectionPos.sectionX, msg.dhSectionPos.sectionZ, msg.dhSectionPos.sectionDetailLevel);
-			
-			RemotePlayer remotePlayer = playersByConnection.get(msg.getChannelContext());
-			if (remotePlayer.pendingFullDataRequests.incrementAndGet() > rateLimitConfig.get())
-			{
-				remotePlayer.pendingFullDataRequests.decrementAndGet();
-				msg.sendResponse(new RateLimitedException("Max concurrent requests: "+rateLimitConfig.get()));
-				return;
-			}
-			
-			DhServerLevel level = this.getLevel(remotePlayer.serverPlayer.getLevel());
-			GeneratedFullDataFileHandler handler = level.serverside.dataFileHandler;
-			
-			while (true)
-			{
-				IncompleteDataSourceEntry entry = incompleteDataSources.computeIfAbsent(msg.dhSectionPos, pos -> {
-					IncompleteDataSourceEntry newEntry = new IncompleteDataSourceEntry();
-					handler.read(msg.dhSectionPos).thenAccept(fullDataSource -> {
-						newEntry.fullDataSource = fullDataSource;
-					});
-					return newEntry;
-				});
-				// If this fails, current entry is being drained and need create another one
-				if (entry.requestCollectionSemaphore.tryAcquire())
-				{
-					entry.requestMessages.add(msg);
-					entry.requestCollectionSemaphore.release();
-					break;
-				}
-			}
-		});
 	}
 
 	public void addPlayer(IServerPlayerWrapper serverPlayer)
 	{
-		this.playersByUUID.put(serverPlayer.getUUID(), new RemotePlayer(serverPlayer));
-		this.worldGenLoopingQueue.add(serverPlayer);
+		this.remotePlayerConnectionHandler.mcPlayerJoined(serverPlayer);
+		this.getLevel(serverPlayer.getLevel()).addPlayer(serverPlayer);
 	}
 	public void removePlayer(IServerPlayerWrapper serverPlayer)
 	{
-		this.worldGenLoopingQueue.remove(serverPlayer);
-		RemotePlayer dhPlayer = this.playersByUUID.remove(serverPlayer.getUUID());
-		ChannelHandlerContext channelContext = this.playersByConnection.inverse().remove(dhPlayer);
-		if (channelContext != null)
-		{
-			this.networkServer.disconnectClient(channelContext, "You are being disconnected.");
-		}
+		this.getLevel(serverPlayer.getLevel()).removePlayer(serverPlayer);
+		this.remotePlayerConnectionHandler.mcPlayerLeft(serverPlayer);
+	}
+	public void changePlayerLevel(IServerPlayerWrapper player, IServerLevelWrapper origin, IServerLevelWrapper dest)
+	{
+		this.getLevel(origin).removePlayer(player);
+		this.getLevel(dest).addPlayer(player);
 	}
 
 	@Override
@@ -163,7 +81,7 @@ public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 		{
 			File levelFile = this.saveStructure.getLevelFolder(wrapper);
 			LodUtil.assertTrue(levelFile != null);
-			return new DhServerLevel(this.saveStructure, serverLevelWrapper);
+			return new DhServerLevel(this.saveStructure, serverLevelWrapper, this.remotePlayerConnectionHandler);
 		});
 	}
 
@@ -201,58 +119,16 @@ public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 		
 		if (rateLimitConfig.pollNewValue())
 		{
-			for (RemotePlayer remotePlayer : playersByConnection.values())
+			for (RemotePlayer remotePlayer : this.remotePlayerConnectionHandler.getConnectedPlayers())
 			{
 				remotePlayer.payload.fullDataRequestRateLimit = rateLimitConfig.get();
 				remotePlayer.channelContext.writeAndFlush(new RemotePlayerConfigMessage(remotePlayer.payload));
 			}
 		}
-		
-		for (Iterator<IncompleteDataSourceEntry> it = incompleteDataSources.values().iterator(); it.hasNext(); )
-		{
-			IncompleteDataSourceEntry entry = it.next();
-			if (entry.fullDataSource == null) continue;
-			
-			if (entry.fullDataSource instanceof IIncompleteFullDataSource)
-			{
-				IIncompleteFullDataSource incompleteSource = (IIncompleteFullDataSource) entry.fullDataSource;
-				if (!incompleteSource.hasBeenPromoted()) continue;
-				entry.fullDataSource = incompleteSource.tryPromotingToCompleteDataSource();
-			}
-			
-			LodUtil.assertTrue(entry.fullDataSource instanceof CompleteFullDataSource, "Invalid full data source");
-			
-			it.remove();
-			// This semaphore is intentionally acquired forever
-			entry.requestCollectionSemaphore.acquireUninterruptibly(Short.MAX_VALUE);
-			
-			CompleteFullDataSource completeSource = (CompleteFullDataSource) entry.fullDataSource;
-			for (FullDataSourceRequestMessage msg : entry.requestMessages)
-			{
-				RemotePlayer remotePlayer = playersByConnection.get(msg.getChannelContext());
-				if (remotePlayer == null) continue;
-				remotePlayer.pendingFullDataRequests.decrementAndGet();
-				
-				DhServerLevel level = this.getLevel(remotePlayer.serverPlayer.getLevel());
-				msg.sendResponse(new FullDataSourceResponseMessage(completeSource, level));
-			}
-		}
 	}
 
 	public void doWorldGen() {
-		this.levels.values().forEach(level -> {
-			// TODO Deal with dimensions and dimension switches
-			
-			IServerPlayerWrapper firstPlayer = this.worldGenLoopingQueue.poll();
-			if (firstPlayer == null) {
-				level.doWorldGen();
-				return;
-			}
-			this.worldGenLoopingQueue.add(firstPlayer);
-			
-			Vec3d position = firstPlayer.getPosition();
-			level.doWorldGen(new DhBlockPos2D((int) position.x, (int) position.z));
-		});
+		this.levels.values().forEach(DhServerLevel::doWorldGen);
 	}
 
 	@Override
@@ -274,14 +150,6 @@ public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 
 		this.levels.clear();
 		LOGGER.info("Closed DhWorld of type "+this.environment);
-	}
-
-	private static class IncompleteDataSourceEntry
-	{
-		@CheckForNull
-		public IFullDataSource fullDataSource;
-		public final Set<FullDataSourceRequestMessage> requestMessages = ConcurrentHashMap.newKeySet();
-		public final Semaphore requestCollectionSemaphore = new Semaphore(Short.MAX_VALUE, true);
 	}
 	
 }

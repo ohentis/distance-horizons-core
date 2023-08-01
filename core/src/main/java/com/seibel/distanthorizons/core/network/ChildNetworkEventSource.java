@@ -14,6 +14,10 @@ public final class ChildNetworkEventSource<TParent extends NetworkEventSource> e
 	{
 		this.parent = parent;
 	}
+	public ChildNetworkEventSource(ChildNetworkEventSource<TParent> child)
+	{
+		this.parent = child.parent;
+	}
 	
 	@Override
 	public <T extends NetworkMessage> void registerHandler(Class<T> handlerClass, Consumer<T> handlerImplementation)

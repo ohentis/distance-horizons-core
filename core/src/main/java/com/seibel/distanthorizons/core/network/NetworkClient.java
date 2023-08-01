@@ -7,7 +7,6 @@ import com.seibel.distanthorizons.core.network.messages.HelloMessage;
 import com.seibel.distanthorizons.core.network.protocol.FutureTrackableNetworkMessage;
 import com.seibel.distanthorizons.core.network.protocol.MessageHandler;
 import com.seibel.distanthorizons.core.network.protocol.NetworkChannelInitializer;
-import com.seibel.distanthorizons.core.network.protocol.NetworkMessage;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -26,18 +25,13 @@ public class NetworkClient extends NetworkEventSource implements AutoCloseable
 	
     private enum EConnectionState
 	{
-		NOT_CONNECTING,
+		INITIAL,
         OPEN,
         RECONNECT,
         RECONNECT_FORCE,
         CLOSE_WAIT,
         CLOSED
     }
-	private static final Set<EConnectionState> workingStates = EnumSet.of(
-			EConnectionState.OPEN,
-			EConnectionState.RECONNECT,
-			EConnectionState.RECONNECT_FORCE
-	);
 	private static final Set<EConnectionState> closedStates = EnumSet.of(
 			EConnectionState.CLOSE_WAIT,
 			EConnectionState.CLOSED
@@ -50,9 +44,7 @@ public class NetworkClient extends NetworkEventSource implements AutoCloseable
     private final InetSocketAddress address;
 	
 	/** Indicates whether the client is initialized and not started connecting yet. */
-	public boolean isNotConnecting() { return this.connectionState == EConnectionState.NOT_CONNECTING; }
-	/** Indicates whether the client is working or in auto-recoverable state. */
-	public boolean isWorking() { return workingStates.contains(this.connectionState); }
+	public boolean isInitialState() { return this.connectionState == EConnectionState.INITIAL; }
 	/** Indicates whether the client is closed(-ing) and should not be used. */
 	public boolean isClosed() { return closedStates.contains(this.connectionState); }
 	private boolean isReady;
@@ -66,7 +58,7 @@ public class NetworkClient extends NetworkEventSource implements AutoCloseable
             .option(ChannelOption.SO_KEEPALIVE, true)
             .handler(new NetworkChannelInitializer(new MessageHandler(this::handleMessage)));
 	
-    private EConnectionState connectionState = EConnectionState.NOT_CONNECTING;
+    private EConnectionState connectionState = EConnectionState.INITIAL;
     private Channel channel;
     private int reconnectAttempts = FAILURE_RECONNECT_ATTEMPTS;
 	
@@ -98,7 +90,7 @@ public class NetworkClient extends NetworkEventSource implements AutoCloseable
 	
 	public void startConnecting()
 	{
-		if (!isNotConnecting()) return;
+		if (!isInitialState()) return;
 		this.connect();
 	}
 

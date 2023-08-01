@@ -171,5 +171,14 @@ public class ServerApi
 			((DhServerWorld) serverWorld).removePlayer(player);
 		}
 	}
+	public void serverPlayerLevelChangeEvent(IServerPlayerWrapper player, IServerLevelWrapper origin, IServerLevelWrapper dest)
+	{
+		IDhServerWorld serverWorld = SharedApi.getIDhServerWorld();
+		if (serverWorld instanceof DhServerWorld) // TODO add support for DhClientServerWorld's (lan worlds) as well
+		{
+			LOGGER.debug("Player changed level: " + player.getUUID());
+			((DhServerWorld) serverWorld).changePlayerLevel(player, origin, dest);
+		}
+	}
 	
 }

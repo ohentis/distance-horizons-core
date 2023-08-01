@@ -24,7 +24,7 @@ import io.netty.channel.ChannelException;
 import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
-import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -84,17 +84,19 @@ public class WorldRemoteGenerationQueue implements IWorldGenerationQueue
 	
 	private void sendNewRequest(DhBlockPos2D targetPos)
 	{
-		DhSectionPos sectionPos = waitingTasks.keySet().stream().reduce(null, (a, b)
+		if (!pendingTasksSemaphore.tryAcquire())
+			return;
+		
+		DhSectionPos sectionPos = Objects.requireNonNull(waitingTasks.keySet().stream().reduce(null, (a, b)
 				-> a != null
 				&& a.getCenter().getCenterBlockPos().distSquared(targetPos)
 				< b.getCenter().getCenterBlockPos().distSquared(targetPos)
-				? a : b);
-		
+				? a : b));
 		WorldGenQueueEntry entry = waitingTasks.remove(sectionPos);
-		pendingTasksSemaphore.acquireUninterruptibly();
 		
 		eventSource.parent.<FullDataSourceResponseMessage>sendRequest(new FullDataSourceRequestMessage(sectionPos))
-				.handle((response, throwable) -> {
+				.handle((response, throwable) ->
+				{
 					pendingTasksSemaphore.release();
 					finishedRequests.incrementAndGet();
 					
@@ -132,7 +134,8 @@ public class WorldRemoteGenerationQueue implements IWorldGenerationQueue
 						finishedRequests.decrementAndGet();
 						waitingTasks.put(sectionPos, entry);
 					}
-					catch (ChannelException e) {
+					catch (ChannelException e)
+					{
 						finishedRequests.decrementAndGet();
 						waitingTasks.put(sectionPos, entry);
 					}

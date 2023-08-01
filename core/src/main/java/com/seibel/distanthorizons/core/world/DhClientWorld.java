@@ -143,9 +143,9 @@ public class DhClientWorld extends AbstractDhWorld implements IDhClientWorld
     public void clientTick() { this.eventLoop.tick(); }
 	
 	public void doWorldGen() {
-		if (networkClient != null && networkClient.isNotConnecting())
-			networkClient.startConnecting();
 		this.levels.values().forEach(DhClientLevel::doWorldGen);
+		if (networkClient != null && networkClient.isInitialState())
+			networkClient.startConnecting();
 	}
 
     @Override

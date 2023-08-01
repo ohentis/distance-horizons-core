@@ -88,8 +88,8 @@ public class DhClientLevel extends DhLevel implements IDhClientLevel
 	public void doWorldGen()
 	{
 		worldGeneratorEnabledConfig.pollNewValue();
-		boolean isClientWorking = networkClient != null && networkClient.isWorking();
-		boolean shouldDoWorldGen = worldGeneratorEnabledConfig.get() && isClientWorking && clientside.isRendering();
+		boolean isClientUsable = networkClient != null && !networkClient.isClosed();
+		boolean shouldDoWorldGen = worldGeneratorEnabledConfig.get() && isClientUsable && clientside.isRendering();
 		boolean isWorldGenRunning = worldGenModule.isWorldGenRunning();
 		if (shouldDoWorldGen && !isWorldGenRunning)
 		{
