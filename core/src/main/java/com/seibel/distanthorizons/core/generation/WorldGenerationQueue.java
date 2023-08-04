@@ -152,6 +152,11 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 		//}
 	}
 	
+	@Override
+	public void cancelGenTasks(Iterable<DhSectionPos> positions)
+	{
+		// TODO Cancel gen tasks properly
+	}
 	
 	//===============//
 	// running tasks //

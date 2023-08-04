@@ -8,6 +8,7 @@ import com.seibel.distanthorizons.core.network.messages.CancelMessage;
 import com.seibel.distanthorizons.core.network.messages.ExceptionMessage;
 import com.seibel.distanthorizons.core.network.protocol.FutureTrackableNetworkMessage;
 import com.seibel.distanthorizons.core.network.protocol.NetworkMessage;
+import io.netty.channel.ChannelException;
 import io.netty.channel.ChannelHandlerContext;
 import org.apache.logging.log4j.Logger;
 
@@ -89,7 +90,8 @@ public abstract class NetworkEventSource
 		
 		CompletableFuture<TResponse> responseFuture = new CompletableFuture<>();
 		responseFuture.handle((response, throwable) -> {
-			pendingFutures.remove(ctx, msg.futureId);
+			if (!(throwable instanceof ChannelException))
+				pendingFutures.remove(ctx, msg.futureId);
 			
 			if (throwable instanceof CancellationException)
 				msg.sendResponse(new CancelMessage());
@@ -126,6 +128,6 @@ public abstract class NetworkEventSource
 	public void close()
 	{
 		this.handlers.clear();
-		completeAllFuturesExceptionally(new Exception(this.getClass().getSimpleName()+" is closed."));
+		completeAllFuturesExceptionally(new ChannelException(this.getClass().getSimpleName()+" is closed."));
 	}
 }

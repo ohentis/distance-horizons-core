@@ -29,6 +29,7 @@ import org.apache.logging.log4j.Logger;
 
 import javax.annotation.CheckForNull;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.*;
 
@@ -43,7 +44,7 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 	
 	private final ConcurrentLinkedQueue<IServerPlayerWrapper> worldGenLoopingQueue = new ConcurrentLinkedQueue<>();
 	private final ConcurrentMap<DhSectionPos, IncompleteDataSourceEntry> incompleteDataSources = new ConcurrentHashMap<>();
-	private final ConcurrentMap<Long, FullDataSourceRequestMessage> fullDataRequests = new ConcurrentHashMap<>();
+	private final ConcurrentMap<Long, IncompleteDataSourceEntry> fullDataRequests = new ConcurrentHashMap<>();
 	private final AppliedConfigState<Integer> rateLimitConfig = new AppliedConfigState<>(Config.Client.Advanced.Multiplayer.serverNetworkingRateLimit);
 	
 	
@@ -91,8 +92,8 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 				// If this fails, current entry is being drained and need create another one
 				if (entry.requestCollectionSemaphore.tryAcquire())
 				{
-					fullDataRequests.put(msg.futureId, msg);
-					entry.requestMessages.add(msg);
+					fullDataRequests.put(msg.futureId, entry);
+					entry.requestMessages.put(msg.futureId, msg);
 					entry.requestCollectionSemaphore.release();
 					break;
 				}
@@ -101,9 +102,20 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 		
 		this.eventSource.registerHandler(CancelMessage.class, msg ->
 		{
-			this.fullDataRequests.remove(msg.futureId);
-			ServerPlayerState serverPlayerState = remotePlayerConnectionHandler.getConnectedPlayer(msg);
-			serverPlayerState.pendingFullDataRequests.decrementAndGet();
+			IncompleteDataSourceEntry entry = this.fullDataRequests.remove(msg.futureId);
+			if (entry == null) return;
+			FullDataSourceRequestMessage requestMessage = entry.requestMessages.remove(msg.futureId);
+			
+			remotePlayerConnectionHandler.getConnectedPlayer(msg).pendingFullDataRequests.decrementAndGet();
+			
+			entry.requestCollectionSemaphore.acquireUninterruptibly(Short.MAX_VALUE);
+			if (entry.requestMessages.isEmpty())
+			{
+				incompleteDataSources.remove(requestMessage.dhSectionPos);
+				serverside.dataFileHandler.removeGenRequestIf(pos -> pos == requestMessage.dhSectionPos);
+			}
+			
+			entry.requestCollectionSemaphore.release(Short.MAX_VALUE);
 		});
 	}
 	
@@ -127,32 +139,32 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 	{
 		chunkToLodBuilder.tick();
 		
-		for (Iterator<IncompleteDataSourceEntry> it = incompleteDataSources.values().iterator(); it.hasNext(); )
+		for (Map.Entry<DhSectionPos, IncompleteDataSourceEntry> mapEntry : incompleteDataSources.entrySet())
 		{
-			IncompleteDataSourceEntry entry = it.next();
-			if (entry.fullDataSource == null) continue;
+			IncompleteDataSourceEntry entry = mapEntry.getValue();
+			
+			if (entry.fullDataSource == null)
+				continue;
 			
 			if (entry.fullDataSource instanceof IIncompleteFullDataSource)
 			{
 				IIncompleteFullDataSource incompleteSource = (IIncompleteFullDataSource) entry.fullDataSource;
-				if (!incompleteSource.hasBeenPromoted()) continue;
+				if (!incompleteSource.hasBeenPromoted())
+					continue;
 				entry.fullDataSource = incompleteSource.tryPromotingToCompleteDataSource();
 			}
 			
 			LodUtil.assertTrue(entry.fullDataSource instanceof CompleteFullDataSource, "Invalid full data source");
+			incompleteDataSources.remove(mapEntry.getKey());
 			
-			it.remove();
 			// This semaphore is intentionally acquired forever
 			entry.requestCollectionSemaphore.acquireUninterruptibly(Short.MAX_VALUE);
 			
 			CompleteFullDataSource completeSource = (CompleteFullDataSource) entry.fullDataSource;
-			for (FullDataSourceRequestMessage msg : entry.requestMessages)
+			for (FullDataSourceRequestMessage msg : entry.requestMessages.values())
 			{
 				ServerPlayerState serverPlayerState = remotePlayerConnectionHandler.getConnectedPlayer(msg);
-				if (serverPlayerState == null) continue;
-				
-				// Check if cancelled
-				if (this.fullDataRequests.remove(msg.futureId) == null)
+				if (serverPlayerState == null)
 					continue;
 				
 				serverPlayerState.pendingFullDataRequests.decrementAndGet();
@@ -242,7 +254,7 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 	{
 		@CheckForNull
 		public IFullDataSource fullDataSource;
-		public final Set<FullDataSourceRequestMessage> requestMessages = ConcurrentHashMap.newKeySet();
+		public final ConcurrentMap<Long, FullDataSourceRequestMessage> requestMessages = new ConcurrentHashMap<>();
 		public final Semaphore requestCollectionSemaphore = new Semaphore(Short.MAX_VALUE, true);
 	}
 }

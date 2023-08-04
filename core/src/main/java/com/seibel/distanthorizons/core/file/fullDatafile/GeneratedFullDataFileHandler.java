@@ -80,12 +80,17 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandler
 	}
 
 	public void removeGenRequestIf(Function<DhSectionPos, Boolean> removeIf) {
+		HashSet<DhSectionPos> removedRequests = new HashSet<>();
+		
 		this.incompleteDataSources.forEach((pos, dataSource) ->
 		{
 			if (removeIf.apply(pos)) {
 				this.incompleteDataSources.remove(pos);
+				removedRequests.add(pos);
 			}
 		});
+		
+		this.worldGenQueueRef.get().cancelGenTasks(removedRequests);
 	}
 	
 	//=================//
@@ -332,6 +337,7 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandler
 		}
 		
 		@Override
+		@Nullable
 		public Consumer<ChunkSizedFullDataAccessor> getChunkDataConsumer()
 		{
 			if (this.loadedTargetFullDataSource == null)
