@@ -163,6 +163,8 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 			CompleteFullDataSource completeSource = (CompleteFullDataSource) entry.fullDataSource;
 			for (FullDataSourceRequestMessage msg : entry.requestMessages.values())
 			{
+				this.fullDataRequests.remove(msg.futureId);
+				
 				ServerPlayerState serverPlayerState = remotePlayerConnectionHandler.getConnectedPlayer(msg);
 				if (serverPlayerState == null)
 					continue;
