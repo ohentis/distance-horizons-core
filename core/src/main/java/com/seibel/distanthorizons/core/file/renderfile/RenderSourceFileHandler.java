@@ -278,11 +278,11 @@ public class RenderSourceFileHandler implements ILodRenderSourceProvider
 				{
 					return metaFile; // someone else loaded it already.
 				}
-					
+				
 				try
 				{
 					metaFile = RenderMetaDataFile.createFromExistingFile(this, fileToLoad);
-					this.topDetailLevel.updateAndGet(v -> Math.max(v, pos.sectionDetailLevel));
+					this.topDetailLevel.updateAndGet(newDetailLevel -> Math.max(newDetailLevel, pos.sectionDetailLevel));
 					this.filesBySectionPos.put(pos, metaFile);
 					return metaFile;
 				}
@@ -317,7 +317,7 @@ public class RenderSourceFileHandler implements ILodRenderSourceProvider
 			return null;
 		}
 		
-		this.topDetailLevel.updateAndGet(v -> Math.max(v, pos.sectionDetailLevel));
+		this.topDetailLevel.updateAndGet(newDetailLevel -> Math.max(newDetailLevel, pos.sectionDetailLevel));
 		// This is a CAS with expected null value.
 		RenderMetaDataFile metaFileCas = this.filesBySectionPos.putIfAbsent(pos, metaFile);
 		return metaFileCas == null ? metaFile : metaFileCas;
@@ -336,7 +336,10 @@ public class RenderSourceFileHandler implements ILodRenderSourceProvider
         RenderMetaDataFile metaFile = this.getLoadOrMakeFile(pos, true);
 
 		// On error, (when it returns null,) return an empty render source
-		if (metaFile == null) return CompletableFuture.completedFuture(ColumnRenderSource.createEmptyRenderSource(pos));
+		if (metaFile == null)
+		{
+			return CompletableFuture.completedFuture(ColumnRenderSource.createEmptyRenderSource(pos));
+		}
 
 		CompletableFuture<ColumnRenderSource> future = metaFile.loadOrGetCachedDataSourceAsync(this.fileHandlerThreadPool, this.level).handle(
 			(renderSource, exception) ->
@@ -348,8 +351,10 @@ public class RenderSourceFileHandler implements ILodRenderSourceProvider
 				
 				return (renderSource != null) ? renderSource : ColumnRenderSource.createEmptyRenderSource(pos);
 			});
-		synchronized (taskTracker) {
-			taskTracker.put(future, TaskType.Read);
+		
+		synchronized (this.taskTracker) 
+		{
+			this.taskTracker.put(future, TaskType.Read);
 		}
 		return future;
     }

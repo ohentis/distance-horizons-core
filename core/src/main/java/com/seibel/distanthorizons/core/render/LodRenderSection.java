@@ -60,18 +60,25 @@ public class LodRenderSection implements IDebugRenderable
 
 	/** a reference is used so the render buffer can be swapped to and from the buffer builder */
 	public final AtomicReference<ColumnRenderBuffer> activeRenderBufferRef = new AtomicReference<>();
-	private volatile boolean doDisposeActiveBuffer = false;
+	private volatile boolean disposeActiveBuffer = false;
 
 	private final QuadTree<LodRenderSection> parentQuadTree;
 	
-    public LodRenderSection(QuadTree<LodRenderSection> parentQuadTree, DhSectionPos pos) {
+	
+	
+	//=============//
+	// constructor //
+	//=============//
+	
+    public LodRenderSection(QuadTree<LodRenderSection> parentQuadTree, DhSectionPos pos)
+    {
 		this.pos = pos;
 		this.parentQuadTree = parentQuadTree;
 
 		DebugRenderer.register(this);
 	}
 
-	public void debugRender(DebugRenderer r)
+	public void debugRender(DebugRenderer debugRenderer)
 	{
 		Color color = Color.red;
 
@@ -86,7 +93,7 @@ public class LodRenderSection implements IDebugRenderable
 			if (canRenderNow() && isRenderingEnabled) color = Color.green;
 		}
 
-		r.renderBox(new DebugRenderer.Box(this.pos, 400, 8f, Objects.hashCode(this), 0.1f, color));
+		debugRenderer.renderBox(new DebugRenderer.Box(this.pos, 400, 8f, Objects.hashCode(this), 0.1f, color));
 	}
 	
 	
@@ -95,32 +102,30 @@ public class LodRenderSection implements IDebugRenderable
 	// rendering //
 	//===========//
 	
-	public void enableRendering() {
+	public void enableRendering() 
+	{
+		// FIXME this is a temporary fix for sections not building the first time,
+		//  this may cause LODs to flash when first loading
+		//  Problem reproduction steps:
+		//  1. connect to a multiplayer server
+		//  2. enter spectator
+		//  3. fly in one direction until section detail levels 7 and 8 appear
+		//  4. empty LODs should appear
+		if (!this.isRenderingEnabled)
+		{
+			// this only needs to be called when first enabling the section
+			this.markBufferDirty();
+		}
+		
 		this.isRenderingEnabled = true;
 	}
-	public void disableRendering() {
-		this.isRenderingEnabled = false;
-	}
+	public void disableRendering() { this.isRenderingEnabled = false; }
+	
+	
 	
 	//=============//
 	// render data //
 	//=============//
-
-	private void startLoadRenderSource() {
-		this.renderSourceLoadFuture = this.renderSourceProvider.readAsync(this.pos);
-		this.renderSourceLoadFuture.whenComplete((renderSource, ex) ->
-		{
-			this.renderSourceLoadFuture = null;
-			this.renderSource = renderSource;
-			this.lastNs = -1;
-			markBufferDirty();
-			if (this.reloadRenderSourceOnceLoaded)
-			{
-				this.reloadRenderSourceOnceLoaded = false;
-				reload(this.renderSourceProvider);
-			}
-		});
-	}
 	
 	/** does nothing if a render source is already loaded or in the process of loading */
 	public void loadRenderSource(ILodRenderSourceProvider renderDataProvider, IDhClientLevel level)
@@ -129,6 +134,7 @@ public class LodRenderSection implements IDebugRenderable
 		this.level = level;
 		if (this.renderSourceProvider == null)
 		{
+			LOGGER.warn("LodRenderSection ["+this.pos+"] called loadRenderSource with a empty source provider");
 			return;
 		}
 		// don't re-load or double load the render source
@@ -136,23 +142,31 @@ public class LodRenderSection implements IDebugRenderable
 		{
 			return;
 		}
-		startLoadRenderSource();
+		
+		this.startLoadRenderSourceAsync();
 	}
 	
     public void reload(ILodRenderSourceProvider renderDataProvider)
 	{
-		if (pos.sectionDetailLevel == DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL)
+		// debug rendering
+		if (this.pos.sectionDetailLevel == DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL)
+		{
 			DebugRenderer.makeParticle(
 					new DebugRenderer.BoxParticle(
 							new DebugRenderer.Box(pos, 0, 256f, 0.03f, Color.cyan),
 							0.5, 512f
 					)
 			);
+		}
+		
+		
 		this.renderSourceProvider = renderDataProvider;
 		if (this.renderSourceProvider == null)
 		{
+			LOGGER.warn("LodRenderSection ["+this.pos+"] called reload with a empty source provider");
 			return;
 		}
+		
 		// don't accidentally enable rendering for a disabled section
 		if (!this.isRenderingEnabled)
 		{
@@ -161,14 +175,31 @@ public class LodRenderSection implements IDebugRenderable
 		// wait for the current load future to finish before re-loading
 		if (this.renderSourceLoadFuture != null)
 		{
-			reloadRenderSourceOnceLoaded = true;
+			this.reloadRenderSourceOnceLoaded = true;
 			return;
 		}
-		startLoadRenderSource();
+		
+		this.startLoadRenderSourceAsync();
 	}
 	
+	private void startLoadRenderSourceAsync()
+	{
+		this.renderSourceLoadFuture = this.renderSourceProvider.readAsync(this.pos);
+		this.renderSourceLoadFuture.whenComplete((renderSource, ex) ->
+		{
+			this.renderSource = renderSource;
+			this.lastNs = -1;
+			this.markBufferDirty();
+			if (this.reloadRenderSourceOnceLoaded)
+			{
+				this.reloadRenderSourceOnceLoaded = false;
+				this.reload(this.renderSourceProvider);
+			}
+			
+			this.renderSourceLoadFuture = null;
+		});
+	}
 
-	
 	
 	
 	//========================//
@@ -182,6 +213,12 @@ public class LodRenderSection implements IDebugRenderable
 	
 	public boolean canRenderNow()
 	{
+		if (this.renderSourceLoadFuture != null || this.buildRenderBufferFuture != null)
+		{
+			// wait for loading to finish
+			return false;
+		}
+		
 		return this.renderSource != null
 				&&
 				(
@@ -210,46 +247,44 @@ public class LodRenderSection implements IDebugRenderable
 			this.buildRenderBufferFuture = null;
 		}
 	}
-
-	private boolean isBufferOutdated() {
-		//if (this.lastNs == -1) return false;
-/*		boolean inTimeout = System.nanoTime() - this.lastNs < SWAP_TIMEOUT_IN_NS;
-		if (!inTimeout && ColumnRenderBufferBuilder.isBusy()) {
-			this.lastNs += (long) (SWAP_BUSY_COLLISION_TIMEOUT_IN_NS * Math.random());
-			return true;
-		}*/
-		return neighborUpdated || renderSource.localVersion.get() - lastSwapLocalVersion > 0;
-	}
-
+	
 	private LodRenderSection[] getNeighbors()
 	{
-		LodRenderSection[] adjacents = new LodRenderSection[EDhDirection.ADJ_DIRECTIONS.length];
-		for (EDhDirection direction : EDhDirection.ADJ_DIRECTIONS) {
-			try {
-				DhSectionPos adjPos = pos.getAdjacentPos(direction);
-				LodRenderSection adjRenderSection = parentQuadTree.getValue(adjPos);
+		LodRenderSection[] adjacentRenderSections = new LodRenderSection[EDhDirection.ADJ_DIRECTIONS.length];
+		for (EDhDirection direction : EDhDirection.ADJ_DIRECTIONS)
+		{
+			try
+			{
+				DhSectionPos adjPos = this.pos.getAdjacentPos(direction);
+				LodRenderSection adjRenderSection = this.parentQuadTree.getValue(adjPos);
 				// adjacent render sources might be null
-				adjacents[direction.ordinal() - 2] = adjRenderSection;
-			} catch (IndexOutOfBoundsException e) {
+				adjacentRenderSections[direction.ordinal() - 2] = adjRenderSection;
+			}
+			catch (IndexOutOfBoundsException e)
+			{
 				// adjacent positions can be out of bounds, in that case a null render source will be used
 			}
 		}
-		return adjacents;
+		
+		return adjacentRenderSections;
 	}
 
 	private void tellNeighborsUpdated()
 	{
-		LodRenderSection[] adjacents = getNeighbors();
-		for (LodRenderSection adj : adjacents) {
-			if (adj != null) {
+		LodRenderSection[] adjacentRenderSections = this.getNeighbors();
+		for (LodRenderSection adj : adjacentRenderSections)
+		{
+			if (adj != null)
+			{
 				adj.neighborUpdated = true;
 			}
 		}
 	}
 
 	/** @return true if this section is loaded and set to render */
-	public boolean canBuildBuffer() { return this.renderSource != null && this.buildRenderBufferFuture == null && !this.renderSource.isEmpty() && isBufferOutdated(); }
-
+	public boolean canBuildBuffer() { return this.renderSource != null && this.buildRenderBufferFuture == null && !this.renderSource.isEmpty() && this.isBufferOutdated(); }
+	private boolean isBufferOutdated() { return this.neighborUpdated || (this.renderSource.localVersion.get() - this.lastSwapLocalVersion) > 0; }
+	
 	/** @return true if this section is loaded and set to render */
 	public boolean canSwapBuffer() { return this.buildRenderBufferFuture != null && this.buildRenderBufferFuture.isDone(); }
 
@@ -262,49 +297,71 @@ public class LodRenderSection implements IDebugRenderable
 	 */
 	public boolean tryBuildAndSwapBuffer()
 	{
-		if (doDisposeActiveBuffer && this.activeRenderBufferRef.get() != null) {
-			doDisposeActiveBuffer = false;
+		// delete the existing buffer if it should be disposed
+		if (this.disposeActiveBuffer && this.activeRenderBufferRef.get() != null) 
+		{
+			this.disposeActiveBuffer = false;
 			this.activeRenderBufferRef.getAndSet(null).close();
 			return false;
 		}
+		
+		
+		// attempt to build the buffer
 		boolean didSwapped = false;
-		if (canBuildBuffer()) {
-			//if (false)
-			if (pos.sectionDetailLevel == DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL)
+		if (this.canBuildBuffer())
+		{
+			// debug
+			if (this.pos.sectionDetailLevel == DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL)
+			{
 				DebugRenderer.makeParticle(
-						new DebugRenderer.BoxParticle(
-								new DebugRenderer.Box(pos, 32f, 64f, 0.2f, Color.yellow),
-								0.5, 16f
-						)
+					new DebugRenderer.BoxParticle(
+						new DebugRenderer.Box(this.pos, 32f, 64f, 0.2f, Color.yellow),
+						0.5, 16f
+					)
 				);
-			neighborUpdated = false;
-			long newVs = renderSource.localVersion.get();
-			if (lastSwapLocalVersion != newVs) {
-				lastSwapLocalVersion = newVs;
-				tellNeighborsUpdated();
 			}
-			LodRenderSection[] adjacents = getNeighbors();
+			
+			
+			this.neighborUpdated = false;
+			long newVersion = this.renderSource.localVersion.get();
+			if (this.lastSwapLocalVersion != newVersion)
+			{
+				this.lastSwapLocalVersion = newVersion;
+				this.tellNeighborsUpdated();
+			}
+			
+			
+			LodRenderSection[] adjacentRenderSections = this.getNeighbors();
 			ColumnRenderSource[] adjacentSources =  new ColumnRenderSource[EDhDirection.ADJ_DIRECTIONS.length];
-			for (int i = 0; i < EDhDirection.ADJ_DIRECTIONS.length; i++) {
-				LodRenderSection adj = adjacents[i];
-				if (adj != null) {
+			for (int i = 0; i < EDhDirection.ADJ_DIRECTIONS.length; i++)
+			{
+				LodRenderSection adj = adjacentRenderSections[i];
+				if (adj != null)
+				{
 					adjacentSources[i] = adj.getRenderSource();
 				}
 			}
-			this.buildRenderBufferFuture = ColumnRenderBufferBuilder.buildBuffers(level, this.inactiveRenderBufferRef, renderSource, adjacentSources);
+			
+			this.buildRenderBufferFuture = ColumnRenderBufferBuilder.buildBuffersAsync(this.level, this.inactiveRenderBufferRef, this.renderSource, adjacentSources);
 		}
-		if (canSwapBuffer()) {
+		
+		
+		// attempt to swap in the buffer
+		if (this.canSwapBuffer()) 
+		{
 			this.lastNs = System.nanoTime();
 			ColumnRenderBuffer newBuffer;
-			try {
+			try
+			{
 				newBuffer = this.buildRenderBufferFuture.getNow(null);
-				this.buildRenderBufferFuture = null;
-				if (newBuffer == null) {
+				if (newBuffer == null)
+				{
 					// failed.
-					markBufferDirty();
+					this.markBufferDirty();
 					return false;
 				}
-				LodUtil.assertTrue(newBuffer.buffersUploaded, "The buffer future for "+pos+" returned an un-built buffer.");
+				
+				LodUtil.assertTrue(newBuffer.buffersUploaded, "The buffer future for "+this.pos+" returned an un-built buffer.");
 				ColumnRenderBuffer oldBuffer = this.activeRenderBufferRef.getAndSet(newBuffer);
 				if (oldBuffer != null)
 				{
@@ -315,23 +372,33 @@ public class LodRenderSection implements IDebugRenderable
 				didSwapped = true;
 				LodUtil.assertTrue(swapped == null);
 			}
-			catch (CancellationException e1) {
+			catch (CancellationException e1)
+			{
 				// ignore.
 				this.buildRenderBufferFuture = null;
 			}
-			catch (CompletionException e) {
-				LOGGER.error("Unable to get render buffer for "+pos+".", e);
+			catch (CompletionException e)
+			{
+				LOGGER.error("Unable to get render buffer for " + pos + ".", e);
+				this.buildRenderBufferFuture = null;
+			}
+			finally
+			{
 				this.buildRenderBufferFuture = null;
 			}
 		}
+		
 		return didSwapped;
 	}
-
+	
+	
+	
 	//==============//
 	// base methods //
 	//==============//
 	
-    public String toString() {
+    public String toString()
+    {
         return "LodRenderSection{" +
                 "pos=" + this.pos +
                 ", lodRenderSource=" + this.renderSource +
@@ -340,17 +407,19 @@ public class LodRenderSection implements IDebugRenderable
                 '}';
     }
 
-	public void dispose() {
-		disposeRenderData();
+	public void dispose()
+	{
+		this.disposeRenderData();
 		DebugRenderer.unregister(this);
-		if (doDisposeActiveBuffer && this.activeRenderBufferRef.get() != null) {
+		if (this.disposeActiveBuffer && this.activeRenderBufferRef.get() != null)
+		{
 			this.activeRenderBufferRef.get().close();
 		}
 	}
 
 	public synchronized void disposeRenderData() // synchronized is a band-aid solution to prevent a rare bug where the future isn't canceled in the right order
 	{
-		disposeRenderBuffer();
+		this.disposeRenderBuffer();
 		this.renderSource = null;
 		if (this.renderSourceLoadFuture != null)
 		{
@@ -361,11 +430,10 @@ public class LodRenderSection implements IDebugRenderable
 
 	public void disposeRenderBuffer()
 	{
-		cancelBuildBuffer();
-		doDisposeActiveBuffer = true;
+		this.cancelBuildBuffer();
+		this.disposeActiveBuffer = true;
 	}
 
-	public void markBufferDirty() {
-		lastSwapLocalVersion = -1;
-	}
+	public void markBufferDirty() { this.lastSwapLocalVersion = -1; }
+	
 }

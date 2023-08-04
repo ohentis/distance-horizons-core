@@ -1,6 +1,7 @@
 package com.seibel.distanthorizons.core.config.eventHandlers;
 
 import com.seibel.distanthorizons.api.DhApi;
+import com.seibel.distanthorizons.api.enums.config.ELodShading;
 import com.seibel.distanthorizons.api.enums.config.EMaxHorizontalResolution;
 import com.seibel.distanthorizons.api.enums.config.EVerticalQuality;
 import com.seibel.distanthorizons.core.config.listeners.IConfigListener;
@@ -22,6 +23,7 @@ public class RenderCacheConfigEventHandler implements IConfigListener
 	// previous values used to check if a watched setting was actually modified
 	private EVerticalQuality previousVerticalQualitySetting = null;
 	private EMaxHorizontalResolution previousHorizontalResolution = null;
+	private ELodShading lodShading = null;
 	
 	/** how long to wait in milliseconds before applying the config changes */
 	private static final long TIMEOUT_IN_MS = 400L;
@@ -51,6 +53,13 @@ public class RenderCacheConfigEventHandler implements IConfigListener
 		if (this.previousHorizontalResolution != newHorizontalResolution)
 		{
 			this.previousHorizontalResolution = newHorizontalResolution;
+			refreshRenderData = true;
+		}
+		
+		ELodShading newLodShading = Config.Client.Advanced.Graphics.AdvancedGraphics.lodShading.get();
+		if (this.lodShading != newLodShading)
+		{
+			this.lodShading = newLodShading;
 			refreshRenderData = true;
 		}
 		

@@ -11,12 +11,18 @@ import org.jetbrains.annotations.Nullable;
 import java.util.function.Consumer;
 
 /**
- * The position object used to define LOD objects in the quad trees. <br>
+ * The position object used to define LOD objects in the quad trees. <br><br>
  * 
  * A section contains 64 x 64 LOD columns at a given quality.
  * The Section detail level is different from the LOD detail level.
  * For the specifics of how they compare can be viewed in the constants {@link #SECTION_BLOCK_DETAIL_LEVEL},
- * {@link #SECTION_CHUNK_DETAIL_LEVEL}, and {@link #SECTION_REGION_DETAIL_LEVEL}).
+ * {@link #SECTION_CHUNK_DETAIL_LEVEL}, and {@link #SECTION_REGION_DETAIL_LEVEL}).<br><br>
+ * 
+ * <strong>Why does the smallest render section represent 2x2 MC chunks (section detail level 6)? </strong> <br>
+ * A section defines what unit the quad tree works in, because of that we don't want that unit to be too big or too small. <br> 
+ * <strong>Too small</strong>, and we'll have 1,000s of sections running around, all needing individual files and render buffers.<br>
+ * <strong>Too big</strong>, and the LOD dropoff will be very noticeable.<br>
+ * With those thoughts in mind we decided on a smallest section size of 32 data points square (IE 2x2 chunks).
  * 
  * @author Leetom
  * @version 2022-11-6

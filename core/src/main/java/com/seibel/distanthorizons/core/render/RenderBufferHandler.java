@@ -156,17 +156,22 @@ public class RenderBufferHandler
 			
 			DhSectionPos sectionPos = node.sectionPos;
 			LodRenderSection renderSection = node.value;
-			try {
+			try
+			{
 
-				if (renderSection != null) {
-					if (rebuildAllBuffers) {
+				if (renderSection != null)
+				{
+					if (rebuildAllBuffers)
+					{
 						renderSection.markBufferDirty();
 					}
 					renderSection.tryBuildAndSwapBuffer();
 
-					if (renderSection.isRenderingEnabled()) {
+					if (renderSection.isRenderingEnabled())
+					{
 						AbstractRenderBuffer buffer = renderSection.activeRenderBufferRef.get();
-						if (buffer != null) {
+						if (buffer != null)
+						{
 							this.loadedNearToFarBuffers.add(new LoadedRenderBuffer(buffer, sectionPos));
 						}
 					}

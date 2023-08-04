@@ -12,9 +12,11 @@ import java.util.*;
 public abstract class AbstractPresetConfigEventHandler<TPresetEnum extends Enum<?>> implements IConfigListener
 {
 	private static final Logger LOGGER = LogManager.getLogger();
-	
+	private static final long MS_DELAY_BEFORE_APPLYING_PRESET = 1_000;
 	
 	protected final ArrayList<ConfigEntryWithPresetOptions<TPresetEnum, ?>> configList = new ArrayList<>();
+	/** this timer is used so each preset isn't applied while a user is clicking through the config options */
+	protected Timer presetApplicationTimer;
 	
 	protected boolean changingPreset = false;
 	
@@ -38,27 +40,41 @@ public abstract class AbstractPresetConfigEventHandler<TPresetEnum extends Enum<
 	@Override 
 	public void onConfigValueSet()
 	{
-		TPresetEnum qualityPreset = this.getPresetConfigEntry().get();
+		TPresetEnum presetEnum = this.getPresetConfigEntry().get();
 		
 		// if the quick value is custom, nothing needs to be changed
-		if (qualityPreset == this.getCustomPresetEnum())
+		if (presetEnum == this.getCustomPresetEnum())
 		{
 			return;
 		}
 		
 		
-		LOGGER.debug("changing preset to: " + qualityPreset);
+		// stop the previous timer if one exists
+		if (this.presetApplicationTimer != null)
+		{
+			this.presetApplicationTimer.cancel();
+		}
+		
+		// reset the timer
+		TimerTask task = new TimerTask() { public void run() { AbstractPresetConfigEventHandler.this.applyPreset(presetEnum); } };
+		this.presetApplicationTimer = new Timer("PresetApplicationTimer");
+		this.presetApplicationTimer.schedule(task, MS_DELAY_BEFORE_APPLYING_PRESET);
+		
+	}
+	private void applyPreset(TPresetEnum presetEnum)
+	{
+		LOGGER.debug("changing preset to: " + presetEnum);
 		this.changingPreset = true;
 		
 		for (ConfigEntryWithPresetOptions<TPresetEnum, ?> configEntry : this.configList)
 		{
-			configEntry.updateConfigEntry(qualityPreset);
+			configEntry.updateConfigEntry(presetEnum);
 		}
 		
 		this.changingPreset = false;
-		LOGGER.debug("preset active: "+qualityPreset);
-		
+		LOGGER.debug("preset active: "+presetEnum);
 	}
+	
 	
 	@Override
 	public void onUiModify() { /* do nothing, we only care about modified config values */ }

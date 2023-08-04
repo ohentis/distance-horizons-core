@@ -17,34 +17,21 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.seibel.distanthorizons.api.enums.config.quickOptions;
-
-import com.seibel.distanthorizons.api.enums.config.DisallowSelectingViaConfigGui;
+package com.seibel.distanthorizons.api.enums.config;
 
 /**
- * CUSTOM, <br><br>
- * 
- * MINIMAL_IMPACT, <br>
- * LOW_IMPACT, <br>
- * BALANCED, <br>
- * AGGRESSIVE, <br>
- * I_PAID_FOR_THE_WHOLE_CPU, <br>
+ * MINECRAFT <br>
+ * OLD_LIGHTING <br>
+ * NONE <br>
  */
-public enum EThreadPreset
+public enum ELodShading
 {
 	// Reminder:
 	// when adding items up the API minor version
 	// when removing items up the API major version
 	
-	@DisallowSelectingViaConfigGui
-	CUSTOM,
-	
-	MINIMAL_IMPACT,
-	LOW_IMPACT,
-	BALANCED,
-	AGGRESSIVE,
-	
-	// temporarily removed due to stability concerns
-	//I_PAID_FOR_THE_WHOLE_CPU;
+	MINECRAFT,
+	OLD_LIGHTING,
+	NONE;
 	
 }

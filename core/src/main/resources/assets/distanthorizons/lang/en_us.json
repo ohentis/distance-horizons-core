@@ -261,7 +261,11 @@
   "distanthorizons.config.client.advanced.graphics.advancedGraphics.lodBias":
     "LOD Bias §6(Affects vanilla terrain)§r",
   "distanthorizons.config.client.advanced.graphics.advancedGraphics.lodBias.@tooltip":
-    "Sets vanilla's lod bias value\nPlease press F3+T to reload the texture packs and apply this affect",
+    "Sets vanilla's lod bias value\nPlease press F3+T to reload the texture packs and apply this affect.",
+  "distanthorizons.config.client.advanced.graphics.advancedGraphics.lodShading":
+    "LOD Shading",
+  "distanthorizons.config.client.advanced.graphics.advancedGraphics.lodShading.@tooltip":
+    "Defines how LODs should be shaded. \nCan be used to improve shader compatibility.",
   
   
   "distanthorizons.config.client.advanced.worldGenerator":
@@ -726,5 +730,13 @@
   "distanthorizons.config.enum.EBufferRebuildTimes.NORMAL":
     "Normal",
   "distanthorizons.config.enum.EBufferRebuildTimes.RARE":
-    "Rare"
+    "Rare",
+    
+  "distanthorizons.config.enum.ELodShading.MINECRAFT":
+    "Minecraft",
+  "distanthorizons.config.enum.ELodShading.OLD_LIGHTING":
+    "Old Lighting",
+  "distanthorizons.config.enum.ELodShading.NONE":
+    "None"
+  
 }

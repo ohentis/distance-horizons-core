@@ -53,7 +53,9 @@ public class ColumnRenderBufferBuilder
 	// vbo building //
 	//==============//
 
-	public static CompletableFuture<ColumnRenderBuffer> buildBuffers(IDhClientLevel clientLevel, Reference<ColumnRenderBuffer> renderBufferRef, ColumnRenderSource renderSource, ColumnRenderSource[] adjData)
+	public static CompletableFuture<ColumnRenderBuffer> buildBuffersAsync(
+			IDhClientLevel clientLevel, Reference<ColumnRenderBuffer> renderBufferRef, 
+			ColumnRenderSource renderSource, ColumnRenderSource[] adjData)
 	{
 /*		if (isBusy())
 		{

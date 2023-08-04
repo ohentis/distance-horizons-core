@@ -586,6 +586,20 @@ public class Config
 									+ "If set to 0 the mod wont overwrite vanilla's default (which so happens to also be 0)")
 							.build();
 					
+					public static ConfigEntry<ELodShading> lodShading = new ConfigEntry.Builder<ELodShading>()
+							.set(ELodShading.MINECRAFT)
+							.comment(""
+									+ "How should LODs be shaded? \n"
+									+ "\n"
+									+ ELodShading.MINECRAFT + ": Uses the same side shading as vanilla Minecraft blocks. \n"
+									+ ELodShading.OLD_LIGHTING + ": Simulates Minecraft's block shading for LODs. \n"
+									+ "              Can be used to force LOD shading when using some shaders. \n"
+									+ ELodShading.NONE + ": All LOD sides will be rendered with the same brightness. \n"
+									+ "")
+							.setPerformance(EConfigEntryPerformance.NONE)
+							.addListener(RenderCacheConfigEventHandler.INSTANCE)
+							.build();
+					
 				}
 				
 			}
@@ -844,7 +858,7 @@ public class Config
 				
 				public static final ConfigEntry<Integer> numberOfDataTransformerThreads = new ConfigEntry.Builder<Integer>()
 						.setMinDefaultMax(1,
-								ThreadPresetConfigEventHandler.getDataConverterDefaultThreadCount(),
+								ThreadPresetConfigEventHandler.getDataTransformerDefaultThreadCount(),
 								Runtime.getRuntime().availableProcessors())
 						.comment(""
 								+ "How many threads should be used when converting full ID data to render data? \n"
@@ -859,7 +873,7 @@ public class Config
 								+ THREAD_NOTE)
 						.build();
 				public static final ConfigEntry<Double> runTimeRatioForDataTransformerThreads = new ConfigEntry.Builder<Double>()
-						.setMinDefaultMax(0.01, ThreadPresetConfigEventHandler.getDataConverterDefaultRunTimeRatio(), 1.0)
+						.setMinDefaultMax(0.01, ThreadPresetConfigEventHandler.getDataTransformerDefaultRunTimeRatio(), 1.0)
 						.comment(THREAD_RUN_TIME_RATIO_NOTE)
 						.build();
 				
