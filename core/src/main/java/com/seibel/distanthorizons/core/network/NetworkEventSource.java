@@ -2,6 +2,7 @@ package com.seibel.distanthorizons.core.network;
 
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
+import com.google.common.collect.Tables;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.network.messages.CancelMessage;
 import com.seibel.distanthorizons.core.network.messages.ExceptionMessage;
@@ -10,19 +11,19 @@ import com.seibel.distanthorizons.core.network.protocol.NetworkMessage;
 import io.netty.channel.ChannelHandlerContext;
 import org.apache.logging.log4j.Logger;
 
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.function.Consumer;
 
 public abstract class NetworkEventSource
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
-	protected final Map<Class<? extends NetworkMessage>, Set<Consumer<NetworkMessage>>> handlers = new HashMap<>();
-	private final Table<ChannelHandlerContext, Long, CompletableFuture<FutureTrackableNetworkMessage>> pendingFutures = HashBasedTable.create();
+	protected final ConcurrentMap<Class<? extends NetworkMessage>, Set<Consumer<NetworkMessage>>> handlers = new ConcurrentHashMap<>();
+	private final Table<ChannelHandlerContext, Long, CompletableFuture<FutureTrackableNetworkMessage>> pendingFutures = Tables.synchronizedTable(HashBasedTable.create());
 	
 	protected boolean hasHandler(Class<? extends NetworkMessage> handlerClass)
 	{
@@ -84,6 +85,7 @@ public abstract class NetworkEventSource
 	protected <TResponse extends FutureTrackableNetworkMessage> CompletableFuture<TResponse> sendRequest(ChannelHandlerContext ctx, FutureTrackableNetworkMessage msg)
 	{
 		msg.futureId |= (long) ctx.hashCode() << 32;
+		msg.setChannelContext(ctx);
 		
 		CompletableFuture<TResponse> responseFuture = new CompletableFuture<>();
 		responseFuture.handle((response, throwable) -> {
@@ -105,14 +107,20 @@ public abstract class NetworkEventSource
 	}
 	
 	protected final void completeAllFuturesExceptionally(ChannelHandlerContext ctx, Throwable cause) {
-		for (CompletableFuture<FutureTrackableNetworkMessage> futureData : pendingFutures.row(ctx).values())
-			futureData.completeExceptionally(cause);
-		pendingFutures.row(ctx).clear();
+		synchronized (pendingFutures)
+		{
+			for (CompletableFuture<FutureTrackableNetworkMessage> futureData : pendingFutures.row(ctx).values())
+				futureData.completeExceptionally(cause);
+			pendingFutures.row(ctx).clear();
+		}
 	}
 	
 	protected final void completeAllFuturesExceptionally(Throwable cause) {
-		for (ChannelHandlerContext ctx : pendingFutures.rowKeySet())
-			this.completeAllFuturesExceptionally(ctx, cause);
+		synchronized (pendingFutures)
+		{
+			for (ChannelHandlerContext ctx : pendingFutures.rowKeySet())
+				this.completeAllFuturesExceptionally(ctx, cause);
+		}
 	}
 	
 	public void close()

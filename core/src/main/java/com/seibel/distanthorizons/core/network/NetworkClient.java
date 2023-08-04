@@ -1,7 +1,7 @@
 package com.seibel.distanthorizons.core.network;
 
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.network.messages.CloseMessage;
+import com.seibel.distanthorizons.core.network.messages.CloseEvent;
 import com.seibel.distanthorizons.core.network.messages.CloseReasonMessage;
 import com.seibel.distanthorizons.core.network.messages.HelloMessage;
 import com.seibel.distanthorizons.core.network.protocol.FutureTrackableNetworkMessage;
@@ -78,9 +78,9 @@ public class NetworkClient extends NetworkEventSource implements AutoCloseable
 			this.connectionState = EConnectionState.CLOSE_WAIT;
         });
 		
-		this.registerHandler(CloseMessage.class, closeMessage ->
+		this.registerHandler(CloseEvent.class, closeEvent ->
 		{
-            LOGGER.info("Disconnected from server: "+closeMessage.getChannelContext().channel().remoteAddress());
+            LOGGER.info("Disconnected from server: "+ closeEvent.getChannelContext().channel().remoteAddress());
             if (this.connectionState == EConnectionState.CLOSE_WAIT)
 			{
 				this.close();

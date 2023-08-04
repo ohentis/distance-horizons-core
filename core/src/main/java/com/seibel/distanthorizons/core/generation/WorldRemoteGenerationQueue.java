@@ -8,8 +8,6 @@ import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
 import com.seibel.distanthorizons.core.multiplayer.ClientNetworkState;
-import com.seibel.distanthorizons.core.network.ChildNetworkEventSource;
-import com.seibel.distanthorizons.core.network.NetworkClient;
 import com.seibel.distanthorizons.core.network.exceptions.RateLimitedException;
 import com.seibel.distanthorizons.core.network.messages.FullDataSourceRequestMessage;
 import com.seibel.distanthorizons.core.network.messages.FullDataSourceResponseMessage;
@@ -25,10 +23,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.ArrayList;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.Semaphore;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
@@ -77,7 +72,7 @@ public class WorldRemoteGenerationQueue implements IWorldGenerationQueue
 	@Override public void runCurrentGenTasksUntilBusy(DhBlockPos2D targetPos)
 	{
 		while (generatorClosingFuture == null
-				&& networkState.eventSource.parent.isReady()
+				&& networkState.client().isReady()
 				&& !waitingTasks.isEmpty()
 				&& pendingTasks() < this.networkState.config.fullDataRequestRateLimit
 				&& pendingTasksSemaphore.tryAcquire())
@@ -95,7 +90,7 @@ public class WorldRemoteGenerationQueue implements IWorldGenerationQueue
 				? a : b));
 		WorldGenQueueEntry entry = waitingTasks.remove(sectionPos);
 		
-		CompletableFuture<FullDataSourceResponseMessage> request = this.networkState.eventSource.parent.sendRequest(new FullDataSourceRequestMessage(sectionPos));
+		CompletableFuture<FullDataSourceResponseMessage> request = this.networkState.client().sendRequest(new FullDataSourceRequestMessage(sectionPos));
 		pendingRequests.add(request);
 		request.handle((response, throwable) ->
 				{
@@ -131,14 +126,11 @@ public class WorldRemoteGenerationQueue implements IWorldGenerationQueue
 						
 						entry.future.complete(WorldGenResult.CreateSuccess(sectionPos));
 					}
-					catch (RateLimitedException e)
+					catch (CancellationException | ChannelException | RateLimitedException e)
 					{
-						LOGGER.warn("Rate limited by server, re-queueing task: "+sectionPos, e);
-						finishedRequests.decrementAndGet();
-						waitingTasks.put(sectionPos, entry);
-					}
-					catch (ChannelException e)
-					{
+						if (e instanceof RateLimitedException)
+							LOGGER.warn("Rate limited by server, re-queueing task ["+sectionPos+"]: "+e.getMessage());
+						
 						finishedRequests.decrementAndGet();
 						waitingTasks.put(sectionPos, entry);
 					}

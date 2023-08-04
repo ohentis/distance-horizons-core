@@ -1,14 +1,13 @@
 package com.seibel.distanthorizons.core.network.protocol;
 
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.network.messages.CloseMessage;
+import com.seibel.distanthorizons.core.network.messages.CloseEvent;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 @ChannelHandler.Sharable
@@ -34,7 +33,7 @@ public class MessageHandler extends SimpleChannelInboundHandler<NetworkMessage>
 	@Override
 	public void channelInactive(@NotNull ChannelHandlerContext channelContext)
 	{
-		this.channelRead0(channelContext, new CloseMessage());
+		this.channelRead0(channelContext, new CloseEvent());
 	}
 	
 }

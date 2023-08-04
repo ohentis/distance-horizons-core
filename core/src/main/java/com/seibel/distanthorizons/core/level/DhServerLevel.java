@@ -6,12 +6,11 @@ import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedF
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.CompleteFullDataSource;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IFullDataSource;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IIncompleteFullDataSource;
-import com.seibel.distanthorizons.core.file.fullDatafile.GeneratedFullDataFileHandler;
 import com.seibel.distanthorizons.core.file.fullDatafile.IFullDataSourceProvider;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
-import com.seibel.distanthorizons.core.multiplayer.RemotePlayer;
+import com.seibel.distanthorizons.core.multiplayer.ServerPlayerState;
 import com.seibel.distanthorizons.core.multiplayer.RemotePlayerConnectionHandler;
-import com.seibel.distanthorizons.core.network.ChildNetworkEventSource;
+import com.seibel.distanthorizons.core.network.ScopedNetworkEventSource;
 import com.seibel.distanthorizons.core.network.NetworkServer;
 import com.seibel.distanthorizons.core.network.exceptions.RateLimitedException;
 import com.seibel.distanthorizons.core.network.messages.CancelMessage;
@@ -22,7 +21,6 @@ import com.seibel.distanthorizons.core.pos.DhLodPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.util.LodUtil;
-import com.seibel.distanthorizons.core.world.DhServerWorld;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
@@ -41,7 +39,7 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 	private final IServerLevelWrapper serverLevelWrapper;
 	
 	private final RemotePlayerConnectionHandler remotePlayerConnectionHandler;
-	private final ChildNetworkEventSource<NetworkServer> eventSource;
+	private final ScopedNetworkEventSource<NetworkServer> eventSource;
 	
 	private final ConcurrentLinkedQueue<IServerPlayerWrapper> worldGenLoopingQueue = new ConcurrentLinkedQueue<>();
 	private final ConcurrentMap<DhSectionPos, IncompleteDataSourceEntry> incompleteDataSources = new ConcurrentHashMap<>();
@@ -60,7 +58,7 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 		LOGGER.info("Started DHLevel for {} with saves at {}", serverLevelWrapper, saveStructure);
 	
 		this.remotePlayerConnectionHandler = remotePlayerConnectionHandler;
-		this.eventSource = new ChildNetworkEventSource<>(remotePlayerConnectionHandler.eventSource);
+		this.eventSource = new ScopedNetworkEventSource<>(remotePlayerConnectionHandler.server());
 		this.registerNetworkHandlers();
 	}
 	
@@ -68,15 +66,15 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 	{
 		this.eventSource.registerHandler(FullDataSourceRequestMessage.class, msg ->
 		{
-			RemotePlayer remotePlayer = remotePlayerConnectionHandler.getConnectedPlayer(msg);
-			if (remotePlayer.serverPlayer.getLevel() != this.serverLevelWrapper)
+			ServerPlayerState serverPlayerState = remotePlayerConnectionHandler.getConnectedPlayer(msg);
+			if (serverPlayerState.serverPlayer.getLevel() != this.serverLevelWrapper)
 				return;
 			
 			LOGGER.info("FullDataSourceRequestMessage received at pos ({}, {}) with detail level {}", msg.dhSectionPos.sectionX, msg.dhSectionPos.sectionZ, msg.dhSectionPos.sectionDetailLevel);
 			
-			if (remotePlayer.pendingFullDataRequests.incrementAndGet() > rateLimitConfig.get())
+			if (serverPlayerState.pendingFullDataRequests.incrementAndGet() > rateLimitConfig.get())
 			{
-				remotePlayer.pendingFullDataRequests.decrementAndGet();
+				serverPlayerState.pendingFullDataRequests.decrementAndGet();
 				msg.sendResponse(new RateLimitedException("Max concurrent requests: "+rateLimitConfig.get()));
 				return;
 			}
@@ -104,8 +102,8 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 		this.eventSource.registerHandler(CancelMessage.class, msg ->
 		{
 			this.fullDataRequests.remove(msg.futureId);
-			RemotePlayer remotePlayer = remotePlayerConnectionHandler.getConnectedPlayer(msg);
-			remotePlayer.pendingFullDataRequests.decrementAndGet();
+			ServerPlayerState serverPlayerState = remotePlayerConnectionHandler.getConnectedPlayer(msg);
+			serverPlayerState.pendingFullDataRequests.decrementAndGet();
 		});
 	}
 	
@@ -150,14 +148,14 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 			CompleteFullDataSource completeSource = (CompleteFullDataSource) entry.fullDataSource;
 			for (FullDataSourceRequestMessage msg : entry.requestMessages)
 			{
-				RemotePlayer remotePlayer = remotePlayerConnectionHandler.getConnectedPlayer(msg);
-				if (remotePlayer == null) continue;
+				ServerPlayerState serverPlayerState = remotePlayerConnectionHandler.getConnectedPlayer(msg);
+				if (serverPlayerState == null) continue;
 				
 				// Check if cancelled
 				if (this.fullDataRequests.remove(msg.futureId) == null)
 					continue;
 				
-				remotePlayer.pendingFullDataRequests.decrementAndGet();
+				serverPlayerState.pendingFullDataRequests.decrementAndGet();
 				msg.sendResponse(new FullDataSourceResponseMessage(completeSource, this));
 			}
 		}

@@ -5,18 +5,14 @@ import com.seibel.distanthorizons.core.network.protocol.NetworkMessage;
 import java.util.function.Consumer;
 
 /** Provides a way to register network message handlers which are expected to be removed later. */
-public final class ChildNetworkEventSource<TParent extends NetworkEventSource> extends NetworkEventSource
+public final class ScopedNetworkEventSource<TParent extends NetworkEventSource> extends NetworkEventSource
 {
 	public final TParent parent;
 	private boolean isClosed = false;
 	
-	public ChildNetworkEventSource(TParent parent)
+	public ScopedNetworkEventSource(TParent parent)
 	{
 		this.parent = parent;
-	}
-	public ChildNetworkEventSource(ChildNetworkEventSource<TParent> child)
-	{
-		this.parent = child.parent;
 	}
 	
 	@Override

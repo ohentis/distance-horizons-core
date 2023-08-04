@@ -5,7 +5,7 @@ import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.file.structure.LocalSaveStructure;
 import com.seibel.distanthorizons.core.level.DhServerLevel;
 import com.seibel.distanthorizons.core.level.IDhLevel;
-import com.seibel.distanthorizons.core.multiplayer.RemotePlayer;
+import com.seibel.distanthorizons.core.multiplayer.ServerPlayerState;
 import com.seibel.distanthorizons.core.multiplayer.RemotePlayerConnectionHandler;
 import com.seibel.distanthorizons.core.network.NetworkServer;
 import com.seibel.distanthorizons.core.network.messages.RemotePlayerConfigMessage;
@@ -23,7 +23,6 @@ public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 	private final HashMap<IServerLevelWrapper, DhServerLevel> levels;
 	public final LocalSaveStructure saveStructure;
 
-	private final NetworkServer networkServer;
 	private final RemotePlayerConnectionHandler remotePlayerConnectionHandler;
 	private final AppliedConfigState<Integer> rateLimitConfig = new AppliedConfigState<>(Config.Client.Advanced.Multiplayer.serverNetworkingRateLimit);
 	
@@ -37,18 +36,18 @@ public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 		this.levels = new HashMap<>();
 
 		// TODO move to global payload once server specific configs are implemented
-		this.networkServer = new NetworkServer(25049);
-		this.registerNetworkHandlers();
+		NetworkServer networkServer = new NetworkServer(25049);
 		this.remotePlayerConnectionHandler = new RemotePlayerConnectionHandler(networkServer);
+		this.registerNetworkHandlers();
 
 		LOGGER.info("Started "+DhServerWorld.class.getSimpleName()+" of type "+this.environment);
 	}
 
 	private void registerNetworkHandlers()
 	{
-		this.networkServer.registerHandler(RemotePlayerConfigMessage.class, remotePlayerConfigMessage ->
+		this.remotePlayerConnectionHandler.server().registerHandler(RemotePlayerConfigMessage.class, remotePlayerConfigMessage ->
 		{
-			this.remotePlayerConnectionHandler.getConnectedPlayer(remotePlayerConfigMessage).payload = remotePlayerConfigMessage.payload;
+			this.remotePlayerConnectionHandler.getConnectedPlayer(remotePlayerConfigMessage).config = remotePlayerConfigMessage.payload;
 			
 			remotePlayerConfigMessage.payload.fullDataRequestRateLimit = Math.min(rateLimitConfig.get(), remotePlayerConfigMessage.payload.fullDataRequestRateLimit);
 			remotePlayerConfigMessage.sendResponse(remotePlayerConfigMessage);
@@ -57,21 +56,18 @@ public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 
 	public void addPlayer(IServerPlayerWrapper serverPlayer)
 	{
-		this.remotePlayerConnectionHandler.mcPlayerJoined(serverPlayer);
+		this.remotePlayerConnectionHandler.registerJoinedPlayer(serverPlayer);
 		this.getLevel(serverPlayer.getLevel()).addPlayer(serverPlayer);
 	}
 	public void removePlayer(IServerPlayerWrapper serverPlayer)
 	{
 		this.getLevel(serverPlayer.getLevel()).removePlayer(serverPlayer);
-		this.remotePlayerConnectionHandler.mcPlayerLeft(serverPlayer);
+		this.remotePlayerConnectionHandler.unregisterLeftPlayer(serverPlayer);
 	}
 	public void changePlayerLevel(IServerPlayerWrapper player, IServerLevelWrapper origin, IServerLevelWrapper dest)
 	{
 		this.getLevel(origin).removePlayer(player);
 		this.getLevel(dest).addPlayer(player);
-		
-		RemotePlayer remotePlayer = this.remotePlayerConnectionHandler.getPlayer(player);
-		remotePlayer.channelContext.writeAndFlush(new RemotePlayerConfigMessage(remotePlayer.payload));
 	}
 
 	@Override
@@ -124,10 +120,10 @@ public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 		
 		if (rateLimitConfig.pollNewValue())
 		{
-			for (RemotePlayer remotePlayer : this.remotePlayerConnectionHandler.getConnectedPlayers())
+			for (ServerPlayerState serverPlayerState : this.remotePlayerConnectionHandler.getConnectedPlayers())
 			{
-				remotePlayer.payload.fullDataRequestRateLimit = rateLimitConfig.get();
-				remotePlayer.channelContext.writeAndFlush(new RemotePlayerConfigMessage(remotePlayer.payload));
+				serverPlayerState.config.fullDataRequestRateLimit = rateLimitConfig.get();
+				serverPlayerState.channelContext.writeAndFlush(new RemotePlayerConfigMessage(serverPlayerState.config));
 			}
 		}
 	}
@@ -145,7 +141,7 @@ public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 	@Override
 	public void close()
 	{
-		this.networkServer.close();
+		this.remotePlayerConnectionHandler.close();
 
 		for (DhServerLevel level : this.levels.values())
 		{

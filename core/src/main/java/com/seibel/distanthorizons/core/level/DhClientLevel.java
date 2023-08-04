@@ -7,6 +7,7 @@ import com.seibel.distanthorizons.core.file.fullDatafile.RemoteFullDataFileHandl
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.generation.WorldRemoteGenerationQueue;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.multiplayer.ClientNetworkState;
 import com.seibel.distanthorizons.core.network.NetworkClient;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
@@ -34,9 +35,9 @@ public class DhClientLevel extends DhLevel implements IDhClientLevel
 	
 	private static class WorldGenState extends WorldGenModule.WorldGenState
 	{
-		WorldGenState(IDhClientLevel level, NetworkClient client)
+		WorldGenState(IDhClientLevel level, ClientNetworkState networkState)
 		{
-			this.worldGenerationQueue = new WorldRemoteGenerationQueue(client, level);
+			this.worldGenerationQueue = new WorldRemoteGenerationQueue(networkState, level);
 		}
 	}
 	
@@ -46,7 +47,7 @@ public class DhClientLevel extends DhLevel implements IDhClientLevel
 	public final RemoteFullDataFileHandler dataFileHandler;
 	
 	@CheckForNull
-	private final NetworkClient networkClient;
+	private final ClientNetworkState networkState;
 	public final WorldGenModule worldGenModule;
 	
 	
@@ -55,13 +56,13 @@ public class DhClientLevel extends DhLevel implements IDhClientLevel
 	// constructor //
 	//=============//
 	
-	public DhClientLevel(AbstractSaveStructure saveStructure, IClientLevelWrapper clientLevelWrapper, @Nullable NetworkClient networkClient)
+	public DhClientLevel(AbstractSaveStructure saveStructure, IClientLevelWrapper clientLevelWrapper, @Nullable ClientNetworkState networkState)
 	{
 		this.levelWrapper = clientLevelWrapper;
 		this.saveStructure = saveStructure;
 		this.dataFileHandler = new RemoteFullDataFileHandler(this, saveStructure);
 		
-		this.networkClient = networkClient;
+		this.networkState = networkState;
 		this.worldGenModule = new WorldGenModule(dataFileHandler, this);
 		
 		clientside = new ClientLevelModule(this);
@@ -82,13 +83,13 @@ public class DhClientLevel extends DhLevel implements IDhClientLevel
 	
 	public void doWorldGen()
 	{
-		boolean isClientUsable = networkClient != null && !networkClient.isClosed();
+		boolean isClientUsable = networkState != null && !networkState.client().isClosed();
 		boolean shouldDoWorldGen = isClientUsable && clientside.isRendering();
 		boolean isWorldGenRunning = worldGenModule.isWorldGenRunning();
 		if (shouldDoWorldGen && !isWorldGenRunning)
 		{
 			// start world gen
-			worldGenModule.startWorldGen(this.dataFileHandler, new WorldGenState(this, this.networkClient));
+			worldGenModule.startWorldGen(this.dataFileHandler, new WorldGenState(this, this.networkState));
 		}
 		else if (!shouldDoWorldGen && isWorldGenRunning)
 		{

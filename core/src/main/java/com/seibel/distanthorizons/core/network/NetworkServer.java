@@ -1,9 +1,8 @@
 package com.seibel.distanthorizons.core.network;
 
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.network.messages.AckMessage;
 import com.seibel.distanthorizons.core.network.messages.CloseReasonMessage;
-import com.seibel.distanthorizons.core.network.messages.CloseMessage;
+import com.seibel.distanthorizons.core.network.messages.CloseEvent;
 import com.seibel.distanthorizons.core.network.messages.HelloMessage;
 import com.seibel.distanthorizons.core.network.protocol.FutureTrackableNetworkMessage;
 import com.seibel.distanthorizons.core.network.protocol.MessageHandler;
@@ -66,12 +65,12 @@ public class NetworkServer extends NetworkEventSource implements AutoCloseable
 			channelContext.writeAndFlush(new HelloMessage());
 		});
 		
-		this.registerHandler(CloseMessage.class, closeMessage ->
+		this.registerHandler(CloseEvent.class, closeEvent ->
 		{
-			Channel channel = closeMessage.getChannelContext().channel();
+			Channel channel = closeEvent.getChannelContext().channel();
 			LOGGER.info("Client disconnected: "+channel.remoteAddress());
 			
-			this.completeAllFuturesExceptionally(closeMessage.getChannelContext(), channel.closeFuture().cause());
+			this.completeAllFuturesExceptionally(closeEvent.getChannelContext(), channel.closeFuture().cause());
 		});
 	}
 	

@@ -6,6 +6,7 @@ import io.netty.buffer.ByteBuf;
 public abstract class FutureTrackableNetworkMessage extends NetworkMessage
 {
 	private static int lastId = 0;
+	// Only low 32 bits are sent (high bits are used for identifying a channel this request was sent from by remote peer)
 	public long futureId = lastId++;
 	
 	public void sendResponse(FutureTrackableNetworkMessage responseMessage)
