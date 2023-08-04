@@ -126,7 +126,7 @@ public class WorldRemoteGenerationQueue implements IWorldGenerationQueue
 							throw throwable;
 						
 						waitingTasks.remove(sectionPos);
-						LOGGER.info("FullDataSourceResponseMessage " + sectionPos);
+						LOGGER.debug("FullDataSourceResponseMessage " + sectionPos);
 						CompleteFullDataSource fullDataSource = response.getFullDataSource(sectionPos, level);
 						
 						// Check is dimension has been switched - received data may no longer be relevant
