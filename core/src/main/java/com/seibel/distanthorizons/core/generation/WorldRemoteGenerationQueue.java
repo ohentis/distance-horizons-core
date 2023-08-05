@@ -15,17 +15,21 @@ import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.pos.DhLodPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
+import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.coreapi.util.BitShiftUtil;
 import io.netty.channel.ChannelException;
 import org.apache.logging.log4j.Logger;
 
+import javax.annotation.CheckForNull;
+import java.awt.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
-public class WorldRemoteGenerationQueue implements IWorldGenerationQueue
+public class WorldRemoteGenerationQueue implements IWorldGenerationQueue, IDebugRenderable
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
@@ -47,6 +51,7 @@ public class WorldRemoteGenerationQueue implements IWorldGenerationQueue
 	{
 		this.networkState = networkState;
 		this.level = level;
+		DebugRenderer.register(this);
 	}
 	
 	@Override
@@ -117,6 +122,7 @@ public class WorldRemoteGenerationQueue implements IWorldGenerationQueue
 		entry.request = this.networkState.client().sendRequest(new FullDataSourceRequestMessage(sectionPos));
 		entry.request.handle((response, throwable) ->
 				{
+					entry.request = null;
 					pendingTasksSemaphore.release();
 					finishedRequests.incrementAndGet();
 					
@@ -209,10 +215,23 @@ public class WorldRemoteGenerationQueue implements IWorldGenerationQueue
 		f3Message.close();
 	}
 	
+	@Override
+	public void debugRender(DebugRenderer r) {
+		for (Map.Entry<DhSectionPos, WorldGenQueueEntry> mapEntry : waitingTasks.entrySet())
+		{
+			r.renderBox(new DebugRenderer.Box(mapEntry.getKey(), -32f, 64f, 0.05f,
+					mapEntry.getValue().request != null
+							? Color.red
+							: Color.blue
+			));
+		}
+	}
+	
 	private static class WorldGenQueueEntry
 	{
-		public CompletableFuture<WorldGenResult> future;
-		public IWorldGenTaskTracker tracker;
+		public final CompletableFuture<WorldGenResult> future;
+		public final IWorldGenTaskTracker tracker;
+		@CheckForNull
 		public CompletableFuture<FullDataSourceResponseMessage> request;
 		
 		public WorldGenQueueEntry(CompletableFuture<WorldGenResult> future, IWorldGenTaskTracker tracker)
