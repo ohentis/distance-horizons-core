@@ -25,4 +25,7 @@ import java.util.HashSet;
 
 public interface ISodiumAccessor extends IModAccessor {
 	HashSet<DhChunkPos> getNormalRenderedChunks();
+
+	/** A temporary overwrite for a config in sodium 0.5 to fix their terrain from showing, will be removed once a proper fix is added */
+	void setFogOcclusion(boolean b); // FIXME
 }
