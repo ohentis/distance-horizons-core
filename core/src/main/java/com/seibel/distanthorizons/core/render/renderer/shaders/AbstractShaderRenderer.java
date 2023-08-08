@@ -29,7 +29,7 @@ public abstract class AbstractShaderRenderer {
 
     protected final ShaderProgram shader;
     protected final ShaderProgram applyShader;
-    protected GLVertexBuffer boxBuffer;
+    public GLVertexBuffer boxBuffer;
     protected VertexAttribute va;
 	boolean init = false;
 
@@ -46,9 +46,8 @@ public abstract class AbstractShaderRenderer {
     protected AbstractShaderRenderer(ShaderProgram shader, ShaderProgram applyShader) {
         this.shader = shader;
         this.applyShader = applyShader;
-
-
     }
+
     private void init() {
 		if (init) return;
 		init = true;
@@ -56,7 +55,7 @@ public abstract class AbstractShaderRenderer {
         va = VertexAttribute.create();
         va.bind();
         // Pos
-        va.setVertexAttribute(0, 0, VertexAttribute.VertexPointer.addVec2Pointer(false));
+        setVertexAttributes();
         va.completeAndCheck(Float.BYTES * 2);
 
         // Some shader stuff needs to be set a bit later than
@@ -65,6 +64,10 @@ public abstract class AbstractShaderRenderer {
         createBuffer();
     }
 
+    /** Sets all the vertex attributes */
+    void setVertexAttributes() {
+        va.setVertexAttribute(0, 0, VertexAttribute.VertexPointer.addVec2Pointer(false));
+    };
     /** Overwrite this to apply uniforms to the shader */
     void setShaderUniforms(float partialTicks) {};
     /** Overwrite this to apply uniforms to the apply shader */

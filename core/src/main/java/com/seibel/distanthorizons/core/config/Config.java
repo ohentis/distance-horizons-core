@@ -30,16 +30,14 @@ import com.seibel.distanthorizons.core.config.eventHandlers.RenderCacheConfigEve
 import com.seibel.distanthorizons.core.config.eventHandlers.UnsafeValuesConfigListener;
 import com.seibel.distanthorizons.core.config.eventHandlers.presets.ThreadPresetConfigEventHandler;
 import com.seibel.distanthorizons.core.config.eventHandlers.presets.RenderQualityPresetConfigEventHandler;
-import com.seibel.distanthorizons.core.config.types.ConfigCategory;
-import com.seibel.distanthorizons.core.config.types.ConfigEntry;
-import com.seibel.distanthorizons.core.config.types.ConfigLinkedEntry;
-import com.seibel.distanthorizons.core.config.types.ConfigUIComment;
+import com.seibel.distanthorizons.core.config.types.*;
 import com.seibel.distanthorizons.core.config.types.enums.EConfigEntryAppearance;
 import com.seibel.distanthorizons.core.config.types.enums.EConfigEntryPerformance;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import org.apache.logging.log4j.Logger;
 
+import javax.swing.*;
 import java.util.*;
 
 
@@ -468,14 +466,11 @@ public class Config
 									+ "How intense should the noise should be?")
 							.build();
 					
-					public static ConfigEntry<Double> noiseDropoff = new ConfigEntry.Builder<Double>()    // TODO: Make this a float (the ClassicConfigGUI doesn't support floats)
-							.setMinDefaultMax(0d, 3d, null)
+					public static ConfigEntry<Integer> noiseDropoff = new ConfigEntry.Builder<Integer>()    // TODO: Make this a float (the ClassicConfigGUI doesn't support floats)
+							.setMinDefaultMax(0, 1024, null)
 							.comment(""
-									+ "How far should the noise texture render before it fades away? \n"
-									+ "\n"
-									+ "0.0 - the noise texture will render the entire LOD render distance. \n"
-									+ "3.0 - the noise texture will fade away at 1/3 of the LOD render distance. \n"
-									+ "")
+									+ "Defines how far should the noise texture render before it fades away. (in blocks) \n"
+									+ "Set to 0 to disable noise from fading away")
 							.build();
 				}
 				
@@ -516,9 +511,9 @@ public class Config
 									+ "Distant Horizons' and Minecraft's near/far clip planes, \n"
 									+ "reducing overdraw. \n"
 									+ "\n"
-									+ "Only tested in Minecraft 1.18.2.\n"
+									+ "Only functional on Fabric.\n"
 									+ "Works best with an overdraw prevention setting of "+EOverdrawPrevention.MEDIUM+" or higher \n"
-									+ " nd cave culling disabled. \n"
+									+ " and cave culling is disabled. \n"
 									+ "")
 							.setPerformance(EConfigEntryPerformance.NONE)
 							.build();
@@ -1095,6 +1090,13 @@ public class Config
 								+ "   will render their debug wireframes.")
 						.build();
 
+				public static ConfigEntry<Boolean> enableWhiteWorld = new ConfigEntry.Builder<Boolean>()
+						.set(false)
+						.comment(""
+								+ "Stops vertex colors from being passed. \n"
+								+ "Useful for debugging shaders")
+						.build();
+
 				// Note: This will reset on game restart, and should have a warning on the tooltip
 				public static ConfigEntry<Boolean> allowUnsafeValues = new ConfigEntry.Builder<Boolean>()
 						.set(false)
@@ -1109,6 +1111,8 @@ public class Config
 						.build();
 				
 				/** This class is used to debug the different features of the config GUI */
+				// FIXME: WARNING: Some of the options in this class dont get show n in the default UI
+				// This will throw a warning when opened in the default ui to tell you about it not showing
 				public static class ExampleConfigScreen
 				{
 					// Defined in the lang, just a note about this screen
@@ -1137,7 +1141,7 @@ public class Config
 					public static ConfigEntry<Long> longTest = new ConfigEntry.Builder<Long>()
 							.set(42069L)
 							.build();
-					
+
 					public static ConfigEntry<Float> floatTest = new ConfigEntry.Builder<Float>()
 							.set(0.42069f)
 							.build();
@@ -1149,6 +1153,15 @@ public class Config
 					public static ConfigEntry<List<String>> listTest = new ConfigEntry.Builder<List<String>>()
 							.set(new ArrayList<String>(Arrays.asList("option 1", "option 2", "option 3")))
 							.build();
+
+					public static ConfigEntry<Map<String, String>> mapTest = new ConfigEntry.Builder<Map<String, String>>()
+							.set(new HashMap<String, String>())
+							.build();
+
+					public static ConfigUIButton uiButtonTest = new ConfigUIButton(() -> {
+						System.setProperty("java.awt.headless", "false"); // Required to make it work
+                        JOptionPane.showMessageDialog(null, "Button pressed!", "UITester dialog", JOptionPane.INFORMATION_MESSAGE);
+                    });
 					
 					public static ConfigCategory categoryTest = new ConfigCategory.Builder().set(CategoryTest.class).build();
 					

@@ -21,6 +21,7 @@ package com.seibel.distanthorizons.core.render.renderer;
 
 import java.awt.Color;
 
+import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.render.glObject.GLProxy;
 import com.seibel.distanthorizons.core.render.glObject.shader.Shader;
@@ -53,6 +54,7 @@ public class LodRenderProgram extends ShaderProgram
 	public final int earthRadiusUniform;
 
 	public final int lightMapUniform;
+
 	// Fog Uniforms
 	public final int fogColorUniform;
 	public final int fogScaleUniform;
@@ -66,6 +68,9 @@ public class LodRenderProgram extends ShaderProgram
 	public final int noiseStepsUniform;
 	public final int noiseIntensityUniform;
 	public final int noiseDropoffUniform;
+
+	// Debug Uniform
+	public final int whiteWorldUniform;
 
 	public final LodFogConfig fogConfig;
 
@@ -85,7 +90,7 @@ public class LodRenderProgram extends ShaderProgram
 
 		lightMapUniform = getUniformLocation("lightMap");
 
-		// Fog uniforms
+		// Fog Uniforms
 		fullFogModeUniform = getUniformLocation("fullFogMode");
 		fogColorUniform = getUniformLocation("fogColor");
 		fogScaleUniform = tryGetUniformLocation("fogScale");
@@ -94,11 +99,15 @@ public class LodRenderProgram extends ShaderProgram
 		nearFogStartUniform = tryGetUniformLocation("nearFogStart");
 		nearFogLengthUniform = tryGetUniformLocation("nearFogLength");
 
-		// Noise uniforms
+		// Noise Uniforms
 		noiseEnabledUniform = getUniformLocation("noiseEnabled");
 		noiseStepsUniform = getUniformLocation("noiseSteps");
 		noiseIntensityUniform = getUniformLocation("noiseIntensity");
 		noiseDropoffUniform = getUniformLocation("noiseDropoff");
+
+		// Debug Uniform
+		whiteWorldUniform = getUniformLocation("whiteWorld");
+
 
 		// TODO: Add better use of the LODFormat thing
 		int vertexByteCount = LodUtil.LOD_VERTEX_FORMAT.getByteSize();
@@ -122,6 +131,7 @@ public class LodRenderProgram extends ShaderProgram
 		if (earthRadiusUniform != -1) setUniform(earthRadiusUniform,
 				/*6371KM*/ 6371000.0f / fogConfig.earthCurveRatio);
 
+		// Noise Uniforms
 		setUniform(noiseEnabledUniform, fogConfig.noiseEnable);
 		setUniform(noiseStepsUniform, fogConfig.noiseSteps);
 		setUniform(noiseIntensityUniform, fogConfig.noiseIntensity);
@@ -177,6 +187,9 @@ public class LodRenderProgram extends ShaderProgram
 		// Fog
 		setUniform(fullFogModeUniform, fullFogMode ? 1 : 0);
 		setUniform(fogColorUniform, fogColor);
+
+		// Debug
+		setUniform(whiteWorldUniform, Config.Client.Advanced.Debugging.enableWhiteWorld.get());
 
 		float nearFogLen = vanillaDrawDistance * 0.2f / lodDrawDistance;
 		float nearFogStart = vanillaDrawDistance * (VERSION_CONSTANTS.isVanillaRenderedChunkSquare() ? (float)Math.sqrt(2.) : 1.f) / lodDrawDistance;

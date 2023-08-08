@@ -1,10 +1,12 @@
 
-in vec3 vertexWorldPos;
-in float vertexYPos;
-//in vec2 TexCoord;
+in vec2 TexCoord;
+
+//in float vertexYPos;
 
 out vec4 fragColor;
 
+uniform sampler2D gDepthMap;
+uniform mat4 gProj;
 
 uniform float fogScale;
 uniform float fogVerticalScale;
@@ -15,6 +17,20 @@ uniform int fullFogMode;
 uniform vec4 fogColor;
 
 
+/* ========MARCO DEFINED BY RUNTIME CODE GEN=========
+
+float farFogStart;
+float farFogLength;
+float farFogMin;
+float farFogRange;
+float farFogDensity;
+
+float heightFogStart;
+float heightFogLength;
+float heightFogMin;
+float heightFogRange;
+float heightFogDensity;
+*/
 
 // method definitions
 // ==== The below 5 methods will be run-time generated. ====
@@ -42,6 +58,20 @@ float mod(float x, int y) {
 }
 
 
+vec3 calcViewPosition(vec2 coords) {
+    float fragmentDepth = texture(gDepthMap, coords).r;
+
+    vec4 ndc = vec4(
+        coords.x * 2.0 - 1.0,
+        coords.y * 2.0 - 1.0,
+        fragmentDepth * 2.0 - 1.0,
+        1.0
+    );
+
+    vec4 vs_pos = inverse(gProj) * ndc;
+    vs_pos.xyz = vs_pos.xyz / vs_pos.w;
+    return vs_pos.xyz;
+}
 
 /**
  * Fragment shader for fog.
@@ -50,6 +80,9 @@ float mod(float x, int y) {
  * version: 2023-6-21
  */
 void main() {
+    float vertexYPos = 100f;
+    vec3 vertexWorldPos = calcViewPosition(TexCoord);
+
     if (fullFogMode != 0) {
         fragColor = vec4(fogColor.r, fogColor.g, fogColor.b, 1.);
     } else {
@@ -70,16 +103,10 @@ void main() {
 
     // Testing
 //    if (fragColor.r != 6969.) { // This line is so that the compiler doesnt delete the previos code
-////        fragColor = vec4(
-////            mod(vertexWorldPos.x, 1),
-////            mod(vertexWorldPos.y, 1),
-////            mod(vertexWorldPos.z, 1),
-////            1.
-////        );
 //        fragColor = vec4(
-//            mod(vertexYPos, 1),
-//            mod(vertexYPos, 1),
-//            mod(vertexYPos, 1),
+//            mod(texture(gDepthMap, TexCoord).x, 1),
+//            mod(texture(gDepthMap, TexCoord).y, 1),
+//            mod(texture(gDepthMap, TexCoord).z, 1),
 //            1.
 //        );
 //    }

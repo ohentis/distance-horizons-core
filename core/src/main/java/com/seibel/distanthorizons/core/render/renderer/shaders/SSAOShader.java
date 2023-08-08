@@ -1,6 +1,7 @@
 package com.seibel.distanthorizons.core.render.renderer.shaders;
 
 import com.seibel.distanthorizons.core.render.glObject.shader.ShaderProgram;
+import com.seibel.distanthorizons.core.render.glObject.vertexAttribute.VertexAttribute;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.RenderUtil;
 import com.seibel.distanthorizons.coreapi.util.math.Mat4f;
@@ -16,9 +17,9 @@ public class SSAOShader extends AbstractShaderRenderer {
     public SSAOShader() {
         super(
                 new ShaderProgram("shaders/normal.vert", "shaders/ssao/ao.frag",
-                "fragColor", new String[]{"vPos"}),
+                "fragColor", new String[]{"vPosition"}),
                 new ShaderProgram("shaders/normal.vert", "shaders/ssao/apply-frag.frag",
-                        "fragColor", new String[]{"vPos"})
+                        "fragColor", new String[]{"vPosition"})
         );
 
     }
@@ -26,6 +27,11 @@ public class SSAOShader extends AbstractShaderRenderer {
     void postInit() {
         // Generate kernel
         kernel = genKernel();
+    }
+
+    @Override
+    void setVertexAttributes() {
+        va.setVertexAttribute(0, 0, VertexAttribute.VertexPointer.addVec2Pointer(false));
     }
 
     @Override

@@ -224,7 +224,7 @@
   "distanthorizons.config.client.advanced.graphics.noiseTextureSettings.noiseDropoff":
     "Noise Dropoff",
   "distanthorizons.config.client.advanced.graphics.noiseTextureSettings.noiseDropoff.@tooltip":
-    "How far should the noise texture render before it fades away? \n\n0.0 - the noise texture will render the entire LOD render distance. \n3.0 - the noise texture will fade away at 1/3 of the LOD render distance. ",
+    "Defines how far should the noise texture render before it fades away. (in blocks). \nSet to 0 to disable noise from fading away.",
     
     
   "distanthorizons.config.client.advanced.graphics.advancedGraphics":
@@ -237,7 +237,7 @@
   "distanthorizons.config.client.advanced.graphics.advancedGraphics.seamlessOverdraw":
     "(Experimental) Seamless Overdraw",
   "distanthorizons.config.client.advanced.graphics.advancedGraphics.seamlessOverdraw.@tooltip":
-    "Buggy experimental option that will attempt to match up \nDistant Horizons' and Minecraft's near/far clip planes, \nreducing overdraw.",
+    "Buggy experimental option that will attempt to match up \nDistant Horizons' and Minecraft's near/far clip planes, \nreducing overdraw. \n\nNote: only works with Fabric.",
   "distanthorizons.config.client.advanced.graphics.advancedGraphics.brightnessMultiplier":
     "Brightness Multiplier",
   "distanthorizons.config.client.advanced.graphics.advancedGraphics.brightnessMultiplier.@tooltip":
@@ -383,7 +383,11 @@
   "distanthorizons.config.client.advanced.debugging.debugWireframeRendering":
     "Enable Debug Wireframe Rendering",
   "distanthorizons.config.client.advanced.debugging.debugWireframeRendering.@tooltip":
-    "If enabled, various wireframes for debugging internal functions will be drawn.", 
+    "If enabled, various wireframes for debugging internal functions will be drawn.",
+  "distanthorizons.config.client.advanced.debugging.enableWhiteWorld":
+    "Enable white world",
+  "distanthorizons.config.client.advanced.debugging.enableWhiteWorld.@tooltip":
+    "If enabled, vertex color will not be passed.\nUseful for debugging shaders.",
   "distanthorizons.config.client.advanced.debugging.allowUnsafeValues":
     "Allow Unsafe UI Values",
   "distanthorizons.config.client.advanced.debugging.allowUnsafeValues.@tooltip":
@@ -460,6 +464,8 @@
     "Float test",
   "distanthorizons.config.client.advanced.debugging.exampleConfigScreen.stringTest":
     "String test",
+  "distanthorizons.config.client.advanced.debugging.exampleConfigScreen.uiButtonTest":
+    "UI Button test",
   "distanthorizons.config.client.advanced.debugging.exampleConfigScreen.listTest":
     "List (ArrayList) test",
   "distanthorizons.config.client.advanced.debugging.exampleConfigScreen.mapTest":

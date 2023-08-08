@@ -134,8 +134,5 @@ public interface IMinecraftRenderWrapper extends IBindable
 
 	ILightMapWrapper getLightmapWrapper();
 	
-	// Try and disable vanilla fog. Return true if successful, or false if not able to.
-	boolean tryDisableVanillaFog();
-
 	
 }

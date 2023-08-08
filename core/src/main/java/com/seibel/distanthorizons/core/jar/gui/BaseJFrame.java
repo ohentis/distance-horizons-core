@@ -59,7 +59,7 @@ public class BaseJFrame extends JFrame {
         // Creates a list with all the options in it
         List<String> langsToChoose = new ArrayList<>();
         try(
-                final InputStreamReader isr = new InputStreamReader(JarUtils.accessFile("assets/lod/lang"), StandardCharsets.UTF_8);
+                final InputStreamReader isr = new InputStreamReader(JarUtils.accessFile("assets/distanthorizons/lang"), StandardCharsets.UTF_8);
                 final BufferedReader br = new BufferedReader(isr)
         ) {
             List<Object> col = Collections.unmodifiableList(new ArrayList<>(Arrays.asList(br.lines().toArray())));
@@ -87,11 +87,11 @@ public class BaseJFrame extends JFrame {
         // Try to set the icons for them
         try {
             lightMode = new JButton(new ImageIcon(
-                    new FlatSVGIcon(JarUtils.accessFile("assets/lod/textures/jar/themeLight.svg")).getImage() // Get the image
+                    new FlatSVGIcon(JarUtils.accessFile("assets/distanthorizons/textures/jar/themeLight.svg")).getImage() // Get the image
                             .getScaledInstance(themeButtonSize, themeButtonSize, Image.SCALE_DEFAULT) // Scale it to the correct size
             ));
             darkMode = new JButton(new ImageIcon(
-                    new FlatSVGIcon(JarUtils.accessFile("assets/lod/textures/jar/themeDark.svg")).getImage() // Get the image
+                    new FlatSVGIcon(JarUtils.accessFile("assets/distanthorizons/textures/jar/themeDark.svg")).getImage() // Get the image
                             .getScaledInstance(themeButtonSize, themeButtonSize, Image.SCALE_DEFAULT) // Scale it to the correct size
             ));
         } catch (Exception e) {e.printStackTrace();}
@@ -139,8 +139,7 @@ public class BaseJFrame extends JFrame {
     // This part of the code is taken from the official java docs at https://docs.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html
 
     // Specify the look and feel to use by defining the LOOKANDFEEL constant
-    // Valid values are: null (use the default), "Metal", "System", "Motif",
-    // and "GTK"
+    // Valid values are: null (use the default), "Metal", "System", "Motif", and "GTK"
     final static String LOOKANDFEEL = "GTK";
     private static void initLookAndFeel() {
         String lookAndFeel = null;

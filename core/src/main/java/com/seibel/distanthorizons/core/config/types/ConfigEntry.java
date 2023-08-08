@@ -7,12 +7,8 @@ import com.seibel.distanthorizons.core.config.types.enums.EConfigEntryAppearance
 import com.seibel.distanthorizons.core.config.types.enums.EConfigEntryPerformance;
 import com.seibel.distanthorizons.coreapi.interfaces.config.IConfigEntry;
 
-import java.time.temporal.Temporal;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
-
-import static com.electronwill.nightconfig.core.NullObject.NULL_OBJECT;
 
 /**
  * Use for making the config variables
@@ -44,29 +40,7 @@ public class ConfigEntry<T> extends AbstractConfigType<T, ConfigEntry<T>> implem
     private ConfigEntry(EConfigEntryAppearance appearance, T value, String comment, T min, T max, boolean allowApiOverride, EConfigEntryPerformance performance, ArrayList<IConfigListener> listenerList)
 	{
         super(appearance, value);
-		
-		// runtime check to make sure the config value is supported by NightConfig,
-		// unfortunately we can't do this type of check statically without Java 16
-		if (value == null)
-		{
-			throw new IllegalArgumentException("ConfigEntry setup failure. TOML doesn't support saving null values.");
-		}
-		// all of these types were taken from NightConfig's writing code
-		else if (!(value instanceof List)
-				&& !(value instanceof CharSequence) // String
-				&& !(value instanceof Enum)
-				&& !(value instanceof Temporal) // Date or DateTime
-				&& !(value instanceof Float || value instanceof Double)
-				&& !(value instanceof Number)
-				&& !(value instanceof Boolean)
-				// optional type that is specific to NightConfig, currently commented out so we aren't tied quite so tightly to NightConfig
-				//&& !(value instanceof Config) // NightConfig interface
-				)
-		{
-			throw new IllegalArgumentException("ConfigEntry setup failure. Value type ["+value.getClass()+"] is not supported by NightConfig.");
-		}
-		
-		
+
         this.defaultValue = value;
         this.comment = comment;
         this.min = min;

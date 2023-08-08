@@ -15,17 +15,25 @@ import java.util.Map;
  */
 public class ConfigTypeConverters {
     // Once you've made a converter add it to here where the first value is the type you want to convert and the 2nd value is the converter
-    public static final Map<Class, ConverterBase> convertObjects = new HashMap<Class, ConverterBase>() {{
+    public static final Map<Class<?>, ConverterBase> convertObjects = new HashMap<Class<?>, ConverterBase>() {{
         put(Short.class, new ShortConverter());
         put(Long.class, new LongConverter());
         put(Float.class, new FloatConverter());
         put(Byte.class, new ByteConverter());
 
         put(Map.class, new MapConverter());
-        put(HashMap.class, new MapConverter());
     }};
 
-    public static String convertToString(Class clazz, Object value) {
+    public static Class<?> isClassConvertable(Class<?> clazz) {
+        for (int i = 0; i < convertObjects.size(); i++) {
+            Class<?> selectedClass = (Class<?>) convertObjects.keySet().toArray()[i];
+            if (selectedClass.isAssignableFrom(clazz))
+                return selectedClass;
+        }
+        return null;
+    }
+
+    public static String convertToString(Class<?> clazz, Object value) {
         try {
             return convertObjects.get(clazz).convertToString(value);
         } catch (Exception e) {
@@ -33,7 +41,7 @@ public class ConfigTypeConverters {
             return null;
         }
     }
-    public static Object convertFromString(Class clazz, String value) {
+    public static Object convertFromString(Class<?> clazz, String value) {
         try {
             return convertObjects.get(clazz).convertFromString(value);
         } catch (Exception e) {

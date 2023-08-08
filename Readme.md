@@ -17,7 +17,7 @@ It should be automatically included when pulling the full mod.
 LZ4 for Java (data compression)\
 https://github.com/lz4/lz4-java
 
-Json & Toml for Java (config handling)\
+NightConfig for Json & Toml (config handling)\
 https://github.com/TheElectronWill/night-config
 
 SVG Salamander for SVG's\

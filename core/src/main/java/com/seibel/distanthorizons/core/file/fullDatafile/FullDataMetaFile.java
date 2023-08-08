@@ -175,6 +175,7 @@ public class FullDataMetaFile extends AbstractMetaDataContainerFile implements I
 		this.fullDataSourceLoader = AbstractFullDataSourceLoader.getLoader(this.baseMetaData.dataTypeId, this.baseMetaData.binaryDataFormatVersion);
 		if (this.fullDataSourceLoader == null)
 		{
+			// TODO add a hard coded dictionary of known ID name combos so we can easily see in the log if the ID is valid or if the data was corrupted/old
 			throw new IOException("Invalid file: Data type loader not found: "+this.baseMetaData.dataTypeId+"(v"+this.baseMetaData.binaryDataFormatVersion +")");
 		}
 		

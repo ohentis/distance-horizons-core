@@ -29,7 +29,8 @@ import com.seibel.distanthorizons.coreapi.util.BitShiftUtil;
  */
 public class FullDataToRenderDataTransformer
 {
-    private static final IBlockStateWrapper AIR = SingletonInjector.INSTANCE.get(IWrapperFactory.class).getAirBlockStateWrapper();
+	private static final IWrapperFactory WRAPPER_FACTORY = SingletonInjector.INSTANCE.get(IWrapperFactory.class);
+	private static final IBlockStateWrapper AIR = WRAPPER_FACTORY.getAirBlockStateWrapper();
 	
 	
 	

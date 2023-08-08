@@ -6,6 +6,7 @@ import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.render.fog.LodFogConfig;
 import com.seibel.distanthorizons.core.render.glObject.shader.Shader;
 import com.seibel.distanthorizons.core.render.glObject.shader.ShaderProgram;
+import com.seibel.distanthorizons.core.render.glObject.vertexAttribute.VertexAttribute;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.RenderUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.IVersionConstants;
@@ -21,7 +22,10 @@ public class FogShader extends AbstractShaderRenderer {
 
 
 //    public final int modelOffsetUniform;
-    public final int worldYOffsetUniform;
+//    public final int worldYOffsetUniform;
+
+    public final int gProjUniform;
+    public final int gDepthMapUniform;
 
     // Fog Uniforms
     public final int fogColorUniform;
@@ -36,13 +40,16 @@ public class FogShader extends AbstractShaderRenderer {
         // This code is just a temp fix so that it looks fine for the time being
         // and even with the jank soloution, i cannot get it to work
         super(new ShaderProgram(
-                () -> Shader.loadFile("shaders/fog/fog.vert", false, new StringBuilder()).toString(),
+                () -> Shader.loadFile("shaders/normal.vert", false, new StringBuilder()).toString(),
                 () -> fogConfig.loadAndProcessFragShader("shaders/fog/fog.frag", false).toString(),
-                "fragColor", new String[] { "vPosition", "vPos", "color" }
+                "fragColor", new String[] { "vPosition" }
         ));
 
 //        modelOffsetUniform = this.shader.getUniformLocation("modelOffset");
-        worldYOffsetUniform = this.shader.getUniformLocation("worldYOffset");
+//        worldYOffsetUniform = this.shader.tryGetUniformLocation("worldYOffset");
+
+        gProjUniform = this.shader.getUniformLocation("gProj");
+        gDepthMapUniform = this.shader.getUniformLocation("gDepthMap");
         // Fog uniforms
         fogColorUniform = this.shader.getUniformLocation("fogColor");
         fullFogModeUniform = this.shader.getUniformLocation("fullFogMode");
@@ -53,6 +60,10 @@ public class FogShader extends AbstractShaderRenderer {
         nearFogLengthUniform = this.shader.tryGetUniformLocation("nearFogLength");
     }
 
+    @Override
+    void setVertexAttributes() {
+        va.setVertexAttribute(0, 0, VertexAttribute.VertexPointer.addVec2Pointer(false));
+    };
 
     @Override
     void setShaderUniforms(float partialTicks) {
@@ -62,8 +73,19 @@ public class FogShader extends AbstractShaderRenderer {
         vanillaDrawDistance += 32; // Give it a 2 chunk boundary for near fog.
 
 
-        this.shader.setUniform(worldYOffsetUniform, (float) MC.getWrappedClientWorld().getMinHeight());
+        Mat4f perspective = Mat4f.perspective(
+                (float) MC_RENDER.getFov(partialTicks),
+                MC_RENDER.getTargetFrameBufferViewportWidth() / (float) MC_RENDER.getTargetFrameBufferViewportHeight(),
+                RenderUtil.getNearClipPlaneDistanceInBlocks(partialTicks),
+                (float) ((lodDrawDistance + LodUtil.REGION_WIDTH) * Math.sqrt(2)));
 
+
+
+//        if (worldYOffsetUniform != -1) this.shader.setUniform(worldYOffsetUniform, (float) MC.getWrappedClientWorld().getMinHeight());
+
+
+        this.shader.setUniform(this.shader.getUniformLocation("gProj"), perspective);
+        GL32.glUniform1i(gDepthMapUniform, 0);
         // Fog
         this.shader.setUniform(fullFogModeUniform, MC_RENDER.isFogStateSpecial() ? 1 : 0);
         this.shader.setUniform(fogColorUniform, MC_RENDER.isFogStateSpecial() ? getSpecialFogColor(partialTicks) : getFogColor(partialTicks));

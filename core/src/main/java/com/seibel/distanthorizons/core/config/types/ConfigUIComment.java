@@ -7,7 +7,7 @@ import com.seibel.distanthorizons.core.config.types.enums.EConfigEntryAppearance
  *
  * @author coolGi
  */
-public class ConfigUIComment extends AbstractConfigType<String, ConfigUIComment>{
+public class ConfigUIComment extends AbstractConfigType<String, ConfigUIComment> {
     public ConfigUIComment() {
         super(EConfigEntryAppearance.ONLY_IN_GUI, "");
     }

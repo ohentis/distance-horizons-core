@@ -8,6 +8,8 @@ out vec4 vertexColor;
 out vec3 vertexWorldPos;
 out float vertexYPos;
 
+uniform bool whiteWorld;
+
 uniform mat4 combinedMatrix;
 uniform vec3 modelOffset;
 uniform float worldYOffset;
@@ -51,7 +53,9 @@ void main()
 
 	float light2 = (mod(float(lights), 16.0)+0.5) / 16.0;
 	float light = (float(lights/16u)+0.5) / 16.0;
-	vertexColor = color * vec4(texture(lightMap, vec2(light, light2)).xyz, 1.0);
+	vertexColor = vec4(texture(lightMap, vec2(light, light2)).xyz, 1.0);
+    if (!whiteWorld)
+        vertexColor *= color;
 
     gl_Position = combinedMatrix * vec4(vertexWorldPos + vec3(mx, 0, mz), 1.0);
 }

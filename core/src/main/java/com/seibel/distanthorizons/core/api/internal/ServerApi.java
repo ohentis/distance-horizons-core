@@ -21,6 +21,7 @@ package com.seibel.distanthorizons.core.api.internal;
 
 import com.seibel.distanthorizons.api.methods.events.abstractEvents.DhApiLevelLoadEvent;
 import com.seibel.distanthorizons.api.methods.events.abstractEvents.DhApiLevelUnloadEvent;
+import com.seibel.distanthorizons.core.generation.DhLightingEngine;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
 import com.seibel.distanthorizons.core.level.IDhLevel;
@@ -33,6 +34,9 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
 import org.apache.logging.log4j.Logger;
+
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * This holds the methods that should be called by the host mod loader (Fabric,
@@ -148,6 +152,32 @@ public class ServerApi
 			IDhLevel dhLevel = SharedApi.getAbstractDhWorld().getLevel(level);
 			if (dhLevel != null)
 			{
+				
+				// Save or populate the chunk wrapper's lighting
+				// this is done so we don't have to worry about MC unloading the lighting data for this chunk
+				if (chunk.isLightCorrect())
+				{
+					try
+					{
+						chunk.bakeDhLightingUsingMcLightingEngine();
+						chunk.setUseDhLighting(true);
+					}
+					catch (IllegalStateException e)
+					{
+						LOGGER.warn(e.getMessage(), e);
+					}
+				}
+				else
+				{
+					// generate the chunk's lighting, ignoring neighbors.
+					// not a perfect solution, but should prevent chunks from having completely broken lighting
+					List<IChunkWrapper> nearbyChunkList = new LinkedList<>();
+					nearbyChunkList.add(chunk);
+					DhLightingEngine.INSTANCE.lightChunks(chunk, nearbyChunkList, level.hasSkyLight() ? 15 : 0);
+					chunk.setUseDhLighting(true);
+				}
+				
+				
 				dhLevel.updateChunkAsync(chunk);
 			}
 		}

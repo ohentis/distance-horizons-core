@@ -112,9 +112,12 @@ public class ConfigFileHandling {
     @SuppressWarnings("unchecked")
     public void saveEntry(ConfigEntry<?> entry, CommentedFileConfig workConfig) {
         if (!entry.getAppearance().showInFile) return;
+        if (entry.getTrueValue() == null)
+            throw new IllegalArgumentException("Entry ["+ entry.getNameWCategory() +"] is null, this may be a problem with ["+ configBase.modName +"]. Please contact the authors");
 
-        if (ConfigTypeConverters.convertObjects.containsKey(entry.getType())) {
-            workConfig.set(entry.getNameWCategory(), ConfigTypeConverters.convertToString(entry.getType(), entry.getTrueValue()));
+        Class<?> originalClass = ConfigTypeConverters.isClassConvertable(entry.getType());
+        if (originalClass != null) {
+            workConfig.set(entry.getNameWCategory(), ConfigTypeConverters.convertToString(originalClass, entry.getTrueValue()));
             return;
         }
         workConfig.set(entry.getNameWCategory(), entry.getTrueValue());
@@ -139,8 +142,9 @@ public class ConfigFileHandling {
                     entry.setWithoutSaving((T) ( workConfig.getEnum(entry.getNameWCategory(), (Class<? extends Enum>) entry.getType())));
                     return;
                 }
-                if (ConfigTypeConverters.convertObjects.containsKey(entry.getType())) {
-                    entry.setWithoutSaving((T) ConfigTypeConverters.convertFromString(entry.getType(), workConfig.get(entry.getNameWCategory())));
+                Class<?> originalClass = ConfigTypeConverters.isClassConvertable(entry.getType());
+                if (originalClass != null) {
+                    entry.setWithoutSaving((T) ConfigTypeConverters.convertFromString(originalClass, workConfig.get(entry.getNameWCategory())));
                     return;
                 }
 

@@ -10,6 +10,7 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.wrapperInterfaces.IVersionConstants;
 import org.apache.logging.log4j.Logger;
 
+import javax.swing.*;
 import java.io.File;
 import java.net.URL;
 import java.nio.file.Files;
@@ -107,6 +108,10 @@ public class SelfUpdater {
             deleteOldOnClose = true;
 
             LOGGER.info(ModInfo.READABLE_NAME + " successfully updated. It will apply on game's relaunch");
+            new Thread(() -> {
+                System.setProperty("java.awt.headless", "false"); // Required to make it work
+                JOptionPane.showMessageDialog(null,  ModInfo.READABLE_NAME+ " updated, this will be applied on game restart.", ModInfo.READABLE_NAME, JOptionPane.INFORMATION_MESSAGE);
+            }).start();
             return true;
         } catch (Exception e) {
             LOGGER.warn("Failed to update "+ModInfo.READABLE_NAME+" to version "+ModrinthGetter.getLatestNameForVersion(minecraftVersion));

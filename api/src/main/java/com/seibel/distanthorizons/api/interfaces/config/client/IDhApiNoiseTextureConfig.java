@@ -40,11 +40,9 @@ public interface IDhApiNoiseTextureConfig extends IDhApiConfigGroup
 	IDhApiConfigValue<Double> noiseIntensity();
 	
 	/**
-	 * Defines how far should the noise texture render before it fades away. <br><br>
-	 * 
-	 * 0.0 - the noise texture will render the entire LOD render distance. <br>
-	 * 3.0 - the noise texture will fade away at 1/3 of the LOD render distance.
+	 * Defines how far should the noise texture render before it fades away. (in blocks) <br>
+	 * Set to 0 to disable noise from fading away
 	 */
-	IDhApiConfigValue<Double> noiseDropoff();
+	IDhApiConfigValue<Integer> noiseDropoff();
 	
 }

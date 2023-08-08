@@ -17,6 +17,7 @@ public class ModrinthGetter {
     public static final String projectID = "distanthorizons";
     public static boolean initted = false;
     public static ArrayList<Config> projectRelease;
+    public static Map<String, Config> idToJson = new HashMap<>();
 
     public static List<String> releaseID = new ArrayList<>(); // This list contains the release ID's
     public static List<String> mcVersions = new ArrayList<>(); // List of available Minecraft versions in the mod
@@ -44,6 +45,7 @@ public class ModrinthGetter {
                 String workingID = currentRelease.get("id").toString();
 
                 releaseID.add(workingID);
+                idToJson.put(workingID, currentRelease);
                 releaseNames.put(workingID, currentRelease.get("name").toString().replaceAll(" - 1\\..*", ""));
                 changeLogs.put(workingID, currentRelease.get("changelog").toString());
                 try {
@@ -88,11 +90,9 @@ public class ModrinthGetter {
         return downloadUrl.get(mcVerToReleaseID.get(mcVer).get(0));
     }
     public static String getLatestShaForVersion(String mcVer) {
-        return ((Config)
-                ((ArrayList) projectRelease.get(
-                        mcVersions.indexOf(mcVer)
-                ).get("files")).get(0))
-                .get("hashes.sha1")
-                .toString();
+        return (((ArrayList<Config>) idToJson.get(
+                        mcVerToReleaseID.get(mcVer).get(0)
+                ).get("files")).get(0).get("hashes.sha1")
+                .toString());
     }
 }
