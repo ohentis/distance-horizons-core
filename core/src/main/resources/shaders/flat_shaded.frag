@@ -1,3 +1,4 @@
+#version 150
 
 in vec4 vertexColor;
 in vec3 vertexWorldPos;
@@ -6,12 +7,6 @@ in vec4 vPos;
 
 out vec4 fragColor;
 
-// Fog Uniforms
-uniform float fogScale;
-uniform float fogVerticalScale;
-uniform float nearFogStart;
-uniform float nearFogLength;
-uniform int fullFogMode;
 
 // Noise Uniforms
 uniform bool noiseEnabled;
@@ -19,32 +14,8 @@ uniform int noiseSteps;
 uniform float noiseIntensity;
 uniform int noiseDropoff;
 
-/* ========MARCO DEFINED BY RUNTIME CODE GEN=========
-
-float farFogStart;
-float farFogLength;
-float farFogMin;
-float farFogRange;
-float farFogDensity;
-
-float heightFogStart;
-float heightFogLength;
-float heightFogMin;
-float heightFogRange;
-float heightFogDensity;
-*/
-
-uniform vec4 fogColor;
 
 // method definitions
-// ==== The below 5 methods will be run-time generated. ====
-float getNearFogThickness(float dist);
-float getFarFogThickness(float dist);
-float getHeightFogThickness(float dist);
-float calculateFarFogDepth(float horizontal, float dist, float nearFogStart);
-float calculateHeightFogDepth(float vertical, float realY);
-float mixFogThickness(float near, float far, float height);
-// =========================================================
 
 float fade(float value, float start, float end) {
     return (clamp(value,start,end)-start)/(end-start);
@@ -97,7 +68,7 @@ vec3 HSV2RGB(vec3 c) {
 void main()
 {
     fragColor = vertexColor;
-
+    
 
     // TODO: Move into its own function instead of in an if statement
     if (noiseEnabled) {
@@ -154,30 +125,6 @@ void main()
         //                mod(fixedVPos.z, 1),
         //            fragColor.w);
         //        }
-    }
-
-    // TODO: Move into its own function instead of in an if statement
-    // This is so that it can apply after the SSAO (work for this has started in the FogShader file and fog/fog.frag shader)
-    if (fullFogMode != 0) {
-        fragColor = vec4(fogColor.rgb, 1.0);
-    } else {
-        // TODO: add a white texture to support Optifine shaders
-        //vec4 textureColor = texture(texImage, textureCoord);
-        //fragColor = vertexColor * textureColor;
-
-        float horizontalDist = length(vertexWorldPos.xz) * fogScale;
-        float heightDist = calculateHeightFogDepth(
-            vertexWorldPos.y, vertexYPos) * fogVerticalScale;
-        float farDist = calculateFarFogDepth(horizontalDist,
-            length(vertexWorldPos.xyz) * fogScale, nearFogStart);
-
-        float nearFogThickness = getNearFogThickness(horizontalDist);
-        float farFogThickness = getFarFogThickness(farDist);
-        float heightFogThickness = getHeightFogThickness(heightDist);
-        float mixedFogThickness = clamp(mixFogThickness(
-            nearFogThickness, farFogThickness, heightFogThickness), 0.0, 1.0);
-
-        fragColor = mix(fragColor, vec4(fogColor.rgb, 1.0), mixedFogThickness);
     }
 }
 

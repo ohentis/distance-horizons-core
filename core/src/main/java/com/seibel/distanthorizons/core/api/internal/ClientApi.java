@@ -489,7 +489,7 @@ public class ClientApi
 
 
 
-			profiler.push("Render" + (Config.Client.Advanced.Debugging.rendererMode.get() == ERendererMode.DEFAULT ? "-lods" : "-debug"));
+			
 			try
 			{
 				if (Config.Client.Advanced.Debugging.rendererMode.get() == ERendererMode.DEFAULT)
@@ -508,7 +508,9 @@ public class ClientApi
 				}
 				else if (Config.Client.Advanced.Debugging.rendererMode.get() == ERendererMode.DEBUG)
 				{
+					profiler.push("Render Debug");
 					ClientApi.testRenderer.render();
+					profiler.pop();
 				}
 				// the other rendererMode is DISABLED
 			}
@@ -522,7 +524,6 @@ public class ClientApi
 				MC.sendChatMessage("\u00A74Renderer is now disabled to prevent further issues.");
 				MC.sendChatMessage("\u00A74Exception detail: " + e);
 			}
-			profiler.pop();
 		}
 		catch (Exception e)
 		{

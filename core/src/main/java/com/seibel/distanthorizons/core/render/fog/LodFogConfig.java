@@ -164,13 +164,14 @@ public class LodFogConfig
 	
 	public StringBuilder loadAndProcessFragShader(String path, boolean absoluteFilePath)
 	{
-		StringBuilder str = makeRuntimeDefine();
-		generateRuntimeShaderCode(Shader.loadFile(path, absoluteFilePath, str));
+		StringBuilder stringBuilder = this.makeRuntimeDefine();
+		this.generateRuntimeShaderCode(Shader.loadFile(path, absoluteFilePath, stringBuilder));
+		
 		if (DEBUG_DUMP_GENERATED_CODE)
 		{
 			try (FileOutputStream file = new FileOutputStream("debugGenerated.frag", false))
 			{
-				file.write(str.toString().getBytes(StandardCharsets.UTF_8));
+				file.write(stringBuilder.toString().getBytes(StandardCharsets.UTF_8));
 				GLProxy.GL_LOGGER.info("Debug dumped generated code to debugGenerated.frag for {}", path);
 			}
 			catch (IOException e)
@@ -178,7 +179,8 @@ public class LodFogConfig
 				GLProxy.GL_LOGGER.warn("Failed to debug dump generated code to file for {}", path);
 			}
 		}
-		return str;
+		
+		return stringBuilder;
 	}
 	
 	/** Generates the necessary constants for a fragment shader */

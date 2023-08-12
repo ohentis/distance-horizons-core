@@ -55,7 +55,9 @@ void main()
 	float light = (float(lights/16u)+0.5) / 16.0;
 	vertexColor = vec4(texture(lightMap, vec2(light, light2)).xyz, 1.0);
     if (!whiteWorld)
+    {
         vertexColor *= color;
+    }
 
     gl_Position = combinedMatrix * vec4(vertexWorldPos + vec3(mx, 0, mz), 1.0);
 }

@@ -146,7 +146,10 @@ public class ShaderProgram
 	public int getUniformLocation(CharSequence name)
 	{
 		int i = GL32.glGetUniformLocation(id, name);
-		if (i==-1) throw new RuntimeException("Uniform name not found: "+name);
+		if (i==-1)
+		{
+			throw new RuntimeException("Uniform name not found: "+name);
+		}
 		return i;
 	}
 

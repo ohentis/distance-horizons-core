@@ -1,12 +1,11 @@
 
 in vec2 TexCoord;
 
-//in float vertexYPos;
-
 out vec4 fragColor;
 
 uniform sampler2D gDepthMap;
-uniform mat4 gProj;
+// model view matrix and projection matrix
+uniform mat4 gMvmProj;
 
 uniform float fogScale;
 uniform float fogVerticalScale;
@@ -58,19 +57,18 @@ float mod(float x, int y) {
 }
 
 
-vec3 calcViewPosition(vec2 coords) {
-    float fragmentDepth = texture(gDepthMap, coords).r;
-
+vec3 calcViewPosition(float fragmentDepth)
+{
     vec4 ndc = vec4(
-        coords.x * 2.0 - 1.0,
-        coords.y * 2.0 - 1.0,
+        TexCoord.x * 2.0 - 1.0,
+        TexCoord.y * 2.0 - 1.0,
         fragmentDepth * 2.0 - 1.0,
         1.0
     );
 
-    vec4 vs_pos = inverse(gProj) * ndc;
-    vs_pos.xyz = vs_pos.xyz / vs_pos.w;
-    return vs_pos.xyz;
+    vec4 eyeCoord = inverse(gMvmProj) * ndc;
+    vec3 cameraPos = eyeCoord.xyz / eyeCoord.w;
+    return cameraPos;
 }
 
 /**
@@ -79,37 +77,52 @@ vec3 calcViewPosition(vec2 coords) {
  *
  * version: 2023-6-21
  */
-void main() {
-    float vertexYPos = 100f;
-    vec3 vertexWorldPos = calcViewPosition(TexCoord);
+void main() 
+{
+    float vertexYPos = 100.0f;
+    float fragmentDepth = texture(gDepthMap, TexCoord).r;
 
-    if (fullFogMode != 0) {
-        fragColor = vec4(fogColor.r, fogColor.g, fogColor.b, 1.);
-    } else {
-        float horizontalDist = length(vertexWorldPos.xz) * fogScale;
-        float heightDist = calculateHeightFogDepth(
-        vertexWorldPos.y, vertexYPos) * fogVerticalScale;
-        float farDist = calculateFarFogDepth(horizontalDist,
-        length(vertexWorldPos.xyz) * fogScale, nearFogStart);
+    // a fragment depth of "1" means the fragment wasn't drawn to,
+    // we only want to apply Fog to LODs, not to the sky outside the LODs
+    if (fragmentDepth != 1.0)
+    {
+        if (fullFogMode == 0)
+        {
+            // render fog based on distance from the camera
+            vec3 vertexWorldPos = calcViewPosition(fragmentDepth);
 
-        float nearFogThickness = getNearFogThickness(horizontalDist);
-        float farFogThickness = getFarFogThickness(farDist);
-        float heightFogThickness = getHeightFogThickness(heightDist);
-        float mixedFogThickness = clamp(mixFogThickness(
-        nearFogThickness, farFogThickness, heightFogThickness), 0.0, 1.0);
+            float horizontalDist = length(vertexWorldPos.xz) * fogScale;
+            float heightDist = calculateHeightFogDepth(vertexWorldPos.y, vertexYPos) * fogVerticalScale;
+            float farDist = calculateFarFogDepth(horizontalDist, length(vertexWorldPos.xyz) * fogScale, nearFogStart);
 
-        fragColor = vec4(fogColor.r, fogColor.g, fogColor.b, mixedFogThickness);
+            float nearFogThickness = getNearFogThickness(horizontalDist);
+            float farFogThickness = getFarFogThickness(farDist);
+            float heightFogThickness = getHeightFogThickness(heightDist);
+            float mixedFogThickness =
+            clamp(
+                mixFogThickness(nearFogThickness, farFogThickness, heightFogThickness)
+            , 0.0, 1.0);
+
+            fragColor = vec4(fogColor.r, fogColor.g, fogColor.b, mixedFogThickness);
+        }
+        else if (fullFogMode == 1)
+        {
+            // render everything with the fog color
+            fragColor = vec4(fogColor.r, fogColor.g, fogColor.b, 1.0);
+        }
+        else
+        {
+            // test code.
+
+            // this can be fired by manually changing the fullFogMode to a (normally)
+            // invalid value (like 7). By having a separate if statement defined by
+            // a uniform we don't have to worry about GLSL optimizing away different
+            // options when testing, causing a bunch of headaches if we just want to render the screen red.
+
+            float depthValue = texture(gDepthMap, TexCoord).r;
+            fragColor = vec4(vec3(depthValue), 1.0); // Convert depth value to grayscale color
+        }
     }
-
-    // Testing
-//    if (fragColor.r != 6969.) { // This line is so that the compiler doesnt delete the previos code
-//        fragColor = vec4(
-//            mod(texture(gDepthMap, TexCoord).x, 1),
-//            mod(texture(gDepthMap, TexCoord).y, 1),
-//            mod(texture(gDepthMap, TexCoord).z, 1),
-//            1.
-//        );
-//    }
 }
 
 

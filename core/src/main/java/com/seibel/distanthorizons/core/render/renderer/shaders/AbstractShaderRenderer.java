@@ -48,7 +48,8 @@ public abstract class AbstractShaderRenderer {
         this.applyShader = applyShader;
     }
 
-    private void init() {
+    private void init() 
+    {
 		if (init) return;
 		init = true;
 
@@ -61,7 +62,7 @@ public abstract class AbstractShaderRenderer {
         // Some shader stuff needs to be set a bit later than
         this.postInit();
         // Framebuffer
-        createBuffer();
+        this.createBuffer();
     }
 
     /** Sets all the vertex attributes */
@@ -75,16 +76,19 @@ public abstract class AbstractShaderRenderer {
     /** Overwrite if you need to run something on runtime */
     void postInit() {};
 
-    public void render(float partialTicks) {
+	// TODO pass in the Model View and Projection Matrices along with the ticks
+    public void render(float partialTicks)
+    {
         GLState state = new GLState();
-		init();
+		this.init();
         int width = MC_RENDER.getTargetFrameBufferViewportWidth();
         int height = MC_RENDER.getTargetFrameBufferViewportHeight();
 
-        if (this.width != width || this.height != height) {
+        if (this.width != width || this.height != height)
+		{
             this.width = width;
             this.height = height;
-            createFramebuffer(width, height);
+            this.createFramebuffer(width, height);
         }
 
 
@@ -100,64 +104,76 @@ public abstract class AbstractShaderRenderer {
         this.setShaderUniforms(partialTicks);
         va.bind();
         va.bindBufferToAllBindingPoint(boxBuffer.getId());
-
+	    
         GL32.glActiveTexture(GL32.GL_TEXTURE0);
         GL32.glBindTexture(GL32.GL_TEXTURE_2D, MC_RENDER.getDepthTextureId());
 
         GL32.glDrawArrays(GL32.GL_TRIANGLES, 0, 6);
 
-        if (applyShader != null) {
-            applyShader.bind();
-            this.setApplyShaderUniforms(partialTicks);
+        if (applyShader != null)
+        {
+	        applyShader.bind();
+	        this.setApplyShaderUniforms(partialTicks);
         }
+	    
         GL32.glEnable(GL11.GL_BLEND);
         GL32.glBlendFunc(GL32.GL_SRC_ALPHA, GL32.GL_ONE_MINUS_SRC_ALPHA);
         GL32.glBindFramebuffer(GL32.GL_FRAMEBUFFER, MC_RENDER.getTargetFrameBuffer());
         GL32.glActiveTexture(GL32.GL_TEXTURE0);
         GL32.glBindTexture(GL32.GL_TEXTURE_2D, shaderTexture);
         GL32.glDrawArrays(GL32.GL_TRIANGLES, 0, 6);
-
-
-
+	    
+		
+		// explicitly unbinding the frame buffer is necessary to prevent GL_CLEAR calls from hitting the wrong buffer
+	    GL32.glBindFramebuffer(GL32.GL_FRAMEBUFFER, 0);
+		
         state.restore();
     }
 
 
-    private void createFramebuffer(int width, int height) {
-        if (framebuffer != -1) {
-            GL32.glDeleteFramebuffers(framebuffer);
-            framebuffer = -1;
+    private void createFramebuffer(int width, int height) 
+    {
+        if (this.framebuffer != -1) 
+		{
+            GL32.glDeleteFramebuffers(this.framebuffer);
+	        this.framebuffer = -1;
         }
 
-        if (shaderTexture != -1) {
-            GL32.glDeleteTextures(shaderTexture);
-            shaderTexture = -1;
+        if (this.shaderTexture != -1)
+		{
+            GL32.glDeleteTextures(this.shaderTexture);
+	        this.shaderTexture = -1;
         }
-
-        framebuffer = GL32.glGenFramebuffers();
-        GL32.glBindFramebuffer(GL32.GL_FRAMEBUFFER, framebuffer);
-
-        shaderTexture = GL32.glGenTextures();
-        GL32.glBindTexture(GL32.GL_TEXTURE_2D, shaderTexture);
+	    
+	    this.framebuffer = GL32.glGenFramebuffers();
+        GL32.glBindFramebuffer(GL32.GL_FRAMEBUFFER, this.framebuffer);
+	    
+	    this.shaderTexture = GL32.glGenTextures();
+        GL32.glBindTexture(GL32.GL_TEXTURE_2D, this.shaderTexture);
         GL32.glTexImage2D(GL32.GL_TEXTURE_2D, 0, GL32.GL_RED, width, height, 0, GL32.GL_RED, GL32.GL_FLOAT, (ByteBuffer) null);
         GL32.glTexParameteri(GL32.GL_TEXTURE_2D, GL32.GL_TEXTURE_MIN_FILTER, GL32.GL_NEAREST);
         GL32.glTexParameteri(GL32.GL_TEXTURE_2D, GL32.GL_TEXTURE_MAG_FILTER, GL32.GL_NEAREST);
-        GL32.glFramebufferTexture2D(GL32.GL_FRAMEBUFFER, GL32.GL_COLOR_ATTACHMENT0, GL32.GL_TEXTURE_2D, shaderTexture, 0);
+        GL32.glFramebufferTexture2D(GL32.GL_FRAMEBUFFER, GL32.GL_COLOR_ATTACHMENT0, GL32.GL_TEXTURE_2D, this.shaderTexture, 0);
     }
 
-    private void createBuffer() {
-        ByteBuffer buffer = ByteBuffer.allocateDirect(box_vertices.length * Float.BYTES);
-        buffer.order(ByteOrder.nativeOrder());
-        buffer.asFloatBuffer().put(box_vertices);
-        buffer.rewind();
-        boxBuffer = new GLVertexBuffer(false);
-        boxBuffer.bind();
-        boxBuffer.uploadBuffer(buffer, box_vertices.length, EGpuUploadMethod.DATA, box_vertices.length * Float.BYTES);
+    private void createBuffer() 
+    {
+		ByteBuffer buffer = ByteBuffer.allocateDirect(box_vertices.length * Float.BYTES);
+		buffer.order(ByteOrder.nativeOrder());
+		buffer.asFloatBuffer().put(box_vertices);
+		buffer.rewind();
+		this.boxBuffer = new GLVertexBuffer(false);
+		this.boxBuffer.bind();
+		this.boxBuffer.uploadBuffer(buffer, box_vertices.length, EGpuUploadMethod.DATA, box_vertices.length * Float.BYTES);
     }
-
-    public void free() {
-        this.shader.free();
-        if (this.applyShader != null)
-            this.applyShader.free();
+	
+    public void free()
+    {
+	    this.shader.free();
+	    if (this.applyShader != null)
+	    {
+		    this.applyShader.free();
+	    }
     }
+	
 }

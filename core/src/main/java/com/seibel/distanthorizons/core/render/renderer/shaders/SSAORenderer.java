@@ -172,23 +172,24 @@ public class SSAORenderer {
         GL32.glUniform1i(ssaoShader.getUniformLocation("gDepthMap"), 0);
         GL32.glDrawArrays(GL32.GL_TRIANGLES, 0, 6);
 
+		
+		
         applyShader.bind();
+	    
         GL32.glEnable(GL11.GL_BLEND);
         GL32.glBlendFunc(GL32.GL_SRC_ALPHA, GL32.GL_ONE_MINUS_SRC_ALPHA);
         GL32.glBindFramebuffer(GL32.GL_FRAMEBUFFER, MC_RENDER.getTargetFrameBuffer());
-        GL32.glActiveTexture(GL32.GL_TEXTURE0);
+        
+		GL32.glActiveTexture(GL32.GL_TEXTURE0);
         GL32.glBindTexture(GL32.GL_TEXTURE_2D, ssaoTexture);
+	    GL32.glUniform1i(applyShader.getUniformLocation("gSSAOMap"), 0);
+	    GL32.glActiveTexture(GL32.GL_TEXTURE1);
+	    GL32.glBindTexture(GL32.GL_TEXTURE_2D, MC_RENDER.getDepthTextureId());
+	    GL32.glUniform1i(applyShader.getUniformLocation("gDepthMap"), 1);
+		
         GL32.glDrawArrays(GL32.GL_TRIANGLES, 0, 6);
 
-        //GL32.glBindFramebuffer(GL32.GL_READ_FRAMEBUFFER, ssaoFramebuffer);
-        //GL32.glBindFramebuffer(GL32.GL_DRAW_FRAMEBUFFER, MC_RENDER.getTargetFrameBuffer());
-        //GL32.glBlitFramebuffer(
-        //		0, 0, width, height,
-        //		0, 0, width, height,
-        //		GL11.GL_COLOR_BUFFER_BIT,
-        //		GL11.GL_NEAREST
-        //);
-
+		
         state.restore();
     }
 
