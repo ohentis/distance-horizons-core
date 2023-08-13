@@ -21,18 +21,27 @@ public class MessageRegistry
 	{
 		// Note: Messages must have parameterless constructors
 		
-		// Keep messages below intact so client/server can disconnect if version does not match
+		// Opening & closing connection
+		// These messages should be compatible with any previous protocol versions
 		this.registerMessage(HelloMessage.class, HelloMessage::new);
 		this.registerMessage(CloseReasonMessage.class, CloseReasonMessage::new);
 		
-		// Define your messages after this line
+		// Core
 		this.registerMessage(AckMessage.class, AckMessage::new);
 		this.registerMessage(CancelMessage.class, CancelMessage::new);
 		this.registerMessage(ExceptionMessage.class, ExceptionMessage::new);
+		
+		// ID & config
 		this.registerMessage(PlayerUUIDMessage.class, PlayerUUIDMessage::new);
 		this.registerMessage(RemotePlayerConfigMessage.class, RemotePlayerConfigMessage::new);
+		
+		// Full data requests
 		this.registerMessage(FullDataSourceRequestMessage.class, FullDataSourceRequestMessage::new);
 		this.registerMessage(FullDataSourceResponseMessage.class, FullDataSourceResponseMessage::new);
+		
+		// Generation task prioritization
+		this.registerMessage(GenTaskPriorityRequestMessage.class, GenTaskPriorityRequestMessage::new);
+		this.registerMessage(GenTaskPriorityResponseMessage.class, GenTaskPriorityResponseMessage::new);
 	}
 	
 	

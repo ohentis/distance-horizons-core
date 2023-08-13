@@ -43,6 +43,18 @@ public class FullDataFileHandler implements IFullDataSourceProvider
 	private final ConcurrentHashMap<DhSectionPos, File> unloadedFiles = new ConcurrentHashMap<>();
 	private final ConcurrentHashMap<DhSectionPos, FullDataMetaFile> fileBySectionPos = new ConcurrentHashMap<>();
 	public void ForEachFile(Consumer<FullDataMetaFile> consumer) { this.fileBySectionPos.values().forEach(consumer); }
+	public Map<DhSectionPos, Integer> getLoadStates(Iterable<DhSectionPos> posList)
+	{
+		HashMap<DhSectionPos, Integer> map = new HashMap<>();
+		for (DhSectionPos pos : posList)
+		{
+			map.put(pos,
+					fileBySectionPos.containsKey(pos) ? 3 // Loaded
+					: unloadedFiles.containsKey(pos) ? 2  // Unloaded
+					: 1);                                 // Not generated
+		}
+		return map;
+	}
 	
 	private LinkedList<Consumer<IFullDataSource>> onUpdatedListeners = new LinkedList<>();
 	

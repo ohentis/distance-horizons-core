@@ -19,7 +19,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
-public class NetworkClient extends NetworkEventSource implements AutoCloseable 
+public class NetworkClient extends NetworkEventSource implements IClientRequestHandler, AutoCloseable
 {
     private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
@@ -102,6 +102,8 @@ public class NetworkClient extends NetworkEventSource implements AutoCloseable
 		// FIXME sometimes this causes the MC connection to crash 
 		//  this might happen if the URL can't be converted to a IP (IE UnknownHostException)
         ChannelFuture connectFuture = this.clientBootstrap.connect(this.address);
+		this.channel = connectFuture.channel();
+		
         connectFuture.addListener((ChannelFuture channelFuture) -> 
 		{
             if (!channelFuture.isSuccess())
@@ -114,7 +116,6 @@ public class NetworkClient extends NetworkEventSource implements AutoCloseable
 			ready = true;
         });
 		
-		this.channel = connectFuture.channel();
 		this.channel.closeFuture().addListener((ChannelFuture channelFuture) ->
 		{
 			ready = false;

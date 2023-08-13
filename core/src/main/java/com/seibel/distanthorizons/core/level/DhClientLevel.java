@@ -8,7 +8,6 @@ import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.generation.WorldRemoteGenerationQueue;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.multiplayer.ClientNetworkState;
-import com.seibel.distanthorizons.core.network.NetworkClient;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
@@ -83,7 +82,7 @@ public class DhClientLevel extends DhLevel implements IDhClientLevel
 	
 	public void doWorldGen()
 	{
-		boolean isClientUsable = networkState != null && !networkState.client().isClosed();
+		boolean isClientUsable = networkState != null && !networkState.getClient().isClosed();
 		boolean shouldDoWorldGen = isClientUsable && clientside.isRendering();
 		boolean isWorldGenRunning = worldGenModule.isWorldGenRunning();
 		if (shouldDoWorldGen && !isWorldGenRunning)

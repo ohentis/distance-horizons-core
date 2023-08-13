@@ -14,9 +14,9 @@ public class CloseReasonMessage extends NetworkMessage
 	public CloseReasonMessage(String reason) { this.reason = reason; }
 	
 	@Override
-	public void encode(ByteBuf out) { INetworkObject.encodeString(this.reason, out); }
+	public void encode(ByteBuf out) { encodeString(this.reason, out); }
 	
 	@Override
-	public void decode(ByteBuf in) { this.reason = INetworkObject.decodeString(in); }
+	public void decode(ByteBuf in) { this.reason = decodeString(in); }
 	
 }

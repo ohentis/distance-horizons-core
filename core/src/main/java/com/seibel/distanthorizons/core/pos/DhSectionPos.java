@@ -49,6 +49,8 @@ public class DhSectionPos implements INetworkObject
 	
 	
 	
+	public static DhSectionPos zero() { return new DhSectionPos((byte) 0, 0, 0); };
+	
 	public DhSectionPos(byte sectionDetailLevel, int sectionX, int sectionZ)
 	{
 		this.sectionDetailLevel = sectionDetailLevel;

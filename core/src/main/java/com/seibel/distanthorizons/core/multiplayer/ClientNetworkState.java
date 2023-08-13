@@ -2,6 +2,7 @@ package com.seibel.distanthorizons.core.multiplayer;
 
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.network.IClientRequestHandler;
 import com.seibel.distanthorizons.core.network.ScopedNetworkEventSource;
 import com.seibel.distanthorizons.core.network.NetworkClient;
 import com.seibel.distanthorizons.core.network.messages.AckMessage;
@@ -17,29 +18,40 @@ public class ClientNetworkState implements Closeable
 {
 	protected static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
-	private final ScopedNetworkEventSource<NetworkClient> eventSource;
+	private final NetworkClient client;
 	private final UUID playerUUID;
 	public MultiplayerConfig config = new MultiplayerConfig();
 	
-	public NetworkClient client() { return this.eventSource.parent; }
+	/**
+	 * Returns the client used by this instance. <p>
+	 * If you need to subscribe to any packet events, create an instance of {@link ScopedNetworkEventSource} using the returned instance.
+	 */
+	public IClientRequestHandler getClient() { return this.client; }
 	
+	/**
+	 * Constructs a new instance.
+	 *
+	 * @param networkClient Client to use. It is assumed that this client will be at full control by this instance.
+	 * @param playerUUID UUID of a player connected
+	 */
 	public ClientNetworkState(NetworkClient networkClient, UUID playerUUID)
 	{
-		this.eventSource = new ScopedNetworkEventSource<>(networkClient);
+		this.client = networkClient;
 		this.playerUUID = playerUUID;
 		this.registerNetworkHandlers();
-		this.client().startConnecting();
+		this.client.startConnecting();
 	}
 	
 	private void registerNetworkHandlers()
 	{
-		this.client().registerHandler(HelloMessage.class, helloMessage ->
+		this.client.registerHandler(HelloMessage.class, helloMessage ->
 		{
 			LOGGER.info("Connected to server: "+helloMessage.getChannelContext().channel().remoteAddress());
 			
-			this.client().<AckMessage>sendRequest(new PlayerUUIDMessage(playerUUID))
-					.thenCompose(ack -> this.client().<RemotePlayerConfigMessage>sendRequest(new RemotePlayerConfigMessage(new MultiplayerConfig()
+			this.getClient().<AckMessage>sendRequest(new PlayerUUIDMessage(playerUUID))
+					.thenCompose(ack -> this.getClient().<RemotePlayerConfigMessage>sendRequest(new RemotePlayerConfigMessage(new MultiplayerConfig()
 					{{
+						renderDistance = Config.Client.Advanced.Graphics.Quality.lodChunkRenderDistance.get();
 						fullDataRequestRateLimit = Config.Client.Advanced.Multiplayer.serverNetworkingRateLimit.get();
 					}})))
 					.thenAccept(msg -> {
@@ -54,7 +66,6 @@ public class ClientNetworkState implements Closeable
 	
 	public void close()
 	{
-		this.eventSource.close();
-		this.client().close();
+		this.client.close();
 	}
 }

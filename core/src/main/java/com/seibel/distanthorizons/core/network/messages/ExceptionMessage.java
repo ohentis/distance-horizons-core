@@ -27,13 +27,13 @@ public class ExceptionMessage extends FutureTrackableNetworkMessage
 	@Override protected void encode0(ByteBuf out)
 	{
 		out.writeInt(exceptionMap.indexOf(exception.getClass()));
-		INetworkObject.encodeString(exception.getMessage(), out);
+		encodeString(exception.getMessage(), out);
 	}
 	
 	@Override protected void decode0(ByteBuf in) throws Exception
 	{
 		int id = in.readInt();
-		String message = INetworkObject.decodeString(in);
+		String message = decodeString(in);
 		exception = exceptionMap.get(id).getDeclaredConstructor(String.class).newInstance(message);
 	}
 }

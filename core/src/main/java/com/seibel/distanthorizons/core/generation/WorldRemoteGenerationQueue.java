@@ -11,6 +11,8 @@ import com.seibel.distanthorizons.core.multiplayer.ClientNetworkState;
 import com.seibel.distanthorizons.core.network.exceptions.RateLimitedException;
 import com.seibel.distanthorizons.core.network.messages.FullDataSourceRequestMessage;
 import com.seibel.distanthorizons.core.network.messages.FullDataSourceResponseMessage;
+import com.seibel.distanthorizons.core.network.messages.GenTaskPriorityRequestMessage;
+import com.seibel.distanthorizons.core.network.messages.GenTaskPriorityResponseMessage;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.pos.DhLodPos;
@@ -25,9 +27,11 @@ import org.apache.logging.log4j.Logger;
 import javax.annotation.CheckForNull;
 import java.awt.*;
 import java.util.*;
+import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 public class WorldRemoteGenerationQueue implements IWorldGenerationQueue, IDebugRenderable
 {
@@ -41,6 +45,9 @@ public class WorldRemoteGenerationQueue implements IWorldGenerationQueue, IDebug
 	private final ConcurrentMap<DhSectionPos, WorldGenQueueEntry> waitingTasks = new ConcurrentHashMap<>();
 	private final Semaphore pendingTasksSemaphore = new Semaphore(Short.MAX_VALUE, true);
 	private int pendingTasks() { return Short.MAX_VALUE - pendingTasksSemaphore.availablePermits(); }
+	
+	private CompletableFuture<?> genTaskPriorityRequest = CompletableFuture.completedFuture(null);
+	private final Semaphore genTaskPriorityRequestSemaphore = new Semaphore(1, true);
 	
 	private final F3Screen.NestedMessage f3Message = new F3Screen.NestedMessage(this::f3Log);
 	private final AtomicInteger finishedRequests = new AtomicInteger();
@@ -73,16 +80,61 @@ public class WorldRemoteGenerationQueue implements IWorldGenerationQueue, IDebug
 		return entry.future;
 	}
 	
+	private int posDistanceSquared(DhBlockPos2D targetPos, DhSectionPos pos)
+	{
+		return (int) pos.getCenter().getCenterBlockPos().distSquared(targetPos);
+	}
+	
 	@Override
 	public void runCurrentGenTasksUntilBusy(DhBlockPos2D targetPos)
 	{
-		while (generatorClosingFuture == null
-				&& networkState.client().isReady()
-				&& !waitingTasks.isEmpty()
+		if (generatorClosingFuture != null || !networkState.getClient().isReady()) return;
+		
+		while (!waitingTasks.isEmpty()
 				&& pendingTasks() < this.networkState.config.fullDataRequestRateLimit
 				&& pendingTasksSemaphore.tryAcquire())
 		{
 			sendNewRequest(targetPos);
+		}
+		
+		if (genTaskPriorityRequestSemaphore.tryAcquire()) {
+			List<DhSectionPos> posList = waitingTasks.entrySet().stream()
+					.filter(task -> task.getValue().request == null && task.getValue().priority == 0)
+					.sorted((x, y) -> posDistanceSquared(targetPos, x.getKey()) - posDistanceSquared(targetPos, y.getKey()))
+					.limit(this.networkState.config.fullDataRequestRateLimit)
+					.map(Map.Entry::getKey)
+					.collect(Collectors.toList());
+			if (posList.isEmpty()) {
+				genTaskPriorityRequestSemaphore.release();
+				return;
+			};
+			
+			CompletableFuture<GenTaskPriorityResponseMessage> request = this.networkState.getClient().sendRequest(new GenTaskPriorityRequestMessage(posList));
+			genTaskPriorityRequest = request;
+			request.handleAsync((response, throwable) -> {
+				try
+				{
+					if (throwable != null)
+						throw throwable;
+					
+					for (Map.Entry<DhSectionPos, Integer> mapEntry : response.posList.entrySet())
+					{
+						WorldGenQueueEntry entry = waitingTasks.get(mapEntry.getKey());
+						if (entry != null)
+							entry.priority = mapEntry.getValue();
+					}
+				}
+				catch (ChannelException | CancellationException ignored)
+				{
+				}
+				catch (Throwable e)
+				{
+					LOGGER.error("Error while fetching gen task priorities", e);
+				}
+				
+				genTaskPriorityRequestSemaphore.release();
+				return null;
+			});
 		}
 	}
 	
@@ -106,10 +158,10 @@ public class WorldRemoteGenerationQueue implements IWorldGenerationQueue, IDebug
 		Map.Entry<DhSectionPos, WorldGenQueueEntry> mapEntry = waitingTasks.entrySet().stream()
 				.filter(task -> task.getValue().request == null)
 				.reduce(null, (a, b)
-						-> a != null
-						&& a.getKey().getCenter().getCenterBlockPos().distSquared(targetPos)
-							< b.getKey().getCenter().getCenterBlockPos().distSquared(targetPos)
-						? a : b);
+						-> a == null
+						|| b.getValue().priority > a.getValue().priority
+						|| posDistanceSquared(targetPos, b.getKey()) < posDistanceSquared(targetPos, a.getKey())
+						? b : a);
 		if (mapEntry == null)
 		{
 			pendingTasksSemaphore.release();
@@ -119,69 +171,71 @@ public class WorldRemoteGenerationQueue implements IWorldGenerationQueue, IDebug
 		DhSectionPos sectionPos = mapEntry.getKey();
 		WorldGenQueueEntry entry = mapEntry.getValue();
 		
-		entry.request = this.networkState.client().sendRequest(new FullDataSourceRequestMessage(sectionPos));
-		entry.request.handle((response, throwable) ->
-				{
-					entry.request = null;
-					pendingTasksSemaphore.release();
-					finishedRequests.incrementAndGet();
+		CompletableFuture<FullDataSourceResponseMessage> request = this.networkState.getClient().sendRequest(new FullDataSourceRequestMessage(sectionPos));
+		entry.request = request;
+		request.handleAsync((response, throwable) ->
+		{
+			pendingTasksSemaphore.release();
+			finishedRequests.incrementAndGet();
+			
+			try
+			{
+				if (throwable != null)
+					throw throwable;
+				
+				waitingTasks.remove(sectionPos);
+				LOGGER.debug("FullDataSourceResponseMessage " + sectionPos);
+				CompleteFullDataSource fullDataSource = response.getFullDataSource(sectionPos, level);
+				
+				// FIXME Add dimension context to request instead
+				// Check is dimension has been switched - received data may no longer be relevant
+				if (fullDataSource == null)
+					throw new CancellationException();
+				
+				Consumer<ChunkSizedFullDataAccessor> chunkDataConsumer = entry.tracker.getChunkDataConsumer();
+				
+				// FIXME Why keeping a reference in first place
+				if (chunkDataConsumer == null)
+					return entry.future.cancel(false);
+				
+				sectionPos.forEachChildAtLevel(LodUtil.CHUNK_DETAIL_LEVEL, childPos -> {
+					ChunkSizedFullDataAccessor accessor = new ChunkSizedFullDataAccessor(new DhChunkPos(childPos.sectionX, childPos.sectionZ));
 					
-					try
-					{
-						if (throwable != null)
-							throw throwable;
-						
-						waitingTasks.remove(sectionPos);
-						LOGGER.debug("FullDataSourceResponseMessage " + sectionPos);
-						CompleteFullDataSource fullDataSource = response.getFullDataSource(sectionPos, level);
-						
-						// Check is dimension has been switched - received data may no longer be relevant
-						if (fullDataSource == null)
-							throw new CancellationException();
-						
-						Consumer<ChunkSizedFullDataAccessor> chunkDataConsumer = entry.tracker.getChunkDataConsumer();
-						
-						// FIXME Who decided it was a good idea to use weak references for cancellation purposes?
-						if (chunkDataConsumer == null)
-							return entry.future.cancel(false);
-						
-						sectionPos.forEachChildAtLevel(LodUtil.CHUNK_DETAIL_LEVEL, childPos -> {
-							ChunkSizedFullDataAccessor accessor = new ChunkSizedFullDataAccessor(new DhChunkPos(childPos.sectionX, childPos.sectionZ));
-							
-							int detailLevelDifference = sectionPos.sectionDetailLevel - childPos.sectionDetailLevel;
-							int childRelativeX = childPos.sectionX - sectionPos.sectionX * BitShiftUtil.powerOfTwo(detailLevelDifference);
-							int childRelativeZ = childPos.sectionZ - sectionPos.sectionZ * BitShiftUtil.powerOfTwo(detailLevelDifference);
-							
-							fullDataSource.subView(
-									LodUtil.CHUNK_WIDTH,
-									childRelativeX * LodUtil.CHUNK_WIDTH,
-									childRelativeZ * LodUtil.CHUNK_WIDTH
-							).shadowCopyTo(accessor);
-							
-							chunkDataConsumer.accept(accessor);
-						});
-					}
-					catch (ChannelException | RateLimitedException e)
-					{
-						if (e instanceof RateLimitedException)
-							LOGGER.warn("Rate limited by server, re-queueing task ["+sectionPos+"]: "+e.getMessage());
-						
-						finishedRequests.decrementAndGet();
-					}
-					catch (CancellationException ignored)
-					{
-						finishedRequests.decrementAndGet();
-						totalRequests.decrementAndGet();
-					}
-					catch (Throwable e)
-					{
-						LOGGER.error("Error while fetching full data source", e);
-						failedRequests.incrementAndGet();
-						return entry.future.complete(WorldGenResult.CreateFail());
-					}
+					int detailLevelDifference = sectionPos.sectionDetailLevel - childPos.sectionDetailLevel;
+					int childRelativeX = childPos.sectionX - sectionPos.sectionX * BitShiftUtil.powerOfTwo(detailLevelDifference);
+					int childRelativeZ = childPos.sectionZ - sectionPos.sectionZ * BitShiftUtil.powerOfTwo(detailLevelDifference);
 					
-					return entry.future.complete(WorldGenResult.CreateSuccess(sectionPos));
+					fullDataSource.subView(
+							LodUtil.CHUNK_WIDTH,
+							childRelativeX * LodUtil.CHUNK_WIDTH,
+							childRelativeZ * LodUtil.CHUNK_WIDTH
+					).shadowCopyTo(accessor);
+					
+					chunkDataConsumer.accept(accessor);
 				});
+			}
+			catch (ChannelException | RateLimitedException e)
+			{
+				if (e instanceof RateLimitedException)
+					LOGGER.warn("Rate limited by server, re-queueing task [" + sectionPos + "]: " + e.getMessage());
+				
+				entry.request = null;
+				finishedRequests.decrementAndGet();
+			}
+			catch (CancellationException ignored)
+			{
+				finishedRequests.decrementAndGet();
+				totalRequests.decrementAndGet();
+			}
+			catch (Throwable e)
+			{
+				LOGGER.error("Error while fetching full data source", e);
+				failedRequests.incrementAndGet();
+				return entry.future.complete(WorldGenResult.CreateFail());
+			}
+			
+			return entry.future.complete(WorldGenResult.CreateSuccess(sectionPos));
+		});
 	}
 	
 	private String[] f3Log()
@@ -197,6 +251,11 @@ public class WorldRemoteGenerationQueue implements IWorldGenerationQueue, IDebug
 	public CompletableFuture<Void> startClosing(boolean cancelCurrentGeneration, boolean alsoInterruptRunning)
 	{
 		return this.generatorClosingFuture = CompletableFuture.runAsync(() -> {
+			while (!genTaskPriorityRequestSemaphore.tryAcquire())
+			{
+				genTaskPriorityRequest.cancel(false);
+			}
+			
 			while (!pendingTasksSemaphore.tryAcquire(Short.MAX_VALUE))
 			{
 				for (WorldGenQueueEntry entry : this.waitingTasks.values())
@@ -231,8 +290,12 @@ public class WorldRemoteGenerationQueue implements IWorldGenerationQueue, IDebug
 	{
 		public final CompletableFuture<WorldGenResult> future;
 		public final IWorldGenTaskTracker tracker;
+		
+		// Higher value = higher priority.
+		// Priority of 0 is reserved for unassigned value
+		public int priority = 0;
 		@CheckForNull
-		public CompletableFuture<FullDataSourceResponseMessage> request;
+		public CompletableFuture<?> request;
 		
 		public WorldGenQueueEntry(CompletableFuture<WorldGenResult> future, IWorldGenTaskTracker tracker)
 		{

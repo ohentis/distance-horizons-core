@@ -161,7 +161,7 @@ public class FullDataPointIdMap
 		}
 		
 		
-		public String serialize(ILevelWrapper levelWrapper) { return this.biome.serialize(levelWrapper) + SEPARATOR_STRING + this.blockState.serialize(); }
+		public String serialize(ILevelWrapper levelWrapper) { return this.biome.serialize(levelWrapper) + SEPARATOR_STRING + this.blockState.serialize(levelWrapper); }
 		
 		public static Entry deserialize(String str, ILevelWrapper levelWrapper) throws IOException, InterruptedException
 		{
@@ -178,7 +178,7 @@ public class FullDataPointIdMap
 			}
 			
 			IBiomeWrapper biome = WRAPPER_FACTORY.deserializeBiomeWrapper(stringArray[0], levelWrapper);
-			IBlockStateWrapper blockState = WRAPPER_FACTORY.deserializeBlockStateWrapper(stringArray[1]);
+			IBlockStateWrapper blockState = WRAPPER_FACTORY.deserializeBlockStateWrapper(stringArray[1], levelWrapper);
 			return new Entry(biome, blockState);
 		}
 		

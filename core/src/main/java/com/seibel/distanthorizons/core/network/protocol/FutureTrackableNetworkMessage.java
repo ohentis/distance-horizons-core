@@ -3,11 +3,13 @@ package com.seibel.distanthorizons.core.network.protocol;
 import com.seibel.distanthorizons.core.network.messages.ExceptionMessage;
 import io.netty.buffer.ByteBuf;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 public abstract class FutureTrackableNetworkMessage extends NetworkMessage
 {
-	private static int lastId = 0;
+	private static final AtomicInteger lastId = new AtomicInteger();
 	// Only low 32 bits are sent (high bits are used for identifying a channel this request was sent from by remote peer)
-	public long futureId = lastId++;
+	public long futureId = lastId.incrementAndGet();
 	
 	public void sendResponse(FutureTrackableNetworkMessage responseMessage)
 	{

@@ -13,9 +13,7 @@ import com.seibel.distanthorizons.core.multiplayer.RemotePlayerConnectionHandler
 import com.seibel.distanthorizons.core.network.ScopedNetworkEventSource;
 import com.seibel.distanthorizons.core.network.NetworkServer;
 import com.seibel.distanthorizons.core.network.exceptions.RateLimitedException;
-import com.seibel.distanthorizons.core.network.messages.CancelMessage;
-import com.seibel.distanthorizons.core.network.messages.FullDataSourceRequestMessage;
-import com.seibel.distanthorizons.core.network.messages.FullDataSourceResponseMessage;
+import com.seibel.distanthorizons.core.network.messages.*;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhLodPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
@@ -65,6 +63,12 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 	
 	private void registerNetworkHandlers()
 	{
+		// TODO implement transparent message handling restriction by level
+		// workaround:
+// 		ServerPlayerState serverPlayerState = remotePlayerConnectionHandler.getConnectedPlayer(msg);
+// 		if (serverPlayerState.serverPlayer.getLevel() != this.serverLevelWrapper)
+// 			return;
+		
 		this.eventSource.registerHandler(FullDataSourceRequestMessage.class, msg ->
 		{
 			ServerPlayerState serverPlayerState = remotePlayerConnectionHandler.getConnectedPlayer(msg);
@@ -98,6 +102,16 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 					break;
 				}
 			}
+		});
+		
+		this.eventSource.registerHandler(GenTaskPriorityRequestMessage.class, msg -> {
+			ServerPlayerState serverPlayerState = remotePlayerConnectionHandler.getConnectedPlayer(msg);
+			if (serverPlayerState.serverPlayer.getLevel() != this.serverLevelWrapper)
+				return;
+			
+			msg.sendResponse(new GenTaskPriorityResponseMessage(
+					this.serverside.dataFileHandler.getLoadStates(msg.posList)
+			));
 		});
 		
 		this.eventSource.registerHandler(CancelMessage.class, msg ->

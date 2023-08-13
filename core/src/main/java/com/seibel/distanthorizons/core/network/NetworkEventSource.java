@@ -66,7 +66,10 @@ public abstract class NetworkEventSource
 		
 		if (!handled)
 		{
-			LOGGER.warn("Unhandled message type: " + message.getClass().getSimpleName());
+			String error = "Unhandled message type: " + message.getClass().getSimpleName();
+			if (message instanceof FutureTrackableNetworkMessage)
+				error += ", future id: " + ((FutureTrackableNetworkMessage) message).futureId;
+			LOGGER.warn(error);
 		}
 	}
 	
