@@ -165,7 +165,7 @@ public class FullDataPointIdMap
 				}
 				if (dataPointEntryBySerialization.containsValue(entry))
 				{
-					LOGGER.error("Duplicate serialized entry found with value: " + entry.serialize());
+					LOGGER.error("Duplicate serialized entry found with value: " + entry.serialize(levelWrapper));
 				}
 				dataPointEntryBySerialization.put(entryString, entry);
 			}
@@ -187,7 +187,7 @@ public class FullDataPointIdMap
 		for (int i = 0; i < entityCount; i++)
 		{
 			String entryString = inputStream.readUTF();
-			Entry newEntry = Entry.deserialize(entryString);
+			Entry newEntry = Entry.deserialize(entryString, levelWrapper);
 			newMap.entryList.add(newEntry);
 
 			if (RUN_SERIALIZATION_DUPLICATE_VALIDATION)
@@ -198,7 +198,7 @@ public class FullDataPointIdMap
 				}
 				if (dataPointEntryBySerialization.containsValue(newEntry))
 				{
-					LOGGER.error("Duplicate deserialized entry found with value: " + newEntry.serialize());
+					LOGGER.error("Duplicate deserialized entry found with value: " + newEntry.serialize(levelWrapper));
 				}
 				dataPointEntryBySerialization.put(entryString, newEntry);
 			}
@@ -278,10 +278,17 @@ public class FullDataPointIdMap
 		}
 
 		@Override
-		public String toString() { return this.serialize(); }
-
+		public String toString() {
+			return this.serialize();
+		}
 		
-		public String serialize(ILevelWrapper levelWrapper) { return this.biome.serialize(levelWrapper) + SEPARATOR_STRING + this.blockState.serialize(levelWrapper); }
+		public String serialize(ILevelWrapper levelWrapper) {
+			return this.biome.serialize(levelWrapper) + BLOCK_STATE_SEPARATOR_STRING + this.blockState.serialize(levelWrapper);
+		}
+
+		public String serialize() {
+			return this.biome.serialize() + BLOCK_STATE_SEPARATOR_STRING + this.blockState.serialize();
+		}
 
 		public static Entry deserialize(String str, ILevelWrapper levelWrapper) throws IOException, InterruptedException
 		{

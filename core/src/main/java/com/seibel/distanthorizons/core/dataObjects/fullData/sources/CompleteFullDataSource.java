@@ -242,8 +242,7 @@ public class CompleteFullDataSource extends FullDataArrayAccessor implements IFu
 			throw new IOException("Invalid data content end guard for ID mapping");
 		}
 		
-		return FullDataPointIdMap.deserialize(inputStream, levelWrapper);
-		return FullDataPointIdMap.deserialize(inputStream, this.sectionPos);
+		return FullDataPointIdMap.deserialize(inputStream, this.sectionPos, levelWrapper);
 	}
 	@Override 
 	public void setIdMapping(FullDataPointIdMap mappings) { this.mapping.mergeAndReturnRemappedEntityIds(mappings); }

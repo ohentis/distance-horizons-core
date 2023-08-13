@@ -7,13 +7,15 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 public interface IBlockStateWrapper extends IDhApiBlockStateWrapper
 {
     String serialize(ILevelWrapper levelWrapper);
-	
-	/** 
-	 * Returning a value of 0 means the block is completely transparent. <br. 
+	// FIXME: Old code that might create a nullpointer exception
+	String serialize();
+
+	/**
+	 * Returning a value of 0 means the block is completely transparent. <br.
 	 * Returning a value of 15 means the block is completely opaque.
 	 */
 	int getOpacity();
-	
+
 	int getLightEmission();
-	
+
 }
