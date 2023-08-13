@@ -52,7 +52,7 @@ public class HighDetailIncompleteFullDataSource implements IIncompleteFullDataSo
 	/** aka max detail level */
     public static final byte MAX_SECTION_DETAIL = SECTION_SIZE_OFFSET + SPARSE_UNIT_DETAIL;
 	
-    public static final byte DATA_FORMAT_VERSION = 2;
+    public static final byte DATA_FORMAT_VERSION = 3;
 	/** written to the binary file to mark what {@link IFullDataSource} the binary file corresponds to */
     public static final long TYPE_ID = "HighDetailIncompleteFullDataSource".hashCode();
 	
@@ -86,7 +86,7 @@ public class HighDetailIncompleteFullDataSource implements IIncompleteFullDataSo
 		
 		this.sparseData = new FullDataArrayAccessor[this.sectionCount * this.sectionCount];
 		this.chunkPos = sectionPos.getCorner(SPARSE_UNIT_DETAIL);
-		this.mapping = new FullDataPointIdMap();
+		this.mapping = new FullDataPointIdMap(sectionPos);
     }
 	
     protected HighDetailIncompleteFullDataSource(DhSectionPos sectionPos, FullDataPointIdMap mapping, FullDataArrayAccessor[] data)
@@ -348,15 +348,7 @@ public class HighDetailIncompleteFullDataSource implements IIncompleteFullDataSo
 			}
 		}
 	}
-	
-	
-	@Override
-	public void writeIdMappings(DhDataOutputStream dataOutputStream, ILevelWrapper levelWrapper) throws IOException
-	{
-		dataOutputStream.writeInt(IFullDataSource.DATA_GUARD_BYTE);
-		this.mapping.serialize(dataOutputStream, levelWrapper);
-		
-	}
+
 	@Override
 	public FullDataPointIdMap readIdMappings(long[][][] dataPoints, DhDataInputStream inputStream, ILevelWrapper levelWrapper) throws IOException, InterruptedException
 	{
@@ -369,8 +361,16 @@ public class HighDetailIncompleteFullDataSource implements IIncompleteFullDataSo
 		}
 		
 		// deserialize the ID data
-		return FullDataPointIdMap.deserialize(inputStream, levelWrapper);
+		return FullDataPointIdMap.deserialize(inputStream, this.sectionPos, levelWrapper);
 	}
+
+	@Override
+	public void writeIdMappings(DhDataOutputStream dataOutputStream) throws IOException
+	{
+		dataOutputStream.writeInt(IFullDataSource.DATA_GUARD_BYTE);
+		this.mapping.serialize(dataOutputStream);
+	}
+
 	@Override
 	public void setIdMapping(FullDataPointIdMap mappings) { this.mapping.mergeAndReturnRemappedEntityIds(mappings); }
 	
@@ -404,10 +404,10 @@ public class HighDetailIncompleteFullDataSource implements IIncompleteFullDataSo
     public DhSectionPos getSectionPos() { return this.sectionPos; }
     @Override
     public byte getDataDetailLevel() { return (byte) (this.sectionPos.sectionDetailLevel - SECTION_SIZE_OFFSET); }
-	
+
 	@Override
 	public long getTypeId() { return TYPE_ID; }
-	
+
 	@Override
     public byte getBinaryDataFormatVersion() { return DATA_FORMAT_VERSION; }
 	

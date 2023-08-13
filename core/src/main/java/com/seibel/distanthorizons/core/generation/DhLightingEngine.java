@@ -9,10 +9,8 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrappe
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import org.apache.logging.log4j.Logger;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * This logic was roughly based on
@@ -43,8 +41,13 @@ public class DhLightingEngine
 		DhChunkPos centerChunkPos = centerChunk.getChunkPos();
 		
 		HashMap<DhChunkPos, IChunkWrapper> chunksByChunkPos = new HashMap<>(9);
-		LinkedList<LightPos> blockLightPosQueue = new LinkedList<>();
-		LinkedList<LightPos> skyLightPosQueue = new LinkedList<>();
+		
+		// from some quick testing on James' part,
+		// these initial capacities should be big enough to fit most lighting jobs
+		// with a bit of room to spare
+		ArrayList<LightPos> blockLightPosQueue = new ArrayList<>(40_000); // when tested with a normal 1.20 world James saw a max of: 36_709
+		ArrayList<LightPos> skyLightPosQueue = new ArrayList<>(3_000); // when tested with a normal 1.20 world James saw a max of: 2355
+		
 		
 		// generate the list of chunk pos we need,
 		// currently a 3x3 grid
@@ -144,15 +147,20 @@ public class DhLightingEngine
 	
 	/** Applies each {@link LightPos} from the queue to the given set of {@link IChunkWrapper}'s. */
 	private void propagateLightPosList(
-			LinkedList<LightPos> lightPosQueue, HashMap<DhChunkPos, IChunkWrapper> chunksByChunkPos,
+			ArrayList<LightPos> lightPosQueue, HashMap<DhChunkPos, IChunkWrapper> chunksByChunkPos,
 			IGetLightFunc getLightFunc, ISetLightFunc setLightFunc)
 	{
 		// update each light position
 		while (!lightPosQueue.isEmpty())
 		{
-			LightPos lightPos = lightPosQueue.poll();
+			// since we don't care about the order the positions are processed,
+			// we can grab the last position instead of the first for a slight performance increase (this way the array doesn't need to be shifted over every loop)
+			int lastIndex = lightPosQueue.size() - 1;
+			LightPos lightPos = lightPosQueue.remove(lastIndex);
+			
 			DhBlockPos pos = lightPos.pos;
 			int lightValue = lightPos.lightValue;
+			
 			
 			// propagate the lighting in each cardinal direction, IE: -x, +x, -y, +y, -z, +z
 			for (EDhDirection direction : EDhDirection.CARDINAL_DIRECTIONS)

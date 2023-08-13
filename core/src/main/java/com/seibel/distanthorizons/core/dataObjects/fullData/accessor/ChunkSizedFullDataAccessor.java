@@ -3,6 +3,7 @@ package com.seibel.distanthorizons.core.dataObjects.fullData.accessor;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.pos.DhLodPos;
 import com.seibel.distanthorizons.core.dataObjects.fullData.FullDataPointIdMap;
+import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.util.FullDataPointUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
 
@@ -22,7 +23,7 @@ public class ChunkSizedFullDataAccessor extends FullDataArrayAccessor
 	
 	public ChunkSizedFullDataAccessor(DhChunkPos pos)
 	{
-		super(new FullDataPointIdMap(), 
+		super(new FullDataPointIdMap(new DhSectionPos(pos)), 
 				new long[LodUtil.CHUNK_WIDTH * LodUtil.CHUNK_WIDTH][0], 
 				LodUtil.CHUNK_WIDTH);
 		

@@ -39,7 +39,7 @@ public class CompleteFullDataSource extends FullDataArrayAccessor implements IFu
     /** measured in dataPoints */
 	public static final int WIDTH = BitShiftUtil.powerOfTwo(SECTION_SIZE_OFFSET);
     
-	public static final byte DATA_FORMAT_VERSION = 2;
+	public static final byte DATA_FORMAT_VERSION = 3;
 	/** written to the binary file to mark what {@link IFullDataSource} the binary file corresponds to */
     public static final long TYPE_ID = "CompleteFullDataSource".hashCode();
 	
@@ -56,7 +56,7 @@ public class CompleteFullDataSource extends FullDataArrayAccessor implements IFu
 	public static CompleteFullDataSource createEmpty(DhSectionPos pos) { return new CompleteFullDataSource(pos); }
 	private CompleteFullDataSource(DhSectionPos sectionPos)
 	{
-        super(new FullDataPointIdMap(), new long[WIDTH * WIDTH][0], WIDTH);
+        super(new FullDataPointIdMap(sectionPos), new long[WIDTH * WIDTH][0], WIDTH);
         this.sectionPos = sectionPos;
     }
 	
@@ -232,7 +232,6 @@ public class CompleteFullDataSource extends FullDataArrayAccessor implements IFu
 	{
 		outputStream.writeInt(IFullDataSource.DATA_GUARD_BYTE);
 		this.mapping.serialize(outputStream, levelWrapper);
-		
 	}
 	@Override
 	public FullDataPointIdMap readIdMappings(long[][] dataPoints, DhDataInputStream inputStream, ILevelWrapper levelWrapper) throws IOException, InterruptedException
@@ -244,6 +243,7 @@ public class CompleteFullDataSource extends FullDataArrayAccessor implements IFu
 		}
 		
 		return FullDataPointIdMap.deserialize(inputStream, levelWrapper);
+		return FullDataPointIdMap.deserialize(inputStream, this.sectionPos);
 	}
 	@Override 
 	public void setIdMapping(FullDataPointIdMap mappings) { this.mapping.mergeAndReturnRemappedEntityIds(mappings); }
@@ -382,7 +382,7 @@ public class CompleteFullDataSource extends FullDataArrayAccessor implements IFu
 	
 	@Override
 	public long getTypeId() { return TYPE_ID; }
-	
+
 	@Override
 	public byte getBinaryDataFormatVersion() { return DATA_FORMAT_VERSION; }
 	

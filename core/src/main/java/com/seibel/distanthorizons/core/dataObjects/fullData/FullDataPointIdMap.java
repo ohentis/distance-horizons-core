@@ -1,19 +1,19 @@
 package com.seibel.distanthorizons.core.dataObjects.fullData;
 
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
+import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataInputStream;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataOutputStream;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
-import com.seibel.distanthorizons.core.util.objects.dataStreams.*;
 import com.seibel.distanthorizons.core.wrapperInterfaces.IWrapperFactory;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /** 
@@ -26,44 +26,92 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  */
 public class FullDataPointIdMap
 {
-	public static final String SEPARATOR_STRING = "_DH-BSW_";
+	private static final Logger LOGGER = LogManager.getLogger();
+	/**
+	 * Should only be enabled when debugging.
+	 * Has the system check if any duplicate Entries were read/written
+	 * when (de)serializing.
+	 */
+	private static final boolean RUN_SERIALIZATION_DUPLICATE_VALIDATION = false;
+	/** Distant Horizons - Block State Wrapper */
+	private static final String BLOCK_STATE_SEPARATOR_STRING = "_DH-BSW_";
 	
 	
 	// FIXME: Improve performance maybe?
-	private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+	/** used when the data point map is running normally */
+	private final ReentrantReadWriteLock readWriteLock = new ReentrantReadWriteLock();
 
-	final ArrayList<Entry> entries = new ArrayList<>();
-	final HashMap<Entry, Integer> idMap = new HashMap<>();
+	/** should only be used for debugging */
+	private final DhSectionPos pos;
 	
-	private Entry getEntry(int id) {
-		lock.readLock().lock();
-		Entry entry = this.entries.get(id);
-		lock.readLock().unlock();
+	/** The index should be the same as the Entry's ID */
+	private final ArrayList<Entry> entryList = new ArrayList<>();
+	private final HashMap<Entry, Integer> idMap = new HashMap<>();
+
+
+
+	//=============//
+	// constructor //
+	//=============//
+
+	public FullDataPointIdMap(DhSectionPos pos) { this.pos = pos; }
+
+
+
+	//=========//
+	// methods //
+	//=========//
+
+	private Entry getEntry(int id)
+	{
+		this.readWriteLock.readLock().lock();
+		Entry entry;
+		try
+		{
+			entry = this.entryList.get(id);
+		}
+		catch (IndexOutOfBoundsException e)
+		{
+			LOGGER.error("FullData ID Map out of sync for pos: "+this.pos+". ID: ["+id+"] greater than the number of known ID's: ["+this.entryList.size()+"].");
+			throw e;
+		}
+
+		this.readWriteLock.readLock().unlock();
 		return entry;
 	}
 	
-	public IBiomeWrapper getBiomeWrapper(int id) {
-		return getEntry(id).biome;
-	}
-	public IBlockStateWrapper getBlockStateWrapper(int id) {
-		return getEntry(id).blockState;
-	}
+	public IBiomeWrapper getBiomeWrapper(int id) { return this.getEntry(id).biome; }
+	public IBlockStateWrapper getBlockStateWrapper(int id) { return this.getEntry(id).blockState; }
 	
 	/** 
 	 * If an entry with the given values already exists nothing will 
 	 * be added but the existing item's ID will still be returned.
 	 */
-	public int addIfNotPresentAndGetId(IBiomeWrapper biome, IBlockStateWrapper blockState) { return this.addIfNotPresentAndGetId(new Entry(biome, blockState)); }
-	private int addIfNotPresentAndGetId(Entry biomeBlockStateEntry)
+	public int addIfNotPresentAndGetId(IBiomeWrapper biome, IBlockStateWrapper blockState) { return this.addIfNotPresentAndGetId(new Entry(biome, blockState), true); }
+	/** @param useWriteLocks should only be false if this method is already in a write lock to prevent unlocking at the wrong time */
+	private int addIfNotPresentAndGetId(Entry biomeBlockStateEntry, boolean useWriteLocks)
 	{
-		lock.writeLock().lock();
-		int result = this.idMap.computeIfAbsent(biomeBlockStateEntry, (entry) -> {
-			int id = this.entries.size();
-			this.entries.add(entry);
-			return id;
-		});
-		lock.writeLock().unlock();
-		return result;
+		if (useWriteLocks) { this.readWriteLock.writeLock().lock(); }
+
+
+		int id;
+		if (this.idMap.containsKey(biomeBlockStateEntry))
+		{
+			// use the existing ID
+			id = this.idMap.get(biomeBlockStateEntry);
+		}
+		else
+		{
+			// Add the new ID
+			id = this.entryList.size();
+			this.entryList.add(biomeBlockStateEntry);
+			this.idMap.put(biomeBlockStateEntry, id);
+		}
+
+
+		if (useWriteLocks) { this.readWriteLock.writeLock().unlock(); }
+
+		return id;
 	}
 	
 	
@@ -73,40 +121,91 @@ public class FullDataPointIdMap
 	 */
 	public int[] mergeAndReturnRemappedEntityIds(FullDataPointIdMap target)
 	{
-		target.lock.readLock().lock();
-		lock.writeLock().lock();
-		ArrayList<Entry> entriesToMerge = target.entries;
+		LOGGER.trace("merging {"+this.pos+", "+this.entryList.size()+"} and {"+target.pos+", "+target.entryList.size()+"}");
+
+		target.readWriteLock.readLock().lock();
+		this.readWriteLock.writeLock().lock();
+
+		ArrayList<Entry> entriesToMerge = target.entryList;
 		int[] remappedEntryIds = new int[entriesToMerge.size()];
 		for (int i = 0; i < entriesToMerge.size(); i++)
 		{
-			remappedEntryIds[i] = this.addIfNotPresentAndGetId(entriesToMerge.get(i));
+			Entry entity = entriesToMerge.get(i);
+			int id = this.addIfNotPresentAndGetId(entity, false);
+			remappedEntryIds[i] = id;
 		}
-		lock.writeLock().unlock();
-		target.lock.readLock().unlock();
+
+		this.readWriteLock.writeLock().unlock();
+		target.readWriteLock.readLock().unlock();
+
+		LOGGER.trace("finished merging {"+this.pos+", "+this.entryList.size()+"} and {"+target.pos+", "+target.entryList.size()+"}");
+
 		return remappedEntryIds;
 	}
 	
 	/** Serializes all contained entries into the given stream, formatted in UTF */
 	public void serialize(DhDataOutputStream outputStream, ILevelWrapper levelWrapper) throws IOException
 	{
-		lock.readLock().lock();
-		outputStream.writeInt(this.entries.size());
-		for (Entry entry : this.entries)
+		this.readWriteLock.readLock().lock();
+		outputStream.writeInt(this.entryList.size());
+
+		// only used when debugging
+		HashMap<String, FullDataPointIdMap.Entry> dataPointEntryBySerialization = new HashMap<>();
+
+		for (Entry entry : this.entryList)
 		{
-			outputStream.writeUTF(entry.serialize(levelWrapper));
+			String entryString = entry.serialize(levelWrapper);
+			outputStream.writeUTF(entryString);
+
+			if (RUN_SERIALIZATION_DUPLICATE_VALIDATION)
+			{
+				if (dataPointEntryBySerialization.containsKey(entryString))
+				{
+					LOGGER.error("Duplicate serialized entry found with serial: " + entryString);
+				}
+				if (dataPointEntryBySerialization.containsValue(entry))
+				{
+					LOGGER.error("Duplicate serialized entry found with value: " + entry.serialize());
+				}
+				dataPointEntryBySerialization.put(entryString, entry);
+			}
 		}
-		lock.readLock().unlock();
+		this.readWriteLock.readLock().unlock();
+
+		LOGGER.trace("serialize "+this.pos+" "+this.entryList.size());
 	}
 	
 	/** Creates a new IdBiomeBlockStateMap from the given UTF formatted stream */
-	public static FullDataPointIdMap deserialize(DhDataInputStream inputStream, ILevelWrapper levelWrapper) throws IOException, InterruptedException
+	public static FullDataPointIdMap deserialize(DhDataInputStream inputStream, DhSectionPos pos, ILevelWrapper levelWrapper) throws IOException, InterruptedException
 	{
 		int entityCount = inputStream.readInt();
-		FullDataPointIdMap newMap = new FullDataPointIdMap();
+
+		// only used when debugging
+		HashMap<String, FullDataPointIdMap.Entry> dataPointEntryBySerialization = new HashMap<>();
+
+		FullDataPointIdMap newMap = new FullDataPointIdMap(pos);
 		for (int i = 0; i < entityCount; i++)
 		{
-			newMap.entries.add(Entry.deserialize(inputStream.readUTF(), levelWrapper));
+			String entryString = inputStream.readUTF();
+			Entry newEntry = Entry.deserialize(entryString);
+			newMap.entryList.add(newEntry);
+
+			if (RUN_SERIALIZATION_DUPLICATE_VALIDATION)
+			{
+				if (dataPointEntryBySerialization.containsKey(entryString))
+				{
+					LOGGER.error("Duplicate deserialized entry found with serial: " + entryString);
+				}
+				if (dataPointEntryBySerialization.containsValue(newEntry))
+				{
+					LOGGER.error("Duplicate deserialized entry found with value: " + newEntry.serialize());
+				}
+				dataPointEntryBySerialization.put(entryString, newEntry);
+			}
 		}
+
+		LOGGER.trace("deserialized "+pos+" "+newMap.entryList.size()+"-"+entityCount);
+
 		return newMap;
 	}
 	
@@ -132,12 +231,16 @@ public class FullDataPointIdMap
 	
 	private static final class Entry
 	{
-		public static final IWrapperFactory WRAPPER_FACTORY = SingletonInjector.INSTANCE.get(IWrapperFactory.class);
+		private static final IWrapperFactory WRAPPER_FACTORY = SingletonInjector.INSTANCE.get(IWrapperFactory.class);
 		
 		public final IBiomeWrapper biome;
 		public final IBlockStateWrapper blockState;
 		
-		
+		private Integer hashCode = null;
+
+
+		// constructor //
+
 		public Entry(IBiomeWrapper biome, IBlockStateWrapper blockState)
 		{
 			this.biome = biome;
@@ -145,27 +248,44 @@ public class FullDataPointIdMap
 		}
 		
 		
+
+		// methods //
+
 		@Override
-		public int hashCode() { return Objects.hash(this.biome, this.blockState); }
-		
-		@Override
-		public boolean equals(Object other)
+		public int hashCode()
 		{
-			if (other == this)
-				return true;
-			
-			if (!(other instanceof Entry))
-				return false;
-			
-			return ((Entry) other).biome.equals(this.biome) && ((Entry) other).blockState.equals(this.blockState);
+			// cache the hash code to improve speed
+			if (this.hashCode == null)
+			{
+				this.hashCode = this.serialize().hashCode();
+			}
+
+			return this.hashCode;
 		}
 		
+		@Override
+		public boolean equals(Object otherObj)
+		{
+			if (otherObj == this)
+				return true;
+			
+			if (!(otherObj instanceof Entry))
+				return false;
+			
+			Entry other = (Entry) otherObj;
+			return other.biome.serialize().equals(this.biome.serialize())
+					&& other.blockState.serialize().equals(this.blockState.serialize());
+		}
+
+		@Override
+		public String toString() { return this.serialize(); }
+
 		
 		public String serialize(ILevelWrapper levelWrapper) { return this.biome.serialize(levelWrapper) + SEPARATOR_STRING + this.blockState.serialize(levelWrapper); }
-		
+
 		public static Entry deserialize(String str, ILevelWrapper levelWrapper) throws IOException, InterruptedException
 		{
-			String[] stringArray = str.split(SEPARATOR_STRING);
+			String[] stringArray = str.split(BLOCK_STATE_SEPARATOR_STRING);
 			if (stringArray.length != 2)
 			{
 				throw new IOException("Failed to deserialize BiomeBlockStateEntry");

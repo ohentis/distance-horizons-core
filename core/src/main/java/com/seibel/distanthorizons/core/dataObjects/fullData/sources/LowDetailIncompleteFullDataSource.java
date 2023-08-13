@@ -43,7 +43,7 @@ public class LowDetailIncompleteFullDataSource extends FullDataArrayAccessor imp
 	/** measured in dataPoints */
     public static final int WIDTH = BitShiftUtil.powerOfTwo(SECTION_SIZE_OFFSET);
 	
-    public static final byte DATA_FORMAT_VERSION = 2;
+    public static final byte DATA_FORMAT_VERSION = 3;
 	/** written to the binary file to mark what {@link IFullDataSource} the binary file corresponds to */
     public static final long TYPE_ID = "LowDetailIncompleteFullDataSource".hashCode();
 	
@@ -64,7 +64,7 @@ public class LowDetailIncompleteFullDataSource extends FullDataArrayAccessor imp
 	public static LowDetailIncompleteFullDataSource createEmpty(DhSectionPos pos) { return new LowDetailIncompleteFullDataSource(pos); }
     private LowDetailIncompleteFullDataSource(DhSectionPos sectionPos)
 	{
-        super(new FullDataPointIdMap(), new long[WIDTH * WIDTH][0], WIDTH);
+        super(new FullDataPointIdMap(sectionPos), new long[WIDTH * WIDTH][0], WIDTH);
         LodUtil.assertTrue(sectionPos.sectionDetailLevel > HighDetailIncompleteFullDataSource.MAX_SECTION_DETAIL);
 		
         this.sectionPos = sectionPos;
@@ -253,7 +253,7 @@ public class LowDetailIncompleteFullDataSource extends FullDataArrayAccessor imp
 		{
 			throw new IOException("invalid ID mapping end guard");
 		}
-		return FullDataPointIdMap.deserialize(inputStream, levelWrapper);
+		return FullDataPointIdMap.deserialize(inputStream, this.sectionPos, levelWrapper);
 	}
 	@Override
 	public void setIdMapping(FullDataPointIdMap mappings) { this.mapping.mergeAndReturnRemappedEntityIds(mappings); }

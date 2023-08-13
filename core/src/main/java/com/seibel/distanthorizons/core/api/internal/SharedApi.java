@@ -47,6 +47,9 @@ public class SharedApi
 			ColumnRenderBufferBuilder.shutdownExecutorService();
 			WorldGenerationQueue.shutdownWorldGenThreadPool();
 			ChunkToLodBuilder.shutdownExecutorService();
+			
+			// recommend that the garbage collector cleans up any objects from the old world
+			System.gc();
 		}
 	}
 	
