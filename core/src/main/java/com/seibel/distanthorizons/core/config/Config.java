@@ -967,7 +967,7 @@ public class Config
 				// TODO add change all option
 				// TODO default to error chat and info file
 				public static ConfigEntry<ELoggerMode> logWorldGenEvent = new ConfigEntry.Builder<ELoggerMode>()
-						.set(ELoggerMode.LOG_WARNING_TO_CHAT_AND_INFO_TO_FILE)
+						.set(ELoggerMode.LOG_WARNING_TO_CHAT_AND_FILE)
 						.comment(""
 								+ "If enabled, the mod will log information about the world generation process. \n"
 								+ "This can be useful for debugging.")

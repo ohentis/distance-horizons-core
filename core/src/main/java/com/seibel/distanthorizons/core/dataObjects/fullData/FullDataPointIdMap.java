@@ -1,5 +1,7 @@
 package com.seibel.distanthorizons.core.dataObjects.fullData;
 
+import com.seibel.distanthorizons.api.enums.config.ELoggerMode;
+import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataInputStream;
@@ -8,11 +10,13 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.IWrapperFactory;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -188,7 +192,10 @@ public class FullDataPointIdMap
 		{
 			String entryString = inputStream.readUTF();
 			Entry newEntry = Entry.deserialize(entryString, levelWrapper);
-			newMap.entryList.add(newEntry);
+			// Required check because of an underlying issue where the BiomeWrapper and BlockStateWrapper get null ILevelWrappers
+			if (newEntry != null) {
+				newMap.entryList.add(newEntry);
+			}
 
 			if (RUN_SERIALIZATION_DUPLICATE_VALIDATION)
 			{
@@ -283,7 +290,7 @@ public class FullDataPointIdMap
 		}
 		
 		public String serialize(ILevelWrapper levelWrapper) {
-			return this.biome.serialize(this.biome.getLevelWrapper()) + BLOCK_STATE_SEPARATOR_STRING + this.blockState.serialize(this.biome.getLevelWrapper());
+			return this.biome.serialize(levelWrapper) + BLOCK_STATE_SEPARATOR_STRING + this.blockState.serialize(levelWrapper);
 		}
 
 		public static Entry deserialize(String str, ILevelWrapper levelWrapper) throws IOException, InterruptedException
@@ -291,10 +298,12 @@ public class FullDataPointIdMap
 			String[] stringArray = str.split(BLOCK_STATE_SEPARATOR_STRING);
 			if (stringArray.length != 2)
 			{
+				// This situation should never occur, both the biome and the blockstate in the entry will always have a value, even if it's default
+				// The default values will be handled by the biome and blockstate's deserialize functions
 				throw new IOException("Failed to deserialize BiomeBlockStateEntry");
 			}
 			
-			// necessary to prevent issues with deserializing objects after the level has been closed
+			// Necessary to prevent issues with deserializing objects after the level has been closed
 			if (Thread.interrupted())
 			{
 				throw new InterruptedException(FullDataPointIdMap.class.getSimpleName()+" task interrupted.");
@@ -304,8 +313,5 @@ public class FullDataPointIdMap
 			IBlockStateWrapper blockState = WRAPPER_FACTORY.deserializeBlockStateWrapper(stringArray[1], levelWrapper);
 			return new Entry(biome, blockState);
 		}
-		
 	}
-	
-	
 }
