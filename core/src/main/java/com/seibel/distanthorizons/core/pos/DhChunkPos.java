@@ -25,23 +25,28 @@ public class DhChunkPos
 {
     public final int x; // Low 32 bits
     public final int z; // High 32 bits
-
+	
+	/** cached to improve hashing speed */
+	public final int hashCode;
 	
 	
     public DhChunkPos(int x, int z)
 	{
         this.x = x;
         this.z = z;
+		
+		// custom hash, 7309 is a random prime
+		this.hashCode = this.x * 7309 + this.z;
     }
     public DhChunkPos(DhBlockPos blockPos)
 	{
-        this.x = blockPos.x >> 4; // Same as div 16
-        this.z = blockPos.z >> 4; // Same as div 16
+		// >> 4 is the Same as div 16
+		this(blockPos.x >> 4, blockPos.z >> 4);
     }
     public DhChunkPos(DhBlockPos2D blockPos)
 	{
-        this.x = blockPos.x >> 4; // Same as div 16
-        this.z = blockPos.z >> 4; // Same as div 16
+		// >> 4 is the Same as div 16
+		this(blockPos.x >> 4, blockPos.z >> 4);
     }
 	public DhChunkPos(long packed) { this(getX(packed), getZ(packed)); }
 	
@@ -86,7 +91,7 @@ public class DhChunkPos
 	}
 
     @Override
-    public int hashCode() { return Objects.hash(x, z); }
+    public int hashCode() { return this.hashCode; }
 
     @Override
     public String toString() { return "C["+x+","+z+"]"; }
