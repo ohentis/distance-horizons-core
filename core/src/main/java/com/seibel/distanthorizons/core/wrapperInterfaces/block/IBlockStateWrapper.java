@@ -7,8 +7,8 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 public interface IBlockStateWrapper extends IDhApiBlockStateWrapper
 {
     String serialize(ILevelWrapper levelWrapper);
-	// FIXME: Old code that might create a nullpointer exception
-	String serialize();
+
+	ILevelWrapper getLevelWrapper();
 
 	/**
 	 * Returning a value of 0 means the block is completely transparent. <br.

@@ -30,6 +30,5 @@ public interface IBiomeWrapper extends IDhApiBiomeWrapper, IBindable
 {
 	String getName();
     String serialize(ILevelWrapper levelWrapper);
-	// FIXME: Old code that might create a nullpointer exception
-	String serialize();
+	ILevelWrapper getLevelWrapper();
 }

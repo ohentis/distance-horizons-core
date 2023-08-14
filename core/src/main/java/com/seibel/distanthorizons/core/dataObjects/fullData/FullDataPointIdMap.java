@@ -4,14 +4,14 @@ import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataInputStream;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataOutputStream;
+import com.seibel.distanthorizons.core.wrapperInterfaces.IWrapperFactory;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
-import com.seibel.distanthorizons.core.wrapperInterfaces.IWrapperFactory;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.*;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -257,7 +257,7 @@ public class FullDataPointIdMap
 			// cache the hash code to improve speed
 			if (this.hashCode == null)
 			{
-				this.hashCode = this.serialize().hashCode();
+				this.hashCode = this.serialize(this.biome.getLevelWrapper()).hashCode();
 			}
 
 			return this.hashCode;
@@ -273,21 +273,17 @@ public class FullDataPointIdMap
 				return false;
 			
 			Entry other = (Entry) otherObj;
-			return other.biome.serialize().equals(this.biome.serialize())
-					&& other.blockState.serialize().equals(this.blockState.serialize());
+			return other.biome.serialize(other.biome.getLevelWrapper()).equals(this.biome.serialize(this.biome.getLevelWrapper()))
+					&& other.blockState.serialize(other.blockState.getLevelWrapper()).equals(this.blockState.serialize(this.blockState.getLevelWrapper()));
 		}
 
 		@Override
 		public String toString() {
-			return this.serialize();
+			return this.serialize(this.biome.getLevelWrapper());
 		}
 		
 		public String serialize(ILevelWrapper levelWrapper) {
-			return this.biome.serialize(levelWrapper) + BLOCK_STATE_SEPARATOR_STRING + this.blockState.serialize(levelWrapper);
-		}
-
-		public String serialize() {
-			return this.biome.serialize() + BLOCK_STATE_SEPARATOR_STRING + this.blockState.serialize();
+			return this.biome.serialize(this.biome.getLevelWrapper()) + BLOCK_STATE_SEPARATOR_STRING + this.blockState.serialize(this.biome.getLevelWrapper());
 		}
 
 		public static Entry deserialize(String str, ILevelWrapper levelWrapper) throws IOException, InterruptedException
