@@ -8,9 +8,9 @@ import java.util.UUID;
 
 public interface IServerPlayerWrapper extends IDhApiUnsafeWrapper
 {
-    UUID getUUID();
-
-    IServerLevelWrapper getLevel();
-    
-    Vec3d getPosition();
+	UUID getUUID();
+	
+	IServerLevelWrapper getLevel();
+	
+	Vec3d getPosition();
 }

@@ -34,7 +34,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * Used to allow multiple levels using the same dimension type. <br/>
  * This is specifically needed for servers running the Multiverse plugin (or similar).
- * 
+ *
  * @author James Seibel
  * @version 12-17-2022
  */
@@ -124,6 +124,7 @@ public class SubDimensionLevelMatcher implements AutoCloseable
 	 * Currently this method checks a single chunk (where the player is)
 	 * and compares it against the same chunk position in the other dimension worlds to
 	 * guess which world the player is in.
+	 *
 	 * @throws IOException if the folder doesn't exist or can't be accessed
 	 */
 	public File attemptToDetermineSubDimensionFolder() throws IOException
@@ -154,17 +155,17 @@ public class SubDimensionLevelMatcher implements AutoCloseable
 		}
 		
 		//TODO: Compute a ChunkData from current chunk.
-        
-        // generate a LOD to test against
-        boolean lodGenerated = LodDataBuilder.canGenerateLodFromChunk(newlyLoadedChunk);
-        if (!lodGenerated)
-            return null;
-
-        // log the start of this attempt
-        LOGGER.info("Attempting to determine sub-dimension for [" + MC_CLIENT.getWrappedClientWorld().getDimensionType().getDimensionName() + "]");
-        LOGGER.info("Player block pos in dimension: [" + playerData.playerBlockPos.getX() + "," + playerData.playerBlockPos.getY() + "," + playerData.playerBlockPos.getZ() + "]");
-
-        // new chunk data
+		
+		// generate a LOD to test against
+		boolean lodGenerated = LodDataBuilder.canGenerateLodFromChunk(newlyLoadedChunk);
+		if (!lodGenerated)
+			return null;
+		
+		// log the start of this attempt
+		LOGGER.info("Attempting to determine sub-dimension for [" + MC_CLIENT.getWrappedClientWorld().getDimensionType().getDimensionName() + "]");
+		LOGGER.info("Player block pos in dimension: [" + playerData.playerBlockPos.getX() + "," + playerData.playerBlockPos.getY() + "," + playerData.playerBlockPos.getZ() + "]");
+		
+		// new chunk data
 		ChunkSizedFullDataAccessor newChunkSizedFullDataView = LodDataBuilder.createChunkData(newlyLoadedChunk);
 		long[][][] newChunkData = new long[LodUtil.CHUNK_WIDTH][LodUtil.CHUNK_WIDTH][];
 		if (newChunkSizedFullDataView != null)
@@ -178,25 +179,25 @@ public class SubDimensionLevelMatcher implements AutoCloseable
 				}
 			}
 		}
-        boolean newChunkHasData = newChunkSizedFullDataView != null && newChunkSizedFullDataView.nonEmptyCount() != 0;
-
-        // check if the chunk is actually empty
-        if (!newChunkHasData)
-        {
-            if (newlyLoadedChunk.getHeight() != 0)
-            {
-                // the chunk isn't empty but the LOD is...
-
-                String message = "Error: the chunk at (" + playerChunkPos.getX() + "," + playerChunkPos.getZ() + ") has a height of [" + newlyLoadedChunk.getHeight() + "] but the LOD generated is empty!";
-                LOGGER.error(message);
-            }
-            else
-            {
-                String message = "Warning: The chunk at (" + playerChunkPos.getX() + "," + playerChunkPos.getZ() + ") is empty.";
-                LOGGER.warn(message);
-            }
-            return null;
-        }
+		boolean newChunkHasData = newChunkSizedFullDataView != null && newChunkSizedFullDataView.nonEmptyCount() != 0;
+		
+		// check if the chunk is actually empty
+		if (!newChunkHasData)
+		{
+			if (newlyLoadedChunk.getHeight() != 0)
+			{
+				// the chunk isn't empty but the LOD is...
+				
+				String message = "Error: the chunk at (" + playerChunkPos.getX() + "," + playerChunkPos.getZ() + ") has a height of [" + newlyLoadedChunk.getHeight() + "] but the LOD generated is empty!";
+				LOGGER.error(message);
+			}
+			else
+			{
+				String message = "Warning: The chunk at (" + playerChunkPos.getX() + "," + playerChunkPos.getZ() + ") is empty.";
+				LOGGER.warn(message);
+			}
+			return null;
+		}
 		
 		
 		// compare each world with the newly loaded one

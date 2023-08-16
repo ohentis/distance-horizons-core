@@ -24,7 +24,7 @@ import org.lwjgl.opengl.GL32;
 /**
  * This is a container for a OpenGL
  * VBO (Vertex Buffer Object).
- * 
+ *
  * @author James Seibel
  * @version 11-20-2021
  */
@@ -38,20 +38,23 @@ public class GLElementBuffer extends GLBuffer
 	public int getIndicesCount() { return indicesCount; }
 	protected int type = GL32.GL_UNSIGNED_INT;
 	public int getType() { return type; }
-
+	
 	public GLElementBuffer(boolean isBufferStorage)
 	{
 		super(isBufferStorage);
 	}
-
+	
 	@Override
-	public void destroy(boolean async) {
+	public void destroy(boolean async)
+	{
 		super.destroy(async);
 		indicesCount = 0;
 	}
-
+	
 	@Override
-	public int getBufferBindingTarget() {
+	public int getBufferBindingTarget()
+	{
 		return GL32.GL_ELEMENT_ARRAY_BUFFER;
 	}
+	
 }

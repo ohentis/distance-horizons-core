@@ -26,7 +26,7 @@ package com.seibel.distanthorizons.api.enums.config;
  *
  * Determines which LODs should have priority when generating
  * outside the normal view distance.
- * 
+ *
  * @author Leonardo Amato
  * @version 12-1-2021
  */

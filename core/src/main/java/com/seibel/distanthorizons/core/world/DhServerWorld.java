@@ -42,7 +42,7 @@ public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 
 		LOGGER.info("Started "+DhServerWorld.class.getSimpleName()+" of type "+this.environment);
 	}
-
+	
 	private void registerNetworkHandlers()
 	{
 		this.remotePlayerConnectionHandler.server().registerHandler(RemotePlayerConfigMessage.class, remotePlayerConfigMessage ->
@@ -150,7 +150,7 @@ public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 		}
 
 		this.levels.clear();
-		LOGGER.info("Closed DhWorld of type "+this.environment);
+		LOGGER.info("Closed DhWorld of type " + this.environment);
 	}
 	
 }

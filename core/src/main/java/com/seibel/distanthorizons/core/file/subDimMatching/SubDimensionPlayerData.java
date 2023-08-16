@@ -16,7 +16,7 @@
  *    You should have received a copy of the GNU Lesser General Public License
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
- 
+
 package com.seibel.distanthorizons.core.file.subDimMatching;
 
 
@@ -86,9 +86,10 @@ public class SubDimensionPlayerData
 	public SubDimensionPlayerData(File dimensionFolder)
 	{
 		File file = getFileForDimensionFolder(dimensionFolder);
-		try (CommentedFileConfig toml = CommentedFileConfig.builder(file).build()) {
+		try (CommentedFileConfig toml = CommentedFileConfig.builder(file).build())
+		{
 			toml.load();
-
+			
 			// get the player block pos if it is specified
 			if (toml.contains(PLAYER_BLOCK_POS_X_PATH)
 					&& toml.contains(PLAYER_BLOCK_POS_Y_PATH)

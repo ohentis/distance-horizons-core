@@ -35,7 +35,7 @@ import java.util.HashMap;
 public class OverrideInjector implements IOverrideInjector<IDhApiOverrideable>
 {
 	public static final OverrideInjector INSTANCE = new OverrideInjector();
-
+	
 	private final HashMap<Class<? extends IDhApiOverrideable>, OverridePriorityListContainer> overrideContainerByInterface = new HashMap<>();
 	
 	
@@ -61,7 +61,7 @@ public class OverrideInjector implements IOverrideInjector<IDhApiOverrideable>
 	
 	
 	@Override
-	public void bind(Class<? extends IDhApiOverrideable> dependencyInterface, IDhApiOverrideable dependencyImplementation)  throws IllegalStateException, IllegalArgumentException
+	public void bind(Class<? extends IDhApiOverrideable> dependencyInterface, IDhApiOverrideable dependencyImplementation) throws IllegalStateException, IllegalArgumentException
 	{
 		// make sure a override container exists
 		OverridePriorityListContainer overrideContainer = this.overrideContainerByInterface.get(dependencyInterface);

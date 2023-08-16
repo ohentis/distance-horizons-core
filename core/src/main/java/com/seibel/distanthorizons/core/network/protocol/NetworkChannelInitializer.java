@@ -7,31 +7,29 @@ import io.netty.handler.codec.LengthFieldPrepender;
 import org.jetbrains.annotations.NotNull;
 
 /** used when creating a network channel */
-public class NetworkChannelInitializer extends ChannelInitializer<SocketChannel> 
+public class NetworkChannelInitializer extends ChannelInitializer<SocketChannel>
 {
-    private final MessageHandler messageHandler;
+	private final MessageHandler messageHandler;
+
+	public NetworkChannelInitializer(MessageHandler messageHandler) { this.messageHandler = messageHandler; }
 	
-	
-	
-    public NetworkChannelInitializer(MessageHandler messageHandler) { this.messageHandler = messageHandler; }
-	
-    @Override
-    public void initChannel(@NotNull SocketChannel socketChannel) 
+	@Override
+	public void initChannel(@NotNull SocketChannel socketChannel)
 	{
-        ChannelPipeline pipeline = socketChannel.pipeline();
+		ChannelPipeline pipeline = socketChannel.pipeline();
 		
-        // Encoder
-        pipeline.addLast(new LengthFieldPrepender(Integer.BYTES));
-        pipeline.addLast(new MessageEncoder());
-        pipeline.addLast(new NetworkOutboundExceptionRouter());
+		// Encoder
+		pipeline.addLast(new LengthFieldPrepender(Integer.BYTES));
+		pipeline.addLast(new MessageEncoder());
+		pipeline.addLast(new NetworkOutboundExceptionRouter());
 		
-        // Decoder
-        pipeline.addLast(new LengthFieldBasedFrameDecoder(Integer.MAX_VALUE, 0, Integer.BYTES, 0, Integer.BYTES));
-        pipeline.addLast(new MessageDecoder());
+		// Decoder
+		pipeline.addLast(new LengthFieldBasedFrameDecoder(Integer.MAX_VALUE, 0, Integer.BYTES, 0, Integer.BYTES));
+		pipeline.addLast(new MessageDecoder());
 		
-        // Handler
-        pipeline.addLast(this.messageHandler);
-        pipeline.addLast(new NetworkExceptionHandler());
-    }
+		// Handler
+		pipeline.addLast(this.messageHandler);
+		pipeline.addLast(new NetworkExceptionHandler());
+	}
 	
 }

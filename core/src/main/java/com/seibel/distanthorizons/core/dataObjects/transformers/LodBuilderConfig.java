@@ -26,7 +26,7 @@ import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiDistantGenerat
  * Generally this will only be used if we want to generate a
  * LodChunk using incomplete data, otherwise the defaults
  * should work best for a fully generated chunk (IE has correct surface blocks).
- * 
+ *
  * @author James Seibel
  * @version 2022-12-10
  */

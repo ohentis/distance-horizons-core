@@ -144,9 +144,9 @@ public interface IDhApiGraphicsConfig extends IDhApiConfigGroup
 	/** If enabled vanilla chunk rendering is disabled and only fake chunks are rendered. */
 	IDhApiConfigValue<Boolean> lodOnlyMode();
 	
-	/** 
-	 * Setting this to a non-zero number will modify vanilla Minecraft's LOD Bias, 
-	 * increasing how quickly its textures fade away.  
+	/**
+	 * Setting this to a non-zero number will modify vanilla Minecraft's LOD Bias,
+	 * increasing how quickly its textures fade away.
 	 */
 	IDhApiConfigValue<Double> lodBias();
 	

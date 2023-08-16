@@ -15,7 +15,7 @@ public final class Pair<T, U>
 	}
 	
 	@Override
-	public String toString() { return "("+this.first+", "+this.second+")"; }
+	public String toString() { return "(" + this.first + ", " + this.second + ")"; }
 	
 	@Override
 	public int hashCode() { return Objects.hash(this.first, this.second); }

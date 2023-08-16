@@ -16,16 +16,18 @@
  *    You should have received a copy of the GNU Lesser General Public License
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
- 
+
 package com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor;
 
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 
 import java.util.HashSet;
 
-public interface ISodiumAccessor extends IModAccessor {
+public interface ISodiumAccessor extends IModAccessor
+{
 	HashSet<DhChunkPos> getNormalRenderedChunks();
-
+	
 	/** A temporary overwrite for a config in sodium 0.5 to fix their terrain from showing, will be removed once a proper fix is added */
 	void setFogOcclusion(boolean b); // FIXME
+	
 }

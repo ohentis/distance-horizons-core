@@ -22,6 +22,7 @@ package com.seibel.distanthorizons.core.api.internal;
 import com.seibel.distanthorizons.api.methods.events.abstractEvents.DhApiLevelLoadEvent;
 import com.seibel.distanthorizons.api.methods.events.abstractEvents.DhApiLevelUnloadEvent;
 import com.seibel.distanthorizons.core.generation.DhLightingEngine;
+import com.seibel.distanthorizons.core.util.ThreadUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
 import com.seibel.distanthorizons.core.level.IDhLevel;
@@ -37,6 +38,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * This holds the methods that should be called by the host mod loader (Fabric,
@@ -48,6 +50,14 @@ public class ServerApi
 	
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
+	private static final ThreadPoolExecutor LIGHT_POPULATOR_THREAD_POOL = ThreadUtil.makeRateLimitedThreadPool(
+			// thread count doesn't need to be very high since the player can only move so fast, 1 should be plenty
+			(Runtime.getRuntime().availableProcessors() <= 12) ? 1 : 2,
+			"Server Light Populator", 
+			// only run the thread 50% of the time to prevent lagging the server thread
+			0.5,
+			ThreadUtil.MINIMUM_RELATIVE_PRIORITY);
+	
 	private int lastWorldGenTickDelta = 0;
 	
 	
@@ -56,9 +66,9 @@ public class ServerApi
 	
 	
 	
-	// =============//
-	// tick events  //
-	// =============//
+	//=============//
+	// tick events //
+	//=============//
 	
 	public void serverTickEvent()
 	{
@@ -74,23 +84,23 @@ public class ServerApi
 		catch (Exception e)
 		{
 			// try catch is necessary to prevent crashing the internal server when an exception is thrown
-			LOGGER.error("ServerTickEvent error: "+e.getMessage(), e);
+			LOGGER.error("ServerTickEvent error: " + e.getMessage(), e);
 		}
 	}
 	public void serverLevelTickEvent(IServerLevelWrapper level)
 	{
 		//TODO
 	}
-
+	
 	public void serverLoadEvent(boolean isDedicatedEnvironment)
 	{
-		LOGGER.debug("Server World loading with (dedicated?:"+isDedicatedEnvironment+")");
+		LOGGER.debug("Server World loading with (dedicated?:" + isDedicatedEnvironment + ")");
 		SharedApi.setDhWorld(isDedicatedEnvironment ? new DhServerWorld() : new DhClientServerWorld());
 	}
 	
 	public void serverUnloadEvent()
 	{
-		LOGGER.debug("Server World "+SharedApi.getAbstractDhWorld()+" unloading");
+		LOGGER.debug("Server World " + SharedApi.getAbstractDhWorld() + " unloading");
 		
 		SharedApi.getAbstractDhWorld().close();
 		SharedApi.setDhWorld(null);
@@ -98,7 +108,7 @@ public class ServerApi
 	
 	public void serverLevelLoadEvent(IServerLevelWrapper level)
 	{
-		LOGGER.debug("Server Level "+level+" loading");
+		LOGGER.debug("Server Level " + level + " loading");
 		
 		AbstractDhWorld serverWorld = SharedApi.getAbstractDhWorld();
 		if (serverWorld != null)
@@ -109,7 +119,7 @@ public class ServerApi
 	}
 	public void serverLevelUnloadEvent(IServerLevelWrapper level)
 	{
-		LOGGER.debug("Server Level "+level+" unloading");
+		LOGGER.debug("Server Level " + level + " unloading");
 		
 		AbstractDhWorld serverWorld = SharedApi.getAbstractDhWorld();
 		if (serverWorld != null)
@@ -118,11 +128,11 @@ public class ServerApi
 			ApiEventInjector.INSTANCE.fireAllEvents(DhApiLevelUnloadEvent.class, new DhApiLevelUnloadEvent.EventParam(level));
 		}
 	}
-
+	
 	@Deprecated // TODO not implemented, remove
 	public void serverSaveEvent()
 	{
-		LOGGER.debug("Server world "+SharedApi.getAbstractDhWorld()+" saving");
+		LOGGER.debug("Server world " + SharedApi.getAbstractDhWorld() + " saving");
 		
 		AbstractDhWorld serverWorld = SharedApi.getAbstractDhWorld();
 		if (serverWorld != null)
@@ -130,7 +140,7 @@ public class ServerApi
 			serverWorld.saveAndFlush();
 		}
 	}
-
+	
 	public void serverChunkLoadEvent(IChunkWrapper chunk, ILevelWrapper level)
 	{
 		// the world should always be non-null, this != null is just in case the world was removed accidentally 
@@ -147,40 +157,48 @@ public class ServerApi
 	public void serverChunkSaveEvent(IChunkWrapper chunk, ILevelWrapper level)
 	{
 		AbstractDhWorld dhWorld = SharedApi.getAbstractDhWorld();
-		if (dhWorld != null)
+		if (dhWorld == null)
 		{
-			IDhLevel dhLevel = SharedApi.getAbstractDhWorld().getLevel(level);
-			if (dhLevel != null)
+			return;
+		}
+		
+		IDhLevel dhLevel = SharedApi.getAbstractDhWorld().getLevel(level);
+		if (dhLevel == null)
+		{
+			return;
+		}
+		
+		
+		// lighting the chunk needs to be done outside the event thread to prevent lagging the server thread
+		LIGHT_POPULATOR_THREAD_POOL.execute(() ->
+		{
+			// Save or populate the chunk wrapper's lighting
+			// this is done so we don't have to worry about MC unloading the lighting data for this chunk
+			if (chunk.isLightCorrect())
 			{
-				
-				// Save or populate the chunk wrapper's lighting
-				// this is done so we don't have to worry about MC unloading the lighting data for this chunk
-				if (chunk.isLightCorrect())
+				try
 				{
-					try
-					{
-						chunk.bakeDhLightingUsingMcLightingEngine();
-						chunk.setUseDhLighting(true);
-					}
-					catch (IllegalStateException e)
-					{
-						LOGGER.warn(e.getMessage(), e);
-					}
-				}
-				else
-				{
-					// generate the chunk's lighting, ignoring neighbors.
-					// not a perfect solution, but should prevent chunks from having completely broken lighting
-					List<IChunkWrapper> nearbyChunkList = new LinkedList<>();
-					nearbyChunkList.add(chunk);
-					DhLightingEngine.INSTANCE.lightChunks(chunk, nearbyChunkList, level.hasSkyLight() ? 15 : 0);
+					// If MC's lighting engine isn't thread safe this may cause the server thread to lag
+					chunk.bakeDhLightingUsingMcLightingEngine();
 					chunk.setUseDhLighting(true);
 				}
-				
-				
-				dhLevel.updateChunkAsync(chunk);
+				catch (IllegalStateException e)
+				{
+					LOGGER.warn(e.getMessage(), e);
+				}
 			}
-		}
+			else
+			{
+				// generate the chunk's lighting, ignoring neighbors.
+				// not a perfect solution, but should prevent chunks from having completely broken lighting
+				List<IChunkWrapper> nearbyChunkList = new LinkedList<>();
+				nearbyChunkList.add(chunk);
+				DhLightingEngine.INSTANCE.lightChunks(chunk, nearbyChunkList, level.hasSkyLight() ? 15 : 0);
+				chunk.setUseDhLighting(true);
+			}
+			
+			dhLevel.updateChunkAsync(chunk);
+		});
 	}
 	
 	public void serverPlayerJoinEvent(IServerPlayerWrapper player)

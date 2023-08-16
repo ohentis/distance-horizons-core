@@ -61,19 +61,19 @@ public class LodRenderer
 	public static final ConfigBasedLogger EVENT_LOGGER = new ConfigBasedLogger(LogManager.getLogger(LodRenderer.class),
 			() -> Config.Client.Advanced.Logging.logRendererBufferEvent.get());
 	public static ConfigBasedSpamLogger tickLogger = new ConfigBasedSpamLogger(LogManager.getLogger(LodRenderer.class),
-			() -> Config.Client.Advanced.Logging.logRendererBufferEvent.get(),1);
+			() -> Config.Client.Advanced.Logging.logRendererBufferEvent.get(), 1);
 	
 	public static final boolean ENABLE_DRAW_LAG_SPIKE_LOGGING = false;
 	public static final boolean ENABLE_DUMP_GL_STATE = true;
 	public static final long DRAW_LAG_SPIKE_THRESHOLD_NS = TimeUnit.NANOSECONDS.convert(20, TimeUnit.MILLISECONDS);
-
+	
 	public static final boolean ENABLE_IBO = true;
-
+	
 	// TODO make these private, the LOD Builder can get these variables from the config itself
 	public static boolean transparencyEnabled = true;
 	public static boolean fakeOceanFloor = true;
-
-	public void setupOffset(DhBlockPos pos) 
+	
+	public void setupOffset(DhBlockPos pos)
 	{
 		Vec3d cam = MC_RENDER.getCameraExactPosition();
 		Vec3f modelPos = new Vec3f((float) (pos.x - cam.x), (float) (pos.y - cam.y), (float) (pos.z - cam.z));
@@ -81,18 +81,18 @@ public class LodRenderer
 		this.shaderProgram.bind();
 		this.shaderProgram.setModelPos(modelPos);
 	}
-
+	
 	public void drawVbo(GLVertexBuffer vbo)
 	{
 		vbo.bind();
 		this.shaderProgram.bindVertexBuffer(vbo.getId());
-		GL32.glDrawElements(GL32.GL_TRIANGLES, (vbo.getVertexCount()/4)*6, // TODO what does the 4 and 6 here represent?
+		GL32.glDrawElements(GL32.GL_TRIANGLES, (vbo.getVertexCount() / 4) * 6, // TODO what does the 4 and 6 here represent?
 				this.quadIBO.getType(), 0);
 		vbo.unbind();
 	}
 	public Vec3f getLookVector() { return MC_RENDER.getLookAtVector(); }
-
-
+	
+	
 	public static class LagSpikeCatcher
 	{
 		long timer = System.nanoTime();
@@ -103,31 +103,33 @@ public class LodRenderer
 		{
 			if (!ENABLE_DRAW_LAG_SPIKE_LOGGING)
 			{
-				return;	
+				return;
 			}
 			
 			this.timer = System.nanoTime() - this.timer;
 			if (this.timer > DRAW_LAG_SPIKE_THRESHOLD_NS)
-			{ 
+			{
 				//4 ms
 				EVENT_LOGGER.debug("NOTE: " + source + " took " + Duration.ofNanos(this.timer) + "!");
 			}
 			
 		}
+		
 	}
+	
 	private static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	private static final IMinecraftRenderWrapper MC_RENDER = SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
-
+	
 	public EDebugRendering previousDebugMode = null;
 	public final RenderBufferHandler bufferHandler;
-
+	
 	// The shader program
 	LodRenderProgram shaderProgram = null;
 	public QuadElementBuffer quadIBO = null;
 	public boolean isSetupComplete = false;
-
+	
 	public LodRenderer(RenderBufferHandler bufferHandler) { this.bufferHandler = bufferHandler; }
-
+	
 	private boolean rendererClosed = false;
 	public void close()
 	{
@@ -137,18 +139,18 @@ public class LodRenderer
 			return;
 		}
 		
-		EVENT_LOGGER.info("Shutting down "+LodRenderer.class.getSimpleName()+"...");
+		EVENT_LOGGER.info("Shutting down " + LodRenderer.class.getSimpleName() + "...");
 		
 		this.rendererClosed = true;
 		GLProxy.getInstance().recordOpenGlCall(this::cleanup);
 		this.bufferHandler.close();
 		
-		EVENT_LOGGER.info("Finished shutting down "+LodRenderer.class.getSimpleName());
+		EVENT_LOGGER.info("Finished shutting down " + LodRenderer.class.getSimpleName());
 	}
-
+	
 	public void drawLODs(Mat4f baseModelViewMatrix, Mat4f baseProjectionMatrix, float partialTicks, IProfilerWrapper profiler)
 	{
-		if (this.rendererClosed) 
+		if (this.rendererClosed)
 		{
 			EVENT_LOGGER.error("drawLODs() called after close()!");
 			return;
@@ -160,7 +162,7 @@ public class LodRenderer
 		GLState minecraftGlState = new GLState();
 		if (ENABLE_DUMP_GL_STATE)
 		{
-			tickLogger.debug("Saving GL state: "+minecraftGlState);
+			tickLogger.debug("Saving GL state: " + minecraftGlState);
 		}
 		drawSaveGLState.end("drawSaveGLState");
 		
@@ -322,17 +324,17 @@ public class LodRenderer
 	/** Setup all render objects - REQUIRES to be in render thread */
 	private void setup()
 	{
-		if (this.isSetupComplete) 
+		if (this.isSetupComplete)
 		{
 			EVENT_LOGGER.warn("Renderer setup called but it has already completed setup!");
 			return;
 		}
-		if (!GLProxy.hasInstance()) 
+		if (!GLProxy.hasInstance())
 		{
 			EVENT_LOGGER.warn("Renderer setup called but GLProxy has not yet been setup!");
 			return;
 		}
-
+		
 		EVENT_LOGGER.info("Setting up renderer");
 		this.isSetupComplete = true;
 		this.shaderProgram = new LodRenderProgram(LodFogConfig.generateFogConfig()); // TODO this doesn't actually use the fog config
@@ -343,7 +345,7 @@ public class LodRenderer
 		}
 		EVENT_LOGGER.info("Renderer setup complete");
 	}
-
+	
 	private Color getFogColor(float partialTicks)
 	{
 		Color fogColor;
@@ -360,25 +362,25 @@ public class LodRenderer
 		return fogColor;
 	}
 	private Color getSpecialFogColor(float partialTicks) { return MC_RENDER.getSpecialFogColor(partialTicks); }
-
+	
 	
 	
 	//======================//
 	// Cleanup Functions    //
 	//======================//
-
-	/** 
+	
+	/**
 	 * cleanup and free all render objects. REQUIRES to be in render thread
-	 * (Many objects are Native, outside of JVM, and need manual cleanup)  
-	 */ 
-	private void cleanup() 
+	 * (Many objects are Native, outside of JVM, and need manual cleanup)
+	 */
+	private void cleanup()
 	{
-		if (!this.isSetupComplete) 
+		if (!this.isSetupComplete)
 		{
 			EVENT_LOGGER.warn("Renderer cleanup called but Renderer has not completed setup!");
 			return;
 		}
-		if (!GLProxy.hasInstance()) 
+		if (!GLProxy.hasInstance())
 		{
 			EVENT_LOGGER.warn("Renderer Cleanup called but the GLProxy has never been initalized!");
 			return;
@@ -393,4 +395,5 @@ public class LodRenderer
 		}
 		EVENT_LOGGER.info("Renderer Cleanup Complete");
 	}
+	
 }

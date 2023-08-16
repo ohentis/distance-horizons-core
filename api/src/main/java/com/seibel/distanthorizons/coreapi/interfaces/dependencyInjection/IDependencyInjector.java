@@ -30,19 +30,18 @@ public interface IDependencyInjector<BindableType extends IBindable>
 	 *
 	 * @see #get(Class, boolean)
 	 */
-	@SuppressWarnings("unchecked")
-	<T extends BindableType> T get(Class<T> interfaceClass) throws ClassCastException;
+	@SuppressWarnings("unchecked") <T extends BindableType> T get(Class<T> interfaceClass) throws ClassCastException;
 	
 	/**
 	 * Returns all dependencies of type T that have been bound. <br>
 	 * Returns an empty list if no dependencies have been bound.
 	 *
 	 * @param <T> class of the dependency
-	 *            (inferred from the objectClass parameter)
+	 * (inferred from the objectClass parameter)
 	 * @param interfaceClass Interface of the dependency
 	 * @return the dependency of type T
 	 * @throws ClassCastException If the dependency isn't able to be cast to type T.
-	 *                            (this shouldn't normally happen, unless the bound object changed somehow)
+	 * (this shouldn't normally happen, unless the bound object changed somehow)
 	 */
 	<T extends BindableType> ArrayList<T> getAll(Class<T> interfaceClass) throws ClassCastException;
 	
@@ -53,15 +52,14 @@ public interface IDependencyInjector<BindableType extends IBindable>
 	 * If the handler allows duplicate bindings, this will return the first bound dependency.
 	 *
 	 * @param <T> class of the dependency
-	 *            (inferred from the interfaceClass parameter)
+	 * (inferred from the interfaceClass parameter)
 	 * @param interfaceClass Interface of the dependency
 	 * @param allowIncompleteDependencies If true this method will also return dependencies that haven't completed their delayed setup.
 	 * @return the dependency of type T
 	 * @throws ClassCastException If the dependency isn't able to be cast to type T.
-	 *                            (this shouldn't normally happen, unless the bound object changed somehow)
+	 * (this shouldn't normally happen, unless the bound object changed somehow)
 	 */
-	@SuppressWarnings("unchecked")
-	<T extends BindableType> T get(Class<T> interfaceClass, boolean allowIncompleteDependencies) throws ClassCastException;
+	@SuppressWarnings("unchecked") <T extends BindableType> T get(Class<T> interfaceClass, boolean allowIncompleteDependencies) throws ClassCastException;
 	
 	
 	
@@ -72,4 +70,5 @@ public interface IDependencyInjector<BindableType extends IBindable>
 	
 	/** Runs delayed setup for any dependencies that require it. */
 	void runDelayedSetup();
+	
 }

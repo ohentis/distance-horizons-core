@@ -98,30 +98,38 @@ public class DependencyInjectorTest
 	{
 		OverrideInjector TEST_INJECTOR = new OverrideInjector(OverrideTestAssembly.getPackagePath(2));
 		OverrideInjector CORE_INJECTOR = new OverrideInjector();
-
-
+		
+		
 		// pre-dependency setup
 		Assert.assertNull("Nothing should have been bound.", TEST_INJECTOR.get(IOverrideTest.class));
 		Assert.assertNull("Nothing should have been bound.", CORE_INJECTOR.get(IOverrideTest.class));
-
-
+		
+		
 		// variables to use later
 		IOverrideTest override;
 		OverrideTestCore coreOverride = new OverrideTestCore();
 		OverrideTestPrimary primaryOverride = new OverrideTestPrimary();
-
-
+		
+		
 		// core override binding
-		try { TEST_INJECTOR.bind(IOverrideTest.class, coreOverride); } catch (IllegalArgumentException e) { Assert.fail("Core override should be bindable for test package injector."); }
-
+		try
+		{
+			TEST_INJECTOR.bind(IOverrideTest.class, coreOverride);
+		}
+		catch (IllegalArgumentException e)
+		{
+			Assert.fail("Core override should be bindable for test package injector.");
+		}
+		
 		try
 		{
 			CORE_INJECTOR.bind(IOverrideTest.class, coreOverride);
 			Assert.fail("Core override should not be bindable for core package injector.");
 		}
-		catch (IllegalArgumentException e) { /* this exception should be thrown */ }
-
-
+		catch (IllegalArgumentException e)
+		{ /* this exception should be thrown */ }
+		
+		
 		// core override
 		Assert.assertNotNull("Test injector should've bound core override.", TEST_INJECTOR.get(IOverrideTest.class));
 		Assert.assertNull("Core injector should not have bound core override.", CORE_INJECTOR.get(IOverrideTest.class));
@@ -132,8 +140,8 @@ public class DependencyInjectorTest
 		override = TEST_INJECTOR.get(IOverrideTest.class);
 		Assert.assertEquals("Override returned incorrect override type.", override.getPriority(), OverrideInjector.CORE_PRIORITY);
 		Assert.assertEquals("Incorrect override object returned.", override.getValue(), OverrideTestCore.VALUE);
-
-
+		
+		
 		// default override
 		TEST_INJECTOR.bind(IOverrideTest.class, primaryOverride);
 		// priority gets
@@ -144,12 +152,12 @@ public class DependencyInjectorTest
 		override = TEST_INJECTOR.get(IOverrideTest.class);
 		Assert.assertEquals("Override returned incorrect override type.", override.getPriority(), OverrideTestPrimary.PRIORITY);
 		Assert.assertEquals("Incorrect override object returned.", override.getValue(), OverrideTestPrimary.VALUE);
-
-
+		
+		
 		// in-line get
 		// (make sure the returned type is correct and compiles, the actual value doesn't matter)
 		TEST_INJECTOR.get(IOverrideTest.class).getValue();
-
+		
 	}
 	
 	@Test
@@ -174,7 +182,14 @@ public class DependencyInjectorTest
 		
 		
 		// bind the core generator //
-		try { TEST_INJECTOR.bind(boundLevel, coreLevelGenerator); } catch (IllegalArgumentException e) { Assert.fail("[" + coreLevelGenerator.getClass().getSimpleName() + "] should be bindable for test package injector."); }
+		try
+		{
+			TEST_INJECTOR.bind(boundLevel, coreLevelGenerator);
+		}
+		catch (IllegalArgumentException e)
+		{
+			Assert.fail("[" + coreLevelGenerator.getClass().getSimpleName() + "] should be bindable for test package injector.");
+		}
 		
 		// validate the core generator was bound
 		generator = TEST_INJECTOR.get(boundLevel);
@@ -188,7 +203,14 @@ public class DependencyInjectorTest
 		
 		
 		// bind the secondary generator //
-		try { TEST_INJECTOR.bind(boundLevel, secondaryLevelGenerator); } catch (IllegalArgumentException e) { Assert.fail("[" + secondaryLevelGenerator.getClass().getSimpleName() + "] should be bindable for test package injector."); }
+		try
+		{
+			TEST_INJECTOR.bind(boundLevel, secondaryLevelGenerator);
+		}
+		catch (IllegalArgumentException e)
+		{
+			Assert.fail("[" + secondaryLevelGenerator.getClass().getSimpleName() + "] should be bindable for test package injector.");
+		}
 		
 		// validate the secondary generator overrides the core generator
 		generator = TEST_INJECTOR.get(boundLevel);
@@ -202,7 +224,14 @@ public class DependencyInjectorTest
 		
 		
 		// bind the primary generator //
-		try { TEST_INJECTOR.bind(boundLevel, primaryLevelGenerator); } catch (IllegalArgumentException e) { Assert.fail("[" + primaryLevelGenerator.getClass().getSimpleName() + "] should be bindable for test package injector."); }
+		try
+		{
+			TEST_INJECTOR.bind(boundLevel, primaryLevelGenerator);
+		}
+		catch (IllegalArgumentException e)
+		{
+			Assert.fail("[" + primaryLevelGenerator.getClass().getSimpleName() + "] should be bindable for test package injector.");
+		}
 		
 		// validate the primary generator overrides both the core and secondary generator
 		generator = TEST_INJECTOR.get(boundLevel);

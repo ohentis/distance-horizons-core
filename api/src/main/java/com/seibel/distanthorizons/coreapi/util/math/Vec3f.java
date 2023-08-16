@@ -24,7 +24,7 @@ import com.seibel.distanthorizons.coreapi.util.MathUtil;
 /**
  * A (almost) exact copy of Minecraft's 1.16.5
  * implementation of a 3 element float vector.
- * 
+ *
  * @author James Seibel
  * @version 11-11-2021
  */
@@ -259,4 +259,5 @@ public class Vec3f
 		this.y = values[1];
 		this.z = values[2];
 	}
+	
 }

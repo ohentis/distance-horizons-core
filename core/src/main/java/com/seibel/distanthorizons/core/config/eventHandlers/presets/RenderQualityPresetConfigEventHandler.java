@@ -21,51 +21,51 @@ public class RenderQualityPresetConfigEventHandler extends AbstractPresetConfigE
 	private static final Logger LOGGER = LogManager.getLogger();
 	
 	
-	private final ConfigEntryWithPresetOptions<EQualityPreset, EMaxHorizontalResolution> drawResolution = new ConfigEntryWithPresetOptions<>(Config.Client.Advanced.Graphics.Quality.maxHorizontalResolution, 
-		new HashMap<EQualityPreset, EMaxHorizontalResolution>()
-		{{
-			this.put(EQualityPreset.MINIMUM, EMaxHorizontalResolution.TWO_BLOCKS);
-			this.put(EQualityPreset.LOW, EMaxHorizontalResolution.BLOCK);
-			this.put(EQualityPreset.MEDIUM, EMaxHorizontalResolution.BLOCK);
-			this.put(EQualityPreset.HIGH, EMaxHorizontalResolution.BLOCK);
-			this.put(EQualityPreset.EXTREME, EMaxHorizontalResolution.BLOCK);
-		}});
+	private final ConfigEntryWithPresetOptions<EQualityPreset, EMaxHorizontalResolution> drawResolution = new ConfigEntryWithPresetOptions<>(Config.Client.Advanced.Graphics.Quality.maxHorizontalResolution,
+			new HashMap<EQualityPreset, EMaxHorizontalResolution>()
+			{{
+				this.put(EQualityPreset.MINIMUM, EMaxHorizontalResolution.TWO_BLOCKS);
+				this.put(EQualityPreset.LOW, EMaxHorizontalResolution.BLOCK);
+				this.put(EQualityPreset.MEDIUM, EMaxHorizontalResolution.BLOCK);
+				this.put(EQualityPreset.HIGH, EMaxHorizontalResolution.BLOCK);
+				this.put(EQualityPreset.EXTREME, EMaxHorizontalResolution.BLOCK);
+			}});
 	private final ConfigEntryWithPresetOptions<EQualityPreset, EVerticalQuality> verticalQuality = new ConfigEntryWithPresetOptions<>(Config.Client.Advanced.Graphics.Quality.verticalQuality,
-		new HashMap<EQualityPreset, EVerticalQuality>()
-		{{
-			this.put(EQualityPreset.MINIMUM, EVerticalQuality.HEIGHT_MAP);
-			this.put(EQualityPreset.LOW, EVerticalQuality.LOW);
-			this.put(EQualityPreset.MEDIUM, EVerticalQuality.MEDIUM);
-			this.put(EQualityPreset.HIGH, EVerticalQuality.HIGH);
-			this.put(EQualityPreset.EXTREME, EVerticalQuality.EXTREME);
-		}});
+			new HashMap<EQualityPreset, EVerticalQuality>()
+			{{
+				this.put(EQualityPreset.MINIMUM, EVerticalQuality.HEIGHT_MAP);
+				this.put(EQualityPreset.LOW, EVerticalQuality.LOW);
+				this.put(EQualityPreset.MEDIUM, EVerticalQuality.MEDIUM);
+				this.put(EQualityPreset.HIGH, EVerticalQuality.HIGH);
+				this.put(EQualityPreset.EXTREME, EVerticalQuality.EXTREME);
+			}});
 	private final ConfigEntryWithPresetOptions<EQualityPreset, EHorizontalQuality> horizontalQuality = new ConfigEntryWithPresetOptions<>(Config.Client.Advanced.Graphics.Quality.horizontalQuality,
-		new HashMap<EQualityPreset, EHorizontalQuality>()
-		{{
-			this.put(EQualityPreset.MINIMUM, EHorizontalQuality.LOWEST);
-			this.put(EQualityPreset.LOW, EHorizontalQuality.LOW);
-			this.put(EQualityPreset.MEDIUM, EHorizontalQuality.MEDIUM);
-			this.put(EQualityPreset.HIGH, EHorizontalQuality.HIGH);
-			this.put(EQualityPreset.EXTREME, EHorizontalQuality.EXTREME);
-		}});
-	private final ConfigEntryWithPresetOptions<EQualityPreset, ETransparency> transparency = new ConfigEntryWithPresetOptions<>(Config.Client.Advanced.Graphics.Quality.transparency, 
-		new HashMap<EQualityPreset, ETransparency>()
-		{{
-			this.put(EQualityPreset.MINIMUM, ETransparency.DISABLED);
-			this.put(EQualityPreset.LOW, ETransparency.DISABLED); // should be fake if/when fake is fixed
-			this.put(EQualityPreset.MEDIUM, ETransparency.COMPLETE);
-			this.put(EQualityPreset.HIGH, ETransparency.COMPLETE);
-			this.put(EQualityPreset.EXTREME, ETransparency.COMPLETE);
-		}});
-	private final ConfigEntryWithPresetOptions<EQualityPreset, Boolean> ssao = new ConfigEntryWithPresetOptions<>(Config.Client.Advanced.Graphics.Quality.ssao, 
-		new HashMap<EQualityPreset, Boolean>()
-		{{
-			this.put(EQualityPreset.MINIMUM, false);
-			this.put(EQualityPreset.LOW, false);
-			this.put(EQualityPreset.MEDIUM, true);
-			this.put(EQualityPreset.HIGH, true);
-			this.put(EQualityPreset.EXTREME, true);
-		}});
+			new HashMap<EQualityPreset, EHorizontalQuality>()
+			{{
+				this.put(EQualityPreset.MINIMUM, EHorizontalQuality.LOWEST);
+				this.put(EQualityPreset.LOW, EHorizontalQuality.LOW);
+				this.put(EQualityPreset.MEDIUM, EHorizontalQuality.MEDIUM);
+				this.put(EQualityPreset.HIGH, EHorizontalQuality.HIGH);
+				this.put(EQualityPreset.EXTREME, EHorizontalQuality.EXTREME);
+			}});
+	private final ConfigEntryWithPresetOptions<EQualityPreset, ETransparency> transparency = new ConfigEntryWithPresetOptions<>(Config.Client.Advanced.Graphics.Quality.transparency,
+			new HashMap<EQualityPreset, ETransparency>()
+			{{
+				this.put(EQualityPreset.MINIMUM, ETransparency.DISABLED);
+				this.put(EQualityPreset.LOW, ETransparency.DISABLED); // should be fake if/when fake is fixed
+				this.put(EQualityPreset.MEDIUM, ETransparency.COMPLETE);
+				this.put(EQualityPreset.HIGH, ETransparency.COMPLETE);
+				this.put(EQualityPreset.EXTREME, ETransparency.COMPLETE);
+			}});
+	private final ConfigEntryWithPresetOptions<EQualityPreset, Boolean> ssao = new ConfigEntryWithPresetOptions<>(Config.Client.Advanced.Graphics.Quality.ssao,
+			new HashMap<EQualityPreset, Boolean>()
+			{{
+				this.put(EQualityPreset.MINIMUM, false);
+				this.put(EQualityPreset.LOW, false);
+				this.put(EQualityPreset.MEDIUM, true);
+				this.put(EQualityPreset.HIGH, true);
+				this.put(EQualityPreset.EXTREME, true);
+			}});
 	
 	
 	
@@ -74,7 +74,7 @@ public class RenderQualityPresetConfigEventHandler extends AbstractPresetConfigE
 	//==============//
 	
 	/** private since we only ever need one handler at a time */
-	private RenderQualityPresetConfigEventHandler() 
+	private RenderQualityPresetConfigEventHandler()
 	{
 		// add each config used by this preset
 		this.configList.add(this.drawResolution);
@@ -100,9 +100,9 @@ public class RenderQualityPresetConfigEventHandler extends AbstractPresetConfigE
 	@Override
 	protected IConfigEntry<EQualityPreset> getPresetConfigEntry() { return Config.Client.qualityPresetSetting; }
 	
-	@Override 
+	@Override
 	protected List<EQualityPreset> getPresetEnumList() { return Arrays.asList(EQualityPreset.values()); }
-	@Override 
+	@Override
 	protected EQualityPreset getCustomPresetEnum() { return EQualityPreset.CUSTOM; }
 	
 }

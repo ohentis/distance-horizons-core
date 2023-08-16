@@ -30,10 +30,10 @@ import java.util.Objects;
  */
 public class FogSettings
 {
-    /** a FogSetting object with 0 for every value */
-    public static final FogSettings EMPTY = new FogSettings(0, 0, 0, 0,0, EFogFalloff.LINEAR);
-    
-    
+	/** a FogSetting object with 0 for every value */
+	public static final FogSettings EMPTY = new FogSettings(0, 0, 0, 0, 0, EFogFalloff.LINEAR);
+	
+	
 	public final double start;
 	public final double end;
 	public final double min;

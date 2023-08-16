@@ -11,22 +11,16 @@ import com.seibel.distanthorizons.core.world.*;
 /** Contains code and variables used by both {@link ClientApi} and {@link ServerApi} */
 public class SharedApi
 {
-    private static AbstractDhWorld currentWorld;
+	private static AbstractDhWorld currentWorld;
 	private static int lastWorldGenTickDelta = 0;
-
 	
-	
-	
-    public static void init() { Initializer.init(); }
-	
-	
+	public static void init() { Initializer.init(); }
 	
 	public static EWorldEnvironment getEnvironment() { return (currentWorld == null) ? null : currentWorld.environment; }
 	
-	
-	public static void setDhWorld(AbstractDhWorld newWorld) 
+	public static void setDhWorld(AbstractDhWorld newWorld)
 	{
-		currentWorld = newWorld; 
+		currentWorld = newWorld;
 		
 		// starting and stopping the DataRenderTransformer is necessary to prevent attempting to
 		// access the MC level at inappropriate times, which can cause exceptions

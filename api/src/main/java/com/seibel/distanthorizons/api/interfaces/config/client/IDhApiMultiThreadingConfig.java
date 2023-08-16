@@ -46,9 +46,9 @@ public interface IDhApiMultiThreadingConfig extends IDhApiConfigGroup
 	/** Defines how many file handler threads are used. */
 	IDhApiConfigValue<Integer> fileHandlerThreads();
 	
-	/** 
+	/**
 	 * Defines how many Full to Render data converter threads are used. <br><br>
-	 * 
+	 *
 	 * <strong>Full data</strong> - Distant Horizons data based on BlockState and Biome IDs <br>
 	 * <strong>Render data</strong> - color data used when Distant Horizons is rendering
 	 */

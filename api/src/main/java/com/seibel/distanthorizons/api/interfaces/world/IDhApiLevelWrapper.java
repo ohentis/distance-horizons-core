@@ -25,7 +25,7 @@ import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiLevelType;
 /**
  * Can be either a Server or Client level.<br>
  * A level is equivalent to a dimension in vanilla Minecraft.
- * 
+ *
  * @author James Seibel
  * @version 2022-7-14
  */
@@ -42,7 +42,7 @@ public interface IDhApiLevelWrapper extends IDhApiUnsafeWrapper
 	/** Returns the max block height of the level(?) */
 	int getHeight();
 	
-	/** 
+	/**
 	 * Returns the lowest possible block position for the level. <br>
 	 * For MC versions before 1.18 this will return 0.
 	 */

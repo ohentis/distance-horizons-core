@@ -32,12 +32,12 @@ public class AnnotationUtil
 			
 			// should never happen
 			// if we got here Java screwed up getting us the enums
-			throw new IllegalStateException("Enum missing expected value. Enum: ["+enumValue.getClass()+"] doesn't contain the value: ["+enumValue.name()+"].");
+			throw new IllegalStateException("Enum missing expected value. Enum: [" + enumValue.getClass() + "] doesn't contain the value: [" + enumValue.name() + "].");
 		}
 		catch (IllegalAccessException | IllegalArgumentException | ClassCastException e)
 		{
 			// shouldn't happen, but just in case
-			LOGGER.error("Unable to get annotation for enum: ["+enumValue.getClass()+"]. Unexpected exception: ["+e+"], message: ["+e.getMessage()+"].", e);
+			LOGGER.error("Unable to get annotation for enum: [" + enumValue.getClass() + "]. Unexpected exception: [" + e + "], message: [" + e.getMessage() + "].", e);
 			return false;
 		}
 	}

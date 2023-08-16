@@ -26,7 +26,7 @@ package com.seibel.distanthorizons.api.enums.config;
  *
  * This represents how far the LODs should overlap with
  * the vanilla Minecraft terrain.
- * 
+ *
  * @author James Seibel
  * @version 2022-6-30
  */

@@ -13,7 +13,7 @@ import java.util.TimerTask;
 /**
  * Listens to the config and will automatically
  * clear the current render cache if certain settings are changed. <br> <br>
- * 
+ *
  * Note: if additional settings should clear the render cache, add those to this listener, don't create a new listener
  */
 public class RenderCacheConfigEventHandler implements IConfigListener
@@ -31,11 +31,11 @@ public class RenderCacheConfigEventHandler implements IConfigListener
 	
 	
 	/** private since we only ever need one handler at a time */
-	private RenderCacheConfigEventHandler() {  }
+	private RenderCacheConfigEventHandler() { }
 	
 	
 	
-	@Override 
+	@Override
 	public void onConfigValueSet()
 	{
 		// confirm a setting was actually changed

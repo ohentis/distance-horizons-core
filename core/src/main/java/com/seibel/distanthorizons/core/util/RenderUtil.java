@@ -37,7 +37,7 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 /**
  * This holds miscellaneous helper code
  * to be used in the rendering process.
- * 
+ *
  * @author James Seibel
  * @version 2022-8-21
  */
@@ -53,6 +53,7 @@ public class RenderUtil
 	
 	/**
 	 * Returns if the given ChunkPos is in the loaded area of the world.
+	 *
 	 * @param center the center of the loaded world (probably the player's ChunkPos)
 	 */
 	public static boolean isChunkPosInLoadedArea(DhChunkPos pos, DhChunkPos center)
@@ -61,11 +62,12 @@ public class RenderUtil
 				&& pos.getX() <= center.getX() + MC_RENDER.getRenderDistance())
 				&&
 				(pos.getZ() >= center.getZ() - MC_RENDER.getRenderDistance()
-				&& pos.getZ() <= center.getZ() + MC_RENDER.getRenderDistance());
+						&& pos.getZ() <= center.getZ() + MC_RENDER.getRenderDistance());
 	}
 	
 	/**
 	 * Returns if the given coordinate is in the loaded area of the world.
+	 *
 	 * @param centerCoordinate the center of the loaded world
 	 */
 	public static boolean isCoordinateInLoadedArea(int x, int z, int centerCoordinate)
@@ -107,8 +109,8 @@ public class RenderUtil
 		
 		// calculate the 4 corners
 		Vec3f vboSeVec = new Vec3f(vboVec.x + LodUtil.REGION_WIDTH, vboVec.y, vboVec.z + LodUtil.REGION_WIDTH);
-		Vec3f vboSwVec = new Vec3f(vboVec.x                       , vboVec.y, vboVec.z + LodUtil.REGION_WIDTH);
-		Vec3f vboNwVec = new Vec3f(vboVec.x                       , vboVec.y, vboVec.z);
+		Vec3f vboSwVec = new Vec3f(vboVec.x, vboVec.y, vboVec.z + LodUtil.REGION_WIDTH);
+		Vec3f vboNwVec = new Vec3f(vboVec.x, vboVec.y, vboVec.z);
 		Vec3f vboNeVec = new Vec3f(vboVec.x + LodUtil.REGION_WIDTH, vboVec.y, vboVec.z);
 		
 		// if any corner is visible, this region should be rendered
@@ -138,6 +140,7 @@ public class RenderUtil
 	
 	/**
 	 * create and return a new projection matrix based on MC's modelView and projection matrices
+	 *
 	 * @param mcProjMat Minecraft's current projection matrix
 	 */
 	public static Mat4f createLodProjectionMatrix(Mat4f mcProjMat, float partialTicks)
@@ -150,7 +153,7 @@ public class RenderUtil
 		// Set new far and near clip plane values.
 		lodProj.setClipPlanes(
 				getNearClipPlaneDistanceInBlocks(partialTicks),
-				(float)((farPlaneDistanceInBlocks+LodUtil.REGION_WIDTH) * Math.sqrt(2)));
+				(float) ((farPlaneDistanceInBlocks + LodUtil.REGION_WIDTH) * Math.sqrt(2)));
 		
 		return lodProj;
 	}
@@ -165,6 +168,7 @@ public class RenderUtil
 	
 	/**
 	 * create and return a new combined modelView/projection matrix based on MC's modelView and projection matrices
+	 *
 	 * @param mcProjMat Minecraft's current projection matrix
 	 * @param mcModelViewMat Minecraft's current model view matrix
 	 */
@@ -191,7 +195,7 @@ public class RenderUtil
 		{
 			nearClipPlane = 0.1f;
 		}
-		else 
+		else
 		{
 			// TODO make this option dependent on player speed.
 			//  if the player is flying quickly, lower the near clip plane to account for slow chunk loading.
@@ -204,16 +208,16 @@ public class RenderUtil
 				case NONE:
 					nearClipPlane = 0.1f;
 					break;
-					
+				
 				case LIGHT:
 					nearClipPlane = vanillaBlockRenderedDistance * 0.25f;
 					break;
-					
+				
 				case MEDIUM:
 					nearClipPlane = vanillaBlockRenderedDistance * 0.4f;
 					break;
-					
-					
+				
+				
 				case HEAVY:
 					// recommend render distance ot 6 or higher, otherwise holes may appear
 					nearClipPlane = vanillaBlockRenderedDistance * 0.6f;

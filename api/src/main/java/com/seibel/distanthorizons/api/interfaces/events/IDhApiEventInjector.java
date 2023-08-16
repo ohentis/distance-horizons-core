@@ -34,8 +34,8 @@ public interface IDhApiEventInjector extends IDependencyInjector<IDhApiEvent>
 	/**
 	 * Unlinks the given event handler, preventing the handler from being called in the future.
 	 *
-	 * @throws IllegalArgumentException if the implementation object doesn't implement the interface
 	 * @return true if the handler was unbound, false if the handler wasn't bound.
+	 * @throws IllegalArgumentException if the implementation object doesn't implement the interface
 	 */
 	// Note to self: Don't try adding a generic type to IDhApiEvent, the constructor won't accept it
 	boolean unbind(Class<? extends IDhApiEvent> dependencyInterface, Class<? extends IDhApiEvent> dependencyClassToRemove) throws IllegalArgumentException;
@@ -46,8 +46,8 @@ public interface IDhApiEventInjector extends IDependencyInjector<IDhApiEvent>
 	 *
 	 * @param abstractEvent event type
 	 * @param eventParameterObject event parameter
-	 * @return if any of bound event handlers returned that this event should be canceled.
 	 * @param <T> the parameter type taken by the event handlers.
+	 * @return if any of bound event handlers returned that this event should be canceled.
 	 */
 	<T, U extends IDhApiEvent<T>> boolean fireAllEvents(Class<U> abstractEvent, T eventParameterObject);
 	

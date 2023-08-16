@@ -52,8 +52,8 @@ public enum EHorizontalQuality
 	
 	EHorizontalQuality(double quadraticBase, int distanceUnitInBlocks)
 	{
-		this.quadraticBase = quadraticBase; 
+		this.quadraticBase = quadraticBase;
 		this.distanceUnitInBlocks = distanceUnitInBlocks;
 	}
-		
+	
 }

@@ -22,9 +22,9 @@ public abstract class AbstractPresetConfigEventHandler<TPresetEnum extends Enum<
 	
 	
 	
-	/** 
-	 * Set the UI only config based on what is set in the file. <br> 
-	 * This should only be called once. 
+	/**
+	 * Set the UI only config based on what is set in the file. <br>
+	 * This should only be called once.
 	 */
 	public void setUiOnlyConfigValues()
 	{
@@ -37,7 +37,7 @@ public abstract class AbstractPresetConfigEventHandler<TPresetEnum extends Enum<
 	// listeners //
 	//===========//
 	
-	@Override 
+	@Override
 	public void onConfigValueSet()
 	{
 		TPresetEnum presetEnum = this.getPresetConfigEntry().get();
@@ -56,7 +56,10 @@ public abstract class AbstractPresetConfigEventHandler<TPresetEnum extends Enum<
 		}
 		
 		// reset the timer
-		TimerTask task = new TimerTask() { public void run() { AbstractPresetConfigEventHandler.this.applyPreset(presetEnum); } };
+		TimerTask task = new TimerTask()
+		{
+			public void run() { AbstractPresetConfigEventHandler.this.applyPreset(presetEnum); }
+		};
 		this.presetApplicationTimer = new Timer("PresetApplicationTimer");
 		this.presetApplicationTimer.schedule(task, MS_DELAY_BEFORE_APPLYING_PRESET);
 		
@@ -72,7 +75,7 @@ public abstract class AbstractPresetConfigEventHandler<TPresetEnum extends Enum<
 		}
 		
 		this.changingPreset = false;
-		LOGGER.debug("preset active: "+presetEnum);
+		LOGGER.debug("preset active: " + presetEnum);
 	}
 	
 	
@@ -127,7 +130,7 @@ public abstract class AbstractPresetConfigEventHandler<TPresetEnum extends Enum<
 		if (possiblePrestList.size() > 1)
 		{
 			// we shouldn't have multiple options, but just in case
-			LOGGER.warn("Multiple potential preset options ["+StringUtil.join(", ", possiblePrestList)+"], defaulting to the first one.");
+			LOGGER.warn("Multiple potential preset options [" + StringUtil.join(", ", possiblePrestList) + "], defaulting to the first one.");
 		}
 		
 		if (possiblePrestList.size() == 0)

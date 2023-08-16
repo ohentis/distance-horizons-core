@@ -46,21 +46,21 @@ public class RaycastingTest
 		
 		// ray origin left of square
 		double rayX = 0;
-		testRay(false, rayX, 0, 	xDir, yDir, squareMinX, squareMinY, squareWidth);
-		testRay(false, rayX, 0.5, 	xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(false, rayX, 0, xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(false, rayX, 0.5, xDir, yDir, squareMinX, squareMinY, squareWidth);
 		
-		testRay(true,  rayX, 1, 	xDir, yDir, squareMinX, squareMinY, squareWidth);
-		testRay(true,  rayX, 1.5, 	xDir, yDir, squareMinX, squareMinY, squareWidth);
-		testRay(true,  rayX, 2, 	xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(true, rayX, 1, xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(true, rayX, 1.5, xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(true, rayX, 2, xDir, yDir, squareMinX, squareMinY, squareWidth);
 		
-		testRay(false, rayX, 2.5, 	xDir, yDir, squareMinX, squareMinY, squareWidth);
-		testRay(false, rayX, 3, 	xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(false, rayX, 2.5, xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(false, rayX, 3, xDir, yDir, squareMinX, squareMinY, squareWidth);
 		
 		// ray origin right of square
 		rayX = 2.5;
-		testRay(false, rayX, 1, 	xDir, yDir, squareMinX, squareMinY, squareWidth);
-		testRay(false, rayX, 1.5, 	xDir, yDir, squareMinX, squareMinY, squareWidth);
-		testRay(false, rayX, 2, 	xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(false, rayX, 1, xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(false, rayX, 1.5, xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(false, rayX, 2, xDir, yDir, squareMinX, squareMinY, squareWidth);
 		
 		
 		// ray points left - direction <-1,0>
@@ -69,21 +69,21 @@ public class RaycastingTest
 		
 		// ray origin left of square
 		rayX = 0;
-		testRay(false, rayX, 0, 	xDir, yDir, squareMinX, squareMinY, squareWidth);
-		testRay(false, rayX, 0.5, 	xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(false, rayX, 0, xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(false, rayX, 0.5, xDir, yDir, squareMinX, squareMinY, squareWidth);
 		
-		testRay(false, rayX, 1, 	xDir, yDir, squareMinX, squareMinY, squareWidth);
-		testRay(false, rayX, 1.5, 	xDir, yDir, squareMinX, squareMinY, squareWidth);
-		testRay(false, rayX, 2, 	xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(false, rayX, 1, xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(false, rayX, 1.5, xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(false, rayX, 2, xDir, yDir, squareMinX, squareMinY, squareWidth);
 		
-		testRay(false, rayX, 2.5, 	xDir, yDir, squareMinX, squareMinY, squareWidth);
-		testRay(false, rayX, 3, 	xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(false, rayX, 2.5, xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(false, rayX, 3, xDir, yDir, squareMinX, squareMinY, squareWidth);
 		
 		// ray origin right of square
 		rayX = 2.5;
-		testRay(true, rayX, 1, 	xDir, yDir, squareMinX, squareMinY, squareWidth);
-		testRay(true, rayX, 1.5, 	xDir, yDir, squareMinX, squareMinY, squareWidth);
-		testRay(true, rayX, 2, 	xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(true, rayX, 1, xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(true, rayX, 1.5, xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(true, rayX, 2, xDir, yDir, squareMinX, squareMinY, squareWidth);
 		
 	}
 	
@@ -105,28 +105,28 @@ public class RaycastingTest
 		double rayY = 0;
 		
 		// ray origin below square
-		testRay(false, 0, rayY, 	xDir, yDir, squareMinX, squareMinY, squareWidth);
-		testRay(false, 0.5, rayY, 	xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(false, 0, rayY, xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(false, 0.5, rayY, xDir, yDir, squareMinX, squareMinY, squareWidth);
 		
-		testRay(true,  1, rayY, 	xDir, yDir, squareMinX, squareMinY, squareWidth);
-		testRay(true,  1.5, rayY, 	xDir, yDir, squareMinX, squareMinY, squareWidth);
-		testRay(true,  2, rayY, 	xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(true, 1, rayY, xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(true, 1.5, rayY, xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(true, 2, rayY, xDir, yDir, squareMinX, squareMinY, squareWidth);
 		
-		testRay(false, 2.5, rayY, 	xDir, yDir, squareMinX, squareMinY, squareWidth);
-		testRay(false, 3, rayY, 	xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(false, 2.5, rayY, xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(false, 3, rayY, xDir, yDir, squareMinX, squareMinY, squareWidth);
 		
 		
 		// ray origin in square
-		testRay(true, 1, 1, 		xDir, yDir, squareMinX, squareMinY, squareWidth);
-		testRay(true, 1.5, 1.5, 	xDir, yDir, squareMinX, squareMinY, squareWidth);
-		testRay(true, 2, 2, 		xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(true, 1, 1, xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(true, 1.5, 1.5, xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(true, 2, 2, xDir, yDir, squareMinX, squareMinY, squareWidth);
 		
 		
 		// ray origin above square
 		rayY = 2.5;
-		testRay(false, 1, rayY, 	xDir, yDir, squareMinX, squareMinY, squareWidth);
-		testRay(false, 1.5, rayY, 	xDir, yDir, squareMinX, squareMinY, squareWidth);
-		testRay(false, 2, rayY, 	xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(false, 1, rayY, xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(false, 1.5, rayY, xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(false, 2, rayY, xDir, yDir, squareMinX, squareMinY, squareWidth);
 		
 		
 		
@@ -138,28 +138,28 @@ public class RaycastingTest
 		rayY = 0;
 		
 		// ray origin below square
-		testRay(false, 1, rayY, 	xDir, yDir, squareMinX, squareMinY, squareWidth);
-		testRay(false, 1.5, rayY, 	xDir, yDir, squareMinX, squareMinY, squareWidth);
-		testRay(false, 2, rayY, 	xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(false, 1, rayY, xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(false, 1.5, rayY, xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(false, 2, rayY, xDir, yDir, squareMinX, squareMinY, squareWidth);
 		
 		
 		// ray origin in square
-		testRay(true, 1, 1, 		xDir, yDir, squareMinX, squareMinY, squareWidth);
-		testRay(true, 1.5, 1.5, 	xDir, yDir, squareMinX, squareMinY, squareWidth);
-		testRay(true, 2, 2, 		xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(true, 1, 1, xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(true, 1.5, 1.5, xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(true, 2, 2, xDir, yDir, squareMinX, squareMinY, squareWidth);
 		
 		
 		// ray origin above square
 		rayY = 2.5;
-		testRay(false, 0, rayY, 	xDir, yDir, squareMinX, squareMinY, squareWidth);
-		testRay(false, 0.5, rayY, 	xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(false, 0, rayY, xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(false, 0.5, rayY, xDir, yDir, squareMinX, squareMinY, squareWidth);
 		
-		testRay(true,  1, rayY, 	xDir, yDir, squareMinX, squareMinY, squareWidth);
-		testRay(true,  1.5, rayY, 	xDir, yDir, squareMinX, squareMinY, squareWidth);
-		testRay(true,  2, rayY, 	xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(true, 1, rayY, xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(true, 1.5, rayY, xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(true, 2, rayY, xDir, yDir, squareMinX, squareMinY, squareWidth);
 		
-		testRay(false, 2.5, rayY, 	xDir, yDir, squareMinX, squareMinY, squareWidth);
-		testRay(false, 3, rayY, 	xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(false, 2.5, rayY, xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(false, 3, rayY, xDir, yDir, squareMinX, squareMinY, squareWidth);
 		
 	}
 	
@@ -177,15 +177,15 @@ public class RaycastingTest
 		// direction <0,0>
 		double xDir = 0;
 		double yDir = 0;
-		testRay(false, 0, 0, 		xDir, yDir, squareMinX, squareMinY, squareWidth);
-		testRay(false, 0.5, 0.5, 	xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(false, 0, 0, xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(false, 0.5, 0.5, xDir, yDir, squareMinX, squareMinY, squareWidth);
 		
-		testRay(true,  1, 1, 		xDir, yDir, squareMinX, squareMinY, squareWidth);
-		testRay(true,  1.5, 1.5, 	xDir, yDir, squareMinX, squareMinY, squareWidth);
-		testRay(true,  2, 2, 		xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(true, 1, 1, xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(true, 1.5, 1.5, xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(true, 2, 2, xDir, yDir, squareMinX, squareMinY, squareWidth);
 		
-		testRay(false, 2.5, 2.5, 	xDir, yDir, squareMinX, squareMinY, squareWidth);
-		testRay(false, 3, 3, 		xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(false, 2.5, 2.5, xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(false, 3, 3, xDir, yDir, squareMinX, squareMinY, squareWidth);
 		
 	}
 	
@@ -205,30 +205,30 @@ public class RaycastingTest
 		
 		// ray origin bottom left of square
 		double rayX = 0;
-		testRay(false, rayX, -1, 		xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(false, rayX, -1, xDir, yDir, squareMinX, squareMinY, squareWidth);
 		
-		testRay(true,  rayX, -0.5, 	xDir, yDir, squareMinX, squareMinY, squareWidth);
-		testRay(true,  rayX, 0, 		xDir, yDir, squareMinX, squareMinY, squareWidth);
-		testRay(true,  rayX, 0.5, 		xDir, yDir, squareMinX, squareMinY, squareWidth);
-		testRay(true,  rayX, 1, 		xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(true, rayX, -0.5, xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(true, rayX, 0, xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(true, rayX, 0.5, xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(true, rayX, 1, xDir, yDir, squareMinX, squareMinY, squareWidth);
 		
-		testRay(false, rayX, 1.5, 		xDir, yDir, squareMinX, squareMinY, squareWidth);
-		testRay(false, rayX, 2, 		xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(false, rayX, 1.5, xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(false, rayX, 2, xDir, yDir, squareMinX, squareMinY, squareWidth);
 		
 		
 		// ray origin in square
-		testRay(true, 1, 1, 		xDir, yDir, squareMinX, squareMinY, squareWidth);
-		testRay(true, 1.5, 1.5, 	xDir, yDir, squareMinX, squareMinY, squareWidth);
-		testRay(true, 2, 2, 		xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(true, 1, 1, xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(true, 1.5, 1.5, xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(true, 2, 2, xDir, yDir, squareMinX, squareMinY, squareWidth);
 		
 		
 		// ray origin right of square
 		rayX = 2.5;
-		double rayY = (yDir/xDir) * rayX; // y = mx + b // where b is the constants defined below
-		testRay(false,  rayX, -0.5 + rayY, 	xDir, yDir, squareMinX, squareMinY, squareWidth);
-		testRay(false,  rayX, 0 + rayY, 		xDir, yDir, squareMinX, squareMinY, squareWidth);
-		testRay(false,  rayX, 0.5 + rayY, 		xDir, yDir, squareMinX, squareMinY, squareWidth);
-		testRay(false,  rayX, 1 + rayY, 		xDir, yDir, squareMinX, squareMinY, squareWidth);
+		double rayY = (yDir / xDir) * rayX; // y = mx + b // where b is the constants defined below
+		testRay(false, rayX, -0.5 + rayY, xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(false, rayX, 0 + rayY, xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(false, rayX, 0.5 + rayY, xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(false, rayX, 1 + rayY, xDir, yDir, squareMinX, squareMinY, squareWidth);
 		
 		
 		
@@ -242,21 +242,21 @@ public class RaycastingTest
 		
 		// ray origin bottom left of square
 		rayX = 0;
-		testRay(false, rayX, 1, 		xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(false, rayX, 1, xDir, yDir, squareMinX, squareMinY, squareWidth);
 		
-		testRay(true,  rayX, 0.5, 		xDir, yDir, squareMinX, squareMinY, squareWidth);
-		testRay(true,  rayX, 0, 		xDir, yDir, squareMinX, squareMinY, squareWidth);
-		testRay(true,  rayX, -0.5, 	xDir, yDir, squareMinX, squareMinY, squareWidth);
-		testRay(true,  rayX, -1, 		xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(true, rayX, 0.5, xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(true, rayX, 0, xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(true, rayX, -0.5, xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(true, rayX, -1, xDir, yDir, squareMinX, squareMinY, squareWidth);
 		
-		testRay(false, rayX, -1.5, 	xDir, yDir, squareMinX, squareMinY, squareWidth);
-		testRay(false, rayX, -2, 		xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(false, rayX, -1.5, xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(false, rayX, -2, xDir, yDir, squareMinX, squareMinY, squareWidth);
 		
 		
 		// ray origin in square
-		testRay(true, 1, -1, 		xDir, yDir, squareMinX, squareMinY, squareWidth);
-		testRay(true, 1.5, -1.5, 	xDir, yDir, squareMinX, squareMinY, squareWidth);
-		testRay(true, 2, -2, 		xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(true, 1, -1, xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(true, 1.5, -1.5, xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(true, 2, -2, xDir, yDir, squareMinX, squareMinY, squareWidth);
 		
 		
 		
@@ -271,21 +271,21 @@ public class RaycastingTest
 		
 		// ray origin bottom left of square
 		rayX = 0;
-		testRay(false, rayX, 1, 		xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(false, rayX, 1, xDir, yDir, squareMinX, squareMinY, squareWidth);
 		
-		testRay(true,  rayX, 0.5, 		xDir, yDir, squareMinX, squareMinY, squareWidth);
-		testRay(true,  rayX, 0, 		xDir, yDir, squareMinX, squareMinY, squareWidth);
-		testRay(true,  rayX, -0.5, 	xDir, yDir, squareMinX, squareMinY, squareWidth);
-		testRay(true,  rayX, -1, 		xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(true, rayX, 0.5, xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(true, rayX, 0, xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(true, rayX, -0.5, xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(true, rayX, -1, xDir, yDir, squareMinX, squareMinY, squareWidth);
 		
-		testRay(false, rayX, -1.5, 	xDir, yDir, squareMinX, squareMinY, squareWidth);
-		testRay(false, rayX, -2, 		xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(false, rayX, -1.5, xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(false, rayX, -2, xDir, yDir, squareMinX, squareMinY, squareWidth);
 		
 		
 		// ray origin in square
-		testRay(true, -1, -1, 		xDir, yDir, squareMinX, squareMinY, squareWidth);
-		testRay(true, -1.5, -1.5, 	xDir, yDir, squareMinX, squareMinY, squareWidth);
-		testRay(true, -2, -2, 		xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(true, -1, -1, xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(true, -1.5, -1.5, xDir, yDir, squareMinX, squareMinY, squareWidth);
+		testRay(true, -2, -2, xDir, yDir, squareMinX, squareMinY, squareWidth);
 		
 		
 	}
@@ -299,7 +299,7 @@ public class RaycastingTest
 	
 	private static String failMessage(double rayX, double rayY, double xDir, double yDir, double squareMinX, double squareMinY, double squareWidth)
 	{
-		return "ray: [" + rayX + ", " + rayY + "] <" + xDir + ", " + yDir + ">     square: [" + squareMinX + ", " + squareMinY + "] - [" + (squareMinX+squareWidth) + ", " + (squareMinY+squareWidth) + "]";
+		return "ray: [" + rayX + ", " + rayY + "] <" + xDir + ", " + yDir + ">     square: [" + squareMinX + ", " + squareMinY + "] - [" + (squareMinX + squareWidth) + ", " + (squareMinY + squareWidth) + "]";
 	}
 	
 }

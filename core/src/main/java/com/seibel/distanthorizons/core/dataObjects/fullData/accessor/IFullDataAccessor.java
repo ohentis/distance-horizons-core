@@ -10,7 +10,7 @@ import java.util.Iterator;
 /**
  * Contains raw full data points, which must be interpreted by the {@link FullDataPointUtil}. <br>
  * Often used by {@link IFullDataSource}'s.
- * 
+ *
  * @see IFullDataSource
  * @see FullDataArrayAccessor
  * @see FullDataPointUtil
@@ -26,8 +26,8 @@ public interface IFullDataAccessor
 	/** measured in full data points */
 	int width();
 	
-	/** 
-	 * Creates a new {@link IFullDataAccessor} with the given width and starting at the given X and Z offsets. <br> 
+	/**
+	 * Creates a new {@link IFullDataAccessor} with the given width and starting at the given X and Z offsets. <br>
 	 * The returned object will use the same underlining data structure (IE memory addresses) as the source {@link IFullDataAccessor}.
 	 */
 	IFullDataAccessor subView(int width, int xOffset, int zOffset);

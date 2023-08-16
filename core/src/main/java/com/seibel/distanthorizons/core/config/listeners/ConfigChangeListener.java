@@ -9,7 +9,7 @@ import java.util.function.Consumer;
  * A basic {@link IConfigListener} that will fire a {@link Consumer}
  * when the value changes from the value the config started with
  * when this object was created.
- * 
+ *
  * @param <T> the config value type
  */
 public class ConfigChangeListener<T> implements IConfigListener, Closeable
@@ -47,9 +47,9 @@ public class ConfigChangeListener<T> implements IConfigListener, Closeable
 	
 	
 	
-	/** 
+	/**
 	 * Removes the config event listener. <br>
-	 * Must be fired to prevent memory leaks. 
+	 * Must be fired to prevent memory leaks.
 	 */
 	@Override
 	public void close() { this.configEntry.removeListener(this); }

@@ -43,12 +43,12 @@ import java.util.*;
 
 /**
  * This handles any configuration the user has access to. <br><br>
- * 
+ *
  * Note: <br>
  * Only add simpler listeners here (IE listeners that only depend on 1 config entry).
  * For listeners that depend on 2 or more config entries, add them before the config menu is opened.
  * Otherwise, you will have issues where only some of the config entries will exist when your listener is created.
- * 
+ *
  * @author coolGi
  * @version 2023-7-16
  */
@@ -57,11 +57,11 @@ public class Config
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
-    public static ConfigCategory client = new ConfigCategory.Builder().set(Client.class).build();
+	public static ConfigCategory client = new ConfigCategory.Builder().set(Client.class).build();
 	
 	
-    public static class Client
-    {
+	public static class Client
+	{
 		public static ConfigEntry<Boolean> quickEnableRendering = new ConfigEntry.Builder<Boolean>()
 				.set(true)
 				.comment(""
@@ -105,7 +105,7 @@ public class Config
 		public static ConfigEntry<Boolean> optionsButton = new ConfigEntry.Builder<Boolean>()
 				.set(true)
 				.comment("" +
-    				"Should Distant Horizon's config button appear in the options screen next to fov slider?")
+						"Should Distant Horizon's config button appear in the options screen next to fov slider?")
 				.build();
 		
 		
@@ -219,7 +219,7 @@ public class Config
 									+ "\n"
 									+ "True: a red flower will tint the grass below it red. \n"
 									+ "False: skipped blocks will not change color of surface below them. "
-									+"")
+									+ "")
 							.setPerformance(EConfigEntryPerformance.NONE)
 							.addListener(RenderCacheConfigEventHandler.INSTANCE)
 							.build();
@@ -310,7 +310,7 @@ public class Config
 								.build();
 						
 						public static ConfigEntry<Double> farFogMin = new ConfigEntry.Builder<Double>()
-								.setMinDefaultMax(-5.0,0.0, FOG_RANGE_MAX)
+								.setMinDefaultMax(-5.0, 0.0, FOG_RANGE_MAX)
 								.comment(""
 										+ "What is the minimum fog thickness? \n"
 										+ "\n"
@@ -338,7 +338,7 @@ public class Config
 								.build();
 						
 						public static ConfigEntry<Double> farFogDensity = new ConfigEntry.Builder<Double>()
-								.setMinDefaultMax(0.01,2.5, 50.0)
+								.setMinDefaultMax(0.01, 2.5, 50.0)
 								.comment(""
 										+ "Used in conjunction with the Fog Falloff.")
 								.build();
@@ -367,7 +367,7 @@ public class Config
 											+ EHeightFogMixMode.INVERSE_MULTIPLY_ADDITION + ": farFog + 1 - (1-heightFog) * (1-farFog) \n"
 											+ EHeightFogMixMode.AVERAGE + ": farFog*0.5 + heightFog*0.5 \n"
 											+ "\n"
-											+ "Note: height fog settings are ignored if '"+EHeightFogMixMode.BASIC+"' or '"+EHeightFogMixMode.IGNORE_HEIGHT+"' are selected.")
+											+ "Note: height fog settings are ignored if '" + EHeightFogMixMode.BASIC + "' or '" + EHeightFogMixMode.IGNORE_HEIGHT + "' are selected.")
 									.build();
 							
 							public static ConfigEntry<EHeightFogMode> heightFogMode = new ConfigEntry.Builder<EHeightFogMode>()
@@ -440,7 +440,9 @@ public class Config
 									.build();
 							
 						}
+						
 					}
+					
 				}
 				
 				public static class NoiseTextureSettings
@@ -449,7 +451,7 @@ public class Config
 							.set(true)
 							.comment(""
 									+ "Should a noise texture be applied to LODs? \n"
-									+"\n"
+									+ "\n"
 									+ "This is done to simulate textures and make the LODs appear more detailed. \n"
 									+ "")
 							.build();
@@ -472,6 +474,7 @@ public class Config
 									+ "Defines how far should the noise texture render before it fades away. (in blocks) \n"
 									+ "Set to 0 to disable noise from fading away")
 							.build();
+					
 				}
 				
 				public static class AdvancedGraphics
@@ -512,7 +515,7 @@ public class Config
 									+ "reducing overdraw. \n"
 									+ "\n"
 									+ "Only functional on Fabric.\n"
-									+ "Works best with an overdraw prevention setting of "+EOverdrawPrevention.MEDIUM+" or higher \n"
+									+ "Works best with an overdraw prevention setting of " + EOverdrawPrevention.MEDIUM + " or higher \n"
 									+ " and cave culling is disabled. \n"
 									+ "")
 							.setPerformance(EConfigEntryPerformance.NONE)
@@ -553,13 +556,13 @@ public class Config
 							.build();
 					
 					public static ConfigEntry<Integer> caveCullingHeight = new ConfigEntry.Builder<Integer>()
-							.setMinDefaultMax(-4096,40,4096)
-							.comment("" 
+							.setMinDefaultMax(-4096, 40, 4096)
+							.comment(""
 									+ "At what Y value should cave culling start?")
 							.build();
 					
 					public static ConfigEntry<Integer> earthCurveRatio = new ConfigEntry.Builder<Integer>()
-							.setMinDefaultMax(0,0,5000)
+							.setMinDefaultMax(0, 0, 5000)
 							.comment(""
 									+ "This is the earth size ratio when applying the curvature shader effect. \n"
 									+ "Note: Enabling this feature may cause rendering bugs. \n"
@@ -643,14 +646,14 @@ public class Config
 								+ "WARNING: This may cause world generator bugs or instability when paired with certain world generator mods. \n"
 								+ "- Fast \n"
 								+ "")
-							/*
-								// FULL isn't currently implemented
-								+ "\n"
-								+ EDhApiDistantGeneratorMode.FULL + " \n"
-								+ "Ask the local server to generate/load each chunk. \n"
-								+ "This is the most compatible, but will cause server/simulation lag. \n"
-								+ "- Slow (15-50 ms, with spikes up to 200 ms) \n"
-							*/
+						/*
+							// FULL isn't currently implemented
+							+ "\n"
+							+ EDhApiDistantGeneratorMode.FULL + " \n"
+							+ "Ask the local server to generate/load each chunk. \n"
+							+ "This is the most compatible, but will cause server/simulation lag. \n"
+							+ "- Slow (15-50 ms, with spikes up to 200 ms) \n"
+						*/
 						.build();
 				
 				public static ConfigEntry<ELightGenerationMode> worldGenLightingEngine = new ConfigEntry.Builder<ELightGenerationMode>()
@@ -667,7 +670,7 @@ public class Config
 						.build();
 				
 				public static ConfigEntry<Integer> worldGenerationTimeoutLengthInSeconds = new ConfigEntry.Builder<Integer>()
-						.setMinDefaultMax(5, 60, 60*10/*10 minutes*/)
+						.setMinDefaultMax(5, 60, 60 * 10/*10 minutes*/ )
 						.comment(""
 								+ "How long should a world generator thread run for before timing out? \n"
 								+ "Note: If you are experiencing timeout errors it is better to lower your CPU usage first \n"
@@ -695,7 +698,7 @@ public class Config
 								+ " fake chunks. \n"
 								+ "\n"
 								+ EGenerationPriority.BALANCED + " \n"
-								+ "A mix between "+ EGenerationPriority.NEAR_FIRST+"and"+ EGenerationPriority.FAR_FIRST+". \n"
+								+ "A mix between " + EGenerationPriority.NEAR_FIRST + "and" + EGenerationPriority.FAR_FIRST + ". \n"
 								+ "First prioritise completing nearby highest detail chunks, \n"
 								+ " then focus on filling in the low detail areas away from the player. \n"
 								+ "\n"
@@ -944,6 +947,7 @@ public class Config
 								+ "How frequently should vertex buffers (geometry) be rebuilt and sent to the GPU? \n"
 								+ "Higher settings may cause stuttering, but will prevent holes in the world")
 						.build();
+				
 			}
 			
 			public static class AutoUpdater
@@ -956,10 +960,11 @@ public class Config
 				
 				public static ConfigEntry<Boolean> enableSilentUpdates = new ConfigEntry.Builder<Boolean>()
 						.set(false)
-						.comment("" 
+						.comment(""
 								+ "Should Distant Horizons silently, automatically download and install new versions? "
 								+ "")
 						.build();
+				
 			}
 			
 			public static class Logging
@@ -1028,6 +1033,7 @@ public class Config
 								+ "If enabled, the mod will log information about network operations. \n"
 								+ "This can be useful for debugging.")
 						.build();
+				
 			}
 			
 			public static class Debugging
@@ -1079,7 +1085,7 @@ public class Config
 								+ "   This setting is only for fun and debugging. \n"
 								+ "   Mod compatibility is not guaranteed.")
 						.build();
-
+				
 				public static ConfigEntry<Boolean> debugWireframeRendering = new ConfigEntry.Builder<Boolean>()
 						.set(false)
 						.comment(""
@@ -1089,21 +1095,21 @@ public class Config
 								+ "   Additionally, only stuff that's loaded after you enable this \n"
 								+ "   will render their debug wireframes.")
 						.build();
-
+				
 				public static ConfigEntry<Boolean> enableWhiteWorld = new ConfigEntry.Builder<Boolean>()
 						.set(false)
 						.comment(""
 								+ "Stops vertex colors from being passed. \n"
 								+ "Useful for debugging shaders")
 						.build();
-
+				
 				// Note: This will reset on game restart, and should have a warning on the tooltip
 				public static ConfigEntry<Boolean> allowUnsafeValues = new ConfigEntry.Builder<Boolean>()
 						.set(false)
 						.setAppearance(EConfigEntryAppearance.ONLY_IN_GUI)
 						.addListener(UnsafeValuesConfigListener.INSTANCE)
 						.build();
-
+				
 				
 				// can be set to public inorder to show in the config file and UI
 				public static ConfigCategory exampleConfigScreen = new ConfigCategory.Builder()
@@ -1141,7 +1147,7 @@ public class Config
 					public static ConfigEntry<Long> longTest = new ConfigEntry.Builder<Long>()
 							.set(42069L)
 							.build();
-
+					
 					public static ConfigEntry<Float> floatTest = new ConfigEntry.Builder<Float>()
 							.set(0.42069f)
 							.build();
@@ -1153,15 +1159,15 @@ public class Config
 					public static ConfigEntry<List<String>> listTest = new ConfigEntry.Builder<List<String>>()
 							.set(new ArrayList<String>(Arrays.asList("option 1", "option 2", "option 3")))
 							.build();
-
+					
 					public static ConfigEntry<Map<String, String>> mapTest = new ConfigEntry.Builder<Map<String, String>>()
 							.set(new HashMap<String, String>())
 							.build();
-
+					
 					public static ConfigUIButton uiButtonTest = new ConfigUIButton(() -> {
 						System.setProperty("java.awt.headless", "false"); // Required to make it work
-                        JOptionPane.showMessageDialog(null, "Button pressed!", "UITester dialog", JOptionPane.INFORMATION_MESSAGE);
-                    });
+						JOptionPane.showMessageDialog(null, "Button pressed!", "UITester dialog", JOptionPane.INFORMATION_MESSAGE);
+					});
 					
 					public static ConfigCategory categoryTest = new ConfigCategory.Builder().set(CategoryTest.class).build();
 					
@@ -1174,7 +1180,9 @@ public class Config
 					{
 						// The name of this can be anything as it will be overwritten by the name of the linked object
 						public static ConfigLinkedEntry linkableTest = new ConfigLinkedEntry(ExampleConfigScreen.linkableTest);
+						
 					}
+					
 				}
 				
 			}
@@ -1195,7 +1203,7 @@ public class Config
 			
 		}
 		
-    }
+	}
 	
 	
 	
@@ -1204,10 +1212,10 @@ public class Config
 	/**
 	 * Runs any config setup that needs all (or most) config entries be initialized (not null),
 	 * but doesn't necessarily require they have the right values yet. <br><br>
-	 * 
+	 *
 	 * Specially:
-	 * Updates any config values that are UI only 
-	 * and adds any listeners that depend on multiple config values. 
+	 * Updates any config values that are UI only
+	 * and adds any listeners that depend on multiple config values.
 	 */
 	public static void completeDelayedSetup()
 	{
@@ -1219,11 +1227,11 @@ public class Config
 			{
 				ThreadPresetConfigEventHandler.INSTANCE.setUiOnlyConfigValues();
 				RenderQualityPresetConfigEventHandler.INSTANCE.setUiOnlyConfigValues();
-				QuickRenderToggleConfigEventHandler.INSTANCE.setUiOnlyConfigValues();	
+				QuickRenderToggleConfigEventHandler.INSTANCE.setUiOnlyConfigValues();
 			}
 			catch (Exception e)
 			{
-				LOGGER.error("Unexpected exception when setting up complicated config listeners. Error: ["+e.getMessage()+"].", e);
+				LOGGER.error("Unexpected exception when setting up complicated config listeners. Error: [" + e.getMessage() + "].", e);
 			}
 		}
 	}

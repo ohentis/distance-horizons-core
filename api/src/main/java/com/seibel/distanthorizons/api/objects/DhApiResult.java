@@ -2,9 +2,8 @@ package com.seibel.distanthorizons.api.objects;
 
 /**
  * Allows for more descriptive non-critical failure states.
- * 
- * @param <T> The payload type this result contains, can be Void if the result is just used to notify success/failure. 
- * 
+ *
+ * @param <T> The payload type this result contains, can be Void if the result is just used to notify success/failure.
  * @author James Seibel
  * @version 2022-11-24
  */
@@ -19,9 +18,9 @@ public class DhApiResult<T>
 	 */
 	public final String message;
 	
-	/** 
+	/**
 	 * Whatever object the API Method generated/returned. <br>
-	 * Will be null/Void if this result is just used to notify success/failure. 
+	 * Will be null/Void if this result is just used to notify success/failure.
 	 */
 	public final T payload;
 	
@@ -33,7 +32,7 @@ public class DhApiResult<T>
 	{
 		this.success = success;
 		// don't allow null messages, in the case of a null message return the empty string to prevent potential null pointers
-		this.message = (message == null) ? "" : message; 
+		this.message = (message == null) ? "" : message;
 		this.payload = payload;
 	}
 	

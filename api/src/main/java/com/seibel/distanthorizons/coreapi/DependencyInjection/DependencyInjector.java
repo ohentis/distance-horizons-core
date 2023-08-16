@@ -70,7 +70,7 @@ public class DependencyInjector<BindableType extends IBindable> implements IDepe
 		
 		// make sure the given dependency implements the necessary interfaces
 		boolean implementsInterface = this.checkIfClassImplements(dependencyImplementation.getClass(), dependencyInterface) ||
-									  this.checkIfClassExtends(dependencyImplementation.getClass(), dependencyInterface);
+				this.checkIfClassExtends(dependencyImplementation.getClass(), dependencyInterface);
 		boolean implementsBindable = this.checkIfClassImplements(dependencyImplementation.getClass(), this.bindableInterface);
 		
 		// display any errors

@@ -159,19 +159,22 @@ public final class ColumnArrayView implements IColumnDataView
 		
 		return sb.toString();
 	}
-
-	public int getDataHash() {
+	
+	public int getDataHash()
+	{
 		return arrayHash(data, offset, size);
 	}
-
-	private static int arrayHash(long[] a, int offset, int length) {
+	
+	private static int arrayHash(long[] a, int offset, int length)
+	{
 		if (a == null)
 			return 0;
 		int result = 1;
 		int end = offset + length;
-		for (int i = offset; i < end; i++) {
+		for (int i = offset; i < end; i++)
+		{
 			long element = a[i];
-			int elementHash = (int)(element ^ (element >>> 32));
+			int elementHash = (int) (element ^ (element >>> 32));
 			result = 31 * result + elementHash;
 		}
 		return result;

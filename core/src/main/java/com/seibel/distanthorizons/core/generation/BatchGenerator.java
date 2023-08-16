@@ -47,11 +47,11 @@ public class BatchGenerator implements IDhApiWorldGenerator
 	private static final IWrapperFactory FACTORY = SingletonInjector.INSTANCE.get(IWrapperFactory.class);
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
-	/** 
+	/**
 	 * Defines how many tasks can be queued per thread. <br><br>
-	 * 
-	 * TODO the multiplier here should change dynamically based on how fast the generator is vs the queuing thread, 
-	 *  if this is too high it may cause issues when moving, 
+	 *
+	 * TODO the multiplier here should change dynamically based on how fast the generator is vs the queuing thread,
+	 *  if this is too high it may cause issues when moving,
 	 *  but if it is too low the generator threads won't have enough tasks to work on
 	 */
 	private static final int MAX_QUEUED_TASKS = 3;
@@ -137,11 +137,13 @@ public class BatchGenerator implements IDhApiWorldGenerator
 		int genChunkSize = BitShiftUtil.powerOfTwo(granularity - 4); // minus 4 is equal to dividing by 16 to convert to chunk scale
 		
 		// the consumer needs to be wrapped like this because the API can't use DH core objects (and IChunkWrapper can't be easily put into the API project)
-		Consumer<IChunkWrapper> consumerWrapper = (chunkWrapper) -> resultConsumer.accept(new Object[]{ chunkWrapper });
-		try {
+		Consumer<IChunkWrapper> consumerWrapper = (chunkWrapper) -> resultConsumer.accept(new Object[]{chunkWrapper});
+		try
+		{
 			return this.generationEnvironment.generateChunks(chunkPosMinX, chunkPosMinZ, genChunkSize, targetStep, worldGeneratorThreadPool, consumerWrapper);
 		}
-		catch (Exception e) {
+		catch (Exception e)
+		{
 			if (!LodUtil.isInterruptOrReject(e)) LOGGER.error("Error starting future for chunk generation", e);
 			CompletableFuture<Void> future = new CompletableFuture<>();
 			future.completeExceptionally(e);
@@ -155,7 +157,7 @@ public class BatchGenerator implements IDhApiWorldGenerator
 	@Override
 	public boolean isBusy()
 	{
-		return this.generationEnvironment.getEventCount() > Math.max(Config.Client.Advanced.MultiThreading.numberOfWorldGenerationThreads.get().intValue(), 1) * MAX_QUEUED_TASKS; 
+		return this.generationEnvironment.getEventCount() > Math.max(Config.Client.Advanced.MultiThreading.numberOfWorldGenerationThreads.get().intValue(), 1) * MAX_QUEUED_TASKS;
 	}
 	
 	
@@ -167,7 +169,7 @@ public class BatchGenerator implements IDhApiWorldGenerator
 	@Override
 	public void close()
 	{
-		LOGGER.info(BatchGenerator.class.getSimpleName()+" shutting down...");
+		LOGGER.info(BatchGenerator.class.getSimpleName() + " shutting down...");
 		this.generationEnvironment.stop();
 	}
 	

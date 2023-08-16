@@ -52,7 +52,7 @@ public class TestWorldGenerator implements IDhApiWorldGenerator
 	//===================//
 	
 	@Override
-	public void close() {  }
+	public void close() { }
 	
 	@Override
 	public boolean isBusy() { return false; }
@@ -61,7 +61,7 @@ public class TestWorldGenerator implements IDhApiWorldGenerator
 	public CompletableFuture<Void> generateChunks(int chunkPosMinX, int chunkPosMinZ, byte granularity, byte targetDataDetail, EDhApiDistantGeneratorMode maxGenerationStep, ExecutorService executorService, Consumer<Object[]> resultConsumer) { return null; }
 	
 	@Override
-	public void preGeneratorTaskStart() {  }
+	public void preGeneratorTaskStart() { }
 	
 	
 }

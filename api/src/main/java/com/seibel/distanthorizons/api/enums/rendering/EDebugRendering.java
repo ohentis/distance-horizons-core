@@ -53,27 +53,37 @@ public enum EDebugRendering
 	SHOW_RENDER_SOURCE_FLAG;
 	
 	
-	public static EDebugRendering next(EDebugRendering type) 
+	public static EDebugRendering next(EDebugRendering type)
 	{
-		switch (type) 
+		switch (type)
 		{
-			case OFF: return SHOW_DETAIL;
-			case SHOW_DETAIL: return SHOW_GENMODE;
-			case SHOW_GENMODE: return SHOW_OVERLAPPING_QUADS;
-			case SHOW_OVERLAPPING_QUADS: return SHOW_RENDER_SOURCE_FLAG;
-			default: return OFF;
+			case OFF:
+				return SHOW_DETAIL;
+			case SHOW_DETAIL:
+				return SHOW_GENMODE;
+			case SHOW_GENMODE:
+				return SHOW_OVERLAPPING_QUADS;
+			case SHOW_OVERLAPPING_QUADS:
+				return SHOW_RENDER_SOURCE_FLAG;
+			default:
+				return OFF;
 		}
 	}
-
-	public static EDebugRendering previous(EDebugRendering type) 
+	
+	public static EDebugRendering previous(EDebugRendering type)
 	{
-		switch (type) 
+		switch (type)
 		{
-			case OFF: return SHOW_RENDER_SOURCE_FLAG;
-			case SHOW_RENDER_SOURCE_FLAG: return SHOW_OVERLAPPING_QUADS;
-			case SHOW_OVERLAPPING_QUADS: return SHOW_GENMODE;
-			case SHOW_GENMODE: return SHOW_DETAIL;
-			default: return OFF;
+			case OFF:
+				return SHOW_RENDER_SOURCE_FLAG;
+			case SHOW_RENDER_SOURCE_FLAG:
+				return SHOW_OVERLAPPING_QUADS;
+			case SHOW_OVERLAPPING_QUADS:
+				return SHOW_GENMODE;
+			case SHOW_GENMODE:
+				return SHOW_DETAIL;
+			default:
+				return OFF;
 		}
 	}
 }

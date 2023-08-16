@@ -5,7 +5,7 @@ import com.seibel.distanthorizons.api.interfaces.block.IDhApiBlockStateWrapper;
 
 /**
  * Holds a single datapoint of terrain data.
- * 
+ *
  * @author James Seibel
  * @version 2022-11-13
  */

@@ -15,10 +15,10 @@ public class LevelWrapperTest implements IDhApiLevelWrapper
 	@Override
 	public Object getWrappedMcObject() { return null; }
 	
-	@Override 
+	@Override
 	public IDhApiDimensionTypeWrapper getDimensionType() { return null; }
 	
-	@Override 
+	@Override
 	public EDhApiLevelType getLevelType() { return null; }
 	
 	@Override
@@ -30,7 +30,7 @@ public class LevelWrapperTest implements IDhApiLevelWrapper
 	@Override
 	public int getHeight() { return 0; }
 	
-	@Override 
+	@Override
 	public int getMinHeight() { return IDhApiLevelWrapper.super.getMinHeight(); }
 	
 }

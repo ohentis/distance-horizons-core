@@ -18,12 +18,12 @@ import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IOverri
  * This is the masthead of the API, almost everything you could want to do
  * can be achieved from here. <br>
  * For example: you can access singletons which handle the config or event binding. <br><br>
- * 
+ *
  * <strong>Q:</strong> Why should I use this class instead of just getting the API singleton I need? <br>
- * 
+ *
  * <strong>A:</strong> This way there is a lower chance of your code breaking if we change something on our end.
  * For example, if we realized there is a much better way of handling dependency injection we would keep the
- * interface the same so your code doesn't have to change. Whereas if you were directly referencing 
+ * interface the same so your code doesn't have to change. Whereas if you were directly referencing
  * the concrete object we replaced, there would be issues.
  *
  * @author James Seibel
@@ -31,10 +31,10 @@ import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IOverri
  */
 public class DhApi
 {
-	/** 
-	 * <strong>WARNING:</strong> 
+	/**
+	 * <strong>WARNING:</strong>
 	 * All objects in this class will be null until after DH initializes for the first time. <br><br>
-	 * 
+	 *
 	 * Bind a custom {@link DhApiAfterDhInitEvent DhApiAfterDhInitEvent}
 	 * to {@link DhApi#events ApiCoreInjectors.events} in order to be notified when this class can
 	 * be safely used.
@@ -44,8 +44,8 @@ public class DhApi
 		/** Used to interact with Distant Horizons' Configs. */
 		public static IDhApiConfig configs = null;
 		
-		/** 
-		 * Used to interact with Distant Horizons' terrain data. 
+		/**
+		 * Used to interact with Distant Horizons' terrain data.
 		 * Designed to be used in conjunction with {@link DhApi.Delayed#worldProxy}.
 		 */
 		public static IDhApiTerrainDataRepo terrainRepo = null;
@@ -81,8 +81,8 @@ public class DhApi
 	/** This version should be updated whenever non-breaking fixes are added to the Distant Horizons API. */
 	public static int getApiPatchVersion() { return ModInfo.API_PATH_VERSION; }
 	
-	/** 
-	 * Returns the mod's semantic version number in the format: Major.Minor.Patch 
+	/**
+	 * Returns the mod's semantic version number in the format: Major.Minor.Patch
 	 * with optional extensions "-a" for alpha, "-b" for beta, and -dev for unstable development builds. <br>
 	 * Examples: "1.6.9-a", "1.7.0-a-dev", "2.1.0-b", "3.0.0", "3.1.4-dev"
 	 */

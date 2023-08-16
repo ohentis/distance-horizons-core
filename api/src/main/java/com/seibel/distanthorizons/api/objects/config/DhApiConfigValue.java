@@ -14,7 +14,6 @@ import com.seibel.distanthorizons.coreapi.util.converters.DefaultConverter;
  *
  * @param <apiType> The datatype you, an API dev will use.
  * @param <coreType> The datatype Distant Horizons uses in the background; implementing developers can ignore this.
- *     
  * @author James Seibel
  * @version 2022-6-30
  */

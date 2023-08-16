@@ -16,7 +16,7 @@
  *    You should have received a copy of the GNU Lesser General Public License
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
- 
+
 package com.seibel.distanthorizons.core.util.gridList;
 
 import com.seibel.distanthorizons.core.pos.Pos2D;
@@ -56,7 +56,7 @@ public class MovableGridRingList<T> extends ArrayList<T> implements List<T>
 		
 		this.width = halfWidth * 2 + 1;
 		this.halfWidth = halfWidth;
-		this.minPosRef.set(new Pos2D(centerX- halfWidth, centerY- halfWidth));
+		this.minPosRef.set(new Pos2D(centerX - halfWidth, centerY - halfWidth));
 		this.clear();
 	}
 	
@@ -83,7 +83,7 @@ public class MovableGridRingList<T> extends ArrayList<T> implements List<T>
 		{
 			Pos2D newMin = this.minPosRef.get();
 			// Use EXACT compare here
-			if (min!=newMin)
+			if (min != newMin)
 			{
 				if (!this._inRangeAcquired(x, y, newMin))
 				{
@@ -115,7 +115,7 @@ public class MovableGridRingList<T> extends ArrayList<T> implements List<T>
 		{
 			Pos2D newMin = this.minPosRef.get();
 			// Use EXACT compare here
-			if (min!=newMin)
+			if (min != newMin)
 			{
 				if (!this._inRangeAcquired(x, y, newMin))
 				{
@@ -137,7 +137,7 @@ public class MovableGridRingList<T> extends ArrayList<T> implements List<T>
 	 * returns null if x,y is outside the grid
 	 * Otherwise, returns the new value
 	 */
-	public T setChained(int x, int y, T item) { return this.set(x,y,item) ? item : null; }
+	public T setChained(int x, int y, T item) { return this.set(x, y, item) ? item : null; }
 	
 	
 	
@@ -161,7 +161,7 @@ public class MovableGridRingList<T> extends ArrayList<T> implements List<T>
 		{
 			Pos2D newMin = this.minPosRef.get();
 			// Use EXACT compare here
-			if (min!=newMin)
+			if (min != newMin)
 			{
 				if (!this._inRangeAcquired(x, y, newMin))
 				{
@@ -259,12 +259,12 @@ public class MovableGridRingList<T> extends ArrayList<T> implements List<T>
 				{
 					for (int y = 0; y < this.width; y++)
 					{
-						Pos2D itemPos = new Pos2D(x+cPos.x, y+cPos.y);
+						Pos2D itemPos = new Pos2D(x + cPos.x, y + cPos.y);
 						
-						if (x - deltaX < 0 
-							|| y - deltaY < 0 
-							|| x - deltaX >= this.width 
-							|| y - deltaY >= this.width)
+						if (x - deltaX < 0
+								|| y - deltaY < 0
+								|| x - deltaX >= this.width
+								|| y - deltaY >= this.width)
 						{
 							T item = this._swapUnsafe(itemPos.x, itemPos.y, null);
 							if (item != null && removedItemConsumer != null)
@@ -303,7 +303,7 @@ public class MovableGridRingList<T> extends ArrayList<T> implements List<T>
 	public Pos2D getCenter() { return new Pos2D(this.minPosRef.get().x + this.halfWidth, this.minPosRef.get().y + this.halfWidth); }
 	
 	public Pos2D getMinPosInRange() { return this.minPosRef.get(); }
-	public Pos2D getMaxPosInRange() { return new Pos2D(this.minPosRef.get().x + this.width -1, this.minPosRef.get().y + this.width -1); }
+	public Pos2D getMaxPosInRange() { return new Pos2D(this.minPosRef.get().x + this.width - 1, this.minPosRef.get().y + this.width - 1); }
 	
 	public int getWidth() { return this.width; }
 	public int getHalfWidth() { return this.halfWidth; }
@@ -321,24 +321,24 @@ public class MovableGridRingList<T> extends ArrayList<T> implements List<T>
 	public boolean inRange(int x, int y)
 	{
 		Pos2D minPos = this.minPosRef.get();
-		return (x>=minPos.x 
-				&& x<minPos.x+this.width 
-				&& y>=minPos.y 
-				&& y<minPos.y+this.width);
+		return (x >= minPos.x
+				&& x < minPos.x + this.width
+				&& y >= minPos.y
+				&& y < minPos.y + this.width);
 	}
 	
 	private boolean _inRangeAcquired(int x, int y, Pos2D min)
 	{
-		return (x>=min.x 
-				&& x<min.x+this.width 
-				&& y>=min.y 
-				&& y<min.y+this.width);
+		return (x >= min.x
+				&& x < min.x + this.width
+				&& y >= min.y
+				&& y < min.y + this.width);
 	}
 	
-	private T _getUnsafe(int x, int y) { return super.get(Math.floorMod(x, this.width) + Math.floorMod(y, this.width)*this.width); }
-	private void _setUnsafe(int x, int y, T item) { super.set(Math.floorMod(x, this.width) + Math.floorMod(y, this.width)*this.width, item); }
-	private T _swapUnsafe(int x, int y, T item) { return super.set(Math.floorMod(x, this.width) + Math.floorMod(y, this.width)*this.width, item); }
-
+	private T _getUnsafe(int x, int y) { return super.get(Math.floorMod(x, this.width) + Math.floorMod(y, this.width) * this.width); }
+	private void _setUnsafe(int x, int y, T item) { super.set(Math.floorMod(x, this.width) + Math.floorMod(y, this.width) * this.width, item); }
+	private T _swapUnsafe(int x, int y, T item) { return super.set(Math.floorMod(x, this.width) + Math.floorMod(y, this.width) * this.width, item); }
+	
 	
 	// TODO: implement this
 	/*
@@ -457,14 +457,14 @@ public class MovableGridRingList<T> extends ArrayList<T> implements List<T>
 	
 	
 	/**
-	 * TODO: Check if this needs to be synchronized 
+	 * TODO: Check if this needs to be synchronized
 	 * <br>
 	 * FIXME: Make all usage of this class do stuff relative to the minPos instead of the center
 	 */
 	private void createRingIteratorList()
 	{
 		this.ringPositionIteratorArray = null;
-		Pos2D[] posArray = new Pos2D[this.width *this.width];
+		Pos2D[] posArray = new Pos2D[this.width * this.width];
 		
 		int i = 0;
 		for (int xPos = -this.halfWidth; xPos <= this.halfWidth; xPos++)
@@ -479,8 +479,8 @@ public class MovableGridRingList<T> extends ArrayList<T> implements List<T>
 		// sort the positions from nearest to farthest from the world origin
 		Arrays.sort(posArray, (a, b) ->
 		{
-			long disSqrA = (long) a.x*a.x + (long) a.y*a.y;
-			long disSqrB = (long) b.x*b.x + (long) b.y*b.y;
+			long disSqrA = (long) a.x * a.x + (long) a.y * a.y;
+			long disSqrB = (long) b.x * b.x + (long) b.y * b.y;
 			return Double.compare(disSqrA, disSqrB);
 		});
 		
@@ -508,7 +508,7 @@ public class MovableGridRingList<T> extends ArrayList<T> implements List<T>
 	public String toString()
 	{
 		Pos2D p = this.minPosRef.get();
-		return this.getClass().getSimpleName() + "[" + (p.x+this.halfWidth) + "," + (p.y+this.halfWidth) + "] " + this.width + "*" + this.width + "[" + this.size() + "]";
+		return this.getClass().getSimpleName() + "[" + (p.x + this.halfWidth) + "," + (p.y + this.halfWidth) + "] " + this.width + "*" + this.width + "[" + this.size() + "]";
 	}
 	
 	public String toDetailString()

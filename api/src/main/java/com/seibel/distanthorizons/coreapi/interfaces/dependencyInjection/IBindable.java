@@ -16,12 +16,12 @@
  *    You should have received a copy of the GNU Lesser General Public License
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
- 
+
 package com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection;
 
 /**
  * Necessary for all singletons that can be dependency injected.
- * 
+ *
  * @author James Seibel
  * @version 2022-7-16
  */
@@ -29,12 +29,12 @@ public interface IBindable
 {
 	/**
 	 * Finish initializing this object. <br> <br>
-	 * 
+	 *
 	 * Generally this should just be used for getting other objects through
-	 * dependency injection and is specifically designed to allow 
+	 * dependency injection and is specifically designed to allow
 	 * for circular references. <br><br>
-	 * 
-	 * If no circular dependencies are required this method 
+	 *
+	 * If no circular dependencies are required this method
 	 * doesn't have to be implemented.
 	 */
 	default void finishDelayedSetup() { }

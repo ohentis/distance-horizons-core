@@ -9,7 +9,7 @@ import com.seibel.distanthorizons.core.dataObjects.fullData.sources.LowDetailInc
 /**
  * Contains Full Data points and basic methods for getting and setting them. <br>
  * Can be used standalone or as the base for Full data sources.
- * 
+ *
  * @see CompleteFullDataSource
  * @see LowDetailIncompleteFullDataSource
  */
@@ -17,8 +17,8 @@ public class FullDataArrayAccessor implements IFullDataAccessor
 {
 	protected final FullDataPointIdMap mapping;
 	
-	/** 
-	 * A flattened 2D array (for the X and Z directions) containing an array for the Y direction.  
+	/**
+	 * A flattened 2D array (for the X and Z directions) containing an array for the Y direction.
 	 * TODO the flattened array is probably to reduce garbage collection overhead, but is doing it this way worth while? Having a 3D array would be much easier to understand
 	 */
 	protected final long[][] dataArrays;
@@ -113,6 +113,7 @@ public class FullDataArrayAccessor implements IFullDataAccessor
 	
 	/**
 	 * Takes a higher detail {@link FullDataArrayAccessor}'s and converts the data to a lower detail level.
+	 *
 	 * @param fullDataAccessor must be larger than this {@link FullDataArrayAccessor} and its width must a power of two larger (example: this.width = 4, other.width = 8)
 	 */
 	public void downsampleFrom(FullDataArrayAccessor fullDataAccessor)
@@ -143,19 +144,19 @@ public class FullDataArrayAccessor implements IFullDataAccessor
 	@Override
 	public SingleColumnFullDataAccessor get(int index) { return this.get(index / this.width, index % this.width); }
 	@Override
-	public SingleColumnFullDataAccessor get(int relativeX, int relativeZ) 
-	{ 
+	public SingleColumnFullDataAccessor get(int relativeX, int relativeZ)
+	{
 		int dataArrayIndex = (relativeX * this.width) + relativeZ + this.offset;
 		if (dataArrayIndex >= this.dataArrays.length)
 		{
 			LodUtil.assertNotReach(
-					"FullDataArrayAccessor.get() called with a relative position that is outside the data source. \n" + 
-					"source width: ["+this.width+"] source offset: ["+this.offset+"]\n" +
-					"given relative pos X: ["+relativeX+"] Z: ["+relativeZ+"]\n" +
-					"dataArrays.length: ["+this.dataArrays.length+"] dataArrayIndex: ["+dataArrayIndex+"].");
+					"FullDataArrayAccessor.get() called with a relative position that is outside the data source. \n" +
+							"source width: [" + this.width + "] source offset: [" + this.offset + "]\n" +
+							"given relative pos X: [" + relativeX + "] Z: [" + relativeZ + "]\n" +
+							"dataArrays.length: [" + this.dataArrays.length + "] dataArrayIndex: [" + dataArrayIndex + "].");
 		}
 		
-		return new SingleColumnFullDataAccessor(this.mapping, this.dataArrays, dataArrayIndex); 
+		return new SingleColumnFullDataAccessor(this.mapping, this.dataArrays, dataArrayIndex);
 	}
 	
 	@Override

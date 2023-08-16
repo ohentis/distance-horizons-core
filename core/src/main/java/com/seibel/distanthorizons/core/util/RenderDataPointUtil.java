@@ -30,7 +30,7 @@ import java.util.Arrays;
 /**
  * A helper class that is used to access the data from a long
  * formatted as a render data point. <br><br>
- * 
+ *
  * To access data from a long formatted as a full data point see: {@link FullDataPointUtil}
  *
  * <strong>DataPoint Format: </strong><br>
@@ -46,65 +46,65 @@ import java.util.Arrays;
  * SL: sky light <br>
  *
  * =======Bit layout=======	<br>
- *  _  GM GM GM A  A  A  A  |	<br>
- * 	R  R  R  R  R  R  R  R  |	<br>
- * 	G  G  G  G  G  G  G  G  |	<br>
- * 	B  B  B  B  B  B  B  B  |	<br><br>
+ * _  GM GM GM A  A  A  A  |	<br>
+ * R  R  R  R  R  R  R  R  |	<br>
+ * G  G  G  G  G  G  G  G  |	<br>
+ * B  B  B  B  B  B  B  B  |	<br><br>
  *
- * 	H  H  H  H  H  H  H  H  |	<br>
- * 	H  H  H  H  D  D  D  D  |	<br>
- * 	D  D  D  D  D  D  D  D  |	<br>
- * 	BL BL BL BL SL SL SL SL |	<br>
+ * H  H  H  H  H  H  H  H  |	<br>
+ * H  H  H  H  D  D  D  D  |	<br>
+ * D  D  D  D  D  D  D  D  |	<br>
+ * BL BL BL BL SL SL SL SL |	<br>
  * </code>
- * 
+ *
  * @see FullDataPointUtil
  */
 public class RenderDataPointUtil
 {
-    // Reminder: bytes have range of [-128, 127].
-    // When converting to or from an int a 128 should be added or removed.
-    // If there is a bug with color then it's probably caused by this.
+	// Reminder: bytes have range of [-128, 127].
+	// When converting to or from an int a 128 should be added or removed.
+	// If there is a bug with color then it's probably caused by this.
 	
 	private static final SpamReducedLogger warnLogger = new SpamReducedLogger(1);
 	
 	
 	public final static int EMPTY_DATA = 0;
-    public final static int MAX_WORLD_Y_SIZE = 4096;
+	public final static int MAX_WORLD_Y_SIZE = 4096;
 	
-    public final static int ALPHA_DOWNSIZE_SHIFT = 4;
+	public final static int ALPHA_DOWNSIZE_SHIFT = 4;
 	
 	
-    public final static int GEN_TYPE_SHIFT = 60;
+	public final static int GEN_TYPE_SHIFT = 60;
 	
-    public final static int COLOR_SHIFT = 32;
-    public final static int BLUE_SHIFT = COLOR_SHIFT;
-    public final static int GREEN_SHIFT = BLUE_SHIFT + 8;
-    public final static int RED_SHIFT = GREEN_SHIFT + 8;
-    public final static int ALPHA_SHIFT = RED_SHIFT + 8;
+	public final static int COLOR_SHIFT = 32;
+	public final static int BLUE_SHIFT = COLOR_SHIFT;
+	public final static int GREEN_SHIFT = BLUE_SHIFT + 8;
+	public final static int RED_SHIFT = GREEN_SHIFT + 8;
+	public final static int ALPHA_SHIFT = RED_SHIFT + 8;
 	
-    public final static int HEIGHT_SHIFT = 20;
-    public final static int DEPTH_SHIFT = 8;
-    public final static int BLOCK_LIGHT_SHIFT = 4;
-    public final static int SKY_LIGHT_SHIFT = 0;
+	public final static int HEIGHT_SHIFT = 20;
+	public final static int DEPTH_SHIFT = 8;
+	public final static int BLOCK_LIGHT_SHIFT = 4;
+	public final static int SKY_LIGHT_SHIFT = 0;
 	
-    public final static long ALPHA_MASK = 0xF;
-    public final static long RED_MASK = 0xFF;
-    public final static long GREEN_MASK = 0xFF;
-    public final static long BLUE_MASK = 0xFF;
-    public final static long COLOR_MASK = 0xFFFFFF;
-    public final static long HEIGHT_MASK = 0xFFF;
-    public final static long DEPTH_MASK = 0xFFF;
-    public final static long HEIGHT_DEPTH_MASK = 0xFFFFFF;
-    public final static long BLOCK_LIGHT_MASK = 0xF;
-    public final static long SKY_LIGHT_MASK = 0xF;
-    public final static long GEN_TYPE_MASK = 0b111;
-    public final static long COMPARE_SHIFT = GEN_TYPE_SHIFT;
+	public final static long ALPHA_MASK = 0xF;
+	public final static long RED_MASK = 0xFF;
+	public final static long GREEN_MASK = 0xFF;
+	public final static long BLUE_MASK = 0xFF;
+	public final static long COLOR_MASK = 0xFFFFFF;
+	public final static long HEIGHT_MASK = 0xFFF;
+	public final static long DEPTH_MASK = 0xFFF;
+	public final static long HEIGHT_DEPTH_MASK = 0xFFFFFF;
+	public final static long BLOCK_LIGHT_MASK = 0xF;
+	public final static long SKY_LIGHT_MASK = 0xF;
+	public final static long GEN_TYPE_MASK = 0b111;
+	public final static long COMPARE_SHIFT = GEN_TYPE_SHIFT;
 	
-    public final static long HEIGHT_SHIFTED_MASK = HEIGHT_MASK << HEIGHT_SHIFT;
-    public final static long DEPTH_SHIFTED_MASK = DEPTH_MASK << DEPTH_SHIFT;
-    public final static long GEN_TYPE_SHIFTED_MASK = GEN_TYPE_MASK << GEN_TYPE_SHIFT;
+	public final static long HEIGHT_SHIFTED_MASK = HEIGHT_MASK << HEIGHT_SHIFT;
+	public final static long DEPTH_SHIFTED_MASK = DEPTH_MASK << DEPTH_SHIFT;
+	public final static long GEN_TYPE_SHIFTED_MASK = GEN_TYPE_MASK << GEN_TYPE_SHIFT;
 	
-    public final static long VOID_SETTER = HEIGHT_SHIFTED_MASK | DEPTH_SHIFTED_MASK;
+	public final static long VOID_SETTER = HEIGHT_SHIFTED_MASK | DEPTH_SHIFTED_MASK;
 	
 	
 	
@@ -122,7 +122,7 @@ public class RenderDataPointUtil
 		return (generationMode & GEN_TYPE_MASK) << GEN_TYPE_SHIFT;
 	}
 	
-    public static long createDataPoint(int height, int depth, int color, int lightSky, int lightBlock, int generationMode)
+	public static long createDataPoint(int height, int depth, int color, int lightSky, int lightBlock, int generationMode)
 	{
 		return createDataPoint(
 				ColorUtil.getAlpha(color),
@@ -148,19 +148,19 @@ public class RenderDataPointUtil
 	{
 		LodUtil.assertTrue(generationMode != 0, "Trying to create datapoint with genMode 0, which is NOT allowed in DataPoint version 10!");
 		
-		LodUtil.assertTrue(height >= 0 && height < MAX_WORLD_Y_SIZE, "Trying to create datapoint with height["+height+"] out of range!");
-		LodUtil.assertTrue(depth >= 0 && depth < MAX_WORLD_Y_SIZE, "Trying to create datapoint with depth["+depth+"] out of range!");
+		LodUtil.assertTrue(height >= 0 && height < MAX_WORLD_Y_SIZE, "Trying to create datapoint with height[" + height + "] out of range!");
+		LodUtil.assertTrue(depth >= 0 && depth < MAX_WORLD_Y_SIZE, "Trying to create datapoint with depth[" + depth + "] out of range!");
 		
-		LodUtil.assertTrue(lightSky >= 0 && lightSky < 16, "Trying to create datapoint with lightSky["+lightSky+"] out of range!");
-		LodUtil.assertTrue(lightBlock >= 0 && lightBlock < 16, "Trying to create datapoint with lightBlock["+lightBlock+"] out of range!");
+		LodUtil.assertTrue(lightSky >= 0 && lightSky < 16, "Trying to create datapoint with lightSky[" + lightSky + "] out of range!");
+		LodUtil.assertTrue(lightBlock >= 0 && lightBlock < 16, "Trying to create datapoint with lightBlock[" + lightBlock + "] out of range!");
 		
-		LodUtil.assertTrue(alpha >= 0 && alpha < 256, "Trying to create datapoint with alpha["+alpha+"] out of range!");
-		LodUtil.assertTrue(red >= 0 && red < 256, "Trying to create datapoint with red["+red+"] out of range!");
-		LodUtil.assertTrue(green >= 0 && green < 256, "Trying to create datapoint with green["+green+"] out of range!");
-		LodUtil.assertTrue(blue >= 0 && blue < 256, "Trying to create datapoint with blue["+blue+"] out of range!");
+		LodUtil.assertTrue(alpha >= 0 && alpha < 256, "Trying to create datapoint with alpha[" + alpha + "] out of range!");
+		LodUtil.assertTrue(red >= 0 && red < 256, "Trying to create datapoint with red[" + red + "] out of range!");
+		LodUtil.assertTrue(green >= 0 && green < 256, "Trying to create datapoint with green[" + green + "] out of range!");
+		LodUtil.assertTrue(blue >= 0 && blue < 256, "Trying to create datapoint with blue[" + blue + "] out of range!");
 		
-		LodUtil.assertTrue(generationMode >= 0 && generationMode < 8, "Trying to create datapoint with genMode["+generationMode+"] out of range!");
-		LodUtil.assertTrue(depth <= height, "Trying to create datapoint with depth["+depth+"] greater than height["+height+"]!");
+		LodUtil.assertTrue(generationMode >= 0 && generationMode < 8, "Trying to create datapoint with genMode[" + generationMode + "] out of range!");
+		LodUtil.assertTrue(depth <= height, "Trying to create datapoint with depth[" + depth + "] greater than height[" + height + "]!");
 		
 		return (long) (alpha >>> ALPHA_DOWNSIZE_SHIFT) << ALPHA_SHIFT
 				| (red & RED_MASK) << RED_SHIFT
@@ -174,7 +174,7 @@ public class RenderDataPointUtil
 				;
 	}
 	
-    public static long shiftHeightAndDepth(long dataPoint, short offset)
+	public static long shiftHeightAndDepth(long dataPoint, short offset)
 	{
 		long height = (dataPoint + ((long) offset << HEIGHT_SHIFT)) & HEIGHT_SHIFTED_MASK;
 		long depth = (dataPoint + (offset << DEPTH_SHIFT)) & DEPTH_SHIFTED_MASK;
@@ -183,17 +183,17 @@ public class RenderDataPointUtil
 	}
 	
 	/** AKA the ending/top/highest Y value above {@link DhLevel#getMinY()} */
-    public static short getYMax(long dataPoint) { return (short) ((dataPoint >>> HEIGHT_SHIFT) & HEIGHT_MASK); }
+	public static short getYMax(long dataPoint) { return (short) ((dataPoint >>> HEIGHT_SHIFT) & HEIGHT_MASK); }
 	/** AKA the starting/bottom/lowest Y value above {@link DhLevel#getMinY()} */
-    public static short getYMin(long dataPoint) { return (short) ((dataPoint >>> DEPTH_SHIFT) & DEPTH_MASK); }
+	public static short getYMin(long dataPoint) { return (short) ((dataPoint >>> DEPTH_SHIFT) & DEPTH_MASK); }
 	
-    public static short getAlpha(long dataPoint) { return (short) ((((dataPoint >>> ALPHA_SHIFT) & ALPHA_MASK) << ALPHA_DOWNSIZE_SHIFT) | 0b1111); }
-    public static short getRed(long dataPoint) { return (short) ((dataPoint >>> RED_SHIFT) & RED_MASK); }
-    public static short getGreen(long dataPoint) { return (short) ((dataPoint >>> GREEN_SHIFT) & GREEN_MASK); }
-    public static short getBlue(long dataPoint) { return (short) ((dataPoint >>> BLUE_SHIFT) & BLUE_MASK); }
+	public static short getAlpha(long dataPoint) { return (short) ((((dataPoint >>> ALPHA_SHIFT) & ALPHA_MASK) << ALPHA_DOWNSIZE_SHIFT) | 0b1111); }
+	public static short getRed(long dataPoint) { return (short) ((dataPoint >>> RED_SHIFT) & RED_MASK); }
+	public static short getGreen(long dataPoint) { return (short) ((dataPoint >>> GREEN_SHIFT) & GREEN_MASK); }
+	public static short getBlue(long dataPoint) { return (short) ((dataPoint >>> BLUE_SHIFT) & BLUE_MASK); }
 	
-    public static byte getLightSky(long dataPoint) { return (byte) ((dataPoint >>> SKY_LIGHT_SHIFT) & SKY_LIGHT_MASK); }
-    public static byte getLightBlock(long dataPoint) { return (byte) ((dataPoint >>> BLOCK_LIGHT_SHIFT) & BLOCK_LIGHT_MASK); }
+	public static byte getLightSky(long dataPoint) { return (byte) ((dataPoint >>> SKY_LIGHT_SHIFT) & SKY_LIGHT_MASK); }
+	public static byte getLightBlock(long dataPoint) { return (byte) ((dataPoint >>> BLOCK_LIGHT_SHIFT) & BLOCK_LIGHT_MASK); }
 	
 	public static byte getGenerationMode(long dataPoint)
 	{
@@ -207,20 +207,20 @@ public class RenderDataPointUtil
 		return (genMode == 0) ? 1 : genMode;
 	}
 	
-    public static long overrideGenerationMode(long current, byte b) { return (current & ~GEN_TYPE_SHIFTED_MASK) | ((b & GEN_TYPE_MASK) << GEN_TYPE_SHIFT); }
+	public static long overrideGenerationMode(long current, byte b) { return (current & ~GEN_TYPE_SHIFTED_MASK) | ((b & GEN_TYPE_MASK) << GEN_TYPE_SHIFT); }
 	
-    public static boolean isVoid(long dataPoint) { return (((dataPoint >>> DEPTH_SHIFT) & HEIGHT_DEPTH_MASK) == 0); }
+	public static boolean isVoid(long dataPoint) { return (((dataPoint >>> DEPTH_SHIFT) & HEIGHT_DEPTH_MASK) == 0); }
 	
-    public static boolean doesDataPointExist(long dataPoint) { return dataPoint != EMPTY_DATA; }
+	public static boolean doesDataPointExist(long dataPoint) { return dataPoint != EMPTY_DATA; }
 	
-    public static int getColor(long dataPoint)
+	public static int getColor(long dataPoint)
 	{
-        long alpha = getAlpha(dataPoint);
-        return (int) (((dataPoint >>> COLOR_SHIFT) & COLOR_MASK) | (alpha << (ALPHA_SHIFT - COLOR_SHIFT)));
-    }
+		long alpha = getAlpha(dataPoint);
+		return (int) (((dataPoint >>> COLOR_SHIFT) & COLOR_MASK) | (alpha << (ALPHA_SHIFT - COLOR_SHIFT)));
+	}
 	
-    /** Return (>0) if dataA should replace dataB, (0) if equal, (<0) if dataB should replace dataA */
-    public static int compareDatapointPriority(long dataA, long dataB) { return (int) ((dataA >> COMPARE_SHIFT) - (dataB >> COMPARE_SHIFT)); }
+	/** Return (>0) if dataA should replace dataB, (0) if equal, (<0) if dataB should replace dataA */
+	public static int compareDatapointPriority(long dataA, long dataB) { return (int) ((dataA >> COMPARE_SHIFT) - (dataB >> COMPARE_SHIFT)); }
 	
 	/** This is used to convert a dataPoint to string (useful for the print function) */
 	@SuppressWarnings("unused")
@@ -243,7 +243,7 @@ public class RenderDataPointUtil
 					getBlue(dataPoint) + " " +
 					getGreen(dataPoint) +
 					" BL:" + getLightBlock(dataPoint) +
-					" SL:" +getLightSky(dataPoint) +
+					" SL:" + getLightSky(dataPoint) +
 					" G:" + getGenerationMode(dataPoint);
 		}
 	}
@@ -264,11 +264,11 @@ public class RenderDataPointUtil
 	
 	
 	/**
-     * This method merge column of multiple data together
-     *
-     * @param sourceData one or more columns of data
-     * @param output     one column of space for the result to be written to
-     */
+	 * This method merge column of multiple data together
+	 *
+	 * @param sourceData one or more columns of data
+	 * @param output one column of space for the result to be written to
+	 */
 	public static void mergeMultiData(IColumnDataView sourceData, ColumnArrayView output)
 	{
 		if (output.dataCount() != 1)
@@ -404,7 +404,7 @@ public class RenderDataPointUtil
 							{
 								//the column we are checking touches the current column from the bottom
 								//for this reason we extend what's below
-							
+								
 								//We want to avoid to expend this column if it has already been expanded by
 								//this index
 								if (!indexHandled[index])
@@ -413,7 +413,7 @@ public class RenderDataPointUtil
 									increaseIndex[index] = true;
 									indexHandled[index] = true;
 								}
-							
+								
 							}
 							else if (tempYMin < newHeight && tempYMin > newDepth)
 							{
@@ -444,7 +444,7 @@ public class RenderDataPointUtil
 					}
 				}
 			}
-		
+			
 			//Now we add the height and depth data we extracted to the heightAndDepth array
 			if (newDepth != newHeight)
 			{
@@ -460,7 +460,7 @@ public class RenderDataPointUtil
 				heightAndDepth[count * 2 + 1] = (short) newDepth;
 				count++;
 			}
-		
+			
 			//Here we check the condition that makes the loop continue
 			//We stop the loop only if there is no more data to check
 			stillHasDataToCheck = false;
@@ -473,7 +473,7 @@ public class RenderDataPointUtil
 				}
 			}
 		}
-	
+		
 		//we limit the vertical portion to maxVerticalData
 		int j = 0;
 		while (count > outputVerticalSize)
@@ -500,14 +500,14 @@ public class RenderDataPointUtil
 			count--;
 		}
 		//As standard the vertical lods are ordered from top to bottom
-	
+		
 		if (!limited && dataCount == 1) // This mean source vertSize < output vertSize AND both dataCount == 1
 		{
 			sourceData.copyTo(output.data, output.offset, output.vertSize);
 		}
 		else
 		{
-		
+			
 			//We want to efficiently memorize indexes
 			int[] dataIndexesCache = tDataIndexCache.get();
 			if (dataIndexesCache == null || dataIndexesCache.length != dataCount)
@@ -526,18 +526,18 @@ public class RenderDataPointUtil
 				//this will be added to each realtive long DataPoint
 				yMax = heightAndDepth[j * 2];
 				yMin = heightAndDepth[j * 2 + 1];
-			
+				
 				//if both height and depth are at 0 then we finished
 				if ((yMin == 0 && yMax == 0) || j >= heightAndDepth.length / 2)
 				{
 					break;
 				}
-			
+				
 				//We initialize data useful for the merge
 				int numberOfChildren = 0;
 				allEmpty = true;
 				allVoid = true;
-			
+				
 				//We initialize all the new values that we are going to put in the dataPoint
 				int tempAlpha = 0;
 				int tempRed = 0;
@@ -546,7 +546,7 @@ public class RenderDataPointUtil
 				int tempLightBlock = 0;
 				int tempLightSky = 0;
 				long data = 0;
-			
+				
 				//For each position that we want to merge
 				for (int index = 0; index < dataCount; index++)
 				{
@@ -574,7 +574,7 @@ public class RenderDataPointUtil
 					{
 						data = createVoidDataPoint(genMode);
 					}
-				
+					
 					if (doesDataPointExist(data))
 					{
 						allEmpty = false;
@@ -609,7 +609,7 @@ public class RenderDataPointUtil
 				//}
 				
 				output.set(j, createDataPoint(tempAlpha, (int) Math.sqrt(tempRed), (int) Math.sqrt(tempGreen), (int) Math.sqrt(tempBlue), yMax, yMin, tempLightSky, tempLightBlock, genMode));
-			
+				
 			}
 		}
 	}

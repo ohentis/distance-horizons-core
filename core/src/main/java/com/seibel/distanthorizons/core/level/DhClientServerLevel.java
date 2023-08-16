@@ -27,10 +27,10 @@ public class DhClientServerLevel extends DhLevel implements IDhClientLevel, IDhS
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
-
+	
 	public final ServerLevelModule serverside;
 	public final ClientLevelModule clientside;
-
+	
 	private final IServerLevelWrapper serverLevelWrapper;
 	public IClientLevelWrapper clientLevelWrapper;
 	
@@ -43,9 +43,9 @@ public class DhClientServerLevel extends DhLevel implements IDhClientLevel, IDhS
 		this.serverLevelWrapper = serverLevelWrapper;
 		serverside = new ServerLevelModule(this, serverLevelWrapper, saveStructure);
 		clientside = new ClientLevelModule(this);
-		LOGGER.info("Started "+DhClientServerLevel.class.getSimpleName()+" for "+ serverLevelWrapper +" with saves at "+saveStructure);
+		LOGGER.info("Started " + DhClientServerLevel.class.getSimpleName() + " for " + serverLevelWrapper + " with saves at " + saveStructure);
 	}
-
+	
 	//==============//
 	// tick methods //
 	//==============//
@@ -55,12 +55,13 @@ public class DhClientServerLevel extends DhLevel implements IDhClientLevel, IDhS
 	{
 		clientside.clientTick();
 	}
-
+	
 	@Override
-	public void render(Mat4f mcModelViewMatrix, Mat4f mcProjectionMatrix, float partialTicks, IProfilerWrapper profiler) {
+	public void render(Mat4f mcModelViewMatrix, Mat4f mcProjectionMatrix, float partialTicks, IProfilerWrapper profiler)
+	{
 		clientside.render(mcModelViewMatrix, mcProjectionMatrix, partialTicks, profiler);
 	}
-
+	
 	@Override
 	public void serverTick()
 	{
@@ -94,7 +95,7 @@ public class DhClientServerLevel extends DhLevel implements IDhClientLevel, IDhS
 			serverside.worldGenModule.worldGenTick(new DhBlockPos2D(MC_CLIENT.getPlayerBlockPos()));
 		}
 	}
-
+	
 	//========//
 	// render //
 	//========//
@@ -109,7 +110,7 @@ public class DhClientServerLevel extends DhLevel implements IDhClientLevel, IDhS
 		clientside.stopRenderer();
 		clientLevelWrapper = null;
 	}
-
+	
 	//================//
 	// level handling //
 	//================//
@@ -130,40 +131,45 @@ public class DhClientServerLevel extends DhLevel implements IDhClientLevel, IDhS
 	
 	@Override
 	public IClientLevelWrapper getClientLevelWrapper() { return serverside.levelWrapper.tryGetClientLevelWrapper(); }
-
+	
 	@Override
-	public void clearRenderCache() {
+	public void clearRenderCache()
+	{
 		clientside.clearRenderCache();
 	}
-
+	
 	@Override
 	public IServerLevelWrapper getServerLevelWrapper() { return serverLevelWrapper; }
 	@Override
 	public ILevelWrapper getLevelWrapper() { return getServerLevelWrapper(); }
-
+	
 	@Override
-	public IFullDataSourceProvider getFileHandler() {
+	public IFullDataSourceProvider getFileHandler()
+	{
 		return serverside.dataFileHandler;
 	}
-
+	
 	@Override
-	public AbstractSaveStructure getSaveStructure() {
+	public AbstractSaveStructure getSaveStructure()
+	{
 		return serverside.saveStructure;
 	}
-
+	
 	@Override
-	public void saveWrites(ChunkSizedFullDataAccessor data) {
+	public void saveWrites(ChunkSizedFullDataAccessor data)
+	{
 		clientside.saveWrites(data);
 	}
-
+	
 	@Override
 	public int getMinY() { return getLevelWrapper().getMinHeight(); }
-
+	
 	@Override
-	public CompletableFuture<Void> saveAsync() {
+	public CompletableFuture<Void> saveAsync()
+	{
 		return CompletableFuture.allOf(clientside.saveAsync(), getFileHandler().flushAndSave());
 	}
-
+	
 	//===============//
 	// data handling //
 	//===============//
@@ -174,24 +180,26 @@ public class DhClientServerLevel extends DhLevel implements IDhClientLevel, IDhS
 		clientside.close();
 		super.close();
 		serverside.close();
-		LOGGER.info("Closed "+this.getClass().getSimpleName()+" for "+this.getServerLevelWrapper());
+		LOGGER.info("Closed " + this.getClass().getSimpleName() + " for " + this.getServerLevelWrapper());
 	}
-
-	@Override 
+	
+	@Override
 	public void onWorldGenTaskComplete(DhSectionPos pos)
 	{
 		//if (pos.sectionDetailLevel == DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL)
-			DebugRenderer.makeParticle(
-					new DebugRenderer.BoxParticle(
-							new DebugRenderer.Box(pos, 128f, 156f, 0.09f, Color.red.darker()),
-							0.2, 32f
-					)
-			);
+		DebugRenderer.makeParticle(
+				new DebugRenderer.BoxParticle(
+						new DebugRenderer.Box(pos, 128f, 156f, 0.09f, Color.red.darker()),
+						0.2, 32f
+				)
+		);
 		clientside.reloadPos(pos);
 	}
-
+	
 	@Override
-	public void dumpRamUsage() {
-
+	public void dumpRamUsage()
+	{
+		
 	}
+	
 }

@@ -27,7 +27,7 @@ public interface IOverrideInjector<BindableType extends IBindable>
 	 * @throws IllegalStateException if another override with the given priority already has been bound.
 	 * @see IDependencyInjector#bind(Class, IBindable)
 	 */
-	void bind(Class<? extends IDhApiOverrideable> dependencyInterface, IDhApiOverrideable dependencyImplementation)  throws IllegalStateException, IllegalArgumentException;
+	void bind(Class<? extends IDhApiOverrideable> dependencyInterface, IDhApiOverrideable dependencyImplementation) throws IllegalStateException, IllegalArgumentException;
 	
 	/**
 	 * Returns the bound dependency with the highest priority. <br>

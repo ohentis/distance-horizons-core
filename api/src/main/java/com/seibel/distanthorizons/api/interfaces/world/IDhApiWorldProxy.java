@@ -22,7 +22,7 @@ package com.seibel.distanthorizons.api.interfaces.world;
 /**
  * Used to interact with Distant Horizons' current world. <br>
  * A world is equivalent to a single server connection or a singleplayer world.
- * 
+ *
  * @author James Seibel
  * @version 2022-11-20
  */
@@ -32,10 +32,10 @@ public interface IDhApiWorldProxy
 	boolean worldLoaded();
 	
 	
-	/** 
+	/**
 	 * In singleplayer this will return the level the player is currently in. <br>
 	 * In multiplayer this will return null.
-	 * 
+	 *
 	 * @throws IllegalStateException if no world is loaded
 	 */
 	IDhApiLevelWrapper getSinglePlayerLevel() throws IllegalStateException;
@@ -43,18 +43,18 @@ public interface IDhApiWorldProxy
 	/** @throws IllegalStateException if no world is loaded */
 	Iterable<IDhApiLevelWrapper> getAllLoadedLevelWrappers() throws IllegalStateException;
 	
-	/** 
+	/**
 	 * In the case of servers running multiverse there may be multiple levels for the same dimensionType.
 	 *
-	 * @throws IllegalStateException if no world is loaded 
+	 * @throws IllegalStateException if no world is loaded
 	 */
 	Iterable<IDhApiLevelWrapper> getAllLoadedLevelsForDimensionType(IDhApiDimensionTypeWrapper dimensionTypeWrapper) throws IllegalStateException;
 	
 	/**
 	 * Returns any dimensions that have names containing the given string (case-insensitive). <br>
-	 * In the case of servers running multiverse there may be multiple levels for the same dimensionType. 
+	 * In the case of servers running multiverse there may be multiple levels for the same dimensionType.
 	 *
-	 * @throws IllegalStateException if no world is loaded 
+	 * @throws IllegalStateException if no world is loaded
 	 */
 	Iterable<IDhApiLevelWrapper> getAllLoadedLevelsWithDimensionNameLike(String dimensionName) throws IllegalStateException;
 	

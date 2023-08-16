@@ -16,7 +16,7 @@
  *    You should have received a copy of the GNU Lesser General Public License
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
- 
+
 package com.seibel.distanthorizons.core.render;
 
 import com.seibel.distanthorizons.core.util.LodUtil;
@@ -28,13 +28,13 @@ public abstract class AbstractRenderBuffer implements AutoCloseable
 	// ======================================================================
 	// ====================== Methods for implementations ===================
 	// ======================================================================
-
+	
 	// ========== Called by render thread ==========
 	/** @return true if something was rendered, false otherwise */
 	public abstract boolean renderOpaque(LodRenderer renderContext);
 	/** @return true if something was rendered, false otherwise */
 	public abstract boolean renderTransparent(LodRenderer renderContext);
-
+	
 	// ========== Called by any thread. (thread safe) ==========
 	
 	/* Called by anyone. This method is allowed to throw exceptions, but
@@ -49,13 +49,13 @@ public abstract class AbstractRenderBuffer implements AutoCloseable
 	 * thread), or by others when the object is not being used. (not in build,
 	 * upload, or render state). */
 	public abstract void close();
-
-
-
+	
+	
+	
 	public static final int DEFAULT_MEMORY_ALLOCATION = (LodUtil.LOD_VERTEX_FORMAT.getByteSize() * 3) * 8;
 	public static final int QUADS_BYTE_SIZE = LodUtil.LOD_VERTEX_FORMAT.getByteSize() * 4;
 	public static final int MAX_QUADS_PER_BUFFER = (1024 * 1024 * 1) / QUADS_BYTE_SIZE;
 	public static final int FULL_SIZED_BUFFER = MAX_QUADS_PER_BUFFER * QUADS_BYTE_SIZE;
-
-
+	
+	
 }

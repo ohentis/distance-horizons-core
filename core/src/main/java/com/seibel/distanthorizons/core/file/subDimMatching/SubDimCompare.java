@@ -16,7 +16,7 @@
  *    You should have received a copy of the GNU Lesser General Public License
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
- 
+
 package com.seibel.distanthorizons.core.file.subDimMatching;
 
 import com.seibel.distanthorizons.core.config.Config;
@@ -35,7 +35,7 @@ import java.io.File;
  */
 public class SubDimCompare implements Comparable<SubDimCompare>
 {
-	/** 
+	/**
 	 * the maximum distance in blocks a player can be away from the
 	 * given dimension and still be considered in the same place.
 	 */
@@ -79,7 +79,8 @@ public class SubDimCompare implements Comparable<SubDimCompare>
 	public boolean isValidSubDim()
 	{
 		double minimumSimilarityRequired = Config.Client.Advanced.Multiplayer.multiverseSimilarityRequiredPercent.get();
-		return this.getPercentEqual() >= minimumSimilarityRequired 
+		return this.getPercentEqual() >= minimumSimilarityRequired
 				|| this.playerPosDist <= MAX_SIMILAR_PLAYER_POS_DISTANCE_IN_BLOCKS;
 	}
+	
 }

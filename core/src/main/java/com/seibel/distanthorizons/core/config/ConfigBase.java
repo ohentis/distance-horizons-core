@@ -20,181 +20,205 @@ import java.util.*;
  * @author Ran
  */
 // Init the config after singletons have been blinded
-public class ConfigBase 
+public class ConfigBase
 {
-    /** Our own config instance, don't modify */
-    public static ConfigBase INSTANCE;
-    public ConfigFileHandling configFileINSTANCE;
-
-	public static final Logger LOGGER = LogManager.getLogger(ConfigBase.class.getSimpleName());
-    public final String modID;
-    public final String modName;
-    public final int configVersion;
+	/** Our own config instance, don't modify */
+	public static ConfigBase INSTANCE;
+	public ConfigFileHandling configFileINSTANCE;
 	
-    /**
-            What the config works with
-
-        Enum
-        Boolean
-        Byte
-        Integer
-        Double
-        Short
-        Long
-        Float
-        String
-
-        // Below, "T" should be a value from above
-        List<T>
-        ArrayList<T>
-        Map<String, T>
-        HashMap<String, T>
-     */
-    public static final List<Class<?>> acceptableInputs = new ArrayList<Class<?>>() {{
-        add(Boolean.class);
-        add(Byte.class);
-        add(Integer.class);
-        add(Double.class);
-        add(Short.class);
-        add(Long.class);
-        add(Float.class);
-        add(String.class);
-
-        // TODO[CONFIG]: Check the type of these is valid
-        add(List.class);
-        add(ArrayList.class);
-        add(Map.class);
-        add(HashMap.class);
-    }};
-
-    /** Disables the minimum and maximum of any variable */
-    public boolean disableMinMax = false; // Very fun to use, but should always be disabled by default
-    public final List<AbstractConfigType<?, ?>> entries = new ArrayList<>();
-
-
-    public ConfigBase(String modID, String modName, Class<?> config, int configVersion) {
-        LOGGER.info("Initialising config for " + modName);
-        this.modID = modID;
-        this.modName = modName;
-        this.configVersion = configVersion;
-
-        initNestedClass(config, ""); // Init root category
-
-        // File handling (load from file)
-        this.configFileINSTANCE = new ConfigFileHandling(this);
-        this.configFileINSTANCE.loadFromFile();
-        LOGGER.info("Config for " + modName + " initialised");
-    }
-
-    private void initNestedClass(Class<?> config, String category) {
-        // Put all the entries in entries
-
-        for (Field field : config.getFields()) {
-            if (AbstractConfigType.class.isAssignableFrom(field.getType())) {
-                try {
-                    entries.add((AbstractConfigType<?, ?>) field.get(field.getType()));
-                } catch (IllegalAccessException exception) {
-                    exception.printStackTrace();
-                }
-
-                AbstractConfigType<?, ?> entry = entries.get(entries.size() - 1);
-                entry.category = category;
-                entry.name = field.getName();
-                entry.configBase = this;
-
-                if (ConfigEntry.class.isAssignableFrom(field.getType())) { // If item is type ConfigEntry
-                    if (!isAcceptableType(entry.getType())) {
-                        LOGGER.error("Invalid variable type at [" + (category.isEmpty() ? "" : category + ".") + field.getName() + "].");
-                        LOGGER.error("Type [" + entry.getType() + "] is not one of these types [" + acceptableInputs.toString() + "]");
-                        entries.remove(entries.size() -1); // Delete the entry if it is invalid so the game can still run
-                    }
-                }
-
-                if (ConfigCategory.class.isAssignableFrom(field.getType())) { // If it's a category then init the stuff inside it and put it in the category list
-                    assert entry instanceof ConfigCategory;
-                    if (((ConfigCategory) entry).getDestination() == null)
-                        ((ConfigCategory) entry).destination = entry.getNameWCategory();
-                    if (entry.get() != null) {
-                        initNestedClass(((ConfigCategory) entry).get(), ((ConfigCategory) entry).getDestination());
-                    }
-                }
-            }
-        }
-    }
-
-    private static boolean isAcceptableType(Class<?> Clazz) {
-        if (Clazz.isEnum())
-            return true;
-        return acceptableInputs.contains(Clazz);
-    }
-
-
-
-
-    /**
-     * Used for checking that all the lang files for the config exist
-     *
-     * @param onlyShowNew If disabled then it would basically remake the config lang
-     * @param checkEnums  Checks if all the lang for the enum's exist
-     */
-    // This is just to re-format the lang or check if there is something in the lang that is missing
-    public String generateLang(boolean onlyShowNew, boolean checkEnums) {
-        ILangWrapper langWrapper = SingletonInjector.INSTANCE.get(ILangWrapper.class);
-        List<Class<? extends Enum>> enumList = new ArrayList<>();
-
-        String generatedLang = "";
-
-        String starter = "  \"";
-        String separator = "\":\n    \"";
-        String ending = "\",\n";
-
-        for (AbstractConfigType<?, ?> entry: this.entries) {
-            String entryPrefix = "lod.config."+entry.getNameWCategory();
-
-            if (checkEnums && entry.getType().isEnum() && !enumList.contains(entry.getType())) { // Put it in an enum list to work with at the end
-                enumList.add((Class<? extends Enum>) entry.getType());
-            }
-            if (!onlyShowNew || langWrapper.langExists(entryPrefix)) {
-                if (!ConfigLinkedEntry.class.isAssignableFrom(entry.getClass())) { // If it is a linked item, dont generate the base lang
-                    generatedLang += starter
-                            + entryPrefix
-                            + separator
-                            + langWrapper.getLang(entryPrefix)
-                            + ending
-                    ;
-                }
-                // Adds tooltips
-                if (langWrapper.langExists(entryPrefix+".@tooltip")) {
-                    generatedLang += starter
-                            + entryPrefix+".@tooltip"
-                            + separator
-                            + langWrapper.getLang(entryPrefix+".@tooltip")
-                                    .replaceAll("\n", "\\\\n")
-                                    .replaceAll("\"", "\\\\\"")
-                            + ending
-                    ;
-                }
-            }
-        }
-        if (!enumList.isEmpty()) {
-            generatedLang += "\n"; // Separate the main lang with the enum's
-
-            for (Class<? extends Enum> anEnum: enumList) {
-                for (Object enumStr: new ArrayList<>(EnumSet.allOf(anEnum))) {
-                    String enumPrefix = "lod.config.enum."+anEnum.getSimpleName()+"."+enumStr.toString();
-
-                    if (!onlyShowNew || langWrapper.langExists(enumPrefix)) {
-                        generatedLang += starter
-                                + enumPrefix
-                                + separator
-                                + langWrapper.getLang(enumPrefix)
-                                + ending
-                        ;
-                    }
-                }
-            }
-        }
-
-        return generatedLang;
-    }
+	public static final Logger LOGGER = LogManager.getLogger(ConfigBase.class.getSimpleName());
+	public final String modID;
+	public final String modName;
+	public final int configVersion;
+	
+	/**
+	 * What the config works with
+	 *
+	 * Enum
+	 * Boolean
+	 * Byte
+	 * Integer
+	 * Double
+	 * Short
+	 * Long
+	 * Float
+	 * String
+	 *
+	 * // Below, "T" should be a value from above
+	 * List<T>
+	 * ArrayList<T>
+	 * Map<String, T>
+	 * HashMap<String, T>
+	 */
+	public static final List<Class<?>> acceptableInputs = new ArrayList<Class<?>>()
+	{{
+		add(Boolean.class);
+		add(Byte.class);
+		add(Integer.class);
+		add(Double.class);
+		add(Short.class);
+		add(Long.class);
+		add(Float.class);
+		add(String.class);
+		
+		// TODO[CONFIG]: Check the type of these is valid
+		add(List.class);
+		add(ArrayList.class);
+		add(Map.class);
+		add(HashMap.class);
+	}};
+	
+	/** Disables the minimum and maximum of any variable */
+	public boolean disableMinMax = false; // Very fun to use, but should always be disabled by default
+	public final List<AbstractConfigType<?, ?>> entries = new ArrayList<>();
+	
+	
+	public ConfigBase(String modID, String modName, Class<?> config, int configVersion)
+	{
+		LOGGER.info("Initialising config for " + modName);
+		this.modID = modID;
+		this.modName = modName;
+		this.configVersion = configVersion;
+		
+		initNestedClass(config, ""); // Init root category
+		
+		// File handling (load from file)
+		this.configFileINSTANCE = new ConfigFileHandling(this);
+		this.configFileINSTANCE.loadFromFile();
+		LOGGER.info("Config for " + modName + " initialised");
+	}
+	
+	private void initNestedClass(Class<?> config, String category)
+	{
+		// Put all the entries in entries
+		
+		for (Field field : config.getFields())
+		{
+			if (AbstractConfigType.class.isAssignableFrom(field.getType()))
+			{
+				try
+				{
+					entries.add((AbstractConfigType<?, ?>) field.get(field.getType()));
+				}
+				catch (IllegalAccessException exception)
+				{
+					exception.printStackTrace();
+				}
+				
+				AbstractConfigType<?, ?> entry = entries.get(entries.size() - 1);
+				entry.category = category;
+				entry.name = field.getName();
+				entry.configBase = this;
+				
+				if (ConfigEntry.class.isAssignableFrom(field.getType()))
+				{ // If item is type ConfigEntry
+					if (!isAcceptableType(entry.getType()))
+					{
+						LOGGER.error("Invalid variable type at [" + (category.isEmpty() ? "" : category + ".") + field.getName() + "].");
+						LOGGER.error("Type [" + entry.getType() + "] is not one of these types [" + acceptableInputs.toString() + "]");
+						entries.remove(entries.size() - 1); // Delete the entry if it is invalid so the game can still run
+					}
+				}
+				
+				if (ConfigCategory.class.isAssignableFrom(field.getType()))
+				{ // If it's a category then init the stuff inside it and put it in the category list
+					assert entry instanceof ConfigCategory;
+					if (((ConfigCategory) entry).getDestination() == null)
+						((ConfigCategory) entry).destination = entry.getNameWCategory();
+					if (entry.get() != null)
+					{
+						initNestedClass(((ConfigCategory) entry).get(), ((ConfigCategory) entry).getDestination());
+					}
+				}
+			}
+		}
+	}
+	
+	private static boolean isAcceptableType(Class<?> Clazz)
+	{
+		if (Clazz.isEnum())
+			return true;
+		return acceptableInputs.contains(Clazz);
+	}
+	
+	
+	
+	
+	/**
+	 * Used for checking that all the lang files for the config exist
+	 *
+	 * @param onlyShowNew If disabled then it would basically remake the config lang
+	 * @param checkEnums Checks if all the lang for the enum's exist
+	 */
+	// This is just to re-format the lang or check if there is something in the lang that is missing
+	public String generateLang(boolean onlyShowNew, boolean checkEnums)
+	{
+		ILangWrapper langWrapper = SingletonInjector.INSTANCE.get(ILangWrapper.class);
+		List<Class<? extends Enum>> enumList = new ArrayList<>();
+		
+		String generatedLang = "";
+		
+		String starter = "  \"";
+		String separator = "\":\n    \"";
+		String ending = "\",\n";
+		
+		for (AbstractConfigType<?, ?> entry : this.entries)
+		{
+			String entryPrefix = "lod.config." + entry.getNameWCategory();
+			
+			if (checkEnums && entry.getType().isEnum() && !enumList.contains(entry.getType()))
+			{ // Put it in an enum list to work with at the end
+				enumList.add((Class<? extends Enum>) entry.getType());
+			}
+			if (!onlyShowNew || langWrapper.langExists(entryPrefix))
+			{
+				if (!ConfigLinkedEntry.class.isAssignableFrom(entry.getClass()))
+				{ // If it is a linked item, dont generate the base lang
+					generatedLang += starter
+							+ entryPrefix
+							+ separator
+							+ langWrapper.getLang(entryPrefix)
+							+ ending
+					;
+				}
+				// Adds tooltips
+				if (langWrapper.langExists(entryPrefix + ".@tooltip"))
+				{
+					generatedLang += starter
+							+ entryPrefix + ".@tooltip"
+							+ separator
+							+ langWrapper.getLang(entryPrefix + ".@tooltip")
+							.replaceAll("\n", "\\\\n")
+							.replaceAll("\"", "\\\\\"")
+							+ ending
+					;
+				}
+			}
+		}
+		if (!enumList.isEmpty())
+		{
+			generatedLang += "\n"; // Separate the main lang with the enum's
+			
+			for (Class<? extends Enum> anEnum : enumList)
+			{
+				for (Object enumStr : new ArrayList<>(EnumSet.allOf(anEnum)))
+				{
+					String enumPrefix = "lod.config.enum." + anEnum.getSimpleName() + "." + enumStr.toString();
+					
+					if (!onlyShowNew || langWrapper.langExists(enumPrefix))
+					{
+						generatedLang += starter
+								+ enumPrefix
+								+ separator
+								+ langWrapper.getLang(enumPrefix)
+								+ ending
+						;
+					}
+				}
+			}
+		}
+		
+		return generatedLang;
+	}
+	
 }

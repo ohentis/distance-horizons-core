@@ -30,10 +30,10 @@ import java.lang.invoke.MethodHandles;
 /**
  * This class takes care of dependency injection for mod accessors. (for mod compatibility
  * support).  <Br> <Br>
- * 
+ *
  * If a IModAccessor returns null either that means the mod isn't loaded in the game
  * or an Accessor hasn't been implemented for the given Minecraft version.
- * 
+ *
  * @author James Seibel
  * @author Leetom
  * @version 2022-7-18
@@ -62,6 +62,6 @@ public class ModAccessorInjector extends DependencyInjector<IModAccessor>
 		super.bind(interfaceClass, modAccessor);
 		LOGGER.info("Registered mod compatibility accessor for: [" + modAccessor.getModName() + "].");
 	}
-
-
+	
+	
 }

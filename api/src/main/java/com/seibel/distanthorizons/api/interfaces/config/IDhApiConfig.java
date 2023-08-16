@@ -6,7 +6,7 @@ import com.seibel.distanthorizons.api.interfaces.config.client.*;
 /**
  * This interfaces holds all config groups
  * the API has access to for easy access.
- * 
+ *
  * @author James Seibel
  * @version 2023-6-14
  */

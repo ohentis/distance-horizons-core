@@ -29,32 +29,32 @@ public class ClientOnlySaveStructure extends AbstractSaveStructure
 	private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	private static final IMinecraftSharedWrapper MC_SHARED = SingletonInjector.INSTANCE.get(IMinecraftSharedWrapper.class);
 	public static final String INVALID_FILE_CHARACTERS_REGEX = "[\\\\/:*?\"<>|]";
-
+	
 	SubDimensionLevelMatcher subDimMatcher = null;
 	final HashMap<ILevelWrapper, File> levelWrapperToFileMap = new HashMap<>();
-
-
-
+	
+	
+	
 	public ClientOnlySaveStructure()
 	{
 		this.folder = new File(getSaveStructureFolderPath());
-
+		
 		if (!this.folder.exists())
 		{
 			if (!this.folder.mkdirs())
 			{
-				LOGGER.warn("Unable to create folder ["  + this.folder.getPath() + "]");
+				LOGGER.warn("Unable to create folder [" + this.folder.getPath() + "]");
 				//TODO: Deal with errors
 			}
 		}
 	}
-
-
-
+	
+	
+	
 	//================//
 	// folder methods //
 	//================//
-
+	
 	@Override
 	public File getLevelFolder(ILevelWrapper levelWrapper)
 	{
@@ -64,7 +64,7 @@ public class ClientOnlySaveStructure extends AbstractSaveStructure
 			if (newLevelWrapper instanceof IServerKeyedClientLevel)
 			{
 				IServerKeyedClientLevel keyedClientLevel = (IServerKeyedClientLevel) newLevelWrapper;
-				LOGGER.info("Loading level "+newLevelWrapper.getDimensionType().getDimensionName()+" with key: "+keyedClientLevel.getServerLevelKey());
+				LOGGER.info("Loading level " + newLevelWrapper.getDimensionType().getDimensionName() + " with key: " + keyedClientLevel.getServerLevelKey());
 				// This world was identified by the server directly, so we can know for sure which folder to use.
 				return new File(getSaveStructureFolderPath() + File.separatorChar + keyedClientLevel.getServerLevelKey());
 			}
@@ -78,7 +78,7 @@ public class ClientOnlySaveStructure extends AbstractSaveStructure
 				{
 					LOGGER.info("Loading level " + newLevelWrapper.getDimensionType().getDimensionName());
 					this.subDimMatcher = new SubDimensionLevelMatcher(newLevelWrapper, this.folder,
-							this.getMatchingLevelFolders(newLevelWrapper).toArray(new File[0] /* surprisingly we don't need to create an array of any specific size for this to work */));
+							this.getMatchingLevelFolders(newLevelWrapper).toArray(new File[0] /* surprisingly we don't need to create an array of any specific size for this to work */ ));
 				}
 				
 				File levelFile = this.subDimMatcher.tryGetLevel();
@@ -103,7 +103,7 @@ public class ClientOnlySaveStructure extends AbstractSaveStructure
 			return this.getLevelFolderWithoutSimilarityMatching(newLevelWrapper);
 		});
 	}
-
+	
 	private File getLevelFolderWithoutSimilarityMatching(ILevelWrapper level)
 	{
 		List<File> folders = this.getMatchingLevelFolders(level);
@@ -120,7 +120,7 @@ public class ClientOnlySaveStructure extends AbstractSaveStructure
 			return new File(this.folder, level.getDimensionType().getDimensionName());
 		}
 	}
-
+	
 	public List<File> getMatchingLevelFolders(@Nullable ILevelWrapper level)
 	{
 		File[] folders = this.folder.listFiles();
@@ -128,7 +128,7 @@ public class ClientOnlySaveStructure extends AbstractSaveStructure
 		{
 			return new ArrayList<>(0);
 		}
-
+		
 		Stream<File> fileStream = Arrays.stream(folders).filter(
 				(folder) ->
 				{
@@ -142,10 +142,10 @@ public class ClientOnlySaveStructure extends AbstractSaveStructure
 					}
 				}
 		).sorted();
-
+		
 		return fileStream.collect(Collectors.toList());
 	}
-
+	
 	@Override
 	public File getRenderCacheFolder(ILevelWrapper level)
 	{
@@ -154,10 +154,10 @@ public class ClientOnlySaveStructure extends AbstractSaveStructure
 		{
 			return null;
 		}
-
+		
 		return new File(levelFolder, RENDER_CACHE_FOLDER);
 	}
-
+	
 	@Override
 	public File getFullDataFolder(ILevelWrapper level)
 	{
@@ -166,16 +166,16 @@ public class ClientOnlySaveStructure extends AbstractSaveStructure
 		{
 			return null;
 		}
-
+		
 		return new File(levelFolder, DATA_FOLDER);
 	}
-
-
-
+	
+	
+	
 	//================//
 	// helper methods //
 	//================//
-
+	
 	/** Returns true if the given folder holds valid Lod Dimension data */
 	private static boolean isValidLevelFolder(File potentialFolder)
 	{
@@ -184,12 +184,12 @@ public class ClientOnlySaveStructure extends AbstractSaveStructure
 			// a valid level folder needs to be a folder
 			return false;
 		}
-
+		
 		// filter out any non-DH folders
 		File[] files = potentialFolder.listFiles((file) ->
 				file.isDirectory() &&
 						(file.getName().equalsIgnoreCase(RENDER_CACHE_FOLDER) || file.getName().equalsIgnoreCase(DATA_FOLDER)));
-
+		
 		// a valid level folder needs to have DH specific folders in it
 		return files != null && files.length != 0;
 	}
@@ -210,14 +210,14 @@ public class ClientOnlySaveStructure extends AbstractSaveStructure
 		ParsedIp parsedIp = new ParsedIp(MC_CLIENT.getCurrentServerIp());
 		String serverIpCleaned = parsedIp.ip.replaceAll(INVALID_FILE_CHARACTERS_REGEX, "");
 		String serverPortCleaned = parsedIp.port != null ? parsedIp.port.replaceAll(INVALID_FILE_CHARACTERS_REGEX, "") : "";
-
-
+		
+		
 		// determine the auto folder name format
 		EServerFolderNameMode folderNameMode = Config.Client.Advanced.Multiplayer.serverFolderNameMode.get();
 		String serverName = MC_CLIENT.getCurrentServerName().replaceAll(INVALID_FILE_CHARACTERS_REGEX, "");
 		String serverMcVersion = MC_CLIENT.getCurrentServerVersion().replaceAll(INVALID_FILE_CHARACTERS_REGEX, "");
-
-
+		
+		
 		// generate the folder name
 		String folderName;
 		switch (folderNameMode)
@@ -226,7 +226,7 @@ public class ClientOnlySaveStructure extends AbstractSaveStructure
 			case NAME_ONLY:
 				folderName = serverName;
 				break;
-
+			
 			case NAME_IP:
 				folderName = serverName + ", IP " + serverIpCleaned;
 				break;
@@ -237,7 +237,7 @@ public class ClientOnlySaveStructure extends AbstractSaveStructure
 				folderName = serverName + ", IP " + serverIpCleaned + (serverPortCleaned.length() != 0 ? ("-" + serverPortCleaned) : "") + ", GameVersion " + serverMcVersion;
 				break;
 		}
-
+		
 		// PercentEscaper makes the characters all part of the standard alphameric character set
 		// This fixes some issues when the server is named something in other languages
 		return new PercentEscaper("", true).escape(folderName);
@@ -248,11 +248,11 @@ public class ClientOnlySaveStructure extends AbstractSaveStructure
 	//==================//
 	// override methods //
 	//==================//
-
+	
 	@Override
 	public void close() { this.subDimMatcher.close(); }
-
+	
 	@Override
 	public String toString() { return "[" + this.getClass().getSimpleName() + "@" + this.folder.getName() + "]"; }
-
+	
 }

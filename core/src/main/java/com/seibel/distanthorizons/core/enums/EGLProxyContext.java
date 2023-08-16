@@ -24,7 +24,7 @@ package com.seibel.distanthorizons.core.enums;
  * Lod_Builder,		<br>
  * Proxy_Worker,	<br>
  * None				<br>
- * 
+ *
  * @author James Seibel
  * @version 10-1-2021
  */

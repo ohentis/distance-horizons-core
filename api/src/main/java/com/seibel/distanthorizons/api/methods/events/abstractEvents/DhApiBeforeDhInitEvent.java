@@ -6,7 +6,7 @@ import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhAp
 /**
  * Fired before Distant Horizons starts running its mod loader setup. <br>
  * IE this is called before Forge's initClient/initServer or Fabric's init method.
- * 
+ *
  * @author James Seibel
  * @version 2023-6-23
  */

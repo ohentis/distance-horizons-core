@@ -3,8 +3,8 @@ package com.seibel.distanthorizons.core.util.objects;
 import java.util.concurrent.*;
 
 /**
- * Can be used to more finely control CPU usage and 
- * reduce CPU usage if only 1 thread is already assigned. 
+ * Can be used to more finely control CPU usage and
+ * reduce CPU usage if only 1 thread is already assigned.
  */
 public class RateLimitedThreadPoolExecutor extends ThreadPoolExecutor
 {
@@ -41,20 +41,23 @@ public class RateLimitedThreadPoolExecutor extends ThreadPoolExecutor
 	{
 		super.beforeExecute(thread, runnable);
 		
-		if (this.runTimeRatio < 1.0 && this.lastRunDurationNanoTimeRef.get() != -1) 
+		if (this.runTimeRatio < 1.0 && this.lastRunDurationNanoTimeRef.get() != -1)
 		{
-			try 
+			try
 			{
 				long deltaMs = TimeUnit.NANOSECONDS.toMillis(this.lastRunDurationNanoTimeRef.get());
-				Thread.sleep((long) (deltaMs/this.runTimeRatio - deltaMs));
-			} catch (InterruptedException ignored) {  }
+				Thread.sleep((long) (deltaMs / this.runTimeRatio - deltaMs));
+			}
+			catch (InterruptedException ignored)
+			{
+			}
 		}
 		
 		this.runStartNanoTimeRef.set(System.nanoTime());
 	}
 	
 	@Override
-	protected void afterExecute(Runnable runnable, Throwable throwable) 
+	protected void afterExecute(Runnable runnable, Throwable throwable)
 	{
 		super.afterExecute(runnable, throwable);
 		this.lastRunDurationNanoTimeRef.set(System.nanoTime() - this.runStartNanoTimeRef.get());

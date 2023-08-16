@@ -36,4 +36,5 @@ public interface IProfilerWrapper extends IBindable
 	void popPush(String newSection);
 	
 	void pop();
+	
 }

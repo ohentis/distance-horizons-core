@@ -33,11 +33,11 @@ import com.seibel.distanthorizons.coreapi.util.MathUtil;
  */
 public enum EVerticalQuality
 {
-	HEIGHT_MAP(new int[] { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }),
-	LOW(new int[] { 4, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1 }),
-	MEDIUM(new int[] { 6, 4, 3, 2, 2, 1, 1, 1, 1, 1, 1 }),
-	HIGH(new int[] { 8, 6, 4, 2, 2, 2, 2, 1, 1, 1, 1 }),
-	EXTREME(new int[] { 16, 8, 4, 2, 2, 2, 2, 1, 1, 1, 1 });
+	HEIGHT_MAP(new int[]{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}),
+	LOW(new int[]{4, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1}),
+	MEDIUM(new int[]{6, 4, 3, 2, 2, 1, 1, 1, 1, 1, 1}),
+	HIGH(new int[]{8, 6, 4, 2, 2, 2, 2, 1, 1, 1, 1}),
+	EXTREME(new int[]{16, 8, 4, 2, 2, 2, 2, 1, 1, 1, 1});
 	
 	/** represents how many LODs can be rendered in a single vertical slice */
 	public final int[] maxVerticalData;
@@ -48,11 +48,11 @@ public enum EVerticalQuality
 	
 	
 	
-    public int calculateMaxVerticalData(byte dataDetail)
+	public int calculateMaxVerticalData(byte dataDetail)
 	{
 		// for detail levels lower than what the enum defines, use the lowest quality item
 		int index = MathUtil.clamp(0, dataDetail, this.maxVerticalData.length - 1);
 		return this.maxVerticalData[index];
-    }
+	}
 	
 }

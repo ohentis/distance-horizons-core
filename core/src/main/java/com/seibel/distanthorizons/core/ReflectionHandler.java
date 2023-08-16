@@ -26,12 +26,12 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.AbstractOpt
 import org.apache.logging.log4j.Logger;
 
 /**
- * A singleton used to determine if a class is present or 
- * access variables from methods where they are private 
+ * A singleton used to determine if a class is present or
+ * access variables from methods where they are private
  * or potentially absent. <br><br>
- * 
+ *
  * For example: presence/absence of Optifine.
- * 
+ *
  * @author James Seibel
  * @version 2022-11-24
  */

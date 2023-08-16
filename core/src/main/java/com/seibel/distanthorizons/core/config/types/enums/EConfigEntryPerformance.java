@@ -8,12 +8,12 @@ package com.seibel.distanthorizons.core.config.types.enums;
  */
 public enum EConfigEntryPerformance
 {
-    NONE,
-    VERY_LOW,
-    LOW,
-    MEDIUM,
-    HIGH,
-    VERY_HIGH,
+	NONE,
+	VERY_LOW,
+	LOW,
+	MEDIUM,
+	HIGH,
+	VERY_HIGH,
 	
-    DONT_SHOW
+	DONT_SHOW
 }

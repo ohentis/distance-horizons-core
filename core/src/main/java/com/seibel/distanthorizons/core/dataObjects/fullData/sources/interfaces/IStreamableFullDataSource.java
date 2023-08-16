@@ -13,19 +13,18 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import java.io.IOException;
 
 /**
- * This interface holds the complete method list necessary for reading and writing a {@link IFullDataSource} 
+ * This interface holds the complete method list necessary for reading and writing a {@link IFullDataSource}
  * to and from data streams. <br><br>
- * 
+ *
  * This interface's purpose is to reduce the chance of accidentally mismatching read/write operation data types or content by splitting
  * up each read/write method into small easy to understand chunks.
- * 
- * @apiNote James would've preferred to have this as an abstract class, 
- * however that is impossible. See the apiNote in
- * {@link IStreamableFullDataSource#populateFromStream(FullDataMetaFile, DhDataInputStream, IDhLevel) populateFromStream} 
- * for the full reasoning.
- * 
- * @param <SummaryDataType> defines the object holding this data source's summary data, extends {@link IStreamableFullDataSource.FullDataSourceSummaryData}. 
+ *
+ * @param <SummaryDataType> defines the object holding this data source's summary data, extends {@link IStreamableFullDataSource.FullDataSourceSummaryData}.
  * @param <DataContainerType> defines the object holding the data points, probably long[][] or long[][][].
+ * @apiNote James would've preferred to have this as an abstract class,
+ * however that is impossible. See the apiNote in
+ * {@link IStreamableFullDataSource#populateFromStream(FullDataMetaFile, DhDataInputStream, IDhLevel) populateFromStream}
+ * for the full reasoning.
  */
 public interface IStreamableFullDataSource<SummaryDataType extends IStreamableFullDataSource.FullDataSourceSummaryData, DataContainerType> extends IFullDataSource
 {
@@ -34,11 +33,11 @@ public interface IStreamableFullDataSource<SummaryDataType extends IStreamableFu
 	// stream handling // 
 	//=================//
 	
-	/** 
-	 * Overwrites any data in this object with the data from the given file and stream. 
+	/**
+	 * Overwrites any data in this object with the data from the given file and stream.
 	 * This is expected to be used with an empty {@link IStreamableFullDataSource} and functions similar to a constructor.
-	 * 
-	 * @apiNote James would've preferred that {@link IStreamableFullDataSource} was an abstract class, 
+	 *
+	 * @apiNote James would've preferred that {@link IStreamableFullDataSource} was an abstract class,
 	 * so this could've been a constructor.
 	 * However, several inheritors of this interface already extend {@link FullDataArrayAccessor}, making that impossible.
 	 */
@@ -83,7 +82,7 @@ public interface IStreamableFullDataSource<SummaryDataType extends IStreamableFu
 	/**
 	 * Confirms that the given {@link FullDataMetaFile} is valid for this {@link IStreamableFullDataSource}. <br>
 	 * This specifically checks any fields that should be set when the {@link IStreamableFullDataSource} was first constructed.
-	 * 
+	 *
 	 * @throws IOException if the {@link FullDataMetaFile} isn't valid for this object.
 	 */
 	SummaryDataType readSourceSummaryInfo(FullDataMetaFile dataFile, DhDataInputStream inputStream, IDhLevel level) throws IOException;

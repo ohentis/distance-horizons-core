@@ -12,15 +12,15 @@ import org.apache.logging.log4j.Logger;
  *
  * @author coolGi
  */
-public final class ModGitInfo 
+public final class ModGitInfo
 {
 	private static final Logger LOGGER = LogManager.getLogger();
 	private static final String FILE_NAME = "build_info.json";
 	
-    static 
-    {
+	static
+	{
 		String gitMainCommit = "UNKNOWN";
-	    String gitMainBranch = "UNKNOWN";
+		String gitMainBranch = "UNKNOWN";
 		String gitCoreCommit = "UNKNOWN";
 		
 		try
@@ -37,15 +37,16 @@ public final class ModGitInfo
 		}
 		catch (Exception | Error e)
 		{
-			LOGGER.warn("Unable to get the Git information from "+FILE_NAME);
+			LOGGER.warn("Unable to get the Git information from " + FILE_NAME);
 		}
-
-        Git_Main_Commit = gitMainCommit;
-        Git_Core_Commit = gitMainBranch;
-        Git_Main_Branch = gitCoreCommit;
-    }
-
-    public static final String Git_Main_Commit;
-    public static final String Git_Core_Commit;
-    public static final String Git_Main_Branch;
+		
+		Git_Main_Commit = gitMainCommit;
+		Git_Core_Commit = gitMainBranch;
+		Git_Main_Branch = gitCoreCommit;
+	}
+	
+	public static final String Git_Main_Commit;
+	public static final String Git_Core_Commit;
+	public static final String Git_Main_Branch;
+	
 }

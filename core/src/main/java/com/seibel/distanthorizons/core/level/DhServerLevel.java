@@ -188,13 +188,14 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 			}
 		}
 	}
-
+	
 	@Override
-	public void saveWrites(ChunkSizedFullDataAccessor data) {
+	public void saveWrites(ChunkSizedFullDataAccessor data)
+	{
 		DhLodPos pos = data.getLodPos().convertToDetailLevel(CompleteFullDataSource.SECTION_SIZE_OFFSET);
 		getFileHandler().write(new DhSectionPos(pos.detailLevel, pos.x, pos.z), data);
 	}
-
+	
 	@Override
 	public int getMinY() { return getLevelWrapper().getMinHeight(); }
 	
@@ -255,14 +256,16 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 	
 	@Override
 	public IFullDataSourceProvider getFileHandler() { return serverside.dataFileHandler; }
-
+	
 	@Override
-	public AbstractSaveStructure getSaveStructure() {
+	public AbstractSaveStructure getSaveStructure()
+	{
 		return serverside.saveStructure;
 	}
-
+	
 	@Override
-	public void onWorldGenTaskComplete(DhSectionPos pos) {
+	public void onWorldGenTaskComplete(DhSectionPos pos)
+	{
 		//TODO: Send packet to client
 	}
 	

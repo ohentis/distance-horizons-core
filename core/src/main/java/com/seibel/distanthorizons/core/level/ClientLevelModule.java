@@ -30,261 +30,232 @@ import org.apache.logging.log4j.Logger;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class ClientLevelModule {
-    private static final Logger LOGGER = DhLoggerBuilder.getLogger();
-    private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
-    private final IDhClientLevel parent;
-    public final AtomicReference<ClientRenderState> ClientRenderStateRef = new AtomicReference<>();
-    public final F3Screen.NestedMessage f3Message;
-    
-    public ClientLevelModule(IDhClientLevel parent)
-    {
-        this.parent = parent;
-        this.f3Message = new F3Screen.NestedMessage(this::f3Log);
-    }
+public class ClientLevelModule
+{
+	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
+	private final IDhClientLevel parent;
+	public final AtomicReference<ClientRenderState> ClientRenderStateRef = new AtomicReference<>();
+	public final F3Screen.NestedMessage f3Message;
 
-    //==============//
-    // tick methods //
-    //==============//
+	public ClientLevelModule(IDhClientLevel parent)
+	{
+		this.parent = parent; this.f3Message = new F3Screen.NestedMessage(this::f3Log);
+	}
 
-    private EDebugRendering lastDebugRendering = EDebugRendering.OFF;
+	//==============//
+	// tick methods //
+	//==============//
 
-    public void clientTick()
-    {
-	    // can be false if the level is unloading
-	    if (!MC_CLIENT.playerExists())
-	    {
-		    return;
-	    }
+	private EDebugRendering lastDebugRendering = EDebugRendering.OFF;
+	
+	public void clientTick()
+	{
+		// can be false if the level is unloading
+		if (!MC_CLIENT.playerExists())
+		{
+			return;
+		}
+
+		ClientRenderState clientRenderState = this.ClientRenderStateRef.get(); if (clientRenderState == null)
+		{
+			return;
+		}
+		// TODO this should probably be handled via a config change listener
+		// recreate the RenderState if the render distance changes
+		if (clientRenderState.quadtree.blockRenderDistanceRadius != Config.Client.Advanced.Graphics.Quality.lodChunkRenderDistance.get() * LodUtil.CHUNK_WIDTH)
+		{
+			if (!this.ClientRenderStateRef.compareAndSet(clientRenderState, null))
+			{
+				return;
+			}
+			
+			clientRenderState.close(); clientRenderState = new ClientRenderState(parent, parent.getFileHandler(), parent.getSaveStructure()); if (!this.ClientRenderStateRef.compareAndSet(null, clientRenderState))
+		{
+			//FIXME: How to handle this?
+			LOGGER.warn("Failed to set render state due to concurrency after changing view distance"); clientRenderState.close(); return;
+		}
+		} clientRenderState.quadtree.tick(new DhBlockPos2D(MC_CLIENT.getPlayerBlockPos()));
+
+		boolean isBuffersDirty = false; EDebugRendering newDebugRendering = Config.Client.Advanced.Debugging.debugRendering.get();
+		if (newDebugRendering != lastDebugRendering)
+		{
+			lastDebugRendering = newDebugRendering; isBuffersDirty = true;
+		}
+		if (isBuffersDirty)
+		{
+			clientRenderState.renderer.bufferHandler.MarkAllBuffersDirty();
+		}
+	}
+
+
+	//========//
+	// render //
+	//========//
+
+	/** @return if the {@link ClientRenderState} was successfully swapped */
+	public boolean startRenderer()
+	{
+		ClientRenderState ClientRenderState = new ClientRenderState(parent, parent.getFileHandler(), parent.getSaveStructure()); if (!this.ClientRenderStateRef.compareAndSet(null, ClientRenderState))
+	{
+		LOGGER.warn("Failed to start renderer due to concurrency"); ClientRenderState.close(); return false;
+	}
+	else
+	{
+		return true;
+	}
+	}
+	
+	public boolean isRendering()
+	{
+		return this.ClientRenderStateRef.get() != null;
+	}
+	
+	public void render(Mat4f mcModelViewMatrix, Mat4f mcProjectionMatrix, float partialTicks, IProfilerWrapper profiler)
+	{
+		ClientRenderState ClientRenderState = this.ClientRenderStateRef.get(); if (ClientRenderState == null)
+	{
+		// either the renderer hasn't been started yet, or is being reloaded
+		return;
+	} ClientRenderState.renderer.drawLODs(mcModelViewMatrix, mcProjectionMatrix, partialTicks, profiler);
+	}
+	
+	public void stopRenderer()
+	{
+		LOGGER.info("Stopping renderer for " + this); ClientRenderState ClientRenderState = this.ClientRenderStateRef.get(); if (ClientRenderState == null)
+	{
+		LOGGER.warn("Tried to stop renderer for " + this + " when it was not started!"); return;
+	}
+		// stop the render state
+		while (!this.ClientRenderStateRef.compareAndSet(ClientRenderState, null)) // TODO why is there a while loop here?
+		{
+			ClientRenderState = this.ClientRenderStateRef.get(); if (ClientRenderState == null)
+		{
+			return;
+		}
+		} ClientRenderState.close();
+	}
+	
+	//===============//
+	// data handling //
+	//===============//
+	public void saveWrites(ChunkSizedFullDataAccessor data)
+	{
+		ClientRenderState ClientRenderState = this.ClientRenderStateRef.get(); DhLodPos pos = data.getLodPos().convertToDetailLevel(CompleteFullDataSource.SECTION_SIZE_OFFSET); if (ClientRenderState != null)
+	{
+		ClientRenderState.renderSourceFileHandler.writeChunkDataToFile(new DhSectionPos(pos.detailLevel, pos.x, pos.z), data);
+	}
+	else
+	{
+		parent.getFileHandler().write(new DhSectionPos(pos.detailLevel, pos.x, pos.z), data);
+	}
+	}
+	
+	public CompletableFuture<Void> saveAsync()
+	{
+		ClientRenderState ClientRenderState = this.ClientRenderStateRef.get(); if (ClientRenderState != null)
+	{
+		return ClientRenderState.renderSourceFileHandler.flushAndSaveAsync();
+	}
+	else
+	{
+		return CompletableFuture.completedFuture(null);
+	}
+	}
+	
+	public void close()
+	{
+		// shutdown the renderer
+		ClientRenderState ClientRenderState = this.ClientRenderStateRef.get(); if (ClientRenderState != null)
+	{
+		// TODO does this have to be in a while loop, if so why?
+		while (!this.ClientRenderStateRef.compareAndSet(ClientRenderState, null))
+		{
+			ClientRenderState = this.ClientRenderStateRef.get(); if (ClientRenderState == null)
+		{
+			break;
+		}
+		}
 		
-        ClientRenderState clientRenderState = this.ClientRenderStateRef.get();
-        if (clientRenderState == null)
-        {
-            return;
-        }
-        // TODO this should probably be handled via a config change listener
-        // recreate the RenderState if the render distance changes
-        if (clientRenderState.quadtree.blockRenderDistanceRadius != Config.Client.Advanced.Graphics.Quality.lodChunkRenderDistance.get() * LodUtil.CHUNK_WIDTH)
-        {
-            if (!this.ClientRenderStateRef.compareAndSet(clientRenderState, null))
-            {
-                return;
-            }
-
-            clientRenderState.close();
-            clientRenderState = new ClientRenderState(parent, parent.getFileHandler(), parent.getSaveStructure());
-            if (!this.ClientRenderStateRef.compareAndSet(null, clientRenderState))
-            {
-                //FIXME: How to handle this?
-                LOGGER.warn("Failed to set render state due to concurrency after changing view distance");
-                clientRenderState.close();
-                return;
-            }
-        }
-        clientRenderState.quadtree.tick(new DhBlockPos2D(MC_CLIENT.getPlayerBlockPos()));
-
-        boolean isBuffersDirty = false;
-        EDebugRendering newDebugRendering = Config.Client.Advanced.Debugging.debugRendering.get();
-        if (newDebugRendering != lastDebugRendering)
-        {
-            lastDebugRendering = newDebugRendering;
-            isBuffersDirty = true;
-        }
-        if (isBuffersDirty) {
-            clientRenderState.renderer.bufferHandler.MarkAllBuffersDirty();
-        }
-    }
-
-
-    //========//
-    // render //
-    //========//
-
-    /** @return if the {@link ClientRenderState} was successfully swapped */
-    public boolean startRenderer()
-    {
-        ClientRenderState ClientRenderState = new ClientRenderState(parent, parent.getFileHandler(), parent.getSaveStructure());
-        if (!this.ClientRenderStateRef.compareAndSet(null, ClientRenderState))
-        {
-            LOGGER.warn("Failed to start renderer due to concurrency");
-            ClientRenderState.close();
-            return false;
-        }
-        else
-        {
-            return true;
-        }
-    }
-
-    public boolean isRendering() {
-        return this.ClientRenderStateRef.get() != null;
-    }
-
-    public void render(Mat4f mcModelViewMatrix, Mat4f mcProjectionMatrix, float partialTicks, IProfilerWrapper profiler)
-    {
-        ClientRenderState ClientRenderState = this.ClientRenderStateRef.get();
-        if (ClientRenderState == null)
-        {
-            // either the renderer hasn't been started yet, or is being reloaded
-            return;
-        }
-        ClientRenderState.renderer.drawLODs(mcModelViewMatrix, mcProjectionMatrix, partialTicks, profiler);
-    }
-
-    public void stopRenderer()
-    {
-        LOGGER.info("Stopping renderer for "+this);
-        ClientRenderState ClientRenderState = this.ClientRenderStateRef.get();
-        if (ClientRenderState == null)
-        {
-            LOGGER.warn("Tried to stop renderer for "+this+" when it was not started!");
-            return;
-        }
-        // stop the render state
-        while (!this.ClientRenderStateRef.compareAndSet(ClientRenderState, null)) // TODO why is there a while loop here?
-        {
-            ClientRenderState = this.ClientRenderStateRef.get();
-            if (ClientRenderState == null)
-            {
-                return;
-            }
-        }
-        ClientRenderState.close();
-    }
-
-    //===============//
-    // data handling //
-    //===============//
-    public void saveWrites(ChunkSizedFullDataAccessor data)
-    {
-        ClientRenderState ClientRenderState = this.ClientRenderStateRef.get();
-        DhLodPos pos = data.getLodPos().convertToDetailLevel(CompleteFullDataSource.SECTION_SIZE_OFFSET);
-        if (ClientRenderState != null)
-        {
-            ClientRenderState.renderSourceFileHandler.writeChunkDataToFile(new DhSectionPos(pos.detailLevel, pos.x, pos.z), data);
-        }
-        else
-        {
-            parent.getFileHandler().write(new DhSectionPos(pos.detailLevel, pos.x, pos.z), data);
-        }
-    }
-
-    public CompletableFuture<Void> saveAsync()
-    {
-        ClientRenderState ClientRenderState = this.ClientRenderStateRef.get();
-        if (ClientRenderState != null)
-        {
-            return ClientRenderState.renderSourceFileHandler.flushAndSaveAsync();
-        }
-        else
-        {
-            return CompletableFuture.completedFuture(null);
-        }
-    }
-    
-    public void close()
-    {
-        // shutdown the renderer
-        ClientRenderState ClientRenderState = this.ClientRenderStateRef.get();
-        if (ClientRenderState != null)
-        {
-            // TODO does this have to be in a while loop, if so why?
-            while (!this.ClientRenderStateRef.compareAndSet(ClientRenderState, null))
-            {
-                ClientRenderState = this.ClientRenderStateRef.get();
-                if (ClientRenderState == null)
-                {
-                    break;
-                }
-            }
-
-            if (ClientRenderState != null)
-            {
-                ClientRenderState.close();
-            }
-        }
-        f3Message.close();
-    }
-
-
-
-
-    //=======================//
-    // misc helper functions //
-    //=======================//
-
-    public void dumpRamUsage()
-    {
-        //TODO
-    }
-
-    /** Returns what should be displayed in Minecraft's F3 debug menu */
-    protected String[] f3Log()
-    {
-        String dimName = parent.getClientLevelWrapper().getDimensionType().getDimensionName();
-        ClientRenderState renderState = this.ClientRenderStateRef.get();
-        if (renderState == null)
-        {
-            return new String[] { "level @ "+dimName+": Inactive" };
-        }
-        else
-        {
-            return new String[] { "level @ "+dimName+": Active" };
-        }
-    }
-
-    public void clearRenderCache()
-    {
-        ClientRenderState ClientRenderState = this.ClientRenderStateRef.get();
-        if (ClientRenderState != null && ClientRenderState.quadtree != null)
-        {
-            ClientRenderState.quadtree.clearRenderDataCache();
-        }
-    }
-
-    public void reloadPos(DhSectionPos pos) {
-        ClientRenderState clientRenderState = this.ClientRenderStateRef.get();
-        if (clientRenderState != null && clientRenderState.quadtree != null)
-        {
-            clientRenderState.quadtree.reloadPos(pos);
-        }
-    }
-
-    public static class ClientRenderState
-    {
-        private static final Logger LOGGER = DhLoggerBuilder.getLogger();
-        private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
-
-        public final ILevelWrapper levelWrapper;
-        public final LodQuadTree quadtree;
-        public final RenderSourceFileHandler renderSourceFileHandler;
-        public final LodRenderer renderer;
-
-        public ClientRenderState(IDhClientLevel dhClientLevel, IFullDataSourceProvider fullDataSourceProvider,
-                AbstractSaveStructure saveStructure)
-        {
-            this.levelWrapper = dhClientLevel.getLevelWrapper();
-            this.renderSourceFileHandler = new RenderSourceFileHandler(fullDataSourceProvider, dhClientLevel, saveStructure);
-
-            this.quadtree = new LodQuadTree(dhClientLevel, Config.Client.Advanced.Graphics.Quality.lodChunkRenderDistance.get() * LodUtil.CHUNK_WIDTH,
-                    // initial position is (0,0) just in case the player hasn't loaded in yet, the tree will be moved once the level starts ticking
-		            0, 0, 
-		            this.renderSourceFileHandler);
-
-            RenderBufferHandler renderBufferHandler = new RenderBufferHandler(this.quadtree);
-            this.renderer = new LodRenderer(renderBufferHandler);
-        }
-
-
-
-        public void close()
-        {
-            LOGGER.info("Shutting down "+ ClientRenderState.class.getSimpleName());
-
-            this.renderer.close();
-            this.quadtree.close();
-	        this.renderSourceFileHandler.close();
-        }
-
-    }
+		if (ClientRenderState != null)
+		{
+			ClientRenderState.close();
+		}
+	} f3Message.close();
+	}
+	
+	
+	
+	
+	//=======================//
+	// misc helper functions //
+	//=======================//
+	
+	public void dumpRamUsage()
+	{
+		//TODO
+	}
+	
+	/** Returns what should be displayed in Minecraft's F3 debug menu */
+	protected String[] f3Log()
+	{
+		String dimName = parent.getClientLevelWrapper().getDimensionType().getDimensionName(); ClientRenderState renderState = this.ClientRenderStateRef.get(); if (renderState == null)
+	{
+		return new String[]{"level @ " + dimName + ": Inactive"};
+	}
+	else
+	{
+		return new String[]{"level @ " + dimName + ": Active"};
+	}
+	}
+	
+	public void clearRenderCache()
+	{
+		ClientRenderState ClientRenderState = this.ClientRenderStateRef.get(); if (ClientRenderState != null && ClientRenderState.quadtree != null)
+	{
+		ClientRenderState.quadtree.clearRenderDataCache();
+	}
+	}
+	
+	public void reloadPos(DhSectionPos pos)
+	{
+		ClientRenderState clientRenderState = this.ClientRenderStateRef.get(); if (clientRenderState != null && clientRenderState.quadtree != null)
+	{
+		clientRenderState.quadtree.reloadPos(pos);
+	}
+	}
+	
+	public static class ClientRenderState
+	{
+		private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+		private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
+		
+		public final ILevelWrapper levelWrapper;
+		public final LodQuadTree quadtree;
+		public final RenderSourceFileHandler renderSourceFileHandler;
+		public final LodRenderer renderer;
+		
+		public ClientRenderState(
+				IDhClientLevel dhClientLevel, IFullDataSourceProvider fullDataSourceProvider, AbstractSaveStructure saveStructure)
+		{
+			this.levelWrapper = dhClientLevel.getLevelWrapper(); this.renderSourceFileHandler = new RenderSourceFileHandler(fullDataSourceProvider, dhClientLevel, saveStructure);
+			
+			this.quadtree = new LodQuadTree(dhClientLevel, Config.Client.Advanced.Graphics.Quality.lodChunkRenderDistance.get() * LodUtil.CHUNK_WIDTH,
+					// initial position is (0,0) just in case the player hasn't loaded in yet, the tree will be moved once the level starts ticking
+					0, 0, this.renderSourceFileHandler);
+			
+			RenderBufferHandler renderBufferHandler = new RenderBufferHandler(this.quadtree); this.renderer = new LodRenderer(renderBufferHandler);
+		}
+		
+		
+		
+		public void close()
+		{
+			LOGGER.info("Shutting down " + ClientRenderState.class.getSimpleName());
+			
+			this.renderer.close(); this.quadtree.close(); this.renderSourceFileHandler.close();
+		}
+		
+	}
+	
 }

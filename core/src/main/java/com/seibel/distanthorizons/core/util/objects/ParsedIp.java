@@ -16,13 +16,13 @@
  *    You should have received a copy of the GNU Lesser General Public License
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
- 
+
 package com.seibel.distanthorizons.core.util.objects;
 
 
 /**
  * Represents an IP and includes a couple helper methods.
- * 
+ *
  * @author James Seibel
  * @version 3-7-2022
  */
@@ -42,7 +42,7 @@ public class ParsedIp
 	
 	/** Examples: "192.168.1.19", "mc.hypixel.net", or "localhost" */
 	public final String ip;
-	/** 
+	/**
 	 * null if the ip isn't numeric (IE: "mc.hypixel.net" or "localhost") <br>
 	 * Example: "25586"
 	 */
@@ -100,10 +100,11 @@ public class ParsedIp
 	@Override
 	public String toString()
 	{
-		return ip + 
+		return ip +
 				// only print the ":port" if a port is present
 				(port != null ? (":" + port) : "");
 	}
+	
 }
 
 

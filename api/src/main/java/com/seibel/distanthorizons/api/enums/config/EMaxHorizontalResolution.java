@@ -30,7 +30,7 @@ import com.seibel.distanthorizons.coreapi.util.MathUtil;
  * FOUR_BLOCKS <br>
  * HALF_CHUNK <Br>
  * CHUNK <br>
- * 
+ *
  * @author James Seibel
  * @author Leonardo Amato
  * @version 2023-6-14

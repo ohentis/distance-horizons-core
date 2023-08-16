@@ -23,7 +23,7 @@ import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IBindab
 
 /**
  * A singleton used to get variables from methods
- * where they are private or potentially absent. 
+ * where they are private or potentially absent.
  * Specifically the fog setting used by Optifine or the
  * presence/absence of other mods.
  * <p>
@@ -32,7 +32,7 @@ import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IBindab
  * passing in interfaces), and it may be needed in the future if
  * we find that reflection handlers need to be different for
  * different MC versions.
- * 
+ *
  * @author James Seibel
  * @version 2022-11-24
  */
@@ -40,7 +40,7 @@ public interface IReflectionHandler extends IBindable
 {
 	/** @return if Sodium (or a sodium like) mod is present. */
 	boolean sodiumPresent();
-
+	
 	boolean optifinePresent();
 	
 }

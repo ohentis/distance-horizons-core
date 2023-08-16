@@ -31,15 +31,16 @@ import com.seibel.distanthorizons.coreapi.util.BitShiftUtil;
 
 /**
  * Builds LODs as rectangular prisms.
+ *
  * @author James Seibel
  * @version 2022-1-2
  */
 public class CubicLodTemplate
 {
-
+	
 	public static void addLodToBuffer(
 			long data, long topData, long bottomData, ColumnArrayView[][] adjColumnViews,
-			byte detailLevel, int offsetPosX, int offsetOosZ, LodQuadBuilder quadBuilder, 
+			byte detailLevel, int offsetPosX, int offsetOosZ, LodQuadBuilder quadBuilder,
 			EDebugRendering debugging, ColumnRenderSource.DebugSourceFlag debugSource)
 	{
 		DhLodPos blockOffsetPos = new DhLodPos(detailLevel, offsetPosX, offsetOosZ).convertToDetailLevel(LodUtil.BLOCK_DETAIL_LEVEL);
@@ -63,7 +64,8 @@ public class CubicLodTemplate
 		
 		int color;
 		boolean fullBright = false;
-		switch (debugging) {
+		switch (debugging)
+		{
 			case OFF:
 			{
 				float saturationMultiplier = Config.Client.Advanced.Graphics.AdvancedGraphics.saturationMultiplier.get().floatValue();
@@ -119,4 +121,5 @@ public class CubicLodTemplate
 				fullBright ? 15 : RenderDataPointUtil.getLightBlock(data), // setBlockLights
 				topData, bottomData, adjColumnViews); // setAdjData
 	}
+	
 }

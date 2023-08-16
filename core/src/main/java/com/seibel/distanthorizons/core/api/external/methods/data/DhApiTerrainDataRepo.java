@@ -55,7 +55,7 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 	
 	
 	
-	private DhApiTerrainDataRepo() 
+	private DhApiTerrainDataRepo()
 	{
 		
 	}
@@ -67,12 +67,12 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 	//================//
 	
 	@Override
-	public DhApiResult<DhApiTerrainDataPoint> getSingleDataPointAtBlockPos(IDhApiLevelWrapper levelWrapper, int blockPosX, int blockPosY, int blockPosZ) 
+	public DhApiResult<DhApiTerrainDataPoint> getSingleDataPointAtBlockPos(IDhApiLevelWrapper levelWrapper, int blockPosX, int blockPosY, int blockPosZ)
 	{
 		return getTerrainDataAtBlockYPos(levelWrapper, new DhLodPos(LodUtil.BLOCK_DETAIL_LEVEL, blockPosX, blockPosZ), blockPosY);
 	}
 	@Override
-	public DhApiResult<DhApiTerrainDataPoint[]> getColumnDataAtBlockPos(IDhApiLevelWrapper levelWrapper, int blockPosX, int blockPosZ) 
+	public DhApiResult<DhApiTerrainDataPoint[]> getColumnDataAtBlockPos(IDhApiLevelWrapper levelWrapper, int blockPosX, int blockPosZ)
 	{
 		return getTerrainDataColumnArray(levelWrapper, new DhLodPos(LodUtil.BLOCK_DETAIL_LEVEL, blockPosX, blockPosZ), null);
 	}
@@ -112,14 +112,14 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 		}
 	}
 	
-	/** 
+	/**
 	 * Returns all the block columns represented by the given {@link DhLodPos}. <br>
 	 * IE, A position with the detail level: <br>
 	 * 0 (block): will return a 1x1 matrix of data. (don't do this, we have a specific method for that.) <br>
 	 * 1 (2 blocks): will return a 2x2 matrix of data. <br>
 	 * 4 (chunk): will return a 16x16 matrix of data. <br> <br>
-	 * 
-	 * will stop and return the in progress data if any errors are encountered. 
+	 *
+	 * will stop and return the in progress data if any errors are encountered.
 	 */
 	private static DhApiResult<DhApiTerrainDataPoint[][][]> getTerrainDataOverAreaForPositionDetailLevel(IDhApiLevelWrapper levelWrapper, DhLodPos requestedAreaPos)
 	{
@@ -151,10 +151,10 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 		return dataColumnsReturned != 0 ? DhApiResult.createSuccess("[" + dataColumnsReturned + "] columns returned.", returnArray) : DhApiResult.createSuccess("No data found.", returnArray);
 	}
 	
-	/** 
+	/**
 	 * If nullableBlockYPos is null: returns every datapoint in the column defined by the DhLodPos. <br>
 	 * If nullableBlockYPos is NOT null: returns a single datapoint in the column defined by the DhLodPos which contains the block Y position. <br><br>
-	 * 
+	 *
 	 * If the ApiResult is successful there will be an array of data. <br>
 	 * The returned array will be empty if no data could be retrieved.
 	 */
@@ -170,7 +170,7 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 		{
 			// custom level wrappers aren't supported,
 			// the API user must get a level wrapper from our code somewhere
-			return DhApiResult.createFail("Unsupported ["+IDhApiLevelWrapper.class.getSimpleName()+"] implementation, only the core class ["+ IDhLevel.class.getSimpleName()+"] is a valid parameter.");
+			return DhApiResult.createFail("Unsupported [" + IDhApiLevelWrapper.class.getSimpleName() + "] implementation, only the core class [" + IDhLevel.class.getSimpleName() + "] is a valid parameter.");
 		}
 		ILevelWrapper coreLevelWrapper = (ILevelWrapper) levelWrapper;
 		
@@ -256,7 +256,7 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 		catch (InterruptedException | ExecutionException e)
 		{
 			// shouldn't normally happen, but just in case
-			LOGGER.error("Unexpected exception in getTerrainDataColumnArray. Error: ["+e.getMessage()+"]", e);
+			LOGGER.error("Unexpected exception in getTerrainDataColumnArray. Error: [" + e.getMessage() + "]", e);
 			return DhApiResult.createFail("Unexpected exception: [" + e.getMessage() + "].");
 		}
 	}
@@ -270,7 +270,7 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 		int height = FullDataPointUtil.getHeight(dataPoint);
 		int topY = bottomY + height;
 		
-		return new DhApiTerrainDataPoint(detailLevel, 
+		return new DhApiTerrainDataPoint(detailLevel,
 				FullDataPointUtil.getLight(dataPoint), topY, bottomY,
 				blockState, biomeWrapper);
 	}
@@ -282,7 +282,8 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 	//====================//
 	
 	@Override
-	public DhApiResult<DhApiRaycastResult> raycast(IDhApiLevelWrapper levelWrapper,
+	public DhApiResult<DhApiRaycastResult> raycast(
+			IDhApiLevelWrapper levelWrapper,
 			double rayOriginX, double rayOriginY, double rayOriginZ,
 			float rayDirectionX, float rayDirectionY, float rayDirectionZ,
 			int maxRayBlockLength)
@@ -340,7 +341,7 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 					{
 						// does this LOD contain the given Y position?
 						Vec3i dataPointPos = new Vec3i(columnPos.x, dataPoint.bottomYBlockPos, columnPos.z);
-						if (exactPos.y >= dataPoint.bottomYBlockPos &&  exactPos.y <= dataPoint.topYBlockPos)
+						if (exactPos.y >= dataPoint.bottomYBlockPos && exactPos.y <= dataPoint.topYBlockPos)
 						{
 							if (closetFoundDataPoint == null)
 							{
@@ -423,7 +424,7 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 	{
 		if (!(levelWrapper instanceof ILevelWrapper))
 		{
-			return DhApiResult.createFail("Level wrapper needs to be an instance of ["+IDhApiLevelWrapper.class.getSimpleName()+"].");
+			return DhApiResult.createFail("Level wrapper needs to be an instance of [" + IDhApiLevelWrapper.class.getSimpleName() + "].");
 		}
 		AbstractDhWorld dhWorld = SharedApi.getAbstractDhWorld();
 		if (dhWorld == null)
@@ -452,8 +453,8 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 	// debug methods //
 	//===============//
 	
-	/** 
-	 * This method is here for debugging the repo and isn't intended for normal use. 
+	/**
+	 * This method is here for debugging the repo and isn't intended for normal use.
 	 * The method need to be async because pausing the main thread with a breakpoint and hot swapping will crash the program
 	 */
 	public static void asyncDebugMethod(IDhApiLevelWrapper levelWrapper, int blockPosX, int blockPosY, int blockPosZ)
@@ -476,7 +477,7 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 					if (rayCast.payload != null && !rayCast.payload.pos.equals(currentDebugVec3i))
 					{
 						currentDebugVec3i = rayCast.payload.pos;
-
+						
 						// get a string for the block
 						String blockString = "[NULL BLOCK]"; // shouldn't normally happen unless there is an issue with getting the terrain at the given position
 						if (rayCast.payload.dataPoint.blockStateWrapper != null)
@@ -487,10 +488,10 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 							}
 							else
 							{
-								blockString = "[AIR]";	
+								blockString = "[AIR]";
 							}
 						}
-
+						
 						LOGGER.info("raycast: " + currentDebugVec3i + "\t block: " + blockString);
 					}
 					else if (rayCast.payload == null && currentDebugVec3i != null)
@@ -504,7 +505,7 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 				}
 				catch (Exception e)
 				{
-					LOGGER.error("Test method Error: ["+e.getMessage()+"]", e);
+					LOGGER.error("Test method Error: [" + e.getMessage() + "]", e);
 				}
 				finally
 				{

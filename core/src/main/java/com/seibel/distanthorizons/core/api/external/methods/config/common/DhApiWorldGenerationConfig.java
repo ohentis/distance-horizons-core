@@ -36,7 +36,7 @@ import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiDistantGenerat
  */
 public class DhApiWorldGenerationConfig implements IDhApiWorldGenerationConfig
 {
-	public static DhApiWorldGenerationConfig INSTANCE = new DhApiWorldGenerationConfig(); 
+	public static DhApiWorldGenerationConfig INSTANCE = new DhApiWorldGenerationConfig();
 	
 	private DhApiWorldGenerationConfig() { }
 	

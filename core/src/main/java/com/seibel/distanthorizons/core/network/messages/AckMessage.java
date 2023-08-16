@@ -11,12 +11,12 @@ import io.netty.buffer.ByteBuf;
  */
 public class AckMessage extends FutureTrackableNetworkMessage
 {
-    public AckMessage() { }
+	public AckMessage() { }
 	
-    @Override
-    public void encode0(ByteBuf out) {  }
+	@Override
+	public void encode0(ByteBuf out) { }
 	
-    @Override
-    public void decode0(ByteBuf in) {  }
+	@Override
+	public void decode0(ByteBuf in) { }
 	
 }

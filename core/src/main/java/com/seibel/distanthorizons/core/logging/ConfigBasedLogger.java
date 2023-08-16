@@ -135,4 +135,5 @@ public class ConfigBasedLogger
 	{
 		log(Level.TRACE, str, param);
 	}
+	
 }

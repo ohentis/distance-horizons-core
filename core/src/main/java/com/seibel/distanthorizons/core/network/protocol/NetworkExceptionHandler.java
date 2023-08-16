@@ -7,12 +7,12 @@ import org.apache.logging.log4j.Logger;
 
 public class NetworkExceptionHandler extends ChannelInboundHandlerAdapter
 {
-    private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
-    @Override
+	@Override
 	public void exceptionCaught(ChannelHandlerContext channelContext, Throwable cause)
 	{
-		LOGGER.error("Exception caught in channel: ["+channelContext.name()+"].", cause);
+		LOGGER.error("Exception caught in channel: [" + channelContext.name() + "].", cause);
 		channelContext.close();
 	}
 	

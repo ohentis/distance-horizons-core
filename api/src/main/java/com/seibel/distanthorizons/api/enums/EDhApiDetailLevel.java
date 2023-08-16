@@ -9,11 +9,11 @@ package com.seibel.distanthorizons.api.enums;
  * is, with the smallest being 0 (1 block wide). <br>
  * The width of a detail level can be calculated by putting the detail level to the power of 2. <br>
  * Example for the chunk detail level (4): 2^4 = 16 blocks wide <Br><br>
- * 
+ *
  * This enum doesn't contain all valid detail levels, only those most likely to be needed.
- * Detail levels 1,2,3, ... 255 are all technically valid detail levels 
- * (although anything beyond {@link EDhApiDetailLevel#REGION} may be difficult deal with). 
- * 
+ * Detail levels 1,2,3, ... 255 are all technically valid detail levels
+ * (although anything beyond {@link EDhApiDetailLevel#REGION} may be difficult deal with).
+ *
  * @author James Seibel
  * @version 2022-12-5
  */
@@ -23,14 +23,14 @@ public enum EDhApiDetailLevel
 	// when adding items up the API minor version
 	// when removing items up the API major version
 	
-	/** 
+	/**
 	 * detail level: 0 <Br>
-	 * width in Blocks: 1 
+	 * width in Blocks: 1
 	 */
 	BLOCK(0, 1),
 	/**
 	 * detail level: 4 <Br>
-	 * width in Blocks: 16 
+	 * width in Blocks: 16
 	 */
 	CHUNK(4, 16),
 	/**

@@ -19,258 +19,265 @@ import java.util.Arrays;
  */
 public class ConfigEntry<T> extends AbstractConfigType<T, ConfigEntry<T>> implements IConfigEntry<T>
 {
-    private final T defaultValue;
-    private String comment;
-    private T min;
-    private T max;
-    private final ArrayList<IConfigListener> listenerList;
-
-    // API control //
-    /**
-     * If true this config can be controlled by the API <br>
-     * and any get() method calls will return the apiValue if it is set.
-     */
-    public final boolean allowApiOverride;
-    private T apiValue;
-
-    private final EConfigEntryPerformance performance;
-
-
-    /** Creates the entry */
-    private ConfigEntry(EConfigEntryAppearance appearance, T value, String comment, T min, T max, boolean allowApiOverride, EConfigEntryPerformance performance, ArrayList<IConfigListener> listenerList)
+	private final T defaultValue;
+	private String comment;
+	private T min;
+	private T max;
+	private final ArrayList<IConfigListener> listenerList;
+	
+	// API control //
+	/**
+	 * If true this config can be controlled by the API <br>
+	 * and any get() method calls will return the apiValue if it is set.
+	 */
+	public final boolean allowApiOverride;
+	private T apiValue;
+	
+	private final EConfigEntryPerformance performance;
+	
+	
+	/** Creates the entry */
+	private ConfigEntry(EConfigEntryAppearance appearance, T value, String comment, T min, T max, boolean allowApiOverride, EConfigEntryPerformance performance, ArrayList<IConfigListener> listenerList)
 	{
-        super(appearance, value);
-
-        this.defaultValue = value;
-        this.comment = comment;
-        this.min = min;
-        this.max = max;
-        this.allowApiOverride = allowApiOverride;
-        this.performance = performance;
-        this.listenerList = listenerList;
-    }
+		super(appearance, value);
+		
+		this.defaultValue = value;
+		this.comment = comment;
+		this.min = min;
+		this.max = max;
+		this.allowApiOverride = allowApiOverride;
+		this.performance = performance;
+		this.listenerList = listenerList;
+	}
 	
 	
 	
-    /** Gets the default value of the option */
+	/** Gets the default value of the option */
 	@Override
 	public T getDefaultValue() { return this.defaultValue; }
 	
 	@Override
-    public void setApiValue(T newApiValue) 
+	public void setApiValue(T newApiValue)
 	{
 		this.apiValue = newApiValue;
 		this.listenerList.forEach(IConfigListener::onConfigValueSet);
 	}
 	@Override
 	public T getApiValue() { return this.apiValue; }
-	@Override 
+	@Override
 	public boolean getAllowApiOverride() { return this.allowApiOverride; }
-    @Override
-    public void set(T newValue)
+	@Override
+	public void set(T newValue)
 	{
-        super.set(newValue);
-        this.save();
-        this.listenerList.forEach(IConfigListener::onConfigValueSet);
-    }
-    public void uiSet(T newValue)
+		super.set(newValue);
+		this.save();
+		this.listenerList.forEach(IConfigListener::onConfigValueSet);
+	}
+	public void uiSet(T newValue)
 	{
-        this.set(newValue);
-        this.listenerList.forEach(IConfigListener::onUiModify);
-    }
-    @Override
-    public T get()
+		this.set(newValue);
+		this.listenerList.forEach(IConfigListener::onUiModify);
+	}
+	@Override
+	public T get()
 	{
-        if (allowApiOverride && apiValue != null)
+		if (allowApiOverride && apiValue != null)
 		{
 			return apiValue;
 		}
 		
-        return super.get();
-    }
+		return super.get();
+	}
 	@Override
-    public T getTrueValue() {
-        return super.get();
-    }
-
-    /** Sets the value without saving */
+	public T getTrueValue()
+	{
+		return super.get();
+	}
+	
+	/** Sets the value without saving */
 	@Override
-    public void setWithoutSaving(T newValue)
+	public void setWithoutSaving(T newValue)
 	{
 		super.set(newValue);
 		this.listenerList.forEach(IConfigListener::onConfigValueSet);
 	}
-
-    /** Gets the min value */
-	@Override
-    public T getMin() { return this.min; }
-    /** Sets the min value */
-	@Override
-    public void setMin(T newMin) { this.min = newMin; }
-    /** Gets the max value */
-	@Override
-    public T getMax() { return this.max; }
-    /** Sets the max value */
-	@Override
-    public void setMax(T newMax) { this.max = newMax; }
-    /** Sets the min and max within a single setter */
-	@Override
-    public void setMinMax(T newMin, T newMax) {
-        this.setMin(newMin);
-        this.setMax(newMax);
-    }
-
-    /**
-     * Clamps the value within the set range
-     * @apiNote This does not save the value
-     */
-    public void clampWithinRange() { this.clampWithinRange(this.min, this.max); }
-    /**
-     * Clamps the value within a set range
-     *
-     * @param min The minimum that the value can be
-     * @param max The maximum that the value can be
-     * @apiNote This does not save the value
-     */
-    @SuppressWarnings("unchecked") // Suppress due to its always safe
-    public void clampWithinRange(T min, T max) {
-        byte validness = this.isValid(min, max);
-        if (validness == -1) this.value = (T) NumberUtil.getMinimum(this.value.getClass());
-        if (validness == 1) this.value = (T) NumberUtil.getMaximum(this.value.getClass());
-    }
-
-	@Override
-    public String getComment() { return this.comment; }
-	@Override
-    public void setComment(String newComment) { this.comment = newComment; }
-
-    /** Gets the performance impact of an option */
-    public EConfigEntryPerformance getPerformance() { return this.performance; }
-
-    public void addListener(IConfigListener newListener) { this.listenerList.add(newListener); }
-    public void removeListener(IConfigListener oldListener) { this.listenerList.remove(oldListener); }
 	
-    public void clearListeners() { this.listenerList.clear(); }
-    public ArrayList<IConfigListener> getListeners() { return this.listenerList; }
-    /** Replaces the listener list */
-    public void setListeners(ArrayList<IConfigListener> newListeners)
-	{
-        this.listenerList.clear();
-        this.listenerList.addAll(newListeners);
-    }
-    public void setListeners(IConfigListener... newListeners) { this.listenerList.addAll(Arrays.asList(newListeners)); }
-
-
-    /**
-     * Checks if the option is valid
-     *
-     * @return      0 == valid
-     *         <p>  2 == invalid
-     *         <p>  1 == number too high
-     *         <p> -1 == number too low
-     */
+	/** Gets the min value */
 	@Override
-    public byte isValid() { return isValid(this.value, this.min, this.max); }
-    /**
-     * Checks if a new value is valid
-     *
-     * @param value Value that is being checked whether valid
-     * @return      0 == valid
-     *         <p>  2 == invalid
-     *         <p>  1 == number too high
-     *         <p> -1 == number too low
-     */
-    @Override
-    public byte isValid(T value) { return this.isValid(value, this.min, this.max); }
-    /**
-     * Checks if a new value is valid
-     *
-     * @param min The minimum that the value can be
-     * @param max The maximum that the value can be
-     * @return      0 == valid
-     *         <p>  2 == invalid
-     *         <p>  1 == number too high
-     *         <p> -1 == number too low
-     */
-    public byte isValid(T min, T max) { return this.isValid(this.value, min, max); }
-    /**
-     * Checks if a new value is valid
-     *
-     * @param value Value that is being checked whether valid
-     * @param min The minimum that the value can be
-     * @param max The maximum that the value can be
-     * @return      0 == valid
-     *         <p>  2 == invalid
-     *         <p>  1 == number too high
-     *         <p> -1 == number too low
-     */
-    public byte isValid(T value, T min, T max) {
-        if (this.configBase.disableMinMax)
-            return 0;
-
-        if (value == null || this.value == null || value.getClass() != this.value.getClass()) // If the 2 variables aren't the same type then it will be invalid
-            return 2;
-        if (Number.class.isAssignableFrom(value.getClass())) { // Only check min max if it is a number
-            if (max != null && NumberUtil.greaterThan((Number) value, (Number) max))
-                return 1;
-            if (min != null && NumberUtil.lessThan((Number) value, (Number) min))
-                return -1;
-
-            return 0;
-        }
-        return 0;
-    }
-
-    /** This should normally not be called since set() automatically calls this */
-    public void save() { configBase.configFileINSTANCE.saveEntry(this); }
-    /** This should normally not be called except for special circumstances */
-    public void load() { configBase.configFileINSTANCE.loadEntry(this); }
+	public T getMin() { return this.min; }
+	/** Sets the min value */
+	@Override
+	public void setMin(T newMin) { this.min = newMin; }
+	/** Gets the max value */
+	@Override
+	public T getMax() { return this.max; }
+	/** Sets the max value */
+	@Override
+	public void setMax(T newMax) { this.max = newMax; }
+	/** Sets the min and max within a single setter */
+	@Override
+	public void setMinMax(T newMin, T newMax)
+	{
+		this.setMin(newMin);
+		this.setMax(newMax);
+	}
+	
+	/**
+	 * Clamps the value within the set range
+	 *
+	 * @apiNote This does not save the value
+	 */
+	public void clampWithinRange() { this.clampWithinRange(this.min, this.max); }
+	/**
+	 * Clamps the value within a set range
+	 *
+	 * @param min The minimum that the value can be
+	 * @param max The maximum that the value can be
+	 * @apiNote This does not save the value
+	 */
+	@SuppressWarnings("unchecked") // Suppress due to its always safe
+	public void clampWithinRange(T min, T max)
+	{
+		byte validness = this.isValid(min, max);
+		if (validness == -1) this.value = (T) NumberUtil.getMinimum(this.value.getClass());
+		if (validness == 1) this.value = (T) NumberUtil.getMaximum(this.value.getClass());
+	}
+	
+	@Override
+	public String getComment() { return this.comment; }
+	@Override
+	public void setComment(String newComment) { this.comment = newComment; }
+	
+	/** Gets the performance impact of an option */
+	public EConfigEntryPerformance getPerformance() { return this.performance; }
+	
+	public void addListener(IConfigListener newListener) { this.listenerList.add(newListener); }
+	public void removeListener(IConfigListener oldListener) { this.listenerList.remove(oldListener); }
+	
+	public void clearListeners() { this.listenerList.clear(); }
+	public ArrayList<IConfigListener> getListeners() { return this.listenerList; }
+	/** Replaces the listener list */
+	public void setListeners(ArrayList<IConfigListener> newListeners)
+	{
+		this.listenerList.clear();
+		this.listenerList.addAll(newListeners);
+	}
+	public void setListeners(IConfigListener... newListeners) { this.listenerList.addAll(Arrays.asList(newListeners)); }
+	
+	
+	/**
+	 * Checks if the option is valid
+	 *
+	 * @return 0 == valid
+	 * <p>  2 == invalid
+	 * <p>  1 == number too high
+	 * <p> -1 == number too low
+	 */
+	@Override
+	public byte isValid() { return isValid(this.value, this.min, this.max); }
+	/**
+	 * Checks if a new value is valid
+	 *
+	 * @param value Value that is being checked whether valid
+	 * @return 0 == valid
+	 * <p>  2 == invalid
+	 * <p>  1 == number too high
+	 * <p> -1 == number too low
+	 */
+	@Override
+	public byte isValid(T value) { return this.isValid(value, this.min, this.max); }
+	/**
+	 * Checks if a new value is valid
+	 *
+	 * @param min The minimum that the value can be
+	 * @param max The maximum that the value can be
+	 * @return 0 == valid
+	 * <p>  2 == invalid
+	 * <p>  1 == number too high
+	 * <p> -1 == number too low
+	 */
+	public byte isValid(T min, T max) { return this.isValid(this.value, min, max); }
+	/**
+	 * Checks if a new value is valid
+	 *
+	 * @param value Value that is being checked whether valid
+	 * @param min The minimum that the value can be
+	 * @param max The maximum that the value can be
+	 * @return 0 == valid
+	 * <p>  2 == invalid
+	 * <p>  1 == number too high
+	 * <p> -1 == number too low
+	 */
+	public byte isValid(T value, T min, T max)
+	{
+		if (this.configBase.disableMinMax)
+			return 0;
+		
+		if (value == null || this.value == null || value.getClass() != this.value.getClass()) // If the 2 variables aren't the same type then it will be invalid
+			return 2;
+		if (Number.class.isAssignableFrom(value.getClass()))
+		{ // Only check min max if it is a number
+			if (max != null && NumberUtil.greaterThan((Number) value, (Number) max))
+				return 1;
+			if (min != null && NumberUtil.lessThan((Number) value, (Number) min))
+				return -1;
+			
+			return 0;
+		}
+		return 0;
+	}
+	
+	/** This should normally not be called since set() automatically calls this */
+	public void save() { configBase.configFileINSTANCE.saveEntry(this); }
+	/** This should normally not be called except for special circumstances */
+	public void load() { configBase.configFileINSTANCE.loadEntry(this); }
 	
 	
 	@Override
 	public boolean equals(IConfigEntry<?> obj) { return obj.getClass() == ConfigEntry.class && equals((ConfigEntry<?>) obj); }
-    /** Is the value of this equal to another */
-    public boolean equals(ConfigEntry<?> obj) {
-        // Can all of this just be "return this.value.equals(obj.value)"?
-
-        if (Number.class.isAssignableFrom(this.value.getClass()))
-            return this.value == obj.value;
-        else
-            return this.value.equals(obj.value);
-    }
-
-
-    public static class Builder<T> extends AbstractConfigType.Builder<T, Builder<T>>
+	/** Is the value of this equal to another */
+	public boolean equals(ConfigEntry<?> obj)
 	{
-        private String tmpComment = null;
-        private T tmpMin = null;
-        private T tmpMax = null;
-        private boolean tmpUseApiOverwrite = true;
-        private EConfigEntryPerformance tmpPerformance = EConfigEntryPerformance.DONT_SHOW;
-        protected ArrayList<IConfigListener> tmpIConfigListener = new ArrayList<>();
-
-        public Builder<T> comment(String newComment)
+		// Can all of this just be "return this.value.equals(obj.value)"?
+		
+		if (Number.class.isAssignableFrom(this.value.getClass()))
+			return this.value == obj.value;
+		else
+			return this.value.equals(obj.value);
+	}
+	
+	
+	public static class Builder<T> extends AbstractConfigType.Builder<T, Builder<T>>
+	{
+		private String tmpComment = null;
+		private T tmpMin = null;
+		private T tmpMax = null;
+		private boolean tmpUseApiOverwrite = true;
+		private EConfigEntryPerformance tmpPerformance = EConfigEntryPerformance.DONT_SHOW;
+		protected ArrayList<IConfigListener> tmpIConfigListener = new ArrayList<>();
+		
+		public Builder<T> comment(String newComment)
 		{
 			this.tmpComment = newComment;
 			return this;
 		}
-
-        /** Allows most values to be set by 1 setter */
-        public Builder<T> setMinDefaultMax(T newMin, T newDefault, T newMax)
+		
+		/** Allows most values to be set by 1 setter */
+		public Builder<T> setMinDefaultMax(T newMin, T newDefault, T newMax)
 		{
 			this.set(newDefault);
 			this.setMinMax(newMin, newMax);
 			return this;
 		}
-
-        public Builder<T> setMinMax(T newMin, T newMax)
+		
+		public Builder<T> setMinMax(T newMin, T newMax)
 		{
 			this.tmpMin = newMin;
 			this.tmpMax = newMax;
 			return this;
 		}
-
-        public Builder<T> setMin(T newMin)
+		
+		public Builder<T> setMin(T newMin)
 		{
 			this.tmpMin = newMin;
 			return this;
@@ -281,20 +288,20 @@ public class ConfigEntry<T> extends AbstractConfigType<T, ConfigEntry<T>> implem
 			this.tmpMax = newMax;
 			return this;
 		}
-
-        public Builder<T> setUseApiOverwrite(boolean newUseApiOverwrite)
+		
+		public Builder<T> setUseApiOverwrite(boolean newUseApiOverwrite)
 		{
 			this.tmpUseApiOverwrite = newUseApiOverwrite;
 			return this;
 		}
-
-        public Builder<T> setPerformance(EConfigEntryPerformance newPerformance)
+		
+		public Builder<T> setPerformance(EConfigEntryPerformance newPerformance)
 		{
 			this.tmpPerformance = newPerformance;
 			return this;
 		}
-
-        public Builder<T> replaceListener(ArrayList<IConfigListener> newConfigListener)
+		
+		public Builder<T> replaceListener(ArrayList<IConfigListener> newConfigListener)
 		{
 			this.tmpIConfigListener = newConfigListener;
 			return this;
@@ -317,13 +324,14 @@ public class ConfigEntry<T> extends AbstractConfigType<T, ConfigEntry<T>> implem
 			this.tmpIConfigListener.clear();
 			return this;
 		}
-
-
-
-        public ConfigEntry<T> build()
+		
+		
+		
+		public ConfigEntry<T> build()
 		{
 			return new ConfigEntry<>(this.tmpAppearance, this.tmpValue, this.tmpComment, this.tmpMin, this.tmpMax, this.tmpUseApiOverwrite, this.tmpPerformance, this.tmpIConfigListener);
-        }
+		}
 		
-    }
+	}
+	
 }

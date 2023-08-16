@@ -10,14 +10,14 @@ import java.util.function.Supplier;
 
 public class MessageRegistry
 {
-    public static final MessageRegistry INSTANCE = new MessageRegistry();
+	public static final MessageRegistry INSTANCE = new MessageRegistry();
 	
     private final Map<Integer, Supplier<? extends NetworkMessage>> idToSupplier = new HashMap<>();
     private final BiMap<Class<? extends NetworkMessage>, Integer> classToId = HashBiMap.create();
 	
 	
 	
-    private MessageRegistry() 
+	private MessageRegistry()
 	{
 		// Note: Messages must have parameterless constructors
 		
@@ -48,10 +48,10 @@ public class MessageRegistry
 	
     public <T extends NetworkMessage> void registerMessage(Class<T> clazz, Supplier<T> supplier)
 	{
-        int id = this.idToSupplier.size() + 1;
+		int id = this.idToSupplier.size() + 1;
 		this.idToSupplier.put(id, supplier);
 		this.classToId.put(clazz, id);
-    }
+	}
 	
     public Class<? extends NetworkMessage> getMessageClassById(int messageId) { return this.classToId.inverse().get(messageId); }
 	

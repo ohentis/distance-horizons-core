@@ -8,9 +8,9 @@ import com.seibel.distanthorizons.core.util.FullDataPointUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
 
 /**
- * A more specific version of {@link FullDataArrayAccessor} 
+ * A more specific version of {@link FullDataArrayAccessor}
  * that only contains full data for a single chunk.
- * 
+ *
  * @see FullDataPointUtil
  */
 public class ChunkSizedFullDataAccessor extends FullDataArrayAccessor
@@ -23,8 +23,8 @@ public class ChunkSizedFullDataAccessor extends FullDataArrayAccessor
 	
 	public ChunkSizedFullDataAccessor(DhChunkPos pos)
 	{
-		super(new FullDataPointIdMap(new DhSectionPos(pos)), 
-				new long[LodUtil.CHUNK_WIDTH * LodUtil.CHUNK_WIDTH][0], 
+		super(new FullDataPointIdMap(new DhSectionPos(pos)),
+				new long[LodUtil.CHUNK_WIDTH * LodUtil.CHUNK_WIDTH][0],
 				LodUtil.CHUNK_WIDTH);
 		
 		this.pos = pos;
@@ -52,6 +52,6 @@ public class ChunkSizedFullDataAccessor extends FullDataArrayAccessor
 	public DhLodPos getLodPos() { return new DhLodPos(LodUtil.CHUNK_DETAIL_LEVEL, this.pos.x, this.pos.z); }
 	
 	@Override
-	public String toString() { return this.pos+" "+this.nonEmptyCount(); }
+	public String toString() { return this.pos + " " + this.nonEmptyCount(); }
 	
 }

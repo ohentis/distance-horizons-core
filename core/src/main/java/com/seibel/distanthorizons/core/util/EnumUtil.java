@@ -50,7 +50,7 @@ public class EnumUtil
 		}
 		
 		// no enum found
-		throw new InvalidObjectException("No Enum of type [" + enumType.getSimpleName() + "] exists with the name [" + enumName + "]. Possible enum values are: [" + createEnumCsv(enumType) + "]" );
+		throw new InvalidObjectException("No Enum of type [" + enumType.getSimpleName() + "] exists with the name [" + enumName + "]. Possible enum values are: [" + createEnumCsv(enumType) + "]");
 	}
 	
 	
@@ -98,10 +98,10 @@ public class EnumUtil
 		}
 		
 		// check that each value exists in both enums
-		for(Enum<?> alphaVal : alphaValues)
+		for (Enum<?> alphaVal : alphaValues)
 		{
 			boolean valueFoundInBothEnums = false;
-			for(Enum<?> betaVal : betaValues)
+			for (Enum<?> betaVal : betaValues)
 			{
 				if (alphaVal.name().equals(betaVal.name()))
 				{
@@ -136,6 +136,7 @@ public class EnumUtil
 			this.success = newSuccess;
 			this.failMessage = newFailMessage;
 		}
+		
 	}
 	
 }

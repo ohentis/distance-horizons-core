@@ -106,7 +106,7 @@ public class DhApiGraphicsConfig implements IDhApiGraphicsConfig
 	//===========================//
 	// advanced graphic settings //
 	//===========================//
-	
+
 //	@Override
 //	public IDhApiConfigValue<Boolean> getDisableDirectionalCulling()
 //	{ return new DhApiConfigValue<Boolean, Boolean>(AdvancedGraphics.disableDirectionalCulling); }

@@ -21,7 +21,7 @@ package com.seibel.distanthorizons.api.enums.rendering;
 
 /**
  * NEAR, FAR, or NEAR_AND_FAR.
- * 
+ *
  * @author James Seibel
  * @version 2022-6-2
  */

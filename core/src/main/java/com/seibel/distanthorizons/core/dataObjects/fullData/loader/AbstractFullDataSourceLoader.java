@@ -34,17 +34,17 @@ public abstract class AbstractFullDataSourceLoader
 		}
 		Set<AbstractFullDataSourceLoader> loaders = loaderRegistry.get(clazz);
 		if (loaders.stream().anyMatch(other ->
+		{
+			// see if any loaderSupportsVersion conflicts with this one
+			for (byte otherVer : other.loaderSupportedVersions)
 			{
-				// see if any loaderSupportsVersion conflicts with this one
-				for (byte otherVer : other.loaderSupportedVersions)
+				if (Arrays.binarySearch(loaderSupportedVersions, otherVer) >= 0)
 				{
-					if (Arrays.binarySearch(loaderSupportedVersions, otherVer) >= 0)
-					{
-						return true;
-					}
+					return true;
 				}
-				return false;
-			}))
+			}
+			return false;
+		}))
 		{
 			throw new IllegalArgumentException("Loader for class " + clazz + " that supports one of the version in "
 					+ Arrays.toString(loaderSupportedVersions) + " already registered!");
@@ -53,8 +53,9 @@ public abstract class AbstractFullDataSourceLoader
 		loaderRegistry.put(clazz, this);
 	}
 	
-	/** 
+	/**
 	 * Can return null if any of the requirements aren't met.
+	 *
 	 * @throws InterruptedException if the loader thread is interrupted, generally happens when the level is shutting down
 	 */
 	public abstract IFullDataSource loadData(FullDataMetaFile dataFile, DhDataInputStream inputStream, IDhLevel level) throws IOException, InterruptedException;

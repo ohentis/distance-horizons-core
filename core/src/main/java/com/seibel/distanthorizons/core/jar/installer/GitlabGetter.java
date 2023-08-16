@@ -15,18 +15,20 @@ import java.util.stream.Collectors;
  */
 // TODO: Change this to a way to get the nightly builds
 @Deprecated
-public class GitlabGetter {
-    public static final String GitLabApi = "https://gitlab.com/api/v4/projects/";
-    public static final String projectID = "18204078";
+public class GitlabGetter
+{
+	public static final String GitLabApi = "https://gitlab.com/api/v4/projects/";
+	public static final String projectID = "18204078";
 //    public static JSONArray projectRelease = new JSONArray();
-
-    public static List<String> releaseNames = new ArrayList<>(); // This list contains the release ID's
-    public static List<String> readableReleaseNames = new ArrayList<>(); // This list contains the readable names of the ID's
-    private static List<String> mcVersionReleases = new ArrayList<>(); // A list of all minecraft releases
-
-
-
-    public static void init() {
+	
+	public static List<String> releaseNames = new ArrayList<>(); // This list contains the release ID's
+	public static List<String> readableReleaseNames = new ArrayList<>(); // This list contains the readable names of the ID's
+	private static List<String> mcVersionReleases = new ArrayList<>(); // A list of all minecraft releases
+	
+	
+	
+	public static void init()
+	{
 //        try {
 //            // TODO: Modify the projectRelease to fix 1.6.0a's versions rather than fixing it everytime we want to use projectReleases
 //            projectRelease = (JSONArray) new JSONParser().parse(WebDownloader.downloadAsString(new URL(GitLabApi+projectID+"/releases")));
@@ -63,11 +65,12 @@ public class GitlabGetter {
 ////            System.out.println(getMcVersionsInRelease("1.6.5a"));
 ////            System.out.println(getMcVersionsInRelease("1.16.4-a1.2"));
 //        } catch (Exception e) { e.printStackTrace(); }
-    }
-
-    /** Gets the compatible minecraft versions a release of the mod works with */
-    public static List<String> getMcVersionsInRelease(String version) {
-        List<String> versions = new ArrayList<>();
+	}
+	
+	/** Gets the compatible minecraft versions a release of the mod works with */
+	public static List<String> getMcVersionsInRelease(String version)
+	{
+		List<String> versions = new ArrayList<>();
 //
 //        JSONArray releaseArray = getScuffedReleaseArray(version);
 //
@@ -85,11 +88,12 @@ public class GitlabGetter {
 //        // Sort it so the newest versions of minecraft are at the top
 //        Collections.sort(versions);
 //        Collections.reverse(versions);
-
-        return versions;
-    }
-    /** Gets the url to the download of a release of the mod */
-    public static URL getRelease(String version, String mcVersion) {
+		
+		return versions;
+	}
+	/** Gets the url to the download of a release of the mod */
+	public static URL getRelease(String version, String mcVersion)
+	{
 //        JSONArray releaseArray = getScuffedReleaseArray(version);
 //
 //        if (mcVersion != null) {
@@ -106,11 +110,12 @@ public class GitlabGetter {
 //                return new URL(((JSONObject) releaseArray.get(0)).get("direct_asset_url").toString());
 //            } catch (Exception e) { e.printStackTrace(); }
 //        }
-
-        return null;
-    }
-    /** Gets the update log of a release */
-    public static String getVersionDescription(String version) {
+		
+		return null;
+	}
+	/** Gets the update log of a release */
+	public static String getVersionDescription(String version)
+	{
 //        try {
 //            if (!version.equals("1.6.0a")) { // We have to do this cus 1.6.0a stuffed up some ordering
 //                // Do this hack to remove all the mcVer-1.6.0a items from the releaseNames
@@ -129,8 +134,8 @@ public class GitlabGetter {
 //        } catch (Exception e) {
 //            e.printStackTrace();
 //        }
-        return null;
-    }
+		return null;
+	}
 
 
 //    public static JSONArray getScuffedReleaseArray(String version) {

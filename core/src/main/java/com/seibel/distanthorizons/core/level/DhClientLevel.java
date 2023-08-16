@@ -66,9 +66,9 @@ public class DhClientLevel extends DhLevel implements IDhClientLevel
 		
 		clientside = new ClientLevelModule(this);
 		clientside.startRenderer();
-		LOGGER.info("Started DHLevel for "+this.levelWrapper+" with saves at "+this.saveStructure);
+		LOGGER.info("Started DHLevel for " + this.levelWrapper + " with saves at " + this.saveStructure);
 	}
-
+	
 	//==============//
 	// tick methods //
 	//==============//
@@ -108,10 +108,11 @@ public class DhClientLevel extends DhLevel implements IDhClientLevel
 	}
 
 	@Override
-	public void render(Mat4f mcModelViewMatrix, Mat4f mcProjectionMatrix, float partialTicks, IProfilerWrapper profiler) {
+	public void render(Mat4f mcModelViewMatrix, Mat4f mcProjectionMatrix, float partialTicks, IProfilerWrapper profiler)
+	{
 		clientside.render(mcModelViewMatrix, mcProjectionMatrix, partialTicks, profiler);
 	}
-
+	
 	//================//
 	// level handling //
 	//================//
@@ -121,28 +122,31 @@ public class DhClientLevel extends DhLevel implements IDhClientLevel
 	
 	@Override
 	public IClientLevelWrapper getClientLevelWrapper() { return levelWrapper; }
-
+	
 	@Override
-	public void clearRenderCache() {
+	public void clearRenderCache()
+	{
 		clientside.clearRenderCache();
 	}
-
+	
 	@Override
 	public ILevelWrapper getLevelWrapper() { return levelWrapper; }
-
+	
 	@Override
-	public CompletableFuture<Void> saveAsync() {
+	public CompletableFuture<Void> saveAsync()
+	{
 		return CompletableFuture.allOf(clientside.saveAsync(), dataFileHandler.flushAndSave());
 	}
-
+	
 	@Override
-	public void saveWrites(ChunkSizedFullDataAccessor data) {
+	public void saveWrites(ChunkSizedFullDataAccessor data)
+	{
 		clientside.saveWrites(data);
 	}
-
+	
 	@Override
 	public int getMinY() { return levelWrapper.getMinHeight(); }
-
+	
 	@Override
 	public void close()
 	{
@@ -151,9 +155,9 @@ public class DhClientLevel extends DhLevel implements IDhClientLevel
 		clientside.close();
 		super.close();
 		dataFileHandler.close();
-		LOGGER.info("Closed "+DhClientLevel.class.getSimpleName()+" for "+levelWrapper);
+		LOGGER.info("Closed " + DhClientLevel.class.getSimpleName() + " for " + levelWrapper);
 	}
-
+	
 	//=======================//
 	// misc helper functions //
 	//=======================//
@@ -165,12 +169,14 @@ public class DhClientLevel extends DhLevel implements IDhClientLevel
 	}
 	
 	@Override
-	public IFullDataSourceProvider getFileHandler() {
+	public IFullDataSourceProvider getFileHandler()
+	{
 		return dataFileHandler;
 	}
-
+	
 	@Override
-	public AbstractSaveStructure getSaveStructure() {
+	public AbstractSaveStructure getSaveStructure()
+	{
 		return saveStructure;
 	}
 	

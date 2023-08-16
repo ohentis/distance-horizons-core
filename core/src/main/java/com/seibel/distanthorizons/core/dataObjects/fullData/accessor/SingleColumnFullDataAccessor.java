@@ -6,14 +6,15 @@ import com.seibel.distanthorizons.core.util.LodUtil;
 
 /**
  * Represents a single column of Full LOD data.
- * 
+ *
  * @see FullDataPointUtil
  */
 public class SingleColumnFullDataAccessor implements IFullDataAccessor
 {
 	/**
-	 * A flattened 2D array (for the X and Z directions) containing an array for the Y direction.  
+	 * A flattened 2D array (for the X and Z directions) containing an array for the Y direction.
 	 * TODO the flattened array is probably to reduce garbage collection overhead, but is doing it this way worth while? Having a 3D array would be much easier to understand
+	 *
 	 * @see FullDataArrayAccessor#dataArrays
 	 */
 	private final long[][] dataArrays;
@@ -29,13 +30,13 @@ public class SingleColumnFullDataAccessor implements IFullDataAccessor
 		this.dataArrayIndex = dataArrayIndex;
 		this.mapping = mapping;
 		
-		LodUtil.assertTrue(this.dataArrayIndex < this.dataArrays.length, "dataArrays.length ["+this.dataArrays.length+"] is less than the dataArrayIndex ["+this.dataArrayIndex+"].");
+		LodUtil.assertTrue(this.dataArrayIndex < this.dataArrays.length, "dataArrays.length [" + this.dataArrays.length + "] is less than the dataArrayIndex [" + this.dataArrayIndex + "].");
 	}
 	
 	
 	
 	/** @return true if any data exists in this column. */
-	public boolean doesColumnExist() 
+	public boolean doesColumnExist()
 	{
 		long[] dataColumn = this.dataArrays[this.dataArrayIndex];
 		return dataColumn != null && dataColumn.length != 0;
@@ -135,8 +136,8 @@ public class SingleColumnFullDataAccessor implements IFullDataAccessor
 		}
 	}
 	
-	/** 
-	 * Replaces this column's data with data from the input {@link IFullDataAccessor}. <br> 
+	/**
+	 * Replaces this column's data with data from the input {@link IFullDataAccessor}. <br>
 	 * This is used to convert higher detail LOD data to lower detail LOD data.
 	 */
 	public void downsampleFrom(IFullDataAccessor source)

@@ -46,9 +46,9 @@ public abstract class AbstractDhApiChunkWorldGenerator implements Closeable, IDh
 			// TODO what does this mean?
 			int genChunkWidth = BitShiftUtil.powerOfTwo(granularity - 4);
 			
-			for (int chunkX = chunkPosMinX; chunkX < chunkPosMinX+genChunkWidth; chunkX++)
+			for (int chunkX = chunkPosMinX; chunkX < chunkPosMinX + genChunkWidth; chunkX++)
 			{
-				for (int chunkZ = chunkPosMinZ; chunkZ< chunkPosMinZ+genChunkWidth; chunkZ++)
+				for (int chunkZ = chunkPosMinZ; chunkZ < chunkPosMinZ + genChunkWidth; chunkZ++)
 				{
 					Object[] rawMcObjectArray = this.generateChunk(chunkX, chunkZ, generatorMode);
 					resultConsumer.accept(rawMcObjectArray);
@@ -60,10 +60,10 @@ public abstract class AbstractDhApiChunkWorldGenerator implements Closeable, IDh
 	/**
 	 * This method is called to generate terrain over a given area
 	 * from a thread defined by Distant Horizons. <br><br>
-	 * 
-	 * See {@link IDhApiWorldGenerator#generateChunks(int, int, byte, byte, EDhApiDistantGeneratorMode, ExecutorService, Consumer) IDhApiWorldGenerator.generateChunks} 
+	 *
+	 * See {@link IDhApiWorldGenerator#generateChunks(int, int, byte, byte, EDhApiDistantGeneratorMode, ExecutorService, Consumer) IDhApiWorldGenerator.generateChunks}
 	 * for the list of Object's this method should return along with additional documentation.
-	 * 
+	 *
 	 * @see IDhApiWorldGenerator#generateChunks(int, int, byte, byte, EDhApiDistantGeneratorMode, ExecutorService, Consumer) IDhApiWorldGenerator#generateChunks
 	 */
 	public abstract Object[] generateChunk(int chunkPosX, int chunkPosZ, EDhApiDistantGeneratorMode generatorMode);

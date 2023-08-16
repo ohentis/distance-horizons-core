@@ -7,7 +7,7 @@ import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhAp
 
 /**
  * Called after Distant Horizons has finished unloading a level.
- * 
+ *
  * @author James Seibel
  * @version 2023-6-23
  */
@@ -35,6 +35,7 @@ public abstract class DhApiLevelUnloadEvent implements IDhApiEvent<DhApiLevelUnl
 		public final IDhApiLevelWrapper levelWrapper;
 		
 		public EventParam(IDhApiLevelWrapper newLevelWrapper) { this.levelWrapper = newLevelWrapper; }
+		
 	}
 	
 }

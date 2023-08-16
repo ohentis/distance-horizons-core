@@ -49,7 +49,7 @@ public class MathUtil
 	public static int log2(int numb)
 	{
 		// properties of logs allow us to use the base Log_e() method
-		return (int)(Math.log(numb) / Math.log(2));
+		return (int) (Math.log(numb) / Math.log(2));
 	}
 	
 }

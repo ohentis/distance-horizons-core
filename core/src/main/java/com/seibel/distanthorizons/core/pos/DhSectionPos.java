@@ -12,26 +12,26 @@ import java.util.function.Consumer;
 
 /**
  * The position object used to define LOD objects in the quad trees. <br><br>
- * 
+ *
  * A section contains 64 x 64 LOD columns at a given quality.
  * The Section detail level is different from the LOD detail level.
  * For the specifics of how they compare can be viewed in the constants {@link #SECTION_BLOCK_DETAIL_LEVEL},
  * {@link #SECTION_CHUNK_DETAIL_LEVEL}, and {@link #SECTION_REGION_DETAIL_LEVEL}).<br><br>
- * 
+ *
  * <strong>Why does the smallest render section represent 2x2 MC chunks (section detail level 6)? </strong> <br>
- * A section defines what unit the quad tree works in, because of that we don't want that unit to be too big or too small. <br> 
+ * A section defines what unit the quad tree works in, because of that we don't want that unit to be too big or too small. <br>
  * <strong>Too small</strong>, and we'll have 1,000s of sections running around, all needing individual files and render buffers.<br>
  * <strong>Too big</strong>, and the LOD dropoff will be very noticeable.<br>
  * With those thoughts in mind we decided on a smallest section size of 32 data points square (IE 2x2 chunks).
- * 
+ *
  * @author Leetom
  * @version 2022-11-6
  */
 public class DhSectionPos implements INetworkObject
 {
-	/** 
+	/**
 	 * The lowest detail level a Section position can hold.
-	 * This section DetailLevel holds 64 x 64 Block level (detail level 0) LODs. 
+	 * This section DetailLevel holds 64 x 64 Block level (detail level 0) LODs.
 	 */
 	public final static byte SECTION_MINIMUM_DETAIL_LEVEL = 6;
 	
@@ -89,8 +89,8 @@ public class DhSectionPos implements INetworkObject
 		this.sectionX = dhLodPos.x;
 		this.sectionZ = dhLodPos.z;
 	}
-
-
+	
+	
 	/** Returns the center for the highest detail level (0) */
 	public DhLodPos getCenter() { return this.getCenter((byte) 0); } // TODO why does this use detail level 0 instead of this object's detail level?
 	public DhLodPos getCenter(byte returnDetailLevel)
@@ -105,7 +105,7 @@ public class DhSectionPos implements INetworkObject
 		byte detailLevelOffset = (byte) (this.sectionDetailLevel - returnDetailLevel);
 		
 		// we can't get the center of the position at block level, only attempt to get the position offset for detail levels above 0 // TODO should this also apply to detail level 1 or is it fine?
-		int positionOffset = 0; 
+		int positionOffset = 0;
 		if (this.sectionDetailLevel != 1 || returnDetailLevel != 0)
 		{
 			positionOffset = BitShiftUtil.powerOfTwo(detailLevelOffset - 1);
@@ -128,7 +128,7 @@ public class DhSectionPos implements INetworkObject
 				this.sectionZ * BitShiftUtil.powerOfTwo(offset));
 	}
 	
-	public DhLodUnit getWidth() { return this.getWidth(this.sectionDetailLevel);  }
+	public DhLodUnit getWidth() { return this.getWidth(this.sectionDetailLevel); }
 	public DhLodUnit getWidth(byte returnDetailLevel)
 	{
 		LodUtil.assertTrue(returnDetailLevel <= this.sectionDetailLevel, "returnDetailLevel must be less than sectionDetail");
@@ -136,8 +136,9 @@ public class DhSectionPos implements INetworkObject
 		return new DhLodUnit(this.sectionDetailLevel, BitShiftUtil.powerOfTwo(offset));
 	}
 	
-	/** 
-	 * uses the absolute detail level aka detail levels like {@link LodUtil#CHUNK_DETAIL_LEVEL} instead of the dhSectionPos detailLevels 
+	/**
+	 * uses the absolute detail level aka detail levels like {@link LodUtil#CHUNK_DETAIL_LEVEL} instead of the dhSectionPos detailLevels
+	 *
 	 * @return the new position closest to negative infinity with the new detail level
 	 */
 	public DhSectionPos convertToDetailLevel(byte newSectionDetailLevel)
@@ -182,7 +183,7 @@ public class DhSectionPos implements INetworkObject
 			callback.accept(this.getChildByIndex(i));
 		}
 	}
-
+	
 	/** Applies the given consumer to all children of the position at the given section detail level. */
 	public void forEachChildAtLevel(byte sectionDetailLevel, Consumer<DhSectionPos> callback)
 	{
@@ -226,14 +227,15 @@ public class DhSectionPos implements INetworkObject
 	
 	/** Serialize() is different from toString() as it must NEVER be changed, and should be in a short format */
 	public String serialize() { return "[" + this.sectionDetailLevel + ',' + this.sectionX + ',' + this.sectionZ + ']'; }
-
+	
 	@Nullable
-	public static DhSectionPos deserialize(String value) {
+	public static DhSectionPos deserialize(String value)
+	{
 		if (value.charAt(0) != '[' || value.charAt(value.length() - 1) != ']') return null;
 		String[] split = value.substring(1, value.length() - 1).split(",");
 		if (split.length != 3) return null;
 		return new DhSectionPos(Byte.parseByte(split[0]), Integer.parseInt(split[1]), Integer.parseInt(split[2]));
-
+		
 	}
 	
 	@Override

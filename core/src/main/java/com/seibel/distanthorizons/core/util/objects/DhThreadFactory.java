@@ -31,7 +31,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Just a simple ThreadFactory to name ExecutorService
  * threads, which can be helpful when debugging.
- * 
+ *
  * @author James Seibel
  * @version 2023-6-5
  */
@@ -49,7 +49,7 @@ public class DhThreadFactory implements ThreadFactory
 	{
 		if (priority < Thread.MIN_PRIORITY || priority > Thread.MAX_PRIORITY)
 		{
-			throw new IllegalArgumentException("Thread priority should be ["+Thread.MIN_PRIORITY+"-"+ Thread.MAX_PRIORITY+"]!");
+			throw new IllegalArgumentException("Thread priority [" + priority + "] out of bounds. Priority should be between [" + Thread.MIN_PRIORITY + "-" + Thread.MAX_PRIORITY + "]!");
 		}
 		
 		this.threadName = newThreadName + " Thread";
@@ -59,7 +59,7 @@ public class DhThreadFactory implements ThreadFactory
 	@Override
 	public Thread newThread(@NotNull Runnable runnable)
 	{
-		Thread thread = new Thread(runnable, this.threadName + "["+(this.threadCount++)+"]");
+		Thread thread = new Thread(runnable, this.threadName + "[" + (this.threadCount++) + "]");
 		thread.setPriority(this.priority);
 		this.threads.add(new WeakReference<>(thread));
 		return thread;
@@ -90,7 +90,7 @@ public class DhThreadFactory implements ThreadFactory
 				if (stacks.length != 0)
 				{
 					LOGGER.info("===========================================\n" +
-							"Thread: "+thread.getName()+"\n" +
+							"Thread: " + thread.getName() + "\n" +
 							StackTraceToString(stacks));
 				}
 			}

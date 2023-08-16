@@ -12,6 +12,7 @@ import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.objects.quadTree.QuadNode;
 import com.seibel.distanthorizons.core.util.objects.quadTree.QuadTree;
+import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrapper;
 import com.seibel.distanthorizons.coreapi.util.MathUtil;
 import org.apache.logging.log4j.Logger;
 
@@ -25,14 +26,14 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoCloseable
 {
-    public static final byte TREE_LOWEST_DETAIL_LEVEL = ColumnRenderSource.SECTION_SIZE_OFFSET;
+	public static final byte TREE_LOWEST_DETAIL_LEVEL = ColumnRenderSource.SECTION_SIZE_OFFSET;
 	
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
-    public final int blockRenderDistanceRadius;
-    private final ILodRenderSourceProvider renderSourceProvider;
+	public final int blockRenderDistanceRadius;
+	private final ILodRenderSourceProvider renderSourceProvider;
 	
-	/** 
+	/**
 	 * This holds every {@link DhSectionPos} that should be reloaded next tick. <br>
 	 * This is a {@link ConcurrentLinkedQueue} because new sections can be added to this list via the world generator threads.
 	 */
@@ -55,18 +56,18 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 	//==============//
 	
 	public LodQuadTree(
-			IDhClientLevel level, int viewDistanceInBlocks, 
-			int initialPlayerBlockX, int initialPlayerBlockZ, 
+			IDhClientLevel level, int viewDistanceInBlocks,
+			int initialPlayerBlockX, int initialPlayerBlockZ,
 			ILodRenderSourceProvider provider)
 	{
 		super(viewDistanceInBlocks, new DhBlockPos2D(initialPlayerBlockX, initialPlayerBlockZ), TREE_LOWEST_DETAIL_LEVEL);
 		
-        this.level = level;
+		this.level = level;
 		this.renderSourceProvider = provider;
-        this.blockRenderDistanceRadius = viewDistanceInBlocks;
+		this.blockRenderDistanceRadius = viewDistanceInBlocks;
 		
 		this.horizontalScaleChangeListener = new ConfigChangeListener<>(Config.Client.Advanced.Graphics.Quality.horizontalQuality, (newHorizontalScale) -> this.onHorizontalQualityChange());
-    }
+	}
 	
 	
 	
@@ -74,11 +75,12 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 	// tick update //
 	//=============//
 	
-    /**
-     * This function updates the quadTree based on the playerPos and the current game configs (static and global)
-     * @param playerPos the reference position for the player
-     */
-    public void tick(DhBlockPos2D playerPos)
+	/**
+	 * This function updates the quadTree based on the playerPos and the current game configs (static and global)
+	 *
+	 * @param playerPos the reference position for the player
+	 */
+	public void tick(DhBlockPos2D playerPos)
 	{
 		if (this.level == null)
 		{
@@ -132,11 +134,11 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 				}
 				catch (IndexOutOfBoundsException e)
 				{ /* the section is now out of bounds, it doesn't need to be reloaded */ }
-
+				
 				pos = pos.getParentPos();
 			}
 		}
-
+		
 		// walk through each root node
 		Iterator<DhSectionPos> rootPosIterator = this.rootNodePosIterator();
 		while (rootPosIterator.hasNext())
@@ -189,7 +191,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 		// handle enabling, loading,     //
 		// and disabling render sections //
 		//===============================//
-		
+
 //		byte expectedDetailLevel = 6; // can be used instead of the following logic for testing
 		byte expectedDetailLevel = this.calculateExpectedDetailLevel(playerPos, sectionPos);
 		expectedDetailLevel += DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL;
@@ -211,7 +213,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 				boolean childSectionLoaded = this.recursivelyUpdateRenderSectionNode(playerPos, rootNode, childNode, childPos, canThisPosRender || parentRenderSectionIsEnabled);
 				allChildrenSectionsAreLoaded = childSectionLoaded && allChildrenSectionsAreLoaded;
 			}
-
+			
 			if (!allChildrenSectionsAreLoaded)
 			{
 				// not all child positions are loaded yet, or this section is out of render range
@@ -239,13 +241,13 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 					//  surprisingly reloadPos() doesn't appear to be the culprit, maybe there is an issue with reloading/changing the full data source?
 					//LOGGER.warn("Potential QuadTree concurrency issue. All child sections should be enabled and ready to render for pos: "+sectionPos);
 				}
-
+				
 				// this section is now being rendered via its children
 				return true;
 			}
 		}
 		// TODO this should only equal the expected detail level, the (expectedDetailLevel-1) is a temporary fix to prevent corners from being cut out 
-		else if (sectionPos.sectionDetailLevel == expectedDetailLevel || sectionPos.sectionDetailLevel == expectedDetailLevel-1)
+		else if (sectionPos.sectionDetailLevel == expectedDetailLevel || sectionPos.sectionDetailLevel == expectedDetailLevel - 1)
 		{
 			// this is the detail level we want to render //
 			// prepare this section for rendering
@@ -274,7 +276,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 		}
 		else
 		{
-			throw new IllegalStateException("LodQuadTree shouldn't be updating renderSections below the expected detail level: ["+expectedDetailLevel+"].");
+			throw new IllegalStateException("LodQuadTree shouldn't be updating renderSections below the expected detail level: [" + expectedDetailLevel + "].");
 		}
 	}
 	
@@ -287,6 +289,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 	/**
 	 * This method will compute the detail level based on player position and section pos
 	 * Override this method if you want to use a different algorithm
+	 *
 	 * @param playerPos player position as a reference for calculating the detail level
 	 * @param sectionPos section position
 	 * @return detail level of this section pos
@@ -301,7 +304,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 		}
 		
 		
-		double maxDetailDistance = this.getDrawDistanceFromDetail(Byte.MAX_VALUE -1);
+		double maxDetailDistance = this.getDrawDistanceFromDetail(Byte.MAX_VALUE - 1);
 		if (distance > maxDetailDistance)
 		{
 			return Byte.MAX_VALUE - 1;
@@ -341,8 +344,8 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 	// render data //
 	//=============//
 	
-	/** 
-	 * Re-creates the color, render data. 
+	/**
+	 * Re-creates the color, render data.
 	 * This method should be called after resource packs are changed or LOD settings are modified.
 	 */
 	public void clearRenderDataCache()
@@ -382,7 +385,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 		}
 	}
 	
-	/** 
+	/**
 	 * Can be called whenever a render section's data needs to be refreshed. <br>
 	 * This should be called whenever a world generation task is completed or if the connected server has new data to show.
 	 */
@@ -416,10 +419,10 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 	// base methods //
 	//==============//
 	
-    @Override
+	@Override
 	public void close()
 	{
-		LOGGER.info("Shutting down "+ LodQuadTree.class.getSimpleName()+"...");
+		LOGGER.info("Shutting down " + LodQuadTree.class.getSimpleName() + "...");
 		
 		this.horizontalScaleChangeListener.close();
 		
@@ -434,7 +437,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 			}
 		}
 		
-		LOGGER.info("Finished shutting down "+ LodQuadTree.class.getSimpleName());
+		LOGGER.info("Finished shutting down " + LodQuadTree.class.getSimpleName());
 	}
 	
 }

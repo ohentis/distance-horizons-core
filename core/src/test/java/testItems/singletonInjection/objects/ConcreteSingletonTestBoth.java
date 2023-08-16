@@ -25,4 +25,5 @@ public class ConcreteSingletonTestBoth implements ISingletonTestOne, ISingletonT
 	
 	@Override
 	public int getDependentValue() { return -1; }
+	
 }

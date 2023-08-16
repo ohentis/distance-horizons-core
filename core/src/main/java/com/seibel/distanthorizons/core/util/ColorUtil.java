@@ -22,7 +22,7 @@ package com.seibel.distanthorizons.core.util;
 /**
  * Handles the bit-wise math used when
  * dealing with colors stored as integers.
- * 
+ *
  * @author Cola
  * @author Leonardo Amato
  * @version 2023-5-15
@@ -36,27 +36,27 @@ public class ColorUtil
 	
 	public static final int INVISIBLE = rgbToInt(0, 0, 0, 0);
 	
-	public static final int BLACK = rgbToInt(0,0,0);
-	public static final int WHITE = rgbToInt(255,255,255);
-	public static final int RED = rgbToInt(255,0,0);
-	public static final int GREEN = rgbToInt(0,255,0);
-	public static final int BLUE = rgbToInt(0,0,255);
-	public static final int YELLOW = rgbToInt(255,255,0);
-	public static final int CYAN = rgbToInt(0,255,255);
-	public static final int MAGENTA = rgbToInt(255,0,255);
-	public static final int ORANGE = rgbToInt(255,128,0);
-	public static final int PINK = rgbToInt(255,128,128);
-	public static final int GRAY = rgbToInt(128,128,128);
-	public static final int LIGHT_GRAY = rgbToInt(192,192,192);
-	public static final int DARK_GRAY = rgbToInt(64,64,64);
-	public static final int BROWN = rgbToInt(128,64,0);
-	public static final int PURPLE = rgbToInt(128,0,128);
+	public static final int BLACK = rgbToInt(0, 0, 0);
+	public static final int WHITE = rgbToInt(255, 255, 255);
+	public static final int RED = rgbToInt(255, 0, 0);
+	public static final int GREEN = rgbToInt(0, 255, 0);
+	public static final int BLUE = rgbToInt(0, 0, 255);
+	public static final int YELLOW = rgbToInt(255, 255, 0);
+	public static final int CYAN = rgbToInt(0, 255, 255);
+	public static final int MAGENTA = rgbToInt(255, 0, 255);
+	public static final int ORANGE = rgbToInt(255, 128, 0);
+	public static final int PINK = rgbToInt(255, 128, 128);
+	public static final int GRAY = rgbToInt(128, 128, 128);
+	public static final int LIGHT_GRAY = rgbToInt(192, 192, 192);
+	public static final int DARK_GRAY = rgbToInt(64, 64, 64);
+	public static final int BROWN = rgbToInt(128, 64, 0);
+	public static final int PURPLE = rgbToInt(128, 0, 128);
 	
 	
 	
 	public static int rgbToInt(int red, int green, int blue) { return (0xFF << 24) | (red << 16) | (green << 8) | blue; }
 	public static int rgbToInt(int alpha, int red, int green, int blue) { return (alpha << 24) | (red << 16) | (green << 8) | blue; }
-	public static int rgbToInt(float alpha, float red, float green, float blue) { return rgbToInt((int)(alpha*255f), (int)(red*255f), (int)(green*255f), (int)(blue*255f)); }
+	public static int rgbToInt(float alpha, float red, float green, float blue) { return rgbToInt((int) (alpha * 255f), (int) (red * 255f), (int) (green * 255f), (int) (blue * 255f)); }
 	
 	
 	
@@ -117,26 +117,31 @@ public class ColorUtil
 	 * Below 2 functions are from: https://stackoverflow.com/questions/13806483/increase-or-decrease-color-saturation
 	 * Alpha in [0.0,1.0], hue in [0.0,360.0], Sat in [0.0,1.0], Value in [0.0,1.0]
 	 */
-	public static float[] argbToAhsv(int color) {
+	public static float[] argbToAhsv(int color)
+	{
 		float a = getAlpha(color) / 255f;
 		float r = getRed(color) / 255f;
 		float g = getGreen(color) / 255f;
 		float b = getBlue(color) / 255f;
 		float h, s, v;
-		float min = Math.min(Math.min( r, g), b );
-		float max = Math.max(Math.max( r, g), b );
-
+		float min = Math.min(Math.min(r, g), b);
+		float max = Math.max(Math.max(r, g), b);
+		
 		v = max;
 		float delta = max - min;
-		if( max != 0f )
+		if (max != 0f)
 			s = delta / max;     // s
-		else {
+		else
+		{
 			// r = g = b = 0     // s = 0, v is undefined
 			return new float[]{a, 0f, 0f, 0f};
 		}
-		if (delta == 0f) {
+		if (delta == 0f)
+		{
 			h = 0f;
-		} else {
+		}
+		else
+		{
 			if (r == max) h = (g - b) / delta; // between yellow & magenta
 			else if (g == max) h = 2f + (b - r) / delta;  // between cyan & yellow
 			else h = 4f + (r - g) / delta;  // between magenta & cyan
@@ -144,52 +149,61 @@ public class ColorUtil
 			if (h < 0f)
 				h += 360f;
 		}
-		return new float[]{a,h,s,v};
+		return new float[]{a, h, s, v};
 	}
 	/** Alpha in [0.0,1.0], hue in [0.0,360.0], Sat in [0.0,1.0], Value in [0.0,1.0] */
-	public static int ahsvToArgb(float a, float h, float s, float v) {
+	public static int ahsvToArgb(float a, float h, float s, float v)
+	{
 		if (a > 1.f) a = 1.f;
 		if (h > 360.f) h -= 350.f;
 		if (s > 1.f) s = 1.f;
 		if (v > 1.f) v = 1.f;
-
-		if(s == 0f) {
+		
+		if (s == 0f)
+		{
 			// achromatic (grey)
 			return ColorUtil.rgbToInt(a, v, v, v);
 		}
 		h /= 60f;
-		int i = (int)(Math.floor(h));
-		float f = h-i;          // factorial part of h
-		float p = v * ( 1f - s );
-		float q = v * ( 1f - s * f );
-		float t = v * ( 1f - s * ( 1f - f ) );
-
-		switch (i) {
-			case 0: return ColorUtil.rgbToInt(a, v, t, p);
-			case 1: return ColorUtil.rgbToInt(a, q, v, p);
-			case 2: return ColorUtil.rgbToInt(a, p, v, t);
-			case 3: return ColorUtil.rgbToInt(a, p, q, v);
-			case 4: return ColorUtil.rgbToInt(a, t, p, v);
-			default: return ColorUtil.rgbToInt(a, v, p, q);  // case 5
+		int i = (int) (Math.floor(h));
+		float f = h - i;          // factorial part of h
+		float p = v * (1f - s);
+		float q = v * (1f - s * f);
+		float t = v * (1f - s * (1f - f));
+		
+		switch (i)
+		{
+			case 0:
+				return ColorUtil.rgbToInt(a, v, t, p);
+			case 1:
+				return ColorUtil.rgbToInt(a, q, v, p);
+			case 2:
+				return ColorUtil.rgbToInt(a, p, v, t);
+			case 3:
+				return ColorUtil.rgbToInt(a, p, q, v);
+			case 4:
+				return ColorUtil.rgbToInt(a, t, p, v);
+			default:
+				return ColorUtil.rgbToInt(a, v, p, q);  // case 5
 		}
-}	
+	}
 	
 	/** Returns the hex value for the Alpha, Red, Green, and Blue channels. */
 	public static String toHexString(int color)
 	{
-		return "A:"+Integer.toHexString(getAlpha(color)) +
-				",R:" +Integer.toHexString(getRed(color)) +
-				",G:" +Integer.toHexString(getGreen(color)) +
-				",B:" +Integer.toHexString(getBlue(color));
+		return "A:" + Integer.toHexString(getAlpha(color)) +
+				",R:" + Integer.toHexString(getRed(color)) +
+				",G:" + Integer.toHexString(getGreen(color)) +
+				",B:" + Integer.toHexString(getBlue(color));
 	}
 	
 	/** Returns the int value (0-255) for the Alpha, Red, Green, and Blue channels. */
 	public static String toString(int color)
 	{
-		return "A:"+getAlpha(color) +
-				",R:" +getRed(color) +
-				",G:" +getGreen(color) +
-				",B:" +getBlue(color);
+		return "A:" + getAlpha(color) +
+				",R:" + getRed(color) +
+				",G:" + getGreen(color) +
+				",B:" + getBlue(color);
 	}
 	
 }

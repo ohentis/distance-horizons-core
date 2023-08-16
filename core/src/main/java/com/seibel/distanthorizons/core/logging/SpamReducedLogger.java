@@ -134,4 +134,5 @@ public class SpamReducedLogger
 	{
 		logInc(Level.TRACE, str, param);
 	}
+	
 }

@@ -19,7 +19,7 @@ import java.nio.ByteOrder;
 
 /**
  * Handles loading and parsing {@link RenderMetaDataFile}s to create {@link ColumnRenderSource}s. <br><br>
- * 
+ *
  * Please see the {@link ColumnRenderLoader#loadRenderSource} method to see what
  * file versions this class can handle.
  */
@@ -35,7 +35,7 @@ public class ColumnRenderLoader
 	
 	
 	
-    public ColumnRenderSource loadRenderSource(RenderMetaDataFile dataFile, DhDataInputStream inputStream, IDhLevel level) throws IOException
+	public ColumnRenderSource loadRenderSource(RenderMetaDataFile dataFile, DhDataInputStream inputStream, IDhLevel level) throws IOException
 	{
 		int dataFileVersion = dataFile.baseMetaData.binaryDataFormatVersion;
 		
@@ -47,17 +47,17 @@ public class ColumnRenderLoader
 				ParsedColumnData parsedColumnData = readDataV1(inputStream, level.getMinY());
 				if (parsedColumnData.isEmpty)
 				{
-					LOGGER.warn("Empty render file "+dataFile.pos);
+					LOGGER.warn("Empty render file " + dataFile.pos);
 				}
 				
 				return new ColumnRenderSource(dataFile.pos, parsedColumnData, level);
 			default:
-				throw new IOException("Invalid Data: The data version ["+dataFileVersion+"] is not supported");
+				throw new IOException("Invalid Data: The data version [" + dataFileVersion + "] is not supported");
 		}
-    }
+	}
 	
 	/** @throws InterruptedException see {@link FullDataToRenderDataTransformer#transformFullDataToColumnData(IDhClientLevel, CompleteFullDataSource) FullDataToRenderDataTransformer#transformFullDataToColumnData} for documentation */
-    public ColumnRenderSource createRenderSource(IFullDataSource fullDataSource, IDhClientLevel level) throws InterruptedException
+	public ColumnRenderSource createRenderSource(IFullDataSource fullDataSource, IDhClientLevel level) throws InterruptedException
 	{
 		if (fullDataSource instanceof CompleteFullDataSource)
 		{
@@ -70,7 +70,7 @@ public class ColumnRenderLoader
 		
 		LodUtil.assertNotReach();
 		return null;
-    }
+	}
 	
 	
 	
@@ -80,8 +80,7 @@ public class ColumnRenderLoader
 	
 	/**
 	 * @param inputStream Expected format: 1st byte: detail level, 2nd byte: vertical size, 3rd byte on: column data
-	 * 
-	 * @throws IOException if there was an issue reading the stream 
+	 * @throws IOException if there was an issue reading the stream
 	 */
 	private static ParsedColumnData readDataV1(DhDataInputStream inputStream, int expectedYOffset) throws IOException
 	{
@@ -101,7 +100,7 @@ public class ColumnRenderLoader
 		byte dataPresentFlag = inputStream.readByte();
 		if (dataPresentFlag != ColumnRenderSource.NO_DATA_FLAG_BYTE && dataPresentFlag != ColumnRenderSource.DATA_GUARD_BYTE)
 		{
-			throw new IOException("Incorrect render file format. Expected either: NO_DATA_FLAG_BYTE ["+ColumnRenderSource.NO_DATA_FLAG_BYTE+"] or DATA_GUARD_BYTE ["+ColumnRenderSource.DATA_GUARD_BYTE+"], Found: ["+dataPresentFlag+"]");
+			throw new IOException("Incorrect render file format. Expected either: NO_DATA_FLAG_BYTE [" + ColumnRenderSource.NO_DATA_FLAG_BYTE + "] or DATA_GUARD_BYTE [" + ColumnRenderSource.DATA_GUARD_BYTE + "], Found: [" + dataPresentFlag + "]");
 		}
 		else if (dataPresentFlag == ColumnRenderSource.NO_DATA_FLAG_BYTE)
 		{
@@ -115,7 +114,7 @@ public class ColumnRenderLoader
 			int fileYOffset = inputStream.readInt();
 			if (fileYOffset != expectedYOffset)
 			{
-				throw new IOException("Invalid data: yOffset is incorrect. Expected: ["+expectedYOffset+"], found: ["+fileYOffset+"].");
+				throw new IOException("Invalid data: yOffset is incorrect. Expected: [" + expectedYOffset + "], found: [" + fileYOffset + "].");
 			}
 			
 			
@@ -149,7 +148,7 @@ public class ColumnRenderLoader
 			EDhApiWorldGenerationStep worldGenStep = EDhApiWorldGenerationStep.fromValue(inputStream.readByte());
 			if (worldGenStep == null)
 			{
-				LOGGER.warn("Missing WorldGenStep, defaulting to: "+EDhApiWorldGenerationStep.SURFACE.name());
+				LOGGER.warn("Missing WorldGenStep, defaulting to: " + EDhApiWorldGenerationStep.SURFACE.name());
 				worldGenStep = EDhApiWorldGenerationStep.SURFACE;
 			}
 			
@@ -175,6 +174,7 @@ public class ColumnRenderLoader
 			this.dataContainer = dataContainer;
 			this.isEmpty = isEmpty;
 		}
+		
 	}
 	
 	

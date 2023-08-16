@@ -20,9 +20,9 @@
 package com.seibel.distanthorizons.api.objects.math;
 
 /**
- * Often used to store block positions or any other 
+ * Often used to store block positions or any other
  * position in 3D space.
- * 
+ *
  * @author James Seibel
  * @version 2022-11-19
  */

@@ -17,9 +17,9 @@ import org.apache.logging.log4j.Logger;
 /** Handles first time Core setup. */
 public class Initializer
 {
-	private static final Logger LOGGER = LogManager.getLogger(ModInfo.NAME+"-"+Initializer.class.getSimpleName());
+	private static final Logger LOGGER = LogManager.getLogger(ModInfo.NAME + "-" + Initializer.class.getSimpleName());
 	
-    public static void init()
+	public static void init()
 	{
 		// confirm that all referenced libraries are available to use
 		try
@@ -33,15 +33,15 @@ public class Initializer
 		}
 		catch (NoClassDefFoundError e)
 		{
-			LOGGER.fatal("Critical programmer error: One or more libraries aren't present. Error: ["+e.getMessage()+"].");
+			LOGGER.fatal("Critical programmer error: One or more libraries aren't present. Error: [" + e.getMessage() + "].");
 			throw e;
 		}
 		
 		
 		
-        CompleteFullDataSourceLoader unused2 = new CompleteFullDataSourceLoader(); // Auto register into the loader system
-        HighDetailIncompleteFullDataSourceLoader unused3 = new HighDetailIncompleteFullDataSourceLoader(); // Auto register
-        LowDetailIncompleteFullDataSourceLoader unused4 = new LowDetailIncompleteFullDataSourceLoader(); // Auto register
+		CompleteFullDataSourceLoader unused2 = new CompleteFullDataSourceLoader(); // Auto register into the loader system
+		HighDetailIncompleteFullDataSourceLoader unused3 = new HighDetailIncompleteFullDataSourceLoader(); // Auto register
+		LowDetailIncompleteFullDataSourceLoader unused4 = new LowDetailIncompleteFullDataSourceLoader(); // Auto register
 		
 		// link Core's config to the API
 		DhApi.Delayed.configs = DhApiConfig.INSTANCE;
@@ -49,5 +49,6 @@ public class Initializer
 		DhApi.Delayed.worldProxy = DhApiWorldProxy.INSTANCE;
 		DhApi.Delayed.renderProxy = DhApiRenderProxy.INSTANCE;
 		
-    }
+	}
+	
 }

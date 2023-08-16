@@ -5,7 +5,7 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapp
 /** Enhances a {@link IClientLevelWrapper} with server provided level information. */
 public interface IServerKeyedClientLevel extends IClientLevelWrapper
 {
-    /** Returns the level key, which is used to select the correct folder on the client. */
-    String getServerLevelKey();
+	/** Returns the level key, which is used to select the correct folder on the client. */
+	String getServerLevelKey();
 	
 }

@@ -16,7 +16,7 @@
  *    You should have received a copy of the GNU Lesser General Public License
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
- 
+
 package com.seibel.distanthorizons.api.enums.rendering;
 
 /**
@@ -36,14 +36,14 @@ package com.seibel.distanthorizons.api.enums.rendering;
  */
 public enum EHeightFogMixMode
 {
-    BASIC,
-    IGNORE_HEIGHT,
-    ADDITION,
-    MAX,
-    MULTIPLY,
-    INVERSE_MULTIPLY,
-    LIMITED_ADDITION,
-    MULTIPLY_ADDITION,
-    INVERSE_MULTIPLY_ADDITION,
-    AVERAGE,
+	BASIC,
+	IGNORE_HEIGHT,
+	ADDITION,
+	MAX,
+	MULTIPLY,
+	INVERSE_MULTIPLY,
+	LIMITED_ADDITION,
+	MULTIPLY_ADDITION,
+	INVERSE_MULTIPLY_ADDITION,
+	AVERAGE,
 }

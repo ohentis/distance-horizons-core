@@ -75,24 +75,24 @@ public class SquareIntersectTest
 	@Test
 	public void TestNonOverlappingSquares()
 	{
-		DhLodPos rect1Min = new DhLodPos((byte)0, 1, 1);
+		DhLodPos rect1Min = new DhLodPos((byte) 0, 1, 1);
 		int rect1Width = 2;
 		
-		DhLodPos rect2Min = new DhLodPos((byte)0, 4, 4);
+		DhLodPos rect2Min = new DhLodPos((byte) 0, 4, 4);
 		int rect2Width = 2;
 		
 		boolean result = DoSquaresOverlap(rect1Min, rect1Width, rect2Min, rect2Width);
 		Assert.assertFalse(result);
 	}
-		
+	
 	// The third test case checks that two rectangles with different sizes and overlapping are detected as overlapping.
 	@Test
 	public void TestSquaresWithDifferentSizes()
 	{
-		DhLodPos rect1Min = new DhLodPos((byte)0, 1, 1);
+		DhLodPos rect1Min = new DhLodPos((byte) 0, 1, 1);
 		int rect1Width = 4;
 		
-		DhLodPos rect2Min = new DhLodPos((byte)0, 3, 3);
+		DhLodPos rect2Min = new DhLodPos((byte) 0, 3, 3);
 		int rect2Width = 3;
 		
 		boolean result = DoSquaresOverlap(rect1Min, rect1Width, rect2Min, rect2Width);
@@ -103,10 +103,10 @@ public class SquareIntersectTest
 	@Test
 	public void TestOneRectangleContainsTheOther()
 	{
-		DhLodPos rect1Min = new DhLodPos((byte)0, 1, 1);
+		DhLodPos rect1Min = new DhLodPos((byte) 0, 1, 1);
 		int rect1Width = 9;
 		
-		DhLodPos rect2Min = new DhLodPos((byte)0, 3, 3);
+		DhLodPos rect2Min = new DhLodPos((byte) 0, 3, 3);
 		int rect2Width = 3;
 		
 		boolean result = DoSquaresOverlap(rect1Min, rect1Width, rect2Min, rect2Width);
@@ -117,10 +117,10 @@ public class SquareIntersectTest
 	@Test
 	public void TestOneRectangleContainsTheOtherInverted()
 	{
-		DhLodPos rect1Min = new DhLodPos((byte)0, 3, 3);
+		DhLodPos rect1Min = new DhLodPos((byte) 0, 3, 3);
 		int rect1Width = 3;
 		
-		DhLodPos rect2Min = new DhLodPos((byte)0, 1, 1);
+		DhLodPos rect2Min = new DhLodPos((byte) 0, 1, 1);
 		int rect2Width = 9;
 		
 		boolean result = DoSquaresOverlap(rect1Min, rect1Width, rect2Min, rect2Width);

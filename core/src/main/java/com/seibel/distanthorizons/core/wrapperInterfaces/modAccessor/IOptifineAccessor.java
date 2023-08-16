@@ -16,7 +16,7 @@
  *    You should have received a copy of the GNU Lesser General Public License
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
- 
+
 package com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor;
 
 import com.seibel.distanthorizons.api.enums.rendering.EFogDrawMode;
@@ -24,7 +24,7 @@ import com.seibel.distanthorizons.core.pos.DhChunkPos;
 
 import java.util.HashSet;
 
-public interface IOptifineAccessor extends IModAccessor 
+public interface IOptifineAccessor extends IModAccessor
 {
 	
 	/** Can be null */

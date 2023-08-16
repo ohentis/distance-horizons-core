@@ -202,4 +202,5 @@ public class ConfigBasedSpamLogger
 	{
 		logInc(Level.TRACE, str, param);
 	}
+	
 }

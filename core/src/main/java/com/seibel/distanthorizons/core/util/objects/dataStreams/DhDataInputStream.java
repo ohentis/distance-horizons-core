@@ -13,7 +13,7 @@ import java.io.InputStream;
  * the wrong stream. <br><br>
  *
  * <strong>Note:</strong>
- * This stream cannot be closed, 
+ * This stream cannot be closed,
  * the passed in stream must be closed instead.
  * This is done to prevent closing file channels prematurely while accessing them.
  */

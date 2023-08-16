@@ -20,7 +20,7 @@ public class DataRenderTransformer
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	private static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
-    
+	
 	private static ExecutorService transformerThreadPool = null;
 	private static ConfigChangeListener<Integer> configListener;
 	
@@ -30,19 +30,19 @@ public class DataRenderTransformer
 	// transformers //
 	//==============//
 	
-    public static CompletableFuture<ColumnRenderSource> transformDataSourceAsync(IFullDataSource fullDataSource, IDhClientLevel level)
+	public static CompletableFuture<ColumnRenderSource> transformDataSourceAsync(IFullDataSource fullDataSource, IDhClientLevel level)
 	{
-        return CompletableFuture.supplyAsync(() -> transform(fullDataSource, level), transformerThreadPool);
-    }
+		return CompletableFuture.supplyAsync(() -> transform(fullDataSource, level), transformerThreadPool);
+	}
 	
-    public static CompletableFuture<ColumnRenderSource> transformDataSourceAsync(CompletableFuture<IFullDataSource> fullDataSourceFuture, IDhClientLevel level)
+	public static CompletableFuture<ColumnRenderSource> transformDataSourceAsync(CompletableFuture<IFullDataSource> fullDataSourceFuture, IDhClientLevel level)
 	{
-        return fullDataSourceFuture.thenApplyAsync((fullDataSource) -> transform(fullDataSource, level), transformerThreadPool);
-    }
+		return fullDataSourceFuture.thenApplyAsync((fullDataSource) -> transform(fullDataSource, level), transformerThreadPool);
+	}
 	
-    private static ColumnRenderSource transform(IFullDataSource fullDataSource, IDhClientLevel level)
+	private static ColumnRenderSource transform(IFullDataSource fullDataSource, IDhClientLevel level)
 	{
-        if (fullDataSource == null)
+		if (fullDataSource == null)
 		{
 			return null;
 		}
@@ -56,11 +56,11 @@ public class DataRenderTransformer
 		{
 			return ColumnRenderLoader.INSTANCE.createRenderSource(fullDataSource, level);
 		}
-        catch (InterruptedException e)
+		catch (InterruptedException e)
 		{
 			return null;
 		}
-    }
+	}
 	
 	
 	
@@ -71,7 +71,7 @@ public class DataRenderTransformer
 	/**
 	 * Creates a new executor. <br>
 	 * Does nothing if an executor already exists.
-	 */	
+	 */
 	public static void setupExecutorService()
 	{
 		// static setup
@@ -84,11 +84,11 @@ public class DataRenderTransformer
 		// TODO this didn't seem to be re-sizing when changed via the config
 		if (transformerThreadPool == null || transformerThreadPool.isTerminated())
 		{
-			LOGGER.info("Starting "+DataRenderTransformer.class.getSimpleName());
+			LOGGER.info("Starting " + DataRenderTransformer.class.getSimpleName());
 			setThreadPoolSize(Config.Client.Advanced.MultiThreading.numberOfDataTransformerThreads.get());
 		}
 	}
-	public static void setThreadPoolSize(int threadPoolSize) 
+	public static void setThreadPoolSize(int threadPoolSize)
 	{
 		if (transformerThreadPool != null)
 		{
@@ -96,10 +96,10 @@ public class DataRenderTransformer
 			transformerThreadPool.shutdown();
 		}
 		
-		transformerThreadPool = ThreadUtil.makeRateLimitedThreadPool(threadPoolSize, "Full/Render Data Transformer", Config.Client.Advanced.MultiThreading.runTimeRatioForDataTransformerThreads); 
+		transformerThreadPool = ThreadUtil.makeRateLimitedThreadPool(threadPoolSize, "Full/Render Data Transformer", Config.Client.Advanced.MultiThreading.runTimeRatioForDataTransformerThreads);
 	}
 	
-	/** 
+	/**
 	 * Stops any executing tasks and destroys the executor. <br>
 	 * Does nothing if the executor isn't running.
 	 */
@@ -107,7 +107,7 @@ public class DataRenderTransformer
 	{
 		if (transformerThreadPool != null)
 		{
-			LOGGER.info("Stopping "+DataRenderTransformer.class.getSimpleName());
+			LOGGER.info("Stopping " + DataRenderTransformer.class.getSimpleName());
 			transformerThreadPool.shutdownNow();
 		}
 	}

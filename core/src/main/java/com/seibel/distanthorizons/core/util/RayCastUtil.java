@@ -16,7 +16,7 @@
  *    You should have received a copy of the GNU Lesser General Public License
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
- 
+
 package com.seibel.distanthorizons.core.util;
 
 /**
@@ -86,7 +86,7 @@ public class RayCastUtil
 			
 			// is the ray pointing towards the square?
 			if ((rayXDirection > 0 && rayX > squareMaxX) || // right
-				(rayXDirection < 0 && rayX < squareMinX)) // left
+					(rayXDirection < 0 && rayX < squareMinX)) // left
 			{
 				// the ray is pointing away from the square
 				return false;
@@ -122,7 +122,7 @@ public class RayCastUtil
 			
 			// does the intersection happen before the ray's origin?
 			if ((rayYDirection > 0 && (yIntersectMin <= rayY && yIntersectMax <= rayY)) || // moving in pos Y direction
-				(rayYDirection < 0 && (yIntersectMin >= rayY && yIntersectMax >= rayY)))   // moving in neg Y direction
+					(rayYDirection < 0 && (yIntersectMin >= rayY && yIntersectMax >= rayY)))   // moving in neg Y direction
 			{
 				return false;
 			}
@@ -144,7 +144,7 @@ public class RayCastUtil
 			
 			// does the intersection happen before the ray's origin?
 			if ((rayXDirection > 0 && (xIntersectMin <= rayX && xIntersectMax <= rayX)) || // moving in pos X direction
-				(rayXDirection < 0 && (xIntersectMin >= rayX && xIntersectMax >= rayX)))   // moving in neg X direction
+					(rayXDirection < 0 && (xIntersectMin >= rayX && xIntersectMax >= rayX)))   // moving in neg X direction
 			{
 				return false;
 			}

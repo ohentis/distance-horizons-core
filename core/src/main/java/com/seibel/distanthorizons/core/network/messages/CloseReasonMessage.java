@@ -7,16 +7,14 @@ import io.netty.buffer.ByteBuf;
 public class CloseReasonMessage extends NetworkMessage
 {
 	public String reason;
-	
-	
-	
+
 	public CloseReasonMessage() { }
 	public CloseReasonMessage(String reason) { this.reason = reason; }
-	
+
 	@Override
 	public void encode(ByteBuf out) { encodeString(this.reason, out); }
-	
+
 	@Override
 	public void decode(ByteBuf in) { this.reason = decodeString(in); }
-	
+
 }

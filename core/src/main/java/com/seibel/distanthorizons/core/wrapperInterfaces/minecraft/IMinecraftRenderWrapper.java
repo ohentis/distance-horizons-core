@@ -39,7 +39,7 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 /**
  * Contains everything related to
  * rendering in Minecraft.
- * 
+ *
  * @author James Seibel
  * @version 3-5-2022
  */
@@ -59,8 +59,8 @@ public interface IMinecraftRenderWrapper extends IBindable
 	
 	Color getFogColor(float partialTicks);
 	
-	default Color getSpecialFogColor(float partialTicks) {return getFogColor(partialTicks);}
-
+	default Color getSpecialFogColor(float partialTicks) { return getFogColor(partialTicks); }
+	
 	boolean isFogStateSpecial();
 	
 	Color getSkyColor();
@@ -72,7 +72,7 @@ public interface IMinecraftRenderWrapper extends IBindable
 	
 	int getScreenWidth();
 	int getScreenHeight();
-
+	
 	int getTargetFrameBuffer();
 	int getDepthTextureId();
 	int getTargetFrameBufferViewportWidth();
@@ -86,16 +86,18 @@ public interface IMinecraftRenderWrapper extends IBindable
 	 */
 	default HashSet<DhChunkPos> getVanillaRenderedChunks()
 	{
+		// FIXME: Is this actually required? Does it make a differance if it exists or not?
 		ISodiumAccessor sodium = ModAccessorInjector.INSTANCE.get(ISodiumAccessor.class);
-		return sodium==null ? getMaximumRenderedChunks() : sodium.getNormalRenderedChunks();
+		return sodium == null ? getMaximumRenderedChunks() : sodium.getNormalRenderedChunks();
 	}
-
-	static boolean correctedCheckRadius(int dx, int dz, int radius2Mul4) {
-		dx = dx*2;// + (dx < 0 ? -1 : 1);
-		dz = dz*2;// + (dz < 0 ? -1 : 1);
-		return (dx*dx + dz*dz <= radius2Mul4);
+	
+	static boolean correctedCheckRadius(int dx, int dz, int radius2Mul4)
+	{
+		dx = dx * 2;// + (dx < 0 ? -1 : 1);
+		dz = dz * 2;// + (dz < 0 ? -1 : 1);
+		return (dx * dx + dz * dz <= radius2Mul4);
 	}
-
+	
 	/**
 	 * <strong>Doesn't need to be implemented.</strong> <br>
 	 * Returns every chunk position within the vanilla render distance.
@@ -107,31 +109,32 @@ public interface IMinecraftRenderWrapper extends IBindable
 		IVersionConstants versionConstants = SingletonInjector.INSTANCE.get(IVersionConstants.class);
 		IMinecraftClientWrapper minecraft = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 		ILevelWrapper clientWorld = minecraft.getWrappedClientWorld();
-
+		
 		int chunkDist = this.getRenderDistance() + 1; // For some reason having '+1' is actually closer to real value
 		
 		DhChunkPos centerChunkPos = mcWrapper.getPlayerChunkPos();
 		int centerChunkX = centerChunkPos.getX();
 		int centerChunkZ = centerChunkPos.getZ();
-		int chunkDist2Mul4 = chunkDist*chunkDist*4;
+		int chunkDist2Mul4 = chunkDist * chunkDist * 4;
 		
 		// add every position within render distance
 		HashSet<DhChunkPos> renderedPos = new HashSet<DhChunkPos>();
 		for (int deltaChunkX = -chunkDist; deltaChunkX <= chunkDist; deltaChunkX++)
 		{
-			for(int deltaChunkZ = -chunkDist; deltaChunkZ <= chunkDist; deltaChunkZ++)
+			for (int deltaChunkZ = -chunkDist; deltaChunkZ <= chunkDist; deltaChunkZ++)
 			{
 				if (!versionConstants.isVanillaRenderedChunkSquare() &&
-						!correctedCheckRadius(deltaChunkX,deltaChunkZ,chunkDist2Mul4)) {
+						!correctedCheckRadius(deltaChunkX, deltaChunkZ, chunkDist2Mul4))
+				{
 					continue;
 				}
 				if (!clientWorld.hasChunkLoaded(centerChunkX + deltaChunkX, centerChunkZ + deltaChunkZ)) continue;
 				renderedPos.add(new DhChunkPos(centerChunkX + deltaChunkX, centerChunkZ + deltaChunkZ));
 			}
 		}
-		return renderedPos;	
+		return renderedPos;
 	}
-
+	
 	ILightMapWrapper getLightmapWrapper();
 	
 	

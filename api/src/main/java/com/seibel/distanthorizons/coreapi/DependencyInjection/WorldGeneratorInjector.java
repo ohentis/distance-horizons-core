@@ -29,6 +29,7 @@ import java.util.HashMap;
 /**
  * This class takes care of dependency injection for world generators. <Br>
  * This is done so other mods can override our world generator(s) to improve or replace them.
+ *
  * @author James Seibel
  * @version 2022-12-10
  */
@@ -65,10 +66,9 @@ public class WorldGeneratorInjector
 	/**
 	 * Binds a world generator to the given level. <Br>
 	 * See {@link DependencyInjector#bind(Class, IBindable) bind(Class, IBindable)} for full documentation.
-	 * 
+	 *
 	 * @throws NullPointerException if any parameter is null
 	 * @throws IllegalArgumentException if a non-Distant Horizons world generator with the priority CORE is passed in
-	 * 
 	 * @see DependencyInjector#bind(Class, IBindable)
 	 */
 	public void bind(IDhApiLevelWrapper levelForWorldGenerator, IDhApiWorldGenerator worldGeneratorImplementation) throws NullPointerException, IllegalArgumentException
@@ -98,8 +98,9 @@ public class WorldGeneratorInjector
 	/**
 	 * Returns the bound world generator with the highest priority. <br>
 	 * Returns null if no world generators have been bound for this specific level. <br><br>
-	 * 
+	 *
 	 * See {@link OverrideInjector#get(Class) get(Class)} for full documentation.
+	 *
 	 * @see OverrideInjector#get(Class)
 	 */
 	public IDhApiWorldGenerator get(IDhApiLevelWrapper levelForWorldGenerator) throws ClassCastException

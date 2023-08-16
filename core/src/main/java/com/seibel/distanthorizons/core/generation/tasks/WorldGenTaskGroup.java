@@ -25,7 +25,7 @@ public final class WorldGenTaskGroup
 		this.pos = pos;
 		this.dataDetail = dataDetail;
 	}
-
+	
 	public void consumeChunkData(ChunkSizedFullDataAccessor chunkSizedFullDataView)
 	{
 		Iterator<WorldGenTask> tasks = this.worldGenTasks.iterator();
@@ -44,4 +44,5 @@ public final class WorldGenTaskGroup
 			}
 		}
 	}
+	
 }

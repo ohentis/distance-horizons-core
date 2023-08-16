@@ -14,11 +14,11 @@ import javax.swing.plaf.ButtonUI;
  * A switch button cus Java dosnt have one
  *
  * <p>
- *     Ever wanted a switch like
- *     <code><a href="https://www.overflowarchives.com/wp-content/uploads/2020/05/overflow-archives-unity-3d-switch-button-ui.jpg">this</a></code>
- *     or
- *     <code><a href="https://c8.alamy.com/comp/2E3PHHW/day-night-mode-switch-ui-button-light-dark-mode-slider-theme-2E3PHHW.jpg">this</a></code>?
- *     Well now you can this this class!
+ * Ever wanted a switch like
+ * <code><a href="https://www.overflowarchives.com/wp-content/uploads/2020/05/overflow-archives-unity-3d-switch-button-ui.jpg">this</a></code>
+ * or
+ * <code><a href="https://c8.alamy.com/comp/2E3PHHW/day-night-mode-switch-ui-button-light-dark-mode-slider-theme-2E3PHHW.jpg">this</a></code>?
+ * Well now you can this this class!
  * </p>
  *
  * Based off Java's JButton
@@ -27,57 +27,63 @@ import javax.swing.plaf.ButtonUI;
  */
 // TODO: Make this for the theme (and finish the documentation once it is done)
 @SuppressWarnings("serial")
-public class JSwitch extends AbstractButton {
-    private static final String uiClassID = "SwitchUI";
-
-    /** Creates a switch with no set text or icons */
-    public JSwitch() {
-        this(null, null, null, null);
-    }
-
-    /**
-     * Creates a switch with an icon
-     *
-     * @param offIcon The deactivated icon image
-     * @param onIcon  The activated icon image
-     */
-    public JSwitch(Icon offIcon, Icon onIcon) {
-        this(null, null, offIcon, onIcon);
-    }
-
-    /**
-     * Creates a switch with text
-     *
-     * @param offText  the deactivated text of the button
-     * @param onText  the activated text of the button
-     */
-    @ConstructorProperties({"text"})
-    public JSwitch(String offText, String onText) {
-        this(offText, onText, null, null);
-    }
-
-    /**
-     * Creates a switch where properties are taken from the
-     * <code>Action</code> supplied.
-     *
-     * @param a the <code>Action</code> used to specify the code that runs when pressing
-     */
-    public JSwitch(Action a) {
-        this();
-        setAction(a);
-    }
-
-    /**
-     * Creates a switch with initial text and an icon
-     *
-     * @param offText  the deactivated text of the button
-     * @param onText  the activated text of the button
-     * @param offIcon The deactivated icon image
-     * @param onIcon  The activated icon image
-     */
-    public JSwitch(String offText, String onText, Icon offIcon, Icon onIcon) {
-        // Create the model
-        setModel(new DefaultButtonModel());
+public class JSwitch extends AbstractButton
+{
+	private static final String uiClassID = "SwitchUI";
+	
+	/** Creates a switch with no set text or icons */
+	public JSwitch()
+	{
+		this(null, null, null, null);
+	}
+	
+	/**
+	 * Creates a switch with an icon
+	 *
+	 * @param offIcon The deactivated icon image
+	 * @param onIcon The activated icon image
+	 */
+	public JSwitch(Icon offIcon, Icon onIcon)
+	{
+		this(null, null, offIcon, onIcon);
+	}
+	
+	/**
+	 * Creates a switch with text
+	 *
+	 * @param offText the deactivated text of the button
+	 * @param onText the activated text of the button
+	 */
+	@ConstructorProperties({"text"})
+	public JSwitch(String offText, String onText)
+	{
+		this(offText, onText, null, null);
+	}
+	
+	/**
+	 * Creates a switch where properties are taken from the
+	 * <code>Action</code> supplied.
+	 *
+	 * @param a the <code>Action</code> used to specify the code that runs when pressing
+	 */
+	public JSwitch(Action a)
+	{
+		this();
+		setAction(a);
+	}
+	
+	/**
+	 * Creates a switch with initial text and an icon
+	 *
+	 * @param offText the deactivated text of the button
+	 * @param onText the activated text of the button
+	 * @param offIcon The deactivated icon image
+	 * @param onIcon The activated icon image
+	 */
+	public JSwitch(String offText, String onText, Icon offIcon, Icon onIcon)
+	{
+		// Create the model
+		setModel(new DefaultButtonModel());
 
 //        this.trueLabel = trueLabel;
 //        this.falseLabel = falseLabel;
@@ -97,20 +103,22 @@ public class JSwitch extends AbstractButton {
 //                }
 //            }
 //        });
-    }
-
-    /**
-     * Resets the UI property to a value from the current look and feel
-     *
-     * @see JComponent#updateUI
-     */
-    public void updateUI() {
-        setUI((ButtonUI)UIManager.getUI(this));
-    }
-
-
-    @Override
-    public void setSelected( boolean b ) {
+	}
+	
+	/**
+	 * Resets the UI property to a value from the current look and feel
+	 *
+	 * @see JComponent#updateUI
+	 */
+	public void updateUI()
+	{
+		setUI((ButtonUI) UIManager.getUI(this));
+	}
+	
+	
+	@Override
+	public void setSelected(boolean b)
+	{
 //        if(b){
 //            setText( trueLabel );
 //            setBackground( green );
@@ -118,32 +126,35 @@ public class JSwitch extends AbstractButton {
 //            setBackground( red );
 //            setText( falseLabel );
 //        }
-        super.setSelected( b );
-    }
-
-
-    /**
-     * Returns a string that specifies the name of the L&amp;F class
-     * that renders this component.
-     *
-     * @return the string "ButtonUI"
-     * @see JComponent#getUIClassID
-     * @see UIDefaults#getUI
-     */
-    public String getUIClassID() {
-        return uiClassID;
-    }
-
-
-    /**
-     * Overrides <code>JComponent.removeNotify</code> to check if
-     * this button is currently set as the default button on the
-     * <code>RootPane</code>, and if so, sets the <code>RootPane</code>'s
-     * default button to <code>null</code> to ensure the
-     * <code>RootPane</code> doesn't hold onto an invalid button reference.
-     */
-    public void removeNotify() {
-        JRootPane root = SwingUtilities.getRootPane(this);
-        super.removeNotify();
-    }
+		super.setSelected(b);
+	}
+	
+	
+	/**
+	 * Returns a string that specifies the name of the L&amp;F class
+	 * that renders this component.
+	 *
+	 * @return the string "ButtonUI"
+	 * @see JComponent#getUIClassID
+	 * @see UIDefaults#getUI
+	 */
+	public String getUIClassID()
+	{
+		return uiClassID;
+	}
+	
+	
+	/**
+	 * Overrides <code>JComponent.removeNotify</code> to check if
+	 * this button is currently set as the default button on the
+	 * <code>RootPane</code>, and if so, sets the <code>RootPane</code>'s
+	 * default button to <code>null</code> to ensure the
+	 * <code>RootPane</code> doesn't hold onto an invalid button reference.
+	 */
+	public void removeNotify()
+	{
+		JRootPane root = SwingUtilities.getRootPane(this);
+		super.removeNotify();
+	}
+	
 }

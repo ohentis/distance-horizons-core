@@ -5,7 +5,7 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 
 public interface IDhClientWorld extends IDhWorld
 {
-    void clientTick();
+	void clientTick();
 	
 	void doWorldGen();
 	

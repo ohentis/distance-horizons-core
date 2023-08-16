@@ -23,4 +23,5 @@ public class DefaultConverter<T> implements IConverter<T, T>
 	{
 		return coreObject;
 	}
+	
 }

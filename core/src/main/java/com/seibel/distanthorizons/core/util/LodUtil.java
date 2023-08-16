@@ -41,7 +41,7 @@ import org.apache.logging.log4j.Logger;
 
 /**
  * This class holds methods and constants that may be used in multiple places.
- * 
+ *
  * @author James Seibel
  * @version 2022-12-5
  */
@@ -73,7 +73,7 @@ public class LodUtil
 	 * alpha used when drawing chunks in debug mode
 	 */
 	public static final int DEBUG_ALPHA = 255; // 0 - 25;
-
+	
 	public static final int COLOR_DEBUG_BLACK = ColorUtil.rgbToInt(DEBUG_ALPHA, 0, 0, 0);
 	public static final int COLOR_DEBUG_WHITE = ColorUtil.rgbToInt(DEBUG_ALPHA, 255, 255, 255);
 	public static final int COLOR_INVISIBLE = ColorUtil.rgbToInt(0, 0, 0, 0);
@@ -83,8 +83,8 @@ public class LodUtil
 	 * In order of nearest to farthest: <br>
 	 * Red, Orange, Yellow, Green, Cyan, Blue, Magenta, white, gray, black
 	 */
-	public static final int[] DEBUG_DETAIL_LEVEL_COLORS = new int[] {
-			ColorUtil.rgbToInt(255,0,0), ColorUtil.rgbToInt(255,127,0),
+	public static final int[] DEBUG_DETAIL_LEVEL_COLORS = new int[]{
+			ColorUtil.rgbToInt(255, 0, 0), ColorUtil.rgbToInt(255, 127, 0),
 			ColorUtil.rgbToInt(255, 255, 0), ColorUtil.rgbToInt(127, 255, 0),
 			ColorUtil.rgbToInt(0, 255, 0), ColorUtil.rgbToInt(0, 255, 127),
 			ColorUtil.rgbToInt(0, 255, 255), ColorUtil.rgbToInt(0, 127, 255),
@@ -146,11 +146,12 @@ public class LodUtil
 	
 	/**
 	 * Gets the ServerWorld for the relevant dimension.
+	 *
 	 * @return null if there is no ServerWorld for the given dimension
 	 */
 	public static ILevelWrapper getServerWorldFromDimension(IDimensionTypeWrapper newDimension)
 	{
-		if(!MC_CLIENT.hasSinglePlayerServer())
+		if (!MC_CLIENT.hasSinglePlayerServer())
 			return null;
 		
 		Iterable<ILevelWrapper> worlds = MC_CLIENT.getAllServerWorlds();
@@ -167,24 +168,32 @@ public class LodUtil
 		
 		return returnWorld;
 	}
-
-
-	public static int computeOverdrawOffset() {
+	
+	
+	public static int computeOverdrawOffset()
+	{
 		int chunkRenderDist = MC_RENDER.getRenderDistance() + 1;
 		EVanillaOverdraw overdraw = EVanillaOverdraw.ALWAYS; //Config.Client.Advanced.Graphics.AdvancedGraphics.vanillaOverdraw.get();
 		if (overdraw == EVanillaOverdraw.ALWAYS) return Integer.MAX_VALUE;
 		int offset;
-		if (overdraw == EVanillaOverdraw.NEVER) {
+		if (overdraw == EVanillaOverdraw.NEVER)
+		{
 			offset = 0; //Config.Client.Advanced.Graphics.AdvancedGraphics.overdrawOffset.get();
-		} else {
-			if (chunkRenderDist < MINIMUM_RENDER_DISTANCE_FOR_FAR_OVERDRAW) {
+		}
+		else
+		{
+			if (chunkRenderDist < MINIMUM_RENDER_DISTANCE_FOR_FAR_OVERDRAW)
+			{
 				offset = 1;
-			} else {
+			}
+			else
+			{
 				offset = chunkRenderDist / 5;
 			}
 		}
-
-		if (chunkRenderDist - offset <= 1) {
+		
+		if (chunkRenderDist - offset <= 1)
+		{
 			return Integer.MAX_VALUE;
 		}
 		return offset;
@@ -197,21 +206,24 @@ public class LodUtil
 		int offset = computeOverdrawOffset();
 		if (offset == Integer.MAX_VALUE) return null;
 		int renderDist = MC_RENDER.getRenderDistance() + 1;
-
+		
 		Iterator<DhChunkPos> posIter = MC_RENDER.getVanillaRenderedChunks().iterator();
-
-		return new EdgeDistanceBooleanGrid(new Iterator<Pos2D>() {
-					@Override
-					public boolean hasNext() {
-						return posIter.hasNext();
-					}
-
-					@Override
-					public Pos2D next() {
-						DhChunkPos pos = posIter.next();
-						return new Pos2D(pos.getX(), pos.getZ());
-					}
-				},
+		
+		return new EdgeDistanceBooleanGrid(new Iterator<Pos2D>()
+		{
+			@Override
+			public boolean hasNext()
+			{
+				return posIter.hasNext();
+			}
+			
+			@Override
+			public Pos2D next()
+			{
+				DhChunkPos pos = posIter.next();
+				return new Pos2D(pos.getX(), pos.getZ());
+			}
+		},
 				MC_CLIENT.getPlayerChunkPos().getX() - renderDist,
 				MC_CLIENT.getPlayerChunkPos().getZ() - renderDist,
 				renderDist * 2 + 1);
@@ -221,29 +233,32 @@ public class LodUtil
 	// True if the requested threshold pass, or false otherwise
 	// For details, see:
 	// https://stackoverflow.com/questions/3571203/what-are-runtime-getruntime-totalmemory-and-freememory
-	public static boolean checkRamUsage(double minFreeMemoryPercent, int minFreeMemoryMB) {
+	public static boolean checkRamUsage(double minFreeMemoryPercent, int minFreeMemoryMB)
+	{
 		long freeMem = Runtime.getRuntime().freeMemory() + Runtime.getRuntime().maxMemory() - Runtime.getRuntime().totalMemory();
 		if (freeMem < minFreeMemoryMB * 1024L * 1024L) return false;
 		long maxMem = Runtime.getRuntime().maxMemory();
-		if (freeMem/(double)maxMem < minFreeMemoryPercent) return false;
+		if (freeMem / (double) maxMem < minFreeMemoryPercent) return false;
 		return true;
 	}
 	
-	public static void checkInterrupts() throws InterruptedException {
+	public static void checkInterrupts() throws InterruptedException
+	{
 		if (Thread.interrupted()) throw new InterruptedException();
 	}
-
+	
 	/**
 	 * Format a given string with params using log4j's MessageFormat
 	 *
-	 * @apiNote <b>This 'format' SHOULD ONLY be used for logging and debugging purposes!
-	 * Do not use it for deserialization or naming of objects.</b>
 	 * @param str The string to format
 	 * @param param The parameters to use in the string
 	 * @return A message object. Call .toString() to get the string.
+	 * @apiNote <b>This 'format' SHOULD ONLY be used for logging and debugging purposes!
+	 * Do not use it for deserialization or naming of objects.</b>
 	 * @author leetom
 	 */
-	public static String formatLog(String str, Object... param) {
+	public static String formatLog(String str, Object... param)
+	{
 		return LOGGER.getMessageFactory().newMessage(str, param).getFormattedMessage();
 	}
 	
@@ -262,51 +277,67 @@ public class LodUtil
 			return str.substring(0, Math.min(str.length(), maxLength));
 		}
 	}
-
-	public static class AssertFailureException extends RuntimeException {
-		public AssertFailureException(String message) {
+	
+	public static class AssertFailureException extends RuntimeException
+	{
+		public AssertFailureException(String message)
+		{
 			super(message);
 			debugBreak();
 		}
+		
 	}
-
-	public static void debugBreak() {
+	
+	public static void debugBreak()
+	{
 		int a = 0; // Set breakpoint here for auto pause on assert failure
 	}
-
-	public static void assertTrue(boolean condition) {
-		if (!condition) {
+	
+	public static void assertTrue(boolean condition)
+	{
+		if (!condition)
+		{
 			throw new AssertFailureException("Assertion failed");
 		}
 	}
-	public static void assertTrue(boolean condition, String message) {
-		if (!condition) {
+	public static void assertTrue(boolean condition, String message)
+	{
+		if (!condition)
+		{
 			throw new AssertFailureException("Assertion failed:\n " + message);
 		}
 	}
-	public static void assertTrue(boolean condition, String message, Object... args) {
-		if (!condition) {
+	public static void assertTrue(boolean condition, String message, Object... args)
+	{
+		if (!condition)
+		{
 			throw new AssertFailureException("Assertion failed:\n " + formatLog(message, args));
 		}
 	}
-	public static void assertNotReach() {
+	public static void assertNotReach()
+	{
 		throw new AssertFailureException("Assert Not Reach failed");
 	}
-	public static void assertNotReach(String message) {
+	public static void assertNotReach(String message)
+	{
 		throw new AssertFailureException("Assert Not Reach failed:\n " + message);
 	}
-	public static void assertNotReach(String message, Object... args) {
+	public static void assertNotReach(String message, Object... args)
+	{
 		throw new AssertFailureException("Assert Not Reach failed:\n " + formatLog(message, args));
 	}
-	public static void assertToDo() {
+	public static void assertToDo()
+	{
 		throw new AssertFailureException("TODO!");
 	}
-
-	public static Throwable ensureUnwrap(Throwable t) {
+	
+	public static Throwable ensureUnwrap(Throwable t)
+	{
 		return t instanceof CompletionException ? ensureUnwrap(t.getCause()) : t;
 	}
-
-	public static boolean isInterruptOrReject(Throwable t) {
+	
+	public static boolean isInterruptOrReject(Throwable t)
+	{
 		Throwable unwrapped = LodUtil.ensureUnwrap(t);
 		return UncheckedInterruptedException.isInterrupt(unwrapped) ||
 				unwrapped instanceof RejectedExecutionException ||

@@ -6,7 +6,7 @@ import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhAp
 
 /**
  * Fired after Distant Horizons finishes running its setup.
- * 
+ *
  * @author James Seibel
  * @version 2023-6-23
  */

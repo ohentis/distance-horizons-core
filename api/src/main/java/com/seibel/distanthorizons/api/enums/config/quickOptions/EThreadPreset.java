@@ -23,7 +23,7 @@ import com.seibel.distanthorizons.api.enums.config.DisallowSelectingViaConfigGui
 
 /**
  * CUSTOM, <br><br>
- * 
+ *
  * MINIMAL_IMPACT, <br>
  * LOW_IMPACT, <br>
  * BALANCED, <br>

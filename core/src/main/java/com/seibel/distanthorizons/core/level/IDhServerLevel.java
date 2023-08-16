@@ -8,6 +8,4 @@ public interface IDhServerLevel extends IDhWorldGenLevel, GeneratedFullDataFileH
     void serverTick();
 	
     IServerLevelWrapper getServerLevelWrapper();
-	
 }
-

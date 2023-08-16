@@ -14,21 +14,21 @@ import java.util.function.Function;
 
 public interface IFullDataSourceProvider extends AutoCloseable
 {
-    void addScannedFile(Collection<File> detectedFiles);
-
-    CompletableFuture<IFullDataSource> read(DhSectionPos pos);
-    void write(DhSectionPos sectionPos, ChunkSizedFullDataAccessor chunkData);
-    CompletableFuture<Void> flushAndSave();
-    CompletableFuture<Void> flushAndSave(DhSectionPos sectionPos);
-
-    void addOnUpdatedListener(Consumer<IFullDataSource> listener);
-
-    //long getCacheVersion(DhSectionPos sectionPos);
-    //boolean isCacheVersionValid(DhSectionPos sectionPos, long cacheVersion);
-
-    CompletableFuture<IFullDataSource> onCreateDataFile(FullDataMetaFile file);
-    CompletableFuture<IFullDataSource> onDataFileUpdate(IFullDataSource source, FullDataMetaFile file, Consumer<IFullDataSource> onUpdated, Function<IFullDataSource, Boolean> updater);
-    File computeDataFilePath(DhSectionPos pos);
-    ExecutorService getIOExecutor();
-
+	void addScannedFile(Collection<File> detectedFiles);
+	
+	CompletableFuture<IFullDataSource> read(DhSectionPos pos);
+	void write(DhSectionPos sectionPos, ChunkSizedFullDataAccessor chunkData);
+	CompletableFuture<Void> flushAndSave();
+	CompletableFuture<Void> flushAndSave(DhSectionPos sectionPos);
+	
+	void addOnUpdatedListener(Consumer<IFullDataSource> listener);
+	
+	//long getCacheVersion(DhSectionPos sectionPos);
+	//boolean isCacheVersionValid(DhSectionPos sectionPos, long cacheVersion);
+	
+	CompletableFuture<IFullDataSource> onCreateDataFile(FullDataMetaFile file);
+	CompletableFuture<IFullDataSource> onDataFileUpdate(IFullDataSource source, FullDataMetaFile file, Consumer<IFullDataSource> onUpdated, Function<IFullDataSource, Boolean> updater);
+	File computeDataFilePath(DhSectionPos pos);
+	ExecutorService getIOExecutor();
+	
 }

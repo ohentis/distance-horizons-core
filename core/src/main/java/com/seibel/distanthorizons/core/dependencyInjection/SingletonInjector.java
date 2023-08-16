@@ -25,7 +25,7 @@ import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IBindab
 /**
  * This class takes care of dependency injection
  * for singletons.
- * 
+ *
  * @author James Seibel
  * @version 2022-7-16
  */

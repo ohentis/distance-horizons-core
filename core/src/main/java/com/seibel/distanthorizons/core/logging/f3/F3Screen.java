@@ -45,16 +45,19 @@ public class F3Screen
 	// and because this class shouldn't be used in a try {} block.
 	public static abstract class Message implements Closeable
 	{
-		protected Message() {
+		protected Message()
+		{
 			SELF_UPDATE_MESSAGE_LIST.add(this);
 		}
 		
 		public abstract void printTo(List<String> output);
 		
-		@Override 
-		public void close() {
+		@Override
+		public void close()
+		{
 			boolean removed = SELF_UPDATE_MESSAGE_LIST.remove(this);
 		}
+		
 	}
 	
 	public static class StaticMessage extends Message
@@ -65,6 +68,7 @@ public class F3Screen
 		
 		@Override
 		public void printTo(List<String> output) { output.addAll(Arrays.asList(this.lines)); }
+		
 	}
 	
 	public static class DynamicMessage extends Message
@@ -81,6 +85,7 @@ public class F3Screen
 				list.add(message);
 			}
 		}
+		
 	}
 	
 	public static class MultiDynamicMessage extends Message
@@ -101,6 +106,7 @@ public class F3Screen
 				}
 			}
 		}
+		
 	}
 	
 	public static class NestedMessage extends Message
@@ -120,6 +126,7 @@ public class F3Screen
 				list.addAll(Arrays.asList(message));
 			}
 		}
+		
 	}
 	
 }

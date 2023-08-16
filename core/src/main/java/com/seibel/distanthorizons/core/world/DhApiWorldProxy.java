@@ -17,7 +17,7 @@ import java.util.ArrayList;
  * This is separate from the world itself to prevent issues
  * with API implementors referencing said world when it needs
  * to be loaded/unloaded.
- * 
+ *
  * @author James Seibel
  * @version 2022-11-20
  */
@@ -35,11 +35,11 @@ public class DhApiWorldProxy implements IDhApiWorldProxy
 	
 	
 	
-	@Override 
+	@Override
 	public boolean worldLoaded() { return SharedApi.getAbstractDhWorld() != null; }
 	
 	@Override
-	public IDhApiLevelWrapper getSinglePlayerLevel() 
+	public IDhApiLevelWrapper getSinglePlayerLevel()
 	{
 		if (SharedApi.getAbstractDhWorld() == null)
 		{

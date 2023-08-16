@@ -24,7 +24,7 @@ import java.nio.FloatBuffer;
 /**
  * An (almost) exact copy of Minecraft's 1.16.5
  * implementation of a 4x4 float matrix.
- * 
+ *
  * @author James Seibel
  * @version 11-11-2021
  */
@@ -394,8 +394,8 @@ public class Mat4f
 	}
 	*/
 	
-	/** 
-	 * TODO: what kind of translation is this? 
+	/**
+	 * TODO: what kind of translation is this?
 	 * and how is this different from "multiplyTranslationMatrix"?
 	 * Answer: This is faster and direct (but only if this is pure translation matrix without rotate)
 	 */
@@ -409,7 +409,7 @@ public class Mat4f
 	/** originally "translate" from Minecraft's MatrixStack */
 	public void multiplyTranslationMatrix(double x, double y, double z)
 	{
-		multiply(createTranslateMatrix((float)x, (float)y, (float)z));
+		multiply(createTranslateMatrix((float) x, (float) y, (float) z));
 	}
 	
 	public Mat4f copy()
@@ -450,30 +450,31 @@ public class Mat4f
 	/** Returns the values of this matrix in row major order (AKA rows then columns) */
 	public float[] getValuesAsArray()
 	{
-		return new float[] {
-			this.m00,
-			this.m01,
-			this.m02,
-			this.m03,
-			
-			this.m10,
-			this.m11,
-			this.m12,
-			this.m13,
-			
-			this.m20,
-			this.m21,
-			this.m22,
-			this.m23,
-			
-			this.m30,
-			this.m31,
-			this.m32,
-			this.m33,
+		return new float[]{
+				this.m00,
+				this.m01,
+				this.m02,
+				this.m03,
+				
+				this.m10,
+				this.m11,
+				this.m12,
+				this.m13,
+				
+				this.m20,
+				this.m21,
+				this.m22,
+				this.m23,
+				
+				this.m30,
+				this.m31,
+				this.m32,
+				this.m33,
 		};
 	}
-
-	public Vec3f asNonNormalizedLookForwardVector() {
+	
+	public Vec3f asNonNormalizedLookForwardVector()
+	{
 		return new Vec3f(this.m02, this.m12, this.m22);
 	}
 	
@@ -505,7 +506,7 @@ public class Mat4f
 	{
 		this(buffer.array());
 	}
-
+	
 	public void set(Mat4f mat)
 	{
 		this.m00 = mat.m00;
@@ -563,7 +564,7 @@ public class Mat4f
 		this.m13 = y;
 		this.m23 = z;
 	}
-
+	
 	/**
 	 * Changes the values that store the clipping planes.
 	 * Formula for calculating matrix values is the same that OpenGL uses when making matrices.
@@ -571,7 +572,7 @@ public class Mat4f
 	 * @param nearClip New near clipping plane value.
 	 * @param farClip New far clipping plane value.
 	 */
-	public void setClipPlanes(float nearClip,float farClip)
+	public void setClipPlanes(float nearClip, float farClip)
 	{
 		//convert to matrix values, formula copied from a textbook / openGL specification.
 		float matNearClip = -((farClip + nearClip) / (farClip - nearClip));

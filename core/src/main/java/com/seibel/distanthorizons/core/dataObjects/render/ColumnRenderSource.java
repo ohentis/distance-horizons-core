@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * Stores the render data used to generate OpenGL buffers.
  *
- * @see	RenderDataPointUtil
+ * @see    RenderDataPointUtil
  */
 public class ColumnRenderSource
 {
@@ -39,7 +39,7 @@ public class ColumnRenderSource
 	
 	/**
 	 * This is the byte put between different sections in the binary save file.
-	 * The presence and absence of this byte indicates if the file is correctly formatted.  
+	 * The presence and absence of this byte indicates if the file is correctly formatted.
 	 */
 	public static final int DATA_GUARD_BYTE = 0xFFFFFFFF;
 	/** indicates the binary save file represents an empty data source */
@@ -57,7 +57,7 @@ public class ColumnRenderSource
 	
 	private boolean isEmpty = true;
 	public EDhApiWorldGenerationStep worldGenStep;
-
+	
 	public AtomicLong localVersion = new AtomicLong(0); // used to track changes to the data source, so that buffers can be updated when necessary
 	
 	//==============//
@@ -67,7 +67,7 @@ public class ColumnRenderSource
 	public static ColumnRenderSource createEmptyRenderSource(DhSectionPos sectionPos) { return new ColumnRenderSource(sectionPos, 0, 0); }
 	/**
 	 * Creates an empty ColumnRenderSource.
-	 * 
+	 *
 	 * @param sectionPos the relative position of the container
 	 * @param maxVerticalSize the maximum vertical size of the container
 	 */
@@ -83,7 +83,7 @@ public class ColumnRenderSource
 	
 	/**
 	 * Creates a new ColumnRenderSource from the parsedColumnData.
-	 * 
+	 *
 	 * @throws IOException if the DataInputStream's detail level isn't what was expected
 	 */
 	public ColumnRenderSource(DhSectionPos sectionPos, ColumnRenderLoader.ParsedColumnData parsedColumnData, IDhLevel level) throws IOException
@@ -241,7 +241,7 @@ public class ColumnRenderSource
 		}
 		// the source isn't empty, this object won't be empty after the method finishes
 		this.isEmpty = false;
-
+		
 		for (int i = 0; i < this.renderDataContainer.length; i += this.verticalDataCount)
 		{
 			int thisGenMode = RenderDataPointUtil.getGenerationMode(this.renderDataContainer[i]);
@@ -264,7 +264,7 @@ public class ColumnRenderSource
 			}
 		}
 	}
-	/** 
+	/**
 	 * If the newVerticalSize is different than the current verticalSize,
 	 * this will delete any data currently in this object and re-size it. <Br>
 	 * Otherwise this method will do nothing.
@@ -282,23 +282,25 @@ public class ColumnRenderSource
 	{
 		try
 		{
-			if (FullDataToRenderDataTransformer.writeFullDataChunkToColumnData(this, level, chunkData)) {
+			if (FullDataToRenderDataTransformer.writeFullDataChunkToColumnData(this, level, chunkData))
+			{
 				localVersion.incrementAndGet();
 				return true;
 			}
-			else {
+			else
+			{
 				return false;
 			}
 		}
 		catch (InterruptedException e)
 		{
 			// expected if the transformer is shut down, the exception can be ignored
-			LOGGER.warn(ColumnRenderSource.class.getSimpleName()+" fast write interrupted.");
+			LOGGER.warn(ColumnRenderSource.class.getSimpleName() + " fast write interrupted.");
 		}
 		catch (Throwable e)
 		{
 			// shouldn't happen, but just in case
-			LOGGER.warn("Unable to complete fastWrite for RenderSource pos: ["+this.sectionPos+"] and chunk pos: ["+chunkData.pos+"].", e);
+			LOGGER.warn("Unable to complete fastWrite for RenderSource pos: [" + this.sectionPos + "] and chunk pos: [" + chunkData.pos + "].", e);
 		}
 		return false;
 	}
@@ -329,10 +331,10 @@ public class ColumnRenderSource
 	/** @return how many data points wide this {@link ColumnRenderSource} is. */
 	public int getWidthInDataPoints() { return BitShiftUtil.powerOfTwo(this.getDetailOffset()); }
 	public byte getDetailOffset() { return SECTION_SIZE_OFFSET; }
-
+	
 	public byte getRenderDataFormatVersion() { return DATA_FORMAT_VERSION; }
 	
-	/** 
+	/**
 	 * Whether this object is still valid. If not, a new one should be created.
 	 * TODO this will be necessary for dedicated multiplayer support, if the server has newer data this section should no longer be valid
 	 */

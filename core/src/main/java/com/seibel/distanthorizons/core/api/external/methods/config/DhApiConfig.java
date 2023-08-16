@@ -10,21 +10,21 @@ public class DhApiConfig implements IDhApiConfig
 {
 	public static final DhApiConfig INSTANCE = new DhApiConfig();
 	
-	private DhApiConfig() {  }
+	private DhApiConfig() { }
 	
 	
 	
 	@Override
 	public IDhApiGraphicsConfig graphics() { return DhApiGraphicsConfig.INSTANCE; }
-	@Override 
+	@Override
 	public IDhApiWorldGenerationConfig worldGenerator() { return DhApiWorldGenerationConfig.INSTANCE; }
 	@Override
 	public IDhApiMultiplayerConfig multiplayer() { return DhApiMultiplayerConfig.INSTANCE; }
 	@Override
 	public IDhApiMultiThreadingConfig multiThreading() { return DhApiMultiThreadingConfig.INSTANCE; }
-	@Override 
+	@Override
 	public IDhApiGpuBuffersConfig gpuBuffers() { return DhApiGpuBuffersConfig.INSTANCE; }
-	@Override 
+	@Override
 	public IDhApiDebuggingConfig debugging() { return DhApiDebuggingConfig.INSTANCE; }
 	
 }

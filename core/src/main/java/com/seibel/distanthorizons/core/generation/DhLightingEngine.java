@@ -23,7 +23,7 @@ public class DhLightingEngine
 	public static final DhLightingEngine INSTANCE = new DhLightingEngine();
 	
 	
-	private DhLightingEngine() {  }
+	private DhLightingEngine() { }
 	
 	
 	
@@ -31,7 +31,7 @@ public class DhLightingEngine
 	 * Note: depending on the implementation of {@link IChunkWrapper#setDhBlockLight(int, int, int, int)} and {@link IChunkWrapper#setDhSkyLight(int, int, int, int)}
 	 * the light values may be stored in the wrapper itself instead of the wrapped chunk object.
 	 * If that is the case unwrapping the chunk will undo any work this method did.
-	 * 
+	 *
 	 * @param centerChunk the chunk we want to apply lighting to
 	 * @param nearbyChunkList should also contain centerChunk
 	 * @param maxSkyLight should be a value between 0 and 15
@@ -56,9 +56,9 @@ public class DhLightingEngine
 		{
 			for (int zOffset = -1; zOffset <= 1; zOffset++)
 			{
-				DhChunkPos adjacentPos = new DhChunkPos(centerChunkPos.x+xOffset, centerChunkPos.z+zOffset);
+				DhChunkPos adjacentPos = new DhChunkPos(centerChunkPos.x + xOffset, centerChunkPos.z + zOffset);
 				requestedAdjacentPositions.add(adjacentPos);
-			}	
+			}
 		}
 		
 		
@@ -125,7 +125,7 @@ public class DhLightingEngine
 		// validate that at least 1 chunk was found
 		if (chunksByChunkPos.size() == 0)
 		{
-			LOGGER.warn("Attempted to generate lighting for position ["+centerChunkPos+"], but neither that chunk nor any adjacent chunks were found. No chunk lighting was performed.");
+			LOGGER.warn("Attempted to generate lighting for position [" + centerChunkPos + "], but neither that chunk nor any adjacent chunks were found. No chunk lighting was performed.");
 			return;
 		}
 		
@@ -142,7 +142,7 @@ public class DhLightingEngine
 				(neighbourChunk, relBlockPos, newLightValue) -> neighbourChunk.setDhSkyLight(relBlockPos.x, relBlockPos.y, relBlockPos.z, newLightValue));
 		
 		
-		LOGGER.trace("Finished generating lighting for chunk: ["+centerChunkPos+"]");
+		LOGGER.trace("Finished generating lighting for chunk: [" + centerChunkPos + "]");
 	}
 	
 	/** Applies each {@link LightPos} from the queue to the given set of {@link IChunkWrapper}'s. */
@@ -221,9 +221,18 @@ public class DhLightingEngine
 	//================//
 	
 	@FunctionalInterface
-	interface IGetLightFunc { int getLight(IChunkWrapper chunk, DhBlockPos pos); }
+	interface IGetLightFunc
+	{
+		int getLight(IChunkWrapper chunk, DhBlockPos pos);
+		
+	}
+	
 	@FunctionalInterface
-	interface ISetLightFunc { void setLight(IChunkWrapper chunk, DhBlockPos pos, int lightValue); }
+	interface ISetLightFunc
+	{
+		void setLight(IChunkWrapper chunk, DhBlockPos pos, int lightValue);
+		
+	}
 	
 	private static class LightPos
 	{
@@ -235,6 +244,7 @@ public class DhLightingEngine
 			this.pos = pos;
 			this.lightValue = lightValue;
 		}
+		
 	}
 	
 	

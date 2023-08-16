@@ -26,25 +26,25 @@ import java.io.*;
 
 /**
  * This data source contains every datapoint over its given {@link DhSectionPos}.
- * 
+ *
  * @see FullDataPointUtil
  * @see LowDetailIncompleteFullDataSource
  * @see HighDetailIncompleteFullDataSource
  */
 public class CompleteFullDataSource extends FullDataArrayAccessor implements IFullDataSource, IStreamableFullDataSource<IStreamableFullDataSource.FullDataSourceSummaryData, long[][]>
 {
-    private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
-    public static final byte SECTION_SIZE_OFFSET = DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL;
-    /** measured in dataPoints */
+	public static final byte SECTION_SIZE_OFFSET = DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL;
+	/** measured in dataPoints */
 	public static final int WIDTH = BitShiftUtil.powerOfTwo(SECTION_SIZE_OFFSET);
-    
+	
 	public static final byte DATA_FORMAT_VERSION = 3;
 	/** written to the binary file to mark what {@link IFullDataSource} the binary file corresponds to */
-    public static final long TYPE_ID = "CompleteFullDataSource".hashCode();
+	public static final long TYPE_ID = "CompleteFullDataSource".hashCode();
 	
-    private final DhSectionPos sectionPos;
-    private boolean isEmpty = true;
+	private final DhSectionPos sectionPos;
+	private boolean isEmpty = true;
 	public EDhApiWorldGenerationStep worldGenStep = EDhApiWorldGenerationStep.EMPTY;
 	
 	
@@ -56,9 +56,9 @@ public class CompleteFullDataSource extends FullDataArrayAccessor implements IFu
 	public static CompleteFullDataSource createEmpty(DhSectionPos pos) { return new CompleteFullDataSource(pos); }
 	private CompleteFullDataSource(DhSectionPos sectionPos)
 	{
-        super(new FullDataPointIdMap(sectionPos), new long[WIDTH * WIDTH][0], WIDTH);
-        this.sectionPos = sectionPos;
-    }
+		super(new FullDataPointIdMap(sectionPos), new long[WIDTH * WIDTH][0], WIDTH);
+		this.sectionPos = sectionPos;
+	}
 	
 	public CompleteFullDataSource(DhSectionPos pos, FullDataPointIdMap mapping, long[][] data)
 	{
@@ -87,7 +87,7 @@ public class CompleteFullDataSource extends FullDataArrayAccessor implements IFu
 	}
 	@Override
 	public FullDataSourceSummaryData readSourceSummaryInfo(@CheckForNull FullDataMetaFile dataFile, DhDataInputStream inputStream, IDhLevel level) throws IOException
-	{	
+	{
 		int dataDetail = inputStream.readInt();
 		if (dataFile != null && dataFile.baseMetaData != null && dataDetail != dataFile.baseMetaData.dataLevel)
 		{
@@ -97,13 +97,13 @@ public class CompleteFullDataSource extends FullDataArrayAccessor implements IFu
 		int width = inputStream.readInt();
 		if (width != WIDTH)
 		{
-			throw new IOException(LodUtil.formatLog("Section width mismatch: "+width+" != "+ WIDTH +" (Currently only 1 section width is supported)"));
+			throw new IOException(LodUtil.formatLog("Section width mismatch: " + width + " != " + WIDTH + " (Currently only 1 section width is supported)"));
 		}
 		
 		int minY = inputStream.readInt();
 		if (minY != level.getMinY())
 		{
-			LOGGER.warn("Data minY mismatch: "+minY+" != "+level.getMinY()+". Will ignore data's y level");
+			LOGGER.warn("Data minY mismatch: " + minY + " != " + level.getMinY() + ". Will ignore data's y level");
 		}
 		
 		byte worldGenByte = inputStream.readByte();
@@ -111,7 +111,7 @@ public class CompleteFullDataSource extends FullDataArrayAccessor implements IFu
 		if (worldGenStep == null)
 		{
 			worldGenStep = EDhApiWorldGenerationStep.SURFACE;
-			LOGGER.warn("Missing WorldGenStep, defaulting to: "+worldGenStep.name());
+			LOGGER.warn("Missing WorldGenStep, defaulting to: " + worldGenStep.name());
 		}
 		
 		
@@ -179,7 +179,7 @@ public class CompleteFullDataSource extends FullDataArrayAccessor implements IFu
 		}
 		else if (dataPresentFlag != IFullDataSource.DATA_GUARD_BYTE)
 		{
-			throw new IOException("Invalid file format. Data Points guard byte expected: (no data) ["+IFullDataSource.NO_DATA_FLAG_BYTE+"] or (data present) ["+IFullDataSource.DATA_GUARD_BYTE+"], but found ["+dataPresentFlag+"].");
+			throw new IOException("Invalid file format. Data Points guard byte expected: (no data) [" + IFullDataSource.NO_DATA_FLAG_BYTE + "] or (data present) [" + IFullDataSource.DATA_GUARD_BYTE + "], but found [" + dataPresentFlag + "].");
 		}
 		
 		
@@ -244,7 +244,7 @@ public class CompleteFullDataSource extends FullDataArrayAccessor implements IFu
 		
 		return FullDataPointIdMap.deserialize(inputStream, this.sectionPos, levelWrapper);
 	}
-	@Override 
+	@Override
 	public void setIdMapping(FullDataPointIdMap mappings) { this.mapping.mergeAndReturnRemappedEntityIds(mappings); }
 	
 	
@@ -328,7 +328,7 @@ public class CompleteFullDataSource extends FullDataArrayAccessor implements IFu
 		}
 		
 	}
-
+	
 	
 	
 	//================//
@@ -354,7 +354,7 @@ public class CompleteFullDataSource extends FullDataArrayAccessor implements IFu
 			// if the difference in detail levels is very large, the posToWrite
 			// may be skipped, due to how we sample large detail levels by only
 			// getting the corners.
-			 
+			
 			// In this case the difference isn't very large, so return true
 			return true;
 		}
@@ -364,7 +364,7 @@ public class CompleteFullDataSource extends FullDataArrayAccessor implements IFu
 			// check if the posToWrite is in a corner of posToTest
 			byte sectPerData = (byte) BitShiftUtil.powerOfTwo(posToWrite.sectionDetailLevel - posToTest.sectionDetailLevel - SECTION_SIZE_OFFSET);
 			LodUtil.assertTrue(sectPerData != 0);
-			return posToTest.sectionX % sectPerData == 0 && posToTest.sectionZ % sectPerData == 0;	
+			return posToTest.sectionX % sectPerData == 0 && posToTest.sectionZ % sectPerData == 0;
 		}
 	}
 	
@@ -375,9 +375,9 @@ public class CompleteFullDataSource extends FullDataArrayAccessor implements IFu
 	//=====================//
 	
 	@Override
-	public DhSectionPos getSectionPos() {  return this.sectionPos; }
+	public DhSectionPos getSectionPos() { return this.sectionPos; }
 	@Override
-	public byte getDataDetailLevel() { return (byte) (this.sectionPos.sectionDetailLevel -SECTION_SIZE_OFFSET); }
+	public byte getDataDetailLevel() { return (byte) (this.sectionPos.sectionDetailLevel - SECTION_SIZE_OFFSET); }
 	
 	@Override
 	public long getTypeId() { return TYPE_ID; }

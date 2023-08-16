@@ -9,7 +9,7 @@ import java.util.Objects;
 
 /**
  * A MC world position that is relative to a given detail level.
- * 
+ *
  * @author Leetom
  * @version 2022-11-6
  */
@@ -37,12 +37,12 @@ public class DhLodPos implements Comparable<DhLodPos>
 	// getters //
 	//=========//
 	
-    public DhLodUnit getX() { return new DhLodUnit(this.detailLevel, this.x); }
-    public DhLodUnit getZ() { return new DhLodUnit(this.detailLevel, this.z); }
-
+	public DhLodUnit getX() { return new DhLodUnit(this.detailLevel, this.x); }
+	public DhLodUnit getZ() { return new DhLodUnit(this.detailLevel, this.z); }
+	
 	// Get the width of this pos, measured in the mc block unit. (i.e. detail 0)
-    public int getBlockWidth() { return this.getWidthAtDetail((byte)0); }
-
+	public int getBlockWidth() { return this.getWidthAtDetail((byte) 0); }
+	
 	// Get the width of this pos, measured in the target detail level.
 	public int getWidthAtDetail(byte targetLevel)
 	{
@@ -50,8 +50,8 @@ public class DhLodPos implements Comparable<DhLodPos>
 		return BitShiftUtil.powerOfTwo(this.detailLevel - targetLevel);
 	}
 	
-	public DhBlockPos2D getCenterBlockPos() 
-	{ 
+	public DhBlockPos2D getCenterBlockPos()
+	{
 		return new DhBlockPos2D(
 				this.getX().toBlockWidth() + BitShiftUtil.half(this.getBlockWidth()),
 				this.getZ().toBlockWidth() + BitShiftUtil.half(this.getBlockWidth()));
@@ -63,19 +63,19 @@ public class DhLodPos implements Comparable<DhLodPos>
 	{
 		LodUtil.assertTrue(newDetail <= this.detailLevel);
 		return new DhLodPos(newDetail,
-				this.x * BitShiftUtil.powerOfTwo(this.detailLevel - newDetail), 
+				this.x * BitShiftUtil.powerOfTwo(this.detailLevel - newDetail),
 				this.z * BitShiftUtil.powerOfTwo(this.detailLevel - newDetail));
 	}
 	
 	/**
 	 * Returns the DhLodPos 1 detail level lower <br><br>
-	 * 
+	 *
 	 * Relative child positions returned for each index: <br>
 	 * 0 = (0,0) <br>
 	 * 1 = (1,0) <br>
 	 * 2 = (0,1) <br>
 	 * 3 = (1,1) <br>
-	 * 
+	 *
 	 * @param child0to3 must be an int between 0 and 3
 	 */
 	public DhLodPos getChildPosByIndex(int child0to3) throws IllegalArgumentException, IllegalStateException
@@ -94,11 +94,11 @@ public class DhLodPos implements Comparable<DhLodPos>
 	
 	/** @see DhLodPos#getSectionPosWithSectionDetailLevel(byte) */
 	public DhLodPos getDhSectionRelativePositionForDetailLevel() throws IllegalArgumentException { return this.getDhSectionRelativePositionForDetailLevel(this.detailLevel); }
-	/** 
+	/**
 	 * Returns a DhLodPos with the given detail level and an X/Z position somewhere between (0,0) and (63,63).
 	 * This is done to access specific sections from a {@link IFullDataSource} where LOD columns are stored
 	 * in 64 x 64 blocks.
-	 * 
+	 *
 	 * @throws IllegalArgumentException if this position's detail level is lower than the output detail level
 	 */
 	public DhLodPos getDhSectionRelativePositionForDetailLevel(byte outputDetailLevel) throws IllegalArgumentException
@@ -131,9 +131,9 @@ public class DhLodPos implements Comparable<DhLodPos>
 		return new DhLodPos(outputDetailLevel, xRelativePos, zRelativePos);
 	}
 	
-	/** 
+	/**
 	 * @param sectionDetailLevel This is different from the normal LOD Detail level, see {@link DhSectionPos} for more information
-	 * @throws IllegalArgumentException if this position's detail level is lower than the output detail level 
+	 * @throws IllegalArgumentException if this position's detail level is lower than the output detail level
 	 */
 	public DhSectionPos getSectionPosWithSectionDetailLevel(byte sectionDetailLevel) throws IllegalArgumentException
 	{
@@ -194,7 +194,7 @@ public class DhLodPos implements Comparable<DhLodPos>
 		if (width.detailLevel < this.detailLevel)
 			throw new IllegalArgumentException("add called with width.detailLevel < pos detail");
 		
-		return new DhLodPos(this.detailLevel, 
+		return new DhLodPos(this.detailLevel,
 				this.x + width.createFromDetailLevel(this.detailLevel).numberOfLodSectionsWide,
 				this.z + width.createFromDetailLevel(this.detailLevel).numberOfLodSectionsWide);
 	}
@@ -222,15 +222,15 @@ public class DhLodPos implements Comparable<DhLodPos>
 		else
 		{
 			DhLodPos otherPos = (DhLodPos) obj;
-			return this.detailLevel == otherPos.detailLevel && this.x == otherPos.x && this.z == otherPos.z;	
+			return this.detailLevel == otherPos.detailLevel && this.x == otherPos.x && this.z == otherPos.z;
 		}
 	}
 	
-    @Override
+	@Override
 	public int hashCode() { return Objects.hash(this.detailLevel, this.x, this.z); }
 	
-    @Override
-    public int compareTo(@NotNull DhLodPos obj) 
+	@Override
+	public int compareTo(@NotNull DhLodPos obj)
 	{
 		if (this.detailLevel != obj.detailLevel)
 		{

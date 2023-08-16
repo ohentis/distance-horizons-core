@@ -24,8 +24,8 @@ public class ChunkToLodBuilder implements AutoCloseable
 	private static ConfigChangeListener<Integer> threadConfigListener;
 	
 	public static final long MAX_TICK_TIME_NS = 1000000000L / 20L;
-	/** 
-	 * This is done to prevent tasks infinitely piling up if a queued chunk could never be generated, 
+	/**
+	 * This is done to prevent tasks infinitely piling up if a queued chunk could never be generated,
 	 * But should also prevent de-queuing chunks that should still be generated.
 	 */
 	public static final short MAX_NUMBER_OF_CHUNK_GENERATION_ATTEMPTS_BEFORE_DISCARDING = 64;
@@ -83,7 +83,7 @@ public class ChunkToLodBuilder implements AutoCloseable
 		else if (MC != null && !MC.playerExists())
 		{
 			// TODO handle server side properly
-
+			
 			// MC hasn't finished loading (or is currently unloaded)
 			
 			// can be uncommented if tasks aren't being cleared correctly
@@ -92,7 +92,7 @@ public class ChunkToLodBuilder implements AutoCloseable
 		}
 		
 		
-		for (int i = 0; i< threadCount; i++)
+		for (int i = 0; i < threadCount; i++)
 		{
 			this.runningCount.incrementAndGet();
 			CompletableFuture.runAsync(() ->
@@ -133,7 +133,7 @@ public class ChunkToLodBuilder implements AutoCloseable
 			IChunkWrapper latestChunk = this.concurrentChunkToBuildByChunkPos.remove(task.chunkPos); // Basically an Exchange operation
 			if (latestChunk == null)
 			{
-				LOGGER.error("Somehow Task at "+task.chunkPos+" has latestChunk as null. Skipping task.");
+				LOGGER.error("Somehow Task at " + task.chunkPos + " has latestChunk as null. Skipping task.");
 				task.future.complete(null);
 				continue;
 			}
@@ -149,7 +149,7 @@ public class ChunkToLodBuilder implements AutoCloseable
 						continue;
 					}
 				}
-				else if(task.generationAttemptNumber > MAX_NUMBER_OF_CHUNK_GENERATION_ATTEMPTS_BEFORE_DISCARDING)
+				else if (task.generationAttemptNumber > MAX_NUMBER_OF_CHUNK_GENERATION_ATTEMPTS_BEFORE_DISCARDING)
 				{
 					// this task won't be re-queued
 					continue;
@@ -157,7 +157,7 @@ public class ChunkToLodBuilder implements AutoCloseable
 			}
 			catch (Exception ex)
 			{
-				LOGGER.error("Error while processing Task at "+task.chunkPos, ex);
+				LOGGER.error("Error while processing Task at " + task.chunkPos, ex);
 			}
 			
 			// Failed to build due to chunk not meeting requirement,
@@ -187,7 +187,7 @@ public class ChunkToLodBuilder implements AutoCloseable
 	}
 	
 	/**
-	 * should be called whenever changing levels/worlds 
+	 * should be called whenever changing levels/worlds
 	 * to prevent trying to generate LODs for chunk(s) that are no longer loaded
 	 * (which can cause exceptions)
 	 */
@@ -218,7 +218,7 @@ public class ChunkToLodBuilder implements AutoCloseable
 		
 		if (executorThreadPool == null || executorThreadPool.isTerminated())
 		{
-			LOGGER.info("Starting "+ChunkToLodBuilder.class.getSimpleName());
+			LOGGER.info("Starting " + ChunkToLodBuilder.class.getSimpleName());
 			setThreadPoolSize(Config.Client.Advanced.MultiThreading.numberOfChunkLodConverterThreads.get());
 		}
 	}
@@ -241,7 +241,7 @@ public class ChunkToLodBuilder implements AutoCloseable
 	{
 		if (executorThreadPool != null)
 		{
-			LOGGER.info("Stopping "+ChunkToLodBuilder.class.getSimpleName());
+			LOGGER.info("Stopping " + ChunkToLodBuilder.class.getSimpleName());
 			executorThreadPool.shutdownNow();
 		}
 	}
@@ -273,6 +273,7 @@ public class ChunkToLodBuilder implements AutoCloseable
 			this.chunkPos = chunkPos;
 			this.future = future;
 		}
+		
 	}
 	
 }

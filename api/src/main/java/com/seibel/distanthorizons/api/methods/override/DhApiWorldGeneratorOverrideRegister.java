@@ -16,7 +16,7 @@ public class DhApiWorldGeneratorOverrideRegister implements IDhApiWorldGenerator
 {
 	public static DhApiWorldGeneratorOverrideRegister INSTANCE = new DhApiWorldGeneratorOverrideRegister();
 	
-	private DhApiWorldGeneratorOverrideRegister() {  }
+	private DhApiWorldGeneratorOverrideRegister() { }
 	
 	
 	

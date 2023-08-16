@@ -28,7 +28,7 @@ package com.seibel.distanthorizons.api.enums.worldGeneration;
  * FULL <br><br>
  *
  * In order of fastest to slowest.
- * 
+ *
  * @author James Seibel
  * @author Leonardo Amato
  * @version 2022-12-10

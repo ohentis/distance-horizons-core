@@ -11,18 +11,18 @@ import java.io.IOException;
 
 public class CompleteFullDataSourceLoader extends AbstractFullDataSourceLoader
 {
-    public CompleteFullDataSourceLoader()
+	public CompleteFullDataSourceLoader()
 	{
-        super(CompleteFullDataSource.class, CompleteFullDataSource.TYPE_ID, new byte[]{ CompleteFullDataSource.DATA_FORMAT_VERSION });
-    }
+		super(CompleteFullDataSource.class, CompleteFullDataSource.TYPE_ID, new byte[]{CompleteFullDataSource.DATA_FORMAT_VERSION});
+	}
 	
-    @Override
-    public IFullDataSource loadData(FullDataMetaFile dataFile, DhDataInputStream inputStream, IDhLevel level) throws IOException, InterruptedException
+	@Override
+	public IFullDataSource loadData(FullDataMetaFile dataFile, DhDataInputStream inputStream, IDhLevel level) throws IOException, InterruptedException
 	{
 		CompleteFullDataSource dataSource = CompleteFullDataSource.createEmpty(dataFile.pos);
 		dataSource.populateFromStream(dataFile, inputStream, level);
-        return dataSource;
-    }
+		return dataSource;
+	}
 	
 	/** Uses a given stream to create a temporary {@link CompleteFullDataSource}, which is not saved. */
 	public CompleteFullDataSource loadData(DhSectionPos pos, DhDataInputStream inputStream, IDhLevel level) throws IOException, InterruptedException

@@ -29,7 +29,7 @@ import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IBindab
 
 /**
  * Can be either a Server world or a Client world.
- * 
+ *
  * @author James Seibel
  * @version 2023-6-17
  */
@@ -57,11 +57,11 @@ public interface ILevelWrapper extends IDhApiLevelWrapper, IBindable
 	
 	default IChunkWrapper tryGetChunk(DhChunkPos pos) { return null; }
 	
-    boolean hasChunkLoaded(int chunkX, int chunkZ);
-
+	boolean hasChunkLoaded(int chunkX, int chunkZ);
+	
 	@Deprecated
 	IBlockStateWrapper getBlockState(DhBlockPos pos);
-
+	
 	@Deprecated
 	IBiomeWrapper getBiome(DhBlockPos pos);
 	

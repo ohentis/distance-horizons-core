@@ -22,10 +22,10 @@ package com.seibel.distanthorizons.coreapi.util.math;
 import com.seibel.distanthorizons.coreapi.util.MathUtil;
 
 /**
- * This is closer to MC's implementation of a 
+ * This is closer to MC's implementation of a
  * 3 element float vector than a 3 element double
  * vector. Hopefully that shouldn't cause any issues.
- * 
+ *
  * @author James Seibel
  * @version 11-18-2021
  */
@@ -254,4 +254,5 @@ public class Vec3d
 		this.y = values[1];
 		this.z = values[2];
 	}
+	
 }

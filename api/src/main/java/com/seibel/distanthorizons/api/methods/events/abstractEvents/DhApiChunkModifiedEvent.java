@@ -10,10 +10,10 @@ import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhAp
  * that a Minecraft chunk has been modified. <br>
  * By the time this event has been fired, the chunk modification should have propagated
  * to DH's full data source, but may not have been updated in the render data source.
- * 
- * @see IDhApiTerrainDataRepo
+ *
  * @author James Seibel
  * @version 2023-6-23
+ * @see IDhApiTerrainDataRepo
  */
 public abstract class DhApiChunkModifiedEvent implements IDhApiEvent<DhApiChunkModifiedEvent.EventParam>
 {
@@ -41,15 +41,16 @@ public abstract class DhApiChunkModifiedEvent implements IDhApiEvent<DhApiChunkM
 		/** the modified chunk's X pos in chunk coordinates */
 		public final int chunkX;
 		/** the modified chunk's Z pos in chunk coordinates */
-		public final int chunkZ;  
+		public final int chunkZ;
 		
 		
-		public EventParam(IDhApiLevelWrapper newLevelWrapper, int chunkX, int chunkZ) 
+		public EventParam(IDhApiLevelWrapper newLevelWrapper, int chunkX, int chunkZ)
 		{
-			this.levelWrapper = newLevelWrapper; 
+			this.levelWrapper = newLevelWrapper;
 			this.chunkX = chunkX;
 			this.chunkZ = chunkZ;
 		}
+		
 	}
 	
 }

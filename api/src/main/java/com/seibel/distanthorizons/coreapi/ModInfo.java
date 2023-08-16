@@ -19,8 +19,8 @@
 
 package com.seibel.distanthorizons.coreapi;
 
-/** 
- * This file is similar to mcmod.info 
+/**
+ * This file is similar to mcmod.info
  * and contains most meta-information related to Distant Horizons.
  */
 public final class ModInfo
@@ -37,7 +37,7 @@ public final class ModInfo
 	public static final String VERSION = "2.0.0-a-dev";
 	/** Returns true if the current build is an unstable developer build, false otherwise. */
 	public static boolean IS_DEV_BUILD = VERSION.toLowerCase().contains("dev");
-
+	
 	/** This version should only be updated when breaking changes are introduced to the DH API */
 	public static final int API_MAJOR_VERSION = 1;
 	/** This version should be updated whenever new methods are added to the DH API */
@@ -45,7 +45,7 @@ public final class ModInfo
 	/** This version should be updated whenever non-breaking fixes are added to the DH API */
 	public static final int API_PATH_VERSION = 0;
 	
-	public static final String NETWORKING_RESOURCE_NAMESPACE =  "distant_horizons";
+	public static final String NETWORKING_RESOURCE_NAMESPACE = "distant_horizons";
 	public static final String MULTIVERSE_PLUGIN_NAMESPACE = "world_control";
 	
 	

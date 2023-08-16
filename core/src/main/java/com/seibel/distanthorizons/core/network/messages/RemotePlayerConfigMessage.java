@@ -8,9 +8,7 @@ import io.netty.buffer.ByteBuf;
 public class RemotePlayerConfigMessage extends FutureTrackableNetworkMessage
 {
     public MultiplayerConfig payload;
-	
-	
-	
+
     public RemotePlayerConfigMessage() { }
     public RemotePlayerConfigMessage(MultiplayerConfig payload) { this.payload = payload; }
 	

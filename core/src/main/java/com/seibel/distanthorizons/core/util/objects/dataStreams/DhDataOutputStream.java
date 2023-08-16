@@ -6,6 +6,7 @@ import java.io.*;
 
 /**
  * See {@link DhDataInputStream} for more information about these custom streams.
+ *
  * @see DhDataInputStream
  */
 public class DhDataOutputStream extends DataOutputStream

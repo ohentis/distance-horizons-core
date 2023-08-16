@@ -16,7 +16,7 @@
  *    You should have received a copy of the GNU Lesser General Public License
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
- 
+
 package com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor;
 
 import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IBindable;
@@ -27,7 +27,9 @@ import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IBindab
  * @author coolGi
  * @version 3-5-2022
  */
-public interface IModChecker extends IBindable {
-    /** Checks if a mod is loaded */
-    boolean isModLoaded(String modid);
+public interface IModChecker extends IBindable
+{
+	/** Checks if a mod is loaded */
+	boolean isModLoaded(String modid);
+	
 }

@@ -16,7 +16,7 @@
  *    You should have received a copy of the GNU Lesser General Public License
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
- 
+
 package com.seibel.distanthorizons.core.util.objects;
 
 import java.io.ByteArrayOutputStream;
@@ -31,7 +31,7 @@ public final class GLMessageOutputStream extends OutputStream
 	
 	
 	private final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-
+	
 	public GLMessageOutputStream(Consumer<GLMessage> func, GLMessage.Builder builder)
 	{
 		this.func = func;
@@ -42,7 +42,7 @@ public final class GLMessageOutputStream extends OutputStream
 	public void write(int b)
 	{
 		buffer.write(b);
-		if (b=='\n') flush();
+		if (b == '\n') flush();
 	}
 	
 	@Override
@@ -60,4 +60,5 @@ public final class GLMessageOutputStream extends OutputStream
 		flush();
 		buffer.close();
 	}
+	
 }

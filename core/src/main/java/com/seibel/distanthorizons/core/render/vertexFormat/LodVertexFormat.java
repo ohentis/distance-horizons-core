@@ -33,7 +33,7 @@ import it.unimi.dsi.fastutil.ints.IntList;
  * A (almost) exact copy of Minecraft's
  * VertexFormat class, several methods
  * were commented out since we didn't need them.
- * 
+ *
  * @author James Seibel
  * @version 12-9-2021
  */
@@ -67,15 +67,15 @@ public class LodVertexFormat
 		return this.elements;
 	}
 	
-
+	
 	// Forge added method
 	public int getOffset(int index)
 	{
 		return offsets.getInt(index);
 	}
-		
-
-
+	
+	
+	
 	@Override
 	public String toString()
 	{

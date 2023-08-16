@@ -16,7 +16,7 @@
  *    You should have received a copy of the GNU Lesser General Public License
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
- 
+
 package com.seibel.distanthorizons.core.util.objects;
 
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
@@ -28,14 +28,14 @@ import java.util.function.Function;
 
 /**
  * Handles parsing and creating string messages from OpenGL messages.
- * 
+ *
  * @author Leetom
  * @version 2022-10-1
  */
 public final class GLMessage
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger(MethodHandles.lookup().lookupClass().getSimpleName());
-		
+	
 	static final String HEADER = "[LWJGL] OpenGL debug message";
 	public final EType type;
 	public final ESeverity severity;
@@ -82,7 +82,7 @@ public final class GLMessage
 	}
 	
 	@Override
-	public String toString() { return "[level:"+severity+", type:"+type+", source:"+source+", id:"+id+", msg:{"+message+"}]"; }
+	public String toString() { return "[level:" + severity + ", type:" + type + ", source:" + source + ", id:" + id + ", msg:{" + message + "}]"; }
 	
 	
 	
@@ -161,9 +161,9 @@ public final class GLMessage
 	
 	public enum ESeverity
 	{
-		HIGH, 
-		MEDIUM, 
-		LOW, 
+		HIGH,
+		MEDIUM,
+		LOW,
 		NOTIFICATION;
 		
 		
@@ -201,24 +201,24 @@ public final class GLMessage
 		/** how many stages are present in the message parser */
 		private static final int FINAL_PARSER_STAGE_INDEX = 15;
 		
-		public static final Builder DEFAULT_MESSAGE_BUILDER = 
+		public static final Builder DEFAULT_MESSAGE_BUILDER =
 				new Builder(
-					(type) -> { // type filter
-						if (type == GLMessage.EType.POP_GROUP)
-							return false;
-						if (type == GLMessage.EType.PUSH_GROUP)
-							return false;
-						if (type == GLMessage.EType.MARKER)
-							return false;
-						// if (type == GLMessage.Type.PERFORMANCE) return false;
-						return true;
-					},
-					(severity) -> { // severity filter
-						if (severity == GLMessage.ESeverity.NOTIFICATION)
-							return false;
-						return true;
-					},
-					null
+						(type) -> { // type filter
+							if (type == GLMessage.EType.POP_GROUP)
+								return false;
+							if (type == GLMessage.EType.PUSH_GROUP)
+								return false;
+							if (type == GLMessage.EType.MARKER)
+								return false;
+							// if (type == GLMessage.Type.PERFORMANCE) return false;
+							return true;
+						},
+						(severity) -> { // severity filter
+							if (severity == GLMessage.ESeverity.NOTIFICATION)
+								return false;
+							return true;
+						},
+						null
 				);
 		
 		
@@ -259,12 +259,12 @@ public final class GLMessage
 		
 		
 		
-		/** 
-		 * Adds the given string to the message builder. <br> <br> 
-		 * 
-		 * Will log a warning if the string given wasn't expected 
-		 * for the next stage of the OpenGL message format.<br> <br> 
-		 * 
+		/**
+		 * Adds the given string to the message builder. <br> <br>
+		 *
+		 * Will log a warning if the string given wasn't expected
+		 * for the next stage of the OpenGL message format.<br> <br>
+		 *
 		 * @return null if the message isn't complete
 		 */
 		public GLMessage add(String str)
@@ -309,55 +309,55 @@ public final class GLMessage
 		{
 			switch (this.parserStage)
 			{
-			case 0:
-				return checkAndIncStage(str, GLMessage.HEADER);
-			case 1:
-				return checkAndIncStage(str, "ID");
-			case 2:
-				return checkAndIncStage(str, ":");
-			case 3:
-				this.id = str;
-				this.parserStage++;
-				return true;
-			case 4:
-				return checkAndIncStage(str, "Source");
-			case 5:
-				return checkAndIncStage(str, ":");
-			case 6:
-				this.source = ESource.get(str);
-				this.parserStage++;
-				return true;
-			case 7:
-				return checkAndIncStage(str, "Type");
-			case 8:
-				return checkAndIncStage(str, ":");
-			case 9:
-				this.type = EType.get(str);
-				this.parserStage++;
-				return true;
-			case 10:
-				return checkAndIncStage(str, "Severity");
-			case 11:
-				return checkAndIncStage(str, ":");
-			case 12:
-				this.severity = ESeverity.get(str);
-				this.parserStage++;
-				return true;
-			case 13:
-				return checkAndIncStage(str, "Message");
-			case 14:
-				return checkAndIncStage(str, ":");
-			case 15:
-				this.message = str;
-				this.parserStage++;
-				return true;
-			default:
-				return false;
+				case 0:
+					return checkAndIncStage(str, GLMessage.HEADER);
+				case 1:
+					return checkAndIncStage(str, "ID");
+				case 2:
+					return checkAndIncStage(str, ":");
+				case 3:
+					this.id = str;
+					this.parserStage++;
+					return true;
+				case 4:
+					return checkAndIncStage(str, "Source");
+				case 5:
+					return checkAndIncStage(str, ":");
+				case 6:
+					this.source = ESource.get(str);
+					this.parserStage++;
+					return true;
+				case 7:
+					return checkAndIncStage(str, "Type");
+				case 8:
+					return checkAndIncStage(str, ":");
+				case 9:
+					this.type = EType.get(str);
+					this.parserStage++;
+					return true;
+				case 10:
+					return checkAndIncStage(str, "Severity");
+				case 11:
+					return checkAndIncStage(str, ":");
+				case 12:
+					this.severity = ESeverity.get(str);
+					this.parserStage++;
+					return true;
+				case 13:
+					return checkAndIncStage(str, "Message");
+				case 14:
+					return checkAndIncStage(str, ":");
+				case 15:
+					this.message = str;
+					this.parserStage++;
+					return true;
+				default:
+					return false;
 			}
 		}
 		
-		/** 
-		 * Returns true and increments the parserStage 
+		/**
+		 * Returns true and increments the parserStage
 		 * if the given and expected strings are the same.
 		 */
 		private boolean checkAndIncStage(String givenString, String expectedString)

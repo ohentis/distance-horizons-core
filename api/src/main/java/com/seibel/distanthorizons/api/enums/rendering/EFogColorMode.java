@@ -22,7 +22,7 @@ package com.seibel.distanthorizons.api.enums.rendering;
 /**
  * USE_DEFAULT_FOG_COLOR, <br>
  * USE_SKY_COLOR, <br>
- * 
+ *
  * @author James Seibel
  * @version 2022-6-9
  */

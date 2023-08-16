@@ -4,7 +4,6 @@ package com.seibel.distanthorizons.api.interfaces.config;
  * An interface for Distant Horizon's Config.
  *
  * @param <T> The data type of this config.
- * 
  * @author James Seibel
  * @version 2022-9-15
  */

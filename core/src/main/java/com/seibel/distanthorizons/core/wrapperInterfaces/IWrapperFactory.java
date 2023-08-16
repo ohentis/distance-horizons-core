@@ -31,19 +31,20 @@ import java.io.IOException;
 
 /**
  * This handles creating abstract wrapper objects.
- * 
+ *
  * @author James Seibel
  * @version 2022-12-5
  */
-public interface IWrapperFactory extends IBindable 
+public interface IWrapperFactory extends IBindable
 {
 	AbstractBatchGenerationEnvironmentWrapper createBatchGenerator(IDhLevel targetLevel);
 	IBiomeWrapper deserializeBiomeWrapper(String str, ILevelWrapper levelWrapper) throws IOException;
 	IBlockStateWrapper deserializeBlockStateWrapper(String str, ILevelWrapper levelWrapper) throws IOException;
 	IBlockStateWrapper getAirBlockStateWrapper();
 	
-	/** 
+	/**
 	 * Specifically designed to be used with the API.
+	 *
 	 * @throws ClassCastException with instructions on expected objects if the object couldn't be cast
 	 */
 	IChunkWrapper createChunkWrapper(Object[] objectArray) throws ClassCastException;

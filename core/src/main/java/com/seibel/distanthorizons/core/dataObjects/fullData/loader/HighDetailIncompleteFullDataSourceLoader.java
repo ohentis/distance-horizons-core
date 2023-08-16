@@ -12,14 +12,15 @@ public class HighDetailIncompleteFullDataSourceLoader extends AbstractFullDataSo
 {
 	public HighDetailIncompleteFullDataSourceLoader()
 	{
-		super(HighDetailIncompleteFullDataSource.class, HighDetailIncompleteFullDataSource.TYPE_ID, new byte[] { HighDetailIncompleteFullDataSource.DATA_FORMAT_VERSION });
+		super(HighDetailIncompleteFullDataSource.class, HighDetailIncompleteFullDataSource.TYPE_ID, new byte[]{HighDetailIncompleteFullDataSource.DATA_FORMAT_VERSION});
 	}
-
-    @Override
+	
+	@Override
 	public IFullDataSource loadData(FullDataMetaFile dataFile, DhDataInputStream inputStream, IDhLevel level) throws IOException, InterruptedException
 	{
 		HighDetailIncompleteFullDataSource dataSource = HighDetailIncompleteFullDataSource.createEmpty(dataFile.pos);
 		dataSource.populateFromStream(dataFile, inputStream, level);
 		return dataSource;
 	}
+	
 }

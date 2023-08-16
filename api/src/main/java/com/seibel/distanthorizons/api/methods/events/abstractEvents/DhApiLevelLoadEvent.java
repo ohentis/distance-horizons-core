@@ -7,7 +7,7 @@ import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhAp
 /**
  * Called after Distant Horizons finishes loading a new level. <br>
  * Note: this may be fired before Minecraft has loaded in the player.
- * 
+ *
  * @author James Seibel
  * @version 2023-6-23
  */
@@ -35,6 +35,7 @@ public abstract class DhApiLevelLoadEvent implements IDhApiEvent<DhApiLevelLoadE
 		public final IDhApiLevelWrapper levelWrapper;
 		
 		public EventParam(IDhApiLevelWrapper newLevelWrapper) { this.levelWrapper = newLevelWrapper; }
+		
 	}
 	
 }

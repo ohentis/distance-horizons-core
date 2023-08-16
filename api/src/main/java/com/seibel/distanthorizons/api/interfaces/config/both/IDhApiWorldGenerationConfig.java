@@ -44,7 +44,7 @@ public interface IDhApiWorldGenerationConfig extends IDhApiConfigGroup
 	/** Defines to what level LOD chunks will be generated. */
 	IDhApiConfigValue<EDhApiDistantGeneratorMode> distantGeneratorMode();
 	
-	/** 
+	/**
 	 * Defines what lighting engine will be used when
 	 * Distant Horizons generates chunks.
 	 */

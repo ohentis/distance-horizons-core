@@ -9,7 +9,7 @@ import com.seibel.distanthorizons.core.world.AbstractDhWorld;
 
 /**
  * Used to interact with Distant Horizons' rendering systems.
- * 
+ *
  * @author James Seibel
  * @version 2023-2-8
  */
@@ -19,7 +19,7 @@ public class DhApiRenderProxy implements IDhApiRenderProxy
 	
 	
 	
-	private DhApiRenderProxy() {  }
+	private DhApiRenderProxy() { }
 	
 	
 	
@@ -29,7 +29,7 @@ public class DhApiRenderProxy implements IDhApiRenderProxy
 		AbstractDhWorld world = SharedApi.getAbstractDhWorld();
 		if (world == null)
 		{
-			return DhApiResult.createFail("No world loaded");			
+			return DhApiResult.createFail("No world loaded");
 		}
 		
 		

@@ -24,7 +24,7 @@ import org.junit.Test;
 
 /**
  * This is just a quick demo to confirm the testing system is set up correctly.
- * 
+ *
  * @author James Seibel
  * @version 2022-9-5
  */

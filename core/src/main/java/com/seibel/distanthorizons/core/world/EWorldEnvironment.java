@@ -7,7 +7,7 @@ package com.seibel.distanthorizons.core.world;
  */
 public enum EWorldEnvironment
 {
-    Client_Only,
-    Client_Server,
-    Server_Only
+	Client_Only,
+	Client_Server,
+	Server_Only
 }

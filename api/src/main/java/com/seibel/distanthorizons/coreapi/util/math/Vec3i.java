@@ -25,7 +25,7 @@ import com.seibel.distanthorizons.api.objects.math.DhApiVec3i;
 /**
  * A (almost) exact copy of Minecraft's 1.16.5
  * implementation of a 3 element integer vector.
- * 
+ *
  * @author James Seibel
  * @version 2022-11-19
  */
@@ -134,8 +134,8 @@ public class Vec3i extends DhApiVec3i // extends the API object so it can be ret
 	public Vec3i cross(Vec3i otherVec)
 	{
 		return new Vec3i(
-				(this.y * otherVec.z) - (this.z * otherVec.y), 
-				(this.z * otherVec.x) - (this.x * otherVec.z), 
+				(this.y * otherVec.z) - (this.z * otherVec.y),
+				(this.z * otherVec.x) - (this.x * otherVec.z),
 				(this.x * otherVec.y) - (this.y * otherVec.x));
 	}
 	

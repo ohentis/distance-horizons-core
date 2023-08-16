@@ -19,197 +19,243 @@ import java.nio.file.Path;
  * @author coolGi
  * @version 2023-7-16
  */
-public class ConfigFileHandling {
+public class ConfigFileHandling
+{
 	private static final Logger LOGGER = ConfigBase.LOGGER;
-
-    public final ConfigBase configBase;
+	
+	public final ConfigBase configBase;
 	public final Path ConfigPath;
-
-    public ConfigFileHandling(ConfigBase configBase) {
-        this.configBase = configBase;
-        ConfigPath = SingletonInjector.INSTANCE.get(IMinecraftSharedWrapper.class)
-                .getInstallationDirectory().toPath().resolve("config").resolve(this.configBase.modName+".toml");
-    }
-
-    /** Saves the entire config to the file */
-    public void saveToFile() {
-        CommentedFileConfig config = CommentedFileConfig.builder(ConfigPath.toFile()).build();
-        if (!Files.exists(ConfigPath)) // Try to check if the config exists
-            try {
-                Files.createFile(ConfigPath);
-            } catch (IOException ex) {
-                ex.printStackTrace();
-            }
-
-        loadConfig(config);
-
-        for (AbstractConfigType<?, ?> entry : this.configBase.entries) {
-            if (ConfigEntry.class.isAssignableFrom(entry.getClass())) {
-                createComment((ConfigEntry<?>) entry, config);
-                saveEntry((ConfigEntry<?>) entry, config);
-            }
-        }
-
-
-        try {
-            config.save();
-        } catch (Exception e) {
-            // If it fails to save, crash game
-            SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class).crashMinecraft("Failed to save config at ["+ ConfigPath.toString() +"]", e);
-        }
-        config.close();
-    }
-    /**
-     * Loads the entire config from the file
-     * @apiNote This overwrites any value currently stored in the config
-     */
-    public void loadFromFile() {
-        CommentedFileConfig config = CommentedFileConfig.builder(ConfigPath.toFile()).build();
-        // Attempt to load the file and if it fails then save config to file
-        try {
-            if (Files.exists(ConfigPath))
-                config.load();
-            else {
-                saveToFile();
-                return;
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            saveToFile();
-            return;
-        }
-
-        // Load all the entries
-        for (AbstractConfigType<?, ?> entry : this.configBase.entries) {
-            if (ConfigEntry.class.isAssignableFrom(entry.getClass())) {
-                createComment((ConfigEntry<?>) entry, config);
-                loadEntry((ConfigEntry<?>) entry, config);
-            }
-        }
-
-
-        try {
-            config.save();
-        } catch (Exception e) {
-            // If it fails to save, crash game
-            SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class).crashMinecraft("Failed to save config at ["+ ConfigPath.toString() +"]", e);
-        }
-        config.close();
-    }
-
-
-
-
-    // Save an entry when only given the entry
-    public void saveEntry(ConfigEntry<?> entry) {
-        CommentedFileConfig config = CommentedFileConfig.builder(ConfigPath.toFile()).build();
-        loadConfig(config);
-        saveEntry(entry, config);
-        config.save();
-        config.close();
-    }
-    // Save an entry
-    @SuppressWarnings("unchecked")
-    public void saveEntry(ConfigEntry<?> entry, CommentedFileConfig workConfig) {
-        if (!entry.getAppearance().showInFile) return;
-        if (entry.getTrueValue() == null)
-            throw new IllegalArgumentException("Entry ["+ entry.getNameWCategory() +"] is null, this may be a problem with ["+ configBase.modName +"]. Please contact the authors");
-
-        Class<?> originalClass = ConfigTypeConverters.isClassConvertable(entry.getType());
-        if (originalClass != null) {
-            workConfig.set(entry.getNameWCategory(), ConfigTypeConverters.convertToString(originalClass, entry.getTrueValue()));
-            return;
-        }
-        workConfig.set(entry.getNameWCategory(), entry.getTrueValue());
-    }
-
-    // Loads an entry when only given the entry
-    public void loadEntry(ConfigEntry<?> entry) {
-        CommentedFileConfig config = CommentedFileConfig.builder(ConfigPath.toFile()).autosave().build();
-        loadConfig(config);
-        loadEntry(entry, config);
-        config.close();
-
-    }
-    // Loads an entry
-    @SuppressWarnings("unchecked") // Suppress due to its always safe
-	public <T> void loadEntry(ConfigEntry<T> entry, CommentedFileConfig workConfig) {
-        if (!entry.getAppearance().showInFile) return;
-
-        if (workConfig.contains(entry.getNameWCategory())) {
-            try {
-                if (entry.getType().isEnum()) {
-                    entry.setWithoutSaving((T) ( workConfig.getEnum(entry.getNameWCategory(), (Class<? extends Enum>) entry.getType())));
-                    return;
-                }
-                Class<?> originalClass = ConfigTypeConverters.isClassConvertable(entry.getType());
-                if (originalClass != null) {
-                    entry.setWithoutSaving((T) ConfigTypeConverters.convertFromString(originalClass, workConfig.get(entry.getNameWCategory())));
-                    return;
-                }
-
-                if (entry.getType() == workConfig.get(entry.getNameWCategory()).getClass()) { // If the types are the same
-                    entry.setWithoutSaving((T) workConfig.get(entry.getNameWCategory()));
-                    entry.clampWithinRange();
-                    return;
-                }
-
-                LOGGER.warn("Entry ["+ entry.getNameWCategory() +"] is invalid. Expected " + entry.getType() + " but got " + workConfig.get(entry.getNameWCategory()).getClass() + ". Using default value.");
-                saveEntry(entry, workConfig);
-            } catch (Exception e) {
+	
+	public ConfigFileHandling(ConfigBase configBase)
+	{
+		this.configBase = configBase;
+		ConfigPath = SingletonInjector.INSTANCE.get(IMinecraftSharedWrapper.class)
+				.getInstallationDirectory().toPath().resolve("config").resolve(this.configBase.modName + ".toml");
+	}
+	
+	/** Saves the entire config to the file */
+	public void saveToFile()
+	{
+		CommentedFileConfig config = CommentedFileConfig.builder(ConfigPath.toFile()).build();
+		if (!Files.exists(ConfigPath)) // Try to check if the config exists
+			try
+			{
+				Files.createFile(ConfigPath);
+			}
+			catch (IOException ex)
+			{
+				ex.printStackTrace();
+			}
+		
+		loadConfig(config);
+		
+		for (AbstractConfigType<?, ?> entry : this.configBase.entries)
+		{
+			if (ConfigEntry.class.isAssignableFrom(entry.getClass()))
+			{
+				createComment((ConfigEntry<?>) entry, config);
+				saveEntry((ConfigEntry<?>) entry, config);
+			}
+		}
+		
+		
+		try
+		{
+			config.save();
+		}
+		catch (Exception e)
+		{
+			// If it fails to save, crash game
+			SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class).crashMinecraft("Failed to save config at [" + ConfigPath.toString() + "]", e);
+		}
+		config.close();
+	}
+	/**
+	 * Loads the entire config from the file
+	 *
+	 * @apiNote This overwrites any value currently stored in the config
+	 */
+	public void loadFromFile()
+	{
+		CommentedFileConfig config = CommentedFileConfig.builder(ConfigPath.toFile()).build();
+		// Attempt to load the file and if it fails then save config to file
+		try
+		{
+			if (Files.exists(ConfigPath))
+				config.load();
+			else
+			{
+				saveToFile();
+				return;
+			}
+		}
+		catch (Exception e)
+		{
+			e.printStackTrace();
+			saveToFile();
+			return;
+		}
+		
+		// Load all the entries
+		for (AbstractConfigType<?, ?> entry : this.configBase.entries)
+		{
+			if (ConfigEntry.class.isAssignableFrom(entry.getClass()))
+			{
+				createComment((ConfigEntry<?>) entry, config);
+				loadEntry((ConfigEntry<?>) entry, config);
+			}
+		}
+		
+		
+		try
+		{
+			config.save();
+		}
+		catch (Exception e)
+		{
+			// If it fails to save, crash game
+			SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class).crashMinecraft("Failed to save config at [" + ConfigPath.toString() + "]", e);
+		}
+		config.close();
+	}
+	
+	
+	
+	
+	// Save an entry when only given the entry
+	public void saveEntry(ConfigEntry<?> entry)
+	{
+		CommentedFileConfig config = CommentedFileConfig.builder(ConfigPath.toFile()).build();
+		loadConfig(config);
+		saveEntry(entry, config);
+		config.save();
+		config.close();
+	}
+	// Save an entry
+	@SuppressWarnings("unchecked")
+	public void saveEntry(ConfigEntry<?> entry, CommentedFileConfig workConfig)
+	{
+		if (!entry.getAppearance().showInFile) return;
+		if (entry.getTrueValue() == null)
+			throw new IllegalArgumentException("Entry [" + entry.getNameWCategory() + "] is null, this may be a problem with [" + configBase.modName + "]. Please contact the authors");
+		
+		Class<?> originalClass = ConfigTypeConverters.isClassConvertable(entry.getType());
+		if (originalClass != null)
+		{
+			workConfig.set(entry.getNameWCategory(), ConfigTypeConverters.convertToString(originalClass, entry.getTrueValue()));
+			return;
+		}
+		workConfig.set(entry.getNameWCategory(), entry.getTrueValue());
+	}
+	
+	// Loads an entry when only given the entry
+	public void loadEntry(ConfigEntry<?> entry)
+	{
+		CommentedFileConfig config = CommentedFileConfig.builder(ConfigPath.toFile()).autosave().build();
+		loadConfig(config);
+		loadEntry(entry, config);
+		config.close();
+		
+	}
+	// Loads an entry
+	@SuppressWarnings("unchecked") // Suppress due to its always safe
+	public <T> void loadEntry(ConfigEntry<T> entry, CommentedFileConfig workConfig)
+	{
+		if (!entry.getAppearance().showInFile) return;
+		
+		if (workConfig.contains(entry.getNameWCategory()))
+		{
+			try
+			{
+				if (entry.getType().isEnum())
+				{
+					entry.setWithoutSaving((T) (workConfig.getEnum(entry.getNameWCategory(), (Class<? extends Enum>) entry.getType())));
+					return;
+				}
+				Class<?> originalClass = ConfigTypeConverters.isClassConvertable(entry.getType());
+				if (originalClass != null)
+				{
+					entry.setWithoutSaving((T) ConfigTypeConverters.convertFromString(originalClass, workConfig.get(entry.getNameWCategory())));
+					return;
+				}
+				
+				if (entry.getType() == workConfig.get(entry.getNameWCategory()).getClass())
+				{ // If the types are the same
+					entry.setWithoutSaving((T) workConfig.get(entry.getNameWCategory()));
+					entry.clampWithinRange();
+					return;
+				}
+				
+				LOGGER.warn("Entry [" + entry.getNameWCategory() + "] is invalid. Expected " + entry.getType() + " but got " + workConfig.get(entry.getNameWCategory()).getClass() + ". Using default value.");
+				saveEntry(entry, workConfig);
+			}
+			catch (Exception e)
+			{
 //                e.printStackTrace();
-                LOGGER.warn("Entry ["+entry.getNameWCategory()+"] had an invalid value when loading the config. Using default value.");
-                saveEntry(entry, workConfig);
-            }
-        } else {
-            saveEntry(entry, workConfig);
-        }
-    }
-
-    // Creates the comment for an entry when only given the entry
-    public void createComment(ConfigEntry<?> entry) {
-        CommentedFileConfig config = CommentedFileConfig.builder(ConfigPath.toFile()).autosave().build();
-        loadConfig(config);
-        createComment(entry, config);
-        config.close();
-    }
-    // Creates a comment for an entry
-    public void createComment(ConfigEntry<?> entry, CommentedFileConfig workConfig) {
-        if (!entry.getAppearance().showInFile)
-            return;
-        if (entry.getComment() != null) {
-            workConfig.setComment(entry.getNameWCategory(), " " + entry.getComment().replaceAll("\n", "\n ") + "\n ");
-        }
-    }
-
-
-
-
-    /** Does config.load(); but with error checking */
-    public void loadConfig(CommentedFileConfig config) {
-        try {
-            config.load();
-        } catch (Exception e) {
-            System.out.println("Loading file failed because of this expectation:\n"+e);
-            try { // Now try remaking the file and loading it
-                if (!ConfigPath.getParent().toFile().exists())
-                    Files.createDirectory(ConfigPath.getParent());
-                else
-                    Files.deleteIfExists(ConfigPath);
-                Files.createFile(ConfigPath);
-                config.load();
-            } catch (IOException ex) {
-                System.out.println("Creating file failed");
-                ex.printStackTrace();
-                SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class).crashMinecraft("Loading file and resetting config file failed at path ["+ConfigPath+"]. Please check the file is ok and you have the permissions", ex);
-            }
-        }
-    }
-
-
-    // ========== API (server) STUFF ========== //
-    /** ALWAYS CLEAR WHEN NOT ON SERVER!!!! */
-    // We are not using this stuff, so comment it out for now (if we ever do need it then we can uncomment it)
+				LOGGER.warn("Entry [" + entry.getNameWCategory() + "] had an invalid value when loading the config. Using default value.");
+				saveEntry(entry, workConfig);
+			}
+		}
+		else
+		{
+			saveEntry(entry, workConfig);
+		}
+	}
+	
+	// Creates the comment for an entry when only given the entry
+	public void createComment(ConfigEntry<?> entry)
+	{
+		CommentedFileConfig config = CommentedFileConfig.builder(ConfigPath.toFile()).autosave().build();
+		loadConfig(config);
+		createComment(entry, config);
+		config.close();
+	}
+	// Creates a comment for an entry
+	public void createComment(ConfigEntry<?> entry, CommentedFileConfig workConfig)
+	{
+		if (!entry.getAppearance().showInFile)
+			return;
+		if (entry.getComment() != null)
+		{
+			workConfig.setComment(entry.getNameWCategory(), " " + entry.getComment().replaceAll("\n", "\n ") + "\n ");
+		}
+	}
+	
+	
+	
+	
+	/** Does config.load(); but with error checking */
+	public void loadConfig(CommentedFileConfig config)
+	{
+		try
+		{
+			config.load();
+		}
+		catch (Exception e)
+		{
+			System.out.println("Loading file failed because of this expectation:\n" + e);
+			try
+			{ // Now try remaking the file and loading it
+				if (!ConfigPath.getParent().toFile().exists())
+					Files.createDirectory(ConfigPath.getParent());
+				else
+					Files.deleteIfExists(ConfigPath);
+				Files.createFile(ConfigPath);
+				config.load();
+			}
+			catch (IOException ex)
+			{
+				System.out.println("Creating file failed");
+				ex.printStackTrace();
+				SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class).crashMinecraft("Loading file and resetting config file failed at path [" + ConfigPath + "]. Please check the file is ok and you have the permissions", ex);
+			}
+		}
+	}
+	
+	
+	// ========== API (server) STUFF ========== //
+	/** ALWAYS CLEAR WHEN NOT ON SERVER!!!! */
+	// We are not using this stuff, so comment it out for now (if we ever do need it then we can uncomment it)
     /*
     @SuppressWarnings("unchecked")
     public static void clearApiValues() {

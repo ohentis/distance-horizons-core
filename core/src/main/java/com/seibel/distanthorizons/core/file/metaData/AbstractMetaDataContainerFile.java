@@ -20,63 +20,63 @@ import org.apache.logging.log4j.Logger;
 /**
  * This represents the data appended to any file we write. <br>
  * Contains a {@link BaseMetaData} which holds most of the necessary values written to the file. <br><br>
- * 
+ *
  * Used size: 40 bytes <br>
  * Remaining space: 24 bytes <br>
  * Total size: 64 bytes <br><br><br>
- * 
- * 
+ *
+ *
  * <Strong>Metadata format: </Strong><br><br>
  * <code>
  * 4 bytes: metadata identifier bytes: "DHv0" (in ascii: 0x44 48 76 30) this signals the file is in the metadata format <br>
  * 4 bytes: section X position <br>
  * 4 bytes: section Y position (Unused, for future proofing) <br>
  * 4 bytes: section Z position <br> <br>
- * 
+ *
  * 4 bytes: data checksum <br> //TODO: Implement checksum
  * 1 byte: section detail level <br>
  * 1 byte: data detail level // Note: not sure if this is needed <br>
  * 1 byte: loader version <br>
  * 1 byte: unused <br> <br>
- * 
+ *
  * 8 bytes: datatype identifier <br> <br>
- * 
+ *
  * 8 bytes: data version
  * </code>
  */
 public abstract class AbstractMetaDataContainerFile
 {
-    private static final Logger LOGGER = DhLoggerBuilder.getLogger();
-    
-    public static final int METADATA_SIZE_IN_BYTES = 64;
-//    public static final int BUFFER_SIZE = 8192;
-    public static final int METADATA_RESERVED_SIZE = 24;
+	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	
+	public static final int METADATA_SIZE_IN_BYTES = 64;
+	//    public static final int BUFFER_SIZE = 8192;
+	public static final int METADATA_RESERVED_SIZE = 24;
 	/** equivalent to "DHv0" */
-    public static final int METADATA_IDENTITY_BYTES = 0x44_48_76_30;
+	public static final int METADATA_IDENTITY_BYTES = 0x44_48_76_30;
 	
-    /** 
+	/**
 	 * James tested this on windows (2023-02-18) and didn't have any issues,
-	 * so it will be turned on for now. If there turns out to be issues 
+	 * so it will be turned on for now. If there turns out to be issues
 	 * we can always turn it off. <Br><br>
-	 * 
+	 *
 	 * original comment: <br>
-	 * Currently set to false because for some reason 
-	 * Window is throwing PermissionDeniedException when trying to atomic replace a file... 
+	 * Currently set to false because for some reason
+	 * Window is throwing PermissionDeniedException when trying to atomic replace a file...
 	 */
-    public static final boolean USE_ATOMIC_MOVE_REPLACE = true;
+	public static final boolean USE_ATOMIC_MOVE_REPLACE = true;
 	
 	
-	/** 
+	/**
 	 * Will be null if no file exists for this object. <br>
-	 * NOTE: Only use {@link BaseMetaData#pos} when initially setting up this object, afterwards the standalone {@link AbstractMetaDataContainerFile#pos} should be used. 
+	 * NOTE: Only use {@link BaseMetaData#pos} when initially setting up this object, afterwards the standalone {@link AbstractMetaDataContainerFile#pos} should be used.
 	 */
 	public volatile BaseMetaData baseMetaData = null;
 	
 	/** Should be used instead of the position inside {@link AbstractMetaDataContainerFile#baseMetaData} */
-    public final DhSectionPos pos;
+	public final DhSectionPos pos;
 	
-    public File file;
-
+	public File file;
+	
 	private volatile boolean DebugThreadCheck = false;
 	
 	
@@ -85,8 +85,9 @@ public abstract class AbstractMetaDataContainerFile
 	// constructors //
 	//==============//
 	
-	/** 
-	 * Create a metaFile in this path. 
+	/**
+	 * Create a metaFile in this path.
+	 *
 	 * @throws FileAlreadyExistsException If the path already has a file.
 	 */
 	protected AbstractMetaDataContainerFile(File file, DhSectionPos pos) throws FileAlreadyExistsException
@@ -99,8 +100,9 @@ public abstract class AbstractMetaDataContainerFile
 		}
 	}
 	
-	/** 
-	 * Creates an {@link AbstractMetaDataContainerFile} with the file at the given path. 
+	/**
+	 * Creates an {@link AbstractMetaDataContainerFile} with the file at the given path.
+	 *
 	 * @throws IOException if the file was formatted incorrectly
 	 * @throws FileNotFoundException if no file exists for the given path
 	 */
@@ -109,7 +111,7 @@ public abstract class AbstractMetaDataContainerFile
 		this.file = file;
 		if (!file.exists())
 		{
-			throw new FileNotFoundException("File not found at ["+file+"]");
+			throw new FileNotFoundException("File not found at [" + file + "]");
 		}
 		
 		validateMetaDataFile(this.file);
@@ -117,48 +119,49 @@ public abstract class AbstractMetaDataContainerFile
 		this.pos = this.baseMetaData.pos;
 	}
 	/**
-	 * Attempts to create a new {@link AbstractMetaDataContainerFile} from the given file. 
+	 * Attempts to create a new {@link AbstractMetaDataContainerFile} from the given file.
+	 *
 	 * @throws IOException if the file was formatted incorrectly
 	 */
 	private static BaseMetaData readMetaDataFromFile(File file) throws IOException
 	{
-        try (FileChannel channel = FileChannel.open(file.toPath(), StandardOpenOption.READ))
+		try (FileChannel channel = FileChannel.open(file.toPath(), StandardOpenOption.READ))
 		{
-            ByteBuffer byteBuffer = ByteBuffer.allocate(METADATA_SIZE_IN_BYTES);
-            channel.read(byteBuffer, 0);
-            channel.close();
-            byteBuffer.flip();
-
-            int idBytes = byteBuffer.getInt();
-            if (idBytes != METADATA_IDENTITY_BYTES)
+			ByteBuffer byteBuffer = ByteBuffer.allocate(METADATA_SIZE_IN_BYTES);
+			channel.read(byteBuffer, 0);
+			channel.close();
+			byteBuffer.flip();
+			
+			int idBytes = byteBuffer.getInt();
+			if (idBytes != METADATA_IDENTITY_BYTES)
 			{
 				if (file.exists())
 				{
 					FileUtil.renameCorruptedFile(file);
-					throw new IOException("Invalid file format: Metadata Identity byte check failed. Expected: ["+METADATA_IDENTITY_BYTES+"], Actual: ["+idBytes+"].");
+					throw new IOException("Invalid file format: Metadata Identity byte check failed. Expected: [" + METADATA_IDENTITY_BYTES + "], Actual: [" + idBytes + "].");
 				}
 				else
 				{
-					throw new IOException("No file found for meta data. Expected file path: "+file.getPath());
+					throw new IOException("No file found for meta data. Expected file path: " + file.getPath());
 				}
-            }
+			}
 			
-            int x = byteBuffer.getInt();
-            int y = byteBuffer.getInt(); // Unused
-            int z = byteBuffer.getInt();
-            int checksum = byteBuffer.getInt();
-            byte detailLevel = byteBuffer.get();
-            byte dataLevel = byteBuffer.get();
-            byte loaderVersion = byteBuffer.get();
+			int x = byteBuffer.getInt();
+			int y = byteBuffer.getInt(); // Unused
+			int z = byteBuffer.getInt();
+			int checksum = byteBuffer.getInt();
+			byte detailLevel = byteBuffer.get();
+			byte dataLevel = byteBuffer.get();
+			byte loaderVersion = byteBuffer.get();
 			EDhApiWorldGenerationStep worldGenStep = EDhApiWorldGenerationStep.fromValue(byteBuffer.get());
-            long dataTypeId = byteBuffer.getLong();
-            long unusedTimestamp = byteBuffer.getLong(); // not currently implemented
-            LodUtil.assertTrue(byteBuffer.remaining() == METADATA_RESERVED_SIZE);
-            DhSectionPos dataPos = new DhSectionPos(detailLevel, x, z);
+			long dataTypeId = byteBuffer.getLong();
+			long unusedTimestamp = byteBuffer.getLong(); // not currently implemented
+			LodUtil.assertTrue(byteBuffer.remaining() == METADATA_RESERVED_SIZE);
+			DhSectionPos dataPos = new DhSectionPos(detailLevel, x, z);
 			
-            return new BaseMetaData(dataPos, checksum, dataLevel, worldGenStep, dataTypeId, loaderVersion);
-        }
-    }
+			return new BaseMetaData(dataPos, checksum, dataLevel, worldGenStep, dataTypeId, loaderVersion);
+		}
+	}
 	
 	
 	
@@ -182,7 +185,7 @@ public abstract class AbstractMetaDataContainerFile
 		this.baseMetaData = readMetaDataFromFile(this.file);
 		if (!this.baseMetaData.pos.equals(this.pos))
 		{
-			LOGGER.warn("The file is from a different location than expected! Expected: ["+this.pos+"] but got ["+this.baseMetaData.pos+"]. Ignoring file tag.");
+			LOGGER.warn("The file is from a different location than expected! Expected: [" + this.pos + "] but got [" + this.baseMetaData.pos + "]. Ignoring file tag.");
 			this.baseMetaData.pos = this.pos;
 		}
 	}
@@ -213,8 +216,8 @@ public abstract class AbstractMetaDataContainerFile
 			fileChannel.position(METADATA_SIZE_IN_BYTES);
 			int checksum;
 			
-			try(DhDataOutputStream compressedOut = new DhDataOutputStream(Channels.newOutputStream(fileChannel));
-				CheckedOutputStream checkedOut = new CheckedOutputStream(compressedOut, new Adler32())) // TODO: Is Adler32 ok?
+			try (DhDataOutputStream compressedOut = new DhDataOutputStream(Channels.newOutputStream(fileChannel));
+					CheckedOutputStream checkedOut = new CheckedOutputStream(compressedOut, new Adler32())) // TODO: Is Adler32 ok?
 			{
 				dataWriterFunc.writeBufferToFile(compressedOut);
 				checksum = (int) checkedOut.getChecksum().getValue();
@@ -270,13 +273,13 @@ public abstract class AbstractMetaDataContainerFile
 					boolean fileRemoved = tempFile.delete();
 					if (!fileRemoved)
 					{
-						tempDeleteErrorMessage = "Unable to remove Temporary file at: "+tempFile.getPath();
+						tempDeleteErrorMessage = "Unable to remove Temporary file at: " + tempFile.getPath();
 					}
 				}
 			}
-			catch (SecurityException exception) 
+			catch (SecurityException exception)
 			{
-				tempDeleteErrorMessage = "Security error: ["+exception.getMessage()+"] when attempting to remove Temporary file at: "+tempFile.getPath();
+				tempDeleteErrorMessage = "Security error: [" + exception.getMessage() + "] when attempting to remove Temporary file at: " + tempFile.getPath();
 			}
 			
 			if (tempDeleteErrorMessage != null)
@@ -297,6 +300,7 @@ public abstract class AbstractMetaDataContainerFile
 	public interface IMetaDataWriterFunc<T>
 	{
 		void writeBufferToFile(T t) throws IOException;
+		
 	}
 	
 }

@@ -25,7 +25,7 @@ public abstract class AbstractDhApiCancelableOneTimeTestEvent implements IDhApiC
 	//=========================//
 	
 	@Override
-	public final void fireEvent(DhApiCancelableEventParam<Boolean> input) 
+	public final void fireEvent(DhApiCancelableEventParam<Boolean> input)
 	{
 		this.onTestEvent(input);
 		if (input.value)

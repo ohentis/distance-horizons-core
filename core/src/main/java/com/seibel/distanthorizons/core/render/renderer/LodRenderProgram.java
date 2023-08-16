@@ -43,58 +43,59 @@ public class LodRenderProgram extends ShaderProgram
 	private static final IVersionConstants VERSION_CONSTANTS = SingletonInjector.INSTANCE.get(IVersionConstants.class);
 	
 	public final VertexAttribute vao;
-
+	
 	// Uniforms
 	public final int combinedMatUniform;
 	public final int modelOffsetUniform;
 	public final int worldYOffsetUniform;
-
+	
 	public final int mircoOffsetUniform;
-
+	
 	public final int earthRadiusUniform;
-
+	
 	public final int lightMapUniform;
-
+	
 	// Fog Uniforms
-
+	
 	// Noise Uniforms
 	public final int noiseEnabledUniform;
 	public final int noiseStepsUniform;
 	public final int noiseIntensityUniform;
 	public final int noiseDropoffUniform;
-
+	
 	// Debug Uniform
 	public final int whiteWorldUniform;
-
+	
 	private final LodFogConfig fogConfig;
-
+	
 	// This will bind  VertexAttribute
-	public LodRenderProgram(LodFogConfig fogConfig) {
-		super(() -> Shader.loadFile(fogConfig.earthCurveRatio!=0 ? VERTEX_CURVE_SHADER_PATH : VERTEX_SHADER_PATH,
+	public LodRenderProgram(LodFogConfig fogConfig)
+	{
+		super(() -> Shader.loadFile(fogConfig.earthCurveRatio != 0 ? VERTEX_CURVE_SHADER_PATH : VERTEX_SHADER_PATH,
 						false, new StringBuilder()).toString(),
 				() -> Shader.loadFile(FRAGMENT_SHADER_PATH, false, new StringBuilder()).toString(),
-				"fragColor", new String[] { "vPosition", "color" });
+				"fragColor", new String[]{"vPosition", "color"});
 		this.fogConfig = fogConfig;
-
+		
 		combinedMatUniform = getUniformLocation("combinedMatrix");
 		modelOffsetUniform = getUniformLocation("modelOffset");
 		worldYOffsetUniform = tryGetUniformLocation("worldYOffset");
 		mircoOffsetUniform = getUniformLocation("mircoOffset");
 		earthRadiusUniform = tryGetUniformLocation("earthRadius");
-
+		
 		lightMapUniform = getUniformLocation("lightMap");
-
-
+		
+		
 		// Noise Uniforms
 		noiseEnabledUniform = getUniformLocation("noiseEnabled");
 		noiseStepsUniform = getUniformLocation("noiseSteps");
 		noiseIntensityUniform = getUniformLocation("noiseIntensity");
 		noiseDropoffUniform = getUniformLocation("noiseDropoff");
-
+		
 		// Debug Uniform
 		whiteWorldUniform = getUniformLocation("whiteWorld");
-
-
+		
+		
 		// TODO: Add better use of the LODFormat thing
 		int vertexByteCount = LodUtil.LOD_VERTEX_FORMAT.getByteSize();
 		if (GLProxy.getInstance().VertexAttributeBufferBindingSupported)
@@ -107,23 +108,26 @@ public class LodRenderProgram extends ShaderProgram
 		//vao.setVertexAttribute(0, posAttrib, VertexAttribute.VertexPointer.addVec3Pointer(false)); // 4+4+4
 		vao.setVertexAttribute(0, 1, VertexAttribute.VertexPointer.addUnsignedBytesPointer(4, true, false)); // +4
 		//vao.setVertexAttribute(0, lightAttrib, VertexAttribute.VertexPointer.addUnsignedBytesPointer(2, false)); // +4 due to how it aligns
-		try {
+		try
+		{
 			vao.completeAndCheck(vertexByteCount);
-		} catch (RuntimeException e) {
+		}
+		catch (RuntimeException e)
+		{
 			System.out.println(LodUtil.LOD_VERTEX_FORMAT);
 			throw e;
 		}
-
+		
 		if (earthRadiusUniform != -1) setUniform(earthRadiusUniform,
 				/*6371KM*/ 6371000.0f / fogConfig.earthCurveRatio);
-
+		
 		// Noise Uniforms
 		setUniform(noiseEnabledUniform, fogConfig.noiseEnable);
 		setUniform(noiseStepsUniform, fogConfig.noiseSteps);
 		setUniform(noiseIntensityUniform, fogConfig.noiseIntensity);
 		setUniform(noiseDropoffUniform, fogConfig.noiseDropoff);
 	}
-
+	
 	// If not usable, return a new LodFogConfig to be constructed
 	public LodFogConfig isShaderUsable() // TODO replace with a config listener, look at LodFogConfig for more info
 	{
@@ -136,50 +140,56 @@ public class LodRenderProgram extends ShaderProgram
 	}
 	
 	// Override ShaderProgram.bind()
-	public void bind() {
+	public void bind()
+	{
 		super.bind();
 		vao.bind();
 	}
 	// Override ShaderProgram.unbind()
-	public void unbind() {
+	public void unbind()
+	{
 		super.unbind();
 		vao.unbind();
 	}
 	
 	// Override ShaderProgram.free()
-	public void free() {
+	public void free()
+	{
 		vao.free();
 		super.free();
 	}
 	
-	public void bindVertexBuffer(int vbo) {
+	public void bindVertexBuffer(int vbo)
+	{
 		vao.bindBufferToAllBindingPoint(vbo);
 	}
 	
-	public void unbindVertexBuffer() {
+	public void unbindVertexBuffer()
+	{
 		vao.unbindBuffersFromAllBindingPoint();
 	}
 	
 	public void fillUniformData(Mat4f combinedMatrix, int lightmapBindPoint, int worldYOffset, int vanillaDrawDistance)
 	{
-        super.bind();
+		super.bind();
 		vanillaDrawDistance += 32; // Give it a 2 chunk boundary for near fog.
 		// uniforms
 		setUniform(combinedMatUniform, combinedMatrix);
 		setUniform(mircoOffsetUniform, 0.01f); // 0.01 block offset
-
+		
 		// setUniform(skyLightUniform, skyLight);
 		setUniform(lightMapUniform, lightmapBindPoint);
-
-		if (worldYOffsetUniform != -1) setUniform(worldYOffsetUniform, (float)worldYOffset);
+		
+		if (worldYOffsetUniform != -1) setUniform(worldYOffsetUniform, (float) worldYOffset);
 		
 		// Debug
 		setUniform(whiteWorldUniform, Config.Client.Advanced.Debugging.enableWhiteWorld.get());
-
+		
 	}
-
-	public void setModelPos(Vec3f modelPos) {
+	
+	public void setModelPos(Vec3f modelPos)
+	{
 		setUniform(modelOffsetUniform, modelPos);
 	}
-
+	
 }

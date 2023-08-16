@@ -23,7 +23,7 @@ package com.seibel.distanthorizons.api.enums.rendering;
  * USE_OPTIFINE_FOG_SETTING, <br>
  * FOG_ENABLED, <br>
  * FOG_DISABLED <br>
- * 
+ *
  * @author James Seibel
  * @version 2022-6-2
  */

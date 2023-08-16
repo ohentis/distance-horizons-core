@@ -88,7 +88,7 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 		this.minGranularity = generator.getMinGenerationGranularity();
 		this.largestDataDetail = generator.getLargestDataDetailLevel();
 		this.smallestDataDetail = generator.getSmallestDataDetailLevel();
-
+		
 		//FIXME: Currently resizing view dist doesn't update this, causing some gen task to fail.
 		int treeWidth = Config.Client.Advanced.Graphics.Quality.lodChunkRenderDistance.get() * LodUtil.CHUNK_WIDTH * 2; // TODO the *2 is to allow for generation edge cases, and should probably be removed at some point
 		byte treeMinDetailLevel = LodUtil.CHUNK_DETAIL_LEVEL; // The min level should be at least fill in 1 ChunkSizedFullDataAccessor.
@@ -132,13 +132,13 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 		{
 			requiredDataDetail = this.largestDataDetail;
 		}
-
+		
 		// Assert that the data at least can fill in 1 single ChunkSizedFullDataAccessor
 		LodUtil.assertTrue(pos.detailLevel > requiredDataDetail + LodUtil.CHUNK_DETAIL_LEVEL);
-
+		
 		DhSectionPos requestPos = new DhSectionPos(pos.detailLevel, pos.x, pos.z);
-
-
+		
+		
 		//if (this.waitingTaskQuadTree.isSectionPosInBounds(requestPos))
 		{
 			CompletableFuture<WorldGenResult> future = new CompletableFuture<>();
@@ -148,7 +148,7 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 		}
 		//else
 		//{
-			//return CompletableFuture.completedFuture(WorldGenResult.CreateFail());
+		//return CompletableFuture.completedFuture(WorldGenResult.CreateFail());
 		//}
 	}
 	
@@ -216,8 +216,8 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 							int debugPointOne = 0;
 						}
 					}
-					
-					
+
+
 //					LOGGER.info("after task count: " + this.numberOfTasksQueued);
 					
 					// if there aren't any new tasks, wait a second before checking again // TODO replace with a listener instead
@@ -230,12 +230,12 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 			}
 			catch (Exception e)
 			{
-				LOGGER.error("queueing exception: "+e.getMessage(), e);
+				LOGGER.error("queueing exception: " + e.getMessage(), e);
 				this.generationQueueStarted = false;
 			}
 		});
 	}
-	
+
 //	/** Removes all {@link WorldGenTask}'s and {@link WorldGenTaskGroup}'s that have been garbage collected. */
 //	private void removeGarbageCollectedTasks() // TODO remove, potential mystery errors caused by garbage collection isn't worth it (and may not be necessary any more now that we are using a quad tree to hold the tasks). // also this is very slow with the curent quad tree impelmentation
 //	{
@@ -255,20 +255,23 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 //			}
 //		}
 //	}
-
+	
 	private final Set<WorldGenTask> CheckingTasks = Collections.newSetFromMap(new ConcurrentHashMap<>());
-
-	private static class Mapper {
+	
+	private static class Mapper
+	{
 		public final WorldGenTask task;
 		public final int dist;
-		public Mapper(WorldGenTask task, int dist) {
+		public Mapper(WorldGenTask task, int dist)
+		{
 			this.task = task;
 			this.dist = dist;
 		}
+		
 	}
-
-	/** 
-	 * @param targetPos the position to center the generation around 
+	
+	/**
+	 * @param targetPos the position to center the generation around
 	 * @return false if no tasks were found to generate
 	 */
 	private boolean startNextWorldGenTask(DhBlockPos2D targetPos)
@@ -307,22 +310,24 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 				}
 			}
 		}*/
-
+		
 		waitingTasks.forEach((pos, task) -> {
-			if (!task.StillValid()) {
+			if (!task.StillValid())
+			{
 				waitingTasks.remove(pos);
 				task.future.complete(WorldGenResult.CreateFail());
 			}
 		});
-
-		if (waitingTasks.size() == 0) {
+		
+		if (waitingTasks.size() == 0)
+		{
 			return false;
 		}
-
+		
 		Mapper closestTaskMap = waitingTasks.reduceEntries(1024,
 				v -> new Mapper(v.getValue(), v.getValue().pos.getCenterBlockPos().toPos2D().chebyshevDist(targetPos.toPos2D())),
 				(a, b) -> a.dist < b.dist ? a : b);
-
+		
 		closestTask = closestTaskMap.task;
 		
 		// remove the task we found, we are going to start it and don't want to run it multiple times
@@ -330,7 +335,7 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 		waitingTasks.remove(closestTask.pos, closestTask);
 		
 		// do we need to modify this task to generate it?
-		if(this.canGeneratePos((byte) 0, closestTask.pos)) // TODO should detail level 0 be replaced?
+		if (this.canGeneratePos((byte) 0, closestTask.pos)) // TODO should detail level 0 be replaced?
 		{
 			// detail level is correct for generation, start generation
 			
@@ -342,7 +347,7 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 			if (previousInProgressTask == null)
 			{
 				// no task exists for this position, start one
-				this.startWorldGenTaskGroup(newInProgressTask);	
+				this.startWorldGenTaskGroup(newInProgressTask);
 			}
 			else
 			{
@@ -350,7 +355,7 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 				// Note: Due to concurrency reasons, even if the currently running task is compatible with 
 				// 		   the newly selected task, we cannot use it,
 				//         as some chunks may have already been written into.
-
+				
 				LOGGER.warn("A task already exists for this position, todo: {}", closestTask.pos);
 			}
 			
@@ -378,13 +383,13 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 				
 				//boolean valueAdded = this.waitingTaskQuadTree.getValue(new DhSectionPos(childDhSectionPos.sectionDetailLevel, childDhSectionPos.sectionX, childDhSectionPos.sectionZ)) != null;
 				//LodUtil.assertTrue(valueAdded); // failed to add world gen task to quad tree, this means the quad tree was the wrong size
-				
+
 //				LOGGER.info("split feature "+sectionPos+" into "+childDhSectionPos+" "+(valueAdded ? "added" : "notAdded"));
 			});
 			
 			// send the child futures to the future recipient, to notify them of the new tasks
 			closestTask.future.complete(WorldGenResult.CreateSplit(childFutures));
-
+			
 			// return true so we attempt to generate again
 			return true;
 		}
@@ -404,9 +409,9 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 		{
 			// temporary solution to prevent generating the same section multiple times
 			LOGGER.warn("Duplicate generation section " + taskPos + " with granularity [" + granularity + "] at " + chunkPosMin + ". Skipping...");
-
+			
 			//StackTraceElement[] stackTrace = this.alreadyGeneratedPosHashSet.get(inProgressTaskGroup.group.pos);
-
+			
 			// sending a success result is necessary to make sure the render sections are reloaded correctly 
 			inProgressTaskGroup.group.worldGenTasks.forEach(worldGenTask -> worldGenTask.future.complete(WorldGenResult.CreateSuccess(new DhSectionPos(granularity, taskPos))));
 			return;
@@ -434,7 +439,7 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 				// don't log the shutdown exceptions
 				if (!LodUtil.isInterruptOrReject(exception))
 				{
-					LOGGER.error("Error generating data for section "+taskPos, exception);
+					LOGGER.error("Error generating data for section " + taskPos, exception);
 				}
 				
 				inProgressTaskGroup.group.worldGenTasks.forEach(worldGenTask -> worldGenTask.future.complete(WorldGenResult.CreateFail()));
@@ -450,24 +455,24 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 	}
 	/**
 	 * The chunkPos is always aligned to the granularity.
-	 * For example: if the granularity is 4 (chunk sized) with a data detail level of 0 (block sized), 
+	 * For example: if the granularity is 4 (chunk sized) with a data detail level of 0 (block sized),
 	 * the chunkPos will be aligned to 16x16 blocks. <br> <br>
-	 * 
-	 * 
+	 *
+	 *
 	 * <strong>Full Granularity definition (as of 2023-6-21): </strong> <br> <br>
-	 * 
+	 *
 	 * world gen actually supports (in theory) generating stuff with a data detail that's higher than the per-block. <br> <br>
 	 *
 	 * Granularity basically means, on a single generation task, how big such group should be, in terms of the data points it will make. <br> <br>
 	 *
-	 * For example, a granularity of 4 means the task will generate a 16 by 16 data points. 
+	 * For example, a granularity of 4 means the task will generate a 16 by 16 data points.
 	 * Now, those data points might be per block, or per 4 by 4 blocks. Granularity doesn't say what detail those would be. <br> <br>
 	 *
-	 * Note: currently the core system sends data via the chunk sized container, 
+	 * Note: currently the core system sends data via the chunk sized container,
 	 * which has the locked granularity of 4 (16 by 16 data columns), and thus generators should at least have min granularity of 4.
-	 * (Gen chunk width in that context means how many 'chunk sized containers' it will fill up. 
-	 * Again, note that a 'chunk sized container' isn't necessary 16 by 16 Minecraft blocks wide. 
-	 * It only has to contain 16 by 16 columns of data points, in whatever data detail it might be in.) 
+	 * (Gen chunk width in that context means how many 'chunk sized containers' it will fill up.
+	 * Again, note that a 'chunk sized container' isn't necessary 16 by 16 Minecraft blocks wide.
+	 * It only has to contain 16 by 16 columns of data points, in whatever data detail it might be in.)
 	 * (So, with a generator whose only gen data detail is 0, it is the same as a MC chunk.)
 	 */
 	private CompletableFuture<Void> startGenerationEvent(
@@ -485,7 +490,7 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 			}
 			catch (ClassCastException e)
 			{
-				DhLoggerBuilder.getLogger().error("World generator return type incorrect. Error: ["+e.getMessage()+"]. World generator disabled.", e);
+				DhLoggerBuilder.getLogger().error("World generator return type incorrect. Error: [" + e.getMessage() + "]. World generator disabled.", e);
 				Config.Client.Advanced.WorldGenerator.enableDistantGeneration.set(false);
 			}
 		});
@@ -512,11 +517,11 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 		
 		if (worldGeneratorThreadPool == null || worldGeneratorThreadPool.isTerminated())
 		{
-			LOGGER.info("Starting "+ FullDataFileHandler.class.getSimpleName());
+			LOGGER.info("Starting " + FullDataFileHandler.class.getSimpleName());
 			setThreadPoolSize(Config.Client.Advanced.MultiThreading.numberOfWorldGenerationThreads.get());
 		}
 	}
-	public static void setThreadPoolSize(int threadPoolSize) 
+	public static void setThreadPoolSize(int threadPoolSize)
 	{
 		if (worldGeneratorThreadPool != null)
 		{
@@ -524,7 +529,7 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 			worldGeneratorThreadPool.shutdown();
 		}
 		
-		worldGeneratorThreadPool = ThreadUtil.makeRateLimitedThreadPool(threadPoolSize, "DH-Gen-Worker-Thread", Thread.MIN_PRIORITY, Config.Client.Advanced.MultiThreading.runTimeRatioForWorldGenerationThreads); 
+		worldGeneratorThreadPool = ThreadUtil.makeRateLimitedThreadPool(threadPoolSize, "DH-Gen-Worker-Thread", Thread.MIN_PRIORITY, Config.Client.Advanced.MultiThreading.runTimeRatioForWorldGenerationThreads);
 	}
 	
 	/**
@@ -535,7 +540,7 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 	{
 		if (worldGeneratorThreadPool != null)
 		{
-			LOGGER.info("Stopping "+ FullDataFileHandler.class.getSimpleName());
+			LOGGER.info("Stopping " + FullDataFileHandler.class.getSimpleName());
 			worldGeneratorThreadPool.shutdownNow();
 		}
 	}
@@ -555,35 +560,35 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 		// stop and remove any in progress tasks
 		ArrayList<CompletableFuture<Void>> inProgressTasksCancelingFutures = new ArrayList<>(this.inProgressGenTasksByLodPos.size());
 		this.inProgressGenTasksByLodPos.values().forEach(runningTaskGroup ->
+		{
+			CompletableFuture<Void> genFuture = runningTaskGroup.genFuture; // Do this to prevent it getting swapped out
+			if (genFuture == null)
 			{
-				CompletableFuture<Void> genFuture = runningTaskGroup.genFuture; // Do this to prevent it getting swapped out
-				if (genFuture == null)
+				// genFuture's shouldn't be null, but sometimes they are...
+				return;
+			}
+			
+			
+			if (cancelCurrentGeneration)
+			{
+				genFuture.cancel(alsoInterruptRunning);
+			}
+			
+			inProgressTasksCancelingFutures.add(genFuture.handle((voidObj, exception) ->
+			{
+				if (exception instanceof CompletionException)
 				{
-					// genFuture's shouldn't be null, but sometimes they are...
-					return;
+					exception = exception.getCause();
 				}
 				
-				
-				if (cancelCurrentGeneration)
+				if (!UncheckedInterruptedException.isInterrupt(exception) && !(exception instanceof CancellationException))
 				{
-					genFuture.cancel(alsoInterruptRunning);
+					LOGGER.error("Error when terminating data generation for section " + runningTaskGroup.group.pos, exception);
 				}
 				
-				inProgressTasksCancelingFutures.add(genFuture.handle((voidObj, exception) ->
-				{
-					if (exception instanceof CompletionException)
-					{
-						exception = exception.getCause();
-					}
-					
-					if (!UncheckedInterruptedException.isInterrupt(exception) && !(exception instanceof CancellationException))
-					{
-						LOGGER.error("Error when terminating data generation for section "+runningTaskGroup.group.pos, exception);
-					}
-					
-					return null;
-				}));
-			});
+				return null;
+			}));
+		});
 		this.generatorClosingFuture = CompletableFuture.allOf(inProgressTasksCancelingFutures.toArray(new CompletableFuture[0]));
 		
 		return this.generatorClosingFuture;
@@ -592,7 +597,7 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 	@Override
 	public void close()
 	{
-		LOGGER.info("Closing "+WorldGenerationQueue.class.getSimpleName()+"...");
+		LOGGER.info("Closing " + WorldGenerationQueue.class.getSimpleName() + "...");
 		
 		if (this.generatorClosingFuture == null)
 		{
@@ -609,7 +614,7 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 			int waitTimeInSeconds = 3;
 			if (!worldGeneratorThreadPool.awaitTermination(waitTimeInSeconds, TimeUnit.SECONDS))
 			{
-				LOGGER.warn("World generator thread pool shutdown didn't complete after ["+waitTimeInSeconds+"] seconds. Some world generator requests may still be running.");
+				LOGGER.warn("World generator thread pool shutdown didn't complete after [" + waitTimeInSeconds + "] seconds. Some world generator requests may still be running.");
 			}
 		}
 		catch (InterruptedException e)
@@ -631,7 +636,7 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 		{
 			LOGGER.warn("Failed to close generation queue: ", e);
 		}
-		LOGGER.info("Finished closing "+WorldGenerationQueue.class.getSimpleName());
+		LOGGER.info("Finished closing " + WorldGenerationQueue.class.getSimpleName());
 		DebugRenderer.unregister(this);
 	}
 	
@@ -641,7 +646,7 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 	// helper methods //
 	//================//
 	
-	private boolean canGeneratePos(byte worldGenTaskGroupDetailLevel /*when in doubt use 0*/, DhLodPos taskPos)
+	private boolean canGeneratePos(byte worldGenTaskGroupDetailLevel /*when in doubt use 0*/ , DhLodPos taskPos)
 	{
 		byte granularity = (byte) (taskPos.detailLevel - worldGenTaskGroupDetailLevel);
 		return (granularity >= this.minGranularity && granularity <= this.maxGranularity);
@@ -671,10 +676,11 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 		
 		return index;
 	}
-
-
+	
+	
 	@Override
-	public void debugRender(DebugRenderer r) {
+	public void debugRender(DebugRenderer r)
+	{
 		//if (true) return;
 		waitingTasks.keySet().forEach((pos) -> {
 			//DhLodPos pos = t.pos;
@@ -684,4 +690,5 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 			r.renderBox(new DebugRenderer.Box(pos, -32f, 64f, 0.05f, Color.red));
 		});
 	}
+	
 }

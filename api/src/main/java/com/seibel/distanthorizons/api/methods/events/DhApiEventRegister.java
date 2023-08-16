@@ -30,7 +30,7 @@ public class DhApiEventRegister
 			return DhApiResult.createFail(e.getMessage());
 		}
 	}
-
+	
 	/**
 	 * Unregisters the given event handler for this event if one has been registered. <br>
 	 * If no eventHandler of the given class has been registered the result will return

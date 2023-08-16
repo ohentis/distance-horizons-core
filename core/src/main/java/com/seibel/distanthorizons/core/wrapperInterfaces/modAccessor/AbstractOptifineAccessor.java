@@ -10,9 +10,9 @@ import java.lang.reflect.Field;
 /**
  * Contains any shared code between Optifine for Forge (official Optifine)
  * and Optifine on Fabric (unofficial ports).
- * 
- * @version 2022-11-24
+ *
  * @author James Seibel
+ * @version 2022-11-24
  */
 public abstract class AbstractOptifineAccessor implements IOptifineAccessor
 {
@@ -47,7 +47,7 @@ public abstract class AbstractOptifineAccessor implements IOptifineAccessor
 		return null;
 	}
 	
-	/** 
+	/**
 	 * Should not be called frequently since this uses reflection calls to determine if Optifine is present. <br>
 	 * Use {@link ReflectionHandler#optifinePresent()} instead.
 	 */

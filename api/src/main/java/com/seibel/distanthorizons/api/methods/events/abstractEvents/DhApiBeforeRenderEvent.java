@@ -7,7 +7,7 @@ import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhAp
 /**
  * Called before Distant Horizons starts rendering a frame. <br>
  * Canceling the event will prevent DH from rendering that frame.
- * 
+ *
  * @author James Seibel
  * @version 2023-6-23
  */
@@ -35,6 +35,7 @@ public abstract class DhApiBeforeRenderEvent implements IDhApiCancelableEvent<Dh
 		{
 			super(parent.mcProjectionMatrix, parent.mcModelViewMatrix, parent.dhProjectionMatrix, parent.dhModelViewMatrix, parent.partialTicks);
 		}
+		
 	}
 	
 }

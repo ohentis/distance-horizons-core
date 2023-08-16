@@ -3,7 +3,7 @@ package com.seibel.distanthorizons.api.interfaces;
 /**
  * Implemented by wrappers so developers can
  * access the underlying Minecraft object(s).
- * 
+ *
  * @author James Seibel
  * @version 2023-6-17
  */

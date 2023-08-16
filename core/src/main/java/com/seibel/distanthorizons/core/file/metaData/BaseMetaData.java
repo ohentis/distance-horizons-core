@@ -5,8 +5,8 @@ import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.I
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSource;
 
-/** 
- * Contains and represents the meta information ({@link DhSectionPos}, {@link BaseMetaData#dataLevel}, etc.) 
+/**
+ * Contains and represents the meta information ({@link DhSectionPos}, {@link BaseMetaData#dataLevel}, etc.)
  * stored at the beginning of files that use the {@link AbstractMetaDataContainerFile}. <Br>
  * Which, as of the time of writing, includes: {@link IFullDataSource} and {@link ColumnRenderSource} files.
  */
@@ -14,7 +14,7 @@ public class BaseMetaData
 {
 	public DhSectionPos pos;
 	public int checksum;
-//	public AtomicLong dataVersion; // currently broken
+	//	public AtomicLong dataVersion; // currently broken
 	public byte dataLevel; // TODO what does this represent?
 	public EDhApiWorldGenerationStep worldGenStep;
 	

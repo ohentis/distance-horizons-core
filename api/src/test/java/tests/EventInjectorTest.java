@@ -133,7 +133,7 @@ public class EventInjectorTest
 		oneTimeEventList = TEST_EVENT_HANDLER.getAll(AbstractDhApiCancelableOneTimeTestEvent.class);
 		for (int i = 0; i < oneTimeEventList.size(); i++)
 		{
-			Assert.assertEquals("Event not fired for object ["+i+"].", true, oneTimeEventList.get(i).getTestValue());
+			Assert.assertEquals("Event not fired for object [" + i + "].", true, oneTimeEventList.get(i).getTestValue());
 		}
 		
 		

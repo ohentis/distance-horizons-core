@@ -39,9 +39,9 @@ public interface IChunkWrapper extends IBindable
 	
 	/** @return The highest y position of a solid block at the given relative chunk position. */
 	int getSolidHeightMapValue(int xRel, int zRel);
-	/** 
-	 * @return The highest y position of a light-blocking or translucent block at the given relative chunk position. <br> 
-	 * 			Note: this includes water.
+	/**
+	 * @return The highest y position of a light-blocking or translucent block at the given relative chunk position. <br>
+	 * Note: this includes water.
 	 */
 	int getLightBlockingHeightMapValue(int xRel, int zRel);
 	
@@ -49,7 +49,7 @@ public interface IChunkWrapper extends IBindable
 	int getMaxBlockZ();
 	int getMinBlockX();
 	int getMinBlockZ();
-
+	
 	long getLongChunkPos();
 	
 	void setIsDhLightCorrect(boolean isDhLightCorrect);
@@ -66,17 +66,17 @@ public interface IChunkWrapper extends IBindable
 	int getBlockLight(int relX, int relY, int relZ);
 	int getSkyLight(int relX, int relY, int relZ);
 	
-	/** 
-	 * Populates DH's saved lighting using MC's lighting engine. 
+	/**
+	 * Populates DH's saved lighting using MC's lighting engine.
 	 * This is generally done in cases where MC's lighting is correct now, but may not be later (like when a chunk is unloading).
-	 * 
+	 *
 	 * @throws IllegalStateException if the chunk's lighting isn't valid. This is done to prevent accidentally baking broken lighting.
 	 */
 	default void bakeDhLightingUsingMcLightingEngine() throws IllegalStateException
 	{
 		if (!this.isLightCorrect())
 		{
-			throw new IllegalStateException("Unable to bake lighting for for chunk ["+this.getChunkPos()+"], Minecraft lighting not valid.");
+			throw new IllegalStateException("Unable to bake lighting for for chunk [" + this.getChunkPos() + "], Minecraft lighting not valid.");
 		}
 		
 		// get the lighting for every relative block pos
@@ -91,7 +91,7 @@ public interface IChunkWrapper extends IBindable
 				}
 			}
 		}
-	}   
+	}
 	
 	
 	
@@ -105,7 +105,7 @@ public interface IChunkWrapper extends IBindable
 				&& y >= this.getMinBuildHeight() && y < this.getMaxBuildHeight()
 				&& z >= this.getMinBlockZ() && z <= this.getMaxBlockZ());
 	}
-	default boolean blockPosInsideChunk(DhBlockPos2D blockPos) 
+	default boolean blockPosInsideChunk(DhBlockPos2D blockPos)
 	{
 		return (blockPos.x >= this.getMinBlockX() && blockPos.x <= this.getMaxBlockX()
 				&& blockPos.z >= this.getMinBlockZ() && blockPos.z <= this.getMaxBlockZ());
@@ -120,9 +120,9 @@ public interface IChunkWrapper extends IBindable
 		int hash = 31;
 		int primeMultiplier = 227;
 		
-		for(int x = 0; x < LodUtil.CHUNK_WIDTH; x++)
+		for (int x = 0; x < LodUtil.CHUNK_WIDTH; x++)
 		{
-			for(int z = 0; z < LodUtil.CHUNK_WIDTH; z++)
+			for (int z = 0; z < LodUtil.CHUNK_WIDTH; z++)
 			{
 				hash = hash * primeMultiplier + Integer.hashCode(this.getLightBlockingHeightMapValue(x, z));
 			}
@@ -136,6 +136,7 @@ public interface IChunkWrapper extends IBindable
 	IBlockStateWrapper getBlockState(int relX, int relY, int relZ);
 	
 	IBiomeWrapper getBiome(int relX, int relY, int relZ);
-
-    boolean isStillValid();
+	
+	boolean isStillValid();
+	
 }

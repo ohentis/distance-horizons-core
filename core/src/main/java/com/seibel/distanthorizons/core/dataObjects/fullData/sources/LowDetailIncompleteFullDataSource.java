@@ -26,32 +26,32 @@ import java.util.BitSet;
 
 /**
  * Used for large incomplete LOD blocks. <Br>
- * Handles incomplete full data with a detail level higher than 
+ * Handles incomplete full data with a detail level higher than
  * {@link HighDetailIncompleteFullDataSource#MAX_SECTION_DETAIL}. <br><br>
- *  
+ *
  * Formerly "SpottyFullDataSource".
- * 
+ *
  * @see HighDetailIncompleteFullDataSource
  * @see CompleteFullDataSource
  * @see FullDataPointUtil
  */
 public class LowDetailIncompleteFullDataSource extends FullDataArrayAccessor implements IIncompleteFullDataSource, IStreamableFullDataSource<IStreamableFullDataSource.FullDataSourceSummaryData, LowDetailIncompleteFullDataSource.StreamDataPointContainer>
 {
-    private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
-    public static final byte SECTION_SIZE_OFFSET = DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL;
+	public static final byte SECTION_SIZE_OFFSET = DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL;
 	/** measured in dataPoints */
-    public static final int WIDTH = BitShiftUtil.powerOfTwo(SECTION_SIZE_OFFSET);
+	public static final int WIDTH = BitShiftUtil.powerOfTwo(SECTION_SIZE_OFFSET);
 	
-    public static final byte DATA_FORMAT_VERSION = 3;
+	public static final byte DATA_FORMAT_VERSION = 3;
 	/** written to the binary file to mark what {@link IFullDataSource} the binary file corresponds to */
-    public static final long TYPE_ID = "LowDetailIncompleteFullDataSource".hashCode();
+	public static final long TYPE_ID = "LowDetailIncompleteFullDataSource".hashCode();
 	
 	
-    private final DhSectionPos sectionPos;
+	private final DhSectionPos sectionPos;
 	private final BitSet isColumnNotEmpty;
 	
-    private boolean isEmpty = true;
+	private boolean isEmpty = true;
 	public EDhApiWorldGenerationStep worldGenStep = EDhApiWorldGenerationStep.EMPTY;
 	private boolean isPromoted = false;
 	
@@ -62,15 +62,15 @@ public class LowDetailIncompleteFullDataSource extends FullDataArrayAccessor imp
 	//==============//
 	
 	public static LowDetailIncompleteFullDataSource createEmpty(DhSectionPos pos) { return new LowDetailIncompleteFullDataSource(pos); }
-    private LowDetailIncompleteFullDataSource(DhSectionPos sectionPos)
+	private LowDetailIncompleteFullDataSource(DhSectionPos sectionPos)
 	{
-        super(new FullDataPointIdMap(sectionPos), new long[WIDTH * WIDTH][0], WIDTH);
-        LodUtil.assertTrue(sectionPos.sectionDetailLevel > HighDetailIncompleteFullDataSource.MAX_SECTION_DETAIL);
+		super(new FullDataPointIdMap(sectionPos), new long[WIDTH * WIDTH][0], WIDTH);
+		LodUtil.assertTrue(sectionPos.sectionDetailLevel > HighDetailIncompleteFullDataSource.MAX_SECTION_DETAIL);
 		
-        this.sectionPos = sectionPos;
+		this.sectionPos = sectionPos;
 		this.isColumnNotEmpty = new BitSet(WIDTH * WIDTH);
 		this.worldGenStep = EDhApiWorldGenerationStep.EMPTY;
-    }
+	}
 	
 	private LowDetailIncompleteFullDataSource(DhSectionPos pos, FullDataPointIdMap mapping, EDhApiWorldGenerationStep worldGenStep, BitSet isColumnNotEmpty, long[][] data)
 	{
@@ -111,20 +111,20 @@ public class LowDetailIncompleteFullDataSource extends FullDataArrayAccessor imp
 		int width = inputStream.readInt();
 		if (width != WIDTH)
 		{
-			throw new IOException(LodUtil.formatLog("Section size mismatch: "+width+" != "+ WIDTH +" (Currently only 1 section size is supported)"));
+			throw new IOException(LodUtil.formatLog("Section size mismatch: " + width + " != " + WIDTH + " (Currently only 1 section size is supported)"));
 		}
 		
 		int minY = inputStream.readInt();
 		if (minY != level.getMinY())
 		{
-			LOGGER.warn("Data minY mismatch: "+minY+" != "+level.getMinY()+". Will ignore data's y level");
+			LOGGER.warn("Data minY mismatch: " + minY + " != " + level.getMinY() + ". Will ignore data's y level");
 		}
 		
 		EDhApiWorldGenerationStep worldGenStep = EDhApiWorldGenerationStep.fromValue(inputStream.readByte());
 		if (worldGenStep == null)
 		{
 			worldGenStep = EDhApiWorldGenerationStep.SURFACE;
-			LOGGER.warn("Missing WorldGenStep, defaulting to: "+worldGenStep.name());
+			LOGGER.warn("Missing WorldGenStep, defaulting to: " + worldGenStep.name());
 		}
 		
 		
@@ -179,13 +179,13 @@ public class LowDetailIncompleteFullDataSource extends FullDataArrayAccessor imp
 		}
 		else if (dataPresentFlag != IFullDataSource.DATA_GUARD_BYTE)
 		{
-			throw new IOException("Invalid file format. Data Points guard byte expected: (no data) ["+IFullDataSource.NO_DATA_FLAG_BYTE+"] or (data present) ["+IFullDataSource.DATA_GUARD_BYTE+"], but found ["+dataPresentFlag+"].");
+			throw new IOException("Invalid file format. Data Points guard byte expected: (no data) [" + IFullDataSource.NO_DATA_FLAG_BYTE + "] or (data present) [" + IFullDataSource.DATA_GUARD_BYTE + "], but found [" + dataPresentFlag + "].");
 		}
 		
 		
 		// data column presence
 		int length = inputStream.readInt();
-		if (length < 0 || length > (WIDTH * WIDTH /8+64)*2) // TODO replace magic numbers or comment what they mean
+		if (length < 0 || length > (WIDTH * WIDTH / 8 + 64) * 2) // TODO replace magic numbers or comment what they mean
 		{
 			throw new IOException(LodUtil.formatLog("Spotty Flag BitSet size outside reasonable range: {} (expects {} to {})",
 					length, 1, WIDTH * WIDTH / 8 + 63));
@@ -264,8 +264,8 @@ public class LowDetailIncompleteFullDataSource extends FullDataArrayAccessor imp
 	// data //
 	//======//
 	
-    @Override
-    public SingleColumnFullDataAccessor tryGet(int relativeX, int relativeZ) { return this.isColumnNotEmpty.get(relativeX * WIDTH + relativeZ) ? this.get(relativeX, relativeZ) : null; }
+	@Override
+	public SingleColumnFullDataAccessor tryGet(int relativeX, int relativeZ) { return this.isColumnNotEmpty.get(relativeX * WIDTH + relativeZ) ? this.get(relativeX, relativeZ) : null; }
 	
 	
 	
@@ -280,14 +280,14 @@ public class LowDetailIncompleteFullDataSource extends FullDataArrayAccessor imp
 	@Override
 	public long getTypeId() { return TYPE_ID; }
 	@Override
-	public byte getBinaryDataFormatVersion() { return DATA_FORMAT_VERSION;  }
+	public byte getBinaryDataFormatVersion() { return DATA_FORMAT_VERSION; }
 	
 	@Override
 	public EDhApiWorldGenerationStep getWorldGenStep() { return this.worldGenStep; }
 	
 	@Override
 	public boolean isEmpty() { return this.isEmpty; }
-	public void markNotEmpty() { this.isEmpty = false;  }
+	public void markNotEmpty() { this.isEmpty = false; }
 	
 	@Override
 	public int getWidthInDataPoints() { return WIDTH; }
@@ -320,8 +320,8 @@ public class LowDetailIncompleteFullDataSource extends FullDataArrayAccessor imp
 			this.isEmpty = false;
 			
 			SingleColumnFullDataAccessor columnFullDataAccessor = this.get(offsetX, offsetZ);
-			data.get(0,0).deepCopyTo(columnFullDataAccessor);
-
+			data.get(0, 0).deepCopyTo(columnFullDataAccessor);
+			
 			this.isColumnNotEmpty.set(offsetX * WIDTH + offsetZ, columnFullDataAccessor.doesColumnExist());
 		}
 		else
@@ -361,7 +361,7 @@ public class LowDetailIncompleteFullDataSource extends FullDataArrayAccessor imp
 		else
 		{
 			// TODO implement
-			LodUtil.assertNotReach("SampleFrom not implemented for ["+this.getClass().getSimpleName()+"] with class ["+fullDataSource.getClass().getSimpleName()+"].");
+			LodUtil.assertNotReach("SampleFrom not implemented for [" + this.getClass().getSimpleName() + "] with class [" + fullDataSource.getClass().getSimpleName() + "].");
 		}
 	}
 	
@@ -521,13 +521,14 @@ public class LowDetailIncompleteFullDataSource extends FullDataArrayAccessor imp
 		isPromoted = true;
 		return new CompleteFullDataSource(this.sectionPos, this.mapping, this.dataArrays);
 	}
-
+	
 	@Override
-	public boolean hasBeenPromoted() {
+	public boolean hasBeenPromoted()
+	{
 		return isPromoted;
 	}
-
-
+	
+	
 	//================//
 	// helper classes //
 	//================//

@@ -16,7 +16,7 @@
  *    You should have received a copy of the GNU Lesser General Public License
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
- 
+
 package com.seibel.distanthorizons.core.render.glObject.vertexAttribute;
 
 import com.seibel.distanthorizons.core.render.glObject.GLProxy;
@@ -30,66 +30,79 @@ import org.lwjgl.opengl.GL43;
 // Since I no longer needs to implement binding points, I also no
 // longer needs to keep track of Pointers.
 
-public final class VertexAttributePostGL43 extends VertexAttribute {
-
+public final class VertexAttributePostGL43 extends VertexAttribute
+{
+	
 	int numberOfBindingPoints = 0;
 	int strideSize = 0;
-
+	
 	// This will bind VertexAttribute
-	public VertexAttributePostGL43() {
+	public VertexAttributePostGL43()
+	{
 		super(); // also bind VertexAttribute
 	}
 	
 	@Override
 	// Requires VertexAttribute binded, VertexBuffer binded
-	public void bindBufferToAllBindingPoint(int buffer) {
-		for (int i=0; i<numberOfBindingPoints; i++)
+	public void bindBufferToAllBindingPoint(int buffer)
+	{
+		for (int i = 0; i < numberOfBindingPoints; i++)
+		{
 			GL43.glBindVertexBuffer(i, buffer, 0, strideSize);
+		}
 	}
-
+	
 	@Override
 	// Requires VertexAttribute binded, VertexBuffer binded
-	public void bindBufferToBindingPoint(int buffer, int bindingPoint) {
+	public void bindBufferToBindingPoint(int buffer, int bindingPoint)
+	{
 		GL43.glBindVertexBuffer(bindingPoint, buffer, 0, strideSize);
 	}
-
+	
 	@Override
 	// Requires VertexAttribute binded
-	public void unbindBuffersFromAllBindingPoint() {
-		for (int i=0; i<numberOfBindingPoints; i++)
+	public void unbindBuffersFromAllBindingPoint()
+	{
+		for (int i = 0; i < numberOfBindingPoints; i++)
+		{
 			GL43.glBindVertexBuffer(i, 0, 0, 0);
+		}
 	}
-
+	
 	@Override
 	// Requires VertexAttribute binded
-	public void unbindBuffersFromBindingPoint(int bindingPoint) {
+	public void unbindBuffersFromBindingPoint(int bindingPoint)
+	{
 		GL43.glBindVertexBuffer(bindingPoint, 0, 0, 0);
 	}
-
+	
 	@Override
 	// Requires VertexAttribute binded
-	public void setVertexAttribute(int bindingPoint, int attributeIndex, VertexPointer attribute) {
+	public void setVertexAttribute(int bindingPoint, int attributeIndex, VertexPointer attribute)
+	{
 		if (attribute.useInteger)
 			GL43.glVertexAttribIFormat(attributeIndex, attribute.elementCount, attribute.glType, strideSize);
 		else
 			GL43.glVertexAttribFormat(attributeIndex, attribute.elementCount, attribute.glType,
-				attribute.normalized, strideSize); // Here strideSize is new attrib offset
+					attribute.normalized, strideSize); // Here strideSize is new attrib offset
 		strideSize += attribute.byteSize;
-		if (numberOfBindingPoints <= bindingPoint) numberOfBindingPoints = bindingPoint+1;
+		if (numberOfBindingPoints <= bindingPoint) numberOfBindingPoints = bindingPoint + 1;
 		GL43.glVertexAttribBinding(attributeIndex, bindingPoint);
 		GL43.glEnableVertexAttribArray(attributeIndex);
 	}
-
+	
 	@Override
 	// Requires VertexAttribute binded
-	public void completeAndCheck(int expectedStrideSize) {
-		if (strideSize != expectedStrideSize) {
+	public void completeAndCheck(int expectedStrideSize)
+	{
+		if (strideSize != expectedStrideSize)
+		{
 			GLProxy.GL_LOGGER.error("Vertex Attribute calculated stride size " + strideSize +
 					" does not match the provided expected stride size " + expectedStrideSize + "!");
 			throw new IllegalArgumentException("Vertex Attribute Incorrect Format");
 		}
-		GLProxy.GL_LOGGER.info("Vertex Attribute (GL43+) completed. It contains "+numberOfBindingPoints
-				+" binding points and a stride size of "+strideSize);
+		GLProxy.GL_LOGGER.info("Vertex Attribute (GL43+) completed. It contains " + numberOfBindingPoints
+				+ " binding points and a stride size of " + strideSize);
 	}
-
+	
 }

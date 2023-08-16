@@ -9,17 +9,18 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapp
 
 public interface IDhClientLevel extends IDhWorldGenLevel
 {
-    void clientTick();
+	void clientTick();
 	
-    void render(Mat4f mcModelViewMatrix, Mat4f mcProjectionMatrix, float partialTicks, IProfilerWrapper profiler);
+	void render(Mat4f mcModelViewMatrix, Mat4f mcProjectionMatrix, float partialTicks, IProfilerWrapper profiler);
 	
-    int computeBaseColor(DhBlockPos pos, IBiomeWrapper biome, IBlockStateWrapper block);
+	int computeBaseColor(DhBlockPos pos, IBiomeWrapper biome, IBlockStateWrapper block);
 	
-    IClientLevelWrapper getClientLevelWrapper();
-
-    /**
-     * Re-creates the color, render data.
-     * This method should be called after resource packs are changed or LOD settings are modified.
-     */
-    void clearRenderCache();
+	IClientLevelWrapper getClientLevelWrapper();
+	
+	/**
+	 * Re-creates the color, render data.
+	 * This method should be called after resource packs are changed or LOD settings are modified.
+	 */
+	void clearRenderCache();
+	
 }

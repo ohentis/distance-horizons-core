@@ -16,7 +16,7 @@
  *    You should have received a copy of the GNU Lesser General Public License
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
- 
+
 package com.seibel.distanthorizons.core.util.objects;
 
 import java.util.ArrayList;
@@ -30,7 +30,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-public class DummyRunExecutorService implements ExecutorService {
+public class DummyRunExecutorService implements ExecutorService
+{
 	private boolean shutdownCalled = false;
 	
 	@Override
@@ -38,50 +39,52 @@ public class DummyRunExecutorService implements ExecutorService {
 	{
 		command.run();
 	}
-
+	
 	@Override
 	public void shutdown()
 	{
 		shutdownCalled = true;
 	}
-
+	
 	@Override
 	public List<Runnable> shutdownNow()
 	{
 		shutdownCalled = true;
 		return new ArrayList<Runnable>();
 	}
-
+	
 	@Override
 	public boolean isShutdown()
 	{
 		return shutdownCalled;
 	}
-
+	
 	@Override
 	public boolean isTerminated()
 	{
 		return shutdownCalled;
 	}
-
+	
 	@Override
 	public boolean awaitTermination(long timeout, TimeUnit unit)
 	{
 		shutdownCalled = true;
 		return true;
 	}
-
+	
 	@Override
 	public <T> Future<T> submit(Callable<T> task)
 	{
 		try
 		{
 			return CompletableFuture.completedFuture(task.call());
-		} catch (Throwable e) {
-			return CompletableFuture.supplyAsync( () -> {throw new CompletionException(e);}, Runnable::run);
+		}
+		catch (Throwable e)
+		{
+			return CompletableFuture.supplyAsync(() -> { throw new CompletionException(e); }, Runnable::run);
 		}
 	}
-
+	
 	@Override
 	public <T> Future<T> submit(Runnable task, T result)
 	{
@@ -92,10 +95,10 @@ public class DummyRunExecutorService implements ExecutorService {
 		}
 		catch (Throwable e)
 		{
-			return CompletableFuture.supplyAsync( () -> {throw new CompletionException(e);}, Runnable::run);
+			return CompletableFuture.supplyAsync(() -> { throw new CompletionException(e); }, Runnable::run);
 		}
 	}
-
+	
 	@Override
 	public Future<?> submit(Runnable task)
 	{
@@ -106,32 +109,35 @@ public class DummyRunExecutorService implements ExecutorService {
 		}
 		catch (Throwable e)
 		{
-			return CompletableFuture.supplyAsync( () -> {throw new CompletionException(e);}, Runnable::run);
+			return CompletableFuture.supplyAsync(() -> { throw new CompletionException(e); }, Runnable::run);
 		}
 	}
-
+	
 	@Override
 	public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks)
 	{
 		List<Future<T>> futures = new ArrayList<Future<T>>(tasks.size());
-		for (Callable<T> t : tasks) {
+		for (Callable<T> t : tasks)
+		{
 			futures.add(submit(t));
 		}
 		return futures;
 	}
-
+	
 	@Override
 	public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit)
 	{
 		return invokeAll(tasks);
 	}
-
+	
 	@Override
 	public <T> T invokeAny(Collection<? extends Callable<T>> tasks) throws ExecutionException
 	{
 		Throwable latestE = null;
-		for (Callable<T> t : tasks) {
-			try {
+		for (Callable<T> t : tasks)
+		{
+			try
+			{
 				return t.call();
 			}
 			catch (Throwable e)
@@ -141,7 +147,7 @@ public class DummyRunExecutorService implements ExecutorService {
 		}
 		throw new ExecutionException(latestE);
 	}
-
+	
 	@Override
 	public <T> T invokeAny(Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit) throws ExecutionException
 	{

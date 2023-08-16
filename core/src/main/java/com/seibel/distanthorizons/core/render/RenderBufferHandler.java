@@ -15,8 +15,8 @@ import java.util.Iterator;
 import java.util.ListIterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-/** 
- * This object tells the {@link LodRenderer} what buffers to render 
+/**
+ * This object tells the {@link LodRenderer} what buffers to render
  * TODO rename this class, maybe RenderBufferOrganizer or something more specific?
  */
 public class RenderBufferHandler
@@ -28,10 +28,10 @@ public class RenderBufferHandler
 	
 	// TODO: Make sorting go into the update loop instead of the render loop as it doesn't need to be done every frame
 	private SortedArraySet<LoadedRenderBuffer> loadedNearToFarBuffers = null;
-
+	
 	private final AtomicBoolean rebuildAllBuffers = new AtomicBoolean(false);
-
-
+	
+	
 	public RenderBufferHandler(LodQuadTree lodQuadTree) { this.lodQuadTree = lodQuadTree; }
 	
 	
@@ -98,20 +98,21 @@ public class RenderBufferHandler
 				axisDirections[2] = xDir;
 			}
 		}
-
+		
 		Pos2D cPos = lodQuadTree.getCenterBlockPos().toPos2D();
-	
+		
 		// Now that we have the axis directions, we can sort the render list
 		Comparator<LoadedRenderBuffer> farToNearComparator = (loadedBufferA, loadedBufferB) ->
 		{
 			Pos2D aPos = loadedBufferA.pos.getCenter().getCenterBlockPos().toPos2D();
 			Pos2D bPos = loadedBufferB.pos.getCenter().getCenterBlockPos().toPos2D();
-			if (true) {
+			if (true)
+			{
 				int aManhattanDistance = aPos.manhattanDist(cPos);
 				int bManhattanDistance = bPos.manhattanDist(cPos);
 				return bManhattanDistance - aManhattanDistance;
 			}
-
+			
 			for (EDhDirection axisDirection : axisDirections)
 			{
 				if (axisDirection.getAxis().isVertical())
@@ -146,7 +147,7 @@ public class RenderBufferHandler
 		
 		// Build the sorted list
 		this.loadedNearToFarBuffers = new SortedArraySet<>((a, b) -> -farToNearComparator.compare(a, b)); // TODO is the comparator named wrong?
-
+		
 		// Update the sections
 		boolean rebuildAllBuffers = this.rebuildAllBuffers.getAndSet(false);
 		Iterator<QuadNode<LodRenderSection>> nodeIterator = this.lodQuadTree.nodeIterator();
@@ -158,7 +159,7 @@ public class RenderBufferHandler
 			LodRenderSection renderSection = node.value;
 			try
 			{
-
+				
 				if (renderSection != null)
 				{
 					if (rebuildAllBuffers)
@@ -166,7 +167,7 @@ public class RenderBufferHandler
 						renderSection.markBufferDirty();
 					}
 					renderSection.tryBuildAndSwapBuffer();
-
+					
 					if (renderSection.isRenderingEnabled())
 					{
 						AbstractRenderBuffer buffer = renderSection.activeRenderBufferRef.get();
@@ -179,18 +180,18 @@ public class RenderBufferHandler
 			}
 			catch (Exception e)
 			{
-				LOGGER.error("Error updating QuadTree render source at "+renderSection.pos+".", e);
+				LOGGER.error("Error updating QuadTree render source at " + renderSection.pos + ".", e);
 				renderSection.markBufferDirty();
 			}
 		}
 	}
 	
-    public void renderOpaque(LodRenderer renderContext)
+	public void renderOpaque(LodRenderer renderContext)
 	{
 		//TODO: Directional culling
 		this.loadedNearToFarBuffers.forEach(loadedBuffer -> loadedBuffer.buffer.renderOpaque(renderContext));
 	}
-    public void renderTransparent(LodRenderer renderContext)
+	public void renderTransparent(LodRenderer renderContext)
 	{
 		//TODO: Directional culling
 		ListIterator<LoadedRenderBuffer> iter = this.loadedNearToFarBuffers.listIterator(this.loadedNearToFarBuffers.size());
@@ -200,14 +201,14 @@ public class RenderBufferHandler
 			loadedBuffer.buffer.renderTransparent(renderContext);
 		}
 	}
-
+	
 	public void MarkAllBuffersDirty()
 	{
 		rebuildAllBuffers.set(true);
 	}
-
 	
-    public void close() 
+	
+	public void close()
 	{
 		Iterator<QuadNode<LodRenderSection>> nodeIterator = this.lodQuadTree.nodeIterator();
 		while (nodeIterator.hasNext())
@@ -236,6 +237,7 @@ public class RenderBufferHandler
 			this.buffer = buffer;
 			this.pos = pos;
 		}
+		
 	}
 	
 }

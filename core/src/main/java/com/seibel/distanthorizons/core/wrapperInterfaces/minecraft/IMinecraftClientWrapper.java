@@ -33,7 +33,7 @@ import org.apache.logging.log4j.Level;
 
 /**
  * Contains everything related to the Minecraft object.
- * 
+ *
  * @author James Seibel
  * @version 2022-8-20
  */
@@ -65,25 +65,25 @@ public interface IMinecraftClientWrapper extends IBindable
 	String getCurrentServerName();
 	String getCurrentServerIp();
 	String getCurrentServerVersion();
-
+	
 	//=============//
 	// Simple gets //
 	//=============//
 	
 	boolean playerExists();
-
+	
 	UUID getPlayerUUID();
-
+	
 	DhBlockPos getPlayerBlockPos();
 	
 	DhChunkPos getPlayerChunkPos();
-
-	/** 
-	 * Returns the level the client is currently in. <br> 
+	
+	/**
+	 * Returns the level the client is currently in. <br>
 	 * Returns null if the client isn't in a level.
 	 */
 	ILevelWrapper getWrappedClientWorld();
-
+	
 	/** Please move over to getInstallationDirectory() within the IMinecraftSharedWrapper */
 	@Deprecated
 	File getGameDirectory();
@@ -133,15 +133,15 @@ public interface IMinecraftClientWrapper extends IBindable
 	/**
 	 * Crashes Minecraft, displaying the given errorMessage <br> <br>
 	 * In the following format: <br>
-	 * 
+	 *
 	 * The game crashed whilst <strong>errorMessage</strong>  <br>
 	 * Error: <strong>ExceptionClass: exceptionErrorMessage</strong>  <br>
 	 * Exit Code: -1  <br>
 	 */
 	void crashMinecraft(String errorMessage, Throwable exception); //FIXME: Move to IMinecraftSharedWrapper
-
-    Object getOptionsObject();
-
+	
+	Object getOptionsObject();
+	
 	/** Executes the given task on Minecraft's render thread. */
 	void executeOnRenderThread(Runnable runnable);
 	

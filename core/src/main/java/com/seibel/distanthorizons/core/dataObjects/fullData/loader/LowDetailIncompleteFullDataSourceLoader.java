@@ -10,15 +10,17 @@ import java.io.IOException;
 
 public class LowDetailIncompleteFullDataSourceLoader extends AbstractFullDataSourceLoader
 {
-    public LowDetailIncompleteFullDataSourceLoader() {
-        super(LowDetailIncompleteFullDataSource.class, LowDetailIncompleteFullDataSource.TYPE_ID, new byte[]{ LowDetailIncompleteFullDataSource.DATA_FORMAT_VERSION });
-    }
-
-    @Override
-    public IFullDataSource loadData(FullDataMetaFile dataFile, DhDataInputStream inputStream, IDhLevel level) throws IOException, InterruptedException
+	public LowDetailIncompleteFullDataSourceLoader()
+	{
+		super(LowDetailIncompleteFullDataSource.class, LowDetailIncompleteFullDataSource.TYPE_ID, new byte[]{LowDetailIncompleteFullDataSource.DATA_FORMAT_VERSION});
+	}
+	
+	@Override
+	public IFullDataSource loadData(FullDataMetaFile dataFile, DhDataInputStream inputStream, IDhLevel level) throws IOException, InterruptedException
 	{
 		LowDetailIncompleteFullDataSource dataSource = LowDetailIncompleteFullDataSource.createEmpty(dataFile.pos);
 		dataSource.populateFromStream(dataFile, inputStream, level);
 		return dataSource;
-    }
+	}
+	
 }

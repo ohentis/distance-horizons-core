@@ -21,28 +21,28 @@ public class QuadNode<T>
 	public T value;
 	
 	
-	/** 
+	/**
 	 * North West <br>
 	 * index 0 <br>
-	 * relative pos (0,0) 
+	 * relative pos (0,0)
 	 */
 	public QuadNode<T> nwChild;
 	/**
 	 * North East <br>
 	 * index 1 <br>
-	 * relative (1,0) 
+	 * relative (1,0)
 	 */
 	public QuadNode<T> neChild;
 	/**
 	 * South West <br>
 	 * index 2 <br>
-	 * relative (0,1) 
+	 * relative (0,1)
 	 */
 	public QuadNode<T> swChild;
 	/**
 	 * South East <br>
 	 * index 3 <br>
-	 * relative (1,1) 
+	 * relative (1,1)
 	 */
 	public QuadNode<T> seChild;
 	
@@ -56,11 +56,12 @@ public class QuadNode<T>
 	
 	
 	
-	/** 
+	/**
 	 * Use {@link QuadNode#getNonNullChildCount()} if you want the number of non-null child values.
-	 * @return the number of non-null child nodes 
+	 *
+	 * @return the number of non-null child nodes
 	 */
-	public int getTotalChildCount() 
+	public int getTotalChildCount()
 	{
 		int count = 0;
 		for (int i = 0; i < 4; i++)
@@ -122,17 +123,17 @@ public class QuadNode<T>
 	
 	/**
 	 * @param sectionPos must be 1 detail level lower than this node's detail level
-	 * @throws IllegalArgumentException if childSectionPos has the wrong detail level or is outside the bounds of this node
 	 * @return the node at the given position
+	 * @throws IllegalArgumentException if childSectionPos has the wrong detail level or is outside the bounds of this node
 	 */
 	public QuadNode<T> getNode(DhSectionPos sectionPos) throws IllegalArgumentException { return this.getOrSetValue(sectionPos, false, null); }
 	
 	/**
 	 * @param sectionPos must be 1 detail level lower than this node's detail level
-	 * @throws IllegalArgumentException if childSectionPos has the wrong detail level or is outside the bounds of this node
 	 * @return the value at the given position before the new value was set
+	 * @throws IllegalArgumentException if childSectionPos has the wrong detail level or is outside the bounds of this node
 	 */
-	public T setValue(DhSectionPos sectionPos, T newValue) throws IllegalArgumentException 
+	public T setValue(DhSectionPos sectionPos, T newValue) throws IllegalArgumentException
 	{
 		QuadNode<T> previousNode = this.getNode(sectionPos);
 		if (previousNode != null)
@@ -150,8 +151,8 @@ public class QuadNode<T>
 	
 	/**
 	 * @param inputSectionPos must be 1 detail level lower than this node's detail level
-	 * @throws IllegalArgumentException if childSectionPos has the wrong detail level or is outside the bounds of this 
 	 * @return the node at the given position before the new node was set (if the new node should be set)
+	 * @throws IllegalArgumentException if childSectionPos has the wrong detail level or is outside the bounds of this
 	 */
 	private QuadNode<T> getOrSetValue(DhSectionPos inputSectionPos, boolean replaceValue, T newValue) throws IllegalArgumentException
 	{
@@ -159,23 +160,23 @@ public class QuadNode<T>
 		
 		if (!this.sectionPos.contains(inputSectionPos))
 		{
-			LOGGER.error((replaceValue ? "set " : "get ")+inputSectionPos+" center block: "+inputSectionPos.getCenter().getCornerBlockPos()+", this pos: "+this.sectionPos+" this center block: "+this.sectionPos.getCenter().getCornerBlockPos());
-			throw new IllegalArgumentException("Input section pos "+inputSectionPos+" outside of this quadNode's pos: "+this.sectionPos+", this node's blockPos: "+this.sectionPos.convertToDetailLevel(LodUtil.BLOCK_DETAIL_LEVEL)+" block width: "+this.sectionPos.getWidth().toBlockWidth()+" input detail level: "+inputSectionPos.convertToDetailLevel(LodUtil.BLOCK_DETAIL_LEVEL)+" width: "+inputSectionPos.getWidth().toBlockWidth());
+			LOGGER.error((replaceValue ? "set " : "get ") + inputSectionPos + " center block: " + inputSectionPos.getCenter().getCornerBlockPos() + ", this pos: " + this.sectionPos + " this center block: " + this.sectionPos.getCenter().getCornerBlockPos());
+			throw new IllegalArgumentException("Input section pos " + inputSectionPos + " outside of this quadNode's pos: " + this.sectionPos + ", this node's blockPos: " + this.sectionPos.convertToDetailLevel(LodUtil.BLOCK_DETAIL_LEVEL) + " block width: " + this.sectionPos.getWidth().toBlockWidth() + " input detail level: " + inputSectionPos.convertToDetailLevel(LodUtil.BLOCK_DETAIL_LEVEL) + " width: " + inputSectionPos.getWidth().toBlockWidth());
 		}
 		
 		if (inputSectionPos.sectionDetailLevel > this.sectionPos.sectionDetailLevel)
 		{
-			throw new IllegalArgumentException("detail level higher than this node. Node Detail level: "+this.sectionPos.sectionDetailLevel+" input detail level: "+inputSectionPos.sectionDetailLevel);
+			throw new IllegalArgumentException("detail level higher than this node. Node Detail level: " + this.sectionPos.sectionDetailLevel + " input detail level: " + inputSectionPos.sectionDetailLevel);
 		}
 		
 		if (inputSectionPos.sectionDetailLevel == this.sectionPos.sectionDetailLevel && !inputSectionPos.equals(this.sectionPos))
 		{
-			throw new IllegalArgumentException("Node and input detail level are equal, however positions are not; this tree doesn't contain the requested position. Node pos: "+this.sectionPos+", input pos: "+inputSectionPos);
+			throw new IllegalArgumentException("Node and input detail level are equal, however positions are not; this tree doesn't contain the requested position. Node pos: " + this.sectionPos + ", input pos: " + inputSectionPos);
 		}
 		
 		if (inputSectionPos.sectionDetailLevel < this.minimumDetailLevel)
 		{
-			throw new IllegalArgumentException("Input position is requesting a detail level lower than what this node can provide. Node minimum detail level: "+this.minimumDetailLevel+", input pos: "+inputSectionPos);
+			throw new IllegalArgumentException("Input position is requesting a detail level lower than what this node can provide. Node minimum detail level: " + this.minimumDetailLevel + ", input pos: " + inputSectionPos);
 		}
 		
 		
@@ -194,7 +195,7 @@ public class QuadNode<T>
 		{
 			// this node is a parent to the position requested,
 			// recurse to the next node
-			
+
 //			LOGGER.info((replaceValue ? "set " : "get ")+inputSectionPos+" center block: "+inputSectionPos.getCenter().getCornerBlockPos()+", this pos: "+this.sectionPos+" this center block: "+this.sectionPos.getCenter().getCornerBlockPos());
 			
 			DhSectionPos nwPos = this.sectionPos.getChildByIndex(0);
@@ -329,6 +330,6 @@ public class QuadNode<T>
 	//==============//
 	
 	@Override
-	public String toString() { return "pos: "+this.sectionPos+", children #: "+this.getTotalChildCount()+", value: "+this.value; }
+	public String toString() { return "pos: " + this.sectionPos + ", children #: " + this.getTotalChildCount() + ", value: " + this.value; }
 	
 }

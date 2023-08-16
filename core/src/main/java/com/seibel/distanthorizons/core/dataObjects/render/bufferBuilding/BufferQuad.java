@@ -26,16 +26,17 @@ import com.seibel.distanthorizons.core.util.LodUtil;
 /** Represents a render-able quad. */
 public final class BufferQuad
 {
-	/** 
-	 * The maximum number of blocks wide a quad can be. <br><br> 
-	 * 
-	 * This could be increased beyond 2048, for use with 
+	/**
+	 * The maximum number of blocks wide a quad can be. <br><br>
+	 *
+	 * This could be increased beyond 2048, for use with
 	 * extremely low detail levels if the need arises.
 	 */
 	public static final int NORMAL_MAX_QUAD_WIDTH = 2048;
-	/** The maximum number of blocks wide a quad can be
-	 * when {@link Config.Client.Advanced.Graphics.AdvancedGraphics#earthCurveRatio earthCurveRatio} 
-	 * is enabled. 
+	/**
+	 * The maximum number of blocks wide a quad can be
+	 * when {@link Config.Client.Advanced.Graphics.AdvancedGraphics#earthCurveRatio earthCurveRatio}
+	 * is enabled.
 	 */
 	public static final int MAX_QUAD_WIDTH_FOR_EARTH_CURVATURE = LodUtil.CHUNK_WIDTH;
 	
@@ -48,8 +49,9 @@ public final class BufferQuad
 	/** This is both North/South and Up/Down since the merging logic is the same either way */
 	public short widthNorthSouthOrUpDown;
 	
-	/** 
-	 * not final since it may need to be modified to be opaque 
+	/**
+	 * not final since it may need to be modified to be opaque
+	 *
 	 * @see LodQuadBuilder#fixTransparencyOverVoid
 	 */
 	public int color;
@@ -62,7 +64,8 @@ public final class BufferQuad
 	
 	
 	
-	BufferQuad(short x, short y, short z, short widthEastWest, short widthNorthSouthOrUpDown,
+	BufferQuad(
+			short x, short y, short z, short widthEastWest, short widthNorthSouthOrUpDown,
 			int color, byte skylight, byte blockLight,
 			EDhDirection direction)
 	{
@@ -100,30 +103,30 @@ public final class BufferQuad
 		{
 			switch (this.direction.getAxis())
 			{
-			case X:
-				return threeDimensionalCompare(this.x, this.y, this.z, quad.x, quad.y, quad.z);
-			case Y:
-				return threeDimensionalCompare(this.y, this.z, this.x, quad.y, quad.z, quad.x);
-			case Z:
-				return threeDimensionalCompare(this.z, this.y, this.x, quad.z, quad.y, quad.x);
+				case X:
+					return threeDimensionalCompare(this.x, this.y, this.z, quad.x, quad.y, quad.z);
+				case Y:
+					return threeDimensionalCompare(this.y, this.z, this.x, quad.y, quad.z, quad.x);
+				case Z:
+					return threeDimensionalCompare(this.z, this.y, this.x, quad.z, quad.y, quad.x);
 				
-			default:
-				throw new IllegalArgumentException("Invalid Axis enum: " + this.direction.getAxis());
+				default:
+					throw new IllegalArgumentException("Invalid Axis enum: " + this.direction.getAxis());
 			}
 		}
 		else
 		{
 			switch (this.direction.getAxis())
 			{
-			case X:
-				return threeDimensionalCompare(this.x, this.z, this.y, quad.x, quad.z, quad.y);
-			case Y:
-				return threeDimensionalCompare(this.y, this.x, this.z, quad.y, quad.x, quad.z);
-			case Z:
-				return threeDimensionalCompare(this.z, this.x, this.y, quad.z, quad.x, quad.y);
-			
-			default:
-				throw new IllegalArgumentException("Invalid Axis enum: " + this.direction.getAxis());
+				case X:
+					return threeDimensionalCompare(this.x, this.z, this.y, quad.x, quad.z, quad.y);
+				case Y:
+					return threeDimensionalCompare(this.y, this.x, this.z, quad.y, quad.x, quad.z);
+				case Z:
+					return threeDimensionalCompare(this.z, this.x, this.y, quad.z, quad.x, quad.y);
+				
+				default:
+					throw new IllegalArgumentException("Invalid Axis enum: " + this.direction.getAxis());
 			}
 		}
 	}
@@ -143,11 +146,12 @@ public final class BufferQuad
 	
 	/**
 	 * Attempts to merge the given quad into this one.
+	 *
 	 * @return true if the quads were merged, false otherwise.
 	 */
 	public boolean tryMerge(BufferQuad quad, BufferMergeDirectionEnum mergeDirection)
 	{
-		if (quad.hasError || this.hasError) 
+		if (quad.hasError || this.hasError)
 			return false;
 		// only merge quads that are in the same direction
 		if (this.direction != quad.direction)
@@ -168,63 +172,63 @@ public final class BufferQuad
 		short otherParallelCompareStartPos;
 		switch (this.direction.getAxis())
 		{
-		default: // shouldn't normally happen, just here to make the compiler happy
-		case X:
-			if (mergeDirection == BufferMergeDirectionEnum.EastWest)
-			{
-				thisPerpendicularCompareStartPos = this.z;
-				thisParallelCompareStartPos = this.x;
-				
-				otherPerpendicularCompareStartPos = quad.z;
-				otherParallelCompareStartPos = quad.x;
-			}
-			else //if (mergeDirection == MergeDirection.NorthSouthOrUpDown)
-			{
-				thisPerpendicularCompareStartPos = this.y;
-				thisParallelCompareStartPos = this.z;
-				
-				otherPerpendicularCompareStartPos = quad.y;
-				otherParallelCompareStartPos = quad.z;
-			}
-			break;
-		
-		case Y:
-			if (mergeDirection == BufferMergeDirectionEnum.EastWest)
-			{
-				thisPerpendicularCompareStartPos = this.x;
-				thisParallelCompareStartPos = this.z;
-				
-				otherPerpendicularCompareStartPos = quad.x;
-				otherParallelCompareStartPos = quad.z;
-			}
-			else //if (mergeDirection == MergeDirection.NorthSouthOrUpDown)
-			{
-				thisPerpendicularCompareStartPos = this.z;
-				thisParallelCompareStartPos = this.y;
-				
-				otherPerpendicularCompareStartPos = quad.z;
-				otherParallelCompareStartPos = quad.y;
-			}
-			break;
-		
-		case Z:
-			if (mergeDirection == BufferMergeDirectionEnum.EastWest)
-			{
-				thisPerpendicularCompareStartPos = this.x;
-				thisParallelCompareStartPos = this.z;
-				
-				otherPerpendicularCompareStartPos = quad.x;
-				otherParallelCompareStartPos = quad.z;
-			}
-			else //if (mergeDirection == MergeDirection.NorthSouthOrUpDown)
-			{
-				thisPerpendicularCompareStartPos = this.y;
-				thisParallelCompareStartPos = this.z;
-				
-				otherPerpendicularCompareStartPos = quad.y;
-				otherParallelCompareStartPos = quad.z;
-			}
-			break;
+			default: // shouldn't normally happen, just here to make the compiler happy
+			case X:
+				if (mergeDirection == BufferMergeDirectionEnum.EastWest)
+				{
+					thisPerpendicularCompareStartPos = this.z;
+					thisParallelCompareStartPos = this.x;
+					
+					otherPerpendicularCompareStartPos = quad.z;
+					otherParallelCompareStartPos = quad.x;
+				}
+				else //if (mergeDirection == MergeDirection.NorthSouthOrUpDown)
+				{
+					thisPerpendicularCompareStartPos = this.y;
+					thisParallelCompareStartPos = this.z;
+					
+					otherPerpendicularCompareStartPos = quad.y;
+					otherParallelCompareStartPos = quad.z;
+				}
+				break;
+			
+			case Y:
+				if (mergeDirection == BufferMergeDirectionEnum.EastWest)
+				{
+					thisPerpendicularCompareStartPos = this.x;
+					thisParallelCompareStartPos = this.z;
+					
+					otherPerpendicularCompareStartPos = quad.x;
+					otherParallelCompareStartPos = quad.z;
+				}
+				else //if (mergeDirection == MergeDirection.NorthSouthOrUpDown)
+				{
+					thisPerpendicularCompareStartPos = this.z;
+					thisParallelCompareStartPos = this.y;
+					
+					otherPerpendicularCompareStartPos = quad.z;
+					otherParallelCompareStartPos = quad.y;
+				}
+				break;
+			
+			case Z:
+				if (mergeDirection == BufferMergeDirectionEnum.EastWest)
+				{
+					thisPerpendicularCompareStartPos = this.x;
+					thisParallelCompareStartPos = this.z;
+					
+					otherPerpendicularCompareStartPos = quad.x;
+					otherParallelCompareStartPos = quad.z;
+				}
+				else //if (mergeDirection == MergeDirection.NorthSouthOrUpDown)
+				{
+					thisPerpendicularCompareStartPos = this.y;
+					thisParallelCompareStartPos = this.z;
+					
+					otherPerpendicularCompareStartPos = quad.y;
+					otherParallelCompareStartPos = quad.z;
+				}
+				break;
 		}
 		
 		// get the width of this quad in the relevant axis
@@ -236,7 +240,7 @@ public final class BufferQuad
 		{
 			thisPerpendicularCompareWidth = this.widthEastWest;
 			thisParallelCompareWidth = this.widthNorthSouthOrUpDown;
-
+			
 			otherPerpendicularCompareWidth = quad.widthEastWest;
 			otherParallelCompareWidth = quad.widthNorthSouthOrUpDown;
 		}
@@ -244,11 +248,11 @@ public final class BufferQuad
 		{
 			thisPerpendicularCompareWidth = this.widthNorthSouthOrUpDown;
 			thisParallelCompareWidth = this.widthEastWest;
-
+			
 			otherPerpendicularCompareWidth = quad.widthNorthSouthOrUpDown;
 			otherParallelCompareWidth = quad.widthEastWest;
 		}
-
+		
 		
 		
 		// quad width should only be limited when earth curvature is enabled
@@ -264,7 +268,7 @@ public final class BufferQuad
 			return false;
 		}
 		if (Math.floorDiv(otherPerpendicularCompareStartPos, maxQuadWidth)
-			!= Math.floorDiv(thisPerpendicularCompareStartPos, maxQuadWidth))
+				!= Math.floorDiv(thisPerpendicularCompareStartPos, maxQuadWidth))
 		{
 			return false;
 		}
@@ -272,14 +276,15 @@ public final class BufferQuad
 		
 		// check if these quads are adjacent
 		if (thisPerpendicularCompareStartPos + thisPerpendicularCompareWidth < otherPerpendicularCompareStartPos ||
-			thisParallelCompareStartPos != otherParallelCompareStartPos)
+				thisParallelCompareStartPos != otherParallelCompareStartPos)
 		{
 			// these quads aren't adjacent, they can't be merged
 			return false;
 		}
 		else if (thisPerpendicularCompareStartPos + thisPerpendicularCompareWidth > otherPerpendicularCompareStartPos)
 		{
-			if (thisPerpendicularCompareStartPos < otherPerpendicularCompareStartPos + otherPerpendicularCompareWidth) {
+			if (thisPerpendicularCompareStartPos < otherPerpendicularCompareStartPos + otherPerpendicularCompareWidth)
+			{
 				// these quads are overlapping, they can't be merged
 				//EVENT_LOGGER.warn("Overlapping quads detected!");
 				quad.hasError = true;
@@ -287,7 +292,7 @@ public final class BufferQuad
 			}
 			return false;
 		}
-
+		
 		// only merge quads that have the same width edges
 		if (thisParallelCompareWidth != otherParallelCompareWidth)
 		{
@@ -296,8 +301,8 @@ public final class BufferQuad
 		
 		// do the quads' color, light, etc. match?
 		if (this.color != quad.color ||
-			this.skyLight != quad.skyLight ||
-			this.blockLight != quad.blockLight)
+				this.skyLight != quad.skyLight ||
+				this.blockLight != quad.blockLight)
 		{
 			// we can only merge identically colored/lit quads
 			return false;

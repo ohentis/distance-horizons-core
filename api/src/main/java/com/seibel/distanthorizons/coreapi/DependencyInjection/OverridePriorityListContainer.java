@@ -7,8 +7,8 @@ import java.util.ArrayList;
 
 /**
  * Contains a list of overrides and their priorities.
- * 
- * @author James Seibel 
+ *
+ * @author James Seibel
  * @version 2022-9-5
  */
 public class OverridePriorityListContainer implements IBindable
@@ -98,7 +98,7 @@ public class OverridePriorityListContainer implements IBindable
 	// utils //
 	
 	/** sort the list so the highest priority item is first in the list */
-	private void sortList() { this.overridePairList.sort((x,y) -> Integer.compare(y.priority, x.priority)); }
+	private void sortList() { this.overridePairList.sort((x, y) -> Integer.compare(y.priority, x.priority)); }
 	
 	
 	
@@ -112,5 +112,7 @@ public class OverridePriorityListContainer implements IBindable
 			this.override = newOverride;
 			this.priority = newPriority;
 		}
+		
 	}
+	
 }

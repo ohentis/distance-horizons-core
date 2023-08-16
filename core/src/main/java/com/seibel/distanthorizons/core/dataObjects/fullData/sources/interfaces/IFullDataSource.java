@@ -19,10 +19,10 @@ import java.util.LinkedList;
 
 /**
  * Base for all Full Data Source objects. <br><br>
- * 
+ *
  * Contains full DH data, methods related to file/stream reading/writing, and the data necessary to create {@link ColumnRenderSource}'s. <br>
  * {@link IFullDataSource}'s will either implement or contain {@link IFullDataAccessor}'s.
- * 
+ *
  * @see IFullDataAccessor
  * @see IIncompleteFullDataSource
  * @see IStreamableFullDataSource
@@ -31,7 +31,7 @@ public interface IFullDataSource
 {
 	/**
 	 * This is the byte put between different sections in the binary save file.
-	 * The presence and absence of this byte indicates if the file is correctly formatted.  
+	 * The presence and absence of this byte indicates if the file is correctly formatted.
 	 */
 	int DATA_GUARD_BYTE = 0xFFFFFFFF;
 	/** indicates the binary save file represents an empty data source */
@@ -60,19 +60,20 @@ public interface IFullDataSource
 	// data //
 	//======//
 	
-	/** 
+	/**
 	 * Attempts to get the data column for the given relative x and z position.
+	 *
 	 * @return null if the data doesn't exist
 	 */
 	SingleColumnFullDataAccessor tryGet(int relativeX, int relativeZ);
 	
 	FullDataPointIdMap getMapping();
 	
-	/** 
+	/**
 	 * @param highestGeneratorDetailLevel the smallest numerical detail level that the un-generated positions should be split into
-	 * @return the list of {@link DhSectionPos} that aren't generated in this data source. 
+	 * @return the list of {@link DhSectionPos} that aren't generated in this data source.
 	 */
-	default ArrayList<DhSectionPos> getUngeneratedPosList(byte highestGeneratorDetailLevel, boolean onlyReturnPositionsTheGeneratorCanAccept) 
+	default ArrayList<DhSectionPos> getUngeneratedPosList(byte highestGeneratorDetailLevel, boolean onlyReturnPositionsTheGeneratorCanAccept)
 	{
 		ArrayList<DhSectionPos> posArray = this.getUngeneratedPosList(this.getSectionPos(), highestGeneratorDetailLevel);
 		
@@ -155,7 +156,7 @@ public interface IFullDataSource
 					}
 				}
 			}
-
+			
 			if (!quadrantFullyGenerated)
 			{
 				// at least 1 data point is missing,
@@ -168,7 +169,7 @@ public interface IFullDataSource
 			// TODO comment
 			// TODO combine duplicate code
 			
-			byte childDetailLevel = (byte) (quadrantPos.sectionDetailLevel-1);
+			byte childDetailLevel = (byte) (quadrantPos.sectionDetailLevel - 1);
 			
 			for (int i = 0; i < 4; i++)
 			{
@@ -245,14 +246,16 @@ public interface IFullDataSource
 	//=======================//
 	
 	// TODO make this blow up in IStreamableFullDataSource instead of the children
-	/** 
-	 * Should only be implemented by {@link IStreamableFullDataSource} to prevent potential stream read/write inconsistencies. 
+	/**
+	 * Should only be implemented by {@link IStreamableFullDataSource} to prevent potential stream read/write inconsistencies.
+	 *
 	 * @see IStreamableFullDataSource#writeToStream(DhDataOutputStream, IDhLevel)
 	 */
 	void writeToStream(DhDataOutputStream outputStream, IDhLevel level) throws IOException;
 	
-	/** 
-	 * Should only be implemented by {@link IStreamableFullDataSource} to prevent potential stream read/write inconsistencies. 
+	/**
+	 * Should only be implemented by {@link IStreamableFullDataSource} to prevent potential stream read/write inconsistencies.
+	 *
 	 * @see IStreamableFullDataSource#populateFromStream(FullDataMetaFile, DhDataInputStream, IDhLevel)
 	 */
 	void populateFromStream(FullDataMetaFile dataFile, DhDataInputStream inputStream, IDhLevel level) throws IOException, InterruptedException;

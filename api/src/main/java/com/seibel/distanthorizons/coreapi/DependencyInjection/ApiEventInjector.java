@@ -46,7 +46,7 @@ public class ApiEventInjector extends DependencyInjector<IDhApiEvent> implements
 	private ApiEventInjector() { super(IDhApiEvent.class, true); }
 	
 	
-
+	
 	@SuppressWarnings("unchecked")
 	@Override
 	public void bind(Class<? extends IDhApiEvent> abstractEvent, IDhApiEvent eventImplementation) throws IllegalStateException, IllegalArgumentException
@@ -76,7 +76,7 @@ public class ApiEventInjector extends DependencyInjector<IDhApiEvent> implements
 	{
 		// make sure the given dependency implements the necessary interfaces
 		boolean implementsInterface = this.checkIfClassImplements(eventClassToRemove, abstractEvent) ||
-									  this.checkIfClassExtends(eventClassToRemove, abstractEvent);
+				this.checkIfClassExtends(eventClassToRemove, abstractEvent);
 		boolean implementsBindable = this.checkIfClassImplements(eventClassToRemove, this.bindableInterface);
 		
 		// display any errors
@@ -95,7 +95,7 @@ public class ApiEventInjector extends DependencyInjector<IDhApiEvent> implements
 		{
 			ArrayList<IDhApiEvent> dependencyList = this.dependencies.get(abstractEvent);
 			int indexToRemove = -1;
-			for(int i = 0; i < dependencyList.size(); i++)
+			for (int i = 0; i < dependencyList.size(); i++)
 			{
 				IBindable dependency = dependencyList.get(i);
 				if (dependency.getClass().equals(eventClassToRemove))
@@ -120,7 +120,7 @@ public class ApiEventInjector extends DependencyInjector<IDhApiEvent> implements
 	{
 		// if this is a one time event, record that it was called
 		if (IDhApiOneTimeEvent.class.isAssignableFrom(abstractEventClass) &&
-			!this.firedOneTimeEventParamsByEventInterface.containsKey(abstractEventClass))
+				!this.firedOneTimeEventParamsByEventInterface.containsKey(abstractEventClass))
 		{
 			this.firedOneTimeEventParamsByEventInterface.put(abstractEventClass, eventInput);
 		}

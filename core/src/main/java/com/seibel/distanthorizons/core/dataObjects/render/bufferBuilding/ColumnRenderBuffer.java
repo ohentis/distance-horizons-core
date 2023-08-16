@@ -23,7 +23,7 @@ import java.util.concurrent.*;
 
 /**
  * Java representation of one or more OpenGL buffers for rendering.
- * 
+ *
  * @see ColumnRenderBufferBuilder
  */
 public class ColumnRenderBuffer extends AbstractRenderBuffer implements IDebugRenderable
@@ -38,9 +38,9 @@ public class ColumnRenderBuffer extends AbstractRenderBuffer implements IDebugRe
 	public boolean buffersUploaded = false;
 	
 	private GLVertexBuffer[] vbos;
-    private GLVertexBuffer[] vbosTransparent;
+	private GLVertexBuffer[] vbosTransparent;
 	private boolean closed = false;
-
+	
 	private final DhSectionPos debugPos;
 	
 	
@@ -56,10 +56,11 @@ public class ColumnRenderBuffer extends AbstractRenderBuffer implements IDebugRe
 		vbosTransparent = new GLVertexBuffer[0];
 		DebugRenderer.register(this);
 	}
-
+	
 	public void debugRender(DebugRenderer r)
 	{
-		if (closed || vbos == null) {
+		if (closed || vbos == null)
+		{
 			return;
 		}
 		Color c = Color.green;
@@ -194,7 +195,7 @@ public class ColumnRenderBuffer extends AbstractRenderBuffer implements IDebugRe
 	// render //
 	//========//
 	
-    @Override
+	@Override
 	public boolean renderOpaque(LodRenderer renderContext)
 	{
 		boolean hasRendered = false;
@@ -218,7 +219,7 @@ public class ColumnRenderBuffer extends AbstractRenderBuffer implements IDebugRe
 		return hasRendered;
 	}
 	
-    @Override
+	@Override
 	public boolean renderTransparent(LodRenderer renderContext)
 	{
 		boolean hasRendered = false;
@@ -250,8 +251,8 @@ public class ColumnRenderBuffer extends AbstractRenderBuffer implements IDebugRe
 	// misc methods //
 	//==============//
 	
-    @Override
-    public void debugDumpStats(StatsMap statsMap)
+	@Override
+	public void debugDumpStats(StatsMap statsMap)
 	{
 		statsMap.incStat("RenderBuffers");
 		statsMap.incStat("SimpleRenderBuffers");
@@ -274,17 +275,17 @@ public class ColumnRenderBuffer extends AbstractRenderBuffer implements IDebugRe
 		}
 	}
 	
-    @Override
-    public void close()
+	@Override
+	public void close()
 	{
-        if (this.closed)
+		if (this.closed)
 		{
 			return;
 		}
 		this.closed = true;
 		this.buffersUploaded = false;
 		
-        GLProxy.getInstance().recordOpenGlCall(() ->
+		GLProxy.getInstance().recordOpenGlCall(() ->
 		{
 			for (GLVertexBuffer buffer : this.vbos)
 			{
@@ -301,6 +302,7 @@ public class ColumnRenderBuffer extends AbstractRenderBuffer implements IDebugRe
 					buffer.destroy(false);
 				}
 			}
-        });
-    }
+		});
+	}
+	
 }

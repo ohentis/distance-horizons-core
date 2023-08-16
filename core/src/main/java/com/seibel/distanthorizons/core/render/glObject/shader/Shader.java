@@ -32,40 +32,43 @@ import org.lwjgl.opengl.GL32;
 /**
  * This object holds a OpenGL reference to a shader
  * and allows for reading in and compiling a shader file.
- * 
+ *
  * @author James Seibel
  * @version 11-8-2021
  */
 public class Shader
-{	
+{
 	/** OpenGL shader ID */
 	public final int id;
 	
-	/** Creates a shader with specified type.
+	/**
+	 * Creates a shader with specified type.
+	 *
 	 * @param type Either GL_VERTEX_SHADER or GL_FRAGMENT_SHADER.
 	 * @param path File path of the shader
 	 * @param absoluteFilePath If false the file path is relative to the resource jar folder.
-	 * @throws RuntimeException if the shader fails to compile 
+	 * @throws RuntimeException if the shader fails to compile
 	 */
 	public Shader(int type, String path, boolean absoluteFilePath)
 	{
-		GLProxy.GL_LOGGER.info("Loading shader at "+path);
+		GLProxy.GL_LOGGER.info("Loading shader at " + path);
 		// Create an empty shader object
 		id = GL32.glCreateShader(type);
 		StringBuilder source = loadFile(path, absoluteFilePath, new StringBuilder());
 		GL32.glShaderSource(id, source);
-
+		
 		GL32.glCompileShader(id);
 		// check if the shader compiled
 		int status = GL32.glGetShaderi(id, GL32.GL_COMPILE_STATUS);
-		if (status != GL32.GL_TRUE) {
-			String message = "Shader compiler error. Details: "+GL32.glGetShaderInfoLog(id);
+		if (status != GL32.GL_TRUE)
+		{
+			String message = "Shader compiler error. Details: " + GL32.glGetShaderInfoLog(id);
 			free(); // important!
 			throw new RuntimeException(message);
 		}
-		GLProxy.GL_LOGGER.info("Shader at "+path+" loaded sucessfully.");
+		GLProxy.GL_LOGGER.info("Shader at " + path + " loaded sucessfully.");
 	}
-
+	
 	public Shader(int type, String sourceString)
 	{
 		GLProxy.GL_LOGGER.info("Loading shader with type: {}", type);
@@ -73,37 +76,44 @@ public class Shader
 		// Create an empty shader object
 		id = GL32.glCreateShader(type);
 		GL32.glShaderSource(id, sourceString);
-
+		
 		GL32.glCompileShader(id);
 		// check if the shader compiled
 		int status = GL32.glGetShaderi(id, GL32.GL_COMPILE_STATUS);
-		if (status != GL32.GL_TRUE) {
-
-			String message = "Shader compiler error. Details: "+GL32.glGetShaderInfoLog(id);
-			message += "\nSource:\n"+sourceString;
+		if (status != GL32.GL_TRUE)
+		{
+			
+			String message = "Shader compiler error. Details: " + GL32.glGetShaderInfoLog(id);
+			message += "\nSource:\n" + sourceString;
 			free(); // important!
 			throw new RuntimeException(message);
 		}
 		GLProxy.GL_LOGGER.info("Shader loaded sucessfully.");
 	}
-
+	
 	// REMEMBER to always free the resource!
-	public void free() {
+	public void free()
+	{
 		GL32.glDeleteShader(id);
 	}
 	
-	public static StringBuilder loadFile(String path, boolean absoluteFilePath, StringBuilder stringBuilder) {
+	public static StringBuilder loadFile(String path, boolean absoluteFilePath, StringBuilder stringBuilder)
+	{
 		try
 		{
 			// open the file
 			InputStream in;
-			if (absoluteFilePath) {
+			if (absoluteFilePath)
+			{
 				// Throws FileNotFoundException
 				in = new FileInputStream(path); // Note: this should use OS path seperator
-			} else {
+			}
+			else
+			{
 				in = Shader.class.getClassLoader().getResourceAsStream(path); // Note: path seperator should be '/'
-				if (in == null) {
-					throw new FileNotFoundException("Shader file not found in resource: "+path);
+				if (in == null)
+				{
+					throw new FileNotFoundException("Shader file not found in resource: " + path);
 				}
 			}
 			BufferedReader reader = new BufferedReader(new InputStreamReader(in));
@@ -111,7 +121,9 @@ public class Shader
 			// read in the file
 			String line;
 			while ((line = reader.readLine()) != null)
+			{
 				stringBuilder.append(line).append("\n");
+			}
 		}
 		catch (IOException e)
 		{
@@ -119,4 +131,5 @@ public class Shader
 		}
 		return stringBuilder;
 	}
+	
 }

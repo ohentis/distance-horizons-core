@@ -16,7 +16,7 @@
  *    You should have received a copy of the GNU Lesser General Public License
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
- 
+
 package com.seibel.distanthorizons.core.enums;
 
 import java.util.Arrays;
@@ -52,35 +52,35 @@ public enum EDhDirection
 	
 	/**
 	 * Up, Down, West, East, North, South <br>
-	 * Similar to {@link EDhDirection#OPPOSITE_DIRECTIONS}, just with a different order 
+	 * Similar to {@link EDhDirection#OPPOSITE_DIRECTIONS}, just with a different order
 	 */
-	public static final EDhDirection[] CARDINAL_DIRECTIONS = new EDhDirection[] {
+	public static final EDhDirection[] CARDINAL_DIRECTIONS = new EDhDirection[]{
 			EDhDirection.UP,
 			EDhDirection.DOWN,
 			EDhDirection.WEST,
 			EDhDirection.EAST,
 			EDhDirection.NORTH,
-			EDhDirection.SOUTH };
+			EDhDirection.SOUTH};
 	
-	/** 
+	/**
 	 * Up, Down, South, North, East, West <br>
-	 * Similar to {@link EDhDirection#CARDINAL_DIRECTIONS}, just with a different order 
+	 * Similar to {@link EDhDirection#CARDINAL_DIRECTIONS}, just with a different order
 	 */
-	public static final EDhDirection[] OPPOSITE_DIRECTIONS = new EDhDirection[] {
+	public static final EDhDirection[] OPPOSITE_DIRECTIONS = new EDhDirection[]{
 			EDhDirection.UP,
 			EDhDirection.DOWN,
 			EDhDirection.SOUTH,
 			EDhDirection.NORTH,
 			EDhDirection.EAST,
-			EDhDirection.WEST };
+			EDhDirection.WEST};
 	
 	/** North, South, East, West */ // TODO rename to state this is just X/Z or flat directions
-	public static final EDhDirection[] ADJ_DIRECTIONS = new EDhDirection[] {
+	public static final EDhDirection[] ADJ_DIRECTIONS = new EDhDirection[]{
 			EDhDirection.EAST,
 			EDhDirection.WEST,
 			EDhDirection.SOUTH,
-			EDhDirection.NORTH };
-	
+			EDhDirection.NORTH};
+
 //	private final int data3d;
 //	private final int oppositeIndex;
 //	private final int data2d;
@@ -95,7 +95,7 @@ public enum EDhDirection
 	{
 		return p_199787_0_;
 	}));
-	
+
 //	private static final LodDirection[] BY_3D_DATA = Arrays.stream(VALUES).sorted(Comparator.comparingInt((p_199790_0_) ->
 //	{
 //		return p_199790_0_.data3d;
@@ -114,7 +114,7 @@ public enum EDhDirection
 //	{
 //		return new LodDirection[p_199791_0_];
 //	});
-	
+
 //	private static final Long2ObjectMap<LodDirection> BY_NORMAL = Arrays.stream(VALUES).collect(Collectors.toMap((p_218385_0_) ->
 //	{
 //		return (new BlockPos(p_218385_0_.getNormal())).asLong();
@@ -138,10 +138,10 @@ public enum EDhDirection
 		this.axisDirection = p_i46016_7_;
 		this.normal = p_i46016_9_;
 	}
-	
-	
-	
-	
+
+
+
+
 //	public static LodDirection[] orderedByNearest(Entity p_196054_0_)
 //	{
 //		float f = p_196054_0_.getViewXRot(1.0F) * ((float) Math.PI / 180F);
@@ -181,12 +181,12 @@ public enum EDhDirection
 //			return f9 > f7 ? makeDirectionArray(direction2, lodDirection, direction1) : makeDirectionArray(direction2, direction1, lodDirection);
 //		}
 //	}
-	
+
 //	private static LodDirection[] makeDirectionArray(LodDirection p_196053_0_, LodDirection p_196053_1_, LodDirection p_196053_2_)
 //	{
 //		return new LodDirection[] { p_196053_0_, p_196053_1_, p_196053_2_, p_196053_2_.getOpposite(), p_196053_1_.getOpposite(), p_196053_0_.getOpposite() };
 //	}
-	
+
 //	public static LodDirection rotate(Mat4f p_229385_0_, LodDirection p_229385_1_)
 //	{
 //		Vec3i Vec3i = p_229385_1_.getNormal();
@@ -194,7 +194,7 @@ public enum EDhDirection
 //		vector4f.transform(p_229385_0_);
 //		return getNearest(vector4f.x(), vector4f.y(), vector4f.z());
 //	}
-	
+
 //	public Quaternion getRotation()
 //	{
 //		Quaternion quaternion = Vector3f.XP.rotationDegrees(90.0F);
@@ -218,7 +218,7 @@ public enum EDhDirection
 //			return quaternion;
 //		}
 //	}
-	
+
 //	public int get3DDataValue()
 //	{
 //		return this.data3d;
@@ -233,7 +233,7 @@ public enum EDhDirection
 	{
 		return this.axisDirection;
 	}
-	
+
 //	public LodDirection getOpposite()
 //	{
 //		return from3DDataValue(this.oppositeIndex);
@@ -243,16 +243,16 @@ public enum EDhDirection
 	{
 		switch (this)
 		{
-		case NORTH:
-			return EAST;
-		case SOUTH:
-			return WEST;
-		case WEST:
-			return NORTH;
-		case EAST:
-			return SOUTH;
-		default:
-			throw new IllegalStateException("Unable to get Y-rotated facing of " + this);
+			case NORTH:
+				return EAST;
+			case SOUTH:
+				return WEST;
+			case WEST:
+				return NORTH;
+			case EAST:
+				return SOUTH;
+			default:
+				throw new IllegalStateException("Unable to get Y-rotated facing of " + this);
 		}
 	}
 	
@@ -260,16 +260,16 @@ public enum EDhDirection
 	{
 		switch (this)
 		{
-		case NORTH:
-			return WEST;
-		case SOUTH:
-			return EAST;
-		case WEST:
-			return SOUTH;
-		case EAST:
-			return NORTH;
-		default:
-			throw new IllegalStateException("Unable to get CCW facing of " + this);
+			case NORTH:
+				return WEST;
+			case SOUTH:
+				return EAST;
+			case WEST:
+				return SOUTH;
+			case EAST:
+				return NORTH;
+			default:
+				throw new IllegalStateException("Unable to get CCW facing of " + this);
 		}
 	}
 	
@@ -282,12 +282,12 @@ public enum EDhDirection
 	{
 		return this.axis;
 	}
-
+	
 	public static EDhDirection byName(String name)
 	{
 		return name == null ? null : BY_NAME.get(name.toLowerCase(Locale.ROOT));
 	}
-	
+
 //	public static LodDirection from3DDataValue(int p_82600_0_)
 //	{
 //		return BY_3D_DATA[MathHelper.abs(p_82600_0_ % BY_3D_DATA.length)];
@@ -297,13 +297,13 @@ public enum EDhDirection
 //	{
 //		return BY_2D_DATA[MathHelper.abs(p_176731_0_ % BY_2D_DATA.length)];
 //	}
-	
+
 //	@Nullable
 //	public static LodDirection fromNormal(int p_218383_0_, int p_218383_1_, int p_218383_2_)
 //	{
 //		return BY_NORMAL.get(BlockPos.asLong(p_218383_0_, p_218383_1_, p_218383_2_));
 //	}
-	
+
 //	public static LodDirection fromYRot(double p_176733_0_)
 //	{
 //		return from2DDataValue(MathHelper.floor(p_176733_0_ / 90.0D + 0.5D) & 3);
@@ -313,31 +313,31 @@ public enum EDhDirection
 	{
 		switch (p_211699_0_)
 		{
-		case X:
-			return p_211699_1_ == EDhDirection.AxisDirection.POSITIVE ? EAST : WEST;
-		case Y:
-			return p_211699_1_ == EDhDirection.AxisDirection.POSITIVE ? UP : DOWN;
-		case Z:
-		default:
-			return p_211699_1_ == EDhDirection.AxisDirection.POSITIVE ? SOUTH : NORTH;
+			case X:
+				return p_211699_1_ == EDhDirection.AxisDirection.POSITIVE ? EAST : WEST;
+			case Y:
+				return p_211699_1_ == EDhDirection.AxisDirection.POSITIVE ? UP : DOWN;
+			case Z:
+			default:
+				return p_211699_1_ == EDhDirection.AxisDirection.POSITIVE ? SOUTH : NORTH;
 		}
 	}
-	
+
 //	public float toYRot()
 //	{
 //		return (this.data2d & 3) * 90;
 //	}
-	
+
 //	public static LodDirection getRandom(Random p_239631_0_)
 //	{
 //		return Util.getRandom(VALUES, p_239631_0_);
 //	}
-	
+
 //	public static LodDirection getNearest(double p_210769_0_, double p_210769_2_, double p_210769_4_)
 //	{
 //		return getNearest((float) p_210769_0_, (float) p_210769_2_, (float) p_210769_4_);
 //	}
-	
+
 //	public static LodDirection getNearest(float p_176737_0_, float p_176737_1_, float p_176737_2_)
 //	{
 //		LodDirection lodDirection = NORTH;
@@ -373,7 +373,7 @@ public enum EDhDirection
 	{
 		return this.normal;
 	}
-	
+
 //	public boolean isFacingAngle(float p_243532_1_)
 //	{
 //		float f = p_243532_1_ * ((float) Math.PI / 180F);
@@ -385,47 +385,47 @@ public enum EDhDirection
 	public enum Axis implements Predicate<EDhDirection>
 	{
 		X("x")
-		{
-			@Override
-			public int choose(int x, int y, int z)
-			{
-				return x;
-			}
-			
-			@Override
-			public double choose(double x, double y, double z)
-			{
-				return x;
-			}
-		},
+				{
+					@Override
+					public int choose(int x, int y, int z)
+					{
+						return x;
+					}
+					
+					@Override
+					public double choose(double x, double y, double z)
+					{
+						return x;
+					}
+				},
 		Y("y")
-		{
-			@Override
-			public int choose(int x, int y, int z)
-			{
-				return y;
-			}
-			
-			@Override
-			public double choose(double x, double y, double z)
-			{
-				return y;
-			}
-		},
+				{
+					@Override
+					public int choose(int x, int y, int z)
+					{
+						return y;
+					}
+					
+					@Override
+					public double choose(double x, double y, double z)
+					{
+						return y;
+					}
+				},
 		Z("z")
-		{
-			@Override
-			public int choose(int x, int y, int z)
-			{
-				return z;
-			}
-			
-			@Override
-			public double choose(double x, double y, double z)
-			{
-				return z;
-			}
-		};
+				{
+					@Override
+					public int choose(int x, int y, int z)
+					{
+						return z;
+					}
+					
+					@Override
+					public double choose(double x, double y, double z)
+					{
+						return z;
+					}
+				};
 		
 		private static final EDhDirection.Axis[] VALUES = values();
 		
@@ -439,7 +439,7 @@ public enum EDhDirection
 		{
 			this.name = name;
 		}
-
+		
 		public static EDhDirection.Axis byName(String name)
 		{
 			return BY_NAME.get(name.toLowerCase(Locale.ROOT));
@@ -465,7 +465,7 @@ public enum EDhDirection
 		{
 			return this.name;
 		}
-		
+
 //		public static LodDirection.Axis getRandom(Random p_239634_0_)
 //		{
 //			return Util.getRandom(VALUES, p_239634_0_);
@@ -476,7 +476,7 @@ public enum EDhDirection
 		{
 			return p_test_1_ != null && p_test_1_.getAxis() == this;
 		}
-		
+
 //		public LodDirection.Plane getPlane()
 //		{
 //			switch (this)
@@ -526,7 +526,7 @@ public enum EDhDirection
 			return this == POSITIVE ? NEGATIVE : POSITIVE;
 		}
 	}
-	
+
 //	public static enum Plane implements Iterable<LodDirection>, Predicate<LodDirection>
 //	{
 //		HORIZONTAL(new LodDirection[] { LodDirection.NORTH, LodDirection.EAST, LodDirection.SOUTH, LodDirection.WEST }, new LodDirection.Axis[] { LodDirection.Axis.X, LodDirection.Axis.Z }),

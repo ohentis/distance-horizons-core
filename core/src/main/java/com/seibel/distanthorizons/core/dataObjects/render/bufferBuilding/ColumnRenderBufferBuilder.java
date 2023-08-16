@@ -29,7 +29,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * Used to populate the buffers in a {@link ColumnRenderSource} object.
- * 
+ *
  * @see ColumnRenderSource
  */
 public class ColumnRenderBufferBuilder
@@ -52,9 +52,9 @@ public class ColumnRenderBufferBuilder
 	//==============//
 	// vbo building //
 	//==============//
-
+	
 	public static CompletableFuture<ColumnRenderBuffer> buildBuffersAsync(
-			IDhClientLevel clientLevel, Reference<ColumnRenderBuffer> renderBufferRef, 
+			IDhClientLevel clientLevel, Reference<ColumnRenderBuffer> renderBufferRef,
 			ColumnRenderSource renderSource, ColumnRenderSource[] adjData)
 	{
 /*		if (isBusy())
@@ -63,91 +63,91 @@ public class ColumnRenderBufferBuilder
 		}*/
 		//LOGGER.info("RenderRegion startBuild @ {}", renderSource.sectionPos);
 		return CompletableFuture.supplyAsync(() ->
-			{
-				try
 				{
-					boolean enableTransparency = Config.Client.Advanced.Graphics.Quality.transparency.get().transparencyEnabled;
-					
-					EVENT_LOGGER.trace("RenderRegion start QuadBuild @ "+renderSource.sectionPos);
-					boolean enableSkyLightCulling = Config.Client.Advanced.Graphics.AdvancedGraphics.enableCaveCulling.get();
-					
-					int skyLightCullingBelow = Config.Client.Advanced.Graphics.AdvancedGraphics.caveCullingHeight.get();
-					// FIXME: Clamp also to the max world height.
-					skyLightCullingBelow = Math.max(skyLightCullingBelow, clientLevel.getMinY());
-					
-					LodQuadBuilder builder = new LodQuadBuilder(enableSkyLightCulling,
-							(short) (skyLightCullingBelow - clientLevel.getMinY()), enableTransparency);
-					
-					makeLodRenderData(builder, renderSource, adjData);
-					EVENT_LOGGER.trace("RenderRegion end QuadBuild @ "+renderSource.sectionPos);
-					return builder;
-				}
-				catch (UncheckedInterruptedException e)
-				{
-					throw e;
-				}
-				catch (Throwable e3)
-				{
-					LOGGER.error("\"LodNodeBufferBuilder\" was unable to build quads: ", e3);
-					throw e3;
-				}
-			}, bufferBuilderThreadPool)
-			.thenApplyAsync((quadBuilder) ->
-			{
-				try
-				{
-					EVENT_LOGGER.trace("RenderRegion start Upload @ "+renderSource.sectionPos);
-					GLProxy glProxy = GLProxy.getInstance();
-					EGpuUploadMethod method = GLProxy.getInstance().getGpuUploadMethod();
-					EGLProxyContext oldContext = glProxy.getGlContext();
-					glProxy.setGlContext(EGLProxyContext.LOD_BUILDER);
-					ColumnRenderBuffer buffer = renderBufferRef.swap(null);
-
-					if (buffer == null)
-					{
-						buffer = new ColumnRenderBuffer(new DhBlockPos(renderSource.sectionPos.getCorner().getCornerBlockPos(), clientLevel.getMinY()), renderSource.sectionPos);
-					}
-
 					try
 					{
-						buffer.uploadBuffer(quadBuilder, method);
-						LodUtil.assertTrue(buffer.buffersUploaded);
-						EVENT_LOGGER.trace("RenderRegion end Upload @ "+renderSource.sectionPos);
-						return buffer;
+						boolean enableTransparency = Config.Client.Advanced.Graphics.Quality.transparency.get().transparencyEnabled;
+						
+						EVENT_LOGGER.trace("RenderRegion start QuadBuild @ " + renderSource.sectionPos);
+						boolean enableSkyLightCulling = Config.Client.Advanced.Graphics.AdvancedGraphics.enableCaveCulling.get();
+						
+						int skyLightCullingBelow = Config.Client.Advanced.Graphics.AdvancedGraphics.caveCullingHeight.get();
+						// FIXME: Clamp also to the max world height.
+						skyLightCullingBelow = Math.max(skyLightCullingBelow, clientLevel.getMinY());
+						
+						LodQuadBuilder builder = new LodQuadBuilder(enableSkyLightCulling,
+								(short) (skyLightCullingBelow - clientLevel.getMinY()), enableTransparency);
+						
+						makeLodRenderData(builder, renderSource, adjData);
+						EVENT_LOGGER.trace("RenderRegion end QuadBuild @ " + renderSource.sectionPos);
+						return builder;
 					}
-					catch (Exception e)
+					catch (UncheckedInterruptedException e)
 					{
-						buffer.close();
 						throw e;
 					}
-					finally
+					catch (Throwable e3)
 					{
-						glProxy.setGlContext(oldContext);
+						LOGGER.error("\"LodNodeBufferBuilder\" was unable to build quads: ", e3);
+						throw e3;
 					}
-				}
-				catch (InterruptedException e)
+				}, bufferBuilderThreadPool)
+				.thenApplyAsync((quadBuilder) ->
 				{
-					throw UncheckedInterruptedException.convert(e);
-				}
-				catch (Throwable e3)
-				{
-					LOGGER.error("\"LodNodeBufferBuilder\" was unable to upload buffer: ", e3);
-					throw e3;
-				}
-			}, bufferUploaderThreadPool)
-			.handle((columnRenderBuffer, ex) ->
+					try
+					{
+						EVENT_LOGGER.trace("RenderRegion start Upload @ " + renderSource.sectionPos);
+						GLProxy glProxy = GLProxy.getInstance();
+						EGpuUploadMethod method = GLProxy.getInstance().getGpuUploadMethod();
+						EGLProxyContext oldContext = glProxy.getGlContext();
+						glProxy.setGlContext(EGLProxyContext.LOD_BUILDER);
+						ColumnRenderBuffer buffer = renderBufferRef.swap(null);
+						
+						if (buffer == null)
+						{
+							buffer = new ColumnRenderBuffer(new DhBlockPos(renderSource.sectionPos.getCorner().getCornerBlockPos(), clientLevel.getMinY()), renderSource.sectionPos);
+						}
+						
+						try
+						{
+							buffer.uploadBuffer(quadBuilder, method);
+							LodUtil.assertTrue(buffer.buffersUploaded);
+							EVENT_LOGGER.trace("RenderRegion end Upload @ " + renderSource.sectionPos);
+							return buffer;
+						}
+						catch (Exception e)
+						{
+							buffer.close();
+							throw e;
+						}
+						finally
+						{
+							glProxy.setGlContext(oldContext);
+						}
+					}
+					catch (InterruptedException e)
+					{
+						throw UncheckedInterruptedException.convert(e);
+					}
+					catch (Throwable e3)
+					{
+						LOGGER.error("\"LodNodeBufferBuilder\" was unable to upload buffer: ", e3);
+						throw e3;
+					}
+				}, bufferUploaderThreadPool)
+				.handle((columnRenderBuffer, ex) ->
 				{
 					//LOGGER.info("RenderRegion endBuild @ {}", renderSource.sectionPos);
 					if (ex != null)
 					{
-						LOGGER.warn("Buffer building failed: "+ex.getMessage(), ex);
-
+						LOGGER.warn("Buffer building failed: " + ex.getMessage(), ex);
+						
 						if (!renderBufferRef.isEmpty())
 						{
 							ColumnRenderBuffer buffer = renderBufferRef.swap(null);
 							buffer.close();
 						}
-
+						
 						return null;
 					}
 					else
@@ -225,7 +225,7 @@ public class ColumnRenderBufferBuilder
 						int zAdj = z + lodDirection.getNormal().z;
 						boolean isCrossRegionBoundary =
 								(xAdj < 0 || xAdj >= ColumnRenderSource.SECTION_SIZE) ||
-								(zAdj < 0 || zAdj >= ColumnRenderSource.SECTION_SIZE);
+										(zAdj < 0 || zAdj >= ColumnRenderSource.SECTION_SIZE);
 						
 						ColumnRenderSource adjRenderSource;
 						byte adjDetailLevel;
@@ -288,7 +288,7 @@ public class ColumnRenderBufferBuilder
 					}
 					catch (RuntimeException e)
 					{
-						EVENT_LOGGER.warn("Failed to get adj data for ["+detailLevel+":"+x+","+z+"] at ["+lodDirection+"]");
+						EVENT_LOGGER.warn("Failed to get adj data for [" + detailLevel + ":" + x + "," + z + "] at [" + lodDirection + "]");
 						EVENT_LOGGER.warn("Detail exception: ", e);
 					}
 				} // for adjacent directions
@@ -383,11 +383,11 @@ public class ColumnRenderBufferBuilder
 		
 		if (bufferBuilderThreadPool == null || bufferBuilderThreadPool.isTerminated())
 		{
-			LOGGER.info("Starting "+ ColumnRenderBufferBuilder.class.getSimpleName());
+			LOGGER.info("Starting " + ColumnRenderBufferBuilder.class.getSimpleName());
 			setThreadPoolSize(Config.Client.Advanced.MultiThreading.numberOfBufferBuilderThreads.get());
 		}
 	}
-	public static void setThreadPoolSize(int threadPoolSize) 
+	public static void setThreadPoolSize(int threadPoolSize)
 	{
 		if (bufferBuilderThreadPool != null)
 		{
@@ -407,7 +407,7 @@ public class ColumnRenderBufferBuilder
 	{
 		if (bufferBuilderThreadPool != null)
 		{
-			LOGGER.info("Stopping "+ColumnRenderBufferBuilder.class.getSimpleName());
+			LOGGER.info("Stopping " + ColumnRenderBufferBuilder.class.getSimpleName());
 			bufferBuilderThreadPool.shutdownNow();
 		}
 	}

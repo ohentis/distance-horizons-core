@@ -16,30 +16,32 @@
  *    You should have received a copy of the GNU Lesser General Public License
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
- 
+
 package com.seibel.distanthorizons.api.enums.config;
+
 import org.apache.logging.log4j.Level;
 
 public enum ELoggerMode
 {
-    DISABLED(Level.OFF, Level.OFF),
-    LOG_ALL_TO_FILE(Level.ALL, Level.OFF),
-    LOG_ERROR_TO_CHAT(Level.ALL, Level.ERROR),
-    LOG_WARNING_TO_CHAT(Level.ALL, Level.WARN),
-    LOG_INFO_TO_CHAT(Level.ALL, Level.INFO),
-    LOG_DEBUG_TO_CHAT(Level.ALL, Level.DEBUG),
-    LOG_ALL_TO_CHAT(Level.ALL, Level.ALL),
-    LOG_ERROR_TO_CHAT_AND_FILE(Level.ERROR, Level.ERROR),
-    LOG_WARNING_TO_CHAT_AND_FILE(Level.WARN, Level.WARN),
-    LOG_INFO_TO_CHAT_AND_FILE(Level.INFO, Level.INFO),
-    LOG_DEBUG_TO_CHAT_AND_FILE(Level.DEBUG, Level.DEBUG),
-    LOG_WARNING_TO_CHAT_AND_INFO_TO_FILE(Level.INFO, Level.WARN),
-    LOG_ERROR_TO_CHAT_AND_INFO_TO_FILE(Level.INFO, Level.ERROR),
-    ;
-    public final Level levelForFile;
-    public final Level levelForChat;
-    ELoggerMode(Level levelForFile, Level levelForChat) {
-        this.levelForFile = levelForFile;
-        this.levelForChat = levelForChat;
-    }
+	DISABLED(Level.OFF, Level.OFF),
+	LOG_ALL_TO_FILE(Level.ALL, Level.OFF),
+	LOG_ERROR_TO_CHAT(Level.ALL, Level.ERROR),
+	LOG_WARNING_TO_CHAT(Level.ALL, Level.WARN),
+	LOG_INFO_TO_CHAT(Level.ALL, Level.INFO),
+	LOG_DEBUG_TO_CHAT(Level.ALL, Level.DEBUG),
+	LOG_ALL_TO_CHAT(Level.ALL, Level.ALL),
+	LOG_ERROR_TO_CHAT_AND_FILE(Level.ERROR, Level.ERROR),
+	LOG_WARNING_TO_CHAT_AND_FILE(Level.WARN, Level.WARN),
+	LOG_INFO_TO_CHAT_AND_FILE(Level.INFO, Level.INFO),
+	LOG_DEBUG_TO_CHAT_AND_FILE(Level.DEBUG, Level.DEBUG),
+	LOG_WARNING_TO_CHAT_AND_INFO_TO_FILE(Level.INFO, Level.WARN),
+	LOG_ERROR_TO_CHAT_AND_INFO_TO_FILE(Level.INFO, Level.ERROR),
+	;
+	public final Level levelForFile;
+	public final Level levelForChat;
+	ELoggerMode(Level levelForFile, Level levelForChat)
+	{
+		this.levelForFile = levelForFile;
+		this.levelForChat = levelForChat;
+	}
 }

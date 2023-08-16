@@ -28,7 +28,7 @@ import org.lwjgl.opengl.GL11;
  * VertexFormatElement class. <br>
  * A number of things were removed from the original
  * object since we didn't need them, specifically "usage".
- * 
+ *
  * @author James Seibel
  * @version 11-13-2021
  */
@@ -50,7 +50,8 @@ public class LodVertexFormatElement
 		this.isPadding = isPadding;
 	}
 	
-	public final boolean getIsPadding() {
+	public final boolean getIsPadding()
+	{
 		return isPadding;
 	}
 	

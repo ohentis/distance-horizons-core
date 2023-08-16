@@ -27,7 +27,7 @@ package com.seibel.distanthorizons.api.enums.config;
  * NAME_IP_PORT_MC_VERSION, <br> <br>
  *
  * Determines how the multiplayer folders should be named.
- * 
+ *
  * @author James Seibel
  * @version 2022-7-1
  */
@@ -41,7 +41,7 @@ public enum EServerFolderNameMode
 	/** Only use the server name */
 	NAME_ONLY,
 	
-	/** 
+	/**
 	 * {SERVER_NAME} IP {IP} <br>
 	 * Example: Minecraft Server IP 192.168.1.40
 	 */
@@ -53,10 +53,10 @@ public enum EServerFolderNameMode
 	 */
 	NAME_IP_PORT,
 	
-	/** 
+	/**
 	 * {SERVER_NAME} IP {IP} <br>
 	 * Example: Minecraft Server IP 192.168.1.40:25565 GameVersion 1.16.5 <Br> <br>
-	 * 
+	 *
 	 * Not normally recommended, since the game version can change if the
 	 * server installs paper or some other jar. <br>
 	 * This is just here to provide backwards compatibility.

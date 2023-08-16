@@ -16,7 +16,7 @@
  *    You should have received a copy of the GNU Lesser General Public License
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
- 
+
 package com.seibel.distanthorizons.core.wrapperInterfaces.worldGeneration;
 
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
@@ -38,7 +38,7 @@ public abstract class AbstractBatchGenerationEnvironmentWrapper
 	public abstract void stop();
 	
 	public abstract CompletableFuture<Void> generateChunks(
-			int minX, int minZ, int genSize, EDhApiWorldGenerationStep targetStep, 
+			int minX, int minZ, int genSize, EDhApiWorldGenerationStep targetStep,
 			ExecutorService worldGeneratorThreadPool, Consumer<IChunkWrapper> resultConsumer);
 	
 }

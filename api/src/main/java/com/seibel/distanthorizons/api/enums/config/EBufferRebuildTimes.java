@@ -26,7 +26,7 @@ package com.seibel.distanthorizons.api.enums.config;
  * RARE <br> <br>
  *
  * Determines how fast the buffers should be regenerated
- * 
+ *
  * @author Leonardo Amato
  * @version 9-25-2021
  */

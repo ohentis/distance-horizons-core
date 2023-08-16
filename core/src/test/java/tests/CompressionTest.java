@@ -37,18 +37,18 @@ import java.util.ArrayList;
 /**
  * Results (2023-5-20): <br>
  * 200 files <br><br>
- * 
+ *
  * <strong>uncompressed</strong> <br><br>
- * 
+ *
  * render data - ratio 1.0 (shocker :P) <br>
  * read time in - 784 ms, avg 3 ms/file <br>
  * write time in - 803 ms, avg 4 ms/file <br><br>
- * 
+ *
  * full data - ratio 1.0 <br>
  * read time in - 2,213 ms, avg 11 ms/file <br>
  * write time in - 1,753 ms, avg 8 ms/file <br><br><br>
  *
- * 
+ *
  * <strong>XZ</strong> <br><br>
  *
  * render data - ratio 0.1044 <br>
@@ -58,8 +58,8 @@ import java.util.ArrayList;
  * full data - ratio 0.1123 <br>
  * read time in - 5,888 ms, avg 29 ms/file <br>
  * write time in - 79,675 ms, avg 398 ms/file <br><br><br>
- * 
- * 
+ *
+ *
  * <strong>LZ4</strong> <br><br>
  *
  * render data - ratio 0.2933 <br>
@@ -69,8 +69,8 @@ import java.util.ArrayList;
  * full data - ratio 0.3275 <br>
  * read time in - 1,964 ms, avg 9 ms/file <br>
  * write time in - 1,584 ms, avg 7 ms/file <br><br><br>
- * 
- * 
+ *
+ *
  * <strong>Z Standard</strong> <br><br>
  *
  * render data - ratio 0.1791 <br>
@@ -80,9 +80,9 @@ import java.util.ArrayList;
  * full data - ratio 0.2060 <br>
  * read time in - 14,754 ms, avg 73 ms/file <br>
  * write time in - 14,057 ms, avg 70 ms/file <br><br><br>
- * 
  *
- * 
+ *
+ *
  * <strong>Note:</strong>
  * In order to test the compressors that aren't currently in use: <br>
  * 1. Generate DH data and point the {@link CompressionTest#TEST_DIR} variable to the "Distant_Horizons" folder.
@@ -106,7 +106,7 @@ public class CompressionTest
 	
 	
 	
-//	@Test
+	//	@Test
 	public void NoCompression()
 	{
 		String compressorName = "Uncompressed";
@@ -115,13 +115,13 @@ public class CompressionTest
 		CreateOutputStreamFunc createOutputStreamFunc = (outputStream) -> outputStream;
 		
 		
-		System.out.println(compressorName+" testing render data");
+		System.out.println(compressorName + " testing render data");
 		this.testCompressor(compressorName, RENDER_DATA_PATH, createInputStreamFunc, createOutputStreamFunc);
-		System.out.println(compressorName+" testing full data");
+		System.out.println(compressorName + " testing full data");
 		this.testCompressor(compressorName, FULL_DATA_PATH, createInputStreamFunc, createOutputStreamFunc);
 	}
 	
-//	@Test
+	//	@Test
 	public void Lz4()
 	{
 		String compressorName = "LZ4";
@@ -130,12 +130,12 @@ public class CompressionTest
 		CreateOutputStreamFunc createOutputStreamFunc = (outputStream) -> new LZ4FrameOutputStream(outputStream);
 		
 		
-		System.out.println(compressorName+" testing render data");
+		System.out.println(compressorName + " testing render data");
 		this.testCompressor(compressorName, RENDER_DATA_PATH, createInputStreamFunc, createOutputStreamFunc);
-		System.out.println(compressorName+" testing full data");
+		System.out.println(compressorName + " testing full data");
 		this.testCompressor(compressorName, FULL_DATA_PATH, createInputStreamFunc, createOutputStreamFunc);
 	}
-	
+
 //	@Test
 //	public void Zstandard()
 //	{
@@ -150,7 +150,7 @@ public class CompressionTest
 //		System.out.println(compressorName+" testing full data");
 //		this.testCompressor(compressorName, FULL_DATA_PATH, createInputStreamFunc, createOutputStreamFunc);
 //	}
-	
+
 //	@Test
 //	public void Xz()
 //	{
@@ -173,9 +173,18 @@ public class CompressionTest
 	//=================//
 	
 	@FunctionalInterface
-	public interface CreateInputStreamFunc { InputStream apply(InputStream inputStream) throws Exception; }
+	public interface CreateInputStreamFunc
+	{
+		InputStream apply(InputStream inputStream) throws Exception;
+		
+	}
+	
 	@FunctionalInterface
-	public interface CreateOutputStreamFunc { OutputStream apply(OutputStream outputStream) throws Exception; }
+	public interface CreateOutputStreamFunc
+	{
+		OutputStream apply(OutputStream outputStream) throws Exception;
+		
+	}
 	
 	private void testCompressor(
 			String compressorName, String inputFolderPath,
@@ -194,7 +203,7 @@ public class CompressionTest
 			File[] inputFileArray = inputFolder.listFiles();
 			Assert.assertNotNull(inputFileArray);
 			
-			File compressedFolder = new File(inputFolderPath+"\\"+compressorName);
+			File compressedFolder = new File(inputFolderPath + "\\" + compressorName);
 			compressedFolder.delete();
 			compressedFolder.mkdirs();
 			
@@ -231,7 +240,8 @@ public class CompressionTest
 							originalFileByteArray.add(nextByte);
 						}
 					}
-					catch (EOFException e) { /* end of file reached */ }
+					catch (EOFException e)
+					{ /* end of file reached */ }
 				}
 				
 				
@@ -239,7 +249,7 @@ public class CompressionTest
 				// compress file //
 				long startWriteMsTime = System.currentTimeMillis();
 				
-				File compressedFile = new File(inputFolderPath+"\\"+compressorName+"\\"+inputFile.getName());
+				File compressedFile = new File(inputFolderPath + "\\" + compressorName + "\\" + inputFile.getName());
 				compressedFile.delete();
 				compressedFile.createNewFile();
 				
@@ -278,7 +288,8 @@ public class CompressionTest
 							compressedFileByteArray.add(nextByte);
 						}
 					}
-					catch (EOFException e) { /* end of file reached */ }
+					catch (EOFException e)
+					{ /* end of file reached */ }
 				}
 				
 				long endReadMsTime = System.currentTimeMillis();
@@ -289,7 +300,7 @@ public class CompressionTest
 				Assert.assertEquals("byte array size mismatch", compressedFileByteArray.size(), originalFileByteArray.size());
 				for (int i = 0; i < compressedFileByteArray.size(); i++)
 				{
-					Assert.assertEquals("array content mismatch at index ["+i+"]", compressedFileByteArray.get(i), originalFileByteArray.get(i));
+					Assert.assertEquals("array content mismatch at index [" + i + "]", compressedFileByteArray.get(i), originalFileByteArray.get(i));
 				}
 				
 				
@@ -298,12 +309,12 @@ public class CompressionTest
 			
 			
 			double compressionRatio = (totalCompressedFileSizeInBytes / (double) totalUncompressedFileSizeInBytes);
-			String compressionRatioString = compressionRatio+"";
-			compressionRatioString = compressionRatioString.substring(0, Math.min(6,compressionRatioString.length()));
+			String compressionRatioString = compressionRatio + "";
+			compressionRatioString = compressionRatioString.substring(0, Math.min(6, compressionRatioString.length()));
 			
-			System.out.println("Uncompressed file size: ["+humanReadableByteCountSI(totalUncompressedFileSizeInBytes)+"] Compressed file size: ["+humanReadableByteCountSI(totalCompressedFileSizeInBytes)+"]. Compression ratio: ["+compressionRatioString+"].");
-			System.out.println("Total read time in MS: ["+totalReadTimeInMs+"] Average read time per file: ["+(totalReadTimeInMs/processedFileCount)+"]");
-			System.out.println("Total write time in MS: ["+totalWriteTimeInMs+"] Average write time per file: ["+(totalWriteTimeInMs/processedFileCount)+"]");
+			System.out.println("Uncompressed file size: [" + humanReadableByteCountSI(totalUncompressedFileSizeInBytes) + "] Compressed file size: [" + humanReadableByteCountSI(totalCompressedFileSizeInBytes) + "]. Compression ratio: [" + compressionRatioString + "].");
+			System.out.println("Total read time in MS: [" + totalReadTimeInMs + "] Average read time per file: [" + (totalReadTimeInMs / processedFileCount) + "]");
+			System.out.println("Total write time in MS: [" + totalWriteTimeInMs + "] Average write time per file: [" + (totalWriteTimeInMs / processedFileCount) + "]");
 		}
 		catch (Exception e)
 		{

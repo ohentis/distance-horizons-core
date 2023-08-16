@@ -34,7 +34,7 @@ public enum EGpuUploadMethod
 {
 	/** Picks the best option based on the GPU the user has. */
 	AUTO(false, false),
-
+	
 	// commented out since it isn't currently in use
 	//BUFFER_STORAGE_MAPPING(true, true),
 	
@@ -43,14 +43,14 @@ public enum EGpuUploadMethod
 	
 	/** Fast rendering but may stutter when uploading. */
 	SUB_DATA(false, false),
-
-	/** 
+	
+	/**
 	 * May end up storing buffers in System memory. <br>
 	 * Fast rending if in GPU memory, slow if in system memory, <br>
-	 * but won't stutter when uploading. 
+	 * but won't stutter when uploading.
 	 */
 	BUFFER_MAPPING(true, false),
-
+	
 	/** Fast rendering but may stutter when uploading. */
 	DATA(false, false);
 	

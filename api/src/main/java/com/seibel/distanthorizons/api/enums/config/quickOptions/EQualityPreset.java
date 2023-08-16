@@ -23,7 +23,7 @@ import com.seibel.distanthorizons.api.enums.config.DisallowSelectingViaConfigGui
 
 /**
  * CUSTOM, <br><br>
- * 
+ *
  * MINIMUM, <br>
  * LOW, <br>
  * MEDIUM, <br>
