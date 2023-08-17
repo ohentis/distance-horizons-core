@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Objects;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
@@ -36,7 +37,7 @@ public class FullDataPointIdMap
 	 * Has the system check if any duplicate Entries were read/written
 	 * when (de)serializing.
 	 */
-	private static final boolean RUN_SERIALIZATION_DUPLICATE_VALIDATION = false;
+	private static final boolean RUN_SERIALIZATION_DUPLICATE_VALIDATION = true;
 	/** Distant Horizons - Block State Wrapper */
 	private static final String BLOCK_STATE_SEPARATOR_STRING = "_DH-BSW_";
 	
@@ -159,7 +160,7 @@ public class FullDataPointIdMap
 
 		for (Entry entry : this.entryList)
 		{
-			String entryString = entry.serialize(levelWrapper);
+			String entryString = entry.serialize();
 			outputStream.writeUTF(entryString);
 
 			if (RUN_SERIALIZATION_DUPLICATE_VALIDATION)
@@ -170,7 +171,7 @@ public class FullDataPointIdMap
 				}
 				if (dataPointEntryBySerialization.containsValue(entry))
 				{
-					LOGGER.error("Duplicate serialized entry found with value: " + entry.serialize(levelWrapper));
+					LOGGER.error("Duplicate serialized entry found with value: " + entry.serialize());
 				}
 				dataPointEntryBySerialization.put(entryString, entry);
 			}
@@ -206,7 +207,7 @@ public class FullDataPointIdMap
 				}
 				if (dataPointEntryBySerialization.containsValue(newEntry))
 				{
-					LOGGER.error("Duplicate deserialized entry found with value: " + newEntry.serialize(levelWrapper));
+					LOGGER.error("Duplicate deserialized entry found with value: " + newEntry.serialize());
 				}
 				dataPointEntryBySerialization.put(entryString, newEntry);
 			}
@@ -265,7 +266,7 @@ public class FullDataPointIdMap
 			// cache the hash code to improve speed
 			if (this.hashCode == null)
 			{
-				this.hashCode = this.serialize(this.biome.getLevelWrapper()).hashCode();
+				this.hashCode = this.serialize().hashCode();
 			}
 
 			return this.hashCode;
@@ -281,17 +282,17 @@ public class FullDataPointIdMap
 				return false;
 			
 			Entry other = (Entry) otherObj;
-			return other.biome.serialize(other.biome.getLevelWrapper()).equals(this.biome.serialize(this.biome.getLevelWrapper()))
-					&& other.blockState.serialize(other.blockState.getLevelWrapper()).equals(this.blockState.serialize(this.blockState.getLevelWrapper()));
+			return other.biome.serialize().equals(this.biome.serialize())
+					&& other.blockState.serialize().equals(this.blockState.serialize());
 		}
 
 		@Override
 		public String toString() {
-			return this.serialize(this.biome.getLevelWrapper());
+			return this.serialize();
 		}
 		
-		public String serialize(ILevelWrapper levelWrapper) {
-			return this.biome.serialize(levelWrapper) + BLOCK_STATE_SEPARATOR_STRING + this.blockState.serialize(levelWrapper);
+		public String serialize() {
+			return this.biome.serialize() + BLOCK_STATE_SEPARATOR_STRING + this.blockState.serialize();
 		}
 
 		public static Entry deserialize(String str, ILevelWrapper levelWrapper) throws IOException, InterruptedException

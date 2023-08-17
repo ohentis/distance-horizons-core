@@ -6,7 +6,7 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 /** A Minecraft version independent way of handling Blocks. */
 public interface IBlockStateWrapper extends IDhApiBlockStateWrapper
 {
-    String serialize(ILevelWrapper levelWrapper);
+    String serialize();
 
 	ILevelWrapper getLevelWrapper();
 
