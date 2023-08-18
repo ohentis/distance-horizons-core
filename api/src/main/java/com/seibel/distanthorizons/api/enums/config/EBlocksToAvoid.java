@@ -22,6 +22,8 @@ package com.seibel.distanthorizons.api.enums.config;
 /**
  * NONE, <br>
  * NON_COLLIDING, <br>
+ *
+ * @since API 1.0.0
  */
 public enum EBlocksToAvoid
 {

@@ -23,6 +23,8 @@ package com.seibel.distanthorizons.api.enums.config;
  * MINECRAFT <br>
  * OLD_LIGHTING <br>
  * NONE <br>
+ *
+ * @since API 1.0.0
  */
 public enum ELodShading
 {

@@ -27,6 +27,7 @@ import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IDepend
  *
  * @author James Seibel
  * @version 2022-9-13
+ * @since API 1.0.0
  */
 public interface IDhApiEventInjector extends IDependencyInjector<IDhApiEvent>
 {

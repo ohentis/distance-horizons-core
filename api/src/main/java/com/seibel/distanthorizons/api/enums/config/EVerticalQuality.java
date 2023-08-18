@@ -30,6 +30,7 @@ import com.seibel.distanthorizons.coreapi.util.MathUtil;
  *
  * @author Leonardo Amato
  * @version 2023-2-5
+ * @since API 1.0.0
  */
 public enum EVerticalQuality
 {

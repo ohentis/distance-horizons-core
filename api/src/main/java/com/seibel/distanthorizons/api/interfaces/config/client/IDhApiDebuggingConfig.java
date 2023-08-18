@@ -28,6 +28,7 @@ import com.seibel.distanthorizons.api.interfaces.config.IDhApiConfigGroup;
  *
  * @author James Seibel
  * @version 2022-9-15
+ * @since API 1.0.0
  */
 public interface IDhApiDebuggingConfig extends IDhApiConfigGroup
 {

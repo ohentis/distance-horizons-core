@@ -16,6 +16,7 @@ import com.seibel.distanthorizons.coreapi.util.converters.DefaultConverter;
  * @param <coreType> The datatype Distant Horizons uses in the background; implementing developers can ignore this.
  * @author James Seibel
  * @version 2022-6-30
+ * @since API 1.0.0
  */
 public class DhApiConfigValue<coreType, apiType> implements IDhApiConfigValue<apiType>
 {

@@ -9,6 +9,7 @@ import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
  *
  * @author James Seibel
  * @version 2022-9-16
+ * @since API 1.0.0
  */
 public class DhApiEventRegister
 {

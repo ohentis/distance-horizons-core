@@ -33,6 +33,7 @@ import com.seibel.distanthorizons.api.interfaces.config.IDhApiConfigValue;
  *
  * @author James Seibel
  * @version 2022-6-14
+ * @since API 1.0.0
  */
 public interface IDhApiFarFogConfig extends IDhApiConfigGroup
 {

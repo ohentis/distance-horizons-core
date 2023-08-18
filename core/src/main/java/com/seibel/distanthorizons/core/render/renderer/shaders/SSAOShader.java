@@ -46,8 +46,7 @@ public class SSAOShader extends AbstractShaderRenderer
 				MC_RENDER.getTargetFrameBufferViewportWidth() / (float) MC_RENDER.getTargetFrameBufferViewportHeight(),
 				RenderUtil.getNearClipPlaneDistanceInBlocks(partialTicks),
 				(float) ((RenderUtil.getFarClipPlaneDistanceInBlocks() + LodUtil.REGION_WIDTH) * Math.sqrt(2)));
-		
-		
+
 		this.shader.setUniform(this.shader.getUniformLocation("gProj"), perspective);
 		this.shader.setUniform(this.shader.getUniformLocation("gSampleRad"), 3.0f);
 		this.shader.setUniform(this.shader.getUniformLocation("gFactor"), 0.8f);

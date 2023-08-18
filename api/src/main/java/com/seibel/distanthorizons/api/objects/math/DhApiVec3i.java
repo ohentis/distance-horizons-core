@@ -25,6 +25,7 @@ package com.seibel.distanthorizons.api.objects.math;
  *
  * @author James Seibel
  * @version 2022-11-19
+ * @since API 1.0.0
  */
 public class DhApiVec3i
 {

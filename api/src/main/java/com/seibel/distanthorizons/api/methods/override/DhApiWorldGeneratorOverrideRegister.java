@@ -11,6 +11,7 @@ import com.seibel.distanthorizons.coreapi.DependencyInjection.WorldGeneratorInje
  *
  * @author James Seibel
  * @version 2022-12-10
+ * @since API 1.0.0
  */
 public class DhApiWorldGeneratorOverrideRegister implements IDhApiWorldGeneratorOverrideRegister
 {

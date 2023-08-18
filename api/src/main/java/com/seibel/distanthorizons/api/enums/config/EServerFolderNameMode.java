@@ -30,6 +30,7 @@ package com.seibel.distanthorizons.api.enums.config;
  *
  * @author James Seibel
  * @version 2022-7-1
+ * @since API 1.0.0
  */
 public enum EServerFolderNameMode
 {

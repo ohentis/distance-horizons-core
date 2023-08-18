@@ -26,6 +26,10 @@ float quantize(float val, int stepSize) {
     return floor(val*stepSize)/stepSize;
 }
 
+vec3 quantize(vec3 val, int stepSize) {
+    return floor(val*stepSize)/stepSize;
+}
+
 // The modulus function dosnt exist in GLSL so I made my own
 // To speed up the mod function, this only accepts full numbers for y
 float mod(float x, int y) {
@@ -44,11 +48,7 @@ float mod(float x, int y) {
 void main() {
     // This bit of code is required to fix the vertex position problem cus of floats in the verted world position varuable
     vec3 vertexNormal = normalize(cross(dFdx(vPos.xyz), dFdy(vPos.xyz)));
-    vec3 fixedVPos = vec3(
-        vPos.x - vertexNormal.x * 0.001,
-        vPos.y - vertexNormal.y * 0.001,
-        vPos.z - vertexNormal.z * 0.001
-    );
+    vec3 fixedVPos = vPos.xyz - vertexNormal * 0.001;
 
 
     float noiseAmplification = noiseIntensity / 100;
@@ -56,29 +56,20 @@ void main() {
     noiseAmplification *= vertexColor.w; // The effect would lessen on transparent objects
 
     // Random value for each position
-    float randomValue = rand(vec3(
-        quantize(fixedVPos.x, noiseSteps),
-        quantize(fixedVPos.y, noiseSteps),
-        quantize(fixedVPos.z, noiseSteps)
-    ))
-        * 2. * noiseAmplification - noiseAmplification;
+    float randomValue = rand(quantize(fixedVPos.xyz, noiseSteps))
+        * 2.0 * noiseAmplification - noiseAmplification;
 
 
     // Modifies the color
     // A value of 0 on the randomValue will result in the original color, while a value of 1 will result in a fully bright color
-    vec3 newCol = (vec3(1.0) - vertexColor.rgb) * randomValue;
+    vec3 newCol = (1.0 - vertexColor.rgb) * randomValue;
 
     // Clamps it and turns it back into a vec4
-    fragColor = vec4(
-        clamp(newCol.r, 0., 1.),
-        clamp(newCol.g, 0., 1.),
-        clamp(newCol.b, 0., 1.),
-        clamp(length(vertexWorldPos) * distanceScale * noiseDropoff, 0., 1.) // The further away it gets, the less noise gets applied
-    );
-    fragColor = vec4(
-        0f, 0f, 0f,
-        randomValue // The further away it gets, the less noise gets applied
-    );
+    float distA = length(vertexWorldPos) * distanceScale * noiseDropoff;
+    fragColor = clamp(vec4(newCol.rgb, distA), 0.0, 1.0); // The further away it gets, the less noise gets applied
+    
+    // The further away it gets, the less noise gets applied
+    fragColor = vec4(0.0, 0.0, 0.0, randomValue);
 
     // For testing
 //    if (vertexColor.r != 69420.) {

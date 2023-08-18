@@ -13,6 +13,7 @@ import java.util.function.Consumer;
 /**
  * @author James Seibel
  * @version 2023-6-22
+ * @since API 1.0.0
  */
 public abstract class AbstractDhApiChunkWorldGenerator implements Closeable, IDhApiOverrideable, IDhApiWorldGenerator
 {

@@ -6,6 +6,7 @@ package com.seibel.distanthorizons.api.interfaces;
  *
  * @author James Seibel
  * @version 2023-6-17
+ * @since API 1.0.0
  */
 public interface IDhApiUnsafeWrapper
 {

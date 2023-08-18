@@ -25,6 +25,7 @@ package com.seibel.distanthorizons.api.enums.rendering;
  *
  * @author James Seibel
  * @version 2022-6-9
+ * @since API 1.0.0
  */
 public enum EFogColorMode
 {

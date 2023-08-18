@@ -8,6 +8,7 @@ import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IBindab
  *
  * @author James Seibel
  * @version 9-15-2022
+ * @since API 1.0.0
  */
 public interface IDhApiConfigGroup extends IBindable
 {

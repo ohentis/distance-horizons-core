@@ -8,6 +8,7 @@ import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IOverri
  *
  * @author James Seibel
  * @version 2022-9-5
+ * @since API 1.0.0
  */
 public interface IDhApiOverrideable extends IBindable
 {

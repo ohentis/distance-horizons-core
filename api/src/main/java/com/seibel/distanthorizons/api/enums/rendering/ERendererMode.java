@@ -20,11 +20,12 @@
 package com.seibel.distanthorizons.api.enums.rendering;
 
 /**
- * Default
- * Debug
- * Disabled
+ * Default <br>
+ * Debug <br>
+ * Disabled <br>
  *
  * @version 2022-6-2
+ * @since API 1.0.0
  */
 public enum ERendererMode
 {

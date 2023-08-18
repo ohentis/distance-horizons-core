@@ -2,6 +2,8 @@ package com.seibel.distanthorizons.core.config.eventHandlers.presets;
 
 import com.seibel.distanthorizons.core.config.ConfigEntryWithPresetOptions;
 import com.seibel.distanthorizons.core.config.listeners.IConfigListener;
+import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
+import com.seibel.distanthorizons.core.wrapperInterfaces.config.IConfigGui;
 import com.seibel.distanthorizons.coreapi.interfaces.config.IConfigEntry;
 import com.seibel.distanthorizons.coreapi.util.StringUtil;
 import org.apache.logging.log4j.LogManager;
@@ -12,15 +14,35 @@ import java.util.*;
 public abstract class AbstractPresetConfigEventHandler<TPresetEnum extends Enum<?>> implements IConfigListener
 {
 	private static final Logger LOGGER = LogManager.getLogger();
-	private static final long MS_DELAY_BEFORE_APPLYING_PRESET = 1_000;
+	private static final long MS_DELAY_BEFORE_APPLYING_PRESET = 3_000;
+	
+	private static IConfigGui configGui = SingletonInjector.INSTANCE.get(IConfigGui.class);
+	private static boolean guiListenersAdded = false;
 	
 	protected final ArrayList<ConfigEntryWithPresetOptions<TPresetEnum, ?>> configList = new ArrayList<>();
 	/** this timer is used so each preset isn't applied while a user is clicking through the config options */
-	protected Timer presetApplicationTimer;
+	protected Timer applyPresetTimer = null;
+	/** the enum to apply after the timer expires or the UI screen changes. */
+	protected TPresetEnum waitingPresetEnum = null;
 	
 	protected boolean changingPreset = false;
 	
 	
+	
+	//=============//
+	// constructor //
+	//=============//
+	
+	public AbstractPresetConfigEventHandler()
+	{
+		configGui.addOnScreenChangeListener(() -> this.onConfigUiClosed());
+	}
+	
+	
+	
+	//=========//
+	// methods //
+	//=========//
 	
 	/**
 	 * Set the UI only config based on what is set in the file. <br>
@@ -28,7 +50,7 @@ public abstract class AbstractPresetConfigEventHandler<TPresetEnum extends Enum<
 	 */
 	public void setUiOnlyConfigValues()
 	{
-		TPresetEnum currentQualitySetting = this.getCurrentQualityPreset();
+		TPresetEnum currentQualitySetting = this.getCurrentPreset();
 		this.getPresetConfigEntry().set(currentQualitySetting);
 	}
 	
@@ -40,44 +62,65 @@ public abstract class AbstractPresetConfigEventHandler<TPresetEnum extends Enum<
 	@Override
 	public void onConfigValueSet()
 	{
-		TPresetEnum presetEnum = this.getPresetConfigEntry().get();
-		
-		// if the quick value is custom, nothing needs to be changed
-		if (presetEnum == this.getCustomPresetEnum())
+		// don't have this method run on top of itself
+		if (this.changingPreset)
 		{
 			return;
 		}
 		
 		
-		// stop the previous timer if one exists
-		if (this.presetApplicationTimer != null)
+		
+		// if the quick value is custom, nothing needs to be changed
+		TPresetEnum presetEnum = this.getPresetConfigEntry().get();
+		if (presetEnum == this.getCustomPresetEnum())
 		{
-			this.presetApplicationTimer.cancel();
+			return;
+		}
+		this.waitingPresetEnum = presetEnum;
+		
+		
+		// stop the previous timer if one exists
+		if (this.applyPresetTimer != null)
+		{
+			this.applyPresetTimer.cancel();
 		}
 		
 		// reset the timer
 		TimerTask task = new TimerTask()
 		{
-			public void run() { AbstractPresetConfigEventHandler.this.applyPreset(presetEnum); }
+			public void run() { AbstractPresetConfigEventHandler.this.applyPreset(); }
 		};
-		this.presetApplicationTimer = new Timer("PresetApplicationTimer");
-		this.presetApplicationTimer.schedule(task, MS_DELAY_BEFORE_APPLYING_PRESET);
+		this.applyPresetTimer = new Timer("ApplyPresetTimer");
+		this.applyPresetTimer.schedule(task, MS_DELAY_BEFORE_APPLYING_PRESET);
 		
 	}
-	private void applyPreset(TPresetEnum presetEnum)
+	private void applyPreset()
 	{
-		LOGGER.debug("changing preset to: " + presetEnum);
-		this.changingPreset = true;
+		TPresetEnum newPresetEnum = this.waitingPresetEnum;
+		this.waitingPresetEnum = null;
 		
-		for (ConfigEntryWithPresetOptions<TPresetEnum, ?> configEntry : this.configList)
+		// only continue if a preset was waiting to be applied
+		if (newPresetEnum == null)
 		{
-			configEntry.updateConfigEntry(presetEnum);
+			return;
 		}
 		
+		
+		
+		LOGGER.info("changing preset to: " + newPresetEnum);
+		this.changingPreset = true;
+		
+		// update the controlled config values
+		for (ConfigEntryWithPresetOptions<TPresetEnum, ?> configEntry : this.configList)
+		{
+			configEntry.updateConfigEntry(newPresetEnum);
+		}
+		// update the preset value (required to make sure the UI value changes correctly after the UI page changes).
+		this.setUiOnlyConfigValues();
+		
 		this.changingPreset = false;
-		LOGGER.debug("preset active: " + presetEnum);
+		LOGGER.info("preset active: " + newPresetEnum);
 	}
-	
 	
 	@Override
 	public void onUiModify() { /* do nothing, we only care about modified config values */ }
@@ -95,7 +138,7 @@ public abstract class AbstractPresetConfigEventHandler<TPresetEnum extends Enum<
 		}
 		
 		
-		TPresetEnum newPreset = this.getCurrentQualityPreset();
+		TPresetEnum newPreset = this.getCurrentPreset();
 		TPresetEnum currentPreset = this.getPresetConfigEntry().get();
 		
 		if (newPreset != currentPreset)
@@ -104,6 +147,15 @@ public abstract class AbstractPresetConfigEventHandler<TPresetEnum extends Enum<
 		}
 	}
 	
+	public void onConfigUiClosed()
+	{
+		// apply the preset if one is waiting to be applied
+		if (this.applyPresetTimer != null)
+		{
+			this.applyPresetTimer.cancel();
+			this.applyPreset();
+		}
+	}
 	
 	
 	//================//
@@ -111,7 +163,7 @@ public abstract class AbstractPresetConfigEventHandler<TPresetEnum extends Enum<
 	//================//
 	
 	/** @return what {@link TPresetEnum} is currently viable based on the {@link AbstractPresetConfigEventHandler#configList}. */
-	public TPresetEnum getCurrentQualityPreset()
+	public TPresetEnum getCurrentPreset()
 	{
 		// get all quick options
 		HashSet<TPresetEnum> possiblePresetSet = new HashSet<>(this.getPresetEnumList());

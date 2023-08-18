@@ -34,6 +34,7 @@ import com.seibel.distanthorizons.coreapi.util.MathUtil;
  * @author James Seibel
  * @author Leonardo Amato
  * @version 2023-6-14
+ * @since API 1.0.0
  */
 public enum EMaxHorizontalResolution
 {

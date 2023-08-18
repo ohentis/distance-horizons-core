@@ -29,6 +29,8 @@ import com.seibel.distanthorizons.api.enums.config.DisallowSelectingViaConfigGui
  * MEDIUM, <br>
  * HIGH, <br>
  * EXTREME, <br>
+ * 
+ * @since API 1.0.0
  */
 public enum EQualityPreset
 {

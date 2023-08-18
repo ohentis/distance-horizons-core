@@ -30,8 +30,7 @@ import com.seibel.distanthorizons.core.render.glObject.GLProxy;
 import com.seibel.distanthorizons.core.render.glObject.GLState;
 import com.seibel.distanthorizons.core.render.glObject.buffer.GLVertexBuffer;
 import com.seibel.distanthorizons.core.render.glObject.buffer.QuadElementBuffer;
-import com.seibel.distanthorizons.core.render.renderer.shaders.FogShader;
-import com.seibel.distanthorizons.core.render.renderer.shaders.SSAORenderer;
+import com.seibel.distanthorizons.core.render.renderer.shaders.*;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.RenderUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
@@ -255,12 +254,11 @@ public class LodRenderer
 		
 		if (Config.Client.Advanced.Graphics.Quality.ssao.get())
 		{
-			// broken, causes renderer to crash
-			// TODO remove duplicate SSAO shader
-			//SSAOShader.INSTANCE.render(partialTicks); // For some reason this looks slightly different :/
-			
 			profiler.popPush("LOD SSAO");
 			SSAORenderer.INSTANCE.render(partialTicks);
+			
+			// TODO: Fix this file (or check the result is the same) so that SSAORenderer could be deleted
+			//SSAOShader.INSTANCE.render(partialTicks); // For some reason this looks slightly different :/
 		}
 		
 		

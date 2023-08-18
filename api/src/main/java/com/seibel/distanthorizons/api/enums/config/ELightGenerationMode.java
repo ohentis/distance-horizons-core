@@ -25,6 +25,7 @@ package com.seibel.distanthorizons.api.enums.config;
  *
  * @author Leetom
  * @version 2023-6-7
+ * @since API 1.0.0
  */
 public enum ELightGenerationMode
 {

@@ -12,18 +12,13 @@ import java.util.function.Consumer;
 /**
  * @author James Seibel
  * @version 2023-6-22
+ * @since API 1.0.0
  */
 public interface IDhApiWorldGenerator extends Closeable, IDhApiOverrideable
 {
 	//============//
 	// parameters //
 	//============//
-	
-	/*
-	 * Returns which thread chunk generation requests will be run on. <br>
-	 * TODO: only {@link EDhApiWorldGenThreadMode#MULTI_THREADED} is implemented
-	 */
-	//EDhApiWorldGenThreadMode getThreadingMode();
 	
 	/**
 	 * Defines the smallest datapoint size that can be generated at a time. <br>

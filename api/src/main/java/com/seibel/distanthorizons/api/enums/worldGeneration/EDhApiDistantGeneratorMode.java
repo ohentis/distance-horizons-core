@@ -32,6 +32,7 @@ package com.seibel.distanthorizons.api.enums.worldGeneration;
  * @author James Seibel
  * @author Leonardo Amato
  * @version 2022-12-10
+ * @since API 1.0.0
  */
 public enum EDhApiDistantGeneratorMode
 {

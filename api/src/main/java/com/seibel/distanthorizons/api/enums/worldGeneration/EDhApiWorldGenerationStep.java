@@ -14,6 +14,7 @@ package com.seibel.distanthorizons.api.enums.worldGeneration;
  *
  * @author James Seibel
  * @version 2023-4-20
+ * @since API 1.0.0
  */
 public enum EDhApiWorldGenerationStep
 {

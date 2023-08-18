@@ -23,7 +23,9 @@ package com.seibel.distanthorizons.api.enums.config;
  * NONE <br>
  * LIGHT <br>
  * MEDIUM <br>
- * HEAVY <br> <br>
+ * HEAVY <br>
+ *
+ * @since API 1.0.0
  */
 public enum EOverdrawPrevention
 {

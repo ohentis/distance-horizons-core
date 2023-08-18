@@ -35,22 +35,19 @@ void main()
     vec3 viewPos = calcViewPosition(TexCoord);
     vec3 viewNormal = normalize(cross(dFdy(viewPos.xyz), dFdx(viewPos.xyz)) * -1.0);
 
-    vec3 randomVec = vec3(
-        0.0,
-        -1.0,
-        0.0
-    );
+    vec3 randomVec = vec3(0.0, -1.0, 0.0);
 
     vec3 tangent = normalize(randomVec - viewNormal * dot(randomVec, viewNormal));
     vec3 bitangent = cross(viewNormal, tangent);
     mat3 TBN = mat3(tangent, bitangent, viewNormal);
+
     float occlusion_factor = 0.0;
-    for (int i = 0; i < MAX_KERNEL_SIZE; i++) {
+    for (int i = 0; i < MAX_KERNEL_SIZE; i++) 
+    {
         vec3 samplePos = vec3(0.0) + (TBN * gKernel[i]);
         samplePos = viewPos + samplePos * gSampleRad;
 
-        vec4 offset = vec4(samplePos, 1.0);
-        offset = gProj * offset;
+        vec4 offset = gProj * vec4(samplePos + viewPos, 1.0);
         offset.xy /= offset.w;
         offset.xy = offset.xy * HALF_2 + HALF_2;
 

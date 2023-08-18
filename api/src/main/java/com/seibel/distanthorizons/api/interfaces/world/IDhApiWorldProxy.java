@@ -25,6 +25,7 @@ package com.seibel.distanthorizons.api.interfaces.world;
  *
  * @author James Seibel
  * @version 2022-11-20
+ * @since API 1.0.0
  */
 public interface IDhApiWorldProxy
 {

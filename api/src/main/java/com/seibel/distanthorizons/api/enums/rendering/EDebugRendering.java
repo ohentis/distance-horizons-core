@@ -29,6 +29,7 @@ package com.seibel.distanthorizons.api.enums.rendering;
  * @author Leetom
  * @author James Seibel
  * @version 2023-6-7
+ * @since API 1.0.0
  */
 public enum EDebugRendering
 {

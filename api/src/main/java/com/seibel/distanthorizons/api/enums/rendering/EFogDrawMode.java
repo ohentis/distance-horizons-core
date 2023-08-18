@@ -26,6 +26,7 @@ package com.seibel.distanthorizons.api.enums.rendering;
  *
  * @author James Seibel
  * @version 2022-6-2
+ * @since API 1.0.0
  */
 public enum EFogDrawMode
 {

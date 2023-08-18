@@ -29,14 +29,15 @@ public class GLState
 	public int vbo;
 	public int ebo;
 	public int fbo;
-	public int text;
-	public int activeTex;
-	public int text0;
+	public int texture2D;
+	/** IE: GL_TEXTURE0, GL_TEXTURE1, etc. */
+	public int activeTextureNumber;
+	public int texture0;
 	public boolean blend;
 	public int blendSrc;
 	public int blendDst;
 	public boolean depth;
-	public boolean depthWrite;
+	public boolean writeToDepthBuffer;
 	public int depthFunc;
 	public boolean stencil;
 	public int stencilFunc;
@@ -57,16 +58,16 @@ public class GLState
 		this.vbo = GL32.glGetInteger(GL32.GL_ARRAY_BUFFER_BINDING);
 		this.ebo = GL32.glGetInteger(GL32.GL_ELEMENT_ARRAY_BUFFER_BINDING);
 		this.fbo = GL32.glGetInteger(GL32.GL_FRAMEBUFFER_BINDING);
-		this.text = GL32.glGetInteger(GL32.GL_TEXTURE_BINDING_2D);
-		this.activeTex = GL32.glGetInteger(GL32.GL_ACTIVE_TEXTURE);
+		this.texture2D = GL32.glGetInteger(GL32.GL_TEXTURE_BINDING_2D);
+		this.activeTextureNumber = GL32.glGetInteger(GL32.GL_ACTIVE_TEXTURE);
 		GL32.glActiveTexture(GL32.GL_TEXTURE0);
-		this.text0 = GL32.glGetInteger(GL32.GL_TEXTURE_BINDING_2D);
-		GL32.glActiveTexture(this.activeTex);
+		this.texture0 = GL32.glGetInteger(GL32.GL_TEXTURE_BINDING_2D);
+		GL32.glActiveTexture(this.activeTextureNumber);
 		this.blend = GL32.glIsEnabled(GL32.GL_BLEND);
 		this.blendSrc = GL32.glGetInteger(GL32.GL_BLEND_SRC);
 		this.blendDst = GL32.glGetInteger(GL32.GL_BLEND_DST);
 		this.depth = GL32.glIsEnabled(GL32.GL_DEPTH_TEST);
-		this.depthWrite = GL32.glGetInteger(GL32.GL_DEPTH_WRITEMASK) == GL32.GL_TRUE;
+		this.writeToDepthBuffer = GL32.glGetInteger(GL32.GL_DEPTH_WRITEMASK) == GL32.GL_TRUE;
 		this.depthFunc = GL32.glGetInteger(GL32.GL_DEPTH_FUNC);
 		this.stencil = GL32.glIsEnabled(GL32.GL_STENCIL_TEST);
 		this.stencilFunc = GL32.glGetInteger(GL32.GL_STENCIL_FUNC);
@@ -84,7 +85,7 @@ public class GLState
 	{
 		return "GLState{" +
 				"prog=" + this.prog + ", vao=" + this.vao + ", vbo=" + this.vbo + ", ebo=" + this.ebo + ", fbo=" + this.fbo +
-				", text=" + GLEnums.getString(this.text) + "@" + this.activeTex + ", text0=" + GLEnums.getString(this.text0) +
+				", text=" + GLEnums.getString(this.texture2D) + "@" + this.activeTextureNumber + ", text0=" + GLEnums.getString(this.texture0) +
 				", blend=" + this.blend + ", blendMode=" + GLEnums.getString(this.blendSrc) + "," + GLEnums.getString(this.blendDst) +
 				", depth=" + this.depth +
 				", depthFunc=" + GLEnums.getString(this.depthFunc) + ", stencil=" + this.stencil + ", stencilFunc=" +
@@ -97,7 +98,7 @@ public class GLState
 	
 	public void restore()
 	{
-		GL32.glBindFramebuffer(GL32.GL_FRAMEBUFFER, this.fbo);
+		GL32.glBindFramebuffer(GL32.GL_FRAMEBUFFER, GL32.glIsFramebuffer(this.fbo) ? this.fbo : 0);
 		if (this.blend)
 		{
 			GL32.glEnable(GL32.GL_BLEND);
@@ -108,15 +109,16 @@ public class GLState
 		}
 		
 		GL32.glActiveTexture(GL32.GL_TEXTURE0);
-		GL32.glBindTexture(GL32.GL_TEXTURE_2D, this.text0);
-		GL32.glActiveTexture(this.activeTex);
-		GL32.glBindTexture(GL32.GL_TEXTURE_2D, this.text);
-		GL32.glBindVertexArray(this.vao);
+		GL32.glBindTexture(GL32.GL_TEXTURE_2D, GL32.glIsTexture(this.texture0) ? this.texture0 : 0);
+		GL32.glActiveTexture(this.activeTextureNumber);
+		
+		GL32.glBindTexture(GL32.GL_TEXTURE_2D, GL32.glIsTexture(this.texture2D) ? this.texture2D : 0);
+		GL32.glBindVertexArray(GL32.glIsVertexArray(this.vao) ? this.vao : 0);
 		GL32.glBindBuffer(GL32.GL_ARRAY_BUFFER, this.vbo);
 		GL32.glBindBuffer(GL32.GL_ELEMENT_ARRAY_BUFFER, this.ebo);
-		GL32.glUseProgram(this.prog);
+		GL32.glUseProgram(GL32.glIsProgram(this.prog) ? this.prog : 0);
 		
-		GL32.glDepthMask(this.depthWrite);
+		GL32.glDepthMask(this.writeToDepthBuffer);
 		GL32.glBlendFunc(this.blendSrc, this.blendDst);
 		if (this.depth)
 		{

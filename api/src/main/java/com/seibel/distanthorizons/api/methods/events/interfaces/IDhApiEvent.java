@@ -9,6 +9,7 @@ import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IBindab
  * @param <T> This is the datatype that will be passed into the event handler's method.
  * @author James Seibel
  * @version 2023-6-23
+ * @since API 1.0.0
  */
 public interface IDhApiEvent<T> extends IBindable
 {

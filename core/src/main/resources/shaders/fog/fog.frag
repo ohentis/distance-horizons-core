@@ -59,16 +59,12 @@ float mod(float x, int y) {
 
 vec3 calcViewPosition(float fragmentDepth)
 {
-    vec4 ndc = vec4(
-        TexCoord.x * 2.0 - 1.0,
-        TexCoord.y * 2.0 - 1.0,
-        fragmentDepth * 2.0 - 1.0,
-        1.0
-    );
+    vec4 ndc = vec4(TexCoord.xy, fragmentDepth, 1.0);
+    ndc.xyz = ndc.xyz * 2.0 - 1.0;
 
+    // TODO: This inverse() should be moved CPU side
     vec4 eyeCoord = inverse(gMvmProj) * ndc;
-    vec3 cameraPos = eyeCoord.xyz / eyeCoord.w;
-    return cameraPos;
+    return eyeCoord.xyz / eyeCoord.w;
 }
 
 /**
@@ -84,7 +80,7 @@ void main()
 
     // a fragment depth of "1" means the fragment wasn't drawn to,
     // we only want to apply Fog to LODs, not to the sky outside the LODs
-    if (fragmentDepth != 1.0)
+    if (fragmentDepth < 1)
     {
         if (fullFogMode == 0)
         {
@@ -98,17 +94,15 @@ void main()
             float nearFogThickness = getNearFogThickness(horizontalDist);
             float farFogThickness = getFarFogThickness(farDist);
             float heightFogThickness = getHeightFogThickness(heightDist);
-            float mixedFogThickness =
-            clamp(
-                mixFogThickness(nearFogThickness, farFogThickness, heightFogThickness)
-            , 0.0, 1.0);
+            float mixedFogThickness = mixFogThickness(nearFogThickness, farFogThickness, heightFogThickness);
+            mixedFogThickness = clamp(mixedFogThickness, 0.0, 1.0);
 
-            fragColor = vec4(fogColor.r, fogColor.g, fogColor.b, mixedFogThickness);
+            fragColor = vec4(fogColor.rgb, mixedFogThickness);
         }
         else if (fullFogMode == 1)
         {
             // render everything with the fog color
-            fragColor = vec4(fogColor.r, fogColor.g, fogColor.b, 1.0);
+            fragColor = vec4(fogColor.rgb, 1.0);
         }
         else
         {
@@ -122,6 +116,11 @@ void main()
             float depthValue = texture(gDepthMap, TexCoord).r;
             fragColor = vec4(vec3(depthValue), 1.0); // Convert depth value to grayscale color
         }
+    }
+    else
+    {
+        // every pixel needs to be set to something, otherwise the pixel may be undefined by some drivers (specifically Intel)
+        fragColor = vec4(0.0, 0.0, 0.0, 0.0);
     }
 }
 

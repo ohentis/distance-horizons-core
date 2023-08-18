@@ -8,6 +8,7 @@ import com.seibel.distanthorizons.api.objects.DhApiResult;
  *
  * @author James Seibel
  * @version 2022-12-10
+ * @since API 1.0.0
  */
 public interface IDhApiWorldGeneratorOverrideRegister
 {

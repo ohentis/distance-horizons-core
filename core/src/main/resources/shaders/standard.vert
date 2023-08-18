@@ -29,7 +29,7 @@ uniform float mircoOffset;
  */
 void main()
 {
-    vPos = vec4(vPosition.x, vPosition.y, vPosition.z, vPosition.w); // This is so it can be passed to the fragment shader
+    vPos = vPosition; // This is so it can be passed to the fragment shader
 
     vertexWorldPos = vPosition.xyz + modelOffset;
 
@@ -54,6 +54,7 @@ void main()
 	float light2 = (mod(float(lights), 16.0)+0.5) / 16.0;
 	float light = (float(lights/16u)+0.5) / 16.0;
 	vertexColor = vec4(texture(lightMap, vec2(light, light2)).xyz, 1.0);
+    
     if (!whiteWorld)
     {
         vertexColor *= color;

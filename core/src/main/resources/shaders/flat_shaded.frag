@@ -18,8 +18,9 @@ uniform int noiseDropoff;
 // method definitions
 
 float fade(float value, float start, float end) {
-    return (clamp(value,start,end)-start)/(end-start);
+    return (clamp(value, start, end) - start) / (end - start);
 }
+
 // The random functions for diffrent dimentions
 float rand(float co) { return fract(sin(co*(91.3458)) * 47453.5453); }
 float rand(vec2 co){ return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453); }
@@ -50,6 +51,7 @@ vec3 RGB2HSV(vec3 c) {
     float e = 1.0e-10;
     return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
 }
+
 vec3 HSV2RGB(vec3 c) {
     vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
     vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
@@ -74,15 +76,10 @@ void main()
     if (noiseEnabled) {
         vec3 vertexNormal = normalize(cross(dFdx(vPos.xyz), dFdy(vPos.xyz)));
         // This bit of code is required to fix the vertex position problem cus of floats in the verted world position varuable
-        vec3 fixedVPos = vec3(
-            vPos.x - vertexNormal.x * 0.001,
-            vPos.y - vertexNormal.y * 0.001,
-            vPos.z - vertexNormal.z * 0.001
-        );
+        vec3 fixedVPos = vPos.xyz - vertexNormal * 0.001;
 
-
-        float noiseAmplification = noiseIntensity / 100;
-        noiseAmplification = (-1 * pow(2*((fragColor.x + fragColor.y + fragColor.z) / 3) - 1, 2) + 1) * noiseAmplification; // Lessen the effect on depending on how dark the object is, equasion for this is -(2x-1)^{2}+1
+        float noiseAmplification = noiseIntensity * 0.01;
+        noiseAmplification = (-1.0 * pow(2.0*((fragColor.x + fragColor.y + fragColor.z) / 3.0) - 1.0, 2.0) + 1.0) * noiseAmplification; // Lessen the effect on depending on how dark the object is, equasion for this is -(2x-1)^{2}+1
         noiseAmplification *= fragColor.w; // The effect would lessen on transparent objects
 
         // Random value for each position
@@ -91,30 +88,20 @@ void main()
             quantize(fixedVPos.y, noiseSteps),
             quantize(fixedVPos.z, noiseSteps)
         ))
-        * 2. * noiseAmplification - noiseAmplification;
+        * 2.0 * noiseAmplification - noiseAmplification;
 
 
         // Modifies the color
         // A value of 0 on the randomValue will result in the original color, while a value of 1 will result in a fully bright color
-        vec3 newCol = fragColor.rgb + (vec3(1.0) - fragColor.rgb) * randomValue;
+        vec3 newCol = fragColor.rgb + (1.0 - fragColor.rgb) * randomValue;
 
         // Clamps it and turns it back into a vec4
         if (noiseDropoff == 0)
-            fragColor = vec4(
-                clamp(newCol.r, 0., 1.),
-                clamp(newCol.g, 0., 1.),
-                clamp(newCol.b, 0., 1.),
-                fragColor.w
-            );
+            fragColor = vec4(clamp(newCol.rgb, 0.0, 1.0), fragColor.w);
         else
             fragColor = mix(
-                vec4(
-                    clamp(newCol.r, 0., 1.),
-                    clamp(newCol.g, 0., 1.),
-                    clamp(newCol.b, 0., 1.),
-                    fragColor.w
-                ), fragColor,
-                    clamp(length(vertexWorldPos) / noiseDropoff, 0., 1.) // The further away it gets, the less noise gets applied
+                vec4(clamp(newCol.rgb, 0.0, 1.0), fragColor.w), fragColor,
+                    min(length(vertexWorldPos) / noiseDropoff, 1.0) // The further away it gets, the less noise gets applied
             );
 
         // For testing

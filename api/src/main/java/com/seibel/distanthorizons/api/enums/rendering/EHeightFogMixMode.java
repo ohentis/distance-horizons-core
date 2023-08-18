@@ -33,6 +33,7 @@ package com.seibel.distanthorizons.api.enums.rendering;
  *
  * @author Leetom
  * @version 2022-4-14
+ * @since API 1.0.0
  */
 public enum EHeightFogMixMode
 {

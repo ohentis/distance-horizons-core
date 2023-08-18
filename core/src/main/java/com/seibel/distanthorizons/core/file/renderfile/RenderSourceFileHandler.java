@@ -310,12 +310,11 @@ public class RenderSourceFileHandler implements ILodRenderSourceProvider
 			return null;
 		}
 		
-		// File does not exist, create it.
-		// In this case, since 'creating' a file object doesn't actually do anything heavy on IO yet, we use CAS
-		// to avoid overhead of 'synchronized', and eat the mini-overhead of possibly creating duplicate objects.
+		// File probably doesn't exist, try creating it.
 		try
 		{
-			metaFile = RenderMetaDataFile.createNewFileForPos(this, pos);
+			// createFromExistingOrNewFile is due to a rare issue where the file may already exist but isn't in the file list
+			metaFile = RenderMetaDataFile.createFromExistingOrNewFile(this, pos);
 		}
 		catch (IOException e)
 		{

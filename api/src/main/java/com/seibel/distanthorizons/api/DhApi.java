@@ -28,6 +28,7 @@ import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IOverri
  *
  * @author James Seibel
  * @version 2023-6-29
+ * @since API 1.0.0
  */
 public class DhApi
 {
@@ -38,25 +39,35 @@ public class DhApi
 	 * Bind a custom {@link DhApiAfterDhInitEvent DhApiAfterDhInitEvent}
 	 * to {@link DhApi#events ApiCoreInjectors.events} in order to be notified when this class can
 	 * be safely used.
+	 *
+	 * @since API 1.0.0
 	 */
 	public static class Delayed
 	{
-		/** Used to interact with Distant Horizons' Configs. */
+		/** 
+		 * Used to interact with Distant Horizons' Configs.
+		 * @since API 1.0.0 
+		 */
 		public static IDhApiConfig configs = null;
 		
 		/**
 		 * Used to interact with Distant Horizons' terrain data.
 		 * Designed to be used in conjunction with {@link DhApi.Delayed#worldProxy}.
+		 * @since API 1.0.0
 		 */
 		public static IDhApiTerrainDataRepo terrainRepo = null;
 		
 		/**
 		 * Used to interact with Distant Horizons' currently loaded world.
 		 * Designed to be used in conjunction with {@link DhApi.Delayed#terrainRepo}.
+		 * @since API 1.0.0
 		 */
 		public static IDhApiWorldProxy worldProxy = null;
 		
-		/** Used to interact with Distant Horizons' rendering system. */
+		/** 
+		 * Used to interact with Distant Horizons' rendering system.
+		 * @since API 1.0.0
+		 */
 		public static IDhApiRenderProxy renderProxy = null;
 		
 	}
@@ -64,33 +75,58 @@ public class DhApi
 	
 	// always available //
 	
-	/** Used to bind/unbind Distant Horizons Api events. */
+	/** 
+	 * Used to bind/unbind Distant Horizons Api events. 
+	 * @since API 1.0.0 
+	 */
 	public static final IDhApiEventInjector events = ApiEventInjector.INSTANCE;
 	
-	/** Used to bind/unbind Distant Horizons Api events. */
+	/** 
+	 * Used to bind/unbind Distant Horizons Api events. 
+	 * @since API 1.0.0 
+	 */
 	public static final IDhApiWorldGeneratorOverrideRegister worldGenOverrides = DhApiWorldGeneratorOverrideRegister.INSTANCE;
 	
-	/** Used to bind overrides to change Distant Horizons' core behavior. */
+	/** 
+	 * Used to bind overrides to change Distant Horizons' core behavior. 
+	 * @since API 1.0.0 
+	 */
 	public static final IOverrideInjector<IDhApiOverrideable> overrides = OverrideInjector.INSTANCE;
 	
 	
-	/** This version should only be updated when breaking changes are introduced to the Distant Horizons API. */
+	/** 
+	 * This version should only be updated when breaking changes are introduced to the Distant Horizons API.
+	 * @since API 1.0.0
+	 */
 	public static int getApiMajorVersion() { return ModInfo.API_MAJOR_VERSION; }
-	/** This version should be updated whenever new methods are added to the Distant Horizons API. */
+	/** 
+	 * This version should be updated whenever new methods are added to the Distant Horizons API. 
+	 * @since API 1.0.0 
+	 */
 	public static int getApiMinorVersion() { return ModInfo.API_MINOR_VERSION; }
-	/** This version should be updated whenever non-breaking fixes are added to the Distant Horizons API. */
+	/** 
+	 * This version should be updated whenever non-breaking fixes are added to the Distant Horizons API. 
+	 * @since API 1.0.0 
+	 */
 	public static int getApiPatchVersion() { return ModInfo.API_PATH_VERSION; }
 	
 	/**
 	 * Returns the mod's semantic version number in the format: Major.Minor.Patch
 	 * with optional extensions "-a" for alpha, "-b" for beta, and -dev for unstable development builds. <br>
 	 * Examples: "1.6.9-a", "1.7.0-a-dev", "2.1.0-b", "3.0.0", "3.1.4-dev"
+	 * @since API 1.0.0
 	 */
 	public static String getModVersion() { return ModInfo.VERSION; }
-	/** Returns true if the mod is a development version, false if it is a release version. */
+	/** 
+	 * Returns true if the mod is a development version, false if it is a release version. 
+	 * @since API 1.0.0 
+	 */
 	public static boolean getIsDevVersion() { return ModInfo.IS_DEV_BUILD; }
 	
-	/** Returns the network protocol version. */
+	/** 
+	 * Returns the network protocol version. 
+	 * @since API 1.0.0 
+	 */
 	public static int getNetworkProtocolVersion() { return ModInfo.PROTOCOL_VERSION; }
 	
 }

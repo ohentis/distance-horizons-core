@@ -12,6 +12,7 @@ import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhAp
  * @author James Seibel
  * @version 2023-6-23
  * @see DhApiRenderParam
+ * @since API 1.0.0
  */
 public abstract class DhApiAfterRenderEvent implements IDhApiEvent<DhApiAfterRenderEvent.EventParam>
 {

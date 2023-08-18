@@ -87,10 +87,6 @@ public class BatchGenerator implements IDhApiWorldGenerator
 	// generator parameters //
 	//======================//
 	
-	// TODO implement
-//	@Override 
-//	public EDhApiWorldGenThreadMode getThreadingMode() { return EDhApiWorldGenThreadMode.MULTI_THREADED; }
-	
 	@Override
 	public byte getSmallestDataDetailLevel() { return LodUtil.BLOCK_DETAIL_LEVEL; }
 	@Override

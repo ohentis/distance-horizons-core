@@ -6,6 +6,7 @@ package com.seibel.distanthorizons.api.objects;
  * @param <T> The payload type this result contains, can be Void if the result is just used to notify success/failure.
  * @author James Seibel
  * @version 2022-11-24
+ * @since API 1.0.0
  */
 public class DhApiResult<T>
 {

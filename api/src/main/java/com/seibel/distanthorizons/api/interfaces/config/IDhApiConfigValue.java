@@ -6,6 +6,7 @@ package com.seibel.distanthorizons.api.interfaces.config;
  * @param <T> The data type of this config.
  * @author James Seibel
  * @version 2022-9-15
+ * @since API 1.0.0
  */
 public interface IDhApiConfigValue<T>
 {

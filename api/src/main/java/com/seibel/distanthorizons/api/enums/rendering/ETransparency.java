@@ -23,6 +23,8 @@ package com.seibel.distanthorizons.api.enums.rendering;
  * DISABLED,					<br>
  * FAKE,						<br>
  * COMPLETE,					<br>
+ * 
+ * @since API 1.0.0
  */
 public enum ETransparency
 {

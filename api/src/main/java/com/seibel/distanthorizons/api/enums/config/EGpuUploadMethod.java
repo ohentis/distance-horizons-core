@@ -29,6 +29,7 @@ package com.seibel.distanthorizons.api.enums.config;
  * @author Leetom
  * @author James Seibel
  * @version 2022-7-2
+ * @since API 1.0.0
  */
 public enum EGpuUploadMethod
 {

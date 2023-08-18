@@ -9,6 +9,7 @@ import com.seibel.distanthorizons.coreapi.util.math.Vec3i;
  *
  * @author James Seibel
  * @version 2022-11-19
+ * @since API 1.0.0
  */
 public class DhApiRaycastResult
 {

@@ -1,6 +1,10 @@
 package com.seibel.distanthorizons.api.methods.events.sharedParameterObjects;
 
-/** Extension of {@link DhApiEventParam} that allows the event to be canceled. */
+/** 
+ * Extension of {@link DhApiEventParam} that allows the event to be canceled. 
+ * 
+ * @since API 1.0.0
+ */
 public class DhApiCancelableEventParam<T> extends DhApiEventParam<T>
 {
 	public DhApiCancelableEventParam(T value) { super(value); }

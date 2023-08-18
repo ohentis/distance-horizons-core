@@ -28,7 +28,8 @@ import com.seibel.distanthorizons.api.enums.config.DisallowSelectingViaConfigGui
  * LOW_IMPACT, <br>
  * BALANCED, <br>
  * AGGRESSIVE, <br>
- * I_PAID_FOR_THE_WHOLE_CPU, <br>
+ * 
+ * @since API 1.0.0
  */
 public enum EThreadPreset
 {

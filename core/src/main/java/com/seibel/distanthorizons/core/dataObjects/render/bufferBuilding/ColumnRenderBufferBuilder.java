@@ -69,7 +69,7 @@ public class ColumnRenderBufferBuilder
 						boolean enableTransparency = Config.Client.Advanced.Graphics.Quality.transparency.get().transparencyEnabled;
 						
 						EVENT_LOGGER.trace("RenderRegion start QuadBuild @ " + renderSource.sectionPos);
-						boolean enableSkyLightCulling = Config.Client.Advanced.Graphics.AdvancedGraphics.enableCaveCulling.get();
+						boolean enableSkyLightCulling = !clientLevel.getLevelWrapper().hasCeiling() && Config.Client.Advanced.Graphics.AdvancedGraphics.enableCaveCulling.get();
 						
 						int skyLightCullingBelow = Config.Client.Advanced.Graphics.AdvancedGraphics.caveCullingHeight.get();
 						// FIXME: Clamp also to the max world height.

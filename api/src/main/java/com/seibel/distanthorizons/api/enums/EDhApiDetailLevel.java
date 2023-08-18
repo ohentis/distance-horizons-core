@@ -16,6 +16,7 @@ package com.seibel.distanthorizons.api.enums;
  *
  * @author James Seibel
  * @version 2022-12-5
+ * @since API 1.0.0
  */
 public enum EDhApiDetailLevel
 {

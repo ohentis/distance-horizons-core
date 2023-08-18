@@ -7,6 +7,7 @@ import com.seibel.distanthorizons.api.interfaces.IDhApiUnsafeWrapper;
  *
  * @author James Seibel
  * @version 2023-6-11
+ * @since API 1.0.0
  */
 public interface IDhApiBlockStateWrapper extends IDhApiUnsafeWrapper
 {

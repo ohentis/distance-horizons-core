@@ -20,10 +20,13 @@
 package com.seibel.distanthorizons.api.enums.rendering;
 
 /**
- * NEAR, FAR, or NEAR_AND_FAR.
+ * NEAR, <br> 
+ * FAR, <br> 
+ * NEAR_AND_FAR <br>
  *
  * @author James Seibel
  * @version 2022-6-2
+ * @since API 1.0.0
  */
 public enum EFogDistance
 {

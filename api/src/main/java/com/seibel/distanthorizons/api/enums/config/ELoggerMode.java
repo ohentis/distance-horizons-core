@@ -21,6 +21,9 @@ package com.seibel.distanthorizons.api.enums.config;
 
 import org.apache.logging.log4j.Level;
 
+/**
+ * @since API 1.0.0
+ */
 public enum ELoggerMode
 {
 	DISABLED(Level.OFF, Level.OFF),

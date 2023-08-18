@@ -29,7 +29,7 @@ uniform float earthRadius;
  */
 void main()
 {
-    vPos = vec4(vPosition.x, vPosition.y, vPosition.z, vPosition.w); // This is so it can be passed to the fragment shader
+    vPos = vPosition; // This is so it can be passed to the fragment shader
 
     vertexWorldPos = vPosition.xyz + modelOffset;
 
@@ -52,36 +52,35 @@ void main()
     vertexWorldPos.y += my;
     vertexWorldPos.z += mz;
 
-    // Old (disabled) vertex transformation logic - Leetom
     #if 0
+        // Old (disabled) vertex transformation logic - Leetom
 
-    // Calculate the vertex pos due to curvature of the earth
-    // We use spherical coordinates to calculate the vertex position
-    if(vertexWorldPos.x == 0.0 && vertexWorldPos.z == 0.0)
-    {
-        // In the center. No curvature needed
-    }
-    else
-    {
-        float theta = atan(vertexWorldPos.z, vertexWorldPos.x); // in radians (-pi, pi)
-        float trueY = earthRadius + vertexWorldPos.y; // true Y position, or height
-        float phi = sqrt(vertexWorldPos.z * vertexWorldPos.z + vertexWorldPos.x * vertexWorldPos.x) / trueY;
-        // Convert spherical coordinates to cartesian coordinates
-        vertexWorldPos.x = trueY * sin(phi) * cos(theta);
-        vertexWorldPos.z = trueY * sin(phi) * sin(theta);
-        vertexWorldPos.y = trueY * cos(phi) - earthRadius;
-    }
+        // Calculate the vertex pos due to curvature of the earth
+        // We use spherical coordinates to calculate the vertex position
+        //if (vertexWorldPos.x == 0.0 && vertexWorldPos.z == 0.0)
+        //{
+        //    // In the center. No curvature needed
+        //}
+        //else
+        //{
+            float theta = atan(vertexWorldPos.z, vertexWorldPos.x); // in radians (-pi, pi)
+            float trueY = earthRadius + vertexWorldPos.y; // true Y position, or height
+            float phi = sqrt(vertexWorldPos.z * vertexWorldPos.z + vertexWorldPos.x * vertexWorldPos.x) / trueY;
+            // Convert spherical coordinates to cartesian coordinates
+            vertexWorldPos.x = trueY * sin(phi) * cos(theta);
+            vertexWorldPos.z = trueY * sin(phi) * sin(theta);
+            vertexWorldPos.y = trueY * cos(phi) - earthRadius;
+        //}
 
     #else
-    // new vertex transformation logic - stduhpf
+        // new vertex transformation logic - stduhpf
 
-    float localRadius = earthRadius + vertexYPos;// vertexWorldPos.y + cameraPosition.y - Center_Y;
+        float localRadius = earthRadius + vertexYPos;// vertexWorldPos.y + cameraPosition.y - Center_Y;
 
-    float phi = length(vertexWorldPos.xz) / localRadius;
+        float phi = length(vertexWorldPos.xz) / localRadius;
 
-    vertexWorldPos.y += (cos(phi) - 1.) * localRadius;
-    vertexWorldPos.xz = vertexWorldPos.xz * sin(phi) / phi;
-
+        vertexWorldPos.y += (cos(phi) - 1.0) * localRadius;
+        vertexWorldPos.xz = vertexWorldPos.xz * sin(phi) / phi;
     #endif
 
     uint lights = meta & 0xFFu;

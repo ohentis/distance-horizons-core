@@ -29,6 +29,7 @@ package com.seibel.distanthorizons.api.enums.rendering;
  *
  * @author Leetom
  * @version 6-30-2022
+ * @since API 1.0.0
  */
 public enum EHeightFogMode
 {

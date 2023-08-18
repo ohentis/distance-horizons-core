@@ -28,6 +28,7 @@ import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiLevelType;
  *
  * @author James Seibel
  * @version 2022-7-14
+ * @since API 1.0.0
  */
 public interface IDhApiLevelWrapper extends IDhApiUnsafeWrapper
 {

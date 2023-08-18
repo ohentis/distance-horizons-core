@@ -226,8 +226,8 @@ public class FullDataToRenderDataTransformer
 					int hash = columnArrayView.getDataHash();
 					SingleColumnFullDataAccessor fullArrayView = chunkDataView.get(ox * dataToSourceScale, oz * dataToSourceScale);
 					convertColumnData(level,
-							sourceBlockX + sourceDataPointBlockWidth * relSourceX * dataToSourceScale,
-							sourceBlockZ + sourceDataPointBlockWidth * relSourceZ * dataToSourceScale,
+							sourceBlockX + sourceDataPointBlockWidth * relSourceX,
+							sourceBlockZ + sourceDataPointBlockWidth * relSourceZ,
 							columnArrayView, fullArrayView, 2);
 					changed |= hash != columnArrayView.getDataHash();
 				}

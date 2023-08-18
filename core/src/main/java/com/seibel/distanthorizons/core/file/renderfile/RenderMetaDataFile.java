@@ -80,6 +80,24 @@ public class RenderMetaDataFile extends AbstractMetaDataContainerFile implements
 	// constructor //
 	//=============//
 	
+	/** 
+	 * Can be used instead of {@link RenderMetaDataFile#createFromExistingFile} or {@link RenderMetaDataFile#createNewFileForPos}, 
+	 * if we are uncertain whether a file exists or not.
+	 */
+	public static RenderMetaDataFile createFromExistingOrNewFile(RenderSourceFileHandler fileHandler, DhSectionPos pos) throws IOException
+	{
+		File file = fileHandler.computeRenderFilePath(pos);
+		if (file.exists())
+		{
+			return createFromExistingFile(fileHandler, file);
+		}
+		else
+		{
+			return createNewFileForPos(fileHandler, pos);
+		}
+	}
+	
+	
 	/**
 	 * NOTE: should only be used if there is NOT an existing file.
 	 *
