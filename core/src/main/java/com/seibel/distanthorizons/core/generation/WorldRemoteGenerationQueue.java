@@ -51,7 +51,6 @@ public class WorldRemoteGenerationQueue implements IWorldGenerationQueue, IDebug
 	
 	private final F3Screen.NestedMessage f3Message = new F3Screen.NestedMessage(this::f3Log);
 	private final AtomicInteger finishedRequests = new AtomicInteger();
-	private final AtomicInteger totalRequests = new AtomicInteger();
 	private final AtomicInteger failedRequests = new AtomicInteger();
 	
 	public WorldRemoteGenerationQueue(ClientNetworkState networkState, IDhClientLevel level)
@@ -73,8 +72,6 @@ public class WorldRemoteGenerationQueue implements IWorldGenerationQueue, IDebug
 		LodUtil.assertTrue(lodPos.detailLevel == DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL, "Only highest-detail sections are allowed.");
 		DhSectionPos sectionPos = new DhSectionPos(lodPos.detailLevel, lodPos);
 		
-		totalRequests.incrementAndGet();
-		
 		WorldGenQueueEntry entry = new WorldGenQueueEntry(new CompletableFuture<>(), tracker);
 		waitingTasks.put(sectionPos, entry);
 		return entry.future;
@@ -90,7 +87,7 @@ public class WorldRemoteGenerationQueue implements IWorldGenerationQueue, IDebug
 	{
 		if (generatorClosingFuture != null || !networkState.getClient().isReady()) return;
 		
-		while (!waitingTasks.isEmpty()
+		while (waitingTasks.size() > pendingTasks()
 				&& pendingTasks() < this.networkState.config.fullDataRequestRateLimit
 				&& pendingTasksSemaphore.tryAcquire())
 		{
@@ -146,9 +143,9 @@ public class WorldRemoteGenerationQueue implements IWorldGenerationQueue, IDebug
 			WorldGenQueueEntry entry = waitingTasks.remove(pos);
 			if (entry != null)
 			{
+				entry.future.cancel(false);
 				if (entry.request != null)
 					entry.request.cancel(false);
-				entry.future.cancel(false);
 			}
 		}
 	}
@@ -225,7 +222,6 @@ public class WorldRemoteGenerationQueue implements IWorldGenerationQueue, IDebug
 			catch (CancellationException ignored)
 			{
 				finishedRequests.decrementAndGet();
-				totalRequests.decrementAndGet();
 			}
 			catch (Throwable e)
 			{
@@ -242,7 +238,7 @@ public class WorldRemoteGenerationQueue implements IWorldGenerationQueue, IDebug
 	{
 		ArrayList<String> lines = new ArrayList<>();
 		lines.add("World Remote Generation Queue ["+level.getClientLevelWrapper().getDimensionType().getDimensionName()+"]");
-		lines.add("  Requests: "+this.finishedRequests+" / "+this.totalRequests +" (failed: "+ this.failedRequests+")");
+		lines.add("  Requests: "+this.finishedRequests+" / "+(this.waitingTasks.size() + this.finishedRequests.get())+" (failed: "+ this.failedRequests+")");
 		lines.add("  Pending: "+this.pendingTasks()+" / "+this.networkState.config.fullDataRequestRateLimit);
 		return lines.toArray(new String[0]);
 	}
@@ -260,9 +256,9 @@ public class WorldRemoteGenerationQueue implements IWorldGenerationQueue, IDebug
 			{
 				for (WorldGenQueueEntry entry : this.waitingTasks.values())
 				{
+					entry.future.cancel(alsoInterruptRunning);
 					if (entry.request != null)
 						entry.request.cancel(alsoInterruptRunning);
-					entry.future.cancel(alsoInterruptRunning);
 				}
 			}
 		});
