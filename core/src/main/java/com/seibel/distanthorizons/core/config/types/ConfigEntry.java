@@ -66,18 +66,42 @@ public class ConfigEntry<T> extends AbstractConfigType<T, ConfigEntry<T>> implem
 	public T getApiValue() { return this.apiValue; }
 	@Override
 	public boolean getAllowApiOverride() { return this.allowApiOverride; }
+	
+	/** 
+	 * DONT USE THIS IN YOUR CODE <br>
+	 * Sets the value without informing the rest of the code (ie, doesnt call listeners, or saves the value). <br>
+	 * Should only be used when loading the config from the file
+	 */
+	public void pureSet(T newValue) {
+		super.set(newValue);
+	}
+	
+	/** Sets the value without saving */
+	@Override
+	public void setWithoutSaving(T newValue)
+	{
+		super.set(newValue);
+		this.listenerList.forEach(IConfigListener::onConfigValueSet);
+	}
 	@Override
 	public void set(T newValue)
 	{
-		super.set(newValue);
+		this.setWithoutSaving(newValue);
 		this.save();
-		this.listenerList.forEach(IConfigListener::onConfigValueSet);
+	}
+	
+	public void uiSetWithoutSaving(T newValue)
+	{
+		this.setWithoutSaving(newValue);
+		this.listenerList.forEach(IConfigListener::onUiModify);
 	}
 	public void uiSet(T newValue)
 	{
 		this.set(newValue);
 		this.listenerList.forEach(IConfigListener::onUiModify);
 	}
+	
+	
 	@Override
 	public T get()
 	{
@@ -94,13 +118,6 @@ public class ConfigEntry<T> extends AbstractConfigType<T, ConfigEntry<T>> implem
 		return super.get();
 	}
 	
-	/** Sets the value without saving */
-	@Override
-	public void setWithoutSaving(T newValue)
-	{
-		super.set(newValue);
-		this.listenerList.forEach(IConfigListener::onConfigValueSet);
-	}
 	
 	/** Gets the min value */
 	@Override
@@ -301,7 +318,9 @@ public class ConfigEntry<T> extends AbstractConfigType<T, ConfigEntry<T>> implem
 			return this;
 		}
 		
-		public Builder<T> replaceListener(ArrayList<IConfigListener> newConfigListener)
+		
+		
+		public Builder<T> replaceListeners(ArrayList<IConfigListener> newConfigListener)
 		{
 			this.tmpIConfigListener = newConfigListener;
 			return this;

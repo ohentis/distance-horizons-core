@@ -122,9 +122,6 @@ public abstract class AbstractPresetConfigEventHandler<TPresetEnum extends Enum<
 		LOGGER.info("preset active: " + newPresetEnum);
 	}
 	
-	@Override
-	public void onUiModify() { /* do nothing, we only care about modified config values */ }
-	
 	/**
 	 * listen for changed graphics settings and set the
 	 * quick quality to "custom" if anything was changed

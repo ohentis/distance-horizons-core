@@ -38,9 +38,19 @@ public class LodDataBuilder
 				// FIXME: The +1 offset to reproduce the old behavior. Remove this when we get per-face lighting
 				byte light = (byte) ((chunkWrapper.getBlockLight(x, lastY + 1, z) << 4) + chunkWrapper.getSkyLight(x, lastY + 1, z));
 				
-				// using a height map to reduce how many empty blocks positions we have to check would be preferable, but there are some world generators
-				// that don't work well with that, so we have to check the whole column
-				int y = chunkWrapper.getMaxBuildHeight();
+				
+				// determine the starting Y Pos
+				int y = chunkWrapper.getLightBlockingHeightMapValue(x,z);
+				// go up until we reach open air or the world limit
+				IBlockStateWrapper topBlockState = chunkWrapper.getBlockState(x, y, z);
+				while (!topBlockState.isAir() && y < chunkWrapper.getMaxBuildHeight())
+				{
+					// This is necessary in some edge cases with snow layers and some other blocks that may not appear in the height map but do block light.
+					// Interestingly this doesn't appear to be the case in the DhLightingEngine, if this same logic is added there the lighting breaks for the affected blocks.
+					y++;
+					topBlockState = chunkWrapper.getBlockState(x, y, z);
+				}
+				
 				
 				for (; y >= chunkWrapper.getMinBuildHeight(); y--)
 				{

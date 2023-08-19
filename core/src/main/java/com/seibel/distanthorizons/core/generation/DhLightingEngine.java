@@ -103,21 +103,8 @@ public class DhLightingEngine
 						for (int relZ = 0; relZ < LodUtil.CHUNK_WIDTH; relZ++)
 						{
 							// get the light
-							int maxY = Math.max(chunk.getLightBlockingHeightMapValue(relX, relZ), chunk.getSolidHeightMapValue(relX, relZ));
-							
-							IBlockStateWrapper blockState = chunk.getBlockState(relX, maxY, relZ);
-							// go up until we reach open air or the world limit
-							while (!blockState.isAir() && maxY < chunk.getMaxBuildHeight())
-							{
-								// this shouldn't normally be necessary, but in the off change the height map is wrong,
-								// (like with a modded world generator)
-								// this should prevent generating skylights inside the ground
-								maxY++;
-								blockState = chunk.getBlockState(relX, maxY, relZ);
-							}
-							
+							int maxY = chunk.getLightBlockingHeightMapValue(relX, relZ);
 							DhBlockPos skyLightPos = new DhBlockPos(chunk.getMinBlockX() + relX, maxY, chunk.getMinBlockZ() + relZ);
-							
 							if (skyLightPos.y < chunk.getMinBuildHeight() || skyLightPos.y > chunk.getMaxBuildHeight())
 							{
 								// this shouldn't normally happen

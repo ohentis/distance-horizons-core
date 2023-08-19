@@ -175,19 +175,19 @@ public class ConfigFileHandling
 			{
 				if (entry.getType().isEnum())
 				{
-					entry.setWithoutSaving((T) (workConfig.getEnum(entry.getNameWCategory(), (Class<? extends Enum>) entry.getType())));
+					entry.pureSet((T) (workConfig.getEnum(entry.getNameWCategory(), (Class<? extends Enum>) entry.getType())));
 					return;
 				}
 				Class<?> originalClass = ConfigTypeConverters.isClassConvertable(entry.getType());
 				if (originalClass != null)
 				{
-					entry.setWithoutSaving((T) ConfigTypeConverters.convertFromString(originalClass, workConfig.get(entry.getNameWCategory())));
+					entry.pureSet((T) ConfigTypeConverters.convertFromString(originalClass, workConfig.get(entry.getNameWCategory())));
 					return;
 				}
 				
 				if (entry.getType() == workConfig.get(entry.getNameWCategory()).getClass())
 				{ // If the types are the same
-					entry.setWithoutSaving((T) workConfig.get(entry.getNameWCategory()));
+					entry.pureSet((T) workConfig.get(entry.getNameWCategory()));
 					entry.clampWithinRange();
 					return;
 				}
@@ -247,19 +247,11 @@ public class ConfigFileHandling
 					Files.createDirectory(this.configPath.getParent());
 				}
 				
-				try
-				{
-					boolean fileDeleted = Files.deleteIfExists(this.configPath);
-					System.out.println("File at [" + this.configPath + "] was " + (fileDeleted ? "" : "not ") + "able to be deleted.");
-				}
-				catch (AccessDeniedException ignored) { /* temporary fix due to windows/Intellij issues either locking or changing the permissions of the file */ }
+				boolean fileDeleted = Files.deleteIfExists(this.configPath);
+				System.out.println("File at [" + this.configPath + "] was " + (fileDeleted ? "" : "not ") + "able to be deleted.");
 				
 				
-				try
-				{
-					Files.createFile(this.configPath);	
-				}
-				catch (FileAlreadyExistsException ignore) { /* temporary fix due to windows/Intellij issues either locking or changing the permissions of the file */ }
+				Files.createFile(this.configPath);	
 				
 				config.load();
 			}

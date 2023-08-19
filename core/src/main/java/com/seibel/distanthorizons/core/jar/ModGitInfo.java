@@ -19,8 +19,8 @@ public final class ModGitInfo
 	
 	static
 	{
-		String gitMainCommit = "UNKNOWN";
 		String gitMainBranch = "UNKNOWN";
+		String gitMainCommit = "UNKNOWN";
 		String gitCoreCommit = "UNKNOWN";
 		
 		try
@@ -31,22 +31,22 @@ public final class ModGitInfo
 			Config jsonObject = Config.inMemory();
 			JsonFormat.minimalInstance().createParser().parse(jsonString, jsonObject, ParsingMode.REPLACE);
 			
+			gitCoreCommit = jsonObject.get("git_main_branch");
 			gitMainCommit = jsonObject.get("git_main_commit");
 			gitMainBranch = jsonObject.get("git_core_commit");
-			gitCoreCommit = jsonObject.get("git_main_branch");
 		}
 		catch (Exception | Error e)
 		{
 			LOGGER.warn("Unable to get the Git information from " + FILE_NAME);
 		}
 		
-		Git_Main_Commit = gitMainCommit;
 		Git_Core_Commit = gitMainBranch;
+		Git_Main_Commit = gitMainCommit;
 		Git_Main_Branch = gitCoreCommit;
 	}
 	
+	public static final String Git_Main_Branch;
 	public static final String Git_Main_Commit;
 	public static final String Git_Core_Commit;
-	public static final String Git_Main_Branch;
 	
 }

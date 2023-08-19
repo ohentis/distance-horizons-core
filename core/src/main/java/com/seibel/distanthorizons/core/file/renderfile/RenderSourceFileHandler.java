@@ -448,7 +448,7 @@ public class RenderSourceFileHandler implements ILodRenderSourceProvider
 		// Skip updating the cache if the data file is already up-to-date
 		FullDataMetaFile dataFile = this.fullDataSourceProvider.getFileIfExist(file.pos);
 		if (!ALWAYS_INVALIDATE_CACHE && dataFile != null && dataFile.baseMetaData.checksum == file.baseMetaData.dataVersion.get()) {
-			LOGGER.info("Skipping render cache update for {}", file.pos);
+			LOGGER.debug("Skipping render cache update for {}", file.pos);
 			renderSource.localVersion.incrementAndGet();
 			return CompletableFuture.completedFuture(null);
 		}
