@@ -160,7 +160,7 @@ public class WorldRemoteGenerationQueue implements IWorldGenerationQueue, IDebug
 				.reduce(null, (a, b)
 						-> a == null
 						|| b.getValue().priority > a.getValue().priority
-						|| posDistanceSquared(targetPos, b.getKey()) < posDistanceSquared(targetPos, a.getKey())
+						|| (b.getValue().priority == a.getValue().priority && posDistanceSquared(targetPos, b.getKey()) < posDistanceSquared(targetPos, a.getKey()))
 						? b : a);
 		if (mapEntry == null)
 		{
@@ -279,9 +279,11 @@ public class WorldRemoteGenerationQueue implements IWorldGenerationQueue, IDebug
 		for (Map.Entry<DhSectionPos, WorldGenQueueEntry> mapEntry : waitingTasks.entrySet())
 		{
 			r.renderBox(new DebugRenderer.Box(mapEntry.getKey(), -32f, 64f, 0.05f,
-					mapEntry.getValue().request != null
-							? Color.red
-							: Color.blue
+					mapEntry.getValue().request != null ? Color.red
+							: mapEntry.getValue().priority == 3 ? Color.orange
+							: mapEntry.getValue().priority == 2 ? Color.cyan
+							: mapEntry.getValue().priority == 1 ? Color.blue
+							: Color.gray
 			));
 		}
 	}
