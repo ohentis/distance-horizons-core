@@ -622,29 +622,28 @@ public class Config
 								+ EDhApiDistantGeneratorMode.PRE_EXISTING_ONLY + " \n"
 								+ "Only create LOD data for already generated chunks. \n"
 								+ "\n"
-								+ EDhApiDistantGeneratorMode.BIOME_ONLY + " \n"
-								+ "Only generate the biomes and use the biome's \n"
-								+ "grass color, water color, or snow color. \n"
-								+ "Doesn't generate height, everything is shown at sea level. \n"
-								+ "- Fastest \n"
-								+ "\n"
-								+ EDhApiDistantGeneratorMode.BIOME_ONLY_SIMULATE_HEIGHT + " \n"
-								+ "Same as " + EDhApiDistantGeneratorMode.BIOME_ONLY + ", except instead \n"
-								+ "of always using sea level as the LOD height \n"
-								+ "different biome types (mountain, ocean, forest, etc.) \n"
-								+ "use predetermined heights to simulate having height data. \n"
-								+ "- Fastest \n"
+								//not currently implemented
+								//+ EDhApiDistantGeneratorMode.BIOME_ONLY + " \n"
+								//+ "Only generate the biomes and use the biome's \n"
+								//+ "grass color, water color, or snow color. \n"
+								//+ "Doesn't generate height, everything is shown at sea level. \n"
+								//+ "- Fastest \n"
+								//+ "\n"
+								//+ EDhApiDistantGeneratorMode.BIOME_ONLY_SIMULATE_HEIGHT + " \n"
+								//+ "Same as " + EDhApiDistantGeneratorMode.BIOME_ONLY + ", except instead \n"
+								//+ "of always using sea level as the LOD height \n"
+								//+ "different biome types (mountain, ocean, forest, etc.) \n"
+								//+ "use predetermined heights to simulate having height data. \n"
+								//+ "- Fastest \n"
 								+ "\n"
 								+ EDhApiDistantGeneratorMode.SURFACE + " \n"
 								+ "Generate the world surface, \n"
 								+ "this does NOT include trees, \n"
 								+ "or structures. \n"
-								+ "- Faster \n"
 								+ "\n"
 								+ EDhApiDistantGeneratorMode.FEATURES + " \n"
 								+ "Generate everything except structures. \n"
 								+ "WARNING: This may cause world generator bugs or instability when paired with certain world generator mods. \n"
-								+ "- Fast \n"
 								+ "")
 						/*
 							// FULL isn't currently implemented
@@ -654,19 +653,6 @@ public class Config
 							+ "This is the most compatible, but will cause server/simulation lag. \n"
 							+ "- Slow (15-50 ms, with spikes up to 200 ms) \n"
 						*/
-						.build();
-				
-				public static ConfigEntry<ELightGenerationMode> worldGenLightingEngine = new ConfigEntry.Builder<ELightGenerationMode>()
-						.set(ELightGenerationMode.DISTANT_HORIZONS)
-						.comment(""
-								+ " How should Distant Horizons world generation chunk lighting be handled? \n"
-								+ "\n"
-								+ ELightGenerationMode.MINECRAFT + ": Use Minecraft's lighting engine to generate chunk lighting. \n"
-								+ "    Generally higher quality; but may crash MC's lighting engine if there is an issue. \n"
-								+ ELightGenerationMode.DISTANT_HORIZONS + ": Uses Distant Horizons' lighting engine to generate chunk lighting. \n"
-								+ "    May not exactly match MC's, but is more stable for large numbers of world generator threads. \n"
-								+ "\n"
-								+ "This will effect generation speed, but not rendering performance.")
 						.build();
 				
 				public static ConfigEntry<Integer> worldGenerationTimeoutLengthInSeconds = new ConfigEntry.Builder<Integer>()

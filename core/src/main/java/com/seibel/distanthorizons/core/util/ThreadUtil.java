@@ -4,11 +4,18 @@ import com.seibel.distanthorizons.core.config.listeners.ConfigChangeListener;
 import com.seibel.distanthorizons.core.config.types.ConfigEntry;
 import com.seibel.distanthorizons.core.util.objects.DhThreadFactory;
 import com.seibel.distanthorizons.core.util.objects.RateLimitedThreadPoolExecutor;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.concurrent.*;
 
 public class ThreadUtil
 {
+	private static final Logger LOGGER = LogManager.getLogger();
+	
+	/** The prefix isn't strictly required, but makes debugging and profiling much easier. */
+	public static String THREAD_NAME_PREFIX = "DH-";
+	
 	public static int MINIMUM_RELATIVE_PRIORITY = -4;
 	public static int DEFAULT_RELATIVE_PRIORITY = 0;
 	
@@ -20,29 +27,49 @@ public class ThreadUtil
 	
 	// create rate limited thread pool //
 	
-	public static RateLimitedThreadPoolExecutor makeRateLimitedThreadPool(int poolSize, String name, ConfigEntry<Double> runTimeRatioConfigEntry) { return makeRateLimitedThreadPool(poolSize, name, DEFAULT_RELATIVE_PRIORITY, runTimeRatioConfigEntry); }
+	public static RateLimitedThreadPoolExecutor makeRateLimitedThreadPool(int poolSize, String name, ConfigEntry<Double> runTimeRatioConfigEntry) 
+	{
+		return makeRateLimitedThreadPool(poolSize, name, DEFAULT_RELATIVE_PRIORITY, runTimeRatioConfigEntry); 
+	}
 	public static RateLimitedThreadPoolExecutor makeRateLimitedThreadPool(int poolSize, String name, int relativePriority, ConfigEntry<Double> runTimeRatioConfigEntry)
 	{
+		DhThreadFactory threadFactory = new DhThreadFactory(THREAD_NAME_PREFIX + name, Thread.NORM_PRIORITY + relativePriority);
+		return makeRateLimitedThreadPool(poolSize, threadFactory, runTimeRatioConfigEntry);
+	}
+	public static RateLimitedThreadPoolExecutor makeRateLimitedThreadPool(int poolSize, DhThreadFactory threadFactory, ConfigEntry<Double> runTimeRatioConfigEntry)
+	{
 		// remove the old listener if one exists
-		if (THREAD_CHANGE_LISTENERS_BY_THREAD_NAME.containsKey(name))
+		if (THREAD_CHANGE_LISTENERS_BY_THREAD_NAME.containsKey(threadFactory.threadName))
 		{
 			// note: this assumes only one thread pool exists with a given name
-			THREAD_CHANGE_LISTENERS_BY_THREAD_NAME.get(name).close();
-			THREAD_CHANGE_LISTENERS_BY_THREAD_NAME.remove(name);
+			THREAD_CHANGE_LISTENERS_BY_THREAD_NAME.get(threadFactory.threadName).close();
+			THREAD_CHANGE_LISTENERS_BY_THREAD_NAME.remove(threadFactory.threadName);
 		}
 		
-		RateLimitedThreadPoolExecutor executor = makeRateLimitedThreadPool(poolSize, name, runTimeRatioConfigEntry.get(), relativePriority);
+		if (!threadFactory.threadName.startsWith(THREAD_NAME_PREFIX))
+		{
+			// this will only happen if a ThreadFactory is passed in that doesn't have the correct thread name
+			LOGGER.warn("Thread pool with the name ["+threadFactory.threadName+"] is missing the expected Distant Horizons thread prefix ["+THREAD_NAME_PREFIX+"].");
+		}
+		
+		
+		RateLimitedThreadPoolExecutor executor = makeRateLimitedThreadPool(poolSize, runTimeRatioConfigEntry.get(), threadFactory);
 		
 		ConfigChangeListener<Double> changeListener = new ConfigChangeListener<>(runTimeRatioConfigEntry, (newRunTimeRatio) -> { executor.runTimeRatio = newRunTimeRatio; });
-		THREAD_CHANGE_LISTENERS_BY_THREAD_NAME.put(name, changeListener);
+		THREAD_CHANGE_LISTENERS_BY_THREAD_NAME.put(threadFactory.threadName, changeListener);
 		
 		return executor;
 	}
 	
+	
 	/** should only be used if there isn't a config controlling the run time ratio of this thread pool */
 	public static RateLimitedThreadPoolExecutor makeRateLimitedThreadPool(int poolSize, String name, Double runTimeRatio, int relativePriority) 
 	{
-		return new RateLimitedThreadPoolExecutor(poolSize, runTimeRatio, new DhThreadFactory("DH-" + name, Thread.NORM_PRIORITY + relativePriority));
+		return new RateLimitedThreadPoolExecutor(poolSize, runTimeRatio, new DhThreadFactory(THREAD_NAME_PREFIX + name, Thread.NORM_PRIORITY + relativePriority));
+	}
+	public static RateLimitedThreadPoolExecutor makeRateLimitedThreadPool(int poolSize, Double runTimeRatio, DhThreadFactory threadFactory) 
+	{
+		return new RateLimitedThreadPoolExecutor(poolSize, runTimeRatio, threadFactory);
 	}
 	
 	
@@ -56,7 +83,7 @@ public class ThreadUtil
 		return new ThreadPoolExecutor(/*corePoolSize*/ poolSize, /*maxPoolSize*/ poolSize,
 				0L, TimeUnit.MILLISECONDS,
 				new LinkedBlockingQueue<Runnable>(),
-				new DhThreadFactory("DH-" + name, Thread.NORM_PRIORITY + relativePriority));
+				new DhThreadFactory(THREAD_NAME_PREFIX + name, Thread.NORM_PRIORITY + relativePriority));
 	}
 	
 	public static ThreadPoolExecutor makeThreadPool(int poolSize, Class<?> clazz, int relativePriority) { return makeThreadPool(poolSize, clazz.getSimpleName(), relativePriority); }

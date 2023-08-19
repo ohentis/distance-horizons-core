@@ -4,6 +4,7 @@ import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedF
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IFullDataSource;
 import com.seibel.distanthorizons.core.file.metaData.BaseMetaData;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.util.Collection;
@@ -30,5 +31,7 @@ public interface IFullDataSourceProvider extends AutoCloseable
 	CompletableFuture<IFullDataSource> onDataFileUpdate(IFullDataSource source, FullDataMetaFile file, Consumer<IFullDataSource> onUpdated, Function<IFullDataSource, Boolean> updater);
 	File computeDataFilePath(DhSectionPos pos);
 	ExecutorService getIOExecutor();
-	
+
+	@Nullable
+    FullDataMetaFile getFileIfExist(DhSectionPos pos);
 }

@@ -98,6 +98,7 @@ public class ColumnRenderSource
 		this.verticalDataCount = parsedColumnData.verticalSize;
 		this.renderDataContainer = parsedColumnData.dataContainer;
 		this.worldGenStep = parsedColumnData.worldGenStep;
+		this.isEmpty = parsedColumnData.isEmpty;
 		
 		this.debugSourceFlags = new DebugSourceFlag[SECTION_SIZE * SECTION_SIZE];
 		this.fillDebugFlag(0, 0, SECTION_SIZE, SECTION_SIZE, DebugSourceFlag.FILE);
@@ -263,6 +264,7 @@ public class ColumnRenderSource
 				this.debugSourceFlags[i / this.verticalDataCount] = renderSource.debugSourceFlags[i / this.verticalDataCount];
 			}
 		}
+		localVersion.incrementAndGet();
 	}
 	/**
 	 * If the newVerticalSize is different than the current verticalSize,
@@ -275,6 +277,7 @@ public class ColumnRenderSource
 		{
 			this.verticalDataCount = newVerticalSize;
 			this.renderDataContainer = new long[SECTION_SIZE * SECTION_SIZE * this.verticalDataCount];
+			localVersion.incrementAndGet();
 		}
 	}
 	

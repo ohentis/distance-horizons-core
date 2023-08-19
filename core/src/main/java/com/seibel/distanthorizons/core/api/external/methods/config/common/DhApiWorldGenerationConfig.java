@@ -50,9 +50,5 @@ public class DhApiWorldGenerationConfig implements IDhApiWorldGenerationConfig
 	public IDhApiConfigValue<EDhApiDistantGeneratorMode> distantGeneratorMode()
 	{ return new DhApiConfigValue<>(WorldGenerator.distantGeneratorMode); }
 	
-	@Override
-	public IDhApiConfigValue<ELightGenerationMode> lightingEngine()
-	{ return new DhApiConfigValue<>(WorldGenerator.worldGenLightingEngine); }
-	
 	
 }

@@ -5,6 +5,8 @@ import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.I
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSource;
 
+import java.util.concurrent.atomic.AtomicLong;
+
 /**
  * Contains and represents the meta information ({@link DhSectionPos}, {@link BaseMetaData#dataLevel}, etc.)
  * stored at the beginning of files that use the {@link AbstractMetaDataContainerFile}. <Br>
@@ -14,7 +16,7 @@ public class BaseMetaData
 {
 	public DhSectionPos pos;
 	public int checksum;
-	//	public AtomicLong dataVersion; // currently broken
+	public AtomicLong dataVersion = new AtomicLong(Long.MAX_VALUE);
 	public byte dataLevel; // TODO what does this represent?
 	public EDhApiWorldGenerationStep worldGenStep;
 	
@@ -25,11 +27,11 @@ public class BaseMetaData
 	
 	
 	
-	public BaseMetaData(DhSectionPos pos, int checksum, byte dataLevel, EDhApiWorldGenerationStep worldGenStep, long dataTypeId, byte binaryDataFormatVersion)
+	public BaseMetaData(DhSectionPos pos, int checksum, byte dataLevel, EDhApiWorldGenerationStep worldGenStep, long dataTypeId, byte binaryDataFormatVersion, long dataVersion)
 	{
 		this.pos = pos;
 		this.checksum = checksum;
-//		this.dataVersion = new AtomicLong(dataVersion);
+		this.dataVersion = new AtomicLong(dataVersion);
 		this.dataLevel = dataLevel;
 		this.worldGenStep = worldGenStep;
 		

@@ -154,7 +154,7 @@ public class ServerApi
 			}
 		}
 	}
-	public void serverChunkSaveEvent(IChunkWrapper chunk, ILevelWrapper level)
+	public void serverChunkSaveEvent(IChunkWrapper chunkWrapper, ILevelWrapper level)
 	{
 		AbstractDhWorld dhWorld = SharedApi.getAbstractDhWorld();
 		if (dhWorld == null)
@@ -174,13 +174,13 @@ public class ServerApi
 		{
 			// Save or populate the chunk wrapper's lighting
 			// this is done so we don't have to worry about MC unloading the lighting data for this chunk
-			if (chunk.isLightCorrect())
+			if (chunkWrapper.isLightCorrect())
 			{
 				try
 				{
 					// If MC's lighting engine isn't thread safe this may cause the server thread to lag
-					chunk.bakeDhLightingUsingMcLightingEngine();
-					chunk.setUseDhLighting(true);
+					chunkWrapper.bakeDhLightingUsingMcLightingEngine();
+					chunkWrapper.setUseDhLighting(true);
 				}
 				catch (IllegalStateException e)
 				{
@@ -192,12 +192,12 @@ public class ServerApi
 				// generate the chunk's lighting, ignoring neighbors.
 				// not a perfect solution, but should prevent chunks from having completely broken lighting
 				List<IChunkWrapper> nearbyChunkList = new LinkedList<>();
-				nearbyChunkList.add(chunk);
-				DhLightingEngine.INSTANCE.lightChunks(chunk, nearbyChunkList, level.hasSkyLight() ? 15 : 0);
-				chunk.setUseDhLighting(true);
+				nearbyChunkList.add(chunkWrapper);
+				DhLightingEngine.INSTANCE.lightChunk(chunkWrapper, nearbyChunkList, level.hasSkyLight() ? 15 : 0);
+				chunkWrapper.setUseDhLighting(true);
 			}
 			
-			dhLevel.updateChunkAsync(chunk);
+			dhLevel.updateChunkAsync(chunkWrapper);
 		});
 	}
 	

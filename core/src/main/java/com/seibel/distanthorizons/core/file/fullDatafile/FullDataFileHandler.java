@@ -197,9 +197,6 @@ public class FullDataFileHandler implements IFullDataSourceProvider
 		}
 	}
 	
-	
-	
-	
 	protected FullDataMetaFile getLoadOrMakeFile(DhSectionPos pos, boolean allowCreateFile)
 	{
 		FullDataMetaFile metaFile = this.fileBySectionPos.get(pos);
@@ -614,6 +611,12 @@ public class FullDataFileHandler implements IFullDataSourceProvider
 	
 	@Override
 	public ExecutorService getIOExecutor() { return fileHandlerThreadPool; }
+	
+	@Override
+	public FullDataMetaFile getFileIfExist(DhSectionPos pos)
+	{
+		return getLoadOrMakeFile(pos, false);
+	}
 	
 	
 	

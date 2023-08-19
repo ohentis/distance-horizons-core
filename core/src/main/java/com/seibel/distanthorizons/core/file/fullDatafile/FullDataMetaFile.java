@@ -358,7 +358,7 @@ public class FullDataMetaFile extends AbstractMetaDataContainerFile implements I
 	{
 		AbstractFullDataSourceLoader loader = AbstractFullDataSourceLoader.getLoader(data.getClass(), data.getBinaryDataFormatVersion());
 		return new BaseMetaData(data.getSectionPos(), -1,
-				data.getDataDetailLevel(), data.getWorldGenStep(), (loader == null ? 0 : loader.datatypeId), data.getBinaryDataFormatVersion());
+				data.getDataDetailLevel(), data.getWorldGenStep(), (loader == null ? 0 : loader.datatypeId), data.getBinaryDataFormatVersion(), Long.MAX_VALUE);
 	}
 	
 	/**

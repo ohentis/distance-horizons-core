@@ -114,8 +114,8 @@ public class GLState
 		
 		GL32.glBindTexture(GL32.GL_TEXTURE_2D, GL32.glIsTexture(this.texture2D) ? this.texture2D : 0);
 		GL32.glBindVertexArray(GL32.glIsVertexArray(this.vao) ? this.vao : 0);
-		GL32.glBindBuffer(GL32.GL_ARRAY_BUFFER, this.vbo);
-		GL32.glBindBuffer(GL32.GL_ELEMENT_ARRAY_BUFFER, this.ebo);
+		GL32.glBindBuffer(GL32.GL_ARRAY_BUFFER, GL32.glIsBuffer(this.vbo) ? this.vbo : 0);
+		GL32.glBindBuffer(GL32.GL_ELEMENT_ARRAY_BUFFER, GL32.glIsBuffer(this.ebo) ? this.ebo: 0);
 		GL32.glUseProgram(GL32.glIsProgram(this.prog) ? this.prog : 0);
 		
 		GL32.glDepthMask(this.writeToDepthBuffer);

@@ -17,6 +17,7 @@ import com.seibel.distanthorizons.core.file.fullDatafile.FullDataFileHandler;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
+import com.seibel.distanthorizons.core.util.objects.DhThreadFactory;
 import com.seibel.distanthorizons.core.util.objects.UncheckedInterruptedException;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.IWrapperFactory;
@@ -32,6 +33,8 @@ import java.util.function.Consumer;
 public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRenderable
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	
+	public static final DhThreadFactory THREAD_FACTORY = new DhThreadFactory(ThreadUtil.THREAD_NAME_PREFIX + "Gen-Worker-Thread", Thread.MIN_PRIORITY);
 	
 	private final IDhApiWorldGenerator generator;
 	
@@ -529,7 +532,7 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 			worldGeneratorThreadPool.shutdown();
 		}
 		
-		worldGeneratorThreadPool = ThreadUtil.makeRateLimitedThreadPool(threadPoolSize, "DH-Gen-Worker-Thread", Thread.MIN_PRIORITY, Config.Client.Advanced.MultiThreading.runTimeRatioForWorldGenerationThreads);
+		worldGeneratorThreadPool = ThreadUtil.makeRateLimitedThreadPool(threadPoolSize, THREAD_FACTORY, Config.Client.Advanced.MultiThreading.runTimeRatioForWorldGenerationThreads);
 	}
 	
 	/**

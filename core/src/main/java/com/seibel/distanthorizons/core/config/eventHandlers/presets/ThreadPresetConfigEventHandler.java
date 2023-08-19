@@ -22,23 +22,23 @@ public class ThreadPresetConfigEventHandler extends AbstractPresetConfigEventHan
 	
 	
 	
-	public static int getWorldGenDefaultThreadCount() { return getThreadCountByPercent(0.2); }
+	public static int getWorldGenDefaultThreadCount() { return getThreadCountByPercent(0.15); }
 	private final ConfigEntryWithPresetOptions<EThreadPreset, Integer> worldGenThreadCount = new ConfigEntryWithPresetOptions<>(Config.Client.Advanced.MultiThreading.numberOfWorldGenerationThreads,
 			new HashMap<EThreadPreset, Integer>()
 			{{
 				this.put(EThreadPreset.MINIMAL_IMPACT, 1);
 				this.put(EThreadPreset.LOW_IMPACT, getWorldGenDefaultThreadCount());
-				this.put(EThreadPreset.BALANCED, getThreadCountByPercent(0.4));
-				this.put(EThreadPreset.AGGRESSIVE, getThreadCountByPercent(0.6));
+				this.put(EThreadPreset.BALANCED, getThreadCountByPercent(0.25));
+				this.put(EThreadPreset.AGGRESSIVE, getThreadCountByPercent(0.5));
 				//this.put(EThreadPreset.I_PAID_FOR_THE_WHOLE_CPU, getThreadCountByPercent(1.0));
 			}});
-	public static double getWorldGenDefaultRunTimeRatio() { return LOW_THREAD_COUNT_CPU ? 0.5 : 1; }
+	public static double getWorldGenDefaultRunTimeRatio() { return LOW_THREAD_COUNT_CPU ? 0.5 : 0.75; }
 	private final ConfigEntryWithPresetOptions<EThreadPreset, Double> worldGenRunTime = new ConfigEntryWithPresetOptions<>(Config.Client.Advanced.MultiThreading.runTimeRatioForWorldGenerationThreads,
 			new HashMap<EThreadPreset, Double>()
 			{{
 				this.put(EThreadPreset.MINIMAL_IMPACT, LOW_THREAD_COUNT_CPU ? 0.1 : 0.25);
 				this.put(EThreadPreset.LOW_IMPACT, getWorldGenDefaultRunTimeRatio());
-				this.put(EThreadPreset.BALANCED, LOW_THREAD_COUNT_CPU ? 0.5 : 1.0);
+				this.put(EThreadPreset.BALANCED, LOW_THREAD_COUNT_CPU ? 0.5 : 0.75);
 				this.put(EThreadPreset.AGGRESSIVE, LOW_THREAD_COUNT_CPU ? 0.75 : 1.0);
 				//this.put(EThreadPreset.I_PAID_FOR_THE_WHOLE_CPU, 1.0);
 			}});

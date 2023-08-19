@@ -3,6 +3,7 @@ package com.seibel.distanthorizons.core.file.renderfile;
 import com.google.common.collect.HashMultimap;
 import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IFullDataSource;
+import com.seibel.distanthorizons.core.file.fullDatafile.FullDataMetaFile;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.level.ClientLevelModule;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
@@ -18,6 +19,7 @@ import com.seibel.distanthorizons.core.util.FileScanUtil;
 import com.seibel.distanthorizons.core.util.FileUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
+import com.seibel.distanthorizons.core.util.objects.Reference;
 import com.seibel.distanthorizons.core.util.objects.UncheckedInterruptedException;
 import com.seibel.distanthorizons.core.config.Config;
 import org.apache.logging.log4j.Logger;
@@ -35,6 +37,8 @@ import static com.seibel.distanthorizons.core.util.FileScanUtil.RENDER_FILE_POST
 public class RenderSourceFileHandler implements ILodRenderSourceProvider
 {
 	public static final boolean USE_LAZY_LOADING = true;
+	public static final boolean ALWAYS_INVALIDATE_CACHE = false;
+	
 	public static final long RENDER_SOURCE_TYPE_ID = ColumnRenderSource.TYPE_ID;
 	
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
@@ -441,12 +445,23 @@ public class RenderSourceFileHandler implements ILodRenderSourceProvider
 	{
 		DebugRenderer.BoxWithLife box = new DebugRenderer.BoxWithLife(new DebugRenderer.Box(renderSource.sectionPos, 74f, 86f, 0.1f, Color.red), 1.0, 32f, Color.green.darker());
 		
+		// Skip updating the cache if the data file is already up-to-date
+		FullDataMetaFile dataFile = this.fullDataSourceProvider.getFileIfExist(file.pos);
+		if (!ALWAYS_INVALIDATE_CACHE && dataFile != null && dataFile.baseMetaData.checksum == file.baseMetaData.dataVersion.get()) {
+			LOGGER.info("Skipping render cache update for {}", file.pos);
+			renderSource.localVersion.incrementAndGet();
+			return CompletableFuture.completedFuture(null);
+		}
+		
 		// get the full data source loading future
+		final Reference<Long> targetChecksumVersion = new Reference<>(Long.MAX_VALUE);
 		CompletableFuture<IFullDataSource> fullDataSourceFuture =
 				this.fullDataSourceProvider.read(renderSource.getSectionPos())
 						.thenApply((fullDataSource) -> {
 							// the fullDataSource can be null if the thread this was running on was interrupted
 							box.box.color = Color.yellow.darker();
+							FullDataMetaFile file2 = this.fullDataSourceProvider.getFileIfExist(file.pos);
+							targetChecksumVersion.value = file2 == null ? Long.MAX_VALUE : file2.baseMetaData.checksum;
 							return fullDataSource;
 						}).exceptionally((ex) ->
 						{
@@ -468,6 +483,7 @@ public class RenderSourceFileHandler implements ILodRenderSourceProvider
 					{
 						try
 						{
+							file.baseMetaData.dataVersion.set(targetChecksumVersion.value);
 							this.writeRenderSourceToFile(renderSource, file, newRenderSource);
 						}
 						catch (Throwable e)
@@ -522,7 +538,6 @@ public class RenderSourceFileHandler implements ILodRenderSourceProvider
 		}
 		
 		currentRenderSource.updateFromRenderSource(newRenderSource);
-		currentRenderSource.localVersion.incrementAndGet();
 		
 		//file.metaData.dataVersion.set(newDataVersion);
 		file.baseMetaData.dataLevel = currentRenderSource.getDataDetail();

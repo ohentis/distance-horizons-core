@@ -223,6 +223,7 @@ public class RenderMetaDataFile extends AbstractMetaDataContainerFile implements
 		else
 		{
 			if (!doTriggerUpdate) return CompletableFuture.completedFuture(cachedRenderDataSource);
+			
 			// Make a new future, and CAS it, or return the existing future
 			CompletableFuture<ColumnRenderSource> newFuture = new CompletableFuture<>();
 			CompletableFuture<ColumnRenderSource> cas = AtomicsUtil.compareAndExchange(renderSourceLoadFutureRef, null, newFuture);
@@ -334,7 +335,7 @@ public class RenderMetaDataFile extends AbstractMetaDataContainerFile implements
 	private BaseMetaData makeMetaData(ColumnRenderSource renderSource)
 	{
 		return new BaseMetaData(renderSource.getSectionPos(), -1,
-				renderSource.getDataDetail(), renderSource.worldGenStep, RenderSourceFileHandler.RENDER_SOURCE_TYPE_ID, renderSource.getRenderDataFormatVersion());
+				renderSource.getDataDetail(), renderSource.worldGenStep, RenderSourceFileHandler.RENDER_SOURCE_TYPE_ID, renderSource.getRenderDataFormatVersion(), Long.MAX_VALUE);
 	}
 	
 	private FileInputStream getFileInputStream() throws IOException

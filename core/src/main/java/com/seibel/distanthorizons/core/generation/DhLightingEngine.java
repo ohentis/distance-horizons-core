@@ -2,6 +2,7 @@ package com.seibel.distanthorizons.core.generation;
 
 import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.logging.SpamReducedLogger;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.util.LodUtil;
@@ -10,7 +11,6 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import org.apache.logging.log4j.Logger;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * This logic was roughly based on
@@ -36,7 +36,7 @@ public class DhLightingEngine
 	 * @param nearbyChunkList should also contain centerChunk
 	 * @param maxSkyLight should be a value between 0 and 15
 	 */
-	public void lightChunks(IChunkWrapper centerChunk, List<IChunkWrapper> nearbyChunkList, int maxSkyLight)
+	public void lightChunk(IChunkWrapper centerChunk, List<IChunkWrapper> nearbyChunkList, int maxSkyLight)
 	{
 		DhChunkPos centerChunkPos = centerChunk.getChunkPos();
 		
@@ -64,6 +64,7 @@ public class DhLightingEngine
 		
 		// find all adjacent chunks
 		// and get any necessary info from them
+		boolean warningLogged = false;
 		for (IChunkWrapper chunk : nearbyChunkList)
 		{
 			if (chunk != null && requestedAdjacentPositions.contains(chunk.getChunkPos()))
@@ -102,9 +103,33 @@ public class DhLightingEngine
 						for (int relZ = 0; relZ < LodUtil.CHUNK_WIDTH; relZ++)
 						{
 							// get the light
-							int maxY = chunk.getLightBlockingHeightMapValue(relX, relZ);
+							int maxY = Math.max(chunk.getLightBlockingHeightMapValue(relX, relZ), chunk.getSolidHeightMapValue(relX, relZ));
+							
+							IBlockStateWrapper blockState = chunk.getBlockState(relX, maxY, relZ);
+							// go up until we reach open air or the world limit
+							while (!blockState.isAir() && maxY < chunk.getMaxBuildHeight())
+							{
+								// this shouldn't normally be necessary, but in the off change the height map is wrong,
+								// (like with a modded world generator)
+								// this should prevent generating skylights inside the ground
+								maxY++;
+								blockState = chunk.getBlockState(relX, maxY, relZ);
+							}
+							
 							DhBlockPos skyLightPos = new DhBlockPos(chunk.getMinBlockX() + relX, maxY, chunk.getMinBlockZ() + relZ);
+							
+							if (skyLightPos.y < chunk.getMinBuildHeight() || skyLightPos.y > chunk.getMaxBuildHeight())
+							{
+								// this shouldn't normally happen
+								if (!warningLogged)
+								{
+									warningLogged = true;
+									LOGGER.debug("Lighting chunk at pos " + chunk.getChunkPos() + " may have a missing or incomplete heightmap. Chunk min/max [" + chunk.getMinBuildHeight() + "/" + chunk.getMaxBuildHeight() + "], skylight pos: " + skyLightPos);
+								}
+								continue;
+							}
 							skyLightPosQueue.add(new LightPos(skyLightPos, maxSkyLight));
+							
 							
 							// set the light
 							DhBlockPos relBlockPos = skyLightPos.convertToChunkRelativePos();
@@ -142,6 +167,7 @@ public class DhLightingEngine
 				(neighbourChunk, relBlockPos, newLightValue) -> neighbourChunk.setDhSkyLight(relBlockPos.x, relBlockPos.y, relBlockPos.z, newLightValue));
 		
 		
+		centerChunk.setIsDhLightCorrect(true);
 		LOGGER.trace("Finished generating lighting for chunk: [" + centerChunkPos + "]");
 	}
 	
@@ -221,18 +247,10 @@ public class DhLightingEngine
 	//================//
 	
 	@FunctionalInterface
-	interface IGetLightFunc
-	{
-		int getLight(IChunkWrapper chunk, DhBlockPos pos);
-		
-	}
+	interface IGetLightFunc { int getLight(IChunkWrapper chunk, DhBlockPos pos); }
 	
 	@FunctionalInterface
-	interface ISetLightFunc
-	{
-		void setLight(IChunkWrapper chunk, DhBlockPos pos, int lightValue);
-		
-	}
+	interface ISetLightFunc { void setLight(IChunkWrapper chunk, DhBlockPos pos, int lightValue); }
 	
 	private static class LightPos
 	{

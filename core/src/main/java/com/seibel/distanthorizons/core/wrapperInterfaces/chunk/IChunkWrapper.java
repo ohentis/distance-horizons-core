@@ -91,6 +91,8 @@ public interface IChunkWrapper extends IBindable
 				}
 			}
 		}
+		
+		this.setIsDhLightCorrect(true);
 	}
 	
 	

@@ -115,7 +115,7 @@ public class LodRenderSection implements IDebugRenderable
 		if (!this.isRenderingEnabled)
 		{
 			// this only needs to be called when first enabling the section
-			this.markBufferDirty();
+			//this.markBufferDirty();
 		}
 		
 		this.isRenderingEnabled = true;
@@ -284,7 +284,7 @@ public class LodRenderSection implements IDebugRenderable
 	
 	/** @return true if this section is loaded and set to render */
 	public boolean canBuildBuffer() { return this.renderSource != null && this.buildRenderBufferFuture == null && !this.renderSource.isEmpty() && this.isBufferOutdated(); }
-	private boolean isBufferOutdated() { return this.neighborUpdated || (this.renderSource.localVersion.get() - this.lastSwapLocalVersion) > 0; }
+	private boolean isBufferOutdated() { return this.neighborUpdated || this.renderSource.localVersion.get() != this.lastSwapLocalVersion; }
 	
 	/** @return true if this section is loaded and set to render */
 	public boolean canSwapBuffer() { return this.buildRenderBufferFuture != null && this.buildRenderBufferFuture.isDone(); }

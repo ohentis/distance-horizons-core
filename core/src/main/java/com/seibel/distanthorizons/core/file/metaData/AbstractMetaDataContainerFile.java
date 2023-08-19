@@ -155,11 +155,11 @@ public abstract class AbstractMetaDataContainerFile
 			byte loaderVersion = byteBuffer.get();
 			EDhApiWorldGenerationStep worldGenStep = EDhApiWorldGenerationStep.fromValue(byteBuffer.get());
 			long dataTypeId = byteBuffer.getLong();
-			long unusedTimestamp = byteBuffer.getLong(); // not currently implemented
+			long dataVersion = byteBuffer.getLong(); // data versioning
 			LodUtil.assertTrue(byteBuffer.remaining() == METADATA_RESERVED_SIZE);
 			DhSectionPos dataPos = new DhSectionPos(detailLevel, x, z);
 			
-			return new BaseMetaData(dataPos, checksum, dataLevel, worldGenStep, dataTypeId, loaderVersion);
+			return new BaseMetaData(dataPos, checksum, dataLevel, worldGenStep, dataTypeId, loaderVersion, dataVersion);
 		}
 	}
 	
@@ -214,13 +214,12 @@ public abstract class AbstractMetaDataContainerFile
 		try (FileChannel fileChannel = FileChannel.open(tempFile.toPath(), StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING))
 		{
 			fileChannel.position(METADATA_SIZE_IN_BYTES);
-			int checksum;
 			
 			try (DhDataOutputStream compressedOut = new DhDataOutputStream(Channels.newOutputStream(fileChannel));
 					CheckedOutputStream checkedOut = new CheckedOutputStream(compressedOut, new Adler32())) // TODO: Is Adler32 ok?
 			{
 				dataWriterFunc.writeBufferToFile(compressedOut);
-				checksum = (int) checkedOut.getChecksum().getValue();
+				this.baseMetaData.checksum = (int) checkedOut.getChecksum().getValue();
 			}
 			
 			
@@ -231,13 +230,13 @@ public abstract class AbstractMetaDataContainerFile
 			buffer.putInt(this.pos.sectionX);
 			buffer.putInt(Integer.MIN_VALUE); // Unused - y pos
 			buffer.putInt(this.pos.sectionZ);
-			buffer.putInt(checksum);
+			buffer.putInt(this.baseMetaData.checksum);
 			buffer.put(this.pos.sectionDetailLevel);
 			buffer.put(this.baseMetaData.dataLevel);
 			buffer.put(this.baseMetaData.binaryDataFormatVersion);
 			buffer.put(this.baseMetaData.worldGenStep != null ? this.baseMetaData.worldGenStep.value : EDhApiWorldGenerationStep.EMPTY.value); // TODO this null check shouldn't be necessary
 			buffer.putLong(this.baseMetaData.dataTypeId);
-			buffer.putLong(Long.MAX_VALUE); //buff.putLong(this.metaData.dataVersion.get()); // not currently implemented
+			buffer.putLong(this.baseMetaData.dataVersion.get()); // for types that doesn't need data versioning, this will be Long.MAX_VALUE
 			LodUtil.assertTrue(buffer.remaining() == METADATA_RESERVED_SIZE);
 			buffer.flip();
 			fileChannel.write(buffer);

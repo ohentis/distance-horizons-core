@@ -38,7 +38,9 @@ public class LodDataBuilder
 				// FIXME: The +1 offset to reproduce the old behavior. Remove this when we get per-face lighting
 				byte light = (byte) ((chunkWrapper.getBlockLight(x, lastY + 1, z) << 4) + chunkWrapper.getSkyLight(x, lastY + 1, z));
 				
-				int y = chunkWrapper.getLightBlockingHeightMapValue(x, z);
+				// using a height map to reduce how many empty blocks positions we have to check would be preferable, but there are some world generators
+				// that don't work well with that, so we have to check the whole column
+				int y = chunkWrapper.getMaxBuildHeight();
 				
 				for (; y >= chunkWrapper.getMinBuildHeight(); y--)
 				{
