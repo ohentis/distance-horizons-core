@@ -35,7 +35,8 @@ public abstract class AbstractPresetConfigEventHandler<TPresetEnum extends Enum<
 	
 	public AbstractPresetConfigEventHandler()
 	{
-		configGui.addOnScreenChangeListener(() -> this.onConfigUiClosed());
+		if (configGui != null)
+			configGui.addOnScreenChangeListener(() -> this.onConfigUiClosed());
 	}
 	
 	

@@ -10,6 +10,7 @@ import com.seibel.distanthorizons.core.file.fullDatafile.FullDataMetaFile;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
+import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.pos.DhLodPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.util.FullDataPointUtil;
@@ -23,6 +24,7 @@ import org.apache.logging.log4j.Logger;
 
 import javax.annotation.CheckForNull;
 import java.io.*;
+import java.util.function.Consumer;
 
 /**
  * This data source contains every datapoint over its given {@link DhSectionPos}.
@@ -366,6 +368,27 @@ public class CompleteFullDataSource extends FullDataArrayAccessor implements IFu
 			LodUtil.assertTrue(sectPerData != 0);
 			return posToTest.sectionX % sectPerData == 0 && posToTest.sectionZ % sectPerData == 0;
 		}
+	}
+	
+	public void splitIntoChunkSizedAccessors(Consumer<ChunkSizedFullDataAccessor> consumer)
+	{
+		LodUtil.assertTrue(sectionPos.sectionDetailLevel == DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL, "Data source detail level must be at block detail level.");
+		
+		sectionPos.forEachChildAtLevel(LodUtil.CHUNK_DETAIL_LEVEL, childPos -> {
+			ChunkSizedFullDataAccessor accessor = new ChunkSizedFullDataAccessor(new DhChunkPos(childPos.sectionX, childPos.sectionZ));
+			
+			int detailLevelDifference = sectionPos.sectionDetailLevel - childPos.sectionDetailLevel;
+			int childRelativeX = childPos.sectionX - sectionPos.sectionX * BitShiftUtil.powerOfTwo(detailLevelDifference);
+			int childRelativeZ = childPos.sectionZ - sectionPos.sectionZ * BitShiftUtil.powerOfTwo(detailLevelDifference);
+			
+			subView(
+					LodUtil.CHUNK_WIDTH,
+					childRelativeX * LodUtil.CHUNK_WIDTH,
+					childRelativeZ * LodUtil.CHUNK_WIDTH
+			).shadowCopyTo(accessor);
+			
+			consumer.accept(accessor);
+		});
 	}
 	
 	

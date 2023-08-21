@@ -1,9 +1,11 @@
 package com.seibel.distanthorizons.core.level;
 
+import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
 import com.seibel.distanthorizons.core.file.fullDatafile.IFullDataSourceProvider;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -20,7 +22,8 @@ public interface IDhLevel extends AutoCloseable
 	 */
 	ILevelWrapper getLevelWrapper();
 	
-	void updateChunkAsync(IChunkWrapper chunk);
+	@Nullable
+	CompletableFuture<ChunkSizedFullDataAccessor> updateChunkAsync(IChunkWrapper chunk);
 	
 	IFullDataSourceProvider getFileHandler();
 	

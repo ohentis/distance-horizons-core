@@ -195,21 +195,7 @@ public class WorldRemoteGenerationQueue implements IWorldGenerationQueue, IDebug
 				if (chunkDataConsumer == null)
 					return entry.future.cancel(false);
 				
-				sectionPos.forEachChildAtLevel(LodUtil.CHUNK_DETAIL_LEVEL, childPos -> {
-					ChunkSizedFullDataAccessor accessor = new ChunkSizedFullDataAccessor(new DhChunkPos(childPos.sectionX, childPos.sectionZ));
-					
-					int detailLevelDifference = sectionPos.sectionDetailLevel - childPos.sectionDetailLevel;
-					int childRelativeX = childPos.sectionX - sectionPos.sectionX * BitShiftUtil.powerOfTwo(detailLevelDifference);
-					int childRelativeZ = childPos.sectionZ - sectionPos.sectionZ * BitShiftUtil.powerOfTwo(detailLevelDifference);
-					
-					fullDataSource.subView(
-							LodUtil.CHUNK_WIDTH,
-							childRelativeX * LodUtil.CHUNK_WIDTH,
-							childRelativeZ * LodUtil.CHUNK_WIDTH
-					).shadowCopyTo(accessor);
-					
-					chunkDataConsumer.accept(accessor);
-				});
+				fullDataSource.splitIntoChunkSizedAccessors(chunkDataConsumer);
 			}
 			catch (ChannelException | RateLimitedException e)
 			{

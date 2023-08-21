@@ -2,7 +2,6 @@ package com.seibel.distanthorizons.core.multiplayer;
 
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.network.IClientRequestHandler;
 import com.seibel.distanthorizons.core.network.ScopedNetworkEventSource;
 import com.seibel.distanthorizons.core.network.NetworkClient;
 import com.seibel.distanthorizons.core.network.messages.AckMessage;
@@ -10,6 +9,7 @@ import com.seibel.distanthorizons.core.network.messages.HelloMessage;
 import com.seibel.distanthorizons.core.network.messages.PlayerUUIDMessage;
 import com.seibel.distanthorizons.core.network.messages.RemotePlayerConfigMessage;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.Closeable;
 import java.util.UUID;
@@ -26,7 +26,7 @@ public class ClientNetworkState implements Closeable
 	 * Returns the client used by this instance. <p>
 	 * If you need to subscribe to any packet events, create an instance of {@link ScopedNetworkEventSource} using the returned instance.
 	 */
-	public IClientRequestHandler getClient() { return this.client; }
+	public NetworkClient getClient() { return this.client; }
 	
 	/**
 	 * Constructs a new instance.

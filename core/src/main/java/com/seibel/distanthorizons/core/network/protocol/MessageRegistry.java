@@ -35,9 +35,10 @@ public class MessageRegistry
 		this.registerMessage(PlayerUUIDMessage.class, PlayerUUIDMessage::new);
 		this.registerMessage(RemotePlayerConfigMessage.class, RemotePlayerConfigMessage::new);
 		
-		// Full data requests
+		// Full data requests & updates
 		this.registerMessage(FullDataSourceRequestMessage.class, FullDataSourceRequestMessage::new);
 		this.registerMessage(FullDataSourceResponseMessage.class, FullDataSourceResponseMessage::new);
+		this.registerMessage(FullDataSourceUpdateMessage.class, FullDataSourceUpdateMessage::new);
 		
 		// Generation task prioritization
 		this.registerMessage(GenTaskPriorityRequestMessage.class, GenTaskPriorityRequestMessage::new);

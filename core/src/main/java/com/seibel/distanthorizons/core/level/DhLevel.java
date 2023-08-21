@@ -25,7 +25,7 @@ public abstract class DhLevel implements IDhLevel
 	}
 	
 	@Override
-	public void updateChunkAsync(IChunkWrapper chunk)
+	public CompletableFuture<ChunkSizedFullDataAccessor> updateChunkAsync(IChunkWrapper chunk)
 	{
 		CompletableFuture<ChunkSizedFullDataAccessor> future = this.chunkToLodBuilder.tryGenerateData(chunk);
 		if (future != null)
@@ -44,6 +44,7 @@ public abstract class DhLevel implements IDhLevel
 						new DhApiChunkModifiedEvent.EventParam(this.getLevelWrapper(), chunk.getChunkPos().x, chunk.getChunkPos().z));
 			});
 		}
+		return future;
 	}
 	
 	@Override

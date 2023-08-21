@@ -6,6 +6,7 @@ import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedF
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.CompleteFullDataSource;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IFullDataSource;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IIncompleteFullDataSource;
+import com.seibel.distanthorizons.core.file.fullDatafile.FullDataMetaFile;
 import com.seibel.distanthorizons.core.file.fullDatafile.IFullDataSourceProvider;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.multiplayer.ServerPlayerState;
@@ -15,10 +16,12 @@ import com.seibel.distanthorizons.core.network.NetworkServer;
 import com.seibel.distanthorizons.core.network.exceptions.RateLimitedException;
 import com.seibel.distanthorizons.core.network.messages.*;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
+import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.pos.DhLodPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.util.LodUtil;
+import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
@@ -26,9 +29,7 @@ import com.seibel.distanthorizons.coreapi.util.math.Vec3d;
 import org.apache.logging.log4j.Logger;
 
 import javax.annotation.CheckForNull;
-import java.util.Iterator;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.*;
 
 public class DhServerLevel extends DhLevel implements IDhServerLevel
@@ -40,7 +41,7 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 	private final RemotePlayerConnectionHandler remotePlayerConnectionHandler;
 	private final ScopedNetworkEventSource<NetworkServer> eventSource;
 	
-	private final ConcurrentLinkedQueue<IServerPlayerWrapper> worldGenLoopingQueue = new ConcurrentLinkedQueue<>();
+	private final LinkedBlockingQueue<IServerPlayerWrapper> worldGenLoopingQueue = new LinkedBlockingQueue<>();
 	private final ConcurrentMap<DhSectionPos, IncompleteDataSourceEntry> incompleteDataSources = new ConcurrentHashMap<>();
 	private final ConcurrentMap<Long, IncompleteDataSourceEntry> fullDataRequests = new ConcurrentHashMap<>();
 	private final AppliedConfigState<Integer> rateLimitConfig = new AppliedConfigState<>(Config.Client.Advanced.Multiplayer.serverNetworkingRateLimit);
@@ -66,12 +67,16 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 		// TODO implement transparent message handling restriction by level
 		// workaround:
 // 		ServerPlayerState serverPlayerState = remotePlayerConnectionHandler.getConnectedPlayer(msg);
+//		if (serverPlayerState == null) return;
+//		
 // 		if (serverPlayerState.serverPlayer.getLevel() != this.serverLevelWrapper)
 // 			return;
 		
 		this.eventSource.registerHandler(FullDataSourceRequestMessage.class, msg ->
 		{
 			ServerPlayerState serverPlayerState = remotePlayerConnectionHandler.getConnectedPlayer(msg);
+			if (serverPlayerState == null) return;
+			
 			if (serverPlayerState.serverPlayer.getLevel() != this.serverLevelWrapper)
 				return;
 			
@@ -106,6 +111,8 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 		
 		this.eventSource.registerHandler(GenTaskPriorityRequestMessage.class, msg -> {
 			ServerPlayerState serverPlayerState = remotePlayerConnectionHandler.getConnectedPlayer(msg);
+			if (serverPlayerState == null) return;
+			
 			if (serverPlayerState.serverPlayer.getLevel() != this.serverLevelWrapper)
 				return;
 			
@@ -120,7 +127,9 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 			if (entry == null) return;
 			FullDataSourceRequestMessage requestMessage = entry.requestMessages.remove(msg.futureId);
 			
-			remotePlayerConnectionHandler.getConnectedPlayer(msg).pendingFullDataRequests.decrementAndGet();
+			ServerPlayerState serverPlayerState = remotePlayerConnectionHandler.getConnectedPlayer(msg);
+			if (serverPlayerState != null)
+				serverPlayerState.pendingFullDataRequests.decrementAndGet();
 			
 			entry.requestCollectionSemaphore.acquireUninterruptibly(Short.MAX_VALUE);
 			if (entry.requestMessages.isEmpty())
@@ -135,18 +144,12 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 	
 	public void addPlayer(IServerPlayerWrapper serverPlayer)
 	{
-		synchronized (worldGenLoopingQueue)
-		{
-			this.worldGenLoopingQueue.add(serverPlayer);
-		}
+		this.worldGenLoopingQueue.add(serverPlayer);
 	}
 	
 	public void removePlayer(IServerPlayerWrapper serverPlayer)
 	{
-		synchronized (worldGenLoopingQueue)
-		{
-			this.worldGenLoopingQueue.remove(serverPlayer);
-		}
+		boolean ignored = this.worldGenLoopingQueue.remove(serverPlayer);
 	}
 	
 	public void serverTick()
@@ -187,6 +190,42 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 				msg.sendResponse(new FullDataSourceResponseMessage(completeSource, this));
 			}
 		}
+	}
+	
+	@Override
+	public CompletableFuture<ChunkSizedFullDataAccessor> updateChunkAsync(IChunkWrapper chunk)
+	{
+		DhSectionPos sectionPos = new DhSectionPos(chunk.getChunkPos()).convertToDetailLevel(DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
+		FullDataMetaFile metaFile = this.serverside.dataFileHandler.getFileIfExist(sectionPos);
+		int prevChecksum = metaFile != null ? metaFile.baseMetaData.checksum : 0;
+		
+		CompletableFuture<ChunkSizedFullDataAccessor> future = super.updateChunkAsync(chunk);
+		if (future == null)
+			return null;
+		
+		future.thenRun(() ->
+		{
+			if (metaFile == null || metaFile.baseMetaData.checksum == prevChecksum)
+				return;
+			
+			this.serverside.dataFileHandler.read(sectionPos).thenAccept(fullDataSource ->
+			{
+				if (!(fullDataSource instanceof CompleteFullDataSource))
+					return;
+				CompleteFullDataSource completeSource = (CompleteFullDataSource) fullDataSource;
+				
+				for (IServerPlayerWrapper serverPlayer : worldGenLoopingQueue)
+				{
+					ServerPlayerState serverPlayerState = remotePlayerConnectionHandler.getPlayer(serverPlayer);
+					if (serverPlayerState == null) continue;
+					
+					if (chunk.getChunkPos().distance(new DhChunkPos(serverPlayer.getPosition())) <= serverPlayerState.config.renderDistance)
+						serverPlayerState.channelContext.writeAndFlush(new FullDataSourceUpdateMessage(completeSource, this));
+				}
+			});
+		});
+		
+		return future;
 	}
 	
 	@Override

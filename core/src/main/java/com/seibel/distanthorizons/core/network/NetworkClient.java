@@ -19,7 +19,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
-public class NetworkClient extends NetworkEventSource implements IClientRequestHandler, AutoCloseable
+public class NetworkClient extends NetworkEventSource implements AutoCloseable
 {
     private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
