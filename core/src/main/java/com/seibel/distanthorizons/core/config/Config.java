@@ -28,8 +28,10 @@ import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiDistantGenerat
 import com.seibel.distanthorizons.core.config.eventHandlers.QuickRenderToggleConfigEventHandler;
 import com.seibel.distanthorizons.core.config.eventHandlers.RenderCacheConfigEventHandler;
 import com.seibel.distanthorizons.core.config.eventHandlers.UnsafeValuesConfigListener;
+import com.seibel.distanthorizons.core.config.eventHandlers.WorldCurvatureConfigEventHandler;
 import com.seibel.distanthorizons.core.config.eventHandlers.presets.ThreadPresetConfigEventHandler;
 import com.seibel.distanthorizons.core.config.eventHandlers.presets.RenderQualityPresetConfigEventHandler;
+import com.seibel.distanthorizons.core.config.listeners.ConfigChangeListener;
 import com.seibel.distanthorizons.core.config.types.*;
 import com.seibel.distanthorizons.core.config.types.enums.EConfigEntryAppearance;
 import com.seibel.distanthorizons.core.config.types.enums.EConfigEntryPerformance;
@@ -575,6 +577,7 @@ public class Config
 									+ "Note: Due to current limitations, the min value is 50 \n"
 									+ "and the max value is 5000. Any values outside this range \n"
 									+ "will be set to 0 (disabled).")
+							.addListener(WorldCurvatureConfigEventHandler.INSTANCE)
 							.build();
 					
 					public static ConfigEntry<Double> lodBias = new ConfigEntry.Builder<Double>()
@@ -734,6 +737,7 @@ public class Config
 								+ "")
 						.build();
 				
+				// not currently implemented
 				public static ConfigEntry<Boolean> enableMultiverseNetworking = new ConfigEntry.Builder<Boolean>()
 						.set(true)
 						.comment(""
@@ -742,6 +746,7 @@ public class Config
 								+ "")
 						.build();
 				
+				// not currently implemented
 				public static ConfigEntry<Boolean> enableServerNetworking = new ConfigEntry.Builder<Boolean>()
 						.set(false)
 						.comment(""

@@ -19,9 +19,9 @@ import java.util.concurrent.ExecutorService;
 
 public class DhClientServerWorld extends AbstractDhWorld implements IDhClientWorld, IDhServerWorld
 {
-	private final HashMap<ILevelWrapper, DhClientServerLevel> levelObjMap;
-	private final HashSet<DhClientServerLevel> dhLevels;
-	public final LocalSaveStructure saveStructure;
+	private final HashMap<ILevelWrapper, DhClientServerLevel> levelWrapperByDhLevel = new HashMap<>();
+	private final HashSet<DhClientServerLevel> dhLevels = new HashSet<>();
+	public final LocalSaveStructure saveStructure = new LocalSaveStructure();
 	
 	public ExecutorService dhTickerThread = ThreadUtil.makeSingleThreadPool("DH Client Server World Ticker Thread", 2);
 	public EventLoop eventLoop = new EventLoop(this.dhTickerThread, this::_clientTick); //TODO: Rate-limit the loop
@@ -30,12 +30,13 @@ public class DhClientServerWorld extends AbstractDhWorld implements IDhClientWor
 	
 	
 	
+	//=============//
+	// constructor //
+	//=============//
+	
 	public DhClientServerWorld()
 	{
 		super(EWorldEnvironment.Client_Server);
-		this.saveStructure = new LocalSaveStructure();
-		this.levelObjMap = new HashMap<>();
-		this.dhLevels = new HashSet<>();
 		
 		LOGGER.info("Started DhWorld of type " + this.environment);
 		
@@ -44,12 +45,16 @@ public class DhClientServerWorld extends AbstractDhWorld implements IDhClientWor
 	
 	
 	
+	//=========//
+	// methods //
+	//=========//
+	
 	@Override
 	public DhClientServerLevel getOrLoadLevel(ILevelWrapper wrapper)
 	{
 		if (wrapper instanceof IServerLevelWrapper)
 		{
-			return this.levelObjMap.computeIfAbsent(wrapper, (levelWrapper) ->
+			return this.levelWrapperByDhLevel.computeIfAbsent(wrapper, (levelWrapper) ->
 			{
 				File levelFile = this.saveStructure.getLevelFolder(levelWrapper);
 				LodUtil.assertTrue(levelFile != null);
@@ -60,7 +65,7 @@ public class DhClientServerWorld extends AbstractDhWorld implements IDhClientWor
 		}
 		else
 		{
-			return this.levelObjMap.computeIfAbsent(wrapper, (levelWrapper) ->
+			return this.levelWrapperByDhLevel.computeIfAbsent(wrapper, (levelWrapper) ->
 			{
 				IClientLevelWrapper clientLevelWrapper = (IClientLevelWrapper) levelWrapper;
 				IServerLevelWrapper serverLevelWrapper = clientLevelWrapper.tryGetServerSideWrapper();
@@ -68,7 +73,7 @@ public class DhClientServerWorld extends AbstractDhWorld implements IDhClientWor
 				LodUtil.assertTrue(clientLevelWrapper.getDimensionType().equals(serverLevelWrapper.getDimensionType()), "tryGetServerSideWrapper returned a level for a different dimension. ClientLevelWrapper dim: " + clientLevelWrapper.getDimensionType().getDimensionName() + " ServerLevelWrapper dim: " + serverLevelWrapper.getDimensionType().getDimensionName());
 				
 				
-				DhClientServerLevel level = this.levelObjMap.get(serverLevelWrapper);
+				DhClientServerLevel level = this.levelWrapperByDhLevel.get(serverLevelWrapper);
 				if (level == null)
 				{
 					return null;
@@ -81,7 +86,7 @@ public class DhClientServerWorld extends AbstractDhWorld implements IDhClientWor
 	}
 	
 	@Override
-	public DhClientServerLevel getLevel(ILevelWrapper wrapper) { return this.levelObjMap.get(wrapper); }
+	public DhClientServerLevel getLevel(ILevelWrapper wrapper) { return this.levelWrapperByDhLevel.get(wrapper); }
 	
 	@Override
 	public Iterable<? extends IDhLevel> getAllLoadedLevels() { return this.dhLevels; }
@@ -89,21 +94,23 @@ public class DhClientServerWorld extends AbstractDhWorld implements IDhClientWor
 	@Override
 	public void unloadLevel(ILevelWrapper wrapper)
 	{
-		if (this.levelObjMap.containsKey(wrapper))
+		if (this.levelWrapperByDhLevel.containsKey(wrapper))
 		{
 			if (wrapper instanceof IServerLevelWrapper)
 			{
-				LOGGER.info("Unloading level " + this.levelObjMap.get(wrapper));
-				DhClientServerLevel clientServerLevel = this.levelObjMap.remove(wrapper);
-				this.dhLevels.remove(clientServerLevel);
+				LOGGER.info("Unloading level " + this.levelWrapperByDhLevel.get(wrapper));
+				wrapper.onUnload();
+				
+				DhClientServerLevel clientServerLevel = this.levelWrapperByDhLevel.remove(wrapper);
 				clientServerLevel.close();
+				this.dhLevels.remove(clientServerLevel);
 			}
 			else
 			{
 				// If the level wrapper is a Client Level Wrapper, then that means the client side leaves the level,
 				// but note that the server side still has the level loaded. So, we don't want to unload the level,
 				// we just want to stop rendering it.
-				this.levelObjMap.remove(wrapper).stopRenderer(); // Ignore resource warning. The level obj is referenced elsewhere.
+				this.levelWrapperByDhLevel.remove(wrapper).stopRenderer(); // Ignore resource warning. The level obj is referenced elsewhere.
 			}
 		}
 	}
@@ -137,10 +144,18 @@ public class DhClientServerWorld extends AbstractDhWorld implements IDhClientWor
 		for (DhClientServerLevel level : this.dhLevels)
 		{
 			LOGGER.info("Unloading level " + level.getServerLevelWrapper().getDimensionType().getDimensionName());
+			
+			// level wrapper shouldn't be null, but just in case
+			IServerLevelWrapper serverLevelWrapper = level.getServerLevelWrapper();
+			if (serverLevelWrapper != null)
+			{
+				serverLevelWrapper.onUnload();
+			}
+			
 			level.close();
 		}
 		
-		this.levelObjMap.clear();
+		this.levelWrapperByDhLevel.clear();
 		this.eventLoop.close();
 		LOGGER.info("Closed DhWorld of type " + this.environment);
 	}

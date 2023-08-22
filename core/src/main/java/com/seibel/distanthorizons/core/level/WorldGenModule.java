@@ -3,6 +3,7 @@ package com.seibel.distanthorizons.core.level;
 import com.seibel.distanthorizons.core.file.fullDatafile.GeneratedFullDataFileHandler;
 import com.seibel.distanthorizons.core.generation.IWorldGenerationQueue;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.logging.f3.F3Screen;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
 import org.apache.logging.log4j.Logger;
 
@@ -16,7 +17,9 @@ public class WorldGenModule implements Closeable
 	
 	private final GeneratedFullDataFileHandler dataFileHandler;
 	private final GeneratedFullDataFileHandler.IOnWorldGenCompleteListener onWorldGenCompleteListener;
+	
 	private final AtomicReference<WorldGenState> worldGenStateRef = new AtomicReference<>();
+	private final F3Screen.DynamicMessage worldGenF3Message;
 	
 	public static abstract class WorldGenState
 	{
@@ -48,6 +51,22 @@ public class WorldGenModule implements Closeable
 	{
 		this.dataFileHandler = dataFileHandler;
 		this.onWorldGenCompleteListener = onWorldGenCompleteListener;
+		this.worldGenF3Message = new F3Screen.DynamicMessage(() ->
+		{
+			WorldGenState worldGenState = this.worldGenStateRef.get();
+			if (worldGenState != null)
+			{
+				int waiting = worldGenState.worldGenerationQueue.getWaitingTaskCount();
+				int inProgress = worldGenState.worldGenerationQueue.getInProgressTaskCount();
+				
+				return "World Gen Tasks: "+waiting+", (in progress: "+inProgress+")";
+			}
+			else
+			{
+				return "World Gen Disabled";
+			}
+		});
+		
 	}
 	
 	public void startWorldGen(GeneratedFullDataFileHandler dataFileHandler, WorldGenState newWgs)
@@ -121,5 +140,6 @@ public class WorldGenModule implements Closeable
 			}
 		}
 		dataFileHandler.close();
+		this.worldGenF3Message.close();
 	}
 }

@@ -32,7 +32,8 @@ public class DhClientServerLevel extends DhLevel implements IDhClientLevel, IDhS
 	public final ClientLevelModule clientside;
 	
 	private final IServerLevelWrapper serverLevelWrapper;
-	public IClientLevelWrapper clientLevelWrapper;
+	
+	
 	
 	public DhClientServerLevel(AbstractSaveStructure saveStructure, IServerLevelWrapper serverLevelWrapper)
 	{
@@ -41,10 +42,12 @@ public class DhClientServerLevel extends DhLevel implements IDhClientLevel, IDhS
 			LOGGER.warn("unable to create data folder.");
 		}
 		this.serverLevelWrapper = serverLevelWrapper;
-		serverside = new ServerLevelModule(this, serverLevelWrapper, saveStructure);
-		clientside = new ClientLevelModule(this);
+		this.serverside = new ServerLevelModule(this, serverLevelWrapper, saveStructure);
+		this.clientside = new ClientLevelModule(this);
 		LOGGER.info("Started " + DhClientServerLevel.class.getSimpleName() + " for " + serverLevelWrapper + " with saves at " + saveStructure);
 	}
+	
+	
 	
 	//==============//
 	// tick methods //
@@ -105,11 +108,7 @@ public class DhClientServerLevel extends DhLevel implements IDhClientLevel, IDhS
 		clientside.startRenderer();
 	}
 	
-	public void stopRenderer()
-	{
-		clientside.stopRenderer();
-		clientLevelWrapper = null;
-	}
+	public void stopRenderer() { this.clientside.stopRenderer(); }
 	
 	//================//
 	// level handling //

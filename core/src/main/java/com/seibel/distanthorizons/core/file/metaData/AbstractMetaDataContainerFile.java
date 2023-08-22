@@ -215,16 +215,19 @@ public abstract class AbstractMetaDataContainerFile
 		{
 			fileChannel.position(METADATA_SIZE_IN_BYTES);
 			
-			try (DhDataOutputStream compressedOut = new DhDataOutputStream(Channels.newOutputStream(fileChannel));
-					CheckedOutputStream checkedOut = new CheckedOutputStream(compressedOut, new Adler32())) // TODO: Is Adler32 ok?
-			{
-				dataWriterFunc.writeBufferToFile(compressedOut);
-				this.baseMetaData.checksum = (int) checkedOut.getChecksum().getValue();
-			}
+			// the order of these streams is important, otherwise the checksum won't be calculated
+			CheckedOutputStream checkedOut = new CheckedOutputStream(Channels.newOutputStream(fileChannel), new Adler32());
+			// normally a DhStream should be the topmost stream to prevent closing the stream accidentally, but since this stream will be closed immediately after writing anyway, it won't be an issue
+			DhDataOutputStream compressedOut = new DhDataOutputStream(checkedOut);
+			
+			// write the contained data
+			dataWriterFunc.writeBufferToFile(compressedOut);
+			compressedOut.flush();
+			this.baseMetaData.checksum = (int) checkedOut.getChecksum().getValue();
 			
 			
-			fileChannel.position(0);
 			// Write metadata
+			fileChannel.position(0);
 			ByteBuffer buffer = ByteBuffer.allocate(METADATA_SIZE_IN_BYTES);
 			buffer.putInt(METADATA_IDENTITY_BYTES);
 			buffer.putInt(this.pos.sectionX);

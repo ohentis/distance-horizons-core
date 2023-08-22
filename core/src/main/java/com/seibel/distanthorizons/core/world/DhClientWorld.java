@@ -28,8 +28,7 @@ public class DhClientWorld extends AbstractDhWorld implements IDhClientWorld
 	@CheckForNull
 	private final ClientNetworkState networkState;
 
-	// TODO why does this executor have 2 threads?
-	public ExecutorService dhTickerThread = ThreadUtil.makeSingleThreadPool("DH Client World Ticker Thread", 2);
+	public ExecutorService dhTickerThread = ThreadUtil.makeSingleThreadPool("DH Client World Ticker Thread");
 	public EventLoop eventLoop = new EventLoop(this.dhTickerThread, this::_clientTick);
 	
 	
@@ -111,6 +110,7 @@ public class DhClientWorld extends AbstractDhWorld implements IDhClientWorld
 		if (this.levels.containsKey(wrapper))
 		{
 			LOGGER.info("Unloading level " + this.levels.get(wrapper));
+			wrapper.onUnload();
 			this.levels.remove(wrapper).close();
 		}
 	}
@@ -145,6 +145,14 @@ public class DhClientWorld extends AbstractDhWorld implements IDhClientWorld
 		for (DhClientLevel dhClientLevel : this.levels.values())
 		{
 			LOGGER.info("Unloading level " + dhClientLevel.getLevelWrapper().getDimensionType().getDimensionName());
+			
+			// level wrapper shouldn't be null, but just in case
+			IClientLevelWrapper clientLevelWrapper = dhClientLevel.getClientLevelWrapper();
+			if (clientLevelWrapper != null)
+			{
+				clientLevelWrapper.onUnload();
+			}
+			
 			dhClientLevel.close();
 		}
 		

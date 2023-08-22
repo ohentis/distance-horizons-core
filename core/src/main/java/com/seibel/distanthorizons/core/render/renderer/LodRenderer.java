@@ -301,7 +301,15 @@ public class LodRenderer
 		GL32.glBindBuffer(GL32.GL_ARRAY_BUFFER, 0);
 		
 		this.shaderProgram.unbind();
-		DebugRenderer.INSTANCE.render(modelViewProjectionMatrix);
+		
+		if (Config.Client.Advanced.Debugging.debugWireframeRendering.get())
+		{
+			profiler.popPush("Debug wireframes");
+			// Note: this can be very slow if a lot of boxes are being rendered 
+			DebugRenderer.INSTANCE.render(modelViewProjectionMatrix);
+			profiler.popPush("LOD cleanup");
+		}
+		
 		GL32.glClear(GL32.GL_DEPTH_BUFFER_BIT);
 		
 		minecraftGlState.restore();
