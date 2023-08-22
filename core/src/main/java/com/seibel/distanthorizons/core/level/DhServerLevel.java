@@ -30,6 +30,7 @@ import org.apache.logging.log4j.Logger;
 
 import javax.annotation.CheckForNull;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.*;
 
 public class DhServerLevel extends DhLevel implements IDhServerLevel
@@ -195,9 +196,16 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 	@Override
 	public CompletableFuture<ChunkSizedFullDataAccessor> updateChunkAsync(IChunkWrapper chunk)
 	{
-		DhSectionPos sectionPos = new DhSectionPos(chunk.getChunkPos()).convertToDetailLevel(DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
+		DhSectionPos sectionPos = new DhSectionPos(
+				LodUtil.BLOCK_DETAIL_LEVEL,
+				chunk.getMinBlockX(),
+				chunk.getMinBlockZ()
+		).convertToDetailLevel(DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL);
 		FullDataMetaFile metaFile = this.serverside.dataFileHandler.getFileIfExist(sectionPos);
-		int prevChecksum = metaFile != null ? metaFile.baseMetaData.checksum : 0;
+		
+		if (metaFile == null)
+			return super.updateChunkAsync(chunk);
+		int prevChecksum = metaFile.baseMetaData.checksum;
 		
 		CompletableFuture<ChunkSizedFullDataAccessor> future = super.updateChunkAsync(chunk);
 		if (future == null)
@@ -205,24 +213,25 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 		
 		future.thenRun(() ->
 		{
-			if (metaFile == null || metaFile.baseMetaData.checksum == prevChecksum)
+			FullDataMetaFile changedMetaFile = this.serverside.dataFileHandler.getFileIfExist(sectionPos);
+			Objects.requireNonNull(changedMetaFile, "Failed to get meta file for section pos " + sectionPos);
+			
+			if (changedMetaFile.baseMetaData.checksum == prevChecksum)
 				return;
 			
-			this.serverside.dataFileHandler.read(sectionPos).thenAccept(fullDataSource ->
+			IFullDataSource fullDataSource = changedMetaFile.getCachedDataSourceNowOrNull();
+			if (!(fullDataSource instanceof CompleteFullDataSource))
+				return;
+			CompleteFullDataSource completeSource = (CompleteFullDataSource) fullDataSource;
+			
+			for (IServerPlayerWrapper serverPlayer : worldGenLoopingQueue)
 			{
-				if (!(fullDataSource instanceof CompleteFullDataSource))
-					return;
-				CompleteFullDataSource completeSource = (CompleteFullDataSource) fullDataSource;
+				ServerPlayerState serverPlayerState = remotePlayerConnectionHandler.getPlayer(serverPlayer);
+				if (serverPlayerState == null) continue;
 				
-				for (IServerPlayerWrapper serverPlayer : worldGenLoopingQueue)
-				{
-					ServerPlayerState serverPlayerState = remotePlayerConnectionHandler.getPlayer(serverPlayer);
-					if (serverPlayerState == null) continue;
-					
-					if (chunk.getChunkPos().distance(new DhChunkPos(serverPlayer.getPosition())) <= serverPlayerState.config.renderDistance)
-						serverPlayerState.channelContext.writeAndFlush(new FullDataSourceUpdateMessage(completeSource, this));
-				}
-			});
+				if (chunk.getChunkPos().distance(new DhChunkPos(serverPlayer.getPosition())) <= serverPlayerState.config.renderDistance)
+					serverPlayerState.channelContext.writeAndFlush(new FullDataSourceUpdateMessage(completeSource, this));
+			}
 		});
 		
 		return future;
