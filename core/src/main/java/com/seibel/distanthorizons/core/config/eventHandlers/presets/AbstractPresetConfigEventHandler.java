@@ -1,8 +1,10 @@
 package com.seibel.distanthorizons.core.config.eventHandlers.presets;
 
+import com.seibel.distanthorizons.core.api.internal.SharedApi;
 import com.seibel.distanthorizons.core.config.ConfigEntryWithPresetOptions;
 import com.seibel.distanthorizons.core.config.listeners.IConfigListener;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
+import com.seibel.distanthorizons.core.world.EWorldEnvironment;
 import com.seibel.distanthorizons.core.wrapperInterfaces.config.IConfigGui;
 import com.seibel.distanthorizons.coreapi.interfaces.config.IConfigEntry;
 import com.seibel.distanthorizons.coreapi.util.StringUtil;
@@ -35,7 +37,9 @@ public abstract class AbstractPresetConfigEventHandler<TPresetEnum extends Enum<
 	
 	public AbstractPresetConfigEventHandler()
 	{
-		configGui.addOnScreenChangeListener(() -> this.onConfigUiClosed());
+		if (configGui != null) {
+			configGui.addOnScreenChangeListener(this::onConfigUiClosed);
+		}
 	}
 	
 	
