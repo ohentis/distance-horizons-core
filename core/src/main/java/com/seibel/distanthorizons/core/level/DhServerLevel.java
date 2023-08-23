@@ -6,7 +6,6 @@ import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedF
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.CompleteFullDataSource;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IFullDataSource;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IIncompleteFullDataSource;
-import com.seibel.distanthorizons.core.file.fullDatafile.FullDataMetaFile;
 import com.seibel.distanthorizons.core.file.fullDatafile.IFullDataSourceProvider;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.multiplayer.ServerPlayerState;
@@ -30,7 +29,6 @@ import org.apache.logging.log4j.Logger;
 
 import javax.annotation.CheckForNull;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.*;
 
 public class DhServerLevel extends DhLevel implements IDhServerLevel
@@ -196,41 +194,19 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 	@Override
 	public CompletableFuture<ChunkSizedFullDataAccessor> updateChunkAsync(IChunkWrapper chunk)
 	{
-		DhSectionPos sectionPos = new DhSectionPos(
-				LodUtil.BLOCK_DETAIL_LEVEL,
-				chunk.getMinBlockX(),
-				chunk.getMinBlockZ()
-		).convertToDetailLevel(DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL);
-		FullDataMetaFile metaFile = this.serverside.dataFileHandler.getFileIfExist(sectionPos);
-		
-		if (metaFile == null)
-			return super.updateChunkAsync(chunk);
-		int prevChecksum = metaFile.baseMetaData.checksum;
-		
 		CompletableFuture<ChunkSizedFullDataAccessor> future = super.updateChunkAsync(chunk);
 		if (future == null)
 			return null;
 		
-		future.thenRun(() ->
+		future.thenAccept(chunkSizedFullDataAccessor ->
 		{
-			FullDataMetaFile changedMetaFile = this.serverside.dataFileHandler.getFileIfExist(sectionPos);
-			Objects.requireNonNull(changedMetaFile, "Failed to get meta file for section pos " + sectionPos);
-			
-			if (changedMetaFile.baseMetaData.checksum == prevChecksum)
-				return;
-			
-			IFullDataSource fullDataSource = changedMetaFile.getCachedDataSourceNowOrNull();
-			if (!(fullDataSource instanceof CompleteFullDataSource))
-				return;
-			CompleteFullDataSource completeSource = (CompleteFullDataSource) fullDataSource;
-			
 			for (IServerPlayerWrapper serverPlayer : worldGenLoopingQueue)
 			{
 				ServerPlayerState serverPlayerState = remotePlayerConnectionHandler.getPlayer(serverPlayer);
 				if (serverPlayerState == null) continue;
 				
 				if (chunk.getChunkPos().distance(new DhChunkPos(serverPlayer.getPosition())) <= serverPlayerState.config.renderDistance)
-					serverPlayerState.channelContext.writeAndFlush(new FullDataSourceUpdateMessage(completeSource, this));
+					serverPlayerState.channelContext.writeAndFlush(new FullDataPartialUpdateMessage(chunkSizedFullDataAccessor, this));
 			}
 		});
 		

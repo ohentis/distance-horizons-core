@@ -11,28 +11,23 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.multiplayer.ClientNetworkState;
 import com.seibel.distanthorizons.core.network.NetworkClient;
 import com.seibel.distanthorizons.core.network.ScopedNetworkEventSource;
-import com.seibel.distanthorizons.core.network.messages.FullDataSourceRequestMessage;
-import com.seibel.distanthorizons.core.network.messages.FullDataSourceUpdateMessage;
+import com.seibel.distanthorizons.core.network.messages.FullDataPartialUpdateMessage;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
-import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
-import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
-import com.seibel.distanthorizons.coreapi.util.BitShiftUtil;
 import com.seibel.distanthorizons.coreapi.util.math.Mat4f;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.CheckForNull;
 import java.awt.*;
-import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 
 /** The level used when connected to a server */
@@ -93,14 +88,14 @@ public class DhClientLevel extends DhLevel implements IDhClientLevel
 	{
 		assert this.eventSource != null;
 		
-		this.eventSource.registerHandler(FullDataSourceUpdateMessage.class, msg ->
+		this.eventSource.registerHandler(FullDataPartialUpdateMessage.class, msg ->
 		{
 			try
 			{
-				CompleteFullDataSource fullDataSource = msg.getFullDataSource(this);
-				if (fullDataSource == null) return;
+				ChunkSizedFullDataAccessor fullDataAccessor = msg.getFullDataSource(this);
+				if (fullDataAccessor == null) return;
 				
-				fullDataSource.splitIntoChunkSizedAccessors(this::saveWrites);
+				this.saveWrites(fullDataAccessor);
 			}
 			catch (Exception e)
 			{

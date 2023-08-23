@@ -1,13 +1,10 @@
 package com.seibel.distanthorizons.core.network.messages;
 
-import com.seibel.distanthorizons.core.dataObjects.fullData.loader.AbstractFullDataSourceLoader;
-import com.seibel.distanthorizons.core.dataObjects.fullData.loader.CompleteFullDataSourceLoader;
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.CompleteFullDataSource;
+import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
 import com.seibel.distanthorizons.core.level.DhServerLevel;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.network.protocol.FutureTrackableNetworkMessage;
-import com.seibel.distanthorizons.core.network.protocol.INetworkObject;
-import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataInputStream;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataOutputStream;
 import io.netty.buffer.ByteBuf;
@@ -17,20 +14,19 @@ import javax.annotation.Nullable;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
-public class FullDataSourceUpdateMessage extends FutureTrackableNetworkMessage
+public class FullDataPartialUpdateMessage extends FutureTrackableNetworkMessage
 {
-	private CompleteFullDataSource fullDataSource;
+	private ChunkSizedFullDataAccessor fullDataAccessor;
 	private DhServerLevel level;
 	
 	private int levelHashCode;
-	private DhSectionPos sectionPos;
-	private CompleteFullDataSourceLoader fullDataSourceLoader;
+	private DhChunkPos chunkPos;
 	private ByteBuf dataBuffer;
 	
-	public FullDataSourceUpdateMessage() {}
-	public FullDataSourceUpdateMessage(CompleteFullDataSource fullDataSource, DhServerLevel level)
+	public FullDataPartialUpdateMessage() {}
+	public FullDataPartialUpdateMessage(ChunkSizedFullDataAccessor fullDataAccessor, DhServerLevel level)
 	{
-		this.fullDataSource = fullDataSource;
+		this.fullDataAccessor = fullDataAccessor;
 		this.level = level;
 		
 		// TODO Multiverse support
@@ -43,12 +39,14 @@ public class FullDataSourceUpdateMessage extends FutureTrackableNetworkMessage
 		try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream())
 		{
 			DhDataOutputStream dhOutputStream = new DhDataOutputStream(outputStream);
-			fullDataSource.writeToStream(dhOutputStream, level);
+			fullDataAccessor.writeToStream(dhOutputStream, level);
 			dhOutputStream.flush();
 			
 			out.writeInt(levelHashCode);
-			fullDataSource.getSectionPos().encode(out);
-			out.writeByte(fullDataSource.getBinaryDataFormatVersion());
+			
+			out.writeInt(fullDataAccessor.pos.x);
+			out.writeInt(fullDataAccessor.pos.z);
+			
 			out.writeInt(outputStream.size());
 			out.writeBytes(outputStream.toByteArray());
 		}
@@ -58,14 +56,14 @@ public class FullDataSourceUpdateMessage extends FutureTrackableNetworkMessage
 	public void decode0(ByteBuf in)
 	{
 		levelHashCode = in.readInt();
-		sectionPos = INetworkObject.decodeStatic(DhSectionPos.zero(), in);
-		byte dataVersion = in.readByte();
-		this.fullDataSourceLoader = (CompleteFullDataSourceLoader) AbstractFullDataSourceLoader.getLoader(CompleteFullDataSource.TYPE_ID, dataVersion);
+		
+		chunkPos = new DhChunkPos(in.readInt(), in.readInt());
+		
 		this.dataBuffer = in.readBytes(in.readInt());
 	}
 	
 	@Nullable
-	public CompleteFullDataSource getFullDataSource(IDhLevel level) throws IOException, InterruptedException
+	public ChunkSizedFullDataAccessor getFullDataSource(IDhLevel level) throws IOException, InterruptedException
 	{
 		// TODO Multiverse support
 		if (levelHashCode != level.getLevelWrapper().getDimensionType().getDimensionName().hashCode())
@@ -73,7 +71,9 @@ public class FullDataSourceUpdateMessage extends FutureTrackableNetworkMessage
 		
 		try (ByteBufInputStream inputStream = new ByteBufInputStream(dataBuffer))
 		{
-			return fullDataSourceLoader.loadData(sectionPos, new DhDataInputStream(inputStream), level);
+			ChunkSizedFullDataAccessor result = new ChunkSizedFullDataAccessor(chunkPos);
+			result.populateFromStream(new DhDataInputStream(inputStream), level);
+			return result;
 		}
 		finally
 		{

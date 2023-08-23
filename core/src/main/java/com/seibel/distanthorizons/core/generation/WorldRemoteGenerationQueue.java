@@ -238,7 +238,8 @@ public class WorldRemoteGenerationQueue implements IWorldGenerationQueue, IDebug
 		return this.generatorClosingFuture = CompletableFuture.runAsync(() -> {
 			while (!genTaskPriorityRequestSemaphore.tryAcquire())
 			{
-				genTaskPriorityRequest.cancel(false);
+				if (genTaskPriorityRequest.cancel(false))
+					genTaskPriorityRequestSemaphore.release();
 			}
 			
 			while (!pendingTasksSemaphore.tryAcquire(Short.MAX_VALUE))
@@ -246,8 +247,8 @@ public class WorldRemoteGenerationQueue implements IWorldGenerationQueue, IDebug
 				for (WorldGenQueueEntry entry : this.waitingTasks.values())
 				{
 					entry.future.cancel(alsoInterruptRunning);
-					if (entry.request != null)
-						entry.request.cancel(alsoInterruptRunning);
+					if (entry.request != null && entry.request.cancel(alsoInterruptRunning))
+						pendingTasksSemaphore.release();
 				}
 			}
 		});

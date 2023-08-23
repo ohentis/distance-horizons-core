@@ -38,7 +38,7 @@ public class MessageRegistry
 		// Full data requests & updates
 		this.registerMessage(FullDataSourceRequestMessage.class, FullDataSourceRequestMessage::new);
 		this.registerMessage(FullDataSourceResponseMessage.class, FullDataSourceResponseMessage::new);
-		this.registerMessage(FullDataSourceUpdateMessage.class, FullDataSourceUpdateMessage::new);
+		this.registerMessage(FullDataPartialUpdateMessage.class, FullDataPartialUpdateMessage::new);
 		
 		// Generation task prioritization
 		this.registerMessage(GenTaskPriorityRequestMessage.class, GenTaskPriorityRequestMessage::new);
