@@ -10,6 +10,7 @@ import com.seibel.distanthorizons.core.network.messages.PlayerUUIDMessage;
 import com.seibel.distanthorizons.core.network.protocol.NetworkMessage;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import io.netty.channel.ChannelHandlerContext;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.Closeable;
 import java.util.HashMap;
@@ -69,11 +70,13 @@ public class RemotePlayerConnectionHandler implements Closeable
 		return playersByConnection.values();
 	}
 	
+	@Nullable
 	public ServerPlayerState getConnectedPlayer(NetworkMessage msg)
 	{
 		return playersByConnection.get(msg.getChannelContext());
 	}
 	
+	@Nullable
 	public ServerPlayerState getPlayer(IServerPlayerWrapper serverPlayer)
 	{
 		return playersByUUID.get(serverPlayer.getUUID());

@@ -15,6 +15,8 @@ public class RateLimitedThreadPoolExecutor extends ThreadPoolExecutor
 	/** How long it took this thread to run its last task */
 	private final ThreadLocal<Long> lastRunDurationNanoTimeRef = ThreadLocal.withInitial(() -> -1L);
 	
+	private Runnable onTerminatedEventHandler = null;
+	
 	
 	
 	//==============//
@@ -62,5 +64,24 @@ public class RateLimitedThreadPoolExecutor extends ThreadPoolExecutor
 		super.afterExecute(runnable, throwable);
 		this.lastRunDurationNanoTimeRef.set(System.nanoTime() - this.runStartNanoTimeRef.get());
 	}
+	
+	@Override
+	protected void terminated() 
+	{
+		super.terminated();
+		if (this.onTerminatedEventHandler != null)
+		{
+			this.onTerminatedEventHandler.run();
+		}
+	}
+	
+	
+	
+	//==============//
+	// custom logic //
+	//==============//
+	
+	/** only one event handler can be present at a time */
+	public void setOnTerminatedEventHandler(Runnable runnable) { this.onTerminatedEventHandler = runnable; }
 	
 }

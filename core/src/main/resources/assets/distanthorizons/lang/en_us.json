@@ -257,7 +257,7 @@
   "distanthorizons.config.client.advanced.graphics.advancedGraphics.earthCurveRatio":
     "Earth Curve Ratio §6(EXPERIMENTAL)§r",
   "distanthorizons.config.client.advanced.graphics.advancedGraphics.earthCurveRatio.@tooltip":
-    "A value of 1 is equivalent to the curvature of Earth in real life.",
+    "A value of 1 is equivalent to the curvature of Earth in real life. \nThe minimum accepted value is 50 and the maximum value is 5000. \nEverything between 1 and 49 will be rounded up to 50.",
   "distanthorizons.config.client.advanced.graphics.advancedGraphics.lodBias":
     "LOD Bias §6(Affects vanilla terrain)§r",
   "distanthorizons.config.client.advanced.graphics.advancedGraphics.lodBias.@tooltip":

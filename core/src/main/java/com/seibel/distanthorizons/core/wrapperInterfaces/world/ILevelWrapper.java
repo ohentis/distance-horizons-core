@@ -39,10 +39,6 @@ public interface ILevelWrapper extends IDhApiLevelWrapper, IBindable
 	@Override
 	IDhApiDimensionTypeWrapper getDimensionType();
 	
-	int getBlockLight(int x, int y, int z);
-	
-	int getSkyLight(int x, int y, int z);
-	
 	@Override
 	boolean hasCeiling();
 	
@@ -65,7 +61,7 @@ public interface ILevelWrapper extends IDhApiLevelWrapper, IBindable
 	@Deprecated
 	IBiomeWrapper getBiome(DhBlockPos pos);
 	
-	// TODO implement onUnload
-	//  necessary so ChunkToLodBuilder can have its cache cleared after the level closes
+	/** Fired when the level is being unloaded. Doesn't unload the level. */
+	void onUnload();
 	
 }

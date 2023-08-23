@@ -44,7 +44,6 @@ public class WorldRemoteGenerationQueue implements IWorldGenerationQueue, IDebug
 	
 	private final ConcurrentMap<DhSectionPos, WorldGenQueueEntry> waitingTasks = new ConcurrentHashMap<>();
 	private final Semaphore pendingTasksSemaphore = new Semaphore(Short.MAX_VALUE, true);
-	private int pendingTasks() { return Short.MAX_VALUE - pendingTasksSemaphore.availablePermits(); }
 	
 	private CompletableFuture<?> genTaskPriorityRequest = CompletableFuture.completedFuture(null);
 	private final Semaphore genTaskPriorityRequestSemaphore = new Semaphore(1, true);
@@ -87,8 +86,8 @@ public class WorldRemoteGenerationQueue implements IWorldGenerationQueue, IDebug
 	{
 		if (generatorClosingFuture != null || !networkState.getClient().isReady()) return;
 		
-		while (waitingTasks.size() > pendingTasks()
-				&& pendingTasks() < this.networkState.config.fullDataRequestRateLimit
+		while (getWaitingTaskCount() > getInProgressTaskCount()
+				&& getInProgressTaskCount() < this.networkState.config.fullDataRequestRateLimit
 				&& pendingTasksSemaphore.tryAcquire())
 		{
 			sendNewRequest(targetPos);
@@ -195,21 +194,7 @@ public class WorldRemoteGenerationQueue implements IWorldGenerationQueue, IDebug
 				if (chunkDataConsumer == null)
 					return entry.future.cancel(false);
 				
-				sectionPos.forEachChildAtLevel(LodUtil.CHUNK_DETAIL_LEVEL, childPos -> {
-					ChunkSizedFullDataAccessor accessor = new ChunkSizedFullDataAccessor(new DhChunkPos(childPos.sectionX, childPos.sectionZ));
-					
-					int detailLevelDifference = sectionPos.sectionDetailLevel - childPos.sectionDetailLevel;
-					int childRelativeX = childPos.sectionX - sectionPos.sectionX * BitShiftUtil.powerOfTwo(detailLevelDifference);
-					int childRelativeZ = childPos.sectionZ - sectionPos.sectionZ * BitShiftUtil.powerOfTwo(detailLevelDifference);
-					
-					fullDataSource.subView(
-							LodUtil.CHUNK_WIDTH,
-							childRelativeX * LodUtil.CHUNK_WIDTH,
-							childRelativeZ * LodUtil.CHUNK_WIDTH
-					).shadowCopyTo(accessor);
-					
-					chunkDataConsumer.accept(accessor);
-				});
+				fullDataSource.splitIntoChunkSizedAccessors(chunkDataConsumer);
 			}
 			catch (ChannelException | RateLimitedException e)
 			{
@@ -238,10 +223,14 @@ public class WorldRemoteGenerationQueue implements IWorldGenerationQueue, IDebug
 	{
 		ArrayList<String> lines = new ArrayList<>();
 		lines.add("World Remote Generation Queue ["+level.getClientLevelWrapper().getDimensionType().getDimensionName()+"]");
-		lines.add("  Requests: "+this.finishedRequests+" / "+(this.waitingTasks.size() + this.finishedRequests.get())+" (failed: "+ this.failedRequests+")");
-		lines.add("  Pending: "+this.pendingTasks()+" / "+this.networkState.config.fullDataRequestRateLimit);
+		lines.add("Requests: "+this.finishedRequests+" / "+(this.getWaitingTaskCount() + this.finishedRequests.get())+" (failed: "+ this.failedRequests+", rate limit: "+this.networkState.config.fullDataRequestRateLimit+")");
 		return lines.toArray(new String[0]);
 	}
+	
+	@Override
+	public int getWaitingTaskCount() { return this.waitingTasks.size(); }
+	@Override
+	public int getInProgressTaskCount() { return Short.MAX_VALUE - pendingTasksSemaphore.availablePermits(); }
 	
 	@Override
 	public CompletableFuture<Void> startClosing(boolean cancelCurrentGeneration, boolean alsoInterruptRunning)
@@ -249,7 +238,8 @@ public class WorldRemoteGenerationQueue implements IWorldGenerationQueue, IDebug
 		return this.generatorClosingFuture = CompletableFuture.runAsync(() -> {
 			while (!genTaskPriorityRequestSemaphore.tryAcquire())
 			{
-				genTaskPriorityRequest.cancel(false);
+				if (genTaskPriorityRequest.cancel(false))
+					genTaskPriorityRequestSemaphore.release();
 			}
 			
 			while (!pendingTasksSemaphore.tryAcquire(Short.MAX_VALUE))
@@ -257,8 +247,8 @@ public class WorldRemoteGenerationQueue implements IWorldGenerationQueue, IDebug
 				for (WorldGenQueueEntry entry : this.waitingTasks.values())
 				{
 					entry.future.cancel(alsoInterruptRunning);
-					if (entry.request != null)
-						entry.request.cancel(alsoInterruptRunning);
+					if (entry.request != null && entry.request.cancel(alsoInterruptRunning))
+						pendingTasksSemaphore.release();
 				}
 			}
 		});

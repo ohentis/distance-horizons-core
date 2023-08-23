@@ -18,6 +18,9 @@ public interface IWorldGenerationQueue extends Closeable
 	
 	void runCurrentGenTasksUntilBusy(DhBlockPos2D targetPos);
 	
+	int getWaitingTaskCount();
+	int getInProgressTaskCount();
+	
 	CompletableFuture<Void> startClosing(boolean cancelCurrentGeneration, boolean alsoInterruptRunning);
 	void close();
 }

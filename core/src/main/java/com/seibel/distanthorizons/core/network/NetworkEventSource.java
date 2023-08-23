@@ -5,8 +5,10 @@ import com.google.common.collect.Table;
 import com.google.common.collect.Tables;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.network.messages.CancelMessage;
+import com.seibel.distanthorizons.core.network.messages.CloseEvent;
 import com.seibel.distanthorizons.core.network.messages.ExceptionMessage;
 import com.seibel.distanthorizons.core.network.protocol.FutureTrackableNetworkMessage;
+import com.seibel.distanthorizons.core.network.protocol.MessageRegistry;
 import com.seibel.distanthorizons.core.network.protocol.NetworkMessage;
 import io.netty.channel.ChannelException;
 import io.netty.channel.ChannelHandlerContext;
@@ -75,7 +77,13 @@ public abstract class NetworkEventSource
 	
 	public <T extends NetworkMessage> void registerHandler(Class<T> handlerClass, Consumer<T> handlerImplementation)
 	{
-		this.handlers.computeIfAbsent(handlerClass, missingHandlerClass -> new HashSet<>())
+		this.handlers.computeIfAbsent(handlerClass, missingHandlerClass ->
+				{
+					// Will throw if the handler class is not found
+					if (handlerClass != CloseEvent.class)
+						MessageRegistry.INSTANCE.getMessageId(handlerClass);
+					return new HashSet<>();
+				})
 				.add((Consumer<NetworkMessage>) handlerImplementation);
 	}
 	

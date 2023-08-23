@@ -20,6 +20,8 @@ uniform float mircoOffset;
 
 
 /** 
+ * TODO in the future this and curve.vert should be merged together to prevent inconsistencies between the two
+ *
  * Vertex Shader
  * 
  * author: James Seibel

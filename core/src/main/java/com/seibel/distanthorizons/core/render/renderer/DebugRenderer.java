@@ -329,8 +329,6 @@ public class DebugRenderer
 	
 	public void render(Mat4f transform)
 	{
-		if (!Config.Client.Advanced.Debugging.debugWireframeRendering.get()) return;
-		
 		transform_this_frame = transform;
 		Vec3d cam = MC_RENDER.getCameraExactPosition();
 		camf = new Vec3f((float) cam.x, (float) cam.y, (float) cam.z);

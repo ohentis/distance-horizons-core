@@ -1,6 +1,7 @@
 package com.seibel.distanthorizons.core.level;
 
 import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.CompleteFullDataSource;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.file.fullDatafile.IFullDataSourceProvider;
 import com.seibel.distanthorizons.core.file.fullDatafile.RemoteFullDataFileHandler;
@@ -8,6 +9,9 @@ import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.generation.WorldRemoteGenerationQueue;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.multiplayer.ClientNetworkState;
+import com.seibel.distanthorizons.core.network.NetworkClient;
+import com.seibel.distanthorizons.core.network.ScopedNetworkEventSource;
+import com.seibel.distanthorizons.core.network.messages.FullDataPartialUpdateMessage;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
@@ -47,6 +51,8 @@ public class DhClientLevel extends DhLevel implements IDhClientLevel
 	
 	@CheckForNull
 	private final ClientNetworkState networkState;
+	@Nullable
+	private final ScopedNetworkEventSource<NetworkClient> eventSource;
 	public final WorldGenModule worldGenModule;
 	
 	
@@ -63,10 +69,39 @@ public class DhClientLevel extends DhLevel implements IDhClientLevel
 		
 		this.networkState = networkState;
 		this.worldGenModule = new WorldGenModule(dataFileHandler, this);
+		if (networkState != null)
+		{
+			this.eventSource = new ScopedNetworkEventSource<>(networkState.getClient());
+			this.registerNetworkHandlers();
+		}
+		else
+		{
+			this.eventSource = null;
+		}
 		
 		clientside = new ClientLevelModule(this);
 		clientside.startRenderer();
 		LOGGER.info("Started DHLevel for " + this.levelWrapper + " with saves at " + this.saveStructure);
+	}
+	
+	private void registerNetworkHandlers()
+	{
+		assert this.eventSource != null;
+		
+		this.eventSource.registerHandler(FullDataPartialUpdateMessage.class, msg ->
+		{
+			try
+			{
+				ChunkSizedFullDataAccessor fullDataAccessor = msg.getFullDataSource(this);
+				if (fullDataAccessor == null) return;
+				
+				this.saveWrites(fullDataAccessor);
+			}
+			catch (Exception e)
+			{
+				LOGGER.error("Error while updating full data source", e);
+			}
+		});
 	}
 	
 	//==============//

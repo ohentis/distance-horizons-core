@@ -19,6 +19,8 @@
 
 package com.seibel.distanthorizons.core.pos;
 
+import com.seibel.distanthorizons.coreapi.util.math.Vec3d;
+
 import java.util.Objects;
 
 public class DhChunkPos
@@ -48,6 +50,10 @@ public class DhChunkPos
 		// >> 4 is the Same as div 16
 		this(blockPos.x >> 4, blockPos.z >> 4);
 	}
+	public DhChunkPos(Vec3d pos)
+	{
+		this(((int)pos.x) >> 4, ((int)pos.z) >> 4);
+	}
 	public DhChunkPos(long packed) { this(getX(packed), getZ(packed)); }
 	
 	
@@ -71,6 +77,11 @@ public class DhChunkPos
 	public DhBlockPos2D getMinBlockPos() { return new DhBlockPos2D(x << 4, z << 4); }
 	
 	public long getLong() { return toLong(x, z); }
+	
+	public double distance(DhChunkPos other)
+	{
+		return Math.sqrt(Math.pow(x - other.x, 2) + Math.pow(z - other.z, 2));
+	}
 	
 	@Override
 	public boolean equals(Object obj)

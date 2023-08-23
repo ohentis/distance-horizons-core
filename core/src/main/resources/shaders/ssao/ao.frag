@@ -46,16 +46,17 @@ void main()
     {
         vec3 samplePos = vec3(0.0) + (TBN * gKernel[i]);
         samplePos = viewPos + samplePos * gSampleRad;
-
+        
         vec4 offset = gProj * vec4(samplePos + viewPos, 1.0);
         offset.xy /= offset.w;
         offset.xy = offset.xy * HALF_2 + HALF_2;
-
+        
         float geometryDepth = calcViewPosition(offset.xy).z;
-
+        
         float rangeCheck = smoothstep(0.0, 1.0, gSampleRad / abs(viewPos.z - geometryDepth));
-        occlusion_factor += float(geometryDepth >= samplePos.z + 0.05) * rangeCheck;
-
+        // the number added to the samplePos.z can be used to reduce noise in the SSAO application at the cost of reducing the overall affect
+        occlusion_factor += float(geometryDepth >= samplePos.z + 1.0) * rangeCheck;
+        
     }
 
     float visibility_factor = 1.0 - (occlusion_factor / MAX_KERNEL_SIZE);
