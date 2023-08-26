@@ -113,8 +113,8 @@ public interface IMinecraftRenderWrapper extends IBindable
 		int chunkDist = this.getRenderDistance() + 1; // For some reason having '+1' is actually closer to real value
 		
 		DhChunkPos centerChunkPos = mcWrapper.getPlayerChunkPos();
-		int centerChunkX = centerChunkPos.getX();
-		int centerChunkZ = centerChunkPos.getZ();
+		int centerChunkX = centerChunkPos.x;
+		int centerChunkZ = centerChunkPos.z;
 		int chunkDist2Mul4 = chunkDist * chunkDist * 4;
 		
 		// add every position within render distance

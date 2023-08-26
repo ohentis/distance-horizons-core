@@ -31,7 +31,6 @@ import com.seibel.distanthorizons.core.config.eventHandlers.UnsafeValuesConfigLi
 import com.seibel.distanthorizons.core.config.eventHandlers.WorldCurvatureConfigEventHandler;
 import com.seibel.distanthorizons.core.config.eventHandlers.presets.ThreadPresetConfigEventHandler;
 import com.seibel.distanthorizons.core.config.eventHandlers.presets.RenderQualityPresetConfigEventHandler;
-import com.seibel.distanthorizons.core.config.listeners.ConfigChangeListener;
 import com.seibel.distanthorizons.core.config.types.*;
 import com.seibel.distanthorizons.core.config.types.enums.EConfigEntryAppearance;
 import com.seibel.distanthorizons.core.config.types.enums.EConfigEntryPerformance;
@@ -60,6 +59,7 @@ public class Config
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
 	public static ConfigCategory client = new ConfigCategory.Builder().set(Client.class).build();
+	
 	
 	
 	public static class Client
@@ -200,6 +200,7 @@ public class Config
 									+ ETransparency.DISABLED + ": LODs will be opaque. \n"
 									+ "")
 							.setPerformance(EConfigEntryPerformance.MEDIUM)
+							.addListener(RenderCacheConfigEventHandler.INSTANCE)
 							.build();
 					
 					public static ConfigEntry<EBlocksToAvoid> blocksToIgnore = new ConfigEntry.Builder<EBlocksToAvoid>()
@@ -531,6 +532,7 @@ public class Config
 									+ "0 = black \n"
 									+ "1 = normal \n"
 									+ "2 = near white")
+							.addListener(RenderCacheConfigEventHandler.INSTANCE)
 							.build();
 					
 					public static ConfigEntry<Double> saturationMultiplier = new ConfigEntry.Builder<Double>() // TODO: Make this a float (the ClassicConfigGUI doesnt support floats)
@@ -541,6 +543,7 @@ public class Config
 									+ "0 = black and white \n"
 									+ "1 = normal \n"
 									+ "2 = very saturated")
+							.addListener(RenderCacheConfigEventHandler.INSTANCE)
 							.build();
 					
 					public static ConfigEntry<Boolean> enableCaveCulling = new ConfigEntry.Builder<Boolean>()
@@ -1101,6 +1104,26 @@ public class Config
 						.addListener(UnsafeValuesConfigListener.INSTANCE)
 						.build();
 				
+				public static ConfigEntry<Boolean> overrideVanillaGLLogger = new ConfigEntry.Builder<Boolean>()
+						.set(ModInfo.IS_DEV_BUILD)
+						.comment(""
+								+ "Requires a reboot to change. \n"
+								+ "")
+						.build();
+				
+				public static ConfigEntry<EGLErrorHandlingMode> glErrorHandlingMode = new ConfigEntry.Builder<EGLErrorHandlingMode>()
+						.set(ModInfo.IS_DEV_BUILD ? EGLErrorHandlingMode.LOG : EGLErrorHandlingMode.IGNORE)
+						.comment(""
+								+ "Defines how OpenGL errors are handled. \n"
+								+ "May incorrectly catch OpenGL errors thrown by other mods. \n"
+								+ "\n"
+								+ EGLErrorHandlingMode.IGNORE + ": Do nothing. \n"
+								+ EGLErrorHandlingMode.LOG + ": write an error to the log. \n"
+								+ EGLErrorHandlingMode.LOG_THROW + ": write to the log and throw an exception. \n"
+								+ "           Warning: this should only be enabled when debugging the LOD renderer \n" 
+								+ "           as it may break Minecraft's renderer when an exception is thrown. \n"
+								+ "")
+						.build();
 				
 				// can be set to public inorder to show in the config file and UI
 				public static ConfigCategory exampleConfigScreen = new ConfigCategory.Builder()
@@ -1155,10 +1178,10 @@ public class Config
 							.set(new HashMap<String, String>())
 							.build();
 					
-					public static ConfigUIButton uiButtonTest = new ConfigUIButton(() -> {
-						System.setProperty("java.awt.headless", "false"); // Required to make it work
-						JOptionPane.showMessageDialog(null, "Button pressed!", "UITester dialog", JOptionPane.INFORMATION_MESSAGE);
-					});
+					public static ConfigUIButton uiButtonTest = new ConfigUIButton(() -> { new Thread(() -> {
+                        System.setProperty("java.awt.headless", "false"); // Required to make it work
+                        JOptionPane.showMessageDialog(null, "Button pressed!", "UITester dialog", JOptionPane.INFORMATION_MESSAGE);
+                    });});
 					
 					public static ConfigCategory categoryTest = new ConfigCategory.Builder().set(CategoryTest.class).build();
 					

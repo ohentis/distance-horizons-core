@@ -8,9 +8,9 @@ import com.seibel.distanthorizons.core.config.types.enums.EConfigEntryAppearance
  *
  * @author coolGi
  */
-public class ConfigLinkedEntry extends AbstractConfigType<AbstractConfigType, ConfigLinkedEntry>
+public class ConfigLinkedEntry extends AbstractConfigType<AbstractConfigType<?, ?>, ConfigLinkedEntry>
 {
-	public ConfigLinkedEntry(AbstractConfigType value)
+	public ConfigLinkedEntry(AbstractConfigType<?, ?> value)
 	{
 		super(EConfigEntryAppearance.ONLY_IN_GUI, value);
 	}
@@ -21,10 +21,10 @@ public class ConfigLinkedEntry extends AbstractConfigType<AbstractConfigType, Co
 	
 	/** Value shouldn't be changed after creation */
 	@Override
-	public void set(AbstractConfigType newValue) { }
+	public void set(AbstractConfigType<?, ?> newValue) { }
 	
 	
-	public static class Builder extends AbstractConfigType.Builder<AbstractConfigType, Builder>
+	public static class Builder extends AbstractConfigType.Builder<AbstractConfigType<?, ?>, Builder>
 	{
 		/** Appearance shouldn't be changed */
 		@Override

@@ -8,17 +8,48 @@ import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.generation.BatchGenerator;
 import com.seibel.distanthorizons.core.generation.WorldGenerationQueue;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.WorldGeneratorInjector;
 import org.apache.logging.log4j.Logger;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicReference;
-
 public class ServerLevelModule
 {
-	public static class WorldGenState extends WorldGenModule.WorldGenState
+	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	
+	public final IDhServerLevel parentServerLevel;
+	public final AbstractSaveStructure saveStructure;
+	public final GeneratedFullDataFileHandler dataFileHandler;
+	public final AppliedConfigState<Boolean> worldGeneratorEnabledConfig;
+	
+	public final WorldGenModule worldGenModule;
+	
+	
+	
+	public ServerLevelModule(IDhServerLevel parentServerLevel, AbstractSaveStructure saveStructure)
+	{
+		this.parentServerLevel = parentServerLevel;
+		this.saveStructure = saveStructure;
+		this.dataFileHandler = new GeneratedFullDataFileHandler(parentServerLevel, saveStructure);
+		this.worldGeneratorEnabledConfig = new AppliedConfigState<>(Config.Client.Advanced.WorldGenerator.enableDistantGeneration);
+		this.worldGenModule = new WorldGenModule(this.dataFileHandler, this.parentServerLevel);
+	}
+	
+	
+	
+	public void close()
+	{
+		// shutdown the world-gen
+		this.worldGenModule.close();
+		this.dataFileHandler.close();
+	}
+	
+	
+	
+	//================//
+	// helper classes //
+	//================//
+	
+	public static class WorldGenState extends WorldGenModule.AbstractWorldGenState
 	{
 		WorldGenState(IDhServerLevel level)
 		{
@@ -34,45 +65,6 @@ public class ServerLevelModule
 			this.worldGenerationQueue = new WorldGenerationQueue(worldGenerator);
 		}
 		
-	}
-	
-	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
-	public final IServerLevelWrapper levelWrapper;
-	public final IDhServerLevel parent;
-	public final AbstractSaveStructure saveStructure;
-	public final GeneratedFullDataFileHandler dataFileHandler;
-	public final AppliedConfigState<Boolean> worldGeneratorEnabledConfig;
-	public final WorldGenModule worldGenModule;
-	
-	public ServerLevelModule(IDhServerLevel parent, IServerLevelWrapper levelWrapper, AbstractSaveStructure saveStructure)
-	{
-		this.parent = parent;
-		this.levelWrapper = levelWrapper;
-		this.saveStructure = saveStructure;
-		this.dataFileHandler = new GeneratedFullDataFileHandler(parent, saveStructure);
-		this.worldGeneratorEnabledConfig = new AppliedConfigState<>(Config.Client.Advanced.WorldGenerator.enableDistantGeneration);
-		this.worldGenModule = new WorldGenModule(this.dataFileHandler, this.parent);
-	}
-	
-	//===============//
-	// data handling //
-	//===============//
-	public void close()
-	{
-		// shutdown the world-gen
-		this.worldGenModule.close();
-		dataFileHandler.close();
-	}
-	
-	
-	
-	//=======================//
-	// misc helper functions //
-	//=======================//
-	
-	public void dumpRamUsage()
-	{
-		//TODO
 	}
 	
 }

@@ -365,10 +365,10 @@ public class HighDetailIncompleteFullDataSource implements IIncompleteFullDataSo
 	}
 
 	@Override
-	public void writeIdMappings(DhDataOutputStream outputStream, ILevelWrapper levelWrapper) throws IOException
+	public void writeIdMappings(DhDataOutputStream outputStream) throws IOException
 	{
 		outputStream.writeInt(IFullDataSource.DATA_GUARD_BYTE);
-		this.mapping.serialize(outputStream, levelWrapper);
+		this.mapping.serialize(outputStream);
 	}
 
 	@Override

@@ -6,12 +6,10 @@ import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.I
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IIncompleteFullDataSource;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.generation.IWorldGenerationQueue;
-import com.seibel.distanthorizons.core.generation.WorldGenerationQueue;
 import com.seibel.distanthorizons.core.generation.tasks.IWorldGenTaskTracker;
 import com.seibel.distanthorizons.core.generation.tasks.WorldGenResult;
 import com.seibel.distanthorizons.core.level.DhLevel;
 import com.seibel.distanthorizons.core.level.IDhLevel;
-import com.seibel.distanthorizons.core.level.IDhServerLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhLodPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
@@ -80,8 +78,9 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandler
 		this.worldGenQueueRef.set(null);
 		incompleteDataSources.clear(); // clear the incomplete data sources
 	}
-
-	public void removeGenRequestIf(Function<DhSectionPos, Boolean> removeIf) {
+	
+	public void removeGenRequestIf(Function<DhSectionPos, Boolean> removeIf)
+	{
 		HashSet<DhSectionPos> removedRequests = new HashSet<>();
 		
 		this.incompleteDataSources.forEach((pos, dataSource) ->
@@ -119,7 +118,8 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandler
 	//========//
 	
 	@Nullable
-	private CompletableFuture<IFullDataSource> tryStartGenTask(FullDataMetaFile file, IIncompleteFullDataSource dataSource) {
+	private CompletableFuture<IFullDataSource> tryStartGenTask(FullDataMetaFile file, IIncompleteFullDataSource dataSource)
+	{
 		IWorldGenerationQueue worldGenQueue = this.worldGenQueueRef.get();
 		// breaks down the missing positions into the desired detail level that the gen queue could accept
 		if (worldGenQueue != null && !file.genQueueChecked)

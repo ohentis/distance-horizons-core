@@ -58,11 +58,11 @@ public class RenderUtil
 	 */
 	public static boolean isChunkPosInLoadedArea(DhChunkPos pos, DhChunkPos center)
 	{
-		return (pos.getX() >= center.getX() - MC_RENDER.getRenderDistance()
-				&& pos.getX() <= center.getX() + MC_RENDER.getRenderDistance())
+		return (pos.x >= center.x - MC_RENDER.getRenderDistance()
+				&& pos.x <= center.x + MC_RENDER.getRenderDistance())
 				&&
-				(pos.getZ() >= center.getZ() - MC_RENDER.getRenderDistance()
-						&& pos.getZ() <= center.getZ() + MC_RENDER.getRenderDistance());
+				(pos.z >= center.z - MC_RENDER.getRenderDistance()
+						&& pos.z <= center.z + MC_RENDER.getRenderDistance());
 	}
 	
 	/**

@@ -18,10 +18,127 @@ public class WorldGenModule implements Closeable
 	private final GeneratedFullDataFileHandler dataFileHandler;
 	private final GeneratedFullDataFileHandler.IOnWorldGenCompleteListener onWorldGenCompleteListener;
 	
-	private final AtomicReference<WorldGenState> worldGenStateRef = new AtomicReference<>();
+	private final AtomicReference<AbstractWorldGenState> worldGenStateRef = new AtomicReference<>();
 	private final F3Screen.DynamicMessage worldGenF3Message;
 	
-	public static abstract class WorldGenState
+	
+	
+	public WorldGenModule(GeneratedFullDataFileHandler dataFileHandler, GeneratedFullDataFileHandler.IOnWorldGenCompleteListener onWorldGenCompleteListener)
+	{
+		this.dataFileHandler = dataFileHandler;
+		this.onWorldGenCompleteListener = onWorldGenCompleteListener;
+		this.worldGenF3Message = new F3Screen.DynamicMessage(() ->
+		{
+			AbstractWorldGenState worldGenState = this.worldGenStateRef.get();
+			if (worldGenState != null)
+			{
+				int waitingCount = worldGenState.worldGenerationQueue.getWaitingTaskCount();
+				int inProgressCount = worldGenState.worldGenerationQueue.getInProgressTaskCount();
+				
+				return "World Gen Tasks: "+waitingCount+", (in progress: "+inProgressCount+")";
+			}
+			else
+			{
+				return "World Gen Disabled";
+			}
+		});
+		
+	}
+	
+	
+	
+	//===================//
+	// world gen control //
+	//===================//
+	
+	public void startWorldGen(GeneratedFullDataFileHandler dataFileHandler, AbstractWorldGenState newWgs)
+	{
+		// create the new world generator
+		if (!this.worldGenStateRef.compareAndSet(null, newWgs))
+		{
+			LOGGER.warn("Failed to start world gen due to concurrency");
+			newWgs.closeAsync(false);
+		}
+		dataFileHandler.addWorldGenCompleteListener(this.onWorldGenCompleteListener);
+		dataFileHandler.setGenerationQueue(newWgs.worldGenerationQueue);
+	}
+	
+	public void stopWorldGen(GeneratedFullDataFileHandler dataFileHandler)
+	{
+		AbstractWorldGenState worldGenState = this.worldGenStateRef.get();
+		if (worldGenState == null)
+		{
+			LOGGER.warn("Attempted to stop world gen when it was not running");
+			return;
+		}
+		
+		// shut down the world generator
+		while (!this.worldGenStateRef.compareAndSet(worldGenState, null))
+		{
+			worldGenState = this.worldGenStateRef.get();
+			if (worldGenState == null)
+			{
+				return;
+			}
+		}
+		dataFileHandler.clearGenerationQueue();
+		worldGenState.closeAsync(true).join(); //TODO: Make it async.
+		dataFileHandler.removeWorldGenCompleteListener(this.onWorldGenCompleteListener);
+	}
+	
+	/** @param targetPosForGeneration the position that world generation should be centered around */
+	public void worldGenTick(DhBlockPos2D targetPosForGeneration)
+	{
+		AbstractWorldGenState worldGenState = this.worldGenStateRef.get();
+		if (worldGenState != null)
+		{
+			// queue new world generation requests
+			worldGenState.tick(targetPosForGeneration);
+		}
+	}
+	
+	@Override
+	public void close()
+	{
+		// shutdown the world-gen
+		AbstractWorldGenState worldGenState = this.worldGenStateRef.get();
+		if (worldGenState != null)
+		{
+			while (!this.worldGenStateRef.compareAndSet(worldGenState, null))
+			{
+				worldGenState = this.worldGenStateRef.get();
+				if (worldGenState == null)
+				{
+					break;
+				}
+			}
+			
+			if (worldGenState != null)
+			{
+				worldGenState.closeAsync(true).join(); //TODO: Make it async.
+			}
+		}
+		
+		this.dataFileHandler.close();
+		this.worldGenF3Message.close();
+	}
+	
+	
+	
+	//=========//
+	// getters //
+	//=========//
+	
+	public boolean isWorldGenRunning() { return this.worldGenStateRef.get() != null; }
+	
+	
+	
+	//================//
+	// helper classes //
+	//================//
+	
+	/** Handles the {@link IWorldGenerationQueue} and any other necessary world gen information. */
+	public static abstract class AbstractWorldGenState
 	{
 		public IWorldGenerationQueue worldGenerationQueue;
 		
@@ -41,105 +158,8 @@ public class WorldGenModule implements Closeable
 					});
 		}
 		
-		public void tick(DhBlockPos2D targetPosForGeneration)
-		{
-			worldGenerationQueue.runCurrentGenTasksUntilBusy(targetPosForGeneration);
-		}
+		/** @param targetPosForGeneration the position that world generation should be centered around */
+		public void tick(DhBlockPos2D targetPosForGeneration) { this.worldGenerationQueue.runCurrentGenTasksUntilBusy(targetPosForGeneration); }
 	}
 	
-	public WorldGenModule(GeneratedFullDataFileHandler dataFileHandler, GeneratedFullDataFileHandler.IOnWorldGenCompleteListener onWorldGenCompleteListener)
-	{
-		this.dataFileHandler = dataFileHandler;
-		this.onWorldGenCompleteListener = onWorldGenCompleteListener;
-		this.worldGenF3Message = new F3Screen.DynamicMessage(() ->
-		{
-			WorldGenState worldGenState = this.worldGenStateRef.get();
-			if (worldGenState != null)
-			{
-				int waiting = worldGenState.worldGenerationQueue.getWaitingTaskCount();
-				int inProgress = worldGenState.worldGenerationQueue.getInProgressTaskCount();
-				
-				return "World Gen Tasks: "+waiting+", (in progress: "+inProgress+")";
-			}
-			else
-			{
-				return "World Gen Disabled";
-			}
-		});
-		
-	}
-	
-	public void startWorldGen(GeneratedFullDataFileHandler dataFileHandler, WorldGenState newWgs)
-	{
-		// create the new world generator
-		if (!this.worldGenStateRef.compareAndSet(null, newWgs))
-		{
-			LOGGER.warn("Failed to start world gen due to concurrency");
-			newWgs.closeAsync(false);
-		}
-		dataFileHandler.addWorldGenCompleteListener(onWorldGenCompleteListener);
-		dataFileHandler.setGenerationQueue(newWgs.worldGenerationQueue);
-	}
-	
-	public void stopWorldGen(GeneratedFullDataFileHandler dataFileHandler)
-	{
-		WorldGenState worldGenState = this.worldGenStateRef.get();
-		if (worldGenState == null)
-		{
-			LOGGER.warn("Attempted to stop world gen when it was not running");
-			return;
-		}
-		
-		// shut down the world generator
-		while (!this.worldGenStateRef.compareAndSet(worldGenState, null))
-		{
-			worldGenState = this.worldGenStateRef.get();
-			if (worldGenState == null)
-			{
-				return;
-			}
-		}
-		dataFileHandler.clearGenerationQueue();
-		worldGenState.closeAsync(true).join(); //TODO: Make it async.
-		dataFileHandler.removeWorldGenCompleteListener(onWorldGenCompleteListener);
-	}
-	
-	public boolean isWorldGenRunning()
-	{
-		return this.worldGenStateRef.get() != null;
-	}
-	
-	public void worldGenTick(DhBlockPos2D targetPosForGeneration)
-	{
-		WorldGenState worldGenState = this.worldGenStateRef.get();
-		if (worldGenState != null)
-		{
-			// queue new world generation requests
-			worldGenState.tick(targetPosForGeneration);
-		}
-	}
-	
-	public void close()
-	{
-		// shutdown the world-gen
-		WorldGenState worldGenState = this.worldGenStateRef.get();
-		if (worldGenState != null)
-		{
-			while (!this.worldGenStateRef.compareAndSet(worldGenState, null))
-			{
-				worldGenState = this.worldGenStateRef.get();
-				if (worldGenState == null)
-				{
-					break;
-				}
-			}
-			
-			if (worldGenState != null)
-			{
-				worldGenState.closeAsync(true).join(); //TODO: Make it async.
-			}
-		}
-		dataFileHandler.close();
-		this.worldGenF3Message.close();
-	}
 }

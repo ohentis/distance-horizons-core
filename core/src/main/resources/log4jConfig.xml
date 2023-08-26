@@ -19,7 +19,7 @@
 
         <File name="important_logs_file" fileName="logs/important.log">
             <Filters>
-                <ThresholdFilter level="warn"  onMatch="ACCEPT" onMismatch="DENY"/>
+                <ThresholdFilter level="warn" onMatch="ACCEPT" onMismatch="DENY"/>
             </Filters>
             <PatternLayout>
                 <pattern>%d %p %c{1.} [%t] %m%n</pattern>

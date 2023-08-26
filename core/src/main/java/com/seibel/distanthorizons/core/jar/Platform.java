@@ -1,7 +1,7 @@
 package com.seibel.distanthorizons.core.jar;
 
 /**
- * A simple OS getting util based off LWJGL's Platform at org.lwjgl.system.Platform. <br>
+ * A simple OS getting util based off LWJGL's Platform at {@link org.lwjgl.system.Platform}. <br>
  * This version includes some extra utils that we need and removes stuff which we don't.
  *
  * @author coolGi

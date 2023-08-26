@@ -8,12 +8,12 @@ import com.seibel.distanthorizons.core.config.types.enums.EConfigEntryAppearance
  *
  * @author coolGi
  */
-public class ConfigCategory extends AbstractConfigType<Class, ConfigCategory>
+public class ConfigCategory extends AbstractConfigType<Class<?>, ConfigCategory>
 {
 	/** This should not be set by anything other than the config system itself */
 	public String destination;    // Where the category goes to
 	
-	private ConfigCategory(EConfigEntryAppearance appearance, Class value, String destination)
+	private ConfigCategory(EConfigEntryAppearance appearance, Class<?> value, String destination)
 	{
 		super(appearance, value);
 		this.destination = destination;
@@ -32,7 +32,7 @@ public class ConfigCategory extends AbstractConfigType<Class, ConfigCategory>
 		return value;
 	}
 	
-	public static class Builder extends AbstractConfigType.Builder<Class, Builder>
+	public static class Builder extends AbstractConfigType.Builder<Class<?>, Builder>
 	{
 		private String tmpDestination = null;
 		

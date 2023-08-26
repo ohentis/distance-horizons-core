@@ -2,7 +2,7 @@ package com.seibel.distanthorizons.core.config;
 
 import com.seibel.distanthorizons.core.config.types.ConfigEntry;
 
-// TODO: Make this intergrate with the config system
+// TODO: Make this integrate with the config system
 public class AppliedConfigState<T>
 {
 	final ConfigEntry<T> entry;

@@ -17,18 +17,14 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.seibel.distanthorizons.core.wrapperInterfaces.world;
-
-import com.seibel.distanthorizons.api.interfaces.block.IDhApiBiomeWrapper;
-import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IBindable;
+package com.seibel.distanthorizons.api.enums.config;
 
 /**
- * @author James Seibel
- * @version 3-5-2022
+ * @since API 1.0.0
  */
-public interface IBiomeWrapper extends IDhApiBiomeWrapper, IBindable
+public enum EGLErrorHandlingMode
 {
-	String getName();
-	String getSerialString();
-	
+	IGNORE,
+	LOG,
+	LOG_THROW;
 }

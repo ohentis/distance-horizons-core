@@ -152,10 +152,10 @@ public class ChunkSizedFullDataAccessor extends FullDataArrayAccessor
 	}
 	
 	
-	public void writeIdMappings(DhDataOutputStream outputStream, ILevelWrapper levelWrapper) throws IOException
+	public void writeIdMappings(DhDataOutputStream outputStream) throws IOException
 	{
 		outputStream.writeInt(IFullDataSource.DATA_GUARD_BYTE);
-		this.mapping.serialize(outputStream, levelWrapper);
+		this.mapping.serialize(outputStream);
 	}
 	public FullDataPointIdMap readIdMappings(DhDataInputStream inputStream, ILevelWrapper levelWrapper) throws IOException, InterruptedException
 	{
@@ -197,7 +197,7 @@ public class ChunkSizedFullDataAccessor extends FullDataArrayAccessor
 			return;
 		}
 		
-		this.writeIdMappings(outputStream, level.getLevelWrapper());
+		this.writeIdMappings(outputStream);
 	}
 	
 	
