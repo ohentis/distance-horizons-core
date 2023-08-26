@@ -7,11 +7,10 @@ import com.seibel.distanthorizons.core.config.types.AbstractConfigType;
 import com.seibel.distanthorizons.core.config.types.ConfigEntry;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftSharedWrapper;
+import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
-import java.nio.file.AccessDeniedException;
-import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -19,63 +18,67 @@ import java.nio.file.Path;
  * Handles reading and writing config files.
  *
  * @author coolGi
- * @version 2023-7-16
+ * @version 2023-8-26
  */
 public class ConfigFileHandling
 {
-	private static final Logger LOGGER = ConfigBase.LOGGER;
-	
 	public final ConfigBase configBase;
 	public final Path configPath;
 	
+	private final Logger LOGGER;
+	
+	/** This is the object for night-config */
+	private final CommentedFileConfig nightConfig;
+	
 	public ConfigFileHandling(ConfigBase configBase)
 	{
+		this.LOGGER = LogManager.getLogger(this.getClass().getSimpleName() + ", " + configBase.modID);
 		this.configBase = configBase;
+		
 		configPath = SingletonInjector.INSTANCE.get(IMinecraftSharedWrapper.class)
 				.getInstallationDirectory().toPath().resolve("config").resolve(this.configBase.modName + ".toml");
+		
+		this.nightConfig = CommentedFileConfig.builder(configPath.toFile()).build();
 	}
 	
 	/** Saves the entire config to the file */
 	public void saveToFile()
 	{
-		CommentedFileConfig config = CommentedFileConfig.builder(configPath.toFile()).build();
+		saveToFile(this.nightConfig);
+	}
+	/** Saves the entire config to the file */
+	public void saveToFile(CommentedFileConfig nightConfig)
+	{
 		if (!Files.exists(configPath)) // Try to check if the config exists
-			try
-			{
-				if (!this.configPath.getParent().toFile().exists())
-				{
-					Files.createDirectory(this.configPath.getParent());
-				}
-				Files.createFile(configPath);
-			}
-			catch (IOException ex)
-			{
-				ex.printStackTrace();
-			}
+		{
+			reCreateFile(configPath);
+		}
 		
-		loadConfig(config);
+		
+		loadNightConfig(nightConfig);
+		
 		
 		for (AbstractConfigType<?, ?> entry : this.configBase.entries)
 		{
 			if (ConfigEntry.class.isAssignableFrom(entry.getClass()))
 			{
-				createComment((ConfigEntry<?>) entry, config);
-				saveEntry((ConfigEntry<?>) entry, config);
+				createComment((ConfigEntry<?>) entry, nightConfig);
+				saveEntry((ConfigEntry<?>) entry, nightConfig);
 			}
 		}
 		
 		
 		try
 		{
-			config.save();
+			nightConfig.save();
 		}
 		catch (Exception e)
 		{
 			// If it fails to save, crash game
 			SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class).crashMinecraft("Failed to save config at [" + configPath.toString() + "]", e);
 		}
-		config.close();
 	}
+	
 	/**
 	 * Loads the entire config from the file
 	 *
@@ -83,46 +86,50 @@ public class ConfigFileHandling
 	 */
 	public void loadFromFile()
 	{
-		CommentedFileConfig config = CommentedFileConfig.builder(configPath.toFile()).build();
+		loadFromFile(nightConfig);
+	}
+	/**
+	 * Loads the entire config from the file
+	 *
+	 * @apiNote This overwrites any value currently stored in the config
+	 */
+	public void loadFromFile(CommentedFileConfig nightConfig)
+	{
 		// Attempt to load the file and if it fails then save config to file
-		try
+		if (Files.exists(configPath))
 		{
-			if (Files.exists(configPath))
-				config.load();
-			else
-			{
-				saveToFile();
-				return;
-			}
+			loadNightConfig(nightConfig);
 		}
-		catch (Exception e)
+		else
 		{
-			e.printStackTrace();
-			saveToFile();
+			reCreateFile(configPath);
 			return;
 		}
+		
 		
 		// Load all the entries
 		for (AbstractConfigType<?, ?> entry : this.configBase.entries)
 		{
-			if (ConfigEntry.class.isAssignableFrom(entry.getClass()))
+			if (
+					ConfigEntry.class.isAssignableFrom(entry.getClass()) &&
+					entry.getAppearance().showInFile
+			)
 			{
-				createComment((ConfigEntry<?>) entry, config);
-				loadEntry((ConfigEntry<?>) entry, config);
+				createComment((ConfigEntry<?>) entry, nightConfig);
+				loadEntry((ConfigEntry<?>) entry, nightConfig);
 			}
 		}
 		
 		
 		try
 		{
-			config.save();
+			nightConfig.save();
 		}
 		catch (Exception e)
 		{
 			// If it fails to save, crash game
 			SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class).crashMinecraft("Failed to save config at [" + configPath.toString() + "]", e);
 		}
-		config.close();
 	}
 	
 	
@@ -131,142 +138,148 @@ public class ConfigFileHandling
 	// Save an entry when only given the entry
 	public void saveEntry(ConfigEntry<?> entry)
 	{
-		CommentedFileConfig config = CommentedFileConfig.builder(configPath.toFile()).build();
-		loadConfig(config);
-		saveEntry(entry, config);
-		config.save();
-		config.close();
+		saveEntry(entry, nightConfig);
+		nightConfig.save();
 	}
-	// Save an entry
-	@SuppressWarnings("unchecked")
+	/** Save an entry */
 	public void saveEntry(ConfigEntry<?> entry, CommentedFileConfig workConfig)
 	{
 		if (!entry.getAppearance().showInFile) return;
 		if (entry.getTrueValue() == null)
 			throw new IllegalArgumentException("Entry [" + entry.getNameWCategory() + "] is null, this may be a problem with [" + configBase.modName + "]. Please contact the authors");
 		
-		Class<?> originalClass = ConfigTypeConverters.isClassConvertable(entry.getType());
-		if (originalClass != null)
-		{
-			workConfig.set(entry.getNameWCategory(), ConfigTypeConverters.convertToString(originalClass, entry.getTrueValue()));
-			return;
-		}
-		workConfig.set(entry.getNameWCategory(), entry.getTrueValue());
+		workConfig.set(entry.getNameWCategory(), ConfigTypeConverters.attemptToConvertToString(entry.getType(), entry.getTrueValue()));
 	}
 	
-	// Loads an entry when only given the entry
+	/** Loads an entry when only given the entry */
 	public void loadEntry(ConfigEntry<?> entry)
 	{
-		CommentedFileConfig config = CommentedFileConfig.builder(configPath.toFile()).autosave().build();
-		loadConfig(config);
-		loadEntry(entry, config);
-		config.close();
-		
+		loadEntry(entry, nightConfig);
 	}
-	// Loads an entry
-	@SuppressWarnings("unchecked") // Suppress due to its always safe
-	public <T> void loadEntry(ConfigEntry<T> entry, CommentedFileConfig workConfig)
+	/** Loads an entry */
+	@SuppressWarnings("unchecked")
+	public <T> void loadEntry(ConfigEntry<T> entry, CommentedFileConfig nightConfig)
 	{
-		if (!entry.getAppearance().showInFile) return;
+		if (!entry.getAppearance().showInFile)
+			return;
 		
-		if (workConfig.contains(entry.getNameWCategory()))
+		if (!nightConfig.contains(entry.getNameWCategory()))
 		{
-			try
+			saveEntry(entry, nightConfig);
+			return;
+		}
+		
+		
+		try
+		{
+			if (entry.getType().isEnum())
 			{
-				if (entry.getType().isEnum())
-				{
-					entry.pureSet((T) (workConfig.getEnum(entry.getNameWCategory(), (Class<? extends Enum>) entry.getType())));
-					return;
-				}
-				Class<?> originalClass = ConfigTypeConverters.isClassConvertable(entry.getType());
-				if (originalClass != null)
-				{
-					entry.pureSet((T) ConfigTypeConverters.convertFromString(originalClass, workConfig.get(entry.getNameWCategory())));
-					return;
-				}
-				
-				if (entry.getType() == workConfig.get(entry.getNameWCategory()).getClass())
-				{ // If the types are the same
-					entry.pureSet((T) workConfig.get(entry.getNameWCategory()));
-					entry.clampWithinRange();
-					return;
-				}
-				
-				LOGGER.warn("Entry [" + entry.getNameWCategory() + "] is invalid. Expected " + entry.getType() + " but got " + workConfig.get(entry.getNameWCategory()).getClass() + ". Using default value.");
-				saveEntry(entry, workConfig);
+				entry.pureSet((T) (nightConfig.getEnum(entry.getNameWCategory(), (Class<? extends Enum>) entry.getType())));
+				return;
 			}
-			catch (Exception e)
-			{
-//                e.printStackTrace();
-				LOGGER.warn("Entry [" + entry.getNameWCategory() + "] had an invalid value when loading the config. Using default value.");
-				saveEntry(entry, workConfig);
+			
+			entry.pureSet((T) ConfigTypeConverters.attemptToConvertFromString(entry.getType(), nightConfig.get(entry.getNameWCategory())));
+			
+			if (entry.getTrueValue() == null) {
+				LOGGER.warn("Entry [" + entry.getNameWCategory() + "] returned as null from the config. Using default value.");
+				entry.pureSet(entry.getDefaultValue());
 			}
 		}
-		else
+		catch (Exception e)
 		{
-			saveEntry(entry, workConfig);
+//                e.printStackTrace();
+			LOGGER.warn("Entry [" + entry.getNameWCategory() + "] had an invalid value when loading the config. Using default value.");
+			entry.pureSet(entry.getDefaultValue());
 		}
 	}
 	
 	// Creates the comment for an entry when only given the entry
 	public void createComment(ConfigEntry<?> entry)
 	{
-		CommentedFileConfig config = CommentedFileConfig.builder(configPath.toFile()).autosave().build();
-		loadConfig(config);
-		createComment(entry, config);
-		config.close();
+		createComment(entry, nightConfig);
 	}
 	// Creates a comment for an entry
-	public void createComment(ConfigEntry<?> entry, CommentedFileConfig workConfig)
+	public void createComment(ConfigEntry<?> entry, CommentedFileConfig nightConfig)
 	{
-		if (!entry.getAppearance().showInFile)
+		if (
+				!entry.getAppearance().showInFile || 
+				entry.getComment() == null
+		)
 			return;
-		if (entry.getComment() != null)
-		{
-			workConfig.setComment(entry.getNameWCategory(), " " + entry.getComment().replaceAll("\n", "\n ") + "\n ");
-		}
+		
+		nightConfig.setComment(entry.getNameWCategory(), " " + entry.getComment().replaceAll("\n", "\n ") + "\n ");
 	}
 	
 	
 	
 	
-	/** Does config.load(); but with error checking */
-	public void loadConfig(CommentedFileConfig config)
+	
+	/**
+	 * Uses {@link ConfigFileHandling#nightConfig} to do {@link CommentedFileConfig#load()} but with error checking
+	 *
+	 * @apiNote This overwrites any value currently stored in the config
+	 */
+	public void loadNightConfig()
+	{
+		loadNightConfig(this.nightConfig);
+	}
+	/**
+	 * Does {@link CommentedFileConfig#load()} but with error checking
+	 *
+	 * @apiNote This overwrites any value currently stored in the config
+	 */
+	public void loadNightConfig(CommentedFileConfig nightConfig)
 	{
 		try
 		{
-			config.load();
-		}
-		catch (Exception e)
-		{
-			System.out.println("Loading file failed because of this expectation:\n" + e);
 			try
-			{ // Now try remaking the file and loading it
-				if (!this.configPath.getParent().toFile().exists())
-				{
-					Files.createDirectory(this.configPath.getParent());
-				}
-				
-				boolean fileDeleted = Files.deleteIfExists(this.configPath);
-				System.out.println("File at [" + this.configPath + "] was " + (fileDeleted ? "" : "not ") + "able to be deleted.");
-				
-				
-				Files.createFile(this.configPath);	
-				
-				config.load();
-			}
-			catch (IOException ex)
 			{
-				System.out.println("Creating file failed");
-				ex.printStackTrace();
-				SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class).crashMinecraft("Loading file and resetting config file failed at path [" + configPath + "]. Please check the file is ok and you have the permissions", ex);
+				if (!Files.exists(this.configPath))
+					Files.createFile(this.configPath);
+				nightConfig.load();
 			}
+			catch (Exception e)
+			{
+				LOGGER.warn("Loading file failed because of this expectation:\n" + e);
+				
+				reCreateFile(this.configPath);
+				
+				nightConfig.load();
+			}
+		}
+		catch (Exception ex)
+		{
+			System.out.println("Creating file failed");
+			LOGGER.error(ex);
+			SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class).crashMinecraft("Loading file and resetting config file failed at path [" + configPath + "]. Please check the file is ok and you have the permissions", ex);
 		}
 	}
 	
 	
+	
+	public static void reCreateFile(Path path)
+	{
+		try
+		{
+			Files.deleteIfExists(path);
+			
+			if (!path.getParent().toFile().exists())
+			{
+				Files.createDirectory(path.getParent());
+			}
+			Files.createFile(path);
+		}
+		catch (IOException ex)
+		{
+			ex.printStackTrace();
+		}
+	}
+	
+	
+	
+	
 	// ========== API (server) STUFF ========== //
-	/** ALWAYS CLEAR WHEN NOT ON SERVER!!!! */
+	/* * ALWAYS CLEAR WHEN NOT ON SERVER!!!! */
 	// We are not using this stuff, so comment it out for now (if we ever do need it then we can uncomment it)
     /*
     @SuppressWarnings("unchecked")

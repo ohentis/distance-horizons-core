@@ -11,7 +11,7 @@ import java.util.regex.Pattern;
  *
  * @author HanSolo
  * @author IMS
- * @author coolGi2007
+ * @author coolGi
  */
 public class DarkModeDetector
 {

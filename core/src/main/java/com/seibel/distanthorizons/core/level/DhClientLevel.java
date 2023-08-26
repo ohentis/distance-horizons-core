@@ -36,7 +36,7 @@ public class DhClientLevel extends DhLevel implements IDhClientLevel
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	
-	private static class WorldGenState extends WorldGenModule.WorldGenState
+	private static class WorldGenState extends WorldGenModule.AbstractWorldGenState
 	{
 		WorldGenState(IDhClientLevel level, ClientNetworkState networkState)
 		{

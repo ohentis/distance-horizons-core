@@ -25,6 +25,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import com.seibel.distanthorizons.api.enums.config.EGLErrorHandlingMode;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
 import com.seibel.distanthorizons.core.config.Config;
@@ -65,8 +66,6 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftCli
  */
 public class GLProxy
 {
-	public static final boolean OVERRIDE_VANILLA_GL_LOGGER = ModInfo.IS_DEV_BUILD;
-	
 	private static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	
 	private ExecutorService workerThread = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat(GLProxy.class.getSimpleName() + "-Worker-Thread").build());
@@ -141,7 +140,7 @@ public class GLProxy
 		}
 		GL_LOGGER.info("minecraftGlCapabilities:\n" + getVersionInfo(minecraftGlCapabilities));
 		
-		if (OVERRIDE_VANILLA_GL_LOGGER)
+		if (Config.Client.Advanced.Debugging.overrideVanillaGLLogger.get())
 		{
 			GLUtil.setupDebugMessageCallback(new PrintStream(new GLMessageOutputStream(GLProxy::logMessage, vanillaDebugMessageBuilder), true));
 		}
@@ -461,29 +460,47 @@ public class GLProxy
 	
 	private static void logMessage(GLMessage msg)
 	{
-		GLMessage.ESeverity s = msg.severity;
-		if (msg.type == GLMessage.EType.ERROR ||
-				msg.type == GLMessage.EType.UNDEFINED_BEHAVIOR)
+		EGLErrorHandlingMode errorHandlingMode = Config.Client.Advanced.Debugging.glErrorHandlingMode.get();
+		if (errorHandlingMode == EGLErrorHandlingMode.IGNORE)
 		{
-			GL_LOGGER.error("GL ERROR {} from {}: {}", msg.id, msg.source, msg.message);
-			throw new RuntimeException("GL ERROR: " + msg.toString());
+			return;
 		}
 		
-		RuntimeException e = new RuntimeException("GL MESSAGE: " + msg.toString());
-		switch (s)
+		
+		
+		if (msg.type == GLMessage.EType.ERROR || msg.type == GLMessage.EType.UNDEFINED_BEHAVIOR)
 		{
-			case HIGH:
-				GL_LOGGER.error("{}", e);
-				break;
-			case MEDIUM:
-				GL_LOGGER.warn("{}", e);
-				break;
-			case LOW:
-				GL_LOGGER.info("{}", e);
-				break;
-			case NOTIFICATION:
-				GL_LOGGER.debug("{}", e);
-				break;
+			// critical error
+			
+			GL_LOGGER.error("GL ERROR " + msg.id + " from " + msg.source + ": " + msg.message);
+			
+			if (errorHandlingMode == EGLErrorHandlingMode.LOG_THROW)
+			{
+				throw new RuntimeException("GL ERROR: " + msg);
+			}
+			
+		}
+		else
+		{
+			// non-critical log
+			
+			GLMessage.ESeverity severity = msg.severity;
+			RuntimeException ex = new RuntimeException("GL MESSAGE: " + msg);
+			switch (severity)
+			{
+				case HIGH:
+					GL_LOGGER.error("{}", ex);
+					break;
+				case MEDIUM:
+					GL_LOGGER.warn("{}", ex);
+					break;
+				case LOW:
+					GL_LOGGER.info("{}", ex);
+					break;
+				case NOTIFICATION:
+					GL_LOGGER.debug("{}", ex);
+					break;
+			}
 		}
 	}
 	

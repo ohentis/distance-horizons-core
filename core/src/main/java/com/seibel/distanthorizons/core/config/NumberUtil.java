@@ -13,7 +13,7 @@ import java.util.Map;
 public class NumberUtil
 {
 	// Is there no better way of doing this?
-	public static Map<Class, Number> minValues = new HashMap<Class, Number>()
+	public static Map<Class<?>, Number> minValues = new HashMap<Class<?>, Number>()
 	{{
 		put(Byte.class, Byte.MIN_VALUE);
 		put(Short.class, Short.MIN_VALUE);
@@ -22,7 +22,7 @@ public class NumberUtil
 		put(Double.class, Double.MIN_VALUE);
 		put(Float.class, Float.MIN_VALUE);
 	}};
-	public static Map<Class, Number> maxValues = new HashMap<Class, Number>()
+	public static Map<Class<?>, Number> maxValues = new HashMap<Class<?>, Number>()
 	{{
 		put(Byte.class, Byte.MAX_VALUE);
 		put(Short.class, Short.MAX_VALUE);
@@ -32,11 +32,11 @@ public class NumberUtil
 		put(Float.class, Float.MAX_VALUE);
 	}};
 	
-	public static Number getMinimum(Class c)
+	public static Number getMinimum(Class<?> c)
 	{
 		return minValues.get(c);
 	}
-	public static Number getMaximum(Class c)
+	public static Number getMaximum(Class<?> c)
 	{
 		return maxValues.get(c);
 	}
@@ -46,7 +46,7 @@ public class NumberUtil
 	{
 		if (a.getClass() != b.getClass())
 			return false;
-		Class typeClass = a.getClass();
+		Class<?> typeClass = a.getClass();
 		
 		if (typeClass == Byte.class) return a.byteValue() > b.byteValue();
 		if (typeClass == Short.class) return a.shortValue() > b.shortValue();
@@ -62,7 +62,7 @@ public class NumberUtil
 	{
 		if (a.getClass() != b.getClass())
 			return false;
-		Class typeClass = a.getClass();
+		Class<?> typeClass = a.getClass();
 		
 		if (typeClass == Byte.class) return a.byteValue() < b.byteValue();
 		if (typeClass == Short.class) return a.shortValue() < b.shortValue();

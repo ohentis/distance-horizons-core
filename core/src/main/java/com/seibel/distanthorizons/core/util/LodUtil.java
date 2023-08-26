@@ -221,11 +221,11 @@ public class LodUtil
 			public Pos2D next()
 			{
 				DhChunkPos pos = posIter.next();
-				return new Pos2D(pos.getX(), pos.getZ());
+				return new Pos2D(pos.x, pos.z);
 			}
 		},
-				MC_CLIENT.getPlayerChunkPos().getX() - renderDist,
-				MC_CLIENT.getPlayerChunkPos().getZ() - renderDist,
+				MC_CLIENT.getPlayerChunkPos().x - renderDist,
+				MC_CLIENT.getPlayerChunkPos().z - renderDist,
 				renderDist * 2 + 1);
 	}
 	

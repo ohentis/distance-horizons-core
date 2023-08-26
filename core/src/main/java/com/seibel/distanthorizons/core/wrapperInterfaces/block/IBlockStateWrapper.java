@@ -6,9 +6,7 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 /** A Minecraft version independent way of handling Blocks. */
 public interface IBlockStateWrapper extends IDhApiBlockStateWrapper
 {
-	String serialize();
-	
-	ILevelWrapper getLevelWrapper();
+	String getSerialString();
 	
 	/**
 	 * Returning a value of 0 means the block is completely transparent. <br.

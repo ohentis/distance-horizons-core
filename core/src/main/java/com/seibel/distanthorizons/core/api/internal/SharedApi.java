@@ -14,9 +14,15 @@ public class SharedApi
 	private static AbstractDhWorld currentWorld;
 	private static int lastWorldGenTickDelta = 0;
 	
+	
+	
+	
 	public static void init() { Initializer.init(); }
 	
+	
+	
 	public static EWorldEnvironment getEnvironment() { return (currentWorld == null) ? null : currentWorld.environment; }
+	
 	
 	public static void setDhWorld(AbstractDhWorld newWorld)
 	{

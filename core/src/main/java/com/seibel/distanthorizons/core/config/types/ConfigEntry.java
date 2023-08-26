@@ -19,7 +19,6 @@ import java.util.Arrays;
  */
 public class ConfigEntry<T> extends AbstractConfigType<T, ConfigEntry<T>> implements IConfigEntry<T>
 {
-	private final T defaultValue;
 	private String comment;
 	private T min;
 	private T max;
@@ -41,7 +40,6 @@ public class ConfigEntry<T> extends AbstractConfigType<T, ConfigEntry<T>> implem
 	{
 		super(appearance, value);
 		
-		this.defaultValue = value;
 		this.comment = comment;
 		this.min = min;
 		this.max = max;
@@ -54,7 +52,7 @@ public class ConfigEntry<T> extends AbstractConfigType<T, ConfigEntry<T>> implem
 	
 	/** Gets the default value of the option */
 	@Override
-	public T getDefaultValue() { return this.defaultValue; }
+	public T getDefaultValue() { return super.defaultValue; }
 	
 	@Override
 	public void setApiValue(T newApiValue)
@@ -70,7 +68,7 @@ public class ConfigEntry<T> extends AbstractConfigType<T, ConfigEntry<T>> implem
 	/** 
 	 * DONT USE THIS IN YOUR CODE <br>
 	 * Sets the value without informing the rest of the code (ie, doesnt call listeners, or saves the value). <br>
-	 * Should only be used when loading the config from the file
+	 * Should only be used when loading the config from the file (in places like the {@link com.seibel.distanthorizons.core.config.file.ConfigFileHandling} or {@link com.seibel.distanthorizons.core.config.ConfigBase})
 	 */
 	public void pureSet(T newValue) {
 		super.set(newValue);

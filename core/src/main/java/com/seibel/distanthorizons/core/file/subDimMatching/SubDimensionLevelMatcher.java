@@ -188,12 +188,12 @@ public class SubDimensionLevelMatcher implements AutoCloseable
 			{
 				// the chunk isn't empty but the LOD is...
 				
-				String message = "Error: the chunk at (" + playerChunkPos.getX() + "," + playerChunkPos.getZ() + ") has a height of [" + newlyLoadedChunk.getHeight() + "] but the LOD generated is empty!";
+				String message = "Error: the chunk at (" + playerChunkPos.x + "," + playerChunkPos.z + ") has a height of [" + newlyLoadedChunk.getHeight() + "] but the LOD generated is empty!";
 				LOGGER.error(message);
 			}
 			else
 			{
-				String message = "Warning: The chunk at (" + playerChunkPos.getX() + "," + playerChunkPos.getZ() + ") is empty.";
+				String message = "Warning: The chunk at (" + playerChunkPos.x + "," + playerChunkPos.z + ") is empty.";
 				LOGGER.warn(message);
 			}
 			return null;
@@ -264,7 +264,7 @@ public class SubDimensionLevelMatcher implements AutoCloseable
 				// stop if the test chunk doesn't contain any data
 				if (!testLodDataExists)
 				{
-					String message = "The test chunk for dimension folder [" + LodUtil.shortenString(testLevelFolder.getName(), 8) + "] and chunk pos (" + playerChunkPos.getX() + "," + playerChunkPos.getZ() + ") is empty. This is expected if the position is outside the sub-dimension's generated area.";
+					String message = "The test chunk for dimension folder [" + LodUtil.shortenString(testLevelFolder.getName(), 8) + "] and chunk pos (" + playerChunkPos.x + "," + playerChunkPos.z + ") is empty. This is expected if the position is outside the sub-dimension's generated area.";
 					LOGGER.info(message);
 					continue;
 				}
@@ -272,7 +272,7 @@ public class SubDimensionLevelMatcher implements AutoCloseable
 				
 				// get the player data for this dimension folder
 				SubDimensionPlayerData testPlayerData = new SubDimensionPlayerData(testLevelFolder);
-				LOGGER.info("Last known player pos: [" + testPlayerData.playerBlockPos.getX() + "," + testPlayerData.playerBlockPos.getY() + "," + testPlayerData.playerBlockPos.getZ() + "]");
+				LOGGER.info("Last known player pos: [" + testPlayerData.playerBlockPos.x + "," + testPlayerData.playerBlockPos.y + "," + testPlayerData.playerBlockPos.z + "]");
 				
 				// check if the block positions are close
 				int playerBlockDist = testPlayerData.playerBlockPos.getManhattanDistance(playerData.playerBlockPos);

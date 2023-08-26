@@ -224,22 +224,31 @@ public class ColumnRenderBuffer extends AbstractRenderBuffer implements IDebugRe
 	{
 		boolean hasRendered = false;
 		
-		renderContext.setupOffset(this.pos);
-		for (GLVertexBuffer vbo : this.vbosTransparent)
+		try
 		{
-			if (vbo == null)
-			{
-				continue;
-			}
+			// can throw an IllegalStateException if the GL program was freed before it should've been
+			renderContext.setupOffset(this.pos);
 			
-			if (vbo.getVertexCount() == 0)
+			for (GLVertexBuffer vbo : this.vbosTransparent)
 			{
-				continue;
+				if (vbo == null)
+				{
+					continue;
+				}
+				
+				if (vbo.getVertexCount() == 0)
+				{
+					continue;
+				}
+				
+				hasRendered = true;
+				renderContext.drawVbo(vbo);
+				//LodRenderer.tickLogger.info("Vertex buffer: {}", vbo);
 			}
-			
-			hasRendered = true;
-			renderContext.drawVbo(vbo);
-			//LodRenderer.tickLogger.info("Vertex buffer: {}", vbo);
+		}
+		catch (IllegalStateException e)
+		{
+			LOGGER.error("renderContext program doesn't exist for pos: "+this.pos, e);
 		}
 		
 		return hasRendered;

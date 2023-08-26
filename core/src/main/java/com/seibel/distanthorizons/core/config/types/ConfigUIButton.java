@@ -9,9 +9,10 @@ public class ConfigUIButton extends AbstractConfigType<Runnable, ConfigUIButton>
 		super(EConfigEntryAppearance.ONLY_IN_GUI, runnable);
 	}
 	
+	/** Runs the action of the button. NOTE: Will run on the main thread (so can halt the main process if not offloaded to a different thread) */
 	public void runAction()
 	{
-		new Thread(this.value).start();
+		this.value.run();
 	}
 	
 	public static class Builder extends AbstractConfigType.Builder<Runnable, Builder>

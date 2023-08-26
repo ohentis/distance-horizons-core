@@ -37,6 +37,32 @@ public class ConfigTypeConverters
 		return null;
 	}
 	
+	public static Object attemptToConvertToString(Object value)
+	{
+		return attemptToConvertToString(value.getClass(), value);
+	}
+	public static Object attemptToConvertToString(Class<?> clazz, Object value)
+	{
+		Class<?> convertablClass = isClassConvertable(clazz);
+		if (convertablClass != null) {
+			return convertToString(convertablClass, value);
+		}
+		return value;
+	}
+	
+	public static Object attemptToConvertFromString(Object value)
+	{
+		return attemptToConvertFromString(value.getClass(), value);
+	}
+	public static Object attemptToConvertFromString(Class<?> clazz, Object value)
+	{
+		Class<?> convertablClass = isClassConvertable(clazz);
+		if (convertablClass != null) {
+			return convertFromString(convertablClass, (String) value);
+		}
+		return value;
+	}
+	
 	public static String convertToString(Class<?> clazz, Object value)
 	{
 		try
@@ -116,9 +142,11 @@ public class ConfigTypeConverters
 			Map<String, Object> mapObject = (Map<String, Object>) item;
 			Config jsonObject = Config.inMemory();
 			
+			Object[] keyArray = mapObject.keySet().toArray();
+			
 			for (int i = 0; i < mapObject.size(); i++)
 			{
-				jsonObject.add(mapObject.keySet().toArray()[i].toString(), mapObject.get(mapObject.keySet().toArray()[i]));
+				jsonObject.add(keyArray[i].toString(), mapObject.get(keyArray[i]));
 			}
 			
 			return JsonFormat.minimalInstance().createWriter().writeToString(jsonObject);

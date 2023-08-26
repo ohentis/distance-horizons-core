@@ -20,13 +20,8 @@ public class RenderCacheConfigEventHandler implements IConfigListener
 {
 	public static RenderCacheConfigEventHandler INSTANCE = new RenderCacheConfigEventHandler();
 	
-	// previous values used to check if a watched setting was actually modified
-	private EVerticalQuality previousVerticalQualitySetting = null;
-	private EMaxHorizontalResolution previousHorizontalResolution = null;
-	private ELodShading lodShading = null;
-	
 	/** how long to wait in milliseconds before applying the config changes */
-	private static final long TIMEOUT_IN_MS = 400L;
+	private static final long TIMEOUT_IN_MS = 4_000L;
 	private Timer cacheClearingTimer;
 	
 	
@@ -38,38 +33,7 @@ public class RenderCacheConfigEventHandler implements IConfigListener
 	@Override
 	public void onConfigValueSet()
 	{
-		// confirm a setting was actually changed
-		boolean refreshRenderData = false;
-		
-		
-		EVerticalQuality newVerticalQuality = Config.Client.Advanced.Graphics.Quality.verticalQuality.get();
-		if (this.previousVerticalQualitySetting != newVerticalQuality)
-		{
-			this.previousVerticalQualitySetting = newVerticalQuality;
-			refreshRenderData = true;
-		}
-		
-		EMaxHorizontalResolution newHorizontalResolution = Config.Client.Advanced.Graphics.Quality.maxHorizontalResolution.get();
-		if (this.previousHorizontalResolution != newHorizontalResolution)
-		{
-			this.previousHorizontalResolution = newHorizontalResolution;
-			refreshRenderData = true;
-		}
-		
-		ELodShading newLodShading = Config.Client.Advanced.Graphics.AdvancedGraphics.lodShading.get();
-		if (this.lodShading != newLodShading)
-		{
-			this.lodShading = newLodShading;
-			refreshRenderData = true;
-		}
-		
-		
-		
-		if (refreshRenderData)
-		{
-			this.refreshRenderDataAfterTimeout();
-		}
-		
+		this.refreshRenderDataAfterTimeout();
 	}
 	
 	@Override

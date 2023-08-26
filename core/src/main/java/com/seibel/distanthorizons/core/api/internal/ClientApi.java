@@ -319,7 +319,12 @@ public class ClientApi
 		if (clientWorld != null)
 		{
 			clientWorld.clientTick();
-			SharedApi.worldGenTick(clientWorld::doWorldGen);
+			
+			// Ignore local world gen, as it's managed by server ticking
+			if (!(clientWorld instanceof DhClientServerWorld))
+			{
+				SharedApi.worldGenTick(clientWorld::doWorldGen);
+			}
 		}
 		profiler.pop();
 	}
@@ -329,7 +334,7 @@ public class ClientApi
 	//============//
 	// networking //
 	//============//
-	
+
 	/** @param byteBuf is Netty's {@link ByteBuffer} wrapper. */
 	public void serverMessageReceived(ByteBuf byteBuf)
 	{
@@ -568,4 +573,6 @@ public class ClientApi
 			MC.sendChatMessage("P: Debug Pref Logger is " + (prefLoggerEnabled ? "enabled" : "disabled"));
 		}
 	}
+	
+	
 }

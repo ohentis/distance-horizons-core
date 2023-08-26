@@ -70,7 +70,7 @@ public interface IStreamableFullDataSource<SummaryDataType extends IStreamableFu
 			return;
 		}
 		
-		this.writeIdMappings(outputStream, level.getLevelWrapper());
+		this.writeIdMappings(outputStream);
 	}
 	
 	
@@ -96,7 +96,7 @@ public interface IStreamableFullDataSource<SummaryDataType extends IStreamableFu
 	void setDataPoints(DataContainerType dataPoints);
 	
 	
-	void writeIdMappings(DhDataOutputStream outputStream, ILevelWrapper levelWrapper) throws IOException;
+	void writeIdMappings(DhDataOutputStream outputStream) throws IOException;
 	FullDataPointIdMap readIdMappings(DataContainerType dataPoints, DhDataInputStream inputStream, ILevelWrapper levelWrapper) throws IOException, InterruptedException;
 	void setIdMapping(FullDataPointIdMap mappings);
 	

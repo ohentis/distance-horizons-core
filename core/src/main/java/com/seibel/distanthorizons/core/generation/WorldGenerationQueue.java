@@ -51,7 +51,8 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 	
 	/** largest numerical detail level allowed */
 	public final byte largestDataDetail;
-	@Override public byte largestDataDetail() { return this.largestDataDetail; }
+	@Override
+	public byte largestDataDetail() { return this.largestDataDetail; }
 	/** lowest numerical detail level allowed */
 	public final byte smallestDataDetail;
 	
@@ -159,7 +160,7 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 	@Override
 	public void cancelGenTasks(Iterable<DhSectionPos> positions)
 	{
-		// TODO Cancel gen tasks properly
+		// TODO Should we cancel generation of chunks that were loaded by the player?
 	}
 	
 	//===============//

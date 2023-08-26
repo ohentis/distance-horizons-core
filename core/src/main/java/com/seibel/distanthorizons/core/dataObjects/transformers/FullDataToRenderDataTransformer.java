@@ -23,7 +23,7 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrappe
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
 import com.seibel.distanthorizons.coreapi.util.BitShiftUtil;
 
-import java.util.HashMap;
+import java.util.HashSet;
 
 /**
  * Handles converting {@link ChunkSizedFullDataAccessor}, {@link IIncompleteFullDataSource},
@@ -32,7 +32,6 @@ import java.util.HashMap;
 public class FullDataToRenderDataTransformer
 {
 	private static final IWrapperFactory WRAPPER_FACTORY = SingletonInjector.INSTANCE.get(IWrapperFactory.class);
-	private static final HashMap<String, ? extends IBlockStateWrapper> RENDERER_IGNORED_BLOCKS = WRAPPER_FACTORY.getRendererIgnoredBlocks();
 	
 	
 	
@@ -292,6 +291,7 @@ public class FullDataToRenderDataTransformer
 		boolean colorBelowWithAvoidedBlocks = Config.Client.Advanced.Graphics.Quality.tintWithAvoidedBlocks.get();
 		
 		FullDataPointIdMap fullDataMapping = data.getMapping();
+		HashSet<IBlockStateWrapper> blockStatesToIgnore = WRAPPER_FACTORY.getRendererIgnoredBlocks(level.getLevelWrapper());
 		
 		boolean isVoid = true;
 		int colorToApplyToNextBlock = -1;
@@ -308,10 +308,9 @@ public class FullDataToRenderDataTransformer
 			IBiomeWrapper biome = fullDataMapping.getBiomeWrapper(id);
 			IBlockStateWrapper block = fullDataMapping.getBlockStateWrapper(id);
 			
-			if (RENDERER_IGNORED_BLOCKS.containsValue(block))
+			if (blockStatesToIgnore.contains(block))
 			{
-				// Don't render a block that's marked as ignored by the renderer
-				// This map should include air (if it doesn't, the map either got refactored or something is wrong)
+				// Don't render: air, barriers, light blocks, etc.
 				continue;
 			}
 			
