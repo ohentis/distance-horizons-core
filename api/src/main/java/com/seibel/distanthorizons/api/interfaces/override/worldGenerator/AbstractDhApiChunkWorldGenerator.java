@@ -61,10 +61,14 @@ public abstract class AbstractDhApiChunkWorldGenerator implements Closeable, IDh
 	/**
 	 * This method is called to generate terrain over a given area
 	 * from a thread defined by Distant Horizons. <br><br>
-	 *
-	 * See {@link IDhApiWorldGenerator#generateChunks(int, int, byte, byte, EDhApiDistantGeneratorMode, ExecutorService, Consumer) IDhApiWorldGenerator.generateChunks}
-	 * for the list of Object's this method should return along with additional documentation.
-	 *
+	 * 
+	 * @param chunkPosX the chunk X position in the level (not to be confused with the chunk's BlockPos in the level)
+	 * @param chunkPosZ the chunk Z position in the level (not to be confused with the chunk's BlockPos in the level)
+	 * @param generatorMode how far into the world gen pipeline this method run. See {@link EDhApiDistantGeneratorMode} for additional documentation.
+	 * 
+	 * @return See {@link IDhApiWorldGenerator#generateChunks(int, int, byte, byte, EDhApiDistantGeneratorMode, ExecutorService, Consumer) IDhApiWorldGenerator.generateChunks}
+	 *         for the list of Object's this method should return along with additional documentation.
+	 *         
 	 * @see IDhApiWorldGenerator#generateChunks(int, int, byte, byte, EDhApiDistantGeneratorMode, ExecutorService, Consumer) IDhApiWorldGenerator#generateChunks
 	 */
 	public abstract Object[] generateChunk(int chunkPosX, int chunkPosZ, EDhApiDistantGeneratorMode generatorMode);

@@ -7,12 +7,12 @@ public interface IOverrideInjector<BindableType extends IBindable>
 {
 	/**
 	 * All core overrides should have this priority. <Br>
-	 * Should be lower than MIN_OVERRIDE_PRIORITY.
+	 * Should be lower than {@link IOverrideInjector#MIN_NON_CORE_OVERRIDE_PRIORITY}.
 	 */
 	public static final int CORE_PRIORITY = -1;
 	/**
 	 * The lowest priority non-core overrides can have.
-	 * Should be higher than CORE_PRIORITY.
+	 * Should be higher than {@link IOverrideInjector#CORE_PRIORITY}.
 	 */
 	public static final int MIN_NON_CORE_OVERRIDE_PRIORITY = 0;
 	/** The priority given to overrides that don't explicitly define a priority. */

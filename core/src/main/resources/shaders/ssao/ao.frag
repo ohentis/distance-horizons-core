@@ -10,7 +10,7 @@ uniform float gFactor;
 uniform float gPower;
 uniform mat4 gProj;
 
-const int MAX_KERNEL_SIZE = 32;
+const int MAX_KERNEL_SIZE = 128;
 const float INV_MAX_KERNEL_SIZE_F = 1.0 / float(MAX_KERNEL_SIZE);
 const vec2 HALF_2 = vec2(0.5);
 uniform vec3 gKernel[MAX_KERNEL_SIZE];
@@ -55,7 +55,7 @@ void main()
         
         float rangeCheck = smoothstep(0.0, 1.0, gSampleRad / abs(viewPos.z - geometryDepth));
         // the number added to the samplePos.z can be used to reduce noise in the SSAO application at the cost of reducing the overall affect
-        occlusion_factor += float(geometryDepth >= samplePos.z + 1.0) * rangeCheck;
+        occlusion_factor += float(geometryDepth >= samplePos.z + 0.1) * rangeCheck;
         
     }
 

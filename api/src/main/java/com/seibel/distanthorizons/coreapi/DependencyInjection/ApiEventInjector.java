@@ -172,6 +172,15 @@ public class ApiEventInjector extends DependencyInjector<IDhApiEvent> implements
 	}
 	
 	
+	/** 
+	 * Wraps the event parameter object in a {@link DhApiCancelableEventParam} or {@link DhApiEventParam} depending on
+	 * if it should allow cancellation or not.
+	 * 
+	 * @param event the event instance
+	 * @param parameter the event's parameter object
+	 * @param <T> the event parameter type
+	 * @return the event parameter wrapped in a {@link DhApiCancelableEventParam} or {@link DhApiEventParam}
+	 */
 	public static <T> DhApiEventParam<T> createEventParamWrapper(IDhApiEvent<T> event, T parameter)
 	{
 		return (event instanceof IDhApiCancelableEvent) ? new DhApiCancelableEventParam<>(parameter) : new DhApiEventParam<>(parameter);

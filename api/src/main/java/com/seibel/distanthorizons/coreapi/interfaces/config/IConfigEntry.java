@@ -1,6 +1,8 @@
 package com.seibel.distanthorizons.coreapi.interfaces.config;
 
 
+import java.util.function.Consumer;
+
 /**
  * Use for making the config variables
  *
@@ -55,5 +57,7 @@ public interface IConfigEntry<T>
 	
 	/** Is the value of this equal to another */
 	boolean equals(IConfigEntry<?> obj);
+	
+	void addValueChangeListener(Consumer<T> onValueChangeFunc);
 	
 }

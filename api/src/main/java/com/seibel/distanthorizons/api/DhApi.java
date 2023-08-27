@@ -20,18 +20,43 @@ import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IOverri
  * For example: you can access singletons which handle the config or event binding. <br><br>
  *
  * <strong>Q:</strong> Why should I use this class instead of just getting the API singleton I need? <br>
- *
  * <strong>A:</strong> This way there is a lower chance of your code breaking if we change something on our end.
  * For example, if we realized there is a much better way of handling dependency injection we would keep the
  * interface the same so your code doesn't have to change. Whereas if you were directly referencing
  * the concrete object we replaced, there would be issues.
  *
  * @author James Seibel
- * @version 2023-6-29
+ * @version 2023-8-26
  * @since API 1.0.0
  */
 public class DhApi
 {
+	/** 
+	 * If you can see this Java Doc, this can be ignored. <br>
+	 * This is just to you know that Javadocs are available and that you should use the API jar
+	 * instead of the full mod jar. <br><br>
+	 * 
+	 * Note: Don't use this string in your code. It may change and is only for reference.
+	 */
+	public static String READ_ME = 
+			"If you don't see Javadocs something is wrong. \n" +
+			"If you are only using the full DH Mod in your build script, you won't have access to our javadocs and could potentially call into unsafe code. \n" +
+			"\n" +
+			"Please use the API jar in your build script as a compile time dependency " +
+			"and the full DH jar as a runtime dependency. \n" +
+			"\n" +
+			"Please refer to the example API project or the DH Developer Wiki for additional information " +
+			"and suggested setup. \n" + // DH Dev note: no links were included to prevent link rot. 
+			"";
+	public static String readMe() { return READ_ME; }
+	/** 
+	 * This is just a humorous way to reference the {@link DhApi#READ_ME} constant string and hopefully peak a few people's attention
+	 * vs the relatively boring "readMe".
+	 */
+	public static String heyYou_YoureFinallyAwake() { return READ_ME; } 
+	
+	
+	
 	/**
 	 * <strong>WARNING:</strong>
 	 * All objects in this class will be null until after DH initializes for the first time. <br><br>
@@ -71,6 +96,7 @@ public class DhApi
 		public static IDhApiRenderProxy renderProxy = null;
 		
 	}
+	
 	
 	
 	// always available //

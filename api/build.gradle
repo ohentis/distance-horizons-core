@@ -77,3 +77,13 @@ task addSourcesToCompiledJar(type: ShadowJar) {
     }
     
 }
+
+javadoc {
+    options {
+        // Don't log warnings.
+        // There are a lot of warnings related to missing @param and @return javadocs
+        // that aren't necessary and would clutter up said javadocs.
+        // For more info see: https://docs.oracle.com/javase/8/docs/technotes/tools/windows/javadoc.html
+        addStringOption('Xdoclint:all,-missing', '-quiet')
+    }
+}

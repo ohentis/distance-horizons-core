@@ -287,9 +287,6 @@ public class LodRenderer
 			{
 				profiler.popPush("LOD SSAO");
 				SSAORenderer.INSTANCE.render(partialTicks);
-				
-				// TODO: Fix this file (or check the result is the same) so that SSAORenderer could be deleted
-				//SSAOShader.INSTANCE.render(partialTicks); // For some reason this looks slightly different :/
 			}
 			
 			

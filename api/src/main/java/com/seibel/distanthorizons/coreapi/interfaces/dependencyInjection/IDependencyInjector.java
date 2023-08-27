@@ -25,7 +25,7 @@ public interface IDependencyInjector<BindableType extends IBindable>
 	
 	
 	/**
-	 * This does not return incomplete dependencies. <Br>
+	 * Does not return incomplete dependencies. <Br>
 	 * See {@link #get(Class, boolean) get(Class, boolean)} for full documentation.
 	 *
 	 * @see #get(Class, boolean)

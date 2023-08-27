@@ -14,7 +14,7 @@ public interface IWorldGenerationQueue extends Closeable
 	/** the largest numerical detail level */
 	byte largestDataDetail();
 	
-	CompletableFuture<WorldGenResult> submitGenTask(DhLodPos pos, byte requiredDataDetail, IWorldGenTaskTracker tracker);
+	CompletableFuture<WorldGenResult> submitGenTask(DhSectionPos pos, byte requiredDataDetail, IWorldGenTaskTracker tracker);
 	void cancelGenTasks(Iterable<DhSectionPos> positions);
 	
 	/** @param targetPos the position that world generation should be centered around, generally this will be the player's position. */

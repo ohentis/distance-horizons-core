@@ -28,7 +28,7 @@ public interface IDhApiWorldGenerator extends Closeable, IDhApiOverrideable
 	 *
 	 * TODO: System currently only supports 1x1 block per data.
 	 *
-	 * @see    EDhApiDetailLevel
+	 * @see EDhApiDetailLevel
 	 */
 	default byte getSmallestDataDetailLevel() { return EDhApiDetailLevel.BLOCK.detailLevel; }
 	/**
@@ -37,7 +37,7 @@ public interface IDhApiWorldGenerator extends Closeable, IDhApiOverrideable
 	 * Default detail level is 0 <br>
 	 * For more information on what detail levels represent see: {@link EDhApiDetailLevel}.
 	 *
-	 * @see    EDhApiDetailLevel
+	 * @see EDhApiDetailLevel
 	 */
 	default byte getLargestDataDetailLevel() { return EDhApiDetailLevel.BLOCK.detailLevel; }
 	
@@ -49,7 +49,7 @@ public interface IDhApiWorldGenerator extends Closeable, IDhApiOverrideable
 	 * Default detail level is 4 <br>
 	 * For more information on what detail levels represent see: {@link EDhApiDetailLevel}.
 	 *
-	 * @see    EDhApiDetailLevel
+	 * @see EDhApiDetailLevel
 	 */
 	default byte getMinGenerationGranularity() { return EDhApiDetailLevel.CHUNK.detailLevel; }
 	
@@ -61,11 +61,11 @@ public interface IDhApiWorldGenerator extends Closeable, IDhApiOverrideable
 	 * Default detail level is 6 (4x4 chunks) <br>
 	 * For more information on what detail levels represent see: {@link EDhApiDetailLevel}.
 	 *
-	 * @see    EDhApiDetailLevel
+	 * @see EDhApiDetailLevel
 	 */
 	default byte getMaxGenerationGranularity() { return (byte) (EDhApiDetailLevel.CHUNK.detailLevel + 2); }
 	
-	/** Returns true if the generator is unable to accept new generation requests. */
+	/** @return true if the generator is unable to accept new generation requests. */
 	boolean isBusy();
 	
 	
@@ -81,13 +81,22 @@ public interface IDhApiWorldGenerator extends Closeable, IDhApiOverrideable
 	 * After a chunk has been generated it (and any necessary supporting objects as listed below) should be passed into the
 	 * resultConsumer's {@link Consumer#accept} method. If the Consumer is given the wrong data
 	 * type(s) it will disable the world generator and log an error with a list of objects it was expecting. <br>
-	 * <strong>Note:</strong> these objects are minecraft version dependent and will change without notice!
+	 * <strong>Note:</strong> these objects are minecraft version dependent and <i>will</i> change without notice!
 	 * Please run your generator in game at least once to confirm the objects you are returning are correct. <br><br>
 	 *
 	 * Consumer expected inputs for each minecraft version (in order): <br>
 	 * <strong>1.16</strong>, <strong>1.17</strong>, <strong>1.18</strong>, <strong>1.19</strong>, <strong>1.20</strong>: <br>
 	 *  - [net.minecraft.world.level.chunk.ChunkAccess] <br>
 	 *  - [net.minecraft.world.level.ServerLevel] or [net.minecraft.world.level.ClientLevel] <br>
+	 *
+	 * @param chunkPosMinX the chunk X position closest to negative infinity 
+	 * @param chunkPosMinZ the chunk Z position closest to negative infinity 
+	 * @param granularity TODO find a central location to store the definition of granularity. For now it is stored in the Core method: WorldGenerationQueue#startGenerationEvent
+	 * @param targetDataDetail the LOD Detail level requested to generate. See {@link EDhApiDetailLevel} for additional information.
+	 * @param generatorMode how far into the world gen pipeline this method run. See {@link EDhApiDistantGeneratorMode} for additional documentation.
+	 * @param worldGeneratorThreadPool the thread pool that should be used when generating the returned {@link CompletableFuture}.
+	 * @param resultConsumer the consumer that should be fired whenever a chunk finishes generating.
+	 * @return a future that should run on the worldGeneratorThreadPool and complete once the given generation task has completed.
 	 */
 	CompletableFuture<Void> generateChunks(
 			int chunkPosMinX, int chunkPosMinZ,

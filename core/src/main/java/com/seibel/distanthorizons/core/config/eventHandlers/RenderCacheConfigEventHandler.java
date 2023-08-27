@@ -1,9 +1,12 @@
 package com.seibel.distanthorizons.core.config.eventHandlers;
 
 import com.seibel.distanthorizons.api.DhApi;
+import com.seibel.distanthorizons.api.enums.config.EBlocksToAvoid;
 import com.seibel.distanthorizons.api.enums.config.ELodShading;
 import com.seibel.distanthorizons.api.enums.config.EMaxHorizontalResolution;
 import com.seibel.distanthorizons.api.enums.config.EVerticalQuality;
+import com.seibel.distanthorizons.api.enums.rendering.ETransparency;
+import com.seibel.distanthorizons.core.config.listeners.ConfigChangeListener;
 import com.seibel.distanthorizons.core.config.listeners.IConfigListener;
 import com.seibel.distanthorizons.core.config.Config;
 
@@ -16,28 +19,52 @@ import java.util.TimerTask;
  *
  * Note: if additional settings should clear the render cache, add those to this listener, don't create a new listener
  */
-public class RenderCacheConfigEventHandler implements IConfigListener
+public class RenderCacheConfigEventHandler
 {
-	public static RenderCacheConfigEventHandler INSTANCE = new RenderCacheConfigEventHandler();
+	private static RenderCacheConfigEventHandler INSTANCE;
+	
+	
+	// previous values used to check if a watched setting was actually modified
+	private final ConfigChangeListener<EMaxHorizontalResolution> horizontalResolutionChangeListener;
+	private final ConfigChangeListener<EVerticalQuality> verticalQualityChangeListener;
+	private final ConfigChangeListener<ETransparency> transparencyChangeListener;
+	private final ConfigChangeListener<EBlocksToAvoid> blocksToIgnoreChangeListener;
+	private final ConfigChangeListener<Boolean> tintWithAvoidedBlocksChangeListener;
+	
+	private final ConfigChangeListener<Double> brightnessMultiplierChangeListener;
+	private final ConfigChangeListener<Double> saturationMultiplierChangeListener;
+	private final ConfigChangeListener<ELodShading> lodShadingChangeListener;
 	
 	/** how long to wait in milliseconds before applying the config changes */
 	private static final long TIMEOUT_IN_MS = 4_000L;
 	private Timer cacheClearingTimer;
 	
 	
-	/** private since we only ever need one handler at a time */
-	private RenderCacheConfigEventHandler() { }
 	
-	
-	
-	@Override
-	public void onConfigValueSet()
+	public static RenderCacheConfigEventHandler getInstance()
 	{
-		this.refreshRenderDataAfterTimeout();
+		if (INSTANCE == null)
+		{
+			INSTANCE = new RenderCacheConfigEventHandler();
+		}
+		
+		return INSTANCE;
 	}
 	
-	@Override
-	public void onUiModify() { /* do nothing, we only care about modified config values */ }
+	/** private since we only ever need one handler at a time */
+	private RenderCacheConfigEventHandler()
+	{
+		this.horizontalResolutionChangeListener = new ConfigChangeListener<>(Config.Client.Advanced.Graphics.Quality.maxHorizontalResolution, (newValue) -> this.refreshRenderDataAfterTimeout());
+		this.verticalQualityChangeListener = new ConfigChangeListener<>(Config.Client.Advanced.Graphics.Quality.verticalQuality, (newValue) -> this.refreshRenderDataAfterTimeout());
+		this.transparencyChangeListener = new ConfigChangeListener<>(Config.Client.Advanced.Graphics.Quality.transparency, (newValue) -> this.refreshRenderDataAfterTimeout());
+		this.blocksToIgnoreChangeListener = new ConfigChangeListener<>(Config.Client.Advanced.Graphics.Quality.blocksToIgnore, (newValue) -> this.refreshRenderDataAfterTimeout());
+		this.tintWithAvoidedBlocksChangeListener = new ConfigChangeListener<>(Config.Client.Advanced.Graphics.Quality.tintWithAvoidedBlocks, (newValue) -> this.refreshRenderDataAfterTimeout());
+		
+		this.brightnessMultiplierChangeListener = new ConfigChangeListener<>(Config.Client.Advanced.Graphics.AdvancedGraphics.brightnessMultiplier, (newValue) -> this.refreshRenderDataAfterTimeout());
+		this.saturationMultiplierChangeListener = new ConfigChangeListener<>(Config.Client.Advanced.Graphics.AdvancedGraphics.saturationMultiplier, (newValue) -> this.refreshRenderDataAfterTimeout());
+		this.lodShadingChangeListener = new ConfigChangeListener<>(Config.Client.Advanced.Graphics.AdvancedGraphics.lodShading, (newValue) -> this.refreshRenderDataAfterTimeout());
+		
+	}
 	
 	
 	/** Calling this method multiple times will reset the timer */

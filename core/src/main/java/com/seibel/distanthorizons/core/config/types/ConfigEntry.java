@@ -2,6 +2,7 @@ package com.seibel.distanthorizons.core.config.types;
 
 
 import com.seibel.distanthorizons.core.config.NumberUtil;
+import com.seibel.distanthorizons.core.config.listeners.ConfigChangeListener;
 import com.seibel.distanthorizons.core.config.listeners.IConfigListener;
 import com.seibel.distanthorizons.core.config.types.enums.EConfigEntryAppearance;
 import com.seibel.distanthorizons.core.config.types.enums.EConfigEntryPerformance;
@@ -9,6 +10,7 @@ import com.seibel.distanthorizons.coreapi.interfaces.config.IConfigEntry;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.function.Consumer;
 
 /**
  * Use for making the config variables
@@ -166,7 +168,16 @@ public class ConfigEntry<T> extends AbstractConfigType<T, ConfigEntry<T>> implem
 	/** Gets the performance impact of an option */
 	public EConfigEntryPerformance getPerformance() { return this.performance; }
 	
+	/** Fired whenever the config value changes to a new value. */
+	public void addValueChangeListener(Consumer<T> onValueChangeFunc)
+	{
+		ConfigChangeListener<T> changeListener = new ConfigChangeListener<>(this, onValueChangeFunc);
+		this.addListener(changeListener);
+	}
+	/** Fired whenever the config value is updated, including when the value doesn't change (IE when the UI changes state or the config is reloaded). */
 	public void addListener(IConfigListener newListener) { this.listenerList.add(newListener); }
+	
+	//public void removeValueChangeListener(Consumer<T> onValueChangeFunc) { } // not currently implemented
 	public void removeListener(IConfigListener oldListener) { this.listenerList.remove(oldListener); }
 	
 	public void clearListeners() { this.listenerList.clear(); }

@@ -146,7 +146,7 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandler
 				this.incompleteDataSources.put(pos, dataSource);
 				// queue this section to be generated
 				GenTask genTask = new GenTask(pos, new WeakReference<>(dataSource));
-				worldGenQueue.submitGenTask(new DhLodPos(pos), dataSource.getDataDetailLevel(), genTask)
+				worldGenQueue.submitGenTask(pos, dataSource.getDataDetailLevel(), genTask)
 						.whenComplete((genTaskResult, ex) ->
 						{
 							if (genTaskResult.success)

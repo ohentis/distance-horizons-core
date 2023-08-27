@@ -152,7 +152,6 @@ public class Config
 									+ "\n"
 									+ "Lowest Quality: " + EMaxHorizontalResolution.CHUNK + "\n"
 									+ "Highest Quality: " + EMaxHorizontalResolution.BLOCK)
-							.addListener(RenderCacheConfigEventHandler.INSTANCE)
 							.setPerformance(EConfigEntryPerformance.MEDIUM)
 							.build();
 					
@@ -173,7 +172,6 @@ public class Config
 									+ "Lowest Quality: " + EVerticalQuality.HEIGHT_MAP + "\n"
 									+ "Highest Quality: " + EVerticalQuality.EXTREME)
 							.setPerformance(EConfigEntryPerformance.VERY_HIGH)
-							.addListener(RenderCacheConfigEventHandler.INSTANCE)
 							.build();
 					
 					public static ConfigEntry<Boolean> ssao = new ConfigEntry.Builder<Boolean>()
@@ -200,7 +198,6 @@ public class Config
 									+ ETransparency.DISABLED + ": LODs will be opaque. \n"
 									+ "")
 							.setPerformance(EConfigEntryPerformance.MEDIUM)
-							.addListener(RenderCacheConfigEventHandler.INSTANCE)
 							.build();
 					
 					public static ConfigEntry<EBlocksToAvoid> blocksToIgnore = new ConfigEntry.Builder<EBlocksToAvoid>()
@@ -212,7 +209,6 @@ public class Config
 									+ EBlocksToAvoid.NON_COLLIDING + ": Only represent solid blocks in the LODs (tall grass, torches, etc. won't count for a LOD's height) \n"
 									+ "")
 							.setPerformance(EConfigEntryPerformance.NONE)
-							.addListener(RenderCacheConfigEventHandler.INSTANCE)
 							.build();
 					
 					public static ConfigEntry<Boolean> tintWithAvoidedBlocks = new ConfigEntry.Builder<Boolean>()
@@ -224,7 +220,6 @@ public class Config
 									+ "False: skipped blocks will not change color of surface below them. "
 									+ "")
 							.setPerformance(EConfigEntryPerformance.NONE)
-							.addListener(RenderCacheConfigEventHandler.INSTANCE)
 							.build();
 					
 					// TODO fixme
@@ -532,7 +527,6 @@ public class Config
 									+ "0 = black \n"
 									+ "1 = normal \n"
 									+ "2 = near white")
-							.addListener(RenderCacheConfigEventHandler.INSTANCE)
 							.build();
 					
 					public static ConfigEntry<Double> saturationMultiplier = new ConfigEntry.Builder<Double>() // TODO: Make this a float (the ClassicConfigGUI doesnt support floats)
@@ -543,7 +537,6 @@ public class Config
 									+ "0 = black and white \n"
 									+ "1 = normal \n"
 									+ "2 = very saturated")
-							.addListener(RenderCacheConfigEventHandler.INSTANCE)
 							.build();
 					
 					public static ConfigEntry<Boolean> enableCaveCulling = new ConfigEntry.Builder<Boolean>()
@@ -601,7 +594,6 @@ public class Config
 									+ ELodShading.NONE + ": All LOD sides will be rendered with the same brightness. \n"
 									+ "")
 							.setPerformance(EConfigEntryPerformance.NONE)
-							.addListener(RenderCacheConfigEventHandler.INSTANCE)
 							.build();
 					
 				}
@@ -1242,6 +1234,7 @@ public class Config
 				ThreadPresetConfigEventHandler.INSTANCE.setUiOnlyConfigValues();
 				RenderQualityPresetConfigEventHandler.INSTANCE.setUiOnlyConfigValues();
 				QuickRenderToggleConfigEventHandler.INSTANCE.setUiOnlyConfigValues();
+				RenderCacheConfigEventHandler.getInstance();
 			}
 			catch (Exception e)
 			{

@@ -29,7 +29,6 @@ public class Initializer
 			Class<?> compressor = LZ4Compressor.class;
 			Class<?> networking = ByteBuf.class;
 			Class<?> toml = com.electronwill.nightconfig.core.Config.class;
-			Class<?> flatlaf = com.formdev.flatlaf.FlatDarculaLaf.class;
 		}
 		catch (NoClassDefFoundError e)
 		{

@@ -20,8 +20,5 @@ https://github.com/lz4/lz4-java
 NightConfig for Json & Toml (config handling)\
 https://github.com/TheElectronWill/night-config
 
-SVG Salamander for SVG's\
+SVG Salamander for SVG support (not being used atm)\
 https://github.com/blackears/svgSalamander
-
-FlatLaf for theming (for development testing, may remove later)\
-https://www.formdev.com/flatlaf/

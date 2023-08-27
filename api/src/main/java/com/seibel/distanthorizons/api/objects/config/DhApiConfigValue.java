@@ -5,6 +5,8 @@ import com.seibel.distanthorizons.coreapi.interfaces.config.IConfigEntry;
 import com.seibel.distanthorizons.coreapi.interfaces.config.IConverter;
 import com.seibel.distanthorizons.coreapi.util.converters.DefaultConverter;
 
+import java.util.function.Consumer;
+
 /**
  * A wrapper used to interface with Distant Horizon's Config. <br> <br>
  *
@@ -68,8 +70,18 @@ public class DhApiConfigValue<coreType, apiType> implements IDhApiConfigValue<ap
 	
 	public boolean getCanBeOverrodeByApi() { return this.configEntry.getAllowApiOverride(); }
 	
-	public apiType getDefaultValue() { return this.configConverter.convertToApiType(configEntry.getDefaultValue()); }
+	public apiType getDefaultValue() { return this.configConverter.convertToApiType(this.configEntry.getDefaultValue()); }
 	public apiType getMaxValue() { return this.configConverter.convertToApiType(this.configEntry.getMax()); }
 	public apiType getMinValue() { return this.configConverter.convertToApiType(this.configEntry.getMin()); }
+	
+	
+	public void addChangeListener(Consumer<apiType> onValueChangeFunc) 
+	{
+		this.configEntry.addValueChangeListener((coreValue) -> 
+		{
+			apiType apiValue = this.configConverter.convertToApiType(coreValue);
+			onValueChangeFunc.accept(apiValue);
+		}); 
+	}
 	
 }

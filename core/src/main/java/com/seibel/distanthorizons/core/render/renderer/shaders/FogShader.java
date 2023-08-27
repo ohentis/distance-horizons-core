@@ -30,7 +30,6 @@ public class FogShader extends AbstractShaderRenderer
 	public final int fogVerticalScaleUniform;
 	public final int nearFogStartUniform;
 	public final int nearFogLengthUniform;
-	;
 	public final int fullFogModeUniform;
 	
 	
