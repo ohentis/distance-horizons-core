@@ -66,10 +66,9 @@ public class WorldRemoteGenerationQueue implements IWorldGenerationQueue, IDebug
 	}
 	
 	@Override
-	public CompletableFuture<WorldGenResult> submitGenTask(DhLodPos lodPos, byte requiredDataDetail, IWorldGenTaskTracker tracker)
+	public CompletableFuture<WorldGenResult> submitGenTask(DhSectionPos sectionPos, byte requiredDataDetail, IWorldGenTaskTracker tracker)
 	{
-		LodUtil.assertTrue(lodPos.detailLevel == DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL, "Only highest-detail sections are allowed.");
-		DhSectionPos sectionPos = new DhSectionPos(lodPos.detailLevel, lodPos);
+		LodUtil.assertTrue(sectionPos.sectionDetailLevel == DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL, "Only highest-detail sections are allowed.");
 		
 		WorldGenQueueEntry entry = new WorldGenQueueEntry(new CompletableFuture<>(), tracker);
 		waitingTasks.put(sectionPos, entry);
