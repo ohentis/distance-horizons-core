@@ -1,4 +1,4 @@
-package com.seibel.distanthorizons.core.network.messages;
+package com.seibel.distanthorizons.core.network.messages.fullData.generation.priority;
 
 import com.seibel.distanthorizons.core.network.protocol.FutureTrackableNetworkMessage;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;

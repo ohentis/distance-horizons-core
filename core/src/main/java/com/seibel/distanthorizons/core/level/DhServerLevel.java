@@ -6,14 +6,24 @@ import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedF
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.CompleteFullDataSource;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IFullDataSource;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IIncompleteFullDataSource;
+import com.seibel.distanthorizons.core.file.fullDatafile.FullDataMetaFile;
 import com.seibel.distanthorizons.core.file.fullDatafile.IFullDataSourceProvider;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.multiplayer.ServerPlayerState;
 import com.seibel.distanthorizons.core.multiplayer.RemotePlayerConnectionHandler;
 import com.seibel.distanthorizons.core.network.ScopedNetworkEventSource;
 import com.seibel.distanthorizons.core.network.NetworkServer;
+import com.seibel.distanthorizons.core.network.exceptions.InvalidLevelException;
+import com.seibel.distanthorizons.core.network.exceptions.InvalidSectionPosException;
 import com.seibel.distanthorizons.core.network.exceptions.RateLimitedException;
-import com.seibel.distanthorizons.core.network.messages.*;
+import com.seibel.distanthorizons.core.network.messages.base.CancelMessage;
+import com.seibel.distanthorizons.core.network.messages.fullData.generation.FullDataSourceRequestMessage;
+import com.seibel.distanthorizons.core.network.messages.fullData.generation.FullDataSourceResponseMessage;
+import com.seibel.distanthorizons.core.network.messages.fullData.generation.priority.GenTaskPriorityRequestMessage;
+import com.seibel.distanthorizons.core.network.messages.fullData.generation.priority.GenTaskPriorityResponseMessage;
+import com.seibel.distanthorizons.core.network.messages.fullData.updates.FullDataChangeSummaryRequestMessage;
+import com.seibel.distanthorizons.core.network.messages.fullData.updates.FullDataChangeSummaryResponseMessage;
+import com.seibel.distanthorizons.core.network.messages.fullData.updates.FullDataPartialUpdateMessage;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.pos.DhLodPos;
@@ -28,7 +38,9 @@ import com.seibel.distanthorizons.coreapi.util.math.Vec3d;
 import org.apache.logging.log4j.Logger;
 
 import javax.annotation.CheckForNull;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.*;
 
 public class DhServerLevel extends DhLevel implements IDhServerLevel
@@ -118,6 +130,38 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 			msg.sendResponse(new GenTaskPriorityResponseMessage(
 					this.serverside.dataFileHandler.getLoadStates(msg.posList)
 			));
+		});
+		
+		this.eventSource.registerHandler(FullDataChangeSummaryRequestMessage.class, msg ->
+		{
+			ServerPlayerState serverPlayerState = remotePlayerConnectionHandler.getConnectedPlayer(msg);
+			if (serverPlayerState == null) return;
+			
+			if (serverPlayerState.serverPlayer.getLevel() != this.serverLevelWrapper)
+				return;
+			
+			if (!msg.isLevelValid(this.serverLevelWrapper))
+			{
+				msg.sendResponse(new InvalidLevelException("Invalid level"));
+				return;
+			}
+			
+			// Load files and check checksums
+			HashSet<DhSectionPos> changedPosList = new HashSet<>();
+			for (Map.Entry<DhSectionPos, Integer> entry : msg.checksums.entrySet())
+			{
+				FullDataMetaFile metaFile = serverside.dataFileHandler.getFileIfExist(entry.getKey());
+				if (metaFile == null)
+				{
+					msg.sendResponse(new InvalidSectionPosException("Not generated section pos: "+entry.getKey()));
+					return;
+				}
+				
+				if (entry.getValue() != metaFile.baseMetaData.checksum)
+					changedPosList.add(entry.getKey());
+			}
+			
+			msg.sendResponse(new FullDataChangeSummaryResponseMessage(changedPosList));
 		});
 		
 		this.eventSource.registerHandler(CancelMessage.class, msg ->

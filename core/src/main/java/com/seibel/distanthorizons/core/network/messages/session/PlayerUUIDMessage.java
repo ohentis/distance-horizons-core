@@ -1,4 +1,4 @@
-package com.seibel.distanthorizons.core.network.messages;
+package com.seibel.distanthorizons.core.network.messages.session;
 
 import com.seibel.distanthorizons.core.network.protocol.FutureTrackableNetworkMessage;
 import com.seibel.distanthorizons.core.network.protocol.NetworkMessage;

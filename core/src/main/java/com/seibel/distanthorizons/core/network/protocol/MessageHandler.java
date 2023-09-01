@@ -1,7 +1,7 @@
 package com.seibel.distanthorizons.core.network.protocol;
 
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.network.messages.CloseEvent;
+import com.seibel.distanthorizons.core.network.messages.base.CloseEvent;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;

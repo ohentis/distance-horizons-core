@@ -1,8 +1,9 @@
-package com.seibel.distanthorizons.core.network.messages;
+package com.seibel.distanthorizons.core.network.messages.base;
 
+import com.seibel.distanthorizons.core.network.exceptions.InvalidLevelException;
+import com.seibel.distanthorizons.core.network.exceptions.InvalidSectionPosException;
 import com.seibel.distanthorizons.core.network.exceptions.RateLimitedException;
 import com.seibel.distanthorizons.core.network.protocol.FutureTrackableNetworkMessage;
-import com.seibel.distanthorizons.core.network.protocol.INetworkObject;
 import io.netty.buffer.ByteBuf;
 
 import java.util.ArrayList;
@@ -14,6 +15,8 @@ public class ExceptionMessage extends FutureTrackableNetworkMessage
 	{{
 		// All exceptions here must include constructor: (String)
 		add(RateLimitedException.class);
+		add(InvalidLevelException.class);
+		add(InvalidSectionPosException.class);
 	}};
 	
 	public Exception exception;

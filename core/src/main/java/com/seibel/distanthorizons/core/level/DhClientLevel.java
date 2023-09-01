@@ -1,7 +1,6 @@
 package com.seibel.distanthorizons.core.level;
 
 import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.CompleteFullDataSource;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.file.fullDatafile.IFullDataSourceProvider;
 import com.seibel.distanthorizons.core.file.fullDatafile.RemoteFullDataFileHandler;
@@ -11,7 +10,7 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.multiplayer.ClientNetworkState;
 import com.seibel.distanthorizons.core.network.NetworkClient;
 import com.seibel.distanthorizons.core.network.ScopedNetworkEventSource;
-import com.seibel.distanthorizons.core.network.messages.FullDataPartialUpdateMessage;
+import com.seibel.distanthorizons.core.network.messages.fullData.updates.FullDataPartialUpdateMessage;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
@@ -65,7 +64,7 @@ public class DhClientLevel extends DhLevel implements IDhClientLevel
 	{
 		this.levelWrapper = clientLevelWrapper;
 		this.saveStructure = saveStructure;
-		this.dataFileHandler = new RemoteFullDataFileHandler(this, saveStructure);
+		this.dataFileHandler = new RemoteFullDataFileHandler(this, saveStructure, networkState);
 		
 		this.networkState = networkState;
 		this.worldGenModule = new WorldGenModule(dataFileHandler, this);

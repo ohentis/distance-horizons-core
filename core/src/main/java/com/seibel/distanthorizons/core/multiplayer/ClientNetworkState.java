@@ -4,12 +4,11 @@ import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.network.ScopedNetworkEventSource;
 import com.seibel.distanthorizons.core.network.NetworkClient;
-import com.seibel.distanthorizons.core.network.messages.AckMessage;
-import com.seibel.distanthorizons.core.network.messages.HelloMessage;
-import com.seibel.distanthorizons.core.network.messages.PlayerUUIDMessage;
-import com.seibel.distanthorizons.core.network.messages.RemotePlayerConfigMessage;
+import com.seibel.distanthorizons.core.network.messages.base.AckMessage;
+import com.seibel.distanthorizons.core.network.messages.base.HelloMessage;
+import com.seibel.distanthorizons.core.network.messages.session.PlayerUUIDMessage;
+import com.seibel.distanthorizons.core.network.messages.session.RemotePlayerConfigMessage;
 import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.NotNull;
 
 import java.io.Closeable;
 import java.util.UUID;

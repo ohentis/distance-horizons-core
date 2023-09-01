@@ -1,7 +1,9 @@
 package com.seibel.distanthorizons.core.network.protocol;
 
 import io.netty.buffer.ByteBuf;
+import org.jetbrains.annotations.Contract;
 
+import javax.annotation.Nullable;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -18,6 +20,22 @@ public interface INetworkObject
 	{
 		obj.decode(inputByteBuf);
 		return obj;
+	}
+	
+	@Contract("_, null -> false; _, !null -> true")
+	default boolean encodeOptional(ByteBuf outputByteBuf, Object value)
+	{
+		boolean isNull = value != null;
+		outputByteBuf.writeBoolean(isNull);
+		return isNull;
+	}
+	
+	@Nullable
+	default <T> T decodeOptional(ByteBuf inputByteBuf, Supplier<T> decoder)
+	{
+		return inputByteBuf.readBoolean()
+				? decoder.get() 
+				: null;
 	}
 	
 	default void encodeString(String inputString, ByteBuf outputByteBuf)

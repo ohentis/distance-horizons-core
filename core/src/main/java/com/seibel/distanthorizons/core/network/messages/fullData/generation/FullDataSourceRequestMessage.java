@@ -1,9 +1,11 @@
-package com.seibel.distanthorizons.core.network.messages;
+package com.seibel.distanthorizons.core.network.messages.fullData.generation;
 
 import com.seibel.distanthorizons.core.network.protocol.FutureTrackableNetworkMessage;
 import com.seibel.distanthorizons.core.network.protocol.INetworkObject;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import io.netty.buffer.ByteBuf;
+
+import javax.annotation.Nullable;
 
 public class FullDataSourceRequestMessage extends FutureTrackableNetworkMessage
 {
@@ -11,7 +13,8 @@ public class FullDataSourceRequestMessage extends FutureTrackableNetworkMessage
 
 	public FullDataSourceRequestMessage() {}
 
-	public FullDataSourceRequestMessage(DhSectionPos dhSectionPos) {
+	public FullDataSourceRequestMessage(DhSectionPos dhSectionPos)
+	{
 		this.dhSectionPos = dhSectionPos;
 	}
 

@@ -50,11 +50,12 @@ public class FullDataFileHandler implements IFullDataSourceProvider
 		{
 			map.put(pos,
 					fileBySectionPos.containsKey(pos) ? 3 // Loaded
-					: unloadedFiles.containsKey(pos) ? 2  // Unloaded
+					: this.isFileUnloaded(pos) ? 2        // Unloaded
 					: 1);                                 // Not generated
 		}
 		return map;
 	}
+	protected boolean isFileUnloaded(DhSectionPos pos) { return unloadedFiles.containsKey(pos); }
 	
 	private LinkedList<Consumer<IFullDataSource>> onUpdatedListeners = new LinkedList<>();
 	

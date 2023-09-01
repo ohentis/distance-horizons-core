@@ -28,7 +28,7 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandler
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
-	private final AtomicReference<IWorldGenerationQueue> worldGenQueueRef = new AtomicReference<>(null);
+	protected final AtomicReference<IWorldGenerationQueue> worldGenQueueRef = new AtomicReference<>(null);
 	
 	private final ArrayList<IOnWorldGenCompleteListener> onWorldGenTaskCompleteListeners = new ArrayList<>();
 	

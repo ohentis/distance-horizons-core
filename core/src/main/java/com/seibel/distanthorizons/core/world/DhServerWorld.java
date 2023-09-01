@@ -8,7 +8,7 @@ import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.multiplayer.ServerPlayerState;
 import com.seibel.distanthorizons.core.multiplayer.RemotePlayerConnectionHandler;
 import com.seibel.distanthorizons.core.network.NetworkServer;
-import com.seibel.distanthorizons.core.network.messages.RemotePlayerConfigMessage;
+import com.seibel.distanthorizons.core.network.messages.session.RemotePlayerConfigMessage;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;

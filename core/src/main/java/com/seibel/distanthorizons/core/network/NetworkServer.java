@@ -1,9 +1,9 @@
 package com.seibel.distanthorizons.core.network;
 
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.network.messages.CloseReasonMessage;
-import com.seibel.distanthorizons.core.network.messages.CloseEvent;
-import com.seibel.distanthorizons.core.network.messages.HelloMessage;
+import com.seibel.distanthorizons.core.network.messages.base.CloseReasonMessage;
+import com.seibel.distanthorizons.core.network.messages.base.CloseEvent;
+import com.seibel.distanthorizons.core.network.messages.base.HelloMessage;
 import com.seibel.distanthorizons.core.network.protocol.FutureTrackableNetworkMessage;
 import com.seibel.distanthorizons.core.network.protocol.MessageHandler;
 import com.seibel.distanthorizons.core.network.protocol.NetworkChannelInitializer;

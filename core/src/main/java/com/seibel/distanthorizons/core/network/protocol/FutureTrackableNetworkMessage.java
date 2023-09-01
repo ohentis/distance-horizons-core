@@ -1,6 +1,6 @@
 package com.seibel.distanthorizons.core.network.protocol;
 
-import com.seibel.distanthorizons.core.network.messages.ExceptionMessage;
+import com.seibel.distanthorizons.core.network.messages.base.ExceptionMessage;
 import io.netty.buffer.ByteBuf;
 
 import java.util.concurrent.atomic.AtomicInteger;

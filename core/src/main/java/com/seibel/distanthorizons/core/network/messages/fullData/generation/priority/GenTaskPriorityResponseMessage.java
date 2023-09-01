@@ -1,11 +1,10 @@
-package com.seibel.distanthorizons.core.network.messages;
+package com.seibel.distanthorizons.core.network.messages.fullData.generation.priority;
 
 import com.seibel.distanthorizons.core.network.protocol.FutureTrackableNetworkMessage;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import io.netty.buffer.ByteBuf;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class GenTaskPriorityResponseMessage extends FutureTrackableNetworkMessage
