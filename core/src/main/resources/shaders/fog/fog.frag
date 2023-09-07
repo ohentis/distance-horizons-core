@@ -4,8 +4,8 @@ in vec2 TexCoord;
 out vec4 fragColor;
 
 uniform sampler2D gDepthMap;
-// model view matrix and projection matrix
-uniform mat4 gMvmProj;
+// inverted model view matrix and projection matrix
+uniform mat4 gInvMvmProj;
 
 uniform float fogScale;
 uniform float fogVerticalScale;
@@ -42,28 +42,18 @@ float mixFogThickness(float near, float far, float height);
 // =========================================================
 
 
-// Puts steps in a float
-// EG. setting stepSize to 4 then this would be the result of this function
-// In:  0.0, 0.1, 0.2, 0.3,  0.4,  0.5, 0.6, ..., 1.1, 1.2, 1.3
-// Out: 0.0, 0.0, 0.0, 0.25, 0.25, 0.5, 0.5, ..., 1.0, 1.0, 1.25
-float quantize(float val, int stepSize) {
-    return floor(val*stepSize)/stepSize;
+const vec3 MAGIC = vec3(0.06711056, 0.00583715, 52.9829189);
+
+float InterleavedGradientNoise(const in vec2 pixel) {
+    float x = dot(pixel, MAGIC.xy);
+    return fract(MAGIC.z * fract(x));
 }
 
-// The modulus function dosnt exist in GLSL so I made my own
-// To speed up the mod function, this only accepts full numbers for y
-float mod(float x, int y) {
-    return x - y * floor(x/y);
-}
-
-
-vec3 calcViewPosition(float fragmentDepth)
-{
+vec3 calcViewPosition(float fragmentDepth) {
     vec4 ndc = vec4(TexCoord.xy, fragmentDepth, 1.0);
     ndc.xyz = ndc.xyz * 2.0 - 1.0;
 
-    // TODO: This inverse() should be moved CPU side
-    vec4 eyeCoord = inverse(gMvmProj) * ndc;
+    vec4 eyeCoord = gInvMvmProj * ndc;
     return eyeCoord.xyz / eyeCoord.w;
 }
 
@@ -77,13 +67,12 @@ void main()
 {
     float vertexYPos = 100.0f;
     float fragmentDepth = texture(gDepthMap, TexCoord).r;
+    fragColor = vec4(fogColor.rgb, 0.0);
 
     // a fragment depth of "1" means the fragment wasn't drawn to,
     // we only want to apply Fog to LODs, not to the sky outside the LODs
-    if (fragmentDepth < 1)
-    {
-        if (fullFogMode == 0)
-        {
+    if (fragmentDepth < 1.0) {
+        if (fullFogMode == 0) {
             // render fog based on distance from the camera
             vec3 vertexWorldPos = calcViewPosition(fragmentDepth);
 
@@ -95,17 +84,16 @@ void main()
             float farFogThickness = getFarFogThickness(farDist);
             float heightFogThickness = getHeightFogThickness(heightDist);
             float mixedFogThickness = mixFogThickness(nearFogThickness, farFogThickness, heightFogThickness);
-            mixedFogThickness = clamp(mixedFogThickness, 0.0, 1.0);
+            fragColor.a = clamp(mixedFogThickness, 0.0, 1.0);
 
-            fragColor = vec4(fogColor.rgb, mixedFogThickness);
+            float dither = InterleavedGradientNoise(gl_FragCoord.xy) - 0.5;
+            fragColor.a += dither / 255.0;
         }
-        else if (fullFogMode == 1)
-        {
+        else if (fullFogMode == 1) {
             // render everything with the fog color
-            fragColor = vec4(fogColor.rgb, 1.0);
+            fragColor.a = 1.0;
         }
-        else
-        {
+        else {
             // test code.
 
             // this can be fired by manually changing the fullFogMode to a (normally)
@@ -113,18 +101,12 @@ void main()
             // a uniform we don't have to worry about GLSL optimizing away different
             // options when testing, causing a bunch of headaches if we just want to render the screen red.
 
-            float depthValue = texture(gDepthMap, TexCoord).r;
-            fragColor = vec4(vec3(depthValue), 1.0); // Convert depth value to grayscale color
+            float depthValue = textureLod(gDepthMap, TexCoord, 0).r;
+            fragColor.rgb = vec3(depthValue); // Convert depth value to grayscale color
+            fragColor.a = 1.0;
         }
     }
-    else
-    {
-        // every pixel needs to be set to something, otherwise the pixel may be undefined by some drivers (specifically Intel)
-        fragColor = vec4(0.0, 0.0, 0.0, 0.0);
-    }
 }
-
-
 
 // Are these still needed?
 float linearFog(float x, float fogStart, float fogLength, float fogMin, float fogRange) {
@@ -133,13 +115,15 @@ float linearFog(float x, float fogStart, float fogLength, float fogMin, float fo
 }
 
 float exponentialFog(float x, float fogStart, float fogLength,
-float fogMin, float fogRange, float fogDensity) {
+    float fogMin, float fogRange, float fogDensity)
+{
     x = max((x-fogStart)/fogLength, 0.0) * fogDensity;
     return fogMin + fogRange - fogRange/exp(x);
 }
 
 float exponentialSquaredFog(float x, float fogStart, float fogLength,
-float fogMin, float fogRange, float fogDensity) {
+    float fogMin, float fogRange, float fogDensity)
+{
     x = max((x-fogStart)/fogLength, 0.0) * fogDensity;
     return fogMin + fogRange - fogRange/exp(x*x);
 }

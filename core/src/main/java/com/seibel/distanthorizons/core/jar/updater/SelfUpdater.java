@@ -1,3 +1,22 @@
+/*
+ *    This file is part of the Distant Horizons mod
+ *    licensed under the GNU LGPL v3 License.
+ *
+ *    Copyright (C) 2020-2023 James Seibel
+ *
+ *    This program is free software: you can redistribute it and/or modify
+ *    it under the terms of the GNU Lesser General Public License as published by
+ *    the Free Software Foundation, version 3.
+ *
+ *    This program is distributed in the hope that it will be useful,
+ *    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *    GNU Lesser General Public License for more details.
+ *
+ *    You should have received a copy of the GNU Lesser General Public License
+ *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.seibel.distanthorizons.core.jar.updater;
 
 import com.seibel.distanthorizons.core.jar.JarUtils;
@@ -38,9 +57,11 @@ public class SelfUpdater
 	 */
 	public static boolean onStart()
 	{
+		LOGGER.info("Checking for DH update");
 		// Some init stuff
 		// We use sha1 to check the version as our versioning system is different to the one on modrinth
-		if (!ModrinthGetter.init()) return false;
+		if (!ModrinthGetter.init())
+			return false;
 		String jarSha = "";
 		try
 		{
@@ -52,6 +73,11 @@ public class SelfUpdater
 			return false;
 		}
 		String mcVersion = SingletonInjector.INSTANCE.get(IVersionConstants.class).getMinecraftVersion();
+		if (!ModrinthGetter.mcVersions.contains(mcVersion))
+		{
+			LOGGER.warn("Minecraft version ["+ mcVersion +"] is not findable on Modrinth, only findable versions are ["+ ModrinthGetter.mcVersions.toString() +"]");
+			return false;
+		}
 		
 		// Check the sha's of both our stuff
 		if (jarSha.equals(ModrinthGetter.getLatestShaForVersion(mcVersion)))

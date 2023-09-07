@@ -1,9 +1,28 @@
+/*
+ *    This file is part of the Distant Horizons mod
+ *    licensed under the GNU LGPL v3 License.
+ *
+ *    Copyright (C) 2020-2023 James Seibel
+ *
+ *    This program is free software: you can redistribute it and/or modify
+ *    it under the terms of the GNU Lesser General Public License as published by
+ *    the Free Software Foundation, version 3.
+ *
+ *    This program is distributed in the hope that it will be useful,
+ *    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *    GNU Lesser General Public License for more details.
+ *
+ *    You should have received a copy of the GNU Lesser General Public License
+ *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.seibel.distanthorizons.core.api.internal;
 
 import com.seibel.distanthorizons.core.Initializer;
 import com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.ColumnRenderBufferBuilder;
 import com.seibel.distanthorizons.core.dataObjects.transformers.ChunkToLodBuilder;
-import com.seibel.distanthorizons.core.dataObjects.transformers.DataRenderTransformer;
+import com.seibel.distanthorizons.core.dataObjects.transformers.FullDataToRenderDataTransformer;
 import com.seibel.distanthorizons.core.file.fullDatafile.FullDataFileHandler;
 import com.seibel.distanthorizons.core.generation.WorldGenerationQueue;
 import com.seibel.distanthorizons.core.world.*;
@@ -33,7 +52,7 @@ public class SharedApi
 		if (currentWorld != null)
 		{
 			// static thread pool setup
-			DataRenderTransformer.setupExecutorService();
+			FullDataToRenderDataTransformer.setupExecutorService();
 			FullDataFileHandler.setupExecutorService();
 			ColumnRenderBufferBuilder.setupExecutorService();
 			WorldGenerationQueue.setupWorldGenThreadPool();
@@ -42,7 +61,7 @@ public class SharedApi
 		else
 		{
 			// static thread pool shutdown
-			DataRenderTransformer.shutdownExecutorService();
+			FullDataToRenderDataTransformer.shutdownExecutorService();
 			FullDataFileHandler.shutdownExecutorService();
 			ColumnRenderBufferBuilder.shutdownExecutorService();
 			WorldGenerationQueue.shutdownWorldGenThreadPool();

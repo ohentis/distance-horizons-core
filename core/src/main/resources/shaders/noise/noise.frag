@@ -30,14 +30,6 @@ vec3 quantize(vec3 val, int stepSize) {
     return floor(val*stepSize)/stepSize;
 }
 
-// The modulus function dosnt exist in GLSL so I made my own
-// To speed up the mod function, this only accepts full numbers for y
-float mod(float x, int y) {
-    return x - y * floor(x/y);
-}
-
-
-
 
 /**
  * Fragment shader for adding noise to lods.

@@ -1,3 +1,22 @@
+/*
+ *    This file is part of the Distant Horizons mod
+ *    licensed under the GNU LGPL v3 License.
+ *
+ *    Copyright (C) 2020-2023 James Seibel
+ *
+ *    This program is free software: you can redistribute it and/or modify
+ *    it under the terms of the GNU Lesser General Public License as published by
+ *    the Free Software Foundation, version 3.
+ *
+ *    This program is distributed in the hope that it will be useful,
+ *    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *    GNU Lesser General Public License for more details.
+ *
+ *    You should have received a copy of the GNU Lesser General Public License
+ *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.seibel.distanthorizons.core.file.metaData;
 
 import java.io.*;
@@ -6,6 +25,7 @@ import java.nio.channels.Channels;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.FileChannel;
 import java.nio.file.*;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.zip.Adler32;
 import java.util.zip.CheckedOutputStream;
 
@@ -33,7 +53,7 @@ import org.apache.logging.log4j.Logger;
  * 4 bytes: section Y position (Unused, for future proofing) <br>
  * 4 bytes: section Z position <br> <br>
  *
- * 4 bytes: data checksum <br> //TODO: Implement checksum
+ * 4 bytes: data checksum <br>
  * 1 byte: section detail level <br>
  * 1 byte: data detail level // Note: not sure if this is needed <br>
  * 1 byte: loader version <br>
@@ -165,40 +185,21 @@ public abstract class AbstractMetaDataContainerFile
 	
 	
 	
-	//================//
-	// helper methods //
-	//================//
-	
-	/** Throws an {@link IOException} if the given file isn't valid */
-	private static void validateMetaDataFile(File file) throws IOException
-	{
-		if (!file.exists()) throw new IOException("File missing");
-		if (!file.isFile()) throw new IOException("Not a file");
-		if (!file.canRead()) throw new IOException("File not readable");
-		if (!file.canWrite()) throw new IOException("File not writable");
-	}
-	
-	/** Sets this object's {@link AbstractMetaDataContainerFile#baseMetaData} using the set {@link AbstractMetaDataContainerFile#file} */
-	protected void loadMetaData() throws IOException
-	{
-		validateMetaDataFile(this.file);
-		this.baseMetaData = readMetaDataFromFile(this.file);
-		if (!this.baseMetaData.pos.equals(this.pos))
-		{
-			LOGGER.warn("The file is from a different location than expected! Expected: [" + this.pos + "] but got [" + this.baseMetaData.pos + "]. Ignoring file tag.");
-			this.baseMetaData.pos = this.pos;
-		}
-	}
+	//==============//
+	// file writing //
+	//==============//
 	
 	protected void writeData(IMetaDataWriterFunc<DhDataOutputStream> dataWriterFunc) throws IOException
 	{
-		LodUtil.assertTrue(!DebugThreadCheck);
-		DebugThreadCheck = true;
+		LodUtil.assertTrue(!this.DebugThreadCheck);
+		this.DebugThreadCheck = true;
 		LodUtil.assertTrue(this.baseMetaData != null);
 		if (this.file.exists())
 		{
 			validateMetaDataFile(this.file);
 		}
+		
+		
 		
 		File tempFile;
 		if (USE_ATOMIC_MOVE_REPLACE)
@@ -262,7 +263,7 @@ public abstract class AbstractMetaDataContainerFile
 		catch (ClosedChannelException e) // includes ClosedByInterruptException
 		{
 			// expected if the file handler is shut down, the exception can be ignored
-//			LOGGER.warn(AbstractMetaDataContainerFile.class.getSimpleName()+" file writing interrupted. Error: "+e.getMessage());
+			//LOGGER.warn(AbstractMetaDataContainerFile.class.getSimpleName()+" file writing interrupted. Error: "+e.getMessage());
 		}
 		finally
 		{
@@ -295,14 +296,37 @@ public abstract class AbstractMetaDataContainerFile
 	
 	
 	//================//
+	// helper methods //
+	//================//
+	
+	/** Throws an {@link IOException} if the given file isn't valid */
+	private static void validateMetaDataFile(File file) throws IOException
+	{
+		if (!file.exists()) throw new IOException("File missing");
+		if (!file.isFile()) throw new IOException("Not a file");
+		if (!file.canRead()) throw new IOException("File not readable");
+		if (!file.canWrite()) throw new IOException("File not writable");
+	}
+	
+	/** Sets this object's {@link AbstractMetaDataContainerFile#baseMetaData} using the set {@link AbstractMetaDataContainerFile#file} */
+	protected void loadMetaData() throws IOException
+	{
+		validateMetaDataFile(this.file);
+		this.baseMetaData = readMetaDataFromFile(this.file);
+		if (!this.baseMetaData.pos.equals(this.pos))
+		{
+			LOGGER.warn("The file is from a different location than expected! Expected: [" + this.pos + "] but got [" + this.baseMetaData.pos + "]. Ignoring file tag.");
+			this.baseMetaData.pos = this.pos;
+		}
+	}
+	
+	
+	
+	//================//
 	// helper classes //
 	//================//
 	
 	@FunctionalInterface
-	public interface IMetaDataWriterFunc<T>
-	{
-		void writeBufferToFile(T t) throws IOException;
-		
-	}
+	public interface IMetaDataWriterFunc<T> { void writeBufferToFile(T t) throws IOException; }
 	
 }

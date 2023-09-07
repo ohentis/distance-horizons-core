@@ -1,3 +1,22 @@
+/*
+ *    This file is part of the Distant Horizons mod
+ *    licensed under the GNU LGPL v3 License.
+ *
+ *    Copyright (C) 2020-2023 James Seibel
+ *
+ *    This program is free software: you can redistribute it and/or modify
+ *    it under the terms of the GNU Lesser General Public License as published by
+ *    the Free Software Foundation, version 3.
+ *
+ *    This program is distributed in the hope that it will be useful,
+ *    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *    GNU Lesser General Public License for more details.
+ *
+ *    You should have received a copy of the GNU Lesser General Public License
+ *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.seibel.distanthorizons.core.render;
 
 import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSource;
@@ -103,23 +122,7 @@ public class LodRenderSection implements IDebugRenderable
 	// rendering //
 	//===========//
 	
-	public void enableRendering()
-	{
-		// FIXME this is a temporary fix for sections not building the first time,
-		//  this may cause LODs to flash when first loading
-		//  Problem reproduction steps:
-		//  1. connect to a multiplayer server
-		//  2. enter spectator
-		//  3. fly in one direction until section detail levels 7 and 8 appear
-		//  4. empty LODs should appear
-		if (!this.isRenderingEnabled)
-		{
-			// this only needs to be called when first enabling the section
-			//this.markBufferDirty();
-		}
-		
-		this.isRenderingEnabled = true;
-	}
+	public void enableRendering() { this.isRenderingEnabled = true; }
 	public void disableRendering() { this.isRenderingEnabled = false; }
 	
 	
@@ -141,6 +144,13 @@ public class LodRenderSection implements IDebugRenderable
 		// don't re-load or double load the render source
 		if (this.renderSource != null || this.renderSourceLoadFuture != null)
 		{
+			// since the render source has been loaded, make sure the render buffers are populated
+			// FIXME this is a duck tape solution, since the renderBufferRef should be populated elsewhere, but this does fix empty LODs when moving around the world
+			if (this.activeRenderBufferRef.get() == null)
+			{
+				this.markBufferDirty(); // empty LOD fix #3, all solutions revolve around markBufferDirty()
+			}
+			
 			return;
 		}
 		
@@ -154,7 +164,7 @@ public class LodRenderSection implements IDebugRenderable
 		{
 			DebugRenderer.makeParticle(
 					new DebugRenderer.BoxParticle(
-							new DebugRenderer.Box(pos, 0, 256f, 0.03f, Color.cyan),
+							new DebugRenderer.Box(this.pos, 0, 256f, 0.03f, Color.cyan),
 							0.5, 512f
 					)
 			);
@@ -223,16 +233,17 @@ public class LodRenderSection implements IDebugRenderable
 		return this.renderSource != null
 				&&
 				(
-						(
-								// if true; either this section represents empty chunks or un-generated chunks. 
-								// Either way, there isn't any data to render, but this should be considered "loaded"
-								this.renderSource.isEmpty()
-						)
-								||
-								(
-										// check if the buffers have been loaded
-										this.activeRenderBufferRef.get() != null
-								)
+					(
+						// if true; either this section represents empty chunks or un-generated chunks. 
+						// Either way, there isn't any data to render, but this should be considered "loaded"
+						this.renderSource.isEmpty()
+					)
+					||
+					(
+						// check if the buffers have been loaded
+						this.activeRenderBufferRef.get() != null // in the case of missing sections, this is probably null
+						&& this.lastSwapLocalVersion != -1
+					)
 				);
 	}
 	
@@ -283,7 +294,7 @@ public class LodRenderSection implements IDebugRenderable
 	}
 	
 	/** @return true if this section is loaded and set to render */
-	public boolean canBuildBuffer() { return this.renderSource != null && this.buildRenderBufferFuture == null && !this.renderSource.isEmpty() && this.isBufferOutdated(); }
+	public boolean canBuildBuffer() { return this.renderSourceLoadFuture == null && this.renderSource != null && this.buildRenderBufferFuture == null && !this.renderSource.isEmpty() && this.isBufferOutdated(); }
 	private boolean isBufferOutdated() { return this.neighborUpdated || this.renderSource.localVersion.get() != this.lastSwapLocalVersion; }
 	
 	/** @return true if this section is loaded and set to render */

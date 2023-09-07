@@ -1,8 +1,8 @@
 /*
- *    This file is part of the Distant Horizons mod (formerly the LOD Mod),
+ *    This file is part of the Distant Horizons mod
  *    licensed under the GNU LGPL v3 License.
  *
- *    Copyright (C) 2020-2022  James Seibel
+ *    Copyright (C) 2020-2023 James Seibel
  *
  *    This program is free software: you can redistribute it and/or modify
  *    it under the terms of the GNU Lesser General Public License as published by
@@ -22,6 +22,7 @@ package com.seibel.distanthorizons.core.api.external.methods.config.client;
 import com.seibel.distanthorizons.api.enums.config.*;
 import com.seibel.distanthorizons.api.enums.rendering.ETransparency;
 import com.seibel.distanthorizons.api.interfaces.config.IDhApiConfigValue;
+import com.seibel.distanthorizons.api.interfaces.config.client.IDhApiAmbientOcclusionConfig;
 import com.seibel.distanthorizons.api.interfaces.config.client.IDhApiFogConfig;
 import com.seibel.distanthorizons.api.interfaces.config.client.IDhApiGraphicsConfig;
 import com.seibel.distanthorizons.api.interfaces.config.client.IDhApiNoiseTextureConfig;
@@ -42,6 +43,7 @@ public class DhApiGraphicsConfig implements IDhApiGraphicsConfig
 	//==============//
 	
 	public IDhApiFogConfig fog() { return DhApiFogConfig.INSTANCE; }
+	public IDhApiAmbientOcclusionConfig ambientOcclusion() { return DhApiAmbientOcclusionConfig.INSTANCE; }
 	public IDhApiNoiseTextureConfig noiseTexture() { return DhApiNoiseTextureConfig.INSTANCE; }
 	
 	
@@ -79,10 +81,6 @@ public class DhApiGraphicsConfig implements IDhApiGraphicsConfig
 	@Override
 	public IDhApiConfigValue<EHorizontalQuality> horizontalQuality()
 	{ return new DhApiConfigValue<EHorizontalQuality, EHorizontalQuality>(Config.Client.Advanced.Graphics.Quality.horizontalQuality); }
-	
-	@Override
-	public IDhApiConfigValue<Boolean> ambientOcclusion()
-	{ return new DhApiConfigValue<Boolean, Boolean>(Config.Client.Advanced.Graphics.Quality.ssao); }
 	
 	@Override
 	public IDhApiConfigValue<ETransparency> transparency()

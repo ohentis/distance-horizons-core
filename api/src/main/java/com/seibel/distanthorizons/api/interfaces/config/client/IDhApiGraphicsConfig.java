@@ -1,8 +1,8 @@
 /*
- *    This file is part of the Distant Horizons mod (formerly the LOD Mod),
+ *    This file is part of the Distant Horizons mod
  *    licensed under the GNU LGPL v3 License.
  *
- *    Copyright (C) 2020-2022  James Seibel
+ *    Copyright (C) 2020-2023 James Seibel
  *
  *    This program is free software: you can redistribute it and/or modify
  *    it under the terms of the GNU Lesser General Public License as published by
@@ -40,6 +40,7 @@ public interface IDhApiGraphicsConfig extends IDhApiConfigGroup
 	//===============//
 	
 	IDhApiFogConfig fog();
+	IDhApiAmbientOcclusionConfig ambientOcclusion();
 	IDhApiNoiseTextureConfig noiseTexture();
 	
 	
@@ -83,8 +84,6 @@ public interface IDhApiGraphicsConfig extends IDhApiConfigGroup
 	
 	/** Modifies the quadratic function fake chunks use for horizontal quality drop-off. */
 	IDhApiConfigValue<EHorizontalQuality> horizontalQuality();
-	
-	IDhApiConfigValue<Boolean> ambientOcclusion();
 	
 	IDhApiConfigValue<ETransparency> transparency();
 	

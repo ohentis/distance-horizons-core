@@ -1,3 +1,22 @@
+/*
+ *    This file is part of the Distant Horizons mod
+ *    licensed under the GNU LGPL v3 License.
+ *
+ *    Copyright (C) 2020-2023 James Seibel
+ *
+ *    This program is free software: you can redistribute it and/or modify
+ *    it under the terms of the GNU Lesser General Public License as published by
+ *    the Free Software Foundation, version 3.
+ *
+ *    This program is distributed in the hope that it will be useful,
+ *    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *    GNU Lesser General Public License for more details.
+ *
+ *    You should have received a copy of the GNU Lesser General Public License
+ *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.seibel.distanthorizons.core.render.renderer.shaders;
 
 import com.seibel.distanthorizons.api.enums.rendering.EFogColorMode;
@@ -21,7 +40,7 @@ public class FogShader extends AbstractShaderRenderer
 	private static final IVersionConstants VERSION_CONSTANTS = SingletonInjector.INSTANCE.get(IVersionConstants.class);
 	
 	
-	public final int gModelViewProjectionUniform;
+	public final int gInvertedModelViewProjectionUniform;
 	public final int gDepthMapUniform;
 	
 	// Fog Uniforms
@@ -48,7 +67,7 @@ public class FogShader extends AbstractShaderRenderer
 		// because disabling fog can cause the GLSL to optimize out most (if not all) uniforms
 		
 		
-		this.gModelViewProjectionUniform = this.shader.tryGetUniformLocation("gMvmProj");
+		this.gInvertedModelViewProjectionUniform = this.shader.tryGetUniformLocation("gInvMvmProj");
 		this.gDepthMapUniform = this.shader.tryGetUniformLocation("gDepthMap");
 		
 		// Fog uniforms
@@ -119,7 +138,11 @@ public class FogShader extends AbstractShaderRenderer
 	public void setModelViewProjectionMatrix(Mat4f combinedModelViewProjectionMatrix)
 	{
 		this.shader.bind();
-		this.shader.setUniform(this.gModelViewProjectionUniform, combinedModelViewProjectionMatrix);
+		
+		Mat4f inverseMvmProjMatrix = new Mat4f(combinedModelViewProjectionMatrix);
+		inverseMvmProjMatrix.invert();
+		this.shader.setUniform(this.gInvertedModelViewProjectionUniform, inverseMvmProjMatrix);
+		
 		this.shader.unbind();
 	}
 	

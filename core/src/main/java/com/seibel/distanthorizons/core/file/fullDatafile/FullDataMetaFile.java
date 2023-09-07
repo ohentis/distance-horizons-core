@@ -1,10 +1,28 @@
+/*
+ *    This file is part of the Distant Horizons mod
+ *    licensed under the GNU LGPL v3 License.
+ *
+ *    Copyright (C) 2020-2023 James Seibel
+ *
+ *    This program is free software: you can redistribute it and/or modify
+ *    it under the terms of the GNU Lesser General Public License as published by
+ *    the Free Software Foundation, version 3.
+ *
+ *    This program is distributed in the hope that it will be useful,
+ *    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *    GNU Lesser General Public License for more details.
+ *
+ *    You should have received a copy of the GNU Lesser General Public License
+ *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.seibel.distanthorizons.core.file.fullDatafile;
 
 import java.awt.*;
 import java.io.*;
 import java.lang.ref.*;
 import java.nio.channels.ClosedByInterruptException;
-import java.nio.file.FileAlreadyExistsException;
 import java.util.Set;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
@@ -13,6 +31,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.CompleteFullDataSource;
 import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IFullDataSource;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IIncompleteFullDataSource;
 import com.seibel.distanthorizons.core.file.metaData.AbstractMetaDataContainerFile;
 import com.seibel.distanthorizons.core.file.metaData.BaseMetaData;
 import com.seibel.distanthorizons.core.level.IDhLevel;
@@ -27,129 +46,49 @@ import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
 import org.apache.logging.log4j.Logger;
 
-/**
- * Represents a File that contains a {@link IFullDataSource}.
- */
+/** Represents a File that contains a {@link IFullDataSource}. */
 public class FullDataMetaFile extends AbstractMetaDataContainerFile implements IDebugRenderable
 {
+	public static final String FILE_SUFFIX = ".lod";
+	
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger(FullDataMetaFile.class.getSimpleName());
 	
-	private final IDhLevel level;
-	private final IFullDataSourceProvider fullDataSourceProvider;
-	public boolean doesFileExist;
+	// === Object lifetime tracking ===
+	/** if true both data source creation and garbage collection will be logged */
+	private static final boolean LOG_DATA_SOURCE_LIVES = false;
+	private static final ReferenceQueue<IFullDataSource> LIFE_CYCLE_DEBUG_QUEUE = new ReferenceQueue<>();
+	private static final ReferenceQueue<IFullDataSource> SOFT_REF_DEBUG_QUEUE = new ReferenceQueue<>();
+	private static final Set<DataObjTracker> LIFE_CYCLE_DEBUG_SET = ConcurrentHashMap.newKeySet();
+	private static final Set<DataObjSoftTracker> SOFT_REF_DEBUG_SET = ConcurrentHashMap.newKeySet();
+	// ===========================
 	
+	
+	
+	public boolean doesFileExist;
 	//TODO: Atm can't find a better way to store when genQueue is checked.
 	public boolean genQueueChecked = false;
 	
-	private volatile boolean markedNeedUpdate = false;
-	
 	public AbstractFullDataSourceLoader fullDataSourceLoader;
-	public Class<? extends IFullDataSource> dataType;
+	public Class<? extends IFullDataSource> fullDataSourceClass;
+	
+	
+	private volatile boolean needsUpdate = false;
+	
+	private final IDhLevel level;
+	private final IFullDataSourceProvider fullDataSourceProvider;
 	
 	/**
 	 * Can be cleared if the garbage collector determines there isn't enough space. <br><br>
 	 *
 	 * When clearing, don't set to null, instead create a SoftReference containing null.
-	 * This will make null checks simpler.
+	 * This makes null checks simpler.
 	 */
-	private SoftReference<IFullDataSource> cachedFullDataSource = new SoftReference<>(null);
+	private SoftReference<IFullDataSource> cachedFullDataSourceRef = new SoftReference<>(null);
 	private final AtomicReference<CompletableFuture<IFullDataSource>> dataSourceLoadFutureRef = new AtomicReference<>(null);
 	
-	private static final class CacheQueryResult
-	{
-		public final CompletableFuture<IFullDataSource> future;
-		public final boolean needsLoad;
-		public CacheQueryResult(CompletableFuture<IFullDataSource> future, boolean needsLoad)
-		{
-			this.future = future;
-			this.needsLoad = needsLoad;
-		}
-		
-	}
-	
-	@Override
-	public void debugRender(DebugRenderer r)
-	{
-		if (pos.sectionDetailLevel > DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL) return;
-		
-		IFullDataSource cached = cachedFullDataSource.get();
-		if (markedNeedUpdate)
-			r.renderBox(new DebugRenderer.Box(pos, 80f, 96f, 0.05f, Color.red));
-		
-		Color c = Color.black;
-		if (cached != null)
-		{
-			if (cached instanceof CompleteFullDataSource)
-			{
-				c = Color.GREEN;
-			}
-			else
-			{
-				c = Color.YELLOW;
-			}
-			
-		}
-		else if (dataSourceLoadFutureRef.get() != null)
-		{
-			c = Color.BLUE;
-		}
-		else if (doesFileExist)
-		{
-			c = Color.RED;
-		}
-		boolean needUpdate = !this.writeQueueRef.get().queue.isEmpty() || markedNeedUpdate;
-		if (needUpdate) c = c.darker().darker();
-		r.renderBox(new DebugRenderer.Box(pos, 80f, 96f, 0.05f, c));
-	}
-	
-	//TODO: use ConcurrentAppendSingleSwapContainer<LodDataSource> instead of below:
-	private static class GuardedMultiAppendQueue
-	{
-		ReentrantReadWriteLock appendLock = new ReentrantReadWriteLock();
-		ConcurrentLinkedQueue<ChunkSizedFullDataAccessor> queue = new ConcurrentLinkedQueue<>();
-		
-	}
-	
-	
-	// ===Concurrent Write stuff===
+	// === Concurrent Write tracking ===
 	private final AtomicReference<GuardedMultiAppendQueue> writeQueueRef = new AtomicReference<>(new GuardedMultiAppendQueue());
 	private GuardedMultiAppendQueue backWriteQueue = new GuardedMultiAppendQueue();
-	// ===========================
-	
-	// ===Object lifetime stuff===
-	private static final ReferenceQueue<IFullDataSource> lifeCycleDebugQueue = new ReferenceQueue<>();
-	private static final ReferenceQueue<IFullDataSource> softRefDebugQueue = new ReferenceQueue<>();
-	private static final Set<DataObjTracker> lifeCycleDebugSet = ConcurrentHashMap.newKeySet();
-	private static final Set<DataObjSoftTracker> softRefDebugSet = ConcurrentHashMap.newKeySet();
-	
-	private static class DataObjTracker extends PhantomReference<IFullDataSource> implements Closeable
-	{
-		public final DhSectionPos pos;
-		DataObjTracker(IFullDataSource data)
-		{
-			super(data, lifeCycleDebugQueue);
-			//LOGGER.info("Phantom created on {}! count: {}", data.getSectionPos(), lifeCycleDebugSet.size());
-			lifeCycleDebugSet.add(this);
-			this.pos = data.getSectionPos();
-		}
-		@Override
-		public void close() { lifeCycleDebugSet.remove(this); }
-		
-	}
-	
-	private static class DataObjSoftTracker extends SoftReference<IFullDataSource> implements Closeable
-	{
-		public final FullDataMetaFile file;
-		DataObjSoftTracker(FullDataMetaFile file, IFullDataSource data)
-		{
-			super(data, softRefDebugQueue);
-			softRefDebugSet.add(this);
-			this.file = file;
-		}
-		@Override
-		public void close() { softRefDebugSet.remove(this); }
-		
-	}
 	// ===========================
 	
 	
@@ -159,14 +98,14 @@ public class FullDataMetaFile extends AbstractMetaDataContainerFile implements I
 	//==============//
 	
 	/**
-	 * Creates a new file.
-	 *
-	 * @throws FileAlreadyExistsException if a file already exists.
+	 * NOTE: should only be used if there is NOT an existing file.
+	 * @throws IOException if a file already exists for this position
 	 */
-	public FullDataMetaFile(IFullDataSourceProvider fullDataSourceProvider, IDhLevel level, DhSectionPos pos) throws FileAlreadyExistsException
+	public static FullDataMetaFile createNewFileForPos(IFullDataSourceProvider fullDataSourceProvider, IDhLevel clientLevel, DhSectionPos pos) throws IOException { return new FullDataMetaFile(fullDataSourceProvider, clientLevel, pos); }
+	private FullDataMetaFile(IFullDataSourceProvider fullDataSourceProvider, IDhLevel level, DhSectionPos pos) throws IOException
 	{
 		super(fullDataSourceProvider.computeDataFilePath(pos), pos);
-		debugPhantomLifeCycleCheck();
+		checkAndLogPhantomDataSourceLifeCycles();
 		
 		this.fullDataSourceProvider = fullDataSourceProvider;
 		this.level = level;
@@ -175,16 +114,17 @@ public class FullDataMetaFile extends AbstractMetaDataContainerFile implements I
 		DebugRenderer.register(this);
 	}
 	
+	
 	/**
-	 * Uses an existing file.
-	 *
+	 * NOTE: should only be used if there IS an existing file.
 	 * @throws IOException if the file was formatted incorrectly
 	 * @throws FileNotFoundException if no file exists for the given path
 	 */
-	public FullDataMetaFile(IFullDataSourceProvider fullDataSourceProvider, IDhLevel level, File file) throws IOException, FileNotFoundException
+	public static FullDataMetaFile createFromExistingFile(IFullDataSourceProvider fullDataSourceProvider, IDhLevel level, File file) throws IOException { return new FullDataMetaFile(fullDataSourceProvider, level, file); }
+	private FullDataMetaFile(IFullDataSourceProvider fullDataSourceProvider, IDhLevel level, File file) throws IOException, FileNotFoundException
 	{
 		super(file);
-		debugPhantomLifeCycleCheck();
+		checkAndLogPhantomDataSourceLifeCycles();
 		
 		this.fullDataSourceProvider = fullDataSourceProvider;
 		this.level = level;
@@ -198,240 +138,191 @@ public class FullDataMetaFile extends AbstractMetaDataContainerFile implements I
 			throw new IOException("Invalid file: Data type loader not found: " + this.baseMetaData.dataTypeId + "(v" + this.baseMetaData.binaryDataFormatVersion + ")");
 		}
 		
-		this.dataType = this.fullDataSourceLoader.clazz;
+		this.fullDataSourceClass = this.fullDataSourceLoader.fullDataSourceClass;
 		DebugRenderer.register(this);
 	}
 	
-	public void markNeedUpdate() { this.markedNeedUpdate = true; }
+	
 	
 	//==========//
 	// get data //
 	//==========//
 	
-	// Try get cached data source. Used for temp impl for re-queueing world gen tasks.
-	// (Read-only access! As writes should always be done async)
-	public IFullDataSource getCachedDataSourceNowOrNull()
-	{
-		debugPhantomLifeCycleCheck();
-		return this.cachedFullDataSource.get();
+	/**
+	 * Try get cached data source. Used for temp impl of re-queueing world gen tasks.
+	 * (Read-only access! As writes should always be done async)
+	 */
+	public IFullDataSource getCachedDataSourceNowOrNull() 
+	{ 
+		checkAndLogPhantomDataSourceLifeCycles(); 
+		return this.cachedFullDataSourceRef.get(); 
 	}
 	
-	private void makeUpdateCompletionStage(CompletableFuture<IFullDataSource> completer, CompletableFuture<IFullDataSource> currentStage)
-	{
-		currentStage.thenCompose(
-						(fullDataSource) -> {
-							markedNeedUpdate = false;
-							return this.fullDataSourceProvider.onDataFileUpdate(fullDataSource, this, this::_updateAndWriteDataSource, this::_applyWriteQueueToFullDataSource);
-						})
-				.whenComplete((fullDataSource, ex) ->
-				{
-					if (ex != null && !LodUtil.isInterruptOrReject(ex))
-					{
-						LOGGER.error("Error updating file [" + this.file + "]: ", ex);
-					}
-					
-					if (fullDataSource != null)
-					{
-						new DataObjTracker(fullDataSource);
-						new DataObjSoftTracker(this, fullDataSource);
-					}
-					//LOGGER.info("Updated file "+this.file);
-					if (pos.sectionDetailLevel == DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL)
-						DebugRenderer.makeParticle(
-								new DebugRenderer.BoxParticle(
-										new DebugRenderer.Box(this.pos, 64f, 72f, 0.03f, Color.green.darker()),
-										0.2, 32f
-								)
-						);
-					
-					this.cachedFullDataSource = new SoftReference<>(fullDataSource);
-					inCrit = false;
-					dataSourceLoadFutureRef.set(null);
-					completer.complete(fullDataSource);
-					
-					if (this.markedNeedUpdate)
-					{
-						// trigger another update
-						this.loadOrGetCachedDataSourceAsync();
-					}
-				});
-	}
 	
-	private void makeLoadCompletionStage(ExecutorService executorService, CompletableFuture<IFullDataSource> completer)
+	public CompletableFuture<IFullDataSource> getOrLoadCachedDataSourceAsync()
 	{
-		makeUpdateCompletionStage(completer, CompletableFuture.supplyAsync(() -> {
-			// Load the file.
-			IFullDataSource fullDataSource;
-			try (FileInputStream fileInputStream = this.getFileInputStream();
-					DhDataInputStream compressedStream = new DhDataInputStream(fileInputStream))
-			{
-				fullDataSource = this.fullDataSourceLoader.loadData(this, compressedStream, this.level);
-			}
-			catch (Exception ex)
-			{
-				// can happen if there is a missing file or the file was incorrectly formatted, or terminated early
-				throw new CompletionException(ex);
-			}
-			return fullDataSource;
-		}, executorService));
-	}
-	
-	private void makeCreateCompletionStage(CompletableFuture<IFullDataSource> completer)
-	{
-		this.makeUpdateCompletionStage(completer, this.fullDataSourceProvider.onCreateDataFile(this)
-				.thenApply((fullDataSource) ->
-				{
-					this.baseMetaData = this._makeBaseMetaData(fullDataSource);
-					return fullDataSource;
-				}));
-	}
-	
-	private volatile boolean inCrit = false;
-	// Cause: Generic Type runtime casting cannot safety check it.
-	// However, the Union type ensures the 'data' should only contain the listed type.
-	public CompletableFuture<IFullDataSource> loadOrGetCachedDataSourceAsync()
-	{
-		debugPhantomLifeCycleCheck();
+		checkAndLogPhantomDataSourceLifeCycles();
 		
-		CacheQueryResult result = this.getCachedDataSourceAsync();
-		
-		if (result.needsLoad)
+		CompletableFuture<IFullDataSource> potentialLoadFuture = this.getCachedDataSourceAsync();
+		if (potentialLoadFuture != null)
 		{
-			LodUtil.assertTrue(!this.inCrit);
-			this.inCrit = true;
+			// return the in-process future
+			return potentialLoadFuture;
+		}
+		else
+		{
+			// there is no cached data, we'll have to load it
 			
-			CompletableFuture<IFullDataSource> future = result.future;
-			// don't continue if the provider has been shut down
-			ExecutorService executorService = this.fullDataSourceProvider.getIOExecutor();
-			if (executorService.isTerminated())
+			potentialLoadFuture = new CompletableFuture<>();
+			if (!this.dataSourceLoadFutureRef.compareAndSet(null, potentialLoadFuture))
 			{
-				this.inCrit = false;
-				this.dataSourceLoadFutureRef.set(null);
-				future.complete(null);
-				return future;
+				// two threads attempted to start this job at the same time, only use the first future
+				potentialLoadFuture = this.dataSourceLoadFutureRef.get();
+			}
+		}
+		
+		
+		
+		CompletableFuture<IFullDataSource> dataSourceLoadFuture = potentialLoadFuture;
+		if (!this.doesFileExist)
+		{
+			// create a new Meta file and data source
+			
+			this.fullDataSourceProvider.onDataFileCreatedAsync(this)
+					.thenApply((fullDataSource) ->
+					{
+						AbstractFullDataSourceLoader dataSourceLoader = AbstractFullDataSourceLoader.getLoader(fullDataSource.getClass(), fullDataSource.getBinaryDataFormatVersion());
+						
+						this.baseMetaData = new BaseMetaData(
+								fullDataSource.getSectionPos(), -1,
+								fullDataSource.getDataDetailLevel(), fullDataSource.getWorldGenStep(),
+								(dataSourceLoader == null ? 0 : dataSourceLoader.datatypeId), fullDataSource.getBinaryDataFormatVersion(), Long.MAX_VALUE);
+						
+						return fullDataSource;
+					})
+					.thenCompose((fullDataSource) -> this.applyWriteQueueAndSaveAsync(fullDataSource))
+					.thenAccept((fullDataSource) ->
+					{
+						dataSourceLoadFuture.complete(fullDataSource);
+						this.dataSourceLoadFutureRef.set(null);
+					});
+		}
+		else
+		{
+			// load the existing Meta file and data source
+			
+			if (this.baseMetaData == null)
+			{
+				throw new IllegalStateException("Meta data not loaded!");
 			}
 			
-			// create a new Meta file
-			if (!this.doesFileExist)
+			
+			ExecutorService executorService = this.fullDataSourceProvider.getIOExecutor();
+			if (!executorService.isTerminated())
 			{
-				this.makeCreateCompletionStage(future);
+				// load the data source
+				
+				CompletableFuture.supplyAsync(() ->
+						{
+							// Load the file.
+							IFullDataSource fullDataSource;
+							try (FileInputStream fileInputStream = this.getFileInputStream();
+									DhDataInputStream compressedStream = new DhDataInputStream(fileInputStream))
+							{
+								fullDataSource = this.fullDataSourceLoader.loadData(this, compressedStream, this.level);
+							}
+							catch (Exception ex)
+							{
+								// can happen if there is a missing file or the file was incorrectly formatted, or terminated early
+								throw new CompletionException(ex);
+							}
+							return fullDataSource;
+						}, executorService)
+						.thenCompose((fullDataSource) -> this.applyWriteQueueAndSaveAsync(fullDataSource))
+						.thenAccept((fullDataSource) ->
+						{
+							dataSourceLoadFuture.complete(fullDataSource);
+							this.dataSourceLoadFutureRef.set(null);
+						});
 			}
 			else
 			{
-				// Otherwise, load and update file
-				if (this.baseMetaData == null)
-				{
-					throw new IllegalStateException("Meta data not loaded!");
-				}
-				
-				this.makeLoadCompletionStage(executorService, future);
+				// don't load anything if the provider has been shut down
+				dataSourceLoadFuture.complete(null);
+				this.dataSourceLoadFutureRef.set(null);
+				return dataSourceLoadFuture;
 			}
 		}
 		
-		return result.future;
+		return dataSourceLoadFuture;
 	}
 	
-	/** @return a stream for the data contained in this file, skips the metadata from {@link AbstractMetaDataContainerFile}. */
-	private FileInputStream getFileInputStream() throws IOException
-	{
-		FileInputStream fileInputStream = new FileInputStream(this.file);
-		
-		// skip the meta-data bytes
-		int bytesToSkip = AbstractMetaDataContainerFile.METADATA_SIZE_IN_BYTES;
-		while (bytesToSkip > 0)
-		{
-			long skippedByteCount = fileInputStream.skip(bytesToSkip);
-			if (skippedByteCount == 0)
-			{
-				throw new IOException("Invalid file: Failed to skip metadata.");
-			}
-			bytesToSkip -= skippedByteCount;
-		}
-		
-		if (bytesToSkip != 0)
-		{
-			throw new IOException("File IO Error: Failed to skip metadata.");
-		}
-		return fileInputStream;
-	}
-	private BaseMetaData _makeBaseMetaData(IFullDataSource data)
-	{
-		AbstractFullDataSourceLoader loader = AbstractFullDataSourceLoader.getLoader(data.getClass(), data.getBinaryDataFormatVersion());
-		return new BaseMetaData(data.getSectionPos(), -1,
-				data.getDataDetailLevel(), data.getWorldGenStep(), (loader == null ? 0 : loader.datatypeId), data.getBinaryDataFormatVersion(), Long.MAX_VALUE);
-	}
 	
-	/**
-	 * @return one of the following:
-	 * the cached {@link IFullDataSource},
-	 * a future that will complete once the {@link FullDataMetaFile#writeQueueRef} has been written,
-	 * or null if nothing has been cached and nothing is being loaded
-	 */
-	private CacheQueryResult getCachedDataSourceAsync()
+	
+	/** @return returns null if {@link FullDataMetaFile#cachedFullDataSourceRef} is empty and no cached {@link IFullDataSource} exists. */
+	private CompletableFuture<IFullDataSource> getCachedDataSourceAsync()
 	{
 		// this data source is being written to, use the existing future
 		CompletableFuture<IFullDataSource> dataSourceLoadFuture = this.dataSourceLoadFutureRef.get();
 		if (dataSourceLoadFuture != null)
 		{
-			return new CacheQueryResult(dataSourceLoadFuture, false);
+			return dataSourceLoadFuture;
 		}
+		
+		
 		// attempt to get the cached data source
-		IFullDataSource cachedFullDataSource = this.cachedFullDataSource.get();
+		IFullDataSource cachedFullDataSource = this.cachedFullDataSourceRef.get();
 		if (cachedFullDataSource == null)
 		{
-			// Make a new future, and CAS it into the dataSourceLoadFutureRef, or return the existing future
-			CompletableFuture<IFullDataSource> newFuture = new CompletableFuture<>();
-			CompletableFuture<IFullDataSource> cas = AtomicsUtil.compareAndExchange(dataSourceLoadFutureRef, null, newFuture);
-			if (cas == null)
-			{
-				return new CacheQueryResult(newFuture, true);
-			}
-			else
-			{
-				return new CacheQueryResult(cas, false);
-			}
+			// no cached data exists and no one is trying to load it
+			return null;
 		}
 		else
 		{
-			// The file is cached in RAM
-			boolean needUpdate = !this.writeQueueRef.get().queue.isEmpty() || markedNeedUpdate;
+			// cached data exists
 			
-			if (!needUpdate)
+			boolean dataNeedsUpdating = !this.writeQueueRef.get().queue.isEmpty() || this.needsUpdate;
+			if (!dataNeedsUpdating)
 			{
 				// return the cached data
-				return new CacheQueryResult(CompletableFuture.completedFuture(cachedFullDataSource), false);
+				return CompletableFuture.completedFuture(cachedFullDataSource);
 			}
 			else
 			{
-				// either write the queue or return the future that is waiting for the queue write
+				// update the data using the write queue, wait for the update to finish, then return the data source  
 				
-				// Do a CAS on inCacheWriteLock to ensure that we are the only thread that is writing to the cache,
-				// or if we fail, then that means someone else is already doing it, and we can just return the future
-				CompletableFuture<IFullDataSource> future = new CompletableFuture<>();
-				CompletableFuture<IFullDataSource> compareAndSwapFuture = AtomicsUtil.compareAndExchange(dataSourceLoadFutureRef, null, future);
-				if (compareAndSwapFuture != null)
+				// Create a new future if one doesn't already exist
+				CompletableFuture<IFullDataSource> newFuture = new CompletableFuture<>();
+				CompletableFuture<IFullDataSource> oldFuture = AtomicsUtil.compareAndExchange(this.dataSourceLoadFutureRef, null, newFuture);
+				
+				if (oldFuture != null)
 				{
-					// a write is already in progress, return its future.
-					return new CacheQueryResult(compareAndSwapFuture, false);
+					// An update is already in progress, return its future.
+					return oldFuture;
 				}
 				else
 				{
-					LodUtil.assertTrue(!inCrit);
-					inCrit = true;
-					// don't continue if the provider has been shut down
 					ExecutorService executorService = this.fullDataSourceProvider.getIOExecutor();
-					if (executorService.isTerminated())
+					if (!executorService.isTerminated())
 					{
-						inCrit = false;
-						dataSourceLoadFutureRef.set(null);
-						future.complete(null);
+						// wait for the update to finish before returning the data source
+						
+						CompletableFuture.supplyAsync(() -> cachedFullDataSource, executorService)
+							.thenCompose((fullDataSource) -> this.applyWriteQueueAndSaveAsync(fullDataSource))
+							.thenAccept((fullDataSource) ->
+							{
+								newFuture.complete(fullDataSource);
+								this.dataSourceLoadFutureRef.set(null);
+							});
 					}
 					else
 					{
-						// write the queue to the data source by triggering an update
-						makeUpdateCompletionStage(future, CompletableFuture.supplyAsync(() -> cachedFullDataSource, executorService));
+						// don't update anything if the provider has been shut down
+						this.dataSourceLoadFutureRef.set(null);
+						newFuture.complete(null);
 					}
-					return new CacheQueryResult(future, false);
+					
+					return newFuture;
 				}
 			}
 		}
@@ -449,7 +340,7 @@ public class FullDataMetaFile extends AbstractMetaDataContainerFile implements I
 	 */
 	public void addToWriteQueue(ChunkSizedFullDataAccessor chunkAccessor)
 	{
-		debugPhantomLifeCycleCheck();
+		checkAndLogPhantomDataSourceLifeCycles();
 		
 		DhLodPos chunkLodPos = new DhLodPos(LodUtil.CHUNK_DETAIL_LEVEL, chunkAccessor.pos.x, chunkAccessor.pos.z);
 		
@@ -479,12 +370,12 @@ public class FullDataMetaFile extends AbstractMetaDataContainerFile implements I
 	/** Applies any queued {@link ChunkSizedFullDataAccessor} to this metadata's {@link IFullDataSource} and writes the data to file. */
 	public CompletableFuture<Void> flushAndSaveAsync()
 	{
-		debugPhantomLifeCycleCheck();
-		boolean isEmpty = this.writeQueueRef.get().queue.isEmpty() && !markedNeedUpdate;
+		checkAndLogPhantomDataSourceLifeCycles();
+		boolean isEmpty = this.writeQueueRef.get().queue.isEmpty() && !needsUpdate;
 		if (!isEmpty)
 		{
 			// This will flush the data to disk.
-			return this.loadOrGetCachedDataSourceAsync().thenApply((fullDataSource) -> null /* ignore the result, just wait for the load to finish*/ );
+			return this.getOrLoadCachedDataSourceAsync().thenApply((fullDataSource) -> null /* ignore the result, just wait for the load to finish*/ );
 		}
 		else
 		{
@@ -493,8 +384,232 @@ public class FullDataMetaFile extends AbstractMetaDataContainerFile implements I
 	}
 	
 	
-	/** updates this object to match the given {@link IFullDataSource} and then writes the new data to file. */
-	private void _updateAndWriteDataSource(IFullDataSource fullDataSource)
+	
+	
+	
+	
+	public void markNeedsUpdate() { this.needsUpdate = true; }
+	
+	
+	
+	//===========//
+	// debugging //
+	//===========//
+	
+	/** can be used to log when data sources have been garbage collected */
+	public static void checkAndLogPhantomDataSourceLifeCycles()
+	{
+		DataObjTracker phantomRef = (DataObjTracker) LIFE_CYCLE_DEBUG_QUEUE.poll();
+		// wait for the tracker to be garbage collected(?)
+		while (phantomRef != null)
+		{
+			if (LOG_DATA_SOURCE_LIVES)
+			{
+				LOGGER.info("Full Data at pos: " + phantomRef.pos + " has been freed. [" + LIFE_CYCLE_DEBUG_SET.size() + "] Full Data sources remaining.");
+			}
+			
+			phantomRef.close();
+			phantomRef = (DataObjTracker) LIFE_CYCLE_DEBUG_QUEUE.poll();
+		}
+		
+		
+		DataObjSoftTracker softRef = (DataObjSoftTracker) SOFT_REF_DEBUG_QUEUE.poll();
+		while (softRef != null)
+		{
+			if (LOG_DATA_SOURCE_LIVES)
+			{
+				LOGGER.info("Full Data at pos: " + softRef.file.pos + " has been soft released.");
+			}
+			
+			softRef.close();
+			softRef = (DataObjSoftTracker) SOFT_REF_DEBUG_QUEUE.poll();
+		}
+	}
+	
+	@Override
+	public void debugRender(DebugRenderer debugRenderer)
+	{
+		if (this.pos.sectionDetailLevel > DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL)
+		{
+			return;
+		}
+		
+		IFullDataSource cached = this.cachedFullDataSourceRef.get();
+		if (this.needsUpdate)
+		{
+			debugRenderer.renderBox(new DebugRenderer.Box(this.pos, 80f, 96f, 0.05f, Color.red));
+		}
+		
+		Color color = Color.black;
+		if (cached != null)
+		{
+			if (cached instanceof CompleteFullDataSource)
+			{
+				color = Color.GREEN;
+			}
+			else
+			{
+				color = Color.YELLOW;
+			}
+			
+		}
+		else if (this.dataSourceLoadFutureRef.get() != null)
+		{
+			color = Color.BLUE;
+		}
+		else if (this.doesFileExist)
+		{
+			color = Color.RED;
+		}
+		
+		boolean needsUpdate = !this.writeQueueRef.get().queue.isEmpty() || this.needsUpdate;
+		if (needsUpdate)
+		{
+			color = color.darker().darker();
+		}
+		
+		debugRenderer.renderBox(new DebugRenderer.Box(this.pos, 80f, 96f, 0.05f, color));
+	}
+	
+	
+	
+	//================//
+	// helper methods //
+	//================//
+	
+	/** @return a stream for the data contained in this file, skips the metadata from {@link AbstractMetaDataContainerFile}. */
+	private FileInputStream getFileInputStream() throws IOException
+	{
+		FileInputStream fileInputStream = new FileInputStream(this.file);
+		
+		// skip the meta-data bytes
+		int bytesToSkip = AbstractMetaDataContainerFile.METADATA_SIZE_IN_BYTES;
+		while (bytesToSkip > 0)
+		{
+			long skippedByteCount = fileInputStream.skip(bytesToSkip);
+			if (skippedByteCount == 0)
+			{
+				throw new IOException("Invalid file: Failed to skip metadata.");
+			}
+			bytesToSkip -= skippedByteCount;
+		}
+		
+		if (bytesToSkip != 0)
+		{
+			throw new IOException("File IO Error: Failed to skip metadata.");
+		}
+		return fileInputStream;
+	}
+	
+	/** 
+	 * Applies the {@link FullDataMetaFile#writeQueueRef} to the current {@link IFullDataSource} 
+	 * and stores the result in {@link FullDataMetaFile#cachedFullDataSourceRef}.
+	 */
+	@SuppressWarnings("resource") // due to DataObjTracker and DataObjSoftTracker being created outside a try-catch block
+	private CompletableFuture<IFullDataSource> applyWriteQueueAndSaveAsync(IFullDataSource fullDataSourceToUpdate)
+	{
+		CompletableFuture<IFullDataSource> completionFuture = new CompletableFuture<>();
+		
+		
+		boolean dataChanged = this.applyWriteQueueToFullDataSource(fullDataSourceToUpdate);
+		this.needsUpdate = false;
+		
+		// attempt to promote the data source
+		if (fullDataSourceToUpdate instanceof IIncompleteFullDataSource)
+		{
+			IFullDataSource newSource = ((IIncompleteFullDataSource) fullDataSourceToUpdate).tryPromotingToCompleteDataSource();
+			dataChanged |= (newSource != fullDataSourceToUpdate);
+			fullDataSourceToUpdate = newSource;
+		}
+		
+		// the provider may need to modify other files based on this data source changing
+		this.fullDataSourceProvider.onDataFileUpdateAsync(fullDataSourceToUpdate, this, dataChanged)
+				.whenComplete((dataFileUpdateResult, ex) ->
+				{
+					if (ex != null && !LodUtil.isInterruptOrReject(ex))
+					{
+						LOGGER.error("Error updating file [" + this.file + "]: ", ex);
+					}
+					
+					IFullDataSource fullDataSource = dataFileUpdateResult.fullDataSource;
+					boolean dataSourceChanged = dataFileUpdateResult.dataSourceChanged;
+					
+					
+					// only save to file if something was changed
+					if (dataSourceChanged)
+					{
+						this.writeDataSource(fullDataSource);
+					}
+					
+					// keep track of non-null data sources
+					if (fullDataSource != null)
+					{
+						new DataObjTracker(fullDataSource);
+						new DataObjSoftTracker(this, fullDataSource);
+					}
+					
+					if (this.pos.sectionDetailLevel == DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL)
+					{
+						DebugRenderer.makeParticle(new DebugRenderer.BoxParticle(
+										new DebugRenderer.Box(this.pos, 64f, 72f, 0.03f, Color.green.darker()),
+										0.2, 32f));
+					}
+					
+					
+					// save the updated data source
+					this.cachedFullDataSourceRef = new SoftReference<>(fullDataSource);
+					
+					// the task is complete
+					completionFuture.complete(fullDataSource);
+					
+					
+					if (this.needsUpdate)
+					{
+						// another update was requested while this update was being processed
+						this.getOrLoadCachedDataSourceAsync();
+					}
+				});
+		
+		return completionFuture;
+	}
+	
+	/** @return true if the queue was not empty and chunk data was applied to this meta file's {@link IFullDataSource}. */
+	private boolean applyWriteQueueToFullDataSource(IFullDataSource fullDataSource)
+	{
+		// swap the write queue if it has queued chunks.
+		// Must be done in this order to ensure IWorldGenTaskTracker.isMemoryAddressValid() work properly. See IWorldGenTaskTracker.isMemoryAddressValid() for details.
+		boolean isEmpty = this.writeQueueRef.get().queue.isEmpty();
+		if (!isEmpty)
+		{
+			this.swapWriteQueues();
+			for (ChunkSizedFullDataAccessor chunk : this.backWriteQueue.queue)
+			{
+				fullDataSource.update(chunk);
+			}
+			
+			this.backWriteQueue.queue.clear();
+			//LOGGER.info("Updated Data file at {} for sect {} with {} chunk writes.", path, pos, count);
+		}
+		
+		return !isEmpty || !this.doesFileExist;
+	}
+	private void swapWriteQueues()
+	{
+		GuardedMultiAppendQueue writeQueue = this.writeQueueRef.getAndSet(this.backWriteQueue);
+		
+		// Acquire write lock and then release it again as we only need to ensure that the queue
+		// is not being appended to by another thread. Note that the above atomic swap &
+		// the guarantee that all append first acquire the appendLock means after the locK() call,
+		// there will be no other threads able to or is currently appending to the queue.
+		// Note: The above needs the getAndSet() to have at least Release Memory order.
+		// (not that java supports anything non volatile for getAndSet()...)
+		writeQueue.appendLock.writeLock().lock();
+		writeQueue.appendLock.writeLock().unlock();
+		
+		this.backWriteQueue = writeQueue;
+	}
+	
+	private void writeDataSource(IFullDataSource fullDataSource)
 	{
 		if (fullDataSource.isEmpty())
 		{
@@ -519,7 +634,7 @@ public class FullDataMetaFile extends AbstractMetaDataContainerFile implements I
 				this.fullDataSourceLoader = AbstractFullDataSourceLoader.getLoader(fullDataSource.getClass(), fullDataSource.getBinaryDataFormatVersion());
 				LodUtil.assertTrue(this.fullDataSourceLoader != null, "No loader for " + fullDataSource.getClass() + " (v" + fullDataSource.getBinaryDataFormatVersion() + ")");
 				
-				this.dataType = fullDataSource.getClass();
+				this.fullDataSourceClass = fullDataSource.getClass();
 				this.baseMetaData.dataTypeId = (this.fullDataSourceLoader == null) ? 0 : this.fullDataSourceLoader.datatypeId;
 				this.baseMetaData.binaryDataFormatVersion = fullDataSource.getBinaryDataFormatVersion();
 				
@@ -529,7 +644,7 @@ public class FullDataMetaFile extends AbstractMetaDataContainerFile implements I
 			catch (ClosedByInterruptException e) // thrown by buffers that are interrupted
 			{
 				// expected if the file handler is shut down, the exception can be ignored
-//				LOGGER.warn("FullData file writing interrupted.", e);
+				//LOGGER.warn("FullData file writing interrupted.", e);
 			}
 			catch (IOException e)
 			{
@@ -538,64 +653,60 @@ public class FullDataMetaFile extends AbstractMetaDataContainerFile implements I
 		}
 	}
 	
-	/** @return true if the queue was not empty and data was applied to the {@link IFullDataSource}. */
-	private boolean _applyWriteQueueToFullDataSource(IFullDataSource fullDataSource)
+	
+	
+	//================//
+	// helper classes //
+	//================//
+	
+	//TODO: use ConcurrentAppendSingleSwapContainer<LodDataSource> instead of below:
+	private static class GuardedMultiAppendQueue
 	{
-		// Poll the write queue
-		// First check if write queue is empty, then swap the write queue.
-		// Must be done in this order to ensure isMemoryAddressValid work properly. See isMemoryAddressValid() for details.
-		boolean isEmpty = this.writeQueueRef.get().queue.isEmpty();
-		if (!isEmpty)
+		ReentrantReadWriteLock appendLock = new ReentrantReadWriteLock();
+		ConcurrentLinkedQueue<ChunkSizedFullDataAccessor> queue = new ConcurrentLinkedQueue<>();
+		
+	}
+	
+	/** used to debug data source soft reference garbage collection */
+	private static class DataObjTracker extends PhantomReference<IFullDataSource> implements Closeable
+	{
+		public final DhSectionPos pos;
+		
+		
+		DataObjTracker(IFullDataSource data)
 		{
-			this._swapWriteQueue();
-			for (ChunkSizedFullDataAccessor chunk : this.backWriteQueue.queue)
+			super(data, LIFE_CYCLE_DEBUG_QUEUE);
+			
+			if (LOG_DATA_SOURCE_LIVES)
 			{
-				fullDataSource.update(chunk);
+				LOGGER.info("Phantom created on {}! count: {}", data.getSectionPos(), LIFE_CYCLE_DEBUG_SET.size());
 			}
-			this.backWriteQueue.queue.clear();
-			//LOGGER.info("Updated Data file at {} for sect {} with {} chunk writes.", path, pos, count);
-		}
-		return !isEmpty || !doesFileExist;
-	}
-	private void _swapWriteQueue()
-	{
-		GuardedMultiAppendQueue writeQueue = this.writeQueueRef.getAndSet(this.backWriteQueue);
-		// Acquire write lock and then release it again as we only need to ensure that the queue
-		// is not being appended to by another thread. Note that the above atomic swap &
-		// the guarantee that all append first acquire the appendLock means after the locK() call,
-		// there will be no other threads able to or is currently appending to the queue.
-		// Note: The above needs the getAndSet() to have at least Release Memory order.
-		// (not that java supports anything non volatile for getAndSet()...)
-		writeQueue.appendLock.writeLock().lock();
-		writeQueue.appendLock.writeLock().unlock();
-		this.backWriteQueue = writeQueue;
-	}
-	
-	
-	
-	//===========//
-	// debugging //
-	//===========//
-	
-	public static void debugPhantomLifeCycleCheck()
-	{
-		DataObjTracker phantom = (DataObjTracker) lifeCycleDebugQueue.poll();
-		
-		// wait for the tracker to be garbage collected(?)
-		while (phantom != null)
-		{
-			//LOGGER.info("Full Data at pos: "+phantom.pos+" has been freed. "+lifeCycleDebugSet.size()+" Full Data files remaining.");
-			phantom.close();
-			phantom = (DataObjTracker) lifeCycleDebugQueue.poll();
+			
+			LIFE_CYCLE_DEBUG_SET.add(this);
+			this.pos = data.getSectionPos();
 		}
 		
-		DataObjSoftTracker soft = (DataObjSoftTracker) softRefDebugQueue.poll();
-		while (soft != null)
+		@Override
+		public void close() { LIFE_CYCLE_DEBUG_SET.remove(this); }
+		
+	}
+	
+	/** used to debug data source soft reference garbage collection */
+	private static class DataObjSoftTracker extends SoftReference<IFullDataSource> implements Closeable
+	{
+		public final FullDataMetaFile file;
+		
+		
+		DataObjSoftTracker(FullDataMetaFile file, IFullDataSource data)
 		{
-			//LOGGER.info("Full Data at pos: "+soft.file.pos+" has been soft released.");
-			soft.close();
-			soft = (DataObjSoftTracker) softRefDebugQueue.poll();
+			super(data, SOFT_REF_DEBUG_QUEUE);
+			SOFT_REF_DEBUG_SET.add(this);
+			this.file = file;
 		}
+		
+		@Override
+		public void close() { SOFT_REF_DEBUG_SET.remove(this); }
+		
 	}
 	
 }

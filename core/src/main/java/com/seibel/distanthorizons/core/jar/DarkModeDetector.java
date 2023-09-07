@@ -1,10 +1,29 @@
+/*
+ *    This file is part of the Distant Horizons mod
+ *    licensed under the GNU LGPL v3 License.
+ *
+ *    Copyright (C) 2020-2023 James Seibel
+ *
+ *    This program is free software: you can redistribute it and/or modify
+ *    it under the terms of the GNU Lesser General Public License as published by
+ *    the Free Software Foundation, version 3.
+ *
+ *    This program is distributed in the hope that it will be useful,
+ *    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *    GNU Lesser General Public License for more details.
+ *
+ *    You should have received a copy of the GNU Lesser General Public License
+ *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.seibel.distanthorizons.core.jar;
 
 import java.io.*;
 import java.util.regex.Pattern;
 
 /**
- * A fork of iris'is dark mode detector (https://github.com/IrisShaders/Iris-Installer/blob/master/src/main/java/net/hypercubemc/iris_installer/DarkModeDetector.java)
+ * A fork of iris' dark mode detector (https://github.com/IrisShaders/Iris-Installer/blob/master/src/main/java/net/hypercubemc/iris_installer/DarkModeDetector.java)
  * Which is a fork of HanSolo's dark mode detector (https://gist.github.com/HanSolo/7cf10b86efff8ca2845bf5ec2dd0fe1d)
  *
  * This fork has better support for Linux

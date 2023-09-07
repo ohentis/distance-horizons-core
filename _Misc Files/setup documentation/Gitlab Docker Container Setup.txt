@@ -1,6 +1,6 @@
 
 The following is short tutorial to setup and register a gitlab runner in a docker container on windows.
-Docker can be installed via a installer from their website and these instructions assume that has already been done.
+Docker can be installed via an installer from their website and these instructions assume that has already been done.
 
 longer tutorials can be found at the following links:
 https://faun.pub/gitlab-runner-setup-run-in-docker-container-on-windows-44fee102d02e

@@ -1,3 +1,22 @@
+/*
+ *    This file is part of the Distant Horizons mod
+ *    licensed under the GNU LGPL v3 License.
+ *
+ *    Copyright (C) 2020-2023 James Seibel
+ *
+ *    This program is free software: you can redistribute it and/or modify
+ *    it under the terms of the GNU Lesser General Public License as published by
+ *    the Free Software Foundation, version 3.
+ *
+ *    This program is distributed in the hope that it will be useful,
+ *    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *    GNU Lesser General Public License for more details.
+ *
+ *    You should have received a copy of the GNU Lesser General Public License
+ *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.seibel.distanthorizons.core.file.fullDatafile;
 
 import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
@@ -11,7 +30,6 @@ import com.seibel.distanthorizons.core.generation.tasks.WorldGenResult;
 import com.seibel.distanthorizons.core.level.DhLevel;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.pos.DhLodPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import org.apache.logging.log4j.Logger;
@@ -39,18 +57,6 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandler
 	
 	
 	
-	//======//
-	// data //
-	//======//
-	
-	@Override
-	public CompletableFuture<IFullDataSource> read(DhSectionPos pos)
-	{
-		return super.read(pos);
-	}
-	
-	
-	
 	//==================//
 	// generation queue //
 	//==================//
@@ -67,7 +73,7 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandler
 			metaFile.genQueueChecked = false; // unset it so it can be checked again
 			if (data != null)
 			{
-				metaFile.markNeedUpdate();
+				metaFile.markNeedsUpdate();
 			}
 		});
 		flushAndSave(); // Trigger an update to the meta files
@@ -169,7 +175,7 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandler
 	
 	// Try update the gen queue on this data source. If null, then nothing was done.
 	@Nullable
-	private CompletableFuture<IFullDataSource> updateFromExistingDataSources(FullDataMetaFile file, IIncompleteFullDataSource data)
+	private CompletableFuture<IFullDataSource> updateFromExistingDataSourcesAsync(FullDataMetaFile file, IIncompleteFullDataSource data)
 	{
 		DhSectionPos pos = file.pos;
 		ArrayList<FullDataMetaFile> existingFiles = new ArrayList<>();
@@ -195,58 +201,43 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandler
 	}
 	
 	@Override
-	public CompletableFuture<IFullDataSource> onCreateDataFile(FullDataMetaFile file)
+	public CompletableFuture<IFullDataSource> onDataFileCreatedAsync(FullDataMetaFile file)
 	{
 		DhSectionPos pos = file.pos;
-		IIncompleteFullDataSource data = makeEmptyDataSource(pos);
-		CompletableFuture<IFullDataSource> future = updateFromExistingDataSources(file, data);
+		IIncompleteFullDataSource data = this.makeEmptyDataSource(pos);
+		CompletableFuture<IFullDataSource> future = this.updateFromExistingDataSourcesAsync(file, data);
 		// Cant start gen task, so return the data
 		return future == null ? CompletableFuture.completedFuture(data) : future;
 	}
 	
 	@Override
-	public CompletableFuture<IFullDataSource> onDataFileUpdate(
-			IFullDataSource source, FullDataMetaFile file,
-			Consumer<IFullDataSource> onUpdated, Function<IFullDataSource, Boolean> updater)
+	public CompletableFuture<DataFileUpdateResult> onDataFileUpdateAsync(IFullDataSource fullDataSource, FullDataMetaFile file, boolean dataChanged)
 	{
-		boolean changed = updater.apply(source);
-		LodUtil.assertTrue(file.doesFileExist || changed);
+		LodUtil.assertTrue(file.doesFileExist || dataChanged);
 		
-		if (source instanceof IIncompleteFullDataSource)
+		
+		if (fullDataSource instanceof CompleteFullDataSource)
 		{
-			IFullDataSource newSource = tryPromoteDataSource((IIncompleteFullDataSource) source);
-			changed |= newSource != source;
-			source = newSource;
+			this.incompleteDataSources.remove(fullDataSource.getSectionPos());
 		}
+		this.fireOnGenPosSuccessListeners(fullDataSource.getSectionPos());
 		
-		if (source instanceof CompleteFullDataSource)
-		{
-			this.fireOnGenPosSuccessListeners(source.getSectionPos());
-		}
-		this.fireOnGenPosSuccessListeners(source.getSectionPos());
 		
-		if (source instanceof IIncompleteFullDataSource && !file.genQueueChecked)
+		if (fullDataSource instanceof IIncompleteFullDataSource && !file.genQueueChecked)
 		{
 			IWorldGenerationQueue worldGenQueue = this.worldGenQueueRef.get();
 			if (worldGenQueue != null)
 			{
-				CompletableFuture<IFullDataSource> future = this.updateFromExistingDataSources(file, (IIncompleteFullDataSource) source);
+				CompletableFuture<IFullDataSource> future = this.updateFromExistingDataSourcesAsync(file, (IIncompleteFullDataSource) fullDataSource);
 				if (future != null)
 				{
-					return future.thenApply((newSource) ->
-					{
-						onUpdated.accept(newSource);
-						return newSource;
-					});
+					final boolean finalDataChanged = dataChanged;
+					return future.thenApply((newSource) -> new DataFileUpdateResult(newSource, finalDataChanged));
 				}
 			}
 		}
 		
-		if (changed)
-		{
-			onUpdated.accept(source);
-		}
-		return CompletableFuture.completedFuture(source);
+		return CompletableFuture.completedFuture(new DataFileUpdateResult(fullDataSource, dataChanged));
 	}
 	
 	private void onWorldGenTaskComplete(WorldGenResult genTaskResult, Throwable exception, GenTask genTask, DhSectionPos pos)

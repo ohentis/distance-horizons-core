@@ -1,3 +1,22 @@
+/*
+ *    This file is part of the Distant Horizons mod
+ *    licensed under the GNU LGPL v3 License.
+ *
+ *    Copyright (C) 2020-2023 James Seibel
+ *
+ *    This program is free software: you can redistribute it and/or modify
+ *    it under the terms of the GNU Lesser General Public License as published by
+ *    the Free Software Foundation, version 3.
+ *
+ *    This program is distributed in the hope that it will be useful,
+ *    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *    GNU Lesser General Public License for more details.
+ *
+ *    You should have received a copy of the GNU Lesser General Public License
+ *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.seibel.distanthorizons.core.util;
 
 import it.unimi.dsi.fastutil.booleans.BooleanObjectImmutablePair;
@@ -36,13 +55,23 @@ public class AtomicsUtil
 		}
 	}
 	
+	/** 
+	 * If the {@link AtomicReference}'s current value matches the expected value, the newValue will be swapped in and the expected value returned. <br>
+	 * If the {@link AtomicReference}'s current value DOESN'T match the expected value, the {@link AtomicReference}'s current value will be returned without modification.
+	 */
 	public static <T> T compareAndExchange(AtomicReference<T> atomic, T expected, T newValue)
 	{
 		while (true)
 		{
 			T oldValue = atomic.get();
-			if (oldValue != expected) return oldValue;
-			if (atomic.weakCompareAndSet(expected, newValue)) return expected;
+			if (oldValue != expected)
+			{
+				return oldValue;
+			}
+			else if (atomic.weakCompareAndSet(expected, newValue))
+			{
+				return expected;
+			}
 		}
 	}
 	

@@ -1,9 +1,30 @@
+/*
+ *    This file is part of the Distant Horizons mod
+ *    licensed under the GNU LGPL v3 License.
+ *
+ *    Copyright (C) 2020-2023 James Seibel
+ *
+ *    This program is free software: you can redistribute it and/or modify
+ *    it under the terms of the GNU Lesser General Public License as published by
+ *    the Free Software Foundation, version 3.
+ *
+ *    This program is distributed in the hope that it will be useful,
+ *    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *    GNU Lesser General Public License for more details.
+ *
+ *    You should have received a copy of the GNU Lesser General Public License
+ *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.seibel.distanthorizons.core.dataObjects.render;
 
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
 import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
+import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.SingleColumnFullDataAccessor;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.pos.DhLodPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.dataObjects.transformers.FullDataToRenderDataTransformer;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataOutputStream;
@@ -277,35 +298,128 @@ public class ColumnRenderSource
 		{
 			this.verticalDataCount = newVerticalSize;
 			this.renderDataContainer = new long[SECTION_SIZE * SECTION_SIZE * this.verticalDataCount];
-			localVersion.incrementAndGet();
+			this.localVersion.incrementAndGet();
 		}
 	}
 	
-	public boolean fastWrite(ChunkSizedFullDataAccessor chunkData, IDhClientLevel level)
+	/** 
+	 * Doesn't write anything to file.
+	 * @return true if any data was changed, false otherwise 
+	 */
+	public boolean updateWithChunkData(ChunkSizedFullDataAccessor chunkDataView, IDhClientLevel level)
 	{
-		try
+		final String errorMessagePrefix = "Unable to complete fastWrite for RenderSource pos: [" + this.sectionPos + "] and chunk pos: [" + chunkDataView.pos + "]. Error:";
+		
+		final DhSectionPos renderSourcePos = this.getSectionPos();
+		
+		final int sourceBlockX = renderSourcePos.getCorner().getCornerBlockPos().x;
+		final int sourceBlockZ = renderSourcePos.getCorner().getCornerBlockPos().z;
+		
+		// offset between the incoming chunk data and this render source
+		final int blockOffsetX = (chunkDataView.pos.x * LodUtil.CHUNK_WIDTH) - sourceBlockX;
+		final int blockOffsetZ = (chunkDataView.pos.z * LodUtil.CHUNK_WIDTH) - sourceBlockZ;
+		
+		final int sourceDataPointBlockWidth = BitShiftUtil.powerOfTwo(this.getDataDetail());
+		
+		boolean dataChanged = false;
+		
+		if (chunkDataView.detailLevel == this.getDataDetail())
 		{
-			if (FullDataToRenderDataTransformer.writeFullDataChunkToColumnData(this, level, chunkData))
+			this.markNotEmpty();
+			// confirm the render source contains this chunk
+			if (blockOffsetX < 0
+					|| blockOffsetX + LodUtil.CHUNK_WIDTH > this.getWidthInDataPoints()
+					|| blockOffsetZ < 0
+					|| blockOffsetZ + LodUtil.CHUNK_WIDTH > this.getWidthInDataPoints())
 			{
-				localVersion.incrementAndGet();
-				return true;
-			}
-			else
-			{
+				LOGGER.warn(errorMessagePrefix+"Data offset is out of bounds.");
 				return false;
 			}
+			
+			
+			if (Thread.interrupted())
+			{
+				LOGGER.warn(errorMessagePrefix+"write interrupted.");
+				return false;
+			}
+			
+			
+			for (int x = 0; x < LodUtil.CHUNK_WIDTH; x++)
+			{
+				for (int z = 0; z < LodUtil.CHUNK_WIDTH; z++)
+				{
+					ColumnArrayView columnArrayView = this.getVerticalDataPointView(blockOffsetX + x, blockOffsetZ + z);
+					int hash = columnArrayView.getDataHash();
+					SingleColumnFullDataAccessor fullArrayView = chunkDataView.get(x, z);
+					FullDataToRenderDataTransformer.convertColumnData(level,
+							sourceBlockX + sourceDataPointBlockWidth * (blockOffsetX + x),
+							sourceBlockZ + sourceDataPointBlockWidth * (blockOffsetZ + z),
+							columnArrayView, fullArrayView, 2);
+					dataChanged |= hash != columnArrayView.getDataHash();
+				}
+			}
+			this.fillDebugFlag(blockOffsetX, blockOffsetZ, LodUtil.CHUNK_WIDTH, LodUtil.CHUNK_WIDTH, ColumnRenderSource.DebugSourceFlag.DIRECT);
 		}
-		catch (InterruptedException e)
+		else if (chunkDataView.detailLevel < this.getDataDetail() && this.getDataDetail() <= chunkDataView.getLodPos().detailLevel)
 		{
-			// expected if the transformer is shut down, the exception can be ignored
-			LOGGER.warn(ColumnRenderSource.class.getSimpleName() + " fast write interrupted.");
+			this.markNotEmpty();
+			// multiple chunk data points converting to 1 column data point
+			DhLodPos dataCornerPos = chunkDataView.getLodPos().getCornerLodPos(chunkDataView.detailLevel);
+			DhLodPos sourceCornerPos = renderSourcePos.getCorner(this.getDataDetail());
+			DhLodPos sourceStartingChangePos = dataCornerPos.convertToDetailLevel(this.getDataDetail());
+			int relStartX = Math.floorMod(sourceStartingChangePos.x, this.getWidthInDataPoints());
+			int relStartZ = Math.floorMod(sourceStartingChangePos.z, this.getWidthInDataPoints());
+			int dataToSourceScale = sourceCornerPos.getWidthAtDetail(chunkDataView.detailLevel);
+			int columnsInChunk = chunkDataView.getLodPos().getWidthAtDetail(this.getDataDetail());
+			
+			for (int ox = 0; ox < columnsInChunk; ox++)
+			{
+				for (int oz = 0; oz < columnsInChunk; oz++)
+				{
+					int relSourceX = relStartX + ox;
+					int relSourceZ = relStartZ + oz;
+					ColumnArrayView columnArrayView = this.getVerticalDataPointView(relSourceX, relSourceZ);
+					int hash = columnArrayView.getDataHash();
+					SingleColumnFullDataAccessor fullArrayView = chunkDataView.get(ox * dataToSourceScale, oz * dataToSourceScale);
+					FullDataToRenderDataTransformer.convertColumnData(level,
+							sourceBlockX + sourceDataPointBlockWidth * relSourceX,
+							sourceBlockZ + sourceDataPointBlockWidth * relSourceZ,
+							columnArrayView, fullArrayView, 2);
+					dataChanged |= hash != columnArrayView.getDataHash();
+				}
+			}
+			this.fillDebugFlag(relStartX, relStartZ, columnsInChunk, columnsInChunk, ColumnRenderSource.DebugSourceFlag.DIRECT);
 		}
-		catch (Throwable e)
+		else if (chunkDataView.getLodPos().detailLevel < this.getDataDetail())
 		{
-			// shouldn't happen, but just in case
-			LOGGER.warn("Unable to complete fastWrite for RenderSource pos: [" + this.sectionPos + "] and chunk pos: [" + chunkData.pos + "].", e);
+			// The entire chunk is being converted to a single column data point, possibly.
+			DhLodPos dataCornerPos = chunkDataView.getLodPos().getCornerLodPos(chunkDataView.detailLevel);
+			DhLodPos sourceCornerPos = renderSourcePos.getCorner(this.getDataDetail());
+			DhLodPos sourceStartingChangePos = dataCornerPos.convertToDetailLevel(this.getDataDetail());
+			int chunksPerColumn = sourceStartingChangePos.getWidthAtDetail(chunkDataView.getLodPos().detailLevel);
+			if (chunkDataView.getLodPos().x % chunksPerColumn != 0 || chunkDataView.getLodPos().z % chunksPerColumn != 0)
+			{
+				return false; // not a multiple of the column size, so no change
+			}
+			int relStartX = Math.floorMod(sourceStartingChangePos.x, this.getWidthInDataPoints());
+			int relStartZ = Math.floorMod(sourceStartingChangePos.z, this.getWidthInDataPoints());
+			ColumnArrayView columnArrayView = this.getVerticalDataPointView(relStartX, relStartZ);
+			int hash = columnArrayView.getDataHash();
+			SingleColumnFullDataAccessor fullArrayView = chunkDataView.get(0, 0);
+			FullDataToRenderDataTransformer.convertColumnData(level, dataCornerPos.x * sourceDataPointBlockWidth,
+					dataCornerPos.z * sourceDataPointBlockWidth,
+					columnArrayView, fullArrayView, 2);
+			dataChanged = hash != columnArrayView.getDataHash();
+			this.fillDebugFlag(relStartX, relStartZ, 1, 1, ColumnRenderSource.DebugSourceFlag.DIRECT);
 		}
-		return false;
+		
+		
+		if (dataChanged)
+		{
+			this.localVersion.incrementAndGet();
+		}
+		
+		return dataChanged;
 	}
 	
 	
@@ -345,6 +459,34 @@ public class ColumnRenderSource
 	
 	public boolean isEmpty() { return this.isEmpty; }
 	public void markNotEmpty() { this.isEmpty = false; }
+	
+	/** can be used when debugging */
+	public boolean hasNonVoidDataPoints()
+	{
+		if (this.isEmpty)
+		{
+			return false;
+		}
+		
+		
+		for (int x = 0; x < SECTION_SIZE; x++)
+		{
+			for (int z = 0; z < SECTION_SIZE; z++)
+			{
+				ColumnArrayView columnArrayView = this.getVerticalDataPointView(x,z);
+				for (int i = 0; i < columnArrayView.size; i++)
+				{
+					long dataPoint = columnArrayView.get(i);
+					if (!RenderDataPointUtil.isVoid(dataPoint))
+					{
+						return true;
+					}
+				}
+			}
+		}
+		
+		return false;
+	}
 	
 	
 	

@@ -1,3 +1,22 @@
+/*
+ *    This file is part of the Distant Horizons mod
+ *    licensed under the GNU LGPL v3 License.
+ *
+ *    Copyright (C) 2020-2023 James Seibel
+ *
+ *    This program is free software: you can redistribute it and/or modify
+ *    it under the terms of the GNU Lesser General Public License as published by
+ *    the Free Software Foundation, version 3.
+ *
+ *    This program is distributed in the hope that it will be useful,
+ *    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *    GNU Lesser General Public License for more details.
+ *
+ *    You should have received a copy of the GNU Lesser General Public License
+ *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.seibel.distanthorizons.core.dataObjects.fullData;
 
 import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.SingleColumnFullDataAccessor;
@@ -35,7 +54,7 @@ public class FullDataDownSampler
 			{
 				for (int oz = 0; oz < sectionSizeNeeded; oz++)
 				{
-					CompletableFuture<IFullDataSource> future = provider.read(new DhSectionPos(
+					CompletableFuture<IFullDataSource> future = provider.readAsync(new DhSectionPos(
 							CompleteFullDataSource.SECTION_SIZE_OFFSET, basePos.x + ox, basePos.z + oz));
 					future = future.whenComplete((source, ex) -> {
 						if (ex == null && source != null && source instanceof CompleteFullDataSource)
@@ -59,7 +78,7 @@ public class FullDataDownSampler
 			{
 				for (int oz = 0; oz < CompleteFullDataSource.WIDTH; oz++)
 				{
-					CompletableFuture<IFullDataSource> future = provider.read(new DhSectionPos(
+					CompletableFuture<IFullDataSource> future = provider.readAsync(new DhSectionPos(
 							CompleteFullDataSource.SECTION_SIZE_OFFSET, basePos.x + ox * multiplier, basePos.z + oz * multiplier));
 					future = future.whenComplete((source, ex) -> {
 						if (ex == null && source != null && source instanceof CompleteFullDataSource)

@@ -1,5 +1,5 @@
 /*
- *    This file is part of the Distant Horizons mod (formerly the LOD Mod),
+ *    This file is part of the Distant Horizons mod
  *    licensed under the GNU LGPL v3 License.
  *
  *    Copyright (C) 2021 Tom Lee (TomTheFurry) & James Seibel (Original code)

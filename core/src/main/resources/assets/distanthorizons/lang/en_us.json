@@ -94,10 +94,6 @@
     "Horizontal Scale",
   "distanthorizons.config.client.advanced.graphics.quality.horizontalScale.@tooltip":
     "How quickly LODs drop off in quality.\n\nLarger numbers will improve how distant terrain looks\nbut will increase memory and GPU usage.",
-  "distanthorizons.config.client.advanced.graphics.quality.ssao":
-    "SSAO",
-  "distanthorizons.config.client.advanced.graphics.quality.ssao.@tooltip":
-    "Screen Space Ambient Occlusion adds depth to the lighting of blocks.",
   "distanthorizons.config.client.advanced.graphics.quality.horizontalQuality":
     "Horizontal Quality",
   "distanthorizons.config.client.advanced.graphics.quality.horizontalQuality.@tooltip":
@@ -163,6 +159,39 @@
     "Far Fog Density",
   "distanthorizons.config.client.advanced.graphics.fog.advancedFog.farFogDensity.@tooltip":
     "What is the fog density? ",
+
+
+  "distanthorizons.config.client.advanced.graphics.ssao":
+    "Ambient Occlusion",
+    
+  "distanthorizons.config.client.advanced.graphics.ssao.enabled":
+    "Enable Ambient Occlusion",
+  "distanthorizons.config.client.advanced.graphics.ssao.enabled.@tooltip":
+    "Ambient Occlusion adds depth to the lighting of blocks.",
+  "distanthorizons.config.client.advanced.graphics.ssao.sampleCount":
+    "Sample Count",
+  "distanthorizons.config.client.advanced.graphics.ssao.sampleCount.@tooltip":
+    "Determines how many points in space are sampled for the occlusion test. \nHigher numbers will improve quality and reduce banding, but will increase GPU load.",
+  "distanthorizons.config.client.advanced.graphics.ssao.radius":
+    "Radius",
+  "distanthorizons.config.client.advanced.graphics.ssao.radius.@tooltip":
+    "Determines the radius Screen Space Ambient Occlusion is applied, measured in blocks.",
+  "distanthorizons.config.client.advanced.graphics.ssao.strength":
+    "Strength",
+  "distanthorizons.config.client.advanced.graphics.ssao.strength.@tooltip":
+    "Determines how dark the Screen Space Ambient Occlusion effect will be.",
+  "distanthorizons.config.client.advanced.graphics.ssao.bias":
+    "Bias",
+  "distanthorizons.config.client.advanced.graphics.ssao.bias.@tooltip":
+    "Increasing the value can reduce banding at the cost of reducing the strength of the effect.",
+  "distanthorizons.config.client.advanced.graphics.ssao.minLight":
+    "Min Light",
+  "distanthorizons.config.client.advanced.graphics.ssao.minLight.@tooltip":
+    "Determines how dark the occlusion shadows can be. \n0 = totally black at the corners \n1 = no shadow",
+  "distanthorizons.config.client.advanced.graphics.ssao.blurRadius":
+    "Blur Radius",
+  "distanthorizons.config.client.advanced.graphics.ssao.blurRadius.@tooltip":
+    "The radius, measured in pixels, that blurring is calculated for the SSAO. \nHigher numbers will reduce banding at the cost of GPU performance.",
     
     
   "distanthorizons.config.client.advanced.graphics.fog.advancedFog.heightFog":
@@ -391,7 +420,7 @@
   "distanthorizons.config.client.advanced.debugging.allowUnsafeValues":
     "Allow Unsafe UI Values",
   "distanthorizons.config.client.advanced.debugging.allowUnsafeValues.@tooltip":
-    "If enabled, very limited config input validation will be performed. \n\nWarning: enabling this can cause instability or crashing, use at your own risk. \nNote: this is option isn't saved between sessions.",
+    "If enabled, very limited config input validation will be performed. \n\nWarning: enabling this can cause instability or crashing, use at your own risk. \nNote: this option isn't saved between sessions.",
   "distanthorizons.config.client.advanced.debugging.overrideVanillaGLLogger":
     "Override Vanilla OpenGL Logger",
   "distanthorizons.config.client.advanced.debugging.overrideVanillaGLLogger.@tooltip":

@@ -1,3 +1,22 @@
+/*
+ *    This file is part of the Distant Horizons mod
+ *    licensed under the GNU LGPL v3 License.
+ *
+ *    Copyright (C) 2020-2023 James Seibel
+ *
+ *    This program is free software: you can redistribute it and/or modify
+ *    it under the terms of the GNU Lesser General Public License as published by
+ *    the Free Software Foundation, version 3.
+ *
+ *    This program is distributed in the hope that it will be useful,
+ *    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *    GNU Lesser General Public License for more details.
+ *
+ *    You should have received a copy of the GNU Lesser General Public License
+ *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.seibel.distanthorizons.core.config.eventHandlers.presets;
 
 import com.seibel.distanthorizons.api.enums.config.EHorizontalQuality;
@@ -57,7 +76,7 @@ public class RenderQualityPresetConfigEventHandler extends AbstractPresetConfigE
 				this.put(EQualityPreset.HIGH, ETransparency.COMPLETE);
 				this.put(EQualityPreset.EXTREME, ETransparency.COMPLETE);
 			}});
-	private final ConfigEntryWithPresetOptions<EQualityPreset, Boolean> ssao = new ConfigEntryWithPresetOptions<>(Config.Client.Advanced.Graphics.Quality.ssao,
+	private final ConfigEntryWithPresetOptions<EQualityPreset, Boolean> ssaoEnabled = new ConfigEntryWithPresetOptions<>(Config.Client.Advanced.Graphics.Ssao.enabled,
 			new HashMap<EQualityPreset, Boolean>()
 			{{
 				this.put(EQualityPreset.MINIMUM, false);
@@ -66,7 +85,7 @@ public class RenderQualityPresetConfigEventHandler extends AbstractPresetConfigE
 				this.put(EQualityPreset.HIGH, true);
 				this.put(EQualityPreset.EXTREME, true);
 			}});
-	
+		
 	
 	
 	//==============//
@@ -81,7 +100,7 @@ public class RenderQualityPresetConfigEventHandler extends AbstractPresetConfigE
 		this.configList.add(this.verticalQuality);
 		this.configList.add(this.horizontalQuality);
 		this.configList.add(this.transparency);
-		this.configList.add(this.ssao);
+		this.configList.add(this.ssaoEnabled);
 		
 		
 		for (ConfigEntryWithPresetOptions<EQualityPreset, ?> config : this.configList)

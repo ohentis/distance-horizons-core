@@ -1,8 +1,8 @@
 /*
- *    This file is part of the Distant Horizons mod (formerly the LOD Mod),
+ *    This file is part of the Distant Horizons mod
  *    licensed under the GNU LGPL v3 License.
  *
- *    Copyright (C) 2020-2022  James Seibel
+ *    Copyright (C) 2020-2023 James Seibel
  *
  *    This program is free software: you can redistribute it and/or modify
  *    it under the terms of the GNU Lesser General Public License as published by
@@ -44,7 +44,6 @@ import com.seibel.distanthorizons.coreapi.util.math.Mat4f;
 import com.seibel.distanthorizons.coreapi.util.math.Vec3d;
 import com.seibel.distanthorizons.coreapi.util.math.Vec3f;
 import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.lwjgl.opengl.GL32;
 
 import java.awt.*;
@@ -283,7 +282,7 @@ public class LodRenderer
 			// TODO: Directional culling
 			this.bufferHandler.renderOpaque(this);
 			
-			if (Config.Client.Advanced.Graphics.Quality.ssao.get())
+			if (Config.Client.Advanced.Graphics.Ssao.enabled.get())
 			{
 				profiler.popPush("LOD SSAO");
 				SSAORenderer.INSTANCE.render(partialTicks);
