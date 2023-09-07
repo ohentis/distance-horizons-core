@@ -123,7 +123,7 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 			{
 				IncompleteDataSourceEntry entry = incompleteDataSources.computeIfAbsent(msg.dhSectionPos, pos -> {
 					IncompleteDataSourceEntry newEntry = new IncompleteDataSourceEntry();
-					serverside.dataFileHandler.read(msg.dhSectionPos).thenAccept(fullDataSource -> {
+					serverside.dataFileHandler.readAsync(msg.dhSectionPos).thenAccept(fullDataSource -> {
 						newEntry.fullDataSource = fullDataSource;
 					});
 					return newEntry;

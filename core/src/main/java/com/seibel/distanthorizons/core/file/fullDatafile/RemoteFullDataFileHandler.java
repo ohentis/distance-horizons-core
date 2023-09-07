@@ -85,7 +85,7 @@ public class RemoteFullDataFileHandler extends GeneratedFullDataFileHandler
 		
 		Consumer<ChunkSizedFullDataAccessor> chunkDataConsumer = (ChunkSizedFullDataAccessor data) -> {
 			DhLodPos pos = data.getLodPos().convertToDetailLevel(CompleteFullDataSource.SECTION_SIZE_OFFSET);
-			this.write(new DhSectionPos(pos.detailLevel, pos.x, pos.z), data);
+			this.writeChunkDataToFile(new DhSectionPos(pos.detailLevel, pos.x, pos.z), data);
 		};
 		
 		this.networkState.getClient().<FullDataChangeSummaryResponseMessage>sendRequest(new FullDataChangeSummaryRequestMessage(level.getLevelWrapper(), block))
