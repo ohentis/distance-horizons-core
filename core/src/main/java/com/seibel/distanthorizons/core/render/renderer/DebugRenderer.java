@@ -264,25 +264,27 @@ public class DebugRenderer
 	
 	private void removeRenderer(IDebugRenderable r)
 	{
-		synchronized (renderers)
+		synchronized (this.renderers)
 		{
-			Iterator<WeakReference<IDebugRenderable>> it = renderers.iterator();
-			while (it.hasNext())
+			Iterator<WeakReference<IDebugRenderable>> iterator = this.renderers.iterator();
+			while (iterator.hasNext())
 			{
-				WeakReference<IDebugRenderable> ref = it.next();
-				if (ref.get() == null)
+				WeakReference<IDebugRenderable> renderableRef = iterator.next();
+				if (renderableRef.get() == null)
 				{
-					it.remove();
+					iterator.remove();
 					continue;
 				}
-				if (ref.get() == r)
+				if (renderableRef.get() == r)
 				{
-					it.remove();
+					iterator.remove();
 					return;
 				}
 			}
 		}
 	}
+	
+	public static void clearRenderables() { INSTANCE.renderers.clear(); }
 	
 	public void init()
 	{

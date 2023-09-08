@@ -69,7 +69,7 @@ public class ColumnBox
 								|| (RenderDataPointUtil.getYMin(topData) >= builder.skyLightCullingBelow)
 								|| !RenderDataPointUtil.doesDataPointExist(topData)
 				)
-		)
+			)
 		{
 			maxY = builder.skyLightCullingBelow;
 		}

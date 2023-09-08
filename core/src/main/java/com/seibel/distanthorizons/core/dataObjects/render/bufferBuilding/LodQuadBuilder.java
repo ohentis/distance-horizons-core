@@ -25,7 +25,6 @@ import java.util.*;
 
 import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.pos.Pos2D;
 import com.seibel.distanthorizons.core.render.AbstractRenderBuffer;
 import com.seibel.distanthorizons.core.render.glObject.buffer.GLVertexBuffer;
 import com.seibel.distanthorizons.core.util.ColorUtil;
@@ -51,12 +50,16 @@ public class LodQuadBuilder
 	private final ArrayList<BufferQuad>[] opaqueQuads = (ArrayList<BufferQuad>[]) new ArrayList[6];
 	@SuppressWarnings("unchecked")
 	private final ArrayList<BufferQuad>[] transparentQuads = (ArrayList<BufferQuad>[]) new ArrayList[6];
-	private final boolean doTransparency;
 	
 	/** Used to turn transparent LODs above the void opaque to prevent seeing the void. */
-	private final HashMap<Pos2D, Short> minOpaqueHeightByRelativePos = new HashMap<>(64 * 64); // the 64*64 capacity was the smallest James saw the builder work with, so it should be a good starting point
+	private final short[] minOpaqueHeightByRelativePos = new short[SECTION_WIDTH * SECTION_WIDTH];
 	/** See {@link LodQuadBuilder#minOpaqueHeightByRelativePos} */
-	private final HashMap<Pos2D, Short> minTransparentHeightByRelativePos = new HashMap<>(64 * 64);
+	private final short[] minTransparentHeightByRelativePos = new short[SECTION_WIDTH * SECTION_WIDTH];
+	
+	private final boolean doTransparency;
+	
+	private static int SECTION_WIDTH = 4096;
+	
 	
 	
 	public static final int[][][] DIRECTION_VERTEX_IBO_QUAD = new int[][][]
@@ -128,6 +131,13 @@ public class LodQuadBuilder
 		this.skipQuadsWithZeroSkylight = enableSkylightCulling;
 		this.skyLightCullingBelow = skyLightCullingBelow;
 		
+		// set the default values
+		for (int i = 0; i < SECTION_WIDTH * SECTION_WIDTH; i++)
+		{
+			// the default height is MAX_VALUE to preserve the comparison logic later
+			this.minOpaqueHeightByRelativePos[i] = Short.MAX_VALUE;
+			this.minTransparentHeightByRelativePos[i] = Short.MAX_VALUE;
+		}
 	}
 	
 	
@@ -185,14 +195,21 @@ public class LodQuadBuilder
 		{
 			for (int zRel = z; zRel < (z + widthNorthSouthOrUpDown); zRel++)
 			{
-				Pos2D relPos = new Pos2D(xRel, zRel);
+				int relPosIndex = relativeQuadPosToIndex(xRel, zRel);
 				
-				HashMap<Pos2D, Short> minHeightByRelativePos = isTransparent ? this.minTransparentHeightByRelativePos : this.minOpaqueHeightByRelativePos;
-				Short currentHeight = minHeightByRelativePos.get(relPos);
-				// the default height is MAX_VALUE to preserve the comparison logic later
-				currentHeight = (currentHeight == null) ? Short.MAX_VALUE : currentHeight;
+				short[] minHeightByRelativePos = isTransparent ? this.minTransparentHeightByRelativePos : this.minOpaqueHeightByRelativePos;
 				
-				minHeightByRelativePos.put(relPos, (short) Math.min(currentHeight, quad.y));
+				try
+				{
+					short currentHeight = minHeightByRelativePos[relPosIndex];
+					minHeightByRelativePos[relPosIndex] = (short) Math.min(currentHeight, quad.y);
+				}
+				catch (IndexOutOfBoundsException e)
+				{
+					// shouldn't happen normally, just in case James screwed up something.
+					// This can be removed once the indexes have been proven not to go outside the expected range
+					LOGGER.error("Relative Pos index out of bounds. Array length: ["+minHeightByRelativePos.length+"], given index: ["+relPosIndex+"], xRel: ["+xRel+"], zRel: ["+zRel+"], max expected rel value: ["+ SECTION_WIDTH +"].",  e);
+				}
 			}
 		}
 		
@@ -362,8 +379,7 @@ public class LodQuadBuilder
 		}
 		
 		long postQuadsCount = this.getCurrentOpaqueQuadsCount() + this.getCurrentTransparentQuadsCount();
-		//if (mergeCount != 0)
-		LOGGER.debug("Merged {}/{}({}) quads", mergeCount, preQuadsCount, mergeCount / (double) preQuadsCount);
+		LOGGER.debug("Merged "+mergeCount+"/"+preQuadsCount+"("+(mergeCount / (double) preQuadsCount)+") quads");
 	}
 	
 	/** Merges all of this builder's quads for the given directionIndex (up, down, left, etc.) in the given direction */
@@ -408,13 +424,10 @@ public class LodQuadBuilder
 			BufferQuad currentQuad = iter.next();
 			while (iter.hasNext())
 			{
-				Pos2D relPos = new Pos2D(currentQuad.x, currentQuad.z);
+				int relPosIndex = relativeQuadPosToIndex(currentQuad.x, currentQuad.z);
 				
-				Short minOpaqueHeight = this.minOpaqueHeightByRelativePos.get(relPos);
-				minOpaqueHeight = (minOpaqueHeight == null) ? Short.MAX_VALUE : minOpaqueHeight;
-				
-				Short minTransHeight = this.minTransparentHeightByRelativePos.get(relPos);
-				minTransHeight = (minTransHeight == null) ? Short.MAX_VALUE : minTransHeight;
+				short minOpaqueHeight = this.minOpaqueHeightByRelativePos[relPosIndex];
+				short minTransHeight = this.minTransparentHeightByRelativePos[relPosIndex];
 				
 				
 				if (currentQuad.y < minOpaqueHeight && currentQuad.y == minTransHeight)
@@ -785,5 +798,15 @@ public class LodQuadBuilder
 		
 		return MathUtil.ceilDiv(this.getCurrentTransparentQuadsCount(), AbstractRenderBuffer.MAX_QUADS_PER_BUFFER);
 	}
+	
+	
+	
+	//================//
+	// helper methods //
+	//================//
+	
+	/** Converts a 2D position into a 1D array index. */
+	public static int relativeQuadPosToIndex(int xRel, int zRel) { return xRel + zRel * SECTION_WIDTH; }
+	
 	
 }

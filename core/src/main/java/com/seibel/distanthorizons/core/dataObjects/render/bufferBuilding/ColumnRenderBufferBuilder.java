@@ -80,7 +80,7 @@ public class ColumnRenderBufferBuilder
 		{
 			return null;
 		}*/
-		//LOGGER.info("RenderRegion startBuild @ {}", renderSource.sectionPos);
+		//LOGGER.info("RenderRegion startBuild @ "+renderSource.sectionPos);
 		return CompletableFuture.supplyAsync(() ->
 				{
 					try

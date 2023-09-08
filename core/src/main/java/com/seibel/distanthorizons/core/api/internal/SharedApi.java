@@ -25,6 +25,7 @@ import com.seibel.distanthorizons.core.dataObjects.transformers.ChunkToLodBuilde
 import com.seibel.distanthorizons.core.dataObjects.transformers.FullDataToRenderDataTransformer;
 import com.seibel.distanthorizons.core.file.fullDatafile.FullDataFileHandler;
 import com.seibel.distanthorizons.core.generation.WorldGenerationQueue;
+import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.world.*;
 
 /** Contains code and variables used by both {@link ClientApi} and {@link ServerApi} */
@@ -66,6 +67,8 @@ public class SharedApi
 			ColumnRenderBufferBuilder.shutdownExecutorService();
 			WorldGenerationQueue.shutdownWorldGenThreadPool();
 			ChunkToLodBuilder.shutdownExecutorService();
+			
+			DebugRenderer.clearRenderables();
 			
 			// recommend that the garbage collector cleans up any objects from the old world
 			System.gc();
