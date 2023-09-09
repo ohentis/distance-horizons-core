@@ -28,6 +28,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.CompleteFullDataSource;
 import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IFullDataSource;
@@ -508,6 +509,11 @@ public class FullDataMetaFile extends AbstractMetaDataContainerFile implements I
 	@SuppressWarnings("resource") // due to DataObjTracker and DataObjSoftTracker being created outside a try-catch block
 	private CompletableFuture<IFullDataSource> applyWriteQueueAndSaveAsync(IFullDataSource fullDataSourceToUpdate)
 	{
+		if (Config.Client.Advanced.Debugging.skipFullDataUpdateQueue.get())
+		{
+			return CompletableFuture.completedFuture(fullDataSourceToUpdate);
+		}
+		
 		CompletableFuture<IFullDataSource> completionFuture = new CompletableFuture<>();
 		
 		

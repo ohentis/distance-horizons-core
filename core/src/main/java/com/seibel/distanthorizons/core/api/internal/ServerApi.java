@@ -21,6 +21,7 @@ package com.seibel.distanthorizons.core.api.internal;
 
 import com.seibel.distanthorizons.api.methods.events.abstractEvents.DhApiLevelLoadEvent;
 import com.seibel.distanthorizons.api.methods.events.abstractEvents.DhApiLevelUnloadEvent;
+import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.generation.DhLightingEngine;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
@@ -143,6 +144,12 @@ public class ServerApi
 	
 	public void serverChunkLoadEvent(IChunkWrapper chunk, ILevelWrapper level)
 	{
+		if (Config.Client.Advanced.Debugging.skipChunkLoadUpdates.get())
+		{
+			return;
+		}
+		
+		
 		// the world should always be non-null, this != null is just in case the world was removed accidentally 
 		AbstractDhWorld dhWorld = SharedApi.getAbstractDhWorld();
 		if (dhWorld != null)
@@ -156,6 +163,12 @@ public class ServerApi
 	}
 	public void serverChunkSaveEvent(IChunkWrapper chunkWrapper, ILevelWrapper level)
 	{
+		if (Config.Client.Advanced.Debugging.skipChunkUnloadUpdates.get())
+		{
+			return;
+		}
+		
+		
 		AbstractDhWorld dhWorld = SharedApi.getAbstractDhWorld();
 		if (dhWorld == null)
 		{

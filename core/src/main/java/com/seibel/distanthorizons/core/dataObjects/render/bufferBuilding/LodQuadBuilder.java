@@ -51,14 +51,7 @@ public class LodQuadBuilder
 	@SuppressWarnings("unchecked")
 	private final ArrayList<BufferQuad>[] transparentQuads = (ArrayList<BufferQuad>[]) new ArrayList[6];
 	
-	/** Used to turn transparent LODs above the void opaque to prevent seeing the void. */
-	private final short[] minOpaqueHeightByRelativePos = new short[SECTION_WIDTH * SECTION_WIDTH];
-	/** See {@link LodQuadBuilder#minOpaqueHeightByRelativePos} */
-	private final short[] minTransparentHeightByRelativePos = new short[SECTION_WIDTH * SECTION_WIDTH];
-	
 	private final boolean doTransparency;
-	
-	private static int SECTION_WIDTH = 4096;
 	
 	
 	
@@ -131,13 +124,6 @@ public class LodQuadBuilder
 		this.skipQuadsWithZeroSkylight = enableSkylightCulling;
 		this.skyLightCullingBelow = skyLightCullingBelow;
 		
-		// set the default values
-		for (int i = 0; i < SECTION_WIDTH * SECTION_WIDTH; i++)
-		{
-			// the default height is MAX_VALUE to preserve the comparison logic later
-			this.minOpaqueHeightByRelativePos[i] = Short.MAX_VALUE;
-			this.minTransparentHeightByRelativePos[i] = Short.MAX_VALUE;
-		}
 	}
 	
 	
@@ -177,49 +163,25 @@ public class LodQuadBuilder
 	}
 	
 	// XZ
-	public void addQuadUp(short x, short y, short z, short widthEastWest, short widthNorthSouthOrUpDown, int color, byte skylight, byte blocklight) // TODO argument names are wrong
+	public void addQuadUp(short x, short maxY, short z, short widthEastWest, short widthNorthSouthOrUpDown, int color, byte skylight, byte blocklight) // TODO argument names are wrong
 	{
 		// cave culling
-		if (this.skipQuadsWithZeroSkylight && skylight == 0 && y < this.skyLightCullingBelow)
+		if (this.skipQuadsWithZeroSkylight && skylight == 0 && maxY < this.skyLightCullingBelow)
 		{
 			return;
 		}
 		
-		BufferQuad quad = new BufferQuad(x, y, z, widthEastWest, widthNorthSouthOrUpDown, color, skylight, blocklight, EDhDirection.UP);
+		BufferQuad quad = new BufferQuad(x, maxY, z, widthEastWest, widthNorthSouthOrUpDown, color, skylight, blocklight, EDhDirection.UP);
 		boolean isTransparent = (this.doTransparency && ColorUtil.getAlpha(color) < 255);
 		ArrayList<BufferQuad> quadList = isTransparent ? this.transparentQuads[EDhDirection.UP.ordinal()] : this.opaqueQuads[EDhDirection.UP.ordinal()];
-		
-		
-		// update the minimum relative height for this quad's positions
-		for (int xRel = x; xRel < (x + widthEastWest); xRel++)
-		{
-			for (int zRel = z; zRel < (z + widthNorthSouthOrUpDown); zRel++)
-			{
-				int relPosIndex = relativeQuadPosToIndex(xRel, zRel);
-				
-				short[] minHeightByRelativePos = isTransparent ? this.minTransparentHeightByRelativePos : this.minOpaqueHeightByRelativePos;
-				
-				try
-				{
-					short currentHeight = minHeightByRelativePos[relPosIndex];
-					minHeightByRelativePos[relPosIndex] = (short) Math.min(currentHeight, quad.y);
-				}
-				catch (IndexOutOfBoundsException e)
-				{
-					// shouldn't happen normally, just in case James screwed up something.
-					// This can be removed once the indexes have been proven not to go outside the expected range
-					LOGGER.error("Relative Pos index out of bounds. Array length: ["+minHeightByRelativePos.length+"], given index: ["+relPosIndex+"], xRel: ["+xRel+"], zRel: ["+zRel+"], max expected rel value: ["+ SECTION_WIDTH +"].",  e);
-				}
-			}
-		}
 		
 		
 		// attempt to merge this quad with adjacent ones
 		if (!quadList.isEmpty() &&
 				(
-						quadList.get(quadList.size() - 1).tryMerge(quad, BufferMergeDirectionEnum.EastWest)
-								|| quadList.get(quadList.size() - 1).tryMerge(quad, BufferMergeDirectionEnum.NorthSouthOrUpDown))
-		)
+					quadList.get(quadList.size() - 1).tryMerge(quad, BufferMergeDirectionEnum.EastWest)
+					|| quadList.get(quadList.size() - 1).tryMerge(quad, BufferMergeDirectionEnum.NorthSouthOrUpDown))
+			)
 		{
 			this.premergeCount++;
 			return;
@@ -339,14 +301,7 @@ public class LodQuadBuilder
 	//=================//
 	
 	/** runs any final data cleanup, merging, etc. */
-	public void finalizeData()
-	{
-		this.mergeQuads();
-		if (this.doTransparency)
-		{
-			this.fixTransparencyOverVoid(); // should happen after merging
-		}
-	}
+	public void finalizeData() { this.mergeQuads(); }
 	
 	/** Uses Greedy meshing to merge this builder's Quads. */
 	public void mergeQuads()
@@ -411,38 +366,6 @@ public class LodQuadBuilder
 		}
 		list[directionIndex].removeIf(Objects::isNull);
 		return mergeCount;
-	}
-	
-	
-	/** makes any transparent LODs that are over the void opaque to prevent seeing the void through them. */
-	public void fixTransparencyOverVoid()
-	{
-		// make transparent LODs opaque if they are over the void
-		ListIterator<BufferQuad> iter = this.transparentQuads[EDhDirection.UP.ordinal()].listIterator();
-		if (iter.hasNext())
-		{
-			BufferQuad currentQuad = iter.next();
-			while (iter.hasNext())
-			{
-				int relPosIndex = relativeQuadPosToIndex(currentQuad.x, currentQuad.z);
-				
-				short minOpaqueHeight = this.minOpaqueHeightByRelativePos[relPosIndex];
-				short minTransHeight = this.minTransparentHeightByRelativePos[relPosIndex];
-				
-				
-				if (currentQuad.y < minOpaqueHeight && currentQuad.y == minTransHeight)
-				{
-					// transparent quad is at the bottom, make it opaque to prevent seeing through the world
-					currentQuad.color = ColorUtil.setAlpha(currentQuad.color, 255);
-					
-					// move the now-opaque quad into the opaque list (if not done the quads may render on top of other transparent quads)
-					iter.remove();
-					this.opaqueQuads[EDhDirection.UP.ordinal()].add(currentQuad);
-				}
-				
-				currentQuad = iter.next();
-			}
-		}
 	}
 	
 	
@@ -798,15 +721,5 @@ public class LodQuadBuilder
 		
 		return MathUtil.ceilDiv(this.getCurrentTransparentQuadsCount(), AbstractRenderBuffer.MAX_QUADS_PER_BUFFER);
 	}
-	
-	
-	
-	//================//
-	// helper methods //
-	//================//
-	
-	/** Converts a 2D position into a 1D array index. */
-	public static int relativeQuadPosToIndex(int xRel, int zRel) { return xRel + zRel * SECTION_WIDTH; }
-	
 	
 }

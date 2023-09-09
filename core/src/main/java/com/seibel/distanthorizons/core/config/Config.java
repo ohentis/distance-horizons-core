@@ -1176,6 +1176,24 @@ public class Config
 								+ "")
 						.build();
 				
+				public static ConfigEntry<Boolean> skipChunkLoadUpdates = new ConfigEntry.Builder<Boolean>()
+						.set(false)
+						.comment("")
+						.build();
+				
+				public static ConfigEntry<Boolean> skipChunkUnloadUpdates = new ConfigEntry.Builder<Boolean>()
+						.set(false)
+						.comment("")
+						.build();
+				
+				public static ConfigEntry<Boolean> skipFullDataUpdateQueue = new ConfigEntry.Builder<Boolean>()
+						.set(false)
+						.comment("")
+						.build();
+				
+				
+				
+				
 				// can be set to public inorder to show in the config file and UI
 				public static ConfigCategory exampleConfigScreen = new ConfigCategory.Builder()
 						.set(ExampleConfigScreen.class)

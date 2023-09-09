@@ -34,8 +34,10 @@ public class GLState
 	public int activeTextureNumber;
 	public int texture0;
 	public boolean blend;
-	public int blendSrc;
-	public int blendDst;
+	public int blendSrcColor;
+	public int blendSrcAlpha;
+	public int blendDstColor;
+	public int blendDstAlpha;
 	public boolean depth;
 	public boolean writeToDepthBuffer;
 	public int depthFunc;
@@ -64,8 +66,10 @@ public class GLState
 		this.texture0 = GL32.glGetInteger(GL32.GL_TEXTURE_BINDING_2D);
 		GL32.glActiveTexture(this.activeTextureNumber);
 		this.blend = GL32.glIsEnabled(GL32.GL_BLEND);
-		this.blendSrc = GL32.glGetInteger(GL32.GL_BLEND_SRC);
-		this.blendDst = GL32.glGetInteger(GL32.GL_BLEND_DST);
+		this.blendSrcColor = GL32.glGetInteger(GL32.GL_BLEND_SRC_RGB);
+		this.blendSrcAlpha = GL32.glGetInteger(GL32.GL_BLEND_SRC_ALPHA);
+		this.blendDstColor = GL32.glGetInteger(GL32.GL_BLEND_DST_RGB);
+		this.blendDstAlpha = GL32.glGetInteger(GL32.GL_BLEND_DST_ALPHA);
 		this.depth = GL32.glIsEnabled(GL32.GL_DEPTH_TEST);
 		this.writeToDepthBuffer = GL32.glGetInteger(GL32.GL_DEPTH_WRITEMASK) == GL32.GL_TRUE;
 		this.depthFunc = GL32.glGetInteger(GL32.GL_DEPTH_FUNC);
@@ -86,7 +90,7 @@ public class GLState
 		return "GLState{" +
 				"prog=" + this.prog + ", vao=" + this.vao + ", vbo=" + this.vbo + ", ebo=" + this.ebo + ", fbo=" + this.fbo +
 				", text=" + GLEnums.getString(this.texture2D) + "@" + this.activeTextureNumber + ", text0=" + GLEnums.getString(this.texture0) +
-				", blend=" + this.blend + ", blendMode=" + GLEnums.getString(this.blendSrc) + "," + GLEnums.getString(this.blendDst) +
+				", blend=" + this.blend + ", blendMode=" + GLEnums.getString(this.blendSrcColor) + "," + GLEnums.getString(this.blendDstColor) +
 				", depth=" + this.depth +
 				", depthFunc=" + GLEnums.getString(this.depthFunc) + ", stencil=" + this.stencil + ", stencilFunc=" +
 				GLEnums.getString(this.stencilFunc) + ", stencilRef=" + this.stencilRef + ", stencilMask=" + this.stencilMask +
@@ -119,7 +123,9 @@ public class GLState
 		GL32.glUseProgram(GL32.glIsProgram(this.prog) ? this.prog : 0);
 		
 		GL32.glDepthMask(this.writeToDepthBuffer);
-		GL32.glBlendFunc(this.blendSrc, this.blendDst);
+		//GL32.glBlendFunc(this.blendSrcColor, this.blendDstColor);
+		GL32.glBlendFuncSeparate(this.blendSrcColor, this.blendDstColor, this.blendSrcAlpha, this.blendDstAlpha);
+		
 		if (this.depth)
 		{
 			GL32.glEnable(GL32.GL_DEPTH_TEST);
