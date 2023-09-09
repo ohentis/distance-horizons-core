@@ -31,7 +31,6 @@ import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.objects.quadTree.QuadNode;
 import com.seibel.distanthorizons.core.util.objects.quadTree.QuadTree;
-import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrapper;
 import com.seibel.distanthorizons.coreapi.util.MathUtil;
 import org.apache.logging.log4j.Logger;
 
@@ -61,8 +60,11 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 	private final ConfigChangeListener<EHorizontalQuality> horizontalScaleChangeListener;
 	private final ReentrantLock treeReadWriteLock = new ReentrantLock();
 	
-	/** the lowest detail level number that can be rendered */
+	/** the smallest numerical detail level number that can be rendered */
 	private byte maxRenderDetailLevel;
+	/** the largest numerical detail level number that can be rendered */
+	private byte minRenderDetailLevel;
+	
 	/** used to calculate when a detail drop will occur */
 	private double detailDropOffDistanceUnit;
 	/** used to calculate when a detail drop will occur */
@@ -141,7 +143,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 		{
 			// walk up the tree until we hit the root node
 			// this is done so any high detail changes flow up to the lower detail render sections as well
-			while (pos.sectionDetailLevel <= this.treeMaxDetailLevel)
+			while (pos.sectionDetailLevel <= this.treeMinDetailLevel)
 			{
 				try
 				{
@@ -157,6 +159,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 				pos = pos.getParentPos();
 			}
 		}
+		
 		
 		// walk through each root node
 		Iterator<DhSectionPos> rootPosIterator = this.rootNodePosIterator();
@@ -174,7 +177,10 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 		}
 	}
 	/** @return whether the current position is able to render (note: not if it IS rendering, just if it is ABLE to.) */
-	private boolean recursivelyUpdateRenderSectionNode(DhBlockPos2D playerPos, QuadNode<LodRenderSection> rootNode, QuadNode<LodRenderSection> quadNode, DhSectionPos sectionPos, boolean parentRenderSectionIsEnabled)
+	private boolean recursivelyUpdateRenderSectionNode(
+			DhBlockPos2D playerPos, 
+			QuadNode<LodRenderSection> rootNode, QuadNode<LodRenderSection> quadNode, DhSectionPos sectionPos, 
+			boolean parentRenderSectionIsEnabled)
 	{
 		//===============================//
 		// node and render section setup //
@@ -211,10 +217,11 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 		// and disabling render sections //
 		//===============================//
 
-//		byte expectedDetailLevel = 6; // can be used instead of the following logic for testing
+		//byte expectedDetailLevel = DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL + 3; // can be used instead of the following logic for testing
 		byte expectedDetailLevel = this.calculateExpectedDetailLevel(playerPos, sectionPos);
+		expectedDetailLevel = (byte) Math.min(expectedDetailLevel, this.minRenderDetailLevel);
 		expectedDetailLevel += DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL;
-		expectedDetailLevel = (byte) Math.min(expectedDetailLevel, this.treeMaxDetailLevel);
+		
 		
 		if (sectionPos.sectionDetailLevel > expectedDetailLevel)
 		{
@@ -313,7 +320,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 	 * @param sectionPos section position
 	 * @return detail level of this section pos
 	 */
-	public byte calculateExpectedDetailLevel(DhBlockPos2D playerPos, DhSectionPos sectionPos) { return getDetailLevelFromDistance(playerPos.dist(sectionPos.getCenter().getCenterBlockPos())); }
+	public byte calculateExpectedDetailLevel(DhBlockPos2D playerPos, DhSectionPos sectionPos) { return this.getDetailLevelFromDistance(playerPos.dist(sectionPos.getCenter().getCenterBlockPos())); }
 	private byte getDetailLevelFromDistance(double distance)
 	{
 		// special case, never drop the quality
@@ -352,9 +359,17 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 	
 	private void updateDetailLevelVariables()
 	{
-		this.maxRenderDetailLevel = Config.Client.Advanced.Graphics.Quality.maxHorizontalResolution.get().detailLevel;
 		this.detailDropOffDistanceUnit = Config.Client.Advanced.Graphics.Quality.horizontalQuality.get().distanceUnitInBlocks * LodUtil.CHUNK_WIDTH;
 		this.detailDropOffLogBase = Math.log(Config.Client.Advanced.Graphics.Quality.horizontalQuality.get().quadraticBase);
+		
+		this.maxRenderDetailLevel = Config.Client.Advanced.Graphics.Quality.maxHorizontalResolution.get().detailLevel;
+		
+		// The minimum detail level is done to prevent single corner sections rendering 1 detail level lower than the others.
+		// If not done corners may not be flush with the other LODs, which looks bad.
+		byte minSectionDetailLevel = this.getDetailLevelFromDistance(this.blockRenderDistanceRadius); // get the minimum allowed detail level
+		minSectionDetailLevel -= 1; // -1 so corners can't render lower than their adjacent neighbors. space
+		minSectionDetailLevel = (byte) Math.min(minSectionDetailLevel, this.treeMinDetailLevel); // don't allow rendering lower detail sections than what the tree contains
+		this.minRenderDetailLevel = (byte) Math.max(minSectionDetailLevel, this.maxRenderDetailLevel); // respect the user's selected max resolution if it is lower detail (IE they want 2x2 block, but minSectionDetailLevel is specifically for 1x1 block render resolution)
 	}
 	
 	

@@ -22,7 +22,6 @@ package com.seibel.distanthorizons.core.api.internal;
 import com.seibel.distanthorizons.api.methods.events.abstractEvents.*;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
 import com.seibel.distanthorizons.core.level.IKeyedClientLevelManager;
-import com.seibel.distanthorizons.core.level.IServerKeyedClientLevel;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.util.objects.Pair;
 import com.seibel.distanthorizons.core.world.*;
@@ -216,7 +215,7 @@ public class ClientApi
 			if (levelWrapper.equals(level))
 			{
 				IChunkWrapper chunkWrapper = this.waitingChunkByClientLevelAndPos.get(levelChunkPair);
-				this.applyChunkUpdate(chunkWrapper, levelWrapper);
+				this.applyChunkUpdate(chunkWrapper, levelWrapper, false);
 				keysToRemove.add(levelChunkPair);
 			}
 		}
@@ -234,9 +233,13 @@ public class ClientApi
 	// chunk modified events //
 	//=======================//
 	
-	public void clientChunkLoadEvent(IChunkWrapper chunk, IClientLevelWrapper level) { this.applyChunkUpdate(chunk, level); }
-	public void clientChunkSaveEvent(IChunkWrapper chunk, IClientLevelWrapper level) { this.applyChunkUpdate(chunk, level); }
-	private void applyChunkUpdate(IChunkWrapper chunk, IClientLevelWrapper level)
+	/** handles both block place and break events */
+	public void clientChunkBlockChangedEvent(IChunkWrapper chunk, IClientLevelWrapper level) { this.applyChunkUpdate(chunk, level, true); }
+	
+	public void clientChunkLoadEvent(IChunkWrapper chunk, IClientLevelWrapper level) { this.applyChunkUpdate(chunk, level, false); }
+	public void clientChunkSaveEvent(IChunkWrapper chunk, IClientLevelWrapper level) { this.applyChunkUpdate(chunk, level, false); }
+	
+	private void applyChunkUpdate(IChunkWrapper chunkWrapper, IClientLevelWrapper level, boolean updateNeighborChunks)
 	{
 		// if the user is in a single player world the chunk updates are handled on the server side
 		if (SharedApi.getEnvironment() != EWorldEnvironment.Client_Only)
@@ -250,24 +253,38 @@ public class ClientApi
 		{
 			// If the level isn't loaded yet, keep track of which chunks were loaded so we can use them later.
 			// This may happen if the world and level load events happen out of order
-			this.waitingChunkByClientLevelAndPos.replace(new Pair<>(level, chunk.getChunkPos()), chunk);
+			this.waitingChunkByClientLevelAndPos.replace(new Pair<>(level, chunkWrapper.getChunkPos()), chunkWrapper);
 			
 			return;
 		}
 		
 		
-		dhLevel.updateChunkAsync(chunk);
-		
-		// also update any existing neighbour chunks so lighting changes are propagated correctly
-		for (int xOffset = -1; xOffset <= 1; xOffset++)
+		if (!updateNeighborChunks)
 		{
-			for (int zOffset = -1; zOffset <= 1; zOffset++)
+			dhLevel.updateChunkAsync(chunkWrapper);
+		}
+		else 
+		{
+			// update any existing neighbour chunks so lighting changes are propagated correctly
+			for (int xOffset = -1; xOffset <= 1; xOffset++)
 			{
-				DhChunkPos neighbourPos = new DhChunkPos(chunk.getChunkPos().x + xOffset, chunk.getChunkPos().z + zOffset);
-				IChunkWrapper neighbourChunk = dhLevel.getLevelWrapper().tryGetChunk(neighbourPos);
-				if (neighbourChunk != null)
+				for (int zOffset = -1; zOffset <= 1; zOffset++)
 				{
-					dhLevel.updateChunkAsync(neighbourChunk);
+					if (xOffset == 0 && zOffset == 0)
+					{
+						// center chunk
+						dhLevel.updateChunkAsync(chunkWrapper);
+					}
+					else
+					{
+						// neighboring chunk
+						DhChunkPos neighbourPos = new DhChunkPos(chunkWrapper.getChunkPos().x + xOffset, chunkWrapper.getChunkPos().z + zOffset);
+						IChunkWrapper neighbourChunk = dhLevel.getLevelWrapper().tryGetChunk(neighbourPos);
+						if (neighbourChunk != null)
+						{
+							dhLevel.updateChunkAsync(neighbourChunk);
+						}
+					}
 				}
 			}
 		}

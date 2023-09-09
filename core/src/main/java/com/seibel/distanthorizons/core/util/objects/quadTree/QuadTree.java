@@ -45,17 +45,23 @@ public class QuadTree<T>
 	
 	
 	
-	/** The largest number detail level in this tree. */
-	public final byte treeMaxDetailLevel;
-	/** The smallest number detail level in this tree. */
+	/** 
+	 * The largest numerical detail level this tree supports. <br>
+	 * IE: the detail level used by the root nodes.
+	 */
 	public final byte treeMinDetailLevel;
+	/** 
+	 * The smallest numerical detail level this tree supports. <br> 
+	 * IE: the detail level used by the leaf nodes.
+	 */
+	public final byte treeMaxDetailLevel;
+	
+	private final int widthInBlocks; // diameterInBlocks
 	
 	/** contain the actual data in the quad tree structure */
 	private final MovableGridRingList<QuadNode<T>> topRingList;
 	
 	private DhBlockPos2D centerBlockPos;
-	
-	private int widthInBlocks;
 	
 	
 	
@@ -64,21 +70,21 @@ public class QuadTree<T>
 	 *
 	 * @param widthInBlocks equivalent to the distance between two opposing sides
 	 */
-	public QuadTree(int widthInBlocks, DhBlockPos2D centerBlockPos, byte treeMinDetailLevel)
+	public QuadTree(int widthInBlocks, DhBlockPos2D centerBlockPos, byte treeMaxDetailLevel)
 	{
 		this.centerBlockPos = centerBlockPos;
 		this.widthInBlocks = widthInBlocks;
 		
-		this.treeMinDetailLevel = treeMinDetailLevel;
-		// the max detail level must be greater than 0 (to prevent divide by 0 errors) and greater than the minimum detail level
-		this.treeMaxDetailLevel = (byte) Math.max(Math.max(1, this.treeMinDetailLevel), MathUtil.log2(widthInBlocks));
+		this.treeMaxDetailLevel = treeMaxDetailLevel;
+		// the min detail level must be greater than 0 (to prevent divide by 0 errors) and greater than the maximum detail level
+		this.treeMinDetailLevel = (byte) Math.max(Math.max(1, this.treeMaxDetailLevel), MathUtil.log2(widthInBlocks));
 		
-		int halfSizeInRootNodes = Math.floorDiv(this.widthInBlocks, 2) / BitShiftUtil.powerOfTwo(this.treeMaxDetailLevel);
+		int halfSizeInRootNodes = Math.floorDiv(this.widthInBlocks, 2) / BitShiftUtil.powerOfTwo(this.treeMinDetailLevel);
 		halfSizeInRootNodes = halfSizeInRootNodes + 1; // always add 1 so nodes will always have a parent, even if the tree's center is offset from the root node grid 
 		
 		Pos2D ringListCenterPos = new Pos2D(
-				BitShiftUtil.divideByPowerOfTwo(this.centerBlockPos.x, this.treeMaxDetailLevel),
-				BitShiftUtil.divideByPowerOfTwo(this.centerBlockPos.z, this.treeMaxDetailLevel));
+				BitShiftUtil.divideByPowerOfTwo(this.centerBlockPos.x, this.treeMinDetailLevel),
+				BitShiftUtil.divideByPowerOfTwo(this.centerBlockPos.z, this.treeMinDetailLevel));
 		this.topRingList = new MovableGridRingList<>(halfSizeInRootNodes, ringListCenterPos.x, ringListCenterPos.y);
 		
 	}
@@ -115,7 +121,7 @@ public class QuadTree<T>
 	{
 		if (!runBoundaryChecks || this.isSectionPosInBounds(pos))
 		{
-			DhSectionPos rootPos = pos.convertToDetailLevel(this.treeMaxDetailLevel);
+			DhSectionPos rootPos = pos.convertToDetailLevel(this.treeMinDetailLevel);
 			int ringListPosX = rootPos.sectionX;
 			int ringListPosZ = rootPos.sectionZ;
 			
@@ -127,7 +133,7 @@ public class QuadTree<T>
 					return null;
 				}
 				
-				topQuadNode = new QuadNode<T>(rootPos, this.treeMinDetailLevel);
+				topQuadNode = new QuadNode<T>(rootPos, this.treeMaxDetailLevel);
 				boolean successfullyAdded = this.topRingList.set(ringListPosX, ringListPosZ, topQuadNode);
 				LodUtil.assertTrue(successfullyAdded, "Failed to add top quadTree node at position: " + rootPos);
 			}
@@ -150,14 +156,14 @@ public class QuadTree<T>
 			int radius = this.diameterInBlocks() / 2;
 			DhBlockPos2D minPos = this.getCenterBlockPos().add(new DhBlockPos2D(-radius, -radius));
 			DhBlockPos2D maxPos = this.getCenterBlockPos().add(new DhBlockPos2D(radius, radius));
-			throw new IndexOutOfBoundsException("QuadTree GetOrSet failed. Position out of bounds, min pos: " + minPos + ", max pos: " + maxPos + ", min detail level: " + this.treeMinDetailLevel + ", max detail level: " + this.treeMaxDetailLevel + ". Given Position: " + pos + " = block pos: " + pos.convertToDetailLevel(LodUtil.BLOCK_DETAIL_LEVEL));
+			throw new IndexOutOfBoundsException("QuadTree GetOrSet failed. Position out of bounds, min pos: " + minPos + ", max pos: " + maxPos + ", min detail level: " + this.treeMaxDetailLevel + ", max detail level: " + this.treeMinDetailLevel + ". Given Position: " + pos + " = block pos: " + pos.convertToDetailLevel(LodUtil.BLOCK_DETAIL_LEVEL));
 		}
 	}
 	
 	public boolean isSectionPosInBounds(DhSectionPos testPos)
 	{
 		// check if the testPos is within the detail level limits of the tree
-		boolean detailLevelWithinBounds = this.treeMinDetailLevel <= testPos.sectionDetailLevel && testPos.sectionDetailLevel <= this.treeMaxDetailLevel;
+		boolean detailLevelWithinBounds = this.treeMaxDetailLevel <= testPos.sectionDetailLevel && testPos.sectionDetailLevel <= this.treeMinDetailLevel;
 		if (!detailLevelWithinBounds)
 		{
 			return false;
@@ -240,8 +246,8 @@ public class QuadTree<T>
 		this.centerBlockPos = newCenterPos;
 		
 		Pos2D expectedCenterPos = new Pos2D(
-				BitShiftUtil.divideByPowerOfTwo(this.centerBlockPos.x, this.treeMaxDetailLevel),
-				BitShiftUtil.divideByPowerOfTwo(this.centerBlockPos.z, this.treeMaxDetailLevel));
+				BitShiftUtil.divideByPowerOfTwo(this.centerBlockPos.x, this.treeMinDetailLevel),
+				BitShiftUtil.divideByPowerOfTwo(this.centerBlockPos.z, this.treeMinDetailLevel));
 		
 		if (this.topRingList.getCenter().equals(expectedCenterPos))
 		{
@@ -378,7 +384,7 @@ public class QuadTree<T>
 //	}
 	
 	@Override
-	public String toString() { return "center block: " + this.centerBlockPos + ", block width: " + this.widthInBlocks + ", detail level range: [" + this.treeMinDetailLevel + "-" + this.treeMaxDetailLevel + "], leaf #: " + this.leafNodeCount(); }
+	public String toString() { return "center block: " + this.centerBlockPos + ", block width: " + this.widthInBlocks + ", detail level range: [" + this.treeMaxDetailLevel + "-" + this.treeMinDetailLevel + "], leaf #: " + this.leafNodeCount(); }
 	
 	
 	
@@ -398,7 +404,7 @@ public class QuadTree<T>
 			{
 				if (node != null || includeNullNodes)
 				{
-					DhSectionPos rootPos = new DhSectionPos(QuadTree.this.treeMaxDetailLevel, pos2D.x, pos2D.y);
+					DhSectionPos rootPos = new DhSectionPos(QuadTree.this.treeMinDetailLevel, pos2D.x, pos2D.y);
 					if (QuadTree.this.isSectionPosInBounds(rootPos))
 					{
 						this.iteratorPosQueue.add(rootPos);
