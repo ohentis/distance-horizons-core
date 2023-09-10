@@ -25,7 +25,6 @@ import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.render.fog.LodFogConfig;
 import com.seibel.distanthorizons.core.render.glObject.shader.Shader;
 import com.seibel.distanthorizons.core.render.glObject.shader.ShaderProgram;
-import com.seibel.distanthorizons.core.render.glObject.vertexAttribute.VertexAttribute;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.RenderUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.IVersionConstants;
@@ -61,11 +60,9 @@ public class FogShader extends AbstractShaderRenderer
 				() -> fogConfig.loadAndProcessFragShader("shaders/fog/fog.frag", false).toString(),
 				"fragColor", new String[]{"vPosition"}
 		));
-		
-		
+				
 		// all uniforms should be tryGet...
 		// because disabling fog can cause the GLSL to optimize out most (if not all) uniforms
-		
 		
 		this.gInvertedModelViewProjectionUniform = this.shader.tryGetUniformLocation("gInvMvmProj");
 		this.gDepthMapUniform = this.shader.tryGetUniformLocation("gDepthMap");
@@ -75,15 +72,10 @@ public class FogShader extends AbstractShaderRenderer
 		this.fullFogModeUniform = this.shader.tryGetUniformLocation("fullFogMode");
 		this.fogScaleUniform = this.shader.tryGetUniformLocation("fogScale");
 		this.fogVerticalScaleUniform = this.shader.tryGetUniformLocation("fogVerticalScale");
+		
 		// near fog
 		this.nearFogStartUniform = this.shader.tryGetUniformLocation("nearFogStart");
 		this.nearFogLengthUniform = this.shader.tryGetUniformLocation("nearFogLength");
-	}
-	
-	@Override
-	void setVertexAttributes()
-	{
-		this.va.setVertexAttribute(0, 0, VertexAttribute.VertexPointer.addVec2Pointer(false));
 	}
 	
 	@Override
@@ -95,13 +87,12 @@ public class FogShader extends AbstractShaderRenderer
 		int vanillaDrawDistance = MC_RENDER.getRenderDistance() * LodUtil.CHUNK_WIDTH;
 		vanillaDrawDistance += LodUtil.CHUNK_WIDTH * 2; // Give it a 2 chunk boundary for near fog.
 		
-		
 		// bind the depth buffer
 		if (this.gDepthMapUniform != -1)
 		{
-			GL32.glActiveTexture(GL32.GL_TEXTURE3);
+			GL32.glActiveTexture(GL32.GL_TEXTURE1);
 			GL32.glBindTexture(GL32.GL_TEXTURE_2D, MC_RENDER.getDepthTextureId());
-			GL32.glUniform1i(this.gDepthMapUniform, 3);
+			GL32.glUniform1i(this.gDepthMapUniform, 1);
 		}
 		
 		// Fog
@@ -115,8 +106,6 @@ public class FogShader extends AbstractShaderRenderer
 		if (this.fogScaleUniform != -1) this.shader.setUniform(this.fogScaleUniform, 1.f / lodDrawDistance);
 		if (this.fogVerticalScaleUniform != -1) this.shader.setUniform(this.fogVerticalScaleUniform, 1.f / MC.getWrappedClientWorld().getHeight());
 	}
-	
-	
 	
 	private Color getFogColor(float partialTicks)
 	{
@@ -133,6 +122,7 @@ public class FogShader extends AbstractShaderRenderer
 		
 		return fogColor;
 	}
+	
 	private Color getSpecialFogColor(float partialTicks) { return MC_RENDER.getSpecialFogColor(partialTicks); }
 	
 	public void setModelViewProjectionMatrix(Mat4f combinedModelViewProjectionMatrix)
@@ -145,5 +135,4 @@ public class FogShader extends AbstractShaderRenderer
 		
 		this.shader.unbind();
 	}
-	
 }

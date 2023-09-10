@@ -176,8 +176,6 @@ public class LodRenderer
 			return;
 		}
 		
-		
-		
 		if (!renderLock.tryLock())
 		{
 			// never lock the render thread, if the lock isn't available don't wait for it
@@ -285,7 +283,7 @@ public class LodRenderer
 			if (Config.Client.Advanced.Graphics.Ssao.enabled.get())
 			{
 				profiler.popPush("LOD SSAO");
-				SSAORenderer.INSTANCE.render(partialTicks);
+				SSAORenderer.INSTANCE.render(minecraftGlState, partialTicks);
 			}
 			
 			

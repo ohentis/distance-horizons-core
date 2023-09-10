@@ -48,26 +48,14 @@ public abstract class AbstractShaderRenderer
 	};
 	
 	protected final ShaderProgram shader;
-	protected final ShaderProgram applyShader;
 	public GLVertexBuffer boxBuffer;
 	protected VertexAttribute va;
 	boolean init = false;
 	
-	private int width = -1;
-	private int height = -1;
-	private int framebuffer = -1;
-	private int shaderTexture = -1;
-	
 	
 	protected AbstractShaderRenderer(ShaderProgram shader)
 	{
-		this(shader, null);
-	}
-	
-	protected AbstractShaderRenderer(ShaderProgram shader, ShaderProgram applyShader)
-	{
 		this.shader = shader;
-		this.applyShader = applyShader;
 	}
 	
 	private void init()
@@ -77,12 +65,14 @@ public abstract class AbstractShaderRenderer
 		
 		va = VertexAttribute.create();
 		va.bind();
+		
 		// Pos
 		setVertexAttributes();
 		va.completeAndCheck(Float.BYTES * 2);
 		
 		// Some shader stuff needs to be set a bit later than
 		this.postInit();
+		
 		// Framebuffer
 		this.createBuffer();
 	}
@@ -92,95 +82,41 @@ public abstract class AbstractShaderRenderer
 	{
 		va.setVertexAttribute(0, 0, VertexAttribute.VertexPointer.addVec2Pointer(false));
 	}
-	;
+	
 	/** Overwrite this to apply uniforms to the shader */
 	void setShaderUniforms(float partialTicks) { }
-	;
-	/** Overwrite this to apply uniforms to the apply shader */
-	void setApplyShaderUniforms(float partialTicks) { }
-	;
+	
 	/** Overwrite if you need to run something on runtime */
 	void postInit() { }
-	;
+	
 	
 	// TODO pass in the Model View and Projection Matrices along with the ticks
 	public void render(float partialTicks)
 	{
 		GLState state = new GLState();
 		this.init();
+		
 		int width = MC_RENDER.getTargetFrameBufferViewportWidth();
 		int height = MC_RENDER.getTargetFrameBufferViewportHeight();
 		
-		if (this.width != width || this.height != height)
-		{
-			this.width = width;
-			this.height = height;
-			this.createFramebuffer(width, height);
-		}
-		
-		
-		
-		GL32.glBindFramebuffer(GL32.GL_FRAMEBUFFER, framebuffer);
 		GL32.glViewport(0, 0, width, height);
 		GL32.glDisable(GL32.GL_DEPTH_TEST);
-		GL32.glDisable(GL32.GL_BLEND);
 		GL32.glDisable(GL32.GL_SCISSOR_TEST);
-		
 		
 		shader.bind();
 		this.setShaderUniforms(partialTicks);
+		
 		va.bind();
 		va.bindBufferToAllBindingPoint(boxBuffer.getId());
 		
 		GL32.glActiveTexture(GL32.GL_TEXTURE0);
 		GL32.glBindTexture(GL32.GL_TEXTURE_2D, MC_RENDER.getDepthTextureId());
 		
-		GL32.glDrawArrays(GL32.GL_TRIANGLES, 0, 6);
-		
-		if (applyShader != null)
-		{
-			applyShader.bind();
-			this.setApplyShaderUniforms(partialTicks);
-		}
-		
 		GL32.glEnable(GL11.GL_BLEND);
 		GL32.glBlendFunc(GL32.GL_SRC_ALPHA, GL32.GL_ONE_MINUS_SRC_ALPHA);
-		GL32.glBindFramebuffer(GL32.GL_FRAMEBUFFER, MC_RENDER.getTargetFrameBuffer());
-		GL32.glActiveTexture(GL32.GL_TEXTURE0);
-		GL32.glBindTexture(GL32.GL_TEXTURE_2D, shaderTexture);
 		GL32.glDrawArrays(GL32.GL_TRIANGLES, 0, 6);
 		
-		
-		// explicitly unbinding the frame buffer is necessary to prevent GL_CLEAR calls from hitting the wrong buffer
-		GL32.glBindFramebuffer(GL32.GL_FRAMEBUFFER, 0);
-		
 		state.restore();
-	}
-	
-	
-	private void createFramebuffer(int width, int height)
-	{
-		if (this.framebuffer != -1)
-		{
-			GL32.glDeleteFramebuffers(this.framebuffer);
-			this.framebuffer = -1;
-		}
-		
-		if (this.shaderTexture != -1)
-		{
-			GL32.glDeleteTextures(this.shaderTexture);
-			this.shaderTexture = -1;
-		}
-		
-		this.framebuffer = GL32.glGenFramebuffers();
-		GL32.glBindFramebuffer(GL32.GL_FRAMEBUFFER, this.framebuffer);
-		
-		this.shaderTexture = GL32.glGenTextures();
-		GL32.glBindTexture(GL32.GL_TEXTURE_2D, this.shaderTexture);
-		GL32.glTexImage2D(GL32.GL_TEXTURE_2D, 0, GL32.GL_RED, width, height, 0, GL32.GL_RED, GL32.GL_FLOAT, (ByteBuffer) null);
-		GL32.glTexParameteri(GL32.GL_TEXTURE_2D, GL32.GL_TEXTURE_MIN_FILTER, GL32.GL_NEAREST);
-		GL32.glTexParameteri(GL32.GL_TEXTURE_2D, GL32.GL_TEXTURE_MAG_FILTER, GL32.GL_NEAREST);
-		GL32.glFramebufferTexture2D(GL32.GL_FRAMEBUFFER, GL32.GL_COLOR_ATTACHMENT0, GL32.GL_TEXTURE_2D, this.shaderTexture, 0);
 	}
 	
 	private void createBuffer()
@@ -189,6 +125,7 @@ public abstract class AbstractShaderRenderer
 		buffer.order(ByteOrder.nativeOrder());
 		buffer.asFloatBuffer().put(box_vertices);
 		buffer.rewind();
+		
 		this.boxBuffer = new GLVertexBuffer(false);
 		this.boxBuffer.bind();
 		this.boxBuffer.uploadBuffer(buffer, box_vertices.length, EGpuUploadMethod.DATA, box_vertices.length * Float.BYTES);
@@ -197,10 +134,5 @@ public abstract class AbstractShaderRenderer
 	public void free()
 	{
 		this.shader.free();
-		if (this.applyShader != null)
-		{
-			this.applyShader.free();
-		}
 	}
-	
 }
