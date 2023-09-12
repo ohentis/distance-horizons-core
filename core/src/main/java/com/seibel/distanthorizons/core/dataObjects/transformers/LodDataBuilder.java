@@ -44,6 +44,7 @@ public class LodDataBuilder
 		
 		
 		ChunkSizedFullDataAccessor chunkData = new ChunkSizedFullDataAccessor(chunkWrapper.getChunkPos());
+		int minBuildHeight = chunkWrapper.getMinFilledHeight();
 		
 		for (int x = 0; x < LodUtil.CHUNK_WIDTH; x++)
 		{
@@ -71,7 +72,7 @@ public class LodDataBuilder
 				}
 				
 				
-				for (; y >= chunkWrapper.getMinBuildHeight(); y--)
+				for (; y >= minBuildHeight; y--)
 				{
 					IBiomeWrapper newBiome = chunkWrapper.getBiome(x, y, z);
 					IBlockStateWrapper newBlockState = chunkWrapper.getBlockState(x, y, z);
@@ -94,7 +95,7 @@ public class LodDataBuilder
 				}
 				longs.add(FullDataPointUtil.encode(mappedId, lastY - y, y + 1 - chunkWrapper.getMinBuildHeight(), light));
 				
-				chunkData.setSingleColumn(longs.toArray(new long[0]), x, z);
+				chunkData.setSingleColumn(longs.toLongArray(), x, z);
 			}
 		}
 		if (!canGenerateLodFromChunk(chunkWrapper)) return null;

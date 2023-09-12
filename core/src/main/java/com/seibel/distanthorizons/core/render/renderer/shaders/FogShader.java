@@ -23,11 +23,14 @@ import com.seibel.distanthorizons.api.enums.rendering.EFogColorMode;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.render.fog.LodFogConfig;
+import com.seibel.distanthorizons.core.render.glObject.GLState;
 import com.seibel.distanthorizons.core.render.glObject.shader.Shader;
 import com.seibel.distanthorizons.core.render.glObject.shader.ShaderProgram;
+import com.seibel.distanthorizons.core.render.renderer.ScreenQuad;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.RenderUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.IVersionConstants;
+import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.coreapi.util.math.Mat4f;
 import org.lwjgl.opengl.GL32;
 
@@ -36,31 +39,40 @@ import java.awt.*;
 public class FogShader extends AbstractShaderRenderer
 {
 	public static FogShader INSTANCE = new FogShader(LodFogConfig.generateFogConfig());
+	
+	private static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	private static final IVersionConstants VERSION_CONSTANTS = SingletonInjector.INSTANCE.get(IVersionConstants.class);
 	
 	
-	public final int gInvertedModelViewProjectionUniform;
-	public final int gDepthMapUniform;
+	private final LodFogConfig fogConfig;
+	private Mat4f inverseMvmProjMatrix;
+	public int gInvertedModelViewProjectionUniform;
+	public int gDepthMapUniform;
 	
 	// Fog Uniforms
-	public final int fogColorUniform;
-	public final int fogScaleUniform;
-	public final int fogVerticalScaleUniform;
-	public final int nearFogStartUniform;
-	public final int nearFogLengthUniform;
-	public final int fullFogModeUniform;
-	
+	public int fogColorUniform;
+	public int fogScaleUniform;
+	public int fogVerticalScaleUniform;
+	public int nearFogStartUniform;
+	public int nearFogLengthUniform;
+	public int fullFogModeUniform;
 	
 	
 	public FogShader(LodFogConfig fogConfig)
 	{
-		super(new ShaderProgram(
+		this.fogConfig = fogConfig;
+	}
+
+	@Override
+	public void onInit()
+	{
+		this.shader = new ShaderProgram(
 				// TODO rename normal.vert to something like "postProcess.vert"
 				() -> Shader.loadFile("shaders/normal.vert", false, new StringBuilder()).toString(),
-				() -> fogConfig.loadAndProcessFragShader("shaders/fog/fog.frag", false).toString(),
+				() -> this.fogConfig.loadAndProcessFragShader("shaders/fog/fog.frag", false).toString(),
 				"fragColor", new String[]{"vPosition"}
-		));
-				
+		);
+		
 		// all uniforms should be tryGet...
 		// because disabling fog can cause the GLSL to optimize out most (if not all) uniforms
 		
@@ -79,9 +91,9 @@ public class FogShader extends AbstractShaderRenderer
 	}
 	
 	@Override
-	void setShaderUniforms(float partialTicks)
+	protected void onApplyUniforms(float partialTicks)
 	{
-		this.shader.bind();
+		this.shader.setUniform(this.gInvertedModelViewProjectionUniform, this.inverseMvmProjMatrix);
 		
 		int lodDrawDistance = RenderUtil.getFarClipPlaneDistanceInBlocks();
 		int vanillaDrawDistance = MC_RENDER.getRenderDistance() * LodUtil.CHUNK_WIDTH;
@@ -127,12 +139,25 @@ public class FogShader extends AbstractShaderRenderer
 	
 	public void setModelViewProjectionMatrix(Mat4f combinedModelViewProjectionMatrix)
 	{
-		this.shader.bind();
+		this.inverseMvmProjMatrix = new Mat4f(combinedModelViewProjectionMatrix);
+		this.inverseMvmProjMatrix.invert();
+	}
+	
+	@Override
+	protected void onRender()
+	{
+		GLState state = new GLState();
 		
-		Mat4f inverseMvmProjMatrix = new Mat4f(combinedModelViewProjectionMatrix);
-		inverseMvmProjMatrix.invert();
-		this.shader.setUniform(this.gInvertedModelViewProjectionUniform, inverseMvmProjMatrix);
+		GL32.glDisable(GL32.GL_DEPTH_TEST);
+		GL32.glDisable(GL32.GL_SCISSOR_TEST);
+		GL32.glEnable(GL32.GL_BLEND);
+		GL32.glBlendFunc(GL32.GL_SRC_ALPHA, GL32.GL_ONE_MINUS_SRC_ALPHA);
 		
-		this.shader.unbind();
+		GL32.glActiveTexture(GL32.GL_TEXTURE0);
+		GL32.glBindTexture(GL32.GL_TEXTURE_2D, MC_RENDER.getDepthTextureId());
+		
+		ScreenQuad.INSTANCE.render();
+		
+		state.restore();
 	}
 }

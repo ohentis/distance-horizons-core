@@ -37,6 +37,7 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
 import org.apache.logging.log4j.Logger;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -204,7 +205,7 @@ public class ServerApi
 			{
 				// generate the chunk's lighting, ignoring neighbors.
 				// not a perfect solution, but should prevent chunks from having completely broken lighting
-				List<IChunkWrapper> nearbyChunkList = new LinkedList<>();
+				ArrayList<IChunkWrapper> nearbyChunkList = new ArrayList<>(1);
 				nearbyChunkList.add(chunkWrapper);
 				DhLightingEngine.INSTANCE.lightChunk(chunkWrapper, nearbyChunkList, level.hasSkyLight() ? 15 : 0);
 				chunkWrapper.setUseDhLighting(true);

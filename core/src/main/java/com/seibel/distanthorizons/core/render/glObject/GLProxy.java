@@ -19,33 +19,31 @@
 
 package com.seibel.distanthorizons.core.render.glObject;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.seibel.distanthorizons.api.enums.config.EGLErrorHandlingMode;
+import com.seibel.distanthorizons.api.enums.config.EGpuUploadMethod;
+import com.seibel.distanthorizons.core.config.Config;
+import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
+import com.seibel.distanthorizons.core.enums.EGLProxyContext;
+import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
+import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.util.objects.GLMessage;
+import com.seibel.distanthorizons.core.util.objects.GLMessageOutputStream;
+import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
+import com.seibel.distanthorizons.coreapi.ModInfo;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.lwjgl.glfw.GLFW;
+import org.lwjgl.opengl.GL;
+import org.lwjgl.opengl.GL32;
+import org.lwjgl.opengl.GLCapabilities;
+import org.lwjgl.opengl.GLUtil;
+
 import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-
-import com.seibel.distanthorizons.api.enums.config.EGLErrorHandlingMode;
-import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
-import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
-import com.seibel.distanthorizons.core.config.Config;
-import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.lwjgl.glfw.GLFW;
-import org.lwjgl.opengl.GL;
-import org.lwjgl.opengl.GL11;
-import org.lwjgl.opengl.GL32;
-import org.lwjgl.opengl.GLCapabilities;
-import org.lwjgl.opengl.GLUtil;
-
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import com.seibel.distanthorizons.coreapi.ModInfo;
-import com.seibel.distanthorizons.api.enums.config.EGpuUploadMethod;
-import com.seibel.distanthorizons.core.enums.EGLProxyContext;
-import com.seibel.distanthorizons.core.util.objects.GLMessage;
-import com.seibel.distanthorizons.core.util.objects.GLMessageOutputStream;
-import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 
 /**
  * A singleton that holds references to different openGL contexts
@@ -108,7 +106,7 @@ public class GLProxy
 		// this must be created on minecraft's render context to work correctly
 		
 		GL_LOGGER.info("Creating " + GLProxy.class.getSimpleName() + "... If this is the last message you see there must have been an OpenGL error.");
-		GL_LOGGER.info("Lod Render OpenGL version [" + GL11.glGetString(GL11.GL_VERSION) + "].");
+		GL_LOGGER.info("Lod Render OpenGL version [" + GL32.glGetString(GL32.GL_VERSION) + "].");
 		
 		// getting Minecraft's context has to be done on the render thread,
 		// where the GL context is

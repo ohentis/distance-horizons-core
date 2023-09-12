@@ -20,6 +20,7 @@
 package com.seibel.distanthorizons.core.render.renderer;
 
 import com.seibel.distanthorizons.core.config.Config;
+import com.seibel.distanthorizons.core.dependencyInjection.ModAccessorInjector;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
 import com.seibel.distanthorizons.core.logging.ConfigBasedSpamLogger;
@@ -40,6 +41,8 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.misc.ILightMapWrapper;
 import com.seibel.distanthorizons.api.enums.rendering.EDebugRendering;
 import com.seibel.distanthorizons.api.enums.rendering.EFogColorMode;
 import com.seibel.distanthorizons.core.render.fog.LodFogConfig;
+import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.IIrisAccessor;
+import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.IOptifineAccessor;
 import com.seibel.distanthorizons.coreapi.util.math.Mat4f;
 import com.seibel.distanthorizons.coreapi.util.math.Vec3d;
 import com.seibel.distanthorizons.coreapi.util.math.Vec3f;
@@ -61,6 +64,8 @@ public class LodRenderer
 			() -> Config.Client.Advanced.Logging.logRendererBufferEvent.get());
 	public static ConfigBasedSpamLogger tickLogger = new ConfigBasedSpamLogger(LogManager.getLogger(LodRenderer.class),
 			() -> Config.Client.Advanced.Logging.logRendererBufferEvent.get(), 1);
+	
+	private static final IIrisAccessor IRIS_ACCESSOR = ModAccessorInjector.INSTANCE.get(IIrisAccessor.class);
 	
 	public static final boolean ENABLE_DRAW_LAG_SPIKE_LOGGING = false;
 	public static final boolean ENABLE_DUMP_GL_STATE = true;
@@ -182,6 +187,17 @@ public class LodRenderer
 			return;
 		}
 		
+		if (IRIS_ACCESSOR != null && IRIS_ACCESSOR.isRenderingShadowPass())
+		{
+			// We do not have a wy to properly render shader shadow pass, since they can
+			// and often do change the projection entirely, as well as the output usage.
+			
+			//EVENT_LOGGER.debug("Skipping shadow pass render.");
+			return;
+		}
+		
+		
+		
 		try
 		{
 			// get MC's shader program and save MC's render state so we can restore it later
@@ -243,16 +259,23 @@ public class LodRenderer
 				{
 					this.shaderProgram.free();
 					this.shaderProgram = new LodRenderProgram(newFogConfig);
+					
 					FogShader.INSTANCE.free();
 					FogShader.INSTANCE = new FogShader(newFogConfig);
 				}
 				this.shaderProgram.bind();
 			}
+			
 			GL32.glActiveTexture(GL32.GL_TEXTURE0);
 			
 			/*---------Get required data--------*/
 			int vanillaBlockRenderedDistance = MC_RENDER.getRenderDistance() * LodUtil.CHUNK_WIDTH;
-			Mat4f modelViewProjectionMatrix = RenderUtil.createCombinedModelViewProjectionMatrix(baseProjectionMatrix, baseModelViewMatrix, partialTicks);
+			//Mat4f modelViewProjectionMatrix = RenderUtil.createCombinedModelViewProjectionMatrix(baseProjectionMatrix, baseModelViewMatrix, partialTicks);
+			
+			Mat4f projectionMatrix = RenderUtil.createLodProjectionMatrix(baseProjectionMatrix, partialTicks);
+			
+			Mat4f modelViewProjectionMatrix = new Mat4f(projectionMatrix);
+			modelViewProjectionMatrix.multiply(RenderUtil.createLodModelViewMatrix(baseModelViewMatrix));
 			
 			/*---------Fill uniform data--------*/
 			this.shaderProgram.fillUniformData(modelViewProjectionMatrix, /*Light map = GL_TEXTURE0*/ 0,
@@ -283,12 +306,12 @@ public class LodRenderer
 			if (Config.Client.Advanced.Graphics.Ssao.enabled.get())
 			{
 				profiler.popPush("LOD SSAO");
+				SSAOShader.INSTANCE.setProjectionMatrix(projectionMatrix);
 				SSAORenderer.INSTANCE.render(minecraftGlState, partialTicks);
 			}
 			
 			
 			profiler.popPush("LOD Fog");
-			// TODO add the model view/projection matrices to the render() function
 			FogShader.INSTANCE.setModelViewProjectionMatrix(modelViewProjectionMatrix);
 			FogShader.INSTANCE.render(partialTicks);
 			
