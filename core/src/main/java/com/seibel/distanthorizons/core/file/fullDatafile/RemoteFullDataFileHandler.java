@@ -84,8 +84,8 @@ public class RemoteFullDataFileHandler extends GeneratedFullDataFileHandler
 			sectionsToUpdate.remove(pos);
 		
 		Consumer<ChunkSizedFullDataAccessor> chunkDataConsumer = (ChunkSizedFullDataAccessor data) -> {
-			DhLodPos pos = data.getLodPos().convertToDetailLevel(CompleteFullDataSource.SECTION_SIZE_OFFSET);
-			this.writeChunkDataToFile(new DhSectionPos(pos.detailLevel, pos.x, pos.z), data);
+			DhSectionPos pos = data.getSectionPos().convertNewToDetailLevel(CompleteFullDataSource.SECTION_SIZE_OFFSET);
+			this.writeChunkDataToFile(new DhSectionPos(pos.getDetailLevel(), pos.getX(), pos.getZ()), data);
 		};
 		
 		this.networkState.getClient().<FullDataChangeSummaryResponseMessage>sendRequest(new FullDataChangeSummaryRequestMessage(level.getLevelWrapper(), block))
@@ -102,7 +102,7 @@ public class RemoteFullDataFileHandler extends GeneratedFullDataFileHandler
 						
 						for (DhSectionPos pos : response.changedPosList)
 						{
-							queue.submitGenTask(pos, pos.sectionDetailLevel, new IWorldGenTaskTracker() {
+							queue.submitGenTask(pos, pos.getDetailLevel(), new IWorldGenTaskTracker() {
 								@Override
 								public boolean isMemoryAddressValid()
 								{
@@ -144,6 +144,10 @@ public class RemoteFullDataFileHandler extends GeneratedFullDataFileHandler
 	@Override
 	public FullDataMetaFile getFileIfExist(DhSectionPos pos)
 	{
+		// This feature is broken - same data may produce different hashes, apparently
+		if (true)
+			return super.getFileIfExist(pos);
+		
 		if (this.networkState == null || !this.isFileUnloaded(pos))
 			return super.getFileIfExist(pos);
 		

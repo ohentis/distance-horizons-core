@@ -391,14 +391,14 @@ public class CompleteFullDataSource extends FullDataArrayAccessor implements IFu
 	
 	public void splitIntoChunkSizedAccessors(Consumer<ChunkSizedFullDataAccessor> consumer)
 	{
-		LodUtil.assertTrue(sectionPos.sectionDetailLevel == DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL, "Data source detail level must be at block detail level.");
+		LodUtil.assertTrue(sectionPos.getDetailLevel() == DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL, "Data source detail level must be at block detail level.");
 		
 		sectionPos.forEachChildAtLevel(LodUtil.CHUNK_DETAIL_LEVEL, childPos -> {
-			ChunkSizedFullDataAccessor accessor = new ChunkSizedFullDataAccessor(new DhChunkPos(childPos.sectionX, childPos.sectionZ));
+			ChunkSizedFullDataAccessor accessor = new ChunkSizedFullDataAccessor(new DhChunkPos(childPos.getX(), childPos.getZ()));
 			
-			int detailLevelDifference = sectionPos.sectionDetailLevel - childPos.sectionDetailLevel;
-			int childRelativeX = childPos.sectionX - sectionPos.sectionX * BitShiftUtil.powerOfTwo(detailLevelDifference);
-			int childRelativeZ = childPos.sectionZ - sectionPos.sectionZ * BitShiftUtil.powerOfTwo(detailLevelDifference);
+			int detailLevelDifference = sectionPos.getDetailLevel() - childPos.getDetailLevel();
+			int childRelativeX = childPos.getX() - sectionPos.getX() * BitShiftUtil.powerOfTwo(detailLevelDifference);
+			int childRelativeZ = childPos.getZ() - sectionPos.getZ() * BitShiftUtil.powerOfTwo(detailLevelDifference);
 			
 			subView(
 					LodUtil.CHUNK_WIDTH,

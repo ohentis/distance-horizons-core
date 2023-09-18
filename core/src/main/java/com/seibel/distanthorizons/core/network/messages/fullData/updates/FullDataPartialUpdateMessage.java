@@ -63,8 +63,8 @@ public class FullDataPartialUpdateMessage extends FutureTrackableNetworkMessage
 			
 			out.writeInt(levelHashCode);
 			
-			out.writeInt(fullDataAccessor.pos.x);
-			out.writeInt(fullDataAccessor.pos.z);
+			out.writeInt(fullDataAccessor.chunkPos.x);
+			out.writeInt(fullDataAccessor.chunkPos.z);
 			
 			out.writeInt(outputStream.size());
 			out.writeBytes(outputStream.toByteArray());

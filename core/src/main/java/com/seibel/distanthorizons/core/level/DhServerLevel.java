@@ -110,7 +110,7 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 			if (serverPlayerState.serverPlayer.getLevel() != this.serverLevelWrapper)
 				return;
 			
-			LOGGER.debug("FullDataSourceRequestMessage received at pos ({}, {}) with detail level {}", msg.dhSectionPos.sectionX, msg.dhSectionPos.sectionZ, msg.dhSectionPos.sectionDetailLevel);
+			LOGGER.debug("FullDataSourceRequestMessage received at pos ({}, {}) with detail level {}", msg.dhSectionPos.getX(), msg.dhSectionPos.getZ(), msg.dhSectionPos.getDetailLevel());
 			
 			if (serverPlayerState.pendingFullDataRequests.incrementAndGet() > rateLimitConfig.get())
 			{

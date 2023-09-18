@@ -65,7 +65,7 @@ public class WorldRemoteGenerationQueue implements IWorldGenerationQueue, IDebug
 	@Override
 	public CompletableFuture<WorldGenResult> submitGenTask(DhSectionPos sectionPos, byte requiredDataDetail, IWorldGenTaskTracker tracker)
 	{
-		LodUtil.assertTrue(sectionPos.sectionDetailLevel == DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL, "Only highest-detail sections are allowed.");
+		LodUtil.assertTrue(sectionPos.getDetailLevel() == DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL, "Only highest-detail sections are allowed.");
 		
 		WorldGenQueueEntry entry = new WorldGenQueueEntry(new CompletableFuture<>(), tracker);
 		waitingTasks.put(sectionPos, entry);
@@ -74,7 +74,7 @@ public class WorldRemoteGenerationQueue implements IWorldGenerationQueue, IDebug
 	
 	private int posDistanceSquared(DhBlockPos2D targetPos, DhSectionPos pos)
 	{
-		return (int) pos.getCenter().getCenterBlockPos().distSquared(targetPos);
+		return (int) pos.getCenterBlockPos().distSquared(targetPos);
 	}
 	
 	@Override
