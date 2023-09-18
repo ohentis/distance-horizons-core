@@ -179,21 +179,21 @@ public class QuadNode<T>
 		
 		if (!this.sectionPos.contains(inputSectionPos))
 		{
-			LOGGER.error((replaceValue ? "set " : "get ") + inputSectionPos + " center block: " + inputSectionPos.getCenter().getCornerBlockPos() + ", this pos: " + this.sectionPos + " this center block: " + this.sectionPos.getCenter().getCornerBlockPos());
-			throw new IllegalArgumentException("Input section pos " + inputSectionPos + " outside of this quadNode's pos: " + this.sectionPos + ", this node's blockPos: " + this.sectionPos.convertToDetailLevel(LodUtil.BLOCK_DETAIL_LEVEL) + " block width: " + this.sectionPos.getWidth().toBlockWidth() + " input detail level: " + inputSectionPos.convertToDetailLevel(LodUtil.BLOCK_DETAIL_LEVEL) + " width: " + inputSectionPos.getWidth().toBlockWidth());
+			LOGGER.error((replaceValue ? "set " : "get ") + inputSectionPos + " center block: " + inputSectionPos.getCenterBlockPos() + ", this pos: " + this.sectionPos + " this center block: " + this.sectionPos.getCenterBlockPos());
+			throw new IllegalArgumentException("Input section pos " + inputSectionPos + " outside of this quadNode's pos: " + this.sectionPos + ", this node's blockPos: " + this.sectionPos.convertNewToDetailLevel(LodUtil.BLOCK_DETAIL_LEVEL) + " block width: " + this.sectionPos.getBlockWidth() + " input detail level: " + inputSectionPos.convertNewToDetailLevel(LodUtil.BLOCK_DETAIL_LEVEL) + " width: " + inputSectionPos.getBlockWidth());
 		}
 		
-		if (inputSectionPos.sectionDetailLevel > this.sectionPos.sectionDetailLevel)
+		if (inputSectionPos.getDetailLevel() > this.sectionPos.getDetailLevel())
 		{
-			throw new IllegalArgumentException("detail level higher than this node. Node Detail level: " + this.sectionPos.sectionDetailLevel + " input detail level: " + inputSectionPos.sectionDetailLevel);
+			throw new IllegalArgumentException("detail level higher than this node. Node Detail level: " + this.sectionPos.getDetailLevel() + " input detail level: " + inputSectionPos.getDetailLevel());
 		}
 		
-		if (inputSectionPos.sectionDetailLevel == this.sectionPos.sectionDetailLevel && !inputSectionPos.equals(this.sectionPos))
+		if (inputSectionPos.getDetailLevel() == this.sectionPos.getDetailLevel() && !inputSectionPos.equals(this.sectionPos))
 		{
 			throw new IllegalArgumentException("Node and input detail level are equal, however positions are not; this tree doesn't contain the requested position. Node pos: " + this.sectionPos + ", input pos: " + inputSectionPos);
 		}
 		
-		if (inputSectionPos.sectionDetailLevel < this.minimumDetailLevel)
+		if (inputSectionPos.getDetailLevel() < this.minimumDetailLevel)
 		{
 			throw new IllegalArgumentException("Input position is requesting a detail level lower than what this node can provide. Node minimum detail level: " + this.minimumDetailLevel + ", input pos: " + inputSectionPos);
 		}
@@ -201,7 +201,7 @@ public class QuadNode<T>
 		
 		
 		// get/set logic
-		if (inputSectionPos.sectionDetailLevel == this.sectionPos.sectionDetailLevel)
+		if (inputSectionPos.getDetailLevel() == this.sectionPos.getDetailLevel())
 		{
 			// this node is the requested position
 			if (replaceValue)

@@ -104,7 +104,7 @@ public interface IFullDataSource
 			while (posList.size() > 0)
 			{
 				DhSectionPos pos = posList.remove();
-				if (pos.sectionDetailLevel > highestGeneratorDetailLevel)
+				if (pos.getDetailLevel() > highestGeneratorDetailLevel)
 				{
 					pos.forEachChild((childPos) -> { posList.push(childPos); });
 				}
@@ -128,30 +128,30 @@ public interface IFullDataSource
 		int sourceRelWidth = this.getWidthInDataPoints();
 		
 		
-		if (quadrantPos.sectionDetailLevel < highestGeneratorDetailLevel)
+		if (quadrantPos.getDetailLevel() < highestGeneratorDetailLevel)
 		{
 			throw new IllegalArgumentException("detail level lower than world generator can accept.");
 		}
-		else if (quadrantPos.sectionDetailLevel == highestGeneratorDetailLevel)
+		else if (quadrantPos.getDetailLevel() == highestGeneratorDetailLevel)
 		{
 			// we are at the highest detail level the world generator can accept,
 			// we either need to generate this whole section, or not at all
 			
 			// TODO combine duplicate code
 			
-			byte childDetailLevel = (byte) (quadrantPos.sectionDetailLevel);
+			byte childDetailLevel = (byte) (quadrantPos.getDetailLevel());
 			
-			int quadrantDetailLevelDiff = this.getSectionPos().sectionDetailLevel - childDetailLevel;
+			int quadrantDetailLevelDiff = this.getSectionPos().getDetailLevel() - childDetailLevel;
 			int widthInSecPos = BitShiftUtil.powerOfTwo(quadrantDetailLevelDiff);
 			int relWidthForSecPos = sourceRelWidth / widthInSecPos;
 			
-			DhSectionPos minSecPos = this.getSectionPos().convertToDetailLevel(childDetailLevel);
+			DhSectionPos minSecPos = this.getSectionPos().convertNewToDetailLevel(childDetailLevel);
 			DhSectionPos inputPos = quadrantPos;
 			
 			
 			
-			int minRelX = inputPos.sectionX - minSecPos.sectionX;
-			int minRelZ = inputPos.sectionZ - minSecPos.sectionZ;
+			int minRelX = inputPos.getX() - minSecPos.getX();
+			int minRelZ = inputPos.getZ() - minSecPos.getZ();
 			int maxRelX = minRelX + 1;
 			int maxRelZ = minRelZ + 1;
 			
@@ -188,21 +188,21 @@ public interface IFullDataSource
 			// TODO comment
 			// TODO combine duplicate code
 			
-			byte childDetailLevel = (byte) (quadrantPos.sectionDetailLevel - 1);
+			byte childDetailLevel = (byte) (quadrantPos.getDetailLevel() - 1);
 			
 			for (int i = 0; i < 4; i++)
 			{
-				int quadrantDetailLevelDiff = this.getSectionPos().sectionDetailLevel - childDetailLevel;
+				int quadrantDetailLevelDiff = this.getSectionPos().getDetailLevel() - childDetailLevel;
 				int widthInSecPos = BitShiftUtil.powerOfTwo(quadrantDetailLevelDiff);
 				int relWidthForSecPos = sourceRelWidth / widthInSecPos;
 				
-				DhSectionPos minSecPos = this.getSectionPos().convertToDetailLevel(childDetailLevel);
+				DhSectionPos minSecPos = this.getSectionPos().convertNewToDetailLevel(childDetailLevel);
 				DhSectionPos inputPos = quadrantPos.getChildByIndex(i);
 				
 				
 				
-				int minRelX = inputPos.sectionX - minSecPos.sectionX;
-				int minRelZ = inputPos.sectionZ - minSecPos.sectionZ;
+				int minRelX = inputPos.getX() - minSecPos.getX();
+				int minRelZ = inputPos.getZ() - minSecPos.getZ();
 				int maxRelX = minRelX + 1;
 				int maxRelZ = minRelZ + 1;
 				

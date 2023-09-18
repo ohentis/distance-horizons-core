@@ -46,7 +46,7 @@ public class QuadTreeNodeIterator<T> implements Iterator<QuadNode<T>>
 		this.onlyReturnLeafValues = onlyReturnLeafValues;
 		// TODO the naming conversion for these are flipped in a lot of places
 		this.highestDetailLevel = rootNode.minimumDetailLevel;
-		this.iteratorDetailLevel = rootNode.sectionPos.sectionDetailLevel;
+		this.iteratorDetailLevel = rootNode.sectionPos.getDetailLevel();
 		
 		
 		if (!this.onlyReturnLeafValues)

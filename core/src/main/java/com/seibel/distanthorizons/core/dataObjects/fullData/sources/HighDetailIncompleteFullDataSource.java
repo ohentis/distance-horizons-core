@@ -96,30 +96,30 @@ public class HighDetailIncompleteFullDataSource implements IIncompleteFullDataSo
 	public static HighDetailIncompleteFullDataSource createEmpty(DhSectionPos pos) { return new HighDetailIncompleteFullDataSource(pos); }
 	private HighDetailIncompleteFullDataSource(DhSectionPos sectionPos)
 	{
-		LodUtil.assertTrue(sectionPos.sectionDetailLevel > SPARSE_UNIT_DETAIL);
-		LodUtil.assertTrue(sectionPos.sectionDetailLevel <= MAX_SECTION_DETAIL);
+		LodUtil.assertTrue(sectionPos.getDetailLevel() > SPARSE_UNIT_DETAIL);
+		LodUtil.assertTrue(sectionPos.getDetailLevel() <= MAX_SECTION_DETAIL);
 		
 		this.sectionPos = sectionPos;
-		this.sectionCount = BitShiftUtil.powerOfTwo(sectionPos.sectionDetailLevel - SPARSE_UNIT_DETAIL);
+		this.sectionCount = BitShiftUtil.powerOfTwo(sectionPos.getDetailLevel() - SPARSE_UNIT_DETAIL);
 		this.dataPointsPerSection = SECTION_SIZE / this.sectionCount;
 		
 		this.sparseData = new FullDataArrayAccessor[this.sectionCount * this.sectionCount];
-		this.chunkPos = sectionPos.getCorner(SPARSE_UNIT_DETAIL);
+		this.chunkPos = sectionPos.getMinCornerLodPos(SPARSE_UNIT_DETAIL);
 		this.mapping = new FullDataPointIdMap(sectionPos);
 	}
 	
 	protected HighDetailIncompleteFullDataSource(DhSectionPos sectionPos, FullDataPointIdMap mapping, FullDataArrayAccessor[] data)
 	{
-		LodUtil.assertTrue(sectionPos.sectionDetailLevel > SPARSE_UNIT_DETAIL);
-		LodUtil.assertTrue(sectionPos.sectionDetailLevel <= MAX_SECTION_DETAIL);
+		LodUtil.assertTrue(sectionPos.getDetailLevel() > SPARSE_UNIT_DETAIL);
+		LodUtil.assertTrue(sectionPos.getDetailLevel() <= MAX_SECTION_DETAIL);
 		
 		this.sectionPos = sectionPos;
-		this.sectionCount = 1 << (byte) (sectionPos.sectionDetailLevel - SPARSE_UNIT_DETAIL);
+		this.sectionCount = 1 << (byte) (sectionPos.getDetailLevel() - SPARSE_UNIT_DETAIL);
 		this.dataPointsPerSection = SECTION_SIZE / this.sectionCount;
 		
 		LodUtil.assertTrue(this.sectionCount * this.sectionCount == data.length);
 		this.sparseData = data;
-		this.chunkPos = sectionPos.getCorner(SPARSE_UNIT_DETAIL);
+		this.chunkPos = sectionPos.getMinCornerLodPos(SPARSE_UNIT_DETAIL);
 		this.isEmpty = false;
 		this.mapping = mapping;
 	}
@@ -144,8 +144,8 @@ public class HighDetailIncompleteFullDataSource implements IIncompleteFullDataSo
 	@Override
 	public FullDataSourceSummaryData readSourceSummaryInfo(FullDataMetaFile dataFile, DhDataInputStream inputStream, IDhLevel level) throws IOException
 	{
-		LodUtil.assertTrue(dataFile.pos.sectionDetailLevel > SPARSE_UNIT_DETAIL);
-		LodUtil.assertTrue(dataFile.pos.sectionDetailLevel <= MAX_SECTION_DETAIL);
+		LodUtil.assertTrue(dataFile.pos.getDetailLevel() > SPARSE_UNIT_DETAIL);
+		LodUtil.assertTrue(dataFile.pos.getDetailLevel() <= MAX_SECTION_DETAIL);
 		
 		int dataDetail = inputStream.readShort();
 		if (dataFile.baseMetaData != null && dataDetail != dataFile.baseMetaData.dataLevel)
@@ -255,7 +255,7 @@ public class HighDetailIncompleteFullDataSource implements IIncompleteFullDataSo
 	{
 		// calculate the number of chunks and dataPoints based on the sparseDetail and sectionSize
 		// TODO these values should be constant, should we still be calculating them like this?
-		int chunks = BitShiftUtil.powerOfTwo(dataFile.pos.sectionDetailLevel - SPARSE_UNIT_DETAIL);
+		int chunks = BitShiftUtil.powerOfTwo(dataFile.pos.getDetailLevel() - SPARSE_UNIT_DETAIL);
 		int dataPointsPerChunk = SECTION_SIZE / chunks;
 		
 		
@@ -422,7 +422,7 @@ public class HighDetailIncompleteFullDataSource implements IIncompleteFullDataSo
     @Override
     public DhSectionPos getSectionPos() { return this.sectionPos; }
     @Override
-    public byte getDataDetailLevel() { return (byte) (this.sectionPos.sectionDetailLevel - SECTION_SIZE_OFFSET); }
+	public byte getDataDetailLevel() { return (byte) (this.sectionPos.getDetailLevel() - SECTION_SIZE_OFFSET); }
 
 	@Override
 	public long getTypeId() { return TYPE_ID; }
@@ -460,7 +460,7 @@ public class HighDetailIncompleteFullDataSource implements IIncompleteFullDataSo
 	@Override
 	public void update(ChunkSizedFullDataAccessor chunkDataView)
 	{
-		int arrayOffset = this.calculateOffset(chunkDataView.pos.x, chunkDataView.pos.z);
+		int arrayOffset = this.calculateOffset(chunkDataView.chunkPos.x, chunkDataView.chunkPos.z);
 		FullDataArrayAccessor newArray = new FullDataArrayAccessor(this.mapping, new long[this.dataPointsPerSection * this.dataPointsPerSection][], this.dataPointsPerSection);
 		if (this.getDataDetailLevel() == chunkDataView.detailLevel)
 		{
@@ -492,8 +492,8 @@ public class HighDetailIncompleteFullDataSource implements IIncompleteFullDataSo
 	public void sampleFrom(IFullDataSource fullDataSource)
 	{
 		DhSectionPos pos = fullDataSource.getSectionPos();
-		LodUtil.assertTrue(pos.sectionDetailLevel < this.sectionPos.sectionDetailLevel);
-		LodUtil.assertTrue(pos.overlaps(this.sectionPos));
+		LodUtil.assertTrue(pos.getDetailLevel() < this.sectionPos.getDetailLevel());
+		LodUtil.assertTrue(pos.overlapsExactly(this.sectionPos));
 		if (fullDataSource.isEmpty())
 		{
 			return;
@@ -524,10 +524,10 @@ public class HighDetailIncompleteFullDataSource implements IIncompleteFullDataSo
 		DhSectionPos pos = completeDataSource.getSectionPos();
 		this.isEmpty = false;
 		
-		DhLodPos basePos = this.sectionPos.getCorner(SPARSE_UNIT_DETAIL);
-		DhLodPos dataPos = pos.getCorner(SPARSE_UNIT_DETAIL);
+		DhLodPos basePos = this.sectionPos.getMinCornerLodPos(SPARSE_UNIT_DETAIL);
+		DhLodPos dataPos = pos.getMinCornerLodPos(SPARSE_UNIT_DETAIL);
 		
-		int coveredChunks = pos.getWidth(SPARSE_UNIT_DETAIL).numberOfLodSectionsWide;
+		int coveredChunks = pos.getWidthCountForLowerDetailedSection(SPARSE_UNIT_DETAIL);
 		int sourceDataPerChunk = SPARSE_UNIT_SIZE >>> completeDataSource.getDataDetailLevel();
 		LodUtil.assertTrue((coveredChunks * sourceDataPerChunk) == CompleteFullDataSource.WIDTH);
 		
@@ -551,8 +551,8 @@ public class HighDetailIncompleteFullDataSource implements IIncompleteFullDataSo
 		DhSectionPos pos = sparseDataSource.getSectionPos();
 		this.isEmpty = false;
 		
-		DhLodPos basePos = this.sectionPos.getCorner(SPARSE_UNIT_DETAIL);
-		DhLodPos dataPos = pos.getCorner(SPARSE_UNIT_DETAIL);
+		DhLodPos basePos = this.sectionPos.getMinCornerLodPos(SPARSE_UNIT_DETAIL);
+		DhLodPos dataPos = pos.getMinCornerLodPos(SPARSE_UNIT_DETAIL);
 		
 		int offsetX = dataPos.x - basePos.x;
 		int offsetZ = dataPos.z - basePos.z;

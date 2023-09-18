@@ -23,14 +23,13 @@ import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IFullDataSource;
 import com.seibel.distanthorizons.core.dataObjects.transformers.FullDataToRenderDataTransformer;
+import com.seibel.distanthorizons.core.file.DataSourceReferenceTracker;
 import com.seibel.distanthorizons.core.file.fullDatafile.FullDataMetaFile;
 import com.seibel.distanthorizons.core.file.fullDatafile.IFullDataSourceProvider;
 import com.seibel.distanthorizons.core.file.metaData.AbstractMetaDataContainerFile;
 import com.seibel.distanthorizons.core.file.metaData.BaseMetaData;
-import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
-import com.seibel.distanthorizons.core.pos.DhLodPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderLoader;
 import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSource;
@@ -47,13 +46,12 @@ import java.awt.*;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.lang.ref.SoftReference;
 import java.util.Random;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 
 /** Represents a File that contains a {@link ColumnRenderSource}. */
-public class RenderMetaDataFile extends AbstractMetaDataContainerFile implements IDebugRenderable
+public class RenderDataMetaFile extends AbstractMetaDataContainerFile implements IDebugRenderable
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
@@ -68,7 +66,7 @@ public class RenderMetaDataFile extends AbstractMetaDataContainerFile implements
 	 * When clearing, don't set to null, instead create a SoftReference containing null.
 	 * This makes null checks simpler.
 	 */
-	private SoftReference<ColumnRenderSource> cachedRenderDataSource = new SoftReference<>(null);
+	private DataSourceReferenceTracker.RenderDataSourceSoftRef cachedRenderDataSource = new DataSourceReferenceTracker.RenderDataSourceSoftRef(this, null);
 	private final AtomicReference<CompletableFuture<ColumnRenderSource>> renderSourceLoadFutureRef = new AtomicReference<>(null);
 	
 	private final IDhClientLevel clientLevel;
@@ -82,10 +80,10 @@ public class RenderMetaDataFile extends AbstractMetaDataContainerFile implements
 	//=============//
 	
 	/** 
-	 * Can be used instead of {@link RenderMetaDataFile#createFromExistingFile} or {@link RenderMetaDataFile#createNewFileForPos}, 
+	 * Can be used instead of {@link RenderDataMetaFile#createFromExistingFile} or {@link RenderDataMetaFile#createNewFileForPos}, 
 	 * if we are uncertain whether a file exists or not.
 	 */
-	public static RenderMetaDataFile createFromExistingOrNewFile(IDhClientLevel clientLevel, IFullDataSourceProvider fullDataSourceProvider, DhSectionPos pos, File file) throws IOException
+	public static RenderDataMetaFile createFromExistingOrNewFile(IDhClientLevel clientLevel, IFullDataSourceProvider fullDataSourceProvider, DhSectionPos pos, File file) throws IOException
 	{
 		if (file.exists())
 		{
@@ -102,8 +100,8 @@ public class RenderMetaDataFile extends AbstractMetaDataContainerFile implements
 	 * NOTE: should only be used if there is NOT an existing file.
 	 * @throws IOException if a file already exists for this position
 	 */
-	public static RenderMetaDataFile createNewFileForPos(IFullDataSourceProvider fullDataSourceProvider, IDhClientLevel clientLevel, DhSectionPos pos, File file) throws IOException { return new RenderMetaDataFile(fullDataSourceProvider, clientLevel, pos, file); }
-	private RenderMetaDataFile(IFullDataSourceProvider fullDataSourceProvider, IDhClientLevel clientLevel, DhSectionPos pos, File file) throws IOException
+	public static RenderDataMetaFile createNewFileForPos(IFullDataSourceProvider fullDataSourceProvider, IDhClientLevel clientLevel, DhSectionPos pos, File file) throws IOException { return new RenderDataMetaFile(fullDataSourceProvider, clientLevel, pos, file); }
+	private RenderDataMetaFile(IFullDataSourceProvider fullDataSourceProvider, IDhClientLevel clientLevel, DhSectionPos pos, File file) throws IOException
 	{
 		super(file, pos);
 		this.fullDataSourceProvider = fullDataSourceProvider;
@@ -118,8 +116,8 @@ public class RenderMetaDataFile extends AbstractMetaDataContainerFile implements
 	 * NOTE: should only be used if there IS an existing file.
 	 * @throws IOException if no file exists for this position
 	 */
-	public static RenderMetaDataFile createFromExistingFile(IFullDataSourceProvider fullDataSourceProvider, IDhClientLevel clientLevel, File file) throws IOException { return new RenderMetaDataFile(fullDataSourceProvider, clientLevel, file); }
-	private RenderMetaDataFile(IFullDataSourceProvider fullDataSourceProvider, IDhClientLevel clientLevel, File file) throws IOException
+	public static RenderDataMetaFile createFromExistingFile(IFullDataSourceProvider fullDataSourceProvider, IDhClientLevel clientLevel, File file) throws IOException { return new RenderDataMetaFile(fullDataSourceProvider, clientLevel, file); }
+	private RenderDataMetaFile(IFullDataSourceProvider fullDataSourceProvider, IDhClientLevel clientLevel, File file) throws IOException
 	{
 		super(file);
 		this.fullDataSourceProvider = fullDataSourceProvider;
@@ -137,8 +135,8 @@ public class RenderMetaDataFile extends AbstractMetaDataContainerFile implements
 	
 	public void updateChunkIfSourceExistsAsync(ChunkSizedFullDataAccessor chunkDataView)
 	{
-		DhLodPos chunkPos = chunkDataView.getLodPos();
-		LodUtil.assertTrue(this.pos.getSectionBBoxPos().overlapsExactly(chunkPos), "Chunk pos " + chunkPos + " doesn't overlap with section " + this.pos);
+		DhSectionPos chunkSectionPos = chunkDataView.getSectionPos();
+		LodUtil.assertTrue(this.pos.overlapsExactly(chunkSectionPos), "Chunk pos " + chunkSectionPos + " doesn't overlap with section " + this.pos);
 		
 		// update the render source if one exists
 		CompletableFuture<ColumnRenderSource> renderSourceLoadFuture = this.getCachedDataSourceAsync(false);
@@ -157,7 +155,7 @@ public class RenderMetaDataFile extends AbstractMetaDataContainerFile implements
 			Color debugColor = dataUpdated ? Color.blue : Color.red;
 			DebugRenderer.makeParticle(
 					new DebugRenderer.BoxParticle(
-							new DebugRenderer.Box(chunkDataView.getLodPos(), 32f, 64f + offset, 0.07f, debugColor),
+							new DebugRenderer.Box(chunkDataView.getSectionPos(), 32f, 64f + offset, 0.07f, debugColor),
 							2.0, 16f
 					)
 			);
@@ -199,7 +197,7 @@ public class RenderMetaDataFile extends AbstractMetaDataContainerFile implements
 			
 			
 			// create an empty render source
-			byte dataDetailLevel = (byte) (this.pos.sectionDetailLevel - ColumnRenderSource.SECTION_SIZE_OFFSET);
+			byte dataDetailLevel = (byte) (this.pos.getDetailLevel() - ColumnRenderSource.SECTION_SIZE_OFFSET);
 			int verticalSize = Config.Client.Advanced.Graphics.Quality.verticalQuality.get().calculateMaxVerticalData(dataDetailLevel);
 			ColumnRenderSource newColumnRenderSource = new ColumnRenderSource(this.pos, verticalSize, this.clientLevel.getMinY());
 			
@@ -210,7 +208,7 @@ public class RenderMetaDataFile extends AbstractMetaDataContainerFile implements
 			
 			this.updateRenderCacheAsync(newColumnRenderSource).whenComplete((voidObj, ex) ->
 				{
-					this.cachedRenderDataSource = new SoftReference<>(newColumnRenderSource);
+					this.cachedRenderDataSource = new DataSourceReferenceTracker.RenderDataSourceSoftRef(this, newColumnRenderSource);
 
 					this.renderSourceLoadFutureRef.set(null);
 					getSourceFuture.complete(newColumnRenderSource);
@@ -258,7 +256,7 @@ public class RenderMetaDataFile extends AbstractMetaDataContainerFile implements
 						
 						this.renderSourceLoadFutureRef.set(null);
 						
-						this.cachedRenderDataSource = new SoftReference<>(renderSource);
+						this.cachedRenderDataSource = new DataSourceReferenceTracker.RenderDataSourceSoftRef(this, renderSource);
 						getSourceFuture.complete(renderSource);
 					});
 		}
@@ -465,7 +463,7 @@ public class RenderMetaDataFile extends AbstractMetaDataContainerFile implements
 	// helper methods //
 	//================//
 	
-	/** @return returns null if {@link RenderMetaDataFile#renderSourceLoadFutureRef} is empty and no cached {@link ColumnRenderSource} exists. */
+	/** @return returns null if {@link RenderDataMetaFile#renderSourceLoadFutureRef} is empty and no cached {@link ColumnRenderSource} exists. */
 	@Nullable
 	private CompletableFuture<ColumnRenderSource> getCachedDataSourceAsync(boolean updateRenderSourceCache)
 	{

@@ -143,7 +143,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 		{
 			// walk up the tree until we hit the root node
 			// this is done so any high detail changes flow up to the lower detail render sections as well
-			while (pos.sectionDetailLevel <= this.treeMinDetailLevel)
+			while (pos.getDetailLevel() <= this.treeMinDetailLevel)
 			{
 				try
 				{
@@ -223,7 +223,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 		expectedDetailLevel += DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL;
 		
 		
-		if (sectionPos.sectionDetailLevel > expectedDetailLevel)
+		if (sectionPos.getDetailLevel() > expectedDetailLevel)
 		{
 			// section detail level too high //
 			boolean canThisPosRender = renderSection.isRenderingEnabled();
@@ -273,7 +273,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 			}
 		}
 		// TODO this should only equal the expected detail level, the (expectedDetailLevel-1) is a temporary fix to prevent corners from being cut out 
-		else if (sectionPos.sectionDetailLevel == expectedDetailLevel || sectionPos.sectionDetailLevel == expectedDetailLevel - 1)
+		else if (sectionPos.getDetailLevel() == expectedDetailLevel || sectionPos.getDetailLevel() == expectedDetailLevel - 1)
 		{
 			// this is the detail level we want to render //
 			// prepare this section for rendering
@@ -320,7 +320,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 	 * @param sectionPos section position
 	 * @return detail level of this section pos
 	 */
-	public byte calculateExpectedDetailLevel(DhBlockPos2D playerPos, DhSectionPos sectionPos) { return this.getDetailLevelFromDistance(playerPos.dist(sectionPos.getCenter().getCenterBlockPos())); }
+	public byte calculateExpectedDetailLevel(DhBlockPos2D playerPos, DhSectionPos sectionPos) { return this.getDetailLevelFromDistance(playerPos.dist(sectionPos.getCenterBlockPosX(), sectionPos.getCenterBlockPosZ())); }
 	private byte getDetailLevelFromDistance(double distance)
 	{
 		// special case, never drop the quality

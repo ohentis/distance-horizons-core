@@ -23,7 +23,6 @@ import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedF
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
-import com.seibel.distanthorizons.core.pos.DhLodPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSource;
 import com.seibel.distanthorizons.core.file.fullDatafile.IFullDataSourceProvider;
@@ -50,8 +49,8 @@ public class RenderSourceFileHandler implements ILodRenderSourceProvider
 	private final F3Screen.NestedMessage threadPoolMsg;
 	
 	private final ConcurrentHashMap<DhSectionPos, File> unloadedFileBySectionPos = new ConcurrentHashMap<>();
-	/** contains the loaded {@link RenderMetaDataFile}'s */
-	private final ConcurrentHashMap<DhSectionPos, RenderMetaDataFile> metaFileBySectionPos = new ConcurrentHashMap<>();
+	/** contains the loaded {@link RenderDataMetaFile}'s */
+	private final ConcurrentHashMap<DhSectionPos, RenderDataMetaFile> metaFileBySectionPos = new ConcurrentHashMap<>();
 	
 	private final IDhClientLevel clientLevel;
 	private final File saveDir;
@@ -93,21 +92,21 @@ public class RenderSourceFileHandler implements ILodRenderSourceProvider
 	@Override
 	public void addScannedFiles(Collection<File> detectedFiles)
 	{
-		MetaFileScanUtil.ICreateMetadataFunc createMetadataFunc = (file) -> RenderMetaDataFile.createFromExistingFile(this.fullDataSourceProvider, this.clientLevel, file);
+		MetaFileScanUtil.ICreateMetadataFunc createMetadataFunc = (file) -> RenderDataMetaFile.createFromExistingFile(this.fullDataSourceProvider, this.clientLevel, file);
 		
 		MetaFileScanUtil.IAddUnloadedFileFunc addUnloadedFileFunc = (pos, file) -> 
 		{
 			this.unloadedFileBySectionPos.put(pos, file);
-			this.topDetailLevelRef.updateAndGet(oldDetailLevel -> Math.max(oldDetailLevel, pos.sectionDetailLevel));
+			this.topDetailLevelRef.updateAndGet(oldDetailLevel -> Math.max(oldDetailLevel, pos.getDetailLevel()));
 		};
 		MetaFileScanUtil.IAddLoadedMetaFileFunc addLoadedMetaFileFunc = (pos, loadedMetaFile) -> 
 		{
-			this.topDetailLevelRef.updateAndGet(oldDetailLevel -> Math.max(oldDetailLevel, pos.sectionDetailLevel));
-			this.metaFileBySectionPos.put(pos, (RenderMetaDataFile) loadedMetaFile);
+			this.topDetailLevelRef.updateAndGet(oldDetailLevel -> Math.max(oldDetailLevel, pos.getDetailLevel()));
+			this.metaFileBySectionPos.put(pos, (RenderDataMetaFile) loadedMetaFile);
 		};
 		
 		
-		MetaFileScanUtil.addScannedFiles(detectedFiles, USE_LAZY_LOADING, RenderMetaDataFile.FILE_SUFFIX,
+		MetaFileScanUtil.addScannedFiles(detectedFiles, USE_LAZY_LOADING, RenderDataMetaFile.FILE_SUFFIX,
 				createMetadataFunc, 
 				addUnloadedFileFunc, addLoadedMetaFileFunc);
 	}
@@ -130,7 +129,7 @@ public class RenderSourceFileHandler implements ILodRenderSourceProvider
 		
 		
 		
-		RenderMetaDataFile metaFile = this.getLoadOrMakeFile(pos);
+		RenderDataMetaFile metaFile = this.getLoadOrMakeFile(pos);
 		if (metaFile == null)
 		{
 			return CompletableFuture.completedFuture(ColumnRenderSource.createEmptyRenderSource(pos));
@@ -154,9 +153,9 @@ public class RenderSourceFileHandler implements ILodRenderSourceProvider
 		return getDataSourceFuture;
 	}
 	/** @return null if there was an issue */
-	private RenderMetaDataFile getLoadOrMakeFile(DhSectionPos pos)
+	private RenderDataMetaFile getLoadOrMakeFile(DhSectionPos pos)
 	{
-		RenderMetaDataFile metaFile = this.metaFileBySectionPos.get(pos);
+		RenderDataMetaFile metaFile = this.metaFileBySectionPos.get(pos);
 		if (metaFile != null)
 		{
 			// return the loaded file
@@ -194,8 +193,8 @@ public class RenderSourceFileHandler implements ILodRenderSourceProvider
 				// attempt to load the file
 				try
 				{
-					metaFile = RenderMetaDataFile.createFromExistingFile(this.fullDataSourceProvider, this.clientLevel, fileToLoad);
-					this.topDetailLevelRef.updateAndGet(currentTopDetailLevel -> Math.max(currentTopDetailLevel, pos.sectionDetailLevel));
+					metaFile = RenderDataMetaFile.createFromExistingFile(this.fullDataSourceProvider, this.clientLevel, fileToLoad);
+					this.topDetailLevelRef.updateAndGet(currentTopDetailLevel -> Math.max(currentTopDetailLevel, pos.getDetailLevel()));
 					this.metaFileBySectionPos.put(pos, metaFile);
 					return metaFile;
 				}
@@ -219,12 +218,12 @@ public class RenderSourceFileHandler implements ILodRenderSourceProvider
 		{
 			// createFromExistingOrNewFile() is used instead of createFromExistingFile()
 			// due to a rare issue where the file may already exist but isn't in the file list
-			metaFile = RenderMetaDataFile.createFromExistingOrNewFile(this.clientLevel, this.fullDataSourceProvider, pos, this.computeRenderFilePath(pos));
+			metaFile = RenderDataMetaFile.createFromExistingOrNewFile(this.clientLevel, this.fullDataSourceProvider, pos, this.computeRenderFilePath(pos));
 			
-			this.topDetailLevelRef.updateAndGet(newDetailLevel -> Math.max(newDetailLevel, pos.sectionDetailLevel));
+			this.topDetailLevelRef.updateAndGet(newDetailLevel -> Math.max(newDetailLevel, pos.getDetailLevel()));
 			
 			// Compare And Swap to handle a concurrency issue where multiple threads created the same Meta File at the same time
-			RenderMetaDataFile metaFileCas = this.metaFileBySectionPos.putIfAbsent(pos, metaFile);
+			RenderDataMetaFile metaFileCas = this.metaFileBySectionPos.putIfAbsent(pos, metaFile);
 			return (metaFileCas == null) ? metaFile : metaFileCas;
 		}
 		catch (IOException e)
@@ -253,16 +252,18 @@ public class RenderSourceFileHandler implements ILodRenderSourceProvider
 	}
 	private void writeChunkDataToFileRecursively(ChunkSizedFullDataAccessor chunk, byte sectionDetailLevel)
 	{
-		DhLodPos boundingPos = chunk.getLodPos();
-		DhLodPos minSectionPos = boundingPos.convertToDetailLevel(sectionDetailLevel);
+		DhSectionPos boundingPos = chunk.getSectionPos();
+		DhSectionPos minSectionPos = boundingPos.convertNewToDetailLevel(sectionDetailLevel);
 		
-		int width = (sectionDetailLevel > boundingPos.detailLevel) ? 1 : boundingPos.getWidthAtDetail(sectionDetailLevel);
+		DhSectionPos.DhMutableSectionPos fileSectionPos = new DhSectionPos.DhMutableSectionPos((byte)0, 0, 0);
+		
+		int width = (sectionDetailLevel > boundingPos.getDetailLevel()) ? 1 : boundingPos.getWidthCountForLowerDetailedSection(sectionDetailLevel);
 		for (int xOffset = 0; xOffset < width; xOffset++)
 		{
 			for (int zOffset = 0; zOffset < width; zOffset++)
 			{
-				DhSectionPos sectionPos = new DhSectionPos(sectionDetailLevel, minSectionPos.x + xOffset, minSectionPos.z + zOffset);
-				RenderMetaDataFile metaFile = this.metaFileBySectionPos.get(sectionPos); // bypass the getLoadOrMakeFile() since we only want cached files.
+				fileSectionPos.mutate(sectionDetailLevel, minSectionPos.getX() + xOffset, minSectionPos.getZ() + zOffset);
+				RenderDataMetaFile metaFile = this.metaFileBySectionPos.get(fileSectionPos); // bypass the getLoadOrMakeFile() since we only want cached files.
 				if (metaFile != null)
 				{
 					metaFile.updateChunkIfSourceExistsAsync(chunk);
@@ -284,7 +285,7 @@ public class RenderSourceFileHandler implements ILodRenderSourceProvider
 		LOGGER.info("Shutting down " + RenderSourceFileHandler.class.getSimpleName() + "...");
 		
 		ArrayList<CompletableFuture<Void>> futures = new ArrayList<>();
-		for (RenderMetaDataFile metaFile : this.metaFileBySectionPos.values())
+		for (RenderDataMetaFile metaFile : this.metaFileBySectionPos.values())
 		{
 			futures.add(metaFile.flushAndSaveAsync());
 		}
@@ -378,7 +379,7 @@ public class RenderSourceFileHandler implements ILodRenderSourceProvider
 	// helper methods //
 	//================//
 	
-	public File computeRenderFilePath(DhSectionPos pos) { return new File(this.saveDir, pos.serialize() + RenderMetaDataFile.FILE_SUFFIX); }
+	public File computeRenderFilePath(DhSectionPos pos) { return new File(this.saveDir, pos.serialize() + RenderDataMetaFile.FILE_SUFFIX); }
 	
 	
 	

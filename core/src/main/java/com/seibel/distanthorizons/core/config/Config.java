@@ -1176,18 +1176,32 @@ public class Config
 								+ "")
 						.build();
 				
+				// TODO temporary test, remove me
 				public static ConfigEntry<Boolean> skipChunkLoadUpdates = new ConfigEntry.Builder<Boolean>()
 						.set(false)
 						.comment("")
 						.build();
 				
+				// TODO temporary test, remove me
 				public static ConfigEntry<Boolean> skipChunkUnloadUpdates = new ConfigEntry.Builder<Boolean>()
 						.set(false)
 						.comment("")
 						.build();
 				
+				// TODO temporary test, remove me
 				public static ConfigEntry<Boolean> skipFullDataUpdateQueue = new ConfigEntry.Builder<Boolean>()
 						.set(false)
+						.comment("")
+						.build();
+				
+				// TODO temporary test, remove me
+				public static ConfigEntry<EGlProfileMode> glProfileMode = new ConfigEntry.Builder<EGlProfileMode>()
+						.set(EGlProfileMode.CORE)
+						.comment("")
+						.build();
+				// TODO temporary test, remove me
+				public static ConfigEntry<Boolean> glForwardCompatibilityMode = new ConfigEntry.Builder<Boolean>()
+						.set(true)
 						.comment("")
 						.build();
 				

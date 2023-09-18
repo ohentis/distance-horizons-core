@@ -30,7 +30,7 @@ public class BitShiftUtil
 {
 	/**
 	 * Equivalent to: <br>
-	 * {@literal 1 << value0, } <br>
+	 * {@literal 1 << value, } <br>
 	 * 2^value, <br>
 	 * Math.pow(2, value) <br><br>
 	 *

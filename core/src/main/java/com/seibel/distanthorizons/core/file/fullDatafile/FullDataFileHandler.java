@@ -107,11 +107,11 @@ public class FullDataFileHandler implements IFullDataSourceProvider
 		MetaFileScanUtil.IAddUnloadedFileFunc addUnloadedFileFunc = (pos, file) ->
 		{
 			this.unloadedFileBySectionPos.put(pos, file);
-			this.topDetailLevelRef.updateAndGet(oldDetailLevel -> Math.max(oldDetailLevel, pos.sectionDetailLevel));
+			this.topDetailLevelRef.updateAndGet(oldDetailLevel -> Math.max(oldDetailLevel, pos.getDetailLevel()));
 		};
 		MetaFileScanUtil.IAddLoadedMetaFileFunc addLoadedMetaFileFunc = (pos, loadedMetaFile) ->
 		{
-			this.topDetailLevelRef.updateAndGet(oldDetailLevel -> Math.max(oldDetailLevel, pos.sectionDetailLevel));
+			this.topDetailLevelRef.updateAndGet(oldDetailLevel -> Math.max(oldDetailLevel, pos.getDetailLevel()));
 			this.metaFileBySectionPos.put(pos, (FullDataMetaFile) loadedMetaFile);
 		};
 		
@@ -138,7 +138,7 @@ public class FullDataFileHandler implements IFullDataSourceProvider
 	@Override
 	public CompletableFuture<IFullDataSource> readAsync(DhSectionPos pos)
 	{
-		this.topDetailLevelRef.updateAndGet(oldDetailLevel -> Math.max(oldDetailLevel, pos.sectionDetailLevel));
+		this.topDetailLevelRef.updateAndGet(oldDetailLevel -> Math.max(oldDetailLevel, pos.getDetailLevel()));
 		FullDataMetaFile metaFile = this.getLoadOrMakeFile(pos, true);
 		if (metaFile == null)
 		{
@@ -192,7 +192,7 @@ public class FullDataFileHandler implements IFullDataSourceProvider
 				try
 				{
 					metaFile = FullDataMetaFile.createFromExistingFile(this, this.level, fileToLoad);
-					this.topDetailLevelRef.updateAndGet(oldDetailLevel -> Math.max(oldDetailLevel, pos.sectionDetailLevel));
+					this.topDetailLevelRef.updateAndGet(oldDetailLevel -> Math.max(oldDetailLevel, pos.getDetailLevel()));
 					this.metaFileBySectionPos.put(pos, metaFile);
 					return metaFile;
 				}
@@ -227,7 +227,7 @@ public class FullDataFileHandler implements IFullDataSourceProvider
 			return null;
 		}
 		
-		this.topDetailLevelRef.updateAndGet(oldDetailLevel -> Math.max(oldDetailLevel, pos.sectionDetailLevel));
+		this.topDetailLevelRef.updateAndGet(oldDetailLevel -> Math.max(oldDetailLevel, pos.getDetailLevel()));
 		
 		// This is a CAS with expected null value.
 		FullDataMetaFile metaFileCas = this.metaFileBySectionPos.putIfAbsent(pos, metaFile);
@@ -244,22 +244,24 @@ public class FullDataFileHandler implements IFullDataSourceProvider
 			DhSectionPos effectivePos, DhSectionPos posAreaToGet,
 			ArrayList<FullDataMetaFile> preexistingFiles, ArrayList<DhSectionPos> missingFilePositions)
 	{
-		byte sectionDetail = posAreaToGet.sectionDetailLevel;
+		byte sectionDetail = posAreaToGet.getDetailLevel();
 		boolean allEmpty = true;
+		
+		final DhSectionPos.DhMutableSectionPos subPos = new DhSectionPos.DhMutableSectionPos((byte)0, 0, 0);
 		
 		// get all existing files for this position
 		outerLoop:
 		while (--sectionDetail >= this.minDetailLevel)
 		{
-			DhLodPos minPos = posAreaToGet.getCorner().getCornerLodPos(sectionDetail);
+			DhLodPos minPos = posAreaToGet.getMinCornerLodPos().getCornerLodPos(sectionDetail);
 			int count = posAreaToGet.getSectionBBoxPos().getWidthAtDetail(sectionDetail);
 			
 			for (int xOffset = 0; xOffset < count; xOffset++)
 			{
 				for (int zOffset = 0; zOffset < count; zOffset++)
 				{
-					DhSectionPos subPos = new DhSectionPos(sectionDetail, xOffset + minPos.x, zOffset + minPos.z);
-					LodUtil.assertTrue(posAreaToGet.overlaps(effectivePos) && subPos.overlaps(posAreaToGet));
+					subPos.mutate(sectionDetail, xOffset + minPos.x, zOffset + minPos.z);
+					LodUtil.assertTrue(posAreaToGet.overlapsExactly(effectivePos) && subPos.overlapsExactly(posAreaToGet));
 					
 					//TODO: The following check is temporary as we only sample corner points, which means
 					// on a very different level, we may not need the entire section at all.
@@ -311,7 +313,7 @@ public class FullDataFileHandler implements IFullDataSourceProvider
 				// we have reached a populated leaf node in the quad tree
 				preexistingFiles.add(metaFile);
 			}
-			else if (childPos.sectionDetailLevel == this.minDetailLevel)
+			else if (childPos.getDetailLevel() == this.minDetailLevel)
 			{
 				// we have reached an empty leaf node in the quad tree
 				missingFilePositions.add(childPos);
@@ -337,11 +339,11 @@ public class FullDataFileHandler implements IFullDataSourceProvider
 	@Override
 	public void writeChunkDataToFile(DhSectionPos sectionPos, ChunkSizedFullDataAccessor chunkDataView)
 	{
-		DhLodPos chunkPos = chunkDataView.getLodPos();
-		LodUtil.assertTrue(chunkPos.overlapsExactly(sectionPos.getSectionBBoxPos()), "Chunk " + chunkPos + " does not overlap section " + sectionPos);
+		DhSectionPos chunkSectionPos = chunkDataView.getSectionPos();
+		LodUtil.assertTrue(chunkSectionPos.overlapsExactly(sectionPos), "Chunk " + chunkSectionPos + " does not overlap section " + sectionPos);
 		
-		chunkPos = chunkPos.convertToDetailLevel((byte) this.minDetailLevel);
-		this.writeChunkDataToMetaFile(new DhSectionPos(chunkPos.detailLevel, chunkPos.x, chunkPos.z), chunkDataView);
+		chunkSectionPos = chunkSectionPos.convertNewToDetailLevel((byte) this.minDetailLevel);
+		this.writeChunkDataToMetaFile(chunkSectionPos, chunkDataView);
 	}
 	private void writeChunkDataToMetaFile(DhSectionPos sectionPos, ChunkSizedFullDataAccessor chunkData)
 	{
@@ -352,7 +354,7 @@ public class FullDataFileHandler implements IFullDataSourceProvider
 			metaFile.addToWriteQueue(chunkData);
 		}
 		
-		if (sectionPos.sectionDetailLevel <= this.topDetailLevelRef.get())
+		if (sectionPos.getDetailLevel() <= this.topDetailLevelRef.get())
 		{
 			// recursively attempt to get the meta file for this position
 			this.writeChunkDataToMetaFile(sectionPos.getParentPos(), chunkData);
@@ -387,7 +389,7 @@ public class FullDataFileHandler implements IFullDataSourceProvider
 	
 	protected IIncompleteFullDataSource makeEmptyDataSource(DhSectionPos pos)
 	{
-		return pos.sectionDetailLevel <= HighDetailIncompleteFullDataSource.MAX_SECTION_DETAIL ?
+		return pos.getDetailLevel() <= HighDetailIncompleteFullDataSource.MAX_SECTION_DETAIL ?
 				HighDetailIncompleteFullDataSource.createEmpty(pos) :
 				LowDetailIncompleteFullDataSource.createEmpty(pos);
 	}

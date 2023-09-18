@@ -19,6 +19,7 @@
 
 package com.seibel.distanthorizons.core;
 
+import com.seibel.distanthorizons.core.file.DataSourceReferenceTracker;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.core.world.DhApiWorldProxy;
 import com.seibel.distanthorizons.core.api.external.methods.config.DhApiConfig;
@@ -66,6 +67,8 @@ public class Initializer
 		DhApi.Delayed.terrainRepo = DhApiTerrainDataRepo.INSTANCE;
 		DhApi.Delayed.worldProxy = DhApiWorldProxy.INSTANCE;
 		DhApi.Delayed.renderProxy = DhApiRenderProxy.INSTANCE;
+		
+		DataSourceReferenceTracker.startGarbageCollectorBackgroundThread();
 		
 	}
 	

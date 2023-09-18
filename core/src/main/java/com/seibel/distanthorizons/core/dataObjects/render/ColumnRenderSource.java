@@ -109,7 +109,7 @@ public class ColumnRenderSource
 	 */
 	public ColumnRenderSource(DhSectionPos sectionPos, ColumnRenderLoader.ParsedColumnData parsedColumnData, IDhLevel level) throws IOException
 	{
-		if (sectionPos.sectionDetailLevel - SECTION_SIZE_OFFSET != parsedColumnData.detailLevel)
+		if (sectionPos.getDetailLevel() - SECTION_SIZE_OFFSET != parsedColumnData.detailLevel)
 		{
 			throw new IOException("Invalid data: detail level does not match");
 		}
@@ -308,16 +308,16 @@ public class ColumnRenderSource
 	 */
 	public boolean updateWithChunkData(ChunkSizedFullDataAccessor chunkDataView, IDhClientLevel level)
 	{
-		final String errorMessagePrefix = "Unable to complete fastWrite for RenderSource pos: [" + this.sectionPos + "] and chunk pos: [" + chunkDataView.pos + "]. Error:";
+		final String errorMessagePrefix = "Unable to complete fastWrite for RenderSource pos: [" + this.sectionPos + "] and chunk pos: [" + chunkDataView.chunkPos + "]. Error:";
 		
 		final DhSectionPos renderSourcePos = this.getSectionPos();
 		
-		final int sourceBlockX = renderSourcePos.getCorner().getCornerBlockPos().x;
-		final int sourceBlockZ = renderSourcePos.getCorner().getCornerBlockPos().z;
+		final int sourceBlockX = renderSourcePos.getMinCornerLodPos().getCornerBlockPos().x;
+		final int sourceBlockZ = renderSourcePos.getMinCornerLodPos().getCornerBlockPos().z;
 		
 		// offset between the incoming chunk data and this render source
-		final int blockOffsetX = (chunkDataView.pos.x * LodUtil.CHUNK_WIDTH) - sourceBlockX;
-		final int blockOffsetZ = (chunkDataView.pos.z * LodUtil.CHUNK_WIDTH) - sourceBlockZ;
+		final int blockOffsetX = (chunkDataView.chunkPos.x * LodUtil.CHUNK_WIDTH) - sourceBlockX;
+		final int blockOffsetZ = (chunkDataView.chunkPos.z * LodUtil.CHUNK_WIDTH) - sourceBlockZ;
 		
 		final int sourceDataPointBlockWidth = BitShiftUtil.powerOfTwo(this.getDataDetail());
 		
@@ -360,27 +360,27 @@ public class ColumnRenderSource
 			}
 			this.fillDebugFlag(blockOffsetX, blockOffsetZ, LodUtil.CHUNK_WIDTH, LodUtil.CHUNK_WIDTH, ColumnRenderSource.DebugSourceFlag.DIRECT);
 		}
-		else if (chunkDataView.detailLevel < this.getDataDetail() && this.getDataDetail() <= chunkDataView.getLodPos().detailLevel)
+		else if (chunkDataView.detailLevel < this.getDataDetail() && this.getDataDetail() <= chunkDataView.getSectionPos().getDetailLevel())
 		{
 			this.markNotEmpty();
 			// multiple chunk data points converting to 1 column data point
-			DhLodPos dataCornerPos = chunkDataView.getLodPos().getCornerLodPos(chunkDataView.detailLevel);
-			DhLodPos sourceCornerPos = renderSourcePos.getCorner(this.getDataDetail());
+			DhLodPos dataCornerPos = chunkDataView.getSectionPos().getMinCornerLodPos(chunkDataView.detailLevel);
+			DhLodPos sourceCornerPos = renderSourcePos.getMinCornerLodPos(this.getDataDetail());
 			DhLodPos sourceStartingChangePos = dataCornerPos.convertToDetailLevel(this.getDataDetail());
 			int relStartX = Math.floorMod(sourceStartingChangePos.x, this.getWidthInDataPoints());
 			int relStartZ = Math.floorMod(sourceStartingChangePos.z, this.getWidthInDataPoints());
 			int dataToSourceScale = sourceCornerPos.getWidthAtDetail(chunkDataView.detailLevel);
-			int columnsInChunk = chunkDataView.getLodPos().getWidthAtDetail(this.getDataDetail());
+			int columnsInChunk = chunkDataView.getSectionPos().getWidthCountForLowerDetailedSection(this.getDataDetail());
 			
-			for (int ox = 0; ox < columnsInChunk; ox++)
+			for (int xOffset = 0; xOffset < columnsInChunk; xOffset++)
 			{
-				for (int oz = 0; oz < columnsInChunk; oz++)
+				for (int zOffset = 0; zOffset < columnsInChunk; zOffset++)
 				{
-					int relSourceX = relStartX + ox;
-					int relSourceZ = relStartZ + oz;
+					int relSourceX = relStartX + xOffset;
+					int relSourceZ = relStartZ + zOffset;
 					ColumnArrayView columnArrayView = this.getVerticalDataPointView(relSourceX, relSourceZ);
 					int hash = columnArrayView.getDataHash();
-					SingleColumnFullDataAccessor fullArrayView = chunkDataView.get(ox * dataToSourceScale, oz * dataToSourceScale);
+					SingleColumnFullDataAccessor fullArrayView = chunkDataView.get(xOffset * dataToSourceScale, zOffset * dataToSourceScale);
 					FullDataToRenderDataTransformer.convertColumnData(level,
 							sourceBlockX + sourceDataPointBlockWidth * relSourceX,
 							sourceBlockZ + sourceDataPointBlockWidth * relSourceZ,
@@ -390,14 +390,14 @@ public class ColumnRenderSource
 			}
 			this.fillDebugFlag(relStartX, relStartZ, columnsInChunk, columnsInChunk, ColumnRenderSource.DebugSourceFlag.DIRECT);
 		}
-		else if (chunkDataView.getLodPos().detailLevel < this.getDataDetail())
+		else if (chunkDataView.getSectionPos().getDetailLevel() < this.getDataDetail())
 		{
 			// The entire chunk is being converted to a single column data point, possibly.
-			DhLodPos dataCornerPos = chunkDataView.getLodPos().getCornerLodPos(chunkDataView.detailLevel);
-			DhLodPos sourceCornerPos = renderSourcePos.getCorner(this.getDataDetail());
+			DhLodPos dataCornerPos = chunkDataView.getSectionPos().getMinCornerLodPos(chunkDataView.detailLevel);
+			DhLodPos sourceCornerPos = renderSourcePos.getMinCornerLodPos(this.getDataDetail());
 			DhLodPos sourceStartingChangePos = dataCornerPos.convertToDetailLevel(this.getDataDetail());
-			int chunksPerColumn = sourceStartingChangePos.getWidthAtDetail(chunkDataView.getLodPos().detailLevel);
-			if (chunkDataView.getLodPos().x % chunksPerColumn != 0 || chunkDataView.getLodPos().z % chunksPerColumn != 0)
+			int chunksPerColumn = sourceStartingChangePos.getWidthAtDetail(chunkDataView.getSectionPos().getDetailLevel());
+			if (chunkDataView.getSectionPos().getX() % chunksPerColumn != 0 || chunkDataView.getSectionPos().getZ() % chunksPerColumn != 0)
 			{
 				return false; // not a multiple of the column size, so no change
 			}
@@ -443,7 +443,7 @@ public class ColumnRenderSource
 	
 	public DhSectionPos getSectionPos() { return this.sectionPos; }
 	
-	public byte getDataDetail() { return (byte) (this.sectionPos.sectionDetailLevel - SECTION_SIZE_OFFSET); }
+	public byte getDataDetail() { return (byte) (this.sectionPos.getDetailLevel() - SECTION_SIZE_OFFSET); }
 	
 	/** @return how many data points wide this {@link ColumnRenderSource} is. */
 	public int getWidthInDataPoints() { return BitShiftUtil.powerOfTwo(this.getDetailOffset()); }
@@ -526,7 +526,7 @@ public class ColumnRenderSource
 		stringBuilder.append(this.sectionPos);
 		stringBuilder.append(LINE_DELIMITER);
 		
-		int size = this.sectionPos.getWidth().numberOfLodSectionsWide;
+		int size = 1;
 		for (int z = 0; z < size; z++)
 		{
 			for (int x = 0; x < size; x++)

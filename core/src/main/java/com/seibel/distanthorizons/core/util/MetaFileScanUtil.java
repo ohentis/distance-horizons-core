@@ -25,7 +25,7 @@ import com.seibel.distanthorizons.core.file.fullDatafile.FullDataMetaFile;
 import com.seibel.distanthorizons.core.file.fullDatafile.IFullDataSourceProvider;
 import com.seibel.distanthorizons.core.file.metaData.AbstractMetaDataContainerFile;
 import com.seibel.distanthorizons.core.file.renderfile.ILodRenderSourceProvider;
-import com.seibel.distanthorizons.core.file.renderfile.RenderMetaDataFile;
+import com.seibel.distanthorizons.core.file.renderfile.RenderDataMetaFile;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
@@ -81,7 +81,7 @@ public class MetaFileScanUtil
 		try (Stream<Path> pathStream = Files.walk(saveStructure.getRenderCacheFolder(levelWrapper).toPath(), MAX_SCAN_DEPTH))
 		{
 			List<File> files = pathStream.filter(
-					path -> path.toFile().getName().endsWith(RenderMetaDataFile.FILE_SUFFIX) && path.toFile().isFile()
+					path -> path.toFile().getName().endsWith(RenderDataMetaFile.FILE_SUFFIX) && path.toFile().isFile()
 			).map(Path::toFile).collect(Collectors.toList());
 			LOGGER.info("Found " + files.size() + " render cache files for " + levelWrapper + " in " + saveStructure);
 			renderSourceProvider.addScannedFiles(files);

@@ -160,7 +160,7 @@ public class LodRenderSection implements IDebugRenderable
 	public void reload(ILodRenderSourceProvider renderDataProvider)
 	{
 		// debug rendering
-		if (this.pos.sectionDetailLevel == DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL)
+		if (this.pos.getDetailLevel() == DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL)
 		{
 			DebugRenderer.makeParticle(
 					new DebugRenderer.BoxParticle(
@@ -324,7 +324,7 @@ public class LodRenderSection implements IDebugRenderable
 		if (this.canBuildBuffer())
 		{
 			// debug
-			if (this.pos.sectionDetailLevel == DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL)
+			if (this.pos.getDetailLevel() == DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL)
 			{
 				DebugRenderer.makeParticle(
 						new DebugRenderer.BoxParticle(

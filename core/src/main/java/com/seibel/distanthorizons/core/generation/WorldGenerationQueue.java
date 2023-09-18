@@ -28,7 +28,6 @@ import com.seibel.distanthorizons.core.generation.tasks.*;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
-import com.seibel.distanthorizons.core.pos.DhLodPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.transformers.LodDataBuilder;
@@ -45,7 +44,6 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import org.apache.logging.log4j.Logger;
 
 import java.awt.*;
-import java.io.Closeable;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
@@ -159,7 +157,7 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 		}
 		
 		// Assert that the data at least can fill in 1 single ChunkSizedFullDataAccessor
-		LodUtil.assertTrue(pos.sectionDetailLevel > requiredDataDetail + LodUtil.CHUNK_DETAIL_LEVEL);
+		LodUtil.assertTrue(pos.getDetailLevel() > requiredDataDetail + LodUtil.CHUNK_DETAIL_LEVEL);
 		
 		
 		//if (this.waitingTaskQuadTree.isSectionPosInBounds(requestPos))
@@ -393,14 +391,14 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 			
 			// split up the task and add each one to the tree
 			LinkedList<CompletableFuture<WorldGenResult>> childFutures = new LinkedList<>();
-			DhSectionPos sectionPos = new DhSectionPos(closestTask.pos.sectionDetailLevel, closestTask.pos.sectionX, closestTask.pos.sectionZ);
+			DhSectionPos sectionPos = new DhSectionPos(closestTask.pos.getDetailLevel(), closestTask.pos.getX(), closestTask.pos.getZ());
 			WorldGenTask finalClosestTask = closestTask;
 			sectionPos.forEachChild((childDhSectionPos) ->
 			{
 				CompletableFuture<WorldGenResult> newFuture = new CompletableFuture<>();
 				childFutures.add(newFuture);
 				
-				WorldGenTask newGenTask = new WorldGenTask(childDhSectionPos, childDhSectionPos.sectionDetailLevel, finalClosestTask.taskTracker, newFuture);
+				WorldGenTask newGenTask = new WorldGenTask(childDhSectionPos, childDhSectionPos.getDetailLevel(), finalClosestTask.taskTracker, newFuture);
 				waitingTasks.put(newGenTask.pos, newGenTask);
 				//this.waitingTaskQuadTree.setValue(new DhSectionPos(childDhSectionPos.sectionDetailLevel, childDhSectionPos.sectionX, childDhSectionPos.sectionZ), newGenTask);
 				
@@ -421,7 +419,7 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 	{
 		byte taskDetailLevel = inProgressTaskGroup.group.dataDetail;
 		DhSectionPos taskPos = inProgressTaskGroup.group.pos;
-		byte granularity = (byte) (taskPos.sectionDetailLevel - taskDetailLevel);
+		byte granularity = (byte) (taskPos.getDetailLevel() - taskDetailLevel);
 		LodUtil.assertTrue(granularity >= this.minGranularity && granularity <= this.maxGranularity);
 		LodUtil.assertTrue(taskDetailLevel >= this.smallestDataDetail && taskDetailLevel <= this.largestDataDetail);
 		
@@ -436,7 +434,7 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 			//StackTraceElement[] stackTrace = this.alreadyGeneratedPosHashSet.get(inProgressTaskGroup.group.pos);
 			
 			// sending a success result is necessary to make sure the render sections are reloaded correctly 
-			inProgressTaskGroup.group.worldGenTasks.forEach(worldGenTask -> worldGenTask.future.complete(WorldGenResult.CreateSuccess(new DhSectionPos(granularity, taskPos.sectionX, taskPos.sectionZ))));
+			inProgressTaskGroup.group.worldGenTasks.forEach(worldGenTask -> worldGenTask.future.complete(WorldGenResult.CreateSuccess(new DhSectionPos(granularity, taskPos.getX(), taskPos.getZ()))));
 			return;
 		}
 		this.alreadyGeneratedPosHashSet.put(inProgressTaskGroup.group.pos, Thread.currentThread().getStackTrace());
@@ -470,7 +468,7 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 			else
 			{
 				//LOGGER.info("Section generation at "+pos+" completed");
-				inProgressTaskGroup.group.worldGenTasks.forEach(worldGenTask -> worldGenTask.future.complete(WorldGenResult.CreateSuccess(new DhSectionPos(granularity, taskPos.sectionX, taskPos.sectionZ))));
+				inProgressTaskGroup.group.worldGenTasks.forEach(worldGenTask -> worldGenTask.future.complete(WorldGenResult.CreateSuccess(new DhSectionPos(granularity, taskPos.getX(), taskPos.getZ()))));
 			}
 			boolean worked = this.inProgressGenTasksByLodPos.remove(taskPos, inProgressTaskGroup);
 			LodUtil.assertTrue(worked);
@@ -686,7 +684,7 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 	
 	private boolean canGeneratePos(byte worldGenTaskGroupDetailLevel /*when in doubt use 0*/ , DhSectionPos taskPos)
 	{
-		byte granularity = (byte) (taskPos.sectionDetailLevel - worldGenTaskGroupDetailLevel);
+		byte granularity = (byte) (taskPos.getDetailLevel() - worldGenTaskGroupDetailLevel);
 		return (granularity >= this.minGranularity && granularity <= this.maxGranularity);
 	}
 	

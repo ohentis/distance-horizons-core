@@ -175,16 +175,16 @@ public class ClientLevelModule implements Closeable
 	//===============//
 	public void writeChunkDataToFile(ChunkSizedFullDataAccessor data)
 	{
-		DhLodPos pos = data.getLodPos().convertToDetailLevel(CompleteFullDataSource.SECTION_SIZE_OFFSET);
+		DhSectionPos pos = data.getSectionPos().convertNewToDetailLevel(CompleteFullDataSource.SECTION_SIZE_OFFSET);
 		
 		ClientRenderState ClientRenderState = this.ClientRenderStateRef.get();
 		if (ClientRenderState != null)
 		{
-			ClientRenderState.renderSourceFileHandler.writeChunkDataToFile(new DhSectionPos(pos.detailLevel, pos.x, pos.z), data);
+			ClientRenderState.renderSourceFileHandler.writeChunkDataToFile(pos, data);
 		}
 		else
 		{
-			this.parentClientLevel.getFileHandler().writeChunkDataToFile(new DhSectionPos(pos.detailLevel, pos.x, pos.z), data);
+			this.parentClientLevel.getFileHandler().writeChunkDataToFile(pos, data);
 		}
 	}
 	

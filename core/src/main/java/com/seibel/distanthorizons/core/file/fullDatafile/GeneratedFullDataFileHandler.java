@@ -355,7 +355,7 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandler
 			
 			return (chunkSizedFullDataSource) ->
 			{
-				if (chunkSizedFullDataSource.getLodPos().overlapsExactly(this.loadedTargetFullDataSource.getSectionPos().getSectionBBoxPos()))
+				if (chunkSizedFullDataSource.getSectionPos().overlapsExactly(this.loadedTargetFullDataSource.getSectionPos()))
 				{
 					((DhLevel) level).saveWrites(chunkSizedFullDataSource);
 					//GeneratedFullDataFileHandler.this.write(this.loadedTargetFullDataSource.getSectionPos(), chunkSizedFullDataSource);

@@ -118,13 +118,13 @@ public class RenderBufferHandler
 			}
 		}
 		
-		Pos2D cPos = lodQuadTree.getCenterBlockPos().toPos2D();
+		Pos2D cPos = this.lodQuadTree.getCenterBlockPos().toPos2D();
 		
 		// Now that we have the axis directions, we can sort the render list
 		Comparator<LoadedRenderBuffer> farToNearComparator = (loadedBufferA, loadedBufferB) ->
 		{
-			Pos2D aPos = loadedBufferA.pos.getCenter().getCenterBlockPos().toPos2D();
-			Pos2D bPos = loadedBufferB.pos.getCenter().getCenterBlockPos().toPos2D();
+			Pos2D aPos = loadedBufferA.pos.getCenterBlockPos().toPos2D();
+			Pos2D bPos = loadedBufferB.pos.getCenterBlockPos().toPos2D();
 			if (true)
 			{
 				int aManhattanDistance = aPos.manhattanDist(cPos);
@@ -161,7 +161,7 @@ public class RenderBufferHandler
 				return abPosDifference;
 			}
 			
-			return loadedBufferA.pos.sectionDetailLevel - loadedBufferB.pos.sectionDetailLevel; // If all else fails, sort by detail
+			return loadedBufferA.pos.getDetailLevel() - loadedBufferB.pos.getDetailLevel(); // If all else fails, sort by detail
 		};
 		
 		// Build the sorted list

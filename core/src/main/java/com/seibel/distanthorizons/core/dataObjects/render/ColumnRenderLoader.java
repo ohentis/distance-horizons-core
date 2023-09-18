@@ -20,16 +20,10 @@
 package com.seibel.distanthorizons.core.dataObjects.render;
 
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IFullDataSource;
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IIncompleteFullDataSource;
-import com.seibel.distanthorizons.core.file.renderfile.RenderMetaDataFile;
-import com.seibel.distanthorizons.core.level.IDhClientLevel;
+import com.seibel.distanthorizons.core.file.renderfile.RenderDataMetaFile;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataInputStream;
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.CompleteFullDataSource;
-import com.seibel.distanthorizons.core.dataObjects.transformers.FullDataToRenderDataTransformer;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
@@ -37,7 +31,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 /**
- * Handles loading and parsing {@link RenderMetaDataFile}s to create {@link ColumnRenderSource}s. <br><br>
+ * Handles loading and parsing {@link RenderDataMetaFile}s to create {@link ColumnRenderSource}s. <br><br>
  *
  * Please see the {@link ColumnRenderLoader#loadRenderSource} method to see what
  * file versions this class can handle.
@@ -54,7 +48,7 @@ public class ColumnRenderLoader
 	
 	
 	
-	public ColumnRenderSource loadRenderSource(RenderMetaDataFile dataFile, DhDataInputStream inputStream, IDhLevel level) throws IOException
+	public ColumnRenderSource loadRenderSource(RenderDataMetaFile dataFile, DhDataInputStream inputStream, IDhLevel level) throws IOException
 	{
 		int dataFileVersion = dataFile.baseMetaData.binaryDataFormatVersion;
 		

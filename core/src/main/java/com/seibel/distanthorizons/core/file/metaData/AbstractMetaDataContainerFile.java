@@ -25,7 +25,6 @@ import java.nio.channels.Channels;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.FileChannel;
 import java.nio.file.*;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.zip.Adler32;
 import java.util.zip.CheckedOutputStream;
 
@@ -231,11 +230,11 @@ public abstract class AbstractMetaDataContainerFile
 			fileChannel.position(0);
 			ByteBuffer buffer = ByteBuffer.allocate(METADATA_SIZE_IN_BYTES);
 			buffer.putInt(METADATA_IDENTITY_BYTES);
-			buffer.putInt(this.pos.sectionX);
+			buffer.putInt(this.pos.getX());
 			buffer.putInt(Integer.MIN_VALUE); // Unused - y pos
-			buffer.putInt(this.pos.sectionZ);
+			buffer.putInt(this.pos.getZ());
 			buffer.putInt(this.baseMetaData.checksum);
-			buffer.put(this.pos.sectionDetailLevel);
+			buffer.put(this.pos.getDetailLevel());
 			buffer.put(this.baseMetaData.dataLevel);
 			buffer.put(this.baseMetaData.binaryDataFormatVersion);
 			buffer.put(this.baseMetaData.worldGenStep != null ? this.baseMetaData.worldGenStep.value : EDhApiWorldGenerationStep.EMPTY.value); // TODO this null check shouldn't be necessary

@@ -429,6 +429,14 @@
     "OpenGL Error Handling Mode",
   "distanthorizons.config.client.advanced.debugging.glErrorHandlingMode.@tooltip":
     "Defines how OpenGL errors are handled. \nMay incorrectly catch OpenGL errors thrown by other mods.",
+  "distanthorizons.config.client.advanced.debugging.glProfileMode":
+    "OpenGL Profile Mode",
+  "distanthorizons.config.client.advanced.debugging.glProfileMode.@tooltip":
+    "Requires rebooting Minecraft to apply.",
+  "distanthorizons.config.client.advanced.debugging.glForwardCompatibilityMode":
+    "OpenGL Forward Compatibility Mode",
+  "distanthorizons.config.client.advanced.debugging.glForwardCompatibilityMode.@tooltip":
+    "Requires rebooting Minecraft to apply.",
     
     
   "distanthorizons.config.client.advanced.buffers":
@@ -735,6 +743,13 @@
     "Log",
   "distanthorizons.config.enum.EGLErrorHandlingMode.LOG_THROW":
     "Log-Throw",
+    
+  "distanthorizons.config.enum.EGlProfileMode.CORE":
+    "Core",
+  "distanthorizons.config.enum.EGlProfileMode.COMPAT":
+    "Compat",
+  "distanthorizons.config.enum.EGlProfileMode.ANY":
+    "Any",
     
   "distanthorizons.config.enum.ELoggerMode.DISABLED":
     "Disabled",

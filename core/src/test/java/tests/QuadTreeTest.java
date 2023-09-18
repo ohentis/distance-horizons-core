@@ -649,7 +649,7 @@ public class QuadTreeTest
 			DhSectionPos sectionPos = directChildIterator.next();
 			QuadNode<Integer> childNode = node.getNode(sectionPos);
 			
-			Assert.assertTrue("Child node recurred too low. Min detail level: " + minDetailLevel + ", node detail level: " + childNode.sectionPos.sectionDetailLevel, childNode.sectionPos.sectionDetailLevel >= minDetailLevel);
+			Assert.assertTrue("Child node recurred too low. Min detail level: " + minDetailLevel + ", node detail level: " + childNode.sectionPos.getDetailLevel(), childNode.sectionPos.getDetailLevel() >= minDetailLevel);
 			recursivelyCreateNodeChildren(childNode, minDetailLevel, minimumDetailLevelReachedRef);
 			
 			childNodesIterated = true;
@@ -657,9 +657,9 @@ public class QuadTreeTest
 		
 		
 		// keep track of how far down the tree we have gone
-		if (node.sectionPos.sectionDetailLevel < minimumDetailLevelReachedRef.get())
+		if (node.sectionPos.getDetailLevel() < minimumDetailLevelReachedRef.get())
 		{
-			minimumDetailLevelReachedRef.set(node.sectionPos.sectionDetailLevel);
+			minimumDetailLevelReachedRef.set(node.sectionPos.getDetailLevel());
 		}
 		
 		
@@ -667,11 +667,11 @@ public class QuadTreeTest
 		// assertions
 		if (childNodesCreated)
 		{
-			Assert.assertTrue("node children created below minimum detail level", node.sectionPos.sectionDetailLevel >= minDetailLevel);
+			Assert.assertTrue("node children created below minimum detail level", node.sectionPos.getDetailLevel() >= minDetailLevel);
 		}
 		if (childNodesIterated)
 		{
-			Assert.assertTrue("node children iterated below minimum detail level", node.sectionPos.sectionDetailLevel - 1 >= minDetailLevel);
+			Assert.assertTrue("node children iterated below minimum detail level", node.sectionPos.getDetailLevel() - 1 >= minDetailLevel);
 		}
 	}
 	

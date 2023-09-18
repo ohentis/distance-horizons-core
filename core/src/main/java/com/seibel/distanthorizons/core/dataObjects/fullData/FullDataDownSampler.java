@@ -47,15 +47,17 @@ public class FullDataDownSampler
 		
 		ArrayList<CompletableFuture<IFullDataSource>> futures;
 		DhLodPos basePos = target.getSectionPos().getSectionBBoxPos().getCornerLodPos(CompleteFullDataSource.SECTION_SIZE_OFFSET);
+		
+		
 		if (sectionSizeNeeded <= CompleteFullDataSource.SECTION_SIZE_OFFSET)
 		{
 			futures = new ArrayList<>(sectionSizeNeeded * sectionSizeNeeded);
-			for (int ox = 0; ox < sectionSizeNeeded; ox++)
+			for (int xOffset = 0; xOffset < sectionSizeNeeded; xOffset++)
 			{
-				for (int oz = 0; oz < sectionSizeNeeded; oz++)
+				for (int zOffset = 0; zOffset < sectionSizeNeeded; zOffset++)
 				{
 					CompletableFuture<IFullDataSource> future = provider.readAsync(new DhSectionPos(
-							CompleteFullDataSource.SECTION_SIZE_OFFSET, basePos.x + ox, basePos.z + oz));
+							CompleteFullDataSource.SECTION_SIZE_OFFSET, basePos.x + xOffset, basePos.z + zOffset));
 					future = future.whenComplete((source, ex) -> {
 						if (ex == null && source != null && source instanceof CompleteFullDataSource)
 						{
@@ -74,12 +76,12 @@ public class FullDataDownSampler
 		{
 			futures = new ArrayList<>(CompleteFullDataSource.WIDTH * CompleteFullDataSource.WIDTH);
 			int multiplier = sectionSizeNeeded / CompleteFullDataSource.WIDTH;
-			for (int ox = 0; ox < CompleteFullDataSource.WIDTH; ox++)
+			for (int xOffset = 0; xOffset < CompleteFullDataSource.WIDTH; xOffset++)
 			{
-				for (int oz = 0; oz < CompleteFullDataSource.WIDTH; oz++)
+				for (int zOffset = 0; zOffset < CompleteFullDataSource.WIDTH; zOffset++)
 				{
 					CompletableFuture<IFullDataSource> future = provider.readAsync(new DhSectionPos(
-							CompleteFullDataSource.SECTION_SIZE_OFFSET, basePos.x + ox * multiplier, basePos.z + oz * multiplier));
+							CompleteFullDataSource.SECTION_SIZE_OFFSET, basePos.x + xOffset * multiplier, basePos.z + zOffset * multiplier));
 					future = future.whenComplete((source, ex) -> {
 						if (ex == null && source != null && source instanceof CompleteFullDataSource)
 						{
@@ -99,7 +101,7 @@ public class FullDataDownSampler
 	
 	public static void downSample(CompleteFullDataSource target, CompleteFullDataSource source)
 	{
-		LodUtil.assertTrue(target.getSectionPos().overlaps(source.getSectionPos()));
+		LodUtil.assertTrue(target.getSectionPos().overlapsExactly(source.getSectionPos()));
 		LodUtil.assertTrue(target.getDataDetailLevel() > source.getDataDetailLevel());
 		
 		byte detailDiff = (byte) (target.getDataDetailLevel() - source.getDataDetailLevel());
@@ -111,11 +113,11 @@ public class FullDataDownSampler
 			// The source occupies only 1 datapoint in the target
 			// FIXME: TEMP method for down-sampling: take only the corner column
 			int sourceSectionPerTargetData = 1 << (detailDiff - CompleteFullDataSource.SECTION_SIZE_OFFSET);
-			if (srcPos.sectionX % sourceSectionPerTargetData != 0 || srcPos.sectionZ % sourceSectionPerTargetData != 0)
+			if (srcPos.getX() % sourceSectionPerTargetData != 0 || srcPos.getZ() % sourceSectionPerTargetData != 0)
 			{
 				return;
 			}
-			DhLodPos trgOffset = trgPos.getCorner(target.getDataDetailLevel());
+			DhLodPos trgOffset = trgPos.getMinCornerLodPos(target.getDataDetailLevel());
 			DhLodPos srcOffset = srcPos.getSectionBBoxPos().convertToDetailLevel(target.getDataDetailLevel());
 			int offsetX = trgOffset.x - srcOffset.x;
 			int offsetZ = trgOffset.z - srcOffset.z;
@@ -131,7 +133,7 @@ public class FullDataDownSampler
 			int srcDataPerTrgData = 1 << detailDiff;
 			int overlappedTrgDataSize = CompleteFullDataSource.WIDTH / srcDataPerTrgData;
 			
-			DhLodPos trgOffset = trgPos.getCorner(target.getDataDetailLevel());
+			DhLodPos trgOffset = trgPos.getMinCornerLodPos(target.getDataDetailLevel());
 			DhLodPos srcOffset = srcPos.getSectionBBoxPos().getCornerLodPos(target.getDataDetailLevel());
 			int offsetX = trgOffset.x - srcOffset.x;
 			int offsetZ = trgOffset.z - srcOffset.z;
