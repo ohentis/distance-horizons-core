@@ -22,11 +22,11 @@ package com.seibel.distanthorizons.core.network.protocol;
 import io.netty.channel.ChannelHandlerContext;
 import org.jetbrains.annotations.NotNull;
 
-import javax.annotation.Nullable;
-
 public abstract class NetworkMessage implements INetworkObject
 {
 	private ChannelHandlerContext channelContext = null;
+	
+	public boolean warnWhenUnhandled() { return true; }
 	
 	public ChannelHandlerContext getChannelContext()
 	{

@@ -33,12 +33,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public abstract class FutureTrackableNetworkMessage extends NetworkMessage
 {
-	
 	private static final AtomicInteger lastId = new AtomicInteger();
 	// 32 bits - Context ID (not transmitted)
 	// 1 bit - Requesting side (client - 0, server - 1)
 	// 31 bits - Request ID
-	public long futureId = lastId.incrementAndGet()
+	public long futureId = lastId.getAndIncrement()
 			| ((Objects.requireNonNull(SharedApi.getEnvironment()) == EWorldEnvironment.Server_Only ? 1 : 0) << 31);
 	
 	private static final AtomicInteger lastContextId = new AtomicInteger();
@@ -54,7 +53,7 @@ public abstract class FutureTrackableNetworkMessage extends NetworkMessage
 	public void setChannelContext(ChannelHandlerContext channelContext)
 	{
 		super.setChannelContext(channelContext);
-		this.futureId |= (long) contextIds.computeIfAbsent(channelContext, k -> lastContextId.incrementAndGet()) << 32;
+		this.futureId |= (long) contextIds.computeIfAbsent(channelContext, k -> lastContextId.getAndIncrement()) << 32;
 	}
 	
 	public void sendResponse(Exception e)

@@ -86,11 +86,8 @@ public abstract class NetworkEventSource
 			}
 		}
 		
-		if (!handled)
-		{
-			String error = "Unhandled message: " + message;
-			LOGGER.warn(error);
-		}
+		if (!handled && message.warnWhenUnhandled())
+			LOGGER.warn("Unhandled message: " + message);
 	}
 	
 	protected void addNewContext(ChannelHandlerContext ctx)

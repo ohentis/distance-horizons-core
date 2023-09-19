@@ -45,7 +45,6 @@ import com.seibel.distanthorizons.core.network.messages.fullData.updates.FullDat
 import com.seibel.distanthorizons.core.network.messages.fullData.updates.FullDataPartialUpdateMessage;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
-import com.seibel.distanthorizons.core.pos.DhLodPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.util.LodUtil;
@@ -59,7 +58,6 @@ import org.apache.logging.log4j.Logger;
 import javax.annotation.CheckForNull;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.*;
 
 public class DhServerLevel extends DhLevel implements IDhServerLevel
@@ -263,12 +261,9 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 		
 		future.thenAccept(chunkSizedFullDataAccessor ->
 		{
-			for (IServerPlayerWrapper serverPlayer : worldGenLoopingQueue)
+			for (ServerPlayerState serverPlayerState : remotePlayerConnectionHandler.getConnectedPlayers())
 			{
-				ServerPlayerState serverPlayerState = remotePlayerConnectionHandler.getPlayer(serverPlayer);
-				if (serverPlayerState == null) continue;
-				
-				if (chunk.getChunkPos().distance(new DhChunkPos(serverPlayer.getPosition())) <= serverPlayerState.config.renderDistance)
+				if (chunk.getChunkPos().distance(new DhChunkPos(serverPlayerState.serverPlayer.getPosition())) <= serverPlayerState.config.renderDistance)
 					serverPlayerState.channelContext.writeAndFlush(new FullDataPartialUpdateMessage(chunkSizedFullDataAccessor, this));
 			}
 		});

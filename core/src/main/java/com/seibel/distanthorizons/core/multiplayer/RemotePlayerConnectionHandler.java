@@ -77,9 +77,12 @@ public class RemotePlayerConnectionHandler implements Closeable
 	}
 	
 	@Nullable
-	public ServerPlayerState getPlayer(IServerPlayerWrapper serverPlayer)
+	public ServerPlayerState getConnectedPlayer(IServerPlayerWrapper serverPlayer)
 	{
-		return playersByUUID.get(serverPlayer.getUUID());
+		ServerPlayerState player = playersByUUID.get(serverPlayer.getUUID());
+		if (player == null || player.channelContext == null)
+			return null;
+		return player;
 	}
 	
 	public void registerJoinedPlayer(IServerPlayerWrapper serverPlayer)

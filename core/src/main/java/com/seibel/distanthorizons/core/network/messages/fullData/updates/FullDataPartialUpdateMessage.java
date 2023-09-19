@@ -43,6 +43,9 @@ public class FullDataPartialUpdateMessage extends NetworkMessage
 	private DhChunkPos chunkPos;
 	private ByteBuf dataBuffer;
 	
+	@Override
+	public boolean warnWhenUnhandled() { return false; }
+	
 	public FullDataPartialUpdateMessage() {}
 	public FullDataPartialUpdateMessage(ChunkSizedFullDataAccessor fullDataAccessor, DhServerLevel level)
 	{
