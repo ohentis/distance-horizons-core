@@ -20,6 +20,9 @@
 package com.seibel.distanthorizons.core.network.protocol;
 
 import io.netty.channel.ChannelHandlerContext;
+import org.jetbrains.annotations.NotNull;
+
+import javax.annotation.Nullable;
 
 public abstract class NetworkMessage implements INetworkObject
 {
@@ -36,5 +39,16 @@ public abstract class NetworkMessage implements INetworkObject
 			throw new IllegalStateException("Channel context cannot be changed after initial setting.");
 		this.channelContext = channelContext;
 	}
+	
+	@Override public String toString()
+	{
+		return toString("");
+	}
+	
+	protected String toString(@NotNull String extraData)
+	{
+		return this.getClass().getSimpleName() + "{" + extraData + '}';
+	}
+	
 }
 

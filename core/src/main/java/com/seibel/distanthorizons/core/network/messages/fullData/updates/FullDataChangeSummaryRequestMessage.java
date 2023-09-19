@@ -61,4 +61,12 @@ public class FullDataChangeSummaryRequestMessage extends FutureTrackableNetworkM
 		return levelWrapper.getDimensionType().getDimensionName().hashCode() == levelHashCode;
 	}
 	
+	@Override public String toString()
+	{
+		return super.toString(
+				"checksums=" + checksums +
+				", levelHashCode=" + levelHashCode
+		);
+	}
+	
 }

@@ -95,4 +95,13 @@ public class FullDataSourceResponseMessage extends FutureTrackableNetworkMessage
 			dataBuffer.release();
 		}
 	}
+	
+	@Override public String toString()
+	{
+		return super.toString(
+				"levelHashCode=" + levelHashCode +
+				", dataBuffer=" + dataBuffer
+		);
+	}
+	
 }

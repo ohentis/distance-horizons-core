@@ -75,7 +75,7 @@ public class NetworkClient extends NetworkEventSource implements AutoCloseable
             .group(this.workerGroup)
             .channel(NioSocketChannel.class)
             .option(ChannelOption.SO_KEEPALIVE, true)
-            .handler(new NetworkChannelInitializer(new MessageHandler(this::handleMessage)));
+            .handler(new NetworkChannelInitializer(new MessageHandler(this::handleMessage, this::addNewContext)));
 	
     private EConnectionState connectionState = EConnectionState.INITIAL;
     private Channel channel;

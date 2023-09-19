@@ -47,4 +47,10 @@ public class GenTaskPriorityResponseMessage extends FutureTrackableNetworkMessag
 	{
 		decodeMap(in, posList, DhSectionPos::zero, () -> 0);
 	}
+	
+	@Override public String toString()
+	{
+		return super.toString("posList=" + posList);
+	}
+	
 }

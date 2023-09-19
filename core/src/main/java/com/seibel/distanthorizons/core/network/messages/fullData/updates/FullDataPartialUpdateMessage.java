@@ -23,6 +23,7 @@ import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedF
 import com.seibel.distanthorizons.core.level.DhServerLevel;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.network.protocol.FutureTrackableNetworkMessage;
+import com.seibel.distanthorizons.core.network.protocol.NetworkMessage;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataInputStream;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataOutputStream;
@@ -33,7 +34,7 @@ import javax.annotation.Nullable;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
-public class FullDataPartialUpdateMessage extends FutureTrackableNetworkMessage
+public class FullDataPartialUpdateMessage extends NetworkMessage
 {
 	private ChunkSizedFullDataAccessor fullDataAccessor;
 	private DhServerLevel level;
@@ -52,8 +53,7 @@ public class FullDataPartialUpdateMessage extends FutureTrackableNetworkMessage
 		this.levelHashCode = level.getLevelWrapper().getDimensionType().getDimensionName().hashCode();
 	}
 	
-	@Override
-	public void encode0(ByteBuf out) throws IOException
+	public void encode(ByteBuf out)
 	{
 		try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream())
 		{
@@ -69,10 +69,13 @@ public class FullDataPartialUpdateMessage extends FutureTrackableNetworkMessage
 			out.writeInt(outputStream.size());
 			out.writeBytes(outputStream.toByteArray());
 		}
+		catch (IOException e)
+		{
+			throw new RuntimeException(e);
+		}
 	}
 	
-	@Override
-	public void decode0(ByteBuf in)
+	public void decode(ByteBuf in)
 	{
 		levelHashCode = in.readInt();
 		
@@ -99,4 +102,14 @@ public class FullDataPartialUpdateMessage extends FutureTrackableNetworkMessage
 			dataBuffer.release();
 		}
 	}
+	
+	@Override public String toString()
+	{
+		return super.toString(
+				"levelHashCode=" + levelHashCode +
+				", chunkPos=" + chunkPos +
+				", dataBuffer=" + dataBuffer
+		);
+	}
+	
 }

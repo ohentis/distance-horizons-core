@@ -23,4 +23,12 @@ public class MultiplayerConfig implements INetworkObject
 		this.fullDataRequestRateLimit = in.readInt();
 	}
 	
+	@Override public String toString()
+	{
+		return "MultiplayerConfig{" +
+				"renderDistance=" + renderDistance +
+				", fullDataRequestRateLimit=" + fullDataRequestRateLimit +
+				'}';
+	}
+	
 }

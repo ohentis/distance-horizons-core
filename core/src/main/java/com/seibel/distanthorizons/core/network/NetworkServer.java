@@ -99,7 +99,7 @@ public class NetworkServer extends NetworkEventSource implements AutoCloseable
 				.group(this.bossGroup, this.workerGroup)
 				.channel(NioServerSocketChannel.class)
 				.handler(new LoggingHandler(LogLevel.DEBUG))
-				.childHandler(new NetworkChannelInitializer(new MessageHandler(this::handleMessage)));
+				.childHandler(new NetworkChannelInitializer(new MessageHandler(this::handleMessage, this::addNewContext)));
 		
 		ChannelFuture bindFuture = bootstrap.bind(this.port);
 		bindFuture.addListener((ChannelFuture channelFuture) -> 

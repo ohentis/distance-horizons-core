@@ -48,4 +48,11 @@ public class FullDataSourceRequestMessage extends FutureTrackableNetworkMessage
 	{
 		dhSectionPos = INetworkObject.decodeStatic(DhSectionPos.zero(), in);
     }
+	
+	@Override
+	public String toString()
+	{
+		return super.toString("dhSectionPos=" + dhSectionPos);
+	}
+	
 }

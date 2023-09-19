@@ -35,5 +35,10 @@ public class CloseReasonMessage extends NetworkMessage
 
 	@Override
 	public void decode(ByteBuf in) { this.reason = decodeString(in); }
-
+	
+	@Override public String toString()
+	{
+		return super.toString("reason='" + reason + '\'');
+	}
+	
 }

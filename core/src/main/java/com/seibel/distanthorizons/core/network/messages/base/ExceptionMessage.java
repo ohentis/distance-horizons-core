@@ -58,4 +58,10 @@ public class ExceptionMessage extends FutureTrackableNetworkMessage
 		String message = decodeString(in);
 		exception = exceptionMap.get(id).getDeclaredConstructor(String.class).newInstance(message);
 	}
+	
+	@Override public String toString()
+	{
+		return super.toString("exception=" + exception);
+	}
+	
 }

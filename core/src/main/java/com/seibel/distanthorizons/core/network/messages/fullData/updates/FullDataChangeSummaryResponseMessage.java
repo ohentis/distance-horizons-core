@@ -51,4 +51,10 @@ public class FullDataChangeSummaryResponseMessage extends FutureTrackableNetwork
 	{
 		decodeCollection(in, changedPosList, DhSectionPos::zero);
     }
+	
+	@Override public String toString()
+	{
+		return super.toString("changedPosList=" + changedPosList);
+	}
+	
 }

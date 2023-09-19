@@ -35,4 +35,9 @@ public class HelloMessage extends NetworkMessage
     @Override
     public void decode(ByteBuf in) { this.version = in.readInt(); }
 	
+	@Override public String toString()
+	{
+		return super.toString("version=" + version);
+	}
+	
 }

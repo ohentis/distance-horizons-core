@@ -42,4 +42,9 @@ public class PlayerUUIDMessage extends FutureTrackableNetworkMessage
 	@Override
 	public void decode0(ByteBuf in) { this.playerUUID = new UUID(in.readLong(), in.readLong()); }
 	
+	@Override public String toString()
+	{
+		return super.toString("playerUUID=" + playerUUID);
+	}
+	
 }

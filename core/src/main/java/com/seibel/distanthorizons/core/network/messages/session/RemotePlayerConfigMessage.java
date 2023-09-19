@@ -37,4 +37,9 @@ public class RemotePlayerConfigMessage extends FutureTrackableNetworkMessage
     @Override
     public void decode0(ByteBuf in) { this.payload = INetworkObject.decodeStatic(new MultiplayerConfig(), in); }
 	
+	@Override public String toString()
+	{
+		return super.toString("payload=" + payload);
+	}
+	
 }
