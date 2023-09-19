@@ -101,7 +101,7 @@ public class WorldRemoteGenerationQueue implements IWorldGenerationQueue, IDebug
 				return;
 			};
 			
-			CompletableFuture<GenTaskPriorityResponseMessage> request = this.networkState.getClient().sendRequest(new GenTaskPriorityRequestMessage(posList));
+			CompletableFuture<GenTaskPriorityResponseMessage> request = this.networkState.getClient().sendRequest(new GenTaskPriorityRequestMessage(posList), GenTaskPriorityResponseMessage.class);
 			genTaskPriorityRequest = request;
 			request.handleAsync((response, throwable) -> {
 				try
@@ -163,7 +163,7 @@ public class WorldRemoteGenerationQueue implements IWorldGenerationQueue, IDebug
 		DhSectionPos sectionPos = mapEntry.getKey();
 		WorldGenQueueEntry entry = mapEntry.getValue();
 		
-		CompletableFuture<FullDataSourceResponseMessage> request = this.networkState.getClient().sendRequest(new FullDataSourceRequestMessage(sectionPos));
+		CompletableFuture<FullDataSourceResponseMessage> request = this.networkState.getClient().sendRequest(new FullDataSourceRequestMessage(sectionPos), FullDataSourceResponseMessage.class);
 		entry.request = request;
 		request.handleAsync((response, throwable) ->
 		{

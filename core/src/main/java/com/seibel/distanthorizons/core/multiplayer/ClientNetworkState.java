@@ -47,12 +47,12 @@ public class ClientNetworkState implements Closeable
 		{
 			LOGGER.info("Connected to server: "+helloMessage.getChannelContext().channel().remoteAddress());
 			
-			this.getClient().<AckMessage>sendRequest(new PlayerUUIDMessage(playerUUID))
-					.thenCompose(ack -> this.getClient().<RemotePlayerConfigMessage>sendRequest(new RemotePlayerConfigMessage(new MultiplayerConfig()
+			this.getClient().sendRequest(new PlayerUUIDMessage(playerUUID), AckMessage.class)
+					.thenCompose(ack -> this.getClient().sendRequest(new RemotePlayerConfigMessage(new MultiplayerConfig()
 					{{
 						renderDistance = Config.Client.Advanced.Graphics.Quality.lodChunkRenderDistance.get();
 						fullDataRequestRateLimit = Config.Client.Advanced.Multiplayer.serverNetworkingRateLimit.get();
-					}})))
+					}}), RemotePlayerConfigMessage.class))
 					.thenAccept(msg -> {
 						this.config = msg.payload;
 					})

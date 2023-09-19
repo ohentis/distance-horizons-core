@@ -88,7 +88,7 @@ public class RemoteFullDataFileHandler extends GeneratedFullDataFileHandler
 			this.writeChunkDataToFile(new DhSectionPos(pos.getDetailLevel(), pos.getX(), pos.getZ()), data);
 		};
 		
-		this.networkState.getClient().<FullDataChangeSummaryResponseMessage>sendRequest(new FullDataChangeSummaryRequestMessage(level.getLevelWrapper(), block))
+		this.networkState.getClient().sendRequest(new FullDataChangeSummaryRequestMessage(level.getLevelWrapper(), block), FullDataChangeSummaryResponseMessage.class)
 				.handle((response, throwable) ->
 				{
 					try

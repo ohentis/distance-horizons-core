@@ -168,9 +168,9 @@ public class NetworkClient extends NetworkEventSource implements AutoCloseable
         });
     }
 	
-	public final <TResponse extends FutureTrackableNetworkMessage> CompletableFuture<TResponse> sendRequest(FutureTrackableNetworkMessage msg)
+	public final <TResponse extends FutureTrackableNetworkMessage> CompletableFuture<TResponse> sendRequest(FutureTrackableNetworkMessage msg, Class<TResponse> responseClass)
 	{
-		return this.sendRequest(this.channel.pipeline().context(MessageHandler.class), msg);
+		return this.sendRequest(this.channel.pipeline().context(MessageHandler.class), msg, responseClass);
 	}
 	
     @Override

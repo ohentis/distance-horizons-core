@@ -124,9 +124,9 @@ public class NetworkServer extends NetworkEventSource implements AutoCloseable
 	}
 	
 	@Override
-	public <TResponse extends FutureTrackableNetworkMessage> CompletableFuture<TResponse> sendRequest(ChannelHandlerContext ctx, FutureTrackableNetworkMessage msg)
+	public <TResponse extends FutureTrackableNetworkMessage> CompletableFuture<TResponse> sendRequest(ChannelHandlerContext ctx, FutureTrackableNetworkMessage msg, Class<TResponse> responseClass)
 	{
-		return super.sendRequest(ctx, msg);
+		return super.sendRequest(ctx, msg, responseClass);
 	}
 	
 	@Override

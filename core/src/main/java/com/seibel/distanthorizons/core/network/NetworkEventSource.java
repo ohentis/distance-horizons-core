@@ -19,9 +19,6 @@
 
 package com.seibel.distanthorizons.core.network;
 
-import com.google.common.collect.HashBasedTable;
-import com.google.common.collect.Table;
-import com.google.common.collect.Tables;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.network.messages.base.CancelMessage;
 import com.seibel.distanthorizons.core.network.messages.base.CloseEvent;
@@ -33,6 +30,7 @@ import io.netty.channel.ChannelException;
 import io.netty.channel.ChannelHandlerContext;
 import org.apache.logging.log4j.Logger;
 
+import java.io.InvalidClassException;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CancellationException;
@@ -45,7 +43,7 @@ public abstract class NetworkEventSource
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	protected final ConcurrentMap<Class<? extends NetworkMessage>, Set<Consumer<NetworkMessage>>> handlers = new ConcurrentHashMap<>();
-	private final ConcurrentMap<ChannelHandlerContext, ConcurrentMap<Long, CompletableFuture<FutureTrackableNetworkMessage>>> pendingFutures = new ConcurrentHashMap<>();
+	private final ConcurrentMap<ChannelHandlerContext, ConcurrentMap<Long, FutureResponseData>> pendingFutures = new ConcurrentHashMap<>();
 	
 	protected boolean hasHandler(Class<? extends NetworkMessage> handlerClass)
 	{
@@ -70,18 +68,20 @@ public abstract class NetworkEventSource
 		if (message instanceof FutureTrackableNetworkMessage)
 		{
 			FutureTrackableNetworkMessage trackableMessage = (FutureTrackableNetworkMessage)message;
-			ConcurrentMap<Long, CompletableFuture<FutureTrackableNetworkMessage>> subMap = pendingFutures.get(message.getChannelContext());
+			ConcurrentMap<Long, FutureResponseData> subMap = pendingFutures.get(message.getChannelContext());
 			if (subMap != null)
 			{
-				CompletableFuture<FutureTrackableNetworkMessage> future = subMap.get(trackableMessage.futureId);
-				if (future != null)
+				FutureResponseData responseData = subMap.get(trackableMessage.futureId);
+				if (responseData != null)
 				{
 					handled = true;
 					
 					if (message instanceof ExceptionMessage)
-						future.completeExceptionally(((ExceptionMessage) message).exception);
+						responseData.future.completeExceptionally(((ExceptionMessage) message).exception);
+					else if (message.getClass() != responseData.responseClass)
+						responseData.future.completeExceptionally(new InvalidClassException("Response with invalid type: expected " + responseData.responseClass.getSimpleName() + ", got:" + message));
 					else
-						future.complete(trackableMessage);
+						responseData.future.complete(trackableMessage);
 				}
 			}
 		}
@@ -97,6 +97,7 @@ public abstract class NetworkEventSource
 	
 	public <T extends NetworkMessage> void registerHandler(Class<T> handlerClass, Consumer<T> handlerImplementation)
 	{
+		//noinspection unchecked
 		this.handlers.computeIfAbsent(handlerClass, missingHandlerClass ->
 				{
 					// Will throw if the handler class is not found
@@ -114,7 +115,7 @@ public abstract class NetworkEventSource
 	}
 	
 	
-	protected <TResponse extends FutureTrackableNetworkMessage> CompletableFuture<TResponse> sendRequest(ChannelHandlerContext ctx, FutureTrackableNetworkMessage msg)
+	protected <TResponse extends FutureTrackableNetworkMessage> CompletableFuture<TResponse> sendRequest(ChannelHandlerContext ctx, FutureTrackableNetworkMessage msg, Class<TResponse> responseClass)
 	{
 		msg.setChannelContext(ctx);
 		
@@ -122,7 +123,7 @@ public abstract class NetworkEventSource
 		responseFuture.handle((response, throwable) -> {
 			if (!(throwable instanceof ChannelException))
 			{
-				ConcurrentMap<Long, CompletableFuture<FutureTrackableNetworkMessage>> subMap = pendingFutures.get(ctx);
+				ConcurrentMap<Long, FutureResponseData> subMap = pendingFutures.get(ctx);
 				if (subMap != null)
 					subMap.remove(msg.futureId);
 			}
@@ -133,14 +134,13 @@ public abstract class NetworkEventSource
 			return null;
 		});
 		
-		ConcurrentMap<Long, CompletableFuture<FutureTrackableNetworkMessage>> subMap = pendingFutures.get(ctx);
+		ConcurrentMap<Long, FutureResponseData> subMap = pendingFutures.get(ctx);
 		if (subMap == null) {
 			// Was deleted before adding
 			responseFuture.completeExceptionally(ctx.channel().closeFuture().cause());
 			return responseFuture;
 		}
-		//noinspection unchecked
-		subMap.put(msg.futureId, (CompletableFuture<FutureTrackableNetworkMessage>) responseFuture);
+		subMap.put(msg.futureId, new FutureResponseData(responseClass, responseFuture));
 		if (!pendingFutures.containsKey(ctx)) {
 			// Was deleted while adding
 			responseFuture.completeExceptionally(ctx.channel().closeFuture().cause());
@@ -158,11 +158,11 @@ public abstract class NetworkEventSource
 	
 	protected final void completeAllFuturesExceptionally(ChannelHandlerContext ctx, Throwable cause)
 	{
-		ConcurrentMap<Long, CompletableFuture<FutureTrackableNetworkMessage>> map = pendingFutures.remove(ctx);
+		ConcurrentMap<Long, FutureResponseData> map = pendingFutures.remove(ctx);
 		if (map == null) return;
 		
-		for (CompletableFuture<FutureTrackableNetworkMessage> future : map.values())
-			future.completeExceptionally(cause);
+		for (FutureResponseData responseData : map.values())
+			responseData.future.completeExceptionally(cause);
 	}
 	
 	protected final void completeAllFuturesExceptionally(Throwable cause)
@@ -175,5 +175,17 @@ public abstract class NetworkEventSource
 	{
 		this.handlers.clear();
 		completeAllFuturesExceptionally(new ChannelException(this.getClass().getSimpleName()+" is closed."));
+	}
+	
+	private static class FutureResponseData
+	{
+		public final Class<? extends FutureTrackableNetworkMessage> responseClass;
+		public final CompletableFuture<FutureTrackableNetworkMessage> future;
+		
+		private <T extends FutureTrackableNetworkMessage> FutureResponseData(Class<T> responseClass, CompletableFuture<T> future) {
+			this.responseClass = responseClass;
+			//noinspection unchecked
+			this.future = (CompletableFuture<FutureTrackableNetworkMessage>) future;
+		}
 	}
 }
