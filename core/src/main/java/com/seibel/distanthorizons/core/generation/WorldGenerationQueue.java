@@ -722,6 +722,8 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 	@Override
 	public void debugRender(DebugRenderer r)
 	{
+		if (!Config.Client.Advanced.Debugging.DebugWireframeRendering.worldGenerationQueue.get()) return;
+		
 		//if (true) return;
 		waitingTasks.keySet().forEach((pos) -> {
 			//DhLodPos pos = t.pos;

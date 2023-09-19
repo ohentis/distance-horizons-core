@@ -1,5 +1,6 @@
 package com.seibel.distanthorizons.core.generation;
 
+import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.CompleteFullDataSource;
 import com.seibel.distanthorizons.core.generation.tasks.IWorldGenTaskTracker;
@@ -257,7 +258,10 @@ public class WorldRemoteGenerationQueue implements IWorldGenerationQueue, IDebug
 	}
 	
 	@Override
-	public void debugRender(DebugRenderer r) {
+	public void debugRender(DebugRenderer r) 
+	{
+		if (!Config.Client.Advanced.Debugging.DebugWireframeRendering.worldRemoteGenerationQueue.get()) return;
+		
 		for (Map.Entry<DhSectionPos, WorldGenQueueEntry> mapEntry : waitingTasks.entrySet())
 		{
 			r.renderBox(new DebugRenderer.Box(mapEntry.getKey(), -32f, 64f, 0.05f,

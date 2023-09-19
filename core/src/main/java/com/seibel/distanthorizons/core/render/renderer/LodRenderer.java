@@ -350,7 +350,7 @@ public class LodRenderer
 			
 			this.shaderProgram.unbind();
 			
-			if (Config.Client.Advanced.Debugging.debugWireframeRendering.get())
+			if (Config.Client.Advanced.Debugging.DebugWireframeRendering.enableRendering.get())
 			{
 				profiler.popPush("Debug wireframes");
 				// Note: this can be very slow if a lot of boxes are being rendered 

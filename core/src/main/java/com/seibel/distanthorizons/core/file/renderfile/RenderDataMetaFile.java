@@ -438,6 +438,8 @@ public class RenderDataMetaFile extends AbstractMetaDataContainerFile implements
 	@Override
 	public void debugRender(DebugRenderer debugRenderer)
 	{
+		if (!Config.Client.Advanced.Debugging.DebugWireframeRendering.renderDataMetaFile.get()) return;
+		
 		Color color = Color.black;
 		
 		ColumnRenderSource cached = this.cachedRenderDataSource.get();

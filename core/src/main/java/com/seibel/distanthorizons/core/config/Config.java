@@ -1083,6 +1083,8 @@ public class Config
 			
 			public static class Debugging
 			{
+				public static ConfigCategory debugWireframeRendering = new ConfigCategory.Builder().set(DebugWireframeRendering.class).build();
+				
 				public static ConfigEntry<ERendererMode> rendererMode = new ConfigEntry.Builder<ERendererMode>()
 						.set(ERendererMode.DEFAULT)
 						.comment(""
@@ -1131,15 +1133,43 @@ public class Config
 								+ "   Mod compatibility is not guaranteed.")
 						.build();
 				
-				public static ConfigEntry<Boolean> debugWireframeRendering = new ConfigEntry.Builder<Boolean>()
-						.set(false)
-						.comment(""
-								+ "If enabled, various wireframes for debugging internal functions will be drawn. \n"
-								+ "\n"
-								+ "NOTE: There WILL be performance hit! \n"
-								+ "   Additionally, only stuff that's loaded after you enable this \n"
-								+ "   will render their debug wireframes.")
-						.build();
+				public static class DebugWireframeRendering
+				{
+					public static ConfigEntry<Boolean> enableRendering = new ConfigEntry.Builder<Boolean>()
+							.set(false)
+							.comment(""
+									+ "If enabled, various wireframes for debugging internal functions will be drawn. \n"
+									+ "\n"
+									+ "NOTE: There WILL be performance hit! \n"
+									+ "   Additionally, only stuff that's loaded after you enable this \n"
+									+ "   will render their debug wireframes.")
+							.build();
+					
+					public static ConfigEntry<Boolean> fullDataMetaFile = new ConfigEntry.Builder<Boolean>()
+							.set(false)
+							.comment("Class: FullDataMetaFile")
+							.build();
+					
+					public static ConfigEntry<Boolean> lodRenderSection = new ConfigEntry.Builder<Boolean>()
+							.set(false)
+							.comment("Class: LodRenderSection")
+							.build();
+					
+					public static ConfigEntry<Boolean> renderDataMetaFile = new ConfigEntry.Builder<Boolean>()
+							.set(false)
+							.comment("Class: RenderDataMetaFile")
+							.build();
+					
+					public static ConfigEntry<Boolean> worldGenerationQueue = new ConfigEntry.Builder<Boolean>()
+							.set(false)
+							.comment("Class: WorldGenerationQueue")
+							.build();
+					
+					public static ConfigEntry<Boolean> worldRemoteGenerationQueue = new ConfigEntry.Builder<Boolean>()
+							.set(false)
+							.comment("Class: WorldRemoteGenerationQueue")
+							.build();
+				}
 				
 				public static ConfigEntry<Boolean> enableWhiteWorld = new ConfigEntry.Builder<Boolean>()
 						.set(false)

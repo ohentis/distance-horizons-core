@@ -19,6 +19,7 @@
 
 package com.seibel.distanthorizons.core.render;
 
+import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSource;
 import com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.ColumnRenderBufferBuilder;
 import com.seibel.distanthorizons.core.enums.EDhDirection;
@@ -99,6 +100,8 @@ public class LodRenderSection implements IDebugRenderable
 	
 	public void debugRender(DebugRenderer debugRenderer)
 	{
+		if (!Config.Client.Advanced.Debugging.DebugWireframeRendering.lodRenderSection.get()) return;
+		
 		Color color = Color.red;
 		
 		if (this.renderSourceProvider == null) color = Color.black;
