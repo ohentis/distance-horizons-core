@@ -2,8 +2,10 @@ package com.seibel.distanthorizons.core.multiplayer;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import com.seibel.distanthorizons.core.level.DhServerLevel;
 import com.seibel.distanthorizons.core.network.ScopedNetworkEventSource;
 import com.seibel.distanthorizons.core.network.NetworkServer;
+import com.seibel.distanthorizons.core.network.messages.base.ILevelRelatedMessage;
 import com.seibel.distanthorizons.core.network.messages.base.AckMessage;
 import com.seibel.distanthorizons.core.network.messages.base.CloseEvent;
 import com.seibel.distanthorizons.core.network.messages.session.PlayerUUIDMessage;
@@ -15,6 +17,8 @@ import org.jetbrains.annotations.Nullable;
 import java.io.Closeable;
 import java.util.HashMap;
 import java.util.UUID;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 public class RemotePlayerConnectionHandler implements Closeable
 {
@@ -62,6 +66,30 @@ public class RemotePlayerConnectionHandler implements Closeable
 			{
 				dhPlayer.channelContext = null;
 			}
+		});
+	}
+	
+	public <T extends NetworkMessage> Consumer<T> connectedPlayersOnly(BiConsumer<T, ServerPlayerState> next)
+	{
+		return msg ->
+		{
+			ServerPlayerState serverPlayerState = getConnectedPlayer(msg);
+			if (serverPlayerState != null)
+				next.accept(msg, serverPlayerState);
+		};
+	}
+	
+	public <T extends NetworkMessage> Consumer<T> currentLevelOnly(DhServerLevel level, BiConsumer<T, ServerPlayerState> next)
+	{
+		return connectedPlayersOnly((msg, serverPlayerState) ->
+		{
+			if (serverPlayerState.serverPlayer.getLevel() != level.getLevelWrapper())
+				return;
+			
+			if (msg instanceof ILevelRelatedMessage && ((ILevelRelatedMessage) msg).sendExceptionIfLevelInvalid(level.getLevelWrapper()))
+				return;
+			
+			next.accept(msg, serverPlayerState);
 		});
 	}
 	

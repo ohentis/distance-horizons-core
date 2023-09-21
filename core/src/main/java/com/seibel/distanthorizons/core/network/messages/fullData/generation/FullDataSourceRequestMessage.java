@@ -19,40 +19,49 @@
 
 package com.seibel.distanthorizons.core.network.messages.fullData.generation;
 
+import com.seibel.distanthorizons.core.network.messages.base.ILevelRelatedMessage;
 import com.seibel.distanthorizons.core.network.protocol.FutureTrackableNetworkMessage;
 import com.seibel.distanthorizons.core.network.protocol.INetworkObject;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import io.netty.buffer.ByteBuf;
 
-import javax.annotation.Nullable;
-
-public class FullDataSourceRequestMessage extends FutureTrackableNetworkMessage
+public class FullDataSourceRequestMessage extends FutureTrackableNetworkMessage implements ILevelRelatedMessage
 {
 	public DhSectionPos dhSectionPos;
-
+	private int levelHashCode;
+	@Override public int getLevelHashCode() { return levelHashCode; }
+	
 	public FullDataSourceRequestMessage() {}
 
-	public FullDataSourceRequestMessage(DhSectionPos dhSectionPos)
+	public FullDataSourceRequestMessage(ILevelWrapper levelWrapper, DhSectionPos dhSectionPos)
 	{
+		// TODO Multiverse support
+		this.levelHashCode = levelWrapper.getDimensionType().getDimensionName().hashCode();
 		this.dhSectionPos = dhSectionPos;
 	}
 
     @Override
     public void encode0(ByteBuf out)
 	{
+		out.writeInt(levelHashCode);
 		dhSectionPos.encode(out);
     }
 
     @Override
     public void decode0(ByteBuf in)
 	{
+		levelHashCode = in.readInt();
 		dhSectionPos = INetworkObject.decodeStatic(DhSectionPos.zero(), in);
     }
 	
 	@Override
 	public String toString()
 	{
-		return super.toString("dhSectionPos=" + dhSectionPos);
+		return super.toString(
+				"dhSectionPos=" + dhSectionPos +
+				", levelHashCode=" + levelHashCode
+		);
 	}
 	
 }

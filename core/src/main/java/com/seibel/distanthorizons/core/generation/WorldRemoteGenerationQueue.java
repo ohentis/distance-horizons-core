@@ -164,7 +164,7 @@ public class WorldRemoteGenerationQueue implements IWorldGenerationQueue, IDebug
 		DhSectionPos sectionPos = mapEntry.getKey();
 		WorldGenQueueEntry entry = mapEntry.getValue();
 		
-		CompletableFuture<FullDataSourceResponseMessage> request = this.networkState.getClient().sendRequest(new FullDataSourceRequestMessage(sectionPos), FullDataSourceResponseMessage.class);
+		CompletableFuture<FullDataSourceResponseMessage> request = this.networkState.getClient().sendRequest(new FullDataSourceRequestMessage(level.getLevelWrapper(), sectionPos), FullDataSourceResponseMessage.class);
 		entry.request = request;
 		request.handleAsync((response, throwable) ->
 		{

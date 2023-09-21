@@ -40,7 +40,6 @@ public class FullDataSourceResponseMessage extends FutureTrackableNetworkMessage
 	private CompleteFullDataSource fullDataSource;
 	private DhServerLevel level;
 	
-	private int levelHashCode;
 	private CompleteFullDataSourceLoader fullDataSourceLoader;
 	private ByteBuf dataBuffer;
 	
@@ -49,9 +48,6 @@ public class FullDataSourceResponseMessage extends FutureTrackableNetworkMessage
 	{
 		this.fullDataSource = fullDataSource;
 		this.level = level;
-		
-		// TODO Multiverse support
-		this.levelHashCode = level.getLevelWrapper().getDimensionType().getDimensionName().hashCode();
 	}
 	
 	@Override
@@ -63,7 +59,6 @@ public class FullDataSourceResponseMessage extends FutureTrackableNetworkMessage
 			fullDataSource.writeToStream(dhOutputStream, level);
 			dhOutputStream.flush();
 			
-			out.writeInt(levelHashCode);
 			out.writeByte(fullDataSource.getBinaryDataFormatVersion());
 			out.writeInt(outputStream.size());
 			out.writeBytes(outputStream.toByteArray());
@@ -73,7 +68,6 @@ public class FullDataSourceResponseMessage extends FutureTrackableNetworkMessage
 	@Override
 	public void decode0(ByteBuf in)
 	{
-		levelHashCode = in.readInt();
 		byte dataVersion = in.readByte();
 		this.fullDataSourceLoader = (CompleteFullDataSourceLoader) AbstractFullDataSourceLoader.getLoader(CompleteFullDataSource.TYPE_ID, dataVersion);
 		this.dataBuffer = in.readBytes(in.readInt());
@@ -82,9 +76,6 @@ public class FullDataSourceResponseMessage extends FutureTrackableNetworkMessage
 	@Nullable
 	public CompleteFullDataSource getFullDataSource(DhSectionPos pos, IDhLevel level) throws IOException, InterruptedException
 	{
-		// TODO Multiverse support
-		if (levelHashCode != level.getLevelWrapper().getDimensionType().getDimensionName().hashCode())
-			return null;
 		
 		try (ByteBufInputStream inputStream = new ByteBufInputStream(dataBuffer))
 		{
@@ -98,10 +89,7 @@ public class FullDataSourceResponseMessage extends FutureTrackableNetworkMessage
 	
 	@Override public String toString()
 	{
-		return super.toString(
-				"levelHashCode=" + levelHashCode +
-				", dataBuffer=" + dataBuffer
-		);
+		return super.toString("dataBuffer=" + dataBuffer);
 	}
 	
 }

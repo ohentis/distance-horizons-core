@@ -19,6 +19,7 @@
 
 package com.seibel.distanthorizons.core.network.messages.fullData.updates;
 
+import com.seibel.distanthorizons.core.network.messages.base.ILevelRelatedMessage;
 import com.seibel.distanthorizons.core.network.protocol.FutureTrackableNetworkMessage;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
@@ -27,10 +28,11 @@ import io.netty.buffer.ByteBuf;
 import java.util.HashMap;
 import java.util.Map;
 
-public class FullDataChangeSummaryRequestMessage extends FutureTrackableNetworkMessage
+public class FullDataChangeSummaryRequestMessage extends FutureTrackableNetworkMessage implements ILevelRelatedMessage
 {
 	public Map<DhSectionPos, Integer> checksums = new HashMap<>();
 	public int levelHashCode;
+	@Override public int getLevelHashCode() { return levelHashCode; }
 
 	public FullDataChangeSummaryRequestMessage() { }
 
@@ -55,11 +57,6 @@ public class FullDataChangeSummaryRequestMessage extends FutureTrackableNetworkM
 		levelHashCode = in.readInt();
 		decodeMap(in, checksums, DhSectionPos::zero, () -> 0);
     }
-	
-	public boolean isLevelValid(ILevelWrapper levelWrapper)
-	{
-		return levelWrapper.getDimensionType().getDimensionName().hashCode() == levelHashCode;
-	}
 	
 	@Override public String toString()
 	{

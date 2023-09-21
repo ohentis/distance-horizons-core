@@ -22,7 +22,7 @@ package com.seibel.distanthorizons.core.network.messages.fullData.updates;
 import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
 import com.seibel.distanthorizons.core.level.DhServerLevel;
 import com.seibel.distanthorizons.core.level.IDhLevel;
-import com.seibel.distanthorizons.core.network.protocol.FutureTrackableNetworkMessage;
+import com.seibel.distanthorizons.core.network.messages.base.ILevelRelatedMessage;
 import com.seibel.distanthorizons.core.network.protocol.NetworkMessage;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataInputStream;
@@ -34,12 +34,14 @@ import javax.annotation.Nullable;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
-public class FullDataPartialUpdateMessage extends NetworkMessage
+public class FullDataPartialUpdateMessage extends NetworkMessage implements ILevelRelatedMessage
 {
 	private ChunkSizedFullDataAccessor fullDataAccessor;
 	private DhServerLevel level;
 	
 	private int levelHashCode;
+	@Override public int getLevelHashCode() { return levelHashCode; }
+	
 	private DhChunkPos chunkPos;
 	private ByteBuf dataBuffer;
 	
@@ -90,9 +92,7 @@ public class FullDataPartialUpdateMessage extends NetworkMessage
 	@Nullable
 	public ChunkSizedFullDataAccessor getFullDataSource(IDhLevel level) throws IOException, InterruptedException
 	{
-		// TODO Multiverse support
-		if (levelHashCode != level.getLevelWrapper().getDimensionType().getDimensionName().hashCode())
-			return null;
+		if (isLevelInvalid(level.getLevelWrapper())) return null;
 		
 		try (ByteBufInputStream inputStream = new ByteBufInputStream(dataBuffer))
 		{

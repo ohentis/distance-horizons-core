@@ -92,28 +92,12 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 	
 	private void registerNetworkHandlers()
 	{
-		// TODO implement transparent message handling restriction by level
-		// workaround:
-// 		ServerPlayerState serverPlayerState = remotePlayerConnectionHandler.getConnectedPlayer(msg);
-//		if (serverPlayerState == null) return;
-//		
-// 		if (serverPlayerState.serverPlayer.getLevel() != this.serverLevelWrapper)
-// 			return;
-		
-		this.eventSource.registerHandler(FullDataSourceRequestMessage.class, msg ->
+		this.eventSource.registerHandler(FullDataSourceRequestMessage.class, remotePlayerConnectionHandler.currentLevelOnly(this, (msg, serverPlayerState) ->
 		{
-			ServerPlayerState serverPlayerState = remotePlayerConnectionHandler.getConnectedPlayer(msg);
-			if (serverPlayerState == null) return;
-			
-			if (serverPlayerState.serverPlayer.getLevel() != this.serverLevelWrapper)
-				return;
-			
-			LOGGER.debug("FullDataSourceRequestMessage received at pos ({}, {}) with detail level {}", msg.dhSectionPos.getX(), msg.dhSectionPos.getZ(), msg.dhSectionPos.getDetailLevel());
-			
 			if (serverPlayerState.pendingFullDataRequests.incrementAndGet() > rateLimitConfig.get())
 			{
 				serverPlayerState.pendingFullDataRequests.decrementAndGet();
-				msg.sendResponse(new RateLimitedException("Max concurrent requests: "+rateLimitConfig.get()));
+				msg.sendResponse(new RateLimitedException("Max concurrent requests: " + rateLimitConfig.get()));
 				return;
 			}
 			
@@ -135,34 +119,17 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 					break;
 				}
 			}
-		});
+		}));
 		
-		this.eventSource.registerHandler(GenTaskPriorityRequestMessage.class, msg -> {
-			ServerPlayerState serverPlayerState = remotePlayerConnectionHandler.getConnectedPlayer(msg);
-			if (serverPlayerState == null) return;
-			
-			if (serverPlayerState.serverPlayer.getLevel() != this.serverLevelWrapper)
-				return;
-			
+		this.eventSource.registerHandler(GenTaskPriorityRequestMessage.class, remotePlayerConnectionHandler.currentLevelOnly(this, (msg, serverPlayerState) ->
+		{
 			msg.sendResponse(new GenTaskPriorityResponseMessage(
 					this.serverside.dataFileHandler.getLoadStates(msg.posList)
 			));
-		});
+		}));
 		
-		this.eventSource.registerHandler(FullDataChangeSummaryRequestMessage.class, msg ->
+		this.eventSource.registerHandler(FullDataChangeSummaryRequestMessage.class, remotePlayerConnectionHandler.currentLevelOnly(this, (msg, serverPlayerState) ->
 		{
-			ServerPlayerState serverPlayerState = remotePlayerConnectionHandler.getConnectedPlayer(msg);
-			if (serverPlayerState == null) return;
-			
-			if (serverPlayerState.serverPlayer.getLevel() != this.serverLevelWrapper)
-				return;
-			
-			if (!msg.isLevelValid(this.serverLevelWrapper))
-			{
-				msg.sendResponse(new InvalidLevelException("Invalid level"));
-				return;
-			}
-			
 			// Load files and check checksums
 			HashSet<DhSectionPos> changedPosList = new HashSet<>();
 			for (Map.Entry<DhSectionPos, Integer> entry : msg.checksums.entrySet())
@@ -179,7 +146,7 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 			}
 			
 			msg.sendResponse(new FullDataChangeSummaryResponseMessage(changedPosList));
-		});
+		}));
 		
 		this.eventSource.registerHandler(CancelMessage.class, msg ->
 		{
