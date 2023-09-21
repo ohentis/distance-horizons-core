@@ -187,19 +187,17 @@ public class LodRenderer
 			return;
 		}
 		
-		if (IRIS_ACCESSOR != null && IRIS_ACCESSOR.isRenderingShadowPass())
-		{
-			// We do not have a wy to properly render shader shadow pass, since they can
-			// and often do change the projection entirely, as well as the output usage.
-			
-			//EVENT_LOGGER.debug("Skipping shadow pass render.");
-			return;
-		}
-		
-		
-		
 		try
 		{
+			if (IRIS_ACCESSOR != null && IRIS_ACCESSOR.isRenderingShadowPass())
+			{
+				// We do not have a wy to properly render shader shadow pass, since they can
+				// and often do change the projection entirely, as well as the output usage.
+				
+				//EVENT_LOGGER.debug("Skipping shadow pass render.");
+				return;
+			}
+			
 			// get MC's shader program and save MC's render state so we can restore it later
 			LagSpikeCatcher drawSaveGLState = new LagSpikeCatcher();
 			GLState minecraftGlState = new GLState();
