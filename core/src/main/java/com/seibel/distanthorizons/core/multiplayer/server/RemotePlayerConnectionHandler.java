@@ -1,14 +1,17 @@
-package com.seibel.distanthorizons.core.multiplayer;
+package com.seibel.distanthorizons.core.multiplayer.server;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.seibel.distanthorizons.core.level.DhServerLevel;
+import com.seibel.distanthorizons.core.multiplayer.config.MultiplayerConfig;
+import com.seibel.distanthorizons.core.multiplayer.config.MultiplayerConfigChangeListener;
 import com.seibel.distanthorizons.core.network.ScopedNetworkEventSource;
 import com.seibel.distanthorizons.core.network.NetworkServer;
 import com.seibel.distanthorizons.core.network.messages.base.ILevelRelatedMessage;
 import com.seibel.distanthorizons.core.network.messages.base.AckMessage;
 import com.seibel.distanthorizons.core.network.messages.base.CloseEvent;
 import com.seibel.distanthorizons.core.network.messages.session.PlayerUUIDMessage;
+import com.seibel.distanthorizons.core.network.messages.session.RemotePlayerConfigMessage;
 import com.seibel.distanthorizons.core.network.protocol.NetworkMessage;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import io.netty.channel.ChannelHandlerContext;
@@ -25,6 +28,8 @@ public class RemotePlayerConnectionHandler implements Closeable
 	private final ScopedNetworkEventSource<NetworkServer> eventSource;
 	private final HashMap<UUID, ServerPlayerState> playersByUUID = new HashMap<>();
 	private final BiMap<ChannelHandlerContext, ServerPlayerState> playersByConnection = HashBiMap.create();
+	
+	private final MultiplayerConfigChangeListener configChangeListener = new MultiplayerConfigChangeListener(this::onConfigChanged); 
 	
 	public NetworkServer server() { return this.eventSource.parent; }
 	
@@ -59,6 +64,12 @@ public class RemotePlayerConnectionHandler implements Closeable
 			playerUUIDMessage.sendResponse(new AckMessage());
 		});
 		
+		this.eventSource.registerHandler(RemotePlayerConfigMessage.class, this.connectedPlayersOnly((remotePlayerConfigMessage, serverPlayerState) ->
+		{
+			serverPlayerState.config.clientConfig = (MultiplayerConfig) remotePlayerConfigMessage.payload;
+			serverPlayerState.channelContext.writeAndFlush(new RemotePlayerConfigMessage(serverPlayerState.config));
+		}));
+		
 		this.eventSource.registerHandler(CloseEvent.class, closeEvent ->
 		{
 			ServerPlayerState dhPlayer = this.playersByConnection.remove(closeEvent.getChannelContext());
@@ -67,6 +78,12 @@ public class RemotePlayerConnectionHandler implements Closeable
 				dhPlayer.channelContext = null;
 			}
 		});
+	}
+	
+	private void onConfigChanged()
+	{
+		for (ServerPlayerState serverPlayerState : this.getConnectedPlayers())
+			serverPlayerState.channelContext.writeAndFlush(new RemotePlayerConfigMessage(serverPlayerState.config));
 	}
 	
 	public <T extends NetworkMessage> Consumer<T> connectedPlayersOnly(BiConsumer<T, ServerPlayerState> next)
@@ -131,6 +148,7 @@ public class RemotePlayerConnectionHandler implements Closeable
 	@Override
 	public void close()
 	{
+		this.configChangeListener.close();
 		this.eventSource.close();
 		this.server().close();
 	}

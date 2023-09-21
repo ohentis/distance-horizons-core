@@ -19,15 +19,11 @@
 
 package com.seibel.distanthorizons.core.world;
 
-import com.seibel.distanthorizons.core.config.AppliedConfigState;
-import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.file.structure.LocalSaveStructure;
 import com.seibel.distanthorizons.core.level.DhServerLevel;
 import com.seibel.distanthorizons.core.level.IDhLevel;
-import com.seibel.distanthorizons.core.multiplayer.ServerPlayerState;
-import com.seibel.distanthorizons.core.multiplayer.RemotePlayerConnectionHandler;
+import com.seibel.distanthorizons.core.multiplayer.server.RemotePlayerConnectionHandler;
 import com.seibel.distanthorizons.core.network.NetworkServer;
-import com.seibel.distanthorizons.core.network.messages.session.RemotePlayerConfigMessage;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
@@ -41,10 +37,7 @@ public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 {
 	private final HashMap<IServerLevelWrapper, DhServerLevel> levels;
 	public final LocalSaveStructure saveStructure;
-
 	private final RemotePlayerConnectionHandler remotePlayerConnectionHandler;
-	private final AppliedConfigState<Integer> rateLimitConfig = new AppliedConfigState<>(Config.Client.Advanced.Multiplayer.serverNetworkingRateLimit);
-	
 	
 	
 	//==============//
@@ -61,20 +54,8 @@ public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 		// TODO move to global payload once server specific configs are implemented
 		NetworkServer networkServer = new NetworkServer(25049);
 		this.remotePlayerConnectionHandler = new RemotePlayerConnectionHandler(networkServer);
-		this.registerNetworkHandlers();
 
 		LOGGER.info("Started "+DhServerWorld.class.getSimpleName()+" of type "+this.environment);
-	}
-	
-	private void registerNetworkHandlers()
-	{
-		this.remotePlayerConnectionHandler.server().registerHandler(RemotePlayerConfigMessage.class, remotePlayerConfigMessage ->
-		{
-			this.remotePlayerConnectionHandler.getConnectedPlayer(remotePlayerConfigMessage).config = remotePlayerConfigMessage.payload;
-			
-			remotePlayerConfigMessage.payload.fullDataRequestRateLimit = Math.min(rateLimitConfig.get(), remotePlayerConfigMessage.payload.fullDataRequestRateLimit);
-			remotePlayerConfigMessage.sendResponse(remotePlayerConfigMessage);
-		});
 	}
 
 	
@@ -95,8 +76,8 @@ public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 	}
 	public void changePlayerLevel(IServerPlayerWrapper player, IServerLevelWrapper origin, IServerLevelWrapper dest)
 	{
-		this.getLevel(origin).removePlayer(player);
 		this.getLevel(dest).addPlayer(player);
+		this.getLevel(origin).removePlayer(player);
 	}
 
 	@Override
@@ -147,15 +128,6 @@ public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 
 	public void serverTick() {
 		this.levels.values().forEach(DhServerLevel::serverTick);
-		
-		if (rateLimitConfig.pollNewValue())
-		{
-			for (ServerPlayerState serverPlayerState : this.remotePlayerConnectionHandler.getConnectedPlayers())
-			{
-				serverPlayerState.config.fullDataRequestRateLimit = rateLimitConfig.get();
-				serverPlayerState.channelContext.writeAndFlush(new RemotePlayerConfigMessage(serverPlayerState.config));
-			}
-		}
 	}
 
 	public void doWorldGen() {

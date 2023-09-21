@@ -24,7 +24,7 @@ import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.file.structure.ClientOnlySaveStructure;
 import com.seibel.distanthorizons.core.level.DhClientLevel;
 import com.seibel.distanthorizons.core.level.IDhLevel;
-import com.seibel.distanthorizons.core.multiplayer.ClientNetworkState;
+import com.seibel.distanthorizons.core.multiplayer.client.ClientNetworkState;
 import com.seibel.distanthorizons.core.network.NetworkClient;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
 import com.seibel.distanthorizons.core.util.objects.EventLoop;
@@ -63,7 +63,7 @@ public class DhClientWorld extends AbstractDhWorld implements IDhClientWorld
 		this.saveStructure = new ClientOnlySaveStructure();
 		this.levels = new ConcurrentHashMap<>();
 		
-		if (Config.Client.Advanced.Multiplayer.enableServerNetworking.get())
+		if (Config.Client.Advanced.Multiplayer.ServerNetworking.enableServerNetworking.get())
 		{
 			// TODO server specific configs
 			NetworkClient networkClient = new NetworkClient(MC_CLIENT.getCurrentServerIp(), 25049);

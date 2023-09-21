@@ -8,7 +8,8 @@ import com.seibel.distanthorizons.core.generation.tasks.WorldGenResult;
 import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
-import com.seibel.distanthorizons.core.multiplayer.ClientNetworkState;
+import com.seibel.distanthorizons.core.multiplayer.client.ClientNetworkState;
+import com.seibel.distanthorizons.core.network.exceptions.InvalidLevelException;
 import com.seibel.distanthorizons.core.network.exceptions.RateLimitedException;
 import com.seibel.distanthorizons.core.network.messages.fullData.generation.FullDataSourceRequestMessage;
 import com.seibel.distanthorizons.core.network.messages.fullData.generation.FullDataSourceResponseMessage;
@@ -178,13 +179,8 @@ public class WorldRemoteGenerationQueue implements IWorldGenerationQueue, IDebug
 				
 				waitingTasks.remove(sectionPos);
 				LOGGER.debug("FullDataSourceResponseMessage " + sectionPos);
+				
 				CompleteFullDataSource fullDataSource = response.getFullDataSource(sectionPos, level);
-				
-				// FIXME Add dimension context to request instead
-				// Check is dimension has been switched - received data may no longer be relevant
-				if (fullDataSource == null)
-					throw new CancellationException();
-				
 				Consumer<ChunkSizedFullDataAccessor> chunkDataConsumer = entry.tracker.getChunkDataConsumer();
 				
 				// FIXME Why keeping a reference in first place
@@ -192,6 +188,10 @@ public class WorldRemoteGenerationQueue implements IWorldGenerationQueue, IDebug
 					return entry.future.cancel(false);
 				
 				fullDataSource.splitIntoChunkSizedAccessors(chunkDataConsumer);
+			}
+			catch (InvalidLevelException ignored)
+			{
+				// We're too late
 			}
 			catch (ChannelException | RateLimitedException e)
 			{

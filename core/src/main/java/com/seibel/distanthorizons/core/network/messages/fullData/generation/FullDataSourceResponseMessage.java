@@ -73,10 +73,8 @@ public class FullDataSourceResponseMessage extends FutureTrackableNetworkMessage
 		this.dataBuffer = in.readBytes(in.readInt());
 	}
 	
-	@Nullable
 	public CompleteFullDataSource getFullDataSource(DhSectionPos pos, IDhLevel level) throws IOException, InterruptedException
 	{
-		
 		try (ByteBufInputStream inputStream = new ByteBufInputStream(dataBuffer))
 		{
 			return fullDataSourceLoader.loadData(pos, new DhDataInputStream(inputStream), level);

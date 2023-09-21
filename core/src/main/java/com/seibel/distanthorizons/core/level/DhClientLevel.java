@@ -26,7 +26,7 @@ import com.seibel.distanthorizons.core.file.fullDatafile.RemoteFullDataFileHandl
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.generation.WorldRemoteGenerationQueue;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.multiplayer.ClientNetworkState;
+import com.seibel.distanthorizons.core.multiplayer.client.ClientNetworkState;
 import com.seibel.distanthorizons.core.network.NetworkClient;
 import com.seibel.distanthorizons.core.network.ScopedNetworkEventSource;
 import com.seibel.distanthorizons.core.network.messages.fullData.updates.FullDataPartialUpdateMessage;

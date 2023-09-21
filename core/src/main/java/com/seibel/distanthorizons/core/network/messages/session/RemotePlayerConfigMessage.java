@@ -19,23 +19,24 @@
 
 package com.seibel.distanthorizons.core.network.messages.session;
 
-import com.seibel.distanthorizons.core.multiplayer.MultiplayerConfig;
-import com.seibel.distanthorizons.core.network.protocol.FutureTrackableNetworkMessage;
+import com.seibel.distanthorizons.core.multiplayer.config.AbstractMultiplayerConfig;
+import com.seibel.distanthorizons.core.multiplayer.config.MultiplayerConfig;
 import com.seibel.distanthorizons.core.network.protocol.INetworkObject;
+import com.seibel.distanthorizons.core.network.protocol.NetworkMessage;
 import io.netty.buffer.ByteBuf;
 
-public class RemotePlayerConfigMessage extends FutureTrackableNetworkMessage
+public class RemotePlayerConfigMessage extends NetworkMessage
 {
-    public MultiplayerConfig payload;
+    public AbstractMultiplayerConfig payload;
 
     public RemotePlayerConfigMessage() { }
-    public RemotePlayerConfigMessage(MultiplayerConfig payload) { this.payload = payload; }
+    public RemotePlayerConfigMessage(AbstractMultiplayerConfig payload) { this.payload = payload; }
 	
     @Override
-    public void encode0(ByteBuf out) { this.payload.encode(out); }
+    public void encode(ByteBuf out) { this.payload.encode(out); }
 	
     @Override
-    public void decode0(ByteBuf in) { this.payload = INetworkObject.decodeStatic(new MultiplayerConfig(), in); }
+    public void decode(ByteBuf in) { this.payload = INetworkObject.decodeStatic(new MultiplayerConfig(), in); }
 	
 	@Override public String toString()
 	{

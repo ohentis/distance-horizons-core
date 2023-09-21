@@ -1,7 +1,8 @@
-package com.seibel.distanthorizons.core.multiplayer;
+package com.seibel.distanthorizons.core.multiplayer.client;
 
-import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.multiplayer.config.MultiplayerConfig;
+import com.seibel.distanthorizons.core.multiplayer.config.MultiplayerConfigChangeListener;
 import com.seibel.distanthorizons.core.network.ScopedNetworkEventSource;
 import com.seibel.distanthorizons.core.network.NetworkClient;
 import com.seibel.distanthorizons.core.network.messages.base.AckMessage;
@@ -20,6 +21,7 @@ public class ClientNetworkState implements Closeable
 	private final NetworkClient client;
 	private final UUID playerUUID;
 	public MultiplayerConfig config = new MultiplayerConfig();
+	private final MultiplayerConfigChangeListener configChangeListener = new MultiplayerConfigChangeListener(this::onConfigChanged);
 	
 	/**
 	 * Returns the client used by this instance. <p>
@@ -31,12 +33,13 @@ public class ClientNetworkState implements Closeable
 	 * Constructs a new instance.
 	 *
 	 * @param networkClient Client to use. It is assumed that this client will be at full control by this instance.
-	 * @param playerUUID UUID of a player connected
+	 * @param playerUUID UUID of a player connected.
 	 */
 	public ClientNetworkState(NetworkClient networkClient, UUID playerUUID)
 	{
 		this.client = networkClient;
 		this.playerUUID = playerUUID;
+		
 		this.registerNetworkHandlers();
 		this.client.startConnecting();
 	}
@@ -48,23 +51,28 @@ public class ClientNetworkState implements Closeable
 			LOGGER.info("Connected to server: "+helloMessage.getChannelContext().channel().remoteAddress());
 			
 			this.getClient().sendRequest(new PlayerUUIDMessage(playerUUID), AckMessage.class)
-					.thenCompose(ack -> this.getClient().sendRequest(new RemotePlayerConfigMessage(new MultiplayerConfig()
-					{{
-						renderDistance = Config.Client.Advanced.Graphics.Quality.lodChunkRenderDistance.get();
-						fullDataRequestRateLimit = Config.Client.Advanced.Multiplayer.serverNetworkingRateLimit.get();
-					}}), RemotePlayerConfigMessage.class))
-					.thenAccept(msg -> {
-						this.config = msg.payload;
-					})
+					.thenAccept(ack -> this.getClient().sendMessage(new RemotePlayerConfigMessage(new MultiplayerConfig())))
 					.exceptionally(throwable -> {
 						LOGGER.error("Error while fetching server's config", throwable);
 						return null;
 					});
 		});
+		
+		this.client.registerHandler(RemotePlayerConfigMessage.class, msg ->
+		{
+			LOGGER.info("Connection config was changed: " + msg.payload);
+			this.config = (MultiplayerConfig) msg.payload;
+		});
+	}
+	
+	private void onConfigChanged()
+	{
+		this.getClient().sendMessage(new RemotePlayerConfigMessage(new MultiplayerConfig()));
 	}
 	
 	public void close()
 	{
+		this.configChangeListener.close();
 		this.client.close();
 	}
 }

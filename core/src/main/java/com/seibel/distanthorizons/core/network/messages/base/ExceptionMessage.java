@@ -22,6 +22,7 @@ package com.seibel.distanthorizons.core.network.messages.base;
 import com.seibel.distanthorizons.core.network.exceptions.InvalidLevelException;
 import com.seibel.distanthorizons.core.network.exceptions.InvalidSectionPosException;
 import com.seibel.distanthorizons.core.network.exceptions.RateLimitedException;
+import com.seibel.distanthorizons.core.network.exceptions.RequestRejectedException;
 import com.seibel.distanthorizons.core.network.protocol.FutureTrackableNetworkMessage;
 import io.netty.buffer.ByteBuf;
 
@@ -36,6 +37,7 @@ public class ExceptionMessage extends FutureTrackableNetworkMessage
 		add(RateLimitedException.class);
 		add(InvalidLevelException.class);
 		add(InvalidSectionPosException.class);
+		add(RequestRejectedException.class);
 	}};
 	
 	public Exception exception;

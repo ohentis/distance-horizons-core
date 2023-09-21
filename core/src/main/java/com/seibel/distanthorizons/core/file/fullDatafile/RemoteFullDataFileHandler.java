@@ -19,6 +19,7 @@
 
 package com.seibel.distanthorizons.core.file.fullDatafile;
 
+import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.CompleteFullDataSource;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
@@ -26,12 +27,12 @@ import com.seibel.distanthorizons.core.generation.IWorldGenerationQueue;
 import com.seibel.distanthorizons.core.generation.tasks.IWorldGenTaskTracker;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.multiplayer.ClientNetworkState;
+import com.seibel.distanthorizons.core.multiplayer.client.ClientNetworkState;
 import com.seibel.distanthorizons.core.network.exceptions.InvalidLevelException;
 import com.seibel.distanthorizons.core.network.exceptions.InvalidSectionPosException;
+import com.seibel.distanthorizons.core.network.exceptions.RequestRejectedException;
 import com.seibel.distanthorizons.core.network.messages.fullData.updates.FullDataChangeSummaryRequestMessage;
 import com.seibel.distanthorizons.core.network.messages.fullData.updates.FullDataChangeSummaryResponseMessage;
-import com.seibel.distanthorizons.core.pos.DhLodPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -144,11 +145,10 @@ public class RemoteFullDataFileHandler extends GeneratedFullDataFileHandler
 	@Override
 	public FullDataMetaFile getFileIfExist(DhSectionPos pos)
 	{
-		// This feature is broken - same data may produce different hashes, apparently
-		if (true)
+		if (this.networkState == null || !this.isFileUnloaded(pos))
 			return super.getFileIfExist(pos);
 		
-		if (this.networkState == null || !this.isFileUnloaded(pos))
+		if (!this.networkState.config.postRelogUpdateEnabled)
 			return super.getFileIfExist(pos);
 		
 		FullDataMetaFile metaFile = super.getFileIfExist(pos);

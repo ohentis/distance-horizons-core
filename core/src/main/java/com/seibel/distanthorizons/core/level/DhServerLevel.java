@@ -19,7 +19,6 @@
 
 package com.seibel.distanthorizons.core.level;
 
-import com.seibel.distanthorizons.core.config.AppliedConfigState;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.CompleteFullDataSource;
@@ -28,13 +27,13 @@ import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.I
 import com.seibel.distanthorizons.core.file.fullDatafile.FullDataMetaFile;
 import com.seibel.distanthorizons.core.file.fullDatafile.IFullDataSourceProvider;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
-import com.seibel.distanthorizons.core.multiplayer.ServerPlayerState;
-import com.seibel.distanthorizons.core.multiplayer.RemotePlayerConnectionHandler;
+import com.seibel.distanthorizons.core.multiplayer.server.ServerPlayerState;
+import com.seibel.distanthorizons.core.multiplayer.server.RemotePlayerConnectionHandler;
 import com.seibel.distanthorizons.core.network.ScopedNetworkEventSource;
 import com.seibel.distanthorizons.core.network.NetworkServer;
-import com.seibel.distanthorizons.core.network.exceptions.InvalidLevelException;
 import com.seibel.distanthorizons.core.network.exceptions.InvalidSectionPosException;
 import com.seibel.distanthorizons.core.network.exceptions.RateLimitedException;
+import com.seibel.distanthorizons.core.network.exceptions.RequestRejectedException;
 import com.seibel.distanthorizons.core.network.messages.base.CancelMessage;
 import com.seibel.distanthorizons.core.network.messages.fullData.generation.FullDataSourceRequestMessage;
 import com.seibel.distanthorizons.core.network.messages.fullData.generation.FullDataSourceResponseMessage;
@@ -72,7 +71,6 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 	private final LinkedBlockingQueue<IServerPlayerWrapper> worldGenLoopingQueue = new LinkedBlockingQueue<>();
 	private final ConcurrentMap<DhSectionPos, IncompleteDataSourceEntry> incompleteDataSources = new ConcurrentHashMap<>();
 	private final ConcurrentMap<Long, IncompleteDataSourceEntry> fullDataRequests = new ConcurrentHashMap<>();
-	private final AppliedConfigState<Integer> rateLimitConfig = new AppliedConfigState<>(Config.Client.Advanced.Multiplayer.serverNetworkingRateLimit);
 	
 	
 	public DhServerLevel(AbstractSaveStructure saveStructure, IServerLevelWrapper serverLevelWrapper, RemotePlayerConnectionHandler remotePlayerConnectionHandler)
@@ -94,10 +92,10 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 	{
 		this.eventSource.registerHandler(FullDataSourceRequestMessage.class, remotePlayerConnectionHandler.currentLevelOnly(this, (msg, serverPlayerState) ->
 		{
-			if (serverPlayerState.pendingFullDataRequests.incrementAndGet() > rateLimitConfig.get())
+			if (serverPlayerState.pendingFullDataRequests.incrementAndGet() > serverPlayerState.config.getFullDataRequestRateLimit())
 			{
 				serverPlayerState.pendingFullDataRequests.decrementAndGet();
-				msg.sendResponse(new RateLimitedException("Max concurrent requests: " + rateLimitConfig.get()));
+				msg.sendResponse(new RateLimitedException("Max concurrent requests: " + serverPlayerState.config.getFullDataRequestRateLimit()));
 				return;
 			}
 			
@@ -110,7 +108,7 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 					});
 					return newEntry;
 				});
-				// If this fails, current entry is being drained and need create another one
+				// If this fails, current entry is being drained and need to create another one
 				if (entry.requestCollectionSemaphore.tryAcquire())
 				{
 					fullDataRequests.put(msg.futureId, entry);
@@ -130,6 +128,12 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 		
 		this.eventSource.registerHandler(FullDataChangeSummaryRequestMessage.class, remotePlayerConnectionHandler.currentLevelOnly(this, (msg, serverPlayerState) ->
 		{
+			if (!Config.Client.Advanced.Multiplayer.ServerNetworking.enablePostRelogUpdate.get())
+			{
+				msg.sendResponse(new RequestRejectedException("Operation is disabled from config."));
+				return;
+			}
+			
 			// Load files and check checksums
 			HashSet<DhSectionPos> changedPosList = new HashSet<>();
 			for (Map.Entry<DhSectionPos, Integer> entry : msg.checksums.entrySet())
@@ -226,11 +230,16 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 		if (future == null)
 			return null;
 		
+		if (!Config.Client.Advanced.Multiplayer.ServerNetworking.enableRealTimeUpdates.get())
+			return future;
+		
 		future.thenAccept(chunkSizedFullDataAccessor ->
 		{
 			for (ServerPlayerState serverPlayerState : remotePlayerConnectionHandler.getConnectedPlayers())
 			{
-				if (chunk.getChunkPos().distance(new DhChunkPos(serverPlayerState.serverPlayer.getPosition())) <= serverPlayerState.config.renderDistance)
+				if (serverPlayerState.config.isRealTimeUpdatesEnabled()) continue;
+				
+				if (chunk.getChunkPos().distance(new DhChunkPos(serverPlayerState.serverPlayer.getPosition())) <= serverPlayerState.config.getRenderDistance())
 					serverPlayerState.channelContext.writeAndFlush(new FullDataPartialUpdateMessage(chunkSizedFullDataAccessor, this));
 			}
 		});

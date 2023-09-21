@@ -26,6 +26,7 @@ import com.seibel.distanthorizons.core.network.messages.base.HelloMessage;
 import com.seibel.distanthorizons.core.network.protocol.FutureTrackableNetworkMessage;
 import com.seibel.distanthorizons.core.network.protocol.MessageHandler;
 import com.seibel.distanthorizons.core.network.protocol.NetworkChannelInitializer;
+import com.seibel.distanthorizons.core.network.protocol.NetworkMessage;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -131,7 +132,7 @@ public class NetworkClient extends NetworkEventSource implements AutoCloseable
 				return;
 			}
 			
-			channel.writeAndFlush(new HelloMessage());
+			sendMessage(new HelloMessage());
 			ready = true;
         });
 		
@@ -167,6 +168,11 @@ public class NetworkClient extends NetworkEventSource implements AutoCloseable
 			}
         });
     }
+	
+	public final void sendMessage(NetworkMessage msg)
+	{
+		this.channel.writeAndFlush(msg);
+	}
 	
 	public final <TResponse extends FutureTrackableNetworkMessage> CompletableFuture<TResponse> sendRequest(FutureTrackableNetworkMessage msg, Class<TResponse> responseClass)
 	{
