@@ -36,10 +36,7 @@ public class FullDataArrayAccessor implements IFullDataAccessor
 {
 	protected final FullDataPointIdMap mapping;
 	
-	/**
-	 * A flattened 2D array (for the X and Z directions) containing an array for the Y direction.
-	 * TODO the flattened array is probably to reduce garbage collection overhead, but is doing it this way worth while? Having a 3D array would be much easier to understand
-	 */
+	/** A flattened 2D array (for the X and Z directions) containing an array for the Y direction. */
 	protected final long[][] dataArrays;
 	
 	/** measured in data points */
@@ -133,20 +130,24 @@ public class FullDataArrayAccessor implements IFullDataAccessor
 	/**
 	 * Takes a higher detail {@link FullDataArrayAccessor}'s and converts the data to a lower detail level.
 	 *
-	 * @param fullDataAccessor must be larger than this {@link FullDataArrayAccessor} and its width must a power of two larger (example: this.width = 4, other.width = 8)
+	 * @param incomingFullDataAccessor must be larger than this {@link FullDataArrayAccessor} and its width must a power of two larger (example: this.width = 4, other.width = 8)
 	 */
-	public void downsampleFrom(FullDataArrayAccessor fullDataAccessor)
+	public void downsampleFrom(FullDataArrayAccessor incomingFullDataAccessor)
 	{
 		// validate that the incoming data isn't smaller than this accessor
-		LodUtil.assertTrue(fullDataAccessor.width >= this.width && fullDataAccessor.width % this.width == 0);
+		LodUtil.assertTrue(incomingFullDataAccessor.width >= this.width && incomingFullDataAccessor.width % this.width == 0);
 		
-		int dataPointsPerWidthUnit = fullDataAccessor.width / this.width;
+		int dataPointsPerWidthUnit = incomingFullDataAccessor.width / this.width;
 		for (int xOffset = 0; xOffset < this.width; xOffset++)
 		{
 			for (int zOffset = 0; zOffset < this.width; zOffset++)
 			{
+				FullDataArrayAccessor subView = incomingFullDataAccessor.subView(dataPointsPerWidthUnit, 
+						xOffset * dataPointsPerWidthUnit, 
+						zOffset * dataPointsPerWidthUnit);
+				
 				SingleColumnFullDataAccessor column = this.get(xOffset, zOffset);
-				column.downsampleFrom(fullDataAccessor.subView(dataPointsPerWidthUnit, xOffset * dataPointsPerWidthUnit, zOffset * dataPointsPerWidthUnit));
+				column.downsampleFrom(subView);
 			}
 		}
 	}

@@ -22,6 +22,7 @@ package com.seibel.distanthorizons.core.render.renderer;
 import com.seibel.distanthorizons.api.enums.config.EGpuUploadMethod;
 import com.seibel.distanthorizons.api.enums.config.ELoggerMode;
 import com.seibel.distanthorizons.core.config.Config;
+import com.seibel.distanthorizons.core.config.types.ConfigEntry;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
 import com.seibel.distanthorizons.core.logging.ConfigBasedSpamLogger;
@@ -39,6 +40,7 @@ import com.seibel.distanthorizons.coreapi.util.math.Vec3d;
 import com.seibel.distanthorizons.coreapi.util.math.Vec3f;
 import org.apache.logging.log4j.LogManager;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.lwjgl.opengl.GL32;
 
 import java.awt.*;
@@ -52,13 +54,30 @@ import java.util.concurrent.PriorityBlockingQueue;
 public class DebugRenderer
 {
 	public static DebugRenderer INSTANCE = new DebugRenderer();
-	public DebugRenderer() { }
 	
 	public static final ConfigBasedLogger logger = new ConfigBasedLogger(
 			LogManager.getLogger(TestRenderer.class), () -> ELoggerMode.LOG_ALL_TO_CHAT);
 	public static final ConfigBasedSpamLogger spamLogger = new ConfigBasedSpamLogger(
 			LogManager.getLogger(TestRenderer.class), () -> ELoggerMode.LOG_ALL_TO_CHAT, 1);
 	private static final IMinecraftRenderWrapper MC_RENDER = SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
+	
+	
+	// rendering setup
+	private ShaderProgram basicShader;
+	private GLVertexBuffer boxBuffer;
+	private GLElementBuffer boxOutlineBuffer;
+	private VertexAttribute va;
+	private boolean init = false;
+	
+	// used when rendering
+	private Mat4f transformThiFrame;
+	private Vec3f camPosFloatThisFrame;
+	
+	
+	private final RendererLists rendererLists = new RendererLists();
+	private final PriorityBlockingQueue<BoxParticle> particles = new PriorityBlockingQueue<>();
+	
+	
 	
 	// A box from 0,0,0 to 1,1,1
 	private static final float[] box_vertices = {
@@ -89,6 +108,145 @@ public class DebugRenderer
 			2, 6,
 			3, 7,
 	};
+	
+	
+	
+	//=============//
+	// constructor //
+	//=============//
+	
+	public DebugRenderer() { }
+	
+	
+	
+	//==============//
+	// registration //
+	//==============//
+	
+	public static void makeParticle(BoxParticle particle)
+	{
+		if (INSTANCE != null && Config.Client.Advanced.Debugging.DebugWireframe.enableRendering.get())
+		{
+			INSTANCE.particles.add(particle);
+		}
+	}
+	
+	public static void register(IDebugRenderable renderable, ConfigEntry<Boolean> config) { if (INSTANCE != null) { INSTANCE.addRenderer(renderable, config); } }
+	public void addRenderer(IDebugRenderable renderable, ConfigEntry<Boolean> config) { this.rendererLists.addRenderable(renderable, config); }
+	
+	public static void unregister(IDebugRenderable renderable, ConfigEntry<Boolean> config) { if (INSTANCE != null) { INSTANCE.removeRenderer(renderable, config); } }
+	private void removeRenderer(IDebugRenderable renderable, ConfigEntry<Boolean> config) { this.rendererLists.removeRenderable(renderable, config); }
+	
+	public static void clearRenderables() { INSTANCE.rendererLists.clearRenderables(); }
+	
+	
+	
+	
+	
+	//===========//
+	// rendering //
+	//===========//
+	
+	public void init()
+	{
+		if (this.init)
+		{
+			return;
+		}
+		
+		this.init = true;
+		this.va = VertexAttribute.create();
+		this.va.bind();
+		// Pos
+		this.va.setVertexAttribute(0, 0, VertexAttribute.VertexPointer.addVec3Pointer(false));
+		this.va.completeAndCheck(Float.BYTES * 3);
+		this.basicShader = new ShaderProgram("shaders/debug/vert.vert", "shaders/debug/frag.frag",
+				"fragColor", new String[]{"vPosition"});
+		this.createBuffer();
+	}
+	
+	private void createBuffer()
+	{
+		ByteBuffer buffer = ByteBuffer.allocateDirect(box_vertices.length * Float.BYTES);
+		buffer.order(ByteOrder.nativeOrder());
+		buffer.asFloatBuffer().put(box_vertices);
+		buffer.rewind();
+		
+		this.boxBuffer = new GLVertexBuffer(false);
+		this.boxBuffer.bind();
+		this.boxBuffer.uploadBuffer(buffer, 8, EGpuUploadMethod.DATA, box_vertices.length * Float.BYTES);
+		
+		buffer = ByteBuffer.allocateDirect(box_outline_indices.length * Integer.BYTES);
+		buffer.order(ByteOrder.nativeOrder());
+		buffer.asIntBuffer().put(box_outline_indices);
+		buffer.rewind();
+		
+		this.boxOutlineBuffer = new GLElementBuffer(false);
+		this.boxOutlineBuffer.bind();
+		this.boxOutlineBuffer.uploadBuffer(buffer, EGpuUploadMethod.DATA, box_outline_indices.length * Integer.BYTES, GL32.GL_STATIC_DRAW);
+	}
+	
+	public void render(Mat4f transform)
+	{
+		this.transformThiFrame = transform;
+		Vec3d camPos = MC_RENDER.getCameraExactPosition();
+		camPosFloatThisFrame = new Vec3f((float) camPos.x, (float) camPos.y, (float) camPos.z);
+		
+		GLState glState = new GLState();
+		this.init();
+		
+		GL32.glBindFramebuffer(GL32.GL_FRAMEBUFFER, MC_RENDER.getTargetFrameBuffer());
+		GL32.glViewport(0, 0, MC_RENDER.getTargetFrameBufferViewportWidth(), MC_RENDER.getTargetFrameBufferViewportHeight());
+		GL32.glPolygonMode(GL32.GL_FRONT_AND_BACK, GL32.GL_LINE);
+		//GL32.glLineWidth(2);
+		GL32.glEnable(GL32.GL_DEPTH_TEST);
+		GL32.glDisable(GL32.GL_STENCIL_TEST);
+		GL32.glDisable(GL32.GL_BLEND);
+		GL32.glDisable(GL32.GL_SCISSOR_TEST);
+		
+		this.basicShader.bind();
+		this.va.bind();
+		this.va.bindBufferToAllBindingPoint(this.boxBuffer.getId());
+		
+		this.boxOutlineBuffer.bind();
+		
+		this.rendererLists.render(this);
+		
+		
+		BoxParticle head = null;
+		while ((head = this.particles.poll()) != null && head.isDead(System.nanoTime()))
+		{
+		}
+		if (head != null)
+		{
+			this.particles.add(head);
+		}
+		
+		for (BoxParticle particle : this.particles)
+		{
+			this.renderBox(particle.getBox());
+		}
+		
+		
+		glState.restore();
+	}
+	
+	public void renderBox(Box box)
+	{
+		Mat4f boxTransform = Mat4f.createTranslateMatrix(box.a.x - this.camPosFloatThisFrame.x, box.a.y - this.camPosFloatThisFrame.y, box.a.z - this.camPosFloatThisFrame.z);
+		boxTransform.multiply(Mat4f.createScaleMatrix(box.b.x - box.a.x, box.b.y - box.a.y, box.b.z - box.a.z));
+		Mat4f t = this.transformThiFrame.copy();
+		t.multiply(boxTransform);
+		this.basicShader.setUniform(this.basicShader.getUniformLocation("transform"), t);
+		this.basicShader.setUniform(this.basicShader.getUniformLocation("uColor"), box.color);
+		GL32.glDrawElements(GL32.GL_LINES, box_outline_indices.length, GL32.GL_UNSIGNED_INT, 0);
+	}
+	
+	
+	
+	//================//
+	// helper classes //
+	//================//
 	
 	public static final class Box
 	{
@@ -149,14 +307,6 @@ public class DebugRenderer
 		
 	}
 	
-	ShaderProgram basicShader;
-	GLVertexBuffer boxBuffer;
-	GLElementBuffer boxOutlineBuffer;
-	VertexAttribute va;
-	boolean init = false;
-	
-	private final LinkedList<WeakReference<IDebugRenderable>> renderers = new LinkedList<>();
-	
 	public static final class BoxParticle implements Comparable<BoxParticle>
 	{
 		public Box box;
@@ -172,35 +322,27 @@ public class DebugRenderer
 			this.yChange = yChange;
 		}
 		
-		public BoxParticle(Box box, long ns, float yChange)
-		{
-			this(box, System.nanoTime(), ns, yChange);
-		}
+		public BoxParticle(Box box, long nanoSecondDuratoin, float yChange) { this(box, System.nanoTime(), nanoSecondDuratoin, yChange); }
 		
-		public BoxParticle(Box box, double s, float yChange)
-		{
-			this(box, System.nanoTime(), (long) (s * 1000000000), yChange);
-		}
+		public BoxParticle(Box box, double secondDuration, float yChange) { this(box, System.nanoTime(), (long) (secondDuration * 1000000000), yChange); }
+		
 		
 		@Override
-		public int compareTo(@NotNull DebugRenderer.BoxParticle o)
+		public int compareTo(@NotNull BoxParticle particle)
 		{
-			return Long.compare(startTime + duration, o.startTime + o.duration);
+			return Long.compare(this.startTime + this.duration, particle.startTime + particle.duration);
 		}
 		
-		Box getBox()
+		public Box getBox()
 		{
 			long now = System.nanoTime();
-			float percent = (now - startTime) / (float) duration;
+			float percent = (now - this.startTime) / (float) this.duration;
 			percent = (float) Math.pow(percent, 4);
-			float yDiff = yChange * percent;
-			return new Box(new Vec3f(box.a.x, box.a.y + yDiff, box.a.z), new Vec3f(box.b.x, box.b.y + yDiff, box.b.z), box.color);
+			float yDiff = this.yChange * percent;
+			return new Box(new Vec3f(this.box.a.x, this.box.a.y + yDiff, this.box.a.z), new Vec3f(this.box.b.x, this.box.b.y + yDiff, this.box.b.z), this.box.color);
 		}
 		
-		boolean isDead(long time)
-		{
-			return time - startTime > duration;
-		}
+		public boolean isDead(long time) { return (time - this.startTime) > this.duration; }
 		
 	}
 	
@@ -209,17 +351,16 @@ public class DebugRenderer
 		public Box box;
 		public BoxParticle particaleOnClose;
 		
+		
 		public BoxWithLife(Box box, long ns, float yChange, Color deathColor)
 		{
 			this.box = box;
 			this.particaleOnClose = new BoxParticle(new Box(box.a, box.b, deathColor), -1, ns, yChange);
-			DebugRenderer.register(this);
+			register(this, null);
 		}
 		
-		public BoxWithLife(Box box, long ns, float yChange)
-		{
-			this(box, ns, yChange, box.color);
-		}
+		
+		public BoxWithLife(Box box, long ns, float yChange) { this(box, ns, yChange, box.color); }
 		
 		public BoxWithLife(Box box, double s, float yChange, Color deathColor)
 		{
@@ -227,46 +368,74 @@ public class DebugRenderer
 			this.particaleOnClose = new BoxParticle(new Box(box.a, box.b, deathColor), s, yChange);
 		}
 		
-		public BoxWithLife(Box box, double s, float yChange)
-		{
-			this(box, s, yChange, box.color);
-		}
+		public BoxWithLife(Box box, double s, float yChange) { this(box, s, yChange, box.color); }
 		
 		@Override
-		public void debugRender(DebugRenderer r)
-		{
-			r.renderBox(box);
-		}
+		public void debugRender(DebugRenderer renderer) { renderer.renderBox(this.box); }
 		
 		@Override
 		public void close()
 		{
-			makeParticle(new BoxParticle(particaleOnClose.getBox(), System.nanoTime(), particaleOnClose.duration, particaleOnClose.yChange));
-			DebugRenderer.unregister(this);
+			makeParticle(new BoxParticle(this.particaleOnClose.getBox(), System.nanoTime(), this.particaleOnClose.duration, this.particaleOnClose.yChange));
+			unregister(this, null);
 		}
 		
 	}
 	
-	private final PriorityBlockingQueue<BoxParticle> particles = new PriorityBlockingQueue<>();
 	
-	public static void unregister(IDebugRenderable r)
-	{
-		if (INSTANCE == null) return;
-		INSTANCE.removeRenderer(r);
-	}
 	
-	public static void makeParticle(BoxParticle particle)
+	private static class RendererLists
 	{
-		if (INSTANCE == null) return;
-		if (!Config.Client.Advanced.Debugging.DebugWireframeRendering.enableRendering.get()) return;
-		INSTANCE.particles.add(particle);
-	}
-	
-	private void removeRenderer(IDebugRenderable r)
-	{
-		synchronized (this.renderers)
+		public final LinkedList<WeakReference<IDebugRenderable>> generalRenderableList = new LinkedList<>();
+		
+		private final HashMap<ConfigEntry<Boolean>, LinkedList<WeakReference<IDebugRenderable>>> renderableListByConfig = new HashMap<>();
+		
+		
+		
+		// registration //
+		
+		public void addRenderable(IDebugRenderable renderable, @Nullable ConfigEntry<Boolean> config)
 		{
-			Iterator<WeakReference<IDebugRenderable>> iterator = this.renderers.iterator();
+			synchronized (this)
+			{
+				if (config != null)
+				{
+					if (!this.renderableListByConfig.containsKey(config))
+					{
+						this.renderableListByConfig.put(config, new LinkedList<>());
+					}
+					
+					LinkedList<WeakReference<IDebugRenderable>> renderableList = this.renderableListByConfig.get(config);
+					renderableList.add(new WeakReference<>(renderable));
+				}
+				else
+				{
+					this.generalRenderableList.add(new WeakReference<>(renderable));
+				}
+			}
+		}
+		
+		public void removeRenderable(IDebugRenderable renderable, @Nullable ConfigEntry<Boolean> config)
+		{
+			synchronized (this)
+			{
+				if (config != null)
+				{
+					if (this.renderableListByConfig.containsKey(config))
+					{
+						LinkedList<WeakReference<IDebugRenderable>> renderableList = this.renderableListByConfig.get(config);
+						this.removeRenderableFromInternalList(renderableList, renderable);	
+					}
+				}
+				else
+				{
+					this.removeRenderableFromInternalList(this.generalRenderableList, renderable);
+				}
+			}
+		}
+		private void removeRenderableFromInternalList(LinkedList<WeakReference<IDebugRenderable>> rendererList, IDebugRenderable renderable)
+		{
+			Iterator<WeakReference<IDebugRenderable>> iterator = rendererList.iterator();
 			while (iterator.hasNext())
 			{
 				WeakReference<IDebugRenderable> renderableRef = iterator.next();
@@ -275,131 +444,63 @@ public class DebugRenderer
 					iterator.remove();
 					continue;
 				}
-				if (renderableRef.get() == r)
+				
+				if (renderableRef.get() == renderable)
 				{
 					iterator.remove();
 					return;
 				}
 			}
 		}
-	}
-	
-	public static void clearRenderables() { INSTANCE.renderers.clear(); }
-	
-	public void init()
-	{
-		if (init) return;
-		init = true;
-		va = VertexAttribute.create();
-		va.bind();
-		// Pos\
-		va.setVertexAttribute(0, 0, VertexAttribute.VertexPointer.addVec3Pointer(false));
-		va.completeAndCheck(Float.BYTES * 3);
-		basicShader = new ShaderProgram("shaders/debug/vert.vert", "shaders/debug/frag.frag",
-				"fragColor", new String[]{"vPosition"});
-		createBuffer();
-	}
-	
-	private void createBuffer()
-	{
-		ByteBuffer buffer = ByteBuffer.allocateDirect(box_vertices.length * Float.BYTES);
-		buffer.order(ByteOrder.nativeOrder());
-		buffer.asFloatBuffer().put(box_vertices);
-		buffer.rewind();
-		boxBuffer = new GLVertexBuffer(false);
-		boxBuffer.bind();
-		boxBuffer.uploadBuffer(buffer, 8, EGpuUploadMethod.DATA, box_vertices.length * Float.BYTES);
 		
-		buffer = ByteBuffer.allocateDirect(box_outline_indices.length * Integer.BYTES);
-		buffer.order(ByteOrder.nativeOrder());
-		buffer.asIntBuffer().put(box_outline_indices);
-		buffer.rewind();
-		boxOutlineBuffer = new GLElementBuffer(false);
-		boxOutlineBuffer.bind();
-		boxOutlineBuffer.uploadBuffer(buffer, EGpuUploadMethod.DATA, box_outline_indices.length * Integer.BYTES, GL32.GL_STATIC_DRAW);
-	}
-	
-	public void addRenderer(IDebugRenderable r)
-	{
-		if (!Config.Client.Advanced.Debugging.DebugWireframeRendering.enableRendering.get()) return;
-		synchronized (renderers)
+		public void clearRenderables()
 		{
-			renderers.add(new WeakReference<>(r));
-		}
-	}
-	
-	public static void register(IDebugRenderable r)
-	{
-		if (INSTANCE == null) return;
-		INSTANCE.addRenderer(r);
-	}
-	
-	private Mat4f transform_this_frame;
-	private Vec3f camf;
-	
-	public void renderBox(Box box)
-	{
-		Mat4f boxTransform = Mat4f.createTranslateMatrix(box.a.x - camf.x, box.a.y - camf.y, box.a.z - camf.z);
-		boxTransform.multiply(Mat4f.createScaleMatrix(box.b.x - box.a.x, box.b.y - box.a.y, box.b.z - box.a.z));
-		Mat4f t = transform_this_frame.copy();
-		t.multiply(boxTransform);
-		basicShader.setUniform(basicShader.getUniformLocation("transform"), t);
-		basicShader.setUniform(basicShader.getUniformLocation("uColor"), box.color);
-		GL32.glDrawElements(GL32.GL_LINES, box_outline_indices.length, GL32.GL_UNSIGNED_INT, 0);
-	}
-	
-	public void render(Mat4f transform)
-	{
-		transform_this_frame = transform;
-		Vec3d cam = MC_RENDER.getCameraExactPosition();
-		camf = new Vec3f((float) cam.x, (float) cam.y, (float) cam.z);
-		
-		GLState state = new GLState();
-		init();
-		
-		GL32.glBindFramebuffer(GL32.GL_FRAMEBUFFER, MC_RENDER.getTargetFrameBuffer());
-		GL32.glViewport(0, 0, MC_RENDER.getTargetFrameBufferViewportWidth(), MC_RENDER.getTargetFrameBufferViewportHeight());
-		GL32.glPolygonMode(GL32.GL_FRONT_AND_BACK, GL32.GL_LINE);
-		//GL32.glLineWidth(2);
-		GL32.glEnable(GL32.GL_DEPTH_TEST);
-		GL32.glDisable(GL32.GL_STENCIL_TEST);
-		GL32.glDisable(GL32.GL_BLEND);
-		GL32.glDisable(GL32.GL_SCISSOR_TEST);
-		
-		basicShader.bind();
-		va.bind();
-		va.bindBufferToAllBindingPoint(boxBuffer.getId());
-		
-		boxOutlineBuffer.bind();
-		
-		synchronized (renderers)
-		{
-			Iterator<WeakReference<IDebugRenderable>> it = renderers.iterator();
-			while (it.hasNext())
+			for (ConfigEntry<Boolean> config : this.renderableListByConfig.keySet())
 			{
-				WeakReference<IDebugRenderable> ref = it.next();
-				IDebugRenderable r = ref.get();
-				if (r == null)
+				LinkedList<WeakReference<IDebugRenderable>> renderableList = this.renderableListByConfig.get(config);
+				if (config.get() && renderableList != null)
 				{
-					it.remove();
-					continue;
+					renderableList.clear();
 				}
-				r.debugRender(this);
 			}
 		}
 		
-		BoxParticle head = null;
-		while ((head = particles.poll()) != null && head.isDead(System.nanoTime()))
-		{
-		}
-		if (head != null)
-		{
-			particles.add(head);
-		}
-		particles.forEach(b -> renderBox(b.getBox()));
 		
-		state.restore();
+		
+		// rendering //
+		
+		public void render(DebugRenderer debugRenderer)
+		{
+			this.renderList(debugRenderer, this.generalRenderableList);
+			
+			for (ConfigEntry<Boolean> config : this.renderableListByConfig.keySet())
+			{
+				LinkedList<WeakReference<IDebugRenderable>> renderableList = this.renderableListByConfig.get(config);
+				if (config.get() && renderableList != null && renderableList.size() != 0)
+				{
+					this.renderList(debugRenderer, renderableList);
+				}
+			}
+		}
+		private void renderList(DebugRenderer debugRenderer, LinkedList<WeakReference<IDebugRenderable>> rendererList)
+		{
+			synchronized (this)
+			{
+				Iterator<WeakReference<IDebugRenderable>> iterator = rendererList.iterator();
+				while (iterator.hasNext())
+				{
+					WeakReference<IDebugRenderable> ref = iterator.next();
+					IDebugRenderable renderable = ref.get();
+					if (renderable == null)
+					{
+						iterator.remove();
+						continue;
+					}
+					
+					renderable.debugRender(debugRenderer);
+				}
+			}
+		}
 	}
-	
 	
 }

@@ -66,7 +66,7 @@ public class RenderDataMetaFile extends AbstractMetaDataContainerFile implements
 	 * When clearing, don't set to null, instead create a SoftReference containing null.
 	 * This makes null checks simpler.
 	 */
-	private DataSourceReferenceTracker.RenderDataSourceSoftRef cachedRenderDataSource = new DataSourceReferenceTracker.RenderDataSourceSoftRef(this, null);
+	private DataSourceReferenceTracker.RenderDataSourceSoftRef cachedRenderDataSourceRef = new DataSourceReferenceTracker.RenderDataSourceSoftRef(this, null);
 	private final AtomicReference<CompletableFuture<ColumnRenderSource>> renderSourceLoadFutureRef = new AtomicReference<>(null);
 	
 	private final IDhClientLevel clientLevel;
@@ -108,7 +108,7 @@ public class RenderDataMetaFile extends AbstractMetaDataContainerFile implements
 		this.clientLevel = clientLevel;
 		LodUtil.assertTrue(this.baseMetaData == null);
 		this.doesFileExist = this.file.exists();
-		DebugRenderer.register(this);
+		DebugRenderer.register(this, Config.Client.Advanced.Debugging.DebugWireframe.showRenderDataFileStatus);
 	}
 	
 	
@@ -124,7 +124,7 @@ public class RenderDataMetaFile extends AbstractMetaDataContainerFile implements
 		this.clientLevel = clientLevel;
 		LodUtil.assertTrue(this.baseMetaData != null);
 		this.doesFileExist = this.file.exists();
-		DebugRenderer.register(this);
+		DebugRenderer.register(this, Config.Client.Advanced.Debugging.DebugWireframe.showRenderDataFileStatus);
 	}
 	
 	
@@ -139,7 +139,7 @@ public class RenderDataMetaFile extends AbstractMetaDataContainerFile implements
 		LodUtil.assertTrue(this.pos.overlapsExactly(chunkSectionPos), "Chunk pos " + chunkSectionPos + " doesn't overlap with section " + this.pos);
 		
 		// update the render source if one exists
-		CompletableFuture<ColumnRenderSource> renderSourceLoadFuture = this.getCachedDataSourceAsync(false);
+		CompletableFuture<ColumnRenderSource> renderSourceLoadFuture = this.getCachedDataSourceAsync(true);
 		if (renderSourceLoadFuture == null)
 		{
 			return;
@@ -148,17 +148,22 @@ public class RenderDataMetaFile extends AbstractMetaDataContainerFile implements
 		
 		renderSourceLoadFuture.thenAccept((renderSource) ->
 		{
-			boolean dataUpdated = renderSource.updateWithChunkData(chunkDataView, clientLevel);
+			boolean dataUpdated = renderSource.updateWithChunkData(chunkDataView, this.clientLevel);
 			
-			// add a debug renderer
-			float offset = new Random(System.nanoTime() ^ Thread.currentThread().getId()).nextFloat() * 16f;
-			Color debugColor = dataUpdated ? Color.blue : Color.red;
-			DebugRenderer.makeParticle(
-					new DebugRenderer.BoxParticle(
-							new DebugRenderer.Box(chunkDataView.getSectionPos(), 32f, 64f + offset, 0.07f, debugColor),
-							2.0, 16f
-					)
-			);
+			
+			// add a debug particle
+			boolean showRenderDataFileStatus = Config.Client.Advanced.Debugging.DebugWireframe.showRenderDataFileStatus.get();
+			if (showRenderDataFileStatus)
+			{
+				float offset = new Random(System.nanoTime() ^ Thread.currentThread().getId()).nextFloat() * 16f;
+				Color debugColor = dataUpdated ? Color.blue : Color.red;
+				DebugRenderer.makeParticle(
+						new DebugRenderer.BoxParticle(
+								new DebugRenderer.Box(chunkDataView.getSectionPos(), 32f, 64f + offset, 0.07f, debugColor),
+								2.0, 16f
+						)
+				);
+			}
 		});
 	}
 	
@@ -208,7 +213,7 @@ public class RenderDataMetaFile extends AbstractMetaDataContainerFile implements
 			
 			this.updateRenderCacheAsync(newColumnRenderSource).whenComplete((voidObj, ex) ->
 				{
-					this.cachedRenderDataSource = new DataSourceReferenceTracker.RenderDataSourceSoftRef(this, newColumnRenderSource);
+					this.cachedRenderDataSourceRef = new DataSourceReferenceTracker.RenderDataSourceSoftRef(this, newColumnRenderSource);
 
 					this.renderSourceLoadFutureRef.set(null);
 					getSourceFuture.complete(newColumnRenderSource);
@@ -256,7 +261,7 @@ public class RenderDataMetaFile extends AbstractMetaDataContainerFile implements
 						
 						this.renderSourceLoadFutureRef.set(null);
 						
-						this.cachedRenderDataSource = new DataSourceReferenceTracker.RenderDataSourceSoftRef(this, renderSource);
+						this.cachedRenderDataSourceRef = new DataSourceReferenceTracker.RenderDataSourceSoftRef(this, renderSource);
 						getSourceFuture.complete(renderSource);
 					});
 		}
@@ -336,26 +341,36 @@ public class RenderDataMetaFile extends AbstractMetaDataContainerFile implements
 		
 		
 		// convert the full data source into a render source
-		CompletableFuture<ColumnRenderSource> transformFuture = FullDataToRenderDataTransformer.transformFullDataToRenderSourceAsync(fullDataSourceFuture, this.clientLevel)
-				.handle((newRenderSource, ex) ->
+		CompletableFuture<ColumnRenderSource> transformFuture = fullDataSourceFuture 
+				.handle((fullDataSource, ex) ->
 				{
 					if (ex == null)
 					{
+						ColumnRenderSource newRenderSource = null;
+						try
+						{
+							newRenderSource = FullDataToRenderDataTransformer.transformFullDataToRenderSourceUsingExecutorAsync(fullDataSource, this.clientLevel).join();
+						}
+						catch (Exception e)
+						{
+							LOGGER.error("Unable to transform full data to render data for file: "+this.file, e);
+						}
+						
 						try
 						{
 							if (newRenderSource != null)
 							{
 								renderSource.updateFromRenderSource(newRenderSource);
+								
+								// update the meta data
+								this.baseMetaData.dataVersion.set(renderDataVersionRef.value);
+								this.baseMetaData.dataLevel = renderSource.getDataDetail();
+								this.baseMetaData.dataTypeId = RENDER_SOURCE_TYPE_ID;
+								this.baseMetaData.binaryDataFormatVersion = renderSource.getRenderDataFormatVersion();
+								
+								// save to file
+								this.save(renderSource);
 							}
-							
-							// update the meta data
-							this.baseMetaData.dataVersion.set(renderDataVersionRef.value);
-							this.baseMetaData.dataLevel = renderSource.getDataDetail();
-							this.baseMetaData.dataTypeId = RENDER_SOURCE_TYPE_ID;
-							this.baseMetaData.binaryDataFormatVersion = renderSource.getRenderDataFormatVersion();
-							
-							// save to file
-							this.save(renderSource);
 						}
 						catch (Throwable e)
 						{
@@ -438,16 +453,15 @@ public class RenderDataMetaFile extends AbstractMetaDataContainerFile implements
 	@Override
 	public void debugRender(DebugRenderer debugRenderer)
 	{
-		if (!Config.Client.Advanced.Debugging.DebugWireframeRendering.renderDataMetaFile.get()) return;
-		
-		Color color = Color.black;
-		
-		ColumnRenderSource cached = this.cachedRenderDataSource.get();
-		if (cached != null)
+		if (this.cachedRenderDataSourceRef.get() != null)
 		{
-			color = Color.GREEN;
+			return;
+			//color = Color.GREEN;
 		}
-		else if (this.renderSourceLoadFutureRef.get() != null)
+		
+		// determine the color
+		Color color = Color.black;
+		if (this.renderSourceLoadFutureRef.get() != null)
 		{
 			color = Color.BLUE;
 		}
@@ -478,7 +492,7 @@ public class RenderDataMetaFile extends AbstractMetaDataContainerFile implements
 		
 		
 		// attempt to get the cached render source
-		ColumnRenderSource cachedRenderDataSource = this.cachedRenderDataSource.get();
+		ColumnRenderSource cachedRenderDataSource = this.cachedRenderDataSourceRef.get();
 		if (cachedRenderDataSource == null)
 		{
 			// no cached data exists and no one is trying to load it

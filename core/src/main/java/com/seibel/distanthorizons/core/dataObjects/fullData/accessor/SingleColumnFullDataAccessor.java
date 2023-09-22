@@ -137,7 +137,7 @@ public class SingleColumnFullDataAccessor implements IFullDataAccessor
 	{
 		if (target.mapping.equals(this.mapping))
 		{
-			target.dataArrays[target.dataArrayIndex] = this.dataArrays[this.dataArrayIndex].clone();
+			System.arraycopy(this.dataArrays[this.dataArrayIndex], 0, target.dataArrays[target.dataArrayIndex], 0, this.dataArrays[this.dataArrayIndex].length);
 		}
 		else
 		{

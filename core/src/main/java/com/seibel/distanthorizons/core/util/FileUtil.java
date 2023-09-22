@@ -49,17 +49,24 @@ public class FileUtil
 		}
 		
 		
-		if (file.renameTo(corruptedFile))
+		if (file.exists())
 		{
-			LOGGER.error("Renamed corrupted file to [" + corruptedFileName + "].");
+			if (file.renameTo(corruptedFile))
+			{
+				LOGGER.error("Renamed corrupted file to [" + corruptedFileName + "].");
+			}
+			else
+			{
+				LOGGER.error("Failed to rename corrupted file to [" + corruptedFileName + "]. Attempting to delete file...");
+				if (!file.delete())
+				{
+					LOGGER.error("Unable to delete corrupted file [" + corruptedFileName + "].");
+				}
+			}
 		}
 		else
 		{
-			LOGGER.error("Failed to rename corrupted file to [" + corruptedFileName + "]. Attempting to delete file...");
-			if (!file.delete())
-			{
-				LOGGER.error("Unable to delete corrupted file [" + corruptedFileName + "].");
-			}
+			LOGGER.error("Corrupted file [" + file + "] doesn't exist.");
 		}
 		
 		return corruptedFile;

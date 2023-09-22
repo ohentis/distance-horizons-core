@@ -1258,11 +1258,56 @@ public class Config
 				
 				
 				
+				public static ConfigCategory debugWireframe = new ConfigCategory.Builder()
+						.set(DebugWireframe.class)
+						.build();
+				
+				public static class DebugWireframe
+				{
+					public static ConfigEntry<Boolean> enableRendering = new ConfigEntry.Builder<Boolean>()
+							.set(false)
+							.comment(""
+									+ "If enabled, various wireframes for debugging internal functions will be drawn. \n"
+									+ "\n"
+									+ "NOTE: There WILL be performance hit! \n"
+									+ "   Additionally, only stuff that's loaded after you enable this \n"
+									+ "   will render their debug wireframes.")
+							.build();
+					
+					
+					public static ConfigEntry<Boolean> showWorldGenQueue = new ConfigEntry.Builder<Boolean>()
+							.set(false)
+							.comment("Render queued world gen tasks?")
+							.build();
+					
+					public static ConfigEntry<Boolean> showRenderSectionStatus = new ConfigEntry.Builder<Boolean>()
+							.set(false)
+							.comment("Render LOD section status?")
+							.build();
+					
+					public static ConfigEntry<Boolean> showFullDataFileStatus = new ConfigEntry.Builder<Boolean>()
+							.set(false)
+							.comment("Render full data file status?")
+							.build();
+					
+					public static ConfigEntry<Boolean> showFullDataFileSampling = new ConfigEntry.Builder<Boolean>()
+							.set(false)
+							.comment("Render full data file sampling progress?")
+							.build();
+					
+					public static ConfigEntry<Boolean> showRenderDataFileStatus = new ConfigEntry.Builder<Boolean>()
+							.set(false)
+							.comment("Render render data file status?")
+							.build();
+					
+				}
+				
+				
+				
 				// can be set to public inorder to show in the config file and UI
 				public static ConfigCategory exampleConfigScreen = new ConfigCategory.Builder()
 						.set(ExampleConfigScreen.class)
 						.build();
-				
 				
 				/** This class is used to debug the different features of the config GUI */
 				// FIXME: WARNING: Some of the options in this class dont get show n in the default UI

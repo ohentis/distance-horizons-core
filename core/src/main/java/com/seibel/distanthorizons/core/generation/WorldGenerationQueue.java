@@ -125,7 +125,7 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 		{
 			throw new IllegalArgumentException(IDhApiWorldGenerator.class.getSimpleName() + ": max granularity smaller than min granularity!");
 		}
-		DebugRenderer.register(this);
+		DebugRenderer.register(this, Config.Client.Advanced.Debugging.DebugWireframe.showWorldGenQueue);
 		LOGGER.info("Created world gen queue");
 	}
 	
@@ -673,7 +673,7 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 			LOGGER.warn("Failed to close generation queue: ", e);
 		}
 		LOGGER.info("Finished closing " + WorldGenerationQueue.class.getSimpleName());
-		DebugRenderer.unregister(this);
+		DebugRenderer.unregister(this, Config.Client.Advanced.Debugging.DebugWireframe.showWorldGenQueue);
 	}
 	
 	
@@ -720,18 +720,10 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 	//=======//
 	
 	@Override
-	public void debugRender(DebugRenderer r)
+	public void debugRender(DebugRenderer renderer)
 	{
-		if (!Config.Client.Advanced.Debugging.DebugWireframeRendering.worldGenerationQueue.get()) return;
-		
-		//if (true) return;
-		waitingTasks.keySet().forEach((pos) -> {
-			//DhLodPos pos = t.pos;
-			r.renderBox(new DebugRenderer.Box(pos, -32f, 64f, 0.05f, Color.blue));
-		});
-		this.inProgressGenTasksByLodPos.forEach((pos, t) -> {
-			r.renderBox(new DebugRenderer.Box(pos, -32f, 64f, 0.05f, Color.red));
-		});
+		this.waitingTasks.keySet().forEach((pos) -> { renderer.renderBox(new DebugRenderer.Box(pos, -32f, 64f, 0.05f, Color.blue)); });
+		this.inProgressGenTasksByLodPos.forEach((pos, t) -> { renderer.renderBox(new DebugRenderer.Box(pos, -32f, 64f, 0.05f, Color.red)); });
 	}
 	
 }

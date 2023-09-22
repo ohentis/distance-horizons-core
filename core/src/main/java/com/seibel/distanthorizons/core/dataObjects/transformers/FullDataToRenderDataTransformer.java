@@ -69,8 +69,7 @@ public class FullDataToRenderDataTransformer
 	// public transformer interface //
 	//==============================//
 	
-	public static CompletableFuture<ColumnRenderSource> transformFullDataToRenderSourceAsync(IFullDataSource fullDataSource, IDhClientLevel level) { return CompletableFuture.supplyAsync(() -> transformFullDataToRenderSource(fullDataSource, level), transformerThreadPool); }
-	public static CompletableFuture<ColumnRenderSource> transformFullDataToRenderSourceAsync(CompletableFuture<IFullDataSource> fullDataSourceFuture, IDhClientLevel level) { return fullDataSourceFuture.thenApplyAsync((fullDataSource) -> transformFullDataToRenderSource(fullDataSource, level), transformerThreadPool); }
+	public static CompletableFuture<ColumnRenderSource> transformFullDataToRenderSourceUsingExecutorAsync(IFullDataSource fullDataSource, IDhClientLevel level) { return CompletableFuture.supplyAsync(() -> transformFullDataToRenderSource(fullDataSource, level), transformerThreadPool); }
 	private static ColumnRenderSource transformFullDataToRenderSource(IFullDataSource fullDataSource, IDhClientLevel level)
 	{
 		if (fullDataSource == null)
@@ -184,9 +183,11 @@ public class FullDataToRenderDataTransformer
 		{
 			int baseX = pos.getMinCornerLodPos().getCornerBlockPos().x;
 			int baseZ = pos.getMinCornerLodPos().getCornerBlockPos().z;
-			for (int x = 0; x < pos.getWidthCountForLowerDetailedSection(dataDetail); x++)
+			
+			int width = pos.getWidthCountForLowerDetailedSection(dataDetail);
+			for (int x = 0; x < width; x++)
 			{
-				for (int z = 0; z < pos.getWidthCountForLowerDetailedSection(dataDetail); z++)
+				for (int z = 0; z < width; z++)
 				{
 					throwIfThreadInterrupted();
 					

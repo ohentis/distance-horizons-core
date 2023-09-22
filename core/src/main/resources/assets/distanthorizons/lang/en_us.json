@@ -409,10 +409,6 @@
     "Only Render LODs",
   "distanthorizons.config.client.advanced.debugging.lodOnlyMode.@tooltip":
     "If enabled this will disable (most) vanilla Minecraft rendering. \n\nNOTE: Do not report any issues when this mode is on! \nThis setting is only for fun and debugging. \nMod compatibility is not guaranteed.",
-  "distanthorizons.config.client.advanced.debugging.debugWireframeRendering":
-    "Enable Debug Wireframe Rendering",
-  "distanthorizons.config.client.advanced.debugging.debugWireframeRendering.@tooltip":
-    "If enabled, various wireframes for debugging internal functions will be drawn.",
   "distanthorizons.config.client.advanced.debugging.enableWhiteWorld":
     "Enable white world",
   "distanthorizons.config.client.advanced.debugging.enableWhiteWorld.@tooltip":
@@ -522,7 +518,26 @@
     "Linkable test",
   "distanthorizons.config.client.advanced.debugging.exampleConfigScreen.linkableTest.@tooltip":
     "The value of this should be the same as in Category Test",
-
+  
+  
+  "distanthorizons.config.client.advanced.debugging.debugWireframe":
+    "Debug Wireframe",
+  
+  "distanthorizons.config.client.advanced.debugging.debugWireframe.enableRendering":
+    "Enable Debug Wireframe Rendering",
+  "distanthorizons.config.client.advanced.debugging.debugWireframe.enableRendering.@tooltip":
+    "If enabled, various wireframes for debugging internal functions will be drawn.",
+  "distanthorizons.config.client.advanced.debugging.debugWireframe.showWorldGenQueue":
+    "Show World Gen Queue",
+  "distanthorizons.config.client.advanced.debugging.debugWireframe.showRenderSectionStatus":
+    "Show Render Section Status",
+  "distanthorizons.config.client.advanced.debugging.debugWireframe.showFullDataFileStatus":
+    "Show Full Data file Status",
+  "distanthorizons.config.client.advanced.debugging.debugWireframe.showFullDataFileSampling":
+    "Show Full Data file Sampling",
+  "distanthorizons.config.client.advanced.debugging.debugWireframe.showRenderDataFileStatus":
+    "Show Render Data file Status",
+    
   
   "distanthorizons.config.client.resetSettingsConfirmation":
     "Reset All Settings?",

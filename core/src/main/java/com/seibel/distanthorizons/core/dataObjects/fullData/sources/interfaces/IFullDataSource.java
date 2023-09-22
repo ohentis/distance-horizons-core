@@ -279,4 +279,11 @@ public interface IFullDataSource
 	 */
 	void populateFromStream(FullDataMetaFile dataFile, DhDataInputStream inputStream, IDhLevel level) throws IOException, InterruptedException;
 	
+	/**
+	 * Should only be implemented by {@link IStreamableFullDataSource} to prevent potential stream read/write inconsistencies.
+	 *
+	 * @see IStreamableFullDataSource#repopulateFromStream(FullDataMetaFile, DhDataInputStream, IDhLevel) 
+	 */
+	void repopulateFromStream(FullDataMetaFile dataFile, DhDataInputStream inputStream, IDhLevel level) throws IOException, InterruptedException;
+	
 }

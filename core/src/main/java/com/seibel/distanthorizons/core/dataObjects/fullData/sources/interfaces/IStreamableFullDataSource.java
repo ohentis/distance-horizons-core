@@ -22,11 +22,10 @@ package com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces;
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.dataObjects.fullData.FullDataPointIdMap;
-import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.FullDataArrayAccessor;
 import com.seibel.distanthorizons.core.file.fullDatafile.FullDataMetaFile;
+import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataInputStream;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataOutputStream;
-import com.seibel.distanthorizons.core.util.objects.dataStreams.*;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 
 import java.io.IOException;
@@ -40,8 +39,6 @@ import java.io.IOException;
  *
  * @param <SummaryDataType> defines the object holding this data source's summary data, extends {@link IStreamableFullDataSource.FullDataSourceSummaryData}.
  * @param <DataContainerType> defines the object holding the data points, probably long[][] or long[][][].
- * @apiNote James would've preferred to have this as an abstract class,
- * however that is impossible. See the apiNote in
  * {@link IStreamableFullDataSource#populateFromStream(FullDataMetaFile, DhDataInputStream, IDhLevel) populateFromStream}
  * for the full reasoning.
  */
@@ -53,13 +50,27 @@ public interface IStreamableFullDataSource<SummaryDataType extends IStreamableFu
 	//=================//
 	
 	/**
+	 * Clears and then overwrites any data in this object with the data from the given file and stream.
+	 * This is expected to be used with an existing {@link IStreamableFullDataSource} and can be used in place of a constructor to reuse an existing {@link IStreamableFullDataSource} object.
+	 * 
+	 * @see IStreamableFullDataSource#populateFromStream
+	 */
+	@Override
+	default void repopulateFromStream(FullDataMetaFile dataFile, DhDataInputStream inputStream, IDhLevel level) throws IOException, InterruptedException
+	{
+		// clear/overwrite the old data
+		this.resizeDataStructuresForRepopulation(dataFile.pos);
+		this.getMapping().clear(dataFile.pos);
+		
+		// set the new data
+		this.populateFromStream(dataFile, inputStream, level);
+	}
+	
+	/**
 	 * Overwrites any data in this object with the data from the given file and stream.
 	 * This is expected to be used with an empty {@link IStreamableFullDataSource} and functions similar to a constructor.
-	 *
-	 * @apiNote James would've preferred that {@link IStreamableFullDataSource} was an abstract class,
-	 * so this could've been a constructor.
-	 * However, several inheritors of this interface already extend {@link FullDataArrayAccessor}, making that impossible.
 	 */
+	@Override
 	default void populateFromStream(FullDataMetaFile dataFile, DhDataInputStream inputStream, IDhLevel level) throws IOException, InterruptedException
 	{
 		SummaryDataType summaryData = this.readSourceSummaryInfo(dataFile, inputStream, level);
@@ -79,6 +90,7 @@ public interface IStreamableFullDataSource<SummaryDataType extends IStreamableFu
 		
 	}
 	
+	@Override
 	default void writeToStream(DhDataOutputStream outputStream, IDhLevel level) throws IOException
 	{
 		this.writeSourceSummaryInfo(level, outputStream);
@@ -93,6 +105,9 @@ public interface IStreamableFullDataSource<SummaryDataType extends IStreamableFu
 	}
 	
 	
+	
+	/** Note: this should only be used if the data source is being reused. Normally data sources shouldn't change. */
+	void resizeDataStructuresForRepopulation(DhSectionPos pos);
 	
 	/**
 	 * Includes information about the source file that doesn't need to be saved in each data point. Like the source's size and y-level.

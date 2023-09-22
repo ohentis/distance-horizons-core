@@ -87,6 +87,7 @@ public class FullDataMetaFile extends AbstractMetaDataContainerFile implements I
 	 */
 	private DataSourceReferenceTracker.FullDataSourceSoftRef cachedFullDataSourceRef = new DataSourceReferenceTracker.FullDataSourceSoftRef(this,null);
 	private final AtomicReference<CompletableFuture<IFullDataSource>> dataSourceLoadFutureRef = new AtomicReference<>(null);
+	public volatile Boolean cacheLoadingDataSource = null;
 	
 	// === Concurrent Write tracking ===
 	private final AtomicReference<GuardedMultiAppendQueue> writeQueueRef = new AtomicReference<>(new GuardedMultiAppendQueue());
@@ -113,7 +114,7 @@ public class FullDataMetaFile extends AbstractMetaDataContainerFile implements I
 		this.level = level;
 		LodUtil.assertTrue(this.baseMetaData == null);
 		this.doesFileExist = false;
-		DebugRenderer.register(this);
+		DebugRenderer.register(this, Config.Client.Advanced.Debugging.DebugWireframe.showFullDataFileStatus);
 	}
 	
 	
@@ -141,7 +142,7 @@ public class FullDataMetaFile extends AbstractMetaDataContainerFile implements I
 		}
 		
 		this.fullDataSourceClass = this.fullDataSourceLoader.fullDataSourceClass;
-		DebugRenderer.register(this);
+		DebugRenderer.register(this, Config.Client.Advanced.Debugging.DebugWireframe.showFullDataFileStatus);
 	}
 	
 	
@@ -160,14 +161,36 @@ public class FullDataMetaFile extends AbstractMetaDataContainerFile implements I
 		return this.cachedFullDataSourceRef.get(); 
 	}
 	
+	/** @return if any data was cleared */
+	public boolean clearCachedDataSource()
+	{
+		boolean dataExists = this.cachedFullDataSourceRef.get() != null;
+		if (dataExists)
+		{
+			this.cachedFullDataSourceRef.close();
+			this.cachedFullDataSourceRef.clear();
+			this.cacheLoadingDataSource = null;
+		}
+		
+		return dataExists;
+	}
 	
-	public CompletableFuture<IFullDataSource> getOrLoadCachedDataSourceAsync()
+	
+	
+	public CompletableFuture<IFullDataSource> getDataSourceWithoutCachingAsync() { return this.getOrLoadCachedDataSourceAsync(false); }
+	public CompletableFuture<IFullDataSource> getOrLoadCachedDataSourceAsync() { return this.getOrLoadCachedDataSourceAsync(true); }
+	private CompletableFuture<IFullDataSource> getOrLoadCachedDataSourceAsync(boolean cacheLoadingSource)
 	{
 		checkAndLogPhantomDataSourceLifeCycles();
 		
 		CompletableFuture<IFullDataSource> potentialLoadFuture = this.getCachedDataSourceAsync();
 		if (potentialLoadFuture != null)
 		{
+			if (cacheLoadingSource)
+			{
+				this.cacheLoadingDataSource = true;
+			}
+			
 			// return the in-process future
 			return potentialLoadFuture;
 		}
@@ -181,11 +204,13 @@ public class FullDataMetaFile extends AbstractMetaDataContainerFile implements I
 				// two threads attempted to start this job at the same time, only use the first future
 				potentialLoadFuture = this.dataSourceLoadFutureRef.get();
 			}
+			
+			this.cacheLoadingDataSource = cacheLoadingSource;
 		}
 		
 		
 		
-		CompletableFuture<IFullDataSource> dataSourceLoadFuture = potentialLoadFuture;
+		final CompletableFuture<IFullDataSource> dataSourceLoadFuture = potentialLoadFuture;
 		if (!this.doesFileExist)
 		{
 			// create a new Meta file and data source
@@ -231,10 +256,21 @@ public class FullDataMetaFile extends AbstractMetaDataContainerFile implements I
 							try (FileInputStream fileInputStream = this.getFileInputStream();
 									DhDataInputStream compressedStream = new DhDataInputStream(fileInputStream))
 							{
-								fullDataSource = this.fullDataSourceLoader.loadData(this, compressedStream, this.level);
+								if (cacheLoadingSource)
+								{
+									fullDataSource = this.fullDataSourceLoader.loadDataSource(this, compressedStream, this.level);
+								}
+								else
+								{
+									fullDataSource = this.fullDataSourceLoader.loadTemporaryDataSource(this, compressedStream, this.level);
+								}
 							}
 							catch (Exception ex)
 							{
+								/// TODO temporary fix
+								dataSourceLoadFuture.completeExceptionally(ex);
+								this.dataSourceLoadFutureRef.set(null);
+								
 								// can happen if there is a missing file or the file was incorrectly formatted, or terminated early
 								throw new CompletionException(ex);
 							}
@@ -373,11 +409,11 @@ public class FullDataMetaFile extends AbstractMetaDataContainerFile implements I
 	public CompletableFuture<Void> flushAndSaveAsync()
 	{
 		checkAndLogPhantomDataSourceLifeCycles();
-		boolean isEmpty = this.writeQueueRef.get().queue.isEmpty() && !needsUpdate;
+		boolean isEmpty = this.writeQueueRef.get().queue.isEmpty() && !this.needsUpdate;
 		if (!isEmpty)
 		{
 			// This will flush the data to disk.
-			return this.getOrLoadCachedDataSourceAsync().thenApply((fullDataSource) -> null /* ignore the result, just wait for the load to finish*/ );
+			return this.getDataSourceWithoutCachingAsync().thenApply((fullDataSource) -> null /* ignore the result, just wait for the load to finish*/ );
 		}
 		else
 		{
@@ -438,16 +474,22 @@ public class FullDataMetaFile extends AbstractMetaDataContainerFile implements I
 			return;
 		}
 		
-		IFullDataSource cached = this.cachedFullDataSourceRef.get();
+		
+		
 		if (this.needsUpdate)
 		{
 			debugRenderer.renderBox(new DebugRenderer.Box(this.pos, 80f, 96f, 0.05f, Color.red));
 		}
 		
+		
+		IFullDataSource cachedDataSource = this.cachedFullDataSourceRef.get();
+		boolean needsUpdate = !this.writeQueueRef.get().queue.isEmpty() || this.needsUpdate;
+		
+		// determine the color
 		Color color = Color.black;
-		if (cached != null)
+		if (cachedDataSource != null)
 		{
-			if (cached instanceof CompleteFullDataSource)
+			if (cachedDataSource instanceof CompleteFullDataSource)
 			{
 				color = Color.GREEN;
 			}
@@ -455,7 +497,6 @@ public class FullDataMetaFile extends AbstractMetaDataContainerFile implements I
 			{
 				color = Color.YELLOW;
 			}
-			
 		}
 		else if (this.dataSourceLoadFutureRef.get() != null)
 		{
@@ -465,9 +506,7 @@ public class FullDataMetaFile extends AbstractMetaDataContainerFile implements I
 		{
 			color = Color.RED;
 		}
-		
-		boolean needsUpdate = !this.writeQueueRef.get().queue.isEmpty() || this.needsUpdate;
-		if (needsUpdate)
+		else if (needsUpdate)
 		{
 			color = color.darker().darker();
 		}
@@ -557,16 +596,23 @@ public class FullDataMetaFile extends AbstractMetaDataContainerFile implements I
 						new DataObjSoftTracker(this, fullDataSource);
 					}
 					
-					if (this.pos.getDetailLevel() == DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL)
+					
+					boolean showFullDataFileStatus = Config.Client.Advanced.Debugging.DebugWireframe.showFullDataFileStatus.get();
+					boolean showFullDataFileSampling = Config.Client.Advanced.Debugging.DebugWireframe.showFullDataFileSampling.get();
+					if (showFullDataFileStatus || showFullDataFileSampling)
 					{
+						Color color = dataSourceChanged ? Color.GREEN : Color.GREEN.darker().darker();
 						DebugRenderer.makeParticle(new DebugRenderer.BoxParticle(
-										new DebugRenderer.Box(this.pos, 64f, 72f, 0.03f, Color.green.darker()),
-										0.2, 32f));
+								new DebugRenderer.Box(this.pos, 64f, 72f, 0.03f, color),
+								0.2, 32f));
 					}
 					
 					
-					// save the updated data source
-					this.cachedFullDataSourceRef = new DataSourceReferenceTracker.FullDataSourceSoftRef(this, fullDataSource);
+					if (this.cacheLoadingDataSource)
+					{
+						// save the updated data source
+						this.cachedFullDataSourceRef = new DataSourceReferenceTracker.FullDataSourceSoftRef(this, fullDataSource);
+					}
 					
 					// the task is complete
 					completionFuture.complete(fullDataSource);
@@ -575,12 +621,90 @@ public class FullDataMetaFile extends AbstractMetaDataContainerFile implements I
 					if (this.needsUpdate)
 					{
 						// another update was requested while this update was being processed
-						this.getOrLoadCachedDataSourceAsync();
+						if (this.cacheLoadingDataSource)
+						{
+							this.getOrLoadCachedDataSourceAsync();
+						}
+						else
+						{
+							this.getDataSourceWithoutCachingAsync();
+						}
 					}
 				});
 		
 		return completionFuture;
 	}
+	
+	/*
+	
+	private void applyWriteQueueAndSave(IFullDataSource fullDataSourceToUpdate)
+	{
+		boolean dataChanged = this.applyWriteQueueToFullDataSource(fullDataSourceToUpdate);
+		this.needsUpdate = false;
+		
+		// attempt to promote the data source
+		if (fullDataSourceToUpdate instanceof IIncompleteFullDataSource)
+		{
+			IFullDataSource newSource = ((IIncompleteFullDataSource) fullDataSourceToUpdate).tryPromotingToCompleteDataSource();
+			dataChanged |= (newSource != fullDataSourceToUpdate);
+			fullDataSourceToUpdate = newSource;
+		}
+		
+		
+		// the provider may need to modify other files based on this data source changing
+		IFullDataSourceProvider.DataFileUpdateResult dataFileUpdateResult = this.fullDataSourceProvider.onDataFileUpdateAsync(fullDataSourceToUpdate, this, dataChanged);
+		IFullDataSource fullDataSource = dataFileUpdateResult.fullDataSource;
+		boolean dataSourceChanged = dataFileUpdateResult.dataSourceChanged;
+		
+		
+		// only save to file if something was changed
+		if (dataSourceChanged)
+		{
+			this.writeDataSource(fullDataSource);
+		}
+		
+		// keep track of non-null data sources
+		if (fullDataSource != null)
+		{
+			new DataObjTracker(fullDataSource);
+			new DataObjSoftTracker(this, fullDataSource);
+		}
+		
+		
+		boolean showFullDataFileStatus = Config.Client.Advanced.Debugging.DebugWireframe.showFullDataFileStatus.get();
+		boolean showFullDataFileSampling = Config.Client.Advanced.Debugging.DebugWireframe.showFullDataFileSampling.get();
+		if (showFullDataFileStatus || showFullDataFileSampling)
+		{
+			Color color;
+			if (this.pos.getDetailLevel() == DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL)
+			{
+				color = Color.GREEN;
+			}
+			else
+			{
+				color = Color.GREEN.darker().darker();
+			}
+			
+			DebugRenderer.makeParticle(new DebugRenderer.BoxParticle(
+					new DebugRenderer.Box(this.pos, 64f, 72f, 0.03f, color),
+					0.2, 32f));
+		}
+		
+		
+		// save the updated data source
+		this.cachedFullDataSourceRef = new DataSourceReferenceTracker.FullDataSourceSoftRef(this, fullDataSource);
+		
+		
+		if (this.needsUpdate)
+		{
+			// another update was requested while this update was being processed
+			this.getOrLoadCachedDataSourceAsync();
+		}
+	}
+	
+	 */
+	
+	
 	
 	/** @return true if the queue was not empty and chunk data was applied to this meta file's {@link IFullDataSource}. */
 	private boolean applyWriteQueueToFullDataSource(IFullDataSource fullDataSource)

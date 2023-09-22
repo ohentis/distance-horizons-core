@@ -41,7 +41,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * Used to map a numerical IDs to a Biome/BlockState pair.
  *
  * @author Leetom
- * @version 2022-10-2
  */
 public class FullDataPointIdMap
 {
@@ -61,7 +60,7 @@ public class FullDataPointIdMap
 	private final ReentrantReadWriteLock readWriteLock = new ReentrantReadWriteLock();
 	
 	/** should only be used for debugging */
-	private final DhSectionPos pos;
+	private DhSectionPos pos;
 	
 	/** The index should be the same as the Entry's ID */
 	private final ArrayList<Entry> entryList = new ArrayList<>();
@@ -78,7 +77,7 @@ public class FullDataPointIdMap
 	
 	
 	//=========//
-	// methods //
+	// getters //
 	//=========//
 	
 	private Entry getEntry(int id)
@@ -101,6 +100,12 @@ public class FullDataPointIdMap
 	
 	public IBiomeWrapper getBiomeWrapper(int id) { return this.getEntry(id).biome; }
 	public IBlockStateWrapper getBlockStateWrapper(int id) { return this.getEntry(id).blockState; }
+	
+	
+	
+	//=========//
+	// setters //
+	//=========//
 	
 	/**
 	 * If an entry with the given values already exists nothing will
@@ -169,6 +174,20 @@ public class FullDataPointIdMap
 		return remappedEntryIds;
 	}
 	
+	/** Should only be used if this map is going to be reused, otherwise bad things will happen. */
+	public void clear(DhSectionPos pos)
+	{
+		this.pos = pos;
+		this.entryList.clear();
+		this.idMap.clear();
+	}
+	
+	
+	
+	//=============//
+	// serializing //
+	//=============//
+	
 	/** Serializes all contained entries into the given stream, formatted in UTF */
 	public void serialize(DhDataOutputStream outputStream) throws IOException
 	{
@@ -234,6 +253,12 @@ public class FullDataPointIdMap
 		
 		return newMap;
 	}
+	
+	
+	
+	//===========//
+	// overrides //
+	//===========//
 	
 	@Override
 	public boolean equals(Object other)

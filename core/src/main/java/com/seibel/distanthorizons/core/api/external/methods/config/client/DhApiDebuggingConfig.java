@@ -46,6 +46,6 @@ public class DhApiDebuggingConfig implements IDhApiDebuggingConfig
 	{ return new DhApiConfigValue<Boolean, Boolean>(Config.Client.Advanced.Debugging.lodOnlyMode); }
 	
 	public IDhApiConfigValue<Boolean> debugWireframeRendering()
-	{ return new DhApiConfigValue<Boolean, Boolean>(Config.Client.Advanced.Debugging.DebugWireframeRendering.enableRendering); }
+	{ return new DhApiConfigValue<Boolean, Boolean>(Config.Client.Advanced.Debugging.DebugWireframe.enableRendering); }
 	
 }

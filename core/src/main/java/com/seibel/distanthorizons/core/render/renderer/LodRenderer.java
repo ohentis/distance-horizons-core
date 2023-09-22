@@ -198,6 +198,8 @@ public class LodRenderer
 				return;
 			}
 			
+			
+			
 			// get MC's shader program and save MC's render state so we can restore it later
 			LagSpikeCatcher drawSaveGLState = new LagSpikeCatcher();
 			GLState minecraftGlState = new GLState();
@@ -348,7 +350,7 @@ public class LodRenderer
 			
 			this.shaderProgram.unbind();
 			
-			if (Config.Client.Advanced.Debugging.DebugWireframeRendering.enableRendering.get())
+			if (Config.Client.Advanced.Debugging.DebugWireframe.enableRendering.get())
 			{
 				profiler.popPush("Debug wireframes");
 				// Note: this can be very slow if a lot of boxes are being rendered 
