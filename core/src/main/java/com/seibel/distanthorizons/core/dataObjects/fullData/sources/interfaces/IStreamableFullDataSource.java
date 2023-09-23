@@ -67,6 +67,22 @@ public interface IStreamableFullDataSource<SummaryDataType extends IStreamableFu
 	}
 	
 	/**
+	 * Clears and then overwrites any data in this object with the data from the given file and stream.
+	 * This is expected to be used with an existing {@link IStreamableFullDataSource} and can be used in place of a constructor to reuse an existing {@link IStreamableFullDataSource} object.
+	 *
+	 * @see IStreamableFullDataSource#populateFromStream
+	 */
+	default void repopulateFromStream(DhSectionPos pos, DhDataInputStream inputStream, IDhLevel level) throws IOException, InterruptedException
+	{
+		// clear/overwrite the old data
+		this.resizeDataStructuresForRepopulation(pos);
+		this.getMapping().clear(pos);
+		
+		// set the new data
+		this.populateFromStream(null, inputStream, level);
+	}
+	
+	/**
 	 * Overwrites any data in this object with the data from the given file and stream.
 	 * This is expected to be used with an empty {@link IStreamableFullDataSource} and functions similar to a constructor.
 	 */

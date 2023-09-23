@@ -38,8 +38,11 @@ public class CompleteFullDataSourceLoader extends AbstractFullDataSourceLoader
 	/** Uses a given stream to create a temporary {@link CompleteFullDataSource}, which is not saved. */
 	public CompleteFullDataSource loadData(DhSectionPos pos, DhDataInputStream inputStream, IDhLevel level) throws IOException, InterruptedException
 	{
-		CompleteFullDataSource dataSource = CompleteFullDataSource.createEmpty(pos);
-		dataSource.populateFromStream(null, inputStream, level);
+		CompleteFullDataSource dataSource = (CompleteFullDataSource) this.tryGetPooledSource();
+		if (dataSource == null)
+			dataSource = CompleteFullDataSource.createEmpty(pos);
+		
+		dataSource.repopulateFromStream(pos, inputStream, level);
 		return dataSource;
 	}
 }
