@@ -55,7 +55,7 @@ public class WorldRemoteGenerationQueue implements IWorldGenerationQueue, IDebug
 	{
 		this.networkState = networkState;
 		this.level = level;
-		DebugRenderer.register(this);
+		DebugRenderer.register(this, Config.Client.Advanced.Debugging.DebugWireframe.showWorldGenQueue);
 	}
 	
 	@Override
@@ -188,6 +188,7 @@ public class WorldRemoteGenerationQueue implements IWorldGenerationQueue, IDebug
 					return entry.future.cancel(false);
 				
 				fullDataSource.splitIntoChunkSizedAccessors(chunkDataConsumer);
+				response.getFullDataSourceLoader().returnPooledDataSource(fullDataSource);
 			}
 			catch (InvalidLevelException ignored)
 			{
@@ -255,13 +256,12 @@ public class WorldRemoteGenerationQueue implements IWorldGenerationQueue, IDebug
 	public void close()
 	{
 		f3Message.close();
+		DebugRenderer.unregister(this, Config.Client.Advanced.Debugging.DebugWireframe.showWorldGenQueue);
 	}
 	
 	@Override
 	public void debugRender(DebugRenderer r) 
 	{
-		if (!Config.Client.Advanced.Debugging.DebugWireframeRendering.worldRemoteGenerationQueue.get()) return;
-		
 		for (Map.Entry<DhSectionPos, WorldGenQueueEntry> mapEntry : waitingTasks.entrySet())
 		{
 			r.renderBox(new DebugRenderer.Box(mapEntry.getKey(), -32f, 64f, 0.05f,

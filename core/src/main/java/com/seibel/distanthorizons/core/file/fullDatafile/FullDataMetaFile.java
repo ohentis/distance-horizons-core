@@ -467,8 +467,6 @@ public class FullDataMetaFile extends AbstractMetaDataContainerFile implements I
 	@Override
 	public void debugRender(DebugRenderer debugRenderer)
 	{
-		if (!Config.Client.Advanced.Debugging.DebugWireframeRendering.fullDataMetaFile.get()) return;
-		
 		if (this.pos.getDetailLevel() > DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL)
 		{
 			return;

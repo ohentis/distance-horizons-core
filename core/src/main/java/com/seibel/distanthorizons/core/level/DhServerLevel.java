@@ -237,7 +237,7 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 		{
 			for (ServerPlayerState serverPlayerState : remotePlayerConnectionHandler.getConnectedPlayers())
 			{
-				if (serverPlayerState.config.isRealTimeUpdatesEnabled()) continue;
+				if (!serverPlayerState.config.isRealTimeUpdatesEnabled()) continue;
 				
 				if (chunk.getChunkPos().distance(new DhChunkPos(serverPlayerState.serverPlayer.getPosition())) <= serverPlayerState.config.getRenderDistance())
 					serverPlayerState.channelContext.writeAndFlush(new FullDataPartialUpdateMessage(chunkSizedFullDataAccessor, this));

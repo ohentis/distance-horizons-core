@@ -41,6 +41,7 @@ public class FullDataSourceResponseMessage extends FutureTrackableNetworkMessage
 	private DhServerLevel level;
 	
 	private CompleteFullDataSourceLoader fullDataSourceLoader;
+	public CompleteFullDataSourceLoader getFullDataSourceLoader() { return fullDataSourceLoader; }
 	private ByteBuf dataBuffer;
 	
 	public FullDataSourceResponseMessage() {}
