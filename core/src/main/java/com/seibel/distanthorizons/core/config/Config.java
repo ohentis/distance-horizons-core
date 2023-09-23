@@ -841,6 +841,13 @@ public class Config
 									+ "Enables updating of LODs after relog."
 									+ "")
 							.build();
+					
+					public static ConfigEntry<Integer> serverPort = new ConfigEntry.Builder<Integer>()
+							.set(25049)
+							.comment(""
+									+ "The port on the server that's used for sending LOD data."
+									+ "")
+							.build();
 				}
 				
 			}

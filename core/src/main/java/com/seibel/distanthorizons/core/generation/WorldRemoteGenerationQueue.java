@@ -55,7 +55,7 @@ public class WorldRemoteGenerationQueue implements IWorldGenerationQueue, IDebug
 	{
 		this.networkState = networkState;
 		this.level = level;
-		DebugRenderer.register(this);
+		DebugRenderer.register(this, Config.Client.Advanced.Debugging.DebugWireframe.showWorldGenQueue);
 	}
 	
 	@Override
