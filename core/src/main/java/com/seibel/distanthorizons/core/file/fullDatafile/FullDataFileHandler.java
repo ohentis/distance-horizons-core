@@ -38,13 +38,11 @@ import com.seibel.distanthorizons.core.util.FileUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
 import org.apache.logging.log4j.Logger;
-import com.seibel.distanthorizons.core.dataObjects.fullData.loader.AbstractFullDataSourceLoader;
 
 import java.awt.*;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -69,12 +67,12 @@ public class FullDataFileHandler implements IFullDataSourceProvider
 		{
 			map.put(pos,
 					loadedMetaFileBySectionPos.containsKey(pos) ? 3 // Loaded
-					: this.isFileUnloaded(pos) ? 2            // Unloaded
-					: 1);                                     // Not generated
+					: this.fileExists(pos) ? 2                      // Unloaded
+					: 1);                                           // Not generated
 		}
 		return map;
 	}
-	protected boolean isFileUnloaded(DhSectionPos pos) { return !loadedMetaFileBySectionPos.containsKey(pos); }
+	protected boolean fileExists(DhSectionPos pos) { return this.computeDataFilePath(pos).exists(); }
 	
 	protected final IDhLevel level;
 	protected final File saveDir;

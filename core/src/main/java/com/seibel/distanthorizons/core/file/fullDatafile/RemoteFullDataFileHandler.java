@@ -19,7 +19,6 @@
 
 package com.seibel.distanthorizons.core.file.fullDatafile;
 
-import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.CompleteFullDataSource;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
@@ -30,7 +29,6 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.multiplayer.client.ClientNetworkState;
 import com.seibel.distanthorizons.core.network.exceptions.InvalidLevelException;
 import com.seibel.distanthorizons.core.network.exceptions.InvalidSectionPosException;
-import com.seibel.distanthorizons.core.network.exceptions.RequestRejectedException;
 import com.seibel.distanthorizons.core.network.messages.fullData.updates.FullDataChangeSummaryRequestMessage;
 import com.seibel.distanthorizons.core.network.messages.fullData.updates.FullDataChangeSummaryResponseMessage;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
@@ -145,7 +143,7 @@ public class RemoteFullDataFileHandler extends GeneratedFullDataFileHandler
 	@Override
 	public FullDataMetaFile getFileIfExist(DhSectionPos pos)
 	{
-		if (this.networkState == null || !this.isFileUnloaded(pos))
+		if (this.networkState == null || !this.fileExists(pos))
 			return super.getFileIfExist(pos);
 		
 		if (!this.networkState.config.postRelogUpdateEnabled)
@@ -155,7 +153,7 @@ public class RemoteFullDataFileHandler extends GeneratedFullDataFileHandler
 		if (metaFile == null)
 			return null;
 		
-		LOGGER.info("Checking server updates for section {}", pos);
+		LOGGER.debug("Checking server updates for section {}", pos);
 		pos.forEachChildAtLevel(DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL, childPos ->
 		{
 			FullDataMetaFile childMetaFile = super.getFileIfExist(childPos);
