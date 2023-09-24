@@ -22,7 +22,6 @@ package com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor;
 import com.seibel.distanthorizons.api.enums.rendering.EFogDrawMode;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
-import com.seibel.distanthorizons.core.ReflectionHandler;
 
 import java.lang.reflect.Field;
 
@@ -66,11 +65,7 @@ public abstract class AbstractOptifineAccessor implements IOptifineAccessor
 		return null;
 	}
 	
-	/**
-	 * Should not be called frequently since this uses reflection calls to determine if Optifine is present. <br>
-	 * Use {@link ReflectionHandler#optifinePresent()} instead.
-	 */
-	public static boolean isOptifinePresent() { return getOptifineFogField() != null; }
+	public static boolean optifinePresent() { return getOptifineFogField() != null; }
 	
 	
 	
@@ -115,7 +110,7 @@ public abstract class AbstractOptifineAccessor implements IOptifineAccessor
 		}
 	}
 	
-	
+	@Override
 	public double getRenderResolutionMultiplier()
 	{
 		/*

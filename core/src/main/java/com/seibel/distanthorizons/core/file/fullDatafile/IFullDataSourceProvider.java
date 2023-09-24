@@ -31,8 +31,6 @@ import java.util.concurrent.ExecutorService;
 
 public interface IFullDataSourceProvider extends AutoCloseable
 {
-	void addScannedFiles(Collection<File> detectedFiles);
-	
 	CompletableFuture<IFullDataSource> readAsync(DhSectionPos pos);
 	void writeChunkDataToFile(DhSectionPos sectionPos, ChunkSizedFullDataAccessor chunkData);
 	CompletableFuture<Void> flushAndSave();

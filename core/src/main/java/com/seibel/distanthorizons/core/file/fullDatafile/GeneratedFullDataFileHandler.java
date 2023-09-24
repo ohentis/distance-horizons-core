@@ -124,7 +124,7 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandler
 	//========//
 	
 	@Nullable
-	private CompletableFuture<IFullDataSource> tryStartGenTask(FullDataMetaFile file, IIncompleteFullDataSource dataSource)
+	private CompletableFuture<IFullDataSource> tryStartGenTask(FullDataMetaFile file, IIncompleteFullDataSource dataSource) // TODO after generation is finished, save and free any full datasources that aren't in use (IE high detail ones below the top)
 	{
 		IWorldGenerationQueue worldGenQueue = this.worldGenQueueRef.get();
 		// breaks down the missing positions into the desired detail level that the gen queue could accept

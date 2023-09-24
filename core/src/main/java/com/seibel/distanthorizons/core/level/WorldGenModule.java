@@ -111,8 +111,7 @@ public class WorldGenModule implements Closeable
 		AbstractWorldGenState worldGenState = this.worldGenStateRef.get();
 		if (worldGenState != null)
 		{
-			// queue new world generation requests
-			worldGenState.tick(targetPosForGeneration);
+			worldGenState.startGenerationQueueAndSetTargetPos(targetPosForGeneration);
 		}
 	}
 	
@@ -178,7 +177,7 @@ public class WorldGenModule implements Closeable
 		}
 		
 		/** @param targetPosForGeneration the position that world generation should be centered around */
-		public void tick(DhBlockPos2D targetPosForGeneration) { this.worldGenerationQueue.runCurrentGenTasksUntilBusy(targetPosForGeneration); }
+		public void startGenerationQueueAndSetTargetPos(DhBlockPos2D targetPosForGeneration) { this.worldGenerationQueue.startGenerationQueueAndSetTargetPos(targetPosForGeneration); }
 	}
 	
 }

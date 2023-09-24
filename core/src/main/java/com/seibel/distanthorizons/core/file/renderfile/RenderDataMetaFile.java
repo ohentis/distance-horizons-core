@@ -298,7 +298,6 @@ public class RenderDataMetaFile extends AbstractMetaDataContainerFile implements
 	// cache handler //
 	//===============//
 	
-	// TODO
 	public CompletableFuture<ColumnRenderSource> updateRenderCacheAsync(ColumnRenderSource renderSource)
 	{
 		DebugRenderer.BoxWithLife debugBox = new DebugRenderer.BoxWithLife(new DebugRenderer.Box(renderSource.sectionPos, 74f, 86f, 0.1f, Color.red), 1.0, 32f, Color.green.darker());
@@ -326,7 +325,7 @@ public class RenderDataMetaFile extends AbstractMetaDataContainerFile implements
 							
 							// get the metaFile's version
 							FullDataMetaFile renderSourceMetaFile = this.fullDataSourceProvider.getFileIfExist(this.pos);
-							if (renderSourceMetaFile != null)
+							if (renderSourceMetaFile != null && renderSourceMetaFile.baseMetaData != null)
 							{
 								renderDataVersionRef.value = renderSourceMetaFile.baseMetaData.checksum;
 							}

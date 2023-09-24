@@ -505,11 +505,6 @@ public class ClientApi
 			IDhClientWorld dhClientWorld = SharedApi.getIDhClientWorld();
 			IDhClientLevel level = dhClientWorld.getOrLoadClientLevel(levelWrapper);
 			
-			if (prefLoggerEnabled)
-			{
-				level.dumpRamUsage();
-			}
-			
 			
 			
 			

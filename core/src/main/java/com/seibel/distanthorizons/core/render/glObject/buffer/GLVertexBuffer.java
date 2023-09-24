@@ -61,16 +61,20 @@ public class GLVertexBuffer extends GLBuffer
 		return GL32.GL_ARRAY_BUFFER;
 	}
 	
-	public void uploadBuffer(ByteBuffer bb, int vertCount, EGpuUploadMethod uploadMethod, int maxExpensionSize)
+	public void uploadBuffer(ByteBuffer byteBuffer, int vertCount, EGpuUploadMethod uploadMethod, int maxExpensionSize)
 	{
-		if (vertCount < 0) throw new IllegalArgumentException("VertCount is negative!");
+		if (vertCount < 0)
+		{
+			throw new IllegalArgumentException("VertCount is negative!");
+		}
+		
 		// If size is zero, just ignore it.
-		if (bb.limit() - bb.position() != 0)
+		if (byteBuffer.limit() - byteBuffer.position() != 0)
 		{
 			boolean useBuffStorage = uploadMethod.useBufferStorage;
-			super.uploadBuffer(bb, uploadMethod, maxExpensionSize, useBuffStorage ? 0 : GL32.GL_STATIC_DRAW);
+			super.uploadBuffer(byteBuffer, uploadMethod, maxExpensionSize, useBuffStorage ? 0 : GL32.GL_STATIC_DRAW);
 		}
-		vertexCount = vertCount;
+		this.vertexCount = vertCount;
 	}
 	
 	public ByteBuffer mapBuffer(int targetSize, EGpuUploadMethod uploadMethod, int maxExpensionSize)

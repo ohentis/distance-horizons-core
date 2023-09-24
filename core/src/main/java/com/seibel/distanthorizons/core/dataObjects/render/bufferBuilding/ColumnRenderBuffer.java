@@ -20,22 +20,22 @@
 package com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding;
 
 import com.seibel.distanthorizons.core.config.Config;
+import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
+import com.seibel.distanthorizons.core.enums.EGLProxyContext;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.render.AbstractRenderBuffer;
 import com.seibel.distanthorizons.core.render.glObject.GLProxy;
 import com.seibel.distanthorizons.core.render.glObject.buffer.GLVertexBuffer;
-import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
-import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
 import com.seibel.distanthorizons.core.render.renderer.LodRenderer;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.objects.StatsMap;
 import com.seibel.distanthorizons.api.enums.config.EGpuUploadMethod;
 import com.seibel.distanthorizons.core.util.*;
+import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import org.apache.logging.log4j.Logger;
 
-import java.awt.*;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.concurrent.*;
@@ -48,6 +48,7 @@ import java.util.concurrent.*;
 public class ColumnRenderBuffer extends AbstractRenderBuffer
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	private static final IMinecraftClientWrapper minecraftClient = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	
 	private static final long MAX_BUFFER_UPLOAD_TIMEOUT_NANOSECONDS = 1_000_000;
 	
@@ -83,19 +84,65 @@ public class ColumnRenderBuffer extends AbstractRenderBuffer
 	// buffer uploading //
 	//==================//
 	
-	public void uploadBuffer(LodQuadBuilder builder, EGpuUploadMethod method) throws InterruptedException
+	/** Should be run on a DH thread. */
+	public void uploadBuffer(LodQuadBuilder builder, EGpuUploadMethod gpuUploadMethod) throws InterruptedException
 	{
-		if (method.useEarlyMapping)
+		LodUtil.assertTrue(Thread.currentThread().getName().startsWith(ThreadUtil.THREAD_NAME_PREFIX), "Buffer uploading needs to be done on a DH thread to prevent locking up any MC threads.");
+		
+		
+		// the async is relative to MC's render thread
+		boolean uploadAsync = Config.Client.Advanced.GpuBuffers.gpuUploadAsync.get();
+		if (uploadAsync)
 		{
-			this.uploadBuffersMapped(builder, method);
+			// upload here on a DH thread
+			GLProxy glProxy = GLProxy.getInstance();
+			EGLProxyContext oldContext = glProxy.getGlContext();
+			glProxy.setGlContext(EGLProxyContext.LOD_BUILDER);
+			try
+			{
+				this.uploadBuffersUsingUploadMethod(builder, gpuUploadMethod);
+			}
+			finally
+			{
+				glProxy.setGlContext(oldContext);
+			}
 		}
 		else
 		{
-			this.uploadBuffersDirect(builder, method);
+			// upload on MC's render thread
+			CompletableFuture<Void> uploadFuture = new CompletableFuture<>();
+			minecraftClient.executeOnRenderThread(() ->
+			{
+				try
+				{
+					this.uploadBuffersUsingUploadMethod(builder, gpuUploadMethod);
+					uploadFuture.complete(null);
+				}
+				catch (InterruptedException e)
+				{
+					throw new CompletionException(e);
+				}
+			});
+			
+			// freeze this DH thread while we wait for MC to upload the buffer
+			uploadFuture.join();
+		}
+	}
+	private void uploadBuffersUsingUploadMethod(LodQuadBuilder builder, EGpuUploadMethod gpuUploadMethod) throws InterruptedException
+	{
+		if (gpuUploadMethod.useEarlyMapping)
+		{
+			this.uploadBuffersMapped(builder, gpuUploadMethod);
+		}
+		else
+		{
+			this.uploadBuffersDirect(builder, gpuUploadMethod);
 		}
 		
 		this.buffersUploaded = true;
 	}
+	
+	
 	
 	private void uploadBuffersMapped(LodQuadBuilder builder, EGpuUploadMethod method)
 	{

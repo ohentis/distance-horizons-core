@@ -117,12 +117,8 @@ public class ColumnRenderBufferBuilder
 					try
 					{
 						EVENT_LOGGER.trace("RenderRegion start Upload @ " + renderSource.sectionPos);
-						GLProxy glProxy = GLProxy.getInstance();
-						EGpuUploadMethod method = GLProxy.getInstance().getGpuUploadMethod();
-						EGLProxyContext oldContext = glProxy.getGlContext();
-						glProxy.setGlContext(EGLProxyContext.LOD_BUILDER);
-						ColumnRenderBuffer buffer = renderBufferRef.swap(null);
 						
+						ColumnRenderBuffer buffer = renderBufferRef.swap(null);
 						if (buffer == null)
 						{
 							buffer = new ColumnRenderBuffer(new DhBlockPos(renderSource.sectionPos.getMinCornerLodPos().getCornerBlockPos(), clientLevel.getMinY()), renderSource.sectionPos);
@@ -130,7 +126,7 @@ public class ColumnRenderBufferBuilder
 						
 						try
 						{
-							buffer.uploadBuffer(quadBuilder, method);
+							buffer.uploadBuffer(quadBuilder, GLProxy.getInstance().getGpuUploadMethod());
 							LodUtil.assertTrue(buffer.buffersUploaded);
 							EVENT_LOGGER.trace("RenderRegion end Upload @ " + renderSource.sectionPos);
 							return buffer;
@@ -139,10 +135,6 @@ public class ColumnRenderBufferBuilder
 						{
 							buffer.close();
 							throw e;
-						}
-						finally
-						{
-							glProxy.setGlContext(oldContext);
 						}
 					}
 					catch (InterruptedException e)

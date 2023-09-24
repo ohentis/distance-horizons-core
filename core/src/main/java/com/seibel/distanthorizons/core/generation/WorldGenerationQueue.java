@@ -82,7 +82,7 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 	//  1. allow the generator to deal with larger sections (let the generator threads split up larger tasks into smaller one
 	//  2. batch requests better. instead of sending 4 individual tasks of detail level N, send 1 task of detail level n+1
 	private final ExecutorService queueingThread = ThreadUtil.makeSingleThreadPool("World Gen Queue");
-	private boolean generationQueueStarted = false;
+	private boolean generationQueueRunning = false;
 	private DhBlockPos2D generationTargetPos = DhBlockPos2D.ZERO;
 	/** can be used for debugging how many tasks are currently in the queue */
 	private int numberOfTasksQueued = 0;
@@ -179,39 +179,26 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 		// TODO Should we cancel generation of chunks that were loaded by the player?
 	}
 	
+	
+	
 	//===============//
 	// running tasks //
 	//===============//
 	
-	public void runCurrentGenTasksUntilBusy(DhBlockPos2D targetPos)
+	public void startGenerationQueueAndSetTargetPos(DhBlockPos2D targetPos)
 	{
-		generator.preGeneratorTaskStart();
-		try
+		// update the target pos
+		this.generationTargetPos = targetPos;
+		
+		// ensure the queuing thread is running
+		if (!this.generationQueueRunning)
 		{
-			// the generator is shutting down, don't attempt to generate anything
-			if (this.generatorClosingFuture != null)
-			{
-				return;
-			}
-			
-			
-			// update the target pos
-			this.generationTargetPos = targetPos;
-			
-			// only start the queuing thread once
-			if (!generationQueueStarted)
-			{
-				startWorldGenQueuingThread();
-			}
-		}
-		catch (Exception e)
-		{
-			LOGGER.error(e.getMessage(), e);
+			this.startWorldGenQueuingThread();
 		}
 	}
 	private void startWorldGenQueuingThread()
 	{
-		this.generationQueueStarted = true;
+		this.generationQueueRunning = true;
 		
 		// queue world generation tasks on its own thread since this process is very slow and would lag the server thread
 		this.queueingThread.execute(() ->
@@ -221,25 +208,18 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 				// loop until the generator is shutdown
 				while (!Thread.interrupted())
 				{
-//					LOGGER.info("pre task count: " + this.numberOfTasksQueued);
-					
-					// recenter the generator tasks, this is done to prevent generating chunks where the player isn't
-					//this.waitingTaskQuadTree.setCenterBlockPos(this.generationTargetPos);
+					this.generator.preGeneratorTaskStart();
 					
 					// queue generation tasks until the generator is full, or there are no more tasks to generate
 					boolean taskStarted = true;
 					while (!this.generator.isBusy() && taskStarted)
 					{
-						//this.removeGarbageCollectedTasks(); // TODO this is extremely slow
 						taskStarted = this.startNextWorldGenTask(this.generationTargetPos);
 						if (!taskStarted)
 						{
 							int debugPointOne = 0;
 						}
 					}
-
-
-//					LOGGER.info("after task count: " + this.numberOfTasksQueued);
 					
 					// if there aren't any new tasks, wait a second before checking again // TODO replace with a listener instead
 					Thread.sleep(1000);
@@ -252,33 +232,11 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 			catch (Exception e)
 			{
 				LOGGER.error("queueing exception: " + e.getMessage(), e);
-				this.generationQueueStarted = false;
+				this.generationQueueRunning = false;
 			}
 		});
 	}
 
-//	/** Removes all {@link WorldGenTask}'s and {@link WorldGenTaskGroup}'s that have been garbage collected. */
-//	private void removeGarbageCollectedTasks() // TODO remove, potential mystery errors caused by garbage collection isn't worth it (and may not be necessary any more now that we are using a quad tree to hold the tasks). // also this is very slow with the curent quad tree impelmentation
-//	{
-//		for (byte detailLevel = QuadTree.TREE_LOWEST_DETAIL_LEVEL; detailLevel < this.waitingTaskQuadTree.treeMaxDetailLevel; detailLevel++)
-//		{
-//			MovableGridRingList<WorldGenTask> gridRingList = this.waitingTaskQuadTree.getRingList(detailLevel);
-//			Iterator<WorldGenTask> taskIterator = gridRingList.iterator();
-//			while (taskIterator.hasNext())
-//			{
-//				// go through each WorldGenTask in the TaskGroup
-//				WorldGenTask genTask = taskIterator.next();
-//				if (genTask != null && !genTask.taskTracker.isMemoryAddressValid())
-//				{
-//					taskIterator.remove();
-//					genTask.future.complete(WorldGenResult.CreateFail());
-//				}
-//			}
-//		}
-//	}
-	
-	private final Set<WorldGenTask> CheckingTasks = Collections.newSetFromMap(new ConcurrentHashMap<>());
-	
 	private static class Mapper
 	{
 		public final WorldGenTask task;
@@ -297,63 +255,30 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 	 */
 	private boolean startNextWorldGenTask(DhBlockPos2D targetPos)
 	{
-		long closestGenDist = Long.MAX_VALUE;
-		
-		WorldGenTask closestTask = null;
-		//CheckingTasks.clear();
-		
-/*		// TODO improve, having to go over every node isn't super efficient, removing null nodes from the tree would help
-		Iterator<QuadNode<WorldGenTask>> nodeIterator = this.waitingTaskQuadTree.nodeIterator();
-		while (nodeIterator.hasNext())
-		{
-			QuadNode<WorldGenTask> taskNode = nodeIterator.next();
-			WorldGenTask newGenTask = taskNode.value;
-			DhSectionPos taskSectionPos = taskNode.sectionPos;
-			
-			if (newGenTask != null) // TODO add an option to skip leaves with null values and potentially auto-prune them
-			{
-				CheckingTasks.add(newGenTask);
-				if (!newGenTask.StillValid())
-				{
-					// skip and remove out-of-bound tasks or tasks that are no longer valid
-					taskNode.value = null;
-					continue;
-				}
-				
-				
-				// use chebyShev distance in order to generate in rings around the target pos (also because it is a fast distance calculation)
-				int chebDistToTargetPos = newGenTask.pos.getCenterBlockPos().toPos2D().chebyshevDist(targetPos.toPos2D());
-				if (chebDistToTargetPos < closestGenDist)
-				{
-					// this task is closer than the last one
-					closestTask = newGenTask;
-					closestGenDist = chebDistToTargetPos;
-				}
-			}
-		}*/
-		
-		waitingTasks.forEach((pos, task) -> {
-			if (!task.StillValid())
-			{
-				waitingTasks.remove(pos);
-				task.future.complete(WorldGenResult.CreateFail());
-			}
-		});
-		
-		if (waitingTasks.size() == 0)
+		if (this.waitingTasks.size() == 0)
 		{
 			return false;
 		}
 		
-		Mapper closestTaskMap = waitingTasks.reduceEntries(1024,
-				v -> new Mapper(v.getValue(), v.getValue().pos.getSectionBBoxPos().getCenterBlockPos().toPos2D().chebyshevDist(targetPos.toPos2D())),
-				(a, b) -> a.dist < b.dist ? a : b);
+		this.waitingTasks.forEach((pos, task) -> 
+		{
+			if (!task.StillValid())
+			{
+				this.waitingTasks.remove(pos);
+				task.future.complete(WorldGenResult.CreateFail());
+			}
+		});
 		
-		closestTask = closestTaskMap.task;
+		
+		
+		Mapper closestTaskMap = this.waitingTasks.reduceEntries(1024,
+				entry -> new Mapper(entry.getValue(), entry.getValue().pos.getSectionBBoxPos().getCenterBlockPos().toPos2D().chebyshevDist(targetPos.toPos2D())),
+				(aMapper, bMapper) -> aMapper.dist < bMapper.dist ? aMapper : bMapper);
+		
+		WorldGenTask closestTask = closestTaskMap.task;
 		
 		// remove the task we found, we are going to start it and don't want to run it multiple times
-		//WorldGenTask removedWorldGenTask = this.waitingTaskQuadTree.setValue(new DhSectionPos(closestTask.pos.detailLevel, closestTask.pos.x, closestTask.pos.z), null);
-		waitingTasks.remove(closestTask.pos, closestTask);
+		this.waitingTasks.remove(closestTask.pos, closestTask);
 		
 		// do we need to modify this task to generate it?
 		if (this.canGeneratePos((byte) 0, closestTask.pos)) // TODO should detail level 0 be replaced?
@@ -399,13 +324,7 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 				childFutures.add(newFuture);
 				
 				WorldGenTask newGenTask = new WorldGenTask(childDhSectionPos, childDhSectionPos.getDetailLevel(), finalClosestTask.taskTracker, newFuture);
-				waitingTasks.put(newGenTask.pos, newGenTask);
-				//this.waitingTaskQuadTree.setValue(new DhSectionPos(childDhSectionPos.sectionDetailLevel, childDhSectionPos.sectionX, childDhSectionPos.sectionZ), newGenTask);
-				
-				//boolean valueAdded = this.waitingTaskQuadTree.getValue(new DhSectionPos(childDhSectionPos.sectionDetailLevel, childDhSectionPos.sectionX, childDhSectionPos.sectionZ)) != null;
-				//LodUtil.assertTrue(valueAdded); // failed to add world gen task to quad tree, this means the quad tree was the wrong size
-
-//				LOGGER.info("split feature "+sectionPos+" into "+childDhSectionPos+" "+(valueAdded ? "added" : "notAdded"));
+				this.waitingTasks.put(newGenTask.pos, newGenTask);
 			});
 			
 			// send the child futures to the future recipient, to notify them of the new tasks

@@ -85,36 +85,34 @@ public class DhClientServerLevel extends DhLevel implements IDhClientLevel, IDhS
 	}
 	
 	@Override
-	public void serverTick()
-	{
-		chunkToLodBuilder.tick();
-	}
+	public void serverTick() { this.chunkToLodBuilder.tick(); }
 	
 	@Override
 	public void doWorldGen()
 	{
-		serverside.worldGeneratorEnabledConfig.pollNewValue();
-		boolean shouldDoWorldGen = serverside.worldGeneratorEnabledConfig.get() && clientside.isRendering();
-		boolean isWorldGenRunning = serverside.worldGenModule.isWorldGenRunning();
+		this.serverside.worldGeneratorEnabledConfig.pollNewValue();
+		boolean shouldDoWorldGen = this.serverside.worldGeneratorEnabledConfig.get() && this.clientside.isRendering();
+		boolean isWorldGenRunning = this.serverside.worldGenModule.isWorldGenRunning();
 		if (shouldDoWorldGen && !isWorldGenRunning)
 		{
 			// start world gen
-			serverside.worldGenModule.startWorldGen(serverside.dataFileHandler, new ServerLevelModule.WorldGenState(this));
+			this.serverside.worldGenModule.startWorldGen(this.serverside.dataFileHandler, new ServerLevelModule.WorldGenState(this));
 		}
 		else if (!shouldDoWorldGen && isWorldGenRunning)
 		{
 			// stop world gen
-			serverside.worldGenModule.stopWorldGen(serverside.dataFileHandler);
+			this.serverside.worldGenModule.stopWorldGen(this.serverside.dataFileHandler);
 		}
 
-		if (serverside.worldGenModule.isWorldGenRunning())
+		if (this.serverside.worldGenModule.isWorldGenRunning())
 		{
-			ClientLevelModule.ClientRenderState renderState = clientside.ClientRenderStateRef.get();
+			ClientLevelModule.ClientRenderState renderState = this.clientside.ClientRenderStateRef.get();
 			if (renderState != null && renderState.quadtree != null)
 			{
-				serverside.dataFileHandler.removeGenRequestIf(p -> !renderState.quadtree.isSectionPosInBounds(p));
+				this.serverside.dataFileHandler.removeGenRequestIf(pos -> !renderState.quadtree.isSectionPosInBounds(pos));
 			}
-			serverside.worldGenModule.worldGenTick(new DhBlockPos2D(MC_CLIENT.getPlayerBlockPos()));
+			
+			this.serverside.worldGenModule.worldGenTick(new DhBlockPos2D(MC_CLIENT.getPlayerBlockPos()));
 		}
 	}
 	
@@ -195,9 +193,9 @@ public class DhClientServerLevel extends DhLevel implements IDhClientLevel, IDhS
 	@Override
 	public void close()
 	{
-		clientside.close();
+		this.clientside.close();
 		super.close();
-		serverside.close();
+		this.serverside.close();
 		LOGGER.info("Closed " + this.getClass().getSimpleName() + " for " + this.getServerLevelWrapper());
 	}
 	
@@ -212,12 +210,6 @@ public class DhClientServerLevel extends DhLevel implements IDhClientLevel, IDhS
 		);
 		
 		this.clientside.reloadPos(pos);
-	}
-	
-	@Override
-	public void dumpRamUsage()
-	{
-		
 	}
 	
 }

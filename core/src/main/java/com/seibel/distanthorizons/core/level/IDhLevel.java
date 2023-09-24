@@ -33,8 +33,6 @@ public interface IDhLevel extends AutoCloseable
 	int getMinY();
 	CompletableFuture<Void> saveAsync();
 	
-	void dumpRamUsage();
-	
 	/**
 	 * May return either a client or server level wrapper. <br>
 	 * Should not return null

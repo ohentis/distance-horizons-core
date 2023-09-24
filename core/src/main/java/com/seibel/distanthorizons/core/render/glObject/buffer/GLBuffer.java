@@ -145,7 +145,7 @@ public class GLBuffer implements AutoCloseable
 		GL32.glBufferSubData(getBufferBindingTarget(), 0, bb);
 	}
 	
-	// Requires already binded
+	/** Assumes the GL Context is already bound */
 	public void uploadBuffer(ByteBuffer bb, EGpuUploadMethod uploadMethod, int maxExpansionSize, int bufferHint)
 	{
 		LodUtil.assertTrue(!uploadMethod.useEarlyMapping, "UploadMethod signal that this should use Mapping instead of uploadBuffer!");

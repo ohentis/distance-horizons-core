@@ -259,12 +259,6 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 	public int getMinY() { return getLevelWrapper().getMinHeight(); }
 	
 	@Override
-	public void dumpRamUsage()
-	{
-		//TODO
-	}
-	
-	@Override
 	public void close()
 	{
 		super.close();

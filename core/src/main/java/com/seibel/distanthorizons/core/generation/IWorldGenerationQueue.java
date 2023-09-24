@@ -22,7 +22,6 @@ package com.seibel.distanthorizons.core.generation;
 import com.seibel.distanthorizons.core.generation.tasks.IWorldGenTaskTracker;
 import com.seibel.distanthorizons.core.generation.tasks.WorldGenResult;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
-import com.seibel.distanthorizons.core.pos.DhLodPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 
 import java.io.Closeable;
@@ -37,7 +36,7 @@ public interface IWorldGenerationQueue extends Closeable
 	void cancelGenTasks(Iterable<DhSectionPos> positions);
 	
 	/** @param targetPos the position that world generation should be centered around, generally this will be the player's position. */
-	void runCurrentGenTasksUntilBusy(DhBlockPos2D targetPos);
+	void startGenerationQueueAndSetTargetPos(DhBlockPos2D targetPos);
 	
 	int getWaitingTaskCount();
 	int getInProgressTaskCount();
