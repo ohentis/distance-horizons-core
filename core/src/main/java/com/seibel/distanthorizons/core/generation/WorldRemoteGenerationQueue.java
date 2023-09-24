@@ -80,7 +80,7 @@ public class WorldRemoteGenerationQueue implements IWorldGenerationQueue, IDebug
 	}
 	
 	@Override
-	public void runCurrentGenTasksUntilBusy(DhBlockPos2D targetPos)
+	public void startGenerationQueueAndSetTargetPos(DhBlockPos2D targetPos)
 	{
 		if (generatorClosingFuture != null || !networkState.getClient().isReady()) return;
 		

@@ -68,13 +68,13 @@ public class FullDataFileHandler implements IFullDataSourceProvider
 		for (DhSectionPos pos : posList)
 		{
 			map.put(pos,
-					metaFileBySectionPos.containsKey(pos) ? 3 // Loaded
+					loadedMetaFileBySectionPos.containsKey(pos) ? 3 // Loaded
 					: this.isFileUnloaded(pos) ? 2            // Unloaded
 					: 1);                                     // Not generated
 		}
 		return map;
 	}
-	protected boolean isFileUnloaded(DhSectionPos pos) { return unloadedFileBySectionPos.containsKey(pos); }
+	protected boolean isFileUnloaded(DhSectionPos pos) { return !loadedMetaFileBySectionPos.containsKey(pos); }
 	
 	protected final IDhLevel level;
 	protected final File saveDir;
