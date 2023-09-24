@@ -30,12 +30,14 @@ import com.seibel.distanthorizons.core.generation.tasks.WorldGenResult;
 import com.seibel.distanthorizons.core.level.DhLevel;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.logging.f3.F3Screen;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nullable;
 import java.lang.ref.WeakReference;
+import java.text.DecimalFormat;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
@@ -50,12 +52,37 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandler
 	
 	private final ArrayList<IOnWorldGenCompleteListener> onWorldGenTaskCompleteListeners = new ArrayList<>();
 	
+	private final ConcurrentSkipListSet<Long> taskCompletionTimes = new ConcurrentSkipListSet<>();
+	private final F3Screen.DynamicMessage handlerF3Message;
+	
 	// Use to hold onto incomplete data sources that are waiting for generation, so that they don't get GC'd before they are generated
 	private final ConcurrentHashMap<DhSectionPos, IIncompleteFullDataSource> incompleteDataSources = new ConcurrentHashMap<>();
 	
-	public GeneratedFullDataFileHandler(IDhLevel level, AbstractSaveStructure saveStructure) { super(level, saveStructure); }
+	public GeneratedFullDataFileHandler(IDhLevel level, AbstractSaveStructure saveStructure) {
+		super(level, saveStructure);
+		this.handlerF3Message = new F3Screen.DynamicMessage(() ->
+		{
+			// Keep only for last 30 seconds
+			taskCompletionTimes.removeIf(time -> time < System.currentTimeMillis() - 30000);
+			if (taskCompletionTimes.size() < 2)
+				return "Gen task completion time: No information yet";
+			
+			double timePerCompletion = (double) (taskCompletionTimes.last() - taskCompletionTimes.first()) / taskCompletionTimes.size() / 1000;
+			if (timePerCompletion < 1) {
+				double completionRate = 1 / timePerCompletion;
+				return "Gen task completion rate: " + new DecimalFormat("#.00").format(completionRate) + " completions/sec";
+			} else {
+				return "Gen task completion time: " + new DecimalFormat("#.00").format(timePerCompletion) + " seconds/completion";
+			}
+		});
+	}
 	
-	
+	@Override
+	public void close()
+	{
+		super.close();
+		this.handlerF3Message.close();
+	}
 	
 	//==================//
 	// generation queue //
@@ -256,6 +283,7 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandler
 			// generation completed, update the files and listener(s)
 			this.flushAndSave(pos);
 			//this.fireOnGenPosSuccessListeners(pos);
+			this.addTimestampToStatistics();
 			return;
 		}
 		else
@@ -272,6 +300,11 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandler
 		}
 		
 		genTask.releaseStrongReference();
+	}
+	
+	private void addTimestampToStatistics()
+	{
+		taskCompletionTimes.add(System.currentTimeMillis());
 	}
 	
 	private void fireOnGenPosSuccessListeners(DhSectionPos pos)
