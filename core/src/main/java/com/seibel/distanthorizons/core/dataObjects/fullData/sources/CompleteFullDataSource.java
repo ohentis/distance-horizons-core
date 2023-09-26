@@ -297,6 +297,8 @@ public class CompleteFullDataSource extends FullDataArrayAccessor implements IFu
 	
 	@Override
 	public SingleColumnFullDataAccessor tryGet(int relativeX, int relativeZ) { return this.get(relativeX, relativeZ); }
+	@Override
+	public SingleColumnFullDataAccessor getOrCreate(int relativeX, int relativeZ) { return this.get(relativeX, relativeZ); }
 	
 	@Override
 	public void update(ChunkSizedFullDataAccessor chunkDataView)
@@ -461,6 +463,7 @@ public class CompleteFullDataSource extends FullDataArrayAccessor implements IFu
 	
 	@Override
 	public boolean isEmpty() { return this.isEmpty; }
+	@Override
 	public void markNotEmpty() { this.isEmpty = false; }
 	
 	@Override

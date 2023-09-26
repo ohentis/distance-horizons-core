@@ -284,7 +284,23 @@ public class LowDetailIncompleteFullDataSource extends FullDataArrayAccessor imp
 	//======//
 	
 	@Override
-	public SingleColumnFullDataAccessor tryGet(int relativeX, int relativeZ) { return this.isColumnNotEmpty.get(relativeX * WIDTH + relativeZ) ? this.get(relativeX, relativeZ) : null; }
+	public SingleColumnFullDataAccessor tryGet(int relativeX, int relativeZ) { return this.tryGetOrCreate(relativeX, relativeZ, false); }
+	@Override
+	public SingleColumnFullDataAccessor getOrCreate(int relativeX, int relativeZ) { return this.tryGetOrCreate(relativeX, relativeZ, true); }
+	private SingleColumnFullDataAccessor tryGetOrCreate(int relativeX, int relativeZ, boolean createIfMissing)
+	{
+		int notEmptyIndex = relativeX * WIDTH + relativeZ;
+		boolean columnEmpty = this.isColumnNotEmpty.get(notEmptyIndex);
+		
+		// "create" the missing column if necessary
+		if (columnEmpty && createIfMissing)
+		{
+			this.isColumnNotEmpty.set(notEmptyIndex, true);
+			columnEmpty = false;
+		}
+		
+		return !columnEmpty ? this.get(relativeX, relativeZ) : null;
+	}
 	
 	
 	
@@ -314,6 +330,7 @@ public class LowDetailIncompleteFullDataSource extends FullDataArrayAccessor imp
 	
 	@Override
 	public boolean isEmpty() { return this.isEmpty; }
+	@Override
 	public void markNotEmpty() { this.isEmpty = false; }
 	
 	@Override
@@ -360,170 +377,6 @@ public class LowDetailIncompleteFullDataSource extends FullDataArrayAccessor imp
 	}
 	
 	@Override
-	public void sampleFrom(IFullDataSource fullDataSource)
-	{
-		DhSectionPos pos = fullDataSource.getSectionPos();
-		LodUtil.assertTrue(pos.getDetailLevel() < this.sectionPos.getDetailLevel());
-		LodUtil.assertTrue(pos.overlapsExactly(this.sectionPos));
-		
-		if (fullDataSource.isEmpty())
-		{
-			return;
-		}
-		
-		
-		if (fullDataSource instanceof CompleteFullDataSource)
-		{
-			this.sampleFrom((CompleteFullDataSource) fullDataSource);
-		}
-		else if (fullDataSource instanceof HighDetailIncompleteFullDataSource)
-		{
-			this.sampleFrom((HighDetailIncompleteFullDataSource) fullDataSource);
-		}
-		else if (fullDataSource instanceof LowDetailIncompleteFullDataSource)
-		{
-			this.sampleFrom((LowDetailIncompleteFullDataSource) fullDataSource);
-//			LodUtil.assertNotReach("SampleFrom not implemented for ["+IFullDataSource.class.getSimpleName()+"] with class ["+fullDataSource.getClass().getSimpleName()+"].");
-		}
-		else
-		{
-			// TODO implement
-			LodUtil.assertNotReach("SampleFrom not implemented for [" + this.getClass().getSimpleName() + "] with class [" + fullDataSource.getClass().getSimpleName() + "].");
-		}
-	}
-	
-	private void sampleFrom(HighDetailIncompleteFullDataSource sparseSource)
-	{
-		DhLodPos thisLodPos = this.sectionPos.getMinCornerLodPos(this.getDataDetailLevel());
-		DhSectionPos pos = sparseSource.getSectionPos();
-		
-		this.isEmpty = false;
-		
-		if (this.getDataDetailLevel() > this.sectionPos.getDetailLevel())
-		{
-			DhLodPos dataLodPos = pos.getMinCornerLodPos(this.getDataDetailLevel());
-			
-			int offsetX = dataLodPos.x - thisLodPos.x;
-			int offsetZ = dataLodPos.z - thisLodPos.z;
-			LodUtil.assertTrue(offsetX >= 0 && offsetX < WIDTH && offsetZ >= 0 && offsetZ < WIDTH);
-			
-			int chunksPerData = 1 << (this.getDataDetailLevel() - HighDetailIncompleteFullDataSource.SPARSE_UNIT_DETAIL);
-			int dataSpan = this.sectionPos.getWidthCountForLowerDetailedSection(this.getDataDetailLevel());
-			
-			for (int xOffset = 0; xOffset < dataSpan; xOffset++)
-			{
-				for (int zOffset = 0; zOffset < dataSpan; zOffset++)
-				{
-					SingleColumnFullDataAccessor column = sparseSource.tryGet(
-							xOffset * chunksPerData * sparseSource.dataPointsPerSection,
-							zOffset * chunksPerData * sparseSource.dataPointsPerSection);
-					
-					if (column != null)
-					{
-						column.deepCopyTo(this.get(offsetX + xOffset, offsetZ + zOffset));
-						this.isColumnNotEmpty.set((offsetX + xOffset) * WIDTH + offsetZ + zOffset, true);
-					}
-				}
-			}
-		}
-		else
-		{
-			DhLodPos dataLodPos = pos.getSectionBBoxPos();
-			int lowerSectionsPerData = this.sectionPos.getWidthCountForLowerDetailedSection(dataLodPos.detailLevel);
-			if (dataLodPos.x % lowerSectionsPerData != 0 || dataLodPos.z % lowerSectionsPerData != 0)
-			{
-				return;
-			}
-			
-			
-			dataLodPos = dataLodPos.convertToDetailLevel(this.getDataDetailLevel());
-			int offsetX = dataLodPos.x - thisLodPos.x;
-			int offsetZ = dataLodPos.z - thisLodPos.z;
-			
-			SingleColumnFullDataAccessor column = sparseSource.tryGet(0, 0);
-			if (column != null)
-			{
-				column.deepCopyTo(this.get(offsetX, offsetZ));
-				this.isColumnNotEmpty.set(offsetX * WIDTH + offsetZ, true);
-			}
-		}
-	}
-	
-	private void sampleFrom(CompleteFullDataSource inputSource)
-	{
-		DhSectionPos inputPos = inputSource.getSectionPos();
-		this.isEmpty = false;
-		
-		
-		DhLodPos baseOffset = this.sectionPos.getMinCornerLodPos(this.getDataDetailLevel());
-		DhSectionPos inputOffset = inputPos.convertNewToDetailLevel(this.getDataDetailLevel());
-		int offsetX = inputOffset.getX() - baseOffset.x;
-		int offsetZ = inputOffset.getZ() - baseOffset.z;
-		
-		
-		int numberOfDataPointsToUpdate = WIDTH / this.sectionPos.getWidthCountForLowerDetailedSection(inputSource.getSectionPos().getDetailLevel()); // can be 0 if the input source is significantly smaller than this data source
-		// should be 1 at minimum, to prevent divide by zero errors (and because trying to get 0 data points doesn't make any sense)
-		numberOfDataPointsToUpdate = Math.max(1, numberOfDataPointsToUpdate);
-		
-		
-		int inputFractionWidth = inputSource.width() / numberOfDataPointsToUpdate;
-		for (int x = 0; x < numberOfDataPointsToUpdate; x++)
-		{
-			for (int z = 0; z < numberOfDataPointsToUpdate; z++)
-			{
-				SingleColumnFullDataAccessor thisDataColumn = this.get(offsetX + x, offsetZ + z);
-				SingleColumnFullDataAccessor inputDataColumn = inputSource.get(inputFractionWidth * x, inputFractionWidth * z);
-				inputDataColumn.deepCopyTo(thisDataColumn);
-				
-				int notEmptyIndex = (offsetX + x) * WIDTH + (offsetZ + z);
-				this.isColumnNotEmpty.set(notEmptyIndex, true);
-			}
-		}
-	}
-	
-	private void sampleFrom(LowDetailIncompleteFullDataSource spottySource)
-	{
-		DhSectionPos pos = spottySource.getSectionPos();
-		this.isEmpty = false;
-		this.downsampleFrom(spottySource);
-		
-		
-		if (this.getDataDetailLevel() > this.sectionPos.getDetailLevel())
-		{
-			DhLodPos thisLodPos = this.sectionPos.getMinCornerLodPos(this.getDataDetailLevel());
-			DhLodPos dataLodPos = pos.getMinCornerLodPos(this.getDataDetailLevel());
-			
-			int offsetX = dataLodPos.x - thisLodPos.x;
-			int offsetZ = dataLodPos.z - thisLodPos.z;
-			int dataWidth = this.sectionPos.getWidthCountForLowerDetailedSection(this.getDataDetailLevel());
-			
-			for (int xOffset = 0; xOffset < dataWidth; xOffset++)
-			{
-				for (int zOffset = 0; zOffset < dataWidth; zOffset++)
-				{
-					this.isColumnNotEmpty.set((offsetX + xOffset) * WIDTH + offsetZ + zOffset, true);
-				}
-			}
-		}
-		else
-		{
-			DhLodPos dataPos = pos.getSectionBBoxPos();
-			int lowerSectionsPerData = this.sectionPos.getWidthCountForLowerDetailedSection(dataPos.detailLevel);
-			if (dataPos.x % lowerSectionsPerData != 0 || dataPos.z % lowerSectionsPerData != 0)
-			{
-				return;
-			}
-			
-			
-			DhLodPos basePos = this.sectionPos.getMinCornerLodPos(this.getDataDetailLevel());
-			dataPos = dataPos.convertToDetailLevel(this.getDataDetailLevel());
-			int offsetX = dataPos.x - basePos.x;
-			int offsetZ = dataPos.z - basePos.z;
-			this.isColumnNotEmpty.set(offsetX * WIDTH + offsetZ, true);
-		}
-	}
-	
-	@Override
 	public IFullDataSource tryPromotingToCompleteDataSource()
 	{
 		// promotion can only be completed if every column has data
@@ -535,15 +388,13 @@ public class LowDetailIncompleteFullDataSource extends FullDataArrayAccessor imp
 		{
 			return this;
 		}
-		isPromoted = true;
+		this.isPromoted = true;
 		return new CompleteFullDataSource(this.sectionPos, this.mapping, this.dataArrays);
 	}
 	
 	@Override
-	public boolean hasBeenPromoted()
-	{
-		return isPromoted;
-	}
+	public boolean hasBeenPromoted() { return this.isPromoted; }
+	
 	
 	
 	//================//

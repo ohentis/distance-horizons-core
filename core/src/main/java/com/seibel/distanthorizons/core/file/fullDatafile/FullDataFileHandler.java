@@ -386,7 +386,7 @@ public class FullDataFileHandler implements IFullDataSourceProvider
 			FullDataMetaFile existingFile = existingFiles.get(i);
 			
 			
-			CompletableFuture<IFullDataSource> loadFileFuture = usePooledDataSources ? existingFile.getOrLoadCachedDataSourceAsync() : existingFile.getDataSourceWithoutCachingAsync();
+			CompletableFuture<IFullDataSource> loadFileFuture = usePooledDataSources ? existingFile.getDataSourceWithoutCachingAsync() : existingFile.getOrLoadCachedDataSourceAsync();
 			
 			CompletableFuture<IFullDataSource> sampleSourceFuture = loadFileFuture.whenComplete((existingFullDataSource, ex) ->
 			{
@@ -415,7 +415,7 @@ public class FullDataFileHandler implements IFullDataSourceProvider
 				}
 				
 				// pooling temporary data sources massively reduces garbage collector overhead when just sampling (going from ~8 GB/sec to ~90 MB/sec)
-				if (!usePooledDataSources && !existingFile.cacheLoadingDataSource)
+				if (usePooledDataSources && !existingFile.cacheLoadingDataSource)
 				{
 					existingFile.clearCachedDataSource();
 					

@@ -114,14 +114,18 @@ public class FullDataArrayAccessor implements IFullDataAccessor
 			{
 				for (int z = 0; z < this.width; z++)
 				{
-					long[] sourceData = this.dataArrays[this.offset + x * this.dataWidth + z];
-					long[] newData = new long[sourceData.length];
-					for (int dataPointIndex = 0; dataPointIndex < newData.length; dataPointIndex++)
+					long[] currentData = this.dataArrays[this.offset + x * this.dataWidth + z];
+					// may be null if no data exists for this column yet
+					if (currentData != null)
 					{
-						newData[dataPointIndex] = FullDataPointUtil.remap(remappedIds, sourceData[dataPointIndex]);
+						long[] newData = new long[currentData.length]; // TODO what to do if null?
+						for (int dataPointIndex = 0; dataPointIndex < newData.length; dataPointIndex++)
+						{
+							newData[dataPointIndex] = FullDataPointUtil.remap(remappedIds, currentData[dataPointIndex]);
+						}
+						
+						target.dataArrays[target.offset + x * target.dataWidth + z] = newData;
 					}
-					
-					target.dataArrays[target.offset + x * target.dataWidth + z] = newData;
 				}
 			}
 		}

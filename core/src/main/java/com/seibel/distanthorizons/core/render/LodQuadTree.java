@@ -277,7 +277,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 		{
 			// this is the detail level we want to render //
 			// prepare this section for rendering
-			renderSection.loadRenderSource(this.renderSourceProvider, this.level);
+			renderSection.loadRenderSource(this.renderSourceProvider, this.level); // TODO this should fire for the lowest detail level first, wait for it to finish then fire the next highest to prevent waiting forever for 2 million chunk section to finish sampling everything
 			
 			// wait for the parent to disable before enabling this section, so we don't overdraw/overlap render sections
 			if (!parentRenderSectionIsEnabled && renderSection.canRenderNow())

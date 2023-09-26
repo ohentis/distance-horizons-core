@@ -1,94 +1,62 @@
 {
   "distanthorizons.title":
-	"Distant Horizons",
+    "Distant Horizons",
 
 
-  "distanthorizons.general.true":
-    "Вкл.",
-  "distanthorizons.general.false":
-    "Выкл.",
-  "distanthorizons.general.yes":
-    "Да",
-  "distanthorizons.general.no":
-    "Нет",
-  "distanthorizons.general.back":
-    "Назад",
-  "distanthorizons.general.next":
-    "Следующий",
-  "distanthorizons.general.done":
-    "Готово",
-  "distanthorizons.general.cancel":
-    "Отмена",
-  "distanthorizons.general.reset":
-    "Сброc",
+  "distanthorizons.general.true": "Вкл.",
+  "distanthorizons.general.false": "Выкл.",
+  "distanthorizons.general.reset": "Сброc",
+  "distanthorizons.general.back": "Назад",
+  "distanthorizons.general.next": "Следующий",
+  "distanthorizons.general.done": "Готово",
+  "distanthorizons.general.cancel": "Отмена",
+  "distanthorizons.general.yes": "Да",
+  "distanthorizons.general.no": "Нет",
 
 
 
 
-  "distanthorizons.updater.title":
-    "Автоматическое обновление Distant Horizons",
-  "distanthorizons.updater.text1":
-    "§lДоступно новое обновление!",
-  "distanthorizons.updater.text2":
-    "§fВы хотите перейти с %s§f на %s§f?",
-  "distanthorizons.updater.later":
-    "Не сейчас",
-  "distanthorizons.updater.never":
-    "Не показывать снова",
-  "distanthorizons.updater.update":
-    "Обновить",
-  "distanthorizons.updater.update.@tooltip":
-    "Обновить мод 1 раз\n(обновляется при закрытии игры)",
-  "distanthorizons.updater.silent":
-    "Всегда тихое обновление",
-  "distanthorizons.updater.silent.@tooltip":
-    "Каждый раз, когда доступно обновление, оно будет обновляться\n(§6ПРЕДУПРЕЖДЕНИЕ§r: Оно не будет запрашивать у пользователя разрешение на обновление, но будет поддерживать мод в актуальном состоянии)",
-  "distanthorizons.updater.waitingForClose":
-    "Обновление Distant Horizons завершится после перезапуска игры",
+  "distanthorizons.updater.title": "Автоматическое обновление Distant Horizons",
+  "distanthorizons.updater.text1": "§lДоступно новое обновление!",
+  "distanthorizons.updater.text2": "§fВы хотите перейти с %s§f на %s§f?",
+  "distanthorizons.updater.later": "Не сейчас",
+  "distanthorizons.updater.never": "Не показывать снова",
+  "distanthorizons.updater.update": "Обновить",
+  "distanthorizons.updater.update.@tooltip": "Обновить мод 1 раз\n(обновляется при закрытии игры)",
+  "distanthorizons.updater.silent": "Всегда тихое обновление",
+  "distanthorizons.updater.silent.@tooltip": "Каждый раз, когда доступно обновление, оно будет обновляться\n(§6ПРЕДУПРЕЖДЕНИЕ§r: Оно не будет запрашивать у пользователя разрешение на обновление, но будет поддерживать мод в актуальном состоянии)",
+  "distanthorizons.updater.waitingForClose": "Обновление Distant Horizons завершится после перезапуска игры",
 
 
 
 
-  "distanthorizons.config.title":
-    "Конфигурация Distant Horizons",
-  "distanthorizons.config.client":
-    "Клиент",
+  "distanthorizons.config.title": "Конфигурация Distant Horizons",
 
-  "distanthorizons.config.client.quickEnableRendering":
-    "Включить рендеринг",
-  "distanthorizons.config.client.quickEnableRendering.@tooltip":
-    "Определяет, отображает ли Distant Horizons LODs.",
-  
-  "distanthorizons.config.client.qualityPresetSetting":
-    "Предустановленное качество",
-  "distanthorizons.config.client.qualityPresetSetting.@tooltip":
-    "Изменяет ряд графических настроек для быстрого изменения качества рендеринга Distant Horizons. \n\nУменьшите этот параметр, если ваш графический процессор максимально загружен или у вас возникли проблемы с частотой кадров.",
-  "distanthorizons.config.client.threadPresetSetting":
-    "Загруженность процессора",
-  "distanthorizons.config.client.threadPresetSetting.@tooltip":
-    "Изменяет количество потоков, которые будут использоваться в Distant Horizons. \n\nУвеличение этого параметра улучшит скорость удаленного генератора (Distant Generator) и скорость загрузки LOD, \nно также увеличит использование процессора/памяти и может привести к заиканию. \n\nПримечание: на процессорах с 4 ядрами или меньше эти настройки будут менее эффективными, \nи некоторые настройки дадут аналогичные результаты.",
-    
-  "distanthorizons.config.client.optionsButton":
-    "Отобразить кнопку Параметров",
-  "distanthorizons.config.client.optionsButton.@tooltip":
-    "Показать кнопку Параметров слева от кнопки FOV.",
+  "distanthorizons.config.client": "Клиент",
+
+  "distanthorizons.config.client.quickEnableRendering": "Включить рендеринг",
+  "distanthorizons.config.client.quickEnableRendering.@tooltip": "Определяет, отображает ли Distant Horizons LODs.",
+  "distanthorizons.config.client.qualityPresetSetting": "Предустановленное качество",
+  "distanthorizons.config.client.qualityPresetSetting.@tooltip": "Изменяет ряд графических настроек для быстрого изменения качества рендеринга Distant Horizons. \n\nУменьшите этот параметр, если ваш графический процессор максимально загружен или у вас возникли проблемы с частотой кадров.",
+  "distanthorizons.config.client.threadPresetSetting": "Загруженность процессора",
+  "distanthorizons.config.client.threadPresetSetting.@tooltip": "Изменяет количество потоков, которые будут использоваться в Distant Horizons. \n\nУвеличение этого параметра улучшит скорость удаленного генератора (Distant Generator) и скорость загрузки LOD, \nно также увеличит использование процессора/памяти и может привести к заиканию. \n\nПримечание: на процессорах с 4 ядрами или меньше эти настройки будут менее эффективными, \nи некоторые настройки дадут аналогичные результаты.",
+  "distanthorizons.config.client.optionsButton": "Отобразить кнопку Параметров",
+  "distanthorizons.config.client.optionsButton.@tooltip": "Показать кнопку Параметров слева от кнопки FOV.",
     
     
     
-  "distanthorizons.config.client.advanced":
-    "Расширенные параметры",
+  "distanthorizons.config.client.advanced": "Расширенные параметры",
     
-  "distanthorizons.config.client.advanced.graphics":
-    "Графика",
-  "distanthorizons.config.client.advanced.graphics.quality":
-    "Качество рендеринга",
+  "distanthorizons.config.client.advanced.graphics": "Графика",
+
+  "distanthorizons.config.client.advanced.graphics.quality": "Качество рендеринга",
 
   "distanthorizons.config.client.advanced.graphics.quality.maxHorizontalResolution": "Максимальное горизонтальное разрешение",
   "distanthorizons.config.client.advanced.graphics.quality.maxHorizontalResolution.@tooltip": "Изображения с максимальной детализацией отображаются на.\n\n§6Самый быстрый:§r Чанк\n§6Самый красивый:§r Блок",
   "distanthorizons.config.client.advanced.graphics.quality.lodChunkRenderDistance": "Расстояние рендеринга LOD",
   "distanthorizons.config.client.advanced.graphics.quality.lodChunkRenderDistance.@tooltip": "Расстояние рендеринга Distant Horizons, измеряемое в чанках. \n\nПримечание: это максимально возможное число. \nДальность рендеринга может быть выше или ниже этого числа \nв зависимости от других графических настроек.",
   "distanthorizons.config.client.advanced.graphics.quality.verticalQuality": "Вертикальное качество",
-  "distanthorizons.config.client.advanced.graphics.quality.verticalQuality.@tooltip": "На сколько хорошо LOD (уровень детализации) отображает выступы, пещеры, обрывы и т.д.\n\nБолее высокие параметры будут увеличивать использование памяти и GPU.",
+  "distanthorizons.config.client.advanced.graphics.quality.verticalQuality.@tooltip": "На сколько хорошо LOD отображает выступы, пещеры, обрывы и т.д.\n\nБолее высокие параметры будут увеличивать использование памяти и GPU.",
   "distanthorizons.config.client.advanced.graphics.quality.horizontalScale": "Горизонтальная шкала",
   "distanthorizons.config.client.advanced.graphics.quality.horizontalScale.@tooltip": "На сколько быстро уровни детализации (LOD) снижают качество.\n\nБольшие значения улучшат вид дальней местности, \nно увеличат использование памяти и GPU.",
   "distanthorizons.config.client.advanced.graphics.quality.horizontalQuality": "Горизонтальное качество",
@@ -105,11 +73,11 @@
   "distanthorizons.config.client.advanced.graphics.fog": "Туман",
 
   "distanthorizons.config.client.advanced.graphics.fog.drawMode": "Режим отображения тумана",
-  "distanthorizons.config.client.advanced.graphics.fog.drawMode.@tooltip": "Когда будет отрисовываться туман на LODs (уровнях детализации).",
+  "distanthorizons.config.client.advanced.graphics.fog.drawMode.@tooltip": "Когда будет отрисовываться туман на LOD-ах (уровнях детализации).",
   "distanthorizons.config.client.advanced.graphics.fog.distance": "Дальность тумана",
-  "distanthorizons.config.client.advanced.graphics.fog.distance.@tooltip": "Дальность(и), на которой туман будет отрисовываться на LODs.",
+  "distanthorizons.config.client.advanced.graphics.fog.distance.@tooltip": "Дальность(и), на которой туман будет отрисовываться на LOD-ах.",
   "distanthorizons.config.client.advanced.graphics.fog.colorMode": "Режим цвета тумана",
-  "distanthorizons.config.client.advanced.graphics.fog.colorMode.@tooltip": "Цвет тумана на LODs.",
+  "distanthorizons.config.client.advanced.graphics.fog.colorMode.@tooltip": "Цвет тумана на LOD-ах.",
   "distanthorizons.config.client.advanced.graphics.fog.disableVanillaFog": "Отключить ванильный туман",
   "distanthorizons.config.client.advanced.graphics.fog.disableVanillaFog.@tooltip": "§6Вкл.:§r отключает туман Minecraft на ванильных чанках. \n§6Выкл.:§r Minecraft отрисовывает туман как обычно. \n\nМожет вызывать проблемы с другими модами, изменяющими туман. \nОтключите, если ванильные чанки полностью покрыты туманом.",
   "distanthorizons.config.client.advanced.graphics.fog.advancedFog": "Дополнительные настройки тумана",
@@ -127,12 +95,12 @@
   "distanthorizons.config.client.advanced.graphics.fog.advancedFog.farFogDensity.@tooltip": "Какая должна быть плотность дальнего тумана? ",
 
 
-  "distanthorizons.config.client.advanced.graphics.ssao": "Окружающая окклюзия (Ambient Occlusion)",
+  "distanthorizons.config.client.advanced.graphics.ssao": "Окружающая окклюзия",
   
   "distanthorizons.config.client.advanced.graphics.ssao.enabled": "Включить окружающую окклюзию (Ambient Occlusion)",
   "distanthorizons.config.client.advanced.graphics.ssao.enabled.@tooltip": "Окружающая окклюзия добавляет глубину к освещению блоков.",
   "distanthorizons.config.client.advanced.graphics.ssao.sampleCount": "Количество образцов",
-  "distanthorizons.config.client.advanced.graphics.ssao.sampleCount.@tooltip": "Определяет, сколько точек в пространстве отбирается для теста окклюзии. \nБольшее количество улучшит качество и уменьшит полосирование, но увеличит нагрузку на ГПУ.",
+  "distanthorizons.config.client.advanced.graphics.ssao.sampleCount.@tooltip": "Определяет, сколько точек в пространстве отбирается для теста окклюзии. \nБольшее количество улучшит качество и уменьшит полосирование, но увеличит нагрузку на графический процессор.",
   "distanthorizons.config.client.advanced.graphics.ssao.radius": "Радиус",
   "distanthorizons.config.client.advanced.graphics.ssao.radius.@tooltip": "Определяет радиус применения эффекта окружающей окклюзии в блоках.",
   "distanthorizons.config.client.advanced.graphics.ssao.strength": "Сила",
@@ -232,23 +200,18 @@
   "distanthorizons.config.client.advanced.multiThreading.numberOfWorldGenerationThreads": "Количество потоков генерации мира",
   "distanthorizons.config.client.advanced.multiThreading.numberOfWorldGenerationThreads.@tooltip": "Сколько потоков следует использовать при генерации LODs вне обычной зоны отрисовки? \n\nЕсли это число меньше 1, оно будет рассматриваться как процент времени, в течение которого один поток может работать, прежде чем перейти в режим ожидания. \n\nЕсли у вас есть проблемы с прерываниями при генерации дальних LODs, уменьшите это число. Если вы хотите увеличить скорость генерации LOD, увеличьте это число. \n\nКоличество потоков для генерации LOD и количество потоков для построения буферов независимы друг от друга. Если их сумма больше количества ядер вашего процессора, это нормально.",
   "distanthorizons.config.client.advanced.multiThreading.runTimeRatioForWorldGenerationThreads": "Процент времени выполнения для потоков генерации мира",
-  
   "distanthorizons.config.client.advanced.multiThreading.numberOfBufferBuilderThreads": "Количество потоков построения буферов",
   "distanthorizons.config.client.advanced.multiThreading.numberOfBufferBuilderThreads.@tooltip": "Количество потоков, используемых при построении данных геометрии. \nМожет быть только от 1 до количества процессорных ядер вашего CPU.",
   "distanthorizons.config.client.advanced.multiThreading.runTimeRatioForBufferBuilderThreads": "Процент времени выполнения для потоков построения буферов",
-  
   "distanthorizons.config.client.advanced.multiThreading.numberOfFileHandlerThreads": "Количество потоков обработки файлов",
   "distanthorizons.config.client.advanced.multiThreading.numberOfFileHandlerThreads.@tooltip": "Количество потоков, используемых при построении буферов вершин (вещей, отправляемых на ваш GPU для отрисовки LODs). \nМожет быть только от 1 до количества процессорных ядер вашего CPU.",
   "distanthorizons.config.client.advanced.multiThreading.runTimeRatioForFileHandlerThreads": "Процент времени выполнения для потоков обработки файлов",
-  
   "distanthorizons.config.client.advanced.multiThreading.numberOfDataTransformerThreads": "Количество потоков преобразования данных",
   "distanthorizons.config.client.advanced.multiThreading.numberOfDataTransformerThreads.@tooltip": "Количество потоков, используемых при преобразовании данных ID в данные, подходящие для отрисовки. \n(Это, как правило, происходит при генерации нового ландшафта или изменении настроек графики). \nМожет быть только от 1 до количества процессорных ядер вашего CPU.",
   "distanthorizons.config.client.advanced.multiThreading.runTimeRatioForDataTransformerThreads": "Процент времени выполнения для потоков преобразования данных",
-  
   "distanthorizons.config.client.advanced.multiThreading.numberOfChunkLodConverterThreads": "Количество потоков преобразования LOD чанков",
   "distanthorizons.config.client.advanced.multiThreading.numberOfChunkLodConverterThreads.@tooltip": "Сколько потоков следует использовать для преобразования чанков Minecraft в данные LOD? \nЭти потоки работают как при генерации мира, так и при загрузке, выгрузке и модификации чанков.",
   "distanthorizons.config.client.advanced.multiThreading.runTimeRatioForChunkLodConverterThreads": "Процент времени выполнения для потоков преобразования LOD чанков",
-  
   
   
   "distanthorizons.config.client.advanced.debugging": "Отладка",
@@ -331,7 +294,6 @@
   "distanthorizons.config.client.advanced.debugging.debugWireframe.showRenderDataFileStatus": "Показать статус файла данных отрисовки",
   
   "distanthorizons.config.client.resetSettingsConfirmation": "Сбросить все настройки?",
-  
   "distanthorizons.config.client.resetSettingsConfirmation.resetConfirmationNote": "Вы уверены? Это действие нельзя отменить!",
   "distanthorizons.config.client.resetSettingsConfirmation.resetAllSettings": "Сбросить все настройки",
   
@@ -470,31 +432,19 @@
   "distanthorizons.config.enum.ELoggerMode.LOG_WARNING_TO_CHAT_AND_INFO_TO_FILE": "Файл: Информация, Чат: Предупреждения",
   "distanthorizons.config.enum.ELoggerMode.LOG_ERROR_TO_CHAT_AND_INFO_TO_FILE": "Файл: Информация, Чат: Ошибки",
     
-  "distanthorizons.config.enum.EGpuUploadMethod.AUTO":
-    "Авто",
-  "distanthorizons.config.enum.EGpuUploadMethod.BUFFER_STORAGE":
-    "Хранение буфера",
-  "distanthorizons.config.enum.EGpuUploadMethod.SUB_DATA":
-    "Данные SUB",
-  "distanthorizons.config.enum.EGpuUploadMethod.BUFFER_MAPPING":
-    "Отображение буфера",
-  "distanthorizons.config.enum.EGpuUploadMethod.DATA":
-    "Данные",
+  "distanthorizons.config.enum.EGpuUploadMethod.AUTO": "Авто",
+  "distanthorizons.config.enum.EGpuUploadMethod.BUFFER_STORAGE": "Хранение буфера",
+  "distanthorizons.config.enum.EGpuUploadMethod.SUB_DATA": "Данные SUB",
+  "distanthorizons.config.enum.EGpuUploadMethod.BUFFER_MAPPING": "Отображение буфера",
+  "distanthorizons.config.enum.EGpuUploadMethod.DATA": "Данные",
     
-  "distanthorizons.config.enum.EBufferRebuildTimes.CONSTANT":
-    "Постоянно",
-  "distanthorizons.config.enum.EBufferRebuildTimes.FREQUENT":
-    "Часто",
-  "distanthorizons.config.enum.EBufferRebuildTimes.NORMAL":
-    "Обычно",
-  "distanthorizons.config.enum.EBufferRebuildTimes.RARE":
-    "Редко",
+  "distanthorizons.config.enum.EBufferRebuildTimes.CONSTANT": "Постоянно",
+  "distanthorizons.config.enum.EBufferRebuildTimes.FREQUENT": "Часто",
+  "distanthorizons.config.enum.EBufferRebuildTimes.NORMAL": "Обычно",
+  "distanthorizons.config.enum.EBufferRebuildTimes.RARE": "Редко",
     
-  "distanthorizons.config.enum.ELodShading.MINECRAFT":
-    "Майнкрафт-овское",
-  "distanthorizons.config.enum.ELodShading.OLD_LIGHTING":
-    "Старое освещение",
-  "distanthorizons.config.enum.ELodShading.NONE":
-    "Ничего"
+  "distanthorizons.config.enum.ELodShading.MINECRAFT": "Майнкрафт-овское",
+  "distanthorizons.config.enum.ELodShading.OLD_LIGHTING": "Старое освещение",
+  "distanthorizons.config.enum.ELodShading.NONE": "Ничего"
   
 }

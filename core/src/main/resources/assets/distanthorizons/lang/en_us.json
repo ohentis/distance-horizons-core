@@ -333,7 +333,7 @@
     
   "distanthorizons.config.client.advanced.multiplayer.serverFolderNameMode":
     "Server Folder Mode",
-  "distanthorizons.config.client.multiplayer.serverFolderNameMode.@tooltip":
+  "distanthorizons.config.client.advanced.multiplayer.serverFolderNameMode.@tooltip":
     "Determines the folder format for local multiplayer data.\n\n§6Name Only:§r\nUses the server browser name. Ex: \"Minecraft Server\"\n§6Name IP:§r\n\"Minecraft Server, IP 192.168.1.40\"\n§6Name, IP, Port:§r\n\"Minecraft Server, IP 192.168.1.40:25565\"\n§6Name, IP, Port, MC Version:§r\n\"Minecraft Server, IP 192.168.1.40:25565, GameVersion 1.18.1\"\n\n§c§lCaution:§r changing while connected to a multiplayer server may cause glitches.",
   "distanthorizons.config.client.advanced.multiplayer.multiverseSimilarityRequiredPercent":
     "Multiverse Required Similarity %",

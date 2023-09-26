@@ -28,8 +28,7 @@ import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataInputStrea
 
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.locks.ReentrantLock;
 
 public abstract class AbstractFullDataSourceLoader
 {
@@ -46,7 +45,7 @@ public abstract class AbstractFullDataSourceLoader
 	
 	/** used when pooling data sources */
 	private final ArrayList<IFullDataSource> cachedSources = new ArrayList<>();
-	private final ReadWriteLock cacheReadWriteLock = new ReentrantReadWriteLock();
+	private final ReentrantLock cacheLock = new ReentrantLock();
 	
 	
 	
@@ -159,7 +158,7 @@ public abstract class AbstractFullDataSourceLoader
 	{
 		try
 		{
-			this.cacheReadWriteLock.readLock().lock();
+			this.cacheLock.lock();
 
 			int index = this.cachedSources.size() - 1;
 			if (index == -1)
@@ -173,7 +172,7 @@ public abstract class AbstractFullDataSourceLoader
 		}
 		finally
 		{
-			this.cacheReadWriteLock.readLock().unlock();
+			this.cacheLock.unlock();
 		}
 	}
 	
@@ -198,12 +197,12 @@ public abstract class AbstractFullDataSourceLoader
 		
 		try
 		{
-			this.cacheReadWriteLock.writeLock().lock();
+			this.cacheLock.lock();
 			this.cachedSources.add(dataSource);
 		}
 		finally
 		{
-			this.cacheReadWriteLock.writeLock().unlock();
+			this.cacheLock.unlock();
 		}
 	}
 	

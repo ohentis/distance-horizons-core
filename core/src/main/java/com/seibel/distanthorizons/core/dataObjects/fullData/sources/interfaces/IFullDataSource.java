@@ -69,6 +69,7 @@ public interface IFullDataSource
 	void update(ChunkSizedFullDataAccessor data);
 	
 	boolean isEmpty();
+	void markNotEmpty();
 	
 	/** AKA; the max relative position that {@link IFullDataSource#tryGet(int, int)} can accept for either X or Z */
 	int getWidthInDataPoints();
@@ -85,6 +86,11 @@ public interface IFullDataSource
 	 * @return null if the data doesn't exist
 	 */
 	SingleColumnFullDataAccessor tryGet(int relativeX, int relativeZ);
+	/**
+	 * Attempts to get the data column for the given relative x and z position. <br>
+	 * If no data exists yet an empty data column will be created.
+	 */
+	SingleColumnFullDataAccessor getOrCreate(int relativeX, int relativeZ);
 	
 	FullDataPointIdMap getMapping();
 	
