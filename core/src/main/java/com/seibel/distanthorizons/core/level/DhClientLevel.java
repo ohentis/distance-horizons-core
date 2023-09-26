@@ -19,6 +19,8 @@
 
 package com.seibel.distanthorizons.core.level;
 
+import com.seibel.distanthorizons.core.config.AppliedConfigState;
+import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.file.fullDatafile.IFullDataSourceProvider;
@@ -72,6 +74,7 @@ public class DhClientLevel extends DhLevel implements IDhClientLevel
 	@Nullable
 	private final ScopedNetworkEventSource<NetworkClient> eventSource;
 	public final WorldGenModule worldGenModule;
+	public final AppliedConfigState<Boolean> worldGeneratorEnabledConfig;
 	
 	
 
@@ -85,6 +88,7 @@ public class DhClientLevel extends DhLevel implements IDhClientLevel
 		this.saveStructure = saveStructure;
 		this.dataFileHandler = new RemoteFullDataFileHandler(this, saveStructure, networkState);
 		
+		this.worldGeneratorEnabledConfig = new AppliedConfigState<>(Config.Client.Advanced.WorldGenerator.enableDistantGeneration);
 		this.networkState = networkState;
 		this.worldGenModule = new WorldGenModule(dataFileHandler, this);
 		if (networkState != null)
@@ -135,8 +139,9 @@ public class DhClientLevel extends DhLevel implements IDhClientLevel
 	
 	public void doWorldGen()
 	{
+		this.worldGeneratorEnabledConfig.pollNewValue();
 		boolean isClientUsable = networkState != null && !networkState.getClient().isClosed();
-		boolean shouldDoWorldGen = isClientUsable && clientside.isRendering();
+		boolean shouldDoWorldGen = this.worldGeneratorEnabledConfig.get() && isClientUsable && clientside.isRendering();
 		boolean isWorldGenRunning = worldGenModule.isWorldGenRunning();
 		if (shouldDoWorldGen && !isWorldGenRunning)
 		{
