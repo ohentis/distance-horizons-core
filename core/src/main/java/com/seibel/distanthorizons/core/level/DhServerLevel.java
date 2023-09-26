@@ -47,6 +47,7 @@ import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.util.LodUtil;
+import com.seibel.distanthorizons.core.util.objects.Pair;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
@@ -72,6 +73,11 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 	private final ConcurrentMap<DhSectionPos, IncompleteDataSourceEntry> incompleteDataSources = new ConcurrentHashMap<>();
 	private final ConcurrentMap<Long, IncompleteDataSourceEntry> fullDataRequests = new ConcurrentHashMap<>();
 	
+	// Used to manage frequent chunk updates.
+	// If a chunk is updated, sending will be delayed, waiting until other updates come around,
+	// i.e. if a chunk is constantly updated, it will be sent once it stops updating.
+	private final ConcurrentMap<DhChunkPos, ChunkUpdateData> chunkUpdatesToSend = new ConcurrentHashMap<>();
+	private static final int CHUNK_UPDATE_SEND_DELAY = 5000;
 	
 	public DhServerLevel(AbstractSaveStructure saveStructure, IServerLevelWrapper serverLevelWrapper, RemotePlayerConnectionHandler remotePlayerConnectionHandler)
 	{
@@ -187,6 +193,7 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 	{
 		chunkToLodBuilder.tick();
 		
+		// Send finished data source requests
 		for (Map.Entry<DhSectionPos, IncompleteDataSourceEntry> mapEntry : incompleteDataSources.entrySet())
 		{
 			IncompleteDataSourceEntry entry = mapEntry.getValue();
@@ -221,6 +228,28 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 				msg.sendResponse(new FullDataSourceResponseMessage(completeSource, this));
 			}
 		}
+		
+		// Send updated chunks after delay
+		for (Map.Entry<DhChunkPos, ChunkUpdateData> chunkUpdateEntry : chunkUpdatesToSend.entrySet())
+		{
+			ChunkUpdateData chunkUpdateData = chunkUpdateEntry.getValue();
+			
+			if (System.currentTimeMillis() < chunkUpdateData.time + CHUNK_UPDATE_SEND_DELAY)
+				continue;
+			
+			chunkUpdatesToSend.remove(chunkUpdateEntry.getKey());
+			
+			for (ServerPlayerState serverPlayerState : remotePlayerConnectionHandler.getConnectedPlayers())
+			{
+				if (!serverPlayerState.config.isRealTimeUpdatesEnabled()) continue;
+				
+				double distanceFromPlayer = chunkUpdateData.accessor.chunkPos.distance(new DhChunkPos(serverPlayerState.serverPlayer.getPosition()));
+				if (distanceFromPlayer < serverPlayerState.serverPlayer.getViewDistance() ||
+						distanceFromPlayer > serverPlayerState.config.getRenderDistance()) return;
+				
+				serverPlayerState.channelContext.writeAndFlush(new FullDataPartialUpdateMessage(chunkUpdateData.accessor, this));
+			}
+		}
 	}
 	
 	@Override
@@ -235,13 +264,7 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 		
 		future.thenAccept(chunkSizedFullDataAccessor ->
 		{
-			for (ServerPlayerState serverPlayerState : remotePlayerConnectionHandler.getConnectedPlayers())
-			{
-				if (!serverPlayerState.config.isRealTimeUpdatesEnabled()) continue;
-				
-				if (chunk.getChunkPos().distance(new DhChunkPos(serverPlayerState.serverPlayer.getPosition())) <= serverPlayerState.config.getRenderDistance())
-					serverPlayerState.channelContext.writeAndFlush(new FullDataPartialUpdateMessage(chunkSizedFullDataAccessor, this));
-			}
+			this.chunkUpdatesToSend.put(chunkSizedFullDataAccessor.chunkPos, new ChunkUpdateData(chunkSizedFullDataAccessor));
 		});
 		
 		return future;
@@ -328,5 +351,13 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 		public IFullDataSource fullDataSource;
 		public final ConcurrentMap<Long, FullDataSourceRequestMessage> requestMessages = new ConcurrentHashMap<>();
 		public final Semaphore requestCollectionSemaphore = new Semaphore(Short.MAX_VALUE, true);
+	}
+	
+	private static class ChunkUpdateData
+	{
+		public final ChunkSizedFullDataAccessor accessor;
+		public final long time = System.currentTimeMillis();
+		
+		private ChunkUpdateData(ChunkSizedFullDataAccessor accessor) { this.accessor = accessor; }
 	}
 }

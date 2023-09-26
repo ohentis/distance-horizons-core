@@ -32,4 +32,6 @@ public interface IServerPlayerWrapper extends IDhApiUnsafeWrapper
 	IServerLevelWrapper getLevel();
 	
 	Vec3d getPosition();
+	
+	int getViewDistance();
 }
