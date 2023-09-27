@@ -43,11 +43,6 @@ public class ChunkToLodBuilder implements AutoCloseable
 	private static ConfigChangeListener<Integer> threadConfigListener;
 	
 	public static final long MAX_TICK_TIME_NS = 1000000000L / 20L;
-	/**
-	 * This is done to prevent tasks infinitely piling up if a queued chunk could never be generated,
-	 * But should also prevent de-queuing chunks that should still be generated.
-	 */
-	public static final short MAX_NUMBER_OF_CHUNK_GENERATION_ATTEMPTS_BEFORE_DISCARDING = 64;
 	
 	private final ConcurrentHashMap<DhChunkPos, IChunkWrapper> concurrentChunkToBuildByChunkPos = new ConcurrentHashMap<>();
 	private final ConcurrentLinkedDeque<Task> concurrentTaskToBuildList = new ConcurrentLinkedDeque<>();
@@ -144,7 +139,6 @@ public class ChunkToLodBuilder implements AutoCloseable
 				allDone = true;
 				break;
 			}
-			task.generationAttemptNumber++;
 			
 			count++;
 			IChunkWrapper latestChunk = this.concurrentChunkToBuildByChunkPos.remove(task.chunkPos); // Basically an Exchange operation
@@ -166,9 +160,10 @@ public class ChunkToLodBuilder implements AutoCloseable
 						continue;
 					}
 				}
-				else if (task.generationAttemptNumber > MAX_NUMBER_OF_CHUNK_GENERATION_ATTEMPTS_BEFORE_DISCARDING)
+				else if (task.generationAttemptExpirationTimeMs < System.currentTimeMillis())
 				{
 					// this task won't be re-queued
+					//LOGGER.trace("removed chunk "+task.chunkPos);
 					continue;
 				}
 			}
@@ -283,7 +278,7 @@ public class ChunkToLodBuilder implements AutoCloseable
 		public final DhChunkPos chunkPos;
 		public final CompletableFuture<ChunkSizedFullDataAccessor> future;
 		/** This is tracked so impossible tasks can be removed from the queue */
-		public short generationAttemptNumber = 0;
+		public long generationAttemptExpirationTimeMs = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(10);
 		
 		Task(DhChunkPos chunkPos, CompletableFuture<ChunkSizedFullDataAccessor> future)
 		{

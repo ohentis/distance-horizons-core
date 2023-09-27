@@ -19,187 +19,133 @@
 
 package com.seibel.distanthorizons.core.jar.installer;
 
+import com.electronwill.nightconfig.core.Config;
+
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.*;
 
 /**
- * Gets the releases available on gitlab and sends out the link.
- * Please move over to ModrinthGetter for downloading releases of the mod
+ * Gets info for nightly builds
  *
  * @author coolGi
  */
-// TODO: Change this to a way to get the nightly builds
-@Deprecated
 public class GitlabGetter
 {
-	public static final String GitLabApi = "https://gitlab.com/api/v4/projects/";
-	public static final String projectID = "18204078";
-//    public static JSONArray projectRelease = new JSONArray();
+	/** DH's instance of the Gitlab getter */
+	public static GitlabGetter INSTANCE = new GitlabGetter();
 	
-	public static List<String> releaseNames = new ArrayList<>(); // This list contains the release ID's
-	public static List<String> readableReleaseNames = new ArrayList<>(); // This list contains the readable names of the ID's
-	private static List<String> mcVersionReleases = new ArrayList<>(); // A list of all minecraft releases
+	public static final String GitlabApi = "https://gitlab.com/api/v4/projects/";
+	/** Gitlab project ID (can by gotten by typing `document.getElementById('project_id').value` on your main project's console) */
+	public final String projectID;
+	/** Combines the {@link GitlabGetter#GitlabApi} and {@link GitlabGetter#projectID} into one var (Followed by a "/" at the end) */
+	public final String GitProjID;
+	public ArrayList<Config> projectPipelines;
 	
+	/** Commit sha; Commit info */
+	private static final Map<String, Config> commitInfo = new HashMap<>();
+	/** Pipeline ID; Pipeline info */
+	private static final Map<Integer, ArrayList<Config>> pipelineInfo = new HashMap<>();
 	
-	
-	public static void init()
+	/** Uses our projectID to init this */
+	public GitlabGetter()
 	{
-//        try {
-//            // TODO: Modify the projectRelease to fix 1.6.0a's versions rather than fixing it everytime we want to use projectReleases
-//            projectRelease = (JSONArray) new JSONParser().parse(WebDownloader.downloadAsString(new URL(GitLabApi+projectID+"/releases")));
-//
-//            for (int i = 0; i < projectRelease.size(); i++) {
-//                JSONObject currentRelease = (JSONObject) projectRelease.get(i);
-//                if (!currentRelease.get("tag_name").toString().contains("-1.6.0a")) { // We have to do this cus 1.6.0a stuffed up some ordering
-//                    releaseNames.add(currentRelease.get("tag_name").toString());
-//                    if (currentRelease.get("tag_name").toString().startsWith("1.16.4") || currentRelease.get("tag_name").toString().startsWith("1.16.5")) {
-//                        // We want to do this to remove the mc version from the start of the name in 1.5.4 and prior
-//                        readableReleaseNames.add(currentRelease.get("name").toString().replace("1.16.4 ","").replace("1.16.5 ",""));
-//                    } else {
-//                        readableReleaseNames.add(currentRelease.get("name").toString());
-//                    }
-//                } else if (!releaseNames.contains("1.6.0a")) {
-//                    releaseNames.add("1.6.0a");
-//                    readableReleaseNames.add("Alpha 1.6.0");
-//                }
-//            }
-//
-//            // Some tests for getting the release versions
-////            System.out.println(getRelease("1.6.3a", "1.18.2"));
-////            System.out.println(getRelease("1.16.4-a1.2", null)); // The oldest downloadable version is 1.2 as versions before that didn't include downloads
-//
-//            // Set the mcVersionReleases
-//            JSONArray minecraftReleases = (JSONArray) ((JSONObject) new JSONParser().parse(WebDownloader.downloadAsString(new URL("https://launchermeta.mojang.com/mc/game/version_manifest.json")))).get("versions");
-//            for (int i = 0; i < minecraftReleases.size(); i++) {
-//                JSONObject jsonObject = (JSONObject) minecraftReleases.get(i);
-//                if (jsonObject.get("type").toString().equals("release"))
-//                    mcVersionReleases.add(jsonObject.get("id").toString());
-//            }
-//
-//            // Some tests to get minecraft versions available in that version of the mod
-////            System.out.println(getMcVersionsInRelease("1.6.5a"));
-////            System.out.println(getMcVersionsInRelease("1.16.4-a1.2"));
-//        } catch (Exception e) { e.printStackTrace(); }
+		this("18204078");
 	}
 	
-	/** Gets the compatible minecraft versions a release of the mod works with */
-	public static List<String> getMcVersionsInRelease(String version)
+	public GitlabGetter(String projectID)
 	{
-		List<String> versions = new ArrayList<>();
-//
-//        JSONArray releaseArray = getScuffedReleaseArray(version);
-//
-//
-//        for (int i = 0; i < releaseArray.size(); i++) {
-//            String name = ((JSONObject) releaseArray.get(i)).get("name").toString();
-//            for (String mcVersion : mcVersionReleases) {
-//                if (name.contains(mcVersion)) {
-//                    versions.add(mcVersion);
-//                    break;
-//                }
-//            }
-//        }
-//
-//        // Sort it so the newest versions of minecraft are at the top
-//        Collections.sort(versions);
-//        Collections.reverse(versions);
+		this.projectID = projectID;
+		this.GitProjID = GitlabApi + projectID + "/";
 		
-		return versions;
+		try
+		{
+			this.projectPipelines = WebDownloader.parseWebJsonList(this.GitProjID + "pipelines");
+		}
+		catch (Exception e) { e.printStackTrace(); }
 	}
-	/** Gets the url to the download of a release of the mod */
-	public static URL getRelease(String version, String mcVersion)
+	
+	public Config getCommitInfo(String commit)
 	{
-//        JSONArray releaseArray = getScuffedReleaseArray(version);
-//
-//        if (mcVersion != null) {
-//            for (int i = 0; i < releaseArray.size(); i++) {
-//                if (((JSONObject) releaseArray.get(i)).get("name").toString().contains(mcVersion)) { // With the way our GitLab releases is set up, the only way to check the mc version is to check if it is in the name
-//                    try {
-//                        return new URL(((JSONObject) releaseArray.get(i)).get("direct_asset_url").toString());
-//                    } catch (Exception e) { e.printStackTrace(); }
-//                }
-//            }
-//        } else {
-//            // If version is null it gets the first version available
-//            try {
-//                return new URL(((JSONObject) releaseArray.get(0)).get("direct_asset_url").toString());
-//            } catch (Exception e) { e.printStackTrace(); }
-//        }
+		if (!commitInfo.containsKey(commit))
+		{
+			try
+			{
+				commitInfo.put(commit, WebDownloader.parseWebJson(this.GitProjID + "repository/commits/" + commit));
+			}
+			catch (Exception e)
+			{
+				e.printStackTrace();
+				// Return empty
+				return Config.inMemory();
+			}
+		}
 		
-		return null;
+		return commitInfo.get(commit);
 	}
-	/** Gets the update log of a release */
-	public static String getVersionDescription(String version)
+	
+	public ArrayList<Config> getPipelineInfo(int pipeline)
 	{
-//        try {
-//            if (!version.equals("1.6.0a")) { // We have to do this cus 1.6.0a stuffed up some ordering
-//                // Do this hack to remove all the mcVer-1.6.0a items from the releaseNames
-//                int newVer = releaseNames.indexOf(version);
-//                if (releaseNames.indexOf(version) > releaseNames.size()-14)
-//                    newVer += 2;
-//
-//                return ((JSONObject) projectRelease.get(newVer)).get("description").toString();
-//            } else {
-//                for (int i = 0; i < projectRelease.size(); i++) {
-//                    JSONObject currentRelease = ((JSONObject) new JSONParser().parse(projectRelease.get(i).toString()));
-//                    if (currentRelease.get("tag_name").toString().contains("-1.6.0a"))
-//                        return currentRelease.get("description").toString();
-//                }
-//            }
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
-		return null;
+		if (!pipelineInfo.containsKey(pipeline))
+		{
+			try
+			{
+				pipelineInfo.put(pipeline, WebDownloader.parseWebJsonList(this.GitProjID + "pipelines/" + pipeline + "/jobs"));
+			}
+			catch (Exception e)
+			{
+				e.printStackTrace();
+				// Return empty
+				return new ArrayList<>();
+			}
+		}
+		
+		return pipelineInfo.get(pipeline);
 	}
-
-
-//    public static JSONArray getScuffedReleaseArray(String version) {
-//        // Get the asset links of the releases
-//        JSONArray releaseArray = new JSONArray();
-//
-//        if (!version.equals("1.6.0a")) { // We have to do this cus 1.6.0a stuffed up some ordering
-//            try {
-//                // Do this hack to remove all the mcVer-1.6.0a items from the releaseNames
-//                int newVer = releaseNames.indexOf(version);
-//                if (releaseNames.indexOf(version) > releaseNames.size()-14)
-//                    newVer += 2;
-//
-//                releaseArray = (
-//                        ((JSONArray)
-//                                ((JSONObject)
-//                                        ((JSONObject)
-//                                                projectRelease.get(newVer)
-//                                        ).get("assets")
-//                                ).get("links")));
-//            } catch (Exception e) {
-//                System.out.println("ERROR: Release [" + version + "] is not a valid release. Printing stacktrace...");
-//                e.printStackTrace();
-//                return null;
-//            }
-//        } else {
-//            try {
-//                for (int i = 0; i < projectRelease.size(); i++) {
-//                    JSONObject currentRelease = ((JSONObject) new JSONParser().parse(projectRelease.get(i).toString()));
-//                    if (currentRelease.get("tag_name").toString().contains("-1.6.0a")) {
-//                        releaseArray.add(
-//                                ((JSONArray)
-//                                    ((JSONObject)
-//                                        currentRelease.get("assets")
-//                                    ).get("links")
-//                                ).get(0)
-//                        );
-//                    }
-//                }
-//            } catch (Exception e) {
-//                e.printStackTrace();
-//                return null;
-//            }
-//        }
-//
-//        return releaseArray;
-//    }
+	
+	/**
+	 * Gets all the Minecraft download links to a pipeline ID
+	 * 
+	 * @return Minecraft version; Download URL
+	 */
+	public Map<String, URL> getDownloads(int pipelineID)
+	{
+		Map<String, URL> downloads = new HashMap<>();
+		ArrayList<Config> currentPipelineInfo = this.getPipelineInfo(pipelineID);
+		
+		try
+		{
+			for (Config cfg : currentPipelineInfo)
+			{
+				if (!cfg.get("stage").equals("build"))
+					continue;
+				downloads.put(
+						((String) cfg.get("name")).split("\\[|\\]")[1], // Regex to extract the Minecraft version from the text
+						new URL(this.GitProjID + "jobs/" + cfg.get("id") + "/artifacts")
+				);
+			}
+		}
+		catch (Exception e) { e.printStackTrace(); }
+		
+		return downloads;
+	}
+	
+	// Just a small test for this (Should output the nightly for each version that it supports)
+	public static void main(String[] args) {
+		GitlabGetter gitlabGetter = new GitlabGetter();
+		
+		System.out.println(gitlabGetter.getDownloads(gitlabGetter.projectPipelines.get(0).get("id")));
+	}
+	
+	
+	
+	/** 
+	 * A simple url getter for the latest jar of a version
+	 * @apiNote Not dependent on the instance of this object, will just download the one for the base mod
+	 */
+	public static URL getLatestForVersion(String mcVer)
+	{
+		try {
+			return new URL("https://gitlab.com/jeseibel/minecraft-lod-mod/-/jobs/artifacts/main/download?job=build:%20[" + mcVer + "]");
+		} catch (Exception e) { e.printStackTrace(); return null; } // This should always be safe (unless you stuff up **badly** somewhere)
+	}
 }

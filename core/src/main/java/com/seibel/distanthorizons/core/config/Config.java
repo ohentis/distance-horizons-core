@@ -21,20 +21,16 @@ package com.seibel.distanthorizons.core.config;
 
 
 import com.seibel.distanthorizons.api.enums.config.*;
+import com.seibel.distanthorizons.api.enums.config.quickOptions.*;
 import com.seibel.distanthorizons.api.enums.rendering.*;
-import com.seibel.distanthorizons.api.enums.config.quickOptions.EQualityPreset;
-import com.seibel.distanthorizons.api.enums.config.quickOptions.EThreadPreset;
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiDistantGeneratorMode;
-import com.seibel.distanthorizons.core.config.eventHandlers.QuickRenderToggleConfigEventHandler;
-import com.seibel.distanthorizons.core.config.eventHandlers.RenderCacheConfigEventHandler;
-import com.seibel.distanthorizons.core.config.eventHandlers.UnsafeValuesConfigListener;
-import com.seibel.distanthorizons.core.config.eventHandlers.WorldCurvatureConfigEventHandler;
-import com.seibel.distanthorizons.core.config.eventHandlers.presets.ThreadPresetConfigEventHandler;
-import com.seibel.distanthorizons.core.config.eventHandlers.presets.RenderQualityPresetConfigEventHandler;
+import com.seibel.distanthorizons.core.config.eventHandlers.*;
+import com.seibel.distanthorizons.core.config.eventHandlers.presets.*;
 import com.seibel.distanthorizons.core.config.types.*;
-import com.seibel.distanthorizons.core.config.types.enums.EConfigEntryAppearance;
-import com.seibel.distanthorizons.core.config.types.enums.EConfigEntryPerformance;
+import com.seibel.distanthorizons.core.config.types.enums.*;
+import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftSharedWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import org.apache.logging.log4j.Logger;
 
@@ -1034,7 +1030,9 @@ public class Config
 			public static class AutoUpdater
 			{
 				public static ConfigEntry<Boolean> enableAutoUpdater = new ConfigEntry.Builder<Boolean>()
-						.set(!ModInfo.IS_DEV_BUILD) // hide the update notification in dev builds 
+						.set(
+								!SingletonInjector.INSTANCE.get(IMinecraftSharedWrapper.class).getInstallationDirectory().getName().equals("run") // Guesses that a dev would use the directory called "run" as their running directory, and clients wont
+						) // disable the update notification in dev clients
 						.comment(""
 								+ "Automatically check for updates on game launch?")
 						.build();
@@ -1042,10 +1040,16 @@ public class Config
 				public static ConfigEntry<Boolean> enableSilentUpdates = new ConfigEntry.Builder<Boolean>()
 						.set(false)
 						.comment(""
-								+ "Should Distant Horizons silently, automatically download and install new versions? "
-								+ "")
+								+ "Should Distant Horizons silently, automatically download and install new versions?")
 						.build();
 				
+				public static ConfigEntry<EUpdateBranch> updateBranch = new ConfigEntry.Builder<EUpdateBranch>()
+						.set(
+								ModInfo.IS_DEV_BUILD? EUpdateBranch.NIGHTLY: EUpdateBranch.STABLE // If it's already a nightly build, then download the nightly build ofc
+						)
+						.comment(""
+								+ " If DH should use the nightly (provided by Gitlab), or stable (provided by Modrinth) build")
+						.build();
 			}
 			
 			public static class Logging

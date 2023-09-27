@@ -19,16 +19,20 @@
 
 package com.seibel.distanthorizons.core.jar.installer;
 
+import com.electronwill.nightconfig.core.Config;
+import com.electronwill.nightconfig.json.JsonFormat;
+
 import javax.net.ssl.HttpsURLConnection;
 import java.io.*;
 import java.net.URL;
 import java.net.URLConnection;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
+import java.util.ArrayList;
 
 /**
- * Does something similar to wget/curl.
- * It allows you to download a file from a link
+ * Does something similar to wget/curl. <br>
+ * It allows you to download a file from a link, and other useful web utils
  *
  * @author coolGi
  */
@@ -38,7 +42,7 @@ public class WebDownloader
 	{
 		try
 		{
-			final URL url = new URL("https://www.google.com"); // Google will probably be online forever so we use that to check network connection
+			final URL url = new URL("https://example.com"); // example.com will always be online as long as a DNS server exists, so attempt to ping it to check for internet connectivity
 			final URLConnection conn = url.openConnection();
 			conn.connect();
 			conn.getInputStream().close();
@@ -109,7 +113,28 @@ public class WebDownloader
 	
 	
 	
-	// Stolen from https://mkyong.com/java/how-to-generate-a-file-checksum-value-in-java/ but added some comments
+	public static Config parseWebJson(String url) throws Exception
+	{
+		return parseWebJson(new URL(url));
+	}
+	public static Config parseWebJson(URL url) throws Exception
+	{
+		return JsonFormat.minimalInstance().createParser().parse(WebDownloader.downloadAsString(url));
+	}
+	
+	public static ArrayList<Config> parseWebJsonList(String url) throws Exception
+	{
+		return parseWebJsonList(new URL(url));
+	}
+	public static ArrayList<Config> parseWebJsonList(URL url) throws Exception
+	{
+		// Is there a better way of doing this?
+		return JsonFormat.minimalInstance().createParser().parse("{\"E\":" + WebDownloader.downloadAsString(url) + "}").get("E");
+	}
+	
+	
+	
+	// Taken from https://mkyong.com/java/how-to-generate-a-file-checksum-value-in-java/ but added some comments
 	/**
 	 * @param filepath Path to the file
 	 * @param md The checksum. Can be gotten by "MessageDigest.getInstance("SHA-256")" and can replace string with something like SHA, MD2, MD5, SHA-256, SHA-384...

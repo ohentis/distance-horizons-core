@@ -216,23 +216,22 @@ public class ColumnRenderBuffer extends AbstractRenderBuffer
 				LOGGER.error("Failed to upload buffer: ", e);
 			}
 			
-			if (BPerNS <= 0)
-			{
-				continue;
-			}
 			
-			// upload buffers over an extended period of time
-			// to hopefully prevent stuttering.
-			remainingNS += size * BPerNS;
-			if (remainingNS >= TimeUnit.NANOSECONDS.convert(1000 / 60, TimeUnit.MILLISECONDS))
+			if (BPerNS > 0)
 			{
-				if (remainingNS > MAX_BUFFER_UPLOAD_TIMEOUT_NANOSECONDS)
+				// upload buffers over an extended period of time
+				// to hopefully prevent stuttering.
+				remainingNS += size * BPerNS;
+				if (remainingNS >= TimeUnit.NANOSECONDS.convert(1000 / 60, TimeUnit.MILLISECONDS))
 				{
-					remainingNS = MAX_BUFFER_UPLOAD_TIMEOUT_NANOSECONDS;
+					if (remainingNS > MAX_BUFFER_UPLOAD_TIMEOUT_NANOSECONDS)
+					{
+						remainingNS = MAX_BUFFER_UPLOAD_TIMEOUT_NANOSECONDS;
+					}
+					
+					Thread.sleep(remainingNS / 1000000, (int) (remainingNS % 1000000));
+					remainingNS = 0;
 				}
-				
-				Thread.sleep(remainingNS / 1000000, (int) (remainingNS % 1000000));
-				remainingNS = 0;
 			}
 		}
 		

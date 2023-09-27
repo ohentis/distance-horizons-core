@@ -30,36 +30,24 @@ import java.util.*;
  *
  * @author coolGi
  */
-// TODO: Fix stuff in here (check how to do stuff with `[{jsonStuff},{jsonStuff}]` which needs to be remade with nightconfig's json
 public class ModrinthGetter
 {
 	public static final String ModrinthAPI = "https://api.modrinth.com/v2/project/";
 	public static final String projectID = "distanthorizons";
+	/** Functions should only be accessed once this is true */
 	public static boolean initted = false;
 	public static ArrayList<Config> projectRelease;
 	public static Map<String, Config> idToJson = new HashMap<>();
 	
 	public static List<String> releaseID = new ArrayList<>(); // This list contains the release ID's
 	public static List<String> mcVersions = new ArrayList<>(); // List of available Minecraft versions in the mod
-	/**
-	 * Arg 1 = Release ID;
-	 * Arg 2 = Readable name
-	 */
+	/** Release ID; Readable name */
 	public static Map<String, String> releaseNames = new HashMap<>(); // This list contains the readable names of the ID's to the
-	/**
-	 * Arg 1 = Minecraft version;
-	 * Arg 2 = Compatible project ID's for that
-	 */
+	/** Minecraft version; Compatible project ID's for that */
 	public static Map<String, List<String>> mcVerToReleaseID = new HashMap<>();
-	/**
-	 * Arg 1 = ID;
-	 * Arg 2 = Download URL
-	 */
+	/** ID; Download URL */
 	public static Map<String, URL> downloadUrl = new HashMap<>(); // Get the download url
-	/**
-	 * Arg 1 = ID;
-	 * Arg 2 = Changelog
-	 */
+	/** ID; Changelog */
 	public static Map<String, String> changeLogs = new HashMap<>();
 	
 	
@@ -68,7 +56,7 @@ public class ModrinthGetter
 		try
 		{
 			initted = false;
-			projectRelease = JsonFormat.fancyInstance().createParser().parse("{\"E\":" + WebDownloader.downloadAsString(new URL(ModrinthAPI + projectID + "/version")) + "}").get("E");
+			projectRelease = WebDownloader.parseWebJsonList(ModrinthAPI + projectID + "/version");
 			
 			
 			for (Config currentRelease : projectRelease)

@@ -466,6 +466,10 @@
     "Enable Silent Updates",
   "distanthorizons.config.client.advanced.autoUpdater.enableSilentUpdates.@tooltip":
     "Automatically updates the mod when an update is available",
+  "distanthorizons.config.client.advanced.autoUpdater.updateBranch":
+    "Update Branch",
+  "distanthorizons.config.client.advanced.autoUpdater.updateBranch.@tooltip":
+    "Where to download the latest update from.\n\nStable: Stable builds from Modrinth\nNightly: Nightly builds from Gitlab",
     
     
     
@@ -828,6 +832,10 @@
   "distanthorizons.config.enum.ELodShading.OLD_LIGHTING":
     "Old Lighting",
   "distanthorizons.config.enum.ELodShading.NONE":
-    "None"
-  
+    "None",
+
+  "distanthorizons.config.enum.EUpdateBranch.STABLE":
+    "Stable",
+  "distanthorizons.config.enum.EUpdateBranch.NIGHTLY":
+    "Nightly"
 }
