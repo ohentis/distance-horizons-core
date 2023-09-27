@@ -47,7 +47,6 @@ import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.util.LodUtil;
-import com.seibel.distanthorizons.core.util.objects.Pair;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
@@ -69,7 +68,7 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 	private final RemotePlayerConnectionHandler remotePlayerConnectionHandler;
 	private final ScopedNetworkEventSource<NetworkServer> eventSource;
 	
-	private final LinkedBlockingQueue<IServerPlayerWrapper> worldGenLoopingQueue = new LinkedBlockingQueue<>();
+	private final ConcurrentLinkedQueue<IServerPlayerWrapper> worldGenLoopingQueue = new ConcurrentLinkedQueue<>();
 	private final ConcurrentMap<DhSectionPos, IncompleteDataSourceEntry> incompleteDataSources = new ConcurrentHashMap<>();
 	private final ConcurrentMap<Long, IncompleteDataSourceEntry> fullDataRequests = new ConcurrentHashMap<>();
 	
@@ -186,7 +185,8 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 	
 	public void removePlayer(IServerPlayerWrapper serverPlayer)
 	{
-		boolean ignored = this.worldGenLoopingQueue.remove(serverPlayer);
+		//noinspection ResultOfMethodCallIgnored
+		this.worldGenLoopingQueue.remove(serverPlayer);
 	}
 	
 	public void serverTick()
@@ -310,14 +310,14 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 		
 		if (serverside.worldGenModule.isWorldGenRunning())
 		{
-			IServerPlayerWrapper firstPlayer;
-			synchronized (worldGenLoopingQueue)
-			{
-				firstPlayer = this.worldGenLoopingQueue.poll();
-				if (firstPlayer == null)
-					return;
-				this.worldGenLoopingQueue.add(firstPlayer);
-			}
+			IServerPlayerWrapper firstPlayer = this.worldGenLoopingQueue.peek();
+			if (firstPlayer == null)
+				return;
+			
+			// Put first player in back before removing from front, so it can be removed by other thread without blocking
+			// - if it gets removed, remove() below will remove the item we just put instead
+			this.worldGenLoopingQueue.add(firstPlayer);
+			this.worldGenLoopingQueue.remove(firstPlayer);
 			
 			Vec3d position = firstPlayer.getPosition();
 			serverside.worldGenModule.worldGenTick(new DhBlockPos2D((int) position.x, (int) position.z));
