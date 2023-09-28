@@ -58,8 +58,14 @@ public class WorldRemoteGenerationQueue implements IWorldGenerationQueue, IDebug
 		DebugRenderer.register(this, Config.Client.Advanced.Debugging.DebugWireframe.showWorldGenQueue);
 	}
 	
+	
 	@Override
-	public byte largestDataDetail()
+	public byte lowestDataDetail()
+	{
+		return LodUtil.BLOCK_DETAIL_LEVEL;
+	}
+	@Override
+	public byte highestDataDetail()
 	{
 		return LodUtil.BLOCK_DETAIL_LEVEL;
 	}
