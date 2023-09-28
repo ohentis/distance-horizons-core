@@ -30,7 +30,9 @@ import java.util.concurrent.CompletableFuture;
 public interface IWorldGenerationQueue extends Closeable
 {
 	/** the largest numerical detail level */
-	byte largestDataDetail();
+	byte lowestDataDetail();
+	/** the smallest numerical detail level */
+	byte highestDataDetail();
 	
 	CompletableFuture<WorldGenResult> submitGenTask(DhSectionPos pos, byte requiredDataDetail, IWorldGenTaskTracker tracker);
 	void cancelGenTasks(Iterable<DhSectionPos> positions);

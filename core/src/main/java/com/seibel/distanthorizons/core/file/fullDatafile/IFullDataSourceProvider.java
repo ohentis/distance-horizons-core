@@ -41,6 +41,9 @@ public interface IFullDataSourceProvider extends AutoCloseable
 	
 	CompletableFuture<IFullDataSource> onDataFileCreatedAsync(FullDataMetaFile file);
 	default CompletableFuture<DataFileUpdateResult> onDataFileUpdateAsync(IFullDataSource fullDataSource, FullDataMetaFile file, boolean dataChanged) { return CompletableFuture.completedFuture(new DataFileUpdateResult(fullDataSource, dataChanged)); }
+	/** Can be used to update world gen queues or run any other data checking necessary when initially loading a file */
+	default void onRenderDataFileLoaded(DhSectionPos pos) {  }
+	
 	File computeDataFilePath(DhSectionPos pos);
 	ExecutorService getIOExecutor();
 

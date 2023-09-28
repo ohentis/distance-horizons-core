@@ -57,7 +57,6 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 	private final IDhApiWorldGenerator generator;
 	
 	/** contains the positions that need to be generated */
-	//private final QuadTree<WorldGenTask> waitingTaskQuadTree;
 	private final ConcurrentHashMap<DhSectionPos, WorldGenTask> waitingTasks = new ConcurrentHashMap<>();
 	
 	private final ConcurrentHashMap<DhSectionPos, InProgressWorldGenTaskGroup> inProgressGenTasksByLodPos = new ConcurrentHashMap<>();
@@ -67,11 +66,15 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 	public final byte minGranularity;
 	
 	/** largest numerical detail level allowed */
-	public final byte largestDataDetail;
+	public final byte lowestDataDetail;
 	@Override
-	public byte largestDataDetail() { return this.largestDataDetail; }
-	/** lowest numerical detail level allowed */
-	public final byte smallestDataDetail;
+	public byte lowestDataDetail() { return this.lowestDataDetail; }
+	
+	/** smallest numerical detail level allowed */
+	public final byte highestDataDetail;
+	@Override
+	public byte highestDataDetail() { return this.highestDataDetail; }
+	
 	
 	/** If not null this generator is in the process of shutting down */
 	private volatile CompletableFuture<Void> generatorClosingFuture = null;
@@ -108,13 +111,8 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 		this.generator = generator;
 		this.maxGranularity = generator.getMaxGenerationGranularity();
 		this.minGranularity = generator.getMinGenerationGranularity();
-		this.largestDataDetail = generator.getLargestDataDetailLevel();
-		this.smallestDataDetail = generator.getSmallestDataDetailLevel();
-		
-		//FIXME: Currently resizing view dist doesn't update this, causing some gen task to fail.
-		int treeWidth = Config.Client.Advanced.Graphics.Quality.lodChunkRenderDistance.get() * LodUtil.CHUNK_WIDTH * 2; // TODO the *2 is to allow for generation edge cases, and should probably be removed at some point
-		byte treeMinDetailLevel = LodUtil.CHUNK_DETAIL_LEVEL; // The min level should be at least fill in 1 ChunkSizedFullDataAccessor.
-		//this.waitingTaskQuadTree = new QuadTree<>(treeWidth, DhBlockPos2D.ZERO /*the quad tree will be re-centered later*/, treeMinDetailLevel);
+		this.lowestDataDetail = generator.getLargestDataDetailLevel();
+		this.highestDataDetail = generator.getSmallestDataDetailLevel();
 		
 		
 		if (this.minGranularity < LodUtil.CHUNK_DETAIL_LEVEL)
@@ -147,30 +145,22 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 		
 		
 		// make sure the generator can provide the requested position
-		if (requiredDataDetail < this.smallestDataDetail)
+		if (requiredDataDetail < this.highestDataDetail)
 		{
 			throw new UnsupportedOperationException("Current generator does not meet requiredDataDetail level");
 		}
-		if (requiredDataDetail > this.largestDataDetail)
+		if (requiredDataDetail > this.lowestDataDetail)
 		{
-			requiredDataDetail = this.largestDataDetail;
+			requiredDataDetail = this.lowestDataDetail;
 		}
 		
 		// Assert that the data at least can fill in 1 single ChunkSizedFullDataAccessor
 		LodUtil.assertTrue(pos.getDetailLevel() > requiredDataDetail + LodUtil.CHUNK_DETAIL_LEVEL);
 		
 		
-		//if (this.waitingTaskQuadTree.isSectionPosInBounds(requestPos))
-		{
-			CompletableFuture<WorldGenResult> future = new CompletableFuture<>();
-			//this.waitingTaskQuadTree.setValue(requestPos, new WorldGenTask(pos, requiredDataDetail, tracker, future));
-			waitingTasks.put(pos, new WorldGenTask(pos, requiredDataDetail, tracker, future));
-			return future;
-		}
-		//else
-		//{
-		//return CompletableFuture.completedFuture(WorldGenResult.CreateFail());
-		//}
+		CompletableFuture<WorldGenResult> future = new CompletableFuture<>();
+		this.waitingTasks.put(pos, new WorldGenTask(pos, requiredDataDetail, tracker, future));
+		return future;
 	}
 	
 	@Override
@@ -302,7 +292,7 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 				// 		   the newly selected task, we cannot use it,
 				//         as some chunks may have already been written into.
 				
-				LOGGER.warn("A task already exists for this position, todo: {}", closestTask.pos);
+				LOGGER.trace("A task already exists for this position, todo: "+closestTask.pos);
 			}
 			
 			// a task has been started
@@ -340,7 +330,7 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 		DhSectionPos taskPos = inProgressTaskGroup.group.pos;
 		byte granularity = (byte) (taskPos.getDetailLevel() - taskDetailLevel);
 		LodUtil.assertTrue(granularity >= this.minGranularity && granularity <= this.maxGranularity);
-		LodUtil.assertTrue(taskDetailLevel >= this.smallestDataDetail && taskDetailLevel <= this.largestDataDetail);
+		LodUtil.assertTrue(taskDetailLevel >= this.highestDataDetail && taskDetailLevel <= this.lowestDataDetail);
 		
 		DhChunkPos chunkPosMin = new DhChunkPos(taskPos.getSectionBBoxPos().getCornerBlockPos());
 		
@@ -348,9 +338,7 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 		if (this.alreadyGeneratedPosHashSet.containsKey(inProgressTaskGroup.group.pos))
 		{
 			// temporary solution to prevent generating the same section multiple times
-			LOGGER.warn("Duplicate generation section " + taskPos + " with granularity [" + granularity + "] at " + chunkPosMin + ". Skipping...");
-			
-			//StackTraceElement[] stackTrace = this.alreadyGeneratedPosHashSet.get(inProgressTaskGroup.group.pos);
+			LOGGER.trace("Duplicate generation section " + taskPos + " with granularity [" + granularity + "] at " + chunkPosMin + ". Skipping...");
 			
 			// sending a success result is necessary to make sure the render sections are reloaded correctly 
 			inProgressTaskGroup.group.worldGenTasks.forEach(worldGenTask -> worldGenTask.future.complete(WorldGenResult.CreateSuccess(new DhSectionPos(granularity, taskPos.getX(), taskPos.getZ()))));

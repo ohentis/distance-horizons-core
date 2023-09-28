@@ -125,6 +125,9 @@ public class RenderDataMetaFile extends AbstractMetaDataContainerFile implements
 		LodUtil.assertTrue(this.baseMetaData != null);
 		this.doesFileExist = this.file.exists();
 		DebugRenderer.register(this, Config.Client.Advanced.Debugging.DebugWireframe.showRenderDataFileStatus);
+		
+		// handles world gen queuing for missing columns
+		this.fullDataSourceProvider.onRenderDataFileLoaded(this.baseMetaData.pos);
 	}
 	
 	

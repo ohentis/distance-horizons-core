@@ -79,7 +79,7 @@ public class WorldGenModule implements Closeable
 			newWgs.closeAsync(false);
 		}
 		dataFileHandler.addWorldGenCompleteListener(this.onWorldGenCompleteListener);
-		dataFileHandler.setGenerationQueue(newWgs.worldGenerationQueue);
+		dataFileHandler.setWorldGenerationQueue(newWgs.worldGenerationQueue);
 	}
 	
 	public void stopWorldGen(GeneratedFullDataFileHandler dataFileHandler)

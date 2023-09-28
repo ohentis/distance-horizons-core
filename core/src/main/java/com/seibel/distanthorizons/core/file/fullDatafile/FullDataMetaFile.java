@@ -67,7 +67,7 @@ public class FullDataMetaFile extends AbstractMetaDataContainerFile implements I
 	
 	
 	public boolean doesFileExist;
-	//TODO: Atm can't find a better way to store when genQueue is checked.
+	/** indicates if this file has been checked for missing sections to generate or not */
 	public boolean genQueueChecked = false;
 	
 	public AbstractFullDataSourceLoader fullDataSourceLoader;

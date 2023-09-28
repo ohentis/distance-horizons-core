@@ -45,9 +45,6 @@ public final class WorldGenTask
 		this.future = future;
 	}
 	
-	public boolean StillValid()
-	{
-		return taskTracker.isMemoryAddressValid();
-	}
+	public boolean StillValid() { return this.taskTracker.isMemoryAddressValid(); }
 	
 }
