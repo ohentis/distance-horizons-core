@@ -76,7 +76,7 @@ public class FullDataFileHandler implements IFullDataSourceProvider
 		}
 		return map;
 	}
-	protected boolean fileExists(DhSectionPos pos) { return this.computeDataFilePath(pos).exists(); }
+	protected boolean fileExists(DhSectionPos pos) { return this.fullDataRepo.existsWithPrimaryKey(pos.serialize()); }
 	
 	protected final IDhLevel level;
 	protected final File saveDir;

@@ -58,8 +58,14 @@ public class RemoteFullDataFileHandler extends GeneratedFullDataFileHandler
 	private final AtomicBoolean isUpdating = new AtomicBoolean(false);
 	private boolean invalidSectionsFound = false;
 	
-	public RemoteFullDataFileHandler(IDhLevel level, AbstractSaveStructure saveStructure, @Nullable ClientNetworkState networkState) {
+	public RemoteFullDataFileHandler(IDhLevel level, AbstractSaveStructure saveStructure, @Nullable ClientNetworkState networkState)
+	{
 		super(level, saveStructure);
+		this.networkState = networkState;
+	}
+	public RemoteFullDataFileHandler(IDhLevel level, AbstractSaveStructure saveStructure, @Nullable File saveDirOverride, @Nullable ClientNetworkState networkState)
+	{
+		super(level, saveStructure, saveDirOverride);
 		this.networkState = networkState;
 	}
 	

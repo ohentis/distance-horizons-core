@@ -372,7 +372,7 @@ public class ClientApi
 					// Unload the current world, since it may be wrong.
 					// A followup WorldChanged event should be received from the server soon after this.
 					LOGGER.info("Unloading current client level so the server can define the correct multiverse level.");
-					this.clientLevelUnloadEvent((IClientLevelWrapper) MC.getWrappedClientWorld());
+					this.clientLevelUnloadEvent(MC.getWrappedClientLevel());
 				});
 				break;
 			
@@ -396,11 +396,11 @@ public class ClientApi
 				
 				LOGGER.info("Server level change event received, changing the level to [" + levelKey + "].");
 				MC.executeOnRenderThread(() -> {
-					if (MC.getWrappedClientWorld() != null)
+					if (MC.getWrappedClientLevel() != null)
 					{
-						this.clientLevelUnloadEvent((IClientLevelWrapper) MC.getWrappedClientWorld());
+						this.clientLevelUnloadEvent(MC.getWrappedClientLevel());
 					}
-					IServerKeyedClientLevel clientLevel = KEYED_CLIENT_LEVEL_MANAGER.getServerKeyedLevel(MC.getWrappedClientWorld(), levelKey);
+					IServerKeyedClientLevel clientLevel = KEYED_CLIENT_LEVEL_MANAGER.getServerKeyedLevel(MC.getWrappedClientLevel(), levelKey);
 					KEYED_CLIENT_LEVEL_MANAGER.setServerKeyedLevel(clientLevel);
 					this.multiverseClientLevelLoadEvent(clientLevel);
 				});

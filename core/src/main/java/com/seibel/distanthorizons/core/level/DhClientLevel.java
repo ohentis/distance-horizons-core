@@ -88,7 +88,7 @@ public class DhClientLevel extends DhLevel implements IDhClientLevel
 	{
 		this.levelWrapper = clientLevelWrapper;
 		this.saveStructure = saveStructure;
-		this.dataFileHandler = new RemoteFullDataFileHandler(this, saveStructure, networkState);
+		this.dataFileHandler = new RemoteFullDataFileHandler(this, saveStructure, fullDataSaveDirOverride, networkState);
 		
 		this.worldGeneratorEnabledConfig = new AppliedConfigState<>(Config.Client.Advanced.WorldGenerator.enableDistantGeneration);
 		this.networkState = networkState;

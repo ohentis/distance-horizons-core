@@ -185,7 +185,6 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 	
 	public void removePlayer(IServerPlayerWrapper serverPlayer)
 	{
-		//noinspection ResultOfMethodCallIgnored
 		this.worldGenLoopingQueue.remove(serverPlayer);
 	}
 	

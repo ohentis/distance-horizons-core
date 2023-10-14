@@ -70,7 +70,7 @@ public class FullDataSourceResponseMessage extends FutureTrackableNetworkMessage
 	public void decode0(ByteBuf in)
 	{
 		byte dataVersion = in.readByte();
-		this.fullDataSourceLoader = (CompleteFullDataSourceLoader) AbstractFullDataSourceLoader.getLoader(CompleteFullDataSource.TYPE_ID, dataVersion);
+		this.fullDataSourceLoader = (CompleteFullDataSourceLoader) AbstractFullDataSourceLoader.getLoader(CompleteFullDataSource.DATA_SOURCE_TYPE, dataVersion);
 		this.dataBuffer = in.readBytes(in.readInt());
 	}
 	
