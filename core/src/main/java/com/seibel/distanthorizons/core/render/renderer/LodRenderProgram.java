@@ -19,8 +19,6 @@
 
 package com.seibel.distanthorizons.core.render.renderer;
 
-import java.awt.Color;
-
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.render.glObject.GLProxy;

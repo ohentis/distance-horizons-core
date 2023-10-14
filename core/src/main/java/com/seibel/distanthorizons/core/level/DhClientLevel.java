@@ -48,6 +48,7 @@ import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.CheckForNull;
 import java.awt.*;
+import java.io.File;
 import java.util.concurrent.CompletableFuture;
 
 /** The level used when connected to a server */
@@ -82,7 +83,8 @@ public class DhClientLevel extends DhLevel implements IDhClientLevel
 	// constructor //
 	//=============//
 	
-	public DhClientLevel(AbstractSaveStructure saveStructure, IClientLevelWrapper clientLevelWrapper, @Nullable ClientNetworkState networkState)
+	public DhClientLevel(AbstractSaveStructure saveStructure, IClientLevelWrapper clientLevelWrapper, @Nullable ClientNetworkState networkState) { this(saveStructure, clientLevelWrapper, null, true, networkState); }
+	public DhClientLevel(AbstractSaveStructure saveStructure, IClientLevelWrapper clientLevelWrapper, @Nullable File fullDataSaveDirOverride, boolean enableRendering, @Nullable ClientNetworkState networkState)
 	{
 		this.levelWrapper = clientLevelWrapper;
 		this.saveStructure = saveStructure;
@@ -101,9 +103,12 @@ public class DhClientLevel extends DhLevel implements IDhClientLevel
 			this.eventSource = null;
 		}
 		
-		clientside = new ClientLevelModule(this);
-		clientside.startRenderer();
-		LOGGER.info("Started DHLevel for " + this.levelWrapper + " with saves at " + this.saveStructure);
+		this.clientside = new ClientLevelModule(this);
+		if (enableRendering)
+		{
+			this.clientside.startRenderer();
+			LOGGER.info("Started DHLevel for " + this.levelWrapper + " with saves at " + this.saveStructure);
+		}
 	}
 	
 	private void registerNetworkHandlers()
@@ -133,8 +138,8 @@ public class DhClientLevel extends DhLevel implements IDhClientLevel
 	@Override
 	public void clientTick()
 	{
-		chunkToLodBuilder.tick();
-		clientside.clientTick();
+		this.chunkToLodBuilder.tick();
+		this.clientside.clientTick();
 	}
 	
 	public void doWorldGen()
@@ -170,6 +175,8 @@ public class DhClientLevel extends DhLevel implements IDhClientLevel
 	{
 		clientside.render(mcModelViewMatrix, mcProjectionMatrix, partialTicks, profiler);
 	}
+	
+	
 	
 	//================//
 	// level handling //
@@ -228,6 +235,10 @@ public class DhClientLevel extends DhLevel implements IDhClientLevel
 	{
 		return saveStructure;
 	}
+	
+	@Override
+	public boolean hasSkyLight() { return this.levelWrapper.hasSkyLight(); }
+	
 	
 	@Override
 	public void onWorldGenTaskComplete(DhSectionPos pos)

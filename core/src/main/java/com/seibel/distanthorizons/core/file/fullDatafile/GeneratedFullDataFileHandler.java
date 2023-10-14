@@ -31,14 +31,12 @@ import com.seibel.distanthorizons.core.generation.tasks.WorldGenResult;
 import com.seibel.distanthorizons.core.level.DhLevel;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.logging.f3.F3Screen;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nullable;
 import java.lang.ref.WeakReference;
-import java.text.DecimalFormat;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
@@ -49,41 +47,16 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandler
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
-	protected final AtomicReference<IWorldGenerationQueue> worldGenQueueRef = new AtomicReference<>(null);
+	private final AtomicReference<IWorldGenerationQueue> worldGenQueueRef = new AtomicReference<>(null);
 	
 	private final ArrayList<IOnWorldGenCompleteListener> onWorldGenTaskCompleteListeners = new ArrayList<>();
 	
-	private final ConcurrentSkipListSet<Long> taskCompletionTimes = new ConcurrentSkipListSet<>();
-	private final F3Screen.DynamicMessage handlerF3Message;
+	/** Used to prevent data sources from being garbage collected before their world gen finishes. */
+	private final ConcurrentHashMap<DhSectionPos, IFullDataSource> generatingDataSourceByPos = new ConcurrentHashMap<>();
 	
-	// Use to hold onto incomplete data sources that are waiting for generation, so that they don't get GC'd before they are generated
-	private final ConcurrentHashMap<DhSectionPos, IIncompleteFullDataSource> incompleteDataSources = new ConcurrentHashMap<>();
+	public GeneratedFullDataFileHandler(IDhLevel level, AbstractSaveStructure saveStructure) { super(level, saveStructure); }
 	
-	public GeneratedFullDataFileHandler(IDhLevel level, AbstractSaveStructure saveStructure) {
-		super(level, saveStructure);
-		this.handlerF3Message = new F3Screen.DynamicMessage(() ->
-		{
-			// Keep only for last 30 seconds
-			taskCompletionTimes.removeIf(time -> time < System.currentTimeMillis() - 30000);
-			if (taskCompletionTimes.size() < 2)
-				return "Gen task completion time: No information yet";
-			
-			double timePerCompletion = (double) (taskCompletionTimes.last() - taskCompletionTimes.first()) / taskCompletionTimes.size() / 1000;
-			if (timePerCompletion < 1) {
-				double completionRate = 1 / timePerCompletion;
-				return "Gen task completion rate: " + new DecimalFormat("#.00").format(completionRate) + " completions/sec";
-			} else {
-				return "Gen task completion time: " + new DecimalFormat("#.00").format(timePerCompletion) + " seconds/completion";
-			}
-		});
-	}
 	
-	@Override
-	public void close()
-	{
-		super.close();
-		this.handlerF3Message.close();
-	}
 	
 	//===========//
 	// overrides //
@@ -163,18 +136,19 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandler
 	public void clearGenerationQueue()
 	{
 		this.worldGenQueueRef.set(null);
-		incompleteDataSources.clear(); // clear the incomplete data sources
+		this.generatingDataSourceByPos.clear(); // clear the incomplete data sources
 	}
 	
+	// TODO what is this here for?
 	public void removeGenRequestIf(Function<DhSectionPos, Boolean> removeIf)
 	{
 		HashSet<DhSectionPos> removedRequests = new HashSet<>();
 		
-		this.incompleteDataSources.forEach((pos, dataSource) ->
+		this.generatingDataSourceByPos.forEach((pos, dataSource) ->
 		{
 			if (removeIf.apply(pos))
 			{
-				this.incompleteDataSources.remove(pos);
+				this.generatingDataSourceByPos.remove(pos);
 				removedRequests.add(pos);
 			}
 		});
@@ -197,7 +171,7 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandler
 		IFullDataSource newSource = source.tryPromotingToCompleteDataSource();
 		if (newSource instanceof CompleteFullDataSource)
 		{
-			incompleteDataSources.remove(source.getSectionPos());
+			this.generatingDataSourceByPos.remove(source.getSectionPos());
 		}
 		return newSource;
 	}
@@ -230,7 +204,7 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandler
 					.thenApply(this::tryPromoteDataSource)
 					.exceptionally((e) ->
 					{
-						this.removeCorruptedFile(pos, file, e);
+						this.removeCorruptedFile(pos, e);
 						return null;
 					});
 		}
@@ -260,12 +234,12 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandler
 	@Override
 	public CompletableFuture<DataFileUpdateResult> onDataFileUpdateAsync(IFullDataSource fullDataSource, FullDataMetaFile file, boolean dataChanged)
 	{
-		LodUtil.assertTrue(file.doesFileExist || dataChanged);
+		LodUtil.assertTrue(this.fullDataRepo.existsWithPrimaryKey(file.pos.serialize()) || dataChanged);
 		
 		
 		if (fullDataSource instanceof CompleteFullDataSource)
 		{
-			this.incompleteDataSources.remove(fullDataSource.getSectionPos());
+			this.generatingDataSourceByPos.remove(fullDataSource.getSectionPos());
 		}
 		this.fireOnGenPosSuccessListeners(fullDataSource.getSectionPos());
 		
@@ -302,13 +276,12 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandler
 			// generation completed, update the files and listener(s)
 			this.flushAndSave(pos);
 			//this.fireOnGenPosSuccessListeners(pos);
-			this.addTimestampToStatistics();
 			return;
 		}
 		else
 		{
 			// generation didn't complete
-			LOGGER.error("Gen Task Failed at " + pos + ": " + genTaskResult);
+			LOGGER.debug("Gen Task Failed at " + pos);
 		}
 		
 		
@@ -321,43 +294,13 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandler
 		genTask.releaseStrongReference();
 	}
 	
-	private void addTimestampToStatistics()
-	{
-		taskCompletionTimes.add(System.currentTimeMillis());
-	}
-	
 	private void fireOnGenPosSuccessListeners(DhSectionPos pos)
 	{
-		if (true) return;
-		//LOGGER.info("gen task completed for pos: ["+pos+"].");
-		
-/*		// save the full data source
-		FullDataMetaFile file = this.fileBySectionPos.get(pos);
-		if (file != null)
-		{
-			// timeout is for the rare case where saving gets stuck
-			int timeoutInSeconds = 10;
-			try
-			{
-				file.flushAndSaveAsync().get(timeoutInSeconds, TimeUnit.SECONDS);
-			}
-			catch (TimeoutException | InterruptedException | ExecutionException e)
-			{
-				LOGGER.warn("fireOnGenPosSuccessListeners timed out after waiting ["+timeoutInSeconds+"] seconds for pos: ["+pos+"].");
-			}
-		}
-		else
-		{
-			// doesn't appear to cause issues, but probably isn't desired either
-			//LOGGER.warn("fireOnGenPosSuccessListeners file null for pos: ["+pos+"].");
-		}
-		*/
 		// fire the event listeners 
 		for (IOnWorldGenCompleteListener listener : this.onWorldGenTaskCompleteListeners)
 		{
 			listener.onWorldGenTaskComplete(pos);
 		}
-		
 	}
 	
 	
@@ -382,14 +325,43 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandler
 		}
 		metaFile.genQueueChecked = true;
 		
+		
+		// get the ungenerated pos list
 		byte minGeneratorSectionDetailLevel = (byte) (worldGenQueue.highestDataDetail() + DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
 		ArrayList<DhSectionPos> genPosList = MissingWorldGenPositionFinder.getUngeneratedPosList(dataSource, minGeneratorSectionDetailLevel, true);
 		
+		// start each pos generating
+		ArrayList<CompletableFuture<WorldGenResult>>  taskFutureList = new ArrayList<>();
 		for (DhSectionPos genPos : genPosList)
 		{
+			// make sure each meta file has been created (not doing this will prevent down sampling and/or saving the generated data source) 
+			this.getLoadOrMakeFile(genPos, true);
+			this.getLoadOrMakeFile(metaFile.pos, true);
+			
+			// queue each gen task
 			GenTask genTask = new GenTask(dataSource.getSectionPos(), new WeakReference<>(dataSource));
-			worldGenQueue.submitGenTask(genPos, dataSource.getSectionPos().getDetailLevel(), genTask);
+			CompletableFuture<WorldGenResult> worldGenFuture = worldGenQueue.submitGenTask(genPos, dataSource.getDataDetailLevel(), genTask);
+			worldGenFuture.whenComplete((genTaskResult, ex) ->
+			{
+				this.onWorldGenTaskComplete(genTaskResult, ex, genTask, genPos);
+				this.onWorldGenTaskComplete(genTaskResult, ex, genTask, metaFile.pos);
+			});
+			
+			taskFutureList.add(worldGenFuture);
 		}
+		
+		
+		// mark the data source as generating if necessary
+		if (taskFutureList.size() != 0)
+		{
+			this.generatingDataSourceByPos.put(metaFile.pos, dataSource);
+		}
+		CompletableFuture.allOf(taskFutureList.toArray(new CompletableFuture[0]))
+			.whenComplete((voidObj, ex) ->
+			{
+				metaFile.flushAndSaveAsync();
+				this.generatingDataSourceByPos.remove(metaFile.pos);
+			});
 	}
 	
 	
@@ -421,7 +393,6 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandler
 		public boolean isMemoryAddressValid() { return this.targetFullDataSourceRef.get() != null; }
 		
 		@Override
-		@Nullable
 		public Consumer<ChunkSizedFullDataAccessor> getChunkDataConsumer()
 		{
 			if (this.loadedTargetFullDataSource == null)

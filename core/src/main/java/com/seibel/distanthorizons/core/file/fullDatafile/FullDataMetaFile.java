@@ -41,11 +41,12 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhLodPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.dataObjects.fullData.loader.AbstractFullDataSourceLoader;
+import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
+import com.seibel.distanthorizons.core.sql.MetaDataDto;
 import com.seibel.distanthorizons.core.util.AtomicsUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataInputStream;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
-import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
 import org.apache.logging.log4j.Logger;
 
 /** Represents a File that contains a {@link IFullDataSource}. */
@@ -66,7 +67,7 @@ public class FullDataMetaFile extends AbstractMetaDataContainerFile implements I
 	
 	
 	
-	public boolean doesFileExist;
+	public boolean doesDtoExist;
 	/** indicates if this file has been checked for missing sections to generate or not */
 	public boolean genQueueChecked = false;
 	
@@ -104,16 +105,16 @@ public class FullDataMetaFile extends AbstractMetaDataContainerFile implements I
 	 * NOTE: should only be used if there is NOT an existing file.
 	 * @throws IOException if a file already exists for this position
 	 */
-	public static FullDataMetaFile createNewFileForPos(IFullDataSourceProvider fullDataSourceProvider, IDhLevel clientLevel, DhSectionPos pos) throws IOException { return new FullDataMetaFile(fullDataSourceProvider, clientLevel, pos); }
+	public static FullDataMetaFile createNewDtoForPos(IFullDataSourceProvider fullDataSourceProvider, IDhLevel clientLevel, DhSectionPos pos) throws IOException { return new FullDataMetaFile(fullDataSourceProvider, clientLevel, pos); }
 	private FullDataMetaFile(IFullDataSourceProvider fullDataSourceProvider, IDhLevel level, DhSectionPos pos) throws IOException
 	{
-		super(fullDataSourceProvider.computeDataFilePath(pos), pos);
+		super(pos);
 		checkAndLogPhantomDataSourceLifeCycles();
 		
 		this.fullDataSourceProvider = fullDataSourceProvider;
 		this.level = level;
 		LodUtil.assertTrue(this.baseMetaData == null);
-		this.doesFileExist = false;
+		this.doesDtoExist = false;
 		DebugRenderer.register(this, Config.Client.Advanced.Debugging.DebugWireframe.showFullDataFileStatus);
 	}
 	
@@ -123,22 +124,21 @@ public class FullDataMetaFile extends AbstractMetaDataContainerFile implements I
 	 * @throws IOException if the file was formatted incorrectly
 	 * @throws FileNotFoundException if no file exists for the given path
 	 */
-	public static FullDataMetaFile createFromExistingFile(IFullDataSourceProvider fullDataSourceProvider, IDhLevel level, File file) throws IOException { return new FullDataMetaFile(fullDataSourceProvider, level, file); }
-	private FullDataMetaFile(IFullDataSourceProvider fullDataSourceProvider, IDhLevel level, File file) throws IOException, FileNotFoundException
+	public static FullDataMetaFile createFromExistingDto(IFullDataSourceProvider fullDataSourceProvider, IDhLevel level, MetaDataDto metaDataDto) throws IOException { return new FullDataMetaFile(fullDataSourceProvider, level, metaDataDto); }
+	private FullDataMetaFile(IFullDataSourceProvider fullDataSourceProvider, IDhLevel level, MetaDataDto metaDataDto) throws IOException
 	{
-		super(file);
+		super(metaDataDto.baseMetaData);
 		checkAndLogPhantomDataSourceLifeCycles();
 		
 		this.fullDataSourceProvider = fullDataSourceProvider;
 		this.level = level;
 		LodUtil.assertTrue(this.baseMetaData != null);
-		this.doesFileExist = true;
+		this.doesDtoExist = true;
 		
-		this.fullDataSourceLoader = AbstractFullDataSourceLoader.getLoader(this.baseMetaData.dataTypeId, this.baseMetaData.binaryDataFormatVersion);
+		this.fullDataSourceLoader = AbstractFullDataSourceLoader.getLoader(this.baseMetaData.dataType, this.baseMetaData.binaryDataFormatVersion);
 		if (this.fullDataSourceLoader == null)
 		{
-			// TODO add a hard coded dictionary of known ID name combos so we can easily see in the log if the ID is valid or if the data was corrupted/old
-			throw new IOException("Invalid file: Data type loader not found: " + this.baseMetaData.dataTypeId + "(v" + this.baseMetaData.binaryDataFormatVersion + ")");
+			throw new IOException("Invalid file: Data type loader not found: " + this.baseMetaData.dataType + "(v" + this.baseMetaData.binaryDataFormatVersion + ")");
 		}
 		
 		this.fullDataSourceClass = this.fullDataSourceLoader.fullDataSourceClass;
@@ -211,9 +211,9 @@ public class FullDataMetaFile extends AbstractMetaDataContainerFile implements I
 		
 		
 		final CompletableFuture<IFullDataSource> dataSourceLoadFuture = potentialLoadFuture;
-		if (!this.doesFileExist)
+		if (!this.doesDtoExist)
 		{
-			// create a new Meta file and data source
+			// create a new DTO and data source
 			
 			this.fullDataSourceProvider.onDataFileCreatedAsync(this)
 					.thenApply((fullDataSource) ->
@@ -223,7 +223,7 @@ public class FullDataMetaFile extends AbstractMetaDataContainerFile implements I
 						this.baseMetaData = new BaseMetaData(
 								fullDataSource.getSectionPos(), -1,
 								fullDataSource.getDataDetailLevel(), fullDataSource.getWorldGenStep(),
-								(dataSourceLoader == null ? 0 : dataSourceLoader.datatypeId), fullDataSource.getBinaryDataFormatVersion(), Long.MAX_VALUE);
+								(dataSourceLoader == null ? null : dataSourceLoader.datatype), fullDataSource.getBinaryDataFormatVersion(), Long.MAX_VALUE);
 						
 						return fullDataSource;
 					})
@@ -253,8 +253,8 @@ public class FullDataMetaFile extends AbstractMetaDataContainerFile implements I
 						{
 							// Load the file.
 							IFullDataSource fullDataSource;
-							try (FileInputStream fileInputStream = this.getFileInputStream();
-									DhDataInputStream compressedStream = new DhDataInputStream(fileInputStream))
+							try (InputStream inputStream = this.getInputStream();
+									DhDataInputStream compressedStream = new DhDataInputStream(inputStream))
 							{
 								if (cacheLoadingSource)
 								{
@@ -267,7 +267,8 @@ public class FullDataMetaFile extends AbstractMetaDataContainerFile implements I
 							}
 							catch (Exception ex)
 							{
-								/// TODO temporary fix
+								LOGGER.error("Full Data Load error: "+ ex.getMessage(), ex);
+								
 								dataSourceLoadFuture.completeExceptionally(ex);
 								this.dataSourceLoadFutureRef.set(null);
 								
@@ -500,7 +501,7 @@ public class FullDataMetaFile extends AbstractMetaDataContainerFile implements I
 		{
 			color = Color.BLUE;
 		}
-		else if (this.doesFileExist)
+		else if (this.doesDtoExist)
 		{
 			color = Color.RED;
 		}
@@ -518,28 +519,12 @@ public class FullDataMetaFile extends AbstractMetaDataContainerFile implements I
 	// helper methods //
 	//================//
 	
+	// TODO merge with RenderDataMetaFile
 	/** @return a stream for the data contained in this file, skips the metadata from {@link AbstractMetaDataContainerFile}. */
-	private FileInputStream getFileInputStream() throws IOException
+	private InputStream getInputStream() throws IOException
 	{
-		FileInputStream fileInputStream = new FileInputStream(this.file);
-		
-		// skip the meta-data bytes
-		int bytesToSkip = AbstractMetaDataContainerFile.METADATA_SIZE_IN_BYTES;
-		while (bytesToSkip > 0)
-		{
-			long skippedByteCount = fileInputStream.skip(bytesToSkip);
-			if (skippedByteCount == 0)
-			{
-				throw new IOException("Invalid file: Failed to skip metadata.");
-			}
-			bytesToSkip -= skippedByteCount;
-		}
-		
-		if (bytesToSkip != 0)
-		{
-			throw new IOException("File IO Error: Failed to skip metadata.");
-		}
-		return fileInputStream;
+		MetaDataDto dto = this.fullDataSourceProvider.getRepo().getByPrimaryKey(this.pos.serialize());
+		return new ByteArrayInputStream(dto.dataArray);
 	}
 	
 	/** 
@@ -549,11 +534,6 @@ public class FullDataMetaFile extends AbstractMetaDataContainerFile implements I
 	@SuppressWarnings("resource") // due to DataObjTracker and DataObjSoftTracker being created outside a try-catch block
 	private CompletableFuture<IFullDataSource> applyWriteQueueAndSaveAsync(IFullDataSource fullDataSourceToUpdate)
 	{
-		if (Config.Client.Advanced.Debugging.skipFullDataUpdateQueue.get())
-		{
-			return CompletableFuture.completedFuture(fullDataSourceToUpdate);
-		}
-		
 		CompletableFuture<IFullDataSource> completionFuture = new CompletableFuture<>();
 		
 		
@@ -574,7 +554,7 @@ public class FullDataMetaFile extends AbstractMetaDataContainerFile implements I
 				{
 					if (ex != null && !LodUtil.isInterruptOrReject(ex))
 					{
-						LOGGER.error("Error updating file [" + this.file + "]: ", ex);
+						LOGGER.error("Error updating full meta file ["+this.pos+"]: ", ex);
 					}
 					
 					IFullDataSource fullDataSource = dataFileUpdateResult.fullDataSource;
@@ -653,7 +633,7 @@ public class FullDataMetaFile extends AbstractMetaDataContainerFile implements I
 			//LOGGER.info("Updated Data file at {} for sect {} with {} chunk writes.", path, pos, count);
 		}
 		
-		return !isEmpty || !this.doesFileExist;
+		return !isEmpty || !this.doesDtoExist;
 	}
 	private void swapWriteQueues()
 	{
@@ -676,11 +656,13 @@ public class FullDataMetaFile extends AbstractMetaDataContainerFile implements I
 		if (fullDataSource.isEmpty())
 		{
 			// delete the empty data source
-			if (this.file.exists() && !this.file.delete())
+			MetaDataDto dto = this.fullDataSourceProvider.getRepo().getByPrimaryKey(this.pos.serialize());
+			if (dto != null)
 			{
-				LOGGER.warn("Failed to delete data file at " + this.file);
+				this.fullDataSourceProvider.getRepo().delete(dto);
 			}
-			this.doesFileExist = false;
+			
+			this.doesDtoExist = false;
 		}
 		else
 		{
@@ -692,16 +674,21 @@ public class FullDataMetaFile extends AbstractMetaDataContainerFile implements I
 				// Write/Update data
 				LodUtil.assertTrue(this.baseMetaData != null);
 				
-				this.baseMetaData.dataLevel = fullDataSource.getDataDetailLevel();
+				
+				// confirm the meta data properties are up to date //
+				
+				this.baseMetaData.dataDetailLevel = fullDataSource.getDataDetailLevel();
 				this.fullDataSourceLoader = AbstractFullDataSourceLoader.getLoader(fullDataSource.getClass(), fullDataSource.getBinaryDataFormatVersion());
 				LodUtil.assertTrue(this.fullDataSourceLoader != null, "No loader for " + fullDataSource.getClass() + " (v" + fullDataSource.getBinaryDataFormatVersion() + ")");
 				
 				this.fullDataSourceClass = fullDataSource.getClass();
-				this.baseMetaData.dataTypeId = (this.fullDataSourceLoader == null) ? 0 : this.fullDataSourceLoader.datatypeId;
+				this.baseMetaData.dataType = (this.fullDataSourceLoader == null) ? null : this.fullDataSourceLoader.datatype;
 				this.baseMetaData.binaryDataFormatVersion = fullDataSource.getBinaryDataFormatVersion();
 				
-				super.writeData((bufferedOutputStream) -> fullDataSource.writeToStream((bufferedOutputStream), this.level));
-				this.doesFileExist = true;
+				
+				// save the data to the database //
+				super.writeToDatabase((bufferedOutputStream) -> fullDataSource.writeToStream((bufferedOutputStream), this.level), this.fullDataSourceProvider.getRepo());
+				this.doesDtoExist = true;
 			}
 			catch (ClosedByInterruptException e) // thrown by buffers that are interrupted
 			{
@@ -710,7 +697,7 @@ public class FullDataMetaFile extends AbstractMetaDataContainerFile implements I
 			}
 			catch (IOException e)
 			{
-				LOGGER.error("Failed to save updated data file at " + this.file + " for section " + this.pos, e);
+				LOGGER.error("Failed to save updated data for section " + this.pos, e);
 			}
 		}
 	}

@@ -19,6 +19,9 @@
 
 package com.seibel.distanthorizons.coreapi.util;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+
 /**
  * Miscellaneous string helper functions.
  *
@@ -42,6 +45,8 @@ public class StringUtil
 		return pos;
 	}
 	
+	/** @see StringUtil#join(String, Iterable)  */
+	public static <T> String join(String delimiter, T[] list) { return join(delimiter, Arrays.asList(list)); }
 	/** Combines each item in the given list together separated by the given delimiter. */
 	public static <T> String join(String delimiter, Iterable<T> list)
 	{
@@ -62,5 +67,22 @@ public class StringUtil
 		return stringBuilder.toString();
 	}
 	
+	
+	private static final char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();
+	/**
+	 * Converts the given byte array into a hex string representation. <br>
+	 * source: https://stackoverflow.com/a/9855338
+	 */
+	public static String byteArrayToHexString(byte[] bytes)
+	{
+		char[] hexChars = new char[bytes.length * 2];
+		for (int i = 0; i < bytes.length; i++)
+		{
+			int v = bytes[i] & 0xFF;
+			hexChars[i * 2] = HEX_ARRAY[v >>> 4];
+			hexChars[i * 2 + 1] = HEX_ARRAY[v & 0x0F];
+		}
+		return new String(hexChars);
+	}
 	
 }

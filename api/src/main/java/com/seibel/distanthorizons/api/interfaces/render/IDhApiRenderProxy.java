@@ -25,7 +25,7 @@ import com.seibel.distanthorizons.api.objects.DhApiResult;
  * Used to interact with Distant Horizons' rendering system.
  *
  * @author James Seibel
- * @version 2023-2-8
+ * @version 2023-10-13
  * @since API 1.0.0
  */
 public interface IDhApiRenderProxy
@@ -44,5 +44,35 @@ public interface IDhApiRenderProxy
 	 * This is the data cleared by this method.
 	 */
 	DhApiResult<Boolean> clearRenderDataCache();
+	
+	/** 
+	 * Returns the name of Distant Horizons' FrameBuffer. <br>
+	 * Will return {@link DhApiResult#success} = false and {@link DhApiResult#payload} = -1 if the FrameBuffer hasn't been created yet.
+	 */
+	DhApiResult<Integer> getDhFrameBufferId();
+	
+	/** 
+	 * Sets the FrameBuffer name that Distant Horizons will draw to after it finishes generating a frame texture. <br>
+	 * Setting this to -1 will cause Distant Horizons to use Minecraft's FrameBuffer. <br><br>
+	 * 
+	 * Will return {@link DhApiResult#success} = false given name isn't a valid FrameBuffer.
+	 */
+	DhApiResult<Void> setTargetFrameBufferId(int frameBufferId);
+	/**
+	 * Returns the FrameBuffer name that Distant Horizons will draw to after it finishes generating a frame texture. <br>
+	 * By default this will be Minecraft's FrameBuffer.
+	 */
+	DhApiResult<Integer> getTargetFrameBufferId();
+	
+	/**
+	 * Returns the name of Distant Horizons' depth texture. <br>
+	 * Will return {@link DhApiResult#success} = false and {@link DhApiResult#payload} = -1 if the texture hasn't been created yet.
+	 */
+	DhApiResult<Integer> getDhDepthTextureId();
+	/**
+	 * Returns the name of Distant Horizons' color texture. <br>
+	 * Will return {@link DhApiResult#success} = false and {@link DhApiResult#payload} = -1 if the texture hasn't been created yet.
+	 */
+	DhApiResult<Integer> getDhColorTextureId();
 	
 }

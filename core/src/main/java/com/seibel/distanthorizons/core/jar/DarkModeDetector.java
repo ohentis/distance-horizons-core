@@ -40,7 +40,7 @@ public class DarkModeDetector
 	
 	public static boolean isDarkMode()
 	{
-		switch (Platform.get())
+		switch (EPlatform.get())
 		{
 			case WINDOWS:
 				return isWindowsDarkMode();

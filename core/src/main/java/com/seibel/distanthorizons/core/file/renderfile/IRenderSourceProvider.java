@@ -22,9 +22,8 @@ package com.seibel.distanthorizons.core.file.renderfile;
 import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSource;
+import com.seibel.distanthorizons.core.sql.RenderDataRepo;
 
-import java.io.File;
-import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -33,7 +32,7 @@ import java.util.concurrent.CompletableFuture;
  *
  * This is used to create {@link ColumnRenderSource}'s
  */
-public interface ILodRenderSourceProvider extends AutoCloseable
+public interface IRenderSourceProvider extends AutoCloseable
 {
 	CompletableFuture<ColumnRenderSource> readAsync(DhSectionPos pos);
 	
@@ -42,5 +41,8 @@ public interface ILodRenderSourceProvider extends AutoCloseable
 	
 	/** Deletes any data stored in the render cache so it can be re-created */
 	void deleteRenderCache();
+	
+	
+	RenderDataRepo getRepo();
 	
 }

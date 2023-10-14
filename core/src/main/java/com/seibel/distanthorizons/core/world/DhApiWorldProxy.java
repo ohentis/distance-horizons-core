@@ -68,7 +68,7 @@ public class DhApiWorldProxy implements IDhApiWorldProxy
 		
 		if (!MC_SHARED.isDedicatedServer())
 		{
-			return MC_CLIENT.getWrappedClientWorld();
+			return MC_CLIENT.getWrappedClientLevel();
 		}
 		else
 		{

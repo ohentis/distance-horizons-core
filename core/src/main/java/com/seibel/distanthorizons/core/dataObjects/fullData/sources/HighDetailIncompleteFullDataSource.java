@@ -72,8 +72,7 @@ public class HighDetailIncompleteFullDataSource implements IIncompleteFullDataSo
 	public static final byte MAX_SECTION_DETAIL = SECTION_SIZE_OFFSET + SPARSE_UNIT_DETAIL;
 	
 	public static final byte DATA_FORMAT_VERSION = 3;
-	/** written to the binary file to mark what {@link IFullDataSource} the binary file corresponds to */
-	public static final long TYPE_ID = "HighDetailIncompleteFullDataSource".hashCode();
+	public static final String DATA_SOURCE_TYPE = "HighDetailIncompleteFullDataSource";
 	
 	
 	protected final FullDataPointIdMap mapping;
@@ -147,10 +146,10 @@ public class HighDetailIncompleteFullDataSource implements IIncompleteFullDataSo
 		LodUtil.assertTrue(dataFile.pos.getDetailLevel() > SPARSE_UNIT_DETAIL);
 		LodUtil.assertTrue(dataFile.pos.getDetailLevel() <= MAX_SECTION_DETAIL);
 		
-		int dataDetail = inputStream.readShort();
-		if (dataFile.baseMetaData != null && dataDetail != dataFile.baseMetaData.dataLevel)
+		int dataDetailLevel = inputStream.readShort();
+		if (dataDetailLevel != dataFile.baseMetaData.dataDetailLevel)
 		{
-			throw new IOException(LodUtil.formatLog("Data level mismatch: {} != {}", dataDetail, dataFile.baseMetaData.dataLevel));
+			throw new IOException(LodUtil.formatLog("Data level mismatch: {} != {}", dataDetailLevel, dataFile.baseMetaData.dataDetailLevel));
 		}
 		
 		// confirm that the detail level is correct
@@ -468,9 +467,6 @@ public class HighDetailIncompleteFullDataSource implements IIncompleteFullDataSo
 	
 	@Override
 	public byte getDataDetailLevel() { return (byte) (this.sectionPos.getDetailLevel() - SECTION_SIZE_OFFSET); }
-
-	@Override
-	public long getTypeId() { return TYPE_ID; }
 
 	@Override
 	public byte getBinaryDataFormatVersion() { return DATA_FORMAT_VERSION; }

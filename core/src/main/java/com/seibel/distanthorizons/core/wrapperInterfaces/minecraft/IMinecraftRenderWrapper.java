@@ -35,6 +35,7 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.IVersionConstants;
 import com.seibel.distanthorizons.core.wrapperInterfaces.IWrapperFactory;
 import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.ISodiumAccessor;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Contains everything related to
@@ -61,6 +62,7 @@ public interface IMinecraftRenderWrapper extends IBindable
 	
 	default Color getSpecialFogColor(float partialTicks) { return getFogColor(partialTicks); }
 	
+	/** Unless you really need to know if the player is blind, use {@link IMinecraftRenderWrapper#isFogStateSpecial()} instead */
 	boolean isFogStateSpecial();
 	
 	Color getSkyColor();
@@ -108,7 +110,7 @@ public interface IMinecraftRenderWrapper extends IBindable
 		IWrapperFactory factory = SingletonInjector.INSTANCE.get(IWrapperFactory.class);
 		IVersionConstants versionConstants = SingletonInjector.INSTANCE.get(IVersionConstants.class);
 		IMinecraftClientWrapper minecraft = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
-		ILevelWrapper clientWorld = minecraft.getWrappedClientWorld();
+		ILevelWrapper clientWorld = minecraft.getWrappedClientLevel();
 		
 		int chunkDist = this.getRenderDistance() + 1; // For some reason having '+1' is actually closer to real value
 		
@@ -135,7 +137,9 @@ public interface IMinecraftRenderWrapper extends IBindable
 		return renderedPos;
 	}
 	
-	ILightMapWrapper getLightmapWrapper();
+	/** Can return null if the given level hasn't had a light map assigned to it */
+	@Nullable
+	ILightMapWrapper getLightmapWrapper(ILevelWrapper level);
 	
 	
 }

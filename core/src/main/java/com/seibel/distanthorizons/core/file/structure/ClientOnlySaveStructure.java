@@ -29,18 +29,15 @@ import com.seibel.distanthorizons.core.util.objects.ParsedIp;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftSharedWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.world.IDimensionTypeWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 
-import javax.annotation.Nullable;
 import java.io.File;
 import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Designed for the Client_Only environment.
- *
- * @version 12-17-2022
  */
 public class ClientOnlySaveStructure extends AbstractSaveStructure
 {
@@ -53,6 +50,10 @@ public class ClientOnlySaveStructure extends AbstractSaveStructure
 	final HashMap<ILevelWrapper, File> levelWrapperToFileMap = new HashMap<>();
 	
 	
+	
+	//=============//
+	// constructor //
+	//=============//
 	
 	public ClientOnlySaveStructure()
 	{
@@ -89,15 +90,18 @@ public class ClientOnlySaveStructure extends AbstractSaveStructure
 			}
 			
 			
-			// use multiverse matching if enabled
-			if (Config.Client.Advanced.Multiplayer.multiverseSimilarityRequiredPercent.get() != 0)
+			// use multiverse matching if enabled and in multiplayer (the server should already know where the player is)
+			if (newLevelWrapper instanceof IClientLevelWrapper && Config.Client.Advanced.Multiplayer.multiverseSimilarityRequiredPercent.get() != 0)
 			{
+				IClientLevelWrapper newClientLevelWrapper = (IClientLevelWrapper) newLevelWrapper;
+				
 				// create the matcher if one doesn't exist
-				if (this.subDimMatcher == null || !this.subDimMatcher.isFindingLevel(newLevelWrapper))
+				if (this.subDimMatcher == null || !this.subDimMatcher.isFindingLevel(newClientLevelWrapper))
 				{
-					LOGGER.info("Loading level " + newLevelWrapper.getDimensionType().getDimensionName());
-					this.subDimMatcher = new SubDimensionLevelMatcher(newLevelWrapper, this.folder,
-							this.getMatchingLevelFolders(newLevelWrapper).toArray(new File[0] /* surprisingly we don't need to create an array of any specific size for this to work */ ));
+					LOGGER.info("Loading level " + newClientLevelWrapper.getDimensionType().getDimensionName());
+					
+					List<File> levelFolders = this.getDhDataFoldersForDimension(newClientLevelWrapper.getDimensionType());
+					this.subDimMatcher = new SubDimensionLevelMatcher(newClientLevelWrapper, this.folder, levelFolders);
 				}
 				
 				File levelFile = this.subDimMatcher.tryGetLevel();
@@ -125,22 +129,23 @@ public class ClientOnlySaveStructure extends AbstractSaveStructure
 	
 	private File getLevelFolderWithoutSimilarityMatching(ILevelWrapper level)
 	{
-		List<File> folders = this.getMatchingLevelFolders(level);
+		List<File> folders = this.getDhDataFoldersForDimension(level.getDimensionType());
 		if (!folders.isEmpty() && folders.get(0) != null)
 		{
+			// use the first existing sub-dimension
 			String folderName = folders.get(0).getName();
 			LOGGER.info("Default Sub Dimension set to: [" + LodUtil.shortenString(folderName, 8) + "...]");
 			return folders.get(0);
 		}
 		else
 		{
-			// if no valid sub dimension was found, create a new one
+			// no valid sub dimension was found, create a new one
 			LOGGER.info("Default Sub Dimension not found. Creating: [" + level.getDimensionType().getDimensionName() + "]");
 			return new File(this.folder, level.getDimensionType().getDimensionName());
 		}
 	}
 	
-	public List<File> getMatchingLevelFolders(@Nullable ILevelWrapper level)
+	public List<File> getDhDataFoldersForDimension(IDimensionTypeWrapper dimensionType)
 	{
 		File[] folders = this.folder.listFiles();
 		if (folders == null)
@@ -148,22 +153,20 @@ public class ClientOnlySaveStructure extends AbstractSaveStructure
 			return new ArrayList<>(0);
 		}
 		
-		Stream<File> fileStream = Arrays.stream(folders).filter(
-				(folder) ->
-				{
-					if (!isValidLevelFolder(folder))
-					{
-						return false;
-					}
-					else
-					{
-						return level == null || folder.getName().equalsIgnoreCase(level.getDimensionType().getDimensionName());
-					}
-				}
-		).sorted();
+		// filter by dimension name
+		String expectedDimName = dimensionType.getDimensionName();
+		ArrayList<File> possibleDimFolders = new ArrayList<>();
+		for (File dimFolder : folders)
+		{
+			if (dimFolder.isDirectory() && dimFolder.getName().equals(expectedDimName))
+			{
+				possibleDimFolders.addAll(getValidDhDimensionFolders(dimFolder));
+			}
+		}
 		
-		return fileStream.collect(Collectors.toList());
+		return possibleDimFolders;
 	}
+	
 	
 	@Override
 	public File getRenderCacheFolder(ILevelWrapper level)
@@ -174,7 +177,7 @@ public class ClientOnlySaveStructure extends AbstractSaveStructure
 			return null;
 		}
 		
-		return new File(levelFolder, RENDER_CACHE_FOLDER);
+		return levelFolder;
 	}
 	
 	@Override
@@ -186,7 +189,7 @@ public class ClientOnlySaveStructure extends AbstractSaveStructure
 			return null;
 		}
 		
-		return new File(levelFolder, DATA_FOLDER);
+		return levelFolder;
 	}
 	
 	
@@ -196,21 +199,50 @@ public class ClientOnlySaveStructure extends AbstractSaveStructure
 	//================//
 	
 	/** Returns true if the given folder holds valid Lod Dimension data */
-	private static boolean isValidLevelFolder(File potentialFolder)
+	private static ArrayList<File> getValidDhDimensionFolders(File potentialFolder)
 	{
+		ArrayList<File> subDimSaveFolders = new ArrayList<>();
+		
 		if (!potentialFolder.isDirectory())
 		{
 			// a valid level folder needs to be a folder
-			return false;
+			return subDimSaveFolders;
 		}
 		
-		// filter out any non-DH folders
-		File[] files = potentialFolder.listFiles((file) ->
-				file.isDirectory() &&
-						(file.getName().equalsIgnoreCase(RENDER_CACHE_FOLDER) || file.getName().equalsIgnoreCase(DATA_FOLDER)));
 		
-		// a valid level folder needs to have DH specific folders in it
-		return files != null && files.length != 0;
+		File[] potentialLevelFolders = potentialFolder.listFiles();
+		if (potentialLevelFolders != null)
+		{
+			// check each level folder
+			for (File potentialFile : potentialLevelFolders)
+			{
+				if (potentialFile.isDirectory())
+				{
+					// check if this is a valid DH level folder
+					File[] dataFolders = potentialFile.listFiles();
+					if (dataFolders != null)
+					{
+						boolean isValidDhLevelFolder = false;
+						for (File dataFolder : dataFolders)
+						{
+							// look for the DH database file
+							if (dataFolder.getName().equalsIgnoreCase(AbstractSaveStructure.DATABASE_NAME))
+							{
+								isValidDhLevelFolder = true;
+								break;
+							}
+						}
+						
+						if (isValidDhLevelFolder)
+						{
+							subDimSaveFolders.add(potentialFile);
+						}
+					}
+				}
+			}
+		}
+		
+		return subDimSaveFolders;
 	}
 	
 	

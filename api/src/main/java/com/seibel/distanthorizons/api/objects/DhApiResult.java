@@ -63,7 +63,7 @@ public class DhApiResult<T>
 	// There is no createSuccess(String message) method because it would be too easy to confuse with createSuccess(Pt payload) when returning null
 	public static <Pt> DhApiResult<Pt> createSuccess(String message, Pt payload) { return new DhApiResult<Pt>(true, message, payload); }
 	
-	public static <Pt> DhApiResult<Pt> createFail() { return new DhApiResult<>(false, ""); }
+	// there is no createFail() since all fail results should give a reason for their failure
 	public static <Pt> DhApiResult<Pt> createFail(String message) { return new DhApiResult<>(false, message); }
 	public static <Pt> DhApiResult<Pt> createFail(String message, Pt payload) { return new DhApiResult<Pt>(false, message, payload); }
 	

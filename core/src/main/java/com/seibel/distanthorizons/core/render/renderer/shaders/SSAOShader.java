@@ -21,18 +21,27 @@ package com.seibel.distanthorizons.core.render.renderer.shaders;
 
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.render.glObject.shader.ShaderProgram;
+import com.seibel.distanthorizons.core.render.renderer.LodRenderer;
+import com.seibel.distanthorizons.core.render.renderer.SSAORenderer;
 import com.seibel.distanthorizons.core.render.renderer.ScreenQuad;
 import com.seibel.distanthorizons.coreapi.util.math.Mat4f;
 import org.lwjgl.opengl.GL32;
 
+/**
+ * Draws the SSAO to a texture. <br><br>
+ *
+ * See Also: <br>
+ * {@link SSAORenderer} - Parent to this shader. <br>
+ * {@link SSAOApplyShader} - draws the SSAO texture to DH's FrameBuffer. <br>
+ */
 public class SSAOShader extends AbstractShaderRenderer
 {
 	public static SSAOShader INSTANCE = new SSAOShader();
 	
 	public int FrameBuffer;
 	
-	private Mat4f perspective;
-	private Mat4f invertedPerspective;
+	private Mat4f projection;
+	private Mat4f invertedProjection;
 	
 	// uniforms
 	public int gProjUniform;
@@ -62,20 +71,20 @@ public class SSAOShader extends AbstractShaderRenderer
 		this.gDepthMapUniform = this.shader.getUniformLocation("gDepthMap");
 	}
 	
-	public void setProjectionMatrix(Mat4f perspective)
+	public void setProjectionMatrix(Mat4f projectionMatrix)
 	{
-		this.perspective = perspective;
+		this.projection = projectionMatrix;
 		
-		this.invertedPerspective = new Mat4f(perspective);
-		this.invertedPerspective.invert();
+		this.invertedProjection = new Mat4f(projectionMatrix);
+		this.invertedProjection.invert();
 	}
 	
 	@Override
 	protected void onApplyUniforms(float partialTicks)
 	{
-		this.shader.setUniform(this.gProjUniform, this.perspective);
+		this.shader.setUniform(this.gProjUniform, this.projection);
 		
-		this.shader.setUniform(this.gInvProjUniform, this.invertedPerspective);
+		this.shader.setUniform(this.gInvProjUniform, this.invertedProjection);
 		
 		this.shader.setUniform(this.gSampleCountUniform,
 				Config.Client.Advanced.Graphics.Ssao.sampleCount.get());
@@ -93,7 +102,7 @@ public class SSAOShader extends AbstractShaderRenderer
 				Config.Client.Advanced.Graphics.Ssao.bias.get().floatValue());
 		
 		GL32.glActiveTexture(GL32.GL_TEXTURE0);
-		GL32.glBindTexture(GL32.GL_TEXTURE_2D, MC_RENDER.getDepthTextureId());
+		GL32.glBindTexture(GL32.GL_TEXTURE_2D, LodRenderer.getActiveDepthTextureId());
 		
 		GL32.glUniform1i(this.gDepthMapUniform, 0);
 	}

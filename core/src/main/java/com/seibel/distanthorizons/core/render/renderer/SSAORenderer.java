@@ -24,10 +24,17 @@ import com.seibel.distanthorizons.core.render.glObject.GLState;
 import com.seibel.distanthorizons.core.render.renderer.shaders.SSAOApplyShader;
 import com.seibel.distanthorizons.core.render.renderer.shaders.SSAOShader;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
+import com.seibel.distanthorizons.coreapi.util.math.Mat4f;
 import org.lwjgl.opengl.GL32;
 
 import java.nio.ByteBuffer;
 
+/**
+ * Handles adding SSAO via {@link SSAOShader} and {@link SSAOApplyShader}. <br><br>
+ * 
+ * {@link SSAOShader} - draws the SSAO to a texture. <br>
+ * {@link SSAOApplyShader} - draws the SSAO texture to DH's FrameBuffer. <br>
+ */
 public class SSAORenderer
 {
 	public static SSAORenderer INSTANCE = new SSAORenderer();
@@ -90,7 +97,7 @@ public class SSAORenderer
 	// render //
 	//========//
 	
-	public void render(GLState primaryState, float partialTicks)
+	public void render(GLState primaryState, Mat4f projectionMatrix, float partialTicks)
 	{
 		GLState state = new GLState();
 		
@@ -107,9 +114,10 @@ public class SSAORenderer
 		}
 		
 		SSAOShader.INSTANCE.FrameBuffer = this.ssaoFramebuffer;
+		SSAOShader.INSTANCE.setProjectionMatrix(projectionMatrix);
 		SSAOShader.INSTANCE.render(partialTicks);
 		
-		primaryState.RestoreFrameBuffer();
+		primaryState.restore();
 		
 		SSAOApplyShader.INSTANCE.BufferTexture = this.ssaoTexture;
 		SSAOApplyShader.INSTANCE.render(partialTicks);

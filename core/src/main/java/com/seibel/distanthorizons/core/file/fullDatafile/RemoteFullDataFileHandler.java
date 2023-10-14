@@ -37,6 +37,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.CheckForNull;
+import java.io.File;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -51,14 +52,13 @@ public class RemoteFullDataFileHandler extends GeneratedFullDataFileHandler
 	
 	@CheckForNull
 	private final ClientNetworkState networkState;
-
+	
 	private final Set<DhSectionPos> visitedSections = ConcurrentHashMap.newKeySet();
 	private final ConcurrentMap<DhSectionPos, FullDataMetaFile> sectionsToUpdate = new ConcurrentHashMap<>();
 	private final AtomicBoolean isUpdating = new AtomicBoolean(false);
 	private boolean invalidSectionsFound = false;
 	
-	public RemoteFullDataFileHandler(IDhLevel level, AbstractSaveStructure saveStructure, @Nullable ClientNetworkState networkState)
-	{
+	public RemoteFullDataFileHandler(IDhLevel level, AbstractSaveStructure saveStructure, @Nullable ClientNetworkState networkState) {
 		super(level, saveStructure);
 		this.networkState = networkState;
 	}

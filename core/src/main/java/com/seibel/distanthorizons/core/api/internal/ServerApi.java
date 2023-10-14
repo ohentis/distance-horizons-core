@@ -25,6 +25,7 @@ import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.generation.DhLightingEngine;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.world.AbstractDhWorld;
@@ -52,17 +53,11 @@ public class ServerApi
 	
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
-	private static final ThreadPoolExecutor LIGHT_POPULATOR_THREAD_POOL = ThreadUtil.makeRateLimitedThreadPool(
-			// thread count doesn't need to be very high since the player can only move so fast, 1 should be plenty
-			(Runtime.getRuntime().availableProcessors() <= 12) ? 1 : 2,
-			"Server Light Populator", 
-			// only run the thread 50% of the time to prevent lagging the server thread
-			0.5,
-			ThreadUtil.MINIMUM_RELATIVE_PRIORITY);
-	
-	private int lastWorldGenTickDelta = 0;
 	
 	
+	//=============//
+	// constructor //
+	//=============//
 	
 	private ServerApi() { }
 	
@@ -89,10 +84,12 @@ public class ServerApi
 			LOGGER.error("ServerTickEvent error: " + e.getMessage(), e);
 		}
 	}
-	public void serverLevelTickEvent(IServerLevelWrapper level)
-	{
-		//TODO
-	}
+	
+	
+	
+	//===============//
+	// server events //
+	//===============//
 	
 	public void serverLoadEvent(boolean isDedicatedEnvironment)
 	{
@@ -107,6 +104,12 @@ public class ServerApi
 		SharedApi.getAbstractDhWorld().close();
 		SharedApi.setDhWorld(null);
 	}
+	
+	
+	
+	//==============//
+	// level events //
+	//==============//
 	
 	public void serverLevelLoadEvent(IServerLevelWrapper level)
 	{
@@ -143,77 +146,20 @@ public class ServerApi
 		}
 	}
 	
-	public void serverChunkLoadEvent(IChunkWrapper chunk, ILevelWrapper level)
-	{
-		if (Config.Client.Advanced.Debugging.skipChunkLoadUpdates.get())
-		{
-			return;
-		}
-		
-		
-		// the world should always be non-null, this != null is just in case the world was removed accidentally 
-		AbstractDhWorld dhWorld = SharedApi.getAbstractDhWorld();
-		if (dhWorld != null)
-		{
-			IDhLevel dhLevel = dhWorld.getLevel(level);
-			if (dhLevel != null)
-			{
-				dhLevel.updateChunkAsync(chunk);
-			}
-		}
-	}
-	public void serverChunkSaveEvent(IChunkWrapper chunkWrapper, ILevelWrapper level)
-	{
-		if (Config.Client.Advanced.Debugging.skipChunkUnloadUpdates.get())
-		{
-			return;
-		}
-		
-		
-		AbstractDhWorld dhWorld = SharedApi.getAbstractDhWorld();
-		if (dhWorld == null)
-		{
-			return;
-		}
-		
-		IDhLevel dhLevel = SharedApi.getAbstractDhWorld().getLevel(level);
-		if (dhLevel == null)
-		{
-			return;
-		}
-		
-		
-		// lighting the chunk needs to be done outside the event thread to prevent lagging the server thread
-		LIGHT_POPULATOR_THREAD_POOL.execute(() ->
-		{
-			// Save or populate the chunk wrapper's lighting
-			// this is done so we don't have to worry about MC unloading the lighting data for this chunk
-			if (chunkWrapper.isLightCorrect())
-			{
-				try
-				{
-					// If MC's lighting engine isn't thread safe this may cause the server thread to lag
-					chunkWrapper.bakeDhLightingUsingMcLightingEngine();
-					chunkWrapper.setUseDhLighting(true);
-				}
-				catch (IllegalStateException e)
-				{
-					LOGGER.warn(e.getMessage(), e);
-				}
-			}
-			else
-			{
-				// generate the chunk's lighting, ignoring neighbors.
-				// not a perfect solution, but should prevent chunks from having completely broken lighting
-				ArrayList<IChunkWrapper> nearbyChunkList = new ArrayList<>(1);
-				nearbyChunkList.add(chunkWrapper);
-				DhLightingEngine.INSTANCE.lightChunk(chunkWrapper, nearbyChunkList, level.hasSkyLight() ? 15 : 0);
-				chunkWrapper.setUseDhLighting(true);
-			}
-			
-			dhLevel.updateChunkAsync(chunkWrapper);
-		});
-	}
+	
+	
+	//=======================//
+	// chunk modified events //
+	//=======================//
+	
+	public void serverChunkLoadEvent(IChunkWrapper chunkWrapper, ILevelWrapper level) { SharedApi.INSTANCE.applyChunkUpdate(chunkWrapper, level, false); }
+	public void serverChunkSaveEvent(IChunkWrapper chunkWrapper, ILevelWrapper level) { SharedApi.INSTANCE.applyChunkUpdate(chunkWrapper, level, false); }
+	
+	
+	
+	//===============//
+	// player events //
+	//===============//
 	
 	public void serverPlayerJoinEvent(IServerPlayerWrapper player)
 	{

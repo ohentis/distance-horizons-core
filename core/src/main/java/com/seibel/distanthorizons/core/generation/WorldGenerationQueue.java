@@ -265,6 +265,12 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 				entry -> new Mapper(entry.getValue(), entry.getValue().pos.getSectionBBoxPos().getCenterBlockPos().toPos2D().chebyshevDist(targetPos.toPos2D())),
 				(aMapper, bMapper) -> aMapper.dist < bMapper.dist ? aMapper : bMapper);
 		
+		if (closestTaskMap == null)
+		{
+			// FIXME concurrency issue
+			return false;
+		}
+		
 		WorldGenTask closestTask = closestTaskMap.task;
 		
 		// remove the task we found, we are going to start it and don't want to run it multiple times

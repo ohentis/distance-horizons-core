@@ -423,23 +423,7 @@
     "Allow Unsafe UI Values",
   "distanthorizons.config.client.advanced.debugging.allowUnsafeValues.@tooltip":
     "If enabled, very limited config input validation will be performed. \n\nWarning: enabling this can cause instability or crashing, use at your own risk. \nNote: this option isn't saved between sessions.",
-  "distanthorizons.config.client.advanced.debugging.overrideVanillaGLLogger":
-    "Override Vanilla OpenGL Logger",
-  "distanthorizons.config.client.advanced.debugging.overrideVanillaGLLogger.@tooltip":
-    "Requires a reboot to change.",
-  "distanthorizons.config.client.advanced.debugging.glErrorHandlingMode":
-    "OpenGL Error Handling Mode",
-  "distanthorizons.config.client.advanced.debugging.glErrorHandlingMode.@tooltip":
-    "Defines how OpenGL errors are handled. \nMay incorrectly catch OpenGL errors thrown by other mods.",
-  "distanthorizons.config.client.advanced.debugging.glProfileMode":
-    "OpenGL Profile Mode",
-  "distanthorizons.config.client.advanced.debugging.glProfileMode.@tooltip":
-    "Requires rebooting Minecraft to apply.",
-  "distanthorizons.config.client.advanced.debugging.glForwardCompatibilityMode":
-    "OpenGL Forward Compatibility Mode",
-  "distanthorizons.config.client.advanced.debugging.glForwardCompatibilityMode.@tooltip":
-    "Requires rebooting Minecraft to apply.",
-    
+  
     
   "distanthorizons.config.client.advanced.buffers":
     "Buffers",
@@ -551,6 +535,41 @@
     "Show Full Data file Sampling",
   "distanthorizons.config.client.advanced.debugging.debugWireframe.showRenderDataFileStatus":
     "Show Render Data file Status",
+
+
+  "distanthorizons.config.client.advanced.debugging.openGl":
+    "Open GL",
+
+  "distanthorizons.config.client.advanced.debugging.openGl.overrideVanillaGLLogger":
+    "Override Vanilla GL Logger",
+  "distanthorizons.config.client.advanced.debugging.openGl.overrideVanillaGLLogger.@tooltip":
+    "Defines how OpenGL errors are handled. \n Requires rebooting Minecraft to apply. \nMay incorrectly catch OpenGL errors thrown by other mods.",
+  "distanthorizons.config.client.advanced.debugging.openGl.glErrorHandlingMode":
+    "OpenGL Error Handling Mode",
+  "distanthorizons.config.client.advanced.debugging.openGl.glErrorHandlingMode.@tooltip":
+    "Defines how OpenGL errors are handled. \n Requires rebooting Minecraft to apply. \nMay incorrectly catch OpenGL errors thrown by other mods.",
+    
+  "distanthorizons.config.client.advanced.debugging.openGl.glContextMajorVersion":
+    "OpenGL Major Version",
+  "distanthorizons.config.client.advanced.debugging.openGl.glContextMajorVersion.@tooltip":
+    "Requires rebooting Minecraft to apply. \nMore information available in the config file.",
+  "distanthorizons.config.client.advanced.debugging.openGl.glContextMinorVersion":
+    "OpenGL Minor Version",
+  "distanthorizons.config.client.advanced.debugging.openGl.glContextMinorVersion.@tooltip":
+    "Requires rebooting Minecraft to apply. \nMore information available in the config file.",
+    
+  "distanthorizons.config.client.advanced.debugging.openGl.glProfileMode":
+    "OpenGL Profile Mode",
+  "distanthorizons.config.client.advanced.debugging.openGl.glProfileMode.@tooltip":
+    "Requires rebooting Minecraft to apply. \nMore information available in the config file.",
+  "distanthorizons.config.client.advanced.debugging.openGl.enableGlForwardCompatibilityMode":
+    "Enable OpenGL Forward Compatibility Mode",
+  "distanthorizons.config.client.advanced.debugging.openGl.enableGlForwardCompatibilityMode.@tooltip":
+    "Requires rebooting Minecraft to apply. \nMore information available in the config file.",
+  "distanthorizons.config.client.advanced.debugging.openGl.enableGlDebugContext":
+    "Enable OpenGL Debug Context",
+  "distanthorizons.config.client.advanced.debugging.openGl.enableGlDebugContext.@tooltip":
+    "Requires rebooting Minecraft to apply. \nMore information available in the config file.",
     
   
   "distanthorizons.config.client.resetSettingsConfirmation":

@@ -19,19 +19,13 @@
 
 package com.seibel.distanthorizons.core.dataObjects.fullData.loader;
 
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.CompleteFullDataSource;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IFullDataSource;
-import com.seibel.distanthorizons.core.file.fullDatafile.FullDataMetaFile;
-import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
-import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataInputStream;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.LowDetailIncompleteFullDataSource;
-
-import java.io.IOException;
 
 public class LowDetailIncompleteFullDataSourceLoader extends AbstractFullDataSourceLoader
 {
-	public LowDetailIncompleteFullDataSourceLoader() { super(LowDetailIncompleteFullDataSource.class, LowDetailIncompleteFullDataSource.TYPE_ID, new byte[]{LowDetailIncompleteFullDataSource.DATA_FORMAT_VERSION}); }
+	public LowDetailIncompleteFullDataSourceLoader() { super(LowDetailIncompleteFullDataSource.class, LowDetailIncompleteFullDataSource.DATA_SOURCE_TYPE, new byte[]{LowDetailIncompleteFullDataSource.DATA_FORMAT_VERSION}); }
 	
 	@Override
 	protected IFullDataSource createEmptyDataSource(DhSectionPos pos) { return LowDetailIncompleteFullDataSource.createEmpty(pos); }

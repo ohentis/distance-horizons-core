@@ -23,7 +23,7 @@ import com.seibel.distanthorizons.api.enums.config.EHorizontalQuality;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.config.listeners.ConfigChangeListener;
 import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSource;
-import com.seibel.distanthorizons.core.file.renderfile.ILodRenderSourceProvider;
+import com.seibel.distanthorizons.core.file.renderfile.IRenderSourceProvider;
 import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
@@ -49,7 +49,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
 	public final int blockRenderDistanceRadius;
-	private final ILodRenderSourceProvider renderSourceProvider;
+	private final IRenderSourceProvider renderSourceProvider;
 	
 	/**
 	 * This holds every {@link DhSectionPos} that should be reloaded next tick. <br>
@@ -79,7 +79,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 	public LodQuadTree(
 			IDhClientLevel level, int viewDistanceInBlocks,
 			int initialPlayerBlockX, int initialPlayerBlockZ,
-			ILodRenderSourceProvider provider)
+			IRenderSourceProvider provider)
 	{
 		super(viewDistanceInBlocks, new DhBlockPos2D(initialPlayerBlockX, initialPlayerBlockZ), TREE_LOWEST_DETAIL_LEVEL);
 		
@@ -275,29 +275,44 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 		// TODO this should only equal the expected detail level, the (expectedDetailLevel-1) is a temporary fix to prevent corners from being cut out 
 		else if (sectionPos.getDetailLevel() == expectedDetailLevel || sectionPos.getDetailLevel() == expectedDetailLevel - 1)
 		{
-			// this is the detail level we want to render //
-			// prepare this section for rendering
-			renderSection.loadRenderSource(this.renderSourceProvider, this.level); // TODO this should fire for the lowest detail level first, wait for it to finish then fire the next highest to prevent waiting forever for 2 million chunk section to finish sampling everything
-			
-			// wait for the parent to disable before enabling this section, so we don't overdraw/overlap render sections
-			if (!parentRenderSectionIsEnabled && renderSection.canRenderNow())
+			/* Can be uncommented to easily debug a single render section. */ 
+			/* Don't forget the disableRendering() at the bottom though. */
+			//if (sectionPos.getDetailLevel() == 10
+			//	&&
+			//	(
+			//			sectionPos.getX() == 0 &&
+			//			sectionPos.getZ() == -4
+			//	))
 			{
-				// if rendering is already enabled we don't have to re-enable it
-				if (!renderSection.isRenderingEnabled())
+				// this is the detail level we want to render //
+				// prepare this section for rendering
+				renderSection.loadRenderSource(this.renderSourceProvider, this.level); // TODO this should fire for the lowest detail level first, wait for it to finish then fire the next highest to prevent waiting forever for 2 million chunk section to finish sampling everything
+				
+				// wait for the parent to disable before enabling this section, so we don't overdraw/overlap render sections
+				if (!parentRenderSectionIsEnabled && renderSection.canRenderNow())
 				{
-					renderSection.enableRendering();
-					
-					// delete/disable children, all of them will be a lower detail level than requested
-					quadNode.deleteAllChildren((childRenderSection) ->
+					// if rendering is already enabled we don't have to re-enable it
+					if (!renderSection.isRenderingEnabled())
 					{
-						if (childRenderSection != null)
+						renderSection.enableRendering();
+						
+						// delete/disable children, all of them will be a lower detail level than requested
+						quadNode.deleteAllChildren((childRenderSection) ->
 						{
-							childRenderSection.disableRendering();
-							childRenderSection.disposeRenderData();
-						}
-					});
+							if (childRenderSection != null)
+							{
+								childRenderSection.disableRendering();
+								childRenderSection.disposeRenderData();
+							}
+						});
+					}
 				}
 			}
+			//else
+			//{
+			//	renderSection.disableRendering();
+			//}
+			
 			return renderSection.canRenderNow();
 		}
 		else

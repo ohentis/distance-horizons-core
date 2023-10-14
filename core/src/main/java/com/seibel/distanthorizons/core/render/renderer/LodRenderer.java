@@ -38,11 +38,10 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftCli
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.ILightMapWrapper;
-import com.seibel.distanthorizons.api.enums.rendering.EDebugRendering;
 import com.seibel.distanthorizons.api.enums.rendering.EFogColorMode;
 import com.seibel.distanthorizons.core.render.fog.LodFogConfig;
 import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.IIrisAccessor;
-import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.IOptifineAccessor;
+import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.coreapi.util.math.Mat4f;
 import com.seibel.distanthorizons.coreapi.util.math.Vec3d;
 import com.seibel.distanthorizons.coreapi.util.math.Vec3f;
@@ -50,6 +49,7 @@ import org.apache.logging.log4j.LogManager;
 import org.lwjgl.opengl.GL32;
 
 import java.awt.*;
+import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
@@ -80,6 +80,11 @@ public class LodRenderer
 	/** used to prevent cleaning up render resources while they are being used */
 	private static final ReentrantLock renderLock = new ReentrantLock();
 	
+	// these ID's either what any render is currently using (since only one renderer can be active at a time), or just used previously
+	private static int activeFramebufferId = -1;
+	private static int activeColorTextureId = -1;
+	private static int activeDepthTextureId = -1;
+	
 	
 	
 	public void setupOffset(DhBlockPos pos) throws IllegalStateException
@@ -89,7 +94,7 @@ public class LodRenderer
 		
 		if (!GL32.glIsProgram(this.shaderProgram.id))
 		{
-			throw new IllegalStateException("No GL program exists with the ID: ["+this.shaderProgram.id+"]. This either means a shader program was freed while it was still in use or was never created.");
+			throw new IllegalStateException("No GL program exists with the ID: [" + this.shaderProgram.id + "]. This either means a shader program was freed while it was still in use or was never created.");
 		}
 		
 		this.shaderProgram.bind();
@@ -134,7 +139,6 @@ public class LodRenderer
 	private static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	private static final IMinecraftRenderWrapper MC_RENDER = SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
 	
-	public EDebugRendering previousDebugMode = null;
 	public final RenderBufferHandler bufferHandler;
 	
 	// The shader program
@@ -142,7 +146,21 @@ public class LodRenderer
 	public QuadElementBuffer quadIBO = null;
 	public boolean isSetupComplete = false;
 	
-	public LodRenderer(RenderBufferHandler bufferHandler) { this.bufferHandler = bufferHandler; }
+	// frameBuffer and texture ID's for this renderer
+	private int framebufferId;
+	private int colorTextureId;
+	private int depthTextureId;
+	
+	
+	
+	//=============//
+	// constructor //
+	//=============//
+	
+	public LodRenderer(RenderBufferHandler bufferHandler)
+	{
+		this.bufferHandler = bufferHandler;
+	}
 	
 	private boolean rendererClosed = false;
 	public void close()
@@ -173,7 +191,13 @@ public class LodRenderer
 		}
 	}
 	
-	public void drawLODs(Mat4f baseModelViewMatrix, Mat4f baseProjectionMatrix, float partialTicks, IProfilerWrapper profiler)
+	
+	
+	//===============//
+	// main renderer //
+	//===============//
+	
+	public void drawLODs(IClientLevelWrapper clientLevelWrapper, Mat4f baseModelViewMatrix, Mat4f baseProjectionMatrix, float partialTicks, IProfilerWrapper profiler)
 	{
 		if (this.rendererClosed)
 		{
@@ -198,9 +222,15 @@ public class LodRenderer
 				return;
 			}
 			
+			// Note: Since lightmapTexture is changing every frame, it's faster to recreate it than to reuse the old one.
+			ILightMapWrapper lightmap = MC_RENDER.getLightmapWrapper(clientLevelWrapper);
+			if (lightmap == null)
+			{
+				// this shouldn't normally happen, but just in case
+				return;
+			}
 			
-			
-			// get MC's shader program and save MC's render state so we can restore it later
+			// Save Minecraft's GL state so it can be restored at the end of LOD rendering
 			LagSpikeCatcher drawSaveGLState = new LagSpikeCatcher();
 			GLState minecraftGlState = new GLState();
 			if (ENABLE_DUMP_GL_STATE)
@@ -209,9 +239,6 @@ public class LodRenderer
 			}
 			drawSaveGLState.end("drawSaveGLState");
 			
-			// make sure everything has been initialized
-			GLProxy glProxy = GLProxy.getInstance();
-			
 			
 			
 			//===================//
@@ -219,9 +246,68 @@ public class LodRenderer
 			//===================//
 			
 			profiler.push("LOD draw setup");
-			/*---------Set GL State--------*/
-			GL32.glViewport(0, 0, MC_RENDER.getTargetFrameBufferViewportWidth(), MC_RENDER.getTargetFrameBufferViewportHeight());
-			GL32.glBindBuffer(GL32.GL_ARRAY_BUFFER, 0);
+			
+			if (!this.isSetupComplete)
+			{
+				this.setup();
+			}
+			
+			
+			// Bind LOD frame buffer
+			GL32.glBindFramebuffer(GL32.GL_FRAMEBUFFER, this.framebufferId);
+			
+			this.setActiveFramebufferId(this.framebufferId);
+			
+			
+			// Bind LOD color texture
+			GL32.glBindTexture(GL32.GL_TEXTURE_2D, this.colorTextureId);
+			GL32.glTexImage2D(GL32.GL_TEXTURE_2D,
+					0,
+					GL32.GL_RGB,
+					MC_RENDER.getTargetFrameBufferViewportWidth(), MC_RENDER.getTargetFrameBufferViewportHeight(),
+					0,
+					GL32.GL_RGB,
+					GL32.GL_UNSIGNED_BYTE,
+					(ByteBuffer) null);
+			GL32.glTexParameteri(GL32.GL_TEXTURE_2D, GL32.GL_TEXTURE_MIN_FILTER, GL32.GL_LINEAR);
+			GL32.glTexParameteri(GL32.GL_TEXTURE_2D, GL32.GL_TEXTURE_MAG_FILTER, GL32.GL_LINEAR);
+			GL32.glFramebufferTexture2D(GL32.GL_DRAW_FRAMEBUFFER, GL32.GL_COLOR_ATTACHMENT0, GL32.GL_TEXTURE_2D, this.colorTextureId, 0);
+			
+			this.setActiveColorTextureId(this.colorTextureId);
+			
+			
+			// bind LOD depth texture 
+			GL32.glBindTexture(GL32.GL_TEXTURE_2D, this.depthTextureId);
+			GL32.glTexImage2D(GL32.GL_TEXTURE_2D,
+					0,
+					GL32.GL_DEPTH_COMPONENT32,
+					MC_RENDER.getTargetFrameBufferViewportWidth(), MC_RENDER.getTargetFrameBufferViewportHeight(),
+					0,
+					GL32.GL_DEPTH_COMPONENT,
+					GL32.GL_UNSIGNED_BYTE,
+					(ByteBuffer) null);
+			GL32.glTexParameteri(GL32.GL_TEXTURE_2D, GL32.GL_TEXTURE_MIN_FILTER, GL32.GL_LINEAR);
+			GL32.glTexParameteri(GL32.GL_TEXTURE_2D, GL32.GL_TEXTURE_MAG_FILTER, GL32.GL_LINEAR);
+			GL32.glFramebufferTexture2D(GL32.GL_DRAW_FRAMEBUFFER, GL32.GL_DEPTH_ATTACHMENT, GL32.GL_TEXTURE_2D, this.depthTextureId, 0);
+			
+			this.setActiveDepthTextureId(this.depthTextureId);
+			
+			
+			// Clear LOD framebuffer and depth buffers
+			GL32.glClear(GL32.GL_COLOR_BUFFER_BIT | GL32.GL_DEPTH_BUFFER_BIT);
+			
+			GL32.glEnable(GL32.GL_DEPTH_TEST);
+			GL32.glDepthFunc(GL32.GL_LESS);
+			
+			
+			if(GL32.glCheckFramebufferStatus(GL32.GL_FRAMEBUFFER) != GL32.GL_FRAMEBUFFER_COMPLETE)
+			{
+				// This generally means something wasn't bound, IE missing either the color or depth texture
+				tickLogger.warn("FrameBuffer ["+this.framebufferId+"] isn't complete.");
+			}
+			
+			
+			// Set OpenGL polygon mode
 			boolean renderWireframe = Config.Client.Advanced.Debugging.renderWireframe.get();
 			if (renderWireframe)
 			{
@@ -233,17 +319,15 @@ public class LodRenderer
 				GL32.glPolygonMode(GL32.GL_FRONT_AND_BACK, GL32.GL_FILL);
 				GL32.glEnable(GL32.GL_CULL_FACE);
 			}
+			
+			// Enable depth test and depth mask
 			GL32.glEnable(GL32.GL_DEPTH_TEST);
 			GL32.glDepthFunc(GL32.GL_LESS);
-			
-			
-			
-			transparencyEnabled = Config.Client.Advanced.Graphics.Quality.transparency.get().transparencyEnabled;
-			fakeOceanFloor = Config.Client.Advanced.Graphics.Quality.transparency.get().fakeTransparencyEnabled;
-			
-			GL32.glDisable(GL32.GL_BLEND); // We render opaque first, then transparent
 			GL32.glDepthMask(true);
-			GL32.glClear(GL32.GL_DEPTH_BUFFER_BIT);
+			
+			// Disable blending
+			// We render opaque first, then transparent
+			GL32.glDisable(GL32.GL_BLEND);
 			
 			/*---------Bind required objects--------*/
 			// Setup LodRenderProgram and the LightmapTexture if it has not yet been done
@@ -266,8 +350,6 @@ public class LodRenderer
 				this.shaderProgram.bind();
 			}
 			
-			GL32.glActiveTexture(GL32.GL_TEXTURE0);
-			
 			/*---------Get required data--------*/
 			int vanillaBlockRenderedDistance = MC_RENDER.getRenderDistance() * LodUtil.CHUNK_WIDTH;
 			//Mat4f modelViewProjectionMatrix = RenderUtil.createCombinedModelViewProjectionMatrix(baseProjectionMatrix, baseModelViewMatrix, partialTicks);
@@ -279,10 +361,8 @@ public class LodRenderer
 			
 			/*---------Fill uniform data--------*/
 			this.shaderProgram.fillUniformData(modelViewProjectionMatrix, /*Light map = GL_TEXTURE0*/ 0,
-					MC.getWrappedClientWorld().getMinHeight(), vanillaBlockRenderedDistance);
+					MC.getWrappedClientLevel().getMinHeight(), vanillaBlockRenderedDistance);
 			
-			// Note: Since lightmapTexture is changing every frame, it's faster to recreate it than to reuse the old one.
-			ILightMapWrapper lightmap = MC_RENDER.getLightmapWrapper();
 			lightmap.bind();
 			if (ENABLE_IBO)
 			{
@@ -306,17 +386,18 @@ public class LodRenderer
 			if (Config.Client.Advanced.Graphics.Ssao.enabled.get())
 			{
 				profiler.popPush("LOD SSAO");
-				SSAOShader.INSTANCE.setProjectionMatrix(projectionMatrix);
-				SSAORenderer.INSTANCE.render(minecraftGlState, partialTicks);
+				SSAORenderer.INSTANCE.render(minecraftGlState, projectionMatrix, partialTicks);
 			}
-			
 			
 			profiler.popPush("LOD Fog");
 			FogShader.INSTANCE.setModelViewProjectionMatrix(modelViewProjectionMatrix);
 			FogShader.INSTANCE.render(partialTicks);
 			
-			//	DarkShader.INSTANCE.render(partialTicks); // A test shader to make the world darker
+			//DarkShader.INSTANCE.render(partialTicks); // A test shader to make the world darker
 			
+			// Render transparent LOD sections (such as water)
+			transparencyEnabled = Config.Client.Advanced.Graphics.Quality.transparency.get().transparencyEnabled;
+			fakeOceanFloor = Config.Client.Advanced.Graphics.Quality.transparency.get().fakeTransparencyEnabled;
 			
 			if (Config.Client.Advanced.Graphics.Quality.transparency.get().transparencyEnabled)
 			{
@@ -333,6 +414,12 @@ public class LodRenderer
 			drawLagSpikeCatcher.end("LodDraw");
 			
 			
+			profiler.popPush("LOD Apply");
+			
+			// Copy the LOD framebuffer to Minecraft's framebuffer
+			DhApplyShader.INSTANCE.render(partialTicks);
+			
+			
 			
 			//================//
 			// render cleanup //
@@ -346,8 +433,6 @@ public class LodRenderer
 				this.quadIBO.unbind();
 			}
 			
-			GL32.glBindBuffer(GL32.GL_ARRAY_BUFFER, 0);
-			
 			this.shaderProgram.unbind();
 			
 			if (Config.Client.Advanced.Debugging.DebugWireframe.enableRendering.get())
@@ -357,8 +442,6 @@ public class LodRenderer
 				DebugRenderer.INSTANCE.render(modelViewProjectionMatrix);
 				profiler.popPush("LOD cleanup");
 			}
-			
-			GL32.glClear(GL32.GL_DEPTH_BUFFER_BIT);
 			
 			minecraftGlState.restore();
 			drawCleanup.end("LodDrawCleanup");
@@ -402,6 +485,12 @@ public class LodRenderer
 			this.quadIBO = new QuadElementBuffer();
 			this.quadIBO.reserve(AbstractRenderBuffer.MAX_QUADS_PER_BUFFER);
 		}
+		
+		// Generate framebuffer, color texture, and depth render buffer
+		this.framebufferId = GL32.glGenFramebuffers();
+		this.colorTextureId = GL32.glGenTextures();
+		this.depthTextureId = GL32.glGenTextures();
+		
 		EVENT_LOGGER.info("Renderer setup complete");
 	}
 	
@@ -421,6 +510,24 @@ public class LodRenderer
 		return fogColor;
 	}
 	private Color getSpecialFogColor(float partialTicks) { return MC_RENDER.getSpecialFogColor(partialTicks); }
+	
+	
+	
+	//===============//
+	// API functions //
+	//===============//
+	
+	private void setActiveFramebufferId(int frameBufferId) { activeFramebufferId = frameBufferId; }
+	/** Returns -1 if no frame buffer has been bound yet */
+	public static int getActiveFramebufferId() { return activeFramebufferId; }
+	
+	private void setActiveColorTextureId(int colorTextureId) { activeColorTextureId = colorTextureId; }
+	/** Returns -1 if no texture has been bound yet */
+	public static int getActiveColorTextureId() { return activeColorTextureId; }
+	
+	private void setActiveDepthTextureId(int depthTextureId) { activeDepthTextureId = depthTextureId; }
+	/** Returns -1 if no texture has been bound yet */
+	public static int getActiveDepthTextureId() { return activeDepthTextureId; }
 	
 	
 	
@@ -447,7 +554,7 @@ public class LodRenderer
 		
 		this.isSetupComplete = false;
 		
-		GLProxy.getInstance().recordOpenGlCall(() -> 
+		GLProxy.getInstance().recordOpenGlCall(() ->
 		{
 			EVENT_LOGGER.info("Renderer Cleanup Started");
 			
@@ -457,6 +564,12 @@ public class LodRenderer
 			{
 				this.quadIBO.destroy(false);
 			}
+			
+			// Delete framebuffer, color texture, and depth texture
+			//GL32.glBindRenderbuffer(GL32.GL_RENDERBUFFER, 0);
+			GL32.glDeleteFramebuffers(this.framebufferId);
+			GL32.glDeleteTextures(this.colorTextureId);
+			GL32.glDeleteTextures(this.depthTextureId);
 			
 			EVENT_LOGGER.info("Renderer Cleanup Complete");
 		});

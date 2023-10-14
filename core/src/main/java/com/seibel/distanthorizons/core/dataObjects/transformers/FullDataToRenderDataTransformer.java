@@ -76,7 +76,7 @@ public class FullDataToRenderDataTransformer
 		{
 			return null;
 		}
-		else if (MC.getWrappedClientWorld() == null)
+		else if (MC.getWrappedClientLevel() == null)
 		{
 			// if the client is no longer loaded in the world, render sources cannot be created 
 			return null;
@@ -129,7 +129,7 @@ public class FullDataToRenderDataTransformer
 		
 		columnSource.markNotEmpty();
 		
-		if (dataDetail == columnSource.getDataDetail())
+		if (dataDetail == columnSource.getDataDetailLevel())
 		{
 			int baseX = pos.getMinCornerLodPos().getCornerBlockPos().x;
 			int baseZ = pos.getMinCornerLodPos().getCornerBlockPos().z;
@@ -179,7 +179,7 @@ public class FullDataToRenderDataTransformer
 		
 		columnSource.markNotEmpty();
 		
-		if (dataDetail == columnSource.getDataDetail())
+		if (dataDetail == columnSource.getDataDetailLevel())
 		{
 			int baseX = pos.getMinCornerLodPos().getCornerBlockPos().x;
 			int baseZ = pos.getMinCornerLodPos().getCornerBlockPos().z;

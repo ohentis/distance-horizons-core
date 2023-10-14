@@ -34,14 +34,18 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhLodPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
+import com.seibel.distanthorizons.core.sql.FullDataRepo;
+import com.seibel.distanthorizons.core.sql.MetaDataDto;
 import com.seibel.distanthorizons.core.util.FileUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.Nullable;
 
 import java.awt.*;
 import java.io.File;
 import java.io.IOException;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -79,19 +83,36 @@ public class FullDataFileHandler implements IFullDataSourceProvider
 	protected final AtomicInteger topDetailLevelRef = new AtomicInteger(0);
 	protected final int minDetailLevel = CompleteFullDataSource.SECTION_SIZE_OFFSET;
 	
+	public final FullDataRepo fullDataRepo;
+	@Override
+	public FullDataRepo getRepo() { return this.fullDataRepo; }
+	
 	
 	
 	//=============//
 	// constructor //
 	//=============//
 	
-	public FullDataFileHandler(IDhLevel level, AbstractSaveStructure saveStructure)
+	public FullDataFileHandler(IDhLevel level, AbstractSaveStructure saveStructure) { this(level, saveStructure, null); }
+	public FullDataFileHandler(IDhLevel level, AbstractSaveStructure saveStructure, @Nullable File saveDirOverride)
 	{
 		this.level = level;
-		this.saveDir = saveStructure.getFullDataFolder(level.getLevelWrapper());
+		this.saveDir = (saveDirOverride == null) ? saveStructure.getFullDataFolder(level.getLevelWrapper()) : saveDirOverride;
 		if (!this.saveDir.exists() && !this.saveDir.mkdirs())
 		{
 			LOGGER.warn("Unable to create full data folder, file saving may fail.");
+		}
+		
+		
+		try
+		{
+			this.fullDataRepo = new FullDataRepo("jdbc:sqlite", this.saveDir.getPath() + "/" + AbstractSaveStructure.DATABASE_NAME);
+		}
+		catch (SQLException e)
+		{
+			// should only happen if there is an issue with the database (it's locked or can't be created if missing) 
+			// or the database update failed
+			throw new RuntimeException(e);
 		}
 	}
 	
@@ -124,7 +145,7 @@ public class FullDataFileHandler implements IFullDataSourceProvider
 		CompletableFuture<IFullDataSource> futureWrapper = new CompletableFuture<>();
 		metaFile.getOrLoadCachedDataSourceAsync().exceptionally((e) ->
 				{
-					FullDataMetaFile newMetaFile = this.removeCorruptedFile(pos, metaFile, e);
+					FullDataMetaFile newMetaFile = this.removeCorruptedFile(pos, e);
 					
 					futureWrapper.completeExceptionally(e);
 					return null; // return value doesn't matter
@@ -149,8 +170,8 @@ public class FullDataFileHandler implements IFullDataSourceProvider
 		
 		
 		// check if the file exists, but hasn't been loaded
-		File fileToLoad = this.computeDataFilePath(pos);
-		if (fileToLoad.exists())
+		MetaDataDto metaDataDto = this.fullDataRepo.getByPrimaryKey(pos.serialize());
+		if (metaDataDto != null)
 		{
 			synchronized (this)
 			{
@@ -165,15 +186,15 @@ public class FullDataFileHandler implements IFullDataSourceProvider
 				
 				try
 				{
-					metaFile = FullDataMetaFile.createFromExistingFile(this, this.level, fileToLoad);
+					metaFile = FullDataMetaFile.createFromExistingDto(this, this.level, metaDataDto);
 					this.topDetailLevelRef.updateAndGet(oldDetailLevel -> Math.max(oldDetailLevel, pos.getDetailLevel()));
 					this.loadedMetaFileBySectionPos.put(pos, metaFile);
 					return metaFile;
 				}
 				catch (IOException e)
 				{
-					LOGGER.error("Failed to read meta data file at " + fileToLoad + ": ", e);
-					FileUtil.renameCorruptedFile(fileToLoad);
+					LOGGER.error("Failed to read meta data file at pos " + pos + ": ", e);
+					this.fullDataRepo.delete(metaDataDto);
 				}
 			}
 		}
@@ -189,7 +210,7 @@ public class FullDataFileHandler implements IFullDataSourceProvider
 		// to avoid overhead of 'synchronized', and eat the mini-overhead of possibly creating duplicate objects.
 		try
 		{
-			metaFile = FullDataMetaFile.createNewFileForPos(this, this.level, pos);
+			metaFile = FullDataMetaFile.createNewDtoForPos(this, this.level, pos);
 		}
 		catch (IOException e)
 		{
@@ -241,7 +262,7 @@ public class FullDataFileHandler implements IFullDataSourceProvider
 					}
 					
 					// check if a file for this pos is loaded or exists
-					if (this.loadedMetaFileBySectionPos.containsKey(subPos) || this.computeDataFilePath(subPos).exists())
+					if (this.loadedMetaFileBySectionPos.containsKey(subPos) || this.fullDataRepo.existsWithPrimaryKey(subPos.serialize()))
 					{
 						allEmpty = false;
 						break outerLoop;
@@ -428,7 +449,7 @@ public class FullDataFileHandler implements IFullDataSourceProvider
 					else
 					{
 						// shouldn't normally happen, but sometimes does
-						dataSourceLoader = AbstractFullDataSourceLoader.getLoader(existingFile.baseMetaData.dataTypeId, existingFile.baseMetaData.binaryDataFormatVersion);
+						dataSourceLoader = AbstractFullDataSourceLoader.getLoader(existingFile.baseMetaData.dataType, existingFile.baseMetaData.binaryDataFormatVersion);
 					}
 					
 					dataSourceLoader.returnPooledDataSource(existingFullDataSource);
@@ -473,16 +494,16 @@ public class FullDataFileHandler implements IFullDataSourceProvider
 			return this.sampleFromFileArray(source, existFiles, true).thenApply(IIncompleteFullDataSource::tryPromotingToCompleteDataSource)
 					.exceptionally((e) ->
 					{
-						FullDataMetaFile newMetaFile = this.removeCorruptedFile(pos, file, e);
+						FullDataMetaFile newMetaFile = this.removeCorruptedFile(pos, e);
 						return null;
 					});
 		}
 	}
-	protected FullDataMetaFile removeCorruptedFile(DhSectionPos pos, FullDataMetaFile metaFile, Throwable exception)
+	protected FullDataMetaFile removeCorruptedFile(DhSectionPos pos, Throwable exception)
 	{
 		LOGGER.error("Error reading Data file [" + pos + "]", exception);
 		
-		FileUtil.renameCorruptedFile(metaFile.file);
+		this.fullDataRepo.deleteByPrimaryKey(pos.serialize());
 		// remove the FullDataMetaFile since the old one was corrupted
 		this.loadedMetaFileBySectionPos.remove(pos);
 		// create a new FullDataMetaFile to write new data to
@@ -549,14 +570,5 @@ public class FullDataFileHandler implements IFullDataSourceProvider
 	
 	@Override
 	public void close() { FullDataMetaFile.checkAndLogPhantomDataSourceLifeCycles(); }
-	
-	
-	
-	//================//
-	// helper methods //
-	//================//
-	
-	@Override
-	public File computeDataFilePath(DhSectionPos pos) { return new File(this.saveDir, pos.serialize() + FullDataMetaFile.FILE_SUFFIX); }
 	
 }

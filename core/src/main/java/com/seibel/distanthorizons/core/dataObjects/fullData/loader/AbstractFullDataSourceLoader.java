@@ -33,14 +33,12 @@ import java.util.concurrent.locks.ReentrantLock;
 public abstract class AbstractFullDataSourceLoader
 {
 	public static final HashMultimap<Class<? extends IFullDataSource>, AbstractFullDataSourceLoader> LOADER_REGISTRY = HashMultimap.create();
-	public static final HashMap<Long, Class<? extends IFullDataSource>> DATATYPE_ID_REGISTRY = new HashMap<>();
-	
-	private static final int AVAILABLE_PROCESSOR_COUNT = Runtime.getRuntime().availableProcessors();
+	public static final HashMap<String, Class<? extends IFullDataSource>> DATATYPE_REGISTRY = new HashMap<>();
 	
 	
 	public final Class<? extends IFullDataSource> fullDataSourceClass;
 	
-	public final long datatypeId;
+	public final String datatype;
 	public final byte[] loaderSupportedVersions;
 	
 	/** used when pooling data sources */
@@ -53,35 +51,38 @@ public abstract class AbstractFullDataSourceLoader
 	// constructor //
 	//=============//
 	
-	public AbstractFullDataSourceLoader(Class<? extends IFullDataSource> fullDataSourceClass, long datatypeId, byte[] loaderSupportedVersions)
+	public AbstractFullDataSourceLoader(Class<? extends IFullDataSource> fullDataSourceClass, String datatype, byte[] loaderSupportedVersions)
 	{
-		this.datatypeId = datatypeId;
+		this.datatype = datatype;
 		this.loaderSupportedVersions = loaderSupportedVersions;
 		Arrays.sort(loaderSupportedVersions); // sort to allow fast access
 		this.fullDataSourceClass = fullDataSourceClass;
-		if (DATATYPE_ID_REGISTRY.containsKey(datatypeId) && DATATYPE_ID_REGISTRY.get(datatypeId) != fullDataSourceClass)
+		
+		if (DATATYPE_REGISTRY.containsKey(datatype) && DATATYPE_REGISTRY.get(datatype) != fullDataSourceClass)
 		{
-			throw new IllegalArgumentException("Loader for datatypeId " + datatypeId + " already registered with different class: "
-					+ DATATYPE_ID_REGISTRY.get(datatypeId) + " != " + fullDataSourceClass);
+			throw new IllegalArgumentException("Loader for datatype: [" + datatype + "] already registered with different class: "
+					+ DATATYPE_REGISTRY.get(datatype) + " != " + fullDataSourceClass);
 		}
+		
 		Set<AbstractFullDataSourceLoader> loaders = LOADER_REGISTRY.get(fullDataSourceClass);
 		if (loaders.stream().anyMatch(other ->
-		{
-			// see if any loaderSupportsVersion conflicts with this one
-			for (byte otherVer : other.loaderSupportedVersions)
 			{
-				if (Arrays.binarySearch(loaderSupportedVersions, otherVer) >= 0)
+				// see if any loaderSupportsVersion conflicts with this one
+				for (byte otherVer : other.loaderSupportedVersions)
 				{
-					return true;
+					if (Arrays.binarySearch(loaderSupportedVersions, otherVer) >= 0)
+					{
+						return true;
+					}
 				}
-			}
-			return false;
-		}))
+				return false;
+			}))
 		{
 			throw new IllegalArgumentException("Loader for class " + fullDataSourceClass + " that supports one of the version in "
 					+ Arrays.toString(loaderSupportedVersions) + " already registered!");
 		}
-		DATATYPE_ID_REGISTRY.put(datatypeId, fullDataSourceClass);
+		
+		DATATYPE_REGISTRY.put(datatype, fullDataSourceClass);
 		LOADER_REGISTRY.put(fullDataSourceClass, this);
 	}
 	
@@ -91,9 +92,9 @@ public abstract class AbstractFullDataSourceLoader
 	// loader getters // 
 	//================//
 	
-	public static AbstractFullDataSourceLoader getLoader(long dataTypeId, byte dataVersion)
+	public static AbstractFullDataSourceLoader getLoader(String dataType, byte dataVersion)
 	{
-		return LOADER_REGISTRY.get(DATATYPE_ID_REGISTRY.get(dataTypeId)).stream()
+		return LOADER_REGISTRY.get(DATATYPE_REGISTRY.get(dataType)).stream()
 				.filter(loader -> Arrays.binarySearch(loader.loaderSupportedVersions, dataVersion) >= 0)
 				.findFirst().orElse(null);
 	}

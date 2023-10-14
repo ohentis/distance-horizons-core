@@ -26,6 +26,7 @@ import java.util.UUID;
 import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
+import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IBindable;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
@@ -82,7 +83,7 @@ public interface IMinecraftClientWrapper extends IBindable
 	 * Returns the level the client is currently in. <br>
 	 * Returns null if the client isn't in a level.
 	 */
-	ILevelWrapper getWrappedClientWorld();
+	IClientLevelWrapper getWrappedClientLevel();
 	
 	/** Please move over to getInstallationDirectory() within the IMinecraftSharedWrapper */
 	@Deprecated

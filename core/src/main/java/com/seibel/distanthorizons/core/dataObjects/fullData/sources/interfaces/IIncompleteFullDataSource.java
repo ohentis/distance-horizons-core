@@ -37,7 +37,7 @@ public interface IIncompleteFullDataSource extends IFullDataSource
 		DhSectionPos inputPos = inputSource.getSectionPos();
 		DhSectionPos thisPos = this.getSectionPos();
 		LodUtil.assertTrue(inputPos.getDetailLevel() < thisPos.getDetailLevel());
-		LodUtil.assertTrue(inputPos.overlapsExactly(this.getSectionPos()));
+		LodUtil.assertTrue(inputPos.overlapsExactly(this.getSectionPos()), "input source at pos: "+inputPos+" doesn't overlap with this source's pos: "+thisPos);
 		
 		if (inputSource.isEmpty())
 		{

@@ -340,6 +340,9 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 	}
 	
 	@Override
+	public boolean hasSkyLight() { return this.serverLevelWrapper.hasSkyLight(); }
+	
+	@Override
 	public void onWorldGenTaskComplete(DhSectionPos pos)
 	{
 		//TODO: Send packet to client

@@ -46,6 +46,7 @@ public interface IDhLevel extends AutoCloseable
 	
 	AbstractSaveStructure getSaveStructure();
 	
+	boolean hasSkyLight();
 	
 	
 }

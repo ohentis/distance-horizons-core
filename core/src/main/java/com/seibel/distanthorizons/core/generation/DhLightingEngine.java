@@ -198,6 +198,7 @@ public class DhLightingEngine
 		
 		
 		centerChunk.setIsDhLightCorrect(true);
+		centerChunk.setUseDhLighting(true);
 		LOGGER.trace("Finished generating lighting for chunk: [" + centerChunkPos + "]");
 	}
 	

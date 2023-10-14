@@ -20,11 +20,13 @@
 package com.seibel.distanthorizons.core.config.gui;
 
 import com.seibel.distanthorizons.api.enums.config.EGpuUploadMethod;
+import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.render.glObject.GLProxy;
 import com.seibel.distanthorizons.core.render.glObject.GLState;
 import com.seibel.distanthorizons.core.render.glObject.buffer.GLVertexBuffer;
 import com.seibel.distanthorizons.core.render.glObject.shader.ShaderProgram;
 import com.seibel.distanthorizons.core.render.glObject.vertexAttribute.VertexAttribute;
+import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
 import org.lwjgl.opengl.GL32;
 
 import java.nio.ByteBuffer;
@@ -92,7 +94,6 @@ public class OpenGLConfigScreen extends AbstractScreen
 		System.out.println("Updated config screen with the delta of " + delta);
 		
 		GLState state = new GLState();
-//        GL32.glBindFramebuffer(GL32.GL_FRAMEBUFFER, MC_RENDER.getTargetFrameBuffer());
 		GL32.glViewport(0, 0, width, height);
 		GL32.glPolygonMode(GL32.GL_FRONT_AND_BACK, GL32.GL_FILL);
 		GL32.glDisable(GL32.GL_CULL_FACE);

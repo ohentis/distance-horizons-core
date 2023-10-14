@@ -21,6 +21,7 @@ package com.seibel.distanthorizons.core.render.glObject;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.seibel.distanthorizons.api.enums.config.EGLErrorHandlingMode;
+import com.seibel.distanthorizons.api.enums.config.EGlProfileMode;
 import com.seibel.distanthorizons.api.enums.config.EGpuUploadMethod;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
@@ -30,8 +31,10 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.util.ReflectionUtil;
 import com.seibel.distanthorizons.core.util.objects.GLMessage;
 import com.seibel.distanthorizons.core.util.objects.GLMessageOutputStream;
+import com.seibel.distanthorizons.core.util.objects.Pair;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
+import com.seibel.distanthorizons.coreapi.util.StringUtil;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.glfw.GLFW;
@@ -42,9 +45,12 @@ import org.lwjgl.opengl.GLUtil;
 
 import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 /**
  * A singleton that holds references to different openGL contexts
@@ -72,7 +78,15 @@ public class GLProxy
 	public static final ConfigBasedLogger GL_LOGGER = new ConfigBasedLogger(LogManager.getLogger(GLProxy.class),
 			() -> Config.Client.Advanced.Logging.logRendererGLEvent.get());
 	
+	/** newest version first */
+	private static final ArrayList<Pair<Integer, Integer>> SUPPORTED_GL_VERSIONS = new ArrayList<>(
+			Arrays.asList(
+				new Pair<>(4,6), new Pair<>(4,5), new Pair<>(4,4), new Pair<>(4,3), new Pair<>(4,2), new Pair<>(4,1), new Pair<>(4,0),
+				new Pair<>(3,3), new Pair<>(3,2)	
+			));
+	
 	private static GLProxy instance = null;
+	
 	
 	/** Minecraft's GLFW window */
 	public final long minecraftGlContext;
@@ -140,9 +154,9 @@ public class GLProxy
 					"Additional info:\n" + supportedVersionInfo;
 			MC.crashMinecraft(errorMessage, new UnsupportedOperationException("Distant Horizon OpenGL requirements not met"));
 		}
-	 	GL_LOGGER.info("minecraftGlCapabilities:\n" + this.getVersionInfo(this.minecraftGlCapabilities));
+	 	GL_LOGGER.info("minecraftGlCapabilities:\n" + this.versionInfoToString(this.minecraftGlCapabilities));
 		
-		if (Config.Client.Advanced.Debugging.overrideVanillaGLLogger.get())
+		if (Config.Client.Advanced.Debugging.OpenGl.overrideVanillaGLLogger.get())
 		{
 			GLUtil.setupDebugMessageCallback(new PrintStream(new GLMessageOutputStream(GLProxy::logMessage, this.vanillaDebugMessageBuilder), true));
 		}
@@ -153,39 +167,92 @@ public class GLProxy
 		// create the lod builder context //
 		//================================//
 		
-		GLFW.glfwMakeContextCurrent(0L);
+		String contextCreateErrorMessage = "";
+		long potentialLodBuilderGlContext = 0;
+		GLCapabilities potentialLodBuilderGlCapabilities = null;
 		
-		// context creation setup
-		GLFW.glfwDefaultWindowHints();
-		// make the context window invisible
-		GLFW.glfwWindowHint(GLFW.GLFW_VISIBLE, GLFW.GLFW_FALSE);
-		
-		// set the GL version
-		// DO NOT comment out the following 2 lines: they are needed for mac and creating forward compatible contexts
-		GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MAJOR, 3);
-		GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MINOR, 2);
-		GLFW.glfwWindowHint(GLFW.GLFW_OPENGL_DEBUG_CONTEXT, GLFW.GLFW_TRUE);
-		GLFW.glfwWindowHint(GLFW.GLFW_OPENGL_FORWARD_COMPAT, GLFW.GLFW_TRUE);
-		GLFW.glfwWindowHint(GLFW.GLFW_OPENGL_PROFILE, GLFW.GLFW_OPENGL_CORE_PROFILE);
-		
-		// create the Lod Builder context
-		this.lodBuilderGlContext = GLFW.glfwCreateWindow(64, 48, "LOD Builder Window", 0L, this.minecraftGlContext);
-		if (this.lodBuilderGlContext == 0)
+		for (Pair<Integer, Integer> supportedGlVersion : SUPPORTED_GL_VERSIONS)
 		{
-			GL_LOGGER.error("ERROR: Failed to create LodBuilder GLFW context for OpenGL 3.2 with Forward compatible Core Profile! Your OS may have not been able to support it.");
-			GL_LOGGER.error("Minecraft GL Capabilities:\n [\n"+ReflectionUtil.getAllFieldValuesAsString(this.minecraftGlCapabilities)+"\n]\n");
+			int glMajorVersion = supportedGlVersion.first;
+			int glMinorVersion = supportedGlVersion.second;
 			
-			throw new UnsupportedOperationException("Forward Compat Core Profile 3.2 creation failure");
+			GL_LOGGER.info("Attempting to create a context with GL version: ["+glMajorVersion+"."+glMinorVersion+"]");
+			
+			
+			
+			GLFW.glfwMakeContextCurrent(0L);
+			
+			// context creation setup
+			GLFW.glfwDefaultWindowHints();
+			// make the context window invisible
+			GLFW.glfwWindowHint(GLFW.GLFW_VISIBLE, GLFW.GLFW_FALSE);
+			
+			boolean debugContextEnabled = Config.Client.Advanced.Debugging.OpenGl.enableGlDebugContext.get();
+			boolean forwardCompatEnabled = Config.Client.Advanced.Debugging.OpenGl.enableGlForwardCompatibilityMode.get();
+			
+			GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MAJOR, glMajorVersion);
+			GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MINOR, glMinorVersion);
+			GLFW.glfwWindowHint(GLFW.GLFW_OPENGL_DEBUG_CONTEXT, debugContextEnabled ? GLFW.GLFW_TRUE : GLFW.GLFW_FALSE);
+			GLFW.glfwWindowHint(GLFW.GLFW_OPENGL_FORWARD_COMPAT, forwardCompatEnabled ? GLFW.GLFW_TRUE : GLFW.GLFW_FALSE);
+			
+			int profileModeInt;
+			EGlProfileMode profileModeEnum = Config.Client.Advanced.Debugging.OpenGl.glProfileMode.get();
+			switch (profileModeEnum)
+			{
+				case CORE:
+					profileModeInt = GLFW.GLFW_OPENGL_CORE_PROFILE;
+					break;
+				case COMPAT:
+					profileModeInt = GLFW.GLFW_OPENGL_COMPAT_PROFILE;
+					break;
+				default:
+				case ANY:
+					profileModeInt = GLFW.GLFW_OPENGL_ANY_PROFILE;
+					break;
+			}
+			GLFW.glfwWindowHint(GLFW.GLFW_OPENGL_PROFILE, profileModeInt);
+			
+			contextCreateErrorMessage =
+					"Failed to create OpenGL GLFW context for OpenGL Version: [" + glMajorVersion + "." + glMinorVersion + "] \n" +
+					"with Debugging: [" + (debugContextEnabled ? "Enabled" : "Disabled") + "], \n" +
+					"Forward Compatibility: [" + (forwardCompatEnabled ? "Enabled" : "Disabled") + "], \n" +
+					"and Profile: [" + profileModeEnum.name() + "]. ";
+			
+			
+			// try creating the Lod Builder context
+			potentialLodBuilderGlContext = GLFW.glfwCreateWindow(1, 1, "LOD Builder Window", 0L, this.minecraftGlContext);
+			if (potentialLodBuilderGlContext == 0)
+			{
+				GL_LOGGER.debug(contextCreateErrorMessage);
+				GL_LOGGER.debug("Minecraft GL Capabilities:\n [\n" + ReflectionUtil.getAllFieldValuesAsString(this.minecraftGlCapabilities) + "\n]\n");
+				
+				continue;
+			}
+			
+			// create the window
+			GLFW.glfwMakeContextCurrent(potentialLodBuilderGlContext);
+			GL_LOGGER.info("Successfully created a context with GL version: ["+glMajorVersion+"."+glMinorVersion+"]");
+			
+			// set and log the capabilities
+			potentialLodBuilderGlCapabilities = GL.createCapabilities();
+			GL_LOGGER.info("lodBuilderGlCapabilities:\n" + this.versionInfoToString(potentialLodBuilderGlCapabilities));
+			// override the GL logger
+			GLUtil.setupDebugMessageCallback(new PrintStream(new GLMessageOutputStream(GLProxy::logMessage, this.lodBuilderDebugMessageBuilder), true));
+			// clear the context for the next stage
+			GLFW.glfwMakeContextCurrent(0L);
+			
+			break;
 		}
-		// create the window
-		GLFW.glfwMakeContextCurrent(this.lodBuilderGlContext);
-		// set and log the capabilities
-		this.lodBuilderGlCapabilities = GL.createCapabilities();
-		GL_LOGGER.info("lodBuilderGlCapabilities:\n" + this.getVersionInfo(this.lodBuilderGlCapabilities));
-		// override the GL logger
-		GLUtil.setupDebugMessageCallback(new PrintStream(new GLMessageOutputStream(GLProxy::logMessage, this.lodBuilderDebugMessageBuilder), true));
-		// clear the context for the next stage
-		GLFW.glfwMakeContextCurrent(0L);
+		
+		if (potentialLodBuilderGlContext == 0)
+		{
+			// no context was created
+			throw new UnsupportedOperationException("ERROR: Unable to create a GL Context using any of the supported GL versions: ["+ StringUtil.join(",", SUPPORTED_GL_VERSIONS) +"]");
+		}
+		
+		this.lodBuilderGlContext = potentialLodBuilderGlContext;
+		this.lodBuilderGlCapabilities = potentialLodBuilderGlCapabilities;
+		
 		
 		
 		
@@ -197,7 +264,8 @@ public class GLProxy
 		this.proxyWorkerGlContext = GLFW.glfwCreateWindow(64, 48, "LOD proxy worker Window", 0L, this.minecraftGlContext);
 		if (this.proxyWorkerGlContext == 0)
 		{
-			GL_LOGGER.error("ERROR: Failed to create GLProxy Worker GLFW context for OpenGL 3.2 with Forward compatible Core Profile! Your OS may have not been able to support it.");
+			GL_LOGGER.error(contextCreateErrorMessage + 
+					"\n Your OS and GPU Driver may have not support this combination.");
 			GL_LOGGER.error("Minecraft GL Capabilities:\n [\n"+ReflectionUtil.getAllFieldValuesAsString(this.minecraftGlCapabilities)+"\n]\n");
 			
 			throw new UnsupportedOperationException("Forward Compat Core Profile 3.2 creation failure");
@@ -206,7 +274,7 @@ public class GLProxy
 		GLFW.glfwMakeContextCurrent(this.proxyWorkerGlContext);
 		// set and log the capabilities
 		this.proxyWorkerGlCapabilities = GL.createCapabilities();
-		GL_LOGGER.info("proxyWorkerGlCapabilities:\n" + this.getVersionInfo(this.lodBuilderGlCapabilities));
+		GL_LOGGER.info("proxyWorkerGlCapabilities:\n" + this.versionInfoToString(this.lodBuilderGlCapabilities));
 		// override the GL logger
 		GLUtil.setupDebugMessageCallback(new PrintStream(new GLMessageOutputStream(GLProxy::logMessage, this.proxyWorkerDebugMessageBuilder), true));
 		// clear the context for the next stage
@@ -262,6 +330,12 @@ public class GLProxy
 		// GLProxy creation success
 		GL_LOGGER.info(GLProxy.class.getSimpleName() + " creation successful. OpenGL smiles upon you this day.");
 	}
+	
+	
+	
+	//==================//
+	// context handling //
+	//==================//
 	
 	/**
 	 * A wrapper function to make switching contexts easier. <br>
@@ -341,8 +415,13 @@ public class GLProxy
 		}
 	}
 	
-	public static boolean hasInstance() { return instance != null; }
 	
+	
+	//=========//
+	// getters //
+	//=========//
+	
+	public static boolean hasInstance() { return instance != null; }
 	public static GLProxy getInstance()
 	{
 		if (instance == null)
@@ -364,6 +443,12 @@ public class GLProxy
 		}
 		return method == EGpuUploadMethod.AUTO ? this.preferredUploadMethod : method;
 	}
+	
+	
+	
+	//============================//
+	// MC render thread runnables //
+	//============================//
 	
 	/**
 	 * Asynchronously calls the given runnable on proxy's OpenGL context.
@@ -430,41 +515,13 @@ public class GLProxy
 	
 	
 	
-	private String getFailedVersionInfo(GLCapabilities c)
-	{
-		return "Your OpenGL support:\n" +
-				"openGL version 3.2+: " + c.OpenGL32 + " <- REQUIRED\n" +
-				"Vertex Attribute Buffer Binding: " + (c.glVertexAttribBinding != 0) + " <- optional improvement\n" +
-				"Buffer Storage: " + (c.glBufferStorage != 0) + " <- optional improvement\n" +
-				"If you noticed that your computer supports higher OpenGL versions"
-				+ " but not the required version, try running the game in compatibility mode."
-				+ " (How you turn that on, I have no clue~)";
-	}
-	
-	private boolean checkCapabilities(GLCapabilities c)
-	{
-		if (!c.OpenGL32)
-		{
-			return false;
-		}
-		
-		this.namedObjectSupported = c.glNamedBufferStorage != 0;
-		this.bufferStorageSupported = c.glBufferStorage != 0;
-		this.VertexAttributeBufferBindingSupported = c.glVertexAttribBinding != 0;
-		return true;
-	}
-	
-	private String getVersionInfo(GLCapabilities c)
-	{
-		return "Your OpenGL support:\n" +
-				"openGL version 3.2+: " + c.OpenGL32 + " <- REQUIRED\n" +
-				"Vertex Attribute Buffer Binding: " + (c.glVertexAttribBinding != 0) + " <- optional improvement\n" +
-				"Buffer Storage: " + (c.glBufferStorage != 0) + " <- optional improvement\n";
-	}
+	//=========//
+	// logging //
+	//=========//
 	
 	private static void logMessage(GLMessage msg)
 	{
-		EGLErrorHandlingMode errorHandlingMode = Config.Client.Advanced.Debugging.glErrorHandlingMode.get();
+		EGLErrorHandlingMode errorHandlingMode = Config.Client.Advanced.Debugging.OpenGl.glErrorHandlingMode.get();
 		if (errorHandlingMode == EGLErrorHandlingMode.IGNORE)
 		{
 			return;
@@ -514,6 +571,32 @@ public class GLProxy
 			}
 		}
 	}
+	
+	
+	
+	//================//
+	// helper methods //
+	//================//
+	
+	private String getFailedVersionInfo(GLCapabilities c)
+	{
+		return "Your OpenGL support:\n" +
+				"openGL version 3.2+: [" + c.OpenGL32 + "] <- REQUIRED\n" +
+				"Vertex Attribute Buffer Binding: [" + (c.glVertexAttribBinding != 0) + "] <- optional improvement\n" +
+				"Buffer Storage: [" + (c.glBufferStorage != 0) + "] <- optional improvement\n" +
+				"If you noticed that your computer supports higher OpenGL versions"
+				+ " but not the required version, try running the game in compatibility mode."
+				+ " (How you turn that on, I have no clue~)";
+	}
+	
+	private String versionInfoToString(GLCapabilities c)
+	{
+		return "Your OpenGL support:\n" +
+				"openGL version 3.2+: [" + c.OpenGL32 + "] <- REQUIRED\n" +
+				"Vertex Attribute Buffer Binding: [" + (c.glVertexAttribBinding != 0) + "] <- optional improvement\n" +
+				"Buffer Storage: [" + (c.glBufferStorage != 0) + "] <- optional improvement\n";
+	}
+	
 	
 	
 }

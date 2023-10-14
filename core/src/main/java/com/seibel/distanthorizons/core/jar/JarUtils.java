@@ -34,7 +34,13 @@ import java.util.Objects;
  */
 public class JarUtils
 {
-	public static final File jarFile = new File(JarUtils.class.getProtectionDomain().getCodeSource().getLocation().getPath());
+	public static File jarFile = null;
+	
+	static {
+		try {
+			jarFile = new File(JarUtils.class.getProtectionDomain().getCodeSource().getLocation().toURI()); // Always safe
+		} catch (Exception e) { e.printStackTrace(); }
+	}
 	
 	
 	/**
@@ -95,7 +101,7 @@ public class JarUtils
 	/**
 	 * Checks the checksum of a file given an algorithm
 	 *
-	 * @param digest What algorithem to use <br>
+	 * @param digest What algorithm to use <br>
 	 * Eg. <br>
 	 * MessageDigest.getInstance("MD5") <br>
 	 * MessageDigest.getInstance("SHA-256") <br>
@@ -137,15 +143,15 @@ public class JarUtils
 	}
 	
 	
-	/** Please use the Platform enum instead */
+	/** Please use the EPlatform enum instead */
 	@Deprecated
 	public enum OperatingSystem
 	{WINDOWS, MACOS, LINUX, NONE} // Easy to use enum for the 3 main os's
-	/** Please use the Platform enum instead */
+	/** Please use the EPlatform enum instead */
 	@Deprecated
 	public static OperatingSystem getOperatingSystem()
 	{ // Get the os and turn it into that enum
-		switch (Platform.get())
+		switch (EPlatform.get())
 		{
 			case WINDOWS:
 				return OperatingSystem.WINDOWS;

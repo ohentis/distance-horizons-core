@@ -42,6 +42,8 @@ public class ThreadUtil
 	/** used to track and remove old listeners for certain pools if the thread pool is recreated. */
 	private static final ConcurrentHashMap<String, ConfigChangeListener<Double>> THREAD_CHANGE_LISTENERS_BY_THREAD_NAME = new ConcurrentHashMap<>();
 	
+	// TODO move all "Runtime.getRuntime().availableProcessors()" calls here
+	
 	
 	
 	// create rate limited thread pool //

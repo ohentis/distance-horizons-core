@@ -37,7 +37,7 @@ public interface ILevelWrapper extends IDhApiLevelWrapper, IBindable
 {
 	
 	@Override
-	IDhApiDimensionTypeWrapper getDimensionType();
+	IDimensionTypeWrapper getDimensionType();
 	
 	@Override
 	boolean hasCeiling();

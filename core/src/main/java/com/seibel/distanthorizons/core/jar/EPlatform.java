@@ -20,12 +20,12 @@
 package com.seibel.distanthorizons.core.jar;
 
 /**
- * A simple OS getting util based off LWJGL's Platform at {@link org.lwjgl.system.Platform}. <br>
+ * A simple OS getting util based off LWJGL's EPlatform at {@link org.lwjgl.system.Platform}. <br>
  * This version includes some extra utils that we need and removes stuff which we don't.
  *
  * @author coolGi
  */
-public enum Platform
+public enum EPlatform
 {
 	WINDOWS("Windows", false),
 	LINUX("Linux", true),
@@ -33,14 +33,14 @@ public enum Platform
 	BSD("BSD", true),
 	UNIX("Unix", true);
 	
-	public enum Architecture
+	public enum EArchitecture
 	{
 		X86(false),
 		X64(true),
 		ARM32(false),
 		ARM64(true);
 		
-		static final Architecture current;
+		static final EArchitecture current;
 		final boolean is64Bit;
 		
 		static
@@ -53,13 +53,13 @@ public enum Platform
 					: (is64Bit ? X64 : X86);
 		}
 		
-		Architecture(boolean is64Bit)
+		EArchitecture(boolean is64Bit)
 		{
 			this.is64Bit = is64Bit;
 		}
 	}
 	
-	private static final Platform current;
+	private static final EPlatform current;
 	
 	static
 	{
@@ -96,7 +96,7 @@ public enum Platform
 	private final String name;
 	private final boolean isUnix;
 	
-	Platform(String name, boolean isUnix)
+	EPlatform(String name, boolean isUnix)
 	{
 		this.name = name;
 		this.isUnix = isUnix;
@@ -115,15 +115,15 @@ public enum Platform
 	}
 	
 	/** Returns the platform on which the library is running. */
-	public static Platform get()
+	public static EPlatform get()
 	{
 		return current;
 	}
 	
 	/** Returns the architecture on which the library is running. */
-	public static Architecture getArchitecture()
+	public static EArchitecture getArchitecture()
 	{
-		return Architecture.current;
+		return EArchitecture.current;
 	}
 	
 	

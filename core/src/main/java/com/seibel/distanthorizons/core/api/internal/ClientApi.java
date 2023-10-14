@@ -88,9 +88,9 @@ public class ClientApi
 	private boolean serverNetworkingIsMalformed = false;
 	
 	/** Holds any levels that were loaded before the {@link ClientApi#onClientOnlyConnected} was fired. */
-	private final HashSet<IClientLevelWrapper> waitingClientLevels = new HashSet<>();
+	public final HashSet<IClientLevelWrapper> waitingClientLevels = new HashSet<>();
 	/** Holds any chunks that were loaded before the {@link ClientApi#clientLevelLoadEvent(IClientLevelWrapper)} was fired. */
-	private final HashMap<Pair<IClientLevelWrapper, DhChunkPos>, IChunkWrapper> waitingChunkByClientLevelAndPos = new HashMap<>();
+	public final HashMap<Pair<IClientLevelWrapper, DhChunkPos>, IChunkWrapper> waitingChunkByClientLevelAndPos = new HashMap<>();
 	
 	
 	
@@ -216,7 +216,7 @@ public class ClientApi
 			if (levelWrapper.equals(level))
 			{
 				IChunkWrapper chunkWrapper = this.waitingChunkByClientLevelAndPos.get(levelChunkPair);
-				this.applyChunkUpdate(chunkWrapper, levelWrapper, false);
+				SharedApi.INSTANCE.chunkLoadEvent(chunkWrapper, levelWrapper);
 				keysToRemove.add(levelChunkPair);
 			}
 		}
@@ -225,70 +225,6 @@ public class ClientApi
 		for (Pair<IClientLevelWrapper, DhChunkPos> keyToRemove : keysToRemove)
 		{
 			this.waitingChunkByClientLevelAndPos.remove(keyToRemove);
-		}
-	}
-	
-	
-	
-	//=======================//
-	// chunk modified events //
-	//=======================//
-	
-	/** handles both block place and break events */
-	public void clientChunkBlockChangedEvent(IChunkWrapper chunk, IClientLevelWrapper level) { this.applyChunkUpdate(chunk, level, true); }
-	
-	public void clientChunkLoadEvent(IChunkWrapper chunk, IClientLevelWrapper level) { this.applyChunkUpdate(chunk, level, false); }
-	public void clientChunkSaveEvent(IChunkWrapper chunk, IClientLevelWrapper level) { this.applyChunkUpdate(chunk, level, false); }
-	
-	private void applyChunkUpdate(IChunkWrapper chunkWrapper, IClientLevelWrapper level, boolean updateNeighborChunks)
-	{
-		// if the user is in a single player world the chunk updates are handled on the server side
-		if (SharedApi.getEnvironment() != EWorldEnvironment.Client_Only)
-		{
-			return;
-		}
-		
-		// only continue if the level is loaded
-		IDhLevel dhLevel = SharedApi.getAbstractDhWorld().getLevel(level);
-		if (dhLevel == null)
-		{
-			// If the level isn't loaded yet, keep track of which chunks were loaded so we can use them later.
-			// This may happen if the world and level load events happen out of order
-			this.waitingChunkByClientLevelAndPos.replace(new Pair<>(level, chunkWrapper.getChunkPos()), chunkWrapper);
-			
-			return;
-		}
-		
-		
-		if (!updateNeighborChunks)
-		{
-			// TODO add light baking like what's done in ServerApi			
-			dhLevel.updateChunkAsync(chunkWrapper);
-		}
-		else 
-		{
-			// update any existing neighbour chunks so lighting changes are propagated correctly
-			for (int xOffset = -1; xOffset <= 1; xOffset++)
-			{
-				for (int zOffset = -1; zOffset <= 1; zOffset++)
-				{
-					if (xOffset == 0 && zOffset == 0)
-					{
-						// center chunk
-						dhLevel.updateChunkAsync(chunkWrapper);
-					}
-					else
-					{
-						// neighboring chunk
-						DhChunkPos neighbourPos = new DhChunkPos(chunkWrapper.getChunkPos().x + xOffset, chunkWrapper.getChunkPos().z + zOffset);
-						IChunkWrapper neighbourChunk = dhLevel.getLevelWrapper().tryGetChunk(neighbourPos);
-						if (neighbourChunk != null)
-						{
-							dhLevel.updateChunkAsync(neighbourChunk);
-						}
-					}
-				}
-			}
 		}
 	}
 	

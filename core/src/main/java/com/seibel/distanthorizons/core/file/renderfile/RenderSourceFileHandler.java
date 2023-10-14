@@ -27,17 +27,19 @@ import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSource;
 import com.seibel.distanthorizons.core.file.fullDatafile.IFullDataSourceProvider;
 import com.seibel.distanthorizons.core.level.IDhClientLevel;
-import com.seibel.distanthorizons.core.util.FileUtil;
+import com.seibel.distanthorizons.core.sql.MetaDataDto;
+import com.seibel.distanthorizons.core.sql.RenderDataRepo;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
+import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class RenderSourceFileHandler implements ILodRenderSourceProvider
+public class RenderSourceFileHandler implements IRenderSourceProvider
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
@@ -53,6 +55,10 @@ public class RenderSourceFileHandler implements ILodRenderSourceProvider
 	private final IFullDataSourceProvider fullDataSourceProvider;
 	
 	private final WeakHashMap<CompletableFuture<?>, ETaskType> taskTracker = new WeakHashMap<>();
+	
+	public final RenderDataRepo renderDataRepo;
+	@Override
+	public RenderDataRepo getRepo() { return this.renderDataRepo; }
 	
 	
 	
@@ -73,6 +79,17 @@ public class RenderSourceFileHandler implements ILodRenderSourceProvider
 		
 		
 		this.threadPoolMsg = new F3Screen.NestedMessage(this::f3Log);
+		
+		try
+		{
+			this.renderDataRepo = new RenderDataRepo("jdbc:sqlite", this.saveDir.getPath() + "/" + AbstractSaveStructure.DATABASE_NAME);
+		}
+		catch (SQLException e)
+		{
+			// should only happen if there is an issue with the database (it's locked or can't be created if missing) 
+			// or the database update failed
+			throw new RuntimeException(e);
+		}
 	}
 	
 	
@@ -127,8 +144,8 @@ public class RenderSourceFileHandler implements ILodRenderSourceProvider
 		}
 		
 		
-		File fileToLoad = this.computeRenderFilePath(pos);
-		if (fileToLoad.exists())
+		MetaDataDto metaDataDto = this.renderDataRepo.getByPrimaryKey(pos.serialize());
+		if (metaDataDto != null)
 		{
 			synchronized (this)
 			{
@@ -145,15 +162,15 @@ public class RenderSourceFileHandler implements ILodRenderSourceProvider
 				
 				try
 				{
-					metaFile = RenderDataMetaFile.createFromExistingFile(this.fullDataSourceProvider, this.clientLevel, fileToLoad);
+					metaFile = RenderDataMetaFile.createFromExistingFile(this.fullDataSourceProvider, this, this.clientLevel, metaDataDto);
 					this.topDetailLevelRef.updateAndGet(currentTopDetailLevel -> Math.max(currentTopDetailLevel, pos.getDetailLevel()));
 					this.loadedMetaFileBySectionPos.put(pos, metaFile);
 					return metaFile;
 				}
 				catch (IOException e)
 				{
-					LOGGER.error("Failed to read meta data file at " + fileToLoad + ": ", e);
-					FileUtil.renameCorruptedFile(fileToLoad);
+					LOGGER.error("Failed to read meta data file at pos " + pos + ": ", e);
+					this.renderDataRepo.delete(metaDataDto);
 				}
 			}
 		}
@@ -164,7 +181,7 @@ public class RenderSourceFileHandler implements ILodRenderSourceProvider
 		// to avoid overhead of 'synchronized', and eat the mini-overhead of possibly creating duplicate objects.
 		try
 		{
-			metaFile = RenderDataMetaFile.createNewFileForPos(this.fullDataSourceProvider, this.clientLevel, pos, fileToLoad);
+			metaFile = RenderDataMetaFile.createNewFileForPos(this.fullDataSourceProvider, this, this.clientLevel, pos);
 		}
 		catch (IOException e)
 		{
@@ -300,30 +317,12 @@ public class RenderSourceFileHandler implements ILodRenderSourceProvider
 	
 	public void deleteRenderCache()
 	{
-		// delete each file in the cache directory
-		File[] renderFiles = this.saveDir.listFiles();
-		if (renderFiles != null)
-		{
-			for (File renderFile : renderFiles)
-			{
-				if (!renderFile.delete())
-				{
-					LOGGER.warn("Unable to delete render file: " + renderFile.getPath());
-				}
-			}
-		}
-		
 		// clear the cached files
 		this.loadedMetaFileBySectionPos.clear();
+		
+		// delete the render cache
+		this.renderDataRepo.deleteAll();
 	}
-	
-	
-	
-	//================//
-	// helper methods //
-	//================//
-	
-	public File computeRenderFilePath(DhSectionPos pos) { return new File(this.saveDir, pos.serialize() + RenderDataMetaFile.FILE_SUFFIX); }
 	
 	
 	

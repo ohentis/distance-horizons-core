@@ -29,7 +29,6 @@ import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
-import com.seibel.distanthorizons.core.pos.DhLodPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.CompleteFullDataSource;
 import com.seibel.distanthorizons.core.render.LodQuadTree;
@@ -38,7 +37,7 @@ import com.seibel.distanthorizons.core.render.renderer.LodRenderer;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrapper;
-import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.coreapi.util.math.Mat4f;
 import org.apache.logging.log4j.Logger;
 
@@ -146,7 +145,7 @@ public class ClientLevelModule implements Closeable
 			// either the renderer hasn't been started yet, or is being reloaded
 			return;
 		}
-		ClientRenderState.renderer.drawLODs(mcModelViewMatrix, mcProjectionMatrix, partialTicks, profiler);
+		ClientRenderState.renderer.drawLODs(ClientRenderState.clientLevelWrapper, mcModelViewMatrix, mcProjectionMatrix, partialTicks, profiler);
 	}
 	
 	public void stopRenderer()
@@ -274,9 +273,8 @@ public class ClientLevelModule implements Closeable
 	public static class ClientRenderState
 	{
 		private static final Logger LOGGER = DhLoggerBuilder.getLogger();
-		private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 		
-		public final ILevelWrapper levelWrapper;
+		public final IClientLevelWrapper clientLevelWrapper;
 		public final LodQuadTree quadtree;
 		public final RenderSourceFileHandler renderSourceFileHandler;
 		public final LodRenderer renderer;
@@ -285,7 +283,7 @@ public class ClientLevelModule implements Closeable
 				IDhClientLevel dhClientLevel, IFullDataSourceProvider fullDataSourceProvider,
 				AbstractSaveStructure saveStructure)
 		{
-			this.levelWrapper = dhClientLevel.getLevelWrapper();
+			this.clientLevelWrapper = dhClientLevel.getClientLevelWrapper();
 			this.renderSourceFileHandler = new RenderSourceFileHandler(fullDataSourceProvider, dhClientLevel, saveStructure);
 			
 			this.quadtree = new LodQuadTree(dhClientLevel, Config.Client.Advanced.Graphics.Quality.lodChunkRenderDistance.get() * LodUtil.CHUNK_WIDTH,

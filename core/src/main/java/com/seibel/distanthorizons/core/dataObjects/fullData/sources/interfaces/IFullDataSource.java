@@ -31,6 +31,7 @@ import com.seibel.distanthorizons.core.file.fullDatafile.FullDataMetaFile;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataInputStream;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataOutputStream;
 import com.seibel.distanthorizons.coreapi.util.BitShiftUtil;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -85,6 +86,7 @@ public interface IFullDataSource
 	 *
 	 * @return null if the data doesn't exist
 	 */
+	@Nullable
 	SingleColumnFullDataAccessor tryGet(int relativeX, int relativeZ);
 	/**
 	 * Attempts to get the data column for the given relative x and z position. <br>

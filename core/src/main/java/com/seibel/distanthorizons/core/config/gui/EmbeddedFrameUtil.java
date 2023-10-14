@@ -19,7 +19,7 @@
 
 package com.seibel.distanthorizons.core.config.gui;
 
-import com.seibel.distanthorizons.core.jar.Platform;
+import com.seibel.distanthorizons.core.jar.EPlatform;
 import org.jetbrains.annotations.NotNull;
 import org.lwjgl.system.jawt.JAWT;
 import org.lwjgl.system.macosx.*;
@@ -73,7 +73,7 @@ public final class EmbeddedFrameUtil
 	
 	private static String getEmbeddedFrameImpl()
 	{
-		switch (Platform.get())
+		switch (EPlatform.get())
 		{
 			case LINUX:
 				return "sun.awt.X11.XEmbeddedFrame";
@@ -88,7 +88,7 @@ public final class EmbeddedFrameUtil
 	
 	private static long getEmbeddedFrameHandle(long window)
 	{
-		switch (Platform.get())
+		switch (EPlatform.get())
 		{
 			case LINUX:
 				return glfwGetX11Window(window);

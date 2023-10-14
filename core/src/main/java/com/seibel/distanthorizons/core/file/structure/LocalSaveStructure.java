@@ -31,8 +31,6 @@ import java.io.File;
  */
 public class LocalSaveStructure extends AbstractSaveStructure
 {
-	public static final String SERVER_FOLDER_NAME = "Distant_Horizons";
-	
 	private File debugPath = new File("");
 	
 	
@@ -49,24 +47,24 @@ public class LocalSaveStructure extends AbstractSaveStructure
 	public File getLevelFolder(ILevelWrapper wrapper)
 	{
 		IServerLevelWrapper serverSide = (IServerLevelWrapper) wrapper;
-		this.debugPath = new File(serverSide.getSaveFolder(), "Distant_Horizons");
-		return new File(serverSide.getSaveFolder(), "Distant_Horizons");
+		this.debugPath = serverSide.getSaveFolder();
+		return serverSide.getSaveFolder();
 	}
 	
 	@Override
 	public File getRenderCacheFolder(ILevelWrapper level)
 	{
 		IServerLevelWrapper serverSide = (IServerLevelWrapper) level;
-		this.debugPath = new File(serverSide.getSaveFolder(), "Distant_Horizons");
-		return new File(new File(serverSide.getSaveFolder(), "Distant_Horizons"), RENDER_CACHE_FOLDER);
+		this.debugPath = serverSide.getSaveFolder();
+		return serverSide.getSaveFolder();
 	}
 	
 	@Override
 	public File getFullDataFolder(ILevelWrapper level)
 	{
 		IServerLevelWrapper serverLevelWrapper = (IServerLevelWrapper) level;
-		this.debugPath = new File(serverLevelWrapper.getSaveFolder(), SERVER_FOLDER_NAME);
-		return new File(new File(serverLevelWrapper.getSaveFolder(), SERVER_FOLDER_NAME), DATA_FOLDER);
+		this.debugPath = serverLevelWrapper.getSaveFolder();
+		return serverLevelWrapper.getSaveFolder();
 	}
 	
 	

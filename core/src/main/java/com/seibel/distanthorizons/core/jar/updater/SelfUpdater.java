@@ -19,26 +19,26 @@
 
 package com.seibel.distanthorizons.core.jar.updater;
 
-import com.seibel.distanthorizons.api.enums.config.EUpdateBranch;
+import com.seibel.distanthorizons.core.config.Config;
+import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
+import com.seibel.distanthorizons.core.jar.EPlatform;
 import com.seibel.distanthorizons.core.jar.JarUtils;
 import com.seibel.distanthorizons.core.jar.ModGitInfo;
 import com.seibel.distanthorizons.core.jar.installer.GitlabGetter;
-import com.seibel.distanthorizons.coreapi.ModInfo;
-import com.seibel.distanthorizons.core.config.Config;
-import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.jar.installer.ModrinthGetter;
 import com.seibel.distanthorizons.core.jar.installer.WebDownloader;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.wrapperInterfaces.IVersionConstants;
+import com.seibel.distanthorizons.coreapi.ModInfo;
+import com.seibel.distanthorizons.coreapi.util.jar.DeleteOnUnlock;
 import org.apache.logging.log4j.Logger;
 
 import javax.swing.*;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.net.URL;
+import java.net.URLEncoder;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -128,9 +128,21 @@ public class SelfUpdater
 			return false;
 		com.electronwill.nightconfig.core.Config pipeline = GitlabGetter.INSTANCE.projectPipelines.get(0);
 		
+		if (!pipeline.get("ref").equals(ModGitInfo.Git_Main_Branch))
+		{
+			//LOGGER.warn("Latest pipeline was found for branch ["+ pipeline.get("ref") +"], but we are on branch ["+ ModGitInfo.Git_Main_Branch +"].");
+			return false;
+		}
+		
+		if (!pipeline.get("status").equals("success"))
+		{
+			LOGGER.warn("Pipeline for branch ["+ ModGitInfo.Git_Main_Branch +"], commit ["+ pipeline.get("id") +"], has either failed to build, or still building.");
+			return false;
+		}
+		
 		if (!GitlabGetter.INSTANCE.getDownloads(pipeline.get("id")).containsKey(mcVersion))
 		{
-			LOGGER.warn("Minecraft version ["+ mcVersion +"] is not findable on Gitlab, findable versions are ["+ GitlabGetter.INSTANCE.getDownloads(pipeline.get("id")).keySet().toArray().toString() +"]");
+			LOGGER.warn("Minecraft version ["+ mcVersion +"] is not findable on Gitlab, findable versions are ["+ GitlabGetter.INSTANCE.getDownloads(pipeline.get("id")).keySet().toArray().toString() +"].");
 			return false;
 		}
 		
@@ -151,35 +163,8 @@ public class SelfUpdater
 		return true;
 	}
 	
-	/**
-	 * Should be called when the game is closed.
-	 * This is ued to delete the previous file if it is required at the end.
-	 */
-	public static void onClose()
-	{
-		if (deleteOldOnClose)
-		{
-			try
-			{
-				Files.move(newFileLocation.toPath(), JarUtils.jarFile.getParentFile().toPath().resolve(newFileLocation.getName()));
-				Files.delete(newFileLocation.getParentFile().toPath());
-			}
-			catch (Exception e)
-			{
-				LOGGER.warn("Failed to move updated fire from [" + newFileLocation.getAbsolutePath() + "] to [" + JarUtils.jarFile.getParentFile().getAbsolutePath() + "], please move it manually");
-				e.printStackTrace();
-			}
-			try
-			{
-				Files.delete(JarUtils.jarFile.toPath());
-			}
-			catch (Exception e)
-			{
-				LOGGER.warn("Failed to delete previous " + ModInfo.READABLE_NAME + " file, please delete it manually at [" + JarUtils.jarFile + "]");
-				e.printStackTrace();
-			}
-		}
-	}
+	
+	
 	
 	public static boolean updateMod()
 	{
@@ -293,6 +278,59 @@ public class SelfUpdater
 			LOGGER.warn("Failed to update " + ModInfo.READABLE_NAME + " to version " + GitlabGetter.INSTANCE.projectPipelines.get(0).get("sha"));
 			e.printStackTrace();
 			return false;
+		}
+	}
+	
+	
+	
+	
+	
+	/**
+	 * Should be called when the game is closed.
+	 * This is ued to delete the previous file if it is required at the end.
+	 */
+	public static void onClose()
+	{
+		if (deleteOldOnClose)
+		{
+			try
+			{
+				Files.move(newFileLocation.toPath(), JarUtils.jarFile.getParentFile().toPath().resolve(newFileLocation.getName()));
+				Files.delete(newFileLocation.getParentFile().toPath());
+			}
+			catch (Exception e)
+			{
+				LOGGER.warn("Failed to move updated fire from [" + newFileLocation.getAbsolutePath() + "] to [" + JarUtils.jarFile.getParentFile().getAbsolutePath() + "], please move it manually");
+				e.printStackTrace();
+			}
+			try
+			{
+				if (EPlatform.get() != EPlatform.WINDOWS)
+				{
+					Files.delete(JarUtils.jarFile.toPath());
+				}
+				else
+				{
+					// Gets the Java binary
+					String javaHome = System.getProperty("java.home");
+					String javaBin = javaHome + File.separator + "bin" + File.separator + "java";
+					
+					// Execute the new jar, to delete the old jar once it detects the lock has been lifted
+					Runtime.getRuntime().exec(
+							"\""+ javaBin +"\" -cp \""+ 
+									newFileLocation.getAbsolutePath()
+									+"\" "+ 
+									DeleteOnUnlock.class.getCanonicalName() 
+									+" "+
+									URLEncoder.encode(JarUtils.jarFile.getAbsolutePath(), "UTF-8") // Encode the file location so that it doesnt have any spaces
+					);
+				}
+			}
+			catch (Exception e)
+			{
+				LOGGER.warn("Failed to delete previous " + ModInfo.READABLE_NAME + " file, please delete it manually at [" + JarUtils.jarFile + "]");
+				e.printStackTrace();
+			}
 		}
 	}
 }

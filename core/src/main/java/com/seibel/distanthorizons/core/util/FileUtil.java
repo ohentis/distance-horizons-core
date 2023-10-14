@@ -23,6 +23,10 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 public class FileUtil
 {
@@ -72,5 +76,11 @@ public class FileUtil
 		return corruptedFile;
 	}
 	
+	/** Returns the content of the given file as a string. */
+	public static String readFile(File file, Charset encoding) throws IOException
+	{
+		byte[] encoded = Files.readAllBytes(file.toPath());
+		return new String(encoded, encoding);
+	}
 	
 }

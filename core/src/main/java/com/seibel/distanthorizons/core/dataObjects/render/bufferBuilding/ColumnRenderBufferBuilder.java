@@ -184,7 +184,7 @@ public class ColumnRenderBufferBuilder
 //			return;
 //		}
 		
-		byte detailLevel = renderSource.getDataDetail();
+		byte detailLevel = renderSource.getDataDetailLevel();
 		for (int x = 0; x < ColumnRenderSource.SECTION_SIZE; x++)
 		{
 			for (int z = 0; z < ColumnRenderSource.SECTION_SIZE; z++)
@@ -251,7 +251,7 @@ public class ColumnRenderBufferBuilder
 								continue;
 							}
 							
-							adjDetailLevel = adjRenderSource.getDataDetail();
+							adjDetailLevel = adjRenderSource.getDataDetailLevel();
 							if (adjDetailLevel != detailLevel)
 							{
 								//TODO: Implement this

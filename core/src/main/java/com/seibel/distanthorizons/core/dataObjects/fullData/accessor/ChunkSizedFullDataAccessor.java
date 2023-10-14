@@ -59,6 +59,7 @@ public class ChunkSizedFullDataAccessor extends FullDataArrayAccessor
 				LodUtil.CHUNK_WIDTH);
 		
 		this.chunkPos = chunkPos;
+		// TODO the fact this is using a LodUtil detail level instead of the DhSectionPos detail level may cause confusion and trouble down the line
 		this.sectionPos = new DhSectionPos(LodUtil.CHUNK_DETAIL_LEVEL, this.chunkPos.x, this.chunkPos.z);
 	}
 	

@@ -23,7 +23,7 @@ import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSource;
 import com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.ColumnRenderBufferBuilder;
 import com.seibel.distanthorizons.core.enums.EDhDirection;
-import com.seibel.distanthorizons.core.file.renderfile.ILodRenderSourceProvider;
+import com.seibel.distanthorizons.core.file.renderfile.IRenderSourceProvider;
 import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
@@ -55,12 +55,12 @@ public class LodRenderSection implements IDebugRenderable
 	
 	private boolean isRenderingEnabled = false;
 	/**
-	 * If this is true, then {@link LodRenderSection#reload(ILodRenderSourceProvider)} was called while
-	 * a {@link ILodRenderSourceProvider} was already being loaded.
+	 * If this is true, then {@link LodRenderSection#reload(IRenderSourceProvider)} was called while
+	 * a {@link IRenderSourceProvider} was already being loaded.
 	 */
 	private boolean reloadRenderSourceOnceLoaded = false;
 	
-	private ILodRenderSourceProvider renderSourceProvider = null;
+	private IRenderSourceProvider renderSourceProvider = null;
 	private CompletableFuture<ColumnRenderSource> renderSourceLoadFuture;
 	private ColumnRenderSource renderSource;
 	
@@ -114,7 +114,7 @@ public class LodRenderSection implements IDebugRenderable
 	//=============//
 	
 	/** does nothing if a render source is already loaded or in the process of loading */
-	public void loadRenderSource(ILodRenderSourceProvider renderDataProvider, IDhClientLevel level)
+	public void loadRenderSource(IRenderSourceProvider renderDataProvider, IDhClientLevel level)
 	{
 		this.renderSourceProvider = renderDataProvider;
 		this.level = level;
@@ -139,7 +139,7 @@ public class LodRenderSection implements IDebugRenderable
 		this.startLoadRenderSourceAsync();
 	}
 	
-	public void reload(ILodRenderSourceProvider renderDataProvider)
+	public void reload(IRenderSourceProvider renderDataProvider)
 	{
 		// debug rendering
 		boolean showRenderSectionStatus = Config.Client.Advanced.Debugging.DebugWireframe.showRenderSectionStatus.get();

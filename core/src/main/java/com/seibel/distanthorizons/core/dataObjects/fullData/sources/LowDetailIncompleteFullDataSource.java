@@ -63,8 +63,7 @@ public class LowDetailIncompleteFullDataSource extends FullDataArrayAccessor imp
 	public static final int WIDTH = BitShiftUtil.powerOfTwo(SECTION_SIZE_OFFSET);
 	
 	public static final byte DATA_FORMAT_VERSION = 3;
-	/** written to the binary file to mark what {@link IFullDataSource} the binary file corresponds to */
-	public static final long TYPE_ID = "LowDetailIncompleteFullDataSource".hashCode();
+	public static final String DATA_SOURCE_TYPE = "LowDetailIncompleteFullDataSource";
 	
 	
 	private DhSectionPos sectionPos;
@@ -121,10 +120,10 @@ public class LowDetailIncompleteFullDataSource extends FullDataArrayAccessor imp
 	@Override
 	public FullDataSourceSummaryData readSourceSummaryInfo(FullDataMetaFile dataFile, DhDataInputStream inputStream, IDhLevel level) throws IOException
 	{
-		int dataDetail = inputStream.readInt();
-		if (dataFile.baseMetaData != null && dataDetail != dataFile.baseMetaData.dataLevel)
+		int dataDetailLevel = inputStream.readInt();
+		if (dataFile.baseMetaData != null && dataDetailLevel != dataFile.baseMetaData.dataDetailLevel)
 		{
-			throw new IOException(LodUtil.formatLog("Data level mismatch: " + dataDetail + " != " + dataFile.baseMetaData.dataLevel));
+			throw new IOException(LodUtil.formatLog("Data level mismatch: " + dataDetailLevel + " != " + dataFile.baseMetaData.dataDetailLevel));
 		}
 		
 		int width = inputStream.readInt();
@@ -321,8 +320,6 @@ public class LowDetailIncompleteFullDataSource extends FullDataArrayAccessor imp
 	@Override
 	public byte getDataDetailLevel() { return (byte) (this.sectionPos.getDetailLevel() - SECTION_SIZE_OFFSET); }
 	@Override
-	public long getTypeId() { return TYPE_ID; }
-	@Override
 	public byte getBinaryDataFormatVersion() { return DATA_FORMAT_VERSION; }
 	
 	@Override
@@ -412,6 +409,7 @@ public class LowDetailIncompleteFullDataSource extends FullDataArrayAccessor imp
 			this.dataPoints = dataPoints;
 			this.isColumnNotEmpty = isColumnNotEmpty;
 		}
+		
 	}
 	
 	

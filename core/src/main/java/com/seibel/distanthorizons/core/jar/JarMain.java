@@ -251,7 +251,7 @@ public class JarMain
 		
 		// Stuff for setting the file install path
 		JFileChooser minecraftDirPop = new JFileChooser();
-		switch (Platform.get())
+		switch (EPlatform.get())
 		{
 			case WINDOWS:
 				minecraftDirPop.setCurrentDirectory(new File(System.getenv("APPDATA") + "/.minecraft/mods"));
