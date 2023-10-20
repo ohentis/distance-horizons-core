@@ -5,7 +5,7 @@ import io.netty.buffer.ByteBuf;
 
 public class MultiplayerConfig extends AbstractMultiplayerConfig
 {
-	public int renderDistance = Config.Client.Advanced.Graphics.Quality.lodChunkRenderDistance.get();
+	public int renderDistance = Config.Client.Advanced.Graphics.Quality.lodChunkRenderDistanceRadius.get();
 	@Override public int getRenderDistance() { return renderDistance; }
 	
 	public int fullDataRequestRateLimit = Config.Client.Advanced.Multiplayer.ServerNetworking.requestRateLimit.get();

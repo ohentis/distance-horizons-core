@@ -2,7 +2,6 @@ package com.seibel.distanthorizons.core.multiplayer.config;
 
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.config.listeners.ConfigChangeListener;
-import com.seibel.distanthorizons.core.config.types.ConfigEntry;
 
 import java.io.Closeable;
 
@@ -15,7 +14,7 @@ public class MultiplayerConfigChangeListener implements Closeable
 	
 	public MultiplayerConfigChangeListener(Runnable runnable)
 	{
-		renderDistance = new ConfigChangeListener<>(Config.Client.Advanced.Graphics.Quality.lodChunkRenderDistance, ignored -> runnable.run());
+		renderDistance = new ConfigChangeListener<>(Config.Client.Advanced.Graphics.Quality.lodChunkRenderDistanceRadius, ignored -> runnable.run());
 		rateLimit = new ConfigChangeListener<>(Config.Client.Advanced.Multiplayer.ServerNetworking.requestRateLimit, ignored -> runnable.run());
 		enableRealTimeUpdates = new ConfigChangeListener<>(Config.Client.Advanced.Multiplayer.ServerNetworking.enableRealTimeUpdates, ignored -> runnable.run());
 		enablePostRelogUpdate = new ConfigChangeListener<>(Config.Client.Advanced.Multiplayer.ServerNetworking.enablePostRelogUpdate, ignored -> runnable.run());
