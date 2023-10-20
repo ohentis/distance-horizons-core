@@ -244,7 +244,7 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 				
 				double distanceFromPlayer = chunkUpdateData.accessor.chunkPos.distance(new DhChunkPos(serverPlayerState.serverPlayer.getPosition()));
 				if (distanceFromPlayer < serverPlayerState.serverPlayer.getViewDistance() ||
-						distanceFromPlayer > serverPlayerState.config.getRenderDistance()) return;
+						distanceFromPlayer > serverPlayerState.config.getRenderDistanceRadius()) return;
 				
 				serverPlayerState.channelContext.writeAndFlush(new FullDataPartialUpdateMessage(chunkUpdateData.accessor, this));
 			}

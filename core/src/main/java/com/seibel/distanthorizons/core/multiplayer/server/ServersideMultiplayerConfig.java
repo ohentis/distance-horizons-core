@@ -13,9 +13,9 @@ public class ServersideMultiplayerConfig extends AbstractMultiplayerConfig
 	public MultiplayerConfig clientConfig = new MultiplayerConfig();
 	
 	@Override
-	public int getRenderDistance()
+	public int getRenderDistanceRadius()
 	{
-		return Math.min(clientConfig.renderDistance, Config.Client.Advanced.Graphics.Quality.lodChunkRenderDistanceRadius.get());
+		return Math.min(clientConfig.renderDistanceRadius, Config.Client.Advanced.Graphics.Quality.lodChunkRenderDistanceRadius.get());
 	}
 	
 	@Override
