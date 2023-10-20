@@ -331,6 +331,14 @@
   "distanthorizons.config.client.advanced.multiplayer":
     "Multiplayer",
     
+  "distanthorizons.config.client.advanced.multiplayer.serverNetworking": "Server Networking",
+    
+  "distanthorizons.config.client.advanced.multiplayer.serverNetworking.enableServerNetworking": "Enable Server Networking",
+  "distanthorizons.config.client.advanced.multiplayer.serverNetworking.requestRateLimit": "Request rate limit",
+  "distanthorizons.config.client.advanced.multiplayer.serverNetworking.enableRealTimeUpdates": "Enable Real Time Updates",
+  "distanthorizons.config.client.advanced.multiplayer.serverNetworking.enablePostRelogUpdates": "Enable Post Relog Updates",
+  "distanthorizons.config.client.advanced.multiplayer.serverNetworking.serverPort": "Server Port",
+    
   "distanthorizons.config.client.advanced.multiplayer.serverFolderNameMode":
     "Server Folder Mode",
   "distanthorizons.config.client.advanced.multiplayer.serverFolderNameMode.@tooltip":
