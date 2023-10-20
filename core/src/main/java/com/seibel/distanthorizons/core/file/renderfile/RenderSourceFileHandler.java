@@ -313,6 +313,7 @@ public class RenderSourceFileHandler implements IRenderSourceProvider
 		LOGGER.info("Closing " + this.getClass().getSimpleName() + " with [" + this.loadedMetaFileBySectionPos.size() + "] files...");
 		this.fileHandlerThreadPool.shutdown();
 		this.threadPoolMsg.close();
+		this.renderDataRepo.close();
 	}
 	
 	public void deleteRenderCache()

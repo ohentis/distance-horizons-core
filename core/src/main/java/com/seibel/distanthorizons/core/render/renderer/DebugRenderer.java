@@ -33,7 +33,8 @@ import com.seibel.distanthorizons.core.render.glObject.GLState;
 import com.seibel.distanthorizons.core.render.glObject.buffer.GLElementBuffer;
 import com.seibel.distanthorizons.core.render.glObject.buffer.GLVertexBuffer;
 import com.seibel.distanthorizons.core.render.glObject.shader.ShaderProgram;
-import com.seibel.distanthorizons.core.render.glObject.vertexAttribute.VertexAttribute;
+import com.seibel.distanthorizons.core.render.glObject.vertexAttribute.AbstractVertexAttribute;
+import com.seibel.distanthorizons.core.render.glObject.vertexAttribute.VertexPointer;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
 import com.seibel.distanthorizons.coreapi.util.math.Mat4f;
 import com.seibel.distanthorizons.coreapi.util.math.Vec3d;
@@ -66,7 +67,7 @@ public class DebugRenderer
 	private ShaderProgram basicShader;
 	private GLVertexBuffer boxBuffer;
 	private GLElementBuffer boxOutlineBuffer;
-	private VertexAttribute va;
+	private AbstractVertexAttribute va;
 	private boolean init = false;
 	
 	// used when rendering
@@ -155,10 +156,10 @@ public class DebugRenderer
 		}
 		
 		this.init = true;
-		this.va = VertexAttribute.create();
+		this.va = AbstractVertexAttribute.create();
 		this.va.bind();
 		// Pos
-		this.va.setVertexAttribute(0, 0, VertexAttribute.VertexPointer.addVec3Pointer(false));
+		this.va.setVertexAttribute(0, 0, VertexPointer.addVec3Pointer(false));
 		this.va.completeAndCheck(Float.BYTES * 3);
 		this.basicShader = new ShaderProgram("shaders/debug/vert.vert", "shaders/debug/frag.frag",
 				"fragColor", new String[]{"vPosition"});
@@ -206,7 +207,7 @@ public class DebugRenderer
 		
 		this.basicShader.bind();
 		this.va.bind();
-		this.va.bindBufferToAllBindingPoint(this.boxBuffer.getId());
+		this.va.bindBufferToAllBindingPoints(this.boxBuffer.getId());
 		
 		this.boxOutlineBuffer.bind();
 		

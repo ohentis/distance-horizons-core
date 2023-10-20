@@ -21,6 +21,7 @@ package com.seibel.distanthorizons.core.render.glObject;
 
 import org.lwjgl.opengl.GL32;
 
+// TODO make this Closable or AutoClosable so it can be used with try-resource blocks
 public class GLState
 {
 	private static final int FBO_MAX = 4;

@@ -24,9 +24,10 @@ import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.render.glObject.GLProxy;
 import com.seibel.distanthorizons.core.render.glObject.shader.Shader;
 import com.seibel.distanthorizons.core.render.glObject.shader.ShaderProgram;
-import com.seibel.distanthorizons.core.render.glObject.vertexAttribute.VertexAttribute;
+import com.seibel.distanthorizons.core.render.glObject.vertexAttribute.AbstractVertexAttribute;
 import com.seibel.distanthorizons.core.render.glObject.vertexAttribute.VertexAttributePostGL43;
 import com.seibel.distanthorizons.core.render.glObject.vertexAttribute.VertexAttributePreGL43;
+import com.seibel.distanthorizons.core.render.glObject.vertexAttribute.VertexPointer;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.render.fog.LodFogConfig;
 import com.seibel.distanthorizons.coreapi.util.math.Mat4f;
@@ -40,7 +41,7 @@ public class LodRenderProgram extends ShaderProgram
 	public static final String FRAGMENT_SHADER_PATH = "shaders/flat_shaded.frag";
 	private static final IVersionConstants VERSION_CONSTANTS = SingletonInjector.INSTANCE.get(IVersionConstants.class);
 	
-	public final VertexAttribute vao;
+	public final AbstractVertexAttribute vao;
 	
 	// Uniforms
 	public final int combinedMatUniform;
@@ -66,7 +67,7 @@ public class LodRenderProgram extends ShaderProgram
 	
 	private final LodFogConfig fogConfig;
 	
-	// This will bind  VertexAttribute
+	// This will bind  AbstractVertexAttribute
 	public LodRenderProgram(LodFogConfig fogConfig)
 	{
 		super(() -> Shader.loadFile(fogConfig.earthCurveRatio != 0 ? VERTEX_CURVE_SHADER_PATH : VERTEX_SHADER_PATH,
@@ -97,15 +98,13 @@ public class LodRenderProgram extends ShaderProgram
 		// TODO: Add better use of the LODFormat thing
 		int vertexByteCount = LodUtil.LOD_VERTEX_FORMAT.getByteSize();
 		if (GLProxy.getInstance().VertexAttributeBufferBindingSupported)
-			vao = new VertexAttributePostGL43(); // also binds VertexAttribute
+			vao = new VertexAttributePostGL43(); // also binds AbstractVertexAttribute
 		else
-			vao = new VertexAttributePreGL43(); // also binds VertexAttribute
+			vao = new VertexAttributePreGL43(); // also binds AbstractVertexAttribute
 		vao.bind();
 		// Now a pos+light.
-		vao.setVertexAttribute(0, 0, VertexAttribute.VertexPointer.addUnsignedShortsPointer(4, false, true)); // 2+2+2+2
-		//vao.setVertexAttribute(0, posAttrib, VertexAttribute.VertexPointer.addVec3Pointer(false)); // 4+4+4
-		vao.setVertexAttribute(0, 1, VertexAttribute.VertexPointer.addUnsignedBytesPointer(4, true, false)); // +4
-		//vao.setVertexAttribute(0, lightAttrib, VertexAttribute.VertexPointer.addUnsignedBytesPointer(2, false)); // +4 due to how it aligns
+		vao.setVertexAttribute(0, 0, VertexPointer.addUnsignedShortsPointer(4, false, true)); // 2+2+2+2
+		vao.setVertexAttribute(0, 1, VertexPointer.addUnsignedBytesPointer(4, true, false)); // +4
 		try
 		{
 			vao.completeAndCheck(vertexByteCount);
@@ -159,7 +158,7 @@ public class LodRenderProgram extends ShaderProgram
 	
 	public void bindVertexBuffer(int vbo)
 	{
-		vao.bindBufferToAllBindingPoint(vbo);
+		vao.bindBufferToAllBindingPoints(vbo);
 	}
 	
 	public void unbindVertexBuffer()

@@ -32,8 +32,8 @@ public interface IFullDataSourceProvider extends AutoCloseable
 {
 	CompletableFuture<IFullDataSource> readAsync(DhSectionPos pos);
 	void writeChunkDataToFile(DhSectionPos sectionPos, ChunkSizedFullDataAccessor chunkData);
-	CompletableFuture<Void> flushAndSave();
-	CompletableFuture<Void> flushAndSave(DhSectionPos sectionPos);
+	CompletableFuture<Void> flushAndSaveAsync();
+	CompletableFuture<Void> flushAndSaveAsync(DhSectionPos sectionPos);
 	
 	//long getCacheVersion(DhSectionPos sectionPos);
 	//boolean isCacheVersionValid(DhSectionPos sectionPos, long cacheVersion);

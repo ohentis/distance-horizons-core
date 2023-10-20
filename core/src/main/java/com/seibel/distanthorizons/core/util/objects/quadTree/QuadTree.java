@@ -56,7 +56,7 @@ public class QuadTree<T>
 	 */
 	public final byte treeMaxDetailLevel;
 	
-	private final int widthInBlocks; // diameterInBlocks
+	private final int diameterInBlocks; // diameterInBlocks
 	
 	/** contain the actual data in the quad tree structure */
 	private final MovableGridRingList<QuadNode<T>> topRingList;
@@ -68,18 +68,18 @@ public class QuadTree<T>
 	/**
 	 * Constructor of the quadTree
 	 *
-	 * @param widthInBlocks equivalent to the distance between two opposing sides
+	 * @param diameterInBlocks equivalent to the distance between the two opposing sides
 	 */
-	public QuadTree(int widthInBlocks, DhBlockPos2D centerBlockPos, byte treeMaxDetailLevel)
+	public QuadTree(int diameterInBlocks, DhBlockPos2D centerBlockPos, byte treeMaxDetailLevel)
 	{
 		this.centerBlockPos = centerBlockPos;
-		this.widthInBlocks = widthInBlocks;
+		this.diameterInBlocks = diameterInBlocks;
 		
 		this.treeMaxDetailLevel = treeMaxDetailLevel;
 		// the min detail level must be greater than 0 (to prevent divide by 0 errors) and greater than the maximum detail level
-		this.treeMinDetailLevel = (byte) Math.max(Math.max(1, this.treeMaxDetailLevel), MathUtil.log2(widthInBlocks));
+		this.treeMinDetailLevel = (byte) Math.max(Math.max(1, this.treeMaxDetailLevel), MathUtil.log2(diameterInBlocks));
 		
-		int halfSizeInRootNodes = Math.floorDiv(this.widthInBlocks, 2) / BitShiftUtil.powerOfTwo(this.treeMinDetailLevel);
+		int halfSizeInRootNodes = Math.floorDiv(this.diameterInBlocks, 2) / BitShiftUtil.powerOfTwo(this.treeMinDetailLevel);
 		halfSizeInRootNodes = halfSizeInRootNodes + 1; // always add 1 so nodes will always have a parent, even if the tree's center is offset from the root node grid 
 		
 		Pos2D ringListCenterPos = new Pos2D(
@@ -171,14 +171,14 @@ public class QuadTree<T>
 		
 		
 		// check if the testPos is within the X,Z boundary of the tree
-		DhBlockPos2D treeBlockCorner = this.centerBlockPos.add(new DhBlockPos2D(-this.widthInBlocks / 2, -this.widthInBlocks / 2));
+		DhBlockPos2D treeBlockCorner = this.centerBlockPos.add(new DhBlockPos2D(-this.diameterInBlocks / 2, -this.diameterInBlocks / 2));
 		DhLodPos treeCornerPos = new DhLodPos((byte) 0, treeBlockCorner.x, treeBlockCorner.z);
 		
 		DhSectionPos inputSectionCorner = testPos.convertNewToDetailLevel((byte) 0);
 		DhLodPos inputCornerPos = new DhLodPos((byte) 0, inputSectionCorner.getX(), inputSectionCorner.getZ());
 		int inputBlockWidth = BitShiftUtil.powerOfTwo(testPos.getDetailLevel());
 		
-		return DoSquaresOverlap(treeCornerPos, this.widthInBlocks, inputCornerPos, inputBlockWidth);
+		return DoSquaresOverlap(treeCornerPos, this.diameterInBlocks, inputCornerPos, inputBlockWidth);
 	}
 	private static boolean DoSquaresOverlap(DhLodPos square1Min, int square1Width, DhLodPos square2Min, int square2Width)
 	{
@@ -368,7 +368,7 @@ public class QuadTree<T>
 	// TODO comment, currently a tree will always have 9 root nodes, because the tree will grow all the way up to the top, if this is ever changed then these values must also change 
 	public int ringListWidth() { return 3; }
 	public int ringListHalfWidth() { return 1; }
-	public int diameterInBlocks() { return this.widthInBlocks; }
+	public int diameterInBlocks() { return this.diameterInBlocks; }
 
 //	public String getDebugString()
 //	{
@@ -384,7 +384,7 @@ public class QuadTree<T>
 //	}
 	
 	@Override
-	public String toString() { return "center block: " + this.centerBlockPos + ", block width: " + this.widthInBlocks + ", detail level range: [" + this.treeMaxDetailLevel + "-" + this.treeMinDetailLevel + "], leaf #: " + this.leafNodeCount(); }
+	public String toString() { return "center block: " + this.centerBlockPos + ", block width: " + this.diameterInBlocks + ", detail level range: [" + this.treeMaxDetailLevel + "-" + this.treeMinDetailLevel + "], leaf #: " + this.leafNodeCount(); }
 	
 	
 	

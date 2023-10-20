@@ -235,7 +235,7 @@ public class RenderUtil
 	}
 	public static int getFarClipPlaneDistanceInBlocks()
 	{
-		int lodChunkDist = Config.Client.Advanced.Graphics.Quality.lodChunkRenderDistance.get();
+		int lodChunkDist = Config.Client.Advanced.Graphics.Quality.lodChunkRenderDistanceRadius.get();
 		return lodChunkDist * LodUtil.CHUNK_WIDTH;
 	}
 	

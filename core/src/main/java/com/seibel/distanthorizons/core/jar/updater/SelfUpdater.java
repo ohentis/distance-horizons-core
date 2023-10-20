@@ -21,7 +21,6 @@ package com.seibel.distanthorizons.core.jar.updater;
 
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
-import com.seibel.distanthorizons.core.jar.EPlatform;
 import com.seibel.distanthorizons.core.jar.JarUtils;
 import com.seibel.distanthorizons.core.jar.ModGitInfo;
 import com.seibel.distanthorizons.core.jar.installer.GitlabGetter;
@@ -34,11 +33,10 @@ import com.seibel.distanthorizons.coreapi.util.jar.DeleteOnUnlock;
 import org.apache.logging.log4j.Logger;
 
 import javax.swing.*;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
+import java.io.*;
 import java.net.URLEncoder;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -53,7 +51,7 @@ public class SelfUpdater
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger(SelfUpdater.class.getSimpleName());
 	
 	/** As we cannot delete(or replace) the jar while the mod is running, we just have this to delete it once the game closes */
-	public static boolean deleteOldOnClose = false;
+	public static boolean deleteOldJarOnJvmShutdown = false;
 	
 	private static String currentJarSha = "";
 	private static String mcVersion = SingletonInjector.INSTANCE.get(IVersionConstants.class).getMinecraftVersion();
@@ -205,7 +203,7 @@ public class SelfUpdater
 				throw new Exception("Checksum failed");
 			}
 			
-			deleteOldOnClose = true;
+			deleteOldJarOnJvmShutdown = true;
 			
 			LOGGER.info(ModInfo.READABLE_NAME + " successfully updated. It will apply on game's relaunch");
 			new Thread(() -> {
@@ -253,7 +251,7 @@ public class SelfUpdater
 					}
 					fos.close();
 					
-					deleteOldOnClose = true;
+					deleteOldJarOnJvmShutdown = true;
 					
 					LOGGER.info(ModInfo.READABLE_NAME + " successfully updated. It will apply on game's relaunch");
 					new Thread(() -> {
@@ -291,46 +289,108 @@ public class SelfUpdater
 	 */
 	public static void onClose()
 	{
-		if (deleteOldOnClose)
+		if (!deleteOldJarOnJvmShutdown)
 		{
-			try
+			return;
+		}
+		
+		
+		
+		Path newJarPath = newFileLocation.toPath();
+		Path finalJarPath = JarUtils.jarFile.getParentFile().toPath().resolve(newFileLocation.getName());
+		
+		try
+		{
+			// if a jar with the same already exists in the final location, delete it first (otherwise file move issues will occur)
+			Files.deleteIfExists(finalJarPath);
+			
+			// move the new jar...
+			Files.move(newJarPath, finalJarPath);
+			// ...and delete the temp folder
+			Files.delete(newFileLocation.getParentFile().toPath());
+		}
+		catch (Exception e)
+		{
+			LOGGER.warn("Failed to move updated fire from [" + newFileLocation.getAbsolutePath() + "] " +
+					"to [" + JarUtils.jarFile.getParentFile().getAbsolutePath() + "], " +
+					"please move it manually", e);
+		}
+		
+		
+		try
+		{
+			// Get the Java binary
+			String javaHome = System.getProperty("java.home");
+			String javaBin = javaHome + File.separator + "bin" + File.separator + "java";
+			
+			// Run the file deletion jar in a new OS process, 
+			// this is done to allow for deleting the current jar if the OS has a lock on it
+			String execCommand = "\""+ javaBin +"\" -cp \""+
+					finalJarPath.toAbsolutePath()+"\" " // run the deletion code from the new jar
+					+DeleteOnUnlock.class.getCanonicalName()+" "+
+					URLEncoder.encode(JarUtils.jarFile.getAbsolutePath(), "UTF-8"); // Encode the file location to prevent issues with special characters and spaces
+			Process deleteProcess = Runtime.getRuntime().exec(execCommand);
+			
+			// check if the pro
+			if (deleteProcess.isAlive())
 			{
-				Files.move(newFileLocation.toPath(), JarUtils.jarFile.getParentFile().toPath().resolve(newFileLocation.getName()));
-				Files.delete(newFileLocation.getParentFile().toPath());
+				LOGGER.info(DeleteOnUnlock.class.getSimpleName()+" process started...");
 			}
-			catch (Exception e)
+			else
 			{
-				LOGGER.warn("Failed to move updated fire from [" + newFileLocation.getAbsolutePath() + "] to [" + JarUtils.jarFile.getParentFile().getAbsolutePath() + "], please move it manually");
-				e.printStackTrace();
+				LOGGER.error(DeleteOnUnlock.class.getSimpleName()+" process failed to start.");
 			}
-			try
+			
+			// wait a moment so we can catch if there are any immediate issues with the process
+			Thread.sleep(250);
+			
+			if (deleteProcess.isAlive())
 			{
-				if (EPlatform.get() != EPlatform.WINDOWS)
+				LOGGER.info(DeleteOnUnlock.class.getSimpleName()+" running, old jar file at ["+JarUtils.jarFile.getAbsolutePath()+"] should be deleted after Minecraft's JVM shutdown has completed.");
+			}
+			else
+			{
+				int processExitCode = deleteProcess.exitValue();
+				if (processExitCode != DeleteOnUnlock.SUCCESS_EXIT_CODE)
 				{
-					Files.delete(JarUtils.jarFile.toPath());
+					String failReason = (processExitCode == DeleteOnUnlock.FAIL_EXIT_CODE) ? "Timed out and was unable to delete the file." : "Ran into an unexpected error."; 
+					LOGGER.error(DeleteOnUnlock.class.getSimpleName() + " " + failReason);
+					LOGGER.error(DeleteOnUnlock.class.getSimpleName() + " Logs are listed below:");
+					
+					// record the process' logs 
+					String normalOutput = convertInputStreamToString(deleteProcess.getInputStream());
+					LOGGER.info("process output: \n\n" + normalOutput);
+					
+					// record the process' error logs
+					String errorOutput = convertInputStreamToString(deleteProcess.getInputStream());
+					LOGGER.error("process error output: \n\n" + errorOutput);
 				}
 				else
 				{
-					// Gets the Java binary
-					String javaHome = System.getProperty("java.home");
-					String javaBin = javaHome + File.separator + "bin" + File.separator + "java";
-					
-					// Execute the new jar, to delete the old jar once it detects the lock has been lifted
-					Runtime.getRuntime().exec(
-							"\""+ javaBin +"\" -cp \""+ 
-									newFileLocation.getAbsolutePath()
-									+"\" "+ 
-									DeleteOnUnlock.class.getCanonicalName() 
-									+" "+
-									URLEncoder.encode(JarUtils.jarFile.getAbsolutePath(), "UTF-8") // Encode the file location so that it doesnt have any spaces
-					);
+					LOGGER.info(DeleteOnUnlock.class.getSimpleName() + " completed before JVM shutdown.");
 				}
 			}
-			catch (Exception e)
-			{
-				LOGGER.warn("Failed to delete previous " + ModInfo.READABLE_NAME + " file, please delete it manually at [" + JarUtils.jarFile + "]");
-				e.printStackTrace();
-			}
+		}
+		catch (Exception e)
+		{
+			LOGGER.warn("Failed to delete previous " + ModInfo.READABLE_NAME + " file, please delete it manually at [" + JarUtils.jarFile + "]", e);
 		}
 	}
+	
+	private static String convertInputStreamToString(InputStream inputStream)
+	{
+		try
+		{
+			byte[] bytes = new byte[inputStream.available()];
+			DataInputStream dataInputStream = new DataInputStream(inputStream);
+			dataInputStream.readFully(bytes);
+			return new String(bytes);
+		}
+		catch (IOException e)
+		{
+			return e.getMessage();
+		}
+	}
+	
+	
 }

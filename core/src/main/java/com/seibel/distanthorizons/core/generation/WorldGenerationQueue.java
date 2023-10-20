@@ -284,12 +284,15 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 			WorldGenTaskGroup closestTaskGroup = new WorldGenTaskGroup(closestTask.pos, (byte) 0);  // TODO should 0 be replaced?
 			closestTaskGroup.worldGenTasks.add(closestTask); // TODO
 			
-			InProgressWorldGenTaskGroup newInProgressTask = new InProgressWorldGenTaskGroup(closestTaskGroup);
-			InProgressWorldGenTaskGroup previousInProgressTask = this.inProgressGenTasksByLodPos.putIfAbsent(closestTask.pos, newInProgressTask);
-			if (previousInProgressTask == null)
+			if (!this.inProgressGenTasksByLodPos.containsKey(closestTask.pos))
 			{
 				// no task exists for this position, start one
-				this.startWorldGenTaskGroup(newInProgressTask);
+				InProgressWorldGenTaskGroup newTaskGroup = new InProgressWorldGenTaskGroup(closestTaskGroup);
+				boolean taskStarted = this.tryStartingWorldGenTaskGroup(newTaskGroup);
+				if (!taskStarted)
+				{
+					LOGGER.trace("Unable to start task: "+closestTask.pos+", skipping. Task position may have already been generated.");
+				}
 			}
 			else
 			{
@@ -330,10 +333,11 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 			return true;
 		}
 	}
-	private void startWorldGenTaskGroup(InProgressWorldGenTaskGroup inProgressTaskGroup)
+	/** @return true if the task was started, false otherwise */
+	private boolean tryStartingWorldGenTaskGroup(InProgressWorldGenTaskGroup newTaskGroup)
 	{
-		byte taskDetailLevel = inProgressTaskGroup.group.dataDetail;
-		DhSectionPos taskPos = inProgressTaskGroup.group.pos;
+		byte taskDetailLevel = newTaskGroup.group.dataDetail;
+		DhSectionPos taskPos = newTaskGroup.group.pos;
 		byte granularity = (byte) (taskPos.getDetailLevel() - taskDetailLevel);
 		LodUtil.assertTrue(granularity >= this.minGranularity && granularity <= this.maxGranularity);
 		LodUtil.assertTrue(taskDetailLevel >= this.highestDataDetail && taskDetailLevel <= this.lowestDataDetail);
@@ -341,17 +345,17 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 		DhChunkPos chunkPosMin = new DhChunkPos(taskPos.getSectionBBoxPos().getCornerBlockPos());
 		
 		// check if this is a duplicate generation task
-		if (this.alreadyGeneratedPosHashSet.containsKey(inProgressTaskGroup.group.pos))
+		if (this.alreadyGeneratedPosHashSet.containsKey(newTaskGroup.group.pos))
 		{
 			// temporary solution to prevent generating the same section multiple times
 			LOGGER.trace("Duplicate generation section " + taskPos + " with granularity [" + granularity + "] at " + chunkPosMin + ". Skipping...");
 			
 			// sending a success result is necessary to make sure the render sections are reloaded correctly 
-			inProgressTaskGroup.group.worldGenTasks.forEach(worldGenTask -> worldGenTask.future.complete(WorldGenResult.CreateSuccess(new DhSectionPos(granularity, taskPos.getX(), taskPos.getZ()))));
-			return;
+			newTaskGroup.group.worldGenTasks.forEach(worldGenTask -> worldGenTask.future.complete(WorldGenResult.CreateSuccess(new DhSectionPos(granularity, taskPos.getX(), taskPos.getZ()))));
+			return false;
 		}
-		this.alreadyGeneratedPosHashSet.put(inProgressTaskGroup.group.pos, Thread.currentThread().getStackTrace());
-		this.alreadyGeneratedPosQueue.add(inProgressTaskGroup.group.pos);
+		this.alreadyGeneratedPosHashSet.put(newTaskGroup.group.pos, Thread.currentThread().getStackTrace());
+		this.alreadyGeneratedPosQueue.add(newTaskGroup.group.pos);
 		
 		// remove extra tracked duplicate positions
 		while (this.alreadyGeneratedPosQueue.size() > MAX_ALREADY_GENERATED_COUNT)
@@ -364,28 +368,40 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 		//LOGGER.info("Generating section "+taskPos+" with granularity "+granularity+" at "+chunkPosMin);
 		
 		this.numberOfTasksQueued++;
-		inProgressTaskGroup.genFuture = this.startGenerationEvent(chunkPosMin, granularity, taskDetailLevel, inProgressTaskGroup.group::consumeChunkData);
-		inProgressTaskGroup.genFuture.whenComplete((voidObj, exception) ->
+		newTaskGroup.genFuture = this.startGenerationEvent(chunkPosMin, granularity, taskDetailLevel, newTaskGroup.group::consumeChunkData);
+		LodUtil.assertTrue(newTaskGroup.genFuture != null);
+		
+		newTaskGroup.genFuture.whenComplete((voidObj, exception) ->
 		{
-			this.numberOfTasksQueued--;
-			if (exception != null)
+			try
 			{
-				// don't log the shutdown exceptions
-				if (!LodUtil.isInterruptOrReject(exception))
+				this.numberOfTasksQueued--;
+				if (exception != null)
 				{
-					LOGGER.error("Error generating data for section " + taskPos, exception);
+					// don't log the shutdown exceptions
+					if (!LodUtil.isInterruptOrReject(exception))
+					{
+						LOGGER.error("Error generating data for section " + taskPos, exception);
+					}
+					
+					newTaskGroup.group.worldGenTasks.forEach(worldGenTask -> worldGenTask.future.complete(WorldGenResult.CreateFail()));
 				}
-				
-				inProgressTaskGroup.group.worldGenTasks.forEach(worldGenTask -> worldGenTask.future.complete(WorldGenResult.CreateFail()));
+				else
+				{
+					//LOGGER.info("Section generation at "+pos+" completed");
+					newTaskGroup.group.worldGenTasks.forEach(worldGenTask -> worldGenTask.future.complete(WorldGenResult.CreateSuccess(new DhSectionPos(granularity, taskPos.getX(), taskPos.getZ()))));
+				}
+				boolean worked = this.inProgressGenTasksByLodPos.remove(taskPos, newTaskGroup);
+				LodUtil.assertTrue(worked);
 			}
-			else
+			catch (Exception e)
 			{
-				//LOGGER.info("Section generation at "+pos+" completed");
-				inProgressTaskGroup.group.worldGenTasks.forEach(worldGenTask -> worldGenTask.future.complete(WorldGenResult.CreateSuccess(new DhSectionPos(granularity, taskPos.getX(), taskPos.getZ()))));
+				LOGGER.error("Unexpected error completing world gen task: "+taskPos, e);
 			}
-			boolean worked = this.inProgressGenTasksByLodPos.remove(taskPos, inProgressTaskGroup);
-			LodUtil.assertTrue(worked);
 		});
+		
+		this.inProgressGenTasksByLodPos.put(taskPos, newTaskGroup);
+		return true;
 	}
 	/**
 	 * The chunkPos is always aligned to the granularity.
@@ -420,7 +436,9 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 			try
 			{
 				IChunkWrapper chunk = SingletonInjector.INSTANCE.get(IWrapperFactory.class).createChunkWrapper(generatedObjectArray);
-				chunkDataConsumer.accept(LodDataBuilder.createChunkData(chunk));
+				ChunkSizedFullDataAccessor chunkDataAccessor = LodDataBuilder.createChunkData(chunk);
+				LodUtil.assertTrue(chunkDataAccessor != null);
+				chunkDataConsumer.accept(chunkDataAccessor);
 			}
 			catch (ClassCastException e)
 			{
@@ -514,6 +532,7 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 			if (genFuture == null)
 			{
 				// genFuture's shouldn't be null, but sometimes they are...
+				LOGGER.info("Null gen future: "+runningTaskGroup.group.pos);
 				return;
 			}
 			

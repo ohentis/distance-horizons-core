@@ -28,7 +28,8 @@ import com.seibel.distanthorizons.core.render.glObject.GLProxy;
 import com.seibel.distanthorizons.core.render.glObject.GLState;
 import com.seibel.distanthorizons.core.render.glObject.buffer.GLVertexBuffer;
 import com.seibel.distanthorizons.core.render.glObject.shader.ShaderProgram;
-import com.seibel.distanthorizons.core.render.glObject.vertexAttribute.VertexAttribute;
+import com.seibel.distanthorizons.core.render.glObject.vertexAttribute.AbstractVertexAttribute;
+import com.seibel.distanthorizons.core.render.glObject.vertexAttribute.VertexPointer;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
 
 import org.apache.logging.log4j.LogManager;
@@ -52,7 +53,7 @@ public class TestRenderer
 	ShaderProgram basicShader;
 	GLVertexBuffer sameContextBuffer;
 	GLVertexBuffer sharedContextBuffer;
-	VertexAttribute va;
+	AbstractVertexAttribute va;
 	boolean init = false;
 	
 	public void init()
@@ -60,12 +61,12 @@ public class TestRenderer
 		if (init) return;
 		logger.info("init");
 		init = true;
-		va = VertexAttribute.create();
+		va = AbstractVertexAttribute.create();
 		va.bind();
 		// Pos
-		va.setVertexAttribute(0, 0, VertexAttribute.VertexPointer.addVec2Pointer(false));
+		va.setVertexAttribute(0, 0, VertexPointer.addVec2Pointer(false));
 		// Color
-		va.setVertexAttribute(0, 1, VertexAttribute.VertexPointer.addVec4Pointer(false));
+		va.setVertexAttribute(0, 1, VertexPointer.addVec4Pointer(false));
 		va.completeAndCheck(Float.BYTES * 6);
 		basicShader = new ShaderProgram("shaders/test/vert.vert", "shaders/test/frag.frag",
 				"fragColor", new String[]{"vPosition", "color"});
@@ -123,13 +124,13 @@ public class TestRenderer
 		if (System.currentTimeMillis() % 2000 < 1000)
 		{
 			sameContextBuffer.bind();
-			va.bindBufferToAllBindingPoint(sameContextBuffer.getId());
+			va.bindBufferToAllBindingPoints(sameContextBuffer.getId());
 			spamLogger.debug("same context buffer");
 		}
 		else
 		{
 			sameContextBuffer.bind();
-			va.bindBufferToAllBindingPoint(sharedContextBuffer.getId());
+			va.bindBufferToAllBindingPoints(sharedContextBuffer.getId());
 			spamLogger.debug("shared context buffer");
 		}
 		// Render the square

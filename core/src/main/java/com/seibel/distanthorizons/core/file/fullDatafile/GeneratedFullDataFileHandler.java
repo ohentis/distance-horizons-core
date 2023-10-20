@@ -132,7 +132,7 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandler
 			metaFile.markNeedsUpdate();
 		});
 		
-		this.flushAndSave(); // Trigger an update to the meta files
+		this.flushAndSaveAsync(); // Trigger an update to the meta files
 	}
 	
 	public void clearGenerationQueue()
@@ -276,8 +276,19 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandler
 		else if (genTaskResult.success)
 		{
 			// generation completed, update the files and listener(s)
-			this.flushAndSave(pos);
-			//this.fireOnGenPosSuccessListeners(pos);
+			this.flushAndSaveAsync(pos).join();
+			
+			// FIXME this is a bad fix to prevent full data sources saving incomplete, causing holes in the world after generation.
+			//  The problem appears to be that the save may be happening too quickly,
+			//  potentially happening before the meta file has the newly generated data added to it.
+			new Thread(() -> 
+			{
+				try{ Thread.sleep(4000); }catch (InterruptedException e){}
+				
+				this.flushAndSaveAsync(pos).join();
+			}).start();
+			
+			this.fireOnGenPosSuccessListeners(pos);
 			return;
 		}
 		else

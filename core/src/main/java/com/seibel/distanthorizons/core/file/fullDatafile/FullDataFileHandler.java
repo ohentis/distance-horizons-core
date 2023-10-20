@@ -354,7 +354,7 @@ public class FullDataFileHandler implements IFullDataSourceProvider
 	
 	/** This call is concurrent. I.e. it supports multiple threads calling this method at the same time. */
 	@Override
-	public CompletableFuture<Void> flushAndSave()
+	public CompletableFuture<Void> flushAndSaveAsync()
 	{
 		ArrayList<CompletableFuture<Void>> futures = new ArrayList<>();
 		for (FullDataMetaFile metaFile : this.loadedMetaFileBySectionPos.values())
@@ -365,7 +365,7 @@ public class FullDataFileHandler implements IFullDataSourceProvider
 	}
 	
 	@Override
-	public CompletableFuture<Void> flushAndSave(DhSectionPos sectionPos)
+	public CompletableFuture<Void> flushAndSaveAsync(DhSectionPos sectionPos)
 	{
 		FullDataMetaFile metaFile = this.loadedMetaFileBySectionPos.get(sectionPos);
 		if (metaFile == null)
@@ -569,6 +569,9 @@ public class FullDataFileHandler implements IFullDataSourceProvider
 	//=========//
 	
 	@Override
-	public void close() { FullDataMetaFile.checkAndLogPhantomDataSourceLifeCycles(); }
+	public void close() {
+		FullDataMetaFile.checkAndLogPhantomDataSourceLifeCycles();
+		this.fullDataRepo.close();
+	}
 	
 }

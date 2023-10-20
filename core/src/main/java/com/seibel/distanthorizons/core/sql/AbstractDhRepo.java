@@ -122,9 +122,9 @@ public abstract class AbstractDhRepo<TDTO extends IBaseDTO>
 	}
 	private void insert(TDTO dto) 
 	{
-		try
+		try(PreparedStatement statement = this.createInsertStatement(dto))
 		{
-			this.query(this.createInsertStatement(dto));
+			this.query(statement);
 		}
 		catch (SQLException e)
 		{
@@ -135,9 +135,9 @@ public abstract class AbstractDhRepo<TDTO extends IBaseDTO>
 	}
 	private void update(TDTO dto)
 	{
-		try
+		try(PreparedStatement statement = this.createUpdateStatement(dto))
 		{
-			this.query(this.createUpdateStatement(dto));
+			this.query(statement);
 		}
 		catch (SQLException e)
 		{
@@ -190,8 +190,10 @@ public abstract class AbstractDhRepo<TDTO extends IBaseDTO>
 			
 			// Note: this can only handle 1 command at a time
 			boolean resultSetPresent = statement.execute();
-			ResultSet resultSet = statement.getResultSet();
-			return this.parseQueryResult(resultSet, resultSetPresent);
+			try (ResultSet resultSet = statement.getResultSet())
+			{
+				return this.parseQueryResult(resultSet, resultSetPresent);
+			}
 		}
 		catch(SQLException e)
 		{
@@ -212,8 +214,10 @@ public abstract class AbstractDhRepo<TDTO extends IBaseDTO>
 			
 			// Note: this can only handle 1 command at a time
 			boolean resultSetPresent = statement.execute(sql);
-			ResultSet resultSet = statement.getResultSet();
-			return this.parseQueryResult(resultSet, resultSetPresent);
+			try (ResultSet resultSet = statement.getResultSet())
+			{
+				return this.parseQueryResult(resultSet, resultSetPresent);
+			}
 		}
 		catch(SQLException e)
 		{
@@ -278,6 +282,7 @@ public abstract class AbstractDhRepo<TDTO extends IBaseDTO>
 			{
 				if(this.connection != null)
 				{
+					CONNECTIONS_BY_CONNECTION_STRING.remove(this.connectionString);
 					this.connection.close();
 				}
 				ACTIVE_CONNECTION_STRINGS_BY_REPO.remove(this);

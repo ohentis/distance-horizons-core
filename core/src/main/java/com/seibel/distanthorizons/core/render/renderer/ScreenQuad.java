@@ -21,12 +21,17 @@ package com.seibel.distanthorizons.core.render.renderer;
 
 import com.seibel.distanthorizons.api.enums.config.EGpuUploadMethod;
 import com.seibel.distanthorizons.core.render.glObject.buffer.GLVertexBuffer;
-import com.seibel.distanthorizons.core.render.glObject.vertexAttribute.VertexAttribute;
+import com.seibel.distanthorizons.core.render.glObject.vertexAttribute.AbstractVertexAttribute;
+import com.seibel.distanthorizons.core.render.glObject.vertexAttribute.VertexPointer;
 import org.lwjgl.opengl.GL32;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
+/**
+ * Renders a full-screen textured quad to the screen. 
+ * Used in composite / deferred rendering (IE fog).
+ */
 public class ScreenQuad
 {
 	public static ScreenQuad INSTANCE = new ScreenQuad();
@@ -41,7 +46,7 @@ public class ScreenQuad
 	};
 	
 	private GLVertexBuffer boxBuffer;
-	private VertexAttribute va;
+	private AbstractVertexAttribute va;
 	private boolean init = false;
 
 	
@@ -56,11 +61,11 @@ public class ScreenQuad
 		if (this.init) return;
 		this.init = true;
 		
-		this.va = VertexAttribute.create();
+		this.va = AbstractVertexAttribute.create();
 		this.va.bind();
 		
 		// Pos
-		this.va.setVertexAttribute(0, 0, VertexAttribute.VertexPointer.addVec2Pointer(false));
+		this.va.setVertexAttribute(0, 0, VertexPointer.addVec2Pointer(false));
 		this.va.completeAndCheck(Float.BYTES * 2);
 		
 		// Framebuffer
@@ -71,8 +76,10 @@ public class ScreenQuad
 	{
 		this.init();
 		
+		this.boxBuffer.bind();
+		
 		this.va.bind();
-		this.va.bindBufferToAllBindingPoint(this.boxBuffer.getId());
+		this.va.bindBufferToAllBindingPoints(this.boxBuffer.getId());
 		
 		GL32.glDrawArrays(GL32.GL_TRIANGLES, 0, 6);
 	}
@@ -88,4 +95,5 @@ public class ScreenQuad
 		this.boxBuffer.bind();
 		this.boxBuffer.uploadBuffer(buffer, box_vertices.length, EGpuUploadMethod.DATA, box_vertices.length * Float.BYTES);
 	}
+	
 }

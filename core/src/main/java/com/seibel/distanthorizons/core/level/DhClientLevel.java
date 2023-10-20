@@ -106,7 +106,7 @@ public class DhClientLevel extends DhLevel implements IDhClientLevel
 		this.clientside = new ClientLevelModule(this);
 		if (enableRendering)
 		{
-			this.clientside.startRenderer();
+			this.clientside.startRenderer(clientLevelWrapper);
 			LOGGER.info("Started DHLevel for " + this.levelWrapper + " with saves at " + this.saveStructure);
 		}
 	}
@@ -200,7 +200,7 @@ public class DhClientLevel extends DhLevel implements IDhClientLevel
 	@Override
 	public CompletableFuture<Void> saveAsync()
 	{
-		return CompletableFuture.allOf(clientside.saveAsync(), dataFileHandler.flushAndSave());
+		return CompletableFuture.allOf(clientside.saveAsync(), dataFileHandler.flushAndSaveAsync());
 	}
 	
 	@Override

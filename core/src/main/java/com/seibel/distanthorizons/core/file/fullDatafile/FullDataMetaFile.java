@@ -620,8 +620,8 @@ public class FullDataMetaFile extends AbstractMetaDataContainerFile implements I
 	{
 		// swap the write queue if it has queued chunks.
 		// Must be done in this order to ensure IWorldGenTaskTracker.isMemoryAddressValid() work properly. See IWorldGenTaskTracker.isMemoryAddressValid() for details.
-		boolean isEmpty = this.writeQueueRef.get().queue.isEmpty();
-		if (!isEmpty)
+		boolean queueIsEmpty = this.writeQueueRef.get().queue.isEmpty();
+		if (!queueIsEmpty)
 		{
 			this.swapWriteQueues();
 			for (ChunkSizedFullDataAccessor chunk : this.backWriteQueue.queue)
@@ -633,7 +633,7 @@ public class FullDataMetaFile extends AbstractMetaDataContainerFile implements I
 			//LOGGER.info("Updated Data file at {} for sect {} with {} chunk writes.", path, pos, count);
 		}
 		
-		return !isEmpty || !this.doesDtoExist;
+		return !queueIsEmpty || !this.doesDtoExist;
 	}
 	private void swapWriteQueues()
 	{

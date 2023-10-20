@@ -289,7 +289,7 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 	}
 	
 	@Override
-	public CompletableFuture<Void> saveAsync() { return getFileHandler().flushAndSave(); }
+	public CompletableFuture<Void> saveAsync() { return getFileHandler().flushAndSaveAsync(); }
 	
 	@Override
 	public void doWorldGen()

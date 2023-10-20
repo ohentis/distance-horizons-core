@@ -171,7 +171,20 @@ public class GLProxy
 		long potentialLodBuilderGlContext = 0;
 		GLCapabilities potentialLodBuilderGlCapabilities = null;
 		
-		for (Pair<Integer, Integer> supportedGlVersion : SUPPORTED_GL_VERSIONS)
+		int majorGlVersion = Config.Client.Advanced.Debugging.OpenGl.glContextMajorVersion.get();
+		int minorGlVersion = Config.Client.Advanced.Debugging.OpenGl.glContextMinorVersion.get();
+		
+		ArrayList<Pair<Integer, Integer>> glVersions = new ArrayList<>();
+		if (majorGlVersion != 0)
+		{
+			glVersions.add(new Pair<>(majorGlVersion, minorGlVersion));	
+		}
+		else
+		{
+			glVersions.addAll(SUPPORTED_GL_VERSIONS);
+		}
+		
+		for (Pair<Integer, Integer> supportedGlVersion : glVersions)
 		{
 			int glMajorVersion = supportedGlVersion.first;
 			int glMinorVersion = supportedGlVersion.second;
@@ -193,8 +206,8 @@ public class GLProxy
 			GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MAJOR, glMajorVersion);
 			GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MINOR, glMinorVersion);
 			GLFW.glfwWindowHint(GLFW.GLFW_OPENGL_DEBUG_CONTEXT, debugContextEnabled ? GLFW.GLFW_TRUE : GLFW.GLFW_FALSE);
-			GLFW.glfwWindowHint(GLFW.GLFW_OPENGL_FORWARD_COMPAT, forwardCompatEnabled ? GLFW.GLFW_TRUE : GLFW.GLFW_FALSE);
 			
+			GLFW.glfwWindowHint(GLFW.GLFW_OPENGL_FORWARD_COMPAT, forwardCompatEnabled ? GLFW.GLFW_TRUE : GLFW.GLFW_FALSE);
 			int profileModeInt;
 			EGlProfileMode profileModeEnum = Config.Client.Advanced.Debugging.OpenGl.glProfileMode.get();
 			switch (profileModeEnum)
@@ -215,15 +228,15 @@ public class GLProxy
 			contextCreateErrorMessage =
 					"Failed to create OpenGL GLFW context for OpenGL Version: [" + glMajorVersion + "." + glMinorVersion + "] \n" +
 					"with Debugging: [" + (debugContextEnabled ? "Enabled" : "Disabled") + "], \n" +
-					"Forward Compatibility: [" + (forwardCompatEnabled ? "Enabled" : "Disabled") + "], \n" +
+					"Forward Compatibility: [" + (true ? "Enabled" : "Disabled") + "], \n" +
 					"and Profile: [" + profileModeEnum.name() + "]. ";
 			
 			
 			// try creating the Lod Builder context
-			potentialLodBuilderGlContext = GLFW.glfwCreateWindow(1, 1, "LOD Builder Window", 0L, this.minecraftGlContext);
+			potentialLodBuilderGlContext = GLFW.glfwCreateWindow(64, 64, "LOD Builder Window", 0L, this.minecraftGlContext);
 			if (potentialLodBuilderGlContext == 0)
 			{
-				GL_LOGGER.debug(contextCreateErrorMessage);
+				GL_LOGGER.info(contextCreateErrorMessage);
 				GL_LOGGER.debug("Minecraft GL Capabilities:\n [\n" + ReflectionUtil.getAllFieldValuesAsString(this.minecraftGlCapabilities) + "\n]\n");
 				
 				continue;

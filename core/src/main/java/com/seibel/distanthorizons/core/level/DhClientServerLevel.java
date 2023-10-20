@@ -120,10 +120,7 @@ public class DhClientServerLevel extends DhLevel implements IDhClientLevel, IDhS
 	// render //
 	//========//
 	
-	public void startRenderer(IClientLevelWrapper clientLevel)
-	{
-		clientside.startRenderer();
-	}
+	public void startRenderer(IClientLevelWrapper clientLevel) { this.clientside.startRenderer(clientLevel); }
 	
 	public void stopRenderer() { this.clientside.stopRenderer(); }
 	
@@ -186,7 +183,7 @@ public class DhClientServerLevel extends DhLevel implements IDhClientLevel, IDhS
 	@Override
 	public CompletableFuture<Void> saveAsync()
 	{
-		return CompletableFuture.allOf(clientside.saveAsync(), getFileHandler().flushAndSave());
+		return CompletableFuture.allOf(clientside.saveAsync(), getFileHandler().flushAndSaveAsync());
 	}
 	
 	//===============//

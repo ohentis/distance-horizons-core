@@ -88,9 +88,9 @@
     "Max Horizontal Resolution",
   "distanthorizons.config.client.advanced.graphics.quality.maxHorizontalResolution.@tooltip":
     "The maximum detail LODs are rendered at.\n\n§6Fastest:§r Chunk\n§6Fanciest:§r Block",
-  "distanthorizons.config.client.advanced.graphics.quality.lodChunkRenderDistance":
-    "LOD Render Distance",
-  "distanthorizons.config.client.advanced.graphics.quality.lodChunkRenderDistance.@tooltip":
+  "distanthorizons.config.client.advanced.graphics.quality.lodChunkRenderDistanceRadius":
+    "LOD Render Distance Radius",
+  "distanthorizons.config.client.advanced.graphics.quality.lodChunkRenderDistanceRadius.@tooltip":
     "Distant Horizons' render distance, measured in chunks. \n\nNote: this is a best effort number. \nThe render distance may be above or below this number \ndepending on your other graphic settings.",
   "distanthorizons.config.client.advanced.graphics.quality.verticalQuality":
     "Vertical Quality",

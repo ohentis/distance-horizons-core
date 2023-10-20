@@ -31,7 +31,6 @@ import com.seibel.distanthorizons.core.config.types.enums.*;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.jar.EPlatform;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.util.EnumUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftSharedWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.coreapi.util.StringUtil;
@@ -71,7 +70,7 @@ public class Config
 				.setAppearance(EConfigEntryAppearance.ONLY_IN_GUI)
 				.build();
 		
-		public static ConfigLinkedEntry quickLodChunkRenderDistance = new ConfigLinkedEntry(Advanced.Graphics.Quality.lodChunkRenderDistance);
+		public static ConfigLinkedEntry quickLodChunkRenderDistance = new ConfigLinkedEntry(Advanced.Graphics.Quality.lodChunkRenderDistanceRadius);
 		
 		public static ConfigEntry<EQualityPreset> qualityPresetSetting = new ConfigEntry.Builder<EQualityPreset>()
 				.set(EQualityPreset.MEDIUM) // the default value is set via the listener when accessed
@@ -155,7 +154,7 @@ public class Config
 							.setPerformance(EConfigEntryPerformance.MEDIUM)
 							.build();
 					
-					public static ConfigEntry<Integer> lodChunkRenderDistance = new ConfigEntry.Builder<Integer>()
+					public static ConfigEntry<Integer> lodChunkRenderDistanceRadius = new ConfigEntry.Builder<Integer>()
 							.setMinDefaultMax(32, 128, 4096)
 							.comment("The radius of the mod's render distance. (measured in chunks)")
 							.setPerformance(EConfigEntryPerformance.HIGH)
@@ -1035,8 +1034,7 @@ public class Config
 				public static ConfigEntry<Boolean> enableAutoUpdater = new ConfigEntry.Builder<Boolean>()
 						.set(
 								!SingletonInjector.INSTANCE.get(IMinecraftSharedWrapper.class).getInstallationDirectory().getName().equals("run") // Guesses that a dev would use the directory called "run" as their running directory, and clients wont
-								&& !EPlatform.get().equals(EPlatform.WINDOWS) // FIXME: Updater on Windows is broken atm (and I have no idea on how to fix it)
-						) // disable the update notification in dev clients
+						) // disable the updater in dev clients
 						.comment(""
 								+ "Automatically check for updates on game launch?")
 						.build();
@@ -1266,30 +1264,32 @@ public class Config
 									+ "")
 							.build();
 					
-					//public static ConfigEntry<Integer> glContextMajorVersion = new ConfigEntry.Builder<Integer>()
-					//		.setMinDefaultMax(3, 3, 4)
-					//		.comment("" +
-					//				"Can be changed if you experience crashing when loading into a world.\n" +
-					//				"Note: setting to an invalid version may also cause the game to crash.\n" +
-					//				"\n" +
-					//				"Defines the requested OpenGL context major version Distant Horizons will create. \n" +
-					//				"Possible values (DH requires 3.2 or higher at minimum): \n" +
-					//				"4.6, 4.5, 4.4, 4.3, 4.2, 4.1, 4.0 \n" +
-					//				"3.3, 3.2 \n" +
-					//				"")
-					//		.build();
-					//public static ConfigEntry<Integer> glContextMinorVersion = new ConfigEntry.Builder<Integer>()
-					//		.setMinDefaultMax(0, 2, 6)
-					//		.comment("" +
-					//				"Can be changed if you experience crashing when loading into a world.\n" +
-					//				"Note: setting to an invalid version may also cause the game to crash.\n" +
-					//				"\n" +
-					//				"Defines the requested OpenGL context major version Distant Horizons will create. \n" +
-					//				"Possible values (DH requires 3.2 or higher at minimum): \n" +
-					//				"4.6, 4.5, 4.4, 4.3, 4.2, 4.1, 4.0 \n" +
-					//				"3.3, 3.2 \n" +
-					//				"")
-					//		.build();
+					public static ConfigEntry<Integer> glContextMajorVersion = new ConfigEntry.Builder<Integer>()
+							.setMinDefaultMax(0, 0, 4)
+							.comment("" +
+									"Can be changed if you experience crashing when loading into a world.\n" +
+									"Note: setting to an invalid version may also cause the game to crash.\n" +
+									"\n" +
+									"Leaving this value at causes DH to try all supported GL versions. \n" +
+									"\n" +
+									"Defines the requested OpenGL context major version Distant Horizons will create. \n" +
+									"Possible values (DH requires 3.2 or higher at minimum): \n" +
+									"4.6, 4.5, 4.4, 4.3, 4.2, 4.1, 4.0 \n" +
+									"3.3, 3.2 \n" +
+									"")
+							.build();
+					public static ConfigEntry<Integer> glContextMinorVersion = new ConfigEntry.Builder<Integer>()
+							.setMinDefaultMax(0, 0, 6)
+							.comment("" +
+									"Can be changed if you experience crashing when loading into a world.\n" +
+									"Note: setting to an invalid version may also cause the game to crash.\n" +
+									"\n" +
+									"Defines the requested OpenGL context major version Distant Horizons will create. \n" +
+									"Possible values (DH requires 3.2 or higher at minimum): \n" +
+									"4.6, 4.5, 4.4, 4.3, 4.2, 4.1, 4.0 \n" +
+									"3.3, 3.2 \n" +
+									"")
+							.build();
 					
 					public static ConfigEntry<EGlProfileMode> glProfileMode = new ConfigEntry.Builder<EGlProfileMode>()
 							.set(EGlProfileMode.CORE)

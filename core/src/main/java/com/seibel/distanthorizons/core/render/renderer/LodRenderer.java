@@ -46,6 +46,7 @@ import com.seibel.distanthorizons.coreapi.util.math.Mat4f;
 import com.seibel.distanthorizons.coreapi.util.math.Vec3d;
 import com.seibel.distanthorizons.coreapi.util.math.Vec3f;
 import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.lwjgl.opengl.GL32;
 
 import java.awt.*;
@@ -250,6 +251,12 @@ public class LodRenderer
 			if (!this.isSetupComplete)
 			{
 				this.setup();
+				
+				// shouldn't normally happen, but just in case
+				if (!this.isSetupComplete)
+				{
+					return;
+				}
 			}
 			
 			
@@ -263,10 +270,10 @@ public class LodRenderer
 			GL32.glBindTexture(GL32.GL_TEXTURE_2D, this.colorTextureId);
 			GL32.glTexImage2D(GL32.GL_TEXTURE_2D,
 					0,
-					GL32.GL_RGB,
+					GL32.GL_RGBA8,
 					MC_RENDER.getTargetFrameBufferViewportWidth(), MC_RENDER.getTargetFrameBufferViewportHeight(),
 					0,
-					GL32.GL_RGB,
+					GL32.GL_RGBA,
 					GL32.GL_UNSIGNED_BYTE,
 					(ByteBuffer) null);
 			GL32.glTexParameteri(GL32.GL_TEXTURE_2D, GL32.GL_TEXTURE_MIN_FILTER, GL32.GL_LINEAR);
@@ -404,7 +411,8 @@ public class LodRenderer
 				profiler.popPush("LOD Transparent");
 				
 				GL32.glEnable(GL32.GL_BLEND);
-				GL32.glBlendFunc(GL32.GL_SRC_ALPHA, GL32.GL_ONE_MINUS_SRC_ALPHA);
+				GL32.glBlendEquation(GL32.GL_FUNC_ADD);
+				GL32.glBlendFunc(GL32.GL_ONE, GL32.GL_ONE_MINUS_SRC_ALPHA);
 				this.bufferHandler.renderTransparent(this);
 				GL32.glDepthMask(true); // Apparently the depth mask state is stored in the FBO, so glState fails to restore it...
 				
@@ -414,10 +422,20 @@ public class LodRenderer
 			drawLagSpikeCatcher.end("LodDraw");
 			
 			
+			
+			//=============================//
+			// Apply to the MC FrameBuffer //
+			//=============================//
+			
 			profiler.popPush("LOD Apply");
+			
+			GLState dhApplyGlState = new GLState();
 			
 			// Copy the LOD framebuffer to Minecraft's framebuffer
 			DhApplyShader.INSTANCE.render(partialTicks);
+			
+			dhApplyGlState.restore();
+			
 			
 			
 			
@@ -457,6 +475,7 @@ public class LodRenderer
 		}
 	}
 	
+	private static final Logger LOGGER = LogManager.getLogger();
 	
 	
 	//=================//
@@ -471,8 +490,9 @@ public class LodRenderer
 			EVENT_LOGGER.warn("Renderer setup called but it has already completed setup!");
 			return;
 		}
-		if (!GLProxy.hasInstance())
+		if (GLProxy.getInstance() == null)
 		{
+			// shouldn't normally happen, but just in case
 			EVENT_LOGGER.warn("Renderer setup called but GLProxy has not yet been setup!");
 			return;
 		}
