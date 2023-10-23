@@ -97,29 +97,63 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 	{
 		this.eventSource.registerHandler(FullDataSourceRequestMessage.class, remotePlayerConnectionHandler.currentLevelOnly(this, (msg, serverPlayerState) ->
 		{
-			if (serverPlayerState.pendingFullDataRequests.incrementAndGet() > serverPlayerState.config.getFullDataRequestRateLimit())
+			if (msg.changedOnly)
 			{
-				serverPlayerState.pendingFullDataRequests.decrementAndGet();
-				msg.sendResponse(new RateLimitedException("Max concurrent requests: " + serverPlayerState.config.getFullDataRequestRateLimit()));
-				return;
-			}
-			
-			while (true)
-			{
-				IncompleteDataSourceEntry entry = incompleteDataSources.computeIfAbsent(msg.dhSectionPos, pos -> {
-					IncompleteDataSourceEntry newEntry = new IncompleteDataSourceEntry();
-					serverside.dataFileHandler.readAsync(msg.dhSectionPos).thenAccept(fullDataSource -> {
-						newEntry.fullDataSource = fullDataSource;
-					});
-					return newEntry;
-				});
-				// If this fails, current entry is being drained and need to create another one
-				if (entry.requestCollectionSemaphore.tryAcquire())
+				if (!serverPlayerState.config.isPostRelogUpdateEnabled())
 				{
-					fullDataRequests.put(msg.futureId, entry);
-					entry.requestMessages.put(msg.futureId, msg);
-					entry.requestCollectionSemaphore.release();
-					break;
+					msg.sendResponse(new RequestRejectedException("Operation is disabled from config."));
+					return;
+				}
+				
+				FullDataMetaFile metaFile = serverside.dataFileHandler.getFileIfExist(msg.dhSectionPos);
+				if (metaFile == null)
+				{
+					msg.sendResponse(new InvalidSectionPosException("Not generated section pos: "+msg.dhSectionPos));
+					return;
+				}
+				
+				metaFile.getOrLoadCachedDataSourceAsync().thenAccept(source -> {
+					if (!(source instanceof CompleteFullDataSource))
+					{
+						msg.sendResponse(new InvalidSectionPosException("Not generated section pos: "+msg.dhSectionPos));
+						return;
+					}
+					
+					msg.sendResponse(new FullDataSourceResponseMessage((CompleteFullDataSource) source, this));
+				});
+			}
+			else
+			{
+				if (!serverPlayerState.config.isDistantGenerationEnabled())
+				{
+					msg.sendResponse(new RequestRejectedException("Operation is disabled from config."));
+					return;
+				}
+				
+				if (serverPlayerState.pendingFullDataRequests.incrementAndGet() > serverPlayerState.config.getFullDataRequestRateLimit())
+				{
+					serverPlayerState.pendingFullDataRequests.decrementAndGet();
+					msg.sendResponse(new RateLimitedException("Max concurrent requests: " + serverPlayerState.config.getFullDataRequestRateLimit()));
+					return;
+				}
+				
+				while (true)
+				{
+					IncompleteDataSourceEntry entry = incompleteDataSources.computeIfAbsent(msg.dhSectionPos, pos -> {
+						IncompleteDataSourceEntry newEntry = new IncompleteDataSourceEntry();
+						serverside.dataFileHandler.readAsync(msg.dhSectionPos).thenAccept(fullDataSource -> {
+							newEntry.fullDataSource = fullDataSource;
+						});
+						return newEntry;
+					});
+					// If this fails, current entry is being drained and need to create another one
+					if (entry.requestCollectionSemaphore.tryAcquire())
+					{
+						fullDataRequests.put(msg.futureId, entry);
+						entry.requestMessages.put(msg.futureId, msg);
+						entry.requestCollectionSemaphore.release();
+						break;
+					}
 				}
 			}
 		}));
@@ -133,7 +167,7 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 		
 		this.eventSource.registerHandler(FullDataChangeSummaryRequestMessage.class, remotePlayerConnectionHandler.currentLevelOnly(this, (msg, serverPlayerState) ->
 		{
-			if (!Config.Client.Advanced.Multiplayer.ServerNetworking.enablePostRelogUpdate.get())
+			if (!serverPlayerState.config.isPostRelogUpdateEnabled())
 			{
 				msg.sendResponse(new RequestRejectedException("Operation is disabled from config."));
 				return;

@@ -31,6 +31,7 @@ public class FullDataSourceRequestMessage extends FutureTrackableNetworkMessage 
 	public DhSectionPos dhSectionPos;
 	private int levelHashCode;
 	@Override public int getLevelHashCode() { return levelHashCode; }
+	public boolean changedOnly;
 	
 	public FullDataSourceRequestMessage() {}
 
@@ -40,12 +41,19 @@ public class FullDataSourceRequestMessage extends FutureTrackableNetworkMessage 
 		this.levelHashCode = levelWrapper.getDimensionType().getDimensionName().hashCode();
 		this.dhSectionPos = dhSectionPos;
 	}
+	
+	public FullDataSourceRequestMessage(ILevelWrapper levelWrapper, DhSectionPos dhSectionPos, boolean changedOnly)
+	{
+		this(levelWrapper, dhSectionPos);
+		this.changedOnly = true;
+	}
 
     @Override
     public void encode0(ByteBuf out)
 	{
 		out.writeInt(levelHashCode);
 		dhSectionPos.encode(out);
+		out.writeBoolean(changedOnly);
     }
 
     @Override
@@ -53,6 +61,7 @@ public class FullDataSourceRequestMessage extends FutureTrackableNetworkMessage 
 	{
 		levelHashCode = in.readInt();
 		dhSectionPos = INetworkObject.decodeStatic(DhSectionPos.zero(), in);
+		changedOnly = in.readBoolean();
     }
 	
 	@Override

@@ -5,8 +5,13 @@ import io.netty.buffer.ByteBuf;
 
 public class MultiplayerConfig extends AbstractMultiplayerConfig
 {
+	// IMPORTANT: Once you added/removed config fields, modify MultiplayerConfigChangeListener accordingly.
+	
 	public int renderDistanceRadius = Config.Client.Advanced.Graphics.Quality.lodChunkRenderDistanceRadius.get();
 	@Override public int getRenderDistanceRadius() { return renderDistanceRadius; }
+	
+	public boolean distantGenerationEnabled = Config.Client.Advanced.WorldGenerator.enableDistantGeneration.get();
+	@Override public boolean isDistantGenerationEnabled() { return distantGenerationEnabled; }
 	
 	public int fullDataRequestRateLimit = Config.Client.Advanced.Multiplayer.ServerNetworking.requestRateLimit.get();
 	@Override public int getFullDataRequestRateLimit() { return fullDataRequestRateLimit; }
@@ -21,6 +26,7 @@ public class MultiplayerConfig extends AbstractMultiplayerConfig
 	public void decode(ByteBuf in)
 	{
 		this.renderDistanceRadius = in.readInt();
+		this.distantGenerationEnabled = in.readBoolean();
 		this.fullDataRequestRateLimit = in.readInt();
 		this.realTimeUpdatesEnabled = in.readBoolean();
 		this.postRelogUpdateEnabled = in.readBoolean();
@@ -30,6 +36,7 @@ public class MultiplayerConfig extends AbstractMultiplayerConfig
 	{
 		return "MultiplayerConfig{" +
 				"renderDistance=" + renderDistanceRadius +
+				", distantGenerationEnabled=" + distantGenerationEnabled +
 				", fullDataRequestRateLimit=" + fullDataRequestRateLimit +
 				", realTimeUpdatesEnabled=" + realTimeUpdatesEnabled +
 				", postRelogUpdatesEnabled=" + postRelogUpdateEnabled +

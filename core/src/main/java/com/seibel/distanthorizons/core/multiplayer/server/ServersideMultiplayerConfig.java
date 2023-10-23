@@ -19,6 +19,12 @@ public class ServersideMultiplayerConfig extends AbstractMultiplayerConfig
 	}
 	
 	@Override
+	public boolean isDistantGenerationEnabled()
+	{
+		return clientConfig.distantGenerationEnabled && Config.Client.Advanced.WorldGenerator.enableDistantGeneration.get();
+	}
+	
+	@Override
 	public int getFullDataRequestRateLimit()
 	{
 		return Math.min(clientConfig.fullDataRequestRateLimit, Config.Client.Advanced.Multiplayer.ServerNetworking.requestRateLimit.get());
