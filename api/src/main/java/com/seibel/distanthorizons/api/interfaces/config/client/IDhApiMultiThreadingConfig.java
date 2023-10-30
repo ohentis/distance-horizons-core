@@ -26,7 +26,7 @@ import com.seibel.distanthorizons.api.interfaces.config.IDhApiConfigGroup;
  * Distant Horizons' threading configuration.
  *
  * @author James Seibel
- * @version 2023-6-14
+ * @version 2023-10-29
  * @since API 1.0.0
  */
 public interface IDhApiMultiThreadingConfig extends IDhApiConfigGroup
@@ -41,21 +41,18 @@ public interface IDhApiMultiThreadingConfig extends IDhApiConfigGroup
 	 */
 	IDhApiConfigValue<Integer> worldGeneratorThreads();
 	
-	/** Defines how many buffer (GPU Terrain data) builder threads are used. */
-	IDhApiConfigValue<Integer> bufferBuilderThreads();
-	
 	/** Defines how many file handler threads are used. */
 	IDhApiConfigValue<Integer> fileHandlerThreads();
 	
 	/**
-	 * Defines how many Full to Render data converter threads are used. <br><br>
-	 *
-	 * <strong>Full data</strong> - Distant Horizons data based on BlockState and Biome IDs <br>
-	 * <strong>Render data</strong> - color data used when Distant Horizons is rendering
+	 * Defines how many threads are used
+	 * to build LODs. <br><br>
+	 * 
+	 * This includes: <br>
+	 * - lighting <br>
+	 * - Chunk -> LOD conversion <br>
+	 * - Buffer generation <br>
 	 */
-	IDhApiConfigValue<Integer> dataConverterThreads();
-	
-	/** Defines how many threads should be used to convert Minecraft chunks to LOD data. */
-	IDhApiConfigValue<Integer> chunkLodConverterThreads();
+	IDhApiConfigValue<Integer> lodBuilderThreads();
 	
 }

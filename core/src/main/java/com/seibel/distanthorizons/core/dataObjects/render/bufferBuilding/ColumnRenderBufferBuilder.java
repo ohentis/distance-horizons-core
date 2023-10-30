@@ -22,7 +22,6 @@ package com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding;
 import com.seibel.distanthorizons.api.enums.rendering.EDebugRendering;
 import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.config.Config;
-import com.seibel.distanthorizons.core.config.listeners.ConfigChangeListener;
 import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSource;
 import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
@@ -32,17 +31,14 @@ import com.seibel.distanthorizons.core.render.glObject.GLProxy;
 import com.seibel.distanthorizons.core.render.glObject.buffer.GLVertexBuffer;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.RenderDataPointUtil;
-import com.seibel.distanthorizons.core.util.ThreadUtil;
 import com.seibel.distanthorizons.core.util.objects.Reference;
 import com.seibel.distanthorizons.core.util.objects.UncheckedInterruptedException;
 import com.seibel.distanthorizons.core.dataObjects.render.columnViews.ColumnArrayView;
+import com.seibel.distanthorizons.core.util.threading.ThreadPools;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
-import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * Used to populate the buffers in a {@link ColumnRenderSource} object.
@@ -55,10 +51,6 @@ public class ColumnRenderBufferBuilder
 			() -> Config.Client.Advanced.Logging.logRendererBufferEvent.get());
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
-	
-	public static ExecutorService bufferUploaderThreadPool = ThreadUtil.makeSingleThreadPool("Column Buffer Uploader");
-	public static ExecutorService bufferBuilderThreadPool;
-	private static ConfigChangeListener<Integer> configListener;
 	
 	public static final int MAX_NUMBER_OF_CONCURRENT_CALLS_PER_THREAD = 3;
 	public static int maxNumberOfConcurrentCalls = MAX_NUMBER_OF_CONCURRENT_CALLS_PER_THREAD;
@@ -109,7 +101,7 @@ public class ColumnRenderBufferBuilder
 						LOGGER.error("\"LodNodeBufferBuilder\" was unable to build quads: ", e3);
 						throw e3;
 					}
-				}, bufferBuilderThreadPool)
+				}, ThreadPools.getBufferBuilderExecutor())
 				.thenApplyAsync((quadBuilder) ->
 				{
 					try
@@ -144,7 +136,7 @@ public class ColumnRenderBufferBuilder
 						LOGGER.error("\"LodNodeBufferBuilder\" was unable to upload buffer: ", e3);
 						throw e3;
 					}
-				}, bufferUploaderThreadPool)
+				}, ThreadPools.getBufferUploaderExecutor())
 				.handle((columnRenderBuffer, ex) ->
 				{
 					//LOGGER.info("RenderRegion endBuild @ {}", renderSource.sectionPos);
@@ -162,8 +154,12 @@ public class ColumnRenderBufferBuilder
 					}
 					else
 					{
-						LodUtil.assertTrue(columnRenderBuffer.buffersUploaded);
-						return columnRenderBuffer;
+						if (columnRenderBuffer != null)
+						{
+							LodUtil.assertTrue(columnRenderBuffer.buffersUploaded);
+						}
+						
+						return columnRenderBuffer; 
 					}
 				});
 	}
@@ -362,79 +358,5 @@ public class ColumnRenderBufferBuilder
 		}
 		return newVbos;
 	}
-	
-	public static GLVertexBuffer getOrMakeBuffer(GLVertexBuffer[] vbos, int iIndex, boolean useBuffStorage)
-	{
-		if (vbos[iIndex] == null)
-		{
-			vbos[iIndex] = new GLVertexBuffer(useBuffStorage);
-		}
-		return vbos[iIndex];
-	}
-	
-	
-	
-	//==========================//
-	// executor handler methods //
-	//==========================//
-	
-	/**
-	 * Creates a new executor. <br>
-	 * Does nothing if an executor already exists.
-	 */
-	public static void setupExecutorService()
-	{
-		// static setup
-		if (configListener == null)
-		{
-			configListener = new ConfigChangeListener<>(Config.Client.Advanced.MultiThreading.numberOfBufferBuilderThreads, (threadCount) -> { setThreadPoolSize(threadCount); });
-		}
-		
-		
-		if (bufferBuilderThreadPool == null || bufferBuilderThreadPool.isTerminated())
-		{
-			LOGGER.info("Starting " + ColumnRenderBufferBuilder.class.getSimpleName());
-			setThreadPoolSize(Config.Client.Advanced.MultiThreading.numberOfBufferBuilderThreads.get());
-		}
-	}
-	public static void setThreadPoolSize(int threadPoolSize)
-	{
-		if (bufferBuilderThreadPool != null)
-		{
-			// close the previous thread pool if one exists
-			bufferBuilderThreadPool.shutdown();
-		}
-		
-		bufferBuilderThreadPool = ThreadUtil.makeRateLimitedThreadPool(threadPoolSize, "Buffer Builder", Config.Client.Advanced.MultiThreading.runTimeRatioForBufferBuilderThreads);
-		maxNumberOfConcurrentCalls = threadPoolSize * MAX_NUMBER_OF_CONCURRENT_CALLS_PER_THREAD;
-	}
-	
-	/**
-	 * Stops any executing tasks and destroys the executor. <br>
-	 * Does nothing if the executor isn't running.
-	 */
-	public static void shutdownExecutorService()
-	{
-		if (bufferBuilderThreadPool != null)
-		{
-			LOGGER.info("Stopping " + ColumnRenderBufferBuilder.class.getSimpleName());
-			bufferBuilderThreadPool.shutdownNow();
-		}
-	}
-	
-	
-	
-	//=========//
-	// getters //
-	//=========//
-	
-	// TODO move static methods to their own class to avoid confusion
-	private static long getCurrentJobsCount()
-	{
-		long jobs = ((ThreadPoolExecutor) bufferBuilderThreadPool).getQueue().stream().filter(runnable -> !((Future<?>) runnable).isDone()).count();
-		jobs += ((ThreadPoolExecutor) bufferUploaderThreadPool).getQueue().stream().filter(runnable -> !((Future<?>) runnable).isDone()).count();
-		return jobs;
-	}
-	public static boolean isBusy() { return getCurrentJobsCount() > maxNumberOfConcurrentCalls; }
 	
 }

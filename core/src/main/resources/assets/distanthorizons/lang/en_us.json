@@ -251,7 +251,7 @@
   "distanthorizons.config.client.advanced.graphics.noiseTextureSettings.noiseSteps":
     "Noise Steps",
   "distanthorizons.config.client.advanced.graphics.noiseTextureSettings.noiseSteps.@tooltip":
-    "distanthorizons.config.client.advanced.graphics.noiseTextureSettings.noiseSteps.@tooltip",
+    "Determines how many steps of noise should be applied to the LODs.",
   "distanthorizons.config.client.advanced.graphics.noiseTextureSettings.noiseIntensity":
     "Noise Intensity",
   "distanthorizons.config.client.advanced.graphics.noiseTextureSettings.noiseIntensity.@tooltip":
@@ -326,8 +326,17 @@
     "Generation Priority",
   "distanthorizons.config.client.advanced.worldGenerator.generationPriority.@tooltip":
     "The priority for chunks being generated around the player.",
+
+
+  "distanthorizons.config.client.advanced.lodBuilding":
+    "Lod Building",
+
+  "distanthorizons.config.client.advanced.lodBuilding.minTimeBetweenChunkUpdatesInSeconds":
+    "Minimum Time Between Chunk Updates In Seconds",
+  "distanthorizons.config.client.advanced.lodBuilding.minTimeBetweenChunkUpdatesInSeconds.@tooltip":
+    "Determines how long must pass between LOD chunk updates before another. \nupdate can occur\n\nIncreasing this value will reduce CPU load but may may cause \nLODs to become outdated more frequently or for longer.",
   
-  
+    
   "distanthorizons.config.client.advanced.multiplayer":
     "Multiplayer",
     
@@ -368,7 +377,7 @@
   "distanthorizons.config.client.advanced.multiThreading.numberOfWorldGenerationThreads":
     "NO. of world generation threads",
   "distanthorizons.config.client.advanced.multiThreading.numberOfWorldGenerationThreads.@tooltip":
-    "How many threads should be used when generating LODs \n outside the normal render distance? \n\nIf it this is less than 1, it will be treated as a percentage \nof time a single thread can run before going idle. \n\nIf you experience stuttering when generating distant LODs, \ndecrease  this number. If you want to increase LOD \ngeneration speed, increase this number. \n\nThis and the number of buffer builder threads are independent, \nif they add up to more threads than your CPU has cores \nthat is ok.",
+    "How many threads should be used when generating LODs \n outside the normal render distance?\n\nIf you experience stuttering when generating distant LODs, \ndecrease  this number. If you want to increase LOD \ngeneration speed, increase this number.",
   "distanthorizons.config.client.advanced.multiThreading.runTimeRatioForWorldGenerationThreads":
     "Runtime % for world generation threads",
   
@@ -386,20 +395,16 @@
   "distanthorizons.config.client.advanced.multiThreading.runTimeRatioForFileHandlerThreads":
     "Runtime % for file handler threads",
   
-  "distanthorizons.config.client.advanced.multiThreading.numberOfDataTransformerThreads":
-    "NO. of data transformer threads",
-  "distanthorizons.config.client.advanced.multiThreading.numberOfDataTransformerThreads.@tooltip":
-    "The number of threads used when converting ID data to render-able data. \n(This generally happens when generating new terrain or changing graphics settings). \nCan only be between 1 and your CPU's processor count.",
-  "distanthorizons.config.client.advanced.multiThreading.runTimeRatioForDataTransformerThreads":
-    "Runtime % for data transformer threads",
-  
-  "distanthorizons.config.client.advanced.multiThreading.numberOfChunkLodConverterThreads":
-    "NO. of chunk LOD converter threads",
-  "distanthorizons.config.client.advanced.multiThreading.numberOfChunkLodConverterThreads.@tooltip":
-    "How many threads should be used to convert Minecraft chunks into LOD data? \nThese threads run both when terrain is generated and when \nchunks are loaded, unloaded, and modified.",
-  "distanthorizons.config.client.advanced.multiThreading.runTimeRatioForChunkLodConverterThreads":
-    "Runtime % for chunk LOD converter threads",
-  
+  "distanthorizons.config.client.advanced.multiThreading.numberOfLodBuilderThreads":
+    "NO. of LOD builder threads",
+  "distanthorizons.config.client.advanced.multiThreading.numberOfLodBuilderThreads.@tooltip":
+    "The number of threads used when building LODs. \nThese threads run when terrain is generated, when \ncertain graphics settings are changed, and when moving around the world.",
+  "distanthorizons.config.client.advanced.multiThreading.runTimeRatioForLodBuilderThreads":
+    "Runtime % for LOD builder threads",
+  "distanthorizons.config.client.advanced.multiThreading.enableLodBuilderThreadLimiting":
+    "Enable LOD builder thread limiting",
+  "distanthorizons.config.client.advanced.multiThreading.enableLodBuilderThreadLimiting.@tooltip":
+    "Should only be disabled if deadlock occurs and LODs refuse to update. \nThis will cause CPU usage to drastically increase for the Lod Builder threads. \nNote that if a deadlock did occur restarting MC may be necessary to stop the locked threads.",
   
   
   "distanthorizons.config.client.advanced.debugging":

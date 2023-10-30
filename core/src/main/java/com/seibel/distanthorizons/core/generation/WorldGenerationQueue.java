@@ -31,14 +31,13 @@ import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.transformers.LodDataBuilder;
-import com.seibel.distanthorizons.core.file.fullDatafile.FullDataFileHandler;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
-import com.seibel.distanthorizons.core.util.objects.DhThreadFactory;
-import com.seibel.distanthorizons.core.util.objects.RateLimitedThreadPoolExecutor;
+import com.seibel.distanthorizons.core.util.threading.RateLimitedThreadPoolExecutor;
 import com.seibel.distanthorizons.core.util.objects.UncheckedInterruptedException;
 import com.seibel.distanthorizons.core.util.LodUtil;
+import com.seibel.distanthorizons.core.util.threading.ThreadPools;
 import com.seibel.distanthorizons.core.wrapperInterfaces.IWrapperFactory;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import org.apache.logging.log4j.Logger;
@@ -51,8 +50,6 @@ import java.util.function.Consumer;
 public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRenderable
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
-	
-	public static final DhThreadFactory THREAD_FACTORY = new DhThreadFactory(ThreadUtil.THREAD_NAME_PREFIX + "World-Gen-Worker-Thread", Thread.MIN_PRIORITY);
 	
 	private final IDhApiWorldGenerator generator;
 	
@@ -95,9 +92,6 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 	private static final int MAX_ALREADY_GENERATED_COUNT = 100;
 	private final HashMap<DhSectionPos, StackTraceElement[]> alreadyGeneratedPosHashSet = new HashMap<>(MAX_ALREADY_GENERATED_COUNT);
 	private final Queue<DhSectionPos> alreadyGeneratedPosQueue = new LinkedList<>();
-	
-	private static RateLimitedThreadPoolExecutor worldGeneratorThreadPool;
-	private static ConfigChangeListener<Integer> configListener;
 	
 	
 	
@@ -431,7 +425,7 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 			Consumer<ChunkSizedFullDataAccessor> chunkDataConsumer)
 	{
 		EDhApiDistantGeneratorMode generatorMode = Config.Client.Advanced.WorldGenerator.distantGeneratorMode.get();
-		return this.generator.generateChunks(chunkPosMin.x, chunkPosMin.z, granularity, targetDataDetail, generatorMode, worldGeneratorThreadPool, (generatedObjectArray) ->
+		return this.generator.generateChunks(chunkPosMin.x, chunkPosMin.z, granularity, targetDataDetail, generatorMode, ThreadPools.getWorldGenExecutor(), (generatedObjectArray) ->
 		{
 			try
 			{
@@ -446,62 +440,6 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 				Config.Client.Advanced.WorldGenerator.enableDistantGeneration.set(false);
 			}
 		});
-	}
-	
-	
-	
-	//==========================//
-	// executor handler methods //
-	//==========================//
-	
-	/**
-	 * Creates a new executor. <br>
-	 * Does nothing if an executor already exists.
-	 */
-	public static void setupWorldGenThreadPool()
-	{
-		// static setup
-		if (configListener == null)
-		{
-			configListener = new ConfigChangeListener<>(Config.Client.Advanced.MultiThreading.numberOfWorldGenerationThreads, (threadCount) -> { setThreadPoolSize(threadCount); });
-		}
-		
-		
-		if (worldGeneratorThreadPool == null || worldGeneratorThreadPool.isTerminated())
-		{
-			LOGGER.info("Starting " + FullDataFileHandler.class.getSimpleName());
-			setThreadPoolSize(Config.Client.Advanced.MultiThreading.numberOfWorldGenerationThreads.get());
-		}
-	}
-	public static void setThreadPoolSize(int threadPoolSize)
-	{
-		if (worldGeneratorThreadPool != null)
-		{
-			// close the previous thread pool if one exists
-			worldGeneratorThreadPool.shutdown();
-		}
-		
-		worldGeneratorThreadPool = ThreadUtil.makeRateLimitedThreadPool(threadPoolSize, THREAD_FACTORY, Config.Client.Advanced.MultiThreading.runTimeRatioForWorldGenerationThreads);
-		worldGeneratorThreadPool.setOnTerminatedEventHandler(WorldGenerationQueue::onWorldGenThreadPoolTerminated);
-	}
-	
-	/**
-	 * Stops any executing tasks and destroys the executor. <br>
-	 * Does nothing if the executor isn't running.
-	 */
-	public static void shutdownWorldGenThreadPool()
-	{
-		if (worldGeneratorThreadPool != null)
-		{
-			LOGGER.info("Stopping " + FullDataFileHandler.class.getSimpleName());
-			worldGeneratorThreadPool.shutdownNow();
-		}
-	}
-	
-	private static void onWorldGenThreadPoolTerminated()
-	{
-		LOGGER.debug("World generator thread pool terminated. Suggesting the JVM runs a garbage collection to clean up any loose world generation objects...");
-		System.gc();
 	}
 	
 	
@@ -580,7 +518,7 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 		try
 		{
 			int waitTimeInSeconds = 3;
-			if (!worldGeneratorThreadPool.awaitTermination(waitTimeInSeconds, TimeUnit.SECONDS))
+			if (!ThreadPools.getWorldGenExecutor().awaitTermination(waitTimeInSeconds, TimeUnit.SECONDS))
 			{
 				LOGGER.warn("World generator thread pool shutdown didn't complete after [" + waitTimeInSeconds + "] seconds. Some world generator requests may still be running.");
 			}

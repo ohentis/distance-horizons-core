@@ -29,6 +29,7 @@ import com.seibel.distanthorizons.core.dataObjects.fullData.sources.CompleteFull
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IFullDataSource;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IIncompleteFullDataSource;
 import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSource;
+import com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.ColumnRenderBufferBuilder;
 import com.seibel.distanthorizons.core.dataObjects.render.columnViews.ColumnArrayView;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.level.IDhClientLevel;
@@ -60,17 +61,13 @@ public class FullDataToRenderDataTransformer
 	private static final IWrapperFactory WRAPPER_FACTORY = SingletonInjector.INSTANCE.get(IWrapperFactory.class);
 	private static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	
-	private static ExecutorService transformerThreadPool = null;
-	private static ConfigChangeListener<Integer> configListener;
-	
 	
 	
 	//==============================//
 	// public transformer interface //
 	//==============================//
 	
-	public static CompletableFuture<ColumnRenderSource> transformFullDataToRenderSourceUsingExecutorAsync(IFullDataSource fullDataSource, IDhClientLevel level) { return CompletableFuture.supplyAsync(() -> transformFullDataToRenderSource(fullDataSource, level), transformerThreadPool); }
-	private static ColumnRenderSource transformFullDataToRenderSource(IFullDataSource fullDataSource, IDhClientLevel level)
+	public static ColumnRenderSource transformFullDataToRenderSource(IFullDataSource fullDataSource, IDhClientLevel level)
 	{
 		if (fullDataSource == null)
 		{
@@ -329,56 +326,6 @@ public class FullDataToRenderDataTransformer
 		else
 		{
 			iterateAndConvert(level, blockX, blockZ, genMode, columnArrayView, fullArrayView); //Directly use the arrayView since it fits.
-		}
-	}
-	
-	
-	
-	//==========================//
-	// executor handler methods //
-	//==========================//
-	
-	/**
-	 * Creates a new executor. <br>
-	 * Does nothing if an executor already exists.
-	 */
-	public static void setupExecutorService()
-	{
-		// static setup
-		if (configListener == null)
-		{
-			configListener = new ConfigChangeListener<>(Config.Client.Advanced.MultiThreading.numberOfDataTransformerThreads, (threadCount) -> { setThreadPoolSize(threadCount); });
-		}
-		
-		
-		// TODO this didn't seem to be re-sizing when changed via the config
-		if (transformerThreadPool == null || transformerThreadPool.isTerminated())
-		{
-			LOGGER.info("Starting " + FullDataToRenderDataTransformer.class.getSimpleName());
-			setThreadPoolSize(Config.Client.Advanced.MultiThreading.numberOfDataTransformerThreads.get());
-		}
-	}
-	public static void setThreadPoolSize(int threadPoolSize)
-	{
-		if (transformerThreadPool != null)
-		{
-			// close the previous thread pool if one exists
-			transformerThreadPool.shutdown();
-		}
-		
-		transformerThreadPool = ThreadUtil.makeRateLimitedThreadPool(threadPoolSize, "Full/Render Data Transformer", Config.Client.Advanced.MultiThreading.runTimeRatioForDataTransformerThreads);
-	}
-	
-	/**
-	 * Stops any executing tasks and destroys the executor. <br>
-	 * Does nothing if the executor isn't running.
-	 */
-	public static void shutdownExecutorService()
-	{
-		if (transformerThreadPool != null)
-		{
-			LOGGER.info("Stopping " + FullDataToRenderDataTransformer.class.getSimpleName());
-			transformerThreadPool.shutdownNow();
 		}
 	}
 	

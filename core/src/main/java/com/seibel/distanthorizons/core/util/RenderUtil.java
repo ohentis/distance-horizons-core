@@ -103,7 +103,7 @@ public class RenderUtil
 		// convert the vbo position into a direction vector
 		// starting from the player's position
 		Vec3f vboVec = new Vec3f(vboRegionX * LodUtil.REGION_WIDTH, 0, vboRegionZ * LodUtil.REGION_WIDTH);
-		Vec3f playerVec = new Vec3f(playerBlockPos.getX(), playerBlockPos.getY(), playerBlockPos.getZ());
+		Vec3f playerVec = new Vec3f(playerBlockPos.x, playerBlockPos.y, playerBlockPos.z);
 		
 		vboVec.subtract(playerVec);
 		

@@ -20,18 +20,14 @@
 package com.seibel.distanthorizons.core.api.internal;
 
 import com.seibel.distanthorizons.core.Initializer;
-import com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.ColumnRenderBufferBuilder;
-import com.seibel.distanthorizons.core.dataObjects.transformers.ChunkToLodBuilder;
-import com.seibel.distanthorizons.core.dataObjects.transformers.FullDataToRenderDataTransformer;
-import com.seibel.distanthorizons.core.file.fullDatafile.FullDataFileHandler;
+import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.generation.DhLightingEngine;
-import com.seibel.distanthorizons.core.generation.WorldGenerationQueue;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
-import com.seibel.distanthorizons.core.util.ThreadUtil;
 import com.seibel.distanthorizons.core.util.objects.Pair;
+import com.seibel.distanthorizons.core.util.threading.ThreadPools;
 import com.seibel.distanthorizons.core.world.*;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
@@ -41,27 +37,24 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Set;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadPoolExecutor;
 
 /** Contains code and variables used by both {@link ClientApi} and {@link ServerApi} */
 public class SharedApi
 {
+	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	public static final SharedApi INSTANCE = new SharedApi();
+	
+	private static final Set<DhChunkPos> UPDATING_CHUNK_SET = ConcurrentHashMap.newKeySet();
+	
 	
 	private static AbstractDhWorld currentWorld;
 	private static int lastWorldGenTickDelta = 0;
 	
-	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
-	
-	private static final ThreadPoolExecutor LIGHT_POPULATOR_THREAD_POOL = ThreadUtil.makeRateLimitedThreadPool(
-			// thread count doesn't need to be very high since the player can only move so fast, 1 should be plenty
-			(Runtime.getRuntime().availableProcessors() <= 12) ? 1 : 2,
-			"Server Light Populator",
-			(Runtime.getRuntime().availableProcessors() <= 12) ? 0.5 : 0.9,
-			ThreadUtil.MINIMUM_RELATIVE_PRIORITY);
-	
-	private static final Set<DhChunkPos> UPDATING_CHUNK_SET = ConcurrentHashMap.newKeySet(); 
+	private static final Timer CHUNK_UPDATE_TIMER = new Timer();
 	
 	
 	
@@ -89,25 +82,14 @@ public class SharedApi
 		// access the MC level at inappropriate times, which can cause exceptions
 		if (currentWorld != null)
 		{
-			// static thread pool setup
-			FullDataToRenderDataTransformer.setupExecutorService();
-			FullDataFileHandler.setupExecutorService();
-			ColumnRenderBufferBuilder.setupExecutorService();
-			WorldGenerationQueue.setupWorldGenThreadPool();
-			ChunkToLodBuilder.setupExecutorService();
+			ThreadPools.setupThreadPools();
 		}
 		else
 		{
-			// static thread pool shutdown
-			FullDataToRenderDataTransformer.shutdownExecutorService();
-			FullDataFileHandler.shutdownExecutorService();
-			ColumnRenderBufferBuilder.shutdownExecutorService();
-			WorldGenerationQueue.shutdownWorldGenThreadPool();
-			ChunkToLodBuilder.shutdownExecutorService();
-			
+			ThreadPools.shutdownThreadPools();
 			DebugRenderer.clearRenderables();
 			
-			// recommend that the garbage collector cleans up any objects from the old world
+			// recommend that the garbage collector cleans up any objects from the old world and thread pools
 			System.gc();
 		}
 	}
@@ -140,7 +122,17 @@ public class SharedApi
 	public void chunkBlockChangedEvent(IChunkWrapper chunk, ILevelWrapper level) { this.applyChunkUpdate(chunk, level, true); }
 	
 	public void chunkLoadEvent(IChunkWrapper chunk, ILevelWrapper level) { this.applyChunkUpdate(chunk, level, false); }
-	public void chunkSaveEvent(IChunkWrapper chunk, ILevelWrapper level) { this.applyChunkUpdate(chunk, level, false); }
+	public void chunkUnloadEvent(IChunkWrapper chunk, ILevelWrapper level) 
+	{
+		// temporarily disabled since this was originally incorrectly designated as "chunkSaveEvent"
+		// but didn't actually fire on chunk save
+		// and generally this is unnecessary and drastically reduces LOD building performance
+		// when traveling around the world
+		if (false)
+		{
+			this.applyChunkUpdate(chunk, level, false);
+		}
+	}
 	
 	
 	public void applyChunkUpdate(IChunkWrapper chunkWrapper, ILevelWrapper level, boolean updateNeighborChunks)
@@ -148,11 +140,6 @@ public class SharedApi
 		if (chunkWrapper == null)
 		{
 			// shouldn't happen, but just in case
-			return;
-		}
-		else if (UPDATING_CHUNK_SET.contains(chunkWrapper.getChunkPos()))
-		{
-			// this chunk is already being updated
 			return;
 		}
 		
@@ -184,10 +171,6 @@ public class SharedApi
 			return;
 		}
 		
-		
-		
-		// prevent duplicate update requests
-		UPDATING_CHUNK_SET.add(chunkWrapper.getChunkPos());
 		
 		// update the necessary chunk(s)
 		if (!updateNeighborChunks)
@@ -234,9 +217,21 @@ public class SharedApi
 	}
 	private static void bakeChunkLightingAndSendToLevelAsync(IChunkWrapper chunkWrapper, @Nullable ArrayList<IChunkWrapper> neighbourChunkList, IDhLevel dhLevel)
 	{
-		// lighting the chunk needs to be done on a separate thread to prevent lagging any of the event threads
-		LIGHT_POPULATOR_THREAD_POOL.execute(() ->
+		// prevent duplicate update requests
+		if (UPDATING_CHUNK_SET.contains(chunkWrapper.getChunkPos()))
 		{
+			// this chunk is already being updated
+			return;
+		}
+		UPDATING_CHUNK_SET.add(chunkWrapper.getChunkPos());
+		
+		
+		// lighting the chunk needs to be done on a separate thread to prevent lagging any of the event threads
+		ThreadPoolExecutor executor = ThreadPools.getLightPopulatorExecutor();
+		executor.execute(() ->
+		{
+			LOGGER.trace(chunkWrapper.getChunkPos() + " " + executor.getActiveCount() + " / " + executor.getQueue().size() + " - " + executor.getCompletedTaskCount());
+			
 			try
 			{
 				// Save or populate the chunk wrapper's lighting
@@ -279,7 +274,22 @@ public class SharedApi
 			}
 			finally
 			{
-				UPDATING_CHUNK_SET.remove(chunkWrapper.getChunkPos());	
+				// the LOD chunk has finished being updated
+				int updateTimeoutInSec = Config.Client.Advanced.LodBuilding.minTimeBetweenChunkUpdatesInSeconds.get();
+				if (updateTimeoutInSec != 0)
+				{
+					// prevent updating this chunk again until the timeout finishes
+					CHUNK_UPDATE_TIMER.schedule(new TimerTask() 
+					{
+						@Override
+						public void run() { UPDATING_CHUNK_SET.remove(chunkWrapper.getChunkPos()); }
+					}, updateTimeoutInSec * 1000L);
+				}
+				else
+				{
+					// instantly allow this chunk to be updated again
+					UPDATING_CHUNK_SET.remove(chunkWrapper.getChunkPos());
+				}
 			}
 		});
 	}

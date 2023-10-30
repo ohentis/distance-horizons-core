@@ -23,12 +23,11 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.seibel.distanthorizons.core.config.Config;
-import com.seibel.distanthorizons.core.config.listeners.ConfigChangeListener;
 import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
-import com.seibel.distanthorizons.core.util.ThreadUtil;
+import com.seibel.distanthorizons.core.util.threading.ThreadPools;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import org.apache.logging.log4j.LogManager;
@@ -37,10 +36,6 @@ public class ChunkToLodBuilder implements AutoCloseable
 {
 	public static final ConfigBasedLogger LOGGER = new ConfigBasedLogger(LogManager.getLogger(), () -> Config.Client.Advanced.Logging.logLodBuilderEvent.get());
 	private static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
-	
-	private static int threadCount = -1;
-	private static ExecutorService executorThreadPool = null;
-	private static ConfigChangeListener<Integer> threadConfigListener;
 	
 	public static final long MAX_TICK_TIME_NS = 1000000000L / 20L;
 	
@@ -84,9 +79,11 @@ public class ChunkToLodBuilder implements AutoCloseable
 		return future;
 	}
 	
+	// TODO why on tick?
 	public void tick()
 	{
-		if (this.runningCount.get() >= this.threadCount)
+		int threadCount = ThreadPools.getWorkerThreadCount();
+		if (this.runningCount.get() >= threadCount)
 		{
 			return;
 		}
@@ -117,7 +114,7 @@ public class ChunkToLodBuilder implements AutoCloseable
 				{
 					this.runningCount.decrementAndGet();
 				}
-			}, executorThreadPool);
+			}, ThreadPools.getChunkToLodBuilderExecutor());
 		}
 	}
 	private void tickThreadTask()
@@ -209,54 +206,6 @@ public class ChunkToLodBuilder implements AutoCloseable
 		this.concurrentChunkToBuildByChunkPos.clear();
 	}
 	
-	
-	
-	//==========================//
-	// executor handler methods //
-	//==========================//
-	
-	/**
-	 * Creates a new executor. <br>
-	 * Does nothing if an executor already exists.
-	 */
-	public static void setupExecutorService()
-	{
-		// static setup
-		if (threadConfigListener == null)
-		{
-			threadConfigListener = new ConfigChangeListener<>(Config.Client.Advanced.MultiThreading.numberOfChunkLodConverterThreads, (threadCount) -> { setThreadPoolSize(threadCount); });
-		}
-		
-		
-		if (executorThreadPool == null || executorThreadPool.isTerminated())
-		{
-			LOGGER.info("Starting " + ChunkToLodBuilder.class.getSimpleName());
-			setThreadPoolSize(Config.Client.Advanced.MultiThreading.numberOfChunkLodConverterThreads.get());
-		}
-	}
-	public static void setThreadPoolSize(int threadPoolSize)
-	{
-		if (executorThreadPool != null && !executorThreadPool.isTerminated())
-		{
-			executorThreadPool.shutdownNow();
-		}
-		
-		threadCount = threadPoolSize;
-		executorThreadPool = ThreadUtil.makeRateLimitedThreadPool(threadPoolSize, ChunkToLodBuilder.class.getSimpleName(), Config.Client.Advanced.MultiThreading.runTimeRatioForChunkLodConverterThreads);
-	}
-	
-	/**
-	 * Stops any executing tasks and destroys the executor. <br>
-	 * Does nothing if the executor isn't running.
-	 */
-	public static void shutdownExecutorService()
-	{
-		if (executorThreadPool != null)
-		{
-			LOGGER.info("Stopping " + ChunkToLodBuilder.class.getSimpleName());
-			executorThreadPool.shutdownNow();
-		}
-	}
 	
 	
 	

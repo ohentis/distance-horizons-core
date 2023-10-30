@@ -43,8 +43,6 @@ public interface IFullDataSourceProvider extends AutoCloseable
 	/** Can be used to update world gen queues or run any other data checking necessary when initially loading a file */
 	default void onRenderDataFileLoaded(DhSectionPos pos) {  }
 	
-	ExecutorService getIOExecutor();
-
 	@Nullable
     FullDataMetaFile getFileIfExist(DhSectionPos pos);
 	

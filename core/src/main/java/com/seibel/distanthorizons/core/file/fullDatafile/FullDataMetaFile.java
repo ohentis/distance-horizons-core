@@ -45,8 +45,10 @@ import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
 import com.seibel.distanthorizons.core.sql.MetaDataDto;
 import com.seibel.distanthorizons.core.util.AtomicsUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
+import com.seibel.distanthorizons.core.util.ThreadUtil;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataInputStream;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
+import com.seibel.distanthorizons.core.util.threading.ThreadPools;
 import org.apache.logging.log4j.Logger;
 
 /** Represents a File that contains a {@link IFullDataSource}. */
@@ -244,8 +246,8 @@ public class FullDataMetaFile extends AbstractMetaDataContainerFile implements I
 			}
 			
 			
-			ExecutorService executorService = this.fullDataSourceProvider.getIOExecutor();
-			if (!executorService.isTerminated())
+			ThreadPoolExecutor executor = ThreadPools.getFileHandlerExecutor();
+			if (!executor.isTerminated())
 			{
 				// load the data source
 				
@@ -276,7 +278,7 @@ public class FullDataMetaFile extends AbstractMetaDataContainerFile implements I
 								throw new CompletionException(ex);
 							}
 							return fullDataSource;
-						}, executorService)
+						}, executor)
 						.thenCompose((fullDataSource) -> this.applyWriteQueueAndSaveAsync(fullDataSource))
 						.thenAccept((fullDataSource) ->
 						{
@@ -341,12 +343,12 @@ public class FullDataMetaFile extends AbstractMetaDataContainerFile implements I
 				}
 				else
 				{
-					ExecutorService executorService = this.fullDataSourceProvider.getIOExecutor();
-					if (!executorService.isTerminated())
+					ThreadPoolExecutor executor = ThreadPools.getFileHandlerExecutor();
+					if (!executor.isTerminated())
 					{
 						// wait for the update to finish before returning the data source
 						
-						CompletableFuture.supplyAsync(() -> cachedFullDataSource, executorService)
+						CompletableFuture.supplyAsync(() -> cachedFullDataSource, executor)
 							.thenCompose((fullDataSource) -> this.applyWriteQueueAndSaveAsync(fullDataSource))
 							.thenAccept((fullDataSource) ->
 							{

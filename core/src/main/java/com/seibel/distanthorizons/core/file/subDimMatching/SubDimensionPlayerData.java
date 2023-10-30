@@ -127,9 +127,9 @@ public class SubDimensionPlayerData
 	public void toTomlFile(CommentedFileConfig toml)
 	{
 		// player block pos
-		toml.add(PLAYER_BLOCK_POS_X_PATH, this.playerBlockPos.getX());
-		toml.add(PLAYER_BLOCK_POS_Y_PATH, this.playerBlockPos.getY());
-		toml.add(PLAYER_BLOCK_POS_Z_PATH, this.playerBlockPos.getZ());
+		toml.add(PLAYER_BLOCK_POS_X_PATH, this.playerBlockPos.x);
+		toml.add(PLAYER_BLOCK_POS_Y_PATH, this.playerBlockPos.y);
+		toml.add(PLAYER_BLOCK_POS_Z_PATH, this.playerBlockPos.z);
 		
 		toml.save();
 	}

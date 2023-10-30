@@ -20,7 +20,6 @@
 package com.seibel.distanthorizons.core.file.fullDatafile;
 
 import com.seibel.distanthorizons.core.config.Config;
-import com.seibel.distanthorizons.core.config.listeners.ConfigChangeListener;
 import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
 import com.seibel.distanthorizons.core.dataObjects.fullData.loader.AbstractFullDataSourceLoader;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.CompleteFullDataSource;
@@ -36,9 +35,7 @@ import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.sql.FullDataRepo;
 import com.seibel.distanthorizons.core.sql.MetaDataDto;
-import com.seibel.distanthorizons.core.util.FileUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
-import com.seibel.distanthorizons.core.util.ThreadUtil;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
@@ -58,9 +55,6 @@ import java.util.function.Consumer;
 public class FullDataFileHandler implements IFullDataSourceProvider
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
-	
-	protected static ExecutorService fileHandlerThreadPool;
-	protected static ConfigChangeListener<Integer> configListener;
 	
 	protected final ConcurrentHashMap<DhSectionPos, FullDataMetaFile> loadedMetaFileBySectionPos = new ConcurrentHashMap<>();
 	
@@ -509,58 +503,6 @@ public class FullDataFileHandler implements IFullDataSourceProvider
 		// create a new FullDataMetaFile to write new data to
 		return this.getLoadOrMakeFile(pos, true);
 	}
-	
-	
-	
-	//==========================//
-	// executor handler methods //
-	//==========================//
-	
-	/**
-	 * Creates a new executor. <br>
-	 * Does nothing if an executor already exists.
-	 */
-	public static void setupExecutorService()
-	{
-		// static setup
-		if (configListener == null)
-		{
-			configListener = new ConfigChangeListener<>(Config.Client.Advanced.MultiThreading.numberOfFileHandlerThreads, (threadCount) -> { setThreadPoolSize(threadCount); });
-		}
-		
-		
-		if (fileHandlerThreadPool == null || fileHandlerThreadPool.isTerminated())
-		{
-			LOGGER.info("Starting " + FullDataFileHandler.class.getSimpleName());
-			setThreadPoolSize(Config.Client.Advanced.MultiThreading.numberOfFileHandlerThreads.get());
-		}
-	}
-	public static void setThreadPoolSize(int threadPoolSize)
-	{
-		if (fileHandlerThreadPool != null)
-		{
-			// close the previous thread pool if one exists
-			fileHandlerThreadPool.shutdown();
-		}
-		
-		fileHandlerThreadPool = ThreadUtil.makeRateLimitedThreadPool(threadPoolSize, FullDataFileHandler.class.getSimpleName() + "Thread", Config.Client.Advanced.MultiThreading.runTimeRatioForFileHandlerThreads);
-	}
-	
-	/**
-	 * Stops any executing tasks and destroys the executor. <br>
-	 * Does nothing if the executor isn't running.
-	 */
-	public static void shutdownExecutorService()
-	{
-		if (fileHandlerThreadPool != null)
-		{
-			LOGGER.info("Stopping " + FullDataFileHandler.class.getSimpleName());
-			fileHandlerThreadPool.shutdownNow();
-		}
-	}
-	
-	@Override
-	public ExecutorService getIOExecutor() { return fileHandlerThreadPool; }
 	
 	
 	

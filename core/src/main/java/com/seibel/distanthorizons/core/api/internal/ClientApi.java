@@ -135,27 +135,24 @@ public class ClientApi
 	
 	public void onClientOnlyDisconnected()
 	{
-		if (MC.clientConnectedToDedicatedServer())
+		AbstractDhWorld world = SharedApi.getAbstractDhWorld();
+		if (world != null)
 		{
-			AbstractDhWorld world = SharedApi.getAbstractDhWorld();
-			if (world != null)
-			{
-				LOGGER.info("Client on ClientOnly mode disconnecting.");
-				
-				world.close();
-				SharedApi.setDhWorld(null);
-			}
+			LOGGER.info("Client on ClientOnly mode disconnecting.");
 			
-			// clear the previous server's information
-			this.isServerCommunicationEnabled = false;
-			this.serverNetworkingIsMalformed = false;
-			KEYED_CLIENT_LEVEL_MANAGER.setUseOverrideWrapper(false);
-			KEYED_CLIENT_LEVEL_MANAGER.setServerKeyedLevel(null);
-			
-			// remove any waiting items
-			this.waitingChunkByClientLevelAndPos.clear();
-			this.waitingClientLevels.clear();
+			world.close();
+			SharedApi.setDhWorld(null);
 		}
+		
+		// clear the previous server's information
+		this.isServerCommunicationEnabled = false;
+		this.serverNetworkingIsMalformed = false;
+		KEYED_CLIENT_LEVEL_MANAGER.setUseOverrideWrapper(false);
+		KEYED_CLIENT_LEVEL_MANAGER.setServerKeyedLevel(null);
+		
+		// remove any waiting items
+		this.waitingChunkByClientLevelAndPos.clear();
+		this.waitingClientLevels.clear();
 	}
 	
 	

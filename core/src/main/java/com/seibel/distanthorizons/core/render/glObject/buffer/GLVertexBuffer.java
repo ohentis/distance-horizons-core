@@ -21,6 +21,8 @@ package com.seibel.distanthorizons.core.render.glObject.buffer;
 
 import java.nio.ByteBuffer;
 
+import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import org.apache.logging.log4j.Logger;
 import org.lwjgl.opengl.GL32;
 
 import com.seibel.distanthorizons.api.enums.config.EGpuUploadMethod;
@@ -43,23 +45,23 @@ public class GLVertexBuffer extends GLBuffer
 	// FIXME: This setter is needed for premapping buffer to manually set the vertexCount. Fix this.
 	public void setVertexCount(int vertexCount) { this.vertexCount = vertexCount; }
 	
+	
 	public GLVertexBuffer(boolean isBufferStorage)
 	{
 		super(isBufferStorage);
 	}
 	
+	
+	
 	@Override
 	public void destroy(boolean async)
 	{
 		super.destroy(async);
-		vertexCount = 0;
+		this.vertexCount = 0;
 	}
 	
 	@Override
-	public int getBufferBindingTarget()
-	{
-		return GL32.GL_ARRAY_BUFFER;
-	}
+	public int getBufferBindingTarget() { return GL32.GL_ARRAY_BUFFER; }
 	
 	public void uploadBuffer(ByteBuffer byteBuffer, int vertCount, EGpuUploadMethod uploadMethod, int maxExpensionSize)
 	{

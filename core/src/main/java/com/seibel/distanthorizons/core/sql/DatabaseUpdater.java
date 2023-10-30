@@ -22,6 +22,7 @@ package com.seibel.distanthorizons.core.sql;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import org.apache.logging.log4j.Logger;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -55,7 +56,16 @@ public class DatabaseUpdater
 	public static <TDTO extends IBaseDTO> void runAutoUpdateScripts(AbstractDhRepo<TDTO> repo) throws SQLException
 	{
 		// get the resource scripts
-		ArrayList<SqlScript> scriptList = getAutoUpdateScripts();
+		ArrayList<SqlScript> scriptList;
+		try
+		{
+			scriptList = getAutoUpdateScripts();
+		}
+		catch (IOException e)
+		{
+			LOGGER.error("Get auto update SQL scripts failed. Error: " + e.getMessage(), e);
+			return;
+		}
 		
 		
 		
@@ -155,25 +165,31 @@ public class DatabaseUpdater
 	//===============//
 	
 	/** @throws NullPointerException if any of the script files failed to be read. */
-	private static ArrayList<SqlScript> getAutoUpdateScripts() throws NullPointerException
+	private static ArrayList<SqlScript> getAutoUpdateScripts() throws NullPointerException, IOException
 	{
 		final ClassLoader loader = Thread.currentThread().getContextClassLoader();
 		
 		
 		// get the script list
-		InputStream scriptListInputStream = loader.getResourceAsStream(SQL_SCRIPT_LIST_FILE);
-		if (scriptListInputStream == null)
+		String scriptListString;
+		try (InputStream scriptListInputStream = loader.getResourceAsStream(SQL_SCRIPT_LIST_FILE))
 		{
-			throw new NullPointerException("Failed to find the SQL Script list file ["+SQL_SCRIPT_LIST_FILE+"], no auto update scripts can be run.");
+			if (scriptListInputStream == null)
+			{
+				throw new NullPointerException("Failed to find the SQL Script list file [" + SQL_SCRIPT_LIST_FILE + "], no auto update scripts can be run.");
+			}
+			
+			try (Scanner scanner = new Scanner(scriptListInputStream).useDelimiter("\\A"))
+			{
+				scriptListString = scanner.hasNext() ? scanner.next() : "";
+			}
 		}
-		Scanner scanner = new Scanner(scriptListInputStream).useDelimiter("\\A");
-		String result = scanner.hasNext() ? scanner.next() : "";
 		
 		
 		
 		// get each script
 		ArrayList<SqlScript> scriptList = new ArrayList<>();
-		String[] sqlScriptNames = result.split("\n");
+		String[] sqlScriptNames = scriptListString.split("\n");
 		for (String scriptName : sqlScriptNames)
 		{
 			scriptName = scriptName.trim();
@@ -185,15 +201,20 @@ public class DatabaseUpdater
 			scriptName = SQL_SCRIPT_RESOURCE_FOLDER + scriptName.trim();
 			
 			// get the script's content
-			InputStream scriptInputStream = loader.getResourceAsStream(scriptName);
-			if (scriptInputStream == null)
+			try(InputStream scriptInputStream = loader.getResourceAsStream(scriptName))
 			{
-				throw new NullPointerException("Failed to find the SQL Script file ["+scriptName+"], no auto update scripts can be run.");
+				if (scriptInputStream == null)
+				{
+					throw new NullPointerException("Failed to find the SQL Script file [" + scriptName + "], no auto update scripts can be run.");
+				}
+				
+				try (Scanner fileScanner = new Scanner(scriptInputStream).useDelimiter("\\A"))
+				{
+					scriptListString = fileScanner.hasNext() ? fileScanner.next() : "";
+				}
+				
+				scriptList.add(new SqlScript(scriptName, scriptListString));
 			}
-			scanner = new Scanner(scriptInputStream).useDelimiter("\\A");
-			result = scanner.hasNext() ? scanner.next() : "";
-			
-			scriptList.add(new SqlScript(scriptName, result));
 		}
 		
 		return scriptList;

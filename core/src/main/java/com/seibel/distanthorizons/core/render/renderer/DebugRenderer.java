@@ -183,7 +183,6 @@ public class DebugRenderer
 		buffer.rewind();
 		
 		this.boxOutlineBuffer = new GLElementBuffer(false);
-		this.boxOutlineBuffer.bind();
 		this.boxOutlineBuffer.uploadBuffer(buffer, EGpuUploadMethod.DATA, box_outline_indices.length * Integer.BYTES, GL32.GL_STATIC_DRAW);
 	}
 	

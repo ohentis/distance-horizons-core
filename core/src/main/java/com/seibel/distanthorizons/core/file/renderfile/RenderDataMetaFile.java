@@ -318,7 +318,7 @@ public class RenderDataMetaFile extends AbstractMetaDataContainerFile implements
 						ColumnRenderSource newRenderSource = null;
 						try
 						{
-							newRenderSource = FullDataToRenderDataTransformer.transformFullDataToRenderSourceUsingExecutorAsync(fullDataSource, this.clientLevel).join();
+							newRenderSource = FullDataToRenderDataTransformer.transformFullDataToRenderSource(fullDataSource, this.clientLevel);
 						}
 						catch (Exception e)
 						{

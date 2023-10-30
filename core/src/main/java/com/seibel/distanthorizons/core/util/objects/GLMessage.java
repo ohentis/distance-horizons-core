@@ -20,6 +20,7 @@
 package com.seibel.distanthorizons.core.util.objects;
 
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.coreapi.ModInfo;
 import org.apache.logging.log4j.Logger;
 
 import java.lang.invoke.MethodHandles;
@@ -196,31 +197,46 @@ public final class GLMessage
 	// helper classes //
 	//================//
 	
+	/**
+	 * Expected message format: <br>
+	 * <code>
+	 * [LWJGL] OpenGL debug message      <br>
+	 * ID: 0x20071                       <br>
+	 * Source: API                       <br>
+	 * Type: OTHER                       <br>
+	 * Severity: NOTIFICATION            <br>
+	 * Message: Buffer detailed info: Buffer object 1014084 (bound to ...
+	 * </code>
+	 */
 	public static class Builder
 	{
 		/** how many stages are present in the message parser */
 		private static final int FINAL_PARSER_STAGE_INDEX = 15;
 		
 		public static final Builder DEFAULT_MESSAGE_BUILDER =
-				new Builder(
-						(type) -> { // type filter
-							if (type == GLMessage.EType.POP_GROUP)
-								return false;
-							if (type == GLMessage.EType.PUSH_GROUP)
-								return false;
-							if (type == GLMessage.EType.MARKER)
-								return false;
-							// if (type == GLMessage.Type.PERFORMANCE) return false;
-							return true;
-						},
-						(severity) -> { // severity filter
-							if (severity == GLMessage.ESeverity.NOTIFICATION)
-								return false;
-							return true;
-						},
-						null
-				);
+			new Builder(
+					(type) -> 
+					{ // type filter
+						if (type == GLMessage.EType.POP_GROUP)
+							return false;
+						if (type == GLMessage.EType.PUSH_GROUP)
+							return false;
+						if (type == GLMessage.EType.MARKER)
+							return false;
+						// if (type == GLMessage.Type.PERFORMANCE) return false;
+						return true;
+					},
+					(severity) -> 
+					{ // severity filter
+						if (severity == GLMessage.ESeverity.NOTIFICATION)
+							return false;
+						return true;
+					},
+					null
+			);
 		
+		
+		private final StringBuilder inProgressMessageBuilder = new StringBuilder();
 		
 		private EType type;
 		private ESeverity severity;
@@ -295,6 +311,41 @@ public final class GLMessage
 			
 			// the message isn't finished yet
 			return null;
+			
+			// TODO implement a method that works for both MC 1.20.2+ and 1.20.1-
+			//if (str.equals(HEADER) && inProgressMessageBuilder.length() != 0)
+			//{
+			//	boolean parseSuccess = runNextParserStage(str);
+			//	if (parseSuccess && parserStage > FINAL_PARSER_STAGE_INDEX)
+			//	{
+			//		this.parserStage = 0;
+			//		GLMessage msg = new GLMessage(this.type, this.severity, this.source, this.id, this.message);
+			//		if (doesMessagePassFilters(msg))
+			//		{
+			//			return msg;
+			//		}
+			//		else
+			//		{
+			//			inProgressMessageBuilder.setLength(0);
+			//			return null;
+			//		}
+			//	}
+			//	else
+			//	{
+			//		if (!parseSuccess)
+			//		{
+			//			LOGGER.warn("Failed to parse GLMessage line '{}' at stage {}", str, parserStage);
+			//			inProgressMessageBuilder.setLength(0);
+			//		}
+			//		
+			//		return null;
+			//	}
+			//}
+			//else
+			//{
+			//	inProgressMessageBuilder.append(str);
+			//	return null;
+			//}
 		}
 		
 		private boolean doesMessagePassFilters(GLMessage msg)
@@ -368,6 +419,7 @@ public final class GLMessage
 		private boolean checkAndIncStage(String givenString, String expectedString)
 		{
 			boolean equal = givenString.equals(expectedString);
+			//boolean equal = givenString.contains(expectedString);
 			if (equal)
 				this.parserStage++;
 			return equal;

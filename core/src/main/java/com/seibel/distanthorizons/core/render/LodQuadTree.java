@@ -481,7 +481,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 			QuadNode<LodRenderSection> quadNode = nodeIterator.next();
 			if (quadNode.value != null)
 			{
-				quadNode.value.disposeRenderData();
+				quadNode.value.dispose();
 				quadNode.value = null;
 			}
 		}

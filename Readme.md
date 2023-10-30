@@ -22,3 +22,6 @@ https://github.com/TheElectronWill/night-config
 
 SVG Salamander for SVG support (not being used atm)\
 https://github.com/blackears/svgSalamander
+
+sqlite-jdbc\
+https://github.com/xerial/sqlite-jdbc

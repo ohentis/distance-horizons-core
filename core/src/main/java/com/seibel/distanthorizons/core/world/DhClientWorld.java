@@ -40,14 +40,14 @@ import java.util.concurrent.ExecutorService;
 
 public class DhClientWorld extends AbstractDhWorld implements IDhClientWorld
 {
-    private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
-
-    private final ConcurrentHashMap<IClientLevelWrapper, DhClientLevel> levels;
-    public final ClientOnlySaveStructure saveStructure;
+	private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
+	
+	private final ConcurrentHashMap<IClientLevelWrapper, DhClientLevel> levels;
+	public final ClientOnlySaveStructure saveStructure;
 	@CheckForNull
 	private final ClientNetworkState networkState;
-
-	public ExecutorService dhTickerThread = ThreadUtil.makeSingleThreadPool("DH Client World Ticker Thread");
+	
+	public ExecutorService dhTickerThread = ThreadUtil.makeSingleThreadPool("Client World Ticker Thread");
 	public EventLoop eventLoop = new EventLoop(this.dhTickerThread, this::_clientTick);
 	
 	
@@ -99,13 +99,13 @@ public class DhClientWorld extends AbstractDhWorld implements IDhClientWorld
 			{
 				return null;
 			}
-
+			
 			return new DhClientLevel(this.saveStructure, clientLevelWrapper, networkState);
-        });
-    }
-
-    @Override
-    public DhClientLevel getLevel(ILevelWrapper wrapper)
+		});
+	}
+	
+	@Override
+	public DhClientLevel getLevel(ILevelWrapper wrapper)
 	{
 		if (!(wrapper instanceof IClientLevelWrapper))
 		{
@@ -138,8 +138,8 @@ public class DhClientWorld extends AbstractDhWorld implements IDhClientWorld
 	{
 		this.levels.values().forEach(DhClientLevel::clientTick);
 	}
-
-    public void clientTick() { this.eventLoop.tick(); }
+	
+	public void clientTick() { this.eventLoop.tick(); }
 	
 	public void doWorldGen() {
 		this.levels.values().forEach(DhClientLevel::doWorldGen);
@@ -158,8 +158,8 @@ public class DhClientWorld extends AbstractDhWorld implements IDhClientWorld
 		{
 			this.networkState.close();
 		}
-  
-
+		
+		
 		this.saveAndFlush();
 		for (DhClientLevel dhClientLevel : this.levels.values())
 		{

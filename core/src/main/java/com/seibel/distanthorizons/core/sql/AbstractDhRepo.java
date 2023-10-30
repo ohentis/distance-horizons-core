@@ -265,10 +265,25 @@ public abstract class AbstractDhRepo<TDTO extends IBaseDTO>
 		}
 	}
 	
+	
+	
+	//=============//
+	// connections //
+	//=============//
+	
 	public Connection getConnection() { return this.connection; }
 	
-	
-	
+	public boolean isConnected() 
+	{
+		try
+		{
+			return this.connection != null && this.connection.isClosed();
+		}
+		catch (SQLException e)
+		{
+			return false;
+		}
+	}
 	
 	public void close()
 	{

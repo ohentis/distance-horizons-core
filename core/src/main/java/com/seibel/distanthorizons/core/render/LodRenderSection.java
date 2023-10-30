@@ -279,7 +279,7 @@ public class LodRenderSection implements IDebugRenderable
 	public boolean canSwapBuffer() { return this.buildRenderBufferFuture != null && this.buildRenderBufferFuture.isDone(); }
 	
 	
-	private void cancelBuildBuffer()
+	public synchronized void disposeRenderData() // synchronized is a band-aid solution to prevent a rare bug where the future isn't canceled in the right order
 	{
 		if (this.buildRenderBufferFuture != null)
 		{
@@ -287,24 +287,14 @@ public class LodRenderSection implements IDebugRenderable
 			this.buildRenderBufferFuture.cancel(true);
 			this.buildRenderBufferFuture = null;
 		}
-	}
-	
-	
-	public synchronized void disposeRenderData() // synchronized is a band-aid solution to prevent a rare bug where the future isn't canceled in the right order
-	{
-		this.disposeRenderBuffer();
+		this.disposeActiveBuffer = true;
+		
 		this.renderSource = null;
 		if (this.renderSourceLoadFuture != null)
 		{
 			this.renderSourceLoadFuture.cancel(true);
 			this.renderSourceLoadFuture = null;
 		}
-	}
-	
-	public void disposeRenderBuffer()
-	{
-		this.cancelBuildBuffer();
-		this.disposeActiveBuffer = true;
 	}
 	
 	
@@ -387,6 +377,7 @@ public class LodRenderSection implements IDebugRenderable
 				{
 					// the old buffer is now considered unloaded, it will need to be freshly re-loaded
 					oldBuffer.buffersUploaded = false;
+					oldBuffer.close();
 				}
 				ColumnRenderBuffer swapped = this.inactiveRenderBufferRef.swap(oldBuffer);
 				didSwapped = true;
@@ -431,9 +422,13 @@ public class LodRenderSection implements IDebugRenderable
 	{
 		this.disposeRenderData();
 		DebugRenderer.unregister(this, Config.Client.Advanced.Debugging.DebugWireframe.showRenderSectionStatus);
-		if (this.disposeActiveBuffer && this.activeRenderBufferRef.get() != null)
+		if (this.activeRenderBufferRef.get() != null)
 		{
 			this.activeRenderBufferRef.get().close();
+		}
+		if (this.inactiveRenderBufferRef.value != null)
+		{
+			this.inactiveRenderBufferRef.value.close();
 		}
 	}
 	

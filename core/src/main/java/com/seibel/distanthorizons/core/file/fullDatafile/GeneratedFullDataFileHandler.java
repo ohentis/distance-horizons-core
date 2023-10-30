@@ -47,6 +47,7 @@ import java.util.function.Function;
 public class GeneratedFullDataFileHandler extends FullDataFileHandler
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	private static final Timer CHUNK_GEN_FINISHED_TIMER = new Timer();
 	
 	protected final AtomicReference<IWorldGenerationQueue> worldGenQueueRef = new AtomicReference<>(null);
 	
@@ -281,12 +282,11 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandler
 			// FIXME this is a bad fix to prevent full data sources saving incomplete, causing holes in the world after generation.
 			//  The problem appears to be that the save may be happening too quickly,
 			//  potentially happening before the meta file has the newly generated data added to it.
-			new Thread(() -> 
+			CHUNK_GEN_FINISHED_TIMER.schedule(new TimerTask()
 			{
-				try{ Thread.sleep(4000); }catch (InterruptedException e){}
-				
-				this.flushAndSaveAsync(pos).join();
-			}).start();
+				@Override
+				public void run() { GeneratedFullDataFileHandler.this.flushAndSaveAsync(pos).join(); }
+			}, 4000L);
 			
 			this.fireOnGenPosSuccessListeners(pos);
 			return;

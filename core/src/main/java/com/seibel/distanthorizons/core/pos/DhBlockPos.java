@@ -69,22 +69,6 @@ public class DhBlockPos
 		this(pos.x, y, pos.z);
 	}
 	
-	@Deprecated
-	public int getX()
-	{
-		return x;
-	}
-	@Deprecated
-	public int getY()
-	{
-		return y;
-	}
-	@Deprecated
-	public int getZ()
-	{
-		return z;
-	}
-	
 	public static long asLong(int x, int y, int z)
 	{
 		if (DO_CHECKS)
@@ -197,7 +181,7 @@ public class DhBlockPos
 	 */
 	public int getManhattanDistance(DhBlockPos otherPos)
 	{
-		return Math.abs(this.getX() - otherPos.getX()) + Math.abs(this.getY() - otherPos.getY()) + Math.abs(this.getZ() - otherPos.getZ());
+		return Math.abs(this.x - otherPos.x) + Math.abs(this.y - otherPos.y) + Math.abs(this.z - otherPos.z);
 	}
 	
 	@Override
@@ -232,7 +216,7 @@ public class DhBlockPos
 			throw new IllegalArgumentException("Packed values don't match: " + packed + " != " + expected);
 		}
 		DhBlockPos pos = new DhBlockPos(packed);
-		if (pos.getX() != x || pos.getY() != y || pos.getZ() != z)
+		if (pos.x != x || pos.y != y || pos.z != z)
 		{
 			throw new IllegalArgumentException("Values after decode don't match: " + pos + " != " + x + ", " + y + ", " + z);
 		}

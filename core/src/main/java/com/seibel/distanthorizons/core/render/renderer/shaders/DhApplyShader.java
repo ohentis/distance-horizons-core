@@ -46,6 +46,9 @@ public class DhApplyShader extends AbstractShaderRenderer
 	public int tempDepthTextureId;
 	
 	
+	
+	private DhApplyShader() { }
+	
 	@Override
 	public void onInit()
 	{

@@ -20,6 +20,7 @@
 package com.seibel.distanthorizons.core.file.renderfile;
 
 import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
+import com.seibel.distanthorizons.core.file.fullDatafile.FullDataFileHandler;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
@@ -30,6 +31,7 @@ import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.sql.MetaDataDto;
 import com.seibel.distanthorizons.core.sql.RenderDataRepo;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
+import com.seibel.distanthorizons.core.util.threading.ThreadPools;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
@@ -43,7 +45,6 @@ public class RenderSourceFileHandler implements IRenderSourceProvider
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
-	private final ThreadPoolExecutor fileHandlerThreadPool;
 	private final F3Screen.NestedMessage threadPoolMsg;
 	
 	protected final ConcurrentHashMap<DhSectionPos, RenderDataMetaFile> loadedMetaFileBySectionPos = new ConcurrentHashMap<>();
@@ -75,7 +76,6 @@ public class RenderSourceFileHandler implements IRenderSourceProvider
 		{
 			LOGGER.warn("Unable to create render data folder, file saving may fail.");
 		}
-		this.fileHandlerThreadPool = ThreadUtil.makeSingleThreadPool("Render Source File Handler [" + this.clientLevel.getLevelWrapper().getDimensionType().getDimensionName() + "]");
 		
 		
 		this.threadPoolMsg = new F3Screen.NestedMessage(this::f3Log);
@@ -103,7 +103,8 @@ public class RenderSourceFileHandler implements IRenderSourceProvider
 	public CompletableFuture<ColumnRenderSource> readAsync(DhSectionPos pos)
 	{
 		// don't continue if the handler has been shut down
-		if (this.fileHandlerThreadPool.isTerminated())
+		ThreadPoolExecutor executor = ThreadPools.getFileHandlerExecutor();
+		if (executor.isTerminated())
 		{
 			return CompletableFuture.completedFuture(null);
 		}
@@ -117,7 +118,7 @@ public class RenderSourceFileHandler implements IRenderSourceProvider
 			return CompletableFuture.completedFuture(ColumnRenderSource.createEmptyRenderSource(pos));
 		}
 		
-		CompletableFuture<ColumnRenderSource> getDataSourceFuture = metaFile.getOrLoadCachedDataSourceAsync(this.fileHandlerThreadPool)
+		CompletableFuture<ColumnRenderSource> getDataSourceFuture = metaFile.getOrLoadCachedDataSourceAsync(executor)
 				.handle((renderSource, exception) ->
 				{
 					if (exception != null)
@@ -264,10 +265,12 @@ public class RenderSourceFileHandler implements IRenderSourceProvider
 	/** Returns what should be displayed in Minecraft's F3 debug menu */
 	private String[] f3Log()
 	{
+		ThreadPoolExecutor executor = ThreadPools.getFileHandlerExecutor();
+		
 		ArrayList<String> lines = new ArrayList<>();
 		lines.add("Render Source File Handler [" + this.clientLevel.getClientLevelWrapper().getDimensionType().getDimensionName() + "]");
 		lines.add("  Loaded files: " + this.loadedMetaFileBySectionPos.size());
-		lines.add("  Thread pool tasks: " + this.fileHandlerThreadPool.getQueue().size() + " (completed: " + this.fileHandlerThreadPool.getCompletedTaskCount() + ")");
+		lines.add("  Thread pool tasks: " + executor.getQueue().size() + " (completed: " + executor.getCompletedTaskCount() + ")");
 		
 		int totalFutures = this.taskTracker.size();
 		EnumMap<ETaskType, Integer> tasksOutstanding = new EnumMap<>(ETaskType.class);
@@ -311,7 +314,6 @@ public class RenderSourceFileHandler implements IRenderSourceProvider
 	public void close()
 	{
 		LOGGER.info("Closing " + this.getClass().getSimpleName() + " with [" + this.loadedMetaFileBySectionPos.size() + "] files...");
-		this.fileHandlerThreadPool.shutdown();
 		this.threadPoolMsg.close();
 		this.renderDataRepo.close();
 	}

@@ -24,6 +24,7 @@ import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 
 /**
  * Contains any shared code between Optifine for Forge (official Optifine)
@@ -122,6 +123,22 @@ public abstract class AbstractOptifineAccessor implements IOptifineAccessor
 		
 		// TODO
 		return 1.0;
+	}
+	
+	
+	public boolean getIsShaderActive()
+	{
+		try
+		{
+			// returns null if no shader, some string if shader active
+			// IE "(internal)", "SEUS-v10.1-Standard.zip"
+			String activeShaderName = (String) Class.forName("net.optifine.shaders.Shaders").getDeclaredMethod("getShaderPackName").invoke(null);
+			return activeShaderName != null;
+		}
+		catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InvocationTargetException e)
+		{
+			return false;
+		}
 	}
 	
 }
