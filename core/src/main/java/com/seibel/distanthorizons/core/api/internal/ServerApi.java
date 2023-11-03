@@ -101,8 +101,13 @@ public class ServerApi
 	{
 		LOGGER.debug("Server World " + SharedApi.getAbstractDhWorld() + " unloading");
 		
-		SharedApi.getAbstractDhWorld().close();
-		SharedApi.setDhWorld(null);
+		// shutdown the world if it isn't already
+		AbstractDhWorld dhWorld = SharedApi.getAbstractDhWorld();
+		if (dhWorld != null)
+		{
+			dhWorld.close();
+			SharedApi.setDhWorld(null);
+		}
 	}
 	
 	

@@ -75,10 +75,17 @@ public interface IMinecraftRenderWrapper extends IBindable
 	int getScreenWidth();
 	int getScreenHeight();
 	
+	/** @return -1 if no valid framebuffer is available yet */
 	int getTargetFrameBuffer();
 	int getDepthTextureId();
 	int getTargetFrameBufferViewportWidth();
 	int getTargetFrameBufferViewportHeight();
+	
+	/** 
+	 * generally shouldn't be needed, the frame buffer should generally stay the same 
+	 * but in case something goes wrong this allows for re-getting the buffer ID.
+	 */
+	void clearTargetFrameBuffer();
 	
 	/**
 	 * This method returns the ChunkPos of all chunks that Minecraft

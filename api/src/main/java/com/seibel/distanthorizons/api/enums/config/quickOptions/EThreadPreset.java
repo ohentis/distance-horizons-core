@@ -46,6 +46,6 @@ public enum EThreadPreset
 	AGGRESSIVE,
 	
 	// temporarily removed due to stability concerns
-	//I_PAID_FOR_THE_WHOLE_CPU;
+	I_PAID_FOR_THE_WHOLE_CPU,
 	
 }

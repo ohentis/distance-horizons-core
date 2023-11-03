@@ -231,6 +231,12 @@ public class LodRenderer
 			return;
 		}
 		
+		if (AbstractOptifineAccessor.optifinePresent() && MC_RENDER.getTargetFrameBuffer() == -1)
+		{
+			// wait for MC to finish setting up their renderer
+			return;
+		}
+		
 		if (!renderLock.tryLock())
 		{
 			// never lock the render thread, if the lock isn't available don't wait for it
@@ -298,8 +304,17 @@ public class LodRenderer
 			// Bind LOD frame buffer
 			this.framebuffer.bind();
 			
-			// Clear LOD framebuffer and depth buffers
-			GL32.glClear(GL32.GL_COLOR_BUFFER_BIT | GL32.GL_DEPTH_BUFFER_BIT);
+			
+			if (this.usingMcFrameBuffer)
+			{
+				// don't clear the color texture, that removes the sky 
+				GL32.glClear(GL32.GL_DEPTH_BUFFER_BIT);
+			}
+			else
+			{
+				GL32.glClear(GL32.GL_COLOR_BUFFER_BIT | GL32.GL_DEPTH_BUFFER_BIT);
+			}
+			
 			
 			GL32.glEnable(GL32.GL_DEPTH_TEST);
 			GL32.glDepthFunc(GL32.GL_LESS);
@@ -514,7 +529,7 @@ public class LodRenderer
 			if (AbstractOptifineAccessor.optifinePresent())
 			{
 				// use MC/Optifine's default FrameBuffer so shaders won't remove the LODs
-				int currentFrameBufferId = GL32.glGetInteger(GL32.GL_FRAMEBUFFER_BINDING);
+				int currentFrameBufferId = MC_RENDER.getTargetFrameBuffer();
 				this.framebuffer = new DhFramebuffer(currentFrameBufferId);
 				this.usingMcFrameBuffer = true;
 			}

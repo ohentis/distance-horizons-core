@@ -21,6 +21,7 @@ package com.seibel.distanthorizons.core.api.internal;
 
 import com.seibel.distanthorizons.core.Initializer;
 import com.seibel.distanthorizons.core.config.Config;
+import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.generation.DhLightingEngine;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
@@ -30,6 +31,7 @@ import com.seibel.distanthorizons.core.util.objects.Pair;
 import com.seibel.distanthorizons.core.util.threading.ThreadPools;
 import com.seibel.distanthorizons.core.world.*;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import org.apache.logging.log4j.Logger;
@@ -45,9 +47,10 @@ import java.util.concurrent.ThreadPoolExecutor;
 /** Contains code and variables used by both {@link ClientApi} and {@link ServerApi} */
 public class SharedApi
 {
-	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	public static final SharedApi INSTANCE = new SharedApi();
 	
+	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	private static final IMinecraftRenderWrapper MC_RENDER = SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
 	private static final Set<DhChunkPos> UPDATING_CHUNK_SET = ConcurrentHashMap.newKeySet();
 	
 	
@@ -88,6 +91,7 @@ public class SharedApi
 		{
 			ThreadPools.shutdownThreadPools();
 			DebugRenderer.clearRenderables();
+			MC_RENDER.clearTargetFrameBuffer();
 			
 			// recommend that the garbage collector cleans up any objects from the old world and thread pools
 			System.gc();

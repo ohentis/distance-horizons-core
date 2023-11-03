@@ -22,7 +22,7 @@ package com.seibel.distanthorizons.core.jar.updater;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.jar.JarUtils;
-import com.seibel.distanthorizons.core.jar.ModGitInfo;
+import com.seibel.distanthorizons.core.jar.ModJarInfo;
 import com.seibel.distanthorizons.core.jar.installer.GitlabGetter;
 import com.seibel.distanthorizons.core.jar.installer.ModrinthGetter;
 import com.seibel.distanthorizons.core.jar.installer.WebDownloader;
@@ -126,7 +126,7 @@ public class SelfUpdater
 			return false;
 		com.electronwill.nightconfig.core.Config pipeline = GitlabGetter.INSTANCE.projectPipelines.get(0);
 		
-		if (!pipeline.get("ref").equals(ModGitInfo.Git_Main_Branch))
+		if (!pipeline.get("ref").equals(ModJarInfo.Git_Branch))
 		{
 			//LOGGER.warn("Latest pipeline was found for branch ["+ pipeline.get("ref") +"], but we are on branch ["+ ModGitInfo.Git_Main_Branch +"].");
 			return false;
@@ -134,7 +134,7 @@ public class SelfUpdater
 		
 		if (!pipeline.get("status").equals("success"))
 		{
-			LOGGER.warn("Pipeline for branch ["+ ModGitInfo.Git_Main_Branch +"], commit ["+ pipeline.get("id") +"], has either failed to build, or still building.");
+			LOGGER.warn("Pipeline for branch ["+ ModJarInfo.Git_Branch +"], commit ["+ pipeline.get("id") +"], has either failed to build, or still building.");
 			return false;
 		}
 		
@@ -146,7 +146,7 @@ public class SelfUpdater
 		
 		String latestCommit = pipeline.get("sha");
 		
-		if (ModGitInfo.Git_Main_Commit.equals(latestCommit)) // If we are already on the latest commit, then dont update
+		if (ModJarInfo.Git_Commit.equals(latestCommit)) // If we are already on the latest commit, then dont update
 			return false;
 		
 		

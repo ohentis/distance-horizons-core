@@ -82,20 +82,26 @@ public class FullDataPointIdMap
 	
 	private Entry getEntry(int id)
 	{
-		this.readWriteLock.readLock().lock();
-		Entry entry;
 		try
 		{
-			entry = this.entryList.get(id);
+			this.readWriteLock.readLock().lock();
+			Entry entry;
+			try
+			{
+				entry = this.entryList.get(id);
+			}
+			catch (IndexOutOfBoundsException e)
+			{
+				LOGGER.error("FullData ID Map out of sync for pos: " + this.pos + ". ID: [" + id + "] greater than the number of known ID's: [" + this.entryList.size() + "].");
+				throw e;
+			}
+			
+			return entry;
 		}
-		catch (IndexOutOfBoundsException e)
+		finally
 		{
-			LOGGER.error("FullData ID Map out of sync for pos: " + this.pos + ". ID: [" + id + "] greater than the number of known ID's: [" + this.entryList.size() + "].");
-			throw e;
+			this.readWriteLock.readLock().unlock();
 		}
-		
-		this.readWriteLock.readLock().unlock();
-		return entry;
 	}
 	
 	public IBiomeWrapper getBiomeWrapper(int id) { return this.getEntry(id).biome; }
@@ -115,33 +121,37 @@ public class FullDataPointIdMap
 	/** @param useWriteLocks should only be false if this method is already in a write lock to prevent unlocking at the wrong time */
 	private int addIfNotPresentAndGetId(Entry biomeBlockStateEntry, boolean useWriteLocks)
 	{
-		if (useWriteLocks)
+		try
 		{
-			this.readWriteLock.writeLock().lock();
+			if (useWriteLocks)
+			{
+				this.readWriteLock.writeLock().lock();
+			}
+			
+			
+			int id;
+			if (this.idMap.containsKey(biomeBlockStateEntry))
+			{
+				// use the existing ID
+				id = this.idMap.get(biomeBlockStateEntry);
+			}
+			else
+			{
+				// Add the new ID
+				id = this.entryList.size();
+				this.entryList.add(biomeBlockStateEntry);
+				this.idMap.put(biomeBlockStateEntry, id);
+			}
+			
+			return id;
 		}
-		
-		
-		int id;
-		if (this.idMap.containsKey(biomeBlockStateEntry))
+		finally
 		{
-			// use the existing ID
-			id = this.idMap.get(biomeBlockStateEntry);
+			if (useWriteLocks)
+			{
+				this.readWriteLock.writeLock().unlock();
+			}
 		}
-		else
-		{
-			// Add the new ID
-			id = this.entryList.size();
-			this.entryList.add(biomeBlockStateEntry);
-			this.idMap.put(biomeBlockStateEntry, id);
-		}
-		
-		
-		if (useWriteLocks)
-		{
-			this.readWriteLock.writeLock().unlock();
-		}
-		
-		return id;
 	}
 	
 	
@@ -152,26 +162,31 @@ public class FullDataPointIdMap
 	 */
 	public int[] mergeAndReturnRemappedEntityIds(FullDataPointIdMap target)
 	{
-		LOGGER.trace("merging {" + this.pos + ", " + this.entryList.size() + "} and {" + target.pos + ", " + target.entryList.size() + "}");
-		
-		target.readWriteLock.readLock().lock();
-		this.readWriteLock.writeLock().lock();
-		
-		ArrayList<Entry> entriesToMerge = target.entryList;
-		int[] remappedEntryIds = new int[entriesToMerge.size()];
-		for (int i = 0; i < entriesToMerge.size(); i++)
+		try
 		{
-			Entry entity = entriesToMerge.get(i);
-			int id = this.addIfNotPresentAndGetId(entity, false);
-			remappedEntryIds[i] = id;
+			LOGGER.trace("merging {" + this.pos + ", " + this.entryList.size() + "} and {" + target.pos + ", " + target.entryList.size() + "}");
+			
+			target.readWriteLock.readLock().lock();
+			this.readWriteLock.writeLock().lock();
+			
+			ArrayList<Entry> entriesToMerge = target.entryList;
+			int[] remappedEntryIds = new int[entriesToMerge.size()];
+			for (int i = 0; i < entriesToMerge.size(); i++)
+			{
+				Entry entity = entriesToMerge.get(i);
+				int id = this.addIfNotPresentAndGetId(entity, false);
+				remappedEntryIds[i] = id;
+			}
+			
+			return remappedEntryIds;
 		}
-		
-		this.readWriteLock.writeLock().unlock();
-		target.readWriteLock.readLock().unlock();
-		
-		LOGGER.trace("finished merging {" + this.pos + ", " + this.entryList.size() + "} and {" + target.pos + ", " + target.entryList.size() + "}");
-		
-		return remappedEntryIds;
+		finally
+		{
+			this.readWriteLock.writeLock().unlock();
+			target.readWriteLock.readLock().unlock();
+			
+			LOGGER.trace("finished merging {" + this.pos + ", " + this.entryList.size() + "} and {" + target.pos + ", " + target.entryList.size() + "}");
+		}
 	}
 	
 	/** Should only be used if this map is going to be reused, otherwise bad things will happen. */
@@ -191,33 +206,38 @@ public class FullDataPointIdMap
 	/** Serializes all contained entries into the given stream, formatted in UTF */
 	public void serialize(DhDataOutputStream outputStream) throws IOException
 	{
-		this.readWriteLock.readLock().lock();
-		outputStream.writeInt(this.entryList.size());
-		
-		// only used when debugging
-		HashMap<String, FullDataPointIdMap.Entry> dataPointEntryBySerialization = new HashMap<>();
-		
-		for (Entry entry : this.entryList)
+		try
 		{
-			String entryString = entry.serialize();
-			outputStream.writeUTF(entryString);
+			this.readWriteLock.readLock().lock();
+			outputStream.writeInt(this.entryList.size());
 			
-			if (RUN_SERIALIZATION_DUPLICATE_VALIDATION)
+			// only used when debugging
+			HashMap<String, FullDataPointIdMap.Entry> dataPointEntryBySerialization = new HashMap<>();
+			
+			for (Entry entry : this.entryList)
 			{
-				if (dataPointEntryBySerialization.containsKey(entryString))
+				String entryString = entry.serialize();
+				outputStream.writeUTF(entryString);
+				
+				if (RUN_SERIALIZATION_DUPLICATE_VALIDATION)
 				{
-					LOGGER.error("Duplicate serialized entry found with serial: " + entryString);
+					if (dataPointEntryBySerialization.containsKey(entryString))
+					{
+						LOGGER.error("Duplicate serialized entry found with serial: " + entryString);
+					}
+					if (dataPointEntryBySerialization.containsValue(entry))
+					{
+						LOGGER.error("Duplicate serialized entry found with value: " + entry.serialize());
+					}
+					dataPointEntryBySerialization.put(entryString, entry);
 				}
-				if (dataPointEntryBySerialization.containsValue(entry))
-				{
-					LOGGER.error("Duplicate serialized entry found with value: " + entry.serialize());
-				}
-				dataPointEntryBySerialization.put(entryString, entry);
 			}
 		}
-		this.readWriteLock.readLock().unlock();
-		
-		LOGGER.trace("serialize " + this.pos + " " + this.entryList.size());
+		finally
+		{
+			this.readWriteLock.readLock().unlock();
+			LOGGER.trace("serialize " + this.pos + " " + this.entryList.size());
+		}
 	}
 	
 	/** Creates a new IdBiomeBlockStateMap from the given UTF formatted stream */
