@@ -79,6 +79,7 @@ public class SharedApi
 	
 	public static void setDhWorld(AbstractDhWorld newWorld)
 	{
+		AbstractDhWorld prevWorld = currentWorld;
 		currentWorld = newWorld;
 		
 		// starting and stopping the DataRenderTransformer is necessary to prevent attempting to
@@ -90,8 +91,12 @@ public class SharedApi
 		else
 		{
 			ThreadPools.shutdownThreadPools();
-			DebugRenderer.clearRenderables();
-			MC_RENDER.clearTargetFrameBuffer();
+			
+			if (prevWorld != null && prevWorld.environment != EWorldEnvironment.Server_Only)
+			{
+				DebugRenderer.clearRenderables();
+				MC_RENDER.clearTargetFrameBuffer();
+			}
 			
 			// recommend that the garbage collector cleans up any objects from the old world and thread pools
 			System.gc();
