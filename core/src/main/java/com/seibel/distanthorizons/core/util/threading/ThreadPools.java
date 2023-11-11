@@ -75,7 +75,7 @@ public class ThreadPools
 	
 	
 	/** how many total worker threads can be used */
-	private static int workerThreadSemaphoreCount = 0;
+	private static int workerThreadSemaphoreCount = Config.Client.Advanced.MultiThreading.numberOfLodBuilderThreads.get();
 	public static int getWorkerThreadCount() { return workerThreadSemaphoreCount; }
 	
 	private static Semaphore workerThreadSemaphore = null;
@@ -141,9 +141,12 @@ public class ThreadPools
 		ThreadPools.bufferBuilderThreadPool.shutdownExecutorService();
 		
 		workerThreadSemaphore = null;
-		workerThreadSemaphoreConfigListener.close();
-		workerThreadSemaphoreConfigListener = null;
 		
+		if (workerThreadSemaphoreConfigListener != null)
+		{
+			workerThreadSemaphoreConfigListener.close();
+			workerThreadSemaphoreConfigListener = null;
+		}
 	}
 	
 }

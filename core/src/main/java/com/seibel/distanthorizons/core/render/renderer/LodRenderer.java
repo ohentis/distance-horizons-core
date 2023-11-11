@@ -619,7 +619,7 @@ public class LodRenderer
 		if (GLProxy.getInstance() == null)
 		{
 			// shouldn't normally happen, but just in case
-			EVENT_LOGGER.warn("Renderer Cleanup called but the GLProxy has never been initalized!");
+			EVENT_LOGGER.warn("Renderer Cleanup called but the GLProxy has never been initialized!");
 			return;
 		}
 		

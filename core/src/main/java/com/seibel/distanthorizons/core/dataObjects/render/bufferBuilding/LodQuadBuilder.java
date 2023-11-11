@@ -214,7 +214,7 @@ public class LodQuadBuilder
 	// add vertices //
 	//==============//
 	
-	private static void putQuad(ByteBuffer bb, BufferQuad quad)
+	private void putQuad(ByteBuffer bb, BufferQuad quad)
 	{
 		int[][] quadBase = DIRECTION_VERTEX_IBO_QUAD[quad.direction.ordinal()];
 		short widthEastWest = quad.widthEastWest;
@@ -261,7 +261,7 @@ public class LodQuadBuilder
 		}
 	}
 	
-	private static void putVertex(ByteBuffer bb, short x, short y, short z, int color, byte skylight, byte blocklight, int mx, int my, int mz)
+	private void putVertex(ByteBuffer bb, short x, short y, short z, int color, byte skylight, byte blocklight, int mx, int my, int mz)
 	{
 		skylight %= 16;
 		blocklight %= 16;
@@ -287,7 +287,7 @@ public class LodQuadBuilder
 		byte r = (byte) ColorUtil.getRed(color);
 		byte g = (byte) ColorUtil.getGreen(color);
 		byte b = (byte) ColorUtil.getBlue(color);
-		byte a = (byte) ColorUtil.getAlpha(color);
+		byte a = this.doTransparency ? (byte) ColorUtil.getAlpha(color) : (byte) 255; // TODO should this be called here or happen somewhere else?
 		bb.put(r);
 		bb.put(g);
 		bb.put(b);

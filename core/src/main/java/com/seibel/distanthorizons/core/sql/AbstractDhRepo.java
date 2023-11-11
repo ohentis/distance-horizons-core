@@ -126,6 +126,9 @@ public abstract class AbstractDhRepo<TDTO extends IBaseDTO>
 		{
 			this.query(statement);
 		}
+		catch (DbConnectionClosedException ignored)
+		{
+		}
 		catch (SQLException e)
 		{
 			String message = "Unexpected insert statement error: ["+e.getMessage()+"].";
@@ -138,6 +141,9 @@ public abstract class AbstractDhRepo<TDTO extends IBaseDTO>
 		try(PreparedStatement statement = this.createUpdateStatement(dto))
 		{
 			this.query(statement);
+		}
+		catch (DbConnectionClosedException ignored)
+		{
 		}
 		catch (SQLException e)
 		{
@@ -172,17 +178,34 @@ public abstract class AbstractDhRepo<TDTO extends IBaseDTO>
 	// low level DB //
 	//==============//
 	
-	public List<Map<String, Object>> queryDictionary(String sql) { return this.query(sql); }
+	public List<Map<String, Object>> queryDictionary(String sql)
+	{
+		try
+		{
+			return this.query(sql);
+		}
+		catch (DbConnectionClosedException e)
+		{
+			return new ArrayList<>();
+		}
+	}
 	@Nullable
 	public Map<String, Object> queryDictionaryFirst(String sql) 
 	{
-		List<Map<String, Object>> objectList = this.query(sql);
-		return !objectList.isEmpty() ? objectList.get(0) : null;
+		try
+		{
+			List<Map<String, Object>> objectList = this.query(sql);
+			return !objectList.isEmpty() ? objectList.get(0) : null;
+		}
+		catch (DbConnectionClosedException e)
+		{
+			return null;
+		}
 	}
 	
 	
 	/** note: this can only handle 1 command at a time */
-	private List<Map<String, Object>> query(PreparedStatement statement) throws RuntimeException
+	private List<Map<String, Object>> query(PreparedStatement statement) throws RuntimeException, DbConnectionClosedException
 	{
 		try
 		{
@@ -200,13 +223,16 @@ public abstract class AbstractDhRepo<TDTO extends IBaseDTO>
 			// SQL exceptions generally only happen when something is wrong with 
 			// the database or the query and should cause the system to blow up to notify the developer
 			
+			if (e.toString().equals("database connection closed"))
+				throw new DbConnectionClosedException(e);
+			
 			String message = "Unexpected Query error: ["+e.getMessage()+"], for prepared statement: ["+statement+"].";
 			LOGGER.error(message);
 			throw new RuntimeException(message, e);
 		}
 	}
 	/** note: this can only handle 1 command at a time */
-	private List<Map<String, Object>> query(String sql) throws RuntimeException
+	private List<Map<String, Object>> query(String sql) throws RuntimeException, DbConnectionClosedException
 	{
 		try (Statement statement = this.connection.createStatement())
 		{
@@ -223,6 +249,9 @@ public abstract class AbstractDhRepo<TDTO extends IBaseDTO>
 		{
 			// SQL exceptions generally only happen when something is wrong with 
 			// the database or the query and should cause the system to blow up to notify the developer
+			
+			if (e.toString().equals("database connection closed"))
+				throw new DbConnectionClosedException(e);
 			
 			String message = "Unexpected Query error: ["+e.getMessage()+"], for script: ["+sql+"].";
 			LOGGER.error(message);

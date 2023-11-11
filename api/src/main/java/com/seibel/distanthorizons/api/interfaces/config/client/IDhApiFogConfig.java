@@ -40,6 +40,20 @@ import com.seibel.distanthorizons.api.interfaces.config.IDhApiConfigValue;
 public interface IDhApiFogConfig extends IDhApiConfigGroup
 {
 	
+	//===============//
+	// inner configs //
+	//===============//
+	
+	/**
+	 * The advanced fog config.
+	 */
+	IDhApiFarFogConfig farFog();
+	
+	/**
+	 * The height fog config.
+	 */
+	IDhApiHeightFogConfig heightFog();
+	
 	//====================//
 	// basic fog settings //
 	//====================//

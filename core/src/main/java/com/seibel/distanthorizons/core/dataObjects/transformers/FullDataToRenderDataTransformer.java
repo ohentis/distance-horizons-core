@@ -21,7 +21,6 @@ package com.seibel.distanthorizons.core.dataObjects.transformers;
 
 import com.seibel.distanthorizons.api.enums.config.EBlocksToAvoid;
 import com.seibel.distanthorizons.core.config.Config;
-import com.seibel.distanthorizons.core.config.listeners.ConfigChangeListener;
 import com.seibel.distanthorizons.core.dataObjects.fullData.FullDataPointIdMap;
 import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
 import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.SingleColumnFullDataAccessor;
@@ -29,7 +28,6 @@ import com.seibel.distanthorizons.core.dataObjects.fullData.sources.CompleteFull
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IFullDataSource;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IIncompleteFullDataSource;
 import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSource;
-import com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.ColumnRenderBufferBuilder;
 import com.seibel.distanthorizons.core.dataObjects.render.columnViews.ColumnArrayView;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.level.IDhClientLevel;
@@ -39,7 +37,6 @@ import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.util.FullDataPointUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.RenderDataPointUtil;
-import com.seibel.distanthorizons.core.util.ThreadUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.IWrapperFactory;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
@@ -47,8 +44,6 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
 import org.apache.logging.log4j.Logger;
 
 import java.util.HashSet;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
 
 /**
  * Handles converting {@link ChunkSizedFullDataAccessor}, {@link IIncompleteFullDataSource},
@@ -230,6 +225,8 @@ public class FullDataToRenderDataTransformer
 		}
 	}
 	
+	private static HashSet<DhSectionPos> brokenPos = new HashSet<>();
+	
 	
 	// TODO what does this mean?
 	private static void iterateAndConvert(IDhClientLevel level, int blockX, int blockZ, int genMode, ColumnArrayView column, SingleColumnFullDataAccessor data)
@@ -252,8 +249,28 @@ public class FullDataToRenderDataTransformer
 			int blockHeight = FullDataPointUtil.getHeight(fullData);
 			int id = FullDataPointUtil.getId(fullData);
 			int light = FullDataPointUtil.getLight(fullData);
-			IBiomeWrapper biome = fullDataMapping.getBiomeWrapper(id);
-			IBlockStateWrapper block = fullDataMapping.getBlockStateWrapper(id);
+			
+			IBiomeWrapper biome;
+			IBlockStateWrapper block;
+			try
+			{
+				biome = fullDataMapping.getBiomeWrapper(id);
+				block = fullDataMapping.getBlockStateWrapper(id);
+			}
+			catch (IndexOutOfBoundsException e)
+			{
+				// FIXME sometimes the data map has a length of 0
+				if (!brokenPos.contains(fullDataMapping.getPos()))
+				{
+					brokenPos.add(fullDataMapping.getPos());
+					String dimName = level.getLevelWrapper().getDimensionType().getDimensionName();
+					LOGGER.warn("Unable to get data point with id ["+id+"] (Max possible ID: ["+fullDataMapping.getMaxValidId()+"]) for pos ["+fullDataMapping.getPos()+"] in dimension ["+dimName+"]. Error: ["+e.getMessage()+"]. Further errors for this position won't be logged.");
+				}
+				
+				// skip rendering broken data
+				continue;
+			}
+			
 			
 			if (blockStatesToIgnore.contains(block))
 			{

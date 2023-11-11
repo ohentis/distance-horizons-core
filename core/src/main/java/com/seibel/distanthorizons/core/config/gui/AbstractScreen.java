@@ -51,8 +51,8 @@ public abstract class AbstractScreen
 	
 	/** Called every time the window gets re-sized */
 	public void onResize() { }
-	;
-	/** What happens when the user closes the screen */
+
+    /** What happens when the user closes the screen */
 	public void onClose() { }
 	
 	// ---------- Random stuff that might be needed later on ---------- //

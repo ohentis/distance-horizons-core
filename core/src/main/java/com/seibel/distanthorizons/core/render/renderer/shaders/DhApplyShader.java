@@ -41,10 +41,6 @@ public class DhApplyShader extends AbstractShaderRenderer
 	public int gDhColorTextureUniform;
 	public int gDepthMapUniform;
 	
-	public int tempFramebufferId;
-	public int tempColorTextureId;
-	public int tempDepthTextureId;
-	
 	
 	
 	private DhApplyShader() { }
@@ -62,28 +58,26 @@ public class DhApplyShader extends AbstractShaderRenderer
 		this.gDhColorTextureUniform = this.shader.getUniformLocation("gDhColorTexture");
 		this.gDepthMapUniform = this.shader.getUniformLocation("gDhDepthTexture");
 		
-		this.tempFramebufferId = GL32.glGenFramebuffers();
-		this.tempColorTextureId = GL32.glGenTextures();
-		this.tempDepthTextureId = GL32.glGenTextures();
-		
 	}
 	
 	@Override
-	protected void onApplyUniforms(float partialTicks)
-	{
-		
-	}
+	protected void onApplyUniforms(float partialTicks) { }
 	
 	
 	//========//
 	// render //
 	//========//
 	
-	private boolean texturesCreated = false;
-	
 	@Override
 	protected void onRender()
 	{
+		int targetFrameBuffer = MC_RENDER.getTargetFrameBuffer();
+		if (targetFrameBuffer == -1)
+		{
+			return;
+		}
+		
+		
 		GL32.glDisable(GL32.GL_DEPTH_TEST);
 		
 		GL32.glEnable(GL32.GL_BLEND);
@@ -99,8 +93,9 @@ public class DhApplyShader extends AbstractShaderRenderer
 		GL32.glUniform1i(this.gDepthMapUniform, 1);
 		
 		// Copy to MC's framebuffer
-		GL32.glBindFramebuffer(GL32.GL_FRAMEBUFFER, MC_RENDER.getTargetFrameBuffer());
+		GL32.glBindFramebuffer(GL32.GL_FRAMEBUFFER, targetFrameBuffer);
 		
 		ScreenQuad.INSTANCE.render();
 	}
+	
 }

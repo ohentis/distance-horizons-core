@@ -39,7 +39,7 @@ import static org.lwjgl.system.macosx.ObjCRuntime.*;
 // which is licensed under https://www.lwjgl.org/license
 
 /**
- * Some utils for embeding awt and swing items into lwjgl windows
+ * Some utils for embedding awt and swing items into lwjgl windows
  *
  * @author Ran
  * @author coolGi

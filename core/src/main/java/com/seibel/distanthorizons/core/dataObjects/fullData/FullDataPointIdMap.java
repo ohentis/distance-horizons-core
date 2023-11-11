@@ -80,7 +80,8 @@ public class FullDataPointIdMap
 	// getters //
 	//=========//
 	
-	private Entry getEntry(int id)
+	/** @throws IndexOutOfBoundsException if the given ID isn't in the {@link FullDataPointIdMap#entryList} */
+	private Entry getEntry(int id) throws IndexOutOfBoundsException
 	{
 		try
 		{
@@ -92,8 +93,7 @@ public class FullDataPointIdMap
 			}
 			catch (IndexOutOfBoundsException e)
 			{
-				LOGGER.error("FullData ID Map out of sync for pos: " + this.pos + ". ID: [" + id + "] greater than the number of known ID's: [" + this.entryList.size() + "].");
-				throw e;
+				throw new IndexOutOfBoundsException("FullData ID Map out of sync for pos: "+this.pos+". ID: ["+id+"] greater than the number of known ID's: ["+this.entryList.size()+"].");
 			}
 			
 			return entry;
@@ -104,8 +104,16 @@ public class FullDataPointIdMap
 		}
 	}
 	
-	public IBiomeWrapper getBiomeWrapper(int id) { return this.getEntry(id).biome; }
-	public IBlockStateWrapper getBlockStateWrapper(int id) { return this.getEntry(id).blockState; }
+	/** @see FullDataPointIdMap#getEntry(int) */
+	public IBiomeWrapper getBiomeWrapper(int id) throws IndexOutOfBoundsException { return this.getEntry(id).biome; }
+	/** @see FullDataPointIdMap#getEntry(int) */
+	public IBlockStateWrapper getBlockStateWrapper(int id) throws IndexOutOfBoundsException { return this.getEntry(id).blockState; }
+	
+	
+	/** @return -1 if the list is empty */
+	public int getMaxValidId() { return this.entryList.size() - 1; }
+	
+	public DhSectionPos getPos() { return this.pos; }
 	
 	
 	

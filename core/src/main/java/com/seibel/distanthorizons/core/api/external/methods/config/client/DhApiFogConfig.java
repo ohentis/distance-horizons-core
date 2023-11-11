@@ -41,7 +41,9 @@ public class DhApiFogConfig implements IDhApiFogConfig
 	// inner configs //
 	//===============//
 	
+	@Override
 	public IDhApiFarFogConfig farFog() { return DhApiFarFogConfig.INSTANCE; }
+	@Override
 	public IDhApiHeightFogConfig heightFog() { return DhApiHeightFogConfig.INSTANCE; }
 	
 	

@@ -23,6 +23,8 @@ import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 
 /**
  *
@@ -51,6 +53,23 @@ public class JavaScreenHandlerScreen extends AbstractScreen
 			frame = EmbeddedFrameUtil.embeddedFrameCreate(this.minecraftWindow); // Don't call this multiple times
 		
 		frame.add(jComponent);
+		
+		JavaScreenHandlerScreen thiss = this;
+		
+		frame.addKeyListener(new KeyListener() {
+			@Override
+			public void keyPressed(KeyEvent keyEvent)
+			{
+				System.out.println("Key pressed code=" + keyEvent.getKeyCode() + ", char=" + keyEvent.getKeyChar());
+				if (keyEvent.getKeyCode() == KeyEvent.VK_ESCAPE)
+					thiss.close = true;
+			}
+			
+			@Override
+			public void keyTyped(KeyEvent keyEvent) { }
+			@Override
+			public void keyReleased(KeyEvent keyEvent) { }
+		});
 		
 		if (firstRun)
 		{

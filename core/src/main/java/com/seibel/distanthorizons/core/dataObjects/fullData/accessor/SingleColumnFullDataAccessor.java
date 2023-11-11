@@ -143,7 +143,8 @@ public class SingleColumnFullDataAccessor implements IFullDataAccessor
 		{
 			int[] remappedEntryIds = target.mapping.mergeAndReturnRemappedEntityIds(this.mapping);
 			long[] sourceData = this.dataArrays[this.dataArrayIndex];
-			if (sourceData != null)
+			// FIXME sourceData.length != 0 may not be a good solution and may end up breaking issues down the line, but fixes exceptions being fired here
+			if (sourceData != null && sourceData.length != 0)
 			{
 				long[] newData = new long[sourceData.length];
 				for (int i = 0; i < newData.length; i++)
