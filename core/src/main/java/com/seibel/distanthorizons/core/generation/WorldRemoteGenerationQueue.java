@@ -51,6 +51,8 @@ public class WorldRemoteGenerationQueue implements IWorldGenerationQueue, IDebug
 	private final AtomicInteger finishedRequests = new AtomicInteger();
 	private final AtomicInteger failedRequests = new AtomicInteger();
 	
+	private final Set<DhSectionPos> alreadyGeneratedPosHashSet = ConcurrentHashMap.newKeySet();
+	
 	public WorldRemoteGenerationQueue(ClientNetworkState networkState, IDhClientLevel level)
 	{
 		this.networkState = networkState;
@@ -74,6 +76,15 @@ public class WorldRemoteGenerationQueue implements IWorldGenerationQueue, IDebug
 	public CompletableFuture<WorldGenResult> submitGenTask(DhSectionPos sectionPos, byte requiredDataDetail, IWorldGenTaskTracker tracker)
 	{
 		LodUtil.assertTrue(sectionPos.getDetailLevel() == DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL, "Only highest-detail sections are allowed.");
+		
+		// check if this is a duplicate generation task
+		if (this.alreadyGeneratedPosHashSet.contains(sectionPos))
+		{
+			// temporary solution to prevent generating the same section multiple times
+			LOGGER.trace("Duplicate generation section " + sectionPos + ". Skipping...");
+			return CompletableFuture.completedFuture(WorldGenResult.CreateFail());
+		}
+		this.alreadyGeneratedPosHashSet.add(sectionPos);
 		
 		WorldGenQueueEntry entry = new WorldGenQueueEntry(new CompletableFuture<>(), tracker);
 		waitingTasks.put(sectionPos, entry);
@@ -149,6 +160,7 @@ public class WorldRemoteGenerationQueue implements IWorldGenerationQueue, IDebug
 				entry.future.cancel(false);
 				if (entry.request != null)
 					entry.request.cancel(false);
+				alreadyGeneratedPosHashSet.remove(pos);
 			}
 		}
 	}
