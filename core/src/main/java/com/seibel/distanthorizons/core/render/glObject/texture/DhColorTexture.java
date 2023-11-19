@@ -16,7 +16,8 @@ public class DhColorTexture
 	private int height;
 
 	private boolean isValid;
-	private final int texture;
+	/** AKA, the OpenGL name of this texture */
+	private final int id;
 
 	private static final ByteBuffer NULL_BUFFER = null;
 	
@@ -37,10 +38,10 @@ public class DhColorTexture
 		this.width = builder.width;
 		this.height = builder.height;
 		
-		this.texture = GL43C.glGenTextures();
+		this.id = GL43C.glGenTextures();
 		
 		boolean isPixelFormatInteger = builder.internalFormat.getPixelFormat().isInteger();
-		setupTexture(texture, builder.width, builder.height, !isPixelFormatInteger);
+		this.setupTexture(this.id, builder.width, builder.height, !isPixelFormatInteger);
 		
 		// Clean up after ourselves
 		// This is strictly defensive to ensure that other buggy code doesn't tamper with our textures
@@ -53,9 +54,9 @@ public class DhColorTexture
 	// methods //
 	//=========//
 	
-	private void setupTexture(int texture, int width, int height, boolean allowsLinear)
+	private void setupTexture(int id, int width, int height, boolean allowsLinear)
 	{
-		resizeTexture(texture, width, height);
+		this.resizeTexture(id, width, height);
 		
 		GL43C.glTexParameteri(GL11C.GL_TEXTURE_2D, GL11C.GL_TEXTURE_MIN_FILTER, allowsLinear ? GL11C.GL_LINEAR : GL11C.GL_NEAREST);
 		GL43C.glTexParameteri(GL11C.GL_TEXTURE_2D, GL11C.GL_TEXTURE_MAG_FILTER, allowsLinear ? GL11C.GL_LINEAR : GL11C.GL_NEAREST);
@@ -66,7 +67,7 @@ public class DhColorTexture
 	private void resizeTexture(int texture, int width, int height)
 	{
 		GL43C.glBindTexture(GL43C.GL_TEXTURE_2D, texture);
-		GL43C.glTexImage2D(GL11C.GL_TEXTURE_2D, 0, internalFormat.getGlFormat(), width, height, 0, format.getGlFormat(), type.getGlFormat(), NULL_BUFFER);
+		GL43C.glTexImage2D(GL11C.GL_TEXTURE_2D, 0, this.internalFormat.getGlFormat(), width, height, 0, this.format.getGlFormat(), this.type.getGlFormat(), NULL_BUFFER);
 	}
 	
 	void resize(Vector2i textureScaleOverride) { this.resize(textureScaleOverride.x, textureScaleOverride.y); }
@@ -74,38 +75,38 @@ public class DhColorTexture
 	// Package private, call CompositeRenderTargets#resizeIfNeeded instead.
 	public void resize(int width, int height)
 	{
-		requireValid();
+		this.throwIfInvalid();
 		
 		this.width = width;
 		this.height = height;
 		
-		resizeTexture(texture, width, height);
+		this.resizeTexture(this.id, width, height);
 	}
 	
-	public EDhInternalTextureFormat getInternalFormat() { return internalFormat; }
+	public EDhInternalTextureFormat getInternalFormat() { return this.internalFormat; }
 	
-	public int getTexture()
+	public int getTextureId()
 	{
-		requireValid();
-		
-		return texture;
+		this.throwIfInvalid();
+		return this.id;
 	}
 	
-	public int getWidth() { return width; }
+	public int getWidth() { return this.width; }
 	
-	public int getHeight() { return height; }
+	public int getHeight() { return this.height; }
 	
 	public void destroy()
 	{
-		requireValid();
-		isValid = false;
+		this.throwIfInvalid();
+		this.isValid = false;
 		
-		GL43C.glDeleteTextures(texture);
+		GL43C.glDeleteTextures(this.id);
 	}
 	
-	private void requireValid()
+	/** @throws IllegalStateException if the texture isn't valid */
+	private void throwIfInvalid()
 	{
-		if (!isValid)
+		if (!this.isValid)
 		{
 			throw new IllegalStateException("Attempted to use a deleted composite render target");
 		}

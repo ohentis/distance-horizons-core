@@ -2,8 +2,7 @@ package com.seibel.distanthorizons.core.render.glObject.texture;
 
 import it.unimi.dsi.fastutil.ints.Int2IntArrayMap;
 import it.unimi.dsi.fastutil.ints.Int2IntMap;
-import org.lwjgl.opengl.GL30C;
-import org.lwjgl.opengl.GL43C;
+import org.lwjgl.opengl.GL32;
 
 // TODO lowercase
 public class DhFramebuffer
@@ -22,11 +21,11 @@ public class DhFramebuffer
 	
 	public DhFramebuffer() 
 	{
-		this.id = GL43C.glGenFramebuffers();
+		this.id = GL32.glGenFramebuffers();
 
 		this.attachments = new Int2IntArrayMap();
-		this.maxDrawBuffers = GL43C.glGetInteger(GL30C.GL_MAX_DRAW_BUFFERS);
-		this.maxColorAttachments = GL43C.glGetInteger(GL30C.GL_MAX_COLOR_ATTACHMENTS);
+		this.maxDrawBuffers = GL32.glGetInteger(GL32.GL_MAX_DRAW_BUFFERS);
+		this.maxColorAttachments = GL32.glGetInteger(GL32.GL_MAX_COLOR_ATTACHMENTS);
 		this.hasDepthAttachment = false;
 	}
 
@@ -36,8 +35,8 @@ public class DhFramebuffer
 		this.id = id;
 		
 		this.attachments = new Int2IntArrayMap();
-		this.maxDrawBuffers = GL43C.glGetInteger(GL30C.GL_MAX_DRAW_BUFFERS);
-		this.maxColorAttachments = GL43C.glGetInteger(GL30C.GL_MAX_COLOR_ATTACHMENTS);
+		this.maxDrawBuffers = GL32.glGetInteger(GL32.GL_MAX_DRAW_BUFFERS);
+		this.maxColorAttachments = GL32.glGetInteger(GL32.GL_MAX_COLOR_ATTACHMENTS);
 		this.hasDepthAttachment = false;
 	}
 	
@@ -53,11 +52,11 @@ public class DhFramebuffer
 		
 		if (depthBufferFormat.isCombinedStencil())
 		{
-			GL43C.glFramebufferTexture2D(GL30C.GL_FRAMEBUFFER, GL30C.GL_DEPTH_STENCIL_ATTACHMENT, GL30C.GL_TEXTURE_2D, texture, 0);
+			GL32.glFramebufferTexture2D(GL32.GL_FRAMEBUFFER, GL32.GL_DEPTH_STENCIL_ATTACHMENT, GL32.GL_TEXTURE_2D, texture, 0);
 		}
 		else
 		{
-			GL43C.glFramebufferTexture2D(GL30C.GL_FRAMEBUFFER, GL30C.GL_DEPTH_ATTACHMENT, GL30C.GL_TEXTURE_2D, texture, 0);
+			GL32.glFramebufferTexture2D(GL32.GL_FRAMEBUFFER, GL32.GL_DEPTH_ATTACHMENT, GL32.GL_TEXTURE_2D, texture, 0);
 		}
 
 		this.hasDepthAttachment = true;
@@ -68,14 +67,14 @@ public class DhFramebuffer
 		int fb = id;
 		bind();
 		
-		GL43C.glFramebufferTexture2D(GL30C.GL_FRAMEBUFFER, GL30C.GL_COLOR_ATTACHMENT0 + index, GL30C.GL_TEXTURE_2D, texture, 0);
+		GL32.glFramebufferTexture2D(GL32.GL_FRAMEBUFFER, GL32.GL_COLOR_ATTACHMENT0 + index, GL32.GL_TEXTURE_2D, texture, 0);
 		attachments.put(index, texture);
 	}
 
 	public void noDrawBuffers()
 	{
 		bind(); 
-		GL43C.glDrawBuffers(new int[]{GL30C.GL_NONE});
+		GL32.glDrawBuffers(new int[]{GL32.GL_NONE});
 	}
 	
 	public void drawBuffers(int[] buffers)
@@ -94,17 +93,17 @@ public class DhFramebuffer
 				throw new IllegalArgumentException("Only " + maxColorAttachments + " color attachments are supported on this GPU, but an attempt was made to write to a color attachment with index " + buffer);
 			}
 			
-			glBuffers[index++] = GL30C.GL_COLOR_ATTACHMENT0 + buffer;
+			glBuffers[index++] = GL32.GL_COLOR_ATTACHMENT0 + buffer;
 		}
 		
 		bind(); 
-		GL43C.glDrawBuffers(new int[]{GL30C.GL_NONE});
+		GL32.glDrawBuffers(new int[]{GL32.GL_NONE});
 	}
 	
 	public void readBuffer(int buffer)
 	{
 		bind();
-		GL43C.glReadBuffer(GL30C.GL_COLOR_ATTACHMENT0 + buffer);
+		GL32.glReadBuffer(GL32.GL_COLOR_ATTACHMENT0 + buffer);
 	}
 	
 	public int getColorAttachment(int index) { return attachments.get(index); }
@@ -117,23 +116,23 @@ public class DhFramebuffer
 		{
 			throw new IllegalStateException("Framebuffer does not exist!");
 		} 
-		GL43C.glBindFramebuffer(GL30C.GL_FRAMEBUFFER, id);
+		GL32.glBindFramebuffer(GL32.GL_FRAMEBUFFER, id);
 	}
 	
-	public void bindAsReadBuffer() { GL43C.glBindFramebuffer(GL30C.GL_READ_FRAMEBUFFER, id); }
+	public void bindAsReadBuffer() { GL32.glBindFramebuffer(GL32.GL_READ_FRAMEBUFFER, id); }
 	
-	public void bindAsDrawBuffer() { GL43C.glBindFramebuffer(GL30C.GL_DRAW_FRAMEBUFFER, id); }
+	public void bindAsDrawBuffer() { GL32.glBindFramebuffer(GL32.GL_DRAW_FRAMEBUFFER, id); }
 	
 	public void destroyInternal()
 	{
-		GL43C.glDeleteFramebuffers(id); 
+		GL32.glDeleteFramebuffers(id); 
 		this.id = -1;
 	}
 	
 	public int getStatus()
 	{
 		bind(); 
-		int status = GL43C.glCheckFramebufferStatus(GL30C.GL_FRAMEBUFFER);
+		int status = GL32.glCheckFramebufferStatus(GL32.GL_FRAMEBUFFER);
 		
 		return status;
 	}

@@ -26,10 +26,12 @@ import com.seibel.distanthorizons.core.config.types.ConfigCategory;
 import com.seibel.distanthorizons.core.config.types.ConfigEntry;
 import com.seibel.distanthorizons.core.config.types.ConfigLinkedEntry;
 import com.seibel.distanthorizons.core.wrapperInterfaces.config.ILangWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftSharedWrapper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.lang.reflect.Field;
+import java.nio.file.Path;
 import java.util.*;
 
 /**
@@ -69,7 +71,7 @@ public class ConfigBase
 	 * <br> {@link String}
 	 * <br> 
 	 * <br> // Below, "T" should be a value from above
-	 * <br> // Note: This is not checked, so we trust that you are doing the right thing
+	 * <br> // Note: This is not checked, so we trust that you are doing the right thing (TODO: Check it)
 	 * <br> List<T>
 	 * <br> ArrayList<T>
 	 * <br> Map<String, T>
@@ -98,7 +100,20 @@ public class ConfigBase
 	public final List<AbstractConfigType<?, ?>> entries = new ArrayList<>();
 	
 	
+	public ConfigBase(String modID, String modName, Class<?> config)
+	{
+		this(modID, modName, config, getConfigPath(modName), -1);
+	}
+	public ConfigBase(String modID, String modName, Class<?> config, Path configPath)
+	{
+		this(modID, modName, config, configPath, -1);
+	}
 	public ConfigBase(String modID, String modName, Class<?> config, int configVersion)
+	{
+		this(modID, modName, config, getConfigPath(modName), configVersion);
+	}
+	
+	public ConfigBase(String modID, String modName, Class<?> config, Path configPath, int configVersion)
 	{
 		this.LOGGER = LogManager.getLogger(this.getClass().getSimpleName() + ", " + modID);
 		
@@ -110,7 +125,7 @@ public class ConfigBase
 		initNestedClass(config, ""); // Init root category
 		
 		// File handling (load from file)
-		this.configFileINSTANCE = new ConfigFileHandling(this);
+		this.configFileINSTANCE = new ConfigFileHandling(this, configPath);
 		this.configFileINSTANCE.loadFromFile();
 		
 		isLoaded = true;
@@ -171,6 +186,12 @@ public class ConfigBase
 	}
 	
 	
+	/** Gets the default config path given a mod name */
+	public static Path getConfigPath(String modName)
+	{
+		return SingletonInjector.INSTANCE.get(IMinecraftSharedWrapper.class)
+				.getInstallationDirectory().toPath().resolve("config").resolve(modName + ".toml");
+	}
 	
 	
 	/**

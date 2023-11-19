@@ -89,7 +89,7 @@ public class MarkdownFormatter
 		@Override
 		public String convertTo(String original)
 		{
-			original = original.replaceAll("<br>", "\n"); // New lines
+			original = original.replaceAll("<br>|<br/>", "\n"); // New lines
 			original = replaceRegex(original, "\\*\\*", "§l", "§r"); // Bold
 			original = replaceRegex(original, "~~", "§m", "§r"); // Striketrough
 //            original = replaceRegex(original, "_", "§n", "§r"); // Italic

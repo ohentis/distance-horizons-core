@@ -80,15 +80,22 @@ public class SelfUpdater
 		}
 		
 		boolean returnValue = false;
-		switch (Config.Client.Advanced.AutoUpdater.updateBranch.get())
+		try
 		{
-			case STABLE:
-				returnValue = onStableStart();
-				break;
-			case NIGHTLY:
-				returnValue = onNightlyStart();
-				break;
-		};
+			switch (Config.Client.Advanced.AutoUpdater.updateBranch.get())
+			{
+				case STABLE:
+					returnValue = onStableStart();
+					break;
+				case NIGHTLY:
+					returnValue = onNightlyStart();
+					break;
+			};
+		}
+		catch (Exception e) // Shouldn't be needed, but just in case
+		{
+			LOGGER.warn(e);
+		}
 		return returnValue;
 	}
 	
@@ -373,7 +380,9 @@ public class SelfUpdater
 		}
 		catch (Exception e)
 		{
-			LOGGER.warn("Failed to delete previous " + ModInfo.READABLE_NAME + " file, please delete it manually at [" + JarUtils.jarFile + "]", e);
+			LOGGER.warn("Failed to delete old jar using bootstrap method, doing backup 'Files.deleteOnExit()' method", e);
+			JarUtils.jarFile.deleteOnExit();
+			LOGGER.warn("If the old DH file didnt delete, delete it manually at [" + JarUtils.jarFile + "]");
 		}
 	}
 	

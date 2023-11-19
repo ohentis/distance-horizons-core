@@ -36,6 +36,9 @@ public class GLState
 	public int activeTextureNumber;
 	public int texture0;
 	public int texture1;
+	public int frameBufferTexture0;
+	public int frameBufferTexture1;
+	public int frameBufferDepthTexture;
 	public boolean blend;
 	public int blendEqRGB;
 	public int blendEqAlpha;
@@ -82,6 +85,10 @@ public class GLState
 		
 		GL32.glActiveTexture(this.activeTextureNumber);
 		
+		this.frameBufferTexture0 = GL32.glGetFramebufferAttachmentParameteri(GL32.GL_FRAMEBUFFER, GL32.GL_COLOR_ATTACHMENT0, GL32.GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME);
+		this.frameBufferTexture1 = GL32.glGetFramebufferAttachmentParameteri(GL32.GL_FRAMEBUFFER, GL32.GL_COLOR_ATTACHMENT1, GL32.GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME);
+		this.frameBufferDepthTexture = GL32.glGetFramebufferAttachmentParameteri(GL32.GL_FRAMEBUFFER, GL32.GL_DEPTH_ATTACHMENT, GL32.GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME);
+		
 		this.blend = GL32.glIsEnabled(GL32.GL_BLEND);
 		this.blendEqRGB = GL32.glGetInteger(GL32.GL_BLEND_EQUATION_RGB);
 		this.blendEqAlpha = GL32.glGetInteger(GL32.GL_BLEND_EQUATION_ALPHA);
@@ -109,6 +116,9 @@ public class GLState
 		return "GLState{" +
 				"program=" + this.program + ", vao=" + this.vao + ", vbo=" + this.vbo + ", ebo=" + this.ebo + ", fbo=" + this.fbo[0] +
 				", text=" + GLEnums.getString(this.texture2D) + "@" + this.activeTextureNumber + ", text0=" + GLEnums.getString(this.texture0) +
+				", FB text0=" + this.frameBufferTexture0 +
+				", FB text1=" + this.frameBufferTexture1 +
+				", FB depth=" + this.frameBufferDepthTexture +
 				", blend=" + this.blend + ", blendMode=" + GLEnums.getString(this.blendSrcColor) + "," + GLEnums.getString(this.blendDstColor) +
 				", depth=" + this.depth +
 				", depthFunc=" + GLEnums.getString(this.depthFunc) + ", stencil=" + this.stencil + ", stencilFunc=" +
@@ -154,6 +164,10 @@ public class GLState
 		
 		GL32.glActiveTexture(this.activeTextureNumber);
 		GL32.glBindTexture(GL32.GL_TEXTURE_2D, GL32.glIsTexture(this.texture2D) ? this.texture2D : 0);
+		
+		GL32.glFramebufferTexture2D(GL32.GL_FRAMEBUFFER, GL32.GL_COLOR_ATTACHMENT0, GL32.GL_TEXTURE_2D, this.frameBufferTexture0, 0);
+		GL32.glFramebufferTexture2D(GL32.GL_FRAMEBUFFER, GL32.GL_COLOR_ATTACHMENT1, GL32.GL_TEXTURE_2D, this.frameBufferTexture1, 0);
+		GL32.glFramebufferTexture2D(GL32.GL_FRAMEBUFFER, GL32.GL_DEPTH_ATTACHMENT, GL32.GL_TEXTURE_2D, this.frameBufferDepthTexture, 0);
 		
 		GL32.glBindVertexArray(GL32.glIsVertexArray(this.vao) ? this.vao : 0);
 		GL32.glBindBuffer(GL32.GL_ARRAY_BUFFER, GL32.glIsBuffer(this.vbo) ? this.vbo : 0);

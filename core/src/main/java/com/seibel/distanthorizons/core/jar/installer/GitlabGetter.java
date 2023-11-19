@@ -39,7 +39,7 @@ public class GitlabGetter
 	public final String projectID;
 	/** Combines the {@link GitlabGetter#GitlabApi} and {@link GitlabGetter#projectID} into one var (Followed by a "/" at the end) */
 	public final String GitProjID;
-	public ArrayList<Config> projectPipelines;
+	public ArrayList<Config> projectPipelines = new ArrayList<>();
 	
 	/** Commit sha; Commit info */
 	private static final Map<String, Config> commitInfo = new HashMap<>();

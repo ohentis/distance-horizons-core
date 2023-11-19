@@ -212,9 +212,10 @@ public class LodRenderer
 		}
 	}
 	
-	public void resize(int width, int height) {
-		colorTexture.resize(width, height);
-		depthTexture.resize(width, height, EDhDepthBufferFormat.DEPTH32F);
+	public void resize(int width, int height) 
+	{
+		this.colorTexture.resize(width, height);
+		this.depthTexture.resize(width, height, EDhDepthBufferFormat.DEPTH32F);
 	}
 	
 	
@@ -292,15 +293,16 @@ public class LodRenderer
 				}
 			}
 			
-			if (MC_RENDER.getTargetFrameBufferViewportWidth() != cachedWidth || MC_RENDER.getTargetFrameBufferViewportHeight() != cachedHeight) {
+			if (MC_RENDER.getTargetFrameBufferViewportWidth() != this.cachedWidth || MC_RENDER.getTargetFrameBufferViewportHeight() != this.cachedHeight) 
+			{
 				this.cachedWidth = MC_RENDER.getTargetFrameBufferViewportWidth();
 				this.cachedHeight = MC_RENDER.getTargetFrameBufferViewportHeight();
-				resize(cachedWidth, cachedHeight);
+				this.resize(this.cachedWidth, this.cachedHeight);
 			}
 			
 			this.setActiveFramebufferId(framebuffer.getId());
 			this.setActiveDepthTextureId(depthTexture.getTextureId());
-			this.setActiveColorTextureId(colorTexture.getTexture());
+			this.setActiveColorTextureId(colorTexture.getTextureId());
 			// Bind LOD frame buffer
 			this.framebuffer.bind();
 			
@@ -548,13 +550,13 @@ public class LodRenderer
 					.build();
 			this.depthTexture = new DHDepthTexture(MC_RENDER.getTargetFrameBufferViewportWidth(), MC_RENDER.getTargetFrameBufferViewportHeight(), EDhDepthBufferFormat.DEPTH32F);
 			
-			this.framebuffer.addDepthAttachment(depthTexture.getTextureId(), EDhDepthBufferFormat.DEPTH32F);
-			this.framebuffer.addColorAttachment(0, colorTexture.getTexture());
+			this.framebuffer.addDepthAttachment(this.depthTexture.getTextureId(), EDhDepthBufferFormat.DEPTH32F);
+			this.framebuffer.addColorAttachment(0, this.colorTexture.getTextureId());
 			
 			this.cachedWidth = MC_RENDER.getTargetFrameBufferViewportWidth();
 			this.cachedHeight = MC_RENDER.getTargetFrameBufferViewportHeight();
 			
-			if(framebuffer.getStatus() != GL32.GL_FRAMEBUFFER_COMPLETE)
+			if(this.framebuffer.getStatus() != GL32.GL_FRAMEBUFFER_COMPLETE)
 			{
 				// This generally means something wasn't bound, IE missing either the color or depth texture
 				tickLogger.warn("FrameBuffer ["+this.framebuffer.getId()+"] isn't complete.");

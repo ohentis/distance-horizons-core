@@ -49,15 +49,13 @@ public class ConfigFileHandling
 	/** This is the object for night-config */
 	private final CommentedFileConfig nightConfig;
 	
-	public ConfigFileHandling(ConfigBase configBase)
+	public ConfigFileHandling(ConfigBase configBase, Path configPath)
 	{
 		this.LOGGER = LogManager.getLogger(this.getClass().getSimpleName() + ", " + configBase.modID);
 		this.configBase = configBase;
+		this.configPath = configPath;
 		
-		configPath = SingletonInjector.INSTANCE.get(IMinecraftSharedWrapper.class)
-				.getInstallationDirectory().toPath().resolve("config").resolve(this.configBase.modName + ".toml");
-		
-		this.nightConfig = CommentedFileConfig.builder(configPath.toFile()).build();
+		this.nightConfig = CommentedFileConfig.builder(this.configPath.toFile()).build();
 	}
 	
 	/** Saves the entire config to the file */
@@ -105,7 +103,38 @@ public class ConfigFileHandling
 	 */
 	public void loadFromFile()
 	{
+		int currentCfgVersion = configBase.configVersion;
+		try
+		{
+			// Dont load the real `this.nightConfig`, instead create a tempoary one
+			CommentedFileConfig tmpNightConfig = CommentedFileConfig.builder(this.configPath.toFile()).build();
+			tmpNightConfig.load();
+			// Attempt to get the version number
+			currentCfgVersion = (Integer) tmpNightConfig.get("_version");
+			tmpNightConfig.close();
+		} catch (Exception e) {e.printStackTrace();}
+		
+		if (currentCfgVersion == configBase.configVersion)
+		{}
+		else if (currentCfgVersion > configBase.configVersion)
+		{
+			LOGGER.warn("Found config version [" + String.valueOf(currentCfgVersion) + "] which is newer than current mods config version of [" + String.valueOf(configBase.configVersion) + "]. You may have downgraded the mod and items may have been moved, you have been warned");
+		}
+		else // if (currentCfgVersion < configBase.configVersion)
+		{
+			LOGGER.warn(configBase.modName +" config is of an older version, currently there is no config updater... so resetting config");
+			try
+			{
+				Files.delete(configPath);
+			}
+			catch (Exception e)
+			{
+				LOGGER.error(e);
+			}
+		}
+		
 		loadFromFile(nightConfig);
+		nightConfig.set("_version", configBase.configVersion);
 	}
 	/**
 	 * Loads the entire config from the file
@@ -122,7 +151,6 @@ public class ConfigFileHandling
 		else
 		{
 			reCreateFile(configPath);
-			return;
 		}
 		
 		
