@@ -48,12 +48,11 @@ public class NetworkClient extends NetworkEventSource implements AutoCloseable
 		INITIAL,
         OPEN,
         RECONNECT,
-        RECONNECT_FORCE,
-        CLOSE_WAIT,
+		CLOSING,
         CLOSED
     }
 	private static final Set<EConnectionState> closedStates = EnumSet.of(
-			EConnectionState.CLOSE_WAIT,
+			EConnectionState.CLOSING,
 			EConnectionState.CLOSED
 	);
 	
@@ -95,13 +94,13 @@ public class NetworkClient extends NetworkEventSource implements AutoCloseable
 		this.registerHandler(CloseReasonMessage.class, closeReasonMessage ->
 		{
             LOGGER.info(closeReasonMessage.reason);
-			this.connectionState = EConnectionState.CLOSE_WAIT;
+			this.connectionState = EConnectionState.CLOSING;
         });
 		
 		this.registerHandler(CloseEvent.class, closeEvent ->
 		{
             LOGGER.info("Disconnected from server: "+ closeEvent.getChannelContext().channel().remoteAddress());
-            if (this.connectionState == EConnectionState.CLOSE_WAIT)
+            if (this.connectionState == EConnectionState.CLOSING)
 			{
 				this.close();
 			}
@@ -143,30 +142,20 @@ public class NetworkClient extends NetworkEventSource implements AutoCloseable
 					? channelFuture.cause()
 					: new ChannelException("Channel is closed."));
 			
-			switch (this.connectionState)
+			if (this.connectionState != EConnectionState.OPEN)
+				return;
+			
+			this.reconnectAttempts--;
+			LOGGER.info("Reconnection attempts left: [" + this.reconnectAttempts + "] of [" + FAILURE_RECONNECT_ATTEMPTS + "].");
+			if (this.reconnectAttempts == 0)
 			{
-				case OPEN:
-					this.reconnectAttempts--;
-					LOGGER.info("Reconnection attempts left: ["+this.reconnectAttempts+"] of ["+FAILURE_RECONNECT_ATTEMPTS+"].");
-					if (this.reconnectAttempts == 0)
-					{
-						this.connectionState = EConnectionState.CLOSE_WAIT;
-						return;
-					}
-					
-					this.connectionState = EConnectionState.RECONNECT;
-					this.workerGroup.schedule(this::connect, FAILURE_RECONNECT_DELAY_SEC, TimeUnit.SECONDS);
-					break;
-					
-				case RECONNECT_FORCE:
-					LOGGER.info("Reconnecting forcefully.");
-					this.reconnectAttempts = FAILURE_RECONNECT_ATTEMPTS;
-					
-					this.connectionState = EConnectionState.RECONNECT;
-					this.workerGroup.schedule(this::connect, 0, TimeUnit.SECONDS);
-					break;
+				this.connectionState = EConnectionState.CLOSING;
+				return;
 			}
-        });
+			
+			this.connectionState = EConnectionState.RECONNECT;
+			this.workerGroup.schedule(this::connect, FAILURE_RECONNECT_DELAY_SEC, TimeUnit.SECONDS);
+		});
     }
 	
 	public final void sendMessage(NetworkMessage msg)
@@ -188,8 +177,8 @@ public class NetworkClient extends NetworkEventSource implements AutoCloseable
 		}
 		
 		this.connectionState = EConnectionState.CLOSED;
-		this.workerGroup.shutdownGracefully().syncUninterruptibly();
 		this.channel.close().syncUninterruptibly();
+		this.workerGroup.shutdownGracefully().syncUninterruptibly();
 		
 		super.close();
     }
