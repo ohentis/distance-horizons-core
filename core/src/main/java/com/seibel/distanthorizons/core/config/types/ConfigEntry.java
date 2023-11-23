@@ -44,6 +44,7 @@ public class ConfigEntry<T> extends AbstractConfigType<T, ConfigEntry<T>> implem
 	private T min;
 	private T max;
 	private final ArrayList<IConfigListener> listenerList;
+	private final boolean enabledOnServer;
 	
 	// API control //
 	/**
@@ -57,13 +58,14 @@ public class ConfigEntry<T> extends AbstractConfigType<T, ConfigEntry<T>> implem
 	
 	
 	/** Creates the entry */
-	private ConfigEntry(EConfigEntryAppearance appearance, T value, String comment, T min, T max, boolean allowApiOverride, EConfigEntryPerformance performance, ArrayList<IConfigListener> listenerList)
+	private ConfigEntry(EConfigEntryAppearance appearance, T value, String comment, T min, T max, boolean enabledOnServer, boolean allowApiOverride, EConfigEntryPerformance performance, ArrayList<IConfigListener> listenerList)
 	{
 		super(appearance, value);
 		
 		this.comment = comment;
 		this.min = min;
 		this.max = max;
+		this.enabledOnServer = enabledOnServer;
 		this.allowApiOverride = allowApiOverride;
 		this.performance = performance;
 		this.listenerList = listenerList;
@@ -178,6 +180,8 @@ public class ConfigEntry<T> extends AbstractConfigType<T, ConfigEntry<T>> implem
 		if (validness == -1) this.value = (T) NumberUtil.getMinimum(this.value.getClass());
 		if (validness == 1) this.value = (T) NumberUtil.getMaximum(this.value.getClass());
 	}
+	
+	public boolean isEnabledOnServer() { return this.enabledOnServer; }
 	
 	@Override
 	public String getComment() { return this.comment; }
@@ -297,6 +301,7 @@ public class ConfigEntry<T> extends AbstractConfigType<T, ConfigEntry<T>> implem
 		private String tmpComment = null;
 		private T tmpMin = null;
 		private T tmpMax = null;
+		protected boolean tmpEnabledOnServer = false;
 		private boolean tmpUseApiOverwrite = true;
 		private EConfigEntryPerformance tmpPerformance = EConfigEntryPerformance.DONT_SHOW;
 		protected ArrayList<IConfigListener> tmpIConfigListener = new ArrayList<>();
@@ -331,6 +336,12 @@ public class ConfigEntry<T> extends AbstractConfigType<T, ConfigEntry<T>> implem
 		public Builder<T> setMax(T newMax)
 		{
 			this.tmpMax = newMax;
+			return this;
+		}
+		
+		public Builder<T> enableOnServer()
+		{
+			this.tmpEnabledOnServer = true;
 			return this;
 		}
 		
@@ -376,7 +387,7 @@ public class ConfigEntry<T> extends AbstractConfigType<T, ConfigEntry<T>> implem
 		
 		public ConfigEntry<T> build()
 		{
-			return new ConfigEntry<>(this.tmpAppearance, this.tmpValue, this.tmpComment, this.tmpMin, this.tmpMax, this.tmpUseApiOverwrite, this.tmpPerformance, this.tmpIConfigListener);
+			return new ConfigEntry<>(this.tmpAppearance, this.tmpValue, this.tmpComment, this.tmpMin, this.tmpMax, this.tmpEnabledOnServer, this.tmpUseApiOverwrite, this.tmpPerformance, this.tmpIConfigListener);
 		}
 		
 	}

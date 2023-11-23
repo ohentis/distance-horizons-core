@@ -65,7 +65,7 @@ public class DhClientWorld extends AbstractDhWorld implements IDhClientWorld
 		
 		if (Config.Client.Advanced.Multiplayer.ServerNetworking.enableServerNetworking.get())
 		{
-			// TODO server specific configs
+			// TODO per server configs
 			NetworkClient networkClient = new NetworkClient(MC_CLIENT.getCurrentServerIp().split(":")[0], Config.Client.Advanced.Multiplayer.ServerNetworking.serverPort.get());
 			this.networkState = new ClientNetworkState(networkClient, MC_CLIENT.getPlayerUUID());
 		}

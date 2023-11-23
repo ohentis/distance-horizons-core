@@ -192,6 +192,8 @@ public class ConfigFileHandling
 	public void saveEntry(ConfigEntry<?> entry, CommentedFileConfig workConfig)
 	{
 		if (!entry.getAppearance().showInFile) return;
+		if (SingletonInjector.INSTANCE.get(IMinecraftSharedWrapper.class).isDedicatedServer() && !entry.isEnabledOnServer())
+			return;
 		if (entry.getTrueValue() == null)
 			throw new IllegalArgumentException("Entry [" + entry.getNameWCategory() + "] is null, this may be a problem with [" + configBase.modName + "]. Please contact the authors");
 		
@@ -252,6 +254,9 @@ public class ConfigFileHandling
 				!entry.getAppearance().showInFile || 
 				entry.getComment() == null
 		)
+			return;
+		
+		if (SingletonInjector.INSTANCE.get(IMinecraftSharedWrapper.class).isDedicatedServer() && !entry.isEnabledOnServer())
 			return;
 		
 		nightConfig.setComment(entry.getNameWCategory(), " " + entry.getComment().replaceAll("\n", "\n ") + "\n ");

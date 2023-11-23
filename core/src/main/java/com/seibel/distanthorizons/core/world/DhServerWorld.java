@@ -19,6 +19,7 @@
 
 package com.seibel.distanthorizons.core.world;
 
+import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.file.structure.LocalSaveStructure;
 import com.seibel.distanthorizons.core.level.DhServerLevel;
 import com.seibel.distanthorizons.core.level.IDhLevel;
@@ -51,8 +52,7 @@ public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 		this.saveStructure = new LocalSaveStructure();
 		this.levels = new HashMap<>();
 
-		// TODO move to global payload once server specific configs are implemented
-		NetworkServer networkServer = new NetworkServer(25049);
+		NetworkServer networkServer = new NetworkServer(Config.Client.Advanced.Multiplayer.ServerNetworking.serverPort.get());
 		this.remotePlayerConnectionHandler = new RemotePlayerConnectionHandler(networkServer);
 
 		LOGGER.info("Started "+DhServerWorld.class.getSimpleName()+" of type "+this.environment);
