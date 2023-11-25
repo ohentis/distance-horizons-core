@@ -155,7 +155,7 @@ public class Config
 							.build();
 					
 					public static ConfigEntry<Integer> lodChunkRenderDistanceRadius = new ConfigEntry.Builder<Integer>()
-							.enableOnServer()
+							.setServersideShortName("renderDistanceRadius")
 							.setMinDefaultMax(32, 128, 4096)
 							.comment("The radius of the mod's render distance. (measured in chunks)")
 							.setPerformance(EConfigEntryPerformance.HIGH)
@@ -661,7 +661,7 @@ public class Config
 			public static class WorldGenerator
 			{
 				public static ConfigEntry<Boolean> enableDistantGeneration = new ConfigEntry.Builder<Boolean>()
-						.enableOnServer()
+						.setServersideShortName("enableDistantGeneration")
 						.set(true)
 						.comment(""
 								+ " Should Distant Horizons slowly generate LODs \n"
@@ -672,7 +672,7 @@ public class Config
 						.build();
 				
 				public static ConfigEntry<EDhApiDistantGeneratorMode> distantGeneratorMode = new ConfigEntry.Builder<EDhApiDistantGeneratorMode>()
-						.enableOnServer()
+						.setServersideShortName("distantGeneratorMode")
 						.set(EDhApiDistantGeneratorMode.FEATURES)
 						.comment(""
 								+ "How detailed should LODs be generated outside the vanilla render distance? \n"
@@ -714,7 +714,7 @@ public class Config
 						.build();
 				
 				public static ConfigEntry<Integer> worldGenerationTimeoutLengthInSeconds = new ConfigEntry.Builder<Integer>()
-						.enableOnServer()
+						.setServersideShortName("worldGenerationTimeout")
 						.setMinDefaultMax(5, 60, 60 * 10/*10 minutes*/ )
 						.comment(""
 								+ "How long should a world generator thread run for before timing out? \n"
@@ -758,7 +758,7 @@ public class Config
 			public static class LodBuilding
 			{
 				public static ConfigEntry<Integer> minTimeBetweenChunkUpdatesInSeconds = new ConfigEntry.Builder<Integer>()
-						.enableOnServer()
+						.setServersideShortName("minTimeBetweenChunkUpdates")
 						.setMinDefaultMax(0, 1, 60)
 						.comment(""
 								+ "Determines how long must pass between LOD chunk updates before another. \n"
@@ -824,7 +824,7 @@ public class Config
 				public static class ServerNetworking
 				{
 					public static ConfigEntry<Boolean> enableServerNetworking = new ConfigEntry.Builder<Boolean>()
-							.enableOnServer()
+							.setServersideShortName("enableServerNetworking")
 							.set(true)
 							.comment(""
 									+ "Attention: \n"
@@ -839,7 +839,7 @@ public class Config
 							.build();
 					
 					public static ConfigEntry<Integer> requestRateLimit = new ConfigEntry.Builder<Integer>()
-							.enableOnServer()
+							.setServersideShortName("requestRateLimit")
 							.setMinDefaultMax(1, 20, 100)
 							.comment(""
 									+ "Limits the amount of sent/processed LOD requests concurrently. \n"
@@ -849,7 +849,7 @@ public class Config
 							.build();
 					
 					public static ConfigEntry<Boolean> enableRealTimeUpdates = new ConfigEntry.Builder<Boolean>()
-							.enableOnServer()
+							.setServersideShortName("enableRealTimeUpdates")
 							.set(false)
 							.comment(""
 									+ "Enables real time updates from server."
@@ -857,7 +857,7 @@ public class Config
 							.build();
 					
 					public static ConfigEntry<Boolean> enablePostRelogUpdate = new ConfigEntry.Builder<Boolean>()
-							.enableOnServer()
+							.setServersideShortName("enablePostRelogUpdate")
 							.set(false)
 							.comment(""
 									+ "Enables updating of LODs after relog."
@@ -865,8 +865,8 @@ public class Config
 							.build();
 					
 					public static ConfigEntry<Integer> serverPort = new ConfigEntry.Builder<Integer>()
-							.enableOnServer()
-							.set(25049)
+							.setServersideShortName("serverPort")
+							.setMinDefaultMax(1, 25049, 65535)
 							.comment(""
 									+ "The port on the server that's used for sending LOD data."
 									+ "")
