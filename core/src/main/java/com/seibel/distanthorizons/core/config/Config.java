@@ -582,7 +582,7 @@ public class Config
 							.comment(""
 									+ "How bright LOD colors are. \n"
 									+ "\n"
-									+ "0 = black \n"
+									+ "0 = black \n"f
 									+ "1 = normal \n"
 									+ "2 = near white")
 							.build();
@@ -893,6 +893,7 @@ public class Config
 				
 				
 				public static final ConfigEntry<Integer> numberOfWorldGenerationThreads = new ConfigEntry.Builder<Integer>()
+						.setServersideShortName("numberOfWorldGenerationThreads")
 						.setMinDefaultMax(1,
 								ThreadPresetConfigEventHandler.getWorldGenDefaultThreadCount(),
 								Runtime.getRuntime().availableProcessors())
@@ -908,11 +909,13 @@ public class Config
 								+ THREAD_NOTE)
 						.build();
 				public static final ConfigEntry<Double> runTimeRatioForWorldGenerationThreads = new ConfigEntry.Builder<Double>()
+						.setServersideShortName("runTimeRatioForWorldGenerationThreads")
 						.setMinDefaultMax(0.01, ThreadPresetConfigEventHandler.getWorldGenDefaultRunTimeRatio(), 1.0)
 						.comment(THREAD_RUN_TIME_RATIO_NOTE)
 						.build();
 				
 				public static final ConfigEntry<Integer> numberOfFileHandlerThreads = new ConfigEntry.Builder<Integer>()
+						.setServersideShortName("numberOfFileHandlerThreads")
 						.setMinDefaultMax(1,
 								ThreadPresetConfigEventHandler.getFileHandlerDefaultThreadCount(),
 								Runtime.getRuntime().availableProcessors())
@@ -926,11 +929,13 @@ public class Config
 								+ THREAD_NOTE)
 						.build();
 				public static final ConfigEntry<Double> runTimeRatioForFileHandlerThreads = new ConfigEntry.Builder<Double>()
+						.setServersideShortName("runTimeRatioForFileHandlerThreads")
 						.setMinDefaultMax(0.01, ThreadPresetConfigEventHandler.getFileHandlerDefaultRunTimeRatio(), 1.0)
 						.comment(THREAD_RUN_TIME_RATIO_NOTE)
 						.build();
 				
 				public static final ConfigEntry<Integer> numberOfLodBuilderThreads = new ConfigEntry.Builder<Integer>()
+						.setServersideShortName("numberOfLodBuilderThreads")
 						.setMinDefaultMax(1,
 								ThreadPresetConfigEventHandler.getLodBuilderDefaultThreadCount(),
 								Runtime.getRuntime().availableProcessors())
@@ -943,10 +948,12 @@ public class Config
 								+ THREAD_NOTE)
 						.build();
 				public static final ConfigEntry<Double> runTimeRatioForLodBuilderThreads = new ConfigEntry.Builder<Double>()
+						.setServersideShortName("runTimeRatioForLodBuilderThreads")
 						.setMinDefaultMax(0.01, ThreadPresetConfigEventHandler.getLodBuilderDefaultRunTimeRatio(), 1.0)
 						.comment(THREAD_RUN_TIME_RATIO_NOTE)
 						.build();
 				public static final ConfigEntry<Boolean> enableLodBuilderThreadLimiting = new ConfigEntry.Builder<Boolean>()
+						.setServersideShortName("enableLodBuilderThreadLimiting")
 						.set(true)
 						.comment(""
 								+ "Should only be disabled if deadlock occurs and LODs refuse to update. \n"
@@ -1054,6 +1061,7 @@ public class Config
 				// TODO add change all option
 				// TODO default to error chat and info file
 				public static ConfigEntry<ELoggerMode> logWorldGenEvent = new ConfigEntry.Builder<ELoggerMode>()
+						.setServersideShortName("logWorldGenEvent")
 						.set(ELoggerMode.LOG_WARNING_TO_CHAT_AND_FILE)
 						.comment(""
 								+ "If enabled, the mod will log information about the world generation process. \n"
@@ -1061,6 +1069,7 @@ public class Config
 						.build();
 				
 				public static ConfigEntry<ELoggerMode> logWorldGenPerformance = new ConfigEntry.Builder<ELoggerMode>()
+						.setServersideShortName("logWorldGenPerformance")
 						.set(ELoggerMode.LOG_WARNING_TO_CHAT_AND_FILE)
 						.comment(""
 								+ "If enabled, the mod will log performance about the world generation process. \n"
@@ -1068,6 +1077,7 @@ public class Config
 						.build();
 				
 				public static ConfigEntry<ELoggerMode> logWorldGenLoadEvent = new ConfigEntry.Builder<ELoggerMode>()
+						.setServersideShortName("logWorldGenPerformance")
 						.set(ELoggerMode.LOG_WARNING_TO_CHAT_AND_FILE)
 						.comment(""
 								+ "If enabled, the mod will log information about the world generation process. \n"
@@ -1075,6 +1085,7 @@ public class Config
 						.build();
 				
 				public static ConfigEntry<ELoggerMode> logLodBuilderEvent = new ConfigEntry.Builder<ELoggerMode>()
+						.setServersideShortName("logLodBuilderEvent")
 						.set(ELoggerMode.LOG_WARNING_TO_CHAT_AND_INFO_TO_FILE)
 						.comment(""
 								+ "If enabled, the mod will log information about the LOD generation process. \n"
@@ -1096,6 +1107,7 @@ public class Config
 						.build();
 				
 				public static ConfigEntry<ELoggerMode> logFileReadWriteEvent = new ConfigEntry.Builder<ELoggerMode>()
+						.setServersideShortName("logFileReadWriteEvent")
 						.set(ELoggerMode.LOG_WARNING_TO_CHAT_AND_INFO_TO_FILE)
 						.comment(""
 								+ "If enabled, the mod will log information about file read/write operations. \n"
@@ -1103,6 +1115,7 @@ public class Config
 						.build();
 				
 				public static ConfigEntry<ELoggerMode> logFileSubDimEvent = new ConfigEntry.Builder<ELoggerMode>()
+						.setServersideShortName("logFileSubDimEvent")
 						.set(ELoggerMode.LOG_WARNING_TO_CHAT_AND_INFO_TO_FILE)
 						.comment(""
 								+ "If enabled, the mod will log information about file sub-dimension operations. \n"
@@ -1110,6 +1123,7 @@ public class Config
 						.build();
 				
 				public static ConfigEntry<ELoggerMode> logNetworkEvent = new ConfigEntry.Builder<ELoggerMode>()
+						.setServersideShortName("logNetworkEvent")
 						.set(ELoggerMode.LOG_WARNING_TO_CHAT_AND_INFO_TO_FILE)
 						.comment(""
 								+ "If enabled, the mod will log information about network operations. \n"
