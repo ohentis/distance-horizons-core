@@ -21,10 +21,10 @@ package com.seibel.distanthorizons.core.network.protocol;
 
 import com.google.common.collect.MapMaker;
 import com.seibel.distanthorizons.core.api.internal.SharedApi;
+import com.seibel.distanthorizons.core.network.IConnection;
 import com.seibel.distanthorizons.core.network.messages.base.ExceptionMessage;
 import com.seibel.distanthorizons.core.world.EWorldEnvironment;
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandlerContext;
 
 import javax.annotation.Nullable;
 import java.util.Objects;
@@ -41,19 +41,19 @@ public abstract class FutureTrackableNetworkMessage extends NetworkMessage
 			| ((Objects.requireNonNull(SharedApi.getEnvironment()) == EWorldEnvironment.Server_Only ? 1 : 0) << 31);
 	
 	private static final AtomicInteger lastContextId = new AtomicInteger();
-	private static final ConcurrentMap<ChannelHandlerContext, Integer> contextIds = new MapMaker().weakKeys().makeMap();
+	private static final ConcurrentMap<IConnection, Integer> connectionToIdMap = new MapMaker().weakKeys().makeMap();
 	
 	public void sendResponse(FutureTrackableNetworkMessage responseMessage)
 	{
 		responseMessage.futureId = futureId;
-		getChannelContext().writeAndFlush(responseMessage);
+		this.getConnection().sendMessage(responseMessage);
 	}
 	
 	@Override
-	public void setChannelContext(ChannelHandlerContext channelContext)
+	public void setConnection(IConnection connection)
 	{
-		super.setChannelContext(channelContext);
-		this.futureId |= (long) contextIds.computeIfAbsent(channelContext, k -> lastContextId.getAndIncrement()) << 32;
+		super.setConnection(connection);
+		this.futureId |= (long) connectionToIdMap.computeIfAbsent(connection, k -> lastContextId.getAndIncrement()) << 32;
 	}
 	
 	public void sendResponse(Exception e)

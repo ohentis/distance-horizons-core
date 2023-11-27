@@ -19,33 +19,35 @@
 
 package com.seibel.distanthorizons.core.network.protocol;
 
-import io.netty.channel.ChannelHandlerContext;
-import org.jetbrains.annotations.NotNull;
+import com.seibel.distanthorizons.core.network.IConnection;
+
+import javax.annotation.Nullable;
 
 public abstract class NetworkMessage implements INetworkObject
 {
-	private ChannelHandlerContext channelContext = null;
+	private IConnection connection = null;
 	
 	public boolean warnWhenUnhandled() { return true; }
 	
-	public ChannelHandlerContext getChannelContext()
+	public IConnection getConnection()
 	{
-		return channelContext;
+		return connection;
 	}
 	
-	public void setChannelContext(ChannelHandlerContext channelContext)
+	public void setConnection(IConnection connection)
 	{
-		if (this.channelContext != null)
+		if (this.connection != null)
 			throw new IllegalStateException("Channel context cannot be changed after initial setting.");
-		this.channelContext = channelContext;
+		this.connection = connection;
 	}
 	
-	@Override public String toString()
+	@Override
+	public String toString()
 	{
 		return toString("");
 	}
 	
-	protected String toString(@NotNull String extraData)
+	protected String toString(@Nullable String extraData)
 	{
 		return this.getClass().getSimpleName() + "{" + extraData + '}';
 	}

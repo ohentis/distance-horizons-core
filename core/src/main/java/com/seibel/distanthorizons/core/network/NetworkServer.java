@@ -19,13 +19,13 @@
 
 package com.seibel.distanthorizons.core.network;
 
+import com.google.common.collect.MapMaker;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.network.messages.base.CloseReasonMessage;
 import com.seibel.distanthorizons.core.network.messages.base.CloseEvent;
 import com.seibel.distanthorizons.core.network.messages.base.HelloMessage;
-import com.seibel.distanthorizons.core.network.protocol.FutureTrackableNetworkMessage;
 import com.seibel.distanthorizons.core.network.protocol.MessageHandler;
 import com.seibel.distanthorizons.core.network.protocol.NetworkChannelInitializer;
+import com.seibel.distanthorizons.core.network.protocol.NetworkMessage;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
@@ -35,7 +35,8 @@ import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import org.apache.logging.log4j.Logger;
 
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class NetworkServer extends NetworkEventSource implements AutoCloseable
 {
@@ -46,7 +47,9 @@ public class NetworkServer extends NetworkEventSource implements AutoCloseable
 	
 	private final EventLoopGroup bossGroup = new NioEventLoopGroup(1);
 	private final EventLoopGroup workerGroup = new NioEventLoopGroup();
-	private boolean isClosed = false;
+	private final AtomicBoolean isClosed = new AtomicBoolean();
+	
+	private final ConcurrentMap<ChannelHandlerContext, IConnection> connections = new MapMaker().weakKeys().weakValues().makeMap();
 	
 	
 	
@@ -63,16 +66,16 @@ public class NetworkServer extends NetworkEventSource implements AutoCloseable
 	{
 		this.registerHandler(HelloMessage.class, helloMessage ->
 		{
-			ChannelHandlerContext channelContext = helloMessage.getChannelContext();
-			LOGGER.info("Client connected: "+channelContext.channel().remoteAddress());
+			IConnection connection = helloMessage.getConnection();
+			LOGGER.info("Client connected: "+connection.getRemoteAddress());
 
 			if (helloMessage.version != ModInfo.PROTOCOL_VERSION)
 			{
 				try
 				{
 					String disconnectReason = "Version mismatch. Server version: ["+ModInfo.PROTOCOL_VERSION+"], client version: ["+helloMessage.version+"].";
-					LOGGER.info("Disconnecting the client ["+channelContext.name()+"]: "+disconnectReason);
-					this.disconnectClient(channelContext, disconnectReason);
+					LOGGER.info("Disconnecting the client ["+connection.getRemoteAddress()+"]: "+disconnectReason);
+					connection.disconnect(disconnectReason);
 				}
 				catch (Exception e)
 				{
@@ -81,15 +84,14 @@ public class NetworkServer extends NetworkEventSource implements AutoCloseable
 				return;
 			}
 
-			channelContext.writeAndFlush(new HelloMessage());
+			connection.sendMessage(new HelloMessage());
 		});
 		
 		this.registerHandler(CloseEvent.class, closeEvent ->
 		{
-			Channel channel = closeEvent.getChannelContext().channel();
-			LOGGER.info("Client disconnected: "+channel.remoteAddress());
-			
-			this.completeAllFuturesExceptionally(closeEvent.getChannelContext(), channel.closeFuture().cause());
+			IConnection connection = closeEvent.getConnection();
+			LOGGER.info("Client disconnected: "+connection.getRemoteAddress());
+			this.completeAllFuturesExceptionally(closeEvent.getConnection(), connection.getCloseReason());
 		});
 	}
 	
@@ -99,7 +101,13 @@ public class NetworkServer extends NetworkEventSource implements AutoCloseable
 				.group(this.bossGroup, this.workerGroup)
 				.channel(NioServerSocketChannel.class)
 				.handler(new LoggingHandler(LogLevel.DEBUG))
-				.childHandler(new NetworkChannelInitializer(new MessageHandler(this::handleMessage, this::addNewContext)));
+				.childHandler(new NetworkChannelInitializer(new MessageHandler(
+						(ctx, msg) -> {
+							msg.setConnection(this.connections.computeIfAbsent(ctx, Connection::new));
+							this.handleMessage(msg);
+						},
+						ctx -> this.addNewConnection(this.connections.computeIfAbsent(ctx, Connection::new))
+				)));
 		
 		ChannelFuture bindFuture = bootstrap.bind(this.port);
 		bindFuture.addListener((ChannelFuture channelFuture) -> 
@@ -116,27 +124,11 @@ public class NetworkServer extends NetworkEventSource implements AutoCloseable
 		channel.closeFuture().addListener(future -> this.close());
 	}
 	
-	public void disconnectClient(ChannelHandlerContext ctx, String reason)
-	{
-		ctx.channel().config().setAutoRead(false);
-		ctx.writeAndFlush(new CloseReasonMessage(reason))
-				.addListener(ChannelFutureListener.CLOSE);
-	}
-	
-	@Override
-	public <TResponse extends FutureTrackableNetworkMessage> CompletableFuture<TResponse> sendRequest(ChannelHandlerContext ctx, FutureTrackableNetworkMessage msg, Class<TResponse> responseClass)
-	{
-		return super.sendRequest(ctx, msg, responseClass);
-	}
-	
 	@Override
 	public void close()
 	{
-		if (this.isClosed)
-		{
+		if (!this.isClosed.compareAndSet(false, true))
 			return;
-		}
-		this.isClosed = true;
 		
 		LOGGER.info("Shutting down the network server.");
 		this.workerGroup.shutdownGracefully().syncUninterruptibly();
@@ -146,4 +138,26 @@ public class NetworkServer extends NetworkEventSource implements AutoCloseable
 		super.close();
 	}
 	
+	public class Connection implements IConnection
+	{
+		private final ChannelHandlerContext channelContext;
+		
+		public Connection(ChannelHandlerContext channelContext)
+		{
+			this.channelContext = channelContext;
+		}
+		
+		@Override
+		public ChannelHandlerContext getChannelContext()
+		{
+			return this.channelContext;
+		}
+		
+		@Override
+		public NetworkEventSource getRequestHandler()
+		{
+			return NetworkServer.this;
+		}
+		
+	}
 }

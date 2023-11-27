@@ -109,8 +109,10 @@ public interface INetworkObject
 			map.put(entry.getKey(), entry.getValue());
 	}
 	
-	/** Should only be used for non-editable classes;
-	 * otherwise, you may want to implement {@link INetworkObject} and use its method where applicable. */
+	/**
+	 * Should only be used for non-editable classes;
+	 * otherwise, you may want to implement {@link INetworkObject} and use its method where applicable.
+	 */
 	class Codec
 	{
 		private static final ConcurrentMap<Class<?>, Codec> codecMap = new ConcurrentHashMap<Class<?>, Codec>()

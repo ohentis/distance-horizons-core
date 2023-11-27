@@ -48,7 +48,7 @@ public class ClientNetworkState implements Closeable
 	{
 		this.client.registerHandler(HelloMessage.class, helloMessage ->
 		{
-			LOGGER.info("Connected to server: "+helloMessage.getChannelContext().channel().remoteAddress());
+			LOGGER.info("Connected to server: "+helloMessage.getConnection().getRemoteAddress());
 			
 			this.getClient().sendRequest(new PlayerUUIDMessage(playerUUID), AckMessage.class)
 					.thenAccept(ack -> this.getClient().sendMessage(new RemotePlayerConfigMessage(new MultiplayerConfig())))

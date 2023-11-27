@@ -27,6 +27,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 @ChannelHandler.Sharable
@@ -34,10 +35,10 @@ public class MessageHandler extends SimpleChannelInboundHandler<NetworkMessage>
 {
 	private static final Logger LOGGER = LogManager.getLogger();
 	
-	private final Consumer<NetworkMessage> messageConsumer;
+	private final BiConsumer<ChannelHandlerContext, NetworkMessage> messageConsumer;
 	private final Consumer<ChannelHandlerContext> channelActiveConsumer;
 	
-	public MessageHandler(Consumer<NetworkMessage> messageConsumer, Consumer<ChannelHandlerContext> channelActiveConsumer)
+	public MessageHandler(BiConsumer<ChannelHandlerContext, NetworkMessage> messageConsumer, Consumer<ChannelHandlerContext> channelActiveConsumer)
 	{
 		this.messageConsumer = messageConsumer;
 		this.channelActiveConsumer = channelActiveConsumer;
@@ -46,9 +47,8 @@ public class MessageHandler extends SimpleChannelInboundHandler<NetworkMessage>
 	@Override
 	protected void channelRead0(ChannelHandlerContext channelContext, NetworkMessage message)
 	{
-		message.setChannelContext(channelContext);
 		LOGGER.trace("Received message: " + message);
-		this.messageConsumer.accept(message);
+		this.messageConsumer.accept(channelContext, message);
 	}
 	
 	@Override

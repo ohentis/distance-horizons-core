@@ -23,7 +23,6 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.network.messages.base.CloseEvent;
 import com.seibel.distanthorizons.core.network.messages.base.CloseReasonMessage;
 import com.seibel.distanthorizons.core.network.messages.base.HelloMessage;
-import com.seibel.distanthorizons.core.network.protocol.FutureTrackableNetworkMessage;
 import com.seibel.distanthorizons.core.network.protocol.MessageHandler;
 import com.seibel.distanthorizons.core.network.protocol.NetworkChannelInitializer;
 import com.seibel.distanthorizons.core.network.protocol.NetworkMessage;
@@ -36,10 +35,9 @@ import org.apache.logging.log4j.Logger;
 import java.net.InetSocketAddress;
 import java.util.EnumSet;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
-public class NetworkClient extends NetworkEventSource implements AutoCloseable
+public class NetworkClient extends NetworkEventSource implements IConnection, AutoCloseable
 {
     private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
@@ -75,7 +73,13 @@ public class NetworkClient extends NetworkEventSource implements AutoCloseable
             .group(this.workerGroup)
             .channel(NioSocketChannel.class)
             .option(ChannelOption.SO_KEEPALIVE, true)
-            .handler(new NetworkChannelInitializer(new MessageHandler(this::handleMessage, this::addNewContext)));
+            .handler(new NetworkChannelInitializer(new MessageHandler(
+		            (ctx, msg) -> {
+			            msg.setConnection(this);
+						this.handleMessage(msg);
+					},
+		            ctx -> this.addNewConnection(this)
+            )));
 	
     private EConnectionState connectionState = EConnectionState.INITIAL;
     private Channel channel;
@@ -99,7 +103,7 @@ public class NetworkClient extends NetworkEventSource implements AutoCloseable
 		
 		this.registerHandler(CloseEvent.class, closeEvent ->
 		{
-            LOGGER.info("Disconnected from server: "+ closeEvent.getChannelContext().channel().remoteAddress());
+            LOGGER.info("Disconnected from server: "+this.getRemoteAddress());
             if (this.connectionState == EConnectionState.CLOSING)
 			{
 				this.close();
@@ -158,17 +162,19 @@ public class NetworkClient extends NetworkEventSource implements AutoCloseable
 		});
     }
 	
-	public final void sendMessage(NetworkMessage msg)
+	@Override
+	public ChannelHandlerContext getChannelContext()
 	{
-		this.channel.writeAndFlush(msg);
+		return this.channel.pipeline().context(MessageHandler.class);
 	}
 	
-	public final <TResponse extends FutureTrackableNetworkMessage> CompletableFuture<TResponse> sendRequest(FutureTrackableNetworkMessage msg, Class<TResponse> responseClass)
+	@Override
+	public NetworkEventSource getRequestHandler()
 	{
-		return this.sendRequest(this.channel.pipeline().context(MessageHandler.class), msg, responseClass);
+		return this;
 	}
 	
-    @Override
+	@Override
     public void close() 
 	{
         if (this.connectionState == EConnectionState.CLOSED)
@@ -178,7 +184,7 @@ public class NetworkClient extends NetworkEventSource implements AutoCloseable
 		
 		this.connectionState = EConnectionState.CLOSED;
 		this.channel.close().syncUninterruptibly();
-		this.workerGroup.shutdownGracefully().syncUninterruptibly();
+		this.workerGroup.shutdownGracefully();
 		
 		super.close();
     }

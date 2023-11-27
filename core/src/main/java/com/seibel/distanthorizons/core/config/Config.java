@@ -582,7 +582,7 @@ public class Config
 							.comment(""
 									+ "How bright LOD colors are. \n"
 									+ "\n"
-									+ "0 = black \n"f
+									+ "0 = black \n"
 									+ "1 = normal \n"
 									+ "2 = near white")
 							.build();

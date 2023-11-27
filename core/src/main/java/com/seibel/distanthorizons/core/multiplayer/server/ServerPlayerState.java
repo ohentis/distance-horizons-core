@@ -1,14 +1,14 @@
 package com.seibel.distanthorizons.core.multiplayer.server;
 
+import com.seibel.distanthorizons.core.network.IConnection;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
-import io.netty.channel.ChannelHandlerContext;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class ServerPlayerState
 {
     public IServerPlayerWrapper serverPlayer;
-    public ChannelHandlerContext channelContext;
+    public IConnection connection;
 	
 	public ServersideMultiplayerConfig config = new ServersideMultiplayerConfig();
     public final AtomicInteger pendingFullDataRequests = new AtomicInteger();
