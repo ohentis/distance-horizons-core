@@ -98,6 +98,7 @@ public class RenderDataPointReducingList {
 			this.links = LongArrays.EMPTY_ARRAY;
 			this.data = LongArrays.EMPTY_ARRAY;
 			this.sortingArray = ShortArrays.EMPTY_ARRAY;
+			if (ASSERTS) this.checkLinks();
 			return;
 		}
 		//allocate an array big enough to hold 2 * size - 1 nodes.
@@ -122,6 +123,18 @@ public class RenderDataPointReducingList {
 				sizeWithoutAir++;
 			}
 		}
+
+		//check if all segments to merge are air or otherwise invisible (barriers).
+		//if they are, then this list can stay empty.
+		if (sizeWithoutAir == 0) {
+			this.setLowest(NULL);
+			this.setHighest(NULL);
+			this.setSmallest(NULL);
+			this.setBiggest(NULL);
+			if (ASSERTS) this.checkLinks();
+			return;
+		}
+
 		//sort the nodes by Y level.
 		this.sortByPosition(sizeWithoutAir);
 		//next pass: link the nodes together, and insert air nodes as necessary.
@@ -191,6 +204,8 @@ public class RenderDataPointReducingList {
 	*/
 	@VisibleForTesting
 	public void checkLinks() {
+		LodUtil.assertTrue(this.getSizeWithAir() >= 0, "size with air < 0");
+		LodUtil.assertTrue(this.getSizeWithoutAir() >= 0, "size without air < 0");
 		LodUtil.assertTrue(this.getSizeWithoutAir() <= this.getSizeWithAir(), "more segments without air than with air");
 		if (this.getSizeWithAir() == 0) {
 			LodUtil.assertTrue(this.getSmallest() == NULL, "size is 0, but we have a smallest node");
@@ -199,7 +214,6 @@ public class RenderDataPointReducingList {
 			LodUtil.assertTrue(this.getHighest()  == NULL, "size is 0, but we have a highest node");
 		}
 		else {
-			LodUtil.assertTrue(this.getSizeWithAir() > 0 && this.getSizeWithoutAir() >= 0, "at least one of our sizes is negative");
 			int sizeWithAir = 0, sizeWithoutAir = 0;
 			for (int index = this.getSmallest(); index != NULL; index = this.getBigger(index)) {
 				int smaller = this.getSmaller(index);
@@ -262,6 +276,7 @@ public class RenderDataPointReducingList {
 	*/
 	@VisibleForTesting
 	public void sortBySizeAndReLink() {
+		if (this.getSizeWithAir() <= 1) return;
 		long[] datas = this.data;
 		int writeIndex = 0;
 		for (int readIndex = this.getLowest(); readIndex != NULL; readIndex = this.getHigher(readIndex)) {
@@ -639,6 +654,12 @@ public class RenderDataPointReducingList {
 			if (this.isIndexVisible(node)) {
 				view.set(writeIndex++, this.getData(node));
 			}
+		}
+		//this list could be empty if all the segments for merging are invisible,
+		//but we must ensure that the view is non-empty.
+		//so, if we didn't set any data points, add a void data point.
+		if (writeIndex == 0) {
+			view.set(writeIndex++, RenderDataPointUtil.createVoidDataPoint((byte)(1)));
 		}
 		for (int size = view.size(); writeIndex < size; writeIndex++) {
 			view.set(writeIndex, 0L);
