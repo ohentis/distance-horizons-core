@@ -559,15 +559,9 @@ public class RenderDataPointReducingList {
 		int lowest = this.getLowest();
 		int higher = this.getHigher(lowest);
 		if (higher != NULL) {
-			if (this.getAlpha(higher) >= this.getAlpha(lowest)) {
-				this.setMinY(higher, this.getMinY(lowest));
-				this.remove(lowest);
-			}
-			else {
-				this.setMaxY(lowest, this.getMaxY(higher));
-				this.resortSize(lowest);
-				this.remove(higher);
-			}
+			this.setMinY(higher, this.getMinY(lowest));
+			this.resortSize(higher);
+			this.remove(lowest);
 			if (ASSERTS) this.checkLinks();
 			return false; //go back to step 1.
 		}
