@@ -117,7 +117,7 @@ public class SelfUpdater
 		
 		
 		LOGGER.info("New version (" + ModrinthGetter.getLatestNameForVersion(mcVersion) + ") of " + ModInfo.READABLE_NAME + " is available");
-		newFileLocation = JarUtils.jarFile.getParentFile().toPath().resolve("update").resolve(ModInfo.NAME + "-" + ModrinthGetter.getLatestNameForVersion(mcVersion) + ".jar").toFile();
+		newFileLocation = JarUtils.jarFile.getParentFile().toPath().resolve("update").resolve(ModInfo.NAME + "-" + ModrinthGetter.getLatestNameForVersion(mcVersion) + "-" + mcVersion + ".jar").toFile();
 		if (Config.Client.Advanced.AutoUpdater.enableSilentUpdates.get())
 		{
 			// Auto-update mod
