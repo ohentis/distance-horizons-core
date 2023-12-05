@@ -277,8 +277,9 @@ public class RenderDataPointReducingList
 	 * 	3: if we still fail, force the lowest segment to merge with the segment above it,
 	 * 		with no restrictions on alpha.
 	 * 		the highest alpha of the two segments takes priority though.
-	 * 	4: repeat until our size is less than or equal to the target size.
-	 * notes:
+	 * 	4: repeat until our size is less than or equal to the target size. <br><br>
+	 * 	
+	 *  <b>notes:</b> <br>
 	 * 	changing the size of a node requires re-sorting that node,
 	 * 	but it does not require re-sorting the whole list.
 	 * 	additionally, because of the fact that nodes are sorted smallest to biggest,
@@ -301,14 +302,11 @@ public class RenderDataPointReducingList
 	 */
 	public void reduce(int target)
 	{
-		if (this.reduceStep1SpecialCases(target)) return;
+		if (this.mergeVerySmallConnectedSegments(target)) return;
 		
-		while (true)
-		{
-			if (this.reduceStep1GeneralCases(target)) return;
-			if (this.reduceStep2(target)) return;
-			if (this.reduceStep3(target)) return;
-		}
+		if (this.mergeConnectedSegments(target)) return;
+		if (this.removeLeastImportantSegments(target)) return;
+		this.forceBottomToMerge(target);
 	}
 	
 	
@@ -662,7 +660,7 @@ public class RenderDataPointReducingList
 	 * the list's size down to less than or equal to target,
 	 * or false if more steps need to be performed.
 	 */
-	private boolean reduceStep1SpecialCases(int target)
+	private boolean mergeVerySmallConnectedSegments(int target)
 	{
 		for (int specialCase = 1; specialCase <= SPECIAL_CASES; specialCase++)
 		{
@@ -690,13 +688,13 @@ public class RenderDataPointReducingList
 	 * in other words, handles all the nodes whose size
 	 * is strictly greater than {@link #SPECIAL_CASES},
 	 * and all the nodes which are smaller, but failed
-	 * to be merged in {@link #reduceStep1SpecialCases(int)}
+	 * to be merged in {@link #mergeVerySmallConnectedSegments(int)}
 	 *
 	 * returns true if this step single-handedly brought
 	 * the list's size down to less than or equal to target,
 	 * or false if more steps need to be performed.
 	 */
-	private boolean reduceStep1GeneralCases(int target) 
+	private boolean mergeConnectedSegments(int target) 
 	{
 		for (int current = this.getSmallest(); current != NULL;) 
 		{
@@ -718,7 +716,7 @@ public class RenderDataPointReducingList
 	 * the list's size down to less than or equal to target,
 	 * or false if more steps need to be performed.
 	 */
-	private boolean reduceStep2(int target)
+	private boolean removeLeastImportantSegments(int target)
 	{
 		for (int center = this.getSmallest(); center != NULL; )
 		{
@@ -752,41 +750,123 @@ public class RenderDataPointReducingList
 	 * are forced to merge in order to fit the desired target,
 	 * even if they normally shouldn't merge because it would look bad. <br><br>
 	 *
-	 * returns true if this step brought the list's
-	 * size down to less than or equal to target,
-	 * or false if we need to go back to step 1.
+	 * returns after this step brings the list's
+	 * size down to less than or equal to target.
 	 */
-	private boolean reduceStep3(int target)
+	private void forceBottomToMerge(int target)
 	{
-		if (this.getSizeWithoutAir() <= target)
+		for (int lowest = this.getLowest(); lowest != NULL; )
 		{
-			return true;
-		}
-		
-		
-		int lowest = this.getLowest();
-		int higher = this.getHigher(lowest);
-		if (higher != NULL)
-		{
-			this.setMinY(higher, this.getMinY(lowest));
-			this.resortSize(higher);
-			this.remove(lowest);
-			if (ASSERTS) this.checkLinks();
+			if (this.getSizeWithoutAir() <= target)
+			{
+				return;
+			}
 			
-			return false; // go back to step 1.
-		}
-		else
-		{
-			// if we reach this line, then target is 0 or negative.
-			this.setLowest(NULL);
-			this.setHighest(NULL);
-			this.setSmallest(NULL);
-			this.setBiggest(NULL);
-			this.setSizeWithAir(0);
-			this.setSizeWithoutAir(0);
-			return true;
+			int lowY = this.getMinY(lowest);
+			int higher = this.getHigher(lowest);
+			inner:
+			while (true)
+			{
+				if (higher == NULL)
+				{
+					//if we reach this line, then target is 0 or negative.
+					this.setLowest(NULL);
+					this.setHighest(NULL);
+					this.setSmallest(NULL);
+					this.setBiggest(NULL);
+					this.setSizeWithAir(0);
+					this.setSizeWithoutAir(0);
+					
+					if (ASSERTS) this.checkLinks();
+					
+					return;
+				}
+				
+				// don't merge the lowest segment with an invisible segment.
+				// in other words, we don't want
+				//   visible
+				//   invisible
+				//   visible
+				// to be replaced with
+				//   visible
+				//   invisible
+				// instead, we want to eliminate the invisible segment too,
+				// and set the minY of the top visible segment
+				// to the minY of the bottom visible segment.
+				if (this.isIndexVisible(higher))
+				{
+					this.setMinY(higher, lowY);
+					this.resortSize(higher);
+					this.remove(lowest);
+					
+					if (ASSERTS) this.checkLinks();
+					
+					lowest = this.getLowest();
+					break inner;
+				}
+				else
+				{
+					this.remove(lowest);
+					lowest = higher;
+					higher = this.getHigher(higher);
+					//don't update lowY.
+				}
+			}
 		}
 	}
+	
+	/**
+	 * reduces the view to a single data point,
+	 * whose min Y is the lowest of all data points in the provided view,
+	 * and every other property of the returned data point
+	 * matches those of the data point with the highest
+	 * Y level in the provided view.
+	 *
+	 * @implNote this method does not allocate any objects.
+	 */
+	public static long reduceToOne(IColumnDataView view) 
+	{
+		int size = view.size();
+		if (size <= 0)
+		{
+			return RenderDataPointUtil.createVoidDataPoint((byte)(1));
+		}
+		
+		long highest;
+		int lowest;
+		int index = 0;
+		//first loop: find the first visible segment.
+		foundVisible:
+		{
+			for (; index < size; index++)
+			{
+				long dataPoint = view.get(index);
+				if (isDataVisible(dataPoint))
+				{
+					highest = dataPoint;
+					lowest = RenderDataPointUtil.getYMin(dataPoint);
+					break foundVisible;
+				}
+			}
+			//no visible segments, return void.
+			return RenderDataPointUtil.createVoidDataPoint((byte) (1));
+		}
+		
+		//second loop: merge the rest of the segments.
+		for (; index < size; index++)
+		{
+			long dataPoint = view.get(index);
+			if (isDataVisible(dataPoint))
+			{
+				int y = RenderDataPointUtil.getYMin(dataPoint);
+				if (y > highest) highest = dataPoint;
+				else if (y < lowest) lowest = y;
+			}
+		}
+		
+		return (highest & ~RenderDataPointUtil.DEPTH_SHIFTED_MASK) | ((lowest & RenderDataPointUtil.DEPTH_MASK) << RenderDataPointUtil.DEPTH_SHIFT);
+	}
+	
 	
 	/** transfers the contents of this list to the provided view, in order of highest to lowest. */
 	public void copyTo(ColumnArrayView view)
@@ -812,7 +892,7 @@ public class RenderDataPointReducingList
 		
 		for (int size = view.size(); writeIndex < size; writeIndex++)
 		{
-			view.set(writeIndex, 0L);
+			view.set(writeIndex, RenderDataPointUtil.EMPTY_DATA);
 		}
 	}
 	
