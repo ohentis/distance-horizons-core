@@ -90,9 +90,8 @@ public class ConfigThreadPool
 	{
 		if (this.executor != null)
 		{
-			//LOGGER.info("Stopping File Handler");
+			//LOGGER.info("Stopping thread pool");
 			this.executor.shutdownNow();
-			this.executor = null;
 		}
 		
 		this.threadCount = 0;

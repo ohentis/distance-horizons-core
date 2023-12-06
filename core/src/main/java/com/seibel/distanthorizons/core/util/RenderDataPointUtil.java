@@ -256,12 +256,17 @@ public class RenderDataPointUtil
 	// TODO this should probably be moved
 	
 	// TODO what is the purpose of these?
+	//these were needed by the old logic for mergeMultiData(),
+	//which has now been replaced by RenderDataPointReducingList.
+	//so, these are no longer necessary, but left here for the same
+	//reason the old logic is left here: in case it's ever needed again.
+	/*
 	private static final ThreadLocal<int[]> tLocalIndices = new ThreadLocal<>();
 	private static final ThreadLocal<boolean[]> tLocalIncreaseIndex = new ThreadLocal<>();
 	private static final ThreadLocal<boolean[]> tLocalIndexHandled = new ThreadLocal<>();
 	private static final ThreadLocal<short[]> tLocalHeightAndDepth = new ThreadLocal<>();
 	private static final ThreadLocal<int[]> tDataIndexCache = new ThreadLocal<>();
-	
+	*/
 	
 	/**
 	 * This method merge column of multiple data together
@@ -271,6 +276,32 @@ public class RenderDataPointUtil
 	 */
 	public static void mergeMultiData(IColumnDataView sourceData, ColumnArrayView output)
 	{
+		int target = output.verticalSize();
+		if (target <= 0)
+		{
+			// I expect this to never be the case,
+			// but RenderDataPointReducingList handles it sanely,
+			// so I might as well handle it sanely here too.
+			output.fill(EMPTY_DATA);
+		}
+		else if (target == 1)
+		{
+			output.set(0, RenderDataPointReducingList.reduceToOne(sourceData));
+			for (int index = 1, size = output.size(); index < size; index++)
+			{
+				output.set(index, EMPTY_DATA);
+			}
+		}
+		else
+		{
+			RenderDataPointReducingList list = new RenderDataPointReducingList(sourceData);
+			list.reduce(output.verticalSize());
+			list.copyTo(output);
+		}
+		
+		
+		//old logic left here in case it's ever needed again.
+		/*
 		if (output.dataCount() != 1)
 		{
 			throw new IllegalArgumentException("output must be only reserved for one datapoint!");
@@ -612,6 +643,7 @@ public class RenderDataPointUtil
 				
 			}
 		}
+		*/
 	}
 	
 }

@@ -49,6 +49,7 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapp
 import io.netty.buffer.ByteBuf;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
 
 import java.nio.ByteBuffer;
@@ -161,46 +162,73 @@ public class ClientApi
 	// level events //
 	//==============//
 	
-	public void clientLevelUnloadEvent(IClientLevelWrapper level)
+	public void clientLevelUnloadEvent(@Nullable IClientLevelWrapper level)
 	{
-		LOGGER.info("Unloading client level [" + level + "].");
-		
-		AbstractDhWorld world = SharedApi.getAbstractDhWorld();
-		if (world != null)
+		try
 		{
-			world.unloadLevel(level);
-			ApiEventInjector.INSTANCE.fireAllEvents(DhApiLevelUnloadEvent.class, new DhApiLevelUnloadEvent.EventParam(level));
+			if (level == null)
+			{
+				// can happen on certain multiverse servers
+				return;
+			}
+			LOGGER.info("Unloading client level [" + level + "].");
+			
+			AbstractDhWorld world = SharedApi.getAbstractDhWorld();
+			if (world != null)
+			{
+				world.unloadLevel(level);
+				ApiEventInjector.INSTANCE.fireAllEvents(DhApiLevelUnloadEvent.class, new DhApiLevelUnloadEvent.EventParam(level));
+			}
+			else
+			{
+				this.waitingClientLevels.remove(level);
+			}
 		}
-		else
+		catch (Exception e)
 		{
-			this.waitingClientLevels.remove(level);
+			// handle errors here to prevent blowing up a mixin or API up stream
+			LOGGER.error("Unexpected error in ClientApi.clientLevelUnloadEvent(), error: "+e.getMessage(), e);
 		}
 	}
 	
-	public void clientLevelLoadEvent(IClientLevelWrapper level) { this.clientLevelLoadEvent(level, false); }
-	public void multiverseClientLevelLoadEvent(IClientLevelWrapper level) { this.clientLevelLoadEvent(level, true); }
-	private void clientLevelLoadEvent(IClientLevelWrapper level, boolean isServerCommunication)
+	public void clientLevelLoadEvent(@Nullable IClientLevelWrapper level) { this.clientLevelLoadEvent(level, false); }
+	public void multiverseClientLevelLoadEvent(@Nullable IClientLevelWrapper level) { this.clientLevelLoadEvent(level, true); }
+	private void clientLevelLoadEvent(@Nullable IClientLevelWrapper level, boolean isServerCommunication)
 	{
-		if (this.isServerCommunicationEnabled && !isServerCommunication)
+		try
 		{
-			LOGGER.info("Server supports communication, deferring loading.");
-			return;
-		}
-		
-		
-		LOGGER.info("Loading " + (isServerCommunication ? "Multiverse" : "") + " client level [" + level + "].");
-		
-		AbstractDhWorld world = SharedApi.getAbstractDhWorld();
-		if (world != null)
-		{
-			world.getOrLoadLevel(level);
-			ApiEventInjector.INSTANCE.fireAllEvents(DhApiLevelLoadEvent.class, new DhApiLevelLoadEvent.EventParam(level));
+			if (this.isServerCommunicationEnabled && !isServerCommunication)
+			{
+				LOGGER.info("Server supports communication, deferring loading.");
+				return;
+			}
+			if (level == null)
+			{
+				// can happen on certain multiverse servers
+				return;
+			}
 			
-			this.loadWaitingChunksForLevel(level);
+			
+			
+			LOGGER.info("Loading " + (isServerCommunication ? "Multiverse" : "") + " client level [" + level + "].");
+			
+			AbstractDhWorld world = SharedApi.getAbstractDhWorld();
+			if (world != null)
+			{
+				world.getOrLoadLevel(level);
+				ApiEventInjector.INSTANCE.fireAllEvents(DhApiLevelLoadEvent.class, new DhApiLevelLoadEvent.EventParam(level));
+				
+				this.loadWaitingChunksForLevel(level);
+			}
+			else
+			{
+				this.waitingClientLevels.add(level);
+			}
 		}
-		else
+		catch (Exception e)
 		{
-			this.waitingClientLevels.add(level);
+			// handle errors here to prevent blowing up a mixin or API up stream
+			LOGGER.error("Unexpected error in ClientApi.clientLevelLoadEvent(), error: "+e.getMessage(), e);
 		}
 	}
 	private void loadWaitingChunksForLevel(IClientLevelWrapper level)
@@ -258,26 +286,35 @@ public class ClientApi
 		IProfilerWrapper profiler = MC.getProfiler();
 		profiler.push("DH-ClientTick");
 		
-		boolean doFlush = System.nanoTime() - this.lastFlushNanoTime >= SPAM_LOGGER_FLUSH_NS;
-		if (doFlush)
+		try
 		{
-			this.lastFlushNanoTime = System.nanoTime();
-			SpamReducedLogger.flushAll();
-		}
-		ConfigBasedLogger.updateAll();
-		ConfigBasedSpamLogger.updateAll(doFlush);
-		
-		IDhClientWorld clientWorld = SharedApi.getIDhClientWorld();
-		if (clientWorld != null)
-		{
-			clientWorld.clientTick();
-			
-			// Ignore local world gen, as it's managed by server ticking
-			if (!(clientWorld instanceof DhClientServerWorld))
+			boolean doFlush = System.nanoTime() - this.lastFlushNanoTime >= SPAM_LOGGER_FLUSH_NS;
+			if (doFlush)
 			{
-				SharedApi.worldGenTick(clientWorld::doWorldGen);
+				this.lastFlushNanoTime = System.nanoTime();
+				SpamReducedLogger.flushAll();
+			}
+			ConfigBasedLogger.updateAll();
+			ConfigBasedSpamLogger.updateAll(doFlush);
+			
+			IDhClientWorld clientWorld = SharedApi.getIDhClientWorld();
+			if (clientWorld != null)
+			{
+				clientWorld.clientTick();
+				
+				// Ignore local world gen, as it's managed by server ticking
+				if (!(clientWorld instanceof DhClientServerWorld))
+				{
+					SharedApi.worldGenTick(clientWorld::doWorldGen);
+				}
 			}
 		}
+		catch (Exception e)
+		{
+			// handle errors here to prevent blowing up a mixin or API up stream
+			LOGGER.error("Unexpected error in ClientApi.clientTickEvent(), error: "+e.getMessage(), e);
+		}
+		
 		profiler.pop();
 	}
 	

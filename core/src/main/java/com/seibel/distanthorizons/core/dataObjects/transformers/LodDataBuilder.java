@@ -21,6 +21,7 @@ package com.seibel.distanthorizons.core.dataObjects.transformers;
 
 import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
+import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.util.FullDataPointUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
@@ -28,11 +29,14 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.IWrapperFactory;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
+import org.apache.logging.log4j.Logger;
 
 public class LodDataBuilder
 {
-	
+	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	private static final IBlockStateWrapper AIR = SingletonInjector.INSTANCE.get(IWrapperFactory.class).getAirBlockStateWrapper();
+	
+	private static boolean getTopErrorLogged = false;
 	
 	
 	public static ChunkSizedFullDataAccessor createChunkData(IChunkWrapper chunkWrapper)
@@ -65,10 +69,24 @@ public class LodDataBuilder
 				IBlockStateWrapper topBlockState = chunkWrapper.getBlockState(x, y, z);
 				while (!topBlockState.isAir() && y < chunkWrapper.getMaxBuildHeight())
 				{
-					// This is necessary in some edge cases with snow layers and some other blocks that may not appear in the height map but do block light.
-					// Interestingly this doesn't appear to be the case in the DhLightingEngine, if this same logic is added there the lighting breaks for the affected blocks.
-					y++;
-					topBlockState = chunkWrapper.getBlockState(x, y, z);
+					try
+					{
+						// This is necessary in some edge cases with snow layers and some other blocks that may not appear in the height map but do block light.
+						// Interestingly this doesn't appear to be the case in the DhLightingEngine, if this same logic is added there the lighting breaks for the affected blocks.
+						y++;
+						topBlockState = chunkWrapper.getBlockState(x, y, z);
+					}
+					catch (Exception e)
+					{
+						if (!getTopErrorLogged)
+						{
+							LOGGER.warn("Unexpected issue in LodDataBuilder, future errors won't be logged. Chunk [" + chunkWrapper.getChunkPos() + "] with max height: [" + chunkWrapper.getMaxBuildHeight() + "] had issue getting block at pos [" + x + "," + y + "," + z + "] error: " + e.getMessage(), e);
+							getTopErrorLogged = true;
+						}
+						
+						y--;
+						break;
+					}
 				}
 				
 				

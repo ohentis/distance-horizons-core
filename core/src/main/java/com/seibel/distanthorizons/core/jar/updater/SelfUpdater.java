@@ -117,7 +117,7 @@ public class SelfUpdater
 		
 		
 		LOGGER.info("New version (" + ModrinthGetter.getLatestNameForVersion(mcVersion) + ") of " + ModInfo.READABLE_NAME + " is available");
-		newFileLocation = JarUtils.jarFile.getParentFile().toPath().resolve("update").resolve(ModInfo.NAME + "-" + ModrinthGetter.getLatestNameForVersion(mcVersion) + ".jar").toFile();
+		newFileLocation = JarUtils.jarFile.getParentFile().toPath().resolve("update").resolve(ModInfo.NAME + "-" + ModrinthGetter.getLatestNameForVersion(mcVersion) + "-" + mcVersion + ".jar").toFile();
 		if (Config.Client.Advanced.AutoUpdater.enableSilentUpdates.get())
 		{
 			// Auto-update mod
@@ -141,7 +141,7 @@ public class SelfUpdater
 		
 		if (!pipeline.get("status").equals("success"))
 		{
-			LOGGER.warn("Pipeline for branch ["+ ModJarInfo.Git_Branch +"], commit ["+ pipeline.get("id") +"], has either failed to build, or still building.");
+			LOGGER.warn("Pipeline for branch ["+ ModJarInfo.Git_Branch +"], pipeline ID ["+ pipeline.get("id") +"], has either failed to build, or is still building.");
 			return false;
 		}
 		

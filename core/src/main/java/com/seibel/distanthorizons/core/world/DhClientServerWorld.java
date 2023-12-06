@@ -29,6 +29,7 @@ import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.util.HashMap;
@@ -69,7 +70,7 @@ public class DhClientServerWorld extends AbstractDhWorld implements IDhClientWor
 	//=========//
 	
 	@Override
-	public DhClientServerLevel getOrLoadLevel(ILevelWrapper wrapper)
+	public DhClientServerLevel getOrLoadLevel(@NotNull ILevelWrapper wrapper)
 	{
 		if (wrapper instanceof IServerLevelWrapper)
 		{
@@ -105,13 +106,13 @@ public class DhClientServerWorld extends AbstractDhWorld implements IDhClientWor
 	}
 	
 	@Override
-	public DhClientServerLevel getLevel(ILevelWrapper wrapper) { return this.levelWrapperByDhLevel.get(wrapper); }
+	public DhClientServerLevel getLevel(@NotNull ILevelWrapper wrapper) { return this.levelWrapperByDhLevel.get(wrapper); }
 	
 	@Override
 	public Iterable<? extends IDhLevel> getAllLoadedLevels() { return this.dhLevels; }
 	
 	@Override
-	public void unloadLevel(ILevelWrapper wrapper)
+	public void unloadLevel(@NotNull ILevelWrapper wrapper)
 	{
 		if (this.levelWrapperByDhLevel.containsKey(wrapper))
 		{
@@ -160,7 +161,12 @@ public class DhClientServerWorld extends AbstractDhWorld implements IDhClientWor
 		this.saveAndFlush();
 		this.f3Message.close();
 		
-		for (DhClientServerLevel level : this.dhLevels)
+		
+		// clear dhLevels to prevent concurrent modification errors
+		HashSet<DhClientServerLevel> levelsToClose = new HashSet<>(this.dhLevels);
+		this.dhLevels.clear();
+		// close each level
+		for (DhClientServerLevel level : levelsToClose)
 		{
 			LOGGER.info("Unloading level " + level.getServerLevelWrapper().getDimensionType().getDimensionName());
 			

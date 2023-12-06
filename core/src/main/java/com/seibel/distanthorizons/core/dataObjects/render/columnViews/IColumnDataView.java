@@ -25,6 +25,7 @@ public interface IColumnDataView
 {
 	long get(int index);
 	
+	// FIXME probably horizontal size in blocks?
 	int size();
 	
 	default Iterator<Long> iterator()
@@ -43,8 +44,10 @@ public interface IColumnDataView
 		};
 	}
 	
+	// FIXME measured in blocks?
 	int verticalSize();
 	
+	// FIXME how many datapoints in this LOD?
 	int dataCount();
 	
 	IColumnDataView subView(int dataIndexStart, int dataCount);

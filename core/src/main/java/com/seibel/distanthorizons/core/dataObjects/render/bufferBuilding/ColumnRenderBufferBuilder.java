@@ -39,6 +39,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * Used to populate the buffers in a {@link ColumnRenderSource} object.
@@ -66,6 +67,17 @@ public class ColumnRenderBufferBuilder
 			IDhClientLevel clientLevel, Reference<ColumnRenderBuffer> renderBufferRef,
 			ColumnRenderSource renderSource, ColumnRenderSource[] adjData)
 	{
+		ThreadPoolExecutor bufferBuilderExecutor = ThreadPools.getBufferBuilderExecutor();
+		ThreadPoolExecutor bufferUploaderExecutor = ThreadPools.getBufferUploaderExecutor();
+		if ((bufferBuilderExecutor == null || bufferBuilderExecutor.isTerminated()) ||
+			(bufferUploaderExecutor == null || bufferUploaderExecutor.isTerminated()))
+		{
+			// one or more of the thread pools has been shut down
+			CompletableFuture<ColumnRenderBuffer> future = new CompletableFuture<>();
+			future.cancel(true);
+			return future;
+		}
+		
 		//LOGGER.info("RenderRegion startBuild @ "+renderSource.sectionPos);
 		return CompletableFuture.supplyAsync(() ->
 				{
@@ -101,7 +113,7 @@ public class ColumnRenderBufferBuilder
 						LOGGER.error("\"LodNodeBufferBuilder\" was unable to build quads: ", e3);
 						throw e3;
 					}
-				}, ThreadPools.getBufferBuilderExecutor())
+				}, bufferBuilderExecutor)
 				.thenApplyAsync((quadBuilder) ->
 				{
 					try
@@ -136,7 +148,7 @@ public class ColumnRenderBufferBuilder
 						LOGGER.error("\"LodNodeBufferBuilder\" was unable to upload buffer: ", e3);
 						throw e3;
 					}
-				}, ThreadPools.getBufferUploaderExecutor())
+				}, bufferUploaderExecutor)
 				.handle((columnRenderBuffer, ex) ->
 				{
 					//LOGGER.info("RenderRegion endBuild @ {}", renderSource.sectionPos);
@@ -168,10 +180,11 @@ public class ColumnRenderBufferBuilder
 		// Variable initialization
 		EDebugRendering debugMode = Config.Client.Advanced.Debugging.debugRendering.get();
 		
+		// TODO make a config for this
 		// can be uncommented to limit which section positions are build and thus, rendered
 		// useful when debugging a specific section
-//		if (renderSource.sectionPos.sectionDetailLevel == 6 
-//			&& renderSource.sectionPos.sectionZ == 0 && renderSource.sectionPos.sectionX == 0)
+//		if (renderSource.sectionPos.getDetailLevel() == 6 
+//			&& renderSource.sectionPos.getZ() == 0 && renderSource.sectionPos.getX() == 0)
 //		{
 //			int test = 0;
 //		}
@@ -185,10 +198,11 @@ public class ColumnRenderBufferBuilder
 		{
 			for (int z = 0; z < ColumnRenderSource.SECTION_SIZE; z++)
 			{
+				// TODO make a config for this
 				// can be uncommented to limit the buffer building to a specific
 				// relative position in this section.
 				// useful for debugging a single column's rendering
-//				if (x != 1 || z != 1)
+//				if (x != 0 || (z != 0 && z != 1))
 //				{
 //					continue;
 //				}
@@ -304,6 +318,7 @@ public class ColumnRenderBufferBuilder
 				// We only stop when we find a block that is void or non-existing block
 				for (int i = 0; i < columnRenderData.size(); i++)
 				{
+					// TODO make a config for this
 					// can be uncommented to limit which vertical LOD is generated
 //					if (i != 0)
 //					{

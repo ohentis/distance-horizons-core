@@ -22,6 +22,7 @@ package com.seibel.distanthorizons.core.util.threading;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.config.listeners.ConfigChangeListener;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -42,13 +43,16 @@ public class ThreadPools
 	
 	public static final DhThreadFactory FILE_HANDLER_THREAD_FACTORY = new DhThreadFactory("File Handler", Thread.MIN_PRIORITY);
 	private static ConfigThreadPool fileHandlerThreadPool;
+	@Nullable
 	public static ThreadPoolExecutor getFileHandlerExecutor() { return fileHandlerThreadPool.executor; }
 	
 	public static final DhThreadFactory WORLD_GEN_THREAD_FACTORY = new DhThreadFactory("World Gen", Thread.MIN_PRIORITY);
 	private static ConfigThreadPool worldGenThreadPool;
+	@Nullable
 	public static ThreadPoolExecutor getWorldGenExecutor() { return worldGenThreadPool.executor; }
 	
 	private static ThreadPoolExecutor bufferUploaderThreadPool;
+	@Nullable
 	public static ThreadPoolExecutor getBufferUploaderExecutor() { return bufferUploaderThreadPool; }
 	
 	
@@ -63,14 +67,17 @@ public class ThreadPools
 	
 	public static final DhThreadFactory LIGHT_POPULATOR_THREAD_FACTORY = new DhThreadFactory("LOD Builder - Light Populator", Thread.MIN_PRIORITY);
 	private static ConfigThreadPool lightPopulatorThreadPool;
+	@Nullable
 	public static ThreadPoolExecutor getLightPopulatorExecutor() { return lightPopulatorThreadPool.executor; }
 	
 	public static final DhThreadFactory CHUNK_TO_LOD_BUILDER_THREAD_FACTORY = new DhThreadFactory("LOD Builder - Chunk to Lod Builder", Thread.MIN_PRIORITY);
 	private static ConfigThreadPool chunkToLodBuilderThreadPool;
+	@Nullable
 	public static ThreadPoolExecutor getChunkToLodBuilderExecutor() { return chunkToLodBuilderThreadPool.executor; }
 	
 	public static final DhThreadFactory BUFFER_BUILDER_THREAD_FACTORY = new DhThreadFactory("LOD Builder - Buffer Builder", Thread.MIN_PRIORITY);
 	private static ConfigThreadPool bufferBuilderThreadPool;
+	@Nullable
 	public static ThreadPoolExecutor getBufferBuilderExecutor() { return bufferBuilderThreadPool.executor; }
 	
 	

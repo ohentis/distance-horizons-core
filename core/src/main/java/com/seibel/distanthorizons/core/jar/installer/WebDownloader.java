@@ -74,13 +74,19 @@ public class WebDownloader
 					fos, 1024))
 			{
 				byte[] data = new byte[1024];
-				int i;
+				int i, percent = -1;
 				while ((i = in.read(data, 0, 1024)) >= 0)
 				{
 					totalDataRead = totalDataRead + i;
 					bout.write(data, 0, i);
-//                        int percent = (int) ((totalDataRead * 100) / filesize);
-//                        System.out.println(percent);
+					
+					// TODO: Link this to an atomic integer rather than printing it to log
+                    int newPercent = (int) ((totalDataRead * 100) / filesize);
+					if (percent != newPercent)
+					{
+						percent = newPercent;
+						System.out.println(String.valueOf(percent) +"% downloaded");
+					}
 				}
 			}
 		}

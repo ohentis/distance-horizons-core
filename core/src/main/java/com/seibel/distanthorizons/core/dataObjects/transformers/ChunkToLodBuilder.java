@@ -100,6 +100,12 @@ public class ChunkToLodBuilder implements AutoCloseable
 			return;
 		}
 		
+		ThreadPoolExecutor lodBuilderExecutor = ThreadPools.getChunkToLodBuilderExecutor();
+		if (lodBuilderExecutor == null)
+		{
+			return;
+		}
+		
 		
 		for (int i = 0; i < threadCount; i++)
 		{
@@ -114,7 +120,7 @@ public class ChunkToLodBuilder implements AutoCloseable
 				{
 					this.runningCount.decrementAndGet();
 				}
-			}, ThreadPools.getChunkToLodBuilderExecutor());
+			}, lodBuilderExecutor);
 		}
 	}
 	private void tickThreadTask()

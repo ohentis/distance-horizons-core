@@ -518,7 +518,8 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 		try
 		{
 			int waitTimeInSeconds = 3;
-			if (!ThreadPools.getWorldGenExecutor().awaitTermination(waitTimeInSeconds, TimeUnit.SECONDS))
+			ThreadPoolExecutor executor = ThreadPools.getWorldGenExecutor();
+			if (executor != null && !executor.awaitTermination(waitTimeInSeconds, TimeUnit.SECONDS))
 			{
 				LOGGER.warn("World generator thread pool shutdown didn't complete after [" + waitTimeInSeconds + "] seconds. Some world generator requests may still be running.");
 			}

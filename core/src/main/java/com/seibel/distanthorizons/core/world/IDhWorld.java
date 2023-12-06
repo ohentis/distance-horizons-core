@@ -21,17 +21,18 @@ package com.seibel.distanthorizons.core.world;
 
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.CompletableFuture;
 
 public interface IDhWorld
 {
 	
-	IDhLevel getOrLoadLevel(ILevelWrapper levelWrapper);
-	IDhLevel getLevel(ILevelWrapper wrapper);
+	IDhLevel getOrLoadLevel(@NotNull ILevelWrapper levelWrapper);
+	IDhLevel getLevel(@NotNull ILevelWrapper wrapper);
 	Iterable<? extends IDhLevel> getAllLoadedLevels();
 	
-	void unloadLevel(ILevelWrapper levelWrapper);
+	void unloadLevel(@NotNull ILevelWrapper levelWrapper);
 	
 	CompletableFuture<Void> saveAndFlush();
 	

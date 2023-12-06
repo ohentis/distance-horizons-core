@@ -145,16 +145,21 @@ public class RenderUtil
 	 */
 	public static Mat4f createLodProjectionMatrix(Mat4f mcProjMat, float partialTicks)
 	{
+		// in James' testing a near clip plane distance of 2 blocks is enough to allow the fragment
+		// culling to take effect instead of seeing the near clip plane.
+		float nearClipDist = 2f; //MC_RENDER.getRenderDistance() * LodUtil.CHUNK_WIDTH / 4.0f; //getNearClipPlaneDistanceInBlocks(partialTicks);
+		if (Config.Client.Advanced.Debugging.lodOnlyMode.get())
+		{
+			nearClipDist = 0.1f;
+		}
+		
 		int farPlaneDistanceInBlocks = RenderUtil.getFarClipPlaneDistanceInBlocks();
+		float farClipDist = (float) ((farPlaneDistanceInBlocks + LodUtil.REGION_WIDTH) * Math.sqrt(2));
 		
 		// Create a copy of the current matrix, so it won't be modified.
 		Mat4f lodProj = mcProjMat.copy();
-		
 		// Set new far and near clip plane values.
-		lodProj.setClipPlanes(
-				getNearClipPlaneDistanceInBlocks(partialTicks),
-				(float) ((farPlaneDistanceInBlocks + LodUtil.REGION_WIDTH) * Math.sqrt(2)));
-		
+		lodProj.setClipPlanes(nearClipDist, farClipDist);
 		return lodProj;
 	}
 	
@@ -198,34 +203,21 @@ public class RenderUtil
 		else
 		{
 			// TODO make this option dependent on player speed.
-			//  if the player is flying quickly, lower the near clip plane to account for slow chunk loading.
+			//  If the player is flying quickly, lower the near clip plane to account for slow chunk loading.
 			//  If the player is moving quickly they are less likely to notice overdraw.
 			
-			EOverdrawPrevention clipPlaneDistance = Config.Client.Advanced.Graphics.AdvancedGraphics.overdrawPrevention.get();
-			switch (clipPlaneDistance)
+			nearClipPlane = Config.Client.Advanced.Graphics.AdvancedGraphics.overdrawPrevention.get().floatValue();
+			nearClipPlane *= vanillaBlockRenderedDistance; 
+			
+			// the near clip plane should never be closer than 1/10th of a block,
+			// otherwise Z-fighting and other issues may occur
+			if (nearClipPlane < 0.1f)
 			{
-				default: // shouldn't be necessary, just here to make the compiler happy
-				case NONE:
-					nearClipPlane = 0.1f;
-					break;
-				
-				case LIGHT:
-					nearClipPlane = vanillaBlockRenderedDistance * 0.25f;
-					break;
-				
-				case MEDIUM:
-					nearClipPlane = vanillaBlockRenderedDistance * 0.4f;
-					break;
-				
-				
-				case HEAVY:
-					// recommend render distance ot 6 or higher, otherwise holes may appear
-					nearClipPlane = vanillaBlockRenderedDistance * 0.6f;
-					break;
+				nearClipPlane = 0.1f;
 			}
 		}
 		
-		// modify the based on the player's FOV
+		// modify based on the player's FOV
 		double fov = MC_RENDER.getFov(partialTicks);
 		double aspectRatio = (double) MC_RENDER.getScreenWidth() / MC_RENDER.getScreenHeight();
 		

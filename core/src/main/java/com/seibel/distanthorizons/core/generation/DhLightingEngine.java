@@ -72,6 +72,8 @@ public class DhLightingEngine
 		DhChunkPos centerChunkPos = centerChunk.getChunkPos();
 		AdjacentChunkHolder adjacentChunkHolder = new AdjacentChunkHolder(centerChunk);
 		
+		long startTimeNs = System.nanoTime();
+		
 		
 		// try-finally to handle the stableArray resources
 		StableLightPosStack blockLightPosQueue = null;
@@ -143,25 +145,25 @@ public class DhLightingEngine
 						{
 							for (int relZ = 0; relZ < LodUtil.CHUNK_WIDTH; relZ++)
 							{
-								// get the light
-								int maxY = chunk.getLightBlockingHeightMapValue(relX, relZ);
-								DhBlockPos skyLightPos = new DhBlockPos(chunk.getMinBlockX() + relX, maxY, chunk.getMinBlockZ() + relZ);
-								if (skyLightPos.y < chunk.getMinBuildHeight() || skyLightPos.y > chunk.getMaxBuildHeight())
+								// set each pos' sky light all the way down until a opaque block is hit
+								for (int y = chunk.getMaxBuildHeight(); y >= chunk.getMinBuildHeight(); y--)
 								{
-									// this shouldn't normally happen
-									if (!warningLogged)
+									IBlockStateWrapper block = chunk.getBlockState(relX, y, relZ);
+									if (block != null && block.getOpacity() != IBlockStateWrapper.FULLY_TRANSPARENT)
 									{
-										warningLogged = true;
-										LOGGER.debug("Lighting chunk at pos " + chunk.getChunkPos() + " may have a missing or incomplete heightmap. Chunk min/max [" + chunk.getMinBuildHeight() + "/" + chunk.getMaxBuildHeight() + "], skylight pos: " + skyLightPos);
+										// keep moving down until we find a non-transparent block
+										break;
 									}
-									continue;
+									
+									
+									// add sky light to the queue
+									DhBlockPos skyLightPos = new DhBlockPos(chunk.getMinBlockX() + relX, y, chunk.getMinBlockZ() + relZ);
+									skyLightPosQueue.push(skyLightPos.x, skyLightPos.y, skyLightPos.z, maxSkyLight);
+									
+									// set the chunk's sky light
+									skyLightPos.mutateToChunkRelativePos(relBlockPos);
+									chunk.setDhSkyLight(relBlockPos.x, relBlockPos.y, relBlockPos.z, maxSkyLight);
 								}
-								skyLightPosQueue.push(skyLightPos.x, skyLightPos.y, skyLightPos.z, maxSkyLight);
-								
-								
-								// set the light
-								skyLightPos.mutateToChunkRelativePos(relBlockPos);
-								chunk.setDhSkyLight(relBlockPos.x, relBlockPos.y, relBlockPos.z, maxSkyLight);
 							}
 						}
 					}
@@ -199,7 +201,10 @@ public class DhLightingEngine
 		
 		centerChunk.setIsDhLightCorrect(true);
 		centerChunk.setUseDhLighting(true);
-		LOGGER.trace("Finished generating lighting for chunk: [" + centerChunkPos + "]");
+		
+		long endTimeNs = System.nanoTime();
+		float totalTimeMs = (endTimeNs - startTimeNs) / 1_000_000.0f;
+		LOGGER.trace("Finished generating lighting for chunk: [" + centerChunkPos + "] in ["+totalTimeMs+"] milliseconds");
 	}
 	
 	/** Applies each {@link LightPos} from the queue to the given set of {@link IChunkWrapper}'s. */

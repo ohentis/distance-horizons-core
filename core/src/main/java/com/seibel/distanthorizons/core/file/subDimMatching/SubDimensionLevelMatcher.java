@@ -332,7 +332,7 @@ public class SubDimensionLevelMatcher implements AutoCloseable
 				
 				
 				String subDimShortName = LodUtil.shortenString(testLevelFolder.getName(), 8); // variables are separated out for easier debugging
-				String equalPercent = LodUtil.shortenString(subDimCompare.getPercentEqual()+"", 5);
+				String equalPercent = LodUtil.shortenString(mostSimilarSubDim.getPercentEqual()+"", 5);
 				LOGGER.info("Sub dimension ["+subDimShortName+"...] is current dimension probability: "+equalPercent+" ("+equalDataPoints+"/"+totalDataPointCount+")");
 			}
 			catch (Exception e)

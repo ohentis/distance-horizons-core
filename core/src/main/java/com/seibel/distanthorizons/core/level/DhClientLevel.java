@@ -138,8 +138,15 @@ public class DhClientLevel extends DhLevel implements IDhClientLevel
 	@Override
 	public void clientTick()
 	{
-		this.chunkToLodBuilder.tick();
-		this.clientside.clientTick();
+		try
+		{
+			this.chunkToLodBuilder.tick();
+			this.clientside.clientTick();
+		}
+		catch (Exception e)
+		{
+			LOGGER.error("Unexpected clientTick Exception: "+e.getMessage(), e);
+		}
 	}
 	
 	public void doWorldGen()

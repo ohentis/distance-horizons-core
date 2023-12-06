@@ -52,6 +52,8 @@ public class ColumnBox
 		
 		// if there isn't any data below this LOD, make this LOD's color opaque to prevent seeing void through transparent blocks
 		// Note: this LOD should still be considered transparent for this method's checks, otherwise rendering bugs may occur
+		// FIXME this transparency change should be applied before this point since this could affect other areas
+		//  This may also be better than handling the LOD as transparent, but that is TBD
 		if (!RenderDataPointUtil.doesDataPointExist(bottomData))
 		{
 			color = ColorUtil.setAlpha(color, 255);
@@ -269,7 +271,17 @@ public class ColumnBox
 				adjIndex++)
 		{
 			long adjPoint = adjColumnView.get(adjIndex);
-			boolean adjTransparent = RenderDataPointUtil.getAlpha(adjPoint) < 255 && LodRenderer.transparencyEnabled;
+			
+			// if the adjacent data point is over the void
+			// don't consider it as transparent
+			// FIXME this transparency change should be applied before this point since this could affect other areas
+			boolean adjOverVoid = false;
+			if (adjIndex > 0)
+			{
+				long adjBellowPoint = adjColumnView.get(adjIndex-1);
+				adjOverVoid = !RenderDataPointUtil.doesDataPointExist(adjBellowPoint);	
+			}
+			boolean adjTransparent = !adjOverVoid && RenderDataPointUtil.getAlpha(adjPoint) < 255 && LodRenderer.transparencyEnabled;
 			
 			
 			// continue if this data point is transparent or the adjacent point is not 

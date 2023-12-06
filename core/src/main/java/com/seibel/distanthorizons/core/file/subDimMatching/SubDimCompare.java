@@ -57,7 +57,7 @@ public class SubDimCompare implements Comparable<SubDimCompare>
 	}
 	
 	/** returns a number between 0 (no equal datapoint) and 1 (totally equal) */
-	public double getPercentEqual() { return (double) equalDataPoints / (double) totalDataPoints; }
+	public double getPercentEqual() { return (double) this.equalDataPoints / (double) this.totalDataPoints; }
 	
 	
 	@Override
@@ -66,7 +66,7 @@ public class SubDimCompare implements Comparable<SubDimCompare>
 		if (this.equalDataPoints != other.equalDataPoints)
 		{
 			// compare based on data points
-			return Integer.compare(this.equalDataPoints, other.equalDataPoints);
+			return Double.compare(this.getPercentEqual(), other.getPercentEqual());
 		}
 		else
 		{
@@ -82,5 +82,8 @@ public class SubDimCompare implements Comparable<SubDimCompare>
 		return this.getPercentEqual() >= minimumSimilarityRequired
 				|| this.playerPosDist <= MAX_SIMILAR_PLAYER_POS_DISTANCE_IN_BLOCKS;
 	}
+	
+	@Override
+	public String toString() { return this.equalDataPoints + "/" + this.totalDataPoints + ": " + this.getPercentEqual() + " playerPos: " + this.playerPosDist; }
 	
 }

@@ -25,7 +25,6 @@ import com.seibel.distanthorizons.core.config.ConfigBase;
 import com.seibel.distanthorizons.core.config.types.AbstractConfigType;
 import com.seibel.distanthorizons.core.config.types.ConfigEntry;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
-import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftSharedWrapper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -112,7 +111,7 @@ public class ConfigFileHandling
 			// Attempt to get the version number
 			currentCfgVersion = (Integer) tmpNightConfig.get("_version");
 			tmpNightConfig.close();
-		} catch (Exception e) {e.printStackTrace();}
+		} catch (Exception ignored) { }
 		
 		if (currentCfgVersion == configBase.configVersion)
 		{}
@@ -227,9 +226,21 @@ public class ConfigFileHandling
 				return;
 			}
 			
-			entry.pureSet((T) ConfigTypeConverters.attemptToConvertFromString(entry.getType(), nightConfig.get(entry.getNameWCategory())));
+			// try converting the value if necessary
+			Class<?> expectedValueClass = entry.getType();
+			Object value = nightConfig.get(entry.getNameWCategory());
+			Object convertedValue = ConfigTypeConverters.attemptToConvertFromString(expectedValueClass, value);
+			if (!convertedValue.getClass().equals(expectedValueClass))
+			{
+				LOGGER.error("Unable to convert config value ["+value+"] from ["+(value != null ? value.getClass() : "NULL")+"] to ["+expectedValueClass+"] for config ["+entry.name+"], " +
+						"the default config value will be used instead ["+entry.getDefaultValue()+"]. " +
+						"Make sure a converter is defined in ["+ConfigTypeConverters.class.getSimpleName()+"].");
+				convertedValue = entry.getDefaultValue();
+			}
+			entry.pureSet((T) convertedValue);
 			
-			if (entry.getTrueValue() == null) {
+			if (entry.getTrueValue() == null) 
+			{
 				LOGGER.warn("Entry [" + entry.getNameWCategory() + "] returned as null from the config. Using default value.");
 				entry.pureSet(entry.getDefaultValue());
 			}

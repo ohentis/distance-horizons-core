@@ -247,7 +247,7 @@ public class FullDataMetaFile extends AbstractMetaDataContainerFile implements I
 			
 			
 			ThreadPoolExecutor executor = ThreadPools.getFileHandlerExecutor();
-			if (!executor.isTerminated())
+			if (executor != null && !executor.isTerminated())
 			{
 				// load the data source
 				
@@ -344,7 +344,7 @@ public class FullDataMetaFile extends AbstractMetaDataContainerFile implements I
 				else
 				{
 					ThreadPoolExecutor executor = ThreadPools.getFileHandlerExecutor();
-					if (!executor.isTerminated())
+					if (executor != null && !executor.isTerminated())
 					{
 						// wait for the update to finish before returning the data source
 						

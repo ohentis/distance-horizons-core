@@ -37,12 +37,13 @@ public class ConfigTypeConverters
 	// Once you've made a converter add it to here where the first value is the type you want to convert and the 2nd value is the converter
 	public static final Map<Class<?>, ConverterBase> convertObjects = new HashMap<Class<?>, ConverterBase>()
 	{{
-		put(Short.class, new ShortConverter());
-		put(Long.class, new LongConverter());
-		put(Float.class, new FloatConverter());
-		put(Byte.class, new ByteConverter());
+		this.put(Short.class, new ShortConverter());
+		this.put(Long.class, new LongConverter());
+		this.put(Float.class, new FloatConverter());
+		this.put(Double.class, new DoubleConverter());
+		this.put(Byte.class, new ByteConverter());
 		
-		put(Map.class, new MapConverter());
+		this.put(Map.class, new MapConverter());
 	}};
 	
 	public static Class<?> isClassConvertable(Class<?> clazz)
@@ -73,10 +74,12 @@ public class ConfigTypeConverters
 	{
 		return attemptToConvertFromString(value.getClass(), value);
 	}
-	public static Object attemptToConvertFromString(Class<?> clazz, Object value)
+	public static Object attemptToConvertFromString(Class<?> outputClass, Object value)
 	{
-		Class<?> convertablClass = isClassConvertable(clazz);
-		if (convertablClass != null) {
+		boolean valueNeedsConverting = (value == null || value.getClass().equals(String.class));
+		Class<?> convertablClass = isClassConvertable(outputClass);
+		if (valueNeedsConverting && convertablClass != null) 
+		{
 			return convertFromString(convertablClass, (String) value);
 		}
 		return value;
@@ -140,7 +143,12 @@ public class ConfigTypeConverters
 	{
 		@Override public String convertToString(Object item) { return ((Float) item).toString(); }
 		@Override public Float convertFromString(String s) { return Float.valueOf(s); }
-		
+	}
+	
+	public static class DoubleConverter extends ConverterBase
+	{
+		@Override public String convertToString(Object item) { return ((Double) item).toString(); }
+		@Override public Double convertFromString(String s) { return Double.valueOf(s); }
 	}
 	
 	public static class ByteConverter extends ConverterBase

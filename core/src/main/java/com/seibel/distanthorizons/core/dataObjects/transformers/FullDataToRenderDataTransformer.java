@@ -280,7 +280,7 @@ public class FullDataToRenderDataTransformer
 			
 			
 			// solid block check
-			if (avoidSolidBlocks && !block.isSolid() && !block.isLiquid())
+			if (avoidSolidBlocks && !block.isSolid() && !block.isLiquid() && block.getOpacity() != IBlockStateWrapper.FULLY_OPAQUE)
 			{
 				if (colorBelowWithAvoidedBlocks)
 				{

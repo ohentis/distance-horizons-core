@@ -34,14 +34,14 @@ public final class ModInfo
 	public static final String NAME = "DistantHorizons";
 	/** Human-readable version of NAME */
 	public static final String READABLE_NAME = "Distant Horizons";
-	public static final String VERSION = "2.0.1-a-dev";
+	public static final String VERSION = "2.0.2-a-dev";
 	/** Returns true if the current build is an unstable developer build, false otherwise. */
 	public static boolean IS_DEV_BUILD = VERSION.toLowerCase().contains("dev");
 	
 	/** This version should only be updated when breaking changes are introduced to the DH API */
 	public static final int API_MAJOR_VERSION = 1;
 	/** This version should be updated whenever new methods are added to the DH API */
-	public static final int API_MINOR_VERSION = 0;
+	public static final int API_MINOR_VERSION = 1;
 	/** This version should be updated whenever non-breaking fixes are added to the DH API */
 	public static final int API_PATH_VERSION = 0;
 	

@@ -104,7 +104,7 @@ public class RenderSourceFileHandler implements IRenderSourceProvider
 	{
 		// don't continue if the handler has been shut down
 		ThreadPoolExecutor executor = ThreadPools.getFileHandlerExecutor();
-		if (executor.isTerminated())
+		if (executor != null && executor.isTerminated())
 		{
 			return CompletableFuture.completedFuture(null);
 		}
@@ -266,11 +266,14 @@ public class RenderSourceFileHandler implements IRenderSourceProvider
 	private String[] f3Log()
 	{
 		ThreadPoolExecutor executor = ThreadPools.getFileHandlerExecutor();
+		String queueSize = executor != null ? executor.getQueue().size()+"" : "-";
+		String completedTaskSize = executor != null ? executor.getCompletedTaskCount()+"" : "-";
+		
 		
 		ArrayList<String> lines = new ArrayList<>();
 		lines.add("Render Source File Handler [" + this.clientLevel.getClientLevelWrapper().getDimensionType().getDimensionName() + "]");
 		lines.add("  Loaded files: " + this.loadedMetaFileBySectionPos.size());
-		lines.add("  Thread pool tasks: " + executor.getQueue().size() + " (completed: " + executor.getCompletedTaskCount() + ")");
+		lines.add("  Thread pool tasks: " + queueSize + " (completed: " + completedTaskSize + ")");
 		
 		int totalFutures = this.taskTracker.size();
 		EnumMap<ETaskType, Integer> tasksOutstanding = new EnumMap<>(ETaskType.class);

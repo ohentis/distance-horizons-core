@@ -24,9 +24,14 @@ package com.seibel.distanthorizons.api.enums.config;
  * LIGHT <br>
  * MEDIUM <br>
  * HEAVY <br>
+ * 
+ * CUSTOM <br>
  *
  * @since API 1.0.0
+ * @deprecated will be removed when DH updates to MC 1.21 <br>
+ *              After removal a float value will be used to control overdraw instead.
  */
+@Deprecated
 public enum EOverdrawPrevention
 {
 	// Reminder:
@@ -36,6 +41,11 @@ public enum EOverdrawPrevention
 	NONE,
 	LIGHT,
 	MEDIUM,
-	HEAVY;
+	HEAVY,
 	
+	/** 
+	 * Should not be passed in. <br>
+	 * Is returned if the overdraw value doesn't match any of the enums defined here.
+	 */
+	CUSTOM;
 }
