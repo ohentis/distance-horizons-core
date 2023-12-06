@@ -224,9 +224,21 @@ public class ConfigFileHandling
 				return;
 			}
 			
-			entry.pureSet((T) ConfigTypeConverters.attemptToConvertFromString(entry.getType(), nightConfig.get(entry.getNameWCategory())));
+			// try converting the value if necessary
+			Class<?> expectedValueClass = entry.getType();
+			Object value = nightConfig.get(entry.getNameWCategory());
+			Object convertedValue = ConfigTypeConverters.attemptToConvertFromString(expectedValueClass, value);
+			if (!convertedValue.getClass().equals(expectedValueClass))
+			{
+				LOGGER.error("Unable to convert config value ["+value+"] from ["+(value != null ? value.getClass() : "NULL")+"] to ["+expectedValueClass+"] for config ["+entry.name+"], " +
+						"the default config value will be used instead ["+entry.getDefaultValue()+"]. " +
+						"Make sure a converter is defined in ["+ConfigTypeConverters.class.getSimpleName()+"].");
+				convertedValue = entry.getDefaultValue();
+			}
+			entry.pureSet((T) convertedValue);
 			
-			if (entry.getTrueValue() == null) {
+			if (entry.getTrueValue() == null) 
+			{
 				LOGGER.warn("Entry [" + entry.getNameWCategory() + "] returned as null from the config. Using default value.");
 				entry.pureSet(entry.getDefaultValue());
 			}
