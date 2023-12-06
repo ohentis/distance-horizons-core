@@ -203,30 +203,17 @@ public class RenderUtil
 		else
 		{
 			// TODO make this option dependent on player speed.
-			//  if the player is flying quickly, lower the near clip plane to account for slow chunk loading.
+			//  If the player is flying quickly, lower the near clip plane to account for slow chunk loading.
 			//  If the player is moving quickly they are less likely to notice overdraw.
 			
-			EOverdrawPrevention clipPlaneDistance = Config.Client.Advanced.Graphics.AdvancedGraphics.overdrawPrevention.get();
-			switch (clipPlaneDistance)
+			nearClipPlane = Config.Client.Advanced.Graphics.AdvancedGraphics.overdrawPrevention.get().floatValue();
+			nearClipPlane *= vanillaBlockRenderedDistance; 
+			
+			// the near clip plane should never be closer than 1/10th of a block,
+			// otherwise Z-fighting and other issues may occur
+			if (nearClipPlane < 0.1f)
 			{
-				default: // shouldn't be necessary, just here to make the compiler happy
-				case NONE:
-					nearClipPlane = 0.1f;
-					break;
-				
-				case LIGHT:
-					nearClipPlane = vanillaBlockRenderedDistance * 0.25f;
-					break;
-				
-				case MEDIUM:
-					nearClipPlane = vanillaBlockRenderedDistance * 0.4f;
-					break;
-				
-				
-				case HEAVY:
-					// recommend render distance ot 6 or higher, otherwise holes may appear
-					nearClipPlane = vanillaBlockRenderedDistance * 0.6f;
-					break;
+				nearClipPlane = 0.1f;
 			}
 		}
 		

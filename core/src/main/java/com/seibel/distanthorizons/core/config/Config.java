@@ -546,17 +546,29 @@ public class Config
 //									+ "Disable this if you see LODs disappearing at the corners of your vision.")
 //							.build();
 					
-					public static ConfigEntry<EOverdrawPrevention> overdrawPrevention = new ConfigEntry.Builder<EOverdrawPrevention>()
+					/** 
+					 * @deprecated Use overdrawPrevention instead, will be removed when DH updates to MC 1.21 <br>
+					 *              After removal a float value will be used to control overdraw instead. <br>
+					 */
+					@Deprecated
+					public static ConfigEntry<EOverdrawPrevention> overdrawPreventionPreset = new ConfigEntry.Builder<EOverdrawPrevention>()
 							.set(EOverdrawPrevention.MEDIUM)
+							.comment("")
+							.setAppearance(EConfigEntryAppearance.ONLY_IN_API)
+							.setPerformance(EConfigEntryPerformance.NONE)
+							.build();
+					
+					public static ConfigEntry<Double> overdrawPrevention = new ConfigEntry.Builder<Double>()
+							.setMinDefaultMax(0.0, 0.4, 1.0)
 							.comment(""
-									+ "Determines how far Distant Horizon's near clip plane will render. \n"
+									+ "Determines how far from the camera Distant Horizons will start rendering. \n"
+									+ "Measured as a percentage of the vanilla render distance.\n"
 									+ "\n"
 									+ "Higher values will prevent LODs from rendering behind vanilla blocks at a higher distance,\n"
 									+ "but may cause holes to appear in the LODs. \n"
-									+ "Holes are most likely at the left and right edges of the screen \n"
-									+ "when flying through unloaded terrain. \n"
+									+ "Holes are most likely to appear when flying through unloaded terrain. \n"
 									+ "\n"
-									+ "Increasing the vanilla render distance increases the effectiveness of these options."
+									+ "Increasing the vanilla render distance increases the effectiveness of this setting."
 									+ "")
 							.setPerformance(EConfigEntryPerformance.NONE)
 							.build();
@@ -1398,14 +1410,26 @@ public class Config
 			
 			try
 			{
+				// listener can only be added after the config has finished initializing
+				Client.Advanced.Graphics.AdvancedGraphics.overdrawPreventionPreset.addListener(OverdrawPreventionPresetConfigEventHandler.INSTANCE);
+			}
+			catch (Exception e)
+			{
+				LOGGER.error("Unexpected exception when running config delayed listener setup. Error: [" + e.getMessage() + "].", e);
+			}
+			
+			try
+			{
+				// TODO automatically get all instances of AbstractPresetConfigEventHandler and fire "setUiOnlyConfigValues"
 				ThreadPresetConfigEventHandler.INSTANCE.setUiOnlyConfigValues();
 				RenderQualityPresetConfigEventHandler.INSTANCE.setUiOnlyConfigValues();
 				QuickRenderToggleConfigEventHandler.INSTANCE.setUiOnlyConfigValues();
+				OverdrawPreventionPresetConfigEventHandler.INSTANCE.setUiOnlyConfigValues();
 				RenderCacheConfigEventHandler.getInstance();
 			}
 			catch (Exception e)
 			{
-				LOGGER.error("Unexpected exception when setting up complicated config listeners. Error: [" + e.getMessage() + "].", e);
+				LOGGER.error("Unexpected exception when running config delayed UI setup. Error: [" + e.getMessage() + "].", e);
 			}
 		}
 	}

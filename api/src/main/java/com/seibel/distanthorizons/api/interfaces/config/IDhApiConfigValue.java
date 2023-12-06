@@ -53,8 +53,10 @@ public interface IDhApiConfigValue<T>
 	 * Sets the config's value. <br>
 	 * If the newValue is set to null then the config
 	 * will revert to using the True Value.<br>
-	 * If the config cannot be set via the API this method will return false.
-	 *
+	 * If the config cannot be set via the API this method will return false. <br><br>
+	 * 
+	 * To unset the config's value pass in Null. <br>
+	 * 
 	 * @return true if the value was set, false otherwise.
 	 */
 	boolean setValue(T newValue);

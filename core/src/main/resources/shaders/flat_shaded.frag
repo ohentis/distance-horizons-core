@@ -27,11 +27,13 @@ float rand(vec3 co) { return rand(co.xy + rand(co.z)); }
 // EG. setting stepSize to 4 then this would be the result of this function
 // In:  0.0, 0.1, 0.2, 0.3,  0.4,  0.5, 0.6, ..., 1.1, 1.2, 1.3
 // Out: 0.0, 0.0, 0.0, 0.25, 0.25, 0.5, 0.5, ..., 1.0, 1.0, 1.25
-vec3 quantize(vec3 val, int stepSize) {
+vec3 quantize(vec3 val, int stepSize) 
+{
     return floor(val * stepSize) / stepSize;
 }
 
-void applyNoise(inout vec4 fragColor, const in float viewDist) {
+void applyNoise(inout vec4 fragColor, const in float viewDist) 
+{
     vec3 vertexNormal = normalize(cross(dFdy(vPos.xyz), dFdx(vPos.xyz)));
     // This bit of code is required to fix the vertex position problem cus of floats in the verted world position varuable
     vec3 fixedVPos = vPos.xyz + vertexNormal * 0.001;
@@ -58,20 +60,20 @@ void applyNoise(inout vec4 fragColor, const in float viewDist) {
     fragColor.rgb = newCol;
 }
 
+ 
 
-/**
- * Fragment Shader
- *
- * author: James Seibel
- * author: coolGi
- * version: 7-2-2023
- */
 void main()
 {
     fragColor = vertexColor;
     
     float viewDist = length(vertexWorldPos);
-    if (viewDist < clipDistance && clipDistance > 0.0) discard;
+    if (viewDist < clipDistance && clipDistance > 0.0)
+    {
+        discard;
+    }
     
-    if (noiseEnabled) applyNoise(fragColor, viewDist);
+    if (noiseEnabled)
+    {
+        applyNoise(fragColor, viewDist);
+    }
 }

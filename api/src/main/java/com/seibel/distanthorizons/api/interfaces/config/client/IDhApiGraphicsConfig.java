@@ -113,12 +113,29 @@ public interface IDhApiGraphicsConfig extends IDhApiConfigGroup
 	//===========================//
 	
 	/**
-	 * If enabled the near clip plane is extended to reduce
-	 * overdraw and improve Z-fighting at extreme render distances. <br>
+	 * Sets the distance used by the near clip plane to reduce
+	 * overdraw. <br>
 	 * Disabling this reduces holes in the world due to the near clip plane
 	 * being too close to the camera and the terrain not being covered by vanilla terrain.
+	 * 
+	 * @deprecated Use {@link IDhApiGraphicsConfig#overdrawPreventionRadius()} instead.
 	 */
+	@Deprecated
 	IDhApiConfigValue<EOverdrawPrevention> overdrawPrevention();
+	
+	/**
+	 * Sets the radius used by the near clip shader to reduce
+	 * overdraw. <br>
+	 * Measured in percentages of the render distance, IE: <br>
+	 * 0.5 = 50% vanilla render distance <br>
+	 * 0.1 = 10% vanilla render distance <br>
+	 * <br>
+	 * Setting this to 0 will reduce/prevent holes in the world due to clipping to close to the camera
+	 * but may cause overdraw issues with transparent or non-full blocks.
+	 * 
+	 * @since API 1.1.0
+	 */
+	IDhApiConfigValue<Double> overdrawPreventionRadius();
 	
 	/**
 	 * Modifies how bright fake chunks are. <br>

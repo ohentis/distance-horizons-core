@@ -109,9 +109,14 @@ public class DhApiGraphicsConfig implements IDhApiGraphicsConfig
 //	public IDhApiConfigValue<Boolean> getDisableDirectionalCulling()
 //	{ return new DhApiConfigValue<Boolean, Boolean>(AdvancedGraphics.disableDirectionalCulling); }
 	
+	@Deprecated
 	@Override
 	public IDhApiConfigValue<EOverdrawPrevention> overdrawPrevention()
-	{ return new DhApiConfigValue<EOverdrawPrevention, EOverdrawPrevention>(Config.Client.Advanced.Graphics.AdvancedGraphics.overdrawPrevention); }
+	{ return new DhApiConfigValue<EOverdrawPrevention, EOverdrawPrevention>(Config.Client.Advanced.Graphics.AdvancedGraphics.overdrawPreventionPreset); }
+	
+	@Override
+	public IDhApiConfigValue<Double> overdrawPreventionRadius()
+	{ return new DhApiConfigValue<Double, Double>(Config.Client.Advanced.Graphics.AdvancedGraphics.overdrawPrevention); }
 	
 	@Override
 	public IDhApiConfigValue<Double> brightnessMultiplier()
