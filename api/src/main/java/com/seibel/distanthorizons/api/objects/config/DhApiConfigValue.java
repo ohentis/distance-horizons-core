@@ -87,6 +87,8 @@ public class DhApiConfigValue<coreType, apiType> implements IDhApiConfigValue<ap
 		}
 	}
 	
+	public boolean clearValue() { return this.setValue(null); }
+	
 	public boolean getCanBeOverrodeByApi() { return this.configEntry.getAllowApiOverride(); }
 	
 	public apiType getDefaultValue() { return this.configConverter.convertToApiType(this.configEntry.getDefaultValue()); }
