@@ -33,7 +33,6 @@ import com.seibel.distanthorizons.core.render.glObject.buffer.GLVertexBuffer;
 import com.seibel.distanthorizons.core.render.glObject.buffer.QuadElementBuffer;
 import com.seibel.distanthorizons.core.render.glObject.texture.*;
 import com.seibel.distanthorizons.core.render.renderer.shaders.*;
-import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.RenderUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
@@ -212,12 +211,6 @@ public class LodRenderer
 		}
 	}
 	
-	public void resize(int width, int height) 
-	{
-		this.colorTexture.resize(width, height);
-		this.depthTexture.resize(width, height, EDhDepthBufferFormat.DEPTH32F);
-	}
-	
 	
 	
 	//===============//
@@ -297,18 +290,34 @@ public class LodRenderer
 			{
 				this.cachedWidth = MC_RENDER.getTargetFrameBufferViewportWidth();
 				this.cachedHeight = MC_RENDER.getTargetFrameBufferViewportHeight();
-				this.resize(this.cachedWidth, this.cachedHeight);
+				
+				// just resizing the textures doesn't work when Optifine is present,
+				// so recreate the textures with the new size instead
+				this.createColorAndDepthTextures();
 			}
 			
-			this.setActiveFramebufferId(framebuffer.getId());
-			this.setActiveDepthTextureId(depthTexture.getTextureId());
-			this.setActiveColorTextureId(colorTexture.getTextureId());
+			this.setActiveFramebufferId(this.framebuffer.getId());
+			this.setActiveDepthTextureId(this.depthTexture.getTextureId());
+			this.setActiveColorTextureId(this.colorTexture.getTextureId());
 			// Bind LOD frame buffer
 			this.framebuffer.bind();
 			
 			
 			if (this.usingMcFrameBuffer)
 			{
+				// recreating the GL State at this point is necessary in order to get the correct depth texture
+				minecraftGlState = new GLState();
+				if (ENABLE_DUMP_GL_STATE)
+				{
+					tickLogger.debug("Re-saving GL state due to Optifine presence: " + minecraftGlState); //
+				}
+				
+				
+				// Due to using MC/Optifine's framebuffer we need to re-bind the depth texture,
+				// otherwise we'll be writing to MC/Optifine's depth texture which causes rendering issues
+				this.framebuffer.addDepthAttachment(this.depthTexture.getTextureId(), EDhDepthBufferFormat.DEPTH32F);
+				
+				
 				// don't clear the color texture, that removes the sky 
 				GL32.glClear(GL32.GL_DEPTH_BUFFER_BIT);
 			}
@@ -542,17 +551,8 @@ public class LodRenderer
 				this.usingMcFrameBuffer = false;
 			}
 			
-			// color and depth texture
-			this.colorTexture = DhColorTexture.builder().setDimensions(MC_RENDER.getTargetFrameBufferViewportWidth(), MC_RENDER.getTargetFrameBufferViewportHeight())
-					.setInternalFormat(EDhInternalTextureFormat.RGBA8)
-					.setPixelType(EDhPixelType.UNSIGNED_BYTE)
-					.setPixelFormat(EDhPixelFormat.RGBA)
-					.build();
-			this.depthTexture = new DHDepthTexture(MC_RENDER.getTargetFrameBufferViewportWidth(), MC_RENDER.getTargetFrameBufferViewportHeight(), EDhDepthBufferFormat.DEPTH32F);
-			
-			this.framebuffer.addDepthAttachment(this.depthTexture.getTextureId(), EDhDepthBufferFormat.DEPTH32F);
-			this.framebuffer.addColorAttachment(0, this.colorTexture.getTextureId());
-			
+			// create and bind the necessary textures
+			this.createColorAndDepthTextures();
 			this.cachedWidth = MC_RENDER.getTargetFrameBufferViewportWidth();
 			this.cachedHeight = MC_RENDER.getTargetFrameBufferViewportHeight();
 			
@@ -570,6 +570,23 @@ public class LodRenderer
 			this.setupLock.unlock();
 		}
 	}
+	/** also binds the new textures to the {@link LodRenderer#framebuffer} */
+	private void createColorAndDepthTextures()
+	{
+		// don't use the cached width/height just in case they haven't been set yet
+		
+		this.colorTexture = DhColorTexture.builder().setDimensions(MC_RENDER.getTargetFrameBufferViewportWidth(), MC_RENDER.getTargetFrameBufferViewportHeight())
+				.setInternalFormat(EDhInternalTextureFormat.RGBA8)
+				.setPixelType(EDhPixelType.UNSIGNED_BYTE)
+				.setPixelFormat(EDhPixelFormat.RGBA)
+				.build();
+		this.depthTexture = new DHDepthTexture(MC_RENDER.getTargetFrameBufferViewportWidth(), MC_RENDER.getTargetFrameBufferViewportHeight(), EDhDepthBufferFormat.DEPTH32F);
+		
+		this.framebuffer.addDepthAttachment(this.depthTexture.getTextureId(), EDhDepthBufferFormat.DEPTH32F);
+		this.framebuffer.addColorAttachment(0, this.colorTexture.getTextureId());
+	}
+	
+	
 	
 	private Color getFogColor(float partialTicks)
 	{
