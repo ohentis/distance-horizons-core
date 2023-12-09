@@ -63,7 +63,6 @@ public class SSAORenderer
 		this.init = true;
 		
 		SSAOShader.INSTANCE.init();
-		
 		SSAOApplyShader.INSTANCE.init();
 	}
 	
@@ -113,13 +112,13 @@ public class SSAORenderer
 			this.createFramebuffer(width, height);
 		}
 		
-		SSAOShader.INSTANCE.FrameBuffer = this.ssaoFramebuffer;
+		SSAOShader.INSTANCE.frameBuffer = this.ssaoFramebuffer;
 		SSAOShader.INSTANCE.setProjectionMatrix(projectionMatrix);
 		SSAOShader.INSTANCE.render(partialTicks);
 		
 		primaryState.restore();
 		
-		SSAOApplyShader.INSTANCE.BufferTexture = this.ssaoTexture;
+		SSAOApplyShader.INSTANCE.ssaoTexture = this.ssaoTexture;
 		SSAOApplyShader.INSTANCE.render(partialTicks);
 		
 		state.restore();

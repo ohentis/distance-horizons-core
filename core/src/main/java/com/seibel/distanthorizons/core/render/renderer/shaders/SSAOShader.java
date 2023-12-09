@@ -38,7 +38,7 @@ public class SSAOShader extends AbstractShaderRenderer
 {
 	public static SSAOShader INSTANCE = new SSAOShader();
 	
-	public int FrameBuffer;
+	public int frameBuffer;
 	
 	private Mat4f projection;
 	private Mat4f invertedProjection;
@@ -115,7 +115,7 @@ public class SSAOShader extends AbstractShaderRenderer
 	@Override
 	protected void onRender()
 	{
-		GL32.glBindFramebuffer(GL32.GL_FRAMEBUFFER, this.FrameBuffer);
+		GL32.glBindFramebuffer(GL32.GL_FRAMEBUFFER, this.frameBuffer);
 		GL32.glDisable(GL32.GL_SCISSOR_TEST);
 		GL32.glDisable(GL32.GL_DEPTH_TEST);
 		GL32.glDisable(GL32.GL_BLEND);
