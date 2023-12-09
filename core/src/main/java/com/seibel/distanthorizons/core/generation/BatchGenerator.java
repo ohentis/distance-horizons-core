@@ -54,7 +54,7 @@ public class BatchGenerator implements IDhApiWorldGenerator
 	 *  if this is too high it may cause issues when moving,
 	 *  but if it is too low the generator threads won't have enough tasks to work on
 	 */
-	private static final int MAX_QUEUED_TASKS = 3;
+	private static final int MAX_QUEUED_TASKS_PER_THREAD = 3;
 	
 	public AbstractBatchGenerationEnvironmentWrapper generationEnvironment;
 	public IDhLevel targetDhLevel;
@@ -150,7 +150,9 @@ public class BatchGenerator implements IDhApiWorldGenerator
 	@Override
 	public boolean isBusy()
 	{
-		return this.generationEnvironment.getEventCount() > Math.max(Config.Client.Advanced.MultiThreading.numberOfWorldGenerationThreads.get().intValue(), 1) * MAX_QUEUED_TASKS;
+		int worldGenThreadCount = Math.max(Config.Client.Advanced.MultiThreading.numberOfWorldGenerationThreads.get(), 1);
+		int maxWorldGenTaskCount = worldGenThreadCount * MAX_QUEUED_TASKS_PER_THREAD;
+		return this.generationEnvironment.getEventCount() > maxWorldGenTaskCount;
 	}
 	
 	

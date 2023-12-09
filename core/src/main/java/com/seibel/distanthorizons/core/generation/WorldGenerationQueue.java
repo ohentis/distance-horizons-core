@@ -220,18 +220,6 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 			}
 		});
 	}
-
-	private static class Mapper
-	{
-		public final WorldGenTask task;
-		public final int dist;
-		public Mapper(WorldGenTask task, int dist)
-		{
-			this.task = task;
-			this.dist = dist;
-		}
-		
-	}
 	
 	/**
 	 * @param targetPos the position to center the generation around
@@ -549,6 +537,19 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 	
 	
 	
+	//=======//
+	// debug //
+	//=======//
+	
+	@Override
+	public void debugRender(DebugRenderer renderer)
+	{
+		this.waitingTasks.keySet().forEach((pos) -> { renderer.renderBox(new DebugRenderer.Box(pos, -32f, 64f, 0.05f, Color.blue)); });
+		this.inProgressGenTasksByLodPos.forEach((pos, t) -> { renderer.renderBox(new DebugRenderer.Box(pos, -32f, 64f, 0.05f, Color.red)); });
+	}
+	
+	
+	
 	//================//
 	// helper methods //
 	//================//
@@ -586,15 +587,20 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 	
 	
 	
-	//=======//
-	// debug //
-	//=======//
+	//================//
+	// helper classes //
+	//================//
 	
-	@Override
-	public void debugRender(DebugRenderer renderer)
+	private static class Mapper
 	{
-		this.waitingTasks.keySet().forEach((pos) -> { renderer.renderBox(new DebugRenderer.Box(pos, -32f, 64f, 0.05f, Color.blue)); });
-		this.inProgressGenTasksByLodPos.forEach((pos, t) -> { renderer.renderBox(new DebugRenderer.Box(pos, -32f, 64f, 0.05f, Color.red)); });
+		public final WorldGenTask task;
+		public final int dist;
+		public Mapper(WorldGenTask task, int dist)
+		{
+			this.task = task;
+			this.dist = dist;
+		}
+		
 	}
 	
 }
