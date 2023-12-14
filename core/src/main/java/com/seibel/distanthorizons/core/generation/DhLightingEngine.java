@@ -140,13 +140,16 @@ public class DhLightingEngine
 					// if the dimension has skylights
 					if (maxSkyLight > 0)
 					{
+						int maxY = chunk.getMaxNonEmptyHeight();
+						int minY = chunk.getMinBuildHeight();
+						
 						// get the adjacent chunk's sky lights
 						for (int relX = 0; relX < LodUtil.CHUNK_WIDTH; relX++) // relative block pos
 						{
 							for (int relZ = 0; relZ < LodUtil.CHUNK_WIDTH; relZ++)
 							{
 								// set each pos' sky light all the way down until a opaque block is hit
-								for (int y = chunk.getMaxBuildHeight(); y >= chunk.getMinBuildHeight(); y--)
+								for (int y = maxY; y >= minY; y--)
 								{
 									IBlockStateWrapper block = chunk.getBlockState(relX, y, relZ);
 									if (block != null && block.getOpacity() != IBlockStateWrapper.FULLY_TRANSPARENT)
@@ -244,7 +247,7 @@ public class DhLightingEngine
 					continue;
 				}
 				
-				if (relNeighbourBlockPos.y < neighbourChunk.getMinFilledHeight() || relNeighbourBlockPos.y > neighbourChunk.getMaxBuildHeight())
+				if (relNeighbourBlockPos.y < neighbourChunk.getMinNonEmptyHeight() || relNeighbourBlockPos.y > neighbourChunk.getMaxBuildHeight())
 				{
 					// the light pos is outside the chunk's min/max height,
 					// this can happen if given a chunk that hasn't finished generating

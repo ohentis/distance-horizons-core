@@ -19,7 +19,6 @@
 
 package com.seibel.distanthorizons.core.wrapperInterfaces.chunk;
 
-import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
@@ -29,7 +28,6 @@ import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
 
 import java.util.ArrayList;
-import java.util.List;
 
 public interface IChunkWrapper extends IBindable
 {
@@ -40,10 +38,15 @@ public interface IChunkWrapper extends IBindable
 	int getMaxBuildHeight();
 	
 	/**
-	 * returns the Y level for the first non-empty section in this chunk,
-	 * or {@link Integer#MAX_VALUE} if this chunk is completely empty.
+	 * returns the Y level for the last non-empty section in this chunk,
+	 * or {@link IChunkWrapper#getMinBuildHeight()} if this chunk is completely empty.
 	 */
-	int getMinFilledHeight();
+	int getMinNonEmptyHeight();
+	/**
+	 * returns the Y level for the first non-empty section in this chunk,
+	 * or {@link IChunkWrapper#getMaxBuildHeight()} if this chunk is completely empty.
+	 */
+	int getMaxNonEmptyHeight();
 	
 	/** @return The highest y position of a solid block at the given relative chunk position. */
 	int getSolidHeightMapValue(int xRel, int zRel);
