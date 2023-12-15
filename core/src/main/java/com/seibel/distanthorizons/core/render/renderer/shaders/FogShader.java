@@ -162,4 +162,5 @@ public class FogShader extends AbstractShaderRenderer
 		
 		state.restore();
 	}
+	
 }

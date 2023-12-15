@@ -68,17 +68,17 @@ public class ThreadPools
 	public static final DhThreadFactory LIGHT_POPULATOR_THREAD_FACTORY = new DhThreadFactory("LOD Builder - Light Populator", Thread.MIN_PRIORITY);
 	private static ConfigThreadPool lightPopulatorThreadPool;
 	@Nullable
-	public static ThreadPoolExecutor getLightPopulatorExecutor() { return lightPopulatorThreadPool.executor; }
+	public static ThreadPoolExecutor getLightPopulatorExecutor() { return (lightPopulatorThreadPool != null) ? lightPopulatorThreadPool.executor : null; }
 	
 	public static final DhThreadFactory CHUNK_TO_LOD_BUILDER_THREAD_FACTORY = new DhThreadFactory("LOD Builder - Chunk to Lod Builder", Thread.MIN_PRIORITY);
 	private static ConfigThreadPool chunkToLodBuilderThreadPool;
 	@Nullable
-	public static ThreadPoolExecutor getChunkToLodBuilderExecutor() { return chunkToLodBuilderThreadPool.executor; }
+	public static ThreadPoolExecutor getChunkToLodBuilderExecutor() { return (chunkToLodBuilderThreadPool != null) ? chunkToLodBuilderThreadPool.executor : null; }
 	
 	public static final DhThreadFactory BUFFER_BUILDER_THREAD_FACTORY = new DhThreadFactory("LOD Builder - Buffer Builder", Thread.MIN_PRIORITY);
 	private static ConfigThreadPool bufferBuilderThreadPool;
 	@Nullable
-	public static ThreadPoolExecutor getBufferBuilderExecutor() { return bufferBuilderThreadPool.executor; }
+	public static ThreadPoolExecutor getBufferBuilderExecutor() { return (bufferBuilderThreadPool != null) ? bufferBuilderThreadPool.executor : null; }
 	
 	
 	/** how many total worker threads can be used */

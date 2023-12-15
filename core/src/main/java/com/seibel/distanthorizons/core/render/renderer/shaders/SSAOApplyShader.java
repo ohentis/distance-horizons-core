@@ -39,7 +39,7 @@ public class SSAOApplyShader extends AbstractShaderRenderer
 {
 	public static SSAOApplyShader INSTANCE = new SSAOApplyShader();
 	
-	public int BufferTexture;
+	public int ssaoTexture;
 	
 	// uniforms
 	public int gSSAOMapUniform;
@@ -76,11 +76,10 @@ public class SSAOApplyShader extends AbstractShaderRenderer
 		GL32.glUniform1i(this.gDepthMapUniform, 0);
 		
 		GL32.glActiveTexture(GL32.GL_TEXTURE1);
-		GL32.glBindTexture(GL32.GL_TEXTURE_2D, this.BufferTexture);
+		GL32.glBindTexture(GL32.GL_TEXTURE_2D, this.ssaoTexture);
 		GL32.glUniform1i(this.gSSAOMapUniform, 1);
 		
-		GL32.glUniform1i(this.gBlurRadiusUniform,
-				Config.Client.Advanced.Graphics.Ssao.blurRadius.get());
+		GL32.glUniform1i(this.gBlurRadiusUniform, Config.Client.Advanced.Graphics.Ssao.blurRadius.get());
 		
 		if (this.gViewSizeUniform >= 0)
 		{
@@ -115,7 +114,7 @@ public class SSAOApplyShader extends AbstractShaderRenderer
 		GL32.glBlendFuncSeparate(GL32.GL_ZERO, GL32.GL_SRC_ALPHA, GL32.GL_ZERO, GL32.GL_ONE);
 		
 		// apply the rendered SSAO to the LODs 
-		GL32.glBindFramebuffer(GL32.GL_READ_FRAMEBUFFER, SSAOShader.INSTANCE.FrameBuffer);
+		GL32.glBindFramebuffer(GL32.GL_READ_FRAMEBUFFER, SSAOShader.INSTANCE.frameBuffer);
 		GL32.glBindFramebuffer(GL32.GL_DRAW_FRAMEBUFFER, LodRenderer.getActiveFramebufferId());
 		
 		ScreenQuad.INSTANCE.render();

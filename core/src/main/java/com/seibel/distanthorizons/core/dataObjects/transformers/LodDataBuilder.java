@@ -48,7 +48,7 @@ public class LodDataBuilder
 		
 		
 		ChunkSizedFullDataAccessor chunkData = new ChunkSizedFullDataAccessor(chunkWrapper.getChunkPos());
-		int minBuildHeight = chunkWrapper.getMinFilledHeight();
+		int minBuildHeight = chunkWrapper.getMinNonEmptyHeight();
 		
 		for (int x = 0; x < LodUtil.CHUNK_WIDTH; x++)
 		{

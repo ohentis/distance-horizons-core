@@ -26,7 +26,7 @@ import java.util.function.Consumer;
  *
  * @param <T> The data type of this config.
  * @author James Seibel
- * @version 2022-9-15
+ * @version 2023-12-7
  * @since API 1.0.0
  */
 public interface IDhApiConfigValue<T>
@@ -43,25 +43,36 @@ public interface IDhApiConfigValue<T>
 	 * This is the value stored in the config file.
 	 */
 	T getTrueValue();
-	/*
+	/**
 	 * Returns the value of the config if it was set by the API.
-	 * Returns null if the config wasn't set by the API.
+	 * Returns null if the config hasn't been set by the API.
+	 * 
+	 * @since API 1.1.0
 	 */
-	//T getApiValue(); // not currently implemented
+	T getApiValue();
 	
 	/**
 	 * Sets the config's value. <br>
 	 * If the newValue is set to null then the config
-	 * will revert to using the True Value.<br>
+	 * will revert to using the True Value 
+	 * (IE the value visible in the config menu).<br>
 	 * If the config cannot be set via the API this method will return false. <br><br>
-	 * 
-	 * To unset the config's value pass in Null. <br>
 	 * 
 	 * @return true if the value was set, false otherwise.
 	 */
 	boolean setValue(T newValue);
 	
-	/** Returns true if this config can be set via the API, false otherwise. */
+	/**
+	 * Un-sets the config's API value. <br>
+	 * After this method is called this config will
+	 * use the value set in the config menu.
+	 * 
+	 * @return true if the value was set, false otherwise.
+	 * @since API 1.1.0
+	 */
+	boolean clearValue();
+	
+	/** @return true if this config can be set via the API, false otherwise. */
 	boolean getCanBeOverrodeByApi();
 	
 	/** Returns the default value for this config. */

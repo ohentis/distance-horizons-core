@@ -145,7 +145,7 @@ public class GitlabGetter
 	public static URL getLatestForVersion(String mcVer)
 	{
 		try {
-			return new URL("https://gitlab.com/jeseibel/minecraft-lod-mod/-/jobs/artifacts/main/download?job=build:%20[" + mcVer + "]");
+			return new URL("https://gitlab.com/jeseibel/distant-horizons/-/jobs/artifacts/main/download?job=build:%20[" + mcVer + "]");
 		} catch (Exception e) { e.printStackTrace(); return null; } // This should always be safe (unless you stuff up **badly** somewhere)
 	}
 }

@@ -110,9 +110,11 @@ public class ClientApi
 	/**
 	 * May be fired slightly before or after the associated
 	 * {@link ClientApi#clientLevelLoadEvent(IClientLevelWrapper)} event
-	 * depending on how the host mod loader functions.
+	 * depending on how the host mod loader functions. <br><br>
+	 * 
+	 * Synchronized shouldn't be necessary, but is present to match {@see onClientOnlyDisconnected} and prevent any unforeseen issues. 
 	 */
-	public void onClientOnlyConnected()
+	public synchronized void onClientOnlyConnected()
 	{
 		// only continue if the client is connected to a different server
 		if (MC.clientConnectedToDedicatedServer())
@@ -134,7 +136,8 @@ public class ClientApi
 		}
 	}
 	
-	public void onClientOnlyDisconnected()
+	/** Synchronized to prevent a rare issue where multiple disconnect events are triggered on top of each other. */
+	public synchronized void onClientOnlyDisconnected()
 	{
 		AbstractDhWorld world = SharedApi.getAbstractDhWorld();
 		if (world != null)
