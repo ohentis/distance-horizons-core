@@ -19,7 +19,9 @@
 
 package com.seibel.distanthorizons.core;
 
+import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.file.DataSourceReferenceTracker;
+import com.seibel.distanthorizons.core.wrapperInterfaces.IWrapperFactory;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.core.world.DhApiWorldProxy;
 import com.seibel.distanthorizons.core.api.external.methods.config.DhApiConfig;
@@ -67,6 +69,11 @@ public class Initializer
 		DhApi.Delayed.terrainRepo = DhApiTerrainDataRepo.INSTANCE;
 		DhApi.Delayed.worldProxy = DhApiWorldProxy.INSTANCE;
 		DhApi.Delayed.renderProxy = DhApiRenderProxy.INSTANCE;
+		DhApi.Delayed.wrapperFactory = SingletonInjector.INSTANCE.get(IWrapperFactory.class);
+		if (DhApi.Delayed.wrapperFactory == null)
+		{
+			LOGGER.error("Programmer Error: No ["+IWrapperFactory.class.getSimpleName()+"] assigned to the DhApi.");
+		}
 		
 		DataSourceReferenceTracker.startGarbageCollectorBackgroundThread();
 		
