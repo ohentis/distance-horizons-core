@@ -52,7 +52,7 @@ public class DhApi
 {
 	/** 
 	 * If you can see this Java Doc, this can be ignored. <br>
-	 * This is just to you know that Javadocs are available and that you should use the API jar
+	 * This is just to let you know that Javadocs are available and that you should use the API jar
 	 * instead of the full mod jar. <br><br>
 	 * 
 	 * Note: Don't use this string in your code. It may change and is only for reference.
@@ -118,7 +118,11 @@ public class DhApi
 	
 	
 	
+	//==================//
 	// always available //
+	//==================//
+	
+	// interfaces //
 	
 	/** 
 	 * Used to bind/unbind Distant Horizons Api events. 
@@ -138,6 +142,8 @@ public class DhApi
 	 */
 	public static final IOverrideInjector<IDhApiOverrideable> overrides = OverrideInjector.INSTANCE;
 	
+	
+	// getters //
 	
 	/** 
 	 * This version should only be updated when breaking changes are introduced to the Distant Horizons API.
@@ -173,5 +179,14 @@ public class DhApi
 	 * @since API 1.0.0 
 	 */
 	public static int getNetworkProtocolVersion() { return ModInfo.PROTOCOL_VERSION; }
+	
+	
+	// methods //
+	
+	/**
+	 * Returns true if the thread this method was called from is owned by Distant Horizons.
+	 * @since API 1.1.0
+	 */
+	public static boolean isDhThread() { return Thread.currentThread().getName().startsWith(ModInfo.THREAD_NAME_PREFIX); }
 	
 }
