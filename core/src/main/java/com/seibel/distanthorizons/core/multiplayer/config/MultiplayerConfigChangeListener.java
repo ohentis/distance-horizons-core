@@ -15,7 +15,7 @@ public class MultiplayerConfigChangeListener implements Closeable
 			Config.Client.Advanced.WorldGenerator.enableDistantGeneration,
 			Config.Client.Advanced.Multiplayer.ServerNetworking.requestRateLimit,
 			Config.Client.Advanced.Multiplayer.ServerNetworking.enableRealTimeUpdates,
-			Config.Client.Advanced.Multiplayer.ServerNetworking.enablePostRelogUpdate
+			//Config.Client.Advanced.Multiplayer.ServerNetworking.enablePostRelogUpdate
 	};
 	
 	private final ArrayList<ConfigChangeListener> changeListeners = new ArrayList<>();

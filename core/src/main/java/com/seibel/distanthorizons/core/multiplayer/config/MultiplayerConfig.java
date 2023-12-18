@@ -19,7 +19,7 @@ public class MultiplayerConfig extends AbstractMultiplayerConfig
 	public boolean realTimeUpdatesEnabled = Config.Client.Advanced.Multiplayer.ServerNetworking.enableRealTimeUpdates.get();
 	@Override public boolean isRealTimeUpdatesEnabled() { return realTimeUpdatesEnabled; }
 	
-	public boolean postRelogUpdateEnabled = Config.Client.Advanced.Multiplayer.ServerNetworking.enablePostRelogUpdate.get();
+	public boolean postRelogUpdateEnabled = false; // Config.Client.Advanced.Multiplayer.ServerNetworking.enablePostRelogUpdate.get();
 	@Override public boolean isPostRelogUpdateEnabled() { return postRelogUpdateEnabled; }
 	
 	@Override

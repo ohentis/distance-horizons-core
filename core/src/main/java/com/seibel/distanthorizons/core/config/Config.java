@@ -881,7 +881,8 @@ public class Config
 									+ "")
 							.build();
 					
-					public static ConfigEntry<Boolean> enablePostRelogUpdate = new ConfigEntry.Builder<Boolean>()
+					// Disabled, previous implementation is too terrible to continue using it
+					private static ConfigEntry<Boolean> enablePostRelogUpdate = new ConfigEntry.Builder<Boolean>()
 							.setServersideShortName("enablePostRelogUpdate")
 							.set(false)
 							.comment(""

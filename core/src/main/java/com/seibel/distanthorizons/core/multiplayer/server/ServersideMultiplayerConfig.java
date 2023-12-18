@@ -38,7 +38,7 @@ public class ServersideMultiplayerConfig extends AbstractMultiplayerConfig
 	
 	@Override
 	public boolean isPostRelogUpdateEnabled() {
-		return clientConfig.postRelogUpdateEnabled && Config.Client.Advanced.Multiplayer.ServerNetworking.enablePostRelogUpdate.get();
+		return false; // clientConfig.postRelogUpdateEnabled && Config.Client.Advanced.Multiplayer.ServerNetworking.enablePostRelogUpdate.get();
 	}
 	
 	@Override
