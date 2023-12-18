@@ -1,17 +1,36 @@
 package com.seibel.distanthorizons.core.multiplayer.server;
 
 import com.seibel.distanthorizons.core.network.IConnection;
+import com.seibel.distanthorizons.core.network.exceptions.RateLimitedException;
+import com.seibel.distanthorizons.core.network.messages.fullData.generation.FullDataSourceRequestMessage;
+import com.seibel.distanthorizons.core.network.messages.fullData.updates.FullDataChangeSummaryRequestMessage;
+import com.seibel.distanthorizons.core.util.ratelimiting.SupplierBasedConcurrencyLimiter;
+import com.seibel.distanthorizons.core.util.ratelimiting.SupplierBasedRateLimiter;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
+import org.jetbrains.annotations.NotNull;
 
-import java.util.concurrent.atomic.AtomicInteger;
+import static com.seibel.distanthorizons.core.config.Config.Client.Advanced.Multiplayer.ServerNetworking;
 
 public class ServerPlayerState
-{
+{	
     public IServerPlayerWrapper serverPlayer;
     public IConnection connection;
 	
+	@NotNull
 	public ServersideMultiplayerConfig config = new ServersideMultiplayerConfig();
-    public final AtomicInteger pendingFullDataRequests = new AtomicInteger();
+	
+	public final SupplierBasedRateLimiter<Void> rateLimitKickTrigger = new SupplierBasedRateLimiter<>(
+			() -> ServerNetworking.rateLimitHitTolerance.get(),
+			ignored -> this.connection.disconnect("You have been repeatedly exceeding rate/concurrency limits.")
+	);
+	
+    public final SupplierBasedConcurrencyLimiter<FullDataSourceRequestMessage> fullDataRequestConcurrencyLimiter = new SupplierBasedConcurrencyLimiter<>(
+			() -> ServerNetworking.fullDataRequestConcurrencyLimit.get(),
+		    msg -> {
+			    msg.sendResponse(new RateLimitedException("Max concurrent requests: " + config.getFullDataRequestConcurrencyLimit()));
+				this.rateLimitKickTrigger.tryAcquire(null);
+		    }
+	);
 	
 	
 	

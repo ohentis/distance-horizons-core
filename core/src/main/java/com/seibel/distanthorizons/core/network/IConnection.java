@@ -40,7 +40,13 @@ public interface IConnection
 	
 	default <TResponse extends FutureTrackableNetworkMessage> CompletableFuture<TResponse> sendRequest(FutureTrackableNetworkMessage msg, Class<TResponse> responseClass)
 	{
-		return this.getRequestHandler().sendRequest(this, msg, responseClass);
+		CompletableFuture<TResponse> responseFuture = this.getRequestHandler().createRequest(this, msg, responseClass);
+		this.sendMessage(msg).whenComplete((ignored, throwable) ->
+		{
+			if (throwable != null)
+				responseFuture.completeExceptionally(throwable);
+		});
+		return responseFuture;
 	}
 	
 	default void disconnect(String reason)

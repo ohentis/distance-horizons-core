@@ -32,7 +32,6 @@ import com.seibel.distanthorizons.core.multiplayer.server.RemotePlayerConnection
 import com.seibel.distanthorizons.core.network.ScopedNetworkEventSource;
 import com.seibel.distanthorizons.core.network.NetworkServer;
 import com.seibel.distanthorizons.core.network.exceptions.InvalidSectionPosException;
-import com.seibel.distanthorizons.core.network.exceptions.RateLimitedException;
 import com.seibel.distanthorizons.core.network.exceptions.RequestRejectedException;
 import com.seibel.distanthorizons.core.network.messages.base.CancelMessage;
 import com.seibel.distanthorizons.core.network.messages.fullData.generation.FullDataSourceRequestMessage;
@@ -97,63 +96,31 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 	{
 		this.eventSource.registerHandler(FullDataSourceRequestMessage.class, remotePlayerConnectionHandler.currentLevelOnly(this, (msg, serverPlayerState) ->
 		{
-			if (msg.changedOnly)
+			if (!serverPlayerState.config.isDistantGenerationEnabled())
 			{
-				if (!serverPlayerState.config.isPostRelogUpdateEnabled())
-				{
-					msg.sendResponse(new RequestRejectedException("Operation is disabled from config."));
-					return;
-				}
-				
-				FullDataMetaFile metaFile = serverside.dataFileHandler.getFileIfExist(msg.dhSectionPos);
-				if (metaFile == null)
-				{
-					msg.sendResponse(new InvalidSectionPosException("Not generated section pos: "+msg.dhSectionPos));
-					return;
-				}
-				
-				metaFile.getOrLoadCachedDataSourceAsync().thenAccept(source -> {
-					if (!(source instanceof CompleteFullDataSource))
-					{
-						msg.sendResponse(new InvalidSectionPosException("Not generated section pos: "+msg.dhSectionPos));
-						return;
-					}
-					
-					msg.sendResponse(new FullDataSourceResponseMessage((CompleteFullDataSource) source, this));
-				});
+				msg.sendResponse(new RequestRejectedException("Operation is disabled from config."));
+				return;
 			}
-			else
+			
+			if (!serverPlayerState.fullDataRequestConcurrencyLimiter.tryAcquire(msg))
+				return;
+			
+			while (true)
 			{
-				if (!serverPlayerState.config.isDistantGenerationEnabled())
-				{
-					msg.sendResponse(new RequestRejectedException("Operation is disabled from config."));
-					return;
-				}
-				
-				if (serverPlayerState.pendingFullDataRequests.incrementAndGet() > serverPlayerState.config.getFullDataRequestRateLimit())
-				{
-					serverPlayerState.pendingFullDataRequests.decrementAndGet();
-					msg.sendResponse(new RateLimitedException("Max concurrent requests: " + serverPlayerState.config.getFullDataRequestRateLimit()));
-					return;
-				}
-				
-				while (true)
-				{
-					IncompleteDataSourceEntry entry = incompleteDataSources.computeIfAbsent(msg.dhSectionPos, pos -> {
-						IncompleteDataSourceEntry newEntry = new IncompleteDataSourceEntry();
-						serverside.dataFileHandler.readAsync(msg.dhSectionPos).thenAccept(fullDataSource -> {
-							newEntry.fullDataSource = fullDataSource;
-						});
-						return newEntry;
+				IncompleteDataSourceEntry entry = incompleteDataSources.computeIfAbsent(msg.dhSectionPos, pos -> {
+					IncompleteDataSourceEntry newEntry = new IncompleteDataSourceEntry();
+					serverside.dataFileHandler.readAsync(msg.dhSectionPos).thenAccept(fullDataSource -> {
+						newEntry.fullDataSource = fullDataSource;
 					});
-					// If this fails, current entry is being drained and need to create another one
-					if (entry.requestCollectionSemaphore.tryAcquire())
-					{
-						fullDataRequests.put(msg.futureId, entry);
-						entry.requestMessages.put(msg.futureId, msg);
-						entry.requestCollectionSemaphore.release();
-						break;
-					}
+					return newEntry;
+				});
+				// If this fails, current entry is being drained and need to create another one
+				if (entry.requestCollectionSemaphore.tryAcquire())
+				{
+					fullDataRequests.put(msg.futureId, entry);
+					entry.requestMessages.put(msg.futureId, msg);
+					entry.requestCollectionSemaphore.release();
+					break;
 				}
 			}
 		}));
@@ -165,32 +132,6 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 			));
 		}));
 		
-		this.eventSource.registerHandler(FullDataChangeSummaryRequestMessage.class, remotePlayerConnectionHandler.currentLevelOnly(this, (msg, serverPlayerState) ->
-		{
-			if (!serverPlayerState.config.isPostRelogUpdateEnabled())
-			{
-				msg.sendResponse(new RequestRejectedException("Operation is disabled from config."));
-				return;
-			}
-			
-			// Load files and check checksums
-			HashSet<DhSectionPos> changedPosList = new HashSet<>();
-			for (Map.Entry<DhSectionPos, Integer> entry : msg.checksums.entrySet())
-			{
-				FullDataMetaFile metaFile = serverside.dataFileHandler.getFileIfExist(entry.getKey());
-				if (metaFile == null)
-				{
-					msg.sendResponse(new InvalidSectionPosException("Not generated section pos: "+entry.getKey()));
-					return;
-				}
-				
-				if (entry.getValue() != metaFile.baseMetaData.checksum)
-					changedPosList.add(entry.getKey());
-			}
-			
-			msg.sendResponse(new FullDataChangeSummaryResponseMessage(changedPosList));
-		}));
-		
 		this.eventSource.registerHandler(CancelMessage.class, msg ->
 		{
 			IncompleteDataSourceEntry entry = this.fullDataRequests.remove(msg.futureId);
@@ -199,7 +140,7 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 			
 			ServerPlayerState serverPlayerState = remotePlayerConnectionHandler.getConnectedPlayer(msg);
 			if (serverPlayerState != null)
-				serverPlayerState.pendingFullDataRequests.decrementAndGet();
+				serverPlayerState.fullDataRequestConcurrencyLimiter.release();
 			
 			entry.requestCollectionSemaphore.acquireUninterruptibly(Short.MAX_VALUE);
 			if (entry.requestMessages.isEmpty())
@@ -257,7 +198,7 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 				if (serverPlayerState == null)
 					continue;
 				
-				serverPlayerState.pendingFullDataRequests.decrementAndGet();
+				serverPlayerState.fullDataRequestConcurrencyLimiter.release();
 				msg.sendResponse(new FullDataSourceResponseMessage(completeSource, this));
 			}
 		}

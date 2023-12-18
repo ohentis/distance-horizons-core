@@ -114,7 +114,7 @@ public abstract class NetworkEventSource
 	}
 	
 	
-	protected <TResponse extends FutureTrackableNetworkMessage> CompletableFuture<TResponse> sendRequest(IConnection connection, FutureTrackableNetworkMessage msg, Class<TResponse> responseClass)
+	protected <TResponse extends FutureTrackableNetworkMessage> CompletableFuture<TResponse> createRequest(IConnection connection, FutureTrackableNetworkMessage msg, Class<TResponse> responseClass)
 	{
 		msg.setConnection(connection);
 		
@@ -148,11 +148,6 @@ public abstract class NetworkEventSource
 		}
 		// If passed until here, cancelling is up to the cleaning side
 		
-		connection.sendMessage(msg).whenComplete((ignored, throwable) ->
-		{
-			if (throwable != null)
-				responseFuture.completeExceptionally(throwable);
-		});
 		return responseFuture;
 	}
 	

@@ -102,7 +102,7 @@ public class WorldRemoteGenerationQueue implements IWorldGenerationQueue, IDebug
 		if (generatorClosingFuture != null || !networkState.getClient().isReady()) return;
 		
 		while (getWaitingTaskCount() > getInProgressTaskCount()
-				&& getInProgressTaskCount() < this.networkState.config.fullDataRequestRateLimit
+				&& getInProgressTaskCount() < this.networkState.config.fullDataRequestConcurrencyLimit
 				&& pendingTasksSemaphore.tryAcquire())
 		{
 			sendNewRequest(targetPos);
@@ -112,7 +112,7 @@ public class WorldRemoteGenerationQueue implements IWorldGenerationQueue, IDebug
 			List<DhSectionPos> posList = waitingTasks.entrySet().stream()
 					.filter(task -> task.getValue().request == null && task.getValue().priority == 0)
 					.sorted((x, y) -> posDistanceSquared(targetPos, x.getKey()) - posDistanceSquared(targetPos, y.getKey()))
-					.limit(this.networkState.config.fullDataRequestRateLimit)
+					.limit(this.networkState.config.fullDataRequestConcurrencyLimit)
 					.map(Map.Entry::getKey)
 					.collect(Collectors.toList());
 			if (posList.isEmpty()) {
@@ -239,7 +239,7 @@ public class WorldRemoteGenerationQueue implements IWorldGenerationQueue, IDebug
 	{
 		ArrayList<String> lines = new ArrayList<>();
 		lines.add("World Remote Generation Queue ["+level.getClientLevelWrapper().getDimensionType().getDimensionName()+"]");
-		lines.add("Requests: "+this.finishedRequests+" / "+(this.getWaitingTaskCount() + this.finishedRequests.get())+" (failed: "+ this.failedRequests+", rate limit: "+this.networkState.config.fullDataRequestRateLimit+")");
+		lines.add("Requests: "+this.finishedRequests+" / "+(this.getWaitingTaskCount() + this.finishedRequests.get())+" (failed: "+ this.failedRequests+", rate limit: "+this.networkState.config.fullDataRequestConcurrencyLimit +")");
 		return lines.toArray(new String[0]);
 	}
 	

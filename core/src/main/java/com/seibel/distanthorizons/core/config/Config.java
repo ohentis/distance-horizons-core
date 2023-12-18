@@ -863,16 +863,6 @@ public class Config
 									+ "")
 							.build();
 					
-					public static ConfigEntry<Integer> requestRateLimit = new ConfigEntry.Builder<Integer>()
-							.setServersideShortName("requestRateLimit")
-							.setMinDefaultMax(1, 20, 100)
-							.comment(""
-									+ "Limits the amount of sent/processed LOD requests concurrently. \n"
-									+ "\n"
-									+ "Note: Server can set its own rate limit. \n"
-									+ "")
-							.build();
-					
 					public static ConfigEntry<Boolean> enableRealTimeUpdates = new ConfigEntry.Builder<Boolean>()
 							.setServersideShortName("enableRealTimeUpdates")
 							.set(false)
@@ -881,7 +871,7 @@ public class Config
 									+ "")
 							.build();
 					
-					// Disabled, previous implementation is too terrible to continue using it
+					/** Disabled, previous implementation is too terrible to continue using it. */
 					private static ConfigEntry<Boolean> enablePostRelogUpdate = new ConfigEntry.Builder<Boolean>()
 							.setServersideShortName("enablePostRelogUpdate")
 							.set(false)
@@ -897,6 +887,37 @@ public class Config
 									+ "The port on the server that's used for sending LOD data."
 									+ "")
 							.build();
+					
+					public static ConfigEntry<Integer> rateLimitHitTolerance = new ConfigEntry.Builder<Integer>()
+							.setServersideShortName("rateLimitHitTolerance")
+							.setAppearance(EConfigEntryAppearance.ONLY_IN_FILE)
+							.setMinDefaultMax(1, 10, 100)
+							.comment(""
+									+ "Amount of rate/concurrency limit hits in one second before disconnecting the offending clients. \n"
+									+ "Warning: too low values can cause slower clients to disconnect prematurely.\n"
+									+ "This setting is server-only; it does not have effect on client.\n"
+									+ "")
+							.build();
+					
+					public static ConfigEntry<Integer> fullDataRequestConcurrencyLimit = new ConfigEntry.Builder<Integer>()
+							.setServersideShortName("fullDataRequestConcurrencyLimit")
+							.setMinDefaultMax(1, 20, 100)
+							.comment(""
+									+ "Limits the amount of sent/processed LOD requests concurrently on server, per player. \n"
+									+ "")
+							.build();
+					
+					/**
+					 * Intentionally disabled.
+					 * @see #enablePostRelogUpdate
+					 */
+					private static ConfigEntry<Integer> fullDataChangeSummaryRequestRateLimit = new ConfigEntry.Builder<Integer>()
+							.setServersideShortName("fullDataChangeSummaryRequestRateLimit")
+							.setMinDefaultMax(1, 20, 100)
+							.comment(""
+									+ "Limits the amount of LOD updates the client can check within a second. \n"
+									+ "")
+							.build(); 
 				}
 				
 			}

@@ -25,9 +25,9 @@ public class ServersideMultiplayerConfig extends AbstractMultiplayerConfig
 	}
 	
 	@Override
-	public int getFullDataRequestRateLimit()
+	public int getFullDataRequestConcurrencyLimit()
 	{
-		return Math.min(clientConfig.fullDataRequestRateLimit, Config.Client.Advanced.Multiplayer.ServerNetworking.requestRateLimit.get());
+		return Math.min(clientConfig.fullDataRequestConcurrencyLimit, Config.Client.Advanced.Multiplayer.ServerNetworking.fullDataRequestConcurrencyLimit.get());
 	}
 	
 	@Override
