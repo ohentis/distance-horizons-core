@@ -412,10 +412,6 @@ public class FullDataFileHandler implements IFullDataSourceProvider
 					return;
 				}
 				
-				// can happen if data source caching isn't working correctly 
-				LodUtil.assertTrue(existingFile.pos.equals(existingFullDataSource.getSectionPos()), "Data source returned the wrong position, pooled data source: ["+usePooledDataSources+"]. Expected: ["+existingFile.pos+"] actual: ["+existingFullDataSource.getSectionPos()+"].");
-				
-				
 				if (showFullDataFileSampling)
 				{
 					DebugRenderer.makeParticle(new DebugRenderer.BoxParticle(
@@ -433,11 +429,10 @@ public class FullDataFileHandler implements IFullDataSourceProvider
 					//throw e;
 				}
 				
-				
-				// return the pooled data source if necessary
-				if (usePooledDataSources)
+				// pooling temporary data sources massively reduces garbage collector overhead when just sampling (going from ~8 GB/sec to ~90 MB/sec)
+				if (usePooledDataSources && !existingFile.cacheLoadingDataSource)
 				{
-					// pooling temporary data sources massively reduces garbage collector overhead when just sampling (going from ~8 GB/sec to ~90 MB/sec)
+					existingFile.clearCachedDataSource();
 					
 					// get the data loader
 					AbstractFullDataSourceLoader dataSourceLoader;

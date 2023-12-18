@@ -25,10 +25,8 @@ import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.generation.DhLightingEngine;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.logging.f3.F3Screen;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
-import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.objects.Pair;
 import com.seibel.distanthorizons.core.util.threading.ThreadPools;
 import com.seibel.distanthorizons.core.world.*;
@@ -54,18 +52,14 @@ public class SharedApi
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	private static final IMinecraftRenderWrapper MC_RENDER = SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
 	private static final Set<DhChunkPos> UPDATING_CHUNK_SET = ConcurrentHashMap.newKeySet();
-	/** how many chunks can be queued for updating per thread, used to prevent updates from infinitely pilling up if the user flys around extremely fast */
-	private static final int MAX_UPDATING_CHUNK_COUNT_PER_THREAD = 500;
-	private static final int MIN_MS_BETWEEN_OVERLOADED_LOG_MESSAGE = 5_000;
+	private static final int MAX_UPDATING_CHUNK_COUNT_PER_THREAD = 100;
 	
-	private static final Timer CHUNK_UPDATE_TIMER = new Timer();
 	
 	
 	private static AbstractDhWorld currentWorld;
 	private static int lastWorldGenTickDelta = 0;
-	private static long lastOverloadedLogMessageMsTime = 0;
 	
-	public F3Screen.DynamicMessage f3Message;
+	private static final Timer CHUNK_UPDATE_TIMER = new Timer();
 	
 	
 	
@@ -73,14 +67,7 @@ public class SharedApi
 	// constructor //
 	//=============//
 	
-	private SharedApi() 
-	{
-		this.f3Message = new F3Screen.DynamicMessage(() ->
-		{
-			int maxUpdateCount = MAX_UPDATING_CHUNK_COUNT_PER_THREAD * Config.Client.Advanced.MultiThreading.numberOfLodBuilderThreads.get();
-			return LodUtil.formatLog("Queued chunk updates: " + UPDATING_CHUNK_SET.size() + " / " + maxUpdateCount);
-		});
-	}
+	private SharedApi() {  }
 	
 	public static void init() { Initializer.init(); }
 	
@@ -161,10 +148,6 @@ public class SharedApi
 	
 	public void applyChunkUpdate(IChunkWrapper chunkWrapper, ILevelWrapper level, boolean updateNeighborChunks)
 	{
-		//========================//
-		// world and level checks //
-		//========================//
-		
 		if (chunkWrapper == null)
 		{
 			// shouldn't happen, but just in case
@@ -200,42 +183,7 @@ public class SharedApi
 		}
 		
 		
-		
-		//=====================//
-		// task limiting check //
-		//=====================//
-		
-		int currentQueueCount = UPDATING_CHUNK_SET.size();
-		int maxQueueCount = MAX_UPDATING_CHUNK_COUNT_PER_THREAD * Config.Client.Advanced.MultiThreading.numberOfLodBuilderThreads.get();
-		if (currentQueueCount >= maxQueueCount)
-		{
-			// The maximum number of chunks are already queued, don't add more.
-			// This is done to prevent overloading the system if the user fly's extremely fast and queues too many chunks
-			
-			long msBetweenLastLog = System.currentTimeMillis() - lastOverloadedLogMessageMsTime;
-			if (msBetweenLastLog >= MIN_MS_BETWEEN_OVERLOADED_LOG_MESSAGE)
-			{
-				lastOverloadedLogMessageMsTime = System.currentTimeMillis();
-				LOGGER.warn("Too many chunks queued for updating, max queue count ["+maxQueueCount+"] (["+MAX_UPDATING_CHUNK_COUNT_PER_THREAD+"] per thread). Some LODs may not be updated or may be missing. Please move through the world slower, decrease your vanilla render distance, or increase the CPU load config.");
-			}
-			
-			return;
-		}
-		
-		// prevent duplicate update requests
-		if (UPDATING_CHUNK_SET.contains(chunkWrapper.getChunkPos()))
-		{
-			// this chunk is already being updated
-			return;
-		}
-		UPDATING_CHUNK_SET.add(chunkWrapper.getChunkPos());
-		
-		
-		
-		//===============================//
-		// update the necessary chunk(s) //
-		//===============================//
-		
+		// update the necessary chunk(s)
 		if (!updateNeighborChunks)
 		{
 			// only update the center chunk
@@ -280,6 +228,22 @@ public class SharedApi
 	}
 	private static void bakeChunkLightingAndSendToLevelAsync(IChunkWrapper chunkWrapper, @Nullable ArrayList<IChunkWrapper> neighbourChunkList, IDhLevel dhLevel)
 	{
+		if (UPDATING_CHUNK_SET.size() >= MAX_UPDATING_CHUNK_COUNT_PER_THREAD * Config.Client.Advanced.MultiThreading.numberOfLodBuilderThreads.get())
+		{
+			// The maximum number of chunks are already queued, don't add more.
+			// This is done to prevent overloading the system if the user flys extremely fast and queues too many chunks
+			return;
+		}
+		
+		// prevent duplicate update requests
+		if (UPDATING_CHUNK_SET.contains(chunkWrapper.getChunkPos()))
+		{
+			// this chunk is already being updated
+			return;
+		}
+		UPDATING_CHUNK_SET.add(chunkWrapper.getChunkPos());
+		
+		
 		// lighting the chunk needs to be done on a separate thread to prevent lagging any of the event threads
 		ThreadPoolExecutor executor = ThreadPools.getLightPopulatorExecutor();
 		if (executor == null)
