@@ -24,6 +24,7 @@ import com.seibel.distanthorizons.core.config.types.ConfigEntry;
 import com.seibel.distanthorizons.core.util.threading.DhThreadFactory;
 import com.seibel.distanthorizons.core.util.threading.RateLimitedThreadPoolExecutor;
 import com.seibel.distanthorizons.core.util.threading.ThreadPools;
+import com.seibel.distanthorizons.coreapi.ModInfo;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -38,8 +39,7 @@ public class ThreadUtil
 {
 	private static final Logger LOGGER = LogManager.getLogger();
 	
-	/** The prefix isn't strictly required, but makes debugging and profiling much easier. */
-	public static String THREAD_NAME_PREFIX = "DH-";
+	public static String THREAD_NAME_PREFIX = ModInfo.THREAD_NAME_PREFIX;
 	
 	public static int MINIMUM_RELATIVE_PRIORITY = -4;
 	public static int DEFAULT_RELATIVE_PRIORITY = 0;
