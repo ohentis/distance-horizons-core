@@ -46,7 +46,7 @@ import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IOverri
  * the concrete object we replaced, there would be issues.
  *
  * @author James Seibel
- * @version 2023-8-26
+ * @version 2023-12-16
  * @since API 1.0.0
  */
 public class DhApi

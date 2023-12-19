@@ -38,10 +38,7 @@ public abstract class DhLevel implements IDhLevel
 	
 	
 	@Override
-	public int getMinY()
-	{
-		return 0;
-	}
+	public int getMinY() { return 0; }
 	
 	@Override
 	public void updateChunkAsync(IChunkWrapper chunk)

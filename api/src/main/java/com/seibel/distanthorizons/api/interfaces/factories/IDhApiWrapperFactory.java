@@ -77,4 +77,13 @@ public interface IDhApiWrapperFactory
 	 */
 	IDhApiBlockStateWrapper getAirBlockStateWrapper();
 	
+	
+	
+	///**
+	// * Specifically designed to be used with the API.
+	// *
+	// * @throws ClassCastException with instructions on expected objects if the object couldn't be cast
+	// */
+	//IChunkWrapper createChunkWrapper(Object[] objectArray) throws ClassCastException;
+	
 }

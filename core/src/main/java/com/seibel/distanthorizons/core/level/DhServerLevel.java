@@ -49,10 +49,7 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 		LOGGER.info("Started DHLevel for {} with saves at {}", serverLevelWrapper, saveStructure);
 	}
 	
-	public void serverTick()
-	{
-		chunkToLodBuilder.tick();
-	}
+	public void serverTick() { this.chunkToLodBuilder.tick(); }
 	
 	@Override
 	public void saveWrites(ChunkSizedFullDataAccessor data)

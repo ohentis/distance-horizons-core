@@ -43,6 +43,10 @@ public class SingleColumnFullDataAccessor implements IFullDataAccessor
 	
 	
 	
+	//=============//
+	// constructor //
+	//=============//
+	
 	public SingleColumnFullDataAccessor(FullDataPointIdMap mapping, long[][] dataArrays, int dataArrayIndex)
 	{
 		this.dataArrays = dataArrays;
@@ -53,6 +57,10 @@ public class SingleColumnFullDataAccessor implements IFullDataAccessor
 	}
 	
 	
+	
+	//=========//
+	// methods //
+	//=========//
 	
 	/** @return true if any data exists in this column. */
 	public boolean doesColumnExist()
