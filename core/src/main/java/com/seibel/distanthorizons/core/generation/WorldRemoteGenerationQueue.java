@@ -1,5 +1,6 @@
 package com.seibel.distanthorizons.core.generation;
 
+import com.google.common.base.Stopwatch;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.CompleteFullDataSource;
@@ -35,6 +36,8 @@ import java.util.stream.Collectors;
 public class WorldRemoteGenerationQueue implements IWorldGenerationQueue, IDebugRenderable
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	
+	private static final long SHUTDOWN_TIMEOUT_SECONDS = 5;
 	
 	private final ClientNetworkState networkState;
 	private final IDhClientLevel level;
@@ -252,13 +255,16 @@ public class WorldRemoteGenerationQueue implements IWorldGenerationQueue, IDebug
 	public CompletableFuture<Void> startClosing(boolean cancelCurrentGeneration, boolean alsoInterruptRunning)
 	{
 		return this.generatorClosingFuture = CompletableFuture.runAsync(() -> {
-			while (!genTaskPriorityRequestSemaphore.tryAcquire())
+			Stopwatch stopwatch = Stopwatch.createStarted();
+			
+			do
 			{
 				if (genTaskPriorityRequest.cancel(false))
 					genTaskPriorityRequestSemaphore.release();
 			}
-			
-			while (!pendingTasksSemaphore.tryAcquire(Short.MAX_VALUE))
+			while (!genTaskPriorityRequestSemaphore.tryAcquire() && stopwatch.elapsed(TimeUnit.SECONDS) < SHUTDOWN_TIMEOUT_SECONDS);
+				
+			do
 			{
 				for (WorldGenQueueEntry entry : this.waitingTasks.values())
 				{
@@ -267,6 +273,10 @@ public class WorldRemoteGenerationQueue implements IWorldGenerationQueue, IDebug
 						pendingTasksSemaphore.release();
 				}
 			}
+			while (!pendingTasksSemaphore.tryAcquire(Short.MAX_VALUE) && stopwatch.elapsed(TimeUnit.SECONDS) < SHUTDOWN_TIMEOUT_SECONDS);
+		
+			if (stopwatch.elapsed(TimeUnit.SECONDS) >= SHUTDOWN_TIMEOUT_SECONDS)
+				LOGGER.warn("Generation queue for " + level.getLevelWrapper() + " did not shutdown in " + SHUTDOWN_TIMEOUT_SECONDS + " seconds! Some unfinished tasks might be left hanging.");
 		});
 	}
 	
