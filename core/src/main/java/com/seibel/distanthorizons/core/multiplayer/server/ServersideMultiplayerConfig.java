@@ -31,6 +31,12 @@ public class ServersideMultiplayerConfig extends AbstractMultiplayerConfig
 	}
 	
 	@Override
+	public int getGenTaskPriorityRequestRateLimit()
+	{
+		return Math.min(clientConfig.genTaskPriorityRequestRateLimit, Config.Client.Advanced.Multiplayer.ServerNetworking.genTaskPriorityRequestRateLimit.get());
+	}
+	
+	@Override
 	public boolean isRealTimeUpdatesEnabled()
 	{
 		return clientConfig.realTimeUpdatesEnabled && Config.Client.Advanced.Multiplayer.ServerNetworking.enableRealTimeUpdates.get();

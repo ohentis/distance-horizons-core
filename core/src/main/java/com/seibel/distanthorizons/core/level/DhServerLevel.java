@@ -24,22 +24,18 @@ import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedF
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.CompleteFullDataSource;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IFullDataSource;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IIncompleteFullDataSource;
-import com.seibel.distanthorizons.core.file.fullDatafile.FullDataMetaFile;
 import com.seibel.distanthorizons.core.file.fullDatafile.IFullDataSourceProvider;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.multiplayer.server.ServerPlayerState;
 import com.seibel.distanthorizons.core.multiplayer.server.RemotePlayerConnectionHandler;
 import com.seibel.distanthorizons.core.network.ScopedNetworkEventSource;
 import com.seibel.distanthorizons.core.network.NetworkServer;
-import com.seibel.distanthorizons.core.network.exceptions.InvalidSectionPosException;
 import com.seibel.distanthorizons.core.network.exceptions.RequestRejectedException;
 import com.seibel.distanthorizons.core.network.messages.base.CancelMessage;
 import com.seibel.distanthorizons.core.network.messages.fullData.generation.FullDataSourceRequestMessage;
 import com.seibel.distanthorizons.core.network.messages.fullData.generation.FullDataSourceResponseMessage;
 import com.seibel.distanthorizons.core.network.messages.fullData.generation.priority.GenTaskPriorityRequestMessage;
 import com.seibel.distanthorizons.core.network.messages.fullData.generation.priority.GenTaskPriorityResponseMessage;
-import com.seibel.distanthorizons.core.network.messages.fullData.updates.FullDataChangeSummaryRequestMessage;
-import com.seibel.distanthorizons.core.network.messages.fullData.updates.FullDataChangeSummaryResponseMessage;
 import com.seibel.distanthorizons.core.network.messages.fullData.updates.FullDataPartialUpdateMessage;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
@@ -54,7 +50,6 @@ import com.seibel.distanthorizons.coreapi.util.math.Vec3d;
 import org.apache.logging.log4j.Logger;
 
 import javax.annotation.CheckForNull;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.concurrent.*;
 
@@ -128,7 +123,9 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 		this.eventSource.registerHandler(GenTaskPriorityRequestMessage.class, remotePlayerConnectionHandler.currentLevelOnly(this, (msg, serverPlayerState) ->
 		{
 			msg.sendResponse(new GenTaskPriorityResponseMessage(
-					this.serverside.dataFileHandler.getLoadStates(msg.posList)
+					this.serverside.dataFileHandler.getLoadStates(msg.posList.stream()
+							.limit(serverPlayerState.genTaskPriorityRequestRateLimiter.acquireOrDrain(msg.posList.size()))
+							::iterator)
 			));
 		}));
 		

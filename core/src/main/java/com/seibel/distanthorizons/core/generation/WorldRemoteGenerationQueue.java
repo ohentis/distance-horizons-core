@@ -112,7 +112,7 @@ public class WorldRemoteGenerationQueue implements IWorldGenerationQueue, IDebug
 			List<DhSectionPos> posList = waitingTasks.entrySet().stream()
 					.filter(task -> task.getValue().request == null && task.getValue().priority == 0)
 					.sorted((x, y) -> posDistanceSquared(targetPos, x.getKey()) - posDistanceSquared(targetPos, y.getKey()))
-					.limit(this.networkState.config.fullDataRequestConcurrencyLimit)
+					.limit(this.networkState.config.genTaskPriorityRequestRateLimit)
 					.map(Map.Entry::getKey)
 					.collect(Collectors.toList());
 			if (posList.isEmpty()) {
@@ -135,7 +135,7 @@ public class WorldRemoteGenerationQueue implements IWorldGenerationQueue, IDebug
 							entry.priority = mapEntry.getValue();
 					}
 				}
-				catch (ChannelException | CancellationException ignored)
+				catch (ChannelException | CancellationException | RateLimitedException ignored)
 				{
 				}
 				catch (Throwable e)

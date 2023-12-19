@@ -43,7 +43,7 @@ public class NetworkChannelInitializer extends ChannelInitializer<SocketChannel>
 		pipeline.addLast(new NetworkOutboundExceptionRouter());
 		
 		// Decoder
-		pipeline.addLast(new LengthFieldBasedFrameDecoder(Integer.MAX_VALUE, 0, Integer.BYTES, 0, Integer.BYTES));
+		pipeline.addLast(new LengthFieldBasedFrameDecoder(4194304 /* 4 MiB */, 0, Integer.BYTES, 0, Integer.BYTES));
 		pipeline.addLast(new MessageDecoder());
 		
 		// Handler

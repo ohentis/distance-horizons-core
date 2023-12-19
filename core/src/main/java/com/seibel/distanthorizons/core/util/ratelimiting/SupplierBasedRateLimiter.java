@@ -27,12 +27,29 @@ public class SupplierBasedRateLimiter<T>
 	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
 	public boolean tryAcquire(T context)
 	{
-		return tryAcquire(1, context);
+		return tryAcquire(context, 1);
 	}
 	
-	public boolean tryAcquire(int permits, T context)
+	public int acquireOrDrain(int permits)
 	{
 		rateLimiter.setRate(maxRateSupplier.get());
+		
+		if (rateLimiter.tryAcquire(permits))
+			return permits;
+		
+		int acquired = 0;
+		while ((permits /= 2) > 0)
+		{
+			if (rateLimiter.tryAcquire(permits))
+				acquired += permits;
+		}
+		return acquired;
+	}
+	
+	public boolean tryAcquire(T context, int permits)
+	{
+		rateLimiter.setRate(maxRateSupplier.get());
+		
 		if (!rateLimiter.tryAcquire(permits))
 		{
 			this.onFailureConsumer.accept(context);

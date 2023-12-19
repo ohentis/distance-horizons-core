@@ -3,7 +3,7 @@ package com.seibel.distanthorizons.core.multiplayer.server;
 import com.seibel.distanthorizons.core.network.IConnection;
 import com.seibel.distanthorizons.core.network.exceptions.RateLimitedException;
 import com.seibel.distanthorizons.core.network.messages.fullData.generation.FullDataSourceRequestMessage;
-import com.seibel.distanthorizons.core.network.messages.fullData.updates.FullDataChangeSummaryRequestMessage;
+import com.seibel.distanthorizons.core.network.messages.fullData.generation.priority.GenTaskPriorityRequestMessage;
 import com.seibel.distanthorizons.core.util.ratelimiting.SupplierBasedConcurrencyLimiter;
 import com.seibel.distanthorizons.core.util.ratelimiting.SupplierBasedRateLimiter;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
@@ -27,9 +27,18 @@ public class ServerPlayerState
     public final SupplierBasedConcurrencyLimiter<FullDataSourceRequestMessage> fullDataRequestConcurrencyLimiter = new SupplierBasedConcurrencyLimiter<>(
 			() -> ServerNetworking.fullDataRequestConcurrencyLimit.get(),
 		    msg -> {
-			    msg.sendResponse(new RateLimitedException("Max concurrent requests: " + config.getFullDataRequestConcurrencyLimit()));
+			    msg.sendResponse(new RateLimitedException("Max concurrent full data requests: " + config.getFullDataRequestConcurrencyLimit()));
 				this.rateLimitKickTrigger.tryAcquire(null);
 		    }
+	);
+	
+	public final SupplierBasedRateLimiter<GenTaskPriorityRequestMessage> genTaskPriorityRequestRateLimiter = new SupplierBasedRateLimiter<>(
+			() -> ServerNetworking.genTaskPriorityRequestRateLimit.get(),
+			msg -> {
+				// Shouldn't be called, but it's here just in case
+				msg.sendResponse(new RateLimitedException("Max section checks per second: " + config.getFullDataRequestConcurrencyLimit()));
+				this.rateLimitKickTrigger.tryAcquire(null);
+			}
 	);
 	
 	

@@ -907,6 +907,14 @@ public class Config
 									+ "")
 							.build();
 					
+					public static ConfigEntry<Integer> genTaskPriorityRequestRateLimit = new ConfigEntry.Builder<Integer>()
+							.setServersideShortName("genTaskPriorityRequestRateLimit")
+							.setMinDefaultMax(1, 50, 200)
+							.comment(""
+									+ "Limits the amount of LOD sections that the client can request states for, per second. \n"
+									+ "")
+							.build();
+					
 					/**
 					 * Intentionally disabled.
 					 * @see #enablePostRelogUpdate
