@@ -178,7 +178,7 @@ public class FullDataMetaFile extends AbstractMetaDataContainerFile implements I
 	
 	
 	
-	public CompletableFuture<IFullDataSource> getDataSourceWithoutCachingAsync() { return this.getOrLoadCachedDataSourceAsync(false); }
+	public CompletableFuture<IFullDataSource> getDataSourceWithoutCachingAsync() { return this.getOrLoadCachedDataSourceAsync(true); }
 	public CompletableFuture<IFullDataSource> getOrLoadCachedDataSourceAsync() { return this.getOrLoadCachedDataSourceAsync(true); }
 	/** 
 	 * Synchronized to help prevent issues where multiple threads try to read as cached and un-cached at the same time. 
