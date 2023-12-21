@@ -271,16 +271,33 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandler
 		else if (genTaskResult.success)
 		{
 			// generation completed, update the files and listener(s)
-			this.flushAndSaveAsync(pos).join();
 			
-			// FIXME this is a bad fix to prevent full data sources saving incomplete, causing holes in the world after generation.
-			//  The problem appears to be that the save may be happening too quickly,
-			//  potentially happening before the meta file has the newly generated data added to it.
-			CHUNK_GEN_FINISHED_TIMER.schedule(new TimerTask()
+			try
 			{
-				@Override
-				public void run() { GeneratedFullDataFileHandler.this.flushAndSaveAsync(pos).join(); }
-			}, 4000L);
+				// timeout necessary in case the flush gets stuck or there are issues down stream
+				// otherwise the world gen might get stuck and never finish
+				this.flushAndSaveAsync(pos).get(10_000, TimeUnit.MILLISECONDS);
+				
+				
+				// FIXME this is a bad fix to prevent full data sources saving incompletely, causing holes in the world after generation.
+				//  The problem appears to be that the save may be happening too quickly,
+				//  potentially happening before the meta file has the newly generated data added to it.
+				CHUNK_GEN_FINISHED_TIMER.schedule(new TimerTask()
+				{
+					@Override
+					public void run() { GeneratedFullDataFileHandler.this.flushAndSaveAsync(pos); }
+				}, 4_000L);
+				
+			}
+			catch (InterruptedException | TimeoutException e)
+			{
+				LOGGER.warn("Unable to flush and save after waiting [10] seconds. Error: "+e.getMessage(), e);
+			}
+			catch (ExecutionException e)
+			{
+				LOGGER.error("Unexpected issue saving world gen result. Error: "+e.getMessage(), e);
+			}
+			
 			
 			this.fireOnGenPosSuccessListeners(pos);
 			return;
