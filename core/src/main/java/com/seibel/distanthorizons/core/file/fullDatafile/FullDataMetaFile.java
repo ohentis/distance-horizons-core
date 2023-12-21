@@ -299,7 +299,7 @@ public class FullDataMetaFile extends AbstractMetaDataContainerFile implements I
 						}
 						catch (Exception ex)
 						{
-							LOGGER.error("Full Data Load error: "+ ex.getMessage(), ex);
+							LOGGER.error("Full Data Load error for pos ["+this.pos+"], error: "+ ex.getMessage(), ex);
 							
 							dataSourceLoadFuture.completeExceptionally(ex);
 							dataSourceLoadFutureRef.set(null);
