@@ -20,6 +20,7 @@
 package com.seibel.distanthorizons.api;
 
 import com.seibel.distanthorizons.api.interfaces.events.IDhApiEventInjector;
+import com.seibel.distanthorizons.api.interfaces.factories.IDhApiWrapperFactory;
 import com.seibel.distanthorizons.api.interfaces.override.IDhApiOverrideable;
 import com.seibel.distanthorizons.api.interfaces.override.worldGenerator.IDhApiWorldGeneratorOverrideRegister;
 import com.seibel.distanthorizons.api.interfaces.render.IDhApiRenderProxy;
@@ -45,7 +46,7 @@ import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IOverri
  * the concrete object we replaced, there would be issues.
  *
  * @author James Seibel
- * @version 2023-8-26
+ * @version 2023-12-16
  * @since API 1.0.0
  */
 public class DhApi
@@ -113,6 +114,12 @@ public class DhApi
 		 * @since API 1.0.0
 		 */
 		public static IDhApiRenderProxy renderProxy = null;
+		
+		/** 
+		 * Used to create wrappers for Minecraft objects needed by other Distant Horizons API methods.
+		 * @since API 1.1.0
+		 */
+		public static IDhApiWrapperFactory wrapperFactory = null;
 		
 	}
 	

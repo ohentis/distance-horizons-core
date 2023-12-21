@@ -19,7 +19,6 @@
 
 package com.seibel.distanthorizons.core.util;
 
-import com.seibel.distanthorizons.api.enums.config.EOverdrawPrevention;
 import com.seibel.distanthorizons.core.api.internal.SharedApi;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
@@ -47,6 +46,7 @@ public class RenderUtil
 	private static final IMinecraftRenderWrapper MC_RENDER = SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
 	
 	
+	
 	//=================//
 	// culling methods //
 	//=================//
@@ -62,7 +62,7 @@ public class RenderUtil
 				&& pos.x <= center.x + MC_RENDER.getRenderDistance())
 				&&
 				(pos.z >= center.z - MC_RENDER.getRenderDistance()
-						&& pos.z <= center.z + MC_RENDER.getRenderDistance());
+				&& pos.z <= center.z + MC_RENDER.getRenderDistance());
 	}
 	
 	/**
@@ -76,7 +76,7 @@ public class RenderUtil
 				&& x <= centerCoordinate + MC_RENDER.getRenderDistance())
 				&&
 				(z >= centerCoordinate - MC_RENDER.getRenderDistance()
-						&& z <= centerCoordinate + MC_RENDER.getRenderDistance());
+				&& z <= centerCoordinate + MC_RENDER.getRenderDistance());
 	}
 	
 	/**
@@ -91,7 +91,7 @@ public class RenderUtil
 				&& i <= lodRadius + halfRadius)
 				&&
 				(j >= lodRadius - halfRadius
-						&& j <= lodRadius + halfRadius);
+				&& j <= lodRadius + halfRadius);
 	}
 	
 	/**

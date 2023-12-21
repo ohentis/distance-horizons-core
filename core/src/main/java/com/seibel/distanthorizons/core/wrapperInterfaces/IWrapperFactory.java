@@ -19,6 +19,7 @@
 
 package com.seibel.distanthorizons.core.wrapperInterfaces;
 
+import com.seibel.distanthorizons.api.interfaces.factories.IDhApiWrapperFactory;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
@@ -36,7 +37,7 @@ import java.util.HashSet;
  * @author James Seibel
  * @version 2022-12-5
  */
-public interface IWrapperFactory extends IBindable
+public interface IWrapperFactory extends IDhApiWrapperFactory, IBindable
 {
 	AbstractBatchGenerationEnvironmentWrapper createBatchGenerator(IDhLevel targetLevel);
 	IBiomeWrapper deserializeBiomeWrapper(String str, ILevelWrapper levelWrapper) throws IOException;

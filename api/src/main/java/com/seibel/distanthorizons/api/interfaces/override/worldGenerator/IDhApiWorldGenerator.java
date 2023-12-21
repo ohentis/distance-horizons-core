@@ -48,6 +48,7 @@ public interface IDhApiWorldGenerator extends Closeable, IDhApiOverrideable
 	 * TODO: System currently only supports 1x1 block per data.
 	 *
 	 * @see EDhApiDetailLevel
+	 * @since API 1.0.0
 	 */
 	default byte getSmallestDataDetailLevel() { return EDhApiDetailLevel.BLOCK.detailLevel; }
 	/**
@@ -57,6 +58,7 @@ public interface IDhApiWorldGenerator extends Closeable, IDhApiOverrideable
 	 * For more information on what detail levels represent see: {@link EDhApiDetailLevel}.
 	 *
 	 * @see EDhApiDetailLevel
+	 * @since API 1.0.0
 	 */
 	default byte getLargestDataDetailLevel() { return EDhApiDetailLevel.BLOCK.detailLevel; }
 	
@@ -69,6 +71,7 @@ public interface IDhApiWorldGenerator extends Closeable, IDhApiOverrideable
 	 * For more information on what detail levels represent see: {@link EDhApiDetailLevel}.
 	 *
 	 * @see EDhApiDetailLevel
+	 * @since API 1.0.0
 	 */
 	default byte getMinGenerationGranularity() { return EDhApiDetailLevel.CHUNK.detailLevel; }
 	
@@ -81,10 +84,14 @@ public interface IDhApiWorldGenerator extends Closeable, IDhApiOverrideable
 	 * For more information on what detail levels represent see: {@link EDhApiDetailLevel}.
 	 *
 	 * @see EDhApiDetailLevel
+	 * @since API 1.0.0
 	 */
 	default byte getMaxGenerationGranularity() { return (byte) (EDhApiDetailLevel.CHUNK.detailLevel + 2); }
 	
-	/** @return true if the generator is unable to accept new generation requests. */
+	/** 
+	 * @return true if the generator is unable to accept new generation requests.
+	 * @since API 1.0.0
+	 */
 	boolean isBusy();
 	
 	
@@ -115,7 +122,10 @@ public interface IDhApiWorldGenerator extends Closeable, IDhApiOverrideable
 	 * @param generatorMode how far into the world gen pipeline this method run. See {@link EDhApiDistantGeneratorMode} for additional documentation.
 	 * @param worldGeneratorThreadPool the thread pool that should be used when generating the returned {@link CompletableFuture}.
 	 * @param resultConsumer the consumer that should be fired whenever a chunk finishes generating.
+	 * 
 	 * @return a future that should run on the worldGeneratorThreadPool and complete once the given generation task has completed.
+	 * 
+	 * @since API 1.0.0
 	 */
 	CompletableFuture<Void> generateChunks(
 			int chunkPosMinX, int chunkPosMinZ,
@@ -131,6 +141,8 @@ public interface IDhApiWorldGenerator extends Closeable, IDhApiOverrideable
 	/**
 	 * Called before a new generator task is started. <br>
 	 * This can be used to run cleanup on existing tasks before new tasks are started.
+	 *
+	 * @since API 1.0.0
 	 */
 	void preGeneratorTaskStart();
 	
