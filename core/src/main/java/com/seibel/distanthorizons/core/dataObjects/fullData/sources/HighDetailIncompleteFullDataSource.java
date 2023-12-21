@@ -149,29 +149,27 @@ public class HighDetailIncompleteFullDataSource implements IIncompleteFullDataSo
 		int dataDetailLevel = inputStream.readShort();
 		if (dataDetailLevel != dataFile.baseMetaData.dataDetailLevel)
 		{
-			throw new IOException(LodUtil.formatLog("Data level mismatch: {} != {}", dataDetailLevel, dataFile.baseMetaData.dataDetailLevel));
+			throw new IOException("Data level mismatch: ["+dataDetailLevel+"] != ["+dataFile.baseMetaData.dataDetailLevel+"]");
 		}
 		
 		// confirm that the detail level is correct
 		int sparseDetail = inputStream.readShort();
 		if (sparseDetail != SPARSE_UNIT_DETAIL)
 		{
-			throw new IOException((LodUtil.formatLog("Unexpected sparse detail level: {} != {}",
-					sparseDetail, SPARSE_UNIT_DETAIL)));
+			throw new IOException("Unexpected sparse detail level: ["+sparseDetail+"] != ["+SPARSE_UNIT_DETAIL+"]");
 		}
 		
 		// confirm the scale of the data points is correct
 		int sectionSize = inputStream.readInt();
 		if (sectionSize != SECTION_SIZE)
 		{
-			throw new IOException(LodUtil.formatLog(
-					"Section size mismatch: {} != {} (Currently only 1 section size is supported)", sectionSize, SECTION_SIZE));
+			throw new IOException("Section size mismatch: ["+sectionSize+"] != ["+SECTION_SIZE+"] (Currently only 1 section size is supported)");
 		}
 		
 		int minY = inputStream.readInt();
 		if (minY != level.getMinY())
 		{
-			LOGGER.warn("Data minY mismatch: " + minY + " != " + level.getMinY() + ". Will ignore data's y level");
+			LOGGER.warn("Data minY mismatch: [" + minY + "] != [" + level.getMinY() + "]. Will ignore data's y level");
 		}
 		
 		EDhApiWorldGenerationStep worldGenStep = EDhApiWorldGenerationStep.fromValue(inputStream.readByte());
