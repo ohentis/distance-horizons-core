@@ -19,9 +19,14 @@
 
 package com.seibel.distanthorizons.core.dataObjects.transformers;
 
+import java.util.List;
+
+import com.seibel.distanthorizons.api.objects.data.DhApiChunkOfDataPoints;
+import com.seibel.distanthorizons.api.objects.data.DhApiTerrainDataPoint;
 import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.util.FullDataPointUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
@@ -121,6 +126,35 @@ public class LodDataBuilder
 		return chunkData;
 	}
 	
+	public static ChunkSizedFullDataAccessor convertDataPoints(DhApiChunkOfDataPoints dataPoints) {
+		ChunkSizedFullDataAccessor accessor = new ChunkSizedFullDataAccessor(new DhChunkPos(dataPoints.chunkPosX, dataPoints.chunkPosZ));
+		for (int z = 0; z < 16; z++) {
+			for (int x = 0; x < 16; x++) {
+				List<DhApiTerrainDataPoint> columnDataPoints = dataPoints.getDataPoints(x, z);
+				//this null check does 2 nice things at the same time:
+				//if columnDataPoints is null,
+				//then packedDataPoints will be of length 0
+				//AND the below loop won't run.
+				int size = columnDataPoints != null ? columnDataPoints.size() : 0;
+				long[] packedDataPoints = new long[size];
+				for (int index = 0; index < size; index++) {
+					DhApiTerrainDataPoint dataPoint = columnDataPoints.get(index);
+					packedDataPoints[index] = FullDataPointUtil.encode(
+						accessor.getMapping().addIfNotPresentAndGetId(
+							(IBiomeWrapper)(dataPoint.biomeWrapper),
+							(IBlockStateWrapper)(dataPoint.blockStateWrapper)
+						),
+						dataPoint.topYBlockPos - dataPoint.bottomYBlockPos,
+						dataPoint.bottomYBlockPos - dataPoints.chunkBottomY,
+						(byte)(dataPoint.lightLevel)
+					);
+				}
+				accessor.setSingleColumn(packedDataPoints, x, z);
+			}
+		}
+		return accessor;
+	}
+
 	public static boolean canGenerateLodFromChunk(IChunkWrapper chunk)
 	{
 		//return true;

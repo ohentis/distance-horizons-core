@@ -22,6 +22,7 @@ package com.seibel.distanthorizons.api.interfaces.override.worldGenerator;
 import com.seibel.distanthorizons.api.interfaces.override.IDhApiOverrideable;
 import com.seibel.distanthorizons.api.enums.EDhApiDetailLevel;
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiDistantGeneratorMode;
+import com.seibel.distanthorizons.api.objects.data.DhApiChunkOfDataPoints;
 
 import java.io.Closeable;
 import java.util.concurrent.CompletableFuture;
@@ -102,7 +103,8 @@ public interface IDhApiWorldGenerator extends Closeable, IDhApiOverrideable
 	//=================//
 	
 	/**
-	 * This method is called by Distant Horizons to generate terrain over a given area. <br><br>
+	 * This method is called by Distant Horizons to generate terrain over a given area when
+	 * {@link #getReturnType()} returns {@link EDhApiWorldGeneratorReturnType#CHUNKS}. <br><br>
 	 *
 	 * After a chunk has been generated it (and any necessary supporting objects as listed below) should be passed into the
 	 * resultConsumer's {@link Consumer#accept} method. If the Consumer is given the wrong data
@@ -115,22 +117,81 @@ public interface IDhApiWorldGenerator extends Closeable, IDhApiOverrideable
 	 *  - [net.minecraft.world.level.chunk.ChunkAccess] <br>
 	 *  - [net.minecraft.world.level.ServerLevel] or [net.minecraft.world.level.ClientLevel] <br>
 	 *
-	 * @param chunkPosMinX the chunk X position closest to negative infinity 
-	 * @param chunkPosMinZ the chunk Z position closest to negative infinity 
+	 * @implNote the default implementation of this method throws an {@link UnsupportedOperationException},
+	 * and must be overridden when {@link #getReturnType()} returns {@link EDhApiWorldGeneratorReturnType#CHUNKS}.
+	 * since {@link #getReturnType()} returns {@link EDhApiWorldGeneratorReturnType#CHUNKS} by default,
+	 * this method must also be overridden when {@link #getReturnType()} is NOT overridden.
+	 *
+	 * @param chunkPosMinX the chunk X position closest to negative infinity
+	 * @param chunkPosMinZ the chunk Z position closest to negative infinity
 	 * @param granularity TODO find a central location to store the definition of granularity. For now it is stored in the Core method: WorldGenerationQueue#startGenerationEvent
 	 * @param targetDataDetail the LOD Detail level requested to generate. See {@link EDhApiDetailLevel} for additional information.
 	 * @param generatorMode how far into the world gen pipeline this method run. See {@link EDhApiDistantGeneratorMode} for additional documentation.
 	 * @param worldGeneratorThreadPool the thread pool that should be used when generating the returned {@link CompletableFuture}.
 	 * @param resultConsumer the consumer that should be fired whenever a chunk finishes generating.
-	 * 
+	 *
 	 * @return a future that should run on the worldGeneratorThreadPool and complete once the given generation task has completed.
-	 * 
+	 *
 	 * @since API 1.0.0
 	 */
-	CompletableFuture<Void> generateChunks(
-			int chunkPosMinX, int chunkPosMinZ,
-			byte granularity, byte targetDataDetail, EDhApiDistantGeneratorMode generatorMode,
-			ExecutorService worldGeneratorThreadPool, Consumer<Object[]> resultConsumer);
+	default CompletableFuture<Void> generateChunks(
+		int chunkPosMinX,
+		int chunkPosMinZ,
+		byte granularity,
+		byte targetDataDetail,
+		EDhApiDistantGeneratorMode generatorMode,
+		ExecutorService worldGeneratorThreadPool,
+		Consumer<Object[]> resultConsumer
+	) {
+		throw new UnsupportedOperationException();
+	}
+
+	/**
+	 * This method is called by Distant Horizons to generate terrain over a given area when
+	 * {@link #getReturnType()} returns {@link EDhApiWorldGeneratorReturnType#CHUNKS_OF_DATA_POINTS}. <br><br>
+	 *
+	 * after the chunk of data points has been generated, it should be passed into the
+	 * resultConsumer's {@link Consumer#accept(Object)} method.
+	 *
+	 * @implNote the default implementation of this method throws an {@link UnsupportedOperationException},
+	 * and must be overridden when {@link #getReturnType()} returns {@link EDhApiWorldGeneratorReturnType#CHUNKS_OF_DATA_POINTS}.
+	 *
+	 * @param chunkPosMinX the chunk X position closest to negative infinity
+	 * @param chunkPosMinZ the chunk Z position closest to negative infinity
+	 * @param granularity TODO find a central location to store the definition of granularity. For now it is stored in the Core method: WorldGenerationQueue#startGenerationEvent
+	 * @param targetDataDetail the LOD Detail level requested to generate. See {@link EDhApiDetailLevel} for additional information.
+	 * @param generatorMode how far into the world gen pipeline this method run. See {@link EDhApiDistantGeneratorMode} for additional documentation.
+	 * @param worldGeneratorThreadPool the thread pool that should be used when generating the returned {@link CompletableFuture}.
+	 * @param resultConsumer the consumer that should be fired whenever a chunk finishes generating.
+	 *
+	 * @return a future that should run on the worldGeneratorThreadPool and complete once the given generation task has completed.
+	 *
+	 * @since API 1.1.0
+	 */
+	default CompletableFuture<Void> generateChunksOfDataPoints(
+		int chunkPosMinX,
+		int chunkPosMinZ,
+		byte granularity,
+		byte targetDataDetail,
+		EDhApiDistantGeneratorMode generatorMode,
+		ExecutorService worldGeneratorThreadPool,
+		Consumer<DhApiChunkOfDataPoints> resultConsumer
+	) {
+		throw new UnsupportedOperationException();
+	}
+
+	/**
+	 * This method controls how Distant Horizons should request that
+	 * this world generator generate terrain over a given area.
+	 * by default, the return value is {@link EDhApiWorldGeneratorReturnType#CHUNKS},
+	 * which means that {@link #generateChunks(int, int, byte, byte, EDhApiDistantGeneratorMode, ExecutorService, Consumer)}
+	 * will be invoked whenever Distant Horizons wants this world generator to generate terrain over a given area.
+	 *
+	 * @since API 1.1.0
+	 */
+	default EDhApiWorldGeneratorReturnType getReturnType() {
+		return EDhApiWorldGeneratorReturnType.CHUNKS;
+	}
 	
 	
 	
@@ -157,5 +218,30 @@ public interface IDhApiWorldGenerator extends Closeable, IDhApiOverrideable
 	@Override
 	void close();
 	
-	
+	/**
+	 * an enum to control how Distant Horizons should request that
+	 * a world generator generate terrain over a given area.
+	 *
+	 * @since API 1.1.0
+	 */
+	enum EDhApiWorldGeneratorReturnType {
+
+		/**
+		 * when this constant is returned by {@link #getReturnType()},
+		 * {@link #generateChunks(int, int, byte, byte, EDhApiDistantGeneratorMode, ExecutorService, Consumer)}
+		 * will be called to generate terrain.
+		 *
+		 * @since API 1.1.0
+		 */
+		CHUNKS,
+
+		/**
+		 * when this constant is returned by {@link #getReturnType()},
+		 * {@link #generateChunksOfDataPoints(int, int, byte, byte, EDhApiDistantGeneratorMode, ExecutorService, Consumer)}
+		 * will be called to generate terrain.
+		 *
+		 * @since API 1.1.0
+		 */
+		CHUNKS_OF_DATA_POINTS;
+	}
 }
