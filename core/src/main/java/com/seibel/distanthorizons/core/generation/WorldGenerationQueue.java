@@ -21,7 +21,8 @@ package com.seibel.distanthorizons.core.generation;
 
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiDistantGeneratorMode;
 import com.seibel.distanthorizons.api.interfaces.override.worldGenerator.IDhApiWorldGenerator;
-import com.seibel.distanthorizons.core.config.listeners.ConfigChangeListener;
+import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGeneratorReturnType;
+import com.seibel.distanthorizons.api.objects.data.DhApiChunk;
 import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.generation.tasks.*;
@@ -33,8 +34,8 @@ import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.transformers.LodDataBuilder;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
+import com.seibel.distanthorizons.core.util.LodUtil.AssertFailureException;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
-import com.seibel.distanthorizons.core.util.threading.RateLimitedThreadPoolExecutor;
 import com.seibel.distanthorizons.core.util.objects.UncheckedInterruptedException;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.threading.ThreadPools;
@@ -50,6 +51,7 @@ import java.util.function.Consumer;
 public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRenderable
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	private static final IWrapperFactory WRAPPER_FACTORY = SingletonInjector.INSTANCE.get(IWrapperFactory.class);
 	
 	private final IDhApiWorldGenerator generator;
 	
@@ -408,26 +410,72 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 	 * (So, with a generator whose only gen data detail is 0, it is the same as a MC chunk.)
 	 */
 	private CompletableFuture<Void> startGenerationEvent(
-			DhChunkPos chunkPosMin,
-			byte granularity, byte targetDataDetail,
-			Consumer<ChunkSizedFullDataAccessor> chunkDataConsumer)
+		DhChunkPos chunkPosMin,
+		byte granularity,
+		byte targetDataDetail,
+		Consumer<ChunkSizedFullDataAccessor> chunkDataConsumer
+		)
 	{
 		EDhApiDistantGeneratorMode generatorMode = Config.Client.Advanced.WorldGenerator.distantGeneratorMode.get();
-		return this.generator.generateChunks(chunkPosMin.x, chunkPosMin.z, granularity, targetDataDetail, generatorMode, ThreadPools.getWorldGenExecutor(), (generatedObjectArray) ->
+		EDhApiWorldGeneratorReturnType returnType = this.generator.getReturnType();
+		switch (returnType) 
 		{
-			try
+			case VANILLA_CHUNKS: 
 			{
-				IChunkWrapper chunk = SingletonInjector.INSTANCE.get(IWrapperFactory.class).createChunkWrapper(generatedObjectArray);
-				ChunkSizedFullDataAccessor chunkDataAccessor = LodDataBuilder.createChunkData(chunk);
-				LodUtil.assertTrue(chunkDataAccessor != null);
-				chunkDataConsumer.accept(chunkDataAccessor);
+				return this.generator.generateChunks(
+					chunkPosMin.x,
+					chunkPosMin.z,
+					granularity,
+					targetDataDetail,
+					generatorMode,
+					ThreadPools.getWorldGenExecutor(),
+					(Object[] generatedObjectArray) -> 
+					{
+						try
+						{
+							IChunkWrapper chunk = WRAPPER_FACTORY.createChunkWrapper(generatedObjectArray);
+							ChunkSizedFullDataAccessor chunkDataAccessor = LodDataBuilder.createChunkData(chunk);
+							LodUtil.assertTrue(chunkDataAccessor != null);
+							chunkDataConsumer.accept(chunkDataAccessor);
+						}
+						catch (ClassCastException e)
+						{
+							LOGGER.error("World generator return type incorrect. Error: [" + e.getMessage() + "]. World generator disabled.", e);
+							Config.Client.Advanced.WorldGenerator.enableDistantGeneration.set(false);
+						}
+					}
+				);
 			}
-			catch (ClassCastException e)
+			case API_CHUNKS: 
 			{
-				DhLoggerBuilder.getLogger().error("World generator return type incorrect. Error: [" + e.getMessage() + "]. World generator disabled.", e);
+				return this.generator.generateApiChunks(
+					chunkPosMin.x,
+					chunkPosMin.z,
+					granularity,
+					targetDataDetail,
+					generatorMode,
+					ThreadPools.getWorldGenExecutor(),
+					(DhApiChunk dataPoints) ->
+					{
+						try
+						{
+							ChunkSizedFullDataAccessor chunkDataAccessor = LodDataBuilder.createApiChunkData(dataPoints);
+							chunkDataConsumer.accept(chunkDataAccessor);
+						}
+						catch (ClassCastException e)
+						{
+							LOGGER.error("World generator return type incorrect. Error: [" + e.getMessage() + "]. World generator disabled.", e);
+							Config.Client.Advanced.WorldGenerator.enableDistantGeneration.set(false);
+						}
+					}
+				);
+			}
+			default: 
+			{
 				Config.Client.Advanced.WorldGenerator.enableDistantGeneration.set(false);
+				throw new AssertFailureException("Unknown return type: " + returnType);
 			}
-		});
+		}
 	}
 	
 	
