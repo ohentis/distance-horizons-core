@@ -44,7 +44,7 @@ public class DhApiChunk
 	public final int topYBlockPos;
 	public final int bottomYBlockPos;
 	
-	private final List<List<DhApiTerrainDataPoint>> dataPoints = new ArrayList<>(16 * 16); // 256
+	private final List<List<DhApiTerrainDataPoint>> dataPoints;
 	
 	
 	
@@ -58,6 +58,13 @@ public class DhApiChunk
 		this.chunkPosZ = chunkPosZ;
 		this.topYBlockPos = topYBlockPos;
 		this.bottomYBlockPos = bottomYBlockPos;
+		
+		// populate the array to prevent null pointers
+		this.dataPoints = new ArrayList<>(16 * 16); // 256
+		for (int i = 0; i < (16*16); i++)
+		{
+			this.dataPoints.add(i, null);
+		}
 	}
 	
 	
