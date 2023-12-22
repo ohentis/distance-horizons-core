@@ -21,7 +21,7 @@ package com.seibel.distanthorizons.core.dataObjects.transformers;
 
 import java.util.List;
 
-import com.seibel.distanthorizons.api.objects.data.DhApiChunkOfDataPoints;
+import com.seibel.distanthorizons.api.objects.data.DhApiChunk;
 import com.seibel.distanthorizons.api.objects.data.DhApiTerrainDataPoint;
 import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
@@ -43,6 +43,11 @@ public class LodDataBuilder
 	
 	private static boolean getTopErrorLogged = false;
 	
+	
+	
+	//============//
+	// converters //
+	//============//
 	
 	public static ChunkSizedFullDataAccessor createChunkData(IChunkWrapper chunkWrapper)
 	{
@@ -126,39 +131,54 @@ public class LodDataBuilder
 		return chunkData;
 	}
 	
-	public static ChunkSizedFullDataAccessor convertDataPoints(DhApiChunkOfDataPoints dataPoints) {
+	/** @throws ClassCastException if an API user returns the wrong object type(s) */
+	public static ChunkSizedFullDataAccessor createApiChunkData(DhApiChunk dataPoints) throws ClassCastException
+	{
 		ChunkSizedFullDataAccessor accessor = new ChunkSizedFullDataAccessor(new DhChunkPos(dataPoints.chunkPosX, dataPoints.chunkPosZ));
-		for (int z = 0; z < 16; z++) {
-			for (int x = 0; x < 16; x++) {
-				List<DhApiTerrainDataPoint> columnDataPoints = dataPoints.getDataPoints(x, z);
-				//this null check does 2 nice things at the same time:
-				//if columnDataPoints is null,
-				//then packedDataPoints will be of length 0
-				//AND the below loop won't run.
-				int size = columnDataPoints != null ? columnDataPoints.size() : 0;
+		for (int relZ = 0; relZ < LodUtil.CHUNK_WIDTH; relZ++)
+		{
+			for (int relX = 0; relX < LodUtil.CHUNK_WIDTH; relX++)
+			{
+				List<DhApiTerrainDataPoint> columnDataPoints = dataPoints.getDataPoints(relX, relZ);
+				
+				
+				// this null check does 2 nice things at the same time:
+				// if columnDataPoints is null,
+				// then packedDataPoints will be of length 0
+				// AND the below loop won't run.
+				int size = (columnDataPoints != null) ? columnDataPoints.size() : 0;
+				
 				long[] packedDataPoints = new long[size];
-				for (int index = 0; index < size; index++) {
+				for (int index = 0; index < size; index++)
+				{
 					DhApiTerrainDataPoint dataPoint = columnDataPoints.get(index);
+					
+					int id = accessor.getMapping().addIfNotPresentAndGetId(
+							(IBiomeWrapper) (dataPoint.biomeWrapper),
+							(IBlockStateWrapper) (dataPoint.blockStateWrapper)
+						);
+					
 					packedDataPoints[index] = FullDataPointUtil.encode(
-						accessor.getMapping().addIfNotPresentAndGetId(
-							(IBiomeWrapper)(dataPoint.biomeWrapper),
-							(IBlockStateWrapper)(dataPoint.blockStateWrapper)
-						),
-						dataPoint.topYBlockPos - dataPoint.bottomYBlockPos,
-						dataPoint.bottomYBlockPos - dataPoints.chunkBottomY,
-						(byte)(dataPoint.lightLevel)
-					);
+							id,
+							dataPoint.topYBlockPos - dataPoint.bottomYBlockPos,
+							dataPoint.bottomYBlockPos - dataPoints.topYBlockPos,
+							(byte) (dataPoint.lightLevel)
+						);
 				}
-				accessor.setSingleColumn(packedDataPoints, x, z);
+				
+				accessor.setSingleColumn(packedDataPoints, relX, relZ);
 			}
 		}
+		
 		return accessor;
 	}
 
-	public static boolean canGenerateLodFromChunk(IChunkWrapper chunk)
-	{
-		//return true;
-		return chunk != null && chunk.isLightCorrect(); // TODO client only chunks return chunks with bad lighting, preventing chunk building (or transparent only chunks)
-	}
+	
+	
+	//================//
+	// helper methods //
+	//================//
+	
+	public static boolean canGenerateLodFromChunk(IChunkWrapper chunk) { return chunk != null && chunk.isLightCorrect(); }
 	
 }

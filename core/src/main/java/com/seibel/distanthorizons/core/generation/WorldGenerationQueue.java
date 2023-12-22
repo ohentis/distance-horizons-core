@@ -21,8 +21,8 @@ package com.seibel.distanthorizons.core.generation;
 
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiDistantGeneratorMode;
 import com.seibel.distanthorizons.api.interfaces.override.worldGenerator.IDhApiWorldGenerator;
-import com.seibel.distanthorizons.api.interfaces.override.worldGenerator.IDhApiWorldGenerator.EDhApiWorldGeneratorReturnType;
-import com.seibel.distanthorizons.api.objects.data.DhApiChunkOfDataPoints;
+import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGeneratorReturnType;
+import com.seibel.distanthorizons.api.objects.data.DhApiChunk;
 import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.generation.tasks.*;
@@ -420,7 +420,7 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 		EDhApiWorldGeneratorReturnType returnType = this.generator.getReturnType();
 		switch (returnType) 
 		{
-			case CHUNKS: 
+			case VANILLA_CHUNKS: 
 			{
 				return this.generator.generateChunks(
 					chunkPosMin.x,
@@ -446,20 +446,20 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 					}
 				);
 			}
-			case CHUNKS_OF_DATA_POINTS: 
+			case API_CHUNKS: 
 			{
-				return this.generator.generateChunksOfDataPoints(
+				return this.generator.generateApiChunks(
 					chunkPosMin.x,
 					chunkPosMin.z,
 					granularity,
 					targetDataDetail,
 					generatorMode,
 					ThreadPools.getWorldGenExecutor(),
-					(DhApiChunkOfDataPoints dataPoints) ->
+					(DhApiChunk dataPoints) ->
 					{
 						try
 						{
-							ChunkSizedFullDataAccessor chunkDataAccessor = LodDataBuilder.createChunkDataFromApiDataPoints(dataPoints);
+							ChunkSizedFullDataAccessor chunkDataAccessor = LodDataBuilder.createApiChunkData(dataPoints);
 							chunkDataConsumer.accept(chunkDataAccessor);
 						}
 						catch (ClassCastException e)
