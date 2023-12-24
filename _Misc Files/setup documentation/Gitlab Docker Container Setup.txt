@@ -32,6 +32,11 @@ gitlab project -> settings (on the left menu bar) -> CI/CD -> Runners
 and you should see the newly registered runner (the description should show up under the runner's auto generated ID)
 
 
+5. optional config
+Open Docker Desktop -> Containers -> Files, go to the file "etc/gitlab-runner/config.toml"
+concurrent can be changed to allow for concurrent builds.
+
+
 
 Additional commands:
 
