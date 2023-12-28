@@ -915,6 +915,14 @@ public class Config
 									+ "")
 							.build();
 					
+					public static ConfigEntry<Integer> fullDataRequestBeginDelay = new ConfigEntry.Builder<Integer>()
+							.setMinDefaultMax(0, 3, 10)
+							.comment(""
+									+ "Adds a delay in seconds before sending LOD requests, when generation is enabled. \n"
+									+ "Increase this value if initial generation starts too far away. \n"
+									+ "")
+							.build();
+					
 					/**
 					 * Intentionally disabled.
 					 * @see #enablePostRelogUpdate

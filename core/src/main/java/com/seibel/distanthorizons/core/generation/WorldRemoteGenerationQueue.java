@@ -2,6 +2,7 @@ package com.seibel.distanthorizons.core.generation;
 
 import com.google.common.base.Stopwatch;
 import com.seibel.distanthorizons.core.config.Config;
+import com.seibel.distanthorizons.core.config.types.ConfigEntry;
 import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.CompleteFullDataSource;
 import com.seibel.distanthorizons.core.generation.tasks.IWorldGenTaskTracker;
@@ -26,6 +27,7 @@ import org.apache.logging.log4j.Logger;
 
 import javax.annotation.CheckForNull;
 import java.awt.*;
+import java.time.Duration;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.*;
@@ -41,6 +43,11 @@ public class WorldRemoteGenerationQueue implements IWorldGenerationQueue, IDebug
 	
 	private final ClientNetworkState networkState;
 	private final IDhClientLevel level;
+	
+	// Used to prevent requests for section very far away, as result of request list not completely filled.
+	// Kinda a hack, since queue is not notified when file handler is done with feeding sections to generate
+	private static final ConfigEntry<Integer> REQUEST_BEGIN_DELAY = Config.Client.Advanced.Multiplayer.ServerNetworking.fullDataRequestBeginDelay;
+	private final Stopwatch requestBeginStopwatch = Stopwatch.createStarted();
 	
 	private volatile CompletableFuture<Void> generatorClosingFuture = null;
 	
@@ -103,6 +110,7 @@ public class WorldRemoteGenerationQueue implements IWorldGenerationQueue, IDebug
 	public void startGenerationQueueAndSetTargetPos(DhBlockPos2D targetPos)
 	{
 		if (generatorClosingFuture != null || !networkState.getClient().isReady()) return;
+		if (requestBeginStopwatch.elapsed(TimeUnit.SECONDS) < REQUEST_BEGIN_DELAY.get()) return;
 		
 		while (getWaitingTaskCount() > getInProgressTaskCount()
 				&& getInProgressTaskCount() < this.networkState.config.fullDataRequestConcurrencyLimit
