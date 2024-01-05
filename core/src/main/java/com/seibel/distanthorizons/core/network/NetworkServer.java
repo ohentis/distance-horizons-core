@@ -33,6 +33,7 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
+import io.netty.util.concurrent.DefaultThreadFactory;
 import org.apache.logging.log4j.Logger;
 
 import java.util.concurrent.ConcurrentMap;
@@ -45,8 +46,8 @@ public class NetworkServer extends NetworkEventSource implements AutoCloseable
 	// TODO move to the config
 	private final int port;
 	
-	private final EventLoopGroup bossGroup = new NioEventLoopGroup(1);
-	private final EventLoopGroup workerGroup = new NioEventLoopGroup();
+	private final EventLoopGroup bossGroup = new NioEventLoopGroup(1, new DefaultThreadFactory("DH-Network - Server Boss Thread"));
+	private final EventLoopGroup workerGroup = new NioEventLoopGroup(new DefaultThreadFactory("DH-Network - Server Worker Thread"));
 	private final AtomicBoolean isClosed = new AtomicBoolean();
 	
 	private final ConcurrentMap<ChannelHandlerContext, IConnection> connections = new MapMaker().weakKeys().weakValues().makeMap();

@@ -30,6 +30,7 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.util.concurrent.DefaultThreadFactory;
 import org.apache.logging.log4j.Logger;
 
 import java.net.InetSocketAddress;
@@ -68,7 +69,7 @@ public class NetworkClient extends NetworkEventSource implements IConnection, Au
 	/** Indicates whether the connection is established and first message is sent. */
 	public boolean isReady() { return ready; }
 	
-    private final EventLoopGroup workerGroup = new NioEventLoopGroup();
+    private final EventLoopGroup workerGroup = new NioEventLoopGroup(new DefaultThreadFactory("DH-Network - Client Thread"));
     private final Bootstrap clientBootstrap = new Bootstrap()
             .group(this.workerGroup)
             .channel(NioSocketChannel.class)
