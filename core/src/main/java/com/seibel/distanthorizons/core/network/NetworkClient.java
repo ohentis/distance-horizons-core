@@ -69,7 +69,7 @@ public class NetworkClient extends NetworkEventSource implements IConnection, Au
 	/** Indicates whether the connection is established and first message is sent. */
 	public boolean isReady() { return ready; }
 	
-    private final EventLoopGroup workerGroup = new NioEventLoopGroup(new DefaultThreadFactory("DH-Network - Client Thread"));
+    private final EventLoopGroup workerGroup = new NioEventLoopGroup(0, new DefaultThreadFactory("DH-Network - Client Thread"));
     private final Bootstrap clientBootstrap = new Bootstrap()
             .group(this.workerGroup)
             .channel(NioSocketChannel.class)

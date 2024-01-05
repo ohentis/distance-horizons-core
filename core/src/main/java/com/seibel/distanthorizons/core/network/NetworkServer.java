@@ -47,7 +47,7 @@ public class NetworkServer extends NetworkEventSource implements AutoCloseable
 	private final int port;
 	
 	private final EventLoopGroup bossGroup = new NioEventLoopGroup(1, new DefaultThreadFactory("DH-Network - Server Boss Thread"));
-	private final EventLoopGroup workerGroup = new NioEventLoopGroup(new DefaultThreadFactory("DH-Network - Server Worker Thread"));
+	private final EventLoopGroup workerGroup = new NioEventLoopGroup(0, new DefaultThreadFactory("DH-Network - Server Worker Thread"));
 	private final AtomicBoolean isClosed = new AtomicBoolean();
 	
 	private final ConcurrentMap<ChannelHandlerContext, IConnection> connections = new MapMaker().weakKeys().weakValues().makeMap();
