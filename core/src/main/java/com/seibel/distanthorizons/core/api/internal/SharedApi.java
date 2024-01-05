@@ -58,7 +58,7 @@ public class SharedApi
 	private static final int MAX_UPDATING_CHUNK_COUNT_PER_THREAD = 500;
 	private static final int MIN_MS_BETWEEN_OVERLOADED_LOG_MESSAGE = 5_000;
 	
-	private static final Timer CHUNK_UPDATE_TIMER = new Timer();
+	private static final Timer CHUNK_UPDATE_TIMER = new Timer("DH-ChunkUpdateTimer", true);
 	
 	
 	private static AbstractDhWorld currentWorld;
