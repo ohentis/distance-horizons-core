@@ -46,7 +46,7 @@ import java.util.function.Function;
 public class GeneratedFullDataFileHandler extends FullDataFileHandler
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
-	private static final Timer CHUNK_GEN_FINISHED_TIMER = new Timer();
+	private static final Timer CHUNK_GEN_FINISHED_TIMER = new Timer("DH-ChunkGenFinishedTimer", true);
 	
 	private final AtomicReference<IWorldGenerationQueue> worldGenQueueRef = new AtomicReference<>(null);
 	

@@ -117,7 +117,7 @@ public abstract class AbstractPresetConfigEventHandler<TPresetEnum extends Enum<
 		{
 			public void run() { AbstractPresetConfigEventHandler.this.applyPreset(); }
 		};
-		this.applyPresetTimer = new Timer("ApplyPresetTimer");
+		this.applyPresetTimer = new Timer("DH-ApplyPresetTimer", true);
 		this.applyPresetTimer.schedule(task, MS_DELAY_BEFORE_APPLYING_PRESET);
 		
 	}
