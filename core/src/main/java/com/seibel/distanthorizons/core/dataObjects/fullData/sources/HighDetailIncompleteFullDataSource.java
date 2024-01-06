@@ -220,7 +220,13 @@ public class HighDetailIncompleteFullDataSource implements IIncompleteFullDataSo
 			{
 				for (int z = 0; z < array.width(); z++)
 				{
-					dataOutputStream.writeInt(array.get(x, z).getSingleLength());
+					SingleColumnFullDataAccessor columnAccessor = array.get(x, z);
+					int columnLength = 0;
+					if (columnAccessor != null)
+					{
+						columnLength = columnAccessor.getSingleLength();
+					}
+					dataOutputStream.writeInt(columnLength);
 				}
 			}
 			
