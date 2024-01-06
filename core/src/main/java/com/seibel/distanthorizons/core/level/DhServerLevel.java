@@ -30,8 +30,6 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
 import org.apache.logging.log4j.Logger;
 
-import java.util.concurrent.CompletableFuture;
-
 public class DhServerLevel extends DhLevel implements IDhServerLevel
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
@@ -56,7 +54,7 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 	{
 		DhSectionPos pos = data.getSectionPos();
 		pos = pos.convertNewToDetailLevel(CompleteFullDataSource.SECTION_SIZE_OFFSET);
-		this.getFileHandler().writeChunkDataToFile(pos, data);
+		this.getFileHandler().updateDataSourcesWithChunkData(data);
 	}
 	
 	@Override
@@ -69,9 +67,6 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 		serverside.close();
 		LOGGER.info("Closed DHLevel for {}", getLevelWrapper());
 	}
-	
-	@Override
-	public CompletableFuture<Void> saveAsync() { return getFileHandler().flushAndSaveAsync(); }
 	
 	@Override
 	public void doWorldGen()

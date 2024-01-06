@@ -25,7 +25,7 @@ import com.seibel.distanthorizons.core.dataObjects.fullData.sources.HighDetailIn
 
 public class HighDetailIncompleteFullDataSourceLoader extends AbstractFullDataSourceLoader
 {
-	public HighDetailIncompleteFullDataSourceLoader() { super(HighDetailIncompleteFullDataSource.class, HighDetailIncompleteFullDataSource.DATA_SOURCE_TYPE, new byte[]{HighDetailIncompleteFullDataSource.DATA_FORMAT_VERSION}); }
+	public HighDetailIncompleteFullDataSourceLoader() { super(HighDetailIncompleteFullDataSource.class, HighDetailIncompleteFullDataSource.DATA_TYPE_NAME, new byte[]{HighDetailIncompleteFullDataSource.DATA_FORMAT_VERSION}); }
 	
 	@Override
 	protected IFullDataSource createEmptyDataSource(DhSectionPos pos) { return HighDetailIncompleteFullDataSource.createEmpty(pos); }

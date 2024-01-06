@@ -56,7 +56,7 @@ public class FullDataDownSampler
 			{
 				for (int zOffset = 0; zOffset < sectionSizeNeeded; zOffset++)
 				{
-					CompletableFuture<IFullDataSource> future = provider.readAsync(new DhSectionPos(
+					CompletableFuture<IFullDataSource> future = provider.getAsync(new DhSectionPos(
 							CompleteFullDataSource.SECTION_SIZE_OFFSET, basePos.x + xOffset, basePos.z + zOffset));
 					future = future.whenComplete((source, ex) -> {
 						if (ex == null && source != null && source instanceof CompleteFullDataSource)
@@ -80,7 +80,7 @@ public class FullDataDownSampler
 			{
 				for (int zOffset = 0; zOffset < CompleteFullDataSource.WIDTH; zOffset++)
 				{
-					CompletableFuture<IFullDataSource> future = provider.readAsync(new DhSectionPos(
+					CompletableFuture<IFullDataSource> future = provider.getAsync(new DhSectionPos(
 							CompleteFullDataSource.SECTION_SIZE_OFFSET, basePos.x + xOffset * multiplier, basePos.z + zOffset * multiplier));
 					future = future.whenComplete((source, ex) -> {
 						if (ex == null && source != null && source instanceof CompleteFullDataSource)

@@ -26,37 +26,55 @@ import com.seibel.distanthorizons.core.dataObjects.fullData.sources.HighDetailIn
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.LowDetailIncompleteFullDataSource;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IFullDataSource;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IIncompleteFullDataSource;
+import com.seibel.distanthorizons.core.file.metaData.AbstractMetaDataContainerFile;
+import com.seibel.distanthorizons.core.file.metaData.BaseMetaData;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.pos.DhLodPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.CompleteFullDataSource;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.sql.FullDataRepo;
 import com.seibel.distanthorizons.core.sql.MetaDataDto;
 import com.seibel.distanthorizons.core.util.LodUtil;
+import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataOutputStream;
+import com.seibel.distanthorizons.core.util.threading.ThreadPools;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
 import java.awt.*;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.nio.channels.ClosedByInterruptException;
+import java.nio.channels.ClosedChannelException;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.zip.Adler32;
+import java.util.zip.CheckedOutputStream;
 
 public class FullDataFileHandler implements IFullDataSourceProvider
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	private static final Timer DELAYED_SAVE_TIMER = new Timer();
+	/** How long a data source must remain un-modified before being written to disk. */
+	private static final int SAVE_DELAY_IN_MS = 4_000;
 	
-	protected final ConcurrentHashMap<DhSectionPos, FullDataMetaFile> loadedMetaFileBySectionPos = new ConcurrentHashMap<>();
+	protected final ConcurrentHashMap<DhSectionPos, IFullDataSource> unsavedDataSourceBySectionPos = new ConcurrentHashMap<>();
+	protected final ConcurrentHashMap<DhSectionPos, TimerTask> saveTimerTasksBySectionPos = new ConcurrentHashMap<>();
+	protected final ReentrantLock[] updateLockArray;
 	
 	protected final IDhLevel level;
 	protected final File saveDir;
-	protected final AtomicInteger topDetailLevelRef = new AtomicInteger(0);
+	
+	/** 
+	 * The highest numerical detail level known about. 
+	 * Used when determining which positions to update. 
+	 */
+	protected final AtomicInteger topSectionDetailLevelRef;
 	protected final int minDetailLevel = CompleteFullDataSource.SECTION_SIZE_OFFSET;
 	
 	public final FullDataRepo fullDataRepo;
@@ -79,6 +97,14 @@ public class FullDataFileHandler implements IFullDataSourceProvider
 			LOGGER.warn("Unable to create full data folder, file saving may fail.");
 		}
 		
+		// the lock array's length is double the number of CPU cores so the number of collisions
+		// should be relatively low without having too many extra locks
+		this.updateLockArray = new ReentrantLock[Runtime.getRuntime().availableProcessors() * 2];
+		for (int i = 0; i < this.updateLockArray.length; i++)
+		{
+			this.updateLockArray[i] = new ReentrantLock();
+		}
+		
 		
 		try
 		{
@@ -90,13 +116,17 @@ public class FullDataFileHandler implements IFullDataSourceProvider
 			// or the database update failed
 			throw new RuntimeException(e);
 		}
+		
+		// determine the top detail level currently in the database
+		int maxSectionDetailLevel = this.fullDataRepo.getMaxSectionDetailLevel();
+		this.topSectionDetailLevelRef = new AtomicInteger(maxSectionDetailLevel);
 	}
 	
 	
 	
-	//===============//
-	// file handling //
-	//===============//
+	//==============//
+	// data reading //
+	//==============//
 	
 	/**
 	 * Returns the {@link IFullDataSource} for the given section position. <Br>
@@ -107,387 +137,336 @@ public class FullDataFileHandler implements IFullDataSourceProvider
 	 * This call is concurrent. I.e. it supports being called by multiple threads at the same time.
 	 */
 	@Override
-	public CompletableFuture<IFullDataSource> readAsync(DhSectionPos pos)
+	public CompletableFuture<IFullDataSource> getAsync(DhSectionPos pos)
 	{
-		this.topDetailLevelRef.updateAndGet(oldDetailLevel -> Math.max(oldDetailLevel, pos.getDetailLevel()));
-		FullDataMetaFile metaFile = this.getLoadOrMakeFile(pos, true);
-		if (metaFile == null)
+		ThreadPoolExecutor executor = ThreadPools.getFileHandlerExecutor();	
+		if (executor == null || executor.isTerminated())
 		{
 			return CompletableFuture.completedFuture(null);
 		}
 		
-		
-		// future wrapper necessary in order to handle file read errors
-		CompletableFuture<IFullDataSource> futureWrapper = new CompletableFuture<>();
-		metaFile.getOrLoadCachedDataSourceAsync().exceptionally((e) ->
-				{
-					FullDataMetaFile newMetaFile = this.removeCorruptedFile(pos, e);
-					
-					futureWrapper.completeExceptionally(e);
-					return null; // return value doesn't matter
-				})
-				.whenComplete((dataSource, e) ->
-				{
-					futureWrapper.complete(dataSource);
-				});
-		
-		return futureWrapper;
+		return CompletableFuture.supplyAsync(() -> this.get(pos), executor);
 	}
-	
-	@Override
-	public FullDataMetaFile getFileIfExist(DhSectionPos pos) { return this.getLoadOrMakeFile(pos, false); }
-	protected FullDataMetaFile getLoadOrMakeFile(DhSectionPos pos, boolean allowCreateFile)
+	/** 
+	 * Should be used in internal methods where we are already running on a file handler thread. 
+	 * @see FullDataFileHandler#getAsync(DhSectionPos)  
+	 */
+	protected IFullDataSource get(DhSectionPos pos)
 	{
-		FullDataMetaFile metaFile = this.loadedMetaFileBySectionPos.get(pos);
-		if (metaFile != null)
+		// used the unsaved data source if present
+		if (this.unsavedDataSourceBySectionPos.containsKey(pos))
 		{
-			return metaFile;
+			return this.unsavedDataSourceBySectionPos.get(pos);
 		}
+		// an unsaved data source isn't present
+		// check the database
 		
 		
-		// check if the file exists, but hasn't been loaded
-		MetaDataDto metaDataDto = this.fullDataRepo.getByPrimaryKey(pos.serialize());
-		if (metaDataDto != null)
-		{
-			synchronized (this)
-			{
-				// Double check locking for loading file, as loading file means also loading the metadata, which
-				// while not... Very expensive, is still better to avoid multiple threads doing it, and dumping the
-				// duplicated work to the trash. Therefore, eating the overhead of 'synchronized' is worth it.
-				metaFile = this.loadedMetaFileBySectionPos.get(pos);
-				if (metaFile != null)
-				{
-					return metaFile; // someone else loaded it already.
-				}
-				
-				try
-				{
-					metaFile = FullDataMetaFile.createFromExistingDto(this, this.level, metaDataDto);
-					this.topDetailLevelRef.updateAndGet(oldDetailLevel -> Math.max(oldDetailLevel, pos.getDetailLevel()));
-					this.loadedMetaFileBySectionPos.put(pos, metaFile);
-					return metaFile;
-				}
-				catch (IOException e)
-				{
-					LOGGER.error("Failed to read meta data file at pos " + pos + ": ", e);
-					this.fullDataRepo.delete(metaDataDto);
-				}
-			}
-		}
+		// increase the top detail level if necessary
+		this.topSectionDetailLevelRef.updateAndGet(oldDetailLevel -> Math.max(oldDetailLevel, pos.getDetailLevel()));
 		
 		
-		if (!allowCreateFile)
-		{
-			return null;
-		}
-		
-		// File does not exist, create it.
-		// In this case, since 'creating' a file object doesn't actually do anything heavy on IO yet, we use CAS
-		// to avoid overhead of 'synchronized', and eat the mini-overhead of possibly creating duplicate objects.
+		IFullDataSource dataSource = null;
 		try
 		{
-			metaFile = FullDataMetaFile.createNewDtoForPos(this, this.level, pos);
-		}
-		catch (IOException e)
-		{
-			LOGGER.error("IOException on creating new data file at {}", pos, e);
-			return null;
-		}
-		
-		this.topDetailLevelRef.updateAndGet(oldDetailLevel -> Math.max(oldDetailLevel, pos.getDetailLevel()));
-		
-		// This is a Compare And Swap with expected null value.
-		FullDataMetaFile metaFileCas = this.loadedMetaFileBySectionPos.putIfAbsent(pos, metaFile);
-		return metaFileCas == null ? metaFile : metaFileCas;
-	}
-	
-	/**
-	 * Populates the preexistingFiles and missingFilePositions ArrayLists.
-	 *
-	 * @param preexistingFiles the list of {@link FullDataMetaFile}'s that have been created for the given position.
-	 * @param missingFilePositions the list of {@link DhSectionPos}'s that don't have {@link FullDataMetaFile} created for them yet.
-	 */
-	protected void getDataFilesForPosition(
-			DhSectionPos effectivePos, DhSectionPos posAreaToGet,
-			ArrayList<FullDataMetaFile> preexistingFiles, ArrayList<DhSectionPos> missingFilePositions)
-	{
-		byte sectionDetail = posAreaToGet.getDetailLevel();
-		boolean allEmpty = true;
-		
-		final DhSectionPos.DhMutableSectionPos subPos = new DhSectionPos.DhMutableSectionPos((byte)0, 0, 0);
-		
-		// get all existing files for this position
-		outerLoop:
-		while (--sectionDetail >= this.minDetailLevel)
-		{
-			DhLodPos minPos = posAreaToGet.getMinCornerLodPos().getCornerLodPos(sectionDetail);
-			int count = posAreaToGet.getSectionBBoxPos().getWidthAtDetail(sectionDetail);
-			
-			for (int xOffset = 0; xOffset < count; xOffset++)
+			MetaDataDto dto = this.fullDataRepo.getByPrimaryKey(pos.serialize());
+			if (dto != null)
 			{
-				for (int zOffset = 0; zOffset < count; zOffset++)
-				{
-					subPos.mutate(sectionDetail, xOffset + minPos.x, zOffset + minPos.z);
-					LodUtil.assertTrue(posAreaToGet.overlapsExactly(effectivePos) && subPos.overlapsExactly(posAreaToGet));
-					
-					//TODO: The following check is temporary as we only sample corner points, which means
-					// on a very different level, we may not need the entire section at all.
-					if (!CompleteFullDataSource.firstDataPosCanAffectSecond(effectivePos, subPos))
-					{
-						continue;
-					}
-					
-					// check if a file for this pos is loaded or exists
-					if (this.loadedMetaFileBySectionPos.containsKey(subPos) || this.fullDataRepo.existsWithPrimaryKey(subPos.serialize()))
-					{
-						allEmpty = false;
-						break outerLoop;
-					}
-				}
-			}
-		}
-		
-		if (allEmpty)
-		{
-			// there are no children to this quad tree,
-			// add this leaf's position
-			missingFilePositions.add(posAreaToGet);
-		}
-		else
-		{
-			// there are children in this quad tree, search them
-			this.recursiveGetDataFilesForPosition(0, effectivePos, posAreaToGet, preexistingFiles, missingFilePositions);
-			this.recursiveGetDataFilesForPosition(1, effectivePos, posAreaToGet, preexistingFiles, missingFilePositions);
-			this.recursiveGetDataFilesForPosition(2, effectivePos, posAreaToGet, preexistingFiles, missingFilePositions);
-			this.recursiveGetDataFilesForPosition(3, effectivePos, posAreaToGet, preexistingFiles, missingFilePositions);
-		}
-	}
-	private void recursiveGetDataFilesForPosition(int childIndex, DhSectionPos basePos, DhSectionPos pos, ArrayList<FullDataMetaFile> preexistingFiles, ArrayList<DhSectionPos> missingFilePositions)
-	{
-		DhSectionPos childPos = pos.getChildByIndex(childIndex);
-		if (CompleteFullDataSource.firstDataPosCanAffectSecond(basePos, childPos))
-		{
-			// get or load the file if necessary
-			if (!this.loadedMetaFileBySectionPos.containsKey(childPos))
-			{
-				this.getLoadOrMakeFile(childPos, false);
-			}
-			
-			
-			FullDataMetaFile metaFile = this.loadedMetaFileBySectionPos.get(childPos);
-			if (metaFile != null)
-			{
-				// we have reached a populated leaf node in the quad tree
-				preexistingFiles.add(metaFile);
-			}
-			else if (childPos.getDetailLevel() == this.minDetailLevel)
-			{
-				// we have reached an empty leaf node in the quad tree
-				missingFilePositions.add(childPos);
+				// load from file
+				AbstractFullDataSourceLoader loader = AbstractFullDataSourceLoader.getLoader(dto.baseMetaData.dataType, dto.baseMetaData.binaryDataFormatVersion);
+				dataSource = loader.loadDataSource(dto, this.level);
 			}
 			else
 			{
-				// recursively traverse down the tree
-				this.getDataFilesForPosition(basePos, childPos, preexistingFiles, missingFilePositions);
+				// attempt to create from any existing files
+				dataSource = this.createNewDataSourceFromExistingDtos(pos);
 			}
 		}
-	}
-	
-	public void ForEachFile(Consumer<FullDataMetaFile> consumer) { this.loadedMetaFileBySectionPos.values().forEach(consumer); }
-	
-	
-	
-	//=============//
-	// data saving //
-	//=============//
-	
-	/** This call is concurrent. I.e. it supports being called by multiple threads at the same time. */
-	@Override
-	public void writeChunkDataToFile(DhSectionPos sectionPos, ChunkSizedFullDataAccessor chunkDataView)
-	{
-		DhSectionPos chunkSectionPos = chunkDataView.getSectionPos();
-		LodUtil.assertTrue(chunkSectionPos.overlapsExactly(sectionPos), "Chunk " + chunkSectionPos + " does not overlap section " + sectionPos);
-		
-		chunkSectionPos = chunkSectionPos.convertNewToDetailLevel((byte) this.minDetailLevel);
-		this.writeChunkDataToMetaFile(chunkSectionPos, chunkDataView);
-	}
-	private void writeChunkDataToMetaFile(DhSectionPos sectionPos, ChunkSizedFullDataAccessor chunkData)
-	{
-		FullDataMetaFile metaFile = this.loadedMetaFileBySectionPos.get(sectionPos);
-		if (metaFile != null)
+		catch (InterruptedException ignore) { }
+		catch (IOException e)
 		{
-			// there is a file for this position
-			metaFile.addToWriteQueue(chunkData);
+			LOGGER.warn("File read Error for pos ["+pos+"], error: "+e.getMessage(), e);
 		}
 		
-		if (sectionPos.getDetailLevel() <= this.topDetailLevelRef.get())
-		{
-			// recursively attempt to get the meta file for this position
-			this.writeChunkDataToMetaFile(sectionPos.getParentPos(), chunkData);
-		}
+		return dataSource;
 	}
-	
-	/** This call is concurrent. I.e. it supports multiple threads calling this method at the same time. */
-	@Override
-	public CompletableFuture<Void> flushAndSaveAsync()
+	/** Creates a new data source using any DTOs already present in the database. */
+	protected IFullDataSource createNewDataSourceFromExistingDtos(DhSectionPos pos)
 	{
-		ArrayList<CompletableFuture<Void>> futures = new ArrayList<>();
-		for (FullDataMetaFile metaFile : this.loadedMetaFileBySectionPos.values())
+		IIncompleteFullDataSource newFullDataSource = this.makeEmptyDataSource(pos);
+		
+		
+		boolean showFullDataFileSampling = Config.Client.Advanced.Debugging.DebugWireframe.showFullDataFileStatus.get();
+		if (showFullDataFileSampling)
 		{
-			futures.add(metaFile.flushAndSaveAsync());
+			DebugRenderer.makeParticle(new DebugRenderer.BoxParticle(
+					new DebugRenderer.Box(newFullDataSource.getSectionPos(), 64f, 72f, 0.03f, Color.MAGENTA),
+					0.2, 32f));
 		}
-		return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+		
+		
+		// TODO replace with a SQL query, it should be much faster
+		ArrayList<DhSectionPos> samplePosList = new ArrayList<>();
+		ArrayList<DhSectionPos> possibleChildList = new ArrayList<>();
+		pos.forEachChild((childPos) ->
+		{
+			if (childPos.getDetailLevel() > this.minDetailLevel)
+			{
+				possibleChildList.add(childPos);
+			}
+		});
+		while (possibleChildList.size() != 0)
+		{
+			DhSectionPos possiblePos = possibleChildList.remove(possibleChildList.size()-1);
+			if (this.fullDataRepo.existsWithPrimaryKey(possiblePos.serialize()))
+			{
+				samplePosList.add(possiblePos);
+			}
+			else
+			{
+				possiblePos.forEachChild((childPos) ->
+				{
+					if (childPos.getDetailLevel() > this.minDetailLevel)
+					{
+						possibleChildList.add(childPos);
+					}
+				});
+			}
+		}
+		
+		
+		// read in the existing data
+		for (int i = 0; i < samplePosList.size(); i++)
+		{
+			DhSectionPos samplePos = samplePosList.get(i);
+			IFullDataSource sampleDataSource = this.get(samplePos);
+			if (sampleDataSource == null)
+			{
+				// no file was found, this is unexpected, but can be ignored
+				continue;
+			}
+			
+			if (showFullDataFileSampling)
+			{
+				DebugRenderer.makeParticle(new DebugRenderer.BoxParticle(
+						new DebugRenderer.Box(newFullDataSource.getSectionPos(), 64f, 72f, 0.03f, Color.MAGENTA.darker()),
+						0.2, 32f));
+			}
+			
+			try
+			{
+				newFullDataSource.sampleFrom(sampleDataSource);
+			}
+			catch (Exception e)
+			{
+				LOGGER.warn("Unable to sample "+sampleDataSource.getSectionPos()+" into "+newFullDataSource.getSectionPos(), e);
+			}
+		}
+		
+		
+		// promotion may happen if all children are fully populated
+		return newFullDataSource.tryPromotingToCompleteDataSource();
 	}
+	
+	
+	
+	//===============//
+	// data updating //
+	//===============//
 	
 	@Override
-	public CompletableFuture<Void> flushAndSaveAsync(DhSectionPos sectionPos)
+	public void updateDataSourcesWithChunkData(ChunkSizedFullDataAccessor chunkDataView)
 	{
-		FullDataMetaFile metaFile = this.loadedMetaFileBySectionPos.get(sectionPos);
-		if (metaFile == null)
+		DhSectionPos chunkSectionPos = chunkDataView.getSectionPos().convertNewToDetailLevel(CompleteFullDataSource.SECTION_SIZE_OFFSET);
+		this.recursivelyUpdateDataSourcesAsync(chunkSectionPos, chunkDataView);
+	}
+	/** Updates every data source from this position up to {@link FullDataFileHandler#topSectionDetailLevelRef} */
+	private void recursivelyUpdateDataSourcesAsync(DhSectionPos pos, ChunkSizedFullDataAccessor chunkDataView)
+	{
+		ThreadPoolExecutor executor = ThreadPools.getFileHandlerExecutor();
+		if (executor == null || executor.isTerminated())
 		{
-			return CompletableFuture.completedFuture(null);
+			return;
 		}
-		return metaFile.flushAndSaveAsync();
+		
+		// update up until we reach the highest available data source
+		if (pos.getDetailLevel() > this.topSectionDetailLevelRef.get())
+		{
+			return;
+		}
+		
+		
+		executor.execute(() ->
+		{
+			DhSectionPos chunkSectionPos = chunkDataView.getSectionPos();
+			LodUtil.assertTrue(chunkSectionPos.overlapsExactly(pos), "Update failed, chunk [" + chunkSectionPos + "] does not overlap section [" + pos + "].");
+			
+			// update this pos
+			this.updateDataSourceAtPos(pos, chunkDataView);
+			
+			// recursively update the parent pos
+			DhSectionPos parentPos = pos.getParentPos();
+			this.recursivelyUpdateDataSourcesAsync(parentPos, chunkDataView);
+			
+		});
+	}
+	private void updateDataSourceAtPos(DhSectionPos pos, ChunkSizedFullDataAccessor chunkDataView)
+	{
+		// a lock is necessary to prevent two threads from writing to the same position at once,
+		// if that happens only the second update will apply and the LOD will end up with hole(s)
+		ReentrantLock updateLock = this.getUpdateLockForPos(pos);
+		
+		try
+		{
+			updateLock.lock();
+			
+			// get or create the data source
+			IFullDataSource fullDataSource = this.get(pos);
+			if (fullDataSource == null)
+			{
+				fullDataSource = this.makeEmptyDataSource(pos);
+			}
+			fullDataSource.update(chunkDataView);
+			
+			// try promoting the datasource
+			if (fullDataSource instanceof IIncompleteFullDataSource)
+			{
+				IIncompleteFullDataSource incompleteFullDataSource = (IIncompleteFullDataSource) fullDataSource;
+				fullDataSource = incompleteFullDataSource.tryPromotingToCompleteDataSource();
+			}
+			
+			this.queueDelayedSave(fullDataSource);
+		}
+		catch (Exception e)
+		{
+			LOGGER.error("Error updating pos ["+pos+"], error: "+e.getMessage(), e);
+		}
+		finally
+		{
+			updateLock.unlock();
+		}
+	}
+	/** 
+	 * Queues the given data source to save after {@link FullDataFileHandler#SAVE_DELAY_IN_MS}
+	 * milliseconds have passed without any additional modifications. <br> <br>
+	 * 
+	 * This prevents repeatedly reading/writing the same data source to/from disk if said 
+	 * source is currently being updated via world gen or chunk modifications.
+	 * This drastically reduces disk usage and improves performance.
+	 */
+	private void queueDelayedSave(IFullDataSource fullDataSource)
+	{
+		DhSectionPos pos = fullDataSource.getSectionPos();
+		
+		// put the data source in memory until it can be flushed to disk
+		this.unsavedDataSourceBySectionPos.put(pos, fullDataSource);
+		
+		TimerTask task = new TimerTask()
+		{
+			@Override
+			public void run()
+			{
+				try
+				{
+					final IFullDataSource finalFullDataSource = FullDataFileHandler.this.unsavedDataSourceBySectionPos.remove(pos);
+					
+					// this can rarely happen due to imperfect concurrency handling,
+					// if the data source is null that just means it has already been saved so nothing needs to be done 
+					if (finalFullDataSource != null)
+					{
+						FullDataFileHandler.this.writeDataSourceToFile(finalFullDataSource, (bufferedOutputStream) ->
+						{
+							try
+							{
+								finalFullDataSource.writeToStream(bufferedOutputStream, FullDataFileHandler.this.level);
+							}
+							catch (Exception e)
+							{
+								// if this try catch isn't included an empty exception will be thrown instead, which makes debugging extremely painful
+								LOGGER.error("Error writing data stream for pos: [" + finalFullDataSource.getSectionPos() + "], error: " + e.getMessage(), e);
+							}
+						});
+					}
+				}
+				catch (ClosedByInterruptException e) // thrown by buffers that are interrupted
+				{
+					// expected if the file handler is shut down, the exception can be ignored
+					//LOGGER.warn("FullData file writing interrupted.", e);
+				}
+				catch (IOException e)
+				{
+					LOGGER.error("Failed to save updated data for section " + pos, e);
+				}
+			}
+		};
+		DELAYED_SAVE_TIMER.schedule(task, SAVE_DELAY_IN_MS);
+		
+		// 
+		TimerTask oldTask = this.saveTimerTasksBySectionPos.put(pos, task);
+		if (oldTask != null)
+		{
+			oldTask.cancel();
+		}
+	}
+	private void writeDataSourceToFile(IFullDataSource fullDataSource, AbstractMetaDataContainerFile.IMetaDataWriterFunc<DhDataOutputStream> dataWriterFunc) throws IOException
+	{
+		LodUtil.assertTrue(fullDataSource != null);
+		
+		
+		boolean showFullDataFileStatus = Config.Client.Advanced.Debugging.DebugWireframe.showFullDataFileStatus.get();
+		if (showFullDataFileStatus)
+		{
+			DebugRenderer.makeParticle(new DebugRenderer.BoxParticle(
+					new DebugRenderer.Box(fullDataSource.getSectionPos(), 64f, 70f, 0.02f, Color.YELLOW),
+					0.2, 16f));
+		}
+		
+		try
+		{
+			// write the outputs to a stream to prep for writing to the database
+			ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+			
+			// the order of these streams is important, otherwise the checksum won't be calculated
+			CheckedOutputStream checkedOut = new CheckedOutputStream(byteArrayOutputStream, new Adler32());
+			// normally a DhStream should be the topmost stream to prevent closing the stream accidentally, 
+			// but since this stream will be closed immediately after writing anyway, it won't be an issue
+			DhDataOutputStream compressedOut = new DhDataOutputStream(checkedOut);
+			
+			dataWriterFunc.writeBinaryDataToStream(compressedOut);
+			
+			compressedOut.flush();
+			int checksum = (int) checkedOut.getChecksum().getValue();
+			byteArrayOutputStream.close();
+			
+			
+			// save the DTO
+			BaseMetaData baseMetaData = new BaseMetaData(fullDataSource.getSectionPos(), checksum,
+					fullDataSource.getDataDetailLevel(), fullDataSource.getWorldGenStep(), fullDataSource.getDataTypeName(),
+					fullDataSource.getDataFormatVersion());
+			MetaDataDto newDto = new MetaDataDto(baseMetaData, byteArrayOutputStream.toByteArray());
+			this.fullDataRepo.save(newDto);
+		}
+		catch (ClosedChannelException e) // includes ClosedByInterruptException
+		{
+			// expected if the file handler is shut down, the exception can be ignored
+			//LOGGER.warn(AbstractMetaDataContainerFile.class.getSimpleName()+" file writing interrupted. Error: "+e.getMessage());
+		}
 	}
 	
 	
 	
+	//================//
+	// helper methods //
+	//================//
+	
+	/** Based on the stack overflow post: https://stackoverflow.com/a/45909920 */
+	protected ReentrantLock getUpdateLockForPos(DhSectionPos pos) { return this.updateLockArray[Math.abs(pos.hashCode()) % this.updateLockArray.length]; }
 	
 	protected IIncompleteFullDataSource makeEmptyDataSource(DhSectionPos pos)
 	{
 		return pos.getDetailLevel() <= HighDetailIncompleteFullDataSource.MAX_SECTION_DETAIL ?
 				HighDetailIncompleteFullDataSource.createEmpty(pos) :
 				LowDetailIncompleteFullDataSource.createEmpty(pos);
-	}
-	
-	/** 
-	 * Populates the given data source using the given array of files
-	 * @param usePooledDataSources if enabled the data sources necessary for this sampling will not be stored beyond what is necessary for the sampling.
-	 *                              This helps reduce garbage collector pressure if the data sources will never be used again.
-	 */
-	protected CompletableFuture<IIncompleteFullDataSource> sampleFromFileArray(IIncompleteFullDataSource recipientFullDataSource, ArrayList<FullDataMetaFile> existingFiles, boolean usePooledDataSources)
-	{
-		boolean showFullDataFileSampling = Config.Client.Advanced.Debugging.DebugWireframe.showFullDataFileSampling.get();
-		if (showFullDataFileSampling)
-		{
-			DebugRenderer.makeParticle(new DebugRenderer.BoxParticle(
-					new DebugRenderer.Box(recipientFullDataSource.getSectionPos(), 64f, 72f, 0.03f, Color.MAGENTA),
-					0.2, 32f));
-		}
-		
-		// read in the existing data
-		final ArrayList<CompletableFuture<IFullDataSource>> sampleDataFutures = new ArrayList<>(existingFiles.size());
-		for (int i = 0; i < existingFiles.size(); i++)
-		{
-			FullDataMetaFile existingFile = existingFiles.get(i);
-			
-			
-			CompletableFuture<IFullDataSource> loadFileFuture = usePooledDataSources ? existingFile.getDataSourceWithoutCachingAsync() : existingFile.getOrLoadCachedDataSourceAsync();
-			
-			CompletableFuture<IFullDataSource> sampleSourceFuture = loadFileFuture.whenComplete((existingFullDataSource, ex) ->
-			{
-				if (existingFullDataSource == null || ex != null)
-				{
-					// Ignore file read errors
-					//LOGGER.warn(recipientFullDataSource.getSectionPos()+" sample from, file read error for file "+existingFile.pos+": "+ex.getMessage(), ex);
-					return;
-				}
-				
-				// can happen if data source caching isn't working correctly 
-				LodUtil.assertTrue(existingFile.pos.equals(existingFullDataSource.getSectionPos()), "Data source returned the wrong position, pooled data source: ["+usePooledDataSources+"]. Expected: ["+existingFile.pos+"] actual: ["+existingFullDataSource.getSectionPos()+"].");
-				
-				
-				if (showFullDataFileSampling)
-				{
-					DebugRenderer.makeParticle(new DebugRenderer.BoxParticle(
-							new DebugRenderer.Box(recipientFullDataSource.getSectionPos(), 64f, 72f, 0.03f, Color.MAGENTA.darker()),
-							0.2, 32f));
-				}
-				
-				try
-				{
-					recipientFullDataSource.sampleFrom(existingFullDataSource);
-				}
-				catch (Exception e)
-				{
-					LOGGER.warn("Unable to sample "+existingFullDataSource.getSectionPos()+" into "+recipientFullDataSource.getSectionPos(), e);
-					//throw e;
-				}
-				
-				
-				// return the pooled data source if necessary
-				if (usePooledDataSources)
-				{
-					// pooling temporary data sources massively reduces garbage collector overhead when just sampling (going from ~8 GB/sec to ~90 MB/sec)
-					
-					// get the data loader
-					AbstractFullDataSourceLoader dataSourceLoader;
-					if (existingFile.fullDataSourceLoader != null)
-					{
-						dataSourceLoader = existingFile.fullDataSourceLoader;
-					}
-					else
-					{
-						// shouldn't normally happen, but sometimes does
-						dataSourceLoader = AbstractFullDataSourceLoader.getLoader(existingFile.baseMetaData.dataType, existingFile.baseMetaData.binaryDataFormatVersion);
-					}
-					
-					dataSourceLoader.returnPooledDataSource(existingFullDataSource);
-				}
-			});
-			
-			sampleDataFutures.add(sampleSourceFuture);
-		}
-		return CompletableFuture.allOf(sampleDataFutures.toArray(new CompletableFuture[0]))
-				.thenApply(voidObj -> recipientFullDataSource);
-	}
-	
-	protected void makeFiles(ArrayList<DhSectionPos> posList, ArrayList<FullDataMetaFile> output)
-	{
-		for (DhSectionPos missingPos : posList)
-		{
-			FullDataMetaFile newFile = this.getLoadOrMakeFile(missingPos, true);
-			if (newFile != null)
-			{
-				output.add(newFile);
-			}
-		}
-	}
-	
-	@Override
-	public CompletableFuture<IFullDataSource> onDataFileCreatedAsync(FullDataMetaFile file)
-	{
-		DhSectionPos pos = file.pos;
-		IIncompleteFullDataSource source = this.makeEmptyDataSource(pos);
-		ArrayList<FullDataMetaFile> existFiles = new ArrayList<>();
-		ArrayList<DhSectionPos> missing = new ArrayList<>();
-		this.getDataFilesForPosition(pos, pos, existFiles, missing);
-		LodUtil.assertTrue(!missing.isEmpty() || !existFiles.isEmpty());
-		if (missing.size() == 1 && existFiles.isEmpty() && missing.get(0).equals(pos))
-		{
-			// None exist.
-			return CompletableFuture.completedFuture(source);
-		}
-		else
-		{
-			this.makeFiles(missing, existFiles);
-			return this.sampleFromFileArray(source, existFiles, true).thenApply(IIncompleteFullDataSource::tryPromotingToCompleteDataSource)
-					.exceptionally((e) ->
-					{
-						FullDataMetaFile newMetaFile = this.removeCorruptedFile(pos, e);
-						return null;
-					});
-		}
-	}
-	protected FullDataMetaFile removeCorruptedFile(DhSectionPos pos, Throwable exception)
-	{
-		LOGGER.error("Error reading Data file [" + pos + "]", exception);
-		
-		this.fullDataRepo.deleteByPrimaryKey(pos.serialize());
-		// remove the FullDataMetaFile since the old one was corrupted
-		this.loadedMetaFileBySectionPos.remove(pos);
-		// create a new FullDataMetaFile to write new data to
-		return this.getLoadOrMakeFile(pos, true);
 	}
 	
 	
@@ -497,9 +476,24 @@ public class FullDataFileHandler implements IFullDataSourceProvider
 	//=========//
 	
 	@Override
-	public void close() {
-		FullDataMetaFile.checkAndLogPhantomDataSourceLifeCycles();
-		this.fullDataRepo.close();
+	public void close() 
+	{
+		LOGGER.info("Closing file handler for level: ["+this.level+"], saving ["+this.saveTimerTasksBySectionPos.size()+"] positions.");
+		
+		Enumeration<DhSectionPos> list = this.saveTimerTasksBySectionPos.keys();
+		while (list.hasMoreElements())
+		{
+			DhSectionPos pos = list.nextElement();
+			TimerTask saveTask = this.saveTimerTasksBySectionPos.remove(pos);
+			if (saveTask != null)
+			{
+				saveTask.run();
+				saveTask.cancel();
+			}
+		}
+		
+		LOGGER.info("File handler saving complete, closing repo.");
+		this.fullDataRepo.close(); 
 	}
 	
 }

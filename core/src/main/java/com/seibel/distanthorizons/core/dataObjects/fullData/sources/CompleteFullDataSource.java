@@ -25,12 +25,12 @@ import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.FullDataArr
 import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.SingleColumnFullDataAccessor;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IFullDataSource;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IStreamableFullDataSource;
-import com.seibel.distanthorizons.core.file.fullDatafile.FullDataMetaFile;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhLodPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.sql.MetaDataDto;
 import com.seibel.distanthorizons.core.util.FullDataPointUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataInputStream;
@@ -59,7 +59,9 @@ public class CompleteFullDataSource extends FullDataArrayAccessor implements IFu
 	public static final int WIDTH = BitShiftUtil.powerOfTwo(SECTION_SIZE_OFFSET);
 	
 	public static final byte DATA_FORMAT_VERSION = 3;
-	public static final String DATA_SOURCE_TYPE = "CompleteFullDataSource";
+	public static final String DATA_TYPE_NAME = "CompleteFullDataSource";
+	@Override
+	public String getDataTypeName() { return DATA_TYPE_NAME; }
 	
 	private DhSectionPos sectionPos;
 	private boolean isEmpty = true;
@@ -103,12 +105,12 @@ public class CompleteFullDataSource extends FullDataArrayAccessor implements IFu
 		
 	}
 	@Override
-	public FullDataSourceSummaryData readSourceSummaryInfo(FullDataMetaFile dataFile, DhDataInputStream inputStream, IDhLevel level) throws IOException
+	public FullDataSourceSummaryData readSourceSummaryInfo(MetaDataDto dto, DhDataInputStream inputStream, IDhLevel level) throws IOException
 	{
 		int dataDetail = inputStream.readInt();
-		if (dataDetail != dataFile.baseMetaData.dataDetailLevel)
+		if (dataDetail != dto.baseMetaData.dataDetailLevel)
 		{
-			throw new IOException(LodUtil.formatLog("Data level mismatch: " + dataDetail + " != " + dataFile.baseMetaData.dataDetailLevel));
+			throw new IOException(LodUtil.formatLog("Data level mismatch: " + dataDetail + " != " + dto.baseMetaData.dataDetailLevel));
 		}
 		
 		int width = inputStream.readInt();
@@ -185,7 +187,7 @@ public class CompleteFullDataSource extends FullDataArrayAccessor implements IFu
 		return true;
 	}
 	@Override
-	public long[][] readDataPoints(FullDataMetaFile dataFile, int width, DhDataInputStream dataInputStream) throws IOException
+	public long[][] readDataPoints(MetaDataDto dto, int width, DhDataInputStream dataInputStream) throws IOException
 	{
 		// Data array length
 		int dataPresentFlag = dataInputStream.readInt();
@@ -428,7 +430,7 @@ public class CompleteFullDataSource extends FullDataArrayAccessor implements IFu
 	public byte getDataDetailLevel() { return (byte) (this.sectionPos.getDetailLevel() - SECTION_SIZE_OFFSET); }
 	
 	@Override
-	public byte getBinaryDataFormatVersion() { return DATA_FORMAT_VERSION; }
+	public byte getDataFormatVersion() { return DATA_FORMAT_VERSION; }
 	
 	@Override
 	public EDhApiWorldGenerationStep getWorldGenStep() { return this.worldGenStep; }

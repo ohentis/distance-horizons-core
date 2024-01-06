@@ -159,12 +159,6 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 		return future;
 	}
 	
-	@Override
-	public void cancelGenTasks(Iterable<DhSectionPos> positions)
-	{
-		// TODO Should we cancel generation of chunks that were loaded by the player?
-	}
-	
 	
 	
 	//===============//

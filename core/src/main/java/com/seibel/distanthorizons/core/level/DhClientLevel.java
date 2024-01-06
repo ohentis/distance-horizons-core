@@ -116,12 +116,6 @@ public class DhClientLevel extends DhLevel implements IDhClientLevel
 	public ILevelWrapper getLevelWrapper() { return levelWrapper; }
 	
 	@Override
-	public CompletableFuture<Void> saveAsync()
-	{
-		return CompletableFuture.allOf(clientside.saveAsync(), dataFileHandler.flushAndSaveAsync());
-	}
-	
-	@Override
 	public void saveWrites(ChunkSizedFullDataAccessor data) { this.clientside.writeChunkDataToFile(data); }
 	
 	@Override

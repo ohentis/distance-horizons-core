@@ -41,6 +41,10 @@ public abstract class AbstractMetaDataRepo extends AbstractDhRepo<MetaDataDto>
 	public String getPrimaryKeyName() { return "DhSectionPos"; }
 	
 	
+	//=======================//
+	// repo required methods //
+	//=======================//
+	
 	@Override 
 	public MetaDataDto convertDictionaryToDto(Map<String, Object> objectMap) throws ClassCastException
 	{
@@ -59,7 +63,7 @@ public abstract class AbstractMetaDataRepo extends AbstractDhRepo<MetaDataDto>
 		
 		BaseMetaData baseMetaData = new BaseMetaData(pos, 
 				checksum, dataDetailLevel, worldGenStep,
-				dataType, binaryDataFormatVersion, dataVersion);
+				dataType, binaryDataFormatVersion);
 		
 		// binary data
 		byte[] dataByteArray = (byte[]) objectMap.get("Data");
@@ -134,6 +138,32 @@ public abstract class AbstractMetaDataRepo extends AbstractDhRepo<MetaDataDto>
 		statement.setObject(i++, dto.getPrimaryKeyString());
 		
 		return statement;
+	}
+	
+	
+	
+	//=====================//
+	// data source methods //
+	//=====================//
+	
+	/** 
+	 * Returns the highest numerical detail level in this table. <Br>
+	 * Returns {@link DhSectionPos#SECTION_MINIMUM_DETAIL_LEVEL} if no data is present.
+	 */
+	public int getMaxSectionDetailLevel()
+	{
+		Map<String, Object> resultMap = this.queryDictionaryFirst("select MAX(DataDetailLevel) as maxDetailLevel from DhFullData;");
+		int maxDetailLevel;
+		if (resultMap == null || resultMap.get("maxDetailLevel") == null)
+		{
+			maxDetailLevel = 0;
+		}
+		else
+		{
+			maxDetailLevel = (int)resultMap.get("maxDetailLevel");
+		}
+		
+		return maxDetailLevel + DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL;
 	}
 	
 	

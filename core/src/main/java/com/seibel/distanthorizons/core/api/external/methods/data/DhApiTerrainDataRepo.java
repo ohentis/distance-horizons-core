@@ -212,7 +212,7 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 		try
 		{
 			// attempt to get/generate the data source for this section
-			IFullDataSource dataSource = level.getFileHandler().readAsync(sectionPos).get();
+			IFullDataSource dataSource = level.getFileHandler().getAsync(sectionPos).get();
 			if (dataSource == null)
 			{
 				return DhApiResult.createFail("Unable to find/generate any data at the " + DhSectionPos.class.getSimpleName() + " [" + sectionPos + "].");

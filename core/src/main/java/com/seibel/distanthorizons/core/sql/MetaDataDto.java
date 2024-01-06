@@ -21,7 +21,13 @@ package com.seibel.distanthorizons.core.sql;
 
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IFullDataSource;
 import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSource;
+import com.seibel.distanthorizons.core.file.metaData.AbstractMetaDataContainerFile;
 import com.seibel.distanthorizons.core.file.metaData.BaseMetaData;
+import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataInputStream;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 
 /** handles storing both {@link IFullDataSource}'s and {@link ColumnRenderSource}'s in the database. */
 public class MetaDataDto implements IBaseDTO
@@ -39,5 +45,13 @@ public class MetaDataDto implements IBaseDTO
 	
 	@Override
 	public String getPrimaryKeyString() { return this.baseMetaData.pos.serialize(); }
+	
+	/** @return a stream for the data contained in this DTO. */
+	public DhDataInputStream getInputStream() throws IOException
+	{
+		InputStream inputStream = new ByteArrayInputStream(this.dataArray);
+		DhDataInputStream compressedStream = new DhDataInputStream(inputStream);
+		return compressedStream;
+	}
 	
 }

@@ -23,51 +23,19 @@ import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedF
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IFullDataSource;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.sql.FullDataRepo;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
 
+/**
+ * Handles reading, writing, and updating {@link IFullDataSource}'s. <br>
+ * Should be backed by a database handled by a {@link FullDataRepo}.
+ */
 public interface IFullDataSourceProvider extends AutoCloseable
 {
-	CompletableFuture<IFullDataSource> readAsync(DhSectionPos pos);
-	void writeChunkDataToFile(DhSectionPos sectionPos, ChunkSizedFullDataAccessor chunkData);
-	CompletableFuture<Void> flushAndSaveAsync();
-	CompletableFuture<Void> flushAndSaveAsync(DhSectionPos sectionPos);
+	CompletableFuture<IFullDataSource> getAsync(DhSectionPos pos);
 	
-	//long getCacheVersion(DhSectionPos sectionPos);
-	//boolean isCacheVersionValid(DhSectionPos sectionPos, long cacheVersion);
-	
-	CompletableFuture<IFullDataSource> onDataFileCreatedAsync(FullDataMetaFile file);
-	default CompletableFuture<DataFileUpdateResult> onDataFileUpdateAsync(IFullDataSource fullDataSource, FullDataMetaFile file, boolean dataChanged) { return CompletableFuture.completedFuture(new DataFileUpdateResult(fullDataSource, dataChanged)); }
-	/** Can be used to update world gen queues or run any other data checking necessary when initially loading a file */
-	default void onRenderDataFileLoaded(DhSectionPos pos) {  }
-	
-	@Nullable
-    FullDataMetaFile getFileIfExist(DhSectionPos pos);
+	void updateDataSourcesWithChunkData(ChunkSizedFullDataAccessor chunkData);
 	
 	FullDataRepo getRepo();
-	
-	
-	
-	//================//
-	// helper classes //
-	//================//
-	
-	/** 
-	 * After a {@link FullDataMetaFile} has been updated the {@link IFullDataSourceProvider} may also need to modify it. <br>
-	 * This specifically happens during world generation. 
-	 */
-	class DataFileUpdateResult
-	{
-		IFullDataSource fullDataSource;
-		boolean dataSourceChanged;
-		
-		public DataFileUpdateResult(IFullDataSource fullDataSource, boolean dataSourceChanged)
-		{
-			this.fullDataSource = fullDataSource;
-			this.dataSourceChanged = dataSourceChanged;
-		}
-	}
 	
 }

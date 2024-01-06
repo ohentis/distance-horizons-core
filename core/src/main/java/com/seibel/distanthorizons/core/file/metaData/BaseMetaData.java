@@ -35,6 +35,8 @@ public class BaseMetaData
 {
 	public DhSectionPos pos;
 	public int checksum;
+	/** @deprecated the database now has a last modified date time that should be used instead */
+	@Deprecated
 	public AtomicLong dataVersion = new AtomicLong(Long.MAX_VALUE);
 	public byte dataDetailLevel;
 	public EDhApiWorldGenerationStep worldGenStep;
@@ -46,11 +48,10 @@ public class BaseMetaData
 	
 	
 	
-	public BaseMetaData(DhSectionPos pos, int checksum, byte dataDetailLevel, EDhApiWorldGenerationStep worldGenStep, String dataType, byte binaryDataFormatVersion, long dataVersion)
+	public BaseMetaData(DhSectionPos pos, int checksum, byte dataDetailLevel, EDhApiWorldGenerationStep worldGenStep, String dataType, byte binaryDataFormatVersion)
 	{
 		this.pos = pos;
 		this.checksum = checksum;
-		this.dataVersion = new AtomicLong(dataVersion);
 		this.dataDetailLevel = dataDetailLevel;
 		this.worldGenStep = worldGenStep;
 		

@@ -142,6 +142,7 @@ public abstract class AbstractMetaDataContainerFile
 	// helper classes //
 	//================//
 	
+	/** TODO replace with a method that accepts a {@link DhDataOutputStream} and writes to that instead  */
 	@FunctionalInterface
 	public interface IMetaDataWriterFunc<T> { void writeBinaryDataToStream(T t) throws IOException; }
 	

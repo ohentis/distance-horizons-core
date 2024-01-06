@@ -151,15 +151,10 @@ public class DhClientServerWorld extends AbstractDhWorld implements IDhClientWor
 	
 	public void doWorldGen() { this.dhLevels.forEach(DhClientServerLevel::doWorldGen); }
 	
-	@Override
-	public CompletableFuture<Void> saveAndFlush() { return CompletableFuture.allOf(this.dhLevels.stream().map(DhClientServerLevel::saveAsync).toArray(CompletableFuture[]::new)); }
-	
 	/** synchronized to prevent a rare issue where the server tries closing the same world multiple times in rapid succession. */
 	@Override
 	public synchronized void close()
 	{
-		// at this point the levels are probably unloaded, so this save call usually generally won't do anything
-		this.saveAndFlush();
 		this.f3Message.close();
 		
 		

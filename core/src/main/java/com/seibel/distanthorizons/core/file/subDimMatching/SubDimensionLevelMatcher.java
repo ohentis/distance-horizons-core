@@ -219,7 +219,7 @@ public class SubDimensionLevelMatcher implements AutoCloseable
 			{
 				// get the data source to compare against
 				IDhLevel tempLevel = new DhClientLevel(new ClientOnlySaveStructure(), this.currentClientLevel, testLevelFolder, false);
-				IFullDataSource testFullDataSource = tempLevel.getFileHandler().readAsync(new DhSectionPos(this.playerData.playerBlockPos)).join();
+				IFullDataSource testFullDataSource = tempLevel.getFileHandler().getAsync(new DhSectionPos(this.playerData.playerBlockPos)).join();
 				if (testFullDataSource == null)
 				{
 					continue;

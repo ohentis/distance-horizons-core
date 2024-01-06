@@ -189,12 +189,6 @@ public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 	public void doWorldGen() { this.levels.values().forEach(DhServerLevel::doWorldGen); }
 	
 	@Override
-	public CompletableFuture<Void> saveAndFlush()
-	{
-		return CompletableFuture.allOf(this.levels.values().stream().map(DhServerLevel::saveAsync).toArray(CompletableFuture[]::new));
-	}
-	
-	@Override
 	public void close()
 	{
 //		this.networkServer.close();

@@ -35,7 +35,6 @@ public interface IWorldGenerationQueue extends Closeable
 	byte highestDataDetail();
 	
 	CompletableFuture<WorldGenResult> submitGenTask(DhSectionPos pos, byte requiredDataDetail, IWorldGenTaskTracker tracker);
-	void cancelGenTasks(Iterable<DhSectionPos> positions);
 	
 	/** @param targetPos the position that world generation should be centered around, generally this will be the player's position. */
 	void startGenerationQueueAndSetTargetPos(DhBlockPos2D targetPos);

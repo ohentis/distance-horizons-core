@@ -213,7 +213,7 @@ public class RenderSourceFileHandler implements IRenderSourceProvider
 	{
 		// convert to the lowest detail level so all detail levels are updated
 		this.writeChunkDataToFileRecursively(chunkDataView, DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
-		this.fullDataSourceProvider.writeChunkDataToFile(sectionPos, chunkDataView);
+		this.fullDataSourceProvider.updateDataSourcesWithChunkData(chunkDataView);
 	}
 	private void writeChunkDataToFileRecursively(ChunkSizedFullDataAccessor chunk, byte sectionDetailLevel)
 	{

@@ -29,7 +29,6 @@ import java.util.concurrent.CompletableFuture;
 public interface IDhLevel extends AutoCloseable
 {
 	int getMinY();
-	CompletableFuture<Void> saveAsync();
 	
 	/**
 	 * May return either a client or server level wrapper. <br>

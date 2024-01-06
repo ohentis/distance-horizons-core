@@ -23,8 +23,6 @@ import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IFullDataSource;
 import com.seibel.distanthorizons.core.dataObjects.transformers.FullDataToRenderDataTransformer;
-import com.seibel.distanthorizons.core.file.DataSourceReferenceTracker;
-import com.seibel.distanthorizons.core.file.fullDatafile.FullDataMetaFile;
 import com.seibel.distanthorizons.core.file.fullDatafile.IFullDataSourceProvider;
 import com.seibel.distanthorizons.core.file.metaData.AbstractMetaDataContainerFile;
 import com.seibel.distanthorizons.core.file.metaData.BaseMetaData;
@@ -38,13 +36,13 @@ import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
 import com.seibel.distanthorizons.core.sql.MetaDataDto;
 import com.seibel.distanthorizons.core.util.AtomicsUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
-import com.seibel.distanthorizons.core.util.objects.Reference;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataInputStream;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
 import java.awt.*;
 import java.io.*;
+import java.lang.ref.SoftReference;
 import java.util.Random;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
@@ -64,7 +62,7 @@ public class RenderDataMetaFile extends AbstractMetaDataContainerFile implements
 	 * When clearing, don't set to null, instead create a SoftReference containing null.
 	 * This makes null checks simpler.
 	 */
-	private DataSourceReferenceTracker.RenderDataSourceSoftRef cachedRenderDataSourceRef = new DataSourceReferenceTracker.RenderDataSourceSoftRef(this, null);
+	private SoftReference<ColumnRenderSource> cachedRenderDataSourceRef = new SoftReference<>(null);
 	private final AtomicReference<CompletableFuture<ColumnRenderSource>> renderSourceLoadFutureRef = new AtomicReference<>(null);
 	
 	private final IDhClientLevel clientLevel;
@@ -109,9 +107,6 @@ public class RenderDataMetaFile extends AbstractMetaDataContainerFile implements
 		LodUtil.assertTrue(this.baseMetaData != null);
 		this.doesDtoExist = true;
 		DebugRenderer.register(this, Config.Client.Advanced.Debugging.DebugWireframe.showRenderDataFileStatus);
-		
-		// handles world gen queuing for missing columns
-		this.fullDataSourceProvider.onRenderDataFileLoaded(this.baseMetaData.pos);
 	}
 	
 	
@@ -196,11 +191,11 @@ public class RenderDataMetaFile extends AbstractMetaDataContainerFile implements
 			this.baseMetaData = new BaseMetaData(
 					newColumnRenderSource.getSectionPos(), -1, newColumnRenderSource.getDataDetailLevel(), 
 					newColumnRenderSource.worldGenStep, RENDER_SOURCE_TYPE, 
-					newColumnRenderSource.getRenderDataFormatVersion(), Long.MAX_VALUE);
+					newColumnRenderSource.getRenderDataFormatVersion());
 			
 			this.updateRenderCacheAsync(newColumnRenderSource).whenComplete((voidObj, ex) ->
 				{
-					this.cachedRenderDataSourceRef = new DataSourceReferenceTracker.RenderDataSourceSoftRef(this, newColumnRenderSource);
+					this.cachedRenderDataSourceRef = new SoftReference<>(newColumnRenderSource);
 
 					this.renderSourceLoadFutureRef.set(null);
 					getSourceFuture.complete(newColumnRenderSource);
@@ -248,7 +243,7 @@ public class RenderDataMetaFile extends AbstractMetaDataContainerFile implements
 						
 						this.renderSourceLoadFutureRef.set(null);
 						
-						this.cachedRenderDataSourceRef = new DataSourceReferenceTracker.RenderDataSourceSoftRef(this, renderSource);
+						this.cachedRenderDataSourceRef = new SoftReference<>(renderSource);
 						getSourceFuture.complete(renderSource);
 					});
 		}
@@ -273,32 +268,30 @@ public class RenderDataMetaFile extends AbstractMetaDataContainerFile implements
 		DebugRenderer.BoxWithLife debugBox = new DebugRenderer.BoxWithLife(new DebugRenderer.Box(renderSource.sectionPos, 74f, 86f, 0.1f, Color.red), 1.0, 32f, Color.green.darker());
 		
 		
-		// Skip updating the cache if the data file is already up-to-date
-		FullDataMetaFile dataFile = this.fullDataSourceProvider.getFileIfExist(this.pos);
-		if (!ALWAYS_INVALIDATE_CACHE && dataFile != null && dataFile.baseMetaData != null && dataFile.baseMetaData.checksum == this.baseMetaData.dataVersion.get()) // TODO can we make it so the version comparisons either both use the checksum or the dataVersion? Comparing checksum and dataVersion is kinda confusing
-		{
-			LOGGER.debug("Skipping render cache update for " + this.pos);
-			renderSource.localVersion.incrementAndGet();
-			return CompletableFuture.completedFuture(renderSource);
-		}
+		//// Skip updating the cache if the data file is already up-to-date
+		//FullDataMetaFile dataFile = this.fullDataSourceProvider.getDtoIfExist(this.pos);
+		//if (!ALWAYS_INVALIDATE_CACHE && dataFile != null && dataFile.baseMetaData != null && dataFile.baseMetaData.checksum == this.baseMetaData.dataVersion.get()) // TODO can we make it so the version comparisons either both use the checksum or the dataVersion? Comparing checksum and dataVersion is kinda confusing
+		//{
+		//	LOGGER.debug("Skipping render cache update for " + this.pos);
+		//	renderSource.localVersion.incrementAndGet();
+		//	return CompletableFuture.completedFuture(renderSource);
+		//}
 		
 		
-		
-		final Reference<Integer> renderDataVersionRef = new Reference<>(Integer.MAX_VALUE);
 		
 		// get the full data source
 		CompletableFuture<IFullDataSource> fullDataSourceFuture =
-				this.fullDataSourceProvider.readAsync(renderSource.getSectionPos())
+				this.fullDataSourceProvider.getAsync(renderSource.getSectionPos())
 						.thenApply((fullDataSource) ->
 						{
 							debugBox.box.color = Color.yellow.darker();
 							
-							// get the metaFile's version
-							FullDataMetaFile renderSourceMetaFile = this.fullDataSourceProvider.getFileIfExist(this.pos);
-							if (renderSourceMetaFile != null && renderSourceMetaFile.baseMetaData != null)
-							{
-								renderDataVersionRef.value = renderSourceMetaFile.baseMetaData.checksum;
-							}
+							//// get the metaFile's version
+							//FullDataMetaFile renderSourceMetaFile = this.fullDataSourceProvider.getDtoIfExist(this.pos);
+							//if (renderSourceMetaFile != null && renderSourceMetaFile.baseMetaData != null)
+							//{
+							//	renderDataVersionRef.value = renderSourceMetaFile.baseMetaData.checksum;
+							//}
 							
 							return fullDataSource;
 						}).exceptionally((ex) ->
@@ -332,7 +325,7 @@ public class RenderDataMetaFile extends AbstractMetaDataContainerFile implements
 								renderSource.updateFromRenderSource(newRenderSource);
 								
 								// update the meta data
-								this.baseMetaData.dataVersion.set(renderDataVersionRef.value);
+								this.baseMetaData.dataVersion.set(Integer.MAX_VALUE);
 								this.baseMetaData.dataDetailLevel = renderSource.getDataDetailLevel();
 								this.baseMetaData.dataType = RENDER_SOURCE_TYPE;
 								this.baseMetaData.binaryDataFormatVersion = renderSource.getRenderDataFormatVersion();

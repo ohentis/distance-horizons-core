@@ -189,20 +189,7 @@ public class ClientLevelModule implements Closeable
 		}
 		else
 		{
-			this.parentClientLevel.getFileHandler().writeChunkDataToFile(pos, data);
-		}
-	}
-	
-	public CompletableFuture<Void> saveAsync()
-	{
-		ClientRenderState ClientRenderState = this.ClientRenderStateRef.get();
-		if (ClientRenderState != null)
-		{
-			return ClientRenderState.renderSourceFileHandler.flushAndSaveAsync();
-		}
-		else
-		{
-			return CompletableFuture.completedFuture(null);
+			this.parentClientLevel.getFileHandler().updateDataSourcesWithChunkData(data);
 		}
 	}
 	
