@@ -21,6 +21,10 @@ package com.seibel.distanthorizons.core.file.fullDatafile;
 
 import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IFullDataSource;
+import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSource;
+import com.seibel.distanthorizons.core.file.ISourceProvider;
+import com.seibel.distanthorizons.core.level.IDhClientLevel;
+import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.sql.FullDataRepo;
 
@@ -30,12 +34,13 @@ import java.util.concurrent.CompletableFuture;
  * Handles reading, writing, and updating {@link IFullDataSource}'s. <br>
  * Should be backed by a database handled by a {@link FullDataRepo}.
  */
-public interface IFullDataSourceProvider extends AutoCloseable
+public interface IFullDataSourceProvider extends ISourceProvider<IFullDataSource, IDhLevel>, AutoCloseable
 {
 	CompletableFuture<IFullDataSource> getAsync(DhSectionPos pos);
+	IFullDataSource get(DhSectionPos pos);
 	
 	void updateDataSourcesWithChunkData(ChunkSizedFullDataAccessor chunkData);
 	
-	FullDataRepo getRepo();
+	int getUnsavedDataSourceCount();
 	
 }

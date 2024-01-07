@@ -34,7 +34,7 @@ public abstract class DhLevel implements IDhLevel
 	
 	protected DhLevel() { this.chunkToLodBuilder = new ChunkToLodBuilder(); }
 	
-	public abstract void saveWrites(ChunkSizedFullDataAccessor data);
+	public abstract void updateDataSourcesWithChunkData(ChunkSizedFullDataAccessor data);
 	
 	
 	@Override
@@ -54,7 +54,7 @@ public abstract class DhLevel implements IDhLevel
 					return;
 				}
 				
-				this.saveWrites(chunkSizedFullDataAccessor);
+				this.updateDataSourcesWithChunkData(chunkSizedFullDataAccessor);
 				ApiEventInjector.INSTANCE.fireAllEvents(
 						DhApiChunkModifiedEvent.class,
 						new DhApiChunkModifiedEvent.EventParam(this.getLevelWrapper(), chunk.getChunkPos().x, chunk.getChunkPos().z));

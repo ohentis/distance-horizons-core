@@ -19,12 +19,9 @@
 
 package com.seibel.distanthorizons.core.sql;
 
-import com.seibel.distanthorizons.core.pos.DhSectionPos;
-
-import java.sql.ResultSet;
 import java.sql.SQLException;
 
-public class FullDataRepo extends AbstractMetaDataRepo
+public class FullDataRepo extends AbstractDataSourceRepo
 {
 	public static final String TABLE_NAME = "DhFullData";
 	

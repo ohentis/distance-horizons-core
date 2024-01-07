@@ -23,7 +23,7 @@ import com.google.common.collect.HashMultimap;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IFullDataSource;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
-import com.seibel.distanthorizons.core.sql.MetaDataDto;
+import com.seibel.distanthorizons.core.sql.DataSourceDto;
 
 import java.io.IOException;
 import java.util.*;
@@ -120,7 +120,7 @@ public abstract class AbstractFullDataSourceLoader
 	//==============//
 	
 	/** Should be used in conjunction with {@link AbstractFullDataSourceLoader#returnPooledDataSource} to return the pooled sources. */
-	public IFullDataSource loadTemporaryDataSource(MetaDataDto dto, IDhLevel level) throws IOException, InterruptedException
+	public IFullDataSource loadTemporaryDataSource(DataSourceDto dto, IDhLevel level) throws IOException, InterruptedException
 	{
 		IFullDataSource dataSource = this.tryGetPooledSource();
 		if (dataSource != null)
@@ -140,9 +140,9 @@ public abstract class AbstractFullDataSourceLoader
 	 *
 	 * @throws InterruptedException if the loader thread is interrupted, generally happens when the level is shutting down
 	 */
-	public IFullDataSource loadDataSource(MetaDataDto dto, IDhLevel level) throws IOException, InterruptedException
+	public IFullDataSource loadDataSource(DataSourceDto dto, IDhLevel level) throws IOException, InterruptedException
 	{
-		IFullDataSource dataSource = this.createEmptyDataSource(dto.baseMetaData.pos);
+		IFullDataSource dataSource = this.createEmptyDataSource(dto.pos);
 		dataSource.populateFromStream(dto, dto.getInputStream(), level);
 		return dataSource;
 	}

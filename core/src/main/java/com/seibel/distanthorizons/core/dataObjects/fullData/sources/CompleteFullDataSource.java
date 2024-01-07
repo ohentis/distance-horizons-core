@@ -30,7 +30,7 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhLodPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
-import com.seibel.distanthorizons.core.sql.MetaDataDto;
+import com.seibel.distanthorizons.core.sql.DataSourceDto;
 import com.seibel.distanthorizons.core.util.FullDataPointUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataInputStream;
@@ -64,6 +64,7 @@ public class CompleteFullDataSource extends FullDataArrayAccessor implements IFu
 	public String getDataTypeName() { return DATA_TYPE_NAME; }
 	
 	private DhSectionPos sectionPos;
+	
 	private boolean isEmpty = true;
 	public EDhApiWorldGenerationStep worldGenStep = EDhApiWorldGenerationStep.EMPTY;
 	
@@ -105,12 +106,12 @@ public class CompleteFullDataSource extends FullDataArrayAccessor implements IFu
 		
 	}
 	@Override
-	public FullDataSourceSummaryData readSourceSummaryInfo(MetaDataDto dto, DhDataInputStream inputStream, IDhLevel level) throws IOException
+	public FullDataSourceSummaryData readSourceSummaryInfo(DataSourceDto dto, DhDataInputStream inputStream, IDhLevel level) throws IOException
 	{
 		int dataDetail = inputStream.readInt();
-		if (dataDetail != dto.baseMetaData.dataDetailLevel)
+		if (dataDetail != dto.dataDetailLevel)
 		{
-			throw new IOException(LodUtil.formatLog("Data level mismatch: " + dataDetail + " != " + dto.baseMetaData.dataDetailLevel));
+			throw new IOException(LodUtil.formatLog("Data level mismatch. Expected: ["+dto.dataDetailLevel+"], found ["+dataDetail+"]."));
 		}
 		
 		int width = inputStream.readInt();
@@ -187,7 +188,7 @@ public class CompleteFullDataSource extends FullDataArrayAccessor implements IFu
 		return true;
 	}
 	@Override
-	public long[][] readDataPoints(MetaDataDto dto, int width, DhDataInputStream dataInputStream) throws IOException
+	public long[][] readDataPoints(DataSourceDto dto, int width, DhDataInputStream dataInputStream) throws IOException
 	{
 		// Data array length
 		int dataPresentFlag = dataInputStream.readInt();

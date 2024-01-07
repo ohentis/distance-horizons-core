@@ -30,7 +30,7 @@ import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhLodPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
-import com.seibel.distanthorizons.core.sql.MetaDataDto;
+import com.seibel.distanthorizons.core.sql.DataSourceDto;
 import com.seibel.distanthorizons.core.util.FullDataPointUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataInputStream;
@@ -143,15 +143,15 @@ public class HighDetailIncompleteFullDataSource implements IIncompleteFullDataSo
 		
 	}
 	@Override
-	public FullDataSourceSummaryData readSourceSummaryInfo(MetaDataDto dto, DhDataInputStream inputStream, IDhLevel level) throws IOException
+	public FullDataSourceSummaryData readSourceSummaryInfo(DataSourceDto dto, DhDataInputStream inputStream, IDhLevel level) throws IOException
 	{
-		LodUtil.assertTrue(dto.baseMetaData.pos.getDetailLevel() > SPARSE_UNIT_DETAIL);
-		LodUtil.assertTrue(dto.baseMetaData.pos.getDetailLevel() <= MAX_SECTION_DETAIL);
+		LodUtil.assertTrue(dto.pos.getDetailLevel() > SPARSE_UNIT_DETAIL);
+		LodUtil.assertTrue(dto.pos.getDetailLevel() <= MAX_SECTION_DETAIL);
 		
 		int dataDetailLevel = inputStream.readShort();
-		if (dataDetailLevel != dto.baseMetaData.dataDetailLevel)
+		if (dataDetailLevel != dto.dataDetailLevel)
 		{
-			throw new IOException("Data level mismatch: ["+dataDetailLevel+"] != ["+dto.baseMetaData.dataDetailLevel+"]");
+			throw new IOException("Data level mismatch: ["+dataDetailLevel+"] != ["+dto.dataDetailLevel+"]");
 		}
 		
 		// confirm that the detail level is correct
@@ -256,11 +256,11 @@ public class HighDetailIncompleteFullDataSource implements IIncompleteFullDataSo
 		return true;
 	}
 	@Override
-	public long[][][] readDataPoints(MetaDataDto dto, int width, DhDataInputStream inputStream) throws IOException
+	public long[][][] readDataPoints(DataSourceDto dto, int width, DhDataInputStream inputStream) throws IOException
 	{
 		// calculate the number of chunks and dataPoints based on the sparseDetail and sectionSize
 		// TODO these values should be constant, should we still be calculating them like this?
-		int chunks = BitShiftUtil.powerOfTwo(dto.baseMetaData.pos.getDetailLevel() - SPARSE_UNIT_DETAIL);
+		int chunks = BitShiftUtil.powerOfTwo(dto.pos.getDetailLevel() - SPARSE_UNIT_DETAIL);
 		int dataPointsPerChunk = SECTION_SIZE / chunks;
 		
 		

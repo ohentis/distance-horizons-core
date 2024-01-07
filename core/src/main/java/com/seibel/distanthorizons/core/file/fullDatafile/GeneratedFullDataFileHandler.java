@@ -66,7 +66,7 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandler
 	//===========//
 	
 	@Override
-	protected IFullDataSource get(DhSectionPos pos)
+	public IFullDataSource get(DhSectionPos pos)
 	{
 		IFullDataSource dataSource = super.get(pos);
 		
@@ -256,7 +256,7 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandler
 			{
 				if (chunkSizedFullDataSource.getSectionPos().overlapsExactly(this.loadedTargetFullDataSource.getSectionPos()))
 				{
-					((DhLevel) level).saveWrites(chunkSizedFullDataSource);
+					((DhLevel) level).updateDataSourcesWithChunkData(chunkSizedFullDataSource);
 					//GeneratedFullDataFileHandler.this.write(this.loadedTargetFullDataSource.getSectionPos(), chunkSizedFullDataSource);
 				}
 			};

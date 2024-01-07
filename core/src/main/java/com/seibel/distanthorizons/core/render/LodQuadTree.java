@@ -417,10 +417,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 					}
 				}
 				
-				// delete the cache files
-				// TODO this will only delete the files for this level/world
 				this.renderSourceProvider.deleteRenderCache();
-				
 				LOGGER.info("Render cache invalidated, please wait a moment for everything to reload...");
 			}
 			catch (Exception e)

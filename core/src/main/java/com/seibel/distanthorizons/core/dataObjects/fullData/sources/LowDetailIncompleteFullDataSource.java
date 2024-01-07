@@ -30,7 +30,7 @@ import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhLodPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
-import com.seibel.distanthorizons.core.sql.MetaDataDto;
+import com.seibel.distanthorizons.core.sql.DataSourceDto;
 import com.seibel.distanthorizons.core.util.FullDataPointUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataInputStream;
@@ -67,8 +67,8 @@ public class LowDetailIncompleteFullDataSource extends FullDataArrayAccessor imp
 	@Override
 	public String getDataTypeName() { return DATA_TYPE_NAME; }
 	
-	
 	private DhSectionPos sectionPos;
+	
 	private final BitSet isColumnNotEmpty;
 	
 	private boolean isEmpty = true;
@@ -120,12 +120,12 @@ public class LowDetailIncompleteFullDataSource extends FullDataArrayAccessor imp
 		
 	}
 	@Override
-	public FullDataSourceSummaryData readSourceSummaryInfo(MetaDataDto dto, DhDataInputStream inputStream, IDhLevel level) throws IOException
+	public FullDataSourceSummaryData readSourceSummaryInfo(DataSourceDto dto, DhDataInputStream inputStream, IDhLevel level) throws IOException
 	{
 		int dataDetailLevel = inputStream.readInt();
-		if (dataDetailLevel != dto.baseMetaData.dataDetailLevel)
+		if (dataDetailLevel != dto.dataDetailLevel)
 		{
-			throw new IOException(LodUtil.formatLog("Data level mismatch: " + dataDetailLevel + " != " + dto.baseMetaData.dataDetailLevel));
+			throw new IOException(LodUtil.formatLog("Data level mismatch: " + dataDetailLevel + " != " + dto.dataDetailLevel));
 		}
 		
 		int width = inputStream.readInt();
@@ -188,7 +188,7 @@ public class LowDetailIncompleteFullDataSource extends FullDataArrayAccessor imp
 		return true;
 	}
 	@Override
-	public StreamDataPointContainer readDataPoints(MetaDataDto dto, int width, DhDataInputStream inputStream) throws IOException
+	public StreamDataPointContainer readDataPoints(DataSourceDto dto, int width, DhDataInputStream inputStream) throws IOException
 	{
 		// is source empty flag
 		int dataPresentFlag = inputStream.readInt();

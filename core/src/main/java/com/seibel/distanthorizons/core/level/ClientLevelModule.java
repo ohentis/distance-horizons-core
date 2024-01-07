@@ -30,7 +30,6 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.CompleteFullDataSource;
 import com.seibel.distanthorizons.core.render.LodQuadTree;
 import com.seibel.distanthorizons.core.render.RenderBufferHandler;
 import com.seibel.distanthorizons.core.render.renderer.LodRenderer;
@@ -42,7 +41,6 @@ import com.seibel.distanthorizons.coreapi.util.math.Mat4f;
 import org.apache.logging.log4j.Logger;
 
 import java.io.Closeable;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class ClientLevelModule implements Closeable
@@ -178,14 +176,13 @@ public class ClientLevelModule implements Closeable
 	//===============//
 	// data handling //
 	//===============//
-	public void writeChunkDataToFile(ChunkSizedFullDataAccessor data)
+	public void updateDataSourcesWithChunkData(ChunkSizedFullDataAccessor data)
 	{
-		DhSectionPos pos = data.getSectionPos().convertNewToDetailLevel(CompleteFullDataSource.SECTION_SIZE_OFFSET);
-		
 		ClientRenderState ClientRenderState = this.ClientRenderStateRef.get();
 		if (ClientRenderState != null)
 		{
-			ClientRenderState.renderSourceFileHandler.writeChunkDataToFile(pos, data);
+			ClientRenderState.renderSourceFileHandler.updateDataSourcesWithChunkData(data);
+			ClientRenderState.quadtree.reloadPos(data.sectionPos);
 		}
 		else
 		{

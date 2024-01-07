@@ -50,7 +50,7 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 	public void serverTick() { this.chunkToLodBuilder.tick(); }
 	
 	@Override
-	public void saveWrites(ChunkSizedFullDataAccessor data)
+	public void updateDataSourcesWithChunkData(ChunkSizedFullDataAccessor data)
 	{
 		DhSectionPos pos = data.getSectionPos();
 		pos = pos.convertNewToDetailLevel(CompleteFullDataSource.SECTION_SIZE_OFFSET);

@@ -186,7 +186,7 @@ public class DhClientServerLevel extends DhLevel implements IDhClientLevel, IDhS
 	public boolean hasSkyLight() { return this.serverLevelWrapper.hasSkyLight(); }
 	
 	@Override
-	public void saveWrites(ChunkSizedFullDataAccessor data) { this.clientside.writeChunkDataToFile(data); }
+	public void updateDataSourcesWithChunkData(ChunkSizedFullDataAccessor data) { this.clientside.updateDataSourcesWithChunkData(data); }
 	
 	@Override
 	public int getMinY() { return getLevelWrapper().getMinHeight(); }

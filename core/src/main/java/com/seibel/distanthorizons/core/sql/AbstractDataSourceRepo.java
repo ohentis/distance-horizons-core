@@ -20,19 +20,17 @@
 package com.seibel.distanthorizons.core.sql;
 
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
-import com.seibel.distanthorizons.core.file.metaData.BaseMetaData;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
-import com.seibel.distanthorizons.coreapi.util.StringUtil;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Map;
 
-public abstract class AbstractMetaDataRepo extends AbstractDhRepo<MetaDataDto>
+public abstract class AbstractDataSourceRepo extends AbstractDhRepo<DataSourceDto>
 {
-	public AbstractMetaDataRepo(String databaseType, String databaseLocation) throws SQLException
+	public AbstractDataSourceRepo(String databaseType, String databaseLocation) throws SQLException
 	{
-		super(databaseType, databaseLocation, MetaDataDto.class);
+		super(databaseType, databaseLocation, DataSourceDto.class);
 	}
 	
 	
@@ -46,7 +44,7 @@ public abstract class AbstractMetaDataRepo extends AbstractDhRepo<MetaDataDto>
 	//=======================//
 	
 	@Override 
-	public MetaDataDto convertDictionaryToDto(Map<String, Object> objectMap) throws ClassCastException
+	public DataSourceDto convertDictionaryToDto(Map<String, Object> objectMap) throws ClassCastException
 	{
 		String posString = (String) objectMap.get("DhSectionPos");
 		DhSectionPos pos = DhSectionPos.deserialize(posString);
@@ -61,22 +59,22 @@ public abstract class AbstractMetaDataRepo extends AbstractDhRepo<MetaDataDto>
 		String dataType = (String) objectMap.get("DataType");
 		byte binaryDataFormatVersion = (Byte) objectMap.get("BinaryDataFormatVersion");
 		
-		BaseMetaData baseMetaData = new BaseMetaData(pos, 
-				checksum, dataDetailLevel, worldGenStep,
-				dataType, binaryDataFormatVersion);
-		
 		// binary data
 		byte[] dataByteArray = (byte[]) objectMap.get("Data");
 		
-		MetaDataDto metaFile = new MetaDataDto(baseMetaData, dataByteArray);
-		return metaFile;
+		DataSourceDto dto = new DataSourceDto(
+				pos,
+				checksum, dataDetailLevel, worldGenStep,
+				dataType, binaryDataFormatVersion, 
+				dataByteArray);
+		return dto;
 	}
 	
 	@Override 
 	public String createSelectPrimaryKeySql(String primaryKey) { return "SELECT * FROM "+this.getTableName()+" WHERE DhSectionPos = '"+primaryKey+"'"; }
 	
 	@Override
-	public PreparedStatement createInsertStatement(MetaDataDto dto) throws SQLException
+	public PreparedStatement createInsertStatement(DataSourceDto dto) throws SQLException
 	{
 		String sql =
 			"INSERT INTO "+this.getTableName() + "\n" +
@@ -94,12 +92,12 @@ public abstract class AbstractMetaDataRepo extends AbstractDhRepo<MetaDataDto>
 		int i = 1;
 		statement.setObject(i++, dto.getPrimaryKeyString());
 		
-		statement.setObject(i++, dto.baseMetaData.checksum);
-		statement.setObject(i++, dto.baseMetaData.dataVersion);
-		statement.setObject(i++, dto.baseMetaData.dataDetailLevel);
-		statement.setObject(i++, dto.baseMetaData.worldGenStep);
-		statement.setObject(i++, dto.baseMetaData.dataType);
-		statement.setObject(i++, dto.baseMetaData.binaryDataFormatVersion);
+		statement.setObject(i++, dto.checksum);
+		statement.setObject(i++, dto.dataVersion);
+		statement.setObject(i++, dto.dataDetailLevel);
+		statement.setObject(i++, dto.worldGenStep);
+		statement.setObject(i++, dto.dataType);
+		statement.setObject(i++, dto.binaryDataFormatVersion);
 		
 		statement.setObject(i++, dto.dataArray);
 		
@@ -107,7 +105,7 @@ public abstract class AbstractMetaDataRepo extends AbstractDhRepo<MetaDataDto>
 	}
 	
 	@Override
-	public PreparedStatement createUpdateStatement(MetaDataDto dto) throws SQLException
+	public PreparedStatement createUpdateStatement(DataSourceDto dto) throws SQLException
 	{
 		String sql =
 			"UPDATE "+this.getTableName()+" \n" +
@@ -126,12 +124,12 @@ public abstract class AbstractMetaDataRepo extends AbstractDhRepo<MetaDataDto>
 		PreparedStatement statement = this.createPreparedStatement(sql);
 		
 		int i = 1;
-		statement.setObject(i++, dto.baseMetaData.checksum);
-		statement.setObject(i++, dto.baseMetaData.dataVersion);
-		statement.setObject(i++, dto.baseMetaData.dataDetailLevel);
-		statement.setObject(i++, dto.baseMetaData.worldGenStep);
-		statement.setObject(i++, dto.baseMetaData.dataType);
-		statement.setObject(i++, dto.baseMetaData.binaryDataFormatVersion);
+		statement.setObject(i++, dto.checksum);
+		statement.setObject(i++, dto.dataVersion);
+		statement.setObject(i++, dto.dataDetailLevel);
+		statement.setObject(i++, dto.worldGenStep);
+		statement.setObject(i++, dto.dataType);
+		statement.setObject(i++, dto.binaryDataFormatVersion);
 		
 		statement.setObject(i++, dto.dataArray);
 		
