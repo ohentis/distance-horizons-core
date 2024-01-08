@@ -146,12 +146,6 @@ public class DhClientWorld extends AbstractDhWorld implements IDhClientWorld
 		this.levels.values().forEach(DhClientLevel::doWorldGen);
 	}
 
-    @Override
-    public CompletableFuture<Void> saveAndFlush()
-	{
-		return CompletableFuture.allOf(this.levels.values().stream().map(DhClientLevel::saveAsync).toArray(CompletableFuture[]::new));
-	}
-	
 	@Override
 	public void close()
 	{
@@ -161,7 +155,6 @@ public class DhClientWorld extends AbstractDhWorld implements IDhClientWorld
 		}
 		
 		
-		this.saveAndFlush();
 		for (DhClientLevel dhClientLevel : this.levels.values())
 		{
 			LOGGER.info("Unloading level " + dhClientLevel.getLevelWrapper().getDimensionType().getDimensionName());

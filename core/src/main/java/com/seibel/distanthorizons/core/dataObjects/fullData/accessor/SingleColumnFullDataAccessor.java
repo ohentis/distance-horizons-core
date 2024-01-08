@@ -103,7 +103,11 @@ public class SingleColumnFullDataAccessor implements IFullDataAccessor
 	public void setNew(long[] newArray) { this.dataArrays[this.dataArrayIndex] = newArray; }
 	
 	/** @return how many data points are in this column */
-	public int getSingleLength() { return this.dataArrays[this.dataArrayIndex].length; }
+	public int getSingleLength() 
+	{ 
+		long[] singleDataArray = this.dataArrays[this.dataArrayIndex];
+		return singleDataArray != null ? singleDataArray.length : 0; 
+	}
 	
 	@Override
 	public int width() { return 1; }

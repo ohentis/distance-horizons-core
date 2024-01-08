@@ -29,7 +29,7 @@ import java.io.IOException;
 
 public class CompleteFullDataSourceLoader extends AbstractFullDataSourceLoader
 {
-	public CompleteFullDataSourceLoader() { super(CompleteFullDataSource.class, CompleteFullDataSource.DATA_SOURCE_TYPE, new byte[]{CompleteFullDataSource.DATA_FORMAT_VERSION}); }
+	public CompleteFullDataSourceLoader() { super(CompleteFullDataSource.class, CompleteFullDataSource.DATA_TYPE_NAME, new byte[]{CompleteFullDataSource.DATA_FORMAT_VERSION}); }
 	
 	@Override
 	protected IFullDataSource createEmptyDataSource(DhSectionPos pos) { return CompleteFullDataSource.createEmpty(pos); }

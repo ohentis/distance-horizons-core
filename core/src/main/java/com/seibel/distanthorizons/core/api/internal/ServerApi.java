@@ -139,18 +139,6 @@ public class ServerApi
 		}
 	}
 	
-	@Deprecated // TODO not implemented, remove
-	public void serverSaveEvent()
-	{
-		LOGGER.debug("Server world " + SharedApi.getAbstractDhWorld() + " saving");
-		
-		AbstractDhWorld serverWorld = SharedApi.getAbstractDhWorld();
-		if (serverWorld != null)
-		{
-			serverWorld.saveAndFlush();
-		}
-	}
-	
 	
 	
 	//=======================//

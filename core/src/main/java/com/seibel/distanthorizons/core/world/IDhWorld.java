@@ -34,6 +34,4 @@ public interface IDhWorld
 	
 	void unloadLevel(@NotNull ILevelWrapper levelWrapper);
 	
-	CompletableFuture<Void> saveAndFlush();
-	
 }

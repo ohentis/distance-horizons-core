@@ -22,6 +22,7 @@ package com.seibel.distanthorizons.core.dataObjects.render;
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
 import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
 import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.SingleColumnFullDataAccessor;
+import com.seibel.distanthorizons.core.file.IDataSource;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhLodPos;
@@ -45,9 +46,9 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * Stores the render data used to generate OpenGL buffers.
  *
- * @see    RenderDataPointUtil
+ * @see RenderDataPointUtil
  */
-public class ColumnRenderSource
+public class ColumnRenderSource implements IDataSource<IDhClientLevel>
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
@@ -56,7 +57,12 @@ public class ColumnRenderSource
 	public static final int SECTION_SIZE = BitShiftUtil.powerOfTwo(SECTION_SIZE_OFFSET);
 	
 	public static final byte DATA_FORMAT_VERSION = 1;
+	@Override
+	public byte getDataFormatVersion() { return DATA_FORMAT_VERSION; }
+	
 	public static final String DATA_NAME = "ColumnRenderSource";
+	@Override
+	public String getDataTypeName() { return DATA_NAME; }
 	
 	/**
 	 * This is the byte put between different sections in the binary save file.
@@ -80,6 +86,8 @@ public class ColumnRenderSource
 	public EDhApiWorldGenerationStep worldGenStep;
 	
 	public AtomicLong localVersion = new AtomicLong(0); // used to track changes to the data source, so that buffers can be updated when necessary
+	
+	
 	
 	//==============//
 	// constructors //
@@ -107,7 +115,7 @@ public class ColumnRenderSource
 	 *
 	 * @throws IOException if the DataInputStream's detail level isn't what was expected
 	 */
-	public ColumnRenderSource(DhSectionPos sectionPos, ColumnRenderLoader.ParsedColumnData parsedColumnData, IDhLevel level) throws IOException
+	public ColumnRenderSource(DhSectionPos sectionPos, ColumnRenderSourceLoader.ParsedColumnData parsedColumnData, IDhLevel level) throws IOException
 	{
 		if (sectionPos.getDetailLevel() - SECTION_SIZE_OFFSET != parsedColumnData.detailLevel)
 		{
@@ -209,7 +217,9 @@ public class ColumnRenderSource
 	// data update and output //
 	//========================//
 	
-	public void writeData(DhDataOutputStream outputStream) throws IOException
+	@Override
+	public void writeToStream(DhDataOutputStream outputStream, IDhClientLevel level) throws IOException { this.writeToStream(outputStream); }
+	public void writeToStream(DhDataOutputStream outputStream) throws IOException
 	{
 		outputStream.flush();
 		
@@ -302,11 +312,8 @@ public class ColumnRenderSource
 		}
 	}
 	
-	/** 
-	 * Doesn't write anything to file.
-	 * @return true if any data was changed, false otherwise 
-	 */
-	public boolean updateWithChunkData(ChunkSizedFullDataAccessor chunkDataView, IDhClientLevel level)
+	@Override
+	public void update(ChunkSizedFullDataAccessor chunkDataView, IDhClientLevel level)
 	{
 		final String errorMessagePrefix = "Unable to complete fastWrite for RenderSource pos: [" + this.sectionPos + "] and chunk pos: [" + chunkDataView.chunkPos + "]. Error:";
 		
@@ -333,14 +340,14 @@ public class ColumnRenderSource
 					|| blockOffsetZ + LodUtil.CHUNK_WIDTH > this.getWidthInDataPoints())
 			{
 				LOGGER.warn(errorMessagePrefix+"Data offset is out of bounds.");
-				return false;
+				return;
 			}
 			
 			
 			if (Thread.interrupted())
 			{
 				LOGGER.warn(errorMessagePrefix+"write interrupted.");
-				return false;
+				return;
 			}
 			
 			
@@ -399,7 +406,7 @@ public class ColumnRenderSource
 			int chunksPerColumn = sourceStartingChangePos.getWidthAtDetail(chunkDataView.getSectionPos().getDetailLevel());
 			if (chunkDataView.getSectionPos().getX() % chunksPerColumn != 0 || chunkDataView.getSectionPos().getZ() % chunksPerColumn != 0)
 			{
-				return false; // not a multiple of the column size, so no change
+				return; // not a multiple of the column size, so no change
 			}
 			int relStartX = Math.floorMod(sourceStartingChangePos.x, this.getWidthInDataPoints());
 			int relStartZ = Math.floorMod(sourceStartingChangePos.z, this.getWidthInDataPoints());
@@ -418,8 +425,6 @@ public class ColumnRenderSource
 		{
 			this.localVersion.incrementAndGet();
 		}
-		
-		return dataChanged;
 	}
 	
 	
@@ -442,8 +447,13 @@ public class ColumnRenderSource
 	public long getRoughRamUsageInBytes() { return (long) this.renderDataContainer.length * Long.BYTES; }
 	
 	public DhSectionPos getSectionPos() { return this.sectionPos; }
+	@Override
+	public String getPrimaryKeyString() { return this.sectionPos.serialize(); }
 	
 	public byte getDataDetailLevel() { return (byte) (this.sectionPos.getDetailLevel() - SECTION_SIZE_OFFSET); }
+	
+	@Override
+	public EDhApiWorldGenerationStep getWorldGenStep() { return EDhApiWorldGenerationStep.EMPTY; } 
 	
 	/** @return how many data points wide this {@link ColumnRenderSource} is. */
 	public int getWidthInDataPoints() { return BitShiftUtil.powerOfTwo(this.getDetailOffset()); }

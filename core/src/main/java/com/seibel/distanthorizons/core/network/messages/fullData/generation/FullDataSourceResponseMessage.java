@@ -31,7 +31,6 @@ import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataOutputStre
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
 
-import javax.annotation.Nullable;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
@@ -60,7 +59,7 @@ public class FullDataSourceResponseMessage extends FutureTrackableNetworkMessage
 			fullDataSource.writeToStream(dhOutputStream, level);
 			dhOutputStream.flush();
 			
-			out.writeByte(fullDataSource.getBinaryDataFormatVersion());
+			out.writeByte(fullDataSource.getDataFormatVersion());
 			out.writeInt(outputStream.size());
 			out.writeBytes(outputStream.toByteArray());
 		}
@@ -70,7 +69,7 @@ public class FullDataSourceResponseMessage extends FutureTrackableNetworkMessage
 	public void decode0(ByteBuf in)
 	{
 		byte dataVersion = in.readByte();
-		this.fullDataSourceLoader = (CompleteFullDataSourceLoader) AbstractFullDataSourceLoader.getLoader(CompleteFullDataSource.DATA_SOURCE_TYPE, dataVersion);
+		this.fullDataSourceLoader = (CompleteFullDataSourceLoader) AbstractFullDataSourceLoader.getLoader(CompleteFullDataSource.DATA_TYPE_NAME, dataVersion);
 		this.dataBuffer = in.readBytes(in.readInt());
 	}
 	

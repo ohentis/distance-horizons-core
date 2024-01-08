@@ -21,7 +21,7 @@ package com.seibel.distanthorizons.core.sql;
 
 import java.sql.SQLException;
 
-public class RenderDataRepo extends AbstractMetaDataRepo
+public class RenderDataRepo extends AbstractDataSourceRepo
 {
 	public static final String TABLE_NAME = "DhRenderData";
 	

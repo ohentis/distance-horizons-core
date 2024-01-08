@@ -49,7 +49,6 @@ import org.jetbrains.annotations.Nullable;
 import javax.annotation.CheckForNull;
 import java.awt.*;
 import java.io.File;
-import java.util.concurrent.CompletableFuture;
 
 /** The level used when connected to a server */
 public class DhClientLevel extends DhLevel implements IDhClientLevel
@@ -122,7 +121,7 @@ public class DhClientLevel extends DhLevel implements IDhClientLevel
 				ChunkSizedFullDataAccessor fullDataAccessor = msg.getFullDataSource(this);
 				if (fullDataAccessor == null) return;
 				
-				this.saveWrites(fullDataAccessor);
+				this.updateDataSourcesWithChunkData(fullDataAccessor);
 			}
 			catch (Exception e)
 			{
@@ -204,13 +203,7 @@ public class DhClientLevel extends DhLevel implements IDhClientLevel
 	public ILevelWrapper getLevelWrapper() { return levelWrapper; }
 	
 	@Override
-	public CompletableFuture<Void> saveAsync()
-	{
-		return CompletableFuture.allOf(clientside.saveAsync(), dataFileHandler.flushAndSaveAsync());
-	}
-	
-	@Override
-	public void saveWrites(ChunkSizedFullDataAccessor data) { this.clientside.writeChunkDataToFile(data); }
+	public void updateDataSourcesWithChunkData(ChunkSizedFullDataAccessor data) { this.clientside.updateDataSourcesWithChunkData(data); }
 	
 	@Override
 	public int getMinY() { return levelWrapper.getMinHeight(); }

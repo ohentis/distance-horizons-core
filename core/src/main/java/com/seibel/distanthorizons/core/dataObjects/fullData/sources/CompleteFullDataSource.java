@@ -20,29 +20,28 @@
 package com.seibel.distanthorizons.core.dataObjects.fullData.sources;
 
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
+import com.seibel.distanthorizons.core.dataObjects.fullData.FullDataPointIdMap;
 import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
 import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.FullDataArrayAccessor;
 import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.SingleColumnFullDataAccessor;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IFullDataSource;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IStreamableFullDataSource;
-import com.seibel.distanthorizons.core.file.fullDatafile.FullDataMetaFile;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.pos.DhLodPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.sql.DataSourceDto;
 import com.seibel.distanthorizons.core.util.FullDataPointUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataInputStream;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataOutputStream;
-import com.seibel.distanthorizons.core.dataObjects.fullData.FullDataPointIdMap;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.coreapi.util.BitShiftUtil;
 import org.apache.logging.log4j.Logger;
 
-import javax.annotation.CheckForNull;
-import java.io.*;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.function.Consumer;
 
@@ -62,9 +61,12 @@ public class CompleteFullDataSource extends FullDataArrayAccessor implements IFu
 	public static final int WIDTH = BitShiftUtil.powerOfTwo(SECTION_SIZE_OFFSET);
 	
 	public static final byte DATA_FORMAT_VERSION = 3;
-	public static final String DATA_SOURCE_TYPE = "CompleteFullDataSource";
+	public static final String DATA_TYPE_NAME = "CompleteFullDataSource";
+	@Override
+	public String getDataTypeName() { return DATA_TYPE_NAME; }
 	
 	private DhSectionPos sectionPos;
+	
 	private boolean isEmpty = true;
 	public EDhApiWorldGenerationStep worldGenStep = EDhApiWorldGenerationStep.EMPTY;
 	
@@ -106,12 +108,12 @@ public class CompleteFullDataSource extends FullDataArrayAccessor implements IFu
 		
 	}
 	@Override
-	public FullDataSourceSummaryData readSourceSummaryInfo(FullDataMetaFile dataFile, DhDataInputStream inputStream, IDhLevel level) throws IOException
+	public FullDataSourceSummaryData readSourceSummaryInfo(DataSourceDto dto, DhDataInputStream inputStream, IDhLevel level) throws IOException
 	{
 		int dataDetail = inputStream.readInt();
-		if (dataFile != null && dataFile.baseMetaData != null && dataDetail != dataFile.baseMetaData.dataDetailLevel)
+		if (dto != null && dataDetail != dto.dataDetailLevel)
 		{
-			throw new IOException(LodUtil.formatLog("Data level mismatch: " + dataDetail + " != " + dataFile.baseMetaData.dataDetailLevel));
+			throw new IOException(LodUtil.formatLog("Data level mismatch. Expected: ["+dto.dataDetailLevel+"], found ["+dataDetail+"]."));
 		}
 		
 		int width = inputStream.readInt();
@@ -188,7 +190,7 @@ public class CompleteFullDataSource extends FullDataArrayAccessor implements IFu
 		return true;
 	}
 	@Override
-	public long[][] readDataPoints(FullDataMetaFile dataFile, int width, DhDataInputStream dataInputStream) throws IOException
+	public long[][] readDataPoints(DataSourceDto dto, int width, DhDataInputStream dataInputStream) throws IOException
 	{
 		// Data array length
 		int dataPresentFlag = dataInputStream.readInt();
@@ -452,7 +454,7 @@ public class CompleteFullDataSource extends FullDataArrayAccessor implements IFu
 	public byte getDataDetailLevel() { return (byte) (this.sectionPos.getDetailLevel() - SECTION_SIZE_OFFSET); }
 	
 	@Override
-	public byte getBinaryDataFormatVersion() { return DATA_FORMAT_VERSION; }
+	public byte getDataFormatVersion() { return DATA_FORMAT_VERSION; }
 	
 	@Override
 	public EDhApiWorldGenerationStep getWorldGenStep() { return this.worldGenStep; }

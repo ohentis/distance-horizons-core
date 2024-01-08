@@ -432,6 +432,7 @@ public class LodRenderer
 				this.bufferHandler.renderTransparent(this);
 				GL32.glDepthMask(true); // Apparently the depth mask state is stored in the FBO, so glState fails to restore it...
 				
+				profiler.popPush("LOD Fog");
 				FogShader.INSTANCE.render(partialTicks);
 			}
 			

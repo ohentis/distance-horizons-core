@@ -22,12 +22,14 @@ package com.seibel.distanthorizons.core.level;
 import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.file.fullDatafile.IFullDataSourceProvider;
+import com.seibel.distanthorizons.core.render.LodRenderSection;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.util.objects.quadTree.QuadNode;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
@@ -39,7 +41,7 @@ import com.seibel.distanthorizons.coreapi.util.math.Mat4f;
 import org.apache.logging.log4j.Logger;
 
 import java.awt.*;
-import java.util.concurrent.CompletableFuture;
+import java.util.Iterator;
 
 /** The level used on a singleplayer world */
 public class DhClientServerLevel extends DhLevel implements IDhClientLevel, IDhServerLevel
@@ -90,25 +92,37 @@ public class DhClientServerLevel extends DhLevel implements IDhClientLevel, IDhS
 	@Override
 	public void doWorldGen()
 	{
-		this.serverside.worldGeneratorEnabledConfig.pollNewValue();
+		this.serverside.worldGeneratorEnabledConfig.pollNewValue(); // if not called the get() line below may not 
 		boolean shouldDoWorldGen = this.serverside.worldGeneratorEnabledConfig.get() && this.clientside.isRendering();
 		boolean isWorldGenRunning = this.serverside.worldGenModule.isWorldGenRunning();
 		if (shouldDoWorldGen && !isWorldGenRunning)
 		{
 			// start world gen
+			
+			// create a new queue
 			this.serverside.worldGenModule.startWorldGen(this.serverside.dataFileHandler, new ServerLevelModule.WorldGenState(this));
+			
+			// populate the queue based on the current rendering tree
+			ClientLevelModule.ClientRenderState renderState = this.clientside.ClientRenderStateRef.get();
+			Iterator<QuadNode<LodRenderSection>> iterator = renderState.quadtree.leafNodeIterator();
+			while (iterator.hasNext())
+			{
+				QuadNode<LodRenderSection> node = iterator.next();
+				this.serverside.dataFileHandler.getAsync(node.sectionPos);
+			}
 		}
 		else if (!shouldDoWorldGen && isWorldGenRunning)
 		{
 			// stop world gen
 			this.serverside.worldGenModule.stopWorldGen(this.serverside.dataFileHandler);
 		}
-
-		if (this.serverside.worldGenModule.isWorldGenRunning())
+		
+		if (isWorldGenRunning)
 		{
 			ClientLevelModule.ClientRenderState renderState = this.clientside.ClientRenderStateRef.get();
 			if (renderState != null && renderState.quadtree != null)
 			{
+				// remove any generator sections that are out of bounds
 				this.serverside.dataFileHandler.removeGenRequestIf(pos -> !renderState.quadtree.isSectionPosInBounds(pos));
 			}
 			
@@ -172,16 +186,12 @@ public class DhClientServerLevel extends DhLevel implements IDhClientLevel, IDhS
 	public boolean hasSkyLight() { return this.serverLevelWrapper.hasSkyLight(); }
 	
 	@Override
-	public void saveWrites(ChunkSizedFullDataAccessor data) { this.clientside.writeChunkDataToFile(data); }
+	public void updateDataSourcesWithChunkData(ChunkSizedFullDataAccessor data) { this.clientside.updateDataSourcesWithChunkData(data); }
 	
 	@Override
 	public int getMinY() { return getLevelWrapper().getMinHeight(); }
 	
-	@Override
-	public CompletableFuture<Void> saveAsync()
-	{
-		return CompletableFuture.allOf(clientside.saveAsync(), getFileHandler().flushAndSaveAsync());
-	}
+	
 	
 	//===============//
 	// data handling //

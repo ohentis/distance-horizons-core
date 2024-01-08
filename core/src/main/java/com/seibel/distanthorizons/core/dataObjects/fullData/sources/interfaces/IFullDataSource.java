@@ -19,23 +19,18 @@
 
 package com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces;
 
-import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
+import com.seibel.distanthorizons.core.file.IDataSource;
 import com.seibel.distanthorizons.core.level.IDhLevel;
-import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.dataObjects.fullData.FullDataPointIdMap;
 import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
 import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.IFullDataAccessor;
 import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.SingleColumnFullDataAccessor;
 import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSource;
-import com.seibel.distanthorizons.core.file.fullDatafile.FullDataMetaFile;
+import com.seibel.distanthorizons.core.sql.DataSourceDto;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataInputStream;
-import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataOutputStream;
-import com.seibel.distanthorizons.coreapi.util.BitShiftUtil;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.LinkedList;
 
 /**
  * Base for all Full Data Source objects. <br><br>
@@ -47,7 +42,7 @@ import java.util.LinkedList;
  * @see IIncompleteFullDataSource
  * @see IStreamableFullDataSource
  */
-public interface IFullDataSource
+public interface IFullDataSource extends IDataSource<IDhLevel>
 {
 	/**
 	 * This is the byte put between different sections in the binary save file.
@@ -59,13 +54,7 @@ public interface IFullDataSource
 	
 	
 	
-	DhSectionPos getSectionPos();
-	
-	/** Returns the detail level of the data contained by this {@link IFullDataSource}. */
-	byte getDataDetailLevel();
-	byte getBinaryDataFormatVersion();
-	EDhApiWorldGenerationStep getWorldGenStep();
-	
+	default void update(ChunkSizedFullDataAccessor chunkData, IDhLevel level) { this.update(chunkData); }
 	void update(ChunkSizedFullDataAccessor data);
 	
 	boolean isEmpty();
@@ -101,26 +90,18 @@ public interface IFullDataSource
 	// basic stream handling // 
 	//=======================//
 	
-	// TODO make this blow up in IStreamableFullDataSource instead of the children
 	/**
 	 * Should only be implemented by {@link IStreamableFullDataSource} to prevent potential stream read/write inconsistencies.
 	 *
-	 * @see IStreamableFullDataSource#writeToStream(DhDataOutputStream, IDhLevel)
+	 * @see IStreamableFullDataSource#populateFromStream(DataSourceDto, DhDataInputStream, IDhLevel)
 	 */
-	void writeToStream(DhDataOutputStream outputStream, IDhLevel level) throws IOException;
+	void populateFromStream(DataSourceDto dto, DhDataInputStream inputStream, IDhLevel level) throws IOException, InterruptedException;
 	
 	/**
 	 * Should only be implemented by {@link IStreamableFullDataSource} to prevent potential stream read/write inconsistencies.
 	 *
-	 * @see IStreamableFullDataSource#populateFromStream(FullDataMetaFile, DhDataInputStream, IDhLevel)
+	 * @see IStreamableFullDataSource#repopulateFromStream(DataSourceDto, DhDataInputStream, IDhLevel) 
 	 */
-	void populateFromStream(FullDataMetaFile dataFile, DhDataInputStream inputStream, IDhLevel level) throws IOException, InterruptedException;
-	
-	/**
-	 * Should only be implemented by {@link IStreamableFullDataSource} to prevent potential stream read/write inconsistencies.
-	 *
-	 * @see IStreamableFullDataSource#repopulateFromStream(FullDataMetaFile, DhDataInputStream, IDhLevel) 
-	 */
-	void repopulateFromStream(FullDataMetaFile dataFile, DhDataInputStream inputStream, IDhLevel level) throws IOException, InterruptedException;
+	void repopulateFromStream(DataSourceDto dto, DhDataInputStream inputStream, IDhLevel level) throws IOException, InterruptedException;
 	
 }

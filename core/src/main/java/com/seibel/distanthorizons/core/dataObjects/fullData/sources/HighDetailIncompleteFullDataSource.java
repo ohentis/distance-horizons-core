@@ -26,11 +26,11 @@ import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.SingleColum
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IFullDataSource;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IIncompleteFullDataSource;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IStreamableFullDataSource;
-import com.seibel.distanthorizons.core.file.fullDatafile.FullDataMetaFile;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhLodPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.sql.DataSourceDto;
 import com.seibel.distanthorizons.core.util.FullDataPointUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataInputStream;
@@ -72,7 +72,9 @@ public class HighDetailIncompleteFullDataSource implements IIncompleteFullDataSo
 	public static final byte MAX_SECTION_DETAIL = SECTION_SIZE_OFFSET + SPARSE_UNIT_DETAIL;
 	
 	public static final byte DATA_FORMAT_VERSION = 3;
-	public static final String DATA_SOURCE_TYPE = "HighDetailIncompleteFullDataSource";
+	public static final String DATA_TYPE_NAME = "HighDetailIncompleteFullDataSource";
+	@Override
+	public String getDataTypeName() { return DATA_TYPE_NAME; }
 	
 	
 	protected final FullDataPointIdMap mapping;
@@ -141,15 +143,15 @@ public class HighDetailIncompleteFullDataSource implements IIncompleteFullDataSo
 		
 	}
 	@Override
-	public FullDataSourceSummaryData readSourceSummaryInfo(FullDataMetaFile dataFile, DhDataInputStream inputStream, IDhLevel level) throws IOException
+	public FullDataSourceSummaryData readSourceSummaryInfo(DataSourceDto dto, DhDataInputStream inputStream, IDhLevel level) throws IOException
 	{
-		LodUtil.assertTrue(dataFile.pos.getDetailLevel() > SPARSE_UNIT_DETAIL);
-		LodUtil.assertTrue(dataFile.pos.getDetailLevel() <= MAX_SECTION_DETAIL);
+		LodUtil.assertTrue(dto.pos.getDetailLevel() > SPARSE_UNIT_DETAIL);
+		LodUtil.assertTrue(dto.pos.getDetailLevel() <= MAX_SECTION_DETAIL);
 		
 		int dataDetailLevel = inputStream.readShort();
-		if (dataDetailLevel != dataFile.baseMetaData.dataDetailLevel)
+		if (dataDetailLevel != dto.dataDetailLevel)
 		{
-			throw new IOException("Data level mismatch: ["+dataDetailLevel+"] != ["+dataFile.baseMetaData.dataDetailLevel+"]");
+			throw new IOException("Data level mismatch: ["+dataDetailLevel+"] != ["+dto.dataDetailLevel+"]");
 		}
 		
 		// confirm that the detail level is correct
@@ -220,7 +222,13 @@ public class HighDetailIncompleteFullDataSource implements IIncompleteFullDataSo
 			{
 				for (int z = 0; z < array.width(); z++)
 				{
-					dataOutputStream.writeInt(array.get(x, z).getSingleLength());
+					SingleColumnFullDataAccessor columnAccessor = array.get(x, z);
+					int columnLength = 0;
+					if (columnAccessor != null)
+					{
+						columnLength = columnAccessor.getSingleLength();
+					}
+					dataOutputStream.writeInt(columnLength);
 				}
 			}
 			
@@ -248,11 +256,11 @@ public class HighDetailIncompleteFullDataSource implements IIncompleteFullDataSo
 		return true;
 	}
 	@Override
-	public long[][][] readDataPoints(FullDataMetaFile dataFile, int width, DhDataInputStream inputStream) throws IOException
+	public long[][][] readDataPoints(DataSourceDto dto, int width, DhDataInputStream inputStream) throws IOException
 	{
 		// calculate the number of chunks and dataPoints based on the sparseDetail and sectionSize
 		// TODO these values should be constant, should we still be calculating them like this?
-		int chunks = BitShiftUtil.powerOfTwo(dataFile.pos.getDetailLevel() - SPARSE_UNIT_DETAIL);
+		int chunks = BitShiftUtil.powerOfTwo(dto.pos.getDetailLevel() - SPARSE_UNIT_DETAIL);
 		int dataPointsPerChunk = SECTION_SIZE / chunks;
 		
 		
@@ -467,7 +475,7 @@ public class HighDetailIncompleteFullDataSource implements IIncompleteFullDataSo
 	public byte getDataDetailLevel() { return (byte) (this.sectionPos.getDetailLevel() - SECTION_SIZE_OFFSET); }
 
 	@Override
-	public byte getBinaryDataFormatVersion() { return DATA_FORMAT_VERSION; }
+	public byte getDataFormatVersion() { return DATA_FORMAT_VERSION; }
 	
 	@Override
 	public EDhApiWorldGenerationStep getWorldGenStep() { return this.worldGenStep; }

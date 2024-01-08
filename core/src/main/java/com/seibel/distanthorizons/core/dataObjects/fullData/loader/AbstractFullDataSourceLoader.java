@@ -21,10 +21,9 @@ package com.seibel.distanthorizons.core.dataObjects.fullData.loader;
 
 import com.google.common.collect.HashMultimap;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IFullDataSource;
-import com.seibel.distanthorizons.core.file.fullDatafile.FullDataMetaFile;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
-import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataInputStream;
+import com.seibel.distanthorizons.core.sql.DataSourceDto;
 
 import java.io.IOException;
 import java.util.*;
@@ -120,31 +119,31 @@ public abstract class AbstractFullDataSourceLoader
 	// data loading //
 	//==============//
 	
+	/** Should be used in conjunction with {@link AbstractFullDataSourceLoader#returnPooledDataSource} to return the pooled sources. */
+	public IFullDataSource loadTemporaryDataSource(DataSourceDto dto, IDhLevel level) throws IOException, InterruptedException
+	{
+		IFullDataSource dataSource = this.tryGetPooledSource();
+		if (dataSource != null)
+		{
+			dataSource.repopulateFromStream(dto, dto.getInputStream(), level);
+		}
+		else
+		{
+			dataSource = this.loadDataSource(dto, level);
+		}
+		
+		return dataSource;
+	}
+	
 	/**
 	 * Can return null if any of the requirements aren't met.
 	 *
 	 * @throws InterruptedException if the loader thread is interrupted, generally happens when the level is shutting down
 	 */
-	public IFullDataSource loadDataSource(FullDataMetaFile dataFile, DhDataInputStream inputStream, IDhLevel level) throws IOException, InterruptedException
+	public IFullDataSource loadDataSource(DataSourceDto dto, IDhLevel level) throws IOException, InterruptedException
 	{
-		IFullDataSource dataSource = this.createEmptyDataSource(dataFile.pos);
-		dataSource.populateFromStream(dataFile, inputStream, level);
-		return dataSource;
-	}
-	
-	/** Should be used in conjunction with {@link AbstractFullDataSourceLoader#returnPooledDataSource} to return the pooled sources. */
-	public IFullDataSource loadTemporaryDataSource(FullDataMetaFile dataFile, DhDataInputStream inputStream, IDhLevel level) throws IOException, InterruptedException
-	{
-		IFullDataSource dataSource = this.tryGetPooledSource();
-		if (dataSource != null)
-		{
-			dataSource.repopulateFromStream(dataFile, inputStream, level);
-		}
-		else
-		{
-			dataSource = this.loadDataSource(dataFile, inputStream, level);
-		}
-		
+		IFullDataSource dataSource = this.createEmptyDataSource(dto.pos);
+		dataSource.populateFromStream(dto, dto.getInputStream(), level);
 		return dataSource;
 	}
 	

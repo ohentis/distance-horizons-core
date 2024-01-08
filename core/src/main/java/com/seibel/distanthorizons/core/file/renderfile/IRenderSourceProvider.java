@@ -20,29 +20,27 @@
 package com.seibel.distanthorizons.core.file.renderfile;
 
 import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IFullDataSource;
+import com.seibel.distanthorizons.core.file.ISourceProvider;
+import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSource;
+import com.seibel.distanthorizons.core.sql.FullDataRepo;
 import com.seibel.distanthorizons.core.sql.RenderDataRepo;
 
 import java.util.concurrent.CompletableFuture;
 
 /**
- * This represents LOD data that is stored in long term storage (IE LOD files stored on the hard drive) <br>
- * Example: {@link RenderSourceFileHandler RenderSourceFileHandler} <br><br>
- *
- * This is used to create {@link ColumnRenderSource}'s
+ * Handles reading, writing, and updating {@link ColumnRenderSource}'s. <br>
+ * Should be backed by a database handled by a {@link RenderDataRepo}.
  */
-public interface IRenderSourceProvider extends AutoCloseable
+public interface IRenderSourceProvider extends ISourceProvider<ColumnRenderSource, IDhClientLevel>
 {
-	CompletableFuture<ColumnRenderSource> readAsync(DhSectionPos pos);
+	CompletableFuture<ColumnRenderSource> getAsync(DhSectionPos pos);
 	
-	void writeChunkDataToFile(DhSectionPos sectionPos, ChunkSizedFullDataAccessor chunkData);
-	CompletableFuture<Void> flushAndSaveAsync();
+	void updateDataSourcesWithChunkData(ChunkSizedFullDataAccessor chunkData);
 	
 	/** Deletes any data stored in the render cache so it can be re-created */
 	void deleteRenderCache();
-	
-	
-	RenderDataRepo getRepo();
 	
 }

@@ -104,7 +104,7 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 			{
 				IncompleteDataSourceEntry entry = incompleteDataSources.computeIfAbsent(msg.dhSectionPos, pos -> {
 					IncompleteDataSourceEntry newEntry = new IncompleteDataSourceEntry();
-					serverside.dataFileHandler.readAsync(msg.dhSectionPos).thenAccept(fullDataSource -> {
+					serverside.dataFileHandler.getAsync(msg.dhSectionPos).thenAccept(fullDataSource -> {
 						newEntry.fullDataSource = fullDataSource;
 					});
 					return newEntry;
@@ -242,11 +242,11 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 	}
 	
 	@Override
-	public void saveWrites(ChunkSizedFullDataAccessor data)
+	public void updateDataSourcesWithChunkData(ChunkSizedFullDataAccessor data)
 	{
 		DhSectionPos pos = data.getSectionPos();
 		pos = pos.convertNewToDetailLevel(CompleteFullDataSource.SECTION_SIZE_OFFSET);
-		this.getFileHandler().writeChunkDataToFile(pos, data);
+		this.getFileHandler().updateDataSourcesWithChunkData(data);
 	}
 	
 	@Override
@@ -259,9 +259,6 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 		serverside.close();
 		LOGGER.info("Closed DHLevel for {}", getLevelWrapper());
 	}
-	
-	@Override
-	public CompletableFuture<Void> saveAsync() { return getFileHandler().flushAndSaveAsync(); }
 	
 	@Override
 	public void doWorldGen()

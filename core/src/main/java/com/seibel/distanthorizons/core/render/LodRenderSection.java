@@ -178,7 +178,7 @@ public class LodRenderSection implements IDebugRenderable
 	
 	private void startLoadRenderSourceAsync()
 	{
-		this.renderSourceLoadFuture = this.renderSourceProvider.readAsync(this.pos);
+		this.renderSourceLoadFuture = this.renderSourceProvider.getAsync(this.pos);
 		this.renderSourceLoadFuture.whenComplete((renderSource, ex) ->
 		{
 			this.renderSource = renderSource;

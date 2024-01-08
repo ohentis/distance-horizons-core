@@ -20,9 +20,9 @@
 package com.seibel.distanthorizons.core.dataObjects.render;
 
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
-import com.seibel.distanthorizons.core.file.renderfile.RenderDataMetaFile;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.sql.DataSourceDto;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataInputStream;
 import org.apache.logging.log4j.Logger;
 
@@ -31,26 +31,26 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 /**
- * Handles loading and parsing {@link RenderDataMetaFile}s to create {@link ColumnRenderSource}s. <br><br>
+ * Handles loading and parsing {@link DataSourceDto}s to create {@link ColumnRenderSource}s. <br><br>
  *
- * Please see the {@link ColumnRenderLoader#loadRenderSource} method to see what
+ * Please see the {@link ColumnRenderSourceLoader#loadRenderSource} method to see what
  * file versions this class can handle.
  */
-public class ColumnRenderLoader
+public class ColumnRenderSourceLoader
 {
-	public static ColumnRenderLoader INSTANCE = new ColumnRenderLoader();
+	public static ColumnRenderSourceLoader INSTANCE = new ColumnRenderSourceLoader();
 	
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
 	
 	
-	private ColumnRenderLoader() { }
+	private ColumnRenderSourceLoader() { }
 	
 	
 	
-	public ColumnRenderSource loadRenderSource(RenderDataMetaFile dataFile, DhDataInputStream inputStream, IDhLevel level) throws IOException
+	public ColumnRenderSource loadRenderSource(DataSourceDto dto, DhDataInputStream inputStream, IDhLevel level) throws IOException
 	{
-		int dataFileVersion = dataFile.baseMetaData.binaryDataFormatVersion;
+		int dataFileVersion = dto.binaryDataFormatVersion;
 		
 		switch (dataFileVersion)
 		{
@@ -60,10 +60,10 @@ public class ColumnRenderLoader
 				ParsedColumnData parsedColumnData = readDataV1(inputStream, level.getMinY());
 				if (parsedColumnData.isEmpty)
 				{
-					LOGGER.warn("Empty render file " + dataFile.pos);
+					LOGGER.warn("Empty render file " + dto.pos);
 				}
 				
-				return new ColumnRenderSource(dataFile.pos, parsedColumnData, level);
+				return new ColumnRenderSource(dto.pos, parsedColumnData, level);
 			default:
 				throw new IOException("Invalid Data: The data version [" + dataFileVersion + "] is not supported");
 		}

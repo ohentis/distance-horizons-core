@@ -22,8 +22,8 @@ package com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces;
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.dataObjects.fullData.FullDataPointIdMap;
-import com.seibel.distanthorizons.core.file.fullDatafile.FullDataMetaFile;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.sql.DataSourceDto;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataInputStream;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataOutputStream;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
@@ -39,7 +39,7 @@ import java.io.IOException;
  *
  * @param <SummaryDataType> defines the object holding this data source's summary data, extends {@link IStreamableFullDataSource.FullDataSourceSummaryData}.
  * @param <DataContainerType> defines the object holding the data points, probably long[][] or long[][][].
- * {@link IStreamableFullDataSource#populateFromStream(FullDataMetaFile, DhDataInputStream, IDhLevel) populateFromStream}
+ * {@link IStreamableFullDataSource#populateFromStream(DataSourceDto, DhDataInputStream, IDhLevel) populateFromStream}
  * for the full reasoning.
  */
 public interface IStreamableFullDataSource<SummaryDataType extends IStreamableFullDataSource.FullDataSourceSummaryData, DataContainerType> extends IFullDataSource
@@ -56,14 +56,14 @@ public interface IStreamableFullDataSource<SummaryDataType extends IStreamableFu
 	 * @see IStreamableFullDataSource#populateFromStream
 	 */
 	@Override
-	default void repopulateFromStream(FullDataMetaFile dataFile, DhDataInputStream inputStream, IDhLevel level) throws IOException, InterruptedException
+	default void repopulateFromStream(DataSourceDto dto, DhDataInputStream inputStream, IDhLevel level) throws IOException, InterruptedException
 	{
 		// clear/overwrite the old data
-		this.resizeDataStructuresForRepopulation(dataFile.pos);
-		this.getMapping().clear(dataFile.pos);
+		this.resizeDataStructuresForRepopulation(dto.pos);
+		this.getMapping().clear(dto.pos);
 		
 		// set the new data
-		this.populateFromStream(dataFile, inputStream, level);
+		this.populateFromStream(dto, inputStream, level);
 	}
 	
 	/**
@@ -87,13 +87,13 @@ public interface IStreamableFullDataSource<SummaryDataType extends IStreamableFu
 	 * This is expected to be used with an empty {@link IStreamableFullDataSource} and functions similar to a constructor.
 	 */
 	@Override
-	default void populateFromStream(FullDataMetaFile dataFile, DhDataInputStream inputStream, IDhLevel level) throws IOException, InterruptedException
+	default void populateFromStream(DataSourceDto dto, DhDataInputStream inputStream, IDhLevel level) throws IOException, InterruptedException
 	{
-		SummaryDataType summaryData = this.readSourceSummaryInfo(dataFile, inputStream, level);
+		SummaryDataType summaryData = this.readSourceSummaryInfo(dto, inputStream, level);
 		this.setSourceSummaryData(summaryData);
 		
 		
-		DataContainerType dataPoints = this.readDataPoints(dataFile, summaryData.dataWidth, inputStream);
+		DataContainerType dataPoints = this.readDataPoints(dto, summaryData.dataWidth, inputStream);
 		if (dataPoints == null)
 		{
 			return;
@@ -130,19 +130,19 @@ public interface IStreamableFullDataSource<SummaryDataType extends IStreamableFu
 	 */
 	void writeSourceSummaryInfo(IDhLevel level, DhDataOutputStream outputStream) throws IOException;
 	/**
-	 * Confirms that the given {@link FullDataMetaFile} is valid for this {@link IStreamableFullDataSource}. <br>
+	 * Confirms that the given {@link DataSourceDto} is valid for this {@link IStreamableFullDataSource}. <br>
 	 * This specifically checks any fields that should be set when the {@link IStreamableFullDataSource} was first constructed.
 	 *
-	 * @throws IOException if the {@link FullDataMetaFile} isn't valid for this object.
+	 * @throws IOException if the {@link DataSourceDto} isn't valid for this object.
 	 */
-	SummaryDataType readSourceSummaryInfo(FullDataMetaFile dataFile, DhDataInputStream inputStream, IDhLevel level) throws IOException;
+	SummaryDataType readSourceSummaryInfo(DataSourceDto dto, DhDataInputStream inputStream, IDhLevel level) throws IOException;
 	void setSourceSummaryData(SummaryDataType summaryData);
 	
 	
 	/** @return true if any data points were present and written, false if this object was empty */
 	boolean writeDataPoints(DhDataOutputStream outputStream) throws IOException;
 	/** @return null if no data points were present */
-	DataContainerType readDataPoints(FullDataMetaFile dataFile, int width, DhDataInputStream inputStream) throws IOException;
+	DataContainerType readDataPoints(DataSourceDto dto, int width, DhDataInputStream inputStream) throws IOException;
 	void setDataPoints(DataContainerType dataPoints);
 	
 	

@@ -17,24 +17,26 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.seibel.distanthorizons.core.file.metaData;
+package com.seibel.distanthorizons.core.sql;
 
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IFullDataSource;
-import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSource;
+import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataInputStream;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * Contains and represents the meta information ({@link DhSectionPos}, {@link BaseMetaData#dataDetailLevel}, etc.)
- * stored at the beginning of files that use the {@link AbstractMetaDataContainerFile}. <Br>
- * Which, as of the time of writing, includes: {@link IFullDataSource} and {@link ColumnRenderSource} files.
- */
-public class BaseMetaData
+/** handles storing both {@link IFullDataSource}'s and {@link ColumnRenderSource}'s in the database. */
+public class DataSourceDto implements IBaseDTO
 {
 	public DhSectionPos pos;
 	public int checksum;
+	/** @deprecated the database now has a last modified date time that should be used instead */
+	@Deprecated
 	public AtomicLong dataVersion = new AtomicLong(Long.MAX_VALUE);
 	public byte dataDetailLevel;
 	public EDhApiWorldGenerationStep worldGenStep;
@@ -44,18 +46,32 @@ public class BaseMetaData
 	public String dataType;
 	public byte binaryDataFormatVersion;
 	
+	public final byte[] dataArray;
 	
 	
-	public BaseMetaData(DhSectionPos pos, int checksum, byte dataDetailLevel, EDhApiWorldGenerationStep worldGenStep, String dataType, byte binaryDataFormatVersion, long dataVersion)
+	public DataSourceDto(DhSectionPos pos, int checksum, byte dataDetailLevel, EDhApiWorldGenerationStep worldGenStep, String dataType, byte binaryDataFormatVersion, byte[] dataArray)
 	{
 		this.pos = pos;
 		this.checksum = checksum;
-		this.dataVersion = new AtomicLong(dataVersion);
 		this.dataDetailLevel = dataDetailLevel;
 		this.worldGenStep = worldGenStep;
 		
 		this.dataType = dataType;
 		this.binaryDataFormatVersion = binaryDataFormatVersion;
+		
+		this.dataArray = dataArray;
+	}
+	
+	
+	@Override
+	public String getPrimaryKeyString() { return this.pos.serialize(); }
+	
+	/** @return a stream for the data contained in this DTO. */
+	public DhDataInputStream getInputStream() throws IOException
+	{
+		InputStream inputStream = new ByteArrayInputStream(this.dataArray);
+		DhDataInputStream compressedStream = new DhDataInputStream(inputStream);
+		return compressedStream;
 	}
 	
 }
