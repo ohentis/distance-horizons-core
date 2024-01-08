@@ -19,6 +19,10 @@
 
 package com.seibel.distanthorizons.core.jar;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.Nullable;
+
 import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -34,12 +38,21 @@ import java.util.Objects;
  */
 public class JarUtils
 {
+	private static final Logger LOGGER = LogManager.getLogger();
+	
+	@Nullable
 	public static File jarFile = null;
 	
-	static {
-		try {
+	static 
+	{
+		try 
+		{
 			jarFile = new File(JarUtils.class.getProtectionDomain().getCodeSource().getLocation().toURI()); // Always safe
-		} catch (Exception e) { e.printStackTrace(); }
+		} 
+		catch (Exception e) 
+		{
+			LOGGER.warn("Unable to get jarFile, Error: "+e.getMessage(), e);
+		}
 	}
 	
 	

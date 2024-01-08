@@ -104,7 +104,9 @@ public class SelfUpdater
 		// Some init stuff
 		// We use sha1 to check the version as our versioning system is different to the one on modrinth
 		if (!ModrinthGetter.init())
+		{
 			return false;
+		}
 		if (!ModrinthGetter.mcVersions.contains(mcVersion))
 		{
 			LOGGER.warn("Minecraft version ["+ mcVersion +"] is not findable on Modrinth, only findable versions are ["+ ModrinthGetter.mcVersions.toString() +"]");
@@ -113,7 +115,14 @@ public class SelfUpdater
 		
 		// Check the sha's of both our stuff
 		if (currentJarSha.equals(ModrinthGetter.getLatestShaForVersion(mcVersion)))
+		{
 			return false;
+		}
+		if (JarUtils.jarFile == null)
+		{
+			LOGGER.warn("Unable to get the DH jar file, self updating disabled.");
+			return false;
+		}
 		
 		
 		LOGGER.info("New version (" + ModrinthGetter.getLatestNameForVersion(mcVersion) + ") of " + ModInfo.READABLE_NAME + " is available");
@@ -297,6 +306,10 @@ public class SelfUpdater
 	public static void onClose()
 	{
 		if (!deleteOldJarOnJvmShutdown)
+		{
+			return;
+		}
+		if (JarUtils.jarFile == null)
 		{
 			return;
 		}
