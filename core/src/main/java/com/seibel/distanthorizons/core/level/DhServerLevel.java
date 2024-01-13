@@ -104,9 +104,7 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 			{
 				IncompleteDataSourceEntry entry = incompleteDataSources.computeIfAbsent(msg.dhSectionPos, pos -> {
 					IncompleteDataSourceEntry newEntry = new IncompleteDataSourceEntry();
-					serverside.dataFileHandler.getAsync(msg.dhSectionPos).thenAccept(fullDataSource -> {
-						newEntry.fullDataSource = fullDataSource;
-					});
+					this.trySetGeneratedDataSourceToEntry(newEntry, pos);
 					return newEntry;
 				});
 				// If this fails, current entry is being drained and need to create another one
@@ -169,16 +167,8 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 		{
 			IncompleteDataSourceEntry entry = mapEntry.getValue();
 			
-			if (entry.fullDataSource == null)
+			if (entry.fullDataSource == null || entry.fullDataSource instanceof IIncompleteFullDataSource)
 				continue;
-			
-			if (entry.fullDataSource instanceof IIncompleteFullDataSource)
-			{
-				IIncompleteFullDataSource incompleteSource = (IIncompleteFullDataSource) entry.fullDataSource;
-				if (!incompleteSource.hasBeenPromoted())
-					continue;
-				entry.fullDataSource = incompleteSource.tryPromotingToCompleteDataSource();
-			}
 			
 			LodUtil.assertTrue(entry.fullDataSource instanceof CompleteFullDataSource, "Invalid full data source");
 			incompleteDataSources.remove(mapEntry.getKey());
@@ -310,10 +300,23 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 	@Override
 	public boolean hasSkyLight() { return this.serverLevelWrapper.hasSkyLight(); }
 	
+	private void trySetGeneratedDataSourceToEntry(IncompleteDataSourceEntry entry, DhSectionPos pos)
+	{
+		this.serverside.dataFileHandler.getAsync(pos).thenAccept(fullDataSource -> {
+			if (fullDataSource instanceof IIncompleteFullDataSource)
+				fullDataSource = ((IIncompleteFullDataSource) fullDataSource).tryPromotingToCompleteDataSource();
+			if (fullDataSource instanceof CompleteFullDataSource)
+				entry.fullDataSource = fullDataSource;
+		});
+	}
+	
 	@Override
 	public void onWorldGenTaskComplete(DhSectionPos pos)
 	{
-		//TODO: Send packet to client
+		IncompleteDataSourceEntry entry = this.incompleteDataSources.get(pos);
+		if (entry == null) return;
+		
+		this.trySetGeneratedDataSourceToEntry(entry, pos);
 	}
 	
 	private static class IncompleteDataSourceEntry
