@@ -163,7 +163,8 @@ public class LodRenderer
 	
 	// frameBuffer and texture ID's for this renderer
 	private DhFramebuffer framebuffer;
-	private DhColorTexture colorTexture;
+	/** will be null if MC's framebuffer is being used since MC already has a color texture */
+	private DhColorTexture nullableColorTexture;
 	private DHDepthTexture depthTexture;
 	/** 
 	 * If true the {@link LodRenderer#framebuffer} is the same as MC's.
@@ -293,12 +294,15 @@ public class LodRenderer
 				
 				// just resizing the textures doesn't work when Optifine is present,
 				// so recreate the textures with the new size instead
-				this.createColorAndDepthTextures();
+				this.createColorAndDepthTextures(this.cachedWidth, this.cachedHeight);
 			}
 			
 			this.setActiveFramebufferId(this.framebuffer.getId());
 			this.setActiveDepthTextureId(this.depthTexture.getTextureId());
-			this.setActiveColorTextureId(this.colorTexture.getTextureId());
+			if (this.nullableColorTexture != null)
+			{
+				this.setActiveColorTextureId(this.nullableColorTexture.getTextureId());
+			}
 			// Bind LOD frame buffer
 			this.framebuffer.bind();
 			
@@ -553,9 +557,9 @@ public class LodRenderer
 			}
 			
 			// create and bind the necessary textures
-			this.createColorAndDepthTextures();
 			this.cachedWidth = MC_RENDER.getTargetFrameBufferViewportWidth();
 			this.cachedHeight = MC_RENDER.getTargetFrameBufferViewportHeight();
+			this.createColorAndDepthTextures(this.cachedWidth, this.cachedHeight);
 			
 			if(this.framebuffer.getStatus() != GL32.GL_FRAMEBUFFER_COMPLETE)
 			{
@@ -572,19 +576,28 @@ public class LodRenderer
 		}
 	}
 	/** also binds the new textures to the {@link LodRenderer#framebuffer} */
-	private void createColorAndDepthTextures()
+	private void createColorAndDepthTextures(int width, int height)
 	{
 		// don't use the cached width/height just in case they haven't been set yet
 		
-		this.colorTexture = DhColorTexture.builder().setDimensions(MC_RENDER.getTargetFrameBufferViewportWidth(), MC_RENDER.getTargetFrameBufferViewportHeight())
-				.setInternalFormat(EDhInternalTextureFormat.RGBA8)
-				.setPixelType(EDhPixelType.UNSIGNED_BYTE)
-				.setPixelFormat(EDhPixelFormat.RGBA)
-				.build();
-		this.depthTexture = new DHDepthTexture(MC_RENDER.getTargetFrameBufferViewportWidth(), MC_RENDER.getTargetFrameBufferViewportHeight(), EDhDepthBufferFormat.DEPTH32F);
-		
+		this.depthTexture = new DHDepthTexture(width, height, EDhDepthBufferFormat.DEPTH32F);
 		this.framebuffer.addDepthAttachment(this.depthTexture.getTextureId(), EDhDepthBufferFormat.DEPTH32F);
-		this.framebuffer.addColorAttachment(0, this.colorTexture.getTextureId());
+		
+		// if we are using MC's frame buffer, a color texture is already present and shouldn't need to be bound
+		if (!this.usingMcFrameBuffer)
+		{
+			this.nullableColorTexture = DhColorTexture.builder().setDimensions(width, height)
+					.setInternalFormat(EDhInternalTextureFormat.RGBA8)
+					.setPixelType(EDhPixelType.UNSIGNED_BYTE)
+					.setPixelFormat(EDhPixelFormat.RGBA)
+					.build();
+			
+			this.framebuffer.addColorAttachment(0, this.nullableColorTexture.getTextureId());
+		}
+		else
+		{
+			this.nullableColorTexture = null;
+		}
 	}
 	
 	
@@ -664,8 +677,8 @@ public class LodRenderer
 				// Delete framebuffer, color texture, and depth texture
 				if (this.framebuffer != null && !this.usingMcFrameBuffer)
 					this.framebuffer.destroyInternal();
-				if (this.colorTexture != null)
-					this.colorTexture.destroy();
+				if (this.nullableColorTexture != null)
+					this.nullableColorTexture.destroy();
 				if (this.depthTexture != null)
 					this.depthTexture.destroy();
 				
