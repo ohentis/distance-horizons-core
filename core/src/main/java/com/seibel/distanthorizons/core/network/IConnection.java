@@ -3,6 +3,7 @@ package com.seibel.distanthorizons.core.network;
 import com.seibel.distanthorizons.core.network.messages.base.CloseReasonMessage;
 import com.seibel.distanthorizons.core.network.protocol.FutureTrackableNetworkMessage;
 import com.seibel.distanthorizons.core.network.protocol.NetworkMessage;
+import io.netty.channel.ChannelException;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 
@@ -23,7 +24,14 @@ public interface IConnection
 	{
 		CompletableFuture<Void> future = new CompletableFuture<>();
 		
-		this.getChannelContext().writeAndFlush(message).addListener(writeFuture ->
+		ChannelHandlerContext ctx = this.getChannelContext();
+		if (ctx == null)
+		{
+			future.completeExceptionally(new ChannelException("Channel is closed."));
+			return future;
+		}
+		
+		ctx.writeAndFlush(message).addListener(writeFuture ->
 		{
 			if (writeFuture.cause() != null)
 			{
