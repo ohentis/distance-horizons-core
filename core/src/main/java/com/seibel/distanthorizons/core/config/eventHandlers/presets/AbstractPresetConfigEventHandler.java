@@ -24,6 +24,7 @@ import com.seibel.distanthorizons.core.config.ConfigBase;
 import com.seibel.distanthorizons.core.config.ConfigEntryWithPresetOptions;
 import com.seibel.distanthorizons.core.config.listeners.IConfigListener;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
+import com.seibel.distanthorizons.core.util.TimerUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.config.IConfigGui;
 import com.seibel.distanthorizons.coreapi.interfaces.config.IConfigEntry;
 import com.seibel.distanthorizons.coreapi.util.StringUtil;
@@ -117,7 +118,7 @@ public abstract class AbstractPresetConfigEventHandler<TPresetEnum extends Enum<
 		{
 			public void run() { AbstractPresetConfigEventHandler.this.applyPreset(); }
 		};
-		this.applyPresetTimer = new Timer("ApplyPresetTimer");
+		this.applyPresetTimer = TimerUtil.CreateTimer("ApplyConfigPresetTimer");
 		this.applyPresetTimer.schedule(task, MS_DELAY_BEFORE_APPLYING_PRESET);
 		
 	}

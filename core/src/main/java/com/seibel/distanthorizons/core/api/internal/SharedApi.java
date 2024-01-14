@@ -29,6 +29,8 @@ import com.seibel.distanthorizons.core.logging.f3.F3Screen;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.util.LodUtil;
+import com.seibel.distanthorizons.core.util.ThreadUtil;
+import com.seibel.distanthorizons.core.util.TimerUtil;
 import com.seibel.distanthorizons.core.util.objects.Pair;
 import com.seibel.distanthorizons.core.util.threading.ThreadPools;
 import com.seibel.distanthorizons.core.world.*;
@@ -58,7 +60,7 @@ public class SharedApi
 	private static final int MAX_UPDATING_CHUNK_COUNT_PER_THREAD = 500;
 	private static final int MIN_MS_BETWEEN_OVERLOADED_LOG_MESSAGE = 5_000;
 	
-	private static final Timer CHUNK_UPDATE_TIMER = new Timer();
+	private static final Timer CHUNK_UPDATE_TIMER = TimerUtil.CreateTimer("ChunkUpdateTimer");
 	
 	
 	private static AbstractDhWorld currentWorld;

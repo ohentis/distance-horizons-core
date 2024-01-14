@@ -7,6 +7,7 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.sql.*;
 import com.seibel.distanthorizons.core.util.LodUtil;
+import com.seibel.distanthorizons.core.util.TimerUtil;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataOutputStream;
 import com.seibel.distanthorizons.core.util.threading.ThreadPools;
 import org.apache.logging.log4j.Logger;
@@ -32,7 +33,7 @@ import java.util.zip.CheckedOutputStream;
 public abstract class AbstractDataSourceHandler<TDataSource extends IDataSource<TDhLevel>, TDhLevel extends IDhLevel> implements ISourceProvider<TDataSource, TDhLevel>
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
-	private static final Timer DELAYED_SAVE_TIMER = new Timer();
+	private static final Timer DELAYED_SAVE_TIMER = TimerUtil.CreateTimer("DataSourceSaveTimer");
 	/** How long a data source must remain un-modified before being written to disk. */
 	private static final int SAVE_DELAY_IN_MS = 4_000;
 	
