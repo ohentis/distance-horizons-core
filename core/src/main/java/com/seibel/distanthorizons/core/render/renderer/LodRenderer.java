@@ -303,6 +303,12 @@ public class LodRenderer
 			{
 				this.setActiveColorTextureId(this.nullableColorTexture.getTextureId());
 			}
+			else
+			{
+				// get MC's color texture
+				int mcColorTextureId = GL32.glGetFramebufferAttachmentParameteri(GL32.GL_FRAMEBUFFER, GL32.GL_COLOR_ATTACHMENT0, GL32.GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME);
+				this.setActiveColorTextureId(mcColorTextureId);
+			}
 			// Bind LOD frame buffer
 			this.framebuffer.bind();
 			
