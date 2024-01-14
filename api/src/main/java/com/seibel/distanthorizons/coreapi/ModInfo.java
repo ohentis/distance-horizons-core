@@ -49,6 +49,6 @@ public final class ModInfo
 	public static final String MULTIVERSE_PLUGIN_NAMESPACE = "world_control";
 	
 	/** All DH owned threads should start with this string to allow for easier debugging and profiling. */
-	public static String THREAD_NAME_PREFIX = "DH-";
+	public static final String THREAD_NAME_PREFIX = "DH-";
 	
 }

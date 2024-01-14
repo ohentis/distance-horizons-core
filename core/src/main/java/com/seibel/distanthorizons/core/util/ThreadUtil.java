@@ -34,12 +34,13 @@ import java.util.concurrent.*;
  * Handles thread pool creation.
  * 
  * @see ThreadPools
+ * @see TimerUtil
  */
 public class ThreadUtil
 {
 	private static final Logger LOGGER = LogManager.getLogger();
 	
-	public static String THREAD_NAME_PREFIX = ModInfo.THREAD_NAME_PREFIX;
+	public static final String THREAD_NAME_PREFIX = ModInfo.THREAD_NAME_PREFIX;
 	
 	public static int MINIMUM_RELATIVE_PRIORITY = -4;
 	public static int DEFAULT_RELATIVE_PRIORITY = 0;
@@ -51,7 +52,9 @@ public class ThreadUtil
 	
 	
 	
-	// rate limited thread pool //
+	//===================//
+	// rate limited pool //
+	//===================//
 	
 	public static RateLimitedThreadPoolExecutor makeRateLimitedThreadPool(int poolSize, DhThreadFactory threadFactory, ConfigEntry<Double> runTimeRatioConfigEntry, Semaphore activeThreadCountSemaphore)
 	{
@@ -90,7 +93,10 @@ public class ThreadUtil
 	}
 	
 	
-	// thread pool executor // 
+	
+	//===============//
+	// standard pool // 
+	//===============//
 	
 	public static ThreadPoolExecutor makeThreadPool(int poolSize, String name, int relativePriority)
 	{
@@ -108,7 +114,10 @@ public class ThreadUtil
 	public static ThreadPoolExecutor makeThreadPool(int poolSize, Class<?> clazz) { return makeThreadPool(poolSize, clazz.getSimpleName(), DEFAULT_RELATIVE_PRIORITY); }
 	
 	
-	// single thread pool executor //
+	
+	//====================//
+	// single thread pool //
+	//====================//
 	
 	public static ThreadPoolExecutor makeSingleThreadPool(String name, int relativePriority) { return makeThreadPool(1, name, relativePriority); }
 	public static ThreadPoolExecutor makeSingleThreadPool(Class<?> clazz, int relativePriority) { return makeThreadPool(1, clazz.getSimpleName(), relativePriority); }
