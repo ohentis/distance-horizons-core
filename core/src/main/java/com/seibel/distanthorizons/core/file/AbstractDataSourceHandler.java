@@ -195,19 +195,22 @@ public abstract class AbstractDataSourceHandler<TDataSource extends IDataSource<
 		}
 		
 		
-		executor.execute(() ->
+		try
 		{
-			DhSectionPos chunkSectionPos = chunkDataView.getSectionPos();
-			LodUtil.assertTrue(chunkSectionPos.overlapsExactly(pos), "Update failed, chunk [" + chunkSectionPos + "] does not overlap section [" + pos + "].");
-			
-			// update this pos
-			this.updateDataSourceAtPos(pos, chunkDataView);
-			
-			// recursively update the parent pos
-			DhSectionPos parentPos = pos.getParentPos();
-			this.recursivelyUpdateDataSourcesAsync(parentPos, chunkDataView);
-			
-		});
+			executor.execute(() ->
+			{
+				DhSectionPos chunkSectionPos = chunkDataView.getSectionPos();
+				LodUtil.assertTrue(chunkSectionPos.overlapsExactly(pos), "Update failed, chunk [" + chunkSectionPos + "] does not overlap section [" + pos + "].");
+				
+				// update this pos
+				this.updateDataSourceAtPos(pos, chunkDataView);
+				
+				// recursively update the parent pos
+				DhSectionPos parentPos = pos.getParentPos();
+				this.recursivelyUpdateDataSourcesAsync(parentPos, chunkDataView);
+			});
+		}
+		catch (RejectedExecutionException ignore) { /* can happen if the executor was shutdown while this task was queued */ }
 	}
 	protected void updateDataSourceAtPos(DhSectionPos pos, ChunkSizedFullDataAccessor chunkData)
 	{
