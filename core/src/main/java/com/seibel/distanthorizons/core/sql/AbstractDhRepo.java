@@ -139,8 +139,9 @@ public abstract class AbstractDhRepo<TDTO extends IBaseDTO>
 		{
 			this.query(statement);
 		}
-		catch (DbConnectionClosedException ignored)
+		catch (DbConnectionClosedException ignored) 
 		{
+			LOGGER.warn("Attempted to insert ["+this.dtoClass.getSimpleName()+"] with primary key ["+(dto != null ? dto.getPrimaryKeyString() : "NULL")+"] on closed repo ["+this.connectionString+"].");
 		}
 		catch (SQLException e)
 		{
@@ -155,8 +156,9 @@ public abstract class AbstractDhRepo<TDTO extends IBaseDTO>
 		{
 			this.query(statement);
 		}
-		catch (DbConnectionClosedException ignored)
+		catch (DbConnectionClosedException e)
 		{
+			LOGGER.warn("Attempted to update ["+this.dtoClass.getSimpleName()+"] with primary key ["+(dto != null ? dto.getPrimaryKeyString() : "NULL")+"] on closed repo ["+this.connectionString+"].");
 		}
 		catch (SQLException e)
 		{
@@ -236,12 +238,16 @@ public abstract class AbstractDhRepo<TDTO extends IBaseDTO>
 			// SQL exceptions generally only happen when something is wrong with 
 			// the database or the query and should cause the system to blow up to notify the developer
 			
-			if (e.toString().equals("database connection closed"))
+			if (DbConnectionClosedException.IsClosedException(e))
+			{
 				throw new DbConnectionClosedException(e);
-			
-			String message = "Unexpected Query error: ["+e.getMessage()+"], for prepared statement: ["+statement+"].";
-			LOGGER.error(message);
-			throw new RuntimeException(message, e);
+			}
+			else
+			{
+				String message = "Unexpected Query error: [" + e.getMessage() + "], for prepared statement: [" + statement + "].";
+				LOGGER.error(message);
+				throw new RuntimeException(message, e);
+			}
 		}
 	}
 	/** note: this can only handle 1 command at a time */
@@ -263,12 +269,16 @@ public abstract class AbstractDhRepo<TDTO extends IBaseDTO>
 			// SQL exceptions generally only happen when something is wrong with 
 			// the database or the query and should cause the system to blow up to notify the developer
 			
-			if (e.toString().equals("database connection closed"))
+			if (DbConnectionClosedException.IsClosedException(e))
+			{
 				throw new DbConnectionClosedException(e);
-			
-			String message = "Unexpected Query error: ["+e.getMessage()+"], for script: ["+sql+"].";
-			LOGGER.error(message);
-			throw new RuntimeException(message, e);
+			}
+			else
+			{
+				String message = "Unexpected Query error: [" + e.getMessage() + "], for script: [" + sql + "].";
+				LOGGER.error(message);
+				throw new RuntimeException(message, e);
+			}
 		}
 	}
 	private List<Map<String, Object>> parseQueryResult(ResultSet resultSet, boolean resultSetPresent) throws SQLException
@@ -291,7 +301,7 @@ public abstract class AbstractDhRepo<TDTO extends IBaseDTO>
 	}
 	
 	
-	public PreparedStatement createPreparedStatement(String sql)
+	public PreparedStatement createPreparedStatement(String sql) throws DbConnectionClosedException
 	{
 		try
 		{
@@ -301,9 +311,19 @@ public abstract class AbstractDhRepo<TDTO extends IBaseDTO>
 		}
 		catch(SQLException e)
 		{
-			// SQL exceptions generally only happen when something is wrong with 
-			// the database or the query and should cause the system to blow up to notify the developer
-			throw new RuntimeException(e);
+			if (DbConnectionClosedException.IsClosedException(e))
+			{
+				throw new DbConnectionClosedException(e);
+			}
+			else
+			{
+				// SQL exceptions generally only happen when something is wrong with 
+				// the database or the query and should cause the system to blow up to notify the developer
+				
+				String message = "Unexpected error: [" + e.getMessage() + "], preparing statement: [" + sql + "].";
+				LOGGER.error(message);
+				throw new RuntimeException(message, e);
+			}
 		}
 	}
 	
@@ -339,7 +359,7 @@ public abstract class AbstractDhRepo<TDTO extends IBaseDTO>
 			{
 				if(this.connection != null)
 				{
-					LOGGER.debug("Closing database connection ["+this.connectionString+"]");
+					LOGGER.info("Closing database connection ["+this.connectionString+"]");
 					CONNECTIONS_BY_CONNECTION_STRING.remove(this.connectionString);
 					this.connection.close();
 				}
