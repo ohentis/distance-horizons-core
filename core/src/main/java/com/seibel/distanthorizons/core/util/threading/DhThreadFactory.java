@@ -45,6 +45,11 @@ public class DhThreadFactory implements ThreadFactory
 	private final LinkedList<WeakReference<Thread>> threads = new LinkedList<>();
 	
 	
+	
+	//=============//
+	// constructor //
+	//=============//
+	
 	public DhThreadFactory(String newThreadName, int priority)
 	{
 		if (priority < Thread.MIN_PRIORITY || priority > Thread.MAX_PRIORITY)
@@ -64,6 +69,12 @@ public class DhThreadFactory implements ThreadFactory
 		this.threads.add(new WeakReference<>(thread));
 		return thread;
 	}
+	
+	
+	
+	//===========//
+	// debugging //
+	//===========//
 	
 	private static String StackTraceToString(StackTraceElement[] stackTraceArray)
 	{

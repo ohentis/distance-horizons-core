@@ -42,9 +42,6 @@ public class ThreadUtil
 	
 	public static final String THREAD_NAME_PREFIX = ModInfo.THREAD_NAME_PREFIX;
 	
-	public static int MINIMUM_RELATIVE_PRIORITY = -4;
-	public static int DEFAULT_RELATIVE_PRIORITY = 0;
-	
 	/** used to track and remove old listeners for certain pools if the thread pool is recreated. */
 	private static final ConcurrentHashMap<String, ConfigChangeListener<Double>> THREAD_CHANGE_LISTENERS_BY_THREAD_NAME = new ConcurrentHashMap<>();
 	
@@ -98,7 +95,7 @@ public class ThreadUtil
 	// standard pool // 
 	//===============//
 	
-	public static ThreadPoolExecutor makeThreadPool(int poolSize, String name, int relativePriority)
+	public static ThreadPoolExecutor makeThreadPool(int poolSize, String name, int priority)
 	{
 		// this is what was being internally used by Executors.newFixedThreadPool
 		// I'm just calling it explicitly here so we can reference the more feature-rich
@@ -106,12 +103,12 @@ public class ThreadUtil
 		return new ThreadPoolExecutor(/*corePoolSize*/ poolSize, /*maxPoolSize*/ poolSize,
 				0L, TimeUnit.MILLISECONDS,
 				new LinkedBlockingQueue<Runnable>(),
-				new DhThreadFactory(name, Thread.NORM_PRIORITY + relativePriority));
+				new DhThreadFactory(name, priority));
 	}
 	
-	public static ThreadPoolExecutor makeThreadPool(int poolSize, Class<?> clazz, int relativePriority) { return makeThreadPool(poolSize, clazz.getSimpleName(), relativePriority); }
-	public static ThreadPoolExecutor makeThreadPool(int poolSize, String name) { return makeThreadPool(poolSize, name, DEFAULT_RELATIVE_PRIORITY); }
-	public static ThreadPoolExecutor makeThreadPool(int poolSize, Class<?> clazz) { return makeThreadPool(poolSize, clazz.getSimpleName(), DEFAULT_RELATIVE_PRIORITY); }
+	public static ThreadPoolExecutor makeThreadPool(int poolSize, Class<?> clazz, int priority) { return makeThreadPool(poolSize, clazz.getSimpleName(), priority); }
+	public static ThreadPoolExecutor makeThreadPool(int poolSize, String name) { return makeThreadPool(poolSize, name, Thread.NORM_PRIORITY); }
+	public static ThreadPoolExecutor makeThreadPool(int poolSize, Class<?> clazz) { return makeThreadPool(poolSize, clazz.getSimpleName(), Thread.NORM_PRIORITY); }
 	
 	
 	
@@ -119,10 +116,10 @@ public class ThreadUtil
 	// single thread pool //
 	//====================//
 	
-	public static ThreadPoolExecutor makeSingleThreadPool(String name, int relativePriority) { return makeThreadPool(1, name, relativePriority); }
-	public static ThreadPoolExecutor makeSingleThreadPool(Class<?> clazz, int relativePriority) { return makeThreadPool(1, clazz.getSimpleName(), relativePriority); }
-	public static ThreadPoolExecutor makeSingleThreadPool(String name) { return makeThreadPool(1, name, DEFAULT_RELATIVE_PRIORITY); }
-	public static ThreadPoolExecutor makeSingleThreadPool(Class<?> clazz) { return makeThreadPool(1, clazz.getSimpleName(), DEFAULT_RELATIVE_PRIORITY); }
+	public static ThreadPoolExecutor makeSingleThreadPool(String name, int priority) { return makeThreadPool(1, name, priority); }
+	public static ThreadPoolExecutor makeSingleThreadPool(Class<?> clazz, int priority) { return makeThreadPool(1, clazz.getSimpleName(), priority); }
+	public static ThreadPoolExecutor makeSingleThreadPool(String name) { return makeThreadPool(1, name, Thread.NORM_PRIORITY); }
+	public static ThreadPoolExecutor makeSingleThreadPool(Class<?> clazz) { return makeThreadPool(1, clazz.getSimpleName(), Thread.NORM_PRIORITY); }
 	
 	
 }
