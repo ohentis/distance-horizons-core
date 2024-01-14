@@ -16,7 +16,6 @@ import org.jetbrains.annotations.Nullable;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ClosedChannelException;
 import java.util.Enumeration;
 import java.util.Timer;
@@ -46,8 +45,11 @@ public abstract class AbstractDataSourceHandler<TDataSource extends IDataSource<
 	
 	protected final ConcurrentHashMap<DhSectionPos, TDataSource> unsavedDataSourceBySectionPos = new ConcurrentHashMap<>();
 	protected final ConcurrentHashMap<DhSectionPos, TimerTask> saveTimerTasksBySectionPos = new ConcurrentHashMap<>();
+	
 	protected final ReentrantLock[] updateLockArray;
 	protected final ReentrantLock[] queueSaveLockArray;
+	protected final ReentrantLock closeLock = new ReentrantLock();
+	protected volatile boolean isShutdown = false;
 	
 	protected final TDhLevel level;
 	protected final File saveDir;
@@ -262,6 +264,15 @@ public abstract class AbstractDataSourceHandler<TDataSource extends IDataSource<
 		DhSectionPos pos = dataSource.getSectionPos();
 		ReentrantLock saveQueueLock = this.getSaveQueueLockForPos(pos);
 		
+		
+		// done to prevent queueing saves while the current queue is being cleared
+		if (this.isShutdown)
+		{
+			LOGGER.warn("Attempted to queue save for section ["+pos+"] while the handler is being shut down. Some data for that position may be lost.");
+			return;
+		}
+		
+		
 		try
 		{
 			saveQueueLock.lock();
@@ -282,16 +293,12 @@ public abstract class AbstractDataSourceHandler<TDataSource extends IDataSource<
 						// if the data source is null that just means it has already been saved so nothing needs to be done 
 						if (finalDataSource != null)
 						{
-							AbstractDataSourceHandler.this.writeDataSourceToFile(finalDataSource); // FIXME can crash game if repo is shutdown
+							AbstractDataSourceHandler.this.writeDataSourceToFile(finalDataSource);
 						}
 					}
-					catch (ClosedByInterruptException e) // thrown by buffers that are interrupted
+					catch (Exception e)
 					{
-						// expected if the file handler is shut down, the exception can be ignored
-					}
-					catch (IOException e)
-					{
-						LOGGER.error("Failed to save updated data for section " + pos, e);
+						LOGGER.error("Failed to save updated data for section ["+pos+"], error: ["+e.getMessage()+"]", e);
 					}
 				}
 			};
@@ -375,21 +382,38 @@ public abstract class AbstractDataSourceHandler<TDataSource extends IDataSource<
 	@Override
 	public void close()
 	{
-		LOGGER.info("Closing ["+this.getClass().getSimpleName()+"] for level: ["+this.level+"], saving ["+this.saveTimerTasksBySectionPos.size()+"] positions.");
-		
-		Enumeration<DhSectionPos> list = this.saveTimerTasksBySectionPos.keys();
-		while (list.hasMoreElements())
+		try
 		{
-			DhSectionPos pos = list.nextElement();
-			TimerTask saveTask = this.saveTimerTasksBySectionPos.remove(pos);
-			if (saveTask != null)
+			this.closeLock.lock();
+			this.isShutdown = true;
+			
+			// wait a moment so any queued saves can finish queuing, 
+			// otherwise we might not see everything that needs saving and attempt to use a closed repo
+			Thread.sleep(200);
+			
+			LOGGER.info("Closing [" + this.getClass().getSimpleName() + "] for level: [" + this.level + "], saving [" + this.saveTimerTasksBySectionPos.size() + "] positions.");
+			
+			
+			Enumeration<DhSectionPos> list = this.saveTimerTasksBySectionPos.keys();
+			while (list.hasMoreElements())
 			{
-				saveTask.run();
+				DhSectionPos pos = list.nextElement();
+				TimerTask saveTask = this.saveTimerTasksBySectionPos.remove(pos);
+				if (saveTask != null)
+				{
+					saveTask.run();
+					// canceling the task doesn't need to be done since the it has internal logic to prevent running more than once
+				}
 			}
+			
+			LOGGER.info("[" + this.getClass().getSimpleName() + "] saving complete, closing repo.");
+			this.repo.close();
 		}
-		
-		LOGGER.info("["+this.getClass().getSimpleName()+"] saving complete, closing repo.");
-		this.repo.close();
+		catch (InterruptedException ignore) { }
+		finally
+		{
+			this.closeLock.unlock();
+		}
 	}
 	
 }
