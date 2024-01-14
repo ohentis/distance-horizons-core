@@ -26,6 +26,7 @@ import org.junit.Assert;
 
 import java.sql.*;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Handles interfacing with SQL databases.
@@ -37,8 +38,8 @@ public abstract class AbstractDhRepo<TDTO extends IBaseDTO>
 	public static final int TIMEOUT_SECONDS = 30;
 	
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
-	private static final HashMap<String, Connection> CONNECTIONS_BY_CONNECTION_STRING = new HashMap<>();
-	private static final HashMap<AbstractDhRepo<?>, String> ACTIVE_CONNECTION_STRINGS_BY_REPO = new HashMap<>();
+	private static final ConcurrentHashMap<String, Connection> CONNECTIONS_BY_CONNECTION_STRING = new ConcurrentHashMap<>();
+	private static final ConcurrentHashMap<AbstractDhRepo<?>, String> ACTIVE_CONNECTION_STRINGS_BY_REPO = new ConcurrentHashMap<>();
 	
 	private final String connectionString;
 	private final Connection connection;
@@ -76,12 +77,24 @@ public abstract class AbstractDhRepo<TDTO extends IBaseDTO>
 		// get or create the connection,
 		// reusing existing connections reduces the chance of locking the database during trivial queries
 		this.connectionString = this.databaseType+":"+this.databaseLocation;
-		if (!CONNECTIONS_BY_CONNECTION_STRING.containsKey(this.connectionString))
+		
+		
+		this.connection = CONNECTIONS_BY_CONNECTION_STRING.computeIfAbsent(this.connectionString, (connectionString) ->
+			{
+				try
+				{
+					return DriverManager.getConnection(connectionString);
+				}
+				catch (SQLException e)
+				{
+					LOGGER.error("Unable to connect to database with the connection string: ["+connectionString+"]");
+					return null;
+				}
+			});
+		if (this.connection == null)
 		{
-			Connection connection = DriverManager.getConnection(this.connectionString);
-			CONNECTIONS_BY_CONNECTION_STRING.put(this.connectionString, connection); 
+			throw new SQLException("Unable to get repo with connection string ["+this.connectionString+"]");
 		}
-		this.connection = CONNECTIONS_BY_CONNECTION_STRING.get(this.connectionString);
 		
 		ACTIVE_CONNECTION_STRINGS_BY_REPO.put(this, this.connectionString);
 		
@@ -326,6 +339,7 @@ public abstract class AbstractDhRepo<TDTO extends IBaseDTO>
 			{
 				if(this.connection != null)
 				{
+					LOGGER.debug("Closing database connection ["+this.connectionString+"]");
 					CONNECTIONS_BY_CONNECTION_STRING.remove(this.connectionString);
 					this.connection.close();
 				}
@@ -335,7 +349,7 @@ public abstract class AbstractDhRepo<TDTO extends IBaseDTO>
 		catch(SQLException e)
 		{
 			// connection close failed.
-			Assert.fail("Unable to close the connection: " + e.getMessage());
+			LOGGER.error("Unable to close the connection ["+this.connectionString+"], error: ["+e.getMessage()+"]");
 		}
 	}
 	
