@@ -285,6 +285,10 @@ public abstract class AbstractDataSourceHandler<TDataSource extends IDataSource<
 				@Override
 				public void run()
 				{
+					
+					// remove this task from the queue
+					AbstractDataSourceHandler.this.saveTimerTasksBySectionPos.remove(pos);
+					
 					try
 					{
 						final TDataSource finalDataSource = AbstractDataSourceHandler.this.unsavedDataSourceBySectionPos.remove(pos);
