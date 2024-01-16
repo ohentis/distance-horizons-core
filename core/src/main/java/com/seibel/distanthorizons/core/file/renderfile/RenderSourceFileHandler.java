@@ -81,6 +81,21 @@ public class RenderSourceFileHandler extends AbstractDataSourceHandler<ColumnRen
 	
 	
 	
+	//===========//
+	// overrides //
+	//===========//
+	
+	@Override
+	public ColumnRenderSource get(DhSectionPos pos)
+	{
+		// call the full data provider to make sure the full data is up to date
+		// and any necessary world generation has been queued/completed
+		this.fullDataSourceProvider.get(pos);
+		
+		return super.get(pos);
+	}
+	
+	
 	//====================//
 	// Abstract overrides //
 	//====================//
