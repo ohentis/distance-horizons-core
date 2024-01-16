@@ -28,6 +28,7 @@ import com.seibel.distanthorizons.api.enums.rendering.ETransparency;
 import com.seibel.distanthorizons.core.config.listeners.ConfigChangeListener;
 import com.seibel.distanthorizons.core.config.listeners.IConfigListener;
 import com.seibel.distanthorizons.core.config.Config;
+import com.seibel.distanthorizons.core.util.TimerUtil;
 
 import java.util.Timer;
 import java.util.TimerTask;
@@ -103,7 +104,7 @@ public class RenderCacheConfigEventHandler
 				DhApi.Delayed.renderProxy.clearRenderDataCache();
 			}
 		};
-		this.cacheClearingTimer = new Timer("RenderCacheConfig-Timeout-Timer");
+		this.cacheClearingTimer = TimerUtil.CreateTimer("RenderCacheClearConfigTimer");
 		this.cacheClearingTimer.schedule(timerTask, TIMEOUT_IN_MS);
 	}
 	

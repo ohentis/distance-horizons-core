@@ -303,6 +303,12 @@ public class LodRenderer
 			{
 				this.setActiveColorTextureId(this.nullableColorTexture.getTextureId());
 			}
+			else
+			{
+				// get MC's color texture
+				int mcColorTextureId = GL32.glGetFramebufferAttachmentParameteri(GL32.GL_FRAMEBUFFER, GL32.GL_COLOR_ATTACHMENT0, GL32.GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME);
+				this.setActiveColorTextureId(mcColorTextureId);
+			}
 			// Bind LOD frame buffer
 			this.framebuffer.bind();
 			
@@ -440,6 +446,12 @@ public class LodRenderer
 				FogShader.INSTANCE.render(partialTicks);
 			}
 			
+			if (Config.Client.Advanced.Debugging.DebugWireframe.enableRendering.get())
+			{
+				profiler.popPush("Debug wireframes");
+				// Note: this can be very slow if a lot of boxes are being rendered 
+				DebugRenderer.INSTANCE.render(modelViewProjectionMatrix);
+			}
 			
 			if (this.usingMcFrameBuffer)
 			{
@@ -482,13 +494,6 @@ public class LodRenderer
 			
 			this.shaderProgram.unbind();
 			
-			if (Config.Client.Advanced.Debugging.DebugWireframe.enableRendering.get())
-			{
-				profiler.popPush("Debug wireframes");
-				// Note: this can be very slow if a lot of boxes are being rendered 
-				DebugRenderer.INSTANCE.render(modelViewProjectionMatrix);
-				profiler.popPush("LOD cleanup");
-			}
 			
 			minecraftGlState.restore();
 			drawCleanup.end("LodDrawCleanup");

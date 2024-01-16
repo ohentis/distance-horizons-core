@@ -190,19 +190,13 @@ public class DebugRenderer
 	{
 		this.transformThiFrame = transform;
 		Vec3d camPos = MC_RENDER.getCameraExactPosition();
-		camPosFloatThisFrame = new Vec3f((float) camPos.x, (float) camPos.y, (float) camPos.z);
+		this.camPosFloatThisFrame = new Vec3f((float) camPos.x, (float) camPos.y, (float) camPos.z);
 		
 		GLState glState = new GLState();
 		this.init();
 		
-		GL32.glBindFramebuffer(GL32.GL_FRAMEBUFFER, MC_RENDER.getTargetFrameBuffer());
-		GL32.glViewport(0, 0, MC_RENDER.getTargetFrameBufferViewportWidth(), MC_RENDER.getTargetFrameBufferViewportHeight());
 		GL32.glPolygonMode(GL32.GL_FRONT_AND_BACK, GL32.GL_LINE);
-		//GL32.glLineWidth(2);
 		GL32.glEnable(GL32.GL_DEPTH_TEST);
-		GL32.glDisable(GL32.GL_STENCIL_TEST);
-		GL32.glDisable(GL32.GL_BLEND);
-		GL32.glDisable(GL32.GL_SCISSOR_TEST);
 		
 		this.basicShader.bind();
 		this.va.bind();

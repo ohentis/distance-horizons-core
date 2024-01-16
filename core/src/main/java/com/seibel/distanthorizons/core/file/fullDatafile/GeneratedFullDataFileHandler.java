@@ -74,8 +74,9 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandler
 		IFullDataSource dataSource = super.get(pos);
 		
 		// add world gen tasks for missing columns in the data source
+		// if this position hasn't already been queued for generation
 		IWorldGenerationQueue worldGenQueue = this.worldGenQueueRef.get();
-		if (worldGenQueue != null)
+		if (worldGenQueue != null && !this.generatingDataSourceByPos.containsKey(pos))
 		{
 			this.queueWorldGenForMissingColumnsInDataSource(worldGenQueue, pos, dataSource);
 		}

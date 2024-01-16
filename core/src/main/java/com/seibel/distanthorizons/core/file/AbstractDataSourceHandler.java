@@ -7,6 +7,7 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.sql.*;
 import com.seibel.distanthorizons.core.util.LodUtil;
+import com.seibel.distanthorizons.core.util.TimerUtil;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataOutputStream;
 import com.seibel.distanthorizons.core.util.threading.ThreadPools;
 import org.apache.logging.log4j.Logger;
@@ -15,13 +16,13 @@ import org.jetbrains.annotations.Nullable;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ClosedChannelException;
 import java.util.Enumeration;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
@@ -31,7 +32,7 @@ import java.util.zip.CheckedOutputStream;
 public abstract class AbstractDataSourceHandler<TDataSource extends IDataSource<TDhLevel>, TDhLevel extends IDhLevel> implements ISourceProvider<TDataSource, TDhLevel>
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
-	private static final Timer DELAYED_SAVE_TIMER = new Timer("DH-DelayedSaveTimer", true);
+	private static final Timer DELAYED_SAVE_TIMER = TimerUtil.CreateTimer("DataSourceSaveTimer");
 	/** How long a data source must remain un-modified before being written to disk. */
 	private static final int SAVE_DELAY_IN_MS = 4_000;
 	
@@ -44,7 +45,11 @@ public abstract class AbstractDataSourceHandler<TDataSource extends IDataSource<
 	
 	protected final ConcurrentHashMap<DhSectionPos, TDataSource> unsavedDataSourceBySectionPos = new ConcurrentHashMap<>();
 	protected final ConcurrentHashMap<DhSectionPos, TimerTask> saveTimerTasksBySectionPos = new ConcurrentHashMap<>();
+	
 	protected final ReentrantLock[] updateLockArray;
+	protected final ReentrantLock[] queueSaveLockArray;
+	protected final ReentrantLock closeLock = new ReentrantLock();
+	protected volatile boolean isShutdown = false;
 	
 	protected final TDhLevel level;
 	protected final File saveDir;
@@ -67,12 +72,15 @@ public abstract class AbstractDataSourceHandler<TDataSource extends IDataSource<
 			LOGGER.warn("Unable to create full data folder, file saving may fail.");
 		}
 		
-		// the lock array's length is double the number of CPU cores so the number of collisions
+		// the lock arrays' length is double the number of CPU cores so the number of collisions
 		// should be relatively low without having too many extra locks
-		this.updateLockArray = new ReentrantLock[Runtime.getRuntime().availableProcessors() * 2];
-		for (int i = 0; i < this.updateLockArray.length; i++)
+		int lockCount = Runtime.getRuntime().availableProcessors() * 2;
+		this.updateLockArray = new ReentrantLock[lockCount];
+		this.queueSaveLockArray = new ReentrantLock[lockCount];
+		for (int i = 0; i < lockCount; i++)
 		{
 			this.updateLockArray[i] = new ReentrantLock();
+			this.queueSaveLockArray[i] = new ReentrantLock();
 		}
 		
 		this.repo = repo;
@@ -195,19 +203,23 @@ public abstract class AbstractDataSourceHandler<TDataSource extends IDataSource<
 		}
 		
 		
-		executor.execute(() ->
+		try
 		{
-			DhSectionPos chunkSectionPos = chunkDataView.getSectionPos();
-			LodUtil.assertTrue(chunkSectionPos.overlapsExactly(pos), "Update failed, chunk [" + chunkSectionPos + "] does not overlap section [" + pos + "].");
-			
-			// update this pos
-			this.updateDataSourceAtPos(pos, chunkDataView);
-			
-			// recursively update the parent pos
-			DhSectionPos parentPos = pos.getParentPos();
+			executor.execute(() ->
+			{
+				DhSectionPos chunkSectionPos = chunkDataView.getSectionPos();
+				LodUtil.assertTrue(chunkSectionPos.overlapsExactly(pos), "Update failed, chunk [" + chunkSectionPos + "] does not overlap section [" + pos + "].");
+				
+				// update this pos
+				this.updateDataSourceAtPos(pos, chunkDataView);
+				
+				// recursively update the parent pos
+				DhSectionPos parentPos = pos.getParentPos();
+				this.recursivelyUpdateDataSourcesAsync(parentPos, chunkDataView);
 			this.recursivelyUpdateDataSourcesAsync(parentPos, chunkDataView);
-			
-		});
+			});
+		}
+		catch (RejectedExecutionException ignore) { /* can happen if the executor was shutdown while this task was queued */ }
 	}
 	protected void updateDataSourceAtPos(DhSectionPos pos, ChunkSizedFullDataAccessor chunkData)
 	{
@@ -248,45 +260,72 @@ public abstract class AbstractDataSourceHandler<TDataSource extends IDataSource<
 	 */
 	protected void queueDelayedSave(TDataSource dataSource)
 	{
+		// a lock is necessary to prevent two threads from queuing a save at the same time,
+		// which can cause the timer to queue canceled tasks
 		DhSectionPos pos = dataSource.getSectionPos();
+		ReentrantLock saveQueueLock = this.getSaveQueueLockForPos(pos);
 		
-		// put the data source in memory until it can be flushed to disk
-		this.unsavedDataSourceBySectionPos.put(pos, dataSource);
 		
-		TimerTask task = new TimerTask()
+		// done to prevent queueing saves while the current queue is being cleared
+		if (this.isShutdown)
 		{
-			@Override
-			public void run()
+			LOGGER.warn("Attempted to queue save for section ["+pos+"] while the handler is being shut down. Some data for that position may be lost.");
+			return;
+		}
+		
+		
+		try
+		{
+			saveQueueLock.lock();
+			
+			// put the data source in memory until it can be flushed to disk
+			this.unsavedDataSourceBySectionPos.put(pos, dataSource);
+			
+			TimerTask task = new TimerTask()
 			{
-				try
+				@Override
+				public void run()
 				{
-					final TDataSource finalDataSource = AbstractDataSourceHandler.this.unsavedDataSourceBySectionPos.remove(pos);
-					
-					// this can rarely happen due to imperfect concurrency handling,
-					// if the data source is null that just means it has already been saved so nothing needs to be done 
-					if (finalDataSource != null)
+					try
 					{
-						AbstractDataSourceHandler.this.writeDataSourceToFile(finalDataSource);
+						final TDataSource finalDataSource = AbstractDataSourceHandler.this.unsavedDataSourceBySectionPos.remove(pos);
+						
+						// this can rarely happen due to imperfect concurrency handling,
+						// if the data source is null that just means it has already been saved so nothing needs to be done 
+						if (finalDataSource != null)
+						{
+							AbstractDataSourceHandler.this.writeDataSourceToFile(finalDataSource);
+						}
+					}
+					catch (Exception e)
+					{
+						LOGGER.error("Failed to save updated data for section ["+pos+"], error: ["+e.getMessage()+"]", e);
 					}
 				}
-				catch (ClosedByInterruptException e) // thrown by buffers that are interrupted
-				{
-					// expected if the file handler is shut down, the exception can be ignored
-				}
-				catch (IOException e)
-				{
-					LOGGER.error("Failed to save updated data for section " + pos, e);
-				}
+			};
+			try
+			{
+				DELAYED_SAVE_TIMER.schedule(task, SAVE_DELAY_IN_MS);
 			}
-		};
-		DELAYED_SAVE_TIMER.schedule(task, SAVE_DELAY_IN_MS);
-		
-		// cancel the old save timer if present
-		// (this is equivalent to restarting the timer)
-		TimerTask oldTask = this.saveTimerTasksBySectionPos.put(pos, task);
-		if (oldTask != null)
+			catch (IllegalStateException ignore)
+			{
+				// James isn't sure why this is possible since this logic is inside a lock, 
+				// maybe the timer is just async enough that there can be problems?
+				LOGGER.warn("Attempted to queue an already canceled task. Pos: ["+pos+"], task already queued for pos: ["+this.saveTimerTasksBySectionPos.containsKey(pos)+"]");
+			}
+			
+			
+			// cancel the old save timer if present
+			// (this is equivalent to restarting the timer)
+			TimerTask oldTask = this.saveTimerTasksBySectionPos.put(pos, task);
+			if (oldTask != null)
+			{
+				oldTask.cancel();
+			}
+		}
+		finally
 		{
-			oldTask.cancel();
+			saveQueueLock.unlock();
 		}
 	}
 	protected void writeDataSourceToFile(TDataSource dataSource) throws IOException
@@ -333,6 +372,7 @@ public abstract class AbstractDataSourceHandler<TDataSource extends IDataSource<
 	
 	/** Based on the stack overflow post: https://stackoverflow.com/a/45909920 */
 	protected ReentrantLock getUpdateLockForPos(DhSectionPos pos) { return this.updateLockArray[Math.abs(pos.hashCode()) % this.updateLockArray.length]; }
+	protected ReentrantLock getSaveQueueLockForPos(DhSectionPos pos) { return this.queueSaveLockArray[Math.abs(pos.hashCode()) % this.queueSaveLockArray.length]; }
 	
 	
 	
@@ -343,22 +383,38 @@ public abstract class AbstractDataSourceHandler<TDataSource extends IDataSource<
 	@Override
 	public void close()
 	{
-		LOGGER.info("Closing ["+this.getClass().getSimpleName()+"] for level: ["+this.level+"], saving ["+this.saveTimerTasksBySectionPos.size()+"] positions.");
-		
-		Enumeration<DhSectionPos> list = this.saveTimerTasksBySectionPos.keys();
-		while (list.hasMoreElements())
+		try
 		{
-			DhSectionPos pos = list.nextElement();
-			TimerTask saveTask = this.saveTimerTasksBySectionPos.remove(pos);
-			if (saveTask != null)
+			this.closeLock.lock();
+			this.isShutdown = true;
+			
+			// wait a moment so any queued saves can finish queuing, 
+			// otherwise we might not see everything that needs saving and attempt to use a closed repo
+			Thread.sleep(200);
+			
+			LOGGER.info("Closing [" + this.getClass().getSimpleName() + "] for level: [" + this.level + "], saving [" + this.saveTimerTasksBySectionPos.size() + "] positions.");
+			
+			
+			Enumeration<DhSectionPos> list = this.saveTimerTasksBySectionPos.keys();
+			while (list.hasMoreElements())
 			{
-				saveTask.run();
-				saveTask.cancel();
+				DhSectionPos pos = list.nextElement();
+				TimerTask saveTask = this.saveTimerTasksBySectionPos.remove(pos);
+				if (saveTask != null)
+				{
+					saveTask.run();
+					// canceling the task doesn't need to be done since the it has internal logic to prevent running more than once
+				}
 			}
+			
+			LOGGER.info("[" + this.getClass().getSimpleName() + "] saving complete, closing repo.");
+			this.repo.close();
 		}
-		
-		LOGGER.info("["+this.getClass().getSimpleName()+"] saving complete, closing repo.");
-		this.repo.close();
+		catch (InterruptedException ignore) { }
+		finally
+		{
+			this.closeLock.unlock();
+		}
 	}
 	
 }

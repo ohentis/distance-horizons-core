@@ -26,6 +26,7 @@ import org.junit.Assert;
 
 import java.sql.*;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Handles interfacing with SQL databases.
@@ -37,8 +38,8 @@ public abstract class AbstractDhRepo<TDTO extends IBaseDTO>
 	public static final int TIMEOUT_SECONDS = 30;
 	
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
-	private static final HashMap<String, Connection> CONNECTIONS_BY_CONNECTION_STRING = new HashMap<>();
-	private static final HashMap<AbstractDhRepo<?>, String> ACTIVE_CONNECTION_STRINGS_BY_REPO = new HashMap<>();
+	private static final ConcurrentHashMap<String, Connection> CONNECTIONS_BY_CONNECTION_STRING = new ConcurrentHashMap<>();
+	private static final ConcurrentHashMap<AbstractDhRepo<?>, String> ACTIVE_CONNECTION_STRINGS_BY_REPO = new ConcurrentHashMap<>();
 	
 	private final String connectionString;
 	private final Connection connection;
@@ -76,12 +77,24 @@ public abstract class AbstractDhRepo<TDTO extends IBaseDTO>
 		// get or create the connection,
 		// reusing existing connections reduces the chance of locking the database during trivial queries
 		this.connectionString = this.databaseType+":"+this.databaseLocation;
-		if (!CONNECTIONS_BY_CONNECTION_STRING.containsKey(this.connectionString))
+		
+		
+		this.connection = CONNECTIONS_BY_CONNECTION_STRING.computeIfAbsent(this.connectionString, (connectionString) ->
+			{
+				try
+				{
+					return DriverManager.getConnection(connectionString);
+				}
+				catch (SQLException e)
+				{
+					LOGGER.error("Unable to connect to database with the connection string: ["+connectionString+"]");
+					return null;
+				}
+			});
+		if (this.connection == null)
 		{
-			Connection connection = DriverManager.getConnection(this.connectionString);
-			CONNECTIONS_BY_CONNECTION_STRING.put(this.connectionString, connection); 
+			throw new SQLException("Unable to get repo with connection string ["+this.connectionString+"]");
 		}
-		this.connection = CONNECTIONS_BY_CONNECTION_STRING.get(this.connectionString);
 		
 		ACTIVE_CONNECTION_STRINGS_BY_REPO.put(this, this.connectionString);
 		
@@ -126,8 +139,9 @@ public abstract class AbstractDhRepo<TDTO extends IBaseDTO>
 		{
 			this.query(statement);
 		}
-		catch (DbConnectionClosedException ignored)
+		catch (DbConnectionClosedException ignored) 
 		{
+			LOGGER.warn("Attempted to insert ["+this.dtoClass.getSimpleName()+"] with primary key ["+(dto != null ? dto.getPrimaryKeyString() : "NULL")+"] on closed repo ["+this.connectionString+"].");
 		}
 		catch (SQLException e)
 		{
@@ -142,8 +156,9 @@ public abstract class AbstractDhRepo<TDTO extends IBaseDTO>
 		{
 			this.query(statement);
 		}
-		catch (DbConnectionClosedException ignored)
+		catch (DbConnectionClosedException e)
 		{
+			LOGGER.warn("Attempted to update ["+this.dtoClass.getSimpleName()+"] with primary key ["+(dto != null ? dto.getPrimaryKeyString() : "NULL")+"] on closed repo ["+this.connectionString+"].");
 		}
 		catch (SQLException e)
 		{
@@ -223,12 +238,16 @@ public abstract class AbstractDhRepo<TDTO extends IBaseDTO>
 			// SQL exceptions generally only happen when something is wrong with 
 			// the database or the query and should cause the system to blow up to notify the developer
 			
-			if (e.toString().equals("database connection closed"))
+			if (DbConnectionClosedException.IsClosedException(e))
+			{
 				throw new DbConnectionClosedException(e);
-			
-			String message = "Unexpected Query error: ["+e.getMessage()+"], for prepared statement: ["+statement+"].";
-			LOGGER.error(message);
-			throw new RuntimeException(message, e);
+			}
+			else
+			{
+				String message = "Unexpected Query error: [" + e.getMessage() + "], for prepared statement: [" + statement + "].";
+				LOGGER.error(message);
+				throw new RuntimeException(message, e);
+			}
 		}
 	}
 	/** note: this can only handle 1 command at a time */
@@ -250,12 +269,16 @@ public abstract class AbstractDhRepo<TDTO extends IBaseDTO>
 			// SQL exceptions generally only happen when something is wrong with 
 			// the database or the query and should cause the system to blow up to notify the developer
 			
-			if (e.toString().equals("database connection closed"))
+			if (DbConnectionClosedException.IsClosedException(e))
+			{
 				throw new DbConnectionClosedException(e);
-			
-			String message = "Unexpected Query error: ["+e.getMessage()+"], for script: ["+sql+"].";
-			LOGGER.error(message);
-			throw new RuntimeException(message, e);
+			}
+			else
+			{
+				String message = "Unexpected Query error: [" + e.getMessage() + "], for script: [" + sql + "].";
+				LOGGER.error(message);
+				throw new RuntimeException(message, e);
+			}
 		}
 	}
 	private List<Map<String, Object>> parseQueryResult(ResultSet resultSet, boolean resultSetPresent) throws SQLException
@@ -278,7 +301,7 @@ public abstract class AbstractDhRepo<TDTO extends IBaseDTO>
 	}
 	
 	
-	public PreparedStatement createPreparedStatement(String sql)
+	public PreparedStatement createPreparedStatement(String sql) throws DbConnectionClosedException
 	{
 		try
 		{
@@ -288,9 +311,19 @@ public abstract class AbstractDhRepo<TDTO extends IBaseDTO>
 		}
 		catch(SQLException e)
 		{
-			// SQL exceptions generally only happen when something is wrong with 
-			// the database or the query and should cause the system to blow up to notify the developer
-			throw new RuntimeException(e);
+			if (DbConnectionClosedException.IsClosedException(e))
+			{
+				throw new DbConnectionClosedException(e);
+			}
+			else
+			{
+				// SQL exceptions generally only happen when something is wrong with 
+				// the database or the query and should cause the system to blow up to notify the developer
+				
+				String message = "Unexpected error: [" + e.getMessage() + "], preparing statement: [" + sql + "].";
+				LOGGER.error(message);
+				throw new RuntimeException(message, e);
+			}
 		}
 	}
 	
@@ -326,6 +359,7 @@ public abstract class AbstractDhRepo<TDTO extends IBaseDTO>
 			{
 				if(this.connection != null)
 				{
+					LOGGER.info("Closing database connection ["+this.connectionString+"]");
 					CONNECTIONS_BY_CONNECTION_STRING.remove(this.connectionString);
 					this.connection.close();
 				}
@@ -335,7 +369,7 @@ public abstract class AbstractDhRepo<TDTO extends IBaseDTO>
 		catch(SQLException e)
 		{
 			// connection close failed.
-			Assert.fail("Unable to close the connection: " + e.getMessage());
+			LOGGER.error("Unable to close the connection ["+this.connectionString+"], error: ["+e.getMessage()+"]");
 		}
 	}
 	
