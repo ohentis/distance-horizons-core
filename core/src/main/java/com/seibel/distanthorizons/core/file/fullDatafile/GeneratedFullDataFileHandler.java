@@ -257,8 +257,7 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandler
 			{
 				if (chunkSizedFullDataSource.getSectionPos().overlapsExactly(this.loadedTargetFullDataSource.getSectionPos()))
 				{
-					((DhLevel) level).updateDataSourcesWithChunkData(chunkSizedFullDataSource);
-					//GeneratedFullDataFileHandler.this.write(this.loadedTargetFullDataSource.getSectionPos(), chunkSizedFullDataSource);
+					((DhLevel) GeneratedFullDataFileHandler.this.level).updateDataSourcesWithChunkData(chunkSizedFullDataSource);
 				}
 			};
 		}
@@ -267,10 +266,7 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandler
 		
 	}
 	
-	/**
-	 * used by external event listeners <br>
-	 * TODO may or may not be best to have this in a separate file
-	 */
+	/** used by external event listeners */
 	@FunctionalInterface
 	public interface IOnWorldGenCompleteListener
 	{

@@ -41,6 +41,7 @@ import com.seibel.distanthorizons.coreapi.util.math.Mat4f;
 import org.apache.logging.log4j.Logger;
 
 import java.io.Closeable;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class ClientLevelModule implements Closeable
@@ -181,12 +182,14 @@ public class ClientLevelModule implements Closeable
 		ClientRenderState ClientRenderState = this.ClientRenderStateRef.get();
 		if (ClientRenderState != null)
 		{
-			ClientRenderState.renderSourceFileHandler.updateDataSourcesWithChunkData(data);
-			ClientRenderState.quadtree.reloadPos(data.sectionPos);
+			ClientRenderState.renderSourceFileHandler
+					.updateDataSourcesWithChunkDataAsync(data)
+					// wait for the update to finish before triggering a reload to prevent holes in the world
+					.thenRun(() -> ClientRenderState.quadtree.reloadPos(data.sectionPos));
 		}
 		else
 		{
-			this.parentClientLevel.getFileHandler().updateDataSourcesWithChunkData(data);
+			this.parentClientLevel.getFileHandler().updateDataSourcesWithChunkDataAsync(data);
 		}
 	}
 	

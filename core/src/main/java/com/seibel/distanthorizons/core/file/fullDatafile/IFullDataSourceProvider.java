@@ -39,7 +39,7 @@ public interface IFullDataSourceProvider extends ISourceProvider<IFullDataSource
 	CompletableFuture<IFullDataSource> getAsync(DhSectionPos pos);
 	IFullDataSource get(DhSectionPos pos);
 	
-	void updateDataSourcesWithChunkData(ChunkSizedFullDataAccessor chunkData);
+	CompletableFuture<Void> updateDataSourcesWithChunkDataAsync(ChunkSizedFullDataAccessor chunkData);
 	
 	int getUnsavedDataSourceCount();
 	

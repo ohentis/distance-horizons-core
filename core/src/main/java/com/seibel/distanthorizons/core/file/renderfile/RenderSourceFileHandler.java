@@ -147,10 +147,13 @@ public class RenderSourceFileHandler extends AbstractDataSourceHandler<ColumnRen
 		return lines.toArray(new String[0]);
 	}
 	
-	public void updateDataSourcesWithChunkData(ChunkSizedFullDataAccessor chunkDataView)
+	@Override
+	public CompletableFuture<Void> updateDataSourcesWithChunkDataAsync(ChunkSizedFullDataAccessor chunkDataView)
 	{
-		super.updateDataSourcesWithChunkData(chunkDataView);
-		this.fullDataSourceProvider.updateDataSourcesWithChunkData(chunkDataView);
+		return CompletableFuture.allOf(
+			super.updateDataSourcesWithChunkDataAsync(chunkDataView),
+			this.fullDataSourceProvider.updateDataSourcesWithChunkDataAsync(chunkDataView)		
+		);
 	}
 	
 	

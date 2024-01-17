@@ -182,20 +182,31 @@ public abstract class AbstractDataSourceHandler<TDataSource extends IDataSource<
 	//===============//
 	
 	@Override
-	public void updateDataSourcesWithChunkData(ChunkSizedFullDataAccessor chunkDataView)
+	public CompletableFuture<Void> updateDataSourcesWithChunkDataAsync(ChunkSizedFullDataAccessor chunkDataView)
 	{
-		DhSectionPos chunkSectionPos = chunkDataView.getSectionPos().convertNewToDetailLevel(DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
-		this.recursivelyUpdateDataSourcesAsync(chunkSectionPos, chunkDataView);
-	}
-	/** Updates every data source from this position up to {@link AbstractDataSourceHandler#topSectionDetailLevelRef} */
-	protected void recursivelyUpdateDataSourcesAsync(DhSectionPos pos, ChunkSizedFullDataAccessor chunkDataView)
-	{
+		DhSectionPos pos = chunkDataView.getSectionPos().convertNewToDetailLevel(DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
+		
 		ThreadPoolExecutor executor = ThreadPools.getFileHandlerExecutor();
 		if (executor == null || executor.isTerminated())
 		{
-			return;
+			return CompletableFuture.completedFuture(null);
 		}
 		
+		
+		try
+		{
+			// run file handling on a separate thread
+			return CompletableFuture.runAsync(() -> this.updateDataSourcesRecursively(pos, chunkDataView), executor);
+		}
+		catch (RejectedExecutionException ignore)
+		{
+			// can happen if the executor was shutdown while this task was queued
+			return CompletableFuture.completedFuture(null);
+		}
+	}
+	/** Updates every data source from this position up to {@link AbstractDataSourceHandler#topSectionDetailLevelRef} */
+	private void updateDataSourcesRecursively(DhSectionPos pos, ChunkSizedFullDataAccessor chunkDataView)
+	{
 		// update up until we reach the highest available data source
 		if (pos.getDetailLevel() > this.topSectionDetailLevelRef.get())
 		{
@@ -203,22 +214,15 @@ public abstract class AbstractDataSourceHandler<TDataSource extends IDataSource<
 		}
 		
 		
-		try
-		{
-			executor.execute(() ->
-			{
-				DhSectionPos chunkSectionPos = chunkDataView.getSectionPos();
-				LodUtil.assertTrue(chunkSectionPos.overlapsExactly(pos), "Update failed, chunk [" + chunkSectionPos + "] does not overlap section [" + pos + "].");
-				
-				// update this pos
-				this.updateDataSourceAtPos(pos, chunkDataView);
-				
-				// recursively update the parent pos
-				DhSectionPos parentPos = pos.getParentPos();
-				this.recursivelyUpdateDataSourcesAsync(parentPos, chunkDataView);
-			});
-		}
-		catch (RejectedExecutionException ignore) { /* can happen if the executor was shutdown while this task was queued */ }
+		DhSectionPos chunkSectionPos = chunkDataView.getSectionPos();
+		LodUtil.assertTrue(chunkSectionPos.overlapsExactly(pos), "Update failed, chunk [" + chunkSectionPos + "] does not overlap section [" + pos + "].");
+		
+		// update this pos
+		this.updateDataSourceAtPos(pos, chunkDataView);
+		
+		// recursively update the parent pos
+		DhSectionPos parentPos = pos.getParentPos();
+		this.updateDataSourcesRecursively(parentPos, chunkDataView);
 	}
 	protected void updateDataSourceAtPos(DhSectionPos pos, ChunkSizedFullDataAccessor chunkData)
 	{

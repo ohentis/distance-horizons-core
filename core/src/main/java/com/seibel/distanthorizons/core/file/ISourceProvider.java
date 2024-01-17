@@ -10,6 +10,6 @@ public interface ISourceProvider<TDataSource extends IDataSource<TDhLevel>, TDhL
 {
 	CompletableFuture<TDataSource> getAsync(DhSectionPos pos);
 	
-	void updateDataSourcesWithChunkData(ChunkSizedFullDataAccessor chunkData);
+	CompletableFuture<Void> updateDataSourcesWithChunkDataAsync(ChunkSizedFullDataAccessor chunkData);
 	
 }

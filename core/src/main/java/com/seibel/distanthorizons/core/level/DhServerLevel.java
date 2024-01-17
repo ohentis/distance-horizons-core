@@ -54,7 +54,7 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 	{
 		DhSectionPos pos = data.getSectionPos();
 		pos = pos.convertNewToDetailLevel(CompleteFullDataSource.SECTION_SIZE_OFFSET);
-		this.getFileHandler().updateDataSourcesWithChunkData(data);
+		this.getFileHandler().updateDataSourcesWithChunkDataAsync(data);
 	}
 	
 	@Override
