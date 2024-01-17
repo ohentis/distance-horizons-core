@@ -25,13 +25,16 @@ import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSourceLoad
 import com.seibel.distanthorizons.core.dataObjects.transformers.FullDataToRenderDataTransformer;
 import com.seibel.distanthorizons.core.file.AbstractDataSourceHandler;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
+import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSource;
 import com.seibel.distanthorizons.core.file.fullDatafile.IFullDataSourceProvider;
 import com.seibel.distanthorizons.core.level.IDhClientLevel;
+import com.seibel.distanthorizons.core.sql.AbstractDataSourceRepo;
 import com.seibel.distanthorizons.core.sql.DataSourceDto;
+import com.seibel.distanthorizons.core.sql.FullDataRepo;
 import com.seibel.distanthorizons.core.sql.RenderDataRepo;
 import com.seibel.distanthorizons.core.util.threading.ThreadPools;
 import org.apache.logging.log4j.Logger;
@@ -58,25 +61,10 @@ public class RenderSourceFileHandler extends AbstractDataSourceHandler<ColumnRen
 	
 	public RenderSourceFileHandler(IFullDataSourceProvider sourceProvider, IDhClientLevel clientLevel, AbstractSaveStructure saveStructure)
 	{
-		super(clientLevel, saveStructure, createRepo(clientLevel, saveStructure));
+		super(clientLevel, saveStructure);
 		
 		this.fullDataSourceProvider = sourceProvider;
 		this.threadPoolMsg = new F3Screen.NestedMessage(this::f3Log);
-	}
-	private static RenderDataRepo createRepo(IDhClientLevel clientLevel, AbstractSaveStructure saveStructure)
-	{
-		File saveDir = saveStructure.getRenderCacheFolder(clientLevel.getLevelWrapper());
-		
-		try
-		{
-			return new RenderDataRepo("jdbc:sqlite", saveDir.getPath() + "/" + AbstractSaveStructure.DATABASE_NAME);
-		}
-		catch (SQLException e)
-		{
-			// should only happen if there is an issue with the database (it's locked or can't be created if missing) 
-			// or the database update failed
-			throw new RuntimeException(e);
-		}
 	}
 	
 	
@@ -99,6 +87,21 @@ public class RenderSourceFileHandler extends AbstractDataSourceHandler<ColumnRen
 	//====================//
 	// Abstract overrides //
 	//====================//
+	
+	@Override
+	protected AbstractDataSourceRepo createRepo()
+	{
+		try
+		{
+			return new RenderDataRepo("jdbc:sqlite", this.saveDir.getPath() + "/" + AbstractSaveStructure.DATABASE_NAME);
+		}
+		catch (SQLException e)
+		{
+			// should only happen if there is an issue with the database (it's locked or can't be created if missing) 
+			// or the database update failed
+			throw new RuntimeException(e);
+		}
+	}
 	
 	@Override 
 	protected ColumnRenderSource createDataSourceFromDto(DataSourceDto dto) throws InterruptedException, IOException

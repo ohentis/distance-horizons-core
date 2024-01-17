@@ -62,8 +62,8 @@ public abstract class AbstractDataSourceHandler<TDataSource extends IDataSource<
 	// constructor //
 	//=============//
 	
-	public AbstractDataSourceHandler(TDhLevel level, AbstractSaveStructure saveStructure, AbstractDataSourceRepo repo) { this(level, saveStructure, repo, null); }
-	public AbstractDataSourceHandler(TDhLevel level, AbstractSaveStructure saveStructure, AbstractDataSourceRepo repo, @Nullable File saveDirOverride)
+	public AbstractDataSourceHandler(TDhLevel level, AbstractSaveStructure saveStructure) { this(level, saveStructure, null); }
+	public AbstractDataSourceHandler(TDhLevel level, AbstractSaveStructure saveStructure, @Nullable File saveDirOverride)
 	{
 		this.level = level;
 		this.saveDir = (saveDirOverride == null) ? saveStructure.getFullDataFolder(level.getLevelWrapper()) : saveDirOverride;
@@ -83,7 +83,7 @@ public abstract class AbstractDataSourceHandler<TDataSource extends IDataSource<
 			this.queueSaveLockArray[i] = new ReentrantLock();
 		}
 		
-		this.repo = repo;
+		this.repo = this.createRepo();
 		
 		// determine the top detail level currently in the database
 		int maxSectionDetailLevel = this.repo.getMaxSectionDetailLevel();
@@ -96,6 +96,9 @@ public abstract class AbstractDataSourceHandler<TDataSource extends IDataSource<
 	//==================//
 	// abstract methods //
 	//==================//
+	
+	/** When this is called the parent folders should be created */
+	protected abstract AbstractDataSourceRepo createRepo();
 	
 	protected abstract TDataSource createDataSourceFromDto(DataSourceDto dto) throws InterruptedException, IOException;
 	/** 

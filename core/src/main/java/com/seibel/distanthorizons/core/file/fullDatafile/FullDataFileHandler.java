@@ -31,6 +31,7 @@ import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
+import com.seibel.distanthorizons.core.sql.AbstractDataSourceRepo;
 import com.seibel.distanthorizons.core.sql.FullDataRepo;
 import com.seibel.distanthorizons.core.sql.DataSourceDto;
 import org.apache.logging.log4j.Logger;
@@ -53,17 +54,20 @@ public class FullDataFileHandler extends AbstractDataSourceHandler<IFullDataSour
 	//=============//
 	
 	public FullDataFileHandler(IDhLevel level, AbstractSaveStructure saveStructure) { this(level, saveStructure, null); }
-	public FullDataFileHandler(IDhLevel level, AbstractSaveStructure saveStructure, @Nullable File saveDirOverride)
+	public FullDataFileHandler(IDhLevel level, AbstractSaveStructure saveStructure, @Nullable File saveDirOverride) { super(level, saveStructure, saveDirOverride); }
+	
+	
+	
+	//====================//
+	// Abstract overrides //
+	//====================//
+	
+	@Override
+	protected AbstractDataSourceRepo createRepo()
 	{
-		super(level, saveStructure, createRepo(level, saveStructure), saveDirOverride);
-	}
-	private static FullDataRepo createRepo(IDhLevel level, AbstractSaveStructure saveStructure)
-	{
-		File saveDir = saveStructure.getFullDataFolder(level.getLevelWrapper());
-		
 		try
 		{
-			return new FullDataRepo("jdbc:sqlite", saveDir.getPath() + "/" + AbstractSaveStructure.DATABASE_NAME);
+			return new FullDataRepo("jdbc:sqlite", this.saveDir.getPath() + "/" + AbstractSaveStructure.DATABASE_NAME);
 		}
 		catch (SQLException e)
 		{
@@ -72,12 +76,6 @@ public class FullDataFileHandler extends AbstractDataSourceHandler<IFullDataSour
 			throw new RuntimeException(e);
 		}
 	}
-	
-	
-	
-	//====================//
-	// Abstract overrides //
-	//====================//
 	
 	@Override
 	protected IFullDataSource createDataSourceFromDto(DataSourceDto dto) throws InterruptedException, IOException
