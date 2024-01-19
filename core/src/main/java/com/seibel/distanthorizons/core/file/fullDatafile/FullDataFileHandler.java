@@ -105,7 +105,7 @@ public class FullDataFileHandler extends AbstractDataSourceHandler<IFullDataSour
 		ArrayList<DhSectionPos> possibleChildList = new ArrayList<>();
 		pos.forEachChild((childPos) ->
 		{
-			if (childPos.getDetailLevel() > this.minDetailLevel)
+			if (childPos.getDetailLevel() >= this.minDetailLevel)
 			{
 				possibleChildList.add(childPos);
 			}
@@ -121,7 +121,7 @@ public class FullDataFileHandler extends AbstractDataSourceHandler<IFullDataSour
 			{
 				possiblePos.forEachChild((childPos) ->
 				{
-					if (childPos.getDetailLevel() > this.minDetailLevel)
+					if (childPos.getDetailLevel() >= this.minDetailLevel)
 					{
 						possibleChildList.add(childPos);
 					}
