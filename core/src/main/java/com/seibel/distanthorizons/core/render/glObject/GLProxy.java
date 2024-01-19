@@ -90,9 +90,9 @@ public class GLProxy
 	 * Two lists exist to prevent potential concurrency issues where we are reading and writing
 	 * at the same time.
 	 */
-	private final ArrayList<Runnable> addRenderThreadRunnableList = new ArrayList<>();
+	private ArrayList<Runnable> addRenderThreadRunnableList = new ArrayList<>();
 	/** the list that items should be read from */
-	private final ArrayList<Runnable> readRenderThreadRunnableList = new ArrayList<>();
+	private ArrayList<Runnable> readRenderThreadRunnableList = new ArrayList<>();
 	
 	/** Minecraft's GLFW window */
 	public final long minecraftGlContext;
