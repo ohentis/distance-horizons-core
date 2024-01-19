@@ -382,7 +382,7 @@ public class ColumnRenderBuffer extends AbstractRenderBuffer
 	{
 		this.buffersUploaded = false;
 		
-		GLProxy.getInstance().recordOpenGlCall(() ->
+		GLProxy.getInstance().queueRunningOnRenderThread(() ->
 		{
 			for (GLVertexBuffer buffer : this.vbos)
 			{

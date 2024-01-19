@@ -50,7 +50,6 @@ import java.util.Arrays;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
 
 /**
  * A singleton that holds references to different openGL contexts
@@ -65,14 +64,10 @@ import java.util.stream.Stream;
  *
  * https://gamedev.stackexchange.com/questions/91995/edit-vbo-data-or-create-a-new-one <br>
  * https://stackoverflow.com/questions/63509735/massive-performance-loss-with-glmapbuffer <br><br>
- *
- * @author James Seibel
  */
 public class GLProxy
 {
 	private static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
-	
-	private ExecutorService workerThread = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat(GLProxy.class.getSimpleName() + "-Worker-Thread").build());
 	
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger(MethodHandles.lookup().lookupClass().getSimpleName());
 	public static final ConfigBasedLogger GL_LOGGER = new ConfigBasedLogger(LogManager.getLogger(GLProxy.class),
@@ -87,6 +82,17 @@ public class GLProxy
 	
 	private static GLProxy instance = null;
 	
+	
+	private ExecutorService workerThread = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat(GLProxy.class.getSimpleName() + "-Worker-Thread").build());
+	
+	/** 
+	 * the list that items should be added to. <br>
+	 * Two lists exist to prevent potential concurrency issues where we are reading and writing
+	 * at the same time.
+	 */
+	private final ArrayList<Runnable> addRenderThreadRunnableList = new ArrayList<>();
+	/** the list that items should be read from */
+	private final ArrayList<Runnable> readRenderThreadRunnableList = new ArrayList<>();
 	
 	/** Minecraft's GLFW window */
 	public final long minecraftGlContext;
@@ -459,9 +465,9 @@ public class GLProxy
 	
 	
 	
-	//============================//
-	// MC render thread runnables //
-	//============================//
+	//=========================//
+	// Worker Thread Runnables //
+	//=========================//
 	
 	/**
 	 * Asynchronously calls the given runnable on proxy's OpenGL context.
@@ -472,14 +478,18 @@ public class GLProxy
 	public void recordOpenGlCall(Runnable renderCall)
 	{
 		StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-		this.workerThread.execute(() -> this.runnableContainer(renderCall, stackTrace));
+		this.workerThread.execute(() -> this.runOpenGlCall(renderCall, stackTrace, true));
 	}
-	private void runnableContainer(Runnable renderCall, StackTraceElement[] stackTrace)
+	private void runOpenGlCall(Runnable renderCall, StackTraceElement[] stackTrace, boolean useProxyWorkerContext)
 	{
 		try
 		{
-			// set up the context...
-			this.setGlContext(EGLProxyContext.PROXY_WORKER);
+			// set up the context if requested...
+			if (useProxyWorkerContext)
+			{
+				this.setGlContext(EGLProxyContext.PROXY_WORKER);
+			}
+			
 			// ...run the actual code...
 			renderCall.run();
 		}
@@ -492,7 +502,10 @@ public class GLProxy
 		finally
 		{
 			// ...and make sure the context is released when the thread finishes
-			this.setGlContext(EGLProxyContext.NONE);
+			if (useProxyWorkerContext)
+			{
+				this.setGlContext(EGLProxyContext.NONE);
+			}
 		}
 	}
 	
@@ -524,6 +537,35 @@ public class GLProxy
 			instance.workerThread = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat(GLProxy.class.getSimpleName() + "-Worker-Thread").build());
 		}
 		LOGGER.info("All GL jobs finished!");
+	}
+	
+	
+	
+	//=========================//
+	// Render Thread Runnables //
+	//=========================//
+	
+	public void queueRunningOnRenderThread(Runnable renderCall)
+	{
+		StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+		this.addRenderThreadRunnableList.add(() -> this.runOpenGlCall(renderCall, stackTrace, false));
+	}
+	
+	/** 
+	 * Doesn't do any thread/GL Context validation.
+	 * Running this outside of the render thread may cause crashes or other issues. 
+	 */
+	public void runRenderThreadTasks()
+	{
+		ArrayList<Runnable> tempList = this.addRenderThreadRunnableList;
+		this.addRenderThreadRunnableList = this.readRenderThreadRunnableList;
+		this.readRenderThreadRunnableList = tempList;
+		
+		for (Runnable runnable : this.readRenderThreadRunnableList)
+		{
+			runnable.run();
+		}
+		this.readRenderThreadRunnableList.clear();
 	}
 	
 	

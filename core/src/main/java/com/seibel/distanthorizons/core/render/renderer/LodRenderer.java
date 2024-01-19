@@ -486,6 +486,9 @@ public class LodRenderer
 			
 			profiler.popPush("LOD cleanup");
 			LagSpikeCatcher drawCleanup = new LagSpikeCatcher();
+			
+			GLProxy.getInstance().runRenderThreadTasks();
+			
 			lightmap.unbind();
 			if (ENABLE_IBO)
 			{
@@ -666,7 +669,7 @@ public class LodRenderer
 			this.setupLock.lock();
 			
 			EVENT_LOGGER.info("Queuing Renderer Cleanup for main render thread");
-			GLProxy.getInstance().recordOpenGlCall(() ->
+			GLProxy.getInstance().queueRunningOnRenderThread(() ->
 			{
 				EVENT_LOGGER.info("Renderer Cleanup Started");
 				
