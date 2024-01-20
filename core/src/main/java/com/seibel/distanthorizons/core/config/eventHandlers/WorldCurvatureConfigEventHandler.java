@@ -19,10 +19,6 @@
 
 package com.seibel.distanthorizons.core.config.eventHandlers;
 
-import com.seibel.distanthorizons.api.DhApi;
-import com.seibel.distanthorizons.api.enums.config.ELodShading;
-import com.seibel.distanthorizons.api.enums.config.EMaxHorizontalResolution;
-import com.seibel.distanthorizons.api.enums.config.EVerticalQuality;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.config.listeners.IConfigListener;
 
