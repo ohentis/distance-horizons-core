@@ -47,6 +47,7 @@ import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -85,14 +86,7 @@ public class GLProxy
 	
 	private ExecutorService workerThread = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat(GLProxy.class.getSimpleName() + "-Worker-Thread").build());
 	
-	/** 
-	 * the list that items should be added to. <br>
-	 * Two lists exist to prevent potential concurrency issues where we are reading and writing
-	 * at the same time.
-	 */
-	private ArrayList<Runnable> addRenderThreadRunnableList = new ArrayList<>();
-	/** the list that items should be read from */
-	private ArrayList<Runnable> readRenderThreadRunnableList = new ArrayList<>();
+	private ConcurrentLinkedQueue<Runnable> renderThreadRunnableQueue = new ConcurrentLinkedQueue<>();
 	
 	/** Minecraft's GLFW window */
 	public final long minecraftGlContext;
@@ -548,7 +542,7 @@ public class GLProxy
 	public void queueRunningOnRenderThread(Runnable renderCall)
 	{
 		StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-		this.addRenderThreadRunnableList.add(() -> this.runOpenGlCall(renderCall, stackTrace, false));
+		this.renderThreadRunnableQueue.add(() -> this.runOpenGlCall(renderCall, stackTrace, false));
 	}
 	
 	/** 
@@ -557,15 +551,12 @@ public class GLProxy
 	 */
 	public void runRenderThreadTasks()
 	{
-		ArrayList<Runnable> tempList = this.addRenderThreadRunnableList;
-		this.addRenderThreadRunnableList = this.readRenderThreadRunnableList;
-		this.readRenderThreadRunnableList = tempList;
-		
-		for (Runnable runnable : this.readRenderThreadRunnableList)
+		Runnable runnable = this.renderThreadRunnableQueue.poll();
+		while(runnable != null)
 		{
 			runnable.run();
+			runnable = this.renderThreadRunnableQueue.poll();
 		}
-		this.readRenderThreadRunnableList.clear();
 	}
 	
 	
