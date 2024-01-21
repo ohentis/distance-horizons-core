@@ -38,7 +38,7 @@ public interface IRenderSourceProvider extends ISourceProvider<ColumnRenderSourc
 {
 	CompletableFuture<ColumnRenderSource> getAsync(DhSectionPos pos);
 	
-	void updateDataSourcesWithChunkData(ChunkSizedFullDataAccessor chunkData);
+	CompletableFuture<Void> updateDataSourcesWithChunkDataAsync(ChunkSizedFullDataAccessor chunkData);
 	
 	/** Deletes any data stored in the render cache so it can be re-created */
 	void deleteRenderCache();

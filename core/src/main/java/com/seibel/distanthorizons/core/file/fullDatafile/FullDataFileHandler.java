@@ -31,6 +31,8 @@ import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
+import com.seibel.distanthorizons.core.sql.AbstractDataSourceRepo;
+import com.seibel.distanthorizons.core.sql.FullDataRepo;
 import com.seibel.distanthorizons.core.sql.DataSourceDto;
 import com.seibel.distanthorizons.core.sql.FullDataRepo;
 import org.apache.logging.log4j.Logger;
@@ -69,17 +71,20 @@ public class FullDataFileHandler extends AbstractDataSourceHandler<IFullDataSour
 	//=============//
 	
 	public FullDataFileHandler(IDhLevel level, AbstractSaveStructure saveStructure) { this(level, saveStructure, null); }
-	public FullDataFileHandler(IDhLevel level, AbstractSaveStructure saveStructure, @Nullable File saveDirOverride)
+	public FullDataFileHandler(IDhLevel level, AbstractSaveStructure saveStructure, @Nullable File saveDirOverride) { super(level, saveStructure, saveDirOverride); }
+	
+	
+	
+	//====================//
+	// Abstract overrides //
+	//====================//
+	
+	@Override
+	protected AbstractDataSourceRepo createRepo()
 	{
-		super(level, saveStructure, createRepo(level, saveStructure), saveDirOverride);
-	}
-	private static FullDataRepo createRepo(IDhLevel level, AbstractSaveStructure saveStructure)
-	{
-		File saveDir = saveStructure.getFullDataFolder(level.getLevelWrapper());
-		
 		try
 		{
-			return new FullDataRepo("jdbc:sqlite", saveDir.getPath() + "/" + AbstractSaveStructure.DATABASE_NAME);
+			return new FullDataRepo("jdbc:sqlite", this.saveDir.getPath() + "/" + AbstractSaveStructure.DATABASE_NAME);
 		}
 		catch (SQLException e)
 		{
@@ -88,12 +93,6 @@ public class FullDataFileHandler extends AbstractDataSourceHandler<IFullDataSour
 			throw new RuntimeException(e);
 		}
 	}
-	
-	
-	
-	//====================//
-	// Abstract overrides //
-	//====================//
 	
 	@Override
 	protected IFullDataSource createDataSourceFromDto(DataSourceDto dto) throws InterruptedException, IOException
@@ -107,7 +106,6 @@ public class FullDataFileHandler extends AbstractDataSourceHandler<IFullDataSour
 	protected IFullDataSource createNewDataSourceFromExistingDtos(DhSectionPos pos)
 	{
 		IIncompleteFullDataSource newFullDataSource = this.makeEmptyDataSource(pos);
-	
 		
 		
 		boolean showFullDataFileSampling = Config.Client.Advanced.Debugging.DebugWireframe.showFullDataFileStatus.get();
@@ -124,12 +122,12 @@ public class FullDataFileHandler extends AbstractDataSourceHandler<IFullDataSour
 		ArrayList<DhSectionPos> possibleChildList = new ArrayList<>();
 		pos.forEachChild((childPos) ->
 		{
-			if (childPos.getDetailLevel() > this.minDetailLevel)
+			if (childPos.getDetailLevel() >= this.minDetailLevel)
 			{
 				possibleChildList.add(childPos);
 			}
 		});
-		while (!possibleChildList.isEmpty())
+		while (possibleChildList.size() != 0)
 		{
 			DhSectionPos possiblePos = possibleChildList.remove(possibleChildList.size()-1);
 			if (this.repo.existsWithPrimaryKey(possiblePos.serialize()))
@@ -140,7 +138,7 @@ public class FullDataFileHandler extends AbstractDataSourceHandler<IFullDataSour
 			{
 				possiblePos.forEachChild((childPos) ->
 				{
-					if (childPos.getDetailLevel() > this.minDetailLevel)
+					if (childPos.getDetailLevel() >= this.minDetailLevel)
 					{
 						possibleChildList.add(childPos);
 					}
@@ -190,8 +188,6 @@ public class FullDataFileHandler extends AbstractDataSourceHandler<IFullDataSour
 				LowDetailIncompleteFullDataSource.createEmpty(pos);
 	}
 	
-					
-			
 	
 	
 	//===================//

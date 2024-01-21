@@ -122,9 +122,12 @@ public class GLBuffer implements AutoCloseable
 	}
 	private static void destroyBufferId(boolean async, int id)
 	{
-		if (async && GLProxy.getInstance().getGlContext() != EGLProxyContext.PROXY_WORKER)
+		EGLProxyContext glContext = GLProxy.getInstance().getGlContext();
+		if (async 
+			&& glContext != EGLProxyContext.PROXY_WORKER 
+			&& glContext != EGLProxyContext.MINECRAFT)
 		{
-			GLProxy.getInstance().recordOpenGlCall(() -> destroyBufferId(false, id));
+			GLProxy.getInstance().queueRunningOnRenderThread(() -> destroyBufferId(false, id));
 		}
 		else
 		{
@@ -200,7 +203,7 @@ public class GLBuffer implements AutoCloseable
 		LodUtil.assertTrue(this.bufferStorage, "Buffer is not bufferStorage but its trying to use bufferStorage upload method!");
 		
 		int bbSize = bb.limit() - bb.position();
-		this.destroy(false);
+		this.destroy(true);
 		this.create(true);
 		this.bind();
 		GL44.glBufferStorage(this.getBufferBindingTarget(), bb, bufferStorageHint);
@@ -313,7 +316,7 @@ public class GLBuffer implements AutoCloseable
 		{
 			// recreate if the buffer storage type changed
 			this.bind();
-			this.destroy(false);
+			this.destroy(true);
 			this.create(uploadMethod.useBufferStorage);
 			this.bind();
 		}

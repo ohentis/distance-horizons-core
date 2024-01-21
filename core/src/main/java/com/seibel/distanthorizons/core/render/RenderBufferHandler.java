@@ -19,10 +19,13 @@
 
 package com.seibel.distanthorizons.core.render;
 
+import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.logging.f3.F3Screen;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.pos.Pos2D;
+import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.objects.SortedArraySet;
 import com.seibel.distanthorizons.core.util.objects.quadTree.QuadNode;
 import com.seibel.distanthorizons.core.render.renderer.LodRenderer;
@@ -38,7 +41,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * This object tells the {@link LodRenderer} what buffers to render
  * TODO rename this class, maybe RenderBufferOrganizer or something more specific?
  */
-public class RenderBufferHandler
+public class RenderBufferHandler implements AutoCloseable
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
@@ -50,8 +53,20 @@ public class RenderBufferHandler
 	
 	private final AtomicBoolean rebuildAllBuffers = new AtomicBoolean(false);
 	
+	public F3Screen.DynamicMessage f3Message;
 	
-	public RenderBufferHandler(LodQuadTree lodQuadTree) { this.lodQuadTree = lodQuadTree; }
+	
+	
+	//=============//
+	// constructor //
+	//=============//
+	
+	public RenderBufferHandler(LodQuadTree lodQuadTree) 
+	{ 
+		this.lodQuadTree = lodQuadTree;
+		
+		this.f3Message = new F3Screen.DynamicMessage(() -> LodUtil.formatLog("Rendered Buffer Count: " + this.loadedNearToFarBuffers.size()));
+	}
 	
 	
 	
@@ -227,6 +242,12 @@ public class RenderBufferHandler
 	}
 	
 	
+	
+	//=========//
+	// cleanup //
+	//=========//
+	
+	@Override
 	public void close()
 	{
 		Iterator<QuadNode<LodRenderSection>> nodeIterator = this.lodQuadTree.nodeIterator();

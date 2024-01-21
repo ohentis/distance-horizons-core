@@ -25,13 +25,16 @@ import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSourceLoad
 import com.seibel.distanthorizons.core.dataObjects.transformers.FullDataToRenderDataTransformer;
 import com.seibel.distanthorizons.core.file.AbstractDataSourceHandler;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
+import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSource;
 import com.seibel.distanthorizons.core.file.fullDatafile.IFullDataSourceProvider;
 import com.seibel.distanthorizons.core.level.IDhClientLevel;
+import com.seibel.distanthorizons.core.sql.AbstractDataSourceRepo;
 import com.seibel.distanthorizons.core.sql.DataSourceDto;
+import com.seibel.distanthorizons.core.sql.FullDataRepo;
 import com.seibel.distanthorizons.core.sql.RenderDataRepo;
 import com.seibel.distanthorizons.core.util.threading.ThreadPools;
 import org.apache.logging.log4j.Logger;
@@ -58,18 +61,39 @@ public class RenderSourceFileHandler extends AbstractDataSourceHandler<ColumnRen
 	
 	public RenderSourceFileHandler(IFullDataSourceProvider sourceProvider, IDhClientLevel clientLevel, AbstractSaveStructure saveStructure)
 	{
-		super(clientLevel, saveStructure, createRepo(clientLevel, saveStructure));
+		super(clientLevel, saveStructure);
 		
 		this.fullDataSourceProvider = sourceProvider;
 		this.threadPoolMsg = new F3Screen.NestedMessage(this::f3Log);
 	}
-	private static RenderDataRepo createRepo(IDhClientLevel clientLevel, AbstractSaveStructure saveStructure)
+	
+	
+	
+	//===========//
+	// overrides //
+	//===========//
+	
+	@Override
+	public ColumnRenderSource get(DhSectionPos pos)
 	{
-		File saveDir = saveStructure.getRenderCacheFolder(clientLevel.getLevelWrapper());
+		// call the full data provider to make sure the full data is up to date
+		// and any necessary world generation has been queued/completed
+		this.fullDataSourceProvider.get(pos);
 		
+		return super.get(pos);
+	}
+	
+	
+	//====================//
+	// Abstract overrides //
+	//====================//
+	
+	@Override
+	protected AbstractDataSourceRepo createRepo()
+	{
 		try
 		{
-			return new RenderDataRepo("jdbc:sqlite", saveDir.getPath() + "/" + AbstractSaveStructure.DATABASE_NAME);
+			return new RenderDataRepo("jdbc:sqlite", this.saveDir.getPath() + "/" + AbstractSaveStructure.DATABASE_NAME);
 		}
 		catch (SQLException e)
 		{
@@ -78,12 +102,6 @@ public class RenderSourceFileHandler extends AbstractDataSourceHandler<ColumnRen
 			throw new RuntimeException(e);
 		}
 	}
-	
-	
-	
-	//====================//
-	// Abstract overrides //
-	//====================//
 	
 	@Override 
 	protected ColumnRenderSource createDataSourceFromDto(DataSourceDto dto) throws InterruptedException, IOException
@@ -132,10 +150,13 @@ public class RenderSourceFileHandler extends AbstractDataSourceHandler<ColumnRen
 		return lines.toArray(new String[0]);
 	}
 	
-	public void updateDataSourcesWithChunkData(ChunkSizedFullDataAccessor chunkDataView)
+	@Override
+	public CompletableFuture<Void> updateDataSourcesWithChunkDataAsync(ChunkSizedFullDataAccessor chunkDataView)
 	{
-		super.updateDataSourcesWithChunkData(chunkDataView);
-		this.fullDataSourceProvider.updateDataSourcesWithChunkData(chunkDataView);
+		return CompletableFuture.allOf(
+			super.updateDataSourcesWithChunkDataAsync(chunkDataView),
+			this.fullDataSourceProvider.updateDataSourcesWithChunkDataAsync(chunkDataView)		
+		);
 	}
 	
 	
