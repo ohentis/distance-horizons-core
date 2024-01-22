@@ -387,6 +387,19 @@ public class LodRenderer
 				drawLagSpikeCatcher.end("LodDraw");
 				
 				
+				//=================//
+				// debug rendering //
+				//=================//
+				
+				if (Config.Client.Advanced.Debugging.DebugWireframe.enableRendering.get())
+				{
+					profiler.popPush("Debug wireframes");
+					// Note: this can be very slow if a lot of boxes are being rendered 
+					DebugRenderer.INSTANCE.render(modelViewProjectionMatrix);
+					profiler.popPush("LOD cleanup");
+				}
+				
+				
 				
 				//=============================//
 				// Apply to the MC FrameBuffer //
@@ -437,14 +450,6 @@ public class LodRenderer
 			}
 			
 			this.shaderProgram.unbind();
-			
-			if (renderingFirstPass && Config.Client.Advanced.Debugging.DebugWireframe.enableRendering.get())
-			{
-				profiler.popPush("Debug wireframes");
-				// Note: this can be very slow if a lot of boxes are being rendered 
-				DebugRenderer.INSTANCE.render(modelViewProjectionMatrix);
-				profiler.popPush("LOD cleanup");
-			}
 			
 			minecraftGlState.restore();
 			drawCleanup.end("LodDrawCleanup");
