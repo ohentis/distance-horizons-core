@@ -44,6 +44,7 @@ public enum EDebugRendering
 	/** LOD colors are based on their detail */
 	SHOW_DETAIL,
 	
+	@Deprecated
 	/** LOD colors are based on their gen mode. */
 	SHOW_GENMODE,
 	
