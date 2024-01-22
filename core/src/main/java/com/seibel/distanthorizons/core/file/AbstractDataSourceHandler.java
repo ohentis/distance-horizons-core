@@ -275,7 +275,6 @@ public abstract class AbstractDataSourceHandler<TDataSource extends IDataSource<
 		// done to prevent queueing saves while the current queue is being cleared
 		if (this.isShutdown)
 		{
-			LOGGER.warn("Attempted to queue save for section ["+pos+"] while the handler is being shut down. Some data for that position may be lost.");
 			return;
 		}
 		
