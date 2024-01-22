@@ -20,6 +20,8 @@
 package com.seibel.distanthorizons.core.logging.f3;
 
 import com.seibel.distanthorizons.coreapi.ModInfo;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.Closeable;
 import java.util.*;
@@ -27,6 +29,8 @@ import java.util.function.Supplier;
 
 public class F3Screen
 {
+	private static final Logger LOGGER = LogManager.getLogger();
+	
 	private static final String[] DEFAULT_STRING = {
 			"", // blank line for spacing
 			ModInfo.READABLE_NAME + " version: " + ModInfo.VERSION
@@ -98,10 +102,18 @@ public class F3Screen
 		
 		public void printTo(List<String> list)
 		{
-			String message = this.supplier.get();
-			if (message != null)
+			
+			try
 			{
-				list.add(message);
+				String message = this.supplier.get();
+				if (message != null)
+				{
+					list.add(message);
+				}
+			}
+			catch (Exception e)
+			{
+				LOGGER.error("Unexpected Exception in F3 ["+DynamicMessage.class.getSimpleName()+"], error: "+e.getMessage(), e);
 			}
 		}
 		
@@ -118,10 +130,17 @@ public class F3Screen
 		{
 			for (Supplier<String> supplier : this.supplierList)
 			{
-				String message = supplier.get();
-				if (message != null)
+				try
 				{
-					list.add(message);
+					String message = supplier.get();
+					if (message != null)
+					{
+						list.add(message);
+					}
+				}
+				catch (Exception e)
+				{
+					LOGGER.error("Unexpected Exception in F3 ["+DynamicMessage.class.getSimpleName()+"], error: "+e.getMessage(), e);
 				}
 			}
 		}
@@ -139,10 +158,17 @@ public class F3Screen
 		
 		public void printTo(List<String> list)
 		{
-			String[] message = this.supplier.get();
-			if (message != null)
+			try
 			{
-				list.addAll(Arrays.asList(message));
+				String[] message = this.supplier.get();
+				if (message != null)
+				{
+					list.addAll(Arrays.asList(message));
+				}
+			}
+			catch (Exception e)
+			{
+				LOGGER.error("Unexpected Exception in F3 ["+DynamicMessage.class.getSimpleName()+"], error: "+e.getMessage(), e);
 			}
 		}
 		
