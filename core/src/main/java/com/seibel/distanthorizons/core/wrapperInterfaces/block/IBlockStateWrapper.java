@@ -24,10 +24,43 @@ import com.seibel.distanthorizons.api.interfaces.block.IDhApiBlockStateWrapper;
 /** A Minecraft version independent way of handling Blocks. */
 public interface IBlockStateWrapper extends IDhApiBlockStateWrapper
 {
+	//===========//
+	// constants //
+	//===========//
+	
 	int FULLY_TRANSPARENT = 0; 
-	int FULLY_OPAQUE = 16; 
+	int FULLY_OPAQUE = 16;
+	
+	/** contains the indices used by Iris to determine how different block types should be rendered */
+	class IrisBlockMaterial
+	{
+		public static final byte UNKOWN = 0;
+		public static final byte LEAVES = 1;
+		public static final byte STONE = 2;
+		public static final byte WOOD = 3;
+		public static final byte METAL = 4;
+		public static final byte DIRT = 5;
+		public static final byte LAVA = 6;
+		public static final byte DEEPSLATE = 7;
+		public static final byte SNOW = 8;
+		public static final byte SAND = 9;
+		public static final byte TERRACOTTA = 10;
+		public static final byte NETHER_STONE = 11;
+		public static final byte WATER = 12;
+		// unlisted numbers are unused
+		
+		/** shouldn't normally be needed, but just in case */
+		public static final byte AIR = 14;
+		public static final byte ILLUMINATED = 15; // Max value
+	}
 	
 	
+	
+	
+	
+	//=========//
+	// methods //
+	//=========//
 	
 	String getSerialString();
 	

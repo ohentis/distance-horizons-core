@@ -39,17 +39,22 @@ public class ColorUtil
 	public static final int BLACK = rgbToInt(0, 0, 0);
 	public static final int WHITE = rgbToInt(255, 255, 255);
 	public static final int RED = rgbToInt(255, 0, 0);
+	public static final int DARK_RED = rgbToInt(100, 0, 0);
 	public static final int GREEN = rgbToInt(0, 255, 0);
 	public static final int BLUE = rgbToInt(0, 0, 255);
 	public static final int YELLOW = rgbToInt(255, 255, 0);
 	public static final int CYAN = rgbToInt(0, 255, 255);
 	public static final int MAGENTA = rgbToInt(255, 0, 255);
 	public static final int ORANGE = rgbToInt(255, 128, 0);
+	public static final int DARK_ORANGE = rgbToInt(125, 62, 0);
+	public static final int TAN = rgbToInt(183, 165, 119);
 	public static final int PINK = rgbToInt(255, 128, 128);
+	public static final int HOT_PINK = rgbToInt(255, 105, 180);
 	public static final int GRAY = rgbToInt(128, 128, 128);
 	public static final int LIGHT_GRAY = rgbToInt(192, 192, 192);
 	public static final int DARK_GRAY = rgbToInt(64, 64, 64);
-	public static final int BROWN = rgbToInt(128, 64, 0);
+	public static final int BROWN = rgbToInt(68, 46, 24);
+	public static final int LIGHT_BROWN = rgbToInt(130, 112, 67);
 	public static final int PURPLE = rgbToInt(128, 0, 128);
 	
 	

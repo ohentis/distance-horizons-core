@@ -785,6 +785,8 @@
     "Show detail",
   "distanthorizons.config.enum.EDebugRendering.SHOW_GENMODE":
     "Show generation mode",
+  "distanthorizons.config.enum.EDebugRendering.SHOW_BLOCK_MATERIAL":
+    "Show Material",
   "distanthorizons.config.enum.EDebugRendering.SHOW_OVERLAPPING_QUADS":
     "Show overlapping quads",
   "distanthorizons.config.enum.EDebugRendering.SHOW_RENDER_SOURCE_FLAG":

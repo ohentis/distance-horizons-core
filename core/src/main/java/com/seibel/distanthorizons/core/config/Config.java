@@ -1114,11 +1114,11 @@ public class Config
 						.comment(""
 								+ "Should specialized colors/rendering modes be used? \n"
 								+ "\n"
-								+ EDebugRendering.OFF + ": Fake chunks will be drawn with their normal colors. \n"
-								+ EDebugRendering.SHOW_DETAIL + ": Fake chunks color will be based on their detail level. \n"
-								+ EDebugRendering.SHOW_GENMODE + ": Fake chunks color will be based on their distant generation mode. \n"
-								+ EDebugRendering.SHOW_OVERLAPPING_QUADS + ": Fake chunks will be drawn with total white, but overlapping quads will be drawn with red. \n"
-								+ "    but overlapping quads will be drawn with red, drawn as a wireframe.")
+								+ EDebugRendering.OFF + ": LODs will be drawn with their normal colors. \n"
+								+ EDebugRendering.SHOW_DETAIL + ": LODs' color will be based on their detail level. \n"
+								+ EDebugRendering.SHOW_BLOCK_MATERIAL + ": LODs' color will be based on their material. \n"
+								+ EDebugRendering.SHOW_OVERLAPPING_QUADS + ": LODs will be drawn with total white, but overlapping quads will be drawn with red. \n"
+								+ "")
 						.build();
 				
 				public static ConfigEntry<Boolean> renderWireframe = new ConfigEntry.Builder<Boolean>()

@@ -48,6 +48,9 @@ public enum EDebugRendering
 	/** LOD colors are based on their gen mode. */
 	SHOW_GENMODE,
 	
+	/** Block Materials are often used by Iris shaders to determine how LODs should be rendered */
+	SHOW_BLOCK_MATERIAL,
+	
 	/** Only draw overlapping LOD quads. */
 	SHOW_OVERLAPPING_QUADS,
 	
@@ -62,8 +65,8 @@ public enum EDebugRendering
 			case OFF:
 				return SHOW_DETAIL;
 			case SHOW_DETAIL:
-				return SHOW_GENMODE;
-			case SHOW_GENMODE:
+				return SHOW_BLOCK_MATERIAL;
+			case SHOW_BLOCK_MATERIAL:
 				return SHOW_OVERLAPPING_QUADS;
 			case SHOW_OVERLAPPING_QUADS:
 				return SHOW_RENDER_SOURCE_FLAG;
@@ -88,4 +91,5 @@ public enum EDebugRendering
 				return OFF;
 		}
 	}
+	
 }
