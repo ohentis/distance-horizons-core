@@ -31,6 +31,7 @@ public interface IDhClientLevel extends IDhLevel
 	void clientTick();
 	
 	void render(Mat4f mcModelViewMatrix, Mat4f mcProjectionMatrix, float partialTicks, IProfilerWrapper profiler);
+	void renderDeferred(Mat4f mcModelViewMatrix, Mat4f mcProjectionMatrix, float partialTicks, IProfilerWrapper profiler);
 	
 	int computeBaseColor(DhBlockPos pos, IBiomeWrapper biome, IBlockStateWrapper block);
 	

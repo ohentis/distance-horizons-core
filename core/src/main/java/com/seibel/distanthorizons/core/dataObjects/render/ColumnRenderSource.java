@@ -274,27 +274,6 @@ public class ColumnRenderSource implements IDataSource<IDhClientLevel>
 		// the source isn't empty, this object won't be empty after the method finishes
 		this.isEmpty = false;
 		
-		for (int i = 0; i < this.renderDataContainer.length; i += this.verticalDataCount)
-		{
-			int thisGenMode = RenderDataPointUtil.getGenerationMode(this.renderDataContainer[i]);
-			int srcGenMode = RenderDataPointUtil.getGenerationMode(renderSource.renderDataContainer[i]);
-			
-			if (srcGenMode == 0)
-			{
-				// the source hasn't been generated, don't write it
-				continue;
-			}
-			
-			// this object's column is older than the source's column, update it
-			if (thisGenMode <= srcGenMode)
-			{
-				ColumnArrayView thisColumnArrayView = new ColumnArrayView(this.renderDataContainer, this.verticalDataCount, i, this.verticalDataCount);
-				ColumnArrayView srcColumnArrayView = new ColumnArrayView(renderSource.renderDataContainer, renderSource.verticalDataCount, i, renderSource.verticalDataCount);
-				thisColumnArrayView.copyFrom(srcColumnArrayView);
-				
-				this.debugSourceFlags[i / this.verticalDataCount] = renderSource.debugSourceFlags[i / this.verticalDataCount];
-			}
-		}
 		localVersion.incrementAndGet();
 	}
 	/**
@@ -361,7 +340,7 @@ public class ColumnRenderSource implements IDataSource<IDhClientLevel>
 					FullDataToRenderDataTransformer.convertColumnData(level,
 							sourceBlockX + sourceDataPointBlockWidth * (blockOffsetX + x),
 							sourceBlockZ + sourceDataPointBlockWidth * (blockOffsetZ + z),
-							columnArrayView, fullArrayView, 2);
+							columnArrayView, fullArrayView);
 					dataChanged |= hash != columnArrayView.getDataHash();
 				}
 			}
@@ -391,7 +370,7 @@ public class ColumnRenderSource implements IDataSource<IDhClientLevel>
 					FullDataToRenderDataTransformer.convertColumnData(level,
 							sourceBlockX + sourceDataPointBlockWidth * relSourceX,
 							sourceBlockZ + sourceDataPointBlockWidth * relSourceZ,
-							columnArrayView, fullArrayView, 2);
+							columnArrayView, fullArrayView);
 					dataChanged |= hash != columnArrayView.getDataHash();
 				}
 			}
@@ -415,7 +394,7 @@ public class ColumnRenderSource implements IDataSource<IDhClientLevel>
 			SingleColumnFullDataAccessor fullArrayView = chunkDataView.get(0, 0);
 			FullDataToRenderDataTransformer.convertColumnData(level, dataCornerPos.x * sourceDataPointBlockWidth,
 					dataCornerPos.z * sourceDataPointBlockWidth,
-					columnArrayView, fullArrayView, 2);
+					columnArrayView, fullArrayView);
 			dataChanged = hash != columnArrayView.getDataHash();
 			this.fillDebugFlag(relStartX, relStartZ, 1, 1, ColumnRenderSource.DebugSourceFlag.DIRECT);
 		}

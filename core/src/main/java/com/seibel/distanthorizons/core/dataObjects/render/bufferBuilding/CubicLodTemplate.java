@@ -85,14 +85,9 @@ public class CubicLodTemplate
 				break;
 			}
 			case SHOW_DETAIL:
+			case SHOW_GENMODE: 
 			{
 				color = LodUtil.DEBUG_DETAIL_LEVEL_COLORS[detailLevel];
-				fullBright = true;
-				break;
-			}
-			case SHOW_GENMODE:
-			{
-				color = LodUtil.DEBUG_DETAIL_LEVEL_COLORS[RenderDataPointUtil.getGenerationMode(data)];
 				fullBright = true;
 				break;
 			}
@@ -112,11 +107,14 @@ public class CubicLodTemplate
 				throw new IllegalArgumentException("Unknown debug mode: " + debugging);
 		}
 		
+		byte blockMaterialId = RenderDataPointUtil.getBlockMaterialId(data);
+		
 		ColumnBox.addBoxQuadsToBuilder(
 				quadBuilder, // buffer
 				width, ySize, width, // setWidth
 				x, yMin, z, // setOffset
 				color, // setColor
+				blockMaterialId, // irisBlockMaterialId
 				RenderDataPointUtil.getLightSky(data), // setSkyLights
 				fullBright ? 15 : RenderDataPointUtil.getLightBlock(data), // setBlockLights
 				topData, bottomData, adjColumnViews); // setAdjData

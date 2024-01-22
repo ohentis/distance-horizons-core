@@ -89,9 +89,11 @@ public class DhClientLevel extends DhLevel implements IDhClientLevel
 	
 	@Override
 	public void render(Mat4f mcModelViewMatrix, Mat4f mcProjectionMatrix, float partialTicks, IProfilerWrapper profiler)
-	{
-		clientside.render(mcModelViewMatrix, mcProjectionMatrix, partialTicks, profiler);
-	}
+	{ this.clientside.render(mcModelViewMatrix, mcProjectionMatrix, partialTicks, profiler); }
+	
+	@Override
+	public void renderDeferred(Mat4f mcModelViewMatrix, Mat4f mcProjectionMatrix, float partialTicks, IProfilerWrapper profiler)
+	{ this.clientside.renderDeferred(mcModelViewMatrix, mcProjectionMatrix, partialTicks, profiler); }
 	
 	
 	

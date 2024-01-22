@@ -573,6 +573,7 @@ public class Config
 							.setPerformance(EConfigEntryPerformance.NONE)
 							.build();
 					
+					@Deprecated // TODO remove failed experiment
 					public static ConfigEntry<Boolean> seamlessOverdraw = new ConfigEntry.Builder<Boolean>()
 							.set(false)
 							.comment(""

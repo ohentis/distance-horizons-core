@@ -39,4 +39,6 @@ public interface IBlockStateWrapper extends IDhApiBlockStateWrapper
 	
 	int getLightEmission();
 	
+	byte getIrisBlockMaterialId();
+	
 }

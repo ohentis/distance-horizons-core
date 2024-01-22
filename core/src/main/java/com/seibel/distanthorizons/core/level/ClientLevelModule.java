@@ -41,7 +41,6 @@ import com.seibel.distanthorizons.coreapi.util.math.Mat4f;
 import org.apache.logging.log4j.Logger;
 
 import java.io.Closeable;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class ClientLevelModule implements Closeable
@@ -150,7 +149,18 @@ public class ClientLevelModule implements Closeable
 			// either the renderer hasn't been started yet, or is being reloaded
 			return;
 		}
-		ClientRenderState.renderer.drawLODs(ClientRenderState.clientLevelWrapper, mcModelViewMatrix, mcProjectionMatrix, partialTicks, profiler);
+		ClientRenderState.renderer.drawLods(ClientRenderState.clientLevelWrapper, mcModelViewMatrix, mcProjectionMatrix, partialTicks, profiler);
+	}
+	
+	public void renderDeferred(Mat4f mcModelViewMatrix, Mat4f mcProjectionMatrix, float partialTicks, IProfilerWrapper profiler)
+	{
+		ClientRenderState ClientRenderState = this.ClientRenderStateRef.get();
+		if (ClientRenderState == null)
+		{
+			// either the renderer hasn't been started yet, or is being reloaded
+			return;
+		}
+		ClientRenderState.renderer.drawDeferredLods(ClientRenderState.clientLevelWrapper, mcModelViewMatrix, mcProjectionMatrix, partialTicks, profiler);
 	}
 	
 	public void stopRenderer()

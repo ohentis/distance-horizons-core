@@ -134,7 +134,7 @@ public class FullDataToRenderDataTransformer
 					
 					ColumnArrayView columnArrayView = columnSource.getVerticalDataPointView(x, z);
 					SingleColumnFullDataAccessor fullArrayView = fullDataSource.get(x, z);
-					convertColumnData(level, baseX + x, baseZ + z, columnArrayView, fullArrayView, 1);
+					convertColumnData(level, baseX + x, baseZ + z, columnArrayView, fullArrayView);
 					
 					if (fullArrayView.doesColumnExist())
 					{
@@ -190,7 +190,7 @@ public class FullDataToRenderDataTransformer
 					}
 					
 					ColumnArrayView columnArrayView = columnSource.getVerticalDataPointView(x, z);
-					convertColumnData(level, baseX + x, baseZ + z, columnArrayView, fullArrayView, 1);
+					convertColumnData(level, baseX + x, baseZ + z, columnArrayView, fullArrayView);
 					
 					columnSource.fillDebugFlag(x, z, 1, 1, ColumnRenderSource.DebugSourceFlag.SPARSE);
 					if (fullArrayView.doesColumnExist())
@@ -229,7 +229,7 @@ public class FullDataToRenderDataTransformer
 	
 	
 	// TODO what does this mean?
-	private static void iterateAndConvert(IDhClientLevel level, int blockX, int blockZ, int genMode, ColumnArrayView column, SingleColumnFullDataAccessor data)
+	private static void iterateAndConvert(IDhClientLevel level, int blockX, int blockZ, ColumnArrayView column, SingleColumnFullDataAccessor data)
 	{
 		boolean avoidSolidBlocks = (Config.Client.Advanced.Graphics.Quality.blocksToIgnore.get() == EBlocksToAvoid.NON_COLLIDING);
 		boolean colorBelowWithAvoidedBlocks = Config.Client.Advanced.Graphics.Quality.tintWithAvoidedBlocks.get();
@@ -308,7 +308,7 @@ public class FullDataToRenderDataTransformer
 			
 			// add the block
 			isVoid = false;
-			long columnData = RenderDataPointUtil.createDataPoint(bottomY + blockHeight, bottomY, color, light, genMode);
+			long columnData = RenderDataPointUtil.createDataPoint(bottomY + blockHeight, bottomY, color, light, block.getIrisBlockMaterialId());
 			column.set(columnOffset, columnData);
 			columnOffset++;
 		}
@@ -316,12 +316,12 @@ public class FullDataToRenderDataTransformer
 		
 		if (isVoid)
 		{
-			column.set(0, RenderDataPointUtil.createVoidDataPoint((byte) genMode));
+			column.set(0, RenderDataPointUtil.createVoidDataPoint());
 		}
 	}
 	
 	// TODO what does this mean?
-	public static void convertColumnData(IDhClientLevel level, int blockX, int blockZ, ColumnArrayView columnArrayView, SingleColumnFullDataAccessor fullArrayView, int genMode)
+	public static void convertColumnData(IDhClientLevel level, int blockX, int blockZ, ColumnArrayView columnArrayView, SingleColumnFullDataAccessor fullArrayView)
 	{
 		if (!fullArrayView.doesColumnExist())
 		{
@@ -337,12 +337,12 @@ public class FullDataToRenderDataTransformer
 		if (dataTotalLength > columnArrayView.verticalSize())
 		{
 			ColumnArrayView totalColumnData = new ColumnArrayView(new long[dataTotalLength], dataTotalLength, 0, dataTotalLength);
-			iterateAndConvert(level, blockX, blockZ, genMode, totalColumnData, fullArrayView);
+			iterateAndConvert(level, blockX, blockZ, totalColumnData, fullArrayView);
 			columnArrayView.changeVerticalSizeFrom(totalColumnData);
 		}
 		else
 		{
-			iterateAndConvert(level, blockX, blockZ, genMode, columnArrayView, fullArrayView); //Directly use the arrayView since it fits.
+			iterateAndConvert(level, blockX, blockZ, columnArrayView, fullArrayView); //Directly use the arrayView since it fits.
 		}
 	}
 	

@@ -65,7 +65,12 @@ public class RenderBufferHandler implements AutoCloseable
 	{ 
 		this.lodQuadTree = lodQuadTree;
 		
-		this.f3Message = new F3Screen.DynamicMessage(() -> LodUtil.formatLog("Rendered Buffer Count: " + this.loadedNearToFarBuffers.size()));
+		this.f3Message = new F3Screen.DynamicMessage(() ->
+		{
+			// should never be null, but just in case something goes wrong, then the F3 menu won't break
+			String countText = (this.loadedNearToFarBuffers != null) ? this.loadedNearToFarBuffers.size()+"" : "NULL";
+			return LodUtil.formatLog("Rendered Buffer Count: " + countText);
+		});
 	}
 	
 	
