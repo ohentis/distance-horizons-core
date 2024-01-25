@@ -1,26 +1,33 @@
 package com.seibel.distanthorizons.core.pos;
 
-import org.joml.Math;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
+
 public class DhFrustumBounds
 {
+	//private final FrustumIntersection frustum;
 	private final Vector3f boundsMin = new Vector3f();
 	private final Vector3f boundsMax = new Vector3f();
+	private final float worldMinY;
+	private final float worldMaxY;
 	
 	
-	public DhFrustumBounds(Matrix4f matViewProjectionInv)
+	public DhFrustumBounds(Matrix4f matViewProjection, float minY, float maxY)
 	{
+		Matrix4f matViewProjectionInv = new Matrix4f(matViewProjection);
+		matViewProjectionInv.invert();
+		
+		//this.frustum = new FrustumIntersection();
+		//this.frustum.set(matViewProjection);
+		
 		matViewProjectionInv.frustumAabb(this.boundsMin, this.boundsMax);
+		this.worldMinY = minY;
+		this.worldMaxY = maxY;
 	}
 	
 	public boolean Intersects(DhLodPos lodBounds)
 	{
-		// TODO
-		float worldMinY = 0f;
-		float worldMaxY = 0f;
-		
 		int lodPosX = lodBounds.getX().toBlockWidth();
 		int lodPosZ = lodBounds.getZ().toBlockWidth();
 		int lodSize = lodBounds.getBlockWidth();
@@ -28,10 +35,11 @@ public class DhFrustumBounds
 		Vector3f lodMin = new Vector3f(lodPosX, worldMinY, lodPosZ);
 		Vector3f lodMax = new Vector3f(lodPosX + lodSize, worldMaxY, lodPosZ + lodSize);
 		
-		if (lodMax.x < boundsMin.x || lodMin.x > boundsMax.x) return false;
-		//if (lodMax.y < boundsMin.y || lodMin.y > boundsMax.y) return false;
-		if (lodMax.z < boundsMin.z || lodMin.z > boundsMax.z) return false;
+		if (lodMax.x < this.boundsMin.x || lodMin.x > this.boundsMax.x) return false;
+		if (lodMax.z < this.boundsMin.z || lodMin.z > this.boundsMax.z) return false;
+		if (this.worldMaxY < this.boundsMin.y || this.worldMinY > this.boundsMax.y) return false;
 		
+		//return frustum.intersectAab(lodMin, lodMax) != FrustumIntersection.OUTSIDE;
 		return true;
 	}
 }

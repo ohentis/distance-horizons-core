@@ -31,6 +31,7 @@ import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.objects.SortedArraySet;
 import com.seibel.distanthorizons.core.util.objects.quadTree.QuadNode;
 import com.seibel.distanthorizons.core.render.renderer.LodRenderer;
+import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.coreapi.util.math.Mat4f;
 import com.seibel.distanthorizons.coreapi.util.math.Vec3f;
 import org.apache.logging.log4j.Logger;
@@ -87,7 +88,7 @@ public class RenderBufferHandler implements AutoCloseable
 	 * TODO: This might get locked by update() causing move() call. Is there a way to avoid this?
 	 *       Maybe dupe the base list and use atomic swap on render? Or is this not worth it?
 	 */
-	public void buildRenderListAndUpdateSections(Matrix4f matViewProjectionInv, Vector3f lookForwardVector)
+	public void buildRenderListAndUpdateSections(IClientLevelWrapper clientLevelWrapper, Matrix4f matViewProjection, Vec3f lookForwardVector)
 	{
 		EDhDirection[] axisDirections = new EDhDirection[3];
 		
@@ -192,7 +193,9 @@ public class RenderBufferHandler implements AutoCloseable
 		// Build the sorted list
 		this.loadedNearToFarBuffers = new SortedArraySet<>((a, b) -> -farToNearComparator.compare(a, b)); // TODO is the comparator named wrong?
 		
-		DhFrustumBounds frustumBounds = new DhFrustumBounds(matViewProjectionInv);
+		float worldMinY = clientLevelWrapper.getMinHeight();
+		float worldHeight = clientLevelWrapper.getHeight();
+		DhFrustumBounds frustumBounds = new DhFrustumBounds(matViewProjection, worldMinY, worldMinY + worldHeight);
 		
 		// Update the sections
 		boolean rebuildAllBuffers = this.rebuildAllBuffers.getAndSet(false);
