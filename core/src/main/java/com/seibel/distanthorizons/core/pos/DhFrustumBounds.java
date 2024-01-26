@@ -1,5 +1,6 @@
 package com.seibel.distanthorizons.core.pos;
 
+import org.jetbrains.annotations.NotNull;
 import org.joml.FrustumIntersection;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fc;
@@ -27,7 +28,8 @@ public class DhFrustumBounds
 		this.worldMaxY = maxY;
 	}
 	
-	public boolean Intersects(DhLodPos lodBounds)
+	/** returns true if the LOD bounds intersect the frustum **/
+	public boolean Intersects(@NotNull DhLodPos lodBounds)
 	{
 		int lodPosX = lodBounds.getX().toBlockWidth();
 		int lodPosZ = lodBounds.getZ().toBlockWidth();
