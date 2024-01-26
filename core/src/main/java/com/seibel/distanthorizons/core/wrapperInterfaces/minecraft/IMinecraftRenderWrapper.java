@@ -36,6 +36,7 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.IWrapperFactory;
 import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.ISodiumAccessor;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import org.jetbrains.annotations.Nullable;
+import org.joml.Matrix4f;
 
 /**
  * Contains everything related to
@@ -53,6 +54,8 @@ public interface IMinecraftRenderWrapper extends IBindable
 	boolean playerHasBlindingEffect();
 	
 	Vec3d getCameraExactPosition();
+	
+	Matrix4f getWorldViewMatrix();
 	
 	Mat4f getDefaultProjectionMatrix(float partialTicks);
 	

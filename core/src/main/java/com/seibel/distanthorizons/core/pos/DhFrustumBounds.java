@@ -15,13 +15,14 @@ public class DhFrustumBounds
 	private final float worldMaxY;
 	
 	
-	public DhFrustumBounds(Matrix4fc matViewProjection, float minY, float maxY)
+	public DhFrustumBounds(Matrix4fc matWorldViewProjection, float minY, float maxY)
 	{
 		this.frustum = new FrustumIntersection();
-		this.frustum.set(matViewProjection);
+		this.frustum.set(matWorldViewProjection);
 		
-		Matrix4fc matViewProjectionInv = new Matrix4f(matViewProjection).invert();
-		matViewProjectionInv.frustumAabb(this.boundsMin, this.boundsMax);
+		Matrix4fc matWorldViewProjectionInv = new Matrix4f(matWorldViewProjection).invert();
+		matWorldViewProjectionInv.frustumAabb(this.boundsMin, this.boundsMax);
+		
 		this.worldMinY = minY;
 		this.worldMaxY = maxY;
 	}

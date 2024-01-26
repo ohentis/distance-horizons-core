@@ -19,7 +19,6 @@
 
 package com.seibel.distanthorizons.core.render;
 
-import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
@@ -27,17 +26,14 @@ import com.seibel.distanthorizons.core.pos.DhFrustumBounds;
 import com.seibel.distanthorizons.core.pos.DhLodPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.pos.Pos2D;
+import com.seibel.distanthorizons.core.render.renderer.LodRenderer;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.objects.SortedArraySet;
 import com.seibel.distanthorizons.core.util.objects.quadTree.QuadNode;
-import com.seibel.distanthorizons.core.render.renderer.LodRenderer;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
-import com.seibel.distanthorizons.coreapi.util.math.Mat4f;
 import com.seibel.distanthorizons.coreapi.util.math.Vec3f;
 import org.apache.logging.log4j.Logger;
-import org.joml.Matrix4f;
 import org.joml.Matrix4fc;
-import org.joml.Vector3f;
 
 import java.util.Comparator;
 import java.util.Iterator;
@@ -89,7 +85,7 @@ public class RenderBufferHandler implements AutoCloseable
 	 * TODO: This might get locked by update() causing move() call. Is there a way to avoid this?
 	 *       Maybe dupe the base list and use atomic swap on render? Or is this not worth it?
 	 */
-	public void buildRenderListAndUpdateSections(IClientLevelWrapper clientLevelWrapper, Matrix4fc matViewProjection, Vec3f lookForwardVector)
+	public void buildRenderListAndUpdateSections(IClientLevelWrapper clientLevelWrapper, Matrix4fc matWorldViewProjection, Vec3f lookForwardVector)
 	{
 		EDhDirection[] axisDirections = new EDhDirection[3];
 		
@@ -196,7 +192,7 @@ public class RenderBufferHandler implements AutoCloseable
 		
 		float worldMinY = clientLevelWrapper.getMinHeight();
 		float worldHeight = clientLevelWrapper.getHeight();
-		DhFrustumBounds frustumBounds = new DhFrustumBounds(matViewProjection, worldMinY, worldMinY + worldHeight);
+		DhFrustumBounds frustumBounds = new DhFrustumBounds(matWorldViewProjection, worldMinY, worldMinY + worldHeight);
 		
 		// Update the sections
 		boolean rebuildAllBuffers = this.rebuildAllBuffers.getAndSet(false);

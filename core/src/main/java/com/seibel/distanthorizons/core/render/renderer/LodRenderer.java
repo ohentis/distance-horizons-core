@@ -332,18 +332,14 @@ public class LodRenderer
 			
 			if (renderingFirstPass)
 			{
-				Vec3f viewDir = MC_RENDER.getLookAtVector();
-				Vec3d viewPos = MC_RENDER.getCameraExactPosition();
-				
-				// TODO: find proper way to get view matrix, this breaks when perfectly up/down
-				Matrix4fc matViewProjection = new Matrix4f()
-					.setTransposed(projectionMatrix.getValuesAsArray())
-					.lookAlong(viewDir.x, viewDir.y, viewDir.z, 0f, 1f, 0f)
-					.translate(-(float)viewPos.x, -(float)viewPos.y, -(float)viewPos.z);
-
 				// TODO: will also need a diff matrix for iris shadow pass!
 				
-				this.bufferHandler.buildRenderListAndUpdateSections(clientLevelWrapper, matViewProjection, viewDir);
+				Matrix4fc matWorldViewProjection = new Matrix4f()
+					.setTransposed(projectionMatrix.getValuesAsArray())
+					.mul(MC_RENDER.getWorldViewMatrix());
+				
+				Vec3f viewDir = this.getLookVector();
+				this.bufferHandler.buildRenderListAndUpdateSections(clientLevelWrapper, matWorldViewProjection, viewDir);
 				
 				transparencyEnabled = Config.Client.Advanced.Graphics.Quality.transparency.get().transparencyEnabled;
 				fakeOceanFloor = Config.Client.Advanced.Graphics.Quality.transparency.get().fakeTransparencyEnabled;
