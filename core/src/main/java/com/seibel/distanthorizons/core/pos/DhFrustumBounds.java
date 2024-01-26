@@ -1,6 +1,5 @@
 package com.seibel.distanthorizons.core.pos;
 
-import com.seibel.distanthorizons.coreapi.util.math.Mat4f;
 import org.joml.FrustumIntersection;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fc;
@@ -36,9 +35,9 @@ public class DhFrustumBounds
 		Vector3f lodMin = new Vector3f(lodPosX, worldMinY, lodPosZ);
 		Vector3f lodMax = new Vector3f(lodPosX + lodSize, worldMaxY, lodPosZ + lodSize);
 		
-		//if (lodMax.x < this.boundsMin.x || lodMin.x > this.boundsMax.x) return false;
-		//if (lodMax.z < this.boundsMin.z || lodMin.z > this.boundsMax.z) return false;
-		//if (this.worldMaxY < this.boundsMin.y || this.worldMinY > this.boundsMax.y) return false;
+		if (lodMax.x < this.boundsMin.x || lodMin.x > this.boundsMax.x) return false;
+		if (lodMax.z < this.boundsMin.z || lodMin.z > this.boundsMax.z) return false;
+		if (this.worldMaxY < this.boundsMin.y || this.worldMinY > this.boundsMax.y) return false;
 		
 		return frustum.testAab(lodMin, lodMax);
 	}

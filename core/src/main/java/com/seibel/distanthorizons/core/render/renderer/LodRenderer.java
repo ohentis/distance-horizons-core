@@ -332,7 +332,7 @@ public class LodRenderer
 			
 			if (renderingFirstPass)
 			{
-				Vec3f viewDir = this.getLookVector();
+				Vec3f viewDir = MC_RENDER.getLookAtVector();
 				Vec3d viewPos = MC_RENDER.getCameraExactPosition();
 				
 				// TODO: find proper way to get view matrix, this breaks when perfectly up/down
@@ -340,6 +340,8 @@ public class LodRenderer
 					.setTransposed(projectionMatrix.getValuesAsArray())
 					.lookAlong(viewDir.x, viewDir.y, viewDir.z, 0f, 1f, 0f)
 					.translate(-(float)viewPos.x, -(float)viewPos.y, -(float)viewPos.z);
+
+				// TODO: will also need a diff matrix for iris shadow pass!
 				
 				this.bufferHandler.buildRenderListAndUpdateSections(clientLevelWrapper, matViewProjection, viewDir);
 				
