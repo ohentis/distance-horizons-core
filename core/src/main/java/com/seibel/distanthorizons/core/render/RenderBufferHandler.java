@@ -36,6 +36,7 @@ import com.seibel.distanthorizons.coreapi.util.math.Mat4f;
 import com.seibel.distanthorizons.coreapi.util.math.Vec3f;
 import org.apache.logging.log4j.Logger;
 import org.joml.Matrix4f;
+import org.joml.Matrix4fc;
 import org.joml.Vector3f;
 
 import java.util.Comparator;
@@ -88,7 +89,7 @@ public class RenderBufferHandler implements AutoCloseable
 	 * TODO: This might get locked by update() causing move() call. Is there a way to avoid this?
 	 *       Maybe dupe the base list and use atomic swap on render? Or is this not worth it?
 	 */
-	public void buildRenderListAndUpdateSections(IClientLevelWrapper clientLevelWrapper, Matrix4f matViewProjection, Vec3f lookForwardVector)
+	public void buildRenderListAndUpdateSections(IClientLevelWrapper clientLevelWrapper, Matrix4fc matViewProjection, Vec3f lookForwardVector)
 	{
 		EDhDirection[] axisDirections = new EDhDirection[3];
 		

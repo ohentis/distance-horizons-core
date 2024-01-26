@@ -48,6 +48,7 @@ import com.seibel.distanthorizons.coreapi.util.math.Vec3d;
 import com.seibel.distanthorizons.coreapi.util.math.Vec3f;
 import org.apache.logging.log4j.LogManager;
 import org.joml.Matrix4f;
+import org.joml.Matrix4fc;
 import org.lwjgl.opengl.GL32;
 
 import java.awt.*;
@@ -334,7 +335,8 @@ public class LodRenderer
 				Vec3f viewDir = this.getLookVector();
 				Vec3d viewPos = MC_RENDER.getCameraExactPosition();
 				
-				Matrix4f matViewProjection = new Matrix4f()
+				// TODO: find proper way to get view matrix, this breaks when perfectly up/down
+				Matrix4fc matViewProjection = new Matrix4f()
 					.setTransposed(projectionMatrix.getValuesAsArray())
 					.lookAlong(viewDir.x, viewDir.y, viewDir.z, 0f, 1f, 0f)
 					.translate(-(float)viewPos.x, -(float)viewPos.y, -(float)viewPos.z);
