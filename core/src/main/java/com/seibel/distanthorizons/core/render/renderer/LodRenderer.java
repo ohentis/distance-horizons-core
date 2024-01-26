@@ -334,9 +334,12 @@ public class LodRenderer
 			{
 				// TODO: will also need a diff matrix for iris shadow pass!
 				
+				Matrix4f matWorldView = new Matrix4f()
+						.setTransposed(MC_RENDER.getWorldViewMatrix().getValuesAsArray());
+				
 				Matrix4fc matWorldViewProjection = new Matrix4f()
 					.setTransposed(projectionMatrix.getValuesAsArray())
-					.mul(MC_RENDER.getWorldViewMatrix());
+					.mul(matWorldView);
 				
 				Vec3f viewDir = this.getLookVector();
 				this.bufferHandler.buildRenderListAndUpdateSections(clientLevelWrapper, matWorldViewProjection, viewDir);

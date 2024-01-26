@@ -55,7 +55,7 @@ public interface IMinecraftRenderWrapper extends IBindable
 	
 	Vec3d getCameraExactPosition();
 	
-	Matrix4f getWorldViewMatrix();
+	Mat4f getWorldViewMatrix();
 	
 	Mat4f getDefaultProjectionMatrix(float partialTicks);
 	
