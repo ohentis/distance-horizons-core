@@ -57,13 +57,13 @@ public class FullDataFileHandler extends AbstractDataSourceHandler<IFullDataSour
 		for (DhSectionPos pos : posList)
 		{
 			map.put(pos,
-					unsavedDataSourceBySectionPos.containsKey(pos) ? 3 // Loaded
+					this.unsavedDataSourceBySectionPos.containsKey(pos) ? 3 // Loaded
 							: this.fileExists(pos) ? 2                      // Unloaded
 							: 1);                                           // Not generated
 		}
 		return map;
 	}
-	protected boolean fileExists(DhSectionPos pos) { return this.repo.existsWithPrimaryKey(pos.serialize()); }
+	public boolean fileExists(DhSectionPos pos) { return this.repo.existsWithPrimaryKey(pos.serialize()); }
 	
 	
 	//=============//

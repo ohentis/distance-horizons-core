@@ -43,7 +43,6 @@ public class NetworkServer extends NetworkEventSource implements AutoCloseable
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
-	// TODO move to the config
 	private final int port;
 	
 	private final EventLoopGroup bossGroup = new NioEventLoopGroup(1, new DefaultThreadFactory("DH-Network - Server Boss Thread"));
@@ -129,7 +128,9 @@ public class NetworkServer extends NetworkEventSource implements AutoCloseable
 	public void close()
 	{
 		if (!this.isClosed.compareAndSet(false, true))
+		{
 			return;
+		}
 		
 		LOGGER.info("Shutting down the network server.");
 		this.workerGroup.shutdownGracefully().syncUninterruptibly();

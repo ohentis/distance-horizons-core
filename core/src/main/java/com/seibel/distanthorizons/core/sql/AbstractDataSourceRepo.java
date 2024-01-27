@@ -22,6 +22,7 @@ package com.seibel.distanthorizons.core.sql;
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 
+import javax.annotation.Nullable;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Map;
@@ -162,6 +163,23 @@ public abstract class AbstractDataSourceRepo extends AbstractDhRepo<DataSourceDt
 		}
 		
 		return maxDetailLevel + DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL;
+	}
+	
+	/**
+	 * Returns the checksum of a given section pos, if it's present in the table.
+	 */
+	@Nullable
+	public Integer getChecksumForSection(DhSectionPos pos)
+	{
+		Map<String, Object> resultMap = this.queryDictionaryFirst("SELECT Checksum FROM DhFullData WHERE DhSectionPos = '" + pos.serialize() + "';");
+		if (resultMap == null || resultMap.get("Checksum") == null)
+		{
+			return null;
+		}
+		else
+		{
+			return (int) resultMap.get("Checksum");
+		}
 	}
 	
 	

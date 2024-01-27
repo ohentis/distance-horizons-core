@@ -19,17 +19,53 @@
 
 package com.seibel.distanthorizons.core.file.fullDatafile;
 
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IFullDataSource;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IIncompleteFullDataSource;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
-import com.seibel.distanthorizons.core.level.IDhLevel;
+import com.seibel.distanthorizons.core.level.IDhClientLevel;
+import com.seibel.distanthorizons.core.multiplayer.client.FullDataRefreshQueue;
+import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
+import java.util.Objects;
 
 public class RemoteFullDataFileHandler extends GeneratedFullDataFileHandler
 {
-	public RemoteFullDataFileHandler(IDhLevel level, AbstractSaveStructure saveStructure, @Nullable File saveDirOverride)
+	@Nullable
+	private final FullDataRefreshQueue dataRefreshQueue;
+	
+	public RemoteFullDataFileHandler(IDhClientLevel level, AbstractSaveStructure saveStructure, @Nullable File saveDirOverride, @Nullable FullDataRefreshQueue dataRefreshQueue)
 	{
 		super(level, saveStructure, saveDirOverride);
+		this.dataRefreshQueue = dataRefreshQueue;
+	}
+	
+	@Override
+	public IFullDataSource get(DhSectionPos pos)
+	{
+		IFullDataSource fullDataSource = super.get(pos);
+		if (fullDataSource instanceof IIncompleteFullDataSource || this.dataRefreshQueue == null)
+		{
+			return fullDataSource;
+		}
+		
+		pos.forEachChildAtLevel(DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL, childPos -> {
+			int checksum = Objects.requireNonNull(this.repo.getChecksumForSection(childPos));
+			this.dataRefreshQueue.submitRequest(childPos, this.level::updateDataSourcesWithChunkData, checksum);
+		});
+		
+		return fullDataSource;
+	}
+	
+	@Override
+	public void close()
+	{
+		if (this.dataRefreshQueue != null)
+		{
+			this.dataRefreshQueue.close();
+		}
+		super.close();
 	}
 	
 }

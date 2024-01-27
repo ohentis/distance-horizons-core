@@ -1,0 +1,289 @@
+package com.seibel.distanthorizons.core.multiplayer.client;
+
+import com.google.common.base.Stopwatch;
+import com.seibel.distanthorizons.core.config.types.ConfigEntry;
+import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.CompleteFullDataSource;
+import com.seibel.distanthorizons.core.level.IDhClientLevel;
+import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.logging.f3.F3Screen;
+import com.seibel.distanthorizons.core.network.exceptions.InvalidLevelException;
+import com.seibel.distanthorizons.core.network.exceptions.RateLimitedException;
+import com.seibel.distanthorizons.core.network.messages.fullData.generation.FullDataSourceRequestMessage;
+import com.seibel.distanthorizons.core.network.messages.fullData.generation.FullDataSourceResponseMessage;
+import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
+import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
+import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
+import com.seibel.distanthorizons.core.util.LodUtil;
+import io.netty.channel.ChannelException;
+import org.apache.logging.log4j.Logger;
+
+import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
+import java.awt.*;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
+
+public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, AutoCloseable
+{
+	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	
+	protected static final long SHUTDOWN_TIMEOUT_SECONDS = 5;
+	
+	public final ClientNetworkState networkState;
+	protected final IDhClientLevel level;
+	private final boolean changedOnly;
+	
+	private volatile CompletableFuture<Void> closingFuture = null;
+	
+	protected final ConcurrentMap<DhSectionPos, RequestQueueEntry> waitingTasks = new ConcurrentHashMap<>();
+	private final Semaphore pendingTasksSemaphore = new Semaphore(Short.MAX_VALUE, true);
+	
+	private final F3Screen.NestedMessage f3Message = new F3Screen.NestedMessage(this::f3Log);
+	private final AtomicInteger finishedRequests = new AtomicInteger();
+	private final AtomicInteger failedRequests = new AtomicInteger();
+	private final ConfigEntry<Boolean> showDebugWireframeConfig;
+	
+	private final Set<DhSectionPos> alreadyRequestedPositions = ConcurrentHashMap.newKeySet();
+	
+	
+	protected abstract int getRequestConcurrencyLimit();
+	
+	protected abstract String getQueueName();
+	
+	
+	public AbstractFullDataRequestQueue(ClientNetworkState networkState, IDhClientLevel level, boolean changedOnly, ConfigEntry<Boolean> showDebugWireframeConfig)
+	{
+		this.networkState = networkState;
+		this.level = level;
+		this.changedOnly = changedOnly;
+		this.showDebugWireframeConfig = showDebugWireframeConfig;
+		DebugRenderer.register(this, this.showDebugWireframeConfig);
+	}
+	
+	public CompletableFuture<Boolean> submitRequest(DhSectionPos sectionPos, Consumer<ChunkSizedFullDataAccessor> chunkDataConsumer)
+	{
+		return this.submitRequest(sectionPos, chunkDataConsumer, null);
+	}
+	public CompletableFuture<Boolean> submitRequest(DhSectionPos sectionPos, Consumer<ChunkSizedFullDataAccessor> chunkDataConsumer, @Nullable Integer currentChecksum)
+	{
+		LodUtil.assertTrue(sectionPos.getDetailLevel() == DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL, "Only highest-detail sections are allowed.");
+		
+		// check if this is a duplicate task
+		if (this.alreadyRequestedPositions.contains(sectionPos))
+		{
+			// temporary solution to prevent requesting the same section multiple times
+			LOGGER.trace("Duplicate section " + sectionPos + ". Skipping...");
+			return CompletableFuture.completedFuture(false);
+		}
+		this.alreadyRequestedPositions.add(sectionPos);
+		
+		RequestQueueEntry entry = new RequestQueueEntry(chunkDataConsumer, currentChecksum);
+		this.waitingTasks.put(sectionPos, entry);
+		return entry.future;
+	}
+	
+	protected int posDistanceSquared(DhBlockPos2D targetPos, DhSectionPos pos)
+	{
+		return (int) pos.getCenterBlockPos().distSquared(targetPos);
+	}
+	
+	public synchronized boolean tick(DhBlockPos2D targetPos)
+	{
+		if (this.closingFuture != null || !this.networkState.getClient().isReady())
+		{
+			return false;
+		}
+		
+		while (this.getWaitingTaskCount() > this.getInProgressTaskCount()
+				&& this.getInProgressTaskCount() < this.getRequestConcurrencyLimit()
+				&& this.pendingTasksSemaphore.tryAcquire())
+		{
+			this.sendNewRequest(targetPos);
+		}
+		
+		return true;
+	}
+	
+	public void cancelRequests(Iterable<DhSectionPos> positions)
+	{
+		for (DhSectionPos pos : positions)
+		{
+			RequestQueueEntry entry = this.waitingTasks.remove(pos);
+			if (entry != null)
+			{
+				entry.future.cancel(false);
+				if (entry.request != null)
+				{
+					entry.request.cancel(false);
+				}
+				this.alreadyRequestedPositions.remove(pos);
+			}
+		}
+	}
+	
+	private void sendNewRequest(DhBlockPos2D targetPos)
+	{
+		Map.Entry<DhSectionPos, RequestQueueEntry> mapEntry = this.waitingTasks.entrySet().stream()
+				.filter(task -> task.getValue().request == null)
+				.reduce(null, (a, b)
+						-> a == null
+						|| b.getValue().priority > a.getValue().priority
+						|| (b.getValue().priority == a.getValue().priority && this.posDistanceSquared(targetPos, b.getKey()) < this.posDistanceSquared(targetPos, a.getKey()))
+						? b : a);
+		if (mapEntry == null)
+		{
+			this.pendingTasksSemaphore.release();
+			return;
+		}
+		
+		DhSectionPos sectionPos = mapEntry.getKey();
+		RequestQueueEntry entry = mapEntry.getValue();
+		
+		CompletableFuture<FullDataSourceResponseMessage> request = this.networkState.getClient().sendRequest(new FullDataSourceRequestMessage(this.level.getLevelWrapper(), sectionPos, entry.currentChecksum), FullDataSourceResponseMessage.class);
+		entry.request = request;
+		request.handleAsync((response, throwable) ->
+		{
+			this.pendingTasksSemaphore.release();
+			this.finishedRequests.incrementAndGet();
+			
+			try
+			{
+				if (throwable != null)
+				{
+					throw throwable;
+				}
+				
+				this.waitingTasks.remove(sectionPos);
+				LOGGER.debug("FullDataSourceResponseMessage " + sectionPos);
+				
+				CompleteFullDataSource fullDataSource = response.getFullDataSource(sectionPos, this.level);
+				
+				if (fullDataSource != null)
+				{
+					fullDataSource.splitIntoChunkSizedAccessors(entry.chunkDataConsumer);
+					response.getFullDataSourceLoader().returnPooledDataSource(fullDataSource);
+				}
+				else
+				{
+					LodUtil.assertTrue(this.changedOnly, "Received empty data source response for not changed-only request");
+				}
+			}
+			catch (InvalidLevelException ignored)
+			{
+				// We're too late
+			}
+			catch (ChannelException | RateLimitedException e)
+			{
+				if (e instanceof RateLimitedException)
+				{
+					LOGGER.warn("Rate limited by server, re-queueing task [" + sectionPos + "]: " + e.getMessage());
+				}
+				
+				entry.request = null;
+				this.finishedRequests.decrementAndGet();
+			}
+			catch (CancellationException ignored)
+			{
+				this.finishedRequests.decrementAndGet();
+			}
+			catch (Throwable e)
+			{
+				LOGGER.error("Error while fetching full data source", e);
+				this.failedRequests.incrementAndGet();
+				return entry.future.complete(false);
+			}
+			
+			return entry.future.complete(true);
+		});
+	}
+	
+	private String[] f3Log()
+	{
+		ArrayList<String> lines = new ArrayList<>();
+		lines.add(this.getQueueName() + " [" + this.level.getClientLevelWrapper().getDimensionType().getDimensionName() + "]");
+		lines.add("Requests: " + this.finishedRequests + " / " + (this.getWaitingTaskCount() + this.finishedRequests.get()) + " (failed: " + this.failedRequests + ", rate limit: " + this.getRequestConcurrencyLimit() + ")");
+		return lines.toArray(new String[0]);
+	}
+	
+	public int getWaitingTaskCount() { return this.waitingTasks.size(); }
+	
+	public int getInProgressTaskCount() { return Short.MAX_VALUE - this.pendingTasksSemaphore.availablePermits(); }
+	
+	public CompletableFuture<Void> startClosing(boolean alsoInterruptRunning)
+	{
+		return this.closingFuture = CompletableFuture.runAsync(() -> {
+			Stopwatch stopwatch = Stopwatch.createStarted();
+			
+			do
+			{
+				for (RequestQueueEntry entry : this.waitingTasks.values())
+				{
+					entry.future.cancel(alsoInterruptRunning);
+					if (entry.request != null && entry.request.cancel(alsoInterruptRunning))
+					{
+						this.pendingTasksSemaphore.release();
+					}
+				}
+			}
+			while (!this.pendingTasksSemaphore.tryAcquire(Short.MAX_VALUE) && stopwatch.elapsed(TimeUnit.SECONDS) < SHUTDOWN_TIMEOUT_SECONDS);
+			
+			if (stopwatch.elapsed(TimeUnit.SECONDS) >= SHUTDOWN_TIMEOUT_SECONDS)
+			{
+				LOGGER.warn(this.getQueueName() + " for " + this.level.getLevelWrapper() + " did not shutdown in " + SHUTDOWN_TIMEOUT_SECONDS + " seconds! Some unfinished tasks might be left hanging.");
+			}
+		});
+	}
+	
+	@Override
+	public void close()
+	{
+		this.f3Message.close();
+		DebugRenderer.unregister(this, this.showDebugWireframeConfig);
+	}
+	
+	@Override
+	public void debugRender(DebugRenderer r)
+	{
+		for (Map.Entry<DhSectionPos, RequestQueueEntry> mapEntry : this.waitingTasks.entrySet())
+		{
+			r.renderBox(new DebugRenderer.Box(mapEntry.getKey(), -32f, 64f, 0.05f,
+					mapEntry.getValue().request != null ? Color.red
+							: mapEntry.getValue().priority == 3 ? Color.orange
+							: mapEntry.getValue().priority == 2 ? Color.cyan
+							: mapEntry.getValue().priority == 1 ? Color.blue
+							: Color.gray
+			));
+		}
+	}
+	
+	protected static class RequestQueueEntry
+	{
+		public final CompletableFuture<Boolean> future = new CompletableFuture<>();
+		public final Consumer<ChunkSizedFullDataAccessor> chunkDataConsumer;
+		@Nullable
+		public final Integer currentChecksum;
+		
+		// Higher value = higher priority.
+		// Priority of 0 is reserved for unassigned value
+		public int priority = 0;
+		@CheckForNull
+		public CompletableFuture<?> request;
+		
+		public RequestQueueEntry(
+				Consumer<ChunkSizedFullDataAccessor> chunkDataConsumer,
+				@Nullable
+				Integer currentChecksum)
+		{
+			this.chunkDataConsumer = chunkDataConsumer;
+			this.currentChecksum = currentChecksum;
+		}
+		
+	}
+	
+}

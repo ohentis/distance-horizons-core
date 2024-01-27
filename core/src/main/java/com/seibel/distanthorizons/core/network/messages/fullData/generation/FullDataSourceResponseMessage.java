@@ -31,20 +31,33 @@ import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataOutputStre
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
 
+import javax.annotation.Nullable;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
+/**
+ * Response message, containing the requested full data source,
+ * or nothing if requested in updates-only mode and the data was not updated. <br>
+ * Decoded full data source is not cached, since it's intended for a single use.
+ */
 public class FullDataSourceResponseMessage extends FutureTrackableNetworkMessage
 {
+	// Transmitted data
+	@Nullable
+	private ByteBuf dataBuffer;
+	
+	// Used only when encoding
+	@Nullable
 	private CompleteFullDataSource fullDataSource;
 	private DhServerLevel level;
 	
+	// Used only when decoding
 	private CompleteFullDataSourceLoader fullDataSourceLoader;
-	public CompleteFullDataSourceLoader getFullDataSourceLoader() { return fullDataSourceLoader; }
-	private ByteBuf dataBuffer;
+	public CompleteFullDataSourceLoader getFullDataSourceLoader() { return this.fullDataSourceLoader; }
+	
 	
 	public FullDataSourceResponseMessage() {}
-	public FullDataSourceResponseMessage(CompleteFullDataSource fullDataSource, DhServerLevel level)
+	public FullDataSourceResponseMessage(@Nullable CompleteFullDataSource fullDataSource, DhServerLevel level)
 	{
 		this.fullDataSource = fullDataSource;
 		this.level = level;
@@ -53,41 +66,54 @@ public class FullDataSourceResponseMessage extends FutureTrackableNetworkMessage
 	@Override
 	public void encode0(ByteBuf out) throws IOException
 	{
-		try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream())
+		if (this.encodeOptional(out, this.fullDataSource))
 		{
-			DhDataOutputStream dhOutputStream = new DhDataOutputStream(outputStream);
-			fullDataSource.writeToStream(dhOutputStream, level);
-			dhOutputStream.flush();
-			
-			out.writeByte(fullDataSource.getDataFormatVersion());
-			out.writeInt(outputStream.size());
-			out.writeBytes(outputStream.toByteArray());
+			try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream())
+			{
+				DhDataOutputStream dhOutputStream = new DhDataOutputStream(outputStream);
+				this.fullDataSource.writeToStream(dhOutputStream, this.level);
+				dhOutputStream.flush();
+				
+				out.writeByte(this.fullDataSource.getDataFormatVersion());
+				out.writeInt(outputStream.size());
+				out.writeBytes(outputStream.toByteArray());
+			}
 		}
 	}
 	
 	@Override
 	public void decode0(ByteBuf in)
 	{
-		byte dataVersion = in.readByte();
-		this.fullDataSourceLoader = (CompleteFullDataSourceLoader) AbstractFullDataSourceLoader.getLoader(CompleteFullDataSource.DATA_TYPE_NAME, dataVersion);
-		this.dataBuffer = in.readBytes(in.readInt());
+		this.dataBuffer = this.decodeOptional(in, () ->
+		{
+			byte dataVersion = in.readByte();
+			this.fullDataSourceLoader = (CompleteFullDataSourceLoader) AbstractFullDataSourceLoader.getLoader(CompleteFullDataSource.DATA_TYPE_NAME, dataVersion);
+			return in.readBytes(in.readInt());
+		});
 	}
 	
-	public CompleteFullDataSource getFullDataSource(DhSectionPos pos, IDhLevel level) throws IOException, InterruptedException
+	@Nullable
+	public synchronized CompleteFullDataSource getFullDataSource(DhSectionPos pos, IDhLevel level) throws IOException, InterruptedException
 	{
-		try (ByteBufInputStream inputStream = new ByteBufInputStream(dataBuffer))
+		if (this.dataBuffer == null)
 		{
-			return fullDataSourceLoader.loadData(pos, new DhDataInputStream(inputStream), level);
+			return null;
+		}
+		
+		try (ByteBufInputStream inputStream = new ByteBufInputStream(this.dataBuffer))
+		{
+			return this.fullDataSourceLoader.loadData(pos, new DhDataInputStream(inputStream), level);
 		}
 		finally
 		{
-			dataBuffer.release();
+			this.dataBuffer.release();
 		}
 	}
 	
-	@Override public String toString()
+	@Override
+	public String toString()
 	{
-		return super.toString("dataBuffer=" + dataBuffer);
+		return super.toString("dataBuffer=" + this.dataBuffer);
 	}
 	
 }

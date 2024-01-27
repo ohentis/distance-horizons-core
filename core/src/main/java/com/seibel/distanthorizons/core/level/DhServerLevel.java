@@ -56,6 +56,7 @@ import java.util.concurrent.*;
 public class DhServerLevel extends DhLevel implements IDhServerLevel
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	
 	public final ServerLevelModule serverside;
 	private final IServerLevelWrapper serverLevelWrapper;
 	
@@ -89,36 +90,73 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 	
 	private void registerNetworkHandlers()
 	{
-		this.eventSource.registerHandler(FullDataSourceRequestMessage.class, remotePlayerConnectionHandler.currentLevelOnly(this, (msg, serverPlayerState) ->
+		this.eventSource.registerHandler(FullDataSourceRequestMessage.class, this.remotePlayerConnectionHandler.currentLevelOnly(this, (msg, serverPlayerState) ->
 		{
-			if (!serverPlayerState.config.isDistantGenerationEnabled())
+			if (msg.checksum == null)
 			{
-				msg.sendResponse(new RequestRejectedException("Operation is disabled from config."));
-				return;
-			}
-			
-			if (!serverPlayerState.fullDataRequestConcurrencyLimiter.tryAcquire(msg))
-				return;
-			
-			while (true)
-			{
-				IncompleteDataSourceEntry entry = incompleteDataSources.computeIfAbsent(msg.dhSectionPos, pos -> {
-					IncompleteDataSourceEntry newEntry = new IncompleteDataSourceEntry();
-					this.trySetGeneratedDataSourceToEntry(newEntry, pos);
-					return newEntry;
-				});
-				// If this fails, current entry is being drained and need to create another one
-				if (entry.requestCollectionSemaphore.tryAcquire())
+				// Normal generation
+				
+				if (!serverPlayerState.config.isDistantGenerationEnabled())
 				{
-					fullDataRequests.put(msg.futureId, entry);
-					entry.requestMessages.put(msg.futureId, msg);
-					entry.requestCollectionSemaphore.release();
-					break;
+					msg.sendResponse(new RequestRejectedException("Operation is disabled from config."));
+					return;
 				}
+				
+				if (!serverPlayerState.fullDataRequestConcurrencyLimiter.tryAcquire(msg))
+				{
+					return;
+				}
+				
+				while (true)
+				{
+					IncompleteDataSourceEntry entry = this.incompleteDataSources.computeIfAbsent(msg.sectionPos, pos ->
+					{
+						IncompleteDataSourceEntry newEntry = new IncompleteDataSourceEntry();
+						this.trySetGeneratedDataSourceToEntry(newEntry, pos);
+						return newEntry;
+					});
+					// If this fails, current entry is being drained and need to create another one
+					if (entry.requestCollectionSemaphore.tryAcquire())
+					{
+						this.fullDataRequests.put(msg.futureId, entry);
+						entry.requestMessages.put(msg.futureId, msg);
+						entry.requestCollectionSemaphore.release();
+						break;
+					}
+				}
+			}
+			else
+			{
+				// Post-relog update
+				
+				if (!serverPlayerState.config.isPostRelogUpdateEnabled())
+				{
+					msg.sendResponse(new RequestRejectedException("Operation is disabled from config."));
+					return;
+				}
+				
+				if (!serverPlayerState.postRelogUpdateRequestConcurrencyLimiter.tryAcquire(msg))
+				{
+					return;
+				}
+				
+				Integer serverChecksum = this.serverside.dataFileHandler.repo.getChecksumForSection(msg.sectionPos);
+				if (serverChecksum == null || serverChecksum.equals(msg.checksum))
+				{
+					serverPlayerState.postRelogUpdateRequestConcurrencyLimiter.release();
+					msg.sendResponse(new FullDataSourceResponseMessage(null, this));
+					return;
+				}
+				
+				this.serverside.dataFileHandler.getAsync(msg.sectionPos).thenAccept(fullDataSource ->
+				{
+					serverPlayerState.postRelogUpdateRequestConcurrencyLimiter.release();
+					msg.sendResponse(new FullDataSourceResponseMessage((CompleteFullDataSource) fullDataSource, this));
+				});
 			}
 		}));
 		
-		this.eventSource.registerHandler(GenTaskPriorityRequestMessage.class, remotePlayerConnectionHandler.currentLevelOnly(this, (msg, serverPlayerState) ->
+		this.eventSource.registerHandler(GenTaskPriorityRequestMessage.class, this.remotePlayerConnectionHandler.currentLevelOnly(this, (msg, serverPlayerState) ->
 		{
 			msg.sendResponse(new GenTaskPriorityResponseMessage(
 					this.serverside.dataFileHandler.getLoadStates(msg.posList.stream()
@@ -130,18 +168,23 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 		this.eventSource.registerHandler(CancelMessage.class, msg ->
 		{
 			IncompleteDataSourceEntry entry = this.fullDataRequests.remove(msg.futureId);
-			if (entry == null) return;
+			if (entry == null)
+			{
+				return;
+			}
 			FullDataSourceRequestMessage requestMessage = entry.requestMessages.remove(msg.futureId);
 			
-			ServerPlayerState serverPlayerState = remotePlayerConnectionHandler.getConnectedPlayer(msg);
+			ServerPlayerState serverPlayerState = this.remotePlayerConnectionHandler.getConnectedPlayer(msg);
 			if (serverPlayerState != null)
+			{
 				serverPlayerState.fullDataRequestConcurrencyLimiter.release();
+			}
 			
 			entry.requestCollectionSemaphore.acquireUninterruptibly(Short.MAX_VALUE);
 			if (entry.requestMessages.isEmpty())
 			{
-				incompleteDataSources.remove(requestMessage.dhSectionPos);
-				serverside.dataFileHandler.removeGenRequestIf(pos -> pos == requestMessage.dhSectionPos);
+				this.incompleteDataSources.remove(requestMessage.sectionPos);
+				this.serverside.dataFileHandler.removeGenRequestIf(pos -> pos == requestMessage.sectionPos);
 			}
 			
 			entry.requestCollectionSemaphore.release(Short.MAX_VALUE);
@@ -158,20 +201,23 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 		this.worldGenLoopingQueue.remove(serverPlayer);
 	}
 	
+	@Override
 	public void serverTick()
 	{
-		chunkToLodBuilder.tick();
+		this.chunkToLodBuilder.tick();
 		
 		// Send finished data source requests
-		for (Map.Entry<DhSectionPos, IncompleteDataSourceEntry> mapEntry : incompleteDataSources.entrySet())
+		for (Map.Entry<DhSectionPos, IncompleteDataSourceEntry> mapEntry : this.incompleteDataSources.entrySet())
 		{
 			IncompleteDataSourceEntry entry = mapEntry.getValue();
 			
 			if (entry.fullDataSource == null || entry.fullDataSource instanceof IIncompleteFullDataSource)
+			{
 				continue;
+			}
 			
 			LodUtil.assertTrue(entry.fullDataSource instanceof CompleteFullDataSource, "Invalid full data source");
-			incompleteDataSources.remove(mapEntry.getKey());
+			this.incompleteDataSources.remove(mapEntry.getKey());
 			
 			// This semaphore is intentionally acquired forever
 			entry.requestCollectionSemaphore.acquireUninterruptibly(Short.MAX_VALUE);
@@ -181,9 +227,11 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 			{
 				this.fullDataRequests.remove(msg.futureId);
 				
-				ServerPlayerState serverPlayerState = remotePlayerConnectionHandler.getConnectedPlayer(msg);
+				ServerPlayerState serverPlayerState = this.remotePlayerConnectionHandler.getConnectedPlayer(msg);
 				if (serverPlayerState == null)
+				{
 					continue;
+				}
 				
 				serverPlayerState.fullDataRequestConcurrencyLimiter.release();
 				msg.sendResponse(new FullDataSourceResponseMessage(completeSource, this));
@@ -191,22 +239,30 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 		}
 		
 		// Send updated chunks after delay
-		for (Map.Entry<DhChunkPos, ChunkUpdateData> chunkUpdateEntry : chunkUpdatesToSend.entrySet())
+		for (Map.Entry<DhChunkPos, ChunkUpdateData> chunkUpdateEntry : this.chunkUpdatesToSend.entrySet())
 		{
 			ChunkUpdateData chunkUpdateData = chunkUpdateEntry.getValue();
 			
 			if (System.currentTimeMillis() < chunkUpdateData.time + CHUNK_UPDATE_SEND_DELAY)
-				continue;
-			
-			chunkUpdatesToSend.remove(chunkUpdateEntry.getKey());
-			
-			for (ServerPlayerState serverPlayerState : remotePlayerConnectionHandler.getConnectedPlayers())
 			{
-				if (!serverPlayerState.config.isRealTimeUpdatesEnabled()) continue;
+				continue;
+			}
+			
+			this.chunkUpdatesToSend.remove(chunkUpdateEntry.getKey());
+			
+			for (ServerPlayerState serverPlayerState : this.remotePlayerConnectionHandler.getConnectedPlayers())
+			{
+				if (!serverPlayerState.config.isRealTimeUpdatesEnabled())
+				{
+					continue;
+				}
 				
 				double distanceFromPlayer = chunkUpdateData.accessor.chunkPos.distance(new DhChunkPos(serverPlayerState.serverPlayer.getPosition()));
 				if (distanceFromPlayer < serverPlayerState.serverPlayer.getViewDistance() ||
-						distanceFromPlayer > serverPlayerState.config.getRenderDistanceRadius()) return;
+						distanceFromPlayer > serverPlayerState.config.getRenderDistanceRadius())
+				{
+					return;
+				}
 				
 				serverPlayerState.connection.sendMessage(new FullDataPartialUpdateMessage(chunkUpdateData.accessor, this));
 			}
@@ -218,10 +274,14 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 	{
 		CompletableFuture<ChunkSizedFullDataAccessor> future = super.updateChunkAsync(chunk);
 		if (future == null)
+		{
 			return null;
+		}
 		
 		if (!Config.Client.Advanced.Multiplayer.ServerNetworking.enableRealTimeUpdates.get())
+		{
 			return future;
+		}
 		
 		future.thenAccept(chunkSizedFullDataAccessor ->
 		{
@@ -240,37 +300,42 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 	}
 	
 	@Override
-	public int getMinY() { return getLevelWrapper().getMinHeight(); }
+	public int getMinY()
+	{
+		return this.getLevelWrapper().getMinHeight();
+	}
 	
 	@Override
 	public void close()
 	{
 		super.close();
-		serverside.close();
-		LOGGER.info("Closed DHLevel for {}", getLevelWrapper());
+		this.serverside.close();
+		LOGGER.info("Closed DHLevel for {}", this.getLevelWrapper());
 	}
 	
 	@Override
 	public void doWorldGen()
 	{
 		boolean shouldDoWorldGen = true; //todo;
-		boolean isWorldGenRunning = serverside.worldGenModule.isWorldGenRunning();
+		boolean isWorldGenRunning = this.serverside.worldGenModule.isWorldGenRunning();
 		if (shouldDoWorldGen && !isWorldGenRunning)
 		{
 			// start world gen
-			serverside.worldGenModule.startWorldGen(serverside.dataFileHandler, new ServerLevelModule.WorldGenState(this));
+			this.serverside.worldGenModule.startWorldGen(this.serverside.dataFileHandler, new ServerLevelModule.WorldGenState(this));
 		}
 		else if (!shouldDoWorldGen && isWorldGenRunning)
 		{
 			// stop world gen
-			serverside.worldGenModule.stopWorldGen(serverside.dataFileHandler);
+			this.serverside.worldGenModule.stopWorldGen(this.serverside.dataFileHandler);
 		}
 		
-		if (serverside.worldGenModule.isWorldGenRunning())
+		if (this.serverside.worldGenModule.isWorldGenRunning())
 		{
 			IServerPlayerWrapper firstPlayer = this.worldGenLoopingQueue.peek();
 			if (firstPlayer == null)
+			{
 				return;
+			}
 			
 			// Put first player in back before removing from front, so it can be removed by other thread without blocking
 			// - if it gets removed, remove() below will remove the item we just put instead
@@ -278,23 +343,32 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 			this.worldGenLoopingQueue.remove(firstPlayer);
 			
 			Vec3d position = firstPlayer.getPosition();
-			serverside.worldGenModule.worldGenTick(new DhBlockPos2D((int) position.x, (int) position.z));
+			this.serverside.worldGenModule.worldGenTick(new DhBlockPos2D((int) position.x, (int) position.z));
 		}
 	}
 	
 	@Override
-	public IServerLevelWrapper getServerLevelWrapper() { return serverLevelWrapper; }
+	public IServerLevelWrapper getServerLevelWrapper()
+	{
+		return this.serverLevelWrapper;
+	}
 	
 	@Override
-	public ILevelWrapper getLevelWrapper() { return getServerLevelWrapper(); }
+	public ILevelWrapper getLevelWrapper()
+	{
+		return this.getServerLevelWrapper();
+	}
 	
 	@Override
-	public IFullDataSourceProvider getFileHandler() { return serverside.dataFileHandler; }
+	public IFullDataSourceProvider getFileHandler()
+	{
+		return this.serverside.dataFileHandler;
+	}
 	
 	@Override
 	public AbstractSaveStructure getSaveStructure()
 	{
-		return serverside.saveStructure;
+		return this.serverside.saveStructure;
 	}
 	
 	@Override
@@ -304,9 +378,13 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 	{
 		this.serverside.dataFileHandler.getAsync(pos).thenAccept(fullDataSource -> {
 			if (fullDataSource instanceof IIncompleteFullDataSource)
+			{
 				fullDataSource = ((IIncompleteFullDataSource) fullDataSource).tryPromotingToCompleteDataSource();
+			}
 			if (fullDataSource instanceof CompleteFullDataSource)
+			{
 				entry.fullDataSource = fullDataSource;
+			}
 		});
 	}
 	
@@ -314,7 +392,10 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 	public void onWorldGenTaskComplete(DhSectionPos pos)
 	{
 		IncompleteDataSourceEntry entry = this.incompleteDataSources.get(pos);
-		if (entry == null) return;
+		if (entry == null)
+		{
+			return;
+		}
 		
 		this.trySetGeneratedDataSourceToEntry(entry, pos);
 	}

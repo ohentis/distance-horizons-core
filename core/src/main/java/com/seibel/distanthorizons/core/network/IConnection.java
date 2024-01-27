@@ -6,12 +6,16 @@ import com.seibel.distanthorizons.core.network.protocol.NetworkMessage;
 import io.netty.channel.ChannelException;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.net.SocketAddress;
 import java.util.concurrent.CompletableFuture;
 
 public interface IConnection
 {
+	Logger LOGGER = LogManager.getLogger();
+	
 	ChannelHandlerContext getChannelContext();
 	NetworkEventSource getRequestHandler();
 	
@@ -22,6 +26,7 @@ public interface IConnection
 	
 	default CompletableFuture<Void> sendMessage(NetworkMessage message)
 	{
+		LOGGER.trace("Sending message: " + message);
 		CompletableFuture<Void> future = new CompletableFuture<>();
 		
 		ChannelHandlerContext ctx = this.getChannelContext();
@@ -52,7 +57,9 @@ public interface IConnection
 		this.sendMessage(msg).whenComplete((ignored, throwable) ->
 		{
 			if (throwable != null)
+			{
 				responseFuture.completeExceptionally(throwable);
+			}
 		});
 		return responseFuture;
 	}

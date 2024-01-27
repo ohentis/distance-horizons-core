@@ -8,22 +8,25 @@ public class MultiplayerConfig extends AbstractMultiplayerConfig
 	// IMPORTANT: Once you added/removed config fields, modify MultiplayerConfigChangeListener accordingly.
 	
 	public int renderDistanceRadius = Config.Client.Advanced.Graphics.Quality.lodChunkRenderDistanceRadius.get();
-	@Override public int getRenderDistanceRadius() { return renderDistanceRadius; }
+	@Override public int getRenderDistanceRadius() { return this.renderDistanceRadius; }
 	
 	public boolean distantGenerationEnabled = Config.Client.Advanced.WorldGenerator.enableDistantGeneration.get();
-	@Override public boolean isDistantGenerationEnabled() { return distantGenerationEnabled; }
+	@Override public boolean isDistantGenerationEnabled() { return this.distantGenerationEnabled; }
 	
 	public int fullDataRequestConcurrencyLimit = Config.Client.Advanced.Multiplayer.ServerNetworking.fullDataRequestConcurrencyLimit.get();
-	@Override public int getFullDataRequestConcurrencyLimit() { return fullDataRequestConcurrencyLimit; }
+	@Override public int getFullDataRequestConcurrencyLimit() { return this.fullDataRequestConcurrencyLimit; }
 	
 	public int genTaskPriorityRequestRateLimit = Config.Client.Advanced.Multiplayer.ServerNetworking.genTaskPriorityRequestRateLimit.get();
-	@Override public int getGenTaskPriorityRequestRateLimit() { return genTaskPriorityRequestRateLimit; }
+	@Override public int getGenTaskPriorityRequestRateLimit() { return this.genTaskPriorityRequestRateLimit; }
 	
 	public boolean realTimeUpdatesEnabled = Config.Client.Advanced.Multiplayer.ServerNetworking.enableRealTimeUpdates.get();
-	@Override public boolean isRealTimeUpdatesEnabled() { return realTimeUpdatesEnabled; }
+	@Override public boolean isRealTimeUpdatesEnabled() { return this.realTimeUpdatesEnabled; }
 	
-	public boolean postRelogUpdateEnabled = false; // Config.Client.Advanced.Multiplayer.ServerNetworking.enablePostRelogUpdate.get();
-	@Override public boolean isPostRelogUpdateEnabled() { return postRelogUpdateEnabled; }
+	public boolean postRelogUpdateEnabled = Config.Client.Advanced.Multiplayer.ServerNetworking.enablePostRelogUpdate.get();
+	@Override public boolean isPostRelogUpdateEnabled() { return this.postRelogUpdateEnabled; }
+	
+	public int postRelogUpdateConcurrencyLimit = Config.Client.Advanced.Multiplayer.ServerNetworking.postRelogUpdateConcurrencyLimit.get();
+	@Override public int getPostRelogUpdateConcurrencyLimit() { return this.postRelogUpdateConcurrencyLimit; }
 	
 	@Override
 	public void decode(ByteBuf in)
@@ -34,17 +37,19 @@ public class MultiplayerConfig extends AbstractMultiplayerConfig
 		this.genTaskPriorityRequestRateLimit = in.readInt();
 		this.realTimeUpdatesEnabled = in.readBoolean();
 		this.postRelogUpdateEnabled = in.readBoolean();
+		this.postRelogUpdateConcurrencyLimit = in.readInt();
 	}
 	
 	@Override public String toString()
 	{
 		return "MultiplayerConfig{" +
-				"renderDistance=" + renderDistanceRadius +
-				", distantGenerationEnabled=" + distantGenerationEnabled +
-				", fullDataRequestConcurrencyLimit=" + fullDataRequestConcurrencyLimit +
-				", genTaskPriorityRequestRateLimit=" + genTaskPriorityRequestRateLimit +
-				", realTimeUpdatesEnabled=" + realTimeUpdatesEnabled +
-				", postRelogUpdatesEnabled=" + postRelogUpdateEnabled +
+				"renderDistance=" + this.renderDistanceRadius +
+				", distantGenerationEnabled=" + this.distantGenerationEnabled +
+				", fullDataRequestConcurrencyLimit=" + this.fullDataRequestConcurrencyLimit +
+				", genTaskPriorityRequestRateLimit=" + this.genTaskPriorityRequestRateLimit +
+				", realTimeUpdatesEnabled=" + this.realTimeUpdatesEnabled +
+				", postRelogUpdatesEnabled=" + this.postRelogUpdateEnabled +
+				", postRelogUpdateConcurrencyLimit=" + this.postRelogUpdateConcurrencyLimit +
 				'}';
 	}
 	

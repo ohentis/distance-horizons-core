@@ -15,36 +15,42 @@ public class ServersideMultiplayerConfig extends AbstractMultiplayerConfig
 	@Override
 	public int getRenderDistanceRadius()
 	{
-		return Math.min(clientConfig.renderDistanceRadius, Config.Client.Advanced.Graphics.Quality.lodChunkRenderDistanceRadius.get());
+		return Math.min(this.clientConfig.renderDistanceRadius, Config.Client.Advanced.Graphics.Quality.lodChunkRenderDistanceRadius.get());
 	}
 	
 	@Override
 	public boolean isDistantGenerationEnabled()
 	{
-		return clientConfig.distantGenerationEnabled && Config.Client.Advanced.WorldGenerator.enableDistantGeneration.get();
+		return this.clientConfig.distantGenerationEnabled && Config.Client.Advanced.WorldGenerator.enableDistantGeneration.get();
 	}
 	
 	@Override
 	public int getFullDataRequestConcurrencyLimit()
 	{
-		return Math.min(clientConfig.fullDataRequestConcurrencyLimit, Config.Client.Advanced.Multiplayer.ServerNetworking.fullDataRequestConcurrencyLimit.get());
+		return Math.min(this.clientConfig.fullDataRequestConcurrencyLimit, Config.Client.Advanced.Multiplayer.ServerNetworking.fullDataRequestConcurrencyLimit.get());
 	}
 	
 	@Override
 	public int getGenTaskPriorityRequestRateLimit()
 	{
-		return Math.min(clientConfig.genTaskPriorityRequestRateLimit, Config.Client.Advanced.Multiplayer.ServerNetworking.genTaskPriorityRequestRateLimit.get());
+		return Math.min(this.clientConfig.genTaskPriorityRequestRateLimit, Config.Client.Advanced.Multiplayer.ServerNetworking.genTaskPriorityRequestRateLimit.get());
 	}
 	
 	@Override
 	public boolean isRealTimeUpdatesEnabled()
 	{
-		return clientConfig.realTimeUpdatesEnabled && Config.Client.Advanced.Multiplayer.ServerNetworking.enableRealTimeUpdates.get();
+		return this.clientConfig.realTimeUpdatesEnabled && Config.Client.Advanced.Multiplayer.ServerNetworking.enableRealTimeUpdates.get();
 	}
 	
 	@Override
 	public boolean isPostRelogUpdateEnabled() {
-		return false; // clientConfig.postRelogUpdateEnabled && Config.Client.Advanced.Multiplayer.ServerNetworking.enablePostRelogUpdate.get();
+		return this.clientConfig.postRelogUpdateEnabled && Config.Client.Advanced.Multiplayer.ServerNetworking.enablePostRelogUpdate.get();
+	}
+	
+	@Override
+	public int getPostRelogUpdateConcurrencyLimit()
+	{
+		return Math.min(this.clientConfig.postRelogUpdateConcurrencyLimit, Config.Client.Advanced.Multiplayer.ServerNetworking.postRelogUpdateConcurrencyLimit.get());
 	}
 	
 	@Override

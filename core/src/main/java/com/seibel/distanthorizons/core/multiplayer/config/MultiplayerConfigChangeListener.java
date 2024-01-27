@@ -16,7 +16,8 @@ public class MultiplayerConfigChangeListener implements Closeable
 			Config.Client.Advanced.Multiplayer.ServerNetworking.fullDataRequestConcurrencyLimit,
 			Config.Client.Advanced.Multiplayer.ServerNetworking.genTaskPriorityRequestRateLimit,
 			Config.Client.Advanced.Multiplayer.ServerNetworking.enableRealTimeUpdates,
-			//Config.Client.Advanced.Multiplayer.ServerNetworking.enablePostRelogUpdate
+			Config.Client.Advanced.Multiplayer.ServerNetworking.enablePostRelogUpdate,
+			Config.Client.Advanced.Multiplayer.ServerNetworking.postRelogUpdateConcurrencyLimit,
 	};
 	
 	private final ArrayList<ConfigChangeListener> changeListeners = new ArrayList<>();
@@ -24,15 +25,19 @@ public class MultiplayerConfigChangeListener implements Closeable
 	public MultiplayerConfigChangeListener(Runnable runnable)
 	{
 		for (ConfigEntry entry : CONFIG_ENTRIES)
-			changeListeners.add(new ConfigChangeListener(entry, ignored -> runnable.run()));
+		{
+			this.changeListeners.add(new ConfigChangeListener(entry, ignored -> runnable.run()));
+		}
 	}
 	
 	@Override
 	public void close()
 	{
-		for (ConfigChangeListener changeListener : changeListeners)
+		for (ConfigChangeListener changeListener : this.changeListeners)
+		{
 			changeListener.close();
-		changeListeners.clear();
+		}
+		this.changeListeners.clear();
 	}
 	
 }

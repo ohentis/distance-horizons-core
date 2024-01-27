@@ -27,7 +27,7 @@ public class ServerPlayerState
     public final SupplierBasedConcurrencyLimiter<FullDataSourceRequestMessage> fullDataRequestConcurrencyLimiter = new SupplierBasedConcurrencyLimiter<>(
 			() -> ServerNetworking.fullDataRequestConcurrencyLimit.get(),
 		    msg -> {
-			    msg.sendResponse(new RateLimitedException("Max concurrent full data requests: " + config.getFullDataRequestConcurrencyLimit()));
+			    msg.sendResponse(new RateLimitedException("Max concurrent full data requests: " + this.config.getFullDataRequestConcurrencyLimit()));
 				this.rateLimitKickTrigger.tryAcquire(null);
 		    }
 	);
@@ -35,15 +35,22 @@ public class ServerPlayerState
 	public final SupplierBasedRateLimiter<GenTaskPriorityRequestMessage> genTaskPriorityRequestRateLimiter = new SupplierBasedRateLimiter<>(
 			() -> ServerNetworking.genTaskPriorityRequestRateLimit.get(),
 			msg -> {
-				// Shouldn't be called, but it's here just in case
-				msg.sendResponse(new RateLimitedException("Max section checks per second: " + config.getFullDataRequestConcurrencyLimit()));
+				msg.sendResponse(new RateLimitedException("Max section checks per second: " + this.config.getFullDataRequestConcurrencyLimit()));
+				this.rateLimitKickTrigger.tryAcquire(null);
+			}
+	);
+	
+	public final SupplierBasedConcurrencyLimiter<FullDataSourceRequestMessage> postRelogUpdateRequestConcurrencyLimiter = new SupplierBasedConcurrencyLimiter<>(
+			() -> ServerNetworking.postRelogUpdateConcurrencyLimit.get(),
+			msg -> {
+				msg.sendResponse(new RateLimitedException("Max concurrent post-relog update requests: " + this.config.getPostRelogUpdateConcurrencyLimit()));
 				this.rateLimitKickTrigger.tryAcquire(null);
 			}
 	);
 	
 	
 	
-    public ServerPlayerState(IServerPlayerWrapper serverPlayer) { this.serverPlayer = serverPlayer; }
+	public ServerPlayerState(IServerPlayerWrapper serverPlayer) { this.serverPlayer = serverPlayer; }
     
 }
 

@@ -26,50 +26,56 @@ import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import io.netty.buffer.ByteBuf;
 
+import javax.annotation.Nullable;
+
 public class FullDataSourceRequestMessage extends FutureTrackableNetworkMessage implements ILevelRelatedMessage
 {
-	public DhSectionPos dhSectionPos;
 	private int levelHashCode;
-	@Override public int getLevelHashCode() { return levelHashCode; }
-	public boolean changedOnly;
+	
+	public DhSectionPos sectionPos;
+	
+	/** Only present when requesting for changes. */
+	@Nullable
+	public Integer checksum;
+	
+	@Override
+	public int getLevelHashCode() { return this.levelHashCode; }
 	
 	public FullDataSourceRequestMessage() {}
-
-	public FullDataSourceRequestMessage(ILevelWrapper levelWrapper, DhSectionPos dhSectionPos)
+	public FullDataSourceRequestMessage(ILevelWrapper levelWrapper, DhSectionPos sectionPos, @Nullable Integer checksum)
 	{
 		// TODO Multiverse support
 		this.levelHashCode = levelWrapper.getDimensionType().getDimensionName().hashCode();
-		this.dhSectionPos = dhSectionPos;
-	}
-	
-	public FullDataSourceRequestMessage(ILevelWrapper levelWrapper, DhSectionPos dhSectionPos, boolean changedOnly)
-	{
-		this(levelWrapper, dhSectionPos);
-		this.changedOnly = true;
+		this.sectionPos = sectionPos;
+		this.checksum = checksum;
 	}
 
     @Override
     public void encode0(ByteBuf out)
 	{
-		out.writeInt(levelHashCode);
-		dhSectionPos.encode(out);
-		out.writeBoolean(changedOnly);
+		out.writeInt(this.levelHashCode);
+		this.sectionPos.encode(out);
+		if (this.encodeOptional(out, this.checksum))
+		{
+			out.writeInt(this.checksum);
+		}
     }
 
     @Override
     public void decode0(ByteBuf in)
 	{
-		levelHashCode = in.readInt();
-		dhSectionPos = INetworkObject.decodeStatic(DhSectionPos.zero(), in);
-		changedOnly = in.readBoolean();
+		this.levelHashCode = in.readInt();
+		this.sectionPos = INetworkObject.decodeStatic(DhSectionPos.zero(), in);
+		this.checksum = this.decodeOptional(in, in::readInt);
     }
 	
 	@Override
 	public String toString()
 	{
 		return super.toString(
-				"dhSectionPos=" + dhSectionPos +
-				", levelHashCode=" + levelHashCode
+				"dhSectionPos=" + this.sectionPos +
+						", levelHashCode=" + this.levelHashCode +
+						", checksum=" + this.checksum
 		);
 	}
 	

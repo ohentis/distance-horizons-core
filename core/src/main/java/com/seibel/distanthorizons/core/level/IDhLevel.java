@@ -38,6 +38,8 @@ public interface IDhLevel extends AutoCloseable
 	 */
 	ILevelWrapper getLevelWrapper();
 	
+	void updateDataSourcesWithChunkData(ChunkSizedFullDataAccessor data);
+	
 	@Nullable
 	CompletableFuture<ChunkSizedFullDataAccessor> updateChunkAsync(IChunkWrapper chunk);
 	

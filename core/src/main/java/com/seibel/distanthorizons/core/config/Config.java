@@ -737,7 +737,7 @@ public class Config
 				
 				// deprecated and not implemented, can be made public if we ever re-implement it
 				@Deprecated
-				private static ConfigEntry<EGenerationPriority> generationPriority = new ConfigEntry.Builder<EGenerationPriority>()
+				private static final ConfigEntry<EGenerationPriority> generationPriority = new ConfigEntry.Builder<EGenerationPriority>()
 						.set(EGenerationPriority.NEAR_FIRST)
 						.comment(""
 								+ "In what priority should fake chunks be generated outside the vanilla render distance? \n"
@@ -871,8 +871,7 @@ public class Config
 									+ "")
 							.build();
 					
-					/** Disabled, previous implementation is too terrible to continue using it. */
-					private static ConfigEntry<Boolean> enablePostRelogUpdate = new ConfigEntry.Builder<Boolean>()
+					public static ConfigEntry<Boolean> enablePostRelogUpdate = new ConfigEntry.Builder<Boolean>()
 							.setServersideShortName("enablePostRelogUpdate")
 							.set(false)
 							.comment(""
@@ -903,7 +902,7 @@ public class Config
 							.setServersideShortName("fullDataRequestConcurrencyLimit")
 							.setMinDefaultMax(1, 20, 100)
 							.comment(""
-									+ "Limits the amount of sent/processed LOD requests concurrently on server, per player. \n"
+									+ "Limits the amount of sent/processed LOD *generation* requests concurrently on server, per player. \n"
 									+ "")
 							.build();
 					
@@ -923,11 +922,19 @@ public class Config
 									+ "")
 							.build();
 					
+					public static ConfigEntry<Integer> postRelogUpdateConcurrencyLimit = new ConfigEntry.Builder<Integer>()
+							.setServersideShortName("postRelogUpdateConcurrencyLimit")
+							.setMinDefaultMax(1, 50, 100)
+							.comment(""
+									+ "Limits the amount of sent/processed LOD *update* requests concurrently on server, per player. \n"
+									+ "")
+							.build();
+					
 					/**
 					 * Intentionally disabled.
 					 * @see #enablePostRelogUpdate
 					 */
-					private static ConfigEntry<Integer> fullDataChangeSummaryRequestRateLimit = new ConfigEntry.Builder<Integer>()
+					private static final ConfigEntry<Integer> fullDataChangeSummaryRequestRateLimit = new ConfigEntry.Builder<Integer>()
 							.setServersideShortName("fullDataChangeSummaryRequestRateLimit")
 							.setMinDefaultMax(1, 20, 100)
 							.comment(""
@@ -1085,7 +1092,7 @@ public class Config
 				
 				// deprecated and not implemented, can be made public if we ever re-implement it
 				@Deprecated
-				private static ConfigEntry<EBufferRebuildTimes> rebuildTimes = new ConfigEntry.Builder<EBufferRebuildTimes>()
+				private static final ConfigEntry<EBufferRebuildTimes> rebuildTimes = new ConfigEntry.Builder<EBufferRebuildTimes>()
 						.set(EBufferRebuildTimes.NORMAL)
 						.comment(""
 								+ "How frequently should vertex buffers (geometry) be rebuilt and sent to the GPU? \n"

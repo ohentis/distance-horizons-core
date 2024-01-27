@@ -29,6 +29,7 @@ import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.generation.WorldRemoteGenerationQueue;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.multiplayer.client.ClientNetworkState;
+import com.seibel.distanthorizons.core.multiplayer.client.FullDataRefreshQueue;
 import com.seibel.distanthorizons.core.network.NetworkClient;
 import com.seibel.distanthorizons.core.network.ScopedNetworkEventSource;
 import com.seibel.distanthorizons.core.network.messages.fullData.updates.FullDataPartialUpdateMessage;
@@ -73,11 +74,15 @@ public class DhClientLevel extends DhLevel implements IDhClientLevel
 	private final ClientNetworkState networkState;
 	@Nullable
 	private final ScopedNetworkEventSource<NetworkClient> eventSource;
+	
 	public final WorldGenModule worldGenModule;
 	public final AppliedConfigState<Boolean> worldGeneratorEnabledConfig;
 	
+	@Nullable
+	private final FullDataRefreshQueue dataRefreshQueue;
 	
-
+	
+	
 	//=============//
 	// constructor //
 	//=============//
@@ -91,20 +96,23 @@ public class DhClientLevel extends DhLevel implements IDhClientLevel
 		}
 		this.levelWrapper = clientLevelWrapper;
 		this.saveStructure = saveStructure;
-		this.dataFileHandler = new RemoteFullDataFileHandler(this, saveStructure, fullDataSaveDirOverride);
 		
-		this.worldGeneratorEnabledConfig = new AppliedConfigState<>(Config.Client.Advanced.WorldGenerator.enableDistantGeneration);
 		this.networkState = networkState;
-		this.worldGenModule = new WorldGenModule(dataFileHandler, this);
 		if (networkState != null)
 		{
 			this.eventSource = new ScopedNetworkEventSource<>(networkState.getClient());
+			this.dataRefreshQueue = new FullDataRefreshQueue(this, networkState);
 			this.registerNetworkHandlers();
 		}
 		else
 		{
 			this.eventSource = null;
+			this.dataRefreshQueue = null;
 		}
+		
+		this.dataFileHandler = new RemoteFullDataFileHandler(this, saveStructure, fullDataSaveDirOverride, this.dataRefreshQueue);
+		this.worldGeneratorEnabledConfig = new AppliedConfigState<>(Config.Client.Advanced.WorldGenerator.enableDistantGeneration);
+		this.worldGenModule = new WorldGenModule(this.dataFileHandler, this);
 		
 		this.clientside = new ClientLevelModule(this);
 		if (enableRendering)
@@ -123,7 +131,10 @@ public class DhClientLevel extends DhLevel implements IDhClientLevel
 			try
 			{
 				ChunkSizedFullDataAccessor fullDataAccessor = msg.getFullDataSource(this);
-				if (fullDataAccessor == null) return;
+				if (fullDataAccessor == null)
+				{
+					return;
+				}
 				
 				this.updateDataSourcesWithChunkData(fullDataAccessor);
 			}
@@ -145,6 +156,11 @@ public class DhClientLevel extends DhLevel implements IDhClientLevel
 		{
 			this.chunkToLodBuilder.tick();
 			this.clientside.clientTick();
+			
+			if (this.dataRefreshQueue != null)
+			{
+				this.dataRefreshQueue.tick(new DhBlockPos2D(MC_CLIENT.getPlayerBlockPos()));
+			}
 		}
 		catch (Exception e)
 		{
@@ -152,37 +168,38 @@ public class DhClientLevel extends DhLevel implements IDhClientLevel
 		}
 	}
 	
+	@Override
 	public void doWorldGen()
 	{
-		boolean isClientUsable = networkState != null && !networkState.getClient().isClosed();
-		boolean shouldDoWorldGen = isClientUsable && this.networkState.config.distantGenerationEnabled && clientside.isRendering();
-		boolean isWorldGenRunning = worldGenModule.isWorldGenRunning();
+		boolean isClientUsable = this.networkState != null && !this.networkState.getClient().isClosed();
+		boolean shouldDoWorldGen = isClientUsable && this.networkState.config.distantGenerationEnabled && this.clientside.isRendering();
+		boolean isWorldGenRunning = this.worldGenModule.isWorldGenRunning();
 		if (shouldDoWorldGen && !isWorldGenRunning)
 		{
 			// start world gen
-			worldGenModule.startWorldGen(this.dataFileHandler, new WorldGenState(this, this.networkState));
+			this.worldGenModule.startWorldGen(this.dataFileHandler, new WorldGenState(this, this.networkState));
 		}
 		else if (!shouldDoWorldGen && isWorldGenRunning)
 		{
 			// stop world gen
-			worldGenModule.stopWorldGen(this.dataFileHandler);
+			this.worldGenModule.stopWorldGen(this.dataFileHandler);
 		}
 		
-		if (worldGenModule.isWorldGenRunning())
+		if (this.worldGenModule.isWorldGenRunning())
 		{
-			ClientLevelModule.ClientRenderState renderState = clientside.ClientRenderStateRef.get();
+			ClientLevelModule.ClientRenderState renderState = this.clientside.ClientRenderStateRef.get();
 			if (renderState != null && renderState.quadtree != null)
 			{
-				dataFileHandler.removeGenRequestIf(p -> !renderState.quadtree.isSectionPosInBounds(p));
+				this.dataFileHandler.removeGenRequestIf(p -> !renderState.quadtree.isSectionPosInBounds(p));
 			}
-			worldGenModule.worldGenTick(new DhBlockPos2D(MC_CLIENT.getPlayerBlockPos()));
+			this.worldGenModule.worldGenTick(new DhBlockPos2D(MC_CLIENT.getPlayerBlockPos()));
 		}
 	}
 
 	@Override
 	public void render(Mat4f mcModelViewMatrix, Mat4f mcProjectionMatrix, float partialTicks, IProfilerWrapper profiler)
 	{
-		clientside.render(mcModelViewMatrix, mcProjectionMatrix, partialTicks, profiler);
+		this.clientside.render(mcModelViewMatrix, mcProjectionMatrix, partialTicks, profiler);
 	}
 	
 	
@@ -192,35 +209,37 @@ public class DhClientLevel extends DhLevel implements IDhClientLevel
 	//================//
 	
 	@Override
-	public int computeBaseColor(DhBlockPos pos, IBiomeWrapper biome, IBlockStateWrapper block) { return levelWrapper.computeBaseColor(pos, biome, block); }
+	public int computeBaseColor(DhBlockPos pos, IBiomeWrapper biome, IBlockStateWrapper block) { return this.levelWrapper.computeBaseColor(pos, biome, block); }
 	
 	@Override
-	public IClientLevelWrapper getClientLevelWrapper() { return levelWrapper; }
+	public IClientLevelWrapper getClientLevelWrapper() { return this.levelWrapper; }
 	
 	@Override
 	public void clearRenderCache()
 	{
-		clientside.clearRenderCache();
+		this.clientside.clearRenderCache();
 	}
 	
 	@Override
-	public ILevelWrapper getLevelWrapper() { return levelWrapper; }
+	public ILevelWrapper getLevelWrapper() { return this.levelWrapper; }
 	
 	@Override
 	public void updateDataSourcesWithChunkData(ChunkSizedFullDataAccessor data) { this.clientside.updateDataSourcesWithChunkData(data); }
 	
 	@Override
-	public int getMinY() { return levelWrapper.getMinHeight(); }
+	public int getMinY() { return this.levelWrapper.getMinHeight(); }
 	
 	@Override
 	public void close()
 	{
-		if (worldGenModule != null)
-			worldGenModule.close();
-		clientside.close();
+		if (this.worldGenModule != null)
+		{
+			this.worldGenModule.close();
+		}
+		this.clientside.close();
 		super.close();
-		dataFileHandler.close();
-		LOGGER.info("Closed " + DhClientLevel.class.getSimpleName() + " for " + levelWrapper);
+		this.dataFileHandler.close();
+		LOGGER.info("Closed " + DhClientLevel.class.getSimpleName() + " for " + this.levelWrapper);
 	}
 	
 	//=======================//
@@ -230,13 +249,13 @@ public class DhClientLevel extends DhLevel implements IDhClientLevel
 	@Override
 	public IFullDataSourceProvider getFileHandler()
 	{
-		return dataFileHandler;
+		return this.dataFileHandler;
 	}
 	
 	@Override
 	public AbstractSaveStructure getSaveStructure()
 	{
-		return saveStructure;
+		return this.saveStructure;
 	}
 	
 	@Override
@@ -253,6 +272,6 @@ public class DhClientLevel extends DhLevel implements IDhClientLevel
 						0.2, 32f
 				)
 		);
-		clientside.reloadPos(pos);
+		this.clientside.reloadPos(pos);
 	}
 }

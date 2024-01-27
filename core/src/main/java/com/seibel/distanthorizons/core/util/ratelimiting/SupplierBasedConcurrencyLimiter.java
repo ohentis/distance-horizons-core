@@ -27,6 +27,7 @@ public class SupplierBasedConcurrencyLimiter<T>
 	{
 		if (this.pendingTasks.incrementAndGet() > this.maxConcurrentTasksSupplier.get())
 		{
+			this.pendingTasks.decrementAndGet();
 			this.onFailureConsumer.accept(context);
 			return false;
 		}
