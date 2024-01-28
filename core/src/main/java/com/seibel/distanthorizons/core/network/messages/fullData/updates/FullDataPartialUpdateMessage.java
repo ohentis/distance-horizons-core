@@ -40,7 +40,8 @@ public class FullDataPartialUpdateMessage extends NetworkMessage implements ILev
 	private DhServerLevel level;
 	
 	private int levelHashCode;
-	@Override public int getLevelHashCode() { return levelHashCode; }
+	@Override
+	public int getLevelHashCode() { return this.levelHashCode; }
 	
 	private DhChunkPos chunkPos;
 	private ByteBuf dataBuffer;
@@ -58,18 +59,19 @@ public class FullDataPartialUpdateMessage extends NetworkMessage implements ILev
 		this.levelHashCode = level.getLevelWrapper().getDimensionType().getDimensionName().hashCode();
 	}
 	
+	@Override
 	public void encode(ByteBuf out)
 	{
 		try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream())
 		{
 			DhDataOutputStream dhOutputStream = new DhDataOutputStream(outputStream);
-			fullDataAccessor.writeToStream(dhOutputStream, level);
+			this.fullDataAccessor.writeToStream(dhOutputStream, this.level);
 			dhOutputStream.flush();
 			
-			out.writeInt(levelHashCode);
+			out.writeInt(this.levelHashCode);
 			
-			out.writeInt(fullDataAccessor.chunkPos.x);
-			out.writeInt(fullDataAccessor.chunkPos.z);
+			out.writeInt(this.fullDataAccessor.chunkPos.x);
+			out.writeInt(this.fullDataAccessor.chunkPos.z);
 			
 			out.writeInt(outputStream.size());
 			out.writeBytes(outputStream.toByteArray());
@@ -80,11 +82,12 @@ public class FullDataPartialUpdateMessage extends NetworkMessage implements ILev
 		}
 	}
 	
+	@Override
 	public void decode(ByteBuf in)
 	{
-		levelHashCode = in.readInt();
+		this.levelHashCode = in.readInt();
 		
-		chunkPos = new DhChunkPos(in.readInt(), in.readInt());
+		this.chunkPos = new DhChunkPos(in.readInt(), in.readInt());
 		
 		this.dataBuffer = in.readBytes(in.readInt());
 	}
@@ -92,26 +95,29 @@ public class FullDataPartialUpdateMessage extends NetworkMessage implements ILev
 	@Nullable
 	public ChunkSizedFullDataAccessor getFullDataSource(IDhLevel level) throws IOException, InterruptedException
 	{
-		if (isLevelInvalid(level.getLevelWrapper())) return null;
-		
-		try (ByteBufInputStream inputStream = new ByteBufInputStream(dataBuffer))
+		if (!this.isLevelValid(level.getLevelWrapper()))
 		{
-			ChunkSizedFullDataAccessor result = new ChunkSizedFullDataAccessor(chunkPos);
+			return null;
+		}
+		
+		try (ByteBufInputStream inputStream = new ByteBufInputStream(this.dataBuffer))
+		{
+			ChunkSizedFullDataAccessor result = new ChunkSizedFullDataAccessor(this.chunkPos);
 			result.populateFromStream(new DhDataInputStream(inputStream), level);
 			return result;
 		}
 		finally
 		{
-			dataBuffer.release();
+			this.dataBuffer.release();
 		}
 	}
 	
 	@Override public String toString()
 	{
 		return super.toString(
-				"levelHashCode=" + levelHashCode +
-				", chunkPos=" + chunkPos +
-				", dataBuffer=" + dataBuffer
+				"levelHashCode=" + this.levelHashCode +
+						", chunkPos=" + this.chunkPos +
+						", dataBuffer=" + this.dataBuffer
 		);
 	}
 	

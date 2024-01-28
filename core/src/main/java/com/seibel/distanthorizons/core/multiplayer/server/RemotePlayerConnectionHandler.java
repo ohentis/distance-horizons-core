@@ -2,32 +2,36 @@ package com.seibel.distanthorizons.core.multiplayer.server;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import com.google.common.collect.Maps;
 import com.seibel.distanthorizons.core.level.DhServerLevel;
 import com.seibel.distanthorizons.core.multiplayer.config.MultiplayerConfig;
 import com.seibel.distanthorizons.core.multiplayer.config.MultiplayerConfigChangeListener;
 import com.seibel.distanthorizons.core.network.IConnection;
 import com.seibel.distanthorizons.core.network.NetworkServer;
 import com.seibel.distanthorizons.core.network.ScopedNetworkEventSource;
+import com.seibel.distanthorizons.core.network.exceptions.InvalidLevelException;
 import com.seibel.distanthorizons.core.network.messages.base.AckMessage;
 import com.seibel.distanthorizons.core.network.messages.base.CloseEvent;
 import com.seibel.distanthorizons.core.network.messages.base.ILevelRelatedMessage;
 import com.seibel.distanthorizons.core.network.messages.session.PlayerUUIDMessage;
 import com.seibel.distanthorizons.core.network.messages.session.RemotePlayerConfigMessage;
+import com.seibel.distanthorizons.core.network.protocol.FutureTrackableNetworkMessage;
 import com.seibel.distanthorizons.core.network.protocol.NetworkMessage;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.Closeable;
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 public class RemotePlayerConnectionHandler implements Closeable
 {
 	private final ScopedNetworkEventSource<NetworkServer> eventSource;
-	private final HashMap<UUID, ServerPlayerState> playersByUUID = new HashMap<>();
-	private final BiMap<IConnection, ServerPlayerState> playersByConnection = HashBiMap.create();
+	private final ConcurrentHashMap<UUID, ServerPlayerState> playersByUUID = new ConcurrentHashMap<>();
+	private final BiMap<IConnection, ServerPlayerState> playersByConnection = Maps.synchronizedBiMap(HashBiMap.create());
 	
 	private final MultiplayerConfigChangeListener configChangeListener = new MultiplayerConfigChangeListener(this::onConfigChanged); 
 	
@@ -83,28 +87,45 @@ public class RemotePlayerConnectionHandler implements Closeable
 	private void onConfigChanged()
 	{
 		for (ServerPlayerState serverPlayerState : this.getConnectedPlayers())
+		{
 			serverPlayerState.connection.sendMessage(new RemotePlayerConfigMessage(serverPlayerState.config));
+		}
 	}
 	
 	public <T extends NetworkMessage> Consumer<T> connectedPlayersOnly(BiConsumer<T, ServerPlayerState> next)
 	{
 		return msg ->
 		{
-			ServerPlayerState serverPlayerState = getConnectedPlayer(msg);
+			ServerPlayerState serverPlayerState = this.getConnectedPlayer(msg);
 			if (serverPlayerState != null)
+			{
 				next.accept(msg, serverPlayerState);
+			}
 		};
 	}
 	
 	public <T extends NetworkMessage> Consumer<T> currentLevelOnly(DhServerLevel level, BiConsumer<T, ServerPlayerState> next)
 	{
-		return connectedPlayersOnly((msg, serverPlayerState) ->
+		return this.connectedPlayersOnly((msg, serverPlayerState) ->
 		{
 			if (serverPlayerState.serverPlayer.getLevel() != level.getLevelWrapper())
+			{
 				return;
+			}
 			
-			if (msg instanceof ILevelRelatedMessage && ((ILevelRelatedMessage) msg).sendExceptionIfLevelInvalid(level.getLevelWrapper()))
-				return;
+			if (msg instanceof ILevelRelatedMessage)
+			{
+				if (!((ILevelRelatedMessage) msg).isLevelValid(level.getLevelWrapper()))
+				{
+					if (msg instanceof FutureTrackableNetworkMessage)
+					{
+						((FutureTrackableNetworkMessage) msg).sendResponse(new InvalidLevelException("Invalid level"));
+					}
+					
+					return;
+				}
+				
+			}
 			
 			next.accept(msg, serverPlayerState);
 		});
@@ -112,13 +133,16 @@ public class RemotePlayerConnectionHandler implements Closeable
 	
 	public Iterable<ServerPlayerState> getConnectedPlayers()
 	{
-		return playersByConnection.values();
+		synchronized (this.playersByConnection)
+		{
+			return new ArrayList<>(this.playersByConnection.values());
+		}
 	}
 	
 	@Nullable
 	public ServerPlayerState getConnectedPlayer(NetworkMessage msg)
 	{
-		return playersByConnection.get(msg.getConnection());
+		return this.playersByConnection.get(msg.getConnection());
 	}
 	
 	public void registerJoinedPlayer(IServerPlayerWrapper serverPlayer)
@@ -131,7 +155,9 @@ public class RemotePlayerConnectionHandler implements Closeable
 		ServerPlayerState dhPlayer = this.playersByUUID.remove(serverPlayer.getUUID());
 		IConnection connection = this.playersByConnection.inverse().remove(dhPlayer);
 		if (connection != null)
+		{
 			connection.disconnect("You are being disconnected.");
+		}
 	}
 	
 	@Override
