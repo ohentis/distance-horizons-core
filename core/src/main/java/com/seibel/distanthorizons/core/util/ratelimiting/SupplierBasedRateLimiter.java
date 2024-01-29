@@ -18,6 +18,7 @@ public class SupplierBasedRateLimiter<T>
 	
 	private final RateLimiter rateLimiter = RateLimiter.create(1);
 	
+	public SupplierBasedRateLimiter(Supplier<Integer> maxRateSupplier) { this(maxRateSupplier, ignored -> { }); }
 	public SupplierBasedRateLimiter(Supplier<Integer> maxRateSupplier, Consumer<T> onFailureConsumer)
 	{
 		this.maxRateSupplier = maxRateSupplier;
@@ -27,30 +28,40 @@ public class SupplierBasedRateLimiter<T>
 	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
 	public boolean tryAcquire(T context)
 	{
-		return tryAcquire(context, 1);
+		return this.tryAcquire(context, 1);
+	}
+	
+	public boolean tryAcquire()
+	{
+		return this.tryAcquire(null, 1);
 	}
 	
 	public int acquireOrDrain(int permits)
 	{
-		rateLimiter.setRate(maxRateSupplier.get());
+		this.rateLimiter.setRate(this.maxRateSupplier.get());
 		
-		if (rateLimiter.tryAcquire(permits))
+		if (this.rateLimiter.tryAcquire(permits))
+		{
 			return permits;
+		}
 		
 		int acquired = 0;
 		while ((permits /= 2) > 0)
 		{
-			if (rateLimiter.tryAcquire(permits))
+			if (this.rateLimiter.tryAcquire(permits))
+			{
 				acquired += permits;
+			}
 		}
+		
 		return acquired;
 	}
 	
 	public boolean tryAcquire(T context, int permits)
 	{
-		rateLimiter.setRate(maxRateSupplier.get());
+		this.rateLimiter.setRate(this.maxRateSupplier.get());
 		
-		if (!rateLimiter.tryAcquire(permits))
+		if (!this.rateLimiter.tryAcquire(permits))
 		{
 			this.onFailureConsumer.accept(context);
 			return false;

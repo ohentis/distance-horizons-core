@@ -4,7 +4,7 @@ import com.seibel.distanthorizons.core.network.IConnection;
 import com.seibel.distanthorizons.core.network.exceptions.RateLimitedException;
 import com.seibel.distanthorizons.core.network.messages.fullData.generation.FullDataSourceRequestMessage;
 import com.seibel.distanthorizons.core.network.messages.fullData.generation.priority.GenTaskPriorityRequestMessage;
-import com.seibel.distanthorizons.core.util.ratelimiting.SupplierBasedConcurrencyLimiter;
+import com.seibel.distanthorizons.core.util.ratelimiting.SupplierBasedRateAndConcurrencyLimiter;
 import com.seibel.distanthorizons.core.util.ratelimiting.SupplierBasedRateLimiter;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import org.jetbrains.annotations.NotNull;
@@ -24,10 +24,10 @@ public class ServerPlayerState
 			ignored -> this.connection.disconnect("You have been repeatedly exceeding rate/concurrency limits.")
 	);
 	
-    public final SupplierBasedConcurrencyLimiter<FullDataSourceRequestMessage> fullDataRequestConcurrencyLimiter = new SupplierBasedConcurrencyLimiter<>(
-			() -> ServerNetworking.fullDataRequestConcurrencyLimit.get(),
+	public final SupplierBasedRateAndConcurrencyLimiter<FullDataSourceRequestMessage> fullDataRequestConcurrencyLimiter = new SupplierBasedRateAndConcurrencyLimiter<>(
+			() -> ServerNetworking.generationRequestRCLimit.get(),
 		    msg -> {
-			    msg.sendResponse(new RateLimitedException("Max concurrent full data requests: " + this.config.getFullDataRequestConcurrencyLimit()));
+			    msg.sendResponse(new RateLimitedException("Full data request rate/concurrency limit: " + this.config.getFullDataRequestConcurrencyLimit()));
 				this.rateLimitKickTrigger.tryAcquire(null);
 		    }
 	);
@@ -35,15 +35,15 @@ public class ServerPlayerState
 	public final SupplierBasedRateLimiter<GenTaskPriorityRequestMessage> genTaskPriorityRequestRateLimiter = new SupplierBasedRateLimiter<>(
 			() -> ServerNetworking.genTaskPriorityRequestRateLimit.get(),
 			msg -> {
-				msg.sendResponse(new RateLimitedException("Max section checks per second: " + this.config.getFullDataRequestConcurrencyLimit()));
+				msg.sendResponse(new RateLimitedException("Generation task priority check rate limit: " + this.config.getFullDataRequestConcurrencyLimit()));
 				this.rateLimitKickTrigger.tryAcquire(null);
 			}
 	);
 	
-	public final SupplierBasedConcurrencyLimiter<FullDataSourceRequestMessage> postRelogUpdateRequestConcurrencyLimiter = new SupplierBasedConcurrencyLimiter<>(
-			() -> ServerNetworking.postRelogUpdateConcurrencyLimit.get(),
+	public final SupplierBasedRateAndConcurrencyLimiter<FullDataSourceRequestMessage> loginDataSyncRCLimiter = new SupplierBasedRateAndConcurrencyLimiter<>(
+			() -> ServerNetworking.loginDataSyncRCLimit.get(),
 			msg -> {
-				msg.sendResponse(new RateLimitedException("Max concurrent post-relog update requests: " + this.config.getPostRelogUpdateConcurrencyLimit()));
+				msg.sendResponse(new RateLimitedException("Data sync rate/concurrency limit: " + this.config.getLoginDataSyncRCLimit()));
 				this.rateLimitKickTrigger.tryAcquire(null);
 			}
 	);

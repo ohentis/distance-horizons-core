@@ -127,15 +127,15 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 			}
 			else
 			{
-				// Post-relog update
+				// Sync only
 				
-				if (!serverPlayerState.config.isPostRelogUpdateEnabled())
+				if (!serverPlayerState.config.isLoginDataSyncEnabled())
 				{
 					msg.sendResponse(new RequestRejectedException("Operation is disabled from config."));
 					return;
 				}
 				
-				if (!serverPlayerState.postRelogUpdateRequestConcurrencyLimiter.tryAcquire(msg))
+				if (!serverPlayerState.loginDataSyncRCLimiter.tryAcquire(msg))
 				{
 					return;
 				}
@@ -143,14 +143,14 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 				Integer serverChecksum = this.serverside.dataFileHandler.repo.getChecksumForSection(msg.sectionPos);
 				if (serverChecksum == null || serverChecksum.equals(msg.checksum))
 				{
-					serverPlayerState.postRelogUpdateRequestConcurrencyLimiter.release();
+					serverPlayerState.loginDataSyncRCLimiter.release();
 					msg.sendResponse(new FullDataSourceResponseMessage(null, this));
 					return;
 				}
 				
 				this.serverside.dataFileHandler.getAsync(msg.sectionPos).thenAccept(fullDataSource ->
 				{
-					serverPlayerState.postRelogUpdateRequestConcurrencyLimiter.release();
+					serverPlayerState.loginDataSyncRCLimiter.release();
 					msg.sendResponse(new FullDataSourceResponseMessage((CompleteFullDataSource) fullDataSource, this));
 				});
 			}

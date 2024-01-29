@@ -845,7 +845,6 @@ public class Config
 								+ "")
 						.build();
 				
-				// TODO Write strings
 				public static class ServerNetworking
 				{
 					public static ConfigEntry<Boolean> enableServerNetworking = new ConfigEntry.Builder<Boolean>()
@@ -862,23 +861,6 @@ public class Config
 									+ "Note: This requires DH to be installed on the server in order to function. \n"
 									+ "")
 							.build();
-					
-					public static ConfigEntry<Boolean> enableRealTimeUpdates = new ConfigEntry.Builder<Boolean>()
-							.setServersideShortName("enableRealTimeUpdates")
-							.set(false)
-							.comment(""
-									+ "Enables real time updates from server."
-									+ "")
-							.build();
-					
-					public static ConfigEntry<Boolean> enablePostRelogUpdate = new ConfigEntry.Builder<Boolean>()
-							.setServersideShortName("enablePostRelogUpdate")
-							.set(false)
-							.comment(""
-									+ "Enables updating of LODs after relog."
-									+ "")
-							.build();
-					
 					public static ConfigEntry<Integer> serverPort = new ConfigEntry.Builder<Integer>()
 							.setServersideShortName("serverPort")
 							.setMinDefaultMax(1, 25049, 65535)
@@ -893,16 +875,16 @@ public class Config
 							.setMinDefaultMax(1, 10, 100)
 							.comment(""
 									+ "Amount of rate/concurrency limit hits in one second before disconnecting the offending clients. \n"
-									+ "Warning: too low values can cause slower clients to disconnect prematurely.\n"
-									+ "This setting is server-only; it does not have effect on client.\n"
+									+ "This setting is server-only; it does not have effect on the client.\n"
 									+ "")
 							.build();
 					
-					public static ConfigEntry<Integer> fullDataRequestConcurrencyLimit = new ConfigEntry.Builder<Integer>()
-							.setServersideShortName("fullDataRequestConcurrencyLimit")
+					
+					public static ConfigEntry<Integer> generationRequestRCLimit = new ConfigEntry.Builder<Integer>()
+							.setServersideShortName("generationRequestRCLimit")
 							.setMinDefaultMax(1, 20, 100)
 							.comment(""
-									+ "Limits the amount of sent/processed LOD *generation* requests concurrently on server, per player. \n"
+									+ "Limits the amount of generation requests sent by client and processed by server. \n"
 									+ "")
 							.build();
 					
@@ -914,7 +896,7 @@ public class Config
 									+ "")
 							.build();
 					
-					public static ConfigEntry<Integer> fullDataRequestBeginDelay = new ConfigEntry.Builder<Integer>()
+					public static ConfigEntry<Integer> generationRequestBeginDelay = new ConfigEntry.Builder<Integer>()
 							.setMinDefaultMax(0, 3, 10)
 							.comment(""
 									+ "Adds a delay in seconds before sending LOD requests, when generation is enabled. \n"
@@ -922,25 +904,31 @@ public class Config
 									+ "")
 							.build();
 					
-					public static ConfigEntry<Integer> postRelogUpdateConcurrencyLimit = new ConfigEntry.Builder<Integer>()
-							.setServersideShortName("postRelogUpdateConcurrencyLimit")
-							.setMinDefaultMax(1, 50, 100)
+					
+					public static ConfigEntry<Boolean> enableRealTimeUpdates = new ConfigEntry.Builder<Boolean>()
+							.setServersideShortName("enableRealTimeUpdates")
+							.set(false)
 							.comment(""
-									+ "Limits the amount of sent/processed LOD *update* requests concurrently on server, per player. \n"
+									+ "Enables real time updates from server."
 									+ "")
 							.build();
 					
-					/**
-					 * Intentionally disabled.
-					 * @see #enablePostRelogUpdate
-					 */
-					private static final ConfigEntry<Integer> fullDataChangeSummaryRequestRateLimit = new ConfigEntry.Builder<Integer>()
-							.setServersideShortName("fullDataChangeSummaryRequestRateLimit")
-							.setMinDefaultMax(1, 20, 100)
+					
+					public static ConfigEntry<Boolean> enableLoginDataSync = new ConfigEntry.Builder<Boolean>()
+							.setServersideShortName("enableLoginDataSync")
+							.set(false)
 							.comment(""
-									+ "Limits the amount of LOD updates the client can check within a second. \n"
+									+ "Enables updating of saved LODs after login."
 									+ "")
-							.build(); 
+							.build();
+					
+					public static ConfigEntry<Integer> loginDataSyncRCLimit = new ConfigEntry.Builder<Integer>()
+							.setServersideShortName("loginDataSyncRCLimit")
+							.setMinDefaultMax(1, 50, 100)
+							.comment(""
+									+ "Limits the amount of sent/processed LOD *update* requests concurrently, per player. \n"
+									+ "")
+							.build();
 				}
 				
 			}

@@ -27,7 +27,7 @@ public class ServersideMultiplayerConfig extends AbstractMultiplayerConfig
 	@Override
 	public int getFullDataRequestConcurrencyLimit()
 	{
-		return Math.min(this.clientConfig.fullDataRequestConcurrencyLimit, Config.Client.Advanced.Multiplayer.ServerNetworking.fullDataRequestConcurrencyLimit.get());
+		return Math.min(this.clientConfig.fullDataRequestConcurrencyLimit, Config.Client.Advanced.Multiplayer.ServerNetworking.generationRequestRCLimit.get());
 	}
 	
 	@Override
@@ -43,14 +43,15 @@ public class ServersideMultiplayerConfig extends AbstractMultiplayerConfig
 	}
 	
 	@Override
-	public boolean isPostRelogUpdateEnabled() {
-		return this.clientConfig.postRelogUpdateEnabled && Config.Client.Advanced.Multiplayer.ServerNetworking.enablePostRelogUpdate.get();
+	public boolean isLoginDataSyncEnabled()
+	{
+		return this.clientConfig.loginDataSyncEnabled && Config.Client.Advanced.Multiplayer.ServerNetworking.enableLoginDataSync.get();
 	}
 	
 	@Override
-	public int getPostRelogUpdateConcurrencyLimit()
+	public int getLoginDataSyncRCLimit()
 	{
-		return Math.min(this.clientConfig.postRelogUpdateConcurrencyLimit, Config.Client.Advanced.Multiplayer.ServerNetworking.postRelogUpdateConcurrencyLimit.get());
+		return Math.min(this.clientConfig.loginDataSyncRCLimit, Config.Client.Advanced.Multiplayer.ServerNetworking.loginDataSyncRCLimit.get());
 	}
 	
 	@Override

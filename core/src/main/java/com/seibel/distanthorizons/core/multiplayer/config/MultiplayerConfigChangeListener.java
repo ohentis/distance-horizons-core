@@ -13,11 +13,11 @@ public class MultiplayerConfigChangeListener implements Closeable
 	private static final ConfigEntry[] CONFIG_ENTRIES = new ConfigEntry[] {
 			Config.Client.Advanced.Graphics.Quality.lodChunkRenderDistanceRadius,
 			Config.Client.Advanced.WorldGenerator.enableDistantGeneration,
-			Config.Client.Advanced.Multiplayer.ServerNetworking.fullDataRequestConcurrencyLimit,
+			Config.Client.Advanced.Multiplayer.ServerNetworking.generationRequestRCLimit,
 			Config.Client.Advanced.Multiplayer.ServerNetworking.genTaskPriorityRequestRateLimit,
 			Config.Client.Advanced.Multiplayer.ServerNetworking.enableRealTimeUpdates,
-			Config.Client.Advanced.Multiplayer.ServerNetworking.enablePostRelogUpdate,
-			Config.Client.Advanced.Multiplayer.ServerNetworking.postRelogUpdateConcurrencyLimit,
+			Config.Client.Advanced.Multiplayer.ServerNetworking.enableLoginDataSync,
+			Config.Client.Advanced.Multiplayer.ServerNetworking.loginDataSyncRCLimit,
 	};
 	
 	private final ArrayList<ConfigChangeListener> changeListeners = new ArrayList<>();

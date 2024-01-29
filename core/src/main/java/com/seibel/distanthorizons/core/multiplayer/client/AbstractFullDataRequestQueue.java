@@ -16,6 +16,7 @@ import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
 import com.seibel.distanthorizons.core.util.LodUtil;
+import com.seibel.distanthorizons.core.util.ratelimiting.SupplierBasedRateLimiter;
 import io.netty.channel.ChannelException;
 import org.apache.logging.log4j.Logger;
 
@@ -50,6 +51,8 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 	private final ConfigEntry<Boolean> showDebugWireframeConfig;
 	
 	private final Set<DhSectionPos> alreadyRequestedPositions = ConcurrentHashMap.newKeySet();
+	
+	private final SupplierBasedRateLimiter<Void> rateLimiter = new SupplierBasedRateLimiter<>(this::getRequestConcurrencyLimit);
 	
 	
 	protected abstract int getRequestConcurrencyLimit();
@@ -104,6 +107,12 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 				&& this.getInProgressTaskCount() < this.getRequestConcurrencyLimit()
 				&& this.pendingTasksSemaphore.tryAcquire())
 		{
+			if (!this.rateLimiter.tryAcquire())
+			{
+				this.pendingTasksSemaphore.release();
+				break;
+			}
+			
 			this.sendNewRequest(targetPos);
 		}
 		
@@ -277,8 +286,7 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 		
 		public RequestQueueEntry(
 				Consumer<ChunkSizedFullDataAccessor> chunkDataConsumer,
-				@Nullable
-				Integer currentChecksum)
+				@Nullable Integer currentChecksum)
 		{
 			this.chunkDataConsumer = chunkDataConsumer;
 			this.currentChecksum = currentChecksum;

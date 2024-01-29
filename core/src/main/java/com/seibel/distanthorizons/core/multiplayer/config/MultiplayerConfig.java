@@ -13,7 +13,7 @@ public class MultiplayerConfig extends AbstractMultiplayerConfig
 	public boolean distantGenerationEnabled = Config.Client.Advanced.WorldGenerator.enableDistantGeneration.get();
 	@Override public boolean isDistantGenerationEnabled() { return this.distantGenerationEnabled; }
 	
-	public int fullDataRequestConcurrencyLimit = Config.Client.Advanced.Multiplayer.ServerNetworking.fullDataRequestConcurrencyLimit.get();
+	public int fullDataRequestConcurrencyLimit = Config.Client.Advanced.Multiplayer.ServerNetworking.generationRequestRCLimit.get();
 	@Override public int getFullDataRequestConcurrencyLimit() { return this.fullDataRequestConcurrencyLimit; }
 	
 	public int genTaskPriorityRequestRateLimit = Config.Client.Advanced.Multiplayer.ServerNetworking.genTaskPriorityRequestRateLimit.get();
@@ -22,11 +22,11 @@ public class MultiplayerConfig extends AbstractMultiplayerConfig
 	public boolean realTimeUpdatesEnabled = Config.Client.Advanced.Multiplayer.ServerNetworking.enableRealTimeUpdates.get();
 	@Override public boolean isRealTimeUpdatesEnabled() { return this.realTimeUpdatesEnabled; }
 	
-	public boolean postRelogUpdateEnabled = Config.Client.Advanced.Multiplayer.ServerNetworking.enablePostRelogUpdate.get();
-	@Override public boolean isPostRelogUpdateEnabled() { return this.postRelogUpdateEnabled; }
+	public boolean loginDataSyncEnabled = Config.Client.Advanced.Multiplayer.ServerNetworking.enableLoginDataSync.get();
+	@Override public boolean isLoginDataSyncEnabled() { return this.loginDataSyncEnabled; }
 	
-	public int postRelogUpdateConcurrencyLimit = Config.Client.Advanced.Multiplayer.ServerNetworking.postRelogUpdateConcurrencyLimit.get();
-	@Override public int getPostRelogUpdateConcurrencyLimit() { return this.postRelogUpdateConcurrencyLimit; }
+	public int loginDataSyncRCLimit = Config.Client.Advanced.Multiplayer.ServerNetworking.loginDataSyncRCLimit.get();
+	@Override public int getLoginDataSyncRCLimit() { return this.loginDataSyncRCLimit; }
 	
 	@Override
 	public void decode(ByteBuf in)
@@ -36,20 +36,20 @@ public class MultiplayerConfig extends AbstractMultiplayerConfig
 		this.fullDataRequestConcurrencyLimit = in.readInt();
 		this.genTaskPriorityRequestRateLimit = in.readInt();
 		this.realTimeUpdatesEnabled = in.readBoolean();
-		this.postRelogUpdateEnabled = in.readBoolean();
-		this.postRelogUpdateConcurrencyLimit = in.readInt();
+		this.loginDataSyncEnabled = in.readBoolean();
+		this.loginDataSyncRCLimit = in.readInt();
 	}
 	
 	@Override public String toString()
 	{
 		return "MultiplayerConfig{" +
-				"renderDistance=" + this.renderDistanceRadius +
+				"renderDistanceRadius=" + this.renderDistanceRadius +
 				", distantGenerationEnabled=" + this.distantGenerationEnabled +
 				", fullDataRequestConcurrencyLimit=" + this.fullDataRequestConcurrencyLimit +
 				", genTaskPriorityRequestRateLimit=" + this.genTaskPriorityRequestRateLimit +
 				", realTimeUpdatesEnabled=" + this.realTimeUpdatesEnabled +
-				", postRelogUpdatesEnabled=" + this.postRelogUpdateEnabled +
-				", postRelogUpdateConcurrencyLimit=" + this.postRelogUpdateConcurrencyLimit +
+				", loginDataSyncEnabled=" + this.loginDataSyncEnabled +
+				", loginDataSyncRCLimit=" + this.loginDataSyncRCLimit +
 				'}';
 	}
 	

@@ -10,8 +10,8 @@ public abstract class AbstractMultiplayerConfig implements INetworkObject
 	public abstract int getFullDataRequestConcurrencyLimit();
 	public abstract int getGenTaskPriorityRequestRateLimit();
 	public abstract boolean isRealTimeUpdatesEnabled();
-	public abstract boolean isPostRelogUpdateEnabled();
-	public abstract int getPostRelogUpdateConcurrencyLimit();
+	public abstract boolean isLoginDataSyncEnabled();
+	public abstract int getLoginDataSyncRCLimit();
 	
 	@Override
 	public void encode(ByteBuf out)
@@ -21,8 +21,8 @@ public abstract class AbstractMultiplayerConfig implements INetworkObject
 		out.writeInt(this.getFullDataRequestConcurrencyLimit());
 		out.writeInt(this.getGenTaskPriorityRequestRateLimit());
 		out.writeBoolean(this.isRealTimeUpdatesEnabled());
-		out.writeBoolean(this.isPostRelogUpdateEnabled());
-		out.writeInt(this.getPostRelogUpdateConcurrencyLimit());
+		out.writeBoolean(this.isLoginDataSyncEnabled());
+		out.writeInt(this.getLoginDataSyncRCLimit());
 	}
 	
 }

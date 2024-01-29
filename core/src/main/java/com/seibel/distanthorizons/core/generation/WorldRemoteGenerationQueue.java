@@ -30,7 +30,7 @@ public class WorldRemoteGenerationQueue extends AbstractFullDataRequestQueue imp
 	
 	// Used to prevent requests for section very far away, as result of request list not completely filled.
 	// Kinda a hack, since queue is not notified when file handler is done with feeding sections to generate
-	private static final ConfigEntry<Integer> REQUEST_BEGIN_DELAY = Config.Client.Advanced.Multiplayer.ServerNetworking.fullDataRequestBeginDelay;
+	private static final ConfigEntry<Integer> REQUEST_BEGIN_DELAY = Config.Client.Advanced.Multiplayer.ServerNetworking.generationRequestBeginDelay;
 	private final Stopwatch requestBeginStopwatch = Stopwatch.createStarted();
 	
 	private CompletableFuture<?> genTaskPriorityRequest = CompletableFuture.completedFuture(null);
