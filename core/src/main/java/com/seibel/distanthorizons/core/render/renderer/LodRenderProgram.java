@@ -40,7 +40,6 @@ public class LodRenderProgram extends ShaderProgram
 	public static final String VERTEX_SHADER_PATH = "shaders/standard.vert";
 	public static final String VERTEX_CURVE_SHADER_PATH = "shaders/curve.vert";
 	public static final String FRAGMENT_SHADER_PATH = "shaders/flat_shaded.frag";
-	private static final IVersionConstants VERSION_CONSTANTS = SingletonInjector.INSTANCE.get(IVersionConstants.class);
 	
 	public final AbstractVertexAttribute vao;
 	
@@ -67,16 +66,15 @@ public class LodRenderProgram extends ShaderProgram
 	// Debug Uniform
 	public final int whiteWorldUniform;
 	
-	private final LodFogConfig fogConfig;
+	
 	
 	// This will bind  AbstractVertexAttribute
-	public LodRenderProgram(LodFogConfig fogConfig)
+	public LodRenderProgram()
 	{
-		super(() -> Shader.loadFile(fogConfig.earthCurveRatio != 0 ? VERTEX_CURVE_SHADER_PATH : VERTEX_SHADER_PATH,
+		super(() -> Shader.loadFile(Config.Client.Advanced.Graphics.AdvancedGraphics.earthCurveRatio.get() != 0 ? VERTEX_CURVE_SHADER_PATH : VERTEX_SHADER_PATH,
 						false, new StringBuilder()).toString(),
 				() -> Shader.loadFile(FRAGMENT_SHADER_PATH, false, new StringBuilder()).toString(),
 				"fragColor", new String[]{"vPosition", "color"});
-		this.fogConfig = fogConfig;
 		
 		combinedMatUniform = getUniformLocation("combinedMatrix");
 		modelOffsetUniform = getUniformLocation("modelOffset");
@@ -123,25 +121,17 @@ public class LodRenderProgram extends ShaderProgram
 		}
 		
 		if (earthRadiusUniform != -1) setUniform(earthRadiusUniform,
-				/*6371KM*/ 6371000.0f / fogConfig.earthCurveRatio);
+				/*6371KM*/ 6371000.0f / Config.Client.Advanced.Graphics.AdvancedGraphics.earthCurveRatio.get());
+		
 		
 		// Noise Uniforms
-		setUniform(noiseEnabledUniform, fogConfig.noiseEnable);
-		setUniform(noiseStepsUniform, fogConfig.noiseSteps);
-		setUniform(noiseIntensityUniform, fogConfig.noiseIntensity);
-		setUniform(noiseDropoffUniform, fogConfig.noiseDropoff);
+		setUniform(noiseEnabledUniform, Config.Client.Advanced.Graphics.NoiseTextureSettings.noiseEnabled.get());
+		setUniform(noiseStepsUniform, Config.Client.Advanced.Graphics.NoiseTextureSettings.noiseSteps.get());
+		setUniform(noiseIntensityUniform, Config.Client.Advanced.Graphics.NoiseTextureSettings.noiseIntensity.get().floatValue());
+		setUniform(noiseDropoffUniform, Config.Client.Advanced.Graphics.NoiseTextureSettings.noiseDropoff.get());
 	}
 	
-	// If not usable, return a new LodFogConfig to be constructed
-	public LodFogConfig isShaderUsable() // TODO replace with a config listener, look at LodFogConfig for more info
-	{
-		LodFogConfig newConfig = LodFogConfig.generateFogConfig();
-		if (fogConfig.equals(newConfig))
-		{
-			return null;
-		}
-		return newConfig;
-	}
+	
 	
 	// Override ShaderProgram.bind()
 	public void bind()

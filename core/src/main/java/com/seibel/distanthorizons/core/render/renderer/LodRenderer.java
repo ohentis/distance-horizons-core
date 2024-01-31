@@ -594,8 +594,8 @@ public class LodRenderer
 			LodFogConfig newFogConfig = this.shaderProgram.isShaderUsable();
 			if (newFogConfig != null)
 			{
-				this.shaderProgram.free();
-				this.shaderProgram = new LodRenderProgram(newFogConfig);
+				this.lodRenderProgram.free();
+				this.lodRenderProgram = new LodRenderProgram();
 				
 				FogShader.INSTANCE.free();
 				FogShader.INSTANCE = new FogShader(newFogConfig);
@@ -635,7 +635,7 @@ public class LodRenderer
 			
 			EVENT_LOGGER.info("Setting up renderer");
 			this.isSetupComplete = true;
-			this.shaderProgram = new LodRenderProgram(LodFogConfig.generateFogConfig()); // TODO this doesn't actually use the fog config
+			this.lodRenderProgram = new LodRenderProgram();
 			if (ENABLE_IBO)
 			{
 				this.quadIBO = new QuadElementBuffer();
