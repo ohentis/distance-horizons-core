@@ -48,6 +48,10 @@ public class OverrideInjector implements IOverrideInjector<IDhApiOverrideable>
 	
 	
 	
+	//==============//
+	// constructors //
+	//==============//
+	
 	public OverrideInjector()
 	{
 		String thisPackageName = this.getClass().getPackage().getName();
@@ -59,6 +63,10 @@ public class OverrideInjector implements IOverrideInjector<IDhApiOverrideable>
 	public OverrideInjector(String newCorePackagePath) { this.corePackagePath = newCorePackagePath; }
 	
 	
+	
+	//=========//
+	// binding //
+ 	//=========//
 	
 	@Override
 	public void bind(Class<? extends IDhApiOverrideable> dependencyInterface, IDhApiOverrideable dependencyImplementation) throws IllegalStateException, IllegalArgumentException
@@ -102,6 +110,14 @@ public class OverrideInjector implements IOverrideInjector<IDhApiOverrideable>
 		// bind the override
 		overrideContainer.addOverride(dependencyImplementation);
 	}
+	
+	
+	
+	
+	
+	//=========//
+	// getters //
+	//=========//
 	
 	@Override
 	@SuppressWarnings("unchecked")

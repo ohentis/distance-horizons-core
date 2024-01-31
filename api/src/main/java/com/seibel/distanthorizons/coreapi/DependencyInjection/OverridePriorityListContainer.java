@@ -42,7 +42,7 @@ public class OverridePriorityListContainer implements IBindable
 		OverridePriorityPair priorityPair = new OverridePriorityPair(override, override.getPriority());
 		this.overridePairList.add(priorityPair);
 		
-		sortList();
+		this.sortList();
 	}
 	
 	/** @return true if the override was removed from the list, false otherwise. */

@@ -48,7 +48,7 @@ public class DhFramebuffer
 	
 	public void addDepthAttachment(int texture, EDhDepthBufferFormat depthBufferFormat) 
 	{
-		bind();
+		this.bind();
 		
 		if (depthBufferFormat.isCombinedStencil())
 		{
@@ -61,19 +61,19 @@ public class DhFramebuffer
 
 		this.hasDepthAttachment = true;
 	}
-
+	
+	@Override
 	public void addColorAttachment(int index, int texture)
 	{
-		int fb = id;
-		bind();
+		this.bind();
 		
 		GL32.glFramebufferTexture2D(GL32.GL_FRAMEBUFFER, GL32.GL_COLOR_ATTACHMENT0 + index, GL32.GL_TEXTURE_2D, texture, 0);
-		attachments.put(index, texture);
+		this.attachments.put(index, texture);
 	}
 
 	public void noDrawBuffers()
 	{
-		bind(); 
+		this.bind(); 
 		GL32.glDrawBuffers(new int[]{GL32.GL_NONE});
 	}
 	
@@ -81,59 +81,60 @@ public class DhFramebuffer
 	{
 		int[] glBuffers = new int[buffers.length]; int index = 0;
 		
-		if (buffers.length > maxDrawBuffers)
+		if (buffers.length > this.maxDrawBuffers)
 		{
-			throw new IllegalArgumentException("Cannot write to more than " + maxDrawBuffers + " draw buffers on this GPU");
+			throw new IllegalArgumentException("Cannot write to more than " + this.maxDrawBuffers + " draw buffers on this GPU");
 		}
 		
 		for (int buffer : buffers)
 		{
-			if (buffer >= maxColorAttachments)
+			if (buffer >= this.maxColorAttachments)
 			{
-				throw new IllegalArgumentException("Only " + maxColorAttachments + " color attachments are supported on this GPU, but an attempt was made to write to a color attachment with index " + buffer);
+				throw new IllegalArgumentException("Only " + this.maxColorAttachments + " color attachments are supported on this GPU, but an attempt was made to write to a color attachment with index " + buffer);
 			}
 			
 			glBuffers[index++] = GL32.GL_COLOR_ATTACHMENT0 + buffer;
 		}
 		
-		bind(); 
+		this.bind(); 
 		GL32.glDrawBuffers(new int[]{GL32.GL_NONE});
 	}
 	
 	public void readBuffer(int buffer)
 	{
-		bind();
+		this.bind();
 		GL32.glReadBuffer(GL32.GL_COLOR_ATTACHMENT0 + buffer);
 	}
 	
-	public int getColorAttachment(int index) { return attachments.get(index); }
+	public int getColorAttachment(int index) { return this.attachments.get(index); }
 	
-	public boolean hasDepthAttachment() { return hasDepthAttachment; }
+	public boolean hasDepthAttachment() { return this.hasDepthAttachment; }
 	
+	@Override
 	public void bind()
 	{
-		if (id == -1)
+		if (this.id == -1)
 		{
 			throw new IllegalStateException("Framebuffer does not exist!");
 		} 
-		GL32.glBindFramebuffer(GL32.GL_FRAMEBUFFER, id);
+		GL32.glBindFramebuffer(GL32.GL_FRAMEBUFFER, this.id);
 	}
 	
-	public void bindAsReadBuffer() { GL32.glBindFramebuffer(GL32.GL_READ_FRAMEBUFFER, id); }
+	public void bindAsReadBuffer() { GL32.glBindFramebuffer(GL32.GL_READ_FRAMEBUFFER, this.id); }
 	
-	public void bindAsDrawBuffer() { GL32.glBindFramebuffer(GL32.GL_DRAW_FRAMEBUFFER, id); }
+	public void bindAsDrawBuffer() { GL32.glBindFramebuffer(GL32.GL_DRAW_FRAMEBUFFER, this.id); }
 	
 	public void destroyInternal()
 	{
-		GL32.glDeleteFramebuffers(id); 
+		GL32.glDeleteFramebuffers(this.id); 
 		this.id = -1;
 	}
 	
+	@Override
 	public int getStatus()
 	{
-		bind(); 
+		this.bind(); 
 		int status = GL32.glCheckFramebufferStatus(GL32.GL_FRAMEBUFFER);
-		
 		return status;
 	}
 	
