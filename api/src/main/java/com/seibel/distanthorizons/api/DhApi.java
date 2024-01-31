@@ -58,7 +58,7 @@ public class DhApi
 	 * 
 	 * Note: Don't use this string in your code. It may change and is only for reference.
 	 */
-	public static String READ_ME = 
+	public static final String READ_ME = 
 			"If you don't see Javadocs something is wrong. \n" +
 			"If you are only using the full DH Mod in your build script, you won't have access to our javadocs and could potentially call into unsafe code. \n" +
 			"\n" +
@@ -69,6 +69,12 @@ public class DhApi
 			"and suggested setup. \n" + // DH Dev note: no links were included to prevent link rot. 
 			"";
 	public static String readMe() { return READ_ME; }
+	
+	/**
+	 * This is just a humorous way to reference the {@link DhApi#READ_ME} constant string and hopefully peak a few people's attention
+	 * vs the relatively boring "readMe".
+	 */
+	public static final String HEY_YOU_YOURE_FINALLY_AWAKE = READ_ME;
 	/** 
 	 * This is just a humorous way to reference the {@link DhApi#READ_ME} constant string and hopefully peak a few people's attention
 	 * vs the relatively boring "readMe".
