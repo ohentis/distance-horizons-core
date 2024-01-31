@@ -48,17 +48,8 @@ public class OverridePriorityListContainer implements IBindable
 	/** @return true if the override was removed from the list, false otherwise. */
 	public boolean removeOverride(IDhApiOverrideable override)
 	{
-		if (this.overridePairList.contains(override))
-		{
-			this.overridePairList.remove(override);
-			sortList();
-			
-			return true;
-		}
-		else
-		{
-			return false;
-		}
+		boolean overrideRemoved = this.overridePairList.removeIf((pair) -> pair.override.equals(override));
+		return overrideRemoved;
 	}
 	
 	

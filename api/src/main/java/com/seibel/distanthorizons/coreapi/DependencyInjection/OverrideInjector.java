@@ -30,14 +30,13 @@ import java.util.HashMap;
  * This is done so other mods can override our methods to improve features down the line.
  *
  * @author James Seibel
- * @version 2022-9-8
+ * @version 2024-1-30
  */
 public class OverrideInjector implements IOverrideInjector<IDhApiOverrideable>
 {
 	public static final OverrideInjector INSTANCE = new OverrideInjector();
 	
 	private final HashMap<Class<? extends IDhApiOverrideable>, OverridePriorityListContainer> overrideContainerByInterface = new HashMap<>();
-	
 	
 	/**
 	 * This is used to determine if an override is part of Distant Horizons'
@@ -111,7 +110,15 @@ public class OverrideInjector implements IOverrideInjector<IDhApiOverrideable>
 		overrideContainer.addOverride(dependencyImplementation);
 	}
 	
-	
+	@Override
+	public void unbind(Class<? extends IDhApiOverrideable> dependencyInterface, IDhApiOverrideable dependencyImplementation)
+	{
+		OverridePriorityListContainer overrideContainer = this.overrideContainerByInterface.get(dependencyInterface);
+		if (overrideContainer != null)
+		{
+			overrideContainer.removeOverride(dependencyImplementation);
+		}
+	}
 	
 	
 	
@@ -137,11 +144,12 @@ public class OverrideInjector implements IOverrideInjector<IDhApiOverrideable>
 	
 	
 	
+	//==========//
+	// clearing //
+	//==========//
+	
 	@Override
 	public void clear() { this.overrideContainerByInterface.clear(); }
-	
-	
-	
 	
 	
 	
