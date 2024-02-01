@@ -31,10 +31,10 @@ import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhAp
  * @version 2023-6-23
  * @since API 1.0.0
  */
-public abstract class DhApiBeforeRenderEvent implements IDhApiCancelableEvent<DhApiBeforeRenderEvent.EventParam>
+public abstract class DhApiBeforeRenderEvent implements IDhApiCancelableEvent<DhApiRenderParam>
 {
 	/** Fired before Distant Horizons renders LODs. */
-	public abstract void beforeRender(DhApiCancelableEventParam<EventParam> input);
+	public abstract void beforeRender(DhApiCancelableEventParam<DhApiRenderParam> event);
 	
 	
 	//=========================//
@@ -42,20 +42,6 @@ public abstract class DhApiBeforeRenderEvent implements IDhApiCancelableEvent<Dh
 	//=========================//
 	
 	@Override
-	public final void fireEvent(DhApiCancelableEventParam<EventParam> input) { this.beforeRender(input); }
-	
-	
-	//==================//
-	// parameter object //
-	//==================//
-	
-	public static class EventParam extends DhApiRenderParam
-	{
-		public EventParam(DhApiRenderParam parent)
-		{
-			super(parent.mcProjectionMatrix, parent.mcModelViewMatrix, parent.dhProjectionMatrix, parent.dhModelViewMatrix, parent.partialTicks);
-		}
-		
-	}
+	public final void fireEvent(DhApiCancelableEventParam<DhApiRenderParam> input) { this.beforeRender(input); }
 	
 }

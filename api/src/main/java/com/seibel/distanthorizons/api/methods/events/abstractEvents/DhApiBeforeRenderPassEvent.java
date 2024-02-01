@@ -19,24 +19,29 @@
 
 package com.seibel.distanthorizons.api.methods.events.abstractEvents;
 
+import com.seibel.distanthorizons.api.enums.rendering.EDhApiRenderPass;
 import com.seibel.distanthorizons.api.methods.events.interfaces.IDhApiEvent;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiEventParam;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
 
 /**
- * Fired after Distant Horizons finishes rendering a frame. <br>
- * At this point DH will have also finished cleaning up any modifications it
- * did to the OpenGL state, so the state should be back to Minecraft's defaults.
- *
+ * Called immediately before Distant Horizons starts a rendering pass. <br>
+ * At this point the GL state will be set up for DH to render. <br>
+ * This event cannot be cancelled, use {@link DhApiBeforeRenderEvent} if you want to cancel rendering.
+ * 
  * @author James Seibel
- * @version 2024-1-31
- * @see DhApiRenderParam
- * @since API 1.0.0
+ * @version 2023-1-31
+ * @since API 1.1.0
+ * 
+ * @see DhApiBeforeRenderEvent
  */
-public abstract class DhApiAfterRenderEvent implements IDhApiEvent<DhApiRenderParam>
+public abstract class DhApiBeforeRenderPassEvent implements IDhApiEvent<DhApiRenderParam>
 {
-	/** Fired after Distant Horizons finishes rendering fake chunks. */
-	public abstract void afterRender(DhApiEventParam<DhApiRenderParam> event);
+	/** 
+	 * Fired immediately before Distant Horizons starts a rendering pass. <br>
+	 * {@link DhApiRenderParam#renderPass} should either be {@link EDhApiRenderPass#OPAQUE} or {@link EDhApiRenderPass#TRANSPARENT}.
+	 */
+	public abstract void beforeRender(DhApiEventParam<DhApiRenderParam> event);
 	
 	
 	//=========================//
@@ -44,6 +49,6 @@ public abstract class DhApiAfterRenderEvent implements IDhApiEvent<DhApiRenderPa
 	//=========================//
 	
 	@Override
-	public final void fireEvent(DhApiEventParam<DhApiRenderParam> event) { this.afterRender(event); }
+	public final void fireEvent(DhApiEventParam<DhApiRenderParam> event) { this.beforeRender(event); }
 	
 }

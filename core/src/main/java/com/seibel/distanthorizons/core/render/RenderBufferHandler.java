@@ -19,7 +19,7 @@
 
 package com.seibel.distanthorizons.core.render;
 
-import com.seibel.distanthorizons.core.config.Config;
+import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
 import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
@@ -225,19 +225,19 @@ public class RenderBufferHandler implements AutoCloseable
 		}
 	}
 	
-	public void renderOpaque(LodRenderer renderContext)
+	public void renderOpaque(LodRenderer renderContext, DhApiRenderParam renderEventParam)
 	{
 		//TODO: Directional culling
-		this.loadedNearToFarBuffers.forEach(loadedBuffer -> loadedBuffer.buffer.renderOpaque(renderContext));
+		this.loadedNearToFarBuffers.forEach(loadedBuffer -> loadedBuffer.buffer.renderOpaque(renderContext, renderEventParam));
 	}
-	public void renderTransparent(LodRenderer renderContext)
+	public void renderTransparent(LodRenderer renderContext, DhApiRenderParam renderEventParam)
 	{
 		//TODO: Directional culling
 		ListIterator<LoadedRenderBuffer> iter = this.loadedNearToFarBuffers.listIterator(this.loadedNearToFarBuffers.size());
 		while (iter.hasPrevious())
 		{
 			LoadedRenderBuffer loadedBuffer = iter.previous();
-			loadedBuffer.buffer.renderTransparent(renderContext);
+			loadedBuffer.buffer.renderTransparent(renderContext, renderEventParam);
 		}
 	}
 	

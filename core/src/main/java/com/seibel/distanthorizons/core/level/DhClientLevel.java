@@ -19,6 +19,7 @@
 
 package com.seibel.distanthorizons.core.level;
 
+import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
 import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
 import com.seibel.distanthorizons.core.file.fullDatafile.IFullDataSourceProvider;
 import com.seibel.distanthorizons.core.file.fullDatafile.RemoteFullDataFileHandler;
@@ -88,12 +89,12 @@ public class DhClientLevel extends DhLevel implements IDhClientLevel
 	}
 	
 	@Override
-	public void render(Mat4f mcModelViewMatrix, Mat4f mcProjectionMatrix, float partialTicks, IProfilerWrapper profiler)
-	{ this.clientside.render(mcModelViewMatrix, mcProjectionMatrix, partialTicks, profiler); }
+	public void render(DhApiRenderParam renderEventParam, IProfilerWrapper profiler)
+	{ this.clientside.render(renderEventParam, profiler); }
 	
 	@Override
-	public void renderDeferred(Mat4f mcModelViewMatrix, Mat4f mcProjectionMatrix, float partialTicks, IProfilerWrapper profiler)
-	{ this.clientside.renderDeferred(mcModelViewMatrix, mcProjectionMatrix, partialTicks, profiler); }
+	public void renderDeferred(DhApiRenderParam renderEventParam, IProfilerWrapper profiler)
+	{ this.clientside.renderDeferred(renderEventParam, profiler); }
 	
 	
 	

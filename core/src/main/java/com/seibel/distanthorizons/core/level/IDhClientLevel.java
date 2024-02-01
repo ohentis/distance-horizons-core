@@ -19,6 +19,7 @@
 
 package com.seibel.distanthorizons.core.level;
 
+import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import com.seibel.distanthorizons.coreapi.util.math.Mat4f;
@@ -30,8 +31,8 @@ public interface IDhClientLevel extends IDhLevel
 {
 	void clientTick();
 	
-	void render(Mat4f mcModelViewMatrix, Mat4f mcProjectionMatrix, float partialTicks, IProfilerWrapper profiler);
-	void renderDeferred(Mat4f mcModelViewMatrix, Mat4f mcProjectionMatrix, float partialTicks, IProfilerWrapper profiler);
+	void render(DhApiRenderParam renderEventParam, IProfilerWrapper profiler);
+	void renderDeferred(DhApiRenderParam renderEventParam, IProfilerWrapper profiler);
 	
 	int computeBaseColor(DhBlockPos pos, IBiomeWrapper biome, IBlockStateWrapper block);
 	

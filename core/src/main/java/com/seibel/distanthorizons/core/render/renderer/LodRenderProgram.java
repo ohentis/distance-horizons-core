@@ -19,8 +19,9 @@
 
 package com.seibel.distanthorizons.core.render.renderer;
 
+import com.seibel.distanthorizons.api.interfaces.override.rendering.IDhApiShaderProgram;
+import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
 import com.seibel.distanthorizons.core.config.Config;
-import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.render.glObject.GLProxy;
 import com.seibel.distanthorizons.core.render.glObject.shader.Shader;
 import com.seibel.distanthorizons.core.render.glObject.shader.ShaderProgram;
@@ -29,13 +30,11 @@ import com.seibel.distanthorizons.core.render.glObject.vertexAttribute.VertexAtt
 import com.seibel.distanthorizons.core.render.glObject.vertexAttribute.VertexAttributePreGL43;
 import com.seibel.distanthorizons.core.render.glObject.vertexAttribute.VertexPointer;
 import com.seibel.distanthorizons.core.util.LodUtil;
-import com.seibel.distanthorizons.core.render.fog.LodFogConfig;
 import com.seibel.distanthorizons.core.util.RenderUtil;
 import com.seibel.distanthorizons.coreapi.util.math.Mat4f;
 import com.seibel.distanthorizons.coreapi.util.math.Vec3f;
-import com.seibel.distanthorizons.core.wrapperInterfaces.IVersionConstants;
 
-public class LodRenderProgram extends ShaderProgram
+public class LodRenderProgram extends ShaderProgram implements IDhApiShaderProgram
 {
 	public static final String VERTEX_SHADER_PATH = "shaders/standard.vert";
 	public static final String VERTEX_CURVE_SHADER_PATH = "shaders/curve.vert";
@@ -67,6 +66,10 @@ public class LodRenderProgram extends ShaderProgram
 	public final int whiteWorldUniform;
 	
 	
+	
+	//=============//
+	// constructor //
+	//=============//
 	
 	// This will bind  AbstractVertexAttribute
 	public LodRenderProgram()
@@ -133,38 +136,41 @@ public class LodRenderProgram extends ShaderProgram
 	
 	
 	
-	// Override ShaderProgram.bind()
+	//=========//
+	// methods //
+	//=========//
+	
+	@Override
 	public void bind()
 	{
 		super.bind();
 		vao.bind();
 	}
-	// Override ShaderProgram.unbind()
+	@Override
 	public void unbind()
 	{
 		super.unbind();
 		vao.unbind();
 	}
 	
-	// Override ShaderProgram.free()
+	@Override
 	public void free()
 	{
 		vao.free();
 		super.free();
 	}
 	
-	public void bindVertexBuffer(int vbo)
-	{
-		vao.bindBufferToAllBindingPoints(vbo);
-	}
+	@Override
+	public void bindVertexBuffer(int vbo) { this.vao.bindBufferToAllBindingPoints(vbo); }
 	
-	public void unbindVertexBuffer()
-	{
-		vao.unbindBuffersFromAllBindingPoint();
-	}
+	public void unbindVertexBuffer() { this.vao.unbindBuffersFromAllBindingPoint(); }
 	
-	public void fillUniformData(Mat4f combinedMatrix, int lightmapBindPoint, int worldYOffset, float partialTicks)
+	@Override
+	public void fillUniformData(DhApiRenderParam renderParameters)
 	{
+		Mat4f combinedMatrix = new Mat4f(renderParameters.dhProjectionMatrix);
+		combinedMatrix.multiply(renderParameters.dhModelViewMatrix);
+		
 		super.bind();
 
 		// uniforms
@@ -172,21 +178,26 @@ public class LodRenderProgram extends ShaderProgram
 		setUniform(mircoOffsetUniform, 0.01f); // 0.01 block offset
 		
 		// setUniform(skyLightUniform, skyLight);
-		setUniform(lightMapUniform, lightmapBindPoint);
+		setUniform(lightMapUniform, renderParameters.lightmapBindingIndex);
 		
-		if (worldYOffsetUniform != -1) setUniform(worldYOffsetUniform, (float) worldYOffset);
+		if (worldYOffsetUniform != -1) setUniform(worldYOffsetUniform, (float) renderParameters.worldYOffset);
 		
 		// Debug
 		setUniform(whiteWorldUniform, Config.Client.Advanced.Debugging.enableWhiteWorld.get());
 		
-		// Fog/Clip Uniforms
-		float dhNearClipDistance = RenderUtil.getNearClipPlaneDistanceInBlocks(partialTicks);
+		// Clip Uniform
+		float dhNearClipDistance = RenderUtil.getNearClipPlaneDistanceInBlocks(renderParameters.partialTicks);
 		setUniform(clipDistanceUniform, dhNearClipDistance);
 	}
 	
-	public void setModelPos(Vec3f modelPos)
-	{
-		setUniform(modelOffsetUniform, modelPos);
-	}
+	@Override
+	public void setModelOffsetPos(Vec3f modelOffsetPos) { this.setUniform(this.modelOffsetUniform, modelOffsetPos); }
+	
+	@Override
+	public int getId() { return this.id; }
+	
+	/** The base DH render program should always render */
+	@Override
+	public boolean overrideThisFrame() { return true; }
 	
 }

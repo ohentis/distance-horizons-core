@@ -19,15 +19,20 @@
 
 package com.seibel.distanthorizons.core.api.internal;
 
+import com.seibel.distanthorizons.api.DhApi;
+import com.seibel.distanthorizons.api.enums.rendering.EDhApiRenderPass;
+import com.seibel.distanthorizons.api.interfaces.override.rendering.IDhApiFramebuffer;
 import com.seibel.distanthorizons.api.methods.events.abstractEvents.*;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
 import com.seibel.distanthorizons.core.level.IKeyedClientLevelManager;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
+import com.seibel.distanthorizons.core.render.DhApiRenderProxy;
 import com.seibel.distanthorizons.core.util.objects.Pair;
 import com.seibel.distanthorizons.core.world.*;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
 import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.config.Config;
+import com.seibel.distanthorizons.coreapi.DependencyInjection.OverrideInjector;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.api.enums.rendering.EDebugRendering;
 import com.seibel.distanthorizons.api.enums.rendering.ERendererMode;
@@ -49,6 +54,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
+import org.lwjgl.opengl.GL32;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -452,19 +458,21 @@ public class ClientApi
 	
 	/** Should be called before {@link ClientApi#renderDeferredLods} */
 	public void renderLods(IClientLevelWrapper levelWrapper, Mat4f mcModelViewMatrix, Mat4f mcProjectionMatrix, float partialTicks)
-	{ this.renderLodLayer(levelWrapper, mcModelViewMatrix, mcProjectionMatrix, partialTicks, true); }
+	{ this.renderLodLayer(levelWrapper, mcModelViewMatrix, mcProjectionMatrix, partialTicks, false); }
 	
 	/** 
 	 * Only necessary when Shaders are in use.
 	 * Should be called after {@link ClientApi#renderLods} 
 	 */
 	public void renderDeferredLods(IClientLevelWrapper levelWrapper, Mat4f mcModelViewMatrix, Mat4f mcProjectionMatrix, float partialTicks)
-	{ this.renderLodLayer(levelWrapper, mcModelViewMatrix, mcProjectionMatrix, partialTicks, false); }
+	{ this.renderLodLayer(levelWrapper, mcModelViewMatrix, mcProjectionMatrix, partialTicks, true); }
 	
 	private void renderLodLayer(
 			IClientLevelWrapper levelWrapper, Mat4f mcModelViewMatrix, Mat4f mcProjectionMatrix, float partialTicks,
 			boolean renderingDeferredLayer)
 	{
+		// logging //
+		
 		if (ModInfo.IS_DEV_BUILD && !this.configOverrideReminderPrinted && MC.playerExists())
 		{
 			this.configOverrideReminderPrinted = true;
@@ -475,12 +483,45 @@ public class ClientApi
 			MC.sendChatMessage("Here be dragons!");
 		}
 		
-		
-		
 		IProfilerWrapper profiler = MC.getProfiler();
 		profiler.pop(); // get out of "terrain"
 		profiler.push("DH-RenderLevel");
-			
+		
+		
+		
+		// render parameter setup //
+		
+		EDhApiRenderPass renderPass;
+		if (DhApiRenderProxy.INSTANCE.getDeferTransparentRendering())
+		{
+			if (renderingDeferredLayer)
+			{
+				renderPass = EDhApiRenderPass.TRANSPARENT;
+			}
+			else
+			{
+				renderPass = EDhApiRenderPass.OPAQUE;
+			}
+		}
+		else
+		{
+			renderPass = EDhApiRenderPass.OPAQUE_AND_TRANSPARENT;
+		}
+		
+		DhApiRenderParam renderEventParam =
+				new DhApiRenderParam(
+						renderPass,
+						partialTicks,
+						RenderUtil.getNearClipPlaneDistanceInBlocks(partialTicks), RenderUtil.getFarClipPlaneDistanceInBlocks(),
+						mcProjectionMatrix, mcModelViewMatrix,
+						RenderUtil.createLodProjectionMatrix(mcProjectionMatrix, partialTicks), RenderUtil.createLodModelViewMatrix(mcModelViewMatrix),
+						levelWrapper.getMinHeight()
+				);
+		
+		
+		
+		// render validation //
+		
 		try
 		{
 			if (!RenderUtil.shouldLodsRender(levelWrapper))
@@ -495,21 +536,28 @@ public class ClientApi
 			}
 			IDhClientLevel level = dhClientWorld.getOrLoadClientLevel(levelWrapper);
 			
+			if (this.rendererDisabledBecauseOfExceptions)
+			{
+				return;
+			}
 			
 			
-			DhApiRenderParam renderEventParam =
-				new DhApiRenderParam(mcProjectionMatrix, mcModelViewMatrix,
-					RenderUtil.createLodProjectionMatrix(mcProjectionMatrix, partialTicks),
-					RenderUtil.createLodModelViewMatrix(mcModelViewMatrix), partialTicks);
 			
-			if (renderingDeferredLayer)
+			// render pass //
+			
+			if (!renderingDeferredLayer)
 			{
 				if (Config.Client.Advanced.Debugging.rendererMode.get() == ERendererMode.DEFAULT)
 				{
-					this.renderingCancelledForThisFrame = ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeRenderEvent.class, new DhApiBeforeRenderEvent.EventParam(renderEventParam));
-					if (!this.rendererDisabledBecauseOfExceptions && !this.renderingCancelledForThisFrame)
+					this.renderingCancelledForThisFrame = ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeRenderEvent.class, renderEventParam);
+					if (!this.renderingCancelledForThisFrame)
 					{
-						level.render(mcModelViewMatrix, mcProjectionMatrix, partialTicks, profiler);
+						level.render(renderEventParam, profiler);
+					}
+					
+					if (!DhApi.Delayed.renderProxy.getDeferTransparentRendering())
+					{
+						ApiEventInjector.INSTANCE.fireAllEvents(DhApiAfterRenderEvent.class, renderEventParam);
 					}
 				}
 				else if (Config.Client.Advanced.Debugging.rendererMode.get() == ERendererMode.DEBUG)
@@ -521,18 +569,23 @@ public class ClientApi
 			}
 			else
 			{
-				if (!this.rendererDisabledBecauseOfExceptions && !this.renderingCancelledForThisFrame)
+				boolean renderingCancelled = ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeDeferredRenderEvent.class, renderEventParam);
+				if (!renderingCancelled)
 				{
-					level.renderDeferred(mcModelViewMatrix, mcProjectionMatrix, partialTicks, profiler);
-					
-					ApiEventInjector.INSTANCE.fireAllEvents(DhApiAfterRenderEvent.class, new DhApiAfterRenderEvent.EventParam(renderEventParam));
+					level.renderDeferred(renderEventParam, profiler);
+				}
+				
+				
+				if (DhApi.Delayed.renderProxy.getDeferTransparentRendering())
+				{
+					ApiEventInjector.INSTANCE.fireAllEvents(DhApiAfterRenderEvent.class, renderEventParam);
 				}
 			}
 		}
 		catch (Exception e)
 		{
 			this.rendererDisabledBecauseOfExceptions = true;
-			LOGGER.error("Unexpected Renderer error in " + (renderingDeferredLayer ? "Opaque" : "Transparent") + " stage. Error: " + e.getMessage(), e);
+			LOGGER.error("Unexpected Renderer error in render pass [" + renderPass + "]. Error: " + e.getMessage(), e);
 			
 			MC.sendChatMessage("\u00A74\u00A7l\u00A7uERROR: Distant Horizons renderer has encountered an exception!");
 			MC.sendChatMessage("\u00A74Renderer is now disabled to prevent further issues.");

@@ -24,19 +24,19 @@ import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhAp
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
 
 /**
- * Fired after Distant Horizons finishes rendering a frame. <br>
- * At this point DH will have also finished cleaning up any modifications it
- * did to the OpenGL state, so the state should be back to Minecraft's defaults.
- *
+ * Called before Distant Horizons has started setting up OpenGL objects for rendering. <br>
+ * If you want to modify already bound DH OpenGL objects try using {@link DhApiBeforeRenderPassEvent}.
+ * 
  * @author James Seibel
  * @version 2024-1-31
- * @see DhApiRenderParam
- * @since API 1.0.0
+ * @since API 1.1.0
+ * 
+ * @see DhApiBeforeRenderPassEvent
  */
-public abstract class DhApiAfterRenderEvent implements IDhApiEvent<DhApiRenderParam>
+public abstract class DhApiBeforeRenderSetupEvent implements IDhApiEvent<DhApiRenderParam>
 {
-	/** Fired after Distant Horizons finishes rendering fake chunks. */
-	public abstract void afterRender(DhApiEventParam<DhApiRenderParam> event);
+	/** Fired before Distant Horizons has started setting up OpenGL objects for rendering. */
+	public abstract void beforeSetup(DhApiEventParam<DhApiRenderParam> input);
 	
 	
 	//=========================//
@@ -44,6 +44,7 @@ public abstract class DhApiAfterRenderEvent implements IDhApiEvent<DhApiRenderPa
 	//=========================//
 	
 	@Override
-	public final void fireEvent(DhApiEventParam<DhApiRenderParam> event) { this.afterRender(event); }
+	public final void fireEvent(DhApiEventParam<DhApiRenderParam> input) { this.beforeSetup(input); }
+	
 	
 }

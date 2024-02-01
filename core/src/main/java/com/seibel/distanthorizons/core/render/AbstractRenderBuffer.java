@@ -19,6 +19,7 @@
 
 package com.seibel.distanthorizons.core.render;
 
+import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.objects.StatsMap;
 import com.seibel.distanthorizons.core.render.renderer.LodRenderer;
@@ -31,9 +32,9 @@ public abstract class AbstractRenderBuffer implements AutoCloseable
 	
 	// ========== Called by render thread ==========
 	/** @return true if something was rendered, false otherwise */
-	public abstract boolean renderOpaque(LodRenderer renderContext);
+	public abstract boolean renderOpaque(LodRenderer renderContext, DhApiRenderParam renderEventParam);
 	/** @return true if something was rendered, false otherwise */
-	public abstract boolean renderTransparent(LodRenderer renderContext);
+	public abstract boolean renderTransparent(LodRenderer renderContext, DhApiRenderParam renderEventParam);
 	
 	// ========== Called by any thread. (thread safe) ==========
 	

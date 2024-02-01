@@ -21,6 +21,7 @@ package com.seibel.distanthorizons.api.interfaces.render;
 
 import com.seibel.distanthorizons.api.objects.DhApiResult;
 
+
 /**
  * Used to interact with Distant Horizons' rendering system.
  *
@@ -45,34 +46,42 @@ public interface IDhApiRenderProxy
 	 */
 	DhApiResult<Boolean> clearRenderDataCache();
 	
-	/** 
-	 * Returns the name of Distant Horizons' FrameBuffer. <br>
-	 * Will return {@link DhApiResult#success} = false and {@link DhApiResult#payload} = -1 if the FrameBuffer hasn't been created yet.
-	 */
-	DhApiResult<Integer> getDhFrameBufferId();
 	
-	/** 
-	 * Sets the FrameBuffer name that Distant Horizons will draw to after it finishes generating a frame texture. <br>
-	 * Setting this to -1 will cause Distant Horizons to use Minecraft's FrameBuffer. <br><br>
-	 * 
-	 * Will return {@link DhApiResult#success} = false given name isn't a valid FrameBuffer.
-	 */
-	DhApiResult<Void> setTargetFrameBufferId(int frameBufferId);
-	/**
-	 * Returns the FrameBuffer name that Distant Horizons will draw to after it finishes generating a frame texture. <br>
-	 * By default this will be Minecraft's FrameBuffer.
-	 */
-	DhApiResult<Integer> getTargetFrameBufferId();
+	
+	//=======================//
+	// OpenGL object getters //
+	//=======================//
 	
 	/**
 	 * Returns the name of Distant Horizons' depth texture. <br>
 	 * Will return {@link DhApiResult#success} = false and {@link DhApiResult#payload} = -1 if the texture hasn't been created yet.
 	 */
 	DhApiResult<Integer> getDhDepthTextureId();
+	
 	/**
 	 * Returns the name of Distant Horizons' color texture. <br>
 	 * Will return {@link DhApiResult#success} = false and {@link DhApiResult#payload} = -1 if the texture hasn't been created yet.
 	 */
 	DhApiResult<Integer> getDhColorTextureId();
+	
+	
+	
+	//======================//
+	// Shader compatibility //
+	//======================//
+	
+	/**
+	 * If set to true DH won't render opaque and transparent LODs in the same pass.
+	 * Instead, opaque objects will be rendered at the normal time, but 
+	 * transparent objects will only be rendered in a second pass during Minecraft's
+	 * own transparent rendering pass.
+	 */
+	void setDeferTransparentRendering(boolean deferTransparentRendering);
+	/** @return If DH should defer transparent rendering or not. */
+	boolean getDeferTransparentRendering();
+	
+	/** This may change based on FOV, player speed, and other factors. */
+	float getNearClipPlaneDistanceInBlocks(float partialTicks);
+	
 	
 }

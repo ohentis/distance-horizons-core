@@ -20,6 +20,7 @@
 package com.seibel.distanthorizons.core.level;
 
 import com.seibel.distanthorizons.api.enums.rendering.EDebugRendering;
+import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
@@ -141,7 +142,7 @@ public class ClientLevelModule implements Closeable
 		return this.ClientRenderStateRef.get() != null;
 	}
 	
-	public void render(Mat4f mcModelViewMatrix, Mat4f mcProjectionMatrix, float partialTicks, IProfilerWrapper profiler)
+	public void render(DhApiRenderParam renderEventParam, IProfilerWrapper profiler)
 	{
 		ClientRenderState ClientRenderState = this.ClientRenderStateRef.get();
 		if (ClientRenderState == null)
@@ -149,10 +150,10 @@ public class ClientLevelModule implements Closeable
 			// either the renderer hasn't been started yet, or is being reloaded
 			return;
 		}
-		ClientRenderState.renderer.drawLods(ClientRenderState.clientLevelWrapper, mcModelViewMatrix, mcProjectionMatrix, partialTicks, profiler);
+		ClientRenderState.renderer.drawLods(ClientRenderState.clientLevelWrapper, renderEventParam, profiler);
 	}
 	
-	public void renderDeferred(Mat4f mcModelViewMatrix, Mat4f mcProjectionMatrix, float partialTicks, IProfilerWrapper profiler)
+	public void renderDeferred(DhApiRenderParam renderEventParam, IProfilerWrapper profiler)
 	{
 		ClientRenderState ClientRenderState = this.ClientRenderStateRef.get();
 		if (ClientRenderState == null)
@@ -160,7 +161,7 @@ public class ClientLevelModule implements Closeable
 			// either the renderer hasn't been started yet, or is being reloaded
 			return;
 		}
-		ClientRenderState.renderer.drawDeferredLods(ClientRenderState.clientLevelWrapper, mcModelViewMatrix, mcProjectionMatrix, partialTicks, profiler);
+		ClientRenderState.renderer.drawDeferredLods(ClientRenderState.clientLevelWrapper, renderEventParam, profiler);
 	}
 	
 	public void stopRenderer()

@@ -1,11 +1,11 @@
 package com.seibel.distanthorizons.core.render.glObject.texture;
 
+import com.seibel.distanthorizons.api.interfaces.override.rendering.IDhApiFramebuffer;
 import it.unimi.dsi.fastutil.ints.Int2IntArrayMap;
 import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import org.lwjgl.opengl.GL32;
 
-// TODO lowercase
-public class DhFramebuffer
+public class DhFramebuffer implements IDhApiFramebuffer
 {
 	private final Int2IntMap attachments;
 	private final int maxDrawBuffers;
@@ -46,29 +46,24 @@ public class DhFramebuffer
 	// methods //
 	//=========//
 	
-	public void addDepthAttachment(int texture, EDhDepthBufferFormat depthBufferFormat) 
+	@Override
+	public void addDepthAttachment(int textureId, boolean isCombinedStencil) 
 	{
 		this.bind();
 		
-		if (depthBufferFormat.isCombinedStencil())
-		{
-			GL32.glFramebufferTexture2D(GL32.GL_FRAMEBUFFER, GL32.GL_DEPTH_STENCIL_ATTACHMENT, GL32.GL_TEXTURE_2D, texture, 0);
-		}
-		else
-		{
-			GL32.glFramebufferTexture2D(GL32.GL_FRAMEBUFFER, GL32.GL_DEPTH_ATTACHMENT, GL32.GL_TEXTURE_2D, texture, 0);
-		}
-
+		int depthAttachment = isCombinedStencil ? GL32.GL_DEPTH_STENCIL_ATTACHMENT : GL32.GL_DEPTH_ATTACHMENT;
+		GL32.glFramebufferTexture2D(GL32.GL_FRAMEBUFFER, depthAttachment, GL32.GL_TEXTURE_2D, textureId, 0);
+		
 		this.hasDepthAttachment = true;
 	}
 	
 	@Override
-	public void addColorAttachment(int index, int texture)
+	public void addColorAttachment(int textureIndex, int textureId)
 	{
 		this.bind();
 		
-		GL32.glFramebufferTexture2D(GL32.GL_FRAMEBUFFER, GL32.GL_COLOR_ATTACHMENT0 + index, GL32.GL_TEXTURE_2D, texture, 0);
-		this.attachments.put(index, texture);
+		GL32.glFramebufferTexture2D(GL32.GL_FRAMEBUFFER, GL32.GL_COLOR_ATTACHMENT0 + textureIndex, GL32.GL_TEXTURE_2D, textureId, 0);
+		this.attachments.put(textureIndex, textureId);
 	}
 
 	public void noDrawBuffers()
@@ -79,7 +74,8 @@ public class DhFramebuffer
 	
 	public void drawBuffers(int[] buffers)
 	{
-		int[] glBuffers = new int[buffers.length]; int index = 0;
+		int[] glBuffers = new int[buffers.length]; 
+		int index = 0;
 		
 		if (buffers.length > this.maxDrawBuffers)
 		{
@@ -124,7 +120,8 @@ public class DhFramebuffer
 	
 	public void bindAsDrawBuffer() { GL32.glBindFramebuffer(GL32.GL_DRAW_FRAMEBUFFER, this.id); }
 	
-	public void destroyInternal()
+	@Override
+	public void destroy()
 	{
 		GL32.glDeleteFramebuffers(this.id); 
 		this.id = -1;
@@ -138,6 +135,15 @@ public class DhFramebuffer
 		return status;
 	}
 	
-	public int getId() { return id; }
+	@Override
+	public int getId() { return this.id; }
+	
+	
+	
+	//=============//
+	// API methods //
+	//=============//
+	
+	public boolean overrideThisFrame() { return true; }
 	
 }

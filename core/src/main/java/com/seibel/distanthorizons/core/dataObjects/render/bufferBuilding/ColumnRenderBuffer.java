@@ -19,6 +19,7 @@
 
 package com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding;
 
+import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.enums.EGLProxyContext;
@@ -275,10 +276,10 @@ public class ColumnRenderBuffer extends AbstractRenderBuffer
 	//========//
 	
 	@Override
-	public boolean renderOpaque(LodRenderer renderContext)
+	public boolean renderOpaque(LodRenderer renderContext, DhApiRenderParam renderEventParam)
 	{
 		boolean hasRendered = false;
-		renderContext.setupOffset(this.pos);
+		renderContext.setModelViewMatrixOffset(this.pos, renderEventParam);
 		for (GLVertexBuffer vbo : this.vbos)
 		{
 			if (vbo == null)
@@ -299,14 +300,14 @@ public class ColumnRenderBuffer extends AbstractRenderBuffer
 	}
 	
 	@Override
-	public boolean renderTransparent(LodRenderer renderContext)
+	public boolean renderTransparent(LodRenderer renderContext, DhApiRenderParam renderEventParam)
 	{
 		boolean hasRendered = false;
 		
 		try
 		{
 			// can throw an IllegalStateException if the GL program was freed before it should've been
-			renderContext.setupOffset(this.pos);
+			renderContext.setModelViewMatrixOffset(this.pos, renderEventParam);
 			
 			for (GLVertexBuffer vbo : this.vbosTransparent)
 			{
