@@ -419,8 +419,12 @@ public class LodRenderer
 				if (Config.Client.Advanced.Debugging.DebugWireframe.enableRendering.get())
 				{
 					profiler.popPush("Debug wireframes");
+					
+					Mat4f combinedMatrix = new Mat4f(renderEventParam.dhProjectionMatrix);
+					combinedMatrix.multiply(renderEventParam.dhModelViewMatrix);
+					
 					// Note: this can be very slow if a lot of boxes are being rendered 
-					DebugRenderer.INSTANCE.render(renderEventParam.dhModelViewMatrix);
+ 					DebugRenderer.INSTANCE.render(combinedMatrix);
 					profiler.popPush("LOD cleanup");
 				}
 				
