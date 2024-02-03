@@ -51,7 +51,12 @@ public class RemoteFullDataFileHandler extends GeneratedFullDataFileHandler
 		}
 		
 		pos.forEachChildAtLevel(DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL, childPos -> {
-			int checksum = Objects.requireNonNull(this.repo.getChecksumForSection(childPos));
+			Integer checksum = this.repo.getChecksumForSection(childPos);
+			if (checksum == null)
+			{
+				return;
+			}
+			
 			this.dataRefreshQueue.submitRequest(childPos, this.level::updateDataSourcesWithChunkData, checksum);
 		});
 		
