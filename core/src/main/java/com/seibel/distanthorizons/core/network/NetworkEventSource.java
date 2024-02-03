@@ -27,6 +27,7 @@ import com.seibel.distanthorizons.core.network.messages.base.ExceptionMessage;
 import com.seibel.distanthorizons.core.network.protocol.FutureTrackableNetworkMessage;
 import com.seibel.distanthorizons.core.network.protocol.MessageRegistry;
 import com.seibel.distanthorizons.core.network.protocol.NetworkMessage;
+import com.seibel.distanthorizons.coreapi.ModInfo;
 import io.netty.channel.ChannelException;
 import org.apache.logging.log4j.LogManager;
 
@@ -93,7 +94,7 @@ public abstract class NetworkEventSource
 			}
 		}
 		
-		if (!handled && message.warnWhenUnhandled())
+		if (!handled && ModInfo.IS_DEV_BUILD && message.warnWhenUnhandled())
 		{
 			LOGGER.warn("Unhandled message: " + message);
 		}

@@ -1,14 +1,16 @@
 package com.seibel.distanthorizons.core.multiplayer.client;
 
 import com.google.common.base.Stopwatch;
+import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.config.types.ConfigEntry;
 import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.CompleteFullDataSource;
 import com.seibel.distanthorizons.core.level.IDhClientLevel;
-import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.logging.ConfigBasedSpamLogger;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
 import com.seibel.distanthorizons.core.network.exceptions.InvalidLevelException;
 import com.seibel.distanthorizons.core.network.exceptions.RateLimitedException;
+import com.seibel.distanthorizons.core.network.exceptions.RequestRejectedException;
 import com.seibel.distanthorizons.core.network.messages.fullData.generation.FullDataSourceRequestMessage;
 import com.seibel.distanthorizons.core.network.messages.fullData.generation.FullDataSourceResponseMessage;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
@@ -18,7 +20,7 @@ import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.ratelimiting.SupplierBasedRateLimiter;
 import io.netty.channel.ChannelException;
-import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
@@ -32,7 +34,8 @@ import java.util.function.Consumer;
 
 public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, AutoCloseable
 {
-	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	private static final ConfigBasedSpamLogger LOGGER = new ConfigBasedSpamLogger(LogManager.getLogger(),
+			() -> Config.Client.Advanced.Logging.logNetworkEvent.get(), 3);
 	
 	protected static final long SHUTDOWN_TIMEOUT_SECONDS = 5;
 	
@@ -81,7 +84,7 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 		if (this.alreadyRequestedPositions.contains(sectionPos))
 		{
 			// temporary solution to prevent requesting the same section multiple times
-			LOGGER.trace("Duplicate section " + sectionPos + ". Skipping...");
+			LOGGER.debug("Duplicate section " + sectionPos + ". Skipping...");
 			return CompletableFuture.completedFuture(false);
 		}
 		this.alreadyRequestedPositions.add(sectionPos);
@@ -169,7 +172,6 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 				}
 				
 				this.waitingTasks.remove(sectionPos);
-				LOGGER.debug("FullDataSourceResponseMessage " + sectionPos);
 				
 				CompleteFullDataSource fullDataSource = response.getFullDataSource(sectionPos, this.level);
 				
@@ -183,9 +185,9 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 					LodUtil.assertTrue(this.changedOnly, "Received empty data source response for not changed-only request");
 				}
 			}
-			catch (InvalidLevelException ignored)
+			catch (InvalidLevelException | RequestRejectedException ignored)
 			{
-				// We're too late
+				// We're too late / some cases might trigger a bunch of expected rejections
 			}
 			catch (ChannelException | RateLimitedException e)
 			{
