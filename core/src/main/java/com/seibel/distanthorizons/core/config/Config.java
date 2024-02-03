@@ -157,7 +157,14 @@ public class Config
 					public static ConfigEntry<Integer> lodChunkRenderDistanceRadius = new ConfigEntry.Builder<Integer>()
 							.setServersideShortName("renderDistanceRadius")
 							.setMinDefaultMax(32, 128, 4096)
-							.comment("The radius of the mod's render distance. (measured in chunks)")
+							.comment("" +
+									"The radius of the mod's render distance. (measured in chunks)\n" +
+									"On server changes the distance players will receive real time updates for, if enabled." +
+									"\n" +
+									"Note for servers:\n" +
+									"This setting does not prevent players from generating farther out.\n" +
+									"If you want to limit performance impact, change rate/concurrency (RC) limits\n" +
+									"and thread count/runtime ratio settings instead.")
 							.setPerformance(EConfigEntryPerformance.HIGH)
 							.build();
 					
@@ -677,10 +684,7 @@ public class Config
 						.set(true)
 						.comment(""
 								+ " Should Distant Horizons slowly generate LODs \n"
-								+ " outside the vanilla render distance?\n"
-								+ "\n"
-								+ " Note: when on a server, distant generation isn't supported \n"
-								+ " and will always be disabled.")
+								+ " outside the vanilla render distance?")
 						.build();
 				
 				public static ConfigEntry<EDhApiDistantGeneratorMode> distantGeneratorMode = new ConfigEntry.Builder<EDhApiDistantGeneratorMode>()
