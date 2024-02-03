@@ -19,7 +19,8 @@
 
 package com.seibel.distanthorizons.core.network;
 
-import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.config.Config;
+import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
 import com.seibel.distanthorizons.core.network.messages.base.CancelMessage;
 import com.seibel.distanthorizons.core.network.messages.base.CloseEvent;
 import com.seibel.distanthorizons.core.network.messages.base.ExceptionMessage;
@@ -27,7 +28,7 @@ import com.seibel.distanthorizons.core.network.protocol.FutureTrackableNetworkMe
 import com.seibel.distanthorizons.core.network.protocol.MessageRegistry;
 import com.seibel.distanthorizons.core.network.protocol.NetworkMessage;
 import io.netty.channel.ChannelException;
-import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 import java.io.InvalidClassException;
 import java.util.HashSet;
@@ -40,7 +41,8 @@ import java.util.function.Consumer;
 
 public abstract class NetworkEventSource
 {
-	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	private static final ConfigBasedLogger LOGGER = new ConfigBasedLogger(LogManager.getLogger(),
+			() -> Config.Client.Advanced.Logging.logNetworkEvent.get());
 	protected final ConcurrentMap<Class<? extends NetworkMessage>, Set<Consumer<NetworkMessage>>> handlers = new ConcurrentHashMap<>();
 	private final ConcurrentMap<IConnection, ConcurrentMap<Long, FutureResponseData>> pendingFutures = new ConcurrentHashMap<>();
 	
@@ -67,7 +69,7 @@ public abstract class NetworkEventSource
 		if (message instanceof FutureTrackableNetworkMessage)
 		{
 			FutureTrackableNetworkMessage trackableMessage = (FutureTrackableNetworkMessage)message;
-			ConcurrentMap<Long, FutureResponseData> subMap = pendingFutures.get(message.getConnection());
+			ConcurrentMap<Long, FutureResponseData> subMap = this.pendingFutures.get(message.getConnection());
 			if (subMap != null)
 			{
 				FutureResponseData responseData = subMap.get(trackableMessage.futureId);
@@ -76,17 +78,25 @@ public abstract class NetworkEventSource
 					handled = true;
 					
 					if (message instanceof ExceptionMessage)
+					{
 						responseData.future.completeExceptionally(((ExceptionMessage) message).exception);
+					}
 					else if (message.getClass() != responseData.responseClass)
+					{
 						responseData.future.completeExceptionally(new InvalidClassException("Response with invalid type: expected " + responseData.responseClass.getSimpleName() + ", got:" + message));
+					}
 					else
+					{
 						responseData.future.complete(trackableMessage);
+					}
 				}
 			}
 		}
 		
 		if (!handled && message.warnWhenUnhandled())
+		{
 			LOGGER.warn("Unhandled message: " + message);
+		}
 	}
 	
 	protected void addNewConnection(IConnection connection)
@@ -101,7 +111,9 @@ public abstract class NetworkEventSource
 				{
 					// Will throw if the handler class is not found
 					if (handlerClass != CloseEvent.class)
+					{
 						MessageRegistry.INSTANCE.getMessageId(handlerClass);
+					}
 					return new HashSet<>();
 				})
 				.add((Consumer<NetworkMessage>) handlerImplementation);
@@ -123,16 +135,20 @@ public abstract class NetworkEventSource
 		{
 			if (!(throwable instanceof ChannelException))
 			{
-				ConcurrentMap<Long, FutureResponseData> subMap = pendingFutures.get(connection);
+				ConcurrentMap<Long, FutureResponseData> subMap = this.pendingFutures.get(connection);
 				if (subMap != null)
+				{
 					subMap.remove(msg.futureId);
+				}
 			}
 			
 			if (throwable instanceof CancellationException)
+			{
 				msg.sendResponse(new CancelMessage());
+			}
 		});
 		
-		ConcurrentMap<Long, FutureResponseData> subMap = pendingFutures.get(connection);
+		ConcurrentMap<Long, FutureResponseData> subMap = this.pendingFutures.get(connection);
 		if (subMap == null)
 		{
 			// Was deleted before adding
@@ -140,9 +156,10 @@ public abstract class NetworkEventSource
 			return responseFuture;
 		}
 		subMap.put(msg.futureId, new FutureResponseData(responseClass, responseFuture));
-		if (!pendingFutures.containsKey(connection))
+		if (!this.pendingFutures.containsKey(connection))
 		{
 			// Was deleted while adding
+			// Note: removal from subMap will happen in whenComplete above
 			responseFuture.completeExceptionally(connection.getCloseReason());
 			return responseFuture;
 		}
@@ -153,23 +170,30 @@ public abstract class NetworkEventSource
 	
 	protected final void completeAllFuturesExceptionally(IConnection connection, Throwable cause)
 	{
-		ConcurrentMap<Long, FutureResponseData> map = pendingFutures.remove(connection);
-		if (map == null) return;
+		ConcurrentMap<Long, FutureResponseData> map = this.pendingFutures.remove(connection);
+		if (map == null)
+		{
+			return;
+		}
 		
 		for (FutureResponseData responseData : map.values())
+		{
 			responseData.future.completeExceptionally(cause);
+		}
 	}
 	
 	protected final void completeAllFuturesExceptionally(Throwable cause)
 	{
-		for (IConnection connection : pendingFutures.keySet())
+		for (IConnection connection : this.pendingFutures.keySet())
+		{
 			this.completeAllFuturesExceptionally(connection, cause);
+		}
 	}
 	
 	public void close()
 	{
 		this.handlers.clear();
-		completeAllFuturesExceptionally(new ChannelException(this.getClass().getSimpleName()+" is closed."));
+		this.completeAllFuturesExceptionally(new ChannelException(this.getClass().getSimpleName() + " is closed."));
 	}
 	
 	private static class FutureResponseData

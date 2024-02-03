@@ -19,19 +19,19 @@
 
 package com.seibel.distanthorizons.core.network;
 
-import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.config.Config;
+import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
 import com.seibel.distanthorizons.core.network.messages.base.CloseEvent;
 import com.seibel.distanthorizons.core.network.messages.base.CloseReasonMessage;
 import com.seibel.distanthorizons.core.network.messages.base.HelloMessage;
 import com.seibel.distanthorizons.core.network.protocol.MessageHandler;
 import com.seibel.distanthorizons.core.network.protocol.NetworkChannelInitializer;
-import com.seibel.distanthorizons.core.network.protocol.NetworkMessage;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.concurrent.DefaultThreadFactory;
-import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 import java.net.InetSocketAddress;
 import java.util.EnumSet;
@@ -40,7 +40,8 @@ import java.util.concurrent.TimeUnit;
 
 public class NetworkClient extends NetworkEventSource implements IConnection, AutoCloseable
 {
-    private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	private static final ConfigBasedLogger LOGGER = new ConfigBasedLogger(LogManager.getLogger(),
+			() -> Config.Client.Advanced.Logging.logNetworkEvent.get());
 	
     private enum EConnectionState
 	{
@@ -67,7 +68,7 @@ public class NetworkClient extends NetworkEventSource implements IConnection, Au
 	public boolean isClosed() { return closedStates.contains(this.connectionState); }
 	private boolean ready;
 	/** Indicates whether the connection is established and first message is sent. */
-	public boolean isReady() { return ready; }
+	public boolean isReady() { return this.ready; }
 	
     private final EventLoopGroup workerGroup = new NioEventLoopGroup(0, new DefaultThreadFactory("DH-Network - Client Thread"));
     private final Bootstrap clientBootstrap = new Bootstrap()
@@ -98,7 +99,7 @@ public class NetworkClient extends NetworkEventSource implements IConnection, Au
 	{
 		this.registerHandler(CloseReasonMessage.class, closeReasonMessage ->
 		{
-            LOGGER.info(closeReasonMessage.reason);
+			LOGGER.warn(closeReasonMessage.reason);
 			this.connectionState = EConnectionState.CLOSING;
         });
 		
@@ -114,7 +115,10 @@ public class NetworkClient extends NetworkEventSource implements IConnection, Au
 	
 	public void startConnecting()
 	{
-		if (!isInitialState()) return;
+		if (!this.isInitialState())
+		{
+			return;
+		}
 		this.connect();
 	}
 
@@ -123,8 +127,6 @@ public class NetworkClient extends NetworkEventSource implements IConnection, Au
         LOGGER.info("Connecting to server: "+this.address);
 		this.connectionState = EConnectionState.OPEN;
 
-		// FIXME sometimes this causes the MC connection to crash 
-		//  this might happen if the URL can't be converted to a IP (IE UnknownHostException)
         ChannelFuture connectFuture = this.clientBootstrap.connect(this.address);
 		this.channel = connectFuture.channel();
 		
@@ -132,23 +134,25 @@ public class NetworkClient extends NetworkEventSource implements IConnection, Au
 		{
             if (!channelFuture.isSuccess())
 			{
-				LOGGER.warn("Connection failed: "+channelFuture.cause());
+				LOGGER.info("Connection failed: " + channelFuture.cause());
 				return;
 			}
 			
-			sendMessage(new HelloMessage());
-			ready = true;
+			this.sendMessage(new HelloMessage());
+			this.ready = true;
         });
 		
 		this.channel.closeFuture().addListener((ChannelFuture channelFuture) ->
 		{
-			ready = false;
+			this.ready = false;
 			this.completeAllFuturesExceptionally(channelFuture.cause() != null
 					? channelFuture.cause()
 					: new ChannelException("Channel is closed."));
 			
 			if (this.connectionState != EConnectionState.OPEN)
+			{
 				return;
+			}
 			
 			this.reconnectAttempts--;
 			LOGGER.info("Reconnection attempts left: [" + this.reconnectAttempts + "] of [" + FAILURE_RECONNECT_ATTEMPTS + "].");

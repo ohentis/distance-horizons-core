@@ -802,8 +802,6 @@ public class Config
 			
 			public static class Multiplayer
 			{
-				public static ConfigCategory serverNetworking = new ConfigCategory.Builder().set(ServerNetworking.class).build();
-				
 				public static ConfigEntry<EServerFolderNameMode> serverFolderNameMode = new ConfigEntry.Builder<EServerFolderNameMode>()
 						.set(EServerFolderNameMode.NAME_ONLY)
 						.comment(""
@@ -849,8 +847,11 @@ public class Config
 								+ "")
 						.build();
 				
+				public static ConfigCategory serverNetworking = new ConfigCategory.Builder().set(ServerNetworking.class).build();
+				
 				public static class ServerNetworking
 				{
+					public static ConfigUIComment generalSectionNote = new ConfigUIComment();
 					public static ConfigEntry<Boolean> enableServerNetworking = new ConfigEntry.Builder<Boolean>()
 							.setServersideShortName("enableServerNetworking")
 							.set(true)
@@ -884,6 +885,7 @@ public class Config
 							.build();
 					
 					
+					public static ConfigUIComment generationSectionNote = new ConfigUIComment();
 					public static ConfigEntry<Integer> generationRequestRCLimit = new ConfigEntry.Builder<Integer>()
 							.setServersideShortName("generationRequestRCLimit")
 							.setMinDefaultMax(1, 20, 100)
@@ -909,6 +911,7 @@ public class Config
 							.build();
 					
 					
+					public static ConfigUIComment realTimeUpdatesSectionNote = new ConfigUIComment();
 					public static ConfigEntry<Boolean> enableRealTimeUpdates = new ConfigEntry.Builder<Boolean>()
 							.setServersideShortName("enableRealTimeUpdates")
 							.set(false)
@@ -918,6 +921,7 @@ public class Config
 							.build();
 					
 					
+					public static ConfigUIComment loginDataSyncSectionNote = new ConfigUIComment();
 					public static ConfigEntry<Boolean> enableLoginDataSync = new ConfigEntry.Builder<Boolean>()
 							.setServersideShortName("enableLoginDataSync")
 							.set(false)

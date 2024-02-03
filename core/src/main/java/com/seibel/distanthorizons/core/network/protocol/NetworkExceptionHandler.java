@@ -19,14 +19,16 @@
 
 package com.seibel.distanthorizons.core.network.protocol;
 
-import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.config.Config;
+import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 public class NetworkExceptionHandler extends ChannelInboundHandlerAdapter
 {
-	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	private static final ConfigBasedLogger LOGGER = new ConfigBasedLogger(LogManager.getLogger(),
+			() -> Config.Client.Advanced.Logging.logNetworkEvent.get());
 	
 	@Override
 	public void exceptionCaught(ChannelHandlerContext channelContext, Throwable cause)

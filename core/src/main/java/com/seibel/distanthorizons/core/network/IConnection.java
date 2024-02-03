@@ -1,5 +1,7 @@
 package com.seibel.distanthorizons.core.network;
 
+import com.seibel.distanthorizons.core.config.Config;
+import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
 import com.seibel.distanthorizons.core.network.messages.base.CloseReasonMessage;
 import com.seibel.distanthorizons.core.network.protocol.FutureTrackableNetworkMessage;
 import com.seibel.distanthorizons.core.network.protocol.NetworkMessage;
@@ -7,14 +9,14 @@ import io.netty.channel.ChannelException;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.net.SocketAddress;
 import java.util.concurrent.CompletableFuture;
 
 public interface IConnection
 {
-	Logger LOGGER = LogManager.getLogger();
+	ConfigBasedLogger LOGGER = new ConfigBasedLogger(LogManager.getLogger(),
+			() -> Config.Client.Advanced.Logging.logNetworkEvent.get());
 	
 	ChannelHandlerContext getChannelContext();
 	NetworkEventSource getRequestHandler();
@@ -26,7 +28,7 @@ public interface IConnection
 	
 	default CompletableFuture<Void> sendMessage(NetworkMessage message)
 	{
-		LOGGER.trace("Sending message: " + message);
+		LOGGER.debug("Sending message: " + message);
 		CompletableFuture<Void> future = new CompletableFuture<>();
 		
 		ChannelHandlerContext ctx = this.getChannelContext();
