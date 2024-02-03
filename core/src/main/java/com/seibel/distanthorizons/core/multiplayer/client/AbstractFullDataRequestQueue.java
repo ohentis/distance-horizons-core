@@ -62,6 +62,8 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 	
 	protected abstract String getQueueName();
 	
+	protected double getPriorityDistanceRatio() { return 1; }
+	
 	
 	public AbstractFullDataRequestQueue(ClientNetworkState networkState, IDhClientLevel level, boolean changedOnly, ConfigEntry<Boolean> showDebugWireframeConfig)
 	{
@@ -143,11 +145,25 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 	{
 		Map.Entry<DhSectionPos, RequestQueueEntry> mapEntry = this.waitingTasks.entrySet().stream()
 				.filter(task -> task.getValue().request == null)
-				.reduce(null, (a, b)
-						-> a == null
-						|| b.getValue().priority > a.getValue().priority
-						|| (b.getValue().priority == a.getValue().priority && this.posDistanceSquared(targetPos, b.getKey()) < this.posDistanceSquared(targetPos, a.getKey()))
-						? b : a);
+				.reduce(null, (a, b) -> {
+					if (a == null)
+					{
+						return b;
+					}
+					
+					if (b.getValue().priority < a.getValue().priority)
+					{
+						Map.Entry<DhSectionPos, RequestQueueEntry> temp = b;
+						b = a;
+						a = temp;
+					}
+					
+					double distanceRatio = Math.sqrt(this.posDistanceSquared(targetPos, b.getKey())) / Math.sqrt(this.posDistanceSquared(targetPos, a.getKey()));
+					double maxDistanceRatioScaled = Math.pow(this.getPriorityDistanceRatio(), b.getValue().priority - a.getValue().priority);
+					
+					return distanceRatio < maxDistanceRatioScaled ? b : a;
+				});
+		
 		if (mapEntry == null)
 		{
 			this.pendingTasksSemaphore.release();

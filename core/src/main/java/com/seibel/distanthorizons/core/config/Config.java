@@ -894,19 +894,28 @@ public class Config
 									+ "")
 							.build();
 					
-					public static ConfigEntry<Integer> genTaskPriorityRequestRateLimit = new ConfigEntry.Builder<Integer>()
-							.setServersideShortName("genTaskPriorityRequestRateLimit")
-							.setMinDefaultMax(1, 50, 200)
-							.comment(""
-									+ "Limits the amount of LOD sections that the client can request states for, per second. \n"
-									+ "")
-							.build();
-					
 					public static ConfigEntry<Integer> generationRequestBeginDelay = new ConfigEntry.Builder<Integer>()
 							.setMinDefaultMax(0, 3, 10)
 							.comment(""
 									+ "Adds a delay in seconds before sending LOD requests, when generation is enabled. \n"
 									+ "Increase this value if initial generation starts too far away. \n"
+									+ "")
+							.build();
+					
+					public static ConfigEntry<Double> genTaskPriorityDistanceRatio = new ConfigEntry.Builder<Double>()
+							.setServersideShortName("genTaskPriorityDistanceRatio")
+							.setMinDefaultMax(1d, 3d, 10d)
+							.comment(""
+									+ "Controls the max ratio between distances of nearest unloaded sections of each priority. \n"
+									+ "For example, value of 2 means that the nearest lower priority section will be allowed to stay \n"
+									+ "unloaded only if it's at most 2x closer than one of a higher priority. \n"
+									+ "")
+							.build();
+					public static ConfigEntry<Integer> genTaskPriorityRequestRateLimit = new ConfigEntry.Builder<Integer>()
+							.setServersideShortName("genTaskPriorityRequestRateLimit")
+							.setMinDefaultMax(1, 50, 200)
+							.comment(""
+									+ "Limits the amount of LOD sections that the client can request states for, per second. \n"
 									+ "")
 							.build();
 					
