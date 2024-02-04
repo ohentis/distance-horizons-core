@@ -178,6 +178,12 @@ public class DhClientLevel extends DhLevel implements IDhClientLevel
 		{
 			// start world gen
 			this.worldGenModule.startWorldGen(this.dataFileHandler, new WorldGenState(this, this.networkState));
+			
+			// populate the queue based on the current rendering tree
+			ClientLevelModule.ClientRenderState renderState = this.clientside.ClientRenderStateRef.get();
+			renderState.quadtree.leafNodeIterator().forEachRemaining(node -> {
+				this.dataFileHandler.getAsync(node.sectionPos);
+			});
 		}
 		else if (!shouldDoWorldGen && isWorldGenRunning)
 		{
