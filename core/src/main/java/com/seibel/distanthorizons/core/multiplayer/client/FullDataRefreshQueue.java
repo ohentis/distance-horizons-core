@@ -12,6 +12,9 @@ public class FullDataRefreshQueue extends AbstractFullDataRequestQueue
 	}
 	
 	@Override
+	protected boolean showInDebug() { return this.networkState.config.loginDataSyncEnabled; }
+	
+	@Override
 	protected int getRequestConcurrencyLimit() { return this.networkState.config.loginDataSyncRCLimit; }
 	
 	@Override

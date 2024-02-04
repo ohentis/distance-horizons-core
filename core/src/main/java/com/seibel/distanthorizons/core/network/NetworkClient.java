@@ -57,7 +57,7 @@ public class NetworkClient extends NetworkEventSource implements IConnection, Au
 	);
 	
     private static final int FAILURE_RECONNECT_DELAY_SEC = 5;
-    private static final int FAILURE_RECONNECT_ATTEMPTS = 3;
+	public static final int FAILURE_RECONNECT_ATTEMPTS = 3;
 	
     // TODO move to payload of some sort
     private final InetSocketAddress address;
@@ -85,8 +85,10 @@ public class NetworkClient extends NetworkEventSource implements IConnection, Au
 	
     private EConnectionState connectionState = EConnectionState.INITIAL;
     private Channel channel;
-    private int reconnectAttempts = FAILURE_RECONNECT_ATTEMPTS;
 	
+	private int reconnectAttempts = FAILURE_RECONNECT_ATTEMPTS;
+	/** Returns the amount of reconnections the client will attempt to perform before giving up. */
+	public int getReconnectAttempts() { return this.reconnectAttempts; }
 	
 	
     public NetworkClient(String host, int port)

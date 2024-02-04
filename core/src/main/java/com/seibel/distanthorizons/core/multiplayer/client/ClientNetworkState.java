@@ -2,6 +2,7 @@ package com.seibel.distanthorizons.core.multiplayer.client;
 
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
+import com.seibel.distanthorizons.core.logging.f3.F3Screen;
 import com.seibel.distanthorizons.core.multiplayer.config.MultiplayerConfig;
 import com.seibel.distanthorizons.core.multiplayer.config.MultiplayerConfigChangeListener;
 import com.seibel.distanthorizons.core.network.NetworkClient;
@@ -13,6 +14,7 @@ import com.seibel.distanthorizons.core.network.messages.session.RemotePlayerConf
 import org.apache.logging.log4j.LogManager;
 
 import java.io.Closeable;
+import java.text.MessageFormat;
 import java.util.UUID;
 
 public class ClientNetworkState implements Closeable
@@ -24,6 +26,8 @@ public class ClientNetworkState implements Closeable
 	private final UUID playerUUID;
 	public MultiplayerConfig config = new MultiplayerConfig();
 	private final MultiplayerConfigChangeListener configChangeListener = new MultiplayerConfigChangeListener(this::onConfigChanged);
+	
+	private final F3Screen.NestedMessage f3Message = new F3Screen.NestedMessage(this::f3Log);
 	
 	/**
 	 * Returns the client used by this instance. <p>
@@ -72,9 +76,30 @@ public class ClientNetworkState implements Closeable
 		this.getClient().sendMessage(new RemotePlayerConfigMessage(new MultiplayerConfig()));
 	}
 	
+	private String[] f3Log()
+	{
+		if (!this.client.isClosed())
+		{
+			return new String[]{
+					this.client.getRemoteAddress() != null
+							? "Connected, ready: " + this.client.isReady()
+							: MessageFormat.format("Disconnected, attempts left: {0} / {1}", this.client.getReconnectAttempts(), NetworkClient.FAILURE_RECONNECT_ATTEMPTS)
+			};
+		}
+		else
+		{
+			return new String[]{
+					this.client.getCloseReason() != null
+							? "Disconnected: " + this.client.getCloseReason().getMessage()
+							: "Disconnected (check logs for more information)"
+			};
+		}
+	}
+	
 	@Override
 	public void close()
 	{
+		this.f3Message.close();
 		this.configChangeListener.close();
 		this.client.close();
 	}

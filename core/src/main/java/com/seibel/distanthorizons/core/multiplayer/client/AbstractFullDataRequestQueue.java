@@ -58,6 +58,9 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 	private final SupplierBasedRateLimiter<Void> rateLimiter = new SupplierBasedRateLimiter<>(this::getRequestConcurrencyLimit);
 	
 	
+	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
+	protected boolean showInDebug() { return true; }
+	
 	protected abstract int getRequestConcurrencyLimit();
 	
 	protected abstract String getQueueName();
@@ -232,10 +235,15 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 	
 	private String[] f3Log()
 	{
-		ArrayList<String> lines = new ArrayList<>();
-		lines.add(this.getQueueName() + " [" + this.level.getClientLevelWrapper().getDimensionType().getDimensionName() + "]");
-		lines.add("Requests: " + this.finishedRequests + " / " + (this.getWaitingTaskCount() + this.finishedRequests.get()) + " (failed: " + this.failedRequests + ", rate limit: " + this.getRequestConcurrencyLimit() + ")");
-		return lines.toArray(new String[0]);
+		if (!this.showInDebug())
+		{
+			return new String[0];
+		}
+		
+		return new String[]{
+				this.getQueueName() + " [" + this.level.getClientLevelWrapper().getDimensionType().getDimensionName() + "]",
+				"Requests: " + this.finishedRequests + " / " + (this.getWaitingTaskCount() + this.finishedRequests.get()) + " (failed: " + this.failedRequests + ", rate limit: " + this.getRequestConcurrencyLimit() + ")"
+		};
 	}
 	
 	public int getWaitingTaskCount() { return this.waitingTasks.size(); }
@@ -277,6 +285,11 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 	@Override
 	public void debugRender(DebugRenderer r)
 	{
+		if (!this.showInDebug())
+		{
+			return;
+		}
+		
 		for (Map.Entry<DhSectionPos, RequestQueueEntry> mapEntry : this.waitingTasks.entrySet())
 		{
 			r.renderBox(new DebugRenderer.Box(mapEntry.getKey(), -32f, 64f, 0.05f,

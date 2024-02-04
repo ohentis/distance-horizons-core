@@ -10,6 +10,7 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import org.apache.logging.log4j.LogManager;
 
+import javax.annotation.Nullable;
 import java.net.SocketAddress;
 import java.util.concurrent.CompletableFuture;
 
@@ -18,12 +19,20 @@ public interface IConnection
 	ConfigBasedLogger LOGGER = new ConfigBasedLogger(LogManager.getLogger(),
 			() -> Config.Client.Advanced.Logging.logNetworkEvent.get());
 	
+	@Nullable
 	ChannelHandlerContext getChannelContext();
 	NetworkEventSource getRequestHandler();
 	
+	@Nullable
 	default SocketAddress getRemoteAddress()
 	{
-		return this.getChannelContext().channel().remoteAddress();
+		ChannelHandlerContext ctx = this.getChannelContext();
+		if (ctx == null)
+		{
+			return null;
+		}
+		
+		return ctx.channel().remoteAddress();
 	}
 	
 	default CompletableFuture<Void> sendMessage(NetworkMessage message)
@@ -68,14 +77,27 @@ public interface IConnection
 	
 	default void disconnect(String reason)
 	{
-		this.getChannelContext().channel().config().setAutoRead(false);
-		this.getChannelContext().writeAndFlush(new CloseReasonMessage(reason))
+		ChannelHandlerContext ctx = this.getChannelContext();
+		if (ctx == null)
+		{
+			return;
+		}
+		
+		ctx.channel().config().setAutoRead(false);
+		ctx.writeAndFlush(new CloseReasonMessage(reason))
 				.addListener(ChannelFutureListener.CLOSE);
 	}
 	
+	@Nullable
 	default Throwable getCloseReason()
 	{
-		return this.getChannelContext().channel().closeFuture().cause();
+		ChannelHandlerContext ctx = this.getChannelContext();
+		if (ctx == null)
+		{
+			return null;
+		}
+		
+		return ctx.channel().closeFuture().cause();
 	}
 	
 }

@@ -25,6 +25,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.apache.logging.log4j.LogManager;
 
+import java.net.SocketException;
+
 public class NetworkExceptionHandler extends ChannelInboundHandlerAdapter
 {
 	private static final ConfigBasedLogger LOGGER = new ConfigBasedLogger(LogManager.getLogger(),
@@ -33,7 +35,14 @@ public class NetworkExceptionHandler extends ChannelInboundHandlerAdapter
 	@Override
 	public void exceptionCaught(ChannelHandlerContext channelContext, Throwable cause)
 	{
-		LOGGER.error("Exception caught in channel: [" + channelContext.name() + "].", cause);
+		if (cause instanceof SocketException)
+		{
+			LOGGER.info("Exception caught in channel: [" + channelContext.name() + "]: " + cause.getMessage());
+		}
+		else
+		{
+			LOGGER.error("Exception caught in channel: [" + channelContext.name() + "].", cause);
+		}
 		channelContext.close();
 	}
 	
