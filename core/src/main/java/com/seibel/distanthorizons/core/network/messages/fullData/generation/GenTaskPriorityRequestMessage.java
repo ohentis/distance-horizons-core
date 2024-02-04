@@ -17,7 +17,7 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.seibel.distanthorizons.core.network.messages.fullData.generation.priority;
+package com.seibel.distanthorizons.core.network.messages.fullData.generation;
 
 import com.seibel.distanthorizons.core.network.protocol.FutureTrackableNetworkMessage;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
@@ -39,18 +39,18 @@ public class GenTaskPriorityRequestMessage extends FutureTrackableNetworkMessage
 	@Override
 	protected void encode0(ByteBuf out)
 	{
-		encodeCollection(out, posList);
+		this.encodeCollection(out, this.posList);
 	}
 	
 	@Override
 	protected void decode0(ByteBuf in)
 	{
-		decodeCollection(in, posList, DhSectionPos::zero);
+		this.decodeCollection(in, this.posList, DhSectionPos::zero);
 	}
 	
 	@Override public String toString()
 	{
-		return super.toString("posList=" + posList);
+		return super.toString("posList=" + this.posList);
 	}
 	
 }

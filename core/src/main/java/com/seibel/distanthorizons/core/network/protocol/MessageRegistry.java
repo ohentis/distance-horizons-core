@@ -22,13 +22,11 @@ package com.seibel.distanthorizons.core.network.protocol;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.seibel.distanthorizons.core.network.messages.base.*;
-import com.seibel.distanthorizons.core.network.messages.fullData.generation.FullDataSourceRequestMessage;
-import com.seibel.distanthorizons.core.network.messages.fullData.generation.FullDataSourceResponseMessage;
-import com.seibel.distanthorizons.core.network.messages.fullData.generation.priority.GenTaskPriorityRequestMessage;
-import com.seibel.distanthorizons.core.network.messages.fullData.generation.priority.GenTaskPriorityResponseMessage;
-import com.seibel.distanthorizons.core.network.messages.fullData.updates.FullDataChangeSummaryRequestMessage;
-import com.seibel.distanthorizons.core.network.messages.fullData.updates.FullDataChangeSummaryResponseMessage;
-import com.seibel.distanthorizons.core.network.messages.fullData.updates.FullDataPartialUpdateMessage;
+import com.seibel.distanthorizons.core.network.messages.fullData.FullDataSourceRequestMessage;
+import com.seibel.distanthorizons.core.network.messages.fullData.FullDataSourceResponseMessage;
+import com.seibel.distanthorizons.core.network.messages.fullData.generation.GenTaskPriorityRequestMessage;
+import com.seibel.distanthorizons.core.network.messages.fullData.generation.GenTaskPriorityResponseMessage;
+import com.seibel.distanthorizons.core.network.messages.fullData.FullDataPartialUpdateMessage;
 import com.seibel.distanthorizons.core.network.messages.session.PlayerUUIDMessage;
 import com.seibel.distanthorizons.core.network.messages.session.RemotePlayerConfigMessage;
 
@@ -71,10 +69,6 @@ public class MessageRegistry
 		// Generation task prioritization
 		this.registerMessage(GenTaskPriorityRequestMessage.class, GenTaskPriorityRequestMessage::new);
 		this.registerMessage(GenTaskPriorityResponseMessage.class, GenTaskPriorityResponseMessage::new);
-		
-		// Post-rejoin updates
-		this.registerMessage(FullDataChangeSummaryRequestMessage.class, FullDataChangeSummaryRequestMessage::new);
-		this.registerMessage(FullDataChangeSummaryResponseMessage.class, FullDataChangeSummaryResponseMessage::new);
 	}
 	
 	

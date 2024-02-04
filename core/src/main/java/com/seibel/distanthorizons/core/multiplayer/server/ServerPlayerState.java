@@ -2,8 +2,8 @@ package com.seibel.distanthorizons.core.multiplayer.server;
 
 import com.seibel.distanthorizons.core.network.IConnection;
 import com.seibel.distanthorizons.core.network.exceptions.RateLimitedException;
-import com.seibel.distanthorizons.core.network.messages.fullData.generation.FullDataSourceRequestMessage;
-import com.seibel.distanthorizons.core.network.messages.fullData.generation.priority.GenTaskPriorityRequestMessage;
+import com.seibel.distanthorizons.core.network.messages.fullData.FullDataSourceRequestMessage;
+import com.seibel.distanthorizons.core.network.messages.fullData.generation.GenTaskPriorityRequestMessage;
 import com.seibel.distanthorizons.core.util.ratelimiting.SupplierBasedRateAndConcurrencyLimiter;
 import com.seibel.distanthorizons.core.util.ratelimiting.SupplierBasedRateLimiter;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
