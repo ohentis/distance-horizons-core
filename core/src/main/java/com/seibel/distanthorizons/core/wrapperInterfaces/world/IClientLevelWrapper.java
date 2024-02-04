@@ -21,8 +21,7 @@ package com.seibel.distanthorizons.core.wrapperInterfaces.world;
 
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
-
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * @version 2022-9-16
