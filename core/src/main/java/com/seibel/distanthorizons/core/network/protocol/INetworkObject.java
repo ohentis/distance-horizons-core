@@ -78,7 +78,9 @@ public interface INetworkObject
 		for (T item : collection)
 		{
 			if (codec == null)
+			{
 				codec = Codec.getCodec(item.getClass());
+			}
 			codec.encode.accept(item, outputByteBuf);
 		}
 	}
@@ -93,7 +95,9 @@ public interface INetworkObject
 			T item = innerValueConstructor.get();
 			
 			if (codec == null)
+			{
 				codec = Codec.getCodec(item.getClass());
+			}
 			item = (T) codec.decode.apply(item, inputByteBuf);
 			
 			collection.add(item);
@@ -104,24 +108,26 @@ public interface INetworkObject
 	{
 		ArrayList<Map.Entry<K, V>> entryList = new ArrayList<>();
 		
-		decodeCollection(inputByteBuf, entryList, () -> new AbstractMap.SimpleEntry<>(keySupplier.get(), valueSupplier.get()));
+		this.decodeCollection(inputByteBuf, entryList, () -> new AbstractMap.SimpleEntry<>(keySupplier.get(), valueSupplier.get()));
 		for (Map.Entry<K, V> entry : entryList)
+		{
 			map.put(entry.getKey(), entry.getValue());
+		}
 	}
 	
 	/**
 	 * Should only be used for non-editable classes;
-	 * otherwise, you may want to implement {@link INetworkObject} and use its method where applicable.
+	 * otherwise, you may want to implement {@link INetworkObject} and use its methods where applicable.
 	 */
 	class Codec
 	{
 		private static final ConcurrentMap<Class<?>, Codec> codecMap = new ConcurrentHashMap<Class<?>, Codec>()
 		{{
 			// Primitives must be added manually here
-			put(Integer.class, new Codec((obj, out) -> out.writeInt((int)obj), (obj, in) -> in.readInt()));
+			this.put(Integer.class, new Codec((obj, out) -> out.writeInt((int)obj), (obj, in) -> in.readInt()));
 			
-			put(INetworkObject.class, new Codec(INetworkObject::encode, INetworkObject::decodeStatic));
-			put(Map.Entry.class, new Codec(
+			this.put(INetworkObject.class, new Codec(INetworkObject::encode, INetworkObject::decodeStatic));
+			this.put(Map.Entry.class, new Codec(
 					(obj, out) -> {
 						Map.Entry<?, ?> entry = (Entry<?, ?>) obj;
 						getCodec(entry.getKey().getClass()).encode.accept(entry.getKey(), out);
@@ -151,7 +157,9 @@ public interface INetworkObject
 				for (Map.Entry<Class<?>, Codec> entry : codecMap.entrySet())
 				{
 					if (entry.getKey().isAssignableFrom(clazz))
+					{
 						return entry.getValue();
+					}
 				}
 				
 				throw new AssertionError("Class has no compatible codec: "+clazz.getSimpleName());
