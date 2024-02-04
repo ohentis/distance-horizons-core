@@ -98,6 +98,7 @@ public interface INetworkObject
 			{
 				codec = Codec.getCodec(item.getClass());
 			}
+			//noinspection unchecked
 			item = (T) codec.decode.apply(item, inputByteBuf);
 			
 			collection.add(item);
@@ -146,6 +147,7 @@ public interface INetworkObject
 		public final BiConsumer<Object, ByteBuf> encode;
 		public final BiFunction<Object, ByteBuf, Object> decode;
 		
+		@SuppressWarnings("unchecked")
 		public <T> Codec(BiConsumer<T, ByteBuf> encode, BiFunction<T, ByteBuf, T> decode)
 		{
 			this.encode = (BiConsumer<Object, ByteBuf>) encode;
