@@ -264,6 +264,8 @@ public class RenderBufferHandler implements AutoCloseable
 				renderSection.dispose();
 			}
 		}
+		
+		this.f3Message.close();
 	}
 	
 	
