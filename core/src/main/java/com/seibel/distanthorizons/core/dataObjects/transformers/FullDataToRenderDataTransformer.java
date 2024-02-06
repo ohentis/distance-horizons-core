@@ -135,11 +135,6 @@ public class FullDataToRenderDataTransformer
 					ColumnArrayView columnArrayView = columnSource.getVerticalDataPointView(x, z);
 					SingleColumnFullDataAccessor fullArrayView = fullDataSource.get(x, z);
 					convertColumnData(level, baseX + x, baseZ + z, columnArrayView, fullArrayView);
-					
-					if (fullArrayView.doesColumnExist())
-					{
-						LodUtil.assertTrue(columnSource.doesDataPointExist(x, z));
-					}
 				}
 			}
 			
@@ -193,8 +188,6 @@ public class FullDataToRenderDataTransformer
 					convertColumnData(level, baseX + x, baseZ + z, columnArrayView, fullArrayView);
 					
 					columnSource.fillDebugFlag(x, z, 1, 1, ColumnRenderSource.DebugSourceFlag.SPARSE);
-					if (fullArrayView.doesColumnExist())
-						LodUtil.assertTrue(columnSource.doesDataPointExist(x, z));
 				}
 			}
 		}

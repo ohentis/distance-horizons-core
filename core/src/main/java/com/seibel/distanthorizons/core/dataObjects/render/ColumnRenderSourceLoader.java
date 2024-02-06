@@ -55,14 +55,7 @@ public class ColumnRenderSourceLoader
 		switch (dataFileVersion)
 		{
 			case 1:
-				//LOGGER.info("loading render source "+dataFile.pos);
-				
 				ParsedColumnData parsedColumnData = readDataV1(inputStream, level.getMinY());
-				if (parsedColumnData.isEmpty)
-				{
-					LOGGER.warn("Empty render file " + dto.pos);
-				}
-				
 				return new ColumnRenderSource(dto.pos, parsedColumnData, level);
 			default:
 				throw new IOException("Invalid Data: The data version [" + dataFileVersion + "] is not supported");
