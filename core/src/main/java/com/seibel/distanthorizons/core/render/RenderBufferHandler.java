@@ -20,17 +20,22 @@
 package com.seibel.distanthorizons.core.render;
 
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
+import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
+import com.seibel.distanthorizons.core.pos.DhFrustumBounds;
+import com.seibel.distanthorizons.core.pos.DhLodPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.pos.Pos2D;
+import com.seibel.distanthorizons.core.render.renderer.LodRenderer;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.objects.SortedArraySet;
 import com.seibel.distanthorizons.core.util.objects.quadTree.QuadNode;
-import com.seibel.distanthorizons.core.render.renderer.LodRenderer;
+import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.coreapi.util.math.Vec3f;
 import org.apache.logging.log4j.Logger;
+import org.joml.Matrix4fc;
 
 import java.util.Comparator;
 import java.util.Iterator;
@@ -82,7 +87,7 @@ public class RenderBufferHandler implements AutoCloseable
 	 * TODO: This might get locked by update() causing move() call. Is there a way to avoid this?
 	 *       Maybe dupe the base list and use atomic swap on render? Or is this not worth it?
 	 */
-	public void buildRenderListAndUpdateSections(Vec3f lookForwardVector)
+	public void buildRenderListAndUpdateSections(IClientLevelWrapper clientLevelWrapper, Matrix4fc matWorldViewProjection, Vec3f lookForwardVector)
 	{
 		EDhDirection[] axisDirections = new EDhDirection[3];
 		
@@ -187,6 +192,11 @@ public class RenderBufferHandler implements AutoCloseable
 		// Build the sorted list
 		this.loadedNearToFarBuffers = new SortedArraySet<>((a, b) -> -farToNearComparator.compare(a, b)); // TODO is the comparator named wrong?
 		
+		float worldMinY = clientLevelWrapper.getMinHeight();
+		float worldHeight = clientLevelWrapper.getHeight();
+		DhFrustumBounds frustumBounds = new DhFrustumBounds(matWorldViewProjection, worldMinY, worldMinY + worldHeight);
+		boolean enableFrustumCulling = !Config.Client.Advanced.Graphics.AdvancedGraphics.disableFrustumCulling.get();
+		
 		// Update the sections
 		boolean rebuildAllBuffers = this.rebuildAllBuffers.getAndSet(false);
 		Iterator<QuadNode<LodRenderSection>> nodeIterator = this.lodQuadTree.nodeIterator();
@@ -196,26 +206,38 @@ public class RenderBufferHandler implements AutoCloseable
 			
 			DhSectionPos sectionPos = node.sectionPos;
 			LodRenderSection renderSection = node.value;
+			if (renderSection == null)
+			{
+				continue;
+			}
+			
 			try
 			{
-				
-				if (renderSection != null)
+				DhLodPos lodBounds = renderSection.pos.getSectionBBoxPos();
+				if (enableFrustumCulling && !frustumBounds.Intersects(lodBounds))
 				{
-					if (rebuildAllBuffers)
-					{
-						renderSection.markBufferDirty();
-					}
-					renderSection.tryBuildAndSwapBuffer();
-					
-					if (renderSection.isRenderingEnabled())
-					{
-						AbstractRenderBuffer buffer = renderSection.activeRenderBufferRef.get();
-						if (buffer != null)
-						{
-							this.loadedNearToFarBuffers.add(new LoadedRenderBuffer(buffer, sectionPos));
-						}
-					}
+					continue;
 				}
+				
+				if (rebuildAllBuffers)
+				{
+					renderSection.markBufferDirty();
+				}
+				
+				renderSection.tryBuildAndSwapBuffer();
+				if (!renderSection.isRenderingEnabled())
+				{
+					continue;
+				}
+				
+				AbstractRenderBuffer buffer = renderSection.activeRenderBufferRef.get();
+				if (buffer == null)
+				{
+					continue;
+				}
+					
+				
+				this.loadedNearToFarBuffers.add(new LoadedRenderBuffer(buffer, sectionPos));
 			}
 			catch (Exception e)
 			{

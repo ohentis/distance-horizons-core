@@ -57,6 +57,8 @@ import com.seibel.distanthorizons.coreapi.util.math.Mat4f;
 import com.seibel.distanthorizons.coreapi.util.math.Vec3d;
 import com.seibel.distanthorizons.coreapi.util.math.Vec3f;
 import org.apache.logging.log4j.LogManager;
+import org.joml.Matrix4f;
+import org.joml.Matrix4fc;
 import org.lwjgl.opengl.GL32;
 
 import java.awt.*;
@@ -349,7 +351,14 @@ public class LodRenderer
 			
 			if (renderingFirstPass)
 			{
-				this.bufferHandler.buildRenderListAndUpdateSections(MC_RENDER.getLookAtVector());
+				Matrix4f matWorldView = new Matrix4f()
+						.setTransposed(MC_RENDER.getWorldViewMatrix().getValuesAsArray());
+				
+				Matrix4fc matWorldViewProjection = new Matrix4f()
+					.setTransposed(renderEventParam.dhProjectionMatrix.getValuesAsArray())
+					.mul(matWorldView);
+				
+				this.bufferHandler.buildRenderListAndUpdateSections(clientLevelWrapper, matWorldViewProjection, MC_RENDER.getLookAtVector());
 				
 				transparencyEnabled = Config.Client.Advanced.Graphics.Quality.transparency.get().transparencyEnabled;
 				fakeOceanFloor = Config.Client.Advanced.Graphics.Quality.transparency.get().fakeTransparencyEnabled;

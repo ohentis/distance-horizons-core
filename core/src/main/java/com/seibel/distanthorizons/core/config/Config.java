@@ -533,18 +533,17 @@ public class Config
 				
 				public static class AdvancedGraphics
 				{
-					// TODO re-implement
-//					public static ConfigEntry<Boolean> disableDirectionalCulling = new ConfigEntry.Builder<Boolean>()
-//							.set(false)
-//							.comment(""
-//									+ "If false fake chunks behind the player's camera \n"
-//									+ "aren't drawn, increasing GPU performance. \n"
-//									+ "\n"
-//									+ "If true all LODs are drawn, even those behind \n"
-//									+ "the player's camera, decreasing GPU performance. \n"
-//									+ "\n"
-//									+ "Disable this if you see LODs disappearing at the corners of your vision.")
-//							.build();
+					public static ConfigEntry<Boolean> disableFrustumCulling = new ConfigEntry.Builder<Boolean>()
+							.set(false)
+							.comment(""
+									+ "If false LODs outside the player's camera \n"
+									+ "aren't drawn, increasing GPU performance. \n"
+									+ "\n"
+									+ "If true all LODs are drawn, even those behind \n"
+									+ "the player's camera, decreasing GPU performance. \n"
+									+ "\n"
+									+ "Disable this if you see LODs disappearing at the corners of your vision.")
+							.build();
 					
 					/** 
 					 * @deprecated Use overdrawPrevention instead, will be removed when DH updates to MC 1.21 <br>
