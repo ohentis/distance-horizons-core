@@ -19,6 +19,8 @@
 
 package com.seibel.distanthorizons.core.render;
 
+import com.seibel.distanthorizons.api.DhApi;
+import com.seibel.distanthorizons.api.interfaces.override.rendering.IDhApiCullingFrustum;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.ModAccessorInjector;
@@ -35,6 +37,8 @@ import com.seibel.distanthorizons.core.util.objects.SortedArraySet;
 import com.seibel.distanthorizons.core.util.objects.quadTree.QuadNode;
 import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.IIrisAccessor;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
+import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IOverrideInjector;
+import com.seibel.distanthorizons.coreapi.util.math.Mat4f;
 import com.seibel.distanthorizons.coreapi.util.math.Vec3f;
 import org.apache.logging.log4j.Logger;
 import org.joml.Matrix4fc;
@@ -64,8 +68,6 @@ public class RenderBufferHandler implements AutoCloseable
 	
 	public F3Screen.MultiDynamicMessage f3Message;
 	
-	private final DhFrustumBounds frustumBounds;
-	
 	private int visibleBufferCount;
 	private int culledBufferCount;
 	private int shadowVisibleBufferCount;
@@ -82,7 +84,12 @@ public class RenderBufferHandler implements AutoCloseable
 		this.lodQuadTree = lodQuadTree;
 		this.culledBufferCount = 0;
 		
-		this.frustumBounds = new DhFrustumBounds();
+		IDhApiCullingFrustum coreFrustum = DhApi.overrides.get(IDhApiCullingFrustum.class, IOverrideInjector.CORE_PRIORITY);
+		if (coreFrustum == null)
+		{
+			DhApi.overrides.bind(IDhApiCullingFrustum.class, new DhFrustumBounds());
+		}
+		
 		
 		this.f3Message = new F3Screen.MultiDynamicMessage(
 			() ->
@@ -231,15 +238,13 @@ public class RenderBufferHandler implements AutoCloseable
 		
 		// update the frustum if necessary
 		boolean enableFrustumCulling = !Config.Client.Advanced.Graphics.AdvancedGraphics.disableFrustumCulling.get();
+		IDhApiCullingFrustum frustum = DhApi.overrides.get(IDhApiCullingFrustum.class, IOverrideInjector.CORE_PRIORITY);
 		if (enableFrustumCulling)
 		{
-			float worldMinY = clientLevelWrapper.getMinHeight();
-			float worldHeight = clientLevelWrapper.getHeight();
+			int worldMinY = clientLevelWrapper.getMinHeight();
+			int worldHeight = clientLevelWrapper.getHeight();
 			
-			this.frustumBounds.worldMinY = worldMinY;
-			this.frustumBounds.worldMaxY = worldMinY + worldHeight;
-			
-			this.frustumBounds.updateFrustum(matWorldViewProjection);
+			frustum.update(worldMinY, worldMinY + worldHeight, new Mat4f(matWorldViewProjection));
 		}
 		
 		
@@ -276,7 +281,10 @@ public class RenderBufferHandler implements AutoCloseable
 				if (enableFrustumCulling)
 				{
 					DhLodPos lodBounds = renderSection.pos.getSectionBBoxPos();
-					if (!this.frustumBounds.intersects(lodBounds))
+					int blockMinX = lodBounds.getX().toBlockWidth();
+					int blockMinZ = lodBounds.getZ().toBlockWidth();
+					int lodBlockWidth = lodBounds.getBlockWidth();
+					if (!frustum.intersects(blockMinX, blockMinZ, lodBlockWidth, lodBounds.detailLevel))
 					{
 						if (isShadowPass)
 						{

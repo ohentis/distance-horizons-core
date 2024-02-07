@@ -20,6 +20,7 @@
 package com.seibel.distanthorizons.coreapi.util.math;
 
 import org.joml.Matrix4f;
+import org.joml.Matrix4fc;
 
 import java.nio.FloatBuffer;
 
@@ -75,8 +76,8 @@ public class Mat4f
 		this.m33 = sourceMatrix.m33;
 	}
 	
-	public Mat4f(Matrix4f sourceMatrix) { this(convertJomlMatrixToArray(sourceMatrix)); }
-	private static float[] convertJomlMatrixToArray(Matrix4f sourceMatrix)
+	public Mat4f(Matrix4fc sourceMatrix) { this(convertJomlMatrixToArray(sourceMatrix)); }
+	private static float[] convertJomlMatrixToArray(Matrix4fc sourceMatrix)
 	{
 		FloatBuffer buffer = FloatBuffer.allocate(16);
 		
@@ -215,6 +216,17 @@ public class Mat4f
 		floatBuffer.put(bufferIndex(3, 2), this.m32);
 		floatBuffer.put(bufferIndex(3, 3), this.m33);
 	}
+	
+	public Matrix4f createJomlMatrix()
+	{
+		return new Matrix4f(
+				this.m00, this.m10, this.m20, this.m30,
+				this.m01, this.m11, this.m21, this.m31,
+				this.m02, this.m12, this.m22, this.m32,
+				this.m03, this.m13, this.m23, this.m33
+		);
+	}
+	
 	
 	private static int bufferIndex(int xIndex, int zIndex)
 	{
