@@ -19,6 +19,9 @@
 
 package com.seibel.distanthorizons.core.jar;
 
+import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
+import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.IModChecker;
+import com.seibel.distanthorizons.coreapi.ModInfo;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
@@ -48,11 +51,20 @@ public class JarUtils
 		try 
 		{
 			jarFile = new File(JarUtils.class.getProtectionDomain().getCodeSource().getLocation().toURI()); // Always safe
-		} 
+		}
 		catch (Exception e) 
 		{
-			LOGGER.warn("Unable to get jarFile, Error: "+e.getMessage(), e);
+			try
+			{
+				LOGGER.warn("Unable to get the jar file, trying backup method... Error: "+e.getMessage(), e);
+				jarFile = SingletonInjector.INSTANCE.get(IModChecker.class).modLocation(ModInfo.ID);
+			}
+			catch (Exception f)
+			{
+				LOGGER.warn("Backup jar file getter failed. Error: "+f.getMessage(), f);
+			}
 		}
+		System.out.println(jarFile);
 	}
 	
 	
