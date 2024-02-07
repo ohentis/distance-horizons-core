@@ -32,8 +32,15 @@ public enum ELodShading
 	// when adding items up the API minor version
 	// when removing items up the API major version
 	
+	/** Uses Minecraft's shading for LODs */
 	MINECRAFT,
+	/** 
+	 * Simulates Minecraft's shading. 
+	 * This is most useful for shaders that disable Minecraft's shading
+	 * but still require shading on LODs.
+	 */
 	OLD_LIGHTING,
+	/** LODs will have no shading */
 	NONE;
 	
 }

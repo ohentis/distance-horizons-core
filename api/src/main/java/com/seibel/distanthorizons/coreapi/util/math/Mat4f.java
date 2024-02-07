@@ -19,6 +19,9 @@
 
 package com.seibel.distanthorizons.coreapi.util.math;
 
+import org.joml.Matrix4f;
+import org.joml.Matrix4fc;
+
 import java.nio.FloatBuffer;
 
 /**
@@ -71,6 +74,31 @@ public class Mat4f
 		this.m31 = sourceMatrix.m31;
 		this.m32 = sourceMatrix.m32;
 		this.m33 = sourceMatrix.m33;
+	}
+	
+	public Mat4f(Matrix4fc sourceMatrix) { this(convertJomlMatrixToArray(sourceMatrix)); }
+	private static float[] convertJomlMatrixToArray(Matrix4fc sourceMatrix)
+	{
+		FloatBuffer buffer = FloatBuffer.allocate(16);
+		
+		buffer.put(bufferIndex(0, 0), sourceMatrix.m00());
+		buffer.put(bufferIndex(0, 1), sourceMatrix.m01());
+		buffer.put(bufferIndex(0, 2), sourceMatrix.m02());
+		buffer.put(bufferIndex(0, 3), sourceMatrix.m03());
+		buffer.put(bufferIndex(1, 0), sourceMatrix.m10());
+		buffer.put(bufferIndex(1, 1), sourceMatrix.m11());
+		buffer.put(bufferIndex(1, 2), sourceMatrix.m12());
+		buffer.put(bufferIndex(1, 3), sourceMatrix.m13());
+		buffer.put(bufferIndex(2, 0), sourceMatrix.m20());
+		buffer.put(bufferIndex(2, 1), sourceMatrix.m21());
+		buffer.put(bufferIndex(2, 2), sourceMatrix.m22());
+		buffer.put(bufferIndex(2, 3), sourceMatrix.m23());
+		buffer.put(bufferIndex(3, 0), sourceMatrix.m30());
+		buffer.put(bufferIndex(3, 1), sourceMatrix.m31());
+		buffer.put(bufferIndex(3, 2), sourceMatrix.m32());
+		buffer.put(bufferIndex(3, 3), sourceMatrix.m33());
+		
+		return buffer.array();
 	}
 	
 	/* Quaternions are not currently needed/implemented
@@ -188,6 +216,17 @@ public class Mat4f
 		floatBuffer.put(bufferIndex(3, 2), this.m32);
 		floatBuffer.put(bufferIndex(3, 3), this.m33);
 	}
+	
+	public Matrix4f createJomlMatrix()
+	{
+		return new Matrix4f(
+				this.m00, this.m10, this.m20, this.m30,
+				this.m01, this.m11, this.m21, this.m31,
+				this.m02, this.m12, this.m22, this.m32,
+				this.m03, this.m13, this.m23, this.m33
+		);
+	}
+	
 	
 	private static int bufferIndex(int xIndex, int zIndex)
 	{

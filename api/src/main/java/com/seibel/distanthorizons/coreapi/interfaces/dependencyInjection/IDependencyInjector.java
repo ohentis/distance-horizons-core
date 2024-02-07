@@ -83,7 +83,7 @@ public interface IDependencyInjector<BindableType extends IBindable>
 	
 	
 	/** Removes all bound dependencies. */
-	public void clear();
+	void clear();
 	
 	
 	

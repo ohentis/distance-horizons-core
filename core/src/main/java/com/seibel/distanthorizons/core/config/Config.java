@@ -541,18 +541,17 @@ public class Config
 				
 				public static class AdvancedGraphics
 				{
-					// TODO re-implement
-//					public static ConfigEntry<Boolean> disableDirectionalCulling = new ConfigEntry.Builder<Boolean>()
-//							.set(false)
-//							.comment(""
-//									+ "If false fake chunks behind the player's camera \n"
-//									+ "aren't drawn, increasing GPU performance. \n"
-//									+ "\n"
-//									+ "If true all LODs are drawn, even those behind \n"
-//									+ "the player's camera, decreasing GPU performance. \n"
-//									+ "\n"
-//									+ "Disable this if you see LODs disappearing at the corners of your vision.")
-//							.build();
+					public static ConfigEntry<Boolean> disableFrustumCulling = new ConfigEntry.Builder<Boolean>()
+							.set(false)
+							.comment(""
+									+ "If false LODs outside the player's camera \n"
+									+ "aren't drawn, increasing GPU performance. \n"
+									+ "\n"
+									+ "If true all LODs are drawn, even those behind \n"
+									+ "the player's camera, decreasing GPU performance. \n"
+									+ "\n"
+									+ "Disable this if you see LODs disappearing at the corners of your vision.")
+							.build();
 					
 					/** 
 					 * @deprecated Use overdrawPrevention instead, will be removed when DH updates to MC 1.21 <br>
@@ -581,6 +580,7 @@ public class Config
 							.setPerformance(EConfigEntryPerformance.NONE)
 							.build();
 					
+					@Deprecated // TODO remove failed experiment
 					public static ConfigEntry<Boolean> seamlessOverdraw = new ConfigEntry.Builder<Boolean>()
 							.set(false)
 							.comment(""
@@ -1225,11 +1225,11 @@ public class Config
 						.comment(""
 								+ "Should specialized colors/rendering modes be used? \n"
 								+ "\n"
-								+ EDebugRendering.OFF + ": Fake chunks will be drawn with their normal colors. \n"
-								+ EDebugRendering.SHOW_DETAIL + ": Fake chunks color will be based on their detail level. \n"
-								+ EDebugRendering.SHOW_GENMODE + ": Fake chunks color will be based on their distant generation mode. \n"
-								+ EDebugRendering.SHOW_OVERLAPPING_QUADS + ": Fake chunks will be drawn with total white, but overlapping quads will be drawn with red. \n"
-								+ "    but overlapping quads will be drawn with red, drawn as a wireframe.")
+								+ EDebugRendering.OFF + ": LODs will be drawn with their normal colors. \n"
+								+ EDebugRendering.SHOW_DETAIL + ": LODs' color will be based on their detail level. \n"
+								+ EDebugRendering.SHOW_BLOCK_MATERIAL + ": LODs' color will be based on their material. \n"
+								+ EDebugRendering.SHOW_OVERLAPPING_QUADS + ": LODs will be drawn with total white, but overlapping quads will be drawn with red. \n"
+								+ "")
 						.build();
 				
 				public static ConfigEntry<Boolean> renderWireframe = new ConfigEntry.Builder<Boolean>()

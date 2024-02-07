@@ -113,6 +113,19 @@ public interface IDhApiGraphicsConfig extends IDhApiConfigGroup
 	//===========================//
 	
 	/**
+	 * Sets whether LODs outside the view frustum culling will
+	 * be culled. <br><br>
+	 * 
+	 * Disabling this will prevent LODs not rendering on the corner
+	 * of the users vision and may fix issues if LODs appear to
+	 * start/stop rendering incorrectly based on the camera direction,
+	 * but will also reduce FPS.
+	 * 
+	 * @since API 1.1.0
+	 */
+	IDhApiConfigValue<Boolean> disableFrustumCulling();
+	
+	/**
 	 * Sets the distance used by the near clip plane to reduce
 	 * overdraw. <br>
 	 * Disabling this reduces holes in the world due to the near clip plane
@@ -166,5 +179,12 @@ public interface IDhApiGraphicsConfig extends IDhApiConfigGroup
 	 * increasing how quickly its textures fade away.
 	 */
 	IDhApiConfigValue<Double> lodBias();
+	
+	/**
+	 * Determines how LODs should be shaded.
+	 *
+	 * @since API 1.1.0
+	 */
+	IDhApiConfigValue<ELodShading> lodShading();
 	
 }

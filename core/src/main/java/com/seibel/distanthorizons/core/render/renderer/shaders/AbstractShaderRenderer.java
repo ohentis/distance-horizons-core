@@ -61,7 +61,13 @@ public abstract class AbstractShaderRenderer
 		this.shader.unbind();
 	}
 	
-	public void free() { this.shader.free(); }
+	public void free()
+	{
+		if (this.shader != null)
+		{
+			this.shader.free();
+		}
+	}
 	
 	protected void onInit() {}
 	

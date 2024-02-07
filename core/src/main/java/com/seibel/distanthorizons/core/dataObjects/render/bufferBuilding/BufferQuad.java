@@ -49,12 +49,9 @@ public final class BufferQuad
 	/** This is both North/South and Up/Down since the merging logic is the same either way */
 	public short widthNorthSouthOrUpDown;
 	
-	/**
-	 * not final since it may need to be modified to be opaque
-	 *
-	 * @see LodQuadBuilder#fixTransparencyOverVoid
-	 */
-	public int color;
+	public final int color;
+	/** used by the Iris shader mod to determine how each LOD should be rendered */
+	public final byte irisBlockMaterialId;
 	
 	public final byte skyLight;
 	public final byte blockLight;
@@ -66,7 +63,7 @@ public final class BufferQuad
 	
 	BufferQuad(
 			short x, short y, short z, short widthEastWest, short widthNorthSouthOrUpDown,
-			int color, byte skylight, byte blockLight,
+			int color, byte irisBlockMaterialId, byte skylight, byte blockLight,
 			EDhDirection direction)
 	{
 		if (widthEastWest == 0 || widthNorthSouthOrUpDown == 0)
@@ -80,6 +77,7 @@ public final class BufferQuad
 		this.widthEastWest = widthEastWest;
 		this.widthNorthSouthOrUpDown = widthNorthSouthOrUpDown;
 		this.color = color;
+		this.irisBlockMaterialId = irisBlockMaterialId;
 		this.skyLight = skylight;
 		this.blockLight = blockLight;
 		this.direction = direction;
@@ -301,6 +299,7 @@ public final class BufferQuad
 		
 		// do the quads' color, light, etc. match?
 		if (this.color != quad.color ||
+				this.irisBlockMaterialId != quad.irisBlockMaterialId ||
 				this.skyLight != quad.skyLight ||
 				this.blockLight != quad.blockLight)
 		{

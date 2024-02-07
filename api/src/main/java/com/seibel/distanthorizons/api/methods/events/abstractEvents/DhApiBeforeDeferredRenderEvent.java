@@ -17,22 +17,21 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor;
+package com.seibel.distanthorizons.api.methods.events.abstractEvents;
 
-import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IBindable;
-
-import java.io.File;
+import com.seibel.distanthorizons.api.interfaces.render.IDhApiRenderProxy;
 
 /**
- * Checks if a mod is loaded
+ * Called before Distant Horizons starts rendering the deferred rendering pass. <br>
+ * Will only happen if {@link IDhApiRenderProxy#getDeferTransparentRendering()} is true. <br>
+ * Generally this is only used when shaders are enabled. <br>
+ * Canceling the event will prevent DH from rendering the deferred pass that frame.
  *
- * @author coolGi
- * @version 3-5-2022
+ * @author James Seibel
+ * @version 2024-1-22
+ * @since API 1.1.0
  */
-public interface IModChecker extends IBindable
+public abstract class DhApiBeforeDeferredRenderEvent extends DhApiBeforeRenderEvent
 {
-	/** Checks if a mod is loaded */
-	boolean isModLoaded(String modid);
 	
-	File modLocation(String modid);
 }

@@ -24,19 +24,17 @@ import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhAp
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
 
 /**
- * Fired after Distant Horizons finishes rendering a frame. <br>
- * At this point DH will have also finished cleaning up any modifications it
- * did to the OpenGL state, so the state should be back to Minecraft's defaults.
+ * Called before Distant Horizons starts the cleanup process done after rendering. <br>
+ * This called after every render pass.
  *
  * @author James Seibel
  * @version 2024-1-31
- * @see DhApiRenderParam
- * @since API 1.0.0
+ * @since API 1.1.0
  */
-public abstract class DhApiAfterRenderEvent implements IDhApiEvent<DhApiRenderParam>
+public abstract class DhApiBeforeRenderCleanupEvent implements IDhApiEvent<DhApiRenderParam>
 {
-	/** Fired after Distant Horizons finishes rendering fake chunks. */
-	public abstract void afterRender(DhApiEventParam<DhApiRenderParam> event);
+	/** Fired before Distant Horizons renders LODs. */
+	public abstract void beforeCleanup(DhApiEventParam<DhApiRenderParam> event);
 	
 	
 	//=========================//
@@ -44,6 +42,6 @@ public abstract class DhApiAfterRenderEvent implements IDhApiEvent<DhApiRenderPa
 	//=========================//
 	
 	@Override
-	public final void fireEvent(DhApiEventParam<DhApiRenderParam> event) { this.afterRender(event); }
+	public final void fireEvent(DhApiEventParam<DhApiRenderParam> event) { this.beforeCleanup(event); }
 	
 }

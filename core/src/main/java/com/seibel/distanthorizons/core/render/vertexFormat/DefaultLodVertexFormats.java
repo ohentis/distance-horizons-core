@@ -35,9 +35,11 @@ public class DefaultLodVertexFormats
 	public static final LodVertexFormatElement ELEMENT_UV = new LodVertexFormatElement(0, LodVertexFormatElement.DataType.FLOAT, 2, false);
 	public static final LodVertexFormatElement ELEMENT_LIGHT_MAP_UV = new LodVertexFormatElement(1, LodVertexFormatElement.DataType.SHORT, 2, false);
 	public static final LodVertexFormatElement ELEMENT_NORMAL = new LodVertexFormatElement(0, LodVertexFormatElement.DataType.BYTE, 3, false);
-	public static final LodVertexFormatElement ELEMENT_PADDING = new LodVertexFormatElement(0, LodVertexFormatElement.DataType.BYTE, 1, true);
+	public static final LodVertexFormatElement ELEMENT_BYTE_PADDING = new LodVertexFormatElement(0, LodVertexFormatElement.DataType.BYTE, 1, true);
 	
 	public static final LodVertexFormatElement ELEMENT_LIGHT = new LodVertexFormatElement(0, LodVertexFormatElement.DataType.UBYTE, 1, false);
+	public static final LodVertexFormatElement ELEMENT_IRIS_MATERIAL_INDEX = new LodVertexFormatElement(0, LodVertexFormatElement.DataType.BYTE, 1, false);
+	public static final LodVertexFormatElement ELEMENT_IRIS_NORMAL_INDEX = new LodVertexFormatElement(0, LodVertexFormatElement.DataType.BYTE, 1, false);
 	
 	
 	public static final LodVertexFormat POSITION = new LodVertexFormat(ImmutableList.<LodVertexFormatElement>builder().add(ELEMENT_POSITION).build());
@@ -48,7 +50,21 @@ public class DefaultLodVertexFormats
 	public static final LodVertexFormat POSITION_COLOR_TEX_LIGHTMAP = new LodVertexFormat(ImmutableList.<LodVertexFormatElement>builder().add(ELEMENT_POSITION).add(ELEMENT_COLOR).add(ELEMENT_UV).add(ELEMENT_LIGHT_MAP_UV).build());
 	
 	public static final LodVertexFormat POSITION_COLOR_BLOCK_LIGHT_SKY_LIGHT = new LodVertexFormat(ImmutableList.<LodVertexFormatElement>builder()
-			.add(ELEMENT_POSITION).add(ELEMENT_PADDING).add(ELEMENT_LIGHT)
-			.add(ELEMENT_COLOR).build());
+			.add(ELEMENT_POSITION)
+			.add(ELEMENT_BYTE_PADDING)
+			.add(ELEMENT_LIGHT)
+			.add(ELEMENT_COLOR)
+			.build());	
+	
+	public static final LodVertexFormat POSITION_COLOR_BLOCK_LIGHT_SKY_LIGHT_MATERIAL_ID_NORMAL_INDEX = new LodVertexFormat(ImmutableList.<LodVertexFormatElement>builder()
+			.add(ELEMENT_POSITION)
+			.add(ELEMENT_BYTE_PADDING)
+			.add(ELEMENT_LIGHT)
+			.add(ELEMENT_COLOR)
+			.add(ELEMENT_IRIS_MATERIAL_INDEX)
+			.add(ELEMENT_IRIS_NORMAL_INDEX)
+			.add(ELEMENT_BYTE_PADDING)
+			.add(ELEMENT_BYTE_PADDING) // padding is to make sure the format is a multiple of 4
+			.build());
 	
 }

@@ -19,13 +19,21 @@
 
 package com.seibel.distanthorizons.core.render.renderer;
 
+import com.seibel.distanthorizons.api.enums.rendering.EDhApiRenderPass;
+import com.seibel.distanthorizons.api.enums.rendering.EFogDrawMode;
+import com.seibel.distanthorizons.api.interfaces.override.rendering.IDhApiFramebuffer;
+import com.seibel.distanthorizons.api.interfaces.override.rendering.IDhApiShaderProgram;
+import com.seibel.distanthorizons.api.methods.events.abstractEvents.*;
+import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
 import com.seibel.distanthorizons.core.config.Config;
+import com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.ColumnRenderBuffer;
 import com.seibel.distanthorizons.core.dependencyInjection.ModAccessorInjector;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
 import com.seibel.distanthorizons.core.logging.ConfigBasedSpamLogger;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
 import com.seibel.distanthorizons.core.render.AbstractRenderBuffer;
+import com.seibel.distanthorizons.core.render.DhApiRenderProxy;
 import com.seibel.distanthorizons.core.render.RenderBufferHandler;
 import com.seibel.distanthorizons.core.render.glObject.GLProxy;
 import com.seibel.distanthorizons.core.render.glObject.GLState;
@@ -43,11 +51,14 @@ import com.seibel.distanthorizons.core.render.fog.LodFogConfig;
 import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.AbstractOptifineAccessor;
 import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.IIrisAccessor;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
+import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
+import com.seibel.distanthorizons.coreapi.DependencyInjection.OverrideInjector;
 import com.seibel.distanthorizons.coreapi.util.math.Mat4f;
 import com.seibel.distanthorizons.coreapi.util.math.Vec3d;
 import com.seibel.distanthorizons.coreapi.util.math.Vec3f;
 import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.joml.Matrix4f;
+import org.joml.Matrix4fc;
 import org.lwjgl.opengl.GL32;
 
 import java.awt.*;
@@ -89,19 +100,29 @@ public class LodRenderer
 	private int cachedHeight;
 	
 	
-	
-	public void setupOffset(DhBlockPos pos) throws IllegalStateException
+	/** called by each {@link ColumnRenderBuffer} before rendering */
+	public void setModelViewMatrixOffset(DhBlockPos pos, DhApiRenderParam renderEventParam) throws IllegalStateException
 	{
 		Vec3d cam = MC_RENDER.getCameraExactPosition();
 		Vec3f modelPos = new Vec3f((float) (pos.x - cam.x), (float) (pos.y - cam.y), (float) (pos.z - cam.z));
 		
-		if (!GL32.glIsProgram(this.shaderProgram.id))
+		
+		IDhApiShaderProgram shaderProgram = this.lodRenderProgram;
+		IDhApiShaderProgram shaderProgramOverride = OverrideInjector.INSTANCE.get(IDhApiShaderProgram.class);
+		if (shaderProgramOverride != null && shaderProgram.overrideThisFrame())
 		{
-			throw new IllegalStateException("No GL program exists with the ID: [" + this.shaderProgram.id + "]. This either means a shader program was freed while it was still in use or was never created.");
+			shaderProgram = shaderProgramOverride;
 		}
 		
-		this.shaderProgram.bind();
-		this.shaderProgram.setModelPos(modelPos);
+		if (!GL32.glIsProgram(shaderProgram.getId()))
+		{
+			throw new IllegalStateException("No GL program exists with the ID: [" + shaderProgram.getId() + "]. This either means a shader program was freed while it was still in use or was never created.");
+		}
+		
+		shaderProgram.bind();
+		shaderProgram.setModelOffsetPos(modelPos);
+		
+		ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeBufferRenderEvent.class, new DhApiBeforeBufferRenderEvent.EventParam(renderEventParam, modelPos));
 	}
 	
 	public void drawVbo(GLVertexBuffer vbo)
@@ -110,8 +131,16 @@ public class LodRenderer
 		//// shouldn't be used in production due to the performance hit
 		//if (GL32.glIsBuffer(vbo.getId()))
 		{
+			IDhApiShaderProgram shaderProgram = this.lodRenderProgram;
+			IDhApiShaderProgram shaderProgramOverride = OverrideInjector.INSTANCE.get(IDhApiShaderProgram.class);
+			if (shaderProgramOverride != null && shaderProgram.overrideThisFrame())
+			{
+				shaderProgram = shaderProgramOverride;
+			}
+			
+			
 			vbo.bind();
-			this.shaderProgram.bindVertexBuffer(vbo.getId());
+			shaderProgram.bindVertexBuffer(vbo.getId());
 			GL32.glDrawElements(GL32.GL_TRIANGLES, (vbo.getVertexCount() / 4) * 6, // TODO what does the 4 and 6 here represent?
 					this.quadIBO.getType(), 0);
 			vbo.unbind();
@@ -122,7 +151,6 @@ public class LodRenderer
 		//	//LOGGER.warn("Unable to draw VBO: "+vbo.getId());
 		//}
 	}
-	public Vec3f getLookVector() { return MC_RENDER.getLookAtVector(); }
 	
 	
 	public static class LagSpikeCatcher
@@ -157,12 +185,13 @@ public class LodRenderer
 	public final RenderBufferHandler bufferHandler;
 	
 	// The shader program
-	LodRenderProgram shaderProgram = null;
+	IDhApiShaderProgram lodRenderProgram = null;
+	LodFogConfig fogConfig;
 	public QuadElementBuffer quadIBO = null;
 	public boolean isSetupComplete = false;
 	
 	// frameBuffer and texture ID's for this renderer
-	private DhFramebuffer framebuffer;
+	private IDhApiFramebuffer framebuffer;
 	/** will be null if MC's framebuffer is being used since MC already has a color texture */
 	private DhColorTexture nullableColorTexture;
 	private DHDepthTexture depthTexture;
@@ -214,15 +243,63 @@ public class LodRenderer
 	
 	
 	
-	//===============//
-	// main renderer //
-	//===============//
+	//===========//
+	// rendering //
+	//===========//
 	
-	public void drawLODs(IClientLevelWrapper clientLevelWrapper, Mat4f baseModelViewMatrix, Mat4f baseProjectionMatrix, float partialTicks, IProfilerWrapper profiler)
+	/**
+	 * This will draw both opaque and transparent LODs if 
+	 * {@link DhApiRenderProxy#getDeferTransparentRendering()} is false,
+	 * otherwise it will only render opaque LODs.
+	 */
+	public void drawLods(
+			IClientLevelWrapper clientLevelWrapper,
+			DhApiRenderParam renderEventParam, IProfilerWrapper profiler)
+	{ 
+		this.renderLodPass(
+			clientLevelWrapper,
+			renderEventParam,
+			profiler,
+			false); 
+	}
+	
+	/**
+	 * This method is designed for Iris to be able 
+	 * to draw water in a deferred rendering context. 
+	 * It needs to be updated with any major changes, 
+	 * but shouldn't be activated as per deferWaterRendering.
+	 */
+	public void drawDeferredLods(
+			IClientLevelWrapper clientLevelWrapper,
+			DhApiRenderParam renderEventParam, IProfilerWrapper profiler)
 	{
+		this.renderLodPass(
+				clientLevelWrapper,
+				renderEventParam,
+				profiler,
+				true);
+	}
+	
+	private void renderLodPass(
+			IClientLevelWrapper clientLevelWrapper,
+			DhApiRenderParam renderEventParam,
+			IProfilerWrapper profiler,
+			boolean runningDeferredPass)
+	{
+		//====================//
+		// validate rendering //
+		//====================//
+		
+		boolean deferTransparentRendering = DhApiRenderProxy.INSTANCE.getDeferTransparentRendering();
+		if (runningDeferredPass && !deferTransparentRendering)
+		{
+			return;
+		}
+		boolean renderingFirstPass = !runningDeferredPass;
+		
 		if (this.rendererClosed)
 		{
-			EVENT_LOGGER.error("drawLODs() called after close()!");
+			EVENT_LOGGER.error("LOD rendering attempted after the renderer has been shut down!");
 			return;
 		}
 		
@@ -238,19 +315,14 @@ public class LodRenderer
 			return;
 		}
 		
+		
+		
+		//=================//
+		// rendering setup //
+		//=================//
+		
 		try
 		{
-			if (IRIS_ACCESSOR != null && IRIS_ACCESSOR.isRenderingShadowPass())
-			{
-				// Do not do this while Iris compat is being worked on.
-				
-				// We do not have a wy to properly render shader shadow pass, since they can
-				// and often do change the projection entirely, as well as the output usage.
-				
-				//EVENT_LOGGER.debug("Skipping shadow pass render.");
-				return;
-			}
-			
 			// Note: Since lightmapTexture is changing every frame, it's faster to recreate it than to reuse the old one.
 			ILightMapWrapper lightmap = MC_RENDER.getLightmapWrapper(clientLevelWrapper);
 			if (lightmap == null)
@@ -268,133 +340,8 @@ public class LodRenderer
 			}
 			drawSaveGLState.end("drawSaveGLState");
 			
-			
-			
-			//===================//
-			// draw params setup //
-			//===================//
-			
-			profiler.push("LOD draw setup");
-			
-			if (!this.isSetupComplete)
-			{
-				this.setup();
-				
-				// shouldn't normally happen, but just in case
-				if (!this.isSetupComplete)
-				{
-					return;
-				}
-			}
-			
-			if (MC_RENDER.getTargetFrameBufferViewportWidth() != this.cachedWidth || MC_RENDER.getTargetFrameBufferViewportHeight() != this.cachedHeight) 
-			{
-				this.cachedWidth = MC_RENDER.getTargetFrameBufferViewportWidth();
-				this.cachedHeight = MC_RENDER.getTargetFrameBufferViewportHeight();
-				
-				// just resizing the textures doesn't work when Optifine is present,
-				// so recreate the textures with the new size instead
-				this.createColorAndDepthTextures(this.cachedWidth, this.cachedHeight);
-			}
-			
-			this.setActiveFramebufferId(this.framebuffer.getId());
-			this.setActiveDepthTextureId(this.depthTexture.getTextureId());
-			if (this.nullableColorTexture != null)
-			{
-				this.setActiveColorTextureId(this.nullableColorTexture.getTextureId());
-			}
-			else
-			{
-				// get MC's color texture
-				int mcColorTextureId = GL32.glGetFramebufferAttachmentParameteri(GL32.GL_FRAMEBUFFER, GL32.GL_COLOR_ATTACHMENT0, GL32.GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME);
-				this.setActiveColorTextureId(mcColorTextureId);
-			}
-			// Bind LOD frame buffer
-			this.framebuffer.bind();
-			
-			
-			if (this.usingMcFrameBuffer)
-			{
-				// recreating the GL State at this point is necessary in order to get the correct depth texture
-				minecraftGlState = new GLState();
-				if (ENABLE_DUMP_GL_STATE)
-				{
-					tickLogger.debug("Re-saving GL state due to Optifine presence: " + minecraftGlState); //
-				}
-				
-				
-				// Due to using MC/Optifine's framebuffer we need to re-bind the depth texture,
-				// otherwise we'll be writing to MC/Optifine's depth texture which causes rendering issues
-				this.framebuffer.addDepthAttachment(this.depthTexture.getTextureId(), EDhDepthBufferFormat.DEPTH32F);
-				
-				
-				// don't clear the color texture, that removes the sky 
-				GL32.glClear(GL32.GL_DEPTH_BUFFER_BIT);
-			}
-			else
-			{
-				GL32.glClear(GL32.GL_COLOR_BUFFER_BIT | GL32.GL_DEPTH_BUFFER_BIT);
-			}
-			
-			
-			GL32.glEnable(GL32.GL_DEPTH_TEST);
-			GL32.glDepthFunc(GL32.GL_LESS);
-			
-			// Set OpenGL polygon mode
-			boolean renderWireframe = Config.Client.Advanced.Debugging.renderWireframe.get();
-			if (renderWireframe)
-			{
-				GL32.glPolygonMode(GL32.GL_FRONT_AND_BACK, GL32.GL_LINE);
-				//GL32.glDisable(GL32.GL_CULL_FACE);
-			}
-			else
-			{
-				GL32.glPolygonMode(GL32.GL_FRONT_AND_BACK, GL32.GL_FILL);
-				GL32.glEnable(GL32.GL_CULL_FACE);
-			}
-			
-			// Enable depth test and depth mask
-			GL32.glEnable(GL32.GL_DEPTH_TEST);
-			GL32.glDepthFunc(GL32.GL_LESS);
-			GL32.glDepthMask(true);
-			
-			// Disable blending
-			// We render opaque first, then transparent
-			GL32.glDisable(GL32.GL_BLEND);
-			
-			/*---------Bind required objects--------*/
-			// Setup LodRenderProgram and the LightmapTexture if it has not yet been done
-			// also binds LightmapTexture, VAO, and ShaderProgram
-			if (!this.isSetupComplete)
-			{
-				this.setup();
-			}
-			else
-			{
-				LodFogConfig newFogConfig = this.shaderProgram.isShaderUsable();
-				if (newFogConfig != null)
-				{
-					this.shaderProgram.free();
-					this.shaderProgram = new LodRenderProgram(newFogConfig);
-					
-					FogShader.INSTANCE.free();
-					FogShader.INSTANCE = new FogShader(newFogConfig);
-				}
-				this.shaderProgram.bind();
-			}
-			
-			/*---------Get required data--------*/
-			//int vanillaBlockRenderedDistance = MC_RENDER.getRenderDistance() * LodUtil.CHUNK_WIDTH;
-			//Mat4f modelViewProjectionMatrix = RenderUtil.createCombinedModelViewProjectionMatrix(baseProjectionMatrix, baseModelViewMatrix, partialTicks);
-			
-			Mat4f projectionMatrix = RenderUtil.createLodProjectionMatrix(baseProjectionMatrix, partialTicks);
-			
-			Mat4f modelViewProjectionMatrix = new Mat4f(projectionMatrix);
-			modelViewProjectionMatrix.multiply(RenderUtil.createLodModelViewMatrix(baseModelViewMatrix));
-			
-			/*---------Fill uniform data--------*/
-			this.shaderProgram.fillUniformData(modelViewProjectionMatrix, /*Light map = GL_TEXTURE0*/ 0,
-					MC.getWrappedClientLevel().getMinHeight(), partialTicks);
+			ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeRenderSetupEvent.class, renderEventParam);
+			this.setupGLStateAndRenderObjects(minecraftGlState, profiler, renderEventParam, renderingFirstPass);
 			
 			lightmap.bind();
 			if (ENABLE_IBO)
@@ -402,7 +349,21 @@ public class LodRenderer
 				this.quadIBO.bind();
 			}
 			
-			this.bufferHandler.buildRenderListAndUpdateSections(this.getLookVector());
+			if (renderingFirstPass)
+			{
+				Matrix4f matWorldView = new Matrix4f()
+						.setTransposed(MC_RENDER.getWorldViewMatrix().getValuesAsArray());
+				
+				Matrix4fc matWorldViewProjection = new Matrix4f()
+					.setTransposed(renderEventParam.dhProjectionMatrix.getValuesAsArray())
+					.mul(matWorldView);
+				
+				this.bufferHandler.buildRenderListAndUpdateSections(clientLevelWrapper, matWorldViewProjection, MC_RENDER.getLookAtVector());
+				
+				transparencyEnabled = Config.Client.Advanced.Graphics.Quality.transparency.get().transparencyEnabled;
+				fakeOceanFloor = Config.Client.Advanced.Graphics.Quality.transparency.get().fakeTransparencyEnabled;
+			}
+			
 			
 			
 			
@@ -412,71 +373,102 @@ public class LodRenderer
 			
 			LagSpikeCatcher drawLagSpikeCatcher = new LagSpikeCatcher();
 			
-			profiler.popPush("LOD Opaque");
-			// TODO: Directional culling
-			this.bufferHandler.renderOpaque(this);
-			
-			if (Config.Client.Advanced.Graphics.Ssao.enabled.get())
+			if (!runningDeferredPass)
 			{
-				profiler.popPush("LOD SSAO");
-				SSAORenderer.INSTANCE.render(minecraftGlState, projectionMatrix, partialTicks);
-			}
-			
-			profiler.popPush("LOD Fog");
-			FogShader.INSTANCE.setModelViewProjectionMatrix(modelViewProjectionMatrix);
-			FogShader.INSTANCE.render(partialTicks);
-			
-			//DarkShader.INSTANCE.render(partialTicks); // A test shader to make the world darker
-			
-			// Render transparent LOD sections (such as water)
-			transparencyEnabled = Config.Client.Advanced.Graphics.Quality.transparency.get().transparencyEnabled;
-			fakeOceanFloor = Config.Client.Advanced.Graphics.Quality.transparency.get().fakeTransparencyEnabled;
-			
-			if (Config.Client.Advanced.Graphics.Quality.transparency.get().transparencyEnabled)
-			{
-				profiler.popPush("LOD Transparent");
+				//===================================//
+				// standard (non-deferred) rendering //
+				//===================================//
 				
-				GL32.glEnable(GL32.GL_BLEND);
-				GL32.glBlendEquation(GL32.GL_FUNC_ADD);
-				GL32.glBlendFunc(GL32.GL_ONE, GL32.GL_ONE_MINUS_SRC_ALPHA);
-				this.bufferHandler.renderTransparent(this);
-				GL32.glDepthMask(true); // Apparently the depth mask state is stored in the FBO, so glState fails to restore it...
 				
-				profiler.popPush("LOD Fog");
-				FogShader.INSTANCE.render(partialTicks);
+				// Disable blending for opaque rendering
+				GL32.glDisable(GL32.GL_BLEND);
+				
+				profiler.popPush("LOD Opaque");
+				ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeRenderPassEvent.class, renderEventParam);
+				
+				// TODO: Directional culling
+				this.bufferHandler.renderOpaque(this, renderEventParam);
+				
+				if (Config.Client.Advanced.Graphics.Ssao.enabled.get())
+				{
+					profiler.popPush("LOD SSAO");
+					SSAORenderer.INSTANCE.render(minecraftGlState, renderEventParam.dhProjectionMatrix, renderEventParam.partialTicks);
+				}
+				
+				
+				if (Config.Client.Advanced.Graphics.Fog.drawMode.get() != EFogDrawMode.FOG_DISABLED)
+				{
+					profiler.popPush("LOD Fog");
+					FogShader.INSTANCE.setModelViewProjectionMatrix(renderEventParam.dhModelViewMatrix);
+					FogShader.INSTANCE.render(renderEventParam.partialTicks);
+				}
+				
+				//DarkShader.INSTANCE.render(partialTicks); // A test shader to make the world darker
+				
+				if (!deferTransparentRendering && Config.Client.Advanced.Graphics.Quality.transparency.get().transparencyEnabled)
+				{
+					this.renderTransparentBuffers(profiler, renderEventParam, renderEventParam.partialTicks);
+				}
+				
+				
+				if (this.usingMcFrameBuffer)
+				{
+					// If MC's framebuffer is being used the depth needs to be cleared to prevent rendering on top of MC.
+					// This should only happen when Optifine shaders are being used.
+					GL32.glClear(GL32.GL_DEPTH_BUFFER_BIT);
+				}
+				
+				drawLagSpikeCatcher.end("LodDraw");
+				
+				
+				//=================//
+				// debug rendering //
+				//=================//
+				
+				if (Config.Client.Advanced.Debugging.DebugWireframe.enableRendering.get())
+				{
+					profiler.popPush("Debug wireframes");
+					
+					Mat4f combinedMatrix = new Mat4f(renderEventParam.dhProjectionMatrix);
+					combinedMatrix.multiply(renderEventParam.dhModelViewMatrix);
+					
+					// Note: this can be very slow if a lot of boxes are being rendered 
+ 					DebugRenderer.INSTANCE.render(combinedMatrix);
+					profiler.popPush("LOD cleanup");
+				}
+				
+				
+				
+				//=============================//
+				// Apply to the MC FrameBuffer //
+				//=============================//
+				
+				boolean cancelApplyShader = ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeApplyShaderRenderEvent.class, renderEventParam);
+				if (!cancelApplyShader)
+				{
+					profiler.popPush("LOD Apply");
+					
+					GLState dhApplyGlState = new GLState();
+					
+					// Copy the LOD framebuffer to Minecraft's framebuffer
+					DhApplyShader.INSTANCE.render(renderEventParam.partialTicks);
+					
+					dhApplyGlState.restore();
+				}
 			}
-			
-			if (Config.Client.Advanced.Debugging.DebugWireframe.enableRendering.get())
+			else
 			{
-				profiler.popPush("Debug wireframes");
-				// Note: this can be very slow if a lot of boxes are being rendered 
-				DebugRenderer.INSTANCE.render(modelViewProjectionMatrix);
+				//====================//
+				// deferred rendering //
+				//====================//
+				
+				if (Config.Client.Advanced.Graphics.Quality.transparency.get().transparencyEnabled)
+				{
+					this.renderTransparentBuffers(profiler, renderEventParam, renderEventParam.partialTicks);
+				}
+				
+				drawLagSpikeCatcher.end("LodTranslucentDraw");
 			}
-			
-			if (this.usingMcFrameBuffer)
-			{
-				// If MC's framebuffer is being used the depth needs to be cleared to prevent rendering on top of MC.
-				// This should only happen when Optifine shaders are being used.
-				GL32.glClear(GL32.GL_DEPTH_BUFFER_BIT);
-			}
-			
-			drawLagSpikeCatcher.end("LodDraw");
-			
-			
-			
-			//=============================//
-			// Apply to the MC FrameBuffer //
-			//=============================//
-			
-			profiler.popPush("LOD Apply");
-			
-			GLState dhApplyGlState = new GLState();
-			
-			// Copy the LOD framebuffer to Minecraft's framebuffer
-			DhApplyShader.INSTANCE.render(partialTicks);
-			
-			dhApplyGlState.restore();
-			
 			
 			
 			
@@ -486,8 +478,15 @@ public class LodRenderer
 			
 			profiler.popPush("LOD cleanup");
 			LagSpikeCatcher drawCleanup = new LagSpikeCatcher();
+			ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeRenderCleanupEvent.class, renderEventParam);
 			
-			GLProxy.getInstance().runRenderThreadTasks();
+			// GLProxy tasks should be run after all rendering has been done
+			boolean afterEnabledDeferredPass = deferTransparentRendering && !renderingFirstPass;
+			boolean afterOnlyRenderingPass = !deferTransparentRendering && renderingFirstPass;
+			if (afterEnabledDeferredPass || afterOnlyRenderingPass)
+			{
+				GLProxy.getInstance().runRenderThreadTasks();
+			}
 			
 			lightmap.unbind();
 			if (ENABLE_IBO)
@@ -495,8 +494,13 @@ public class LodRenderer
 				this.quadIBO.unbind();
 			}
 			
-			this.shaderProgram.unbind();
-			
+			IDhApiShaderProgram shaderProgram = this.lodRenderProgram;
+			IDhApiShaderProgram shaderProgramOverride = OverrideInjector.INSTANCE.get(IDhApiShaderProgram.class);
+			if (shaderProgramOverride != null && shaderProgram.overrideThisFrame())
+			{
+				shaderProgram = shaderProgramOverride;
+			}
+			shaderProgram.unbind();
 			
 			minecraftGlState.restore();
 			drawCleanup.end("LodDrawCleanup");
@@ -512,15 +516,173 @@ public class LodRenderer
 		}
 	}
 	
-	private static final Logger LOGGER = LogManager.getLogger();
+	private void renderTransparentBuffers(IProfilerWrapper profiler, DhApiRenderParam renderEventParam, float partialTicks) 
+	{
+		profiler.popPush("LOD Transparent");
+		
+		GL32.glEnable(GL32.GL_BLEND);
+		GL32.glBlendEquation(GL32.GL_FUNC_ADD);
+		GL32.glBlendFunc(GL32.GL_ONE, GL32.GL_ONE_MINUS_SRC_ALPHA);
+		ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeRenderPassEvent.class, renderEventParam);
+		this.bufferHandler.renderTransparent(this, renderEventParam);
+		GL32.glDepthMask(true); // Apparently the depth mask state is stored in the FBO, so glState fails to restore it...
+		
+		
+		if (Config.Client.Advanced.Graphics.Fog.drawMode.get() != EFogDrawMode.FOG_DISABLED)
+		{
+			profiler.popPush("LOD Fog");
+			FogShader.INSTANCE.render(partialTicks);
+		}
+	}
+	
 	
 	
 	//=================//
 	// Setup Functions //
 	//=================//
 	
-	/** Setup all render objects - REQUIRES to be in render thread */
-	private void setup()
+	private void setupGLStateAndRenderObjects(
+			GLState minecraftGlState, IProfilerWrapper profiler,
+			DhApiRenderParam renderEventParam,
+			boolean firstPass)
+	{
+		//===================//
+		// draw params setup //
+		//===================//
+		
+		profiler.push("LOD draw setup");
+		
+		if (!this.isSetupComplete)
+		{
+			this.setupRenderObjects();
+			
+			// shouldn't normally happen, but just in case
+			if (!this.isSetupComplete)
+			{
+				return;
+			}
+		}
+		
+		if (MC_RENDER.getTargetFrameBufferViewportWidth() != this.cachedWidth || MC_RENDER.getTargetFrameBufferViewportHeight() != this.cachedHeight)
+		{
+			// just resizing the textures doesn't work when Optifine is present,
+			// so recreate the textures with the new size instead
+			this.createColorAndDepthTextures();
+		}
+		
+		
+		IDhApiFramebuffer activeFrameBuffer = this.framebuffer;
+		IDhApiFramebuffer framebufferOverride = OverrideInjector.INSTANCE.get(IDhApiFramebuffer.class);
+		if (framebufferOverride != null && framebufferOverride.overrideThisFrame())
+		{
+			activeFrameBuffer = framebufferOverride;
+		}
+		
+		this.setActiveFramebufferId(activeFrameBuffer.getId());
+		this.setActiveDepthTextureId(this.depthTexture.getTextureId());
+		if (this.nullableColorTexture != null)
+		{
+			this.setActiveColorTextureId(this.nullableColorTexture.getTextureId());
+		}
+		else
+		{
+			// get MC's color texture
+			int mcColorTextureId = GL32.glGetFramebufferAttachmentParameteri(GL32.GL_FRAMEBUFFER, GL32.GL_COLOR_ATTACHMENT0, GL32.GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME);
+			this.setActiveColorTextureId(mcColorTextureId);
+		}
+		// Bind LOD frame buffer
+		activeFrameBuffer.bind();
+		
+		
+		boolean clearTextures = !ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeTextureClearEvent.class, renderEventParam);
+		if (clearTextures)
+		{
+			if (this.usingMcFrameBuffer && framebufferOverride == null)
+			{
+				// recreating the GL State at this point is necessary in order to get the correct depth texture
+				minecraftGlState.saveState();
+				if (ENABLE_DUMP_GL_STATE)
+				{
+					tickLogger.debug("Re-saving GL state due to Optifine presence: " + minecraftGlState);
+				}
+				
+				
+				// Due to using MC/Optifine's framebuffer we need to re-bind the depth texture,
+				// otherwise we'll be writing to MC/Optifine's depth texture which causes rendering issues
+				activeFrameBuffer.addDepthAttachment(this.depthTexture.getTextureId(), EDhDepthBufferFormat.DEPTH32F.isCombinedStencil());
+				
+				
+				// don't clear the color texture, that removes the sky 
+				GL32.glClear(GL32.GL_DEPTH_BUFFER_BIT);
+			}
+			else if (firstPass)
+			{
+				GL32.glClear(GL32.GL_COLOR_BUFFER_BIT | GL32.GL_DEPTH_BUFFER_BIT);
+			}
+		}
+		
+		
+		GL32.glEnable(GL32.GL_DEPTH_TEST);
+		GL32.glDepthFunc(GL32.GL_LESS);
+		
+		// Set OpenGL polygon mode
+		boolean renderWireframe = Config.Client.Advanced.Debugging.renderWireframe.get();
+		if (renderWireframe)
+		{
+			GL32.glPolygonMode(GL32.GL_FRONT_AND_BACK, GL32.GL_LINE);
+			//GL32.glDisable(GL32.GL_CULL_FACE);
+		}
+		else
+		{
+			GL32.glPolygonMode(GL32.GL_FRONT_AND_BACK, GL32.GL_FILL);
+			GL32.glEnable(GL32.GL_CULL_FACE);
+		}
+		
+		// Enable depth test and depth mask
+		GL32.glEnable(GL32.GL_DEPTH_TEST);
+		GL32.glDepthFunc(GL32.GL_LESS);
+		GL32.glDepthMask(true);
+		
+		/*---------Bind required objects--------*/
+		// Setup LodRenderProgram and the LightmapTexture if it has not yet been done
+		// also binds LightmapTexture, VAO, and ShaderProgram
+		if (!this.isSetupComplete)
+		{
+			this.setupRenderObjects();
+		}
+		else
+		{
+			LodFogConfig newFogConfig = LodFogConfig.generateFogConfig(); // TODO use a config listener instead
+			if (this.fogConfig == null)
+			{
+				this.fogConfig = newFogConfig;
+			}
+			
+			if (!this.fogConfig.equals(newFogConfig))
+			{
+				this.fogConfig = newFogConfig;
+				
+				this.lodRenderProgram.free();
+				this.lodRenderProgram = new LodRenderProgram();
+				
+				FogShader.INSTANCE.free();
+				FogShader.INSTANCE = new FogShader(newFogConfig);
+			}
+			this.lodRenderProgram.bind();
+		}
+		
+		
+		IDhApiShaderProgram shaderProgramOverride = OverrideInjector.INSTANCE.get(IDhApiShaderProgram.class);
+		if (shaderProgramOverride != null)
+		{
+			shaderProgramOverride.fillUniformData(renderEventParam);
+		}
+		
+		this.lodRenderProgram.fillUniformData(renderEventParam);
+	}
+	
+	/** Setup all render objects - MUST be called on the render thread */
+	private void setupRenderObjects()
 	{
 		if (this.isSetupComplete)
 		{
@@ -541,7 +703,7 @@ public class LodRenderer
 			
 			EVENT_LOGGER.info("Setting up renderer");
 			this.isSetupComplete = true;
-			this.shaderProgram = new LodRenderProgram(LodFogConfig.generateFogConfig()); // TODO this doesn't actually use the fog config
+			this.lodRenderProgram = new LodRenderProgram();
 			if (ENABLE_IBO)
 			{
 				this.quadIBO = new QuadElementBuffer();
@@ -565,9 +727,7 @@ public class LodRenderer
 			}
 			
 			// create and bind the necessary textures
-			this.cachedWidth = MC_RENDER.getTargetFrameBufferViewportWidth();
-			this.cachedHeight = MC_RENDER.getTargetFrameBufferViewportHeight();
-			this.createColorAndDepthTextures(this.cachedWidth, this.cachedHeight);
+			this.createColorAndDepthTextures();
 			
 			if(this.framebuffer.getStatus() != GL32.GL_FRAMEBUFFER_COMPLETE)
 			{
@@ -584,23 +744,45 @@ public class LodRenderer
 		}
 	}
 	/** also binds the new textures to the {@link LodRenderer#framebuffer} */
-	private void createColorAndDepthTextures(int width, int height)
+	private void createColorAndDepthTextures()
 	{
-		// don't use the cached width/height just in case they haven't been set yet
+		int oldWidth = this.cachedWidth;
+		int oldHeight = this.cachedHeight;
+		this.cachedWidth = MC_RENDER.getTargetFrameBufferViewportWidth();
+		this.cachedHeight = MC_RENDER.getTargetFrameBufferViewportHeight();
 		
-		this.depthTexture = new DHDepthTexture(width, height, EDhDepthBufferFormat.DEPTH32F);
-		this.framebuffer.addDepthAttachment(this.depthTexture.getTextureId(), EDhDepthBufferFormat.DEPTH32F);
+		
+		ApiEventInjector.INSTANCE.fireAllEvents(DhApiScreenResizeEvent.class, 
+				new DhApiScreenResizeEvent.EventParam(
+						oldWidth, oldHeight,
+						this.cachedWidth, this.cachedHeight
+				));
+				
+		
+		// also update the override if present
+		IDhApiFramebuffer framebufferOverride = OverrideInjector.INSTANCE.get(IDhApiFramebuffer.class);
+		
+		this.depthTexture = new DHDepthTexture(this.cachedWidth, this.cachedHeight, EDhDepthBufferFormat.DEPTH32F);
+		this.framebuffer.addDepthAttachment(this.depthTexture.getTextureId(), EDhDepthBufferFormat.DEPTH32F.isCombinedStencil());
+		if (framebufferOverride != null)
+		{
+			framebufferOverride.addDepthAttachment(this.depthTexture.getTextureId(), EDhDepthBufferFormat.DEPTH32F.isCombinedStencil());
+		}
 		
 		// if we are using MC's frame buffer, a color texture is already present and shouldn't need to be bound
 		if (!this.usingMcFrameBuffer)
 		{
-			this.nullableColorTexture = DhColorTexture.builder().setDimensions(width, height)
+			this.nullableColorTexture = DhColorTexture.builder().setDimensions(this.cachedWidth, this.cachedHeight)
 					.setInternalFormat(EDhInternalTextureFormat.RGBA8)
 					.setPixelType(EDhPixelType.UNSIGNED_BYTE)
 					.setPixelFormat(EDhPixelFormat.RGBA)
 					.build();
 			
 			this.framebuffer.addColorAttachment(0, this.nullableColorTexture.getTextureId());
+			if (framebufferOverride != null)
+			{
+				framebufferOverride.addColorAttachment(0, this.nullableColorTexture.getTextureId());
+			}
 		}
 		else
 		{
@@ -647,12 +829,12 @@ public class LodRenderer
 	
 	
 	
-	//======================//
-	// Cleanup Functions    //
-	//======================//
+	//===================//
+	// Cleanup Functions //
+	//===================//
 	
 	/**
-	 * cleanup and free all render objects. MUST be on the render thread
+	 * cleanup and free all render objects.
 	 * (Many objects are Native, outside of JVM, and need manual cleanup)
 	 */
 	private void cleanup()
@@ -673,10 +855,10 @@ public class LodRenderer
 			{
 				EVENT_LOGGER.info("Renderer Cleanup Started");
 				
-				if (this.shaderProgram != null)
+				if (this.lodRenderProgram != null)
 				{
-					this.shaderProgram.free();
-					this.shaderProgram = null;
+					this.lodRenderProgram.free();
+					this.lodRenderProgram = null;
 				}
 				
 				if (this.quadIBO != null)
@@ -684,7 +866,7 @@ public class LodRenderer
 				
 				// Delete framebuffer, color texture, and depth texture
 				if (this.framebuffer != null && !this.usingMcFrameBuffer)
-					this.framebuffer.destroyInternal();
+					this.framebuffer.destroy();
 				if (this.nullableColorTexture != null)
 					this.nullableColorTexture.destroy();
 				if (this.depthTexture != null)

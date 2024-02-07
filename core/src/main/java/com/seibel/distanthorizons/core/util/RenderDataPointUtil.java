@@ -24,8 +24,6 @@ import com.seibel.distanthorizons.core.logging.SpamReducedLogger;
 import com.seibel.distanthorizons.core.dataObjects.render.columnViews.ColumnArrayView;
 import com.seibel.distanthorizons.core.dataObjects.render.columnViews.IColumnDataView;
 
-import java.util.Arrays;
-
 
 /**
  * A helper class that is used to access the data from a long
@@ -35,7 +33,7 @@ import java.util.Arrays;
  *
  * <strong>DataPoint Format: </strong><br>
  * <code>
- * GM: generation mode <br>
+ * BM: block material id <br>
  * A: color alpha <br>
  * R: color red <br>
  * G: color green <br>
@@ -46,7 +44,7 @@ import java.util.Arrays;
  * SL: sky light <br>
  *
  * =======Bit layout=======	<br>
- * _  GM GM GM A  A  A  A  |	<br>
+ * BM BM BM BM A  A  A  A  |	<br>
  * R  R  R  R  R  R  R  R  |	<br>
  * G  G  G  G  G  G  G  G  |	<br>
  * B  B  B  B  B  B  B  B  |	<br><br>
@@ -74,7 +72,7 @@ public class RenderDataPointUtil
 	public final static int ALPHA_DOWNSIZE_SHIFT = 4;
 	
 	
-	public final static int GEN_TYPE_SHIFT = 60;
+	public final static int IRIS_BLOCK_MATERIAL_ID_SHIFT = 60;
 	
 	public final static int COLOR_SHIFT = 32;
 	public final static int BLUE_SHIFT = COLOR_SHIFT;
@@ -97,12 +95,11 @@ public class RenderDataPointUtil
 	public final static long HEIGHT_DEPTH_MASK = 0xFFFFFF;
 	public final static long BLOCK_LIGHT_MASK = 0xF;
 	public final static long SKY_LIGHT_MASK = 0xF;
-	public final static long GEN_TYPE_MASK = 0b111;
-	public final static long COMPARE_SHIFT = GEN_TYPE_SHIFT;
+	public final static long IRIS_BLOCK_MATERIAL_ID_MASK = 0xF;
+	public final static long COMPARE_SHIFT = 0b111;
 	
 	public final static long HEIGHT_SHIFTED_MASK = HEIGHT_MASK << HEIGHT_SHIFT;
 	public final static long DEPTH_SHIFTED_MASK = DEPTH_MASK << DEPTH_SHIFT;
-	public final static long GEN_TYPE_SHIFTED_MASK = GEN_TYPE_MASK << GEN_TYPE_SHIFT;
 	
 	public final static long VOID_SETTER = HEIGHT_SHIFTED_MASK | DEPTH_SHIFTED_MASK;
 	
@@ -112,27 +109,19 @@ public class RenderDataPointUtil
 	// datapoint manipulation //
 	//========================//
 	
-	public static long createVoidDataPoint(byte generationMode)
-	{
-		if (generationMode == 0)
-		{
-			throw new IllegalArgumentException("Trying to create void datapoint with genMode 0, which is NOT allowed in DataPoint version 10!");
-		}
-		
-		return (generationMode & GEN_TYPE_MASK) << GEN_TYPE_SHIFT;
-	}
+	public static long createVoidDataPoint() { return EMPTY_DATA; }
 	
-	public static long createDataPoint(int height, int depth, int color, int lightSky, int lightBlock, int generationMode)
+	public static long createDataPoint(int height, int depth, int color, int lightSky, int lightBlock, int irisBlockMaterialId)
 	{
 		return createDataPoint(
 				ColorUtil.getAlpha(color),
 				ColorUtil.getRed(color),
 				ColorUtil.getGreen(color),
 				ColorUtil.getBlue(color),
-				height, depth, lightSky, lightBlock, generationMode);
+				height, depth, lightSky, lightBlock, irisBlockMaterialId);
 	}
 	
-	public static long createDataPoint(int height, int depth, int color, int light, int generationMode)
+	public static long createDataPoint(int height, int depth, int color, int light, int irisBlockMaterialId)
 	{
 		LodUtil.assertTrue(light >= 0 && light < 256, "Raw Light value must be between 0 and 255!");
 		
@@ -141,28 +130,29 @@ public class RenderDataPointUtil
 				ColorUtil.getRed(color),
 				ColorUtil.getGreen(color),
 				ColorUtil.getBlue(color),
-				height, depth, light % 16, light / 16, generationMode);
+				height, depth, 
+				light % 16, light / 16, 
+				irisBlockMaterialId);
 	}
 	
-	public static long createDataPoint(int alpha, int red, int green, int blue, int height, int depth, int lightSky, int lightBlock, int generationMode)
+	public static long createDataPoint(int alpha, int red, int green, int blue, int height, int depth, int lightSky, int lightBlock, int irisBlockMaterialId)
 	{
-		LodUtil.assertTrue(generationMode != 0, "Trying to create datapoint with genMode 0, which is NOT allowed in DataPoint version 10!");
-		
 		LodUtil.assertTrue(height >= 0 && height < MAX_WORLD_Y_SIZE, "Trying to create datapoint with height[" + height + "] out of range!");
 		LodUtil.assertTrue(depth >= 0 && depth < MAX_WORLD_Y_SIZE, "Trying to create datapoint with depth[" + depth + "] out of range!");
 		
 		LodUtil.assertTrue(lightSky >= 0 && lightSky < 16, "Trying to create datapoint with lightSky[" + lightSky + "] out of range!");
 		LodUtil.assertTrue(lightBlock >= 0 && lightBlock < 16, "Trying to create datapoint with lightBlock[" + lightBlock + "] out of range!");
 		
+		LodUtil.assertTrue(irisBlockMaterialId >= 0 && irisBlockMaterialId < 256, "Trying to create datapoint with irisBlockMaterialId[" + irisBlockMaterialId + "] out of range!");
+		
 		LodUtil.assertTrue(alpha >= 0 && alpha < 256, "Trying to create datapoint with alpha[" + alpha + "] out of range!");
 		LodUtil.assertTrue(red >= 0 && red < 256, "Trying to create datapoint with red[" + red + "] out of range!");
 		LodUtil.assertTrue(green >= 0 && green < 256, "Trying to create datapoint with green[" + green + "] out of range!");
 		LodUtil.assertTrue(blue >= 0 && blue < 256, "Trying to create datapoint with blue[" + blue + "] out of range!");
 		
-		LodUtil.assertTrue(generationMode >= 0 && generationMode < 8, "Trying to create datapoint with genMode[" + generationMode + "] out of range!");
 		LodUtil.assertTrue(depth <= height, "Trying to create datapoint with depth[" + depth + "] greater than height[" + height + "]!");
 		
-		return (long) (alpha >>> ALPHA_DOWNSIZE_SHIFT) << ALPHA_SHIFT
+		long out = (long) (alpha >>> ALPHA_DOWNSIZE_SHIFT) << ALPHA_SHIFT
 				| (red & RED_MASK) << RED_SHIFT
 				| (green & GREEN_MASK) << GREEN_SHIFT
 				| (blue & BLUE_MASK) << BLUE_SHIFT
@@ -170,8 +160,10 @@ public class RenderDataPointUtil
 				| (depth & DEPTH_MASK) << DEPTH_SHIFT
 				| (lightBlock & BLOCK_LIGHT_MASK) << BLOCK_LIGHT_SHIFT
 				| (lightSky & SKY_LIGHT_MASK) << SKY_LIGHT_SHIFT
-				| (generationMode & GEN_TYPE_MASK) << GEN_TYPE_SHIFT
+				| (irisBlockMaterialId & IRIS_BLOCK_MATERIAL_ID_MASK) << IRIS_BLOCK_MATERIAL_ID_SHIFT
 				;
+		
+		return out;
 	}
 	
 	public static long shiftHeightAndDepth(long dataPoint, short offset)
@@ -195,19 +187,8 @@ public class RenderDataPointUtil
 	public static byte getLightSky(long dataPoint) { return (byte) ((dataPoint >>> SKY_LIGHT_SHIFT) & SKY_LIGHT_MASK); }
 	public static byte getLightBlock(long dataPoint) { return (byte) ((dataPoint >>> BLOCK_LIGHT_SHIFT) & BLOCK_LIGHT_MASK); }
 	
-	public static byte getGenerationMode(long dataPoint)
-	{
-		byte genMode = (byte) ((dataPoint >>> GEN_TYPE_SHIFT) & GEN_TYPE_MASK);
-		if (warnLogger.canMaybeLog() && doesDataPointExist(dataPoint) && genMode == 0)
-		{
-			warnLogger.warnInc("Existing datapoint with genMode 0 detected! This is invalid in DataPoint version 10!"
-					+ " This may be caused by old data that has not been updated correctly.");
-			return 1;
-		}
-		return (genMode == 0) ? 1 : genMode;
-	}
+	public static byte getBlockMaterialId(long dataPoint) { return (byte) ((dataPoint >>> IRIS_BLOCK_MATERIAL_ID_SHIFT) & IRIS_BLOCK_MATERIAL_ID_MASK); }
 	
-	public static long overrideGenerationMode(long current, byte b) { return (current & ~GEN_TYPE_SHIFTED_MASK) | ((b & GEN_TYPE_MASK) << GEN_TYPE_SHIFT); }
 	
 	public static boolean isVoid(long dataPoint) { return (((dataPoint >>> DEPTH_SHIFT) & HEIGHT_DEPTH_MASK) == 0); }
 	
@@ -244,7 +225,7 @@ public class RenderDataPointUtil
 					getGreen(dataPoint) +
 					" BL:" + getLightBlock(dataPoint) +
 					" SL:" + getLightSky(dataPoint) +
-					" G:" + getGenerationMode(dataPoint);
+					" BID:" + getBlockMaterialId(dataPoint);
 		}
 	}
 	

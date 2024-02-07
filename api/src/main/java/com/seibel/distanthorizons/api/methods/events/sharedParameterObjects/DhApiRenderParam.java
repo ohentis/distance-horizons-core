@@ -19,17 +19,35 @@
 
 package com.seibel.distanthorizons.api.methods.events.sharedParameterObjects;
 
+import com.seibel.distanthorizons.api.enums.rendering.EDhApiRenderPass;
 import com.seibel.distanthorizons.coreapi.util.math.Mat4f;
 
 /**
  * Contains information relevant to Distant Horizons and Minecraft rendering.
  *
  * @author James Seibel
- * @version 2022-9-5
+ * @version 2024-1-31
  * @since API 1.0.0
  */
 public class DhApiRenderParam
 {
+	/** Indicates what render pass DH is currently rendering */
+	public final EDhApiRenderPass renderPass;
+	
+	/** Indicates how far into this tick the frame is. */
+	public final float partialTicks;
+	
+	/** 
+	 * Indicates DH's near clip plane, measured in blocks. 
+	 * Note: this may change based on time, player speed, and other factors. 
+	 */
+	public final float nearClipPlane;
+	/**
+	 * Indicates DH's far clip plane, measured in blocks. 
+	 * Note: this may change based on time, player speed, and other factors. 
+	 */
+	public final float farClipPlane;
+	
 	/** The projection matrix Minecraft is using to render this frame. */
 	public final Mat4f mcProjectionMatrix;
 	/** The model view matrix Minecraft is using to render this frame. */
@@ -40,23 +58,53 @@ public class DhApiRenderParam
 	/** The model view matrix Distant Horizons is using to render this frame. */
 	public final Mat4f dhModelViewMatrix;
 	
-	/** Indicates how far into this tick the frame is. */
-	public final float partialTicks;
+	public final int lightmapBindingIndex = 0;
+	
+	// TODO why is this here? wouldn't it make more sense to have this built into the vertex buffer data?
+	public final int worldYOffset;
 	
 	
+	
+	//==============//
+	// constructors //
+	//==============//
+	
+	public DhApiRenderParam(DhApiRenderParam parent)
+	{
+		this(
+			parent.renderPass,
+			parent.partialTicks,
+			parent.nearClipPlane, parent.farClipPlane,
+			parent.mcProjectionMatrix, parent.mcModelViewMatrix, 
+			parent.dhProjectionMatrix, parent.dhModelViewMatrix,
+			parent.worldYOffset	
+			);
+	}
 	
 	public DhApiRenderParam(
+			EDhApiRenderPass renderPass,
+			float newPartialTicks,
+			float nearClipPlane, float farClipPlane,
 			Mat4f newMcProjectionMatrix, Mat4f newMcModelViewMatrix,
 			Mat4f newDhProjectionMatrix, Mat4f newDhModelViewMatrix,
-			float newPartialTicks)
+			int worldYOffset
+			)
 	{
+		this.renderPass = renderPass;
+		
+		this.partialTicks = newPartialTicks;
+		
+		this.farClipPlane = farClipPlane;
+		this.nearClipPlane = nearClipPlane;
+		
 		this.mcProjectionMatrix = newMcProjectionMatrix;
 		this.mcModelViewMatrix = newMcModelViewMatrix;
 		
 		this.dhProjectionMatrix = newDhProjectionMatrix;
 		this.dhModelViewMatrix = newDhModelViewMatrix;
 		
-		this.partialTicks = newPartialTicks;
+		this.worldYOffset = worldYOffset;
+		
 	}
 	
 }

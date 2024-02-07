@@ -27,6 +27,7 @@ import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.RenderDataPointUtil;
 import com.seibel.distanthorizons.api.enums.rendering.EDebugRendering;
 import com.seibel.distanthorizons.core.dataObjects.render.columnViews.ColumnArrayView;
+import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import com.seibel.distanthorizons.coreapi.util.BitShiftUtil;
 
 /**
@@ -60,6 +61,8 @@ public class CubicLodTemplate
 			throw new IllegalArgumentException("Negative y size for the data! Data: " + RenderDataPointUtil.toString(data));
 		}
 		
+		byte blockMaterialId = RenderDataPointUtil.getBlockMaterialId(data);
+		
 		
 		
 		int color;
@@ -85,14 +88,67 @@ public class CubicLodTemplate
 				break;
 			}
 			case SHOW_DETAIL:
+			case SHOW_GENMODE: 
 			{
 				color = LodUtil.DEBUG_DETAIL_LEVEL_COLORS[detailLevel];
 				fullBright = true;
 				break;
 			}
-			case SHOW_GENMODE:
+			case SHOW_BLOCK_MATERIAL:
 			{
-				color = LodUtil.DEBUG_DETAIL_LEVEL_COLORS[RenderDataPointUtil.getGenerationMode(data)];
+				switch (blockMaterialId)
+				{
+					case IBlockStateWrapper.IrisBlockMaterial.UNKOWN:
+					case IBlockStateWrapper.IrisBlockMaterial.AIR: // shouldn't normally be rendered, but just in case
+						color = ColorUtil.HOT_PINK;
+						break;
+						
+					case IBlockStateWrapper.IrisBlockMaterial.LEAVES:
+						color = ColorUtil.GREEN;
+						break;
+					case IBlockStateWrapper.IrisBlockMaterial.STONE:
+						color = ColorUtil.GRAY;
+						break;
+					case IBlockStateWrapper.IrisBlockMaterial.WOOD:
+						color = ColorUtil.BROWN;
+						break;
+					case IBlockStateWrapper.IrisBlockMaterial.METAL:
+						color = ColorUtil.DARK_GRAY;
+						break;
+					case IBlockStateWrapper.IrisBlockMaterial.DIRT:
+						color = ColorUtil.LIGHT_BROWN;
+						break;
+					case IBlockStateWrapper.IrisBlockMaterial.LAVA:
+						color = ColorUtil.ORANGE;
+						break;
+					case IBlockStateWrapper.IrisBlockMaterial.DEEPSLATE:
+						color = ColorUtil.BLACK;
+						break;
+					case IBlockStateWrapper.IrisBlockMaterial.SNOW:
+						color = ColorUtil.WHITE;
+						break;
+					case IBlockStateWrapper.IrisBlockMaterial.SAND:
+						color = ColorUtil.TAN;
+						break;
+					case IBlockStateWrapper.IrisBlockMaterial.TERRACOTTA:
+						color = ColorUtil.DARK_ORANGE;
+						break;
+					case IBlockStateWrapper.IrisBlockMaterial.NETHER_STONE:
+						color = ColorUtil.DARK_RED;
+						break;
+					case IBlockStateWrapper.IrisBlockMaterial.WATER:
+						color = ColorUtil.BLUE;
+						break;
+					case IBlockStateWrapper.IrisBlockMaterial.ILLUMINATED:
+						color = ColorUtil.YELLOW;
+						break;
+					
+					default:
+						// undefined color
+						color = ColorUtil.CYAN;
+						break;
+				}
+				
 				fullBright = true;
 				break;
 			}
@@ -117,6 +173,7 @@ public class CubicLodTemplate
 				width, ySize, width, // setWidth
 				x, yMin, z, // setOffset
 				color, // setColor
+				blockMaterialId, // irisBlockMaterialId
 				RenderDataPointUtil.getLightSky(data), // setSkyLights
 				fullBright ? 15 : RenderDataPointUtil.getLightBlock(data), // setBlockLights
 				topData, bottomData, adjColumnViews); // setAdjData

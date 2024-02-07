@@ -105,9 +105,9 @@ public class DhApiGraphicsConfig implements IDhApiGraphicsConfig
 	// advanced graphic settings //
 	//===========================//
 
-//	@Override
-//	public IDhApiConfigValue<Boolean> getDisableDirectionalCulling()
-//	{ return new DhApiConfigValue<Boolean, Boolean>(AdvancedGraphics.disableDirectionalCulling); }
+	@Override
+	public IDhApiConfigValue<Boolean> disableFrustumCulling()
+	{ return new DhApiConfigValue<Boolean, Boolean>(Config.Client.Advanced.Graphics.AdvancedGraphics.disableFrustumCulling); }
 	
 	@Deprecated
 	@Override
@@ -145,6 +145,10 @@ public class DhApiGraphicsConfig implements IDhApiGraphicsConfig
 	@Override
 	public IDhApiConfigValue<Double> lodBias()
 	{ return new DhApiConfigValue<Double, Double>(Config.Client.Advanced.Graphics.AdvancedGraphics.lodBias); }
+	
+	@Override
+	public IDhApiConfigValue<ELodShading> lodShading()
+	{ return new DhApiConfigValue<ELodShading, ELodShading>(Config.Client.Advanced.Graphics.AdvancedGraphics.lodShading); }
 	
 	
 	

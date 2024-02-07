@@ -202,7 +202,7 @@ public class RenderDataPointReducingList
 						lowerMaxY,
 						RenderDataPointUtil.getLightSky(higherData),
 						RenderDataPointUtil.getLightBlock(higherData),
-						RenderDataPointUtil.getGenerationMode(higherData)
+						RenderDataPointUtil.getBlockMaterialId(higherData)
 					)
 				);
 				
@@ -829,7 +829,7 @@ public class RenderDataPointReducingList
 		int size = view.size();
 		if (size <= 0)
 		{
-			return RenderDataPointUtil.createVoidDataPoint((byte)(1));
+			return RenderDataPointUtil.createVoidDataPoint();
 		}
 		
 		long highest;
@@ -849,7 +849,7 @@ public class RenderDataPointReducingList
 				}
 			}
 			//no visible segments, return void.
-			return RenderDataPointUtil.createVoidDataPoint((byte) (1));
+			return RenderDataPointUtil.createVoidDataPoint();
 		}
 		
 		//second loop: merge the rest of the segments.
@@ -887,7 +887,7 @@ public class RenderDataPointReducingList
 		// so, if we didn't set any data points, add a void data point.
 		if (writeIndex == 0)
 		{
-			view.set(writeIndex++, RenderDataPointUtil.createVoidDataPoint((byte) (1)));
+			view.set(writeIndex++, RenderDataPointUtil.createVoidDataPoint());
 		}
 		
 		for (int size = view.size(); writeIndex < size; writeIndex++)

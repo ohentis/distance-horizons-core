@@ -19,18 +19,29 @@
 
 package com.seibel.distanthorizons.core.render;
 
+import com.seibel.distanthorizons.api.DhApi;
+import com.seibel.distanthorizons.api.interfaces.override.rendering.IDhApiCullingFrustum;
+import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
 import com.seibel.distanthorizons.core.config.Config;
+import com.seibel.distanthorizons.core.dependencyInjection.ModAccessorInjector;
 import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
+import com.seibel.distanthorizons.core.pos.DhFrustumBounds;
+import com.seibel.distanthorizons.core.pos.DhLodPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.pos.Pos2D;
+import com.seibel.distanthorizons.core.render.renderer.LodRenderer;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.objects.SortedArraySet;
 import com.seibel.distanthorizons.core.util.objects.quadTree.QuadNode;
-import com.seibel.distanthorizons.core.render.renderer.LodRenderer;
+import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.IIrisAccessor;
+import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
+import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IOverrideInjector;
+import com.seibel.distanthorizons.coreapi.util.math.Mat4f;
 import com.seibel.distanthorizons.coreapi.util.math.Vec3f;
 import org.apache.logging.log4j.Logger;
+import org.joml.Matrix4fc;
 
 import java.util.Comparator;
 import java.util.Iterator;
@@ -45,6 +56,8 @@ public class RenderBufferHandler implements AutoCloseable
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
+	private static final IIrisAccessor IRIS_ACCESSOR = ModAccessorInjector.INSTANCE.get(IIrisAccessor.class);
+	
 	/** contains all relevant data */
 	public final LodQuadTree lodQuadTree;
 	
@@ -53,7 +66,12 @@ public class RenderBufferHandler implements AutoCloseable
 	
 	private final AtomicBoolean rebuildAllBuffers = new AtomicBoolean(false);
 	
-	public F3Screen.DynamicMessage f3Message;
+	public F3Screen.MultiDynamicMessage f3Message;
+	
+	private int visibleBufferCount;
+	private int culledBufferCount;
+	private int shadowVisibleBufferCount;
+	private int shadowCulledBufferCount;
 	
 	
 	
@@ -64,11 +82,47 @@ public class RenderBufferHandler implements AutoCloseable
 	public RenderBufferHandler(LodQuadTree lodQuadTree) 
 	{ 
 		this.lodQuadTree = lodQuadTree;
+		this.culledBufferCount = 0;
 		
-		this.f3Message = new F3Screen.DynamicMessage(() -> LodUtil.formatLog("Rendered Buffer Count: " + this.loadedNearToFarBuffers.size()));
+		IDhApiCullingFrustum coreFrustum = DhApi.overrides.get(IDhApiCullingFrustum.class, IOverrideInjector.CORE_PRIORITY);
+		if (coreFrustum == null)
+		{
+			DhApi.overrides.bind(IDhApiCullingFrustum.class, new DhFrustumBounds());
+		}
+		
+		
+		this.f3Message = new F3Screen.MultiDynamicMessage(
+			() ->
+			{
+				String countText = this.visibleBufferCount + "";
+				if (!Config.Client.Advanced.Graphics.AdvancedGraphics.disableFrustumCulling.get())
+				{
+					countText += "/" + (this.visibleBufferCount + this.culledBufferCount);
+				}
+				return LodUtil.formatLog("Rendered Buffer Count: " + countText);
+			}, 
+			() -> 
+			{
+				boolean hasIrisShaders = (IRIS_ACCESSOR != null && IRIS_ACCESSOR.isShaderPackInUse());
+				if (!hasIrisShaders)
+				{
+					return null;
+				}
+				
+				String countText = this.shadowVisibleBufferCount + "";
+				if (!Config.Client.Advanced.Graphics.AdvancedGraphics.disableFrustumCulling.get())
+				{
+					countText += "/" + (this.shadowVisibleBufferCount + this.shadowCulledBufferCount);
+				}
+				return LodUtil.formatLog("Shadow Buffer Count: " + countText);
+		});
 	}
 	
 	
+	
+	//=================//
+	// render building //
+	//=================//
 	
 	/**
 	 * The following buildRenderList sorting method is based on the following reddit post: <br>
@@ -77,7 +131,7 @@ public class RenderBufferHandler implements AutoCloseable
 	 * TODO: This might get locked by update() causing move() call. Is there a way to avoid this?
 	 *       Maybe dupe the base list and use atomic swap on render? Or is this not worth it?
 	 */
-	public void buildRenderListAndUpdateSections(Vec3f lookForwardVector)
+	public void buildRenderListAndUpdateSections(IClientLevelWrapper clientLevelWrapper, Matrix4fc matWorldViewProjection, Vec3f lookForwardVector)
 	{
 		EDhDirection[] axisDirections = new EDhDirection[3];
 		
@@ -178,11 +232,37 @@ public class RenderBufferHandler implements AutoCloseable
 			
 			return loadedBufferA.pos.getDetailLevel() - loadedBufferB.pos.getDetailLevel(); // If all else fails, sort by detail
 		};
-		
-		// Build the sorted list
 		this.loadedNearToFarBuffers = new SortedArraySet<>((a, b) -> -farToNearComparator.compare(a, b)); // TODO is the comparator named wrong?
 		
-		// Update the sections
+		
+		
+		// update the frustum if necessary
+		boolean enableFrustumCulling = !Config.Client.Advanced.Graphics.AdvancedGraphics.disableFrustumCulling.get();
+		IDhApiCullingFrustum frustum = DhApi.overrides.get(IDhApiCullingFrustum.class, IOverrideInjector.CORE_PRIORITY);
+		if (enableFrustumCulling)
+		{
+			int worldMinY = clientLevelWrapper.getMinHeight();
+			int worldHeight = clientLevelWrapper.getHeight();
+			
+			frustum.update(worldMinY, worldMinY + worldHeight, new Mat4f(matWorldViewProjection));
+		}
+		
+		
+		
+		//=========================//
+		// Update the section list //
+		//=========================//
+		
+		boolean isShadowPass = (IRIS_ACCESSOR != null && IRIS_ACCESSOR.isRenderingShadowPass());
+		if (isShadowPass)
+		{
+			this.shadowCulledBufferCount = 0;
+		}
+		else
+		{
+			this.culledBufferCount = 0;
+		}
+		
 		boolean rebuildAllBuffers = this.rebuildAllBuffers.getAndSet(false);
 		Iterator<QuadNode<LodRenderSection>> nodeIterator = this.lodQuadTree.nodeIterator();
 		while (nodeIterator.hasNext())
@@ -191,26 +271,53 @@ public class RenderBufferHandler implements AutoCloseable
 			
 			DhSectionPos sectionPos = node.sectionPos;
 			LodRenderSection renderSection = node.value;
+			if (renderSection == null)
+			{
+				continue;
+			}
+			
 			try
 			{
-				
-				if (renderSection != null)
+				if (enableFrustumCulling)
 				{
-					if (rebuildAllBuffers)
+					DhLodPos lodBounds = renderSection.pos.getSectionBBoxPos();
+					int blockMinX = lodBounds.getMinX().toBlockWidth();
+					int blockMinZ = lodBounds.getMinZ().toBlockWidth();
+					int lodBlockWidth = lodBounds.getBlockWidth();
+					if (!frustum.intersects(blockMinX, blockMinZ, lodBlockWidth, lodBounds.detailLevel))
 					{
-						renderSection.markBufferDirty();
-					}
-					renderSection.tryBuildAndSwapBuffer();
-					
-					if (renderSection.isRenderingEnabled())
-					{
-						AbstractRenderBuffer buffer = renderSection.activeRenderBufferRef.get();
-						if (buffer != null)
+						if (isShadowPass)
 						{
-							this.loadedNearToFarBuffers.add(new LoadedRenderBuffer(buffer, sectionPos));
+							this.shadowCulledBufferCount++;
 						}
+						else
+						{
+							this.culledBufferCount++;
+						}
+						
+						continue;
 					}
 				}
+				
+				if (rebuildAllBuffers)
+				{
+					renderSection.markBufferDirty();
+				}
+				
+				renderSection.tryBuildAndSwapBuffer();
+				if (!renderSection.isRenderingEnabled())
+				{
+					continue;
+				}
+				
+				AbstractRenderBuffer buffer = renderSection.activeRenderBufferRef.get();
+				if (buffer == null)
+				{
+					continue;
+				}
+					
+				
+				this.loadedNearToFarBuffers.add(new LoadedRenderBuffer(buffer, sectionPos));
 			}
 			catch (Exception e)
 			{
@@ -218,27 +325,37 @@ public class RenderBufferHandler implements AutoCloseable
 				renderSection.markBufferDirty();
 			}
 		}
+		
+		if (isShadowPass)
+		{
+			this.shadowVisibleBufferCount = this.loadedNearToFarBuffers.size();
+		}
+		else
+		{
+			this.visibleBufferCount = this.loadedNearToFarBuffers.size();
+		}
 	}
 	
-	public void renderOpaque(LodRenderer renderContext)
+	public void MarkAllBuffersDirty() { this.rebuildAllBuffers.set(true); }
+	
+	
+	
+	//================//
+	// render methods //
+	//================//
+	
+	public void renderOpaque(LodRenderer renderContext, DhApiRenderParam renderEventParam)
 	{
-		//TODO: Directional culling
-		this.loadedNearToFarBuffers.forEach(loadedBuffer -> loadedBuffer.buffer.renderOpaque(renderContext));
+		this.loadedNearToFarBuffers.forEach(loadedBuffer -> loadedBuffer.buffer.renderOpaque(renderContext, renderEventParam));
 	}
-	public void renderTransparent(LodRenderer renderContext)
+	public void renderTransparent(LodRenderer renderContext, DhApiRenderParam renderEventParam)
 	{
-		//TODO: Directional culling
 		ListIterator<LoadedRenderBuffer> iter = this.loadedNearToFarBuffers.listIterator(this.loadedNearToFarBuffers.size());
 		while (iter.hasPrevious())
 		{
 			LoadedRenderBuffer loadedBuffer = iter.previous();
-			loadedBuffer.buffer.renderTransparent(renderContext);
+			loadedBuffer.buffer.renderTransparent(renderContext, renderEventParam);
 		}
-	}
-	
-	public void MarkAllBuffersDirty()
-	{
-		rebuildAllBuffers.set(true);
 	}
 	
 	
@@ -259,6 +376,8 @@ public class RenderBufferHandler implements AutoCloseable
 				renderSection.dispose();
 			}
 		}
+		
+		this.f3Message.close();
 	}
 	
 	

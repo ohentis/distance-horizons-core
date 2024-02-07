@@ -195,7 +195,14 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandler
 		ArrayList<CompletableFuture<WorldGenResult>>  taskFutureList = new ArrayList<>();
 		for (DhSectionPos genPos : genPosList)
 		{
-			// queue each gen task
+			// try not to re-queue already generating tasks
+			if (this.generatingDataSourceByPos.containsKey(genPos))
+			{
+				continue;
+			}
+			
+			
+			// queue each new gen task
 			GenTask genTask = new GenTask(dataSource.getSectionPos(), new WeakReference<>(dataSource));
 			CompletableFuture<WorldGenResult> worldGenFuture = worldGenQueue.submitGenTask(genPos, dataSource.getDataDetailLevel(), genTask);
 			worldGenFuture.whenComplete((genTaskResult, ex) ->

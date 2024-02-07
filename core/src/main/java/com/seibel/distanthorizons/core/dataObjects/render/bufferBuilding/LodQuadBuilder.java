@@ -135,7 +135,7 @@ public class LodQuadBuilder
 	public void addQuadAdj(
 			EDhDirection dir, short x, short y, short z,
 			short widthEastWest, short widthNorthSouthOrUpDown,
-			int color, byte skyLight, byte blockLight)
+			int color, byte irisBlockMaterialId, byte skyLight, byte blockLight)
 	{
 		if (dir == EDhDirection.DOWN)
 		{
@@ -147,7 +147,7 @@ public class LodQuadBuilder
 			return;
 		}
 		
-		BufferQuad quad = new BufferQuad(x, y, z, widthEastWest, widthNorthSouthOrUpDown, color, skyLight, blockLight, dir);
+		BufferQuad quad = new BufferQuad(x, y, z, widthEastWest, widthNorthSouthOrUpDown, color, irisBlockMaterialId, skyLight, blockLight, dir);
 		ArrayList<BufferQuad> quadList = (this.doTransparency && ColorUtil.getAlpha(color) < 255) ? this.transparentQuads[dir.ordinal()] : this.opaqueQuads[dir.ordinal()];
 		if (!quadList.isEmpty() &&
 				(
@@ -163,7 +163,7 @@ public class LodQuadBuilder
 	}
 	
 	// XZ
-	public void addQuadUp(short x, short maxY, short z, short widthEastWest, short widthNorthSouthOrUpDown, int color, byte skylight, byte blocklight) // TODO argument names are wrong
+	public void addQuadUp(short x, short maxY, short z, short widthEastWest, short widthNorthSouthOrUpDown, int color, byte irisBlockMaterialId, byte skylight, byte blocklight) // TODO argument names are wrong
 	{
 		// cave culling
 		if (this.skipQuadsWithZeroSkylight && skylight == 0 && maxY < this.skyLightCullingBelow)
@@ -171,7 +171,7 @@ public class LodQuadBuilder
 			return;
 		}
 		
-		BufferQuad quad = new BufferQuad(x, maxY, z, widthEastWest, widthNorthSouthOrUpDown, color, skylight, blocklight, EDhDirection.UP);
+		BufferQuad quad = new BufferQuad(x, maxY, z, widthEastWest, widthNorthSouthOrUpDown, color, irisBlockMaterialId, skylight, blocklight, EDhDirection.UP);
 		boolean isTransparent = (this.doTransparency && ColorUtil.getAlpha(color) < 255);
 		ArrayList<BufferQuad> quadList = isTransparent ? this.transparentQuads[EDhDirection.UP.ordinal()] : this.opaqueQuads[EDhDirection.UP.ordinal()];
 		
@@ -190,11 +190,11 @@ public class LodQuadBuilder
 		quadList.add(quad);
 	}
 	
-	public void addQuadDown(short x, short y, short z, short width, short wz, int color, byte skylight, byte blocklight)
+	public void addQuadDown(short x, short y, short z, short width, short wz, int color, byte irisBlockMaterialId, byte skylight, byte blocklight)
 	{
 		if (skipQuadsWithZeroSkylight && skylight == 0 && y < skyLightCullingBelow)
 			return;
-		BufferQuad quad = new BufferQuad(x, y, z, width, wz, color, skylight, blocklight, EDhDirection.DOWN);
+		BufferQuad quad = new BufferQuad(x, y, z, width, wz, color, irisBlockMaterialId, skylight, blocklight, EDhDirection.DOWN);
 		ArrayList<BufferQuad> qs = (doTransparency && ColorUtil.getAlpha(color) < 255)
 				? transparentQuads[EDhDirection.DOWN.ordinal()] : opaqueQuads[EDhDirection.DOWN.ordinal()];
 		if (!qs.isEmpty() &&
@@ -219,6 +219,7 @@ public class LodQuadBuilder
 		int[][] quadBase = DIRECTION_VERTEX_IBO_QUAD[quad.direction.ordinal()];
 		short widthEastWest = quad.widthEastWest;
 		short widthNorthSouth = quad.widthNorthSouthOrUpDown;
+		byte normalIndex = (byte) quad.direction.ordinal();
 		EDhDirection.Axis axis = quad.direction.getAxis();
 		for (int i = 0; i < quadBase.length; i++)
 		{
@@ -255,13 +256,15 @@ public class LodQuadBuilder
 			}
 			putVertex(bb, (short) (quad.x + dx), (short) (quad.y + dy), (short) (quad.z + dz),
 					quad.hasError ? ColorUtil.RED : quad.color, // TODO add debug config that allows toggling this
+					quad.hasError ? 0 : normalIndex,
+					quad.hasError ? 0 : quad.irisBlockMaterialId,
 					quad.hasError ? 15 : quad.skyLight,
 					quad.hasError ? 15 : quad.blockLight,
 					mx, my, mz);
 		}
 	}
 	
-	private void putVertex(ByteBuffer bb, short x, short y, short z, int color, byte skylight, byte blocklight, int mx, int my, int mz)
+	private void putVertex(ByteBuffer bb, short x, short y, short z, int color, byte normalIndex, byte irisBlockMaterialId, byte skylight, byte blocklight, int mx, int my, int mz)
 	{
 		skylight %= 16;
 		blocklight %= 16;
@@ -292,6 +295,11 @@ public class LodQuadBuilder
 		bb.put(g);
 		bb.put(b);
 		bb.put(a);
+		
+		// Block ID and normal index are used by the Iris format
+		bb.put(irisBlockMaterialId);
+		bb.put(normalIndex);
+		bb.putShort((short) 0); // padding to make sure the vertex format as a whole is a multiple of 4
 	}
 	
 	

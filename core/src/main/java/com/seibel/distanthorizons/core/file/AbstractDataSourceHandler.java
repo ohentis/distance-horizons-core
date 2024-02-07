@@ -275,7 +275,6 @@ public abstract class AbstractDataSourceHandler<TDataSource extends IDataSource<
 		// done to prevent queueing saves while the current queue is being cleared
 		if (this.isShutdown)
 		{
-			LOGGER.warn("Attempted to queue save for section ["+pos+"] while the handler is being shut down. Some data for that position may be lost.");
 			return;
 		}
 		
@@ -307,7 +306,7 @@ public abstract class AbstractDataSourceHandler<TDataSource extends IDataSource<
 							AbstractDataSourceHandler.this.writeDataSourceToFile(finalDataSource);
 						}
 					}
-					catch (Exception e)
+					catch (Exception e) // this can throw errors (not exceptions) when installed in Iris' dev environment for some reason due to an issue with LZ4's compression library
 					{
 						LOGGER.error("Failed to save updated data for section ["+pos+"], error: ["+e.getMessage()+"]", e);
 					}

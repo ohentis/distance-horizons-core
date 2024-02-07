@@ -26,6 +26,7 @@ import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.render.renderer.LodRenderer;
+import com.seibel.distanthorizons.core.util.RenderUtil;
 import com.seibel.distanthorizons.core.world.AbstractDhWorld;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
 import org.lwjgl.opengl.GL32;
@@ -42,7 +43,7 @@ public class DhApiRenderProxy implements IDhApiRenderProxy
 	
 	private static final IMinecraftRenderWrapper MC_RENDER = SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
 	
-	public int targetFrameBufferOverride = -1;
+	private boolean deferTransparentRendering = false;
 	
 	
 	
@@ -83,29 +84,6 @@ public class DhApiRenderProxy implements IDhApiRenderProxy
 	
 	
 	@Override
-	public DhApiResult<Integer> getDhFrameBufferId()
-	{
-		int activeFrameBuffer = LodRenderer.getActiveFramebufferId();
-		return (activeFrameBuffer == -1) ? DhApiResult.createFail("DH's FrameBuffer hasn't been created and/or bound yet.", -1) : DhApiResult.createSuccess(activeFrameBuffer);
-	}
-	
-	
-	@Override
-	public DhApiResult<Void> setTargetFrameBufferId(int frameBufferId)
-	{
-		if (frameBufferId != -1 && !GL32.glIsFramebuffer(frameBufferId))
-		{
-			return DhApiResult.createFail("FrameBufferID ["+frameBufferId+"] isn't a valid FrameBuffer ID.");
-		}
-		
-		this.targetFrameBufferOverride = frameBufferId;
-		return DhApiResult.createSuccess();
-	}
-	@Override
-	public DhApiResult<Integer> getTargetFrameBufferId() { return (this.targetFrameBufferOverride == -1) ? DhApiResult.createSuccess("Default MC FrameBuffer in use.", MC_RENDER.getTargetFrameBuffer()) : DhApiResult.createSuccess("FrameBuffer override active.", this.targetFrameBufferOverride); }
-	
-	
-	@Override
 	public DhApiResult<Integer> getDhDepthTextureId()
 	{
 		int activeTexture = LodRenderer.getActiveDepthTextureId();
@@ -117,5 +95,14 @@ public class DhApiRenderProxy implements IDhApiRenderProxy
 		int activeTexture = LodRenderer.getActiveColorTextureId();
 		return (activeTexture == -1) ? DhApiResult.createFail("DH's color texture hasn't been created and/or bound yet.", -1) : DhApiResult.createSuccess(activeTexture);
 	}
+	
+	
+	@Override 
+	public void setDeferTransparentRendering(boolean deferTransparentRendering) { this.deferTransparentRendering = deferTransparentRendering; }
+	@Override 
+	public boolean getDeferTransparentRendering() { return this.deferTransparentRendering; }
+	
+	@Override
+	public float getNearClipPlaneDistanceInBlocks(float partialTicks) { return RenderUtil.getNearClipPlaneDistanceInBlocks(partialTicks); }
 	
 }

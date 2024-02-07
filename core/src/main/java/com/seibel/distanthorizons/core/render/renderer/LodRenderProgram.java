@@ -19,8 +19,9 @@
 
 package com.seibel.distanthorizons.core.render.renderer;
 
+import com.seibel.distanthorizons.api.interfaces.override.rendering.IDhApiShaderProgram;
+import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
 import com.seibel.distanthorizons.core.config.Config;
-import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.render.glObject.GLProxy;
 import com.seibel.distanthorizons.core.render.glObject.shader.Shader;
 import com.seibel.distanthorizons.core.render.glObject.shader.ShaderProgram;
@@ -29,18 +30,15 @@ import com.seibel.distanthorizons.core.render.glObject.vertexAttribute.VertexAtt
 import com.seibel.distanthorizons.core.render.glObject.vertexAttribute.VertexAttributePreGL43;
 import com.seibel.distanthorizons.core.render.glObject.vertexAttribute.VertexPointer;
 import com.seibel.distanthorizons.core.util.LodUtil;
-import com.seibel.distanthorizons.core.render.fog.LodFogConfig;
 import com.seibel.distanthorizons.core.util.RenderUtil;
 import com.seibel.distanthorizons.coreapi.util.math.Mat4f;
 import com.seibel.distanthorizons.coreapi.util.math.Vec3f;
-import com.seibel.distanthorizons.core.wrapperInterfaces.IVersionConstants;
 
-public class LodRenderProgram extends ShaderProgram
+public class LodRenderProgram extends ShaderProgram implements IDhApiShaderProgram
 {
 	public static final String VERTEX_SHADER_PATH = "shaders/standard.vert";
 	public static final String VERTEX_CURVE_SHADER_PATH = "shaders/curve.vert";
 	public static final String FRAGMENT_SHADER_PATH = "shaders/flat_shaded.frag";
-	private static final IVersionConstants VERSION_CONSTANTS = SingletonInjector.INSTANCE.get(IVersionConstants.class);
 	
 	public final AbstractVertexAttribute vao;
 	
@@ -67,16 +65,19 @@ public class LodRenderProgram extends ShaderProgram
 	// Debug Uniform
 	public final int whiteWorldUniform;
 	
-	private final LodFogConfig fogConfig;
+	
+	
+	//=============//
+	// constructor //
+	//=============//
 	
 	// This will bind  AbstractVertexAttribute
-	public LodRenderProgram(LodFogConfig fogConfig)
+	public LodRenderProgram()
 	{
-		super(() -> Shader.loadFile(fogConfig.earthCurveRatio != 0 ? VERTEX_CURVE_SHADER_PATH : VERTEX_SHADER_PATH,
+		super(() -> Shader.loadFile(Config.Client.Advanced.Graphics.AdvancedGraphics.earthCurveRatio.get() != 0 ? VERTEX_CURVE_SHADER_PATH : VERTEX_SHADER_PATH,
 						false, new StringBuilder()).toString(),
 				() -> Shader.loadFile(FRAGMENT_SHADER_PATH, false, new StringBuilder()).toString(),
 				"fragColor", new String[]{"vPosition", "color"});
-		this.fogConfig = fogConfig;
 		
 		combinedMatUniform = getUniformLocation("combinedMatrix");
 		modelOffsetUniform = getUniformLocation("modelOffset");
@@ -106,9 +107,12 @@ public class LodRenderProgram extends ShaderProgram
 		else
 			vao = new VertexAttributePreGL43(); // also binds AbstractVertexAttribute
 		vao.bind();
-		// Now a pos+light.
-		vao.setVertexAttribute(0, 0, VertexPointer.addUnsignedShortsPointer(4, false, true)); // 2+2+2+2
-		vao.setVertexAttribute(0, 1, VertexPointer.addUnsignedBytesPointer(4, true, false)); // +4
+		
+		// TODO comment what each attribute represents
+		vao.setVertexAttribute(0, 0, VertexPointer.addUnsignedShortsPointer(4, false, true)); // 2+2+2+2 // TODO probably color, blockpos
+		vao.setVertexAttribute(0, 1, VertexPointer.addUnsignedBytesPointer(4, true, false)); // +4 // TODO ?
+		vao.setVertexAttribute(0, 2, VertexPointer.addUnsignedBytesPointer(4, true, true)); // +4 // TODO probably normal index and Iris block ID
+		
 		try
 		{
 			vao.completeAndCheck(vertexByteCount);
@@ -120,58 +124,53 @@ public class LodRenderProgram extends ShaderProgram
 		}
 		
 		if (earthRadiusUniform != -1) setUniform(earthRadiusUniform,
-				/*6371KM*/ 6371000.0f / fogConfig.earthCurveRatio);
+				/*6371KM*/ 6371000.0f / Config.Client.Advanced.Graphics.AdvancedGraphics.earthCurveRatio.get());
+		
 		
 		// Noise Uniforms
-		setUniform(noiseEnabledUniform, fogConfig.noiseEnable);
-		setUniform(noiseStepsUniform, fogConfig.noiseSteps);
-		setUniform(noiseIntensityUniform, fogConfig.noiseIntensity);
-		setUniform(noiseDropoffUniform, fogConfig.noiseDropoff);
+		setUniform(noiseEnabledUniform, Config.Client.Advanced.Graphics.NoiseTextureSettings.noiseEnabled.get());
+		setUniform(noiseStepsUniform, Config.Client.Advanced.Graphics.NoiseTextureSettings.noiseSteps.get());
+		setUniform(noiseIntensityUniform, Config.Client.Advanced.Graphics.NoiseTextureSettings.noiseIntensity.get().floatValue());
+		setUniform(noiseDropoffUniform, Config.Client.Advanced.Graphics.NoiseTextureSettings.noiseDropoff.get());
 	}
 	
-	// If not usable, return a new LodFogConfig to be constructed
-	public LodFogConfig isShaderUsable() // TODO replace with a config listener, look at LodFogConfig for more info
-	{
-		LodFogConfig newConfig = LodFogConfig.generateFogConfig();
-		if (fogConfig.equals(newConfig))
-		{
-			return null;
-		}
-		return newConfig;
-	}
 	
-	// Override ShaderProgram.bind()
+	
+	//=========//
+	// methods //
+	//=========//
+	
+	@Override
 	public void bind()
 	{
 		super.bind();
 		vao.bind();
 	}
-	// Override ShaderProgram.unbind()
+	@Override
 	public void unbind()
 	{
 		super.unbind();
 		vao.unbind();
 	}
 	
-	// Override ShaderProgram.free()
+	@Override
 	public void free()
 	{
 		vao.free();
 		super.free();
 	}
 	
-	public void bindVertexBuffer(int vbo)
-	{
-		vao.bindBufferToAllBindingPoints(vbo);
-	}
+	@Override
+	public void bindVertexBuffer(int vbo) { this.vao.bindBufferToAllBindingPoints(vbo); }
 	
-	public void unbindVertexBuffer()
-	{
-		vao.unbindBuffersFromAllBindingPoint();
-	}
+	public void unbindVertexBuffer() { this.vao.unbindBuffersFromAllBindingPoint(); }
 	
-	public void fillUniformData(Mat4f combinedMatrix, int lightmapBindPoint, int worldYOffset, float partialTicks)
+	@Override
+	public void fillUniformData(DhApiRenderParam renderParameters)
 	{
+		Mat4f combinedMatrix = new Mat4f(renderParameters.dhProjectionMatrix);
+		combinedMatrix.multiply(renderParameters.dhModelViewMatrix);
+		
 		super.bind();
 
 		// uniforms
@@ -179,21 +178,26 @@ public class LodRenderProgram extends ShaderProgram
 		setUniform(mircoOffsetUniform, 0.01f); // 0.01 block offset
 		
 		// setUniform(skyLightUniform, skyLight);
-		setUniform(lightMapUniform, lightmapBindPoint);
+		setUniform(lightMapUniform, renderParameters.lightmapBindingIndex);
 		
-		if (worldYOffsetUniform != -1) setUniform(worldYOffsetUniform, (float) worldYOffset);
+		if (worldYOffsetUniform != -1) setUniform(worldYOffsetUniform, (float) renderParameters.worldYOffset);
 		
 		// Debug
 		setUniform(whiteWorldUniform, Config.Client.Advanced.Debugging.enableWhiteWorld.get());
 		
-		// Fog/Clip Uniforms
-		float dhNearClipDistance = RenderUtil.getNearClipPlaneDistanceInBlocks(partialTicks);
+		// Clip Uniform
+		float dhNearClipDistance = RenderUtil.getNearClipPlaneDistanceInBlocks(renderParameters.partialTicks);
 		setUniform(clipDistanceUniform, dhNearClipDistance);
 	}
 	
-	public void setModelPos(Vec3f modelPos)
-	{
-		setUniform(modelOffsetUniform, modelPos);
-	}
+	@Override
+	public void setModelOffsetPos(Vec3f modelOffsetPos) { this.setUniform(this.modelOffsetUniform, modelOffsetPos); }
+	
+	@Override
+	public int getId() { return this.id; }
+	
+	/** The base DH render program should always render */
+	@Override
+	public boolean overrideThisFrame() { return true; }
 	
 }

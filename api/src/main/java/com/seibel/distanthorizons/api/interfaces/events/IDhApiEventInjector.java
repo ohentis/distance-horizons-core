@@ -51,7 +51,7 @@ public interface IDhApiEventInjector extends IDependencyInjector<IDhApiEvent>
 	 * @param eventParameterObject event parameter
 	 * @param <T> the parameter type taken by the event handlers.
 	 * @param <U> the {@link IDhApiEvent}'s class
-	 * @return if any of bound event handlers returned that this event should be canceled.
+	 * @return if any of the bound event handlers notified that this event should be canceled.
 	 */
 	<T, U extends IDhApiEvent<T>> boolean fireAllEvents(Class<U> abstractEvent, T eventParameterObject);
 	

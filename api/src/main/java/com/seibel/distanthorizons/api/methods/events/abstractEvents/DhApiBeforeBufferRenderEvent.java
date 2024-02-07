@@ -22,21 +22,22 @@ package com.seibel.distanthorizons.api.methods.events.abstractEvents;
 import com.seibel.distanthorizons.api.methods.events.interfaces.IDhApiEvent;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiEventParam;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
+import com.seibel.distanthorizons.coreapi.util.math.Vec3f;
 
 /**
- * Fired after Distant Horizons finishes rendering a frame. <br>
- * At this point DH will have also finished cleaning up any modifications it
- * did to the OpenGL state, so the state should be back to Minecraft's defaults.
- *
+ * Called before Distant Horizons starts rendering a buffer. <br>
+ * This event cannot be cancelled, use {@link DhApiBeforeRenderEvent} if you want to cancel rendering.
+ * 
  * @author James Seibel
- * @version 2024-1-31
- * @see DhApiRenderParam
- * @since API 1.0.0
+ * @version 2023-1-31
+ * @since API 1.1.0
+ * 
+ * @see DhApiBeforeRenderEvent
  */
-public abstract class DhApiAfterRenderEvent implements IDhApiEvent<DhApiRenderParam>
+public abstract class DhApiBeforeBufferRenderEvent implements IDhApiEvent<DhApiBeforeBufferRenderEvent.EventParam>
 {
-	/** Fired after Distant Horizons finishes rendering fake chunks. */
-	public abstract void afterRender(DhApiEventParam<DhApiRenderParam> event);
+	/** Fired immediately before Distant Horizons starts rendering a buffer. */
+	public abstract void beforeRender(DhApiEventParam<EventParam> input);
 	
 	
 	//=========================//
@@ -44,6 +45,27 @@ public abstract class DhApiAfterRenderEvent implements IDhApiEvent<DhApiRenderPa
 	//=========================//
 	
 	@Override
-	public final void fireEvent(DhApiEventParam<DhApiRenderParam> event) { this.afterRender(event); }
+	public final void fireEvent(DhApiEventParam<EventParam> input) { this.beforeRender(input); }
+	
+	
+	//==================//
+	// parameter object //
+	//==================//
+	
+	public static class EventParam extends DhApiRenderParam
+	{
+		/** 
+		 * Measured in blocks.
+		 * Should be applied to the model view matrix to move the buffer into its proper place. 
+		 */
+		public final Vec3f modelPos;
+		
+		
+		public EventParam(DhApiRenderParam parent, Vec3f modelPos)
+		{
+			super(parent);
+			this.modelPos = modelPos;
+		}
+	}
 	
 }

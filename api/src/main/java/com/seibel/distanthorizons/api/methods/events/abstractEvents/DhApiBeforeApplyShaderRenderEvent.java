@@ -19,24 +19,24 @@
 
 package com.seibel.distanthorizons.api.methods.events.abstractEvents;
 
-import com.seibel.distanthorizons.api.methods.events.interfaces.IDhApiEvent;
-import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiEventParam;
+import com.seibel.distanthorizons.api.methods.events.interfaces.IDhApiCancelableEvent;
+import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiCancelableEventParam;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
 
 /**
- * Fired after Distant Horizons finishes rendering a frame. <br>
- * At this point DH will have also finished cleaning up any modifications it
- * did to the OpenGL state, so the state should be back to Minecraft's defaults.
- *
+ * Fired before DH runs its apply shader.
+ * The apply shader is a shader that copies over everything DH has rendered
+ * for this pass into MC's framebuffers so it can be rendered to the screen.
+ * Canceling this event prevents the apply shader from running.
+ * 
  * @author James Seibel
  * @version 2024-1-31
- * @see DhApiRenderParam
- * @since API 1.0.0
+ * @since API 1.1.0
  */
-public abstract class DhApiAfterRenderEvent implements IDhApiEvent<DhApiRenderParam>
+public abstract class DhApiBeforeApplyShaderRenderEvent implements IDhApiCancelableEvent<DhApiRenderParam>
 {
-	/** Fired after Distant Horizons finishes rendering fake chunks. */
-	public abstract void afterRender(DhApiEventParam<DhApiRenderParam> event);
+	/** Fired before the apply shader is run. */
+	public abstract void beforeRender(DhApiCancelableEventParam<DhApiRenderParam> event);
 	
 	
 	//=========================//
@@ -44,6 +44,6 @@ public abstract class DhApiAfterRenderEvent implements IDhApiEvent<DhApiRenderPa
 	//=========================//
 	
 	@Override
-	public final void fireEvent(DhApiEventParam<DhApiRenderParam> event) { this.afterRender(event); }
+	public final void fireEvent(DhApiCancelableEventParam<DhApiRenderParam> event) { this.beforeRender(event); }
 	
 }

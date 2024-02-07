@@ -265,6 +265,10 @@
   "distanthorizons.config.client.advanced.graphics.advancedGraphics":
     "Advanced Graphics Options",
     
+  "distanthorizons.config.client.advanced.graphics.advancedGraphics.disableFrustumCulling":
+    "Disable Frustum Culling",
+  "distanthorizons.config.client.advanced.graphics.advancedGraphics.disableFrustumCulling.@tooltip":
+    "If false LODs outside the player's camera \naren't drawn, increasing GPU performance. \n\nIf true all LODs are drawn, even those behind \nthe player's camera, decreasing GPU performance. \n\nDisable this if you see LODs disappearing at the corners of your vision.",  
   "distanthorizons.config.client.advanced.graphics.advancedGraphics.overdrawPrevention":
     "Overdraw Prevention",
   "distanthorizons.config.client.advanced.graphics.advancedGraphics.overdrawPrevention.@tooltip":
@@ -803,6 +807,8 @@
     "Show detail",
   "distanthorizons.config.enum.EDebugRendering.SHOW_GENMODE":
     "Show generation mode",
+  "distanthorizons.config.enum.EDebugRendering.SHOW_BLOCK_MATERIAL":
+    "Show Material",
   "distanthorizons.config.enum.EDebugRendering.SHOW_OVERLAPPING_QUADS":
     "Show overlapping quads",
   "distanthorizons.config.enum.EDebugRendering.SHOW_RENDER_SOURCE_FLAG":

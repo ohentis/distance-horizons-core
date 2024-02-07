@@ -28,21 +28,22 @@ public interface IOverrideInjector<BindableType extends IBindable>
 	 * All core overrides should have this priority. <Br>
 	 * Should be lower than {@link IOverrideInjector#MIN_NON_CORE_OVERRIDE_PRIORITY}.
 	 */
-	public static final int CORE_PRIORITY = -1;
+	int CORE_PRIORITY = -1;
 	/**
 	 * The lowest priority non-core overrides can have.
 	 * Should be higher than {@link IOverrideInjector#CORE_PRIORITY}.
 	 */
-	public static final int MIN_NON_CORE_OVERRIDE_PRIORITY = 0;
+	int MIN_NON_CORE_OVERRIDE_PRIORITY = 0;
 	/** The priority given to overrides that don't explicitly define a priority. */
-	public static final int DEFAULT_NON_CORE_OVERRIDE_PRIORITY = 10;
+	int DEFAULT_NON_CORE_OVERRIDE_PRIORITY = 10;
 	
 	
 	
 	/**
 	 * See {@link IDependencyInjector#bind(Class, IBindable) bind(Class, IBindable)} for full documentation.
 	 *
-	 * @throws IllegalArgumentException if a non-Distant Horizons Override with the priority CORE is passed in or a invalid priority value.
+	 * @throws IllegalArgumentException if a non-Distant Horizons Override with the priority {@link IOverrideInjector#CORE_PRIORITY} is passed in
+	 * or an override is passed in with an invalid priority value.
 	 * @throws IllegalStateException if another override with the given priority already has been bound.
 	 * @see IDependencyInjector#bind(Class, IBindable)
 	 */
@@ -66,7 +67,8 @@ public interface IOverrideInjector<BindableType extends IBindable>
 	 */
 	<T extends IDhApiOverrideable> T get(Class<T> interfaceClass, int priority) throws ClassCastException;
 	
-	
+	/** Removes the given concrete {@link IDhApiOverrideable} bound to the given interface. */
+	void unbind(Class<? extends IDhApiOverrideable> dependencyInterface, IDhApiOverrideable dependencyImplementation);
 	
 	/** Removes all bound overrides. */
 	void clear();

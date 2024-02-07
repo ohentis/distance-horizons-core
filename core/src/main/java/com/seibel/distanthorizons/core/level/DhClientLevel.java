@@ -19,6 +19,7 @@
 
 package com.seibel.distanthorizons.core.level;
 
+import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
 import com.seibel.distanthorizons.core.config.AppliedConfigState;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
@@ -43,7 +44,6 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrap
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
-import com.seibel.distanthorizons.coreapi.util.math.Mat4f;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
@@ -203,10 +203,12 @@ public class DhClientLevel extends DhLevel implements IDhClientLevel
 	}
 
 	@Override
-	public void render(Mat4f mcModelViewMatrix, Mat4f mcProjectionMatrix, float partialTicks, IProfilerWrapper profiler)
-	{
-		this.clientside.render(mcModelViewMatrix, mcProjectionMatrix, partialTicks, profiler);
-	}
+	public void render(DhApiRenderParam renderEventParam, IProfilerWrapper profiler)
+	{ this.clientside.render(renderEventParam, profiler); }
+	
+	@Override
+	public void renderDeferred(DhApiRenderParam renderEventParam, IProfilerWrapper profiler)
+	{ this.clientside.renderDeferred(renderEventParam, profiler); }
 	
 	
 	
@@ -215,25 +217,25 @@ public class DhClientLevel extends DhLevel implements IDhClientLevel
 	//================//
 	
 	@Override
-	public int computeBaseColor(DhBlockPos pos, IBiomeWrapper biome, IBlockStateWrapper block) { return this.levelWrapper.computeBaseColor(pos, biome, block); }
+	public int computeBaseColor(DhBlockPos pos, IBiomeWrapper biome, IBlockStateWrapper block) { return levelWrapper.computeBaseColor(pos, biome, block); }
 	
 	@Override
-	public IClientLevelWrapper getClientLevelWrapper() { return this.levelWrapper; }
+	public IClientLevelWrapper getClientLevelWrapper() { return levelWrapper; }
 	
 	@Override
 	public void clearRenderCache()
 	{
-		this.clientside.clearRenderCache();
+		clientside.clearRenderCache();
 	}
 	
 	@Override
-	public ILevelWrapper getLevelWrapper() { return this.levelWrapper; }
+	public ILevelWrapper getLevelWrapper() { return levelWrapper; }
 	
 	@Override
 	public void updateDataSourcesWithChunkData(ChunkSizedFullDataAccessor data) { this.clientside.updateDataSourcesWithChunkData(data); }
 	
 	@Override
-	public int getMinY() { return this.levelWrapper.getMinHeight(); }
+	public int getMinY() { return levelWrapper.getMinHeight(); }
 	
 	@Override
 	public void close()
@@ -244,8 +246,8 @@ public class DhClientLevel extends DhLevel implements IDhClientLevel
 		}
 		this.clientside.close();
 		super.close();
-		this.dataFileHandler.close();
-		LOGGER.info("Closed " + DhClientLevel.class.getSimpleName() + " for " + this.levelWrapper);
+		dataFileHandler.close();
+		LOGGER.info("Closed " + DhClientLevel.class.getSimpleName() + " for " + levelWrapper);
 	}
 	
 	//=======================//
@@ -255,13 +257,13 @@ public class DhClientLevel extends DhLevel implements IDhClientLevel
 	@Override
 	public IFullDataSourceProvider getFileHandler()
 	{
-		return this.dataFileHandler;
+		return dataFileHandler;
 	}
 	
 	@Override
 	public AbstractSaveStructure getSaveStructure()
 	{
-		return this.saveStructure;
+		return saveStructure;
 	}
 	
 	@Override
