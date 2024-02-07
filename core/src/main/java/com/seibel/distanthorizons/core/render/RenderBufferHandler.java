@@ -277,7 +277,7 @@ public class RenderBufferHandler implements AutoCloseable
 			
 			try
 			{
-				if (enableFrustumCulling)
+				if (enableFrustumCulling && frustum != null)
 				{
 					DhLodPos lodBounds = renderSection.pos.getSectionBBoxPos();
 					int blockMinX = lodBounds.getMinX().toBlockWidth();
