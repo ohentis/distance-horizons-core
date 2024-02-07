@@ -55,8 +55,10 @@ public class DhLodPos implements Comparable<DhLodPos>
 	// getters //
 	//=========//
 	
-	public DhLodUnit getX() { return new DhLodUnit(this.detailLevel, this.x); }
-	public DhLodUnit getZ() { return new DhLodUnit(this.detailLevel, this.z); }
+	/** gets the X position closest to negative infinity */
+	public DhLodUnit getMinX() { return new DhLodUnit(this.detailLevel, this.x); }
+	/** gets the Z position closest to negative infinity */
+	public DhLodUnit getMinZ() { return new DhLodUnit(this.detailLevel, this.z); }
 	
 	// Get the width of this pos, measured in the mc block unit. (i.e. detail 0)
 	public int getBlockWidth() { return this.getWidthAtDetail((byte) 0); }
@@ -71,10 +73,10 @@ public class DhLodPos implements Comparable<DhLodPos>
 	public DhBlockPos2D getCenterBlockPos()
 	{
 		return new DhBlockPos2D(
-				this.getX().toBlockWidth() + BitShiftUtil.half(this.getBlockWidth()),
-				this.getZ().toBlockWidth() + BitShiftUtil.half(this.getBlockWidth()));
+				this.getMinX().toBlockWidth() + BitShiftUtil.half(this.getBlockWidth()),
+				this.getMinZ().toBlockWidth() + BitShiftUtil.half(this.getBlockWidth()));
 	}
-	public DhBlockPos2D getCornerBlockPos() { return new DhBlockPos2D(this.getX().toBlockWidth(), this.getZ().toBlockWidth()); }
+	public DhBlockPos2D getCornerBlockPos() { return new DhBlockPos2D(this.getMinX().toBlockWidth(), this.getMinZ().toBlockWidth()); }
 	
 	/** converts this position to a lower detail level, angled towards the corner position. */
 	public DhLodPos getCornerLodPos(byte newDetail)
