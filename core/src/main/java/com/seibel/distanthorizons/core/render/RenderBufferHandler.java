@@ -68,6 +68,7 @@ public class RenderBufferHandler implements AutoCloseable
 	
 	public F3Screen.MultiDynamicMessage f3Message;
 	
+	private final IDhApiCullingFrustum cameraFrustum;
 	private int visibleBufferCount;
 	private int culledBufferCount;
 	private int shadowVisibleBufferCount;
@@ -82,14 +83,8 @@ public class RenderBufferHandler implements AutoCloseable
 	public RenderBufferHandler(LodQuadTree lodQuadTree) 
 	{ 
 		this.lodQuadTree = lodQuadTree;
-		this.culledBufferCount = 0;
 		
-		IDhApiCullingFrustum coreFrustum = DhApi.overrides.get(IDhApiCullingFrustum.class, IOverrideInjector.CORE_PRIORITY);
-		if (coreFrustum == null)
-		{
-			DhApi.overrides.bind(IDhApiCullingFrustum.class, new DhFrustumBounds());
-		}
-		
+		this.cameraFrustum = new DhFrustumBounds();
 		
 		this.f3Message = new F3Screen.MultiDynamicMessage(
 			() ->
@@ -238,8 +233,13 @@ public class RenderBufferHandler implements AutoCloseable
 		
 		// update the frustum if necessary
 		boolean enableFrustumCulling = !Config.Client.Advanced.Graphics.AdvancedGraphics.disableFrustumCulling.get();
-		IDhApiCullingFrustum frustum = DhApi.overrides.get(IDhApiCullingFrustum.class, IOverrideInjector.CORE_PRIORITY);
-		if (enableFrustumCulling)
+		boolean isShadowPass = (IRIS_ACCESSOR != null && IRIS_ACCESSOR.isRenderingShadowPass());
+
+		IDhApiCullingFrustum frustum = isShadowPass
+				? DhApi.overrides.get(IDhApiCullingFrustum.class, IOverrideInjector.CORE_PRIORITY)
+				: cameraFrustum;
+		
+		if (enableFrustumCulling && frustum != null)
 		{
 			int worldMinY = clientLevelWrapper.getMinHeight();
 			int worldHeight = clientLevelWrapper.getHeight();
@@ -253,7 +253,6 @@ public class RenderBufferHandler implements AutoCloseable
 		// Update the section list //
 		//=========================//
 		
-		boolean isShadowPass = (IRIS_ACCESSOR != null && IRIS_ACCESSOR.isRenderingShadowPass());
 		if (isShadowPass)
 		{
 			this.shadowCulledBufferCount = 0;
