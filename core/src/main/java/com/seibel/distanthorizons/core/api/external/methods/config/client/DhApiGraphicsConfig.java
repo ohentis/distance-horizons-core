@@ -146,6 +146,10 @@ public class DhApiGraphicsConfig implements IDhApiGraphicsConfig
 	public IDhApiConfigValue<Double> lodBias()
 	{ return new DhApiConfigValue<Double, Double>(Config.Client.Advanced.Graphics.AdvancedGraphics.lodBias); }
 	
+	@Override
+	public IDhApiConfigValue<ELodShading> lodShading()
+	{ return new DhApiConfigValue<ELodShading, ELodShading>(Config.Client.Advanced.Graphics.AdvancedGraphics.lodShading); }
+	
 	
 	
 }

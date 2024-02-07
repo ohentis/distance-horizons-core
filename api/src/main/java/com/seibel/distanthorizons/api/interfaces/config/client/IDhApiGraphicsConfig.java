@@ -120,8 +120,9 @@ public interface IDhApiGraphicsConfig extends IDhApiConfigGroup
 	 * of the users vision and may fix issues if LODs appear to
 	 * start/stop rendering incorrectly based on the camera direction,
 	 * but will also reduce FPS.
+	 * 
+	 * @since API 1.1.0
 	 */
-	@Deprecated
 	IDhApiConfigValue<Boolean> disableFrustumCulling();
 	
 	/**
@@ -178,5 +179,12 @@ public interface IDhApiGraphicsConfig extends IDhApiConfigGroup
 	 * increasing how quickly its textures fade away.
 	 */
 	IDhApiConfigValue<Double> lodBias();
+	
+	/**
+	 * Determines how LODs should be shaded.
+	 *
+	 * @since API 1.1.0
+	 */
+	IDhApiConfigValue<ELodShading> lodShading();
 	
 }
