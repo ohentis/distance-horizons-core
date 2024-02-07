@@ -64,7 +64,6 @@ public class JarUtils
 				LOGGER.warn("Backup jar file getter failed. Error: "+f.getMessage(), f);
 			}
 		}
-		System.out.println(jarFile);
 	}
 	
 	
