@@ -12,25 +12,36 @@ public class DhFrustumBounds
 	private final FrustumIntersection frustum;
 	private final Vector3f boundsMin = new Vector3f();
 	private final Vector3f boundsMax = new Vector3f();
-	private final float worldMinY;
-	private final float worldMaxY;
+	public float worldMinY;
+	public float worldMaxY;
 	
 	
 	
-	public DhFrustumBounds(Matrix4fc matWorldViewProjection, float minY, float maxY)
+	//=============//
+	// constructor //
+	//=============//
+	
+	public DhFrustumBounds()
 	{
 		this.frustum = new FrustumIntersection();
+	}
+	
+	
+	
+	//=========//
+	// methods //
+	//=========//
+	
+	public void updateFrustum(Matrix4fc matWorldViewProjection)
+	{
 		this.frustum.set(matWorldViewProjection);
 		
 		Matrix4fc matWorldViewProjectionInv = new Matrix4f(matWorldViewProjection).invert();
 		matWorldViewProjectionInv.frustumAabb(this.boundsMin, this.boundsMax);
-		
-		this.worldMinY = minY;
-		this.worldMaxY = maxY;
 	}
 	
 	/** returns true if the LOD bounds intersect the frustum **/
-	public boolean Intersects(@NotNull DhLodPos lodBounds)
+	public boolean intersects(@NotNull DhLodPos lodBounds)
 	{
 		int lodPosX = lodBounds.getX().toBlockWidth();
 		int lodPosZ = lodBounds.getZ().toBlockWidth();
@@ -45,4 +56,5 @@ public class DhFrustumBounds
 		
 		return this.frustum.testAab(lodMin, lodMax);
 	}
+	
 }
