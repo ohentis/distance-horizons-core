@@ -57,6 +57,7 @@ import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL32;
 
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.concurrent.TimeUnit;
@@ -333,7 +334,6 @@ public class ClientApi
 	// networking //
 	//============//
 
-	/** @param byteBuf is Netty's {@link ByteBuffer} wrapper. */
 	public void serverMessageReceived(ByteBuf byteBuf)
 	{
 		if (!Config.Client.Advanced.Multiplayer.enableMultiverseNetworking.get())
