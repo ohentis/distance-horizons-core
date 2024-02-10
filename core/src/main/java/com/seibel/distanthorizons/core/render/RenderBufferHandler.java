@@ -24,6 +24,7 @@ import com.seibel.distanthorizons.api.interfaces.override.rendering.IDhApiCullin
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.ModAccessorInjector;
+import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
@@ -35,12 +36,15 @@ import com.seibel.distanthorizons.core.render.renderer.LodRenderer;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.objects.SortedArraySet;
 import com.seibel.distanthorizons.core.util.objects.quadTree.QuadNode;
+import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.IIrisAccessor;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IOverrideInjector;
 import com.seibel.distanthorizons.coreapi.util.math.Mat4f;
+import com.seibel.distanthorizons.coreapi.util.math.Vec3d;
 import com.seibel.distanthorizons.coreapi.util.math.Vec3f;
 import org.apache.logging.log4j.Logger;
+import org.joml.Matrix4f;
 import org.joml.Matrix4fc;
 
 import java.util.Comparator;
@@ -56,6 +60,8 @@ public class RenderBufferHandler implements AutoCloseable
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
+	private static final IMinecraftRenderWrapper MC_RENDER = SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
+
 	private static final IIrisAccessor IRIS_ACCESSOR = ModAccessorInjector.INSTANCE.get(IIrisAccessor.class);
 	
 	/** contains all relevant data */
@@ -126,7 +132,7 @@ public class RenderBufferHandler implements AutoCloseable
 	 * TODO: This might get locked by update() causing move() call. Is there a way to avoid this?
 	 *       Maybe dupe the base list and use atomic swap on render? Or is this not worth it?
 	 */
-	public void buildRenderListAndUpdateSections(IClientLevelWrapper clientLevelWrapper, Matrix4fc matWorldViewProjection, Vec3f lookForwardVector)
+	public void buildRenderListAndUpdateSections(IClientLevelWrapper clientLevelWrapper, DhApiRenderParam renderEventParam, Vec3f lookForwardVector)
 	{
 		EDhDirection[] axisDirections = new EDhDirection[3];
 		
@@ -234,17 +240,32 @@ public class RenderBufferHandler implements AutoCloseable
 		// update the frustum if necessary
 		boolean enableFrustumCulling = !Config.Client.Advanced.Graphics.AdvancedGraphics.disableFrustumCulling.get();
 		boolean isShadowPass = (IRIS_ACCESSOR != null && IRIS_ACCESSOR.isRenderingShadowPass());
-
-		IDhApiCullingFrustum frustum = isShadowPass
-				? DhApi.overrides.get(IDhApiCullingFrustum.class, IOverrideInjector.CORE_PRIORITY)
-				: cameraFrustum;
 		
-		if (enableFrustumCulling && frustum != null)
+		IDhApiCullingFrustum frustum = this.cameraFrustum;
+		
+		if (enableFrustumCulling)
 		{
-			int worldMinY = clientLevelWrapper.getMinHeight();
-			int worldHeight = clientLevelWrapper.getHeight();
-			
-			frustum.update(worldMinY, worldMinY + worldHeight, new Mat4f(matWorldViewProjection));
+			if (isShadowPass) {
+				frustum = DhApi.overrides.get(IDhApiCullingFrustum.class, IOverrideInjector.CORE_PRIORITY);
+				if (frustum == null) enableFrustumCulling = false;
+			}
+			else
+			{
+				int worldMinY = clientLevelWrapper.getMinHeight();
+				int worldHeight = clientLevelWrapper.getHeight();
+				
+				Vec3d cameraPos = MC_RENDER.getCameraExactPosition();
+				
+				Matrix4fc matWorldView = new Matrix4f()
+						.setTransposed(renderEventParam.mcModelViewMatrix.getValuesAsArray())
+						.translate(-(float) cameraPos.x, -(float) cameraPos.y, -(float) cameraPos.z);
+				
+				Matrix4fc matWorldViewProjection = new Matrix4f()
+						.setTransposed(renderEventParam.dhProjectionMatrix.getValuesAsArray())
+						.mul(matWorldView);
+				
+				frustum.update(worldMinY, worldMinY + worldHeight, new Mat4f(matWorldViewProjection));
+			}
 		}
 		
 		
@@ -277,7 +298,7 @@ public class RenderBufferHandler implements AutoCloseable
 			
 			try
 			{
-				if (enableFrustumCulling && frustum != null)
+				if (enableFrustumCulling)
 				{
 					DhLodPos lodBounds = renderSection.pos.getSectionBBoxPos();
 					int blockMinX = lodBounds.getMinX().toBlockWidth();
