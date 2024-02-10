@@ -156,7 +156,7 @@ public class RemotePlayerConnectionHandler implements Closeable
 		IConnection connection = this.playersByConnection.inverse().remove(dhPlayer);
 		if (connection != null)
 		{
-			connection.disconnect("You are being disconnected.");
+			connection.disconnect("You have been disconnected.");
 		}
 	}
 	

@@ -8,7 +8,7 @@ import io.netty.buffer.ByteBuf;
 /**
  * Used for constraining the client config to the server config.
  */
-public class ServersideMultiplayerConfig extends AbstractMultiplayerConfig
+public class ConstrainedMultiplayerConfig extends AbstractMultiplayerConfig
 {
 	public MultiplayerConfig clientConfig = new MultiplayerConfig();
 	

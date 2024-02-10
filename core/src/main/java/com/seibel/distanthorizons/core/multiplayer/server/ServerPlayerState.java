@@ -17,7 +17,7 @@ public class ServerPlayerState
     public IConnection connection;
 	
 	@NotNull
-	public ServersideMultiplayerConfig config = new ServersideMultiplayerConfig();
+	public ConstrainedMultiplayerConfig config = new ConstrainedMultiplayerConfig();
 	
 	public final SupplierBasedRateLimiter<Void> rateLimitKickTrigger = new SupplierBasedRateLimiter<>(
 			() -> ServerNetworking.rateLimitHitTolerance.get(),

@@ -8,6 +8,7 @@ import com.seibel.distanthorizons.core.multiplayer.config.MultiplayerConfigChang
 import com.seibel.distanthorizons.core.network.NetworkClient;
 import com.seibel.distanthorizons.core.network.ScopedNetworkEventSource;
 import com.seibel.distanthorizons.core.network.messages.base.AckMessage;
+import com.seibel.distanthorizons.core.network.messages.base.CloseEvent;
 import com.seibel.distanthorizons.core.network.messages.base.HelloMessage;
 import com.seibel.distanthorizons.core.network.messages.session.PlayerUUIDMessage;
 import com.seibel.distanthorizons.core.network.messages.session.RemotePlayerConfigMessage;
@@ -24,8 +25,11 @@ public class ClientNetworkState implements Closeable
 	
 	private final NetworkClient client;
 	private final UUID playerUUID;
+	
 	public MultiplayerConfig config = new MultiplayerConfig();
+	private volatile boolean configReceived = false;
 	private final MultiplayerConfigChangeListener configChangeListener = new MultiplayerConfigChangeListener(this::onConfigChanged);
+	public boolean isReady() { return this.configReceived; }
 	
 	private final F3Screen.NestedMessage f3Message = new F3Screen.NestedMessage(this::f3Log);
 	
@@ -47,7 +51,7 @@ public class ClientNetworkState implements Closeable
 		this.playerUUID = playerUUID;
 		
 		this.registerNetworkHandlers();
-		this.client.startConnecting();
+		this.client.connect();
 	}
 	
 	private void registerNetworkHandlers()
@@ -66,8 +70,14 @@ public class ClientNetworkState implements Closeable
 		
 		this.client.registerHandler(RemotePlayerConfigMessage.class, msg ->
 		{
-			LOGGER.info("Connection config was changed: " + msg.payload);
+			LOGGER.info("Connection config has been changed: " + msg.payload);
 			this.config = (MultiplayerConfig) msg.payload;
+			this.configReceived = true;
+		});
+		
+		this.client.registerHandler(CloseEvent.class, msg ->
+		{
+			this.configReceived = false;
 		});
 	}
 	
@@ -82,8 +92,8 @@ public class ClientNetworkState implements Closeable
 		{
 			return new String[]{
 					this.client.getRemoteAddress() != null
-							? "Connected, ready: " + this.client.isReady()
-							: MessageFormat.format("Disconnected, attempts left: {0} / {1}", this.client.getReconnectAttempts(), NetworkClient.FAILURE_RECONNECT_ATTEMPTS)
+							? "Connected, ready: " + this.isReady()
+							: MessageFormat.format("Disconnected, attempts left: {0} / {1}", this.client.getReconnectionAttemptsLeft(), NetworkClient.RECONNECTION_ATTEMPTS)
 			};
 		}
 		else

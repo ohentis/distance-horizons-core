@@ -105,7 +105,7 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 	
 	public synchronized boolean tick(DhBlockPos2D targetPos)
 	{
-		if (this.closingFuture != null || !this.networkState.getClient().isReady())
+		if (this.closingFuture != null || !this.networkState.isReady())
 		{
 			return false;
 		}
