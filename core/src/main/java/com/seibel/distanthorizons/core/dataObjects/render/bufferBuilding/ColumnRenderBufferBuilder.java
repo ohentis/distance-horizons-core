@@ -180,18 +180,22 @@ public class ColumnRenderBufferBuilder
 		// Variable initialization
 		EDebugRendering debugMode = Config.Client.Advanced.Debugging.debugRendering.get();
 		
-		// TODO make a config for this
-		// can be uncommented to limit which section positions are build and thus, rendered
+		// can be used to limit which section positions are build and thus, rendered
 		// useful when debugging a specific section
-//		if (renderSource.sectionPos.getDetailLevel() == 6 
-//			&& renderSource.sectionPos.getZ() == 0 && renderSource.sectionPos.getX() == 0)
-//		{
-//			int test = 0;
-//		}
-//		else
-//		{
-//			return;
-//		}
+		boolean enableColumnBufferLimit = Config.Client.Advanced.Debugging.columnBuilderDebugEnable.get();
+		if (enableColumnBufferLimit)
+		{
+			if (renderSource.sectionPos.getDetailLevel() == Config.Client.Advanced.Debugging.columnBuilderDebugDetailLevel.get()
+				&& renderSource.sectionPos.getX() == Config.Client.Advanced.Debugging.columnBuilderDebugXPos.get()
+				&& renderSource.sectionPos.getZ() == Config.Client.Advanced.Debugging.columnBuilderDebugZPos.get())
+			{
+				int test = 0;
+			}
+			else
+			{
+				return;
+			}
+		}
 		
 		byte detailLevel = renderSource.getDataDetailLevel();
 		for (int x = 0; x < ColumnRenderSource.SECTION_SIZE; x++)

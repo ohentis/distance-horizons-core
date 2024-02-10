@@ -30,6 +30,7 @@ import com.seibel.distanthorizons.core.config.types.*;
 import com.seibel.distanthorizons.core.config.types.enums.*;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftSharedWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.coreapi.util.StringUtil;
@@ -1160,6 +1161,26 @@ public class Config
 						.addListener(UnsafeValuesConfigListener.INSTANCE)
 						.build();
 				
+				public static ConfigEntry<Boolean> columnBuilderDebugEnable = new ConfigEntry.Builder<Boolean>()
+						.set(false)
+						.setAppearance(EConfigEntryAppearance.ONLY_IN_GUI)
+						.addListener(DebugColumnConfigEventHandler.INSTANCE)
+						.build();
+				public static ConfigEntry<Integer> columnBuilderDebugDetailLevel = new ConfigEntry.Builder<Integer>()
+						.set((int) DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL)
+						.setAppearance(EConfigEntryAppearance.ONLY_IN_GUI)
+						.addListener(DebugColumnConfigEventHandler.INSTANCE)
+						.build();
+				public static ConfigEntry<Integer> columnBuilderDebugXPos = new ConfigEntry.Builder<Integer>()
+						.set(0)
+						.setAppearance(EConfigEntryAppearance.ONLY_IN_GUI)
+						.addListener(DebugColumnConfigEventHandler.INSTANCE)
+						.build();
+				public static ConfigEntry<Integer> columnBuilderDebugZPos = new ConfigEntry.Builder<Integer>()
+						.set(0)
+						.setAppearance(EConfigEntryAppearance.ONLY_IN_GUI)
+						.addListener(DebugColumnConfigEventHandler.INSTANCE)
+						.build();
 				
 				
 				
