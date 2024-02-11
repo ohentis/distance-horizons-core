@@ -5,6 +5,7 @@ import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.config.types.ConfigEntry;
 import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.CompleteFullDataSource;
+import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.logging.ConfigBasedSpamLogger;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
@@ -19,6 +20,7 @@ import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.ratelimiting.SupplierBasedRateLimiter;
+import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import io.netty.channel.ChannelException;
 import org.apache.logging.log4j.LogManager;
 
@@ -35,6 +37,8 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 {
 	private static final ConfigBasedSpamLogger LOGGER = new ConfigBasedSpamLogger(LogManager.getLogger(),
 			() -> Config.Client.Advanced.Logging.logNetworkEvent.get(), 3);
+	
+	private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	
 	protected static final long SHUTDOWN_TIMEOUT_SECONDS = 5;
 	
@@ -285,6 +289,11 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 	public void debugRender(DebugRenderer r)
 	{
 		if (!this.showInDebug())
+		{
+			return;
+		}
+		
+		if (MC_CLIENT.getWrappedClientLevel() != this.level.getClientLevelWrapper())
 		{
 			return;
 		}

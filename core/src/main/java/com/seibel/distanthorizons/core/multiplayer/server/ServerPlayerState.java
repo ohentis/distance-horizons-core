@@ -1,5 +1,6 @@
 package com.seibel.distanthorizons.core.multiplayer.server;
 
+import com.seibel.distanthorizons.core.level.DhServerLevel;
 import com.seibel.distanthorizons.core.network.IConnection;
 import com.seibel.distanthorizons.core.network.exceptions.RateLimitedException;
 import com.seibel.distanthorizons.core.network.messages.fullData.FullDataSourceRequestMessage;
@@ -8,6 +9,8 @@ import com.seibel.distanthorizons.core.util.ratelimiting.SupplierBasedRateAndCon
 import com.seibel.distanthorizons.core.util.ratelimiting.SupplierBasedRateLimiter;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.concurrent.ConcurrentHashMap;
 
 import static com.seibel.distanthorizons.core.config.Config.Client.Advanced.Multiplayer.ServerNetworking;
 
@@ -24,33 +27,42 @@ public class ServerPlayerState
 			ignored -> this.connection.disconnect("You have been repeatedly exceeding rate/concurrency limits.")
 	);
 	
-	public final SupplierBasedRateAndConcurrencyLimiter<FullDataSourceRequestMessage> fullDataRequestConcurrencyLimiter = new SupplierBasedRateAndConcurrencyLimiter<>(
-			() -> ServerNetworking.generationRequestRCLimit.get(),
-		    msg -> {
-			    msg.sendResponse(new RateLimitedException("Full data request rate/concurrency limit: " + this.config.getFullDataRequestConcurrencyLimit()));
-				this.rateLimitKickTrigger.tryAcquire(null);
-		    }
-	);
-	
-	public final SupplierBasedRateLimiter<GenTaskPriorityRequestMessage> genTaskPriorityRequestRateLimiter = new SupplierBasedRateLimiter<>(
-			() -> ServerNetworking.genTaskPriorityRequestRateLimit.get(),
-			msg -> {
-				msg.sendResponse(new RateLimitedException("Generation task priority check rate limit: " + this.config.getFullDataRequestConcurrencyLimit()));
-				this.rateLimitKickTrigger.tryAcquire(null);
-			}
-	);
-	
-	public final SupplierBasedRateAndConcurrencyLimiter<FullDataSourceRequestMessage> loginDataSyncRCLimiter = new SupplierBasedRateAndConcurrencyLimiter<>(
-			() -> ServerNetworking.loginDataSyncRCLimit.get(),
-			msg -> {
-				msg.sendResponse(new RateLimitedException("Data sync rate/concurrency limit: " + this.config.getLoginDataSyncRCLimit()));
-				this.rateLimitKickTrigger.tryAcquire(null);
-			}
-	);
-	
-	
+	private final ConcurrentHashMap<DhServerLevel, RateLimiterSet> rateLimiterSets = new ConcurrentHashMap<>();
+	public RateLimiterSet getRateLimiterSet(DhServerLevel level)
+	{
+		return this.rateLimiterSets.computeIfAbsent(level, ignored -> new RateLimiterSet());
+	}
 	
 	public ServerPlayerState(IServerPlayerWrapper serverPlayer) { this.serverPlayer = serverPlayer; }
-    
+	
+	
+	public class RateLimiterSet
+	{
+		public final SupplierBasedRateAndConcurrencyLimiter<FullDataSourceRequestMessage> fullDataRequestConcurrencyLimiter = new SupplierBasedRateAndConcurrencyLimiter<>(
+				() -> ServerNetworking.generationRequestRCLimit.get(),
+				msg -> {
+					msg.sendResponse(new RateLimitedException("Full data request rate/concurrency limit: " + ServerPlayerState.this.config.getFullDataRequestConcurrencyLimit()));
+					ServerPlayerState.this.rateLimitKickTrigger.tryAcquire(null);
+				}
+		);
+		
+		public final SupplierBasedRateLimiter<GenTaskPriorityRequestMessage> genTaskPriorityRequestRateLimiter = new SupplierBasedRateLimiter<>(
+				() -> ServerNetworking.genTaskPriorityRequestRateLimit.get(),
+				msg -> {
+					msg.sendResponse(new RateLimitedException("Generation task priority check rate limit: " + ServerPlayerState.this.config.getFullDataRequestConcurrencyLimit()));
+					ServerPlayerState.this.rateLimitKickTrigger.tryAcquire(null);
+				}
+		);
+		
+		public final SupplierBasedRateAndConcurrencyLimiter<FullDataSourceRequestMessage> loginDataSyncRCLimiter = new SupplierBasedRateAndConcurrencyLimiter<>(
+				() -> ServerNetworking.loginDataSyncRCLimit.get(),
+				msg -> {
+					msg.sendResponse(new RateLimitedException("Data sync rate/concurrency limit: " + ServerPlayerState.this.config.getLoginDataSyncRCLimit()));
+					ServerPlayerState.this.rateLimitKickTrigger.tryAcquire(null);
+				}
+		);
+		
+	}
+	
 }
 

@@ -18,12 +18,14 @@ public class MultiplayerConfigChangeListener implements Closeable
 			Config.Client.Advanced.Multiplayer.ServerNetworking.enableRealTimeUpdates,
 			Config.Client.Advanced.Multiplayer.ServerNetworking.enableLoginDataSync,
 			Config.Client.Advanced.Multiplayer.ServerNetworking.loginDataSyncRCLimit,
+			Config.Client.Advanced.Multiplayer.ServerNetworking.generateMultipleDimensions,
 	};
 	
-	private final ArrayList<ConfigChangeListener> changeListeners = new ArrayList<>();
+	private final ArrayList<ConfigChangeListener> changeListeners;
 	
 	public MultiplayerConfigChangeListener(Runnable runnable)
 	{
+		this.changeListeners = new ArrayList<>(CONFIG_ENTRIES.length);
 		for (ConfigEntry entry : CONFIG_ENTRIES)
 		{
 			this.changeListeners.add(new ConfigChangeListener(entry, ignored -> runnable.run()));

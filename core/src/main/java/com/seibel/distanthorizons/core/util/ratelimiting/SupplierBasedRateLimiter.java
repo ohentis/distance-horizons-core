@@ -16,7 +16,7 @@ public class SupplierBasedRateLimiter<T>
 	private final Supplier<Integer> maxRateSupplier;
 	private final Consumer<T> onFailureConsumer;
 	
-	private final RateLimiter rateLimiter = RateLimiter.create(1);
+	private final RateLimiter rateLimiter = RateLimiter.create(Double.POSITIVE_INFINITY);
 	
 	public SupplierBasedRateLimiter(Supplier<Integer> maxRateSupplier) { this(maxRateSupplier, ignored -> { }); }
 	public SupplierBasedRateLimiter(Supplier<Integer> maxRateSupplier, Consumer<T> onFailureConsumer)

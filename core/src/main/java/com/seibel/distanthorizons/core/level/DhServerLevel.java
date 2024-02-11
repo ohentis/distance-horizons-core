@@ -92,6 +92,8 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 	{
 		this.eventSource.registerHandler(FullDataSourceRequestMessage.class, this.remotePlayerConnectionHandler.currentLevelOnly(this, (msg, serverPlayerState) ->
 		{
+			ServerPlayerState.RateLimiterSet rateLimiterSet = serverPlayerState.getRateLimiterSet(this);
+			
 			if (msg.checksum == null)
 			{
 				// Normal generation
@@ -102,7 +104,7 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 					return;
 				}
 				
-				if (!serverPlayerState.fullDataRequestConcurrencyLimiter.tryAcquire(msg))
+				if (!rateLimiterSet.fullDataRequestConcurrencyLimiter.tryAcquire(msg))
 				{
 					return;
 				}
@@ -135,7 +137,7 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 					return;
 				}
 				
-				if (!serverPlayerState.loginDataSyncRCLimiter.tryAcquire(msg))
+				if (!rateLimiterSet.loginDataSyncRCLimiter.tryAcquire(msg))
 				{
 					return;
 				}
@@ -143,14 +145,14 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 				Integer serverChecksum = this.serverside.dataFileHandler.repo.getChecksumForSection(msg.sectionPos);
 				if (serverChecksum == null || serverChecksum.equals(msg.checksum))
 				{
-					serverPlayerState.loginDataSyncRCLimiter.release();
+					rateLimiterSet.loginDataSyncRCLimiter.release();
 					msg.sendResponse(new FullDataSourceResponseMessage(null, this));
 					return;
 				}
 				
 				this.serverside.dataFileHandler.getAsync(msg.sectionPos).thenAccept(fullDataSource ->
 				{
-					serverPlayerState.loginDataSyncRCLimiter.release();
+					rateLimiterSet.loginDataSyncRCLimiter.release();
 					msg.sendResponse(new FullDataSourceResponseMessage((CompleteFullDataSource) fullDataSource, this));
 				});
 			}
@@ -160,7 +162,7 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 		{
 			msg.sendResponse(new GenTaskPriorityResponseMessage(
 					this.serverside.dataFileHandler.getLoadStates(msg.posList.stream()
-							.limit(serverPlayerState.genTaskPriorityRequestRateLimiter.acquireOrDrain(msg.posList.size()))
+							.limit(serverPlayerState.getRateLimiterSet(this).genTaskPriorityRequestRateLimiter.acquireOrDrain(msg.posList.size()))
 							::iterator)
 			));
 		}));
@@ -177,7 +179,7 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 			ServerPlayerState serverPlayerState = this.remotePlayerConnectionHandler.getConnectedPlayer(msg);
 			if (serverPlayerState != null)
 			{
-				serverPlayerState.fullDataRequestConcurrencyLimiter.release();
+				serverPlayerState.getRateLimiterSet(this).fullDataRequestConcurrencyLimiter.release();
 			}
 			
 			entry.requestCollectionSemaphore.acquireUninterruptibly(Short.MAX_VALUE);
@@ -233,7 +235,7 @@ public class DhServerLevel extends DhLevel implements IDhServerLevel
 					continue;
 				}
 				
-				serverPlayerState.fullDataRequestConcurrencyLimiter.release();
+				serverPlayerState.getRateLimiterSet(this).fullDataRequestConcurrencyLimiter.release();
 				msg.sendResponse(new FullDataSourceResponseMessage(completeSource, this));
 			}
 		}

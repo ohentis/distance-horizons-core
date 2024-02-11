@@ -171,13 +171,25 @@ public class DhClientLevel extends DhLevel implements IDhClientLevel
 	@Override
 	public void doWorldGen()
 	{
-		boolean isClientUsable = this.networkState != null && !this.networkState.getClient().isClosed();
-		boolean shouldDoWorldGen = isClientUsable && this.networkState.config.distantGenerationEnabled && this.clientside.isRendering();
+		ClientNetworkState networkState = this.networkState;
+		
+		boolean isClientUsable = false, isAllowedDimension = false;
+		if (networkState != null)
+		{
+			isClientUsable = !networkState.getClient().isClosed();
+			isAllowedDimension = MC_CLIENT.getWrappedClientLevel() == this.levelWrapper || networkState.config.generateMultipleDimensions;
+		}
+		
+		boolean shouldDoWorldGen = isClientUsable
+				&& networkState.config.distantGenerationEnabled
+				&& isAllowedDimension
+				&& this.clientside.isRendering();
+		
 		boolean isWorldGenRunning = this.worldGenModule.isWorldGenRunning();
 		if (shouldDoWorldGen && !isWorldGenRunning)
 		{
 			// start world gen
-			this.worldGenModule.startWorldGen(this.dataFileHandler, new WorldGenState(this, this.networkState));
+			this.worldGenModule.startWorldGen(this.dataFileHandler, new WorldGenState(this, networkState));
 			
 			// populate the queue based on the current rendering tree
 			ClientLevelModule.ClientRenderState renderState = this.clientside.ClientRenderStateRef.get();
@@ -217,25 +229,25 @@ public class DhClientLevel extends DhLevel implements IDhClientLevel
 	//================//
 	
 	@Override
-	public int computeBaseColor(DhBlockPos pos, IBiomeWrapper biome, IBlockStateWrapper block) { return levelWrapper.computeBaseColor(pos, biome, block); }
+	public int computeBaseColor(DhBlockPos pos, IBiomeWrapper biome, IBlockStateWrapper block) { return this.levelWrapper.computeBaseColor(pos, biome, block); }
 	
 	@Override
-	public IClientLevelWrapper getClientLevelWrapper() { return levelWrapper; }
+	public IClientLevelWrapper getClientLevelWrapper() { return this.levelWrapper; }
 	
 	@Override
 	public void clearRenderCache()
 	{
-		clientside.clearRenderCache();
+		this.clientside.clearRenderCache();
 	}
 	
 	@Override
-	public ILevelWrapper getLevelWrapper() { return levelWrapper; }
+	public ILevelWrapper getLevelWrapper() { return this.levelWrapper; }
 	
 	@Override
 	public void updateDataSourcesWithChunkData(ChunkSizedFullDataAccessor data) { this.clientside.updateDataSourcesWithChunkData(data); }
 	
 	@Override
-	public int getMinY() { return levelWrapper.getMinHeight(); }
+	public int getMinY() { return this.levelWrapper.getMinHeight(); }
 	
 	@Override
 	public void close()
@@ -246,8 +258,8 @@ public class DhClientLevel extends DhLevel implements IDhClientLevel
 		}
 		this.clientside.close();
 		super.close();
-		dataFileHandler.close();
-		LOGGER.info("Closed " + DhClientLevel.class.getSimpleName() + " for " + levelWrapper);
+		this.dataFileHandler.close();
+		LOGGER.info("Closed " + DhClientLevel.class.getSimpleName() + " for " + this.levelWrapper);
 	}
 	
 	//=======================//
@@ -257,13 +269,13 @@ public class DhClientLevel extends DhLevel implements IDhClientLevel
 	@Override
 	public IFullDataSourceProvider getFileHandler()
 	{
-		return dataFileHandler;
+		return this.dataFileHandler;
 	}
 	
 	@Override
 	public AbstractSaveStructure getSaveStructure()
 	{
-		return saveStructure;
+		return this.saveStructure;
 	}
 	
 	@Override

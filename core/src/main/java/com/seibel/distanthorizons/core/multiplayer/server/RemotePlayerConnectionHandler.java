@@ -3,6 +3,8 @@ package com.seibel.distanthorizons.core.multiplayer.server;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.Maps;
+import com.seibel.distanthorizons.core.config.Config;
+import com.seibel.distanthorizons.core.config.types.ConfigEntry;
 import com.seibel.distanthorizons.core.level.DhServerLevel;
 import com.seibel.distanthorizons.core.multiplayer.config.MultiplayerConfig;
 import com.seibel.distanthorizons.core.multiplayer.config.MultiplayerConfigChangeListener;
@@ -29,6 +31,8 @@ import java.util.function.Consumer;
 
 public class RemotePlayerConnectionHandler implements Closeable
 {
+	private static final ConfigEntry<Boolean> GENERATE_MULTIPLE_DIMENSIONS_CONFIG = Config.Client.Advanced.Multiplayer.ServerNetworking.generateMultipleDimensions;
+	
 	private final ScopedNetworkEventSource<NetworkServer> eventSource;
 	private final ConcurrentHashMap<UUID, ServerPlayerState> playersByUUID = new ConcurrentHashMap<>();
 	private final BiMap<IConnection, ServerPlayerState> playersByConnection = Maps.synchronizedBiMap(HashBiMap.create());
@@ -115,7 +119,7 @@ public class RemotePlayerConnectionHandler implements Closeable
 			
 			if (msg instanceof ILevelRelatedMessage)
 			{
-				if (!((ILevelRelatedMessage) msg).isLevelValid(level.getLevelWrapper()))
+				if (!GENERATE_MULTIPLE_DIMENSIONS_CONFIG.get() && !((ILevelRelatedMessage) msg).isSameLevelAs(level.getLevelWrapper()))
 				{
 					if (msg instanceof FutureTrackableNetworkMessage)
 					{

@@ -95,7 +95,7 @@ public class FullDataPartialUpdateMessage extends NetworkMessage implements ILev
 	@Nullable
 	public ChunkSizedFullDataAccessor getFullDataSource(IDhLevel level) throws IOException, InterruptedException
 	{
-		if (!this.isLevelValid(level.getLevelWrapper()))
+		if (!this.isSameLevelAs(level.getLevelWrapper()))
 		{
 			return null;
 		}

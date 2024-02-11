@@ -10,7 +10,7 @@ public interface ILevelRelatedMessage
 	 * Checks whether the message's level matches the given level.
 	 */
 	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
-	default boolean isLevelValid(ILevelWrapper levelWrapper)
+	default boolean isSameLevelAs(ILevelWrapper levelWrapper)
 	{
 		return levelWrapper.getDimensionType().getDimensionName().hashCode() == this.getLevelHashCode();
 	}
