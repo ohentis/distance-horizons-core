@@ -25,6 +25,7 @@ import com.seibel.distanthorizons.core.util.LodUtil;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * The position object used to define LOD objects in the quad trees. <br><br>
@@ -315,6 +316,21 @@ public class DhSectionPos
 	}
 	
 	/** Applies the given consumer to all children of the position at the given section detail level. */
+	public void forEachChildDownToDetailLevel(byte minSectionDetailLevel, Function<DhSectionPos, Boolean> callback)
+	{
+		boolean stop = callback.apply(this);
+		if (stop || minSectionDetailLevel == this.detailLevel)
+		{
+			return;
+		}
+		
+		for (int i = 0; i < 4; i++)
+		{
+			this.getChildByIndex(i).forEachChildDownToDetailLevel(minSectionDetailLevel, callback);
+		}
+	}
+	
+	/** Applies the given consumer to all children of the position at the given section detail level. */
 	public void forEachChildAtLevel(byte sectionDetailLevel, Consumer<DhSectionPos> callback)
 	{
 		if (sectionDetailLevel == this.detailLevel)
@@ -328,6 +344,20 @@ public class DhSectionPos
 			this.getChildByIndex(i).forEachChildAtLevel(sectionDetailLevel, callback);
 		}
 	}
+	
+	/** Applies the given consumer to all children of the position at the given section detail level. */
+	public void forEachPosUpToDetailLevel(byte maxSectionDetailLevel, Consumer<DhSectionPos> callback)
+	{
+		callback.accept(this);
+		if (maxSectionDetailLevel == this.detailLevel)
+		{
+			return;
+		}
+		
+		this.getParentPos().forEachPosUpToDetailLevel(maxSectionDetailLevel, callback);
+	}
+	
+	
 	
 	
 	
