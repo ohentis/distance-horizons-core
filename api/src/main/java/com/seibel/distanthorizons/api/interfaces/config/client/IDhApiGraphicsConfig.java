@@ -113,19 +113,6 @@ public interface IDhApiGraphicsConfig extends IDhApiConfigGroup
 	//===========================//
 	
 	/**
-	 * Sets whether LODs outside the view frustum culling will
-	 * be culled. <br><br>
-	 * 
-	 * Disabling this will prevent LODs not rendering on the corner
-	 * of the users vision and may fix issues if LODs appear to
-	 * start/stop rendering incorrectly based on the camera direction,
-	 * but will also reduce FPS.
-	 * 
-	 * @since API 1.1.0
-	 */
-	IDhApiConfigValue<Boolean> disableFrustumCulling();
-	
-	/**
 	 * Sets the distance used by the near clip plane to reduce
 	 * overdraw. <br>
 	 * Disabling this reduces holes in the world due to the near clip plane
@@ -186,5 +173,31 @@ public interface IDhApiGraphicsConfig extends IDhApiConfigGroup
 	 * @since API 1.1.0
 	 */
 	IDhApiConfigValue<ELodShading> lodShading();
+	
+	/**
+	 * Sets whether LODs outside the view frustum culling will
+	 * be culled. <br><br>
+	 *
+	 * Disabling this will prevent LODs not rendering on the corner
+	 * of the users vision and may fix issues if LODs appear to
+	 * start/stop rendering incorrectly based on the camera direction,
+	 * but will also reduce FPS.
+	 *
+	 * @since API 1.1.0
+	 * @see IDhApiGraphicsConfig#disableShadowFrustumCulling()
+	 */
+	IDhApiConfigValue<Boolean> disableFrustumCulling();
+	
+	/**
+	 * Identical to the other frustum culling option, except that it is
+	 * only used when a shader mod is present using the DH API
+	 * and the shadow pass is being rendered. <br><br>
+	 * 
+	 * Disable this if shadows render incorrectly.
+	 *
+	 * @since API 1.1.0
+	 * @see IDhApiGraphicsConfig#disableFrustumCulling() 
+	 */
+	IDhApiConfigValue<Boolean> disableShadowFrustumCulling();
 	
 }

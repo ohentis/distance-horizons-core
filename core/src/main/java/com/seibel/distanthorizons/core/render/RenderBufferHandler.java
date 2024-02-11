@@ -20,7 +20,9 @@
 package com.seibel.distanthorizons.core.render;
 
 import com.seibel.distanthorizons.api.DhApi;
+import com.seibel.distanthorizons.api.interfaces.override.IDhApiOverrideable;
 import com.seibel.distanthorizons.api.interfaces.override.rendering.IDhApiCullingFrustum;
+import com.seibel.distanthorizons.api.interfaces.override.rendering.IDhApiShadowCullingFrustum;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.ModAccessorInjector;
@@ -74,7 +76,6 @@ public class RenderBufferHandler implements AutoCloseable
 	
 	public F3Screen.MultiDynamicMessage f3Message;
 	
-	private final IDhApiCullingFrustum cameraFrustum;
 	private int visibleBufferCount;
 	private int culledBufferCount;
 	private int shadowVisibleBufferCount;
@@ -90,7 +91,11 @@ public class RenderBufferHandler implements AutoCloseable
 	{ 
 		this.lodQuadTree = lodQuadTree;
 		
-		this.cameraFrustum = new DhFrustumBounds();
+		IDhApiCullingFrustum coreFrustum = DhApi.overrides.get(IDhApiCullingFrustum.class, IOverrideInjector.CORE_PRIORITY);
+		if (coreFrustum == null)
+		{
+			DhApi.overrides.bind(IDhApiCullingFrustum.class, new DhFrustumBounds());
+		}
 		
 		this.f3Message = new F3Screen.MultiDynamicMessage(
 			() ->
@@ -237,35 +242,48 @@ public class RenderBufferHandler implements AutoCloseable
 		
 		
 		
-		// update the frustum if necessary
-		boolean enableFrustumCulling = !Config.Client.Advanced.Graphics.AdvancedGraphics.disableFrustumCulling.get();
+		//====================================//
+		// get and update the culling frustum //
+		//====================================//
+		
+		// get the culling frustum
+		boolean enableFrustumCulling;
+		IDhApiCullingFrustum frustum;
 		boolean isShadowPass = (IRIS_ACCESSOR != null && IRIS_ACCESSOR.isRenderingShadowPass());
+		if (isShadowPass)
+		{
+			enableFrustumCulling = !Config.Client.Advanced.Graphics.AdvancedGraphics.disableShadowPassFrustumCulling.get();
+			frustum = DhApi.overrides.get(IDhApiShadowCullingFrustum.class);
+		}
+		else
+		{
+			enableFrustumCulling = !Config.Client.Advanced.Graphics.AdvancedGraphics.disableFrustumCulling.get();
+			frustum = DhApi.overrides.get(IDhApiCullingFrustum.class);
+		}
+		// use the core frustum if no override is present
+		if (frustum == null)
+		{
+			frustum = DhApi.overrides.get(IDhApiCullingFrustum.class, IOverrideInjector.CORE_PRIORITY);
+		}
 		
-		IDhApiCullingFrustum frustum = this.cameraFrustum;
 		
+		// update the frustum if necessary
 		if (enableFrustumCulling)
 		{
-			if (isShadowPass) {
-				frustum = DhApi.overrides.get(IDhApiCullingFrustum.class, IOverrideInjector.CORE_PRIORITY);
-				if (frustum == null) enableFrustumCulling = false;
-			}
-			else
-			{
-				int worldMinY = clientLevelWrapper.getMinHeight();
-				int worldHeight = clientLevelWrapper.getHeight();
-				
-				Vec3d cameraPos = MC_RENDER.getCameraExactPosition();
-				
-				Matrix4fc matWorldView = new Matrix4f()
-						.setTransposed(renderEventParam.mcModelViewMatrix.getValuesAsArray())
-						.translate(-(float) cameraPos.x, -(float) cameraPos.y, -(float) cameraPos.z);
-				
-				Matrix4fc matWorldViewProjection = new Matrix4f()
-						.setTransposed(renderEventParam.dhProjectionMatrix.getValuesAsArray())
-						.mul(matWorldView);
-				
-				frustum.update(worldMinY, worldMinY + worldHeight, new Mat4f(matWorldViewProjection));
-			}
+			int worldMinY = clientLevelWrapper.getMinHeight();
+			int worldHeight = clientLevelWrapper.getHeight();
+			
+			Vec3d cameraPos = MC_RENDER.getCameraExactPosition();
+			
+			Matrix4fc matWorldView = new Matrix4f()
+					.setTransposed(renderEventParam.mcModelViewMatrix.getValuesAsArray())
+					.translate(-(float) cameraPos.x, -(float) cameraPos.y, -(float) cameraPos.z);
+			
+			Matrix4fc matWorldViewProjection = new Matrix4f()
+					.setTransposed(renderEventParam.dhProjectionMatrix.getValuesAsArray())
+					.mul(matWorldView);
+			
+			frustum.update(worldMinY, worldMinY + worldHeight, new Mat4f(matWorldViewProjection));
 		}
 		
 		

@@ -265,10 +265,6 @@
   "distanthorizons.config.client.advanced.graphics.advancedGraphics":
     "Advanced Graphics Options",
     
-  "distanthorizons.config.client.advanced.graphics.advancedGraphics.disableFrustumCulling":
-    "Disable Frustum Culling",
-  "distanthorizons.config.client.advanced.graphics.advancedGraphics.disableFrustumCulling.@tooltip":
-    "If false LODs outside the player's camera \naren't drawn, increasing GPU performance. \n\nIf true all LODs are drawn, even those behind \nthe player's camera, decreasing GPU performance. \n\nDisable this if you see LODs disappearing at the corners of your vision.",  
   "distanthorizons.config.client.advanced.graphics.advancedGraphics.overdrawPrevention":
     "Overdraw Prevention",
   "distanthorizons.config.client.advanced.graphics.advancedGraphics.overdrawPrevention.@tooltip":
@@ -305,7 +301,15 @@
     "LOD Shading",
   "distanthorizons.config.client.advanced.graphics.advancedGraphics.lodShading.@tooltip":
     "Defines how LODs should be shaded. \nCan be used to improve shader compatibility.",
-  
+  "distanthorizons.config.client.advanced.graphics.advancedGraphics.disableFrustumCulling":
+    "Disable Frustum Culling",
+  "distanthorizons.config.client.advanced.graphics.advancedGraphics.disableFrustumCulling.@tooltip":
+    "If false LODs outside the player's camera \naren't drawn, increasing GPU performance. \n\nIf true all LODs are drawn, even those behind \nthe player's camera, decreasing GPU performance. \n\nDisable this if you see LODs disappearing at the corners of your vision.",
+  "distanthorizons.config.client.advanced.graphics.advancedGraphics.disableShadowPassFrustumCulling":
+    "Disable Shadow Pass Frustum Culling",
+  "distanthorizons.config.client.advanced.graphics.advancedGraphics.disableShadowPassFrustumCulling.@tooltip":
+    "Identical to the other frustum culling option except that it is \nonly used when a shader mod is present using the DH API \nand the shadow pass is being rendered. \n\nDisable this if shadows render incorrectly.",
+    
   
   "distanthorizons.config.client.advanced.worldGenerator":
     "World Generator",
