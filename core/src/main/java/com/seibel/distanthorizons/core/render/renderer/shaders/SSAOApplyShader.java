@@ -96,8 +96,8 @@ public class SSAOApplyShader extends AbstractShaderRenderer
 		
 		if (this.gFarUniform >= 0)
 		{
-			float far = (float) ((RenderUtil.getFarClipPlaneDistanceInBlocks() + LodUtil.REGION_WIDTH) * Math.sqrt(2));
-			GL32.glUniform1f(this.gFarUniform, far);
+			float farClipPlane = RenderUtil.getFarClipPlaneDistanceInBlocks();
+			GL32.glUniform1f(this.gFarUniform, farClipPlane);
 		}
 	}
 	
