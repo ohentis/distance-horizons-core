@@ -26,7 +26,10 @@ import com.seibel.distanthorizons.coreapi.util.math.Mat4f;
 /**
  * The culling frustum used during Distant Horizons' shadow pass
  * if another mod has enabled Distant Horizons' shadow
- * pass via the API.
+ * pass via the API. <br><br>
+ * 
+ * If no {@link IDhApiShadowCullingFrustum} is bound then culling
+ * will not be done in the shadow pass.
  * 
  * @see IDhApiCullingFrustum
  * 

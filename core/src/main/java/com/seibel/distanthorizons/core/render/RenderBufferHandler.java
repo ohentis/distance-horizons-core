@@ -20,7 +20,6 @@
 package com.seibel.distanthorizons.core.render;
 
 import com.seibel.distanthorizons.api.DhApi;
-import com.seibel.distanthorizons.api.interfaces.override.IDhApiOverrideable;
 import com.seibel.distanthorizons.api.interfaces.override.rendering.IDhApiCullingFrustum;
 import com.seibel.distanthorizons.api.interfaces.override.rendering.IDhApiShadowCullingFrustum;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
@@ -30,7 +29,6 @@ import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
-import com.seibel.distanthorizons.core.pos.DhFrustumBounds;
 import com.seibel.distanthorizons.core.pos.DhLodPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.pos.Pos2D;
@@ -91,11 +89,19 @@ public class RenderBufferHandler implements AutoCloseable
 	{ 
 		this.lodQuadTree = lodQuadTree;
 		
-		IDhApiCullingFrustum coreFrustum = DhApi.overrides.get(IDhApiCullingFrustum.class, IOverrideInjector.CORE_PRIORITY);
-		if (coreFrustum == null)
+		IDhApiCullingFrustum coreCameraFrustum = DhApi.overrides.get(IDhApiCullingFrustum.class, IOverrideInjector.CORE_PRIORITY);
+		if (coreCameraFrustum == null)
 		{
 			DhApi.overrides.bind(IDhApiCullingFrustum.class, new DhFrustumBounds());
 		}
+		
+		// by default the shadow pass shouldn't have any frustum culling
+		IDhApiShadowCullingFrustum coreShadowFrustum = DhApi.overrides.get(IDhApiShadowCullingFrustum.class, IOverrideInjector.CORE_PRIORITY);
+		if (coreShadowFrustum == null)
+		{
+			DhApi.overrides.bind(IDhApiShadowCullingFrustum.class, new NeverCullFrustum());
+		}
+		
 		
 		this.f3Message = new F3Screen.MultiDynamicMessage(
 			() ->
@@ -259,11 +265,6 @@ public class RenderBufferHandler implements AutoCloseable
 		{
 			enableFrustumCulling = !Config.Client.Advanced.Graphics.AdvancedGraphics.disableFrustumCulling.get();
 			frustum = DhApi.overrides.get(IDhApiCullingFrustum.class);
-		}
-		// use the core frustum if no override is present
-		if (frustum == null)
-		{
-			frustum = DhApi.overrides.get(IDhApiCullingFrustum.class, IOverrideInjector.CORE_PRIORITY);
 		}
 		
 		
