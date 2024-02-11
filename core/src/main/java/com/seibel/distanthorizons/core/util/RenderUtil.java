@@ -147,7 +147,7 @@ public class RenderUtil
 	{
 		// in James' testing a near clip plane distance of 2 blocks is enough to allow the fragment
 		// culling to take effect instead of seeing the near clip plane.
-		float nearClipDist = 2f; //MC_RENDER.getRenderDistance() * LodUtil.CHUNK_WIDTH / 4.0f; //getNearClipPlaneDistanceInBlocks(partialTicks);
+		float nearClipDist = RenderUtil.getNearClipPlaneDistanceInBlocks(partialTicks);
 		if (Config.Client.Advanced.Debugging.lodOnlyMode.get())
 		{
 			nearClipDist = 0.1f;
