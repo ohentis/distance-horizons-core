@@ -20,10 +20,12 @@
 package com.seibel.distanthorizons.core.file.fullDatafile;
 
 import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.CompleteFullDataSource;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IFullDataSource;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IIncompleteFullDataSource;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
-import com.seibel.distanthorizons.core.generation.MissingWorldGenPositionFinder;
 import com.seibel.distanthorizons.core.generation.IWorldGenerationQueue;
+import com.seibel.distanthorizons.core.generation.MissingWorldGenPositionFinder;
 import com.seibel.distanthorizons.core.generation.tasks.IWorldGenTaskTracker;
 import com.seibel.distanthorizons.core.generation.tasks.WorldGenResult;
 import com.seibel.distanthorizons.core.level.DhLevel;
@@ -31,9 +33,10 @@ import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.util.LodUtil;
+import com.seibel.distanthorizons.core.util.TimerUtil;
+import com.seibel.distanthorizons.core.util.objects.Reference;
 import org.apache.logging.log4j.Logger;
 
-import java.lang.ref.WeakReference;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
@@ -48,8 +51,8 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandler
 	
 	private final ArrayList<IOnWorldGenCompleteListener> onWorldGenTaskCompleteListeners = new ArrayList<>();
 	
-	/** Used to prevent data sources from being garbage collected before their world gen finishes. */
-	private final ConcurrentHashMap<DhSectionPos, IFullDataSource> generatingDataSourceByPos = new ConcurrentHashMap<>();
+	/** Used to prevent world gen tasks from being queued multiple times. */
+	private final Set<DhSectionPos> generatingDataPos = Collections.newSetFromMap(new ConcurrentHashMap<>());
 	
 	
 	
@@ -66,16 +69,20 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandler
 	//===========//
 	
 	@Override
-	public IFullDataSource get(DhSectionPos pos)
+	public IFullDataSource get(DhSectionPos pos) { return this.get(pos, true); }
+	public IFullDataSource get(DhSectionPos pos, boolean runWorldGenCheck)
 	{
 		IFullDataSource dataSource = super.get(pos);
 		
-		// add world gen tasks for missing columns in the data source
-		// if this position hasn't already been queued for generation
-		IWorldGenerationQueue worldGenQueue = this.worldGenQueueRef.get();
-		if (worldGenQueue != null && !this.generatingDataSourceByPos.containsKey(pos))
+		if (runWorldGenCheck)
 		{
-			this.queueWorldGenForMissingColumnsInDataSource(worldGenQueue, pos, dataSource);
+			// add world gen tasks for missing columns in the data source
+			// if this position hasn't already been queued for generation
+			IWorldGenerationQueue worldGenQueue = this.worldGenQueueRef.get();
+			if (worldGenQueue != null && !this.generatingDataPos.contains(pos))
+			{
+				this.queueWorldGenForMissingColumnsInDataSource(worldGenQueue, pos, dataSource);
+			}
 		}
 		
 		return dataSource;
@@ -101,17 +108,17 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandler
 	public void clearGenerationQueue()
 	{
 		this.worldGenQueueRef.set(null);
-		this.generatingDataSourceByPos.clear(); // clear the incomplete data sources
+		this.generatingDataPos.clear(); // clear the incomplete data sources
 	}
 	
 	/** Can be used to remove positions that are outside the player's render distance. */
 	public void removeGenRequestIf(Function<DhSectionPos, Boolean> removeIf)
 	{
-		this.generatingDataSourceByPos.forEach((pos, dataSource) ->
+		this.generatingDataPos.forEach((pos) ->
 		{
 			if (removeIf.apply(pos))
 			{
-				this.generatingDataSourceByPos.remove(pos);
+				this.generatingDataPos.remove(pos);
 			}
 		});
 	}
@@ -131,35 +138,33 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandler
 	// events //
 	//========//
 	
-	private void onWorldGenTaskComplete(WorldGenResult genTaskResult, Throwable exception, GenTask genTask, DhSectionPos pos)
+	private void onWorldGenTaskComplete(WorldGenResult genTaskResult, Throwable exception)
 	{
 		if (exception != null)
 		{
 			// don't log shutdown exceptions
 			if (!(exception instanceof CancellationException || exception.getCause() instanceof CancellationException))
 			{
-				LOGGER.error("Uncaught Gen Task Exception at " + pos + ":", exception);
+				LOGGER.error("Uncaught Gen Task Exception at [" + genTaskResult.pos + "], error: ["+ exception.getMessage() + "].", exception);
 			}
 		}
 		else if (genTaskResult.success)
 		{
-			this.fireOnGenPosSuccessListeners(pos);
+			this.fireOnGenPosSuccessListeners(genTaskResult.pos);
 			return;
 		}
 		else
 		{
 			// generation didn't complete
-			LOGGER.debug("Gen Task Failed at " + pos);
+			LOGGER.debug("Gen Task Failed at " + genTaskResult.pos);
 		}
 		
 		
 		// if the generation task was split up into smaller positions, add the on-complete event to them
 		for (CompletableFuture<WorldGenResult> siblingFuture : genTaskResult.childFutures)
 		{
-			siblingFuture.whenComplete((siblingGenTaskResult, siblingEx) -> this.onWorldGenTaskComplete(siblingGenTaskResult, siblingEx, genTask, pos));
+			siblingFuture.whenComplete((siblingGenTaskResult, siblingEx) -> this.onWorldGenTaskComplete(siblingGenTaskResult, siblingEx));
 		}
-		
-		genTask.releaseStrongReference();
 	}
 	
 	private void fireOnGenPosSuccessListeners(DhSectionPos pos)
@@ -188,20 +193,16 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandler
 		for (DhSectionPos genPos : genPosList)
 		{
 			// try not to re-queue already generating tasks
-			if (this.generatingDataSourceByPos.containsKey(genPos))
+			if (this.generatingDataPos.contains(genPos))
 			{
 				continue;
 			}
 			
 			
 			// queue each new gen task
-			GenTask genTask = new GenTask(dataSource.getSectionPos(), new WeakReference<>(dataSource));
+			GenTask genTask = new GenTask(dataSource.getSectionPos());
 			CompletableFuture<WorldGenResult> worldGenFuture = worldGenQueue.submitGenTask(genPos, dataSource.getDataDetailLevel(), genTask);
-			worldGenFuture.whenComplete((genTaskResult, ex) ->
-			{
-				this.onWorldGenTaskComplete(genTaskResult, ex, genTask, genPos);
-				this.onWorldGenTaskComplete(genTaskResult, ex, genTask, pos);
-			});
+			worldGenFuture.whenComplete((genTaskResult, ex) -> this.onWorldGenTaskComplete(genTaskResult, ex));
 			
 			taskFutureList.add(worldGenFuture);
 		}
@@ -210,11 +211,11 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandler
 		// mark the data source as generating if necessary
 		if (taskFutureList.size() != 0)
 		{
-			this.generatingDataSourceByPos.put(pos, dataSource);
+			this.generatingDataPos.add(pos);
 			CompletableFuture.allOf(taskFutureList.toArray(new CompletableFuture[0]))
 				.whenComplete((voidObj, ex) ->
 				{
-					this.generatingDataSourceByPos.remove(pos);
+					this.generatingDataPos.remove(pos);
 				});
 		}
 	}
@@ -225,52 +226,29 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandler
 	// helper classes //
 	//================//
 	
+	// TODO may not be needed
 	private class GenTask implements IWorldGenTaskTracker
 	{
 		private final DhSectionPos pos;
 		
-		// weak reference (probably) used to prevent overloading the GC when lots of gen tasks are created? // TODO do we still need a weak reference here?
-		private final WeakReference<IFullDataSource> targetFullDataSourceRef;
-		// the target data source is where the generated chunk data will be put when completed
-		private IFullDataSource loadedTargetFullDataSource = null;
-		
-		
-		
-		public GenTask(DhSectionPos pos, WeakReference<IFullDataSource> targetFullDataSourceRef)
+		public GenTask(DhSectionPos pos)
 		{
 			this.pos = pos;
-			this.targetFullDataSourceRef = targetFullDataSourceRef;
 		}
 		
 		
 		
 		@Override
-		public boolean isMemoryAddressValid() { return this.targetFullDataSourceRef.get() != null; }
+		public boolean isMemoryAddressValid() { return true; }
 		
 		@Override
 		public Consumer<ChunkSizedFullDataAccessor> getChunkDataConsumer()
 		{
-			if (this.loadedTargetFullDataSource == null)
-			{
-				this.loadedTargetFullDataSource = this.targetFullDataSourceRef.get();
-			}
-			if (this.loadedTargetFullDataSource == null)
-			{
-				return null;
-			}
-			
-			
 			return (chunkSizedFullDataSource) ->
 			{
-				if (chunkSizedFullDataSource.getSectionPos().overlapsExactly(this.loadedTargetFullDataSource.getSectionPos()))
-				{
-					((DhLevel) GeneratedFullDataFileHandler.this.level).updateDataSourcesWithChunkData(chunkSizedFullDataSource);
-				}
+				((DhLevel) GeneratedFullDataFileHandler.this.level).updateDataSourcesWithChunkData(chunkSizedFullDataSource);
 			};
 		}
-		
-		public void releaseStrongReference() { this.loadedTargetFullDataSource = null; }
-		
 	}
 	
 	/** used by external event listeners */
