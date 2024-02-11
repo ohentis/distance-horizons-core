@@ -19,7 +19,7 @@
 
 package com.seibel.distanthorizons.core.util;
 
-import com.seibel.distanthorizons.core.level.DhLevel;
+import com.seibel.distanthorizons.core.level.AbstractDhLevel;
 import com.seibel.distanthorizons.core.logging.SpamReducedLogger;
 import com.seibel.distanthorizons.core.dataObjects.render.columnViews.ColumnArrayView;
 import com.seibel.distanthorizons.core.dataObjects.render.columnViews.IColumnDataView;
@@ -174,9 +174,9 @@ public class RenderDataPointUtil
 		return dataPoint & ~(HEIGHT_SHIFTED_MASK | DEPTH_SHIFTED_MASK) | height | depth;
 	}
 	
-	/** AKA the ending/top/highest Y value above {@link DhLevel#getMinY()} */
+	/** AKA the ending/top/highest Y value above {@link AbstractDhLevel#getMinY()} */
 	public static short getYMax(long dataPoint) { return (short) ((dataPoint >>> HEIGHT_SHIFT) & HEIGHT_MASK); }
-	/** AKA the starting/bottom/lowest Y value above {@link DhLevel#getMinY()} */
+	/** AKA the starting/bottom/lowest Y value above {@link AbstractDhLevel#getMinY()} */
 	public static short getYMin(long dataPoint) { return (short) ((dataPoint >>> DEPTH_SHIFT) & DEPTH_MASK); }
 	
 	public static short getAlpha(long dataPoint) { return (short) ((((dataPoint >>> ALPHA_SHIFT) & ALPHA_MASK) << ALPHA_DOWNSIZE_SHIFT) | 0b1111); }

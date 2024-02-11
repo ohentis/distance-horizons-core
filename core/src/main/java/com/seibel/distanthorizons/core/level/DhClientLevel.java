@@ -31,14 +31,13 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrap
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
-import com.seibel.distanthorizons.coreapi.util.math.Mat4f;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 
 /** The level used when connected to a server */
-public class DhClientLevel extends DhLevel implements IDhClientLevel
+public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	

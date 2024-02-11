@@ -20,21 +20,16 @@
 package com.seibel.distanthorizons.core.file.fullDatafile;
 
 import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.CompleteFullDataSource;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IFullDataSource;
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IIncompleteFullDataSource;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.generation.IWorldGenerationQueue;
 import com.seibel.distanthorizons.core.generation.MissingWorldGenPositionFinder;
 import com.seibel.distanthorizons.core.generation.tasks.IWorldGenTaskTracker;
 import com.seibel.distanthorizons.core.generation.tasks.WorldGenResult;
-import com.seibel.distanthorizons.core.level.DhLevel;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.util.LodUtil;
-import com.seibel.distanthorizons.core.util.TimerUtil;
-import com.seibel.distanthorizons.core.util.objects.Reference;
 import org.apache.logging.log4j.Logger;
 
 import java.util.*;
@@ -251,7 +246,7 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandler
 		{
 			return (chunkSizedFullDataSource) ->
 			{
-				((DhLevel) GeneratedFullDataFileHandler.this.level).updateDataSourcesWithChunkData(chunkSizedFullDataSource);
+				GeneratedFullDataFileHandler.this.level.updateDataSourcesWithChunkData(chunkSizedFullDataSource);
 			};
 		}
 	}

@@ -27,18 +27,23 @@ import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
 
 import java.util.concurrent.CompletableFuture;
 
-public abstract class DhLevel implements IDhLevel
+public abstract class AbstractDhLevel implements IDhLevel
 {
-	
 	public final ChunkToLodBuilder chunkToLodBuilder;
 	
-	protected DhLevel() { this.chunkToLodBuilder = new ChunkToLodBuilder(); }
-	
-	public abstract void updateDataSourcesWithChunkData(ChunkSizedFullDataAccessor data);
 	
 	
-	@Override
-	public int getMinY() { return 0; }
+	//=============//
+	// constructor //
+	//=============//
+	
+	protected AbstractDhLevel() { this.chunkToLodBuilder = new ChunkToLodBuilder(); }
+	
+	
+	
+	//=================//
+	// default methods //
+	//=================//
 	
 	@Override
 	public void updateChunkAsync(IChunkWrapper chunk)

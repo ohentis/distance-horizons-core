@@ -30,7 +30,7 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
 import org.apache.logging.log4j.Logger;
 
-public class DhServerLevel extends DhLevel implements IDhServerLevel
+public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	public final ServerLevelModule serverside;

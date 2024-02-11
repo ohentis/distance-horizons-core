@@ -19,6 +19,7 @@
 
 package com.seibel.distanthorizons.core.level;
 
+import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
 import com.seibel.distanthorizons.core.file.fullDatafile.IFullDataSourceProvider;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
@@ -44,5 +45,6 @@ public interface IDhLevel extends AutoCloseable
 	
 	boolean hasSkyLight();
 	
+	void updateDataSourcesWithChunkData(ChunkSizedFullDataAccessor data);
 	
 }

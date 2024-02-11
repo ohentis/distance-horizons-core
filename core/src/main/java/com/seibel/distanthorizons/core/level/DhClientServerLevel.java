@@ -38,14 +38,13 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
-import com.seibel.distanthorizons.coreapi.util.math.Mat4f;
 import org.apache.logging.log4j.Logger;
 
 import java.awt.*;
 import java.util.Iterator;
 
 /** The level used on a singleplayer world */
-public class DhClientServerLevel extends DhLevel implements IDhClientLevel, IDhServerLevel
+public class DhClientServerLevel extends AbstractDhLevel implements IDhClientLevel, IDhServerLevel
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
