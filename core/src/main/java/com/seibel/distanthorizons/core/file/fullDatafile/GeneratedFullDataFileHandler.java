@@ -198,6 +198,11 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandler
 				continue;
 			}
 			
+			if (this.repo.existsWithPrimaryKey(genPos.serialize()))
+			{
+				continue;
+			}
+			
 			
 			// queue each new gen task
 			GenTask genTask = new GenTask(dataSource.getSectionPos());
