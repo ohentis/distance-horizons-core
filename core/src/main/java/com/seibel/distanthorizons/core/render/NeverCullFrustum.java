@@ -1,6 +1,7 @@
 package com.seibel.distanthorizons.core.render;
 
 import com.seibel.distanthorizons.api.interfaces.override.rendering.IDhApiCullingFrustum;
+import com.seibel.distanthorizons.api.interfaces.override.rendering.IDhApiShadowCullingFrustum;
 import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IOverrideInjector;
 import com.seibel.distanthorizons.coreapi.util.math.Mat4f;
 
@@ -8,7 +9,7 @@ import com.seibel.distanthorizons.coreapi.util.math.Mat4f;
  * Dummy {@link IDhApiCullingFrustum} that allows everything through. <br> 
  * Useful when a frustum is required, but culling shouldn't be done.
  */
-public class NeverCullFrustum implements IDhApiCullingFrustum
+public class NeverCullFrustum implements IDhApiCullingFrustum, IDhApiShadowCullingFrustum
 {
 	//=============//
 	// constructor //
