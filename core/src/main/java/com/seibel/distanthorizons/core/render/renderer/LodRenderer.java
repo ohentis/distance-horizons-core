@@ -351,14 +351,7 @@ public class LodRenderer
 			
 			if (renderingFirstPass)
 			{
-				Matrix4f matWorldView = new Matrix4f()
-						.setTransposed(MC_RENDER.getWorldViewMatrix().getValuesAsArray());
-				
-				Matrix4fc matWorldViewProjection = new Matrix4f()
-					.setTransposed(renderEventParam.dhProjectionMatrix.getValuesAsArray())
-					.mul(matWorldView);
-				
-				this.bufferHandler.buildRenderListAndUpdateSections(clientLevelWrapper, matWorldViewProjection, MC_RENDER.getLookAtVector());
+				this.bufferHandler.buildRenderListAndUpdateSections(clientLevelWrapper, renderEventParam, MC_RENDER.getLookAtVector());
 				
 				transparencyEnabled = Config.Client.Advanced.Graphics.Quality.transparency.get().transparencyEnabled;
 				fakeOceanFloor = Config.Client.Advanced.Graphics.Quality.transparency.get().fakeTransparencyEnabled;

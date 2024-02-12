@@ -49,5 +49,6 @@ public interface IDhLevel extends AutoCloseable
 	
 	boolean hasSkyLight();
 	
+	void updateDataSourcesWithChunkData(ChunkSizedFullDataAccessor data);
 	
 }

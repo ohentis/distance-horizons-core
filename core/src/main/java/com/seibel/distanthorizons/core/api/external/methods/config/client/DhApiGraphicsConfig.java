@@ -105,10 +105,6 @@ public class DhApiGraphicsConfig implements IDhApiGraphicsConfig
 	// advanced graphic settings //
 	//===========================//
 
-	@Override
-	public IDhApiConfigValue<Boolean> disableFrustumCulling()
-	{ return new DhApiConfigValue<Boolean, Boolean>(Config.Client.Advanced.Graphics.AdvancedGraphics.disableFrustumCulling); }
-	
 	@Deprecated
 	@Override
 	public IDhApiConfigValue<EOverdrawPrevention> overdrawPrevention()
@@ -149,6 +145,14 @@ public class DhApiGraphicsConfig implements IDhApiGraphicsConfig
 	@Override
 	public IDhApiConfigValue<ELodShading> lodShading()
 	{ return new DhApiConfigValue<ELodShading, ELodShading>(Config.Client.Advanced.Graphics.AdvancedGraphics.lodShading); }
+	
+	@Override
+	public IDhApiConfigValue<Boolean> disableFrustumCulling()
+	{ return new DhApiConfigValue<Boolean, Boolean>(Config.Client.Advanced.Graphics.AdvancedGraphics.disableFrustumCulling); }
+	
+	@Override
+	public IDhApiConfigValue<Boolean> disableShadowFrustumCulling()
+	{ return new DhApiConfigValue<Boolean, Boolean>(Config.Client.Advanced.Graphics.AdvancedGraphics.disableShadowPassFrustumCulling); }
 	
 	
 	

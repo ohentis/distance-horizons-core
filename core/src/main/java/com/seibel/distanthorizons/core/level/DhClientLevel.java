@@ -52,7 +52,7 @@ import java.awt.*;
 import java.io.File;
 
 /** The level used when connected to a server */
-public class DhClientLevel extends DhLevel implements IDhClientLevel
+public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);

@@ -1,4 +1,4 @@
-package com.seibel.distanthorizons.core.pos;
+package com.seibel.distanthorizons.core.render;
 
 import com.seibel.distanthorizons.api.interfaces.override.rendering.IDhApiCullingFrustum;
 import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IOverrideInjector;

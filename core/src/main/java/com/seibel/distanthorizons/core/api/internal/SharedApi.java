@@ -26,6 +26,7 @@ import com.seibel.distanthorizons.core.generation.DhLightingEngine;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
+import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.util.LodUtil;
@@ -54,7 +55,7 @@ public class SharedApi
 	
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	private static final IMinecraftRenderWrapper MC_RENDER = SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
-	private static final Set<DhChunkPos> UPDATING_CHUNK_SET = ConcurrentHashMap.newKeySet();
+	private static final Set<DhChunkPos> UPDATING_CHUNK_POS_SET = ConcurrentHashMap.newKeySet();
 	/** how many chunks can be queued for updating per thread, used to prevent updates from infinitely pilling up if the user flys around extremely fast */
 	private static final int MAX_UPDATING_CHUNK_COUNT_PER_THREAD = 500;
 	private static final int MIN_MS_BETWEEN_OVERLOADED_LOG_MESSAGE = 5_000;
@@ -79,7 +80,7 @@ public class SharedApi
 		this.f3Message = new F3Screen.DynamicMessage(() ->
 		{
 			int maxUpdateCount = MAX_UPDATING_CHUNK_COUNT_PER_THREAD * Config.Client.Advanced.MultiThreading.numberOfLodBuilderThreads.get();
-			return LodUtil.formatLog("Queued chunk updates: " + UPDATING_CHUNK_SET.size() + " / " + maxUpdateCount);
+			return LodUtil.formatLog("Queued chunk updates: " + UPDATING_CHUNK_POS_SET.size() + " / " + maxUpdateCount);
 		});
 	}
 	
@@ -142,6 +143,13 @@ public class SharedApi
 	//==============//
 	// chunk update //
 	//==============//
+	
+	/** 
+	 * Used to prevent getting a full chunk from MC if it isn't necessary. <br>
+	 * This is important since asking MC for a chunk is slow and may block the render thread.
+	 */
+	public static boolean isChunkAtBlockPosAlreadyUpdating(int blockPosX, int blockPosZ) { return UPDATING_CHUNK_POS_SET.contains(new DhChunkPos(new DhBlockPos2D(blockPosX, blockPosZ))); }
+	
 	
 	/** handles both block place and break events */
 	public void chunkBlockChangedEvent(IChunkWrapper chunk, ILevelWrapper level) { this.applyChunkUpdate(chunk, level, true); }
@@ -206,7 +214,7 @@ public class SharedApi
 		// task limiting check //
 		//=====================//
 		
-		int currentQueueCount = UPDATING_CHUNK_SET.size();
+		int currentQueueCount = UPDATING_CHUNK_POS_SET.size();
 		int maxQueueCount = MAX_UPDATING_CHUNK_COUNT_PER_THREAD * Config.Client.Advanced.MultiThreading.numberOfLodBuilderThreads.get();
 		if (currentQueueCount >= maxQueueCount)
 		{
@@ -224,12 +232,12 @@ public class SharedApi
 		}
 		
 		// prevent duplicate update requests
-		if (UPDATING_CHUNK_SET.contains(chunkWrapper.getChunkPos()))
+		if (UPDATING_CHUNK_POS_SET.contains(chunkWrapper.getChunkPos()))
 		{
 			// this chunk is already being updated
 			return;
 		}
-		UPDATING_CHUNK_SET.add(chunkWrapper.getChunkPos());
+		UPDATING_CHUNK_POS_SET.add(chunkWrapper.getChunkPos());
 		
 		
 		
@@ -343,13 +351,13 @@ public class SharedApi
 					CHUNK_UPDATE_TIMER.schedule(new TimerTask() 
 					{
 						@Override
-						public void run() { UPDATING_CHUNK_SET.remove(chunkWrapper.getChunkPos()); }
+						public void run() { UPDATING_CHUNK_POS_SET.remove(chunkWrapper.getChunkPos()); }
 					}, updateTimeoutInSec * 1000L);
 				}
 				else
 				{
 					// instantly allow this chunk to be updated again
-					UPDATING_CHUNK_SET.remove(chunkWrapper.getChunkPos());
+					UPDATING_CHUNK_POS_SET.remove(chunkWrapper.getChunkPos());
 				}
 			}
 		});

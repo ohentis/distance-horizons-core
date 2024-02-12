@@ -106,7 +106,11 @@ public class FullDataFileHandler extends AbstractDataSourceHandler<IFullDataSour
 	protected IFullDataSource createNewDataSourceFromExistingDtos(DhSectionPos pos)
 	{
 		IIncompleteFullDataSource newFullDataSource = this.makeEmptyDataSource(pos);
-		
+		return this.updateFromDataSourceFromExistingDtos(newFullDataSource);
+	}
+	protected IFullDataSource updateFromDataSourceFromExistingDtos(IIncompleteFullDataSource newFullDataSource)
+	{
+		DhSectionPos pos = newFullDataSource.getSectionPos();
 		
 		boolean showFullDataFileSampling = Config.Client.Advanced.Debugging.DebugWireframe.showFullDataFileStatus.get();
 		if (showFullDataFileSampling)
@@ -179,6 +183,8 @@ public class FullDataFileHandler extends AbstractDataSourceHandler<IFullDataSour
 		// promotion may happen if all children are fully populated
 		return newFullDataSource.tryPromotingToCompleteDataSource();
 	}
+	
+	
 	
 	@Override
 	protected IIncompleteFullDataSource makeEmptyDataSource(DhSectionPos pos)

@@ -53,7 +53,7 @@ import javax.annotation.CheckForNull;
 import java.util.Map;
 import java.util.concurrent.*;
 
-public class DhServerLevel extends DhLevel implements IDhServerLevel
+public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	

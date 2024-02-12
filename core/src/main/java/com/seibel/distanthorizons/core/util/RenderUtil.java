@@ -147,14 +147,13 @@ public class RenderUtil
 	{
 		// in James' testing a near clip plane distance of 2 blocks is enough to allow the fragment
 		// culling to take effect instead of seeing the near clip plane.
-		float nearClipDist = 2f; //MC_RENDER.getRenderDistance() * LodUtil.CHUNK_WIDTH / 4.0f; //getNearClipPlaneDistanceInBlocks(partialTicks);
+		float nearClipDist = RenderUtil.getNearClipPlaneDistanceInBlocks(partialTicks);
 		if (Config.Client.Advanced.Debugging.lodOnlyMode.get())
 		{
 			nearClipDist = 0.1f;
 		}
 		
-		int farPlaneDistanceInBlocks = RenderUtil.getFarClipPlaneDistanceInBlocks();
-		float farClipDist = (float) ((farPlaneDistanceInBlocks + LodUtil.REGION_WIDTH) * Math.sqrt(2));
+		float farClipDist = (float) RenderUtil.getFarClipPlaneDistanceInBlocks();
 		
 		// Create a copy of the current matrix, so it won't be modified.
 		Mat4f lodProj = mcProjMat.copy();
@@ -228,7 +227,9 @@ public class RenderUtil
 	public static int getFarClipPlaneDistanceInBlocks()
 	{
 		int lodChunkDist = Config.Client.Advanced.Graphics.Quality.lodChunkRenderDistanceRadius.get();
-		return lodChunkDist * LodUtil.CHUNK_WIDTH;
+		int lodBlockDist = lodChunkDist * LodUtil.CHUNK_WIDTH;
+		// sqrt 2 to prevent the corners from being cut off
+		return (int)((lodBlockDist + LodUtil.REGION_WIDTH) * Math.sqrt(2));
 	}
 	
 	/** @return false if LODs shouldn't be rendered for any reason */
