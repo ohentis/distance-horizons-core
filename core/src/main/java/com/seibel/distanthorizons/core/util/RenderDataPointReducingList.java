@@ -832,8 +832,8 @@ public class RenderDataPointReducingList
 			return RenderDataPointUtil.createVoidDataPoint();
 		}
 		
-		long highest;
-		int lowest;
+		long highestDataPoint;
+		long lowestDataPoint;
 		int index = 0;
 		//first loop: find the first visible segment.
 		foundVisible:
@@ -843,8 +843,8 @@ public class RenderDataPointReducingList
 				long dataPoint = view.get(index);
 				if (isDataVisible(dataPoint))
 				{
-					highest = dataPoint;
-					lowest = RenderDataPointUtil.getYMin(dataPoint);
+					highestDataPoint = dataPoint;
+					lowestDataPoint = dataPoint;
 					break foundVisible;
 				}
 			}
@@ -858,13 +858,15 @@ public class RenderDataPointReducingList
 			long dataPoint = view.get(index);
 			if (isDataVisible(dataPoint))
 			{
-				int y = RenderDataPointUtil.getYMin(dataPoint);
-				if (y > highest) highest = dataPoint;
-				else if (y < lowest) lowest = y;
+				int yMax = RenderDataPointUtil.getYMax(dataPoint);
+				int yMin = RenderDataPointUtil.getYMin(dataPoint);
+				
+				if (yMax > RenderDataPointUtil.getYMax(highestDataPoint)) highestDataPoint = dataPoint;
+				else if (yMin < RenderDataPointUtil.getYMin(lowestDataPoint)) lowestDataPoint = dataPoint;
 			}
 		}
 		
-		return (highest & ~RenderDataPointUtil.DEPTH_SHIFTED_MASK) | ((lowest & RenderDataPointUtil.DEPTH_MASK) << RenderDataPointUtil.DEPTH_SHIFT);
+		return (highestDataPoint & ~RenderDataPointUtil.DEPTH_SHIFTED_MASK) | (RenderDataPointUtil.getYMin(lowestDataPoint) << RenderDataPointUtil.DEPTH_SHIFT);
 	}
 	
 	
