@@ -243,6 +243,21 @@ public class FullDataToRenderDataTransformer
 			int id = FullDataPointUtil.getId(fullData);
 			int light = FullDataPointUtil.getLight(fullData);
 			
+			// TODO how should corrupted data be handled?
+			// TODO why is the full data corrupted in the first place? FullDataPointUtil hasn't been changed in a long time, could one of the full data point objects be corrupted?
+			// TODO if either of these happen the ID might also be invalid
+			//if (bottomY + blockHeight > 300)
+			//{
+			//  // this data point is too tall, it's probably a monolith
+			//	int k = 0;
+			//	throw new RuntimeException();
+			//}
+			//if (light > 16 || light < 0)
+			//{
+			//  // light is out of range
+			//	throw new RuntimeException();
+			//}
+			
 			IBiomeWrapper biome;
 			IBlockStateWrapper block;
 			try
@@ -257,7 +272,11 @@ public class FullDataToRenderDataTransformer
 				{
 					brokenPos.add(fullDataMapping.getPos());
 					String dimName = level.getLevelWrapper().getDimensionType().getDimensionName();
-					LOGGER.warn("Unable to get data point with id ["+id+"] (Max possible ID: ["+fullDataMapping.getMaxValidId()+"]) for pos ["+fullDataMapping.getPos()+"] in dimension ["+dimName+"]. Error: ["+e.getMessage()+"]. Further errors for this position won't be logged.");
+					LOGGER.warn("Unable to get data point with id ["+id+"] " +
+							"(Max possible ID: ["+fullDataMapping.getMaxValidId()+"]) " +
+							"for pos ["+fullDataMapping.getPos()+"] in dimension ["+dimName+"]. " +
+							"Error: ["+e.getMessage()+"]. " +
+							"Further errors for this position won't be logged.");
 				}
 				
 				// skip rendering broken data
