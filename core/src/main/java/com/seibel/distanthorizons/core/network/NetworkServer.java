@@ -39,6 +39,7 @@ import io.netty.handler.logging.LoggingHandler;
 import io.netty.util.concurrent.DefaultThreadFactory;
 import org.apache.logging.log4j.LogManager;
 
+import javax.annotation.Nullable;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -110,7 +111,8 @@ public class NetworkServer extends NetworkEventSource implements AutoCloseable
 							msg.setConnection(this.connections.computeIfAbsent(ctx, Connection::new));
 							this.handleMessage(msg);
 						},
-						ctx -> this.addNewConnection(this.connections.computeIfAbsent(ctx, Connection::new))
+						ctx -> this.addNewConnection(this.connections.computeIfAbsent(ctx, Connection::new)),
+						(ctx, closeReason) -> ((Connection) this.connections.computeIfAbsent(ctx, Connection::new)).closeReason = closeReason
 				)));
 		
 		ChannelFuture bindFuture = bootstrap.bind(this.port);
@@ -147,6 +149,12 @@ public class NetworkServer extends NetworkEventSource implements AutoCloseable
 	public class Connection implements IConnection
 	{
 		private final ChannelHandlerContext channelContext;
+		
+		@Nullable
+		private Throwable closeReason;
+		@Override
+		@Nullable
+		public Throwable getCloseReason() { return this.closeReason; }
 		
 		public Connection(ChannelHandlerContext channelContext)
 		{

@@ -33,6 +33,7 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.concurrent.DefaultThreadFactory;
 import org.apache.logging.log4j.LogManager;
 
+import javax.annotation.Nullable;
 import java.net.InetSocketAddress;
 import java.util.EnumSet;
 import java.util.Set;
@@ -65,7 +66,13 @@ public class NetworkClient extends NetworkEventSource implements IConnection, Au
 	
 	private final InetSocketAddress address;
 	
-    private final EventLoopGroup workerGroup = new NioEventLoopGroup(0, new DefaultThreadFactory("DH-Network - Client Thread"));
+	@Nullable
+	private Throwable closeReason;
+	@Override
+	@Nullable
+	public Throwable getCloseReason() { return this.closeReason; }
+	
+	private final EventLoopGroup workerGroup = new NioEventLoopGroup(0, new DefaultThreadFactory("DH-Network - Client Thread"));
     private final Bootstrap clientBootstrap = new Bootstrap()
             .group(this.workerGroup)
             .channel(NioSocketChannel.class)
@@ -75,7 +82,8 @@ public class NetworkClient extends NetworkEventSource implements IConnection, Au
 			            msg.setConnection(this);
 						this.handleMessage(msg);
 					},
-		            ctx -> this.addNewConnection(this)
+		            ctx -> this.addNewConnection(this),
+		            (ctx, closeReason) -> this.closeReason = closeReason
             )));
 	
     private Channel channel;

@@ -22,6 +22,8 @@ public interface IConnection
 	@Nullable
 	ChannelHandlerContext getChannelContext();
 	NetworkEventSource getRequestHandler();
+	@Nullable
+	Throwable getCloseReason();
 	
 	@Nullable
 	default SocketAddress getRemoteAddress()
@@ -86,18 +88,6 @@ public interface IConnection
 		ctx.channel().config().setAutoRead(false);
 		ctx.writeAndFlush(new CloseReasonMessage(reason))
 				.addListener(ChannelFutureListener.CLOSE);
-	}
-	
-	@Nullable
-	default Throwable getCloseReason()
-	{
-		ChannelHandlerContext ctx = this.getChannelContext();
-		if (ctx == null)
-		{
-			return null;
-		}
-		
-		return ctx.channel().closeFuture().cause();
 	}
 	
 }

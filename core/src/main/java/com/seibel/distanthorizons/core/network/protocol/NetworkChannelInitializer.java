@@ -25,9 +25,15 @@ import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
 import org.jetbrains.annotations.NotNull;
 
-/** used when creating a network channel */
+/** Used when creating a network channel */
 public class NetworkChannelInitializer extends ChannelInitializer<SocketChannel>
 {
+	/**
+	 * 4 MiB should be enough for any transferred data. <br>
+	 * Currently largest transferred data is DH full data sections, which usually don't exceed 1-2 MiB in size.
+	 */
+	private static final int MAX_MESSAGE_LENGTH = 4194304;
+	
 	private final MessageHandler messageHandler;
 
 	public NetworkChannelInitializer(MessageHandler messageHandler) { this.messageHandler = messageHandler; }
@@ -43,12 +49,11 @@ public class NetworkChannelInitializer extends ChannelInitializer<SocketChannel>
 		pipeline.addLast(new NetworkOutboundExceptionRouter());
 		
 		// Decoder
-		pipeline.addLast(new LengthFieldBasedFrameDecoder(4194304 /* 4 MiB */, 0, Integer.BYTES, 0, Integer.BYTES));
+		pipeline.addLast(new LengthFieldBasedFrameDecoder(MAX_MESSAGE_LENGTH, 0, Integer.BYTES, 0, Integer.BYTES));
 		pipeline.addLast(new MessageDecoder());
 		
 		// Handler
 		pipeline.addLast(this.messageHandler);
-		pipeline.addLast(new NetworkExceptionHandler());
 	}
 	
 }
