@@ -187,6 +187,10 @@ public class LodRenderProgram extends ShaderProgram implements IDhApiShaderProgr
 		
 		// Clip Uniform
 		float dhNearClipDistance = RenderUtil.getNearClipPlaneDistanceInBlocks(renderParameters.partialTicks);
+		// TODO a different multiplier might be necessary
+		//  this is to try and allow the fragment culling to go farther than the near clip plane.
+		//  Currently this only works for certain FOV/screen ratio combos.
+		dhNearClipDistance *= 2.0f;
 		setUniform(clipDistanceUniform, dhNearClipDistance);
 	}
 	

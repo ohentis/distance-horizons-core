@@ -186,13 +186,7 @@ public class RenderUtil
 	public static float getNearClipPlaneDistanceInBlocks(float partialTicks)
 	{
 		int chunkRenderDistance = MC_RENDER.getRenderDistance();
-		if (chunkRenderDistance % 2 == 0)
-		{
-			chunkRenderDistance += 1;
-		}
-		
 		int vanillaBlockRenderedDistance = chunkRenderDistance * LodUtil.CHUNK_WIDTH;
-		vanillaBlockRenderedDistance *= 2;
 		
 		float nearClipPlane;
 		if (Config.Client.Advanced.Debugging.lodOnlyMode.get())
