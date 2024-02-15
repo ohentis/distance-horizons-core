@@ -19,6 +19,7 @@ import com.seibel.distanthorizons.core.network.messages.session.PlayerUUIDMessag
 import com.seibel.distanthorizons.core.network.messages.session.RemotePlayerConfigMessage;
 import com.seibel.distanthorizons.core.network.protocol.FutureTrackableNetworkMessage;
 import com.seibel.distanthorizons.core.network.protocol.NetworkMessage;
+import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import org.jetbrains.annotations.Nullable;
 
@@ -112,23 +113,25 @@ public class RemotePlayerConnectionHandler implements Closeable
 	{
 		return this.connectedPlayersOnly((msg, serverPlayerState) ->
 		{
-			if (serverPlayerState.serverPlayer.getLevel() != level.getLevelWrapper())
+			LodUtil.assertTrue(msg instanceof ILevelRelatedMessage, "Received message does not implement " + ILevelRelatedMessage.class.getSimpleName() + ": " + msg.getClass().getSimpleName());
+			
+			// Handle only in requested dimension
+			if (!((ILevelRelatedMessage) msg).isSameLevelAs(level.getLevelWrapper()))
 			{
 				return;
 			}
 			
-			if (msg instanceof ILevelRelatedMessage)
+			// If player is not in this dimension and handling multiple dimensions at once is not allowed
+			if (serverPlayerState.serverPlayer.getLevel() != level.getLevelWrapper()
+					&& !GENERATE_MULTIPLE_DIMENSIONS_CONFIG.get())
 			{
-				if (!GENERATE_MULTIPLE_DIMENSIONS_CONFIG.get() && !((ILevelRelatedMessage) msg).isSameLevelAs(level.getLevelWrapper()))
+				// If the message can be replied to - reply with error, otherwise just ignore
+				if (msg instanceof FutureTrackableNetworkMessage)
 				{
-					if (msg instanceof FutureTrackableNetworkMessage)
-					{
-						((FutureTrackableNetworkMessage) msg).sendResponse(new InvalidLevelException("Invalid level"));
-					}
-					
-					return;
+					((FutureTrackableNetworkMessage) msg).sendResponse(new InvalidLevelException("Invalid level"));
 				}
 				
+				return;
 			}
 			
 			next.accept(msg, serverPlayerState);

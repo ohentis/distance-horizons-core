@@ -74,9 +74,8 @@ public class MessageHandler extends SimpleChannelInboundHandler<NetworkMessage>
 	}
 	
 	@Override
-	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception
+	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause)
 	{
-		super.exceptionCaught(ctx, cause);
 		this.closeReasonConsumer.accept(ctx, cause);
 		ctx.close();
 		

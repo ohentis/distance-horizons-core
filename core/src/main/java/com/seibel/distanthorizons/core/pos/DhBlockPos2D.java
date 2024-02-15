@@ -59,6 +59,8 @@ public class DhBlockPos2D
 	
 	public DhBlockPos2D subtract(DhBlockPos2D other) { return new DhBlockPos2D(this.x - other.x, this.z - other.z); }
 	
+	public DhBlockPos2D scale(double scale) { return new DhBlockPos2D((int) (this.x * scale), (int) (this.z * scale)); }
+	
 	public Pos2D toPos2D() { return new Pos2D(this.x, this.z); }
 	
 	

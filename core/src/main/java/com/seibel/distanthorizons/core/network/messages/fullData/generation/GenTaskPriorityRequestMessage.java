@@ -19,6 +19,8 @@
 
 package com.seibel.distanthorizons.core.network.messages.fullData.generation;
 
+import com.seibel.distanthorizons.core.level.IDhLevel;
+import com.seibel.distanthorizons.core.network.messages.base.ILevelRelatedMessage;
 import com.seibel.distanthorizons.core.network.protocol.FutureTrackableNetworkMessage;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import io.netty.buffer.ByteBuf;
@@ -26,25 +28,35 @@ import io.netty.buffer.ByteBuf;
 import java.util.ArrayList;
 import java.util.List;
 
-public class GenTaskPriorityRequestMessage extends FutureTrackableNetworkMessage
+public class GenTaskPriorityRequestMessage extends FutureTrackableNetworkMessage implements ILevelRelatedMessage
 {
 	public List<DhSectionPos> posList = new ArrayList<>();
 	
+	private int levelHashCode;
+	@Override
+	public int getLevelHashCode() { return this.levelHashCode; }
+	
+	
 	public GenTaskPriorityRequestMessage() { }
-	public GenTaskPriorityRequestMessage(List<DhSectionPos> posList)
+	public GenTaskPriorityRequestMessage(List<DhSectionPos> posList, IDhLevel level)
 	{
 		this.posList = posList;
+		
+		// TODO Multiverse support
+		this.levelHashCode = level.getLevelWrapper().getDimensionType().getDimensionName().hashCode();
 	}
 	
 	@Override
 	protected void encode0(ByteBuf out)
 	{
+		out.writeInt(this.levelHashCode);
 		this.encodeCollection(out, this.posList);
 	}
 	
 	@Override
 	protected void decode0(ByteBuf in)
 	{
+		this.levelHashCode = in.readInt();
 		this.decodeCollection(in, this.posList, DhSectionPos::zero);
 	}
 	

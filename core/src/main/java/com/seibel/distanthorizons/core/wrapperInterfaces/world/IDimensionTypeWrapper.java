@@ -37,4 +37,6 @@ public interface IDimensionTypeWrapper extends IDhApiDimensionTypeWrapper, IBind
 	@Override
 	boolean hasSkyLight();
 	
+	double getTeleportationScale(IDimensionTypeWrapper to);
+	
 }

@@ -26,8 +26,8 @@ package com.seibel.distanthorizons.coreapi;
 public final class ModInfo
 {
 	public static final String ID = "distanthorizons";
-	/** The internal protocol version used for networking */
-	public static final int PROTOCOL_VERSION = 1;
+	/** The internal protocol version used for networking. Incremented every time any packets are added, changed or removed. */
+	public static final int PROTOCOL_VERSION = 2;
 	/** The protocol version used for multiverse networking */
 	public static final int MULTIVERSE_PLUGIN_PROTOCOL_VERSION = 1;
 	/** The internal mod name */

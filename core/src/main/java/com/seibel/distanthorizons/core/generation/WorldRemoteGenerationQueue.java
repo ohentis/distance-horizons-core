@@ -100,7 +100,7 @@ public class WorldRemoteGenerationQueue extends AbstractFullDataRequestQueue imp
 				return;
 			};
 			
-			CompletableFuture<GenTaskPriorityResponseMessage> request = this.networkState.getClient().sendRequest(new GenTaskPriorityRequestMessage(posList), GenTaskPriorityResponseMessage.class);
+			CompletableFuture<GenTaskPriorityResponseMessage> request = this.networkState.getClient().sendRequest(new GenTaskPriorityRequestMessage(posList, this.level), GenTaskPriorityResponseMessage.class);
 			this.genTaskPriorityRequest = request;
 			request.handleAsync((response, throwable) -> {
 				try

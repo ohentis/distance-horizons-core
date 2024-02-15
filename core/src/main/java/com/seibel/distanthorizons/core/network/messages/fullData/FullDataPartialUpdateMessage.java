@@ -86,9 +86,7 @@ public class FullDataPartialUpdateMessage extends NetworkMessage implements ILev
 	public void decode(ByteBuf in)
 	{
 		this.levelHashCode = in.readInt();
-		
 		this.chunkPos = new DhChunkPos(in.readInt(), in.readInt());
-		
 		this.dataBuffer = in.readBytes(in.readInt());
 	}
 	
