@@ -214,6 +214,7 @@ public class RenderUtil
 		double fov = MC_RENDER.getFov(partialTicks);
 		double aspectRatio = (double) MC_RENDER.getScreenWidth() / MC_RENDER.getScreenHeight();
 		
+		// source: https://stackoverflow.com/questions/8101119/how-do-i-methodically-choose-the-near-clip-plane-distance-for-a-perspective-proj/8101234#8101234
 		return (float) (nearClipPlane
 				/ Math.sqrt(1d + MathUtil.pow2(Math.tan(fov / 180d * Math.PI / 2d))
 				* (MathUtil.pow2(aspectRatio) + 1d)));
