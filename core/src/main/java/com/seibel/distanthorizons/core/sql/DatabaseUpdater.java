@@ -222,6 +222,18 @@ public class DatabaseUpdater
 	
 	
 	
+	//====================//
+	// startup validation //
+	//====================//
+	
+	/** 
+	 * Can be used to confirm the auto update scripts are in their expected folder. 
+	 * Will throw an exception if the scripts are missing or malformed.
+	 */
+	public static int getAutoUpdateScriptCount() throws NullPointerException, IOException { return getAutoUpdateScripts().size(); }
+	
+	
+	
 	//================//
 	// helper classes //
 	//================//

@@ -20,6 +20,7 @@
 package com.seibel.distanthorizons.core;
 
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
+import com.seibel.distanthorizons.core.sql.DatabaseUpdater;
 import com.seibel.distanthorizons.core.wrapperInterfaces.IWrapperFactory;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.core.world.DhApiWorldProxy;
@@ -34,6 +35,8 @@ import com.seibel.distanthorizons.core.render.DhApiRenderProxy;
 import net.jpountz.lz4.LZ4Compressor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import java.io.InputStream;
 
 /** Handles first time Core setup. */
 public class Initializer
@@ -55,6 +58,21 @@ public class Initializer
 		{
 			LOGGER.fatal("Critical programmer error: One or more libraries aren't present. Error: [" + e.getMessage() + "].");
 			throw e;
+		}
+		
+		// confirm the resource directory is present
+		try
+		{
+			int scriptCount = DatabaseUpdater.getAutoUpdateScriptCount();
+			if (scriptCount == 0)
+			{
+				throw new NullPointerException("No auto update scripts found, but no error thrown. This might mean the script list file is corrupted or empty.");
+			}
+		}
+		catch (Exception e)
+		{
+			LOGGER.fatal("Critical programmer error: Can't read SQL Scripts resource folder is either missing or malformed. Error: [" + e.getMessage() + "].");
+			throw new RuntimeException(e);
 		}
 		
 		
