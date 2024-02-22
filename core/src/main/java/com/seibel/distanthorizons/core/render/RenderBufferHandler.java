@@ -385,15 +385,23 @@ public class RenderBufferHandler implements AutoCloseable
 	
 	public void renderOpaque(LodRenderer renderContext, DhApiRenderParam renderEventParam)
 	{
-		this.loadedNearToFarBuffers.forEach(loadedBuffer -> loadedBuffer.buffer.renderOpaque(renderContext, renderEventParam));
+		// TODO why can these sometimes be null when teleporting between multiverses
+		if (this.loadedNearToFarBuffers != null)
+		{
+			this.loadedNearToFarBuffers.forEach(loadedBuffer -> loadedBuffer.buffer.renderOpaque(renderContext, renderEventParam));
+		}
 	}
 	public void renderTransparent(LodRenderer renderContext, DhApiRenderParam renderEventParam)
 	{
-		ListIterator<LoadedRenderBuffer> iter = this.loadedNearToFarBuffers.listIterator(this.loadedNearToFarBuffers.size());
-		while (iter.hasPrevious())
+		// TODO why can these sometimes be null when teleporting between multiverses
+		if (this.loadedNearToFarBuffers != null)
 		{
-			LoadedRenderBuffer loadedBuffer = iter.previous();
-			loadedBuffer.buffer.renderTransparent(renderContext, renderEventParam);
+			ListIterator<LoadedRenderBuffer> iter = this.loadedNearToFarBuffers.listIterator(this.loadedNearToFarBuffers.size());
+			while (iter.hasPrevious())
+			{
+				LoadedRenderBuffer loadedBuffer = iter.previous();
+				loadedBuffer.buffer.renderTransparent(renderContext, renderEventParam);
+			}
 		}
 	}
 	

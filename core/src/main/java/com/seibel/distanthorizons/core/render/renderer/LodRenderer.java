@@ -392,7 +392,11 @@ public class LodRenderer
 				if (Config.Client.Advanced.Graphics.Fog.drawMode.get() != EFogDrawMode.FOG_DISABLED)
 				{
 					profiler.popPush("LOD Fog");
-					FogShader.INSTANCE.setModelViewProjectionMatrix(renderEventParam.dhModelViewMatrix);
+					
+					Mat4f combinedMatrix = new Mat4f(renderEventParam.dhProjectionMatrix);
+					combinedMatrix.multiply(renderEventParam.dhModelViewMatrix);
+					
+					FogShader.INSTANCE.setModelViewProjectionMatrix(combinedMatrix);
 					FogShader.INSTANCE.render(renderEventParam.partialTicks);
 				}
 				

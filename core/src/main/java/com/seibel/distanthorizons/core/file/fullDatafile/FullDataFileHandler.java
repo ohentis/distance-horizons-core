@@ -31,6 +31,7 @@ import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
+import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
 import com.seibel.distanthorizons.core.sql.AbstractDataSourceRepo;
 import com.seibel.distanthorizons.core.sql.FullDataRepo;
 import com.seibel.distanthorizons.core.sql.DataSourceDto;
@@ -46,7 +47,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-public class FullDataFileHandler extends AbstractDataSourceHandler<IFullDataSource, IDhLevel> implements IFullDataSourceProvider
+public class FullDataFileHandler 
+		extends AbstractDataSourceHandler<IFullDataSource, IDhLevel> 
+		implements IFullDataSourceProvider, IDebugRenderable
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 
@@ -71,7 +74,12 @@ public class FullDataFileHandler extends AbstractDataSourceHandler<IFullDataSour
 	//=============//
 	
 	public FullDataFileHandler(IDhLevel level, AbstractSaveStructure saveStructure) { this(level, saveStructure, null); }
-	public FullDataFileHandler(IDhLevel level, AbstractSaveStructure saveStructure, @Nullable File saveDirOverride) { super(level, saveStructure, saveDirOverride); }
+	public FullDataFileHandler(IDhLevel level, AbstractSaveStructure saveStructure, @Nullable File saveDirOverride) 
+	{
+		super(level, saveStructure, saveDirOverride);
+		
+		DebugRenderer.register(this, Config.Client.Advanced.Debugging.DebugWireframe.showWorldGenQueue);
+	}
 	
 	
 	
@@ -223,6 +231,20 @@ public class FullDataFileHandler extends AbstractDataSourceHandler<IFullDataSour
 	
 	@Override
 	public int getUnsavedDataSourceCount() { return this.unsavedDataSourceBySectionPos.size(); }
+	
+	
+	
+	//===========//
+	// overrides //
+	//===========//
+	
+	@Override
+	public void debugRender(DebugRenderer renderer)
+	{
+		this.saveTimerTasksBySectionPos.keySet()
+				.forEach((pos) -> { renderer.renderBox(new DebugRenderer.Box(pos, -32f, 128f, 0.15f, Color.cyan)); });
+		
+	}
 	
 	
 }

@@ -29,7 +29,6 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.List;
@@ -58,7 +57,7 @@ public class BaseJFrame extends JFrame
 		setTitle(SingletonInjector.INSTANCE.get(ILangWrapper.class).getLang("lod.title"));
 		try
 		{
-			setIconImage(ImageIO.read(JarUtils.accessFile("icon.png")));
+			setIconImage(ImageIO.read(JarUtils.accessFile("assets/distanthorizons/icon.png")));
 		}
 		catch (Exception e)
 		{
@@ -165,7 +164,7 @@ public class BaseJFrame extends JFrame
 				super.paintComponent(g);
 				try
 				{
-					BufferedImage image = ImageIO.read(JarUtils.accessFile("logo.png"));
+					BufferedImage image = ImageIO.read(JarUtils.accessFile("assets/distanthorizons/logo.png"));
 					int logoWidth = (int) ((double) logoHeight * ((double) image.getWidth() / (double) image.getHeight())); // Calculate the aspect ratio and set the height correctly to not stretch it
 					g.drawImage(image, (getWidth() / 2) - (logoWidth / 2), 0, logoWidth, logoHeight, this); // Resize image and draw it
 				}
