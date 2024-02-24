@@ -40,16 +40,16 @@ public class MessageHandler extends SimpleChannelInboundHandler<NetworkMessage>
 	
 	private final BiConsumer<ChannelHandlerContext, NetworkMessage> messageConsumer;
 	private final Consumer<ChannelHandlerContext> channelActiveConsumer;
-	private final BiConsumer<ChannelHandlerContext, Throwable> closeReasonConsumer;
+	private final BiConsumer<ChannelHandlerContext, Throwable> exceptionConsumer;
 	
 	public MessageHandler(
 			BiConsumer<ChannelHandlerContext, NetworkMessage> messageConsumer,
 			Consumer<ChannelHandlerContext> channelActiveConsumer,
-			BiConsumer<ChannelHandlerContext, Throwable> closeReasonConsumer)
+			BiConsumer<ChannelHandlerContext, Throwable> exceptionConsumer)
 	{
 		this.messageConsumer = messageConsumer;
 		this.channelActiveConsumer = channelActiveConsumer;
-		this.closeReasonConsumer = closeReasonConsumer;
+		this.exceptionConsumer = exceptionConsumer;
 	}
 	
 	@Override
@@ -67,18 +67,8 @@ public class MessageHandler extends SimpleChannelInboundHandler<NetworkMessage>
 	}
 	
 	@Override
-	public void channelInactive(@NotNull ChannelHandlerContext channelContext) throws Exception
-	{
-		super.channelInactive(channelContext);
-		this.channelRead0(channelContext, new CloseEvent());
-	}
-	
-	@Override
 	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause)
 	{
-		this.closeReasonConsumer.accept(ctx, cause);
-		ctx.close();
-		
 		if (cause instanceof SocketException)
 		{
 			LOGGER.info("Exception caught in channel: [" + ctx.name() + "]: " + cause.getMessage());
@@ -86,7 +76,17 @@ public class MessageHandler extends SimpleChannelInboundHandler<NetworkMessage>
 		else
 		{
 			LOGGER.error("Exception caught in channel: [" + ctx.name() + "].", cause);
+			this.exceptionConsumer.accept(ctx, cause);
 		}
+		
+		ctx.close();
+	}
+	
+	@Override
+	public void channelInactive(@NotNull ChannelHandlerContext channelContext) throws Exception
+	{
+		super.channelInactive(channelContext);
+		this.channelRead0(channelContext, new CloseEvent());
 	}
 	
 }

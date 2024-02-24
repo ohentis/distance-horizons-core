@@ -103,7 +103,9 @@ public class NetworkClient extends NetworkEventSource implements IConnection, Au
 	{
 		this.registerHandler(CloseReasonMessage.class, closeReasonMessage ->
 		{
-			LOGGER.warn("Received disconnect reason: " + closeReasonMessage.reason);
+			String fullCloseText = "[Server] " + closeReasonMessage.reason;
+			LOGGER.warn(fullCloseText);
+			this.closeReason = new Exception(fullCloseText);
 			this.connectionState.set(EConnectionState.GOT_CLOSE_REASON);
         });
 		
