@@ -427,7 +427,7 @@ public class ColumnRenderSource implements IDataSource<IDhClientLevel>
 	
 	public DhSectionPos getSectionPos() { return this.sectionPos; }
 	@Override
-	public String getPrimaryKeyString() { return this.sectionPos.serialize(); }
+	public DhSectionPos getKey() { return this.sectionPos; }
 	
 	public byte getDataDetailLevel() { return (byte) (this.sectionPos.getDetailLevel() - SECTION_SIZE_OFFSET); }
 	

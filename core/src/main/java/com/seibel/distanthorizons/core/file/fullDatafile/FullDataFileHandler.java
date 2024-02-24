@@ -125,7 +125,7 @@ public class FullDataFileHandler
 		while (possibleChildList.size() != 0)
 		{
 			DhSectionPos possiblePos = possibleChildList.remove(possibleChildList.size()-1);
-			if (this.repo.existsWithPrimaryKey(possiblePos.serialize()))
+			if (this.repo.existsWithKey(possiblePos))
 			{
 				samplePosList.add(possiblePos);
 			}

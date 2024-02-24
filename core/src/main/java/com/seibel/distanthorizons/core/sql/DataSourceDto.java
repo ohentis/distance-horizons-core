@@ -31,7 +31,7 @@ import java.io.InputStream;
 import java.util.concurrent.atomic.AtomicLong;
 
 /** handles storing both {@link IFullDataSource}'s and {@link ColumnRenderSource}'s in the database. */
-public class DataSourceDto implements IBaseDTO
+public class DataSourceDto implements IBaseDTO<DhSectionPos>
 {
 	public DhSectionPos pos;
 	public int checksum;
@@ -49,6 +49,11 @@ public class DataSourceDto implements IBaseDTO
 	public final byte[] dataArray;
 	
 	
+	
+	//=============//
+	// constructor //
+	//=============//
+	
 	public DataSourceDto(DhSectionPos pos, int checksum, byte dataDetailLevel, EDhApiWorldGenerationStep worldGenStep, String dataType, byte binaryDataFormatVersion, byte[] dataArray)
 	{
 		this.pos = pos;
@@ -63,9 +68,6 @@ public class DataSourceDto implements IBaseDTO
 	}
 	
 	
-	@Override
-	public String getPrimaryKeyString() { return this.pos.serialize(); }
-	
 	/** @return a stream for the data contained in this DTO. */
 	public DhDataInputStream getInputStream() throws IOException
 	{
@@ -73,5 +75,15 @@ public class DataSourceDto implements IBaseDTO
 		DhDataInputStream compressedStream = new DhDataInputStream(inputStream);
 		return compressedStream;
 	}
+	
+	
+	
+	//===========//
+	// overrides //
+	//===========//
+	
+	@Override
+	public DhSectionPos getKey() { return this.pos; }
+	
 	
 }

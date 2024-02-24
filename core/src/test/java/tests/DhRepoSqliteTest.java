@@ -19,11 +19,15 @@
 
 package tests;
 
+import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.sql.DatabaseUpdater;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
-import testItems.sql.TestDataRepo;
-import testItems.sql.TestDto;
+import testItems.sql.TestCompoundKeyRepo;
+import testItems.sql.TestCompoundKeyDto;
+import testItems.sql.TestPrimaryKeyRepo;
+import testItems.sql.TestSingleKeyDto;
 
 import java.io.File;
 import java.sql.SQLException;
@@ -35,28 +39,29 @@ import java.util.Map;
 public class DhRepoSqliteTest
 {
 	public static String DATABASE_TYPE = "jdbc:sqlite";
+	public static String DB_FILE_NAME = "test.sqlite";
 	
 	
-	@Test
-	public void testFileSqlite()
+	
+	@BeforeClass
+	public static void testSetup()
 	{
-		String dbFileName = "test.sqlite";
-		
-		
-		File dbFile = new File(dbFileName);
+		File dbFile = new File(DB_FILE_NAME);
 		if (dbFile.exists())
 		{
 			Assert.assertTrue("unable to delete old test DB File.", dbFile.delete());
 		}
-		
-		
-		TestDataRepo testDataRepo = null;
+	}
+	
+	
+	
+	@Test
+	public void testPrimaryKeyRepo()
+	{
+		TestPrimaryKeyRepo primaryKeyRepo = null;
 		try
 		{
-			testDataRepo = new TestDataRepo(DATABASE_TYPE, dbFileName);
-			
-			dbFile = new File(dbFileName);
-			Assert.assertTrue("dbFile not created", dbFile.exists());
+			primaryKeyRepo = new TestPrimaryKeyRepo(DATABASE_TYPE, DB_FILE_NAME);
 			
 			
 			
@@ -65,15 +70,15 @@ public class DhRepoSqliteTest
 			//==========================//
 			
 			// check that the schema table is created
-			Map<String, Object> autoUpdateTablePresentResult = testDataRepo.queryDictionaryFirst("SELECT name FROM sqlite_master WHERE type='table' AND name='"+DatabaseUpdater.SCHEMA_TABLE_NAME+"';");
+			Map<String, Object> autoUpdateTablePresentResult = primaryKeyRepo.queryDictionaryFirst("SELECT name FROM sqlite_master WHERE type='table' AND name='"+DatabaseUpdater.SCHEMA_TABLE_NAME+"';");
 			if (autoUpdateTablePresentResult == null || autoUpdateTablePresentResult.get("name") == null)
 			{
 				Assert.fail("Auto DB update table missing.");
 			}
 			
 			// check that the update scripts aren't run multiple times
-			TestDataRepo altDataRepoOne = new TestDataRepo(DATABASE_TYPE, dbFileName);
-			TestDataRepo altDataRepoTwo = new TestDataRepo(DATABASE_TYPE, dbFileName);
+			TestPrimaryKeyRepo altDataRepoOne = new TestPrimaryKeyRepo(DATABASE_TYPE, DB_FILE_NAME);
+			TestPrimaryKeyRepo altDataRepoTwo = new TestPrimaryKeyRepo(DATABASE_TYPE, DB_FILE_NAME);
 			
 			
 			
@@ -82,39 +87,39 @@ public class DhRepoSqliteTest
 			//===========//
 			
 			// insert
-			TestDto insertDto = new TestDto(0, "a", 0L, (byte) 0);
-			testDataRepo.save(insertDto);
+			TestSingleKeyDto insertDto = new TestSingleKeyDto(0, "a", 0L, (byte) 0);
+			primaryKeyRepo.save(insertDto);
 			
 			// get
-			TestDto getDto = testDataRepo.getByPrimaryKey("0");
+			TestSingleKeyDto getDto = primaryKeyRepo.getByKey(0);
 			Assert.assertNotNull("get failed, null returned", getDto);
 			Assert.assertEquals("get/insert failed, not equal", insertDto, getDto);
 			
 			// exists - DTO present
-			Assert.assertTrue("DTO exists failed", testDataRepo.exists(insertDto));
-			Assert.assertTrue("DTO exists failed", testDataRepo.existsWithPrimaryKey(insertDto.getPrimaryKeyString()));
+			Assert.assertTrue("DTO exists failed", primaryKeyRepo.exists(insertDto));
+			Assert.assertTrue("DTO exists failed", primaryKeyRepo.existsWithKey(insertDto.getKey()));
 			
 			
 			// update
-			TestDto updateMetaFile = new TestDto(0, "b", Long.MAX_VALUE, Byte.MAX_VALUE);
-			testDataRepo.save(updateMetaFile);
+			TestSingleKeyDto updateMetaFile = new TestSingleKeyDto(0, "b", Long.MAX_VALUE, Byte.MAX_VALUE);
+			primaryKeyRepo.save(updateMetaFile);
 			
 			// get
-			getDto = testDataRepo.getByPrimaryKey("0");
+			getDto = primaryKeyRepo.getByKey(0);
 			Assert.assertNotNull("get failed, null returned", getDto);
 			Assert.assertEquals("get/insert failed, not equal", updateMetaFile, getDto);
 			
 			
 			// delete
-			testDataRepo.delete(updateMetaFile);
+			primaryKeyRepo.delete(updateMetaFile);
 			
 			// get
-			getDto = testDataRepo.getByPrimaryKey("0");
+			getDto = primaryKeyRepo.getByKey(0);
 			Assert.assertNull("delete failed, not null returned", getDto);
 			
 			// exists - DTO absent
-			Assert.assertFalse("DTO exists failed", testDataRepo.exists(insertDto));
-			Assert.assertFalse("DTO exists failed", testDataRepo.existsWithPrimaryKey(insertDto.getPrimaryKeyString()));
+			Assert.assertFalse("DTO exists failed", primaryKeyRepo.exists(insertDto));
+			Assert.assertFalse("DTO exists failed", primaryKeyRepo.existsWithKey(insertDto.getKey()));
 			
 		}
 		catch (SQLException e)
@@ -123,11 +128,75 @@ public class DhRepoSqliteTest
 		}
 		finally
 		{
-			if (testDataRepo != null)
+			if (primaryKeyRepo != null)
 			{
-				testDataRepo.close();
+				primaryKeyRepo.close();
 			}
 		}
 	}
+	
+	@Test
+	public void testCompoundKeyRepo()
+	{
+		TestCompoundKeyRepo compoundKeyRepo = null;
+		try
+		{
+			compoundKeyRepo = new TestCompoundKeyRepo(DATABASE_TYPE, DB_FILE_NAME);
+			
+			
+			
+			//===========//
+			// DTO tests //
+			//===========//
+			
+			// insert
+			TestCompoundKeyDto insertDto = new TestCompoundKeyDto(new DhChunkPos(1, 2), "a");
+			compoundKeyRepo.save(insertDto);
+			
+			// get
+			TestCompoundKeyDto getDto = compoundKeyRepo.getByKey(new DhChunkPos(1, 2));
+			Assert.assertNotNull("get failed, null returned", getDto);
+			Assert.assertEquals("get/insert failed, not equal", insertDto, getDto);
+			
+			// exists - DTO present
+			Assert.assertTrue("DTO exists failed", compoundKeyRepo.exists(insertDto));
+			Assert.assertTrue("DTO exists failed", compoundKeyRepo.existsWithKey(insertDto.getKey()));
+			
+			
+			// update
+			TestCompoundKeyDto updateMetaFile = new TestCompoundKeyDto(new DhChunkPos(1, 2), "b");
+			compoundKeyRepo.save(updateMetaFile);
+			
+			// get
+			getDto = compoundKeyRepo.getByKey(new DhChunkPos(1, 2));
+			Assert.assertNotNull("get failed, null returned", getDto);
+			Assert.assertEquals("get/insert failed, not equal", updateMetaFile, getDto);
+			
+			
+			// delete
+			compoundKeyRepo.delete(updateMetaFile);
+			
+			// get
+			getDto = compoundKeyRepo.getByKey(new DhChunkPos(1, 2));
+			Assert.assertNull("delete failed, not null returned", getDto);
+			
+			// exists - DTO absent
+			Assert.assertFalse("DTO exists failed", compoundKeyRepo.exists(insertDto));
+			Assert.assertFalse("DTO exists failed", compoundKeyRepo.existsWithKey(insertDto.getKey()));
+			
+		}
+		catch (SQLException e)
+		{
+			Assert.fail(e.getMessage());
+		}
+		finally
+		{
+			if (compoundKeyRepo != null)
+			{
+				compoundKeyRepo.close();
+			}
+		}
+	}
+	
 	
 }

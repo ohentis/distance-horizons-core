@@ -193,7 +193,7 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandler
 				continue;
 			}
 			
-			if (this.repo.existsWithPrimaryKey(genPos.serialize()))
+			if (this.repo.existsWithKey(genPos))
 			{
 				continue;
 			}

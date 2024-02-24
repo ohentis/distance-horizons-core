@@ -20,16 +20,18 @@
 package testItems.sql;
 
 import com.seibel.distanthorizons.core.sql.IBaseDTO;
-import org.junit.Assert;
 
-public class TestDto implements IBaseDTO
+public class TestSingleKeyDto implements IBaseDTO<Integer>
 {
 	public int id;
 	public String value;
 	public long longValue;
 	public byte byteValue;
 	
-	public TestDto(int id, String value, long longValue, byte byteValue) 
+	
+	
+	
+	public TestSingleKeyDto(int id, String value, long longValue, byte byteValue) 
 	{ 
 		this.id = id;
 		this.value = value;
@@ -38,7 +40,7 @@ public class TestDto implements IBaseDTO
 	}
 	
 	@Override 
-	public String getPrimaryKeyString() { return this.id+""; }
+	public Integer getKey() { return this.id; }
 	
 	
 	@Override
@@ -50,7 +52,7 @@ public class TestDto implements IBaseDTO
 		}
 		else
 		{
-			TestDto otherDto = (TestDto) other;
+			TestSingleKeyDto otherDto = (TestSingleKeyDto) other;
 			
 			return otherDto.id == this.id
 					&& otherDto.value.equals(this.value)

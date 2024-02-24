@@ -53,7 +53,7 @@ public class DatabaseUpdater
 	// script running //
 	//================//
 	
-	public static <TDTO extends IBaseDTO> void runAutoUpdateScripts(AbstractDhRepo<TDTO> repo) throws SQLException
+	public static <TKey, TDTO extends IBaseDTO<TKey>> void runAutoUpdateScripts(AbstractDhRepo<TKey, TDTO> repo) throws SQLException
 	{
 		// get the resource scripts
 		ArrayList<SqlScript> scriptList;

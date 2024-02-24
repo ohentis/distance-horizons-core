@@ -17,7 +17,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
-import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -158,7 +157,7 @@ public abstract class AbstractDataSourceHandler<TDataSource extends IDataSource<
 		TDataSource dataSource = null;
 		try
 		{
-			DataSourceDto dto = this.repo.getByPrimaryKey(pos.serialize());
+			DataSourceDto dto = this.repo.getByKey(pos);
 			if (dto != null)
 			{
 				// load from file

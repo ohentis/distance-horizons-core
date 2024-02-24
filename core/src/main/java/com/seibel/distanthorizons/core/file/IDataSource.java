@@ -16,12 +16,10 @@ import java.io.IOException;
  * 
  * @param <TDhLevel> what type of level this data source can be created from
  */
-public interface IDataSource<TDhLevel extends IDhLevel> extends IBaseDTO
+public interface IDataSource<TDhLevel extends IDhLevel> extends IBaseDTO<DhSectionPos>
 {
 	
 	DhSectionPos getSectionPos();
-	@Override
-	default String getPrimaryKeyString() { return this.getSectionPos().serialize(); }
 	
 	
 	

@@ -22,7 +22,6 @@ package com.seibel.distanthorizons.core.sql;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Assert;
 
 import java.sql.*;
 import java.util.*;
@@ -31,15 +30,15 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Handles interfacing with SQL databases.
  * 
- * @param <TDTO> DTO stands for "Data Table Object" 
+ * @param <TDTO> DTO stands for "Data Transfer Object" 
  */
-public abstract class AbstractDhRepo<TDTO extends IBaseDTO>
+public abstract class AbstractDhRepo<TKey, TDTO extends IBaseDTO<TKey>>
 {
 	public static final int TIMEOUT_SECONDS = 30;
 	
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	private static final ConcurrentHashMap<String, Connection> CONNECTIONS_BY_CONNECTION_STRING = new ConcurrentHashMap<>();
-	private static final ConcurrentHashMap<AbstractDhRepo<?>, String> ACTIVE_CONNECTION_STRINGS_BY_REPO = new ConcurrentHashMap<>();
+	private static final ConcurrentHashMap<AbstractDhRepo<?, ?>, String> ACTIVE_CONNECTION_STRINGS_BY_REPO = new ConcurrentHashMap<>();
 	
 	private final String connectionString;
 	private final Connection connection;
@@ -107,10 +106,10 @@ public abstract class AbstractDhRepo<TDTO extends IBaseDTO>
 	// high level DB //
 	//===============//
 	
-	public TDTO get(TDTO dto) { return this.getByPrimaryKey(dto.getPrimaryKeyString()); }
-	public TDTO getByPrimaryKey(String primaryKey)
+	public TDTO get(TDTO dto) { return this.getByKey(dto.getKey()); }
+	public TDTO getByKey(TKey primaryKey)
 	{
-		Map<String, Object> objectMap = this.queryDictionaryFirst(this.createSelectPrimaryKeySql(primaryKey));
+		Map<String, Object> objectMap = this.queryDictionaryFirst(this.createSelectByKeySql(primaryKey));
 		if (objectMap != null && !objectMap.isEmpty())
 		{
 			return this.convertDictionaryToDto(objectMap);
@@ -124,7 +123,7 @@ public abstract class AbstractDhRepo<TDTO extends IBaseDTO>
 	
 	public void save(TDTO dto)
 	{
-		if (this.getByPrimaryKey(dto.getPrimaryKeyString()) != null)
+		if (this.getByKey(dto.getKey()) != null)
 		{
 			this.update(dto);
 		}
@@ -141,7 +140,7 @@ public abstract class AbstractDhRepo<TDTO extends IBaseDTO>
 		}
 		catch (DbConnectionClosedException ignored) 
 		{
-			LOGGER.warn("Attempted to insert ["+this.dtoClass.getSimpleName()+"] with primary key ["+(dto != null ? dto.getPrimaryKeyString() : "NULL")+"] on closed repo ["+this.connectionString+"].");
+			LOGGER.warn("Attempted to insert ["+this.dtoClass.getSimpleName()+"] with primary key ["+(dto != null ? dto.getKey() : "NULL")+"] on closed repo ["+this.connectionString+"].");
 		}
 		catch (SQLException e)
 		{
@@ -158,7 +157,7 @@ public abstract class AbstractDhRepo<TDTO extends IBaseDTO>
 		}
 		catch (DbConnectionClosedException e)
 		{
-			LOGGER.warn("Attempted to update ["+this.dtoClass.getSimpleName()+"] with primary key ["+(dto != null ? dto.getPrimaryKeyString() : "NULL")+"] on closed repo ["+this.connectionString+"].");
+			LOGGER.warn("Attempted to update ["+this.dtoClass.getSimpleName()+"] with primary key ["+(dto != null ? dto.getKey() : "NULL")+"] on closed repo ["+this.connectionString+"].");
 		}
 		catch (SQLException e)
 		{
@@ -169,10 +168,10 @@ public abstract class AbstractDhRepo<TDTO extends IBaseDTO>
 	}
 	
 	
-	public void delete(TDTO dto) { this.deleteByPrimaryKey(dto.getPrimaryKeyString()); }
-	public void deleteByPrimaryKey(String primaryKey) 
+	public void delete(TDTO dto) { this.deleteWithKey(dto.getKey()); }
+	public void deleteWithKey(TKey key) 
 	{
-		String whereEqualStatement = this.createWherePrimaryKeySql(primaryKey);
+		String whereEqualStatement = this.createWhereStatement(key);
 		this.queryDictionaryFirst("DELETE FROM "+this.getTableName()+" WHERE "+whereEqualStatement); 
 	}
 	
@@ -180,10 +179,10 @@ public abstract class AbstractDhRepo<TDTO extends IBaseDTO>
 	public void deleteAll() { this.queryDictionaryFirst("DELETE FROM "+this.getTableName()); }
 	
 	
-	public boolean exists(TDTO dto) { return this.existsWithPrimaryKey(dto.getPrimaryKeyString()); }
-	public boolean existsWithPrimaryKey(String primaryKey) 
+	public boolean exists(TDTO dto) { return this.existsWithKey(dto.getKey()); }
+	public boolean existsWithKey(TKey key) 
 	{
-		String whereEqualStatement = this.createWherePrimaryKeySql(primaryKey);
+		String whereEqualStatement = this.createWhereStatement(key);
 		Map<String, Object> result = this.queryDictionaryFirst("SELECT EXISTS(SELECT 1 FROM "+this.getTableName()+" WHERE "+whereEqualStatement+") as 'existingCount';"); 
 		return result != null && (int)result.get("existingCount") != 0;
 	}
@@ -379,10 +378,7 @@ public abstract class AbstractDhRepo<TDTO extends IBaseDTO>
 	// helper methods //
 	//================//
 	
-	/** Example: <code> Id = '0' </code> */
-	public String createWherePrimaryKeySql(TDTO dto) { return this.createWherePrimaryKeySql(dto.getPrimaryKeyString()); }
-	/** Example: <code> Id = '0' </code> */
-	public String createWherePrimaryKeySql(String primaryKeyValue) { return this.getPrimaryKeyName()+" = '"+primaryKeyValue+"'"; }
+	public String createWhereStatement(TDTO dto) { return this.createWhereStatement(dto.getKey()); }
 	
 	public static List<Map<String, Object>> convertResultSetToDictionaryList(ResultSet resultSet) throws SQLException
 	{
@@ -440,12 +436,17 @@ public abstract class AbstractDhRepo<TDTO extends IBaseDTO>
 	//==================//
 	
 	public abstract String getTableName();
-	public abstract String getPrimaryKeyName();
 	
 	@Nullable
 	public abstract TDTO convertDictionaryToDto(Map<String, Object> objectMap) throws ClassCastException;
 	
-	public abstract String createSelectPrimaryKeySql(String primaryKey);
+	public String createSelectByKeySql(TKey key) { return "SELECT * FROM "+this.getTableName()+" WHERE "+this.createWhereStatement(key); }
+	/** 
+	 * Example: 
+	 * <code> Id = '0' </code> 
+	 * <code> ColOne = '0' AND ColTwo = '2' </code>
+	 */
+	public abstract String createWhereStatement(TKey key);
 	
 	public abstract PreparedStatement createInsertStatement(TDTO dto) throws SQLException;
 	public abstract PreparedStatement createUpdateStatement(TDTO dto) throws SQLException;

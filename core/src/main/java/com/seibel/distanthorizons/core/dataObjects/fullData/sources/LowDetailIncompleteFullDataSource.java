@@ -310,6 +310,9 @@ public class LowDetailIncompleteFullDataSource extends FullDataArrayAccessor imp
 	//=====================//
 	
 	@Override
+	public DhSectionPos getKey() { return this.sectionPos; }
+	
+	@Override
 	public DhSectionPos getSectionPos() { return this.sectionPos; }
 	
 	@Override

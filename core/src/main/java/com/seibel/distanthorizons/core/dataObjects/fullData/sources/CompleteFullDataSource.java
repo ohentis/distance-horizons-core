@@ -418,6 +418,9 @@ public class CompleteFullDataSource extends FullDataArrayAccessor implements IFu
 	//=====================//
 	
 	@Override
+	public DhSectionPos getKey() { return this.sectionPos; }
+	
+	@Override
 	public DhSectionPos getSectionPos() { return this.sectionPos; }
 	
 	@Override

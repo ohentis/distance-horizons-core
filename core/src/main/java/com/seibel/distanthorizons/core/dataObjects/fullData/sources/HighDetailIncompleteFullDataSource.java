@@ -448,6 +448,9 @@ public class HighDetailIncompleteFullDataSource implements IIncompleteFullDataSo
 	//=========//
 	
 	@Override
+	public DhSectionPos getKey() { return this.sectionPos; }
+	
+	@Override
 	public DhSectionPos getSectionPos() { return this.sectionPos; }
 	
 	@Override

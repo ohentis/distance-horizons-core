@@ -26,17 +26,13 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Map;
 
-public abstract class AbstractDataSourceRepo extends AbstractDhRepo<DataSourceDto>
+public abstract class AbstractDataSourceRepo extends AbstractDhRepo<DhSectionPos, DataSourceDto>
 {
 	public AbstractDataSourceRepo(String databaseType, String databaseLocation) throws SQLException
 	{
 		super(databaseType, databaseLocation, DataSourceDto.class);
 	}
 	
-	
-	
-	@Override 
-	public String getPrimaryKeyName() { return "DhSectionPos"; }
 	
 	
 	//=======================//
@@ -70,9 +66,6 @@ public abstract class AbstractDataSourceRepo extends AbstractDhRepo<DataSourceDt
 		return dto;
 	}
 	
-	@Override 
-	public String createSelectPrimaryKeySql(String primaryKey) { return "SELECT * FROM "+this.getTableName()+" WHERE DhSectionPos = '"+primaryKey+"'"; }
-	
 	@Override
 	public PreparedStatement createInsertStatement(DataSourceDto dto) throws SQLException
 	{
@@ -90,7 +83,7 @@ public abstract class AbstractDataSourceRepo extends AbstractDhRepo<DataSourceDt
 		PreparedStatement statement = this.createPreparedStatement(sql);
 		
 		int i = 1;
-		statement.setObject(i++, dto.getPrimaryKeyString());
+		statement.setObject(i++, dto.pos.serialize());
 		
 		statement.setObject(i++, dto.checksum);
 		statement.setObject(i++, dto.dataVersion);
@@ -133,7 +126,7 @@ public abstract class AbstractDataSourceRepo extends AbstractDhRepo<DataSourceDt
 		
 		statement.setObject(i++, dto.dataArray);
 		
-		statement.setObject(i++, dto.getPrimaryKeyString());
+		statement.setObject(i++, dto.pos.serialize());
 		
 		return statement;
 	}

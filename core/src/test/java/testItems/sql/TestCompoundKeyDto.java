@@ -17,27 +17,49 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.seibel.distanthorizons.core.sql;
+package testItems.sql;
 
+import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.sql.IBaseDTO;
 
-import java.sql.SQLException;
-
-public class FullDataRepo extends AbstractDataSourceRepo
+public class TestCompoundKeyDto implements IBaseDTO<DhChunkPos>
 {
-	public static final String TABLE_NAME = "DhFullData";
+	public DhChunkPos id;
+	public String value;
 	
 	
-	public FullDataRepo(String databaseType, String databaseLocation) throws SQLException
-	{
-		super(databaseType, databaseLocation);
+	
+	public TestCompoundKeyDto(DhChunkPos id, String value) 
+	{ 
+		this.id = id;
+		this.value = value;
 	}
+	
+	@Override 
+	public DhChunkPos getKey() { return this.id; }
 	
 	
 	@Override
-	public String getTableName() { return TABLE_NAME; }
+	public boolean equals(Object other)
+	{
+		if (other.getClass() != this.getClass())
+		{
+			return false;
+		}
+		else
+		{
+			TestCompoundKeyDto otherDto = (TestCompoundKeyDto) other;
+			
+			return otherDto.id.equals(this.id)
+					&& otherDto.value.equals(this.value);
+		}
+	}
 	
-	@Override 
-	public String createWhereStatement(DhSectionPos pos) { return "DhSectionPos = '"+pos.serialize()+"'"; }
+	@Override
+	public String toString()
+	{
+		return this.id + ", " + this.value;
+	}
 	
 }

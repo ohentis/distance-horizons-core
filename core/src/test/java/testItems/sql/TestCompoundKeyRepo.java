@@ -19,91 +19,84 @@
 
 package testItems.sql;
 
+import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.sql.AbstractDhRepo;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Map;
 
-public class TestDataRepo extends AbstractDhRepo<TestDto>
+public class TestCompoundKeyRepo extends AbstractDhRepo<DhChunkPos, TestCompoundKeyDto>
 {
 	
-	public TestDataRepo(String databaseType, String databaseLocation) throws SQLException
+	public TestCompoundKeyRepo(String databaseType, String databaseLocation) throws SQLException
 	{
-		super(databaseType, databaseLocation, TestDto.class);
+		super(databaseType, databaseLocation, TestCompoundKeyDto.class);
 		
 		// note: this should only ever be done with the test repo.
 		// All long term tables should be created using a sql Script.
 		String createTableSql = 
 				"CREATE TABLE IF NOT EXISTS "+this.getTableName()+"(\n" +
-				"Id INT NOT NULL PRIMARY KEY\n" +
+				"XPos INT NOT NULL\n" +
+				",ZPos INT NOT NULL\n" +
 				"\n" +
 				",Value TEXT NULL\n" +
-				",LongValue BIGINT NULL\n" +
-				",ByteValue TINYINT NULL\n" +
+				"\n" +
+				",PRIMARY KEY (XPos, ZPos)" +
 				");";
 		this.queryDictionaryFirst(createTableSql);
 	}
 	
 	
-	
 	@Override
-	public String getTableName() { return "Test"; }
-	@Override
-	public String getPrimaryKeyName() { return "Id"; }
+	public String getTableName() { return "TestCompound"; }
+	@Override 
+	public String createWhereStatement(DhChunkPos key) { return "XPos = '"+key.x+"' AND ZPos = '"+key.z+"'"; }
 	
 	
 	@Override 
-	public TestDto convertDictionaryToDto(Map<String, Object> objectMap) throws ClassCastException
+	public TestCompoundKeyDto convertDictionaryToDto(Map<String, Object> objectMap) throws ClassCastException
 	{
-		int id = (int) objectMap.get("Id");
+		int xPos = (int) objectMap.get("XPos");
+		int zPos = (int) objectMap.get("ZPos");
 		String value = (String) objectMap.get("Value");
-		long longValue = (Long) objectMap.get("LongValue");
-		byte byteValue = (Byte) objectMap.get("ByteValue");
 		
-		return new TestDto(id, value, longValue, byteValue);
+		return new TestCompoundKeyDto(new DhChunkPos(xPos, zPos), value);
 	}
 	
-	@Override 
-	public String createSelectPrimaryKeySql(String primaryKey) { return "SELECT * FROM "+this.getTableName()+" WHERE Id = '"+primaryKey+"'"; }
-	
 	@Override
-	public PreparedStatement createInsertStatement(TestDto dto) throws SQLException
+	public PreparedStatement createInsertStatement(TestCompoundKeyDto dto) throws SQLException
 	{
 		String sql = 
 			"INSERT INTO "+this.getTableName()+" \n" +
-				"(Id, Value, LongValue, ByteValue) \n" +
-			"VALUES(?,?,?,?);";
+				"(XPos, ZPos, Value) \n" +
+			"VALUES(?,?,?);";
 		PreparedStatement statement = this.createPreparedStatement(sql);
 		
 		int i = 1; // post-increment for the win!
-		statement.setObject(i++, dto.id);
+		statement.setObject(i++, dto.id.x);
+		statement.setObject(i++, dto.id.z);
 		
 		statement.setObject(i++, dto.value);
-		statement.setObject(i++, dto.longValue);
-		statement.setObject(i++, dto.byteValue);
 		
 		return statement;
 	}
 	
 	@Override
-	public PreparedStatement createUpdateStatement(TestDto dto) throws SQLException
+	public PreparedStatement createUpdateStatement(TestCompoundKeyDto dto) throws SQLException
 	{
 		String sql =
 			"UPDATE "+this.getTableName()+" \n" +
 			"SET \n" +
 			"   Value = ? \n" +
-			"   ,LongValue = ? \n" +
-			"   ,ByteValue = ? \n" +
-			"WHERE Id = ?";
+			"WHERE XPos = ? AND ZPos = ?";
 		PreparedStatement statement = this.createPreparedStatement(sql);
 		
 		int i = 1;
 		statement.setObject(i++, dto.value);
-		statement.setObject(i++, dto.longValue);
-		statement.setObject(i++, dto.byteValue);
 		
-		statement.setObject(i++, dto.id);
+		statement.setObject(i++, dto.id.x);
+		statement.setObject(i++, dto.id.z);
 		
 		return statement;
 	}

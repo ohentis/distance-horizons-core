@@ -19,6 +19,8 @@
 
 package com.seibel.distanthorizons.core.sql;
 
+import com.seibel.distanthorizons.core.pos.DhSectionPos;
+
 import java.sql.SQLException;
 
 public class RenderDataRepo extends AbstractDataSourceRepo
@@ -34,5 +36,8 @@ public class RenderDataRepo extends AbstractDataSourceRepo
 	
 	@Override
 	public String getTableName() { return TABLE_NAME; }
+	
+	@Override
+	public String createWhereStatement(DhSectionPos pos) { return "DhSectionPos = '"+pos.serialize()+"'"; }
 	
 }
