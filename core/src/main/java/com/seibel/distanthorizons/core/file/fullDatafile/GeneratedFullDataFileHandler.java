@@ -123,7 +123,11 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandler
 			}
 		});
 		
-		this.worldGenQueueRef.get().cancelGenTasks(removedRequests);
+		IWorldGenerationQueue worldGenQueue = this.worldGenQueueRef.get();
+		if (worldGenQueue != null)
+		{
+			worldGenQueue.cancelGenTasks(removedRequests);
+		}
 	}
 	
 	

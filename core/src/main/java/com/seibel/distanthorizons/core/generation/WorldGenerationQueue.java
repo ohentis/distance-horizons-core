@@ -171,6 +171,7 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 	// running tasks //
 	//===============//
 	
+	@Override
 	public void startGenerationQueueAndSetTargetPos(DhBlockPos2D targetPos)
 	{
 		// update the target pos
@@ -271,8 +272,7 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 			if (!this.inProgressGenTasksByLodPos.containsKey(closestTask.pos))
 			{
 				// no task exists for this position, start one
-				InProgressWorldGenTaskGroup newTaskGroup = new InProgressWorldGenTaskGroup(closestTaskGroup);
-				boolean taskStarted = this.tryStartingWorldGenTaskGroup(newTaskGroup);
+				boolean taskStarted = this.tryStartingWorldGenTaskGroup(closestTaskGroup);
 				if (!taskStarted)
 				{
 					LOGGER.trace("Unable to start task: "+closestTask.pos+", skipping. Task position may have already been generated.");
@@ -317,11 +317,12 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 			return true;
 		}
 	}
+	
 	/** @return true if the task was started, false otherwise */
-	private boolean tryStartingWorldGenTaskGroup(InProgressWorldGenTaskGroup newTaskGroup)
+	private boolean tryStartingWorldGenTaskGroup(WorldGenTaskGroup group)
 	{
-		byte taskDetailLevel = newTaskGroup.group.dataDetail;
-		DhSectionPos taskPos = newTaskGroup.group.pos;
+		byte taskDetailLevel = group.dataDetail;
+		DhSectionPos taskPos = group.pos;
 		byte granularity = (byte) (taskPos.getDetailLevel() - taskDetailLevel);
 		LodUtil.assertTrue(granularity >= this.minGranularity && granularity <= this.maxGranularity);
 		LodUtil.assertTrue(taskDetailLevel >= this.highestDataDetail && taskDetailLevel <= this.lowestDataDetail);
@@ -329,17 +330,17 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 		DhChunkPos chunkPosMin = new DhChunkPos(taskPos.getSectionBBoxPos().getCornerBlockPos());
 		
 		// check if this is a duplicate generation task
-		if (this.alreadyGeneratedPosHashSet.containsKey(newTaskGroup.group.pos))
+		if (this.alreadyGeneratedPosHashSet.containsKey(group.pos))
 		{
 			// temporary solution to prevent generating the same section multiple times
 			LOGGER.trace("Duplicate generation section " + taskPos + " with granularity [" + granularity + "] at " + chunkPosMin + ". Skipping...");
 			
 			// sending a success result is necessary to make sure the render sections are reloaded correctly 
-			newTaskGroup.group.worldGenTasks.forEach(worldGenTask -> worldGenTask.future.complete(WorldGenResult.CreateSuccess(new DhSectionPos(granularity, taskPos.getX(), taskPos.getZ()))));
+			group.worldGenTasks.forEach(worldGenTask -> worldGenTask.future.complete(WorldGenResult.CreateSuccess(new DhSectionPos(granularity, taskPos.getX(), taskPos.getZ()))));
 			return false;
 		}
-		this.alreadyGeneratedPosHashSet.put(newTaskGroup.group.pos, Thread.currentThread().getStackTrace());
-		this.alreadyGeneratedPosQueue.add(newTaskGroup.group.pos);
+		this.alreadyGeneratedPosHashSet.put(group.pos, Thread.currentThread().getStackTrace());
+		this.alreadyGeneratedPosQueue.add(group.pos);
 		
 		// remove extra tracked duplicate positions
 		while (this.alreadyGeneratedPosQueue.size() > MAX_ALREADY_GENERATED_COUNT)
@@ -352,8 +353,8 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 		//LOGGER.info("Generating section "+taskPos+" with granularity "+granularity+" at "+chunkPosMin);
 		
 		this.numberOfTasksQueued++;
-		newTaskGroup.genFuture = this.startGenerationEvent(chunkPosMin, granularity, taskDetailLevel, newTaskGroup.group::consumeChunkData);
-		LodUtil.assertTrue(newTaskGroup.genFuture != null);
+		CompletableFuture<Void> genFuture = this.startGenerationEvent(chunkPosMin, granularity, taskDetailLevel, group::consumeChunkData);
+		InProgressWorldGenTaskGroup newTaskGroup = new InProgressWorldGenTaskGroup(group, genFuture);
 		
 		newTaskGroup.genFuture.whenComplete((voidObj, exception) ->
 		{
@@ -484,14 +485,15 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 	// getters //
 	//=========//
 	
-	public int getWaitingTaskCount() { return this.waitingTasks.size(); }
-	public int getInProgressTaskCount() { return this.inProgressGenTasksByLodPos.size(); }
+	@Override public int getWaitingTaskCount() { return this.waitingTasks.size(); }
+	@Override public int getInProgressTaskCount() { return this.inProgressGenTasksByLodPos.size(); }
 	
 	
 	//==========//
 	// shutdown //
 	//==========//
 	
+	@Override
 	public CompletableFuture<Void> startClosing(boolean cancelCurrentGeneration, boolean alsoInterruptRunning)
 	{
 		LOGGER.info("Closing world gen queue");
@@ -503,13 +505,6 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 		this.inProgressGenTasksByLodPos.values().forEach(runningTaskGroup ->
 		{
 			CompletableFuture<Void> genFuture = runningTaskGroup.genFuture; // Do this to prevent it getting swapped out
-			if (genFuture == null)
-			{
-				// genFuture's shouldn't be null, but sometimes they are...
-				LOGGER.info("Null gen future: "+runningTaskGroup.group.pos);
-				return;
-			}
-			
 			
 			if (cancelCurrentGeneration)
 			{
@@ -550,20 +545,6 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 		
 		
 		
-		LOGGER.info("Awaiting world generator thread pool termination...");
-		try
-		{
-			int waitTimeInSeconds = 3;
-			ThreadPoolExecutor executor = ThreadPools.getWorldGenExecutor();
-			if (executor != null && !executor.awaitTermination(waitTimeInSeconds, TimeUnit.SECONDS))
-			{
-				LOGGER.warn("World generator thread pool shutdown didn't complete after [" + waitTimeInSeconds + "] seconds. Some world generator requests may still be running.");
-			}
-		}
-		catch (InterruptedException e)
-		{
-			LOGGER.warn("World generator thread pool shutdown interrupted! Ignoring child threads...", e);
-		}
 		
 		
 		
@@ -621,13 +602,17 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 		{
 			index = 4 * X * X - X - Y;
 			if (X < Y)
+			{
 				index = index - 2 * (X - Y);
+			}
 		}
 		else
 		{
 			index = 4 * Y * Y - X - Y;
 			if (X < Y)
+			{
 				index = index + 2 * (X - Y);
+			}
 		}
 		
 		return index;
