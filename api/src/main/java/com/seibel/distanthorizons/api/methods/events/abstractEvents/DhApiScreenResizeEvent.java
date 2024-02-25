@@ -32,7 +32,7 @@ import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhAp
  */
 public abstract class DhApiScreenResizeEvent implements IDhApiEvent<DhApiScreenResizeEvent.EventParam>
 {
-	/** Fired immediately before Distant Horizons renders any transparent buffers. */
+	/** Fired immediately before Distant Horizons handles the screen resize. */
 	public abstract void onResize(DhApiEventParam<EventParam> event);
 	
 	
