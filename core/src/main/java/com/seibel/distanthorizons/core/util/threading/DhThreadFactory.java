@@ -32,12 +32,10 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Just a simple ThreadFactory to name ExecutorService
  * threads, which is helpful when debugging.
- *
- * @author James Seibel
  */
 public class DhThreadFactory implements ThreadFactory
 {
-	private static final Logger LOGGER = DhLoggerBuilder.getLogger(MethodHandles.lookup().lookupClass().getSimpleName());
+	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
 	public final String threadName;
 	public final int priority;

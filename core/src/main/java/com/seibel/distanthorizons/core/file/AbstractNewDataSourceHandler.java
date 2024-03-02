@@ -181,7 +181,6 @@ public abstract class AbstractNewDataSourceHandler
 			return CompletableFuture.runAsync(() ->
 			{
 				this.updateDataSourceAtPos(inputDataSource.getSectionPos(), inputDataSource, true);
-				
 			}, executor);
 		}
 		catch (RejectedExecutionException ignore)

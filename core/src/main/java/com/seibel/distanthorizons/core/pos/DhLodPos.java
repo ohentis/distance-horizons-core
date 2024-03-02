@@ -31,6 +31,11 @@ import java.util.Objects;
  *
  * @author Leetom
  * @version 2022-11-6
+ * 
+ * @deprecated TODO replace entirely with DhSectionPos, 
+ *                  we don't need to have a full fledged position object for 
+ *                  positions inside a LOD, we only need this position object
+ *                  to get to/from the LOD section.
  */
 @Deprecated
 public class DhLodPos implements Comparable<DhLodPos>

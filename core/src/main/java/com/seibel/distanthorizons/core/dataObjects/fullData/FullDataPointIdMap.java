@@ -36,10 +36,15 @@ import java.util.HashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
- * WARNING: This is not THREAD-SAFE!
- * <p>
- * Used to map a numerical IDs to a Biome/BlockState pair.
- *
+ * WARNING: This is not THREAD-SAFE! <br><br>
+ * 
+ * Used to map a numerical IDs to a Biome/BlockState pair. <br><br>
+ * 
+ * TODO the serializing of this map might be really big
+ *  since it stringifies every block and biome name, which is quite bulky.
+ *  It might be worth while to have a biome and block ID that then both get mapped
+ *  to the data point ID to reduce file size.
+ * 
  * @author Leetom
  */
 public class FullDataPointIdMap
