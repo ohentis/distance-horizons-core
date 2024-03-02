@@ -19,7 +19,6 @@
 
 package com.seibel.distanthorizons.core.render.renderer;
 
-import com.seibel.distanthorizons.api.enums.rendering.EDhApiRenderPass;
 import com.seibel.distanthorizons.api.enums.rendering.EFogDrawMode;
 import com.seibel.distanthorizons.api.interfaces.override.rendering.IDhApiFramebuffer;
 import com.seibel.distanthorizons.api.interfaces.override.rendering.IDhApiShaderProgram;
@@ -41,7 +40,6 @@ import com.seibel.distanthorizons.core.render.glObject.buffer.GLVertexBuffer;
 import com.seibel.distanthorizons.core.render.glObject.buffer.QuadElementBuffer;
 import com.seibel.distanthorizons.core.render.glObject.texture.*;
 import com.seibel.distanthorizons.core.render.renderer.shaders.*;
-import com.seibel.distanthorizons.core.util.RenderUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrapper;
@@ -57,8 +55,6 @@ import com.seibel.distanthorizons.coreapi.util.math.Mat4f;
 import com.seibel.distanthorizons.coreapi.util.math.Vec3d;
 import com.seibel.distanthorizons.coreapi.util.math.Vec3f;
 import org.apache.logging.log4j.LogManager;
-import org.joml.Matrix4f;
-import org.joml.Matrix4fc;
 import org.lwjgl.opengl.GL32;
 
 import java.awt.*;
@@ -748,6 +744,14 @@ public class LodRenderer
 		this.cachedWidth = MC_RENDER.getTargetFrameBufferViewportWidth();
 		this.cachedHeight = MC_RENDER.getTargetFrameBufferViewportHeight();
 		
+		
+		// TODO add on texture (re)created event
+		//  https://discord.com/channels/881614130614767666/1211290858134052894/1211431000580554752
+		ApiEventInjector.INSTANCE.fireAllEvents(DhApiColorDepthTextureCreatedEvent.class, 
+				new DhApiColorDepthTextureCreatedEvent.EventParam(
+						oldWidth, oldHeight,
+						this.cachedWidth, this.cachedHeight
+				));
 		
 		ApiEventInjector.INSTANCE.fireAllEvents(DhApiScreenResizeEvent.class, 
 				new DhApiScreenResizeEvent.EventParam(

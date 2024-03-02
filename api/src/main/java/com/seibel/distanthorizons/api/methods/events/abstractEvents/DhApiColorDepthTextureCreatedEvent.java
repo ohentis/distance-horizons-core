@@ -23,16 +23,16 @@ import com.seibel.distanthorizons.api.methods.events.interfaces.IDhApiEvent;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiEventParam;
 
 /**
- * TODO remove
+ * Called whenever Distant Horizons (re)creates 
+ * the color and depth textures it renders to. <br>
  * 
  * @author James Seibel
- * @version 2023-1-23
+ * @version 2024-3-2
  * @since API 1.1.0
  */
-@Deprecated // TODO remove before stable release and write a merge request for Iris
-public abstract class DhApiScreenResizeEvent implements IDhApiEvent<DhApiScreenResizeEvent.EventParam>
+public abstract class DhApiColorDepthTextureCreatedEvent implements IDhApiEvent<DhApiColorDepthTextureCreatedEvent.EventParam>
 {
-	/** Fired immediately before Distant Horizons handles the screen resize. */
+	/** Fired before Distant Horizons creates. */
 	public abstract void onResize(DhApiEventParam<EventParam> event);
 	
 	
