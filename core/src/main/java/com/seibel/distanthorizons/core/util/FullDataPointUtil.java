@@ -44,10 +44,10 @@ import org.jetbrains.annotations.Contract;
  * YY YY YY YY  YY YY YY YY	<br>
  * YY YY YY YY  DP DP DP DP	<br>
  * DP DP DP DP  DP DP DP DP	<br>
- * ID ID ID ID  ID ID IO ID	<br>
- * ID ID ID ID  ID ID IO ID	<br>
- * ID ID ID ID  ID ID IO ID	<br>
- * ID ID ID ID  ID ID IO ID <-- Bottom bits	<br>
+ * ID ID ID ID  ID ID ID ID	<br>
+ * ID ID ID ID  ID ID ID ID	<br>
+ * ID ID ID ID  ID ID ID ID	<br>
+ * ID ID ID ID  ID ID ID ID <-- Bottom bits	<br>
  * </code>
  *
  * @see RenderDataPointUtil
@@ -106,6 +106,20 @@ public class FullDataPointUtil
 	
 	/** Remaps the biome/blockState ID of the given datapoint */
 	@Contract(pure = true)
-	public static long remap(int[] newIdMapping, long data) { return (data & INVERSE_ID_MASK) | newIdMapping[(int) data]; }
+	public static long remap(int[] newIdMapping, long data) throws IndexOutOfBoundsException
+	{
+		int currentId = getId(data);
+		try
+		{
+			int newId = newIdMapping[currentId];
+			return (data & INVERSE_ID_MASK) | newId;
+		}
+		catch (IndexOutOfBoundsException e)
+		{
+			// this try-catch is present to fix an issue where the stack trace is missing
+			// and to allow for easily attaching a debugger
+			throw new RuntimeException(e);
+		}
+	}
 	
 }
