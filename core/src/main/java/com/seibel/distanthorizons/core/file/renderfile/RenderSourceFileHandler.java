@@ -33,7 +33,7 @@ import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.sql.repo.AbstractLegacyDataSourceRepo;
 import com.seibel.distanthorizons.core.sql.dto.LegacyDataSourceDTO;
 import com.seibel.distanthorizons.core.sql.repo.RenderDataRepo;
-import com.seibel.distanthorizons.core.util.threading.ThreadPools;
+import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
@@ -126,7 +126,7 @@ public class RenderSourceFileHandler extends AbstractLegacyDataSourceHandler<Col
 	/** Returns what should be displayed in Minecraft's F3 debug menu */
 	private String[] f3Log()
 	{
-		ThreadPoolExecutor executor = ThreadPools.getFileHandlerExecutor();
+		ThreadPoolExecutor executor = ThreadPoolUtil.getFileHandlerExecutor();
 		String queueSize = (executor != null) ? executor.getQueue().size()+"" : "-";
 		String completedTaskSize = (executor != null) ? executor.getCompletedTaskCount()+"" : "-";
 		

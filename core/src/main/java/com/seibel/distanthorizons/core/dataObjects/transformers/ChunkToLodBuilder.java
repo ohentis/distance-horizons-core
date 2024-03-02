@@ -27,7 +27,7 @@ import com.seibel.distanthorizons.core.dataObjects.fullData.sources.NewFullDataS
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
-import com.seibel.distanthorizons.core.util.threading.ThreadPools;
+import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import org.apache.logging.log4j.LogManager;
@@ -82,7 +82,7 @@ public class ChunkToLodBuilder implements AutoCloseable
 	// TODO why on tick?
 	public void tick()
 	{
-		int threadCount = ThreadPools.getWorkerThreadCount();
+		int threadCount = ThreadPoolUtil.getWorkerThreadCount();
 		if (this.runningCount.get() >= threadCount)
 		{
 			return;
@@ -102,7 +102,7 @@ public class ChunkToLodBuilder implements AutoCloseable
 			return;
 		}
 		
-		ThreadPoolExecutor lodBuilderExecutor = ThreadPools.getChunkToLodBuilderExecutor();
+		ThreadPoolExecutor lodBuilderExecutor = ThreadPoolUtil.getChunkToLodBuilderExecutor();
 		if (lodBuilderExecutor == null)
 		{
 			return;

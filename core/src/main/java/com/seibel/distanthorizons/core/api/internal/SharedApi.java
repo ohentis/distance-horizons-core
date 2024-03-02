@@ -32,7 +32,7 @@ import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.TimerUtil;
 import com.seibel.distanthorizons.core.util.objects.Pair;
-import com.seibel.distanthorizons.core.util.threading.ThreadPools;
+import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.world.*;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
@@ -102,11 +102,11 @@ public class SharedApi
 		// access the MC level at inappropriate times, which can cause exceptions
 		if (currentWorld != null)
 		{
-			ThreadPools.setupThreadPools();
+			ThreadPoolUtil.setupThreadPools();
 		}
 		else
 		{
-			ThreadPools.shutdownThreadPools();
+			ThreadPoolUtil.shutdownThreadPools();
 			DebugRenderer.clearRenderables();
 			MC_RENDER.clearTargetFrameBuffer();
 			
@@ -285,7 +285,7 @@ public class SharedApi
 	private static void bakeChunkLightingAndSendToLevelAsync(IChunkWrapper chunkWrapper, @Nullable ArrayList<IChunkWrapper> neighbourChunkList, IDhLevel dhLevel)
 	{
 		// lighting the chunk needs to be done on a separate thread to prevent lagging any of the event threads
-		ThreadPoolExecutor executor = ThreadPools.getLightPopulatorExecutor();
+		ThreadPoolExecutor executor = ThreadPoolUtil.getLightPopulatorExecutor();
 		if (executor == null)
 		{
 			return;

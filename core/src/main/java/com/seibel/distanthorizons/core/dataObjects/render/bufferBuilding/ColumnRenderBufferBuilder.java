@@ -34,7 +34,7 @@ import com.seibel.distanthorizons.core.util.RenderDataPointUtil;
 import com.seibel.distanthorizons.core.util.objects.Reference;
 import com.seibel.distanthorizons.core.util.objects.UncheckedInterruptedException;
 import com.seibel.distanthorizons.core.dataObjects.render.columnViews.ColumnArrayView;
-import com.seibel.distanthorizons.core.util.threading.ThreadPools;
+import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -67,8 +67,8 @@ public class ColumnRenderBufferBuilder
 			IDhClientLevel clientLevel, Reference<ColumnRenderBuffer> renderBufferRef,
 			ColumnRenderSource renderSource, ColumnRenderSource[] adjData)
 	{
-		ThreadPoolExecutor bufferBuilderExecutor = ThreadPools.getBufferBuilderExecutor();
-		ThreadPoolExecutor bufferUploaderExecutor = ThreadPools.getBufferUploaderExecutor();
+		ThreadPoolExecutor bufferBuilderExecutor = ThreadPoolUtil.getBufferBuilderExecutor();
+		ThreadPoolExecutor bufferUploaderExecutor = ThreadPoolUtil.getBufferUploaderExecutor();
 		if ((bufferBuilderExecutor == null || bufferBuilderExecutor.isTerminated()) ||
 			(bufferUploaderExecutor == null || bufferUploaderExecutor.isTerminated()))
 		{

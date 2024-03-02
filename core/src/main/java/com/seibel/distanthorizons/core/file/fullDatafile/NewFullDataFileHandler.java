@@ -32,7 +32,7 @@ import com.seibel.distanthorizons.core.sql.dto.NewFullDataSourceDTO;
 import com.seibel.distanthorizons.core.sql.repo.AbstractDhRepo;
 import com.seibel.distanthorizons.core.sql.repo.NewFullDataSourceRepo;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
-import com.seibel.distanthorizons.core.util.threading.ThreadPools;
+import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
@@ -211,7 +211,7 @@ public class NewFullDataFileHandler
 					if (updatePosList.size() != 0)
 					{
 						// stop if the file handler has been shut down
-						ThreadPoolExecutor executor = ThreadPools.getFileHandlerExecutor();
+						ThreadPoolExecutor executor = ThreadPoolUtil.getFileHandlerExecutor();
 						if (executor == null || executor.isTerminated())
 						{
 							this.updateQueueThreadRunningRef.set(false);

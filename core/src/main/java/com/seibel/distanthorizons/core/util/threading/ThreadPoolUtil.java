@@ -32,7 +32,7 @@ import java.util.concurrent.ThreadPoolExecutor;
  * 
  * @see ThreadUtil
  */
-public class ThreadPools
+public class ThreadPoolUtil
 {
 	//=========================//
 	// standalone thread pools //
@@ -143,9 +143,9 @@ public class ThreadPools
 		
 		
 		// worker threads
-		ThreadPools.lightPopulatorThreadPool.shutdownExecutorService();
-		ThreadPools.chunkToLodBuilderThreadPool.shutdownExecutorService();
-		ThreadPools.bufferBuilderThreadPool.shutdownExecutorService();
+		ThreadPoolUtil.lightPopulatorThreadPool.shutdownExecutorService();
+		ThreadPoolUtil.chunkToLodBuilderThreadPool.shutdownExecutorService();
+		ThreadPoolUtil.bufferBuilderThreadPool.shutdownExecutorService();
 		
 		workerThreadSemaphore = null;
 		

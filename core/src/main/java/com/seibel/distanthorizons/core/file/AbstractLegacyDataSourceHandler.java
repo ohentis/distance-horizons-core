@@ -11,7 +11,7 @@ import com.seibel.distanthorizons.core.sql.repo.AbstractLegacyDataSourceRepo;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.TimerUtil;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataOutputStream;
-import com.seibel.distanthorizons.core.util.threading.ThreadPools;
+import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
@@ -128,7 +128,7 @@ public abstract class AbstractLegacyDataSourceHandler<TDataSource extends IDataS
 	@Override
 	public CompletableFuture<TDataSource> getAsync(DhSectionPos pos)
 	{
-		ThreadPoolExecutor executor = ThreadPools.getFileHandlerExecutor();
+		ThreadPoolExecutor executor = ThreadPoolUtil.getFileHandlerExecutor();
 		if (executor == null || executor.isTerminated())
 		{
 			return CompletableFuture.completedFuture(null);
@@ -190,7 +190,7 @@ public abstract class AbstractLegacyDataSourceHandler<TDataSource extends IDataS
 	@Override
 	public CompletableFuture<Void> updateDataSourceAsync(NewFullDataSource inputDataSource)
 	{
-		ThreadPoolExecutor executor = ThreadPools.getFileHandlerExecutor();
+		ThreadPoolExecutor executor = ThreadPoolUtil.getFileHandlerExecutor();
 		if (executor == null || executor.isTerminated())
 		{
 			return CompletableFuture.completedFuture(null);

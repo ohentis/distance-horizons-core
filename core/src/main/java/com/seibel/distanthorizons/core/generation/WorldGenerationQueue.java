@@ -38,7 +38,7 @@ import com.seibel.distanthorizons.core.util.LodUtil.AssertFailureException;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
 import com.seibel.distanthorizons.core.util.objects.UncheckedInterruptedException;
 import com.seibel.distanthorizons.core.util.LodUtil;
-import com.seibel.distanthorizons.core.util.threading.ThreadPools;
+import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.IWrapperFactory;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import org.apache.logging.log4j.Logger;
@@ -446,7 +446,7 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 					granularity,
 					targetDataDetail,
 					generatorMode,
-					ThreadPools.getWorldGenExecutor(),
+					ThreadPoolUtil.getWorldGenExecutor(),
 					(Object[] generatedObjectArray) -> 
 					{
 						try
@@ -472,7 +472,7 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 					granularity,
 					targetDataDetail,
 					generatorMode,
-					ThreadPools.getWorldGenExecutor(),
+					ThreadPoolUtil.getWorldGenExecutor(),
 					(DhApiChunk dataPoints) ->
 					{
 						try
@@ -572,7 +572,7 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 		try
 		{
 			int waitTimeInSeconds = 3;
-			ThreadPoolExecutor executor = ThreadPools.getWorldGenExecutor();
+			ThreadPoolExecutor executor = ThreadPoolUtil.getWorldGenExecutor();
 			if (executor != null && !executor.awaitTermination(waitTimeInSeconds, TimeUnit.SECONDS))
 			{
 				LOGGER.warn("World generator thread pool shutdown didn't complete after [" + waitTimeInSeconds + "] seconds. Some world generator requests may still be running.");

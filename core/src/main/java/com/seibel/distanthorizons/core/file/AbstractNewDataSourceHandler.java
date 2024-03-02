@@ -9,18 +9,15 @@ import com.seibel.distanthorizons.core.sql.repo.AbstractDhRepo;
 import com.seibel.distanthorizons.core.sql.dto.IBaseDTO;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.TimerUtil;
-import com.seibel.distanthorizons.core.util.threading.ThreadPools;
+import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Enumeration;
 import java.util.Timer;
-import java.util.TimerTask;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.locks.ReentrantLock;
@@ -123,7 +120,7 @@ public abstract class AbstractNewDataSourceHandler
 	@Override
 	public CompletableFuture<TDataSource> getAsync(DhSectionPos pos)
 	{
-		ThreadPoolExecutor executor = ThreadPools.getFileHandlerExecutor();
+		ThreadPoolExecutor executor = ThreadPoolUtil.getFileHandlerExecutor();
 		if (executor == null || executor.isTerminated())
 		{
 			return CompletableFuture.completedFuture(null);
@@ -171,7 +168,7 @@ public abstract class AbstractNewDataSourceHandler
 	@Override
 	public CompletableFuture<Void> updateDataSourceAsync(NewFullDataSource inputDataSource)
 	{
-		ThreadPoolExecutor executor = ThreadPools.getFileHandlerExecutor();
+		ThreadPoolExecutor executor = ThreadPoolUtil.getFileHandlerExecutor();
 		if (executor == null || executor.isTerminated())
 		{
 			return CompletableFuture.completedFuture(null);
