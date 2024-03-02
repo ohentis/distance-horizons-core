@@ -210,19 +210,21 @@ public abstract class AbstractNewDataSourceHandler
 			
 			// get or create the data source
 			TDataSource dataSource = this.get(pos);
-			dataSource.update(inputData, this.level); // TODO only write to database and send update signal if data was changed
+			boolean dataModified = dataSource.update(inputData, this.level);
 			
-			
-			// save the updated data to the database
-			TDTO dto = this.createDtoFromDataSource(dataSource);
-			this.repo.save(dto);
-			
-			
-			for (IDataSourceUpdateFunc<TDataSource> listener : this.dateSourceUpdateListeners)
+			if (dataModified)
 			{
-				if (listener != null)
+				// save the updated data to the database
+				TDTO dto = this.createDtoFromDataSource(dataSource);
+				this.repo.save(dto);
+				
+				
+				for (IDataSourceUpdateFunc<TDataSource> listener : this.dateSourceUpdateListeners)
 				{
-					listener.OnDataSourceUpdated(dataSource);
+					if (listener != null)
+					{
+						listener.OnDataSourceUpdated(dataSource);
+					}
 				}
 			}
 		}

@@ -25,7 +25,8 @@ public interface IDataSource<TDhLevel extends IDhLevel> extends IBaseDTO<DhSecti
 	// file handling //
 	//===============//
 	
-	void update(NewFullDataSource chunkData, TDhLevel level);
+	/** @return true if the data was changed */
+	boolean update(NewFullDataSource chunkData, TDhLevel level);
 	
 	// still used by RenderSource, remove once that's been changed
 	@Deprecated

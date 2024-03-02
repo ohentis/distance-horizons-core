@@ -37,6 +37,7 @@ import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -150,8 +151,8 @@ public class NewFullDataSource implements IDataSource<IDhLevel>
 	public SingleColumnFullDataAccessor get(int relX, int relZ) { return new SingleColumnFullDataAccessor(this.mapping, this.dataPoints, relativePosToIndex(relX, relZ)); }
 	
 	@Override
-	public void update(NewFullDataSource inputDataSource, @Nullable IDhLevel level) { this.update(inputDataSource); }
-	public void update(NewFullDataSource inputDataSource)
+	public boolean update(NewFullDataSource inputDataSource, @Nullable IDhLevel level) { return this.update(inputDataSource); }
+	public boolean update(NewFullDataSource inputDataSource)
 	{
 		byte thisDetailLevel = this.pos.getDetailLevel();
 		byte inputDetailLevel = inputDataSource.pos.getDetailLevel();
@@ -160,7 +161,7 @@ public class NewFullDataSource implements IDataSource<IDhLevel>
 		// determine the mapping changes necessary for the input to map onto this datasource
 		int[] remappedIds = this.mapping.mergeAndReturnRemappedEntityIds(inputDataSource.mapping);
 		
-		boolean dataChanged = false;
+		boolean dataChanged;
 		if (inputDetailLevel == thisDetailLevel)
 		{
 			dataChanged = this.updateFromSameDetailLevel(inputDataSource, remappedIds);
@@ -171,13 +172,11 @@ public class NewFullDataSource implements IDataSource<IDhLevel>
 		}
 		else
 		{
-			// TODO what should happen here?
-			
 			// other detail levels aren't supported since it would be more difficult to maintain
 			// and would lead to edge cases that don't necessarily need to be supported 
 			// (IE what do you do when the input is smaller than a single datapoint in the receiving data source?)
 			// instead it's better to just percolate the updates up
-			//throw new UnsupportedOperationException("Unsupported data source update. Expected input detail level of ["+thisDetailLevel+"] or ["+(thisDetailLevel+1)+"], received detail level ["+inputDetailLevel+"].");
+			throw new UnsupportedOperationException("Unsupported data source update. Expected input detail level of ["+thisDetailLevel+"] or ["+(thisDetailLevel+1)+"], received detail level ["+inputDetailLevel+"].");
 		}
 		
 		if (dataChanged && this.pos.getDetailLevel() < NewFullDataFileHandler.TOP_SECTION_DETAIL_LEVEL)
@@ -185,6 +184,8 @@ public class NewFullDataSource implements IDataSource<IDhLevel>
 			// mark that this data source should be applied to its parent
 			this.applyToParent = true;
 		}
+		
+		return dataChanged;
 	}
 	public boolean updateFromSameDetailLevel(NewFullDataSource inputDataSource, int[] remappedIds)
 	{
@@ -212,13 +213,22 @@ public class NewFullDataSource implements IDataSource<IDhLevel>
 					if (inputGenState != EDhApiWorldGenerationStep.EMPTY.value
 						&& thisGenState <= inputGenState)
 					{
+						long[] oldDataArray = this.dataPoints[index];
+						
+						// copy over the new data
 						this.dataPoints[index] = new long[newDataArray.length];
 						System.arraycopy(newDataArray, 0, this.dataPoints[index], 0, newDataArray.length);
 						this.remapDataColumn(index, remappedIds);
 						
-						this.columnGenerationSteps[index] = inputGenState;
+						// we only need to see if the data was changed in one column
+						if (!dataChanged)
+						{
+							// needs to be done after the ID's have been remapped otherwise the ID's won't match even if the data is the same
+							dataChanged = areDataColumnsDifferent(oldDataArray, this.dataPoints[index]);
+						}
 						
-						dataChanged = true; // TODO contents of the arrays should be compared to prevent re-writing the same data
+						this.columnGenerationSteps[index] = inputGenState;
+						this.isEmpty = false;
 					}
 				}
 			}
@@ -265,13 +275,20 @@ public class NewFullDataSource implements IDataSource<IDhLevel>
 					int recipientZ = (z / 2) + recipientOffsetZ;
 					int recipientIndex = relativePosToIndex(recipientX, recipientZ);
 					
+					long[] oldDataArray = this.dataPoints[recipientIndex];
+					
 					this.columnGenerationSteps[recipientIndex] = inputGenStep;
 					this.dataPoints[recipientIndex] = inputDataArray;
 					this.remapDataColumn(recipientIndex, remappedIds);
 					
-					this.isEmpty = false;
+					// we only need to see if the data was changed in one column
+					if (!dataChanged)
+					{
+						// needs to be done after the ID's have been remapped otherwise the ID's won't match even if the data is the same
+						dataChanged = areDataColumnsDifferent(oldDataArray, this.dataPoints[recipientIndex]);
+					}
 					
-					dataChanged = true; // TODO contents of the arrays should probably be compared or something
+					this.isEmpty = false;
 				}
 			}
 		}
@@ -289,6 +306,21 @@ public class NewFullDataSource implements IDataSource<IDhLevel>
 		for (int i = 0; i < dataColumn.length; i++)
 		{
 			dataColumn[i] = FullDataPointUtil.remap(remappedIds, dataColumn[i]);
+		}
+	}
+	private static boolean areDataColumnsDifferent(long[] oldDataArray, long[] newDataArray)
+	{
+		if (oldDataArray == null || oldDataArray.length != newDataArray.length)
+		{
+			// new data was added/removed
+			return true;
+		}
+		else
+		{
+			// check if the new column data is different
+			int oldArrayHash = Arrays.hashCode(oldDataArray);
+			int newArrayHash = Arrays.hashCode(newDataArray);
+			return (newArrayHash != oldArrayHash);
 		}
 	}
 	

@@ -99,7 +99,7 @@ public class CompleteFullDataSource extends FullDataArrayAccessor implements IDa
 	
 	@Deprecated
 	@Override
-	public void update(NewFullDataSource dataSource, IDhLevel level) { throw new UnsupportedOperationException("Deprecated"); }
+	public boolean update(NewFullDataSource dataSource, IDhLevel level) { throw new UnsupportedOperationException("Deprecated"); }
 	
 	
 	

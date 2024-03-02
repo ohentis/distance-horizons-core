@@ -290,7 +290,7 @@ public class ColumnRenderSource implements IDataSource<IDhClientLevel>
 	}
 	
 	@Override
-	public void update(NewFullDataSource inputDataSource, IDhClientLevel level)
+	public boolean update(NewFullDataSource inputDataSource, IDhClientLevel level)
 	{
 		final String errorMessagePrefix = "Unable to complete update for RenderSource pos: [" + this.sectionPos + "] and pos: [" + inputDataSource.getSectionPos() + "]. Error:";
 		
@@ -302,7 +302,7 @@ public class ColumnRenderSource implements IDataSource<IDhClientLevel>
 				if (Thread.interrupted())
 				{
 					LOGGER.warn(errorMessagePrefix + "write interrupted.");
-					return;
+					return false;
 				}
 				
 				
@@ -340,11 +340,14 @@ public class ColumnRenderSource implements IDataSource<IDhClientLevel>
 		}
 		
 		
+		
 		if (dataChanged)
 		{
 			this.localVersion.incrementAndGet();
 			this.markNotEmpty();
 		}
+		
+		return dataChanged;
 	}
 	
 	
