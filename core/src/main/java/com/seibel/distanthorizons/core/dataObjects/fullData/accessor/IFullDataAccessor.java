@@ -19,8 +19,8 @@
 
 package com.seibel.distanthorizons.core.dataObjects.fullData.accessor;
 
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IFullDataSource;
 import com.seibel.distanthorizons.core.dataObjects.fullData.FullDataPointIdMap;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.CompleteFullDataSource;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.FullDataPointUtil;
 
@@ -28,12 +28,12 @@ import java.util.Iterator;
 
 /**
  * Contains raw full data points, which must be interpreted by the {@link FullDataPointUtil}. <br>
- * Often used by {@link IFullDataSource}'s.
+ * Often used by {@link CompleteFullDataSource}'s.
  *
- * @see IFullDataSource
  * @see FullDataArrayAccessor
  * @see FullDataPointUtil
  */
+@Deprecated
 public interface IFullDataAccessor
 {
 	FullDataPointIdMap getMapping();

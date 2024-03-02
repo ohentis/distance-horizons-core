@@ -20,6 +20,8 @@
 package com.seibel.distanthorizons.core.sql;
 
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.sql.dto.IBaseDTO;
+import com.seibel.distanthorizons.core.sql.repo.AbstractDhRepo;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;

@@ -19,11 +19,10 @@
 
 package com.seibel.distanthorizons.core.file.fullDatafile;
 
-import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IFullDataSource;
+import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.NewFullDataSource;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.generation.IWorldGenerationQueue;
-import com.seibel.distanthorizons.core.generation.MissingWorldGenPositionFinder;
 import com.seibel.distanthorizons.core.generation.tasks.IWorldGenTaskTracker;
 import com.seibel.distanthorizons.core.generation.tasks.WorldGenResult;
 import com.seibel.distanthorizons.core.level.IDhLevel;
@@ -34,11 +33,12 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-public class GeneratedFullDataFileHandler extends FullDataFileHandler
+public class NewGeneratedFullDataFileHandler extends NewFullDataFileHandler
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
@@ -46,8 +46,11 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandler
 	
 	private final ArrayList<IOnWorldGenCompleteListener> onWorldGenTaskCompleteListeners = new ArrayList<>();
 	
-	/** Used to prevent world gen tasks from being queued multiple times. */
-	private final Set<DhSectionPos> generatingDataPos = Collections.newSetFromMap(new ConcurrentHashMap<>());
+	
+	// TODO name better
+	//  this is just the list of section pos that have had their world generation
+	//  calculated and queued this session.
+	private final Set<DhSectionPos> genHandledPosSet = Collections.newSetFromMap(new ConcurrentHashMap<>());
 	
 	
 	
@@ -55,7 +58,7 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandler
 	// constructor //
 	//=============//
 	
-	public GeneratedFullDataFileHandler(IDhLevel level, AbstractSaveStructure saveStructure) { super(level, saveStructure); }
+	public NewGeneratedFullDataFileHandler(IDhLevel level, AbstractSaveStructure saveStructure) { super(level, saveStructure); }
 	
 	
 	
@@ -64,24 +67,21 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandler
 	//===========//
 	
 	@Override
-	public IFullDataSource get(DhSectionPos pos) { return this.get(pos, true); }
-	public IFullDataSource get(DhSectionPos pos, boolean runWorldGenCheck)
+	public NewFullDataSource get(DhSectionPos pos) { return this.get(pos, true); }
+	public NewFullDataSource get(DhSectionPos pos, boolean runWorldGenCheck)
 	{
-		IFullDataSource dataSource = super.get(pos);
+		NewFullDataSource dataSource = super.get(pos);
 		
 		if (runWorldGenCheck)
 		{
-			// add world gen tasks for missing columns in the data source
-			// if this position hasn't already been queued for generation
-			IWorldGenerationQueue worldGenQueue = this.worldGenQueueRef.get();
-			if (worldGenQueue != null && !this.generatingDataPos.contains(pos))
-			{
-				this.queueWorldGenForMissingColumnsInDataSource(worldGenQueue, pos, dataSource);
-			}
+			this.tryQueueSection(pos);
 		}
 		
 		return dataSource;
 	}
+	
+	@Override
+	public void queuePositionForGenerationOrRetrievalIfNecessary(DhSectionPos pos) { this.tryQueueSection(pos); }
 	
 	
 	
@@ -103,17 +103,25 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandler
 	public void clearGenerationQueue()
 	{
 		this.worldGenQueueRef.set(null);
-		this.generatingDataPos.clear(); // clear the incomplete data sources
+		this.genHandledPosSet.clear();
 	}
 	
 	/** Can be used to remove positions that are outside the player's render distance. */
 	public void removeGenRequestIf(Function<DhSectionPos, Boolean> removeIf)
 	{
-		this.generatingDataPos.forEach((pos) ->
+		// TODO there has to be a better way to do this
+		
+		IWorldGenerationQueue worldGenQueue = this.worldGenQueueRef.get();
+		if (worldGenQueue != null)
+		{
+			worldGenQueue.removeGenRequestIf(removeIf);
+		}
+		
+		this.genHandledPosSet.forEach((pos) ->
 		{
 			if (removeIf.apply(pos))
 			{
-				this.generatingDataPos.remove(pos);
+				this.genHandledPosSet.remove(pos);
 			}
 		});
 	}
@@ -162,6 +170,7 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandler
 		}
 	}
 	
+	// TODO only fire after the section has finished generated or once every X seconds
 	private void fireOnGenPosSuccessListeners(DhSectionPos pos)
 	{
 		// fire the event listeners 
@@ -177,47 +186,97 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandler
 	// helper methods //
 	//================//
 	
-	private void queueWorldGenForMissingColumnsInDataSource(IWorldGenerationQueue worldGenQueue, DhSectionPos pos, IFullDataSource dataSource)
+	/** does nothing if this section or one of it's parents has already been queued */
+	public void tryQueueSection(DhSectionPos pos)
 	{
-		// get the un-generated pos list
-		byte minGeneratorSectionDetailLevel = (byte) (worldGenQueue.highestDataDetail() + DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
-		ArrayList<DhSectionPos> genPosList = MissingWorldGenPositionFinder.getUngeneratedPosList(dataSource, minGeneratorSectionDetailLevel, true);
-		
-		// start each pos generating
-		ArrayList<CompletableFuture<WorldGenResult>>  taskFutureList = new ArrayList<>();
-		for (DhSectionPos genPos : genPosList)
+		IWorldGenerationQueue tempWorldGenQueue = this.worldGenQueueRef.get();
+		if (tempWorldGenQueue == null)
 		{
-			// try not to re-queue already generating tasks
-			if (this.generatingDataPos.contains(genPos))
+			return;
+		}
+		
+		if (this.genHandledPosSet.contains(pos))
+		{
+			return;
+		}
+		
+		
+		
+		AtomicBoolean positionAlreadyHandled = new AtomicBoolean(false);
+		pos.forEachPosUpToDetailLevel(NewFullDataFileHandler.TOP_SECTION_DETAIL_LEVEL, (parentPos) ->
+		{
+			if (!positionAlreadyHandled.get())
 			{
-				continue;
+				if (this.genHandledPosSet.contains(parentPos))
+				{
+					positionAlreadyHandled.set(true);
+				}
+			}
+		});
+		
+		if (positionAlreadyHandled.get())
+		{
+			return;
+		}
+		this.genHandledPosSet.add(pos);
+		
+		
+		
+		// get the un-generated pos list
+		byte minGeneratorSectionDetailLevel = (byte) (tempWorldGenQueue.highestDataDetail() + DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
+		
+		pos.forEachChildAtDetailLevel(minGeneratorSectionDetailLevel, (genPos) ->
+		{
+			IWorldGenerationQueue worldGenQueue = this.worldGenQueueRef.get();
+			if (worldGenQueue == null)
+			{
+				return;
 			}
 			
 			if (this.repo.existsWithKey(genPos))
 			{
-				continue;
+				// TODO only pull in the generation steps
+				NewFullDataSource potentialDataSource = this.get(genPos, false);
+				
+				EDhApiWorldGenerationStep currentMinWorldGenStep = EDhApiWorldGenerationStep.LIGHT;
+				checkWorldGenLoop:
+				for (int x = 0; x < NewFullDataSource.WIDTH; x++)
+				{
+					for (int z = 0; z < NewFullDataSource.WIDTH; z++)
+					{
+						int index = NewFullDataSource.relativePosToIndex(x, z);
+						byte genStepValue = potentialDataSource.columnGenerationSteps[index];
+						
+						if (genStepValue < currentMinWorldGenStep.value)
+						{
+							EDhApiWorldGenerationStep newWorldGenStep = EDhApiWorldGenerationStep.fromValue(genStepValue);
+							if (newWorldGenStep != null && newWorldGenStep.value < currentMinWorldGenStep.value)
+							{
+								currentMinWorldGenStep = newWorldGenStep;
+							}
+						}
+						
+						if (currentMinWorldGenStep == EDhApiWorldGenerationStep.EMPTY)
+						{
+							// queue the task
+							break checkWorldGenLoop;
+						}
+					}
+				}
+				
+				if (currentMinWorldGenStep != EDhApiWorldGenerationStep.EMPTY)
+				{
+					// no world gen needed
+					return;
+				}
 			}
 			
 			
 			// queue each new gen task
-			GenTask genTask = new GenTask(dataSource.getSectionPos());
-			CompletableFuture<WorldGenResult> worldGenFuture = worldGenQueue.submitGenTask(genPos, dataSource.getDataDetailLevel(), genTask);
+			GenTask genTask = new GenTask(genPos);
+			CompletableFuture<WorldGenResult> worldGenFuture = tempWorldGenQueue.submitGenTask(genPos, (byte) (genPos.getDetailLevel() - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL), genTask);
 			worldGenFuture.whenComplete((genTaskResult, ex) -> this.onWorldGenTaskComplete(genTaskResult, ex));
-			
-			taskFutureList.add(worldGenFuture);
-		}
-		
-		
-		// mark the data source as generating if necessary
-		if (taskFutureList.size() != 0)
-		{
-			this.generatingDataPos.add(pos);
-			CompletableFuture.allOf(taskFutureList.toArray(new CompletableFuture[0]))
-				.whenComplete((voidObj, ex) ->
-				{
-					this.generatingDataPos.remove(pos);
-				});
-		}
+		});
 	}
 	
 	
@@ -242,11 +301,11 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandler
 		public boolean isMemoryAddressValid() { return true; }
 		
 		@Override
-		public Consumer<ChunkSizedFullDataAccessor> getChunkDataConsumer()
+		public Consumer<NewFullDataSource> getChunkDataConsumer()
 		{
 			return (chunkSizedFullDataSource) ->
 			{
-				GeneratedFullDataFileHandler.this.level.updateDataSourcesWithChunkData(chunkSizedFullDataSource);
+				NewGeneratedFullDataFileHandler.this.level.updateDataSources(chunkSizedFullDataSource);
 			};
 		}
 	}

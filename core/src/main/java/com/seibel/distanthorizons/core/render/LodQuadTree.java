@@ -33,6 +33,7 @@ import com.seibel.distanthorizons.core.util.objects.quadTree.QuadNode;
 import com.seibel.distanthorizons.core.util.objects.quadTree.QuadTree;
 import com.seibel.distanthorizons.coreapi.util.MathUtil;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -206,7 +207,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 			LodRenderSection newRenderSection = new LodRenderSection(this, sectionPos);
 			rootNode.setValue(sectionPos, newRenderSection);
 			
-			renderSection = newRenderSection;
+			renderSection = newRenderSection; // TODO this never seemed to be called, is it necessary?
 		}
 		
 		
@@ -435,7 +436,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 	 * Can be called whenever a render section's data needs to be refreshed. <br>
 	 * This should be called whenever a world generation task is completed or if the connected server has new data to show.
 	 */
-	public void reloadPos(DhSectionPos pos)
+	public void reloadPos(@NotNull DhSectionPos pos)
 	{
 		if (pos == null)
 		{

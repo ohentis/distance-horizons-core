@@ -1,11 +1,13 @@
 package com.seibel.distanthorizons.core.file;
 
-import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.NewFullDataSource;
+import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSource;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
-import com.seibel.distanthorizons.core.sql.*;
+import com.seibel.distanthorizons.core.sql.dto.LegacyDataSourceDTO;
+import com.seibel.distanthorizons.core.sql.repo.AbstractLegacyDataSourceRepo;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.TimerUtil;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataOutputStream;
@@ -29,7 +31,8 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.zip.Adler32;
 import java.util.zip.CheckedOutputStream;
 
-public abstract class AbstractDataSourceHandler<TDataSource extends IDataSource<TDhLevel>, TDhLevel extends IDhLevel> implements ISourceProvider<TDataSource, TDhLevel>
+public abstract class AbstractLegacyDataSourceHandler<TDataSource extends IDataSource<TDhLevel>, TDhLevel extends IDhLevel> 
+		implements ISourceProvider<TDataSource, TDhLevel>
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	private static final Timer DELAYED_SAVE_TIMER = TimerUtil.CreateTimer("DataSourceSaveTimer");
@@ -54,7 +57,7 @@ public abstract class AbstractDataSourceHandler<TDataSource extends IDataSource<
 	protected final TDhLevel level;
 	protected final File saveDir;
 	
-	public final AbstractDataSourceRepo repo;
+	public final AbstractLegacyDataSourceRepo repo;
 	
 	
 	
@@ -62,8 +65,8 @@ public abstract class AbstractDataSourceHandler<TDataSource extends IDataSource<
 	// constructor //
 	//=============//
 	
-	public AbstractDataSourceHandler(TDhLevel level, AbstractSaveStructure saveStructure) { this(level, saveStructure, null); }
-	public AbstractDataSourceHandler(TDhLevel level, AbstractSaveStructure saveStructure, @Nullable File saveDirOverride)
+	public AbstractLegacyDataSourceHandler(TDhLevel level, AbstractSaveStructure saveStructure) { this(level, saveStructure, null); }
+	public AbstractLegacyDataSourceHandler(TDhLevel level, AbstractSaveStructure saveStructure, @Nullable File saveDirOverride)
 	{
 		this.level = level;
 		this.saveDir = (saveDirOverride == null) ? saveStructure.getFullDataFolder(level.getLevelWrapper()) : saveDirOverride;
@@ -98,9 +101,9 @@ public abstract class AbstractDataSourceHandler<TDataSource extends IDataSource<
 	//==================//
 	
 	/** When this is called the parent folders should be created */
-	protected abstract AbstractDataSourceRepo createRepo();
+	protected abstract AbstractLegacyDataSourceRepo createRepo();
 	
-	protected abstract TDataSource createDataSourceFromDto(DataSourceDto dto) throws InterruptedException, IOException;
+	protected abstract TDataSource createDataSourceFromDto(LegacyDataSourceDTO dto) throws InterruptedException, IOException;
 	/** 
 	 * Creates a new data source using any DTOs already present in the database. 
 	 * Can return null if there was an issue, but in general should return at least an empty data source.
@@ -136,7 +139,7 @@ public abstract class AbstractDataSourceHandler<TDataSource extends IDataSource<
 	/**
 	 * Should only be used in internal file handler methods where we are already running on a file handler thread.
 	 * Can return null if there was a problem.
-	 * @see AbstractDataSourceHandler#getAsync(DhSectionPos)
+	 * @see AbstractLegacyDataSourceHandler#getAsync(DhSectionPos)
 	 */
 	@Nullable
 	public TDataSource get(DhSectionPos pos)
@@ -157,7 +160,7 @@ public abstract class AbstractDataSourceHandler<TDataSource extends IDataSource<
 		TDataSource dataSource = null;
 		try
 		{
-			DataSourceDto dto = this.repo.getByKey(pos);
+			LegacyDataSourceDTO dto = this.repo.getByKey(pos);
 			if (dto != null)
 			{
 				// load from file
@@ -185,7 +188,7 @@ public abstract class AbstractDataSourceHandler<TDataSource extends IDataSource<
 	//===============//
 	
 	@Override
-	public CompletableFuture<Void> updateDataSourcesWithChunkDataAsync(ChunkSizedFullDataAccessor chunkDataView)
+	public CompletableFuture<Void> updateDataSourceAsync(NewFullDataSource inputDataSource)
 	{
 		ThreadPoolExecutor executor = ThreadPools.getFileHandlerExecutor();
 		if (executor == null || executor.isTerminated())
@@ -199,11 +202,11 @@ public abstract class AbstractDataSourceHandler<TDataSource extends IDataSource<
 			// run file handling on a separate thread
 			return CompletableFuture.runAsync(() ->
 			{
-				DhSectionPos bottomPos = chunkDataView.getSectionPos().convertNewToDetailLevel(DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
+				DhSectionPos bottomPos = inputDataSource.getSectionPos().convertNewToDetailLevel(DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
 				
 				bottomPos.forEachPosUpToDetailLevel(
 						this.topSectionDetailLevelRef.byteValue(), 
-						(pos) -> this.updateDataSourceAtPos(pos, chunkDataView) );
+						(pos) -> this.updateDataSourceAtPos(pos, inputDataSource) );
 				
 			}, executor);
 		}
@@ -213,7 +216,7 @@ public abstract class AbstractDataSourceHandler<TDataSource extends IDataSource<
 			return CompletableFuture.completedFuture(null);
 		}
 	}
-	protected void updateDataSourceAtPos(DhSectionPos pos, ChunkSizedFullDataAccessor chunkData)
+	protected void updateDataSourceAtPos(DhSectionPos pos, NewFullDataSource newDataSource)
 	{
 		// a lock is necessary to prevent two threads from writing to the same position at once,
 		// if that happens only the second update will apply and the LOD will end up with hole(s)
@@ -229,7 +232,7 @@ public abstract class AbstractDataSourceHandler<TDataSource extends IDataSource<
 			{
 				dataSource = this.makeEmptyDataSource(pos);
 			}
-			dataSource.update(chunkData, this.level);
+			dataSource.update(newDataSource, this.level);
 			
 			this.queueDelayedSave(dataSource);
 		}
@@ -243,7 +246,7 @@ public abstract class AbstractDataSourceHandler<TDataSource extends IDataSource<
 		}
 	}
 	/**
-	 * Queues the given data source to save after {@link AbstractDataSourceHandler#SAVE_DELAY_IN_MS}
+	 * Queues the given data source to save after {@link AbstractLegacyDataSourceHandler#SAVE_DELAY_IN_MS}
 	 * milliseconds have passed without any additional modifications. <br> <br>
 	 *
 	 * This prevents repeatedly reading/writing the same data source to/from disk if said 
@@ -279,17 +282,17 @@ public abstract class AbstractDataSourceHandler<TDataSource extends IDataSource<
 				{
 					
 					// remove this task from the queue
-					AbstractDataSourceHandler.this.saveTimerTasksBySectionPos.remove(pos);
+					AbstractLegacyDataSourceHandler.this.saveTimerTasksBySectionPos.remove(pos);
 					
 					try
 					{
-						final TDataSource finalDataSource = AbstractDataSourceHandler.this.unsavedDataSourceBySectionPos.remove(pos);
+						final TDataSource finalDataSource = AbstractLegacyDataSourceHandler.this.unsavedDataSourceBySectionPos.remove(pos);
 						
 						// this can rarely happen due to imperfect concurrency handling,
 						// if the data source is null that just means it has already been saved so nothing needs to be done 
 						if (finalDataSource != null)
 						{
-							AbstractDataSourceHandler.this.writeDataSourceToFile(finalDataSource);
+							AbstractLegacyDataSourceHandler.this.writeDataSourceToFile(finalDataSource);
 						}
 					}
 					catch (Exception e) // this can throw errors (not exceptions) when installed in Iris' dev environment for some reason due to an issue with LZ4's compression library
@@ -338,7 +341,7 @@ public abstract class AbstractDataSourceHandler<TDataSource extends IDataSource<
 			// but since this stream will be closed immediately after writing anyway, it won't be an issue
 			DhDataOutputStream compressedOut = new DhDataOutputStream(checkedOut);
 			
-			dataSource.writeToStream(compressedOut, AbstractDataSourceHandler.this.level);
+			dataSource.writeToStream(compressedOut, AbstractLegacyDataSourceHandler.this.level);
 			
 			compressedOut.flush();
 			int checksum = (int) checkedOut.getChecksum().getValue();
@@ -346,9 +349,9 @@ public abstract class AbstractDataSourceHandler<TDataSource extends IDataSource<
 			
 			
 			// save the DTO
-			DataSourceDto newDto = new DataSourceDto(
+			LegacyDataSourceDTO newDto = new LegacyDataSourceDTO(
 					dataSource.getSectionPos(), checksum,
-					dataSource.getDataDetailLevel(), dataSource.getWorldGenStep(), dataSource.getDataTypeName(),
+					dataSource.getDataDetailLevel(), dataSource.getWorldGenStep(), ColumnRenderSource.DATA_NAME,
 					dataSource.getDataFormatVersion(), 
 					byteArrayOutputStream.toByteArray());
 			this.repo.save(newDto);

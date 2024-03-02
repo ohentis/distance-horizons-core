@@ -17,27 +17,15 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.seibel.distanthorizons.core.sql;
+package com.seibel.distanthorizons.core.sql.dto;
 
-import com.seibel.distanthorizons.core.pos.DhSectionPos;
-
-import java.sql.SQLException;
-
-public class FullDataRepo extends AbstractDataSourceRepo
+/**
+ * DTO = DataTable Object <br>
+ * Any object that's stored in the database should extend this object.
+ */
+public interface IBaseDTO<TKey>
 {
-	public static final String TABLE_NAME = "DhFullData";
+	TKey getKey();
 	
-	
-	public FullDataRepo(String databaseType, String databaseLocation) throws SQLException
-	{
-		super(databaseType, databaseLocation);
-	}
-	
-	
-	@Override
-	public String getTableName() { return TABLE_NAME; }
-	
-	@Override 
-	public String createWhereStatement(DhSectionPos pos) { return "DhSectionPos = '"+pos.serialize()+"'"; }
 	
 }

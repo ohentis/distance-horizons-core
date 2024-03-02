@@ -19,7 +19,7 @@
 
 package com.seibel.distanthorizons.core.level;
 
-import com.seibel.distanthorizons.core.file.fullDatafile.GeneratedFullDataFileHandler;
+import com.seibel.distanthorizons.core.file.fullDatafile.NewGeneratedFullDataFileHandler;
 import com.seibel.distanthorizons.core.generation.IWorldGenerationQueue;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
@@ -34,15 +34,15 @@ public class WorldGenModule implements Closeable
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
-	private final GeneratedFullDataFileHandler dataFileHandler;
-	private final GeneratedFullDataFileHandler.IOnWorldGenCompleteListener onWorldGenCompleteListener;
+	private final NewGeneratedFullDataFileHandler dataFileHandler;
+	private final NewGeneratedFullDataFileHandler.IOnWorldGenCompleteListener onWorldGenCompleteListener;
 	
 	private final AtomicReference<AbstractWorldGenState> worldGenStateRef = new AtomicReference<>();
 	private final F3Screen.DynamicMessage worldGenF3Message;
 	
 	
 	
-	public WorldGenModule(GeneratedFullDataFileHandler dataFileHandler, GeneratedFullDataFileHandler.IOnWorldGenCompleteListener onWorldGenCompleteListener)
+	public WorldGenModule(NewGeneratedFullDataFileHandler dataFileHandler, NewGeneratedFullDataFileHandler.IOnWorldGenCompleteListener onWorldGenCompleteListener)
 	{
 		this.dataFileHandler = dataFileHandler;
 		this.onWorldGenCompleteListener = onWorldGenCompleteListener;
@@ -70,7 +70,7 @@ public class WorldGenModule implements Closeable
 	// world gen control //
 	//===================//
 	
-	public void startWorldGen(GeneratedFullDataFileHandler dataFileHandler, AbstractWorldGenState newWgs)
+	public void startWorldGen(NewGeneratedFullDataFileHandler dataFileHandler, AbstractWorldGenState newWgs)
 	{
 		// create the new world generator
 		if (!this.worldGenStateRef.compareAndSet(null, newWgs))
@@ -82,7 +82,7 @@ public class WorldGenModule implements Closeable
 		dataFileHandler.setWorldGenerationQueue(newWgs.worldGenerationQueue);
 	}
 	
-	public void stopWorldGen(GeneratedFullDataFileHandler dataFileHandler)
+	public void stopWorldGen(NewGeneratedFullDataFileHandler dataFileHandler)
 	{
 		AbstractWorldGenState worldGenState = this.worldGenStateRef.get();
 		if (worldGenState == null)

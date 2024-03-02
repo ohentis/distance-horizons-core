@@ -21,6 +21,7 @@ package tests;
 
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.sql.DatabaseUpdater;
+import com.seibel.distanthorizons.core.sql.repo.AbstractDhRepo;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -34,7 +35,7 @@ import java.sql.SQLException;
 import java.util.Map;
 
 /**
- * Validates {@link com.seibel.distanthorizons.core.sql.AbstractDhRepo} is set up correctly.
+ * Validates {@link AbstractDhRepo} is set up correctly.
  */
 public class DhRepoSqliteTest
 {

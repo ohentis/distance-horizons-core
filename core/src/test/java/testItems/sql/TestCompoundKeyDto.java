@@ -20,8 +20,7 @@
 package testItems.sql;
 
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
-import com.seibel.distanthorizons.core.pos.DhSectionPos;
-import com.seibel.distanthorizons.core.sql.IBaseDTO;
+import com.seibel.distanthorizons.core.sql.dto.IBaseDTO;
 
 public class TestCompoundKeyDto implements IBaseDTO<DhChunkPos>
 {

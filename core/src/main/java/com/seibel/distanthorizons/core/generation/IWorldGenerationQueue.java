@@ -26,7 +26,10 @@ import com.seibel.distanthorizons.core.pos.DhSectionPos;
 
 import java.io.Closeable;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 
+// TODO does this need a interface?
+@Deprecated
 public interface IWorldGenerationQueue extends Closeable
 {
 	/** the largest numerical detail level */
@@ -44,5 +47,9 @@ public interface IWorldGenerationQueue extends Closeable
 	
 	CompletableFuture<Void> startClosing(boolean cancelCurrentGeneration, boolean alsoInterruptRunning);
 	void close();
+	
+	void removeGenRequestIf(Function<DhSectionPos, Boolean> removeIf);
+	void removeGenTask(DhSectionPos pos);
+	
 	
 }

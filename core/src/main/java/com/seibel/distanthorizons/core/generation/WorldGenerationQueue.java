@@ -23,7 +23,7 @@ import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiDistantGenerat
 import com.seibel.distanthorizons.api.interfaces.override.worldGenerator.IDhApiWorldGenerator;
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGeneratorReturnType;
 import com.seibel.distanthorizons.api.objects.data.DhApiChunk;
-import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.NewFullDataSource;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.generation.tasks.*;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
@@ -47,6 +47,7 @@ import java.awt.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRenderable
 {
@@ -158,6 +159,29 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 		this.waitingTasks.put(pos, new WorldGenTask(pos, requiredDataDetail, tracker, future));
 		return future;
 	}
+	
+	@Override
+	public void removeGenRequestIf(Function<DhSectionPos, Boolean> removeIf)
+	{
+		this.waitingTasks.forEachKey(100, (genPos) -> 
+		{
+			if (removeIf.apply(genPos))
+			{
+				this.waitingTasks.remove(genPos);
+			}
+		});
+	}
+	
+	@Override
+	public void removeGenTask(DhSectionPos pos)
+	{
+		WorldGenTask task = this.waitingTasks.remove(pos);
+		if (task != null)
+		{
+			task.future.cancel(true);
+		}
+	}
+	
 	
 	
 	
@@ -407,7 +431,7 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 		DhChunkPos chunkPosMin,
 		byte granularity,
 		byte targetDataDetail,
-		Consumer<ChunkSizedFullDataAccessor> chunkDataConsumer
+		Consumer<NewFullDataSource> chunkDataConsumer
 		)
 	{
 		EDhApiDistantGeneratorMode generatorMode = Config.Client.Advanced.WorldGenerator.distantGeneratorMode.get();
@@ -428,9 +452,9 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 						try
 						{
 							IChunkWrapper chunk = WRAPPER_FACTORY.createChunkWrapper(generatedObjectArray);
-							ChunkSizedFullDataAccessor chunkDataAccessor = LodDataBuilder.createChunkData(chunk);
-							LodUtil.assertTrue(chunkDataAccessor != null);
-							chunkDataConsumer.accept(chunkDataAccessor);
+							NewFullDataSource dataSource = LodDataBuilder.createGeneratedDataSource(chunk);
+							LodUtil.assertTrue(dataSource != null);
+							chunkDataConsumer.accept(dataSource);
 						}
 						catch (ClassCastException e)
 						{
@@ -453,8 +477,8 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 					{
 						try
 						{
-							ChunkSizedFullDataAccessor chunkDataAccessor = LodDataBuilder.createApiChunkData(dataPoints);
-							chunkDataConsumer.accept(chunkDataAccessor);
+							NewFullDataSource dataSource = LodDataBuilder.createFromApiChunkData(dataPoints);
+							chunkDataConsumer.accept(dataSource);
 						}
 						catch (ClassCastException e)
 						{

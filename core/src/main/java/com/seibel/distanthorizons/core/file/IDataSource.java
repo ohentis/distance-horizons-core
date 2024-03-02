@@ -1,12 +1,11 @@
 package com.seibel.distanthorizons.core.file;
 
+import com.seibel.distanthorizons.api.enums.EDhApiDetailLevel;
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
-import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
-import com.seibel.distanthorizons.core.dataObjects.fullData.loader.AbstractFullDataSourceLoader;
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IFullDataSource;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.NewFullDataSource;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
-import com.seibel.distanthorizons.core.sql.IBaseDTO;
+import com.seibel.distanthorizons.core.sql.dto.IBaseDTO;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataOutputStream;
 
 import java.io.IOException;
@@ -14,11 +13,10 @@ import java.io.IOException;
 /**
  * Base for all data sources.
  * 
- * @param <TDhLevel> what type of level this data source can be created from
+ * @param <TDhLevel> there are times when we need specifically a client level vs a more generic level
  */
 public interface IDataSource<TDhLevel extends IDhLevel> extends IBaseDTO<DhSectionPos>
 {
-	
 	DhSectionPos getSectionPos();
 	
 	
@@ -27,8 +25,10 @@ public interface IDataSource<TDhLevel extends IDhLevel> extends IBaseDTO<DhSecti
 	// file handling //
 	//===============//
 	
-	void update(ChunkSizedFullDataAccessor chunkData, TDhLevel level);
+	void update(NewFullDataSource chunkData, TDhLevel level);
 	
+	// still used by RenderSource, remove once that's been changed
+	@Deprecated
 	void writeToStream(DhDataOutputStream outputStream, TDhLevel level) throws IOException;
 	
 	
@@ -37,16 +37,19 @@ public interface IDataSource<TDhLevel extends IDhLevel> extends IBaseDTO<DhSecti
 	// meta data //
 	//===========//
 	
-	/** Returns the detail level of the data contained by this {@link IFullDataSource}. */
-	byte getDataDetailLevel();
-	EDhApiWorldGenerationStep getWorldGenStep();
-	/**
-	 * Returns the name of this data source. <br>
-	 * Primarily by {@link AbstractFullDataSourceLoader#getLoader(String, byte)} to determine how to parse
-	 * the binary data when read from file.
+	/** 
+	 * Returns the detail level of the data contained by this data source. 
+	 * IE: 0 for block, 1 for 2x2 blocks, etc.
+	 * 
+	 * @see EDhApiDetailLevel
 	 */
-	String getDataTypeName();
-	/** Defines how the binary data is formatted and which {@link AbstractFullDataSourceLoader} should be used when loading from file. */
+	byte getDataDetailLevel();
+	
+	@Deprecated // TODO only necessary for full data sources
+	EDhApiWorldGenerationStep getWorldGenStep();
+	EDhApiWorldGenerationStep getWorldGenStepAtRelativePos(int relX, int relZ);
+	
+	/** Defines how the binary data is formatted. */
 	byte getDataFormatVersion();
 	
 }

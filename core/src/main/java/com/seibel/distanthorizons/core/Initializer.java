@@ -26,10 +26,7 @@ import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.core.world.DhApiWorldProxy;
 import com.seibel.distanthorizons.core.api.external.methods.config.DhApiConfig;
 import com.seibel.distanthorizons.core.api.external.methods.data.DhApiTerrainDataRepo;
-import com.seibel.distanthorizons.core.dataObjects.fullData.loader.CompleteFullDataSourceLoader;
-import com.seibel.distanthorizons.core.dataObjects.fullData.loader.HighDetailIncompleteFullDataSourceLoader;
 import com.seibel.distanthorizons.api.DhApi;
-import com.seibel.distanthorizons.core.dataObjects.fullData.loader.LowDetailIncompleteFullDataSourceLoader;
 import com.seibel.distanthorizons.core.render.DhApiRenderProxy;
 //import io.netty.buffer.ByteBuf;
 import net.jpountz.lz4.LZ4Compressor;
@@ -76,10 +73,6 @@ public class Initializer
 		}
 		
 		
-		
-		CompleteFullDataSourceLoader unused2 = new CompleteFullDataSourceLoader(); // Auto register into the loader system
-		HighDetailIncompleteFullDataSourceLoader unused3 = new HighDetailIncompleteFullDataSourceLoader(); // Auto register
-		LowDetailIncompleteFullDataSourceLoader unused4 = new LowDetailIncompleteFullDataSourceLoader(); // Auto register
 		
 		// link Core's config to the API
 		DhApi.Delayed.configs = DhApiConfig.INSTANCE;

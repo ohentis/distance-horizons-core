@@ -165,19 +165,23 @@ public class FullDataPointIdMap
 	
 	/**
 	 * Adds each entry from the given map to this map.
+	 * 
+	 * Note: when using this function be careful about re-mapping the
+	 * same data source multiple times.
+	 * Doing so may cause indexOutOfBounds issues.
 	 *
 	 * @return an array of each added entry's ID in this map in order
 	 */
-	public int[] mergeAndReturnRemappedEntityIds(FullDataPointIdMap target)
+	public int[] mergeAndReturnRemappedEntityIds(FullDataPointIdMap inputMap)
 	{
 		try
 		{
-			LOGGER.trace("merging {" + this.pos + ", " + this.entryList.size() + "} and {" + target.pos + ", " + target.entryList.size() + "}");
+			LOGGER.trace("merging {" + this.pos + ", " + this.entryList.size() + "} and {" + inputMap.pos + ", " + inputMap.entryList.size() + "}");
 			
-			target.readWriteLock.readLock().lock();
+			inputMap.readWriteLock.readLock().lock();
 			this.readWriteLock.writeLock().lock();
 			
-			ArrayList<Entry> entriesToMerge = target.entryList;
+			ArrayList<Entry> entriesToMerge = inputMap.entryList;
 			int[] remappedEntryIds = new int[entriesToMerge.size()];
 			for (int i = 0; i < entriesToMerge.size(); i++)
 			{
@@ -191,9 +195,9 @@ public class FullDataPointIdMap
 		finally
 		{
 			this.readWriteLock.writeLock().unlock();
-			target.readWriteLock.readLock().unlock();
+			inputMap.readWriteLock.readLock().unlock();
 			
-			LOGGER.trace("finished merging {" + this.pos + ", " + this.entryList.size() + "} and {" + target.pos + ", " + target.entryList.size() + "}");
+			LOGGER.trace("finished merging {" + this.pos + ", " + this.entryList.size() + "} and {" + inputMap.pos + ", " + inputMap.entryList.size() + "}");
 		}
 	}
 	

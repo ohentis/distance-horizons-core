@@ -23,15 +23,14 @@ import com.seibel.distanthorizons.core.dataObjects.fullData.FullDataPointIdMap;
 import com.seibel.distanthorizons.core.util.FullDataPointUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.CompleteFullDataSource;
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.LowDetailIncompleteFullDataSource;
 
 /**
  * Contains Full Data points and basic methods for getting and setting them. <br>
  * Can be used standalone or as the base for Full data sources.
  *
  * @see CompleteFullDataSource
- * @see LowDetailIncompleteFullDataSource
  */
+@Deprecated
 public class FullDataArrayAccessor implements IFullDataAccessor
 {
 	protected final FullDataPointIdMap mapping;

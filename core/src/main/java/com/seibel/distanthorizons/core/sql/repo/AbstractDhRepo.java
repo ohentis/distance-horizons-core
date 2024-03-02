@@ -17,9 +17,12 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.seibel.distanthorizons.core.sql;
+package com.seibel.distanthorizons.core.sql.repo;
 
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.sql.DatabaseUpdater;
+import com.seibel.distanthorizons.core.sql.DbConnectionClosedException;
+import com.seibel.distanthorizons.core.sql.dto.IBaseDTO;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 

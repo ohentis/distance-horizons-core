@@ -21,12 +21,14 @@ package com.seibel.distanthorizons.core.dataObjects.transformers;
 
 import java.util.List;
 
+import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
 import com.seibel.distanthorizons.api.objects.data.DhApiChunk;
 import com.seibel.distanthorizons.api.objects.data.DhApiTerrainDataPoint;
-import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.NewFullDataSource;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
+import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.util.FullDataPointUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
@@ -40,6 +42,8 @@ public class LodDataBuilder
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	private static final IBlockStateWrapper AIR = SingletonInjector.INSTANCE.get(IWrapperFactory.class).getAirBlockStateWrapper();
+	/** how many chunks wide the {@link NewFullDataSource} is. */
+	private static final int NUMB_OF_CHUNKS_WIDE = NewFullDataSource.WIDTH / LodUtil.CHUNK_WIDTH;
 	
 	private static boolean getTopErrorLogged = false;
 	
@@ -49,7 +53,7 @@ public class LodDataBuilder
 	// converters //
 	//============//
 	
-	public static ChunkSizedFullDataAccessor createChunkData(IChunkWrapper chunkWrapper)
+	public static NewFullDataSource createGeneratedDataSource(IChunkWrapper chunkWrapper)
 	{
 		if (!canGenerateLodFromChunk(chunkWrapper))
 		{
@@ -57,26 +61,89 @@ public class LodDataBuilder
 		}
 		
 		
-		ChunkSizedFullDataAccessor chunkData = new ChunkSizedFullDataAccessor(chunkWrapper.getChunkPos());
-		int minBuildHeight = chunkWrapper.getMinNonEmptyHeight();
 		
-		for (int x = 0; x < LodUtil.CHUNK_WIDTH; x++)
+		// get the section position
+		int sectionPosX = chunkWrapper.getChunkPos().x;
+		// negative positions start at -1 so the logic there is slightly different
+		sectionPosX = (sectionPosX < 0) ? ((sectionPosX + 1) / NUMB_OF_CHUNKS_WIDE) - 1 : (sectionPosX / NUMB_OF_CHUNKS_WIDE);
+		int sectionPosZ = chunkWrapper.getChunkPos().z;
+		sectionPosZ = (sectionPosZ < 0) ? ((sectionPosZ + 1) / NUMB_OF_CHUNKS_WIDE) - 1 : (sectionPosZ / NUMB_OF_CHUNKS_WIDE);
+		DhSectionPos pos = new DhSectionPos(DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL, sectionPosX, sectionPosZ);
+		
+		NewFullDataSource dataSource = NewFullDataSource.createEmpty(pos);
+		dataSource.markNotEmpty();
+		
+		
+		
+		// compute the chunk dataSource offset
+		// this offset is used to determine where in the dataSource this chunk's data should go
+		int chunkOffsetX = chunkWrapper.getChunkPos().x;
+		if (chunkWrapper.getChunkPos().x < 0)
 		{
-			for (int z = 0; z < LodUtil.CHUNK_WIDTH; z++)
+			// expected offset positions:
+			// chunkPos -> offset
+			//  5 -> 1
+			//  4 -> 0 ---
+			//  3 -> 3
+			//  2 -> 2
+			//  1 -> 1
+			//  0 -> 0 ===
+			// -1 -> 3
+			// -2 -> 2
+			// -3 -> 1
+			// -4 -> 0 ---
+			// -5 -> 3
+			chunkOffsetX = ((chunkOffsetX) % NUMB_OF_CHUNKS_WIDE);
+			if (chunkOffsetX != 0)
+			{
+				chunkOffsetX += NUMB_OF_CHUNKS_WIDE;
+			}
+		}
+		else
+		{
+			chunkOffsetX %= NUMB_OF_CHUNKS_WIDE;
+		}
+		chunkOffsetX *= LodUtil.CHUNK_WIDTH;
+		
+		int chunkOffsetZ = chunkWrapper.getChunkPos().z;
+		if (chunkWrapper.getChunkPos().z < 0)
+		{
+			chunkOffsetZ = ((chunkOffsetZ) % NUMB_OF_CHUNKS_WIDE);
+			if (chunkOffsetZ != 0)
+			{
+				chunkOffsetZ += NUMB_OF_CHUNKS_WIDE;
+			}
+		}
+		else
+		{
+			chunkOffsetZ %= NUMB_OF_CHUNKS_WIDE;
+		}
+		chunkOffsetZ *= LodUtil.CHUNK_WIDTH;
+		
+		
+		
+		//==========================//
+		// populate the data source //
+		//==========================//
+		
+		int minBuildHeight = chunkWrapper.getMinNonEmptyHeight();
+		for (int chunkX = 0; chunkX < LodUtil.CHUNK_WIDTH; chunkX++)
+		{
+			for (int chunkZ = 0; chunkZ < LodUtil.CHUNK_WIDTH; chunkZ++)
 			{
 				LongArrayList longs = new LongArrayList(chunkWrapper.getHeight() / 4);
 				int lastY = chunkWrapper.getMaxBuildHeight();
-				IBiomeWrapper biome = chunkWrapper.getBiome(x, lastY, z);
+				IBiomeWrapper biome = chunkWrapper.getBiome(chunkX, lastY, chunkZ);
 				IBlockStateWrapper blockState = AIR;
-				int mappedId = chunkData.getMapping().addIfNotPresentAndGetId(biome, blockState);
-				// FIXME: The +1 offset to reproduce the old behavior. Remove this when we get per-face lighting
-				byte light = (byte) ((chunkWrapper.getBlockLight(x, lastY + 1, z) << 4) + chunkWrapper.getSkyLight(x, lastY + 1, z));
+				int mappedId = dataSource.getMapping().addIfNotPresentAndGetId(biome, blockState);
+				// FIXME: The lastY +1 offset is to reproduce the old behavior. Remove this when we get per-face lighting
+				byte light = (byte) ((chunkWrapper.getBlockLight(chunkX, lastY + 1, chunkZ) << 4) + chunkWrapper.getSkyLight(chunkX, lastY + 1, chunkZ));
 				
 				
 				// determine the starting Y Pos
-				int y = chunkWrapper.getLightBlockingHeightMapValue(x,z);
+				int y = chunkWrapper.getLightBlockingHeightMapValue(chunkX,chunkZ);
 				// go up until we reach open air or the world limit
-				IBlockStateWrapper topBlockState = chunkWrapper.getBlockState(x, y, z);
+				IBlockStateWrapper topBlockState = chunkWrapper.getBlockState(chunkX, y, chunkZ);
 				while (!topBlockState.isAir() && y < chunkWrapper.getMaxBuildHeight())
 				{
 					try
@@ -84,13 +151,13 @@ public class LodDataBuilder
 						// This is necessary in some edge cases with snow layers and some other blocks that may not appear in the height map but do block light.
 						// Interestingly this doesn't appear to be the case in the DhLightingEngine, if this same logic is added there the lighting breaks for the affected blocks.
 						y++;
-						topBlockState = chunkWrapper.getBlockState(x, y, z);
+						topBlockState = chunkWrapper.getBlockState(chunkX, y, chunkZ);
 					}
 					catch (Exception e)
 					{
 						if (!getTopErrorLogged)
 						{
-							LOGGER.warn("Unexpected issue in LodDataBuilder, future errors won't be logged. Chunk [" + chunkWrapper.getChunkPos() + "] with max height: [" + chunkWrapper.getMaxBuildHeight() + "] had issue getting block at pos [" + x + "," + y + "," + z + "] error: " + e.getMessage(), e);
+							LOGGER.warn("Unexpected issue in LodDataBuilder, future errors won't be logged. Chunk [" + chunkWrapper.getChunkPos() + "] with max height: [" + chunkWrapper.getMaxBuildHeight() + "] had issue getting block at pos [" + chunkX + "," + y + "," + chunkZ + "] error: " + e.getMessage(), e);
 							getTopErrorLogged = true;
 						}
 						
@@ -102,39 +169,38 @@ public class LodDataBuilder
 				
 				for (; y >= minBuildHeight; y--)
 				{
-					IBiomeWrapper newBiome = chunkWrapper.getBiome(x, y, z);
-					IBlockStateWrapper newBlockState = chunkWrapper.getBlockState(x, y, z);
-					byte newLight = (byte) ((chunkWrapper.getBlockLight(x, y + 1, z) << 4) + chunkWrapper.getSkyLight(x, y + 1, z));
+					IBiomeWrapper newBiome = chunkWrapper.getBiome(chunkX, y, chunkZ);
+					IBlockStateWrapper newBlockState = chunkWrapper.getBlockState(chunkX, y, chunkZ);
+					byte newLight = (byte) ((chunkWrapper.getBlockLight(chunkX, y + 1, chunkZ) << 4) + chunkWrapper.getSkyLight(chunkX, y + 1, chunkZ));
 					
 					if (!newBiome.equals(biome) || !newBlockState.equals(blockState))
 					{
 						longs.add(FullDataPointUtil.encode(mappedId, lastY - y, y + 1 - chunkWrapper.getMinBuildHeight(), light));
 						biome = newBiome;
 						blockState = newBlockState;
-						mappedId = chunkData.getMapping().addIfNotPresentAndGetId(biome, blockState);
+						mappedId = dataSource.getMapping().addIfNotPresentAndGetId(biome, blockState);
 						light = newLight;
 						lastY = y;
 					}
-//                    else if (newLight != light) {
-//                        longs.add(FullFormat.encode(mappedId, lastY-y, y+1 - chunk.getMinBuildHeight(), light));
-//                        light = newLight;
-//                        lastY = y;
-//                    }
 				}
 				longs.add(FullDataPointUtil.encode(mappedId, lastY - y, y + 1 - chunkWrapper.getMinBuildHeight(), light));
 				
-				chunkData.setSingleColumn(longs.toLongArray(), x, z);
+				dataSource.setSingleColumn(longs.toLongArray(), 
+						chunkX + chunkOffsetX, 
+						chunkZ + chunkOffsetZ, 
+						EDhApiWorldGenerationStep.LIGHT);
 			}
 		}
-		if (!canGenerateLodFromChunk(chunkWrapper)) return null;
-		LodUtil.assertTrue(chunkData.emptyCount() == 0);
-		return chunkData;
+		
+		LodUtil.assertTrue(!dataSource.isEmpty());
+		return dataSource;
 	}
 	
+	
 	/** @throws ClassCastException if an API user returns the wrong object type(s) */
-	public static ChunkSizedFullDataAccessor createApiChunkData(DhApiChunk dataPoints) throws ClassCastException
+	public static NewFullDataSource createFromApiChunkData(DhApiChunk dataPoints) throws ClassCastException
 	{
-		ChunkSizedFullDataAccessor accessor = new ChunkSizedFullDataAccessor(new DhChunkPos(dataPoints.chunkPosX, dataPoints.chunkPosZ));
+		NewFullDataSource accessor = NewFullDataSource.createEmpty(new DhSectionPos(new DhChunkPos(dataPoints.chunkPosX, dataPoints.chunkPosZ)));
 		for (int relZ = 0; relZ < LodUtil.CHUNK_WIDTH; relZ++)
 		{
 			for (int relX = 0; relX < LodUtil.CHUNK_WIDTH; relX++)
@@ -156,23 +222,23 @@ public class LodDataBuilder
 					int id = accessor.getMapping().addIfNotPresentAndGetId(
 							(IBiomeWrapper) (dataPoint.biomeWrapper),
 							(IBlockStateWrapper) (dataPoint.blockStateWrapper)
-						);
+					);
 					
 					packedDataPoints[index] = FullDataPointUtil.encode(
 							id,
 							dataPoint.topYBlockPos - dataPoint.bottomYBlockPos,
 							dataPoint.bottomYBlockPos - dataPoints.topYBlockPos,
 							(byte) (dataPoint.lightLevel)
-						);
+					);
 				}
 				
-				accessor.setSingleColumn(packedDataPoints, relX, relZ);
+				accessor.setSingleColumn(packedDataPoints, relX, relZ, EDhApiWorldGenerationStep.LIGHT);
 			}
 		}
 		
 		return accessor;
 	}
-
+	
 	
 	
 	//================//

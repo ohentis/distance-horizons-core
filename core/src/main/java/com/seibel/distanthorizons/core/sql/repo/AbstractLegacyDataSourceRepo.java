@@ -17,20 +17,21 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.seibel.distanthorizons.core.sql;
+package com.seibel.distanthorizons.core.sql.repo;
 
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.sql.dto.LegacyDataSourceDTO;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Map;
 
-public abstract class AbstractDataSourceRepo extends AbstractDhRepo<DhSectionPos, DataSourceDto>
+public abstract class AbstractLegacyDataSourceRepo extends AbstractDhRepo<DhSectionPos, LegacyDataSourceDTO>
 {
-	public AbstractDataSourceRepo(String databaseType, String databaseLocation) throws SQLException
+	public AbstractLegacyDataSourceRepo(String databaseType, String databaseLocation) throws SQLException
 	{
-		super(databaseType, databaseLocation, DataSourceDto.class);
+		super(databaseType, databaseLocation, LegacyDataSourceDTO.class);
 	}
 	
 	
@@ -40,7 +41,7 @@ public abstract class AbstractDataSourceRepo extends AbstractDhRepo<DhSectionPos
 	//=======================//
 	
 	@Override 
-	public DataSourceDto convertDictionaryToDto(Map<String, Object> objectMap) throws ClassCastException
+	public LegacyDataSourceDTO convertDictionaryToDto(Map<String, Object> objectMap) throws ClassCastException
 	{
 		String posString = (String) objectMap.get("DhSectionPos");
 		DhSectionPos pos = DhSectionPos.deserialize(posString);
@@ -58,7 +59,7 @@ public abstract class AbstractDataSourceRepo extends AbstractDhRepo<DhSectionPos
 		// binary data
 		byte[] dataByteArray = (byte[]) objectMap.get("Data");
 		
-		DataSourceDto dto = new DataSourceDto(
+		LegacyDataSourceDTO dto = new LegacyDataSourceDTO(
 				pos,
 				checksum, dataDetailLevel, worldGenStep,
 				dataType, binaryDataFormatVersion, 
@@ -67,7 +68,7 @@ public abstract class AbstractDataSourceRepo extends AbstractDhRepo<DhSectionPos
 	}
 	
 	@Override
-	public PreparedStatement createInsertStatement(DataSourceDto dto) throws SQLException
+	public PreparedStatement createInsertStatement(LegacyDataSourceDTO dto) throws SQLException
 	{
 		String sql =
 			"INSERT INTO "+this.getTableName() + "\n" +
@@ -98,7 +99,7 @@ public abstract class AbstractDataSourceRepo extends AbstractDhRepo<DhSectionPos
 	}
 	
 	@Override
-	public PreparedStatement createUpdateStatement(DataSourceDto dto) throws SQLException
+	public PreparedStatement createUpdateStatement(LegacyDataSourceDTO dto) throws SQLException
 	{
 		String sql =
 			"UPDATE "+this.getTableName()+" \n" +

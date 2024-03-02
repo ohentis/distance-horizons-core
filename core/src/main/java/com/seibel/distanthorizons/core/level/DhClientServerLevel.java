@@ -20,9 +20,10 @@
 package com.seibel.distanthorizons.core.level;
 
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
-import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.NewFullDataSource;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.file.fullDatafile.IFullDataSourceProvider;
+import com.seibel.distanthorizons.core.file.fullDatafile.NewFullDataFileHandler;
 import com.seibel.distanthorizons.core.render.LodRenderSection;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
@@ -173,10 +174,7 @@ public class DhClientServerLevel extends AbstractDhLevel implements IDhClientLev
 	public ILevelWrapper getLevelWrapper() { return getServerLevelWrapper(); }
 	
 	@Override
-	public IFullDataSourceProvider getFileHandler()
-	{
-		return serverside.dataFileHandler;
-	}
+	public NewFullDataFileHandler getFullDataProvider() { return this.serverside.dataFileHandler; }
 	
 	@Override
 	public AbstractSaveStructure getSaveStructure()
@@ -188,7 +186,7 @@ public class DhClientServerLevel extends AbstractDhLevel implements IDhClientLev
 	public boolean hasSkyLight() { return this.serverLevelWrapper.hasSkyLight(); }
 	
 	@Override
-	public void updateDataSourcesWithChunkData(ChunkSizedFullDataAccessor data) { this.clientside.updateDataSourcesWithChunkData(data); }
+	public void updateDataSources(NewFullDataSource data) { this.clientside.updateDataSources(data); }
 	
 	@Override
 	public int getMinY() { return getLevelWrapper().getMinHeight(); }

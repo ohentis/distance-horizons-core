@@ -1,2 +1,3 @@
 
 0010-sqlite-createInitialDataTables.sql
+0020-sqlite-createGeneratedFullDataSourceTables.sql

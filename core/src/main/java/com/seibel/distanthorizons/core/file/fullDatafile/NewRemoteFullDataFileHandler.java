@@ -17,27 +17,17 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.seibel.distanthorizons.core.sql;
+package com.seibel.distanthorizons.core.file.fullDatafile;
 
-import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
+import com.seibel.distanthorizons.core.level.IDhLevel;
+import org.jetbrains.annotations.Nullable;
 
-import java.sql.SQLException;
+import java.io.File;
 
-public class RenderDataRepo extends AbstractDataSourceRepo
+public class NewRemoteFullDataFileHandler extends NewFullDataFileHandler
 {
-	public static final String TABLE_NAME = "DhRenderData";
-	
-	
-	public RenderDataRepo(String databaseType, String databaseLocation) throws SQLException
-	{
-		super(databaseType, databaseLocation);
-	}
-	
-	
-	@Override
-	public String getTableName() { return TABLE_NAME; }
-	
-	@Override
-	public String createWhereStatement(DhSectionPos pos) { return "DhSectionPos = '"+pos.serialize()+"'"; }
+	public NewRemoteFullDataFileHandler(IDhLevel level, AbstractSaveStructure saveStructure) { super(level, saveStructure); }
+	public NewRemoteFullDataFileHandler(IDhLevel level, AbstractSaveStructure saveStructure, @Nullable File saveDirOverride) { super(level, saveStructure, saveDirOverride); }
 	
 }

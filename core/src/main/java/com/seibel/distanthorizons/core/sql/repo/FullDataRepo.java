@@ -17,17 +17,27 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.seibel.distanthorizons.core.dataObjects.fullData.loader;
+package com.seibel.distanthorizons.core.sql.repo;
 
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IFullDataSource;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.LowDetailIncompleteFullDataSource;
 
-public class LowDetailIncompleteFullDataSourceLoader extends AbstractFullDataSourceLoader
+import java.sql.SQLException;
+
+public class FullDataRepo extends AbstractLegacyDataSourceRepo
 {
-	public LowDetailIncompleteFullDataSourceLoader() { super(LowDetailIncompleteFullDataSource.class, LowDetailIncompleteFullDataSource.DATA_TYPE_NAME, new byte[]{LowDetailIncompleteFullDataSource.DATA_FORMAT_VERSION}); }
+	public static final String TABLE_NAME = "DhFullData";
+	
+	
+	public FullDataRepo(String databaseType, String databaseLocation) throws SQLException
+	{
+		super(databaseType, databaseLocation);
+	}
+	
 	
 	@Override
-	protected IFullDataSource createEmptyDataSource(DhSectionPos pos) { return LowDetailIncompleteFullDataSource.createEmpty(pos); }
+	public String getTableName() { return TABLE_NAME; }
+	
+	@Override 
+	public String createWhereStatement(DhSectionPos pos) { return "DhSectionPos = '"+pos.serialize()+"'"; }
 	
 }

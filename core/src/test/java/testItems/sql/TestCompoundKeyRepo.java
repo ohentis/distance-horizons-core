@@ -20,7 +20,7 @@
 package testItems.sql;
 
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
-import com.seibel.distanthorizons.core.sql.AbstractDhRepo;
+import com.seibel.distanthorizons.core.sql.repo.AbstractDhRepo;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;

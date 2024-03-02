@@ -19,39 +19,35 @@
 
 package com.seibel.distanthorizons.core.file.renderfile;
 
-import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IFullDataSource;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.NewFullDataSource;
 import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSourceLoader;
 import com.seibel.distanthorizons.core.dataObjects.transformers.FullDataToRenderDataTransformer;
-import com.seibel.distanthorizons.core.file.AbstractDataSourceHandler;
+import com.seibel.distanthorizons.core.file.AbstractLegacyDataSourceHandler;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
-import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSource;
 import com.seibel.distanthorizons.core.file.fullDatafile.IFullDataSourceProvider;
 import com.seibel.distanthorizons.core.level.IDhClientLevel;
-import com.seibel.distanthorizons.core.sql.AbstractDataSourceRepo;
-import com.seibel.distanthorizons.core.sql.DataSourceDto;
-import com.seibel.distanthorizons.core.sql.FullDataRepo;
-import com.seibel.distanthorizons.core.sql.RenderDataRepo;
+import com.seibel.distanthorizons.core.sql.repo.AbstractLegacyDataSourceRepo;
+import com.seibel.distanthorizons.core.sql.dto.LegacyDataSourceDTO;
+import com.seibel.distanthorizons.core.sql.repo.RenderDataRepo;
 import com.seibel.distanthorizons.core.util.threading.ThreadPools;
 import org.apache.logging.log4j.Logger;
 
-import java.io.File;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.*;
 
-public class RenderSourceFileHandler extends AbstractDataSourceHandler<ColumnRenderSource, IDhClientLevel> implements IRenderSourceProvider
+public class RenderSourceFileHandler extends AbstractLegacyDataSourceHandler<ColumnRenderSource, IDhClientLevel> implements IRenderSourceProvider
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
 	private final F3Screen.NestedMessage threadPoolMsg;
 	
-	private final IFullDataSourceProvider fullDataSourceProvider;
+	public final IFullDataSourceProvider fullDataSourceProvider;
 	
 	
 	
@@ -78,7 +74,7 @@ public class RenderSourceFileHandler extends AbstractDataSourceHandler<ColumnRen
 	{
 		// call the full data provider to make sure the full data is up to date
 		// and any necessary world generation has been queued/completed
-		this.fullDataSourceProvider.get(pos);
+		this.fullDataSourceProvider.queuePositionForGenerationOrRetrievalIfNecessary(pos);
 		
 		return super.get(pos);
 	}
@@ -89,7 +85,7 @@ public class RenderSourceFileHandler extends AbstractDataSourceHandler<ColumnRen
 	//====================//
 	
 	@Override
-	protected AbstractDataSourceRepo createRepo()
+	protected AbstractLegacyDataSourceRepo createRepo()
 	{
 		try
 		{
@@ -104,22 +100,15 @@ public class RenderSourceFileHandler extends AbstractDataSourceHandler<ColumnRen
 	}
 	
 	@Override 
-	protected ColumnRenderSource createDataSourceFromDto(DataSourceDto dto) throws InterruptedException, IOException
+	protected ColumnRenderSource createDataSourceFromDto(LegacyDataSourceDTO dto) throws InterruptedException, IOException
 	{ return ColumnRenderSourceLoader.INSTANCE.loadRenderSource(dto, dto.getInputStream(), this.level); }
 	@Override 
 	protected ColumnRenderSource createNewDataSourceFromExistingDtos(DhSectionPos pos) 
 	{
 		ColumnRenderSource renderDataSource;
 		
-		IFullDataSource fullDataSource = this.fullDataSourceProvider.get(pos);
-		if (fullDataSource != null)
-		{
-			renderDataSource = FullDataToRenderDataTransformer.transformFullDataToRenderSource(fullDataSource, this.level);
-		}
-		else
-		{
-			renderDataSource = this.makeEmptyDataSource(pos);
-		}
+		NewFullDataSource fullDataSource = this.fullDataSourceProvider.get(pos);
+		renderDataSource = FullDataToRenderDataTransformer.transformFullDataToRenderSource(fullDataSource, this.level);
 		return renderDataSource;
 	}
 	
@@ -145,18 +134,15 @@ public class RenderSourceFileHandler extends AbstractDataSourceHandler<ColumnRen
 		lines.add("File Handler [" + this.level.getLevelWrapper().getDimensionType().getDimensionName() + "]");
 		lines.add("  Thread pool tasks: " + queueSize + " (completed: " + completedTaskSize + ")");
 		lines.add("  Unsaved render sources: " + this.unsavedDataSourceBySectionPos.size());
-		lines.add("  Unsaved data sources: " + this.fullDataSourceProvider.getUnsavedDataSourceCount());
 		
 		return lines.toArray(new String[0]);
 	}
 	
 	@Override
-	public CompletableFuture<Void> updateDataSourcesWithChunkDataAsync(ChunkSizedFullDataAccessor chunkDataView)
+	public CompletableFuture<Void> updateDataSourceAsync(NewFullDataSource inputDataSource)
 	{
-		return CompletableFuture.allOf(
-			super.updateDataSourcesWithChunkDataAsync(chunkDataView),
-			this.fullDataSourceProvider.updateDataSourcesWithChunkDataAsync(chunkDataView)		
-		);
+		this.updateDataSourceAtPos(inputDataSource.getSectionPos(), inputDataSource);
+		return CompletableFuture.completedFuture(null);
 	}
 	
 	

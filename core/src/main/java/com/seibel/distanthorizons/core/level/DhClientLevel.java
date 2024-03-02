@@ -20,9 +20,10 @@
 package com.seibel.distanthorizons.core.level;
 
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
-import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.NewFullDataSource;
 import com.seibel.distanthorizons.core.file.fullDatafile.IFullDataSourceProvider;
-import com.seibel.distanthorizons.core.file.fullDatafile.RemoteFullDataFileHandler;
+import com.seibel.distanthorizons.core.file.fullDatafile.NewFullDataFileHandler;
+import com.seibel.distanthorizons.core.file.fullDatafile.NewRemoteFullDataFileHandler;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
@@ -44,7 +45,7 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 	public final ClientLevelModule clientside;
 	public final IClientLevelWrapper levelWrapper;
 	public final AbstractSaveStructure saveStructure;
-	public final RemoteFullDataFileHandler dataFileHandler;
+	public final NewRemoteFullDataFileHandler dataFileHandler;
 	
 	
 	
@@ -57,7 +58,7 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 	{
 		this.levelWrapper = clientLevelWrapper;
 		this.saveStructure = saveStructure;
-		this.dataFileHandler = new RemoteFullDataFileHandler(this, saveStructure, fullDataSaveDirOverride);
+		this.dataFileHandler = new NewRemoteFullDataFileHandler(this, saveStructure, fullDataSaveDirOverride);
 		this.clientside = new ClientLevelModule(this);
 		
 		if (enableRendering)
@@ -117,7 +118,7 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 	public ILevelWrapper getLevelWrapper() { return levelWrapper; }
 	
 	@Override
-	public void updateDataSourcesWithChunkData(ChunkSizedFullDataAccessor data) { this.clientside.updateDataSourcesWithChunkData(data); }
+	public void updateDataSources(NewFullDataSource data) { this.clientside.updateDataSources(data); }
 	
 	@Override
 	public int getMinY() { return levelWrapper.getMinHeight(); }
@@ -136,10 +137,7 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 	//=======================//
 	
 	@Override
-	public IFullDataSourceProvider getFileHandler()
-	{
-		return dataFileHandler;
-	}
+	public NewFullDataFileHandler getFullDataProvider() { return this.dataFileHandler; }
 	
 	@Override
 	public AbstractSaveStructure getSaveStructure()

@@ -19,14 +19,12 @@
 
 package com.seibel.distanthorizons.core.file.renderfile;
 
-import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IFullDataSource;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.NewFullDataSource;
 import com.seibel.distanthorizons.core.file.ISourceProvider;
 import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSource;
-import com.seibel.distanthorizons.core.sql.FullDataRepo;
-import com.seibel.distanthorizons.core.sql.RenderDataRepo;
+import com.seibel.distanthorizons.core.sql.repo.RenderDataRepo;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -38,7 +36,7 @@ public interface IRenderSourceProvider extends ISourceProvider<ColumnRenderSourc
 {
 	CompletableFuture<ColumnRenderSource> getAsync(DhSectionPos pos);
 	
-	CompletableFuture<Void> updateDataSourcesWithChunkDataAsync(ChunkSizedFullDataAccessor chunkData);
+	CompletableFuture<Void> updateDataSourceAsync(NewFullDataSource dataSource);
 	
 	/** Deletes any data stored in the render cache so it can be re-created */
 	void deleteRenderCache();

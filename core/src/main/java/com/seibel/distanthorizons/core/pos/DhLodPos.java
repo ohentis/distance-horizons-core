@@ -19,7 +19,7 @@
 
 package com.seibel.distanthorizons.core.pos;
 
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IFullDataSource;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.NewFullDataSource;
 import com.seibel.distanthorizons.coreapi.util.BitShiftUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import org.jetbrains.annotations.NotNull;
@@ -32,6 +32,7 @@ import java.util.Objects;
  * @author Leetom
  * @version 2022-11-6
  */
+@Deprecated
 public class DhLodPos implements Comparable<DhLodPos>
 {
 	public final byte detailLevel;
@@ -116,7 +117,7 @@ public class DhLodPos implements Comparable<DhLodPos>
 	public DhLodPos getDhSectionRelativePositionForDetailLevel() throws IllegalArgumentException { return this.getDhSectionRelativePositionForDetailLevel(this.detailLevel); }
 	/**
 	 * Returns a DhLodPos with the given detail level and an X/Z position somewhere between (0,0) and (63,63).
-	 * This is done to access specific sections from a {@link IFullDataSource} where LOD columns are stored
+	 * This is done to access specific sections from a {@link NewFullDataSource} where LOD columns are stored
 	 * in 64 x 64 blocks.
 	 *
 	 * @throws IllegalArgumentException if this position's detail level is lower than the output detail level

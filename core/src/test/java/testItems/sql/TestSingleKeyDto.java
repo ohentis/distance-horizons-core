@@ -19,7 +19,7 @@
 
 package testItems.sql;
 
-import com.seibel.distanthorizons.core.sql.IBaseDTO;
+import com.seibel.distanthorizons.core.sql.dto.IBaseDTO;
 
 public class TestSingleKeyDto implements IBaseDTO<Integer>
 {

@@ -28,7 +28,7 @@ import com.seibel.distanthorizons.api.objects.math.DhApiVec3i;
 import com.seibel.distanthorizons.core.api.internal.SharedApi;
 import com.seibel.distanthorizons.core.dataObjects.fullData.FullDataPointIdMap;
 import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.SingleColumnFullDataAccessor;
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IFullDataSource;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.NewFullDataSource;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.pos.DhLodPos;
@@ -212,7 +212,7 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 		try
 		{
 			// attempt to get/generate the data source for this section
-			IFullDataSource dataSource = level.getFileHandler().getAsync(sectionPos).get();
+			NewFullDataSource dataSource = level.getFullDataProvider().getAsync(sectionPos).get();
 			if (dataSource == null)
 			{
 				return DhApiResult.createFail("Unable to find/generate any data at the " + DhSectionPos.class.getSimpleName() + " [" + sectionPos + "].");
@@ -221,7 +221,7 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 			{
 				// attempt to get the LOD data from the data source
 				FullDataPointIdMap mapping = dataSource.getMapping();
-				SingleColumnFullDataAccessor dataColumn = dataSource.tryGet(relativePos.x, relativePos.z);
+				SingleColumnFullDataAccessor dataColumn = dataSource.get(relativePos.x, relativePos.z);
 				if (dataColumn != null)
 				{
 					int dataColumnIndexCount = dataColumn.getSingleLength();

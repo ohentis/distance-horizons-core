@@ -22,11 +22,8 @@ package com.seibel.distanthorizons.core.dataObjects.transformers;
 import com.seibel.distanthorizons.api.enums.config.EBlocksToAvoid;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.FullDataPointIdMap;
-import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
 import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.SingleColumnFullDataAccessor;
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.CompleteFullDataSource;
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IFullDataSource;
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IIncompleteFullDataSource;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.NewFullDataSource;
 import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSource;
 import com.seibel.distanthorizons.core.dataObjects.render.columnViews.ColumnArrayView;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
@@ -35,7 +32,6 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.util.FullDataPointUtil;
-import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.RenderDataPointUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.IWrapperFactory;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
@@ -46,8 +42,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.HashSet;
 
 /**
- * Handles converting {@link ChunkSizedFullDataAccessor}, {@link IIncompleteFullDataSource},
- * and {@link IFullDataSource}'s to {@link ColumnRenderSource}.
+ * Handles converting {@link NewFullDataSource}'s to {@link ColumnRenderSource}.
  */
 public class FullDataToRenderDataTransformer
 {
@@ -62,7 +57,7 @@ public class FullDataToRenderDataTransformer
 	// public transformer interface //
 	//==============================//
 	
-	public static ColumnRenderSource transformFullDataToRenderSource(IFullDataSource fullDataSource, IDhClientLevel level)
+	public static ColumnRenderSource transformFullDataToRenderSource(NewFullDataSource fullDataSource, IDhClientLevel level)
 	{
 		if (fullDataSource == null)
 		{
@@ -77,17 +72,7 @@ public class FullDataToRenderDataTransformer
 		
 		try
 		{
-			if (fullDataSource instanceof CompleteFullDataSource)
-			{
-				return transformCompleteFullDataToColumnData(level, (CompleteFullDataSource) fullDataSource);
-			}
-			else if (fullDataSource instanceof IIncompleteFullDataSource)
-			{
-				return transformIncompleteFullDataToColumnData(level, (IIncompleteFullDataSource) fullDataSource);
-			}
-			
-			LodUtil.assertNotReach("Unimplemented Full Data transformer for "+IFullDataSource.class.getSimpleName()+" of type ["+fullDataSource.getClass().getSimpleName()+"].");
-			return null;
+			return transformCompleteFullDataToColumnData(level, fullDataSource);
 		}
 		catch (InterruptedException e)
 		{
@@ -108,7 +93,7 @@ public class FullDataToRenderDataTransformer
 	 * @throws InterruptedException Can be caused by interrupting the thread upstream.
 	 * Generally thrown if the method is running after the client leaves the current world.
 	 */
-	private static ColumnRenderSource transformCompleteFullDataToColumnData(IDhClientLevel level, CompleteFullDataSource fullDataSource) throws InterruptedException
+	private static ColumnRenderSource transformCompleteFullDataToColumnData(IDhClientLevel level, NewFullDataSource fullDataSource) throws InterruptedException
 	{
 		final DhSectionPos pos = fullDataSource.getSectionPos();
 		final byte dataDetail = fullDataSource.getDataDetailLevel();
@@ -149,56 +134,6 @@ public class FullDataToRenderDataTransformer
 		return columnSource;
 	}
 	
-	/**
-	 * @throws InterruptedException Can be caused by interrupting the thread upstream.
-	 * Generally thrown if the method is running after the client leaves the current world.
-	 */
-	private static ColumnRenderSource transformIncompleteFullDataToColumnData(IDhClientLevel level, IIncompleteFullDataSource data) throws InterruptedException
-	{
-		final DhSectionPos pos = data.getSectionPos();
-		final byte dataDetail = data.getDataDetailLevel();
-		final int vertSize = Config.Client.Advanced.Graphics.Quality.verticalQuality.get().calculateMaxVerticalData(data.getDataDetailLevel());
-		final ColumnRenderSource columnSource = new ColumnRenderSource(pos, vertSize, level.getMinY());
-		if (data.isEmpty())
-		{
-			return columnSource;
-		}
-		
-		columnSource.markNotEmpty();
-		
-		if (dataDetail == columnSource.getDataDetailLevel())
-		{
-			int baseX = pos.getMinCornerLodPos().getCornerBlockPos().x;
-			int baseZ = pos.getMinCornerLodPos().getCornerBlockPos().z;
-			
-			int width = pos.getWidthCountForLowerDetailedSection(dataDetail);
-			for (int x = 0; x < width; x++)
-			{
-				for (int z = 0; z < width; z++)
-				{
-					throwIfThreadInterrupted();
-					
-					SingleColumnFullDataAccessor fullArrayView = data.tryGet(x, z);
-					if (fullArrayView == null)
-					{
-						continue;
-					}
-					
-					ColumnArrayView columnArrayView = columnSource.getVerticalDataPointView(x, z);
-					convertColumnData(level, baseX + x, baseZ + z, columnArrayView, fullArrayView);
-					
-					columnSource.fillDebugFlag(x, z, 1, 1, ColumnRenderSource.DebugSourceFlag.SPARSE);
-				}
-			}
-		}
-		else
-		{
-			throw new UnsupportedOperationException("To be implemented");
-			//FIXME: Implement different size creation of renderData
-		}
-		return columnSource;
-	}
-	
 	
 	
 	//================//
@@ -222,7 +157,9 @@ public class FullDataToRenderDataTransformer
 	
 	
 	// TODO what does this mean?
-	private static void iterateAndConvert(IDhClientLevel level, int blockX, int blockZ, ColumnArrayView column, SingleColumnFullDataAccessor data)
+	private static void iterateAndConvert(IDhClientLevel level, 
+			int blockX, int blockZ, 
+			ColumnArrayView column, SingleColumnFullDataAccessor data)
 	{
 		boolean avoidSolidBlocks = (Config.Client.Advanced.Graphics.Quality.blocksToIgnore.get() == EBlocksToAvoid.NON_COLLIDING);
 		boolean colorBelowWithAvoidedBlocks = Config.Client.Advanced.Graphics.Quality.tintWithAvoidedBlocks.get();
@@ -335,7 +272,7 @@ public class FullDataToRenderDataTransformer
 	// TODO what does this mean?
 	public static void convertColumnData(IDhClientLevel level, int blockX, int blockZ, ColumnArrayView columnArrayView, SingleColumnFullDataAccessor fullArrayView)
 	{
-		if (!fullArrayView.doesColumnExist())
+		if (fullArrayView == null || !fullArrayView.doesColumnExist())
 		{
 			return;
 		}

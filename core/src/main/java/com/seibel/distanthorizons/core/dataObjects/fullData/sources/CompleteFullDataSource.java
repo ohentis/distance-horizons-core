@@ -20,17 +20,13 @@
 package com.seibel.distanthorizons.core.dataObjects.fullData.sources;
 
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
-import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
 import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.FullDataArrayAccessor;
 import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.SingleColumnFullDataAccessor;
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IFullDataSource;
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IStreamableFullDataSource;
+import com.seibel.distanthorizons.core.file.IDataSource;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
-import com.seibel.distanthorizons.core.pos.DhLodPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
-import com.seibel.distanthorizons.core.sql.DataSourceDto;
+import com.seibel.distanthorizons.core.sql.dto.LegacyDataSourceDTO;
 import com.seibel.distanthorizons.core.util.FullDataPointUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataInputStream;
@@ -47,10 +43,8 @@ import java.util.Arrays;
  * This data source contains every datapoint over its given {@link DhSectionPos}.
  *
  * @see FullDataPointUtil
- * @see LowDetailIncompleteFullDataSource
- * @see HighDetailIncompleteFullDataSource
  */
-public class CompleteFullDataSource extends FullDataArrayAccessor implements IFullDataSource, IStreamableFullDataSource<IStreamableFullDataSource.FullDataSourceSummaryData, long[][]>
+public class CompleteFullDataSource extends FullDataArrayAccessor implements IDataSource<IDhLevel>
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
@@ -60,8 +54,15 @@ public class CompleteFullDataSource extends FullDataArrayAccessor implements IFu
 	
 	public static final byte DATA_FORMAT_VERSION = 3;
 	public static final String DATA_TYPE_NAME = "CompleteFullDataSource";
-	@Override
-	public String getDataTypeName() { return DATA_TYPE_NAME; }
+	
+	/**
+	 * This is the byte put between different sections in the binary save file.
+	 * The presence and absence of this byte indicates if the file is correctly formatted.
+	 */
+	private static final int DATA_GUARD_BYTE = 0xFFFFFFFF;
+	/** indicates the binary save file represents an empty data source */
+	private static final int NO_DATA_FLAG_BYTE = 0x00000001;
+	
 	
 	private DhSectionPos sectionPos;
 	
@@ -92,11 +93,100 @@ public class CompleteFullDataSource extends FullDataArrayAccessor implements IFu
 	
 	
 	
-	//=================//
-	// stream handling //
-	//=================//
+	//======//
+	// data //
+	//======//
+	
+	@Deprecated
+	@Override
+	public void update(NewFullDataSource dataSource, IDhLevel level) { throw new UnsupportedOperationException("Deprecated"); }
+	
+	
+	
+	//=====================//
+	// setters and getters //
+	//=====================//
 	
 	@Override
+	public DhSectionPos getKey() { return this.sectionPos; }
+	
+	@Override
+	public DhSectionPos getSectionPos() { return this.sectionPos; }
+	
+	public void resizeDataStructuresForRepopulation(DhSectionPos pos)
+	{
+		// no data structures need to be changed, only the source's position 
+		this.sectionPos = pos;
+	}
+	
+	@Override
+	public byte getDataDetailLevel() { return (byte) (this.sectionPos.getDetailLevel() - SECTION_SIZE_OFFSET); }
+	
+	@Override
+	public byte getDataFormatVersion() { return DATA_FORMAT_VERSION; }
+	
+	@Override
+	public EDhApiWorldGenerationStep getWorldGenStep() { return this.worldGenStep; }
+	@Override
+	public EDhApiWorldGenerationStep getWorldGenStepAtRelativePos(int relX, int relZ) { return this.worldGenStep; }
+	
+	public boolean isEmpty() { return this.isEmpty; }
+	
+	
+	
+	//=================//
+	// stream handling // 
+	//=================//
+	
+	/**
+	 * Clears and then overwrites any data in this object with the data from the given file and stream.
+	 * This is expected to be used with an existing {@link CompleteFullDataSource} and can be used in place of a constructor to reuse an existing {@link CompleteFullDataSource} object.
+	 */
+	public void repopulateFromStream(LegacyDataSourceDTO dto, DhDataInputStream inputStream, IDhLevel level) throws IOException, InterruptedException
+	{
+		// clear/overwrite the old data
+		this.resizeDataStructuresForRepopulation(dto.pos);
+		this.getMapping().clear(dto.pos);
+		
+		// set the new data
+		this.populateFromStream(dto, inputStream, level);
+	}
+	
+	/**
+	 * Overwrites any data in this object with the data from the given file and stream.
+	 * This is expected to be used with an empty {@link CompleteFullDataSource} and functions similar to a constructor.
+	 */
+	public void populateFromStream(LegacyDataSourceDTO dto, DhDataInputStream inputStream, IDhLevel level) throws IOException, InterruptedException
+	{
+		FullDataSourceSummaryData summaryData = this.readSourceSummaryInfo(dto, inputStream, level);
+		this.setSourceSummaryData(summaryData);
+		
+		
+		long[][] dataPoints = this.readDataPoints(summaryData.dataWidth, inputStream);
+		if (dataPoints == null)
+		{
+			return;
+		}
+		this.setDataPoints(dataPoints);
+		
+		
+		FullDataPointIdMap mapping = this.readIdMappings(inputStream, level.getLevelWrapper());
+		this.setIdMapping(mapping);
+		
+	}
+	
+	
+	// low level stream methods //
+	
+	@Deprecated
+	@Override
+	public void writeToStream(DhDataOutputStream outputStream, IDhLevel level) throws IOException
+	{
+		throw new UnsupportedOperationException("Deprecated");
+	}
+	
+	/** unused, just here for reference as to how the data was written */
+	@Deprecated
 	public void writeSourceSummaryInfo(IDhLevel level, DhDataOutputStream outputStream) throws IOException
 	{
 		outputStream.writeInt(this.getDataDetailLevel());
@@ -105,8 +195,7 @@ public class CompleteFullDataSource extends FullDataArrayAccessor implements IFu
 		outputStream.writeByte(this.worldGenStep.value);
 		
 	}
-	@Override
-	public FullDataSourceSummaryData readSourceSummaryInfo(DataSourceDto dto, DhDataInputStream inputStream, IDhLevel level) throws IOException
+	public FullDataSourceSummaryData readSourceSummaryInfo(LegacyDataSourceDTO dto, DhDataInputStream inputStream, IDhLevel level) throws IOException
 	{
 		int dataDetail = inputStream.readInt();
 		if (dataDetail != dto.dataDetailLevel)
@@ -137,21 +226,18 @@ public class CompleteFullDataSource extends FullDataArrayAccessor implements IFu
 		
 		return new FullDataSourceSummaryData(width, worldGenStep);
 	}
-	public void setSourceSummaryData(FullDataSourceSummaryData summaryData)
-	{
-		this.worldGenStep = summaryData.worldGenStep;
-	}
+	public void setSourceSummaryData(FullDataSourceSummaryData summaryData) { this.worldGenStep = summaryData.worldGenStep; }
 	
-	
-	@Override
+	/** unused, just here for reference as to how the data was written */
+	@Deprecated
 	public boolean writeDataPoints(DhDataOutputStream outputStream) throws IOException
 	{
 		if (this.isEmpty())
 		{
-			outputStream.writeInt(IFullDataSource.NO_DATA_FLAG_BYTE);
+			outputStream.writeInt(NO_DATA_FLAG_BYTE);
 			return false;
 		}
-		outputStream.writeInt(IFullDataSource.DATA_GUARD_BYTE);
+		outputStream.writeInt(DATA_GUARD_BYTE);
 		
 		
 		
@@ -167,7 +253,7 @@ public class CompleteFullDataSource extends FullDataArrayAccessor implements IFu
 		
 		
 		// Data array content (only on non-empty columns)
-		outputStream.writeInt(IFullDataSource.DATA_GUARD_BYTE);
+		outputStream.writeInt(DATA_GUARD_BYTE);
 		for (int x = 0; x < this.width; x++)
 		{
 			for (int z = 0; z < this.width; z++)
@@ -187,19 +273,18 @@ public class CompleteFullDataSource extends FullDataArrayAccessor implements IFu
 		
 		return true;
 	}
-	@Override
-	public long[][] readDataPoints(DataSourceDto dto, int width, DhDataInputStream dataInputStream) throws IOException
+	public long[][] readDataPoints(int width, DhDataInputStream dataInputStream) throws IOException
 	{
 		// Data array length
 		int dataPresentFlag = dataInputStream.readInt();
-		if (dataPresentFlag == IFullDataSource.NO_DATA_FLAG_BYTE)
+		if (dataPresentFlag == NO_DATA_FLAG_BYTE)
 		{
 			// Section is empty
 			return null;
 		}
-		else if (dataPresentFlag != IFullDataSource.DATA_GUARD_BYTE)
+		else if (dataPresentFlag != DATA_GUARD_BYTE)
 		{
-			throw new IOException("Invalid file format. Data Points guard byte expected: (no data) [" + IFullDataSource.NO_DATA_FLAG_BYTE + "] or (data present) [" + IFullDataSource.DATA_GUARD_BYTE + "], but found [" + dataPresentFlag + "].");
+			throw new IOException("Invalid file format. Data Points guard byte expected: (no data) [" + NO_DATA_FLAG_BYTE + "] or (data present) [" + DATA_GUARD_BYTE + "], but found [" + dataPresentFlag + "].");
 		}
 		
 		
@@ -211,7 +296,7 @@ public class CompleteFullDataSource extends FullDataArrayAccessor implements IFu
 		}
 		else
 		{
-			dataPointArrays = new long[width * width][]; 
+			dataPointArrays = new long[width * width][];
 		}
 		
 		for (int x = 0; x < width; x++)
@@ -238,7 +323,7 @@ public class CompleteFullDataSource extends FullDataArrayAccessor implements IFu
 		
 		// check if the array start flag is present
 		int arrayStartFlag = dataInputStream.readInt();
-		if (arrayStartFlag != IFullDataSource.DATA_GUARD_BYTE)
+		if (arrayStartFlag != DATA_GUARD_BYTE)
 		{
 			throw new IOException("invalid data length end guard");
 		}
@@ -258,7 +343,6 @@ public class CompleteFullDataSource extends FullDataArrayAccessor implements IFu
 		
 		return dataPointArrays;
 	}
-	@Override
 	public void setDataPoints(long[][] dataPoints)
 	{
 		LodUtil.assertTrue(this.dataArrays.length == dataPoints.length, "Data point array length mismatch.");
@@ -268,183 +352,47 @@ public class CompleteFullDataSource extends FullDataArrayAccessor implements IFu
 	}
 	
 	
-	@Override
+	/** unused, just here for reference as to how the data was written */
+	@Deprecated
 	public void writeIdMappings(DhDataOutputStream outputStream) throws IOException
 	{
-		outputStream.writeInt(IFullDataSource.DATA_GUARD_BYTE);
+		outputStream.writeInt(DATA_GUARD_BYTE);
 		this.mapping.serialize(outputStream);
 	}
-	@Override
-	public FullDataPointIdMap readIdMappings(long[][] dataPoints, DhDataInputStream inputStream, ILevelWrapper levelWrapper) throws IOException, InterruptedException
+	public FullDataPointIdMap readIdMappings(DhDataInputStream inputStream, ILevelWrapper levelWrapper) throws IOException, InterruptedException
 	{
 		int guardByte = inputStream.readInt();
-		if (guardByte != IFullDataSource.DATA_GUARD_BYTE)
+		if (guardByte != DATA_GUARD_BYTE)
 		{
 			throw new IOException("Invalid data content end guard for ID mapping");
 		}
 		
 		return FullDataPointIdMap.deserialize(inputStream, this.sectionPos, levelWrapper);
 	}
-	@Override
 	public void setIdMapping(FullDataPointIdMap mappings) { this.mapping.mergeAndReturnRemappedEntityIds(mappings); }
 	
 	
 	
-	//======//
-	// data //
-	//======//
+	//================//
+	// helper classes //
+	//================//
 	
-	@Override
-	public SingleColumnFullDataAccessor tryGet(int relativeX, int relativeZ) { return this.get(relativeX, relativeZ); }
-	@Override
-	public SingleColumnFullDataAccessor getOrCreate(int relativeX, int relativeZ) { return this.get(relativeX, relativeZ); }
-	
-	@Override
-	public void update(ChunkSizedFullDataAccessor chunkDataView)
+	/**
+	 * This holds information that is relevant to the entire source and isn't stored in the data points. <br>
+	 * Example: minimum height, detail level, source type, etc.
+	 */
+	private static class FullDataSourceSummaryData
 	{
-		LodUtil.assertTrue(this.sectionPos.overlapsExactly(chunkDataView.getSectionPos()));
-		if (this.getDataDetailLevel() == LodUtil.BLOCK_DETAIL_LEVEL)
+		public final int dataWidth;
+		public EDhApiWorldGenerationStep worldGenStep;
+		
+		
+		public FullDataSourceSummaryData(int dataWidth, EDhApiWorldGenerationStep worldGenStep)
 		{
-			DhBlockPos2D chunkBlockPos = new DhBlockPos2D(chunkDataView.chunkPos.x * LodUtil.CHUNK_WIDTH, chunkDataView.chunkPos.z * LodUtil.CHUNK_WIDTH);
-			DhBlockPos2D blockOffset = chunkBlockPos.subtract(this.sectionPos.getMinCornerLodPos().getCornerBlockPos());
-			LodUtil.assertTrue(blockOffset.x >= 0 && blockOffset.x < WIDTH && blockOffset.z >= 0 && blockOffset.z < WIDTH);
-			this.isEmpty = false;
-			
-			chunkDataView.shadowCopyTo(this.subView(LodUtil.CHUNK_WIDTH, blockOffset.x, blockOffset.z));
-			
-			// DEBUG ASSERTION
-			{
-				for (int x = 0; x < LodUtil.CHUNK_WIDTH; x++)
-				{
-					for (int z = 0; z < LodUtil.CHUNK_WIDTH; z++)
-					{
-						SingleColumnFullDataAccessor column = this.get(x + blockOffset.x, z + blockOffset.z);
-						LodUtil.assertTrue(column.doesColumnExist());
-					}
-				}
-			}
-		}
-		else if (this.getDataDetailLevel() < LodUtil.CHUNK_DETAIL_LEVEL)
-		{
-			int dataPerFull = 1 << this.getDataDetailLevel();
-			int fullSize = LodUtil.CHUNK_WIDTH / dataPerFull;
-			DhLodPos dataOffset = chunkDataView.getSectionPos().getMinCornerLodPos(this.getDataDetailLevel());
-			DhLodPos baseOffset = this.sectionPos.getMinCornerLodPos(this.getDataDetailLevel());
-			
-			int offsetX = dataOffset.x - baseOffset.x;
-			int offsetZ = dataOffset.z - baseOffset.z;
-			LodUtil.assertTrue(offsetX >= 0 && offsetX < WIDTH && offsetZ >= 0 && offsetZ < WIDTH);
-			
-			this.isEmpty = false;
-			for (int xOffset = 0; xOffset < fullSize; xOffset++)
-			{
-				for (int zOffset = 0; zOffset < fullSize; zOffset++)
-				{
-					SingleColumnFullDataAccessor column = this.get(xOffset + offsetX, zOffset + offsetZ);
-					column.downsampleFrom(chunkDataView.subView(dataPerFull, xOffset * dataPerFull, zOffset * dataPerFull));
-				}
-			}
-		}
-		else if (this.getDataDetailLevel() >= LodUtil.CHUNK_DETAIL_LEVEL)
-		{
-			//FIXME: TEMPORARY
-			int chunkPerFull = 1 << (this.getDataDetailLevel() - LodUtil.CHUNK_DETAIL_LEVEL);
-			if (chunkDataView.chunkPos.x % chunkPerFull != 0 || chunkDataView.chunkPos.z % chunkPerFull != 0)
-			{
-				return;
-			}
-			
-			DhLodPos baseOffset = this.sectionPos.getMinCornerLodPos(this.getDataDetailLevel());
-			DhSectionPos dataOffset = chunkDataView.getSectionPos().convertNewToDetailLevel(this.getDataDetailLevel());
-			
-			int offsetX = dataOffset.getX() - baseOffset.x;
-			int offsetZ = dataOffset.getZ() - baseOffset.z;
-			LodUtil.assertTrue(offsetX >= 0 && offsetX < WIDTH && offsetZ >= 0 && offsetZ < WIDTH);
-			
-			this.isEmpty = false;
-			chunkDataView.get(0, 0).deepCopyTo(this.get(offsetX, offsetZ));
-		}
-		else
-		{
-			LodUtil.assertNotReach();
-			//TODO
+			this.dataWidth = dataWidth;
+			this.worldGenStep = worldGenStep;
 		}
 		
 	}
-	
-	
-	
-	//================//
-	// helper methods //
-	//================//
-	
-	/** Returns whether data at the given posToWrite can effect the target region file at posToTest. */
-	public static boolean firstDataPosCanAffectSecond(DhSectionPos posToWrite, DhSectionPos posToTest)
-	{
-		if (!posToWrite.overlapsExactly(posToTest))
-		{
-			// the testPosition is outside the writePosition
-			return false;
-		}
-		else if (posToTest.getDetailLevel() > posToWrite.getDetailLevel())
-		{
-			// the testPosition is larger (aka is less detailed) than the writePosition,
-			// more detailed sections shouldn't be updated by lower detail sections
-			return false;
-		}
-		else if (posToWrite.getDetailLevel() - posToTest.getDetailLevel() <= SECTION_SIZE_OFFSET)
-		{
-			// if the difference in detail levels is very large, the posToWrite
-			// may be skipped, due to how we sample large detail levels by only
-			// getting the corners.
-			
-			// In this case the difference isn't very large, so return true
-			return true;
-		}
-		else
-		{
-			// the difference in detail levels is very large,
-			// check if the posToWrite is in a corner of posToTest
-			byte sectPerData = (byte) BitShiftUtil.powerOfTwo(posToWrite.getDetailLevel() - posToTest.getDetailLevel() - SECTION_SIZE_OFFSET);
-			LodUtil.assertTrue(sectPerData != 0);
-			return posToTest.getX() % sectPerData == 0 && posToTest.getZ() % sectPerData == 0;
-		}
-	}
-	
-	
-	
-	//=====================//
-	// setters and getters //
-	//=====================//
-	
-	@Override
-	public DhSectionPos getKey() { return this.sectionPos; }
-	
-	@Override
-	public DhSectionPos getSectionPos() { return this.sectionPos; }
-	
-	@Override
-	public void resizeDataStructuresForRepopulation(DhSectionPos pos)
-	{
-		// no data structures need to be changed, only the source's position 
-		this.sectionPos = pos;
-	}
-	
-	@Override
-	public byte getDataDetailLevel() { return (byte) (this.sectionPos.getDetailLevel() - SECTION_SIZE_OFFSET); }
-	
-	@Override
-	public byte getDataFormatVersion() { return DATA_FORMAT_VERSION; }
-	
-	@Override
-	public EDhApiWorldGenerationStep getWorldGenStep() { return this.worldGenStep; }
-	
-	@Override
-	public boolean isEmpty() { return this.isEmpty; }
-	@Override
-	public void markNotEmpty() { this.isEmpty = false; }
-	
-	@Override
-	public int getWidthInDataPoints() { return this.width; }
 	
 }

@@ -118,6 +118,9 @@ public class FullDataPointUtil
 		{
 			// this try-catch is present to fix an issue where the stack trace is missing
 			// and to allow for easily attaching a debugger
+			
+			// if this was thrown that probably means the datasource has been
+			// re-mapped multiple times, causing the ID's to go out of their expected bounds.
 			throw new RuntimeException(e);
 		}
 	}

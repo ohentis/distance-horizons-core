@@ -17,10 +17,9 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.seibel.distanthorizons.core.sql;
+package com.seibel.distanthorizons.core.sql.dto;
 
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IFullDataSource;
 import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSource;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataInputStream;
@@ -30,8 +29,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.concurrent.atomic.AtomicLong;
 
-/** handles storing both {@link IFullDataSource}'s and {@link ColumnRenderSource}'s in the database. */
-public class DataSourceDto implements IBaseDTO<DhSectionPos>
+/** handles storing {@link ColumnRenderSource}'s in the database. */
+public class LegacyDataSourceDTO implements IBaseDTO<DhSectionPos>
 {
 	public DhSectionPos pos;
 	public int checksum;
@@ -54,7 +53,7 @@ public class DataSourceDto implements IBaseDTO<DhSectionPos>
 	// constructor //
 	//=============//
 	
-	public DataSourceDto(DhSectionPos pos, int checksum, byte dataDetailLevel, EDhApiWorldGenerationStep worldGenStep, String dataType, byte binaryDataFormatVersion, byte[] dataArray)
+	public LegacyDataSourceDTO(DhSectionPos pos, int checksum, byte dataDetailLevel, EDhApiWorldGenerationStep worldGenStep, String dataType, byte binaryDataFormatVersion, byte[] dataArray)
 	{
 		this.pos = pos;
 		this.checksum = checksum;
