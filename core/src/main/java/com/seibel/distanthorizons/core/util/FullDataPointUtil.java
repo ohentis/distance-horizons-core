@@ -19,8 +19,6 @@
 
 package com.seibel.distanthorizons.core.util;
 
-// 
-
 import org.jetbrains.annotations.Contract;
 
 /**
@@ -34,16 +32,16 @@ import org.jetbrains.annotations.Contract;
  * <strong>DataPoint Format: </strong><br>
  * <code>
  * ID: blockState id <br>
- * Y: Height(signed) <br>
- * DP: Depth (Depth means the length of the block!) <br>
+ * MY: Min Y Height (unsigned, relative to the minimum level height) <br>
+ * HI: Height (how tall this data point is in blocks) <br>
  * BL: Block light <br>
  * SL: Sky light <br><br>
  *
  * =======Bit layout=======	<br>
  * BL BL BL BL  SL SL SL SL <-- Top bits <br>
- * YY YY YY YY  YY YY YY YY	<br>
- * YY YY YY YY  DP DP DP DP	<br>
- * DP DP DP DP  DP DP DP DP	<br>
+ * MY MY MY MY  MY MY MY MY	<br>
+ * MY MY MY MY  HI HI HI HI	<br>
+ * HI HI HI HI  HI HI HI HI	<br>
  * ID ID ID ID  ID ID ID ID	<br>
  * ID ID ID ID  ID ID ID ID	<br>
  * ID ID ID ID  ID ID ID ID	<br>
@@ -52,51 +50,54 @@ import org.jetbrains.annotations.Contract;
  *
  * @see RenderDataPointUtil
  */
+// TODO make a legacy version of this specifically for CompleteFullDataSource just in case things change in the future
 public class FullDataPointUtil
 {
 	/** Represents the data held by an empty data point */
 	public static final int EMPTY_DATA_POINT = 0;
 	
 	public static final int ID_WIDTH = 32;
-	public static final int DP_WIDTH = 12;
-	public static final int Y_WIDTH = 12;
+	public static final int HEIGHT_WIDTH = 12;
+	public static final int MIN_Y_WIDTH = 12;
 	public static final int BLOCK_LIGHT_WIDTH = 4;
 	public static final int SKY_LIGHT_WIDTH = 4;
+	
 	public static final int ID_OFFSET = 0;
-	public static final int DP_OFFSET = ID_OFFSET + ID_WIDTH;
+	public static final int HEIGHT_OFFSET = ID_OFFSET + ID_WIDTH;
 	/** indicates the Y position where the LOD starts relative to the level's minimum height */
-	public static final int Y_OFFSET = DP_OFFSET + DP_WIDTH;
-	public static final int BLOCK_LIGHT_OFFSET = Y_OFFSET + Y_WIDTH;
+	public static final int MIN_Y_OFFSET = HEIGHT_OFFSET + HEIGHT_WIDTH;
+	public static final int BLOCK_LIGHT_OFFSET = MIN_Y_OFFSET + MIN_Y_WIDTH;
 	public static final int SKY_LIGHT_OFFSET = BLOCK_LIGHT_OFFSET + BLOCK_LIGHT_WIDTH;
 	
 	
 	public static final long ID_MASK = Integer.MAX_VALUE;
 	public static final long INVERSE_ID_MASK = ~ID_MASK;
-	public static final int DP_MASK = (int) Math.pow(2, DP_WIDTH) - 1;
-	public static final int Y_MASK = (int) Math.pow(2, Y_WIDTH) - 1;
+	public static final int HEIGHT_MASK = (int) Math.pow(2, HEIGHT_WIDTH) - 1;
+	public static final int MIN_Y_MASK = (int) Math.pow(2, MIN_Y_WIDTH) - 1;
 	public static final int BLOCK_LIGHT_MASK = (int) Math.pow(2, BLOCK_LIGHT_WIDTH) - 1;
 	public static final int SKY_LIGHT_MASK = (int) Math.pow(2, SKY_LIGHT_WIDTH) - 1;
 	
 	
-	/** creates a new datapoint with the given values */
-	public static long encode(int id, int depth, int y, byte blockLight, byte skyLight)
+	/**
+	 * creates a new datapoint with the given values 
+	 * @param relMinY relative to the minimum level Y value
+	 */
+	public static long encode(int id, int height, int relMinY, byte blockLight, byte skyLight)
 	{
-		LodUtil.assertTrue(y >= 0 && y < RenderDataPointUtil.MAX_WORLD_Y_SIZE, "Trying to create datapoint with y[{}] out of range!", y);
-		LodUtil.assertTrue(depth > 0 && depth < RenderDataPointUtil.MAX_WORLD_Y_SIZE, "Trying to create datapoint with depth[{}] out of range!", depth);
-		LodUtil.assertTrue(y + depth <= RenderDataPointUtil.MAX_WORLD_Y_SIZE, "Trying to create datapoint with y+depth[{}] out of range!", y + depth);
+		LodUtil.assertTrue(relMinY >= 0 && relMinY < RenderDataPointUtil.MAX_WORLD_Y_SIZE, "Trying to create datapoint with y["+relMinY+"] out of range!");
+		LodUtil.assertTrue(height > 0 && height < RenderDataPointUtil.MAX_WORLD_Y_SIZE, "Trying to create datapoint with height["+height+"] out of range!");
+		LodUtil.assertTrue(relMinY + height <= RenderDataPointUtil.MAX_WORLD_Y_SIZE, "Trying to create datapoint with y+depth["+(relMinY+height)+"] out of range!");
 		
 		long data = 0;
 		data |= id & ID_MASK;
-		data |= (long) (depth & DP_MASK) << DP_OFFSET;
-		data |= (long) (y & Y_MASK) << Y_OFFSET;
+		data |= (long) (height & HEIGHT_MASK) << HEIGHT_OFFSET;
+		data |= (long) (relMinY & MIN_Y_MASK) << MIN_Y_OFFSET;
 		data |= (long) blockLight << BLOCK_LIGHT_OFFSET;
 		data |= (long) skyLight << SKY_LIGHT_OFFSET;
 		
-		// confirm the written data can still be retrieved
-		LodUtil.assertTrue(
-				getId(data) == id && getHeight(data) == depth && getBottomY(data) == y && getBlockLight(data) == Byte.toUnsignedInt(blockLight) && getSkyLight(data) == Byte.toUnsignedInt(skyLight),
+		LodUtil.assertTrue(getId(data) == id && getHeight(data) == height && getBottomY(data) == relMinY && getBlockLight(data) == Byte.toUnsignedInt(blockLight) && getSkyLight(data) == Byte.toUnsignedInt(skyLight),
 				"Trying to create datapoint with " +
-						"id[" + id + "], height[" + depth + "], minY[" + y + "], blockLight[" + blockLight + "], skyLight[" + skyLight + "] " +
+						"id[" + id + "], height[" + height + "], minY[" + relMinY + "], blockLight[" + blockLight + "], skyLight[" + skyLight + "] " +
 						"but got " +
 						"id[" + getId(data) + "], height[" + getHeight(data) + "], minY[" + getBottomY(data) + "], blockLight[" + getBlockLight(data) + "], skyLight[" + getSkyLight(data) + "]!");
 		
@@ -106,11 +107,15 @@ public class FullDataPointUtil
 	/** Returns the BlockState/Biome pair ID used to identify this LOD's color */
 	public static int getId(long data) { return (int) (data & ID_MASK); }
 	/** Returns how many blocks tall this LOD is. */
-	public static int getHeight(long data) { return (int) ((data >> DP_OFFSET) & DP_MASK); }
-	/** Returns the block position of the bottom vertices for this LOD relative to the level's minimum height. */
-	public static int getBottomY(long data) { return (int) ((data >> Y_OFFSET) & Y_MASK); }
+	public static int getHeight(long data) { return (int) ((data >> HEIGHT_OFFSET) & HEIGHT_MASK); }
+	/**
+	 * Returns the unsigned block position of the bottom vertices for this LOD relative to the level's minimum height. 
+	 * Should be between 0 and {@link RenderDataPointUtil#MAX_WORLD_Y_SIZE}
+	 */
+	public static int getBottomY(long data) { return (int) ((data >> MIN_Y_OFFSET) & MIN_Y_MASK); }
 	public static int getBlockLight(long data) { return (int) ((data >> BLOCK_LIGHT_OFFSET) & BLOCK_LIGHT_MASK); }
 	public static int getSkyLight(long data) { return (int) ((data >> SKY_LIGHT_OFFSET) & SKY_LIGHT_MASK); }
+	
 	
 	public static String toString(long data) { return "[ID:" + getId(data) + ",Y:" + getBottomY(data) + ",Height:" + getHeight(data) + ",BlockLight:" + getBlockLight(data) + ",SkyLight:" + getSkyLight(data) + "]"; }
 	
