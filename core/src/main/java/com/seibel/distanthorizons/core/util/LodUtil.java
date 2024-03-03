@@ -118,6 +118,13 @@ public class LodUtil
 	public static final int REGION_WIDTH_IN_CHUNKS = REGION_WIDTH / CHUNK_WIDTH;
 	
 	
+	/** maximum possible light level handled by Minecraft */
+	public static final byte MAX_MC_LIGHT = 15;
+	/** lowest possible light level handled by Minecraft */
+	public static final byte MIN_MC_LIGHT = 0;
+	
+	
+	
 	/**
 	 * This regex finds any characters that are invalid for use in a windows
 	 * (and by extension mac and linux) file path
