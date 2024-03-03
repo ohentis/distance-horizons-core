@@ -121,20 +121,6 @@ public class RenderDataPointUtil
 				height, depth, lightSky, lightBlock, irisBlockMaterialId);
 	}
 	
-	public static long createDataPoint(int height, int depth, int color, int light, int irisBlockMaterialId)
-	{
-		LodUtil.assertTrue(light >= 0 && light < 256, "Raw Light value must be between 0 and 255!");
-		
-		return createDataPoint(
-				ColorUtil.getAlpha(color),
-				ColorUtil.getRed(color),
-				ColorUtil.getGreen(color),
-				ColorUtil.getBlue(color),
-				height, depth, 
-				light % 16, light / 16, 
-				irisBlockMaterialId);
-	}
-	
 	public static long createDataPoint(int alpha, int red, int green, int blue, int height, int depth, int lightSky, int lightBlock, int irisBlockMaterialId)
 	{
 		LodUtil.assertTrue(height >= 0 && height < MAX_WORLD_Y_SIZE, "Trying to create datapoint with height[" + height + "] out of range!");

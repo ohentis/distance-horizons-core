@@ -178,7 +178,8 @@ public class FullDataToRenderDataTransformer
 			int bottomY = FullDataPointUtil.getBottomY(fullData);
 			int blockHeight = FullDataPointUtil.getHeight(fullData);
 			int id = FullDataPointUtil.getId(fullData);
-			int light = FullDataPointUtil.getLight(fullData);
+			int blockLight = FullDataPointUtil.getBlockLight(fullData);
+			int skyLight = FullDataPointUtil.getSkyLight(fullData);
 			
 			// TODO how should corrupted data be handled?
 			// TODO why is the full data corrupted in the first place? FullDataPointUtil hasn't been changed in a long time, could one of the full data point objects be corrupted?
@@ -257,7 +258,7 @@ public class FullDataToRenderDataTransformer
 			
 			// add the block
 			isVoid = false;
-			long columnData = RenderDataPointUtil.createDataPoint(bottomY + blockHeight, bottomY, color, light, block.getIrisBlockMaterialId());
+			long columnData = RenderDataPointUtil.createDataPoint(bottomY + blockHeight, bottomY, color, skyLight, blockLight, block.getIrisBlockMaterialId());
 			column.set(columnOffset, columnData);
 			columnOffset++;
 		}

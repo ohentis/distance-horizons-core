@@ -290,7 +290,8 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 		int topY = bottomY + height;
 		
 		return new DhApiTerrainDataPoint(detailLevel,
-				FullDataPointUtil.getLight(dataPoint), topY, bottomY,
+				FullDataPointUtil.getBlockLight(dataPoint), FullDataPointUtil.getSkyLight(dataPoint),
+				topY, bottomY,
 				blockState, biomeWrapper);
 	}
 	

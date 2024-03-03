@@ -60,23 +60,26 @@ public class FullDataPointUtil
 	public static final int ID_WIDTH = 32;
 	public static final int DP_WIDTH = 12;
 	public static final int Y_WIDTH = 12;
-	public static final int LIGHT_WIDTH = 8;
+	public static final int BLOCK_LIGHT_WIDTH = 4;
+	public static final int SKY_LIGHT_WIDTH = 4;
 	public static final int ID_OFFSET = 0;
 	public static final int DP_OFFSET = ID_OFFSET + ID_WIDTH;
 	/** indicates the Y position where the LOD starts relative to the level's minimum height */
 	public static final int Y_OFFSET = DP_OFFSET + DP_WIDTH;
-	public static final int LIGHT_OFFSET = Y_OFFSET + Y_WIDTH;
+	public static final int BLOCK_LIGHT_OFFSET = Y_OFFSET + Y_WIDTH;
+	public static final int SKY_LIGHT_OFFSET = BLOCK_LIGHT_OFFSET + BLOCK_LIGHT_WIDTH;
 	
 	
 	public static final long ID_MASK = Integer.MAX_VALUE;
 	public static final long INVERSE_ID_MASK = ~ID_MASK;
 	public static final int DP_MASK = (int) Math.pow(2, DP_WIDTH) - 1;
 	public static final int Y_MASK = (int) Math.pow(2, Y_WIDTH) - 1;
-	public static final int LIGHT_MASK = (int) Math.pow(2, LIGHT_WIDTH) - 1;
+	public static final int BLOCK_LIGHT_MASK = (int) Math.pow(2, BLOCK_LIGHT_WIDTH) - 1;
+	public static final int SKY_LIGHT_MASK = (int) Math.pow(2, SKY_LIGHT_WIDTH) - 1;
 	
 	
 	/** creates a new datapoint with the given values */
-	public static long encode(int id, int depth, int y, byte lightPair)
+	public static long encode(int id, int depth, int y, byte blockLight, byte skyLight)
 	{
 		LodUtil.assertTrue(y >= 0 && y < RenderDataPointUtil.MAX_WORLD_Y_SIZE, "Trying to create datapoint with y[{}] out of range!", y);
 		LodUtil.assertTrue(depth > 0 && depth < RenderDataPointUtil.MAX_WORLD_Y_SIZE, "Trying to create datapoint with depth[{}] out of range!", depth);
@@ -86,10 +89,16 @@ public class FullDataPointUtil
 		data |= id & ID_MASK;
 		data |= (long) (depth & DP_MASK) << DP_OFFSET;
 		data |= (long) (y & Y_MASK) << Y_OFFSET;
-		data |= (long) lightPair << LIGHT_OFFSET;
-		LodUtil.assertTrue(getId(data) == id && getHeight(data) == depth && getBottomY(data) == y && getLight(data) == Byte.toUnsignedInt(lightPair),
-				"Trying to create datapoint with id[{}], depth[{}], y[{}], lightPair[{}] but got id[{}], depth[{}], y[{}], lightPair[{}]!",
-				id, depth, y, Byte.toUnsignedInt(lightPair), getId(data), getHeight(data), getBottomY(data), getLight(data));
+		data |= (long) blockLight << BLOCK_LIGHT_OFFSET;
+		data |= (long) skyLight << SKY_LIGHT_OFFSET;
+		
+		// confirm the written data can still be retrieved
+		LodUtil.assertTrue(
+				getId(data) == id && getHeight(data) == depth && getBottomY(data) == y && getBlockLight(data) == Byte.toUnsignedInt(blockLight) && getSkyLight(data) == Byte.toUnsignedInt(skyLight),
+				"Trying to create datapoint with " +
+						"id[" + id + "], height[" + depth + "], minY[" + y + "], blockLight[" + blockLight + "], skyLight[" + skyLight + "] " +
+						"but got " +
+						"id[" + getId(data) + "], height[" + getHeight(data) + "], minY[" + getBottomY(data) + "], blockLight[" + getBlockLight(data) + "], skyLight[" + getSkyLight(data) + "]!");
 		
 		return data;
 	}
@@ -100,9 +109,10 @@ public class FullDataPointUtil
 	public static int getHeight(long data) { return (int) ((data >> DP_OFFSET) & DP_MASK); }
 	/** Returns the block position of the bottom vertices for this LOD relative to the level's minimum height. */
 	public static int getBottomY(long data) { return (int) ((data >> Y_OFFSET) & Y_MASK); }
-	public static int getLight(long data) { return (int) ((data >> LIGHT_OFFSET) & LIGHT_MASK); }
+	public static int getBlockLight(long data) { return (int) ((data >> BLOCK_LIGHT_OFFSET) & BLOCK_LIGHT_MASK); }
+	public static int getSkyLight(long data) { return (int) ((data >> SKY_LIGHT_OFFSET) & SKY_LIGHT_MASK); }
 	
-	public static String toString(long data) { return "[ID:" + getId(data) + ",Y:" + getBottomY(data) + ",Height:" + getHeight(data) + ",Light:" + getLight(data) + "]"; }
+	public static String toString(long data) { return "[ID:" + getId(data) + ",Y:" + getBottomY(data) + ",Height:" + getHeight(data) + ",BlockLight:" + getBlockLight(data) + ",SkyLight:" + getSkyLight(data) + "]"; }
 	
 	/** Remaps the biome/blockState ID of the given datapoint */
 	@Contract(pure = true)

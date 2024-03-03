@@ -40,7 +40,8 @@ public class DhApiTerrainDataPoint
 	 */
 	public final byte detailLevel;
 	
-	public final int lightLevel;
+	public final int blockLightLevel;
+	public final int skyLightLevel;
 	public final int topYBlockPos;
 	public final int bottomYBlockPos;
 	
@@ -49,11 +50,12 @@ public class DhApiTerrainDataPoint
 	
 	
 	
-	public DhApiTerrainDataPoint(byte detailLevel, int lightLevel, int topYBlockPos, int bottomYBlockPos, IDhApiBlockStateWrapper blockStateWrapper, IDhApiBiomeWrapper biomeWrapper)
+	public DhApiTerrainDataPoint(byte detailLevel, int blockLightLevel, int skyLightLevel, int topYBlockPos, int bottomYBlockPos, IDhApiBlockStateWrapper blockStateWrapper, IDhApiBiomeWrapper biomeWrapper)
 	{
 		this.detailLevel = detailLevel;
 		
-		this.lightLevel = lightLevel;
+		this.blockLightLevel = blockLightLevel;
+		this.skyLightLevel = skyLightLevel;
 		this.topYBlockPos = topYBlockPos;
 		this.bottomYBlockPos = bottomYBlockPos;
 		

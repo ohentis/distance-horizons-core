@@ -137,7 +137,8 @@ public class LodDataBuilder
 				IBlockStateWrapper blockState = AIR;
 				int mappedId = dataSource.getMapping().addIfNotPresentAndGetId(biome, blockState);
 				// FIXME: The lastY +1 offset is to reproduce the old behavior. Remove this when we get per-face lighting
-				byte light = (byte) ((chunkWrapper.getBlockLight(chunkX, lastY + 1, chunkZ) << 4) + chunkWrapper.getSkyLight(chunkX, lastY + 1, chunkZ));
+				byte blockLight = (byte) chunkWrapper.getBlockLight(chunkX, lastY + 1, chunkZ);
+				byte skyLight = (byte) chunkWrapper.getSkyLight(chunkX, lastY + 1, chunkZ);
 				
 				
 				// determine the starting Y Pos
@@ -171,19 +172,21 @@ public class LodDataBuilder
 				{
 					IBiomeWrapper newBiome = chunkWrapper.getBiome(chunkX, y, chunkZ);
 					IBlockStateWrapper newBlockState = chunkWrapper.getBlockState(chunkX, y, chunkZ);
-					byte newLight = (byte) ((chunkWrapper.getBlockLight(chunkX, y + 1, chunkZ) << 4) + chunkWrapper.getSkyLight(chunkX, y + 1, chunkZ));
+					byte newBlockLight = (byte) chunkWrapper.getBlockLight(chunkX, y + 1, chunkZ);
+					byte newSkyLight = (byte) chunkWrapper.getSkyLight(chunkX, y + 1, chunkZ);
 					
 					if (!newBiome.equals(biome) || !newBlockState.equals(blockState))
 					{
-						longs.add(FullDataPointUtil.encode(mappedId, lastY - y, y + 1 - chunkWrapper.getMinBuildHeight(), light));
+						longs.add(FullDataPointUtil.encode(mappedId, lastY - y, y + 1 - chunkWrapper.getMinBuildHeight(), blockLight, skyLight));
 						biome = newBiome;
 						blockState = newBlockState;
 						mappedId = dataSource.getMapping().addIfNotPresentAndGetId(biome, blockState);
-						light = newLight;
+						blockLight = newBlockLight;
+						skyLight = newSkyLight;
 						lastY = y;
 					}
 				}
-				longs.add(FullDataPointUtil.encode(mappedId, lastY - y, y + 1 - chunkWrapper.getMinBuildHeight(), light));
+				longs.add(FullDataPointUtil.encode(mappedId, lastY - y, y + 1 - chunkWrapper.getMinBuildHeight(), blockLight, skyLight));
 				
 				dataSource.setSingleColumn(longs.toLongArray(), 
 						chunkX + chunkOffsetX, 
@@ -228,7 +231,8 @@ public class LodDataBuilder
 							id,
 							dataPoint.topYBlockPos - dataPoint.bottomYBlockPos,
 							dataPoint.bottomYBlockPos - dataPoints.topYBlockPos,
-							(byte) (dataPoint.lightLevel)
+							(byte) (dataPoint.blockLightLevel),
+							(byte) (dataPoint.skyLightLevel)
 					);
 				}
 				
