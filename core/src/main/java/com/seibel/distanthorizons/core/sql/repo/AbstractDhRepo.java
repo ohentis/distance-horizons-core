@@ -20,6 +20,7 @@
 package com.seibel.distanthorizons.core.sql.repo;
 
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.sql.DatabaseUpdater;
 import com.seibel.distanthorizons.core.sql.DbConnectionClosedException;
 import com.seibel.distanthorizons.core.sql.dto.IBaseDTO;
@@ -29,6 +30,7 @@ import org.jetbrains.annotations.Nullable;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Handles interfacing with SQL databases.
@@ -51,6 +53,11 @@ public abstract class AbstractDhRepo<TKey, TDTO extends IBaseDTO<TKey>>
 	
 	public final Class<? extends TDTO> dtoClass;
 	
+	protected final ReentrantLock[] saveLockArray;
+	/** Based on the stack overflow post: https://stackoverflow.com/a/45909920 */
+	protected ReentrantLock getSaveLockForKey(TKey key) { return this.saveLockArray[Math.abs(key.hashCode()) % this.saveLockArray.length]; }
+	
+	
 	
 	
 	//=============//
@@ -63,6 +70,16 @@ public abstract class AbstractDhRepo<TKey, TDTO extends IBaseDTO<TKey>>
 		this.databaseType = databaseType;
 		this.databaseLocation = databaseLocation;
 		this.dtoClass = dtoClass;
+		
+		
+		// the lock array's length is 2x the number of CPU cores so the number of collisions
+		// should be relatively low without having too many extra locks
+		int lockCount = Runtime.getRuntime().availableProcessors() * 2;
+		this.saveLockArray = new ReentrantLock[lockCount];
+		for (int i = 0; i < lockCount; i++)
+		{
+			this.saveLockArray[i] = new ReentrantLock();
+		}
 		
 		
 		try
@@ -126,13 +143,27 @@ public abstract class AbstractDhRepo<TKey, TDTO extends IBaseDTO<TKey>>
 	
 	public void save(TDTO dto)
 	{
-		if (this.getByKey(dto.getKey()) != null)
+		// a lock is necessary to prevent concurrent modification between
+		// existsWithKey and insert/update,
+		// otherwise another thread might cause the insert/update to fail.
+		ReentrantLock saveLock = this.getSaveLockForKey(dto.getKey());
+		
+		try
 		{
-			this.update(dto);
+			saveLock.lock();
+			
+			if (this.existsWithKey(dto.getKey()))
+			{
+				this.update(dto);
+			}
+			else
+			{
+				this.insert(dto);
+			}
 		}
-		else
+		finally
 		{
-			this.insert(dto);
+			saveLock.unlock();
 		}
 	}
 	private void insert(TDTO dto) 
