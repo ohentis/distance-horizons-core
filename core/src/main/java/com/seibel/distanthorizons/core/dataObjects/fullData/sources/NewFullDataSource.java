@@ -30,6 +30,7 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.util.FullDataPointUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
+import com.seibel.distanthorizons.core.util.RenderDataPointUtil;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataOutputStream;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
@@ -41,10 +42,10 @@ import java.util.Arrays;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * This data source contains every datapoint over its given {@link DhSectionPos}.
- *
+ * This data source contains every datapoint over its given {@link DhSectionPos}. <br><br>
+ * 
  * TODO create a child object that extends AutoClosable
- *  that can be pooled so we don't have GC overhead 
+ *       that can be pooled to reduce GC overhead 
  * 
  * @see FullDataPointUtil
  * @see CompleteFullDataSource
@@ -52,6 +53,8 @@ import java.util.concurrent.locks.ReentrantLock;
 public class NewFullDataSource implements IDataSource<IDhLevel>
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	/** useful for debugging, but can slow down update operations quite a bit due to being called so often. */
+	private static final boolean RUN_UPDATE_DEV_VALIDATION = false; //ModInfo.IS_DEV_BUILD;
 	
 	/** measured in data columns */
 	public static final int WIDTH = 64;
@@ -76,7 +79,10 @@ public class NewFullDataSource implements IDataSource<IDhLevel>
 	 */
 	public byte[] columnGenerationSteps;
 	
-	/** stored x/z, y */
+	/** 
+	 * stored x/z, y 
+	 * The y data should be sorted from bottom to top
+	 */
 	public long[][] dataPoints;
 	private boolean isEmpty;
 	
@@ -154,6 +160,15 @@ public class NewFullDataSource implements IDataSource<IDhLevel>
 	public boolean update(NewFullDataSource inputDataSource, @Nullable IDhLevel level) { return this.update(inputDataSource); }
 	public boolean update(NewFullDataSource inputDataSource)
 	{
+		// shouldn't happen, but James saw it happen once
+		if (inputDataSource.mapping.getMaxValidId() == 0)
+		{
+			LOGGER.warn("Invalid mapping given from input update data source at pos: ["+inputDataSource.pos+"], skipping update.");
+			return false;
+		}
+		
+		
+		
 		byte thisDetailLevel = this.pos.getDetailLevel();
 		byte inputDetailLevel = inputDataSource.pos.getDetailLevel();
 		
@@ -263,37 +278,183 @@ public class NewFullDataSource implements IDataSource<IDhLevel>
 		{
 			for (int z = 0; z < WIDTH; z += 2)
 			{
-				int inputIndex = relativePosToIndex(x, z);
+				long[] mergedInputDataArray = mergeInputTwoByTwoDataColumn(inputDataSource, x, z);
+				byte inputGenStep = inputDataSource.columnGenerationSteps[0]; // TODO
 
-				long[] inputDataArray = inputDataSource.dataPoints[inputIndex];
-				if (inputDataArray != null)
+
+				int recipientX = (x / 2) + recipientOffsetX;
+				int recipientZ = (z / 2) + recipientOffsetZ;
+				int recipientIndex = relativePosToIndex(recipientX, recipientZ);
+
+				long[] oldDataArray = this.dataPoints[recipientIndex];
+
+				this.columnGenerationSteps[recipientIndex] = inputGenStep;
+				this.dataPoints[recipientIndex] = mergedInputDataArray;
+				this.remapDataColumn(recipientIndex, remappedIds);
+
+				// we only need to see if the data was changed in one column
+				if (!dataChanged)
 				{
-					byte inputGenStep = inputDataSource.columnGenerationSteps[inputIndex];
-					
-					// TODO downsample instad of grabbing the column nearest to (-inf, -inf)
-					int recipientX = (x / 2) + recipientOffsetX;
-					int recipientZ = (z / 2) + recipientOffsetZ;
-					int recipientIndex = relativePosToIndex(recipientX, recipientZ);
-					
-					long[] oldDataArray = this.dataPoints[recipientIndex];
-					
-					this.columnGenerationSteps[recipientIndex] = inputGenStep;
-					this.dataPoints[recipientIndex] = inputDataArray;
-					this.remapDataColumn(recipientIndex, remappedIds);
-					
-					// we only need to see if the data was changed in one column
-					if (!dataChanged)
-					{
-						// needs to be done after the ID's have been remapped otherwise the ID's won't match even if the data is the same
-						dataChanged = areDataColumnsDifferent(oldDataArray, this.dataPoints[recipientIndex]);
-					}
-					
-					this.isEmpty = false;
+					// needs to be done after the ID's have been remapped otherwise the ID's won't match even if the data is the same
+					dataChanged = areDataColumnsDifferent(oldDataArray, this.dataPoints[recipientIndex]);
 				}
+
+				this.isEmpty = false;
 			}
 		}
 		
 		return dataChanged;
+	}
+	
+	
+	private static long[] mergeInputTwoByTwoDataColumn(NewFullDataSource inputDataSource, int x, int z)
+	{
+		ArrayList<Long> newColumnList = new ArrayList<>();
+		
+		int[] currentDatapointIndex = new int[] { 0, 0, 0, 0 };
+		
+		int lastId = 0;
+		byte lastBlockLight = 0;
+		byte lastSkyLight = 0;
+		int height = 0;
+		int minY = 0;
+		
+		
+		for (int blockY = 0; blockY < RenderDataPointUtil.MAX_WORLD_Y_SIZE; blockY++, height++)
+		{
+			//if (x == 38 && z == 2 && blockY == 65+72) // nether portal 
+			if (x == 32 && z == 0 && blockY == 138) // glowstone
+			{
+				int k = 0; // TODO remove, just for testing
+			}
+			
+			// if each column has reached the end of their data, nothing more needs to be done
+			if (currentDatapointIndex[0] == -1
+				&& currentDatapointIndex[1] == -1
+				&& currentDatapointIndex[2] == -1
+				&& currentDatapointIndex[3] == -1
+				)
+			{
+				break;
+			}
+			
+			
+			long[] datapointsForYSlice = new long[4]; 
+			
+			
+			// scary double loop but, 
+			// this will only ever loop 4 times, 
+			// once for each of the 4 input columns
+			int colIndex = 0;
+			for (int inputX = x; inputX < x +2; inputX++)
+			{
+				for (int inputZ = z; inputZ < z + 2; inputZ++, colIndex++)
+				{
+					long[] inputDataArray = inputDataSource.dataPoints[relativePosToIndex(inputX, inputZ)];
+					if (inputDataArray == null || inputDataArray.length == 0)
+					{
+						currentDatapointIndex[colIndex] = -1;
+						continue;
+					}
+					
+					
+					int dataPointIndex = currentDatapointIndex[colIndex];
+					if (dataPointIndex == -1)
+					{
+						// went over the end 
+						continue;
+					}
+					long datapoint = inputDataArray[dataPointIndex];
+					
+					int datapointMinY = FullDataPointUtil.getBottomY(datapoint);
+					int numbOfBlocksTall = FullDataPointUtil.getHeight(datapoint);
+					int datapointMaxY = (datapointMinY + numbOfBlocksTall);
+					
+					
+					// check if y position is inside this datapoint
+					if (blockY < datapointMinY)
+					{
+						// this y-slice is below this datapoint, nothing can be added
+						continue;
+					}
+					else if (blockY >= datapointMaxY)
+					{
+						// this y-slice is above this datapoint,
+						// try the next data point
+						
+						int newDatapointIndex = currentDatapointIndex[colIndex] + 1;
+						if (newDatapointIndex >= inputDataArray.length)
+						{
+							// went to far, no additional data present
+							newDatapointIndex = -1;
+						}
+						currentDatapointIndex[colIndex] = newDatapointIndex;
+						
+						
+						// try again with the next data point
+						inputZ--;
+						colIndex--;
+						continue;
+					}
+					
+					
+					
+					datapointsForYSlice[colIndex] = datapoint;
+				}
+			}
+			
+			
+			
+			int[] mergeIds = new int[4];
+			int[] mergeBlockLights = new int[4];
+			int[] mergeSkyLights = new int[4];
+			for (int i = 0; i < 4; i++)
+			{
+				mergeIds[i] = FullDataPointUtil.getId(datapointsForYSlice[i]);
+				mergeBlockLights[i] = FullDataPointUtil.getBlockLight(datapointsForYSlice[i]);
+				mergeSkyLights[i] = FullDataPointUtil.getSkyLight(datapointsForYSlice[i]);
+			}
+			
+			
+			// determine the most common values for this slice
+			int id = determineMostValueInColumnSlice(mergeIds, inputDataSource.mapping);
+			byte blockLight = (byte) determineAverageValueInColumnSlice(mergeBlockLights);
+			byte skyLight = (byte) determineAverageValueInColumnSlice(mergeSkyLights);
+
+			// if this slice is different then the last one, create a new one
+			if (id != lastId
+				// block and sky light might not be necessary
+				|| blockLight != lastBlockLight
+				|| skyLight != lastSkyLight)
+			{
+				if (height != 0)
+				{
+					newColumnList.add(FullDataPointUtil.encode(lastId, height, minY, lastBlockLight, lastSkyLight));
+				}
+				
+				lastId = id;
+				lastBlockLight = blockLight;
+				lastSkyLight = skyLight;
+				height = 0;
+				minY = blockY;
+			}
+		}
+		
+		// add the last slice if present
+		if (height != 0)
+		{
+			newColumnList.add(FullDataPointUtil.encode(lastId, height, minY, lastBlockLight, lastSkyLight));
+		}
+		
+		
+		
+		
+		long[]mergedInputDataArray = new long[newColumnList.size()];
+		for (int i = 0; i < mergedInputDataArray.length; i++)
+		{
+			mergedInputDataArray[i] = newColumnList.get(i);
+		}
+		return mergedInputDataArray;
 	}
 	/**
 	 * Only update the ID once it's been added to this data source.
@@ -322,6 +483,72 @@ public class NewFullDataSource implements IDataSource<IDhLevel>
 			int newArrayHash = Arrays.hashCode(newDataArray);
 			return (newArrayHash != oldArrayHash);
 		}
+	}
+	/** @param mapping can be included to ignore air ID's, otherwise all 4 values are treated equally */
+	private static int determineMostValueInColumnSlice(int[] sliceArray, @Nullable FullDataPointIdMap mapping)
+	{
+		if (RUN_UPDATE_DEV_VALIDATION)
+		{
+			LodUtil.assertTrue(sliceArray.length == 4, "Column Slice should only contain 4 values.");
+		}
+			
+		int value0 = sliceArray[0];
+		int count0 = 0;
+		int value1 = sliceArray[1];
+		int count1 = 0;
+		int value2 = sliceArray[2];
+		int count2 = 0;
+		int value3 = sliceArray[3];
+		int count3 = 0; 
+		
+		// count the occurrences of each value
+		for (int i = 0; i < 4; i++)
+		{
+			int value = sliceArray[i];
+			if (mapping != null && mapping.getBlockStateWrapper(value).isAir())
+			{
+				// always overwrite air to prevent holes in hollow structures
+				continue;
+			}
+			
+			if (value == value0)
+				count0++;
+			else if (value == value1)
+				count1++;
+			else if (value == value2)
+				count2++;
+			else
+				count3++;
+		}
+		
+		// return the most common occurance
+		int maxCount = Math.max(count0, Math.max(count1, Math.max(count2, count3)));
+		if (maxCount == count0)
+			// if the max count is 1 then we'll just go with the first column
+			return value0;
+		else if (maxCount == count1)
+			return value1;
+		else if (maxCount == count2)
+			return value2;
+		else 
+			return value3;
+	}
+	private static int determineAverageValueInColumnSlice(int[] sliceArray)
+	{
+		if (RUN_UPDATE_DEV_VALIDATION)
+		{
+			LodUtil.assertTrue(sliceArray.length == 4, "Column Slice should only contain 4 values.");
+		}
+		
+		
+		int value = 0;
+		for (int i = 0; i < 4; i++)
+		{
+			value += sliceArray[i];
+		}
+		
+		value /= 4;
+		return value;
 	}
 	
 	
@@ -377,10 +604,9 @@ public class NewFullDataSource implements IDataSource<IDhLevel>
 		this.columnGenerationSteps[index] =  worldGenStep.value;
 		
 		
-		// validate the incoming ID's
-		// shouldn't normally happen and can be disabled for release builds
-		if (ModInfo.IS_DEV_BUILD)
+		if (RUN_UPDATE_DEV_VALIDATION)
 		{
+			// validate the incoming ID's
 			int maxValidId = this.mapping.getMaxValidId();
 			for (int i = 0; i < longArray.length; i++)
 			{

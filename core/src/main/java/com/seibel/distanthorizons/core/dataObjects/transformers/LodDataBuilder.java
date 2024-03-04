@@ -188,6 +188,16 @@ public class LodDataBuilder
 				}
 				longs.add(FullDataPointUtil.encode(mappedId, lastY - y, y + 1 - chunkWrapper.getMinBuildHeight(), blockLight, skyLight));
 				
+				// reverse the array so index 0 is the lowest,
+				// this is necessary for later logic
+				// source: https://stackoverflow.com/questions/2137755/how-do-i-reverse-an-int-array-in-java
+				for(int i = 0; i < longs.size() / 2; i++)
+				{
+					long temp = longs.getLong(i);
+					longs.set(i, longs.getLong(longs.size() - i - 1));
+					longs.set(longs.size() - i - 1, temp);
+				}
+				
 				dataSource.setSingleColumn(longs.toLongArray(), 
 						chunkX + chunkOffsetX, 
 						chunkZ + chunkOffsetZ, 

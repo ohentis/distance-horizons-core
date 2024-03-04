@@ -53,15 +53,14 @@ public class NewFullDataFileHandler
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
-	private static final int NUMBER_OF_PARENT_UPDATE_TASKS_PER_THREAD = 20;
+	private static final int NUMBER_OF_PARENT_UPDATE_TASKS_PER_THREAD = 50;
 	/** how many parent update tasks can be in the queue at once */
 	private static final int MAX_PARENT_UPDATE_TASK_COUNT = NUMBER_OF_PARENT_UPDATE_TASKS_PER_THREAD * Config.Client.Advanced.MultiThreading.numberOfFileHandlerThreads.get();
 	
 	/** indicates how long the update queue thread should wait between queuing ticks */
-	private static final int UPDATE_QUEUE_THREAD_DELAY_IN_MS = 1_000;
+	private static final int UPDATE_QUEUE_THREAD_DELAY_IN_MS = 500;
 	
-	
-	// TODO add a debug view
+	/** the list of queued positions that need to update their parents */
 	Set<DhSectionPos> parentApplicationPositionSet = ConcurrentHashMap.newKeySet();
 	private final ThreadPoolExecutor updateQueueProcessor = ThreadUtil.makeSingleThreadPool("Update Queue Processor");
 	private final AtomicBoolean updateQueueThreadRunningRef = new AtomicBoolean(false);
