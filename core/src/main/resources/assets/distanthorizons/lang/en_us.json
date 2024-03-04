@@ -395,6 +395,13 @@
   "distanthorizons.config.client.advanced.multiThreading.runTimeRatioForFileHandlerThreads":
     "Runtime % for file handler threads",
   
+  "distanthorizons.config.client.advanced.multiThreading.numberOfUpdatePropagatorThreads":
+    "NO. of update propagator threads",
+  "distanthorizons.config.client.advanced.multiThreading.numberOfUpdatePropagatorThreads.@tooltip":
+  "How many threads should be used when applying LOD updates? \nAn LOD update is the operation of down-sampling a high detail LOD \ninto a lower detail one. \n\nThis config can have a much higher number of threads \nassigned and much lower run time ratio vs other thread pools \nbecause the amount of time any particular thread may run is relatively low.",
+  "distanthorizons.config.client.advanced.multiThreading.runTimeRatioForUpdatePropagatorThreads":
+    "Runtime % for update propagator threads",
+  
   "distanthorizons.config.client.advanced.multiThreading.numberOfLodBuilderThreads":
     "NO. of LOD builder threads",
   "distanthorizons.config.client.advanced.multiThreading.numberOfLodBuilderThreads.@tooltip":

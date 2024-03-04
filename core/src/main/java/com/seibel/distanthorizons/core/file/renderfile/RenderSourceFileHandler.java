@@ -126,13 +126,18 @@ public class RenderSourceFileHandler extends AbstractLegacyDataSourceHandler<Col
 	/** Returns what should be displayed in Minecraft's F3 debug menu */
 	private String[] f3Log()
 	{
-		ThreadPoolExecutor executor = ThreadPoolUtil.getFileHandlerExecutor();
-		String queueSize = (executor != null) ? executor.getQueue().size()+"" : "-";
-		String completedTaskSize = (executor != null) ? executor.getCompletedTaskCount()+"" : "-";
+		ThreadPoolExecutor fileExecutor = ThreadPoolUtil.getFileHandlerExecutor();
+		String fileQueueSize = (fileExecutor != null) ? fileExecutor.getQueue().size()+"" : "-";
+		String fileCompletedTaskSize = (fileExecutor != null) ? fileExecutor.getCompletedTaskCount()+"" : "-";
+		
+		ThreadPoolExecutor updateExecutor = ThreadPoolUtil.getUpdatePropagatorExecutor();
+		String updateQueueSize = (updateExecutor != null) ? updateExecutor.getQueue().size()+"" : "-";
+		String updateCompletedTaskSize = (updateExecutor != null) ? updateExecutor.getCompletedTaskCount()+"" : "-";
 		
 		ArrayList<String> lines = new ArrayList<>();
 		lines.add("File Handler [" + this.level.getLevelWrapper().getDimensionType().getDimensionName() + "]");
-		lines.add("  Thread pool tasks: " + queueSize + " (completed: " + completedTaskSize + ")");
+		lines.add("  File thread pool tasks: " + fileQueueSize + " (completed: " + fileCompletedTaskSize + ")");
+		lines.add("  Update thread pool tasks: " + updateQueueSize + " (completed: " + updateCompletedTaskSize + ")");
 		lines.add("  Unsaved render sources: " + this.unsavedDataSourceBySectionPos.size());
 		
 		return lines.toArray(new String[0]);

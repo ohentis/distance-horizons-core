@@ -168,7 +168,7 @@ public abstract class AbstractNewDataSourceHandler
 	@Override
 	public CompletableFuture<Void> updateDataSourceAsync(NewFullDataSource inputDataSource)
 	{
-		ThreadPoolExecutor executor = ThreadPoolUtil.getFileHandlerExecutor();
+		ThreadPoolExecutor executor = ThreadPoolUtil.getUpdatePropagatorExecutor();
 		if (executor == null || executor.isTerminated())
 		{
 			return CompletableFuture.completedFuture(null);
@@ -214,18 +214,27 @@ public abstract class AbstractNewDataSourceHandler
 			
 			if (dataModified)
 			{
-				// save the updated data to the database
-				TDTO dto = this.createDtoFromDataSource(dataSource);
-				this.repo.save(dto);
-				
-				
-				for (IDataSourceUpdateFunc<TDataSource> listener : this.dateSourceUpdateListeners)
+				ThreadPoolExecutor executor = ThreadPoolUtil.getFileHandlerExecutor();
+				if (executor == null || executor.isTerminated())
 				{
-					if (listener != null)
-					{
-						listener.OnDataSourceUpdated(dataSource);
-					}
+					return;
 				}
+				
+				executor.execute(() -> 
+				{
+					// save the updated data to the database
+					TDTO dto = this.createDtoFromDataSource(dataSource);
+					this.repo.save(dto);
+					
+					
+					for (IDataSourceUpdateFunc<TDataSource> listener : this.dateSourceUpdateListeners)
+					{
+						if (listener != null)
+						{
+							listener.OnDataSourceUpdated(dataSource);
+						}
+					}
+				});
 			}
 		}
 		catch (Exception e)

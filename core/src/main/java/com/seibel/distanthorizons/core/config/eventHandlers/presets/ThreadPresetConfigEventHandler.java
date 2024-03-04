@@ -85,6 +85,28 @@ public class ThreadPresetConfigEventHandler extends AbstractPresetConfigEventHan
 			}});
 	
 	
+	public static int getUpdatePropagatorDefaultThreadCount() { return getThreadCountByPercent(0.5); }
+	private final ConfigEntryWithPresetOptions<EThreadPreset, Integer> UpdatePropagatorThreadCount = new ConfigEntryWithPresetOptions<>(Config.Client.Advanced.MultiThreading.numberOfUpdatePropagatorThreads,
+			new HashMap<EThreadPreset, Integer>()
+			{{
+				this.put(EThreadPreset.MINIMAL_IMPACT, 1);
+				this.put(EThreadPreset.LOW_IMPACT, getUpdatePropagatorDefaultThreadCount());
+				this.put(EThreadPreset.BALANCED, getThreadCountByPercent(0.75));
+				this.put(EThreadPreset.AGGRESSIVE, getThreadCountByPercent(0.75));
+				this.put(EThreadPreset.I_PAID_FOR_THE_WHOLE_CPU, getThreadCountByPercent(1.0));
+			}});
+	public static double getUpdatePropagatorDefaultRunTimeRatio() { return 0.25; }
+	private final ConfigEntryWithPresetOptions<EThreadPreset, Double> UpdatePropagatorRunTime = new ConfigEntryWithPresetOptions<>(Config.Client.Advanced.MultiThreading.runTimeRatioForUpdatePropagatorThreads,
+			new HashMap<EThreadPreset, Double>()
+			{{
+				this.put(EThreadPreset.MINIMAL_IMPACT, 0.25);
+				this.put(EThreadPreset.LOW_IMPACT, getUpdatePropagatorDefaultRunTimeRatio());
+				this.put(EThreadPreset.BALANCED, 0.5);
+				this.put(EThreadPreset.AGGRESSIVE, 1.0);
+				this.put(EThreadPreset.I_PAID_FOR_THE_WHOLE_CPU, 1.0);
+			}});
+	
+	
 	public static int getLodBuilderDefaultThreadCount() { return getThreadCountByPercent(0.1); }
 	private final ConfigEntryWithPresetOptions<EThreadPreset, Integer> lodBuilderThreadCount = new ConfigEntryWithPresetOptions<>(Config.Client.Advanced.MultiThreading.numberOfLodBuilderThreads,
 			new HashMap<EThreadPreset, Integer>()
@@ -121,6 +143,9 @@ public class ThreadPresetConfigEventHandler extends AbstractPresetConfigEventHan
 		
 		this.configList.add(this.fileHandlerThreadCount);
 		this.configList.add(this.fileHandlerRunTime);
+		
+		this.configList.add(this.UpdatePropagatorThreadCount);
+		this.configList.add(this.UpdatePropagatorRunTime);
 		
 		this.configList.add(this.lodBuilderThreadCount);
 		this.configList.add(this.lodBuilderRunTime);

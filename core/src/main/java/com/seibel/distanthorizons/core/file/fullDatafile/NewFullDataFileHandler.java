@@ -58,7 +58,7 @@ public class NewFullDataFileHandler
 	private static final int MAX_PARENT_UPDATE_TASK_COUNT = NUMBER_OF_PARENT_UPDATE_TASKS_PER_THREAD * Config.Client.Advanced.MultiThreading.numberOfFileHandlerThreads.get();
 	
 	/** indicates how long the update queue thread should wait between queuing ticks */
-	private static final int UPDATE_QUEUE_THREAD_DELAY_IN_MS = 500;
+	private static final int UPDATE_QUEUE_THREAD_DELAY_IN_MS = 1_000;
 	
 	/** the list of queued positions that need to update their parents */
 	Set<DhSectionPos> parentApplicationPositionSet = ConcurrentHashMap.newKeySet();
@@ -210,7 +210,7 @@ public class NewFullDataFileHandler
 					if (updatePosList.size() != 0)
 					{
 						// stop if the file handler has been shut down
-						ThreadPoolExecutor executor = ThreadPoolUtil.getFileHandlerExecutor();
+						ThreadPoolExecutor executor = ThreadPoolUtil.getUpdatePropagatorExecutor();
 						if (executor == null || executor.isTerminated())
 						{
 							this.updateQueueThreadRunningRef.set(false);
@@ -222,6 +222,9 @@ public class NewFullDataFileHandler
 						int queueCount = 0;
 						for (DhSectionPos pos : updatePosList)
 						{
+							// James thought batching together updates
+							// based on the parent they were going to update would reduce update locks,
+							// but after testing it didn't, so we're just queing each section individually
 							if (this.parentApplicationPositionSet.add(pos))
 							{
 								queueCount++;
@@ -230,8 +233,6 @@ public class NewFullDataFileHandler
 									NewFullDataSource inputData = this.get(pos);
 									// update the parent position with this new data
 									this.updateDataSourceAtPos(pos.getParentPos(), inputData, true);
-									
-									// TODO add comparable interface to make this low priority
 								});
 							}
 						}

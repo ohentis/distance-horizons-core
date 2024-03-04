@@ -907,7 +907,7 @@ public class Config
 								ThreadPresetConfigEventHandler.getFileHandlerDefaultThreadCount(),
 								Runtime.getRuntime().availableProcessors())
 						.comment(""
-								+ "How many threads should be used when reading in LOD data from disk? \n"
+								+ "How many threads should be used when reading/writing LOD data to/from disk? \n"
 								+ "\n"
 								+ "Increasing this number will cause LODs to load in faster, \n"
 								+ "but may cause lag when loading a new world or when \n"
@@ -917,6 +917,31 @@ public class Config
 						.build();
 				public static final ConfigEntry<Double> runTimeRatioForFileHandlerThreads = new ConfigEntry.Builder<Double>()
 						.setMinDefaultMax(0.01, ThreadPresetConfigEventHandler.getFileHandlerDefaultRunTimeRatio(), 1.0)
+						.comment(THREAD_RUN_TIME_RATIO_NOTE)
+						.build();
+				
+				public static final ConfigEntry<Integer> numberOfUpdatePropagatorThreads = new ConfigEntry.Builder<Integer>()
+						.setMinDefaultMax(1,
+								ThreadPresetConfigEventHandler.getUpdatePropagatorDefaultThreadCount(),
+								Runtime.getRuntime().availableProcessors())
+						.comment(""
+								+ "How many threads should be used when applying LOD updates? \n"
+								+ "An LOD update is the operation of down-sampling a high detail LOD \n"
+								+ "into a lower detail one.\n"
+								+ "\n"
+								+ "This config can have a much higher number of threads \n"
+								+ "assigned and much lower run time ratio vs other thread pools \n"
+								+ "because the amount of time any particular thread may run is relatively low.\n"
+								+ "\n"
+								+ "This is because LOD updating only only partially thread safe, \n"
+								+ "so between 40% and 60% of the time a given thread may end up \n"
+								+ "waiting on another thread to finish updating the same LOD it also wants\n"
+								+ "to work on.\n"
+								+ "\n"
+								+ THREAD_NOTE)
+						.build();
+				public static final ConfigEntry<Double> runTimeRatioForUpdatePropagatorThreads = new ConfigEntry.Builder<Double>()
+						.setMinDefaultMax(0.01, ThreadPresetConfigEventHandler.getUpdatePropagatorDefaultRunTimeRatio(), 1.0)
 						.comment(THREAD_RUN_TIME_RATIO_NOTE)
 						.build();
 				

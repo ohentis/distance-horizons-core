@@ -46,11 +46,17 @@ public class ThreadPoolUtil
 	@Nullable
 	public static ThreadPoolExecutor getFileHandlerExecutor() { return fileHandlerThreadPool.executor; }
 	
+	public static final DhThreadFactory UPDATE_PROPAGATOR_THREAD_FACTORY = new DhThreadFactory("LOD Update Propagator", Thread.MIN_PRIORITY);
+	private static RateLimitedThreadPoolExecutor updatePropagatorThreadPool;
+	@Nullable
+	public static ThreadPoolExecutor getUpdatePropagatorExecutor() { return updatePropagatorThreadPool; }
+	
 	public static final DhThreadFactory WORLD_GEN_THREAD_FACTORY = new DhThreadFactory("World Gen", Thread.MIN_PRIORITY);
 	private static ConfigThreadPool worldGenThreadPool;
 	@Nullable
 	public static ThreadPoolExecutor getWorldGenExecutor() { return worldGenThreadPool.executor; }
 	
+	public static final String BUFFER_UPLOADER_THREAD_NAME = "Buffer Uploader";
 	private static ThreadPoolExecutor bufferUploaderThreadPool;
 	@Nullable
 	public static ThreadPoolExecutor getBufferUploaderExecutor() { return bufferUploaderThreadPool; }
@@ -99,8 +105,9 @@ public class ThreadPoolUtil
 		// standalone threads //
 		
 		fileHandlerThreadPool = new ConfigThreadPool(FILE_HANDLER_THREAD_FACTORY, Config.Client.Advanced.MultiThreading.numberOfFileHandlerThreads, Config.Client.Advanced.MultiThreading.runTimeRatioForFileHandlerThreads, null);
+		updatePropagatorThreadPool = new RateLimitedThreadPoolExecutor(8, 1.0, UPDATE_PROPAGATOR_THREAD_FACTORY);
 		worldGenThreadPool = new ConfigThreadPool(WORLD_GEN_THREAD_FACTORY, Config.Client.Advanced.MultiThreading.numberOfWorldGenerationThreads, Config.Client.Advanced.MultiThreading.runTimeRatioForWorldGenerationThreads, null);
-		bufferUploaderThreadPool = ThreadUtil.makeSingleThreadPool("Buffer Uploader");
+		bufferUploaderThreadPool = ThreadUtil.makeSingleThreadPool(BUFFER_UPLOADER_THREAD_NAME);
 		
 		
 		
@@ -138,6 +145,7 @@ public class ThreadPoolUtil
 	{
 		// standalone threads
 		fileHandlerThreadPool.shutdownExecutorService();
+		updatePropagatorThreadPool.shutdown();
 		worldGenThreadPool.shutdownExecutorService();
 		bufferUploaderThreadPool.shutdown();
 		
