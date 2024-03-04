@@ -75,9 +75,9 @@ public abstract class AbstractNewDataSourceHandler
 			LOGGER.warn("Unable to create full data folder, file saving may fail.");
 		}
 		
-		// the lock array's length is double the number of CPU cores so the number of collisions
+		// the lock array's length is 4x the number of CPU cores so the number of collisions
 		// should be relatively low without having too many extra locks
-		int lockCount = Runtime.getRuntime().availableProcessors() * 2;
+		int lockCount = Runtime.getRuntime().availableProcessors() * 4;
 		this.updateLockArray = new ReentrantLock[lockCount];
 		for (int i = 0; i < lockCount; i++)
 		{
