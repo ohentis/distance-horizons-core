@@ -35,10 +35,10 @@ import com.seibel.distanthorizons.coreapi.util.MathUtil;
 public enum EVerticalQuality
 {
 	HEIGHT_MAP(new int[]{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}),
-	LOW(new int[]{4, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1}),
-	MEDIUM(new int[]{6, 4, 3, 2, 2, 1, 1, 1, 1, 1, 1}),
-	HIGH(new int[]{8, 6, 4, 2, 2, 2, 2, 1, 1, 1, 1}),
-	EXTREME(new int[]{16, 8, 4, 2, 2, 2, 2, 1, 1, 1, 1});
+	LOW(new int[]{4, 3, 3, 2, 2, 1, 1, 1, 1, 1, 1}),
+	MEDIUM(new int[]{6, 4, 3, 3, 3, 3, 3, 2, 2, 2, 1}),
+	HIGH(new int[]{16, 8, 4, 3, 3, 3, 3, 3, 3, 3, 1}),
+	EXTREME(new int[]{32, 16, 8, 4, 4, 3, 3, 3, 3, 3, 1});
 	
 	/** represents how many LODs can be rendered in a single vertical slice */
 	public final int[] maxVerticalData;
