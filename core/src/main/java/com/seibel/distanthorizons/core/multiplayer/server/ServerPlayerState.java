@@ -1,10 +1,10 @@
 package com.seibel.distanthorizons.core.multiplayer.server;
 
 import com.seibel.distanthorizons.core.level.DhServerLevel;
-import com.seibel.distanthorizons.core.network.IConnection;
+import com.seibel.distanthorizons.core.network.netty.INettyConnection;
 import com.seibel.distanthorizons.core.network.exceptions.RateLimitedException;
-import com.seibel.distanthorizons.core.network.messages.fullData.FullDataSourceRequestMessage;
-import com.seibel.distanthorizons.core.network.messages.fullData.generation.GenTaskPriorityRequestMessage;
+import com.seibel.distanthorizons.core.network.messages.netty.fullData.FullDataSourceRequestMessage;
+import com.seibel.distanthorizons.core.network.messages.netty.fullData.generation.GenTaskPriorityRequestMessage;
 import com.seibel.distanthorizons.core.util.ratelimiting.SupplierBasedRateAndConcurrencyLimiter;
 import com.seibel.distanthorizons.core.util.ratelimiting.SupplierBasedRateLimiter;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
@@ -17,7 +17,7 @@ import static com.seibel.distanthorizons.core.config.Config.Client.Advanced.Mult
 public class ServerPlayerState
 {	
     public IServerPlayerWrapper serverPlayer;
-    public IConnection connection;
+	public INettyConnection connection;
 	
 	@NotNull
 	public ConstrainedMultiplayerConfig config = new ConstrainedMultiplayerConfig();

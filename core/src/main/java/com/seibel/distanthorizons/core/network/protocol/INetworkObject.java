@@ -35,14 +35,14 @@ public interface INetworkObject
 	
 	void decode(ByteBuf in);
 	
-	static <T extends INetworkObject> T decodeStatic(T obj, ByteBuf inputByteBuf)
+	static <T extends INetworkObject> T readToObject(T obj, ByteBuf inputByteBuf)
 	{
 		obj.decode(inputByteBuf);
 		return obj;
 	}
 	
 	@Contract("_, null -> false; _, !null -> true")
-	default boolean encodeOptional(ByteBuf outputByteBuf, Object value)
+	default boolean writeOptional(ByteBuf outputByteBuf, Object value)
 	{
 		boolean isNull = value != null;
 		outputByteBuf.writeBoolean(isNull);
@@ -50,27 +50,27 @@ public interface INetworkObject
 	}
 	
 	@Nullable
-	default <T> T decodeOptional(ByteBuf inputByteBuf, Supplier<T> decoder)
+	default <T> T readOptional(ByteBuf inputByteBuf, Supplier<T> decoder)
 	{
 		return inputByteBuf.readBoolean()
 				? decoder.get() 
 				: null;
 	}
 	
-	default void encodeString(String inputString, ByteBuf outputByteBuf)
+	default void writeString(String inputString, ByteBuf outputByteBuf)
 	{
 		byte[] bytes = inputString.getBytes(StandardCharsets.UTF_8);
 		outputByteBuf.writeShort(bytes.length);
 		outputByteBuf.writeBytes(bytes);
 	}
 	
-	default String decodeString(ByteBuf inputByteBuf)
+	default String readString(ByteBuf inputByteBuf)
 	{
 		int length = inputByteBuf.readShort();
 		return inputByteBuf.readBytes(length).toString(StandardCharsets.UTF_8);
 	}
 	
-	default <T> void encodeCollection(ByteBuf outputByteBuf, Collection<T> collection)
+	default <T> void writeCollection(ByteBuf outputByteBuf, Collection<T> collection)
 	{
 		outputByteBuf.writeInt(collection.size());
 		
@@ -85,7 +85,7 @@ public interface INetworkObject
 		}
 	}
 	
-	default <T> void decodeCollection(ByteBuf inputByteBuf, Collection<T> collection, Supplier<T> innerValueConstructor)
+	default <T> void readCollection(ByteBuf inputByteBuf, Collection<T> collection, Supplier<T> innerValueConstructor)
 	{
 		int size = inputByteBuf.readInt();
 		
@@ -105,11 +105,11 @@ public interface INetworkObject
 		}
 	}
 	
-	default <K, V> void decodeMap(ByteBuf inputByteBuf, Map<K, V> map, Supplier<K> keySupplier, Supplier<V> valueSupplier)
+	default <K, V> void readMap(ByteBuf inputByteBuf, Map<K, V> map, Supplier<K> keySupplier, Supplier<V> valueSupplier)
 	{
 		ArrayList<Map.Entry<K, V>> entryList = new ArrayList<>();
 		
-		this.decodeCollection(inputByteBuf, entryList, () -> new AbstractMap.SimpleEntry<>(keySupplier.get(), valueSupplier.get()));
+		this.readCollection(inputByteBuf, entryList, () -> new AbstractMap.SimpleEntry<>(keySupplier.get(), valueSupplier.get()));
 		for (Map.Entry<K, V> entry : entryList)
 		{
 			map.put(entry.getKey(), entry.getValue());
@@ -127,7 +127,7 @@ public interface INetworkObject
 			// Primitives must be added manually here
 			this.put(Integer.class, new Codec((obj, out) -> out.writeInt((int)obj), (obj, in) -> in.readInt()));
 			
-			this.put(INetworkObject.class, new Codec(INetworkObject::encode, INetworkObject::decodeStatic));
+			this.put(INetworkObject.class, new Codec(INetworkObject::encode, INetworkObject::readToObject));
 			this.put(Map.Entry.class, new Codec(
 					(obj, out) -> {
 						Map.Entry<?, ?> entry = (Entry<?, ?>) obj;

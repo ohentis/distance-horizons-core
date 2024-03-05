@@ -24,7 +24,7 @@ import com.seibel.distanthorizons.core.file.structure.LocalSaveStructure;
 import com.seibel.distanthorizons.core.level.DhServerLevel;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.multiplayer.server.RemotePlayerConnectionHandler;
-import com.seibel.distanthorizons.core.network.NetworkServer;
+import com.seibel.distanthorizons.core.network.netty.NettyServer;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
@@ -33,7 +33,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.util.HashMap;
-import java.util.concurrent.CompletableFuture;
 
 public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 {
@@ -52,9 +51,9 @@ public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 		
 		this.saveStructure = new LocalSaveStructure();
 		this.levels = new HashMap<>();
-
-		NetworkServer networkServer = new NetworkServer(Config.Client.Advanced.Multiplayer.ServerNetworking.serverPort.get());
-		this.remotePlayerConnectionHandler = new RemotePlayerConnectionHandler(networkServer);
+		
+		NettyServer nettyServer = new NettyServer(Config.Client.Advanced.Multiplayer.ServerNetworking.serverPort.get());
+		this.remotePlayerConnectionHandler = new RemotePlayerConnectionHandler(nettyServer);
 
 		LOGGER.info("Started "+DhServerWorld.class.getSimpleName()+" of type "+this.environment);
 	}
@@ -126,12 +125,14 @@ public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 			this.levels.remove(wrapper).close();
 		}
 	}
-
-	public void serverTick() {
+	
+	@Override public void serverTick()
+	{
 		this.levels.values().forEach(DhServerLevel::serverTick);
 	}
-
-	public void doWorldGen() {
+	
+	@Override public void doWorldGen()
+	{
 		this.levels.values().forEach(DhServerLevel::doWorldGen);
 	}
 	

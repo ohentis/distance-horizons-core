@@ -1,0 +1,46 @@
+/*
+ *    This file is part of the Distant Horizons mod
+ *    licensed under the GNU LGPL v3 License.
+ *
+ *    Copyright (C) 2020-2023 James Seibel
+ *
+ *    This program is free software: you can redistribute it and/or modify
+ *    it under the terms of the GNU Lesser General Public License as published by
+ *    the Free Software Foundation, version 3.
+ *
+ *    This program is distributed in the hope that it will be useful,
+ *    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *    GNU Lesser General Public License for more details.
+ *
+ *    You should have received a copy of the GNU Lesser General Public License
+ *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+package com.seibel.distanthorizons.core.network.messages.netty.session;
+
+import com.seibel.distanthorizons.core.multiplayer.config.AbstractMultiplayerConfig;
+import com.seibel.distanthorizons.core.multiplayer.config.MultiplayerConfig;
+import com.seibel.distanthorizons.core.network.protocol.INetworkObject;
+import com.seibel.distanthorizons.core.network.netty.NettyMessage;
+import io.netty.buffer.ByteBuf;
+
+public class RemotePlayerConfigMessage extends NettyMessage
+{
+    public AbstractMultiplayerConfig payload;
+
+    public RemotePlayerConfigMessage() { }
+    public RemotePlayerConfigMessage(AbstractMultiplayerConfig payload) { this.payload = payload; }
+	
+    @Override
+    public void encode(ByteBuf out) { this.payload.encode(out); }
+	
+    @Override
+    public void decode(ByteBuf in) { this.payload = INetworkObject.readToObject(new MultiplayerConfig(), in); }
+	
+	@Override public String toString()
+	{
+		return super.toString("payload=" + this.payload);
+	}
+	
+}

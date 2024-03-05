@@ -25,7 +25,8 @@ import com.seibel.distanthorizons.core.file.structure.ClientOnlySaveStructure;
 import com.seibel.distanthorizons.core.level.DhClientLevel;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.multiplayer.client.ClientNetworkState;
-import com.seibel.distanthorizons.core.network.NetworkClient;
+import com.seibel.distanthorizons.core.network.netty.NettyClient;
+import com.seibel.distanthorizons.core.network.plugin.PluginChannelHandler;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
 import com.seibel.distanthorizons.core.util.objects.EventLoop;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
@@ -35,7 +36,6 @@ import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.CheckForNull;
 import java.io.File;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 
@@ -67,8 +67,8 @@ public class DhClientWorld extends AbstractDhWorld implements IDhClientWorld
 		if (Config.Client.Advanced.Multiplayer.ServerNetworking.enableServerNetworking.get())
 		{
 			// TODO per server configs
-			NetworkClient networkClient = new NetworkClient(MC_CLIENT.getCurrentServerIp().split(":")[0], Config.Client.Advanced.Multiplayer.ServerNetworking.serverPort.get());
-			this.networkState = new ClientNetworkState(networkClient, MC_CLIENT.getPlayerUUID());
+			NettyClient nettyClient = new NettyClient(MC_CLIENT.getCurrentServerIp().split(":")[0], Config.Client.Advanced.Multiplayer.ServerNetworking.serverPort.get());
+			this.networkState = new ClientNetworkState(nettyClient, MC_CLIENT.getPlayerUUID());
 		}
 		else
 		{
@@ -101,7 +101,7 @@ public class DhClientWorld extends AbstractDhWorld implements IDhClientWorld
 				return null;
 			}
 			
-			return new DhClientLevel(this.saveStructure, clientLevelWrapper, networkState);
+			return new DhClientLevel(this.saveStructure, clientLevelWrapper, this.networkState);
 		});
 	}
 	
@@ -140,9 +140,10 @@ public class DhClientWorld extends AbstractDhWorld implements IDhClientWorld
 		this.levels.values().forEach(DhClientLevel::clientTick);
 	}
 	
-	public void clientTick() { this.eventLoop.tick(); }
+	@Override public void clientTick() { this.eventLoop.tick(); }
 	
-	public void doWorldGen() {
+	@Override public void doWorldGen()
+	{
 		this.levels.values().forEach(DhClientLevel::doWorldGen);
 	}
 

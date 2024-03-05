@@ -17,23 +17,20 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.seibel.distanthorizons.core.level;
+package com.seibel.distanthorizons.core.network.protocol.netty;
 
-import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
-import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IBindable;
+import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelOutboundHandlerAdapter;
+import io.netty.channel.ChannelPromise;
 
-/**
- * Handles level overrides initiated by servers that
- * support differentiating between different levels.
- */
-public interface IKeyedClientLevelManager extends IBindable
+public class NettyOutboundExceptionRouter extends ChannelOutboundHandlerAdapter
 {
-	IServerKeyedClientLevel getServerKeyedLevel();
-	/** Called when a client level is wrapped by a ServerEnhancedClientLevel, for integration into mod internals. */
-	IServerKeyedClientLevel setServerKeyedLevel(IClientLevelWrapper clientLevel, String levelKey);
-	void clearServerKeyedLevel();
-	
-	boolean isEnabled();
-	void disable();
+    @Override
+    public void write(ChannelHandlerContext channelContext, Object messageObj, ChannelPromise promise) throws Exception
+	{
+		promise.addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+		super.write(channelContext, messageObj, promise);
+	}
 	
 }

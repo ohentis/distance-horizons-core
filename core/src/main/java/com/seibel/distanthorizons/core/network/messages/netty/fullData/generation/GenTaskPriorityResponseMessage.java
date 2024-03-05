@@ -17,29 +17,40 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.seibel.distanthorizons.core.network.protocol;
+package com.seibel.distanthorizons.core.network.messages.netty.fullData.generation;
 
-import com.seibel.distanthorizons.core.network.messages.AbstractMessageRegistry;
+import com.seibel.distanthorizons.core.network.netty.TrackableNettyMessage;
+import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.ByteToMessageDecoder;
 
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
-public class MessageDecoder<TMessage extends INetworkObject> extends ByteToMessageDecoder
+public class GenTaskPriorityResponseMessage extends TrackableNettyMessage
 {
-	private final AbstractMessageRegistry<TMessage> messageRegistry;
+	public Map<DhSectionPos, Integer> posList = new HashMap<>();
 	
-	public MessageDecoder(AbstractMessageRegistry<TMessage> messageRegistry)
+	public GenTaskPriorityResponseMessage() { }
+	public GenTaskPriorityResponseMessage(Map<DhSectionPos, Integer> posList)
 	{
-		this.messageRegistry = messageRegistry;
+		this.posList = posList;
 	}
 	
 	@Override
-	protected void decode(ChannelHandlerContext channelContext, ByteBuf inputByteBuf, List<Object> outputDecodedObjectList)
+	protected void encode0(ByteBuf out)
 	{
-		TMessage message = this.messageRegistry.createMessage(inputByteBuf.readShort());
-		outputDecodedObjectList.add(INetworkObject.readToObject(message, inputByteBuf));
+		this.writeCollection(out, this.posList.entrySet());
+	}
+	
+	@Override
+	protected void decode0(ByteBuf in)
+	{
+		this.readMap(in, this.posList, DhSectionPos::zero, () -> 0);
+	}
+	
+	@Override public String toString()
+	{
+		return super.toString("posList=" + this.posList);
 	}
 	
 }

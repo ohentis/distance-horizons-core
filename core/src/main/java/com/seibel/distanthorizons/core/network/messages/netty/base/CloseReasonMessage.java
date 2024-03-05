@@ -17,23 +17,30 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.seibel.distanthorizons.core.level;
+package com.seibel.distanthorizons.core.network.messages.netty.base;
 
-import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
-import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IBindable;
+import com.seibel.distanthorizons.core.network.netty.NettyMessage;
+import io.netty.buffer.ByteBuf;
 
-/**
- * Handles level overrides initiated by servers that
- * support differentiating between different levels.
- */
-public interface IKeyedClientLevelManager extends IBindable
+public class CloseReasonMessage extends NettyMessage
 {
-	IServerKeyedClientLevel getServerKeyedLevel();
-	/** Called when a client level is wrapped by a ServerEnhancedClientLevel, for integration into mod internals. */
-	IServerKeyedClientLevel setServerKeyedLevel(IClientLevelWrapper clientLevel, String levelKey);
-	void clearServerKeyedLevel();
+	public String reason;
+
+	public CloseReasonMessage() { }
+	public CloseReasonMessage(String reason) { this.reason = reason; }
+
+	@Override
+	public void encode(ByteBuf out)
+	{
+		this.writeString(this.reason, out);
+	}
+
+	@Override
+	public void decode(ByteBuf in) { this.reason = this.readString(in); }
 	
-	boolean isEnabled();
-	void disable();
+	@Override public String toString()
+	{
+		return super.toString("reason='" + this.reason + '\'');
+	}
 	
 }

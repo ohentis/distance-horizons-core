@@ -8,17 +8,17 @@ import com.seibel.distanthorizons.core.config.types.ConfigEntry;
 import com.seibel.distanthorizons.core.level.DhServerLevel;
 import com.seibel.distanthorizons.core.multiplayer.config.MultiplayerConfig;
 import com.seibel.distanthorizons.core.multiplayer.config.MultiplayerConfigChangeListener;
-import com.seibel.distanthorizons.core.network.IConnection;
-import com.seibel.distanthorizons.core.network.NetworkServer;
+import com.seibel.distanthorizons.core.network.netty.INettyConnection;
+import com.seibel.distanthorizons.core.network.netty.NettyServer;
 import com.seibel.distanthorizons.core.network.ScopedNetworkEventSource;
 import com.seibel.distanthorizons.core.network.exceptions.InvalidLevelException;
-import com.seibel.distanthorizons.core.network.messages.base.AckMessage;
-import com.seibel.distanthorizons.core.network.messages.base.CloseEvent;
-import com.seibel.distanthorizons.core.network.messages.base.ILevelRelatedMessage;
-import com.seibel.distanthorizons.core.network.messages.session.PlayerUUIDMessage;
-import com.seibel.distanthorizons.core.network.messages.session.RemotePlayerConfigMessage;
-import com.seibel.distanthorizons.core.network.protocol.FutureTrackableNetworkMessage;
-import com.seibel.distanthorizons.core.network.protocol.NetworkMessage;
+import com.seibel.distanthorizons.core.network.messages.netty.base.AckMessage;
+import com.seibel.distanthorizons.core.network.messages.netty.base.NettyCloseEvent;
+import com.seibel.distanthorizons.core.network.messages.netty.ILevelRelatedMessage;
+import com.seibel.distanthorizons.core.network.messages.netty.session.PlayerUUIDMessage;
+import com.seibel.distanthorizons.core.network.messages.netty.session.RemotePlayerConfigMessage;
+import com.seibel.distanthorizons.core.network.netty.TrackableNettyMessage;
+import com.seibel.distanthorizons.core.network.netty.NettyMessage;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import org.jetbrains.annotations.Nullable;
@@ -34,17 +34,17 @@ public class RemotePlayerConnectionHandler implements Closeable
 {
 	private static final ConfigEntry<Boolean> GENERATE_MULTIPLE_DIMENSIONS_CONFIG = Config.Client.Advanced.Multiplayer.ServerNetworking.generateMultipleDimensions;
 	
-	private final ScopedNetworkEventSource<NetworkServer> eventSource;
+	private final ScopedNetworkEventSource<NettyServer, NettyMessage> eventSource;
 	private final ConcurrentHashMap<UUID, ServerPlayerState> playersByUUID = new ConcurrentHashMap<>();
-	private final BiMap<IConnection, ServerPlayerState> playersByConnection = Maps.synchronizedBiMap(HashBiMap.create());
+	private final BiMap<INettyConnection, ServerPlayerState> playersByConnection = Maps.synchronizedBiMap(HashBiMap.create());
 	
-	private final MultiplayerConfigChangeListener configChangeListener = new MultiplayerConfigChangeListener(this::onConfigChanged); 
+	private final MultiplayerConfigChangeListener configChangeListener = new MultiplayerConfigChangeListener(this::onConfigChanged);
 	
-	public NetworkServer server() { return this.eventSource.parent; }
+	public NettyServer server() { return this.eventSource.parent; }
 	
-	public RemotePlayerConnectionHandler(NetworkServer networkServer)
+	public RemotePlayerConnectionHandler(NettyServer nettyServer)
 	{
-		this.eventSource = new ScopedNetworkEventSource<>(networkServer);
+		this.eventSource = new ScopedNetworkEventSource<>(nettyServer);
 		this.registerNetworkHandlers();
 	}
 	
@@ -52,7 +52,7 @@ public class RemotePlayerConnectionHandler implements Closeable
 	{
 		this.eventSource.registerHandler(PlayerUUIDMessage.class, playerUUIDMessage ->
 		{
-			IConnection connection = playerUUIDMessage.getConnection();
+			INettyConnection connection = playerUUIDMessage.getConnection();
 			ServerPlayerState serverPlayerState = this.playersByUUID.get(playerUUIDMessage.playerUUID);
 			
 			if (serverPlayerState == null)
@@ -79,7 +79,7 @@ public class RemotePlayerConnectionHandler implements Closeable
 			serverPlayerState.connection.sendMessage(new RemotePlayerConfigMessage(serverPlayerState.config));
 		}));
 		
-		this.eventSource.registerHandler(CloseEvent.class, closeEvent ->
+		this.eventSource.registerHandler(NettyCloseEvent.class, closeEvent ->
 		{
 			ServerPlayerState dhPlayer = this.playersByConnection.remove(closeEvent.getConnection());
 			if (dhPlayer != null)
@@ -97,7 +97,7 @@ public class RemotePlayerConnectionHandler implements Closeable
 		}
 	}
 	
-	public <T extends NetworkMessage> Consumer<T> connectedPlayersOnly(BiConsumer<T, ServerPlayerState> next)
+	public <T extends NettyMessage> Consumer<T> connectedPlayersOnly(BiConsumer<T, ServerPlayerState> next)
 	{
 		return msg ->
 		{
@@ -109,7 +109,7 @@ public class RemotePlayerConnectionHandler implements Closeable
 		};
 	}
 	
-	public <T extends NetworkMessage> Consumer<T> currentLevelOnly(DhServerLevel level, BiConsumer<T, ServerPlayerState> next)
+	public <T extends NettyMessage> Consumer<T> currentLevelOnly(DhServerLevel level, BiConsumer<T, ServerPlayerState> next)
 	{
 		return this.connectedPlayersOnly((msg, serverPlayerState) ->
 		{
@@ -126,9 +126,9 @@ public class RemotePlayerConnectionHandler implements Closeable
 					&& !GENERATE_MULTIPLE_DIMENSIONS_CONFIG.get())
 			{
 				// If the message can be replied to - reply with error, otherwise just ignore
-				if (msg instanceof FutureTrackableNetworkMessage)
+				if (msg instanceof TrackableNettyMessage)
 				{
-					((FutureTrackableNetworkMessage) msg).sendResponse(new InvalidLevelException("Invalid level"));
+					((TrackableNettyMessage) msg).sendResponse(new InvalidLevelException("Invalid level"));
 				}
 				
 				return;
@@ -147,7 +147,7 @@ public class RemotePlayerConnectionHandler implements Closeable
 	}
 	
 	@Nullable
-	public ServerPlayerState getConnectedPlayer(NetworkMessage msg)
+	public ServerPlayerState getConnectedPlayer(NettyMessage msg)
 	{
 		return this.playersByConnection.get(msg.getConnection());
 	}
@@ -160,7 +160,7 @@ public class RemotePlayerConnectionHandler implements Closeable
 	public void unregisterLeftPlayer(IServerPlayerWrapper serverPlayer)
 	{
 		ServerPlayerState dhPlayer = this.playersByUUID.remove(serverPlayer.getUUID());
-		IConnection connection = this.playersByConnection.inverse().remove(dhPlayer);
+		INettyConnection connection = this.playersByConnection.inverse().remove(dhPlayer);
 		if (connection != null)
 		{
 			connection.disconnect("You have logged out.");
