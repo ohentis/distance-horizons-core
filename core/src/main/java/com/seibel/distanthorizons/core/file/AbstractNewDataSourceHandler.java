@@ -214,27 +214,18 @@ public abstract class AbstractNewDataSourceHandler
 			
 			if (dataModified)
 			{
-				ThreadPoolExecutor executor = ThreadPoolUtil.getFileHandlerExecutor();
-				if (executor == null || executor.isTerminated())
-				{
-					return;
-				}
+				// save the updated data to the database
+				TDTO dto = this.createDtoFromDataSource(dataSource);
+				this.repo.save(dto);
 				
-				executor.execute(() -> 
+				
+				for (IDataSourceUpdateFunc<TDataSource> listener : this.dateSourceUpdateListeners)
 				{
-					// save the updated data to the database
-					TDTO dto = this.createDtoFromDataSource(dataSource);
-					this.repo.save(dto);
-					
-					
-					for (IDataSourceUpdateFunc<TDataSource> listener : this.dateSourceUpdateListeners)
+					if (listener != null)
 					{
-						if (listener != null)
-						{
-							listener.OnDataSourceUpdated(dataSource);
-						}
+						listener.OnDataSourceUpdated(dataSource);
 					}
-				});
+				}
 			}
 		}
 		catch (Exception e)
