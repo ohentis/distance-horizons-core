@@ -1,4 +1,6 @@
 
+select * from DhRenderData; -- here to prevent crashing when running the first batch
+
 --batch--
 
 CREATE TABLE FullData ( 
