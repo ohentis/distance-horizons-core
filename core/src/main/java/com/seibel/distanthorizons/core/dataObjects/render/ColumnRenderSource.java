@@ -71,7 +71,7 @@ public class ColumnRenderSource implements IDataSource<IDhClientLevel>
 	public static final int NO_DATA_FLAG_BYTE = 0x00000001;
 	
 	
-	
+	/** will be zero if an empty data source was created */
 	public int verticalDataCount;
 	public final DhSectionPos sectionPos;
 	public final int yOffset;
@@ -290,12 +290,12 @@ public class ColumnRenderSource implements IDataSource<IDhClientLevel>
 	}
 	
 	@Override
-	public boolean update(NewFullDataSource inputDataSource, IDhClientLevel level)
+	public boolean update(NewFullDataSource inputFullDataSource, IDhClientLevel level)
 	{
-		final String errorMessagePrefix = "Unable to complete update for RenderSource pos: [" + this.sectionPos + "] and pos: [" + inputDataSource.getSectionPos() + "]. Error:";
+		final String errorMessagePrefix = "Unable to complete update for RenderSource pos: [" + this.sectionPos + "] and pos: [" + inputFullDataSource.getSectionPos() + "]. Error:";
 		
 		boolean dataChanged = false;
-		if (inputDataSource.getSectionPos().getDetailLevel() == this.sectionPos.getDetailLevel())
+		if (inputFullDataSource.getSectionPos().getDetailLevel() == this.sectionPos.getDetailLevel())
 		{
 			try
 			{
@@ -307,8 +307,8 @@ public class ColumnRenderSource implements IDataSource<IDhClientLevel>
 				
 				
 				
-				DhBlockPos2D centerBlockPos = inputDataSource.getSectionPos().getCenterBlockPos();
-				int halfBlockWidth = inputDataSource.getSectionPos().getBlockWidth() / 2;
+				DhBlockPos2D centerBlockPos = inputFullDataSource.getSectionPos().getCenterBlockPos();
+				int halfBlockWidth = inputFullDataSource.getSectionPos().getBlockWidth() / 2;
 				DhBlockPos2D minBlockPos = new DhBlockPos2D(centerBlockPos.x - halfBlockWidth, centerBlockPos.z - halfBlockWidth);
 				
 				for (int x = 0; x < NewFullDataSource.WIDTH; x++)
@@ -318,8 +318,8 @@ public class ColumnRenderSource implements IDataSource<IDhClientLevel>
 						ColumnArrayView columnArrayView = this.getVerticalDataPointView(x, z);
 						int columnHash = columnArrayView.getDataHash();
 						
-						SingleColumnFullDataAccessor fullArrayView = inputDataSource.get(x, z);
-						EDhApiWorldGenerationStep worldGenStep = inputDataSource.getWorldGenStepAtRelativePos(x, z);
+						SingleColumnFullDataAccessor fullArrayView = inputFullDataSource.get(x, z);
+						EDhApiWorldGenerationStep worldGenStep = inputFullDataSource.getWorldGenStepAtRelativePos(x, z);
 						if (fullArrayView != null && worldGenStep != EDhApiWorldGenerationStep.EMPTY)
 						{
 							FullDataToRenderDataTransformer.convertColumnData(level,
@@ -338,8 +338,6 @@ public class ColumnRenderSource implements IDataSource<IDhClientLevel>
 				LOGGER.error(errorMessagePrefix + e.getMessage(), e);
 			}
 		}
-		
-		
 		
 		if (dataChanged)
 		{

@@ -29,6 +29,7 @@ public final class ColumnArrayView implements IColumnDataView
 	public final long[] data;
 	public final int size;
 	public final int offset; // offset in longs
+	/** can be 0 if this column was created for an empty data source */
 	public final int vertSize; // vertical size in longs
 	
 	
@@ -55,7 +56,7 @@ public final class ColumnArrayView implements IColumnDataView
 	public int verticalSize() { return vertSize; }
 	
 	@Override
-	public int dataCount() { return size / vertSize; }
+	public int dataCount() { return (this.vertSize != 0) ? (this.size / this.vertSize) : 0; }
 	
 	@Override
 	public ColumnArrayView subView(int dataIndexStart, int dataCount)
@@ -130,17 +131,18 @@ public final class ColumnArrayView implements IColumnDataView
 	
 	public void changeVerticalSizeFrom(IColumnDataView source)
 	{
-		if (dataCount() != source.dataCount())
+		if (this.dataCount() != source.dataCount())
 		{
 			throw new IllegalArgumentException("Cannot copy and resize to views with different dataCounts");
 		}
-		if (vertSize >= source.verticalSize())
+		
+		if (this.vertSize >= source.verticalSize())
 		{
-			copyFrom(source);
+			this.copyFrom(source);
 		}
 		else
 		{
-			for (int i = 0; i < dataCount(); i++)
+			for (int i = 0; i < this.dataCount(); i++)
 			{
 				RenderDataPointUtil.mergeMultiData(source.subView(i, 1), subView(i, 1));
 			}

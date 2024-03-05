@@ -27,6 +27,7 @@ import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.file.AbstractNewDataSourceHandler;
 import com.seibel.distanthorizons.core.file.fullDatafile.IFullDataSourceProvider;
 import com.seibel.distanthorizons.core.file.fullDatafile.NewFullDataFileHandler;
+import com.seibel.distanthorizons.core.file.renderfile.IRenderSourceProvider;
 import com.seibel.distanthorizons.core.file.renderfile.RenderSourceFileHandler;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
@@ -49,8 +50,12 @@ public class ClientLevelModule implements Closeable, AbstractNewDataSourceHandle
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
+	
 	private final IDhClientLevel parentClientLevel;
+	
+	public final NewFullDataFileHandler fullDataSourceProvider;
 	public final AtomicReference<ClientRenderState> ClientRenderStateRef = new AtomicReference<>();
+	
 	public final F3Screen.NestedMessage f3Message;
 	
 	
@@ -64,8 +69,8 @@ public class ClientLevelModule implements Closeable, AbstractNewDataSourceHandle
 		this.parentClientLevel = parentClientLevel;
 		this.f3Message = new F3Screen.NestedMessage(this::f3Log);
 		
-		NewFullDataFileHandler fileHandler = this.parentClientLevel.getFullDataProvider();
-		fileHandler.dateSourceUpdateListeners.add(this);
+		this.fullDataSourceProvider = this.parentClientLevel.getFullDataProvider();
+		this.fullDataSourceProvider.dateSourceUpdateListeners.add(this);
 	}
 	
 	
@@ -137,7 +142,7 @@ public class ClientLevelModule implements Closeable, AbstractNewDataSourceHandle
 	/** @return if the {@link ClientRenderState} was successfully swapped */
 	public boolean startRenderer(IClientLevelWrapper clientLevelWrapper)
 	{
-		ClientRenderState ClientRenderState = new ClientRenderState(parentClientLevel, clientLevelWrapper, parentClientLevel.getFullDataProvider(), parentClientLevel.getSaveStructure());
+		ClientRenderState ClientRenderState = new ClientRenderState(this.parentClientLevel, clientLevelWrapper, this.parentClientLevel.getFullDataProvider(), this.parentClientLevel.getSaveStructure());
 		if (!this.ClientRenderStateRef.compareAndSet(null, ClientRenderState))
 		{
 			LOGGER.warn("Failed to start renderer due to concurrency");
@@ -208,6 +213,7 @@ public class ClientLevelModule implements Closeable, AbstractNewDataSourceHandle
 	@Override
 	public void OnDataSourceUpdated(NewFullDataSource updatedFullDataSource)
 	{
+		// if rendering also update the render sources
 		ClientRenderState ClientRenderState = this.ClientRenderStateRef.get();
 		if (ClientRenderState != null)
 		{
@@ -240,6 +246,8 @@ public class ClientLevelModule implements Closeable, AbstractNewDataSourceHandle
 			}
 		}
 		
+		this.fullDataSourceProvider.dateSourceUpdateListeners.remove(this);
+		
 		this.f3Message.close();
 	}
 	
@@ -252,7 +260,7 @@ public class ClientLevelModule implements Closeable, AbstractNewDataSourceHandle
 	/** Returns what should be displayed in Minecraft's F3 debug menu */
 	protected String[] f3Log()
 	{
-		String dimName = parentClientLevel.getClientLevelWrapper().getDimensionType().getDimensionName();
+		String dimName = this.parentClientLevel.getClientLevelWrapper().getDimensionType().getDimensionName();
 		ClientRenderState renderState = this.ClientRenderStateRef.get();
 		if (renderState == null)
 		{
