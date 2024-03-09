@@ -23,6 +23,7 @@ import com.seibel.distanthorizons.core.dataObjects.fullData.sources.NewFullDataS
 import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSourceLoader;
 import com.seibel.distanthorizons.core.dataObjects.transformers.FullDataToRenderDataTransformer;
 import com.seibel.distanthorizons.core.file.AbstractLegacyDataSourceHandler;
+import com.seibel.distanthorizons.core.file.fullDatafile.NewFullDataFileHandler;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
@@ -138,6 +139,10 @@ public class RenderSourceFileHandler extends AbstractLegacyDataSourceHandler<Col
 		lines.add("File Handler [" + this.level.getLevelWrapper().getDimensionType().getDimensionName() + "]");
 		lines.add("  File thread pool tasks: " + fileQueueSize + " (completed: " + fileCompletedTaskSize + ")");
 		lines.add("  Update thread pool tasks: " + updateQueueSize + " (completed: " + updateCompletedTaskSize + ")");
+		lines.add("  Level Unsaved #: " + this.level.getUnsavedDataSourceCount());
+		lines.add("  Full Data Unsaved #: " + this.fullDataSourceProvider.getUnsavedDataSourceCount());
+		//lines.add("  Lock #: " + ((NewFullDataFileHandler) this.fullDataSourceProvider).lockedPosSet.size());
+		lines.add("  Parent Update #: " + ((NewFullDataFileHandler) this.fullDataSourceProvider).parentUpdatingPosSet.size());
 		lines.add("  Unsaved render sources: " + this.unsavedDataSourceBySectionPos.size());
 		
 		return lines.toArray(new String[0]);
