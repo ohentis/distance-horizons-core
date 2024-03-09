@@ -33,7 +33,6 @@ import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.RenderDataPointUtil;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataOutputStream;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
-import com.seibel.distanthorizons.coreapi.ModInfo;
 import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nullable;
@@ -72,6 +71,8 @@ public class NewFullDataSource implements IDataSource<IDhLevel>
 	public long createdUnixDateTime;
 	
 	public int levelMinY;
+	
+	private int cachedHashCode = 0;
 	
 	/** 
 	 * stores how far each column has been generated should start with {@link EDhApiWorldGenerationStep#EMPTY}
@@ -198,6 +199,12 @@ public class NewFullDataSource implements IDataSource<IDhLevel>
 		{
 			// mark that this data source should be applied to its parent
 			this.applyToParent = true;
+		}
+		
+		if (dataChanged)
+		{
+			// update the hash code
+			this.generateHashCode();
 		}
 		
 		return dataChanged;
@@ -623,7 +630,45 @@ public class NewFullDataSource implements IDataSource<IDhLevel>
 	@Override
 	public String toString() { return this.pos.toString(); }
 	
+	@Override 
+	public int hashCode()
+	{
+		if (this.cachedHashCode == 0)
+		{
+			this.generateHashCode();
+		}
+		return this.cachedHashCode;
+	}
+	private void generateHashCode()
+	{
+		int result = this.pos.hashCode();
+		result = 31 * result + Arrays.deepHashCode(this.dataPoints);
+		result = 17 * result + Arrays.hashCode(this.columnGenerationSteps);
+		
+		this.cachedHashCode = result;
+	}
 	
+	@Override 
+	public boolean equals(Object obj)
+	{
+		if (!(obj instanceof NewFullDataSource))
+		{
+			return false;
+		}
+		NewFullDataSource other = (NewFullDataSource) obj;
+		
+		if (!other.pos.equals(this.pos))
+		{
+			return false;
+		}
+		else
+		{
+			// the positions are the same, use the hash as a quick method
+			// to determine if the data inside is the same.
+			// Note: this isn't perfect, but should work well enough for our use case.
+			return other.hashCode() == this.hashCode();	
+		}
+	}
 	
 	//============//
 	// deprecated //
