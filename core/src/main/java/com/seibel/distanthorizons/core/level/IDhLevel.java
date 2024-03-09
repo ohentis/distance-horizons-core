@@ -25,6 +25,8 @@ import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 
+import java.util.concurrent.CompletableFuture;
+
 public interface IDhLevel extends AutoCloseable
 {
 	int getMinY();
@@ -43,6 +45,12 @@ public interface IDhLevel extends AutoCloseable
 	
 	boolean hasSkyLight();
 	
-	void updateDataSources(NewFullDataSource data);
+	CompletableFuture<Void> updateDataSourcesAsync(NewFullDataSource data);
+	
+	/** 
+	 * this number is generally related to how many data sources have been updated 
+	 * due to chunk modifications or loads.
+	 */
+	int getUnsavedDataSourceCount();
 	
 }

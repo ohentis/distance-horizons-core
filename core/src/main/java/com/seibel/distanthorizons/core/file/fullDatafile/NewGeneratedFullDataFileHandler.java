@@ -20,6 +20,7 @@
 package com.seibel.distanthorizons.core.file.fullDatafile;
 
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
+import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.NewFullDataSource;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.generation.IWorldGenerationQueue;
@@ -28,9 +29,12 @@ import com.seibel.distanthorizons.core.generation.tasks.WorldGenResult;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
+import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import org.apache.logging.log4j.Logger;
 
+import java.awt.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -38,7 +42,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-public class NewGeneratedFullDataFileHandler extends NewFullDataFileHandler
+public class NewGeneratedFullDataFileHandler extends NewFullDataFileHandler implements IDebugRenderable
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
@@ -46,10 +50,12 @@ public class NewGeneratedFullDataFileHandler extends NewFullDataFileHandler
 	
 	private final ArrayList<IOnWorldGenCompleteListener> onWorldGenTaskCompleteListeners = new ArrayList<>();
 	
+	protected final DelayedFullDataSourceSaveCache delayedFullDataSourceSaveCache = new DelayedFullDataSourceSaveCache(this::onDataSourceSave, 5_000);
 	
 	// TODO name better
 	//  this is just the list of section pos that have had their world generation
 	//  calculated and queued this session.
+	@Deprecated
 	private final Set<DhSectionPos> genHandledPosSet = Collections.newSetFromMap(new ConcurrentHashMap<>());
 	
 	
@@ -125,6 +131,9 @@ public class NewGeneratedFullDataFileHandler extends NewFullDataFileHandler
 			}
 		});
 	}
+	
+	@Override
+	public int getUnsavedDataSourceCount() { return this.delayedFullDataSourceSaveCache.getUnsavedCount(); }
 	
 	
 	
@@ -279,6 +288,16 @@ public class NewGeneratedFullDataFileHandler extends NewFullDataFileHandler
 		});
 	}
 	
+	@Override
+	public void debugRender(DebugRenderer renderer)
+	{
+		super.debugRender(renderer);
+		
+		this.delayedFullDataSourceSaveCache.dataSourceByPosition
+				.forEach((pos, dataSource) -> { renderer.renderBox(new DebugRenderer.Box(pos, -32f, 80f, 0.20f, Color.green.darker())); });
+	}
+	
+	
 	
 	
 	//================//
@@ -305,10 +324,14 @@ public class NewGeneratedFullDataFileHandler extends NewFullDataFileHandler
 		{
 			return (chunkSizedFullDataSource) ->
 			{
-				NewGeneratedFullDataFileHandler.this.level.updateDataSources(chunkSizedFullDataSource);
+				NewGeneratedFullDataFileHandler.this.delayedFullDataSourceSaveCache.queueDataSourceForUpdateAndSave(chunkSizedFullDataSource);
 			};
 		}
 	}
+	private void onDataSourceSave(NewFullDataSource fullDataSource) 
+	{ NewGeneratedFullDataFileHandler.this.updateDataSourceAsync(fullDataSource); }
+	
+	
 	
 	/** used by external event listeners */
 	@FunctionalInterface

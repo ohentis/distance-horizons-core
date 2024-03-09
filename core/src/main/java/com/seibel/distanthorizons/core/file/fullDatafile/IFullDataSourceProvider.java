@@ -45,7 +45,7 @@ public interface IFullDataSourceProvider extends ISourceProvider<NewFullDataSour
 	
 	CompletableFuture<Void> updateDataSourceAsync(NewFullDataSource chunkData);
 	
-	@Deprecated
-	int getUnsavedDataSourceCount();
+	/** @return -1 if this provider never has unsaved data sources */
+	default int getUnsavedDataSourceCount() { return -1; }
 	
 }

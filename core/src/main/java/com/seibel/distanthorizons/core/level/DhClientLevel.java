@@ -36,6 +36,7 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
+import java.util.concurrent.CompletableFuture;
 
 /** The level used when connected to a server */
 public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
@@ -118,7 +119,7 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 	public ILevelWrapper getLevelWrapper() { return levelWrapper; }
 	
 	@Override
-	public void updateDataSources(NewFullDataSource data) { this.clientside.updateDataSources(data); }
+	public CompletableFuture<Void> updateDataSourcesAsync(NewFullDataSource data) { return this.clientside.updateDataSourcesAsync(data); }
 	
 	@Override
 	public int getMinY() { return levelWrapper.getMinHeight(); }

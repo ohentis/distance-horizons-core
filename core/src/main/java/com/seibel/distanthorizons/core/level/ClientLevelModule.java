@@ -44,6 +44,7 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapp
 import org.apache.logging.log4j.Logger;
 
 import java.io.Closeable;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class ClientLevelModule implements Closeable, AbstractNewDataSourceHandler.IDataSourceUpdateFunc<NewFullDataSource>
@@ -209,7 +210,7 @@ public class ClientLevelModule implements Closeable, AbstractNewDataSourceHandle
 	// data handling //
 	//===============//
 	
-	public void updateDataSources(NewFullDataSource data) { this.parentClientLevel.getFullDataProvider().updateDataSourceAsync(data); }
+	public CompletableFuture<Void> updateDataSourcesAsync(NewFullDataSource data) { return this.parentClientLevel.getFullDataProvider().updateDataSourceAsync(data); }
 	@Override
 	public void OnDataSourceUpdated(NewFullDataSource updatedFullDataSource)
 	{

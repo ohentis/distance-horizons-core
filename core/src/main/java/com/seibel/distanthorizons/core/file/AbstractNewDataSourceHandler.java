@@ -8,18 +8,16 @@ import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.sql.repo.AbstractDhRepo;
 import com.seibel.distanthorizons.core.sql.dto.IBaseDTO;
 import com.seibel.distanthorizons.core.util.LodUtil;
-import com.seibel.distanthorizons.core.util.TimerUtil;
+import com.seibel.distanthorizons.core.util.threading.PositionalLockProvider;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Timer;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.ThreadPoolExecutor;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
 public abstract class AbstractNewDataSourceHandler
@@ -29,9 +27,6 @@ public abstract class AbstractNewDataSourceHandler
 		implements ISourceProvider<TDataSource, TDhLevel>
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
-	private static final Timer DELAYED_SAVE_TIMER = TimerUtil.CreateTimer("DataSourceSaveTimer");
-	/** How long a data source must remain un-modified before being written to disk. */
-	private static final int SAVE_DELAY_IN_MS = 4_000;
 	
 	/**
 	 * The highest numerical detail level possible. 
@@ -48,7 +43,15 @@ public abstract class AbstractNewDataSourceHandler
 	public static final byte MIN_SECTION_DETAIL_LEVEL = DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL;
 	
 	
-	protected final ReentrantLock[] updateLockArray;
+	protected final PositionalLockProvider updateLockProvider = new PositionalLockProvider();
+	/** 
+	 * generally just used for debugging,
+	 * keeps track of which positions are currently locked.
+	 */
+	public final Set<DhSectionPos> lockedPosSet = ConcurrentHashMap.newKeySet();
+	public final ConcurrentHashMap<DhSectionPos, AtomicInteger> queuedUpdateCountsByPos = new ConcurrentHashMap<>();
+	
+	
 	protected final ReentrantLock closeLock = new ReentrantLock();
 	protected volatile boolean isShutdown = false;
 	
@@ -73,15 +76,6 @@ public abstract class AbstractNewDataSourceHandler
 		if (!this.saveDir.exists() && !this.saveDir.mkdirs())
 		{
 			LOGGER.warn("Unable to create full data folder, file saving may fail.");
-		}
-		
-		// the lock array's length is 4x the number of CPU cores so the number of collisions
-		// should be relatively low without having too many extra locks
-		int lockCount = Runtime.getRuntime().availableProcessors() * 4;
-		this.updateLockArray = new ReentrantLock[lockCount];
-		for (int i = 0; i < lockCount; i++)
-		{
-			this.updateLockArray[i] = new ReentrantLock();
 		}
 		
 		this.repo = this.createRepo();
@@ -178,44 +172,61 @@ public abstract class AbstractNewDataSourceHandler
 		try
 		{
 			// run file handling on a separate thread
+			this.markUpdateStart(inputDataSource.getSectionPos());
 			return CompletableFuture.runAsync(() ->
 			{
-				this.updateDataSourceAtPos(inputDataSource.getSectionPos(), inputDataSource, true);
+				try
+				{
+					this.updateDataSourceAtPos(inputDataSource.getSectionPos(), inputDataSource, true);
+				}
+				catch (Exception e)
+				{
+					LOGGER.error("Unexpected error in async data source update, error: "+e.getMessage(), e);
+				}
+				finally
+				{
+					this.markUpdateEnd(inputDataSource.getSectionPos());
+				}
 			}, executor);
 		}
 		catch (RejectedExecutionException ignore)
 		{
 			// can happen if the executor was shutdown while this task was queued
+			this.markUpdateEnd(inputDataSource.getSectionPos());
 			return CompletableFuture.completedFuture(null);
 		}
 	}
-	/**
-	 * @param pos the position to update
-	 * @param lockOnPosition Can be disabled by inheriting children to allow for their own locking logic.
-	 *                       This is important if the child has its own position specific logic that shouldn't be done concurrently.
-	 */
-	protected void updateDataSourceAtPos(DhSectionPos pos, NewFullDataSource inputData, boolean lockOnPosition)
+	
+	/** @param updatePos the position to update */
+	protected void updateDataSourceAtPos(DhSectionPos updatePos, NewFullDataSource inputData, boolean lockOnUpdatePos)
 	{
+		boolean methodLocked = false;
 		// a lock is necessary to prevent two threads from writing to the same position at once,
 		// if that happens only the second update will apply and the LOD will end up with hole(s)
-		ReentrantLock updateLock = this.getUpdateLockForPos(pos);
+		ReentrantLock updateLock = this.updateLockProvider.getLock(updatePos);
 		
 		try
 		{
-			if (lockOnPosition)
+			if (lockOnUpdatePos)
 			{
+				methodLocked = true;
 				updateLock.lock();
+				this.lockedPosSet.add(updatePos);
+			}
+			else
+			{
+				methodLocked = false;
 			}
 			
 			
 			// get or create the data source
-			TDataSource dataSource = this.get(pos);
-			boolean dataModified = dataSource.update(inputData, this.level);
+			TDataSource recipientDataSource = this.get(updatePos);
+			boolean dataModified = recipientDataSource.update(inputData, this.level);
 			
 			if (dataModified)
 			{
 				// save the updated data to the database
-				TDTO dto = this.createDtoFromDataSource(dataSource);
+				TDTO dto = this.createDtoFromDataSource(recipientDataSource);
 				this.repo.save(dto);
 				
 				
@@ -223,20 +234,21 @@ public abstract class AbstractNewDataSourceHandler
 				{
 					if (listener != null)
 					{
-						listener.OnDataSourceUpdated(dataSource);
+						listener.OnDataSourceUpdated(recipientDataSource);
 					}
 				}
 			}
 		}
 		catch (Exception e)
 		{
-			LOGGER.error("Error updating pos ["+pos+"], error: "+e.getMessage(), e);
+			LOGGER.error("Error updating pos ["+updatePos+"], error: "+e.getMessage(), e);
 		}
 		finally
 		{
-			if (lockOnPosition)
+			if (methodLocked)
 			{
 				updateLock.unlock();
+				this.lockedPosSet.remove(updatePos);
 			}
 		}
 	}
@@ -247,8 +259,31 @@ public abstract class AbstractNewDataSourceHandler
 	// helper methods //
 	//================//
 	
-	/** Based on the stack overflow post: https://stackoverflow.com/a/45909920 */
-	protected ReentrantLock getUpdateLockForPos(DhSectionPos pos) { return this.updateLockArray[Math.abs(pos.hashCode()) % this.updateLockArray.length]; }
+	/** used for debugging to track which positions are queued for updating */
+	private void markUpdateStart(DhSectionPos dataSourcePos)
+	{
+		this.queuedUpdateCountsByPos.compute(dataSourcePos, (pos, atomicCount) ->
+		{
+			if (atomicCount == null)
+			{
+				atomicCount = new AtomicInteger(0);
+			}
+			atomicCount.incrementAndGet();
+			return atomicCount;
+		});
+	}
+	/** used for debugging to track which positions are queued for updating */
+	private void markUpdateEnd(DhSectionPos dataSourcePos)
+	{
+		this.queuedUpdateCountsByPos.compute(dataSourcePos, (pos, atomicCount) ->
+		{
+			if (atomicCount != null && atomicCount.decrementAndGet() <= 0)
+			{
+				atomicCount = null;
+			}
+			return atomicCount;
+		});
+	}
 	
 	
 	

@@ -40,11 +40,9 @@ import java.awt.*;
 import java.io.File;
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class NewFullDataFileHandler 
@@ -55,15 +53,20 @@ public class NewFullDataFileHandler
 	
 	private static final int NUMBER_OF_PARENT_UPDATE_TASKS_PER_THREAD = 50;
 	/** how many parent update tasks can be in the queue at once */
-	private static final int MAX_PARENT_UPDATE_TASK_COUNT = NUMBER_OF_PARENT_UPDATE_TASKS_PER_THREAD * Config.Client.Advanced.MultiThreading.numberOfFileHandlerThreads.get();
+	private static final int MAX_UPDATE_TASK_COUNT = NUMBER_OF_PARENT_UPDATE_TASKS_PER_THREAD * Config.Client.Advanced.MultiThreading.numberOfFileHandlerThreads.get();
 	
 	/** indicates how long the update queue thread should wait between queuing ticks */
-	private static final int UPDATE_QUEUE_THREAD_DELAY_IN_MS = 1_000;
+	private static final int UPDATE_QUEUE_THREAD_DELAY_IN_MS = 250;
 	
-	/** the list of queued positions that need to update their parents */
-	Set<DhSectionPos> parentApplicationPositionSet = ConcurrentHashMap.newKeySet();
-	private final ThreadPoolExecutor updateQueueProcessor = ThreadUtil.makeSingleThreadPool("Update Queue Processor");
-	private final AtomicBoolean updateQueueThreadRunningRef = new AtomicBoolean(false);
+	
+	public final Set<DhSectionPos> parentUpdatingPosSet = ConcurrentHashMap.newKeySet();
+	
+	// TODO only run thread if modifications happened recently
+	/** 
+	 * This isn't in {@link AbstractNewDataSourceHandler} since we don't need parent updating logic
+	 * for render data, only full data.
+	 */
+	private final ThreadPoolExecutor updateQueueProcessor;
 	
 	
 	
@@ -76,7 +79,11 @@ public class NewFullDataFileHandler
 	{
 		super(level, saveStructure, saveDirOverride);
 		
-		DebugRenderer.register(this, Config.Client.Advanced.Debugging.DebugWireframe.showWorldGenQueue);
+		DebugRenderer.register(this, Config.Client.Advanced.Debugging.DebugWireframe.showFullDataFileStatus);
+		
+		String dimensionName = level.getLevelWrapper().getDimensionType().getDimensionName();
+		this.updateQueueProcessor = ThreadUtil.makeSingleThreadPool("Parent Update Queue ["+dimensionName+"]");
+		this.updateQueueProcessor.execute(() -> this.runUpdateQueue());
 	}
 	
 	
@@ -127,10 +134,6 @@ public class NewFullDataFileHandler
 	@Override
 	protected NewFullDataSource makeEmptyDataSource(DhSectionPos pos) { return NewFullDataSource.createEmpty(pos); }
 	
-	@Deprecated
-	@Override
-	public int getUnsavedDataSourceCount() { return 0; }
-	
 	
 	
 	//================//
@@ -145,115 +148,126 @@ public class NewFullDataFileHandler
 		// that aren't already in the database
 	}
 	
-	@Override
-	protected void updateDataSourceAtPos(DhSectionPos pos, NewFullDataSource inputData, boolean lockOnPosition)
+	
+	private void runUpdateQueue()
 	{
-		ReentrantLock updateLock = this.getUpdateLockForPos(pos);
-		
-		try
-		{
-			if (lockOnPosition)
-			{
-				updateLock.lock();
-			}
-			
-			super.updateDataSourceAtPos(pos, inputData, false);
-			this.tryQueueParentUpdates();
-			
-			this.parentApplicationPositionSet.remove(inputData.getSectionPos());
-			if (pos.getDetailLevel() != inputData.getSectionPos().getDetailLevel())
-			{
-				// mark that the update has completed
-				((NewFullDataSourceRepo) this.repo).setApplyToParent(inputData.getSectionPos(), false); // TODO remove casting
-			}
-		}
-		catch (Exception e)
-		{
-			LOGGER.error("Error updating pos ["+pos+"], error: "+e.getMessage(), e);
-		}
-		finally
-		{
-			if (lockOnPosition)
-			{
-				updateLock.unlock();
-			}
-		}
-	}
-	/** Queues some of the parent updates listed in the database. */
-	private void tryQueueParentUpdates()
-	{
-		// the update thread is already running,
-		// we don't need multiple running
-		if (this.updateQueueThreadRunningRef.getAndSet(true))
-		{
-			return;
-		}
-		
-		
-		this.updateQueueProcessor.execute(() ->
+		while (!Thread.interrupted())
 		{
 			try
 			{
-				ArrayList<DhSectionPos> updatePosList = null;
+				Thread.sleep(UPDATE_QUEUE_THREAD_DELAY_IN_MS);
 				
-				while ( // continue queuing update positions as long as there are positions to queue
-						(updatePosList == null || updatePosList.size() != 0)
-								// only add more items to the queue if half or more of the previous tasks have been completed
-								&& this.parentApplicationPositionSet.size() < (MAX_PARENT_UPDATE_TASK_COUNT / 2))
+				ThreadPoolExecutor executor = ThreadPoolUtil.getUpdatePropagatorExecutor();
+				if (executor == null || executor.isTerminated())
 				{
-					// prevent hitting the database more often than is necessary
-					Thread.sleep(UPDATE_QUEUE_THREAD_DELAY_IN_MS);
-					
-					
+					continue;
+				}
+				
+				
+				
+				// only add more items to the queue if half or more of the previous tasks have been completed
+				if (executor.getQueue().size() < (MAX_UPDATE_TASK_COUNT)
+					&& this.parentUpdatingPosSet.size() < (MAX_UPDATE_TASK_COUNT))
+				{
 					// get the positions that need to be applied to their parents
-					updatePosList = ((NewFullDataSourceRepo) this.repo).getPositionsToUpdate(MAX_PARENT_UPDATE_TASK_COUNT);
-					if (updatePosList.size() != 0)
+					ArrayList<DhSectionPos> parentUpdatePosList = ((NewFullDataSourceRepo) this.repo).getPositionsToUpdate(MAX_UPDATE_TASK_COUNT);
+					
+					HashMap<DhSectionPos, HashSet<DhSectionPos>> updatePosByParentPos = new HashMap<>();
+					for (DhSectionPos pos : parentUpdatePosList)
 					{
-						// stop if the file handler has been shut down
-						ThreadPoolExecutor executor = ThreadPoolUtil.getUpdatePropagatorExecutor();
-						if (executor == null || executor.isTerminated())
+						updatePosByParentPos.compute(pos.getParentPos(), (parentPos, updatePosSet) -> 
 						{
-							this.updateQueueThreadRunningRef.set(false);
-							return;
-						}
-						
-						
-						// queue each update
-						int queueCount = 0;
-						for (DhSectionPos pos : updatePosList)
-						{
-							// James thought batching together updates
-							// based on the parent they were going to update would reduce update locks,
-							// but after testing it didn't, so we're just queing each section individually
-							if (this.parentApplicationPositionSet.add(pos))
+							if (updatePosSet == null)
 							{
-								queueCount++;
-								executor.execute(() ->
-								{
-									NewFullDataSource inputData = this.get(pos);
-									// update the parent position with this new data
-									this.updateDataSourceAtPos(pos.getParentPos(), inputData, true);
-								});
+								updatePosSet = new HashSet<>();
 							}
+							updatePosSet.add(pos);
+							return updatePosSet;
+						});
+					}
+					
+					
+					
+					// queue each update
+					for (DhSectionPos parentUpdatePos : updatePosByParentPos.keySet())
+					{
+						// stop if there are already a bunch of updates queued
+						if (this.parentUpdatingPosSet.size() > MAX_UPDATE_TASK_COUNT
+							&& this.parentUpdatingPosSet.add(parentUpdatePos))
+						{
+							break;
 						}
 						
-						// can be used for debugging
-						if (queueCount != 0)
+						try
 						{
-							LOGGER.trace("Queued [" + queueCount + "] out of ["+updatePosList.size()+"] parent updates.");
+							executor.execute(() ->
+							{
+								ReentrantLock parentWriteLock = this.updateLockProvider.getLock(parentUpdatePos);
+								boolean parentLocked = false;
+								try
+								{
+									//LOGGER.info("updating parent: "+parentUpdatePos);
+									
+									// Locking the parent before the children should prevent deadlocks.
+									// TryLock is used instead of lock so this thread can handle a different update.
+									if (parentWriteLock.tryLock())
+									{
+										parentLocked = true;
+										this.lockedPosSet.add(parentUpdatePos);
+										
+										// apply each child pos to the parent
+										for (DhSectionPos childPos : updatePosByParentPos.get(parentUpdatePos))
+										{
+											ReentrantLock childReadLock = this.updateLockProvider.getLock(childPos);
+											try
+											{
+												childReadLock.lock();
+												this.lockedPosSet.add(childPos);
+												
+												NewFullDataSource dataSource = this.get(childPos);
+												this.updateDataSourceAtPos(parentUpdatePos, dataSource, false);
+												((NewFullDataSourceRepo) this.repo).setApplyToParent(childPos, false);
+											}
+											catch (Exception e)
+											{
+												LOGGER.error("issue in update for parent pos: " + parentUpdatePos);
+											}
+											finally
+											{
+												childReadLock.unlock();
+												this.lockedPosSet.remove(childPos);
+											}
+										}
+									}
+								}
+								finally
+								{
+									if (parentLocked)
+									{
+										parentWriteLock.unlock();
+										this.lockedPosSet.remove(parentUpdatePos);
+									}
+									
+									this.parentUpdatingPosSet.remove(parentUpdatePos);
+								}
+							});
+						}
+						catch (Exception e)
+						{
+							this.parentUpdatingPosSet.remove(parentUpdatePos);
+							throw e;
 						}
 					}
 				}
 			}
+			catch (InterruptedException ignored) { Thread.currentThread().interrupt(); }
 			catch (Exception e)
 			{
 				LOGGER.error("Unexpected error in the parent update queue thread. Error: " + e.getMessage(), e);
 			}
-			finally
-			{
-				this.updateQueueThreadRunningRef.set(false);
-			}
-		});
+		}
+		
+		LOGGER.info("Update thread ["+Thread.currentThread().getName()+"] terminated.");
 	}
 	
 	
@@ -265,12 +279,20 @@ public class NewFullDataFileHandler
 	@Override
 	public void debugRender(DebugRenderer renderer)
 	{
-		if (Config.Client.Advanced.Debugging.DebugWireframe.showFullDataFileStatus.get())
-		{
-			this.parentApplicationPositionSet
-					.forEach((pos) -> { renderer.renderBox(new DebugRenderer.Box(pos, -32f, 128f, 0.15f, Color.cyan)); });
-		}
+		this.lockedPosSet
+				.forEach((pos) -> { renderer.renderBox(new DebugRenderer.Box(pos, -32f, 74f, 0.15f, Color.PINK)); });
+		
+		this.queuedUpdateCountsByPos
+				.forEach((pos, updateCountRef) -> { renderer.renderBox(new DebugRenderer.Box(pos, -32f, 80f + (updateCountRef.get() * 16f), 0.20f, Color.WHITE)); });
+		this.parentUpdatingPosSet
+				.forEach((pos) -> { renderer.renderBox(new DebugRenderer.Box(pos, -32f, 80f, 0.20f, Color.MAGENTA)); });
 	}
 	
+	@Override 
+	public void close()
+	{
+		super.close();
+		this.updateQueueProcessor.shutdownNow();
+	}
 	
 }

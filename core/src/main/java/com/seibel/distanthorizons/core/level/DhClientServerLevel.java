@@ -43,6 +43,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.awt.*;
 import java.util.Iterator;
+import java.util.concurrent.CompletableFuture;
 
 /** The level used on a singleplayer world */
 public class DhClientServerLevel extends AbstractDhLevel implements IDhClientLevel, IDhServerLevel
@@ -186,7 +187,7 @@ public class DhClientServerLevel extends AbstractDhLevel implements IDhClientLev
 	public boolean hasSkyLight() { return this.serverLevelWrapper.hasSkyLight(); }
 	
 	@Override
-	public void updateDataSources(NewFullDataSource data) { this.clientside.updateDataSources(data); }
+	public CompletableFuture<Void> updateDataSourcesAsync(NewFullDataSource data) { return this.clientside.updateDataSourcesAsync(data); }
 	
 	@Override
 	public int getMinY() { return getLevelWrapper().getMinHeight(); }

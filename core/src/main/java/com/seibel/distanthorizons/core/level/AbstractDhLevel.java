@@ -22,12 +22,22 @@ package com.seibel.distanthorizons.core.level;
 import com.seibel.distanthorizons.api.methods.events.abstractEvents.DhApiChunkModifiedEvent;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.NewFullDataSource;
 import com.seibel.distanthorizons.core.dataObjects.transformers.ChunkToLodBuilder;
+import com.seibel.distanthorizons.core.file.fullDatafile.DelayedFullDataSourceSaveCache;
+import com.seibel.distanthorizons.core.pos.DhChunkPos;
+import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
+
+import java.util.HashSet;
+import java.util.concurrent.ConcurrentHashMap;
 
 public abstract class AbstractDhLevel implements IDhLevel
 {
 	public final ChunkToLodBuilder chunkToLodBuilder;
+	
+	protected final DelayedFullDataSourceSaveCache delayedFullDataSourceSaveCache = new DelayedFullDataSourceSaveCache(this::onDataSourceSave, 2_000);
+	/** contains the {@link DhChunkPos} for each {@link DhSectionPos} that are queued to save via {@link AbstractDhLevel#delayedFullDataSourceSaveCache} */
+	protected final ConcurrentHashMap<DhSectionPos, HashSet<DhChunkPos>> updatedChunkPosSetBySectionPos = new ConcurrentHashMap<>();
 	
 	
 	
@@ -44,20 +54,50 @@ public abstract class AbstractDhLevel implements IDhLevel
 	//=================//
 	
 	@Override
-	public void updateChunkAsync(IChunkWrapper chunk)
+	public int getUnsavedDataSourceCount() { return this.delayedFullDataSourceSaveCache.getUnsavedCount(); }
+	
+	@Override
+	public void updateChunkAsync(IChunkWrapper chunkWrapper)
 	{
-		NewFullDataSource dataSource = NewFullDataSource.createFromChunk(chunk);
+		NewFullDataSource dataSource = NewFullDataSource.createFromChunk(chunkWrapper);
 		if (dataSource == null)
 		{
 			// This can happen if, among other reasons, a chunk save is superseded by a later event
 			return;
 		}
 		
-		this.updateDataSources(dataSource);
-		ApiEventInjector.INSTANCE.fireAllEvents(
-				DhApiChunkModifiedEvent.class,
-				new DhApiChunkModifiedEvent.EventParam(this.getLevelWrapper(), chunk.getChunkPos().x, chunk.getChunkPos().z));
+		
+		this.updatedChunkPosSetBySectionPos.compute(dataSource.getSectionPos(), (dataSourcePos, chunkPosSet) -> 
+		{
+			if (chunkPosSet == null)
+			{
+				chunkPosSet = new HashSet<>();
+			}
+			chunkPosSet.add(chunkWrapper.getChunkPos());
+			return chunkPosSet;
+		});
+		
+		// batch updates to reduce overhead when flying around or breaking/placing a lot of blocks in an area
+		this.delayedFullDataSourceSaveCache.queueDataSourceForUpdateAndSave(dataSource);
 	}
+	
+	private void onDataSourceSave(NewFullDataSource fullDataSource)
+	{
+		this.updateDataSourcesAsync(fullDataSource).thenRun(() -> 
+		{
+			HashSet<DhChunkPos> updatedChunkPosSet = this.updatedChunkPosSetBySectionPos.remove(fullDataSource.getSectionPos());
+			if (updatedChunkPosSet != null)
+			{
+				for (DhChunkPos chunkPos : updatedChunkPosSet)
+				{
+					ApiEventInjector.INSTANCE.fireAllEvents(
+							DhApiChunkModifiedEvent.class,
+							new DhApiChunkModifiedEvent.EventParam(this.getLevelWrapper(), chunkPos.x, chunkPos.z));
+				}
+			}
+		});
+	}
+	
 	
 	@Override
 	public void close() { this.chunkToLodBuilder.close(); }

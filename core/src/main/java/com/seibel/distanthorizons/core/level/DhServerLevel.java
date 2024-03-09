@@ -30,6 +30,8 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
 import org.apache.logging.log4j.Logger;
 
+import java.util.concurrent.CompletableFuture;
+
 public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
@@ -50,12 +52,7 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 	public void serverTick() { this.chunkToLodBuilder.tick(); }
 	
 	@Override
-	public void updateDataSources(NewFullDataSource data)
-	{
-		DhSectionPos pos = data.getSectionPos();
-		pos = pos.convertNewToDetailLevel(CompleteFullDataSource.SECTION_SIZE_OFFSET);
-		this.getFullDataProvider().updateDataSourceAsync(data);
-	}
+	public CompletableFuture<Void> updateDataSourcesAsync(NewFullDataSource data) { return this.getFullDataProvider().updateDataSourceAsync(data); }
 	
 	@Override
 	public int getMinY() { return getLevelWrapper().getMinHeight(); }
