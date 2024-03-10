@@ -7,6 +7,7 @@ import com.seibel.distanthorizons.core.level.IServerKeyedClientLevel;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
 import com.seibel.distanthorizons.core.network.messages.plugin.PluginCloseEvent;
 import com.seibel.distanthorizons.core.network.messages.plugin.CurrentLevelKeyMessage;
+import com.seibel.distanthorizons.core.network.messages.plugin.PluginHelloMessage;
 import com.seibel.distanthorizons.core.network.messages.plugin.ServerConnectInfoMessage;
 import com.seibel.distanthorizons.core.network.plugin.PluginChannelHandler;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
@@ -46,6 +47,11 @@ public class ClientPluginChannelApi implements AutoCloseable
 		this.channelHandler.registerHandler(PluginCloseEvent.class, this::onClose);
 	}
 	
+	public void onJoin()
+	{
+		this.channelHandler.sendMessage(new PluginHelloMessage());
+	}
+	
 	private void onCurrentLevelKeyMessage(CurrentLevelKeyMessage msg)
 	{
 		if (!msg.levelKey.matches("[a-zA-Z0-9_]+"))
@@ -56,7 +62,7 @@ public class ClientPluginChannelApi implements AutoCloseable
 		LOGGER.info("Server level change event received, changing the level to [" + msg.levelKey + "].");
 		
 		MC.executeOnRenderThread(() -> {
-			IClientLevelWrapper clientLevel = MC.getWrappedClientLevel();
+			IClientLevelWrapper clientLevel = MC.getWrappedClientLevel(true);
 			
 			if (clientLevel != null)
 			{
@@ -78,9 +84,9 @@ public class ClientPluginChannelApi implements AutoCloseable
 		KEYED_CLIENT_LEVEL_MANAGER.clearServerKeyedLevel();
 	}
 	
-	public void onClose(PluginCloseEvent event)
+	private void onClose(PluginCloseEvent event)
 	{
-		this.onClientLevelUnload();
+		KEYED_CLIENT_LEVEL_MANAGER.disable();
 	}
 	
 	public void handlePacket(ByteBuf buffer)
@@ -91,7 +97,6 @@ public class ClientPluginChannelApi implements AutoCloseable
 	@Override
 	public void close()
 	{
-		KEYED_CLIENT_LEVEL_MANAGER.disable();
 		this.channelHandler.close();
 	}
 	

@@ -84,6 +84,11 @@ public interface IMinecraftClientWrapper extends IBindable
 	 * Returns null if the client isn't in a level.
 	 */
 	IClientLevelWrapper getWrappedClientLevel();
+	/**
+	 * Returns the level the client is currently in. <br>
+	 * Returns null if the client isn't in a level.
+	 */
+	IClientLevelWrapper getWrappedClientLevel(boolean bypassMultiverse);
 	
 	/** Please move over to getInstallationDirectory() within the IMinecraftSharedWrapper */
 	@Deprecated

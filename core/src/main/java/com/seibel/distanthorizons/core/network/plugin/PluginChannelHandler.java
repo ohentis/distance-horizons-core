@@ -4,6 +4,7 @@ import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
 import com.seibel.distanthorizons.core.network.NetworkEventSource;
+import com.seibel.distanthorizons.core.network.messages.plugin.PluginCloseEvent;
 import com.seibel.distanthorizons.core.network.messages.plugin.PluginMessageRegistry;
 import com.seibel.distanthorizons.core.network.protocol.plugin.PluginMessageDecoder;
 import com.seibel.distanthorizons.core.network.protocol.plugin.PluginMessageEncoder;
@@ -15,6 +16,7 @@ import org.apache.logging.log4j.LogManager;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class PluginChannelHandler extends NetworkEventSource<PluginChannelMessage>
 {
@@ -27,10 +29,10 @@ public class PluginChannelHandler extends NetworkEventSource<PluginChannelMessag
 	
 	/**
 	 * When set to true, any received data will be ignored. <br>
-	 * This does not include wrong version, which is ignored without setting this flag,
+	 * This does not include wrong versions, which are ignored without setting this flag,
 	 * to allow multi-compat servers.
 	 */
-	private boolean isCorrupted = false;
+	private final AtomicBoolean isClosed = new AtomicBoolean();
 	
 	
 	public PluginChannelHandler()
@@ -41,7 +43,7 @@ public class PluginChannelHandler extends NetworkEventSource<PluginChannelMessag
 	
 	public void decodeAndHandle(ByteBuf byteBuf)
 	{
-		if (this.isCorrupted)
+		if (this.isClosed.get())
 		{
 			return;
 		}
@@ -59,16 +61,39 @@ public class PluginChannelHandler extends NetworkEventSource<PluginChannelMessag
 		catch (Throwable e)
 		{
 			LOGGER.error("Failed to handle the message. New messages will be ignored. \n" + e);
-			this.isCorrupted = true;
+			this.close();
 		}
 	}
 	
+	public void sendMessage(PluginChannelMessage message)
+	{
+		this.sendMessage(null, message);
+	}
 	public void sendMessage(@Nullable IServerPlayerWrapper serverPlayer, PluginChannelMessage message)
 	{
 		ByteBuf buffer = PooledByteBufAllocator.DEFAULT.buffer();
 		this.messageEncoder.encode(message, buffer);
 		
 		this.packetSender.sendPluginPacket(serverPlayer, buffer);
+	}
+	
+	@Override
+	public void close()
+	{
+		if (!this.isClosed.compareAndSet(false, true))
+		{
+			return;
+		}
+		
+		try
+		{
+			this.handleMessage(new PluginCloseEvent());
+		}
+		catch (Throwable ignored)
+		{
+		}
+		
+		super.close();
 	}
 	
 }

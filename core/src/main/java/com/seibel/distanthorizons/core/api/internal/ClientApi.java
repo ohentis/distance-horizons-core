@@ -132,6 +132,8 @@ public class ClientApi
 			}
 			
 			this.waitingClientLevels.clear();
+			
+			this.pluginChannelApi.onJoin();
 		}
 	}
 	

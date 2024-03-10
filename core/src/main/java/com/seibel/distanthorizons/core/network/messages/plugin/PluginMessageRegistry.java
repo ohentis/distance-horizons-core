@@ -12,6 +12,7 @@ public class PluginMessageRegistry extends AbstractMessageRegistry<PluginChannel
 	{
 		// Note: Messages must have parameterless constructors
 		
+		this.registerMessage(PluginHelloMessage.class, PluginHelloMessage::new);
 		this.registerMessage(CurrentLevelKeyMessage.class, CurrentLevelKeyMessage::new);
 		this.registerMessage(ServerConnectInfoMessage.class, ServerConnectInfoMessage::new);
 	}
