@@ -209,6 +209,26 @@ public class NewFullDataSourceRepo extends AbstractDhRepo<DhSectionPos, NewFullD
 		return list;
 	}
 	
+	/** @return null if nothing exists for this position */
+	public byte[] getColumnGenerationStepForPos(DhSectionPos pos)
+	{
+		int detailLevel = pos.getDetailLevel() - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL;
+		
+		Map<String, Object> resultMap = this.queryDictionaryFirst(
+				"select ColumnGenerationStep " +
+						"from "+this.getTableName()+" " +
+						"WHERE DetailLevel = "+detailLevel+" AND PosX = "+pos.getX()+" AND PosZ = "+pos.getZ());
+		
+		if (resultMap != null)
+		{
+			return (byte[]) resultMap.get("ColumnGenerationStep");
+		}
+		else
+		{
+			return null;
+		}
+	}
+	
 	
 	
 }

@@ -45,6 +45,10 @@ public interface IWorldGenerationQueue extends Closeable
 	int getWaitingTaskCount();
 	int getInProgressTaskCount();
 	
+	/** used for rendering to the F3 menu */
+	int getEstimatedTotalTaskCount();
+	void setEstimatedTotalTaskCount(int newEstimate);
+	
 	CompletableFuture<Void> startClosing(boolean cancelCurrentGeneration, boolean alsoInterruptRunning);
 	void close();
 	

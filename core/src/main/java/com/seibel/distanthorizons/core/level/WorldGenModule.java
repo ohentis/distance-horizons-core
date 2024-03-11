@@ -53,8 +53,9 @@ public class WorldGenModule implements Closeable
 			{
 				int waitingCount = worldGenState.worldGenerationQueue.getWaitingTaskCount();
 				int inProgressCount = worldGenState.worldGenerationQueue.getInProgressTaskCount();
+				int totalCountEstimate = worldGenState.worldGenerationQueue.getEstimatedTotalTaskCount();
 				
-				return "World Gen Tasks: "+waitingCount+", (in progress: "+inProgressCount+")";
+				return "World Gen Tasks: "+waitingCount+"/"+totalCountEstimate+", (in progress: "+inProgressCount+")";
 			}
 			else
 			{

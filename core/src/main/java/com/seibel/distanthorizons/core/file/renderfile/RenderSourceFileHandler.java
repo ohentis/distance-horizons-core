@@ -47,6 +47,7 @@ public class RenderSourceFileHandler extends AbstractLegacyDataSourceHandler<Col
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
 	private final F3Screen.NestedMessage threadPoolMsg;
+	private int totalRetrievalPositionCount = 0;
 	
 	public final IFullDataSourceProvider fullDataSourceProvider;
 	
@@ -73,10 +74,6 @@ public class RenderSourceFileHandler extends AbstractLegacyDataSourceHandler<Col
 	@Override
 	public ColumnRenderSource get(DhSectionPos pos)
 	{
-		// call the full data provider to make sure the full data is up to date
-		// and any necessary world generation has been queued/completed
-		this.fullDataSourceProvider.queuePositionForGenerationOrRetrievalIfNecessary(pos);
-		
 		return super.get(pos);
 	}
 	
@@ -119,6 +116,19 @@ public class RenderSourceFileHandler extends AbstractLegacyDataSourceHandler<Col
 	
 	
 	
+	//=====================//
+	// extension overrides //
+	//=====================//
+	
+	@Override
+	public CompletableFuture<Void> updateDataSourceAsync(NewFullDataSource inputDataSource)
+	{
+		// TODO once the legacy data provider has been replaced this can be removed
+		this.updateDataSourceAtPos(inputDataSource.getSectionPos(), inputDataSource);
+		return CompletableFuture.completedFuture(null);
+	}
+	
+	
 	
 	//=========//
 	// F3 menu //
@@ -148,12 +158,6 @@ public class RenderSourceFileHandler extends AbstractLegacyDataSourceHandler<Col
 		return lines.toArray(new String[0]);
 	}
 	
-	@Override
-	public CompletableFuture<Void> updateDataSourceAsync(NewFullDataSource inputDataSource)
-	{
-		this.updateDataSourceAtPos(inputDataSource.getSectionPos(), inputDataSource);
-		return CompletableFuture.completedFuture(null);
-	}
 	
 	
 	//=====================//

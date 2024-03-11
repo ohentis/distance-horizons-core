@@ -24,7 +24,9 @@ import com.seibel.distanthorizons.core.file.ISourceProvider;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.sql.repo.FullDataRepo;
+import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -36,16 +38,40 @@ public interface IFullDataSourceProvider extends ISourceProvider<NewFullDataSour
 	CompletableFuture<NewFullDataSource> getAsync(DhSectionPos pos);
 	NewFullDataSource get(DhSectionPos pos);
 	
-	/** 
-	 * If this provider has the ability to create (world gen) or get (networking)
-	 * missing data sources this method will queue the given position
-	 * for generation or retrieval.
-	 */
-	void queuePositionForGenerationOrRetrievalIfNecessary(DhSectionPos pos);
-	
 	CompletableFuture<Void> updateDataSourceAsync(NewFullDataSource chunkData);
 	
 	/** @return -1 if this provider never has unsaved data sources */
 	default int getUnsavedDataSourceCount() { return -1; }
+	
+	
+	
+	// retrieval (world gen) //
+	
+	/**
+	 * If true this {@link IFullDataSourceProvider} can generate or retrieve
+	 * {@link NewFullDataSource}'s that aren't currently in the database.
+	 */
+	default boolean canRetrieveMissingDataSources() { return false; }
+	
+	/** @return null if it was unable to generate any positions, an empty array if all positions were generated */
+	@Nullable
+	default ArrayList<DhSectionPos> getPositionsToRetrieve(DhSectionPos pos)  { return null; }
+	/**
+	 * Returns how many positions could potentially be generated for this position assuming the position is empty.
+	 * Used when estimating the total number of retrieval requests.
+	 */
+	default int getMaxPossibleRetrievalPositionCountForPos(DhSectionPos pos)  { return -1; }
+	
+	/** @return true if the position was queued, false if not */
+	default boolean queuePositionForRetrieval(DhSectionPos genPos) { return false; }
+	/** 
+	 * @return false if the provider isn't accepting new requests,
+	 *          this can be due to having a full queue or some other
+	 *          limiting factor.
+	 */
+	default boolean canQueueRetrieval() { return false; }
+	
+	/** Can be used to display how many total retrieval requests might be available. */
+	default void setTotalRetrievalPositionCount(int newCount) {  }
 	
 }

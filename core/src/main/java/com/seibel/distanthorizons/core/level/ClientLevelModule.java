@@ -316,7 +316,7 @@ public class ClientLevelModule implements Closeable, AbstractNewDataSourceHandle
 			this.quadtree = new LodQuadTree(dhClientLevel, Config.Client.Advanced.Graphics.Quality.lodChunkRenderDistanceRadius.get() * LodUtil.CHUNK_WIDTH * 2,
 					// initial position is (0,0) just in case the player hasn't loaded in yet, the tree will be moved once the level starts ticking
 					0, 0,
-					this.renderSourceFileHandler);
+					this.renderSourceFileHandler.fullDataSourceProvider, this.renderSourceFileHandler);
 			
 			RenderBufferHandler renderBufferHandler = new RenderBufferHandler(this.quadtree);
 			this.renderer = new LodRenderer(renderBufferHandler);

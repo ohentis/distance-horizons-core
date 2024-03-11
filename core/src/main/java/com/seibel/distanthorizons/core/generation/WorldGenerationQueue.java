@@ -67,13 +67,8 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 	
 	/** largest numerical detail level allowed */
 	public final byte lowestDataDetail;
-	@Override
-	public byte lowestDataDetail() { return this.lowestDataDetail; }
-	
 	/** smallest numerical detail level allowed */
 	public final byte highestDataDetail;
-	@Override
-	public byte highestDataDetail() { return this.highestDataDetail; }
 	
 	
 	/** If not null this generator is in the process of shutting down */
@@ -95,6 +90,9 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 	private static final int MAX_ALREADY_GENERATED_COUNT = 100;
 	private final HashMap<DhSectionPos, StackTraceElement[]> alreadyGeneratedPosHashSet = new HashMap<>(MAX_ALREADY_GENERATED_COUNT);
 	private final Queue<DhSectionPos> alreadyGeneratedPosQueue = new LinkedList<>();
+	
+	/** just used for rendering to the F3 menu */
+	private int estimatedTotalTaskCount = 0;
 	
 	
 	
@@ -498,12 +496,23 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 	
 	
 	
-	//=========//
-	// getters //
-	//=========//
+	//===================//
+	// getters / setters //
+	//===================//
 	
 	public int getWaitingTaskCount() { return this.waitingTasks.size(); }
 	public int getInProgressTaskCount() { return this.inProgressGenTasksByLodPos.size(); }
+	
+	@Override
+	public byte lowestDataDetail() { return this.lowestDataDetail; }
+	@Override
+	public byte highestDataDetail() { return this.highestDataDetail; }
+	
+	@Override
+	public int getEstimatedTotalTaskCount() { return this.estimatedTotalTaskCount; }
+	@Override
+	public void setEstimatedTotalTaskCount(int newEstimate) { this.estimatedTotalTaskCount = newEstimate; }
+	
 	
 	
 	//==========//

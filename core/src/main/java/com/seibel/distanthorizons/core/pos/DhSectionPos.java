@@ -224,6 +224,12 @@ public class DhSectionPos
 		return (centerBlockPos * BitShiftUtil.powerOfTwo(this.detailLevel)) + positionOffset;
 	}
 	
+	public int getManhattanBlockDistance(DhBlockPos2D blockPos)
+	{
+		return Math.abs(this.getCenterBlockPosX() - blockPos.x)
+				+ Math.abs(this.getCenterBlockPosZ() - blockPos.z);
+	}
+	
 	
 	
 	//==================//
