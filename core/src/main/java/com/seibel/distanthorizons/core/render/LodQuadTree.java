@@ -437,6 +437,9 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 			{
 				LOGGER.info("Clearing render cache...");
 				
+				// delete the cache first so the nodes won't accidentally try re-loading the old data
+				this.renderSourceProvider.deleteRenderCache();
+				
 				// clear the tree
 				Iterator<QuadNode<LodRenderSection>> nodeIterator = this.nodeIterator();
 				while (nodeIterator.hasNext())
@@ -449,7 +452,6 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 					}
 				}
 				
-				this.renderSourceProvider.deleteRenderCache();
 				LOGGER.info("Render cache invalidated, please wait a moment for everything to reload...");
 			}
 			catch (Exception e)
