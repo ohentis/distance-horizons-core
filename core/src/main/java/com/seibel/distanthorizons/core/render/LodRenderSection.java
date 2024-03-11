@@ -303,9 +303,6 @@ public class LodRenderSection implements IDebugRenderable
 		}
 	}
 	
-	// probably used by Iris
-	public void disposeBufferForRecreate() { this.disposeActiveBuffer = true; }
-	
 	
 	/**
 	 * Try and swap in new render buffer for this section. Note that before this call, there should be no other
