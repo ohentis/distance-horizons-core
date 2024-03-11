@@ -41,7 +41,6 @@ import java.sql.SQLException;
 
 public class LegacyFullDataFileHandler 
 		extends AbstractLegacyDataSourceHandler<CompleteFullDataSource, IDhLevel> 
-		implements IDebugRenderable
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
@@ -55,8 +54,6 @@ public class LegacyFullDataFileHandler
 	public LegacyFullDataFileHandler(IDhLevel level, AbstractSaveStructure saveStructure, @Nullable File saveDirOverride) 
 	{
 		super(level, saveStructure, saveDirOverride);
-		
-		DebugRenderer.register(this, Config.Client.Advanced.Debugging.DebugWireframe.showWorldGenQueue);
 	}
 	
 	
@@ -114,20 +111,6 @@ public class LegacyFullDataFileHandler
 	public void writeDataSourceToFile(CompleteFullDataSource fullDataSource) throws IOException
 	{
 		throw new UnsupportedOperationException("Deprecated");
-	}
-	
-	
-	
-	//===========//
-	// overrides //
-	//===========//
-	
-	@Override
-	public void debugRender(DebugRenderer renderer)
-	{
-		this.saveTimerTasksBySectionPos.keySet()
-				.forEach((pos) -> { renderer.renderBox(new DebugRenderer.Box(pos, -32f, 128f, 0.15f, Color.cyan)); });
-		
 	}
 	
 	
