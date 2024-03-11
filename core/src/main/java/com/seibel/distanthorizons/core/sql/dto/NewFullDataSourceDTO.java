@@ -129,6 +129,8 @@ public class NewFullDataSourceDTO implements IBaseDTO<DhSectionPos>
 		
 		dataSource.levelMinY = this.levelMinY;
 		
+		dataSource.markNotEmpty();
+		
 		return dataSource;
 	}
 	
