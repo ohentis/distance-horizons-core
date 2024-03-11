@@ -67,17 +67,6 @@ public class RenderSourceFileHandler extends AbstractLegacyDataSourceHandler<Col
 	
 	
 	
-	//===========//
-	// overrides //
-	//===========//
-	
-	@Override
-	public ColumnRenderSource get(DhSectionPos pos)
-	{
-		return super.get(pos);
-	}
-	
-	
 	//====================//
 	// Abstract overrides //
 	//====================//
