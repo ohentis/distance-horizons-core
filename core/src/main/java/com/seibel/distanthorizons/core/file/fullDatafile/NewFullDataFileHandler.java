@@ -79,7 +79,7 @@ public class NewFullDataFileHandler
 	{
 		super(level, saveStructure, saveDirOverride);
 		
-		DebugRenderer.register(this, Config.Client.Advanced.Debugging.DebugWireframe.showFullDataFileStatus);
+		DebugRenderer.register(this, Config.Client.Advanced.Debugging.DebugWireframe.showFullDataUpdateStatus);
 		
 		String dimensionName = level.getLevelWrapper().getDimensionType().getDimensionName();
 		this.updateQueueProcessor = ThreadUtil.makeSingleThreadPool("Parent Update Queue ["+dimensionName+"]");

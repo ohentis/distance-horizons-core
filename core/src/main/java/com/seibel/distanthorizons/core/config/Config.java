@@ -1247,19 +1247,9 @@ public class Config
 							.comment("Render LOD section status?")
 							.build();
 					
-					public static ConfigEntry<Boolean> showFullDataFileStatus = new ConfigEntry.Builder<Boolean>()
+					public static ConfigEntry<Boolean> showFullDataUpdateStatus = new ConfigEntry.Builder<Boolean>()
 							.set(false)
-							.comment("Render full data file status?")
-							.build();
-					
-					public static ConfigEntry<Boolean> showFullDataFileSampling = new ConfigEntry.Builder<Boolean>()
-							.set(false)
-							.comment("Render full data file sampling progress?")
-							.build();
-					
-					public static ConfigEntry<Boolean> showRenderDataFileStatus = new ConfigEntry.Builder<Boolean>()
-							.set(false)
-							.comment("Render render data file status?")
+							.comment("Render full data update/lock status?")
 							.build();
 					
 				}

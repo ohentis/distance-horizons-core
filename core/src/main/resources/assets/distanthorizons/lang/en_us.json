@@ -558,12 +558,8 @@
     "Show World Gen Queue",
   "distanthorizons.config.client.advanced.debugging.debugWireframe.showRenderSectionStatus":
     "Show Render Section Status",
-  "distanthorizons.config.client.advanced.debugging.debugWireframe.showFullDataFileStatus":
-    "Show Full Data file Status",
-  "distanthorizons.config.client.advanced.debugging.debugWireframe.showFullDataFileSampling":
-    "Show Full Data file Sampling",
-  "distanthorizons.config.client.advanced.debugging.debugWireframe.showRenderDataFileStatus":
-    "Show Render Data file Status",
+  "distanthorizons.config.client.advanced.debugging.debugWireframe.showFullDataUpdateStatus":
+    "Show Full Data Update Status",
 
 
   "distanthorizons.config.client.advanced.debugging.openGl":

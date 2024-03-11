@@ -575,8 +575,6 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 		LodUtil.assertTrue(this.generatorClosingFuture != null);
 		
 		
-		
-		
 		LOGGER.info("Awaiting world generator thread pool termination...");
 		try
 		{
@@ -593,9 +591,8 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 		}
 		
 		
-		
 		this.generator.close();
-		
+		DebugRenderer.unregister(this, Config.Client.Advanced.Debugging.DebugWireframe.showWorldGenQueue);
 		
 		
 		try
@@ -606,8 +603,9 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 		{
 			LOGGER.warn("Failed to close generation queue: ", e);
 		}
+		
+		
 		LOGGER.info("Finished closing " + WorldGenerationQueue.class.getSimpleName());
-		DebugRenderer.unregister(this, Config.Client.Advanced.Debugging.DebugWireframe.showWorldGenQueue);
 	}
 	
 	
