@@ -51,12 +51,12 @@ public class NewFullDataFileHandler
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
-	private static final int NUMBER_OF_PARENT_UPDATE_TASKS_PER_THREAD = 50;
+	protected static final int NUMBER_OF_PARENT_UPDATE_TASKS_PER_THREAD = 50;
 	/** how many parent update tasks can be in the queue at once */
-	private static final int MAX_UPDATE_TASK_COUNT = NUMBER_OF_PARENT_UPDATE_TASKS_PER_THREAD * Config.Client.Advanced.MultiThreading.numberOfFileHandlerThreads.get();
+	protected static final int MAX_UPDATE_TASK_COUNT = NUMBER_OF_PARENT_UPDATE_TASKS_PER_THREAD * Config.Client.Advanced.MultiThreading.numberOfFileHandlerThreads.get();
 	
 	/** indicates how long the update queue thread should wait between queuing ticks */
-	private static final int UPDATE_QUEUE_THREAD_DELAY_IN_MS = 250;
+	protected static final int UPDATE_QUEUE_THREAD_DELAY_IN_MS = 250;
 	
 	
 	public final Set<DhSectionPos> parentUpdatingPosSet = ConcurrentHashMap.newKeySet();
@@ -140,15 +140,6 @@ public class NewFullDataFileHandler
 	// parent updates //
 	//================//
 	
-	@Override
-	public void queuePositionForGenerationOrRetrievalIfNecessary(DhSectionPos pos)
-	{
-		// Do nothing.
-		// This file handler doesn't have the ability to generate or retrieve data sources
-		// that aren't already in the database
-	}
-	
-	
 	private void runUpdateQueue()
 	{
 		while (!Thread.interrupted())
@@ -166,8 +157,8 @@ public class NewFullDataFileHandler
 				
 				
 				// only add more items to the queue if half or more of the previous tasks have been completed
-				if (executor.getQueue().size() < (MAX_UPDATE_TASK_COUNT)
-					&& this.parentUpdatingPosSet.size() < (MAX_UPDATE_TASK_COUNT))
+				if (executor.getQueue().size() < MAX_UPDATE_TASK_COUNT
+					&& this.parentUpdatingPosSet.size() < MAX_UPDATE_TASK_COUNT)
 				{
 					// get the positions that need to be applied to their parents
 					ArrayList<DhSectionPos> parentUpdatePosList = ((NewFullDataSourceRepo) this.repo).getPositionsToUpdate(MAX_UPDATE_TASK_COUNT);
