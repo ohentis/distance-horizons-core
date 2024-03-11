@@ -312,8 +312,6 @@ public class NewFullDataSource implements IDataSource<IDhLevel>
 		
 		return dataChanged;
 	}
-	
-	
 	private static long[] mergeInputTwoByTwoDataColumn(NewFullDataSource inputDataSource, int x, int z)
 	{
 		ArrayList<Long> newColumnList = new ArrayList<>();
@@ -329,12 +327,6 @@ public class NewFullDataSource implements IDataSource<IDhLevel>
 		
 		for (int blockY = 0; blockY < RenderDataPointUtil.MAX_WORLD_Y_SIZE; blockY++, height++)
 		{
-			//if (x == 38 && z == 2 && blockY == 65+72) // nether portal 
-			if (x == 32 && z == 0 && blockY == 138) // glowstone
-			{
-				int k = 0; // TODO remove, just for testing
-			}
-			
 			// if each column has reached the end of their data, nothing more needs to be done
 			if (currentDatapointIndex[0] == -1
 				&& currentDatapointIndex[1] == -1
