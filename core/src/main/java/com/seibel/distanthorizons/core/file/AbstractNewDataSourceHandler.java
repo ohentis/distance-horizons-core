@@ -22,7 +22,8 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public abstract class AbstractNewDataSourceHandler
 		<TDataSource extends IDataSource<TDhLevel>, 
-				TDTO extends IBaseDTO<DhSectionPos>, 
+				TDTO extends IBaseDTO<DhSectionPos>,
+				TRepo extends AbstractDhRepo<DhSectionPos, TDTO>,
 				TDhLevel extends IDhLevel> 
 		implements ISourceProvider<TDataSource, TDhLevel>
 {
@@ -58,7 +59,7 @@ public abstract class AbstractNewDataSourceHandler
 	protected final TDhLevel level;
 	protected final File saveDir;
 	
-	public final AbstractDhRepo<DhSectionPos, TDTO> repo;
+	public final TRepo repo;
 	
 	public final ArrayList<IDataSourceUpdateFunc<TDataSource>> dateSourceUpdateListeners = new ArrayList<>();
 	
@@ -89,7 +90,7 @@ public abstract class AbstractNewDataSourceHandler
 	//==================//
 	
 	/** When this is called the parent folders should be created */
-	protected abstract AbstractDhRepo<DhSectionPos, TDTO> createRepo();
+	protected abstract TRepo createRepo();
 	
 	protected abstract TDataSource createDataSourceFromDto(TDTO dto) throws InterruptedException, IOException;
 	protected abstract TDTO createDtoFromDataSource(TDataSource dataSource);

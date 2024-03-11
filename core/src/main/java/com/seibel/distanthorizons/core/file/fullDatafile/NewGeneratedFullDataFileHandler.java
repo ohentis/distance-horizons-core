@@ -31,7 +31,6 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
-import com.seibel.distanthorizons.core.sql.repo.NewFullDataSourceRepo;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.coreapi.util.BitShiftUtil;
@@ -233,7 +232,7 @@ public class NewGeneratedFullDataFileHandler extends NewFullDataFileHandler impl
 			}
 			else
 			{
-				byte[] columnGenerationSteps = ((NewFullDataSourceRepo)this.repo).getColumnGenerationStepForPos(genPos);
+				byte[] columnGenerationSteps = this.repo.getColumnGenerationStepForPos(genPos);
 				if (columnGenerationSteps == null)
 				{
 					// shouldn't happen, but just in case

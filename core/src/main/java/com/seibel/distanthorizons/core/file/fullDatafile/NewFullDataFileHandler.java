@@ -46,7 +46,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class NewFullDataFileHandler 
-		extends AbstractNewDataSourceHandler<NewFullDataSource, NewFullDataSourceDTO, IDhLevel> 
+		extends AbstractNewDataSourceHandler<NewFullDataSource, NewFullDataSourceDTO, NewFullDataSourceRepo, IDhLevel> 
 		implements IFullDataSourceProvider, IDebugRenderable
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
@@ -93,7 +93,7 @@ public class NewFullDataFileHandler
 	//====================//
 	
 	@Override
-	protected AbstractDhRepo<DhSectionPos, NewFullDataSourceDTO> createRepo()
+	protected NewFullDataSourceRepo createRepo()
 	{
 		try
 		{
@@ -161,7 +161,7 @@ public class NewFullDataFileHandler
 					&& this.parentUpdatingPosSet.size() < MAX_UPDATE_TASK_COUNT)
 				{
 					// get the positions that need to be applied to their parents
-					ArrayList<DhSectionPos> parentUpdatePosList = ((NewFullDataSourceRepo) this.repo).getPositionsToUpdate(MAX_UPDATE_TASK_COUNT);
+					ArrayList<DhSectionPos> parentUpdatePosList = this.repo.getPositionsToUpdate(MAX_UPDATE_TASK_COUNT);
 					
 					HashMap<DhSectionPos, HashSet<DhSectionPos>> updatePosByParentPos = new HashMap<>();
 					for (DhSectionPos pos : parentUpdatePosList)
@@ -217,7 +217,7 @@ public class NewFullDataFileHandler
 												
 												NewFullDataSource dataSource = this.get(childPos);
 												this.updateDataSourceAtPos(parentUpdatePos, dataSource, false);
-												((NewFullDataSourceRepo) this.repo).setApplyToParent(childPos, false);
+												this.repo.setApplyToParent(childPos, false);
 											}
 											catch (Exception e)
 											{
