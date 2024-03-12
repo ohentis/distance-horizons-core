@@ -31,6 +31,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.zip.Adler32;
 import java.util.zip.CheckedOutputStream;
 
+@Deprecated
 public abstract class AbstractLegacyDataSourceHandler<TDataSource extends IDataSource<TDhLevel>, TDhLevel extends IDhLevel> 
 		implements ISourceProvider<TDataSource, TDhLevel>
 {

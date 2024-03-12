@@ -144,7 +144,7 @@ public abstract class AbstractLegacyDataSourceRepo extends AbstractDhRepo<DhSect
 	 */
 	public int getMaxSectionDetailLevel()
 	{
-		Map<String, Object> resultMap = this.queryDictionaryFirst("select MAX(DataDetailLevel) as maxDetailLevel from DhFullData;");
+		Map<String, Object> resultMap = this.queryDictionaryFirst("select MAX(DataDetailLevel) as maxDetailLevel from "+this.getTableName()+";");
 		int maxDetailLevel;
 		if (resultMap == null || resultMap.get("maxDetailLevel") == null)
 		{

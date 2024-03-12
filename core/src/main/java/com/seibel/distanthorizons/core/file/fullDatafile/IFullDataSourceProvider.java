@@ -23,7 +23,7 @@ import com.seibel.distanthorizons.core.dataObjects.fullData.sources.NewFullDataS
 import com.seibel.distanthorizons.core.file.ISourceProvider;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
-import com.seibel.distanthorizons.core.sql.repo.FullDataRepo;
+import com.seibel.distanthorizons.core.sql.repo.LegacyFullDataRepo;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -31,7 +31,7 @@ import java.util.concurrent.CompletableFuture;
 
 /**
  * Handles reading, writing, and updating {@link NewFullDataSource}'s. <br>
- * Should be backed by a database handled by a {@link FullDataRepo}.
+ * Should be backed by a database handled by a {@link LegacyFullDataRepo}.
  */
 public interface IFullDataSourceProvider extends ISourceProvider<NewFullDataSource, IDhLevel>, AutoCloseable
 {

@@ -125,7 +125,7 @@ public abstract class AbstractNewDataSourceHandler
 	}
 	/**
 	 * Should only be used in internal file handler methods where we are already running on a file handler thread.
-	 * Can return null if there was a problem.
+	 * Shouldn't return null.
 	 * @see AbstractNewDataSourceHandler#getAsync(DhSectionPos)
 	 */
 	public TDataSource get(DhSectionPos pos)
@@ -136,7 +136,7 @@ public abstract class AbstractNewDataSourceHandler
 			TDTO dto = this.repo.getByKey(pos);
 			if (dto != null)
 			{
-				// load from file
+				// load from database
 				dataSource = this.createDataSourceFromDto(dto);
 			}
 			else
@@ -198,7 +198,10 @@ public abstract class AbstractNewDataSourceHandler
 		}
 	}
 	
-	/** @param updatePos the position to update */
+	/** 
+	 * After this method returns the inputData will be written to file.
+	 * @param updatePos the position to update 
+	 */
 	protected void updateDataSourceAtPos(DhSectionPos updatePos, NewFullDataSource inputData, boolean lockOnUpdatePos)
 	{
 		boolean methodLocked = false;

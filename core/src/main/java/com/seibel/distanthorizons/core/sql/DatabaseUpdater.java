@@ -112,6 +112,7 @@ public class DatabaseUpdater
 						
 						
 						statement.setQueryTimeout(AbstractDhRepo.TIMEOUT_SECONDS);
+						// TODO this should be a complete transaction, but doesn't appear to be
 						int[] numberOfRowsModifiedArray = statement.executeBatch();
 						
 						
