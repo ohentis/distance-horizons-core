@@ -53,7 +53,7 @@ public class LegacyFullDataRepo extends AbstractLegacyDataSourceRepo
 	public int getMigrationCount()
 	{
 		Map<String, Object> resultMap = this.queryDictionaryFirst(
-				"select COUNT(*) as itemCount from "+this.getTableName());
+				"select COUNT(*) as itemCount from "+this.getTableName()+" where MigrationFailed <> 1");
 		
 		if (resultMap == null)
 		{
@@ -74,6 +74,7 @@ public class LegacyFullDataRepo extends AbstractLegacyDataSourceRepo
 		List<Map<String, Object>> resultMapList = this.queryDictionary(
 				"select DhSectionPos " +
 						"from "+this.getTableName()+" " +
+						"WHERE MigrationFailed <> 1 " +
 						"LIMIT "+returnCount+";");
 		
 		for (Map<String, Object> resultMap : resultMapList)
@@ -84,6 +85,16 @@ public class LegacyFullDataRepo extends AbstractLegacyDataSourceRepo
 		}
 		
 		return list;
+	}
+	
+	public void markMigrationFailed(DhSectionPos pos)
+	{
+		String sql =
+			"UPDATE "+this.getTableName()+" \n" +
+			"SET MigrationFailed = 1 \n" +
+			"WHERE DhSectionPos = '"+pos.serialize()+"'";
+		
+		this.queryDictionaryFirst(sql);
 	}
 	
 	

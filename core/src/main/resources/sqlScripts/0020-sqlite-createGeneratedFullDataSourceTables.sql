@@ -1,5 +1,9 @@
 
-ALTER TABLE `DhFullData` RENAME TO `Legacy_FullData_V1`;
+ALTER TABLE DhFullData RENAME TO Legacy_FullData_V1;
+
+--batch--
+
+ALTER TABLE Legacy_FullData_V1 ADD COLUMN MigrationFailed BIT NOT NULL DEFAULT 0;
 
 --batch--
 

@@ -313,15 +313,25 @@ public class NewFullDataFileHandler
 				
 				for (int i = 0; i < legacyDataSourceList.size() && this.migrationThreadRunning.get(); i++)
 				{
-					// convert the legacy data source to the new format
 					CompleteFullDataSource legacyDataSource = legacyDataSourceList.get(i);
-					NewFullDataSource newDataSource = NewFullDataSource.createFromCompleteDataSource(legacyDataSource);
-					newDataSource.applyToParent = true;
 					
-					this.updateDataSourceAtPos(newDataSource.getSectionPos(), newDataSource, true);
-					
-					// the legacy data source can now be deleted
-					this.legacyFileHandler.repo.deleteWithKey(legacyDataSource.getSectionPos());
+					try
+					{
+						// convert the legacy data source to the new format
+						NewFullDataSource newDataSource = NewFullDataSource.createFromCompleteDataSource(legacyDataSource);
+						newDataSource.applyToParent = true;
+						
+						this.updateDataSourceAtPos(newDataSource.getSectionPos(), newDataSource, true);
+						
+						// the legacy data source can now be deleted
+						this.legacyFileHandler.repo.deleteWithKey(legacyDataSource.getSectionPos());
+					}
+					catch (Exception e)
+					{
+						DhSectionPos migrationPos = legacyDataSource.getSectionPos();
+						LOGGER.error("Unexpected issue migrating data source at pos "+migrationPos+". Error: "+e.getMessage(), e);
+						this.legacyFileHandler.markMigrationFailed(migrationPos);
+					}
 				}
 				
 				legacyDataSourceList = this.legacyFileHandler.getDataSourcesToMigrate(MIGRATION_BATCH_COUNT);
@@ -342,6 +352,8 @@ public class NewFullDataFileHandler
 		{
 			LOGGER.info("No migration necessary.");
 		}
+		
+		this.migrationThreadRunning.set(false);
 	}
 	
 	

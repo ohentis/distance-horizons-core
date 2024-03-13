@@ -107,8 +107,7 @@ public class LegacyFullDataFileHandler
 	// migration //
 	//===========//
 	
-	public int getDataSourceMigrationCount()
-	{ return ((LegacyFullDataRepo) this.repo).getMigrationCount(); }
+	public int getDataSourceMigrationCount() { return ((LegacyFullDataRepo) this.repo).getMigrationCount(); }
 	
 	public ArrayList<CompleteFullDataSource> getDataSourcesToMigrate(int limit)
 	{
@@ -127,6 +126,8 @@ public class LegacyFullDataFileHandler
 		
 		return dataSourceList;
 	}
+	
+	public void markMigrationFailed(DhSectionPos pos) { ((LegacyFullDataRepo) this.repo).markMigrationFailed(pos); }
 	
 	
 }
