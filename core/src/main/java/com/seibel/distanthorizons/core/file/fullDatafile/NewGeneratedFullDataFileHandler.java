@@ -173,6 +173,12 @@ public class NewGeneratedFullDataFileHandler extends NewFullDataFileHandler impl
 	@Override
 	public boolean canQueueRetrieval()
 	{
+		if (!super.canQueueRetrieval())
+		{
+			return false;
+		}
+		
+		
 		IWorldGenerationQueue worldGenQueue = this.worldGenQueueRef.get();
 		if (worldGenQueue == null)
 		{

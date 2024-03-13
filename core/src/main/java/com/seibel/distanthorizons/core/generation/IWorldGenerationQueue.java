@@ -28,7 +28,7 @@ import java.io.Closeable;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
-// TODO does this need a interface?
+// TODO This doesn't need an interface, remove the interface
 @Deprecated
 public interface IWorldGenerationQueue extends Closeable
 {

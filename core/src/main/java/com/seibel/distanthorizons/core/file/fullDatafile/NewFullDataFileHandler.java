@@ -160,6 +160,16 @@ public class NewFullDataFileHandler
 	@Override
 	protected NewFullDataSource makeEmptyDataSource(DhSectionPos pos) { return NewFullDataSource.createEmpty(pos); }
 	
+	@Override
+	public boolean canQueueRetrieval()
+	{
+		// Retrieval shouldn't happen while an unknown number of
+		// legacy data sources are present.
+		// If retrieval was allowed we might run into concurrency issues.
+		return !this.migrationThreadRunning.get();
+	}
+	
+	
 	
 	
 	//================//
