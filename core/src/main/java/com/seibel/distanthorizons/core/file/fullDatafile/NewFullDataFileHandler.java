@@ -209,7 +209,7 @@ public class NewFullDataFileHandler
 					{
 						// stop if there are already a bunch of updates queued
 						if (this.parentUpdatingPosSet.size() > MAX_UPDATE_TASK_COUNT
-							&& this.parentUpdatingPosSet.add(parentUpdatePos))
+							|| !this.parentUpdatingPosSet.add(parentUpdatePos))
 						{
 							break;
 						}
