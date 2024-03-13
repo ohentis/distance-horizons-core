@@ -1,31 +1,15 @@
-/*
- *    This file is part of the Distant Horizons mod
- *    licensed under the GNU LGPL v3 License.
- *
- *    Copyright (C) 2020-2023 James Seibel
- *
- *    This program is free software: you can redistribute it and/or modify
- *    it under the terms of the GNU Lesser General Public License as published by
- *    the Free Software Foundation, version 3.
- *
- *    This program is distributed in the hope that it will be useful,
- *    but WITHOUT ANY WARRANTY; without even the implied warranty of
- *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *    GNU Lesser General Public License for more details.
- *
- *    You should have received a copy of the GNU Lesser General Public License
- *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
- */
-
 package com.seibel.distanthorizons.core.util;
 
-import org.jetbrains.annotations.Contract;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.CompleteFullDataSource;
 
 /**
- * A helper class that is used to access the data from a long
- * formatted as a full data point. <br>
- * A full data point contains the most information and is the
- * source of truth used when creating render data. <br><br>
+ * <strong> Only for Legacy support </strong> <br>
+ * Used by DH versions 2.0.0 and 2.0.1. <br><br>
+ *
+ * Specifically used by the data sources: <br>
+ * - {@link CompleteFullDataSource} aka CompleteFullDataSource <br>
+ * - (Deleted) HighDetailIncompleteFullDataSource <br>
+ * - (Deleted) LowDetailIncompleteFullDataSource <br><br>
  *
  * <strong>DataPoint Format: </strong><br>
  * <code>
@@ -36,7 +20,7 @@ import org.jetbrains.annotations.Contract;
  * SL: Sky light <br><br>
  *
  * =======Bit layout=======	<br>
- * BL BL BL BL  SL SL SL SL <-- Top bits <br>
+ * SL SL SL SL  BL BL BL BL <-- Top bits <br>
  * MY MY MY MY  MY MY MY MY	<br>
  * MY MY MY MY  HI HI HI HI	<br>
  * HI HI HI HI  HI HI HI HI	<br>
@@ -45,11 +29,11 @@ import org.jetbrains.annotations.Contract;
  * ID ID ID ID  ID ID ID ID	<br>
  * ID ID ID ID  ID ID ID ID <-- Bottom bits	<br>
  * </code>
- * 
- * @see RenderDataPointUtil
- * @see FullDataPointUtilV1
+ *
+ * @see CompleteFullDataSource
+ * @see FullDataPointUtil
  */
-public class FullDataPointUtil
+public class FullDataPointUtilV1
 {
 	/** Represents the data held by an empty data point */
 	public static final int EMPTY_DATA_POINT = 0;
@@ -57,29 +41,32 @@ public class FullDataPointUtil
 	public static final int ID_WIDTH = 32;
 	public static final int HEIGHT_WIDTH = 12;
 	public static final int MIN_Y_WIDTH = 12;
-	public static final int BLOCK_LIGHT_WIDTH = 4;
 	public static final int SKY_LIGHT_WIDTH = 4;
+	public static final int BLOCK_LIGHT_WIDTH = 4;
 	
 	public static final int ID_OFFSET = 0;
 	public static final int HEIGHT_OFFSET = ID_OFFSET + ID_WIDTH;
 	/** indicates the Y position where the LOD starts relative to the level's minimum height */
 	public static final int MIN_Y_OFFSET = HEIGHT_OFFSET + HEIGHT_WIDTH;
-	public static final int BLOCK_LIGHT_OFFSET = MIN_Y_OFFSET + MIN_Y_WIDTH;
-	public static final int SKY_LIGHT_OFFSET = BLOCK_LIGHT_OFFSET + BLOCK_LIGHT_WIDTH;
+	public static final int SKY_LIGHT_OFFSET = MIN_Y_OFFSET + MIN_Y_WIDTH;
+	public static final int BLOCK_LIGHT_OFFSET = SKY_LIGHT_OFFSET + SKY_LIGHT_WIDTH;
 	
 	
 	public static final long ID_MASK = Integer.MAX_VALUE;
 	public static final long INVERSE_ID_MASK = ~ID_MASK;
 	public static final int HEIGHT_MASK = (int) Math.pow(2, HEIGHT_WIDTH) - 1;
 	public static final int MIN_Y_MASK = (int) Math.pow(2, MIN_Y_WIDTH) - 1;
-	public static final int BLOCK_LIGHT_MASK = (int) Math.pow(2, BLOCK_LIGHT_WIDTH) - 1;
 	public static final int SKY_LIGHT_MASK = (int) Math.pow(2, SKY_LIGHT_WIDTH) - 1;
+	public static final int BLOCK_LIGHT_MASK = (int) Math.pow(2, BLOCK_LIGHT_WIDTH) - 1;
 	
 	
 	/**
 	 * creates a new datapoint with the given values 
 	 * @param relMinY relative to the minimum level Y value
+	 *
+	 * @deprecated Should not be used anymore, just here as a reference for how the data points were constructed.
 	 */
+	@Deprecated
 	public static long encode(int id, int height, int relMinY, byte blockLight, byte skyLight)
 	{
 		LodUtil.assertTrue(relMinY >= 0 && relMinY < RenderDataPointUtil.MAX_WORLD_Y_SIZE, "Trying to create datapoint with y["+relMinY+"] out of range!");
@@ -102,6 +89,7 @@ public class FullDataPointUtil
 		return data;
 	}
 	
+	
 	/** Returns the BlockState/Biome pair ID used to identify this LOD's color */
 	public static int getId(long data) { return (int) (data & ID_MASK); }
 	/** Returns how many blocks tall this LOD is. */
@@ -116,26 +104,5 @@ public class FullDataPointUtil
 	
 	
 	public static String toString(long data) { return "[ID:" + getId(data) + ",Y:" + getBottomY(data) + ",Height:" + getHeight(data) + ",BlockLight:" + getBlockLight(data) + ",SkyLight:" + getSkyLight(data) + "]"; }
-	
-	/** Remaps the biome/blockState ID of the given datapoint */
-	@Contract(pure = true)
-	public static long remap(int[] newIdMapping, long data) throws IndexOutOfBoundsException
-	{
-		int currentId = getId(data);
-		try
-		{
-			int newId = newIdMapping[currentId];
-			return (data & INVERSE_ID_MASK) | newId;
-		}
-		catch (IndexOutOfBoundsException e)
-		{
-			// this try-catch is present to fix an issue where the stack trace is missing
-			// and to allow for easily attaching a debugger
-			
-			// if this was thrown that probably means the datasource has been
-			// re-mapped multiple times, causing the ID's to go out of their expected bounds.
-			throw new RuntimeException(e);
-		}
-	}
 	
 }

@@ -25,11 +25,11 @@ import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.SingleColum
 import com.seibel.distanthorizons.core.dataObjects.transformers.LodDataBuilder;
 import com.seibel.distanthorizons.core.file.IDataSource;
 import com.seibel.distanthorizons.core.file.fullDatafile.NewFullDataFileHandler;
-import com.seibel.distanthorizons.core.generation.DhLightingEngine;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.util.FullDataPointUtil;
+import com.seibel.distanthorizons.core.util.FullDataPointUtilV1;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.RenderDataPointUtil;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataOutputStream;
@@ -171,13 +171,13 @@ public class NewFullDataSource implements IDataSource<IDhLevel>
 					{
 						long dataPoint = dataColumn[i];
 						
-						int id = FullDataPointUtil.getId(dataPoint);
-						int height = FullDataPointUtil.getHeight(dataPoint);
-						int bottomY = FullDataPointUtil.getBottomY(dataPoint);
-						byte blockLight = (byte) FullDataPointUtil.getBlockLight(dataPoint);
-						byte skyLight = (byte) FullDataPointUtil.getSkyLight(dataPoint);
+						int id = FullDataPointUtilV1.getId(dataPoint);
+						int height = FullDataPointUtilV1.getHeight(dataPoint);
+						int bottomY = FullDataPointUtilV1.getBottomY(dataPoint);
+						byte blockLight = (byte) FullDataPointUtilV1.getBlockLight(dataPoint);
+						byte skyLight = (byte) FullDataPointUtilV1.getSkyLight(dataPoint);
 						
-						long newDataPoint = FullDataPointUtil.encode(id, height, bottomY, skyLight, blockLight);
+						long newDataPoint = FullDataPointUtil.encode(id, height, bottomY, blockLight, skyLight);
 						dataColumn[i] = newDataPoint;
 						
 						
