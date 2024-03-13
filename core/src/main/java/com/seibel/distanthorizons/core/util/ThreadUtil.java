@@ -80,9 +80,9 @@ public class ThreadUtil
 	
 	
 	/** should only be used if there isn't a config controlling the run time ratio of this thread pool */
-	public static RateLimitedThreadPoolExecutor makeRateLimitedThreadPool(int poolSize, String name, Double runTimeRatio, int relativePriority, Semaphore activeThreadCountSemaphore) 
+	public static RateLimitedThreadPoolExecutor makeRateLimitedThreadPool(int poolSize, String name, Double runTimeRatio, int threadPriority, Semaphore activeThreadCountSemaphore) 
 	{
-		return new RateLimitedThreadPoolExecutor(poolSize, runTimeRatio, new DhThreadFactory(name, Thread.NORM_PRIORITY + relativePriority), activeThreadCountSemaphore);
+		return new RateLimitedThreadPoolExecutor(poolSize, runTimeRatio, new DhThreadFactory(name, threadPriority), activeThreadCountSemaphore);
 	}
 	public static RateLimitedThreadPoolExecutor makeRateLimitedThreadPool(int poolSize, Double runTimeRatio, DhThreadFactory threadFactory, Semaphore activeThreadCountSemaphore) 
 	{

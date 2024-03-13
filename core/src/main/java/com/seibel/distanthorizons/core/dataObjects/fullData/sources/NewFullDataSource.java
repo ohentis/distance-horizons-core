@@ -25,6 +25,7 @@ import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.SingleColum
 import com.seibel.distanthorizons.core.dataObjects.transformers.LodDataBuilder;
 import com.seibel.distanthorizons.core.file.IDataSource;
 import com.seibel.distanthorizons.core.file.fullDatafile.NewFullDataFileHandler;
+import com.seibel.distanthorizons.core.generation.DhLightingEngine;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
@@ -32,6 +33,7 @@ import com.seibel.distanthorizons.core.util.FullDataPointUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.RenderDataPointUtil;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataOutputStream;
+import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import org.apache.logging.log4j.Logger;
 
@@ -54,6 +56,7 @@ public class NewFullDataSource implements IDataSource<IDhLevel>
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	/** useful for debugging, but can slow down update operations quite a bit due to being called so often. */
 	private static final boolean RUN_UPDATE_DEV_VALIDATION = false; //ModInfo.IS_DEV_BUILD;
+	private static final boolean RUN_V1_MIGRATION_VALIDATION = false;
 	
 	/** measured in data columns */
 	public static final int WIDTH = 64;
@@ -128,25 +131,117 @@ public class NewFullDataSource implements IDataSource<IDhLevel>
 	
 	public static NewFullDataSource createFromCompleteDataSource(CompleteFullDataSource legacyData)
 	{
+		if (CompleteFullDataSource.WIDTH != WIDTH)
+		{
+			throw new UnsupportedOperationException(
+					"Unable to convert CompleteFullDataSource into NewFullDataSource. " +
+					"Data sources have different data point widths and no converter is present. " +
+					"CompleteFullDataSource width ["+CompleteFullDataSource.WIDTH+"], NewFullDataSource width ["+WIDTH+"].");
+		}
+		
+		
+		// Note: this logic only works if the data point data is the same between both versions
 		byte[] columnGenerationSteps = new byte[WIDTH * WIDTH];
 		long[][] dataPoints = new long[WIDTH * WIDTH][];
 		for (int x = 0; x < WIDTH; x++)
 		{
 			for (int z = 0; z < WIDTH; z++)
 			{
-				int index = relativePosToIndex(x, z);
-				
 				SingleColumnFullDataAccessor accessor = legacyData.get(x, z);
-				
 				if (accessor.doesColumnExist())
 				{
+					int index = relativePosToIndex(x, z);
 					dataPoints[index] = accessor.getRaw();
-					columnGenerationSteps[index] = legacyData.getWorldGenStep().value;
+					
+					// reverse the array so index 0 is the lowest,
+					// this is necessary for later logic
+					// source: https://stackoverflow.com/questions/2137755/how-do-i-reverse-an-int-array-in-java
+					long[] dataColumn = dataPoints[index];
+					for(int i = 0; i < dataColumn.length / 2; i++)
+					{
+						long temp = dataColumn[i];
+						dataColumn[i] = dataColumn[dataColumn.length - i - 1];
+						dataColumn[dataColumn.length - i - 1] = temp;
+					}
+					
+					
+					// convert the data point format
+					boolean columnHasNonAirBlock = false;
+					for (int i = 0; i < dataColumn.length; i++)
+					{
+						long dataPoint = dataColumn[i];
+						
+						int id = FullDataPointUtil.getId(dataPoint);
+						int height = FullDataPointUtil.getHeight(dataPoint);
+						int bottomY = FullDataPointUtil.getBottomY(dataPoint);
+						byte blockLight = (byte) FullDataPointUtil.getBlockLight(dataPoint);
+						byte skyLight = (byte) FullDataPointUtil.getSkyLight(dataPoint);
+						
+						long newDataPoint = FullDataPointUtil.encode(id, height, bottomY, skyLight, blockLight);
+						dataColumn[i] = newDataPoint;
+						
+						
+						// check if this datapoint is air
+						if (!columnHasNonAirBlock)
+						{
+							IBlockStateWrapper blockState = legacyData.getMapping().getBlockStateWrapper(id);
+							if (!blockState.isAir())
+							{
+								columnHasNonAirBlock = true;
+							}
+						}
+					}
+					
+					// the old data sources didn't have a generation step written down
+					// if the column has any data points, assume it's fully generated, otherwise assume it's empty
+					columnGenerationSteps[index] = (columnHasNonAirBlock ? EDhApiWorldGenerationStep.LIGHT.value : EDhApiWorldGenerationStep.EMPTY.value);
 				}
 			}
 		}
 		
-		return NewFullDataSource.createWithData(legacyData.getSectionPos(), legacyData.getMapping(), dataPoints, columnGenerationSteps); 
+		NewFullDataSource newFullDataSource = NewFullDataSource.createWithData(legacyData.getSectionPos(), legacyData.getMapping(), dataPoints, columnGenerationSteps);
+		
+		
+		// should only be used if debugging, this is a very expensive operation
+		if (RUN_V1_MIGRATION_VALIDATION)
+		{
+			for (int x = 0; x < WIDTH; x++)
+			{
+				for (int z = 0; z < WIDTH; z++)
+				{
+					SingleColumnFullDataAccessor legacyAccessor = legacyData.get(x, z);
+					if (legacyAccessor.doesColumnExist())
+					{
+						SingleColumnFullDataAccessor newAccessor = newFullDataSource.get(x, z);
+						
+						if (newAccessor == null)
+						{
+							LodUtil.assertNotReach("Accessor column mismatch");
+						}
+						else if (legacyAccessor.getRaw().length != newAccessor.getRaw().length)
+						{
+							LodUtil.assertNotReach("Accessor column length mismatch");
+						}
+						else
+						{
+							long[] legacyRaw = legacyAccessor.getRaw();
+							long[] newRaw = newAccessor.getRaw();
+							
+							for (int i = 0; i < legacyRaw.length; i++)
+							{
+								if (legacyRaw[i] != newRaw[i])
+								{
+									LodUtil.assertNotReach("Data mismatch");
+								}
+							}
+						}
+						
+					}
+				}
+			}
+		}
+		
+		return newFullDataSource;
 	}
 	
 	
@@ -286,7 +381,8 @@ public class NewFullDataSource implements IDataSource<IDhLevel>
 			for (int z = 0; z < WIDTH; z += 2)
 			{
 				long[] mergedInputDataArray = mergeInputTwoByTwoDataColumn(inputDataSource, x, z);
-				byte inputGenStep = inputDataSource.columnGenerationSteps[0]; // TODO
+				// TODO
+				byte inputGenStep = inputDataSource.columnGenerationSteps[0];
 
 
 				int recipientX = (x / 2) + recipientOffsetX;
@@ -349,6 +445,7 @@ public class NewFullDataSource implements IDataSource<IDhLevel>
 			{
 				for (int inputZ = z; inputZ < z + 2; inputZ++, colIndex++)
 				{
+					// TODO throw an assertion if the column isn't in order or just fix it...
 					long[] inputDataArray = inputDataSource.dataPoints[relativePosToIndex(inputX, inputZ)];
 					if (inputDataArray == null || inputDataArray.length == 0)
 					{
@@ -556,7 +653,7 @@ public class NewFullDataSource implements IDataSource<IDhLevel>
 	// helper methods //
 	//================//
 	
-	// TODO make private, any external logic should go through a method, not interact with the arrays directly
+	// TODO  make private, any external logic should go through a method, not interact with the arrays directly
 	public static int relativePosToIndex(int relX, int relZ) throws IndexOutOfBoundsException
 	{ 
 		if (relX < 0 || relZ < 0 ||

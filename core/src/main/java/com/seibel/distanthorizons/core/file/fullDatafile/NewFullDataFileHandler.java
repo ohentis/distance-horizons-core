@@ -20,6 +20,7 @@
 package com.seibel.distanthorizons.core.file.fullDatafile;
 
 import com.seibel.distanthorizons.core.config.Config;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.CompleteFullDataSource;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.NewFullDataSource;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.file.AbstractNewDataSourceHandler;
@@ -29,7 +30,6 @@ import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
 import com.seibel.distanthorizons.core.sql.dto.NewFullDataSourceDTO;
-import com.seibel.distanthorizons.core.sql.repo.AbstractDhRepo;
 import com.seibel.distanthorizons.core.sql.repo.NewFullDataSourceRepo;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
@@ -42,7 +42,9 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class NewFullDataFileHandler 
@@ -50,6 +52,10 @@ public class NewFullDataFileHandler
 		implements IFullDataSourceProvider, IDebugRenderable
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	
+	/** how many data sources should be pulled down for migration at once */
+	private static final int MIGRATION_BATCH_COUNT = 20;
+	private static final String MIGRATION_THREAD_NAME_PREFIX = "Full Data Migration Thread: ";
 	
 	protected static final int NUMBER_OF_PARENT_UPDATE_TASKS_PER_THREAD = 50;
 	/** how many parent update tasks can be in the queue at once */
@@ -59,6 +65,18 @@ public class NewFullDataFileHandler
 	protected static final int UPDATE_QUEUE_THREAD_DELAY_IN_MS = 250;
 	
 	
+	protected final ThreadPoolExecutor migrationThreadPool;
+	/** 
+	 * Interrupting the migration thread pool doesn't work well and may corrupt the database
+	 * vs gracefully shutting down the thread ourselves. 
+	 */
+	protected final AtomicBoolean migrationThreadRunning = new AtomicBoolean(true);
+	protected final LegacyFullDataFileHandler legacyFileHandler;
+	
+	/** 
+	 * Tracks which positions are currently being updated
+	 * to prevent duplicate concurrent updates.
+	 */
 	public final Set<DhSectionPos> parentUpdatingPosSet = ConcurrentHashMap.newKeySet();
 	
 	// TODO only run thread if modifications happened recently
@@ -78,10 +96,18 @@ public class NewFullDataFileHandler
 	public NewFullDataFileHandler(IDhLevel level, AbstractSaveStructure saveStructure, @Nullable File saveDirOverride) 
 	{
 		super(level, saveStructure, saveDirOverride);
+		this.legacyFileHandler = new LegacyFullDataFileHandler(level, saveStructure, saveDirOverride);
 		
 		DebugRenderer.register(this, Config.Client.Advanced.Debugging.DebugWireframe.showFullDataUpdateStatus);
 		
 		String dimensionName = level.getLevelWrapper().getDimensionType().getDimensionName();
+		
+		// start migrating any legacy data sources present in the background
+		int totalCount = this.legacyFileHandler.getDataSourceMigrationCount();
+		LOGGER.info("Found ["+totalCount+"] data sources that need migration.");
+		this.migrationThreadPool = ThreadUtil.makeRateLimitedThreadPool(1, MIGRATION_THREAD_NAME_PREFIX +"["+dimensionName+"]", Config.Client.Advanced.MultiThreading.runTimeRatioForUpdatePropagatorThreads.get(), Thread.MIN_PRIORITY, (Semaphore)null);
+		this.migrationThreadPool.execute(() -> this.convertLegacyDataSources());
+		
 		this.updateQueueProcessor = ThreadUtil.makeSingleThreadPool("Parent Update Queue ["+dimensionName+"]");
 		this.updateQueueProcessor.execute(() -> this.runUpdateQueue());
 	}
@@ -156,13 +182,14 @@ public class NewFullDataFileHandler
 				
 				
 				
-				// only add more items to the queue if half or more of the previous tasks have been completed
+				// queue parent updates
 				if (executor.getQueue().size() < MAX_UPDATE_TASK_COUNT
 					&& this.parentUpdatingPosSet.size() < MAX_UPDATE_TASK_COUNT)
 				{
 					// get the positions that need to be applied to their parents
 					ArrayList<DhSectionPos> parentUpdatePosList = this.repo.getPositionsToUpdate(MAX_UPDATE_TASK_COUNT);
 					
+					// combine updates together based on their parent
 					HashMap<DhSectionPos, HashSet<DhSectionPos>> updatePosByParentPos = new HashMap<>();
 					for (DhSectionPos pos : parentUpdatePosList)
 					{
@@ -177,9 +204,7 @@ public class NewFullDataFileHandler
 						});
 					}
 					
-					
-					
-					// queue each update
+					// queue the updates
 					for (DhSectionPos parentUpdatePos : updatePosByParentPos.keySet())
 					{
 						// stop if there are already a bunch of updates queued
@@ -250,6 +275,7 @@ public class NewFullDataFileHandler
 						}
 					}
 				}
+				
 			}
 			catch (InterruptedException ignored) { Thread.currentThread().interrupt(); }
 			catch (Exception e)
@@ -259,6 +285,63 @@ public class NewFullDataFileHandler
 		}
 		
 		LOGGER.info("Update thread ["+Thread.currentThread().getName()+"] terminated.");
+	}
+	
+	
+	
+	//=======================//
+	// data source migration //
+	//=======================//
+	
+	private void convertLegacyDataSources()
+	{
+		String dimensionName = this.level.getLevelWrapper().getDimensionType().getDimensionName();
+		LOGGER.info("Attempting to migrate data sources for: ["+dimensionName+"]-["+this.saveDir+"]...");
+		
+		int totalCount = this.legacyFileHandler.getDataSourceMigrationCount();
+		LOGGER.info("Found ["+totalCount+"] data sources that need migration.");
+		
+		
+		ArrayList<CompleteFullDataSource> legacyDataSourceList = this.legacyFileHandler.getDataSourcesToMigrate(MIGRATION_BATCH_COUNT);
+		if (!legacyDataSourceList.isEmpty())
+		{
+			// keep going until every data source has been migrated
+			int progressCount = 0;
+			while (!legacyDataSourceList.isEmpty() && this.migrationThreadRunning.get())
+			{
+				LOGGER.info("Migrating ["+dimensionName+"] - [" + progressCount + "/" + totalCount + "]...");
+				
+				for (int i = 0; i < legacyDataSourceList.size() && this.migrationThreadRunning.get(); i++)
+				{
+					// convert the legacy data source to the new format
+					CompleteFullDataSource legacyDataSource = legacyDataSourceList.get(i);
+					NewFullDataSource newDataSource = NewFullDataSource.createFromCompleteDataSource(legacyDataSource);
+					newDataSource.applyToParent = true;
+					
+					this.updateDataSourceAtPos(newDataSource.getSectionPos(), newDataSource, true);
+					
+					// the legacy data source can now be deleted
+					this.legacyFileHandler.repo.deleteWithKey(legacyDataSource.getSectionPos());
+				}
+				
+				legacyDataSourceList = this.legacyFileHandler.getDataSourcesToMigrate(MIGRATION_BATCH_COUNT);
+				progressCount += legacyDataSourceList.size();
+			}
+			
+			
+			if (this.migrationThreadRunning.get())
+			{
+				LOGGER.info("migration complete for: ["+dimensionName+"]-["+this.saveDir+"].");
+			}
+			else
+			{
+				LOGGER.info("migration stopped for: ["+dimensionName+"]-["+this.saveDir+"].");
+			}
+		}
+		else
+		{
+			LOGGER.info("No migration necessary.");
+		}
 	}
 	
 	
@@ -284,6 +367,9 @@ public class NewFullDataFileHandler
 	{
 		super.close();
 		this.updateQueueProcessor.shutdownNow();
+		
+		this.migrationThreadRunning.set(false);
+		this.migrationThreadPool.shutdown();
 	}
 	
 }

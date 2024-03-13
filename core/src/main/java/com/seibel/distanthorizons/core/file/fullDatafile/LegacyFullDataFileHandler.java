@@ -19,25 +19,22 @@
 
 package com.seibel.distanthorizons.core.file.fullDatafile;
 
-import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.CompleteFullDataSource;
 import com.seibel.distanthorizons.core.file.AbstractLegacyDataSourceHandler;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
-import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
-import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
 import com.seibel.distanthorizons.core.sql.repo.AbstractLegacyDataSourceRepo;
-import com.seibel.distanthorizons.core.sql.repo.FullDataRepo;
+import com.seibel.distanthorizons.core.sql.repo.LegacyFullDataRepo;
 import com.seibel.distanthorizons.core.sql.dto.LegacyDataSourceDTO;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
-import java.awt.*;
 import java.io.File;
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.ArrayList;
 
 public class LegacyFullDataFileHandler 
 		extends AbstractLegacyDataSourceHandler<CompleteFullDataSource, IDhLevel> 
@@ -50,7 +47,6 @@ public class LegacyFullDataFileHandler
 	// constructor //
 	//=============//
 	
-	public LegacyFullDataFileHandler(IDhLevel level, AbstractSaveStructure saveStructure) { this(level, saveStructure, null); }
 	public LegacyFullDataFileHandler(IDhLevel level, AbstractSaveStructure saveStructure, @Nullable File saveDirOverride) 
 	{
 		super(level, saveStructure, saveDirOverride);
@@ -67,7 +63,7 @@ public class LegacyFullDataFileHandler
 	{
 		try
 		{
-			return new FullDataRepo("jdbc:sqlite", this.saveDir.getPath() + "/" + AbstractSaveStructure.DATABASE_NAME);
+			return new LegacyFullDataRepo("jdbc:sqlite", this.saveDir.getPath() + "/" + AbstractSaveStructure.DATABASE_NAME);
 		}
 		catch (SQLException e)
 		{
@@ -87,18 +83,12 @@ public class LegacyFullDataFileHandler
 	/** Creates a new data source using any DTOs already present in the database. */
 	@Deprecated
 	@Override
-	protected CompleteFullDataSource createNewDataSourceFromExistingDtos(DhSectionPos pos)
-	{
-		throw new UnsupportedOperationException("Deprecated");
-	}
+	protected CompleteFullDataSource createNewDataSourceFromExistingDtos(DhSectionPos pos) { return null; }
 	
 	
 	@Deprecated
 	@Override
-	protected CompleteFullDataSource makeEmptyDataSource(DhSectionPos pos)
-	{
-		throw new UnsupportedOperationException("Deprecated");
-	}
+	protected CompleteFullDataSource makeEmptyDataSource(DhSectionPos pos) { return null; }
 	
 	
 	
@@ -109,8 +99,33 @@ public class LegacyFullDataFileHandler
 	@Deprecated
 	@Override
 	public void writeDataSourceToFile(CompleteFullDataSource fullDataSource) throws IOException
+	{ throw new UnsupportedOperationException("Deprecated"); }
+	
+	
+	
+	//===========//
+	// migration //
+	//===========//
+	
+	public int getDataSourceMigrationCount()
+	{ return ((LegacyFullDataRepo) this.repo).getMigrationCount(); }
+	
+	public ArrayList<CompleteFullDataSource> getDataSourcesToMigrate(int limit)
 	{
-		throw new UnsupportedOperationException("Deprecated");
+		ArrayList<CompleteFullDataSource> dataSourceList = new ArrayList<>();
+		
+		ArrayList<DhSectionPos> migrationPosList = ((LegacyFullDataRepo) this.repo).getPositionsToMigrate(limit);
+		for (int i = 0; i < migrationPosList.size(); i++)
+		{
+			DhSectionPos pos = migrationPosList.get(i);
+			CompleteFullDataSource dataSource = this.get(pos);
+			if (dataSource != null)
+			{
+				dataSourceList.add(dataSource);
+			}
+		}
+		
+		return dataSourceList;
 	}
 	
 	

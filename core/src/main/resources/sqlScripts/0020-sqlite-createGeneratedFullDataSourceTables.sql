@@ -1,5 +1,16 @@
 
-select * from DhRenderData; -- here to prevent crashing when running the first batch
+ALTER TABLE `DhFullData` RENAME TO `Legacy_FullData_V1`;
+
+--batch--
+
+-- we only want to convert the level 0 LOD data, the rest can be generated later
+delete from Legacy_FullData_V1
+where DataType <> 'CompleteFullDataSource' or DataDetailLevel <> 0;
+
+--batch--
+
+-- shrink the database file for the removed legacy detail levels
+VACUUM;
 
 --batch--
 
