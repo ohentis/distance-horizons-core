@@ -19,16 +19,15 @@
 
 package com.seibel.distanthorizons.core.world;
 
-import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.file.structure.LocalSaveStructure;
 import com.seibel.distanthorizons.core.level.DhServerLevel;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.multiplayer.server.RemotePlayerConnectionHandler;
-import com.seibel.distanthorizons.core.network.netty.NettyServer;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
+import io.netty.buffer.ByteBuf;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
@@ -38,6 +37,7 @@ public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 {
 	private final HashMap<IServerLevelWrapper, DhServerLevel> levels;
 	public final LocalSaveStructure saveStructure;
+	
 	private final RemotePlayerConnectionHandler remotePlayerConnectionHandler;
 	
 	
@@ -52,8 +52,7 @@ public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 		this.saveStructure = new LocalSaveStructure();
 		this.levels = new HashMap<>();
 		
-		NettyServer nettyServer = new NettyServer(Config.Client.Advanced.Multiplayer.ServerNetworking.serverPort.get());
-		this.remotePlayerConnectionHandler = new RemotePlayerConnectionHandler(nettyServer);
+		this.remotePlayerConnectionHandler = new RemotePlayerConnectionHandler();
 
 		LOGGER.info("Started "+DhServerWorld.class.getSimpleName()+" of type "+this.environment);
 	}
@@ -78,6 +77,10 @@ public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 	{
 		this.getLevel(dest).addPlayer(player);
 		this.getLevel(origin).removePlayer(player);
+	}
+	public void handlePluginMessage(IServerPlayerWrapper player, ByteBuf buffer)
+	{
+		this.remotePlayerConnectionHandler.handlePluginMessage(player, buffer);
 	}
 	
 	@Override

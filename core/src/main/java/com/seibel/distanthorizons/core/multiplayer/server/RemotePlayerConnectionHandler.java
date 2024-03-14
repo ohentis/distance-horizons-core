@@ -8,9 +8,9 @@ import com.seibel.distanthorizons.core.config.types.ConfigEntry;
 import com.seibel.distanthorizons.core.level.DhServerLevel;
 import com.seibel.distanthorizons.core.multiplayer.config.MultiplayerConfig;
 import com.seibel.distanthorizons.core.multiplayer.config.MultiplayerConfigChangeListener;
+import com.seibel.distanthorizons.core.network.messages.plugin.PluginHelloMessage;
 import com.seibel.distanthorizons.core.network.netty.INettyConnection;
 import com.seibel.distanthorizons.core.network.netty.NettyServer;
-import com.seibel.distanthorizons.core.network.ScopedNetworkEventSource;
 import com.seibel.distanthorizons.core.network.exceptions.InvalidLevelException;
 import com.seibel.distanthorizons.core.network.messages.netty.base.AckMessage;
 import com.seibel.distanthorizons.core.network.messages.netty.base.NettyCloseEvent;
@@ -19,8 +19,10 @@ import com.seibel.distanthorizons.core.network.messages.netty.session.PlayerUUID
 import com.seibel.distanthorizons.core.network.messages.netty.session.RemotePlayerConfigMessage;
 import com.seibel.distanthorizons.core.network.netty.TrackableNettyMessage;
 import com.seibel.distanthorizons.core.network.netty.NettyMessage;
+import com.seibel.distanthorizons.core.network.plugin.PluginChannelHandler;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
+import io.netty.buffer.ByteBuf;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.Closeable;
@@ -34,23 +36,20 @@ public class RemotePlayerConnectionHandler implements Closeable
 {
 	private static final ConfigEntry<Boolean> GENERATE_MULTIPLE_DIMENSIONS_CONFIG = Config.Client.Advanced.Multiplayer.ServerNetworking.generateMultipleDimensions;
 	
-	private final ScopedNetworkEventSource<NettyServer, NettyMessage> eventSource;
+	private final NettyServer server = new NettyServer(Config.Client.Advanced.Multiplayer.ServerNetworking.serverPort.get());
 	private final ConcurrentHashMap<UUID, ServerPlayerState> playersByUUID = new ConcurrentHashMap<>();
 	private final BiMap<INettyConnection, ServerPlayerState> playersByConnection = Maps.synchronizedBiMap(HashBiMap.create());
-	
 	private final MultiplayerConfigChangeListener configChangeListener = new MultiplayerConfigChangeListener(this::onConfigChanged);
 	
-	public NettyServer server() { return this.eventSource.parent; }
+	private final PluginChannelHandler pluginChannelHandler = new PluginChannelHandler();
+	// TODO port change listener
 	
-	public RemotePlayerConnectionHandler(NettyServer nettyServer)
-	{
-		this.eventSource = new ScopedNetworkEventSource<>(nettyServer);
-		this.registerNetworkHandlers();
-	}
+	public NettyServer server() { return this.server; }
 	
-	private void registerNetworkHandlers()
+	public RemotePlayerConnectionHandler()
 	{
-		this.eventSource.registerHandler(PlayerUUIDMessage.class, playerUUIDMessage ->
+		//region Netty server
+		this.server.registerHandler(PlayerUUIDMessage.class, playerUUIDMessage ->
 		{
 			INettyConnection connection = playerUUIDMessage.getConnection();
 			ServerPlayerState serverPlayerState = this.playersByUUID.get(playerUUIDMessage.playerUUID);
@@ -73,13 +72,13 @@ public class RemotePlayerConnectionHandler implements Closeable
 			playerUUIDMessage.sendResponse(new AckMessage());
 		});
 		
-		this.eventSource.registerHandler(RemotePlayerConfigMessage.class, this.connectedPlayersOnly((remotePlayerConfigMessage, serverPlayerState) ->
+		this.server.registerHandler(RemotePlayerConfigMessage.class, this.connectedPlayersOnly((remotePlayerConfigMessage, serverPlayerState) ->
 		{
 			serverPlayerState.config.clientConfig = (MultiplayerConfig) remotePlayerConfigMessage.payload;
 			serverPlayerState.connection.sendMessage(new RemotePlayerConfigMessage(serverPlayerState.config));
 		}));
 		
-		this.eventSource.registerHandler(NettyCloseEvent.class, closeEvent ->
+		this.server.registerHandler(NettyCloseEvent.class, closeEvent ->
 		{
 			ServerPlayerState dhPlayer = this.playersByConnection.remove(closeEvent.getConnection());
 			if (dhPlayer != null)
@@ -87,6 +86,19 @@ public class RemotePlayerConnectionHandler implements Closeable
 				dhPlayer.connection = null;
 			}
 		});
+		//endregion
+		
+		//region Plugin channel
+		this.pluginChannelHandler.registerHandler(PluginHelloMessage.class, msg -> {
+			// TODO tell to connect somewhere
+			int i = 0;
+		});
+		//endregion
+	}
+	
+	public void handlePluginMessage(IServerPlayerWrapper player, ByteBuf buffer)
+	{
+		this.pluginChannelHandler.decodeAndHandle(player, buffer);
 	}
 	
 	private void onConfigChanged()
@@ -171,7 +183,7 @@ public class RemotePlayerConnectionHandler implements Closeable
 	public void close()
 	{
 		this.configChangeListener.close();
-		this.eventSource.close();
+		this.pluginChannelHandler.close();
 		this.server().close();
 	}
 	

@@ -1,8 +1,9 @@
 package com.seibel.distanthorizons.core.network.plugin;
 
 import com.seibel.distanthorizons.core.network.protocol.INetworkObject;
+import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 
 public abstract class PluginChannelMessage implements INetworkObject
 {
-	// Exists only to distinguish "message" from "object"
+	public IServerPlayerWrapper serverPlayer;
 }

@@ -11,9 +11,11 @@ import com.seibel.distanthorizons.core.network.messages.plugin.PluginHelloMessag
 import com.seibel.distanthorizons.core.network.messages.plugin.ServerConnectInfoMessage;
 import com.seibel.distanthorizons.core.network.plugin.PluginChannelHandler;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import io.netty.buffer.ByteBuf;
 import org.apache.logging.log4j.LogManager;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.function.Consumer;
 
@@ -91,7 +93,11 @@ public class ClientPluginChannelApi implements AutoCloseable
 	
 	public void handlePacket(ByteBuf buffer)
 	{
-		this.channelHandler.decodeAndHandle(buffer);
+		this.handlePacket(null, buffer);
+	}
+	public void handlePacket(@Nullable IServerPlayerWrapper serverPlayer, ByteBuf buffer)
+	{
+		this.channelHandler.decodeAndHandle(serverPlayer, buffer);
 	}
 	
 	@Override

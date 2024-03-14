@@ -41,7 +41,7 @@ public class PluginChannelHandler extends NetworkEventSource<PluginChannelMessag
 	}
 	
 	
-	public void decodeAndHandle(ByteBuf byteBuf)
+	public void decodeAndHandle(@Nullable IServerPlayerWrapper serverPlayer, ByteBuf byteBuf)
 	{
 		if (this.isClosed.get())
 		{
@@ -53,9 +53,11 @@ public class PluginChannelHandler extends NetworkEventSource<PluginChannelMessag
 			ArrayList<Object> messages = new ArrayList<>();
 			this.messageDecoder.decode(byteBuf, messages);
 			
-			for (Object msg : messages)
+			for (Object msgObj : messages)
 			{
-				this.handleMessage((PluginChannelMessage) msg);
+				PluginChannelMessage msg = (PluginChannelMessage) msgObj;
+				msg.serverPlayer = serverPlayer;
+				this.handleMessage(msg);
 			}
 		}
 		catch (Throwable e)
@@ -73,7 +75,6 @@ public class PluginChannelHandler extends NetworkEventSource<PluginChannelMessag
 	{
 		ByteBuf buffer = PooledByteBufAllocator.DEFAULT.buffer();
 		this.messageEncoder.encode(message, buffer);
-		
 		this.packetSender.sendPluginPacket(serverPlayer, buffer);
 	}
 	
