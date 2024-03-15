@@ -38,7 +38,9 @@ public enum EVerticalQuality
 	LOW(new int[]{4, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1}),
 	MEDIUM(new int[]{6, 4, 3, 2, 2, 1, 1, 1, 1, 1, 1}),
 	HIGH(new int[]{8, 6, 4, 2, 2, 2, 2, 1, 1, 1, 1}),
-	EXTREME(new int[]{16, 8, 4, 2, 2, 2, 2, 1, 1, 1, 1});
+	EXTREME(new int[]{16, 8, 4, 2, 2, 2, 2, 1, 1, 1, 1}),
+	WHAT(new int[]{64, 16, 8, 4, 2, 2, 2, 2, 1, 1, 1}),
+	WHY(new int[]{120, 16, 8, 4, 2, 2, 2, 2, 1, 1, 1});
 	
 	/** represents how many LODs can be rendered in a single vertical slice */
 	public final int[] maxVerticalData;
