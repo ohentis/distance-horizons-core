@@ -871,9 +871,9 @@
     "Rare",
     
   "distanthorizons.config.enum.ELodShading.MINECRAFT":
-    "Minecraft",
+    "Auto",
   "distanthorizons.config.enum.ELodShading.OLD_LIGHTING":
-    "Old Lighting",
+    "Force",
   "distanthorizons.config.enum.ELodShading.NONE":
     "None",
 
