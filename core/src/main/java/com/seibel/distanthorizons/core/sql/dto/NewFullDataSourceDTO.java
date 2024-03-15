@@ -111,7 +111,18 @@ public class NewFullDataSourceDTO implements IBaseDTO<DhSectionPos>
 	
 	public NewFullDataSource createDataSource(@NotNull ILevelWrapper levelWrapper) throws IOException, InterruptedException 
 	{ return this.populateDataSource(NewFullDataSource.createEmpty(this.pos), levelWrapper); }
-	public NewFullDataSource populateDataSource(NewFullDataSource dataSource, @NotNull ILevelWrapper levelWrapper) throws IOException, InterruptedException
+	
+	public NewFullDataSource populateDataSource(NewFullDataSource dataSource, @NotNull ILevelWrapper levelWrapper) throws IOException, InterruptedException 
+	{ return this.internalPopulateDataSource(dataSource, levelWrapper, false); }
+	
+	/** 
+	 * May be missing one or more data fields. <br>
+	 * Designed to be used without access to Minecraft or any supporting objects. 
+	 */
+	public NewFullDataSource createUnitTestDataSource() throws IOException, InterruptedException 
+	{ return this.internalPopulateDataSource(NewFullDataSource.createEmpty(this.pos), null, true); }
+	
+	private NewFullDataSource internalPopulateDataSource(NewFullDataSource dataSource, ILevelWrapper levelWrapper, boolean unitTest) throws IOException, InterruptedException
 	{
 		if (NewFullDataSource.DATA_FORMAT_VERSION != this.dataFormatVersion)
 		{
@@ -122,7 +133,16 @@ public class NewFullDataSourceDTO implements IBaseDTO<DhSectionPos>
 		dataSource.dataPoints = readBlobToDataSourceDataArray(this.dataByteArray);
 		
 		dataSource.getMapping().clear(dataSource.getSectionPos());
-		dataSource.getMapping().mergeAndReturnRemappedEntityIds(readBlobToDataMapping(this.mappingByteArray, dataSource.getSectionPos(), levelWrapper));
+		// should only be null when used in a unit test
+		if (!unitTest)
+		{
+			if (levelWrapper == null)
+			{
+				throw new NullPointerException("No level wrapper present, unable to deserialize data map. This should only be used for unit tests.");
+			}
+			
+			dataSource.getMapping().mergeAndReturnRemappedEntityIds(readBlobToDataMapping(this.mappingByteArray, dataSource.getSectionPos(), levelWrapper));
+		}
 		
 		dataSource.lastModifiedUnixDateTime = this.lastModifiedUnixDateTime;
 		dataSource.createdUnixDateTime = this.createdUnixDateTime;
@@ -160,7 +180,7 @@ public class NewFullDataSourceDTO implements IBaseDTO<DhSectionPos>
 			
 			// write column length
 			int columnLength = (dataColumn != null) ? dataColumn.length : 0;
-			compressedOut.writeInt(columnLength);
+			compressedOut.writeInt(columnLength); // TODO
 			
 			// write column data (will be skipped if no data was present)
 			for (int y = 0; y < columnLength; y++)
