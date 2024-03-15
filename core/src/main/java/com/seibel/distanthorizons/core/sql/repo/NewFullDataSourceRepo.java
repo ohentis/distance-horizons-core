@@ -231,4 +231,60 @@ public class NewFullDataSourceRepo extends AbstractDhRepo<DhSectionPos, NewFullD
 	
 	
 	
+	//===================//
+	// compression tests //
+	//===================//
+	
+	/** @return every position in this database */
+	public ArrayList<DhSectionPos> getAllPositions()
+	{
+		ArrayList<DhSectionPos> list = new ArrayList<>();
+
+		List<Map<String, Object>> resultMapList = this.queryDictionary(
+				"select DetailLevel, PosX, PosZ " +
+						"from "+this.getTableName()+"; ");
+
+		for (Map<String, Object> resultMap : resultMapList)
+		{
+			byte detailLevel = (Byte) resultMap.get("DetailLevel");
+			byte sectionDetailLevel = (byte) (detailLevel + DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
+			int posX = (Integer) resultMap.get("PosX");
+			int posZ = (Integer) resultMap.get("PosZ");
+
+			DhSectionPos pos = new DhSectionPos(sectionDetailLevel, posX, posZ);
+			list.add(pos);
+		}
+
+		return list;
+	}
+	
+	/** 
+	 * @return the size of the full data at the given position 
+	 *          (doesn't include the size of the mapping or any other column)
+	 */
+	public int getDataSizeInBytes(DhSectionPos pos)
+	{
+		int detailLevel = pos.getDetailLevel() - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL;
+
+		Map<String, Object> resultMap = this.queryDictionaryFirst(
+				"select LENGTH(Data) as dataSize " +
+						"from "+this.getTableName()+" " +
+						"WHERE DetailLevel = "+detailLevel+" AND PosX = "+pos.getX()+" AND PosZ = "+pos.getZ());
+
+		int dataLength = (resultMap != null) ? (int) resultMap.get("dataSize") : 0;
+		return dataLength;
+	}
+	
+	/** @return the total size in bytes of the full data for this entire database */
+	public int getTotalDataSizeInBytes()
+	{
+		Map<String, Object> resultMap = this.queryDictionaryFirst(
+				"select SUM(LENGTH(Data)) as dataSize " +
+						"from "+this.getTableName()+"; ");
+
+		int dataLength = (resultMap != null) ? (int) resultMap.get("dataSize") : 0;
+		return dataLength;
+	}
+	
+	
 }
