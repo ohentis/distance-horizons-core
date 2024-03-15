@@ -651,6 +651,10 @@
     "High",
   "distanthorizons.config.enum.EVerticalQuality.EXTREME":
     "Extreme",
+  "distanthorizons.config.enum.EVerticalQuality.WHAT":
+    "What? (64)",
+  "distanthorizons.config.enum.EVerticalQuality.WHY":
+    "Why? (120)",
   "distanthorizons.config.enum.EHorizontalQuality.LOWEST":
     "Lowest",
   "distanthorizons.config.enum.EHorizontalQuality.LOW":
