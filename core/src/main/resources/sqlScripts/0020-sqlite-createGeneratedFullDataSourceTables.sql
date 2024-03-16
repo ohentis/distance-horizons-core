@@ -13,7 +13,7 @@ where DataType <> 'CompleteFullDataSource' or DataDetailLevel <> 0;
 
 --batch--
 
--- shrink the database file for the removed legacy detail levels
+-- shrink the database file after having removed low detail legacy LODs
 VACUUM;
 
 --batch--

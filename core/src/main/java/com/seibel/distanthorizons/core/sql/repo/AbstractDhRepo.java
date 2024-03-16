@@ -126,7 +126,6 @@ public abstract class AbstractDhRepo<TKey, TDTO extends IBaseDTO<TKey>>
 	// high level DB //
 	//===============//
 	
-	public TDTO get(TDTO dto) { return this.getByKey(dto.getKey()); }
 	public TDTO getByKey(TKey primaryKey)
 	{
 		Map<String, Object> objectMap = this.queryDictionaryFirst(this.createSelectByKeySql(primaryKey));
