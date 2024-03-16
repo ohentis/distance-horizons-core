@@ -20,6 +20,7 @@ import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.ratelimiting.SupplierBasedRateLimiter;
+import com.seibel.distanthorizons.core.util.threading.ThreadPools;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import io.netty.channel.ChannelException;
 import org.apache.logging.log4j.LogManager;
@@ -110,6 +111,13 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 	public synchronized boolean tick(DhBlockPos2D targetPos)
 	{
 		if (this.closingFuture != null || !this.networkState.isReady())
+		{
+			return false;
+		}
+		
+		ThreadPoolExecutor fileHandlerPool = ThreadPools.getFileHandlerExecutor();
+		int maxThreadPoolTasks = Config.Client.Advanced.Multiplayer.ServerNetworking.maxThreadPoolTasks.get();
+		if (fileHandlerPool != null && maxThreadPoolTasks != 0 && fileHandlerPool.getQueue().size() > maxThreadPoolTasks)
 		{
 			return false;
 		}

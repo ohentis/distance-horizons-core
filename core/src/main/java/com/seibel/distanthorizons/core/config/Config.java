@@ -896,6 +896,16 @@ public class Config
 									+ "")
 							.build();
 					
+					public static ConfigEntry<Integer> maxThreadPoolTasks = new ConfigEntry.Builder<Integer>()
+							.setMinDefaultMax(0, 300, 10000)
+							.comment(""
+									+ "Pauses the generation if amount of thread pool tasks is too high. \n"
+									+ "Decrease this value if LODs don't show up for too long.\n"
+									+ "Increase this value if thread pool tasks often get drained completely.\n"
+									+ "Setting this value to 0 will allow thread pool tasks to build up indefinitely.\n"
+									+ "")
+							.build();
+					
 					
 					public static ConfigUIComment generationSectionNote = new ConfigUIComment();
 					public static ConfigEntry<Integer> generationRequestRCLimit = new ConfigEntry.Builder<Integer>()
