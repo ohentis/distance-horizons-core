@@ -19,6 +19,7 @@
 
 package com.seibel.distanthorizons.core.sql.dto;
 
+import com.seibel.distanthorizons.api.enums.config.EDhApiDataCompressionMode;
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
 import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSource;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
@@ -71,7 +72,7 @@ public class LegacyDataSourceDTO implements IBaseDTO<DhSectionPos>
 	public DhDataInputStream getInputStream() throws IOException
 	{
 		InputStream inputStream = new ByteArrayInputStream(this.dataArray);
-		DhDataInputStream compressedStream = new DhDataInputStream(inputStream);
+		DhDataInputStream compressedStream = new DhDataInputStream(inputStream, EDhApiDataCompressionMode.LZ4); // LZ4 was used by DH before 2.1.0 and as such must be used until the render data format is changed to record the compressor
 		return compressedStream;
 	}
 	

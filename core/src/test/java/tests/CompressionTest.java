@@ -19,152 +19,212 @@
 
 package tests;
 
-import net.jpountz.lz4.*;
+import com.seibel.distanthorizons.api.enums.config.EDhApiDataCompressionMode;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.NewFullDataSource;
+import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.sql.dto.NewFullDataSourceDTO;
+import com.seibel.distanthorizons.core.sql.repo.NewFullDataSourceRepo;
 import org.junit.Assert;
-import org.junit.Test;
 
 import java.io.*;
-import java.nio.file.Files;
 import java.text.CharacterIterator;
 import java.text.StringCharacterIterator;
 import java.util.ArrayList;
 
-//import org.apache.commons.compress.compressors.xz.XZCompressorInputStream;
-//import org.apache.commons.compress.compressors.xz.XZCompressorOutputStream;
-//import com.github.luben.zstd.ZstdInputStream;
-//import com.github.luben.zstd.ZstdOutputStream;
-
 /**
- * Results (2023-5-20): <br>
- * 200 files <br><br>
- *
- * <strong>uncompressed</strong> <br><br>
- *
- * render data - ratio 1.0 (shocker :P) <br>
- * read time in - 784 ms, avg 3 ms/file <br>
- * write time in - 803 ms, avg 4 ms/file <br><br>
- *
- * full data - ratio 1.0 <br>
- * read time in - 2,213 ms, avg 11 ms/file <br>
- * write time in - 1,753 ms, avg 8 ms/file <br><br><br>
- *
- *
- * <strong>XZ</strong> <br><br>
- *
- * render data - ratio 0.1044 <br>
- * read time in - 2,413 ms, avg 12 ms/file <br>
- * write time in - 28,441 ms, avg 142 ms/file <br><br>
- *
- * full data - ratio 0.1123 <br>
- * read time in - 5,888 ms, avg 29 ms/file <br>
- * write time in - 79,675 ms, avg 398 ms/file <br><br><br>
- *
- *
- * <strong>LZ4</strong> <br><br>
- *
- * render data - ratio 0.2933 <br>
- * read time in - 846 ms, avg 4 ms/file <br>
- * write time in - 1,040 ms, avg 5 ms/file <br><br>
- *
- * full data - ratio 0.3275 <br>
- * read time in - 1,964 ms, avg 9 ms/file <br>
- * write time in - 1,584 ms, avg 7 ms/file <br><br><br>
- *
- *
- * <strong>Z Standard</strong> <br><br>
- *
- * render data - ratio 0.1791 <br>
- * read time in - 5,170 ms, avg 25 ms/file <br>
- * write time in - 5,294 ms, avg 26 ms/file <br><br>
- *
- * full data - ratio 0.2060 <br>
- * read time in - 14,754 ms, avg 73 ms/file <br>
- * write time in - 14,057 ms, avg 70 ms/file <br><br><br>
- *
- *
- *
  * <strong>Note:</strong>
  * In order to test the compressors that aren't currently in use: <br>
- * 1. Generate DH data and point the {@link CompressionTest#TEST_DIR} variable to the "Distant_Horizons" folder.
- * 2. Add the following to build.gradle's dependencies block: <br>
+ * 1. Generate DH data (64 DH render distance is suggest) 
+ * 2. Point the {@link CompressionTest#TEST_DIR} variable to the world's "data" folder.
+ * 3. (Optional) Add the following to build.gradle's dependencies block: <br>
  * <code>
- * shadowMe("org.tukaani:xz:1.9")
- * shadowMe("org.apache.commons:commons-compress:1.21")
- * shadowMe("com.github.luben:zstd-jni:1.5.5-3")
+ * forgeShadowMe('org.apache.commons:commons-compress:1.26.1')
+ * forgeShadowMe('org.itadaki:bzip2:0.9.1')
+ * forgeShadowMe('lzma:lzma:0.0.1')
  * </code><br>
- * 3. Uncomment the tests in this file <br>
- * 4. Run the tests like normal
+ * 4. (Optional) Uncomment the tests in this file <br>
+ * 5. Run tests like normal
  */
 public class CompressionTest
 {
-	public static String TEST_DIR = "C:\\DistantHorizonsWorkspace\\distantHorizons\\fabric\\run\\saves\\Arcapelago\\data\\Distant_Horizons";
-	public static String RENDER_DATA_PATH = TEST_DIR + "\\renderCache";
-	public static String FULL_DATA_PATH = TEST_DIR + "\\data";
+	public static String TEST_DIR = "C:\\DistantHorizonsWorkspace\\distant-horizons\\run\\saves\\Arcapelago\\data";
+	public static String DB_FILE_NAME_PREFIX = "DistantHorizons";
+	public static String UNCOMPRESSED_DB_FILE_NAME = "DistantHorizons.sqlite";
 	
-	/** limits the number of files tested so I don't have to wait 10 minutes for the slower compressors */
-	public static int MAX_NUMBER_OF_FILES_TO_TEST = 200;
+	/** -1 will test all of them */
+	public static int MAX_DTO_TEST_COUNT = -1;
 	
 	
 	
-	//	@Test
+	//@Test
 	public void NoCompression()
 	{
 		String compressorName = "Uncompressed";
-		
-		CreateInputStreamFunc createInputStreamFunc = (inputStream) -> inputStream;
-		CreateOutputStreamFunc createOutputStreamFunc = (outputStream) -> outputStream;
-		
-		
-		System.out.println(compressorName + " testing render data");
-		this.testCompressor(compressorName, RENDER_DATA_PATH, createInputStreamFunc, createOutputStreamFunc);
-		System.out.println(compressorName + " testing full data");
-		this.testCompressor(compressorName, FULL_DATA_PATH, createInputStreamFunc, createOutputStreamFunc);
+		this.testCompressor(compressorName, EDhApiDataCompressionMode.UNCOMPRESSED);
 	}
 	
-	//	@Test
-	public void Lz4()
+	// collapse the following commented out code when looking at tests
+	
+	//@Test
+	//public void GZIP() // DNF
+	//{
+	//	String compressorName = "GZIP";
+	//	
+	//	DhDataInputStream.CreateInputStreamFunc createInputStreamFunc = (inputStream) -> new GZIPInputStream(inputStream);
+	//	DhDataOutputStream.CreateOutputStreamFunc createOutputStreamFunc = (outputStream) -> new GZIPOutputStream(outputStream);
+	//	
+	//	this.testCompressor(compressorName, createInputStreamFunc, createOutputStreamFunc);
+	//}
+
+	//@Test
+	//public void BZip2() // DNF
+	//{
+	//	String compressorName = "bzip2";
+	//	
+	//	DhDataInputStream.CreateInputStreamFunc createInputStreamFunc = (inputStream) -> new BZip2InputStream(inputStream, true);
+	//	DhDataOutputStream.CreateOutputStreamFunc createOutputStreamFunc = (outputStream) -> new BZip2OutputStream(outputStream);
+	//	
+	//	this.testCompressor(compressorName, createInputStreamFunc, createOutputStreamFunc);
+	//}
+
+	//@Test
+	//public void blockLz4() // DNF
+	//{
+	//	String compressorName = "Block LZ4";
+	//	
+	//	DhDataInputStream.CreateInputStreamFunc createInputStreamFunc = (inputStream) -> new BlockLZ4CompressorInputStream(inputStream);
+	//	DhDataOutputStream.CreateOutputStreamFunc createOutputStreamFunc = (outputStream) -> new BlockLZ4CompressorOutputStream(outputStream);
+	//	
+	//	this.testCompressor(compressorName, createInputStreamFunc, createOutputStreamFunc);
+	//}
+
+	//@Test
+	//public void lzma() // DNF, doesn't support flushing
+	//{
+	//	String compressorName = "lzma";
+	//	
+	//	DhDataInputStream.CreateInputStreamFunc createInputStreamFunc = (inputStream) -> new LZMA2InputStream(inputStream, LZMA2Options.DICT_SIZE_MIN);
+	//	DhDataOutputStream.CreateOutputStreamFunc createOutputStreamFunc = (outputStream) -> new LZMAOutputStream(outputStream, new LZMA2Options(), -1);
+	//	
+	//	this.testCompressor(compressorName, createInputStreamFunc, createOutputStreamFunc);
+	//}
+
+	//@Test
+	//public void deflate() // DNF
+	//{
+	//	String compressorName = "deflate";
+	//	
+	//	DhDataInputStream.CreateInputStreamFunc createInputStreamFunc = (inputStream) -> new DeflateCompressorInputStream(inputStream);
+	//	DhDataOutputStream.CreateOutputStreamFunc createOutputStreamFunc = (outputStream) -> new DeflateCompressorOutputStream(outputStream);
+	//	
+	//	this.testCompressor(compressorName, createInputStreamFunc, createOutputStreamFunc);
+	//}
+	
+	//@Test
+	//public void snappy() // DNF
+	//{
+	//	String compressorName = "snappy";
+	//	
+	//	DhDataInputStream.CreateInputStreamFunc createInputStreamFunc = (inputStream) -> new SnappyCompressorInputStream(inputStream);
+	//	DhDataOutputStream.CreateOutputStreamFunc createOutputStreamFunc = (outputStream) -> new SnappyCompressorOutputStream(outputStream, Long.MAX_VALUE);
+	//	
+	//	this.testCompressor(compressorName, createInputStreamFunc, createOutputStreamFunc);
+	//}
+	
+	
+	//@Test
+	//public void Zstd()
+	//{
+	//	String compressorName = "Zstd";
+	//	
+	//	DhDataInputStream.CreateInputStreamFunc createInputStreamFunc = (inputStream) -> new ZstdInputStream(inputStream);
+	//	DhDataOutputStream.CreateOutputStreamFunc createOutputStreamFunc = (outputStream) -> new ZstdOutputStream(outputStream);
+	//	
+	//	this.testCompressor(compressorName, createInputStreamFunc, createOutputStreamFunc);
+	//}
+	
+	////@Test
+	//public void ZstdDictionary() throws SQLException // isn't any better than normal Zstd
+	//{
+	//	String compressorName = "ZstdDictionary";
+	//
+	//	BufferPool pool = RecyclingBufferPool.INSTANCE;
+	//
+	//
+	//	// create the dictionary
+	//	byte[] dictionary;
+	//	{
+	//		String uncompressedDatabaseFilePath = TEST_DIR + "/" + UNCOMPRESSED_DB_FILE_NAME;
+	//		NewFullDataSourceRepo uncompressedRepo = new NewFullDataSourceRepo("jdbc:sqlite", uncompressedDatabaseFilePath);
+	//		ArrayList<DhSectionPos> positionList = uncompressedRepo.getAllPositions();
+	//
+	//		// sample size of 10 MB or less
+	//		// dictionary size of 64 KB (1 MB and 10 MB's both seemed to perform worse)
+	//		ZstdDictTrainer dictTrainer = new ZstdDictTrainer(10 * 1024 * 1024, 64 * 1024);
+	//
+	//		for (int i = 0; i < positionList.size(); i++)
+	//		{
+	//			DhSectionPos pos = positionList.get(i);
+	//			NewFullDataSourceDTO uncompressedDto = uncompressedRepo.getByKey(pos);
+	//
+	//			dictTrainer.addSample(uncompressedDto.dataByteArray);
+	//		}
+	//
+	//		dictionary = dictTrainer.trainSamples();
+	//	}
+	//
+	//
+	//
+	//
+	//	DhDataInputStream.CreateInputStreamFunc createInputStreamFunc = (inputStream) ->
+	//	{
+	//		ZstdInputStream stream = new ZstdInputStream(inputStream, pool);
+	//		stream.setDict(dictionary);
+	//		return stream;
+	//	};
+	//	DhDataOutputStream.CreateOutputStreamFunc createOutputStreamFunc = (outputStream) ->
+	//	{
+	//		ZstdOutputStream stream = new ZstdOutputStream(outputStream, pool);
+	//		stream.setDict(dictionary);
+	//		return stream;
+	//	};
+	//
+	//	this.testCompressor(compressorName, createInputStreamFunc, createOutputStreamFunc);
+	//}
+	
+	//@Test
+	//public void Lz4FastCompression() // DNF
+	//{
+	//	String compressorName = "LZ4FastCompression";
+	//	
+	//	LZ4FastDecompressor fastCompressor = LZ4Factory.fastestInstance().fastDecompressor();
+	//	
+	//	DhDataInputStream.CreateInputStreamFunc createInputStreamFunc = (inputStream) -> new LZ4BlockInputStream(inputStream, fastCompressor);
+	//	DhDataOutputStream.CreateOutputStreamFunc createOutputStreamFunc = (outputStream) -> new LZ4BlockOutputStream(outputStream);
+	//	
+	//	this.testCompressor(compressorName, createInputStreamFunc, createOutputStreamFunc);
+	//}
+	
+	//@Test
+	public void Lz4() // fast, poor compression
 	{
 		String compressorName = "LZ4";
-		
-		CreateInputStreamFunc createInputStreamFunc = (inputStream) -> new LZ4FrameInputStream(inputStream);
-		CreateOutputStreamFunc createOutputStreamFunc = (outputStream) -> new LZ4FrameOutputStream(outputStream);
-		
-		
-		System.out.println(compressorName + " testing render data");
-		this.testCompressor(compressorName, RENDER_DATA_PATH, createInputStreamFunc, createOutputStreamFunc);
-		System.out.println(compressorName + " testing full data");
-		this.testCompressor(compressorName, FULL_DATA_PATH, createInputStreamFunc, createOutputStreamFunc);
+		this.testCompressor(compressorName, EDhApiDataCompressionMode.LZ4);
 	}
-
-//	@Test
-//	public void Zstandard()
-//	{
-//		String compressorName = "Z_std";
-//		
-//		CreateInputStreamFunc createInputStreamFunc = (inputStream) -> new ZstdInputStream(inputStream);
-//		CreateOutputStreamFunc createOutputStreamFunc = (outputStream) -> new ZstdOutputStream(outputStream);
-//		
-//		
-//		System.out.println(compressorName+" testing render data");
-//		this.testCompressor(compressorName, RENDER_DATA_PATH, createInputStreamFunc, createOutputStreamFunc);
-//		System.out.println(compressorName+" testing full data");
-//		this.testCompressor(compressorName, FULL_DATA_PATH, createInputStreamFunc, createOutputStreamFunc);
-//	}
-
-//	@Test
-//	public void Xz()
-//	{
-//		String compressorName = "XZ";
-//		
-//		CreateInputStreamFunc createInputStreamFunc = (inputStream) -> new XZCompressorInputStream(inputStream);
-//		CreateOutputStreamFunc createOutputStreamFunc = (outputStream) -> new XZCompressorOutputStream(outputStream);
-//		
-//		
-//		System.out.println(compressorName+" testing render data");
-//		this.testCompressor(compressorName, RENDER_DATA_PATH, createInputStreamFunc, createOutputStreamFunc);
-//		System.out.println(compressorName+" testing full data");
-//		this.testCompressor(compressorName, FULL_DATA_PATH, createInputStreamFunc, createOutputStreamFunc);
-//	}
+	
+	//@Test
+	public void Zstd() // middle of the road
+	{
+		String compressorName = "Zstd";
+		this.testCompressor(compressorName, EDhApiDataCompressionMode.Z_STD);
+	}
+	
+	//@Test
+	public void LZMA2() // very slow, very good compression though
+	{
+		String compressorName = "LZMA";
+		this.testCompressor(compressorName, EDhApiDataCompressionMode.LZMA2);
+	}
 	
 	
 	
@@ -172,149 +232,139 @@ public class CompressionTest
 	// testing methods //
 	//=================//
 	
-	@FunctionalInterface
-	public interface CreateInputStreamFunc
+	private void testCompressor(String compressorName, EDhApiDataCompressionMode compressionMode)
 	{
-		InputStream apply(InputStream inputStream) throws Exception;
+		System.out.println("\n");
+		System.out.println("Testing " + compressorName);
 		
-	}
-	
-	@FunctionalInterface
-	public interface CreateOutputStreamFunc
-	{
-		OutputStream apply(OutputStream outputStream) throws Exception;
 		
-	}
-	
-	private void testCompressor(
-			String compressorName, String inputFolderPath,
-			CreateInputStreamFunc createInputStreamFunc,
-			CreateOutputStreamFunc createOutputStreamFunc)
-	{
-		long totalUncompressedFileSizeInBytes = 0;
-		long totalCompressedFileSizeInBytes = 0;
+		long minUncompressedDtoSizeInBytes = Long.MAX_VALUE;
+		long maxUncompressedDtoSizeInBytes = 0;
+		long avgUncompressedDtoSizeInBytes = 0;
 		
-		long totalReadTimeInMs = 0;
-		long totalWriteTimeInMs = 0;
+		long minCompressedDtoSizeInBytes = Long.MAX_VALUE;
+		long maxCompressedDtoSizeInBytes = 0;
+		long avgCompressedDtoSizeInBytes = 0;
+		
+		long totalReadTimeInNano = 0;
+		long totalWriteTimeInNano = 0;
+		
+		
+		long totalUncompressedFileSizeInBytes;
+		long totalCompressedFileSizeInBytes;
+		
 		
 		try
 		{
-			File inputFolder = new File(inputFolderPath);
-			File[] inputFileArray = inputFolder.listFiles();
-			Assert.assertNotNull(inputFileArray);
+			String uncompressedDatabaseFilePath = TEST_DIR + "/" + UNCOMPRESSED_DB_FILE_NAME;
+			File uncompressedDatabaseFile = new File(uncompressedDatabaseFilePath);
+			Assert.assertTrue(uncompressedDatabaseFile.exists());
 			
-			File compressedFolder = new File(inputFolderPath + "\\" + compressorName);
-			compressedFolder.delete();
-			compressedFolder.mkdirs();
+			NewFullDataSourceRepo uncompressedRepo = new NewFullDataSourceRepo("jdbc:sqlite", uncompressedDatabaseFilePath);
 			
 			
-			int processedFileCount = 0;
-			for (File inputFile : inputFileArray)
+			String compressedDatabaseFilePath = TEST_DIR + "/output/" + DB_FILE_NAME_PREFIX + "_" + compressorName + ".sqlite";
+			File compressedDatabaseFile = new File(compressedDatabaseFilePath);
+			compressedDatabaseFile.mkdirs();
+			compressedDatabaseFile.delete();
+			Assert.assertTrue(!compressedDatabaseFile.exists());
+			NewFullDataSourceRepo compressedRepo = new NewFullDataSourceRepo("jdbc:sqlite", compressedDatabaseFilePath);
+			
+			
+			
+			ArrayList<DhSectionPos> positionList = uncompressedRepo.getAllPositions();
+			totalUncompressedFileSizeInBytes = uncompressedRepo.getTotalDataSizeInBytes();
+			System.out.println("Found [" + positionList.size() + "] DTOs.");
+			
+			long processedDtoCount = 0;
+			int maxTestPosition = (MAX_DTO_TEST_COUNT == -1) ? positionList.size() : MAX_DTO_TEST_COUNT;
+			for (int i = 0; i < maxTestPosition; i++)
 			{
-				if (inputFile.isDirectory())
+				try
 				{
-					continue;
-				}
-				
-				// can be used to speed up the tests
-				if (processedFileCount >= MAX_NUMBER_OF_FILES_TO_TEST)
-				{
-					break;
-				}
-				
-				
-				
-				// uncompressed file input //
-				ArrayList<Byte> originalFileByteArray = new ArrayList<>();
-				totalUncompressedFileSizeInBytes += Files.size(inputFile.toPath());
-				
-				try (FileInputStream fileStream = new FileInputStream(inputFile);
-						BufferedInputStream bufferedStream = new BufferedInputStream(fileStream);
-						DataInputStream dataStream = new DataInputStream(bufferedStream))
-				{
-					try
+					DhSectionPos pos = positionList.get(i);
+					if (i % 20 == 0)
 					{
-						while (true)
-						{
-							byte nextByte = dataStream.readByte();
-							originalFileByteArray.add(nextByte);
-						}
+						System.out.println(i + "/" + maxTestPosition);
 					}
-					catch (EOFException e)
-					{ /* end of file reached */ }
+					
+					
+					
+					// uncompressed input //
+					
+					NewFullDataSourceDTO uncompressedDto = uncompressedRepo.getByKey(pos);
+					Assert.assertEquals(uncompressedDto.compressionModeEnum, EDhApiDataCompressionMode.UNCOMPRESSED);
+					NewFullDataSource uncompressedDataSource = uncompressedDto.createUnitTestDataSource();
+					
+					long uncompressedDtoSize = uncompressedRepo.getDataSizeInBytes(pos);
+					minUncompressedDtoSizeInBytes = Math.min(uncompressedDtoSize, minUncompressedDtoSizeInBytes);
+					maxUncompressedDtoSizeInBytes = Math.max(uncompressedDtoSize, maxUncompressedDtoSizeInBytes);
+					avgUncompressedDtoSizeInBytes += uncompressedDtoSize;
+					
+					
+					
+					// compress file //
+					
+					long startWriteNanoTime = System.nanoTime();
+					
+					NewFullDataSourceDTO compressedDto = NewFullDataSourceDTO.CreateFromDataSource(uncompressedDataSource, compressionMode);
+					compressedRepo.save(compressedDto);
+					
+					long endWriteNanoTime = System.nanoTime();
+					totalWriteTimeInNano += (endWriteNanoTime - startWriteNanoTime);
+					
+					
+					long compressedDtoSize = compressedRepo.getDataSizeInBytes(pos);
+					minCompressedDtoSizeInBytes = Math.min(compressedDtoSize, minCompressedDtoSizeInBytes);
+					maxCompressedDtoSizeInBytes = Math.max(compressedDtoSize, maxCompressedDtoSizeInBytes);
+					avgCompressedDtoSizeInBytes += compressedDtoSize;
+					
+					
+					
+					// read compressed file //
+					
+					long startReadNanoTime = System.nanoTime();
+					
+					compressedDto = compressedRepo.getByKey(pos);
+					NewFullDataSource compressedDataSource = compressedDto.createUnitTestDataSource();
+					
+					long endReadMsTime = System.nanoTime();
+					totalReadTimeInNano += (endReadMsTime - startReadNanoTime);
+					
+					
+					processedDtoCount++;
 				}
-				
-				
-				
-				// compress file //
-				long startWriteMsTime = System.currentTimeMillis();
-				
-				File compressedFile = new File(inputFolderPath + "\\" + compressorName + "\\" + inputFile.getName());
-				compressedFile.delete();
-				compressedFile.createNewFile();
-				
-				try (FileOutputStream fileStream = new FileOutputStream(compressedFile);
-						BufferedOutputStream bufferedStream = new BufferedOutputStream(fileStream);
-						OutputStream compressorStream = createOutputStreamFunc.apply(bufferedStream);
-						DataOutputStream dataStream = new DataOutputStream(compressorStream))
+				catch (Exception | Error e)
 				{
-					for (byte nextByte : originalFileByteArray)
-					{
-						dataStream.writeByte(nextByte);
-					}
+					e.printStackTrace();
+					Assert.fail(e.getMessage());
 				}
-				
-				long endWriteMsTime = System.currentTimeMillis();
-				totalWriteTimeInMs += (endWriteMsTime - startWriteMsTime);
-				
-				totalCompressedFileSizeInBytes += Files.size(compressedFile.toPath());
-				
-				
-				
-				// read compressed file //
-				long startReadMsTime = System.currentTimeMillis();
-				ArrayList<Byte> compressedFileByteArray = new ArrayList<>();
-				
-				try (FileInputStream fileStream = new FileInputStream(compressedFile);
-						BufferedInputStream bufferedStream = new BufferedInputStream(fileStream);
-						InputStream compressorStream = createInputStreamFunc.apply(bufferedStream);
-						DataInputStream dataStream = new DataInputStream(compressorStream))
-				{
-					try
-					{
-						while (true)
-						{
-							byte nextByte = dataStream.readByte();
-							compressedFileByteArray.add(nextByte);
-						}
-					}
-					catch (EOFException e)
-					{ /* end of file reached */ }
-				}
-				
-				long endReadMsTime = System.currentTimeMillis();
-				totalReadTimeInMs += (endReadMsTime - startReadMsTime);
-				
-				
-				// confirm the file contents are the same
-				Assert.assertEquals("byte array size mismatch", compressedFileByteArray.size(), originalFileByteArray.size());
-				for (int i = 0; i < compressedFileByteArray.size(); i++)
-				{
-					Assert.assertEquals("array content mismatch at index [" + i + "]", compressedFileByteArray.get(i), originalFileByteArray.get(i));
-				}
-				
-				
-				processedFileCount++;
 			}
+			
+			
+			
+			totalCompressedFileSizeInBytes = compressedRepo.getTotalDataSizeInBytes();
+			
+			avgCompressedDtoSizeInBytes /= processedDtoCount;
+			avgUncompressedDtoSizeInBytes /= processedDtoCount;
 			
 			
 			double compressionRatio = (totalCompressedFileSizeInBytes / (double) totalUncompressedFileSizeInBytes);
 			String compressionRatioString = compressionRatio + "";
 			compressionRatioString = compressionRatioString.substring(0, Math.min(6, compressionRatioString.length()));
 			
-			System.out.println("Uncompressed file size: [" + humanReadableByteCountSI(totalUncompressedFileSizeInBytes) + "] Compressed file size: [" + humanReadableByteCountSI(totalCompressedFileSizeInBytes) + "]. Compression ratio: [" + compressionRatioString + "].");
-			System.out.println("Total read time in MS: [" + totalReadTimeInMs + "] Average read time per file: [" + (totalReadTimeInMs / processedFileCount) + "]");
-			System.out.println("Total write time in MS: [" + totalWriteTimeInMs + "] Average write time per file: [" + (totalWriteTimeInMs / processedFileCount) + "]");
+			
+			System.out.println("\n");
+			System.out.println("Results: " + compressorName);
+			System.out.println();
+			System.out.println("Total uncompressed data: [" + humanReadableByteCountSI(totalUncompressedFileSizeInBytes) + "] Total compressed data: [" + humanReadableByteCountSI(totalCompressedFileSizeInBytes) + "]. Compression ratio: [" + compressionRatioString + "].");
+			System.out.println("Min uncompressed data: [" + humanReadableByteCountSI(minUncompressedDtoSizeInBytes) + "] Min compressed data: [" + humanReadableByteCountSI(minCompressedDtoSizeInBytes) + "].");
+			System.out.println("Max uncompressed data: [" + humanReadableByteCountSI(maxUncompressedDtoSizeInBytes) + "] Max compressed data: [" + humanReadableByteCountSI(maxCompressedDtoSizeInBytes) + "].");
+			System.out.println("Avg uncompressed data: [" + humanReadableByteCountSI(avgUncompressedDtoSizeInBytes) + "] Avg compressed data: [" + humanReadableByteCountSI(avgCompressedDtoSizeInBytes) + "].");
+			System.out.println();
+			System.out.println("Total read time in MS: [" + totalReadTimeInNano / 1_000_000.0 + "] Average read time per dto: [" + (totalReadTimeInNano / processedDtoCount) / 1_000_000.0 + "]");
+			System.out.println("Total write time in MS: [" + totalWriteTimeInNano / 1_000_000.0 + "] Average write time per dto: [" + (totalWriteTimeInNano / processedDtoCount) / 1_000_000.0 + "]");
+			System.out.println();
 		}
 		catch (Exception e)
 		{

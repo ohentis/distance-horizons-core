@@ -32,6 +32,7 @@ CREATE TABLE FullData (
     ,Mapping BLOB NULL
     
     ,DataFormatVersion TINYINT NULL
+    ,CompressionMode TINYINT NULL
     
     ,ApplyToParent BIT NULL
     

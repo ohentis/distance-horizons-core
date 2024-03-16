@@ -1,5 +1,6 @@
 package com.seibel.distanthorizons.core.file;
 
+import com.seibel.distanthorizons.api.enums.config.EDhApiDataCompressionMode;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.NewFullDataSource;
 import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSource;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
@@ -340,7 +341,7 @@ public abstract class AbstractLegacyDataSourceHandler<TDataSource extends IDataS
 			CheckedOutputStream checkedOut = new CheckedOutputStream(byteArrayOutputStream, new Adler32());
 			// normally a DhStream should be the topmost stream to prevent closing the stream accidentally, 
 			// but since this stream will be closed immediately after writing anyway, it won't be an issue
-			DhDataOutputStream compressedOut = new DhDataOutputStream(checkedOut);
+			DhDataOutputStream compressedOut = new DhDataOutputStream(checkedOut, EDhApiDataCompressionMode.LZ4);
 			
 			dataSource.writeToStream(compressedOut, AbstractLegacyDataSourceHandler.this.level);
 			

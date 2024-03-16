@@ -19,6 +19,7 @@
 
 package com.seibel.distanthorizons.core.file.fullDatafile;
 
+import com.seibel.distanthorizons.api.enums.config.EDhApiDataCompressionMode;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.CompleteFullDataSource;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.NewFullDataSource;
@@ -138,7 +139,9 @@ public class NewFullDataFileHandler
 	{
 		try
 		{
-			return NewFullDataSourceDTO.CreateFromDataSource(dataSource);
+			// when creating new data use the compressor currently selected in the config
+			EDhApiDataCompressionMode compressionModeEnum = Config.Client.Advanced.LodBuilding.dataCompression.get();
+			return NewFullDataSourceDTO.CreateFromDataSource(dataSource, compressionModeEnum);
 		}
 		catch (IOException e)
 		{

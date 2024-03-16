@@ -19,7 +19,11 @@
 
 package com.seibel.distanthorizons.core.util.objects.dataStreams;
 
+import com.github.luben.zstd.ZstdOutputStream;
+import com.seibel.distanthorizons.api.enums.config.EDhApiDataCompressionMode;
 import net.jpountz.lz4.LZ4FrameOutputStream;
+import org.tukaani.xz.LZMA2Options;
+import org.tukaani.xz.XZOutputStream;
 
 import java.io.*;
 
@@ -30,9 +34,28 @@ import java.io.*;
  */
 public class DhDataOutputStream extends DataOutputStream
 {
-	public DhDataOutputStream(OutputStream stream) throws IOException
+	public DhDataOutputStream(OutputStream stream, EDhApiDataCompressionMode compressionMode) throws IOException
+	{ 
+		super(warpStream(new BufferedOutputStream(stream), compressionMode)); 
+	}
+	private static OutputStream warpStream(OutputStream stream, EDhApiDataCompressionMode compressionMode) throws IOException
 	{
-		super(new LZ4FrameOutputStream(new BufferedOutputStream(stream)));
+		switch (compressionMode)
+		{
+			case UNCOMPRESSED:
+				return stream;
+			case LZ4:
+				return new LZ4FrameOutputStream(stream);
+			case Z_STD:
+				return new ZstdOutputStream(stream);
+			case LZMA2:
+				// in James' testing preset 4 has the best balance between compression ratio and speed
+				// 5 is slightly more compressed 0.128 vs 0.139, but is roughly 60% slower
+				return new XZOutputStream(stream, new LZMA2Options(4));
+			
+			default:
+				throw new IllegalArgumentException("No compressor defined for ["+compressionMode+"]");
+		}
 	}
 	
 	@Override

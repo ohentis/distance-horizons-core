@@ -19,6 +19,7 @@
 
 package com.seibel.distanthorizons.core.sql.repo;
 
+import com.seibel.distanthorizons.api.enums.config.EDhApiDataCompressionMode;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.sql.dto.NewFullDataSourceDTO;
 
@@ -71,6 +72,8 @@ public class NewFullDataSourceRepo extends AbstractDhRepo<DhSectionPos, NewFullD
 		
 		
 		byte dataFormatVersion = (Byte) objectMap.get("DataFormatVersion");
+		byte compressionMode = (Byte) objectMap.get("CompressionMode");
+		EDhApiDataCompressionMode compressionModeEnum = EDhApiDataCompressionMode.getFromValue(compressionMode);
 		
 		boolean applyToParent = ((int) objectMap.get("ApplyToParent")) == 1;
 		
@@ -79,7 +82,7 @@ public class NewFullDataSourceRepo extends AbstractDhRepo<DhSectionPos, NewFullD
 		
 		NewFullDataSourceDTO dto = new NewFullDataSourceDTO(
 				pos,
-				dataChecksum, columnGenStepByteArray, dataFormatVersion, dataByteArray,
+				dataChecksum, columnGenStepByteArray, dataFormatVersion, compressionModeEnum, dataByteArray,
 				lastModifiedUnixDateTime, createdUnixDateTime,
 				mappingByteArray, applyToParent,
 				minY);
@@ -94,13 +97,13 @@ public class NewFullDataSourceRepo extends AbstractDhRepo<DhSectionPos, NewFullD
 			"   DetailLevel, PosX, PosZ, \n" +
 			"   MinY, DataChecksum, \n" +
 			"   Data, ColumnGenerationStep, Mapping, \n" +
-			"   DataFormatVersion, ApplyToParent, \n" +
+			"   DataFormatVersion, CompressionMode, ApplyToParent, \n" +
 			"   LastModifiedUnixDateTime, CreatedUnixDateTime) \n" +
 			"VALUES( \n" +
 			"    ?, ?, ?, \n" +
 			"    ?, ?, \n" +
 			"    ?, ?, ?, \n" +
-			"    ?, ?, \n" +
+			"    ?, ?, ?, \n" +
 			"    ?, ? \n" +
 			");";
 		PreparedStatement statement = this.createPreparedStatement(sql);
@@ -118,6 +121,7 @@ public class NewFullDataSourceRepo extends AbstractDhRepo<DhSectionPos, NewFullD
 		statement.setObject(i++, dto.mappingByteArray);
 		
 		statement.setObject(i++, dto.dataFormatVersion);
+		statement.setObject(i++, dto.compressionModeEnum.value);
 		statement.setObject(i++, dto.applyToParent);
 		
 		statement.setObject(i++, dto.lastModifiedUnixDateTime);
@@ -140,6 +144,7 @@ public class NewFullDataSourceRepo extends AbstractDhRepo<DhSectionPos, NewFullD
 			"   ,Mapping = ? \n" +
 					
 			"   ,DataFormatVersion = ? \n" +
+			"   ,CompressionMode = ? \n" +
 			"   ,ApplyToParent = ? \n" +
 					
 			"   ,LastModifiedUnixDateTime = ? \n" +
@@ -157,6 +162,7 @@ public class NewFullDataSourceRepo extends AbstractDhRepo<DhSectionPos, NewFullD
 		statement.setObject(i++, dto.mappingByteArray);
 		
 		statement.setObject(i++, dto.dataFormatVersion);
+		statement.setObject(i++, dto.compressionModeEnum.value);
 		statement.setObject(i++, dto.applyToParent);
 		
 		statement.setObject(i++, dto.lastModifiedUnixDateTime);
@@ -262,7 +268,7 @@ public class NewFullDataSourceRepo extends AbstractDhRepo<DhSectionPos, NewFullD
 	 * @return the size of the full data at the given position 
 	 *          (doesn't include the size of the mapping or any other column)
 	 */
-	public int getDataSizeInBytes(DhSectionPos pos)
+	public long getDataSizeInBytes(DhSectionPos pos)
 	{
 		int detailLevel = pos.getDetailLevel() - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL;
 
@@ -270,20 +276,39 @@ public class NewFullDataSourceRepo extends AbstractDhRepo<DhSectionPos, NewFullD
 				"select LENGTH(Data) as dataSize " +
 						"from "+this.getTableName()+" " +
 						"WHERE DetailLevel = "+detailLevel+" AND PosX = "+pos.getX()+" AND PosZ = "+pos.getZ());
-
-		int dataLength = (resultMap != null) ? (int) resultMap.get("dataSize") : 0;
-		return dataLength;
+		
+		if (resultMap != null && resultMap.get("dataSize") != null)
+		{
+			// Number cast is necessary because the returned number can be an int or long
+			Number resultNumber = (Number) resultMap.get("dataSize");
+			long dataLength = resultNumber.longValue();
+			return dataLength;
+			
+		}
+		else
+		{
+			return 0;
+		}
 	}
 	
 	/** @return the total size in bytes of the full data for this entire database */
-	public int getTotalDataSizeInBytes()
+	public long getTotalDataSizeInBytes()
 	{
 		Map<String, Object> resultMap = this.queryDictionaryFirst(
 				"select SUM(LENGTH(Data)) as dataSize " +
 						"from "+this.getTableName()+"; ");
-
-		int dataLength = (resultMap != null) ? (int) resultMap.get("dataSize") : 0;
-		return dataLength;
+		
+		if (resultMap != null && resultMap.get("dataSize") != null)
+		{
+			Number resultNumber = (Number) resultMap.get("dataSize");
+			long dataLength = resultNumber.longValue();
+			return dataLength;
+			
+		}
+		else
+		{
+			return 0;
+		}
 	}
 	
 	

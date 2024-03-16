@@ -341,13 +341,18 @@
 
   "distanthorizons.config.client.advanced.lodBuilding.minTimeBetweenChunkUpdatesInSeconds":
     "Minimum Time Between Chunk Updates In Seconds",
+    
   "distanthorizons.config.client.advanced.lodBuilding.minTimeBetweenChunkUpdatesInSeconds.@tooltip":
     "Determines how long must pass between LOD chunk updates before another. \nupdate can occur\n\nIncreasing this value will reduce CPU load but may may cause \nLODs to become outdated more frequently or for longer.",
   "distanthorizons.config.client.advanced.lodBuilding.onlyUseDhLightingEngine":
     "Only Use DH Lighting Engine",
   "distanthorizons.config.client.advanced.lodBuilding.onlyUseDhLightingEngine.@tooltip":
     "If false LODs will be lit by Minecraft's lighting engine when possible \nand fall back to the DH lighting engine only when necessary. \n\nIf true LODs will only be lit using Distant Horizons' lighting engine. \n\nGenerally it is best to leave this disabled and should only be enabled \nif there are lighting issues or for debugging.",
-  
+  "distanthorizons.config.client.advanced.lodBuilding.dataCompression":
+    "Data Compression",
+  "distanthorizons.config.client.advanced.lodBuilding.dataCompression.@tooltip":
+    "What algorithm should be used to compress new LOD data? \nThis setting will only affect new or updated LOD data, \nany data already generated when this setting is changed will be \nunaffected until it needs to be re-written to the database. \n\nFastest: LZ4 \nHighest Compression: LZMA2",
+    
     
   "distanthorizons.config.client.advanced.multiplayer":
     "Multiplayer",
@@ -754,6 +759,15 @@
     "Features",
   "distanthorizons.config.enum.EDhApiDistantGeneratorMode.FULL":
     "Full",
+    
+  "distanthorizons.config.enum.EDhApiDataCompressionMode.UNCOMPRESSED":
+    "Uncompressed",
+  "distanthorizons.config.enum.EDhApiDataCompressionMode.LZ4":
+    "LZ4",
+  "distanthorizons.config.enum.EDhApiDataCompressionMode.Z_STD":
+    "Zstd",
+  "distanthorizons.config.enum.EDhApiDataCompressionMode.LZMA2":
+    "LZMA2",
     
   "distanthorizons.config.enum.ELightGenerationMode.DISTANT_HORIZONS":
     "Distant Horizons",
