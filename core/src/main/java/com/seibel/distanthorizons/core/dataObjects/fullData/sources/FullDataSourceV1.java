@@ -38,11 +38,12 @@ import java.io.*;
 import java.util.Arrays;
 
 /**
- * This data source contains every datapoint over its given {@link DhSectionPos}.
+ * Formerly "CompleteFullDataSource". <br>
+ * Should be fully populated, containing 1 data point for each column.
  *
  * @see FullDataPointUtilV1
  */
-public class CompleteFullDataSource implements IDataSource<IDhLevel>
+public class FullDataSourceV1 implements IDataSource<IDhLevel>
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
@@ -80,8 +81,8 @@ public class CompleteFullDataSource implements IDataSource<IDhLevel>
 	// constructors //
 	//==============//
 	
-	public static CompleteFullDataSource createEmpty(DhSectionPos pos) { return new CompleteFullDataSource(pos); }
-	private CompleteFullDataSource(DhSectionPos sectionPos)
+	public static FullDataSourceV1 createEmpty(DhSectionPos pos) { return new FullDataSourceV1(pos); }
+	private FullDataSourceV1(DhSectionPos sectionPos)
 	{
 		this.dataArrays = new long[WIDTH * WIDTH][0];
 		this.mapping = new FullDataPointIdMap(sectionPos);
@@ -154,7 +155,7 @@ public class CompleteFullDataSource implements IDataSource<IDhLevel>
 	
 	/**
 	 * Clears and then overwrites any data in this object with the data from the given file and stream.
-	 * This is expected to be used with an existing {@link CompleteFullDataSource} and can be used in place of a constructor to reuse an existing {@link CompleteFullDataSource} object.
+	 * This is expected to be used with an existing {@link FullDataSourceV1} and can be used in place of a constructor to reuse an existing {@link FullDataSourceV1} object.
 	 */
 	public void repopulateFromStream(LegacyDataSourceDTO dto, DhDataInputStream inputStream, IDhLevel level) throws IOException, InterruptedException
 	{
@@ -168,7 +169,7 @@ public class CompleteFullDataSource implements IDataSource<IDhLevel>
 	
 	/**
 	 * Overwrites any data in this object with the data from the given file and stream.
-	 * This is expected to be used with an empty {@link CompleteFullDataSource} and functions similar to a constructor.
+	 * This is expected to be used with an empty {@link FullDataSourceV1} and functions similar to a constructor.
 	 */
 	public void populateFromStream(LegacyDataSourceDTO dto, DhDataInputStream inputStream, IDhLevel level) throws IOException, InterruptedException
 	{

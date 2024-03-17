@@ -48,7 +48,7 @@ import java.util.concurrent.locks.ReentrantLock;
  *       that can be pooled to reduce GC overhead 
  * 
  * @see FullDataPointUtil
- * @see CompleteFullDataSource
+ * @see FullDataSourceV1
  */
 public class NewFullDataSource implements IDataSource<IDhLevel>
 {
@@ -128,14 +128,14 @@ public class NewFullDataSource implements IDataSource<IDhLevel>
 	
 	public static NewFullDataSource createFromChunk(IChunkWrapper chunkWrapper) { return LodDataBuilder.createGeneratedDataSource(chunkWrapper); }
 	
-	public static NewFullDataSource createFromCompleteDataSource(CompleteFullDataSource legacyData)
+	public static NewFullDataSource createFromCompleteDataSource(FullDataSourceV1 legacyData)
 	{
-		if (CompleteFullDataSource.WIDTH != WIDTH)
+		if (FullDataSourceV1.WIDTH != WIDTH)
 		{
 			throw new UnsupportedOperationException(
 					"Unable to convert CompleteFullDataSource into NewFullDataSource. " +
 					"Data sources have different data point widths and no converter is present. " +
-					"CompleteFullDataSource width ["+CompleteFullDataSource.WIDTH+"], NewFullDataSource width ["+WIDTH+"].");
+					"CompleteFullDataSource width ["+ FullDataSourceV1.WIDTH+"], NewFullDataSource width ["+WIDTH+"].");
 		}
 		
 		
@@ -780,12 +780,12 @@ public class NewFullDataSource implements IDataSource<IDhLevel>
 	private static class Pooling
 	{
 		/** used when pooling data sources */
-		private final ArrayList<CompleteFullDataSource> cachedSources = new ArrayList<>();
+		private final ArrayList<FullDataSourceV1> cachedSources = new ArrayList<>();
 		private final ReentrantLock cacheLock = new ReentrantLock();
 		
 		
 		/** @return null if no pooled source exists */
-		public CompleteFullDataSource tryGetPooledSource()
+		public FullDataSourceV1 tryGetPooledSource()
 		{
 			try
 			{
@@ -811,7 +811,7 @@ public class NewFullDataSource implements IDataSource<IDhLevel>
 		 * Doesn't have to be called, if a data source isn't returned, nothing will be leaked. 
 		 * It just means a new source must be constructed next time {@link Pooling#tryGetPooledSource} is called.
 		 */
-		public void returnPooledDataSource(CompleteFullDataSource dataSource)
+		public void returnPooledDataSource(FullDataSourceV1 dataSource)
 		{
 			if (dataSource == null)
 			{

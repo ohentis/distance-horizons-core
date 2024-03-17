@@ -21,7 +21,7 @@ package com.seibel.distanthorizons.core.file.fullDatafile;
 
 import com.seibel.distanthorizons.api.enums.config.EDhApiDataCompressionMode;
 import com.seibel.distanthorizons.core.config.Config;
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.CompleteFullDataSource;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV1;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.NewFullDataSource;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.file.AbstractNewDataSourceHandler;
@@ -72,7 +72,7 @@ public class NewFullDataFileHandler
 	 * vs gracefully shutting down the thread ourselves. 
 	 */
 	protected final AtomicBoolean migrationThreadRunning = new AtomicBoolean(true);
-	protected final LegacyFullDataFileHandler legacyFileHandler;
+	protected final FullDataFileHandlerV1 legacyFileHandler;
 	
 	/** 
 	 * Tracks which positions are currently being updated
@@ -97,7 +97,7 @@ public class NewFullDataFileHandler
 	public NewFullDataFileHandler(IDhLevel level, AbstractSaveStructure saveStructure, @Nullable File saveDirOverride) 
 	{
 		super(level, saveStructure, saveDirOverride);
-		this.legacyFileHandler = new LegacyFullDataFileHandler(level, saveStructure, saveDirOverride);
+		this.legacyFileHandler = new FullDataFileHandlerV1(level, saveStructure, saveDirOverride);
 		
 		DebugRenderer.register(this, Config.Client.Advanced.Debugging.DebugWireframe.showFullDataUpdateStatus);
 		
@@ -315,7 +315,7 @@ public class NewFullDataFileHandler
 		LOGGER.info("Found ["+totalCount+"] data sources that need migration.");
 		
 		
-		ArrayList<CompleteFullDataSource> legacyDataSourceList = this.legacyFileHandler.getDataSourcesToMigrate(MIGRATION_BATCH_COUNT);
+		ArrayList<FullDataSourceV1> legacyDataSourceList = this.legacyFileHandler.getDataSourcesToMigrate(MIGRATION_BATCH_COUNT);
 		if (!legacyDataSourceList.isEmpty())
 		{
 			// keep going until every data source has been migrated
@@ -327,7 +327,7 @@ public class NewFullDataFileHandler
 				ArrayList<CompletableFuture<Void>> updateFutureList = new ArrayList<>();
 				for (int i = 0; i < legacyDataSourceList.size() && this.migrationThreadRunning.get(); i++)
 				{
-					CompleteFullDataSource legacyDataSource = legacyDataSourceList.get(i);
+					FullDataSourceV1 legacyDataSource = legacyDataSourceList.get(i);
 					
 					try
 					{

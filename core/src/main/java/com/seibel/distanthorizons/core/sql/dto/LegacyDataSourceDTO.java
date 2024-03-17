@@ -21,6 +21,7 @@ package com.seibel.distanthorizons.core.sql.dto;
 
 import com.seibel.distanthorizons.api.enums.config.EDhApiDataCompressionMode;
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV1;
 import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSource;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataInputStream;
@@ -30,7 +31,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.concurrent.atomic.AtomicLong;
 
-/** handles storing {@link ColumnRenderSource}'s in the database. */
+/**
+ * Handles storing {@link ColumnRenderSource}'s and {@link FullDataSourceV1}'s in the database. 
+ * 
+ * @deprecated {@link ColumnRenderSource} should store the actual GPU buffer data, 
+ *              at that point this DTO should be just used for {@link FullDataSourceV1}
+ *              and could be renamed to FullDataSourceV1DTO
+ */
+@Deprecated
 public class LegacyDataSourceDTO implements IBaseDTO<DhSectionPos>
 {
 	public DhSectionPos pos;

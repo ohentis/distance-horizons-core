@@ -21,7 +21,7 @@ package com.seibel.distanthorizons.core.file.subDimMatching;
 
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.FullDataPointIdMap;
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.CompleteFullDataSource;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV1;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.NewFullDataSource;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.file.structure.ClientOnlySaveStructure;
@@ -229,9 +229,9 @@ public class SubDimensionLevelMatcher implements AutoCloseable
 				// compare the data sources
 				int equalDataPoints = 0;
 				int totalDataPointCount = 0;
-				for (int x = 0; x < CompleteFullDataSource.WIDTH; x++)
+				for (int x = 0; x < FullDataSourceV1.WIDTH; x++)
 				{
-					for (int z = 0; z < CompleteFullDataSource.WIDTH; z++)
+					for (int z = 0; z < FullDataSourceV1.WIDTH; z++)
 					{
 						long[] newColumn = newDataSource.get(x, z);
 						long[] testColumn = testFullDataSource.get(x, z);

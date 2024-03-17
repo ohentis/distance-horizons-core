@@ -19,7 +19,7 @@
 
 package com.seibel.distanthorizons.core.file.fullDatafile;
 
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.CompleteFullDataSource;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV1;
 import com.seibel.distanthorizons.core.file.AbstractLegacyDataSourceHandler;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.level.IDhLevel;
@@ -36,8 +36,7 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
 
-public class LegacyFullDataFileHandler 
-		extends AbstractLegacyDataSourceHandler<CompleteFullDataSource, IDhLevel> 
+public class FullDataFileHandlerV1 extends AbstractLegacyDataSourceHandler<FullDataSourceV1, IDhLevel> 
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
@@ -47,7 +46,7 @@ public class LegacyFullDataFileHandler
 	// constructor //
 	//=============//
 	
-	public LegacyFullDataFileHandler(IDhLevel level, AbstractSaveStructure saveStructure, @Nullable File saveDirOverride) 
+	public FullDataFileHandlerV1(IDhLevel level, AbstractSaveStructure saveStructure, @Nullable File saveDirOverride) 
 	{
 		super(level, saveStructure, saveDirOverride);
 	}
@@ -74,21 +73,20 @@ public class LegacyFullDataFileHandler
 	}
 	
 	@Override
-	protected CompleteFullDataSource createDataSourceFromDto(LegacyDataSourceDTO dto) throws InterruptedException, IOException
+	protected FullDataSourceV1 createDataSourceFromDto(LegacyDataSourceDTO dto) throws InterruptedException, IOException
 	{
-		CompleteFullDataSource dataSource = CompleteFullDataSource.createEmpty(dto.pos);
+		FullDataSourceV1 dataSource = FullDataSourceV1.createEmpty(dto.pos);
 		dataSource.populateFromStream(dto, dto.getInputStream(), this.level);
 		return dataSource;
 	}
 	/** Creates a new data source using any DTOs already present in the database. */
 	@Deprecated
 	@Override
-	protected CompleteFullDataSource createNewDataSourceFromExistingDtos(DhSectionPos pos) { return null; }
-	
+	protected FullDataSourceV1 createNewDataSourceFromExistingDtos(DhSectionPos pos) { return null; }
 	
 	@Deprecated
 	@Override
-	protected CompleteFullDataSource makeEmptyDataSource(DhSectionPos pos) { return null; }
+	protected FullDataSourceV1 makeEmptyDataSource(DhSectionPos pos) { return null; }
 	
 	
 	
@@ -98,7 +96,7 @@ public class LegacyFullDataFileHandler
 	
 	@Deprecated
 	@Override
-	public void writeDataSourceToFile(CompleteFullDataSource fullDataSource) throws IOException
+	public void writeDataSourceToFile(FullDataSourceV1 fullDataSource) throws IOException
 	{ throw new UnsupportedOperationException("Deprecated"); }
 	
 	
@@ -109,15 +107,15 @@ public class LegacyFullDataFileHandler
 	
 	public int getDataSourceMigrationCount() { return ((LegacyFullDataRepo) this.repo).getMigrationCount(); }
 	
-	public ArrayList<CompleteFullDataSource> getDataSourcesToMigrate(int limit)
+	public ArrayList<FullDataSourceV1> getDataSourcesToMigrate(int limit)
 	{
-		ArrayList<CompleteFullDataSource> dataSourceList = new ArrayList<>();
+		ArrayList<FullDataSourceV1> dataSourceList = new ArrayList<>();
 		
 		ArrayList<DhSectionPos> migrationPosList = ((LegacyFullDataRepo) this.repo).getPositionsToMigrate(limit);
 		for (int i = 0; i < migrationPosList.size(); i++)
 		{
 			DhSectionPos pos = migrationPosList.get(i);
-			CompleteFullDataSource dataSource = this.get(pos);
+			FullDataSourceV1 dataSource = this.get(pos);
 			if (dataSource != null)
 			{
 				dataSourceList.add(dataSource);

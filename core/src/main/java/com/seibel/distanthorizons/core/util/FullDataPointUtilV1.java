@@ -1,13 +1,13 @@
 package com.seibel.distanthorizons.core.util;
 
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.CompleteFullDataSource;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV1;
 
 /**
  * <strong> Only for Legacy support </strong> <br>
  * Used by DH versions 2.0.0 and 2.0.1. <br><br>
  *
  * Specifically used by the data sources: <br>
- * - {@link CompleteFullDataSource} aka CompleteFullDataSource <br>
+ * - {@link FullDataSourceV1} aka CompleteFullDataSource <br>
  * - (Deleted) HighDetailIncompleteFullDataSource <br>
  * - (Deleted) LowDetailIncompleteFullDataSource <br><br>
  *
@@ -30,7 +30,7 @@ import com.seibel.distanthorizons.core.dataObjects.fullData.sources.CompleteFull
  * ID ID ID ID  ID ID ID ID <-- Bottom bits	<br>
  * </code>
  *
- * @see CompleteFullDataSource
+ * @see FullDataSourceV1
  * @see FullDataPointUtil
  */
 public class FullDataPointUtilV1
