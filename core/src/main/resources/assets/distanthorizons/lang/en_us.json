@@ -440,7 +440,7 @@
     "Enable white world",
   "distanthorizons.config.client.advanced.debugging.enableWhiteWorld.@tooltip":
     "If enabled, vertex color will not be passed.\nUseful for debugging shaders.",
-    "distanthorizons.config.client.advanced.debugging.showOverlappingQuadErrors":
+  "distanthorizons.config.client.advanced.debugging.showOverlappingQuadErrors":
     "Show overlapping quad errors",
   "distanthorizons.config.client.advanced.debugging.showOverlappingQuadErrors.@tooltip":
     "f true overlapping quads will be rendered as bright red for easy identification. \nIf false the quads will be rendered normally.",

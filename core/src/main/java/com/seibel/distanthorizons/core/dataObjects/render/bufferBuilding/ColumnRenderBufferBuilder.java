@@ -86,7 +86,15 @@ public class ColumnRenderBufferBuilder
 						boolean enableTransparency = Config.Client.Advanced.Graphics.Quality.transparency.get().transparencyEnabled;
 						
 						EVENT_LOGGER.trace("RenderRegion start QuadBuild @ " + renderSource.sectionPos);
-						boolean enableSkyLightCulling = !clientLevel.getLevelWrapper().hasCeiling() && Config.Client.Advanced.Graphics.AdvancedGraphics.enableCaveCulling.get();
+						boolean enableSkyLightCulling =
+								(
+									// dimensions with a ceiling will be all caves so we don't want cave culling
+									!clientLevel.getLevelWrapper().hasCeiling()
+									// the end has a lot of overhangs with 0 lighting above the void, which look broken with
+									// the current cave culling logic (this could probably be improved, but just skipping it works best for now)
+									&& !clientLevel.getLevelWrapper().getDimensionType().isTheEnd()
+								)		
+								&& Config.Client.Advanced.Graphics.AdvancedGraphics.enableCaveCulling.get();
 						
 						int skyLightCullingBelow = Config.Client.Advanced.Graphics.AdvancedGraphics.caveCullingHeight.get();
 						// FIXME: Clamp also to the max world height.
