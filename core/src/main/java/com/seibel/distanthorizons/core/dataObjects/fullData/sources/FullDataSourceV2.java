@@ -254,14 +254,6 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 	public boolean update(FullDataSourceV2 inputDataSource, @Nullable IDhLevel level) { return this.update(inputDataSource); }
 	public boolean update(FullDataSourceV2 inputDataSource)
 	{
-		if (inputDataSource.mapping.getMaxValidId() == 0)
-		{
-			// can happen in the end or where empty chunks exist
-			return false;
-		}
-		
-		
-		
 		byte thisDetailLevel = this.pos.getDetailLevel();
 		byte inputDetailLevel = inputDataSource.pos.getDetailLevel();
 		
