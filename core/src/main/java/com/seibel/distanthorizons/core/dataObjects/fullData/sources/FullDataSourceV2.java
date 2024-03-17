@@ -254,10 +254,9 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 	public boolean update(FullDataSourceV2 inputDataSource, @Nullable IDhLevel level) { return this.update(inputDataSource); }
 	public boolean update(FullDataSourceV2 inputDataSource)
 	{
-		// shouldn't happen, but James saw it happen once
 		if (inputDataSource.mapping.getMaxValidId() == 0)
 		{
-			LOGGER.warn("Invalid mapping given from input update data source at pos: ["+inputDataSource.pos+"], skipping update.");
+			// can happen in the end or where empty chunks exist
 			return false;
 		}
 		
