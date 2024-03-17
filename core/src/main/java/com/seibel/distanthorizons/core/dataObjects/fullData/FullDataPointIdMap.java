@@ -44,6 +44,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  *  since it stringifies every block and biome name, which is quite bulky.
  *  It might be worth while to have a biome and block ID that then both get mapped
  *  to the data point ID to reduce file size.
+ *  And/or it would be good to dynamically remove IDs that aren't currently in use.  
  * 
  * @author Leetom
  */

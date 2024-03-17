@@ -35,7 +35,7 @@ public abstract class AbstractNewDataSourceHandler
 	 * 
 	 * @see AbstractNewDataSourceHandler#MIN_SECTION_DETAIL_LEVEL
 	 */
-	public static final byte TOP_SECTION_DETAIL_LEVEL = DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL + LodUtil.REGION_DETAIL_LEVEL; // TODO add "section" to detail level
+	public static final byte TOP_SECTION_DETAIL_LEVEL = DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL + LodUtil.REGION_DETAIL_LEVEL;
 	/** 
 	 * The lowest numerical detail level possible. 
 	 *

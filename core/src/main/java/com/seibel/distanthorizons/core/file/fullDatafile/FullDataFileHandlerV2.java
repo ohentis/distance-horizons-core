@@ -156,7 +156,8 @@ public class FullDataFileHandlerV2
 	@Override
 	protected FullDataSourceV2 createNewDataSourceFromExistingDtos(DhSectionPos pos)
 	{
-		//  TODO maybe just set children update flags to true?
+		// TODO maybe just set children update flags to true?
+		// TODO is any special logic necessary? All DTOs should be generated using their children via the update system anyway
 		return FullDataSourceV2.createEmpty(pos);
 	}
 	
