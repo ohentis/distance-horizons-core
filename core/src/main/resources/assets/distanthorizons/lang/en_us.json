@@ -269,10 +269,6 @@
     "Overdraw Prevention",
   "distanthorizons.config.client.advanced.graphics.advancedGraphics.overdrawPrevention.@tooltip":
     "Determines how far from the camera Distant Horizons will start rendering. \nMeasured as a percentage of the vanilla render distance.\n\nHigher values will prevent LODs from rendering behind vanilla blocks at a higher distance,\nbut may cause holes to appear in the LODs. \nHoles are most likely to appear when flying through unloaded terrain. \n\nIncreasing the vanilla render distance increases the effectiveness of this setting.",
-  "distanthorizons.config.client.advanced.graphics.advancedGraphics.seamlessOverdraw":
-    "(Experimental) Seamless Overdraw",
-  "distanthorizons.config.client.advanced.graphics.advancedGraphics.seamlessOverdraw.@tooltip":
-    "Buggy experimental option that will attempt to match up \nDistant Horizons' and Minecraft's near/far clip planes, \nreducing overdraw. \n\nNote: only works with Fabric.",
   "distanthorizons.config.client.advanced.graphics.advancedGraphics.brightnessMultiplier":
     "Brightness Multiplier",
   "distanthorizons.config.client.advanced.graphics.advancedGraphics.brightnessMultiplier.@tooltip":

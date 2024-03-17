@@ -561,21 +561,6 @@ public class Config
 							.setPerformance(EConfigEntryPerformance.NONE)
 							.build();
 					
-					@Deprecated // TODO remove failed experiment
-					public static ConfigEntry<Boolean> seamlessOverdraw = new ConfigEntry.Builder<Boolean>()
-							.set(false)
-							.comment(""
-									+ "Buggy experimental option that will attempt to match up \n"
-									+ "Distant Horizons' and Minecraft's near/far clip planes, \n"
-									+ "reducing overdraw. \n"
-									+ "\n"
-									+ "Only functional on Fabric.\n"
-									+ "Works best with an overdraw prevention setting of " + EOverdrawPrevention.MEDIUM + " or higher \n"
-									+ " and cave culling is disabled. \n"
-									+ "")
-							.setPerformance(EConfigEntryPerformance.NONE)
-							.build();
-					
 					// move into "shader compatibility"
 					public static ConfigEntry<Double> brightnessMultiplier = new ConfigEntry.Builder<Double>() // TODO: Make this a float (the ClassicConfigGUI doesnt support floats)
 							.set(1.0)
