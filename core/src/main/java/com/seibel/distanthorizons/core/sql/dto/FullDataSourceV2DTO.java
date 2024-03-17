@@ -180,8 +180,10 @@ public class FullDataSourceV2DTO implements IBaseDTO<DhSectionPos>
 			long[] dataColumn = dataArray[xz];
 			
 			// write column length
-			int columnLength = (dataColumn != null) ? dataColumn.length : 0;
-			compressedOut.writeInt(columnLength); /// TODO
+			short columnLength = (dataColumn != null) ? (short) dataColumn.length : 0;
+			// a short is used instead of an int because at most we store 4096 vertical slices and a 
+			// short fits that with less wasted spaces vs an int (short has max value of 32,767 vs int's max of 2 billion)
+			compressedOut.writeShort(columnLength);
 			
 			// write column data (will be skipped if no data was present)
 			for (int y = 0; y < columnLength; y++)
@@ -210,7 +212,7 @@ public class FullDataSourceV2DTO implements IBaseDTO<DhSectionPos>
 		for (int xz = 0; xz < dataArray.length; xz++)
 		{
 			// read the column length
-			int dataColumnLength = compressedIn.readInt(); // separate variables are used for debugging and in case validation wants to be added later 
+			short dataColumnLength = compressedIn.readShort(); // separate variables are used for debugging and in case validation wants to be added later 
 			long[] dataColumn = new long[dataColumnLength];
 			
 			// read column data (will be skipped if no data was present)
