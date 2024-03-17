@@ -124,8 +124,8 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<DhSectionPos, FullDataS
 		statement.setObject(i++, dto.compressionModeEnum.value);
 		statement.setObject(i++, dto.applyToParent);
 		
-		statement.setObject(i++, dto.lastModifiedUnixDateTime);
-		statement.setObject(i++, dto.createdUnixDateTime);
+		statement.setObject(i++, System.currentTimeMillis()); // last modified unix time
+		statement.setObject(i++, System.currentTimeMillis()); // created unix time
 		
 		return statement;
 	}
@@ -165,7 +165,7 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<DhSectionPos, FullDataS
 		statement.setObject(i++, dto.compressionModeEnum.value);
 		statement.setObject(i++, dto.applyToParent);
 		
-		statement.setObject(i++, dto.lastModifiedUnixDateTime);
+		statement.setObject(i++, System.currentTimeMillis()); // last modified unix time
 		statement.setObject(i++, dto.createdUnixDateTime);
 		
 		statement.setObject(i++, dto.pos.getDetailLevel() - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
