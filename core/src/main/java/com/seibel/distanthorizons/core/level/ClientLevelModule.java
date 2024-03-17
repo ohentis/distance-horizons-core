@@ -25,7 +25,6 @@ import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.file.AbstractNewDataSourceHandler;
-import com.seibel.distanthorizons.core.file.fullDatafile.IFullDataSourceProvider;
 import com.seibel.distanthorizons.core.file.fullDatafile.FullDataFileHandlerV2;
 import com.seibel.distanthorizons.core.file.renderfile.RenderSourceFileHandler;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
@@ -306,7 +305,7 @@ public class ClientLevelModule implements Closeable, AbstractNewDataSourceHandle
 		public final LodRenderer renderer;
 		
 		public ClientRenderState(
-				IDhClientLevel dhClientLevel, IClientLevelWrapper clientLevelWrapper, IFullDataSourceProvider fullDataSourceProvider,
+				IDhClientLevel dhClientLevel, IClientLevelWrapper clientLevelWrapper, FullDataFileHandlerV2 fullDataSourceProvider,
 				AbstractSaveStructure saveStructure)
 		{
 			this.clientLevelWrapper = clientLevelWrapper;

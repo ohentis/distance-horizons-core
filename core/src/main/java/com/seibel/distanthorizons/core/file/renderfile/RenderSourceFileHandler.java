@@ -29,7 +29,6 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSource;
-import com.seibel.distanthorizons.core.file.fullDatafile.IFullDataSourceProvider;
 import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.sql.repo.AbstractLegacyDataSourceRepo;
 import com.seibel.distanthorizons.core.sql.dto.LegacyDataSourceDTO;
@@ -47,9 +46,8 @@ public class RenderSourceFileHandler extends AbstractLegacyDataSourceHandler<Col
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
 	private final F3Screen.NestedMessage threadPoolMsg;
-	private int totalRetrievalPositionCount = 0;
 	
-	public final IFullDataSourceProvider fullDataSourceProvider; // TODO replace with FullDataFileHandlerV2?
+	public final FullDataFileHandlerV2 fullDataSourceProvider;
 	
 	
 	
@@ -57,7 +55,7 @@ public class RenderSourceFileHandler extends AbstractLegacyDataSourceHandler<Col
 	// constructor //
 	//=============//
 	
-	public RenderSourceFileHandler(IFullDataSourceProvider sourceProvider, IDhClientLevel clientLevel, AbstractSaveStructure saveStructure)
+	public RenderSourceFileHandler(FullDataFileHandlerV2 sourceProvider, IDhClientLevel clientLevel, AbstractSaveStructure saveStructure)
 	{
 		super(clientLevel, saveStructure);
 		
@@ -140,7 +138,7 @@ public class RenderSourceFileHandler extends AbstractLegacyDataSourceHandler<Col
 		lines.add("  Update thread pool tasks: " + updateQueueSize + " (completed: " + updateCompletedTaskSize + ")");
 		lines.add("  Level Unsaved #: " + this.level.getUnsavedDataSourceCount());
 		lines.add("  Full Data Unsaved #: " + this.fullDataSourceProvider.getUnsavedDataSourceCount());
-		lines.add("  Parent Update #: " + ((FullDataFileHandlerV2) this.fullDataSourceProvider).parentUpdatingPosSet.size());
+		lines.add("  Parent Update #: " + this.fullDataSourceProvider.parentUpdatingPosSet.size());
 		lines.add("  Unsaved render sources: " + this.unsavedDataSourceBySectionPos.size());
 		
 		return lines.toArray(new String[0]);
