@@ -322,7 +322,7 @@ public class ColumnRenderSource implements IDataSource<IDhClientLevel>
 						if (dataColumn != null && worldGenStep != EDhApiWorldGenerationStep.EMPTY)
 						{
 							FullDataToRenderDataTransformer.convertColumnData(
-									level, inputFullDataSource.getMapping(),
+									level, inputFullDataSource.mapping,
 									minBlockPos.x + x,
 									minBlockPos.z + z,
 									columnArrayView, dataColumn);
@@ -372,11 +372,6 @@ public class ColumnRenderSource implements IDataSource<IDhClientLevel>
 	public DhSectionPos getKey() { return this.sectionPos; }
 	
 	public byte getDataDetailLevel() { return (byte) (this.sectionPos.getDetailLevel() - SECTION_SIZE_OFFSET); }
-	
-	@Override
-	public EDhApiWorldGenerationStep getWorldGenStep() { return EDhApiWorldGenerationStep.EMPTY; }
-	@Override 
-	public EDhApiWorldGenerationStep getWorldGenStepAtRelativePos(int relX, int relZ) { return EDhApiWorldGenerationStep.EMPTY; }
 	
 	/** @return how many data points wide this {@link ColumnRenderSource} is. */
 	public int getWidthInDataPoints() { return BitShiftUtil.powerOfTwo(this.getDetailOffset()); }

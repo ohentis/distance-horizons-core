@@ -240,8 +240,8 @@ public class SubDimensionLevelMatcher implements AutoCloseable
 						{
 							// compare each data point in the column
 							
-							FullDataPointIdMap newDataMap = newDataSource.getMapping();
-							FullDataPointIdMap testDataMap = testFullDataSource.getMapping();
+							FullDataPointIdMap newDataMap = newDataSource.mapping;
+							FullDataPointIdMap testDataMap = testFullDataSource.mapping;
 							
 							// use min to prevent going out of bounds
 							int minColumnIndex = Math.min(newColumn.length, testColumn.length);

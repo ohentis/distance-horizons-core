@@ -127,10 +127,7 @@ public class FullDataSourceV1 implements IDataSource<IDhLevel>
 	@Override
 	public byte getDataFormatVersion() { return DATA_FORMAT_VERSION; }
 	
-	@Override
 	public EDhApiWorldGenerationStep getWorldGenStep() { return this.worldGenStep; }
-	@Override
-	public EDhApiWorldGenerationStep getWorldGenStepAtRelativePos(int relX, int relZ) { return this.worldGenStep; }
 	
 	public boolean isEmpty() { return this.isEmpty; }
 	

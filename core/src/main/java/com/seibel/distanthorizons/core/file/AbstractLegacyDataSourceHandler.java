@@ -1,6 +1,7 @@
 package com.seibel.distanthorizons.core.file;
 
 import com.seibel.distanthorizons.api.enums.config.EDhApiDataCompressionMode;
+import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSource;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
@@ -353,7 +354,7 @@ public abstract class AbstractLegacyDataSourceHandler<TDataSource extends IDataS
 			// save the DTO
 			LegacyDataSourceDTO newDto = new LegacyDataSourceDTO(
 					dataSource.getSectionPos(), checksum,
-					dataSource.getDataDetailLevel(), dataSource.getWorldGenStep(), ColumnRenderSource.DATA_NAME,
+					dataSource.getDataDetailLevel(), EDhApiWorldGenerationStep.EMPTY, ColumnRenderSource.DATA_NAME,
 					dataSource.getDataFormatVersion(), 
 					byteArrayOutputStream.toByteArray());
 			this.repo.save(newDto);

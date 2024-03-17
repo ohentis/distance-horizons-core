@@ -46,10 +46,6 @@ public interface IDataSource<TDhLevel extends IDhLevel> extends IBaseDTO<DhSecti
 	 */
 	byte getDataDetailLevel();
 	
-	@Deprecated // TODO only necessary for full data sources
-	EDhApiWorldGenerationStep getWorldGenStep();
-	EDhApiWorldGenerationStep getWorldGenStepAtRelativePos(int relX, int relZ);
-	
 	/** Defines how the binary data is formatted. */
 	byte getDataFormatVersion();
 	

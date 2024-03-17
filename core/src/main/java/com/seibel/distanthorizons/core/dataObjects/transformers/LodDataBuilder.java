@@ -71,7 +71,7 @@ public class LodDataBuilder
 		DhSectionPos pos = new DhSectionPos(DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL, sectionPosX, sectionPosZ);
 		
 		FullDataSourceV2 dataSource = FullDataSourceV2.createEmpty(pos);
-		dataSource.markNotEmpty();
+		dataSource.isEmpty = false;
 		
 		
 		
@@ -135,7 +135,7 @@ public class LodDataBuilder
 				int lastY = chunkWrapper.getMaxBuildHeight();
 				IBiomeWrapper biome = chunkWrapper.getBiome(chunkX, lastY, chunkZ);
 				IBlockStateWrapper blockState = AIR;
-				int mappedId = dataSource.getMapping().addIfNotPresentAndGetId(biome, blockState);
+				int mappedId = dataSource.mapping.addIfNotPresentAndGetId(biome, blockState);
 				// FIXME: The lastY +1 offset is to reproduce the old behavior. Remove this when we get per-face lighting
 				byte blockLight = (byte) chunkWrapper.getBlockLight(chunkX, lastY + 1, chunkZ);
 				byte skyLight = (byte) chunkWrapper.getSkyLight(chunkX, lastY + 1, chunkZ);
@@ -180,7 +180,7 @@ public class LodDataBuilder
 						longs.add(FullDataPointUtilV2.encode(mappedId, lastY - y, y + 1 - chunkWrapper.getMinBuildHeight(), blockLight, skyLight));
 						biome = newBiome;
 						blockState = newBlockState;
-						mappedId = dataSource.getMapping().addIfNotPresentAndGetId(biome, blockState);
+						mappedId = dataSource.mapping.addIfNotPresentAndGetId(biome, blockState);
 						blockLight = newBlockLight;
 						skyLight = newSkyLight;
 						lastY = y;
@@ -205,7 +205,7 @@ public class LodDataBuilder
 			}
 		}
 		
-		LodUtil.assertTrue(!dataSource.isEmpty());
+		LodUtil.assertTrue(!dataSource.isEmpty);
 		return dataSource;
 	}
 	
@@ -232,7 +232,7 @@ public class LodDataBuilder
 				{
 					DhApiTerrainDataPoint dataPoint = columnDataPoints.get(index);
 					
-					int id = accessor.getMapping().addIfNotPresentAndGetId(
+					int id = accessor.mapping.addIfNotPresentAndGetId(
 							(IBiomeWrapper) (dataPoint.biomeWrapper),
 							(IBlockStateWrapper) (dataPoint.blockStateWrapper)
 					);

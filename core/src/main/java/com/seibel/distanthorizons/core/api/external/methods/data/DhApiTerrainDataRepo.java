@@ -219,7 +219,7 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 			else
 			{
 				// attempt to get the LOD data from the data source
-				FullDataPointIdMap mapping = dataSource.getMapping();
+				FullDataPointIdMap mapping = dataSource.mapping;
 				long[] dataColumn = dataSource.get(relativePos.x, relativePos.z);
 				if (dataColumn != null)
 				{

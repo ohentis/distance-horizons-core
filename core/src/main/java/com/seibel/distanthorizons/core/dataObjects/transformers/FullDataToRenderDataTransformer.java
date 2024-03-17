@@ -98,7 +98,7 @@ public class FullDataToRenderDataTransformer
 		final byte dataDetail = fullDataSource.getDataDetailLevel();
 		final int vertSize = Config.Client.Advanced.Graphics.Quality.verticalQuality.get().calculateMaxVerticalData(fullDataSource.getDataDetailLevel());
 		final ColumnRenderSource columnSource = new ColumnRenderSource(pos, vertSize, level.getMinY());
-		if (fullDataSource.isEmpty())
+		if (fullDataSource.isEmpty)
 		{
 			return columnSource;
 		}
@@ -118,7 +118,7 @@ public class FullDataToRenderDataTransformer
 					
 					ColumnArrayView columnArrayView = columnSource.getVerticalDataPointView(x, z);
 					long[] dataColumn = fullDataSource.get(x, z);
-					convertColumnData(level, fullDataSource.getMapping(), baseX + x, baseZ + z, columnArrayView, dataColumn);
+					convertColumnData(level, fullDataSource.mapping, baseX + x, baseZ + z, columnArrayView, dataColumn);
 				}
 			}
 			

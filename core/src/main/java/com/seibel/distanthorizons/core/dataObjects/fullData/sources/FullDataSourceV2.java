@@ -54,7 +54,7 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	/** useful for debugging, but can slow down update operations quite a bit due to being called so often. */
-	private static final boolean RUN_UPDATE_DEV_VALIDATION = false; //ModInfo.IS_DEV_BUILD;
+	private static final boolean RUN_UPDATE_DEV_VALIDATION = false;
 	private static final boolean RUN_V1_MIGRATION_VALIDATION = false;
 	
 	/** measured in data columns */
@@ -64,17 +64,20 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 		
 	
 	
-	// TODO make these fields private
+	private int cachedHashCode = 0;
+	
 	private DhSectionPos pos;
 	@Override
 	public DhSectionPos getKey() { return this.pos; }
+	
+	
+	public final FullDataPointIdMap mapping;
+	
 	
 	public long lastModifiedUnixDateTime;
 	public long createdUnixDateTime;
 	
 	public int levelMinY;
-	
-	private int cachedHashCode = 0;
 	
 	/** 
 	 * stores how far each column has been generated should start with {@link EDhApiWorldGenerationStep#EMPTY}
@@ -87,11 +90,8 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 	 * The y data should be sorted from bottom to top
 	 */
 	public long[][] dataPoints;
-	private boolean isEmpty;
 	
-	private FullDataPointIdMap mapping;
-	public FullDataPointIdMap getMapping() { return this.mapping; }
-	
+	public boolean isEmpty;
 	public boolean applyToParent = false;
 	
 	
@@ -651,7 +651,10 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 	// helper methods //
 	//================//
 	
-	// TODO  make private, any external logic should go through a method, not interact with the arrays directly
+	/** 
+	 * Usually this should just be used internally, but there may be instances
+	 * where the raw data arrays are available without the data source object.
+	 */
 	public static int relativePosToIndex(int relX, int relZ) throws IndexOutOfBoundsException
 	{ 
 		if (relX < 0 || relZ < 0 ||
@@ -678,18 +681,11 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 	@Override
 	public byte getDataFormatVersion() { return DATA_FORMAT_VERSION; }
 	
-	@Deprecated
-	@Override
-	public EDhApiWorldGenerationStep getWorldGenStep() { return this.getWorldGenStepAtRelativePos(0, 0); }
-	@Override
 	public EDhApiWorldGenerationStep getWorldGenStepAtRelativePos(int relX, int relZ) 
 	{
 		int index = relativePosToIndex(relX, relZ);
 		return EDhApiWorldGenerationStep.fromValue(this.columnGenerationSteps[index]); 
 	}
-	
-	public boolean isEmpty() { return this.isEmpty; }
-	public void markNotEmpty() { this.isEmpty = false; }
 	
 	public void setSingleColumn(long[] longArray, int relX, int relZ, EDhApiWorldGenerationStep worldGenStep)
 	{
@@ -713,6 +709,12 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 			}
 		}
 	}
+	
+	
+	
+	//================//
+	// base overrides //
+	//================//
 	
 	@Override
 	public String toString() { return this.pos.toString(); }
