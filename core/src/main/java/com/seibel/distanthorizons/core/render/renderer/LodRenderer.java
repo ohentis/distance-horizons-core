@@ -519,7 +519,8 @@ public class LodRenderer
 		
 		GL32.glEnable(GL32.GL_BLEND);
 		GL32.glBlendEquation(GL32.GL_FUNC_ADD);
-		GL32.glBlendFunc(GL32.GL_ONE, GL32.GL_ONE_MINUS_SRC_ALPHA);
+		GL32.glBlendFuncSeparate(GL32.GL_SRC_ALPHA, GL32.GL_ONE_MINUS_SRC_ALPHA, GL32.GL_ONE, GL32.GL_ONE_MINUS_SRC_ALPHA);
+		//GL32.glBlendFunc(GL32.GL_ONE, GL32.GL_ONE_MINUS_SRC_ALPHA);
 		ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeRenderPassEvent.class, renderEventParam);
 		this.bufferHandler.renderTransparent(this, renderEventParam);
 		GL32.glDepthMask(true); // Apparently the depth mask state is stored in the FBO, so glState fails to restore it...
