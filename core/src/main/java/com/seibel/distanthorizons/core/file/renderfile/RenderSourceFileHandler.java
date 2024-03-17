@@ -23,7 +23,7 @@ import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSour
 import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSourceLoader;
 import com.seibel.distanthorizons.core.dataObjects.transformers.FullDataToRenderDataTransformer;
 import com.seibel.distanthorizons.core.file.AbstractLegacyDataSourceHandler;
-import com.seibel.distanthorizons.core.file.fullDatafile.FullDataFileHandlerV2;
+import com.seibel.distanthorizons.core.file.fullDatafile.FullDataSourceProviderV2;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
@@ -47,7 +47,7 @@ public class RenderSourceFileHandler extends AbstractLegacyDataSourceHandler<Col
 	
 	private final F3Screen.NestedMessage threadPoolMsg;
 	
-	public final FullDataFileHandlerV2 fullDataSourceProvider;
+	public final FullDataSourceProviderV2 fullDataSourceProvider;
 	
 	
 	
@@ -55,7 +55,7 @@ public class RenderSourceFileHandler extends AbstractLegacyDataSourceHandler<Col
 	// constructor //
 	//=============//
 	
-	public RenderSourceFileHandler(FullDataFileHandlerV2 sourceProvider, IDhClientLevel clientLevel, AbstractSaveStructure saveStructure)
+	public RenderSourceFileHandler(FullDataSourceProviderV2 sourceProvider, IDhClientLevel clientLevel, AbstractSaveStructure saveStructure)
 	{
 		super(clientLevel, saveStructure);
 		
@@ -132,14 +132,23 @@ public class RenderSourceFileHandler extends AbstractLegacyDataSourceHandler<Col
 		String updateQueueSize = (updateExecutor != null) ? updateExecutor.getQueue().size()+"" : "-";
 		String updateCompletedTaskSize = (updateExecutor != null) ? updateExecutor.getCompletedTaskCount()+"" : "-";
 		
+		int unsavedDataSourceCount = this.fullDataSourceProvider.getUnsavedDataSourceCount();
+		
+		
+		
 		ArrayList<String> lines = new ArrayList<>();
 		lines.add("File Handler [" + this.level.getLevelWrapper().getDimensionType().getDimensionName() + "]");
 		lines.add("  File thread pool tasks: " + fileQueueSize + " (completed: " + fileCompletedTaskSize + ")");
 		lines.add("  Update thread pool tasks: " + updateQueueSize + " (completed: " + updateCompletedTaskSize + ")");
 		lines.add("  Level Unsaved #: " + this.level.getUnsavedDataSourceCount());
-		lines.add("  Full Data Unsaved #: " + this.fullDataSourceProvider.getUnsavedDataSourceCount());
+		if (unsavedDataSourceCount != -1)
+		{
+			lines.add("  File Handler Unsaved #: " + unsavedDataSourceCount);
+		}
 		lines.add("  Parent Update #: " + this.fullDataSourceProvider.parentUpdatingPosSet.size());
 		lines.add("  Unsaved render sources: " + this.unsavedDataSourceBySectionPos.size());
+		
+		
 		
 		return lines.toArray(new String[0]);
 	}

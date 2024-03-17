@@ -36,7 +36,7 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
 
-public class FullDataFileHandlerV1 extends AbstractLegacyDataSourceHandler<FullDataSourceV1, IDhLevel> 
+public class FullDataSourceProviderV1 extends AbstractLegacyDataSourceHandler<FullDataSourceV1, IDhLevel> 
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
@@ -46,7 +46,7 @@ public class FullDataFileHandlerV1 extends AbstractLegacyDataSourceHandler<FullD
 	// constructor //
 	//=============//
 	
-	public FullDataFileHandlerV1(IDhLevel level, AbstractSaveStructure saveStructure, @Nullable File saveDirOverride) 
+	public FullDataSourceProviderV1(IDhLevel level, AbstractSaveStructure saveStructure, @Nullable File saveDirOverride) 
 	{
 		super(level, saveStructure, saveDirOverride);
 	}

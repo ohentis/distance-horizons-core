@@ -20,7 +20,7 @@
 package com.seibel.distanthorizons.core.level;
 
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
-import com.seibel.distanthorizons.core.file.fullDatafile.FullDataFileHandlerV2;
+import com.seibel.distanthorizons.core.file.fullDatafile.FullDataSourceProviderV2;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
@@ -93,7 +93,7 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 	public ILevelWrapper getLevelWrapper() { return getServerLevelWrapper(); }
 	
 	@Override
-	public FullDataFileHandlerV2 getFullDataProvider() { return this.serverside.dataFileHandler; }
+	public FullDataSourceProviderV2 getFullDataProvider() { return this.serverside.dataFileHandler; }
 	
 	@Override
 	public AbstractSaveStructure getSaveStructure()

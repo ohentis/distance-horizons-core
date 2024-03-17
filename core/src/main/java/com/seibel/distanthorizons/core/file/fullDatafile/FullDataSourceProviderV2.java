@@ -46,9 +46,13 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class FullDataFileHandlerV2 
+/**
+ * Handles reading/writing {@link FullDataSourceV2} 
+ * to and from the database.
+ */
+public class FullDataSourceProviderV2 
 		extends AbstractNewDataSourceHandler<FullDataSourceV2, FullDataSourceV2DTO, FullDataSourceV2Repo, IDhLevel> 
-		implements IFullDataSourceProvider, IDebugRenderable
+		implements IDebugRenderable
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
@@ -72,7 +76,7 @@ public class FullDataFileHandlerV2
 	 * vs gracefully shutting down the thread ourselves. 
 	 */
 	protected final AtomicBoolean migrationThreadRunning = new AtomicBoolean(true);
-	protected final FullDataFileHandlerV1 legacyFileHandler;
+	protected final FullDataSourceProviderV1 legacyFileHandler;
 	
 	/** 
 	 * Tracks which positions are currently being updated
@@ -93,11 +97,11 @@ public class FullDataFileHandlerV2
 	// constructor //
 	//=============//
 	
-	public FullDataFileHandlerV2(IDhLevel level, AbstractSaveStructure saveStructure) { this(level, saveStructure, null); }
-	public FullDataFileHandlerV2(IDhLevel level, AbstractSaveStructure saveStructure, @Nullable File saveDirOverride) 
+	public FullDataSourceProviderV2(IDhLevel level, AbstractSaveStructure saveStructure) { this(level, saveStructure, null); }
+	public FullDataSourceProviderV2(IDhLevel level, AbstractSaveStructure saveStructure, @Nullable File saveDirOverride) 
 	{
 		super(level, saveStructure, saveDirOverride);
-		this.legacyFileHandler = new FullDataFileHandlerV1(level, saveStructure, saveDirOverride);
+		this.legacyFileHandler = new FullDataSourceProviderV1(level, saveStructure, saveDirOverride);
 		
 		DebugRenderer.register(this, Config.Client.Advanced.Debugging.DebugWireframe.showFullDataUpdateStatus);
 		
@@ -163,16 +167,6 @@ public class FullDataFileHandlerV2
 	
 	@Override
 	protected FullDataSourceV2 makeEmptyDataSource(DhSectionPos pos) { return FullDataSourceV2.createEmpty(pos); }
-	
-	@Override
-	public boolean canQueueRetrieval()
-	{
-		// Retrieval shouldn't happen while an unknown number of
-		// legacy data sources are present.
-		// If retrieval was allowed we might run into concurrency issues.
-		return !this.migrationThreadRunning.get();
-	}
-	
 	
 	
 	
@@ -388,6 +382,71 @@ public class FullDataFileHandlerV2
 		
 		this.migrationThreadRunning.set(false);
 	}
+	
+	
+	
+	//=======================//
+	// retrieval (world gen) //
+	//=======================//
+	
+	/**
+	 * Returns true if this provider can generate or retrieve
+	 * {@link FullDataSourceV2}'s that aren't currently in the database.
+	 */
+	public boolean canRetrieveMissingDataSources() 
+	{ 
+		// the base handler just handles basic reading/writing
+		// to the database and as such can't retrieve anything else.
+		return false; 
+	}
+	
+	/**
+	 * Returns false if this provider isn't accepting new requests,
+	 * this can be due to having a full queue or some other
+	 * limiting factor. <br><br>
+	 * 
+	 * Note: when overriding make sure to add: <br>
+	 * <code>
+	 * if (!super.canQueueRetrieval()) <br>
+	 * { <br>
+	 *      return false; <br>
+	 * } <br>
+	 * </code>
+	 *  to the beginning of your override.
+	 *  Otherwise, parent retrieval limits will be ignored.
+	 */
+	public boolean canQueueRetrieval()
+	{
+		// Retrieval shouldn't happen while an unknown number of
+		// legacy data sources are present.
+		// If retrieval was allowed we might run into concurrency issues.
+		return !this.migrationThreadRunning.get();
+	}
+	
+	/** 
+	 * @return null if this provider can't generate any positions and
+	 * an empty array if all positions were generated 
+	 */
+	@Nullable
+	public ArrayList<DhSectionPos> getPositionsToRetrieve(DhSectionPos pos)  { return null; }
+	/**
+	 * Returns how many positions could potentially be generated for this position assuming the position is empty.
+	 * Used when estimating the total number of retrieval requests.
+	 */
+	public int getMaxPossibleRetrievalPositionCountForPos(DhSectionPos pos)  { return -1; }
+
+	/** @return true if the position was queued, false if not */
+	public boolean queuePositionForRetrieval(DhSectionPos genPos) { return false; }
+	
+	/** Can be used to display how many total retrieval requests might be available. */
+	public void setTotalRetrievalPositionCount(int newCount) {  }
+	
+	/** 
+	 * Returns how many data sources are currently in memory and haven't
+	 * been saved to the database.
+	 * Returns -1 if this provider never stores data sources to memory.
+	 */
+	public int getUnsavedDataSourceCount() { return -1; }
 	
 	
 	

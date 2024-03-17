@@ -20,7 +20,7 @@
 package com.seibel.distanthorizons.core.level;
 
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
-import com.seibel.distanthorizons.core.file.fullDatafile.FullDataFileHandlerV2;
+import com.seibel.distanthorizons.core.file.fullDatafile.FullDataSourceProviderV2;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
@@ -39,7 +39,7 @@ public interface IDhLevel extends AutoCloseable
 	
 	void updateChunkAsync(IChunkWrapper chunk);
 	
-	FullDataFileHandlerV2 getFullDataProvider();
+	FullDataSourceProviderV2 getFullDataProvider();
 	
 	AbstractSaveStructure getSaveStructure();
 	

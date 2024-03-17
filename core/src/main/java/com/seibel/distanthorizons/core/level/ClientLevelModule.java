@@ -25,7 +25,7 @@ import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.file.AbstractNewDataSourceHandler;
-import com.seibel.distanthorizons.core.file.fullDatafile.FullDataFileHandlerV2;
+import com.seibel.distanthorizons.core.file.fullDatafile.FullDataSourceProviderV2;
 import com.seibel.distanthorizons.core.file.renderfile.RenderSourceFileHandler;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
@@ -52,7 +52,7 @@ public class ClientLevelModule implements Closeable, AbstractNewDataSourceHandle
 	
 	private final IDhClientLevel parentClientLevel;
 	
-	public final FullDataFileHandlerV2 fullDataSourceProvider;
+	public final FullDataSourceProviderV2 fullDataSourceProvider;
 	public final AtomicReference<ClientRenderState> ClientRenderStateRef = new AtomicReference<>();
 	
 	public final F3Screen.NestedMessage f3Message;
@@ -305,7 +305,7 @@ public class ClientLevelModule implements Closeable, AbstractNewDataSourceHandle
 		public final LodRenderer renderer;
 		
 		public ClientRenderState(
-				IDhClientLevel dhClientLevel, IClientLevelWrapper clientLevelWrapper, FullDataFileHandlerV2 fullDataSourceProvider,
+				IDhClientLevel dhClientLevel, IClientLevelWrapper clientLevelWrapper, FullDataSourceProviderV2 fullDataSourceProvider,
 				AbstractSaveStructure saveStructure)
 		{
 			this.clientLevelWrapper = clientLevelWrapper;

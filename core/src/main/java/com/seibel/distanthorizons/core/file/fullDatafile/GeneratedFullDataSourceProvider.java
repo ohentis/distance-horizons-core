@@ -43,7 +43,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-public class GeneratedFullDataFileHandler extends FullDataFileHandlerV2 implements IDebugRenderable
+public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 implements IDebugRenderable
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
@@ -61,7 +61,7 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandlerV2 implemen
 	// constructor //
 	//=============//
 	
-	public GeneratedFullDataFileHandler(IDhLevel level, AbstractSaveStructure saveStructure) { super(level, saveStructure); }
+	public GeneratedFullDataSourceProvider(IDhLevel level, AbstractSaveStructure saveStructure) { super(level, saveStructure); }
 	
 	
 	
@@ -195,8 +195,18 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandlerV2 implemen
 		}
 		
 		
-		// don't queue additional world gen requests beyond the max allotted
 		int maxQueueCount = MAX_WORLD_GEN_REQUESTS_PER_THREAD * Config.Client.Advanced.MultiThreading.numberOfWorldGenerationThreads.get();
+		
+		if (this.delayedFullDataSourceSaveCache.getUnsavedCount() >= maxQueueCount)
+		{
+			// don't queue additional world gen requests if there are
+			// a lot of data sources in memory 
+			// (this is done to prevent infinite memory growth)
+			return false;
+		}
+		
+		
+		// don't queue additional world gen requests beyond the max allotted count
 		return worldGenQueue.getWaitingTaskCount() < maxQueueCount; 
 	}
 	
@@ -342,12 +352,12 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandlerV2 implemen
 		{
 			return (chunkSizedFullDataSource) ->
 			{
-				GeneratedFullDataFileHandler.this.delayedFullDataSourceSaveCache.queueDataSourceForUpdateAndSave(chunkSizedFullDataSource);
+				GeneratedFullDataSourceProvider.this.delayedFullDataSourceSaveCache.queueDataSourceForUpdateAndSave(chunkSizedFullDataSource);
 			};
 		}
 	}
 	private void onDataSourceSave(FullDataSourceV2 fullDataSource) 
-	{ GeneratedFullDataFileHandler.this.updateDataSourceAsync(fullDataSource); }
+	{ GeneratedFullDataSourceProvider.this.updateDataSourceAsync(fullDataSource); }
 	
 	
 	

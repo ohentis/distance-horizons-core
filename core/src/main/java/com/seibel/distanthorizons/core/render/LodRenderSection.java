@@ -23,7 +23,7 @@ import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSource;
 import com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.ColumnRenderBufferBuilder;
 import com.seibel.distanthorizons.core.enums.EDhDirection;
-import com.seibel.distanthorizons.core.file.fullDatafile.IFullDataSourceProvider;
+import com.seibel.distanthorizons.core.file.fullDatafile.FullDataSourceProviderV2;
 import com.seibel.distanthorizons.core.file.renderfile.IRenderSourceProvider;
 import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
@@ -418,7 +418,7 @@ public class LodRenderSection implements IDebugRenderable
 	public boolean missingPositionsCalculated() { return this.missingPositionsCalculated; }
 	public int ungeneratedPositionCount() { return (this.missingGenerationPos != null) ? this.missingGenerationPos.size() : 0; }
 	
-	public void tryQueuingMissingLodRetrieval(IFullDataSourceProvider fullDataSourceProvider)
+	public void tryQueuingMissingLodRetrieval(FullDataSourceProviderV2 fullDataSourceProvider)
 	{
 		if (fullDataSourceProvider.canRetrieveMissingDataSources() && fullDataSourceProvider.canQueueRetrieval())
 		{

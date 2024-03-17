@@ -21,8 +21,8 @@ package com.seibel.distanthorizons.core.level;
 
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
-import com.seibel.distanthorizons.core.file.fullDatafile.FullDataFileHandlerV2;
-import com.seibel.distanthorizons.core.file.fullDatafile.RemoteFullDataFileHandler;
+import com.seibel.distanthorizons.core.file.fullDatafile.FullDataSourceProviderV2;
+import com.seibel.distanthorizons.core.file.fullDatafile.RemoteFullDataSourceProvider;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
@@ -45,7 +45,7 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 	public final ClientLevelModule clientside;
 	public final IClientLevelWrapper levelWrapper;
 	public final AbstractSaveStructure saveStructure;
-	public final RemoteFullDataFileHandler dataFileHandler;
+	public final RemoteFullDataSourceProvider dataFileHandler;
 	
 	
 	
@@ -58,7 +58,7 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 	{
 		this.levelWrapper = clientLevelWrapper;
 		this.saveStructure = saveStructure;
-		this.dataFileHandler = new RemoteFullDataFileHandler(this, saveStructure, fullDataSaveDirOverride);
+		this.dataFileHandler = new RemoteFullDataSourceProvider(this, saveStructure, fullDataSaveDirOverride);
 		this.clientside = new ClientLevelModule(this);
 		
 		if (enableRendering)
@@ -137,7 +137,7 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 	//=======================//
 	
 	@Override
-	public FullDataFileHandlerV2 getFullDataProvider() { return this.dataFileHandler; }
+	public FullDataSourceProviderV2 getFullDataProvider() { return this.dataFileHandler; }
 	
 	@Override
 	public AbstractSaveStructure getSaveStructure()
