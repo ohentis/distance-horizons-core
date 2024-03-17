@@ -355,7 +355,7 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 	{
 		if (inputDataSource.pos.getDetailLevel() + 1 != this.pos.getDetailLevel())
 		{
-			throw new IllegalArgumentException("Input data source must be exactly 1 detail level below this data source. Expected ["+(this.pos.getDetailLevel() - 1)+"], received ["+inputDataSource.pos.getDetailLevel()+"].");
+			throw new IllegalArgumentException("Input data source must be exactly 1 detail level below this data source. Expected [" + (this.pos.getDetailLevel() - 1) + "], received [" + inputDataSource.pos.getDetailLevel() + "].");
 		}
 		
 		// input is one detail level lower (higher detail)
@@ -377,34 +377,55 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 		for (int x = 0; x < WIDTH; x += 2)
 		{
 			for (int z = 0; z < WIDTH; z += 2)
-			{
-				long[] mergedInputDataArray = mergeInputTwoByTwoDataColumn(inputDataSource, x, z);
-				// TODO
-				byte inputGenStep = inputDataSource.columnGenerationSteps[0];
-
-
+			{			
 				int recipientX = (x / 2) + recipientOffsetX;
 				int recipientZ = (z / 2) + recipientOffsetZ;
 				int recipientIndex = relativePosToIndex(recipientX, recipientZ);
-
-				long[] oldDataArray = this.dataPoints[recipientIndex];
-
+				
+				
+				// world gen
+				byte inputGenStep = determineMinWorldGenStepForTwoByTwoColumn(inputDataSource.columnGenerationSteps, x, z);
 				this.columnGenerationSteps[recipientIndex] = inputGenStep;
+				
+				// data points
+				long[] oldDataArray = this.dataPoints[recipientIndex];
+				long[] mergedInputDataArray = mergeInputTwoByTwoDataColumn(inputDataSource, x, z);
 				this.dataPoints[recipientIndex] = mergedInputDataArray;
+				
+				// mapping
 				this.remapDataColumn(recipientIndex, remappedIds);
-
+				
+				
 				// we only need to see if the data was changed in one column
 				if (!dataChanged)
 				{
 					// needs to be done after the ID's have been remapped otherwise the ID's won't match even if the data is the same
 					dataChanged = areDataColumnsDifferent(oldDataArray, this.dataPoints[recipientIndex]);
 				}
-
+				
 				this.isEmpty = false;
 			}
 		}
 		
 		return dataChanged;
+	}
+	/** 
+	 * The minimum value is used because we don't want to accidentally record that
+	 * something was generated when it wasn't.
+	 */
+	private static byte determineMinWorldGenStepForTwoByTwoColumn(byte[] columnGenerationSteps, int relX, int relZ)
+	{
+		byte minWorldGenStepValue = Byte.MAX_VALUE;
+		for (int x = 0; x < 2; x++)
+		{
+			for (int z = 0; z < 2; z++)
+			{
+				int index = relativePosToIndex(x + relX, z + relZ);
+				byte worldGenStepValue = columnGenerationSteps[index];
+				minWorldGenStepValue = (byte) Math.min(minWorldGenStepValue, worldGenStepValue);
+			}
+		}
+		return minWorldGenStepValue;
 	}
 	private static long[] mergeInputTwoByTwoDataColumn(FullDataSourceV2 inputDataSource, int x, int z)
 	{
