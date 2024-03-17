@@ -20,13 +20,12 @@
 package com.seibel.distanthorizons.core.dataObjects.fullData.sources;
 
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
-import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.FullDataArrayAccessor;
 import com.seibel.distanthorizons.core.file.IDataSource;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.sql.dto.LegacyDataSourceDTO;
-import com.seibel.distanthorizons.core.util.FullDataPointUtil;
+import com.seibel.distanthorizons.core.util.FullDataPointUtilV1;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataInputStream;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataOutputStream;
@@ -41,9 +40,9 @@ import java.util.Arrays;
 /**
  * This data source contains every datapoint over its given {@link DhSectionPos}.
  *
- * @see FullDataPointUtil // FullDataSourceV1
+ * @see FullDataPointUtilV1
  */
-public class CompleteFullDataSource extends FullDataArrayAccessor implements IDataSource<IDhLevel>
+public class CompleteFullDataSource implements IDataSource<IDhLevel>
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
@@ -52,6 +51,7 @@ public class CompleteFullDataSource extends FullDataArrayAccessor implements IDa
 	public static final int WIDTH = BitShiftUtil.powerOfTwo(SECTION_SIZE_OFFSET);
 	
 	public static final byte DATA_FORMAT_VERSION = 3;
+	/** never used but should stay here. */
 	public static final String DATA_TYPE_NAME = "CompleteFullDataSource";
 	
 	/**
@@ -63,10 +63,16 @@ public class CompleteFullDataSource extends FullDataArrayAccessor implements IDa
 	private static final int NO_DATA_FLAG_BYTE = 0x00000001;
 	
 	
+	public final FullDataPointIdMap mapping;
+	public EDhApiWorldGenerationStep worldGenStep = EDhApiWorldGenerationStep.EMPTY;
+	
+	
+	/** A flattened 2D array (for the X and Z directions) containing an array for the Y direction. */
+	private final long[][] dataArrays;
+	
 	private DhSectionPos sectionPos;
 	
 	private boolean isEmpty = true;
-	public EDhApiWorldGenerationStep worldGenStep = EDhApiWorldGenerationStep.EMPTY;
 	
 	
 	
@@ -77,18 +83,11 @@ public class CompleteFullDataSource extends FullDataArrayAccessor implements IDa
 	public static CompleteFullDataSource createEmpty(DhSectionPos pos) { return new CompleteFullDataSource(pos); }
 	private CompleteFullDataSource(DhSectionPos sectionPos)
 	{
-		super(new FullDataPointIdMap(sectionPos), new long[WIDTH * WIDTH][0], WIDTH);
+		this.dataArrays = new long[WIDTH * WIDTH][0];
+		this.mapping = new FullDataPointIdMap(sectionPos);
 		this.sectionPos = sectionPos;
 	}
 	
-	public CompleteFullDataSource(DhSectionPos pos, FullDataPointIdMap mapping, long[][] data)
-	{
-		super(mapping, data, WIDTH);
-		LodUtil.assertTrue(data.length == WIDTH * WIDTH);
-		
-		this.sectionPos = pos;
-		this.isEmpty = false;
-	}
 	
 	
 	
@@ -132,6 +131,22 @@ public class CompleteFullDataSource extends FullDataArrayAccessor implements IDa
 	public boolean isEmpty() { return this.isEmpty; }
 	
 	
+	public long[] get(int index) { return this.get(index / WIDTH, index % WIDTH); }
+	public long[] get(int relativeX, int relativeZ)
+	{
+		int dataArrayIndex = (relativeX * WIDTH) + relativeZ;
+		if (dataArrayIndex >= this.dataArrays.length)
+		{
+			LodUtil.assertNotReach(
+					"FullDataArrayAccessor.get() called with a relative position that is outside the data source. \n" +
+							"given relative pos X: [" + relativeX + "] Z: [" + relativeZ + "]\n" +
+							"dataArrays.length: [" + this.dataArrays.length + "] dataArrayIndex: [" + dataArrayIndex + "].");
+		}
+		
+		return this.dataArrays[dataArrayIndex];
+	}
+	
+	
 	
 	//=================//
 	// stream handling // 
@@ -145,7 +160,7 @@ public class CompleteFullDataSource extends FullDataArrayAccessor implements IDa
 	{
 		// clear/overwrite the old data
 		this.resizeDataStructuresForRepopulation(dto.pos);
-		this.getMapping().clear(dto.pos);
+		this.mapping.clear(dto.pos);
 		
 		// set the new data
 		this.populateFromStream(dto, inputStream, level);
@@ -189,7 +204,7 @@ public class CompleteFullDataSource extends FullDataArrayAccessor implements IDa
 	public void writeSourceSummaryInfo(IDhLevel level, DhDataOutputStream outputStream) throws IOException
 	{
 		outputStream.writeInt(this.getDataDetailLevel());
-		outputStream.writeInt(this.width);
+		outputStream.writeInt(WIDTH);
 		outputStream.writeInt(level.getMinY());
 		outputStream.writeByte(this.worldGenStep.value);
 		
@@ -241,9 +256,9 @@ public class CompleteFullDataSource extends FullDataArrayAccessor implements IDa
 		
 		
 		// Data array length
-		for (int x = 0; x < this.width; x++)
+		for (int x = 0; x < WIDTH; x++)
 		{
-			for (int z = 0; z < this.width; z++)
+			for (int z = 0; z < WIDTH; z++)
 			{
 				outputStream.writeInt(this.get(x, z).length);
 			}
@@ -253,9 +268,9 @@ public class CompleteFullDataSource extends FullDataArrayAccessor implements IDa
 		
 		// Data array content (only on non-empty columns)
 		outputStream.writeInt(DATA_GUARD_BYTE);
-		for (int x = 0; x < this.width; x++)
+		for (int x = 0; x < WIDTH; x++)
 		{
-			for (int z = 0; z < this.width; z++)
+			for (int z = 0; z < WIDTH; z++)
 			{
 				long[] dataColumn = this.get(x, z);
 				if (dataColumn != null)
@@ -288,7 +303,7 @@ public class CompleteFullDataSource extends FullDataArrayAccessor implements IDa
 		
 		
 		long[][] dataPointArrays;
-		if (this.width == width) // attempt to use the existing dataArrays if possible
+		if (WIDTH == width) // attempt to use the existing dataArrays if possible
 		{
 			dataPointArrays = this.dataArrays;
 		}

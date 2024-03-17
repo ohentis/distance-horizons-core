@@ -175,7 +175,7 @@ public class NewFullDataSource implements IDataSource<IDhLevel>
 						byte blockLight = (byte) FullDataPointUtilV1.getBlockLight(dataPoint);
 						byte skyLight = (byte) FullDataPointUtilV1.getSkyLight(dataPoint);
 						
-						IBlockStateWrapper blockState = legacyData.getMapping().getBlockStateWrapper(id);
+						IBlockStateWrapper blockState = legacyData.mapping.getBlockStateWrapper(id);
 						if (blockState.isAir())
 						{
 							// air shouldn't have any light, otherwise down sampling will look weird
@@ -200,7 +200,7 @@ public class NewFullDataSource implements IDataSource<IDhLevel>
 			}
 		}
 		
-		NewFullDataSource newFullDataSource = NewFullDataSource.createWithData(legacyData.getSectionPos(), legacyData.getMapping(), dataPoints, columnGenerationSteps);
+		NewFullDataSource newFullDataSource = NewFullDataSource.createWithData(legacyData.getSectionPos(), legacyData.mapping, dataPoints, columnGenerationSteps);
 		
 		
 		// should only be used if debugging, this is a very expensive operation
