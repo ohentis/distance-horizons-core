@@ -478,7 +478,7 @@ public class ClientApi
 			this.configOverrideReminderPrinted = true;
 			
 			// remind the user that this is a development build
-			MC.sendChatMessage(ModInfo.READABLE_NAME + " experimental build " + ModInfo.VERSION);
+			MC.sendChatMessage("Distant Horizons nightly experimental build version [" + ModInfo.VERSION+"].");
 			MC.sendChatMessage("You are running an unsupported version of Distant Horizons!");
 			MC.sendChatMessage("Here be dragons!");
 		}
