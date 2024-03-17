@@ -24,8 +24,8 @@ public abstract class AbstractNewDataSourceHandler
 		<TDataSource extends IDataSource<TDhLevel>, 
 				TDTO extends IBaseDTO<DhSectionPos>,
 				TRepo extends AbstractDhRepo<DhSectionPos, TDTO>,
-				TDhLevel extends IDhLevel> 
-		implements ISourceProvider<TDataSource, TDhLevel>
+				TDhLevel extends IDhLevel>
+		implements AutoCloseable
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
@@ -112,7 +112,6 @@ public abstract class AbstractNewDataSourceHandler
 	 *
 	 * This call is concurrent. I.e. it supports being called by multiple threads at the same time.
 	 */
-	@Override
 	public CompletableFuture<TDataSource> getAsync(DhSectionPos pos)
 	{
 		ThreadPoolExecutor executor = ThreadPoolUtil.getFileHandlerExecutor();
@@ -160,7 +159,6 @@ public abstract class AbstractNewDataSourceHandler
 	// data updating //
 	//===============//
 	
-	@Override
 	public CompletableFuture<Void> updateDataSourceAsync(FullDataSourceV2 inputDataSource)
 	{
 		ThreadPoolExecutor executor = ThreadPoolUtil.getUpdatePropagatorExecutor();

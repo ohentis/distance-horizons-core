@@ -20,7 +20,6 @@
 package com.seibel.distanthorizons.core.file.renderfile;
 
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
-import com.seibel.distanthorizons.core.file.ISourceProvider;
 import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSource;
@@ -31,8 +30,11 @@ import java.util.concurrent.CompletableFuture;
 /**
  * Handles reading, writing, and updating {@link ColumnRenderSource}'s. <br>
  * Should be backed by a database handled by a {@link RenderDataRepo}.
+ * 
+ * @deprecated an interface isn't necessary for the single render source provider we have
  */
-public interface IRenderSourceProvider extends ISourceProvider<ColumnRenderSource, IDhClientLevel>
+@Deprecated
+public interface IRenderSourceProvider extends AutoCloseable
 {
 	CompletableFuture<ColumnRenderSource> getAsync(DhSectionPos pos);
 	

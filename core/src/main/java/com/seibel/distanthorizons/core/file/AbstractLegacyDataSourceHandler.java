@@ -34,8 +34,9 @@ import java.util.zip.Adler32;
 import java.util.zip.CheckedOutputStream;
 
 @Deprecated
-public abstract class AbstractLegacyDataSourceHandler<TDataSource extends IDataSource<TDhLevel>, TDhLevel extends IDhLevel> 
-		implements ISourceProvider<TDataSource, TDhLevel>
+public abstract class AbstractLegacyDataSourceHandler<TDataSource 
+		extends IDataSource<TDhLevel>, TDhLevel extends IDhLevel>
+		implements AutoCloseable
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	private static final Timer DELAYED_SAVE_TIMER = TimerUtil.CreateTimer("DataSourceSaveTimer");
@@ -128,7 +129,6 @@ public abstract class AbstractLegacyDataSourceHandler<TDataSource extends IDataS
 	 *
 	 * This call is concurrent. I.e. it supports being called by multiple threads at the same time.
 	 */
-	@Override
 	public CompletableFuture<TDataSource> getAsync(DhSectionPos pos)
 	{
 		ThreadPoolExecutor executor = ThreadPoolUtil.getFileHandlerExecutor();
@@ -190,7 +190,6 @@ public abstract class AbstractLegacyDataSourceHandler<TDataSource extends IDataS
 	// data updating //
 	//===============//
 	
-	@Override
 	public CompletableFuture<Void> updateDataSourceAsync(FullDataSourceV2 inputDataSource)
 	{
 		ThreadPoolExecutor executor = ThreadPoolUtil.getFileHandlerExecutor();
