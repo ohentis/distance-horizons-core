@@ -49,7 +49,7 @@ import java.util.concurrent.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRenderable
+public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDebugRenderable
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	private static final IWrapperFactory WRAPPER_FACTORY = SingletonInjector.INSTANCE.get(IWrapperFactory.class);
@@ -187,7 +187,8 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 	// running tasks //
 	//===============//
 	
-	public void startGenerationQueueAndSetTargetPos(DhBlockPos2D targetPos)
+	@Override
+	public void startAndSetTargetPos(DhBlockPos2D targetPos)
 	{
 		// update the target pos
 		this.generationTargetPos = targetPos;

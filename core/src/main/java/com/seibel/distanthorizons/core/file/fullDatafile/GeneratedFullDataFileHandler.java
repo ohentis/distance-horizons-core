@@ -23,7 +23,7 @@ import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGeneratio
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
-import com.seibel.distanthorizons.core.generation.IWorldGenerationQueue;
+import com.seibel.distanthorizons.core.generation.IFullDataSourceRetrievalQueue;
 import com.seibel.distanthorizons.core.generation.tasks.IWorldGenTaskTracker;
 import com.seibel.distanthorizons.core.generation.tasks.WorldGenResult;
 import com.seibel.distanthorizons.core.level.IDhLevel;
@@ -50,7 +50,7 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandlerV2 implemen
 	public static final int MAX_WORLD_GEN_REQUESTS_PER_THREAD = 20; 
 	
 	
-	private final AtomicReference<IWorldGenerationQueue> worldGenQueueRef = new AtomicReference<>(null);
+	private final AtomicReference<IFullDataSourceRetrievalQueue> worldGenQueueRef = new AtomicReference<>(null);
 	private final ArrayList<IOnWorldGenCompleteListener> onWorldGenTaskCompleteListeners = new ArrayList<>();
 	
 	protected final DelayedFullDataSourceSaveCache delayedFullDataSourceSaveCache = new DelayedFullDataSourceSaveCache(this::onDataSourceSave, 5_000);
@@ -73,7 +73,7 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandlerV2 implemen
 	 * Assigns the queue for handling world gen and does first time setup as well. <br> 
 	 * Assumes there isn't a pre-existing queue. 
 	 */ 
-	public void setWorldGenerationQueue(IWorldGenerationQueue newWorldGenQueue)
+	public void setWorldGenerationQueue(IFullDataSourceRetrievalQueue newWorldGenQueue)
 	{
 		boolean oldQueueExists = this.worldGenQueueRef.compareAndSet(null, newWorldGenQueue);
 		LodUtil.assertTrue(oldQueueExists, "previous world gen queue is still here!");
@@ -87,7 +87,7 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandlerV2 implemen
 	{
 		// TODO there has to be a better way to do this
 		
-		IWorldGenerationQueue worldGenQueue = this.worldGenQueueRef.get();
+		IFullDataSourceRetrievalQueue worldGenQueue = this.worldGenQueueRef.get();
 		if (worldGenQueue != null)
 		{
 			worldGenQueue.removeGenRequestIf(removeIf);
@@ -163,7 +163,7 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandlerV2 implemen
 	@Override
 	public void setTotalRetrievalPositionCount(int newCount) 
 	{
-		IWorldGenerationQueue worldGenQueue = this.worldGenQueueRef.get();
+		IFullDataSourceRetrievalQueue worldGenQueue = this.worldGenQueueRef.get();
 		if (worldGenQueue != null)
 		{
 			worldGenQueue.setEstimatedTotalTaskCount(newCount);
@@ -179,7 +179,7 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandlerV2 implemen
 		}
 		
 		
-		IWorldGenerationQueue worldGenQueue = this.worldGenQueueRef.get();
+		IFullDataSourceRetrievalQueue worldGenQueue = this.worldGenQueueRef.get();
 		if (worldGenQueue == null)
 		{
 			// we can't queue anything if the world generator isn't set up yet
@@ -203,7 +203,7 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandlerV2 implemen
 	@Override
 	public boolean queuePositionForRetrieval(DhSectionPos genPos)
 	{
-		IWorldGenerationQueue worldGenQueue = this.worldGenQueueRef.get();
+		IFullDataSourceRetrievalQueue worldGenQueue = this.worldGenQueueRef.get();
 		if (worldGenQueue == null)
 		{
 			return false;
@@ -219,7 +219,7 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandlerV2 implemen
 	@Override
 	public ArrayList<DhSectionPos> getPositionsToRetrieve(DhSectionPos pos)
 	{
-		IWorldGenerationQueue worldGenQueue = this.worldGenQueueRef.get();
+		IFullDataSourceRetrievalQueue worldGenQueue = this.worldGenQueueRef.get();
 		if (worldGenQueue == null)
 		{
 			return null;
@@ -288,7 +288,7 @@ public class GeneratedFullDataFileHandler extends FullDataFileHandlerV2 implemen
 	@Override
 	public int getMaxPossibleRetrievalPositionCountForPos(DhSectionPos pos)  
 	{
-		IWorldGenerationQueue worldGenQueue = this.worldGenQueueRef.get();
+		IFullDataSourceRetrievalQueue worldGenQueue = this.worldGenQueueRef.get();
 		if (worldGenQueue == null)
 		{
 			return -1;

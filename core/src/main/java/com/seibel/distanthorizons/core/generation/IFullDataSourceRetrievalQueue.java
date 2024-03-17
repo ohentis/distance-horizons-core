@@ -23,24 +23,80 @@ import com.seibel.distanthorizons.core.generation.tasks.IWorldGenTaskTracker;
 import com.seibel.distanthorizons.core.generation.tasks.WorldGenResult;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.render.LodQuadTree;
 
 import java.io.Closeable;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
-// TODO This doesn't need an interface, remove the interface
-@Deprecated
-public interface IWorldGenerationQueue extends Closeable
+/**
+ * Used to track what full data sources the system currently
+ * wants but doesn't have. <br>
+ * IE, what sections should be generated via the world generator. <br><br>
+ * 
+ * Note: <br>
+ * This won't contain every position that needs to be retrieved 
+ * (due to causing issues at extreme render distances).
+ * TODO does that mean this object isn't necessary or 
+ *      should just be renamed since it isn't the full queue <br><br>
+ * 
+ * Use by both world gen and server networking.
+ * 
+ * @see LodQuadTree
+ */
+public interface IFullDataSourceRetrievalQueue extends Closeable
 {
+	//=========//
+	// getters //
+	//=========//
+	
 	/** the largest numerical detail level */
 	byte lowestDataDetail();
 	/** the smallest numerical detail level */
 	byte highestDataDetail();
 	
+	
+	
+	//=======//
+	// setup //
+	//=======//
+	
+	/** 
+	 * Starts the retrieval process if not already running,
+	 * and if running updates the target position.
+	 * 
+	 * @param targetPos the position that retrieval should be centered around, 
+	 *                  generally this will be the player's position. 
+	 * */
+	void startAndSetTargetPos(DhBlockPos2D targetPos);
+	
+	
+	
+	//===============//
+	// task handling //
+	//===============//
+	
+	/** @deprecated replace with {@link IFullDataSourceRetrievalQueue#removeGenTask(DhSectionPos)} */
+	@Deprecated
+	void removeGenRequestIf(Function<DhSectionPos, Boolean> removeIf);
+	void removeGenTask(DhSectionPos pos);
+	
 	CompletableFuture<WorldGenResult> submitGenTask(DhSectionPos pos, byte requiredDataDetail, IWorldGenTaskTracker tracker);
 	
-	/** @param targetPos the position that world generation should be centered around, generally this will be the player's position. */
-	void startGenerationQueueAndSetTargetPos(DhBlockPos2D targetPos);
+	
+	
+	//==========//
+	// shutdown //
+	//==========//
+	
+	CompletableFuture<Void> startClosing(boolean cancelCurrentGeneration, boolean alsoInterruptRunning);
+	void close();
+	
+	
+	
+	//===============//
+	// debug display //
+	//===============//
 	
 	int getWaitingTaskCount();
 	int getInProgressTaskCount();
@@ -48,12 +104,6 @@ public interface IWorldGenerationQueue extends Closeable
 	/** used for rendering to the F3 menu */
 	int getEstimatedTotalTaskCount();
 	void setEstimatedTotalTaskCount(int newEstimate);
-	
-	CompletableFuture<Void> startClosing(boolean cancelCurrentGeneration, boolean alsoInterruptRunning);
-	void close();
-	
-	void removeGenRequestIf(Function<DhSectionPos, Boolean> removeIf);
-	void removeGenTask(DhSectionPos pos);
 	
 	
 }

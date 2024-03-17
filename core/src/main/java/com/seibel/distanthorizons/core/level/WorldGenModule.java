@@ -20,7 +20,7 @@
 package com.seibel.distanthorizons.core.level;
 
 import com.seibel.distanthorizons.core.file.fullDatafile.GeneratedFullDataFileHandler;
-import com.seibel.distanthorizons.core.generation.IWorldGenerationQueue;
+import com.seibel.distanthorizons.core.generation.IFullDataSourceRetrievalQueue;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
@@ -156,10 +156,10 @@ public class WorldGenModule implements Closeable
 	// helper classes //
 	//================//
 	
-	/** Handles the {@link IWorldGenerationQueue} and any other necessary world gen information. */
+	/** Handles the {@link IFullDataSourceRetrievalQueue} and any other necessary world gen information. */
 	public static abstract class AbstractWorldGenState
 	{
-		public IWorldGenerationQueue worldGenerationQueue;
+		public IFullDataSourceRetrievalQueue worldGenerationQueue;
 		
 		CompletableFuture<Void> closeAsync(boolean doInterrupt)
 		{
@@ -178,7 +178,8 @@ public class WorldGenModule implements Closeable
 		}
 		
 		/** @param targetPosForGeneration the position that world generation should be centered around */
-		public void startGenerationQueueAndSetTargetPos(DhBlockPos2D targetPosForGeneration) { this.worldGenerationQueue.startGenerationQueueAndSetTargetPos(targetPosForGeneration); }
+		public void startGenerationQueueAndSetTargetPos(DhBlockPos2D targetPosForGeneration) 
+		{ this.worldGenerationQueue.startAndSetTargetPos(targetPosForGeneration); }
 	}
 	
 }
