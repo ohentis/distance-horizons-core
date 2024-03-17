@@ -20,7 +20,6 @@
 package com.seibel.distanthorizons.core.dataObjects.render;
 
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
-import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.SingleColumnFullDataAccessor;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.NewFullDataSource;
 import com.seibel.distanthorizons.core.dataObjects.transformers.FullDataToRenderDataTransformer;
 import com.seibel.distanthorizons.core.file.IDataSource;
@@ -318,14 +317,15 @@ public class ColumnRenderSource implements IDataSource<IDhClientLevel>
 						ColumnArrayView columnArrayView = this.getVerticalDataPointView(x, z);
 						int columnHash = columnArrayView.getDataHash();
 						
-						SingleColumnFullDataAccessor fullArrayView = inputFullDataSource.get(x, z);
+						long[] dataColumn = inputFullDataSource.get(x, z);
 						EDhApiWorldGenerationStep worldGenStep = inputFullDataSource.getWorldGenStepAtRelativePos(x, z);
-						if (fullArrayView != null && worldGenStep != EDhApiWorldGenerationStep.EMPTY)
+						if (dataColumn != null && worldGenStep != EDhApiWorldGenerationStep.EMPTY)
 						{
-							FullDataToRenderDataTransformer.convertColumnData(level,
+							FullDataToRenderDataTransformer.convertColumnData(
+									level, inputFullDataSource.getMapping(),
 									minBlockPos.x + x,
 									minBlockPos.z + z,
-									columnArrayView, fullArrayView);
+									columnArrayView, dataColumn);
 							dataChanged |= columnHash != columnArrayView.getDataHash();
 							
 							this.fillDebugFlag(x, z, 1, 1, ColumnRenderSource.DebugSourceFlag.DIRECT);

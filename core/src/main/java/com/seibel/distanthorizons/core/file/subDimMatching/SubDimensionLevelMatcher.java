@@ -21,7 +21,6 @@ package com.seibel.distanthorizons.core.file.subDimMatching;
 
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.FullDataPointIdMap;
-import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.SingleColumnFullDataAccessor;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.CompleteFullDataSource;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.NewFullDataSource;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
@@ -234,8 +233,8 @@ public class SubDimensionLevelMatcher implements AutoCloseable
 				{
 					for (int z = 0; z < CompleteFullDataSource.WIDTH; z++)
 					{
-						SingleColumnFullDataAccessor newColumn = newDataSource.get(x, z);
-						SingleColumnFullDataAccessor testColumn = testFullDataSource.get(x, z);
+						long[] newColumn = newDataSource.get(x, z);
+						long[] testColumn = testFullDataSource.get(x, z);
 						
 						if (newColumn != null && testColumn != null)
 						{
@@ -245,11 +244,11 @@ public class SubDimensionLevelMatcher implements AutoCloseable
 							FullDataPointIdMap testDataMap = testFullDataSource.getMapping();
 							
 							// use min to prevent going out of bounds
-							int minColumnIndex = Math.min(newColumn.getSingleLength(), testColumn.getSingleLength());
+							int minColumnIndex = Math.min(newColumn.length, testColumn.length);
 							for (int i = 0; i < minColumnIndex; i++)
 							{
-								long newDataPoint = newColumn.getSingle(i);
-								long testDataPoint = testColumn.getSingle(i);
+								long newDataPoint = newColumn[i];
+								long testDataPoint = testColumn[i];
 								
 								int newId = FullDataPointUtil.getId(newDataPoint);
 								int testId = FullDataPointUtil.getId(testDataPoint);
@@ -298,7 +297,7 @@ public class SubDimensionLevelMatcher implements AutoCloseable
 						else if (newColumn != null)
 						{
 							// missing test column
-							totalDataPointCount += newColumn.getSingleLength();
+							totalDataPointCount += newColumn.length;
 						}
 						else
 						{

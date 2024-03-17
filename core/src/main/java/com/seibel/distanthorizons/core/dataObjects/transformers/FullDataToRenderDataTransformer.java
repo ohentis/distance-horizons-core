@@ -22,7 +22,6 @@ package com.seibel.distanthorizons.core.dataObjects.transformers;
 import com.seibel.distanthorizons.api.enums.config.EBlocksToAvoid;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.FullDataPointIdMap;
-import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.SingleColumnFullDataAccessor;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.NewFullDataSource;
 import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSource;
 import com.seibel.distanthorizons.core.dataObjects.render.columnViews.ColumnArrayView;
@@ -118,8 +117,8 @@ public class FullDataToRenderDataTransformer
 					throwIfThreadInterrupted();
 					
 					ColumnArrayView columnArrayView = columnSource.getVerticalDataPointView(x, z);
-					SingleColumnFullDataAccessor fullArrayView = fullDataSource.get(x, z);
-					convertColumnData(level, baseX + x, baseZ + z, columnArrayView, fullArrayView);
+					long[] dataColumn = fullDataSource.get(x, z);
+					convertColumnData(level, fullDataSource.getMapping(), baseX + x, baseZ + z, columnArrayView, dataColumn);
 				}
 			}
 			
@@ -157,14 +156,14 @@ public class FullDataToRenderDataTransformer
 	
 	
 	// TODO what does this mean?
-	private static void iterateAndConvert(IDhClientLevel level, 
+	private static void iterateAndConvert(
+			IDhClientLevel level, FullDataPointIdMap fullDataMapping, 
 			int blockX, int blockZ, 
-			ColumnArrayView column, SingleColumnFullDataAccessor data)
+			ColumnArrayView renderColumnData, long[] fullColumnData)
 	{
 		boolean avoidSolidBlocks = (Config.Client.Advanced.Graphics.Quality.blocksToIgnore.get() == EBlocksToAvoid.NON_COLLIDING);
 		boolean colorBelowWithAvoidedBlocks = Config.Client.Advanced.Graphics.Quality.tintWithAvoidedBlocks.get();
 		
-		FullDataPointIdMap fullDataMapping = data.getMapping();
 		HashSet<IBlockStateWrapper> blockStatesToIgnore = WRAPPER_FACTORY.getRendererIgnoredBlocks(level.getLevelWrapper());
 		
 		boolean isVoid = true;
@@ -172,9 +171,9 @@ public class FullDataToRenderDataTransformer
 		int columnOffset = 0;
 		
 		// goes from the top down
-		for (int i = 0; i < data.getSingleLength(); i++)
+		for (int i = 0; i < fullColumnData.length; i++)
 		{
-			long fullData = data.getSingle(i);
+			long fullData = fullColumnData[i];
 			int bottomY = FullDataPointUtil.getBottomY(fullData);
 			int blockHeight = FullDataPointUtil.getHeight(fullData);
 			int id = FullDataPointUtil.getId(fullData);
@@ -259,40 +258,35 @@ public class FullDataToRenderDataTransformer
 			// add the block
 			isVoid = false;
 			long columnData = RenderDataPointUtil.createDataPoint(bottomY + blockHeight, bottomY, color, skyLight, blockLight, block.getIrisBlockMaterialId());
-			column.set(columnOffset, columnData);
+			renderColumnData.set(columnOffset, columnData);
 			columnOffset++;
 		}
 		
 		
 		if (isVoid)
 		{
-			column.set(0, RenderDataPointUtil.createVoidDataPoint());
+			renderColumnData.set(0, RenderDataPointUtil.createVoidDataPoint());
 		}
 	}
 	
 	// TODO what does this mean?
-	public static void convertColumnData(IDhClientLevel level, int blockX, int blockZ, ColumnArrayView columnArrayView, SingleColumnFullDataAccessor fullArrayView)
+	public static void convertColumnData(IDhClientLevel level, FullDataPointIdMap fullDataMapping, int blockX, int blockZ, ColumnArrayView columnArrayView, long[] fullDataColumn)
 	{
-		if (fullArrayView == null || !fullArrayView.doesColumnExist())
+		if (fullDataColumn == null || fullDataColumn.length == 0)
 		{
 			return;
 		}
 		
-		int dataTotalLength = fullArrayView.getSingleLength();
-		if (dataTotalLength == 0)
-		{
-			return;
-		}
-		
+		int dataTotalLength = fullDataColumn.length;
 		if (dataTotalLength > columnArrayView.verticalSize())
 		{
 			ColumnArrayView totalColumnData = new ColumnArrayView(new long[dataTotalLength], dataTotalLength, 0, dataTotalLength);
-			iterateAndConvert(level, blockX, blockZ, totalColumnData, fullArrayView);
+			iterateAndConvert(level, fullDataMapping, blockX, blockZ, totalColumnData, fullDataColumn);
 			columnArrayView.changeVerticalSizeFrom(totalColumnData);
 		}
 		else
 		{
-			iterateAndConvert(level, blockX, blockZ, columnArrayView, fullArrayView); //Directly use the arrayView since it fits.
+			iterateAndConvert(level, fullDataMapping, blockX, blockZ, columnArrayView, fullDataColumn); //Directly use the arrayView since it fits.
 		}
 	}
 	

@@ -20,7 +20,6 @@
 package com.seibel.distanthorizons.core.dataObjects.fullData.accessor;
 
 import com.seibel.distanthorizons.core.dataObjects.fullData.FullDataPointIdMap;
-import com.seibel.distanthorizons.core.util.FullDataPointUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.CompleteFullDataSource;
 
@@ -30,8 +29,8 @@ import com.seibel.distanthorizons.core.dataObjects.fullData.sources.CompleteFull
  *
  * @see CompleteFullDataSource
  */
-@Deprecated
-public class FullDataArrayAccessor implements IFullDataAccessor
+@Deprecated // TODO merge into FullDataSourceV1
+public class FullDataArrayAccessor
 {
 	protected final FullDataPointIdMap mapping;
 	
@@ -83,91 +82,13 @@ public class FullDataArrayAccessor implements IFullDataAccessor
 	
 	
 	//=========//
-	// methods //
-	//=========//
-	
-	@Override
-	public FullDataArrayAccessor subView(int width, int xOffset, int zOffset) { return new FullDataArrayAccessor(this, width, xOffset, zOffset); }
-	
-	/** WARNING: This will potentially share the underlying array object! */
-	public void shadowCopyTo(FullDataArrayAccessor target)
-	{
-		if (target.width != this.width)
-		{
-			throw new IllegalArgumentException("Target view must have same size as this view");
-		}
-		
-		
-		if (target.mapping.equals(this.mapping))
-		{
-			for (int x = 0; x < this.width; x++)
-			{
-				System.arraycopy(this.dataArrays, this.offset + x * this.dataWidth,
-						target.dataArrays, target.offset + x * target.dataWidth, this.width);
-			}
-		}
-		else
-		{
-			int[] remappedIds = target.mapping.mergeAndReturnRemappedEntityIds(this.mapping);
-			for (int x = 0; x < this.width; x++)
-			{
-				for (int z = 0; z < this.width; z++)
-				{
-					long[] currentData = this.dataArrays[this.offset + x * this.dataWidth + z];
-					// may be null if no data exists for this column yet
-					if (currentData != null)
-					{
-						long[] newData = new long[currentData.length]; // TODO what to do if null?
-						for (int dataPointIndex = 0; dataPointIndex < newData.length; dataPointIndex++)
-						{
-							newData[dataPointIndex] = FullDataPointUtil.remap(remappedIds, currentData[dataPointIndex]);
-						}
-						
-						target.dataArrays[target.offset + x * target.dataWidth + z] = newData;
-					}
-				}
-			}
-		}
-	}
-	
-	/**
-	 * Takes a higher detail {@link FullDataArrayAccessor}'s and converts the data to a lower detail level.
-	 *
-	 * @param incomingFullDataAccessor must be larger than this {@link FullDataArrayAccessor} and its width must a power of two larger (example: this.width = 4, other.width = 8)
-	 */
-	public void downsampleFrom(FullDataArrayAccessor incomingFullDataAccessor)
-	{
-		// validate that the incoming data isn't smaller than this accessor
-		LodUtil.assertTrue(incomingFullDataAccessor.width >= this.width && incomingFullDataAccessor.width % this.width == 0);
-		
-		int dataPointsPerWidthUnit = incomingFullDataAccessor.width / this.width;
-		for (int xOffset = 0; xOffset < this.width; xOffset++)
-		{
-			for (int zOffset = 0; zOffset < this.width; zOffset++)
-			{
-				FullDataArrayAccessor subView = incomingFullDataAccessor.subView(dataPointsPerWidthUnit, 
-						xOffset * dataPointsPerWidthUnit, 
-						zOffset * dataPointsPerWidthUnit);
-				
-				SingleColumnFullDataAccessor column = this.get(xOffset, zOffset);
-				column.downsampleFrom(subView);
-			}
-		}
-	}
-	
-	
-	
-	//=========//
 	// getters //
 	//=========//
 	
-	@Override
 	public FullDataPointIdMap getMapping() { return this.mapping; }
 	
-	@Override
-	public SingleColumnFullDataAccessor get(int index) { return this.get(index / this.width, index % this.width); }
-	@Override
-	public SingleColumnFullDataAccessor get(int relativeX, int relativeZ)
+	public long[] get(int index) { return this.get(index / this.width, index % this.width); }
+	public long[] get(int relativeX, int relativeZ)
 	{
 		int dataArrayIndex = (relativeX * this.width) + relativeZ + this.offset;
 		if (dataArrayIndex >= this.dataArrays.length)
@@ -179,10 +100,7 @@ public class FullDataArrayAccessor implements IFullDataAccessor
 							"dataArrays.length: [" + this.dataArrays.length + "] dataArrayIndex: [" + dataArrayIndex + "].");
 		}
 		
-		return new SingleColumnFullDataAccessor(this.mapping, this.dataArrays, dataArrayIndex);
+		return this.dataArrays[dataArrayIndex];
 	}
-	
-	@Override
-	public int width() { return this.width; }
 	
 }

@@ -154,10 +154,16 @@ public class DhSectionPos
 	// getters //
 	//=========//
 	
-	/** @return the corner with the smallest X and Z coordinate */
+	/**
+	 * @deprecated use DhSectionPos instead 
+	 * @return the corner with the smallest X and Z coordinate 
+	 */
 	@Deprecated
 	public DhLodPos getMinCornerLodPos() { return this.getMinCornerLodPos((byte) (this.detailLevel - 1)); }
-	/** @return the corner with the smallest X and Z coordinate */
+	/**
+	 * @deprecated use DhSectionPos instead 
+	 * @return the corner with the smallest X and Z coordinate 
+	 */
 	@Deprecated
 	public DhLodPos getMinCornerLodPos(byte returnDetailLevel)
 	{

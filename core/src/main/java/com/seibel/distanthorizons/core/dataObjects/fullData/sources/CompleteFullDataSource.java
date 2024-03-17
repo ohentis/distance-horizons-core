@@ -21,7 +21,6 @@ package com.seibel.distanthorizons.core.dataObjects.fullData.sources;
 
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
 import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.FullDataArrayAccessor;
-import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.SingleColumnFullDataAccessor;
 import com.seibel.distanthorizons.core.file.IDataSource;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
@@ -42,7 +41,7 @@ import java.util.Arrays;
 /**
  * This data source contains every datapoint over its given {@link DhSectionPos}.
  *
- * @see FullDataPointUtil
+ * @see FullDataPointUtil // FullDataSourceV1
  */
 public class CompleteFullDataSource extends FullDataArrayAccessor implements IDataSource<IDhLevel>
 {
@@ -246,7 +245,7 @@ public class CompleteFullDataSource extends FullDataArrayAccessor implements IDa
 		{
 			for (int z = 0; z < this.width; z++)
 			{
-				outputStream.writeInt(this.get(x, z).getSingleLength());
+				outputStream.writeInt(this.get(x, z).length);
 			}
 		}
 		
@@ -258,11 +257,10 @@ public class CompleteFullDataSource extends FullDataArrayAccessor implements IDa
 		{
 			for (int z = 0; z < this.width; z++)
 			{
-				SingleColumnFullDataAccessor columnAccessor = this.get(x, z);
-				if (columnAccessor.doesColumnExist())
+				long[] dataColumn = this.get(x, z);
+				if (dataColumn != null)
 				{
-					long[] dataPointArray = columnAccessor.getRaw();
-					for (long dataPoint : dataPointArray)
+					for (long dataPoint : dataColumn)
 					{
 						outputStream.writeLong(dataPoint);
 					}

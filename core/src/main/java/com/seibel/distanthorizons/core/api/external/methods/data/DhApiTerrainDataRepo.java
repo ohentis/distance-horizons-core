@@ -27,7 +27,6 @@ import com.seibel.distanthorizons.api.interfaces.data.IDhApiTerrainDataRepo;
 import com.seibel.distanthorizons.api.objects.math.DhApiVec3i;
 import com.seibel.distanthorizons.core.api.internal.SharedApi;
 import com.seibel.distanthorizons.core.dataObjects.fullData.FullDataPointIdMap;
-import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.SingleColumnFullDataAccessor;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.NewFullDataSource;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.level.IDhLevel;
@@ -221,10 +220,10 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 			{
 				// attempt to get the LOD data from the data source
 				FullDataPointIdMap mapping = dataSource.getMapping();
-				SingleColumnFullDataAccessor dataColumn = dataSource.get(relativePos.x, relativePos.z);
+				long[] dataColumn = dataSource.get(relativePos.x, relativePos.z);
 				if (dataColumn != null)
 				{
-					int dataColumnIndexCount = dataColumn.getSingleLength();
+					int dataColumnIndexCount = dataColumn.length;
 					DhApiTerrainDataPoint[] returnArray = new DhApiTerrainDataPoint[dataColumnIndexCount];
 					long dataPoint;
 					
@@ -235,7 +234,7 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 					// search for a datapoint that contains the block y position
 					for (int i = 0; i < dataColumnIndexCount; i++)
 					{
-						dataPoint = dataColumn.getSingle(i);
+						dataPoint = dataColumn[i];
 						
 						if (!getSpecificYCoordinate)
 						{

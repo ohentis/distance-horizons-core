@@ -21,7 +21,6 @@ package com.seibel.distanthorizons.core.dataObjects.fullData.sources;
 
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
 import com.seibel.distanthorizons.core.dataObjects.fullData.FullDataPointIdMap;
-import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.SingleColumnFullDataAccessor;
 import com.seibel.distanthorizons.core.dataObjects.transformers.LodDataBuilder;
 import com.seibel.distanthorizons.core.file.IDataSource;
 import com.seibel.distanthorizons.core.file.fullDatafile.NewFullDataFileHandler;
@@ -147,22 +146,21 @@ public class NewFullDataSource implements IDataSource<IDhLevel>
 		{
 			for (int z = 0; z < WIDTH; z++)
 			{
-				SingleColumnFullDataAccessor accessor = legacyData.get(x, z);
-				if (accessor.doesColumnExist())
+				long[] dataColumn = legacyData.get(x, z);
+				if (dataColumn != null && dataColumn.length != 0)
 				{
-					int index = relativePosToIndex(x, z);
-					dataPoints[index] = accessor.getRaw();
-					
 					// reverse the array so index 0 is the lowest,
 					// this is necessary for later logic
 					// source: https://stackoverflow.com/questions/2137755/how-do-i-reverse-an-int-array-in-java
-					long[] dataColumn = dataPoints[index];
 					for(int i = 0; i < dataColumn.length / 2; i++)
 					{
 						long temp = dataColumn[i];
 						dataColumn[i] = dataColumn[dataColumn.length - i - 1];
 						dataColumn[dataColumn.length - i - 1] = temp;
 					}
+					
+					int index = relativePosToIndex(x, z);
+					dataPoints[index] = dataColumn;
 					
 					
 					// convert the data point format
@@ -212,27 +210,24 @@ public class NewFullDataSource implements IDataSource<IDhLevel>
 			{
 				for (int z = 0; z < WIDTH; z++)
 				{
-					SingleColumnFullDataAccessor legacyAccessor = legacyData.get(x, z);
-					if (legacyAccessor.doesColumnExist())
+					long[] legacyDataColumn = legacyData.get(x, z);
+					if (legacyDataColumn != null && legacyDataColumn.length != 0)
 					{
-						SingleColumnFullDataAccessor newAccessor = newFullDataSource.get(x, z);
+						long[] newDataColumn = newFullDataSource.get(x, z);
 						
-						if (newAccessor == null)
+						if (newDataColumn == null)
 						{
 							LodUtil.assertNotReach("Accessor column mismatch");
 						}
-						else if (legacyAccessor.getRaw().length != newAccessor.getRaw().length)
+						else if (legacyDataColumn.length != newDataColumn.length)
 						{
 							LodUtil.assertNotReach("Accessor column length mismatch");
 						}
 						else
 						{
-							long[] legacyRaw = legacyAccessor.getRaw();
-							long[] newRaw = newAccessor.getRaw();
-							
-							for (int i = 0; i < legacyRaw.length; i++)
+							for (int i = 0; i < legacyDataColumn.length; i++)
 							{
-								if (legacyRaw[i] != newRaw[i])
+								if (legacyDataColumn[i] != newDataColumn[i])
 								{
 									LodUtil.assertNotReach("Data mismatch");
 								}
@@ -253,7 +248,7 @@ public class NewFullDataSource implements IDataSource<IDhLevel>
 	// data //
 	//======//
 	
-	public SingleColumnFullDataAccessor get(int relX, int relZ) { return new SingleColumnFullDataAccessor(this.mapping, this.dataPoints, relativePosToIndex(relX, relZ)); }
+	public long[] get(int relX, int relZ) throws IndexOutOfBoundsException { return this.dataPoints[relativePosToIndex(relX, relZ)]; }
 	
 	@Override
 	public boolean update(NewFullDataSource inputDataSource, @Nullable IDhLevel level) { return this.update(inputDataSource); }
