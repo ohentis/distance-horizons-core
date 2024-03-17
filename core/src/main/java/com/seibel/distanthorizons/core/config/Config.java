@@ -1209,6 +1209,14 @@ public class Config
 								+ "Useful for debugging shaders")
 						.build();
 				
+				public static ConfigEntry<Boolean> showOverlappingQuadErrors = new ConfigEntry.Builder<Boolean>()
+						.set(false)
+						.comment(""
+								+ "If true overlapping quads will be rendered as bright red for easy identification. \n"
+								+ "If false the quads will be rendered normally. \n"
+								+ "")
+						.build();
+				
 				// Note: This will reset on game restart, and should have a warning on the tooltip
 				public static ConfigEntry<Boolean> allowUnsafeValues = new ConfigEntry.Builder<Boolean>()
 						.set(false)
