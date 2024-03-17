@@ -22,12 +22,11 @@ package com.seibel.distanthorizons.core.level;
 import com.seibel.distanthorizons.api.enums.rendering.EDebugRendering;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
 import com.seibel.distanthorizons.core.config.Config;
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.NewFullDataSource;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.file.AbstractNewDataSourceHandler;
 import com.seibel.distanthorizons.core.file.fullDatafile.IFullDataSourceProvider;
-import com.seibel.distanthorizons.core.file.fullDatafile.NewFullDataFileHandler;
-import com.seibel.distanthorizons.core.file.renderfile.IRenderSourceProvider;
+import com.seibel.distanthorizons.core.file.fullDatafile.FullDataFileHandlerV2;
 import com.seibel.distanthorizons.core.file.renderfile.RenderSourceFileHandler;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
@@ -47,14 +46,14 @@ import java.io.Closeable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class ClientLevelModule implements Closeable, AbstractNewDataSourceHandler.IDataSourceUpdateFunc<NewFullDataSource>
+public class ClientLevelModule implements Closeable, AbstractNewDataSourceHandler.IDataSourceUpdateFunc<FullDataSourceV2>
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	
 	private final IDhClientLevel parentClientLevel;
 	
-	public final NewFullDataFileHandler fullDataSourceProvider;
+	public final FullDataFileHandlerV2 fullDataSourceProvider;
 	public final AtomicReference<ClientRenderState> ClientRenderStateRef = new AtomicReference<>();
 	
 	public final F3Screen.NestedMessage f3Message;
@@ -210,9 +209,9 @@ public class ClientLevelModule implements Closeable, AbstractNewDataSourceHandle
 	// data handling //
 	//===============//
 	
-	public CompletableFuture<Void> updateDataSourcesAsync(NewFullDataSource data) { return this.parentClientLevel.getFullDataProvider().updateDataSourceAsync(data); }
+	public CompletableFuture<Void> updateDataSourcesAsync(FullDataSourceV2 data) { return this.parentClientLevel.getFullDataProvider().updateDataSourceAsync(data); }
 	@Override
-	public void OnDataSourceUpdated(NewFullDataSource updatedFullDataSource)
+	public void OnDataSourceUpdated(FullDataSourceV2 updatedFullDataSource)
 	{
 		// if rendering also update the render sources
 		ClientRenderState ClientRenderState = this.ClientRenderStateRef.get();

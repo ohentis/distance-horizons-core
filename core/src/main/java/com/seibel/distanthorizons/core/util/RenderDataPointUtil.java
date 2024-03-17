@@ -29,7 +29,7 @@ import com.seibel.distanthorizons.core.dataObjects.render.columnViews.IColumnDat
  * A helper class that is used to access the data from a long
  * formatted as a render data point. <br><br>
  *
- * To access data from a long formatted as a full data point see: {@link FullDataPointUtil}
+ * To access data from a long formatted as a full data point see: {@link FullDataPointUtilV2}
  *
  * <strong>DataPoint Format: </strong><br>
  * <code>
@@ -55,7 +55,7 @@ import com.seibel.distanthorizons.core.dataObjects.render.columnViews.IColumnDat
  * BL BL BL BL SL SL SL SL |	<br>
  * </code>
  *
- * @see FullDataPointUtil
+ * @see FullDataPointUtilV2
  */
 public class RenderDataPointUtil
 {

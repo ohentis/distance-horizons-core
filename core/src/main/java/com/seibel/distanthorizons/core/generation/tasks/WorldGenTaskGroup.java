@@ -19,7 +19,7 @@
 
 package com.seibel.distanthorizons.core.generation.tasks;
 
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.NewFullDataSource;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 
 import java.util.Iterator;
@@ -46,13 +46,13 @@ public final class WorldGenTaskGroup
 		this.dataDetail = dataDetail;
 	}
 	
-	public void consumeChunkData(NewFullDataSource chunkSizedFullDataView)
+	public void consumeChunkData(FullDataSourceV2 chunkSizedFullDataView)
 	{
 		Iterator<WorldGenTask> tasks = this.worldGenTasks.iterator();
 		while (tasks.hasNext())
 		{
 			WorldGenTask task = tasks.next();
-			Consumer<NewFullDataSource> chunkDataConsumer = task.taskTracker.getChunkDataConsumer();
+			Consumer<FullDataSourceV2> chunkDataConsumer = task.taskTracker.getChunkDataConsumer();
 			if (chunkDataConsumer == null)
 			{
 				tasks.remove();

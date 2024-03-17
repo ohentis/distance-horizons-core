@@ -19,8 +19,8 @@
 
 package com.seibel.distanthorizons.core.level;
 
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.NewFullDataSource;
-import com.seibel.distanthorizons.core.file.fullDatafile.NewFullDataFileHandler;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
+import com.seibel.distanthorizons.core.file.fullDatafile.FullDataFileHandlerV2;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
@@ -51,7 +51,7 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 	public void serverTick() { this.chunkToLodBuilder.tick(); }
 	
 	@Override
-	public CompletableFuture<Void> updateDataSourcesAsync(NewFullDataSource data) { return this.getFullDataProvider().updateDataSourceAsync(data); }
+	public CompletableFuture<Void> updateDataSourcesAsync(FullDataSourceV2 data) { return this.getFullDataProvider().updateDataSourceAsync(data); }
 	
 	@Override
 	public int getMinY() { return getLevelWrapper().getMinHeight(); }
@@ -93,7 +93,7 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 	public ILevelWrapper getLevelWrapper() { return getServerLevelWrapper(); }
 	
 	@Override
-	public NewFullDataFileHandler getFullDataProvider() { return this.serverside.dataFileHandler; }
+	public FullDataFileHandlerV2 getFullDataProvider() { return this.serverside.dataFileHandler; }
 	
 	@Override
 	public AbstractSaveStructure getSaveStructure()

@@ -23,7 +23,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.seibel.distanthorizons.core.config.Config;
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.NewFullDataSource;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
@@ -57,7 +57,7 @@ public class ChunkToLodBuilder implements AutoCloseable
 	// data generation //
 	//=================//
 	
-	public CompletableFuture<NewFullDataSource> tryGenerateData(IChunkWrapper chunkWrapper)
+	public CompletableFuture<FullDataSourceV2> tryGenerateData(IChunkWrapper chunkWrapper)
 	{
 		if (chunkWrapper == null)
 		{
@@ -74,7 +74,7 @@ public class ChunkToLodBuilder implements AutoCloseable
 		}
 		
 		// Otherwise, it means we're the first to do so. Let's submit our task to this entry.
-		CompletableFuture<NewFullDataSource> future = new CompletableFuture<>();
+		CompletableFuture<FullDataSourceV2> future = new CompletableFuture<>();
 		this.concurrentTaskToBuildList.addLast(new Task(chunkWrapper.getChunkPos(), future));
 		return future;
 	}
@@ -158,7 +158,7 @@ public class ChunkToLodBuilder implements AutoCloseable
 			{
 				if (LodDataBuilder.canGenerateLodFromChunk(latestChunk))
 				{
-					NewFullDataSource dataSource = LodDataBuilder.createGeneratedDataSource(latestChunk);
+					FullDataSourceV2 dataSource = LodDataBuilder.createGeneratedDataSource(latestChunk);
 					if (dataSource != null)
 					{
 						task.future.complete(dataSource);
@@ -233,11 +233,11 @@ public class ChunkToLodBuilder implements AutoCloseable
 	private static class Task
 	{
 		public final DhChunkPos chunkPos;
-		public final CompletableFuture<NewFullDataSource> future;
+		public final CompletableFuture<FullDataSourceV2> future;
 		/** This is tracked so impossible tasks can be removed from the queue */
 		public long generationAttemptExpirationTimeMs = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(10);
 		
-		Task(DhChunkPos chunkPos, CompletableFuture<NewFullDataSource> future)
+		Task(DhChunkPos chunkPos, CompletableFuture<FullDataSourceV2> future)
 		{
 			this.chunkPos = chunkPos;
 			this.future = future;

@@ -23,7 +23,7 @@ import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiDistantGenerat
 import com.seibel.distanthorizons.api.interfaces.override.worldGenerator.IDhApiWorldGenerator;
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGeneratorReturnType;
 import com.seibel.distanthorizons.api.objects.data.DhApiChunk;
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.NewFullDataSource;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.generation.tasks.*;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
@@ -429,7 +429,7 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 		DhChunkPos chunkPosMin,
 		byte granularity,
 		byte targetDataDetail,
-		Consumer<NewFullDataSource> chunkDataConsumer
+		Consumer<FullDataSourceV2> chunkDataConsumer
 		)
 	{
 		EDhApiDistantGeneratorMode generatorMode = Config.Client.Advanced.WorldGenerator.distantGeneratorMode.get();
@@ -450,7 +450,7 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 						try
 						{
 							IChunkWrapper chunk = WRAPPER_FACTORY.createChunkWrapper(generatedObjectArray);
-							NewFullDataSource dataSource = LodDataBuilder.createGeneratedDataSource(chunk);
+							FullDataSourceV2 dataSource = LodDataBuilder.createGeneratedDataSource(chunk);
 							LodUtil.assertTrue(dataSource != null);
 							chunkDataConsumer.accept(dataSource);
 						}
@@ -475,7 +475,7 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 					{
 						try
 						{
-							NewFullDataSource dataSource = LodDataBuilder.createFromApiChunkData(dataPoints);
+							FullDataSourceV2 dataSource = LodDataBuilder.createFromApiChunkData(dataPoints);
 							chunkDataConsumer.accept(dataSource);
 						}
 						catch (ClassCastException e)

@@ -25,9 +25,9 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 
-public class NewRemoteFullDataFileHandler extends NewFullDataFileHandler
+public class RemoteFullDataFileHandler extends FullDataFileHandlerV2
 {
-	public NewRemoteFullDataFileHandler(IDhLevel level, AbstractSaveStructure saveStructure) { super(level, saveStructure); }
-	public NewRemoteFullDataFileHandler(IDhLevel level, AbstractSaveStructure saveStructure, @Nullable File saveDirOverride) { super(level, saveStructure, saveDirOverride); }
+	public RemoteFullDataFileHandler(IDhLevel level, AbstractSaveStructure saveStructure) { super(level, saveStructure); }
+	public RemoteFullDataFileHandler(IDhLevel level, AbstractSaveStructure saveStructure, @Nullable File saveDirOverride) { super(level, saveStructure, saveDirOverride); }
 	
 }

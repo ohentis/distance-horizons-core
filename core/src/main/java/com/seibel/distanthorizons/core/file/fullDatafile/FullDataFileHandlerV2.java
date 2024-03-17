@@ -22,7 +22,7 @@ package com.seibel.distanthorizons.core.file.fullDatafile;
 import com.seibel.distanthorizons.api.enums.config.EDhApiDataCompressionMode;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV1;
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.NewFullDataSource;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.file.AbstractNewDataSourceHandler;
 import com.seibel.distanthorizons.core.level.IDhLevel;
@@ -30,8 +30,8 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
-import com.seibel.distanthorizons.core.sql.dto.NewFullDataSourceDTO;
-import com.seibel.distanthorizons.core.sql.repo.NewFullDataSourceRepo;
+import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV2DTO;
+import com.seibel.distanthorizons.core.sql.repo.FullDataSourceV2Repo;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import org.apache.logging.log4j.Logger;
@@ -46,8 +46,8 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class NewFullDataFileHandler 
-		extends AbstractNewDataSourceHandler<NewFullDataSource, NewFullDataSourceDTO, NewFullDataSourceRepo, IDhLevel> 
+public class FullDataFileHandlerV2 
+		extends AbstractNewDataSourceHandler<FullDataSourceV2, FullDataSourceV2DTO, FullDataSourceV2Repo, IDhLevel> 
 		implements IFullDataSourceProvider, IDebugRenderable
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
@@ -93,8 +93,8 @@ public class NewFullDataFileHandler
 	// constructor //
 	//=============//
 	
-	public NewFullDataFileHandler(IDhLevel level, AbstractSaveStructure saveStructure) { this(level, saveStructure, null); }
-	public NewFullDataFileHandler(IDhLevel level, AbstractSaveStructure saveStructure, @Nullable File saveDirOverride) 
+	public FullDataFileHandlerV2(IDhLevel level, AbstractSaveStructure saveStructure) { this(level, saveStructure, null); }
+	public FullDataFileHandlerV2(IDhLevel level, AbstractSaveStructure saveStructure, @Nullable File saveDirOverride) 
 	{
 		super(level, saveStructure, saveDirOverride);
 		this.legacyFileHandler = new FullDataFileHandlerV1(level, saveStructure, saveDirOverride);
@@ -120,11 +120,11 @@ public class NewFullDataFileHandler
 	//====================//
 	
 	@Override
-	protected NewFullDataSourceRepo createRepo()
+	protected FullDataSourceV2Repo createRepo()
 	{
 		try
 		{
-			return new NewFullDataSourceRepo("jdbc:sqlite", this.saveDir.getPath() + "/" + AbstractSaveStructure.DATABASE_NAME);
+			return new FullDataSourceV2Repo("jdbc:sqlite", this.saveDir.getPath() + "/" + AbstractSaveStructure.DATABASE_NAME);
 		}
 		catch (SQLException e)
 		{
@@ -135,13 +135,13 @@ public class NewFullDataFileHandler
 	}
 	
 	@Override 
-	protected NewFullDataSourceDTO createDtoFromDataSource(NewFullDataSource dataSource)
+	protected FullDataSourceV2DTO createDtoFromDataSource(FullDataSourceV2 dataSource)
 	{
 		try
 		{
 			// when creating new data use the compressor currently selected in the config
 			EDhApiDataCompressionMode compressionModeEnum = Config.Client.Advanced.LodBuilding.dataCompression.get();
-			return NewFullDataSourceDTO.CreateFromDataSource(dataSource, compressionModeEnum);
+			return FullDataSourceV2DTO.CreateFromDataSource(dataSource, compressionModeEnum);
 		}
 		catch (IOException e)
 		{
@@ -151,17 +151,17 @@ public class NewFullDataFileHandler
 	}
 	
 	@Override
-	protected NewFullDataSource createDataSourceFromDto(NewFullDataSourceDTO dto) throws InterruptedException, IOException
+	protected FullDataSourceV2 createDataSourceFromDto(FullDataSourceV2DTO dto) throws InterruptedException, IOException
 	{ return dto.createDataSource(this.level.getLevelWrapper()); }
 	@Override
-	protected NewFullDataSource createNewDataSourceFromExistingDtos(DhSectionPos pos)
+	protected FullDataSourceV2 createNewDataSourceFromExistingDtos(DhSectionPos pos)
 	{
 		//  TODO maybe just set children update flags to true?
-		return NewFullDataSource.createEmpty(pos);
+		return FullDataSourceV2.createEmpty(pos);
 	}
 	
 	@Override
-	protected NewFullDataSource makeEmptyDataSource(DhSectionPos pos) { return NewFullDataSource.createEmpty(pos); }
+	protected FullDataSourceV2 makeEmptyDataSource(DhSectionPos pos) { return FullDataSourceV2.createEmpty(pos); }
 	
 	@Override
 	public boolean canQueueRetrieval()
@@ -253,7 +253,7 @@ public class NewFullDataFileHandler
 												childReadLock.lock();
 												this.lockedPosSet.add(childPos);
 												
-												NewFullDataSource dataSource = this.get(childPos);
+												FullDataSourceV2 dataSource = this.get(childPos);
 												this.updateDataSourceAtPos(parentUpdatePos, dataSource, false);
 												this.repo.setApplyToParent(childPos, false);
 											}
@@ -333,7 +333,7 @@ public class NewFullDataFileHandler
 					{
 						// convert the legacy data source to the new format,
 						// this is a relatively cheap operation
-						NewFullDataSource newDataSource = NewFullDataSource.createFromCompleteDataSource(legacyDataSource);
+						FullDataSourceV2 newDataSource = FullDataSourceV2.createFromCompleteDataSource(legacyDataSource);
 						newDataSource.applyToParent = true;
 						
 						// the actual update process can be moderately expensive due to having to update

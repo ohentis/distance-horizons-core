@@ -21,7 +21,7 @@ package com.seibel.distanthorizons.core.sql.repo;
 
 import com.seibel.distanthorizons.api.enums.config.EDhApiDataCompressionMode;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
-import com.seibel.distanthorizons.core.sql.dto.NewFullDataSourceDTO;
+import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV2DTO;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -29,11 +29,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class NewFullDataSourceRepo extends AbstractDhRepo<DhSectionPos, NewFullDataSourceDTO>
+public class FullDataSourceV2Repo extends AbstractDhRepo<DhSectionPos, FullDataSourceV2DTO>
 {
-	public NewFullDataSourceRepo(String databaseType, String databaseLocation) throws SQLException
+	public FullDataSourceV2Repo(String databaseType, String databaseLocation) throws SQLException
 	{
-		super(databaseType, databaseLocation, NewFullDataSourceDTO.class);
+		super(databaseType, databaseLocation, FullDataSourceV2DTO.class);
 	}
 	
 	
@@ -55,7 +55,7 @@ public class NewFullDataSourceRepo extends AbstractDhRepo<DhSectionPos, NewFullD
 	//=======================//
 	
 	@Override 
-	public NewFullDataSourceDTO convertDictionaryToDto(Map<String, Object> objectMap) throws ClassCastException
+	public FullDataSourceV2DTO convertDictionaryToDto(Map<String, Object> objectMap) throws ClassCastException
 	{
 		byte detailLevel = (Byte) objectMap.get("DetailLevel");
 		byte sectionDetailLevel = (byte) (detailLevel + DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
@@ -80,7 +80,7 @@ public class NewFullDataSourceRepo extends AbstractDhRepo<DhSectionPos, NewFullD
 		long lastModifiedUnixDateTime = (Long) objectMap.get("LastModifiedUnixDateTime");
 		long createdUnixDateTime = (Long) objectMap.get("CreatedUnixDateTime");
 		
-		NewFullDataSourceDTO dto = new NewFullDataSourceDTO(
+		FullDataSourceV2DTO dto = new FullDataSourceV2DTO(
 				pos,
 				dataChecksum, columnGenStepByteArray, dataFormatVersion, compressionModeEnum, dataByteArray,
 				lastModifiedUnixDateTime, createdUnixDateTime,
@@ -90,7 +90,7 @@ public class NewFullDataSourceRepo extends AbstractDhRepo<DhSectionPos, NewFullD
 	}
 	
 	@Override
-	public PreparedStatement createInsertStatement(NewFullDataSourceDTO dto) throws SQLException
+	public PreparedStatement createInsertStatement(FullDataSourceV2DTO dto) throws SQLException
 	{
 		String sql =
 			"INSERT INTO "+this.getTableName() + " (\n" +
@@ -131,7 +131,7 @@ public class NewFullDataSourceRepo extends AbstractDhRepo<DhSectionPos, NewFullD
 	}
 	
 	@Override
-	public PreparedStatement createUpdateStatement(NewFullDataSourceDTO dto) throws SQLException
+	public PreparedStatement createUpdateStatement(FullDataSourceV2DTO dto) throws SQLException
 	{
 		String sql =
 			"UPDATE "+this.getTableName()+" \n" +

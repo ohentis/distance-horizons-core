@@ -49,7 +49,7 @@ import org.jetbrains.annotations.Contract;
  * @see RenderDataPointUtil
  * @see FullDataPointUtilV1
  */
-public class FullDataPointUtil
+public class FullDataPointUtilV2
 {
 	/** Represents the data held by an empty data point */
 	public static final int EMPTY_DATA_POINT = 0;

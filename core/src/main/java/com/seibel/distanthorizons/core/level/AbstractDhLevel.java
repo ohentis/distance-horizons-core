@@ -20,7 +20,7 @@
 package com.seibel.distanthorizons.core.level;
 
 import com.seibel.distanthorizons.api.methods.events.abstractEvents.DhApiChunkModifiedEvent;
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.NewFullDataSource;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.dataObjects.transformers.ChunkToLodBuilder;
 import com.seibel.distanthorizons.core.file.fullDatafile.DelayedFullDataSourceSaveCache;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
@@ -59,7 +59,7 @@ public abstract class AbstractDhLevel implements IDhLevel
 	@Override
 	public void updateChunkAsync(IChunkWrapper chunkWrapper)
 	{
-		NewFullDataSource dataSource = NewFullDataSource.createFromChunk(chunkWrapper);
+		FullDataSourceV2 dataSource = FullDataSourceV2.createFromChunk(chunkWrapper);
 		if (dataSource == null)
 		{
 			// This can happen if, among other reasons, a chunk save is superseded by a later event
@@ -81,7 +81,7 @@ public abstract class AbstractDhLevel implements IDhLevel
 		this.delayedFullDataSourceSaveCache.queueDataSourceForUpdateAndSave(dataSource);
 	}
 	
-	private void onDataSourceSave(NewFullDataSource fullDataSource)
+	private void onDataSourceSave(FullDataSourceV2 fullDataSource)
 	{
 		this.updateDataSourcesAsync(fullDataSource).thenRun(() -> 
 		{

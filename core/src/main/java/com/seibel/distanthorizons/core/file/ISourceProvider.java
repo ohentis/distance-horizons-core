@@ -1,6 +1,6 @@
 package com.seibel.distanthorizons.core.file;
 
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.NewFullDataSource;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.file.fullDatafile.IFullDataSourceProvider;
 import com.seibel.distanthorizons.core.file.renderfile.IRenderSourceProvider;
 import com.seibel.distanthorizons.core.level.IDhLevel;
@@ -18,6 +18,6 @@ public interface ISourceProvider<TDataSource extends IDataSource<TDhLevel>, TDhL
 {
 	CompletableFuture<TDataSource> getAsync(DhSectionPos pos);
 	
-	CompletableFuture<Void> updateDataSourceAsync(NewFullDataSource inputData);
+	CompletableFuture<Void> updateDataSourceAsync(FullDataSourceV2 inputData);
 	
 }

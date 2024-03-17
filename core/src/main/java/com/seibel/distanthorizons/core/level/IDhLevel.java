@@ -19,8 +19,8 @@
 
 package com.seibel.distanthorizons.core.level;
 
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.NewFullDataSource;
-import com.seibel.distanthorizons.core.file.fullDatafile.NewFullDataFileHandler;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
+import com.seibel.distanthorizons.core.file.fullDatafile.FullDataFileHandlerV2;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
@@ -39,13 +39,13 @@ public interface IDhLevel extends AutoCloseable
 	
 	void updateChunkAsync(IChunkWrapper chunk);
 	
-	NewFullDataFileHandler getFullDataProvider();
+	FullDataFileHandlerV2 getFullDataProvider();
 	
 	AbstractSaveStructure getSaveStructure();
 	
 	boolean hasSkyLight();
 	
-	CompletableFuture<Void> updateDataSourcesAsync(NewFullDataSource data);
+	CompletableFuture<Void> updateDataSourcesAsync(FullDataSourceV2 data);
 	
 	/** 
 	 * this number is generally related to how many data sources have been updated 

@@ -1,7 +1,7 @@
 package com.seibel.distanthorizons.core.file;
 
 import com.seibel.distanthorizons.api.enums.config.EDhApiDataCompressionMode;
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.NewFullDataSource;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSource;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.level.IDhLevel;
@@ -190,7 +190,7 @@ public abstract class AbstractLegacyDataSourceHandler<TDataSource extends IDataS
 	//===============//
 	
 	@Override
-	public CompletableFuture<Void> updateDataSourceAsync(NewFullDataSource inputDataSource)
+	public CompletableFuture<Void> updateDataSourceAsync(FullDataSourceV2 inputDataSource)
 	{
 		ThreadPoolExecutor executor = ThreadPoolUtil.getFileHandlerExecutor();
 		if (executor == null || executor.isTerminated())
@@ -218,7 +218,7 @@ public abstract class AbstractLegacyDataSourceHandler<TDataSource extends IDataS
 			return CompletableFuture.completedFuture(null);
 		}
 	}
-	protected void updateDataSourceAtPos(DhSectionPos pos, NewFullDataSource newDataSource)
+	protected void updateDataSourceAtPos(DhSectionPos pos, FullDataSourceV2 newDataSource)
 	{
 		// a lock is necessary to prevent two threads from writing to the same position at once,
 		// if that happens only the second update will apply and the LOD will end up with hole(s)

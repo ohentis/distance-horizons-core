@@ -20,10 +20,9 @@
 package com.seibel.distanthorizons.core.level;
 
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.NewFullDataSource;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
-import com.seibel.distanthorizons.core.file.fullDatafile.IFullDataSourceProvider;
-import com.seibel.distanthorizons.core.file.fullDatafile.NewFullDataFileHandler;
+import com.seibel.distanthorizons.core.file.fullDatafile.FullDataFileHandlerV2;
 import com.seibel.distanthorizons.core.render.LodRenderSection;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
@@ -175,7 +174,7 @@ public class DhClientServerLevel extends AbstractDhLevel implements IDhClientLev
 	public ILevelWrapper getLevelWrapper() { return getServerLevelWrapper(); }
 	
 	@Override
-	public NewFullDataFileHandler getFullDataProvider() { return this.serverside.dataFileHandler; }
+	public FullDataFileHandlerV2 getFullDataProvider() { return this.serverside.dataFileHandler; }
 	
 	@Override
 	public AbstractSaveStructure getSaveStructure()
@@ -187,7 +186,7 @@ public class DhClientServerLevel extends AbstractDhLevel implements IDhClientLev
 	public boolean hasSkyLight() { return this.serverLevelWrapper.hasSkyLight(); }
 	
 	@Override
-	public CompletableFuture<Void> updateDataSourcesAsync(NewFullDataSource data) { return this.clientside.updateDataSourcesAsync(data); }
+	public CompletableFuture<Void> updateDataSourcesAsync(FullDataSourceV2 data) { return this.clientside.updateDataSourcesAsync(data); }
 	
 	@Override
 	public int getMinY() { return getLevelWrapper().getMinHeight(); }

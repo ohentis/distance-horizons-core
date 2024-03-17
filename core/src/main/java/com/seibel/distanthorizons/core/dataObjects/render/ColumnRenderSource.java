@@ -20,7 +20,7 @@
 package com.seibel.distanthorizons.core.dataObjects.render;
 
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.NewFullDataSource;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.dataObjects.transformers.FullDataToRenderDataTransformer;
 import com.seibel.distanthorizons.core.file.IDataSource;
 import com.seibel.distanthorizons.core.level.IDhLevel;
@@ -289,7 +289,7 @@ public class ColumnRenderSource implements IDataSource<IDhClientLevel>
 	}
 	
 	@Override
-	public boolean update(NewFullDataSource inputFullDataSource, IDhClientLevel level)
+	public boolean update(FullDataSourceV2 inputFullDataSource, IDhClientLevel level)
 	{
 		final String errorMessagePrefix = "Unable to complete update for RenderSource pos: [" + this.sectionPos + "] and pos: [" + inputFullDataSource.getSectionPos() + "]. Error:";
 		
@@ -310,9 +310,9 @@ public class ColumnRenderSource implements IDataSource<IDhClientLevel>
 				int halfBlockWidth = inputFullDataSource.getSectionPos().getBlockWidth() / 2;
 				DhBlockPos2D minBlockPos = new DhBlockPos2D(centerBlockPos.x - halfBlockWidth, centerBlockPos.z - halfBlockWidth);
 				
-				for (int x = 0; x < NewFullDataSource.WIDTH; x++)
+				for (int x = 0; x < FullDataSourceV2.WIDTH; x++)
 				{
-					for (int z = 0; z < NewFullDataSource.WIDTH; z++)
+					for (int z = 0; z < FullDataSourceV2.WIDTH; z++)
 					{
 						ColumnArrayView columnArrayView = this.getVerticalDataPointView(x, z);
 						int columnHash = columnArrayView.getDataHash();

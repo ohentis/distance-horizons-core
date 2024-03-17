@@ -1,6 +1,6 @@
 package com.seibel.distanthorizons.core.file.fullDatafile;
 
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.NewFullDataSource;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.util.TimerUtil;
@@ -22,7 +22,7 @@ public class DelayedFullDataSourceSaveCache
 	private static final Timer DELAY_UPDATE_TIMER = TimerUtil.CreateTimer("Delayed Full Datasource Save Timer");
 	
 	
-	public final ConcurrentHashMap<DhSectionPos, NewFullDataSource> dataSourceByPosition = new ConcurrentHashMap<>();
+	public final ConcurrentHashMap<DhSectionPos, FullDataSourceV2> dataSourceByPosition = new ConcurrentHashMap<>();
 	private final ConcurrentHashMap<DhSectionPos, TimerTask> saveTimerTasksBySectionPos = new ConcurrentHashMap<>();
 	
 	private final ISaveDataSourceFunc onSaveTimeoutFunc;
@@ -46,14 +46,14 @@ public class DelayedFullDataSourceSaveCache
 	// update queue //
 	//==============//
 	
-	public void queueDataSourceForUpdateAndSave(NewFullDataSource inputDataSource)
+	public void queueDataSourceForUpdateAndSave(FullDataSourceV2 inputDataSource)
 	{
 		DhSectionPos dataSourcePos = inputDataSource.getSectionPos();
 		this.dataSourceByPosition.compute(dataSourcePos, (inputPos, temporaryDataSource) ->
 		{
 			if (temporaryDataSource == null)
 			{
-				temporaryDataSource = NewFullDataSource.createEmpty(inputPos);
+				temporaryDataSource = FullDataSourceV2.createEmpty(inputPos);
 			}
 			temporaryDataSource.update(inputDataSource);
 			
@@ -67,7 +67,7 @@ public class DelayedFullDataSourceSaveCache
 					
 					try
 					{
-						NewFullDataSource dataSourceToSave = DelayedFullDataSourceSaveCache.this.dataSourceByPosition.remove(dataSourcePos);
+						FullDataSourceV2 dataSourceToSave = DelayedFullDataSourceSaveCache.this.dataSourceByPosition.remove(dataSourcePos);
 						if (dataSourceToSave != null)
 						{
 							DelayedFullDataSourceSaveCache.this.onSaveTimeoutFunc.save(dataSourceToSave);
@@ -115,7 +115,7 @@ public class DelayedFullDataSourceSaveCache
 	public interface ISaveDataSourceFunc
 	{
 		/** called after the timeout expires */
-		void save(NewFullDataSource inputDataSource);
+		void save(FullDataSourceV2 inputDataSource);
 	}
 	
 }

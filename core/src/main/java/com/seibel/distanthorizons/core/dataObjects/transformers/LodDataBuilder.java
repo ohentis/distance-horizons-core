@@ -24,12 +24,12 @@ import java.util.List;
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
 import com.seibel.distanthorizons.api.objects.data.DhApiChunk;
 import com.seibel.distanthorizons.api.objects.data.DhApiTerrainDataPoint;
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.NewFullDataSource;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
-import com.seibel.distanthorizons.core.util.FullDataPointUtil;
+import com.seibel.distanthorizons.core.util.FullDataPointUtilV2;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
@@ -42,8 +42,8 @@ public class LodDataBuilder
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	private static final IBlockStateWrapper AIR = SingletonInjector.INSTANCE.get(IWrapperFactory.class).getAirBlockStateWrapper();
-	/** how many chunks wide the {@link NewFullDataSource} is. */
-	private static final int NUMB_OF_CHUNKS_WIDE = NewFullDataSource.WIDTH / LodUtil.CHUNK_WIDTH;
+	/** how many chunks wide the {@link FullDataSourceV2} is. */
+	private static final int NUMB_OF_CHUNKS_WIDE = FullDataSourceV2.WIDTH / LodUtil.CHUNK_WIDTH;
 	
 	private static boolean getTopErrorLogged = false;
 	
@@ -53,7 +53,7 @@ public class LodDataBuilder
 	// converters //
 	//============//
 	
-	public static NewFullDataSource createGeneratedDataSource(IChunkWrapper chunkWrapper)
+	public static FullDataSourceV2 createGeneratedDataSource(IChunkWrapper chunkWrapper)
 	{
 		if (!canGenerateLodFromChunk(chunkWrapper))
 		{
@@ -70,7 +70,7 @@ public class LodDataBuilder
 		sectionPosZ = (sectionPosZ < 0) ? ((sectionPosZ + 1) / NUMB_OF_CHUNKS_WIDE) - 1 : (sectionPosZ / NUMB_OF_CHUNKS_WIDE);
 		DhSectionPos pos = new DhSectionPos(DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL, sectionPosX, sectionPosZ);
 		
-		NewFullDataSource dataSource = NewFullDataSource.createEmpty(pos);
+		FullDataSourceV2 dataSource = FullDataSourceV2.createEmpty(pos);
 		dataSource.markNotEmpty();
 		
 		
@@ -177,7 +177,7 @@ public class LodDataBuilder
 					
 					if (!newBiome.equals(biome) || !newBlockState.equals(blockState))
 					{
-						longs.add(FullDataPointUtil.encode(mappedId, lastY - y, y + 1 - chunkWrapper.getMinBuildHeight(), blockLight, skyLight));
+						longs.add(FullDataPointUtilV2.encode(mappedId, lastY - y, y + 1 - chunkWrapper.getMinBuildHeight(), blockLight, skyLight));
 						biome = newBiome;
 						blockState = newBlockState;
 						mappedId = dataSource.getMapping().addIfNotPresentAndGetId(biome, blockState);
@@ -186,7 +186,7 @@ public class LodDataBuilder
 						lastY = y;
 					}
 				}
-				longs.add(FullDataPointUtil.encode(mappedId, lastY - y, y + 1 - chunkWrapper.getMinBuildHeight(), blockLight, skyLight));
+				longs.add(FullDataPointUtilV2.encode(mappedId, lastY - y, y + 1 - chunkWrapper.getMinBuildHeight(), blockLight, skyLight));
 				
 				// reverse the array so index 0 is the lowest,
 				// this is necessary for later logic
@@ -211,9 +211,9 @@ public class LodDataBuilder
 	
 	
 	/** @throws ClassCastException if an API user returns the wrong object type(s) */
-	public static NewFullDataSource createFromApiChunkData(DhApiChunk dataPoints) throws ClassCastException
+	public static FullDataSourceV2 createFromApiChunkData(DhApiChunk dataPoints) throws ClassCastException
 	{
-		NewFullDataSource accessor = NewFullDataSource.createEmpty(new DhSectionPos(new DhChunkPos(dataPoints.chunkPosX, dataPoints.chunkPosZ)));
+		FullDataSourceV2 accessor = FullDataSourceV2.createEmpty(new DhSectionPos(new DhChunkPos(dataPoints.chunkPosX, dataPoints.chunkPosZ)));
 		for (int relZ = 0; relZ < LodUtil.CHUNK_WIDTH; relZ++)
 		{
 			for (int relX = 0; relX < LodUtil.CHUNK_WIDTH; relX++)
@@ -237,7 +237,7 @@ public class LodDataBuilder
 							(IBlockStateWrapper) (dataPoint.blockStateWrapper)
 					);
 					
-					packedDataPoints[index] = FullDataPointUtil.encode(
+					packedDataPoints[index] = FullDataPointUtilV2.encode(
 							id,
 							dataPoint.topYBlockPos - dataPoint.bottomYBlockPos,
 							dataPoint.bottomYBlockPos - dataPoints.topYBlockPos,

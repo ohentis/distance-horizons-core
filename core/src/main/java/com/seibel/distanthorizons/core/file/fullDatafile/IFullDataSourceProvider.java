@@ -19,7 +19,7 @@
 
 package com.seibel.distanthorizons.core.file.fullDatafile;
 
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.NewFullDataSource;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.file.ISourceProvider;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
@@ -30,15 +30,15 @@ import java.util.ArrayList;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Handles reading, writing, and updating {@link NewFullDataSource}'s. <br>
+ * Handles reading, writing, and updating {@link FullDataSourceV2}'s. <br>
  * Should be backed by a database handled by a {@link LegacyFullDataRepo}.
  */
-public interface IFullDataSourceProvider extends ISourceProvider<NewFullDataSource, IDhLevel>, AutoCloseable
+public interface IFullDataSourceProvider extends ISourceProvider<FullDataSourceV2, IDhLevel>, AutoCloseable
 {
-	CompletableFuture<NewFullDataSource> getAsync(DhSectionPos pos);
-	NewFullDataSource get(DhSectionPos pos);
+	CompletableFuture<FullDataSourceV2> getAsync(DhSectionPos pos);
+	FullDataSourceV2 get(DhSectionPos pos);
 	
-	CompletableFuture<Void> updateDataSourceAsync(NewFullDataSource chunkData);
+	CompletableFuture<Void> updateDataSourceAsync(FullDataSourceV2 chunkData);
 	
 	/** @return -1 if this provider never has unsaved data sources */
 	default int getUnsavedDataSourceCount() { return -1; }
@@ -49,7 +49,7 @@ public interface IFullDataSourceProvider extends ISourceProvider<NewFullDataSour
 	
 	/**
 	 * If true this {@link IFullDataSourceProvider} can generate or retrieve
-	 * {@link NewFullDataSource}'s that aren't currently in the database.
+	 * {@link FullDataSourceV2}'s that aren't currently in the database.
 	 */
 	default boolean canRetrieveMissingDataSources() { return false; }
 	

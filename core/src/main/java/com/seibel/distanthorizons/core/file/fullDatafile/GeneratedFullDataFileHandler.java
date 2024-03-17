@@ -21,7 +21,7 @@ package com.seibel.distanthorizons.core.file.fullDatafile;
 
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
 import com.seibel.distanthorizons.core.config.Config;
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.NewFullDataSource;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.generation.IWorldGenerationQueue;
 import com.seibel.distanthorizons.core.generation.tasks.IWorldGenTaskTracker;
@@ -43,7 +43,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-public class NewGeneratedFullDataFileHandler extends NewFullDataFileHandler implements IDebugRenderable
+public class GeneratedFullDataFileHandler extends FullDataFileHandlerV2 implements IDebugRenderable
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
@@ -61,7 +61,7 @@ public class NewGeneratedFullDataFileHandler extends NewFullDataFileHandler impl
 	// constructor //
 	//=============//
 	
-	public NewGeneratedFullDataFileHandler(IDhLevel level, AbstractSaveStructure saveStructure) { super(level, saveStructure); }
+	public GeneratedFullDataFileHandler(IDhLevel level, AbstractSaveStructure saveStructure) { super(level, saveStructure); }
 	
 	
 	
@@ -248,11 +248,11 @@ public class NewGeneratedFullDataFileHandler extends NewFullDataFileHandler impl
 				
 				EDhApiWorldGenerationStep currentMinWorldGenStep = EDhApiWorldGenerationStep.LIGHT;
 				checkWorldGenLoop:
-				for (int x = 0; x < NewFullDataSource.WIDTH; x++)
+				for (int x = 0; x < FullDataSourceV2.WIDTH; x++)
 				{
-					for (int z = 0; z < NewFullDataSource.WIDTH; z++)
+					for (int z = 0; z < FullDataSourceV2.WIDTH; z++)
 					{
-						int index = NewFullDataSource.relativePosToIndex(x, z);
+						int index = FullDataSourceV2.relativePosToIndex(x, z);
 						byte genStepValue = columnGenerationSteps[index];
 						
 						if (genStepValue < currentMinWorldGenStep.value)
@@ -338,16 +338,16 @@ public class NewGeneratedFullDataFileHandler extends NewFullDataFileHandler impl
 		public boolean isMemoryAddressValid() { return true; }
 		
 		@Override
-		public Consumer<NewFullDataSource> getChunkDataConsumer()
+		public Consumer<FullDataSourceV2> getChunkDataConsumer()
 		{
 			return (chunkSizedFullDataSource) ->
 			{
-				NewGeneratedFullDataFileHandler.this.delayedFullDataSourceSaveCache.queueDataSourceForUpdateAndSave(chunkSizedFullDataSource);
+				GeneratedFullDataFileHandler.this.delayedFullDataSourceSaveCache.queueDataSourceForUpdateAndSave(chunkSizedFullDataSource);
 			};
 		}
 	}
-	private void onDataSourceSave(NewFullDataSource fullDataSource) 
-	{ NewGeneratedFullDataFileHandler.this.updateDataSourceAsync(fullDataSource); }
+	private void onDataSourceSave(FullDataSourceV2 fullDataSource) 
+	{ GeneratedFullDataFileHandler.this.updateDataSourceAsync(fullDataSource); }
 	
 	
 	

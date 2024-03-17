@@ -19,11 +19,11 @@
 
 package com.seibel.distanthorizons.core.file.renderfile;
 
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.NewFullDataSource;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSourceLoader;
 import com.seibel.distanthorizons.core.dataObjects.transformers.FullDataToRenderDataTransformer;
 import com.seibel.distanthorizons.core.file.AbstractLegacyDataSourceHandler;
-import com.seibel.distanthorizons.core.file.fullDatafile.NewFullDataFileHandler;
+import com.seibel.distanthorizons.core.file.fullDatafile.FullDataFileHandlerV2;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
@@ -49,7 +49,7 @@ public class RenderSourceFileHandler extends AbstractLegacyDataSourceHandler<Col
 	private final F3Screen.NestedMessage threadPoolMsg;
 	private int totalRetrievalPositionCount = 0;
 	
-	public final IFullDataSourceProvider fullDataSourceProvider;
+	public final IFullDataSourceProvider fullDataSourceProvider; // TODO replace with FullDataFileHandlerV2?
 	
 	
 	
@@ -94,7 +94,7 @@ public class RenderSourceFileHandler extends AbstractLegacyDataSourceHandler<Col
 	{
 		ColumnRenderSource renderDataSource;
 		
-		NewFullDataSource fullDataSource = this.fullDataSourceProvider.get(pos);
+		FullDataSourceV2 fullDataSource = this.fullDataSourceProvider.get(pos);
 		renderDataSource = FullDataToRenderDataTransformer.transformFullDataToRenderSource(fullDataSource, this.level);
 		return renderDataSource;
 	}
@@ -110,7 +110,7 @@ public class RenderSourceFileHandler extends AbstractLegacyDataSourceHandler<Col
 	//=====================//
 	
 	@Override
-	public CompletableFuture<Void> updateDataSourceAsync(NewFullDataSource inputDataSource)
+	public CompletableFuture<Void> updateDataSourceAsync(FullDataSourceV2 inputDataSource)
 	{
 		// TODO once the legacy data provider has been replaced this can be removed
 		this.updateDataSourceAtPos(inputDataSource.getSectionPos(), inputDataSource);
@@ -140,8 +140,7 @@ public class RenderSourceFileHandler extends AbstractLegacyDataSourceHandler<Col
 		lines.add("  Update thread pool tasks: " + updateQueueSize + " (completed: " + updateCompletedTaskSize + ")");
 		lines.add("  Level Unsaved #: " + this.level.getUnsavedDataSourceCount());
 		lines.add("  Full Data Unsaved #: " + this.fullDataSourceProvider.getUnsavedDataSourceCount());
-		//lines.add("  Lock #: " + ((NewFullDataFileHandler) this.fullDataSourceProvider).lockedPosSet.size());
-		lines.add("  Parent Update #: " + ((NewFullDataFileHandler) this.fullDataSourceProvider).parentUpdatingPosSet.size());
+		lines.add("  Parent Update #: " + ((FullDataFileHandlerV2) this.fullDataSourceProvider).parentUpdatingPosSet.size());
 		lines.add("  Unsaved render sources: " + this.unsavedDataSourceBySectionPos.size());
 		
 		return lines.toArray(new String[0]);

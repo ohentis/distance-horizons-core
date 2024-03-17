@@ -31,7 +31,7 @@ import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSour
  * </code>
  *
  * @see FullDataSourceV1
- * @see FullDataPointUtil
+ * @see FullDataPointUtilV2
  */
 public class FullDataPointUtilV1
 {

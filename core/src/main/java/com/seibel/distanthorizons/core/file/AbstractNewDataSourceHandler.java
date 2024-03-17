@@ -1,6 +1,6 @@
 package com.seibel.distanthorizons.core.file;
 
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.NewFullDataSource;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
@@ -161,7 +161,7 @@ public abstract class AbstractNewDataSourceHandler
 	//===============//
 	
 	@Override
-	public CompletableFuture<Void> updateDataSourceAsync(NewFullDataSource inputDataSource)
+	public CompletableFuture<Void> updateDataSourceAsync(FullDataSourceV2 inputDataSource)
 	{
 		ThreadPoolExecutor executor = ThreadPoolUtil.getUpdatePropagatorExecutor();
 		if (executor == null || executor.isTerminated())
@@ -202,7 +202,7 @@ public abstract class AbstractNewDataSourceHandler
 	 * After this method returns the inputData will be written to file.
 	 * @param updatePos the position to update 
 	 */
-	protected void updateDataSourceAtPos(DhSectionPos updatePos, NewFullDataSource inputData, boolean lockOnUpdatePos)
+	protected void updateDataSourceAtPos(DhSectionPos updatePos, FullDataSourceV2 inputData, boolean lockOnUpdatePos)
 	{
 		boolean methodLocked = false;
 		// a lock is necessary to prevent two threads from writing to the same position at once,

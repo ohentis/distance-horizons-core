@@ -2,7 +2,7 @@ package com.seibel.distanthorizons.core.file;
 
 import com.seibel.distanthorizons.api.enums.EDhApiDetailLevel;
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.NewFullDataSource;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.sql.dto.IBaseDTO;
@@ -26,7 +26,7 @@ public interface IDataSource<TDhLevel extends IDhLevel> extends IBaseDTO<DhSecti
 	//===============//
 	
 	/** @return true if the data was changed */
-	boolean update(NewFullDataSource chunkData, TDhLevel level);
+	boolean update(FullDataSourceV2 chunkData, TDhLevel level);
 	
 	// still used by RenderSource, remove once that's been changed
 	@Deprecated

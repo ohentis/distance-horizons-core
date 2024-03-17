@@ -22,7 +22,7 @@ package com.seibel.distanthorizons.core.file.subDimMatching;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.FullDataPointIdMap;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV1;
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.NewFullDataSource;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.file.structure.ClientOnlySaveStructure;
 import com.seibel.distanthorizons.core.generation.DhLightingEngine;
@@ -32,7 +32,7 @@ import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.dataObjects.transformers.LodDataBuilder;
-import com.seibel.distanthorizons.core.util.FullDataPointUtil;
+import com.seibel.distanthorizons.core.util.FullDataPointUtilV2;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
@@ -188,9 +188,9 @@ public class SubDimensionLevelMatcher implements AutoCloseable
 			LOGGER.warn("unable to build lod for chunk:"+newlyLoadedChunk.getChunkPos());
 			return null;
 		}
-		NewFullDataSource newChunkSizedFullDataView = NewFullDataSource.createFromChunk(newlyLoadedChunk);
+		FullDataSourceV2 newChunkSizedFullDataView = FullDataSourceV2.createFromChunk(newlyLoadedChunk);
 		// convert to a data source for easier comparing
-		NewFullDataSource newDataSource = NewFullDataSource.createEmpty(new DhSectionPos(this.playerData.playerBlockPos));
+		FullDataSourceV2 newDataSource = FullDataSourceV2.createEmpty(new DhSectionPos(this.playerData.playerBlockPos));
 		newDataSource.update(newChunkSizedFullDataView);
 		
 		
@@ -212,7 +212,7 @@ public class SubDimensionLevelMatcher implements AutoCloseable
 			{
 				// get the data source to compare against
 				IDhLevel tempLevel = new DhClientLevel(new ClientOnlySaveStructure(), this.currentClientLevel, testLevelFolder, false);
-				NewFullDataSource testFullDataSource = tempLevel.getFullDataProvider().getAsync(new DhSectionPos(this.playerData.playerBlockPos)).join();
+				FullDataSourceV2 testFullDataSource = tempLevel.getFullDataProvider().getAsync(new DhSectionPos(this.playerData.playerBlockPos)).join();
 				if (testFullDataSource == null)
 				{
 					continue;
@@ -250,13 +250,13 @@ public class SubDimensionLevelMatcher implements AutoCloseable
 								long newDataPoint = newColumn[i];
 								long testDataPoint = testColumn[i];
 								
-								int newId = FullDataPointUtil.getId(newDataPoint);
-								int testId = FullDataPointUtil.getId(testDataPoint);
+								int newId = FullDataPointUtilV2.getId(newDataPoint);
+								int testId = FullDataPointUtilV2.getId(testDataPoint);
 								
 								
 								// bottom Y
-								int newBottom = FullDataPointUtil.getBottomY(newDataPoint);
-								int testBottom = FullDataPointUtil.getBottomY(testDataPoint);
+								int newBottom = FullDataPointUtilV2.getBottomY(newDataPoint);
+								int testBottom = FullDataPointUtilV2.getBottomY(testDataPoint);
 								if (newBottom == testBottom)
 								{
 									equalDataPoints++;	
@@ -264,8 +264,8 @@ public class SubDimensionLevelMatcher implements AutoCloseable
 								totalDataPointCount++;
 								
 								// height
-								int newHeight = FullDataPointUtil.getHeight(newDataPoint);
-								int testHeight = FullDataPointUtil.getHeight(testDataPoint);
+								int newHeight = FullDataPointUtilV2.getHeight(newDataPoint);
+								int testHeight = FullDataPointUtilV2.getHeight(testDataPoint);
 								if (newHeight == testHeight)
 								{
 									equalDataPoints++;

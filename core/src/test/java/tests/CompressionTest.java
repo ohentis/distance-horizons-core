@@ -20,10 +20,10 @@
 package tests;
 
 import com.seibel.distanthorizons.api.enums.config.EDhApiDataCompressionMode;
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.NewFullDataSource;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
-import com.seibel.distanthorizons.core.sql.dto.NewFullDataSourceDTO;
-import com.seibel.distanthorizons.core.sql.repo.NewFullDataSourceRepo;
+import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV2DTO;
+import com.seibel.distanthorizons.core.sql.repo.FullDataSourceV2Repo;
 import org.junit.Assert;
 
 import java.io.*;
@@ -155,7 +155,7 @@ public class CompressionTest
 	//	byte[] dictionary;
 	//	{
 	//		String uncompressedDatabaseFilePath = TEST_DIR + "/" + UNCOMPRESSED_DB_FILE_NAME;
-	//		NewFullDataSourceRepo uncompressedRepo = new NewFullDataSourceRepo("jdbc:sqlite", uncompressedDatabaseFilePath);
+	//		FullDataSourceV2Repo uncompressedRepo = new FullDataSourceV2Repo("jdbc:sqlite", uncompressedDatabaseFilePath);
 	//		ArrayList<DhSectionPos> positionList = uncompressedRepo.getAllPositions();
 	//
 	//		// sample size of 10 MB or less
@@ -165,7 +165,7 @@ public class CompressionTest
 	//		for (int i = 0; i < positionList.size(); i++)
 	//		{
 	//			DhSectionPos pos = positionList.get(i);
-	//			NewFullDataSourceDTO uncompressedDto = uncompressedRepo.getByKey(pos);
+	//			FullDataSourceV2DTO uncompressedDto = uncompressedRepo.getByKey(pos);
 	//
 	//			dictTrainer.addSample(uncompressedDto.dataByteArray);
 	//		}
@@ -260,7 +260,7 @@ public class CompressionTest
 			File uncompressedDatabaseFile = new File(uncompressedDatabaseFilePath);
 			Assert.assertTrue(uncompressedDatabaseFile.exists());
 			
-			NewFullDataSourceRepo uncompressedRepo = new NewFullDataSourceRepo("jdbc:sqlite", uncompressedDatabaseFilePath);
+			FullDataSourceV2Repo uncompressedRepo = new FullDataSourceV2Repo("jdbc:sqlite", uncompressedDatabaseFilePath);
 			
 			
 			String compressedDatabaseFilePath = TEST_DIR + "/output/" + DB_FILE_NAME_PREFIX + "_" + compressorName + ".sqlite";
@@ -268,7 +268,7 @@ public class CompressionTest
 			compressedDatabaseFile.mkdirs();
 			compressedDatabaseFile.delete();
 			Assert.assertTrue(!compressedDatabaseFile.exists());
-			NewFullDataSourceRepo compressedRepo = new NewFullDataSourceRepo("jdbc:sqlite", compressedDatabaseFilePath);
+			FullDataSourceV2Repo compressedRepo = new FullDataSourceV2Repo("jdbc:sqlite", compressedDatabaseFilePath);
 			
 			
 			
@@ -292,9 +292,9 @@ public class CompressionTest
 					
 					// uncompressed input //
 					
-					NewFullDataSourceDTO uncompressedDto = uncompressedRepo.getByKey(pos);
+					FullDataSourceV2DTO uncompressedDto = uncompressedRepo.getByKey(pos);
 					Assert.assertEquals(uncompressedDto.compressionModeEnum, EDhApiDataCompressionMode.UNCOMPRESSED);
-					NewFullDataSource uncompressedDataSource = uncompressedDto.createUnitTestDataSource();
+					FullDataSourceV2 uncompressedDataSource = uncompressedDto.createUnitTestDataSource();
 					
 					long uncompressedDtoSize = uncompressedRepo.getDataSizeInBytes(pos);
 					minUncompressedDtoSizeInBytes = Math.min(uncompressedDtoSize, minUncompressedDtoSizeInBytes);
@@ -307,7 +307,7 @@ public class CompressionTest
 					
 					long startWriteNanoTime = System.nanoTime();
 					
-					NewFullDataSourceDTO compressedDto = NewFullDataSourceDTO.CreateFromDataSource(uncompressedDataSource, compressionMode);
+					FullDataSourceV2DTO compressedDto = FullDataSourceV2DTO.CreateFromDataSource(uncompressedDataSource, compressionMode);
 					compressedRepo.save(compressedDto);
 					
 					long endWriteNanoTime = System.nanoTime();
@@ -326,7 +326,7 @@ public class CompressionTest
 					long startReadNanoTime = System.nanoTime();
 					
 					compressedDto = compressedRepo.getByKey(pos);
-					NewFullDataSource compressedDataSource = compressedDto.createUnitTestDataSource();
+					FullDataSourceV2 compressedDataSource = compressedDto.createUnitTestDataSource();
 					
 					long endReadMsTime = System.nanoTime();
 					totalReadTimeInNano += (endReadMsTime - startReadNanoTime);

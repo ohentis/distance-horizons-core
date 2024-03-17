@@ -22,7 +22,7 @@ package com.seibel.distanthorizons.core.dataObjects.transformers;
 import com.seibel.distanthorizons.api.enums.config.EBlocksToAvoid;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.FullDataPointIdMap;
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.NewFullDataSource;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSource;
 import com.seibel.distanthorizons.core.dataObjects.render.columnViews.ColumnArrayView;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
@@ -30,7 +30,7 @@ import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
-import com.seibel.distanthorizons.core.util.FullDataPointUtil;
+import com.seibel.distanthorizons.core.util.FullDataPointUtilV2;
 import com.seibel.distanthorizons.core.util.RenderDataPointUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.IWrapperFactory;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
@@ -41,7 +41,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.HashSet;
 
 /**
- * Handles converting {@link NewFullDataSource}'s to {@link ColumnRenderSource}.
+ * Handles converting {@link FullDataSourceV2}'s to {@link ColumnRenderSource}.
  */
 public class FullDataToRenderDataTransformer
 {
@@ -56,7 +56,7 @@ public class FullDataToRenderDataTransformer
 	// public transformer interface //
 	//==============================//
 	
-	public static ColumnRenderSource transformFullDataToRenderSource(NewFullDataSource fullDataSource, IDhClientLevel level)
+	public static ColumnRenderSource transformFullDataToRenderSource(FullDataSourceV2 fullDataSource, IDhClientLevel level)
 	{
 		if (fullDataSource == null)
 		{
@@ -92,7 +92,7 @@ public class FullDataToRenderDataTransformer
 	 * @throws InterruptedException Can be caused by interrupting the thread upstream.
 	 * Generally thrown if the method is running after the client leaves the current world.
 	 */
-	private static ColumnRenderSource transformCompleteFullDataToColumnData(IDhClientLevel level, NewFullDataSource fullDataSource) throws InterruptedException
+	private static ColumnRenderSource transformCompleteFullDataToColumnData(IDhClientLevel level, FullDataSourceV2 fullDataSource) throws InterruptedException
 	{
 		final DhSectionPos pos = fullDataSource.getSectionPos();
 		final byte dataDetail = fullDataSource.getDataDetailLevel();
@@ -174,11 +174,11 @@ public class FullDataToRenderDataTransformer
 		for (int i = 0; i < fullColumnData.length; i++)
 		{
 			long fullData = fullColumnData[i];
-			int bottomY = FullDataPointUtil.getBottomY(fullData);
-			int blockHeight = FullDataPointUtil.getHeight(fullData);
-			int id = FullDataPointUtil.getId(fullData);
-			int blockLight = FullDataPointUtil.getBlockLight(fullData);
-			int skyLight = FullDataPointUtil.getSkyLight(fullData);
+			int bottomY = FullDataPointUtilV2.getBottomY(fullData);
+			int blockHeight = FullDataPointUtilV2.getHeight(fullData);
+			int id = FullDataPointUtilV2.getId(fullData);
+			int blockLight = FullDataPointUtilV2.getBlockLight(fullData);
+			int skyLight = FullDataPointUtilV2.getSkyLight(fullData);
 			
 			// TODO how should corrupted data be handled?
 			// TODO why is the full data corrupted in the first place? FullDataPointUtil hasn't been changed in a long time, could one of the full data point objects be corrupted?

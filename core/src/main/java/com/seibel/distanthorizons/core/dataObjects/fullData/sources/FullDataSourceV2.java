@@ -23,11 +23,11 @@ import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGeneratio
 import com.seibel.distanthorizons.core.dataObjects.fullData.FullDataPointIdMap;
 import com.seibel.distanthorizons.core.dataObjects.transformers.LodDataBuilder;
 import com.seibel.distanthorizons.core.file.IDataSource;
-import com.seibel.distanthorizons.core.file.fullDatafile.NewFullDataFileHandler;
+import com.seibel.distanthorizons.core.file.fullDatafile.FullDataFileHandlerV2;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
-import com.seibel.distanthorizons.core.util.FullDataPointUtil;
+import com.seibel.distanthorizons.core.util.FullDataPointUtilV2;
 import com.seibel.distanthorizons.core.util.FullDataPointUtilV1;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.RenderDataPointUtil;
@@ -47,10 +47,10 @@ import java.util.concurrent.locks.ReentrantLock;
  * TODO create a child object that extends AutoClosable
  *       that can be pooled to reduce GC overhead 
  * 
- * @see FullDataPointUtil
+ * @see FullDataPointUtilV2
  * @see FullDataSourceV1
  */
-public class NewFullDataSource implements IDataSource<IDhLevel>
+public class FullDataSourceV2 implements IDataSource<IDhLevel>
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	/** useful for debugging, but can slow down update operations quite a bit due to being called so often. */
@@ -100,8 +100,8 @@ public class NewFullDataSource implements IDataSource<IDhLevel>
 	// constructors //
 	//==============//
 	
-	public static NewFullDataSource createEmpty(DhSectionPos pos) { return new NewFullDataSource(pos); }
-	private NewFullDataSource(DhSectionPos pos) 
+	public static FullDataSourceV2 createEmpty(DhSectionPos pos) { return new FullDataSourceV2(pos); }
+	private FullDataSourceV2(DhSectionPos pos) 
 	{
 		this.pos = pos;
 		this.dataPoints = new long[WIDTH * WIDTH][];
@@ -113,8 +113,8 @@ public class NewFullDataSource implements IDataSource<IDhLevel>
 		this.columnGenerationSteps = new byte[WIDTH * WIDTH];
 	}
 	
-	public static NewFullDataSource createWithData(DhSectionPos pos, FullDataPointIdMap mapping, long[][] data, byte[] columnGenerationStep) { return new NewFullDataSource(pos, mapping, data, columnGenerationStep); }
-	private NewFullDataSource(DhSectionPos pos, FullDataPointIdMap mapping, long[][] data, byte[] columnGenerationSteps)
+	public static FullDataSourceV2 createWithData(DhSectionPos pos, FullDataPointIdMap mapping, long[][] data, byte[] columnGenerationStep) { return new FullDataSourceV2(pos, mapping, data, columnGenerationStep); }
+	private FullDataSourceV2(DhSectionPos pos, FullDataPointIdMap mapping, long[][] data, byte[] columnGenerationSteps)
 	{
 		LodUtil.assertTrue(data.length == WIDTH * WIDTH);
 		
@@ -126,16 +126,16 @@ public class NewFullDataSource implements IDataSource<IDhLevel>
 		this.columnGenerationSteps = columnGenerationSteps;
 	}
 	
-	public static NewFullDataSource createFromChunk(IChunkWrapper chunkWrapper) { return LodDataBuilder.createGeneratedDataSource(chunkWrapper); }
+	public static FullDataSourceV2 createFromChunk(IChunkWrapper chunkWrapper) { return LodDataBuilder.createGeneratedDataSource(chunkWrapper); }
 	
-	public static NewFullDataSource createFromCompleteDataSource(FullDataSourceV1 legacyData)
+	public static FullDataSourceV2 createFromCompleteDataSource(FullDataSourceV1 legacyData)
 	{
 		if (FullDataSourceV1.WIDTH != WIDTH)
 		{
 			throw new UnsupportedOperationException(
-					"Unable to convert CompleteFullDataSource into NewFullDataSource. " +
+					"Unable to convert ["+FullDataSourceV1.class.getSimpleName()+"] into ["+FullDataSourceV2.class.getSimpleName()+"]. " +
 					"Data sources have different data point widths and no converter is present. " +
-					"CompleteFullDataSource width ["+ FullDataSourceV1.WIDTH+"], NewFullDataSource width ["+WIDTH+"].");
+					"input width ["+ FullDataSourceV1.WIDTH+"], recipient width ["+WIDTH+"].");
 		}
 		
 		
@@ -182,7 +182,7 @@ public class NewFullDataSource implements IDataSource<IDhLevel>
 							blockLight = 0;
 						}
 						
-						long newDataPoint = FullDataPointUtil.encode(id, height, bottomY, blockLight, skyLight);
+						long newDataPoint = FullDataPointUtilV2.encode(id, height, bottomY, blockLight, skyLight);
 						dataColumn[i] = newDataPoint;
 						
 						
@@ -200,7 +200,7 @@ public class NewFullDataSource implements IDataSource<IDhLevel>
 			}
 		}
 		
-		NewFullDataSource newFullDataSource = NewFullDataSource.createWithData(legacyData.getSectionPos(), legacyData.mapping, dataPoints, columnGenerationSteps);
+		FullDataSourceV2 fullDataSource = FullDataSourceV2.createWithData(legacyData.getSectionPos(), legacyData.mapping, dataPoints, columnGenerationSteps);
 		
 		
 		// should only be used if debugging, this is a very expensive operation
@@ -213,7 +213,7 @@ public class NewFullDataSource implements IDataSource<IDhLevel>
 					long[] legacyDataColumn = legacyData.get(x, z);
 					if (legacyDataColumn != null && legacyDataColumn.length != 0)
 					{
-						long[] newDataColumn = newFullDataSource.get(x, z);
+						long[] newDataColumn = fullDataSource.get(x, z);
 						
 						if (newDataColumn == null)
 						{
@@ -239,7 +239,7 @@ public class NewFullDataSource implements IDataSource<IDhLevel>
 			}
 		}
 		
-		return newFullDataSource;
+		return fullDataSource;
 	}
 	
 	
@@ -251,8 +251,8 @@ public class NewFullDataSource implements IDataSource<IDhLevel>
 	public long[] get(int relX, int relZ) throws IndexOutOfBoundsException { return this.dataPoints[relativePosToIndex(relX, relZ)]; }
 	
 	@Override
-	public boolean update(NewFullDataSource inputDataSource, @Nullable IDhLevel level) { return this.update(inputDataSource); }
-	public boolean update(NewFullDataSource inputDataSource)
+	public boolean update(FullDataSourceV2 inputDataSource, @Nullable IDhLevel level) { return this.update(inputDataSource); }
+	public boolean update(FullDataSourceV2 inputDataSource)
 	{
 		// shouldn't happen, but James saw it happen once
 		if (inputDataSource.mapping.getMaxValidId() == 0)
@@ -288,7 +288,7 @@ public class NewFullDataSource implements IDataSource<IDhLevel>
 			throw new UnsupportedOperationException("Unsupported data source update. Expected input detail level of ["+thisDetailLevel+"] or ["+(thisDetailLevel+1)+"], received detail level ["+inputDetailLevel+"].");
 		}
 		
-		if (dataChanged && this.pos.getDetailLevel() < NewFullDataFileHandler.TOP_SECTION_DETAIL_LEVEL)
+		if (dataChanged && this.pos.getDetailLevel() < FullDataFileHandlerV2.TOP_SECTION_DETAIL_LEVEL)
 		{
 			// mark that this data source should be applied to its parent
 			this.applyToParent = true;
@@ -302,7 +302,7 @@ public class NewFullDataSource implements IDataSource<IDhLevel>
 		
 		return dataChanged;
 	}
-	public boolean updateFromSameDetailLevel(NewFullDataSource inputDataSource, int[] remappedIds)
+	public boolean updateFromSameDetailLevel(FullDataSourceV2 inputDataSource, int[] remappedIds)
 	{
 		// both data sources should have the same detail level
 		if (inputDataSource.pos.getDetailLevel() != this.pos.getDetailLevel())
@@ -351,7 +351,7 @@ public class NewFullDataSource implements IDataSource<IDhLevel>
 		
 		return dataChanged;
 	}
-	public boolean updateFromOneBelowDetailLevel(NewFullDataSource inputDataSource, int[] remappedIds)
+	public boolean updateFromOneBelowDetailLevel(FullDataSourceV2 inputDataSource, int[] remappedIds)
 	{
 		if (inputDataSource.pos.getDetailLevel() + 1 != this.pos.getDetailLevel())
 		{
@@ -406,7 +406,7 @@ public class NewFullDataSource implements IDataSource<IDhLevel>
 		
 		return dataChanged;
 	}
-	private static long[] mergeInputTwoByTwoDataColumn(NewFullDataSource inputDataSource, int x, int z)
+	private static long[] mergeInputTwoByTwoDataColumn(FullDataSourceV2 inputDataSource, int x, int z)
 	{
 		ArrayList<Long> newColumnList = new ArrayList<>();
 		
@@ -460,8 +460,8 @@ public class NewFullDataSource implements IDataSource<IDhLevel>
 					}
 					long datapoint = inputDataArray[dataPointIndex];
 					
-					int datapointMinY = FullDataPointUtil.getBottomY(datapoint);
-					int numbOfBlocksTall = FullDataPointUtil.getHeight(datapoint);
+					int datapointMinY = FullDataPointUtilV2.getBottomY(datapoint);
+					int numbOfBlocksTall = FullDataPointUtilV2.getHeight(datapoint);
 					int datapointMaxY = (datapointMinY + numbOfBlocksTall);
 					
 					
@@ -504,9 +504,9 @@ public class NewFullDataSource implements IDataSource<IDhLevel>
 			int[] mergeSkyLights = new int[4];
 			for (int i = 0; i < 4; i++)
 			{
-				mergeIds[i] = FullDataPointUtil.getId(datapointsForYSlice[i]);
-				mergeBlockLights[i] = FullDataPointUtil.getBlockLight(datapointsForYSlice[i]);
-				mergeSkyLights[i] = FullDataPointUtil.getSkyLight(datapointsForYSlice[i]);
+				mergeIds[i] = FullDataPointUtilV2.getId(datapointsForYSlice[i]);
+				mergeBlockLights[i] = FullDataPointUtilV2.getBlockLight(datapointsForYSlice[i]);
+				mergeSkyLights[i] = FullDataPointUtilV2.getSkyLight(datapointsForYSlice[i]);
 			}
 			
 			
@@ -523,7 +523,7 @@ public class NewFullDataSource implements IDataSource<IDhLevel>
 			{
 				if (height != 0)
 				{
-					newColumnList.add(FullDataPointUtil.encode(lastId, height, minY, lastBlockLight, lastSkyLight));
+					newColumnList.add(FullDataPointUtilV2.encode(lastId, height, minY, lastBlockLight, lastSkyLight));
 				}
 				
 				lastId = id;
@@ -537,7 +537,7 @@ public class NewFullDataSource implements IDataSource<IDhLevel>
 		// add the last slice if present
 		if (height != 0)
 		{
-			newColumnList.add(FullDataPointUtil.encode(lastId, height, minY, lastBlockLight, lastSkyLight));
+			newColumnList.add(FullDataPointUtilV2.encode(lastId, height, minY, lastBlockLight, lastSkyLight));
 		}
 		
 		
@@ -560,7 +560,7 @@ public class NewFullDataSource implements IDataSource<IDhLevel>
 		long[] dataColumn = this.dataPoints[dataPointIndex];
 		for (int i = 0; i < dataColumn.length; i++)
 		{
-			dataColumn[i] = FullDataPointUtil.remap(remappedIds, dataColumn[i]);
+			dataColumn[i] = FullDataPointUtilV2.remap(remappedIds, dataColumn[i]);
 		}
 	}
 	private static boolean areDataColumnsDifferent(long[] oldDataArray, long[] newDataArray)
@@ -705,7 +705,7 @@ public class NewFullDataSource implements IDataSource<IDhLevel>
 			for (int i = 0; i < longArray.length; i++)
 			{
 				long dataPoint = longArray[i];
-				int id = FullDataPointUtil.getId(dataPoint);
+				int id = FullDataPointUtilV2.getId(dataPoint);
 				if (id > maxValidId)
 				{
 					LodUtil.assertNotReach("Column set with higher than possible ID. ID [" + id + "], max valid ID [" + maxValidId + "].");
@@ -738,11 +738,11 @@ public class NewFullDataSource implements IDataSource<IDhLevel>
 	@Override 
 	public boolean equals(Object obj)
 	{
-		if (!(obj instanceof NewFullDataSource))
+		if (!(obj instanceof FullDataSourceV2))
 		{
 			return false;
 		}
-		NewFullDataSource other = (NewFullDataSource) obj;
+		FullDataSourceV2 other = (FullDataSourceV2) obj;
 		
 		if (!other.pos.equals(this.pos))
 		{

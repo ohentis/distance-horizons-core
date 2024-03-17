@@ -39,9 +39,12 @@ import java.util.Arrays;
 
 /**
  * Formerly "CompleteFullDataSource". <br>
- * Should be fully populated, containing 1 data point for each column.
- *
+ * Should be fully populated, containing 1 data point for each column. <br><br>
+ * 
+ * Replaced by {@link FullDataSourceV2}.
+ * 
  * @see FullDataPointUtilV1
+ * @see FullDataSourceV2
  */
 public class FullDataSourceV1 implements IDataSource<IDhLevel>
 {
@@ -98,7 +101,7 @@ public class FullDataSourceV1 implements IDataSource<IDhLevel>
 	
 	@Deprecated
 	@Override
-	public boolean update(NewFullDataSource dataSource, IDhLevel level) { throw new UnsupportedOperationException("Deprecated"); }
+	public boolean update(FullDataSourceV2 dataSource, IDhLevel level) { throw new UnsupportedOperationException("Deprecated"); }
 	
 	
 	

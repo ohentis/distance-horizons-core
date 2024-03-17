@@ -21,9 +21,8 @@ package com.seibel.distanthorizons.core.sql.dto;
 
 import com.seibel.distanthorizons.api.enums.config.EDhApiDataCompressionMode;
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
-import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.FullDataPointIdMap;
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.NewFullDataSource;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataInputStream;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataOutputStream;
@@ -36,8 +35,8 @@ import java.io.IOException;
 import java.util.zip.Adler32;
 import java.util.zip.CheckedOutputStream;
 
-/** handles storing {@link NewFullDataSource}'s in the database. */
-public class NewFullDataSourceDTO implements IBaseDTO<DhSectionPos>
+/** handles storing {@link FullDataSourceV2}'s in the database. */
+public class FullDataSourceV2DTO implements IBaseDTO<DhSectionPos>
 {
 	public DhSectionPos pos;
 	
@@ -67,20 +66,20 @@ public class NewFullDataSourceDTO implements IBaseDTO<DhSectionPos>
 	// constructor //
 	//=============//
 	
-	public static NewFullDataSourceDTO CreateFromDataSource(NewFullDataSource dataSource, EDhApiDataCompressionMode compressionModeEnum) throws IOException
+	public static FullDataSourceV2DTO CreateFromDataSource(FullDataSourceV2 dataSource, EDhApiDataCompressionMode compressionModeEnum) throws IOException
 	{
 		CheckedByteArray checkedDataPointArray = writeDataSourceDataArrayToBlob(dataSource.dataPoints, compressionModeEnum);
 		byte[] mappingByteArray = writeDataMappingToBlob(dataSource.getMapping(), compressionModeEnum);
 		
-		return new NewFullDataSourceDTO(
+		return new FullDataSourceV2DTO(
 				dataSource.getSectionPos(), 
-				checkedDataPointArray.checksum, dataSource.columnGenerationSteps, NewFullDataSource.DATA_FORMAT_VERSION, compressionModeEnum, checkedDataPointArray.byteArray,
+				checkedDataPointArray.checksum, dataSource.columnGenerationSteps, FullDataSourceV2.DATA_FORMAT_VERSION, compressionModeEnum, checkedDataPointArray.byteArray,
 				dataSource.lastModifiedUnixDateTime, dataSource.createdUnixDateTime,
 				mappingByteArray, dataSource.applyToParent, 
 				dataSource.levelMinY
 		);
 	}
-	public NewFullDataSourceDTO(
+	public FullDataSourceV2DTO(
 			DhSectionPos pos, 
 			int dataChecksum, byte[] columnGenStepByteArray, byte dataFormatVersion, EDhApiDataCompressionMode compressionModeEnum, byte[] dataByteArray,
 			long lastModifiedUnixDateTime, long createdUnixDateTime,
@@ -111,22 +110,22 @@ public class NewFullDataSourceDTO implements IBaseDTO<DhSectionPos>
 	// data source population //
 	//========================//
 	
-	public NewFullDataSource createDataSource(@NotNull ILevelWrapper levelWrapper) throws IOException, InterruptedException 
-	{ return this.populateDataSource(NewFullDataSource.createEmpty(this.pos), levelWrapper); }
+	public FullDataSourceV2 createDataSource(@NotNull ILevelWrapper levelWrapper) throws IOException, InterruptedException 
+	{ return this.populateDataSource(FullDataSourceV2.createEmpty(this.pos), levelWrapper); }
 	
-	public NewFullDataSource populateDataSource(NewFullDataSource dataSource, @NotNull ILevelWrapper levelWrapper) throws IOException, InterruptedException 
+	public FullDataSourceV2 populateDataSource(FullDataSourceV2 dataSource, @NotNull ILevelWrapper levelWrapper) throws IOException, InterruptedException 
 	{ return this.internalPopulateDataSource(dataSource, levelWrapper, false); }
 	
 	/** 
 	 * May be missing one or more data fields. <br>
 	 * Designed to be used without access to Minecraft or any supporting objects. 
 	 */
-	public NewFullDataSource createUnitTestDataSource() throws IOException, InterruptedException 
-	{ return this.internalPopulateDataSource(NewFullDataSource.createEmpty(this.pos), null, true); }
+	public FullDataSourceV2 createUnitTestDataSource() throws IOException, InterruptedException 
+	{ return this.internalPopulateDataSource(FullDataSourceV2.createEmpty(this.pos), null, true); }
 	
-	private NewFullDataSource internalPopulateDataSource(NewFullDataSource dataSource, ILevelWrapper levelWrapper, boolean unitTest) throws IOException, InterruptedException
+	private FullDataSourceV2 internalPopulateDataSource(FullDataSourceV2 dataSource, ILevelWrapper levelWrapper, boolean unitTest) throws IOException, InterruptedException
 	{
-		if (NewFullDataSource.DATA_FORMAT_VERSION != this.dataFormatVersion)
+		if (FullDataSourceV2.DATA_FORMAT_VERSION != this.dataFormatVersion)
 		{
 			throw new IllegalStateException("There should only be one data format right now anyway.");
 		}
@@ -175,7 +174,7 @@ public class NewFullDataSourceDTO implements IBaseDTO<DhSectionPos>
 		
 		
 		// write the data
-		int dataArrayLength = NewFullDataSource.WIDTH * NewFullDataSource.WIDTH;
+		int dataArrayLength = FullDataSourceV2.WIDTH * FullDataSourceV2.WIDTH;
 		for (int xz = 0; xz < dataArrayLength; xz++)
 		{
 			long[] dataColumn = dataArray[xz];
@@ -206,7 +205,7 @@ public class NewFullDataSourceDTO implements IBaseDTO<DhSectionPos>
 		
 		
 		// read the data
-		int dataArrayLength = NewFullDataSource.WIDTH * NewFullDataSource.WIDTH;
+		int dataArrayLength = FullDataSourceV2.WIDTH * FullDataSourceV2.WIDTH;
 		long[][] dataArray = new long[dataArrayLength][];
 		for (int xz = 0; xz < dataArray.length; xz++)
 		{
