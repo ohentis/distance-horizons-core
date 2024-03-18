@@ -650,15 +650,20 @@
     "Chunk",
     
   "distanthorizons.config.enum.EVerticalQuality.HEIGHT_MAP":
-    "Height Map",
+    "1. Height Map",
   "distanthorizons.config.enum.EVerticalQuality.LOW":
-    "Low",
+    "2. Low",
   "distanthorizons.config.enum.EVerticalQuality.MEDIUM":
-    "Medium",
+    "3. Medium",
   "distanthorizons.config.enum.EVerticalQuality.HIGH":
-    "High",
+    "4. High",
+  "distanthorizons.config.enum.EVerticalQuality.VERY_HIGH":
+    "5. Very High",
   "distanthorizons.config.enum.EVerticalQuality.EXTREME":
-    "Extreme",
+    "6. Extreme",
+  "distanthorizons.config.enum.EVerticalQuality.PIXEL_ART":
+    "7. Pixel Art",
+    
   "distanthorizons.config.enum.EHorizontalQuality.LOWEST":
     "Lowest",
   "distanthorizons.config.enum.EHorizontalQuality.LOW":
