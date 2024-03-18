@@ -26,7 +26,6 @@ import com.seibel.distanthorizons.core.level.DhClientLevel;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.multiplayer.client.ClientNetworkState;
 import com.seibel.distanthorizons.core.network.netty.NettyClient;
-import com.seibel.distanthorizons.core.network.plugin.PluginChannelHandler;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
 import com.seibel.distanthorizons.core.util.objects.EventLoop;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;

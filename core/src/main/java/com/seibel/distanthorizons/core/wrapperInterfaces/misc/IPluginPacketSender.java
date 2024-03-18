@@ -4,8 +4,10 @@ import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IBindab
 import io.netty.buffer.ByteBuf;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.function.Consumer;
+
 public interface IPluginPacketSender extends IBindable
 {
-	void sendPluginPacket(@Nullable IServerPlayerWrapper serverPlayer, ByteBuf buffer);
+	void sendPluginPacket(@Nullable IServerPlayerWrapper serverPlayer, Consumer<ByteBuf> encoder);
 	
 }

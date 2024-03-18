@@ -11,7 +11,6 @@ import com.seibel.distanthorizons.core.network.protocol.plugin.PluginMessageEnco
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IPluginPacketSender;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.PooledByteBufAllocator;
 import org.apache.logging.log4j.LogManager;
 import org.jetbrains.annotations.Nullable;
 
@@ -73,9 +72,7 @@ public class PluginChannelHandler extends NetworkEventSource<PluginChannelMessag
 	}
 	public void sendMessage(@Nullable IServerPlayerWrapper serverPlayer, PluginChannelMessage message)
 	{
-		ByteBuf buffer = PooledByteBufAllocator.DEFAULT.buffer();
-		this.messageEncoder.encode(message, buffer);
-		this.packetSender.sendPluginPacket(serverPlayer, buffer);
+		this.packetSender.sendPluginPacket(serverPlayer, buffer -> this.messageEncoder.encode(message, buffer));
 	}
 	
 	@Override
