@@ -34,6 +34,7 @@ import com.seibel.distanthorizons.core.util.RenderDataPointUtil;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataOutputStream;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
+import com.seibel.distanthorizons.coreapi.ModInfo;
 import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nullable;
@@ -55,7 +56,13 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	/** useful for debugging, but can slow down update operations quite a bit due to being called so often. */
 	private static final boolean RUN_UPDATE_DEV_VALIDATION = false;
-	private static final boolean RUN_V1_MIGRATION_VALIDATION = false;
+	private static final boolean RUN_V1_MIGRATION_CONSTRUCTOR_VALIDATION = ModInfo.IS_DEV_BUILD;
+	/** 
+	 * If the data column order isn't correct
+	 * block lighting may appear broken 
+	 * and/or certain detail level LODs may not appear at all. 
+	 */
+	private static final boolean RUN_DATA_ORDER_VALIDATION = ModInfo.IS_DEV_BUILD;
 	
 	/** measured in data columns */
 	public static final int WIDTH = 64;
@@ -86,8 +93,8 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 	public byte[] columnGenerationSteps;
 	
 	/** 
-	 * stored x/z, y 
-	 * The y data should be sorted from top to bottom
+	 * stored x/z, y <br>
+	 * The y data should be sorted from top to bottom <br>
 	 * TODO that ordering feels weird, it'd be nice to reverse that order, unfortunately
 	 *      there's something in the render data logic that expects this order so we can't change it right now
 	 */
@@ -196,7 +203,7 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 		
 		
 		// should only be used if debugging, this is a very expensive operation
-		if (RUN_V1_MIGRATION_VALIDATION)
+		if (RUN_V1_MIGRATION_CONSTRUCTOR_VALIDATION)
 		{
 			for (int x = 0; x < WIDTH; x++)
 			{
@@ -318,6 +325,11 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 						System.arraycopy(newDataArray, 0, this.dataPoints[index], 0, newDataArray.length);
 						this.remapDataColumn(index, remappedIds);
 						
+						if (RUN_DATA_ORDER_VALIDATION)
+						{
+							throwIfDataColumnInWrongOrder(inputDataSource.pos, this.dataPoints[index]);
+						}
+						
 						// we only need to see if the data was changed in one column
 						if (!dataChanged)
 						{
@@ -374,6 +386,11 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 				long[] oldDataArray = this.dataPoints[recipientIndex];
 				long[] mergedInputDataArray = mergeInputTwoByTwoDataColumn(inputDataSource, x, z);
 				this.dataPoints[recipientIndex] = mergedInputDataArray;
+				
+				if (RUN_DATA_ORDER_VALIDATION)
+				{
+					throwIfDataColumnInWrongOrder(inputDataSource.pos, this.dataPoints[recipientIndex]);
+				}
 				
 				// mapping
 				this.remapDataColumn(recipientIndex, remappedIds);
@@ -460,6 +477,11 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 					if (currentDatapointIndex[colIndex] == -2)
 					{
 						currentDatapointIndex[colIndex] = inputDataArray.length - 1;
+						
+						if (RUN_DATA_ORDER_VALIDATION)
+						{
+							throwIfDataColumnInWrongOrder(inputDataSource.pos, inputDataArray);
+						}
 					}
 					
 					
@@ -552,13 +574,38 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 		}
 		
 		
-		
-		
+		// convert the arraylist to an array
 		long[]mergedInputDataArray = new long[newColumnList.size()];
 		for (int i = 0; i < mergedInputDataArray.length; i++)
 		{
 			mergedInputDataArray[i] = newColumnList.get(i);
 		}
+		
+		
+		// flip the array if necessary
+		// TODO why is this sometimes necessary? What did I (James) screw up that causes the mergedInputDataArray
+		//  to sometimes be in a different order? Is it potentially related to what detail level is coming in?
+		{
+			long firstDataPoint = mergedInputDataArray[0];
+			int firstBottomY = FullDataPointUtilV2.getBottomY(firstDataPoint);
+			
+			long lastDataPoint = mergedInputDataArray[mergedInputDataArray.length - 1];
+			int lastBottomY = FullDataPointUtilV2.getBottomY(lastDataPoint);
+			
+			if (firstBottomY < lastBottomY)
+			{
+				// reverse the array so index 0 is the highest,
+				// this is necessary for later logic
+				// source: https://stackoverflow.com/questions/2137755/how-do-i-reverse-an-int-array-in-java
+				for(int i = 0; i < mergedInputDataArray.length / 2; i++)
+				{
+					long temp = mergedInputDataArray[i];
+					mergedInputDataArray[i] = mergedInputDataArray[mergedInputDataArray.length - i - 1];
+					mergedInputDataArray[mergedInputDataArray.length - i - 1] = temp;
+				}
+			}
+		}
+		
 		return mergedInputDataArray;
 	}
 	/**
@@ -675,6 +722,28 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 		}
 		
 		return (relX * WIDTH) + relZ; 
+	}
+	
+	/** 
+	 * Throws an exception if the given
+	 * full data column array is in the wrong order
+	 * IE if the first data point is the lowest and the last data point is the highest.
+	 * Data columns should be in reverse order, IE the first data point should be the highest data point.
+	 * 
+	 * @see FullDataSourceV2#dataPoints
+	 */
+	public static void throwIfDataColumnInWrongOrder(DhSectionPos pos, long[] dataArray) throws IllegalStateException
+	{
+		long firstDataPoint = dataArray[0];
+		int firstBottomY = FullDataPointUtilV2.getBottomY(firstDataPoint);
+		
+		long lastDataPoint = dataArray[dataArray.length - 1];
+		int lastBottomY = FullDataPointUtilV2.getBottomY(lastDataPoint);
+		
+		if (firstBottomY < lastBottomY)
+		{
+			throw new IllegalStateException("Incorrect data point order at pos: "+pos+", first datapoint bottom Y ["+firstBottomY+"], last datapoint bottom Y ["+lastBottomY+"].");
+		}
 	}
 	
 	
