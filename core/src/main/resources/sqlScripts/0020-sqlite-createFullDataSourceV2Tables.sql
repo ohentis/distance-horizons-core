@@ -13,11 +13,6 @@ where DataType <> 'CompleteFullDataSource' or DataDetailLevel <> 0;
 
 --batch--
 
--- shrink the database file after having removed low detail legacy LODs
-VACUUM;
-
---batch--
-
 CREATE TABLE FullData ( 
     -- compound primary key
      DetailLevel TINYINT NOT NULL -- LOD detail level, not section detail level IE 0, 1, 2 not 6, 7, 8
