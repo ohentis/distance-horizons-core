@@ -128,7 +128,7 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 	
 	public static FullDataSourceV2 createFromChunk(IChunkWrapper chunkWrapper) { return LodDataBuilder.createGeneratedDataSource(chunkWrapper); }
 	
-	public static FullDataSourceV2 createFromCompleteDataSource(FullDataSourceV1 legacyData)
+	public static FullDataSourceV2 createFromLegacyDataSourceV1(FullDataSourceV1 legacyData)
 	{
 		if (FullDataSourceV1.WIDTH != WIDTH)
 		{

@@ -328,7 +328,7 @@ public class FullDataSourceProviderV2
 					{
 						// convert the legacy data source to the new format,
 						// this is a relatively cheap operation
-						FullDataSourceV2 newDataSource = FullDataSourceV2.createFromCompleteDataSource(legacyDataSource);
+						FullDataSourceV2 newDataSource = FullDataSourceV2.createFromLegacyDataSourceV1(legacyDataSource);
 						newDataSource.applyToParent = true;
 						
 						// the actual update process can be moderately expensive due to having to update
