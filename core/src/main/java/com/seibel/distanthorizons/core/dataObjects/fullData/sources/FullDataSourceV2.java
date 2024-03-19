@@ -87,7 +87,9 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 	
 	/** 
 	 * stored x/z, y 
-	 * The y data should be sorted from bottom to top
+	 * The y data should be sorted from top to bottom
+	 * TODO that ordering feels weird, it'd be nice to reverse that order, unfortunately
+	 *      there's something in the render data logic that expects this order so we can't change it right now
 	 */
 	public long[][] dataPoints;
 	
@@ -149,16 +151,6 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 				long[] dataColumn = legacyData.get(x, z);
 				if (dataColumn != null && dataColumn.length != 0)
 				{
-					// reverse the array so index 0 is the lowest,
-					// this is necessary for later logic
-					// source: https://stackoverflow.com/questions/2137755/how-do-i-reverse-an-int-array-in-java
-					for(int i = 0; i < dataColumn.length / 2; i++)
-					{
-						long temp = dataColumn[i];
-						dataColumn[i] = dataColumn[dataColumn.length - i - 1];
-						dataColumn[dataColumn.length - i - 1] = temp;
-					}
-					
 					int index = relativePosToIndex(x, z);
 					dataPoints[index] = dataColumn;
 					
@@ -422,7 +414,10 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 	{
 		ArrayList<Long> newColumnList = new ArrayList<>();
 		
-		int[] currentDatapointIndex = new int[] { 0, 0, 0, 0 };
+		// special numbers:
+		// -2 = the column's height hasn't been determined yet
+		// -1 = we've reached the end of the column
+		int[] currentDatapointIndex = new int[] { -2, -2, -2, -2 };
 		
 		int lastId = 0;
 		byte lastBlockLight = 0;
@@ -444,23 +439,27 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 			}
 			
 			
-			long[] datapointsForYSlice = new long[4]; 
-			
-			
 			// scary double loop but, 
 			// this will only ever loop 4 times, 
 			// once for each of the 4 input columns
+			long[] datapointsForYSlice = new long[4];
 			int colIndex = 0;
-			for (int inputX = x; inputX < x +2; inputX++)
+			for (int inputX = x; inputX < x + 2; inputX++)
 			{
 				for (int inputZ = z; inputZ < z + 2; inputZ++, colIndex++)
 				{
-					// TODO throw an assertion if the column isn't in order or just fix it...
+					// TODO throw an assertion if the column isn't in top-down order or just fix it...
 					long[] inputDataArray = inputDataSource.dataPoints[relativePosToIndex(inputX, inputZ)];
 					if (inputDataArray == null || inputDataArray.length == 0)
 					{
 						currentDatapointIndex[colIndex] = -1;
 						continue;
+					}
+					
+					// determine the last index (the lowest data point) for each column
+					if (currentDatapointIndex[colIndex] == -2)
+					{
+						currentDatapointIndex[colIndex] = inputDataArray.length - 1;
 					}
 					
 					
@@ -485,11 +484,11 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 					}
 					else if (blockY >= datapointMaxY)
 					{
-						// this y-slice is above this datapoint,
+						// this y-slice is above the current datapoint,
 						// try the next data point
 						
-						int newDatapointIndex = currentDatapointIndex[colIndex] + 1;
-						if (newDatapointIndex >= inputDataArray.length)
+						int newDatapointIndex = currentDatapointIndex[colIndex] - 1;
+						if (newDatapointIndex < 0)
 						{
 							// went to far, no additional data present
 							newDatapointIndex = -1;
