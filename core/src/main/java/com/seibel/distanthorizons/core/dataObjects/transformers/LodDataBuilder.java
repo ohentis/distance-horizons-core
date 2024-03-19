@@ -136,9 +136,22 @@ public class LodDataBuilder
 				IBiomeWrapper biome = chunkWrapper.getBiome(chunkX, lastY, chunkZ);
 				IBlockStateWrapper blockState = AIR;
 				int mappedId = dataSource.mapping.addIfNotPresentAndGetId(biome, blockState);
-				// FIXME: The lastY +1 offset is to reproduce the old behavior. Remove this when we get per-face lighting
-				byte blockLight = (byte) chunkWrapper.getBlockLight(chunkX, lastY + 1, chunkZ);
-				byte skyLight = (byte) chunkWrapper.getSkyLight(chunkX, lastY + 1, chunkZ);
+
+				
+				byte blockLight;
+				byte skyLight;
+				if (lastY < chunkWrapper.getMaxBuildHeight())
+				{
+					// FIXME: The lastY +1 offset is to reproduce the old behavior. Remove this when we get per-face lighting
+					blockLight = (byte) chunkWrapper.getBlockLight(chunkX, lastY + 1, chunkZ);
+					skyLight = (byte) chunkWrapper.getSkyLight(chunkX, lastY + 1, chunkZ);
+				}
+				else
+				{
+					//we are at the height limit. There are no torches here, and sky is not obscured.
+					blockLight = 0;
+					skyLight = 15;
+				}
 				
 				
 				// determine the starting Y Pos
