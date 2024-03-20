@@ -1,3 +1,4 @@
 
 0010-sqlite-createInitialDataTables.sql
 0020-sqlite-createFullDataSourceV2Tables.sql
+0030-sqlite-changeTableJournaling.sql
