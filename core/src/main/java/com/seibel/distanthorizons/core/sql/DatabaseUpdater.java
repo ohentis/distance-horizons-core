@@ -106,7 +106,7 @@ public class DatabaseUpdater
 					// split up each individual statement so Java can handle the script as a whole
 					String[] fileUpdateSqlArray = resource.queryString.split(UPDATE_SCRIPT_BATCH_SEPARATOR);
 					
-					boolean transactScript = resource.queryString.contains(UPDATE_SCRIPT_NO_TRANSACTION_FLAG);
+					boolean transactScript = !resource.queryString.contains(UPDATE_SCRIPT_NO_TRANSACTION_FLAG);
 					
 					
 					
