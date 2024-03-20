@@ -116,9 +116,9 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<DhSectionPos, FullDataS
 		statement.setObject(i++, dto.levelMinY);
 		statement.setObject(i++, dto.dataChecksum);
 		
-		statement.setObject(i++, dto.dataByteArray);
-		statement.setObject(i++, dto.columnGenStepByteArray);
-		statement.setObject(i++, dto.mappingByteArray);
+		statement.setObject(i++, dto.compressedDataByteArray);
+		statement.setObject(i++, dto.compressedColumnGenStepByteArray);
+		statement.setObject(i++, dto.compressedMappingByteArray);
 		
 		statement.setObject(i++, dto.dataFormatVersion);
 		statement.setObject(i++, dto.compressionModeEnum.value);
@@ -157,9 +157,9 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<DhSectionPos, FullDataS
 		statement.setObject(i++, dto.levelMinY);
 		statement.setObject(i++, dto.dataChecksum);
 		
-		statement.setObject(i++, dto.dataByteArray);
-		statement.setObject(i++, dto.columnGenStepByteArray);
-		statement.setObject(i++, dto.mappingByteArray);
+		statement.setObject(i++, dto.compressedDataByteArray);
+		statement.setObject(i++, dto.compressedColumnGenStepByteArray);
+		statement.setObject(i++, dto.compressedMappingByteArray);
 		
 		statement.setObject(i++, dto.dataFormatVersion);
 		statement.setObject(i++, dto.compressionModeEnum.value);

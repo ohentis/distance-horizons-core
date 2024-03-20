@@ -45,12 +45,12 @@ public class FullDataSourceV2DTO implements IBaseDTO<DhSectionPos>
 	/** only for the data array */
 	public int dataChecksum;
 	
-	public byte[] dataByteArray;
+	public byte[] compressedDataByteArray;
 	
 	/** @see EDhApiWorldGenerationStep */
-	public byte[] columnGenStepByteArray;
+	public byte[] compressedColumnGenStepByteArray;
 	
-	public byte[] mappingByteArray;
+	public byte[] compressedMappingByteArray;
 	
 	public byte dataFormatVersion;
 	public EDhApiDataCompressionMode compressionModeEnum;
@@ -69,32 +69,34 @@ public class FullDataSourceV2DTO implements IBaseDTO<DhSectionPos>
 	public static FullDataSourceV2DTO CreateFromDataSource(FullDataSourceV2 dataSource, EDhApiDataCompressionMode compressionModeEnum) throws IOException
 	{
 		CheckedByteArray checkedDataPointArray = writeDataSourceDataArrayToBlob(dataSource.dataPoints, compressionModeEnum);
+		byte[] compressedWorldGenStepByteArray = writeGenerationStepsToBlob(dataSource.columnGenerationSteps, compressionModeEnum);
 		byte[] mappingByteArray = writeDataMappingToBlob(dataSource.mapping, compressionModeEnum);
 		
 		return new FullDataSourceV2DTO(
 				dataSource.getSectionPos(), 
-				checkedDataPointArray.checksum, dataSource.columnGenerationSteps, FullDataSourceV2.DATA_FORMAT_VERSION, compressionModeEnum, checkedDataPointArray.byteArray,
+				checkedDataPointArray.checksum, compressedWorldGenStepByteArray, FullDataSourceV2.DATA_FORMAT_VERSION, compressionModeEnum, checkedDataPointArray.byteArray,
 				dataSource.lastModifiedUnixDateTime, dataSource.createdUnixDateTime,
 				mappingByteArray, dataSource.applyToParent, 
 				dataSource.levelMinY
 		);
 	}
+	
 	public FullDataSourceV2DTO(
 			DhSectionPos pos, 
-			int dataChecksum, byte[] columnGenStepByteArray, byte dataFormatVersion, EDhApiDataCompressionMode compressionModeEnum, byte[] dataByteArray,
+			int dataChecksum, byte[] compressedColumnGenStepByteArray, byte dataFormatVersion, EDhApiDataCompressionMode compressionModeEnum, byte[] compressedDataByteArray,
 			long lastModifiedUnixDateTime, long createdUnixDateTime,
-			byte[] mappingByteArray, boolean applyToParent,
+			byte[] compressedMappingByteArray, boolean applyToParent,
 			int levelMinY)
 	{
 		this.pos = pos;
 		this.dataChecksum = dataChecksum;
-		this.columnGenStepByteArray = columnGenStepByteArray;
+		this.compressedColumnGenStepByteArray = compressedColumnGenStepByteArray;
 		
 		this.dataFormatVersion = dataFormatVersion;
 		this.compressionModeEnum = compressionModeEnum;
 		
-		this.dataByteArray = dataByteArray;
-		this.mappingByteArray = mappingByteArray;
+		this.compressedDataByteArray = compressedDataByteArray;
+		this.compressedMappingByteArray = compressedMappingByteArray;
 		
 		this.applyToParent = applyToParent;
 		
@@ -130,8 +132,8 @@ public class FullDataSourceV2DTO implements IBaseDTO<DhSectionPos>
 			throw new IllegalStateException("There should only be one data format right now anyway.");
 		}
 		
-		dataSource.columnGenerationSteps = this.columnGenStepByteArray;
-		dataSource.dataPoints = readBlobToDataSourceDataArray(this.dataByteArray, this.compressionModeEnum);
+		dataSource.columnGenerationSteps = readBlobToGenerationSteps(this.compressedColumnGenStepByteArray, this.compressionModeEnum);
+		dataSource.dataPoints = readBlobToDataSourceDataArray(this.compressedDataByteArray, this.compressionModeEnum);
 		
 		dataSource.mapping.clear(dataSource.getSectionPos());
 		// should only be null when used in a unit test
@@ -142,7 +144,7 @@ public class FullDataSourceV2DTO implements IBaseDTO<DhSectionPos>
 				throw new NullPointerException("No level wrapper present, unable to deserialize data map. This should only be used for unit tests.");
 			}
 			
-			dataSource.mapping.mergeAndReturnRemappedEntityIds(readBlobToDataMapping(this.mappingByteArray, dataSource.getSectionPos(), levelWrapper,  this.compressionModeEnum));
+			dataSource.mapping.mergeAndReturnRemappedEntityIds(readBlobToDataMapping(this.compressedMappingByteArray, dataSource.getSectionPos(), levelWrapper,  this.compressionModeEnum));
 		}
 		
 		dataSource.lastModifiedUnixDateTime = this.lastModifiedUnixDateTime;
@@ -200,9 +202,9 @@ public class FullDataSourceV2DTO implements IBaseDTO<DhSectionPos>
 		
 		return new CheckedByteArray(checksum, byteArrayOutputStream.toByteArray());
 	}
-	private static long[][] readBlobToDataSourceDataArray(byte[] dataByteArray, EDhApiDataCompressionMode compressionModeEnum) throws IOException
+	private static long[][] readBlobToDataSourceDataArray(byte[] compressedDataByteArray, EDhApiDataCompressionMode compressionModeEnum) throws IOException
 	{
-		ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(dataByteArray);
+		ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(compressedDataByteArray);
 		DhDataInputStream compressedIn = new DhDataInputStream(byteArrayInputStream, compressionModeEnum);
 		
 		
@@ -230,6 +232,30 @@ public class FullDataSourceV2DTO implements IBaseDTO<DhSectionPos>
 	}
 	
 	
+	private static byte[] writeGenerationStepsToBlob(byte[] columnGenStepByteArray, EDhApiDataCompressionMode compressionModeEnum) throws IOException
+	{
+		ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+		DhDataOutputStream compressedOut = new DhDataOutputStream(byteArrayOutputStream, compressionModeEnum);
+		
+		compressedOut.write(columnGenStepByteArray);
+		
+		compressedOut.flush();
+		byteArrayOutputStream.close();
+		
+		return byteArrayOutputStream.toByteArray();
+	}
+	private static byte[] readBlobToGenerationSteps(byte[] dataByteArray, EDhApiDataCompressionMode compressionModeEnum) throws IOException, InterruptedException
+	{
+		ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(dataByteArray);
+		DhDataInputStream compressedIn = new DhDataInputStream(byteArrayInputStream, compressionModeEnum);
+		
+		byte[] columnGenStepByteArray = new byte[FullDataSourceV2.WIDTH * FullDataSourceV2.WIDTH];
+		compressedIn.readFully(columnGenStepByteArray);
+		
+		return columnGenStepByteArray;
+	}
+	
+	
 	private static byte[] writeDataMappingToBlob(FullDataPointIdMap mapping, EDhApiDataCompressionMode compressionModeEnum) throws IOException
 	{
 		ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
@@ -242,9 +268,9 @@ public class FullDataSourceV2DTO implements IBaseDTO<DhSectionPos>
 		
 		return byteArrayOutputStream.toByteArray();
 	}
-	private static FullDataPointIdMap readBlobToDataMapping(byte[] dataByteArray, DhSectionPos pos, @NotNull ILevelWrapper levelWrapper, EDhApiDataCompressionMode compressionModeEnum) throws IOException, InterruptedException
+	private static FullDataPointIdMap readBlobToDataMapping(byte[] compressedMappingByteArray, DhSectionPos pos, @NotNull ILevelWrapper levelWrapper, EDhApiDataCompressionMode compressionModeEnum) throws IOException, InterruptedException
 	{
-		ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(dataByteArray);
+		ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(compressedMappingByteArray);
 		DhDataInputStream compressedIn = new DhDataInputStream(byteArrayInputStream, compressionModeEnum);
 		
 		FullDataPointIdMap mapping = FullDataPointIdMap.deserialize(compressedIn, pos, levelWrapper);
