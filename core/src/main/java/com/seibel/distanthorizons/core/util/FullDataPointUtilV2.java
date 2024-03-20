@@ -19,6 +19,7 @@
 
 package com.seibel.distanthorizons.core.util;
 
+import com.seibel.distanthorizons.coreapi.ModInfo;
 import org.jetbrains.annotations.Contract;
 
 /**
@@ -51,6 +52,8 @@ import org.jetbrains.annotations.Contract;
  */
 public class FullDataPointUtilV2
 {
+	public static final boolean RUN_VALIDATION = ModInfo.IS_DEV_BUILD;
+	
 	/** Represents the data held by an empty data point */
 	public static final int EMPTY_DATA_POINT = 0;
 	
@@ -82,9 +85,23 @@ public class FullDataPointUtilV2
 	 */
 	public static long encode(int id, int height, int relMinY, byte blockLight, byte skyLight)
 	{
-		LodUtil.assertTrue(relMinY >= 0 && relMinY < RenderDataPointUtil.MAX_WORLD_Y_SIZE, "Trying to create datapoint with y["+relMinY+"] out of range!");
-		LodUtil.assertTrue(height > 0 && height < RenderDataPointUtil.MAX_WORLD_Y_SIZE, "Trying to create datapoint with height["+height+"] out of range!");
-		LodUtil.assertTrue(relMinY + height <= RenderDataPointUtil.MAX_WORLD_Y_SIZE, "Trying to create datapoint with y+depth["+(relMinY+height)+"] out of range!");
+		if (RUN_VALIDATION)
+		{
+			// assertions are inside if-blocks to prevent unnecessary string concatenations
+			if (relMinY < 0 || relMinY >= RenderDataPointUtil.MAX_WORLD_Y_SIZE)
+			{
+				LodUtil.assertNotReach("Trying to create datapoint with y[" + relMinY + "] out of range!");
+			}
+			if (height <= 0 || height >= RenderDataPointUtil.MAX_WORLD_Y_SIZE)
+			{
+				LodUtil.assertNotReach("Trying to create datapoint with height[" + height + "] out of range!");
+			}
+			if (relMinY + height > RenderDataPointUtil.MAX_WORLD_Y_SIZE)
+			{
+				LodUtil.assertNotReach("Trying to create datapoint with y+depth[" + (relMinY + height) + "] out of range!");
+			}
+		}
+		
 		
 		long data = 0;
 		data |= id & ID_MASK;
@@ -93,11 +110,19 @@ public class FullDataPointUtilV2
 		data |= (long) blockLight << BLOCK_LIGHT_OFFSET;
 		data |= (long) skyLight << SKY_LIGHT_OFFSET;
 		
-		LodUtil.assertTrue(getId(data) == id && getHeight(data) == height && getBottomY(data) == relMinY && getBlockLight(data) == Byte.toUnsignedInt(blockLight) && getSkyLight(data) == Byte.toUnsignedInt(skyLight),
-				"Trying to create datapoint with " +
-						"id[" + id + "], height[" + height + "], minY[" + relMinY + "], blockLight[" + blockLight + "], skyLight[" + skyLight + "] " +
-						"but got " +
-						"id[" + getId(data) + "], height[" + getHeight(data) + "], minY[" + getBottomY(data) + "], blockLight[" + getBlockLight(data) + "], skyLight[" + getSkyLight(data) + "]!");
+		
+		if (RUN_VALIDATION)
+		{
+			if (getId(data) != id || getHeight(data) != height || getBottomY(data) != relMinY
+					|| getBlockLight(data) != Byte.toUnsignedInt(blockLight) || getSkyLight(data) != Byte.toUnsignedInt(skyLight))
+			{
+				LodUtil.assertNotReach(
+						"Trying to create datapoint with " +
+								"id[" + id + "], height[" + height + "], minY[" + relMinY + "], blockLight[" + blockLight + "], skyLight[" + skyLight + "] " +
+								"but got " +
+								"id[" + getId(data) + "], height[" + getHeight(data) + "], minY[" + getBottomY(data) + "], blockLight[" + getBlockLight(data) + "], skyLight[" + getSkyLight(data) + "]!");
+			}
+		}
 		
 		return data;
 	}

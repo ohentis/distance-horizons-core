@@ -377,7 +377,11 @@ public class LodRenderSection implements IDebugRenderable
 					return false;
 				}
 				
-				LodUtil.assertTrue(newBuffer.buffersUploaded, "The buffer future for " + this.pos + " returned an un-built buffer.");
+				if (!newBuffer.buffersUploaded)
+				{
+					LodUtil.assertNotReach("The buffer future for " + this.pos + " returned an un-built buffer.");
+				}
+				
 				ColumnRenderBuffer oldBuffer = this.activeRenderBufferRef.getAndSet(newBuffer);
 				if (oldBuffer != null)
 				{

@@ -94,8 +94,10 @@ public class GLBuffer implements AutoCloseable
 	
 	protected void create(boolean asBufferStorage)
 	{
-		LodUtil.assertTrue(GLProxy.getInstance().getGlContext() != EGLProxyContext.NONE,
-				"Thread ["+Thread.currentThread()+"] tried to create a GLBuffer outside a OpenGL context.");
+		if (GLProxy.getInstance().getGlContext() == EGLProxyContext.NONE)
+		{
+			LodUtil.assertNotReach("Thread ["+Thread.currentThread()+"] tried to create a GLBuffer outside a OpenGL context.");
+		}
 		
 		this.id = GL32.glGenBuffers();
 		this.bufferStorage = asBufferStorage;
@@ -165,7 +167,10 @@ public class GLBuffer implements AutoCloseable
 	{
 		LodUtil.assertTrue(!uploadMethod.useEarlyMapping, "UploadMethod signal that this should use Mapping instead of uploadBuffer!");
 		int bbSize = bb.limit() - bb.position();
-		LodUtil.assertTrue(bbSize <= maxExpansionSize, "maxExpansionSize is ["+maxExpansionSize+"] but buffer size is ["+bbSize+"]!");
+		if (bbSize > maxExpansionSize) 
+		{ 
+			LodUtil.assertNotReach("maxExpansionSize is [" + maxExpansionSize + "] but buffer size is [" + bbSize + "]!"); 
+		}
 		GLProxy.GL_LOGGER.debug("Uploading buffer with ["+new UnitBytes(bbSize)+"].");
 		
 		// Don't upload an empty buffer
@@ -219,6 +224,7 @@ public class GLBuffer implements AutoCloseable
 	protected void uploadSubData(ByteBuffer bb, int maxExpansionSize, int bufferDataHint)
 	{
 		LodUtil.assertTrue(!this.bufferStorage, "Buffer is bufferStorage but its trying to use subData upload method!");
+		
 		int bbSize = bb.limit() - bb.position();
 		if (this.size < bbSize || this.size > bbSize * BUFFER_SHRINK_TRIGGER)
 		{
