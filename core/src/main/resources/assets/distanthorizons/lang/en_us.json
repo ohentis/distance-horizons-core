@@ -101,7 +101,7 @@
   "distanthorizons.config.client.advanced.graphics.quality.horizontalScale.@tooltip":
     "How quickly LODs drop off in quality.\n\nLarger numbers will improve how distant terrain looks\nbut will increase memory and GPU usage.",
   "distanthorizons.config.client.advanced.graphics.quality.horizontalQuality":
-    "Horizontal Quality",
+    "LOD Dropoff Distance",
   "distanthorizons.config.client.advanced.graphics.quality.horizontalQuality.@tooltip":
     "How far apart drops in quality are.\n\nHigher settings will increase the distance between drops\nbut will increase memory and GPU usage.",
   "distanthorizons.config.client.advanced.graphics.quality.transparency":
