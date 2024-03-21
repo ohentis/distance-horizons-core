@@ -162,11 +162,11 @@ public class FullDataSourceProviderV2
 	{
 		// TODO maybe just set children update flags to true?
 		// TODO is any special logic necessary? All DTOs should be generated using their children via the update system anyway
-		return FullDataSourceV2.createEmpty(pos);
+		return FullDataSourceV2.getPooledSource(pos, true);
 	}
 	
 	@Override
-	protected FullDataSourceV2 makeEmptyDataSource(DhSectionPos pos) { return FullDataSourceV2.createEmpty(pos); }
+	protected FullDataSourceV2 makeEmptyDataSource(DhSectionPos pos) { return FullDataSourceV2.getPooledSource(pos, true); }
 	
 	
 	
@@ -248,9 +248,11 @@ public class FullDataSourceProviderV2
 												childReadLock.lock();
 												this.lockedPosSet.add(childPos);
 												
-												FullDataSourceV2 dataSource = this.get(childPos);
-												this.updateDataSourceAtPos(parentUpdatePos, dataSource, false);
-												this.repo.setApplyToParent(childPos, false);
+												try (FullDataSourceV2 dataSource = this.get(childPos))
+												{
+													this.updateDataSourceAtPos(parentUpdatePos, dataSource, false);
+													this.repo.setApplyToParent(childPos, false);
+												}
 											}
 											catch (Exception e)
 											{

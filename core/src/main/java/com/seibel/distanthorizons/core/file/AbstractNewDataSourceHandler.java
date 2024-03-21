@@ -221,22 +221,23 @@ public abstract class AbstractNewDataSourceHandler
 			}
 			
 			
-			// get or create the data source
-			TDataSource recipientDataSource = this.get(updatePos);
-			boolean dataModified = recipientDataSource.update(inputData, this.level);
-			
-			if (dataModified)
+			// try block allows for disposing of pooled data sources after the update is complete
+			try (TDataSource recipientDataSource = this.get(updatePos))
 			{
-				// save the updated data to the database
-				TDTO dto = this.createDtoFromDataSource(recipientDataSource);
-				this.repo.save(dto);
-				
-				
-				for (IDataSourceUpdateFunc<TDataSource> listener : this.dateSourceUpdateListeners)
+				boolean dataModified = recipientDataSource.update(inputData, this.level);
+				if (dataModified)
 				{
-					if (listener != null)
+					// save the updated data to the database
+					TDTO dto = this.createDtoFromDataSource(recipientDataSource);
+					this.repo.save(dto);
+					
+					
+					for (IDataSourceUpdateFunc<TDataSource> listener : this.dateSourceUpdateListeners)
 					{
-						listener.OnDataSourceUpdated(recipientDataSource);
+						if (listener != null)
+						{
+							listener.OnDataSourceUpdated(recipientDataSource);
+						}
 					}
 				}
 			}

@@ -387,6 +387,16 @@ public class FullDataSourceV1 implements IDataSource<IDhLevel>
 	
 	
 	
+	//==================//
+	// override methods //
+	//==================//
+	
+	@Override
+	public void close() throws Exception
+	{ /* not currently needed */ }
+	
+	
+	
 	//================//
 	// helper classes //
 	//================//
