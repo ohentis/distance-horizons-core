@@ -72,7 +72,11 @@ public class DhLodPos implements Comparable<DhLodPos>
 	// Get the width of this pos, measured in the target detail level.
 	public int getWidthAtDetail(byte targetLevel)
 	{
-		LodUtil.assertTrue(targetLevel <= this.detailLevel);
+		if (targetLevel > this.detailLevel)
+		{
+			LodUtil.assertNotReach("getWidthAtDetail for pos "+this+", given target detail level of bounds: ["+targetLevel+"], this: ["+this.detailLevel+"]");
+		}
+		
 		return BitShiftUtil.powerOfTwo(this.detailLevel - targetLevel);
 	}
 	
