@@ -20,9 +20,15 @@
 package com.seibel.distanthorizons.core.sql.repo;
 
 import com.seibel.distanthorizons.api.enums.config.EDhApiDataCompressionMode;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
+import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV2DTO;
+import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataInputStream;
+import org.apache.logging.log4j.Logger;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -31,6 +37,9 @@ import java.util.Map;
 
 public class FullDataSourceV2Repo extends AbstractDhRepo<DhSectionPos, FullDataSourceV2DTO>
 {
+	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	
+	
 	public FullDataSourceV2Repo(String databaseType, String databaseLocation) throws SQLException
 	{
 		super(databaseType, databaseLocation, FullDataSourceV2DTO.class);
@@ -221,13 +230,33 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<DhSectionPos, FullDataS
 		int detailLevel = pos.getDetailLevel() - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL;
 		
 		Map<String, Object> resultMap = this.queryDictionaryFirst(
-				"select ColumnGenerationStep " +
+				"select ColumnGenerationStep, CompressionMode " +
 						"from "+this.getTableName()+" " +
 						"WHERE DetailLevel = "+detailLevel+" AND PosX = "+pos.getX()+" AND PosZ = "+pos.getZ());
 		
 		if (resultMap != null)
 		{
-			return (byte[]) resultMap.get("ColumnGenerationStep");
+			byte[] compressedByteArray = (byte[]) resultMap.get("ColumnGenerationStep");
+			
+			byte compressionModeEnumValue = (byte) resultMap.get("CompressionMode");
+			EDhApiDataCompressionMode compressionModeEnum = EDhApiDataCompressionMode.getFromValue(compressionModeEnumValue);
+			
+			try
+			{
+				// decompress the data
+				ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(compressedByteArray);
+				DhDataInputStream compressedIn = new DhDataInputStream(byteArrayInputStream, compressionModeEnum);
+				
+				byte[] columnGenStepByteArray = new byte[FullDataSourceV2.WIDTH * FullDataSourceV2.WIDTH];
+				compressedIn.readFully(columnGenStepByteArray);
+				
+				return columnGenStepByteArray;
+			}
+			catch (IOException e)
+			{
+				LOGGER.warn("Decompression issue when getting column gen steps for pos: "+pos, e);
+				return null;
+			}
 		}
 		else
 		{
