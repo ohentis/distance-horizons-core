@@ -105,14 +105,16 @@ public class DhClientServerLevel extends AbstractDhLevel implements IDhClientLev
 			// create a new queue
 			this.serverside.worldGenModule.startWorldGen(this.serverside.dataFileHandler, new ServerLevelModule.WorldGenState(this));
 			
+			// TODO I think this used to queue the world gen
+			//  is it still needed?
 			// populate the queue based on the current rendering tree
-			ClientLevelModule.ClientRenderState renderState = this.clientside.ClientRenderStateRef.get();
-			Iterator<QuadNode<LodRenderSection>> iterator = renderState.quadtree.leafNodeIterator();
-			while (iterator.hasNext())
-			{
-				QuadNode<LodRenderSection> node = iterator.next();
-				this.serverside.dataFileHandler.getAsync(node.sectionPos);
-			}
+			//ClientLevelModule.ClientRenderState renderState = this.clientside.ClientRenderStateRef.get();
+			//Iterator<QuadNode<LodRenderSection>> iterator = renderState.quadtree.leafNodeIterator();
+			//while (iterator.hasNext())
+			//{
+			//	QuadNode<LodRenderSection> node = iterator.next();
+			//	//this.serverside.dataFileHandler.getAsync(node.sectionPos);
+			//}
 		}
 		else if (!shouldDoWorldGen && isWorldGenRunning)
 		{
