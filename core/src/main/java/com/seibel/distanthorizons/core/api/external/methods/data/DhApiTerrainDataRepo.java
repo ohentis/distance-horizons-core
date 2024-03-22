@@ -46,7 +46,6 @@ import com.seibel.distanthorizons.coreapi.util.BitShiftUtil;
 import com.seibel.distanthorizons.coreapi.util.math.Vec3d;
 import com.seibel.distanthorizons.coreapi.util.math.Vec3f;
 import com.seibel.distanthorizons.coreapi.util.math.Vec3i;
-import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -221,10 +220,10 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 			{
 				// attempt to get the LOD data from the data source
 				FullDataPointIdMap mapping = dataSource.mapping;
-				LongArrayList dataColumn = dataSource.get(relativePos.x, relativePos.z);
+				long[] dataColumn = dataSource.get(relativePos.x, relativePos.z);
 				if (dataColumn != null)
 				{
-					int dataColumnIndexCount = dataColumn.size();
+					int dataColumnIndexCount = dataColumn.length;
 					DhApiTerrainDataPoint[] returnArray = new DhApiTerrainDataPoint[dataColumnIndexCount];
 					long dataPoint;
 					
@@ -235,7 +234,7 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 					// search for a datapoint that contains the block y position
 					for (int i = 0; i < dataColumnIndexCount; i++)
 					{
-						dataPoint = dataColumn.getLong(i);
+						dataPoint = dataColumn[i];
 						
 						if (!getSpecificYCoordinate)
 						{

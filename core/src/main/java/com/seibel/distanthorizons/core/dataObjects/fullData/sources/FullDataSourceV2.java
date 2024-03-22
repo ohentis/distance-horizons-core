@@ -35,7 +35,6 @@ import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataOutputStre
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
-import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nullable;
@@ -52,7 +51,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @see FullDataPointUtilV2
  * @see FullDataSourceV1
  */
-public class FullDataSourceV2 implements IDataSource<IDhLevel>, AutoCloseable
+public class FullDataSourceV2 implements IDataSource<IDhLevel>
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	/** useful for debugging, but can slow down update operations quite a bit due to being called so often. */
@@ -99,7 +98,7 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>, AutoCloseable
 	 * TODO that ordering feels weird, it'd be nice to reverse that order, unfortunately
 	 *      there's something in the render data logic that expects this order so we can't change it right now
 	 */
-	public LongArrayList[] dataPoints;
+	public long[][] dataPoints;
 	
 	public boolean isEmpty;
 	public boolean applyToParent = false;
@@ -114,7 +113,7 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>, AutoCloseable
 	private FullDataSourceV2(DhSectionPos pos) 
 	{
 		this.pos = pos;
-		this.dataPoints = new LongArrayList[WIDTH * WIDTH];
+		this.dataPoints = new long[WIDTH * WIDTH][];
 		this.mapping = new FullDataPointIdMap(pos);
 		this.isEmpty = true;
 		
@@ -123,8 +122,8 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>, AutoCloseable
 		this.columnGenerationSteps = new byte[WIDTH * WIDTH];
 	}
 	
-	public static FullDataSourceV2 createWithData(DhSectionPos pos, FullDataPointIdMap mapping, LongArrayList[] data, byte[] columnGenerationStep) { return new FullDataSourceV2(pos, mapping, data, columnGenerationStep); }
-	private FullDataSourceV2(DhSectionPos pos, FullDataPointIdMap mapping, LongArrayList[] data, byte[] columnGenerationSteps)
+	public static FullDataSourceV2 createWithData(DhSectionPos pos, FullDataPointIdMap mapping, long[][] data, byte[] columnGenerationStep) { return new FullDataSourceV2(pos, mapping, data, columnGenerationStep); }
+	private FullDataSourceV2(DhSectionPos pos, FullDataPointIdMap mapping, long[][] data, byte[] columnGenerationSteps)
 	{
 		LodUtil.assertTrue(data.length == WIDTH * WIDTH);
 		
@@ -151,7 +150,7 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>, AutoCloseable
 		
 		// Note: this logic only works if the data point data is the same between both versions
 		byte[] columnGenerationSteps = new byte[WIDTH * WIDTH];
-		LongArrayList[] dataPoints = new LongArrayList[WIDTH * WIDTH];
+		long[][] dataPoints = new long[WIDTH * WIDTH][];
 		for (int x = 0; x < WIDTH; x++)
 		{
 			for (int z = 0; z < WIDTH; z++)
@@ -160,7 +159,7 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>, AutoCloseable
 				if (dataColumn != null && dataColumn.length != 0)
 				{
 					int index = relativePosToIndex(x, z);
-					dataPoints[index] = new LongArrayList(dataColumn);
+					dataPoints[index] = dataColumn;
 					
 					
 					// convert the data point format
@@ -213,13 +212,13 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>, AutoCloseable
 					long[] legacyDataColumn = legacyData.get(x, z);
 					if (legacyDataColumn != null && legacyDataColumn.length != 0)
 					{
-						LongArrayList newDataColumn = fullDataSource.get(x, z);
+						long[] newDataColumn = fullDataSource.get(x, z);
 						
 						if (newDataColumn == null)
 						{
 							LodUtil.assertNotReach("Accessor column mismatch");
 						}
-						else if (legacyDataColumn.length != newDataColumn.size())
+						else if (legacyDataColumn.length != newDataColumn.length)
 						{
 							LodUtil.assertNotReach("Accessor column length mismatch");
 						}
@@ -227,7 +226,7 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>, AutoCloseable
 						{
 							for (int i = 0; i < legacyDataColumn.length; i++)
 							{
-								if (legacyDataColumn[i] != newDataColumn.getLong(i))
+								if (legacyDataColumn[i] != newDataColumn[i])
 								{
 									LodUtil.assertNotReach("Data mismatch");
 								}
@@ -248,7 +247,7 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>, AutoCloseable
 	// data //
 	//======//
 	
-	public LongArrayList get(int relX, int relZ) throws IndexOutOfBoundsException { return this.dataPoints[relativePosToIndex(relX, relZ)]; }
+	public long[] get(int relX, int relZ) throws IndexOutOfBoundsException { return this.dataPoints[relativePosToIndex(relX, relZ)]; }
 	
 	@Override
 	public boolean update(FullDataSourceV2 inputDataSource, @Nullable IDhLevel level) { return this.update(inputDataSource); }
@@ -310,7 +309,7 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>, AutoCloseable
 			{
 				int index = relativePosToIndex(x, z);
 				
-				LongArrayList newDataArray = inputDataSource.dataPoints[index];
+				long[] newDataArray = inputDataSource.dataPoints[index];
 				if (newDataArray != null)
 				{
 					byte thisGenState = this.columnGenerationSteps[index];
@@ -319,15 +318,11 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>, AutoCloseable
 					if (inputGenState != EDhApiWorldGenerationStep.EMPTY.value
 						&& thisGenState <= inputGenState)
 					{
-						LongArrayList oldDataArray = this.dataPoints[index];
+						long[] oldDataArray = this.dataPoints[index];
 						
 						// copy over the new data
-						if (this.dataPoints[index] == null)
-						{
-							this.dataPoints[index] = new LongArrayList(new long[newDataArray.size()]);
-						}
-						this.dataPoints[index].clear();
-						this.dataPoints[index].addAll(newDataArray);
+						this.dataPoints[index] = new long[newDataArray.length];
+						System.arraycopy(newDataArray, 0, this.dataPoints[index], 0, newDataArray.length);
 						this.remapDataColumn(index, remappedIds);
 						
 						if (RUN_DATA_ORDER_VALIDATION)
@@ -388,8 +383,8 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>, AutoCloseable
 				this.columnGenerationSteps[recipientIndex] = inputGenStep;
 				
 				// data points
-				LongArrayList oldDataArray = this.dataPoints[recipientIndex];
-				LongArrayList mergedInputDataArray = mergeInputTwoByTwoDataColumn(inputDataSource, x, z);
+				long[] oldDataArray = this.dataPoints[recipientIndex];
+				long[] mergedInputDataArray = mergeInputTwoByTwoDataColumn(inputDataSource, x, z);
 				this.dataPoints[recipientIndex] = mergedInputDataArray;
 				
 				if (RUN_DATA_ORDER_VALIDATION)
@@ -432,13 +427,9 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>, AutoCloseable
 		}
 		return minWorldGenStepValue;
 	}
-	
-	private static ThreadLocal<LongArrayList> mergeTwoByTwoTempList = ThreadLocal.withInitial(() -> new LongArrayList(20));
-	private static LongArrayList mergeInputTwoByTwoDataColumn(FullDataSourceV2 inputDataSource, int x, int z)
+	private static long[] mergeInputTwoByTwoDataColumn(FullDataSourceV2 inputDataSource, int x, int z)
 	{
-		LongArrayList newColumnList = mergeTwoByTwoTempList.get();
-		newColumnList.clear();
-		
+		ArrayList<Long> newColumnList = new ArrayList<>();
 		
 		// special numbers:
 		// -2 = the column's height hasn't been determined yet
@@ -475,8 +466,8 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>, AutoCloseable
 				for (int inputZ = z; inputZ < z + 2; inputZ++, colIndex++)
 				{
 					// TODO throw an assertion if the column isn't in top-down order or just fix it...
-					LongArrayList inputDataArray = inputDataSource.dataPoints[relativePosToIndex(inputX, inputZ)];
-					if (inputDataArray == null || inputDataArray.size() == 0)
+					long[] inputDataArray = inputDataSource.dataPoints[relativePosToIndex(inputX, inputZ)];
+					if (inputDataArray == null || inputDataArray.length == 0)
 					{
 						currentDatapointIndex[colIndex] = -1;
 						continue;
@@ -485,7 +476,7 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>, AutoCloseable
 					// determine the last index (the lowest data point) for each column
 					if (currentDatapointIndex[colIndex] == -2)
 					{
-						currentDatapointIndex[colIndex] = inputDataArray.size() - 1;
+						currentDatapointIndex[colIndex] = inputDataArray.length - 1;
 						
 						if (RUN_DATA_ORDER_VALIDATION)
 						{
@@ -500,7 +491,7 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>, AutoCloseable
 						// went over the end 
 						continue;
 					}
-					long datapoint = inputDataArray.getLong(dataPointIndex);
+					long datapoint = inputDataArray[dataPointIndex];
 					
 					int datapointMinY = FullDataPointUtilV2.getBottomY(datapoint);
 					int numbOfBlocksTall = FullDataPointUtilV2.getHeight(datapoint);
@@ -584,10 +575,10 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>, AutoCloseable
 		
 		
 		// convert the arraylist to an array
-		LongArrayList mergedInputDataArray = new LongArrayList(new long[newColumnList.size()]);
-		for (int i = 0; i < mergedInputDataArray.size(); i++)
+		long[]mergedInputDataArray = new long[newColumnList.size()];
+		for (int i = 0; i < mergedInputDataArray.length; i++)
 		{
-			mergedInputDataArray.set(i, newColumnList.getLong(i));
+			mergedInputDataArray[i] = newColumnList.get(i);
 		}
 		
 		
@@ -595,10 +586,10 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>, AutoCloseable
 		// TODO why is this sometimes necessary? What did I (James) screw up that causes the mergedInputDataArray
 		//  to sometimes be in a different order? Is it potentially related to what detail level is coming in?
 		{
-			long firstDataPoint = mergedInputDataArray.getLong(0);
+			long firstDataPoint = mergedInputDataArray[0];
 			int firstBottomY = FullDataPointUtilV2.getBottomY(firstDataPoint);
 			
-			long lastDataPoint = mergedInputDataArray.getLong(mergedInputDataArray.size() - 1);
+			long lastDataPoint = mergedInputDataArray[mergedInputDataArray.length - 1];
 			int lastBottomY = FullDataPointUtilV2.getBottomY(lastDataPoint);
 			
 			if (firstBottomY < lastBottomY)
@@ -606,11 +597,11 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>, AutoCloseable
 				// reverse the array so index 0 is the highest,
 				// this is necessary for later logic
 				// source: https://stackoverflow.com/questions/2137755/how-do-i-reverse-an-int-array-in-java
-				for(int i = 0; i < mergedInputDataArray.size() / 2; i++)
+				for(int i = 0; i < mergedInputDataArray.length / 2; i++)
 				{
-					long temp = mergedInputDataArray.getLong(i);
-					mergedInputDataArray.set(i, mergedInputDataArray.getLong(mergedInputDataArray.size() - i - 1));
-					mergedInputDataArray.set(mergedInputDataArray.size() - i - 1, temp);
+					long temp = mergedInputDataArray[i];
+					mergedInputDataArray[i] = mergedInputDataArray[mergedInputDataArray.length - i - 1];
+					mergedInputDataArray[mergedInputDataArray.length - i - 1] = temp;
 				}
 			}
 		}
@@ -624,15 +615,15 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>, AutoCloseable
 	 */
 	private void remapDataColumn(int dataPointIndex, int[] remappedIds)
 	{
-		LongArrayList dataColumn = this.dataPoints[dataPointIndex];
-		for (int i = 0; i < dataColumn.size(); i++)
+		long[] dataColumn = this.dataPoints[dataPointIndex];
+		for (int i = 0; i < dataColumn.length; i++)
 		{
-			dataColumn.set(i, FullDataPointUtilV2.remap(remappedIds, dataColumn.getLong(i)));
+			dataColumn[i] = FullDataPointUtilV2.remap(remappedIds, dataColumn[i]);
 		}
 	}
-	private static boolean areDataColumnsDifferent(LongArrayList oldDataArray, LongArrayList newDataArray)
+	private static boolean areDataColumnsDifferent(long[] oldDataArray, long[] newDataArray)
 	{
-		if (oldDataArray == null || oldDataArray.size() != newDataArray.size())
+		if (oldDataArray == null || oldDataArray.length != newDataArray.length)
 		{
 			// new data was added/removed
 			return true;
@@ -640,8 +631,8 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>, AutoCloseable
 		else
 		{
 			// check if the new column data is different
-			int oldArrayHash = oldDataArray.hashCode();
-			int newArrayHash = newDataArray.hashCode();
+			int oldArrayHash = Arrays.hashCode(oldDataArray);
+			int newArrayHash = Arrays.hashCode(newDataArray);
 			return (newArrayHash != oldArrayHash);
 		}
 	}
@@ -741,12 +732,12 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>, AutoCloseable
 	 * 
 	 * @see FullDataSourceV2#dataPoints
 	 */
-	public static void throwIfDataColumnInWrongOrder(DhSectionPos pos, LongArrayList dataArray) throws IllegalStateException
+	public static void throwIfDataColumnInWrongOrder(DhSectionPos pos, long[] dataArray) throws IllegalStateException
 	{
-		long firstDataPoint = dataArray.getLong(0);
+		long firstDataPoint = dataArray[0];
 		int firstBottomY = FullDataPointUtilV2.getBottomY(firstDataPoint);
 		
-		long lastDataPoint = dataArray.getLong(dataArray.size() - 1);
+		long lastDataPoint = dataArray[dataArray.length - 1];
 		int lastBottomY = FullDataPointUtilV2.getBottomY(lastDataPoint);
 		
 		if (firstBottomY < lastBottomY)
@@ -776,7 +767,7 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>, AutoCloseable
 		return EDhApiWorldGenerationStep.fromValue(this.columnGenerationSteps[index]); 
 	}
 	
-	public void setSingleColumn(LongArrayList longArray, int relX, int relZ, EDhApiWorldGenerationStep worldGenStep)
+	public void setSingleColumn(long[] longArray, int relX, int relZ, EDhApiWorldGenerationStep worldGenStep)
 	{
 		int index = relativePosToIndex(relX, relZ);
 		this.dataPoints[index] = longArray;
@@ -787,9 +778,9 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>, AutoCloseable
 		{
 			// validate the incoming ID's
 			int maxValidId = this.mapping.getMaxValidId();
-			for (int i = 0; i < longArray.size(); i++)
+			for (int i = 0; i < longArray.length; i++)
 			{
-				long dataPoint = longArray.getLong(i);
+				long dataPoint = longArray[i];
 				int id = FullDataPointUtilV2.getId(dataPoint);
 				if (id > maxValidId)
 				{
@@ -867,83 +858,64 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>, AutoCloseable
 	// pooling //
 	//=========//
 	
-	@Override 
-	public void close() throws Exception
+	// TODO add pooled data sources
+	private static class Pooling
 	{
-		returnPooledDataSource(this);
-	}
-	
-	
-	/** used when pooling data sources */
-	private static final ArrayList<FullDataSourceV2> CACHED_SOURCES = new ArrayList<>();
-	private static final ReentrantLock CACHE_LOCK = new ReentrantLock();
-	
-	
-	/** @return an empty data source if non are cached */
-	public static FullDataSourceV2 getPooledSource(DhSectionPos pos, boolean clearData)
-	{
-		try
+		/** used when pooling data sources */
+		private final ArrayList<FullDataSourceV1> cachedSources = new ArrayList<>();
+		private final ReentrantLock cacheLock = new ReentrantLock();
+		
+		
+		/** @return null if no pooled source exists */
+		public FullDataSourceV1 tryGetPooledSource()
 		{
-			CACHE_LOCK.lock();
-			
-			int index = CACHED_SOURCES.size() - 1;
-			if (index == -1)
+			try
 			{
-				return createEmpty(pos);
-			}
-			else
-			{
-				FullDataSourceV2 dataSource = CACHED_SOURCES.remove(index);;
-				dataSource.pos = pos;
+				this.cacheLock.lock();
 				
-				if (clearData)
+				int index = this.cachedSources.size() - 1;
+				if (index == -1)
 				{
-					dataSource.mapping.clear(pos);
-					
-					for (int i = 0; i < dataSource.dataPoints.length; i++)
-					{
-						if (dataSource.dataPoints[i] != null)
-						{
-							dataSource.dataPoints[i].clear();
-						}
-					}
-					
-					Arrays.fill(dataSource.columnGenerationSteps, (byte) 0);
+					return null;
 				}
-				
-				return dataSource;
+				else
+				{
+					return this.cachedSources.remove(index);
+				}
 			}
-		}
-		finally
-		{
-			CACHE_LOCK.unlock();
-		}
-	}
-	
-	/**
-	 * Doesn't have to be called, if a data source isn't returned, nothing will be leaked. 
-	 * It just means a new source must be constructed next time {@link FullDataSourceV2#getPooledSource} is called.
-	 */
-	public static void returnPooledDataSource(FullDataSourceV2 dataSource)
-	{
-		if (dataSource == null)
-		{
-			return;
-		}
-		else if (CACHED_SOURCES.size() > 25)
-		{
-			return;
+			finally
+			{
+				this.cacheLock.unlock();
+			}
 		}
 		
-		try
+		/**
+		 * Doesn't have to be called, if a data source isn't returned, nothing will be leaked. 
+		 * It just means a new source must be constructed next time {@link Pooling#tryGetPooledSource} is called.
+		 */
+		public void returnPooledDataSource(FullDataSourceV1 dataSource)
 		{
-			CACHE_LOCK.lock();
-			CACHED_SOURCES.add(dataSource);
+			if (dataSource == null)
+			{
+				return;
+			}
+			else if (this.cachedSources.size() > 25)
+			{
+				return;
+			}
+			
+			try
+			{
+				this.cacheLock.lock();
+				this.cachedSources.add(dataSource);
+			}
+			finally
+			{
+				this.cacheLock.unlock();
+			}
 		}
-		finally
-		{
-			CACHE_LOCK.unlock();
-		}
+		
 	}
+	
 	
 }

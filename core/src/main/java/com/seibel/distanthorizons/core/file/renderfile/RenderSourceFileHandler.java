@@ -92,12 +92,8 @@ public class RenderSourceFileHandler extends AbstractLegacyDataSourceHandler<Col
 	{
 		ColumnRenderSource renderDataSource;
 		
-		try (FullDataSourceV2 fullDataSource = this.fullDataSourceProvider.get(pos))
-		{
-			renderDataSource = FullDataToRenderDataTransformer.transformFullDataToRenderSource(fullDataSource, this.level);
-		}
-		catch (Exception e) { throw new RuntimeException(e); }
-		
+		FullDataSourceV2 fullDataSource = this.fullDataSourceProvider.get(pos);
+		renderDataSource = FullDataToRenderDataTransformer.transformFullDataToRenderSource(fullDataSource, this.level);
 		return renderDataSource;
 	}
 	

@@ -41,7 +41,6 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftCli
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
-import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.apache.logging.log4j.LogManager;
 
 import java.io.File;
@@ -234,8 +233,8 @@ public class SubDimensionLevelMatcher implements AutoCloseable
 				{
 					for (int z = 0; z < FullDataSourceV1.WIDTH; z++)
 					{
-						LongArrayList newColumn = newDataSource.get(x, z);
-						LongArrayList testColumn = testFullDataSource.get(x, z);
+						long[] newColumn = newDataSource.get(x, z);
+						long[] testColumn = testFullDataSource.get(x, z);
 						
 						if (newColumn != null && testColumn != null)
 						{
@@ -245,11 +244,11 @@ public class SubDimensionLevelMatcher implements AutoCloseable
 							FullDataPointIdMap testDataMap = testFullDataSource.mapping;
 							
 							// use min to prevent going out of bounds
-							int minColumnIndex = Math.min(newColumn.size(), testColumn.size());
+							int minColumnIndex = Math.min(newColumn.length, testColumn.length);
 							for (int i = 0; i < minColumnIndex; i++)
 							{
-								long newDataPoint = newColumn.getLong(i);
-								long testDataPoint = testColumn.getLong(i);
+								long newDataPoint = newColumn[i];
+								long testDataPoint = testColumn[i];
 								
 								int newId = FullDataPointUtilV2.getId(newDataPoint);
 								int testId = FullDataPointUtilV2.getId(testDataPoint);
@@ -298,7 +297,7 @@ public class SubDimensionLevelMatcher implements AutoCloseable
 						else if (newColumn != null)
 						{
 							// missing test column
-							totalDataPointCount += newColumn.size();
+							totalDataPointCount += newColumn.length;
 						}
 						else
 						{
