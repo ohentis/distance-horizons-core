@@ -112,11 +112,10 @@ public class RenderSourceFileHandler extends AbstractLegacyDataSourceHandler<Col
 	//=====================//
 	
 	@Override
-	public CompletableFuture<Void> updateDataSourceAsync(FullDataSourceV2 inputDataSource)
+	public void updateDataSource(FullDataSourceV2 inputDataSource)
 	{
 		// TODO once the legacy data provider has been replaced this can be removed
 		this.updateDataSourceAtPos(inputDataSource.getSectionPos(), inputDataSource);
-		return CompletableFuture.completedFuture(null);
 	}
 	
 	

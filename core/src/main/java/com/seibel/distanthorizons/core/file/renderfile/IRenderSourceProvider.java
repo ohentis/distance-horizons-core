@@ -20,7 +20,6 @@
 package com.seibel.distanthorizons.core.file.renderfile;
 
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
-import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSource;
 import com.seibel.distanthorizons.core.sql.repo.RenderDataRepo;
@@ -38,7 +37,7 @@ public interface IRenderSourceProvider extends AutoCloseable
 {
 	CompletableFuture<ColumnRenderSource> getAsync(DhSectionPos pos);
 	
-	CompletableFuture<Void> updateDataSourceAsync(FullDataSourceV2 dataSource);
+	void updateDataSource(FullDataSourceV2 dataSource);
 	
 	/** Deletes any data stored in the render cache so it can be re-created */
 	void deleteRenderCache();

@@ -216,10 +216,8 @@ public class ClientLevelModule implements Closeable, AbstractNewDataSourceHandle
 		ClientRenderState ClientRenderState = this.ClientRenderStateRef.get();
 		if (ClientRenderState != null)
 		{
-			ClientRenderState.renderSourceFileHandler
-					.updateDataSourceAsync(updatedFullDataSource)
-					// wait for the update to finish before triggering a reload to prevent holes in the world
-					.thenRun(() -> ClientRenderState.quadtree.reloadPos(updatedFullDataSource.getSectionPos()));
+			ClientRenderState.renderSourceFileHandler.updateDataSource(updatedFullDataSource);
+			ClientRenderState.quadtree.reloadPos(updatedFullDataSource.getSectionPos());
 		}
 	}
 	
