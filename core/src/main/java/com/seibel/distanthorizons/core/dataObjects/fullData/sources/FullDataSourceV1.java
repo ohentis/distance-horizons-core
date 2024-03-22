@@ -386,6 +386,15 @@ public class FullDataSourceV1 implements IDataSource<IDhLevel>
 	public void setIdMapping(FullDataPointIdMap mappings) { this.mapping.mergeAndReturnRemappedEntityIds(mappings); }
 	
 	
+	//==================//
+	// override methods //
+	//==================//
+	
+	@Override
+	public void close() throws Exception
+	{ /* not currently needed */ }
+	
+	
 	
 	//================//
 	// helper classes //

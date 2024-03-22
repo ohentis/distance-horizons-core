@@ -113,8 +113,11 @@ public class FullDataSourceV2DTO implements IBaseDTO<DhSectionPos>
 	// data source population //
 	//========================//
 	
-	public FullDataSourceV2 createDataSource(@NotNull ILevelWrapper levelWrapper) throws IOException, InterruptedException 
-	{ return this.populateDataSource(FullDataSourceV2.createEmpty(this.pos), levelWrapper); }
+	public FullDataSourceV2 createPooledDataSource(@NotNull ILevelWrapper levelWrapper) throws IOException, InterruptedException
+	{
+		FullDataSourceV2 dataSource = FullDataSourceV2.getPooledSource(this.pos, false);
+		return this.populateDataSource(dataSource, levelWrapper);
+	}
 	
 	public FullDataSourceV2 populateDataSource(FullDataSourceV2 dataSource, @NotNull ILevelWrapper levelWrapper) throws IOException, InterruptedException 
 	{ return this.internalPopulateDataSource(dataSource, levelWrapper, false); }

@@ -903,63 +903,84 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 	// pooling //
 	//=========//
 	
-	// TODO add pooled data sources
-	private static class Pooling
+	@Override
+	public void close() throws Exception
 	{
-		/** used when pooling data sources */
-		private final ArrayList<FullDataSourceV1> cachedSources = new ArrayList<>();
-		private final ReentrantLock cacheLock = new ReentrantLock();
-		
-		
-		/** @return null if no pooled source exists */
-		public FullDataSourceV1 tryGetPooledSource()
+		returnPooledDataSource(this);
+	}
+	
+	
+	/** used when pooling data sources */
+	private static final ArrayList<FullDataSourceV2> CACHED_SOURCES = new ArrayList<>();
+	private static final ReentrantLock CACHE_LOCK = new ReentrantLock();
+	
+	
+	/** @return an empty data source if non are cached */
+	public static FullDataSourceV2 getPooledSource(DhSectionPos pos, boolean clearData)
+	{
+		try
 		{
-			try
-			{
-				this.cacheLock.lock();
-				
-				int index = this.cachedSources.size() - 1;
-				if (index == -1)
-				{
-					return null;
-				}
-				else
-				{
-					return this.cachedSources.remove(index);
-				}
-			}
-			finally
-			{
-				this.cacheLock.unlock();
-			}
-		}
-		
-		/**
-		 * Doesn't have to be called, if a data source isn't returned, nothing will be leaked. 
-		 * It just means a new source must be constructed next time {@link Pooling#tryGetPooledSource} is called.
-		 */
-		public void returnPooledDataSource(FullDataSourceV1 dataSource)
-		{
-			if (dataSource == null)
-			{
-				return;
-			}
-			else if (this.cachedSources.size() > 25)
-			{
-				return;
-			}
+			CACHE_LOCK.lock();
 			
-			try
+			int index = CACHED_SOURCES.size() - 1;
+			if (index == -1)
 			{
-				this.cacheLock.lock();
-				this.cachedSources.add(dataSource);
+				// no pooled sources exist
+				return createEmpty(pos);
 			}
-			finally
+			else
 			{
-				this.cacheLock.unlock();
+				FullDataSourceV2 dataSource = CACHED_SOURCES.remove(index);
+				dataSource.pos = pos;
+				
+				if (clearData)
+				{
+					dataSource.mapping.clear(pos);
+					
+					for (int i = 0; i < dataSource.dataPoints.length; i++)
+					{
+						if (dataSource.dataPoints[i] != null)
+						{
+							dataSource.dataPoints[i].clear();
+						}
+					}
+					
+					Arrays.fill(dataSource.columnGenerationSteps, (byte) 0);
+				}
+				
+				return dataSource;
 			}
 		}
+		finally
+		{
+			CACHE_LOCK.unlock();
+		}
+	}
+	
+	/**
+	 * Doesn't have to be called, if a data source isn't returned, nothing will be leaked. 
+	 * It just means a new source must be constructed next time {@link FullDataSourceV2#getPooledSource} is called.
+	 */
+	public static void returnPooledDataSource(FullDataSourceV2 dataSource)
+	{
+		if (dataSource == null)
+		{
+			return;
+		}
+		else if (CACHED_SOURCES.size() > 25)
+		{
+			return;
+		}
 		
+		try
+		{
+			CACHE_LOCK.lock();
+			CACHED_SOURCES.add(dataSource);
+		}
+		finally
+		{
+			CACHE_LOCK.unlock();
+		}
 	}
 	
 	

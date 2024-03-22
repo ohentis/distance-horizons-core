@@ -477,6 +477,10 @@ public class ColumnRenderSource implements IDataSource<IDhClientLevel>
 		return stringBuilder.toString();
 	}
 	
+	@Override
+	public void close() throws Exception
+	{ /* not currently needed */ }
+	
 	
 	
 	//==============//
