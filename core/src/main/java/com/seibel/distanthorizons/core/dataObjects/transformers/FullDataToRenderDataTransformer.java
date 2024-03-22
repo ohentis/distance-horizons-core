@@ -36,6 +36,7 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.IWrapperFactory;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.apache.logging.log4j.Logger;
 
 import java.util.HashSet;
@@ -117,7 +118,7 @@ public class FullDataToRenderDataTransformer
 					throwIfThreadInterrupted();
 					
 					ColumnArrayView columnArrayView = columnSource.getVerticalDataPointView(x, z);
-					long[] dataColumn = fullDataSource.get(x, z);
+					LongArrayList dataColumn = fullDataSource.get(x, z);
 					convertColumnData(level, fullDataSource.mapping, baseX + x, baseZ + z, columnArrayView, dataColumn);
 				}
 			}
@@ -159,7 +160,7 @@ public class FullDataToRenderDataTransformer
 	private static void iterateAndConvert(
 			IDhClientLevel level, FullDataPointIdMap fullDataMapping, 
 			int blockX, int blockZ, 
-			ColumnArrayView renderColumnData, long[] fullColumnData)
+			ColumnArrayView renderColumnData, LongArrayList fullColumnData)
 	{
 		boolean avoidSolidBlocks = (Config.Client.Advanced.Graphics.Quality.blocksToIgnore.get() == EBlocksToAvoid.NON_COLLIDING);
 		boolean colorBelowWithAvoidedBlocks = Config.Client.Advanced.Graphics.Quality.tintWithAvoidedBlocks.get();
@@ -171,9 +172,9 @@ public class FullDataToRenderDataTransformer
 		int columnOffset = 0;
 		
 		// goes from the top down
-		for (int i = 0; i < fullColumnData.length; i++)
+		for (int i = 0; i < fullColumnData.size(); i++)
 		{
-			long fullData = fullColumnData[i];
+			long fullData = fullColumnData.getLong(i);
 			int bottomY = FullDataPointUtilV2.getBottomY(fullData);
 			int blockHeight = FullDataPointUtilV2.getHeight(fullData);
 			int id = FullDataPointUtilV2.getId(fullData);
@@ -270,14 +271,14 @@ public class FullDataToRenderDataTransformer
 	}
 	
 	// TODO what does this mean?
-	public static void convertColumnData(IDhClientLevel level, FullDataPointIdMap fullDataMapping, int blockX, int blockZ, ColumnArrayView columnArrayView, long[] fullDataColumn)
+	public static void convertColumnData(IDhClientLevel level, FullDataPointIdMap fullDataMapping, int blockX, int blockZ, ColumnArrayView columnArrayView, LongArrayList fullDataColumn)
 	{
-		if (fullDataColumn == null || fullDataColumn.length == 0)
+		if (fullDataColumn == null || fullDataColumn.size() == 0)
 		{
 			return;
 		}
 		
-		int dataTotalLength = fullDataColumn.length;
+		int dataTotalLength = fullDataColumn.size();
 		if (dataTotalLength > columnArrayView.verticalSize())
 		{
 			ColumnArrayView totalColumnData = new ColumnArrayView(new long[dataTotalLength], dataTotalLength, 0, dataTotalLength);

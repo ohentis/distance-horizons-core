@@ -37,6 +37,7 @@ import com.seibel.distanthorizons.coreapi.util.BitShiftUtil;
 import com.seibel.distanthorizons.core.util.ColorUtil;
 import com.seibel.distanthorizons.core.util.RenderDataPointUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.apache.logging.log4j.Logger;
 
 import java.io.*;
@@ -317,7 +318,7 @@ public class ColumnRenderSource implements IDataSource<IDhClientLevel>
 						ColumnArrayView columnArrayView = this.getVerticalDataPointView(x, z);
 						int columnHash = columnArrayView.getDataHash();
 						
-						long[] dataColumn = inputFullDataSource.get(x, z);
+						LongArrayList dataColumn = inputFullDataSource.get(x, z);
 						EDhApiWorldGenerationStep worldGenStep = inputFullDataSource.getWorldGenStepAtRelativePos(x, z);
 						if (dataColumn != null && worldGenStep != EDhApiWorldGenerationStep.EMPTY)
 						{

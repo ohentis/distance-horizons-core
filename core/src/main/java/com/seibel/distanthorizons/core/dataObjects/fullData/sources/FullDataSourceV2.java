@@ -35,6 +35,7 @@ import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataOutputStre
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nullable;
@@ -98,7 +99,7 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 	 * TODO that ordering feels weird, it'd be nice to reverse that order, unfortunately
 	 *      there's something in the render data logic that expects this order so we can't change it right now
 	 */
-	public long[][] dataPoints;
+	public LongArrayList[] dataPoints;
 	
 	public boolean isEmpty;
 	public boolean applyToParent = false;
@@ -113,7 +114,7 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 	private FullDataSourceV2(DhSectionPos pos) 
 	{
 		this.pos = pos;
-		this.dataPoints = new long[WIDTH * WIDTH][];
+		this.dataPoints = new LongArrayList[WIDTH * WIDTH];
 		this.mapping = new FullDataPointIdMap(pos);
 		this.isEmpty = true;
 		
@@ -122,8 +123,8 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 		this.columnGenerationSteps = new byte[WIDTH * WIDTH];
 	}
 	
-	public static FullDataSourceV2 createWithData(DhSectionPos pos, FullDataPointIdMap mapping, long[][] data, byte[] columnGenerationStep) { return new FullDataSourceV2(pos, mapping, data, columnGenerationStep); }
-	private FullDataSourceV2(DhSectionPos pos, FullDataPointIdMap mapping, long[][] data, byte[] columnGenerationSteps)
+	public static FullDataSourceV2 createWithData(DhSectionPos pos, FullDataPointIdMap mapping, LongArrayList[] data, byte[] columnGenerationStep) { return new FullDataSourceV2(pos, mapping, data, columnGenerationStep); }
+	private FullDataSourceV2(DhSectionPos pos, FullDataPointIdMap mapping, LongArrayList[] data, byte[] columnGenerationSteps)
 	{
 		LodUtil.assertTrue(data.length == WIDTH * WIDTH);
 		
@@ -150,7 +151,7 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 		
 		// Note: this logic only works if the data point data is the same between both versions
 		byte[] columnGenerationSteps = new byte[WIDTH * WIDTH];
-		long[][] dataPoints = new long[WIDTH * WIDTH][];
+		LongArrayList[] dataPoints = new LongArrayList[WIDTH * WIDTH];
 		for (int x = 0; x < WIDTH; x++)
 		{
 			for (int z = 0; z < WIDTH; z++)
@@ -159,7 +160,7 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 				if (dataColumn != null && dataColumn.length != 0)
 				{
 					int index = relativePosToIndex(x, z);
-					dataPoints[index] = dataColumn;
+					dataPoints[index] = new LongArrayList(dataColumn);
 					
 					
 					// convert the data point format
@@ -212,13 +213,12 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 					long[] legacyDataColumn = legacyData.get(x, z);
 					if (legacyDataColumn != null && legacyDataColumn.length != 0)
 					{
-						long[] newDataColumn = fullDataSource.get(x, z);
-						
+						LongArrayList newDataColumn = fullDataSource.get(x, z);
 						if (newDataColumn == null)
 						{
 							LodUtil.assertNotReach("Accessor column mismatch");
 						}
-						else if (legacyDataColumn.length != newDataColumn.length)
+						else if (legacyDataColumn.length != newDataColumn.size())
 						{
 							LodUtil.assertNotReach("Accessor column length mismatch");
 						}
@@ -226,7 +226,7 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 						{
 							for (int i = 0; i < legacyDataColumn.length; i++)
 							{
-								if (legacyDataColumn[i] != newDataColumn[i])
+								if (legacyDataColumn[i] != newDataColumn.getLong(i))
 								{
 									LodUtil.assertNotReach("Data mismatch");
 								}
@@ -247,7 +247,7 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 	// data //
 	//======//
 	
-	public long[] get(int relX, int relZ) throws IndexOutOfBoundsException { return this.dataPoints[relativePosToIndex(relX, relZ)]; }
+	public LongArrayList get(int relX, int relZ) throws IndexOutOfBoundsException { return this.dataPoints[relativePosToIndex(relX, relZ)]; }
 	
 	@Override
 	public boolean update(FullDataSourceV2 inputDataSource, @Nullable IDhLevel level) { return this.update(inputDataSource); }
@@ -309,8 +309,8 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 			{
 				int index = relativePosToIndex(x, z);
 				
-				long[] newDataArray = inputDataSource.dataPoints[index];
-				if (newDataArray != null)
+				LongArrayList inputDataArray = inputDataSource.dataPoints[index];
+				if (inputDataArray != null)
 				{
 					byte thisGenState = this.columnGenerationSteps[index];
 					byte inputGenState = inputDataSource.columnGenerationSteps[index];
@@ -318,11 +318,31 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 					if (inputGenState != EDhApiWorldGenerationStep.EMPTY.value
 						&& thisGenState <= inputGenState)
 					{
-						long[] oldDataArray = this.dataPoints[index];
+						// check if the data changed
+						if (this.dataPoints[index] == null)
+						{
+							// no data was present previously
+							this.dataPoints[index] = new LongArrayList(inputDataArray);
+							dataChanged = true;
+						}
+						else if (this.dataPoints[index].size() != inputDataArray.size())
+						{
+							// data is present, but the size is different
+							dataChanged = true;
+						}
+						
+						int oldDataHash = 0;
+						if (!dataChanged)
+						{
+							// some old data existed with the same length,
+							// we'll have to compare the caches
+							oldDataHash = this.dataPoints[index].hashCode();
+						}
+						
 						
 						// copy over the new data
-						this.dataPoints[index] = new long[newDataArray.length];
-						System.arraycopy(newDataArray, 0, this.dataPoints[index], 0, newDataArray.length);
+						this.dataPoints[index].clear();
+						this.dataPoints[index].addAll(inputDataArray);
 						this.remapDataColumn(index, remappedIds);
 						
 						if (RUN_DATA_ORDER_VALIDATION)
@@ -330,11 +350,17 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 							throwIfDataColumnInWrongOrder(inputDataSource.pos, this.dataPoints[index]);
 						}
 						
-						// we only need to see if the data was changed in one column
+						
+						
 						if (!dataChanged)
 						{
-							// needs to be done after the ID's have been remapped otherwise the ID's won't match even if the data is the same
-							dataChanged = areDataColumnsDifferent(oldDataArray, this.dataPoints[index]);
+							// check if the identical length data column hashes are the same
+							// hashes need to be compared after the ID's have been remapped otherwise the ID's won't match even if the data is the same
+							if (oldDataHash != this.dataPoints[index].hashCode())
+							{
+								// the hashes are different, something was changed
+								dataChanged = true;
+							}
 						}
 						
 						this.columnGenerationSteps[index] = inputGenState;
@@ -378,29 +404,55 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 				int recipientIndex = relativePosToIndex(recipientX, recipientZ);
 				
 				
-				// world gen
+				// world gen //
 				byte inputGenStep = determineMinWorldGenStepForTwoByTwoColumn(inputDataSource.columnGenerationSteps, x, z);
 				this.columnGenerationSteps[recipientIndex] = inputGenStep;
 				
-				// data points
-				long[] oldDataArray = this.dataPoints[recipientIndex];
-				long[] mergedInputDataArray = mergeInputTwoByTwoDataColumn(inputDataSource, x, z);
+				
+				
+				// data points //
+				LongArrayList mergedInputDataArray = mergeInputTwoByTwoDataColumn(inputDataSource, x, z);
+				
+				// check if the data changed
+				if (this.dataPoints[recipientIndex] == null)
+				{
+					// no data was present previously
+					dataChanged = true;
+				}
+				else if (this.dataPoints[recipientIndex].size() != mergedInputDataArray.size())
+				{
+					// data is present, but the size is different
+					dataChanged = true;
+				}
+				
+				int oldDataHash = 0;
+				if (!dataChanged)
+				{
+					// some old data existed with the same length,
+					// we'll have to compare the caches
+					oldDataHash = this.dataPoints[recipientIndex].hashCode();
+				}
+				
+				
 				this.dataPoints[recipientIndex] = mergedInputDataArray;
+				this.remapDataColumn(recipientIndex, remappedIds);
 				
 				if (RUN_DATA_ORDER_VALIDATION)
 				{
 					throwIfDataColumnInWrongOrder(inputDataSource.pos, this.dataPoints[recipientIndex]);
 				}
 				
-				// mapping
-				this.remapDataColumn(recipientIndex, remappedIds);
 				
 				
-				// we only need to see if the data was changed in one column
 				if (!dataChanged)
 				{
-					// needs to be done after the ID's have been remapped otherwise the ID's won't match even if the data is the same
-					dataChanged = areDataColumnsDifferent(oldDataArray, this.dataPoints[recipientIndex]);
+					// check if the identical length data column hashes are the same
+					// hashes need to be compared after the ID's have been remapped otherwise the ID's won't match even if the data is the same
+					if (oldDataHash != this.dataPoints[recipientIndex].hashCode())
+					{
+						// the hashes are different, something was changed
+						dataChanged = true;
+					}
 				}
 				
 				this.isEmpty = false;
@@ -427,9 +479,9 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 		}
 		return minWorldGenStepValue;
 	}
-	private static long[] mergeInputTwoByTwoDataColumn(FullDataSourceV2 inputDataSource, int x, int z)
+	private static LongArrayList mergeInputTwoByTwoDataColumn(FullDataSourceV2 inputDataSource, int x, int z)
 	{
-		ArrayList<Long> newColumnList = new ArrayList<>();
+		LongArrayList newColumnList = new LongArrayList();
 		
 		// special numbers:
 		// -2 = the column's height hasn't been determined yet
@@ -466,8 +518,8 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 				for (int inputZ = z; inputZ < z + 2; inputZ++, colIndex++)
 				{
 					// TODO throw an assertion if the column isn't in top-down order or just fix it...
-					long[] inputDataArray = inputDataSource.dataPoints[relativePosToIndex(inputX, inputZ)];
-					if (inputDataArray == null || inputDataArray.length == 0)
+					LongArrayList inputDataArray = inputDataSource.dataPoints[relativePosToIndex(inputX, inputZ)];
+					if (inputDataArray == null || inputDataArray.size() == 0)
 					{
 						currentDatapointIndex[colIndex] = -1;
 						continue;
@@ -476,7 +528,7 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 					// determine the last index (the lowest data point) for each column
 					if (currentDatapointIndex[colIndex] == -2)
 					{
-						currentDatapointIndex[colIndex] = inputDataArray.length - 1;
+						currentDatapointIndex[colIndex] = inputDataArray.size() - 1;
 						
 						if (RUN_DATA_ORDER_VALIDATION)
 						{
@@ -491,7 +543,7 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 						// went over the end 
 						continue;
 					}
-					long datapoint = inputDataArray[dataPointIndex];
+					long datapoint = inputDataArray.getLong(dataPointIndex);
 					
 					int datapointMinY = FullDataPointUtilV2.getBottomY(datapoint);
 					int numbOfBlocksTall = FullDataPointUtilV2.getHeight(datapoint);
@@ -574,22 +626,15 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 		}
 		
 		
-		// convert the arraylist to an array
-		long[]mergedInputDataArray = new long[newColumnList.size()];
-		for (int i = 0; i < mergedInputDataArray.length; i++)
-		{
-			mergedInputDataArray[i] = newColumnList.get(i);
-		}
-		
 		
 		// flip the array if necessary
 		// TODO why is this sometimes necessary? What did I (James) screw up that causes the mergedInputDataArray
 		//  to sometimes be in a different order? Is it potentially related to what detail level is coming in?
 		{
-			long firstDataPoint = mergedInputDataArray[0];
+			long firstDataPoint = newColumnList.getLong(0);
 			int firstBottomY = FullDataPointUtilV2.getBottomY(firstDataPoint);
 			
-			long lastDataPoint = mergedInputDataArray[mergedInputDataArray.length - 1];
+			long lastDataPoint = newColumnList.getLong(newColumnList.size() - 1);
 			int lastBottomY = FullDataPointUtilV2.getBottomY(lastDataPoint);
 			
 			if (firstBottomY < lastBottomY)
@@ -597,16 +642,16 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 				// reverse the array so index 0 is the highest,
 				// this is necessary for later logic
 				// source: https://stackoverflow.com/questions/2137755/how-do-i-reverse-an-int-array-in-java
-				for(int i = 0; i < mergedInputDataArray.length / 2; i++)
+				for(int i = 0; i < newColumnList.size() / 2; i++)
 				{
-					long temp = mergedInputDataArray[i];
-					mergedInputDataArray[i] = mergedInputDataArray[mergedInputDataArray.length - i - 1];
-					mergedInputDataArray[mergedInputDataArray.length - i - 1] = temp;
+					long temp = newColumnList.getLong(i);
+					newColumnList.set(i, newColumnList.getLong(newColumnList.size() - i - 1));
+					newColumnList.set(newColumnList.size() - i - 1, temp);
 				}
 			}
 		}
 		
-		return mergedInputDataArray;
+		return newColumnList;
 	}
 	/**
 	 * Only update the ID once it's been added to this data source.
@@ -615,10 +660,10 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 	 */
 	private void remapDataColumn(int dataPointIndex, int[] remappedIds)
 	{
-		long[] dataColumn = this.dataPoints[dataPointIndex];
-		for (int i = 0; i < dataColumn.length; i++)
+		LongArrayList dataColumn = this.dataPoints[dataPointIndex];
+		for (int i = 0; i < dataColumn.size(); i++)
 		{
-			dataColumn[i] = FullDataPointUtilV2.remap(remappedIds, dataColumn[i]);
+			dataColumn.set(i, FullDataPointUtilV2.remap(remappedIds, dataColumn.getLong(i)));
 		}
 	}
 	private static boolean areDataColumnsDifferent(long[] oldDataArray, long[] newDataArray)
@@ -732,12 +777,12 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 	 * 
 	 * @see FullDataSourceV2#dataPoints
 	 */
-	public static void throwIfDataColumnInWrongOrder(DhSectionPos pos, long[] dataArray) throws IllegalStateException
+	public static void throwIfDataColumnInWrongOrder(DhSectionPos pos, LongArrayList dataArray) throws IllegalStateException
 	{
-		long firstDataPoint = dataArray[0];
+		long firstDataPoint = dataArray.getLong(0);
 		int firstBottomY = FullDataPointUtilV2.getBottomY(firstDataPoint);
 		
-		long lastDataPoint = dataArray[dataArray.length - 1];
+		long lastDataPoint = dataArray.getLong(dataArray.size() - 1);
 		int lastBottomY = FullDataPointUtilV2.getBottomY(lastDataPoint);
 		
 		if (firstBottomY < lastBottomY)
@@ -767,7 +812,7 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 		return EDhApiWorldGenerationStep.fromValue(this.columnGenerationSteps[index]); 
 	}
 	
-	public void setSingleColumn(long[] longArray, int relX, int relZ, EDhApiWorldGenerationStep worldGenStep)
+	public void setSingleColumn(LongArrayList longArray, int relX, int relZ, EDhApiWorldGenerationStep worldGenStep)
 	{
 		int index = relativePosToIndex(relX, relZ);
 		this.dataPoints[index] = longArray;
@@ -778,9 +823,9 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 		{
 			// validate the incoming ID's
 			int maxValidId = this.mapping.getMaxValidId();
-			for (int i = 0; i < longArray.length; i++)
+			for (int i = 0; i < longArray.size(); i++)
 			{
-				long dataPoint = longArray[i];
+				long dataPoint = longArray.getLong(i);
 				int id = FullDataPointUtilV2.getId(dataPoint);
 				if (id > maxValidId)
 				{

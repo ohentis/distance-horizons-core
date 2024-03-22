@@ -27,6 +27,7 @@ import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataInputStream;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataOutputStream;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.ByteArrayInputStream;
@@ -163,7 +164,7 @@ public class FullDataSourceV2DTO implements IBaseDTO<DhSectionPos>
 	// (de)serializing //
 	//=================//
 	
-	private static CheckedByteArray writeDataSourceDataArrayToBlob(long[][] dataArray, EDhApiDataCompressionMode compressionModeEnum) throws IOException
+	private static CheckedByteArray writeDataSourceDataArrayToBlob(LongArrayList[] dataArray, EDhApiDataCompressionMode compressionModeEnum) throws IOException
 	{
 		// write the outputs to a stream to prep for writing to the database
 		ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
@@ -179,10 +180,10 @@ public class FullDataSourceV2DTO implements IBaseDTO<DhSectionPos>
 		int dataArrayLength = FullDataSourceV2.WIDTH * FullDataSourceV2.WIDTH;
 		for (int xz = 0; xz < dataArrayLength; xz++)
 		{
-			long[] dataColumn = dataArray[xz];
+			LongArrayList dataColumn = dataArray[xz];
 			
 			// write column length
-			short columnLength = (dataColumn != null) ? (short) dataColumn.length : 0;
+			short columnLength = (dataColumn != null) ? (short) dataColumn.size() : 0;
 			// a short is used instead of an int because at most we store 4096 vertical slices and a 
 			// short fits that with less wasted spaces vs an int (short has max value of 32,767 vs int's max of 2 billion)
 			compressedOut.writeShort(columnLength);
@@ -190,7 +191,7 @@ public class FullDataSourceV2DTO implements IBaseDTO<DhSectionPos>
 			// write column data (will be skipped if no data was present)
 			for (int y = 0; y < columnLength; y++)
 			{
-				compressedOut.writeLong(dataColumn[y]);
+				compressedOut.writeLong(dataColumn.getLong(y));
 			}
 		}
 		
@@ -202,7 +203,7 @@ public class FullDataSourceV2DTO implements IBaseDTO<DhSectionPos>
 		
 		return new CheckedByteArray(checksum, byteArrayOutputStream.toByteArray());
 	}
-	private static long[][] readBlobToDataSourceDataArray(byte[] compressedDataByteArray, EDhApiDataCompressionMode compressionModeEnum) throws IOException
+	private static LongArrayList[] readBlobToDataSourceDataArray(byte[] compressedDataByteArray, EDhApiDataCompressionMode compressionModeEnum) throws IOException
 	{
 		ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(compressedDataByteArray);
 		DhDataInputStream compressedIn = new DhDataInputStream(byteArrayInputStream, compressionModeEnum);
@@ -210,18 +211,18 @@ public class FullDataSourceV2DTO implements IBaseDTO<DhSectionPos>
 		
 		// read the data
 		int dataArrayLength = FullDataSourceV2.WIDTH * FullDataSourceV2.WIDTH;
-		long[][] dataArray = new long[dataArrayLength][];
+		LongArrayList[] dataArray = new LongArrayList[dataArrayLength];
 		for (int xz = 0; xz < dataArray.length; xz++)
 		{
 			// read the column length
 			short dataColumnLength = compressedIn.readShort(); // separate variables are used for debugging and in case validation wants to be added later 
-			long[] dataColumn = new long[dataColumnLength];
+			LongArrayList dataColumn = new LongArrayList(new long[dataColumnLength]);
 			
 			// read column data (will be skipped if no data was present)
 			for (int y = 0; y < dataColumnLength; y++)
 			{
 				long dataPoint = compressedIn.readLong();
-				dataColumn[y] = dataPoint;
+				dataColumn.set(y, dataPoint);
 			}
 			
 			dataArray[xz] = dataColumn;

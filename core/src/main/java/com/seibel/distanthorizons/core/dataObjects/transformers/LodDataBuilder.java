@@ -201,7 +201,7 @@ public class LodDataBuilder
 				}
 				longs.add(FullDataPointUtilV2.encode(mappedId, lastY - y, y + 1 - chunkWrapper.getMinBuildHeight(), blockLight, skyLight));
 				
-				dataSource.setSingleColumn(longs.toLongArray(), 
+				dataSource.setSingleColumn(longs, 
 						chunkX + chunkOffsetX, 
 						chunkZ + chunkOffsetZ, 
 						EDhApiWorldGenerationStep.LIGHT);
@@ -230,7 +230,7 @@ public class LodDataBuilder
 				// AND the below loop won't run.
 				int size = (columnDataPoints != null) ? columnDataPoints.size() : 0;
 				
-				long[] packedDataPoints = new long[size];
+				LongArrayList packedDataPoints = new LongArrayList(new long[size]);
 				for (int index = 0; index < size; index++)
 				{
 					DhApiTerrainDataPoint dataPoint = columnDataPoints.get(index);
@@ -240,13 +240,13 @@ public class LodDataBuilder
 							(IBlockStateWrapper) (dataPoint.blockStateWrapper)
 					);
 					
-					packedDataPoints[index] = FullDataPointUtilV2.encode(
+					packedDataPoints.set(index, FullDataPointUtilV2.encode(
 							id,
 							dataPoint.topYBlockPos - dataPoint.bottomYBlockPos,
 							dataPoint.bottomYBlockPos - dataPoints.topYBlockPos,
 							(byte) (dataPoint.blockLightLevel),
 							(byte) (dataPoint.skyLightLevel)
-					);
+					));
 				}
 				
 				accessor.setSingleColumn(packedDataPoints, relX, relZ, EDhApiWorldGenerationStep.LIGHT);
