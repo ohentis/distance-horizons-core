@@ -56,10 +56,9 @@ public class DebugRenderer
 {
 	public static DebugRenderer INSTANCE = new DebugRenderer();
 	
-	public static final ConfigBasedLogger logger = new ConfigBasedLogger(
-			LogManager.getLogger(TestRenderer.class), () -> ELoggerMode.LOG_ALL_TO_CHAT);
-	public static final ConfigBasedSpamLogger spamLogger = new ConfigBasedSpamLogger(
-			LogManager.getLogger(TestRenderer.class), () -> ELoggerMode.LOG_ALL_TO_CHAT, 1);
+	public static final ConfigBasedLogger LOGGER = new ConfigBasedLogger(LogManager.getLogger(TestRenderer.class), () -> ELoggerMode.LOG_ALL_TO_CHAT);
+	public static final ConfigBasedSpamLogger SPAM_LOGGER = new ConfigBasedSpamLogger(LogManager.getLogger(TestRenderer.class), () -> ELoggerMode.LOG_ALL_TO_CHAT, 1);
+	
 	private static final IMinecraftRenderWrapper MC_RENDER = SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
 	
 	
@@ -480,18 +479,25 @@ public class DebugRenderer
 		{
 			synchronized (this)
 			{
-				Iterator<WeakReference<IDebugRenderable>> iterator = rendererList.iterator();
-				while (iterator.hasNext())
+				try
 				{
-					WeakReference<IDebugRenderable> ref = iterator.next();
-					IDebugRenderable renderable = ref.get();
-					if (renderable == null)
+					Iterator<WeakReference<IDebugRenderable>> iterator = rendererList.iterator();
+					while (iterator.hasNext())
 					{
-						iterator.remove();
-						continue;
+						WeakReference<IDebugRenderable> ref = iterator.next();
+						IDebugRenderable renderable = ref.get();
+						if (renderable == null)
+						{
+							iterator.remove();
+							continue;
+						}
+						
+						renderable.debugRender(debugRenderer);
 					}
-					
-					renderable.debugRender(debugRenderer);
+				}
+				catch (Exception e)
+				{
+					SPAM_LOGGER.error("Unexpected Debug renderer error, Error: "+e.getMessage(), e);
 				}
 			}
 		}
