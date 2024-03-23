@@ -495,6 +495,13 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 		int minY = 0;
 		
 		
+		// these arrays will be reused quite often, so re-using them helps reduce some GC pressure
+		long[] datapointsForYSlice = new long[4];
+		int[] mergeIds = new int[4];
+		int[] mergeBlockLights = new int[4];
+		int[] mergeSkyLights = new int[4];
+		
+		
 		for (int blockY = 0; blockY < RenderDataPointUtil.MAX_WORLD_Y_SIZE; blockY++, height++)
 		{
 			// if each column has reached the end of their data, nothing more needs to be done
@@ -511,7 +518,7 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 			// scary double loop but, 
 			// this will only ever loop 4 times, 
 			// once for each of the 4 input columns
-			long[] datapointsForYSlice = new long[4];
+			Arrays.fill(datapointsForYSlice, 0L);
 			int colIndex = 0;
 			for (int inputX = x; inputX < x + 2; inputX++)
 			{
@@ -584,9 +591,9 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 			
 			
 			
-			int[] mergeIds = new int[4];
-			int[] mergeBlockLights = new int[4];
-			int[] mergeSkyLights = new int[4];
+			Arrays.fill(mergeIds, 0);
+			Arrays.fill(mergeBlockLights, 0);
+			Arrays.fill(mergeSkyLights, 0);
 			for (int i = 0; i < 4; i++)
 			{
 				mergeIds[i] = FullDataPointUtilV2.getId(datapointsForYSlice[i]);
