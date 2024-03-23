@@ -292,7 +292,7 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 				boolean taskStarted = this.tryStartingWorldGenTaskGroup(newTaskGroup);
 				if (!taskStarted)
 				{
-					LOGGER.trace("Unable to start task: "+closestTask.pos+", skipping. Task position may have already been generated.");
+					//LOGGER.trace("Unable to start task: "+closestTask.pos+", skipping. Task position may have already been generated.");
 				}
 			}
 			else
@@ -302,7 +302,7 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 				// 		   the newly selected task, we cannot use it,
 				//         as some chunks may have already been written into.
 				
-				LOGGER.trace("A task already exists for this position, todo: "+closestTask.pos);
+				//LOGGER.trace("A task already exists for this position, todo: "+closestTask.pos);
 			}
 			
 			// a task has been started
@@ -349,7 +349,7 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 		if (this.alreadyGeneratedPosHashSet.containsKey(newTaskGroup.group.pos))
 		{
 			// temporary solution to prevent generating the same section multiple times
-			LOGGER.trace("Duplicate generation section " + taskPos + " with granularity [" + granularity + "] at " + chunkPosMin + ". Skipping...");
+			//LOGGER.trace("Duplicate generation section " + taskPos + " with granularity [" + granularity + "] at " + chunkPosMin + ". Skipping...");
 			
 			// sending a success result is necessary to make sure the render sections are reloaded correctly 
 			newTaskGroup.group.worldGenTasks.forEach(worldGenTask -> worldGenTask.future.complete(WorldGenResult.CreateSuccess(new DhSectionPos(granularity, taskPos.getX(), taskPos.getZ()))));

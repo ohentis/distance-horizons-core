@@ -207,7 +207,7 @@ public class DhLightingEngine
 		
 		long endTimeNs = System.nanoTime();
 		float totalTimeMs = (endTimeNs - startTimeNs) / 1_000_000.0f;
-		LOGGER.trace("Finished generating lighting for chunk: [" + centerChunkPos + "] in ["+totalTimeMs+"] milliseconds");
+		//LOGGER.trace("Finished generating lighting for chunk: [" + centerChunkPos + "] in ["+totalTimeMs+"] milliseconds");
 	}
 	
 	/** Applies each {@link LightPos} from the queue to the given set of {@link IChunkWrapper}'s. */

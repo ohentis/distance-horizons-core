@@ -85,7 +85,7 @@ public class ColumnRenderBufferBuilder
 					{
 						boolean enableTransparency = Config.Client.Advanced.Graphics.Quality.transparency.get().transparencyEnabled;
 						
-						EVENT_LOGGER.trace("RenderRegion start QuadBuild @ " + renderSource.sectionPos);
+						//EVENT_LOGGER.trace("RenderRegion start QuadBuild @ " + renderSource.sectionPos);
 						boolean enableSkyLightCulling =
 								(
 									// dimensions with a ceiling will be all caves so we don't want cave culling
@@ -126,7 +126,7 @@ public class ColumnRenderBufferBuilder
 				{
 					try
 					{
-						EVENT_LOGGER.trace("RenderRegion start Upload @ " + renderSource.sectionPos);
+						//EVENT_LOGGER.trace("RenderRegion start Upload @ " + renderSource.sectionPos);
 						
 						ColumnRenderBuffer buffer = renderBufferRef.swap(null);
 						if (buffer == null)
@@ -138,7 +138,8 @@ public class ColumnRenderBufferBuilder
 						{
 							buffer.uploadBuffer(quadBuilder, GLProxy.getInstance().getGpuUploadMethod());
 							LodUtil.assertTrue(buffer.buffersUploaded);
-							EVENT_LOGGER.trace("RenderRegion end Upload @ " + renderSource.sectionPos);
+							
+							//EVENT_LOGGER.trace("RenderRegion end Upload @ " + renderSource.sectionPos);
 							return buffer;
 						}
 						catch (Exception e)

@@ -182,7 +182,7 @@ public class FullDataPointIdMap
 	{
 		try
 		{
-			LOGGER.trace("merging {" + this.pos + ", " + this.entryList.size() + "} and {" + inputMap.pos + ", " + inputMap.entryList.size() + "}");
+			//LOGGER.trace("merging {" + this.pos + ", " + this.entryList.size() + "} and {" + inputMap.pos + ", " + inputMap.entryList.size() + "}");
 			
 			inputMap.readWriteLock.readLock().lock();
 			this.readWriteLock.writeLock().lock();
@@ -203,7 +203,7 @@ public class FullDataPointIdMap
 			this.readWriteLock.writeLock().unlock();
 			inputMap.readWriteLock.readLock().unlock();
 			
-			LOGGER.trace("finished merging {" + this.pos + ", " + this.entryList.size() + "} and {" + inputMap.pos + ", " + inputMap.entryList.size() + "}");
+			//LOGGER.trace("finished merging {" + this.pos + ", " + this.entryList.size() + "} and {" + inputMap.pos + ", " + inputMap.entryList.size() + "}");
 		}
 	}
 	
@@ -254,7 +254,7 @@ public class FullDataPointIdMap
 		finally
 		{
 			this.readWriteLock.readLock().unlock();
-			LOGGER.trace("serialize " + this.pos + " " + this.entryList.size());
+			//LOGGER.trace("serialize " + this.pos + " " + this.entryList.size());
 		}
 	}
 	
@@ -287,7 +287,7 @@ public class FullDataPointIdMap
 			}
 		}
 		
-		LOGGER.trace("deserialized " + pos + " " + newMap.entryList.size() + "-" + entityCount);
+		//LOGGER.trace("deserialized " + pos + " " + newMap.entryList.size() + "-" + entityCount);
 		
 		return newMap;
 	}
