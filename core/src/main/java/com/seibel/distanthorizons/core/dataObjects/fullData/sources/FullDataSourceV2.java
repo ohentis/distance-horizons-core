@@ -22,6 +22,7 @@ package com.seibel.distanthorizons.core.dataObjects.fullData.sources;
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
 import com.seibel.distanthorizons.core.dataObjects.fullData.FullDataPointIdMap;
 import com.seibel.distanthorizons.core.dataObjects.transformers.LodDataBuilder;
+import com.seibel.distanthorizons.core.file.AbstractNewDataSourceHandler;
 import com.seibel.distanthorizons.core.file.IDataSource;
 import com.seibel.distanthorizons.core.file.fullDatafile.FullDataSourceProviderV2;
 import com.seibel.distanthorizons.core.level.IDhLevel;
@@ -278,11 +279,8 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 			throw new UnsupportedOperationException("Unsupported data source update. Expected input detail level of ["+thisDetailLevel+"] or ["+(thisDetailLevel+1)+"], received detail level ["+inputDetailLevel+"].");
 		}
 		
-		if (dataChanged && this.pos.getDetailLevel() < FullDataSourceProviderV2.TOP_SECTION_DETAIL_LEVEL)
-		{
-			// mark that this data source should be applied to its parent
-			this.applyToParent = true;
-		}
+		// determine if this data source should be applied to its parent
+		this.applyToParent = (dataChanged && this.pos.getDetailLevel() < AbstractNewDataSourceHandler.TOP_SECTION_DETAIL_LEVEL);
 		
 		if (dataChanged)
 		{

@@ -20,6 +20,8 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
+// TODO is there a reason this is separate from FullDataSourceProviderV2?
+//  We shouldn't need multiple data source handlers
 public abstract class AbstractNewDataSourceHandler
 		<TDataSource extends IDataSource<TDhLevel>, 
 				TDTO extends IBaseDTO<DhSectionPos>,
