@@ -22,7 +22,7 @@ package com.seibel.distanthorizons.core.dataObjects.render;
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.sql.dto.LegacyDataSourceDTO;
+import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV1DTO;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataInputStream;
 import org.apache.logging.log4j.Logger;
 
@@ -31,7 +31,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 /**
- * Handles loading and parsing {@link LegacyDataSourceDTO}s to create {@link ColumnRenderSource}s. <br><br>
+ * Handles loading and parsing {@link FullDataSourceV1DTO}s to create {@link ColumnRenderSource}s. <br><br>
  *
  * Please see the {@link ColumnRenderSourceLoader#loadRenderSource} method to see what
  * file versions this class can handle.
@@ -48,7 +48,7 @@ public class ColumnRenderSourceLoader
 	
 	
 	
-	public ColumnRenderSource loadRenderSource(LegacyDataSourceDTO dto, DhDataInputStream inputStream, IDhLevel level) throws IOException
+	public ColumnRenderSource loadRenderSource(FullDataSourceV1DTO dto, DhDataInputStream inputStream, IDhLevel level) throws IOException
 	{
 		int dataFileVersion = dto.binaryDataFormatVersion;
 		

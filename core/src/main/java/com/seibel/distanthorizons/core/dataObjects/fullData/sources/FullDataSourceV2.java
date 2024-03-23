@@ -893,19 +893,6 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 	
 	
 	
-	//============//
-	// deprecated //
-	//============//
-	
-	@Deprecated
-	@Override
-	public void writeToStream(DhDataOutputStream outputStream, IDhLevel level)
-	{
-		throw new UnsupportedOperationException("deprecated");
-	}
-	
-	
-	
 	//=========//
 	// pooling //
 	//=========//

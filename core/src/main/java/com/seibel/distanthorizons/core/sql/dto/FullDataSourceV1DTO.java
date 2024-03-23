@@ -32,20 +32,12 @@ import java.io.InputStream;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Handles storing {@link ColumnRenderSource}'s and {@link FullDataSourceV1}'s in the database. 
- * 
- * @deprecated {@link ColumnRenderSource} should store the actual GPU buffer data, 
- *              at that point this DTO should be just used for {@link FullDataSourceV1}
- *              and could be renamed to FullDataSourceV1DTO
+ * Handles storing{@link FullDataSourceV1}'s in the database.
  */
-@Deprecated
-public class LegacyDataSourceDTO implements IBaseDTO<DhSectionPos>
+public class FullDataSourceV1DTO implements IBaseDTO<DhSectionPos>
 {
 	public DhSectionPos pos;
 	public int checksum;
-	/** @deprecated the database now has a last modified date time that should be used instead */
-	@Deprecated
-	public AtomicLong dataVersion = new AtomicLong(Long.MAX_VALUE);
 	public byte dataDetailLevel;
 	public EDhApiWorldGenerationStep worldGenStep;
 	
@@ -62,7 +54,7 @@ public class LegacyDataSourceDTO implements IBaseDTO<DhSectionPos>
 	// constructor //
 	//=============//
 	
-	public LegacyDataSourceDTO(DhSectionPos pos, int checksum, byte dataDetailLevel, EDhApiWorldGenerationStep worldGenStep, String dataType, byte binaryDataFormatVersion, byte[] dataArray)
+	public FullDataSourceV1DTO(DhSectionPos pos, int checksum, byte dataDetailLevel, EDhApiWorldGenerationStep worldGenStep, String dataType, byte binaryDataFormatVersion, byte[] dataArray)
 	{
 		this.pos = pos;
 		this.checksum = checksum;

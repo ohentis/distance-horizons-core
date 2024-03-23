@@ -21,18 +21,8 @@ public interface IDataSource<TDhLevel extends IDhLevel> extends IBaseDTO<DhSecti
 {
 	DhSectionPos getSectionPos();
 	
-	
-	
-	//===============//
-	// file handling //
-	//===============//
-	
 	/** @return true if the data was changed */
 	boolean update(FullDataSourceV2 chunkData, TDhLevel level);
-	
-	// still used by RenderSource, remove once that's been changed
-	@Deprecated
-	void writeToStream(DhDataOutputStream outputStream, TDhLevel level) throws IOException;
 	
 	
 	

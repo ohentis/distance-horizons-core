@@ -21,18 +21,40 @@ package com.seibel.distanthorizons.core.sql.repo;
 
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
-import com.seibel.distanthorizons.core.sql.dto.LegacyDataSourceDTO;
+import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV1DTO;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
-public abstract class AbstractLegacyDataSourceRepo extends AbstractDhRepo<DhSectionPos, LegacyDataSourceDTO>
+public class FullDataSourceV1Repo extends AbstractDhRepo<DhSectionPos, FullDataSourceV1DTO>
 {
-	public AbstractLegacyDataSourceRepo(String databaseType, String databaseLocation) throws SQLException
+	public static final String TABLE_NAME = "Legacy_FullData_V1";
+	
+	
+	
+	//=============//
+	// constructor //
+	//=============//
+	
+	public FullDataSourceV1Repo(String databaseType, String databaseLocation) throws SQLException
 	{
-		super(databaseType, databaseLocation, LegacyDataSourceDTO.class);
+		super(databaseType, databaseLocation, FullDataSourceV1DTO.class);
 	}
+	
+	
+	
+	//===========//
+	// overrides //
+	//===========//
+	
+	@Override
+	public String getTableName() { return TABLE_NAME; }
+	
+	@Override
+	public String createWhereStatement(DhSectionPos pos) { return "DhSectionPos = '"+pos.serialize()+"'"; }
 	
 	
 	
@@ -41,14 +63,13 @@ public abstract class AbstractLegacyDataSourceRepo extends AbstractDhRepo<DhSect
 	//=======================//
 	
 	@Override 
-	public LegacyDataSourceDTO convertDictionaryToDto(Map<String, Object> objectMap) throws ClassCastException
+	public FullDataSourceV1DTO convertDictionaryToDto(Map<String, Object> objectMap) throws ClassCastException
 	{
 		String posString = (String) objectMap.get("DhSectionPos");
 		DhSectionPos pos = DhSectionPos.deserialize(posString);
 		
 		// meta data
 		int checksum = (Integer) objectMap.get("Checksum");
-		long dataVersion = (Long) objectMap.get("DataVersion");
 		byte dataDetailLevel = (Byte) objectMap.get("DataDetailLevel");
 		String worldGenStepString = (String) objectMap.get("WorldGenStep");
 		EDhApiWorldGenerationStep worldGenStep = EDhApiWorldGenerationStep.fromName(worldGenStepString);
@@ -59,7 +80,7 @@ public abstract class AbstractLegacyDataSourceRepo extends AbstractDhRepo<DhSect
 		// binary data
 		byte[] dataByteArray = (byte[]) objectMap.get("Data");
 		
-		LegacyDataSourceDTO dto = new LegacyDataSourceDTO(
+		FullDataSourceV1DTO dto = new FullDataSourceV1DTO(
 				pos,
 				checksum, dataDetailLevel, worldGenStep,
 				dataType, binaryDataFormatVersion, 
@@ -68,7 +89,7 @@ public abstract class AbstractLegacyDataSourceRepo extends AbstractDhRepo<DhSect
 	}
 	
 	@Override
-	public PreparedStatement createInsertStatement(LegacyDataSourceDTO dto) throws SQLException
+	public PreparedStatement createInsertStatement(FullDataSourceV1DTO dto) throws SQLException
 	{
 		String sql =
 			"INSERT INTO "+this.getTableName() + "\n" +
@@ -87,7 +108,7 @@ public abstract class AbstractLegacyDataSourceRepo extends AbstractDhRepo<DhSect
 		statement.setObject(i++, dto.pos.serialize());
 		
 		statement.setObject(i++, dto.checksum);
-		statement.setObject(i++, dto.dataVersion);
+		statement.setObject(i++, 0 /*dto.dataVersion*/);
 		statement.setObject(i++, dto.dataDetailLevel);
 		statement.setObject(i++, dto.worldGenStep);
 		statement.setObject(i++, dto.dataType);
@@ -99,7 +120,7 @@ public abstract class AbstractLegacyDataSourceRepo extends AbstractDhRepo<DhSect
 	}
 	
 	@Override
-	public PreparedStatement createUpdateStatement(LegacyDataSourceDTO dto) throws SQLException
+	public PreparedStatement createUpdateStatement(FullDataSourceV1DTO dto) throws SQLException
 	{
 		String sql =
 			"UPDATE "+this.getTableName()+" \n" +
@@ -119,7 +140,7 @@ public abstract class AbstractLegacyDataSourceRepo extends AbstractDhRepo<DhSect
 		
 		int i = 1;
 		statement.setObject(i++, dto.checksum);
-		statement.setObject(i++, dto.dataVersion);
+		statement.setObject(i++, 0 /*dto.dataVersion*/);
 		statement.setObject(i++, dto.dataDetailLevel);
 		statement.setObject(i++, dto.worldGenStep);
 		statement.setObject(i++, dto.dataType);
@@ -156,6 +177,60 @@ public abstract class AbstractLegacyDataSourceRepo extends AbstractDhRepo<DhSect
 		}
 		
 		return maxDetailLevel + DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL;
+	}
+	
+	
+	
+	//===========//
+	// migration //
+	//===========//
+	
+	/** Returns how many positions need to be migrated over to the new version */
+	public int getMigrationCount()
+	{
+		Map<String, Object> resultMap = this.queryDictionaryFirst(
+				"select COUNT(*) as itemCount from "+this.getTableName()+" where MigrationFailed <> 1");
+		
+		if (resultMap == null)
+		{
+			return 0;
+		}
+		else
+		{
+			int count = (int) resultMap.get("itemCount");
+			return count;
+		}
+	}
+	
+	/** Returns the new "returnCount" positions that need to be migrated */
+	public ArrayList<DhSectionPos> getPositionsToMigrate(int returnCount)
+	{
+		ArrayList<DhSectionPos> list = new ArrayList<>();
+		
+		List<Map<String, Object>> resultMapList = this.queryDictionary(
+				"select DhSectionPos " +
+						"from "+this.getTableName()+" " +
+						"WHERE MigrationFailed <> 1 " +
+						"LIMIT "+returnCount+";");
+		
+		for (Map<String, Object> resultMap : resultMapList)
+		{
+			// returned in the format [sectionDetailLevel,x,z] IE [6,0,0]
+			DhSectionPos sectionPos = DhSectionPos.deserialize((String) resultMap.get("DhSectionPos"));
+			list.add(sectionPos);
+		}
+		
+		return list;
+	}
+	
+	public void markMigrationFailed(DhSectionPos pos)
+	{
+		String sql =
+				"UPDATE "+this.getTableName()+" \n" +
+						"SET MigrationFailed = 1 \n" +
+						"WHERE DhSectionPos = '"+pos.serialize()+"'";
+		
+		this.queryDictionaryFirst(sql);
 	}
 	
 	

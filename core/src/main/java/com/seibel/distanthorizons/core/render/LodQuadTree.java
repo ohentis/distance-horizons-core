@@ -24,7 +24,6 @@ import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.config.listeners.ConfigChangeListener;
 import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSource;
 import com.seibel.distanthorizons.core.file.fullDatafile.FullDataSourceProviderV2;
-import com.seibel.distanthorizons.core.file.renderfile.IRenderSourceProvider;
 import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
@@ -60,7 +59,6 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 	
 	public final int blockRenderDistanceDiameter;
 	private final FullDataSourceProviderV2 fullDataSourceProvider;
-	private final IRenderSourceProvider renderSourceProvider;
 	
 	/**
 	 * This holds every {@link DhSectionPos} that should be reloaded next tick. <br>
@@ -91,14 +89,12 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 	public LodQuadTree(
 			IDhClientLevel level, int viewDiameterInBlocks,
 			int initialPlayerBlockX, int initialPlayerBlockZ,
-			FullDataSourceProviderV2 fullDataSourceProvider, 
-			IRenderSourceProvider renderSourceProvider)
+			FullDataSourceProviderV2 fullDataSourceProvider)
 	{
 		super(viewDiameterInBlocks, new DhBlockPos2D(initialPlayerBlockX, initialPlayerBlockZ), TREE_LOWEST_DETAIL_LEVEL);
 		
 		this.level = level;
 		this.fullDataSourceProvider = fullDataSourceProvider;
-		this.renderSourceProvider = renderSourceProvider;
 		this.blockRenderDistanceDiameter = viewDiameterInBlocks;
 		
 		this.horizontalScaleChangeListener = new ConfigChangeListener<>(Config.Client.Advanced.Graphics.Quality.horizontalQuality, (newHorizontalScale) -> this.onHorizontalQualityChange());
@@ -164,7 +160,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 					LodRenderSection renderSection = this.getValue(pos);
 					if (renderSection != null)
 					{
-						renderSection.reload(this.renderSourceProvider);
+						renderSection.reload(this.fullDataSourceProvider);
 					}
 				}
 				catch (IndexOutOfBoundsException e)
@@ -313,7 +309,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 			{
 				// prepare this section for rendering
 				// TODO this should fire for the lowest detail level first to improve loading speed
-				renderSection.loadRenderSource(this.renderSourceProvider, this.level);
+				renderSection.loadRenderSource(this.fullDataSourceProvider, this.level);
 				
 				// wait for the parent to disable before enabling this section, so we don't overdraw/overlap render sections
 				if (!parentRenderSectionIsEnabled && renderSection.canRenderNow())
@@ -435,10 +431,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 		{
 			try
 			{
-				LOGGER.info("Clearing render cache...");
-				
-				// delete the cache first so the nodes won't accidentally try re-loading the old data
-				this.renderSourceProvider.deleteRenderCache();
+				LOGGER.info("Disposing render data...");
 				
 				// clear the tree
 				Iterator<QuadNode<LodRenderSection>> nodeIterator = this.nodeIterator();
@@ -452,7 +445,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 					}
 				}
 				
-				LOGGER.info("Render cache invalidated, please wait a moment for everything to reload...");
+				LOGGER.info("Render data cleared, please wait a moment for everything to reload...");
 			}
 			catch (Exception e)
 			{

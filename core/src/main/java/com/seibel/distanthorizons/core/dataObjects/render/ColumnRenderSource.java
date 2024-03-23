@@ -211,83 +211,9 @@ public class ColumnRenderSource implements IDataSource<IDhClientLevel>
 	
 	
 	
-	//========================//
-	// data update and output //
-	//========================//
-	
-	@Override
-	public void writeToStream(DhDataOutputStream outputStream, IDhClientLevel level) throws IOException { this.writeToStream(outputStream); }
-	public void writeToStream(DhDataOutputStream outputStream) throws IOException
-	{
-		outputStream.flush();
-		
-		outputStream.writeByte(this.getDataDetailLevel());
-		outputStream.writeInt(this.verticalDataCount);
-		
-		if (this.isEmpty)
-		{
-			// no data is present
-			outputStream.writeByte(NO_DATA_FLAG_BYTE);
-		}
-		else
-		{
-			// data is present
-			outputStream.writeByte(DATA_GUARD_BYTE);
-			outputStream.writeInt(this.yOffset);
-			
-			// write the data for each column
-			for (int xz = 0; xz < SECTION_SIZE * SECTION_SIZE; xz++)
-			{
-				for (int y = 0; y < this.verticalDataCount; y++)
-				{
-					long currentDatapoint = this.renderDataContainer[xz * this.verticalDataCount + y];
-					outputStream.writeLong(Long.reverseBytes(currentDatapoint)); // the reverse bytes is necessary to ensure the data is read in correctly
-				}
-			}
-		}
-		
-		outputStream.writeByte(DATA_GUARD_BYTE);
-		outputStream.writeByte(this.worldGenStep.value);
-		
-		outputStream.flush();
-	}
-	
-	/** Overrides any data that has not been written directly using write(). Skips empty source dataPoints. */
-	public void updateFromRenderSource(ColumnRenderSource renderSource)
-	{
-		// validate we are writing for the same location
-		LodUtil.assertTrue(renderSource.sectionPos.equals(this.sectionPos));
-		
-		// change the vertical size if necessary (this can happen if the vertical quality was changed in the config) 
-		this.clearAndChangeVerticalSize(renderSource.verticalDataCount);
-		// validate both objects have the same number of dataPoints
-		LodUtil.assertTrue(renderSource.verticalDataCount == this.verticalDataCount);
-		
-		
-		if (renderSource.isEmpty)
-		{
-			// the source is empty, don't attempt to update anything
-			return;
-		}
-		// the source isn't empty, this object won't be empty after the method finishes
-		this.isEmpty = false;
-		
-		localVersion.incrementAndGet();
-	}
-	/**
-	 * If the newVerticalSize is different than the current verticalSize,
-	 * this will delete any data currently in this object and re-size it. <Br>
-	 * Otherwise this method will do nothing.
-	 */
-	private void clearAndChangeVerticalSize(int newVerticalSize)
-	{
-		if (newVerticalSize != this.verticalDataCount)
-		{
-			this.verticalDataCount = newVerticalSize;
-			this.renderDataContainer = new long[SECTION_SIZE * SECTION_SIZE * this.verticalDataCount];
-			this.localVersion.incrementAndGet();
-		}
-	}
+	//=============//
+	// data update //
+	//=============//
 	
 	@Override
 	public boolean update(FullDataSourceV2 inputFullDataSource, IDhClientLevel level)
@@ -355,36 +281,11 @@ public class ColumnRenderSource implements IDataSource<IDhClientLevel>
 	// data helper methods //
 	//=====================//
 	
-	public boolean doesDataPointExist(int posX, int posZ) { return RenderDataPointUtil.doesDataPointExist(this.getFirstDataPoint(posX, posZ)); }
-	
-	public void generateData(ColumnRenderSource lowerDataContainer, int posX, int posZ)
-	{
-		ColumnArrayView outputView = this.getVerticalDataPointView(posX, posZ);
-		ColumnQuadView quadView = lowerDataContainer.getQuadViewOverRange(posX * 2, posZ * 2, 2, 2);
-		outputView.mergeMultiDataFrom(quadView);
-	}
-	
-	public int getMaxLodCount() { return SECTION_SIZE * SECTION_SIZE * this.getVerticalSize(); }
-	
-	public long getRoughRamUsageInBytes() { return (long) this.renderDataContainer.length * Long.BYTES; }
-	
 	public DhSectionPos getSectionPos() { return this.sectionPos; }
 	@Override
 	public DhSectionPos getKey() { return this.sectionPos; }
 	
 	public byte getDataDetailLevel() { return (byte) (this.sectionPos.getDetailLevel() - SECTION_SIZE_OFFSET); }
-	
-	/** @return how many data points wide this {@link ColumnRenderSource} is. */
-	public int getWidthInDataPoints() { return BitShiftUtil.powerOfTwo(this.getDetailOffset()); }
-	public byte getDetailOffset() { return SECTION_SIZE_OFFSET; }
-	
-	public byte getRenderDataFormatVersion() { return DATA_FORMAT_VERSION; }
-	
-	/**
-	 * Whether this object is still valid. If not, a new one should be created.
-	 * TODO this will be necessary for dedicated multiplayer support, if the server has newer data this section should no longer be valid
-	 */
-	public boolean isValid() { return true; }
 	
 	public boolean isEmpty() { return this.isEmpty; }
 	public void markNotEmpty() { this.isEmpty = false; }

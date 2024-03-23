@@ -24,7 +24,7 @@ import com.seibel.distanthorizons.core.file.IDataSource;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
-import com.seibel.distanthorizons.core.sql.dto.LegacyDataSourceDTO;
+import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV1DTO;
 import com.seibel.distanthorizons.core.util.FullDataPointUtilV1;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataInputStream;
@@ -157,7 +157,7 @@ public class FullDataSourceV1 implements IDataSource<IDhLevel>
 	 * Clears and then overwrites any data in this object with the data from the given file and stream.
 	 * This is expected to be used with an existing {@link FullDataSourceV1} and can be used in place of a constructor to reuse an existing {@link FullDataSourceV1} object.
 	 */
-	public void repopulateFromStream(LegacyDataSourceDTO dto, DhDataInputStream inputStream, IDhLevel level) throws IOException, InterruptedException
+	public void repopulateFromStream(FullDataSourceV1DTO dto, DhDataInputStream inputStream, IDhLevel level) throws IOException, InterruptedException
 	{
 		// clear/overwrite the old data
 		this.resizeDataStructuresForRepopulation(dto.pos);
@@ -171,7 +171,7 @@ public class FullDataSourceV1 implements IDataSource<IDhLevel>
 	 * Overwrites any data in this object with the data from the given file and stream.
 	 * This is expected to be used with an empty {@link FullDataSourceV1} and functions similar to a constructor.
 	 */
-	public void populateFromStream(LegacyDataSourceDTO dto, DhDataInputStream inputStream, IDhLevel level) throws IOException, InterruptedException
+	public void populateFromStream(FullDataSourceV1DTO dto, DhDataInputStream inputStream, IDhLevel level) throws IOException, InterruptedException
 	{
 		FullDataSourceSummaryData summaryData = this.readSourceSummaryInfo(dto, inputStream, level);
 		this.setSourceSummaryData(summaryData);
@@ -193,13 +193,6 @@ public class FullDataSourceV1 implements IDataSource<IDhLevel>
 	
 	// low level stream methods //
 	
-	@Deprecated
-	@Override
-	public void writeToStream(DhDataOutputStream outputStream, IDhLevel level) throws IOException
-	{
-		throw new UnsupportedOperationException("Deprecated");
-	}
-	
 	/** unused, just here for reference as to how the data was written */
 	@Deprecated
 	public void writeSourceSummaryInfo(IDhLevel level, DhDataOutputStream outputStream) throws IOException
@@ -210,7 +203,7 @@ public class FullDataSourceV1 implements IDataSource<IDhLevel>
 		outputStream.writeByte(this.worldGenStep.value);
 		
 	}
-	public FullDataSourceSummaryData readSourceSummaryInfo(LegacyDataSourceDTO dto, DhDataInputStream inputStream, IDhLevel level) throws IOException
+	public FullDataSourceSummaryData readSourceSummaryInfo(FullDataSourceV1DTO dto, DhDataInputStream inputStream, IDhLevel level) throws IOException
 	{
 		int dataDetail = inputStream.readInt();
 		if (dataDetail != dto.dataDetailLevel)

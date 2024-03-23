@@ -1,33 +1,13 @@
-/*
- *    This file is part of the Distant Horizons mod
- *    licensed under the GNU LGPL v3 License.
- *
- *    Copyright (C) 2020-2023 James Seibel
- *
- *    This program is free software: you can redistribute it and/or modify
- *    it under the terms of the GNU Lesser General Public License as published by
- *    the Free Software Foundation, version 3.
- *
- *    This program is distributed in the hope that it will be useful,
- *    but WITHOUT ANY WARRANTY; without even the implied warranty of
- *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *    GNU Lesser General Public License for more details.
- *
- *    You should have received a copy of the GNU Lesser General Public License
- *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
- */
-
 package com.seibel.distanthorizons.core.file.fullDatafile;
 
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV1;
-import com.seibel.distanthorizons.core.file.AbstractLegacyDataSourceHandler;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
-import com.seibel.distanthorizons.core.sql.repo.AbstractLegacyDataSourceRepo;
-import com.seibel.distanthorizons.core.sql.repo.LegacyFullDataRepo;
-import com.seibel.distanthorizons.core.sql.dto.LegacyDataSourceDTO;
+import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV1DTO;
+import com.seibel.distanthorizons.core.sql.repo.FullDataSourceV1Repo;
+import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
@@ -35,10 +15,22 @@ import java.io.File;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.locks.ReentrantLock;
 
-public class FullDataSourceProviderV1 extends AbstractLegacyDataSourceHandler<FullDataSourceV1, IDhLevel> 
+public class FullDataSourceProviderV1<TDhLevel extends IDhLevel>
+		implements AutoCloseable
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	
+	protected final ReentrantLock closeLock = new ReentrantLock();
+	protected volatile boolean isShutdown = false;
+	
+	protected final TDhLevel level;
+	protected final File saveDir;
+	
+	public final FullDataSourceV1Repo repo;
 	
 	
 	
@@ -46,23 +38,30 @@ public class FullDataSourceProviderV1 extends AbstractLegacyDataSourceHandler<Fu
 	// constructor //
 	//=============//
 	
-	public FullDataSourceProviderV1(IDhLevel level, AbstractSaveStructure saveStructure, @Nullable File saveDirOverride) 
+	public FullDataSourceProviderV1(TDhLevel level, AbstractSaveStructure saveStructure, @Nullable File saveDirOverride)
 	{
-		super(level, saveStructure, saveDirOverride);
+		this.level = level;
+		this.saveDir = (saveDirOverride == null) ? saveStructure.getFullDataFolder(level.getLevelWrapper()) : saveDirOverride;
+		if (!this.saveDir.exists() && !this.saveDir.mkdirs())
+		{
+			LOGGER.warn("Unable to create full data folder, file saving may fail.");
+		}
+		
+		this.repo = this.createRepo();
 	}
 	
 	
 	
-	//====================//
-	// Abstract overrides //
-	//====================//
+	//==================//
+	// abstract methods //
+	//==================//
 	
-	@Override
-	protected AbstractLegacyDataSourceRepo createRepo()
+	/** When this is called the parent folders should be created */
+	protected FullDataSourceV1Repo createRepo()
 	{
 		try
 		{
-			return new LegacyFullDataRepo("jdbc:sqlite", this.saveDir.getPath() + "/" + AbstractSaveStructure.DATABASE_NAME);
+			return new FullDataSourceV1Repo("jdbc:sqlite", this.saveDir.getPath() + "/" + AbstractSaveStructure.DATABASE_NAME);
 		}
 		catch (SQLException e)
 		{
@@ -72,32 +71,61 @@ public class FullDataSourceProviderV1 extends AbstractLegacyDataSourceHandler<Fu
 		}
 	}
 	
-	@Override
-	protected FullDataSourceV1 createDataSourceFromDto(LegacyDataSourceDTO dto) throws InterruptedException, IOException
+	protected FullDataSourceV1 createDataSourceFromDto(FullDataSourceV1DTO dto) throws InterruptedException, IOException
 	{
 		FullDataSourceV1 dataSource = FullDataSourceV1.createEmpty(dto.pos);
 		dataSource.populateFromStream(dto, dto.getInputStream(), this.level);
 		return dataSource;
 	}
-	/** Creates a new data source using any DTOs already present in the database. */
-	@Deprecated
-	@Override
-	protected FullDataSourceV1 createNewDataSourceFromExistingDtos(DhSectionPos pos) { return null; }
-	
-	@Deprecated
-	@Override
-	protected FullDataSourceV1 makeEmptyDataSource(DhSectionPos pos) { return null; }
 	
 	
 	
-	//===================//
-	// extension methods //
-	//===================//
+	//==============//
+	// data reading //
+	//==============//
 	
-	@Deprecated
-	@Override
-	public void writeDataSourceToFile(FullDataSourceV1 fullDataSource) throws IOException
-	{ throw new UnsupportedOperationException("Deprecated"); }
+	/**
+	 * Returns the {@link FullDataSourceV1} for the given section position. <Br>
+	 * The returned data source may be null if there was a problem. <Br> <Br>
+	 *
+	 * This call is concurrent. I.e. it supports being called by multiple threads at the same time.
+	 */
+	public CompletableFuture<FullDataSourceV1> getAsync(DhSectionPos pos)
+	{
+		ThreadPoolExecutor executor = ThreadPoolUtil.getFileHandlerExecutor();
+		if (executor == null || executor.isTerminated())
+		{
+			return CompletableFuture.completedFuture(null);
+		}
+		
+		return CompletableFuture.supplyAsync(() -> this.get(pos), executor);
+	}
+	/**
+	 * Should only be used in internal file handler methods where we are already running on a file handler thread.
+	 * Can return null.
+	 * @see FullDataSourceProviderV1#getAsync(DhSectionPos)
+	 */
+	@Nullable
+	public FullDataSourceV1 get(DhSectionPos pos)
+	{
+		FullDataSourceV1 dataSource = null;
+		try
+		{
+			FullDataSourceV1DTO dto = this.repo.getByKey(pos);
+			if (dto != null)
+			{
+				// load from file
+				dataSource = this.createDataSourceFromDto(dto);
+			}
+		}
+		catch (InterruptedException ignore) { }
+		catch (IOException e)
+		{
+			LOGGER.warn("File read Error for pos ["+pos+"], error: "+e.getMessage(), e);
+		}
+		
+		return dataSource;
+	}
 	
 	
 	
@@ -105,13 +133,13 @@ public class FullDataSourceProviderV1 extends AbstractLegacyDataSourceHandler<Fu
 	// migration //
 	//===========//
 	
-	public int getDataSourceMigrationCount() { return ((LegacyFullDataRepo) this.repo).getMigrationCount(); }
+	public int getDataSourceMigrationCount() { return this.repo.getMigrationCount(); }
 	
 	public ArrayList<FullDataSourceV1> getDataSourcesToMigrate(int limit)
 	{
 		ArrayList<FullDataSourceV1> dataSourceList = new ArrayList<>();
 		
-		ArrayList<DhSectionPos> migrationPosList = ((LegacyFullDataRepo) this.repo).getPositionsToMigrate(limit);
+		ArrayList<DhSectionPos> migrationPosList = ((FullDataSourceV1Repo) this.repo).getPositionsToMigrate(limit);
 		for (int i = 0; i < migrationPosList.size(); i++)
 		{
 			DhSectionPos pos = migrationPosList.get(i);
@@ -125,7 +153,29 @@ public class FullDataSourceProviderV1 extends AbstractLegacyDataSourceHandler<Fu
 		return dataSourceList;
 	}
 	
-	public void markMigrationFailed(DhSectionPos pos) { ((LegacyFullDataRepo) this.repo).markMigrationFailed(pos); }
+	public void markMigrationFailed(DhSectionPos pos) { ((FullDataSourceV1Repo) this.repo).markMigrationFailed(pos); }
 	
+	
+	
+	//=========//
+	// cleanup //
+	//=========//
+	
+	@Override
+	public void close()
+	{
+		try
+		{
+			this.closeLock.lock();
+			this.isShutdown = true;
+			
+			LOGGER.info("Closing [" + this.getClass().getSimpleName() + "] for level: [" + this.level + "].");
+			this.repo.close();
+		}
+		finally
+		{
+			this.closeLock.unlock();
+		}
+	}
 	
 }

@@ -20,11 +20,12 @@
 package com.seibel.distanthorizons.core.render;
 
 import com.seibel.distanthorizons.core.config.Config;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSource;
 import com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.ColumnRenderBufferBuilder;
+import com.seibel.distanthorizons.core.dataObjects.transformers.FullDataToRenderDataTransformer;
 import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.file.fullDatafile.FullDataSourceProviderV2;
-import com.seibel.distanthorizons.core.file.renderfile.IRenderSourceProvider;
 import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
@@ -57,13 +58,13 @@ public class LodRenderSection implements IDebugRenderable
 	
 	private boolean isRenderingEnabled = false;
 	/**
-	 * If this is true, then {@link LodRenderSection#reload(IRenderSourceProvider)} was called while
-	 * a {@link IRenderSourceProvider} was already being loaded.
+	 * If this is true, then {@ link LodRenderSection#reload(IRenderSourceProvider)} was called while
+	 * a {@ link IRenderSourceProvider} was already being loaded.
 	 */
 	private boolean reloadRenderSourceOnceLoaded = false;
 	
-	private IRenderSourceProvider renderSourceProvider = null;
-	private CompletableFuture<ColumnRenderSource> renderSourceLoadFuture;
+	private FullDataSourceProviderV2 fullDataSourceProvider = null;
+	private CompletableFuture<FullDataSourceV2> fullDataSourceLoadFuture;
 	private ColumnRenderSource renderSource;
 	
 	private IDhClientLevel level = null;
@@ -120,17 +121,17 @@ public class LodRenderSection implements IDebugRenderable
 	//=============//
 	
 	/** does nothing if a render source is already loaded or in the process of loading */
-	public void loadRenderSource(IRenderSourceProvider renderDataProvider, IDhClientLevel level)
+	public void loadRenderSource(FullDataSourceProviderV2 fullDataSourceProvider, IDhClientLevel level)
 	{
-		this.renderSourceProvider = renderDataProvider;
+		this.fullDataSourceProvider = fullDataSourceProvider;
 		this.level = level;
-		if (this.renderSourceProvider == null)
+		if (this.fullDataSourceProvider == null)
 		{
 			LOGGER.warn("LodRenderSection [" + this.pos + "] called loadRenderSource with a empty source provider");
 			return;
 		}
 		// don't re-load or double load the render source
-		if (this.renderSource != null || this.renderSourceLoadFuture != null)
+		if (this.renderSource != null || this.fullDataSourceLoadFuture != null)
 		{
 			// since the render source has been loaded, make sure the render buffers are populated
 			// FIXME this is a duck tape solution, since the renderBufferRef should be populated elsewhere, but this does fix empty LODs when moving around the world
@@ -145,7 +146,7 @@ public class LodRenderSection implements IDebugRenderable
 		this.startLoadRenderSourceAsync();
 	}
 	
-	public void reload(IRenderSourceProvider renderDataProvider)
+	public void reload(FullDataSourceProviderV2 fullDataSourceProvider)
 	{
 		// debug rendering
 		boolean showRenderSectionStatus = Config.Client.Advanced.Debugging.DebugWireframe.showRenderSectionStatus.get();
@@ -160,8 +161,8 @@ public class LodRenderSection implements IDebugRenderable
 		}
 		
 		
-		this.renderSourceProvider = renderDataProvider;
-		if (this.renderSourceProvider == null)
+		this.fullDataSourceProvider = fullDataSourceProvider;
+		if (this.fullDataSourceProvider == null)
 		{
 			LOGGER.warn("LodRenderSection [" + this.pos + "] called reload with a empty source provider");
 			return;
@@ -173,7 +174,7 @@ public class LodRenderSection implements IDebugRenderable
 			return;
 		}
 		// wait for the current load future to finish before re-loading
-		if (this.renderSourceLoadFuture != null)
+		if (this.fullDataSourceLoadFuture != null)
 		{
 			this.reloadRenderSourceOnceLoaded = true;
 			return;
@@ -184,19 +185,22 @@ public class LodRenderSection implements IDebugRenderable
 	
 	private void startLoadRenderSourceAsync()
 	{
-		this.renderSourceLoadFuture = this.renderSourceProvider.getAsync(this.pos);
-		this.renderSourceLoadFuture.whenComplete((renderSource, ex) ->
+		this.fullDataSourceLoadFuture = this.fullDataSourceProvider.getAsync(this.pos);
+		this.fullDataSourceLoadFuture.whenComplete((fullDataSource, ex) ->
 		{
-			this.renderSource = renderSource;
+			// this runs on the a file handler thread, so transforming the data
+			// here shouldn't cause any stutters
+			// (Although it might be good to have it on a separate thread anyway)
+			this.renderSource = FullDataToRenderDataTransformer.transformFullDataToRenderSource(fullDataSource, this.level);
 			this.lastNs = -1;
 			this.markBufferDirty();
 			if (this.reloadRenderSourceOnceLoaded)
 			{
 				this.reloadRenderSourceOnceLoaded = false;
-				this.reload(this.renderSourceProvider);
+				this.reload(this.fullDataSourceProvider);
 			}
 			
-			this.renderSourceLoadFuture = null;
+			this.fullDataSourceLoadFuture = null;
 		});
 	}
 	
@@ -213,7 +217,7 @@ public class LodRenderSection implements IDebugRenderable
 	
 	public boolean canRenderNow()
 	{
-		if (this.renderSourceLoadFuture != null || this.buildRenderBufferFuture != null)
+		if (this.fullDataSourceLoadFuture != null || this.buildRenderBufferFuture != null)
 		{
 			// wait for loading to finish
 			return false;
@@ -278,7 +282,7 @@ public class LodRenderSection implements IDebugRenderable
 	}
 	
 	/** @return true if this section is loaded and set to render */
-	public boolean canBuildBuffer() { return this.renderSourceLoadFuture == null && this.renderSource != null && this.buildRenderBufferFuture == null && !this.renderSource.isEmpty() && this.isBufferOutdated(); }
+	public boolean canBuildBuffer() { return this.fullDataSourceLoadFuture == null && this.renderSource != null && this.buildRenderBufferFuture == null && !this.renderSource.isEmpty() && this.isBufferOutdated(); }
 	private boolean isBufferOutdated() { return this.neighborUpdated || this.renderSource.localVersion.get() != this.lastSwapLocalVersion; }
 	
 	/** @return true if this section is loaded and set to render */
@@ -296,10 +300,10 @@ public class LodRenderSection implements IDebugRenderable
 		this.disposeActiveBuffer = true;
 		
 		this.renderSource = null;
-		if (this.renderSourceLoadFuture != null)
+		if (this.fullDataSourceLoadFuture != null)
 		{
-			this.renderSourceLoadFuture.cancel(true);
-			this.renderSourceLoadFuture = null;
+			this.fullDataSourceLoadFuture.cancel(true);
+			this.fullDataSourceLoadFuture = null;
 		}
 	}
 	
@@ -473,7 +477,7 @@ public class LodRenderSection implements IDebugRenderable
 		return "LodRenderSection{" +
 				"pos=" + this.pos +
 				", lodRenderSource=" + this.renderSource +
-				", loadFuture=" + this.renderSourceLoadFuture +
+				", loadFuture=" + this.fullDataSourceLoadFuture +
 				", isRenderEnabled=" + this.isRenderingEnabled +
 				'}';
 	}
@@ -496,11 +500,11 @@ public class LodRenderSection implements IDebugRenderable
 	public void debugRender(DebugRenderer debugRenderer)
 	{
 		Color color = Color.red;
-		if (this.renderSourceProvider == null)
+		if (this.fullDataSourceProvider == null)
 		{
 			color = Color.black;
 		}
-		else if (this.renderSourceLoadFuture != null)
+		else if (this.fullDataSourceLoadFuture != null)
 		{
 			color = Color.yellow;
 		}
