@@ -22,7 +22,6 @@ package com.seibel.distanthorizons.core.sql;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Assert;
 
 import java.sql.*;
 import java.util.*;
