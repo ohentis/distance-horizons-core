@@ -28,7 +28,7 @@ import org.junit.Test;
  * @author James Seibel
  * @version 2022-9-5
  */
-public class ExampleTest
+public class ExampleCoreTest
 {
 	
 	@Test
