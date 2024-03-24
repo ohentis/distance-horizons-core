@@ -22,7 +22,9 @@ package com.seibel.distanthorizons.core.util.objects.dataStreams;
 import com.github.luben.zstd.RecyclingBufferPool;
 import com.github.luben.zstd.ZstdOutputStream;
 import com.seibel.distanthorizons.api.enums.config.EDhApiDataCompressionMode;
+import net.jpountz.lz4.LZ4Factory;
 import net.jpountz.lz4.LZ4FrameOutputStream;
+import net.jpountz.xxhash.XXHashFactory;
 import org.tukaani.xz.LZMA2Options;
 import org.tukaani.xz.XZOutputStream;
 
@@ -46,7 +48,12 @@ public class DhDataOutputStream extends DataOutputStream
 			case UNCOMPRESSED:
 				return stream;
 			case LZ4:
-				return new LZ4FrameOutputStream(stream);
+				return new LZ4FrameOutputStream(stream, 
+						LZ4FrameOutputStream.BLOCKSIZE.SIZE_64KB, -1L, 
+						// using native instances reduces GC pressures
+						LZ4Factory.nativeInstance().fastCompressor(),
+						XXHashFactory.nativeInstance().hash32(), 
+						LZ4FrameOutputStream.FLG.Bits.BLOCK_INDEPENDENCE);
 			case Z_STD:
 				return new ZstdOutputStream(stream, RecyclingBufferPool.INSTANCE);
 			case LZMA2:
