@@ -37,7 +37,9 @@ import com.seibel.distanthorizons.coreapi.util.StringUtil;
 import org.apache.logging.log4j.Logger;
 
 import javax.swing.*;
+import java.awt.*;
 import java.util.*;
+import java.util.List;
 
 
 /**
@@ -1423,10 +1425,20 @@ public class Config
 							.set(new HashMap<String, String>())
 							.build();
 					
-					public static ConfigUIButton uiButtonTest = new ConfigUIButton(() -> { new Thread(() -> {
-                        System.setProperty("java.awt.headless", "false"); // Required to make it work
-                        JOptionPane.showMessageDialog(null, "Button pressed!", "UITester dialog", JOptionPane.INFORMATION_MESSAGE);
-                    });});
+					public static ConfigUIButton uiButtonTest = new ConfigUIButton(() -> 
+					{
+						new Thread(() -> 
+						{
+							if (!GraphicsEnvironment.isHeadless())
+							{
+								JOptionPane.showMessageDialog(null, "Button pressed!", "UITester dialog", JOptionPane.INFORMATION_MESSAGE);
+							}
+							else
+							{
+								LOGGER.info("button pressed!");
+							}
+						});
+					});
 					
 					public static ConfigCategory categoryTest = new ConfigCategory.Builder().set(CategoryTest.class).build();
 					
