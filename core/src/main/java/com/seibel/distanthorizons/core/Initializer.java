@@ -33,6 +33,7 @@ import net.jpountz.lz4.LZ4Compressor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.awt.*;
 import java.io.InputStream;
 
 /** Handles first time Core setup. */
@@ -73,6 +74,16 @@ public class Initializer
 		}
 		
 		
+		// attempt to setup Swing so we can display dialogs (popup windows)
+		System.setProperty("java.awt.headless", "false");
+		if (GraphicsEnvironment.isHeadless())
+		{
+			LOGGER.warn("Java.awt.headless is false. This means Distant Horizons can't display error and info dialog windows.");
+		}
+		else
+		{
+			LOGGER.info("Java.awt.headless set to true. Distant Horizons can correctly display error and info dialog windows.");
+		}
 		
 		// link Core's config to the API
 		DhApi.Delayed.configs = DhApiConfig.INSTANCE;
