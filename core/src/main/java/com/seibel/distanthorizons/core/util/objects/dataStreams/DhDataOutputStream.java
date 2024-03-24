@@ -19,6 +19,7 @@
 
 package com.seibel.distanthorizons.core.util.objects.dataStreams;
 
+import com.github.luben.zstd.RecyclingBufferPool;
 import com.github.luben.zstd.ZstdOutputStream;
 import com.seibel.distanthorizons.api.enums.config.EDhApiDataCompressionMode;
 import net.jpountz.lz4.LZ4FrameOutputStream;
@@ -47,7 +48,7 @@ public class DhDataOutputStream extends DataOutputStream
 			case LZ4:
 				return new LZ4FrameOutputStream(stream);
 			case Z_STD:
-				return new ZstdOutputStream(stream);
+				return new ZstdOutputStream(stream, RecyclingBufferPool.INSTANCE);
 			case LZMA2:
 				// in James' testing preset 4 has the best balance between compression ratio and speed
 				// 5 is slightly more compressed 0.128 vs 0.139, but is roughly 60% slower
