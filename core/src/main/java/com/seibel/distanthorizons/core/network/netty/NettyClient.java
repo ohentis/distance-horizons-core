@@ -64,7 +64,7 @@ public class NettyClient extends NettyEventSource implements INettyConnection, A
 	private static final int RECONNECTION_DELAY_SEC = 5;
 	public static final int RECONNECTION_ATTEMPTS = 3;
 	
-	private final InetSocketAddress address;
+	private InetSocketAddress address;
 	
 	@Nullable
 	private Throwable closeReason;
@@ -93,13 +93,7 @@ public class NettyClient extends NettyEventSource implements INettyConnection, A
 	public int getReconnectionAttemptsLeft() { return this.reconnectionAttemptsLeft; }
 	
 	
-	public NettyClient(String host, int port)
-	{
-        this.address = new InetSocketAddress(host, port);
-		this.registerHandlers();
-    }
-	
-	private void registerHandlers()
+	public NettyClient()
 	{
 		this.registerHandler(CloseReasonMessage.class, closeReasonMessage ->
 		{
@@ -118,6 +112,20 @@ public class NettyClient extends NettyEventSource implements INettyConnection, A
 			}
         });
     }
+	
+	public void resetAndConnectTo(String host, int port)
+	{
+		this.connectionState.set(EConnectionState.INITIAL);
+		this.address = new InetSocketAddress(host, port);
+		
+		if (this.channel != null)
+		{
+			this.channel.close().syncUninterruptibly();
+		}
+		
+		this.reconnectionAttemptsLeft = RECONNECTION_ATTEMPTS;
+		this.connect();
+	}
 	
 	public void connect()
 	{

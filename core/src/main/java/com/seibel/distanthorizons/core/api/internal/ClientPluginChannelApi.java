@@ -5,6 +5,7 @@ import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.level.IKeyedClientLevelManager;
 import com.seibel.distanthorizons.core.level.IServerKeyedClientLevel;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
+import com.seibel.distanthorizons.core.multiplayer.client.ClientNetworkState;
 import com.seibel.distanthorizons.core.network.messages.plugin.PluginCloseEvent;
 import com.seibel.distanthorizons.core.network.messages.plugin.CurrentLevelKeyMessage;
 import com.seibel.distanthorizons.core.network.messages.plugin.PluginHelloMessage;
@@ -31,6 +32,9 @@ public class ClientPluginChannelApi implements AutoCloseable
 	private final Consumer<IClientLevelWrapper> levelUnloadHandler;
 	private final Consumer<IServerKeyedClientLevel> multiverseLevelLoadHandler;
 	
+	@Nullable
+	private ClientNetworkState networkState;
+	
 	
 	public boolean allowLoadingLevel()
 	{
@@ -49,9 +53,10 @@ public class ClientPluginChannelApi implements AutoCloseable
 		this.channelHandler.registerHandler(PluginCloseEvent.class, this::onClose);
 	}
 	
-	public void onJoin()
+	public void onJoin(@Nullable ClientNetworkState networkState)
 	{
-		this.channelHandler.sendMessage(new PluginHelloMessage());
+		this.networkState = networkState;
+		this.channelHandler.sendMessageClient(new PluginHelloMessage());
 	}
 	
 	private void onCurrentLevelKeyMessage(CurrentLevelKeyMessage msg)
@@ -78,7 +83,14 @@ public class ClientPluginChannelApi implements AutoCloseable
 	
 	private void onServerConnectInfoMessage(ServerConnectInfoMessage msg)
 	{
-		// TODO
+		if (this.networkState != null)
+		{
+			this.networkState.getClient().resetAndConnectTo(
+					msg.ipOverride != null
+							? msg.ipOverride
+							: MC.getCurrentServerIp().split(":")[0],
+					msg.port);
+		}
 	}
 	
 	public void onClientLevelUnload()

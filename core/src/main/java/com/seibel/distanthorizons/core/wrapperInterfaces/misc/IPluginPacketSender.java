@@ -8,6 +8,7 @@ import java.util.function.Consumer;
 
 public interface IPluginPacketSender extends IBindable
 {
-	void sendPluginPacket(@Nullable IServerPlayerWrapper serverPlayer, Consumer<ByteBuf> encoder);
+	void sendPluginPacketClient(Consumer<ByteBuf> encoder);
+	void sendPluginPacketServer(IServerPlayerWrapper serverPlayer, Consumer<ByteBuf> encoder);
 	
 }

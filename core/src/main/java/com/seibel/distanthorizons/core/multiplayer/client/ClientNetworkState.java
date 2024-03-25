@@ -1,6 +1,7 @@
 package com.seibel.distanthorizons.core.multiplayer.client;
 
 import com.seibel.distanthorizons.core.config.Config;
+import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
 import com.seibel.distanthorizons.core.multiplayer.config.MultiplayerConfig;
@@ -12,6 +13,7 @@ import com.seibel.distanthorizons.core.network.messages.netty.base.NettyCloseEve
 import com.seibel.distanthorizons.core.network.messages.netty.base.HelloMessage;
 import com.seibel.distanthorizons.core.network.messages.netty.session.PlayerUUIDMessage;
 import com.seibel.distanthorizons.core.network.messages.netty.session.RemotePlayerConfigMessage;
+import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import org.apache.logging.log4j.LogManager;
 
 import java.io.Closeable;
@@ -22,9 +24,11 @@ public class ClientNetworkState implements Closeable
 {
 	protected static final ConfigBasedLogger LOGGER = new ConfigBasedLogger(LogManager.getLogger(),
 			() -> Config.Client.Advanced.Logging.logNetworkEvent.get());
+	private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	
-	private final NettyClient client;
-	private final UUID playerUUID;
+	private final NettyClient client = new NettyClient();
+	private final UUID playerUUID = MC_CLIENT.getPlayerUUID();
+	
 	
 	public MultiplayerConfig config = new MultiplayerConfig();
 	private volatile boolean configReceived = false;
@@ -41,20 +45,8 @@ public class ClientNetworkState implements Closeable
 	
 	/**
 	 * Constructs a new instance.
-	 *
-	 * @param nettyClient Client to use. It is assumed that this client will be at full control by this instance.
-	 * @param playerUUID UUID of a player connected.
 	 */
-	public ClientNetworkState(NettyClient nettyClient, UUID playerUUID)
-	{
-		this.client = nettyClient;
-		this.playerUUID = playerUUID;
-		
-		this.registerNetworkHandlers();
-		this.client.connect();
-	}
-	
-	private void registerNetworkHandlers()
+	public ClientNetworkState()
 	{
 		this.client.registerHandler(HelloMessage.class, helloMessage ->
 		{

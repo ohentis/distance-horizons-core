@@ -32,6 +32,7 @@ import com.seibel.distanthorizons.core.level.IServerKeyedClientLevel;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
 import com.seibel.distanthorizons.core.logging.ConfigBasedSpamLogger;
 import com.seibel.distanthorizons.core.logging.SpamReducedLogger;
+import com.seibel.distanthorizons.core.multiplayer.client.ClientNetworkState;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.render.DhApiRenderProxy;
 import com.seibel.distanthorizons.core.render.glObject.GLProxy;
@@ -122,7 +123,8 @@ public class ClientApi
 			
 			// firing after clientLevelLoadEvent
 			// TODO if level has prepped to load it should fire level load event
-			SharedApi.setDhWorld(new DhClientWorld());
+			DhClientWorld world = new DhClientWorld();
+			SharedApi.setDhWorld(world);
 			
 			
 			LOGGER.info("Loading [" + this.waitingClientLevels.size() + "] waiting client level wrappers.");
@@ -133,7 +135,7 @@ public class ClientApi
 			
 			this.waitingClientLevels.clear();
 			
-			this.pluginChannelApi.onJoin();
+			this.pluginChannelApi.onJoin(world.networkState);
 		}
 	}
 	

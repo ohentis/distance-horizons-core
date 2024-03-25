@@ -15,8 +15,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import static com.seibel.distanthorizons.core.config.Config.Client.Advanced.Multiplayer.ServerNetworking;
 
 public class ServerPlayerState
-{	
-    public IServerPlayerWrapper serverPlayer;
+{
+	public final IServerPlayerWrapper serverPlayer;
 	public INettyConnection connection;
 	
 	@NotNull

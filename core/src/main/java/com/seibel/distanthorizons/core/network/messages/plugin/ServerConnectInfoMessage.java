@@ -3,29 +3,35 @@ package com.seibel.distanthorizons.core.network.messages.plugin;
 import com.seibel.distanthorizons.core.network.plugin.PluginChannelMessage;
 import io.netty.buffer.ByteBuf;
 
+import javax.annotation.Nullable;
+
 public class ServerConnectInfoMessage extends PluginChannelMessage
 {
-	public String ipAddress;
-	public short port;
+	@Nullable
+	public String ipOverride;
+	public int port;
 	
 	public ServerConnectInfoMessage() { }
-	public ServerConnectInfoMessage(String ipAddress, short port)
+	public ServerConnectInfoMessage(@Nullable String ipOverride, int port)
 	{
-		this.ipAddress = ipAddress;
+		this.ipOverride = ipOverride;
 		this.port = port;
 	}
 	
 	@Override
 	public void encode(ByteBuf out)
 	{
-		this.writeString(this.ipAddress, out);
+		if (this.writeOptional(out, this.ipOverride))
+		{
+			this.writeString(this.ipOverride, out);
+		}
 		out.writeShort(this.port);
 	}
 	
 	@Override
 	public void decode(ByteBuf in)
 	{
-		this.ipAddress = this.readString(in);
+		this.ipOverride = this.readOptional(in, () -> this.readString(in));
 		this.port = in.readShort();
 	}
 	

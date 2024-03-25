@@ -56,6 +56,7 @@ public class PluginChannelHandler extends NetworkEventSource<PluginChannelMessag
 			{
 				PluginChannelMessage msg = (PluginChannelMessage) msgObj;
 				msg.serverPlayer = serverPlayer;
+				
 				this.handleMessage(msg);
 			}
 		}
@@ -66,13 +67,13 @@ public class PluginChannelHandler extends NetworkEventSource<PluginChannelMessag
 		}
 	}
 	
-	public void sendMessage(PluginChannelMessage message)
+	public void sendMessageClient(PluginChannelMessage message)
 	{
-		this.sendMessage(null, message);
+		this.packetSender.sendPluginPacketClient(buffer -> this.messageEncoder.encode(message, buffer));
 	}
-	public void sendMessage(@Nullable IServerPlayerWrapper serverPlayer, PluginChannelMessage message)
+	public void sendMessageServer(@Nullable IServerPlayerWrapper serverPlayer, PluginChannelMessage message)
 	{
-		this.packetSender.sendPluginPacket(serverPlayer, buffer -> this.messageEncoder.encode(message, buffer));
+		this.packetSender.sendPluginPacketServer(serverPlayer, buffer -> this.messageEncoder.encode(message, buffer));
 	}
 	
 	@Override

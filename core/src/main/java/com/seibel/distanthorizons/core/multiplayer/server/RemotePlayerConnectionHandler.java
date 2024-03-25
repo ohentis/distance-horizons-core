@@ -4,21 +4,23 @@ import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.Maps;
 import com.seibel.distanthorizons.core.config.Config;
+import com.seibel.distanthorizons.core.config.listeners.ConfigChangeListener;
 import com.seibel.distanthorizons.core.config.types.ConfigEntry;
 import com.seibel.distanthorizons.core.level.DhServerLevel;
 import com.seibel.distanthorizons.core.multiplayer.config.MultiplayerConfig;
 import com.seibel.distanthorizons.core.multiplayer.config.MultiplayerConfigChangeListener;
-import com.seibel.distanthorizons.core.network.messages.plugin.PluginHelloMessage;
-import com.seibel.distanthorizons.core.network.netty.INettyConnection;
-import com.seibel.distanthorizons.core.network.netty.NettyServer;
 import com.seibel.distanthorizons.core.network.exceptions.InvalidLevelException;
+import com.seibel.distanthorizons.core.network.messages.netty.ILevelRelatedMessage;
 import com.seibel.distanthorizons.core.network.messages.netty.base.AckMessage;
 import com.seibel.distanthorizons.core.network.messages.netty.base.NettyCloseEvent;
-import com.seibel.distanthorizons.core.network.messages.netty.ILevelRelatedMessage;
 import com.seibel.distanthorizons.core.network.messages.netty.session.PlayerUUIDMessage;
 import com.seibel.distanthorizons.core.network.messages.netty.session.RemotePlayerConfigMessage;
-import com.seibel.distanthorizons.core.network.netty.TrackableNettyMessage;
+import com.seibel.distanthorizons.core.network.messages.plugin.PluginHelloMessage;
+import com.seibel.distanthorizons.core.network.messages.plugin.ServerConnectInfoMessage;
+import com.seibel.distanthorizons.core.network.netty.INettyConnection;
 import com.seibel.distanthorizons.core.network.netty.NettyMessage;
+import com.seibel.distanthorizons.core.network.netty.NettyServer;
+import com.seibel.distanthorizons.core.network.netty.TrackableNettyMessage;
 import com.seibel.distanthorizons.core.network.plugin.PluginChannelHandler;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
@@ -26,23 +28,31 @@ import io.netty.buffer.ByteBuf;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.Closeable;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
+import static com.seibel.distanthorizons.core.config.Config.Client.Advanced.Multiplayer.ServerNetworking;
+
 public class RemotePlayerConnectionHandler implements Closeable
 {
+	private static final boolean DEBUG_ALWAYS_USE_OVERRIDES = true;
+	
 	private static final ConfigEntry<Boolean> GENERATE_MULTIPLE_DIMENSIONS_CONFIG = Config.Client.Advanced.Multiplayer.ServerNetworking.generateMultipleDimensions;
 	
-	private final NettyServer server = new NettyServer(Config.Client.Advanced.Multiplayer.ServerNetworking.serverPort.get());
+	private final NettyServer server = new NettyServer(ServerNetworking.serverPort.get());
 	private final ConcurrentHashMap<UUID, ServerPlayerState> playersByUUID = new ConcurrentHashMap<>();
 	private final BiMap<INettyConnection, ServerPlayerState> playersByConnection = Maps.synchronizedBiMap(HashBiMap.create());
 	private final MultiplayerConfigChangeListener configChangeListener = new MultiplayerConfigChangeListener(this::onConfigChanged);
 	
 	private final PluginChannelHandler pluginChannelHandler = new PluginChannelHandler();
-	// TODO port change listener
+	private final ConfigChangeListener<Integer> portChangeListener = new ConfigChangeListener<>(ServerNetworking.serverPort, this::onServerPortChanged);
+	private final ConfigChangeListener<String> connectIpOverrideChangeListener = new ConfigChangeListener<>(ServerNetworking.connectIpOverride, this::broadcastConnectInfo);
+	private final ConfigChangeListener<Integer> connectPortOverrideChangeListener = new ConfigChangeListener<>(ServerNetworking.serverPort, this::broadcastConnectInfo);
 	
 	public NettyServer server() { return this.server; }
 	
@@ -90,8 +100,7 @@ public class RemotePlayerConnectionHandler implements Closeable
 		
 		//region Plugin channel
 		this.pluginChannelHandler.registerHandler(PluginHelloMessage.class, msg -> {
-			// TODO tell to connect somewhere
-			int i = 0;
+			this.sendConnectInfo(msg.serverPlayer);
 		});
 		//endregion
 	}
@@ -107,6 +116,39 @@ public class RemotePlayerConnectionHandler implements Closeable
 		{
 			serverPlayerState.connection.sendMessage(new RemotePlayerConfigMessage(serverPlayerState.config));
 		}
+	}
+	
+	private void onServerPortChanged(int ignored)
+	{
+		// stop server
+		// restart server on new port
+		this.broadcastConnectInfo(null);
+	}
+	private void broadcastConnectInfo(@Nullable Object ignored)
+	{
+		for (ServerPlayerState serverPlayerState : this.getConnectedPlayers())
+		{
+			this.sendConnectInfo(serverPlayerState.serverPlayer);
+		}
+	}
+	private void sendConnectInfo(IServerPlayerWrapper serverPlayer)
+	{
+		String ipOverride = ServerNetworking.connectIpOverride.get();
+		int listenPort = ServerNetworking.serverPort.get();
+		int portOverride = ServerNetworking.connectPortOverride.get();
+		
+		// IP/port overrides are intended for using with port forwarding services,
+		// and LAN clients are unlikely to need to hop through internet
+		InetAddress ip = ((InetSocketAddress) serverPlayer.getRemoteAddress()).getAddress();
+		boolean isLanPlayer = !DEBUG_ALWAYS_USE_OVERRIDES &&
+				(ip.isLoopbackAddress() ||
+						ip.isLinkLocalAddress() ||
+						ip.isSiteLocalAddress());
+		
+		this.pluginChannelHandler.sendMessageServer(serverPlayer, new ServerConnectInfoMessage(
+				!isLanPlayer && !ipOverride.isEmpty() ? ipOverride : null,
+				!isLanPlayer && portOverride != 0 ? portOverride : listenPort
+		));
 	}
 	
 	public <T extends NettyMessage> Consumer<T> connectedPlayersOnly(BiConsumer<T, ServerPlayerState> next)
@@ -182,8 +224,12 @@ public class RemotePlayerConnectionHandler implements Closeable
 	@Override
 	public void close()
 	{
-		this.configChangeListener.close();
+		this.portChangeListener.close();
+		this.connectIpOverrideChangeListener.close();
+		this.connectPortOverrideChangeListener.close();
 		this.pluginChannelHandler.close();
+		
+		this.configChangeListener.close();
 		this.server().close();
 	}
 	
