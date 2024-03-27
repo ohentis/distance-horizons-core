@@ -26,7 +26,9 @@ import com.seibel.distanthorizons.api.objects.data.DhApiChunk;
 import com.seibel.distanthorizons.api.objects.data.DhApiTerrainDataPoint;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
+import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.pos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.util.FullDataPointUtilV2;
@@ -127,13 +129,13 @@ public class LodDataBuilder
 		//==========================//
 		
 		int minBuildHeight = chunkWrapper.getMinNonEmptyHeight();
-		for (int chunkX = 0; chunkX < LodUtil.CHUNK_WIDTH; chunkX++)
+		for (int relBlockX = 0; relBlockX < LodUtil.CHUNK_WIDTH; relBlockX++)
 		{
-			for (int chunkZ = 0; chunkZ < LodUtil.CHUNK_WIDTH; chunkZ++)
+			for (int relBlockZ = 0; relBlockZ < LodUtil.CHUNK_WIDTH; relBlockZ++)
 			{
 				LongArrayList longs = new LongArrayList(chunkWrapper.getHeight() / 4);
 				int lastY = chunkWrapper.getMaxBuildHeight();
-				IBiomeWrapper biome = chunkWrapper.getBiome(chunkX, lastY, chunkZ);
+				IBiomeWrapper biome = chunkWrapper.getBiome(relBlockX, lastY, relBlockZ);
 				IBlockStateWrapper blockState = AIR;
 				int mappedId = dataSource.mapping.addIfNotPresentAndGetId(biome, blockState);
 
@@ -143,8 +145,8 @@ public class LodDataBuilder
 				if (lastY < chunkWrapper.getMaxBuildHeight())
 				{
 					// FIXME: The lastY +1 offset is to reproduce the old behavior. Remove this when we get per-face lighting
-					blockLight = (byte) chunkWrapper.getBlockLight(chunkX, lastY + 1, chunkZ);
-					skyLight = (byte) chunkWrapper.getSkyLight(chunkX, lastY + 1, chunkZ);
+					blockLight = (byte) chunkWrapper.getBlockLight(relBlockX, lastY + 1, relBlockZ);
+					skyLight = (byte) chunkWrapper.getSkyLight(relBlockX, lastY + 1, relBlockZ);
 				}
 				else
 				{
@@ -155,9 +157,9 @@ public class LodDataBuilder
 				
 				
 				// determine the starting Y Pos
-				int y = chunkWrapper.getLightBlockingHeightMapValue(chunkX,chunkZ);
+				int y = chunkWrapper.getLightBlockingHeightMapValue(relBlockX,relBlockZ);
 				// go up until we reach open air or the world limit
-				IBlockStateWrapper topBlockState = chunkWrapper.getBlockState(chunkX, y, chunkZ);
+				IBlockStateWrapper topBlockState = chunkWrapper.getBlockState(relBlockX, y, relBlockZ);
 				while (!topBlockState.isAir() && y < chunkWrapper.getMaxBuildHeight())
 				{
 					try
@@ -165,13 +167,13 @@ public class LodDataBuilder
 						// This is necessary in some edge cases with snow layers and some other blocks that may not appear in the height map but do block light.
 						// Interestingly this doesn't appear to be the case in the DhLightingEngine, if this same logic is added there the lighting breaks for the affected blocks.
 						y++;
-						topBlockState = chunkWrapper.getBlockState(chunkX, y, chunkZ);
+						topBlockState = chunkWrapper.getBlockState(relBlockX, y, relBlockZ);
 					}
 					catch (Exception e)
 					{
 						if (!getTopErrorLogged)
 						{
-							LOGGER.warn("Unexpected issue in LodDataBuilder, future errors won't be logged. Chunk [" + chunkWrapper.getChunkPos() + "] with max height: [" + chunkWrapper.getMaxBuildHeight() + "] had issue getting block at pos [" + chunkX + "," + y + "," + chunkZ + "] error: " + e.getMessage(), e);
+							LOGGER.warn("Unexpected issue in LodDataBuilder, future errors won't be logged. Chunk [" + chunkWrapper.getChunkPos() + "] with max height: [" + chunkWrapper.getMaxBuildHeight() + "] had issue getting block at pos [" + relBlockX + "," + y + "," + relBlockZ + "] error: " + e.getMessage(), e);
 							getTopErrorLogged = true;
 						}
 						
@@ -183,12 +185,15 @@ public class LodDataBuilder
 				
 				for (; y >= minBuildHeight; y--)
 				{
-					IBiomeWrapper newBiome = chunkWrapper.getBiome(chunkX, y, chunkZ);
-					IBlockStateWrapper newBlockState = chunkWrapper.getBlockState(chunkX, y, chunkZ);
-					byte newBlockLight = (byte) chunkWrapper.getBlockLight(chunkX, y + 1, chunkZ);
-					byte newSkyLight = (byte) chunkWrapper.getSkyLight(chunkX, y + 1, chunkZ);
+					IBiomeWrapper newBiome = chunkWrapper.getBiome(relBlockX, y, relBlockZ);
+					IBlockStateWrapper newBlockState = chunkWrapper.getBlockState(relBlockX, y, relBlockZ);
+					byte newBlockLight = (byte) chunkWrapper.getBlockLight(relBlockX, y + 1, relBlockZ);
+					byte newSkyLight = (byte) chunkWrapper.getSkyLight(relBlockX, y + 1, relBlockZ);
 					
-					if (!newBiome.equals(biome) || !newBlockState.equals(blockState))
+					if (
+							(!newBiome.equals(biome) || !newBlockState.equals(blockState))
+							&& !blockState.isAir() && !blockVisible(chunkWrapper, relBlockX, y, relBlockZ)
+						)
 					{
 						longs.add(FullDataPointUtilV2.encode(mappedId, lastY - y, y + 1 - chunkWrapper.getMinBuildHeight(), blockLight, skyLight));
 						biome = newBiome;
@@ -202,14 +207,58 @@ public class LodDataBuilder
 				longs.add(FullDataPointUtilV2.encode(mappedId, lastY - y, y + 1 - chunkWrapper.getMinBuildHeight(), blockLight, skyLight));
 				
 				dataSource.setSingleColumn(longs, 
-						chunkX + chunkOffsetX, 
-						chunkZ + chunkOffsetZ, 
+						relBlockX + chunkOffsetX, 
+						relBlockZ + chunkOffsetZ, 
 						EDhApiWorldGenerationStep.LIGHT);
 			}
 		}
 		
 		LodUtil.assertTrue(!dataSource.isEmpty);
 		return dataSource;
+	}
+	private static boolean blockVisible(IChunkWrapper chunkWrapper, int relBlockX, int blockY, int relBlockZ)
+	{
+		DhBlockPos originalBlockPos = new DhBlockPos(relBlockX,blockY,relBlockZ);
+		DhBlockPos testBlockPos = new DhBlockPos(relBlockX,blockY,relBlockZ);
+		
+		// up/down
+		if (blockInDirectionVisible(chunkWrapper, EDhDirection.UP, originalBlockPos, testBlockPos))
+		{
+			return true;
+		}
+		if (blockInDirectionVisible(chunkWrapper, EDhDirection.DOWN, originalBlockPos, testBlockPos))
+		{
+			return true;
+		}
+		
+		// north/south
+		if (blockInDirectionVisible(chunkWrapper, EDhDirection.NORTH, originalBlockPos, testBlockPos))
+		{
+			return true;
+		}
+		if (blockInDirectionVisible(chunkWrapper, EDhDirection.SOUTH, originalBlockPos, testBlockPos))
+		{
+			return true;
+		}
+		
+		// east/west
+		if (blockInDirectionVisible(chunkWrapper, EDhDirection.EAST, originalBlockPos, testBlockPos))
+		{
+			return true;
+		}
+		if (blockInDirectionVisible(chunkWrapper, EDhDirection.WEST, originalBlockPos, testBlockPos))
+		{
+			return true;
+		}
+		
+		
+		return false;
+	}
+	private static boolean blockInDirectionVisible(IChunkWrapper chunkWrapper, EDhDirection direction, DhBlockPos originalBlockPos, DhBlockPos testBlockPos)
+	{
+		originalBlockPos.mutateOffset(direction, testBlockPos);
+		IBlockStateWrapper blockState = chunkWrapper.getBlockState(testBlockPos);
+		return blockState.isAir() || blockState.getOpacity() != IBlockStateWrapper.FULLY_OPAQUE;
 	}
 	
 	

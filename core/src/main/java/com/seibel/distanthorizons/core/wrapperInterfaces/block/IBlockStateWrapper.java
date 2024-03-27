@@ -67,6 +67,9 @@ public interface IBlockStateWrapper extends IDhApiBlockStateWrapper
 	/**
 	 * Returning a value of 0 means the block is completely transparent. <br.
 	 * Returning a value of 15 means the block is completely opaque.
+	 * 
+	 * @see IBlockStateWrapper#FULLY_OPAQUE
+	 * @see IBlockStateWrapper#FULLY_TRANSPARENT
 	 */
 	int getOpacity();
 	
