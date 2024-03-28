@@ -30,6 +30,7 @@ import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.util.ColorUtil;
 import com.seibel.distanthorizons.core.util.FullDataPointUtilV2;
 import com.seibel.distanthorizons.core.util.RenderDataPointUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.IWrapperFactory;
@@ -169,6 +170,8 @@ public class FullDataToRenderDataTransformer
 		
 		boolean isVoid = true;
 		int colorToApplyToNextBlock = -1;
+		byte skylightToApplyToNextBlock = -1;
+		byte blocklightToApplyToNextBlock = -1;
 		int columnOffset = 0;
 		
 		// goes from the top down
@@ -234,7 +237,9 @@ public class FullDataToRenderDataTransformer
 			{
 				if (colorBelowWithAvoidedBlocks)
 				{
-					colorToApplyToNextBlock = level.computeBaseColor(new DhBlockPos(blockX, bottomY + level.getMinY(), blockZ), biome, block);
+					colorToApplyToNextBlock = ColorUtil.setAlpha(level.computeBaseColor(new DhBlockPos(blockX, bottomY + level.getMinY(), blockZ), biome, block),255);
+					skylightToApplyToNextBlock = skyLight;
+					blocklightToApplyToNextBlock = blockLight;
 				}
 				
 				// don't add this block
@@ -246,13 +251,15 @@ public class FullDataToRenderDataTransformer
 			if (colorToApplyToNextBlock == -1)
 			{
 				// use this block's color
-				color = level.computeBaseColor(new DhBlockPos(blockX, bottomY + level.getMinY(), blockZ), biome, block);
+				colorToApplyToNextBlock = level.computeBaseColor(new DhBlockPos(blockX, bottomY + level.getMinY(), blockZ), biome, block);
 			}
 			else
 			{
 				// use the previous block's color
 				color = colorToApplyToNextBlock;
 				colorToApplyToNextBlock = -1;
+				skyLight = skylightToApplyToNextBlock;
+				blockLight = blocklightToApplyToNextBlock;
 			}
 			
 			
