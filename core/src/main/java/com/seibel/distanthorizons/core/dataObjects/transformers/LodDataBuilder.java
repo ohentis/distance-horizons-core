@@ -21,9 +21,11 @@ package com.seibel.distanthorizons.core.dataObjects.transformers;
 
 import java.util.List;
 
+import com.seibel.distanthorizons.api.enums.config.EDhApiWorldCompressionMode;
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
 import com.seibel.distanthorizons.api.objects.data.DhApiChunk;
 import com.seibel.distanthorizons.api.objects.data.DhApiTerrainDataPoint;
+import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.enums.EDhDirection;
@@ -128,6 +130,9 @@ public class LodDataBuilder
 		// populate the data source //
 		//==========================//
 		
+		EDhApiWorldCompressionMode worldCompressionMode = Config.Client.Advanced.LodBuilding.worldCompression.get();
+		boolean ignoreHiddenBlocks = (worldCompressionMode != EDhApiWorldCompressionMode.UNCOMPRESSED);
+		
 		int minBuildHeight = chunkWrapper.getMinNonEmptyHeight();
 		for (int relBlockX = 0; relBlockX < LodUtil.CHUNK_WIDTH; relBlockX++)
 		{
@@ -190,18 +195,25 @@ public class LodDataBuilder
 					byte newBlockLight = (byte) chunkWrapper.getBlockLight(relBlockX, y + 1, relBlockZ);
 					byte newSkyLight = (byte) chunkWrapper.getSkyLight(relBlockX, y + 1, relBlockZ);
 					
-					if (
-							(!newBiome.equals(biome) || !newBlockState.equals(blockState))
-							&& !blockState.isAir() && !blockVisible(chunkWrapper, relBlockX, y, relBlockZ)
-						)
+					// save the biome/block change
+					if (!newBiome.equals(biome) || !newBlockState.equals(blockState))
 					{
-						longs.add(FullDataPointUtilV2.encode(mappedId, lastY - y, y + 1 - chunkWrapper.getMinBuildHeight(), blockLight, skyLight));
-						biome = newBiome;
-						blockState = newBlockState;
-						mappedId = dataSource.mapping.addIfNotPresentAndGetId(biome, blockState);
-						blockLight = newBlockLight;
-						skyLight = newSkyLight;
-						lastY = y;
+						// if we ignore hidden blocks, don't save this biome/block change
+						// wait until the block is visible and then save the new datapoint
+						if (!ignoreHiddenBlocks
+							// if the last block is air, this block will always be visible
+							|| blockState.isAir()
+							// check if this block is visible from any direction 
+							|| blockVisible(chunkWrapper, relBlockX, y, relBlockZ))
+						{
+							longs.add(FullDataPointUtilV2.encode(mappedId, lastY - y, y + 1 - chunkWrapper.getMinBuildHeight(), blockLight, skyLight));
+							biome = newBiome;
+							blockState = newBlockState;
+							mappedId = dataSource.mapping.addIfNotPresentAndGetId(biome, blockState);
+							blockLight = newBlockLight;
+							skyLight = newSkyLight;
+							lastY = y;
+						}
 					}
 				}
 				longs.add(FullDataPointUtilV2.encode(mappedId, lastY - y, y + 1 - chunkWrapper.getMinBuildHeight(), blockLight, skyLight));
@@ -257,6 +269,22 @@ public class LodDataBuilder
 	private static boolean blockInDirectionVisible(IChunkWrapper chunkWrapper, EDhDirection direction, DhBlockPos originalBlockPos, DhBlockPos testBlockPos)
 	{
 		originalBlockPos.mutateOffset(direction, testBlockPos);
+		
+		// if the block is next to the border of a chunk, assume it's visible
+		if (testBlockPos.x < 0 || testBlockPos.x >= LodUtil.CHUNK_WIDTH)
+		{
+			return true;
+		}
+		if (testBlockPos.z < 0 || testBlockPos.z >= LodUtil.CHUNK_WIDTH)
+		{
+			return true;
+		}
+		if (testBlockPos.y < chunkWrapper.getMinBuildHeight() || testBlockPos.y > chunkWrapper.getMaxBuildHeight())
+		{
+			return true;
+		}
+		
+		// this block isn't on a chunk boundary, check if it is next to a transparent/air block
 		IBlockStateWrapper blockState = chunkWrapper.getBlockState(testBlockPos);
 		return blockState.isAir() || blockState.getOpacity() != IBlockStateWrapper.FULLY_OPAQUE;
 	}

@@ -348,6 +348,10 @@
     "Data Compression",
   "distanthorizons.config.client.advanced.lodBuilding.dataCompression.@tooltip":
     "What algorithm should be used to compress new LOD data? \nThis setting will only affect new or updated LOD data, \nany data already generated when this setting is changed will be \nunaffected until it needs to be re-written to the database. \n\nFastest: LZ4 \nHighest Compression: LZMA2",
+  "distanthorizons.config.client.advanced.lodBuilding.worldCompression":
+    "Lossy World Compression",
+  "distanthorizons.config.client.advanced.lodBuilding.worldCompression.@tooltip":
+    "TODO",
     
     
   "distanthorizons.config.client.advanced.multiplayer":
@@ -773,6 +777,11 @@
     "Zstd",
   "distanthorizons.config.enum.EDhApiDataCompressionMode.LZMA2":
     "LZMA2",
+    
+  "distanthorizons.config.enum.EDhApiWorldCompressionMode.UNCOMPRESSED":
+    "Uncompressed",
+  "distanthorizons.config.enum.EDhApiWorldCompressionMode.VISUALLY_EQUAL":
+    "Visually Equal",
     
   "distanthorizons.config.enum.ELightGenerationMode.DISTANT_HORIZONS":
     "Distant Horizons",
