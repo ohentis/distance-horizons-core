@@ -825,16 +825,20 @@ public class Config
 				public static ConfigEntry<EDhApiWorldCompressionMode> worldCompression = new ConfigEntry.Builder<EDhApiWorldCompressionMode>()
 						.set(EDhApiWorldCompressionMode.VISUALLY_EQUAL)
 						.comment(""
-								//+ "What algorithm should be used to compress new LOD data? \n"
-								//+ "This setting will only affect new or updated LOD data, \n"
-								//+ "any data already generated when this setting is changed will be\n"
-								//+ "unaffected until it needs to be re-written to the database.\n"
-								//+ "\n"
-								//+ EDhApiDataCompressionMode.UNCOMPRESSED + " \n"
-								//+ "Should only be used for testing, is worse in every way vs ["+EDhApiDataCompressionMode.LZ4+"].\n"
-								//+ "Expected Compression Ratio: 1.0\n"
-								//+ "Estimated average DTO read speed: 1.64 milliseconds\n"
-								//+ "Estimated average DTO write speed: 12.44 milliseconds\n"
+								+ "How should block data be compressed when creating LOD data? \n"
+								+ "This setting will only affect new or updated LOD data, \n"
+								+ "any data already generated when this setting is changed will be\n"
+								+ "unaffected until it is modified or re-loaded.\n"
+								+ "\n"
+								+ EDhApiWorldCompressionMode.MERGE_SAME_BLOCKS + " \n"
+								+ "Every block/biome change is recorded in the database. \n" 
+								+ "This is what DH 2.0 and 2.0.1 all used by default and will store a lot of data. \n" 
+								+ "Expected Compression Ratio: 1.0\n"
+								+ "\n"
+								+ EDhApiWorldCompressionMode.VISUALLY_EQUAL + " \n"
+								+ "Only visible block/biome changes are recorded in the database. \n" 
+								+ "Hidden blocks (IE ores) are ignored.  \n" 
+								+ "Expected Compression Ratio: 0.7\n"
 								+ "")
 						.build();
 				

@@ -131,7 +131,7 @@ public class LodDataBuilder
 		//==========================//
 		
 		EDhApiWorldCompressionMode worldCompressionMode = Config.Client.Advanced.LodBuilding.worldCompression.get();
-		boolean ignoreHiddenBlocks = (worldCompressionMode != EDhApiWorldCompressionMode.UNCOMPRESSED);
+		boolean ignoreHiddenBlocks = (worldCompressionMode != EDhApiWorldCompressionMode.MERGE_SAME_BLOCKS);
 		
 		int minBuildHeight = chunkWrapper.getMinNonEmptyHeight();
 		for (int relBlockX = 0; relBlockX < LodUtil.CHUNK_WIDTH; relBlockX++)
@@ -221,7 +221,8 @@ public class LodDataBuilder
 				dataSource.setSingleColumn(longs, 
 						relBlockX + chunkOffsetX, 
 						relBlockZ + chunkOffsetZ, 
-						EDhApiWorldGenerationStep.LIGHT);
+						EDhApiWorldGenerationStep.LIGHT,
+						worldCompressionMode);
 			}
 		}
 		
@@ -326,7 +327,9 @@ public class LodDataBuilder
 					));
 				}
 				
-				accessor.setSingleColumn(packedDataPoints, relX, relZ, EDhApiWorldGenerationStep.LIGHT);
+				// TODO add the ability for API users to define a different compression mode
+				//  or add a "unkown" compression mode
+				accessor.setSingleColumn(packedDataPoints, relX, relZ, EDhApiWorldGenerationStep.LIGHT, EDhApiWorldCompressionMode.MERGE_SAME_BLOCKS);
 			}
 		}
 		
