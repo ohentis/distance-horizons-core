@@ -20,6 +20,7 @@
 package com.seibel.distanthorizons.core.sql.dto;
 
 import com.seibel.distanthorizons.api.enums.config.EDhApiDataCompressionMode;
+import com.seibel.distanthorizons.api.enums.config.EDhApiWorldCompressionMode;
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
 import com.seibel.distanthorizons.core.dataObjects.fullData.FullDataPointIdMap;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
@@ -50,6 +51,8 @@ public class FullDataSourceV2DTO implements IBaseDTO<DhSectionPos>
 	
 	/** @see EDhApiWorldGenerationStep */
 	public byte[] compressedColumnGenStepByteArray;
+	/** @see EDhApiWorldCompressionMode */
+	public byte[] compressedWorldCompressionModeByteArray;
 	
 	public byte[] compressedMappingByteArray;
 	
@@ -71,11 +74,12 @@ public class FullDataSourceV2DTO implements IBaseDTO<DhSectionPos>
 	{
 		CheckedByteArray checkedDataPointArray = writeDataSourceDataArrayToBlob(dataSource.dataPoints, compressionModeEnum);
 		byte[] compressedWorldGenStepByteArray = writeGenerationStepsToBlob(dataSource.columnGenerationSteps, compressionModeEnum);
+		byte[] compressedWorldCompressionModeByteArray = writeWorldCompressionModeToBlob(dataSource.columnWorldCompressionMode, compressionModeEnum);
 		byte[] mappingByteArray = writeDataMappingToBlob(dataSource.mapping, compressionModeEnum);
 		
 		return new FullDataSourceV2DTO(
 				dataSource.getSectionPos(), 
-				checkedDataPointArray.checksum, compressedWorldGenStepByteArray, FullDataSourceV2.DATA_FORMAT_VERSION, compressionModeEnum, checkedDataPointArray.byteArray,
+				checkedDataPointArray.checksum, compressedWorldGenStepByteArray, compressedWorldCompressionModeByteArray, FullDataSourceV2.DATA_FORMAT_VERSION, compressionModeEnum, checkedDataPointArray.byteArray,
 				dataSource.lastModifiedUnixDateTime, dataSource.createdUnixDateTime,
 				mappingByteArray, dataSource.applyToParent, 
 				dataSource.levelMinY
@@ -84,7 +88,7 @@ public class FullDataSourceV2DTO implements IBaseDTO<DhSectionPos>
 	
 	public FullDataSourceV2DTO(
 			DhSectionPos pos, 
-			int dataChecksum, byte[] compressedColumnGenStepByteArray, byte dataFormatVersion, EDhApiDataCompressionMode compressionModeEnum, byte[] compressedDataByteArray,
+			int dataChecksum, byte[] compressedColumnGenStepByteArray, byte[] compressedWorldCompressionModeByteArray, byte dataFormatVersion, EDhApiDataCompressionMode compressionModeEnum, byte[] compressedDataByteArray,
 			long lastModifiedUnixDateTime, long createdUnixDateTime,
 			byte[] compressedMappingByteArray, boolean applyToParent,
 			int levelMinY)
@@ -92,6 +96,7 @@ public class FullDataSourceV2DTO implements IBaseDTO<DhSectionPos>
 		this.pos = pos;
 		this.dataChecksum = dataChecksum;
 		this.compressedColumnGenStepByteArray = compressedColumnGenStepByteArray;
+		this.compressedWorldCompressionModeByteArray = compressedWorldCompressionModeByteArray;
 		
 		this.dataFormatVersion = dataFormatVersion;
 		this.compressionModeEnum = compressionModeEnum;
@@ -133,10 +138,11 @@ public class FullDataSourceV2DTO implements IBaseDTO<DhSectionPos>
 	{
 		if (FullDataSourceV2.DATA_FORMAT_VERSION != this.dataFormatVersion)
 		{
-			throw new IllegalStateException("There should only be one data format right now anyway.");
+			throw new IllegalStateException("There should only be one data format ["+FullDataSourceV2.DATA_FORMAT_VERSION+"].");
 		}
 		
 		dataSource.columnGenerationSteps = readBlobToGenerationSteps(this.compressedColumnGenStepByteArray, this.compressionModeEnum);
+		dataSource.columnWorldCompressionMode = readBlobToGenerationSteps(this.compressedWorldCompressionModeByteArray, this.compressionModeEnum);
 		dataSource.dataPoints = readBlobToDataSourceDataArray(this.compressedDataByteArray, this.compressionModeEnum);
 		
 		dataSource.mapping.clear(dataSource.getSectionPos());
@@ -257,6 +263,30 @@ public class FullDataSourceV2DTO implements IBaseDTO<DhSectionPos>
 		compressedIn.readFully(columnGenStepByteArray);
 		
 		return columnGenStepByteArray;
+	}
+	
+	
+	private static byte[] writeWorldCompressionModeToBlob(byte[] worldCompressionModeByteArray, EDhApiDataCompressionMode compressionModeEnum) throws IOException
+	{
+		ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+		DhDataOutputStream compressedOut = new DhDataOutputStream(byteArrayOutputStream, compressionModeEnum);
+		
+		compressedOut.write(worldCompressionModeByteArray);
+		
+		compressedOut.flush();
+		byteArrayOutputStream.close();
+		
+		return byteArrayOutputStream.toByteArray();
+	}
+	private static byte[] readBlobToWorldCompressionMode(byte[] dataByteArray, EDhApiDataCompressionMode compressionModeEnum) throws IOException, InterruptedException
+	{
+		ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(dataByteArray);
+		DhDataInputStream compressedIn = new DhDataInputStream(byteArrayInputStream, compressionModeEnum);
+		
+		byte[] worldCompressionModeByteArray = new byte[FullDataSourceV2.WIDTH * FullDataSourceV2.WIDTH];
+		compressedIn.readFully(worldCompressionModeByteArray);
+		
+		return worldCompressionModeByteArray;
 	}
 	
 	

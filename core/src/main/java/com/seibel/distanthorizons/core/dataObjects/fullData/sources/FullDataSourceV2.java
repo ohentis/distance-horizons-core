@@ -19,6 +19,7 @@
 
 package com.seibel.distanthorizons.core.dataObjects.fullData.sources;
 
+import com.seibel.distanthorizons.api.enums.config.EDhApiWorldCompressionMode;
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
 import com.seibel.distanthorizons.core.dataObjects.fullData.FullDataPointIdMap;
 import com.seibel.distanthorizons.core.dataObjects.transformers.LodDataBuilder;
@@ -93,6 +94,11 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 	 * @see EDhApiWorldGenerationStep 
 	 */
 	public byte[] columnGenerationSteps;
+	/** 
+	 * stores what world compression was used for each column.
+	 * @see EDhApiWorldCompressionMode 
+	 */
+	public byte[] columnWorldCompressionMode;
 	
 	/** 
 	 * stored x/z, y <br>
@@ -122,10 +128,11 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 		// doesn't need to be populated since nothing has been generated yet
 		// the default value of all 0's is adequate
 		this.columnGenerationSteps = new byte[WIDTH * WIDTH];
+		this.columnWorldCompressionMode = new byte[WIDTH * WIDTH];
 	}
 	
-	public static FullDataSourceV2 createWithData(DhSectionPos pos, FullDataPointIdMap mapping, LongArrayList[] data, byte[] columnGenerationStep) { return new FullDataSourceV2(pos, mapping, data, columnGenerationStep); }
-	private FullDataSourceV2(DhSectionPos pos, FullDataPointIdMap mapping, LongArrayList[] data, byte[] columnGenerationSteps)
+	public static FullDataSourceV2 createWithData(DhSectionPos pos, FullDataPointIdMap mapping, LongArrayList[] data, byte[] columnGenerationStep, byte[] columnWorldCompressionMode) { return new FullDataSourceV2(pos, mapping, data, columnGenerationStep, columnWorldCompressionMode); }
+	private FullDataSourceV2(DhSectionPos pos, FullDataPointIdMap mapping, LongArrayList[] data, byte[] columnGenerationSteps, byte[] columnWorldCompressionMode)
 	{
 		LodUtil.assertTrue(data.length == WIDTH * WIDTH);
 		
@@ -135,6 +142,7 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 		this.isEmpty = false;
 		
 		this.columnGenerationSteps = columnGenerationSteps;
+		this.columnWorldCompressionMode = columnWorldCompressionMode;
 	}
 	
 	public static FullDataSourceV2 createFromChunk(IChunkWrapper chunkWrapper) { return LodDataBuilder.createGeneratedDataSource(chunkWrapper); }
@@ -152,6 +160,7 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 		
 		// Note: this logic only works if the data point data is the same between both versions
 		byte[] columnGenerationSteps = new byte[WIDTH * WIDTH];
+		byte[] columnWorldCompressionMode = new byte[WIDTH * WIDTH];
 		LongArrayList[] dataPoints = new LongArrayList[WIDTH * WIDTH];
 		for (int x = 0; x < WIDTH; x++)
 		{
@@ -197,11 +206,12 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 					// the old data sources didn't have a generation step written down
 					// if the column has any data points, assume it's fully generated, otherwise assume it's empty
 					columnGenerationSteps[index] = (columnHasNonAirBlock ? EDhApiWorldGenerationStep.LIGHT.value : EDhApiWorldGenerationStep.EMPTY.value);
+					columnWorldCompressionMode[index] = EDhApiWorldCompressionMode.MERGE_SAME_BLOCKS.value;
 				}
 			}
 		}
 		
-		FullDataSourceV2 fullDataSource = FullDataSourceV2.createWithData(legacyData.getSectionPos(), legacyData.mapping, dataPoints, columnGenerationSteps);
+		FullDataSourceV2 fullDataSource = FullDataSourceV2.createWithData(legacyData.getSectionPos(), legacyData.mapping, dataPoints, columnGenerationSteps, columnWorldCompressionMode);
 		
 		
 		// should only be used if debugging, this is a very expensive operation
@@ -361,7 +371,10 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 							}
 						}
 						
+						
 						this.columnGenerationSteps[index] = inputGenState;
+						// always overwrite the compression mode since we're replacing this column
+						this.columnWorldCompressionMode[index] = inputDataSource.columnWorldCompressionMode[index];
 						this.isEmpty = false;
 					}
 				}
@@ -405,6 +418,11 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 				// world gen //
 				byte inputGenStep = determineMinWorldGenStepForTwoByTwoColumn(inputDataSource.columnGenerationSteps, x, z);
 				this.columnGenerationSteps[recipientIndex] = inputGenStep;
+				
+				
+				// world compression //
+				byte worldCompressionMode = determineHighestWorldCompressionForTwoByTwoColumn(inputDataSource.columnWorldCompressionMode, x, z);
+				this.columnWorldCompressionMode[recipientIndex] = worldCompressionMode;
 				
 				
 				
@@ -465,6 +483,7 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 	 */
 	private static byte determineMinWorldGenStepForTwoByTwoColumn(byte[] columnGenerationSteps, int relX, int relZ)
 	{
+		// TODO merge similar logic with determineHighestWorldCompressionForTwoByTwoColumn
 		byte minWorldGenStepValue = Byte.MAX_VALUE;
 		for (int x = 0; x < 2; x++)
 		{
@@ -473,6 +492,25 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 				int index = relativePosToIndex(x + relX, z + relZ);
 				byte worldGenStepValue = columnGenerationSteps[index];
 				minWorldGenStepValue = (byte) Math.min(minWorldGenStepValue, worldGenStepValue);
+			}
+		}
+		return minWorldGenStepValue;
+	}
+	/** 
+	 * The minimum value is used because we don't want to accidentally record that
+	 * something was generated when it wasn't.
+	 */
+	private static byte determineHighestWorldCompressionForTwoByTwoColumn(byte[] columnCompressionMode, int relX, int relZ)
+	{
+		// TODO merge similar logic with determineMinWorldGenStepForTwoByTwoColumn
+		byte minWorldGenStepValue = Byte.MIN_VALUE;
+		for (int x = 0; x < 2; x++)
+		{
+			for (int z = 0; z < 2; z++)
+			{
+				int index = relativePosToIndex(x + relX, z + relZ);
+				byte worldGenStepValue = columnCompressionMode[index];
+				minWorldGenStepValue = (byte) Math.max(minWorldGenStepValue, worldGenStepValue);
 			}
 		}
 		return minWorldGenStepValue;
@@ -817,11 +855,12 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 		return EDhApiWorldGenerationStep.fromValue(this.columnGenerationSteps[index]); 
 	}
 	
-	public void setSingleColumn(LongArrayList longArray, int relX, int relZ, EDhApiWorldGenerationStep worldGenStep)
+	public void setSingleColumn(LongArrayList longArray, int relX, int relZ, EDhApiWorldGenerationStep worldGenStep, EDhApiWorldCompressionMode worldCompressionMode)
 	{
 		int index = relativePosToIndex(relX, relZ);
 		this.dataPoints[index] = longArray;
 		this.columnGenerationSteps[index] =  worldGenStep.value;
+		this.columnWorldCompressionMode[index] =  worldCompressionMode.value;
 		
 		
 		if (RUN_UPDATE_DEV_VALIDATION)
@@ -863,6 +902,7 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 		int result = this.pos.hashCode();
 		result = 31 * result + Arrays.deepHashCode(this.dataPoints);
 		result = 17 * result + Arrays.hashCode(this.columnGenerationSteps);
+		result = 43 * result + Arrays.hashCode(this.columnWorldCompressionMode);
 		
 		this.cachedHashCode = result;
 	}
@@ -938,6 +978,7 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 					}
 					
 					Arrays.fill(dataSource.columnGenerationSteps, (byte) 0);
+					Arrays.fill(dataSource.columnWorldCompressionMode, (byte) 0);
 				}
 				
 				return dataSource;

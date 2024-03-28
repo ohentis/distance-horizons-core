@@ -86,6 +86,7 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<DhSectionPos, FullDataS
 		
 		byte[] dataByteArray = (byte[]) objectMap.get("Data");
 		byte[] columnGenStepByteArray = (byte[]) objectMap.get("ColumnGenerationStep");
+		byte[] columnWorldCompressionByteArray = (byte[]) objectMap.get("ColumnWorldCompressionMode");
 		byte[] mappingByteArray = (byte[]) objectMap.get("Mapping");
 		
 		
@@ -100,7 +101,7 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<DhSectionPos, FullDataS
 		
 		FullDataSourceV2DTO dto = new FullDataSourceV2DTO(
 				pos,
-				dataChecksum, columnGenStepByteArray, dataFormatVersion, compressionModeEnum, dataByteArray,
+				dataChecksum, columnGenStepByteArray, columnWorldCompressionByteArray, dataFormatVersion, compressionModeEnum, dataByteArray,
 				lastModifiedUnixDateTime, createdUnixDateTime,
 				mappingByteArray, applyToParent,
 				minY);
@@ -114,13 +115,13 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<DhSectionPos, FullDataS
 			"INSERT INTO "+this.getTableName() + " (\n" +
 			"   DetailLevel, PosX, PosZ, \n" +
 			"   MinY, DataChecksum, \n" +
-			"   Data, ColumnGenerationStep, Mapping, \n" +
+			"   Data, ColumnGenerationStep, ColumnWorldCompressionMode, Mapping, \n" +
 			"   DataFormatVersion, CompressionMode, ApplyToParent, \n" +
 			"   LastModifiedUnixDateTime, CreatedUnixDateTime) \n" +
 			"VALUES( \n" +
 			"    ?, ?, ?, \n" +
 			"    ?, ?, \n" +
-			"    ?, ?, ?, \n" +
+			"    ?, ?, ?, ?, \n" +
 			"    ?, ?, ?, \n" +
 			"    ?, ? \n" +
 			");";
@@ -136,6 +137,7 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<DhSectionPos, FullDataS
 		
 		statement.setObject(i++, dto.compressedDataByteArray);
 		statement.setObject(i++, dto.compressedColumnGenStepByteArray);
+		statement.setObject(i++, dto.compressedWorldCompressionModeByteArray);
 		statement.setObject(i++, dto.compressedMappingByteArray);
 		
 		statement.setObject(i++, dto.dataFormatVersion);
@@ -159,6 +161,7 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<DhSectionPos, FullDataS
 					
 			"   ,Data = ? \n" +
 			"   ,ColumnGenerationStep = ? \n" +
+			"   ,ColumnWorldCompressionMode = ? \n" +
 			"   ,Mapping = ? \n" +
 					
 			"   ,DataFormatVersion = ? \n" +
@@ -177,6 +180,7 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<DhSectionPos, FullDataS
 		
 		statement.setObject(i++, dto.compressedDataByteArray);
 		statement.setObject(i++, dto.compressedColumnGenStepByteArray);
+		statement.setObject(i++, dto.compressedWorldCompressionModeByteArray);
 		statement.setObject(i++, dto.compressedMappingByteArray);
 		
 		statement.setObject(i++, dto.dataFormatVersion);

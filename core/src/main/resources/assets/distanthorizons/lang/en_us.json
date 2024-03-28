@@ -770,18 +770,18 @@
     "Full",
     
   "distanthorizons.config.enum.EDhApiDataCompressionMode.UNCOMPRESSED":
-    "Uncompressed",
+    "1. Uncompressed",
   "distanthorizons.config.enum.EDhApiDataCompressionMode.LZ4":
-    "LZ4",
+    "2. LZ4",
   "distanthorizons.config.enum.EDhApiDataCompressionMode.Z_STD":
-    "Zstd",
+    "3. Zstd",
   "distanthorizons.config.enum.EDhApiDataCompressionMode.LZMA2":
-    "LZMA2",
+    "4. LZMA2",
     
-  "distanthorizons.config.enum.EDhApiWorldCompressionMode.UNCOMPRESSED":
-    "Uncompressed",
+  "distanthorizons.config.enum.EDhApiWorldCompressionMode.MERGE_SAME_BLOCKS":
+    "1. Merge Same Blocks",
   "distanthorizons.config.enum.EDhApiWorldCompressionMode.VISUALLY_EQUAL":
-    "Visually Equal",
+    "2. Visually Equal",
     
   "distanthorizons.config.enum.ELightGenerationMode.DISTANT_HORIZONS":
     "Distant Horizons",

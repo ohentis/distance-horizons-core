@@ -24,6 +24,7 @@ CREATE TABLE FullData (
     
     ,Data BLOB NULL
     ,ColumnGenerationStep BLOB NULL
+    ,ColumnWorldCompressionMode BLOB NULL
     ,Mapping BLOB NULL
     
     ,DataFormatVersion TINYINT NULL

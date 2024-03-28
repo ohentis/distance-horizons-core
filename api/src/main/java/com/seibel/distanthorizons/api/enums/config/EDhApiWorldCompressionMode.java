@@ -20,7 +20,7 @@
 package com.seibel.distanthorizons.api.enums.config;
 
 /**
- * UNCOMPRESSED <br>
+ * MERGE_SAME_BLOCKS <br>
  * VISUALLY_EQUAL <br><br>
  * 
  * @version 2024-3-27
@@ -32,8 +32,11 @@ public enum EDhApiWorldCompressionMode
 	// when adding items up the API minor version
 	// when removing items up the API major version
 	
-	/** Every block/biome change is recorded in the database. */
-	UNCOMPRESSED(0),
+	/** 
+	 * Every block/biome change is recorded in the database. <br>
+	 * This is what DH 2.0 and 2.0.1 all used by default and will store a lot of data. 
+	 */
+	MERGE_SAME_BLOCKS(0),
 	
 	/** 
 	 * Only visible block/biome changes are recorded in the database. <Br> 
