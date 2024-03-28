@@ -172,8 +172,8 @@ public class FullDataToRenderDataTransformer
 		int colorToApplyToNextBlock = -1;
 		int lastColor = 0;
 		int lastBottom = -10000;
-		byte skylightToApplyToNextBlock = -1;
-		byte blocklightToApplyToNextBlock = -1;
+		int skylightToApplyToNextBlock = -1;
+		int blocklightToApplyToNextBlock = -1;
 		int columnOffset = 0;
 		
 		// goes from the top down
@@ -270,7 +270,7 @@ public class FullDataToRenderDataTransformer
 			{
 				//replace the previus block with new bottom
 				long columnData = renderColumnData.get(columnOffset - 1);
-				columnData = RenderDataPointUtil.setYMin(columnData, bottom);
+				columnData = RenderDataPointUtil.setYMin(columnData, bottomY);
 				renderColumnData.set(columnOffset - 1, columnData);
 			}
 			else
