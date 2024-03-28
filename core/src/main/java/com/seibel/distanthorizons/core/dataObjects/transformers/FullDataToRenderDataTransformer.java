@@ -170,6 +170,8 @@ public class FullDataToRenderDataTransformer
 		
 		boolean isVoid = true;
 		int colorToApplyToNextBlock = -1;
+		int lastColor = 0;
+		int lastBottom = -10000;
 		byte skylightToApplyToNextBlock = -1;
 		byte blocklightToApplyToNextBlock = -1;
 		int columnOffset = 0;
@@ -237,6 +239,7 @@ public class FullDataToRenderDataTransformer
 			{
 				if (colorBelowWithAvoidedBlocks)
 				{
+					//mare sure to not trnasfer alpha if for some reason grass is transparent
 					colorToApplyToNextBlock = ColorUtil.setAlpha(level.computeBaseColor(new DhBlockPos(blockX, bottomY + level.getMinY(), blockZ), biome, block),255);
 					skylightToApplyToNextBlock = skyLight;
 					blocklightToApplyToNextBlock = blockLight;
@@ -261,13 +264,26 @@ public class FullDataToRenderDataTransformer
 				skyLight = skylightToApplyToNextBlock;
 				blockLight = blocklightToApplyToNextBlock;
 			}
-			
-			
-			// add the block
-			isVoid = false;
-			long columnData = RenderDataPointUtil.createDataPoint(bottomY + blockHeight, bottomY, color, skyLight, blockLight, block.getIrisBlockMaterialId());
-			renderColumnData.set(columnOffset, columnData);
-			columnOffset++;
+
+			//check if they share a top-bottom face and if they have same collor
+			if (color == lastColor && bottomY + blockHeight == lastBottom  && columnOffset > 0)
+			{
+				//replace the previus block with new bottom
+				long columnData = renderColumnData.get(columnOffset - 1);
+				columnData = RenderDataPointUtil.setYMin(columnData, bottom);
+				renderColumnData.set(columnOffset - 1, columnData);
+			}
+			else
+			{
+				// add the block
+				isVoid = false;
+				long columnData = RenderDataPointUtil.createDataPoint(bottomY + blockHeight, bottomY, color, skyLight, blockLight, block.getIrisBlockMaterialId());
+				renderColumnData.set(columnOffset, columnData);
+				columnOffset++;
+			}
+			lastBottom = bottomY;
+			lastColor = color;
+
 		}
 		
 		
