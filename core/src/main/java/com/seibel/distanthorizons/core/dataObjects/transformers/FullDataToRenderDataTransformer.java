@@ -251,7 +251,7 @@ public class FullDataToRenderDataTransformer
 			if (colorToApplyToNextBlock == -1)
 			{
 				// use this block's color
-				colorToApplyToNextBlock = level.computeBaseColor(new DhBlockPos(blockX, bottomY + level.getMinY(), blockZ), biome, block);
+				color = level.computeBaseColor(new DhBlockPos(blockX, bottomY + level.getMinY(), blockZ), biome, block);
 			}
 			else
 			{
