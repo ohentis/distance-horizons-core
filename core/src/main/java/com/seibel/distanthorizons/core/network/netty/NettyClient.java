@@ -38,6 +38,7 @@ import java.net.InetSocketAddress;
 import java.util.EnumSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class NettyClient extends NettyEventSource implements INettyConnection, AutoCloseable
@@ -88,9 +89,9 @@ public class NettyClient extends NettyEventSource implements INettyConnection, A
 	
     private Channel channel;
 	
-	private int reconnectionAttemptsLeft = RECONNECTION_ATTEMPTS;
+	private final AtomicInteger reconnectionAttemptsLeft = new AtomicInteger(RECONNECTION_ATTEMPTS);
 	/** Returns the amount of reconnections the client will attempt to perform before giving up. */
-	public int getReconnectionAttemptsLeft() { return this.reconnectionAttemptsLeft; }
+	public int getReconnectionAttemptsLeft() { return this.reconnectionAttemptsLeft.get(); }
 	
 	
 	public NettyClient()
@@ -115,7 +116,10 @@ public class NettyClient extends NettyEventSource implements INettyConnection, A
 	
 	public void resetAndConnectTo(String host, int port)
 	{
-		this.connectionState.set(EConnectionState.INITIAL);
+		if (this.connectionState.getAndUpdate(state -> state != EConnectionState.CLOSED ? EConnectionState.INITIAL : state) == EConnectionState.CLOSED)
+		{
+			return;
+		}
 		this.address = new InetSocketAddress(host, port);
 		
 		if (this.channel != null)
@@ -123,7 +127,7 @@ public class NettyClient extends NettyEventSource implements INettyConnection, A
 			this.channel.close().syncUninterruptibly();
 		}
 		
-		this.reconnectionAttemptsLeft = RECONNECTION_ATTEMPTS;
+		this.reconnectionAttemptsLeft.set(RECONNECTION_ATTEMPTS);
 		this.connect();
 	}
 	
@@ -157,21 +161,25 @@ public class NettyClient extends NettyEventSource implements INettyConnection, A
 			
 			if (this.connectionState.get() == EConnectionState.OPEN)
 			{
-				this.reconnectionAttemptsLeft--;
-				LOGGER.info("Reconnection attempts left: [" + this.reconnectionAttemptsLeft + "] of [" + RECONNECTION_ATTEMPTS + "].");
+				int reconnectionAttemptsLeft = this.reconnectionAttemptsLeft.decrementAndGet();
+				LOGGER.info("Reconnection attempts left: [" + this.reconnectionAttemptsLeft.get() + "] of [" + RECONNECTION_ATTEMPTS + "].");
 				
-				if (this.reconnectionAttemptsLeft != 0)
+				if (reconnectionAttemptsLeft != 0)
 				{
-					this.connectionState.set(EConnectionState.RECONNECTING);
-					this.workerGroup.schedule(() ->
+					if (this.connectionState.compareAndSet(EConnectionState.OPEN, EConnectionState.RECONNECTING))
 					{
-						this.connectionState.set(EConnectionState.INITIAL);
-						this.connect();
-					}, RECONNECTION_DELAY_SEC, TimeUnit.SECONDS);
+						this.workerGroup.schedule(() ->
+						{
+							if (this.connectionState.compareAndSet(EConnectionState.RECONNECTING, EConnectionState.INITIAL))
+							{
+								this.connect();
+							}
+						}, RECONNECTION_DELAY_SEC, TimeUnit.SECONDS);
+					}
 				}
 				else
 				{
-					this.connectionState.set(EConnectionState.GOT_CLOSE_REASON);
+					this.connectionState.compareAndSet(EConnectionState.OPEN, EConnectionState.GOT_CLOSE_REASON);
 				}
 			}
 		});

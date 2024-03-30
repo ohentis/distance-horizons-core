@@ -84,7 +84,7 @@ public class ClientNetworkState implements Closeable
 		{
 			return new String[]{
 					this.client.getRemoteAddress() != null
-							? "Connected, ready: " + this.isReady()
+							? (this.isReady() ? "Connected to server" : "Connecting to server...")
 							: MessageFormat.format("Disconnected, attempts left: {0} / {1}", this.client.getReconnectionAttemptsLeft(), NettyClient.RECONNECTION_ATTEMPTS)
 			};
 		}

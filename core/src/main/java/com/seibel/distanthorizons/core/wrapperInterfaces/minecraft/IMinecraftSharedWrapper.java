@@ -19,9 +19,11 @@
 
 package com.seibel.distanthorizons.core.wrapperInterfaces.minecraft;
 
+import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IBindable;
 
 import java.io.File;
+import java.util.List;
 
 //TODO: Maybe have IMCClientWrapper & IMCDedicatedWrapper extend this interface???
 public interface IMinecraftSharedWrapper extends IBindable
@@ -29,5 +31,7 @@ public interface IMinecraftSharedWrapper extends IBindable
 	boolean isDedicatedServer();
 	
 	File getInstallationDirectory();
+	
+	List<IServerPlayerWrapper> getPlayerList();
 	
 }

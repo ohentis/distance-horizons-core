@@ -6,6 +6,7 @@ import com.google.common.collect.Maps;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.config.listeners.ConfigChangeListener;
 import com.seibel.distanthorizons.core.config.types.ConfigEntry;
+import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.level.DhServerLevel;
 import com.seibel.distanthorizons.core.multiplayer.config.MultiplayerConfig;
 import com.seibel.distanthorizons.core.multiplayer.config.MultiplayerConfigChangeListener;
@@ -23,6 +24,7 @@ import com.seibel.distanthorizons.core.network.netty.NettyServer;
 import com.seibel.distanthorizons.core.network.netty.TrackableNettyMessage;
 import com.seibel.distanthorizons.core.network.plugin.PluginChannelHandler;
 import com.seibel.distanthorizons.core.util.LodUtil;
+import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftSharedWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import io.netty.buffer.ByteBuf;
 import org.jetbrains.annotations.Nullable;
@@ -40,8 +42,9 @@ import static com.seibel.distanthorizons.core.config.Config.Client.Advanced.Mult
 
 public class RemotePlayerConnectionHandler implements Closeable
 {
-	private static final boolean DEBUG_ALWAYS_USE_OVERRIDES = true;
+	private static final boolean DEBUG_ENABLE_OVERRIDES_IN_LAN = false;
 	
+	private static final IMinecraftSharedWrapper MC_SERVER = SingletonInjector.INSTANCE.get(IMinecraftSharedWrapper.class);
 	private static final ConfigEntry<Boolean> GENERATE_MULTIPLE_DIMENSIONS_CONFIG = Config.Client.Advanced.Multiplayer.ServerNetworking.generateMultipleDimensions;
 	
 	private final NettyServer server = new NettyServer(ServerNetworking.serverPort.get());
@@ -52,7 +55,7 @@ public class RemotePlayerConnectionHandler implements Closeable
 	private final PluginChannelHandler pluginChannelHandler = new PluginChannelHandler();
 	private final ConfigChangeListener<Integer> portChangeListener = new ConfigChangeListener<>(ServerNetworking.serverPort, this::onServerPortChanged);
 	private final ConfigChangeListener<String> connectIpOverrideChangeListener = new ConfigChangeListener<>(ServerNetworking.connectIpOverride, this::broadcastConnectInfo);
-	private final ConfigChangeListener<Integer> connectPortOverrideChangeListener = new ConfigChangeListener<>(ServerNetworking.serverPort, this::broadcastConnectInfo);
+	private final ConfigChangeListener<Integer> connectPortOverrideChangeListener = new ConfigChangeListener<>(ServerNetworking.connectPortOverride, this::broadcastConnectInfo);
 	
 	public NettyServer server() { return this.server; }
 	
@@ -126,9 +129,9 @@ public class RemotePlayerConnectionHandler implements Closeable
 	}
 	private void broadcastConnectInfo(@Nullable Object ignored)
 	{
-		for (ServerPlayerState serverPlayerState : this.getConnectedPlayers())
+		for (IServerPlayerWrapper serverPlayer : MC_SERVER.getPlayerList())
 		{
-			this.sendConnectInfo(serverPlayerState.serverPlayer);
+			this.sendConnectInfo(serverPlayer);
 		}
 	}
 	private void sendConnectInfo(IServerPlayerWrapper serverPlayer)
@@ -140,7 +143,7 @@ public class RemotePlayerConnectionHandler implements Closeable
 		// IP/port overrides are intended for using with port forwarding services,
 		// and LAN clients are unlikely to need to hop through internet
 		InetAddress ip = ((InetSocketAddress) serverPlayer.getRemoteAddress()).getAddress();
-		boolean isLanPlayer = !DEBUG_ALWAYS_USE_OVERRIDES &&
+		boolean isLanPlayer = !DEBUG_ENABLE_OVERRIDES_IN_LAN &&
 				(ip.isLoopbackAddress() ||
 						ip.isLinkLocalAddress() ||
 						ip.isSiteLocalAddress());
