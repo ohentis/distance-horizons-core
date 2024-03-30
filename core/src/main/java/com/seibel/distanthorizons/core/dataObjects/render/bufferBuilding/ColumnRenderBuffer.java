@@ -26,7 +26,6 @@ import com.seibel.distanthorizons.core.enums.EGLProxyContext;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
-import com.seibel.distanthorizons.core.render.AbstractRenderBuffer;
 import com.seibel.distanthorizons.core.render.glObject.GLProxy;
 import com.seibel.distanthorizons.core.render.glObject.buffer.GLVertexBuffer;
 import com.seibel.distanthorizons.core.render.renderer.LodRenderer;
@@ -46,12 +45,18 @@ import java.util.concurrent.*;
  *
  * @see ColumnRenderBufferBuilder
  */
-public class ColumnRenderBuffer extends AbstractRenderBuffer
+public class ColumnRenderBuffer implements AutoCloseable
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	private static final IMinecraftClientWrapper minecraftClient = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	
 	private static final long MAX_BUFFER_UPLOAD_TIMEOUT_NANOSECONDS = 1_000_000;
+	
+	public static final int QUADS_BYTE_SIZE = LodUtil.LOD_VERTEX_FORMAT.getByteSize() * 4; // TODO what does the 4 represent
+	public static final int MAX_QUADS_PER_BUFFER = (1024 * 1024 * 1) / QUADS_BYTE_SIZE; // TODO what do these multiples represent?
+	public static final int FULL_SIZED_BUFFER = MAX_QUADS_PER_BUFFER * QUADS_BYTE_SIZE;
+	
+	
 	
 	
 	public final DhBlockPos pos;
@@ -275,7 +280,7 @@ public class ColumnRenderBuffer extends AbstractRenderBuffer
 	// render //
 	//========//
 	
-	@Override
+	/** @return true if something was rendered, false otherwise */
 	public boolean renderOpaque(LodRenderer renderContext, DhApiRenderParam renderEventParam)
 	{
 		boolean hasRendered = false;
@@ -299,7 +304,7 @@ public class ColumnRenderBuffer extends AbstractRenderBuffer
 		return hasRendered;
 	}
 	
-	@Override
+	/** @return true if something was rendered, false otherwise */
 	public boolean renderTransparent(LodRenderer renderContext, DhApiRenderParam renderEventParam)
 	{
 		boolean hasRendered = false;
@@ -354,7 +359,6 @@ public class ColumnRenderBuffer extends AbstractRenderBuffer
 		return false;
 	}
 	
-	@Override
 	public void debugDumpStats(StatsMap statsMap)
 	{
 		statsMap.incStat("RenderBuffers");
@@ -378,6 +382,12 @@ public class ColumnRenderBuffer extends AbstractRenderBuffer
 		}
 	}
 	
+	/**
+	 * This method is called when object is no longer in use.
+	 * Called either after uploadBuffers() returned false (On buffer Upload
+	 * thread), or by others when the object is not being used. (not in build,
+	 * upload, or render state). 
+	 */
 	@Override
 	public void close()
 	{

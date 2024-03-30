@@ -31,7 +31,6 @@ import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
 import com.seibel.distanthorizons.core.logging.ConfigBasedSpamLogger;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
-import com.seibel.distanthorizons.core.render.AbstractRenderBuffer;
 import com.seibel.distanthorizons.core.render.DhApiRenderProxy;
 import com.seibel.distanthorizons.core.render.RenderBufferHandler;
 import com.seibel.distanthorizons.core.render.glObject.GLProxy;
@@ -700,7 +699,7 @@ public class LodRenderer
 			if (ENABLE_IBO)
 			{
 				this.quadIBO = new QuadElementBuffer();
-				this.quadIBO.reserve(AbstractRenderBuffer.MAX_QUADS_PER_BUFFER);
+				this.quadIBO.reserve(ColumnRenderBuffer.MAX_QUADS_PER_BUFFER);
 			}
 			
 			

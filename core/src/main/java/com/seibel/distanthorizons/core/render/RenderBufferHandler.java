@@ -24,6 +24,7 @@ import com.seibel.distanthorizons.api.interfaces.override.rendering.IDhApiCullin
 import com.seibel.distanthorizons.api.interfaces.override.rendering.IDhApiShadowCullingFrustum;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
 import com.seibel.distanthorizons.core.config.Config;
+import com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.ColumnRenderBuffer;
 import com.seibel.distanthorizons.core.dependencyInjection.ModAccessorInjector;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.enums.EDhDirection;
@@ -349,7 +350,7 @@ public class RenderBufferHandler implements AutoCloseable
 					continue;
 				}
 				
-				AbstractRenderBuffer buffer = renderSection.activeRenderBufferRef.get();
+				ColumnRenderBuffer buffer = renderSection.activeRenderBufferRef.get();
 				if (buffer == null)
 				{
 					continue;
@@ -435,10 +436,10 @@ public class RenderBufferHandler implements AutoCloseable
 	
 	private static class LoadedRenderBuffer
 	{
-		public final AbstractRenderBuffer buffer;
+		public final ColumnRenderBuffer buffer;
 		public final DhSectionPos pos;
 		
-		LoadedRenderBuffer(AbstractRenderBuffer buffer, DhSectionPos pos)
+		LoadedRenderBuffer(ColumnRenderBuffer buffer, DhSectionPos pos)
 		{
 			this.buffer = buffer;
 			this.pos = pos;

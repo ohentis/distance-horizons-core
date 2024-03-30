@@ -25,7 +25,6 @@ import java.util.*;
 
 import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.render.AbstractRenderBuffer;
 import com.seibel.distanthorizons.core.render.glObject.buffer.GLVertexBuffer;
 import com.seibel.distanthorizons.core.util.ColorUtil;
 import com.seibel.distanthorizons.api.enums.config.EGpuUploadMethod;
@@ -386,7 +385,7 @@ public class LodQuadBuilder
 	{
 		return new Iterator<ByteBuffer>()
 		{
-			final ByteBuffer bb = ByteBuffer.allocateDirect(AbstractRenderBuffer.FULL_SIZED_BUFFER)
+			final ByteBuffer bb = ByteBuffer.allocateDirect(ColumnRenderBuffer.FULL_SIZED_BUFFER)
 					.order(ByteOrder.nativeOrder());
 			int dir = skipEmpty(0);
 			int quad = 0;
@@ -414,7 +413,7 @@ public class LodQuadBuilder
 					return null;
 				}
 				bb.clear();
-				bb.limit(AbstractRenderBuffer.FULL_SIZED_BUFFER);
+				bb.limit(ColumnRenderBuffer.FULL_SIZED_BUFFER);
 				while (bb.hasRemaining() && dir < 6)
 				{
 					writeData();
@@ -454,7 +453,7 @@ public class LodQuadBuilder
 	{
 		return new Iterator<ByteBuffer>()
 		{
-			final ByteBuffer bb = ByteBuffer.allocateDirect(AbstractRenderBuffer.FULL_SIZED_BUFFER)
+			final ByteBuffer bb = ByteBuffer.allocateDirect(ColumnRenderBuffer.FULL_SIZED_BUFFER)
 					.order(ByteOrder.nativeOrder());
 			int directionIndex = this.skipEmptyDirectionIndices(0);
 			int quad = 0;
@@ -483,7 +482,7 @@ public class LodQuadBuilder
 				}
 				
 				this.bb.clear();
-				this.bb.limit(AbstractRenderBuffer.FULL_SIZED_BUFFER);
+				this.bb.limit(ColumnRenderBuffer.FULL_SIZED_BUFFER);
 				while (this.bb.hasRemaining() && this.directionIndex < 6)
 				{
 					this.writeData();
@@ -541,19 +540,19 @@ public class LodQuadBuilder
 				}
 				
 				int numOfQuads = _countRemainingQuads();
-				if (numOfQuads > AbstractRenderBuffer.MAX_QUADS_PER_BUFFER)
-					numOfQuads = AbstractRenderBuffer.MAX_QUADS_PER_BUFFER;
+				if (numOfQuads > ColumnRenderBuffer.MAX_QUADS_PER_BUFFER)
+					numOfQuads = ColumnRenderBuffer.MAX_QUADS_PER_BUFFER;
 				if (numOfQuads == 0)
 				{
 					vbo.setVertexCount(0);
 					return false;
 				}
-				ByteBuffer bb = vbo.mapBuffer(numOfQuads * AbstractRenderBuffer.QUADS_BYTE_SIZE, method,
-						AbstractRenderBuffer.FULL_SIZED_BUFFER);
+				ByteBuffer bb = vbo.mapBuffer(numOfQuads * ColumnRenderBuffer.QUADS_BYTE_SIZE, method,
+						ColumnRenderBuffer.FULL_SIZED_BUFFER);
 				if (bb == null)
 					throw new NullPointerException("mapBuffer returned null");
 				bb.clear();
-				bb.limit(numOfQuads * AbstractRenderBuffer.QUADS_BYTE_SIZE);
+				bb.limit(numOfQuads * ColumnRenderBuffer.QUADS_BYTE_SIZE);
 				while (bb.hasRemaining() && dir < 6)
 				{
 					writeData(bb);
@@ -621,19 +620,19 @@ public class LodQuadBuilder
 				}
 				
 				int numOfQuads = _countRemainingQuads();
-				if (numOfQuads > AbstractRenderBuffer.MAX_QUADS_PER_BUFFER)
-					numOfQuads = AbstractRenderBuffer.MAX_QUADS_PER_BUFFER;
+				if (numOfQuads > ColumnRenderBuffer.MAX_QUADS_PER_BUFFER)
+					numOfQuads = ColumnRenderBuffer.MAX_QUADS_PER_BUFFER;
 				if (numOfQuads == 0)
 				{
 					vbo.setVertexCount(0);
 					return false;
 				}
-				ByteBuffer bb = vbo.mapBuffer(numOfQuads * AbstractRenderBuffer.QUADS_BYTE_SIZE, method,
-						AbstractRenderBuffer.FULL_SIZED_BUFFER);
+				ByteBuffer bb = vbo.mapBuffer(numOfQuads * ColumnRenderBuffer.QUADS_BYTE_SIZE, method,
+						ColumnRenderBuffer.FULL_SIZED_BUFFER);
 				if (bb == null)
 					throw new NullPointerException("mapBuffer returned null");
 				bb.clear();
-				bb.limit(numOfQuads * AbstractRenderBuffer.QUADS_BYTE_SIZE);
+				bb.limit(numOfQuads * ColumnRenderBuffer.QUADS_BYTE_SIZE);
 				while (bb.hasRemaining() && dir < 6)
 				{
 					writeData(bb);
@@ -718,7 +717,7 @@ public class LodQuadBuilder
 	}
 	
 	/** Returns how many GpuBuffers will be needed to render opaque quads in this builder. */
-	public int getCurrentNeededOpaqueVertexBufferCount() { return MathUtil.ceilDiv(this.getCurrentOpaqueQuadsCount(), AbstractRenderBuffer.MAX_QUADS_PER_BUFFER); }
+	public int getCurrentNeededOpaqueVertexBufferCount() { return MathUtil.ceilDiv(this.getCurrentOpaqueQuadsCount(), ColumnRenderBuffer.MAX_QUADS_PER_BUFFER); }
 	/** Returns how many GpuBuffers will be needed to render transparent quads in this builder. */
 	public int getCurrentNeededTransparentVertexBufferCount()
 	{
@@ -727,7 +726,7 @@ public class LodQuadBuilder
 			return 0;
 		}
 		
-		return MathUtil.ceilDiv(this.getCurrentTransparentQuadsCount(), AbstractRenderBuffer.MAX_QUADS_PER_BUFFER);
+		return MathUtil.ceilDiv(this.getCurrentTransparentQuadsCount(), ColumnRenderBuffer.MAX_QUADS_PER_BUFFER);
 	}
 	
 }
