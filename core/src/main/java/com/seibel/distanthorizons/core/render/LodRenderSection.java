@@ -62,7 +62,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	public ColumnRenderBuffer renderBuffer; 
 	
 	
-	public boolean renderSourceLoading = false;
+	private CompletableFuture<Void> renderSourceLoadingFuture = null;
 	private boolean canRender = false;
 	
 	private boolean missingPositionsCalculated = false;
@@ -92,11 +92,10 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	
 	public void loadRenderSourceAsync()
 	{
-		if (this.renderSourceLoading)
+		if (this.renderSourceLoadingFuture != null)
 		{
 			return;
 		}
-		this.renderSourceLoading = true;
 		
 		
 		
@@ -108,7 +107,8 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 			return;
 		}
 		
-		executor.execute(() -> 
+		
+		this.renderSourceLoadingFuture = CompletableFuture.runAsync(() -> 
 		{
 			FullDataSourceV2 fullDataSource = null;
 			ColumnRenderSource[] adjacentRenderSections = null;
@@ -161,9 +161,9 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 				}
 				catch (Exception ignore){ }
 				
-				this.renderSourceLoading = false;
+				this.renderSourceLoadingFuture = null;
 			}
-		});
+		}, executor);
 	}
 	/** Should be called on the {@link ThreadPoolUtil#getFileHandlerExecutor()} */
 	private ColumnRenderSource[] getAndCreateNeighborRenderSources()
@@ -194,6 +194,8 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	//========================//
 	
 	public boolean canRender() { return this.canRender; }
+	
+	public boolean loadingRenderSource() { return this.renderSourceLoadingFuture != null; }
 	
 	
 	
@@ -267,6 +269,11 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		{
 			this.renderBuffer.close();
 		}
+		
+		if (this.renderSourceLoadingFuture != null)
+		{
+			this.renderSourceLoadingFuture.cancel(true);
+		}
 	}
 	
 	@Override
@@ -277,7 +284,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		{
 			color = Color.green;
 		}
-		else if (this.renderSourceLoading)
+		else if (this.renderSourceLoadingFuture != null)
 		{
 			color = Color.yellow;
 		}

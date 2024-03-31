@@ -308,7 +308,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 			{
 				// prepare this section for rendering
 				// TODO this should fire for the lowest detail level first to improve loading speed
-				if (!renderSection.renderSourceLoading && renderSection.renderBuffer == null)
+				if (!renderSection.loadingRenderSource() && renderSection.renderBuffer == null)
 				{
 					renderSection.loadRenderSourceAsync();
 				}
