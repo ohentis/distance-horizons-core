@@ -108,29 +108,6 @@ public class ColumnRenderSource implements IDataSource<IDhClientLevel>
 		this.worldGenStep = EDhApiWorldGenerationStep.EMPTY;
 	}
 	
-	/**
-	 * Creates a new ColumnRenderSource from the parsedColumnData.
-	 *
-	 * @throws IOException if the DataInputStream's detail level isn't what was expected
-	 */
-	public ColumnRenderSource(DhSectionPos sectionPos, ColumnRenderSourceLoader.ParsedColumnData parsedColumnData, IDhLevel level) throws IOException
-	{
-		if (sectionPos.getDetailLevel() - SECTION_SIZE_OFFSET != parsedColumnData.detailLevel)
-		{
-			throw new IOException("Invalid data: detail level does not match");
-		}
-		
-		this.sectionPos = sectionPos;
-		this.yOffset = level.getMinY();
-		this.verticalDataCount = parsedColumnData.verticalSize;
-		this.renderDataContainer = parsedColumnData.dataContainer;
-		this.worldGenStep = parsedColumnData.worldGenStep;
-		this.isEmpty = parsedColumnData.isEmpty;
-		
-		this.debugSourceFlags = new DebugSourceFlag[SECTION_SIZE * SECTION_SIZE];
-		this.fillDebugFlag(0, 0, SECTION_SIZE, SECTION_SIZE, DebugSourceFlag.FILE);
-	}
-	
 	
 	
 	//========================//

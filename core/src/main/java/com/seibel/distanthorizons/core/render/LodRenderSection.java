@@ -58,8 +58,8 @@ public class LodRenderSection implements IDebugRenderable
 	
 	private boolean isRenderingEnabled = false;
 	/**
-	 * If this is true, then {@ link LodRenderSection#reload(IRenderSourceProvider)} was called while
-	 * a {@ link IRenderSourceProvider} was already being loaded.
+	 * If this is true, then {@link LodRenderSection#reload(FullDataSourceProviderV2)} was called while
+	 * a {@link ColumnRenderSource} was already being loaded.
 	 */
 	private boolean reloadRenderSourceOnceLoaded = false;
 	
