@@ -59,6 +59,8 @@ public class NettyClient extends NettyEventSource implements INettyConnection, A
 			EConnectionState.CLOSED
 	);
 	private final AtomicReference<EConnectionState> connectionState = new AtomicReference<>(EConnectionState.INITIAL);
+	/** Indicates whether the client is working. */
+	public boolean isActive() { return this.connectionState.get() != EConnectionState.INITIAL && !this.isClosed(); }
 	/** Indicates whether the client is closed(-ing) and should not be used. */
 	public boolean isClosed() { return closedStates.contains(this.connectionState.get()); }
 	
@@ -188,6 +190,10 @@ public class NettyClient extends NettyEventSource implements INettyConnection, A
 	@Override
 	public ChannelHandlerContext getChannelContext()
 	{
+		if (this.channel == null)
+		{
+			return null;
+		}
 		return this.channel.pipeline().context(NettyMessageHandler.class);
 	}
 	
@@ -200,7 +206,8 @@ public class NettyClient extends NettyEventSource implements INettyConnection, A
 	@Override
     public void close() 
 	{
-		if (this.connectionState.getAndSet(EConnectionState.CLOSED) == EConnectionState.CLOSED)
+		EConnectionState stateChangeResult = this.connectionState.getAndSet(EConnectionState.CLOSED);
+		if (stateChangeResult == EConnectionState.CLOSED || stateChangeResult == EConnectionState.INITIAL)
 		{
 			return;
 		}
