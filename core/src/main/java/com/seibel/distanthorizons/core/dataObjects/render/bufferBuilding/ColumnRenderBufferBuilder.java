@@ -31,7 +31,6 @@ import com.seibel.distanthorizons.core.render.glObject.GLProxy;
 import com.seibel.distanthorizons.core.render.glObject.buffer.GLVertexBuffer;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.RenderDataPointUtil;
-import com.seibel.distanthorizons.core.util.objects.Reference;
 import com.seibel.distanthorizons.core.util.objects.UncheckedInterruptedException;
 import com.seibel.distanthorizons.core.dataObjects.render.columnViews.ColumnArrayView;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
@@ -63,8 +62,8 @@ public class ColumnRenderBufferBuilder
 	// vbo building //
 	//==============//
 	
-	public static CompletableFuture<ColumnRenderBuffer> buildBuffersAsync(
-			IDhClientLevel clientLevel, Reference<ColumnRenderBuffer> renderBufferRef,
+	public static CompletableFuture<ColumnRenderBuffer> buildAndUploadBuffersAsync(
+			IDhClientLevel clientLevel,
 			ColumnRenderSource renderSource, ColumnRenderSource[] adjData)
 	{
 		ThreadPoolExecutor bufferBuilderExecutor = ThreadPoolUtil.getBufferBuilderExecutor();
@@ -126,20 +125,11 @@ public class ColumnRenderBufferBuilder
 				{
 					try
 					{
-						//EVENT_LOGGER.trace("RenderRegion start Upload @ " + renderSource.sectionPos);
-						
-						ColumnRenderBuffer buffer = renderBufferRef.swap(null);
-						if (buffer == null)
-						{
-							buffer = new ColumnRenderBuffer(new DhBlockPos(renderSource.sectionPos.getMinCornerLodPos().getCornerBlockPos(), clientLevel.getMinY()), renderSource.sectionPos);
-						}
-						
+						ColumnRenderBuffer buffer = new ColumnRenderBuffer(new DhBlockPos(renderSource.sectionPos.getMinCornerLodPos().getCornerBlockPos(), clientLevel.getMinY()));
 						try
 						{
 							buffer.uploadBuffer(quadBuilder, GLProxy.getInstance().getGpuUploadMethod());
 							LodUtil.assertTrue(buffer.buffersUploaded);
-							
-							//EVENT_LOGGER.trace("RenderRegion end Upload @ " + renderSource.sectionPos);
 							return buffer;
 						}
 						catch (Exception e)
@@ -154,35 +144,10 @@ public class ColumnRenderBufferBuilder
 					}
 					catch (Throwable e3)
 					{
-						LOGGER.error("\"LodNodeBufferBuilder\" was unable to upload buffer: ", e3);
+						LOGGER.error("LodNodeBufferBuilder was unable to upload buffer: "+e3.getMessage(), e3);
 						throw e3;
 					}
-				}, bufferUploaderExecutor)
-				.handle((columnRenderBuffer, ex) ->
-				{
-					//LOGGER.info("RenderRegion endBuild @ {}", renderSource.sectionPos);
-					if (ex != null)
-					{
-						LOGGER.warn("Buffer building failed: " + ex.getMessage(), ex);
-						
-						if (!renderBufferRef.isEmpty())
-						{
-							ColumnRenderBuffer buffer = renderBufferRef.swap(null);
-							buffer.close();
-						}
-						
-						return null;
-					}
-					else
-					{
-						if (columnRenderBuffer != null)
-						{
-							LodUtil.assertTrue(columnRenderBuffer.buffersUploaded);
-						}
-						
-						return columnRenderBuffer; 
-					}
-				});
+				}, bufferUploaderExecutor);
 	}
 	private static void makeLodRenderData(LodQuadBuilder quadBuilder, ColumnRenderSource renderSource, ColumnRenderSource[] adjRegions)
 	{
@@ -321,8 +286,7 @@ public class ColumnRenderBufferBuilder
 					}
 					catch (RuntimeException e)
 					{
-						EVENT_LOGGER.warn("Failed to get adj data for [" + detailLevel + ":" + x + "," + z + "] at [" + lodDirection + "]");
-						EVENT_LOGGER.warn("Detail exception: ", e);
+						EVENT_LOGGER.warn("Failed to get adj data for [" + detailLevel + ":" + x + "," + z + "] at [" + lodDirection + "], Error: "+e.getMessage(), e);
 					}
 				} // for adjacent directions
 				

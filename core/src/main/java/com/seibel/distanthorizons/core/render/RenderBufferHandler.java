@@ -339,18 +339,7 @@ public class RenderBufferHandler implements AutoCloseable
 					}
 				}
 				
-				if (rebuildAllBuffers)
-				{
-					renderSection.markBufferDirty();
-				}
-				
-				renderSection.tryBuildAndSwapBuffer();
-				if (!renderSection.isRenderingEnabled())
-				{
-					continue;
-				}
-				
-				ColumnRenderBuffer buffer = renderSection.activeRenderBufferRef.get();
+				ColumnRenderBuffer buffer = renderSection.renderBuffer;
 				if (buffer == null)
 				{
 					continue;
@@ -362,7 +351,6 @@ public class RenderBufferHandler implements AutoCloseable
 			catch (Exception e)
 			{
 				LOGGER.error("Error updating QuadTree render source at " + renderSection.pos + ".", e);
-				renderSection.markBufferDirty();
 			}
 		}
 		
@@ -421,7 +409,7 @@ public class RenderBufferHandler implements AutoCloseable
 			LodRenderSection renderSection = nodeIterator.next().value;
 			if (renderSection != null)
 			{
-				renderSection.dispose();
+				renderSection.close();
 			}
 		}
 		

@@ -66,17 +66,15 @@ public class ColumnRenderBuffer implements AutoCloseable
 	private GLVertexBuffer[] vbos;
 	private GLVertexBuffer[] vbosTransparent;
 	
-	private final DhSectionPos debugPos;
 	
 	
 	//==============//
 	// constructors //
 	//==============//
 	
-	public ColumnRenderBuffer(DhBlockPos pos, DhSectionPos debugPos)
+	public ColumnRenderBuffer(DhBlockPos pos)
 	{
 		this.pos = pos;
-		this.debugPos = debugPos;
 		this.vbos = new GLVertexBuffer[0];
 		this.vbosTransparent = new GLVertexBuffer[0];
 	}

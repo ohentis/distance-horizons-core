@@ -23,6 +23,7 @@ import com.seibel.distanthorizons.api.enums.config.EHorizontalQuality;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.config.listeners.ConfigChangeListener;
 import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSource;
+import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.file.fullDatafile.FullDataSourceProviderV2;
 import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
@@ -131,7 +132,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 			try
 			{
 				// recenter if necessary, removing out of bounds sections
-				this.setCenterBlockPos(playerPos, LodRenderSection::dispose);
+				this.setCenterBlockPos(playerPos, LodRenderSection::close);
 				
 				this.updateAllRenderSections(playerPos);
 			}
@@ -158,9 +159,9 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 				try
 				{
 					LodRenderSection renderSection = this.getValue(pos);
-					if (renderSection != null)
+					if (renderSection != null && renderSection.renderingEnabled)
 					{
-						renderSection.reload(this.fullDataSourceProvider);
+						renderSection.loadRenderSourceAsync();
 					}
 				}
 				catch (IndexOutOfBoundsException e)
@@ -180,7 +181,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 			DhSectionPos rootPos = rootPosIterator.next();
 			if (this.getNode(rootPos) == null)
 			{
-				this.setValue(rootPos, new LodRenderSection(this, rootPos));
+				this.setValue(rootPos, new LodRenderSection(rootPos, this.level, this.fullDataSourceProvider));
 			}
 			
 			QuadNode<LodRenderSection> rootNode = this.getNode(rootPos);
@@ -209,7 +210,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 		// make sure the node is created
 		if (quadNode == null && this.isSectionPosInBounds(sectionPos)) // the position bounds should only fail when at the edge of the user's render distance
 		{
-			rootNode.setValue(sectionPos, new LodRenderSection(this, sectionPos));
+			rootNode.setValue(sectionPos, new LodRenderSection(sectionPos, this.level, this.fullDataSourceProvider));
 			quadNode = rootNode.getNode(sectionPos);
 		}
 		if (quadNode == null)
@@ -223,12 +224,11 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 		// create a new render section if missing
 		if (renderSection == null)
 		{
-			LodRenderSection newRenderSection = new LodRenderSection(this, sectionPos);
+			LodRenderSection newRenderSection = new LodRenderSection(sectionPos, this.level, this.fullDataSourceProvider);
 			rootNode.setValue(sectionPos, newRenderSection);
 			
 			renderSection = newRenderSection; // TODO this never seemed to be called, is it necessary?
 		}
-		
 		
 		
 		
@@ -246,7 +246,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 		if (sectionPos.getDetailLevel() > expectedDetailLevel)
 		{
 			// section detail level too high //
-			boolean canThisPosRender = renderSection.isRenderingEnabled();
+			boolean canThisPosRender = renderSection.canRender();
 			boolean allChildrenSectionsAreLoaded = true;
 			
 			// recursively update all child render sections
@@ -268,8 +268,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 			else
 			{
 				// all child positions are loaded, disable this section and enable its children.
-				renderSection.disableRendering();
-				renderSection.disposeRenderData();
+				renderSection.renderingEnabled = false;
 				
 				// walk back down the tree and enable the child sections //TODO there are probably more efficient ways of doing this, but this will work for now
 				childPosIterator = quadNode.getChildPosIterator();
@@ -309,23 +308,26 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 			{
 				// prepare this section for rendering
 				// TODO this should fire for the lowest detail level first to improve loading speed
-				renderSection.loadRenderSource(this.fullDataSourceProvider, this.level);
+				if (!renderSection.renderSourceLoading && renderSection.renderBuffer == null)
+				{
+					renderSection.loadRenderSourceAsync();
+				}
 				
 				// wait for the parent to disable before enabling this section, so we don't overdraw/overlap render sections
-				if (!parentRenderSectionIsEnabled && renderSection.canRenderNow())
+				if (!parentRenderSectionIsEnabled && renderSection.canRender())
 				{
 					// if rendering is already enabled we don't have to re-enable it
-					if (!renderSection.isRenderingEnabled())
+					if (!renderSection.renderingEnabled)
 					{
-						renderSection.enableRendering();
+						renderSection.renderingEnabled = true;
 						
 						// delete/disable children, all of them will be a lower detail level than requested
 						quadNode.deleteAllChildren((childRenderSection) ->
 						{
 							if (childRenderSection != null)
 							{
-								childRenderSection.disableRendering();
-								childRenderSection.disposeRenderData();
+								childRenderSection.renderingEnabled = false;
+								childRenderSection.close();
 							}
 						});
 					}
@@ -341,7 +343,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 			//	renderSection.disableRendering();
 			//}
 			
-			return renderSection.canRenderNow();
+			return renderSection.canRender();
 		}
 		else
 		{
@@ -440,7 +442,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 					QuadNode<LodRenderSection> quadNode = nodeIterator.next();
 					if (quadNode.value != null)
 					{
-						quadNode.value.disposeRenderData();
+						quadNode.value.close();
 						quadNode.value = null;
 					}
 				}
@@ -471,8 +473,16 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 			return;
 		}
 		
-		//LOGGER.info("LodQuadTree reloadPos ["+pos+"].");
+		
 		this.sectionsToReload.add(pos);
+		
+		// the adjacent locations also need to be updated to make sure lighting
+		// and water updates correctly, otherwise oceans may have walls
+		// and lights may not show up over LOD borders
+		for (EDhDirection direction : EDhDirection.ADJ_DIRECTIONS)
+		{
+			this.sectionsToReload.add(pos.getAdjacentPos(direction));
+		}
 	}
 	
 	
@@ -561,7 +571,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 			QuadNode<LodRenderSection> quadNode = nodeIterator.next();
 			if (quadNode.value != null)
 			{
-				quadNode.value.dispose();
+				quadNode.value.close();
 				quadNode.value = null;
 			}
 		}
