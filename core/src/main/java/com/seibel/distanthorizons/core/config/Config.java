@@ -878,6 +878,12 @@ public class Config
 									+ "Note: This requires DH to be installed on the server in order to function. \n"
 									+ "")
 							.build();
+					
+					/**
+					 * Server port. <br>
+					 * Do not use this to retrieve the current server's port;
+					 * Instead, use {@link com.seibel.distanthorizons.core.network.netty.NettyServer#port NettyServer#port}.
+					 */
 					public static ConfigEntry<Integer> serverPort = new ConfigEntry.Builder<Integer>()
 							.setServersideShortName("serverPort")
 							.setAppearance(EConfigEntryAppearance.ONLY_IN_FILE)

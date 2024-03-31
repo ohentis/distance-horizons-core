@@ -8,6 +8,7 @@ import com.seibel.distanthorizons.core.config.listeners.ConfigChangeListener;
 import com.seibel.distanthorizons.core.config.types.ConfigEntry;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.level.DhServerLevel;
+import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
 import com.seibel.distanthorizons.core.multiplayer.config.MultiplayerConfig;
 import com.seibel.distanthorizons.core.multiplayer.config.MultiplayerConfigChangeListener;
 import com.seibel.distanthorizons.core.network.exceptions.InvalidLevelException;
@@ -27,6 +28,7 @@ import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftSharedWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import io.netty.buffer.ByteBuf;
+import org.apache.logging.log4j.LogManager;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.Closeable;
@@ -44,6 +46,8 @@ public class RemotePlayerConnectionHandler implements Closeable
 {
 	private static final boolean DEBUG_ENABLE_OVERRIDES_IN_LAN = false;
 	
+	private static final ConfigBasedLogger LOGGER = new ConfigBasedLogger(LogManager.getLogger(),
+			() -> Config.Client.Advanced.Logging.logNetworkEvent.get());
 	private static final IMinecraftSharedWrapper MC_SERVER = SingletonInjector.INSTANCE.get(IMinecraftSharedWrapper.class);
 	private static final ConfigEntry<Boolean> GENERATE_MULTIPLE_DIMENSIONS_CONFIG = Config.Client.Advanced.Multiplayer.ServerNetworking.generateMultipleDimensions;
 	
@@ -123,9 +127,7 @@ public class RemotePlayerConnectionHandler implements Closeable
 	
 	private void onServerPortChanged(int ignored)
 	{
-		// stop server
-		// restart server on new port
-		this.broadcastConnectInfo(null);
+		LOGGER.warn("Server port change requires a server restart to take effect.");
 	}
 	private void broadcastConnectInfo(@Nullable Object ignored)
 	{
@@ -137,7 +139,6 @@ public class RemotePlayerConnectionHandler implements Closeable
 	private void sendConnectInfo(IServerPlayerWrapper serverPlayer)
 	{
 		String ipOverride = ServerNetworking.connectIpOverride.get();
-		int listenPort = ServerNetworking.serverPort.get();
 		int portOverride = ServerNetworking.connectPortOverride.get();
 		
 		// IP/port overrides are intended for using with port forwarding services,
@@ -150,7 +151,7 @@ public class RemotePlayerConnectionHandler implements Closeable
 		
 		this.pluginChannelHandler.sendMessageServer(serverPlayer, new ServerConnectInfoMessage(
 				!isLanPlayer && !ipOverride.isEmpty() ? ipOverride : null,
-				!isLanPlayer && portOverride != 0 ? portOverride : listenPort
+				!isLanPlayer && portOverride != 0 ? portOverride : this.server.port
 		));
 	}
 	
