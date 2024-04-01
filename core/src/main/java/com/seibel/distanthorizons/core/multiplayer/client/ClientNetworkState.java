@@ -80,9 +80,9 @@ public class ClientNetworkState implements Closeable
 	
 	private String[] f3Log()
 	{
-		if (!this.client.isActive())
+		if (!this.client.isInitialized())
 		{
-			return new String[]{"Waiting for connection info..."};
+			return new String[]{"Did not receive connection info yet..."};
 		}
 		
 		if (!this.client.isClosed())

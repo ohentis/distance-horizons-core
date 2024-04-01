@@ -60,7 +60,7 @@ public class NettyClient extends NettyEventSource implements INettyConnection, A
 	);
 	private final AtomicReference<EConnectionState> connectionState = new AtomicReference<>(EConnectionState.INITIAL);
 	/** Indicates whether the client is working. */
-	public boolean isActive() { return this.connectionState.get() != EConnectionState.INITIAL && !this.isClosed(); }
+	public boolean isInitialized() { return this.connectionState.get() != EConnectionState.INITIAL; }
 	/** Indicates whether the client is closed(-ing) and should not be used. */
 	public boolean isClosed() { return closedStates.contains(this.connectionState.get()); }
 	
