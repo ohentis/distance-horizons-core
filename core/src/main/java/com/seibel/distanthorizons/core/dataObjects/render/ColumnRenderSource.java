@@ -53,11 +53,6 @@ public class ColumnRenderSource implements IDataSource<IDhClientLevel>
 	public static final byte SECTION_SIZE_OFFSET = DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL;
 	public static final int SECTION_SIZE = BitShiftUtil.powerOfTwo(SECTION_SIZE_OFFSET);
 	
-	@Deprecated
-	public static final byte DATA_FORMAT_VERSION = 1;
-	@Override
-	public byte getDataFormatVersion() { return DATA_FORMAT_VERSION; }
-	
 	public static final DataSourcePool<ColumnRenderSource, IDhClientLevel> DATA_SOURCE_POOL = new DataSourcePool<>(ColumnRenderSource::createEmptyRenderSource, null /* data source prep/cleanup needs to be done outside the pool since it requires additional inputs */);
 	
 	

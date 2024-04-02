@@ -124,11 +124,6 @@ public class FullDataSourceV1 implements IDataSource<IDhLevel>
 	@Override
 	public byte getDataDetailLevel() { return (byte) (this.sectionPos.getDetailLevel() - SECTION_SIZE_OFFSET); }
 	
-	@Override
-	public byte getDataFormatVersion() { return DATA_FORMAT_VERSION; }
-	
-	public EDhApiWorldGenerationStep getWorldGenStep() { return this.worldGenStep; }
-	
 	public boolean isEmpty() { return this.isEmpty; }
 	
 	

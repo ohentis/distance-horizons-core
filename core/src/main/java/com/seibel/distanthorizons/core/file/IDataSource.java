@@ -34,7 +34,4 @@ public interface IDataSource<TDhLevel extends IDhLevel> extends IBaseDTO<DhSecti
 	 */
 	byte getDataDetailLevel();
 	
-	/** Defines how the binary data is formatted. */
-	byte getDataFormatVersion();
-	
 }

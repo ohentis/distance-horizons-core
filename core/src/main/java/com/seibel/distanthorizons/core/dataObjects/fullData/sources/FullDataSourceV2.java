@@ -869,9 +869,6 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 	@Override
 	public byte getDataDetailLevel() { return (byte) (this.pos.getDetailLevel() - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL); }
 	
-	@Override
-	public byte getDataFormatVersion() { return DATA_FORMAT_VERSION; }
-	
 	public EDhApiWorldGenerationStep getWorldGenStepAtRelativePos(int relX, int relZ) 
 	{
 		int index = relativePosToIndex(relX, relZ);
