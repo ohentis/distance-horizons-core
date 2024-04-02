@@ -356,8 +356,6 @@
   "distanthorizons.config.client.advanced.multiplayer.serverNetworking.generalSectionNote": " \u25cf  General",
   "distanthorizons.config.client.advanced.multiplayer.serverNetworking.enableServerNetworking": "Enable Server Networking",
   "distanthorizons.config.client.advanced.multiplayer.serverNetworking.enableServerNetworking.@tooltip": "§6Attention:§r this feature is not fully implemented. \n\nIf true Distant Horizons will attempt to communicate with the connected \nserver in order to load LODs outside your vanilla render distance. \n\nNote: This requires DH to be installed on the server in order to function.",
-  "distanthorizons.config.client.advanced.multiplayer.serverNetworking.serverPort": "Server Port",
-  "distanthorizons.config.client.advanced.multiplayer.serverNetworking.serverPort.@tooltip": "The port on the server that's used for sending LOD data.",
   "distanthorizons.config.client.advanced.multiplayer.serverNetworking.generationSectionNote": " \u25cf  Generation",
   "distanthorizons.config.client.advanced.multiplayer.serverNetworking.generationRequestRCLimit": "Gen Task Rate/Concurrency Limit",
   "distanthorizons.config.client.advanced.multiplayer.serverNetworking.generationRequestRCLimit.@tooltip": "Limits the amount of generation requests sent by client and processed by server.",

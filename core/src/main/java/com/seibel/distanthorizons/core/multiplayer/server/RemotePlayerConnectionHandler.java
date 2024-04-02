@@ -144,10 +144,7 @@ public class RemotePlayerConnectionHandler implements Closeable
 		// IP/port overrides are intended for using with port forwarding services,
 		// and LAN clients are unlikely to need to hop through internet
 		InetAddress ip = ((InetSocketAddress) serverPlayer.getRemoteAddress()).getAddress();
-		boolean isLanPlayer = !DEBUG_ENABLE_OVERRIDES_IN_LAN &&
-				(ip.isLoopbackAddress() ||
-						ip.isLinkLocalAddress() ||
-						ip.isSiteLocalAddress());
+		boolean isLanPlayer = !DEBUG_ENABLE_OVERRIDES_IN_LAN && (ip.isLinkLocalAddress() || ip.isSiteLocalAddress());
 		
 		this.pluginChannelHandler.sendMessageServer(serverPlayer, new ServerConnectInfoMessage(
 				!isLanPlayer && !ipOverride.isEmpty() ? ipOverride : null,
