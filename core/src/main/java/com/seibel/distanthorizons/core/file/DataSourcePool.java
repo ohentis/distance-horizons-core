@@ -2,6 +2,7 @@ package com.seibel.distanthorizons.core.file;
 
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.util.ThreadUtil;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -16,6 +17,13 @@ import java.util.function.Function;
  */
 public class DataSourcePool<TDataSource extends IDataSource<TDhLevel>, TDhLevel extends IDhLevel>
 {
+	/** 
+	 * James tested with a static 25 on a 8 core 16 processor machine and didn't have any issues.
+	 * In most cases the number of pooled sources won't probably even get close to the number of processors,
+	 * but just in case the user has a overkill CPU (or config) this should hopefully prevent thrashing.
+	 */
+	private static final int MAX_POOLED_SOURCES = Runtime.getRuntime().availableProcessors() * 2;
+	
 	private final ArrayList<TDataSource> pooledDataSources = new ArrayList<>();
 	private final ReentrantLock poolLock = new ReentrantLock();
 	
@@ -90,7 +98,7 @@ public class DataSourcePool<TDataSource extends IDataSource<TDhLevel>, TDhLevel 
 		{
 			return;
 		}
-		else if (this.pooledDataSources.size() > 25)
+		else if (this.pooledDataSources.size() > MAX_POOLED_SOURCES)
 		{
 			return;
 		}
