@@ -277,6 +277,9 @@ public class ClientOnlySaveStructure extends AbstractSaveStructure
 			case NAME_ONLY:
 				folderName = serverName;
 				break;
+			case IP_ONLY:
+				folderName = serverIpCleaned;
+				break;
 			
 			case NAME_IP:
 				folderName = serverName + ", IP " + serverIpCleaned;

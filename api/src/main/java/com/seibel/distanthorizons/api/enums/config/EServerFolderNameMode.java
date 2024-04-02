@@ -22,6 +22,7 @@ package com.seibel.distanthorizons.api.enums.config;
 
 /**
  * NAME_ONLY, <br>
+ * IP_ONLY, <br>
  * NAME_IP, <br>
  * NAME_IP_PORT, <br>
  * NAME_IP_PORT_MC_VERSION, <br> <br>
@@ -29,7 +30,7 @@ package com.seibel.distanthorizons.api.enums.config;
  * Determines how the multiplayer folders should be named.
  *
  * @author James Seibel
- * @version 2022-7-1
+ * @version 2024-4-2
  * @since API 1.0.0
  */
 public enum EServerFolderNameMode
@@ -41,6 +42,9 @@ public enum EServerFolderNameMode
 	
 	/** Only use the server name */
 	NAME_ONLY,
+	
+	/** Only use the server IP */
+	IP_ONLY,
 	
 	/**
 	 * {SERVER_NAME} IP {IP} <br>

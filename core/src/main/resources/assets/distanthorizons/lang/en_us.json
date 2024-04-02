@@ -813,6 +813,8 @@
     
   "distanthorizons.config.enum.EServerFolderNameMode.NAME_ONLY":
     "Name Only",
+  "distanthorizons.config.enum.EServerFolderNameMode.IP_ONLY":
+    "IP Only",
   "distanthorizons.config.enum.EServerFolderNameMode.NAME_IP":
     "Name and IP",
   "distanthorizons.config.enum.EServerFolderNameMode.NAME_IP_PORT":
