@@ -72,7 +72,6 @@ public class ColumnRenderSource implements IDataSource<IDhClientLevel>
 	public final DebugSourceFlag[] debugSourceFlags;
 	
 	private boolean isEmpty = true;
-	public EDhApiWorldGenerationStep worldGenStep;
 	
 	public AtomicLong localVersion = new AtomicLong(0); // used to track changes to the data source, so that buffers can be updated when necessary
 	
@@ -129,7 +128,6 @@ public class ColumnRenderSource implements IDataSource<IDhClientLevel>
 		this.debugSourceFlags = new DebugSourceFlag[SECTION_SIZE * SECTION_SIZE];
 		this.pos = pos;
 		this.yOffset = yOffset;
-		this.worldGenStep = EDhApiWorldGenerationStep.EMPTY;
 	}
 	
 	
