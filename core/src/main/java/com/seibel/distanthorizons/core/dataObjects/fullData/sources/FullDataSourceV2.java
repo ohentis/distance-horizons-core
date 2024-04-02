@@ -207,7 +207,7 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 			}
 		}
 		
-		FullDataSourceV2 fullDataSource = FullDataSourceV2.createWithData(legacyData.getSectionPos(), legacyData.mapping, dataPoints, columnGenerationSteps, columnWorldCompressionMode);
+		FullDataSourceV2 fullDataSource = FullDataSourceV2.createWithData(legacyData.getPos(), legacyData.mapping, dataPoints, columnGenerationSteps, columnWorldCompressionMode);
 		
 		
 		// should only be used if debugging, this is a very expensive operation
@@ -864,7 +864,7 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 	//=====================//
 	
 	@Override
-	public DhSectionPos getSectionPos() { return this.pos; }
+	public DhSectionPos getPos() { return this.pos; }
 	
 	@Override
 	public byte getDataDetailLevel() { return (byte) (this.pos.getDetailLevel() - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL); }

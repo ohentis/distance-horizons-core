@@ -173,12 +173,12 @@ public abstract class AbstractNewDataSourceHandler
 		try
 		{
 			// run file handling on a separate thread
-			this.markUpdateStart(inputDataSource.getSectionPos());
+			this.markUpdateStart(inputDataSource.getPos());
 			return CompletableFuture.runAsync(() ->
 			{
 				try
 				{
-					this.updateDataSourceAtPos(inputDataSource.getSectionPos(), inputDataSource, true);
+					this.updateDataSourceAtPos(inputDataSource.getPos(), inputDataSource, true);
 				}
 				catch (Exception e)
 				{
@@ -186,14 +186,14 @@ public abstract class AbstractNewDataSourceHandler
 				}
 				finally
 				{
-					this.markUpdateEnd(inputDataSource.getSectionPos());
+					this.markUpdateEnd(inputDataSource.getPos());
 				}
 			}, executor);
 		}
 		catch (RejectedExecutionException ignore)
 		{
 			// can happen if the executor was shutdown while this task was queued
-			this.markUpdateEnd(inputDataSource.getSectionPos());
+			this.markUpdateEnd(inputDataSource.getPos());
 			return CompletableFuture.completedFuture(null);
 		}
 	}

@@ -67,7 +67,7 @@ public abstract class AbstractDhLevel implements IDhLevel
 		}
 		
 		
-		this.updatedChunkPosSetBySectionPos.compute(dataSource.getSectionPos(), (dataSourcePos, chunkPosSet) -> 
+		this.updatedChunkPosSetBySectionPos.compute(dataSource.getPos(), (dataSourcePos, chunkPosSet) -> 
 		{
 			if (chunkPosSet == null)
 			{
@@ -85,7 +85,7 @@ public abstract class AbstractDhLevel implements IDhLevel
 	{
 		this.updateDataSourcesAsync(fullDataSource).thenRun(() -> 
 		{
-			HashSet<DhChunkPos> updatedChunkPosSet = this.updatedChunkPosSetBySectionPos.remove(fullDataSource.getSectionPos());
+			HashSet<DhChunkPos> updatedChunkPosSet = this.updatedChunkPosSetBySectionPos.remove(fullDataSource.getPos());
 			if (updatedChunkPosSet != null)
 			{
 				for (DhChunkPos chunkPos : updatedChunkPosSet)

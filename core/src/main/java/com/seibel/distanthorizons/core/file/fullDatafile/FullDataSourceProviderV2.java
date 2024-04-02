@@ -340,12 +340,12 @@ public class FullDataSourceProviderV2
 						future.thenRun(() -> 
 						{
 							// after the update finishes the legacy data source can be safely deleted
-							this.legacyFileHandler.repo.deleteWithKey(legacyDataSource.getSectionPos());
+							this.legacyFileHandler.repo.deleteWithKey(legacyDataSource.getPos());
 						});
 					}
 					catch (Exception e)
 					{
-						DhSectionPos migrationPos = legacyDataSource.getSectionPos();
+						DhSectionPos migrationPos = legacyDataSource.getPos();
 						LOGGER.error("Unexpected issue migrating data source at pos "+migrationPos+". Error: "+e.getMessage(), e);
 						this.legacyFileHandler.markMigrationFailed(migrationPos);
 					}

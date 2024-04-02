@@ -48,7 +48,7 @@ public class DelayedFullDataSourceSaveCache
 	
 	public void queueDataSourceForUpdateAndSave(FullDataSourceV2 inputDataSource)
 	{
-		DhSectionPos dataSourcePos = inputDataSource.getSectionPos();
+		DhSectionPos dataSourcePos = inputDataSource.getPos();
 		this.dataSourceByPosition.compute(dataSourcePos, (inputPos, temporaryDataSource) ->
 		{
 			if (temporaryDataSource == null)

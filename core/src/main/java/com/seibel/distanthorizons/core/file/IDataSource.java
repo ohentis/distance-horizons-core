@@ -1,14 +1,10 @@
 package com.seibel.distanthorizons.core.file;
 
 import com.seibel.distanthorizons.api.enums.EDhApiDetailLevel;
-import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.sql.dto.IBaseDTO;
-import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataOutputStream;
-
-import java.io.IOException;
 
 /**
  * Base for all data sources. <br><br>
@@ -19,7 +15,7 @@ import java.io.IOException;
  */
 public interface IDataSource<TDhLevel extends IDhLevel> extends IBaseDTO<DhSectionPos>, AutoCloseable
 {
-	DhSectionPos getSectionPos();
+	DhSectionPos getPos();
 	
 	/** @return true if the data was changed */
 	boolean update(FullDataSourceV2 chunkData, TDhLevel level);

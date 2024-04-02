@@ -107,7 +107,7 @@ public class ColumnRenderBufferBuilder
 						
 						long builderEndTime = System.currentTimeMillis();
 						long buildMs = builderEndTime - builderStartTime;
-						LOGGER.debug("RenderRegion end QuadBuild @ " + renderSource.sectionPos + " took: " + buildMs);
+						LOGGER.debug("RenderRegion end QuadBuild @ " + renderSource.pos + " took: " + buildMs);
 						
 						return builder;
 					}
@@ -125,7 +125,7 @@ public class ColumnRenderBufferBuilder
 				{
 					try
 					{
-						ColumnRenderBuffer buffer = new ColumnRenderBuffer(new DhBlockPos(renderSource.sectionPos.getMinCornerLodPos().getCornerBlockPos(), clientLevel.getMinY()));
+						ColumnRenderBuffer buffer = new ColumnRenderBuffer(new DhBlockPos(renderSource.pos.getMinCornerLodPos().getCornerBlockPos(), clientLevel.getMinY()));
 						try
 						{
 							buffer.uploadBuffer(quadBuilder, GLProxy.getInstance().getGpuUploadMethod());
@@ -159,9 +159,9 @@ public class ColumnRenderBufferBuilder
 		boolean enableColumnBufferLimit = Config.Client.Advanced.Debugging.columnBuilderDebugEnable.get();
 		if (enableColumnBufferLimit)
 		{
-			if (renderSource.sectionPos.getDetailLevel() == Config.Client.Advanced.Debugging.columnBuilderDebugDetailLevel.get()
-				&& renderSource.sectionPos.getX() == Config.Client.Advanced.Debugging.columnBuilderDebugXPos.get()
-				&& renderSource.sectionPos.getZ() == Config.Client.Advanced.Debugging.columnBuilderDebugZPos.get())
+			if (renderSource.pos.getDetailLevel() == Config.Client.Advanced.Debugging.columnBuilderDebugDetailLevel.get()
+				&& renderSource.pos.getX() == Config.Client.Advanced.Debugging.columnBuilderDebugXPos.get()
+				&& renderSource.pos.getZ() == Config.Client.Advanced.Debugging.columnBuilderDebugZPos.get())
 			{
 				int test = 0;
 			}

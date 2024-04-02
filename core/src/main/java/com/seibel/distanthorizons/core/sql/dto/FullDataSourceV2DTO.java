@@ -78,7 +78,7 @@ public class FullDataSourceV2DTO implements IBaseDTO<DhSectionPos>
 		byte[] mappingByteArray = writeDataMappingToBlob(dataSource.mapping, compressionModeEnum);
 		
 		return new FullDataSourceV2DTO(
-				dataSource.getSectionPos(), 
+				dataSource.getPos(), 
 				checkedDataPointArray.checksum, compressedWorldGenStepByteArray, compressedWorldCompressionModeByteArray, FullDataSourceV2.DATA_FORMAT_VERSION, compressionModeEnum, checkedDataPointArray.byteArray,
 				dataSource.lastModifiedUnixDateTime, dataSource.createdUnixDateTime,
 				mappingByteArray, dataSource.applyToParent, 
@@ -145,7 +145,7 @@ public class FullDataSourceV2DTO implements IBaseDTO<DhSectionPos>
 		dataSource.columnWorldCompressionMode = readBlobToGenerationSteps(this.compressedWorldCompressionModeByteArray, this.compressionModeEnum);
 		dataSource.dataPoints = readBlobToDataSourceDataArray(this.compressedDataByteArray, this.compressionModeEnum);
 		
-		dataSource.mapping.clear(dataSource.getSectionPos());
+		dataSource.mapping.clear(dataSource.getPos());
 		// should only be null when used in a unit test
 		if (!unitTest)
 		{
@@ -154,7 +154,7 @@ public class FullDataSourceV2DTO implements IBaseDTO<DhSectionPos>
 				throw new NullPointerException("No level wrapper present, unable to deserialize data map. This should only be used for unit tests.");
 			}
 			
-			dataSource.mapping.mergeAndReturnRemappedEntityIds(readBlobToDataMapping(this.compressedMappingByteArray, dataSource.getSectionPos(), levelWrapper,  this.compressionModeEnum));
+			dataSource.mapping.mergeAndReturnRemappedEntityIds(readBlobToDataMapping(this.compressedMappingByteArray, dataSource.getPos(), levelWrapper,  this.compressionModeEnum));
 		}
 		
 		dataSource.lastModifiedUnixDateTime = this.lastModifiedUnixDateTime;

@@ -113,7 +113,7 @@ public class FullDataSourceV1 implements IDataSource<IDhLevel>
 	public DhSectionPos getKey() { return this.sectionPos; }
 	
 	@Override
-	public DhSectionPos getSectionPos() { return this.sectionPos; }
+	public DhSectionPos getPos() { return this.sectionPos; }
 	
 	public void resizeDataStructuresForRepopulation(DhSectionPos pos)
 	{
