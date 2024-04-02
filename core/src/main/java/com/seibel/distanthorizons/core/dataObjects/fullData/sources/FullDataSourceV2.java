@@ -24,8 +24,8 @@ import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGeneratio
 import com.seibel.distanthorizons.core.dataObjects.fullData.FullDataPointIdMap;
 import com.seibel.distanthorizons.core.dataObjects.transformers.LodDataBuilder;
 import com.seibel.distanthorizons.core.file.AbstractNewDataSourceHandler;
+import com.seibel.distanthorizons.core.file.DataSourcePool;
 import com.seibel.distanthorizons.core.file.IDataSource;
-import com.seibel.distanthorizons.core.file.fullDatafile.FullDataSourceProviderV2;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
@@ -33,7 +33,6 @@ import com.seibel.distanthorizons.core.util.FullDataPointUtilV2;
 import com.seibel.distanthorizons.core.util.FullDataPointUtilV1;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.RenderDataPointUtil;
-import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataOutputStream;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
@@ -41,15 +40,10 @@ import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nullable;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * This data source contains every datapoint over its given {@link DhSectionPos}. <br><br>
- * 
- * TODO create a child object that extends AutoClosable
- *       that can be pooled to reduce GC overhead 
  * 
  * @see FullDataPointUtilV2
  * @see FullDataSourceV1
@@ -71,7 +65,9 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 	public static final int WIDTH = 64;
 	
 	public static final byte DATA_FORMAT_VERSION = 1;
-		
+	
+	public static final DataSourcePool<FullDataSourceV2, IDhLevel> DATA_SOURCE_POOL = new DataSourcePool<>(FullDataSourceV2::createEmpty, FullDataSourceV2::prepPooledDataSource);
+	
 	
 	
 	private int cachedHashCode = 0;
@@ -836,6 +832,33 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 	
 	
 	
+	//=========//
+	// pooling //
+	//=========//
+	
+	private static void prepPooledDataSource(DhSectionPos pos, boolean clearData, FullDataSourceV2 dataSource)
+	{
+		dataSource.pos = pos;
+		
+		if (clearData)
+		{
+			dataSource.mapping.clear(pos);
+			
+			for (int i = 0; i < dataSource.dataPoints.length; i++)
+			{
+				if (dataSource.dataPoints[i] != null)
+				{
+					dataSource.dataPoints[i].clear();
+				}
+			}
+			
+			Arrays.fill(dataSource.columnGenerationSteps, (byte) 0);
+			Arrays.fill(dataSource.columnWorldCompressionMode, (byte) 0);
+		}
+	}
+	
+	
+	
 	//=====================//
 	// setters and getters //
 	//=====================//
@@ -929,92 +952,10 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 		}
 	}
 	
-	
-	
-	//=========//
-	// pooling //
-	//=========//
-	
 	@Override
 	public void close() throws Exception
 	{
-		returnPooledDataSource(this);
+		DATA_SOURCE_POOL.returnPooledDataSource(this);
 	}
-	
-	
-	/** used when pooling data sources */
-	private static final ArrayList<FullDataSourceV2> CACHED_SOURCES = new ArrayList<>();
-	private static final ReentrantLock CACHE_LOCK = new ReentrantLock();
-	
-	
-	/** @return an empty data source if non are cached */
-	public static FullDataSourceV2 getPooledSource(DhSectionPos pos, boolean clearData)
-	{
-		try
-		{
-			CACHE_LOCK.lock();
-			
-			int index = CACHED_SOURCES.size() - 1;
-			if (index == -1)
-			{
-				// no pooled sources exist
-				return createEmpty(pos);
-			}
-			else
-			{
-				FullDataSourceV2 dataSource = CACHED_SOURCES.remove(index);
-				dataSource.pos = pos;
-				
-				if (clearData)
-				{
-					dataSource.mapping.clear(pos);
-					
-					for (int i = 0; i < dataSource.dataPoints.length; i++)
-					{
-						if (dataSource.dataPoints[i] != null)
-						{
-							dataSource.dataPoints[i].clear();
-						}
-					}
-					
-					Arrays.fill(dataSource.columnGenerationSteps, (byte) 0);
-					Arrays.fill(dataSource.columnWorldCompressionMode, (byte) 0);
-				}
-				
-				return dataSource;
-			}
-		}
-		finally
-		{
-			CACHE_LOCK.unlock();
-		}
-	}
-	
-	/**
-	 * Doesn't have to be called, if a data source isn't returned, nothing will be leaked. 
-	 * It just means a new source must be constructed next time {@link FullDataSourceV2#getPooledSource} is called.
-	 */
-	public static void returnPooledDataSource(FullDataSourceV2 dataSource)
-	{
-		if (dataSource == null)
-		{
-			return;
-		}
-		else if (CACHED_SOURCES.size() > 25)
-		{
-			return;
-		}
-		
-		try
-		{
-			CACHE_LOCK.lock();
-			CACHED_SOURCES.add(dataSource);
-		}
-		finally
-		{
-			CACHE_LOCK.unlock();
-		}
-	}
-	
 	
 }

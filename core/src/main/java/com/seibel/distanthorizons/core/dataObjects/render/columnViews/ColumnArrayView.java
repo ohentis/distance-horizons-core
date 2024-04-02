@@ -21,12 +21,13 @@ package com.seibel.distanthorizons.core.dataObjects.render.columnViews;
 
 
 import com.seibel.distanthorizons.core.util.RenderDataPointUtil;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 
 import java.util.Arrays;
 
 public final class ColumnArrayView implements IColumnDataView
 {
-	public final long[] data;
+	public final LongArrayList data;
 	public final int size;
 	public final int offset; // offset in longs
 	/** can be 0 if this column was created for an empty data source */
@@ -34,7 +35,7 @@ public final class ColumnArrayView implements IColumnDataView
 	
 	
 	
-	public ColumnArrayView(long[] data, int size, int offset, int vertSize)
+	public ColumnArrayView(LongArrayList data, int size, int offset, int vertSize)
 	{
 		this.data = data;
 		this.size = size;
@@ -45,9 +46,9 @@ public final class ColumnArrayView implements IColumnDataView
 	
 	
 	@Override
-	public long get(int index) { return data[index + offset]; }
+	public long get(int index) { return data.getLong(index + offset); }
 	
-	public void set(int index, long value) { data[index + offset] = value; }
+	public void set(int index, long value) { data.set(index + offset, value); }
 	
 	@Override
 	public int size() { return size; }
@@ -64,7 +65,7 @@ public final class ColumnArrayView implements IColumnDataView
 		return new ColumnArrayView(data, dataCount * vertSize, offset + dataIndexStart * vertSize, vertSize);
 	}
 	
-	public void fill(long value) { Arrays.fill(data, offset, offset + size, value); }
+	public void fill(long value) { Arrays.fill(data.elements(), offset, offset + size, value); }
 	
 	public void copyFrom(IColumnDataView source) { copyFrom(source, 0); }
 	public void copyFrom(IColumnDataView source, int outputDataIndexOffset)
@@ -82,19 +83,19 @@ public final class ColumnArrayView implements IColumnDataView
 			for (int i = 0; i < source.dataCount(); i++)
 			{
 				int outputOffset = offset + outputDataIndexOffset * vertSize + i * vertSize;
-				source.subView(i, 1).copyTo(data, outputOffset, source.verticalSize());
-				Arrays.fill(data, outputOffset + source.verticalSize(),
+				source.subView(i, 1).copyTo(data.elements(), outputOffset, source.verticalSize());
+				Arrays.fill(data.elements(), outputOffset + source.verticalSize(),
 						outputOffset + vertSize, 0);
 			}
 		}
 		else
 		{
-			source.copyTo(data, offset + outputDataIndexOffset * vertSize, source.size());
+			source.copyTo(data.elements(), offset + outputDataIndexOffset * vertSize, source.size());
 		}
 	}
 	
 	@Override
-	public void copyTo(long[] target, int offset, int size) { System.arraycopy(data, this.offset, target, offset, size); }
+	public void copyTo(long[] target, int offset, int size) { System.arraycopy(data.elements(), this.offset, target, offset, size); }
 	
 	public boolean mergeWith(ColumnArrayView source, boolean override)
 	{
@@ -170,7 +171,7 @@ public final class ColumnArrayView implements IColumnDataView
 		sb.append(" [");
 		for (int i = 0; i < size; i++)
 		{
-			sb.append(RenderDataPointUtil.toString(data[offset + i]));
+			sb.append(RenderDataPointUtil.toString(data.getLong(offset + i)));
 			if (i < size - 1)
 			{
 				sb.append(",\n");
@@ -186,15 +187,18 @@ public final class ColumnArrayView implements IColumnDataView
 		return arrayHash(data, offset, size);
 	}
 	
-	private static int arrayHash(long[] a, int offset, int length)
+	private static int arrayHash(LongArrayList a, int offset, int length)
 	{
 		if (a == null)
+		{
 			return 0;
+		}
+		
 		int result = 1;
 		int end = offset + length;
 		for (int i = offset; i < end; i++)
 		{
-			long element = a[i];
+			long element = a.getLong(i);
 			int elementHash = (int) (element ^ (element >>> 32));
 			result = 31 * result + elementHash;
 		}

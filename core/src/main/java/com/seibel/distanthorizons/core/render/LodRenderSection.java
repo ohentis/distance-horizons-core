@@ -112,12 +112,13 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		{
 			FullDataSourceV2 fullDataSource = null;
 			ColumnRenderSource[] adjacentRenderSections = null;
+			ColumnRenderSource renderSource = null;
 			
 			try
 			{
 				// get this positions data source
 				fullDataSource = this.fullDataSourceProvider.get(this.pos);
-				ColumnRenderSource renderSource = FullDataToRenderDataTransformer.transformFullDataToRenderSource(fullDataSource, this.level);
+				renderSource = FullDataToRenderDataTransformer.transformFullDataToRenderSource(fullDataSource, this.level);
 				if (renderSource.isEmpty())
 				{
 					// nothing needs to be rendered
@@ -147,14 +148,19 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 						fullDataSource.close();
 					}
 					
+					if (renderSource != null)
+					{
+						renderSource.close();
+					}
+					
 					if (adjacentRenderSections != null)
 					{
 						for (int i = 0; i < adjacentRenderSections.length; i++)
 						{
-							ColumnRenderSource renderSource = adjacentRenderSections[i];
-							if (renderSource != null)
+							ColumnRenderSource adjacentRenderSource = adjacentRenderSections[i];
+							if (adjacentRenderSource != null)
 							{
-								renderSource.close();
+								adjacentRenderSource.close();
 							}
 						}
 					}

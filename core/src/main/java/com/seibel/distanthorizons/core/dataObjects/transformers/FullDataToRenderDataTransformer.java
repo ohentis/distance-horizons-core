@@ -99,7 +99,7 @@ public class FullDataToRenderDataTransformer
 		final DhSectionPos pos = fullDataSource.getSectionPos();
 		final byte dataDetail = fullDataSource.getDataDetailLevel();
 		final int vertSize = Config.Client.Advanced.Graphics.Quality.verticalQuality.get().calculateMaxVerticalData(fullDataSource.getDataDetailLevel());
-		final ColumnRenderSource columnSource = new ColumnRenderSource(pos, vertSize, level.getMinY());
+		final ColumnRenderSource columnSource = ColumnRenderSource.getPooledRenderSource(pos, vertSize, level.getMinY(), true);
 		if (fullDataSource.isEmpty)
 		{
 			return columnSource;
@@ -304,7 +304,7 @@ public class FullDataToRenderDataTransformer
 		int dataTotalLength = fullDataColumn.size();
 		if (dataTotalLength > columnArrayView.verticalSize())
 		{
-			ColumnArrayView totalColumnData = new ColumnArrayView(new long[dataTotalLength], dataTotalLength, 0, dataTotalLength);
+			ColumnArrayView totalColumnData = new ColumnArrayView(new LongArrayList(new long[dataTotalLength]), dataTotalLength, 0, dataTotalLength);
 			iterateAndConvert(level, fullDataMapping, blockX, blockZ, totalColumnData, fullDataColumn);
 			columnArrayView.changeVerticalSizeFrom(totalColumnData);
 		}

@@ -120,7 +120,7 @@ public class FullDataSourceV2DTO implements IBaseDTO<DhSectionPos>
 	
 	public FullDataSourceV2 createPooledDataSource(@NotNull ILevelWrapper levelWrapper) throws IOException, InterruptedException
 	{
-		FullDataSourceV2 dataSource = FullDataSourceV2.getPooledSource(this.pos, false);
+		FullDataSourceV2 dataSource = FullDataSourceV2.DATA_SOURCE_POOL.getPooledSource(this.pos, false);
 		return this.populateDataSource(dataSource, levelWrapper);
 	}
 	
