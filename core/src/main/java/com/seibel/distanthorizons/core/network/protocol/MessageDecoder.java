@@ -19,19 +19,27 @@
 
 package com.seibel.distanthorizons.core.network.protocol;
 
+import com.seibel.distanthorizons.core.network.messages.AbstractMessageRegistry;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
 
 import java.util.List;
 
-public class MessageDecoder extends ByteToMessageDecoder 
+public class MessageDecoder<TMessage extends INetworkObject> extends ByteToMessageDecoder
 {
-    @Override
-    protected void decode(ChannelHandlerContext channelContext, ByteBuf inputByteBuf, List<Object> outputDecodedObjectList) 
+	private final AbstractMessageRegistry<TMessage> messageRegistry;
+	
+	public MessageDecoder(AbstractMessageRegistry<TMessage> messageRegistry)
 	{
-        NetworkMessage message = MessageRegistry.INSTANCE.createMessage(inputByteBuf.readShort());
-        outputDecodedObjectList.add(INetworkObject.decodeStatic(message, inputByteBuf));
-    }
+		this.messageRegistry = messageRegistry;
+	}
+	
+	@Override
+	protected void decode(ChannelHandlerContext channelContext, ByteBuf inputByteBuf, List<Object> outputDecodedObjectList)
+	{
+		TMessage message = this.messageRegistry.createMessage(inputByteBuf.readShort());
+		outputDecodedObjectList.add(INetworkObject.readToObject(message, inputByteBuf));
+	}
 	
 }

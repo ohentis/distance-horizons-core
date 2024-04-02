@@ -25,7 +25,7 @@ import com.seibel.distanthorizons.core.file.structure.ClientOnlySaveStructure;
 import com.seibel.distanthorizons.core.level.DhClientLevel;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.multiplayer.client.ClientNetworkState;
-import com.seibel.distanthorizons.core.network.NetworkClient;
+import com.seibel.distanthorizons.core.network.netty.NettyClient;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
 import com.seibel.distanthorizons.core.util.objects.EventLoop;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
@@ -34,19 +34,17 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
 import java.io.File;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 
 public class DhClientWorld extends AbstractDhWorld implements IDhClientWorld
 {
-	private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
-	
 	private final ConcurrentHashMap<IClientLevelWrapper, DhClientLevel> levels;
 	public final ClientOnlySaveStructure saveStructure;
-	@CheckForNull
-	private final ClientNetworkState networkState;
+	@Nullable
+	public final ClientNetworkState networkState;
 	
 	public ExecutorService dhTickerThread = ThreadUtil.makeSingleThreadPool("Client World Ticker Thread");
 	public EventLoop eventLoop = new EventLoop(this.dhTickerThread, this::_clientTick);
@@ -64,16 +62,9 @@ public class DhClientWorld extends AbstractDhWorld implements IDhClientWorld
 		this.saveStructure = new ClientOnlySaveStructure();
 		this.levels = new ConcurrentHashMap<>();
 		
-		if (Config.Client.Advanced.Multiplayer.ServerNetworking.enableServerNetworking.get())
-		{
-			// TODO per server configs
-			NetworkClient networkClient = new NetworkClient(MC_CLIENT.getCurrentServerIp().split(":")[0], Config.Client.Advanced.Multiplayer.ServerNetworking.serverPort.get());
-			this.networkState = new ClientNetworkState(networkClient, MC_CLIENT.getPlayerUUID());
-		}
-		else
-		{
-			this.networkState = null;
-		}
+		this.networkState = Config.Client.Advanced.Multiplayer.ServerNetworking.enableServerNetworking.get()
+				? new ClientNetworkState()
+				: null;
 		
 		LOGGER.info("Started DhWorld of type " + this.environment);
 	}
@@ -101,7 +92,7 @@ public class DhClientWorld extends AbstractDhWorld implements IDhClientWorld
 				return null;
 			}
 			
-			return new DhClientLevel(this.saveStructure, clientLevelWrapper, networkState);
+			return new DhClientLevel(this.saveStructure, clientLevelWrapper, this.networkState);
 		});
 	}
 	
@@ -140,9 +131,10 @@ public class DhClientWorld extends AbstractDhWorld implements IDhClientWorld
 		this.levels.values().forEach(DhClientLevel::clientTick);
 	}
 	
-	public void clientTick() { this.eventLoop.tick(); }
+	@Override public void clientTick() { this.eventLoop.tick(); }
 	
-	public void doWorldGen() {
+	@Override public void doWorldGen()
+	{
 		this.levels.values().forEach(DhClientLevel::doWorldGen);
 	}
 

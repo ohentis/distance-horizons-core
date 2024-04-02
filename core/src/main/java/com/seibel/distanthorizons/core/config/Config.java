@@ -878,11 +878,37 @@ public class Config
 									+ "Note: This requires DH to be installed on the server in order to function. \n"
 									+ "")
 							.build();
+					
+					/**
+					 * Server port. <br>
+					 * Do not use this to retrieve the current server's port;
+					 * Instead, use {@link com.seibel.distanthorizons.core.network.netty.NettyServer#port NettyServer#port}.
+					 */
 					public static ConfigEntry<Integer> serverPort = new ConfigEntry.Builder<Integer>()
 							.setServersideShortName("serverPort")
+							.setAppearance(EConfigEntryAppearance.ONLY_IN_FILE)
 							.setMinDefaultMax(1, 25049, 65535)
 							.comment(""
 									+ "The port on the server that's used for sending LOD data."
+									+ "")
+							.build();
+					
+					public static ConfigEntry<String> connectIpOverride = new ConfigEntry.Builder<String>()
+							.setServersideShortName("connectIpOverride")
+							.setAppearance(EConfigEntryAppearance.ONLY_IN_FILE)
+							.set("")
+							.comment(""
+									+ "Overrides the IP address that is sent to the client for connecting to DH server."
+									+ "Leave empty to let client use the IP used to connect to the MC server."
+									+ "")
+							.build();
+					public static ConfigEntry<Integer> connectPortOverride = new ConfigEntry.Builder<Integer>()
+							.setServersideShortName("connectPortOverride")
+							.setAppearance(EConfigEntryAppearance.ONLY_IN_FILE)
+							.setMinDefaultMax(0, 0, 65535)
+							.comment(""
+									+ "Overrides the port that is sent to the client for connecting to DH server."
+									+ "Set to 0 to use port from serverPort."
 									+ "")
 							.build();
 					

@@ -21,191 +21,87 @@ package com.seibel.distanthorizons.core.network;
 
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
-import com.seibel.distanthorizons.core.network.messages.base.CancelMessage;
-import com.seibel.distanthorizons.core.network.messages.base.CloseEvent;
-import com.seibel.distanthorizons.core.network.messages.base.ExceptionMessage;
-import com.seibel.distanthorizons.core.network.protocol.FutureTrackableNetworkMessage;
-import com.seibel.distanthorizons.core.network.protocol.MessageRegistry;
-import com.seibel.distanthorizons.core.network.protocol.NetworkMessage;
+import com.seibel.distanthorizons.core.network.messages.AbstractMessageRegistry;
+import com.seibel.distanthorizons.core.network.messages.ICloseEvent;
+import com.seibel.distanthorizons.core.network.protocol.INetworkObject;
 import com.seibel.distanthorizons.coreapi.ModInfo;
-import io.netty.channel.ChannelException;
 import org.apache.logging.log4j.LogManager;
 
-import java.io.InvalidClassException;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Consumer;
 
-public abstract class NetworkEventSource
+public abstract class NetworkEventSource<TMessage extends INetworkObject>
 {
 	private static final ConfigBasedLogger LOGGER = new ConfigBasedLogger(LogManager.getLogger(),
 			() -> Config.Client.Advanced.Logging.logNetworkEvent.get());
-	protected final ConcurrentMap<Class<? extends NetworkMessage>, Set<Consumer<NetworkMessage>>> handlers = new ConcurrentHashMap<>();
-	private final ConcurrentMap<IConnection, ConcurrentMap<Long, FutureResponseData>> pendingFutures = new ConcurrentHashMap<>();
+	protected final ConcurrentMap<Class<? extends TMessage>, Set<Consumer<TMessage>>> handlers = new ConcurrentHashMap<>();
 	
-	protected boolean hasHandler(Class<? extends NetworkMessage> handlerClass)
+	
+	protected final AbstractMessageRegistry<TMessage> messageRegistry;
+	public NetworkEventSource(AbstractMessageRegistry<TMessage> messageRegistry)
 	{
-		return this.handlers.containsKey(handlerClass);
+		this.messageRegistry = messageRegistry;
 	}
 	
-	
-	protected void handleMessage(NetworkMessage message)
+	protected final void handleMessage(TMessage message)
 	{
 		boolean handled = false;
 		
-		Set<Consumer<NetworkMessage>> handlerList = this.handlers.get(message.getClass());
+		Set<Consumer<TMessage>> handlerList = this.handlers.get(message.getClass());
 		if (handlerList != null)
 		{
-			for (Consumer<NetworkMessage> handler : handlerList)
+			for (Consumer<TMessage> handler : handlerList)
 			{
 				handled = true;
 				handler.accept(message);
 			}
 		}
 		
-		if (message instanceof FutureTrackableNetworkMessage)
-		{
-			FutureTrackableNetworkMessage trackableMessage = (FutureTrackableNetworkMessage)message;
-			ConcurrentMap<Long, FutureResponseData> subMap = this.pendingFutures.get(message.getConnection());
-			if (subMap != null)
-			{
-				FutureResponseData responseData = subMap.get(trackableMessage.futureId);
-				if (responseData != null)
-				{
-					handled = true;
-					
-					if (message instanceof ExceptionMessage)
-					{
-						responseData.future.completeExceptionally(((ExceptionMessage) message).exception);
-					}
-					else if (message.getClass() != responseData.responseClass)
-					{
-						responseData.future.completeExceptionally(new InvalidClassException("Response with invalid type: expected " + responseData.responseClass.getSimpleName() + ", got:" + message));
-					}
-					else
-					{
-						responseData.future.complete(trackableMessage);
-					}
-				}
-			}
-		}
+		handled |= this.tryHandleMessage(message);
 		
-		if (!handled && ModInfo.IS_DEV_BUILD && message.warnWhenUnhandled())
+		if (!handled && ModInfo.IS_DEV_BUILD)
 		{
 			LOGGER.warn("Unhandled message: " + message);
 		}
 	}
 	
-	protected void addNewConnection(IConnection connection)
+	protected boolean tryHandleMessage(TMessage message)
 	{
-		this.pendingFutures.put(connection, new ConcurrentHashMap<>());
+		// By default, messages are handled only by their direct handlers.
+		return false;
 	}
 	
-	public <T extends NetworkMessage> void registerHandler(Class<T> handlerClass, Consumer<T> handlerImplementation)
+	public <T extends TMessage> void registerHandler(Class<T> handlerClass, Consumer<T> handlerImplementation)
 	{
 		//noinspection unchecked
 		this.handlers.computeIfAbsent(handlerClass, missingHandlerClass ->
 				{
-					// Will throw if the handler class is not found
-					if (handlerClass != CloseEvent.class)
+					// Will throw if the handler class is not found and not a CloseEvent
+					if (!ICloseEvent.class.isAssignableFrom(missingHandlerClass))
 					{
-						MessageRegistry.INSTANCE.getMessageId(handlerClass);
+						this.messageRegistry.getMessageId(handlerClass);
 					}
-					return new HashSet<>();
+					return ConcurrentHashMap.newKeySet();
 				})
-				.add((Consumer<NetworkMessage>) handlerImplementation);
+				.add((Consumer<TMessage>) handlerImplementation);
 	}
 	
-	protected <T extends NetworkMessage> void removeHandler(Class<T> handlerClass, Consumer<T> handlerImplementation)
+	protected boolean hasHandler(Class<? extends TMessage> handlerClass)
+	{
+		return this.handlers.containsKey(handlerClass);
+	}
+	
+	protected <T extends TMessage> void removeHandler(Class<T> handlerClass, Consumer<T> handlerImplementation)
 	{
 		this.handlers.computeIfAbsent(handlerClass, missingHandlerClass -> new HashSet<>())
 				.remove(handlerImplementation);
 	}
 	
-	
-	protected <TResponse extends FutureTrackableNetworkMessage> CompletableFuture<TResponse> createRequest(IConnection connection, FutureTrackableNetworkMessage msg, Class<TResponse> responseClass)
-	{
-		msg.setConnection(connection);
-		
-		CompletableFuture<TResponse> responseFuture = new CompletableFuture<>();
-		responseFuture.whenComplete((response, throwable) ->
-		{
-			if (!(throwable instanceof ChannelException))
-			{
-				ConcurrentMap<Long, FutureResponseData> subMap = this.pendingFutures.get(connection);
-				if (subMap != null)
-				{
-					subMap.remove(msg.futureId);
-				}
-			}
-			
-			if (throwable instanceof CancellationException)
-			{
-				msg.sendResponse(new CancelMessage());
-			}
-		});
-		
-		ConcurrentMap<Long, FutureResponseData> subMap = this.pendingFutures.get(connection);
-		if (subMap == null)
-		{
-			// Was deleted before adding
-			responseFuture.completeExceptionally(connection.getCloseReason());
-			return responseFuture;
-		}
-		subMap.put(msg.futureId, new FutureResponseData(responseClass, responseFuture));
-		if (!this.pendingFutures.containsKey(connection))
-		{
-			// Was deleted while adding
-			// Note: removal from subMap will happen in whenComplete above
-			responseFuture.completeExceptionally(connection.getCloseReason());
-			return responseFuture;
-		}
-		// If passed until here, cancelling is up to the cleaning side
-		
-		return responseFuture;
-	}
-	
-	protected final void completeAllFuturesExceptionally(IConnection connection, Throwable cause)
-	{
-		ConcurrentMap<Long, FutureResponseData> map = this.pendingFutures.remove(connection);
-		if (map == null)
-		{
-			return;
-		}
-		
-		for (FutureResponseData responseData : map.values())
-		{
-			responseData.future.completeExceptionally(cause);
-		}
-	}
-	
-	protected final void completeAllFuturesExceptionally(Throwable cause)
-	{
-		for (IConnection connection : this.pendingFutures.keySet())
-		{
-			this.completeAllFuturesExceptionally(connection, cause);
-		}
-	}
-	
 	public void close()
 	{
 		this.handlers.clear();
-		this.completeAllFuturesExceptionally(new ChannelException(this.getClass().getSimpleName() + " is closed."));
-	}
-	
-	private static class FutureResponseData
-	{
-		public final Class<? extends FutureTrackableNetworkMessage> responseClass;
-		public final CompletableFuture<FutureTrackableNetworkMessage> future;
-		
-		private <T extends FutureTrackableNetworkMessage> FutureResponseData(Class<T> responseClass, CompletableFuture<T> future) {
-			this.responseClass = responseClass;
-			//noinspection unchecked
-			this.future = (CompletableFuture<FutureTrackableNetworkMessage>) future;
-		}
 	}
 }

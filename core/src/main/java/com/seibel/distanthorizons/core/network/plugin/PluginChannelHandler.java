@@ -1,0 +1,98 @@
+package com.seibel.distanthorizons.core.network.plugin;
+
+import com.seibel.distanthorizons.core.config.Config;
+import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
+import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
+import com.seibel.distanthorizons.core.network.NetworkEventSource;
+import com.seibel.distanthorizons.core.network.messages.plugin.PluginCloseEvent;
+import com.seibel.distanthorizons.core.network.messages.plugin.PluginMessageRegistry;
+import com.seibel.distanthorizons.core.network.protocol.plugin.PluginMessageDecoder;
+import com.seibel.distanthorizons.core.network.protocol.plugin.PluginMessageEncoder;
+import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IPluginPacketSender;
+import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
+import io.netty.buffer.ByteBuf;
+import org.apache.logging.log4j.LogManager;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.ArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+public class PluginChannelHandler extends NetworkEventSource<PluginChannelMessage>
+{
+	private static final ConfigBasedLogger LOGGER = new ConfigBasedLogger(LogManager.getLogger(),
+			() -> Config.Client.Advanced.Logging.logNetworkEvent.get());
+	
+	private final PluginMessageDecoder messageDecoder = new PluginMessageDecoder();
+	private final PluginMessageEncoder messageEncoder = new PluginMessageEncoder();
+	private final IPluginPacketSender packetSender = SingletonInjector.INSTANCE.get(IPluginPacketSender.class);
+	
+	/**
+	 * When set to true, any received data will be ignored. <br>
+	 * This does not include wrong versions, which are ignored without setting this flag,
+	 * to allow multi-compat servers.
+	 */
+	private final AtomicBoolean isClosed = new AtomicBoolean();
+	
+	
+	public PluginChannelHandler()
+	{
+		super(PluginMessageRegistry.INSTANCE);
+	}
+	
+	
+	public void decodeAndHandle(@Nullable IServerPlayerWrapper serverPlayer, ByteBuf byteBuf)
+	{
+		if (this.isClosed.get())
+		{
+			return;
+		}
+		
+		try
+		{
+			ArrayList<Object> messages = new ArrayList<>();
+			this.messageDecoder.decode(byteBuf, messages);
+			
+			for (Object msgObj : messages)
+			{
+				PluginChannelMessage msg = (PluginChannelMessage) msgObj;
+				msg.serverPlayer = serverPlayer;
+				
+				this.handleMessage(msg);
+			}
+		}
+		catch (Throwable e)
+		{
+			LOGGER.error("Failed to handle the message. New messages will be ignored. \n" + e);
+			this.close();
+		}
+	}
+	
+	public void sendMessageClient(PluginChannelMessage message)
+	{
+		this.packetSender.sendPluginPacketClient(buffer -> this.messageEncoder.encode(message, buffer));
+	}
+	public void sendMessageServer(@Nullable IServerPlayerWrapper serverPlayer, PluginChannelMessage message)
+	{
+		this.packetSender.sendPluginPacketServer(serverPlayer, buffer -> this.messageEncoder.encode(message, buffer));
+	}
+	
+	@Override
+	public void close()
+	{
+		if (!this.isClosed.compareAndSet(false, true))
+		{
+			return;
+		}
+		
+		try
+		{
+			this.handleMessage(new PluginCloseEvent());
+		}
+		catch (Throwable ignored)
+		{
+		}
+		
+		super.close();
+	}
+	
+}

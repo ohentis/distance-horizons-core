@@ -246,7 +246,7 @@ public class RenderUtil
 			return false;
 		}
 		
-		IDhClientLevel level = clientWorld.getOrLoadClientLevel(levelWrapper);
+		IDhClientLevel level = (IDhClientLevel) clientWorld.getLevel(levelWrapper);
 		if (level == null)
 		{
 			return false; //Level is not ready yet.

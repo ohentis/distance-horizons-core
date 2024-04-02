@@ -36,12 +36,8 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
+import io.netty.buffer.ByteBuf;
 import org.apache.logging.log4j.Logger;
-
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * This holds the methods that should be called by the host mod loader (Fabric,
@@ -179,6 +175,16 @@ public class ServerApi
 		{
 			LOGGER.debug("Player changed level: " + player.getUUID());
 			((DhServerWorld) serverWorld).changePlayerLevel(player, origin, dest);
+		}
+	}
+	
+	public void pluginMessageReceived(IServerPlayerWrapper player, ByteBuf buffer)
+	{
+		IDhServerWorld serverWorld = SharedApi.getIDhServerWorld();
+		if (serverWorld instanceof DhServerWorld) // TODO add support for DhClientServerWorld's (lan worlds) as well
+		{
+			LOGGER.debug("Player " + player.getUUID() + " sent plugin message: " + buffer.toString());
+			((DhServerWorld) serverWorld).handlePluginMessage(player, buffer);
 		}
 	}
 	

@@ -29,14 +29,15 @@ import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.multiplayer.server.ServerPlayerState;
 import com.seibel.distanthorizons.core.multiplayer.server.RemotePlayerConnectionHandler;
 import com.seibel.distanthorizons.core.network.ScopedNetworkEventSource;
-import com.seibel.distanthorizons.core.network.NetworkServer;
+import com.seibel.distanthorizons.core.network.netty.NettyServer;
 import com.seibel.distanthorizons.core.network.exceptions.RequestRejectedException;
-import com.seibel.distanthorizons.core.network.messages.base.CancelMessage;
-import com.seibel.distanthorizons.core.network.messages.fullData.FullDataSourceRequestMessage;
-import com.seibel.distanthorizons.core.network.messages.fullData.FullDataSourceResponseMessage;
-import com.seibel.distanthorizons.core.network.messages.fullData.generation.GenTaskPriorityRequestMessage;
-import com.seibel.distanthorizons.core.network.messages.fullData.generation.GenTaskPriorityResponseMessage;
-import com.seibel.distanthorizons.core.network.messages.fullData.FullDataPartialUpdateMessage;
+import com.seibel.distanthorizons.core.network.messages.netty.base.CancelMessage;
+import com.seibel.distanthorizons.core.network.messages.netty.fullData.FullDataSourceRequestMessage;
+import com.seibel.distanthorizons.core.network.messages.netty.fullData.FullDataSourceResponseMessage;
+import com.seibel.distanthorizons.core.network.messages.netty.fullData.generation.GenTaskPriorityRequestMessage;
+import com.seibel.distanthorizons.core.network.messages.netty.fullData.generation.GenTaskPriorityResponseMessage;
+import com.seibel.distanthorizons.core.network.messages.netty.fullData.FullDataPartialUpdateMessage;
+import com.seibel.distanthorizons.core.network.netty.NettyMessage;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
@@ -61,7 +62,7 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 	private final IServerLevelWrapper serverLevelWrapper;
 	
 	private final RemotePlayerConnectionHandler remotePlayerConnectionHandler;
-	private final ScopedNetworkEventSource<NetworkServer> eventSource;
+	private final ScopedNetworkEventSource<NettyServer, NettyMessage> eventSource;
 	
 	private final ConcurrentLinkedQueue<IServerPlayerWrapper> worldGenLoopingQueue = new ConcurrentLinkedQueue<>();
 	private final ConcurrentMap<DhSectionPos, IncompleteDataSourceEntry> incompleteDataSources = new ConcurrentHashMap<>();

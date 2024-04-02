@@ -1,17 +1,19 @@
 package com.seibel.distanthorizons.core.multiplayer.client;
 
 import com.seibel.distanthorizons.core.config.Config;
+import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
 import com.seibel.distanthorizons.core.multiplayer.config.MultiplayerConfig;
 import com.seibel.distanthorizons.core.multiplayer.config.MultiplayerConfigChangeListener;
-import com.seibel.distanthorizons.core.network.NetworkClient;
+import com.seibel.distanthorizons.core.network.netty.NettyClient;
 import com.seibel.distanthorizons.core.network.ScopedNetworkEventSource;
-import com.seibel.distanthorizons.core.network.messages.base.AckMessage;
-import com.seibel.distanthorizons.core.network.messages.base.CloseEvent;
-import com.seibel.distanthorizons.core.network.messages.base.HelloMessage;
-import com.seibel.distanthorizons.core.network.messages.session.PlayerUUIDMessage;
-import com.seibel.distanthorizons.core.network.messages.session.RemotePlayerConfigMessage;
+import com.seibel.distanthorizons.core.network.messages.netty.base.AckMessage;
+import com.seibel.distanthorizons.core.network.messages.netty.base.NettyCloseEvent;
+import com.seibel.distanthorizons.core.network.messages.netty.base.HelloMessage;
+import com.seibel.distanthorizons.core.network.messages.netty.session.PlayerUUIDMessage;
+import com.seibel.distanthorizons.core.network.messages.netty.session.RemotePlayerConfigMessage;
+import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import org.apache.logging.log4j.LogManager;
 
 import java.io.Closeable;
@@ -22,9 +24,11 @@ public class ClientNetworkState implements Closeable
 {
 	protected static final ConfigBasedLogger LOGGER = new ConfigBasedLogger(LogManager.getLogger(),
 			() -> Config.Client.Advanced.Logging.logNetworkEvent.get());
+	private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	
-	private final NetworkClient client;
-	private final UUID playerUUID;
+	private final NettyClient client = new NettyClient();
+	private final UUID playerUUID = MC_CLIENT.getPlayerUUID();
+	
 	
 	public MultiplayerConfig config = new MultiplayerConfig();
 	private volatile boolean configReceived = false;
@@ -37,24 +41,12 @@ public class ClientNetworkState implements Closeable
 	 * Returns the client used by this instance. <p>
 	 * If you need to subscribe to any packet events, create an instance of {@link ScopedNetworkEventSource} using the returned instance.
 	 */
-	public NetworkClient getClient() { return this.client; }
+	public NettyClient getClient() { return this.client; }
 	
 	/**
 	 * Constructs a new instance.
-	 *
-	 * @param networkClient Client to use. It is assumed that this client will be at full control by this instance.
-	 * @param playerUUID UUID of a player connected.
 	 */
-	public ClientNetworkState(NetworkClient networkClient, UUID playerUUID)
-	{
-		this.client = networkClient;
-		this.playerUUID = playerUUID;
-		
-		this.registerNetworkHandlers();
-		this.client.connect();
-	}
-	
-	private void registerNetworkHandlers()
+	public ClientNetworkState()
 	{
 		this.client.registerHandler(HelloMessage.class, helloMessage ->
 		{
@@ -75,7 +67,7 @@ public class ClientNetworkState implements Closeable
 			this.configReceived = true;
 		});
 		
-		this.client.registerHandler(CloseEvent.class, msg ->
+		this.client.registerHandler(NettyCloseEvent.class, msg ->
 		{
 			this.configReceived = false;
 		});
@@ -88,12 +80,17 @@ public class ClientNetworkState implements Closeable
 	
 	private String[] f3Log()
 	{
+		if (!this.client.isInitialized())
+		{
+			return new String[]{"Did not receive connection info yet..."};
+		}
+		
 		if (!this.client.isClosed())
 		{
 			return new String[]{
 					this.client.getRemoteAddress() != null
-							? "Connected, ready: " + this.isReady()
-							: MessageFormat.format("Disconnected, attempts left: {0} / {1}", this.client.getReconnectionAttemptsLeft(), NetworkClient.RECONNECTION_ATTEMPTS)
+							? (this.isReady() ? "Connected to server" : "Connecting to server...")
+							: MessageFormat.format("Disconnected, attempts left: {0} / {1}", this.client.getReconnectionAttemptsLeft(), NettyClient.RECONNECTION_ATTEMPTS)
 			};
 		}
 		else

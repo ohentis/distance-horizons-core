@@ -19,26 +19,25 @@
 
 package com.seibel.distanthorizons.core.world;
 
-import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.file.structure.LocalSaveStructure;
 import com.seibel.distanthorizons.core.level.DhServerLevel;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.multiplayer.server.RemotePlayerConnectionHandler;
-import com.seibel.distanthorizons.core.network.NetworkServer;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
+import io.netty.buffer.ByteBuf;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.util.HashMap;
-import java.util.concurrent.CompletableFuture;
 
 public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 {
 	private final HashMap<IServerLevelWrapper, DhServerLevel> levels;
 	public final LocalSaveStructure saveStructure;
+	
 	private final RemotePlayerConnectionHandler remotePlayerConnectionHandler;
 	
 	
@@ -52,9 +51,8 @@ public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 		
 		this.saveStructure = new LocalSaveStructure();
 		this.levels = new HashMap<>();
-
-		NetworkServer networkServer = new NetworkServer(Config.Client.Advanced.Multiplayer.ServerNetworking.serverPort.get());
-		this.remotePlayerConnectionHandler = new RemotePlayerConnectionHandler(networkServer);
+		
+		this.remotePlayerConnectionHandler = new RemotePlayerConnectionHandler();
 
 		LOGGER.info("Started "+DhServerWorld.class.getSimpleName()+" of type "+this.environment);
 	}
@@ -79,6 +77,10 @@ public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 	{
 		this.getLevel(dest).addPlayer(player);
 		this.getLevel(origin).removePlayer(player);
+	}
+	public void handlePluginMessage(IServerPlayerWrapper player, ByteBuf buffer)
+	{
+		this.remotePlayerConnectionHandler.handlePluginMessage(player, buffer);
 	}
 	
 	@Override
@@ -126,12 +128,14 @@ public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 			this.levels.remove(wrapper).close();
 		}
 	}
-
-	public void serverTick() {
+	
+	@Override public void serverTick()
+	{
 		this.levels.values().forEach(DhServerLevel::serverTick);
 	}
-
-	public void doWorldGen() {
+	
+	@Override public void doWorldGen()
+	{
 		this.levels.values().forEach(DhServerLevel::doWorldGen);
 	}
 	

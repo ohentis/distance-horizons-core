@@ -23,6 +23,7 @@ import com.seibel.distanthorizons.api.interfaces.IDhApiUnsafeWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
 import com.seibel.distanthorizons.coreapi.util.math.Vec3d;
 
+import java.net.SocketAddress;
 import java.util.UUID;
 
 public interface IServerPlayerWrapper extends IDhApiUnsafeWrapper
@@ -34,4 +35,6 @@ public interface IServerPlayerWrapper extends IDhApiUnsafeWrapper
 	Vec3d getPosition();
 	
 	int getViewDistance();
+	
+	SocketAddress getRemoteAddress();
 }

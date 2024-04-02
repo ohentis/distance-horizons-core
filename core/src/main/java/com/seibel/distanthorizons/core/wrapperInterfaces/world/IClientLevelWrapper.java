@@ -19,6 +19,7 @@
 
 package com.seibel.distanthorizons.core.wrapperInterfaces.world;
 
+import com.seibel.distanthorizons.core.level.IServerKeyedClientLevel;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import org.jetbrains.annotations.Nullable;
@@ -28,7 +29,6 @@ import org.jetbrains.annotations.Nullable;
  */
 public interface IClientLevelWrapper extends ILevelWrapper
 {
-	
 	@Nullable
 	IServerLevelWrapper tryGetServerSideWrapper();
 	

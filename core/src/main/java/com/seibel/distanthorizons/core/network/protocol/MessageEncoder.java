@@ -19,16 +19,25 @@
 
 package com.seibel.distanthorizons.core.network.protocol;
 
+import com.seibel.distanthorizons.core.network.messages.AbstractMessageRegistry;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
 
-public class MessageEncoder extends MessageToByteEncoder<NetworkMessage>
+public class MessageEncoder<TMessage extends INetworkObject> extends MessageToByteEncoder<TMessage>
 {
-	@Override
-	protected void encode(ChannelHandlerContext channelContext, NetworkMessage message, ByteBuf outputByteBuf) throws IllegalArgumentException
+	private final AbstractMessageRegistry<TMessage> messageRegistry;
+	
+	public MessageEncoder(AbstractMessageRegistry<TMessage> messageRegistry, Class<TMessage> messageClass)
 	{
-		outputByteBuf.writeShort(MessageRegistry.INSTANCE.getMessageId(message));
+		super(messageClass);
+		this.messageRegistry = messageRegistry;
+	}
+	
+	@Override
+	protected void encode(ChannelHandlerContext channelContext, TMessage message, ByteBuf outputByteBuf) throws IllegalArgumentException
+	{
+		outputByteBuf.writeShort(this.messageRegistry.getMessageId(message));
 		message.encode(outputByteBuf);
 	}
 	
