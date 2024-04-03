@@ -29,6 +29,7 @@ import com.seibel.distanthorizons.core.file.fullDatafile.FullDataSourceProviderV
 import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.render.glObject.GLProxy;
 import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
 import com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.ColumnRenderBuffer;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
@@ -92,6 +93,13 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	
 	public void loadRenderSourceAsync()
 	{
+		if (!GLProxy.hasInstance())
+		{
+			// it's possible to try uploading buffers before the GLProxy has been initialized
+			// which would cause the system to crash
+			return;
+		}
+		
 		if (this.renderSourceLoadingFuture != null)
 		{
 			return;
