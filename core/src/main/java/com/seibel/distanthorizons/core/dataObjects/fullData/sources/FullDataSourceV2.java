@@ -53,7 +53,6 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	/** useful for debugging, but can slow down update operations quite a bit due to being called so often. */
 	private static final boolean RUN_UPDATE_DEV_VALIDATION = false;
-	private static final boolean RUN_V1_MIGRATION_CONSTRUCTOR_VALIDATION = ModInfo.IS_DEV_BUILD;
 	/** 
 	 * If the data column order isn't correct
 	 * block lighting may appear broken 
@@ -208,43 +207,6 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 		}
 		
 		FullDataSourceV2 fullDataSource = FullDataSourceV2.createWithData(legacyData.getPos(), legacyData.mapping, dataPoints, columnGenerationSteps, columnWorldCompressionMode);
-		
-		
-		// should only be used if debugging, this is a very expensive operation
-		if (RUN_V1_MIGRATION_CONSTRUCTOR_VALIDATION)
-		{
-			for (int x = 0; x < WIDTH; x++)
-			{
-				for (int z = 0; z < WIDTH; z++)
-				{
-					long[] legacyDataColumn = legacyData.get(x, z);
-					if (legacyDataColumn != null && legacyDataColumn.length != 0)
-					{
-						LongArrayList newDataColumn = fullDataSource.get(x, z);
-						if (newDataColumn == null)
-						{
-							LodUtil.assertNotReach("Accessor column mismatch");
-						}
-						else if (legacyDataColumn.length != newDataColumn.size())
-						{
-							LodUtil.assertNotReach("Accessor column length mismatch");
-						}
-						else
-						{
-							for (int i = 0; i < legacyDataColumn.length; i++)
-							{
-								if (legacyDataColumn[i] != newDataColumn.getLong(i))
-								{
-									LodUtil.assertNotReach("Data mismatch");
-								}
-							}
-						}
-						
-					}
-				}
-			}
-		}
-		
 		return fullDataSource;
 	}
 	
