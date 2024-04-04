@@ -60,6 +60,8 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	private static final ConcurrentHashMap<DhSectionPos, TimerTask> RENDER_SOURCE_CLOSING_TIMER_TASK_BY_POS = new ConcurrentHashMap<>();
 	private static final Timer RENDER_SOURCE_CACHE_REMOVAL_TIMER = TimerUtil.CreateTimer("LodRenderSection Render Source Cache Removal Timer");
 	
+	public static final long RENDER_CACHE_EXPIRATION_TIME_IN_MS = 4000L; 
+	
 	
 	
 	public final DhSectionPos pos;
@@ -237,7 +239,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 			});
 			try
 			{
-				RENDER_SOURCE_CACHE_REMOVAL_TIMER.schedule(timerTask, 1000L);
+				RENDER_SOURCE_CACHE_REMOVAL_TIMER.schedule(timerTask, RENDER_CACHE_EXPIRATION_TIME_IN_MS);
 			}
 			catch (IllegalStateException ignore) { /* can rarely happen due to some minor concurrency bug with how Timer works. It isn't an issue and can be ignored. */ }
 			
