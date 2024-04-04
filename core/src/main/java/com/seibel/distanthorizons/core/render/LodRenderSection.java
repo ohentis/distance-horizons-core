@@ -137,8 +137,15 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 				
 				adjacentRenderSections = this.getAndCreateNeighborRenderSources();
 				
+				ColumnRenderBuffer previousBuffer = this.renderBuffer;
+				
 				CompletableFuture<ColumnRenderBuffer> uploadFuture = ColumnRenderBufferBuilder.buildAndUploadBuffersAsync(this.level, renderSource, adjacentRenderSections);
 				this.renderBuffer = uploadFuture.join();
+				
+				if (previousBuffer != null)
+				{
+					previousBuffer.close();
+				}
 				
 				this.canRender = true;
 			}
