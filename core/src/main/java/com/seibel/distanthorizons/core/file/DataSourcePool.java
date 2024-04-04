@@ -116,6 +116,15 @@ public class DataSourcePool<TDataSource extends IDataSource<TDhLevel>, TDhLevel 
 	
 	
 	
+	//===============//
+	// debug methods //
+	//===============//
+	
+	/** Returns how many data sources are in the pool */
+	public int size() { return this.pooledDataSources.size(); }
+	
+	
+	
 	//================//
 	// helper classes //
 	//================//

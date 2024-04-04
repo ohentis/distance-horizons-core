@@ -33,13 +33,14 @@ import com.seibel.distanthorizons.core.render.glObject.GLProxy;
 import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
 import com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.ColumnRenderBuffer;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
+import com.seibel.distanthorizons.core.util.TimerUtil;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import org.apache.logging.log4j.Logger;
 
 import java.awt.*;
-import java.util.ArrayList;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadPoolExecutor;
 
 /**
@@ -49,6 +50,16 @@ import java.util.concurrent.ThreadPoolExecutor;
 public class LodRenderSection implements IDebugRenderable, AutoCloseable
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	
+	/**
+	 * Only the adjacent render sources should be cached to prevent accidentally using cached data when the LOD data was changed.
+	 * This cache should really only be used when initially loading LODs or generating new terrain.
+	 */
+	private static final ConcurrentHashMap<DhSectionPos, ColumnRenderSource> ADJACENT_RENDER_SOURCE_BY_POS = new ConcurrentHashMap<>();
+	
+	private static final ConcurrentHashMap<DhSectionPos, TimerTask> RENDER_SOURCE_CLOSING_TIMER_TASK_BY_POS = new ConcurrentHashMap<>();
+	private static final Timer RENDER_SOURCE_CACHE_REMOVAL_TIMER = TimerUtil.CreateTimer("LodRenderSection Render Source Cache Removal Timer");
+	
 	
 	
 	public final DhSectionPos pos;
@@ -119,7 +130,6 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		this.renderSourceLoadingFuture = CompletableFuture.runAsync(() -> 
 		{
 			FullDataSourceV2 fullDataSource = null;
-			ColumnRenderSource[] adjacentRenderSections = null;
 			ColumnRenderSource renderSource = null;
 			
 			try
@@ -135,7 +145,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 				}
 				
 				
-				adjacentRenderSections = this.getAndCreateNeighborRenderSources();
+				ColumnRenderSource[] adjacentRenderSections = this.getAndCreateNeighborRenderSources();
 				
 				ColumnRenderBuffer previousBuffer = this.renderBuffer;
 				
@@ -167,18 +177,6 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 					{
 						renderSource.close();
 					}
-					
-					if (adjacentRenderSections != null)
-					{
-						for (int i = 0; i < adjacentRenderSections.length; i++)
-						{
-							ColumnRenderSource adjacentRenderSource = adjacentRenderSections[i];
-							if (adjacentRenderSource != null)
-							{
-								adjacentRenderSource.close();
-							}
-						}
-					}
 				}
 				catch (Exception ignore){ }
 				
@@ -193,19 +191,63 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		for (EDhDirection direction : EDhDirection.ADJ_DIRECTIONS)
 		{
 			DhSectionPos adjPos = this.pos.getAdjacentPos(direction);
-			try (FullDataSourceV2 fullDataSource = this.fullDataSourceProvider.get(adjPos))
-			{
-				// TODO some temporary caching could be done here 
-				ColumnRenderSource renderSource = FullDataToRenderDataTransformer.transformFullDataToRenderSource(fullDataSource, this.level);
-				adjacentRenderSections[direction.ordinal() - 2] = renderSource;
-			}
-			catch (Exception e)
-			{
-				LOGGER.warn("Unable to get neighbor render source "+this.pos+" - "+adjPos+", error: "+e.getMessage(), e);
-			}
+			
+			ColumnRenderSource renderSource = ADJACENT_RENDER_SOURCE_BY_POS.compute(adjPos, this::computeCachedRenderSource);
+			adjacentRenderSections[direction.ordinal() - 2] = renderSource;
 		}
 		
 		return adjacentRenderSections;
+	}
+	private ColumnRenderSource computeCachedRenderSource(DhSectionPos pos, ColumnRenderSource oldRenderSource)
+	{
+		try (FullDataSourceV2 fullDataSource = this.fullDataSourceProvider.get(pos))
+		{
+			// use the old render source if it isn't null
+			if (oldRenderSource == null)
+			{
+				oldRenderSource = FullDataToRenderDataTransformer.transformFullDataToRenderSource(fullDataSource, this.level);
+			}
+			
+			// create a new timer task to reset the cache timeout
+			TimerTask timerTask = RENDER_SOURCE_CLOSING_TIMER_TASK_BY_POS.compute(pos, (timerPos, oldTimerTask) ->
+			{
+				if (oldTimerTask != null)
+				{
+					oldTimerTask.cancel();
+				}
+				
+				return new TimerTask()
+				{
+					@Override
+					public void run()
+					{
+						// remove the finished task
+						RENDER_SOURCE_CLOSING_TIMER_TASK_BY_POS.remove(pos);
+						
+						// return the pooled data source if present
+						ColumnRenderSource expiredRenderSource = ADJACENT_RENDER_SOURCE_BY_POS.remove(pos);
+						if (expiredRenderSource != null)
+						{
+							try { expiredRenderSource.close(); } catch (Exception ignored) { }
+						}
+						
+						//LOGGER.info("cache size " +cachedNeighborSections.size()+"  pool size:"+ColumnRenderSource.DATA_SOURCE_POOL.size());
+					}
+				};
+			});
+			try
+			{
+				RENDER_SOURCE_CACHE_REMOVAL_TIMER.schedule(timerTask, 1000L);
+			}
+			catch (IllegalStateException ignore) { /* can rarely happen due to some minor concurrency bug with how Timer works. It isn't an issue and can be ignored. */ }
+			
+			return oldRenderSource;
+		}
+		catch (Exception e)
+		{
+			LOGGER.warn("Unable to get neighbor render source " + this.pos + " - " + pos + ", error: " + e.getMessage(), e);
+			return null;
+		}
 	}
 	
 	
