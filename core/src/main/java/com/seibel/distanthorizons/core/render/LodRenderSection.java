@@ -190,13 +190,13 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	private ColumnRenderSource[] getAndCreateNeighborRenderSources()
 	{
 		ColumnRenderSource[] adjacentRenderSections = new ColumnRenderSource[EDhDirection.ADJ_DIRECTIONS.length];
-		for (EDhDirection direction : EDhDirection.ADJ_DIRECTIONS)
-		{
-			DhSectionPos adjPos = this.pos.getAdjacentPos(direction);
-			
-			ColumnRenderSource renderSource = ADJACENT_RENDER_SOURCE_BY_POS.compute(adjPos, this::computeCachedRenderSource);
-			adjacentRenderSections[direction.ordinal() - 2] = renderSource;
-		}
+		//for (EDhDirection direction : EDhDirection.ADJ_DIRECTIONS)
+		//{
+		//	DhSectionPos adjPos = this.pos.getAdjacentPos(direction);
+		//	
+		//	ColumnRenderSource renderSource = ADJACENT_RENDER_SOURCE_BY_POS.compute(adjPos, this::computeCachedRenderSource);
+		//	adjacentRenderSections[direction.ordinal() - 2] = renderSource;
+		//}
 		
 		return adjacentRenderSections;
 	}
