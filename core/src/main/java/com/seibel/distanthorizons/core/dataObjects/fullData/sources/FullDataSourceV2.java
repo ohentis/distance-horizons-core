@@ -161,18 +161,18 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 		{
 			for (int z = 0; z < WIDTH; z++)
 			{
-				long[] dataColumn = legacyData.get(x, z);
-				if (dataColumn != null && dataColumn.length != 0)
+				long[] legacyDataColumn = legacyData.get(x, z);
+				if (legacyDataColumn != null && legacyDataColumn.length != 0)
 				{
 					int index = relativePosToIndex(x, z);
-					dataPoints[index] = new LongArrayList(dataColumn);
+					LongArrayList newDataColumn = new LongArrayList(legacyDataColumn);
 					
 					
 					// convert the data point format
 					boolean columnHasNonAirBlock = false;
-					for (int i = 0; i < dataColumn.length; i++)
+					for (int i = 0; i < legacyDataColumn.length; i++)
 					{
-						long dataPoint = dataColumn[i];
+						long dataPoint = legacyDataColumn[i];
 						
 						int id = FullDataPointUtilV1.getId(dataPoint);
 						int height = FullDataPointUtilV1.getHeight(dataPoint);
@@ -188,7 +188,7 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 						}
 						
 						long newDataPoint = FullDataPointUtilV2.encode(id, height, bottomY, blockLight, skyLight);
-						dataColumn[i] = newDataPoint;
+						newDataColumn.set(i, newDataPoint);
 						
 						
 						// check if this datapoint is air
@@ -197,6 +197,11 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 							columnHasNonAirBlock = true;
 						}
 					}
+					
+					
+					// save the converted data point
+					ensureDataColumnOrder(newDataColumn);
+					dataPoints[index] = newDataColumn;
 					
 					// the old data sources didn't have a generation step written down
 					// if the column has any data points, assume it's fully generated, otherwise assume it's empty
@@ -627,30 +632,10 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 		}
 		
 		
-		
 		// flip the array if necessary
 		// TODO why is this sometimes necessary? What did I (James) screw up that causes the mergedInputDataArray
 		//  to sometimes be in a different order? Is it potentially related to what detail level is coming in?
-		{
-			long firstDataPoint = newColumnList.getLong(0);
-			int firstBottomY = FullDataPointUtilV2.getBottomY(firstDataPoint);
-			
-			long lastDataPoint = newColumnList.getLong(newColumnList.size() - 1);
-			int lastBottomY = FullDataPointUtilV2.getBottomY(lastDataPoint);
-			
-			if (firstBottomY < lastBottomY)
-			{
-				// reverse the array so index 0 is the highest,
-				// this is necessary for later logic
-				// source: https://stackoverflow.com/questions/2137755/how-do-i-reverse-an-int-array-in-java
-				for(int i = 0; i < newColumnList.size() / 2; i++)
-				{
-					long temp = newColumnList.getLong(i);
-					newColumnList.set(i, newColumnList.getLong(newColumnList.size() - i - 1));
-					newColumnList.set(newColumnList.size() - i - 1, temp);
-				}
-			}
-		}
+		ensureDataColumnOrder(newColumnList);
 		
 		return newColumnList;
 	}
@@ -789,6 +774,32 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 		if (firstBottomY < lastBottomY)
 		{
 			throw new IllegalStateException("Incorrect data point order at pos: "+pos+", first datapoint bottom Y ["+firstBottomY+"], last datapoint bottom Y ["+lastBottomY+"].");
+		}
+	}
+	
+	/**
+	 * Ensures the given data column is in the correct Y order, specifically
+	 * top-to-bottom.
+	 */
+	private static void ensureDataColumnOrder(LongArrayList dataColumn)
+	{
+		long firstDataPoint = dataColumn.getLong(0);
+		int firstBottomY = FullDataPointUtilV2.getBottomY(firstDataPoint);
+		
+		long lastDataPoint = dataColumn.getLong(dataColumn.size() - 1);
+		int lastBottomY = FullDataPointUtilV2.getBottomY(lastDataPoint);
+		
+		if (firstBottomY < lastBottomY)
+		{
+			// reverse the array so index 0 is the highest,
+			// this is necessary for later logic
+			// source: https://stackoverflow.com/questions/2137755/how-do-i-reverse-an-int-array-in-java
+			for(int i = 0; i < dataColumn.size() / 2; i++)
+			{
+				long temp = dataColumn.getLong(i);
+				dataColumn.set(i, dataColumn.getLong(dataColumn.size() - i - 1));
+				dataColumn.set(dataColumn.size() - i - 1, temp);
+			}
 		}
 	}
 	
