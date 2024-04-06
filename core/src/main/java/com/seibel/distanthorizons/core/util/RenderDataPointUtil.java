@@ -30,7 +30,7 @@ import com.seibel.distanthorizons.coreapi.ModInfo;
  * A helper class that is used to access the data from a long
  * formatted as a render data point. <br><br>
  *
- * To access data from a long formatted as a full data point see: {@link FullDataPointUtilV2}
+ * To access data from a long formatted as a full data point see: {@link FullDataPointUtil}
  *
  * <strong>DataPoint Format: </strong><br>
  * <code>
@@ -56,7 +56,7 @@ import com.seibel.distanthorizons.coreapi.ModInfo;
  * BL BL BL BL SL SL SL SL |	<br>
  * </code>
  *
- * @see FullDataPointUtilV2
+ * @see FullDataPointUtil
  */
 public class RenderDataPointUtil
 {
