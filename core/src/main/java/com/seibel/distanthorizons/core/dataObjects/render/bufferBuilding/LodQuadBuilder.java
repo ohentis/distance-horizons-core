@@ -23,11 +23,15 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.*;
 
+import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.render.glObject.buffer.GLVertexBuffer;
 import com.seibel.distanthorizons.core.util.ColorUtil;
 import com.seibel.distanthorizons.api.enums.config.EDhApiGpuUploadMethod;
+import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.coreapi.util.MathUtil;
 import org.apache.logging.log4j.Logger;
 
@@ -41,6 +45,7 @@ import org.apache.logging.log4j.Logger;
 public class LodQuadBuilder
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	private static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	
 	public final boolean skipQuadsWithZeroSkylight;
 	public final short skyLightCullingBelow;
@@ -51,6 +56,7 @@ public class LodQuadBuilder
 	private final ArrayList<BufferQuad>[] transparentQuads = (ArrayList<BufferQuad>[]) new ArrayList[6];
 	
 	private final boolean doTransparency;
+	private final IClientLevelWrapper clientLevelWrapper;
 	
 	
 	
@@ -111,7 +117,7 @@ public class LodQuadBuilder
 	// constructor //
 	//=============//
 	
-	public LodQuadBuilder(boolean enableSkylightCulling, short skyLightCullingBelow, boolean doTransparency)
+	public LodQuadBuilder(boolean enableSkylightCulling, short skyLightCullingBelow, boolean doTransparency, IClientLevelWrapper clientLevelWrapper)
 	{
 		this.doTransparency = doTransparency;
 		for (int i = 0; i < 6; i++)
@@ -122,6 +128,7 @@ public class LodQuadBuilder
 		
 		this.skipQuadsWithZeroSkylight = enableSkylightCulling;
 		this.skyLightCullingBelow = skyLightCullingBelow;
+		this.clientLevelWrapper = clientLevelWrapper;
 		
 	}
 	
@@ -253,8 +260,24 @@ public class LodQuadBuilder
 				default:
 					throw new IllegalArgumentException("Invalid Axis enum: " + axis);
 			}
+			
+			
+			int color = quad.color;
+			if (quad.irisBlockMaterialId == IBlockStateWrapper.IrisBlockMaterial.GRASS 
+				&& 
+				(
+					(quad.direction.getAxis().isHorizontal() && quadBase[i][1] == 0) // TODO what does "quadBase[i][1] == 0" mean?
+					|| quad.direction == EDhDirection.DOWN)
+				)
+			{
+				// for horizontal and bottom faces of grass blocks, use the  dirt color to
+				// prevent green cliff walls
+				color = this.clientLevelWrapper.getDirtBlockColor();
+				color = ColorUtil.applyShade(color, MC.getShade(quad.direction));
+			}
+			
 			this.putVertex(bb, (short) (quad.x + dx), (short) (quad.y + dy), (short) (quad.z + dz),
-					quad.hasError ? ColorUtil.RED : quad.color,
+					quad.hasError ? ColorUtil.RED : color,
 					quad.hasError ? 0 : normalIndex,
 					quad.hasError ? 0 : quad.irisBlockMaterialId,
 					quad.hasError ? 15 : quad.skyLight,

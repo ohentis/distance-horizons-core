@@ -102,7 +102,7 @@ public class ColumnRenderBufferBuilder
 						
 						long builderStartTime = System.currentTimeMillis();
 						
-						LodQuadBuilder builder = new LodQuadBuilder(enableSkyLightCulling, (short) (skyLightCullingBelow - clientLevel.getMinY()), enableTransparency);
+						LodQuadBuilder builder = new LodQuadBuilder(enableSkyLightCulling, (short) (skyLightCullingBelow - clientLevel.getMinY()), enableTransparency, clientLevel.getClientLevelWrapper());
 						makeLodRenderData(builder, renderSource, adjData);
 						
 						long builderEndTime = System.currentTimeMillis();

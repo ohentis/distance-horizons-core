@@ -41,6 +41,7 @@ public class ColorUtil
 	public static final int RED = rgbToInt(255, 0, 0);
 	public static final int DARK_RED = rgbToInt(100, 0, 0);
 	public static final int GREEN = rgbToInt(0, 255, 0);
+	public static final int LIGHT_GREEN = rgbToInt(80, 255, 80);
 	public static final int BLUE = rgbToInt(0, 0, 255);
 	public static final int YELLOW = rgbToInt(255, 255, 0);
 	public static final int CYAN = rgbToInt(0, 255, 255);

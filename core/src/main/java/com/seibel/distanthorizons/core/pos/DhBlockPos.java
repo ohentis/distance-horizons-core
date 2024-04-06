@@ -45,9 +45,15 @@ public class DhBlockPos
 	public static final int PACKED_Z_OFFSET = PACKED_Y_LENGTH;
 	public static final int PACKED_X_OFFSET = PACKED_Y_LENGTH + PACKED_Z_LENGTH;
 	
+	/** Useful for methods that need a position passed in but won't actually be used */
+	public static final DhBlockPos ZERO = new DhBlockPos(0, 0, 0);
+	
+	
 	public int x;
 	public int y;
 	public int z;
+	
+	
 	
 	public DhBlockPos(int x, int y, int z)
 	{

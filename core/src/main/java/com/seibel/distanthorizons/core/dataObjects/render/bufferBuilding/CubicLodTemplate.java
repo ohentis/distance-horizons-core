@@ -133,6 +133,9 @@ public class CubicLodTemplate
 					case IBlockStateWrapper.IrisBlockMaterial.WATER:
 						color = ColorUtil.BLUE;
 						break;
+					case IBlockStateWrapper.IrisBlockMaterial.GRASS:
+						color = ColorUtil.LIGHT_GREEN;
+						break;
 					case IBlockStateWrapper.IrisBlockMaterial.ILLUMINATED:
 						color = ColorUtil.YELLOW;
 						break;
