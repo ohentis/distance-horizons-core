@@ -230,9 +230,9 @@ public class SubDimensionLevelMatcher implements AutoCloseable
 				// compare the data sources
 				int equalDataPoints = 0;
 				int totalDataPointCount = 0;
-				for (int x = 0; x < FullDataSourceV1.WIDTH; x++)
+				for (int x = 0; x < FullDataSourceV2.WIDTH; x++)
 				{
-					for (int z = 0; z < FullDataSourceV1.WIDTH; z++)
+					for (int z = 0; z < FullDataSourceV2.WIDTH; z++)
 					{
 						LongArrayList newColumn = newDataSource.get(x, z);
 						LongArrayList testColumn = testFullDataSource.get(x, z);
