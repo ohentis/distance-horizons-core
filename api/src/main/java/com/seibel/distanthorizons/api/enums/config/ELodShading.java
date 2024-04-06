@@ -25,6 +25,7 @@ package com.seibel.distanthorizons.api.enums.config;
  * NONE <br>
  *
  * @since API 1.0.0
+ * @version 2024-4-6
  */
 public enum ELodShading
 {
@@ -32,15 +33,20 @@ public enum ELodShading
 	// when adding items up the API minor version
 	// when removing items up the API major version
 	
-	/** Uses Minecraft's shading for LODs */
-	MINECRAFT,
 	/** 
-	 * Simulates Minecraft's shading. 
+	 * Uses Minecraft's shading for LODs. <Br>
+	 * This means if Minecraft's shading is disabled DH's shading will be as well.
+	 */
+	AUTO,
+	
+	/** 
+	 * Simulates Minecraft's shading. <Br>
 	 * This is most useful for shaders that disable Minecraft's shading
 	 * but still require shading on LODs.
 	 */
-	OLD_LIGHTING,
+	ENABLED,
+	
 	/** LODs will have no shading */
-	NONE;
+	DISABLED;
 	
 }

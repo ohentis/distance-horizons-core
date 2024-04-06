@@ -629,12 +629,12 @@ public class Config
 							.build();
 					
 					public static ConfigEntry<ELodShading> lodShading = new ConfigEntry.Builder<ELodShading>()
-							.set(ELodShading.MINECRAFT)
+							.set(ELodShading.AUTO)
 							.comment(""
 									+ "How should LODs be shaded? \n"
 									+ "\n"
-									+ ELodShading.MINECRAFT + ": Uses the same side shading as vanilla Minecraft blocks. \n"
-									+ ELodShading.OLD_LIGHTING + ": Simulates Minecraft's block shading for LODs. \n"
+									+ ELodShading.AUTO + ": Uses the same side shading as vanilla Minecraft blocks. \n"
+									+ ELodShading.FORCED + ": Simulates Minecraft's block shading for LODs. \n"
 									+ "              Can be used to force LOD shading when using some shaders. \n"
 									+ ELodShading.NONE + ": All LOD sides will be rendered with the same brightness. \n"
 									+ "")

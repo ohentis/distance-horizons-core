@@ -903,12 +903,12 @@
   "distanthorizons.config.enum.EBufferRebuildTimes.RARE":
     "Rare",
     
-  "distanthorizons.config.enum.ELodShading.MINECRAFT":
+  "distanthorizons.config.enum.ELodShading.AUTO":
     "Auto",
-  "distanthorizons.config.enum.ELodShading.OLD_LIGHTING":
-    "Force",
-  "distanthorizons.config.enum.ELodShading.NONE":
-    "None",
+  "distanthorizons.config.enum.ELodShading.ENABLED":
+    "Enabled",
+  "distanthorizons.config.enum.ELodShading.DISABLED":
+    "Disabled",
 
   "distanthorizons.config.enum.EUpdateBranch.STABLE":
     "Stable",
