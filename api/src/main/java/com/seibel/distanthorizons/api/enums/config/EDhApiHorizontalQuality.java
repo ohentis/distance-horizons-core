@@ -45,11 +45,7 @@ public enum EDhApiHorizontalQuality
 	MEDIUM(2.0f, 12),
 	HIGH(2.2f, 24),
 	EXTREME(2.4f, 64),
-	
-	/** @deprecated this setting is unmaintainable at high render distances. */
-	@Deprecated
-	@DisallowSelectingViaConfigGui
-	UNLIMITED(-1, -1);
+	;
 	
 	
 	
