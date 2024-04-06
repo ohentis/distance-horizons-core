@@ -17,35 +17,26 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.seibel.distanthorizons.api.enums.config;
+package com.seibel.distanthorizons.api.enums.rendering;
 
 /**
- * NONE <br>
- * LIGHT <br>
- * MEDIUM <br>
- * HEAVY <br>
- * 
- * CUSTOM <br>
+ * LINEAR,				<br>
+ * EXPONENTIAL, 		<br>
+ * EXPONENTIAL_SQUARED 	<br>
  *
- * @since API 1.0.0
- * @deprecated will be removed when DH updates to MC 1.21 <br>
- *              After removal a float value will be used to control overdraw instead.
+ * @author Leetom
+ * @version 2022-6-30
+ * @since API 1.1.0
  */
-@Deprecated
-public enum EOverdrawPrevention
+public enum EDhApiFogFalloff
 {
 	// Reminder:
 	// when adding items up the API minor version
 	// when removing items up the API major version
 	
-	NONE,
-	LIGHT,
-	MEDIUM,
-	HEAVY,
 	
-	/** 
-	 * Should not be passed in. <br>
-	 * Is returned if the overdraw value doesn't match any of the enums defined here.
-	 */
-	CUSTOM;
+	LINEAR,
+	EXPONENTIAL,
+	EXPONENTIAL_SQUARED,
+	
 }

@@ -19,7 +19,7 @@
 
 package com.seibel.distanthorizons.core.level;
 
-import com.seibel.distanthorizons.api.enums.rendering.EDebugRendering;
+import com.seibel.distanthorizons.api.enums.rendering.EDhApiDebugRendering;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
@@ -80,7 +80,7 @@ public class ClientLevelModule implements Closeable, AbstractNewDataSourceHandle
 	// tick methods //
 	//==============//
 	
-	private EDebugRendering lastDebugRendering = EDebugRendering.OFF;
+	private EDhApiDebugRendering lastDebugRendering = EDhApiDebugRendering.OFF;
 	
 	public void clientTick()
 	{
@@ -123,7 +123,7 @@ public class ClientLevelModule implements Closeable, AbstractNewDataSourceHandle
 		clientRenderState.quadtree.tick(new DhBlockPos2D(MC_CLIENT.getPlayerBlockPos()));
 		
 		boolean isBuffersDirty = false;
-		EDebugRendering newDebugRendering = Config.Client.Advanced.Debugging.debugRendering.get();
+		EDhApiDebugRendering newDebugRendering = Config.Client.Advanced.Debugging.debugRendering.get();
 		if (newDebugRendering != lastDebugRendering)
 		{
 			lastDebugRendering = newDebugRendering;

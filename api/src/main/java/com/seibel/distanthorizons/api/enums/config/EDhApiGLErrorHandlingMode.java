@@ -17,24 +17,15 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.seibel.distanthorizons.api.enums.rendering;
+package com.seibel.distanthorizons.api.enums.config;
 
 /**
- * NEAR, <br> 
- * FAR, <br> 
- * NEAR_AND_FAR <br>
- *
- * @author James Seibel
- * @version 2022-6-2
- * @since API 1.0.0
+ * @since API 1.1.0
+ * @version 2024-4-6
  */
-public enum EFogDistance
+public enum EDhApiGLErrorHandlingMode
 {
-	// Reminder:
-	// when adding items up the API minor version
-	// when removing items up the API major version
-	
-	NEAR,
-	FAR,
-	NEAR_AND_FAR
+	IGNORE,
+	LOG,
+	LOG_THROW;
 }

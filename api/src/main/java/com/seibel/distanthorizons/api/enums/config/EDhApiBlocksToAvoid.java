@@ -17,54 +17,26 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.seibel.distanthorizons.api.enums.rendering;
+package com.seibel.distanthorizons.api.enums.config;
 
 /**
- * Default <br>
- * Debug <br>
- * Disabled <br>
+ * NONE, <br>
+ * NON_COLLIDING, <br>
  *
- * @version 2022-6-2
- * @since API 1.0.0
+ * @since API 1.1.0
+ * @version 2024-4-6
  */
-public enum ERendererMode
+public enum EDhApiBlocksToAvoid
 {
 	// Reminder:
 	// when adding items up the API minor version
 	// when removing items up the API major version
 	
+	NONE(false),
+	NON_COLLIDING(true);
 	
-	DEFAULT,
-	DEBUG,
-	DISABLED;
+	public final boolean noCollision;
 	
-	
-	/** Used by the config GUI to cycle through the available rendering options */
-	public static ERendererMode next(ERendererMode type)
-	{
-		switch (type)
-		{
-			case DEFAULT:
-				return DEBUG;
-			case DEBUG:
-				return DISABLED;
-			default:
-				return DEFAULT;
-		}
-	}
-	
-	/** Used by the config GUI to cycle through the available rendering options */
-	public static ERendererMode previous(ERendererMode type)
-	{
-		switch (type)
-		{
-			case DEFAULT:
-				return DISABLED;
-			case DEBUG:
-				return DEFAULT;
-			default:
-				return DEBUG;
-		}
-	}
+	EDhApiBlocksToAvoid(boolean noCollision) { this.noCollision = noCollision; }
 	
 }

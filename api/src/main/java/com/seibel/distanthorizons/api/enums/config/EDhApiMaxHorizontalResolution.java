@@ -33,10 +33,10 @@ import com.seibel.distanthorizons.coreapi.util.MathUtil;
  *
  * @author James Seibel
  * @author Leonardo Amato
- * @version 2023-6-14
- * @since API 1.0.0
+ * @since API 1.1.0
+ * @version 2024-4-6
  */
-public enum EMaxHorizontalResolution
+public enum EDhApiMaxHorizontalResolution
 {
 	/** render 256 LODs for each chunk */
 	BLOCK(16, 0),
@@ -84,12 +84,12 @@ public enum EMaxHorizontalResolution
 	 * 2nd dimension: An array of all LodDetails that are less than or <br>
 	 * equal to that detailLevel
 	 */
-	private static EMaxHorizontalResolution[][] lowerDetailArrays;
+	private static EDhApiMaxHorizontalResolution[][] lowerDetailArrays;
 	
 	
 	
 	
-	EMaxHorizontalResolution(int newLengthCount, int newDetailLevel)
+	EDhApiMaxHorizontalResolution(int newLengthCount, int newDetailLevel)
 	{
 		this.detailLevel = (byte) newDetailLevel;
 		this.dataPointLengthCount = newLengthCount;
@@ -129,20 +129,20 @@ public enum EMaxHorizontalResolution
 	 * Returns an array of all LodDetails that have a detail level
 	 * that is less than or equal to the given LodDetail
 	 */
-	public static EMaxHorizontalResolution[] getSelfAndLowerDetails(EMaxHorizontalResolution detail)
+	public static EDhApiMaxHorizontalResolution[] getSelfAndLowerDetails(EDhApiMaxHorizontalResolution detail)
 	{
 		if (lowerDetailArrays == null)
 		{
 			// run first time setup
-			lowerDetailArrays = new EMaxHorizontalResolution[EMaxHorizontalResolution.values().length][];
+			lowerDetailArrays = new EDhApiMaxHorizontalResolution[EDhApiMaxHorizontalResolution.values().length][];
 			
 			// go through each LodDetail
-			for (EMaxHorizontalResolution currentDetail : EMaxHorizontalResolution.values())
+			for (EDhApiMaxHorizontalResolution currentDetail : EDhApiMaxHorizontalResolution.values())
 			{
-				ArrayList<EMaxHorizontalResolution> lowerDetails = new ArrayList<>();
+				ArrayList<EDhApiMaxHorizontalResolution> lowerDetails = new ArrayList<>();
 				
 				// find the details lower than currentDetail
-				for (EMaxHorizontalResolution compareDetail : EMaxHorizontalResolution.values())
+				for (EDhApiMaxHorizontalResolution compareDetail : EDhApiMaxHorizontalResolution.values())
 				{
 					if (currentDetail.detailLevel <= compareDetail.detailLevel)
 					{
@@ -154,7 +154,7 @@ public enum EMaxHorizontalResolution
 				Collections.sort(lowerDetails);
 				Collections.reverse(lowerDetails);
 				
-				lowerDetailArrays[currentDetail.detailLevel] = lowerDetails.toArray(new EMaxHorizontalResolution[lowerDetails.size()]);
+				lowerDetailArrays[currentDetail.detailLevel] = lowerDetails.toArray(new EDhApiMaxHorizontalResolution[lowerDetails.size()]);
 			}
 		}
 		
@@ -162,9 +162,9 @@ public enum EMaxHorizontalResolution
 	}
 	
 	/** Returns what detail level should be used at a given distance and maxDistance. */
-	public static EMaxHorizontalResolution getDetailForDistance(EMaxHorizontalResolution maxDetailLevel, int distance, int maxDistance)
+	public static EDhApiMaxHorizontalResolution getDetailForDistance(EDhApiMaxHorizontalResolution maxDetailLevel, int distance, int maxDistance)
 	{
-		EMaxHorizontalResolution[] lowerDetails = getSelfAndLowerDetails(maxDetailLevel);
+		EDhApiMaxHorizontalResolution[] lowerDetails = getSelfAndLowerDetails(maxDetailLevel);
 		int distanceBetweenDetails = maxDistance / lowerDetails.length;
 		int index = MathUtil.clamp(0, distance / distanceBetweenDetails, lowerDetails.length - 1);
 		

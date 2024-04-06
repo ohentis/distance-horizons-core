@@ -30,9 +30,10 @@ import com.seibel.distanthorizons.api.enums.config.DisallowSelectingViaConfigGui
  * HIGH, <br>
  * EXTREME, <br>
  * 
- * @since API 1.0.0
+ * @since API 1.1.0
+ * @version 2024-4-6
  */
-public enum EQualityPreset
+public enum EDhApiQualityPreset
 {
 	// Reminder:
 	// when adding items up the API minor version

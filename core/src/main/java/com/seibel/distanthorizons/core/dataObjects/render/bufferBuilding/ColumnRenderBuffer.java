@@ -25,13 +25,12 @@ import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.enums.EGLProxyContext;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
-import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.render.glObject.GLProxy;
 import com.seibel.distanthorizons.core.render.glObject.buffer.GLVertexBuffer;
 import com.seibel.distanthorizons.core.render.renderer.LodRenderer;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.objects.StatsMap;
-import com.seibel.distanthorizons.api.enums.config.EGpuUploadMethod;
+import com.seibel.distanthorizons.api.enums.config.EDhApiGpuUploadMethod;
 import com.seibel.distanthorizons.core.util.*;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import org.apache.logging.log4j.Logger;
@@ -88,7 +87,7 @@ public class ColumnRenderBuffer implements AutoCloseable
 	//==================//
 	
 	/** Should be run on a DH thread. */
-	public void uploadBuffer(LodQuadBuilder builder, EGpuUploadMethod gpuUploadMethod) throws InterruptedException
+	public void uploadBuffer(LodQuadBuilder builder, EDhApiGpuUploadMethod gpuUploadMethod) throws InterruptedException
 	{
 		LodUtil.assertTrue(Thread.currentThread().getName().startsWith(ThreadUtil.THREAD_NAME_PREFIX), "Buffer uploading needs to be done on a DH thread to prevent locking up any MC threads.");
 		
@@ -147,7 +146,7 @@ public class ColumnRenderBuffer implements AutoCloseable
 			
 		}
 	}
-	private void uploadBuffersUsingUploadMethod(LodQuadBuilder builder, EGpuUploadMethod gpuUploadMethod) throws InterruptedException
+	private void uploadBuffersUsingUploadMethod(LodQuadBuilder builder, EDhApiGpuUploadMethod gpuUploadMethod) throws InterruptedException
 	{
 		if (gpuUploadMethod.useEarlyMapping)
 		{
@@ -163,7 +162,7 @@ public class ColumnRenderBuffer implements AutoCloseable
 	
 	
 	
-	private void uploadBuffersMapped(LodQuadBuilder builder, EGpuUploadMethod method)
+	private void uploadBuffersMapped(LodQuadBuilder builder, EDhApiGpuUploadMethod method)
 	{
 		// opaque vbos //
 		
@@ -199,7 +198,7 @@ public class ColumnRenderBuffer implements AutoCloseable
 		}
 	}
 	
-	private void uploadBuffersDirect(LodQuadBuilder builder, EGpuUploadMethod method) throws InterruptedException
+	private void uploadBuffersDirect(LodQuadBuilder builder, EDhApiGpuUploadMethod method) throws InterruptedException
 	{
 		this.vbos = ColumnRenderBufferBuilder.resizeBuffer(this.vbos, builder.getCurrentNeededOpaqueVertexBufferCount());
 		uploadBuffersDirect(this.vbos, builder.makeOpaqueVertexBuffers(), method);
@@ -207,7 +206,7 @@ public class ColumnRenderBuffer implements AutoCloseable
 		this.vbosTransparent = ColumnRenderBufferBuilder.resizeBuffer(this.vbosTransparent, builder.getCurrentNeededTransparentVertexBufferCount());
 		uploadBuffersDirect(this.vbosTransparent, builder.makeTransparentVertexBuffers(), method);
 	}
-	private static void uploadBuffersDirect(GLVertexBuffer[] vbos, Iterator<ByteBuffer> iter, EGpuUploadMethod method) throws InterruptedException
+	private static void uploadBuffersDirect(GLVertexBuffer[] vbos, Iterator<ByteBuffer> iter, EDhApiGpuUploadMethod method) throws InterruptedException
 	{
 		long remainingMS = 0;
 		long MBPerMS = Config.Client.Advanced.GpuBuffers.gpuUploadPerMegabyteInMilliseconds.get();

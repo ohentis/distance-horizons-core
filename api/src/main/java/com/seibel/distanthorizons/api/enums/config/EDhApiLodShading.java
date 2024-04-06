@@ -20,45 +20,33 @@
 package com.seibel.distanthorizons.api.enums.config;
 
 /**
- * LOWEST <br>
- * LOW <br>
- * MEDIUM <br>
- * HIGH <br>
- * UNLIMITED <br>
+ * MINECRAFT <br>
+ * OLD_LIGHTING <br>
+ * NONE <br>
  *
- * @since API 1.0.0
+ * @since API 1.1.0
+ * @version 2024-4-6
  */
-public enum EHorizontalQuality
+public enum EDhApiLodShading
 {
 	// Reminder:
 	// when adding items up the API minor version
 	// when removing items up the API major version
 	
+	/** 
+	 * Uses Minecraft's shading for LODs. <Br>
+	 * This means if Minecraft's shading is disabled DH's shading will be as well.
+	 */
+	AUTO,
 	
-	// FIXME any quadraticBase less than 2.0f has issues with DetailDistanceUtil, and will always return the lowest detail level.
-	//  So for now we are limiting the lowest value to 2.0
-	//  LOWEST was originally 1.0f and LOW was 1.5f
+	/** 
+	 * Simulates Minecraft's shading. <Br>
+	 * This is most useful for shaders that disable Minecraft's shading
+	 * but still require shading on LODs.
+	 */
+	ENABLED,
 	
-	LOWEST(2.0f, 4),
-	LOW(2.0f, 8),
-	MEDIUM(2.0f, 12),
-	HIGH(2.2f, 24),
-	EXTREME(2.4f, 64),
-	
-	/** @deprecated this setting is unmaintainable at high render distances. */
-	@Deprecated
-	@DisallowSelectingViaConfigGui
-	UNLIMITED(-1, -1);
-	
-	
-	
-	public final double quadraticBase;
-	public final int distanceUnitInBlocks;
-	
-	EHorizontalQuality(double quadraticBase, int distanceUnitInBlocks)
-	{
-		this.quadraticBase = quadraticBase;
-		this.distanceUnitInBlocks = distanceUnitInBlocks;
-	}
+	/** LODs will have no shading */
+	DISABLED;
 	
 }

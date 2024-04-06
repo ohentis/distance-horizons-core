@@ -20,22 +20,13 @@
 package com.seibel.distanthorizons.api.enums.config;
 
 /**
- * NONE, <br>
- * NON_COLLIDING, <br>
- *
- * @since API 1.0.0
+ * @since API 1.1.0
+ * @version 2024-4-6
  */
-public enum EBlocksToAvoid
+public enum EDhApiGlProfileMode
 {
-	// Reminder:
-	// when adding items up the API minor version
-	// when removing items up the API major version
-	
-	NONE(false),
-	NON_COLLIDING(true);
-	
-	public final boolean noCollision;
-	
-	EBlocksToAvoid(boolean noCollision) { this.noCollision = noCollision; }
+	CORE,
+	COMPAT,
+	ANY;
 	
 }

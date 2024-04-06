@@ -19,7 +19,7 @@
 
 package com.seibel.distanthorizons.core.render.renderer;
 
-import com.seibel.distanthorizons.api.enums.rendering.EFogDrawMode;
+import com.seibel.distanthorizons.api.enums.rendering.EDhApiFogDrawMode;
 import com.seibel.distanthorizons.api.interfaces.override.rendering.IDhApiFramebuffer;
 import com.seibel.distanthorizons.api.interfaces.override.rendering.IDhApiShaderProgram;
 import com.seibel.distanthorizons.api.methods.events.abstractEvents.*;
@@ -43,7 +43,7 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftCli
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.ILightMapWrapper;
-import com.seibel.distanthorizons.api.enums.rendering.EFogColorMode;
+import com.seibel.distanthorizons.api.enums.rendering.EDhApiFogColorMode;
 import com.seibel.distanthorizons.core.render.fog.LodFogConfig;
 import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.AbstractOptifineAccessor;
 import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.IIrisAccessor;
@@ -384,7 +384,7 @@ public class LodRenderer
 				}
 				
 				
-				if (Config.Client.Advanced.Graphics.Fog.drawMode.get() != EFogDrawMode.FOG_DISABLED)
+				if (Config.Client.Advanced.Graphics.Fog.drawMode.get() != EDhApiFogDrawMode.FOG_DISABLED)
 				{
 					profiler.popPush("LOD Fog");
 					
@@ -520,7 +520,7 @@ public class LodRenderer
 		GL32.glDepthMask(true); // Apparently the depth mask state is stored in the FBO, so glState fails to restore it...
 		
 		
-		if (Config.Client.Advanced.Graphics.Fog.drawMode.get() != EFogDrawMode.FOG_DISABLED)
+		if (Config.Client.Advanced.Graphics.Fog.drawMode.get() != EDhApiFogDrawMode.FOG_DISABLED)
 		{
 			profiler.popPush("LOD Fog");
 			FogShader.INSTANCE.render(partialTicks);
@@ -796,7 +796,7 @@ public class LodRenderer
 	{
 		Color fogColor;
 		
-		if (Config.Client.Advanced.Graphics.Fog.colorMode.get() == EFogColorMode.USE_SKY_COLOR)
+		if (Config.Client.Advanced.Graphics.Fog.colorMode.get() == EDhApiFogColorMode.USE_SKY_COLOR)
 		{
 			fogColor = MC_RENDER.getSkyColor();
 		}

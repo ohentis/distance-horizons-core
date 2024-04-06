@@ -20,28 +20,39 @@
 package com.seibel.distanthorizons.api.enums.rendering;
 
 /**
- * USE_DEFAULT_FOG_COLOR, <br>
- * USE_SKY_COLOR, <br>
+ * ABOVE_CAMERA,				<br>
+ * BELOW_CAMERA,				<br>
+ * ABOVE_AND_BELOW_CAMERA,		<br>
+ * ABOVE_SET_HEIGHT,			<br>
+ * BELOW_SET_HEIGHT,			<br>
+ * ABOVE_AND_BELOW_SET_HEIGHT,	<br>
  *
- * @author James Seibel
- * @version 2022-6-9
- * @since API 1.0.0
+ * @author Leetom
+ * @version 2024-4-6
+ * @since API 1.1.0
  */
-public enum EFogColorMode
+public enum EDhApiHeightFogMode
 {
 	// Reminder:
-	// when adding items: up the API minor version
-	// when removing items: up the API major version
+	// when adding items up the API minor version
+	// when removing items up the API major version
 	
-	/** Fog uses Minecraft's fog color. */
-	USE_WORLD_FOG_COLOR,
 	
-	/**
-	 * Replicates the effect of the clear sky mod.
-	 * Making the fog blend in with the sky better
-	 * For it to look good you need one of the following mods:
-	 * https://www.curseforge.com/minecraft/mc-mods/clear-skies
-	 * https://www.curseforge.com/minecraft/mc-mods/clear-skies-forge-port
-	 */
-	USE_SKY_COLOR,
+	ABOVE_CAMERA(true, true, false),
+	BELOW_CAMERA(true, false, true),
+	ABOVE_AND_BELOW_CAMERA(true, true, true),
+	ABOVE_SET_HEIGHT(false, true, false),
+	BELOW_SET_HEIGHT(false, false, true),
+	ABOVE_AND_BELOW_SET_HEIGHT(false, true, true);
+	
+	public final boolean basedOnCamera;
+	public final boolean above;
+	public final boolean below;
+	
+	EDhApiHeightFogMode(boolean basedOnCamera, boolean above, boolean below)
+	{
+		this.basedOnCamera = basedOnCamera;
+		this.above = above;
+		this.below = below;
+	}
 }

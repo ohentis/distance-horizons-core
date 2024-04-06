@@ -2,6 +2,7 @@
  *    This file is part of the Distant Horizons mod
  *    licensed under the GNU LGPL v3 License.
  *
+ *    Copyright (C) 2022  Tom Lee (TomTheFurry)
  *    Copyright (C) 2020-2023 James Seibel
  *
  *    This program is free software: you can redistribute it and/or modify
@@ -20,36 +21,51 @@
 package com.seibel.distanthorizons.api.enums.config;
 
 /**
- * NEVER, 	<br>
- * DYNAMIC, <br>
- * ALWAYS	<br> <br>
+ * NAME_ONLY, <br>
+ * IP_ONLY, <br>
+ * NAME_IP, <br>
+ * NAME_IP_PORT, <br>
+ * NAME_IP_PORT_MC_VERSION, <br> <br>
  *
- * This represents how far the LODs should overlap with
- * the vanilla Minecraft terrain.
+ * Determines how the multiplayer folders should be named.
  *
  * @author James Seibel
- * @version 2022-6-30
+ * @since API 1.1.0
+ * @version 2024-4-6
  */
-@Deprecated // not currently in use, if the config this enum represents is re-implemented, the deprecated flag can be removed
-public enum EVanillaOverdraw
+public enum EDhApiServerFolderNameMode
 {
 	// Reminder:
 	// when adding items up the API minor version
 	// when removing items up the API major version
 	
 	
-	/**
-	 * Don't draw LODs where a minecraft chunk could be.
-	 * Use Overdraw Offset to tweak the border thickness.
-	 */
-	NEVER,
+	/** Only use the server name */
+	NAME_ONLY,
+	
+	/** Only use the server IP */
+	IP_ONLY,
 	
 	/**
-	 * Draw LODs over the farther minecraft chunks.
-	 * Dynamically decides the border thickness
+	 * {SERVER_NAME} IP {IP} <br>
+	 * Example: Minecraft Server IP 192.168.1.40
 	 */
-	DYNAMIC,
+	NAME_IP,
 	
-	/** Draw LODs over all minecraft chunks. */
-	ALWAYS,
+	/**
+	 * {SERVER_NAME} IP {IP}:{PORT} <br>
+	 * Example: Minecraft Server IP 192.168.1.40:25565
+	 */
+	NAME_IP_PORT,
+	
+	/**
+	 * {SERVER_NAME} IP {IP} <br>
+	 * Example: Minecraft Server IP 192.168.1.40:25565 GameVersion 1.16.5 <Br> <br>
+	 *
+	 * Not normally recommended, since the game version can change if the
+	 * server installs paper or some other jar. <br>
+	 * This is just here to provide backwards compatibility.
+	 */
+	NAME_IP_PORT_MC_VERSION;
+	
 }

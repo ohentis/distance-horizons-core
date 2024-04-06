@@ -19,7 +19,7 @@
 
 package com.seibel.distanthorizons.core.api.external.methods.config.client;
 
-import com.seibel.distanthorizons.api.enums.rendering.EFogFalloff;
+import com.seibel.distanthorizons.api.enums.rendering.EDhApiFogFalloff;
 import com.seibel.distanthorizons.api.interfaces.config.IDhApiConfigValue;
 import com.seibel.distanthorizons.api.interfaces.config.client.IDhApiFarFogConfig;
 import com.seibel.distanthorizons.api.objects.config.DhApiConfigValue;
@@ -50,8 +50,8 @@ public class DhApiFarFogConfig implements IDhApiFarFogConfig
 	{ return new DhApiConfigValue<Double, Double>(Config.Client.Advanced.Graphics.Fog.AdvancedFog.farFogMax); }
 	
 	@Override
-	public IDhApiConfigValue<EFogFalloff> farFogFalloff()
-	{ return new DhApiConfigValue<EFogFalloff, EFogFalloff>(Config.Client.Advanced.Graphics.Fog.AdvancedFog.farFogFalloff); }
+	public IDhApiConfigValue<EDhApiFogFalloff> farFogFalloff()
+	{ return new DhApiConfigValue<EDhApiFogFalloff, EDhApiFogFalloff>(Config.Client.Advanced.Graphics.Fog.AdvancedFog.farFogFalloff); }
 	
 	@Override
 	public IDhApiConfigValue<Double> farFogDensity()

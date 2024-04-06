@@ -28,10 +28,10 @@ package com.seibel.distanthorizons.api.enums.config;
  *
  * @author Leetom
  * @author James Seibel
- * @version 2022-7-2
- * @since API 1.0.0
+ * @version 2024-4-6
+ * @since API 1.1.0
  */
-public enum EGpuUploadMethod
+public enum EDhApiGpuUploadMethod
 {
 	/** Picks the best option based on the GPU the user has. */
 	AUTO(false, false),
@@ -60,7 +60,7 @@ public enum EGpuUploadMethod
 	public final boolean useEarlyMapping;
 	public final boolean useBufferStorage;
 	
-	EGpuUploadMethod(boolean useEarlyMapping, boolean useBufferStorage)
+	EDhApiGpuUploadMethod(boolean useEarlyMapping, boolean useBufferStorage)
 	{
 		this.useEarlyMapping = useEarlyMapping;
 		this.useBufferStorage = useBufferStorage;

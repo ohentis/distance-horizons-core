@@ -22,9 +22,10 @@ package com.seibel.distanthorizons.api.enums.config;
 import org.apache.logging.log4j.Level;
 
 /**
- * @since API 1.0.0
+ * @since API 1.1.0
+ * @version 2024-4-6
  */
-public enum ELoggerMode
+public enum EDhApiLoggerMode
 {
 	DISABLED(Level.OFF, Level.OFF),
 	LOG_ALL_TO_FILE(Level.ALL, Level.OFF),
@@ -40,11 +41,14 @@ public enum ELoggerMode
 	LOG_WARNING_TO_CHAT_AND_INFO_TO_FILE(Level.INFO, Level.WARN),
 	LOG_ERROR_TO_CHAT_AND_INFO_TO_FILE(Level.INFO, Level.ERROR),
 	;
+	
 	public final Level levelForFile;
 	public final Level levelForChat;
-	ELoggerMode(Level levelForFile, Level levelForChat)
+	
+	EDhApiLoggerMode(Level levelForFile, Level levelForChat)
 	{
 		this.levelForFile = levelForFile;
 		this.levelForChat = levelForChat;
 	}
+	
 }

@@ -19,10 +19,9 @@
 
 package com.seibel.distanthorizons.api.interfaces.config.client;
 
-import com.seibel.distanthorizons.api.enums.rendering.EFogColorMode;
-import com.seibel.distanthorizons.api.enums.rendering.EFogDistance;
-import com.seibel.distanthorizons.api.enums.rendering.EFogDrawMode;
-import com.seibel.distanthorizons.api.enums.rendering.*;
+import com.seibel.distanthorizons.api.enums.rendering.EDhApiFogColorMode;
+import com.seibel.distanthorizons.api.enums.rendering.EDhApiFogDistance;
+import com.seibel.distanthorizons.api.enums.rendering.EDhApiFogDrawMode;
 import com.seibel.distanthorizons.api.interfaces.config.IDhApiConfigGroup;
 import com.seibel.distanthorizons.api.interfaces.config.IDhApiConfigValue;
 
@@ -59,13 +58,13 @@ public interface IDhApiFogConfig extends IDhApiConfigGroup
 	//====================//
 	
 	/** Defines at what distance fog is rendered on fake chunks. */
-	IDhApiConfigValue<EFogDistance> distance();
+	IDhApiConfigValue<EDhApiFogDistance> distance();
 	
 	/** Should be used to enable/disable fog rendering. */
-	IDhApiConfigValue<EFogDrawMode> drawMode();
+	IDhApiConfigValue<EDhApiFogDrawMode> drawMode();
 	
 	/** Can be used to enable support with mods that change vanilla MC's fog color. */
-	IDhApiConfigValue<EFogColorMode> color();
+	IDhApiConfigValue<EDhApiFogColorMode> color();
 	
 	/**
 	 * If enabled attempts to disable vanilla MC's fog on real chunks. <br>

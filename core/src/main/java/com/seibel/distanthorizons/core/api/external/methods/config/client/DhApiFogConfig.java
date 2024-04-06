@@ -19,9 +19,9 @@
 
 package com.seibel.distanthorizons.core.api.external.methods.config.client;
 
-import com.seibel.distanthorizons.api.enums.rendering.EFogColorMode;
-import com.seibel.distanthorizons.api.enums.rendering.EFogDistance;
-import com.seibel.distanthorizons.api.enums.rendering.EFogDrawMode;
+import com.seibel.distanthorizons.api.enums.rendering.EDhApiFogColorMode;
+import com.seibel.distanthorizons.api.enums.rendering.EDhApiFogDistance;
+import com.seibel.distanthorizons.api.enums.rendering.EDhApiFogDrawMode;
 import com.seibel.distanthorizons.api.interfaces.config.IDhApiConfigValue;
 import com.seibel.distanthorizons.api.interfaces.config.client.IDhApiFarFogConfig;
 import com.seibel.distanthorizons.api.interfaces.config.client.IDhApiFogConfig;
@@ -53,15 +53,15 @@ public class DhApiFogConfig implements IDhApiFogConfig
 	//====================//
 	
 	@Override
-	public IDhApiConfigValue<EFogDistance> distance()
+	public IDhApiConfigValue<EDhApiFogDistance> distance()
 	{ return new DhApiConfigValue<>(Config.Client.Advanced.Graphics.Fog.distance); }
 	
 	@Override
-	public IDhApiConfigValue<EFogDrawMode> drawMode()
+	public IDhApiConfigValue<EDhApiFogDrawMode> drawMode()
 	{ return new DhApiConfigValue<>(Config.Client.Advanced.Graphics.Fog.drawMode); }
 	
 	@Override
-	public IDhApiConfigValue<EFogColorMode> color()
+	public IDhApiConfigValue<EDhApiFogColorMode> color()
 	{ return new DhApiConfigValue<>(Config.Client.Advanced.Graphics.Fog.colorMode); }
 	
 	@Override

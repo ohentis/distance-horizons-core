@@ -19,9 +19,6 @@
 
 package com.seibel.distanthorizons.api.interfaces.config.client;
 
-import com.seibel.distanthorizons.api.enums.rendering.EFogColorMode;
-import com.seibel.distanthorizons.api.enums.rendering.EFogDistance;
-import com.seibel.distanthorizons.api.enums.rendering.EFogDrawMode;
 import com.seibel.distanthorizons.api.interfaces.config.IDhApiConfigGroup;
 import com.seibel.distanthorizons.api.interfaces.config.IDhApiConfigValue;
 

@@ -616,142 +616,142 @@
   
     
     
-  "distanthorizons.config.enum.EQualityPreset.CUSTOM":
+  "distanthorizons.config.enum.EDhApiQualityPreset.CUSTOM":
     "Custom",
-  "distanthorizons.config.enum.EQualityPreset.MINIMUM":
+  "distanthorizons.config.enum.EDhApiQualityPreset.MINIMUM":
     "Minimum",
-  "distanthorizons.config.enum.EQualityPreset.LOW":
+  "distanthorizons.config.enum.EDhApiQualityPreset.LOW":
     "Low",
-  "distanthorizons.config.enum.EQualityPreset.MEDIUM":
+  "distanthorizons.config.enum.EDhApiQualityPreset.MEDIUM":
     "Medium",
-  "distanthorizons.config.enum.EQualityPreset.HIGH":
+  "distanthorizons.config.enum.EDhApiQualityPreset.HIGH":
     "High",
-  "distanthorizons.config.enum.EQualityPreset.EXTREME":
+  "distanthorizons.config.enum.EDhApiQualityPreset.EXTREME":
     "Extreme",
     
-  "distanthorizons.config.enum.EThreadPreset.CUSTOM":
+  "distanthorizons.config.enum.EDhApiThreadPreset.CUSTOM":
     "Custom",
-  "distanthorizons.config.enum.EThreadPreset.MINIMAL_IMPACT":
+  "distanthorizons.config.enum.EDhApiThreadPreset.MINIMAL_IMPACT":
     "Minimal Impact",
-  "distanthorizons.config.enum.EThreadPreset.LOW_IMPACT":
+  "distanthorizons.config.enum.EDhApiThreadPreset.LOW_IMPACT":
     "Low Impact",
-  "distanthorizons.config.enum.EThreadPreset.BALANCED":
+  "distanthorizons.config.enum.EDhApiThreadPreset.BALANCED":
     "Balanced",
-  "distanthorizons.config.enum.EThreadPreset.AGGRESSIVE":
+  "distanthorizons.config.enum.EDhApiThreadPreset.AGGRESSIVE":
     "Aggressive",
-  "distanthorizons.config.enum.EThreadPreset.I_PAID_FOR_THE_WHOLE_CPU":
+  "distanthorizons.config.enum.EDhApiThreadPreset.I_PAID_FOR_THE_WHOLE_CPU":
     "I Paid For The Whole CPU",
     
-  "distanthorizons.config.enum.EMaxHorizontalResolution.BLOCK":
+  "distanthorizons.config.enum.EDhApiMaxHorizontalResolution.BLOCK":
     "Block",
-  "distanthorizons.config.enum.EMaxHorizontalResolution.TWO_BLOCKS":
+  "distanthorizons.config.enum.EDhApiMaxHorizontalResolution.TWO_BLOCKS":
     "2 blocks",
-  "distanthorizons.config.enum.EMaxHorizontalResolution.FOUR_BLOCKS":
+  "distanthorizons.config.enum.EDhApiMaxHorizontalResolution.FOUR_BLOCKS":
     "4 blocks",
-  "distanthorizons.config.enum.EMaxHorizontalResolution.HALF_CHUNK":
+  "distanthorizons.config.enum.EDhApiMaxHorizontalResolution.HALF_CHUNK":
     "Half a chunk",
-  "distanthorizons.config.enum.EMaxHorizontalResolution.CHUNK":
+  "distanthorizons.config.enum.EDhApiMaxHorizontalResolution.CHUNK":
     "Chunk",
     
-  "distanthorizons.config.enum.EVerticalQuality.HEIGHT_MAP":
+  "distanthorizons.config.enum.EDhApiVerticalQuality.HEIGHT_MAP":
     "1. Height Map",
-  "distanthorizons.config.enum.EVerticalQuality.LOW":
+  "distanthorizons.config.enum.EDhApiVerticalQuality.LOW":
     "2. Low",
-  "distanthorizons.config.enum.EVerticalQuality.MEDIUM":
+  "distanthorizons.config.enum.EDhApiVerticalQuality.MEDIUM":
     "3. Medium",
-  "distanthorizons.config.enum.EVerticalQuality.HIGH":
+  "distanthorizons.config.enum.EDhApiVerticalQuality.HIGH":
     "4. High",
-  "distanthorizons.config.enum.EVerticalQuality.VERY_HIGH":
+  "distanthorizons.config.enum.EDhApiVerticalQuality.VERY_HIGH":
     "5. Very High",
-  "distanthorizons.config.enum.EVerticalQuality.EXTREME":
+  "distanthorizons.config.enum.EDhApiVerticalQuality.EXTREME":
     "6. Extreme",
-  "distanthorizons.config.enum.EVerticalQuality.PIXEL_ART":
+  "distanthorizons.config.enum.EDhApiVerticalQuality.PIXEL_ART":
     "7. Pixel Art",
     
-  "distanthorizons.config.enum.EHorizontalQuality.LOWEST":
+  "distanthorizons.config.enum.EDhApiHorizontalQuality.LOWEST":
     "Lowest",
-  "distanthorizons.config.enum.EHorizontalQuality.LOW":
+  "distanthorizons.config.enum.EDhApiHorizontalQuality.LOW":
     "Low",
-  "distanthorizons.config.enum.EHorizontalQuality.MEDIUM":
+  "distanthorizons.config.enum.EDhApiHorizontalQuality.MEDIUM":
     "Medium",
-  "distanthorizons.config.enum.EHorizontalQuality.HIGH":
+  "distanthorizons.config.enum.EDhApiHorizontalQuality.HIGH":
     "High",
-  "distanthorizons.config.enum.EHorizontalQuality.EXTREME":
+  "distanthorizons.config.enum.EDhApiHorizontalQuality.EXTREME":
     "Extreme",
-  "distanthorizons.config.enum.EHorizontalQuality.UNLIMITED":
+  "distanthorizons.config.enum.EDhApiHorizontalQuality.UNLIMITED":
     "Unlimited",
     
-  "distanthorizons.config.enum.ETransparency.DISABLED":
+  "distanthorizons.config.enum.EDhApiTransparency.DISABLED":
     "Disabled",
-  "distanthorizons.config.enum.ETransparency.FAKE":
+  "distanthorizons.config.enum.EDhApiTransparency.FAKE":
     "Fake",
-  "distanthorizons.config.enum.ETransparency.COMPLETE":
+  "distanthorizons.config.enum.EDhApiTransparency.COMPLETE":
     "Complete",
     
-  "distanthorizons.config.enum.EFogDistance.NEAR":
+  "distanthorizons.config.enum.EDhApiFogDistance.NEAR":
     "Near",
-  "distanthorizons.config.enum.EFogDistance.FAR":
+  "distanthorizons.config.enum.EDhApiFogDistance.FAR":
     "Far",
-  "distanthorizons.config.enum.EFogDistance.NEAR_AND_FAR":
+  "distanthorizons.config.enum.EDhApiFogDistance.NEAR_AND_FAR":
     "Near and far",
     
-  "distanthorizons.config.enum.EFogDrawMode.USE_OPTIFINE_SETTING":
+  "distanthorizons.config.enum.EDhApiFogDrawMode.USE_OPTIFINE_SETTING":
     "Use modded settings",
-  "distanthorizons.config.enum.EFogDrawMode.FOG_ENABLED":
+  "distanthorizons.config.enum.EDhApiFogDrawMode.FOG_ENABLED":
     "Enabled",
-  "distanthorizons.config.enum.EFogDrawMode.FOG_DISABLED":
+  "distanthorizons.config.enum.EDhApiFogDrawMode.FOG_DISABLED":
     "Disabled",
-  "distanthorizons.config.enum.EFogColorMode.USE_WORLD_FOG_COLOR":
+  "distanthorizons.config.enum.EDhApiFogColorMode.USE_WORLD_FOG_COLOR":
     "Use world fog",
-  "distanthorizons.config.enum.EFogColorMode.USE_SKY_COLOR":
+  "distanthorizons.config.enum.EDhApiFogColorMode.USE_SKY_COLOR":
     "Use sky color",
     
-  "distanthorizons.config.enum.EFogFalloff.LINEAR":
+  "distanthorizons.config.enum.EDhApiFogFalloff.LINEAR":
     "Linear",
-  "distanthorizons.config.enum.EFogFalloff.EXPONENTIAL":
+  "distanthorizons.config.enum.EDhApiFogFalloff.EXPONENTIAL":
     "Exponential",
-  "distanthorizons.config.enum.EFogFalloff.EXPONENTIAL_SQUARED":
+  "distanthorizons.config.enum.EDhApiFogFalloff.EXPONENTIAL_SQUARED":
     "Exponential squared",
     
-  "distanthorizons.config.enum.EHeightFogMixMode.BASIC":
+  "distanthorizons.config.enum.EDhApiHeightFogMixMode.BASIC":
     "Basic",
-  "distanthorizons.config.enum.EHeightFogMixMode.IGNORE_HEIGHT":
+  "distanthorizons.config.enum.EDhApiHeightFogMixMode.IGNORE_HEIGHT":
     "Ignore Height",
-  "distanthorizons.config.enum.EHeightFogMixMode.ADDITION":
+  "distanthorizons.config.enum.EDhApiHeightFogMixMode.ADDITION":
     "Addition",
-  "distanthorizons.config.enum.EHeightFogMixMode.MAX":
+  "distanthorizons.config.enum.EDhApiHeightFogMixMode.MAX":
     "Max",
-  "distanthorizons.config.enum.EHeightFogMixMode.MULTIPLY":
+  "distanthorizons.config.enum.EDhApiHeightFogMixMode.MULTIPLY":
     "Multiply",
-  "distanthorizons.config.enum.EHeightFogMixMode.INVERSE_MULTIPLY":
+  "distanthorizons.config.enum.EDhApiHeightFogMixMode.INVERSE_MULTIPLY":
     "Inverse Multiply",
-  "distanthorizons.config.enum.EHeightFogMixMode.LIMITED_ADDITION":
+  "distanthorizons.config.enum.EDhApiHeightFogMixMode.LIMITED_ADDITION":
     "Limited Addition",
-  "distanthorizons.config.enum.EHeightFogMixMode.MULTIPLY_ADDITION":
+  "distanthorizons.config.enum.EDhApiHeightFogMixMode.MULTIPLY_ADDITION":
     "Multiply Addition",
-  "distanthorizons.config.enum.EHeightFogMixMode.INVERSE_MULTIPLY_ADDITION":
+  "distanthorizons.config.enum.EDhApiHeightFogMixMode.INVERSE_MULTIPLY_ADDITION":
     "Inverse Multiply Addition",
-  "distanthorizons.config.enum.EHeightFogMixMode.AVERAGE":
+  "distanthorizons.config.enum.EDhApiHeightFogMixMode.AVERAGE":
     "Average",
     
-  "distanthorizons.config.enum.EHeightFogMode.ABOVE_CAMERA":
+  "distanthorizons.config.enum.EDhApiHeightFogMode.ABOVE_CAMERA":
     "Above Camera",
-  "distanthorizons.config.enum.EHeightFogMode.BELOW_CAMERA":
+  "distanthorizons.config.enum.EDhApiHeightFogMode.BELOW_CAMERA":
     "Below Camera",
-  "distanthorizons.config.enum.EHeightFogMode.ABOVE_AND_BELOW_CAMERA":
+  "distanthorizons.config.enum.EDhApiHeightFogMode.ABOVE_AND_BELOW_CAMERA":
     "Above And Below Camera",
-  "distanthorizons.config.enum.EHeightFogMode.ABOVE_SET_HEIGHT":
+  "distanthorizons.config.enum.EDhApiHeightFogMode.ABOVE_SET_HEIGHT":
     "Above Set Height",
-  "distanthorizons.config.enum.EHeightFogMode.BELOW_SET_HEIGHT":
+  "distanthorizons.config.enum.EDhApiHeightFogMode.BELOW_SET_HEIGHT":
     "Below Set Height",
-  "distanthorizons.config.enum.EHeightFogMode.ABOVE_AND_BELOW_SET_HEIGHT":
+  "distanthorizons.config.enum.EDhApiHeightFogMode.ABOVE_AND_BELOW_SET_HEIGHT":
     "Above And Below Set Height",
     
-  "distanthorizons.config.enum.EVanillaOverdraw.NEVER":
+  "distanthorizons.config.enum.EDhApiVanillaOverdraw.NEVER":
     "Never",
-  "distanthorizons.config.enum.EVanillaOverdraw.DYNAMIC":
+  "distanthorizons.config.enum.EDhApiVanillaOverdraw.DYNAMIC":
     "Dynamic",
-  "distanthorizons.config.enum.EVanillaOverdraw.ALWAYS":
+  "distanthorizons.config.enum.EDhApiVanillaOverdraw.ALWAYS":
     "Always",
     
   "distanthorizons.config.enum.EDhApiDistantGeneratorMode.NONE":
@@ -783,135 +783,135 @@
   "distanthorizons.config.enum.EDhApiWorldCompressionMode.VISUALLY_EQUAL":
     "2. Visually Equal",
     
-  "distanthorizons.config.enum.ELightGenerationMode.DISTANT_HORIZONS":
+  "distanthorizons.config.enum.EDhApiLightGenerationMode.DISTANT_HORIZONS":
     "Distant Horizons",
-  "distanthorizons.config.enum.ELightGenerationMode.MINECRAFT":
+  "distanthorizons.config.enum.EDhApiLightGenerationMode.MINECRAFT":
     "Minecraft",
     
-  "distanthorizons.config.enum.EGenerationPriority.AUTO":
+  "distanthorizons.config.enum.EDhApiGenerationPriority.AUTO":
     "Auto",
-  "distanthorizons.config.enum.EGenerationPriority.NEAR_FIRST":
+  "distanthorizons.config.enum.EDhApiGenerationPriority.NEAR_FIRST":
     "Near first",
-  "distanthorizons.config.enum.EGenerationPriority.BALANCED":
+  "distanthorizons.config.enum.EDhApiGenerationPriority.BALANCED":
     "Balanced",
-  "distanthorizons.config.enum.EGenerationPriority.FAR_FIRST":
+  "distanthorizons.config.enum.EDhApiGenerationPriority.FAR_FIRST":
     "Far first",
     
-  "distanthorizons.config.enum.EBlocksToAvoid.NONE":
+  "distanthorizons.config.enum.EDhApiBlocksToAvoid.NONE":
     "None",
-  "distanthorizons.config.enum.EBlocksToAvoid.NON_COLLIDING":
+  "distanthorizons.config.enum.EDhApiBlocksToAvoid.NON_COLLIDING":
     "Non-Colliding",
     
-  "distanthorizons.config.enum.EOverdrawPrevention.NONE":
+  "distanthorizons.config.enum.EDhApiOverdrawPrevention.NONE":
     "None",
-  "distanthorizons.config.enum.EOverdrawPrevention.LIGHT":
+  "distanthorizons.config.enum.EDhApiOverdrawPrevention.LIGHT":
     "Light",
-  "distanthorizons.config.enum.EOverdrawPrevention.MEDIUM":
+  "distanthorizons.config.enum.EDhApiOverdrawPrevention.MEDIUM":
     "Medium",
-  "distanthorizons.config.enum.EOverdrawPrevention.HEAVY":
+  "distanthorizons.config.enum.EDhApiOverdrawPrevention.HEAVY":
     "Heavy",
     
-  "distanthorizons.config.enum.EServerFolderNameMode.NAME_ONLY":
+  "distanthorizons.config.enum.EDhApiServerFolderNameMode.NAME_ONLY":
     "Name Only",
-  "distanthorizons.config.enum.EServerFolderNameMode.IP_ONLY":
+  "distanthorizons.config.enum.EDhApiServerFolderNameMode.IP_ONLY":
     "IP Only",
-  "distanthorizons.config.enum.EServerFolderNameMode.NAME_IP":
+  "distanthorizons.config.enum.EDhApiServerFolderNameMode.NAME_IP":
     "Name and IP",
-  "distanthorizons.config.enum.EServerFolderNameMode.NAME_IP_PORT":
+  "distanthorizons.config.enum.EDhApiServerFolderNameMode.NAME_IP_PORT":
     "Name, IP, Port",
-  "distanthorizons.config.enum.EServerFolderNameMode.NAME_IP_PORT_MC_VERSION":
+  "distanthorizons.config.enum.EDhApiServerFolderNameMode.NAME_IP_PORT_MC_VERSION":
     "Name, IP, Port, MC version",
     
-  "distanthorizons.config.enum.ERendererMode.DEFAULT":
+  "distanthorizons.config.enum.EDhApiRendererMode.DEFAULT":
     "Default",
-  "distanthorizons.config.enum.ERendererMode.DEBUG":
+  "distanthorizons.config.enum.EDhApiRendererMode.DEBUG":
     "Debug",
-  "distanthorizons.config.enum.ERendererMode.DISABLED":
+  "distanthorizons.config.enum.EDhApiRendererMode.DISABLED":
     "Disabled",
     
-  "distanthorizons.config.enum.EDebugRendering.OFF":
+  "distanthorizons.config.enum.EDhApiDebugRendering.OFF":
     "Off",
-  "distanthorizons.config.enum.EDebugRendering.SHOW_DETAIL":
+  "distanthorizons.config.enum.EDhApiDebugRendering.SHOW_DETAIL":
     "Show detail",
-  "distanthorizons.config.enum.EDebugRendering.SHOW_GENMODE":
+  "distanthorizons.config.enum.EDhApiDebugRendering.SHOW_GENMODE":
     "Show generation mode",
-  "distanthorizons.config.enum.EDebugRendering.SHOW_BLOCK_MATERIAL":
+  "distanthorizons.config.enum.EDhApiDebugRendering.SHOW_BLOCK_MATERIAL":
     "Show Material",
-  "distanthorizons.config.enum.EDebugRendering.SHOW_OVERLAPPING_QUADS":
+  "distanthorizons.config.enum.EDhApiDebugRendering.SHOW_OVERLAPPING_QUADS":
     "Show overlapping quads",
-  "distanthorizons.config.enum.EDebugRendering.SHOW_RENDER_SOURCE_FLAG":
+  "distanthorizons.config.enum.EDhApiDebugRendering.SHOW_RENDER_SOURCE_FLAG":
     "Show render source flag",
     
-  "distanthorizons.config.enum.EGLErrorHandlingMode.IGNORE":
+  "distanthorizons.config.enum.EDhApiGLErrorHandlingMode.IGNORE":
     "Ignore",
-  "distanthorizons.config.enum.EGLErrorHandlingMode.LOG":
+  "distanthorizons.config.enum.EDhApiGLErrorHandlingMode.LOG":
     "Log",
-  "distanthorizons.config.enum.EGLErrorHandlingMode.LOG_THROW":
+  "distanthorizons.config.enum.EDhApiGLErrorHandlingMode.LOG_THROW":
     "Log-Throw",
     
-  "distanthorizons.config.enum.EGlProfileMode.CORE":
+  "distanthorizons.config.enum.EDhApiGlProfileMode.CORE":
     "Core",
-  "distanthorizons.config.enum.EGlProfileMode.COMPAT":
+  "distanthorizons.config.enum.EDhApiGlProfileMode.COMPAT":
     "Compat",
-  "distanthorizons.config.enum.EGlProfileMode.ANY":
+  "distanthorizons.config.enum.EDhApiGlProfileMode.ANY":
     "Any",
     
-  "distanthorizons.config.enum.ELoggerMode.DISABLED":
+  "distanthorizons.config.enum.EDhApiLoggerMode.DISABLED":
     "Disabled",
-  "distanthorizons.config.enum.ELoggerMode.LOG_ALL_TO_FILE":
+  "distanthorizons.config.enum.EDhApiLoggerMode.LOG_ALL_TO_FILE":
     "File: All, Chat: Off",
-  "distanthorizons.config.enum.ELoggerMode.LOG_ERROR_TO_CHAT":
+  "distanthorizons.config.enum.EDhApiLoggerMode.LOG_ERROR_TO_CHAT":
     "File: All, Chat: Error",
-  "distanthorizons.config.enum.ELoggerMode.LOG_WARNING_TO_CHAT":
+  "distanthorizons.config.enum.EDhApiLoggerMode.LOG_WARNING_TO_CHAT":
     "File: All, Chat: Warning",
-  "distanthorizons.config.enum.ELoggerMode.LOG_INFO_TO_CHAT":
+  "distanthorizons.config.enum.EDhApiLoggerMode.LOG_INFO_TO_CHAT":
     "File: All, Chat: Info",
-  "distanthorizons.config.enum.ELoggerMode.LOG_DEBUG_TO_CHAT":
+  "distanthorizons.config.enum.EDhApiLoggerMode.LOG_DEBUG_TO_CHAT":
     "File: All, Chat: Debug",
-  "distanthorizons.config.enum.ELoggerMode.LOG_ALL_TO_CHAT":
+  "distanthorizons.config.enum.EDhApiLoggerMode.LOG_ALL_TO_CHAT":
     "File: All, Chat: All",
-  "distanthorizons.config.enum.ELoggerMode.LOG_ERROR_TO_CHAT_AND_FILE":
+  "distanthorizons.config.enum.EDhApiLoggerMode.LOG_ERROR_TO_CHAT_AND_FILE":
     "File: Error, Chat: Error",
-  "distanthorizons.config.enum.ELoggerMode.LOG_WARNING_TO_CHAT_AND_FILE":
+  "distanthorizons.config.enum.EDhApiLoggerMode.LOG_WARNING_TO_CHAT_AND_FILE":
     "File: Warning, Chat: Warning",
-  "distanthorizons.config.enum.ELoggerMode.LOG_INFO_TO_CHAT_AND_FILE":
+  "distanthorizons.config.enum.EDhApiLoggerMode.LOG_INFO_TO_CHAT_AND_FILE":
     "File: Info, Chat: Info",
-  "distanthorizons.config.enum.ELoggerMode.LOG_DEBUG_TO_CHAT_AND_FILE":
+  "distanthorizons.config.enum.EDhApiLoggerMode.LOG_DEBUG_TO_CHAT_AND_FILE":
     "File: Debug, Chat: Debug",
-  "distanthorizons.config.enum.ELoggerMode.LOG_WARNING_TO_CHAT_AND_INFO_TO_FILE":
+  "distanthorizons.config.enum.EDhApiLoggerMode.LOG_WARNING_TO_CHAT_AND_INFO_TO_FILE":
     "File: Info, Chat: Warning",
-  "distanthorizons.config.enum.ELoggerMode.LOG_ERROR_TO_CHAT_AND_INFO_TO_FILE":
+  "distanthorizons.config.enum.EDhApiLoggerMode.LOG_ERROR_TO_CHAT_AND_INFO_TO_FILE":
     "File: Info, Chat: Error",
     
-  "distanthorizons.config.enum.EGpuUploadMethod.AUTO":
+  "distanthorizons.config.enum.EDhApiGpuUploadMethod.AUTO":
     "Auto",
-  "distanthorizons.config.enum.EGpuUploadMethod.BUFFER_STORAGE":
+  "distanthorizons.config.enum.EDhApiGpuUploadMethod.BUFFER_STORAGE":
     "Buffer storage",
-  "distanthorizons.config.enum.EGpuUploadMethod.SUB_DATA":
+  "distanthorizons.config.enum.EDhApiGpuUploadMethod.SUB_DATA":
     "Sub data",
-  "distanthorizons.config.enum.EGpuUploadMethod.BUFFER_MAPPING":
+  "distanthorizons.config.enum.EDhApiGpuUploadMethod.BUFFER_MAPPING":
     "Buffer mapping",
-  "distanthorizons.config.enum.EGpuUploadMethod.DATA":
+  "distanthorizons.config.enum.EDhApiGpuUploadMethod.DATA":
     "Data",
     
-  "distanthorizons.config.enum.EBufferRebuildTimes.CONSTANT":
+  "distanthorizons.config.enum.EDhApiBufferRebuildTimes.CONSTANT":
     "Constant",
-  "distanthorizons.config.enum.EBufferRebuildTimes.FREQUENT":
+  "distanthorizons.config.enum.EDhApiBufferRebuildTimes.FREQUENT":
     "Frequent",
-  "distanthorizons.config.enum.EBufferRebuildTimes.NORMAL":
+  "distanthorizons.config.enum.EDhApiBufferRebuildTimes.NORMAL":
     "Normal",
-  "distanthorizons.config.enum.EBufferRebuildTimes.RARE":
+  "distanthorizons.config.enum.EDhApiBufferRebuildTimes.RARE":
     "Rare",
     
-  "distanthorizons.config.enum.ELodShading.AUTO":
+  "distanthorizons.config.enum.EDhApiLodShading.AUTO":
     "Auto",
-  "distanthorizons.config.enum.ELodShading.ENABLED":
+  "distanthorizons.config.enum.EDhApiLodShading.ENABLED":
     "Enabled",
-  "distanthorizons.config.enum.ELodShading.DISABLED":
+  "distanthorizons.config.enum.EDhApiLodShading.DISABLED":
     "Disabled",
 
-  "distanthorizons.config.enum.EUpdateBranch.STABLE":
+  "distanthorizons.config.enum.EDhApiUpdateBranch.STABLE":
     "Stable",
-  "distanthorizons.config.enum.EUpdateBranch.NIGHTLY":
+  "distanthorizons.config.enum.EDhApiUpdateBranch.NIGHTLY":
     "Nightly"
 }

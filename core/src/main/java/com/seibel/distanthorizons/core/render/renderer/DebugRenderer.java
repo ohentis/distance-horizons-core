@@ -19,8 +19,8 @@
 
 package com.seibel.distanthorizons.core.render.renderer;
 
-import com.seibel.distanthorizons.api.enums.config.EGpuUploadMethod;
-import com.seibel.distanthorizons.api.enums.config.ELoggerMode;
+import com.seibel.distanthorizons.api.enums.config.EDhApiGpuUploadMethod;
+import com.seibel.distanthorizons.api.enums.config.EDhApiLoggerMode;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.config.types.ConfigEntry;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
@@ -56,8 +56,8 @@ public class DebugRenderer
 {
 	public static DebugRenderer INSTANCE = new DebugRenderer();
 	
-	public static final ConfigBasedLogger LOGGER = new ConfigBasedLogger(LogManager.getLogger(TestRenderer.class), () -> ELoggerMode.LOG_ALL_TO_CHAT);
-	public static final ConfigBasedSpamLogger SPAM_LOGGER = new ConfigBasedSpamLogger(LogManager.getLogger(TestRenderer.class), () -> ELoggerMode.LOG_ALL_TO_CHAT, 1);
+	public static final ConfigBasedLogger LOGGER = new ConfigBasedLogger(LogManager.getLogger(TestRenderer.class), () -> EDhApiLoggerMode.LOG_ALL_TO_CHAT);
+	public static final ConfigBasedSpamLogger SPAM_LOGGER = new ConfigBasedSpamLogger(LogManager.getLogger(TestRenderer.class), () -> EDhApiLoggerMode.LOG_ALL_TO_CHAT, 1);
 	
 	private static final IMinecraftRenderWrapper MC_RENDER = SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
 	
@@ -174,7 +174,7 @@ public class DebugRenderer
 		
 		this.boxBuffer = new GLVertexBuffer(false);
 		this.boxBuffer.bind();
-		this.boxBuffer.uploadBuffer(buffer, 8, EGpuUploadMethod.DATA, box_vertices.length * Float.BYTES);
+		this.boxBuffer.uploadBuffer(buffer, 8, EDhApiGpuUploadMethod.DATA, box_vertices.length * Float.BYTES);
 		
 		buffer = ByteBuffer.allocateDirect(box_outline_indices.length * Integer.BYTES);
 		buffer.order(ByteOrder.nativeOrder());
@@ -182,7 +182,7 @@ public class DebugRenderer
 		buffer.rewind();
 		
 		this.boxOutlineBuffer = new GLElementBuffer(false);
-		this.boxOutlineBuffer.uploadBuffer(buffer, EGpuUploadMethod.DATA, box_outline_indices.length * Integer.BYTES, GL32.GL_STATIC_DRAW);
+		this.boxOutlineBuffer.uploadBuffer(buffer, EDhApiGpuUploadMethod.DATA, box_outline_indices.length * Integer.BYTES, GL32.GL_STATIC_DRAW);
 	}
 	
 	public void render(Mat4f transform)

@@ -74,8 +74,8 @@ public class Config
 		
 		public static ConfigLinkedEntry quickLodChunkRenderDistance = new ConfigLinkedEntry(Advanced.Graphics.Quality.lodChunkRenderDistanceRadius);
 		
-		public static ConfigEntry<EQualityPreset> qualityPresetSetting = new ConfigEntry.Builder<EQualityPreset>()
-				.set(EQualityPreset.MEDIUM) // the default value is set via the listener when accessed
+		public static ConfigEntry<EDhApiQualityPreset> qualityPresetSetting = new ConfigEntry.Builder<EDhApiQualityPreset>()
+				.set(EDhApiQualityPreset.MEDIUM) // the default value is set via the listener when accessed
 				.comment(""
 						+ "Changing this setting will modify a number of different settings that will change the \n"
 						+ "visual fidelity of the rendered LODs.\n"
@@ -86,8 +86,8 @@ public class Config
 				.addListener(RenderQualityPresetConfigEventHandler.INSTANCE)
 				.build();
 		
-		public static ConfigEntry<EThreadPreset> threadPresetSetting = new ConfigEntry.Builder<EThreadPreset>()
-				.set(EThreadPreset.LOW_IMPACT) // the default value is set via the listener when accessed
+		public static ConfigEntry<EDhApiThreadPreset> threadPresetSetting = new ConfigEntry.Builder<EDhApiThreadPreset>()
+				.set(EDhApiThreadPreset.LOW_IMPACT) // the default value is set via the listener when accessed
 				.comment(""
 						+ "Changing this setting will modify a number of different settings that will change \n"
 						+ "the load that Distant Horizons is allowed to put on your CPU. \n"
@@ -140,20 +140,20 @@ public class Config
 				
 				public static class Quality
 				{
-					public static ConfigEntry<EMaxHorizontalResolution> maxHorizontalResolution = new ConfigEntry.Builder<EMaxHorizontalResolution>()
-							.set(EMaxHorizontalResolution.BLOCK)
+					public static ConfigEntry<EDhApiMaxHorizontalResolution> maxHorizontalResolution = new ConfigEntry.Builder<EDhApiMaxHorizontalResolution>()
+							.set(EDhApiMaxHorizontalResolution.BLOCK)
 							.comment(""
 									+ "What is the maximum detail LODs should be drawn at? \n"
 									+ "Higher settings will increase memory and GPU usage. \n"
 									+ "\n"
-									+ EMaxHorizontalResolution.CHUNK + ": render 1 LOD for each Chunk. \n"
-									+ EMaxHorizontalResolution.HALF_CHUNK + ": render 4 LODs for each Chunk. \n"
-									+ EMaxHorizontalResolution.FOUR_BLOCKS + ": render 16 LODs for each Chunk. \n"
-									+ EMaxHorizontalResolution.TWO_BLOCKS + ": render 64 LODs for each Chunk. \n"
-									+ EMaxHorizontalResolution.BLOCK + ": render 256 LODs for each Chunk (width of one block). \n"
+									+ EDhApiMaxHorizontalResolution.CHUNK + ": render 1 LOD for each Chunk. \n"
+									+ EDhApiMaxHorizontalResolution.HALF_CHUNK + ": render 4 LODs for each Chunk. \n"
+									+ EDhApiMaxHorizontalResolution.FOUR_BLOCKS + ": render 16 LODs for each Chunk. \n"
+									+ EDhApiMaxHorizontalResolution.TWO_BLOCKS + ": render 64 LODs for each Chunk. \n"
+									+ EDhApiMaxHorizontalResolution.BLOCK + ": render 256 LODs for each Chunk (width of one block). \n"
 									+ "\n"
-									+ "Lowest Quality: " + EMaxHorizontalResolution.CHUNK + "\n"
-									+ "Highest Quality: " + EMaxHorizontalResolution.BLOCK)
+									+ "Lowest Quality: " + EDhApiMaxHorizontalResolution.CHUNK + "\n"
+									+ "Highest Quality: " + EDhApiMaxHorizontalResolution.BLOCK)
 							.setPerformance(EConfigEntryPerformance.MEDIUM)
 							.build();
 					
@@ -163,21 +163,21 @@ public class Config
 							.setPerformance(EConfigEntryPerformance.HIGH)
 							.build();
 					
-					public static ConfigEntry<EVerticalQuality> verticalQuality = new ConfigEntry.Builder<EVerticalQuality>()
-							.set(EVerticalQuality.MEDIUM)
+					public static ConfigEntry<EDhApiVerticalQuality> verticalQuality = new ConfigEntry.Builder<EDhApiVerticalQuality>()
+							.set(EDhApiVerticalQuality.MEDIUM)
 							.comment(""
 									+ "This indicates how well LODs will represent \n"
 									+ "overhangs, caves, floating islands, etc. \n"
 									+ "Higher options will make the world more accurate, but"
 									+ "will increase memory and GPU usage. \n"
 									+ "\n"
-									+ "Lowest Quality: " + EVerticalQuality.HEIGHT_MAP + "\n"
-									+ "Highest Quality: " + EVerticalQuality.EXTREME)
+									+ "Lowest Quality: " + EDhApiVerticalQuality.HEIGHT_MAP + "\n"
+									+ "Highest Quality: " + EDhApiVerticalQuality.EXTREME)
 							.setPerformance(EConfigEntryPerformance.VERY_HIGH)
 							.build();
 					
-					public static ConfigEntry<EHorizontalQuality> horizontalQuality = new ConfigEntry.Builder<EHorizontalQuality>()
-							.set(EHorizontalQuality.MEDIUM)
+					public static ConfigEntry<EDhApiHorizontalQuality> horizontalQuality = new ConfigEntry.Builder<EDhApiHorizontalQuality>()
+							.set(EDhApiHorizontalQuality.MEDIUM)
 							.comment(""
 									+ "This indicates how quickly LODs decrease in quality the further away they are. \n"
 									+ "Higher settings will render higher quality fake chunks farther away, \n"
@@ -185,25 +185,25 @@ public class Config
 							.setPerformance(EConfigEntryPerformance.MEDIUM)
 							.build();
 					
-					public static ConfigEntry<ETransparency> transparency = new ConfigEntry.Builder<ETransparency>()
-							.set(ETransparency.COMPLETE)
+					public static ConfigEntry<EDhApiTransparency> transparency = new ConfigEntry.Builder<EDhApiTransparency>()
+							.set(EDhApiTransparency.COMPLETE)
 							.comment(""
 									+ "How should LOD transparency be handled. \n"
 									+ "\n"
-									+ ETransparency.COMPLETE + ": LODs will render transparent. \n"
-									+ ETransparency.FAKE + ": LODs will be opaque, but shaded to match the blocks underneath. \n"
-									+ ETransparency.DISABLED + ": LODs will be opaque. \n"
+									+ EDhApiTransparency.COMPLETE + ": LODs will render transparent. \n"
+									+ EDhApiTransparency.FAKE + ": LODs will be opaque, but shaded to match the blocks underneath. \n"
+									+ EDhApiTransparency.DISABLED + ": LODs will be opaque. \n"
 									+ "")
 							.setPerformance(EConfigEntryPerformance.MEDIUM)
 							.build();
 					
-					public static ConfigEntry<EBlocksToAvoid> blocksToIgnore = new ConfigEntry.Builder<EBlocksToAvoid>()
-							.set(EBlocksToAvoid.NON_COLLIDING)
+					public static ConfigEntry<EDhApiBlocksToAvoid> blocksToIgnore = new ConfigEntry.Builder<EDhApiBlocksToAvoid>()
+							.set(EDhApiBlocksToAvoid.NON_COLLIDING)
 							.comment(""
 									+ "What blocks shouldn't be rendered as LODs? \n"
 									+ "\n"
-									+ EBlocksToAvoid.NONE + ": Represent all blocks in the LODs \n"
-									+ EBlocksToAvoid.NON_COLLIDING + ": Only represent solid blocks in the LODs (tall grass, torches, etc. won't count for a LOD's height) \n"
+									+ EDhApiBlocksToAvoid.NONE + ": Represent all blocks in the LODs \n"
+									+ EDhApiBlocksToAvoid.NON_COLLIDING + ": Only represent solid blocks in the LODs (tall grass, torches, etc. won't count for a LOD's height) \n"
 									+ "")
 							.setPerformance(EConfigEntryPerformance.NONE)
 							.build();
@@ -236,33 +236,33 @@ public class Config
 				
 				public static class Fog
 				{
-					public static ConfigEntry<EFogDrawMode> drawMode = new ConfigEntry.Builder<EFogDrawMode>()
-							.set(EFogDrawMode.FOG_ENABLED)
+					public static ConfigEntry<EDhApiFogDrawMode> drawMode = new ConfigEntry.Builder<EDhApiFogDrawMode>()
+							.set(EDhApiFogDrawMode.FOG_ENABLED)
 							.comment(""
 									+ "When should fog be drawn? \n"
 									+ "\n"
-									+ EFogDrawMode.USE_OPTIFINE_SETTING + ": Use whatever Fog setting Optifine is using.\n"
-									+ "If Optifine isn't installed this defaults to " + EFogDrawMode.FOG_ENABLED + ". \n"
-									+ EFogDrawMode.FOG_ENABLED + ": Never draw fog on the LODs \n"
-									+ EFogDrawMode.FOG_DISABLED + ": Always draw fast fog on the LODs \n"
+									+ EDhApiFogDrawMode.USE_OPTIFINE_SETTING + ": Use whatever Fog setting Optifine is using.\n"
+									+ "If Optifine isn't installed this defaults to " + EDhApiFogDrawMode.FOG_ENABLED + ". \n"
+									+ EDhApiFogDrawMode.FOG_ENABLED + ": Never draw fog on the LODs \n"
+									+ EDhApiFogDrawMode.FOG_DISABLED + ": Always draw fast fog on the LODs \n"
 									+ "\n"
 									+ "Disabling fog will improve GPU performance.")
 							.setPerformance(EConfigEntryPerformance.VERY_LOW)
 							.build();
 					
-					public static ConfigEntry<EFogDistance> distance = new ConfigEntry.Builder<EFogDistance>()
-							.set(EFogDistance.FAR)
+					public static ConfigEntry<EDhApiFogDistance> distance = new ConfigEntry.Builder<EDhApiFogDistance>()
+							.set(EDhApiFogDistance.FAR)
 							.comment("At what distance should Fog be drawn on the LODs?")
 							.setPerformance(EConfigEntryPerformance.NONE)
 							.build();
 					
-					public static ConfigEntry<EFogColorMode> colorMode = new ConfigEntry.Builder<EFogColorMode>()
-							.set(EFogColorMode.USE_WORLD_FOG_COLOR)
+					public static ConfigEntry<EDhApiFogColorMode> colorMode = new ConfigEntry.Builder<EDhApiFogColorMode>()
+							.set(EDhApiFogColorMode.USE_WORLD_FOG_COLOR)
 							.comment(""
 									+ "What color should fog use? \n"
 									+ "\n"
-									+ EFogColorMode.USE_WORLD_FOG_COLOR + ": Use the world's fog color. \n"
-									+ EFogColorMode.USE_SKY_COLOR + ": Use the sky's color.")
+									+ EDhApiFogColorMode.USE_WORLD_FOG_COLOR + ": Use the world's fog color. \n"
+									+ EDhApiFogColorMode.USE_SKY_COLOR + ": Use the sky's color.")
 							.setPerformance(EConfigEntryPerformance.NONE)
 							.build();
 					
@@ -322,14 +322,14 @@ public class Config
 										+ "1.0: Fully opaque fog.")
 								.build();
 						
-						public static ConfigEntry<EFogFalloff> farFogFalloff = new ConfigEntry.Builder<EFogFalloff>()
-								.set(EFogFalloff.EXPONENTIAL_SQUARED)
+						public static ConfigEntry<EDhApiFogFalloff> farFogFalloff = new ConfigEntry.Builder<EDhApiFogFalloff>()
+								.set(EDhApiFogFalloff.EXPONENTIAL_SQUARED)
 								.comment(""
 										+ "How should the fog thickness should be calculated? \n"
 										+ "\n"
-										+ EFogFalloff.LINEAR + ": Linear based on distance (will ignore 'density')\n"
-										+ EFogFalloff.EXPONENTIAL + ": 1/(e^(distance*density)) \n"
-										+ EFogFalloff.EXPONENTIAL_SQUARED + ": 1/(e^((distance*density)^2)")
+										+ EDhApiFogFalloff.LINEAR + ": Linear based on distance (will ignore 'density')\n"
+										+ EDhApiFogFalloff.EXPONENTIAL + ": 1/(e^(distance*density)) \n"
+										+ EDhApiFogFalloff.EXPONENTIAL_SQUARED + ": 1/(e^((distance*density)^2)")
 								.build();
 						
 						public static ConfigEntry<Double> farFogDensity = new ConfigEntry.Builder<Double>()
@@ -345,37 +345,37 @@ public class Config
 						
 						public static class HeightFog
 						{
-							public static ConfigEntry<EHeightFogMixMode> heightFogMixMode = new ConfigEntry.Builder<EHeightFogMixMode>()
-									.set(EHeightFogMixMode.BASIC)
+							public static ConfigEntry<EDhApiHeightFogMixMode> heightFogMixMode = new ConfigEntry.Builder<EDhApiHeightFogMixMode>()
+									.set(EDhApiHeightFogMixMode.BASIC)
 									.comment(""
 											+ "How should height effect the fog thickness? \n"
 											+ "Note: height fog is combined with the other fog settings. \n"
 											+ "\n"
-											+ EHeightFogMixMode.BASIC + ": No special height fog effect. Fog is calculated based on camera distance \n"
-											+ EHeightFogMixMode.IGNORE_HEIGHT + ": Ignore height completely. Fog is only calculated with horizontal distance \n"
-											+ EHeightFogMixMode.ADDITION + ": heightFog + farFog \n"
-											+ EHeightFogMixMode.MAX + ": max(heightFog, farFog) \n"
-											+ EHeightFogMixMode.MULTIPLY + ": heightFog * farFog \n"
-											+ EHeightFogMixMode.INVERSE_MULTIPLY + ": 1 - (1-heightFog) * (1-farFog) \n"
-											+ EHeightFogMixMode.LIMITED_ADDITION + ": farFog + max(farFog, heightFog) \n"
-											+ EHeightFogMixMode.MULTIPLY_ADDITION + ": farFog + farFog * heightFog \n"
-											+ EHeightFogMixMode.INVERSE_MULTIPLY_ADDITION + ": farFog + 1 - (1-heightFog) * (1-farFog) \n"
-											+ EHeightFogMixMode.AVERAGE + ": farFog*0.5 + heightFog*0.5 \n"
+											+ EDhApiHeightFogMixMode.BASIC + ": No special height fog effect. Fog is calculated based on camera distance \n"
+											+ EDhApiHeightFogMixMode.IGNORE_HEIGHT + ": Ignore height completely. Fog is only calculated with horizontal distance \n"
+											+ EDhApiHeightFogMixMode.ADDITION + ": heightFog + farFog \n"
+											+ EDhApiHeightFogMixMode.MAX + ": max(heightFog, farFog) \n"
+											+ EDhApiHeightFogMixMode.MULTIPLY + ": heightFog * farFog \n"
+											+ EDhApiHeightFogMixMode.INVERSE_MULTIPLY + ": 1 - (1-heightFog) * (1-farFog) \n"
+											+ EDhApiHeightFogMixMode.LIMITED_ADDITION + ": farFog + max(farFog, heightFog) \n"
+											+ EDhApiHeightFogMixMode.MULTIPLY_ADDITION + ": farFog + farFog * heightFog \n"
+											+ EDhApiHeightFogMixMode.INVERSE_MULTIPLY_ADDITION + ": farFog + 1 - (1-heightFog) * (1-farFog) \n"
+											+ EDhApiHeightFogMixMode.AVERAGE + ": farFog*0.5 + heightFog*0.5 \n"
 											+ "\n"
-											+ "Note: height fog settings are ignored if '" + EHeightFogMixMode.BASIC + "' or '" + EHeightFogMixMode.IGNORE_HEIGHT + "' are selected.")
+											+ "Note: height fog settings are ignored if '" + EDhApiHeightFogMixMode.BASIC + "' or '" + EDhApiHeightFogMixMode.IGNORE_HEIGHT + "' are selected.")
 									.build();
 							
-							public static ConfigEntry<EHeightFogMode> heightFogMode = new ConfigEntry.Builder<EHeightFogMode>()
-									.set(EHeightFogMode.ABOVE_AND_BELOW_CAMERA)
+							public static ConfigEntry<EDhApiHeightFogMode> heightFogMode = new ConfigEntry.Builder<EDhApiHeightFogMode>()
+									.set(EDhApiHeightFogMode.ABOVE_AND_BELOW_CAMERA)
 									.comment(""
 											+ "Where should the height fog start? \n"
 											+ "\n"
-											+ EHeightFogMode.ABOVE_CAMERA + ": Height fog starts at the camera and goes towards the sky \n"
-											+ EHeightFogMode.BELOW_CAMERA + ": Height fog starts at the camera and goes towards the void \n"
-											+ EHeightFogMode.ABOVE_AND_BELOW_CAMERA + ": Height fog starts from the camera to goes towards both the sky and void \n"
-											+ EHeightFogMode.ABOVE_SET_HEIGHT + ": Height fog starts from a set height and goes towards the sky \n"
-											+ EHeightFogMode.BELOW_SET_HEIGHT + ": Height fog starts from a set height and goes towards the void \n"
-											+ EHeightFogMode.ABOVE_AND_BELOW_SET_HEIGHT + ": Height fog starts from a set height and goes towards both the sky and void")
+											+ EDhApiHeightFogMode.ABOVE_CAMERA + ": Height fog starts at the camera and goes towards the sky \n"
+											+ EDhApiHeightFogMode.BELOW_CAMERA + ": Height fog starts at the camera and goes towards the void \n"
+											+ EDhApiHeightFogMode.ABOVE_AND_BELOW_CAMERA + ": Height fog starts from the camera to goes towards both the sky and void \n"
+											+ EDhApiHeightFogMode.ABOVE_SET_HEIGHT + ": Height fog starts from a set height and goes towards the sky \n"
+											+ EDhApiHeightFogMode.BELOW_SET_HEIGHT + ": Height fog starts from a set height and goes towards the void \n"
+											+ EDhApiHeightFogMode.ABOVE_AND_BELOW_SET_HEIGHT + ": Height fog starts from a set height and goes towards both the sky and void")
 									.build();
 							
 							public static ConfigEntry<Double> heightFogBaseHeight = new ConfigEntry.Builder<Double>()
@@ -419,14 +419,14 @@ public class Config
 											+ "1.0: Fully opaque fog.")
 									.build();
 							
-							public static ConfigEntry<EFogFalloff> heightFogFalloff = new ConfigEntry.Builder<EFogFalloff>()
-									.set(EFogFalloff.EXPONENTIAL_SQUARED)
+							public static ConfigEntry<EDhApiFogFalloff> heightFogFalloff = new ConfigEntry.Builder<EDhApiFogFalloff>()
+									.set(EDhApiFogFalloff.EXPONENTIAL_SQUARED)
 									.comment(""
 											+ "How should the height fog thickness should be calculated? \n"
 											+ "\n"
-											+ EFogFalloff.LINEAR + ": Linear based on height (will ignore 'density')\n"
-											+ EFogFalloff.EXPONENTIAL + ": 1/(e^(height*density)) \n"
-											+ EFogFalloff.EXPONENTIAL_SQUARED + ": 1/(e^((height*density)^2)")
+											+ EDhApiFogFalloff.LINEAR + ": Linear based on height (will ignore 'density')\n"
+											+ EDhApiFogFalloff.EXPONENTIAL + ": 1/(e^(height*density)) \n"
+											+ EDhApiFogFalloff.EXPONENTIAL_SQUARED + ": 1/(e^((height*density)^2)")
 									.build();
 							
 							public static ConfigEntry<Double> heightFogDensity = new ConfigEntry.Builder<Double>()
@@ -536,18 +536,6 @@ public class Config
 				
 				public static class AdvancedGraphics
 				{
-					/** 
-					 * @deprecated Use overdrawPrevention instead, will be removed when DH updates to MC 1.21 <br>
-					 *              After removal a float value will be used to control overdraw instead. <br>
-					 */
-					@Deprecated
-					public static ConfigEntry<EOverdrawPrevention> overdrawPreventionPreset = new ConfigEntry.Builder<EOverdrawPrevention>()
-							.set(EOverdrawPrevention.MEDIUM)
-							.comment("")
-							.setAppearance(EConfigEntryAppearance.ONLY_IN_API)
-							.setPerformance(EConfigEntryPerformance.NONE)
-							.build();
-					
 					public static ConfigEntry<Double> overdrawPrevention = new ConfigEntry.Builder<Double>()
 							.setMinDefaultMax(0.0, 0.4, 1.0)
 							.comment(""
@@ -628,15 +616,15 @@ public class Config
 									+ "If set to 0 the mod wont overwrite vanilla's default (which so happens to also be 0)")
 							.build();
 					
-					public static ConfigEntry<ELodShading> lodShading = new ConfigEntry.Builder<ELodShading>()
-							.set(ELodShading.AUTO)
+					public static ConfigEntry<EDhApiLodShading> lodShading = new ConfigEntry.Builder<EDhApiLodShading>()
+							.set(EDhApiLodShading.AUTO)
 							.comment(""
 									+ "How should LODs be shaded? \n"
 									+ "\n"
-									+ ELodShading.AUTO + ": Uses the same side shading as vanilla Minecraft blocks. \n"
-									+ ELodShading.FORCED + ": Simulates Minecraft's block shading for LODs. \n"
+									+ EDhApiLodShading.AUTO + ": Uses the same side shading as vanilla Minecraft blocks. \n"
+									+ EDhApiLodShading.ENABLED + ": Simulates Minecraft's block shading for LODs. \n"
 									+ "              Can be used to force LOD shading when using some shaders. \n"
-									+ ELodShading.NONE + ": All LOD sides will be rendered with the same brightness. \n"
+									+ EDhApiLodShading.DISABLED + ": All LOD sides will be rendered with the same brightness. \n"
 									+ "")
 							.setPerformance(EConfigEntryPerformance.NONE)
 							.build();
@@ -730,36 +718,6 @@ public class Config
 								+ "")
 						.build();
 				
-				// deprecated and not implemented, can be made public if we ever re-implement it
-				@Deprecated
-				private static ConfigEntry<EGenerationPriority> generationPriority = new ConfigEntry.Builder<EGenerationPriority>()
-						.set(EGenerationPriority.NEAR_FIRST)
-						.comment(""
-								+ "In what priority should fake chunks be generated outside the vanilla render distance? \n"
-								+ "\n"
-								+ EGenerationPriority.FAR_FIRST + " \n"
-								+ "Fake chunks are generated from lowest to highest detail \n"
-								+ " with a priority for far away regions. \n"
-								+ "This fills in the world fastest, but you will have large low detail \n"
-								+ " blocks for a while while the generation happens. \n"
-								+ "\n"
-								+ EGenerationPriority.NEAR_FIRST + " \n"
-								+ "Fake chunks are generated around the player \n"
-								+ " in a spiral, similar to vanilla minecraft. \n"
-								+ "Best used when on a server since we can't generate \n"
-								+ " fake chunks. \n"
-								+ "\n"
-								+ EGenerationPriority.BALANCED + " \n"
-								+ "A mix between " + EGenerationPriority.NEAR_FIRST + "and" + EGenerationPriority.FAR_FIRST + ". \n"
-								+ "First prioritise completing nearby highest detail chunks, \n"
-								+ " then focus on filling in the low detail areas away from the player. \n"
-								+ "\n"
-								+ EGenerationPriority.AUTO + " \n"
-								+ "Uses " + EGenerationPriority.BALANCED + " when on a single player world \n"
-								+ " and " + EGenerationPriority.NEAR_FIRST + " when connected to a server.")
-						.setPerformance(EConfigEntryPerformance.NONE)
-						.build();
-				
 			}
 			
 			public static class LodBuilding
@@ -846,16 +804,16 @@ public class Config
 			
 			public static class Multiplayer
 			{
-				public static ConfigEntry<EServerFolderNameMode> serverFolderNameMode = new ConfigEntry.Builder<EServerFolderNameMode>()
-						.set(EServerFolderNameMode.NAME_ONLY)
+				public static ConfigEntry<EDhApiServerFolderNameMode> serverFolderNameMode = new ConfigEntry.Builder<EDhApiServerFolderNameMode>()
+						.set(EDhApiServerFolderNameMode.NAME_ONLY)
 						.comment(""
 								+ "How should multiplayer save folders should be named? \n"
 								+ "\n"
-								+ EServerFolderNameMode.NAME_ONLY + ": Example: \"Minecraft Server\" \n"
-								+ EServerFolderNameMode.IP_ONLY + ": Example: \"192.168.1.40\" \n"
-								+ EServerFolderNameMode.NAME_IP + ": Example: \"Minecraft Server IP 192.168.1.40\" \n"
-								+ EServerFolderNameMode.NAME_IP_PORT + ": Example: \"Minecraft Server IP 192.168.1.40:25565\""
-								+ EServerFolderNameMode.NAME_IP_PORT_MC_VERSION + ": Example: \"Minecraft Server IP 192.168.1.40:25565 GameVersion 1.16.5\"")
+								+ EDhApiServerFolderNameMode.NAME_ONLY + ": Example: \"Minecraft Server\" \n"
+								+ EDhApiServerFolderNameMode.IP_ONLY + ": Example: \"192.168.1.40\" \n"
+								+ EDhApiServerFolderNameMode.NAME_IP + ": Example: \"Minecraft Server IP 192.168.1.40\" \n"
+								+ EDhApiServerFolderNameMode.NAME_IP_PORT + ": Example: \"Minecraft Server IP 192.168.1.40:25565\""
+								+ EDhApiServerFolderNameMode.NAME_IP_PORT_MC_VERSION + ": Example: \"Minecraft Server IP 192.168.1.40:25565 GameVersion 1.16.5\"")
 						.build();
 				
 				public static ConfigEntry<Double> multiverseSimilarityRequiredPercent = new ConfigEntry.Builder<Double>()
@@ -1017,27 +975,27 @@ public class Config
 			
 			public static class GpuBuffers
 			{
-				public static ConfigEntry<EGpuUploadMethod> gpuUploadMethod = new ConfigEntry.Builder<EGpuUploadMethod>()
-						.set(EGpuUploadMethod.AUTO)
+				public static ConfigEntry<EDhApiGpuUploadMethod> gpuUploadMethod = new ConfigEntry.Builder<EDhApiGpuUploadMethod>()
+						.set(EDhApiGpuUploadMethod.AUTO)
 						.comment(""
 								+ "What method should be used to upload geometry to the GPU? \n"
 								+ "\n"
-								+ EGpuUploadMethod.AUTO + ": Picks the best option based on the GPU you have. \n"
+								+ EDhApiGpuUploadMethod.AUTO + ": Picks the best option based on the GPU you have. \n"
 								+ "\n"
-								+ EGpuUploadMethod.BUFFER_STORAGE + ": Default if OpenGL 4.5 is supported. \n"
+								+ EDhApiGpuUploadMethod.BUFFER_STORAGE + ": Default if OpenGL 4.5 is supported. \n"
 								+ "    Fast rendering, no stuttering. \n"
 								+ "\n"
-								+ EGpuUploadMethod.SUB_DATA + ": Backup option for NVIDIA. \n"
+								+ EDhApiGpuUploadMethod.SUB_DATA + ": Backup option for NVIDIA. \n"
 								+ "    Fast rendering but may stutter when uploading. \n"
 								+ "\n"
-								+ EGpuUploadMethod.BUFFER_MAPPING + ": Slow rendering but won't stutter when uploading. \n"
+								+ EDhApiGpuUploadMethod.BUFFER_MAPPING + ": Slow rendering but won't stutter when uploading. \n"
 								+ "    Generally the best option for integrated GPUs. \n"
 								+ "    Default option for AMD/Intel if OpenGL 4.5 isn't supported. \n"
 								+ "    May end up storing buffers in System memory. \n"
 								+ "    Fast rendering if in GPU memory, slow if in system memory, \n"
 								+ "    but won't stutter when uploading.  \n"
 								+ "\n"
-								+ EGpuUploadMethod.DATA + ": Fast rendering but will stutter when uploading. \n"
+								+ EDhApiGpuUploadMethod.DATA + ": Fast rendering but will stutter when uploading. \n"
 								+ "    Backup option for AMD/Intel. \n"
 								+ "    Fast rendering but may stutter when uploading. \n"
 								+ "\n"
@@ -1070,15 +1028,6 @@ public class Config
 								+ "")
 						.build();
 				
-				// deprecated and not implemented, can be made public if we ever re-implement it
-				@Deprecated
-				private static ConfigEntry<EBufferRebuildTimes> rebuildTimes = new ConfigEntry.Builder<EBufferRebuildTimes>()
-						.set(EBufferRebuildTimes.NORMAL)
-						.comment(""
-								+ "How frequently should vertex buffers (geometry) be rebuilt and sent to the GPU? \n"
-								+ "Higher settings may cause stuttering, but will prevent holes in the world")
-						.build();
-				
 			}
 			
 			public static class AutoUpdater
@@ -1097,9 +1046,9 @@ public class Config
 								+ "Should Distant Horizons silently, automatically download and install new versions?")
 						.build();
 				
-				public static ConfigEntry<EUpdateBranch> updateBranch = new ConfigEntry.Builder<EUpdateBranch>()
+				public static ConfigEntry<EDhApiUpdateBranch> updateBranch = new ConfigEntry.Builder<EDhApiUpdateBranch>()
 						.set(
-								ModInfo.IS_DEV_BUILD? EUpdateBranch.NIGHTLY: EUpdateBranch.STABLE // If it's already a nightly build, then download the nightly build ofc
+								ModInfo.IS_DEV_BUILD? EDhApiUpdateBranch.NIGHTLY: EDhApiUpdateBranch.STABLE // If it's already a nightly build, then download the nightly build ofc
 						)
 						.comment(""
 								+ " If DH should use the nightly (provided by Gitlab), or stable (provided by Modrinth) build")
@@ -1110,64 +1059,64 @@ public class Config
 			{
 				// TODO add change all option
 				// TODO default to error chat and info file
-				public static ConfigEntry<ELoggerMode> logWorldGenEvent = new ConfigEntry.Builder<ELoggerMode>()
-						.set(ELoggerMode.LOG_WARNING_TO_CHAT_AND_INFO_TO_FILE)
+				public static ConfigEntry<EDhApiLoggerMode> logWorldGenEvent = new ConfigEntry.Builder<EDhApiLoggerMode>()
+						.set(EDhApiLoggerMode.LOG_WARNING_TO_CHAT_AND_INFO_TO_FILE)
 						.comment(""
 								+ "If enabled, the mod will log information about the world generation process. \n"
 								+ "This can be useful for debugging.")
 						.build();
 				
-				public static ConfigEntry<ELoggerMode> logWorldGenPerformance = new ConfigEntry.Builder<ELoggerMode>()
-						.set(ELoggerMode.LOG_WARNING_TO_CHAT_AND_FILE)
+				public static ConfigEntry<EDhApiLoggerMode> logWorldGenPerformance = new ConfigEntry.Builder<EDhApiLoggerMode>()
+						.set(EDhApiLoggerMode.LOG_WARNING_TO_CHAT_AND_FILE)
 						.comment(""
 								+ "If enabled, the mod will log performance about the world generation process. \n"
 								+ "This can be useful for debugging.")
 						.build();
 				
-				public static ConfigEntry<ELoggerMode> logWorldGenLoadEvent = new ConfigEntry.Builder<ELoggerMode>()
-						.set(ELoggerMode.LOG_WARNING_TO_CHAT_AND_FILE)
+				public static ConfigEntry<EDhApiLoggerMode> logWorldGenLoadEvent = new ConfigEntry.Builder<EDhApiLoggerMode>()
+						.set(EDhApiLoggerMode.LOG_WARNING_TO_CHAT_AND_FILE)
 						.comment(""
 								+ "If enabled, the mod will log information about the world generation process. \n"
 								+ "This can be useful for debugging.")
 						.build();
 				
-				public static ConfigEntry<ELoggerMode> logLodBuilderEvent = new ConfigEntry.Builder<ELoggerMode>()
-						.set(ELoggerMode.LOG_WARNING_TO_CHAT_AND_INFO_TO_FILE)
+				public static ConfigEntry<EDhApiLoggerMode> logLodBuilderEvent = new ConfigEntry.Builder<EDhApiLoggerMode>()
+						.set(EDhApiLoggerMode.LOG_WARNING_TO_CHAT_AND_INFO_TO_FILE)
 						.comment(""
 								+ "If enabled, the mod will log information about the LOD generation process. \n"
 								+ "This can be useful for debugging.")
 						.build();
 				
-				public static ConfigEntry<ELoggerMode> logRendererBufferEvent = new ConfigEntry.Builder<ELoggerMode>()
-						.set(ELoggerMode.LOG_WARNING_TO_CHAT_AND_INFO_TO_FILE)
+				public static ConfigEntry<EDhApiLoggerMode> logRendererBufferEvent = new ConfigEntry.Builder<EDhApiLoggerMode>()
+						.set(EDhApiLoggerMode.LOG_WARNING_TO_CHAT_AND_INFO_TO_FILE)
 						.comment(""
 								+ "If enabled, the mod will log information about the renderer buffer process. \n"
 								+ "This can be useful for debugging.")
 						.build();
 				
-				public static ConfigEntry<ELoggerMode> logRendererGLEvent = new ConfigEntry.Builder<ELoggerMode>()
-						.set(ELoggerMode.LOG_WARNING_TO_CHAT_AND_INFO_TO_FILE)
+				public static ConfigEntry<EDhApiLoggerMode> logRendererGLEvent = new ConfigEntry.Builder<EDhApiLoggerMode>()
+						.set(EDhApiLoggerMode.LOG_WARNING_TO_CHAT_AND_INFO_TO_FILE)
 						.comment(""
 								+ "If enabled, the mod will log information about the renderer OpenGL process. \n"
 								+ "This can be useful for debugging.")
 						.build();
 				
-				public static ConfigEntry<ELoggerMode> logFileReadWriteEvent = new ConfigEntry.Builder<ELoggerMode>()
-						.set(ELoggerMode.LOG_WARNING_TO_CHAT_AND_INFO_TO_FILE)
+				public static ConfigEntry<EDhApiLoggerMode> logFileReadWriteEvent = new ConfigEntry.Builder<EDhApiLoggerMode>()
+						.set(EDhApiLoggerMode.LOG_WARNING_TO_CHAT_AND_INFO_TO_FILE)
 						.comment(""
 								+ "If enabled, the mod will log information about file read/write operations. \n"
 								+ "This can be useful for debugging.")
 						.build();
 				
-				public static ConfigEntry<ELoggerMode> logFileSubDimEvent = new ConfigEntry.Builder<ELoggerMode>()
-						.set(ELoggerMode.LOG_WARNING_TO_CHAT_AND_INFO_TO_FILE)
+				public static ConfigEntry<EDhApiLoggerMode> logFileSubDimEvent = new ConfigEntry.Builder<EDhApiLoggerMode>()
+						.set(EDhApiLoggerMode.LOG_WARNING_TO_CHAT_AND_INFO_TO_FILE)
 						.comment(""
 								+ "If enabled, the mod will log information about file sub-dimension operations. \n"
 								+ "This can be useful for debugging.")
 						.build();
 				
-				public static ConfigEntry<ELoggerMode> logNetworkEvent = new ConfigEntry.Builder<ELoggerMode>()
-						.set(ELoggerMode.LOG_WARNING_TO_CHAT_AND_INFO_TO_FILE)
+				public static ConfigEntry<EDhApiLoggerMode> logNetworkEvent = new ConfigEntry.Builder<EDhApiLoggerMode>()
+						.set(EDhApiLoggerMode.LOG_WARNING_TO_CHAT_AND_INFO_TO_FILE)
 						.comment(""
 								+ "If enabled, the mod will log information about network operations. \n"
 								+ "This can be useful for debugging.")
@@ -1177,25 +1126,25 @@ public class Config
 			
 			public static class Debugging
 			{
-				public static ConfigEntry<ERendererMode> rendererMode = new ConfigEntry.Builder<ERendererMode>()
-						.set(ERendererMode.DEFAULT)
+				public static ConfigEntry<EDhApiRendererMode> rendererMode = new ConfigEntry.Builder<EDhApiRendererMode>()
+						.set(EDhApiRendererMode.DEFAULT)
 						.comment(""
 								+ "What renderer is active? \n"
 								+ "\n"
-								+ ERendererMode.DEFAULT + ": Default lod renderer \n"
-								+ ERendererMode.DEBUG + ": Debug testing renderer \n"
-								+ ERendererMode.DISABLED + ": Disable rendering")
+								+ EDhApiRendererMode.DEFAULT + ": Default lod renderer \n"
+								+ EDhApiRendererMode.DEBUG + ": Debug testing renderer \n"
+								+ EDhApiRendererMode.DISABLED + ": Disable rendering")
 						.build();
 				
-				public static ConfigEntry<EDebugRendering> debugRendering = new ConfigEntry.Builder<EDebugRendering>()
-						.set(EDebugRendering.OFF)
+				public static ConfigEntry<EDhApiDebugRendering> debugRendering = new ConfigEntry.Builder<EDhApiDebugRendering>()
+						.set(EDhApiDebugRendering.OFF)
 						.comment(""
 								+ "Should specialized colors/rendering modes be used? \n"
 								+ "\n"
-								+ EDebugRendering.OFF + ": LODs will be drawn with their normal colors. \n"
-								+ EDebugRendering.SHOW_DETAIL + ": LODs' color will be based on their detail level. \n"
-								+ EDebugRendering.SHOW_BLOCK_MATERIAL + ": LODs' color will be based on their material. \n"
-								+ EDebugRendering.SHOW_OVERLAPPING_QUADS + ": LODs will be drawn with total white, but overlapping quads will be drawn with red. \n"
+								+ EDhApiDebugRendering.OFF + ": LODs will be drawn with their normal colors. \n"
+								+ EDhApiDebugRendering.SHOW_DETAIL + ": LODs' color will be based on their detail level. \n"
+								+ EDhApiDebugRendering.SHOW_BLOCK_MATERIAL + ": LODs' color will be based on their material. \n"
+								+ EDhApiDebugRendering.SHOW_OVERLAPPING_QUADS + ": LODs will be drawn with total white, but overlapping quads will be drawn with red. \n"
 								+ "")
 						.build();
 				
@@ -1319,15 +1268,15 @@ public class Config
 									+ "")
 							.build();
 					
-					public static ConfigEntry<EGLErrorHandlingMode> glErrorHandlingMode = new ConfigEntry.Builder<EGLErrorHandlingMode>()
-							.set(ModInfo.IS_DEV_BUILD ? EGLErrorHandlingMode.LOG : EGLErrorHandlingMode.IGNORE)
+					public static ConfigEntry<EDhApiGLErrorHandlingMode> glErrorHandlingMode = new ConfigEntry.Builder<EDhApiGLErrorHandlingMode>()
+							.set(ModInfo.IS_DEV_BUILD ? EDhApiGLErrorHandlingMode.LOG : EDhApiGLErrorHandlingMode.IGNORE)
 							.comment(""
 									+ "Defines how OpenGL errors are handled. \n"
 									+ "May incorrectly catch OpenGL errors thrown by other mods. \n"
 									+ "\n"
-									+ EGLErrorHandlingMode.IGNORE + ": Do nothing. \n"
-									+ EGLErrorHandlingMode.LOG + ": write an error to the log. \n"
-									+ EGLErrorHandlingMode.LOG_THROW + ": write to the log and throw an exception. \n"
+									+ EDhApiGLErrorHandlingMode.IGNORE + ": Do nothing. \n"
+									+ EDhApiGLErrorHandlingMode.LOG + ": write an error to the log. \n"
+									+ EDhApiGLErrorHandlingMode.LOG_THROW + ": write to the log and throw an exception. \n"
 									+ "           Warning: this should only be enabled when debugging the LOD renderer \n"
 									+ "           as it may break Minecraft's renderer when an exception is thrown. \n"
 									+ "")
@@ -1360,14 +1309,14 @@ public class Config
 									"")
 							.build();
 					
-					public static ConfigEntry<EGlProfileMode> glProfileMode = new ConfigEntry.Builder<EGlProfileMode>()
-							.set(EGlProfileMode.CORE)
+					public static ConfigEntry<EDhApiGlProfileMode> glProfileMode = new ConfigEntry.Builder<EDhApiGlProfileMode>()
+							.set(EDhApiGlProfileMode.CORE)
 							.comment("" +
 									"Can be changed if you experience crashing when loading into a world.\n" +
 									"\n" +
 									"Defines the OpenGL context type Distant Horizon's will create. \n" +
-									"Generally this should be left as ["+EGlProfileMode.CORE+"] unless there is an issue with your GPU driver. \n" +
-									"Possible values: ["+ StringUtil.join("],[", EGlProfileMode.values())+"] \n" +
+									"Generally this should be left as ["+ EDhApiGlProfileMode.CORE+"] unless there is an issue with your GPU driver. \n" +
+									"Possible values: ["+ StringUtil.join("],[", EDhApiGlProfileMode.values())+"] \n" +
 									"")
 							.build();
 					public static ConfigEntry<Boolean> enableGlForwardCompatibilityMode = new ConfigEntry.Builder<Boolean>()
@@ -1517,21 +1466,10 @@ public class Config
 			
 			try
 			{
-				// listener can only be added after the config has finished initializing
-				Client.Advanced.Graphics.AdvancedGraphics.overdrawPreventionPreset.addListener(OverdrawPreventionPresetConfigEventHandler.INSTANCE);
-			}
-			catch (Exception e)
-			{
-				LOGGER.error("Unexpected exception when running config delayed listener setup. Error: [" + e.getMessage() + "].", e);
-			}
-			
-			try
-			{
 				// TODO automatically get all instances of AbstractPresetConfigEventHandler and fire "setUiOnlyConfigValues"
 				ThreadPresetConfigEventHandler.INSTANCE.setUiOnlyConfigValues();
 				RenderQualityPresetConfigEventHandler.INSTANCE.setUiOnlyConfigValues();
 				QuickRenderToggleConfigEventHandler.INSTANCE.setUiOnlyConfigValues();
-				OverdrawPreventionPresetConfigEventHandler.INSTANCE.setUiOnlyConfigValues();
 				RenderCacheConfigEventHandler.getInstance();
 			}
 			catch (Exception e)

@@ -20,37 +20,37 @@
 package com.seibel.distanthorizons.api.enums.config;
 
 /**
- * CONSTANT <br>
- * FREQUENT <br>
- * NORMAL <br>
- * RARE <br> <br>
+ * NEVER, 	<br>
+ * DYNAMIC, <br>
+ * ALWAYS	<br> <br>
  *
- * Determines how fast the buffers should be regenerated
+ * This represents how far the LODs should overlap with
+ * the vanilla Minecraft terrain.
  *
- * @author Leonardo Amato
- * @version 9-25-2021
+ * @author James Seibel
+ * @since API 1.1.0
+ * @version 2024-4-6
  */
 @Deprecated // not currently in use, if the config this enum represents is re-implemented, the deprecated flag can be removed
-public enum EBufferRebuildTimes
+public enum EDhApiVanillaOverdraw
 {
-	CONSTANT(0, 0, 0, 1),
+	// Reminder:
+	// when adding items up the API minor version
+	// when removing items up the API major version
 	
-	FREQUENT(1000, 500, 2500, 1),
 	
-	NORMAL(2000, 1000, 5000, 4),
+	/**
+	 * Don't draw LODs where a minecraft chunk could be.
+	 * Use Overdraw Offset to tweak the border thickness.
+	 */
+	NEVER,
 	
-	RARE(5000, 2000, 10000, 16);
+	/**
+	 * Draw LODs over the farther minecraft chunks.
+	 * Dynamically decides the border thickness
+	 */
+	DYNAMIC,
 	
-	public final int playerMoveTimeout;
-	public final int renderedChunkTimeout;
-	public final int chunkChangeTimeout;
-	public final int playerMoveDistance;
-	
-	EBufferRebuildTimes(int playerMoveTimeout, int renderedChunkTimeout, int chunkChangeTimeout, int playerMoveDistance)
-	{
-		this.playerMoveTimeout = playerMoveTimeout;
-		this.renderedChunkTimeout = renderedChunkTimeout;
-		this.chunkChangeTimeout = chunkChangeTimeout;
-		this.playerMoveDistance = playerMoveDistance;
-	}
+	/** Draw LODs over all minecraft chunks. */
+	ALWAYS,
 }

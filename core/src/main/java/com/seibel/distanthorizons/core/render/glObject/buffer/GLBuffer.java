@@ -19,7 +19,7 @@
 
 package com.seibel.distanthorizons.core.render.glObject.buffer;
 
-import com.seibel.distanthorizons.api.enums.config.EGpuUploadMethod;
+import com.seibel.distanthorizons.api.enums.config.EDhApiGpuUploadMethod;
 import com.seibel.distanthorizons.core.enums.EGLProxyContext;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.render.glObject.GLProxy;
@@ -163,7 +163,7 @@ public class GLBuffer implements AutoCloseable
 	 * Assumes the GL Context is already bound. <br> 
 	 * Will create the VBO if one exist.
 	 */
-	public void uploadBuffer(ByteBuffer bb, EGpuUploadMethod uploadMethod, int maxExpansionSize, int bufferHint)
+	public void uploadBuffer(ByteBuffer bb, EDhApiGpuUploadMethod uploadMethod, int maxExpansionSize, int bufferHint)
 	{
 		LodUtil.assertTrue(!uploadMethod.useEarlyMapping, "UploadMethod signal that this should use Mapping instead of uploadBuffer!");
 		int bbSize = bb.limit() - bb.position();
@@ -242,7 +242,7 @@ public class GLBuffer implements AutoCloseable
 	// buffer mapping //
 	//================//
 	
-	public ByteBuffer mapBuffer(int targetSize, EGpuUploadMethod uploadMethod, int maxExpensionSize, int bufferHint, int mapFlags)
+	public ByteBuffer mapBuffer(int targetSize, EDhApiGpuUploadMethod uploadMethod, int maxExpensionSize, int bufferHint, int mapFlags)
 	{
 		LodUtil.assertTrue(targetSize != 0, "MapBuffer targetSize is 0");
 		LodUtil.assertTrue(uploadMethod.useEarlyMapping, "Upload method must be one that use early mappings in order to call mapBuffer");
@@ -312,7 +312,7 @@ public class GLBuffer implements AutoCloseable
 	 * Makes sure the buffer exists and is of the correct format
 	 * before uploading.
 	 */
-	private void createOrChangeBufferTypeForUpload(EGpuUploadMethod uploadMethod)
+	private void createOrChangeBufferTypeForUpload(EDhApiGpuUploadMethod uploadMethod)
 	{
 		// create/change the buffer type if necessary
 		if (uploadMethod.useBufferStorage != this.bufferStorage)

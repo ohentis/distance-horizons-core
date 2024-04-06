@@ -27,7 +27,7 @@ import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.render.glObject.buffer.GLVertexBuffer;
 import com.seibel.distanthorizons.core.util.ColorUtil;
-import com.seibel.distanthorizons.api.enums.config.EGpuUploadMethod;
+import com.seibel.distanthorizons.api.enums.config.EDhApiGpuUploadMethod;
 import com.seibel.distanthorizons.coreapi.util.MathUtil;
 import org.apache.logging.log4j.Logger;
 
@@ -524,7 +524,7 @@ public class LodQuadBuilder
 		
 	}
 	
-	public BufferFiller makeOpaqueBufferFiller(EGpuUploadMethod method)
+	public BufferFiller makeOpaqueBufferFiller(EDhApiGpuUploadMethod method)
 	{
 		return new BufferFiller()
 		{
@@ -604,7 +604,7 @@ public class LodQuadBuilder
 		};
 	}
 	
-	public BufferFiller makeTransparentBufferFiller(EGpuUploadMethod method)
+	public BufferFiller makeTransparentBufferFiller(EDhApiGpuUploadMethod method)
 	{
 		return new BufferFiller()
 		{

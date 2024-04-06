@@ -17,33 +17,34 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.seibel.distanthorizons.api.enums.rendering;
+package com.seibel.distanthorizons.api.enums.config.quickOptions;
+
+import com.seibel.distanthorizons.api.enums.config.DisallowSelectingViaConfigGui;
 
 /**
- * DISABLED,					<br>
- * FAKE,						<br>
- * COMPLETE,					<br>
+ * CUSTOM, <br><br>
+ *
+ * MINIMAL_IMPACT, <br>
+ * LOW_IMPACT, <br>
+ * BALANCED, <br>
+ * AGGRESSIVE, <br>
  * 
- * @since API 1.0.0
+ * @since API 1.1.0
+ * @version 2024-4-6
  */
-public enum ETransparency
+public enum EDhApiThreadPreset
 {
 	// Reminder:
 	// when adding items up the API minor version
 	// when removing items up the API major version
 	
+	@DisallowSelectingViaConfigGui
+	CUSTOM,
 	
-	DISABLED(false, false),
-	FAKE(true, true),
-	COMPLETE(true, false);
-	
-	public final boolean transparencyEnabled;
-	public final boolean fakeTransparencyEnabled;
-	
-	ETransparency(boolean transparencyEnabled, boolean fakeTransparencyEnabled)
-	{
-		this.transparencyEnabled = transparencyEnabled;
-		this.fakeTransparencyEnabled = fakeTransparencyEnabled;
-	}
+	MINIMAL_IMPACT,
+	LOW_IMPACT,
+	BALANCED,
+	AGGRESSIVE,
+	I_PAID_FOR_THE_WHOLE_CPU,
 	
 }

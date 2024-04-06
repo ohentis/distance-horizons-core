@@ -17,42 +17,49 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.seibel.distanthorizons.api.enums.rendering;
+package com.seibel.distanthorizons.api.enums.config;
 
 /**
- * ABOVE_CAMERA,				<br>
- * BELOW_CAMERA,				<br>
- * ABOVE_AND_BELOW_CAMERA,		<br>
- * ABOVE_SET_HEIGHT,			<br>
- * BELOW_SET_HEIGHT,			<br>
- * ABOVE_AND_BELOW_SET_HEIGHT,	<br>
+ * LOWEST <br>
+ * LOW <br>
+ * MEDIUM <br>
+ * HIGH <br>
+ * UNLIMITED <br>
  *
- * @author Leetom
- * @version 6-30-2022
- * @since API 1.0.0
+ * @since API 1.1.0
+ * @version 2024-4-6
  */
-public enum EHeightFogMode
+public enum EDhApiHorizontalQuality
 {
 	// Reminder:
 	// when adding items up the API minor version
 	// when removing items up the API major version
 	
 	
-	ABOVE_CAMERA(true, true, false),
-	BELOW_CAMERA(true, false, true),
-	ABOVE_AND_BELOW_CAMERA(true, true, true),
-	ABOVE_SET_HEIGHT(false, true, false),
-	BELOW_SET_HEIGHT(false, false, true),
-	ABOVE_AND_BELOW_SET_HEIGHT(false, true, true);
+	// FIXME any quadraticBase less than 2.0f has issues with DetailDistanceUtil, and will always return the lowest detail level.
+	//  So for now we are limiting the lowest value to 2.0
+	//  LOWEST was originally 1.0f and LOW was 1.5f
 	
-	public final boolean basedOnCamera;
-	public final boolean above;
-	public final boolean below;
+	LOWEST(2.0f, 4),
+	LOW(2.0f, 8),
+	MEDIUM(2.0f, 12),
+	HIGH(2.2f, 24),
+	EXTREME(2.4f, 64),
 	
-	EHeightFogMode(boolean basedOnCamera, boolean above, boolean below)
+	/** @deprecated this setting is unmaintainable at high render distances. */
+	@Deprecated
+	@DisallowSelectingViaConfigGui
+	UNLIMITED(-1, -1);
+	
+	
+	
+	public final double quadraticBase;
+	public final int distanceUnitInBlocks;
+	
+	EDhApiHorizontalQuality(double quadraticBase, int distanceUnitInBlocks)
 	{
-		this.basedOnCamera = basedOnCamera;
-		this.above = above;
-		this.below = below;
+		this.quadraticBase = quadraticBase;
+		this.distanceUnitInBlocks = distanceUnitInBlocks;
 	}
+	
 }

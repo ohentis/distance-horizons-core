@@ -17,14 +17,34 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.seibel.distanthorizons.api.enums.config;
+package com.seibel.distanthorizons.api.enums.rendering;
 
 /**
- * @since API 1.0.0
+ * BASIC                        <br>
+ * IGNORE_HEIGHT                <br>
+ * ADDITION                     <br>
+ * MAX                          <br>
+ * MULTIPLY                     <br>
+ * INVERSE_MULTIPLY             <br>
+ * LIMITED_ADDITION             <br>
+ * MULTIPLY_ADDITION            <br>
+ * INVERSE_MULTIPLY_ADDITION    <br>
+ * AVERAGE                      <br>
+ *
+ * @author Leetom
+ * @version 2024-4-6
+ * @since API 1.1.0
  */
-public enum EGLErrorHandlingMode
+public enum EDhApiHeightFogMixMode
 {
-	IGNORE,
-	LOG,
-	LOG_THROW;
+	BASIC,
+	IGNORE_HEIGHT,
+	ADDITION,
+	MAX,
+	MULTIPLY,
+	INVERSE_MULTIPLY,
+	LIMITED_ADDITION,
+	MULTIPLY_ADDITION,
+	INVERSE_MULTIPLY_ADDITION,
+	AVERAGE,
 }

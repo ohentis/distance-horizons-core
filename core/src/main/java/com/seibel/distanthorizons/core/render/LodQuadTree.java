@@ -19,7 +19,7 @@
 
 package com.seibel.distanthorizons.core.render;
 
-import com.seibel.distanthorizons.api.enums.config.EHorizontalQuality;
+import com.seibel.distanthorizons.api.enums.config.EDhApiHorizontalQuality;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.config.listeners.ConfigChangeListener;
 import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSource;
@@ -67,7 +67,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 	 */
 	private final ConcurrentLinkedQueue<DhSectionPos> sectionsToReload = new ConcurrentLinkedQueue<>();
 	private final IDhClientLevel level; //FIXME: Proper hierarchy to remove this reference!
-	private final ConfigChangeListener<EHorizontalQuality> horizontalScaleChangeListener;
+	private final ConfigChangeListener<EDhApiHorizontalQuality> horizontalScaleChangeListener;
 	private final ReentrantLock treeReadWriteLock = new ReentrantLock();
 	private final AtomicBoolean fullDataRetrievalQueueRunning = new AtomicBoolean(false);
 	
@@ -369,7 +369,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 	private byte getDetailLevelFromDistance(double distance)
 	{
 		// special case, never drop the quality
-		if (Config.Client.Advanced.Graphics.Quality.horizontalQuality.get() == EHorizontalQuality.UNLIMITED)
+		if (Config.Client.Advanced.Graphics.Quality.horizontalQuality.get() == EDhApiHorizontalQuality.UNLIMITED)
 		{
 			return this.maxRenderDetailLevel;
 		}

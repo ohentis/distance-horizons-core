@@ -29,10 +29,10 @@ import com.seibel.distanthorizons.coreapi.util.MathUtil;
  * EXTREME <br>
  *
  * @author Leonardo Amato
- * @version 2023-2-5
- * @since API 1.0.0
+ * @version 2024-4-6
+ * @since API 1.1.0
  */
-public enum EVerticalQuality
+public enum EDhApiVerticalQuality
 {
 	HEIGHT_MAP( new int[]{1,    1,  1, 1, 1, 1, 1, 1, 1, 1, 1}),
 	LOW(        new int[]{4,    3,  3, 2, 2, 1, 1, 1, 1, 1, 1}),
@@ -47,7 +47,7 @@ public enum EVerticalQuality
 	
 	
 	
-	EVerticalQuality(int[] maxVerticalData) { this.maxVerticalData = maxVerticalData; }
+	EDhApiVerticalQuality(int[] maxVerticalData) { this.maxVerticalData = maxVerticalData; }
 	
 	
 	

@@ -17,36 +17,30 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.seibel.distanthorizons.api.enums.config;
+package com.seibel.distanthorizons.api.enums.rendering;
 
 /**
- * MINECRAFT <br>
- * OLD_LIGHTING <br>
- * NONE <br>
+ * USE_OPTIFINE_FOG_SETTING, <br>
+ * FOG_ENABLED, <br>
+ * FOG_DISABLED <br>
  *
- * @since API 1.0.0
- * @version 2024-4-6
+ * @author James Seibel
+ * @since API 1.1.0
+ * @version 2022-6-2
  */
-public enum ELodShading
+public enum EDhApiFogDrawMode
 {
 	// Reminder:
 	// when adding items up the API minor version
 	// when removing items up the API major version
 	
-	/** 
-	 * Uses Minecraft's shading for LODs. <Br>
-	 * This means if Minecraft's shading is disabled DH's shading will be as well.
+	/**
+	 * Use whatever Fog setting optifine is using.
+	 * If optifine isn't installed this defaults to FOG_ENABLED.
 	 */
-	AUTO,
+	USE_OPTIFINE_SETTING,
 	
-	/** 
-	 * Simulates Minecraft's shading. <Br>
-	 * This is most useful for shaders that disable Minecraft's shading
-	 * but still require shading on LODs.
-	 */
-	ENABLED,
-	
-	/** LODs will have no shading */
-	DISABLED;
+	FOG_ENABLED,
+	FOG_DISABLED;
 	
 }

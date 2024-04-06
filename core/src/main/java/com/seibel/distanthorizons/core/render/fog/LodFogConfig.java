@@ -48,8 +48,8 @@ public class LodFogConfig
 	
 	public final FogSettings farFogSetting;
 	public final FogSettings heightFogSetting;
-	public final EHeightFogMixMode heightFogMixMode;
-	public final EHeightFogMode heightFogMode;
+	public final EDhApiHeightFogMixMode heightFogMixMode;
+	public final EDhApiHeightFogMode heightFogMode;
 	public final float heightFogHeight;
 	
 	final boolean drawNearFog;
@@ -66,8 +66,8 @@ public class LodFogConfig
 	
 	public static LodFogConfig generateFogConfig()
 	{
-		EFogDrawMode fogMode = Config.Client.Advanced.Graphics.Fog.drawMode.get();
-		if (fogMode == EFogDrawMode.USE_OPTIFINE_SETTING && OPTIFINE != null)
+		EDhApiFogDrawMode fogMode = Config.Client.Advanced.Graphics.Fog.drawMode.get();
+		if (fogMode == EDhApiFogDrawMode.USE_OPTIFINE_SETTING && OPTIFINE != null)
 		{
 			fogMode = OPTIFINE.getFogDrawMode();
 		}
@@ -75,7 +75,7 @@ public class LodFogConfig
 	}
 	
 	/** sets all fog options from the config */
-	private LodFogConfig(EFogDrawMode fogDrawMode)
+	private LodFogConfig(EDhApiFogDrawMode fogDrawMode)
 	{
 		// TODO: Move these out of here
 		earthCurveRatio = Config.Client.Advanced.Graphics.AdvancedGraphics.earthCurveRatio.get();
@@ -86,12 +86,12 @@ public class LodFogConfig
 		noiseDropoff = Config.Client.Advanced.Graphics.NoiseTextureSettings.noiseDropoff.get();
 		
 		
-		if (fogDrawMode != EFogDrawMode.FOG_DISABLED)
+		if (fogDrawMode != EDhApiFogDrawMode.FOG_DISABLED)
 		{
-			EFogDistance fogDistance = Config.Client.Advanced.Graphics.Fog.distance.get();
-			drawNearFog = (fogDistance == EFogDistance.NEAR || fogDistance == EFogDistance.NEAR_AND_FAR);
+			EDhApiFogDistance fogDistance = Config.Client.Advanced.Graphics.Fog.distance.get();
+			drawNearFog = (fogDistance == EDhApiFogDistance.NEAR || fogDistance == EDhApiFogDistance.NEAR_AND_FAR);
 			
-			if (fogDistance == EFogDistance.FAR || fogDistance == EFogDistance.NEAR_AND_FAR)
+			if (fogDistance == EDhApiFogDistance.FAR || fogDistance == EDhApiFogDistance.NEAR_AND_FAR)
 			{
 				// far fog should be drawn
 				
@@ -105,7 +105,7 @@ public class LodFogConfig
 				);
 				
 				heightFogMixMode = Config.Client.Advanced.Graphics.Fog.AdvancedFog.HeightFog.heightFogMixMode.get();
-				if (heightFogMixMode == EHeightFogMixMode.IGNORE_HEIGHT || heightFogMixMode == EHeightFogMixMode.BASIC)
+				if (heightFogMixMode == EDhApiHeightFogMixMode.IGNORE_HEIGHT || heightFogMixMode == EDhApiHeightFogMixMode.BASIC)
 				{
 					// basic fog mixing
 					
@@ -238,7 +238,7 @@ public class LodFogConfig
 			str.append("" +
 					"float calculateFarFogDepth(float horizontal, float dist, float nearFogStart) \n" +
 					"{ \n" +
-					"	return " + (heightFogMixMode == EHeightFogMixMode.BASIC ?
+					"	return " + (heightFogMixMode == EDhApiHeightFogMixMode.BASIC ?
 					"(dist - nearFogStart)/(1.0 - nearFogStart);" :
 					"(horizontal - nearFogStart)/(1.0 - nearFogStart);") +
 					"} \n");
@@ -286,7 +286,7 @@ public class LodFogConfig
 		return str;
 	}
 	
-	private static String getFarFogMethod(EFogFalloff fogType)
+	private static String getFarFogMethod(EDhApiFogFalloff fogType)
 	{
 		switch (fogType)
 		{
@@ -302,7 +302,7 @@ public class LodFogConfig
 		}
 	}
 	
-	private static String getHeightDepthMethod(EHeightFogMode heightMode, float heightFogHeight)
+	private static String getHeightDepthMethod(EDhApiHeightFogMode heightMode, float heightFogHeight)
 	{
 		String str = "";
 		if (!heightMode.basedOnCamera)
@@ -334,7 +334,7 @@ public class LodFogConfig
 	 * Example: <br>
 	 * <code>"	return linearFog(dist, heightFogStart, heightFogLength, heightFogMin, heightFogRange);"</code>
 	 */
-	private static String getHeightFogMethod(EFogFalloff fogType)
+	private static String getHeightFogMethod(EDhApiFogFalloff fogType)
 	{
 		switch (fogType)
 		{
@@ -354,7 +354,7 @@ public class LodFogConfig
 	 * creates a line in the format <br>
 	 * <code>"	return max(1.0-near, far);" </code>
 	 */
-	private static String getMixFogLine(EHeightFogMixMode heightFogMode, boolean drawNearFog)
+	private static String getMixFogLine(EDhApiHeightFogMixMode heightFogMode, boolean drawNearFog)
 	{
 		String str = "	return ";
 		

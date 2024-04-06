@@ -19,7 +19,7 @@
 
 package com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding;
 
-import com.seibel.distanthorizons.api.enums.rendering.EDebugRendering;
+import com.seibel.distanthorizons.api.enums.rendering.EDhApiDebugRendering;
 import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSource;
@@ -152,7 +152,7 @@ public class ColumnRenderBufferBuilder
 	private static void makeLodRenderData(LodQuadBuilder quadBuilder, ColumnRenderSource renderSource, ColumnRenderSource[] adjRegions)
 	{
 		// Variable initialization
-		EDebugRendering debugMode = Config.Client.Advanced.Debugging.debugRendering.get();
+		EDhApiDebugRendering debugMode = Config.Client.Advanced.Debugging.debugRendering.get();
 		
 		// can be used to limit which section positions are build and thus, rendered
 		// useful when debugging a specific section

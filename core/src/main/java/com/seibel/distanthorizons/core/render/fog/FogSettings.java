@@ -19,7 +19,7 @@
 
 package com.seibel.distanthorizons.core.render.fog;
 
-import com.seibel.distanthorizons.api.enums.rendering.EFogFalloff;
+import com.seibel.distanthorizons.api.enums.rendering.EDhApiFogFalloff;
 
 import java.util.Objects;
 
@@ -31,7 +31,7 @@ import java.util.Objects;
 public class FogSettings
 {
 	/** a FogSetting object with 0 for every value */
-	public static final FogSettings EMPTY = new FogSettings(0, 0, 0, 0, 0, EFogFalloff.LINEAR);
+	public static final FogSettings EMPTY = new FogSettings(0, 0, 0, 0, 0, EDhApiFogFalloff.LINEAR);
 	
 	
 	public final double start;
@@ -39,9 +39,9 @@ public class FogSettings
 	public final double min;
 	public final double max;
 	public final double density;
-	public final EFogFalloff fogType;
+	public final EDhApiFogFalloff fogType;
 	
-	public FogSettings(double start, double end, double min, double max, double density, EFogFalloff fogType)
+	public FogSettings(double start, double end, double min, double max, double density, EDhApiFogFalloff fogType)
 	{
 		this.start = start;
 		this.end = end;

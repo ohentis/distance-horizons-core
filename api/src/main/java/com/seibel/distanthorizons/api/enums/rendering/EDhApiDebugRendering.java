@@ -28,10 +28,10 @@ package com.seibel.distanthorizons.api.enums.rendering;
  *
  * @author Leetom
  * @author James Seibel
- * @version 2023-6-7
- * @since API 1.0.0
+ * @version 2024-4-6
+ * @since API 1.1.0
  */
-public enum EDebugRendering
+public enum EDhApiDebugRendering
 {
 	// Reminder:
 	// when adding items up the API minor version
@@ -44,10 +44,6 @@ public enum EDebugRendering
 	/** LOD colors are based on their detail */
 	SHOW_DETAIL,
 	
-	@Deprecated
-	/** LOD colors are based on their gen mode. */
-	SHOW_GENMODE,
-	
 	/** Block Materials are often used by Iris shaders to determine how LODs should be rendered */
 	SHOW_BLOCK_MATERIAL,
 	
@@ -58,7 +54,7 @@ public enum EDebugRendering
 	SHOW_RENDER_SOURCE_FLAG;
 	
 	
-	public static EDebugRendering next(EDebugRendering type)
+	public static EDhApiDebugRendering next(EDhApiDebugRendering type)
 	{
 		switch (type)
 		{
@@ -75,7 +71,7 @@ public enum EDebugRendering
 		}
 	}
 	
-	public static EDebugRendering previous(EDebugRendering type)
+	public static EDhApiDebugRendering previous(EDhApiDebugRendering type)
 	{
 		switch (type)
 		{
@@ -84,8 +80,6 @@ public enum EDebugRendering
 			case SHOW_RENDER_SOURCE_FLAG:
 				return SHOW_OVERLAPPING_QUADS;
 			case SHOW_OVERLAPPING_QUADS:
-				return SHOW_GENMODE;
-			case SHOW_GENMODE:
 				return SHOW_DETAIL;
 			default:
 				return OFF;

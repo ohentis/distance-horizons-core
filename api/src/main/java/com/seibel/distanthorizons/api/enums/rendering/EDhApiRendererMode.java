@@ -20,27 +20,51 @@
 package com.seibel.distanthorizons.api.enums.rendering;
 
 /**
- * USE_OPTIFINE_FOG_SETTING, <br>
- * FOG_ENABLED, <br>
- * FOG_DISABLED <br>
+ * Default <br>
+ * Debug <br>
+ * Disabled <br>
  *
- * @author James Seibel
- * @version 2022-6-2
- * @since API 1.0.0
+ * @since API 1.1.0
+ * @version 2024-4-6
  */
-public enum EFogDrawMode
+public enum EDhApiRendererMode
 {
 	// Reminder:
 	// when adding items up the API minor version
 	// when removing items up the API major version
 	
-	/**
-	 * Use whatever Fog setting optifine is using.
-	 * If optifine isn't installed this defaults to FOG_ENABLED.
-	 */
-	USE_OPTIFINE_SETTING,
 	
-	FOG_ENABLED,
-	FOG_DISABLED;
+	DEFAULT,
+	DEBUG,
+	DISABLED;
+	
+	
+	/** Used by the config GUI to cycle through the available rendering options */
+	public static EDhApiRendererMode next(EDhApiRendererMode type)
+	{
+		switch (type)
+		{
+			case DEFAULT:
+				return DEBUG;
+			case DEBUG:
+				return DISABLED;
+			default:
+				return DEFAULT;
+		}
+	}
+	
+	/** Used by the config GUI to cycle through the available rendering options */
+	public static EDhApiRendererMode previous(EDhApiRendererMode type)
+	{
+		switch (type)
+		{
+			case DEFAULT:
+				return DISABLED;
+			case DEBUG:
+				return DEFAULT;
+			default:
+				return DEBUG;
+		}
+	}
 	
 }

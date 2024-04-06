@@ -17,32 +17,34 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.seibel.distanthorizons.api.enums.config;
+package com.seibel.distanthorizons.api.enums.rendering;
 
 /**
- * AUTO <br>
- * Near_First <br>
- * Far_First <br> <br>
- *
- * Determines which LODs should have priority when generating
- * outside the normal view distance.
- *
- * @author Leonardo Amato
- * @version 12-1-2021
+ * DISABLED,					<br>
+ * FAKE,						<br>
+ * COMPLETE,					<br>
+ * 
+ * @since API 1.1.0
+ * @version 2024-4-6
  */
-@Deprecated // not currently in use, if the config this enum represents is re-implemented, the deprecated flag can be removed
-public enum EGenerationPriority
+public enum EDhApiTransparency
 {
 	// Reminder:
 	// when adding items up the API minor version
 	// when removing items up the API major version
 	
-	/** NEAR_FIRST when connected to servers and BALANCED when on single player */
-	AUTO,
 	
-	NEAR_FIRST,
+	DISABLED(false, false),
+	FAKE(true, true),
+	COMPLETE(true, false);
 	
-	BALANCED,
+	public final boolean transparencyEnabled;
+	public final boolean fakeTransparencyEnabled;
 	
-	FAR_FIRST
+	EDhApiTransparency(boolean transparencyEnabled, boolean fakeTransparencyEnabled)
+	{
+		this.transparencyEnabled = transparencyEnabled;
+		this.fakeTransparencyEnabled = fakeTransparencyEnabled;
+	}
+	
 }
