@@ -112,17 +112,21 @@ public class ChunkToLodBuilder implements AutoCloseable
 		for (int i = 0; i < threadCount; i++)
 		{
 			this.runningCount.incrementAndGet();
-			CompletableFuture.runAsync(() ->
+			try
 			{
-				try
+				CompletableFuture.runAsync(() ->
 				{
-					this.tickThreadTask();
-				}
-				finally
-				{
-					this.runningCount.decrementAndGet();
-				}
-			}, lodBuilderExecutor);
+					try
+					{
+						this.tickThreadTask();
+					}
+					finally
+					{
+						this.runningCount.decrementAndGet();
+					}
+				}, lodBuilderExecutor);
+			}
+			catch (RejectedExecutionException ignore) { /* the thread pool was probably shut down because it's size is being changed, just wait a sec and it should be back */ }
 		}
 	}
 	private void tickThreadTask()

@@ -278,6 +278,7 @@ public class FullDataSourceProviderV2
 								}
 							});
 						}
+						catch (RejectedExecutionException ignore) { /* the executor was shut down, it should be back up shortly and able to accept new jobs */ }
 						catch (Exception e)
 						{
 							this.parentUpdatingPosSet.remove(parentUpdatePos);

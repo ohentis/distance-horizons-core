@@ -38,6 +38,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 
 /**
@@ -77,8 +78,9 @@ public class ColumnRenderBufferBuilder
 			return future;
 		}
 		
-		//LOGGER.info("RenderRegion startBuild @ "+renderSource.sectionPos);
-		return CompletableFuture.supplyAsync(() ->
+		try
+		{
+			return CompletableFuture.supplyAsync(() ->
 				{
 					try
 					{
@@ -87,13 +89,13 @@ public class ColumnRenderBufferBuilder
 						//EVENT_LOGGER.trace("RenderRegion start QuadBuild @ " + renderSource.sectionPos);
 						boolean enableSkyLightCulling =
 								(
-									// dimensions with a ceiling will be all caves so we don't want cave culling
-									!clientLevel.getLevelWrapper().hasCeiling()
-									// the end has a lot of overhangs with 0 lighting above the void, which look broken with
-									// the current cave culling logic (this could probably be improved, but just skipping it works best for now)
-									&& !clientLevel.getLevelWrapper().getDimensionType().isTheEnd()
-								)		
-								&& Config.Client.Advanced.Graphics.AdvancedGraphics.enableCaveCulling.get();
+										// dimensions with a ceiling will be all caves so we don't want cave culling
+										!clientLevel.getLevelWrapper().hasCeiling()
+												// the end has a lot of overhangs with 0 lighting above the void, which look broken with
+												// the current cave culling logic (this could probably be improved, but just skipping it works best for now)
+												&& !clientLevel.getLevelWrapper().getDimensionType().isTheEnd()
+								)
+										&& Config.Client.Advanced.Graphics.AdvancedGraphics.enableCaveCulling.get();
 						
 						int skyLightCullingBelow = Config.Client.Advanced.Graphics.AdvancedGraphics.caveCullingHeight.get();
 						// FIXME: Clamp also to the max world height.
@@ -144,10 +146,19 @@ public class ColumnRenderBufferBuilder
 					}
 					catch (Throwable e3)
 					{
-						LOGGER.error("LodNodeBufferBuilder was unable to upload buffer: "+e3.getMessage(), e3);
+						LOGGER.error("LodNodeBufferBuilder was unable to upload buffer: " + e3.getMessage(), e3);
 						throw e3;
 					}
 				}, bufferUploaderExecutor);
+		}
+		catch (RejectedExecutionException ignore) 
+		{
+			// the thread pool was probably shut down because it's size is being changed, just wait a sec and it should be back
+			
+			CompletableFuture<ColumnRenderBuffer> future = new CompletableFuture<>();
+			future.cancel(true);
+			return future;
+		}
 	}
 	private static void makeLodRenderData(LodQuadBuilder quadBuilder, ColumnRenderSource renderSource, ColumnRenderSource[] adjRegions)
 	{

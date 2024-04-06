@@ -122,7 +122,16 @@ public abstract class AbstractNewDataSourceHandler
 			return CompletableFuture.completedFuture(null);
 		}
 		
-		return CompletableFuture.supplyAsync(() -> this.get(pos), executor);
+		
+		try
+		{
+			return CompletableFuture.supplyAsync(() -> this.get(pos), executor);
+		}
+		catch (RejectedExecutionException ignore) 
+		{
+			// the thread pool was probably shut down because it's size is being changed, just wait a sec and it should be back
+			return CompletableFuture.completedFuture(null);
+		}
 	}
 	/**
 	 * Should only be used in internal file handler methods where we are already running on a file handler thread.

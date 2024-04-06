@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -98,7 +99,15 @@ public class FullDataSourceProviderV1<TDhLevel extends IDhLevel>
 			return CompletableFuture.completedFuture(null);
 		}
 		
-		return CompletableFuture.supplyAsync(() -> this.get(pos), executor);
+		try
+		{
+			return CompletableFuture.supplyAsync(() -> this.get(pos), executor);
+		}
+		catch (RejectedExecutionException ignore)
+		{
+			// the thread pool was probably shut down because it's size is being changed, just wait a sec and it should be back
+			return CompletableFuture.completedFuture(null);
+		}
 	}
 	/**
 	 * Should only be used in internal file handler methods where we are already running on a file handler thread.
