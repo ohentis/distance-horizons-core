@@ -32,7 +32,7 @@ import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.pos.DhLodPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
-import com.seibel.distanthorizons.core.util.FullDataPointUtilV2;
+import com.seibel.distanthorizons.core.util.FullDataPointUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.RayCastUtil;
 import com.seibel.distanthorizons.core.world.AbstractDhWorld;
@@ -249,8 +249,8 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 							if (dataPoint != 0)
 							{
 								int requestedY = nullableBlockYPos;
-								int bottomY = FullDataPointUtilV2.getBottomY(dataPoint) + levelMinimumHeight;
-								int height = FullDataPointUtilV2.getHeight(dataPoint);
+								int bottomY = FullDataPointUtil.getBottomY(dataPoint) + levelMinimumHeight;
+								int height = FullDataPointUtil.getHeight(dataPoint);
 								int topY = bottomY + height;
 								
 								// does this datapoint contain the requested Y position? 
@@ -282,15 +282,15 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 	
 	private static DhApiTerrainDataPoint generateApiDatapoint(IDhApiLevelWrapper levelWrapper, FullDataPointIdMap mapping, byte detailLevel, long dataPoint)
 	{
-		IBlockStateWrapper blockState = mapping.getBlockStateWrapper(FullDataPointUtilV2.getId(dataPoint));
-		IBiomeWrapper biomeWrapper = mapping.getBiomeWrapper(FullDataPointUtilV2.getId(dataPoint));
+		IBlockStateWrapper blockState = mapping.getBlockStateWrapper(FullDataPointUtil.getId(dataPoint));
+		IBiomeWrapper biomeWrapper = mapping.getBiomeWrapper(FullDataPointUtil.getId(dataPoint));
 		
-		int bottomY = FullDataPointUtilV2.getBottomY(dataPoint) + levelWrapper.getMinHeight();
-		int height = FullDataPointUtilV2.getHeight(dataPoint);
+		int bottomY = FullDataPointUtil.getBottomY(dataPoint) + levelWrapper.getMinHeight();
+		int height = FullDataPointUtil.getHeight(dataPoint);
 		int topY = bottomY + height;
 		
 		return new DhApiTerrainDataPoint(detailLevel,
-				FullDataPointUtilV2.getBlockLight(dataPoint), FullDataPointUtilV2.getSkyLight(dataPoint),
+				FullDataPointUtil.getBlockLight(dataPoint), FullDataPointUtil.getSkyLight(dataPoint),
 				topY, bottomY,
 				blockState, biomeWrapper);
 	}

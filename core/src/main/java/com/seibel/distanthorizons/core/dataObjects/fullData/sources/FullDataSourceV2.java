@@ -29,8 +29,7 @@ import com.seibel.distanthorizons.core.file.IDataSource;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
-import com.seibel.distanthorizons.core.util.FullDataPointUtilV2;
-import com.seibel.distanthorizons.core.util.FullDataPointUtilV1;
+import com.seibel.distanthorizons.core.util.FullDataPointUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.RenderDataPointUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
@@ -174,11 +173,11 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 					{
 						long dataPoint = legacyDataColumn[i];
 						
-						int id = FullDataPointUtilV1.getId(dataPoint);
-						int height = FullDataPointUtilV1.getHeight(dataPoint);
-						int bottomY = FullDataPointUtilV1.getBottomY(dataPoint);
-						byte blockLight = (byte) FullDataPointUtilV1.getBlockLight(dataPoint);
-						byte skyLight = (byte) FullDataPointUtilV1.getSkyLight(dataPoint);
+						int id = FullDataPointUtil.getId(dataPoint);
+						int height = FullDataPointUtil.getHeight(dataPoint);
+						int bottomY = FullDataPointUtil.getBottomY(dataPoint);
+						byte blockLight = (byte) FullDataPointUtil.getBlockLight(dataPoint);
+						byte skyLight = (byte) FullDataPointUtil.getSkyLight(dataPoint);
 						
 						IBlockStateWrapper blockState = legacyData.mapping.getBlockStateWrapper(id);
 						if (blockState.isAir())
@@ -187,7 +186,7 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 							blockLight = 0;
 						}
 						
-						long newDataPoint = FullDataPointUtilV2.encode(id, height, bottomY, blockLight, skyLight);
+						long newDataPoint = FullDataPointUtil.encode(id, height, bottomY, blockLight, skyLight);
 						newDataColumn.set(i, newDataPoint);
 						
 						
@@ -551,8 +550,8 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 					}
 					long datapoint = inputDataArray.getLong(dataPointIndex);
 					
-					int datapointMinY = FullDataPointUtilV2.getBottomY(datapoint);
-					int numbOfBlocksTall = FullDataPointUtilV2.getHeight(datapoint);
+					int datapointMinY = FullDataPointUtil.getBottomY(datapoint);
+					int numbOfBlocksTall = FullDataPointUtil.getHeight(datapoint);
 					int datapointMaxY = (datapointMinY + numbOfBlocksTall);
 					
 					
@@ -595,9 +594,9 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 			Arrays.fill(mergeSkyLights, 0);
 			for (int i = 0; i < 4; i++)
 			{
-				mergeIds[i] = FullDataPointUtilV2.getId(datapointsForYSlice[i]);
-				mergeBlockLights[i] = FullDataPointUtilV2.getBlockLight(datapointsForYSlice[i]);
-				mergeSkyLights[i] = FullDataPointUtilV2.getSkyLight(datapointsForYSlice[i]);
+				mergeIds[i] = FullDataPointUtil.getId(datapointsForYSlice[i]);
+				mergeBlockLights[i] = FullDataPointUtil.getBlockLight(datapointsForYSlice[i]);
+				mergeSkyLights[i] = FullDataPointUtil.getSkyLight(datapointsForYSlice[i]);
 			}
 			
 			
@@ -614,7 +613,7 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 			{
 				if (height != 0)
 				{
-					newColumnList.add(FullDataPointUtilV2.encode(lastId, height, minY, lastBlockLight, lastSkyLight));
+					newColumnList.add(FullDataPointUtil.encode(lastId, height, minY, lastBlockLight, lastSkyLight));
 				}
 				
 				lastId = id;
@@ -628,7 +627,7 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 		// add the last slice if present
 		if (height != 0)
 		{
-			newColumnList.add(FullDataPointUtilV2.encode(lastId, height, minY, lastBlockLight, lastSkyLight));
+			newColumnList.add(FullDataPointUtil.encode(lastId, height, minY, lastBlockLight, lastSkyLight));
 		}
 		
 		
@@ -649,7 +648,7 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 		LongArrayList dataColumn = this.dataPoints[dataPointIndex];
 		for (int i = 0; i < dataColumn.size(); i++)
 		{
-			dataColumn.set(i, FullDataPointUtilV2.remap(remappedIds, dataColumn.getLong(i)));
+			dataColumn.set(i, FullDataPointUtil.remap(remappedIds, dataColumn.getLong(i)));
 		}
 	}
 	private static boolean areDataColumnsDifferent(long[] oldDataArray, long[] newDataArray)
@@ -766,10 +765,10 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 	public static void throwIfDataColumnInWrongOrder(DhSectionPos pos, LongArrayList dataArray) throws IllegalStateException
 	{
 		long firstDataPoint = dataArray.getLong(0);
-		int firstBottomY = FullDataPointUtilV2.getBottomY(firstDataPoint);
+		int firstBottomY = FullDataPointUtil.getBottomY(firstDataPoint);
 		
 		long lastDataPoint = dataArray.getLong(dataArray.size() - 1);
-		int lastBottomY = FullDataPointUtilV2.getBottomY(lastDataPoint);
+		int lastBottomY = FullDataPointUtil.getBottomY(lastDataPoint);
 		
 		if (firstBottomY < lastBottomY)
 		{
@@ -784,10 +783,10 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 	private static void ensureDataColumnOrder(LongArrayList dataColumn)
 	{
 		long firstDataPoint = dataColumn.getLong(0);
-		int firstBottomY = FullDataPointUtilV2.getBottomY(firstDataPoint);
+		int firstBottomY = FullDataPointUtil.getBottomY(firstDataPoint);
 		
 		long lastDataPoint = dataColumn.getLong(dataColumn.size() - 1);
-		int lastBottomY = FullDataPointUtilV2.getBottomY(lastDataPoint);
+		int lastBottomY = FullDataPointUtil.getBottomY(lastDataPoint);
 		
 		if (firstBottomY < lastBottomY)
 		{
@@ -863,7 +862,7 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 			for (int i = 0; i < longArray.size(); i++)
 			{
 				long dataPoint = longArray.getLong(i);
-				int id = FullDataPointUtilV2.getId(dataPoint);
+				int id = FullDataPointUtil.getId(dataPoint);
 				if (id > maxValidId)
 				{
 					LodUtil.assertNotReach("Column set with higher than possible ID. ID [" + id + "], max valid ID [" + maxValidId + "].");

@@ -31,7 +31,7 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.util.ColorUtil;
-import com.seibel.distanthorizons.core.util.FullDataPointUtilV2;
+import com.seibel.distanthorizons.core.util.FullDataPointUtil;
 import com.seibel.distanthorizons.core.util.RenderDataPointUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.IWrapperFactory;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
@@ -180,11 +180,11 @@ public class FullDataToRenderDataTransformer
 		for (int i = 0; i < fullColumnData.size(); i++)
 		{
 			long fullData = fullColumnData.getLong(i);
-			int bottomY = FullDataPointUtilV2.getBottomY(fullData);
-			int blockHeight = FullDataPointUtilV2.getHeight(fullData);
-			int id = FullDataPointUtilV2.getId(fullData);
-			int blockLight = FullDataPointUtilV2.getBlockLight(fullData);
-			int skyLight = FullDataPointUtilV2.getSkyLight(fullData);
+			int bottomY = FullDataPointUtil.getBottomY(fullData);
+			int blockHeight = FullDataPointUtil.getHeight(fullData);
+			int id = FullDataPointUtil.getId(fullData);
+			int blockLight = FullDataPointUtil.getBlockLight(fullData);
+			int skyLight = FullDataPointUtil.getSkyLight(fullData);
 			
 			// TODO how should corrupted data be handled?
 			// TODO why is the full data corrupted in the first place? FullDataPointUtil hasn't been changed in a long time, could one of the full data point objects be corrupted?

@@ -21,7 +21,6 @@ package com.seibel.distanthorizons.core.file.subDimMatching;
 
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.FullDataPointIdMap;
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV1;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.file.structure.ClientOnlySaveStructure;
@@ -32,7 +31,7 @@ import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.dataObjects.transformers.LodDataBuilder;
-import com.seibel.distanthorizons.core.util.FullDataPointUtilV2;
+import com.seibel.distanthorizons.core.util.FullDataPointUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
@@ -251,13 +250,13 @@ public class SubDimensionLevelMatcher implements AutoCloseable
 								long newDataPoint = newColumn.getLong(i);
 								long testDataPoint = testColumn.getLong(i);
 								
-								int newId = FullDataPointUtilV2.getId(newDataPoint);
-								int testId = FullDataPointUtilV2.getId(testDataPoint);
+								int newId = FullDataPointUtil.getId(newDataPoint);
+								int testId = FullDataPointUtil.getId(testDataPoint);
 								
 								
 								// bottom Y
-								int newBottom = FullDataPointUtilV2.getBottomY(newDataPoint);
-								int testBottom = FullDataPointUtilV2.getBottomY(testDataPoint);
+								int newBottom = FullDataPointUtil.getBottomY(newDataPoint);
+								int testBottom = FullDataPointUtil.getBottomY(testDataPoint);
 								if (newBottom == testBottom)
 								{
 									equalDataPoints++;	
@@ -265,8 +264,8 @@ public class SubDimensionLevelMatcher implements AutoCloseable
 								totalDataPointCount++;
 								
 								// height
-								int newHeight = FullDataPointUtilV2.getHeight(newDataPoint);
-								int testHeight = FullDataPointUtilV2.getHeight(testDataPoint);
+								int newHeight = FullDataPointUtil.getHeight(newDataPoint);
+								int testHeight = FullDataPointUtil.getHeight(testDataPoint);
 								if (newHeight == testHeight)
 								{
 									equalDataPoints++;

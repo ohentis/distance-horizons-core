@@ -33,7 +33,7 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
-import com.seibel.distanthorizons.core.util.FullDataPointUtilV2;
+import com.seibel.distanthorizons.core.util.FullDataPointUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
@@ -206,7 +206,7 @@ public class LodDataBuilder
 							// check if this block is visible from any direction 
 							|| blockVisible(chunkWrapper, relBlockX, y, relBlockZ))
 						{
-							longs.add(FullDataPointUtilV2.encode(mappedId, lastY - y, y + 1 - chunkWrapper.getMinBuildHeight(), blockLight, skyLight));
+							longs.add(FullDataPointUtil.encode(mappedId, lastY - y, y + 1 - chunkWrapper.getMinBuildHeight(), blockLight, skyLight));
 							biome = newBiome;
 							blockState = newBlockState;
 							mappedId = dataSource.mapping.addIfNotPresentAndGetId(biome, blockState);
@@ -216,7 +216,7 @@ public class LodDataBuilder
 						}
 					}
 				}
-				longs.add(FullDataPointUtilV2.encode(mappedId, lastY - y, y + 1 - chunkWrapper.getMinBuildHeight(), blockLight, skyLight));
+				longs.add(FullDataPointUtil.encode(mappedId, lastY - y, y + 1 - chunkWrapper.getMinBuildHeight(), blockLight, skyLight));
 				
 				dataSource.setSingleColumn(longs, 
 						relBlockX + chunkOffsetX, 
@@ -318,7 +318,7 @@ public class LodDataBuilder
 							(IBlockStateWrapper) (dataPoint.blockStateWrapper)
 					);
 					
-					packedDataPoints.set(index, FullDataPointUtilV2.encode(
+					packedDataPoints.set(index, FullDataPointUtil.encode(
 							id,
 							dataPoint.topYBlockPos - dataPoint.bottomYBlockPos,
 							dataPoint.bottomYBlockPos - dataPoints.topYBlockPos,

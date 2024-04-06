@@ -1,16 +1,21 @@
 package com.seibel.distanthorizons.core.util;
 
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV1;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.coreapi.ModInfo;
+import org.jetbrains.annotations.Contract;
 
 /**
- * <strong> Only for Legacy support </strong> <br>
- * Used by DH versions 2.0.0 and 2.0.1. <br><br>
+ * A helper class that is used to access the data from a long
+ * formatted as a full data point. <br>
+ * A full data point contains the most information and is the
+ * source of truth used when creating render data. <br><br>
  *
  * Specifically used by the data sources: <br>
+ * - {@link FullDataSourceV2} <br>
  * - {@link FullDataSourceV1} aka CompleteFullDataSource <br>
- * - (Deleted) HighDetailIncompleteFullDataSource <br>
- * - (Deleted) LowDetailIncompleteFullDataSource <br><br>
+ * - (Deleted) HighDetailIncompleteFullDataSource aka SparseDataSource <br>
+ * - (Deleted) LowDetailIncompleteFullDataSource aka SpottyDataSource <br><br>
  *
  * <strong>DataPoint Format: </strong><br>
  * <code>
@@ -32,9 +37,9 @@ import com.seibel.distanthorizons.coreapi.ModInfo;
  * </code>
  *
  * @see FullDataSourceV1
- * @see FullDataPointUtilV2
+ * @see FullDataSourceV2
  */
-public class FullDataPointUtilV1
+public class FullDataPointUtil
 {
 	public static final boolean RUN_VALIDATION = ModInfo.IS_DEV_BUILD;
 	
@@ -66,10 +71,7 @@ public class FullDataPointUtilV1
 	/**
 	 * creates a new datapoint with the given values 
 	 * @param relMinY relative to the minimum level Y value
-	 *
-	 * @deprecated Should not be used anymore, just here as a reference for how the data points were constructed.
 	 */
-	@Deprecated
 	public static long encode(int id, int height, int relMinY, byte blockLight, byte skyLight)
 	{
 		if (RUN_VALIDATION)
@@ -129,5 +131,28 @@ public class FullDataPointUtilV1
 	
 	
 	public static String toString(long data) { return "[ID:" + getId(data) + ",Y:" + getBottomY(data) + ",Height:" + getHeight(data) + ",BlockLight:" + getBlockLight(data) + ",SkyLight:" + getSkyLight(data) + "]"; }
+	
+	
+	
+	/** Remaps the biome/blockState ID of the given datapoint */
+	@Contract(pure = true)
+	public static long remap(int[] newIdMapping, long data) throws IndexOutOfBoundsException
+	{
+		int currentId = getId(data);
+		try
+		{
+			int newId = newIdMapping[currentId];
+			return (data & INVERSE_ID_MASK) | newId;
+		}
+		catch (IndexOutOfBoundsException e)
+		{
+			// this try-catch is present to fix an issue where the stack trace is missing
+			// and to allow for easily attaching a debugger
+			
+			// if this was thrown that probably means the datasource has been
+			// re-mapped multiple times, causing the ID's to go out of their expected bounds.
+			throw new RuntimeException(e);
+		}
+	}
 	
 }

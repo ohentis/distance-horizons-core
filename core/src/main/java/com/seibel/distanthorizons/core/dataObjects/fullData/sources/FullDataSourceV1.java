@@ -25,7 +25,7 @@ import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV1DTO;
-import com.seibel.distanthorizons.core.util.FullDataPointUtilV1;
+import com.seibel.distanthorizons.core.util.FullDataPointUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataInputStream;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataOutputStream;
@@ -43,7 +43,7 @@ import java.util.Arrays;
  * 
  * Replaced by {@link FullDataSourceV2}.
  * 
- * @see FullDataPointUtilV1
+ * @see FullDataPointUtil
  * @see FullDataSourceV2
  */
 public class FullDataSourceV1 implements IDataSource<IDhLevel>
