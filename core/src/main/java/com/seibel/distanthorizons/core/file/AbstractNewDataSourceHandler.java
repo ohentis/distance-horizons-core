@@ -11,6 +11,7 @@ import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.threading.PositionalLockProvider;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
@@ -110,7 +111,7 @@ public abstract class AbstractNewDataSourceHandler
 	
 	/**
 	 * Returns the {@link TDataSource} for the given section position. <Br>
-	 * The returned data source may be null if there was a problem. <Br> <Br>
+	 * The returned data source may be null if repo is in the process of shutting down. <Br> <Br>
 	 *
 	 * This call is concurrent. I.e. it supports being called by multiple threads at the same time.
 	 */
@@ -135,9 +136,10 @@ public abstract class AbstractNewDataSourceHandler
 	}
 	/**
 	 * Should only be used in internal file handler methods where we are already running on a file handler thread.
-	 * Shouldn't return null.
+	 * Can return null if the repo is in the process of being shut down
 	 * @see AbstractNewDataSourceHandler#getAsync(DhSectionPos)
 	 */
+	@Nullable
 	public TDataSource get(DhSectionPos pos)
 	{
 		TDataSource dataSource = null;
@@ -170,7 +172,7 @@ public abstract class AbstractNewDataSourceHandler
 	// data updating //
 	//===============//
 	
-	public CompletableFuture<Void> updateDataSourceAsync(FullDataSourceV2 inputDataSource)
+	public CompletableFuture<Void> updateDataSourceAsync(@NotNull FullDataSourceV2 inputDataSource)
 	{
 		ThreadPoolExecutor executor = ThreadPoolUtil.getUpdatePropagatorExecutor();
 		if (executor == null || executor.isTerminated())
@@ -211,7 +213,7 @@ public abstract class AbstractNewDataSourceHandler
 	 * After this method returns the inputData will be written to file.
 	 * @param updatePos the position to update 
 	 */
-	protected void updateDataSourceAtPos(DhSectionPos updatePos, FullDataSourceV2 inputData, boolean lockOnUpdatePos)
+	protected void updateDataSourceAtPos(DhSectionPos updatePos, @NotNull FullDataSourceV2 inputData, boolean lockOnUpdatePos)
 	{
 		boolean methodLocked = false;
 		// a lock is necessary to prevent two threads from writing to the same position at once,

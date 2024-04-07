@@ -138,6 +138,12 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 			{
 				// get this positions data source
 				fullDataSource = this.fullDataSourceProvider.get(this.pos);
+				if (fullDataSource == null)
+				{
+					// the file handler is being shut down, we won't be rendering anything anyway
+					return;
+				}
+				
 				renderSource = FullDataToRenderDataTransformer.transformFullDataToRenderSource(fullDataSource, this.level);
 				if (renderSource.isEmpty())
 				{

@@ -37,6 +37,7 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
 import java.util.Arrays;
@@ -223,8 +224,8 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 	public LongArrayList get(int relX, int relZ) throws IndexOutOfBoundsException { return this.dataPoints[relativePosToIndex(relX, relZ)]; }
 	
 	@Override
-	public boolean update(FullDataSourceV2 inputDataSource, @Nullable IDhLevel level) { return this.update(inputDataSource); }
-	public boolean update(FullDataSourceV2 inputDataSource)
+	public boolean update(@NotNull FullDataSourceV2 inputDataSource, @Nullable IDhLevel level) { return this.update(inputDataSource); }
+	public boolean update(@NotNull FullDataSourceV2 inputDataSource)
 	{
 		byte thisDetailLevel = this.pos.getDetailLevel();
 		byte inputDetailLevel = inputDataSource.pos.getDetailLevel();
