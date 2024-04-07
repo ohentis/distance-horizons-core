@@ -66,8 +66,12 @@ public class FullDataSourceProviderV2
 	/** how many data sources should be pulled down for migration at once */
 	private static final int MIGRATION_BATCH_COUNT = NUMBER_OF_PARENT_UPDATE_TASKS_PER_THREAD;
 	private static final String MIGRATION_THREAD_NAME_PREFIX = "Full Data Migration Thread: ";
-	/** 1 minute */
-	private static final int MIGRATION_MAX_UPDATE_TIMEOUT_IN_MS = 60 * 1_000;
+	/** 
+	 * 5 minutes <br>
+	 * This should be much longer than any update should take. This is just
+	 * to make sure the thread doesn't get stuck.
+	 */
+	private static final int MIGRATION_MAX_UPDATE_TIMEOUT_IN_MS = 5 * 60 * 1_000;
 	
 	
 	protected final ThreadPoolExecutor migrationThreadPool;
@@ -323,7 +327,7 @@ public class FullDataSourceProviderV2
 			int progressCount = 0;
 			while (!legacyDataSourceList.isEmpty() && this.migrationThreadRunning.get())
 			{
-				LOGGER.info("Migrating ["+dimensionName+"] - [" + progressCount + "/" + totalCount + "]...");
+				LOGGER.info("Migrating [" + dimensionName + "] - [" + progressCount + "/" + totalCount + "]...");
 				
 				ArrayList<CompletableFuture<Void>> updateFutureList = new ArrayList<>();
 				for (int i = 0; i < legacyDataSourceList.size() && this.migrationThreadRunning.get(); i++)
@@ -341,7 +345,7 @@ public class FullDataSourceProviderV2
 						// the render data along with the full data, so running it async on the update threads gains us a good bit of speed
 						CompletableFuture<Void> future = this.updateDataSourceAsync(newDataSource);
 						updateFutureList.add(future);
-						future.thenRun(() -> 
+						future.thenRun(() ->
 						{
 							// after the update finishes the legacy data source can be safely deleted
 							this.legacyFileHandler.repo.deleteWithKey(legacyDataSource.getPos());
@@ -350,7 +354,7 @@ public class FullDataSourceProviderV2
 					catch (Exception e)
 					{
 						DhSectionPos migrationPos = legacyDataSource.getPos();
-						LOGGER.error("Unexpected issue migrating data source at pos "+migrationPos+". Error: "+e.getMessage(), e);
+						LOGGER.error("Unexpected issue migrating data source at pos " + migrationPos + ". Error: " + e.getMessage(), e);
 						this.legacyFileHandler.markMigrationFailed(migrationPos);
 					}
 				}
@@ -362,9 +366,13 @@ public class FullDataSourceProviderV2
 					CompletableFuture<Void> combinedFutures = CompletableFuture.allOf(updateFutureList.toArray(new CompletableFuture[0]));
 					combinedFutures.get(MIGRATION_MAX_UPDATE_TIMEOUT_IN_MS, TimeUnit.MILLISECONDS);
 				}
-				catch (InterruptedException | ExecutionException | TimeoutException e) 
+				catch (InterruptedException | TimeoutException e)
 				{
-					LOGGER.warn("Migration update timed out. Migration will re-try the same positions again. Error:"+e.getMessage(), e);
+					LOGGER.warn("Migration update timed out after ["+MIGRATION_MAX_UPDATE_TIMEOUT_IN_MS+"] milliseconds. Migration will re-try the same positions again in a moment..", e);
+				}
+				catch (ExecutionException e) 
+				{
+					LOGGER.warn("Migration update failed. Migration will re-try the same positions again. Error:"+e.getMessage(), e);
 				}
 				
 				legacyDataSourceList = this.legacyFileHandler.getDataSourcesToMigrate(MIGRATION_BATCH_COUNT);
