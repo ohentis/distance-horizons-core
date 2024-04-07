@@ -20,7 +20,6 @@
 package com.seibel.distanthorizons.core.api.external.methods.config.client;
 
 import com.seibel.distanthorizons.api.enums.rendering.EDhApiFogColorMode;
-import com.seibel.distanthorizons.api.enums.rendering.EDhApiFogDistance;
 import com.seibel.distanthorizons.api.enums.rendering.EDhApiFogDrawMode;
 import com.seibel.distanthorizons.api.interfaces.config.IDhApiConfigValue;
 import com.seibel.distanthorizons.api.interfaces.config.client.IDhApiFarFogConfig;
@@ -51,10 +50,6 @@ public class DhApiFogConfig implements IDhApiFogConfig
 	//====================//
 	// basic fog settings //
 	//====================//
-	
-	@Override
-	public IDhApiConfigValue<EDhApiFogDistance> distance()
-	{ return new DhApiConfigValue<>(Config.Client.Advanced.Graphics.Fog.distance); }
 	
 	@Override
 	public IDhApiConfigValue<EDhApiFogDrawMode> drawMode()

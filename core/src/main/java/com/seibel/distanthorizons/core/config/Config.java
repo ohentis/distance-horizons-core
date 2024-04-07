@@ -250,12 +250,6 @@ public class Config
 							.setPerformance(EConfigEntryPerformance.VERY_LOW)
 							.build();
 					
-					public static ConfigEntry<EDhApiFogDistance> distance = new ConfigEntry.Builder<EDhApiFogDistance>()
-							.set(EDhApiFogDistance.FAR)
-							.comment("At what distance should Fog be drawn on the LODs?")
-							.setPerformance(EConfigEntryPerformance.NONE)
-							.build();
-					
 					public static ConfigEntry<EDhApiFogColorMode> colorMode = new ConfigEntry.Builder<EDhApiFogColorMode>()
 							.set(EDhApiFogColorMode.USE_WORLD_FOG_COLOR)
 							.comment(""
