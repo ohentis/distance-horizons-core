@@ -85,13 +85,13 @@ public class ThreadPresetConfigEventHandler extends AbstractPresetConfigEventHan
 			}});
 	
 	
-	public static int getUpdatePropagatorDefaultThreadCount() { return getThreadCountByPercent(0.5); }
+	public static int getUpdatePropagatorDefaultThreadCount() { return getThreadCountByPercent(0.25); }
 	private final ConfigEntryWithPresetOptions<EDhApiThreadPreset, Integer> UpdatePropagatorThreadCount = new ConfigEntryWithPresetOptions<>(Config.Client.Advanced.MultiThreading.numberOfUpdatePropagatorThreads,
 			new HashMap<EDhApiThreadPreset, Integer>()
 			{{
 				this.put(EDhApiThreadPreset.MINIMAL_IMPACT, 1);
 				this.put(EDhApiThreadPreset.LOW_IMPACT, getUpdatePropagatorDefaultThreadCount());
-				this.put(EDhApiThreadPreset.BALANCED, getThreadCountByPercent(0.75));
+				this.put(EDhApiThreadPreset.BALANCED, getThreadCountByPercent(0.5));
 				this.put(EDhApiThreadPreset.AGGRESSIVE, getThreadCountByPercent(0.75));
 				this.put(EDhApiThreadPreset.I_PAID_FOR_THE_WHOLE_CPU, getThreadCountByPercent(1.0));
 			}});
