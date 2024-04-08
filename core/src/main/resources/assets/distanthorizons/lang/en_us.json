@@ -305,6 +305,10 @@
     "Disable Shadow Pass Frustum Culling",
   "distanthorizons.config.client.advanced.graphics.advancedGraphics.disableShadowPassFrustumCulling.@tooltip":
     "Identical to the other frustum culling option except that it is \nonly used when a shader mod is present using the DH API \nand the shadow pass is being rendered. \n\nDisable this if shadows render incorrectly.",
+  "distanthorizons.config.client.advanced.graphics.advancedGraphics.grassSideRendering":
+    "Grass Side Rendering",
+  "distanthorizons.config.client.advanced.graphics.advancedGraphics.grassSideRendering.@tooltip":
+    "How should the sides and bottom of grass block LODs render?",
     
   
   "distanthorizons.config.client.advanced.worldGenerator":
@@ -913,5 +917,13 @@
   "distanthorizons.config.enum.EDhApiUpdateBranch.STABLE":
     "Stable",
   "distanthorizons.config.enum.EDhApiUpdateBranch.NIGHTLY":
-    "Nightly"
+    "Nightly",
+
+  "distanthorizons.config.enum.EDhApiGrassSideRendering.AS_GRASS":
+    "As Grass",
+  "distanthorizons.config.enum.EDhApiGrassSideRendering.FADE_TO_DIRT":
+    "Fade To Dirt",
+  "distanthorizons.config.enum.EDhApiGrassSideRendering.AS_DIRT":
+    "As Dirt"
+    
 }

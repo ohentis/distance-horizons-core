@@ -61,23 +61,16 @@ public class ColumnBox
 			color = ColorUtil.setAlpha(color, 255);
 		}
 		
-		// try to prevent displaying grass gradients for dirt blocks underneath solid blocks
-		if (!isTopTransparent && irisBlockMaterialId == IBlockStateWrapper.IrisBlockMaterial.GRASS)
-		{
-			irisBlockMaterialId = IBlockStateWrapper.IrisBlockMaterial.DIRT;
-		}
-		
 		
 		// cave culling prevention
 		// prevents certain faces from being culled underground that should be allowed
 		if (builder.skipQuadsWithZeroSkylight
-				&& 0 == skyLight
-				&& builder.skyLightCullingBelow > maxY
-				&&
-				(
-						(RenderDataPointUtil.getAlpha(topData) < 255 && RenderDataPointUtil.getYMax(topData) >= builder.skyLightCullingBelow)
-								|| (RenderDataPointUtil.getYMin(topData) >= builder.skyLightCullingBelow)
-								|| !RenderDataPointUtil.doesDataPointExist(topData)
+			&& 0 == skyLight
+			&& builder.skyLightCullingBelow > maxY
+			&& (
+					(RenderDataPointUtil.getAlpha(topData) < 255 && RenderDataPointUtil.getYMax(topData) >= builder.skyLightCullingBelow)
+					|| (RenderDataPointUtil.getYMin(topData) >= builder.skyLightCullingBelow)
+					|| !RenderDataPointUtil.doesDataPointExist(topData)
 				)
 			)
 		{

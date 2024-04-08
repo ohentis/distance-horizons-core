@@ -645,6 +645,17 @@ public class Config
 									+ "Disable this if shadows render incorrectly.")
 							.build();
 					
+					public static ConfigEntry<EDhApiGrassSideRendering> grassSideRendering = new ConfigEntry.Builder<EDhApiGrassSideRendering>()
+							.set(EDhApiGrassSideRendering.AS_DIRT)
+							.comment(""
+									+ "How should the sides and bottom of grass block LODs render? \n"
+									+ "\n"
+									+ EDhApiGrassSideRendering.AS_GRASS + ": all sides of dirt LOD's render using the top (green) color. \n"
+									+ EDhApiGrassSideRendering.FADE_TO_DIRT + ": sides fade from grass to dirt. \n"
+									+ EDhApiGrassSideRendering.AS_DIRT + ": sides render entirely as dirt. \n"
+									+ "")
+							.setPerformance(EConfigEntryPerformance.NONE)
+							.build();
 					
 				}
 				

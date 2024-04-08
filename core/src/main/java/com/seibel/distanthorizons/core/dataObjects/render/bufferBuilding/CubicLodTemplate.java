@@ -103,7 +103,7 @@ public class CubicLodTemplate
 						break;
 						
 					case IBlockStateWrapper.IrisBlockMaterial.LEAVES:
-						color = ColorUtil.GREEN;
+						color = ColorUtil.DARK_GREEN;
 						break;
 					case IBlockStateWrapper.IrisBlockMaterial.STONE:
 						color = ColorUtil.GRAY;
@@ -139,7 +139,7 @@ public class CubicLodTemplate
 						color = ColorUtil.BLUE;
 						break;
 					case IBlockStateWrapper.IrisBlockMaterial.GRASS:
-						color = ColorUtil.LIGHT_GREEN;
+						color = ColorUtil.GREEN;
 						break;
 					case IBlockStateWrapper.IrisBlockMaterial.ILLUMINATED:
 						color = ColorUtil.YELLOW;

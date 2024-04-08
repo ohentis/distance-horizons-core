@@ -20,10 +20,8 @@
 package com.seibel.distanthorizons.core.config.eventHandlers;
 
 import com.seibel.distanthorizons.api.DhApi;
-import com.seibel.distanthorizons.api.enums.config.EDhApiBlocksToAvoid;
-import com.seibel.distanthorizons.api.enums.config.EDhApiLodShading;
-import com.seibel.distanthorizons.api.enums.config.EDhApiMaxHorizontalResolution;
-import com.seibel.distanthorizons.api.enums.config.EDhApiVerticalQuality;
+import com.seibel.distanthorizons.api.enums.config.*;
+import com.seibel.distanthorizons.api.enums.rendering.EDhApiDebugRendering;
 import com.seibel.distanthorizons.api.enums.rendering.EDhApiTransparency;
 import com.seibel.distanthorizons.core.config.listeners.ConfigChangeListener;
 import com.seibel.distanthorizons.core.config.Config;
@@ -53,6 +51,9 @@ public class RenderCacheConfigEventHandler
 	private final ConfigChangeListener<Double> brightnessMultiplierChangeListener;
 	private final ConfigChangeListener<Double> saturationMultiplierChangeListener;
 	private final ConfigChangeListener<EDhApiLodShading> lodShadingChangeListener;
+	private final ConfigChangeListener<EDhApiGrassSideRendering> grassSideChangeListener;
+	
+	private final ConfigChangeListener<EDhApiDebugRendering> debugRenderingChangeListener;
 	
 	/** how long to wait in milliseconds before applying the config changes */
 	private static final long TIMEOUT_IN_MS = 4_000L;
@@ -82,6 +83,9 @@ public class RenderCacheConfigEventHandler
 		this.brightnessMultiplierChangeListener = new ConfigChangeListener<>(Config.Client.Advanced.Graphics.AdvancedGraphics.brightnessMultiplier, (newValue) -> this.refreshRenderDataAfterTimeout());
 		this.saturationMultiplierChangeListener = new ConfigChangeListener<>(Config.Client.Advanced.Graphics.AdvancedGraphics.saturationMultiplier, (newValue) -> this.refreshRenderDataAfterTimeout());
 		this.lodShadingChangeListener = new ConfigChangeListener<>(Config.Client.Advanced.Graphics.AdvancedGraphics.lodShading, (newValue) -> this.refreshRenderDataAfterTimeout());
+		this.grassSideChangeListener = new ConfigChangeListener<>(Config.Client.Advanced.Graphics.AdvancedGraphics.grassSideRendering, (newValue) -> this.refreshRenderDataAfterTimeout());
+		
+		this.debugRenderingChangeListener = new ConfigChangeListener<>(Config.Client.Advanced.Debugging.debugRendering, (newValue) -> this.refreshRenderDataAfterTimeout());
 		
 	}
 	

@@ -23,6 +23,9 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.*;
 
+import com.seibel.distanthorizons.api.enums.config.EDhApiGrassSideRendering;
+import com.seibel.distanthorizons.api.enums.rendering.EDhApiDebugRendering;
+import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
@@ -58,6 +61,8 @@ public class LodQuadBuilder
 	private final boolean doTransparency;
 	private final IClientLevelWrapper clientLevelWrapper;
 	
+	private final EDhApiDebugRendering debugRenderingMode;
+	private final EDhApiGrassSideRendering grassSideRenderingMode;
 	
 	
 	public static final int[][][] DIRECTION_VERTEX_IBO_QUAD = new int[][][]
@@ -129,6 +134,9 @@ public class LodQuadBuilder
 		this.skipQuadsWithZeroSkylight = enableSkylightCulling;
 		this.skyLightCullingBelow = skyLightCullingBelow;
 		this.clientLevelWrapper = clientLevelWrapper;
+		
+		this.debugRenderingMode = Config.Client.Advanced.Debugging.debugRendering.get();
+		this.grassSideRenderingMode = Config.Client.Advanced.Graphics.AdvancedGraphics.grassSideRendering.get();
 		
 	}
 	
@@ -263,18 +271,35 @@ public class LodQuadBuilder
 			
 			
 			int color = quad.color;
-			if (quad.irisBlockMaterialId == IBlockStateWrapper.IrisBlockMaterial.GRASS 
-				&& 
-				(
-					(quad.direction.getAxis().isHorizontal() && quadBase[i][1] == 0) // TODO what does "quadBase[i][1] == 0" mean?
-					|| quad.direction == EDhDirection.DOWN)
-				)
+			
+			// use custom side color logic for grass blocks
+			if (quad.irisBlockMaterialId == IBlockStateWrapper.IrisBlockMaterial.GRASS)
 			{
-				// for horizontal and bottom faces of grass blocks, use the  dirt color to
-				// prevent green cliff walls
-				color = this.clientLevelWrapper.getDirtBlockColor();
-				color = ColorUtil.applyShade(color, MC.getShade(quad.direction));
+				// only use dirt colors if debug rendering is disabled
+				if (this.debugRenderingMode == EDhApiDebugRendering.OFF)
+				{
+					// determine if any custom coloring logic should be used
+					if (this.grassSideRenderingMode != EDhApiGrassSideRendering.AS_GRASS)
+					{
+						// only change the vertex color if it's on the side or bottom
+						if (quad.direction.getAxis().isHorizontal() || quad.direction == EDhDirection.DOWN)
+						{
+							if (this.grassSideRenderingMode == EDhApiGrassSideRendering.AS_DIRT
+								// if we want the color to fade, only apply the dirt color to the bottom vertices
+								|| (this.grassSideRenderingMode == EDhApiGrassSideRendering.FADE_TO_DIRT && quadBase[i][1] == 0)
+								// always render the bottom as dirt
+								|| quad.direction == EDhDirection.DOWN)
+							{
+								// for horizontal and bottom faces of grass blocks, use the  dirt color to
+								// prevent green cliff walls
+								color = this.clientLevelWrapper.getDirtBlockColor();
+								color = ColorUtil.applyShade(color, MC.getShade(quad.direction));
+							}
+						}
+					}   
+				}
 			}
+			
 			
 			this.putVertex(bb, (short) (quad.x + dx), (short) (quad.y + dy), (short) (quad.z + dz),
 					quad.hasError ? ColorUtil.RED : color,
