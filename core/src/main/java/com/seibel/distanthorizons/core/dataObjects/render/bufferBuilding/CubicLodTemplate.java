@@ -88,6 +88,11 @@ public class CubicLodTemplate
 				break;
 			}
 			case SHOW_DETAIL:
+			{
+				color = LodUtil.DEBUG_DETAIL_LEVEL_COLORS[detailLevel];
+				fullBright = true;
+				break;
+			}
 			case SHOW_BLOCK_MATERIAL:
 			{
 				switch (blockMaterialId)

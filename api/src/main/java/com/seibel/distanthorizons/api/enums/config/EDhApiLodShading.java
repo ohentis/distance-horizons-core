@@ -20,9 +20,9 @@
 package com.seibel.distanthorizons.api.enums.config;
 
 /**
- * MINECRAFT <br>
- * OLD_LIGHTING <br>
- * NONE <br>
+ * AUTO <br>
+ * ENABLED <br>
+ * DISABLED <br>
  *
  * @since API 1.1.0
  * @version 2024-4-6
