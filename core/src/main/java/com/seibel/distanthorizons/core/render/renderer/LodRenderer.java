@@ -744,16 +744,8 @@ public class LodRenderer
 		this.cachedHeight = MC_RENDER.getTargetFrameBufferViewportHeight();
 		
 		
-		// TODO add on texture (re)created event
-		//  https://discord.com/channels/881614130614767666/1211290858134052894/1211431000580554752
 		ApiEventInjector.INSTANCE.fireAllEvents(DhApiColorDepthTextureCreatedEvent.class, 
 				new DhApiColorDepthTextureCreatedEvent.EventParam(
-						oldWidth, oldHeight,
-						this.cachedWidth, this.cachedHeight
-				));
-		
-		ApiEventInjector.INSTANCE.fireAllEvents(DhApiScreenResizeEvent.class, 
-				new DhApiScreenResizeEvent.EventParam(
 						oldWidth, oldHeight,
 						this.cachedWidth, this.cachedHeight
 				));
