@@ -236,7 +236,36 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 		}
 		
 		
-		// TODO based on the column generation step, only check children that are un-generated
+		// don't check any child positions if this position is already fully generated 
+		if (this.repo.existsWithKey(pos))
+		{
+			byte[] columnGenerationSteps = this.repo.getColumnGenerationStepForPos(pos);
+			// shouldn't happen, but just in case
+			if (columnGenerationSteps != null)
+			{
+				boolean positionFullyGenerated = true;
+				
+				// check if any positions are ungenerated
+				for (int i = 0; i < columnGenerationSteps.length; i++)
+				{
+					if (columnGenerationSteps[i] == EDhApiWorldGenerationStep.EMPTY.value)
+					{
+						positionFullyGenerated = false;
+						break;
+					}
+				}
+				
+				if (positionFullyGenerated)
+				{
+					return new ArrayList<>();
+				}
+			}
+		}
+		
+		
+		
+		// this section is missing one or more columns, queue the missing ones for generation.
+		// TODO speed up this logic by only checking ungenerated columns
 		ArrayList<DhSectionPos> generationList = new ArrayList<>();
 		byte minGeneratorSectionDetailLevel = (byte) (worldGenQueue.highestDataDetail() + DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
 		pos.forEachChildAtDetailLevel(minGeneratorSectionDetailLevel, (genPos) ->
