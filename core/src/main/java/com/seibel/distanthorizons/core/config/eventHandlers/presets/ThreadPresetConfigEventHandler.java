@@ -95,13 +95,13 @@ public class ThreadPresetConfigEventHandler extends AbstractPresetConfigEventHan
 				this.put(EDhApiThreadPreset.AGGRESSIVE, getThreadCountByPercent(0.75));
 				this.put(EDhApiThreadPreset.I_PAID_FOR_THE_WHOLE_CPU, getThreadCountByPercent(1.0));
 			}});
-	public static double getUpdatePropagatorDefaultRunTimeRatio() { return 0.25; }
+	public static double getUpdatePropagatorDefaultRunTimeRatio() { return 0.5; }
 	private final ConfigEntryWithPresetOptions<EDhApiThreadPreset, Double> UpdatePropagatorRunTime = new ConfigEntryWithPresetOptions<>(Config.Client.Advanced.MultiThreading.runTimeRatioForUpdatePropagatorThreads,
 			new HashMap<EDhApiThreadPreset, Double>()
 			{{
 				this.put(EDhApiThreadPreset.MINIMAL_IMPACT, 0.25);
 				this.put(EDhApiThreadPreset.LOW_IMPACT, getUpdatePropagatorDefaultRunTimeRatio());
-				this.put(EDhApiThreadPreset.BALANCED, 0.5);
+				this.put(EDhApiThreadPreset.BALANCED, 0.75);
 				this.put(EDhApiThreadPreset.AGGRESSIVE, 1.0);
 				this.put(EDhApiThreadPreset.I_PAID_FOR_THE_WHOLE_CPU, 1.0);
 			}});
