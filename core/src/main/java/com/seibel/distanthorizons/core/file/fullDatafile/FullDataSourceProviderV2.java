@@ -193,7 +193,7 @@ public class FullDataSourceProviderV2
 					continue;
 				}
 				
-				
+				// TODO it might be worth skipping this logic if no parent updates happened
 				
 				// queue parent updates
 				if (executor.getQueue().size() < MAX_UPDATE_TASK_COUNT
