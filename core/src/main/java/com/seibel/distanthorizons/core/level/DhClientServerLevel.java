@@ -23,14 +23,12 @@ import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhAp
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.file.fullDatafile.FullDataSourceProviderV2;
-import com.seibel.distanthorizons.core.render.LodRenderSection;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
-import com.seibel.distanthorizons.core.util.objects.quadTree.QuadNode;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
@@ -41,7 +39,6 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapp
 import org.apache.logging.log4j.Logger;
 
 import java.awt.*;
-import java.util.Iterator;
 import java.util.concurrent.CompletableFuture;
 
 /** The level used on a singleplayer world */
@@ -103,7 +100,7 @@ public class DhClientServerLevel extends AbstractDhLevel implements IDhClientLev
 			// start world gen
 			
 			// create a new queue
-			this.serverside.worldGenModule.startWorldGen(this.serverside.dataFileHandler, new ServerLevelModule.WorldGenState(this));
+			this.serverside.worldGenModule.startWorldGen(this.serverside.fullDataFileHandler, new ServerLevelModule.WorldGenState(this));
 			
 			// TODO I think this used to queue the world gen
 			//  is it still needed?
@@ -119,7 +116,7 @@ public class DhClientServerLevel extends AbstractDhLevel implements IDhClientLev
 		else if (!shouldDoWorldGen && isWorldGenRunning)
 		{
 			// stop world gen
-			this.serverside.worldGenModule.stopWorldGen(this.serverside.dataFileHandler);
+			this.serverside.worldGenModule.stopWorldGen(this.serverside.fullDataFileHandler);
 		}
 		
 		if (isWorldGenRunning)
@@ -169,7 +166,7 @@ public class DhClientServerLevel extends AbstractDhLevel implements IDhClientLev
 	public ILevelWrapper getLevelWrapper() { return getServerLevelWrapper(); }
 	
 	@Override
-	public FullDataSourceProviderV2 getFullDataProvider() { return this.serverside.dataFileHandler; }
+	public FullDataSourceProviderV2 getFullDataProvider() { return this.serverside.fullDataFileHandler; }
 	
 	@Override
 	public AbstractSaveStructure getSaveStructure()

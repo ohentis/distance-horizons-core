@@ -37,7 +37,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * 
  * @param <TDTO> DTO stands for "Data Transfer Object" 
  */
-public abstract class AbstractDhRepo<TKey, TDTO extends IBaseDTO<TKey>>
+public abstract class AbstractDhRepo<TKey, TDTO extends IBaseDTO<TKey>> implements AutoCloseable
 {
 	public static final int TIMEOUT_SECONDS = 30;
 	
@@ -379,6 +379,7 @@ public abstract class AbstractDhRepo<TKey, TDTO extends IBaseDTO<TKey>>
 		}
 	}
 	
+	@Override
 	public void close()
 	{
 		try
@@ -391,9 +392,17 @@ public abstract class AbstractDhRepo<TKey, TDTO extends IBaseDTO<TKey>>
 			{
 				if(this.connection != null)
 				{
-					LOGGER.info("Closing database connection ["+this.connectionString+"]");
 					CONNECTIONS_BY_CONNECTION_STRING.remove(this.connectionString);
-					this.connection.close();
+					
+					if (!this.connection.isClosed())
+					{
+						LOGGER.info("Closing database connection: [" + this.connectionString + "]");
+						this.connection.close();
+					}
+					else
+					{
+						LOGGER.warn("Attempting to close already closed database connection: [" + this.connectionString + "]");
+					}
 				}
 				ACTIVE_CONNECTION_STRINGS_BY_REPO.remove(this);
 			}

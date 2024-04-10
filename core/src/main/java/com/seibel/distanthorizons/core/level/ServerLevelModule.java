@@ -30,13 +30,13 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.WorldGeneratorInjector;
 import org.apache.logging.log4j.Logger;
 
-public class ServerLevelModule
+public class ServerLevelModule implements AutoCloseable
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
 	public final IDhServerLevel parentServerLevel;
 	public final AbstractSaveStructure saveStructure;
-	public final GeneratedFullDataSourceProvider dataFileHandler;
+	public final GeneratedFullDataSourceProvider fullDataFileHandler;
 	public final AppliedConfigState<Boolean> worldGeneratorEnabledConfig;
 	
 	public final WorldGenModule worldGenModule;
@@ -47,18 +47,19 @@ public class ServerLevelModule
 	{
 		this.parentServerLevel = parentServerLevel;
 		this.saveStructure = saveStructure;
-		this.dataFileHandler = new GeneratedFullDataSourceProvider(parentServerLevel, saveStructure);
+		this.fullDataFileHandler = new GeneratedFullDataSourceProvider(parentServerLevel, saveStructure);
 		this.worldGeneratorEnabledConfig = new AppliedConfigState<>(Config.Client.Advanced.WorldGenerator.enableDistantGeneration);
-		this.worldGenModule = new WorldGenModule(this.dataFileHandler, this.parentServerLevel);
+		this.worldGenModule = new WorldGenModule(this.parentServerLevel);
 	}
 	
 	
 	
+	@Override
 	public void close()
 	{
 		// shutdown the world-gen
 		this.worldGenModule.close();
-		this.dataFileHandler.close();
+		this.fullDataFileHandler.close();
 	}
 	
 	

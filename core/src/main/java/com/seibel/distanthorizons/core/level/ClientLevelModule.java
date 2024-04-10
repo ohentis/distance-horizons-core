@@ -41,6 +41,7 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrap
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import org.apache.logging.log4j.Logger;
 
+import javax.annotation.WillNotClose;
 import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.concurrent.CompletableFuture;
@@ -54,6 +55,7 @@ public class ClientLevelModule implements Closeable, AbstractNewDataSourceHandle
 	
 	private final IDhClientLevel clientLevel;
 	
+	@WillNotClose
 	public final FullDataSourceProviderV2 fullDataSourceProvider;
 	public final AtomicReference<ClientRenderState> ClientRenderStateRef = new AtomicReference<>();
 	
@@ -111,7 +113,7 @@ public class ClientLevelModule implements Closeable, AbstractNewDataSourceHandle
 			}
 			
 			clientRenderState.close();
-			clientRenderState = new ClientRenderState(this.clientLevel, clientLevelWrapper, this.clientLevel.getFullDataProvider(), this.clientLevel.getSaveStructure());
+			clientRenderState = new ClientRenderState(this.clientLevel, clientLevelWrapper, this.clientLevel.getFullDataProvider());
 			if (!this.ClientRenderStateRef.compareAndSet(null, clientRenderState))
 			{
 				//FIXME: How to handle this?
@@ -144,7 +146,7 @@ public class ClientLevelModule implements Closeable, AbstractNewDataSourceHandle
 	public boolean startRenderer(IClientLevelWrapper clientLevelWrapper)
 	{
 		// TODO why are we passing in a level wrapper? Our client level is already defined.
-		ClientRenderState ClientRenderState = new ClientRenderState(this.clientLevel, clientLevelWrapper, this.clientLevel.getFullDataProvider(), this.clientLevel.getSaveStructure());
+		ClientRenderState ClientRenderState = new ClientRenderState(this.clientLevel, clientLevelWrapper, this.clientLevel.getFullDataProvider());
 		if (!this.ClientRenderStateRef.compareAndSet(null, ClientRenderState))
 		{
 			LOGGER.warn("Failed to start renderer due to concurrency");
@@ -324,9 +326,7 @@ public class ClientLevelModule implements Closeable, AbstractNewDataSourceHandle
 		public final LodQuadTree quadtree;
 		public final LodRenderer renderer;
 		
-		public ClientRenderState(
-				IDhClientLevel dhClientLevel, IClientLevelWrapper clientLevelWrapper, FullDataSourceProviderV2 fullDataSourceProvider,
-				AbstractSaveStructure saveStructure)
+		public ClientRenderState(IDhClientLevel dhClientLevel, IClientLevelWrapper clientLevelWrapper, FullDataSourceProviderV2 fullDataSourceProvider)
 		{
 			this.clientLevelWrapper = clientLevelWrapper;
 			

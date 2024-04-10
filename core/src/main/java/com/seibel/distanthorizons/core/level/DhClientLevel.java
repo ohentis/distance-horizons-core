@@ -103,47 +103,37 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 	//================//
 	
 	@Override
-	public int computeBaseColor(DhBlockPos pos, IBiomeWrapper biome, IBlockStateWrapper block) { return levelWrapper.computeBaseColor(pos, biome, block); }
+	public int computeBaseColor(DhBlockPos pos, IBiomeWrapper biome, IBlockStateWrapper block) { return this.levelWrapper.computeBaseColor(pos, biome, block); }
 	
 	@Override
-	public IClientLevelWrapper getClientLevelWrapper() { return levelWrapper; }
+	public IClientLevelWrapper getClientLevelWrapper() { return this.levelWrapper; }
 	
 	@Override
-	public void clearRenderCache()
-	{
-		clientside.clearRenderCache();
-	}
+	public void clearRenderCache() { this.clientside.clearRenderCache(); }
 	
 	@Override
-	public ILevelWrapper getLevelWrapper() { return levelWrapper; }
+	public ILevelWrapper getLevelWrapper() { return this.levelWrapper; }
 	
 	@Override
 	public CompletableFuture<Void> updateDataSourcesAsync(FullDataSourceV2 data) { return this.clientside.updateDataSourcesAsync(data); }
 	
 	@Override
-	public int getMinY() { return levelWrapper.getMinHeight(); }
+	public int getMinY() { return this.levelWrapper.getMinHeight(); }
 	
 	@Override
 	public void close()
 	{
-		clientside.close();
+		this.clientside.close();
 		super.close();
-		dataFileHandler.close();
+		this.dataFileHandler.close();
 		LOGGER.info("Closed " + DhClientLevel.class.getSimpleName() + " for " + levelWrapper);
 	}
-	
-	//=======================//
-	// misc helper functions //
-	//=======================//
 	
 	@Override
 	public FullDataSourceProviderV2 getFullDataProvider() { return this.dataFileHandler; }
 	
 	@Override
-	public AbstractSaveStructure getSaveStructure()
-	{
-		return saveStructure;
-	}
+	public AbstractSaveStructure getSaveStructure() { return this.saveStructure; }
 	
 	@Override
 	public boolean hasSkyLight() { return this.levelWrapper.hasSkyLight(); }

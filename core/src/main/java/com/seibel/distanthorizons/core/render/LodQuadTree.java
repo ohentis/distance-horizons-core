@@ -37,6 +37,7 @@ import com.seibel.distanthorizons.coreapi.util.MathUtil;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
+import javax.annotation.WillNotClose;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -59,6 +60,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 	
 	
 	public final int blockRenderDistanceDiameter;
+	@WillNotClose
 	private final FullDataSourceProviderV2 fullDataSourceProvider;
 	
 	/**
@@ -508,7 +510,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 					break;
 				}
 				
-				renderSection.tryQueuingMissingLodRetrieval(this.fullDataSourceProvider);
+				renderSection.tryQueuingMissingLodRetrieval();
 			}
 			
 			// calculate an estimate for the max number of tasks for the queue

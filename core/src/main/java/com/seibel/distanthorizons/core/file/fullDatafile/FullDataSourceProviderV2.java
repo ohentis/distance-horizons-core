@@ -81,7 +81,7 @@ public class FullDataSourceProviderV2
 	 * vs gracefully shutting down the thread ourselves. 
 	 */
 	protected final AtomicBoolean migrationThreadRunning = new AtomicBoolean(true);
-	protected final FullDataSourceProviderV1 legacyFileHandler;
+	protected final FullDataSourceProviderV1<IDhLevel> legacyFileHandler;
 	
 	/** 
 	 * Tracks which positions are currently being updated
@@ -106,7 +106,7 @@ public class FullDataSourceProviderV2
 	public FullDataSourceProviderV2(IDhLevel level, AbstractSaveStructure saveStructure, @Nullable File saveDirOverride) 
 	{
 		super(level, saveStructure, saveDirOverride);
-		this.legacyFileHandler = new FullDataSourceProviderV1(level, saveStructure, saveDirOverride);
+		this.legacyFileHandler = new FullDataSourceProviderV1<>(level, saveStructure, saveDirOverride);
 		
 		DebugRenderer.register(this, Config.Client.Advanced.Debugging.DebugWireframe.showFullDataUpdateStatus);
 		
@@ -491,6 +491,8 @@ public class FullDataSourceProviderV2
 	{
 		super.close();
 		this.updateQueueProcessor.shutdownNow();
+		
+		this.legacyFileHandler.close();
 		
 		this.migrationThreadRunning.set(false);
 		this.migrationThreadPool.shutdown();

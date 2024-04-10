@@ -37,6 +37,7 @@ import com.seibel.distanthorizons.core.util.TimerUtil;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import org.apache.logging.log4j.Logger;
 
+import javax.annotation.WillNotClose;
 import java.awt.*;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -68,6 +69,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	public final DhSectionPos pos;
 	
 	private final IDhClientLevel level;
+	@WillNotClose
 	private final FullDataSourceProviderV2 fullDataSourceProvider;
 	
 	
@@ -279,14 +281,14 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	public boolean missingPositionsCalculated() { return this.missingPositionsCalculated; }
 	public int ungeneratedPositionCount() { return (this.missingGenerationPos != null) ? this.missingGenerationPos.size() : 0; }
 	
-	public void tryQueuingMissingLodRetrieval(FullDataSourceProviderV2 fullDataSourceProvider)
+	public void tryQueuingMissingLodRetrieval()
 	{
-		if (fullDataSourceProvider.canRetrieveMissingDataSources() && fullDataSourceProvider.canQueueRetrieval())
+		if (this.fullDataSourceProvider.canRetrieveMissingDataSources() && this.fullDataSourceProvider.canQueueRetrieval())
 		{
 			// calculate the missing positions if not already done
 			if (!this.missingPositionsCalculated)
 			{
-				this.missingGenerationPos = fullDataSourceProvider.getPositionsToRetrieve(this.pos);
+				this.missingGenerationPos = this.fullDataSourceProvider.getPositionsToRetrieve(this.pos);
 				if (this.missingGenerationPos != null)
 				{
 					this.missingPositionsCalculated = true;
@@ -299,14 +301,14 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 				// queue from last to first to prevent shifting the array unnecessarily
 				for (int i = this.missingGenerationPos.size() - 1; i >= 0; i--)
 				{
-					if (!fullDataSourceProvider.canQueueRetrieval())
+					if (!this.fullDataSourceProvider.canQueueRetrieval())
 					{
 						// the data source provider isn't accepting any more jobs
 						break;
 					}
 					
 					DhSectionPos pos = this.missingGenerationPos.remove(i);
-					boolean positionQueued = fullDataSourceProvider.queuePositionForRetrieval(pos);
+					boolean positionQueued = this.fullDataSourceProvider.queuePositionForRetrieval(pos);
 					if (!positionQueued)
 					{
 						// shouldn't normally happen, but just in case

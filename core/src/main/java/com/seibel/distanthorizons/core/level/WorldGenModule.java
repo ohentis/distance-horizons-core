@@ -34,7 +34,6 @@ public class WorldGenModule implements Closeable
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
-	private final GeneratedFullDataSourceProvider dataFileHandler;
 	private final GeneratedFullDataSourceProvider.IOnWorldGenCompleteListener onWorldGenCompleteListener;
 	
 	private final AtomicReference<AbstractWorldGenState> worldGenStateRef = new AtomicReference<>();
@@ -42,9 +41,8 @@ public class WorldGenModule implements Closeable
 	
 	
 	
-	public WorldGenModule(GeneratedFullDataSourceProvider dataFileHandler, GeneratedFullDataSourceProvider.IOnWorldGenCompleteListener onWorldGenCompleteListener)
+	public WorldGenModule(GeneratedFullDataSourceProvider.IOnWorldGenCompleteListener onWorldGenCompleteListener)
 	{
-		this.dataFileHandler = dataFileHandler;
 		this.onWorldGenCompleteListener = onWorldGenCompleteListener;
 		this.worldGenF3Message = new F3Screen.DynamicMessage(() ->
 		{
@@ -138,7 +136,6 @@ public class WorldGenModule implements Closeable
 			}
 		}
 		
-		this.dataFileHandler.close();
 		this.worldGenF3Message.close();
 	}
 	

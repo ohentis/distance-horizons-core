@@ -72,12 +72,12 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 		if (shouldDoWorldGen && !isWorldGenRunning)
 		{
 			// start world gen
-			serverside.worldGenModule.startWorldGen(serverside.dataFileHandler, new ServerLevelModule.WorldGenState(this));
+			serverside.worldGenModule.startWorldGen(serverside.fullDataFileHandler, new ServerLevelModule.WorldGenState(this));
 		}
 		else if (!shouldDoWorldGen && isWorldGenRunning)
 		{
 			// stop world gen
-			serverside.worldGenModule.stopWorldGen(serverside.dataFileHandler);
+			serverside.worldGenModule.stopWorldGen(serverside.fullDataFileHandler);
 		}
 		
 		if (serverside.worldGenModule.isWorldGenRunning())
@@ -93,7 +93,7 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 	public ILevelWrapper getLevelWrapper() { return getServerLevelWrapper(); }
 	
 	@Override
-	public FullDataSourceProviderV2 getFullDataProvider() { return this.serverside.dataFileHandler; }
+	public FullDataSourceProviderV2 getFullDataProvider() { return this.serverside.fullDataFileHandler; }
 	
 	@Override
 	public AbstractSaveStructure getSaveStructure()
