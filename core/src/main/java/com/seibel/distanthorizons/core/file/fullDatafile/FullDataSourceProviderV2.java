@@ -45,6 +45,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Function;
 
 /**
  * Handles reading/writing {@link FullDataSourceV2} 
@@ -451,6 +452,11 @@ public class FullDataSourceProviderV2
 
 	/** @return true if the position was queued, false if not */
 	public boolean queuePositionForRetrieval(DhSectionPos genPos) { return false; }
+	
+	/** does nothing if the given position isn't present in the queue */
+	public void removeRetrievalRequestIf(Function<DhSectionPos, Boolean> removeIf) { }
+	
+	public void clearRetrievalQueue() { }
 	
 	/** Can be used to display how many total retrieval requests might be available. */
 	public void setTotalRetrievalPositionCount(int newCount) {  }

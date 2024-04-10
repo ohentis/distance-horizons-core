@@ -76,10 +76,11 @@ public interface IFullDataSourceRetrievalQueue extends Closeable
 	// task handling //
 	//===============//
 	
-	/** @deprecated replace with {@link IFullDataSourceRetrievalQueue#removeGenTask(DhSectionPos)} */
-	@Deprecated
-	void removeGenRequestIf(Function<DhSectionPos, Boolean> removeIf);
-	void removeGenTask(DhSectionPos pos);
+	/** 
+	 * Generally the retrieval queue should be fairly small, so its faster to iterate over the existing list
+	 * and check if each one is valid vs dumbly attempting to remove every position that just went out of range.
+	 */
+	void removeRetrievalRequestIf(Function<DhSectionPos, Boolean> removeIf);
 	
 	CompletableFuture<WorldGenResult> submitGenTask(DhSectionPos pos, byte requiredDataDetail, IWorldGenTaskTracker tracker);
 	

@@ -101,7 +101,7 @@ public class WorldGenModule implements Closeable
 				return;
 			}
 		}
-		dataFileHandler.clearGenerationQueue();
+		dataFileHandler.clearRetrievalQueue();
 		worldGenState.closeAsync(true).join(); //TODO: Make it async.
 		dataFileHandler.removeWorldGenCompleteListener(this.onWorldGenCompleteListener);
 	}

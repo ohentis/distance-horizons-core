@@ -65,40 +65,6 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 	
 	
 	
-	//==================//
-	// generation queue //
-	//==================//
-	
-	/**
-	 * Assigns the queue for handling world gen and does first time setup as well. <br> 
-	 * Assumes there isn't a pre-existing queue. 
-	 */ 
-	public void setWorldGenerationQueue(IFullDataSourceRetrievalQueue newWorldGenQueue)
-	{
-		boolean oldQueueExists = this.worldGenQueueRef.compareAndSet(null, newWorldGenQueue);
-		LodUtil.assertTrue(oldQueueExists, "previous world gen queue is still here!");
-		LOGGER.info("Set world gen queue for level ["+this.level+"].");
-	}
-	
-	public void clearGenerationQueue() { this.worldGenQueueRef.set(null); }
-	
-	/** Can be used to remove positions that are outside the player's render distance. */
-	public void removeGenRequestIf(Function<DhSectionPos, Boolean> removeIf)
-	{
-		// TODO there has to be a better way to do this
-		
-		IFullDataSourceRetrievalQueue worldGenQueue = this.worldGenQueueRef.get();
-		if (worldGenQueue != null)
-		{
-			worldGenQueue.removeGenRequestIf(removeIf);
-		}
-	}
-	
-	@Override
-	public int getUnsavedDataSourceCount() { return this.delayedFullDataSourceSaveCache.getUnsavedCount(); }
-	
-	
-	
 	//=================//
 	// event listeners //
 	//=================//
@@ -156,6 +122,17 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 	//===================================//
 	// world gen (data source retrieval) //
 	//===================================//
+	
+	/**
+	 * Assigns the queue for handling world gen and does first time setup as well. <br> 
+	 * Assumes there isn't a pre-existing queue. 
+	 */
+	public void setWorldGenerationQueue(IFullDataSourceRetrievalQueue newWorldGenQueue)
+	{
+		boolean oldQueueExists = this.worldGenQueueRef.compareAndSet(null, newWorldGenQueue);
+		LodUtil.assertTrue(oldQueueExists, "previous world gen queue is still here!");
+		LOGGER.info("Set world gen queue for level ["+this.level+"].");
+	}
 	
 	@Override
 	public boolean canRetrieveMissingDataSources() { return true; }
@@ -225,6 +202,23 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 		
 		return true;
 	}
+	
+	@Override
+	public void removeRetrievalRequestIf(Function<DhSectionPos, Boolean> removeIf)
+	{
+		IFullDataSourceRetrievalQueue worldGenQueue = this.worldGenQueueRef.get();
+		if (worldGenQueue != null)
+		{
+			worldGenQueue.removeRetrievalRequestIf(removeIf);
+		}
+	}
+	
+	@Override
+	public void clearRetrievalQueue() { this.worldGenQueueRef.set(null); }
+	
+	@Override
+	public int getUnsavedDataSourceCount() { return this.delayedFullDataSourceSaveCache.getUnsavedCount(); }
+	
 	
 	@Override
 	public ArrayList<DhSectionPos> getPositionsToRetrieve(DhSectionPos pos)

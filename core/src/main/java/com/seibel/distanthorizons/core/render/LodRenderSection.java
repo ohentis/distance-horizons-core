@@ -41,6 +41,7 @@ import java.awt.*;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 
 /**
@@ -344,6 +345,22 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		if (this.renderSourceLoadingFuture != null)
 		{
 			this.renderSourceLoadingFuture.cancel(true);
+		}
+		
+		
+		// remove any active world gen requests that may be for this position
+		ThreadPoolExecutor executor = ThreadPoolUtil.getCleanupExecutor();
+		if (executor != null && !executor.isTerminated())
+		{
+			// while this should generally be a fast operation 
+			// this is run on a separate thread to prevent lag on the render thread
+			
+			try
+			{
+				executor.execute(() -> this.fullDataSourceProvider.removeRetrievalRequestIf((genPos) -> this.pos.contains(genPos)));
+			}
+			catch (RejectedExecutionException ignore)
+			{ /* If this happens that means everything is already shut down and no additional cleanup will be necessary */ }
 		}
 	}
 	

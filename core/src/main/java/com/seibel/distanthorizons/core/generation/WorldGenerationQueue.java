@@ -159,7 +159,7 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 	}
 	
 	@Override
-	public void removeGenRequestIf(Function<DhSectionPos, Boolean> removeIf)
+	public void removeRetrievalRequestIf(Function<DhSectionPos, Boolean> removeIf)
 	{
 		this.waitingTasks.forEachKey(100, (genPos) -> 
 		{
@@ -168,16 +168,6 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 				this.waitingTasks.remove(genPos);
 			}
 		});
-	}
-	
-	@Override
-	public void removeGenTask(DhSectionPos pos)
-	{
-		WorldGenTask task = this.waitingTasks.remove(pos);
-		if (task != null)
-		{
-			task.future.cancel(true);
-		}
 	}
 	
 	

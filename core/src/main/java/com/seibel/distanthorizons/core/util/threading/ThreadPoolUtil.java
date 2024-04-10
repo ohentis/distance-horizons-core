@@ -61,6 +61,11 @@ public class ThreadPoolUtil
 	@Nullable
 	public static ThreadPoolExecutor getBufferUploaderExecutor() { return bufferUploaderThreadPool; }
 	
+	public static final String CLEANUP_THREAD_NAME = "Cleanup";
+	private static ThreadPoolExecutor cleanupThreadPool;
+	@Nullable
+	public static ThreadPoolExecutor getCleanupExecutor() { return cleanupThreadPool; }
+	
 	
 	
 	//======================//
@@ -108,6 +113,7 @@ public class ThreadPoolUtil
 		updatePropagatorThreadPool = new ConfigThreadPool(UPDATE_PROPAGATOR_THREAD_FACTORY, Config.Client.Advanced.MultiThreading.numberOfUpdatePropagatorThreads, Config.Client.Advanced.MultiThreading.runTimeRatioForUpdatePropagatorThreads, null);
 		worldGenThreadPool = new ConfigThreadPool(WORLD_GEN_THREAD_FACTORY, Config.Client.Advanced.MultiThreading.numberOfWorldGenerationThreads, Config.Client.Advanced.MultiThreading.runTimeRatioForWorldGenerationThreads, null);
 		bufferUploaderThreadPool = ThreadUtil.makeSingleThreadPool(BUFFER_UPLOADER_THREAD_NAME);
+		cleanupThreadPool = ThreadUtil.makeSingleThreadPool(CLEANUP_THREAD_NAME);
 		
 		
 		
@@ -148,6 +154,7 @@ public class ThreadPoolUtil
 		updatePropagatorThreadPool.shutdownExecutorService();
 		worldGenThreadPool.shutdownExecutorService();
 		bufferUploaderThreadPool.shutdown();
+		cleanupThreadPool.shutdown();
 		
 		
 		// worker threads

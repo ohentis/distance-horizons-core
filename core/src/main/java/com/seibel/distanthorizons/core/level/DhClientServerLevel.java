@@ -124,13 +124,6 @@ public class DhClientServerLevel extends AbstractDhLevel implements IDhClientLev
 		
 		if (isWorldGenRunning)
 		{
-			ClientLevelModule.ClientRenderState renderState = this.clientside.ClientRenderStateRef.get();
-			if (renderState != null && renderState.quadtree != null)
-			{
-				// remove any generator sections that are out of bounds
-				this.serverside.dataFileHandler.removeGenRequestIf(pos -> !renderState.quadtree.isSectionPosInBounds(pos));
-			}
-			
 			this.serverside.worldGenModule.worldGenTick(new DhBlockPos2D(MC_CLIENT.getPlayerBlockPos()));
 		}
 	}
