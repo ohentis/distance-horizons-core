@@ -183,7 +183,7 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 							blockLight = 0;
 						}
 						
-						long dataPoint = FullDataPointUtil.setBlockLight(dataPoint, blockLight);
+						dataPoint = FullDataPointUtil.setBlockLight(dataPoint, blockLight);
 						newDataColumn.set(i, dataPoint);
 						
 						
