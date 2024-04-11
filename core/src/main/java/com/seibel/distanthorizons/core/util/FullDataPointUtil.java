@@ -127,6 +127,10 @@ public class FullDataPointUtil
 	 */
 	public static int getBottomY(long data) { return (int) ((data >> MIN_Y_OFFSET) & MIN_Y_MASK); }
 	public static int getBlockLight(long data) { return (int) ((data >> BLOCK_LIGHT_OFFSET) & BLOCK_LIGHT_MASK); }
+	public static long setBlockLight(long data, byte blockLight)
+	{
+		return (data & ~((long) BLOCK_LIGHT_MASK << BLOCK_LIGHT_OFFSET) | (long) blockLight << BLOCK_LIGHT_OFFSET);
+	}
 	public static int getSkyLight(long data) { return (int) ((data >> SKY_LIGHT_OFFSET) & SKY_LIGHT_MASK); }
 	
 	
