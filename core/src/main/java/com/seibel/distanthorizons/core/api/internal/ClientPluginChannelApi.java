@@ -105,11 +105,7 @@ public class ClientPluginChannelApi implements AutoCloseable
 	
 	public void handlePacket(ByteBuf buffer)
 	{
-		this.handlePacket(null, buffer);
-	}
-	public void handlePacket(@Nullable IServerPlayerWrapper serverPlayer, ByteBuf buffer)
-	{
-		this.channelHandler.decodeAndHandle(serverPlayer, buffer);
+		this.channelHandler.decodeAndHandle(buffer, null);
 	}
 	
 	@Override

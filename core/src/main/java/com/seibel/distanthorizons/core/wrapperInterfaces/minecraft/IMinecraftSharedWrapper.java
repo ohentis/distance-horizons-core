@@ -32,6 +32,4 @@ public interface IMinecraftSharedWrapper extends IBindable
 	
 	File getInstallationDirectory();
 	
-	List<IServerPlayerWrapper> getPlayerList();
-	
 }

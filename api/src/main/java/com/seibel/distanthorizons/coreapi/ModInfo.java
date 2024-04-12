@@ -37,6 +37,7 @@ public final class ModInfo
 	/** Plugin channel protocol version. */
 	public static final int PLUGIN_PROTOCOL_VERSION = 1;
 	public static final String PLUGIN_CHANNEL_PATH = "plugin_channel";
+	public static final String WRAPPER_PACKET_PATH = "wrapper";
 	// endregion
 	
 	

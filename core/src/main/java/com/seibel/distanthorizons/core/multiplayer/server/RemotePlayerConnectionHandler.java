@@ -6,7 +6,6 @@ import com.google.common.collect.Maps;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.config.listeners.ConfigChangeListener;
 import com.seibel.distanthorizons.core.config.types.ConfigEntry;
-import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.level.DhServerLevel;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
 import com.seibel.distanthorizons.core.multiplayer.config.MultiplayerConfig;
@@ -17,23 +16,17 @@ import com.seibel.distanthorizons.core.network.messages.netty.base.AckMessage;
 import com.seibel.distanthorizons.core.network.messages.netty.base.NettyCloseEvent;
 import com.seibel.distanthorizons.core.network.messages.netty.session.PlayerUUIDMessage;
 import com.seibel.distanthorizons.core.network.messages.netty.session.RemotePlayerConfigMessage;
-import com.seibel.distanthorizons.core.network.messages.plugin.PluginHelloMessage;
-import com.seibel.distanthorizons.core.network.messages.plugin.ServerConnectInfoMessage;
 import com.seibel.distanthorizons.core.network.netty.INettyConnection;
 import com.seibel.distanthorizons.core.network.netty.NettyMessage;
 import com.seibel.distanthorizons.core.network.netty.NettyServer;
 import com.seibel.distanthorizons.core.network.netty.TrackableNettyMessage;
-import com.seibel.distanthorizons.core.network.plugin.PluginChannelHandler;
 import com.seibel.distanthorizons.core.util.LodUtil;
-import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftSharedWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import io.netty.buffer.ByteBuf;
 import org.apache.logging.log4j.LogManager;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.Closeable;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -44,11 +37,8 @@ import static com.seibel.distanthorizons.core.config.Config.Client.Advanced.Mult
 
 public class RemotePlayerConnectionHandler implements Closeable
 {
-	private static final boolean DEBUG_ENABLE_OVERRIDES_IN_LAN = false;
-	
 	private static final ConfigBasedLogger LOGGER = new ConfigBasedLogger(LogManager.getLogger(),
 			() -> Config.Client.Advanced.Logging.logNetworkEvent.get());
-	private static final IMinecraftSharedWrapper MC_SERVER = SingletonInjector.INSTANCE.get(IMinecraftSharedWrapper.class);
 	private static final ConfigEntry<Boolean> GENERATE_MULTIPLE_DIMENSIONS_CONFIG = Config.Client.Advanced.Multiplayer.ServerNetworking.generateMultipleDimensions;
 	
 	private final NettyServer server = new NettyServer(ServerNetworking.serverPort.get());
@@ -56,16 +46,15 @@ public class RemotePlayerConnectionHandler implements Closeable
 	private final BiMap<INettyConnection, ServerPlayerState> playersByConnection = Maps.synchronizedBiMap(HashBiMap.create());
 	private final MultiplayerConfigChangeListener configChangeListener = new MultiplayerConfigChangeListener(this::onConfigChanged);
 	
-	private final PluginChannelHandler pluginChannelHandler = new PluginChannelHandler();
 	private final ConfigChangeListener<Integer> portChangeListener = new ConfigChangeListener<>(ServerNetworking.serverPort, this::onServerPortChanged);
-	private final ConfigChangeListener<String> connectIpOverrideChangeListener = new ConfigChangeListener<>(ServerNetworking.connectIpOverride, this::broadcastConnectInfo);
-	private final ConfigChangeListener<Integer> connectPortOverrideChangeListener = new ConfigChangeListener<>(ServerNetworking.connectPortOverride, this::broadcastConnectInfo);
+	private final ConfigChangeListener<String> connectIpOverrideChangeListener = new ConfigChangeListener<>(ServerNetworking.connectIpOverride, this::onConnectOverridesChanged);
+	private final ConfigChangeListener<Integer> connectPortOverrideChangeListener = new ConfigChangeListener<>(ServerNetworking.connectPortOverride, this::onConnectOverridesChanged);
+	
 	
 	public NettyServer server() { return this.server; }
 	
 	public RemotePlayerConnectionHandler()
 	{
-		//region Netty server
 		this.server.registerHandler(PlayerUUIDMessage.class, playerUUIDMessage ->
 		{
 			INettyConnection connection = playerUUIDMessage.getConnection();
@@ -103,18 +92,11 @@ public class RemotePlayerConnectionHandler implements Closeable
 				dhPlayer.connection = null;
 			}
 		});
-		//endregion
-		
-		//region Plugin channel
-		this.pluginChannelHandler.registerHandler(PluginHelloMessage.class, msg -> {
-			this.sendConnectInfo(msg.serverPlayer);
-		});
-		//endregion
 	}
 	
 	public void handlePluginMessage(IServerPlayerWrapper player, ByteBuf buffer)
 	{
-		this.pluginChannelHandler.decodeAndHandle(player, buffer);
+		this.playersByUUID.get(player.getUUID()).pluginChannelHandler.decodeAndHandle(buffer, player);
 	}
 	
 	private void onConfigChanged()
@@ -129,28 +111,14 @@ public class RemotePlayerConnectionHandler implements Closeable
 	{
 		LOGGER.warn("Server port change requires a server restart to take effect.");
 	}
-	private void broadcastConnectInfo(@Nullable Object ignored)
+	private void onConnectOverridesChanged(@Nullable Object ignored)
 	{
-		for (IServerPlayerWrapper serverPlayer : MC_SERVER.getPlayerList())
+		for (ServerPlayerState playerState : this.playersByUUID.values())
 		{
-			this.sendConnectInfo(serverPlayer);
+			playerState.sendConnectInfo();
 		}
 	}
-	private void sendConnectInfo(IServerPlayerWrapper serverPlayer)
-	{
-		String ipOverride = ServerNetworking.connectIpOverride.get();
-		int portOverride = ServerNetworking.connectPortOverride.get();
-		
-		// IP/port overrides are intended for using with port forwarding services,
-		// and LAN clients are unlikely to need to hop through internet
-		InetAddress ip = ((InetSocketAddress) serverPlayer.getRemoteAddress()).getAddress();
-		boolean isLanPlayer = !DEBUG_ENABLE_OVERRIDES_IN_LAN && (ip.isLinkLocalAddress() || ip.isSiteLocalAddress());
-		
-		this.pluginChannelHandler.sendMessageServer(serverPlayer, new ServerConnectInfoMessage(
-				!isLanPlayer && !ipOverride.isEmpty() ? ipOverride : null,
-				!isLanPlayer && portOverride != 0 ? portOverride : this.server.port
-		));
-	}
+	
 	
 	public <T extends NettyMessage> Consumer<T> connectedPlayersOnly(BiConsumer<T, ServerPlayerState> next)
 	{
@@ -209,13 +177,15 @@ public class RemotePlayerConnectionHandler implements Closeable
 	
 	public void registerJoinedPlayer(IServerPlayerWrapper serverPlayer)
 	{
-		this.playersByUUID.put(serverPlayer.getUUID(), new ServerPlayerState(serverPlayer));
+		this.playersByUUID.put(serverPlayer.getUUID(), new ServerPlayerState(serverPlayer, this.server.port));
 	}
 	
 	public void unregisterLeftPlayer(IServerPlayerWrapper serverPlayer)
 	{
-		ServerPlayerState dhPlayer = this.playersByUUID.remove(serverPlayer.getUUID());
-		INettyConnection connection = this.playersByConnection.inverse().remove(dhPlayer);
+		ServerPlayerState playerState = this.playersByUUID.remove(serverPlayer.getUUID());
+		playerState.close();
+		
+		INettyConnection connection = this.playersByConnection.inverse().remove(playerState);
 		if (connection != null)
 		{
 			connection.disconnect("You have logged out.");
@@ -228,7 +198,6 @@ public class RemotePlayerConnectionHandler implements Closeable
 		this.portChangeListener.close();
 		this.connectIpOverrideChangeListener.close();
 		this.connectPortOverrideChangeListener.close();
-		this.pluginChannelHandler.close();
 		
 		this.configChangeListener.close();
 		this.server().close();

@@ -11,6 +11,7 @@ import com.seibel.distanthorizons.core.network.protocol.plugin.PluginMessageEnco
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IPluginPacketSender;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
 import org.apache.logging.log4j.LogManager;
 import org.jetbrains.annotations.Nullable;
 
@@ -40,7 +41,7 @@ public class PluginChannelHandler extends NetworkEventSource<PluginChannelMessag
 	}
 	
 	
-	public void decodeAndHandle(@Nullable IServerPlayerWrapper serverPlayer, ByteBuf byteBuf)
+	public void decodeAndHandle(ByteBuf byteBuf, @Nullable IServerPlayerWrapper serverPlayer)
 	{
 		if (this.isClosed.get())
 		{
@@ -62,7 +63,10 @@ public class PluginChannelHandler extends NetworkEventSource<PluginChannelMessag
 		}
 		catch (Throwable e)
 		{
-			LOGGER.error("Failed to handle the message. New messages will be ignored. \n" + e);
+			LOGGER.error("Failed to handle the message. New messages will be ignored.", e);
+			LOGGER.error("Buffer: " + byteBuf.toString());
+			byteBuf.resetReaderIndex();
+			LOGGER.error("Buffer contents: " + ByteBufUtil.hexDump(byteBuf));
 			this.close();
 		}
 	}
