@@ -32,7 +32,7 @@ public class ServerConnectInfoMessage extends PluginChannelMessage
 	public void decode(ByteBuf in)
 	{
 		this.ipOverride = this.readOptional(in, () -> this.readString(in));
-		this.port = in.readShort();
+		this.port = in.readUnsignedShort();
 	}
 	
 }

@@ -38,7 +38,7 @@ public class MessageDecoder<TMessage extends INetworkObject> extends ByteToMessa
 	@Override
 	protected void decode(ChannelHandlerContext channelContext, ByteBuf inputByteBuf, List<Object> outputDecodedObjectList)
 	{
-		TMessage message = this.messageRegistry.createMessage(inputByteBuf.readShort());
+		TMessage message = this.messageRegistry.createMessage(inputByteBuf.readUnsignedShort());
 		outputDecodedObjectList.add(INetworkObject.readToObject(message, inputByteBuf));
 	}
 	
