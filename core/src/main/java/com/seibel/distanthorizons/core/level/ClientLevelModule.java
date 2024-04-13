@@ -26,7 +26,6 @@ import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSour
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.file.AbstractNewDataSourceHandler;
 import com.seibel.distanthorizons.core.file.fullDatafile.FullDataSourceProviderV2;
-import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
@@ -272,7 +271,8 @@ public class ClientLevelModule implements Closeable, AbstractNewDataSourceHandle
 		String updateCompletedTaskSize = (updateExecutor != null) ? updateExecutor.getCompletedTaskCount()+"" : "-";
 		
 		int unsavedDataSourceCount = this.fullDataSourceProvider.getUnsavedDataSourceCount();
-		int migrationCount = this.fullDataSourceProvider.getMigrationCount();
+		long legacyDeletionCount = this.fullDataSourceProvider.getLegacyDeletionCount();
+		long migrationCount = this.fullDataSourceProvider.getTotalMigrationCount();
 		
 		
 		
@@ -284,6 +284,10 @@ public class ClientLevelModule implements Closeable, AbstractNewDataSourceHandle
 		{
 			lines.add("File Handler [" + dimName + "]");
 			lines.add("  File thread pool tasks: " + fileQueueSize + " (completed: " + fileCompletedTaskSize + ")");
+			if (legacyDeletionCount > 0)
+			{
+				lines.add("  Legacy Deletion #: " + legacyDeletionCount);
+			}
 			if (migrationCount > 0)
 			{
 				lines.add("  Legacy Migration #: " + migrationCount);

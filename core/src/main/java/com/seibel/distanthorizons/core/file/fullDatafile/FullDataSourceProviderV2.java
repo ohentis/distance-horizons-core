@@ -79,9 +79,6 @@ public class FullDataSourceProviderV2
 	private static final int MIGRATION_MAX_UPDATE_TIMEOUT_IN_MS = 5 * 60 * 1_000;
 	
 	
-	private static boolean migrationMessageShown = false;
-	
-	
 	protected final ThreadPoolExecutor migrationThreadPool;
 	/** 
 	 * Interrupting the migration thread pool doesn't work well and may corrupt the database
@@ -89,6 +86,9 @@ public class FullDataSourceProviderV2
 	 */
 	protected final AtomicBoolean migrationThreadRunning = new AtomicBoolean(true);
 	protected final FullDataSourceProviderV1<IDhLevel> legacyFileHandler;
+	
+	protected long legacyDeletionCount = -1;
+	protected long migrationCount = -1;
 	
 	/** 
 	 * Tracks which positions are currently being updated
@@ -120,8 +120,6 @@ public class FullDataSourceProviderV2
 		String dimensionName = level.getLevelWrapper().getDimensionType().getDimensionName();
 		
 		// start migrating any legacy data sources present in the background
-		int totalCount = this.legacyFileHandler.getDataSourceMigrationCount();
-		LOGGER.info("Found ["+totalCount+"] data sources that need migration.");
 		this.migrationThreadPool = ThreadUtil.makeRateLimitedThreadPool(1, MIGRATION_THREAD_NAME_PREFIX +"["+dimensionName+"]", Config.Client.Advanced.MultiThreading.runTimeRatioForUpdatePropagatorThreads.get(), Thread.MIN_PRIORITY, (Semaphore)null);
 		this.migrationThreadPool.execute(() -> this.convertLegacyDataSources());
 		
@@ -333,43 +331,70 @@ public class FullDataSourceProviderV2
 		// this could be done all at once via SQL, 
 		// but doing it in chunks prevents locking the database for long periods of time 
 		long unusedCount = 0;
-		long totalUnusedCount = this.legacyFileHandler.repo.getUnusedDataSourceCount();
-		if (totalUnusedCount != 0)
+		long totalDeleteCount = this.legacyFileHandler.repo.getUnusedDataSourceCount();
+		if (totalDeleteCount != 0)
 		{
-			LOGGER.info("deleting [" + dimensionName + "] - ["+totalUnusedCount+"] unused data sources...");
+			// this should only be shown once per session but should be shown during 
+			// either when the deletion or migration phases start
+			ClientApi.INSTANCE.showMigrationMessageOnNextFrame();
+			
+			
+			LOGGER.info("deleting [" + dimensionName + "] - ["+totalDeleteCount+"] unused data sources...");
+			this.legacyDeletionCount = totalDeleteCount;
 
-			ArrayList<String> unusedDataPosList = this.legacyFileHandler.repo.getUnusedDataSourcePositionStringList(100);
+			ArrayList<String> unusedDataPosList = this.legacyFileHandler.repo.getUnusedDataSourcePositionStringList(50);
 			while (unusedDataPosList.size() != 0)
 			{
-				this.legacyFileHandler.repo.deleteUnusedLegacyData(unusedDataPosList);
 				unusedCount += unusedDataPosList.size();
-				unusedDataPosList = this.legacyFileHandler.repo.getUnusedDataSourcePositionStringList(100);
-
-				LOGGER.info("Deleting [" + dimensionName + "] - [" + unusedCount + "/" + totalUnusedCount + "]...");
+				this.legacyDeletionCount -= unusedDataPosList.size();
+				
+				
+				long startTime = System.currentTimeMillis();
+				
+				// delete batch and get next batch 
+				this.legacyFileHandler.repo.deleteUnusedLegacyData(unusedDataPosList);
+				unusedDataPosList = this.legacyFileHandler.repo.getUnusedDataSourcePositionStringList(50);
+				
+				long endStart = System.currentTimeMillis();
+				long deleteTime = endStart - startTime;
+				LOGGER.info("Deleting [" + dimensionName + "] - [" + unusedCount + "/" + totalDeleteCount + "] in ["+deleteTime+"]ms ...");
+				
+				
+				// a slight delay is added to prevent accidentally locking the database when deleting a lot of rows
+				// (that shouldn't be the case since we're using WAL journaling, but just in case)
+				try
+				{
+					// use the delete time so we don't make powerful computers wait super long
+					// and weak computers wait no time at all
+					Thread.sleep(deleteTime / 2);
+				}
+				catch (InterruptedException ignore){}
 			}
 
-			LOGGER.info("Done deleting [" + dimensionName + "] - ["+totalUnusedCount+"] unused data sources.");
+			LOGGER.info("Done deleting [" + dimensionName + "] - ["+totalDeleteCount+"] unused data sources.");
 		}
 		
 		
 		
-		//=========//
-		// migrate //
-		//=========//
+		//===========//
+		// migration //
+		//===========//
 		
-		int totalCount = this.legacyFileHandler.getDataSourceMigrationCount();
-		LOGGER.info("Found ["+totalCount+"] data sources that need migration.");
+		long totalMigrationCount = this.legacyFileHandler.getDataSourceMigrationCount();
+		this.migrationCount = totalMigrationCount;
+		LOGGER.info("Found ["+totalMigrationCount+"] data sources that need migration.");
 		
 		ArrayList<FullDataSourceV1> legacyDataSourceList = this.legacyFileHandler.getDataSourcesToMigrate(MIGRATION_BATCH_COUNT);
 		if (!legacyDataSourceList.isEmpty())
 		{
 			ClientApi.INSTANCE.showMigrationMessageOnNextFrame();
 			
+			
 			// keep going until every data source has been migrated
 			int progressCount = 0;
 			while (!legacyDataSourceList.isEmpty() && this.migrationThreadRunning.get())
 			{
-				LOGGER.info("Migrating [" + dimensionName + "] - [" + progressCount + "/" + totalCount + "]...");
+				LOGGER.info("Migrating [" + dimensionName + "] - [" + progressCount + "/" + totalMigrationCount + "]...");
 				
 				ArrayList<CompletableFuture<Void>> updateFutureList = new ArrayList<>();
 				for (int i = 0; i < legacyDataSourceList.size() && this.migrationThreadRunning.get(); i++)
@@ -391,6 +416,12 @@ public class FullDataSourceProviderV2
 						{
 							// after the update finishes the legacy data source can be safely deleted
 							this.legacyFileHandler.repo.deleteWithKey(legacyDataSource.getPos());
+							
+							try
+							{
+								newDataSource.close();
+							}
+							catch (Exception ignore){ }
 						});
 					}
 					catch (Exception e)
@@ -418,13 +449,16 @@ public class FullDataSourceProviderV2
 				}
 				
 				legacyDataSourceList = this.legacyFileHandler.getDataSourcesToMigrate(MIGRATION_BATCH_COUNT);
+				
 				progressCount += legacyDataSourceList.size();
+				this.migrationCount -= legacyDataSourceList.size();
 			}
 			
 			
 			if (this.migrationThreadRunning.get())
 			{
 				LOGGER.info("migration complete for: ["+dimensionName+"]-["+this.saveDir+"].");
+				this.migrationCount = 0;
 			}
 			else
 			{
@@ -439,7 +473,8 @@ public class FullDataSourceProviderV2
 		this.migrationThreadRunning.set(false);
 	}
 	
-	public int getMigrationCount() { return this.legacyFileHandler.getDataSourceMigrationCount(); }
+	public long getLegacyDeletionCount() { return this.legacyDeletionCount; }
+	public long getTotalMigrationCount() { return this.migrationCount; }
 	
 	
 	

@@ -142,7 +142,7 @@ public class FullDataSourceProviderV1<TDhLevel extends IDhLevel>
 	// migration //
 	//===========//
 	
-	public int getDataSourceMigrationCount() { return this.repo.getMigrationCount(); }
+	public long getDataSourceMigrationCount() { return this.repo.getMigrationCount(); }
 	
 	public ArrayList<FullDataSourceV1> getDataSourcesToMigrate(int limit)
 	{

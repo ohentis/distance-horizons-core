@@ -187,7 +187,7 @@ public class FullDataSourceV1Repo extends AbstractDhRepo<DhSectionPos, FullDataS
 	//===========//
 	
 	/** Returns how many positions need to be migrated over to the new version */
-	public int getMigrationCount()
+	public long getMigrationCount()
 	{
 		Map<String, Object> resultMap = this.queryDictionaryFirst(
 				"select COUNT(*) as itemCount from "+this.getTableName()+" where MigrationFailed <> 1");
@@ -198,7 +198,8 @@ public class FullDataSourceV1Repo extends AbstractDhRepo<DhSectionPos, FullDataS
 		}
 		else
 		{
-			int count = (int) resultMap.get("itemCount");
+			Number resultNumber = (Number) resultMap.get("itemCount");
+			long count = resultNumber.longValue();
 			return count;
 		}
 	}
