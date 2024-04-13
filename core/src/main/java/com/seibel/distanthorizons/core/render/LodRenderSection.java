@@ -228,20 +228,22 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		for (int i = 0; i < EDhDirection.ADJ_DIRECTIONS.length; i++)
 		{
 			EDhDirection direction = EDhDirection.ADJ_DIRECTIONS[i];
+			int arrayIndex = direction.ordinal() - 2;
+			
 			DhSectionPos adjPos = this.pos.getAdjacentPos(direction);
 			try
 			{
 				LodRenderSection adjRenderSection = this.quadTree.getValue(adjPos);
 				if (adjRenderSection != null)
 				{
-					futureArray[i] = adjRenderSection.getRenderSourceAsync();
+					futureArray[arrayIndex] = adjRenderSection.getRenderSourceAsync();
 				}
 			}
 			catch (IndexOutOfBoundsException ignore) {}
 			
-			if (futureArray[i] == null)
+			if (futureArray[arrayIndex] == null)
 			{
-				futureArray[i] = new ReferenceCountingFutureWrapper(CompletableFuture.completedFuture(null));
+				futureArray[arrayIndex] = new ReferenceCountingFutureWrapper(CompletableFuture.completedFuture(null));
 			}
 		}
 		
