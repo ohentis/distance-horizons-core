@@ -491,7 +491,7 @@ public class ClientApi
 			this.showMigrationMessage = false;
 			
 			MC.sendChatMessage("Old Distant Horizons data is being migrated.");
-			MC.sendChatMessage("While running LODs may load slowly and DH world gen is disabled.");
+			MC.sendChatMessage("During migration LODs may load slowly and DH world gen is disabled.");
 			MC.sendChatMessage("");
 		}
 		
