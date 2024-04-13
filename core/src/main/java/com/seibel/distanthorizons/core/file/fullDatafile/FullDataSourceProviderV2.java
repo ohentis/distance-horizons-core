@@ -317,9 +317,41 @@ public class FullDataSourceProviderV2
 		String dimensionName = this.level.getLevelWrapper().getDimensionType().getDimensionName();
 		LOGGER.info("Attempting to migrate data sources for: ["+dimensionName+"]-["+this.saveDir+"]...");
 		
+		
+		
+		//============================//
+		// delete unused data sources //
+		//============================//
+		
+		// this could be done all at once via SQL, 
+		// but doing it in chunks prevents locking the database for long periods of time 
+		long unusedCount = 0;
+		long totalUnusedCount = this.legacyFileHandler.repo.getUnusedDataSourceCount();
+		if (totalUnusedCount != 0)
+		{
+			LOGGER.info("deleting [" + dimensionName + "] - ["+totalUnusedCount+"] unused data sources...");
+
+			ArrayList<String> unusedDataPosList = this.legacyFileHandler.repo.getUnusedDataSourcePositionStringList(100);
+			while (unusedDataPosList.size() != 0)
+			{
+				this.legacyFileHandler.repo.deleteUnusedLegacyData(unusedDataPosList);
+				unusedCount += unusedDataPosList.size();
+				unusedDataPosList = this.legacyFileHandler.repo.getUnusedDataSourcePositionStringList(100);
+
+				LOGGER.info("Deleting [" + dimensionName + "] - [" + unusedCount + "/" + totalUnusedCount + "]...");
+			}
+
+			LOGGER.info("Done deleting [" + dimensionName + "] - ["+totalUnusedCount+"] unused data sources.");
+		}
+		
+		
+		
+		//=========//
+		// migrate //
+		//=========//
+		
 		int totalCount = this.legacyFileHandler.getDataSourceMigrationCount();
 		LOGGER.info("Found ["+totalCount+"] data sources that need migration.");
-		
 		
 		ArrayList<FullDataSourceV1> legacyDataSourceList = this.legacyFileHandler.getDataSourcesToMigrate(MIGRATION_BATCH_COUNT);
 		if (!legacyDataSourceList.isEmpty())

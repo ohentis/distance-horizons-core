@@ -22,6 +22,7 @@ package com.seibel.distanthorizons.core.sql.repo;
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV1DTO;
+import com.seibel.distanthorizons.coreapi.util.StringUtil;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -233,5 +234,52 @@ public class FullDataSourceV1Repo extends AbstractDhRepo<DhSectionPos, FullDataS
 		this.queryDictionaryFirst(sql);
 	}
 	
+	
+	
+	//======================//
+	// migration - deletion //
+	//======================//
+	
+	/** returns the number of data sources that should be deleted */
+	public long getUnusedDataSourceCount()
+	{
+		Map<String, Object> resultMap = this.queryDictionaryFirst(
+				"select Count(*) as unusedCount from "+this.getTableName()+" where DataDetailLevel <> 0 and DataType <> 'CompleteFullDataSource'");
+		
+		if (resultMap != null)
+		{
+			// Number cast is necessary because the returned number can be an int or long
+			Number resultNumber = (Number) resultMap.get("unusedCount");
+			long count = resultNumber.longValue();
+			return count;
+		}
+		else
+		{
+			return 0;
+		}
+	}
+	
+	/** Returns single quote surrounded {@link DhSectionPos} serailzed values */
+	public ArrayList<String> getUnusedDataSourcePositionStringList(int deleteCount)
+	{
+		List<Map<String, Object>> deletePosResultMapList = this.queryDictionary(
+				"select DhSectionPos from "+this.getTableName()+" where DataDetailLevel <> 0 and DataType <> 'CompleteFullDataSource' limit "+deleteCount);
+		
+		ArrayList<String> deletePosList = new ArrayList<>();
+		for (Map<String, Object> deletePosMap : deletePosResultMapList)
+		{
+			String posString = (String) deletePosMap.get("DhSectionPos");
+			deletePosList.add("'"+posString+"'");
+		}
+		
+		return deletePosList;
+	}
+	
+	/** Expects positions to already be surrounded in single quotes */
+	public void deleteUnusedLegacyData(ArrayList<String> deletePosList)
+	{
+		String sectionPosCsv = StringUtil.join(",", deletePosList);
+		this.queryDictionaryFirst("delete from " + this.getTableName() + " where DhSectionPos in (" + sectionPosCsv + ")");
+	}
 	
 }
