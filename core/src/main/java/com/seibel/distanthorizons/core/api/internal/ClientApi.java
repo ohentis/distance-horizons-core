@@ -78,6 +78,8 @@ public class ClientApi
 	public static final long SPAM_LOGGER_FLUSH_NS = TimeUnit.NANOSECONDS.convert(1, TimeUnit.SECONDS);
 	
 	private boolean configOverrideReminderPrinted = false;
+	private boolean showMigrationMessage = false;
+	
 	public boolean rendererDisabledBecauseOfExceptions = false;
 	
 	private long lastFlushNanoTime = 0;
@@ -470,6 +472,7 @@ public class ClientApi
 	{
 		// logging //
 		
+		// dev build
 		if (ModInfo.IS_DEV_BUILD && !this.configOverrideReminderPrinted && MC.playerExists())
 		{
 			this.configOverrideReminderPrinted = true;
@@ -478,6 +481,18 @@ public class ClientApi
 			MC.sendChatMessage("Distant Horizons nightly experimental build version [" + ModInfo.VERSION+"].");
 			MC.sendChatMessage("You are running an unsupported version of Distant Horizons!");
 			MC.sendChatMessage("Here be dragons!");
+			MC.sendChatMessage("");
+		}
+		
+		// data migration
+		if (this.showMigrationMessage
+			&& Config.Client.Advanced.LodBuilding.showMigrationChatWarning.get())
+		{
+			this.showMigrationMessage = false;
+			
+			MC.sendChatMessage("Old Distant Horizons data is being migrated.");
+			MC.sendChatMessage("While running LODs may load slowly and DH world gen is disabled.");
+			MC.sendChatMessage("");
 		}
 		
 		IProfilerWrapper profiler = MC.getProfiler();
@@ -629,5 +644,7 @@ public class ClientApi
 		}
 	}
 	
+	// TODO there's probably a better way of handling chat messages
+	public void showMigrationMessageOnNextFrame() { this.showMigrationMessage = true; }
 	
 }

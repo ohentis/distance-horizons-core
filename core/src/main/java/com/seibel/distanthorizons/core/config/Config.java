@@ -805,6 +805,13 @@ public class Config
 								+ "")
 						.build();
 				
+				public static ConfigEntry<Boolean> showMigrationChatWarning = new ConfigEntry.Builder<Boolean>()
+						.set(true)
+						.comment(""
+								+ "Determines if a message should be displayed in the chat when LOD migration starts. \n"
+								+ "")
+						.build();
+				
 			}
 			
 			public static class Multiplayer

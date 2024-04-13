@@ -20,9 +20,11 @@
 package com.seibel.distanthorizons.core.file.fullDatafile;
 
 import com.seibel.distanthorizons.api.enums.config.EDhApiDataCompressionMode;
+import com.seibel.distanthorizons.core.api.internal.ClientApi;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV1;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
+import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.file.AbstractNewDataSourceHandler;
 import com.seibel.distanthorizons.core.level.IDhLevel;
@@ -34,6 +36,7 @@ import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV2DTO;
 import com.seibel.distanthorizons.core.sql.repo.FullDataSourceV2Repo;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
+import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
@@ -56,6 +59,7 @@ public class FullDataSourceProviderV2
 		implements IDebugRenderable
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	private static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	
 	protected static final int NUMBER_OF_PARENT_UPDATE_TASKS_PER_THREAD = 50;
 	/** how many parent update tasks can be in the queue at once */
@@ -73,6 +77,9 @@ public class FullDataSourceProviderV2
 	 * to make sure the thread doesn't get stuck.
 	 */
 	private static final int MIGRATION_MAX_UPDATE_TIMEOUT_IN_MS = 5 * 60 * 1_000;
+	
+	
+	private static boolean migrationMessageShown = false;
 	
 	
 	protected final ThreadPoolExecutor migrationThreadPool;
@@ -356,6 +363,8 @@ public class FullDataSourceProviderV2
 		ArrayList<FullDataSourceV1> legacyDataSourceList = this.legacyFileHandler.getDataSourcesToMigrate(MIGRATION_BATCH_COUNT);
 		if (!legacyDataSourceList.isEmpty())
 		{
+			ClientApi.INSTANCE.showMigrationMessageOnNextFrame();
+			
 			// keep going until every data source has been migrated
 			int progressCount = 0;
 			while (!legacyDataSourceList.isEmpty() && this.migrationThreadRunning.get())
@@ -429,6 +438,8 @@ public class FullDataSourceProviderV2
 		
 		this.migrationThreadRunning.set(false);
 	}
+	
+	public int getMigrationCount() { return this.legacyFileHandler.getDataSourceMigrationCount(); }
 	
 	
 	

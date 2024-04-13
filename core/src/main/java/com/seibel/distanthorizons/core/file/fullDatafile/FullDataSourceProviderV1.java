@@ -148,7 +148,7 @@ public class FullDataSourceProviderV1<TDhLevel extends IDhLevel>
 	{
 		ArrayList<FullDataSourceV1> dataSourceList = new ArrayList<>();
 		
-		ArrayList<DhSectionPos> migrationPosList = ((FullDataSourceV1Repo) this.repo).getPositionsToMigrate(limit);
+		ArrayList<DhSectionPos> migrationPosList = this.repo.getPositionsToMigrate(limit);
 		for (int i = 0; i < migrationPosList.size(); i++)
 		{
 			DhSectionPos pos = migrationPosList.get(i);

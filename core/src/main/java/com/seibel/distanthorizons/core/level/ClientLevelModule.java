@@ -272,6 +272,8 @@ public class ClientLevelModule implements Closeable, AbstractNewDataSourceHandle
 		String updateCompletedTaskSize = (updateExecutor != null) ? updateExecutor.getCompletedTaskCount()+"" : "-";
 		
 		int unsavedDataSourceCount = this.fullDataSourceProvider.getUnsavedDataSourceCount();
+		int migrationCount = this.fullDataSourceProvider.getMigrationCount();
+		
 		
 		
 		ArrayList<String> lines = new ArrayList<>();
@@ -282,6 +284,10 @@ public class ClientLevelModule implements Closeable, AbstractNewDataSourceHandle
 		{
 			lines.add("File Handler [" + dimName + "]");
 			lines.add("  File thread pool tasks: " + fileQueueSize + " (completed: " + fileCompletedTaskSize + ")");
+			if (migrationCount > 0)
+			{
+				lines.add("  Legacy Migration #: " + migrationCount);
+			}
 			lines.add("  Update thread pool tasks: " + updateQueueSize + " (completed: " + updateCompletedTaskSize + ")");
 			lines.add("  Level Unsaved #: " + this.clientLevel.getUnsavedDataSourceCount());
 			if (unsavedDataSourceCount != -1)
