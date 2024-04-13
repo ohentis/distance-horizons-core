@@ -244,7 +244,7 @@ public class FullDataSourceV1Repo extends AbstractDhRepo<DhSectionPos, FullDataS
 	public long getUnusedDataSourceCount()
 	{
 		Map<String, Object> resultMap = this.queryDictionaryFirst(
-				"select Count(*) as unusedCount from "+this.getTableName()+" where DataDetailLevel <> 0 and DataType <> 'CompleteFullDataSource'");
+				"select Count(*) as unusedCount from "+this.getTableName()+" where DataDetailLevel <> 0 or DataType <> 'CompleteFullDataSource'");
 		
 		if (resultMap != null)
 		{
@@ -263,7 +263,7 @@ public class FullDataSourceV1Repo extends AbstractDhRepo<DhSectionPos, FullDataS
 	public ArrayList<String> getUnusedDataSourcePositionStringList(int deleteCount)
 	{
 		List<Map<String, Object>> deletePosResultMapList = this.queryDictionary(
-				"select DhSectionPos from "+this.getTableName()+" where DataDetailLevel <> 0 and DataType <> 'CompleteFullDataSource' limit "+deleteCount);
+				"select DhSectionPos from "+this.getTableName()+" where DataDetailLevel <> 0 or DataType <> 'CompleteFullDataSource' limit "+deleteCount);
 		
 		ArrayList<String> deletePosList = new ArrayList<>();
 		for (Map<String, Object> deletePosMap : deletePosResultMapList)
