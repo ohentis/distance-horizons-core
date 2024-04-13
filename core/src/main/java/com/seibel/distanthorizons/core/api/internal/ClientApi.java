@@ -176,7 +176,7 @@ public class ClientApi
 				// can happen on certain multiverse servers
 				return;
 			}
-			LOGGER.info("Unloading client level [" + level + "].");
+			LOGGER.info("Unloading client level [" + level + "]-["+level.getDimensionType().getDimensionName()+"].");
 			
 			AbstractDhWorld world = SharedApi.getAbstractDhWorld();
 			if (world != null)
@@ -215,7 +215,7 @@ public class ClientApi
 			
 			
 			
-			LOGGER.info("Loading " + (isServerCommunication ? "Multiverse" : "") + " client level [" + level + "].");
+			LOGGER.info("Loading " + (isServerCommunication ? "Multiverse" : "") + " client level [" + level + "]-["+level.getDimensionType().getDimensionName()+"].");
 			
 			AbstractDhWorld world = SharedApi.getAbstractDhWorld();
 			if (world != null)
