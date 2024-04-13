@@ -163,7 +163,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 					LodRenderSection renderSection = this.getValue(pos);
 					if (renderSection != null && renderSection.renderingEnabled)
 					{
-						renderSection.loadRenderSourceAsync();
+						renderSection.uploadRenderDataToGpuAsync();
 					}
 				}
 				catch (IndexOutOfBoundsException e)
@@ -176,6 +176,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 		
 		// walk through each root node
 		ArrayList<LodRenderSection> nodesNeedingRetrieval = new ArrayList<>();
+		ArrayList<LodRenderSection> nodesNeedingLoading = new ArrayList<>();
 		Iterator<DhSectionPos> rootPosIterator = this.rootNodePosIterator();
 		while (rootPosIterator.hasNext())
 		{
@@ -183,11 +184,11 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 			DhSectionPos rootPos = rootPosIterator.next();
 			if (this.getNode(rootPos) == null)
 			{
-				this.setValue(rootPos, new LodRenderSection(rootPos, this.level, this.fullDataSourceProvider));
+				this.setValue(rootPos, new LodRenderSection(rootPos, this, this.level, this.fullDataSourceProvider));
 			}
 			
 			QuadNode<LodRenderSection> rootNode = this.getNode(rootPos);
-			this.recursivelyUpdateRenderSectionNode(playerPos, rootNode, rootNode, rootNode.sectionPos, false, nodesNeedingRetrieval);
+			this.recursivelyUpdateRenderSectionNode(playerPos, rootNode, rootNode, rootNode.sectionPos, false, nodesNeedingRetrieval, nodesNeedingLoading);
 		}
 		
 		
@@ -197,13 +198,32 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 			this.fullDataRetrievalQueueRunning.set(true);
 			FULL_DATA_RETRIEVAL_QUEUE_THREAD.execute(() -> this.queueFullDataRetrievalTasks(playerPos, nodesNeedingRetrieval));
 		}
+		
+		
+		nodesNeedingLoading.sort((a, b) ->
+		{
+			int aDist = a.pos.getManhattanBlockDistance(playerPos);
+			int bDist = b.pos.getManhattanBlockDistance(playerPos);
+			return Integer.compare(aDist, bDist);
+		});
+		
+		for (int i = 0; i < nodesNeedingLoading.size(); i++)
+		{
+			LodRenderSection renderSection = nodesNeedingLoading.get(i);
+			if (!renderSection.gpuUploadInProgress() && renderSection.renderBuffer == null)
+			{
+				renderSection.uploadRenderDataToGpuAsync();
+			}
+		}
+		
 	}
 	/** @return whether the current position is able to render (note: not if it IS rendering, just if it is ABLE to.) */
 	private boolean recursivelyUpdateRenderSectionNode(
 			DhBlockPos2D playerPos, 
 			QuadNode<LodRenderSection> rootNode, QuadNode<LodRenderSection> quadNode, DhSectionPos sectionPos, 
 			boolean parentRenderSectionIsEnabled,
-			ArrayList<LodRenderSection> nodesNeedingRetrieval)
+			ArrayList<LodRenderSection> nodesNeedingRetrieval,
+			ArrayList<LodRenderSection> nodesNeedingLoading)
 	{
 		//===============================//
 		// node and render section setup //
@@ -212,7 +232,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 		// make sure the node is created
 		if (quadNode == null && this.isSectionPosInBounds(sectionPos)) // the position bounds should only fail when at the edge of the user's render distance
 		{
-			rootNode.setValue(sectionPos, new LodRenderSection(sectionPos, this.level, this.fullDataSourceProvider));
+			rootNode.setValue(sectionPos, new LodRenderSection(sectionPos, this, this.level, this.fullDataSourceProvider));
 			quadNode = rootNode.getNode(sectionPos);
 		}
 		if (quadNode == null)
@@ -226,7 +246,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 		// create a new render section if missing
 		if (renderSection == null)
 		{
-			LodRenderSection newRenderSection = new LodRenderSection(sectionPos, this.level, this.fullDataSourceProvider);
+			LodRenderSection newRenderSection = new LodRenderSection(sectionPos, this, this.level, this.fullDataSourceProvider);
 			rootNode.setValue(sectionPos, newRenderSection);
 			
 			renderSection = newRenderSection; // TODO this never seemed to be called, is it necessary?
@@ -258,7 +278,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 				DhSectionPos childPos = childPosIterator.next();
 				QuadNode<LodRenderSection> childNode = rootNode.getNode(childPos);
 				
-				boolean childSectionLoaded = this.recursivelyUpdateRenderSectionNode(playerPos, rootNode, childNode, childPos, canThisPosRender || parentRenderSectionIsEnabled, nodesNeedingRetrieval);
+				boolean childSectionLoaded = this.recursivelyUpdateRenderSectionNode(playerPos, rootNode, childNode, childPos, canThisPosRender || parentRenderSectionIsEnabled, nodesNeedingRetrieval, nodesNeedingLoading);
 				allChildrenSectionsAreLoaded = childSectionLoaded && allChildrenSectionsAreLoaded;
 			}
 			
@@ -279,7 +299,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 					DhSectionPos childPos = childPosIterator.next();
 					QuadNode<LodRenderSection> childNode = rootNode.getNode(childPos);
 					
-					boolean childSectionLoaded = this.recursivelyUpdateRenderSectionNode(playerPos, rootNode, childNode, childPos, parentRenderSectionIsEnabled, nodesNeedingRetrieval);
+					boolean childSectionLoaded = this.recursivelyUpdateRenderSectionNode(playerPos, rootNode, childNode, childPos, parentRenderSectionIsEnabled, nodesNeedingRetrieval, nodesNeedingLoading);
 					allChildrenSectionsAreLoaded = childSectionLoaded && allChildrenSectionsAreLoaded;
 				}
 				if (!allChildrenSectionsAreLoaded)
@@ -310,9 +330,9 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 			{
 				// prepare this section for rendering
 				// TODO this should fire for the lowest detail level first to improve loading speed
-				if (!renderSection.loadingRenderSource() && renderSection.renderBuffer == null)
+				if (!renderSection.gpuUploadInProgress() && renderSection.renderBuffer == null)
 				{
-					renderSection.loadRenderSourceAsync();
+					nodesNeedingLoading.add(renderSection);
 				}
 				
 				// wait for the parent to disable before enabling this section, so we don't overdraw/overlap render sections
