@@ -27,6 +27,7 @@ import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
+import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.render.glObject.GLProxy;
 import com.seibel.distanthorizons.core.render.glObject.buffer.GLVertexBuffer;
 import com.seibel.distanthorizons.core.util.LodUtil;
@@ -88,14 +89,17 @@ public class ColumnRenderBufferBuilder
 						
 						//EVENT_LOGGER.trace("RenderRegion start QuadBuild @ " + renderSource.sectionPos);
 						boolean enableSkyLightCulling =
-								(
+								Config.Client.Advanced.Graphics.AdvancedGraphics.enableCaveCulling.get()
+								&& (
 									// dimensions with a ceiling will be all caves so we don't want cave culling
 									!clientLevel.getLevelWrapper().hasCeiling()
 									// the end has a lot of overhangs with 0 lighting above the void, which look broken with
 									// the current cave culling logic (this could probably be improved, but just skipping it works best for now)
 									&& !clientLevel.getLevelWrapper().getDimensionType().isTheEnd()
-								)
-								&& Config.Client.Advanced.Graphics.AdvancedGraphics.enableCaveCulling.get();
+									// FIXME temporary fix
+									//  Cave culling is currently broken for any detail level above 0
+									&& renderSource.pos.getDetailLevel() == DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL
+								);
 						
 						int skyLightCullingBelow = Config.Client.Advanced.Graphics.AdvancedGraphics.caveCullingHeight.get();
 						// FIXME: Clamp also to the max world height.
