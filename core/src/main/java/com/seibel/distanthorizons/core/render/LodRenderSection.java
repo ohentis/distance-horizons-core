@@ -192,6 +192,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		}, executor);
 	}
 	/** Should be called on the {@link ThreadPoolUtil#getFileHandlerExecutor()} */
+	@SuppressWarnings("unchecked") // creating an array of CompletableFuture's is unchecked, unfortunately I don't currently see a better fix
 	private CompletableFuture<ColumnRenderSource>[] getNeighborRenderSourcesAsync()
 	{
 		CompletableFuture<ColumnRenderSource>[] futureArray = new CompletableFuture[EDhDirection.ADJ_DIRECTIONS.length];
