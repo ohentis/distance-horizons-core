@@ -174,25 +174,21 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 					{
 						long dataPoint = legacyDataColumn[i];
 						
-						int id = FullDataPointUtil.getId(dataPoint);
-						int height = FullDataPointUtil.getHeight(dataPoint);
-						int bottomY = FullDataPointUtil.getBottomY(dataPoint);
+						boolean isAir = legacyData.mapping.getBlockStateWrapper(FullDataPointUtil.getId(dataPoint)).isAir;
 						byte blockLight = (byte) FullDataPointUtil.getBlockLight(dataPoint);
-						byte skyLight = (byte) FullDataPointUtil.getSkyLight(dataPoint);
-						
-						IBlockStateWrapper blockState = legacyData.mapping.getBlockStateWrapper(id);
-						if (blockState.isAir())
+
+						if (isAir)
 						{
 							// air shouldn't have any light, otherwise down sampling will look weird
 							blockLight = 0;
 						}
 						
-						long newDataPoint = FullDataPointUtil.encode(id, height, bottomY, blockLight, skyLight);
-						newDataColumn.set(i, newDataPoint);
+						dataPoint = FullDataPointUtil.setBlockLight(dataPoint, blockLight);
+						newDataColumn.set(i, dataPoint);
 						
 						
 						// check if this datapoint is air
-						if (!columnHasNonAirBlock && !blockState.isAir())
+						if (!columnHasNonAirBlock && !isAir)
 						{
 							columnHasNonAirBlock = true;
 						}
