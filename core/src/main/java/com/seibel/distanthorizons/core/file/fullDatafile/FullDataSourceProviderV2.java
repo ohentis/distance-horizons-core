@@ -427,7 +427,7 @@ public class FullDataSourceProviderV2
 					catch (Exception e)
 					{
 						DhSectionPos migrationPos = legacyDataSource.getPos();
-						LOGGER.error("Unexpected issue migrating data source at pos " + migrationPos + ". Error: " + e.getMessage(), e);
+						LOGGER.warn("Unexpected issue migrating data source at pos " + migrationPos + ". Error: " + e.getMessage(), e);
 						this.legacyFileHandler.markMigrationFailed(migrationPos);
 					}
 				}

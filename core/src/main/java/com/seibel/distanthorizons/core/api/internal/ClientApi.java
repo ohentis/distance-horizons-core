@@ -488,11 +488,11 @@ public class ClientApi
 		
 		// data migration
 		if (this.showMigrationMessageNextFrame 
-			&& this.migrationMessageShown
+			&& !this.migrationMessageShown
 			&& Config.Client.Advanced.LodBuilding.showMigrationChatWarning.get())
 		{
 			this.showMigrationMessageNextFrame  = false;
-			this.migrationMessageShown = false;
+			this.migrationMessageShown = true;
 			
 			MC.sendChatMessage("Old Distant Horizons data is being migrated.");
 			MC.sendChatMessage("During migration LODs may load slowly and DH world gen is disabled.");
