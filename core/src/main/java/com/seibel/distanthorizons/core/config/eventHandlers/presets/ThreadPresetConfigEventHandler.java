@@ -73,13 +73,13 @@ public class ThreadPresetConfigEventHandler extends AbstractPresetConfigEventHan
 				this.put(EDhApiThreadPreset.AGGRESSIVE, getThreadCountByPercent(0.2));
 				this.put(EDhApiThreadPreset.I_PAID_FOR_THE_WHOLE_CPU, getThreadCountByPercent(1.0));
 			}});
-	public static double getFileHandlerDefaultRunTimeRatio() { return 0.5; }
+	public static double getFileHandlerDefaultRunTimeRatio() { return 0.75; }
 	private final ConfigEntryWithPresetOptions<EDhApiThreadPreset, Double> fileHandlerRunTime = new ConfigEntryWithPresetOptions<>(Config.Client.Advanced.MultiThreading.runTimeRatioForFileHandlerThreads,
 			new HashMap<EDhApiThreadPreset, Double>()
 			{{
-				this.put(EDhApiThreadPreset.MINIMAL_IMPACT, 0.25);
+				this.put(EDhApiThreadPreset.MINIMAL_IMPACT, 0.50);
 				this.put(EDhApiThreadPreset.LOW_IMPACT, getFileHandlerDefaultRunTimeRatio());
-				this.put(EDhApiThreadPreset.BALANCED, 0.75);
+				this.put(EDhApiThreadPreset.BALANCED, 1.0);
 				this.put(EDhApiThreadPreset.AGGRESSIVE, 1.0);
 				this.put(EDhApiThreadPreset.I_PAID_FOR_THE_WHOLE_CPU, 1.0);
 			}});
