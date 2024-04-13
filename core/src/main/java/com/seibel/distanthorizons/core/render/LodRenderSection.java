@@ -33,7 +33,6 @@ import com.seibel.distanthorizons.core.render.glObject.GLProxy;
 import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
 import com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.ColumnRenderBuffer;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
-import com.seibel.distanthorizons.core.util.TimerUtil;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import org.apache.logging.log4j.Logger;
 
@@ -41,9 +40,10 @@ import javax.annotation.WillNotClose;
 import java.awt.*;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * A render section represents an area that could be rendered.
@@ -53,17 +53,6 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
-	/**
-	 * Only the adjacent render sources should be cached to prevent accidentally using cached data when the LOD data was changed.
-	 * This cache should really only be used when initially loading LODs or generating new terrain.
-	 */
-	private static final ConcurrentHashMap<DhSectionPos, ColumnRenderSource> ADJACENT_RENDER_SOURCE_BY_POS = new ConcurrentHashMap<>();
-	
-	private static final ConcurrentHashMap<DhSectionPos, TimerTask> RENDER_SOURCE_CLOSING_TIMER_TASK_BY_POS = new ConcurrentHashMap<>();
-	private static final Timer RENDER_SOURCE_CACHE_REMOVAL_TIMER = TimerUtil.CreateTimer("LodRenderSection Render Source Cache Removal Timer");
-	
-	public static final long RENDER_CACHE_EXPIRATION_TIME_IN_MS = 4000L; 
-	
 	
 	
 	public final DhSectionPos pos;
@@ -71,16 +60,25 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	private final IDhClientLevel level;
 	@WillNotClose
 	private final FullDataSourceProviderV2 fullDataSourceProvider;
+	private final LodQuadTree quadTree;
 	
 	
 	public boolean renderingEnabled = false;
+	private boolean canRender = false;
 	
 	/** this reference is necessary so we can determine what VBO to render */
 	public ColumnRenderBuffer renderBuffer; 
 	
 	
-	private CompletableFuture<Void> renderSourceLoadingFuture = null;
-	private boolean canRender = false;
+	/** 
+	 * Encapsulates everything between pulling data from the database (including neighbors)
+	 * up to the point when geometry data is uploaded to the GPU.
+	 */
+	private CompletableFuture<Void> uploadRenderDataToGpuFuture = null;
+	
+	private final ReentrantLock getRenderSourceLock = new ReentrantLock();
+	/** Used to track this position's render data loading */
+	private ReferenceCountingFutureWrapper renderSourceLoadingFuture = null;
 	
 	private boolean missingPositionsCalculated = false;
 	/** should be an empty array if no positions need to be generated */
@@ -92,9 +90,10 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	// constructor //
 	//=============//
 	
-	public LodRenderSection(DhSectionPos pos, IDhClientLevel level, FullDataSourceProviderV2 fullDataSourceProvider)
+	public LodRenderSection(DhSectionPos pos, LodQuadTree quadTree, IDhClientLevel level, FullDataSourceProviderV2 fullDataSourceProvider)
 	{
 		this.pos = pos;
+		this.quadTree = quadTree;
 		this.level = level;
 		this.fullDataSourceProvider = fullDataSourceProvider;
 		
@@ -103,11 +102,11 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	
 	
 	
-	//=============//
-	// render data //
-	//=============//
+	//===============================//
+	// render data loading/uploading //
+	//===============================//
 	
-	public void loadRenderSourceAsync()
+	public void uploadRenderDataToGpuAsync()
 	{
 		if (!GLProxy.hasInstance())
 		{
@@ -116,148 +115,183 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 			return;
 		}
 		
-		if (this.renderSourceLoadingFuture != null)
+		if (this.uploadRenderDataToGpuFuture != null)
 		{
+			// don't accidentally queue multiple uploads at the same time
 			return;
 		}
 		
 		
 		
-		// run on the file handler pool since a number of operations
-		// require a number of database hits
 		ThreadPoolExecutor executor = ThreadPoolUtil.getFileHandlerExecutor();
 		if (executor == null || executor.isTerminated())
 		{
 			return;
 		}
 		
-		
-		this.renderSourceLoadingFuture = CompletableFuture.runAsync(() -> 
+		this.uploadRenderDataToGpuFuture = CompletableFuture.runAsync(() -> 
 		{
-			FullDataSourceV2 fullDataSource = null;
-			ColumnRenderSource renderSource = null;
-			
-			try
+			ReferenceCountingFutureWrapper thisRenderSourceFutureWrapper = this.getRenderSourceAsync();
+			thisRenderSourceFutureWrapper.future.thenAccept((renderSource) ->
 			{
-				// get this positions data source
-				fullDataSource = this.fullDataSourceProvider.get(this.pos);
-				if (fullDataSource == null)
-				{
-					// the file handler is being shut down, we won't be rendering anything anyway
-					return;
-				}
-				
-				renderSource = FullDataToRenderDataTransformer.transformFullDataToRenderSource(fullDataSource, this.level);
-				if (renderSource.isEmpty())
-				{
-					// nothing needs to be rendered
-					this.canRender = false;
-					return;
-				}
-				
-				
-				ColumnRenderSource[] adjacentRenderSections = this.getAndCreateNeighborRenderSources();
-				
-				ColumnRenderBuffer previousBuffer = this.renderBuffer;
-				
-				CompletableFuture<ColumnRenderBuffer> uploadFuture = ColumnRenderBufferBuilder.buildAndUploadBuffersAsync(this.level, renderSource, adjacentRenderSections);
-				this.renderBuffer = uploadFuture.join();
-				
-				if (previousBuffer != null)
-				{
-					previousBuffer.close();
-				}
-				
-				this.canRender = true;
-			}
-			catch (Exception e)
-			{
-				LOGGER.error("Unexpected error in LodRenderSection loading, Error: "+e.getMessage(), e);
-			}
-			finally
-			{
-				// clean up pooled data sources
 				try
 				{
-					if (fullDataSource != null)
+					if (renderSource == null || renderSource.isEmpty())
 					{
-						fullDataSource.close();
+						// nothing needs to be rendered
+						this.canRender = false;
+						thisRenderSourceFutureWrapper.decrementRefCount();
+						return;
 					}
 					
-					if (renderSource != null)
+					
+					
+					//=================================//
+					// get the neighbor render sources //
+					//=================================//
+					
+					ReferenceCountingFutureWrapper[] adjacentLoadFutureWrappers = this.getNeighborRenderSourcesAsync();
+					CompletableFuture<?>[] adjacentLoadFutures = new CompletableFuture<?>[adjacentLoadFutureWrappers.length];
+					for (int i = 0; i < adjacentLoadFutureWrappers.length; i++)
 					{
-						renderSource.close();
+						adjacentLoadFutures[i] = adjacentLoadFutureWrappers[i].future;
 					}
+					
+					
+					
+					//==============================//
+					// build/upload new render data //
+					//==============================//
+					
+					CompletableFuture.allOf(adjacentLoadFutures).thenRun(() ->
+					{
+						try
+						{
+							ColumnRenderBuffer previousBuffer = this.renderBuffer;
+							
+							ColumnRenderSource[] adjacentRenderSections = new ColumnRenderSource[EDhDirection.ADJ_DIRECTIONS.length];
+							for (int i = 0; i < EDhDirection.ADJ_DIRECTIONS.length; i++)
+							{
+								adjacentRenderSections[i] = adjacentLoadFutureWrappers[i].future.getNow(null);
+							}
+							ColumnRenderBufferBuilder.buildAndUploadBuffersAsync(this.level, renderSource, adjacentRenderSections).thenAccept((buffer) ->
+							{
+								// upload complete, clean up the old data if 
+								this.renderBuffer = buffer;
+								this.canRender = true;
+								this.uploadRenderDataToGpuFuture = null;
+								
+								
+								
+								//=========//
+								// cleanup //
+								//=========//
+								
+								// the old buffer isn't needed anymore
+								if (previousBuffer != null)
+								{
+									previousBuffer.close();
+								}
+								
+								// if these render sources aren't needed anymore they can be put back in the pool
+								try
+								{
+									thisRenderSourceFutureWrapper.decrementRefCount();
+									
+									for (ReferenceCountingFutureWrapper adjLoadFutureWrapper : adjacentLoadFutureWrappers)
+									{
+										adjLoadFutureWrapper.decrementRefCount();
+									}
+								}
+								catch (Exception ignore) { }
+							});
+						}
+						catch (Exception e)
+						{
+							LOGGER.error("Unexpected error in LodRenderSection loading, Error: "+e.getMessage(), e);
+							this.uploadRenderDataToGpuFuture = null;
+						}
+					});
 				}
-				catch (Exception ignore){ }
-				
-				this.renderSourceLoadingFuture = null;
-			}
+				catch (Exception e)
+				{
+					LOGGER.error("Unexpected error in LodRenderSection loading, Error: "+e.getMessage(), e);
+					this.uploadRenderDataToGpuFuture = null;
+				}
+			});
 		}, executor);
 	}
 	/** Should be called on the {@link ThreadPoolUtil#getFileHandlerExecutor()} */
-	private ColumnRenderSource[] getAndCreateNeighborRenderSources()
+	private ReferenceCountingFutureWrapper[] getNeighborRenderSourcesAsync()
 	{
-		ColumnRenderSource[] adjacentRenderSections = new ColumnRenderSource[EDhDirection.ADJ_DIRECTIONS.length];
-		//for (EDhDirection direction : EDhDirection.ADJ_DIRECTIONS)
-		//{
-		//	DhSectionPos adjPos = this.pos.getAdjacentPos(direction);
-		//	
-		//	ColumnRenderSource renderSource = ADJACENT_RENDER_SOURCE_BY_POS.compute(adjPos, this::computeCachedRenderSource);
-		//	adjacentRenderSections[direction.ordinal() - 2] = renderSource;
-		//}
-		
-		return adjacentRenderSections;
-	}
-	private ColumnRenderSource computeCachedRenderSource(DhSectionPos pos, ColumnRenderSource oldRenderSource)
-	{
-		try (FullDataSourceV2 fullDataSource = this.fullDataSourceProvider.get(pos))
+		ReferenceCountingFutureWrapper[] futureArray = new ReferenceCountingFutureWrapper[EDhDirection.ADJ_DIRECTIONS.length];
+		for (int i = 0; i < EDhDirection.ADJ_DIRECTIONS.length; i++)
 		{
-			// use the old render source if it isn't null
-			if (oldRenderSource == null)
-			{
-				oldRenderSource = FullDataToRenderDataTransformer.transformFullDataToRenderSource(fullDataSource, this.level);
-			}
-			
-			// create a new timer task to reset the cache timeout
-			TimerTask timerTask = RENDER_SOURCE_CLOSING_TIMER_TASK_BY_POS.compute(pos, (timerPos, oldTimerTask) ->
-			{
-				if (oldTimerTask != null)
-				{
-					oldTimerTask.cancel();
-				}
-				
-				return new TimerTask()
-				{
-					@Override
-					public void run()
-					{
-						// remove the finished task
-						RENDER_SOURCE_CLOSING_TIMER_TASK_BY_POS.remove(pos);
-						
-						// return the pooled data source if present
-						ColumnRenderSource expiredRenderSource = ADJACENT_RENDER_SOURCE_BY_POS.remove(pos);
-						if (expiredRenderSource != null)
-						{
-							try { expiredRenderSource.close(); } catch (Exception ignored) { }
-						}
-						
-						//LOGGER.info("cache size " +cachedNeighborSections.size()+"  pool size:"+ColumnRenderSource.DATA_SOURCE_POOL.size());
-					}
-				};
-			});
+			EDhDirection direction = EDhDirection.ADJ_DIRECTIONS[i];
+			DhSectionPos adjPos = this.pos.getAdjacentPos(direction);
 			try
 			{
-				RENDER_SOURCE_CACHE_REMOVAL_TIMER.schedule(timerTask, RENDER_CACHE_EXPIRATION_TIME_IN_MS);
+				LodRenderSection adjRenderSection = this.quadTree.getValue(adjPos);
+				if (adjRenderSection != null)
+				{
+					futureArray[i] = adjRenderSection.getRenderSourceAsync();
+				}
 			}
-			catch (IllegalStateException ignore) { /* can rarely happen due to some minor concurrency bug with how Timer works. It isn't an issue and can be ignored. */ }
+			catch (IndexOutOfBoundsException ignore) {}
 			
-			return oldRenderSource;
+			if (futureArray[i] == null)
+			{
+				futureArray[i] = new ReferenceCountingFutureWrapper(CompletableFuture.completedFuture(null));
+			}
 		}
-		catch (Exception e)
+		
+		return futureArray;
+	}
+	/** Will try to return the same {@link CompletableFuture} if multiple requests are made for the same position */
+	private ReferenceCountingFutureWrapper getRenderSourceAsync()
+	{
+		try
 		{
-			LOGGER.warn("Unable to get neighbor render source " + this.pos + " - " + pos + ", error: " + e.getMessage(), e);
-			return null;
+			this.getRenderSourceLock.lock();
+			
+			
+			// if a load is already in progress, use that existing one
+			// (this reduces the number of duplicate loads that may happen when initially loading the world)
+			if (this.renderSourceLoadingFuture != null)
+			{
+				this.renderSourceLoadingFuture.incrementRefCount();
+				return this.renderSourceLoadingFuture;
+			}
+			
+			
+			
+			ThreadPoolExecutor executor = ThreadPoolUtil.getFileHandlerExecutor();
+			if (executor == null || executor.isTerminated())
+			{
+				return new ReferenceCountingFutureWrapper(CompletableFuture.completedFuture(null));
+			}
+			
+			CompletableFuture<ColumnRenderSource> future = CompletableFuture.supplyAsync(() ->
+			{
+				try (FullDataSourceV2 fullDataSource = this.fullDataSourceProvider.get(this.pos))
+				{
+					ColumnRenderSource renderSource = FullDataToRenderDataTransformer.transformFullDataToRenderSource(fullDataSource, this.level);
+					this.renderSourceLoadingFuture = null;
+					return renderSource;
+				}
+				catch (Exception e)
+				{
+					LOGGER.warn("Unable to get render source " + this.pos + ", error: " + e.getMessage(), e);
+					this.renderSourceLoadingFuture = null;
+					return null;
+				}
+			}, executor);
+			this.renderSourceLoadingFuture = new ReferenceCountingFutureWrapper(future);
+			return this.renderSourceLoadingFuture;
+		}
+		finally
+		{
+			this.getRenderSourceLock.unlock();
 		}
 	}
 	
@@ -269,7 +303,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	
 	public boolean canRender() { return this.canRender; }
 	
-	public boolean loadingRenderSource() { return this.renderSourceLoadingFuture != null; }
+	public boolean gpuUploadInProgress() { return this.uploadRenderDataToGpuFuture != null; }
 	
 	
 	
@@ -344,9 +378,14 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 			this.renderBuffer.close();
 		}
 		
+		if (this.uploadRenderDataToGpuFuture != null)
+		{
+			this.uploadRenderDataToGpuFuture.cancel(true);
+		}
+		
 		if (this.renderSourceLoadingFuture != null)
 		{
-			this.renderSourceLoadingFuture.cancel(true);
+			this.renderSourceLoadingFuture.future.cancel(true);
 		}
 		
 		
@@ -374,7 +413,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		{
 			color = Color.green;
 		}
-		else if (this.renderSourceLoadingFuture != null)
+		else if (this.uploadRenderDataToGpuFuture != null)
 		{
 			color = Color.yellow;
 		}
@@ -385,5 +424,55 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		
 		debugRenderer.renderBox(new DebugRenderer.Box(this.pos, 400, 8f, Objects.hashCode(this), 0.1f, color));
 	}
+	
+	
+	
+	//================//
+	// helper classes //
+	//================//
+	
+	/** 
+	 * Used to keep track of how many references a given {@link ColumnRenderSource} 
+	 * has, so it can be closed when it's no longer needed. <br><br>
+	 * 
+	 * If the reference counting isn't perfect that's ok.
+	 * This just optimizes loading by putting finished {@link ColumnRenderSource}
+	 * back into the pool to reduce GC overhead, no data will be leaked if they aren't closed.
+	 */
+	private static class ReferenceCountingFutureWrapper
+	{
+		public final CompletableFuture<ColumnRenderSource> future;
+		private final AtomicInteger referenceCount = new AtomicInteger(1);
+		
+		public ReferenceCountingFutureWrapper(CompletableFuture<ColumnRenderSource> future)
+		{
+			this.future = future;
+		}
+		
+		
+		public void incrementRefCount() { this.referenceCount.incrementAndGet(); }
+		public void decrementRefCount() 
+		{ 
+			if (this.referenceCount.decrementAndGet() <= 0)
+			{
+				try
+				{
+					// this logic assumes that the data source has finished loading
+					// if it hasn't finished loading it will just be garbage collected
+					ColumnRenderSource renderSource = this.future.getNow(null);
+					if (renderSource != null)
+					{
+						renderSource.close();
+					}
+				}
+				catch (Exception e)
+				{
+					LOGGER.error(e.getMessage(), e);
+				}
+			}
+		}
+		
+	}
+	
 	
 }
