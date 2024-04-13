@@ -174,7 +174,7 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 					{
 						long dataPoint = legacyDataColumn[i];
 						
-						boolean isAir = legacyData.mapping.getBlockStateWrapper(FullDataPointUtil.getId(dataPoint)).isAir;
+						boolean isAir = legacyData.mapping.getBlockStateWrapper(FullDataPointUtil.getId(dataPoint)).isAir();
 						byte blockLight = (byte) FullDataPointUtil.getBlockLight(dataPoint);
 
 						if (isAir)
