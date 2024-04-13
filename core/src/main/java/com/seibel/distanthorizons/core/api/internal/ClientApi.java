@@ -78,7 +78,9 @@ public class ClientApi
 	public static final long SPAM_LOGGER_FLUSH_NS = TimeUnit.NANOSECONDS.convert(1, TimeUnit.SECONDS);
 	
 	private boolean configOverrideReminderPrinted = false;
-	private boolean showMigrationMessage = false;
+	
+	private boolean migrationMessageShown = false;
+	private boolean showMigrationMessageNextFrame = false;
 	
 	public boolean rendererDisabledBecauseOfExceptions = false;
 	
@@ -485,10 +487,12 @@ public class ClientApi
 		}
 		
 		// data migration
-		if (this.showMigrationMessage
+		if (this.showMigrationMessageNextFrame 
+			&& this.migrationMessageShown
 			&& Config.Client.Advanced.LodBuilding.showMigrationChatWarning.get())
 		{
-			this.showMigrationMessage = false;
+			this.showMigrationMessageNextFrame  = false;
+			this.migrationMessageShown = false;
 			
 			MC.sendChatMessage("Old Distant Horizons data is being migrated.");
 			MC.sendChatMessage("During migration LODs may load slowly and DH world gen is disabled.");
@@ -645,6 +649,6 @@ public class ClientApi
 	}
 	
 	// TODO there's probably a better way of handling chat messages
-	public void showMigrationMessageOnNextFrame() { this.showMigrationMessage = true; }
+	public void showMigrationMessageOnNextFrame() { this.showMigrationMessageNextFrame = true; }
 	
 }
