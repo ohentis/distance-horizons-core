@@ -125,7 +125,7 @@ public class NettyClient extends NettyEventSource implements INettyConnection, A
 		
 		// Remove IPv6 brackets
 		host = host.replaceAll("[\\[\\]]", "");
-		this.address = new InetSocketAddress(host port);
+		this.address = new InetSocketAddress(host, port);
 		
 		if (this.channel != null)
 		{

@@ -75,6 +75,7 @@ public class ClientNetworkState implements Closeable
 	
 	private void onConfigChanged()
 	{
+		this.configReceived = false;
 		this.getClient().sendMessage(new RemotePlayerConfigMessage(new MultiplayerConfig()));
 	}
 	
