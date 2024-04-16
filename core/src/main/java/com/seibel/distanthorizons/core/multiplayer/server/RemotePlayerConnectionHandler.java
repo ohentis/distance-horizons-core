@@ -27,6 +27,7 @@ import org.apache.logging.log4j.LogManager;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.Closeable;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -151,7 +152,11 @@ public class RemotePlayerConnectionHandler implements Closeable
 				// If the message can be replied to - reply with error, otherwise just ignore
 				if (msg instanceof TrackableNettyMessage)
 				{
-					((TrackableNettyMessage) msg).sendResponse(new InvalidLevelException("Invalid level"));
+					((TrackableNettyMessage) msg).sendResponse(new InvalidLevelException(MessageFormat.format(
+							"Generation not allowed. Requested dimension: {0}, player dimension: {1}",
+							level.getLevelWrapper().getDimensionType().getDimensionName(),
+							serverPlayerState.serverPlayer.getLevel().getDimensionType().getDimensionName()
+					)));
 				}
 				
 				return;
