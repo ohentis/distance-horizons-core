@@ -898,8 +898,8 @@ public class Config
 							.setAppearance(EConfigEntryAppearance.ONLY_IN_FILE)
 							.set("")
 							.comment(""
-									+ "Overrides the IP address that is sent to the client for connecting to DH server."
-									+ "Leave empty to let client use the IP used to connect to the MC server."
+									+ "Overrides the IP address that is sent to the client for connecting to DH server.\n"
+									+ "Leave empty to let client use the IP used to connect to the MC server.\n"
 									+ "")
 							.build();
 					public static ConfigEntry<Integer> connectPortOverride = new ConfigEntry.Builder<Integer>()
@@ -907,8 +907,8 @@ public class Config
 							.setAppearance(EConfigEntryAppearance.ONLY_IN_FILE)
 							.setMinDefaultMax(0, 0, 65535)
 							.comment(""
-									+ "Overrides the port that is sent to the client for connecting to DH server."
-									+ "Set to 0 to use port from serverPort."
+									+ "Overrides the port that is sent to the client for connecting to DH server.\n"
+									+ "Set to 0 to use port from serverPort.\n"
 									+ "")
 							.build();
 					
