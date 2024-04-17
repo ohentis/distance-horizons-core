@@ -49,7 +49,7 @@ public class NettyChannelInitializer extends ChannelInitializer<SocketChannel>
 		ChannelPipeline pipeline = socketChannel.pipeline();
 		
 		// Encoder
-		pipeline.addLast(new FlushConsolidationHandler(FlushConsolidationHandler.DEFAULT_EXPLICIT_FLUSH_AFTER_FLUSHES, true));
+		pipeline.addLast(new FlushConsolidationHandler(256, true));
 		pipeline.addLast(new LengthFieldPrepender(Integer.BYTES));
 		pipeline.addLast(new MessageEncoder<>(NettyMessageRegistry.INSTANCE, NettyMessage.class));
 		pipeline.addLast(new NettyOutboundExceptionRouter());
