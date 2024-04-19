@@ -131,10 +131,23 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		
 		this.uploadRenderDataToGpuFuture = CompletableFuture.runAsync(() -> 
 		{
-			this.getRenderSourceAsync().thenAccept((renderSource) ->
+			//==================//
+			// load render data //
+			//==================//
+			
+			CompletableFuture<ColumnRenderSource> thisLoadFuture = this.getRenderSourceAsync();
+			CompletableFuture<ColumnRenderSource>[] adjacentLoadFutures = this.getNeighborRenderSourcesAsync();
+			
+			// wait for all futures to complete together,
+			// merging the futures makes loading significantly faster than loading this position then loading the neighbors
+			ArrayList<CompletableFuture<ColumnRenderSource>> futureList = new ArrayList<>();
+			futureList.add(thisLoadFuture);
+			futureList.addAll(Arrays.asList(adjacentLoadFutures));
+			CompletableFuture.allOf(futureList.toArray(new CompletableFuture[0])).thenAccept((voidObj) ->
 			{
 				try
 				{
+					ColumnRenderSource renderSource = thisLoadFuture.get();
 					if (renderSource == null || renderSource.isEmpty())
 					{
 						// nothing needs to be rendered
@@ -144,44 +157,38 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 					
 					
 					
-					//=================================//
-					// get the neighbor render sources //
-					//=================================//
-					
-					CompletableFuture<ColumnRenderSource>[] adjacentLoadFutures = this.getNeighborRenderSourcesAsync();
-					
-					
-					
 					//==============================//
 					// build/upload new render data //
 					//==============================//
 					
-					CompletableFuture.allOf(adjacentLoadFutures).thenRun(() ->
+					try
 					{
-						try
+						ColumnRenderBuffer previousBuffer = this.renderBuffer;
+						
+						ColumnRenderSource[] adjacentRenderSections = new ColumnRenderSource[EDhDirection.ADJ_DIRECTIONS.length];
+						for (int i = 0; i < EDhDirection.ADJ_DIRECTIONS.length; i++)
 						{
-							ColumnRenderBuffer previousBuffer = this.renderBuffer;
-							
-							ColumnRenderSource[] adjacentRenderSections = new ColumnRenderSource[EDhDirection.ADJ_DIRECTIONS.length];
-							for (int i = 0; i < EDhDirection.ADJ_DIRECTIONS.length; i++)
-							{
-								adjacentRenderSections[i] = adjacentLoadFutures[i].getNow(null);
-							}
-							ColumnRenderBufferBuilder.buildAndUploadBuffersAsync(this.level, renderSource, adjacentRenderSections).thenAccept((buffer) ->
-							{
-								// upload complete, clean up the old data if 
-								this.renderBuffer = buffer;
-								this.canRender = true;
-								this.uploadRenderDataToGpuFuture = null;
-								
-							});
+							adjacentRenderSections[i] = adjacentLoadFutures[i].getNow(null);
 						}
-						catch (Exception e)
+						ColumnRenderBufferBuilder.buildAndUploadBuffersAsync(this.level, renderSource, adjacentRenderSections).thenAccept((buffer) ->
 						{
-							LOGGER.error("Unexpected error in LodRenderSection loading, Error: "+e.getMessage(), e);
+							// upload complete, clean up the old data if 
+							this.renderBuffer = buffer;
+							this.canRender = true;
 							this.uploadRenderDataToGpuFuture = null;
-						}
-					});
+							
+							
+							if (previousBuffer != null)
+							{
+								previousBuffer.close();
+							}
+						});
+					}
+					catch (Exception e)
+					{
+						LOGGER.error("Unexpected error in LodRenderSection loading, Error: "+e.getMessage(), e);
+						this.uploadRenderDataToGpuFuture = null;
+					}
 				}
 				catch (Exception e)
 				{
