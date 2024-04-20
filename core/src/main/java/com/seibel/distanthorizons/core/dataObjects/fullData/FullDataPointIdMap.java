@@ -61,7 +61,6 @@ public class FullDataPointIdMap
 	private static final String BLOCK_STATE_SEPARATOR_STRING = "_DH-BSW_";
 	
 	
-	// FIXME: Improve performance maybe?
 	/** used when the data point map is running normally */
 	private final ReentrantReadWriteLock readWriteLock = new ReentrantReadWriteLock();
 	
@@ -118,6 +117,7 @@ public class FullDataPointIdMap
 	
 	/** @return -1 if the list is empty */
 	public int getMaxValidId() { return this.entryList.size() - 1; }
+	public boolean isEmpty() { return this.entryList.isEmpty(); }
 	
 	public DhSectionPos getPos() { return this.pos; }
 	

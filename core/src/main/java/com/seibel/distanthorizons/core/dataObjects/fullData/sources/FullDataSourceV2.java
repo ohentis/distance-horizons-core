@@ -223,6 +223,13 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 	public boolean update(@NotNull FullDataSourceV2 inputDataSource, @Nullable IDhLevel level) { return this.update(inputDataSource); }
 	public boolean update(@NotNull FullDataSourceV2 inputDataSource)
 	{
+		// don't try updating if the input is empty
+		if (inputDataSource.mapping.isEmpty())
+		{
+			return false;
+		}
+		
+		
 		byte thisDetailLevel = this.pos.getDetailLevel();
 		byte inputDetailLevel = inputDataSource.pos.getDetailLevel();
 		
