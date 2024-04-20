@@ -260,7 +260,8 @@ public class FullDataSourceProviderV2
 												
 												try (FullDataSourceV2 dataSource = this.get(childPos))
 												{
-													if (dataSource != null) // can return null when the file handler is being shut down
+													// can return null when the file handler is being shut down
+													if (dataSource != null)
 													{
 														this.updateDataSourceAtPos(parentUpdatePos, dataSource, false);
 														this.repo.setApplyToParent(childPos, false);

@@ -98,9 +98,6 @@ public abstract class AbstractNewDataSourceHandler
 	protected abstract TDataSource createDataSourceFromDto(TDTO dto) throws InterruptedException, IOException;
 	protected abstract TDTO createDtoFromDataSource(TDataSource dataSource);
 	
-	/** Creates a new data source using any DTOs already present in the database. */
-	protected abstract TDataSource createNewDataSourceFromExistingDtos(DhSectionPos pos);
-	
 	protected abstract TDataSource makeEmptyDataSource(DhSectionPos pos);
 	
 	
@@ -153,8 +150,10 @@ public abstract class AbstractNewDataSourceHandler
 			}
 			else
 			{
-				// attempt to create from any existing files
-				dataSource = this.createNewDataSourceFromExistingDtos(pos);
+				// TODO does this need any special logic to be populated from the existing DTOs?
+				//  and/or is that necessary?
+				//  Everything already appears to be populating correctly.
+				dataSource = this.makeEmptyDataSource(pos);
 			}
 		}
 		catch (InterruptedException ignore) { }
@@ -228,29 +227,27 @@ public abstract class AbstractNewDataSourceHandler
 				updateLock.lock();
 				this.lockedPosSet.add(updatePos);
 			}
-			else
-			{
-				methodLocked = false;
-			}
 			
 			
 			// get or create the data source
 			try (TDataSource recipientDataSource = this.get(updatePos))
 			{
-				boolean dataModified = recipientDataSource.update(inputData, this.level);
-				
-				if (dataModified)
+				if (recipientDataSource != null)
 				{
-					// save the updated data to the database
-					TDTO dto = this.createDtoFromDataSource(recipientDataSource);
-					this.repo.save(dto);
-					
-					
-					for (IDataSourceUpdateFunc<TDataSource> listener : this.dateSourceUpdateListeners)
+					boolean dataModified = recipientDataSource.update(inputData, this.level);
+					if (dataModified)
 					{
-						if (listener != null)
+						// save the updated data to the database
+						TDTO dto = this.createDtoFromDataSource(recipientDataSource);
+						this.repo.save(dto);
+						
+						
+						for (IDataSourceUpdateFunc<TDataSource> listener : this.dateSourceUpdateListeners)
 						{
-							listener.OnDataSourceUpdated(recipientDataSource);
+							if (listener != null)
+							{
+								listener.OnDataSourceUpdated(recipientDataSource);
+							}
 						}
 					}
 				}
