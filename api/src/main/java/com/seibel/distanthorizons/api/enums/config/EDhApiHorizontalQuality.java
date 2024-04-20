@@ -43,8 +43,8 @@ public enum EDhApiHorizontalQuality
 	LOWEST(2.0f, 4),
 	LOW(2.0f, 8),
 	MEDIUM(2.0f, 12),
-	HIGH(2.2f, 24),
-	EXTREME(2.4f, 64),
+	HIGH(2.2f, 16),
+	EXTREME(2.4f, 32),
 	;
 	
 	
