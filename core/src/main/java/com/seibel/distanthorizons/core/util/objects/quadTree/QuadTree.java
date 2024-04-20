@@ -264,6 +264,8 @@ public class QuadTree<T>
 		{
 			if (quadNode != null && removedItemConsumer != null)
 			{
+				quadNode.deleteAllChildren(removedItemConsumer);
+				
 				removedItemConsumer.accept(quadNode.value);
 			}
 		});
