@@ -29,6 +29,7 @@ import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
 import com.seibel.distanthorizons.core.util.objects.quadTree.QuadNode;
@@ -38,6 +39,7 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.WillNotClose;
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -221,7 +223,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 	private boolean recursivelyUpdateRenderSectionNode(
 			DhBlockPos2D playerPos, 
 			QuadNode<LodRenderSection> rootNode, QuadNode<LodRenderSection> quadNode, DhSectionPos sectionPos, 
-			boolean parentRenderSectionIsEnabled,
+			boolean parentSectionIsRendering,
 			ArrayList<LodRenderSection> nodesNeedingRetrieval,
 			ArrayList<LodRenderSection> nodesNeedingLoading)
 	{
@@ -268,7 +270,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 		if (sectionPos.getDetailLevel() > expectedDetailLevel)
 		{
 			// section detail level too high //
-			boolean canThisPosRender = renderSection.canRender();
+			boolean thisPosIsRendering = renderSection.renderingEnabled;
 			boolean allChildrenSectionsAreLoaded = true;
 			
 			// recursively update all child render sections
@@ -278,17 +280,29 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 				DhSectionPos childPos = childPosIterator.next();
 				QuadNode<LodRenderSection> childNode = rootNode.getNode(childPos);
 				
-				boolean childSectionLoaded = this.recursivelyUpdateRenderSectionNode(playerPos, rootNode, childNode, childPos, canThisPosRender || parentRenderSectionIsEnabled, nodesNeedingRetrieval, nodesNeedingLoading);
+				boolean childSectionLoaded = this.recursivelyUpdateRenderSectionNode(playerPos, rootNode, childNode, childPos, thisPosIsRendering || parentSectionIsRendering, nodesNeedingRetrieval, nodesNeedingLoading);
 				allChildrenSectionsAreLoaded = childSectionLoaded && allChildrenSectionsAreLoaded;
 			}
 			
 			if (!allChildrenSectionsAreLoaded)
 			{
 				// not all child positions are loaded yet, or this section is out of render range
-				return canThisPosRender;
+				return thisPosIsRendering;
 			}
 			else
 			{
+				if (renderSection.renderingEnabled
+					&& Config.Client.Advanced.Debugging.DebugWireframe.showRenderSectionStatus.get())
+				{
+					// show that this position has just been disabled
+					DebugRenderer.makeParticle(
+						new DebugRenderer.BoxParticle(
+							new DebugRenderer.Box(renderSection.pos, 128f, 156f, 0.09f, Color.CYAN.darker()),
+							0.2, 32f
+						)
+					);
+				}
+				
 				// all child positions are loaded, disable this section and enable its children.
 				renderSection.renderingEnabled = false;
 				
@@ -299,7 +313,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 					DhSectionPos childPos = childPosIterator.next();
 					QuadNode<LodRenderSection> childNode = rootNode.getNode(childPos);
 					
-					boolean childSectionLoaded = this.recursivelyUpdateRenderSectionNode(playerPos, rootNode, childNode, childPos, parentRenderSectionIsEnabled, nodesNeedingRetrieval, nodesNeedingLoading);
+					boolean childSectionLoaded = this.recursivelyUpdateRenderSectionNode(playerPos, rootNode, childNode, childPos, parentSectionIsRendering, nodesNeedingRetrieval, nodesNeedingLoading);
 					allChildrenSectionsAreLoaded = childSectionLoaded && allChildrenSectionsAreLoaded;
 				}
 				if (!allChildrenSectionsAreLoaded)
@@ -310,7 +324,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 				}
 				
 				// this section is now being rendered via its children
-				return true;
+				return allChildrenSectionsAreLoaded;
 			}
 		}
 		// TODO this should only equal the expected detail level, the (expectedDetailLevel-1) is a temporary fix to prevent corners from being cut out 
@@ -336,7 +350,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 				}
 				
 				// wait for the parent to disable before enabling this section, so we don't overdraw/overlap render sections
-				if (!parentRenderSectionIsEnabled && renderSection.canRender())
+				if (!parentSectionIsRendering && renderSection.canRender())
 				{
 					// if rendering is already enabled we don't have to re-enable it
 					if (!renderSection.renderingEnabled)
@@ -348,6 +362,17 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 						{
 							if (childRenderSection != null)
 							{
+								if (childRenderSection.renderingEnabled)
+								{
+									// show that this position's rendering has been disabled due to a parent rendering
+									DebugRenderer.makeParticle(
+										new DebugRenderer.BoxParticle(
+											new DebugRenderer.Box(childRenderSection.pos, 128f, 156f, 0.09f, Color.MAGENTA.darker()),
+											0.2, 32f
+										)
+									);
+								}
+								
 								childRenderSection.renderingEnabled = false;
 								childRenderSection.close();
 							}
