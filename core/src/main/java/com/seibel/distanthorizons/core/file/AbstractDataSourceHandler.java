@@ -23,7 +23,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 // TODO is there a reason this is separate from FullDataSourceProviderV2?
 //  We shouldn't need multiple data source handlers
-public abstract class AbstractNewDataSourceHandler
+public abstract class AbstractDataSourceHandler
 		<TDataSource extends IDataSource<TDhLevel>, 
 				TDTO extends IBaseDTO<DhSectionPos>,
 				TRepo extends AbstractDhRepo<DhSectionPos, TDTO>,
@@ -36,13 +36,13 @@ public abstract class AbstractNewDataSourceHandler
 	 * The highest numerical detail level possible. 
 	 * Used when determining which positions to update. 
 	 * 
-	 * @see AbstractNewDataSourceHandler#MIN_SECTION_DETAIL_LEVEL
+	 * @see AbstractDataSourceHandler#MIN_SECTION_DETAIL_LEVEL
 	 */
 	public static final byte TOP_SECTION_DETAIL_LEVEL = DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL + LodUtil.REGION_DETAIL_LEVEL;
 	/** 
 	 * The lowest numerical detail level possible. 
 	 *
-	 * @see AbstractNewDataSourceHandler#TOP_SECTION_DETAIL_LEVEL
+	 * @see AbstractDataSourceHandler#TOP_SECTION_DETAIL_LEVEL
 	 * */
 	public static final byte MIN_SECTION_DETAIL_LEVEL = DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL;
 	
@@ -72,8 +72,8 @@ public abstract class AbstractNewDataSourceHandler
 	// constructor //
 	//=============//
 	
-	public AbstractNewDataSourceHandler(TDhLevel level, AbstractSaveStructure saveStructure) { this(level, saveStructure, null); }
-	public AbstractNewDataSourceHandler(TDhLevel level, AbstractSaveStructure saveStructure, @Nullable File saveDirOverride)
+	public AbstractDataSourceHandler(TDhLevel level, AbstractSaveStructure saveStructure) { this(level, saveStructure, null); }
+	public AbstractDataSourceHandler(TDhLevel level, AbstractSaveStructure saveStructure, @Nullable File saveDirOverride)
 	{
 		this.level = level;
 		this.saveDir = (saveDirOverride == null) ? saveStructure.getFullDataFolder(level.getLevelWrapper()) : saveDirOverride;
@@ -134,7 +134,7 @@ public abstract class AbstractNewDataSourceHandler
 	/**
 	 * Should only be used in internal file handler methods where we are already running on a file handler thread.
 	 * Can return null if the repo is in the process of being shut down
-	 * @see AbstractNewDataSourceHandler#getAsync(DhSectionPos)
+	 * @see AbstractDataSourceHandler#getAsync(DhSectionPos)
 	 */
 	@Nullable
 	public TDataSource get(DhSectionPos pos)

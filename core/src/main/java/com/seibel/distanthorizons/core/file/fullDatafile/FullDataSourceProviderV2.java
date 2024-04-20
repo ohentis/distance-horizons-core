@@ -26,7 +26,7 @@ import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSour
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
-import com.seibel.distanthorizons.core.file.AbstractNewDataSourceHandler;
+import com.seibel.distanthorizons.core.file.AbstractDataSourceHandler;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
@@ -55,7 +55,7 @@ import java.util.function.Function;
  * to and from the database.
  */
 public class FullDataSourceProviderV2 
-		extends AbstractNewDataSourceHandler<FullDataSourceV2, FullDataSourceV2DTO, FullDataSourceV2Repo, IDhLevel> 
+		extends AbstractDataSourceHandler<FullDataSourceV2, FullDataSourceV2DTO, FullDataSourceV2Repo, IDhLevel> 
 		implements IDebugRenderable
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
@@ -98,7 +98,7 @@ public class FullDataSourceProviderV2
 	
 	// TODO only run thread if modifications happened recently
 	/** 
-	 * This isn't in {@link AbstractNewDataSourceHandler} since we don't need parent updating logic
+	 * This isn't in {@link AbstractDataSourceHandler} since we don't need parent updating logic
 	 * for render data, only full data.
 	 */
 	private final ThreadPoolExecutor updateQueueProcessor;

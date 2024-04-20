@@ -23,7 +23,7 @@ import com.seibel.distanthorizons.api.enums.config.EDhApiWorldCompressionMode;
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
 import com.seibel.distanthorizons.core.dataObjects.fullData.FullDataPointIdMap;
 import com.seibel.distanthorizons.core.dataObjects.transformers.LodDataBuilder;
-import com.seibel.distanthorizons.core.file.AbstractNewDataSourceHandler;
+import com.seibel.distanthorizons.core.file.AbstractDataSourceHandler;
 import com.seibel.distanthorizons.core.file.DataSourcePool;
 import com.seibel.distanthorizons.core.file.IDataSource;
 import com.seibel.distanthorizons.core.level.IDhLevel;
@@ -32,7 +32,6 @@ import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.util.FullDataPointUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.RenderDataPointUtil;
-import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
@@ -256,7 +255,7 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 		}
 		
 		// determine if this data source should be applied to its parent
-		this.applyToParent = (dataChanged && this.pos.getDetailLevel() < AbstractNewDataSourceHandler.TOP_SECTION_DETAIL_LEVEL);
+		this.applyToParent = (dataChanged && this.pos.getDetailLevel() < AbstractDataSourceHandler.TOP_SECTION_DETAIL_LEVEL);
 		
 		if (dataChanged)
 		{
