@@ -646,7 +646,7 @@ public class Config
 							.build();
 					
 					public static ConfigEntry<EDhApiGrassSideRendering> grassSideRendering = new ConfigEntry.Builder<EDhApiGrassSideRendering>()
-							.set(EDhApiGrassSideRendering.AS_DIRT)
+							.set(EDhApiGrassSideRendering.FADE_TO_DIRT)
 							.comment(""
 									+ "How should the sides and bottom of grass block LODs render? \n"
 									+ "\n"
