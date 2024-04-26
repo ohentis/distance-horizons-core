@@ -28,13 +28,12 @@ import com.seibel.distanthorizons.core.api.external.methods.config.DhApiConfig;
 import com.seibel.distanthorizons.core.api.external.methods.data.DhApiTerrainDataRepo;
 import com.seibel.distanthorizons.api.DhApi;
 import com.seibel.distanthorizons.core.render.DhApiRenderProxy;
-//import io.netty.buffer.ByteBuf;
-import net.jpountz.lz4.LZ4Compressor;
+import io.netty.buffer.ByteBuf;
+import net.jpountz.lz4.LZ4FrameOutputStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.awt.*;
-import java.io.InputStream;
 
 /** Handles first time Core setup. */
 public class Initializer
@@ -48,11 +47,11 @@ public class Initializer
 		{
 			// if any library isn't present in the jar its class
 			// will throw an error (not an exception)
-			Class<?> compressor = LZ4Compressor.class;
-			//Class<?> networking = ByteBuf.class;
+			Class<?> compressor = LZ4FrameOutputStream.class;
+			Class<?> networking = ByteBuf.class;
 			Class<?> toml = com.electronwill.nightconfig.core.Config.class;
 		}
-		catch (NoClassDefFoundError e)
+		catch (Throwable e)
 		{
 			LOGGER.fatal("Critical programmer error: One or more libraries aren't present. Error: [" + e.getMessage() + "].");
 			throw e;
