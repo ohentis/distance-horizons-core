@@ -19,9 +19,8 @@
 
 package com.seibel.distanthorizons.core.level;
 
-import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.CompleteFullDataSource;
-import com.seibel.distanthorizons.core.file.fullDatafile.IFullDataSourceProvider;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
+import com.seibel.distanthorizons.core.file.fullDatafile.FullDataSourceProviderV2;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
@@ -29,6 +28,8 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
 import org.apache.logging.log4j.Logger;
+
+import java.util.concurrent.CompletableFuture;
 
 public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 {
@@ -50,12 +51,7 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 	public void serverTick() { this.chunkToLodBuilder.tick(); }
 	
 	@Override
-	public void updateDataSourcesWithChunkData(ChunkSizedFullDataAccessor data)
-	{
-		DhSectionPos pos = data.getSectionPos();
-		pos = pos.convertNewToDetailLevel(CompleteFullDataSource.SECTION_SIZE_OFFSET);
-		this.getFileHandler().updateDataSourcesWithChunkDataAsync(data);
-	}
+	public CompletableFuture<Void> updateDataSourcesAsync(FullDataSourceV2 data) { return this.getFullDataProvider().updateDataSourceAsync(data); }
 	
 	@Override
 	public int getMinY() { return getLevelWrapper().getMinHeight(); }
@@ -76,12 +72,12 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 		if (shouldDoWorldGen && !isWorldGenRunning)
 		{
 			// start world gen
-			serverside.worldGenModule.startWorldGen(serverside.dataFileHandler, new ServerLevelModule.WorldGenState(this));
+			serverside.worldGenModule.startWorldGen(serverside.fullDataFileHandler, new ServerLevelModule.WorldGenState(this));
 		}
 		else if (!shouldDoWorldGen && isWorldGenRunning)
 		{
 			// stop world gen
-			serverside.worldGenModule.stopWorldGen(serverside.dataFileHandler);
+			serverside.worldGenModule.stopWorldGen(serverside.fullDataFileHandler);
 		}
 		
 		if (serverside.worldGenModule.isWorldGenRunning())
@@ -97,7 +93,7 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 	public ILevelWrapper getLevelWrapper() { return getServerLevelWrapper(); }
 	
 	@Override
-	public IFullDataSourceProvider getFileHandler() { return serverside.dataFileHandler; }
+	public FullDataSourceProviderV2 getFullDataProvider() { return this.serverside.fullDataFileHandler; }
 	
 	@Override
 	public AbstractSaveStructure getSaveStructure()

@@ -20,9 +20,9 @@
 package com.seibel.distanthorizons.core.level;
 
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
-import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
-import com.seibel.distanthorizons.core.file.fullDatafile.IFullDataSourceProvider;
-import com.seibel.distanthorizons.core.file.fullDatafile.RemoteFullDataFileHandler;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
+import com.seibel.distanthorizons.core.file.fullDatafile.FullDataSourceProviderV2;
+import com.seibel.distanthorizons.core.file.fullDatafile.RemoteFullDataSourceProvider;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
@@ -35,6 +35,7 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
+import java.util.concurrent.CompletableFuture;
 
 /** The level used when connected to a server */
 public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
@@ -44,7 +45,7 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 	public final ClientLevelModule clientside;
 	public final IClientLevelWrapper levelWrapper;
 	public final AbstractSaveStructure saveStructure;
-	public final RemoteFullDataFileHandler dataFileHandler;
+	public final RemoteFullDataSourceProvider dataFileHandler;
 	
 	
 	
@@ -57,7 +58,7 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 	{
 		this.levelWrapper = clientLevelWrapper;
 		this.saveStructure = saveStructure;
-		this.dataFileHandler = new RemoteFullDataFileHandler(this, saveStructure, fullDataSaveDirOverride);
+		this.dataFileHandler = new RemoteFullDataSourceProvider(this, saveStructure, fullDataSaveDirOverride);
 		this.clientside = new ClientLevelModule(this);
 		
 		if (enableRendering)
@@ -102,50 +103,37 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 	//================//
 	
 	@Override
-	public int computeBaseColor(DhBlockPos pos, IBiomeWrapper biome, IBlockStateWrapper block) { return levelWrapper.computeBaseColor(pos, biome, block); }
+	public int computeBaseColor(DhBlockPos pos, IBiomeWrapper biome, IBlockStateWrapper block) { return this.levelWrapper.computeBaseColor(pos, biome, block); }
 	
 	@Override
-	public IClientLevelWrapper getClientLevelWrapper() { return levelWrapper; }
+	public IClientLevelWrapper getClientLevelWrapper() { return this.levelWrapper; }
 	
 	@Override
-	public void clearRenderCache()
-	{
-		clientside.clearRenderCache();
-	}
+	public void clearRenderCache() { this.clientside.clearRenderCache(); }
 	
 	@Override
-	public ILevelWrapper getLevelWrapper() { return levelWrapper; }
+	public ILevelWrapper getLevelWrapper() { return this.levelWrapper; }
 	
 	@Override
-	public void updateDataSourcesWithChunkData(ChunkSizedFullDataAccessor data) { this.clientside.updateDataSourcesWithChunkData(data); }
+	public CompletableFuture<Void> updateDataSourcesAsync(FullDataSourceV2 data) { return this.clientside.updateDataSourcesAsync(data); }
 	
 	@Override
-	public int getMinY() { return levelWrapper.getMinHeight(); }
+	public int getMinY() { return this.levelWrapper.getMinHeight(); }
 	
 	@Override
 	public void close()
 	{
-		clientside.close();
+		this.clientside.close();
 		super.close();
-		dataFileHandler.close();
+		this.dataFileHandler.close();
 		LOGGER.info("Closed " + DhClientLevel.class.getSimpleName() + " for " + levelWrapper);
 	}
 	
-	//=======================//
-	// misc helper functions //
-	//=======================//
+	@Override
+	public FullDataSourceProviderV2 getFullDataProvider() { return this.dataFileHandler; }
 	
 	@Override
-	public IFullDataSourceProvider getFileHandler()
-	{
-		return dataFileHandler;
-	}
-	
-	@Override
-	public AbstractSaveStructure getSaveStructure()
-	{
-		return saveStructure;
-	}
+	public AbstractSaveStructure getSaveStructure() { return this.saveStructure; }
 	
 	@Override
 	public boolean hasSkyLight() { return this.levelWrapper.hasSkyLight(); }

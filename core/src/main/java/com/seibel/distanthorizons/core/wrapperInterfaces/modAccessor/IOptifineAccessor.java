@@ -19,7 +19,7 @@
 
 package com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor;
 
-import com.seibel.distanthorizons.api.enums.rendering.EFogDrawMode;
+import com.seibel.distanthorizons.api.enums.rendering.EDhApiFogDrawMode;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 
 import java.util.HashSet;
@@ -31,7 +31,7 @@ public interface IOptifineAccessor extends IModAccessor
 	HashSet<DhChunkPos> getNormalRenderedChunks();
 	
 	/** Get what type of fog optifine is currently set to render. */
-	EFogDrawMode getFogDrawMode();
+	EDhApiFogDrawMode getFogDrawMode();
 	
 	/**
 	 * Returns the percentage multiplier of the screen's current resolution. <br>

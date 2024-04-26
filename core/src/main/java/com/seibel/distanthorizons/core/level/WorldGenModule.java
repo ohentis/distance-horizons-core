@@ -19,8 +19,8 @@
 
 package com.seibel.distanthorizons.core.level;
 
-import com.seibel.distanthorizons.core.file.fullDatafile.GeneratedFullDataFileHandler;
-import com.seibel.distanthorizons.core.generation.IWorldGenerationQueue;
+import com.seibel.distanthorizons.core.file.fullDatafile.GeneratedFullDataSourceProvider;
+import com.seibel.distanthorizons.core.generation.IFullDataSourceRetrievalQueue;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
@@ -34,17 +34,15 @@ public class WorldGenModule implements Closeable
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
-	private final GeneratedFullDataFileHandler dataFileHandler;
-	private final GeneratedFullDataFileHandler.IOnWorldGenCompleteListener onWorldGenCompleteListener;
+	private final GeneratedFullDataSourceProvider.IOnWorldGenCompleteListener onWorldGenCompleteListener;
 	
 	private final AtomicReference<AbstractWorldGenState> worldGenStateRef = new AtomicReference<>();
 	private final F3Screen.DynamicMessage worldGenF3Message;
 	
 	
 	
-	public WorldGenModule(GeneratedFullDataFileHandler dataFileHandler, GeneratedFullDataFileHandler.IOnWorldGenCompleteListener onWorldGenCompleteListener)
+	public WorldGenModule(GeneratedFullDataSourceProvider.IOnWorldGenCompleteListener onWorldGenCompleteListener)
 	{
-		this.dataFileHandler = dataFileHandler;
 		this.onWorldGenCompleteListener = onWorldGenCompleteListener;
 		this.worldGenF3Message = new F3Screen.DynamicMessage(() ->
 		{
@@ -53,8 +51,9 @@ public class WorldGenModule implements Closeable
 			{
 				int waitingCount = worldGenState.worldGenerationQueue.getWaitingTaskCount();
 				int inProgressCount = worldGenState.worldGenerationQueue.getInProgressTaskCount();
+				int totalCountEstimate = worldGenState.worldGenerationQueue.getEstimatedTotalTaskCount();
 				
-				return "World Gen Tasks: "+waitingCount+", (in progress: "+inProgressCount+")";
+				return "World Gen Tasks: "+waitingCount+"/"+totalCountEstimate+", (in progress: "+inProgressCount+")";
 			}
 			else
 			{
@@ -70,7 +69,7 @@ public class WorldGenModule implements Closeable
 	// world gen control //
 	//===================//
 	
-	public void startWorldGen(GeneratedFullDataFileHandler dataFileHandler, AbstractWorldGenState newWgs)
+	public void startWorldGen(GeneratedFullDataSourceProvider dataFileHandler, AbstractWorldGenState newWgs)
 	{
 		// create the new world generator
 		if (!this.worldGenStateRef.compareAndSet(null, newWgs))
@@ -82,7 +81,7 @@ public class WorldGenModule implements Closeable
 		dataFileHandler.setWorldGenerationQueue(newWgs.worldGenerationQueue);
 	}
 	
-	public void stopWorldGen(GeneratedFullDataFileHandler dataFileHandler)
+	public void stopWorldGen(GeneratedFullDataSourceProvider dataFileHandler)
 	{
 		AbstractWorldGenState worldGenState = this.worldGenStateRef.get();
 		if (worldGenState == null)
@@ -100,7 +99,7 @@ public class WorldGenModule implements Closeable
 				return;
 			}
 		}
-		dataFileHandler.clearGenerationQueue();
+		dataFileHandler.clearRetrievalQueue();
 		worldGenState.closeAsync(true).join(); //TODO: Make it async.
 		dataFileHandler.removeWorldGenCompleteListener(this.onWorldGenCompleteListener);
 	}
@@ -137,7 +136,6 @@ public class WorldGenModule implements Closeable
 			}
 		}
 		
-		this.dataFileHandler.close();
 		this.worldGenF3Message.close();
 	}
 	
@@ -155,10 +153,10 @@ public class WorldGenModule implements Closeable
 	// helper classes //
 	//================//
 	
-	/** Handles the {@link IWorldGenerationQueue} and any other necessary world gen information. */
+	/** Handles the {@link IFullDataSourceRetrievalQueue} and any other necessary world gen information. */
 	public static abstract class AbstractWorldGenState
 	{
-		public IWorldGenerationQueue worldGenerationQueue;
+		public IFullDataSourceRetrievalQueue worldGenerationQueue;
 		
 		CompletableFuture<Void> closeAsync(boolean doInterrupt)
 		{
@@ -177,7 +175,8 @@ public class WorldGenModule implements Closeable
 		}
 		
 		/** @param targetPosForGeneration the position that world generation should be centered around */
-		public void startGenerationQueueAndSetTargetPos(DhBlockPos2D targetPosForGeneration) { this.worldGenerationQueue.startGenerationQueueAndSetTargetPos(targetPosForGeneration); }
+		public void startGenerationQueueAndSetTargetPos(DhBlockPos2D targetPosForGeneration) 
+		{ this.worldGenerationQueue.startAndSetTargetPos(targetPosForGeneration); }
 	}
 	
 }

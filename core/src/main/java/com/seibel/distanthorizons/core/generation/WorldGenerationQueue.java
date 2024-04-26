@@ -23,7 +23,7 @@ import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiDistantGenerat
 import com.seibel.distanthorizons.api.interfaces.override.worldGenerator.IDhApiWorldGenerator;
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGeneratorReturnType;
 import com.seibel.distanthorizons.api.objects.data.DhApiChunk;
-import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.generation.tasks.*;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
@@ -38,7 +38,7 @@ import com.seibel.distanthorizons.core.util.LodUtil.AssertFailureException;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
 import com.seibel.distanthorizons.core.util.objects.UncheckedInterruptedException;
 import com.seibel.distanthorizons.core.util.LodUtil;
-import com.seibel.distanthorizons.core.util.threading.ThreadPools;
+import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.IWrapperFactory;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import org.apache.logging.log4j.Logger;
@@ -47,8 +47,9 @@ import java.awt.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
-public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRenderable
+public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDebugRenderable
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	private static final IWrapperFactory WRAPPER_FACTORY = SingletonInjector.INSTANCE.get(IWrapperFactory.class);
@@ -66,13 +67,8 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 	
 	/** largest numerical detail level allowed */
 	public final byte lowestDataDetail;
-	@Override
-	public byte lowestDataDetail() { return this.lowestDataDetail; }
-	
 	/** smallest numerical detail level allowed */
 	public final byte highestDataDetail;
-	@Override
-	public byte highestDataDetail() { return this.highestDataDetail; }
 	
 	
 	/** If not null this generator is in the process of shutting down */
@@ -94,6 +90,9 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 	private static final int MAX_ALREADY_GENERATED_COUNT = 100;
 	private final HashMap<DhSectionPos, StackTraceElement[]> alreadyGeneratedPosHashSet = new HashMap<>(MAX_ALREADY_GENERATED_COUNT);
 	private final Queue<DhSectionPos> alreadyGeneratedPosQueue = new LinkedList<>();
+	
+	/** just used for rendering to the F3 menu */
+	private int estimatedTotalTaskCount = 0;
 	
 	
 	
@@ -159,13 +158,27 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 		return future;
 	}
 	
+	@Override
+	public void removeRetrievalRequestIf(Function<DhSectionPos, Boolean> removeIf)
+	{
+		this.waitingTasks.forEachKey(100, (genPos) -> 
+		{
+			if (removeIf.apply(genPos))
+			{
+				this.waitingTasks.remove(genPos);
+			}
+		});
+	}
+	
+	
 	
 	
 	//===============//
 	// running tasks //
 	//===============//
 	
-	public void startGenerationQueueAndSetTargetPos(DhBlockPos2D targetPos)
+	@Override
+	public void startAndSetTargetPos(DhBlockPos2D targetPos)
 	{
 		// update the target pos
 		this.generationTargetPos = targetPos;
@@ -269,7 +282,7 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 				boolean taskStarted = this.tryStartingWorldGenTaskGroup(newTaskGroup);
 				if (!taskStarted)
 				{
-					LOGGER.trace("Unable to start task: "+closestTask.pos+", skipping. Task position may have already been generated.");
+					//LOGGER.trace("Unable to start task: "+closestTask.pos+", skipping. Task position may have already been generated.");
 				}
 			}
 			else
@@ -279,7 +292,7 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 				// 		   the newly selected task, we cannot use it,
 				//         as some chunks may have already been written into.
 				
-				LOGGER.trace("A task already exists for this position, todo: "+closestTask.pos);
+				//LOGGER.trace("A task already exists for this position, todo: "+closestTask.pos);
 			}
 			
 			// a task has been started
@@ -326,7 +339,7 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 		if (this.alreadyGeneratedPosHashSet.containsKey(newTaskGroup.group.pos))
 		{
 			// temporary solution to prevent generating the same section multiple times
-			LOGGER.trace("Duplicate generation section " + taskPos + " with granularity [" + granularity + "] at " + chunkPosMin + ". Skipping...");
+			//LOGGER.trace("Duplicate generation section " + taskPos + " with granularity [" + granularity + "] at " + chunkPosMin + ". Skipping...");
 			
 			// sending a success result is necessary to make sure the render sections are reloaded correctly 
 			newTaskGroup.group.worldGenTasks.forEach(worldGenTask -> worldGenTask.future.complete(WorldGenResult.CreateSuccess(new DhSectionPos(granularity, taskPos.getX(), taskPos.getZ()))));
@@ -407,7 +420,7 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 		DhChunkPos chunkPosMin,
 		byte granularity,
 		byte targetDataDetail,
-		Consumer<ChunkSizedFullDataAccessor> chunkDataConsumer
+		Consumer<FullDataSourceV2> chunkDataConsumer
 		)
 	{
 		EDhApiDistantGeneratorMode generatorMode = Config.Client.Advanced.WorldGenerator.distantGeneratorMode.get();
@@ -422,15 +435,15 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 					granularity,
 					targetDataDetail,
 					generatorMode,
-					ThreadPools.getWorldGenExecutor(),
+					ThreadPoolUtil.getWorldGenExecutor(),
 					(Object[] generatedObjectArray) -> 
 					{
 						try
 						{
 							IChunkWrapper chunk = WRAPPER_FACTORY.createChunkWrapper(generatedObjectArray);
-							ChunkSizedFullDataAccessor chunkDataAccessor = LodDataBuilder.createChunkData(chunk);
-							LodUtil.assertTrue(chunkDataAccessor != null);
-							chunkDataConsumer.accept(chunkDataAccessor);
+							FullDataSourceV2 dataSource = LodDataBuilder.createGeneratedDataSource(chunk);
+							LodUtil.assertTrue(dataSource != null);
+							chunkDataConsumer.accept(dataSource);
 						}
 						catch (ClassCastException e)
 						{
@@ -448,13 +461,13 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 					granularity,
 					targetDataDetail,
 					generatorMode,
-					ThreadPools.getWorldGenExecutor(),
+					ThreadPoolUtil.getWorldGenExecutor(),
 					(DhApiChunk dataPoints) ->
 					{
 						try
 						{
-							ChunkSizedFullDataAccessor chunkDataAccessor = LodDataBuilder.createApiChunkData(dataPoints);
-							chunkDataConsumer.accept(chunkDataAccessor);
+							FullDataSourceV2 dataSource = LodDataBuilder.createFromApiChunkData(dataPoints);
+							chunkDataConsumer.accept(dataSource);
 						}
 						catch (ClassCastException e)
 						{
@@ -474,12 +487,23 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 	
 	
 	
-	//=========//
-	// getters //
-	//=========//
+	//===================//
+	// getters / setters //
+	//===================//
 	
 	public int getWaitingTaskCount() { return this.waitingTasks.size(); }
 	public int getInProgressTaskCount() { return this.inProgressGenTasksByLodPos.size(); }
+	
+	@Override
+	public byte lowestDataDetail() { return this.lowestDataDetail; }
+	@Override
+	public byte highestDataDetail() { return this.highestDataDetail; }
+	
+	@Override
+	public int getEstimatedTotalTaskCount() { return this.estimatedTotalTaskCount; }
+	@Override
+	public void setEstimatedTotalTaskCount(int newEstimate) { this.estimatedTotalTaskCount = newEstimate; }
+	
 	
 	
 	//==========//
@@ -542,13 +566,11 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 		LodUtil.assertTrue(this.generatorClosingFuture != null);
 		
 		
-		
-		
 		LOGGER.info("Awaiting world generator thread pool termination...");
 		try
 		{
 			int waitTimeInSeconds = 3;
-			ThreadPoolExecutor executor = ThreadPools.getWorldGenExecutor();
+			ThreadPoolExecutor executor = ThreadPoolUtil.getWorldGenExecutor();
 			if (executor != null && !executor.awaitTermination(waitTimeInSeconds, TimeUnit.SECONDS))
 			{
 				LOGGER.warn("World generator thread pool shutdown didn't complete after [" + waitTimeInSeconds + "] seconds. Some world generator requests may still be running.");
@@ -560,9 +582,8 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 		}
 		
 		
-		
 		this.generator.close();
-		
+		DebugRenderer.unregister(this, Config.Client.Advanced.Debugging.DebugWireframe.showWorldGenQueue);
 		
 		
 		try
@@ -573,8 +594,9 @@ public class WorldGenerationQueue implements IWorldGenerationQueue, IDebugRender
 		{
 			LOGGER.warn("Failed to close generation queue: ", e);
 		}
+		
+		
 		LOGGER.info("Finished closing " + WorldGenerationQueue.class.getSimpleName());
-		DebugRenderer.unregister(this, Config.Client.Advanced.Debugging.DebugWireframe.showWorldGenQueue);
 	}
 	
 	

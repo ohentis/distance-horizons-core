@@ -143,7 +143,10 @@ public class QuadTree<T>
 			
 			topQuadNode = new QuadNode<T>(rootPos, this.treeMaxDetailLevel);
 			boolean successfullyAdded = this.topRingList.set(ringListPosX, ringListPosZ, topQuadNode);
-			LodUtil.assertTrue(successfullyAdded, "Failed to add top quadTree node at position: " + rootPos);
+			if (!successfullyAdded)
+			{
+				LodUtil.assertNotReach("Failed to add top quadTree node at position: " + rootPos);
+			}
 		}
 		
 		if (!topQuadNode.sectionPos.contains(pos))
@@ -261,6 +264,8 @@ public class QuadTree<T>
 		{
 			if (quadNode != null && removedItemConsumer != null)
 			{
+				quadNode.deleteAllChildren(removedItemConsumer);
+				
 				removedItemConsumer.accept(quadNode.value);
 			}
 		});

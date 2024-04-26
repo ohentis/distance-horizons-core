@@ -191,7 +191,13 @@ public class LodRenderProgram extends ShaderProgram implements IDhApiShaderProgr
 		//  this is to try and allow the fragment culling to go farther than the near clip plane.
 		//  Currently this only works for certain FOV/screen ratio combos.
 		dhNearClipDistance *= 2.0f;
-		setUniform(clipDistanceUniform, dhNearClipDistance);
+		// if the player is very high up and the near clip plane has been modified, disable the distance clipping
+		// we're high enough that nothing will render on top of the player and this can cause issues otherwise
+		if (RenderUtil.getHeightBasedNearClipOverride() != -1)
+		{
+			dhNearClipDistance = 1.0f;
+		}
+		this.setUniform(this.clipDistanceUniform, dhNearClipDistance);
 	}
 	
 	@Override

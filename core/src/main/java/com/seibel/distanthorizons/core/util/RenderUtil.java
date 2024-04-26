@@ -28,6 +28,7 @@ import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.world.IDhClientWorld;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.coreapi.util.MathUtil;
 import com.seibel.distanthorizons.coreapi.util.math.Mat4f;
 import com.seibel.distanthorizons.coreapi.util.math.Vec3f;
@@ -148,11 +149,6 @@ public class RenderUtil
 		// in James' testing a near clip plane distance of 2 blocks is enough to allow the fragment
 		// culling to take effect instead of seeing the near clip plane.
 		float nearClipDist = RenderUtil.getNearClipPlaneDistanceInBlocks(partialTicks);
-		if (Config.Client.Advanced.Debugging.lodOnlyMode.get())
-		{
-			nearClipDist = 0.1f;
-		}
-		
 		float farClipDist = (float) RenderUtil.getFarClipPlaneDistanceInBlocks();
 		
 		// Create a copy of the current matrix, so it won't be modified.
@@ -210,6 +206,15 @@ public class RenderUtil
 			}
 		}
 		
+		
+		// TODO move into method and use to override discard value in shader program
+		float heightOverride = getHeightBasedNearClipOverride();
+		if (heightOverride != -1.0f)
+		{
+			nearClipPlane = heightOverride;
+		}
+		
+		
 		// modify based on the player's FOV
 		double fov = MC_RENDER.getFov(partialTicks);
 		double aspectRatio = (double) MC_RENDER.getScreenWidth() / MC_RENDER.getScreenHeight();
@@ -225,6 +230,28 @@ public class RenderUtil
 		int lodBlockDist = lodChunkDist * LodUtil.CHUNK_WIDTH;
 		// sqrt 2 to prevent the corners from being cut off
 		return (int)((lodBlockDist + LodUtil.REGION_WIDTH) * Math.sqrt(2));
+	}
+	
+	/** @return -1 if no override is necessary */
+	public static float getHeightBasedNearClipOverride()
+	{
+		// TODO always using the client level like this might cause issues with immersive portals and the like,
+		//  but for now it should work well enough
+		IClientLevelWrapper level = MC.getWrappedClientLevel();
+		// a level should always be loaded, but just in case
+		if (level != null)
+		{
+			// if the player is a significant distance above the work, increase the
+			// near clip plane to fix Z imprecision issues
+			int playerHeight = MC.getPlayerBlockPos().y;
+			int levelMaxHeight = level.getHeight();
+			if (playerHeight > levelMaxHeight + 1_000)
+			{
+				return playerHeight - (levelMaxHeight + 1000);
+			}
+		}
+		
+		return -1.0f;
 	}
 	
 	/** @return false if LODs shouldn't be rendered for any reason */

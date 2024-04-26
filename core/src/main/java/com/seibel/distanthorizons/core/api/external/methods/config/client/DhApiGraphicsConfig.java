@@ -20,14 +20,14 @@
 package com.seibel.distanthorizons.core.api.external.methods.config.client;
 
 import com.seibel.distanthorizons.api.enums.config.*;
-import com.seibel.distanthorizons.api.enums.rendering.ETransparency;
+import com.seibel.distanthorizons.api.enums.rendering.EDhApiTransparency;
 import com.seibel.distanthorizons.api.interfaces.config.IDhApiConfigValue;
 import com.seibel.distanthorizons.api.interfaces.config.client.IDhApiAmbientOcclusionConfig;
 import com.seibel.distanthorizons.api.interfaces.config.client.IDhApiFogConfig;
 import com.seibel.distanthorizons.api.interfaces.config.client.IDhApiGraphicsConfig;
 import com.seibel.distanthorizons.api.interfaces.config.client.IDhApiNoiseTextureConfig;
 import com.seibel.distanthorizons.api.objects.config.DhApiConfigValue;
-import com.seibel.distanthorizons.api.enums.rendering.ERendererMode;
+import com.seibel.distanthorizons.api.enums.rendering.EDhApiRendererMode;
 import com.seibel.distanthorizons.core.config.Config;
 
 public class DhApiGraphicsConfig implements IDhApiGraphicsConfig
@@ -61,8 +61,8 @@ public class DhApiGraphicsConfig implements IDhApiGraphicsConfig
 	{ return new DhApiConfigValue<Boolean, Boolean>(Config.Client.quickEnableRendering); }
 	
 	@Override
-	public IDhApiConfigValue<ERendererMode> renderingMode()
-	{ return new DhApiConfigValue<ERendererMode, ERendererMode>(Config.Client.Advanced.Debugging.rendererMode); }
+	public IDhApiConfigValue<EDhApiRendererMode> renderingMode()
+	{ return new DhApiConfigValue<EDhApiRendererMode, EDhApiRendererMode>(Config.Client.Advanced.Debugging.rendererMode); }
 	
 	
 	
@@ -71,24 +71,24 @@ public class DhApiGraphicsConfig implements IDhApiGraphicsConfig
 	//==================//
 	
 	@Override
-	public IDhApiConfigValue<EMaxHorizontalResolution> maxHorizontalResolution()
-	{ return new DhApiConfigValue<EMaxHorizontalResolution, EMaxHorizontalResolution>(Config.Client.Advanced.Graphics.Quality.maxHorizontalResolution); }
+	public IDhApiConfigValue<EDhApiMaxHorizontalResolution> maxHorizontalResolution()
+	{ return new DhApiConfigValue<EDhApiMaxHorizontalResolution, EDhApiMaxHorizontalResolution>(Config.Client.Advanced.Graphics.Quality.maxHorizontalResolution); }
 	
 	@Override
-	public IDhApiConfigValue<EVerticalQuality> verticalQuality()
-	{ return new DhApiConfigValue<EVerticalQuality, EVerticalQuality>(Config.Client.Advanced.Graphics.Quality.verticalQuality); }
+	public IDhApiConfigValue<EDhApiVerticalQuality> verticalQuality()
+	{ return new DhApiConfigValue<EDhApiVerticalQuality, EDhApiVerticalQuality>(Config.Client.Advanced.Graphics.Quality.verticalQuality); }
 	
 	@Override
-	public IDhApiConfigValue<EHorizontalQuality> horizontalQuality()
-	{ return new DhApiConfigValue<EHorizontalQuality, EHorizontalQuality>(Config.Client.Advanced.Graphics.Quality.horizontalQuality); }
+	public IDhApiConfigValue<EDhApiHorizontalQuality> horizontalQuality()
+	{ return new DhApiConfigValue<EDhApiHorizontalQuality, EDhApiHorizontalQuality>(Config.Client.Advanced.Graphics.Quality.horizontalQuality); }
 	
 	@Override
-	public IDhApiConfigValue<ETransparency> transparency()
-	{ return new DhApiConfigValue<ETransparency, ETransparency>(Config.Client.Advanced.Graphics.Quality.transparency); }
+	public IDhApiConfigValue<EDhApiTransparency> transparency()
+	{ return new DhApiConfigValue<EDhApiTransparency, EDhApiTransparency>(Config.Client.Advanced.Graphics.Quality.transparency); }
 	
 	@Override
-	public IDhApiConfigValue<EBlocksToAvoid> blocksToAvoid()
-	{ return new DhApiConfigValue<EBlocksToAvoid, EBlocksToAvoid>(Config.Client.Advanced.Graphics.Quality.blocksToIgnore); }
+	public IDhApiConfigValue<EDhApiBlocksToAvoid> blocksToAvoid()
+	{ return new DhApiConfigValue<EDhApiBlocksToAvoid, EDhApiBlocksToAvoid>(Config.Client.Advanced.Graphics.Quality.blocksToIgnore); }
 	
 	@Override
 	public IDhApiConfigValue<Boolean> tintWithAvoidedBlocks()
@@ -105,11 +105,6 @@ public class DhApiGraphicsConfig implements IDhApiGraphicsConfig
 	// advanced graphic settings //
 	//===========================//
 
-	@Deprecated
-	@Override
-	public IDhApiConfigValue<EOverdrawPrevention> overdrawPrevention()
-	{ return new DhApiConfigValue<EOverdrawPrevention, EOverdrawPrevention>(Config.Client.Advanced.Graphics.AdvancedGraphics.overdrawPreventionPreset); }
-	
 	@Override
 	public IDhApiConfigValue<Double> overdrawPreventionRadius()
 	{ return new DhApiConfigValue<Double, Double>(Config.Client.Advanced.Graphics.AdvancedGraphics.overdrawPrevention); }
@@ -143,8 +138,8 @@ public class DhApiGraphicsConfig implements IDhApiGraphicsConfig
 	{ return new DhApiConfigValue<Double, Double>(Config.Client.Advanced.Graphics.AdvancedGraphics.lodBias); }
 	
 	@Override
-	public IDhApiConfigValue<ELodShading> lodShading()
-	{ return new DhApiConfigValue<ELodShading, ELodShading>(Config.Client.Advanced.Graphics.AdvancedGraphics.lodShading); }
+	public IDhApiConfigValue<EDhApiLodShading> lodShading()
+	{ return new DhApiConfigValue<EDhApiLodShading, EDhApiLodShading>(Config.Client.Advanced.Graphics.AdvancedGraphics.lodShading); }
 	
 	@Override
 	public IDhApiConfigValue<Boolean> disableFrustumCulling()

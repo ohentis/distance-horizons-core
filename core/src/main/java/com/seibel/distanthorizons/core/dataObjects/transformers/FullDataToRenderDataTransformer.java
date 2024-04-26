@@ -19,14 +19,10 @@
 
 package com.seibel.distanthorizons.core.dataObjects.transformers;
 
-import com.seibel.distanthorizons.api.enums.config.EBlocksToAvoid;
+import com.seibel.distanthorizons.api.enums.config.EDhApiBlocksToAvoid;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.FullDataPointIdMap;
-import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
-import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.SingleColumnFullDataAccessor;
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.CompleteFullDataSource;
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IFullDataSource;
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IIncompleteFullDataSource;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSource;
 import com.seibel.distanthorizons.core.dataObjects.render.columnViews.ColumnArrayView;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
@@ -34,20 +30,20 @@ import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.util.ColorUtil;
 import com.seibel.distanthorizons.core.util.FullDataPointUtil;
-import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.RenderDataPointUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.IWrapperFactory;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.apache.logging.log4j.Logger;
 
 import java.util.HashSet;
 
 /**
- * Handles converting {@link ChunkSizedFullDataAccessor}, {@link IIncompleteFullDataSource},
- * and {@link IFullDataSource}'s to {@link ColumnRenderSource}.
+ * Handles converting {@link FullDataSourceV2}'s to {@link ColumnRenderSource}.
  */
 public class FullDataToRenderDataTransformer
 {
@@ -62,13 +58,13 @@ public class FullDataToRenderDataTransformer
 	// public transformer interface //
 	//==============================//
 	
-	public static ColumnRenderSource transformFullDataToRenderSource(IFullDataSource fullDataSource, IDhClientLevel level)
+	public static ColumnRenderSource transformFullDataToRenderSource(FullDataSourceV2 fullDataSource, IDhClientLevel level)
 	{
 		if (fullDataSource == null)
 		{
 			return null;
 		}
-		else if (MC.getWrappedClientLevel() == null)
+		else if (level == null)
 		{
 			// if the client is no longer loaded in the world, render sources cannot be created 
 			return null;
@@ -77,17 +73,7 @@ public class FullDataToRenderDataTransformer
 		
 		try
 		{
-			if (fullDataSource instanceof CompleteFullDataSource)
-			{
-				return transformCompleteFullDataToColumnData(level, (CompleteFullDataSource) fullDataSource);
-			}
-			else if (fullDataSource instanceof IIncompleteFullDataSource)
-			{
-				return transformIncompleteFullDataToColumnData(level, (IIncompleteFullDataSource) fullDataSource);
-			}
-			
-			LodUtil.assertNotReach("Unimplemented Full Data transformer for "+IFullDataSource.class.getSimpleName()+" of type ["+fullDataSource.getClass().getSimpleName()+"].");
-			return null;
+			return transformCompleteFullDataToColumnData(level, fullDataSource);
 		}
 		catch (InterruptedException e)
 		{
@@ -108,13 +94,13 @@ public class FullDataToRenderDataTransformer
 	 * @throws InterruptedException Can be caused by interrupting the thread upstream.
 	 * Generally thrown if the method is running after the client leaves the current world.
 	 */
-	private static ColumnRenderSource transformCompleteFullDataToColumnData(IDhClientLevel level, CompleteFullDataSource fullDataSource) throws InterruptedException
+	private static ColumnRenderSource transformCompleteFullDataToColumnData(IDhClientLevel level, FullDataSourceV2 fullDataSource) throws InterruptedException
 	{
-		final DhSectionPos pos = fullDataSource.getSectionPos();
+		final DhSectionPos pos = fullDataSource.getPos();
 		final byte dataDetail = fullDataSource.getDataDetailLevel();
 		final int vertSize = Config.Client.Advanced.Graphics.Quality.verticalQuality.get().calculateMaxVerticalData(fullDataSource.getDataDetailLevel());
-		final ColumnRenderSource columnSource = new ColumnRenderSource(pos, vertSize, level.getMinY());
-		if (fullDataSource.isEmpty())
+		final ColumnRenderSource columnSource = ColumnRenderSource.getPooledRenderSource(pos, vertSize, level.getMinY(), true);
+		if (fullDataSource.isEmpty)
 		{
 			return columnSource;
 		}
@@ -133,63 +119,13 @@ public class FullDataToRenderDataTransformer
 					throwIfThreadInterrupted();
 					
 					ColumnArrayView columnArrayView = columnSource.getVerticalDataPointView(x, z);
-					SingleColumnFullDataAccessor fullArrayView = fullDataSource.get(x, z);
-					convertColumnData(level, baseX + x, baseZ + z, columnArrayView, fullArrayView);
+					LongArrayList dataColumn = fullDataSource.get(x, z);
+					convertColumnData(level, fullDataSource.mapping, baseX + x, baseZ + z, columnArrayView, dataColumn);
 				}
 			}
 			
 			columnSource.fillDebugFlag(0, 0, ColumnRenderSource.SECTION_SIZE, ColumnRenderSource.SECTION_SIZE, ColumnRenderSource.DebugSourceFlag.FULL);
 			
-		}
-		else
-		{
-			throw new UnsupportedOperationException("To be implemented");
-			//FIXME: Implement different size creation of renderData
-		}
-		return columnSource;
-	}
-	
-	/**
-	 * @throws InterruptedException Can be caused by interrupting the thread upstream.
-	 * Generally thrown if the method is running after the client leaves the current world.
-	 */
-	private static ColumnRenderSource transformIncompleteFullDataToColumnData(IDhClientLevel level, IIncompleteFullDataSource data) throws InterruptedException
-	{
-		final DhSectionPos pos = data.getSectionPos();
-		final byte dataDetail = data.getDataDetailLevel();
-		final int vertSize = Config.Client.Advanced.Graphics.Quality.verticalQuality.get().calculateMaxVerticalData(data.getDataDetailLevel());
-		final ColumnRenderSource columnSource = new ColumnRenderSource(pos, vertSize, level.getMinY());
-		if (data.isEmpty())
-		{
-			return columnSource;
-		}
-		
-		columnSource.markNotEmpty();
-		
-		if (dataDetail == columnSource.getDataDetailLevel())
-		{
-			int baseX = pos.getMinCornerLodPos().getCornerBlockPos().x;
-			int baseZ = pos.getMinCornerLodPos().getCornerBlockPos().z;
-			
-			int width = pos.getWidthCountForLowerDetailedSection(dataDetail);
-			for (int x = 0; x < width; x++)
-			{
-				for (int z = 0; z < width; z++)
-				{
-					throwIfThreadInterrupted();
-					
-					SingleColumnFullDataAccessor fullArrayView = data.tryGet(x, z);
-					if (fullArrayView == null)
-					{
-						continue;
-					}
-					
-					ColumnArrayView columnArrayView = columnSource.getVerticalDataPointView(x, z);
-					convertColumnData(level, baseX + x, baseZ + z, columnArrayView, fullArrayView);
-					
-					columnSource.fillDebugFlag(x, z, 1, 1, ColumnRenderSource.DebugSourceFlag.SPARSE);
-				}
-			}
 		}
 		else
 		{
@@ -222,26 +158,33 @@ public class FullDataToRenderDataTransformer
 	
 	
 	// TODO what does this mean?
-	private static void iterateAndConvert(IDhClientLevel level, int blockX, int blockZ, ColumnArrayView column, SingleColumnFullDataAccessor data)
+	private static void iterateAndConvert(
+			IDhClientLevel level, FullDataPointIdMap fullDataMapping, 
+			int blockX, int blockZ, 
+			ColumnArrayView renderColumnData, LongArrayList fullColumnData)
 	{
-		boolean avoidSolidBlocks = (Config.Client.Advanced.Graphics.Quality.blocksToIgnore.get() == EBlocksToAvoid.NON_COLLIDING);
+		boolean avoidSolidBlocks = (Config.Client.Advanced.Graphics.Quality.blocksToIgnore.get() == EDhApiBlocksToAvoid.NON_COLLIDING);
 		boolean colorBelowWithAvoidedBlocks = Config.Client.Advanced.Graphics.Quality.tintWithAvoidedBlocks.get();
 		
-		FullDataPointIdMap fullDataMapping = data.getMapping();
 		HashSet<IBlockStateWrapper> blockStatesToIgnore = WRAPPER_FACTORY.getRendererIgnoredBlocks(level.getLevelWrapper());
 		
 		boolean isVoid = true;
 		int colorToApplyToNextBlock = -1;
+		int lastColor = 0;
+		int lastBottom = -10000;
+		int skylightToApplyToNextBlock = -1;
+		int blocklightToApplyToNextBlock = -1;
 		int columnOffset = 0;
 		
 		// goes from the top down
-		for (int i = 0; i < data.getSingleLength(); i++)
+		for (int i = 0; i < fullColumnData.size(); i++)
 		{
-			long fullData = data.getSingle(i);
+			long fullData = fullColumnData.getLong(i);
 			int bottomY = FullDataPointUtil.getBottomY(fullData);
 			int blockHeight = FullDataPointUtil.getHeight(fullData);
 			int id = FullDataPointUtil.getId(fullData);
-			int light = FullDataPointUtil.getLight(fullData);
+			int blockLight = FullDataPointUtil.getBlockLight(fullData);
+			int skyLight = FullDataPointUtil.getSkyLight(fullData);
 			
 			// TODO how should corrupted data be handled?
 			// TODO why is the full data corrupted in the first place? FullDataPointUtil hasn't been changed in a long time, could one of the full data point objects be corrupted?
@@ -296,7 +239,10 @@ public class FullDataToRenderDataTransformer
 			{
 				if (colorBelowWithAvoidedBlocks)
 				{
-					colorToApplyToNextBlock = level.computeBaseColor(new DhBlockPos(blockX, bottomY + level.getMinY(), blockZ), biome, block);
+					//mare sure to not trnasfer alpha if for some reason grass is transparent
+					colorToApplyToNextBlock = ColorUtil.setAlpha(level.computeBaseColor(new DhBlockPos(blockX, bottomY + level.getMinY(), blockZ), biome, block),255);
+					skylightToApplyToNextBlock = skyLight;
+					blocklightToApplyToNextBlock = blockLight;
 				}
 				
 				// don't add this block
@@ -315,46 +261,56 @@ public class FullDataToRenderDataTransformer
 				// use the previous block's color
 				color = colorToApplyToNextBlock;
 				colorToApplyToNextBlock = -1;
+				skyLight = skylightToApplyToNextBlock;
+				blockLight = blocklightToApplyToNextBlock;
 			}
-			
-			
-			// add the block
-			isVoid = false;
-			long columnData = RenderDataPointUtil.createDataPoint(bottomY + blockHeight, bottomY, color, light, block.getIrisBlockMaterialId());
-			column.set(columnOffset, columnData);
-			columnOffset++;
+
+			//check if they share a top-bottom face and if they have same collor
+			if (color == lastColor && bottomY + blockHeight == lastBottom  && columnOffset > 0)
+			{
+				//replace the previus block with new bottom
+				long columnData = renderColumnData.get(columnOffset - 1);
+				columnData = RenderDataPointUtil.setYMin(columnData, bottomY);
+				renderColumnData.set(columnOffset - 1, columnData);
+			}
+			else
+			{
+				// add the block
+				isVoid = false;
+				long columnData = RenderDataPointUtil.createDataPoint(bottomY + blockHeight, bottomY, color, skyLight, blockLight, block.getIrisBlockMaterialId());
+				renderColumnData.set(columnOffset, columnData);
+				columnOffset++;
+			}
+			lastBottom = bottomY;
+			lastColor = color;
+
 		}
 		
 		
 		if (isVoid)
 		{
-			column.set(0, RenderDataPointUtil.createVoidDataPoint());
+			renderColumnData.set(0, RenderDataPointUtil.createVoidDataPoint());
 		}
 	}
 	
 	// TODO what does this mean?
-	public static void convertColumnData(IDhClientLevel level, int blockX, int blockZ, ColumnArrayView columnArrayView, SingleColumnFullDataAccessor fullArrayView)
+	public static void convertColumnData(IDhClientLevel level, FullDataPointIdMap fullDataMapping, int blockX, int blockZ, ColumnArrayView columnArrayView, LongArrayList fullDataColumn)
 	{
-		if (!fullArrayView.doesColumnExist())
+		if (fullDataColumn == null || fullDataColumn.size() == 0)
 		{
 			return;
 		}
 		
-		int dataTotalLength = fullArrayView.getSingleLength();
-		if (dataTotalLength == 0)
-		{
-			return;
-		}
-		
+		int dataTotalLength = fullDataColumn.size();
 		if (dataTotalLength > columnArrayView.verticalSize())
 		{
-			ColumnArrayView totalColumnData = new ColumnArrayView(new long[dataTotalLength], dataTotalLength, 0, dataTotalLength);
-			iterateAndConvert(level, blockX, blockZ, totalColumnData, fullArrayView);
+			ColumnArrayView totalColumnData = new ColumnArrayView(new LongArrayList(new long[dataTotalLength]), dataTotalLength, 0, dataTotalLength);
+			iterateAndConvert(level, fullDataMapping, blockX, blockZ, totalColumnData, fullDataColumn);
 			columnArrayView.changeVerticalSizeFrom(totalColumnData);
 		}
 		else
 		{
-			iterateAndConvert(level, blockX, blockZ, columnArrayView, fullArrayView); //Directly use the arrayView since it fits.
+			iterateAndConvert(level, fullDataMapping, blockX, blockZ, columnArrayView, fullDataColumn); //Directly use the arrayView since it fits.
 		}
 	}
 	

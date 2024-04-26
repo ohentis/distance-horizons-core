@@ -20,9 +20,8 @@
 package com.seibel.distanthorizons.api.interfaces.config.client;
 
 import com.seibel.distanthorizons.api.enums.config.*;
-import com.seibel.distanthorizons.api.enums.config.*;
-import com.seibel.distanthorizons.api.enums.rendering.ERendererMode;
-import com.seibel.distanthorizons.api.enums.rendering.ETransparency;
+import com.seibel.distanthorizons.api.enums.rendering.EDhApiRendererMode;
+import com.seibel.distanthorizons.api.enums.rendering.EDhApiTransparency;
 import com.seibel.distanthorizons.api.interfaces.config.IDhApiConfigValue;
 import com.seibel.distanthorizons.api.interfaces.config.IDhApiConfigGroup;
 
@@ -68,7 +67,7 @@ public interface IDhApiGraphicsConfig extends IDhApiConfigGroup
 	 *
 	 * Changing this config also changes {@link IDhApiGraphicsConfig#renderingEnabled()}'s value.
 	 */
-	IDhApiConfigValue<ERendererMode> renderingMode();
+	IDhApiConfigValue<EDhApiRendererMode> renderingMode();
 	
 	
 	
@@ -77,18 +76,18 @@ public interface IDhApiGraphicsConfig extends IDhApiConfigGroup
 	//==================//
 	
 	/** Defines how detailed fake chunks are in the horizontal direction */
-	IDhApiConfigValue<EMaxHorizontalResolution> maxHorizontalResolution();
+	IDhApiConfigValue<EDhApiMaxHorizontalResolution> maxHorizontalResolution();
 	
 	/** Defines how detailed fake chunks are in the vertical direction */
-	IDhApiConfigValue<EVerticalQuality> verticalQuality();
+	IDhApiConfigValue<EDhApiVerticalQuality> verticalQuality();
 	
 	/** Modifies the quadratic function fake chunks use for horizontal quality drop-off. */
-	IDhApiConfigValue<EHorizontalQuality> horizontalQuality();
+	IDhApiConfigValue<EDhApiHorizontalQuality> horizontalQuality();
 	
-	IDhApiConfigValue<ETransparency> transparency();
+	IDhApiConfigValue<EDhApiTransparency> transparency();
 	
 	/** Defines what blocks won't be rendered as LODs. */
-	IDhApiConfigValue<EBlocksToAvoid> blocksToAvoid();
+	IDhApiConfigValue<EDhApiBlocksToAvoid> blocksToAvoid();
 	
 	/**
 	 * Defines if the color of avoided blocks will color the block below them. <Br>
@@ -111,17 +110,6 @@ public interface IDhApiGraphicsConfig extends IDhApiConfigGroup
 	//===========================//
 	// advanced graphic settings //
 	//===========================//
-	
-	/**
-	 * Sets the distance used by the near clip plane to reduce
-	 * overdraw. <br>
-	 * Disabling this reduces holes in the world due to the near clip plane
-	 * being too close to the camera and the terrain not being covered by vanilla terrain.
-	 * 
-	 * @deprecated Use {@link IDhApiGraphicsConfig#overdrawPreventionRadius()} instead.
-	 */
-	@Deprecated
-	IDhApiConfigValue<EOverdrawPrevention> overdrawPrevention();
 	
 	/**
 	 * Sets the radius used by the near clip shader to reduce
@@ -172,7 +160,7 @@ public interface IDhApiGraphicsConfig extends IDhApiConfigGroup
 	 *
 	 * @since API 1.1.0
 	 */
-	IDhApiConfigValue<ELodShading> lodShading();
+	IDhApiConfigValue<EDhApiLodShading> lodShading();
 	
 	/**
 	 * Sets whether LODs outside the view frustum culling will

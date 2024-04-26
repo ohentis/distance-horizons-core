@@ -19,7 +19,7 @@
 
 package com.seibel.distanthorizons.api.interfaces.config.client;
 
-import com.seibel.distanthorizons.api.enums.config.EGpuUploadMethod;
+import com.seibel.distanthorizons.api.enums.config.EDhApiGpuUploadMethod;
 import com.seibel.distanthorizons.api.interfaces.config.IDhApiConfigGroup;
 import com.seibel.distanthorizons.api.interfaces.config.IDhApiConfigValue;
 
@@ -34,7 +34,7 @@ public interface IDhApiGpuBuffersConfig extends IDhApiConfigGroup
 {
 	
 	/** Defines how geometry data is uploaded to the GPU. */
-	IDhApiConfigValue<EGpuUploadMethod> gpuUploadMethod();
+	IDhApiConfigValue<EDhApiGpuUploadMethod> gpuUploadMethod();
 	
 	/**
 	 * Defines how long we should wait after uploading one

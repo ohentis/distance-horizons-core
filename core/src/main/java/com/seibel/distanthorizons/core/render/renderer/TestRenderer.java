@@ -19,8 +19,8 @@
 
 package com.seibel.distanthorizons.core.render.renderer;
 
-import com.seibel.distanthorizons.api.enums.config.EGpuUploadMethod;
-import com.seibel.distanthorizons.api.enums.config.ELoggerMode;
+import com.seibel.distanthorizons.api.enums.config.EDhApiGpuUploadMethod;
+import com.seibel.distanthorizons.api.enums.config.EDhApiLoggerMode;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
 import com.seibel.distanthorizons.core.logging.ConfigBasedSpamLogger;
@@ -45,9 +45,9 @@ public class TestRenderer
 	public TestRenderer() { }
 	
 	public static final ConfigBasedLogger logger = new ConfigBasedLogger(
-			LogManager.getLogger(TestRenderer.class), () -> ELoggerMode.LOG_ALL_TO_CHAT);
+			LogManager.getLogger(TestRenderer.class), () -> EDhApiLoggerMode.LOG_ALL_TO_CHAT);
 	public static final ConfigBasedSpamLogger spamLogger = new ConfigBasedSpamLogger(
-			LogManager.getLogger(TestRenderer.class), () -> ELoggerMode.LOG_ALL_TO_CHAT, 1);
+			LogManager.getLogger(TestRenderer.class), () -> EDhApiLoggerMode.LOG_ALL_TO_CHAT, 1);
 	private static final IMinecraftRenderWrapper MC_RENDER = SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
 	
 	ShaderProgram basicShader;
@@ -91,7 +91,7 @@ public class TestRenderer
 		buffer.rewind();
 		GLVertexBuffer vbo = new GLVertexBuffer(false);
 		vbo.bind();
-		vbo.uploadBuffer(buffer, 4, EGpuUploadMethod.DATA, vertices.length * Float.BYTES);
+		vbo.uploadBuffer(buffer, 4, EDhApiGpuUploadMethod.DATA, vertices.length * Float.BYTES);
 		return vbo;
 	}
 	

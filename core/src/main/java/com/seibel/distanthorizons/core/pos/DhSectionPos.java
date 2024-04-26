@@ -154,15 +154,33 @@ public class DhSectionPos
 	// getters //
 	//=========//
 	
-	/** @return the corner with the smallest X and Z coordinate */
+	/**
+	 * @deprecated use DhSectionPos instead 
+	 * @return the corner with the smallest X and Z coordinate 
+	 */
+	@Deprecated
 	public DhLodPos getMinCornerLodPos() { return this.getMinCornerLodPos((byte) (this.detailLevel - 1)); }
-	/** @return the corner with the smallest X and Z coordinate */
+	/**
+	 * @deprecated use DhSectionPos instead 
+	 * @return the corner with the smallest X and Z coordinate 
+	 */
+	@Deprecated
 	public DhLodPos getMinCornerLodPos(byte returnDetailLevel)
 	{
 		LodUtil.assertTrue(returnDetailLevel <= this.detailLevel, "returnDetailLevel must be less than sectionDetail");
 		
 		byte offset = (byte) (this.detailLevel - returnDetailLevel);
 		return new DhLodPos(returnDetailLevel,
+				this.x * BitShiftUtil.powerOfTwo(offset),
+				this.z * BitShiftUtil.powerOfTwo(offset));
+	}
+	
+	public DhSectionPos getMinCornerPos(byte returnDetailLevel)
+	{
+		LodUtil.assertTrue(returnDetailLevel <= this.detailLevel, "returnDetailLevel must be less than sectionDetail");
+		
+		byte offset = (byte) (this.detailLevel - returnDetailLevel);
+		return new DhSectionPos(returnDetailLevel,
 				this.x * BitShiftUtil.powerOfTwo(offset),
 				this.z * BitShiftUtil.powerOfTwo(offset));
 	}
@@ -210,6 +228,12 @@ public class DhSectionPos
 		}
 		
 		return (centerBlockPos * BitShiftUtil.powerOfTwo(this.detailLevel)) + positionOffset;
+	}
+	
+	public int getManhattanBlockDistance(DhBlockPos2D blockPos)
+	{
+		return Math.abs(this.getCenterBlockPosX() - blockPos.x)
+				+ Math.abs(this.getCenterBlockPosZ() - blockPos.z);
 	}
 	
 	
@@ -331,7 +355,7 @@ public class DhSectionPos
 	}
 	
 	/** Applies the given consumer to all children of the position at the given section detail level. */
-	public void forEachChildAtLevel(byte sectionDetailLevel, Consumer<DhSectionPos> callback)
+	public void forEachChildAtDetailLevel(byte sectionDetailLevel, Consumer<DhSectionPos> callback)
 	{
 		if (sectionDetailLevel == this.detailLevel)
 		{
@@ -341,7 +365,7 @@ public class DhSectionPos
 		
 		for (int i = 0; i < 4; i++)
 		{
-			this.getChildByIndex(i).forEachChildAtLevel(sectionDetailLevel, callback);
+			this.getChildByIndex(i).forEachChildAtDetailLevel(sectionDetailLevel, callback);
 		}
 	}
 	

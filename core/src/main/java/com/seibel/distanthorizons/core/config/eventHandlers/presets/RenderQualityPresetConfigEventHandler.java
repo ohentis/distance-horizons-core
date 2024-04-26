@@ -19,11 +19,11 @@
 
 package com.seibel.distanthorizons.core.config.eventHandlers.presets;
 
-import com.seibel.distanthorizons.api.enums.config.EHorizontalQuality;
-import com.seibel.distanthorizons.api.enums.config.EMaxHorizontalResolution;
-import com.seibel.distanthorizons.api.enums.config.EVerticalQuality;
-import com.seibel.distanthorizons.api.enums.config.quickOptions.EQualityPreset;
-import com.seibel.distanthorizons.api.enums.rendering.ETransparency;
+import com.seibel.distanthorizons.api.enums.config.EDhApiHorizontalQuality;
+import com.seibel.distanthorizons.api.enums.config.EDhApiMaxHorizontalResolution;
+import com.seibel.distanthorizons.api.enums.config.EDhApiVerticalQuality;
+import com.seibel.distanthorizons.api.enums.config.quickOptions.EDhApiQualityPreset;
+import com.seibel.distanthorizons.api.enums.rendering.EDhApiTransparency;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.config.ConfigEntryWithPresetOptions;
 import com.seibel.distanthorizons.core.config.listeners.ConfigChangeListener;
@@ -33,57 +33,57 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.*;
 
-public class RenderQualityPresetConfigEventHandler extends AbstractPresetConfigEventHandler<EQualityPreset>
+public class RenderQualityPresetConfigEventHandler extends AbstractPresetConfigEventHandler<EDhApiQualityPreset>
 {
 	public static final RenderQualityPresetConfigEventHandler INSTANCE = new RenderQualityPresetConfigEventHandler();
 	
 	private static final Logger LOGGER = LogManager.getLogger();
 	
 	
-	private final ConfigEntryWithPresetOptions<EQualityPreset, EMaxHorizontalResolution> drawResolution = new ConfigEntryWithPresetOptions<>(Config.Client.Advanced.Graphics.Quality.maxHorizontalResolution,
-			new HashMap<EQualityPreset, EMaxHorizontalResolution>()
+	private final ConfigEntryWithPresetOptions<EDhApiQualityPreset, EDhApiMaxHorizontalResolution> drawResolution = new ConfigEntryWithPresetOptions<>(Config.Client.Advanced.Graphics.Quality.maxHorizontalResolution,
+			new HashMap<EDhApiQualityPreset, EDhApiMaxHorizontalResolution>()
 			{{
-				this.put(EQualityPreset.MINIMUM, EMaxHorizontalResolution.TWO_BLOCKS);
-				this.put(EQualityPreset.LOW, EMaxHorizontalResolution.BLOCK);
-				this.put(EQualityPreset.MEDIUM, EMaxHorizontalResolution.BLOCK);
-				this.put(EQualityPreset.HIGH, EMaxHorizontalResolution.BLOCK);
-				this.put(EQualityPreset.EXTREME, EMaxHorizontalResolution.BLOCK);
+				this.put(EDhApiQualityPreset.MINIMUM, EDhApiMaxHorizontalResolution.TWO_BLOCKS);
+				this.put(EDhApiQualityPreset.LOW, EDhApiMaxHorizontalResolution.BLOCK);
+				this.put(EDhApiQualityPreset.MEDIUM, EDhApiMaxHorizontalResolution.BLOCK);
+				this.put(EDhApiQualityPreset.HIGH, EDhApiMaxHorizontalResolution.BLOCK);
+				this.put(EDhApiQualityPreset.EXTREME, EDhApiMaxHorizontalResolution.BLOCK);
 			}});
-	private final ConfigEntryWithPresetOptions<EQualityPreset, EVerticalQuality> verticalQuality = new ConfigEntryWithPresetOptions<>(Config.Client.Advanced.Graphics.Quality.verticalQuality,
-			new HashMap<EQualityPreset, EVerticalQuality>()
+	private final ConfigEntryWithPresetOptions<EDhApiQualityPreset, EDhApiVerticalQuality> verticalQuality = new ConfigEntryWithPresetOptions<>(Config.Client.Advanced.Graphics.Quality.verticalQuality,
+			new HashMap<EDhApiQualityPreset, EDhApiVerticalQuality>()
 			{{
-				this.put(EQualityPreset.MINIMUM, EVerticalQuality.HEIGHT_MAP);
-				this.put(EQualityPreset.LOW, EVerticalQuality.LOW);
-				this.put(EQualityPreset.MEDIUM, EVerticalQuality.MEDIUM);
-				this.put(EQualityPreset.HIGH, EVerticalQuality.HIGH);
-				this.put(EQualityPreset.EXTREME, EVerticalQuality.EXTREME);
+				this.put(EDhApiQualityPreset.MINIMUM, EDhApiVerticalQuality.HEIGHT_MAP);
+				this.put(EDhApiQualityPreset.LOW, EDhApiVerticalQuality.LOW);
+				this.put(EDhApiQualityPreset.MEDIUM, EDhApiVerticalQuality.MEDIUM);
+				this.put(EDhApiQualityPreset.HIGH, EDhApiVerticalQuality.HIGH);
+				this.put(EDhApiQualityPreset.EXTREME, EDhApiVerticalQuality.EXTREME);
 			}});
-	private final ConfigEntryWithPresetOptions<EQualityPreset, EHorizontalQuality> horizontalQuality = new ConfigEntryWithPresetOptions<>(Config.Client.Advanced.Graphics.Quality.horizontalQuality,
-			new HashMap<EQualityPreset, EHorizontalQuality>()
+	private final ConfigEntryWithPresetOptions<EDhApiQualityPreset, EDhApiHorizontalQuality> horizontalQuality = new ConfigEntryWithPresetOptions<>(Config.Client.Advanced.Graphics.Quality.horizontalQuality,
+			new HashMap<EDhApiQualityPreset, EDhApiHorizontalQuality>()
 			{{
-				this.put(EQualityPreset.MINIMUM, EHorizontalQuality.LOWEST);
-				this.put(EQualityPreset.LOW, EHorizontalQuality.LOW);
-				this.put(EQualityPreset.MEDIUM, EHorizontalQuality.MEDIUM);
-				this.put(EQualityPreset.HIGH, EHorizontalQuality.HIGH);
-				this.put(EQualityPreset.EXTREME, EHorizontalQuality.EXTREME);
+				this.put(EDhApiQualityPreset.MINIMUM, EDhApiHorizontalQuality.LOWEST);
+				this.put(EDhApiQualityPreset.LOW, EDhApiHorizontalQuality.LOW);
+				this.put(EDhApiQualityPreset.MEDIUM, EDhApiHorizontalQuality.MEDIUM);
+				this.put(EDhApiQualityPreset.HIGH, EDhApiHorizontalQuality.HIGH);
+				this.put(EDhApiQualityPreset.EXTREME, EDhApiHorizontalQuality.EXTREME);
 			}});
-	private final ConfigEntryWithPresetOptions<EQualityPreset, ETransparency> transparency = new ConfigEntryWithPresetOptions<>(Config.Client.Advanced.Graphics.Quality.transparency,
-			new HashMap<EQualityPreset, ETransparency>()
+	private final ConfigEntryWithPresetOptions<EDhApiQualityPreset, EDhApiTransparency> transparency = new ConfigEntryWithPresetOptions<>(Config.Client.Advanced.Graphics.Quality.transparency,
+			new HashMap<EDhApiQualityPreset, EDhApiTransparency>()
 			{{
-				this.put(EQualityPreset.MINIMUM, ETransparency.DISABLED);
-				this.put(EQualityPreset.LOW, ETransparency.DISABLED); // should be fake if/when fake is fixed
-				this.put(EQualityPreset.MEDIUM, ETransparency.COMPLETE);
-				this.put(EQualityPreset.HIGH, ETransparency.COMPLETE);
-				this.put(EQualityPreset.EXTREME, ETransparency.COMPLETE);
+				this.put(EDhApiQualityPreset.MINIMUM, EDhApiTransparency.DISABLED);
+				this.put(EDhApiQualityPreset.LOW, EDhApiTransparency.DISABLED); // should be fake if/when fake is fixed
+				this.put(EDhApiQualityPreset.MEDIUM, EDhApiTransparency.COMPLETE);
+				this.put(EDhApiQualityPreset.HIGH, EDhApiTransparency.COMPLETE);
+				this.put(EDhApiQualityPreset.EXTREME, EDhApiTransparency.COMPLETE);
 			}});
-	private final ConfigEntryWithPresetOptions<EQualityPreset, Boolean> ssaoEnabled = new ConfigEntryWithPresetOptions<>(Config.Client.Advanced.Graphics.Ssao.enabled,
-			new HashMap<EQualityPreset, Boolean>()
+	private final ConfigEntryWithPresetOptions<EDhApiQualityPreset, Boolean> ssaoEnabled = new ConfigEntryWithPresetOptions<>(Config.Client.Advanced.Graphics.Ssao.enabled,
+			new HashMap<EDhApiQualityPreset, Boolean>()
 			{{
-				this.put(EQualityPreset.MINIMUM, false);
-				this.put(EQualityPreset.LOW, false);
-				this.put(EQualityPreset.MEDIUM, true);
-				this.put(EQualityPreset.HIGH, true);
-				this.put(EQualityPreset.EXTREME, true);
+				this.put(EDhApiQualityPreset.MINIMUM, false);
+				this.put(EDhApiQualityPreset.LOW, false);
+				this.put(EDhApiQualityPreset.MEDIUM, true);
+				this.put(EDhApiQualityPreset.HIGH, true);
+				this.put(EDhApiQualityPreset.EXTREME, true);
 			}});
 		
 	
@@ -103,7 +103,7 @@ public class RenderQualityPresetConfigEventHandler extends AbstractPresetConfigE
 		this.configList.add(this.ssaoEnabled);
 		
 		
-		for (ConfigEntryWithPresetOptions<EQualityPreset, ?> config : this.configList)
+		for (ConfigEntryWithPresetOptions<EDhApiQualityPreset, ?> config : this.configList)
 		{
 			// ignore try-using, the listener should only ever be added once and should never be removed
 			new ConfigChangeListener<>(config.configEntry, (val) -> { this.onConfigValueChanged(); });
@@ -117,11 +117,11 @@ public class RenderQualityPresetConfigEventHandler extends AbstractPresetConfigE
 	//==============//
 	
 	@Override
-	protected IConfigEntry<EQualityPreset> getPresetConfigEntry() { return Config.Client.qualityPresetSetting; }
+	protected IConfigEntry<EDhApiQualityPreset> getPresetConfigEntry() { return Config.Client.qualityPresetSetting; }
 	
 	@Override
-	protected List<EQualityPreset> getPresetEnumList() { return Arrays.asList(EQualityPreset.values()); }
+	protected List<EDhApiQualityPreset> getPresetEnumList() { return Arrays.asList(EDhApiQualityPreset.values()); }
 	@Override
-	protected EQualityPreset getCustomPresetEnum() { return EQualityPreset.CUSTOM; }
+	protected EDhApiQualityPreset getCustomPresetEnum() { return EDhApiQualityPreset.CUSTOM; }
 	
 }

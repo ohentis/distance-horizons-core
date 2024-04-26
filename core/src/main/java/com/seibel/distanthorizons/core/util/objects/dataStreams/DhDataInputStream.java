@@ -19,12 +19,13 @@
 
 package com.seibel.distanthorizons.core.util.objects.dataStreams;
 
+import com.github.luben.zstd.RecyclingBufferPool;
+import com.github.luben.zstd.ZstdInputStream;
+import com.seibel.distanthorizons.api.enums.config.EDhApiDataCompressionMode;
 import net.jpountz.lz4.LZ4FrameInputStream;
+import org.tukaani.xz.XZInputStream;
 
-import java.io.BufferedInputStream;
-import java.io.DataInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 
 /**
  * Combines multiple different streams together for ease of use
@@ -38,9 +39,27 @@ import java.io.InputStream;
  */
 public class DhDataInputStream extends DataInputStream
 {
-	public DhDataInputStream(InputStream stream) throws IOException
+	public DhDataInputStream(InputStream stream, EDhApiDataCompressionMode compressionMode) throws IOException
+	{ 
+		super(warpStream(new BufferedInputStream(stream), compressionMode)); 
+	}
+	private static InputStream warpStream(InputStream stream, EDhApiDataCompressionMode compressionMode) throws IOException
 	{
-		super(new LZ4FrameInputStream(new BufferedInputStream(stream)));
+		switch (compressionMode)
+		{
+			case UNCOMPRESSED:
+				return stream;
+			case LZ4:
+				return new LZ4FrameInputStream(stream);
+			case Z_STD:
+				return new ZstdInputStream(stream, RecyclingBufferPool.INSTANCE);
+			case LZMA2:
+				// Note: all LZMA/XZ compressors can be decompressed using this same InputStream
+				return new XZInputStream(stream);
+			
+			default:
+				throw new IllegalArgumentException("No compressor defined for ["+compressionMode+"]");
+		}
 	}
 	
 	@Override

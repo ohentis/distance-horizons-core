@@ -26,17 +26,14 @@ import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.core.world.DhApiWorldProxy;
 import com.seibel.distanthorizons.core.api.external.methods.config.DhApiConfig;
 import com.seibel.distanthorizons.core.api.external.methods.data.DhApiTerrainDataRepo;
-import com.seibel.distanthorizons.core.dataObjects.fullData.loader.CompleteFullDataSourceLoader;
-import com.seibel.distanthorizons.core.dataObjects.fullData.loader.HighDetailIncompleteFullDataSourceLoader;
 import com.seibel.distanthorizons.api.DhApi;
-import com.seibel.distanthorizons.core.dataObjects.fullData.loader.LowDetailIncompleteFullDataSourceLoader;
 import com.seibel.distanthorizons.core.render.DhApiRenderProxy;
-//import io.netty.buffer.ByteBuf;
-import net.jpountz.lz4.LZ4Compressor;
+import io.netty.buffer.ByteBuf;
+import net.jpountz.lz4.LZ4FrameOutputStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.InputStream;
+import java.awt.*;
 
 /** Handles first time Core setup. */
 public class Initializer
@@ -50,11 +47,11 @@ public class Initializer
 		{
 			// if any library isn't present in the jar its class
 			// will throw an error (not an exception)
-			Class<?> compressor = LZ4Compressor.class;
-			//Class<?> networking = ByteBuf.class;
+			Class<?> compressor = LZ4FrameOutputStream.class;
+			Class<?> networking = ByteBuf.class;
 			Class<?> toml = com.electronwill.nightconfig.core.Config.class;
 		}
-		catch (NoClassDefFoundError e)
+		catch (Throwable e)
 		{
 			LOGGER.fatal("Critical programmer error: One or more libraries aren't present. Error: [" + e.getMessage() + "].");
 			throw e;
@@ -76,10 +73,16 @@ public class Initializer
 		}
 		
 		
-		
-		CompleteFullDataSourceLoader unused2 = new CompleteFullDataSourceLoader(); // Auto register into the loader system
-		HighDetailIncompleteFullDataSourceLoader unused3 = new HighDetailIncompleteFullDataSourceLoader(); // Auto register
-		LowDetailIncompleteFullDataSourceLoader unused4 = new LowDetailIncompleteFullDataSourceLoader(); // Auto register
+		// attempt to setup Swing so we can display dialogs (popup windows)
+		System.setProperty("java.awt.headless", "false");
+		if (GraphicsEnvironment.isHeadless())
+		{
+			LOGGER.warn("Java.awt.headless is false. This means Distant Horizons can't display error and info dialog windows.");
+		}
+		else
+		{
+			LOGGER.info("Java.awt.headless set to true. Distant Horizons can correctly display error and info dialog windows.");
+		}
 		
 		// link Core's config to the API
 		DhApi.Delayed.configs = DhApiConfig.INSTANCE;

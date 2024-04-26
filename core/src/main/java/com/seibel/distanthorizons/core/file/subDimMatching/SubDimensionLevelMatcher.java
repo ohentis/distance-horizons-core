@@ -21,10 +21,7 @@ package com.seibel.distanthorizons.core.file.subDimMatching;
 
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.FullDataPointIdMap;
-import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
-import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.SingleColumnFullDataAccessor;
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.CompleteFullDataSource;
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IFullDataSource;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.file.structure.ClientOnlySaveStructure;
 import com.seibel.distanthorizons.core.generation.DhLightingEngine;
@@ -43,6 +40,7 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftCli
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.apache.logging.log4j.LogManager;
 
 import java.io.File;
@@ -190,14 +188,9 @@ public class SubDimensionLevelMatcher implements AutoCloseable
 			LOGGER.warn("unable to build lod for chunk:"+newlyLoadedChunk.getChunkPos());
 			return null;
 		}
-		ChunkSizedFullDataAccessor newChunkSizedFullDataView = LodDataBuilder.createChunkData(newlyLoadedChunk);
-		if (newChunkSizedFullDataView == null)
-		{
-			LOGGER.warn("Unexpected LOD build error for chunk:"+newlyLoadedChunk.getChunkPos());
-			return null;
-		}
+		FullDataSourceV2 newChunkSizedFullDataView = FullDataSourceV2.createFromChunk(newlyLoadedChunk);
 		// convert to a data source for easier comparing
-		CompleteFullDataSource newDataSource = CompleteFullDataSource.createEmpty(new DhSectionPos(this.playerData.playerBlockPos));
+		FullDataSourceV2 newDataSource = FullDataSourceV2.createEmpty(new DhSectionPos(this.playerData.playerBlockPos));
 		newDataSource.update(newChunkSizedFullDataView);
 		
 		
@@ -219,7 +212,7 @@ public class SubDimensionLevelMatcher implements AutoCloseable
 			{
 				// get the data source to compare against
 				IDhLevel tempLevel = new DhClientLevel(new ClientOnlySaveStructure(), this.currentClientLevel, testLevelFolder, false);
-				IFullDataSource testFullDataSource = tempLevel.getFileHandler().getAsync(new DhSectionPos(this.playerData.playerBlockPos)).join();
+				FullDataSourceV2 testFullDataSource = tempLevel.getFullDataProvider().getAsync(new DhSectionPos(this.playerData.playerBlockPos)).join();
 				if (testFullDataSource == null)
 				{
 					continue;
@@ -227,8 +220,8 @@ public class SubDimensionLevelMatcher implements AutoCloseable
 				
 				
 				// confirm both data sources have the same section pos
-				DhSectionPos newSectionChunkPos = newDataSource.getSectionPos().convertNewToDetailLevel(DhSectionPos.SECTION_CHUNK_DETAIL_LEVEL);
-				DhSectionPos testSectionChunkPos = testFullDataSource.getSectionPos().convertNewToDetailLevel(DhSectionPos.SECTION_CHUNK_DETAIL_LEVEL);
+				DhSectionPos newSectionChunkPos = newDataSource.getPos().convertNewToDetailLevel(DhSectionPos.SECTION_CHUNK_DETAIL_LEVEL);
+				DhSectionPos testSectionChunkPos = testFullDataSource.getPos().convertNewToDetailLevel(DhSectionPos.SECTION_CHUNK_DETAIL_LEVEL);
 				LodUtil.assertTrue(newSectionChunkPos.equals(testSectionChunkPos), "data source positions don't match");
 				
 				
@@ -236,26 +229,26 @@ public class SubDimensionLevelMatcher implements AutoCloseable
 				// compare the data sources
 				int equalDataPoints = 0;
 				int totalDataPointCount = 0;
-				for (int x = 0; x < CompleteFullDataSource.WIDTH; x++)
+				for (int x = 0; x < FullDataSourceV2.WIDTH; x++)
 				{
-					for (int z = 0; z < CompleteFullDataSource.WIDTH; z++)
+					for (int z = 0; z < FullDataSourceV2.WIDTH; z++)
 					{
-						SingleColumnFullDataAccessor newColumn = newDataSource.tryGet(x, z);
-						SingleColumnFullDataAccessor testColumn = testFullDataSource.tryGet(x, z);
+						LongArrayList newColumn = newDataSource.get(x, z);
+						LongArrayList testColumn = testFullDataSource.get(x, z);
 						
 						if (newColumn != null && testColumn != null)
 						{
 							// compare each data point in the column
 							
-							FullDataPointIdMap newDataMap = newDataSource.getMapping();
-							FullDataPointIdMap testDataMap = testFullDataSource.getMapping();
+							FullDataPointIdMap newDataMap = newDataSource.mapping;
+							FullDataPointIdMap testDataMap = testFullDataSource.mapping;
 							
 							// use min to prevent going out of bounds
-							int minColumnIndex = Math.min(newColumn.getSingleLength(), testColumn.getSingleLength());
+							int minColumnIndex = Math.min(newColumn.size(), testColumn.size());
 							for (int i = 0; i < minColumnIndex; i++)
 							{
-								long newDataPoint = newColumn.getSingle(i);
-								long testDataPoint = testColumn.getSingle(i);
+								long newDataPoint = newColumn.getLong(i);
+								long testDataPoint = testColumn.getLong(i);
 								
 								int newId = FullDataPointUtil.getId(newDataPoint);
 								int testId = FullDataPointUtil.getId(testDataPoint);
@@ -304,7 +297,7 @@ public class SubDimensionLevelMatcher implements AutoCloseable
 						else if (newColumn != null)
 						{
 							// missing test column
-							totalDataPointCount += newColumn.getSingleLength();
+							totalDataPointCount += newColumn.size();
 						}
 						else
 						{

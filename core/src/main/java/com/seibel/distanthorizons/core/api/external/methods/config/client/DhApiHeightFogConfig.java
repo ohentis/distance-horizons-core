@@ -19,9 +19,9 @@
 
 package com.seibel.distanthorizons.core.api.external.methods.config.client;
 
-import com.seibel.distanthorizons.api.enums.rendering.EFogFalloff;
-import com.seibel.distanthorizons.api.enums.rendering.EHeightFogMixMode;
-import com.seibel.distanthorizons.api.enums.rendering.EHeightFogMode;
+import com.seibel.distanthorizons.api.enums.rendering.EDhApiFogFalloff;
+import com.seibel.distanthorizons.api.enums.rendering.EDhApiHeightFogMixMode;
+import com.seibel.distanthorizons.api.enums.rendering.EDhApiHeightFogMode;
 import com.seibel.distanthorizons.api.interfaces.config.IDhApiConfigValue;
 import com.seibel.distanthorizons.api.interfaces.config.client.IDhApiHeightFogConfig;
 import com.seibel.distanthorizons.api.objects.config.DhApiConfigValue;
@@ -36,12 +36,12 @@ public class DhApiHeightFogConfig implements IDhApiHeightFogConfig
 	
 	
 	@Override
-	public IDhApiConfigValue<EHeightFogMixMode> heightFogMixMode()
-	{ return new DhApiConfigValue<EHeightFogMixMode, EHeightFogMixMode>(Config.Client.Advanced.Graphics.Fog.AdvancedFog.HeightFog.heightFogMixMode); }
+	public IDhApiConfigValue<EDhApiHeightFogMixMode> heightFogMixMode()
+	{ return new DhApiConfigValue<EDhApiHeightFogMixMode, EDhApiHeightFogMixMode>(Config.Client.Advanced.Graphics.Fog.AdvancedFog.HeightFog.heightFogMixMode); }
 	
 	@Override
-	public IDhApiConfigValue<EHeightFogMode> heightFogMode()
-	{ return new DhApiConfigValue<EHeightFogMode, EHeightFogMode>(Config.Client.Advanced.Graphics.Fog.AdvancedFog.HeightFog.heightFogMode); }
+	public IDhApiConfigValue<EDhApiHeightFogMode> heightFogMode()
+	{ return new DhApiConfigValue<EDhApiHeightFogMode, EDhApiHeightFogMode>(Config.Client.Advanced.Graphics.Fog.AdvancedFog.HeightFog.heightFogMode); }
 	
 	@Override
 	public IDhApiConfigValue<Double> heightFogBaseHeight()
@@ -64,8 +64,8 @@ public class DhApiHeightFogConfig implements IDhApiHeightFogConfig
 	{ return new DhApiConfigValue<Double, Double>(Config.Client.Advanced.Graphics.Fog.AdvancedFog.HeightFog.heightFogMax); }
 	
 	@Override
-	public IDhApiConfigValue<EFogFalloff> heightFogFalloff()
-	{ return new DhApiConfigValue<EFogFalloff, EFogFalloff>(Config.Client.Advanced.Graphics.Fog.AdvancedFog.HeightFog.heightFogFalloff); }
+	public IDhApiConfigValue<EDhApiFogFalloff> heightFogFalloff()
+	{ return new DhApiConfigValue<EDhApiFogFalloff, EDhApiFogFalloff>(Config.Client.Advanced.Graphics.Fog.AdvancedFog.HeightFog.heightFogFalloff); }
 	
 	@Override
 	public IDhApiConfigValue<Double> heightFogDensity()

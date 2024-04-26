@@ -62,7 +62,7 @@ public class RateLimitedThreadPoolExecutor extends ThreadPoolExecutor
 	{
 		super(corePoolSize, corePoolSize,
 				0L, TimeUnit.MILLISECONDS,
-				new LinkedBlockingQueue<>(),
+				new LinkedBlockingQueue<>(), // TODO using a PriorityBlockingQueue would be nice to allow for prioritizing tasks, but then all tasks must be Comparable
 				threadFactory);
 		
 		this.runTimeRatio = runTimeRatio;
@@ -75,6 +75,7 @@ public class RateLimitedThreadPoolExecutor extends ThreadPoolExecutor
 	// overrides //
 	//===========//
 	
+	@Override
 	protected void beforeExecute(Thread thread, Runnable runnable)
 	{
 		super.beforeExecute(thread, runnable);

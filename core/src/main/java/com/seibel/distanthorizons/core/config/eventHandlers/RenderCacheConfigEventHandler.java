@@ -20,13 +20,10 @@
 package com.seibel.distanthorizons.core.config.eventHandlers;
 
 import com.seibel.distanthorizons.api.DhApi;
-import com.seibel.distanthorizons.api.enums.config.EBlocksToAvoid;
-import com.seibel.distanthorizons.api.enums.config.ELodShading;
-import com.seibel.distanthorizons.api.enums.config.EMaxHorizontalResolution;
-import com.seibel.distanthorizons.api.enums.config.EVerticalQuality;
-import com.seibel.distanthorizons.api.enums.rendering.ETransparency;
+import com.seibel.distanthorizons.api.enums.config.*;
+import com.seibel.distanthorizons.api.enums.rendering.EDhApiDebugRendering;
+import com.seibel.distanthorizons.api.enums.rendering.EDhApiTransparency;
 import com.seibel.distanthorizons.core.config.listeners.ConfigChangeListener;
-import com.seibel.distanthorizons.core.config.listeners.IConfigListener;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.util.TimerUtil;
 
@@ -45,15 +42,18 @@ public class RenderCacheConfigEventHandler
 	
 	
 	// previous values used to check if a watched setting was actually modified
-	private final ConfigChangeListener<EMaxHorizontalResolution> horizontalResolutionChangeListener;
-	private final ConfigChangeListener<EVerticalQuality> verticalQualityChangeListener;
-	private final ConfigChangeListener<ETransparency> transparencyChangeListener;
-	private final ConfigChangeListener<EBlocksToAvoid> blocksToIgnoreChangeListener;
+	private final ConfigChangeListener<EDhApiMaxHorizontalResolution> horizontalResolutionChangeListener;
+	private final ConfigChangeListener<EDhApiVerticalQuality> verticalQualityChangeListener;
+	private final ConfigChangeListener<EDhApiTransparency> transparencyChangeListener;
+	private final ConfigChangeListener<EDhApiBlocksToAvoid> blocksToIgnoreChangeListener;
 	private final ConfigChangeListener<Boolean> tintWithAvoidedBlocksChangeListener;
 	
 	private final ConfigChangeListener<Double> brightnessMultiplierChangeListener;
 	private final ConfigChangeListener<Double> saturationMultiplierChangeListener;
-	private final ConfigChangeListener<ELodShading> lodShadingChangeListener;
+	private final ConfigChangeListener<EDhApiLodShading> lodShadingChangeListener;
+	private final ConfigChangeListener<EDhApiGrassSideRendering> grassSideChangeListener;
+	
+	private final ConfigChangeListener<EDhApiDebugRendering> debugRenderingChangeListener;
 	
 	/** how long to wait in milliseconds before applying the config changes */
 	private static final long TIMEOUT_IN_MS = 4_000L;
@@ -83,6 +83,9 @@ public class RenderCacheConfigEventHandler
 		this.brightnessMultiplierChangeListener = new ConfigChangeListener<>(Config.Client.Advanced.Graphics.AdvancedGraphics.brightnessMultiplier, (newValue) -> this.refreshRenderDataAfterTimeout());
 		this.saturationMultiplierChangeListener = new ConfigChangeListener<>(Config.Client.Advanced.Graphics.AdvancedGraphics.saturationMultiplier, (newValue) -> this.refreshRenderDataAfterTimeout());
 		this.lodShadingChangeListener = new ConfigChangeListener<>(Config.Client.Advanced.Graphics.AdvancedGraphics.lodShading, (newValue) -> this.refreshRenderDataAfterTimeout());
+		this.grassSideChangeListener = new ConfigChangeListener<>(Config.Client.Advanced.Graphics.AdvancedGraphics.grassSideRendering, (newValue) -> this.refreshRenderDataAfterTimeout());
+		
+		this.debugRenderingChangeListener = new ConfigChangeListener<>(Config.Client.Advanced.Debugging.debugRendering, (newValue) -> this.refreshRenderDataAfterTimeout());
 		
 	}
 	

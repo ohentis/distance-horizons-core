@@ -19,7 +19,7 @@
 
 package com.seibel.distanthorizons.core.config.gui;
 
-import com.seibel.distanthorizons.api.enums.config.EGpuUploadMethod;
+import com.seibel.distanthorizons.api.enums.config.EDhApiGpuUploadMethod;
 import com.seibel.distanthorizons.core.render.glObject.GLProxy;
 import com.seibel.distanthorizons.core.render.glObject.GLState;
 import com.seibel.distanthorizons.core.render.glObject.buffer.GLVertexBuffer;
@@ -76,7 +76,7 @@ public class OpenGLConfigScreen extends AbstractScreen
 		buffer.rewind();
 		GLVertexBuffer vbo = new GLVertexBuffer(false);
 		vbo.bind();
-		vbo.uploadBuffer(buffer, 4, EGpuUploadMethod.DATA, vertices.length * Float.BYTES);
+		vbo.uploadBuffer(buffer, 4, EDhApiGpuUploadMethod.DATA, vertices.length * Float.BYTES);
 		return vbo;
 	}
 	

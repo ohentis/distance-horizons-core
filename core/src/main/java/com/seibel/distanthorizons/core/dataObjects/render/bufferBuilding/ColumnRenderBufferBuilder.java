@@ -19,7 +19,7 @@
 
 package com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding;
 
-import com.seibel.distanthorizons.api.enums.rendering.EDebugRendering;
+import com.seibel.distanthorizons.api.enums.rendering.EDhApiDebugRendering;
 import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSource;
@@ -27,18 +27,19 @@ import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
+import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.render.glObject.GLProxy;
 import com.seibel.distanthorizons.core.render.glObject.buffer.GLVertexBuffer;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.RenderDataPointUtil;
-import com.seibel.distanthorizons.core.util.objects.Reference;
 import com.seibel.distanthorizons.core.util.objects.UncheckedInterruptedException;
 import com.seibel.distanthorizons.core.dataObjects.render.columnViews.ColumnArrayView;
-import com.seibel.distanthorizons.core.util.threading.ThreadPools;
+import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 
 /**
@@ -63,12 +64,12 @@ public class ColumnRenderBufferBuilder
 	// vbo building //
 	//==============//
 	
-	public static CompletableFuture<ColumnRenderBuffer> buildBuffersAsync(
-			IDhClientLevel clientLevel, Reference<ColumnRenderBuffer> renderBufferRef,
+	public static CompletableFuture<ColumnRenderBuffer> buildAndUploadBuffersAsync(
+			IDhClientLevel clientLevel,
 			ColumnRenderSource renderSource, ColumnRenderSource[] adjData)
 	{
-		ThreadPoolExecutor bufferBuilderExecutor = ThreadPools.getBufferBuilderExecutor();
-		ThreadPoolExecutor bufferUploaderExecutor = ThreadPools.getBufferUploaderExecutor();
+		ThreadPoolExecutor bufferBuilderExecutor = ThreadPoolUtil.getBufferBuilderExecutor();
+		ThreadPoolExecutor bufferUploaderExecutor = ThreadPoolUtil.getBufferUploaderExecutor();
 		if ((bufferBuilderExecutor == null || bufferBuilderExecutor.isTerminated()) ||
 			(bufferUploaderExecutor == null || bufferUploaderExecutor.isTerminated()))
 		{
@@ -78,15 +79,27 @@ public class ColumnRenderBufferBuilder
 			return future;
 		}
 		
-		//LOGGER.info("RenderRegion startBuild @ "+renderSource.sectionPos);
-		return CompletableFuture.supplyAsync(() ->
+		try
+		{
+			return CompletableFuture.supplyAsync(() ->
 				{
 					try
 					{
 						boolean enableTransparency = Config.Client.Advanced.Graphics.Quality.transparency.get().transparencyEnabled;
 						
-						EVENT_LOGGER.trace("RenderRegion start QuadBuild @ " + renderSource.sectionPos);
-						boolean enableSkyLightCulling = !clientLevel.getLevelWrapper().hasCeiling() && Config.Client.Advanced.Graphics.AdvancedGraphics.enableCaveCulling.get();
+						//EVENT_LOGGER.trace("RenderRegion start QuadBuild @ " + renderSource.sectionPos);
+						boolean enableSkyLightCulling =
+								Config.Client.Advanced.Graphics.AdvancedGraphics.enableCaveCulling.get()
+								&& (
+									// dimensions with a ceiling will be all caves so we don't want cave culling
+									!clientLevel.getLevelWrapper().hasCeiling()
+									// the end has a lot of overhangs with 0 lighting above the void, which look broken with
+									// the current cave culling logic (this could probably be improved, but just skipping it works best for now)
+									&& !clientLevel.getLevelWrapper().getDimensionType().isTheEnd()
+									// FIXME temporary fix
+									//  Cave culling is currently broken for any detail level above 0
+									&& renderSource.pos.getDetailLevel() == DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL
+								);
 						
 						int skyLightCullingBelow = Config.Client.Advanced.Graphics.AdvancedGraphics.caveCullingHeight.get();
 						// FIXME: Clamp also to the max world height.
@@ -95,12 +108,12 @@ public class ColumnRenderBufferBuilder
 						
 						long builderStartTime = System.currentTimeMillis();
 						
-						LodQuadBuilder builder = new LodQuadBuilder(enableSkyLightCulling, (short) (skyLightCullingBelow - clientLevel.getMinY()), enableTransparency);
+						LodQuadBuilder builder = new LodQuadBuilder(enableSkyLightCulling, (short) (skyLightCullingBelow - clientLevel.getMinY()), enableTransparency, clientLevel.getClientLevelWrapper());
 						makeLodRenderData(builder, renderSource, adjData);
 						
 						long builderEndTime = System.currentTimeMillis();
 						long buildMs = builderEndTime - builderStartTime;
-						LOGGER.debug("RenderRegion end QuadBuild @ " + renderSource.sectionPos + " took: " + buildMs);
+						LOGGER.debug("RenderRegion end QuadBuild @ " + renderSource.pos + " took: " + buildMs);
 						
 						return builder;
 					}
@@ -118,19 +131,11 @@ public class ColumnRenderBufferBuilder
 				{
 					try
 					{
-						EVENT_LOGGER.trace("RenderRegion start Upload @ " + renderSource.sectionPos);
-						
-						ColumnRenderBuffer buffer = renderBufferRef.swap(null);
-						if (buffer == null)
-						{
-							buffer = new ColumnRenderBuffer(new DhBlockPos(renderSource.sectionPos.getMinCornerLodPos().getCornerBlockPos(), clientLevel.getMinY()), renderSource.sectionPos);
-						}
-						
+						ColumnRenderBuffer buffer = new ColumnRenderBuffer(new DhBlockPos(renderSource.pos.getMinCornerLodPos().getCornerBlockPos(), clientLevel.getMinY()));
 						try
 						{
 							buffer.uploadBuffer(quadBuilder, GLProxy.getInstance().getGpuUploadMethod());
 							LodUtil.assertTrue(buffer.buffersUploaded);
-							EVENT_LOGGER.trace("RenderRegion end Upload @ " + renderSource.sectionPos);
 							return buffer;
 						}
 						catch (Exception e)
@@ -145,49 +150,33 @@ public class ColumnRenderBufferBuilder
 					}
 					catch (Throwable e3)
 					{
-						LOGGER.error("\"LodNodeBufferBuilder\" was unable to upload buffer: ", e3);
+						LOGGER.error("LodNodeBufferBuilder was unable to upload buffer: " + e3.getMessage(), e3);
 						throw e3;
 					}
-				}, bufferUploaderExecutor)
-				.handle((columnRenderBuffer, ex) ->
-				{
-					//LOGGER.info("RenderRegion endBuild @ {}", renderSource.sectionPos);
-					if (ex != null)
-					{
-						LOGGER.warn("Buffer building failed: " + ex.getMessage(), ex);
-						
-						if (!renderBufferRef.isEmpty())
-						{
-							ColumnRenderBuffer buffer = renderBufferRef.swap(null);
-							buffer.close();
-						}
-						
-						return null;
-					}
-					else
-					{
-						if (columnRenderBuffer != null)
-						{
-							LodUtil.assertTrue(columnRenderBuffer.buffersUploaded);
-						}
-						
-						return columnRenderBuffer; 
-					}
-				});
+				}, bufferUploaderExecutor);
+		}
+		catch (RejectedExecutionException ignore) 
+		{
+			// the thread pool was probably shut down because it's size is being changed, just wait a sec and it should be back
+			
+			CompletableFuture<ColumnRenderBuffer> future = new CompletableFuture<>();
+			future.cancel(true);
+			return future;
+		}
 	}
 	private static void makeLodRenderData(LodQuadBuilder quadBuilder, ColumnRenderSource renderSource, ColumnRenderSource[] adjRegions)
 	{
 		// Variable initialization
-		EDebugRendering debugMode = Config.Client.Advanced.Debugging.debugRendering.get();
+		EDhApiDebugRendering debugMode = Config.Client.Advanced.Debugging.debugRendering.get();
 		
 		// can be used to limit which section positions are build and thus, rendered
 		// useful when debugging a specific section
 		boolean enableColumnBufferLimit = Config.Client.Advanced.Debugging.columnBuilderDebugEnable.get();
 		if (enableColumnBufferLimit)
 		{
-			if (renderSource.sectionPos.getDetailLevel() == Config.Client.Advanced.Debugging.columnBuilderDebugDetailLevel.get()
-				&& renderSource.sectionPos.getX() == Config.Client.Advanced.Debugging.columnBuilderDebugXPos.get()
-				&& renderSource.sectionPos.getZ() == Config.Client.Advanced.Debugging.columnBuilderDebugZPos.get())
+			if (renderSource.pos.getDetailLevel() == Config.Client.Advanced.Debugging.columnBuilderDebugDetailLevel.get()
+				&& renderSource.pos.getX() == Config.Client.Advanced.Debugging.columnBuilderDebugXPos.get()
+				&& renderSource.pos.getZ() == Config.Client.Advanced.Debugging.columnBuilderDebugZPos.get())
 			{
 				int test = 0;
 			}
@@ -312,8 +301,7 @@ public class ColumnRenderBufferBuilder
 					}
 					catch (RuntimeException e)
 					{
-						EVENT_LOGGER.warn("Failed to get adj data for [" + detailLevel + ":" + x + "," + z + "] at [" + lodDirection + "]");
-						EVENT_LOGGER.warn("Detail exception: ", e);
+						EVENT_LOGGER.warn("Failed to get adj data for [" + detailLevel + ":" + x + "," + z + "] at [" + lodDirection + "], Error: "+e.getMessage(), e);
 					}
 				} // for adjacent directions
 				

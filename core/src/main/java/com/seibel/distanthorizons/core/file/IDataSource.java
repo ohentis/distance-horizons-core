@@ -1,37 +1,24 @@
 package com.seibel.distanthorizons.core.file;
 
-import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
-import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
-import com.seibel.distanthorizons.core.dataObjects.fullData.loader.AbstractFullDataSourceLoader;
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IFullDataSource;
+import com.seibel.distanthorizons.api.enums.EDhApiDetailLevel;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
-import com.seibel.distanthorizons.core.sql.IBaseDTO;
-import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataOutputStream;
-
-import java.io.IOException;
+import com.seibel.distanthorizons.core.sql.dto.IBaseDTO;
 
 /**
- * Base for all data sources.
+ * Base for all data sources. <br><br>
  * 
- * @param <TDhLevel> what type of level this data source can be created from
+ * AutoCloseable Can be implemented to allow for disposing of pooled data sources. <br><br>
+ * 
+ * @param <TDhLevel> there are times when we need specifically a client level vs a more generic level
  */
-public interface IDataSource<TDhLevel extends IDhLevel> extends IBaseDTO
+public interface IDataSource<TDhLevel extends IDhLevel> extends IBaseDTO<DhSectionPos>, AutoCloseable
 {
+	DhSectionPos getPos();
 	
-	DhSectionPos getSectionPos();
-	@Override
-	default String getPrimaryKeyString() { return this.getSectionPos().serialize(); }
-	
-	
-	
-	//===============//
-	// file handling //
-	//===============//
-	
-	void update(ChunkSizedFullDataAccessor chunkData, TDhLevel level);
-	
-	void writeToStream(DhDataOutputStream outputStream, TDhLevel level) throws IOException;
+	/** @return true if the data was changed */
+	boolean update(FullDataSourceV2 chunkData, TDhLevel level);
 	
 	
 	
@@ -39,16 +26,12 @@ public interface IDataSource<TDhLevel extends IDhLevel> extends IBaseDTO
 	// meta data //
 	//===========//
 	
-	/** Returns the detail level of the data contained by this {@link IFullDataSource}. */
-	byte getDataDetailLevel();
-	EDhApiWorldGenerationStep getWorldGenStep();
-	/**
-	 * Returns the name of this data source. <br>
-	 * Primarily by {@link AbstractFullDataSourceLoader#getLoader(String, byte)} to determine how to parse
-	 * the binary data when read from file.
+	/** 
+	 * Returns the detail level of the data contained by this data source. 
+	 * IE: 0 for block, 1 for 2x2 blocks, etc.
+	 * 
+	 * @see EDhApiDetailLevel
 	 */
-	String getDataTypeName();
-	/** Defines how the binary data is formatted and which {@link AbstractFullDataSourceLoader} should be used when loading from file. */
-	byte getDataFormatVersion();
+	byte getDataDetailLevel();
 	
 }

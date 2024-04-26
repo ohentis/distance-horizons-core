@@ -47,7 +47,7 @@ public interface IBlockStateWrapper extends IDhApiBlockStateWrapper
 		public static final byte TERRACOTTA = 10;
 		public static final byte NETHER_STONE = 11;
 		public static final byte WATER = 12;
-		// unlisted numbers are unused
+		public static final byte GRASS = 13;
 		
 		/** shouldn't normally be needed, but just in case */
 		public static final byte AIR = 14;
@@ -67,6 +67,9 @@ public interface IBlockStateWrapper extends IDhApiBlockStateWrapper
 	/**
 	 * Returning a value of 0 means the block is completely transparent. <br.
 	 * Returning a value of 15 means the block is completely opaque.
+	 * 
+	 * @see IBlockStateWrapper#FULLY_OPAQUE
+	 * @see IBlockStateWrapper#FULLY_TRANSPARENT
 	 */
 	int getOpacity();
 	

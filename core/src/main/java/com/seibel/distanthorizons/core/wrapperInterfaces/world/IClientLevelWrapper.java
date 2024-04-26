@@ -34,4 +34,7 @@ public interface IClientLevelWrapper extends ILevelWrapper
 	
 	int computeBaseColor(DhBlockPos pos, IBiomeWrapper biome, IBlockStateWrapper blockState);
 	
+	/** @return -1 if there was a problem getting the color */
+	int getDirtBlockColor();
+	
 }

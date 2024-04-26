@@ -19,8 +19,7 @@
 
 package com.seibel.distanthorizons.core.render.renderer;
 
-import com.seibel.distanthorizons.api.enums.rendering.EDhApiRenderPass;
-import com.seibel.distanthorizons.api.enums.rendering.EFogDrawMode;
+import com.seibel.distanthorizons.api.enums.rendering.EDhApiFogDrawMode;
 import com.seibel.distanthorizons.api.interfaces.override.rendering.IDhApiFramebuffer;
 import com.seibel.distanthorizons.api.interfaces.override.rendering.IDhApiShaderProgram;
 import com.seibel.distanthorizons.api.methods.events.abstractEvents.*;
@@ -32,7 +31,6 @@ import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
 import com.seibel.distanthorizons.core.logging.ConfigBasedSpamLogger;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
-import com.seibel.distanthorizons.core.render.AbstractRenderBuffer;
 import com.seibel.distanthorizons.core.render.DhApiRenderProxy;
 import com.seibel.distanthorizons.core.render.RenderBufferHandler;
 import com.seibel.distanthorizons.core.render.glObject.GLProxy;
@@ -41,12 +39,11 @@ import com.seibel.distanthorizons.core.render.glObject.buffer.GLVertexBuffer;
 import com.seibel.distanthorizons.core.render.glObject.buffer.QuadElementBuffer;
 import com.seibel.distanthorizons.core.render.glObject.texture.*;
 import com.seibel.distanthorizons.core.render.renderer.shaders.*;
-import com.seibel.distanthorizons.core.util.RenderUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.ILightMapWrapper;
-import com.seibel.distanthorizons.api.enums.rendering.EFogColorMode;
+import com.seibel.distanthorizons.api.enums.rendering.EDhApiFogColorMode;
 import com.seibel.distanthorizons.core.render.fog.LodFogConfig;
 import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.AbstractOptifineAccessor;
 import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.IIrisAccessor;
@@ -57,8 +54,6 @@ import com.seibel.distanthorizons.coreapi.util.math.Mat4f;
 import com.seibel.distanthorizons.coreapi.util.math.Vec3d;
 import com.seibel.distanthorizons.coreapi.util.math.Vec3f;
 import org.apache.logging.log4j.LogManager;
-import org.joml.Matrix4f;
-import org.joml.Matrix4fc;
 import org.lwjgl.opengl.GL32;
 
 import java.awt.*;
@@ -389,7 +384,7 @@ public class LodRenderer
 				}
 				
 				
-				if (Config.Client.Advanced.Graphics.Fog.drawMode.get() != EFogDrawMode.FOG_DISABLED)
+				if (Config.Client.Advanced.Graphics.Fog.drawMode.get() != EDhApiFogDrawMode.FOG_DISABLED)
 				{
 					profiler.popPush("LOD Fog");
 					
@@ -520,13 +515,12 @@ public class LodRenderer
 		GL32.glEnable(GL32.GL_BLEND);
 		GL32.glBlendEquation(GL32.GL_FUNC_ADD);
 		GL32.glBlendFuncSeparate(GL32.GL_SRC_ALPHA, GL32.GL_ONE_MINUS_SRC_ALPHA, GL32.GL_ONE, GL32.GL_ONE_MINUS_SRC_ALPHA);
-		//GL32.glBlendFunc(GL32.GL_ONE, GL32.GL_ONE_MINUS_SRC_ALPHA);
 		ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeRenderPassEvent.class, renderEventParam);
 		this.bufferHandler.renderTransparent(this, renderEventParam);
 		GL32.glDepthMask(true); // Apparently the depth mask state is stored in the FBO, so glState fails to restore it...
 		
 		
-		if (Config.Client.Advanced.Graphics.Fog.drawMode.get() != EFogDrawMode.FOG_DISABLED)
+		if (Config.Client.Advanced.Graphics.Fog.drawMode.get() != EDhApiFogDrawMode.FOG_DISABLED)
 		{
 			profiler.popPush("LOD Fog");
 			FogShader.INSTANCE.render(partialTicks);
@@ -705,7 +699,7 @@ public class LodRenderer
 			if (ENABLE_IBO)
 			{
 				this.quadIBO = new QuadElementBuffer();
-				this.quadIBO.reserve(AbstractRenderBuffer.MAX_QUADS_PER_BUFFER);
+				this.quadIBO.reserve(ColumnRenderBuffer.MAX_QUADS_PER_BUFFER);
 			}
 			
 			
@@ -750,8 +744,8 @@ public class LodRenderer
 		this.cachedHeight = MC_RENDER.getTargetFrameBufferViewportHeight();
 		
 		
-		ApiEventInjector.INSTANCE.fireAllEvents(DhApiScreenResizeEvent.class, 
-				new DhApiScreenResizeEvent.EventParam(
+		ApiEventInjector.INSTANCE.fireAllEvents(DhApiColorDepthTextureCreatedEvent.class, 
+				new DhApiColorDepthTextureCreatedEvent.EventParam(
 						oldWidth, oldHeight,
 						this.cachedWidth, this.cachedHeight
 				));
@@ -794,7 +788,7 @@ public class LodRenderer
 	{
 		Color fogColor;
 		
-		if (Config.Client.Advanced.Graphics.Fog.colorMode.get() == EFogColorMode.USE_SKY_COLOR)
+		if (Config.Client.Advanced.Graphics.Fog.colorMode.get() == EDhApiFogColorMode.USE_SKY_COLOR)
 		{
 			fogColor = MC_RENDER.getSkyColor();
 		}

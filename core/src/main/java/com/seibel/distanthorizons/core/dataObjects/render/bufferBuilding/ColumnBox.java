@@ -22,7 +22,9 @@ package com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.util.ColorUtil;
+import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.RenderDataPointUtil;
+import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.dataObjects.render.columnViews.ColumnArrayView;
 import com.seibel.distanthorizons.core.render.renderer.LodRenderer;
@@ -63,13 +65,12 @@ public class ColumnBox
 		// cave culling prevention
 		// prevents certain faces from being culled underground that should be allowed
 		if (builder.skipQuadsWithZeroSkylight
-				&& 0 == skyLight
-				&& builder.skyLightCullingBelow > maxY
-				&&
-				(
-						(RenderDataPointUtil.getAlpha(topData) < 255 && RenderDataPointUtil.getYMax(topData) >= builder.skyLightCullingBelow)
-								|| (RenderDataPointUtil.getYMin(topData) >= builder.skyLightCullingBelow)
-								|| !RenderDataPointUtil.doesDataPointExist(topData)
+			&& 0 == skyLight
+			&& builder.skyLightCullingBelow > maxY
+			&& (
+					(RenderDataPointUtil.getAlpha(topData) < 255 && RenderDataPointUtil.getYMax(topData) >= builder.skyLightCullingBelow)
+					|| (RenderDataPointUtil.getYMin(topData) >= builder.skyLightCullingBelow)
+					|| !RenderDataPointUtil.doesDataPointExist(topData)
 				)
 			)
 		{
@@ -124,7 +125,7 @@ public class ColumnBox
 				// add an adjacent face if this is opaque face or transparent over the void
 				if (!isTransparent || overVoid)
 				{
-					builder.addQuadAdj(EDhDirection.NORTH, x, minY, z, xSize, ySize, color, irisBlockMaterialId, (byte) 15, blockLight);
+					builder.addQuadAdj(EDhDirection.NORTH, x, minY, z, xSize, ySize, color, irisBlockMaterialId, LodUtil.MAX_MC_LIGHT, blockLight);
 				}
 			}
 			else if (adjDataNorth.length == 1)
@@ -151,7 +152,7 @@ public class ColumnBox
 			if (adjDataSouth == null)
 			{
 				if (!isTransparent || overVoid)
-					builder.addQuadAdj(EDhDirection.SOUTH, x, minY, maxZ, xSize, ySize, color, irisBlockMaterialId, (byte) 15, blockLight);
+					builder.addQuadAdj(EDhDirection.SOUTH, x, minY, maxZ, xSize, ySize, color, irisBlockMaterialId, LodUtil.MAX_MC_LIGHT, blockLight);
 			}
 			else if (adjDataSouth.length == 1)
 			{
@@ -178,7 +179,7 @@ public class ColumnBox
 			if (adjDataWest == null)
 			{
 				if (!isTransparent || overVoid)
-					builder.addQuadAdj(EDhDirection.WEST, x, minY, z, zSize, ySize, color, irisBlockMaterialId, (byte) 15, blockLight);
+					builder.addQuadAdj(EDhDirection.WEST, x, minY, z, zSize, ySize, color, irisBlockMaterialId, LodUtil.MAX_MC_LIGHT, blockLight);
 			}
 			else if (adjDataWest.length == 1)
 			{
@@ -204,7 +205,7 @@ public class ColumnBox
 			if (adjData[EDhDirection.EAST.ordinal() - 2] == null)
 			{
 				if (!isTransparent || overVoid)
-					builder.addQuadAdj(EDhDirection.EAST, maxX, minY, z, zSize, ySize, color, irisBlockMaterialId, (byte) 15, blockLight);
+					builder.addQuadAdj(EDhDirection.EAST, maxX, minY, z, zSize, ySize, color, irisBlockMaterialId, LodUtil.MAX_MC_LIGHT, blockLight);
 			}
 			else if (adjDataEast.length == 1)
 			{
@@ -236,7 +237,7 @@ public class ColumnBox
 		if (adjColumnView == null || adjColumnView.size == 0 || RenderDataPointUtil.isVoid(adjColumnView.get(0)))
 		{
 			// there isn't any data adjacent to this LOD, add the vertical quad
-			builder.addQuadAdj(direction, x, yMin, z, horizontalWidth, ySize, color, irisBlockMaterialId, (byte) 15, blockLight);
+			builder.addQuadAdj(direction, x, yMin, z, horizontalWidth, ySize, color, irisBlockMaterialId, LodUtil.MAX_MC_LIGHT, blockLight);
 			return;
 		}
 		
@@ -393,7 +394,7 @@ public class ColumnBox
 						// The input face is completely inside the adj's face, don't render it
 						if (debugOverlapColor != 0)
 						{
-							builder.addQuadAdj(direction, x, yMin, z, horizontalWidth, ySize, debugOverlapColor, irisBlockMaterialId, (byte) 15, (byte) 15);
+							builder.addQuadAdj(direction, x, yMin, z, horizontalWidth, ySize, debugOverlapColor, irisBlockMaterialId, LodUtil.MAX_MC_LIGHT, LodUtil.MAX_MC_LIGHT);
 						}
 					}
 					else
@@ -402,7 +403,7 @@ public class ColumnBox
 						
 						if (adjYMax > yMin && debugOverlapColor != 0)
 						{
-							builder.addQuadAdj(direction, x, yMin, z, horizontalWidth, (short) (adjYMax - yMin), debugOverlapColor, irisBlockMaterialId, (byte) 15, (byte) 15);
+							builder.addQuadAdj(direction, x, yMin, z, horizontalWidth, (short) (adjYMax - yMin), debugOverlapColor, irisBlockMaterialId, LodUtil.MAX_MC_LIGHT, LodUtil.MAX_MC_LIGHT);
 						}
 						
 						// if this is the only face, use the yMax and break,
@@ -448,7 +449,7 @@ public class ColumnBox
 					// the adj data intersects the higher part of the current data
 					if (debugOverlapColor != 0)
 					{
-						builder.addQuadAdj(direction, x, adjYMin, z, horizontalWidth, (short) (yMax - adjYMin), debugOverlapColor, irisBlockMaterialId, (byte) 15, (byte) 15);
+						builder.addQuadAdj(direction, x, adjYMin, z, horizontalWidth, (short) (yMax - adjYMin), debugOverlapColor, irisBlockMaterialId, LodUtil.MAX_MC_LIGHT, LodUtil.MAX_MC_LIGHT);
 					}
 					
 					// we start the creation of a new face
@@ -459,7 +460,7 @@ public class ColumnBox
 					// _______&&: y < depth ______ < yMax
 					if (debugOverlapColor != 0)
 					{
-						builder.addQuadAdj(direction, x, adjYMin, z, horizontalWidth, (short) (adjYMax - adjYMin), debugOverlapColor, irisBlockMaterialId, (byte) 15, (byte) 15);
+						builder.addQuadAdj(direction, x, adjYMin, z, horizontalWidth, (short) (adjYMax - adjYMin), debugOverlapColor, irisBlockMaterialId, LodUtil.MAX_MC_LIGHT, LodUtil.MAX_MC_LIGHT);
 					}
 					
 					if (firstFace)
@@ -474,6 +475,12 @@ public class ColumnBox
 							throw new RuntimeException("Loop error");
 						if (previousAdjDepth > adjYMax)
 						{
+							if (irisBlockMaterialId == IBlockStateWrapper.IrisBlockMaterial.GRASS)
+							{
+								// this LOD is underneath another, grass will never show here
+								irisBlockMaterialId = IBlockStateWrapper.IrisBlockMaterial.DIRT;
+							}
+							
 							builder.addQuadAdj(direction, x, adjYMax, z, horizontalWidth, (short) (previousAdjDepth - adjYMax), color, irisBlockMaterialId,
 									RenderDataPointUtil.getLightSky(adjPoint), blockLight);
 						}

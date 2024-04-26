@@ -38,5 +38,14 @@ CREATE TABLE TableTwo(
 );
 ```
 
+### PRAGMA Auto Commits
 
+Certain queries will auto commit after running, specifically certain `PRAGMA` commands. In that case we have to disable DH's automatic transactions by putting `--No Transactions--` somewhere in the file. Otherwise, when the system attempts to commit, it will fail due to the PRAGMA having already committed itself.
 
+Due to how these commands work it's best to only have a single command in the file to prevent confusion and potential database corruption.
+
+```roomsql
+--No Transactions--
+
+PRAGMA journal_mode = TRUNCATE;
+```

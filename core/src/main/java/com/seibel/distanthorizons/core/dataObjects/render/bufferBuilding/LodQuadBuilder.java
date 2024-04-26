@@ -23,12 +23,18 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.*;
 
+import com.seibel.distanthorizons.api.enums.config.EDhApiGrassSideRendering;
+import com.seibel.distanthorizons.api.enums.rendering.EDhApiDebugRendering;
+import com.seibel.distanthorizons.core.config.Config;
+import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.render.AbstractRenderBuffer;
 import com.seibel.distanthorizons.core.render.glObject.buffer.GLVertexBuffer;
 import com.seibel.distanthorizons.core.util.ColorUtil;
-import com.seibel.distanthorizons.api.enums.config.EGpuUploadMethod;
+import com.seibel.distanthorizons.api.enums.config.EDhApiGpuUploadMethod;
+import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.coreapi.util.MathUtil;
 import org.apache.logging.log4j.Logger;
 
@@ -42,6 +48,7 @@ import org.apache.logging.log4j.Logger;
 public class LodQuadBuilder
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	private static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	
 	public final boolean skipQuadsWithZeroSkylight;
 	public final short skyLightCullingBelow;
@@ -52,7 +59,10 @@ public class LodQuadBuilder
 	private final ArrayList<BufferQuad>[] transparentQuads = (ArrayList<BufferQuad>[]) new ArrayList[6];
 	
 	private final boolean doTransparency;
+	private final IClientLevelWrapper clientLevelWrapper;
 	
+	private final EDhApiDebugRendering debugRenderingMode;
+	private final EDhApiGrassSideRendering grassSideRenderingMode;
 	
 	
 	public static final int[][][] DIRECTION_VERTEX_IBO_QUAD = new int[][][]
@@ -112,7 +122,7 @@ public class LodQuadBuilder
 	// constructor //
 	//=============//
 	
-	public LodQuadBuilder(boolean enableSkylightCulling, short skyLightCullingBelow, boolean doTransparency)
+	public LodQuadBuilder(boolean enableSkylightCulling, short skyLightCullingBelow, boolean doTransparency, IClientLevelWrapper clientLevelWrapper)
 	{
 		this.doTransparency = doTransparency;
 		for (int i = 0; i < 6; i++)
@@ -123,6 +133,10 @@ public class LodQuadBuilder
 		
 		this.skipQuadsWithZeroSkylight = enableSkylightCulling;
 		this.skyLightCullingBelow = skyLightCullingBelow;
+		this.clientLevelWrapper = clientLevelWrapper;
+		
+		this.debugRenderingMode = Config.Client.Advanced.Debugging.debugRendering.get();
+		this.grassSideRenderingMode = Config.Client.Advanced.Graphics.AdvancedGraphics.grassSideRendering.get();
 		
 	}
 	
@@ -254,8 +268,41 @@ public class LodQuadBuilder
 				default:
 					throw new IllegalArgumentException("Invalid Axis enum: " + axis);
 			}
-			putVertex(bb, (short) (quad.x + dx), (short) (quad.y + dy), (short) (quad.z + dz),
-					quad.hasError ? ColorUtil.RED : quad.color, // TODO add debug config that allows toggling this
+			
+			
+			int color = quad.color;
+			
+			// use custom side color logic for grass blocks
+			if (quad.irisBlockMaterialId == IBlockStateWrapper.IrisBlockMaterial.GRASS)
+			{
+				// only use dirt colors if debug rendering is disabled
+				if (this.debugRenderingMode == EDhApiDebugRendering.OFF)
+				{
+					// determine if any custom coloring logic should be used
+					if (this.grassSideRenderingMode != EDhApiGrassSideRendering.AS_GRASS)
+					{
+						// only change the vertex color if it's on the side or bottom
+						if (quad.direction.getAxis().isHorizontal() || quad.direction == EDhDirection.DOWN)
+						{
+							if (this.grassSideRenderingMode == EDhApiGrassSideRendering.AS_DIRT
+								// if we want the color to fade, only apply the dirt color to the bottom vertices
+								|| (this.grassSideRenderingMode == EDhApiGrassSideRendering.FADE_TO_DIRT && quadBase[i][1] == 0)
+								// always render the bottom as dirt
+								|| quad.direction == EDhDirection.DOWN)
+							{
+								// for horizontal and bottom faces of grass blocks, use the  dirt color to
+								// prevent green cliff walls
+								color = this.clientLevelWrapper.getDirtBlockColor();
+								color = ColorUtil.applyShade(color, MC.getShade(quad.direction));
+							}
+						}
+					}   
+				}
+			}
+			
+			
+			this.putVertex(bb, (short) (quad.x + dx), (short) (quad.y + dy), (short) (quad.z + dz),
+					quad.hasError ? ColorUtil.RED : color,
 					quad.hasError ? 0 : normalIndex,
 					quad.hasError ? 0 : quad.irisBlockMaterialId,
 					quad.hasError ? 15 : quad.skyLight,
@@ -386,7 +433,7 @@ public class LodQuadBuilder
 	{
 		return new Iterator<ByteBuffer>()
 		{
-			final ByteBuffer bb = ByteBuffer.allocateDirect(AbstractRenderBuffer.FULL_SIZED_BUFFER)
+			final ByteBuffer bb = ByteBuffer.allocateDirect(ColumnRenderBuffer.FULL_SIZED_BUFFER)
 					.order(ByteOrder.nativeOrder());
 			int dir = skipEmpty(0);
 			int quad = 0;
@@ -414,7 +461,7 @@ public class LodQuadBuilder
 					return null;
 				}
 				bb.clear();
-				bb.limit(AbstractRenderBuffer.FULL_SIZED_BUFFER);
+				bb.limit(ColumnRenderBuffer.FULL_SIZED_BUFFER);
 				while (bb.hasRemaining() && dir < 6)
 				{
 					writeData();
@@ -454,7 +501,7 @@ public class LodQuadBuilder
 	{
 		return new Iterator<ByteBuffer>()
 		{
-			final ByteBuffer bb = ByteBuffer.allocateDirect(AbstractRenderBuffer.FULL_SIZED_BUFFER)
+			final ByteBuffer bb = ByteBuffer.allocateDirect(ColumnRenderBuffer.FULL_SIZED_BUFFER)
 					.order(ByteOrder.nativeOrder());
 			int directionIndex = this.skipEmptyDirectionIndices(0);
 			int quad = 0;
@@ -483,7 +530,7 @@ public class LodQuadBuilder
 				}
 				
 				this.bb.clear();
-				this.bb.limit(AbstractRenderBuffer.FULL_SIZED_BUFFER);
+				this.bb.limit(ColumnRenderBuffer.FULL_SIZED_BUFFER);
 				while (this.bb.hasRemaining() && this.directionIndex < 6)
 				{
 					this.writeData();
@@ -525,7 +572,7 @@ public class LodQuadBuilder
 		
 	}
 	
-	public BufferFiller makeOpaqueBufferFiller(EGpuUploadMethod method)
+	public BufferFiller makeOpaqueBufferFiller(EDhApiGpuUploadMethod method)
 	{
 		return new BufferFiller()
 		{
@@ -541,19 +588,19 @@ public class LodQuadBuilder
 				}
 				
 				int numOfQuads = _countRemainingQuads();
-				if (numOfQuads > AbstractRenderBuffer.MAX_QUADS_PER_BUFFER)
-					numOfQuads = AbstractRenderBuffer.MAX_QUADS_PER_BUFFER;
+				if (numOfQuads > ColumnRenderBuffer.MAX_QUADS_PER_BUFFER)
+					numOfQuads = ColumnRenderBuffer.MAX_QUADS_PER_BUFFER;
 				if (numOfQuads == 0)
 				{
 					vbo.setVertexCount(0);
 					return false;
 				}
-				ByteBuffer bb = vbo.mapBuffer(numOfQuads * AbstractRenderBuffer.QUADS_BYTE_SIZE, method,
-						AbstractRenderBuffer.FULL_SIZED_BUFFER);
+				ByteBuffer bb = vbo.mapBuffer(numOfQuads * ColumnRenderBuffer.QUADS_BYTE_SIZE, method,
+						ColumnRenderBuffer.FULL_SIZED_BUFFER);
 				if (bb == null)
 					throw new NullPointerException("mapBuffer returned null");
 				bb.clear();
-				bb.limit(numOfQuads * AbstractRenderBuffer.QUADS_BYTE_SIZE);
+				bb.limit(numOfQuads * ColumnRenderBuffer.QUADS_BYTE_SIZE);
 				while (bb.hasRemaining() && dir < 6)
 				{
 					writeData(bb);
@@ -605,7 +652,7 @@ public class LodQuadBuilder
 		};
 	}
 	
-	public BufferFiller makeTransparentBufferFiller(EGpuUploadMethod method)
+	public BufferFiller makeTransparentBufferFiller(EDhApiGpuUploadMethod method)
 	{
 		return new BufferFiller()
 		{
@@ -621,19 +668,19 @@ public class LodQuadBuilder
 				}
 				
 				int numOfQuads = _countRemainingQuads();
-				if (numOfQuads > AbstractRenderBuffer.MAX_QUADS_PER_BUFFER)
-					numOfQuads = AbstractRenderBuffer.MAX_QUADS_PER_BUFFER;
+				if (numOfQuads > ColumnRenderBuffer.MAX_QUADS_PER_BUFFER)
+					numOfQuads = ColumnRenderBuffer.MAX_QUADS_PER_BUFFER;
 				if (numOfQuads == 0)
 				{
 					vbo.setVertexCount(0);
 					return false;
 				}
-				ByteBuffer bb = vbo.mapBuffer(numOfQuads * AbstractRenderBuffer.QUADS_BYTE_SIZE, method,
-						AbstractRenderBuffer.FULL_SIZED_BUFFER);
+				ByteBuffer bb = vbo.mapBuffer(numOfQuads * ColumnRenderBuffer.QUADS_BYTE_SIZE, method,
+						ColumnRenderBuffer.FULL_SIZED_BUFFER);
 				if (bb == null)
 					throw new NullPointerException("mapBuffer returned null");
 				bb.clear();
-				bb.limit(numOfQuads * AbstractRenderBuffer.QUADS_BYTE_SIZE);
+				bb.limit(numOfQuads * ColumnRenderBuffer.QUADS_BYTE_SIZE);
 				while (bb.hasRemaining() && dir < 6)
 				{
 					writeData(bb);
@@ -718,7 +765,7 @@ public class LodQuadBuilder
 	}
 	
 	/** Returns how many GpuBuffers will be needed to render opaque quads in this builder. */
-	public int getCurrentNeededOpaqueVertexBufferCount() { return MathUtil.ceilDiv(this.getCurrentOpaqueQuadsCount(), AbstractRenderBuffer.MAX_QUADS_PER_BUFFER); }
+	public int getCurrentNeededOpaqueVertexBufferCount() { return MathUtil.ceilDiv(this.getCurrentOpaqueQuadsCount(), ColumnRenderBuffer.MAX_QUADS_PER_BUFFER); }
 	/** Returns how many GpuBuffers will be needed to render transparent quads in this builder. */
 	public int getCurrentNeededTransparentVertexBufferCount()
 	{
@@ -727,7 +774,7 @@ public class LodQuadBuilder
 			return 0;
 		}
 		
-		return MathUtil.ceilDiv(this.getCurrentTransparentQuadsCount(), AbstractRenderBuffer.MAX_QUADS_PER_BUFFER);
+		return MathUtil.ceilDiv(this.getCurrentTransparentQuadsCount(), ColumnRenderBuffer.MAX_QUADS_PER_BUFFER);
 	}
 	
 }

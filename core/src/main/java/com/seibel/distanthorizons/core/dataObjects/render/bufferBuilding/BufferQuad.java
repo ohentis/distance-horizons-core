@@ -151,6 +151,7 @@ public final class BufferQuad
 	{
 		if (quad.hasError || this.hasError)
 			return false;
+		
 		// only merge quads that are in the same direction
 		if (this.direction != quad.direction)
 			return false;
@@ -284,10 +285,17 @@ public final class BufferQuad
 			if (thisPerpendicularCompareStartPos < otherPerpendicularCompareStartPos + otherPerpendicularCompareWidth)
 			{
 				// these quads are overlapping, they can't be merged
-				//EVENT_LOGGER.warn("Overlapping quads detected!");
-				quad.hasError = true;
-				this.hasError = true;
+				
+				// Overlapping quads appear to render correctly, why are we marking them as errored?
+				// Is it possible the wrong quad will be extended thus the wrong color is rendered?
+				// Or is that the height/depth might be wrong?
+				if (Config.Client.Advanced.Debugging.showOverlappingQuadErrors.get())
+				{
+					quad.hasError = true;
+					this.hasError = true;
+				}
 			}
+			
 			return false;
 		}
 		

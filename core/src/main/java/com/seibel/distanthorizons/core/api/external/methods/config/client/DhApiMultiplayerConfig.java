@@ -23,7 +23,7 @@ import com.seibel.distanthorizons.api.interfaces.config.IDhApiConfigValue;
 import com.seibel.distanthorizons.api.interfaces.config.client.IDhApiMultiplayerConfig;
 import com.seibel.distanthorizons.api.objects.config.DhApiConfigValue;
 import com.seibel.distanthorizons.core.config.Config;
-import com.seibel.distanthorizons.api.enums.config.EServerFolderNameMode;
+import com.seibel.distanthorizons.api.enums.config.EDhApiServerFolderNameMode;
 
 public class DhApiMultiplayerConfig implements IDhApiMultiplayerConfig
 {
@@ -33,8 +33,8 @@ public class DhApiMultiplayerConfig implements IDhApiMultiplayerConfig
 	
 	
 	
-	public IDhApiConfigValue<EServerFolderNameMode> folderSavingMode()
-	{ return new DhApiConfigValue<EServerFolderNameMode, EServerFolderNameMode>(Config.Client.Advanced.Multiplayer.serverFolderNameMode); }
+	public IDhApiConfigValue<EDhApiServerFolderNameMode> folderSavingMode()
+	{ return new DhApiConfigValue<EDhApiServerFolderNameMode, EDhApiServerFolderNameMode>(Config.Client.Advanced.Multiplayer.serverFolderNameMode); }
 	
 	public IDhApiConfigValue<Double> multiverseSimilarityRequirement()
 	{ return new DhApiConfigValue<Double, Double>(Config.Client.Advanced.Multiplayer.multiverseSimilarityRequiredPercent); }

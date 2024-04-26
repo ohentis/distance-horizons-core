@@ -19,7 +19,7 @@
 
 package com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor;
 
-import com.seibel.distanthorizons.api.enums.rendering.EFogDrawMode;
+import com.seibel.distanthorizons.api.enums.rendering.EDhApiFogDrawMode;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 
@@ -75,14 +75,14 @@ public abstract class AbstractOptifineAccessor implements IOptifineAccessor
 	//===================//
 	
 	@Override
-	public EFogDrawMode getFogDrawMode()
+	public EDhApiFogDrawMode getFogDrawMode()
 	{
 		if (this.ofFogField == null)
 		{
 			// either optifine isn't installed,
 			// the variable name was changed, or
 			// the setup method wasn't called yet.
-			return EFogDrawMode.FOG_ENABLED;
+			return EDhApiFogDrawMode.FOG_ENABLED;
 		}
 		
 		int returnNum = 0;
@@ -105,9 +105,9 @@ public abstract class AbstractOptifineAccessor implements IOptifineAccessor
 				// normal options
 			case 1: // fast
 			case 2: // fancy
-				return EFogDrawMode.FOG_ENABLED;
+				return EDhApiFogDrawMode.FOG_ENABLED;
 			case 3: // off
-				return EFogDrawMode.FOG_DISABLED;
+				return EDhApiFogDrawMode.FOG_DISABLED;
 		}
 	}
 	

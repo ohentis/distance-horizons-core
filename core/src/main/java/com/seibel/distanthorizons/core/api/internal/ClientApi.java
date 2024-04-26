@@ -21,7 +21,6 @@ package com.seibel.distanthorizons.core.api.internal;
 
 import com.seibel.distanthorizons.api.DhApi;
 import com.seibel.distanthorizons.api.enums.rendering.EDhApiRenderPass;
-import com.seibel.distanthorizons.api.interfaces.override.rendering.IDhApiFramebuffer;
 import com.seibel.distanthorizons.api.methods.events.abstractEvents.*;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
 import com.seibel.distanthorizons.core.level.IKeyedClientLevelManager;
@@ -32,10 +31,9 @@ import com.seibel.distanthorizons.core.world.*;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
 import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.config.Config;
-import com.seibel.distanthorizons.coreapi.DependencyInjection.OverrideInjector;
 import com.seibel.distanthorizons.coreapi.ModInfo;
-import com.seibel.distanthorizons.api.enums.rendering.EDebugRendering;
-import com.seibel.distanthorizons.api.enums.rendering.ERendererMode;
+import com.seibel.distanthorizons.api.enums.rendering.EDhApiDebugRendering;
+import com.seibel.distanthorizons.api.enums.rendering.EDhApiRendererMode;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
 import com.seibel.distanthorizons.core.logging.ConfigBasedSpamLogger;
@@ -54,7 +52,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
-import org.lwjgl.opengl.GL32;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -81,6 +78,10 @@ public class ClientApi
 	public static final long SPAM_LOGGER_FLUSH_NS = TimeUnit.NANOSECONDS.convert(1, TimeUnit.SECONDS);
 	
 	private boolean configOverrideReminderPrinted = false;
+	
+	private boolean migrationMessageShown = false;
+	private boolean showMigrationMessageNextFrame = false;
+	
 	public boolean rendererDisabledBecauseOfExceptions = false;
 	
 	private long lastFlushNanoTime = 0;
@@ -179,7 +180,7 @@ public class ClientApi
 				// can happen on certain multiverse servers
 				return;
 			}
-			LOGGER.info("Unloading client level [" + level + "].");
+			LOGGER.info("Unloading client level [" + level + "]-["+level.getDimensionType().getDimensionName()+"].");
 			
 			AbstractDhWorld world = SharedApi.getAbstractDhWorld();
 			if (world != null)
@@ -218,7 +219,7 @@ public class ClientApi
 			
 			
 			
-			LOGGER.info("Loading " + (isServerCommunication ? "Multiverse" : "") + " client level [" + level + "].");
+			LOGGER.info("Loading " + (isServerCommunication ? "Multiverse" : "") + " client level [" + level + "]-["+level.getDimensionType().getDimensionName()+"].");
 			
 			AbstractDhWorld world = SharedApi.getAbstractDhWorld();
 			if (world != null)
@@ -473,14 +474,29 @@ public class ClientApi
 	{
 		// logging //
 		
+		// dev build
 		if (ModInfo.IS_DEV_BUILD && !this.configOverrideReminderPrinted && MC.playerExists())
 		{
 			this.configOverrideReminderPrinted = true;
 			
 			// remind the user that this is a development build
-			MC.sendChatMessage(ModInfo.READABLE_NAME + " experimental build " + ModInfo.VERSION);
+			MC.sendChatMessage("Distant Horizons nightly experimental build version [" + ModInfo.VERSION+"].");
 			MC.sendChatMessage("You are running an unsupported version of Distant Horizons!");
 			MC.sendChatMessage("Here be dragons!");
+			MC.sendChatMessage("");
+		}
+		
+		// data migration
+		if (this.showMigrationMessageNextFrame 
+			&& !this.migrationMessageShown
+			&& Config.Client.Advanced.LodBuilding.showMigrationChatWarning.get())
+		{
+			this.showMigrationMessageNextFrame  = false;
+			this.migrationMessageShown = true;
+			
+			MC.sendChatMessage("Old Distant Horizons data is being migrated.");
+			MC.sendChatMessage("During migration LODs may load slowly and DH world gen is disabled.");
+			MC.sendChatMessage("");
 		}
 		
 		IProfilerWrapper profiler = MC.getProfiler();
@@ -547,7 +563,7 @@ public class ClientApi
 			
 			if (!renderingDeferredLayer)
 			{
-				if (Config.Client.Advanced.Debugging.rendererMode.get() == ERendererMode.DEFAULT)
+				if (Config.Client.Advanced.Debugging.rendererMode.get() == EDhApiRendererMode.DEFAULT)
 				{
 					this.renderingCancelledForThisFrame = ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeRenderEvent.class, renderEventParam);
 					if (!this.renderingCancelledForThisFrame)
@@ -560,7 +576,7 @@ public class ClientApi
 						ApiEventInjector.INSTANCE.fireAllEvents(DhApiAfterRenderEvent.class, renderEventParam);
 					}
 				}
-				else if (Config.Client.Advanced.Debugging.rendererMode.get() == ERendererMode.DEBUG)
+				else if (Config.Client.Advanced.Debugging.rendererMode.get() == EDhApiRendererMode.DEBUG)
 				{
 					profiler.push("Render Debug");
 					ClientApi.testRenderer.render();
@@ -617,12 +633,12 @@ public class ClientApi
 		
 		if (glfwKey == GLFW.GLFW_KEY_F8)
 		{
-			Config.Client.Advanced.Debugging.debugRendering.set(EDebugRendering.next(Config.Client.Advanced.Debugging.debugRendering.get()));
+			Config.Client.Advanced.Debugging.debugRendering.set(EDhApiDebugRendering.next(Config.Client.Advanced.Debugging.debugRendering.get()));
 			MC.sendChatMessage("F8: Set debug mode to " + Config.Client.Advanced.Debugging.debugRendering.get());
 		}
 		else if (glfwKey == GLFW.GLFW_KEY_F6)
 		{
-			Config.Client.Advanced.Debugging.rendererMode.set(ERendererMode.next(Config.Client.Advanced.Debugging.rendererMode.get()));
+			Config.Client.Advanced.Debugging.rendererMode.set(EDhApiRendererMode.next(Config.Client.Advanced.Debugging.rendererMode.get()));
 			MC.sendChatMessage("F6: Set rendering to " + Config.Client.Advanced.Debugging.rendererMode.get());
 		}
 		else if (glfwKey == GLFW.GLFW_KEY_P)
@@ -632,5 +648,7 @@ public class ClientApi
 		}
 	}
 	
+	// TODO there's probably a better way of handling chat messages
+	public void showMigrationMessageOnNextFrame() { this.showMigrationMessageNextFrame = true; }
 	
 }

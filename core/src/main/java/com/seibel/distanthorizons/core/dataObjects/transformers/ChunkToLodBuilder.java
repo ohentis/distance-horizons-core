@@ -23,11 +23,11 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.seibel.distanthorizons.core.config.Config;
-import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
-import com.seibel.distanthorizons.core.util.threading.ThreadPools;
+import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import org.apache.logging.log4j.LogManager;
@@ -57,7 +57,7 @@ public class ChunkToLodBuilder implements AutoCloseable
 	// data generation //
 	//=================//
 	
-	public CompletableFuture<ChunkSizedFullDataAccessor> tryGenerateData(IChunkWrapper chunkWrapper)
+	public CompletableFuture<FullDataSourceV2> tryGenerateData(IChunkWrapper chunkWrapper)
 	{
 		if (chunkWrapper == null)
 		{
@@ -74,7 +74,7 @@ public class ChunkToLodBuilder implements AutoCloseable
 		}
 		
 		// Otherwise, it means we're the first to do so. Let's submit our task to this entry.
-		CompletableFuture<ChunkSizedFullDataAccessor> future = new CompletableFuture<>();
+		CompletableFuture<FullDataSourceV2> future = new CompletableFuture<>();
 		this.concurrentTaskToBuildList.addLast(new Task(chunkWrapper.getChunkPos(), future));
 		return future;
 	}
@@ -82,7 +82,7 @@ public class ChunkToLodBuilder implements AutoCloseable
 	// TODO why on tick?
 	public void tick()
 	{
-		int threadCount = ThreadPools.getWorkerThreadCount();
+		int threadCount = ThreadPoolUtil.getWorkerThreadCount();
 		if (this.runningCount.get() >= threadCount)
 		{
 			return;
@@ -102,7 +102,7 @@ public class ChunkToLodBuilder implements AutoCloseable
 			return;
 		}
 		
-		ThreadPoolExecutor lodBuilderExecutor = ThreadPools.getChunkToLodBuilderExecutor();
+		ThreadPoolExecutor lodBuilderExecutor = ThreadPoolUtil.getChunkToLodBuilderExecutor();
 		if (lodBuilderExecutor == null)
 		{
 			return;
@@ -112,17 +112,21 @@ public class ChunkToLodBuilder implements AutoCloseable
 		for (int i = 0; i < threadCount; i++)
 		{
 			this.runningCount.incrementAndGet();
-			CompletableFuture.runAsync(() ->
+			try
 			{
-				try
+				CompletableFuture.runAsync(() ->
 				{
-					this.tickThreadTask();
-				}
-				finally
-				{
-					this.runningCount.decrementAndGet();
-				}
-			}, lodBuilderExecutor);
+					try
+					{
+						this.tickThreadTask();
+					}
+					finally
+					{
+						this.runningCount.decrementAndGet();
+					}
+				}, lodBuilderExecutor);
+			}
+			catch (RejectedExecutionException ignore) { /* the thread pool was probably shut down because it's size is being changed, just wait a sec and it should be back */ }
 		}
 	}
 	private void tickThreadTask()
@@ -158,10 +162,10 @@ public class ChunkToLodBuilder implements AutoCloseable
 			{
 				if (LodDataBuilder.canGenerateLodFromChunk(latestChunk))
 				{
-					ChunkSizedFullDataAccessor data = LodDataBuilder.createChunkData(latestChunk);
-					if (data != null)
+					FullDataSourceV2 dataSource = LodDataBuilder.createGeneratedDataSource(latestChunk);
+					if (dataSource != null)
 					{
-						task.future.complete(data);
+						task.future.complete(dataSource);
 						continue;
 					}
 				}
@@ -233,11 +237,11 @@ public class ChunkToLodBuilder implements AutoCloseable
 	private static class Task
 	{
 		public final DhChunkPos chunkPos;
-		public final CompletableFuture<ChunkSizedFullDataAccessor> future;
+		public final CompletableFuture<FullDataSourceV2> future;
 		/** This is tracked so impossible tasks can be removed from the queue */
 		public long generationAttemptExpirationTimeMs = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(10);
 		
-		Task(DhChunkPos chunkPos, CompletableFuture<ChunkSizedFullDataAccessor> future)
+		Task(DhChunkPos chunkPos, CompletableFuture<FullDataSourceV2> future)
 		{
 			this.chunkPos = chunkPos;
 			this.future = future;

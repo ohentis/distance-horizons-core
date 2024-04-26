@@ -33,6 +33,7 @@ import com.seibel.distanthorizons.coreapi.util.jar.DeleteOnUnlock;
 import org.apache.logging.log4j.Logger;
 
 import javax.swing.*;
+import java.awt.*;
 import java.io.*;
 import java.net.URLEncoder;
 import java.nio.file.Files;
@@ -222,9 +223,17 @@ public class SelfUpdater
 			deleteOldJarOnJvmShutdown = true;
 			
 			LOGGER.info(ModInfo.READABLE_NAME + " successfully updated. It will apply on game's relaunch");
-			new Thread(() -> {
-				System.setProperty("java.awt.headless", "false"); // Required to make it work
-				JOptionPane.showMessageDialog(null, ModInfo.READABLE_NAME + " updated, this will be applied on game restart.", ModInfo.READABLE_NAME, JOptionPane.INFORMATION_MESSAGE);
+			new Thread(() -> 
+			{
+				String message = ModInfo.READABLE_NAME + " updated, this will be applied on game restart.";
+				if (!GraphicsEnvironment.isHeadless())
+				{
+					JOptionPane.showMessageDialog(null, message, ModInfo.READABLE_NAME, JOptionPane.INFORMATION_MESSAGE);
+				}
+				else
+				{
+					LOGGER.info(message);
+				}
 			}).start();
 			return true;
 		}
@@ -270,9 +279,17 @@ public class SelfUpdater
 					deleteOldJarOnJvmShutdown = true;
 					
 					LOGGER.info(ModInfo.READABLE_NAME + " successfully updated. It will apply on game's relaunch");
-					new Thread(() -> {
-						System.setProperty("java.awt.headless", "false"); // Required to make it work
-						JOptionPane.showMessageDialog(null, ModInfo.READABLE_NAME + " updated, this will be applied on game restart.", ModInfo.READABLE_NAME, JOptionPane.INFORMATION_MESSAGE);
+					new Thread(() -> 
+					{
+						String message = ModInfo.READABLE_NAME + " updated, this will be applied on game restart.";
+						if (!GraphicsEnvironment.isHeadless())
+						{
+							JOptionPane.showMessageDialog(null, message, ModInfo.READABLE_NAME, JOptionPane.INFORMATION_MESSAGE);
+						}
+						else
+						{
+							LOGGER.info(message);
+						}
 					}).start();
 					
 					zis.close();

@@ -38,11 +38,6 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
 import org.apache.logging.log4j.Logger;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.concurrent.ThreadPoolExecutor;
-
 /**
  * This holds the methods that should be called by the host mod loader (Fabric,
  * Forge, etc.). Specifically server events.

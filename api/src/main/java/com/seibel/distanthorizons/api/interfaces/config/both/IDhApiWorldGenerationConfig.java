@@ -19,7 +19,6 @@
 
 package com.seibel.distanthorizons.api.interfaces.config.both;
 
-import com.seibel.distanthorizons.api.enums.config.ELightGenerationMode;
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiDistantGeneratorMode;
 import com.seibel.distanthorizons.api.interfaces.config.IDhApiConfigValue;
 import com.seibel.distanthorizons.api.interfaces.config.IDhApiConfigGroup;
