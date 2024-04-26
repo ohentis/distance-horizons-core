@@ -45,6 +45,7 @@ dependencies { // All of these dependencies are in Vanilla Minecraft, but we nee
     shade("it.unimi.dsi:fastutil:${rootProject.fastutil_version}")
     
     // Compression
+    // needs to be here and in core to prevent runtime/compiler errors
     shade("org.lz4:lz4-java:${rootProject.lz4_version}") // LZ4
     shade("com.github.luben:zstd-jni:${rootProject.zstd_version}") // Zstd
     shade("org.tukaani:xz:${rootProject.xz_version}") // LZMA
@@ -56,7 +57,7 @@ dependencies { // All of these dependencies are in Vanilla Minecraft, but we nee
     shade("io.netty:netty-all:${rootProject.netty_version}")
 
     // NightConfig (includes Toml & Json)
-    // needed in both common and core
+    // needs to be here and in core to prevent runtime/compiler errors
     shade("com.electronwill.night-config:toml:${rootProject.nightconfig_version}")
     shade("com.electronwill.night-config:json:${rootProject.nightconfig_version}")
     
