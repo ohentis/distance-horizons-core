@@ -62,8 +62,8 @@ dependencies { // All of these dependencies are in Vanilla Minecraft, but we nee
     
     
     // needed for the standalone jar
-//    shade 'org.apache.logging.log4j:log4j-core:2.23.1'
-//    shade 'org.apache.logging.log4j:log4j-api:2.23.1'
+    shade("org.apache.logging.log4j:log4j-core:2.23.1")
+    shade("org.apache.logging.log4j:log4j-api:2.23.1")
 
     // SVG (not needed atm)
     //shade("com.formdev:svgSalamander:${rootProject.svgSalamander_version}")
@@ -114,6 +114,8 @@ shadowJar {
 
     // Netty
     relocate "io.netty", "${librariesLocation}.netty"
+    
+    relocate "org.apache.logging", "${librariesLocation}.apache.logging"
 
 
     mergeServiceFiles()
