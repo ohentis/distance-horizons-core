@@ -61,14 +61,16 @@ dependencies { // All of these dependencies are in Vanilla Minecraft, but we nee
     shade("com.electronwill.night-config:toml:${rootProject.nightconfig_version}")
     shade("com.electronwill.night-config:json:${rootProject.nightconfig_version}")
     
-    
-    // needed for the standalone jar
-    shade("org.apache.logging.log4j:log4j-core:2.23.1")
-    shade("org.apache.logging.log4j:log4j-api:2.23.1")
 
     // SVG (not needed atm)
     //shade("com.formdev:svgSalamander:${rootProject.svgSalamander_version}")
 
+    // can't be included since relocation is broken due to
+    // reflection Log4j does on their end.
+    // TODO create our own logging interface to work with/without log4j for use as a standalone jar or with MC
+//    shade("org.apache.logging.log4j:log4j-api:${rootProject.log4j_version}")
+//    shade("org.apache.logging.log4j:log4j-core:${rootProject.log4j_version}")
+    
 
 
 
@@ -93,31 +95,16 @@ shadowJar {
     
     relocate "it.unimi.dsi.fastutil", "${librariesLocation}.unimi.dsi.fastutil"
 
-    // LWJGL
-    // Only ever shadow the dependencies we use otherwise some stuff would break when running on an external client
-    relocate "org.lwjgl.system.jawt", "${librariesLocation}.lwjgl.system.jawt"
-
-    // Compression
+    // Compression (LZ4)
     relocate "net.jpountz", "${librariesLocation}.jpountz"
     relocate "com.github.luben", "${librariesLocation}.github.luben"
     relocate "org.tukaani", "${librariesLocation}.tukaani"
 
-    // Sqlite Database
-    //At the moment, there is a bug in this library which doesnt allow it to be relocated
-//        relocate "org.sqlite", "${librariesLocation}.sqlite"
-
-    // JOML
-    if (project.hasProperty("embed_joml") && embed_joml == "true")
-        relocate "org.joml", "${librariesLocation}.joml"
-
-    // NightConfig (includes Toml & Json)
+    // night config
     relocate "com.electronwill.nightconfig", "${librariesLocation}.electronwill.nightconfig"
-
+    
     // Netty
     relocate "io.netty", "${librariesLocation}.netty"
-    
-    relocate "org.apache.logging", "${librariesLocation}.apache.logging"
-
 
     mergeServiceFiles()
 }
