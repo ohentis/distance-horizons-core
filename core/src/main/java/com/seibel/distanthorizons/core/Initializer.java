@@ -28,7 +28,7 @@ import com.seibel.distanthorizons.core.api.external.methods.config.DhApiConfig;
 import com.seibel.distanthorizons.core.api.external.methods.data.DhApiTerrainDataRepo;
 import com.seibel.distanthorizons.api.DhApi;
 import com.seibel.distanthorizons.core.render.DhApiRenderProxy;
-import io.netty.buffer.ByteBuf;
+//import io.netty.buffer.ByteBuf;
 import net.jpountz.lz4.LZ4FrameOutputStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -48,7 +48,7 @@ public class Initializer
 			// if any library isn't present in the jar its class
 			// will throw an error (not an exception)
 			Class<?> compressor = LZ4FrameOutputStream.class;
-			Class<?> networking = ByteBuf.class;
+			//Class<?> networking = ByteBuf.class;
 			Class<?> toml = com.electronwill.nightconfig.core.Config.class;
 		}
 		catch (Throwable e)

@@ -39,39 +39,8 @@ dependencies { // All of these dependencies are in Vanilla Minecraft, but we nee
     runtimeOnly "org.lwjgl:lwjgl-opengl::$lwjglNatives"
     runtimeOnly "org.lwjgl:lwjgl-stb::$lwjglNatives"
     runtimeOnly "org.lwjgl:lwjgl-tinyfd::$lwjglNatives"
-    
-    
-    // fast util
-    shade("it.unimi.dsi:fastutil:${rootProject.fastutil_version}")
-    
-    // Compression
-    // needs to be here and in core to prevent runtime/compiler errors
-    shade("org.lz4:lz4-java:${rootProject.lz4_version}") // LZ4
-    shade("com.github.luben:zstd-jni:${rootProject.zstd_version}") // Zstd
-    shade("org.tukaani:xz:${rootProject.xz_version}") // LZMA
-    
-    // Sqlite Database
-    shade("org.xerial:sqlite-jdbc:${rootProject.sqlite_jdbc_version}")
-    
-    // Netty
-    shade("io.netty:netty-all:${rootProject.netty_version}")
 
-    // NightConfig (includes Toml & Json)
-    // needs to be here and in core to prevent runtime/compiler errors
-    shade("com.electronwill.night-config:toml:${rootProject.nightconfig_version}")
-    shade("com.electronwill.night-config:json:${rootProject.nightconfig_version}")
-    
-
-    // SVG (not needed atm)
-    //shade("com.formdev:svgSalamander:${rootProject.svgSalamander_version}")
-
-    // can't be included since relocation is broken due to
-    // reflection Log4j does on their end.
-    // TODO create our own logging interface to work with/without log4j for use as a standalone jar or with MC
-//    shade("org.apache.logging.log4j:log4j-api:${rootProject.log4j_version}")
-//    shade("org.apache.logging.log4j:log4j-core:${rootProject.log4j_version}")
-    
-
+    shade "it.unimi.dsi:fastutil:${rootProject.fastutil_version}" // Add our own fastutil version
 
 
     // Some other dependencies
@@ -83,28 +52,11 @@ dependencies { // All of these dependencies are in Vanilla Minecraft, but we nee
 }
 
 artifacts {
-    shade shadowJar
     shadowedArtifact shadowJar // Setup the configuration shadowedArtifact to be the shadowJar
 }
 
 shadowJar {
-    configurations = [project.configurations.shade]
-    
     def librariesLocation = "distanthorizons.libraries"
-    
-    
     relocate "it.unimi.dsi.fastutil", "${librariesLocation}.unimi.dsi.fastutil"
-
-    // Compression (LZ4)
-    relocate "net.jpountz", "${librariesLocation}.jpountz"
-    relocate "com.github.luben", "${librariesLocation}.github.luben"
-    relocate "org.tukaani", "${librariesLocation}.tukaani"
-
-    // night config
-    relocate "com.electronwill.nightconfig", "${librariesLocation}.electronwill.nightconfig"
-    
-    // Netty
-    relocate "io.netty", "${librariesLocation}.netty"
-
     mergeServiceFiles()
 }
