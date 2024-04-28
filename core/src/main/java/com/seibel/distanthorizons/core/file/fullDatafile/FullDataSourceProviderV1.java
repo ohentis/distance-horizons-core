@@ -7,6 +7,7 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV1DTO;
 import com.seibel.distanthorizons.core.sql.repo.FullDataSourceV1Repo;
+import com.seibel.distanthorizons.core.util.objects.DataCorruptedException;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
@@ -72,7 +73,7 @@ public class FullDataSourceProviderV1<TDhLevel extends IDhLevel>
 		}
 	}
 	
-	protected FullDataSourceV1 createDataSourceFromDto(FullDataSourceV1DTO dto) throws InterruptedException, IOException
+	protected FullDataSourceV1 createDataSourceFromDto(FullDataSourceV1DTO dto) throws InterruptedException, IOException, DataCorruptedException
 	{
 		FullDataSourceV1 dataSource = FullDataSourceV1.createEmpty(dto.pos);
 		dataSource.populateFromStream(dto, dto.getInputStream(), this.level);
@@ -128,6 +129,13 @@ public class FullDataSourceProviderV1<TDhLevel extends IDhLevel>
 			}
 		}
 		catch (InterruptedException ignore) { }
+		catch (DataCorruptedException e)
+		{
+			// stack trace not included since a lot of corrupt data would cause the log to get quite messy, 
+			// and it should be fairly easy to see what the problem was from the message
+			LOGGER.warn("Corrupted data found at pos "+pos+". Data at position will be deleted so it can be re-generated and to prevent future issues. Error: "+e.getMessage());
+			this.repo.deleteWithKey(pos);
+		}
 		catch (IOException e)
 		{
 			LOGGER.warn("File read Error for pos ["+pos+"], error: "+e.getMessage(), e);

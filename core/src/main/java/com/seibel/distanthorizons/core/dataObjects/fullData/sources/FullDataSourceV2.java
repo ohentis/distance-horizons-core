@@ -32,6 +32,7 @@ import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.util.FullDataPointUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.RenderDataPointUtil;
+import com.seibel.distanthorizons.core.util.objects.DataCorruptedException;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
@@ -616,7 +617,16 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 			{
 				if (height != 0)
 				{
-					newColumnList.add(FullDataPointUtil.encode(lastId, height, minY, lastBlockLight, lastSkyLight));
+					try
+					{
+						long datapoint = FullDataPointUtil.encode(lastId, height, minY, lastBlockLight, lastSkyLight);
+						newColumnList.add(datapoint);
+					}
+					catch (DataCorruptedException e)
+					{
+						// shouldn't happen, (especially if validation is disabled) but just in case
+						LOGGER.warn("Skipping corrupt datapoint for pos "+inputDataSource.pos+" at relative position ["+x+","+z+"] with data: ID["+lastId+"], Height["+height+"], minY["+minY+"], lastBlockLight["+lastBlockLight+"], lastSkyLight["+lastSkyLight+"].");
+					}
 				}
 				
 				lastId = id;
@@ -630,7 +640,15 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 		// add the last slice if present
 		if (height != 0)
 		{
-			newColumnList.add(FullDataPointUtil.encode(lastId, height, minY, lastBlockLight, lastSkyLight));
+			try
+			{
+				newColumnList.add(FullDataPointUtil.encode(lastId, height, minY, lastBlockLight, lastSkyLight));
+			}
+			catch (DataCorruptedException e)
+			{
+				// shouldn't happen, (especially if validation is disabled) but just in case
+				LOGGER.warn("Skipping corrupt datapoint for pos "+inputDataSource.pos+" at relative position ["+x+","+z+"] with data: ID["+lastId+"], Height["+height+"], minY["+minY+"], lastBlockLight["+lastBlockLight+"], lastSkyLight["+lastSkyLight+"].");
+			}
 		}
 		
 		

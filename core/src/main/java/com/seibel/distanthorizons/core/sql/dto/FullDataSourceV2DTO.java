@@ -25,21 +25,24 @@ import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGeneratio
 import com.seibel.distanthorizons.core.dataObjects.fullData.FullDataPointIdMap;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.util.FullDataPointUtil;
+import com.seibel.distanthorizons.core.util.objects.DataCorruptedException;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataInputStream;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataOutputStream;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.util.zip.Adler32;
 import java.util.zip.CheckedOutputStream;
 
 /** handles storing {@link FullDataSourceV2}'s in the database. */
 public class FullDataSourceV2DTO implements IBaseDTO<DhSectionPos>
 {
+	public static final boolean VALIDATE_INPUT_DATAPOINTS = true;
+	
+	
 	public DhSectionPos pos;
 	
 	public int levelMinY;
@@ -118,23 +121,23 @@ public class FullDataSourceV2DTO implements IBaseDTO<DhSectionPos>
 	// data source population //
 	//========================//
 	
-	public FullDataSourceV2 createPooledDataSource(@NotNull ILevelWrapper levelWrapper) throws IOException, InterruptedException
+	public FullDataSourceV2 createPooledDataSource(@NotNull ILevelWrapper levelWrapper) throws IOException, InterruptedException, DataCorruptedException
 	{
 		FullDataSourceV2 dataSource = FullDataSourceV2.DATA_SOURCE_POOL.getPooledSource(this.pos, false);
 		return this.populateDataSource(dataSource, levelWrapper);
 	}
 	
-	public FullDataSourceV2 populateDataSource(FullDataSourceV2 dataSource, @NotNull ILevelWrapper levelWrapper) throws IOException, InterruptedException 
+	public FullDataSourceV2 populateDataSource(FullDataSourceV2 dataSource, @NotNull ILevelWrapper levelWrapper) throws IOException, InterruptedException, DataCorruptedException 
 	{ return this.internalPopulateDataSource(dataSource, levelWrapper, false); }
 	
 	/** 
 	 * May be missing one or more data fields. <br>
 	 * Designed to be used without access to Minecraft or any supporting objects. 
 	 */
-	public FullDataSourceV2 createUnitTestDataSource() throws IOException, InterruptedException 
+	public FullDataSourceV2 createUnitTestDataSource() throws IOException, InterruptedException, DataCorruptedException 
 	{ return this.internalPopulateDataSource(FullDataSourceV2.createEmpty(this.pos), null, true); }
 	
-	private FullDataSourceV2 internalPopulateDataSource(FullDataSourceV2 dataSource, ILevelWrapper levelWrapper, boolean unitTest) throws IOException, InterruptedException
+	private FullDataSourceV2 internalPopulateDataSource(FullDataSourceV2 dataSource, ILevelWrapper levelWrapper, boolean unitTest) throws IOException, InterruptedException, DataCorruptedException
 	{
 		if (FullDataSourceV2.DATA_FORMAT_VERSION != this.dataFormatVersion)
 		{
@@ -212,7 +215,7 @@ public class FullDataSourceV2DTO implements IBaseDTO<DhSectionPos>
 		
 		return new CheckedByteArray(checksum, byteArrayOutputStream.toByteArray());
 	}
-	private static LongArrayList[] readBlobToDataSourceDataArray(byte[] compressedDataByteArray, EDhApiDataCompressionMode compressionModeEnum) throws IOException
+	private static LongArrayList[] readBlobToDataSourceDataArray(byte[] compressedDataByteArray, EDhApiDataCompressionMode compressionModeEnum) throws IOException, DataCorruptedException
 	{
 		ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(compressedDataByteArray);
 		DhDataInputStream compressedIn = new DhDataInputStream(byteArrayInputStream, compressionModeEnum);
@@ -225,12 +228,21 @@ public class FullDataSourceV2DTO implements IBaseDTO<DhSectionPos>
 		{
 			// read the column length
 			short dataColumnLength = compressedIn.readShort(); // separate variables are used for debugging and in case validation wants to be added later 
+			if (dataColumnLength < 0)
+			{
+				throw new DataCorruptedException("Read DataSource Blob data at index ["+xz+"], column length ["+dataColumnLength+"] should be greater than zero.");
+			}
+			
 			LongArrayList dataColumn = new LongArrayList(new long[dataColumnLength]);
 			
 			// read column data (will be skipped if no data was present)
 			for (int y = 0; y < dataColumnLength; y++)
 			{
 				long dataPoint = compressedIn.readLong();
+				if (VALIDATE_INPUT_DATAPOINTS)
+				{
+					FullDataPointUtil.validateDatapoint(dataPoint);
+				}
 				dataColumn.set(y, dataPoint);
 			}
 			
@@ -254,15 +266,22 @@ public class FullDataSourceV2DTO implements IBaseDTO<DhSectionPos>
 		
 		return byteArrayOutputStream.toByteArray();
 	}
-	private static byte[] readBlobToGenerationSteps(byte[] dataByteArray, EDhApiDataCompressionMode compressionModeEnum) throws IOException, InterruptedException
+	private static byte[] readBlobToGenerationSteps(byte[] dataByteArray, EDhApiDataCompressionMode compressionModeEnum) throws IOException, DataCorruptedException
 	{
 		ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(dataByteArray);
 		DhDataInputStream compressedIn = new DhDataInputStream(byteArrayInputStream, compressionModeEnum);
 		
-		byte[] columnGenStepByteArray = new byte[FullDataSourceV2.WIDTH * FullDataSourceV2.WIDTH];
-		compressedIn.readFully(columnGenStepByteArray);
-		
-		return columnGenStepByteArray;
+		try
+		{
+			byte[] columnGenStepByteArray = new byte[FullDataSourceV2.WIDTH * FullDataSourceV2.WIDTH];
+			compressedIn.readFully(columnGenStepByteArray);
+			
+			return columnGenStepByteArray;
+		}
+		catch (EOFException e)
+		{
+			throw new DataCorruptedException(e);
+		}
 	}
 	
 	
@@ -302,7 +321,7 @@ public class FullDataSourceV2DTO implements IBaseDTO<DhSectionPos>
 		
 		return byteArrayOutputStream.toByteArray();
 	}
-	private static FullDataPointIdMap readBlobToDataMapping(byte[] compressedMappingByteArray, DhSectionPos pos, @NotNull ILevelWrapper levelWrapper, EDhApiDataCompressionMode compressionModeEnum) throws IOException, InterruptedException
+	private static FullDataPointIdMap readBlobToDataMapping(byte[] compressedMappingByteArray, DhSectionPos pos, @NotNull ILevelWrapper levelWrapper, EDhApiDataCompressionMode compressionModeEnum) throws IOException, InterruptedException, DataCorruptedException
 	{
 		ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(compressedMappingByteArray);
 		DhDataInputStream compressedIn = new DhDataInputStream(byteArrayInputStream, compressionModeEnum);

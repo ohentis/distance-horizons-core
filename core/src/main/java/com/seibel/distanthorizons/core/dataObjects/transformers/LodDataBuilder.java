@@ -35,6 +35,7 @@ import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.util.FullDataPointUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
+import com.seibel.distanthorizons.core.util.objects.DataCorruptedException;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
@@ -133,97 +134,105 @@ public class LodDataBuilder
 		EDhApiWorldCompressionMode worldCompressionMode = Config.Client.Advanced.LodBuilding.worldCompression.get();
 		boolean ignoreHiddenBlocks = (worldCompressionMode != EDhApiWorldCompressionMode.MERGE_SAME_BLOCKS);
 		
-		int minBuildHeight = chunkWrapper.getMinNonEmptyHeight();
-		for (int relBlockX = 0; relBlockX < LodUtil.CHUNK_WIDTH; relBlockX++)
+		try
 		{
-			for (int relBlockZ = 0; relBlockZ < LodUtil.CHUNK_WIDTH; relBlockZ++)
+			int minBuildHeight = chunkWrapper.getMinNonEmptyHeight();
+			for (int relBlockX = 0; relBlockX < LodUtil.CHUNK_WIDTH; relBlockX++)
 			{
-				LongArrayList longs = new LongArrayList(chunkWrapper.getHeight() / 4);
-				int lastY = chunkWrapper.getMaxBuildHeight();
-				IBiomeWrapper biome = chunkWrapper.getBiome(relBlockX, lastY, relBlockZ);
-				IBlockStateWrapper blockState = AIR;
-				int mappedId = dataSource.mapping.addIfNotPresentAndGetId(biome, blockState);
-
-				
-				byte blockLight;
-				byte skyLight;
-				if (lastY < chunkWrapper.getMaxBuildHeight())
+				for (int relBlockZ = 0; relBlockZ < LodUtil.CHUNK_WIDTH; relBlockZ++)
 				{
-					// FIXME: The lastY +1 offset is to reproduce the old behavior. Remove this when we get per-face lighting
-					blockLight = (byte) chunkWrapper.getBlockLight(relBlockX, lastY + 1, relBlockZ);
-					skyLight = (byte) chunkWrapper.getSkyLight(relBlockX, lastY + 1, relBlockZ);
-				}
-				else
-				{
-					//we are at the height limit. There are no torches here, and sky is not obscured.
-					blockLight = 0;
-					skyLight = 15;
-				}
-				
-				
-				// determine the starting Y Pos
-				int y = chunkWrapper.getLightBlockingHeightMapValue(relBlockX,relBlockZ);
-				// go up until we reach open air or the world limit
-				IBlockStateWrapper topBlockState = chunkWrapper.getBlockState(relBlockX, y, relBlockZ);
-				while (!topBlockState.isAir() && y < chunkWrapper.getMaxBuildHeight())
-				{
-					try
-					{
-						// This is necessary in some edge cases with snow layers and some other blocks that may not appear in the height map but do block light.
-						// Interestingly this doesn't appear to be the case in the DhLightingEngine, if this same logic is added there the lighting breaks for the affected blocks.
-						y++;
-						topBlockState = chunkWrapper.getBlockState(relBlockX, y, relBlockZ);
-					}
-					catch (Exception e)
-					{
-						if (!getTopErrorLogged)
-						{
-							LOGGER.warn("Unexpected issue in LodDataBuilder, future errors won't be logged. Chunk [" + chunkWrapper.getChunkPos() + "] with max height: [" + chunkWrapper.getMaxBuildHeight() + "] had issue getting block at pos [" + relBlockX + "," + y + "," + relBlockZ + "] error: " + e.getMessage(), e);
-							getTopErrorLogged = true;
-						}
-						
-						y--;
-						break;
-					}
-				}
-				
-				
-				for (; y >= minBuildHeight; y--)
-				{
-					IBiomeWrapper newBiome = chunkWrapper.getBiome(relBlockX, y, relBlockZ);
-					IBlockStateWrapper newBlockState = chunkWrapper.getBlockState(relBlockX, y, relBlockZ);
-					byte newBlockLight = (byte) chunkWrapper.getBlockLight(relBlockX, y + 1, relBlockZ);
-					byte newSkyLight = (byte) chunkWrapper.getSkyLight(relBlockX, y + 1, relBlockZ);
+					LongArrayList longs = new LongArrayList(chunkWrapper.getHeight() / 4);
+					int lastY = chunkWrapper.getMaxBuildHeight();
+					IBiomeWrapper biome = chunkWrapper.getBiome(relBlockX, lastY, relBlockZ);
+					IBlockStateWrapper blockState = AIR;
+					int mappedId = dataSource.mapping.addIfNotPresentAndGetId(biome, blockState);
 					
-					// save the biome/block change
-					if (!newBiome.equals(biome) || !newBlockState.equals(blockState))
+					
+					byte blockLight;
+					byte skyLight;
+					if (lastY < chunkWrapper.getMaxBuildHeight())
 					{
-						// if we ignore hidden blocks, don't save this biome/block change
-						// wait until the block is visible and then save the new datapoint
-						if (!ignoreHiddenBlocks
-							// if the last block is air, this block will always be visible
-							|| blockState.isAir()
-							// check if this block is visible from any direction 
-							|| blockVisible(chunkWrapper, relBlockX, y, relBlockZ))
+						// FIXME: The lastY +1 offset is to reproduce the old behavior. Remove this when we get per-face lighting
+						blockLight = (byte) chunkWrapper.getBlockLight(relBlockX, lastY + 1, relBlockZ);
+						skyLight = (byte) chunkWrapper.getSkyLight(relBlockX, lastY + 1, relBlockZ);
+					}
+					else
+					{
+						//we are at the height limit. There are no torches here, and sky is not obscured.
+						blockLight = 0;
+						skyLight = 15;
+					}
+					
+					
+					// determine the starting Y Pos
+					int y = chunkWrapper.getLightBlockingHeightMapValue(relBlockX, relBlockZ);
+					// go up until we reach open air or the world limit
+					IBlockStateWrapper topBlockState = chunkWrapper.getBlockState(relBlockX, y, relBlockZ);
+					while (!topBlockState.isAir() && y < chunkWrapper.getMaxBuildHeight())
+					{
+						try
 						{
-							longs.add(FullDataPointUtil.encode(mappedId, lastY - y, y + 1 - chunkWrapper.getMinBuildHeight(), blockLight, skyLight));
-							biome = newBiome;
-							blockState = newBlockState;
-							mappedId = dataSource.mapping.addIfNotPresentAndGetId(biome, blockState);
-							blockLight = newBlockLight;
-							skyLight = newSkyLight;
-							lastY = y;
+							// This is necessary in some edge cases with snow layers and some other blocks that may not appear in the height map but do block light.
+							// Interestingly this doesn't appear to be the case in the DhLightingEngine, if this same logic is added there the lighting breaks for the affected blocks.
+							y++;
+							topBlockState = chunkWrapper.getBlockState(relBlockX, y, relBlockZ);
+						}
+						catch (Exception e)
+						{
+							if (!getTopErrorLogged)
+							{
+								LOGGER.warn("Unexpected issue in LodDataBuilder, future errors won't be logged. Chunk [" + chunkWrapper.getChunkPos() + "] with max height: [" + chunkWrapper.getMaxBuildHeight() + "] had issue getting block at pos [" + relBlockX + "," + y + "," + relBlockZ + "] error: " + e.getMessage(), e);
+								getTopErrorLogged = true;
+							}
+							
+							y--;
+							break;
 						}
 					}
+					
+					
+					for (; y >= minBuildHeight; y--)
+					{
+						IBiomeWrapper newBiome = chunkWrapper.getBiome(relBlockX, y, relBlockZ);
+						IBlockStateWrapper newBlockState = chunkWrapper.getBlockState(relBlockX, y, relBlockZ);
+						byte newBlockLight = (byte) chunkWrapper.getBlockLight(relBlockX, y + 1, relBlockZ);
+						byte newSkyLight = (byte) chunkWrapper.getSkyLight(relBlockX, y + 1, relBlockZ);
+						
+						// save the biome/block change
+						if (!newBiome.equals(biome) || !newBlockState.equals(blockState))
+						{
+							// if we ignore hidden blocks, don't save this biome/block change
+							// wait until the block is visible and then save the new datapoint
+							if (!ignoreHiddenBlocks
+									// if the last block is air, this block will always be visible
+									|| blockState.isAir()
+									// check if this block is visible from any direction 
+									|| blockVisible(chunkWrapper, relBlockX, y, relBlockZ))
+							{
+								longs.add(FullDataPointUtil.encode(mappedId, lastY - y, y + 1 - chunkWrapper.getMinBuildHeight(), blockLight, skyLight));
+								biome = newBiome;
+								blockState = newBlockState;
+								mappedId = dataSource.mapping.addIfNotPresentAndGetId(biome, blockState);
+								blockLight = newBlockLight;
+								skyLight = newSkyLight;
+								lastY = y;
+							}
+						}
+					}
+					longs.add(FullDataPointUtil.encode(mappedId, lastY - y, y + 1 - chunkWrapper.getMinBuildHeight(), blockLight, skyLight));
+					
+					dataSource.setSingleColumn(longs,
+							relBlockX + chunkOffsetX,
+							relBlockZ + chunkOffsetZ,
+							EDhApiWorldGenerationStep.LIGHT,
+							worldCompressionMode);
 				}
-				longs.add(FullDataPointUtil.encode(mappedId, lastY - y, y + 1 - chunkWrapper.getMinBuildHeight(), blockLight, skyLight));
-				
-				dataSource.setSingleColumn(longs, 
-						relBlockX + chunkOffsetX, 
-						relBlockZ + chunkOffsetZ, 
-						EDhApiWorldGenerationStep.LIGHT,
-						worldCompressionMode);
 			}
+		}
+		catch (DataCorruptedException e)
+		{
+			LOGGER.error("Unable to convert chunk at pos ["+chunkWrapper.getChunkPos()+"] to an LOD. Error: "+e.getMessage(), e);
+			return null;
 		}
 		
 		LodUtil.assertTrue(!dataSource.isEmpty);
@@ -292,7 +301,7 @@ public class LodDataBuilder
 	
 	
 	/** @throws ClassCastException if an API user returns the wrong object type(s) */
-	public static FullDataSourceV2 createFromApiChunkData(DhApiChunk dataPoints) throws ClassCastException
+	public static FullDataSourceV2 createFromApiChunkData(DhApiChunk dataPoints) throws ClassCastException, DataCorruptedException
 	{
 		FullDataSourceV2 accessor = FullDataSourceV2.createEmpty(new DhSectionPos(new DhChunkPos(dataPoints.chunkPosX, dataPoints.chunkPosZ)));
 		for (int relZ = 0; relZ < LodUtil.CHUNK_WIDTH; relZ++)

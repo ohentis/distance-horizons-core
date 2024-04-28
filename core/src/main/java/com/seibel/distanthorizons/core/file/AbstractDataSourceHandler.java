@@ -8,6 +8,7 @@ import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.sql.repo.AbstractDhRepo;
 import com.seibel.distanthorizons.core.sql.dto.IBaseDTO;
 import com.seibel.distanthorizons.core.util.LodUtil;
+import com.seibel.distanthorizons.core.util.objects.DataCorruptedException;
 import com.seibel.distanthorizons.core.util.threading.PositionalLockProvider;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import org.apache.logging.log4j.Logger;
@@ -16,6 +17,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.StreamCorruptedException;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -95,7 +97,7 @@ public abstract class AbstractDataSourceHandler
 	/** When this is called the parent folders should be created */
 	protected abstract TRepo createRepo();
 	
-	protected abstract TDataSource createDataSourceFromDto(TDTO dto) throws InterruptedException, IOException;
+	protected abstract TDataSource createDataSourceFromDto(TDTO dto) throws InterruptedException, IOException, DataCorruptedException;
 	protected abstract TDTO createDtoFromDataSource(TDataSource dataSource);
 	
 	protected abstract TDataSource makeEmptyDataSource(DhSectionPos pos);
@@ -145,8 +147,18 @@ public abstract class AbstractDataSourceHandler
 			TDTO dto = this.repo.getByKey(pos);
 			if (dto != null)
 			{
-				// load from database
-				dataSource = this.createDataSourceFromDto(dto);
+				try
+				{
+					// load from database
+					dataSource = this.createDataSourceFromDto(dto);
+				}
+				catch (DataCorruptedException e)
+				{
+					// stack trace not included since a lot of corrupt data would cause the log to get quite messy, 
+					// and it should be fairly easy to see what the problem was from the message
+					LOGGER.warn("Corrupted data found at pos "+pos+". Data at position will be deleted so it can be re-generated and to prevent future issues. Error: "+e.getMessage());
+					this.repo.deleteWithKey(pos);
+				}
 			}
 			else
 			{

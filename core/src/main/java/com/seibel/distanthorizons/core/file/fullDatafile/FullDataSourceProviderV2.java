@@ -35,6 +35,7 @@ import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
 import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV2DTO;
 import com.seibel.distanthorizons.core.sql.repo.FullDataSourceV2Repo;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
+import com.seibel.distanthorizons.core.util.objects.DataCorruptedException;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import org.apache.logging.log4j.Logger;
@@ -165,7 +166,7 @@ public class FullDataSourceProviderV2
 	}
 	
 	@Override
-	protected FullDataSourceV2 createDataSourceFromDto(FullDataSourceV2DTO dto) throws InterruptedException, IOException
+	protected FullDataSourceV2 createDataSourceFromDto(FullDataSourceV2DTO dto) throws InterruptedException, IOException, DataCorruptedException
 	{ return dto.createPooledDataSource(this.level.getLevelWrapper()); }
 	
 	@Override
@@ -263,7 +264,7 @@ public class FullDataSourceProviderV2
 											}
 											catch (Exception e)
 											{
-												LOGGER.error("issue in update for parent pos: " + parentUpdatePos);
+												LOGGER.error("issue in update for parent pos: " + parentUpdatePos+ " Error: "+e.getMessage(), e);
 											}
 											finally
 											{
