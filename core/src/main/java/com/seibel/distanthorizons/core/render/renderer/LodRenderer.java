@@ -57,6 +57,9 @@ import org.apache.logging.log4j.LogManager;
 import org.lwjgl.opengl.GL32;
 
 import java.awt.*;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
@@ -425,7 +428,7 @@ public class LodRenderer
 					combinedMatrix.multiply(renderEventParam.dhModelViewMatrix);
 					
 					// Note: this can be very slow if a lot of boxes are being rendered 
- 					DebugRenderer.INSTANCE.render(combinedMatrix);
+					DebugRenderer.INSTANCE.render(combinedMatrix);
 					profiler.popPush("LOD cleanup");
 				}
 				
@@ -591,8 +594,6 @@ public class LodRenderer
 		{
 			if (this.usingMcFrameBuffer && framebufferOverride == null)
 			{
-				// recreating the GL State at this point is necessary in order to get the correct depth texture
-				minecraftGlState.saveState();
 				if (ENABLE_DUMP_GL_STATE)
 				{
 					tickLogger.debug("Re-saving GL state due to Optifine presence: " + minecraftGlState);
