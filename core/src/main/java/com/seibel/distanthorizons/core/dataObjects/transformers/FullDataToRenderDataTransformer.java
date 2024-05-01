@@ -239,8 +239,14 @@ public class FullDataToRenderDataTransformer
 			{
 				if (colorBelowWithAvoidedBlocks)
 				{
-					//mare sure to not trnasfer alpha if for some reason grass is transparent
-					colorToApplyToNextBlock = ColorUtil.setAlpha(level.computeBaseColor(new DhBlockPos(blockX, bottomY + level.getMinY(), blockZ), biome, block),255);
+					int tempColor = level.computeBaseColor(new DhBlockPos(blockX, bottomY + level.getMinY(), blockZ), biome, block);
+					if (ColorUtil.getAlpha(tempColor) == 0)
+					{
+						//make sure to not transfer the color when alpha is 0
+						continue;
+					}
+					//mare sure to not trnasfer alpha if for some reason grass is semi transparent
+					colorToApplyToNextBlock = ColorUtil.setAlpha(tempColor,255);
 					skylightToApplyToNextBlock = skyLight;
 					blocklightToApplyToNextBlock = blockLight;
 				}
