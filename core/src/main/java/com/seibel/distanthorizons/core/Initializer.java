@@ -28,10 +28,10 @@ import com.seibel.distanthorizons.core.api.external.methods.config.DhApiConfig;
 import com.seibel.distanthorizons.core.api.external.methods.data.DhApiTerrainDataRepo;
 import com.seibel.distanthorizons.api.DhApi;
 import com.seibel.distanthorizons.core.render.DhApiRenderProxy;
-//import io.netty.buffer.ByteBuf;
 import net.jpountz.lz4.LZ4FrameOutputStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.tukaani.xz.XZOutputStream;
 
 import java.awt.*;
 
@@ -47,15 +47,17 @@ public class Initializer
 		{
 			// if any library isn't present in the jar its class
 			// will throw an error (not an exception)
-			Class<?> compressor = LZ4FrameOutputStream.class;
+			Class<?> fastCompressor = LZ4FrameOutputStream.class;
+			Class<?> smallCompressor = XZOutputStream.class;
 			//Class<?> networking = ByteBuf.class;
-			Class<?> toml = com.electronwill.nightconfig.core.Config.class;
+			Class<?> config = com.electronwill.nightconfig.core.Config.class;
 			Class<?> oldFastUtil = it.unimi.dsi.fastutil.longs.LongArrayList.class; // available in 8.2.1
 			//Class<?> newFastUtil = it.unimi.dsi.fastutil.ints.IntUnaryOperator.class; // available in 8.5.13
 		}
 		catch (Throwable e)
 		{
 			LOGGER.fatal("Critical programmer error: One or more libraries aren't present. Error: [" + e.getMessage() + "].");
+			// throwing here should crash the game, notifying the developer that something is wrong
 			throw e;
 		}
 		

@@ -19,14 +19,10 @@
 
 package com.seibel.distanthorizons.core.util.objects.dataStreams;
 
-import com.github.luben.zstd.RecyclingBufferPool;
-import com.github.luben.zstd.ZstdOutputStream;
 import com.seibel.distanthorizons.api.enums.config.EDhApiDataCompressionMode;
-import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import net.jpountz.lz4.LZ4Factory;
 import net.jpountz.lz4.LZ4FrameOutputStream;
 import net.jpountz.xxhash.XXHashFactory;
-import org.apache.logging.log4j.Logger;
 import org.tukaani.xz.*;
 
 import java.io.*;
@@ -59,8 +55,6 @@ public class DhDataOutputStream extends DataOutputStream
 						LZ4Factory.nativeInstance().fastCompressor(),
 						XXHashFactory.nativeInstance().hash32(), 
 						LZ4FrameOutputStream.FLG.Bits.BLOCK_INDEPENDENCE);
-			case Z_STD:
-				return new ZstdOutputStream(stream, RecyclingBufferPool.INSTANCE);
 			case LZMA2:
 				// using an array cache significantly reduces GC pressure
 				ResettableArrayCache arrayCache = LZMA_RESETTABLE_ARRAY_CACHE_GETTER.get();

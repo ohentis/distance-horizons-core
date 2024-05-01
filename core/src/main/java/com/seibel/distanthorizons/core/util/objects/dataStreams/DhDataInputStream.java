@@ -19,9 +19,8 @@
 
 package com.seibel.distanthorizons.core.util.objects.dataStreams;
 
-import com.github.luben.zstd.RecyclingBufferPool;
-import com.github.luben.zstd.ZstdInputStream;
 import com.seibel.distanthorizons.api.enums.config.EDhApiDataCompressionMode;
+import com.seibel.distanthorizons.core.util.objects.DataCorruptedException;
 import net.jpountz.lz4.LZ4FrameInputStream;
 import org.tukaani.xz.XZInputStream;
 
@@ -51,8 +50,6 @@ public class DhDataInputStream extends DataInputStream
 				return stream;
 			case LZ4:
 				return new LZ4FrameInputStream(stream);
-			case Z_STD:
-				return new ZstdInputStream(stream, RecyclingBufferPool.INSTANCE);
 			case LZMA2:
 				// Note: all LZMA/XZ compressors can be decompressed using this same InputStream
 				return new XZInputStream(stream);

@@ -24,6 +24,7 @@ import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSour
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV2DTO;
+import com.seibel.distanthorizons.core.util.objects.DataCorruptedException;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataInputStream;
 import org.apache.logging.log4j.Logger;
 
@@ -91,8 +92,7 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<DhSectionPos, FullDataS
 		
 		
 		byte dataFormatVersion = (Byte) objectMap.get("DataFormatVersion");
-		byte compressionMode = (Byte) objectMap.get("CompressionMode");
-		EDhApiDataCompressionMode compressionModeEnum = EDhApiDataCompressionMode.getFromValue(compressionMode);
+		byte compressionModeValue = (Byte) objectMap.get("CompressionMode");
 		
 		boolean applyToParent = ((int) objectMap.get("ApplyToParent")) == 1;
 		
@@ -101,7 +101,7 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<DhSectionPos, FullDataS
 		
 		FullDataSourceV2DTO dto = new FullDataSourceV2DTO(
 				pos,
-				dataChecksum, columnGenStepByteArray, columnWorldCompressionByteArray, dataFormatVersion, compressionModeEnum, dataByteArray,
+				dataChecksum, columnGenStepByteArray, columnWorldCompressionByteArray, dataFormatVersion, compressionModeValue, dataByteArray,
 				lastModifiedUnixDateTime, createdUnixDateTime,
 				mappingByteArray, applyToParent,
 				minY);
@@ -141,7 +141,7 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<DhSectionPos, FullDataS
 		statement.setObject(i++, dto.compressedMappingByteArray);
 		
 		statement.setObject(i++, dto.dataFormatVersion);
-		statement.setObject(i++, dto.compressionModeEnum.value);
+		statement.setObject(i++, dto.compressionModeValue);
 		statement.setObject(i++, dto.applyToParent);
 		
 		statement.setObject(i++, System.currentTimeMillis()); // last modified unix time
@@ -184,7 +184,7 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<DhSectionPos, FullDataS
 		statement.setObject(i++, dto.compressedMappingByteArray);
 		
 		statement.setObject(i++, dto.dataFormatVersion);
-		statement.setObject(i++, dto.compressionModeEnum.value);
+		statement.setObject(i++, dto.compressionModeValue);
 		statement.setObject(i++, dto.applyToParent);
 		
 		statement.setObject(i++, System.currentTimeMillis()); // last modified unix time

@@ -33,6 +33,8 @@ public abstract class AbstractDataSourceHandler
 		implements AutoCloseable
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	private static final Set<String> CORRUPT_DATA_ERRORS_LOGGED = Collections.newSetFromMap(new ConcurrentHashMap<>());
+	
 	
 	/**
 	 * The highest numerical detail level possible. 
@@ -154,9 +156,14 @@ public abstract class AbstractDataSourceHandler
 				}
 				catch (DataCorruptedException e)
 				{
-					// stack trace not included since a lot of corrupt data would cause the log to get quite messy, 
-					// and it should be fairly easy to see what the problem was from the message
-					LOGGER.warn("Corrupted data found at pos "+pos+". Data at position will be deleted so it can be re-generated and to prevent future issues. Error: "+e.getMessage());
+					// Only log each message type once.
+					// This is done to prevent logging "No compression mode with the value [2]" 10,000 times 
+					// if the user is migrating from a nightly build and used ZStd. 
+					if (CORRUPT_DATA_ERRORS_LOGGED.add(e.getMessage()))
+					{
+						LOGGER.warn("Corrupted data found at pos " + pos + ". Data at position will be deleted so it can be re-generated to prevent issues. Future errors with this same message won't be logged. Error: " + e.getMessage(), e);
+					}
+					
 					this.repo.deleteWithKey(pos);
 				}
 			}

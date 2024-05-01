@@ -60,7 +60,7 @@ public class FullDataSourceV2DTO implements IBaseDTO<DhSectionPos>
 	public byte[] compressedMappingByteArray;
 	
 	public byte dataFormatVersion;
-	public EDhApiDataCompressionMode compressionModeEnum;
+	public byte compressionModeValue;
 	
 	public boolean applyToParent;
 	
@@ -82,7 +82,7 @@ public class FullDataSourceV2DTO implements IBaseDTO<DhSectionPos>
 		
 		return new FullDataSourceV2DTO(
 				dataSource.getPos(), 
-				checkedDataPointArray.checksum, compressedWorldGenStepByteArray, compressedWorldCompressionModeByteArray, FullDataSourceV2.DATA_FORMAT_VERSION, compressionModeEnum, checkedDataPointArray.byteArray,
+				checkedDataPointArray.checksum, compressedWorldGenStepByteArray, compressedWorldCompressionModeByteArray, FullDataSourceV2.DATA_FORMAT_VERSION, compressionModeEnum.value, checkedDataPointArray.byteArray,
 				dataSource.lastModifiedUnixDateTime, dataSource.createdUnixDateTime,
 				mappingByteArray, dataSource.applyToParent, 
 				dataSource.levelMinY
@@ -91,7 +91,7 @@ public class FullDataSourceV2DTO implements IBaseDTO<DhSectionPos>
 	
 	public FullDataSourceV2DTO(
 			DhSectionPos pos, 
-			int dataChecksum, byte[] compressedColumnGenStepByteArray, byte[] compressedWorldCompressionModeByteArray, byte dataFormatVersion, EDhApiDataCompressionMode compressionModeEnum, byte[] compressedDataByteArray,
+			int dataChecksum, byte[] compressedColumnGenStepByteArray, byte[] compressedWorldCompressionModeByteArray, byte dataFormatVersion, byte compressionModeValue, byte[] compressedDataByteArray,
 			long lastModifiedUnixDateTime, long createdUnixDateTime,
 			byte[] compressedMappingByteArray, boolean applyToParent,
 			int levelMinY)
@@ -102,7 +102,7 @@ public class FullDataSourceV2DTO implements IBaseDTO<DhSectionPos>
 		this.compressedWorldCompressionModeByteArray = compressedWorldCompressionModeByteArray;
 		
 		this.dataFormatVersion = dataFormatVersion;
-		this.compressionModeEnum = compressionModeEnum;
+		this.compressionModeValue = compressionModeValue;
 		
 		this.compressedDataByteArray = compressedDataByteArray;
 		this.compressedMappingByteArray = compressedMappingByteArray;
@@ -144,9 +144,23 @@ public class FullDataSourceV2DTO implements IBaseDTO<DhSectionPos>
 			throw new IllegalStateException("There should only be one data format ["+FullDataSourceV2.DATA_FORMAT_VERSION+"].");
 		}
 		
-		dataSource.columnGenerationSteps = readBlobToGenerationSteps(this.compressedColumnGenStepByteArray, this.compressionModeEnum);
-		dataSource.columnWorldCompressionMode = readBlobToGenerationSteps(this.compressedWorldCompressionModeByteArray, this.compressionModeEnum);
-		dataSource.dataPoints = readBlobToDataSourceDataArray(this.compressedDataByteArray, this.compressionModeEnum);
+		
+		EDhApiDataCompressionMode compressionModeEnum;
+		try
+		{
+			compressionModeEnum = this.getCompressionMode();
+		}
+		catch (IllegalArgumentException e)
+		{
+			// may happen if ZStd was used (which was added and removed during the nightly builds)
+			// or if the compressor value is changed to an invalid option
+			throw new DataCorruptedException(e);
+		}
+		
+		
+		dataSource.columnGenerationSteps = readBlobToGenerationSteps(this.compressedColumnGenStepByteArray, compressionModeEnum);
+		dataSource.columnWorldCompressionMode = readBlobToGenerationSteps(this.compressedWorldCompressionModeByteArray, compressionModeEnum);
+		dataSource.dataPoints = readBlobToDataSourceDataArray(this.compressedDataByteArray, compressionModeEnum);
 		
 		dataSource.mapping.clear(dataSource.getPos());
 		// should only be null when used in a unit test
@@ -157,7 +171,7 @@ public class FullDataSourceV2DTO implements IBaseDTO<DhSectionPos>
 				throw new NullPointerException("No level wrapper present, unable to deserialize data map. This should only be used for unit tests.");
 			}
 			
-			dataSource.mapping.mergeAndReturnRemappedEntityIds(readBlobToDataMapping(this.compressedMappingByteArray, dataSource.getPos(), levelWrapper,  this.compressionModeEnum));
+			dataSource.mapping.mergeAndReturnRemappedEntityIds(readBlobToDataMapping(this.compressedMappingByteArray, dataSource.getPos(), levelWrapper,  compressionModeEnum));
 		}
 		
 		dataSource.lastModifiedUnixDateTime = this.lastModifiedUnixDateTime;
@@ -339,6 +353,13 @@ public class FullDataSourceV2DTO implements IBaseDTO<DhSectionPos>
 	@Override 
 	public DhSectionPos getKey() { return this.pos; }
 	
+	
+	
+	//================//
+	// helper methods //
+	//================//
+	
+	public EDhApiDataCompressionMode getCompressionMode() throws IllegalArgumentException { return EDhApiDataCompressionMode.getFromValue(this.compressionModeValue); }
 	
 	
 	//================//
