@@ -2,12 +2,12 @@ package com.seibel.distanthorizons.core.util.objects.dataStreams;
 
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceArrayMap;
-import it.unimi.dsi.fastutil.ints.IntUnaryOperator;
 import org.apache.logging.log4j.Logger;
 import org.tukaani.xz.ArrayCache;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.function.IntUnaryOperator;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /** 
