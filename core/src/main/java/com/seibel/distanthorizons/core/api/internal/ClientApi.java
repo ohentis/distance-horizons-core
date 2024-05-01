@@ -55,6 +55,8 @@ import org.lwjgl.glfw.GLFW;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Queue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -79,8 +81,7 @@ public class ClientApi
 	
 	private boolean configOverrideReminderPrinted = false;
 	
-	private boolean migrationMessageShown = false;
-	private boolean showMigrationMessageNextFrame = false;
+	private final Queue<String> chatMessageQueueForNextFrame = new LinkedBlockingQueue<>();
 	
 	public boolean rendererDisabledBecauseOfExceptions = false;
 	
@@ -486,17 +487,16 @@ public class ClientApi
 			MC.sendChatMessage("");
 		}
 		
-		// data migration
-		if (this.showMigrationMessageNextFrame 
-			&& !this.migrationMessageShown
-			&& Config.Client.Advanced.LodBuilding.showMigrationChatWarning.get())
+		// generic messages
+		while (!this.chatMessageQueueForNextFrame.isEmpty())
 		{
-			this.showMigrationMessageNextFrame  = false;
-			this.migrationMessageShown = true;
-			
-			MC.sendChatMessage("Old Distant Horizons data is being migrated.");
-			MC.sendChatMessage("During migration LODs may load slowly and DH world gen is disabled.");
-			MC.sendChatMessage("");
+			String message = this.chatMessageQueueForNextFrame.poll();
+			if (message == null)
+			{
+				// done to prevent potential null pointers
+				message = "";
+			}
+			MC.sendChatMessage(message);
 		}
 		
 		IProfilerWrapper profiler = MC.getProfiler();
@@ -648,7 +648,10 @@ public class ClientApi
 		}
 	}
 	
-	// TODO there's probably a better way of handling chat messages
-	public void showMigrationMessageOnNextFrame() { this.showMigrationMessageNextFrame = true; }
+	/** 
+	 * Queues the given message to appear in chat the next valid frame.
+	 * Useful for queueing up messages that may be triggered before the user has loaded into the world. 
+	 */
+	public void showChatMessageNextFrame(String chatMessage) { this.chatMessageQueueForNextFrame.add(chatMessage); }
 	
 }
