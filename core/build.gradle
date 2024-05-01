@@ -40,7 +40,8 @@ dependencies { // All of these dependencies are in Vanilla Minecraft, but we nee
     runtimeOnly "org.lwjgl:lwjgl-stb::$lwjglNatives"
     runtimeOnly "org.lwjgl:lwjgl-tinyfd::$lwjglNatives"
 
-    shade "it.unimi.dsi:fastutil:${rootProject.fastutil_version}" // Add our own fastutil version
+    // FIXME for some reason this line doesn't actually shade in the library
+//    shade "it.unimi.dsi:fastutil:${rootProject.fastutil_version}" // Add our own fastutil version
 
 
     // Some other dependencies
@@ -57,6 +58,6 @@ artifacts {
 
 shadowJar {
     def librariesLocation = "distanthorizons.libraries"
-    relocate "it.unimi.dsi.fastutil", "${librariesLocation}.unimi.dsi.fastutil"
+//    relocate "it.unimi.dsi.fastutil", "${librariesLocation}.unimi.dsi.fastutil"
     mergeServiceFiles()
 }

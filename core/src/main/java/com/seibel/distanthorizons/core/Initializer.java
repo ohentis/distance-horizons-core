@@ -50,6 +50,8 @@ public class Initializer
 			Class<?> compressor = LZ4FrameOutputStream.class;
 			//Class<?> networking = ByteBuf.class;
 			Class<?> toml = com.electronwill.nightconfig.core.Config.class;
+			Class<?> oldFastUtil = it.unimi.dsi.fastutil.longs.LongArrayList.class; // available in 8.2.1
+			//Class<?> newFastUtil = it.unimi.dsi.fastutil.ints.IntUnaryOperator.class; // available in 8.5.13
 		}
 		catch (Throwable e)
 		{
