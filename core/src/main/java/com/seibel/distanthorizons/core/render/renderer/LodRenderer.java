@@ -405,15 +405,8 @@ public class LodRenderer
 					this.renderTransparentBuffers(profiler, renderEventParam, renderEventParam.partialTicks);
 				}
 				
-				
-				if (this.usingMcFrameBuffer)
-				{
-					// If MC's framebuffer is being used the depth needs to be cleared to prevent rendering on top of MC.
-					// This should only happen when Optifine shaders are being used.
-					GL32.glClear(GL32.GL_DEPTH_BUFFER_BIT);
-				}
-				
 				drawLagSpikeCatcher.end("LodDraw");
+				
 				
 				
 				//=================//
@@ -430,6 +423,15 @@ public class LodRenderer
 					// Note: this can be very slow if a lot of boxes are being rendered 
 					DebugRenderer.INSTANCE.render(combinedMatrix);
 					profiler.popPush("LOD cleanup");
+				}
+				
+				
+				
+				if (this.usingMcFrameBuffer)
+				{
+					// If MC's framebuffer is being used the depth needs to be cleared to prevent rendering on top of MC.
+					// This should only happen when Optifine shaders are being used.
+					GL32.glClear(GL32.GL_DEPTH_BUFFER_BIT);
 				}
 				
 				
