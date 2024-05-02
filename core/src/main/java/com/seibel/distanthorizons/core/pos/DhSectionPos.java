@@ -158,9 +158,17 @@ public class DhSectionPos implements INetworkObject
 	// getters //
 	//=========//
 	
-	/** @return the corner with the smallest X and Z coordinate */
+	/**
+	 * @return the corner with the smallest X and Z coordinate
+	 * @deprecated use DhSectionPos instead
+	 */
+	@Deprecated
 	public DhLodPos getMinCornerLodPos() { return this.getMinCornerLodPos((byte) (this.detailLevel - 1)); }
-	/** @return the corner with the smallest X and Z coordinate */
+	/**
+	 * @return the corner with the smallest X and Z coordinate
+	 * @deprecated use DhSectionPos instead
+	 */
+	@Deprecated
 	public DhLodPos getMinCornerLodPos(byte returnDetailLevel)
 	{
 		LodUtil.assertTrue(returnDetailLevel <= this.detailLevel, "returnDetailLevel must be less than sectionDetail");
@@ -169,6 +177,26 @@ public class DhSectionPos implements INetworkObject
 		return new DhLodPos(returnDetailLevel,
 				this.x * BitShiftUtil.powerOfTwo(offset),
 				this.z * BitShiftUtil.powerOfTwo(offset));
+	}
+	
+	public DhSectionPos getMinCornerPos(byte returnDetailLevel)
+	{
+		LodUtil.assertTrue(returnDetailLevel <= this.detailLevel, "returnDetailLevel must be less than sectionDetail");
+		
+		byte offset = (byte) (this.detailLevel - returnDetailLevel);
+		return new DhSectionPos(returnDetailLevel,
+				this.x * BitShiftUtil.powerOfTwo(offset),
+				this.z * BitShiftUtil.powerOfTwo(offset));
+	}
+	
+	public DhSectionPos getMaxCornerPos(byte returnDetailLevel)
+	{
+		LodUtil.assertTrue(returnDetailLevel <= this.detailLevel, "returnDetailLevel must be less than sectionDetail");
+		
+		byte offset = (byte) (this.detailLevel - returnDetailLevel);
+		return new DhSectionPos(returnDetailLevel,
+				(this.x + 1) * BitShiftUtil.powerOfTwo(offset) - 1,
+				(this.z + 1) * BitShiftUtil.powerOfTwo(offset) - 1);
 	}
 	
 	/** 
@@ -214,6 +242,12 @@ public class DhSectionPos implements INetworkObject
 		}
 		
 		return (centerBlockPos * BitShiftUtil.powerOfTwo(this.detailLevel)) + positionOffset;
+	}
+	
+	public int getManhattanBlockDistance(DhBlockPos2D blockPos)
+	{
+		return Math.abs(this.getCenterBlockPosX() - blockPos.x)
+				+ Math.abs(this.getCenterBlockPosZ() - blockPos.z);
 	}
 	
 	
@@ -335,7 +369,7 @@ public class DhSectionPos implements INetworkObject
 	}
 	
 	/** Applies the given consumer to all children of the position at the given section detail level. */
-	public void forEachChildAtLevel(byte sectionDetailLevel, Consumer<DhSectionPos> callback)
+	public void forEachChildAtDetailLevel(byte sectionDetailLevel, Consumer<DhSectionPos> callback)
 	{
 		if (sectionDetailLevel == this.detailLevel)
 		{
@@ -345,7 +379,7 @@ public class DhSectionPos implements INetworkObject
 		
 		for (int i = 0; i < 4; i++)
 		{
-			this.getChildByIndex(i).forEachChildAtLevel(sectionDetailLevel, callback);
+			this.getChildByIndex(i).forEachChildAtDetailLevel(sectionDetailLevel, callback);
 		}
 	}
 	
@@ -375,9 +409,15 @@ public class DhSectionPos implements INetworkObject
 	@Nullable
 	public static DhSectionPos deserialize(String value)
 	{
-		if (value.charAt(0) != '[' || value.charAt(value.length() - 1) != ']') return null;
+		if (value.charAt(0) != '[' || value.charAt(value.length() - 1) != ']')
+		{
+			return null;
+		}
 		String[] split = value.substring(1, value.length() - 1).split(",");
-		if (split.length != 3) return null;
+		if (split.length != 3)
+		{
+			return null;
+		}
 		return new DhSectionPos(Byte.parseByte(split[0]), Integer.parseInt(split[1]), Integer.parseInt(split[2]));
 		
 	}

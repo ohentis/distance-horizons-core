@@ -19,7 +19,6 @@
 
 package com.seibel.distanthorizons.core.wrapperInterfaces.world;
 
-import com.seibel.distanthorizons.core.level.IServerKeyedClientLevel;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import org.jetbrains.annotations.Nullable;
@@ -33,5 +32,8 @@ public interface IClientLevelWrapper extends ILevelWrapper
 	IServerLevelWrapper tryGetServerSideWrapper();
 	
 	int computeBaseColor(DhBlockPos pos, IBiomeWrapper biome, IBlockStateWrapper blockState);
+	
+	/** @return -1 if there was a problem getting the color */
+	int getDirtBlockColor();
 	
 }

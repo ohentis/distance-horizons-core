@@ -21,11 +21,9 @@ package com.seibel.distanthorizons.core.render.glObject.buffer;
 
 import java.nio.ByteBuffer;
 
-import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import org.apache.logging.log4j.Logger;
 import org.lwjgl.opengl.GL32;
 
-import com.seibel.distanthorizons.api.enums.config.EGpuUploadMethod;
+import com.seibel.distanthorizons.api.enums.config.EDhApiGpuUploadMethod;
 
 /**
  * This is a container for a OpenGL
@@ -63,7 +61,7 @@ public class GLVertexBuffer extends GLBuffer
 	@Override
 	public int getBufferBindingTarget() { return GL32.GL_ARRAY_BUFFER; }
 	
-	public void uploadBuffer(ByteBuffer byteBuffer, int vertCount, EGpuUploadMethod uploadMethod, int maxExpensionSize)
+	public void uploadBuffer(ByteBuffer byteBuffer, int vertCount, EDhApiGpuUploadMethod uploadMethod, int maxExpensionSize)
 	{
 		if (vertCount < 0)
 		{
@@ -79,7 +77,7 @@ public class GLVertexBuffer extends GLBuffer
 		this.vertexCount = vertCount;
 	}
 	
-	public ByteBuffer mapBuffer(int targetSize, EGpuUploadMethod uploadMethod, int maxExpensionSize)
+	public ByteBuffer mapBuffer(int targetSize, EDhApiGpuUploadMethod uploadMethod, int maxExpensionSize)
 	{
 		return super.mapBuffer(targetSize, uploadMethod, maxExpensionSize,
 				uploadMethod.useBufferStorage ? GL32.GL_MAP_WRITE_BIT :

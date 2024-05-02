@@ -23,6 +23,7 @@ import com.seibel.distanthorizons.core.level.AbstractDhLevel;
 import com.seibel.distanthorizons.core.logging.SpamReducedLogger;
 import com.seibel.distanthorizons.core.dataObjects.render.columnViews.ColumnArrayView;
 import com.seibel.distanthorizons.core.dataObjects.render.columnViews.IColumnDataView;
+import com.seibel.distanthorizons.coreapi.ModInfo;
 
 
 /**
@@ -63,7 +64,7 @@ public class RenderDataPointUtil
 	// When converting to or from an int a 128 should be added or removed.
 	// If there is a bug with color then it's probably caused by this.
 	
-	private static final SpamReducedLogger warnLogger = new SpamReducedLogger(1);
+	public static final boolean RUN_VALIDATION = ModInfo.IS_DEV_BUILD;
 	
 	
 	public final static int EMPTY_DATA = 0;
@@ -121,36 +122,58 @@ public class RenderDataPointUtil
 				height, depth, lightSky, lightBlock, irisBlockMaterialId);
 	}
 	
-	public static long createDataPoint(int height, int depth, int color, int light, int irisBlockMaterialId)
-	{
-		LodUtil.assertTrue(light >= 0 && light < 256, "Raw Light value must be between 0 and 255!");
-		
-		return createDataPoint(
-				ColorUtil.getAlpha(color),
-				ColorUtil.getRed(color),
-				ColorUtil.getGreen(color),
-				ColorUtil.getBlue(color),
-				height, depth, 
-				light % 16, light / 16, 
-				irisBlockMaterialId);
-	}
-	
 	public static long createDataPoint(int alpha, int red, int green, int blue, int height, int depth, int lightSky, int lightBlock, int irisBlockMaterialId)
 	{
-		LodUtil.assertTrue(height >= 0 && height < MAX_WORLD_Y_SIZE, "Trying to create datapoint with height[" + height + "] out of range!");
-		LodUtil.assertTrue(depth >= 0 && depth < MAX_WORLD_Y_SIZE, "Trying to create datapoint with depth[" + depth + "] out of range!");
+		if (RUN_VALIDATION)
+		{
+			// assertions are inside if-blocks to prevent unnecessary string concatenations
+			if (height < 0 || height >= MAX_WORLD_Y_SIZE)
+			{
+				LodUtil.assertNotReach("Trying to create datapoint with height[" + height + "] out of range!");
+			}
+			if (depth < 0 || depth >= MAX_WORLD_Y_SIZE)
+			{
+				LodUtil.assertNotReach("Trying to create datapoint with depth[" + depth + "] out of range!");
+			}
+			
+			if (lightSky < 0 || lightSky >= 16)
+			{
+				LodUtil.assertNotReach("Trying to create datapoint with lightSky[" + lightSky + "] out of range!");
+			}
+			if (lightBlock < 0 || lightBlock >= 16)
+			{
+				LodUtil.assertNotReach("Trying to create datapoint with lightBlock[" + lightBlock + "] out of range!");
+			}
+			
+			if (irisBlockMaterialId < 0 || irisBlockMaterialId >= 256)
+			{
+				LodUtil.assertNotReach("Trying to create datapoint with irisBlockMaterialId[" + irisBlockMaterialId + "] out of range!");
+			}
+			
+			if (alpha < 0 || alpha >= 256)
+			{
+				LodUtil.assertNotReach("Trying to create datapoint with alpha[" + alpha + "] out of range!");
+			}
+			if (red < 0 || red >= 256)
+			{
+				LodUtil.assertNotReach("Trying to create datapoint with red[" + red + "] out of range!");
+			}
+			if (green < 0 || green >= 256)
+			{
+				LodUtil.assertNotReach("Trying to create datapoint with green[" + green + "] out of range!");
+			}
+			if (blue < 0 || blue >= 256)
+			{
+				LodUtil.assertNotReach("Trying to create datapoint with blue[" + blue + "] out of range!");
+			}
+			
+			
+			if (depth > height)
+			{
+				LodUtil.assertNotReach("Trying to create datapoint with depth[" + depth + "] greater than height[" + height + "]!");
+			}
+		}
 		
-		LodUtil.assertTrue(lightSky >= 0 && lightSky < 16, "Trying to create datapoint with lightSky[" + lightSky + "] out of range!");
-		LodUtil.assertTrue(lightBlock >= 0 && lightBlock < 16, "Trying to create datapoint with lightBlock[" + lightBlock + "] out of range!");
-		
-		LodUtil.assertTrue(irisBlockMaterialId >= 0 && irisBlockMaterialId < 256, "Trying to create datapoint with irisBlockMaterialId[" + irisBlockMaterialId + "] out of range!");
-		
-		LodUtil.assertTrue(alpha >= 0 && alpha < 256, "Trying to create datapoint with alpha[" + alpha + "] out of range!");
-		LodUtil.assertTrue(red >= 0 && red < 256, "Trying to create datapoint with red[" + red + "] out of range!");
-		LodUtil.assertTrue(green >= 0 && green < 256, "Trying to create datapoint with green[" + green + "] out of range!");
-		LodUtil.assertTrue(blue >= 0 && blue < 256, "Trying to create datapoint with blue[" + blue + "] out of range!");
-		
-		LodUtil.assertTrue(depth <= height, "Trying to create datapoint with depth[" + depth + "] greater than height[" + height + "]!");
 		
 		long out = (long) (alpha >>> ALPHA_DOWNSIZE_SHIFT) << ALPHA_SHIFT
 				| (red & RED_MASK) << RED_SHIFT
@@ -178,6 +201,7 @@ public class RenderDataPointUtil
 	public static short getYMax(long dataPoint) { return (short) ((dataPoint >>> HEIGHT_SHIFT) & HEIGHT_MASK); }
 	/** AKA the starting/bottom/lowest Y value above {@link AbstractDhLevel#getMinY()} */
 	public static short getYMin(long dataPoint) { return (short) ((dataPoint >>> DEPTH_SHIFT) & DEPTH_MASK); }
+	public static long setYMin(long dataPoint, int depth) { return (long) ((dataPoint & ~(DEPTH_MASK << DEPTH_SHIFT)) | (depth & DEPTH_MASK) << DEPTH_SHIFT); }
 	
 	public static short getAlpha(long dataPoint) { return (short) ((((dataPoint >>> ALPHA_SHIFT) & ALPHA_MASK) << ALPHA_DOWNSIZE_SHIFT) | 0b1111); }
 	public static short getRed(long dataPoint) { return (short) ((dataPoint >>> RED_SHIFT) & RED_MASK); }

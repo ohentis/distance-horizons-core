@@ -19,7 +19,7 @@
 
 package com.seibel.distanthorizons.coreapi.util.converters;
 
-import com.seibel.distanthorizons.api.enums.rendering.ERendererMode;
+import com.seibel.distanthorizons.api.enums.rendering.EDhApiRendererMode;
 import com.seibel.distanthorizons.coreapi.interfaces.config.IConverter;
 
 /**
@@ -28,17 +28,17 @@ import com.seibel.distanthorizons.coreapi.interfaces.config.IConverter;
  * @author James Seibel
  * @version 2022-6-30
  */
-public class RenderModeEnabledConverter implements IConverter<ERendererMode, Boolean>
+public class RenderModeEnabledConverter implements IConverter<EDhApiRendererMode, Boolean>
 {
 	
-	@Override public ERendererMode convertToCoreType(Boolean renderingEnabled)
+	@Override public EDhApiRendererMode convertToCoreType(Boolean renderingEnabled)
 	{
-		return renderingEnabled ? ERendererMode.DEFAULT : ERendererMode.DISABLED;
+		return renderingEnabled ? EDhApiRendererMode.DEFAULT : EDhApiRendererMode.DISABLED;
 	}
 	
-	@Override public Boolean convertToApiType(ERendererMode renderingMode)
+	@Override public Boolean convertToApiType(EDhApiRendererMode renderingMode)
 	{
-		return renderingMode == ERendererMode.DEFAULT;
+		return renderingMode == EDhApiRendererMode.DEFAULT;
 	}
 	
 }

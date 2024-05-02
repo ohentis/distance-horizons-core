@@ -20,17 +20,15 @@
 package com.seibel.distanthorizons.core.level;
 
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
-import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
-import com.seibel.distanthorizons.core.file.fullDatafile.IFullDataSourceProvider;
-import com.seibel.distanthorizons.core.render.LodRenderSection;
+import com.seibel.distanthorizons.core.file.fullDatafile.FullDataSourceProviderV2;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
-import com.seibel.distanthorizons.core.util.objects.quadTree.QuadNode;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
@@ -41,7 +39,7 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapp
 import org.apache.logging.log4j.Logger;
 
 import java.awt.*;
-import java.util.Iterator;
+import java.util.concurrent.CompletableFuture;
 
 /** The level used on a singleplayer world */
 public class DhClientServerLevel extends AbstractDhLevel implements IDhClientLevel, IDhServerLevel
@@ -102,32 +100,27 @@ public class DhClientServerLevel extends AbstractDhLevel implements IDhClientLev
 			// start world gen
 			
 			// create a new queue
-			this.serverside.worldGenModule.startWorldGen(this.serverside.dataFileHandler, new ServerLevelModule.WorldGenState(this));
+			this.serverside.worldGenModule.startWorldGen(this.serverside.fullDataFileHandler, new ServerLevelModule.WorldGenState(this));
 			
+			// TODO I think this used to queue the world gen
+			//  is it still needed?
 			// populate the queue based on the current rendering tree
-			ClientLevelModule.ClientRenderState renderState = this.clientside.ClientRenderStateRef.get();
-			Iterator<QuadNode<LodRenderSection>> iterator = renderState.quadtree.leafNodeIterator();
-			while (iterator.hasNext())
-			{
-				QuadNode<LodRenderSection> node = iterator.next();
-				this.serverside.dataFileHandler.getAsync(node.sectionPos);
-			}
+			//ClientLevelModule.ClientRenderState renderState = this.clientside.ClientRenderStateRef.get();
+			//Iterator<QuadNode<LodRenderSection>> iterator = renderState.quadtree.leafNodeIterator();
+			//while (iterator.hasNext())
+			//{
+			//	QuadNode<LodRenderSection> node = iterator.next();
+			//	//this.serverside.dataFileHandler.getAsync(node.sectionPos);
+			//}
 		}
 		else if (!shouldDoWorldGen && isWorldGenRunning)
 		{
 			// stop world gen
-			this.serverside.worldGenModule.stopWorldGen(this.serverside.dataFileHandler);
+			this.serverside.worldGenModule.stopWorldGen(this.serverside.fullDataFileHandler);
 		}
 		
 		if (isWorldGenRunning)
 		{
-			ClientLevelModule.ClientRenderState renderState = this.clientside.ClientRenderStateRef.get();
-			if (renderState != null && renderState.quadtree != null)
-			{
-				// remove any generator sections that are out of bounds
-				this.serverside.dataFileHandler.removeGenRequestIf(pos -> !renderState.quadtree.isSectionPosInBounds(pos));
-			}
-			
 			this.serverside.worldGenModule.worldGenTick(new DhBlockPos2D(MC_CLIENT.getPlayerBlockPos()));
 		}
 	}
@@ -173,10 +166,7 @@ public class DhClientServerLevel extends AbstractDhLevel implements IDhClientLev
 	public ILevelWrapper getLevelWrapper() { return getServerLevelWrapper(); }
 	
 	@Override
-	public IFullDataSourceProvider getFileHandler()
-	{
-		return serverside.dataFileHandler;
-	}
+	public FullDataSourceProviderV2 getFullDataProvider() { return this.serverside.fullDataFileHandler; }
 	
 	@Override
 	public AbstractSaveStructure getSaveStructure()
@@ -188,7 +178,7 @@ public class DhClientServerLevel extends AbstractDhLevel implements IDhClientLev
 	public boolean hasSkyLight() { return this.serverLevelWrapper.hasSkyLight(); }
 	
 	@Override
-	public void updateDataSourcesWithChunkData(ChunkSizedFullDataAccessor data) { this.clientside.updateDataSourcesWithChunkData(data); }
+	public CompletableFuture<Void> updateDataSourcesAsync(FullDataSourceV2 data) { return this.clientside.updateDataSourcesAsync(data); }
 	
 	@Override
 	public int getMinY() { return getLevelWrapper().getMinHeight(); }

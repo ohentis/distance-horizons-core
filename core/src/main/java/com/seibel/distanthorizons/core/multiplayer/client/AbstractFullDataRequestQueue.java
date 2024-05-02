@@ -3,8 +3,7 @@ package com.seibel.distanthorizons.core.multiplayer.client;
 import com.google.common.base.Stopwatch;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.config.types.ConfigEntry;
-import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.CompleteFullDataSource;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.logging.ConfigBasedSpamLogger;
@@ -20,7 +19,6 @@ import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.ratelimiting.SupplierBasedRateLimiter;
-import com.seibel.distanthorizons.core.util.threading.ThreadPools;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import io.netty.channel.ChannelException;
 import org.apache.logging.log4j.LogManager;
@@ -33,6 +31,7 @@ import java.util.Set;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, AutoCloseable
 {
@@ -81,11 +80,11 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 		DebugRenderer.register(this, this.showDebugWireframeConfig);
 	}
 	
-	public CompletableFuture<Boolean> submitRequest(DhSectionPos sectionPos, Consumer<ChunkSizedFullDataAccessor> chunkDataConsumer)
+	public CompletableFuture<Boolean> submitRequest(DhSectionPos sectionPos, Consumer<FullDataSourceV2> chunkDataConsumer)
 	{
-		return this.submitRequest(sectionPos, chunkDataConsumer, null);
+		return this.submitRequest(sectionPos, null, chunkDataConsumer);
 	}
-	public CompletableFuture<Boolean> submitRequest(DhSectionPos sectionPos, Consumer<ChunkSizedFullDataAccessor> chunkDataConsumer, @Nullable Integer currentChecksum)
+	public CompletableFuture<Boolean> submitRequest(DhSectionPos sectionPos, @Nullable Long clientTimestamp, Consumer<FullDataSourceV2> chunkDataConsumer)
 	{
 		LodUtil.assertTrue(sectionPos.getDetailLevel() == DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL, "Only highest-detail sections are allowed.");
 		
@@ -98,7 +97,7 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 		}
 		this.alreadyRequestedPositions.add(sectionPos);
 		
-		RequestQueueEntry entry = new RequestQueueEntry(chunkDataConsumer, currentChecksum);
+		RequestQueueEntry entry = new RequestQueueEntry(chunkDataConsumer, clientTimestamp);
 		this.waitingTasks.put(sectionPos, entry);
 		return entry.future;
 	}
@@ -111,13 +110,6 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 	public synchronized boolean tick(DhBlockPos2D targetPos)
 	{
 		if (this.closingFuture != null || !this.networkState.isReady())
-		{
-			return false;
-		}
-		
-		ThreadPoolExecutor fileHandlerPool = ThreadPools.getFileHandlerExecutor();
-		int maxThreadPoolTasks = Config.Client.Advanced.Multiplayer.ServerNetworking.maxThreadPoolTasks.get();
-		if (fileHandlerPool != null && maxThreadPoolTasks != 0 && fileHandlerPool.getQueue().size() > maxThreadPoolTasks)
 		{
 			return false;
 		}
@@ -138,12 +130,14 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 		return true;
 	}
 	
-	public void cancelRequests(Iterable<DhSectionPos> positions)
+	public void removeRetrievalRequestIf(Function<DhSectionPos, Boolean> removeIf)
 	{
-		for (DhSectionPos pos : positions)
+		for (Map.Entry<DhSectionPos, RequestQueueEntry> mapEntry : this.waitingTasks.entrySet())
 		{
-			RequestQueueEntry entry = this.waitingTasks.remove(pos);
-			if (entry != null)
+			DhSectionPos pos = mapEntry.getKey();
+			RequestQueueEntry entry = mapEntry.getValue();
+			
+			if (removeIf.apply(pos))
 			{
 				entry.future.cancel(false);
 				if (entry.request != null)
@@ -187,7 +181,7 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 		DhSectionPos sectionPos = mapEntry.getKey();
 		RequestQueueEntry entry = mapEntry.getValue();
 		
-		CompletableFuture<FullDataSourceResponseMessage> request = this.networkState.getClient().sendRequest(new FullDataSourceRequestMessage(this.level.getLevelWrapper(), sectionPos, entry.currentChecksum), FullDataSourceResponseMessage.class);
+		CompletableFuture<FullDataSourceResponseMessage> request = this.networkState.getClient().sendRequest(new FullDataSourceRequestMessage(this.level.getLevelWrapper(), sectionPos, entry.updateTimestamp), FullDataSourceResponseMessage.class);
 		entry.request = request;
 		request.handleAsync((response, throwable) ->
 		{
@@ -203,12 +197,11 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 				
 				this.waitingTasks.remove(sectionPos);
 				
-				CompleteFullDataSource fullDataSource = response.getFullDataSource(sectionPos, this.level);
-				
-				if (fullDataSource != null)
+				if (response.dataSourceDto != null)
 				{
-					fullDataSource.splitIntoChunkSizedAccessors(entry.chunkDataConsumer);
-					response.getFullDataSourceLoader().returnPooledDataSource(fullDataSource);
+					FullDataSourceV2 fullDataSource = response.dataSourceDto.createPooledDataSource(this.level.getLevelWrapper());
+					entry.chunkDataConsumer.accept(fullDataSource);
+					FullDataSourceV2.DATA_SOURCE_POOL.returnPooledDataSource(fullDataSource);
 				}
 				else
 				{
@@ -257,9 +250,11 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 		};
 	}
 	
+	
 	public int getWaitingTaskCount() { return this.waitingTasks.size(); }
 	
 	public int getInProgressTaskCount() { return Short.MAX_VALUE - this.pendingTasksSemaphore.availablePermits(); }
+	
 	
 	public CompletableFuture<Void> startClosing(boolean alsoInterruptRunning)
 	{
@@ -321,9 +316,9 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 	protected static class RequestQueueEntry
 	{
 		public final CompletableFuture<Boolean> future = new CompletableFuture<>();
-		public final Consumer<ChunkSizedFullDataAccessor> chunkDataConsumer;
+		public final Consumer<FullDataSourceV2> chunkDataConsumer;
 		@Nullable
-		public final Integer currentChecksum;
+		public final Long updateTimestamp;
 		
 		// Higher value = higher priority.
 		// Priority of 0 is reserved for unassigned value
@@ -332,11 +327,11 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 		public CompletableFuture<?> request;
 		
 		public RequestQueueEntry(
-				Consumer<ChunkSizedFullDataAccessor> chunkDataConsumer,
-				@Nullable Integer currentChecksum)
+				Consumer<FullDataSourceV2> chunkDataConsumer,
+				@Nullable Long updateTimestamp)
 		{
 			this.chunkDataConsumer = chunkDataConsumer;
-			this.currentChecksum = currentChecksum;
+			this.updateTimestamp = updateTimestamp;
 		}
 		
 	}

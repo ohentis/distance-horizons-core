@@ -19,12 +19,9 @@
 
 package com.seibel.distanthorizons.core.level;
 
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
+import com.seibel.distanthorizons.core.file.fullDatafile.FullDataSourceProviderV2;
 import com.seibel.distanthorizons.core.config.Config;
-import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.CompleteFullDataSource;
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IFullDataSource;
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IIncompleteFullDataSource;
-import com.seibel.distanthorizons.core.file.fullDatafile.IFullDataSourceProvider;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.multiplayer.server.ServerPlayerState;
 import com.seibel.distanthorizons.core.multiplayer.server.RemotePlayerConnectionHandler;
@@ -39,16 +36,15 @@ import com.seibel.distanthorizons.core.network.messages.netty.fullData.generatio
 import com.seibel.distanthorizons.core.network.messages.netty.fullData.FullDataPartialUpdateMessage;
 import com.seibel.distanthorizons.core.network.netty.NettyMessage;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
-import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.util.LodUtil;
-import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
 import com.seibel.distanthorizons.coreapi.util.math.Vec3d;
 import org.apache.logging.log4j.Logger;
+
+import java.util.concurrent.CompletableFuture;
 
 import javax.annotation.CheckForNull;
 import java.util.Map;
@@ -67,12 +63,6 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 	private final ConcurrentLinkedQueue<IServerPlayerWrapper> worldGenLoopingQueue = new ConcurrentLinkedQueue<>();
 	private final ConcurrentMap<DhSectionPos, IncompleteDataSourceEntry> incompleteDataSources = new ConcurrentHashMap<>();
 	private final ConcurrentMap<Long, IncompleteDataSourceEntry> fullDataRequests = new ConcurrentHashMap<>();
-	
-	// Used to manage frequent chunk updates.
-	// If a chunk is updated, sending will be delayed, waiting until other updates come around,
-	// i.e. if a chunk is constantly updated, it will be sent once it stops updating.
-	private final ConcurrentMap<DhChunkPos, ChunkUpdateData> chunkUpdatesToSend = new ConcurrentHashMap<>();
-	private static final int CHUNK_UPDATE_SEND_DELAY = 5000;
 	
 	public DhServerLevel(AbstractSaveStructure saveStructure, IServerLevelWrapper serverLevelWrapper, RemotePlayerConnectionHandler remotePlayerConnectionHandler)
 	{
@@ -95,7 +85,7 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 		{
 			ServerPlayerState.RateLimiterSet rateLimiterSet = serverPlayerState.getRateLimiterSet(this);
 			
-			if (msg.checksum == null)
+			if (msg.clientTimestamp == null)
 			{
 				// Normal generation
 				
@@ -143,18 +133,18 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 					return;
 				}
 				
-				Integer serverChecksum = this.serverside.dataFileHandler.repo.getChecksumForSection(msg.sectionPos);
-				if (serverChecksum == null || serverChecksum.equals(msg.checksum))
+				Long serverTimestamp = this.serverside.fullDataFileHandler.getTimestampForPos(msg.sectionPos);
+				if (serverTimestamp == null || serverTimestamp < msg.clientTimestamp)
 				{
 					rateLimiterSet.loginDataSyncRCLimiter.release();
-					msg.sendResponse(new FullDataSourceResponseMessage(null, this));
+					msg.sendResponse(new FullDataSourceResponseMessage(null));
 					return;
 				}
 				
-				this.serverside.dataFileHandler.getAsync(msg.sectionPos).thenAccept(fullDataSource ->
+				this.serverside.fullDataFileHandler.getAsync(msg.sectionPos).thenAccept(fullDataSource ->
 				{
 					rateLimiterSet.loginDataSyncRCLimiter.release();
-					msg.sendResponse(new FullDataSourceResponseMessage((CompleteFullDataSource) fullDataSource, this));
+					msg.sendResponse(new FullDataSourceResponseMessage(fullDataSource));
 				});
 			}
 		}));
@@ -162,7 +152,7 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 		this.eventSource.registerHandler(GenTaskPriorityRequestMessage.class, this.remotePlayerConnectionHandler.currentLevelOnly(this, (msg, serverPlayerState) ->
 		{
 			msg.sendResponse(new GenTaskPriorityResponseMessage(
-					this.serverside.dataFileHandler.getLoadStates(msg.posList.stream()
+					this.serverside.fullDataFileHandler.getLoadStates(msg.posList.stream()
 							.limit(serverPlayerState.getRateLimiterSet(this).genTaskPriorityRequestRateLimiter.acquireOrDrain(msg.posList.size()))
 							::iterator)
 			));
@@ -187,7 +177,7 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 			if (entry.requestMessages.isEmpty())
 			{
 				this.incompleteDataSources.remove(requestMessage.sectionPos);
-				this.serverside.dataFileHandler.removeGenRequestIf(pos -> pos == requestMessage.sectionPos);
+				this.serverside.fullDataFileHandler.removeRetrievalRequestIf(pos -> pos == requestMessage.sectionPos);
 			}
 			
 			entry.requestCollectionSemaphore.release(Short.MAX_VALUE);
@@ -214,18 +204,16 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 		{
 			IncompleteDataSourceEntry entry = mapEntry.getValue();
 			
-			if (entry.fullDataSource == null || entry.fullDataSource instanceof IIncompleteFullDataSource)
+			if (entry.fullDataSource == null)
 			{
 				continue;
 			}
 			
-			LodUtil.assertTrue(entry.fullDataSource instanceof CompleteFullDataSource, "Invalid full data source");
 			this.incompleteDataSources.remove(mapEntry.getKey());
 			
 			// This semaphore is intentionally acquired forever
 			entry.requestCollectionSemaphore.acquireUninterruptibly(Short.MAX_VALUE);
 			
-			CompleteFullDataSource completeSource = (CompleteFullDataSource) entry.fullDataSource;
 			for (FullDataSourceRequestMessage msg : entry.requestMessages.values())
 			{
 				this.fullDataRequests.remove(msg.futureId);
@@ -237,69 +225,36 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 				}
 				
 				serverPlayerState.getRateLimiterSet(this).fullDataRequestConcurrencyLimiter.release();
-				msg.sendResponse(new FullDataSourceResponseMessage(completeSource, this));
+				msg.sendResponse(new FullDataSourceResponseMessage(entry.fullDataSource));
 			}
 		}
-		
-		// Send updated chunks after delay
-		for (Map.Entry<DhChunkPos, ChunkUpdateData> chunkUpdateEntry : this.chunkUpdatesToSend.entrySet())
+	}
+	
+	@Override
+	public CompletableFuture<Void> updateDataSourcesAsync(FullDataSourceV2 data)
+	{
+		if (!Config.Client.Advanced.Multiplayer.ServerNetworking.enableRealTimeUpdates.get())
 		{
-			ChunkUpdateData chunkUpdateData = chunkUpdateEntry.getValue();
-			
-			if (System.currentTimeMillis() < chunkUpdateData.time + CHUNK_UPDATE_SEND_DELAY)
+			this.getFullDataProvider().updateDataSourceAsync(data);
+		}
+		
+		for (ServerPlayerState serverPlayerState : this.remotePlayerConnectionHandler.getConnectedPlayers())
+		{
+			if (!serverPlayerState.config.isRealTimeUpdatesEnabled())
 			{
 				continue;
 			}
 			
-			this.chunkUpdatesToSend.remove(chunkUpdateEntry.getKey());
-			
-			for (ServerPlayerState serverPlayerState : this.remotePlayerConnectionHandler.getConnectedPlayers())
+			Vec3d playerPosition = serverPlayerState.serverPlayer.getPosition();
+			double distanceFromPlayer = data.getPos().getManhattanBlockDistance(new DhBlockPos2D((int) playerPosition.x, (int) playerPosition.z));
+			if (distanceFromPlayer > serverPlayerState.serverPlayer.getViewDistance() &&
+					distanceFromPlayer < serverPlayerState.config.getRenderDistanceRadius())
 			{
-				if (!serverPlayerState.config.isRealTimeUpdatesEnabled())
-				{
-					continue;
-				}
-				
-				double distanceFromPlayer = chunkUpdateData.accessor.chunkPos.distance(new DhChunkPos(serverPlayerState.serverPlayer.getPosition()));
-				if (distanceFromPlayer < serverPlayerState.serverPlayer.getViewDistance() ||
-						distanceFromPlayer > serverPlayerState.config.getRenderDistanceRadius())
-				{
-					return;
-				}
-				
-				serverPlayerState.connection.sendMessage(new FullDataPartialUpdateMessage(chunkUpdateData.accessor, this));
+				serverPlayerState.connection.sendMessage(new FullDataPartialUpdateMessage(this.serverLevelWrapper, data));
 			}
 		}
-	}
-	
-	@Override
-	public CompletableFuture<ChunkSizedFullDataAccessor> updateChunkAsync(IChunkWrapper chunk)
-	{
-		CompletableFuture<ChunkSizedFullDataAccessor> future = super.updateChunkAsync(chunk);
-		if (future == null)
-		{
-			return null;
-		}
 		
-		if (!Config.Client.Advanced.Multiplayer.ServerNetworking.enableRealTimeUpdates.get())
-		{
-			return future;
-		}
-		
-		future.thenAccept(chunkSizedFullDataAccessor ->
-		{
-			this.chunkUpdatesToSend.put(chunkSizedFullDataAccessor.chunkPos, new ChunkUpdateData(chunkSizedFullDataAccessor));
-		});
-		
-		return future;
-	}
-	
-	@Override
-	public void updateDataSourcesWithChunkData(ChunkSizedFullDataAccessor data)
-	{
-		DhSectionPos pos = data.getSectionPos();
-		pos = pos.convertNewToDetailLevel(CompleteFullDataSource.SECTION_SIZE_OFFSET);
-		this.getFileHandler().updateDataSourcesWithChunkDataAsync(data);
+		return this.getFullDataProvider().updateDataSourceAsync(data);
 	}
 	
 	@Override
@@ -324,12 +279,12 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 		if (shouldDoWorldGen && !isWorldGenRunning)
 		{
 			// start world gen
-			this.serverside.worldGenModule.startWorldGen(this.serverside.dataFileHandler, new ServerLevelModule.WorldGenState(this));
+			this.serverside.worldGenModule.startWorldGen(this.serverside.fullDataFileHandler, new ServerLevelModule.WorldGenState(this));
 		}
 		else if (!shouldDoWorldGen && isWorldGenRunning)
 		{
 			// stop world gen
-			this.serverside.worldGenModule.stopWorldGen(this.serverside.dataFileHandler);
+			this.serverside.worldGenModule.stopWorldGen(this.serverside.fullDataFileHandler);
 		}
 		
 		if (this.serverside.worldGenModule.isWorldGenRunning())
@@ -363,9 +318,9 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 	}
 	
 	@Override
-	public IFullDataSourceProvider getFileHandler()
+	public FullDataSourceProviderV2 getFullDataProvider()
 	{
-		return this.serverside.dataFileHandler;
+		return this.serverside.fullDataFileHandler;
 	}
 	
 	@Override
@@ -379,12 +334,8 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 	
 	private void trySetGeneratedDataSourceToEntry(IncompleteDataSourceEntry entry, DhSectionPos pos)
 	{
-		this.serverside.dataFileHandler.getAsync(pos).thenAccept(fullDataSource -> {
-			if (fullDataSource instanceof IIncompleteFullDataSource)
-			{
-				fullDataSource = ((IIncompleteFullDataSource) fullDataSource).tryPromotingToCompleteDataSource();
-			}
-			if (fullDataSource instanceof CompleteFullDataSource)
+		this.serverside.fullDataFileHandler.getAsync(pos).thenAccept(fullDataSource -> {
+			if (this.serverside.fullDataFileHandler.isFullyGenerated(fullDataSource.columnGenerationSteps))
 			{
 				entry.fullDataSource = fullDataSource;
 			}
@@ -406,16 +357,9 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 	private static class IncompleteDataSourceEntry
 	{
 		@CheckForNull
-		public IFullDataSource fullDataSource;
+		public FullDataSourceV2 fullDataSource;
 		public final ConcurrentMap<Long, FullDataSourceRequestMessage> requestMessages = new ConcurrentHashMap<>();
 		public final Semaphore requestCollectionSemaphore = new Semaphore(Short.MAX_VALUE, true);
 	}
 	
-	private static class ChunkUpdateData
-	{
-		public final ChunkSizedFullDataAccessor accessor;
-		public final long time = System.currentTimeMillis();
-		
-		private ChunkUpdateData(ChunkSizedFullDataAccessor accessor) { this.accessor = accessor; }
-	}
 }

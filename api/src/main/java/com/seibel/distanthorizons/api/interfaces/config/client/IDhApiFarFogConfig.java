@@ -19,8 +19,7 @@
 
 package com.seibel.distanthorizons.api.interfaces.config.client;
 
-import com.seibel.distanthorizons.api.enums.rendering.EFogFalloff;
-import com.seibel.distanthorizons.api.enums.rendering.*;
+import com.seibel.distanthorizons.api.enums.rendering.EDhApiFogFalloff;
 import com.seibel.distanthorizons.api.interfaces.config.IDhApiConfigGroup;
 import com.seibel.distanthorizons.api.interfaces.config.IDhApiConfigValue;
 
@@ -64,7 +63,7 @@ public interface IDhApiFarFogConfig extends IDhApiConfigGroup
 	IDhApiConfigValue<Double> farFogMaxThickness();
 	
 	/** Defines how the fog changes in thickness. */
-	IDhApiConfigValue<EFogFalloff> farFogFalloff();
+	IDhApiConfigValue<EDhApiFogFalloff> farFogFalloff();
 	
 	/** Defines the fog density. */
 	IDhApiConfigValue<Double> farFogDensity();

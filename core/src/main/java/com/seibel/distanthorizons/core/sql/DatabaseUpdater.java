@@ -20,6 +20,8 @@
 package com.seibel.distanthorizons.core.sql;
 
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.sql.dto.IBaseDTO;
+import com.seibel.distanthorizons.core.sql.repo.AbstractDhRepo;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
@@ -39,6 +41,11 @@ public class DatabaseUpdater
 	public static final String SCHEMA_TABLE_NAME = "Schema";
 	/** Since java can only run one sql query at a time this string is used to split up our scripts into individual queries. */
 	public static final String UPDATE_SCRIPT_BATCH_SEPARATOR = "--batch--";
+	/** 
+	 * If this comment is present anywhere in the auto update script, then transactions won't be used. <br>
+	 * This is necessary for some commands that will auto-commit after running, IE: "PRAGMA journal_mode = TRUNCATE"
+	 */
+	public static final String UPDATE_SCRIPT_NO_TRANSACTION_FLAG = "--No Transactions--";
 	
 	private static final String SQL_SCRIPT_RESOURCE_FOLDER = "sqlScripts/";
 	/** 
@@ -53,7 +60,7 @@ public class DatabaseUpdater
 	// script running //
 	//================//
 	
-	public static <TDTO extends IBaseDTO> void runAutoUpdateScripts(AbstractDhRepo<TDTO> repo) throws SQLException
+	public static <TKey, TDTO extends IBaseDTO<TKey>> void runAutoUpdateScripts(AbstractDhRepo<TKey, TDTO> repo) throws SQLException
 	{
 		// get the resource scripts
 		ArrayList<SqlScript> scriptList;
@@ -99,47 +106,42 @@ public class DatabaseUpdater
 					// split up each individual statement so Java can handle the script as a whole
 					String[] fileUpdateSqlArray = resource.queryString.split(UPDATE_SCRIPT_BATCH_SEPARATOR);
 					
+					boolean transactScript = !resource.queryString.contains(UPDATE_SCRIPT_NO_TRANSACTION_FLAG);
+					
+					
+					
 					Connection connection = repo.getConnection();
+					connection.setAutoCommit(!transactScript);
+					
 					try (Statement statement = connection.createStatement())
 					{
+						statement.setQueryTimeout(AbstractDhRepo.TIMEOUT_SECONDS);
+						
 						// adding the scripts to a batched statement allows them to execute together and rollback together if there are any issues
 						for (String updateSql : fileUpdateSqlArray)
 						{
-							statement.addBatch(updateSql);
+							statement.execute(updateSql);
 						}
 						
-						
-						statement.setQueryTimeout(AbstractDhRepo.TIMEOUT_SECONDS);
-						int[] numberOfRowsModifiedArray = statement.executeBatch();
-						
-						
-						// confirm the scripts ran successfully
-						for (;sqlIndex < numberOfRowsModifiedArray.length; sqlIndex++)
+						if (transactScript)
 						{
-							int numberOfRowsModified = numberOfRowsModifiedArray[sqlIndex];
-							if (numberOfRowsModified >= 0)
-							{
-								// the statement completed successfully
-								continue;
-							}
-							else if (numberOfRowsModified == Statement.EXECUTE_FAILED)
-							{
-								LOGGER.error("Execute failed for auto update script: [" + resource.name + "], query: [" + fileUpdateSqlArray[sqlIndex] + "]. Changes have been rolled back.", new SQLException());
-							}
-							else if (numberOfRowsModified == Statement.SUCCESS_NO_INFO)
-							{
-								LOGGER.error("Execute failed for auto update script: [" + resource.name + "], query: [" + fileUpdateSqlArray[sqlIndex] + "]. Changes may not have been rolled back.", new SQLException());
-							}
-							else
-							{
-								LOGGER.error("Unexpected error state [" + numberOfRowsModified + "] returned for auto update script: [" + resource.name + "], query: [" + fileUpdateSqlArray[sqlIndex] + "].", new SQLException());
-							}
+							connection.commit();
 						}
 					}
 					catch (SQLException e)
 					{
-						LOGGER.error("Unexpected SQL Error: ["+e.getMessage()+"] returned for auto update script: [" + resource.name + "], query: [" + fileUpdateSqlArray[sqlIndex] + "].", new SQLException());
+						connection.rollback();
+						LOGGER.error(
+							"Unexpected SQL Error: ["+e.getMessage()+"] " +
+									"returned for auto update script: [" + resource.name + "], " +
+									"query: [" + fileUpdateSqlArray[sqlIndex] + "]. " +
+									"Changes should have been rolled back.", new SQLException());
 						throw e;
+					}
+					
+					if (transactScript)
+					{
+						connection.setAutoCommit(true);
 					}
 				}
 				catch (RuntimeException e)

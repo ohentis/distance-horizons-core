@@ -23,7 +23,7 @@ import com.seibel.distanthorizons.api.interfaces.config.IDhApiConfigValue;
 import com.seibel.distanthorizons.api.interfaces.config.client.IDhApiGpuBuffersConfig;
 import com.seibel.distanthorizons.api.objects.config.DhApiConfigValue;
 import com.seibel.distanthorizons.core.config.Config;
-import com.seibel.distanthorizons.api.enums.config.EGpuUploadMethod;
+import com.seibel.distanthorizons.api.enums.config.EDhApiGpuUploadMethod;
 
 public class DhApiGpuBuffersConfig implements IDhApiGpuBuffersConfig
 {
@@ -33,7 +33,7 @@ public class DhApiGpuBuffersConfig implements IDhApiGpuBuffersConfig
 	
 	
 	
-	public IDhApiConfigValue<EGpuUploadMethod> gpuUploadMethod()
+	public IDhApiConfigValue<EDhApiGpuUploadMethod> gpuUploadMethod()
 	{ return new DhApiConfigValue<>(Config.Client.Advanced.GpuBuffers.gpuUploadMethod); }
 	
 	public IDhApiConfigValue<Integer> gpuUploadPerMegabyteInMilliseconds()

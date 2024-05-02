@@ -32,7 +32,7 @@ import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.TimerUtil;
 import com.seibel.distanthorizons.core.util.objects.Pair;
-import com.seibel.distanthorizons.core.util.threading.ThreadPools;
+import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.world.*;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
@@ -46,6 +46,7 @@ import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 
 /** Contains code and variables used by both {@link ClientApi} and {@link ServerApi} */
@@ -103,11 +104,11 @@ public class SharedApi
 		// access the MC level at inappropriate times, which can cause exceptions
 		if (currentWorld != null)
 		{
-			ThreadPools.setupThreadPools();
+			ThreadPoolUtil.setupThreadPools();
 		}
 		else
 		{
-			ThreadPools.shutdownThreadPools();
+			ThreadPoolUtil.shutdownThreadPools();
 			
 			if (prevWorld != null && prevWorld.environment != EWorldEnvironment.Server_Only)
 			{
@@ -290,77 +291,81 @@ public class SharedApi
 	private static void bakeChunkLightingAndSendToLevelAsync(IChunkWrapper chunkWrapper, @Nullable ArrayList<IChunkWrapper> neighbourChunkList, IDhLevel dhLevel)
 	{
 		// lighting the chunk needs to be done on a separate thread to prevent lagging any of the event threads
-		ThreadPoolExecutor executor = ThreadPools.getLightPopulatorExecutor();
+		ThreadPoolExecutor executor = ThreadPoolUtil.getLightPopulatorExecutor();
 		if (executor == null)
 		{
 			return;
 		}
 		
-		executor.execute(() ->
+		try
 		{
-			LOGGER.trace(chunkWrapper.getChunkPos() + " " + executor.getActiveCount() + " / " + executor.getQueue().size() + " - " + executor.getCompletedTaskCount());
-			
-			try
+			executor.execute(() ->
 			{
-				// Save or populate the chunk wrapper's lighting
-				// this is done so we don't have to worry about MC unloading the lighting data for this chunk
-				boolean onlyUseDhLighting = Config.Client.Advanced.LodBuilding.onlyUseDhLightingEngine.get();
-				if (!onlyUseDhLighting && chunkWrapper.isLightCorrect())
+				//LOGGER.trace(chunkWrapper.getChunkPos() + " " + executor.getActiveCount() + " / " + executor.getQueue().size() + " - " + executor.getCompletedTaskCount());
+				
+				try
 				{
-					try
+					// Save or populate the chunk wrapper's lighting
+					// this is done so we don't have to worry about MC unloading the lighting data for this chunk
+					boolean onlyUseDhLighting = Config.Client.Advanced.LodBuilding.onlyUseDhLightingEngine.get();
+					if (!onlyUseDhLighting && chunkWrapper.isLightCorrect())
 					{
-						// If MC's lighting engine isn't thread safe this may cause the server thread to lag
-						chunkWrapper.bakeDhLightingUsingMcLightingEngine();
-					}
-					catch (IllegalStateException e)
-					{
-						LOGGER.warn("Chunk light baking error: " + e.getMessage(), e);
-					}
-				}
-				else
-				{
-					// generate the chunk's lighting, using neighboring chunks if present
-					
-					ArrayList<IChunkWrapper> nearbyChunkList;
-					if (neighbourChunkList != null)
-					{
-						nearbyChunkList = neighbourChunkList;
+						try
+						{
+							// If MC's lighting engine isn't thread safe this may cause the server thread to lag
+							chunkWrapper.bakeDhLightingUsingMcLightingEngine();
+						}
+						catch (IllegalStateException e)
+						{
+							LOGGER.warn("Chunk light baking error: " + e.getMessage(), e);
+						}
 					}
 					else
 					{
-						nearbyChunkList = new ArrayList<>(1);
-						nearbyChunkList.add(chunkWrapper);
+						// generate the chunk's lighting, using neighboring chunks if present
+						
+						ArrayList<IChunkWrapper> nearbyChunkList;
+						if (neighbourChunkList != null)
+						{
+							nearbyChunkList = neighbourChunkList;
+						}
+						else
+						{
+							nearbyChunkList = new ArrayList<>(1);
+							nearbyChunkList.add(chunkWrapper);
+						}
+						
+						DhLightingEngine.INSTANCE.lightChunk(chunkWrapper, nearbyChunkList, dhLevel.hasSkyLight() ? 15 : 0);
 					}
 					
-					DhLightingEngine.INSTANCE.lightChunk(chunkWrapper, nearbyChunkList, dhLevel.hasSkyLight() ? 15 : 0);
+					dhLevel.updateChunkAsync(chunkWrapper);
 				}
-				
-				dhLevel.updateChunkAsync(chunkWrapper);
-			}
-			catch (Exception e)
-			{
-				LOGGER.error("Unexpected error when updating chunk at pos: ["+chunkWrapper.getChunkPos()+"]", e);
-			}
-			finally
-			{
-				// the LOD chunk has finished being updated
-				int updateTimeoutInSec = Config.Client.Advanced.LodBuilding.minTimeBetweenChunkUpdatesInSeconds.get();
-				if (updateTimeoutInSec != 0)
+				catch (Exception e)
 				{
-					// prevent updating this chunk again until the timeout finishes
-					CHUNK_UPDATE_TIMER.schedule(new TimerTask() 
+					LOGGER.error("Unexpected error when updating chunk at pos: [" + chunkWrapper.getChunkPos() + "]", e);
+				}
+				finally
+				{
+					// the LOD chunk has finished being updated
+					int updateTimeoutInSec = Config.Client.Advanced.LodBuilding.minTimeBetweenChunkUpdatesInSeconds.get();
+					if (updateTimeoutInSec != 0)
 					{
-						@Override
-						public void run() { UPDATING_CHUNK_POS_SET.remove(chunkWrapper.getChunkPos()); }
-					}, updateTimeoutInSec * 1000L);
+						// prevent updating this chunk again until the timeout finishes
+						CHUNK_UPDATE_TIMER.schedule(new TimerTask()
+						{
+							@Override
+							public void run() { UPDATING_CHUNK_POS_SET.remove(chunkWrapper.getChunkPos()); }
+						}, updateTimeoutInSec * 1000L);
+					}
+					else
+					{
+						// instantly allow this chunk to be updated again
+						UPDATING_CHUNK_POS_SET.remove(chunkWrapper.getChunkPos());
+					}
 				}
-				else
-				{
-					// instantly allow this chunk to be updated again
-					UPDATING_CHUNK_POS_SET.remove(chunkWrapper.getChunkPos());
-				}
-			}
-		});
+			});
+		}
+		catch (RejectedExecutionException ignore) { /* the executor was shut down, it should be back up shortly and able to accept new jobs */ }
 	}
 	
 	

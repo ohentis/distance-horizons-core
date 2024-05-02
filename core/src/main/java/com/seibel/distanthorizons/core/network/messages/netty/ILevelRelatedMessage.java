@@ -4,7 +4,7 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 
 public interface ILevelRelatedMessage
 {
-	int getLevelHashCode();
+	String getLevelName();
 	
 	/**
 	 * Checks whether the message's level matches the given level.
@@ -12,7 +12,7 @@ public interface ILevelRelatedMessage
 	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
 	default boolean isSameLevelAs(ILevelWrapper levelWrapper)
 	{
-		return levelWrapper.getDimensionType().getDimensionName().hashCode() == this.getLevelHashCode();
+		return levelWrapper.getDimensionType().getDimensionName().equals(levelWrapper.getDimensionType().getDimensionName());
 	}
 	
 }

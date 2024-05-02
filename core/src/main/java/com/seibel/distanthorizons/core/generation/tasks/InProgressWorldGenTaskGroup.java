@@ -28,13 +28,12 @@ import java.util.concurrent.CompletableFuture;
 public final class InProgressWorldGenTaskGroup
 {
 	public final WorldGenTaskGroup group;
-	public final CompletableFuture<Void> genFuture;
+	public CompletableFuture<Void> genFuture = null;
 	
 	
-	public InProgressWorldGenTaskGroup(WorldGenTaskGroup group, CompletableFuture<Void> genFuture)
+	public InProgressWorldGenTaskGroup(WorldGenTaskGroup group)
 	{
 		this.group = group;
-		this.genFuture = genFuture;
 	}
 	
 }

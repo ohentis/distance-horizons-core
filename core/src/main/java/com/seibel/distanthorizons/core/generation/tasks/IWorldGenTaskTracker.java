@@ -19,7 +19,7 @@
 
 package com.seibel.distanthorizons.core.generation.tasks;
 
-import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 
 import javax.annotation.Nullable;
 import java.util.function.Consumer;
@@ -34,6 +34,6 @@ public interface IWorldGenTaskTracker
 	boolean isMemoryAddressValid();
 	
 	@Nullable
-	Consumer<ChunkSizedFullDataAccessor> getChunkDataConsumer();
+	Consumer<FullDataSourceV2> getChunkDataConsumer();
 	
 }

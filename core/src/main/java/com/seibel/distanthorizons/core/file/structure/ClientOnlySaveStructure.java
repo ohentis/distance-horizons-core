@@ -23,7 +23,7 @@ import com.google.common.net.PercentEscaper;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.file.subDimMatching.SubDimensionLevelMatcher;
 import com.seibel.distanthorizons.core.config.Config;
-import com.seibel.distanthorizons.api.enums.config.EServerFolderNameMode;
+import com.seibel.distanthorizons.api.enums.config.EDhApiServerFolderNameMode;
 import com.seibel.distanthorizons.core.level.IServerKeyedClientLevel;
 import com.seibel.distanthorizons.core.util.objects.ParsedIp;
 import com.seibel.distanthorizons.core.util.LodUtil;
@@ -264,7 +264,7 @@ public class ClientOnlySaveStructure extends AbstractSaveStructure
 		
 		
 		// determine the auto folder name format
-		EServerFolderNameMode folderNameMode = Config.Client.Advanced.Multiplayer.serverFolderNameMode.get();
+		EDhApiServerFolderNameMode folderNameMode = Config.Client.Advanced.Multiplayer.serverFolderNameMode.get();
 		String serverName = MC_CLIENT.getCurrentServerName().replaceAll(INVALID_FILE_CHARACTERS_REGEX, "");
 		String serverMcVersion = MC_CLIENT.getCurrentServerVersion().replaceAll(INVALID_FILE_CHARACTERS_REGEX, "");
 		
@@ -276,6 +276,9 @@ public class ClientOnlySaveStructure extends AbstractSaveStructure
 			default:
 			case NAME_ONLY:
 				folderName = serverName;
+				break;
+			case IP_ONLY:
+				folderName = serverIpCleaned;
 				break;
 			
 			case NAME_IP:

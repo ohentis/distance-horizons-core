@@ -25,14 +25,12 @@ import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.enums.EGLProxyContext;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
-import com.seibel.distanthorizons.core.pos.DhSectionPos;
-import com.seibel.distanthorizons.core.render.AbstractRenderBuffer;
 import com.seibel.distanthorizons.core.render.glObject.GLProxy;
 import com.seibel.distanthorizons.core.render.glObject.buffer.GLVertexBuffer;
 import com.seibel.distanthorizons.core.render.renderer.LodRenderer;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.objects.StatsMap;
-import com.seibel.distanthorizons.api.enums.config.EGpuUploadMethod;
+import com.seibel.distanthorizons.api.enums.config.EDhApiGpuUploadMethod;
 import com.seibel.distanthorizons.core.util.*;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import org.apache.logging.log4j.Logger;
@@ -46,12 +44,18 @@ import java.util.concurrent.*;
  *
  * @see ColumnRenderBufferBuilder
  */
-public class ColumnRenderBuffer extends AbstractRenderBuffer
+public class ColumnRenderBuffer implements AutoCloseable
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	private static final IMinecraftClientWrapper minecraftClient = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	
 	private static final long MAX_BUFFER_UPLOAD_TIMEOUT_NANOSECONDS = 1_000_000;
+	
+	public static final int QUADS_BYTE_SIZE = LodUtil.LOD_VERTEX_FORMAT.getByteSize() * 4; // TODO what does the 4 represent
+	public static final int MAX_QUADS_PER_BUFFER = (1024 * 1024 * 1) / QUADS_BYTE_SIZE; // TODO what do these multiples represent?
+	public static final int FULL_SIZED_BUFFER = MAX_QUADS_PER_BUFFER * QUADS_BYTE_SIZE;
+	
+	
 	
 	
 	public final DhBlockPos pos;
@@ -61,17 +65,15 @@ public class ColumnRenderBuffer extends AbstractRenderBuffer
 	private GLVertexBuffer[] vbos;
 	private GLVertexBuffer[] vbosTransparent;
 	
-	private final DhSectionPos debugPos;
 	
 	
 	//==============//
 	// constructors //
 	//==============//
 	
-	public ColumnRenderBuffer(DhBlockPos pos, DhSectionPos debugPos)
+	public ColumnRenderBuffer(DhBlockPos pos)
 	{
 		this.pos = pos;
-		this.debugPos = debugPos;
 		this.vbos = new GLVertexBuffer[0];
 		this.vbosTransparent = new GLVertexBuffer[0];
 	}
@@ -85,7 +87,7 @@ public class ColumnRenderBuffer extends AbstractRenderBuffer
 	//==================//
 	
 	/** Should be run on a DH thread. */
-	public void uploadBuffer(LodQuadBuilder builder, EGpuUploadMethod gpuUploadMethod) throws InterruptedException
+	public void uploadBuffer(LodQuadBuilder builder, EDhApiGpuUploadMethod gpuUploadMethod) throws InterruptedException
 	{
 		LodUtil.assertTrue(Thread.currentThread().getName().startsWith(ThreadUtil.THREAD_NAME_PREFIX), "Buffer uploading needs to be done on a DH thread to prevent locking up any MC threads.");
 		
@@ -144,7 +146,7 @@ public class ColumnRenderBuffer extends AbstractRenderBuffer
 			
 		}
 	}
-	private void uploadBuffersUsingUploadMethod(LodQuadBuilder builder, EGpuUploadMethod gpuUploadMethod) throws InterruptedException
+	private void uploadBuffersUsingUploadMethod(LodQuadBuilder builder, EDhApiGpuUploadMethod gpuUploadMethod) throws InterruptedException
 	{
 		if (gpuUploadMethod.useEarlyMapping)
 		{
@@ -160,7 +162,7 @@ public class ColumnRenderBuffer extends AbstractRenderBuffer
 	
 	
 	
-	private void uploadBuffersMapped(LodQuadBuilder builder, EGpuUploadMethod method)
+	private void uploadBuffersMapped(LodQuadBuilder builder, EDhApiGpuUploadMethod method)
 	{
 		// opaque vbos //
 		
@@ -196,7 +198,7 @@ public class ColumnRenderBuffer extends AbstractRenderBuffer
 		}
 	}
 	
-	private void uploadBuffersDirect(LodQuadBuilder builder, EGpuUploadMethod method) throws InterruptedException
+	private void uploadBuffersDirect(LodQuadBuilder builder, EDhApiGpuUploadMethod method) throws InterruptedException
 	{
 		this.vbos = ColumnRenderBufferBuilder.resizeBuffer(this.vbos, builder.getCurrentNeededOpaqueVertexBufferCount());
 		uploadBuffersDirect(this.vbos, builder.makeOpaqueVertexBuffers(), method);
@@ -204,7 +206,7 @@ public class ColumnRenderBuffer extends AbstractRenderBuffer
 		this.vbosTransparent = ColumnRenderBufferBuilder.resizeBuffer(this.vbosTransparent, builder.getCurrentNeededTransparentVertexBufferCount());
 		uploadBuffersDirect(this.vbosTransparent, builder.makeTransparentVertexBuffers(), method);
 	}
-	private static void uploadBuffersDirect(GLVertexBuffer[] vbos, Iterator<ByteBuffer> iter, EGpuUploadMethod method) throws InterruptedException
+	private static void uploadBuffersDirect(GLVertexBuffer[] vbos, Iterator<ByteBuffer> iter, EDhApiGpuUploadMethod method) throws InterruptedException
 	{
 		long remainingMS = 0;
 		long MBPerMS = Config.Client.Advanced.GpuBuffers.gpuUploadPerMegabyteInMilliseconds.get();
@@ -275,7 +277,7 @@ public class ColumnRenderBuffer extends AbstractRenderBuffer
 	// render //
 	//========//
 	
-	@Override
+	/** @return true if something was rendered, false otherwise */
 	public boolean renderOpaque(LodRenderer renderContext, DhApiRenderParam renderEventParam)
 	{
 		boolean hasRendered = false;
@@ -299,7 +301,7 @@ public class ColumnRenderBuffer extends AbstractRenderBuffer
 		return hasRendered;
 	}
 	
-	@Override
+	/** @return true if something was rendered, false otherwise */
 	public boolean renderTransparent(LodRenderer renderContext, DhApiRenderParam renderEventParam)
 	{
 		boolean hasRendered = false;
@@ -354,7 +356,6 @@ public class ColumnRenderBuffer extends AbstractRenderBuffer
 		return false;
 	}
 	
-	@Override
 	public void debugDumpStats(StatsMap statsMap)
 	{
 		statsMap.incStat("RenderBuffers");
@@ -378,6 +379,12 @@ public class ColumnRenderBuffer extends AbstractRenderBuffer
 		}
 	}
 	
+	/**
+	 * This method is called when object is no longer in use.
+	 * Called either after uploadBuffers() returned false (On buffer Upload
+	 * thread), or by others when the object is not being used. (not in build,
+	 * upload, or render state). 
+	 */
 	@Override
 	public void close()
 	{

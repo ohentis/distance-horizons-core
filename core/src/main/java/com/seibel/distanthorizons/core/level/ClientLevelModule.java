@@ -19,14 +19,13 @@
 
 package com.seibel.distanthorizons.core.level;
 
-import com.seibel.distanthorizons.api.enums.rendering.EDebugRendering;
+import com.seibel.distanthorizons.api.enums.rendering.EDhApiDebugRendering;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
 import com.seibel.distanthorizons.core.config.Config;
-import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
-import com.seibel.distanthorizons.core.file.fullDatafile.IFullDataSourceProvider;
-import com.seibel.distanthorizons.core.file.renderfile.RenderSourceFileHandler;
-import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
+import com.seibel.distanthorizons.core.file.AbstractDataSourceHandler;
+import com.seibel.distanthorizons.core.file.fullDatafile.FullDataSourceProviderV2;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
@@ -35,33 +34,54 @@ import com.seibel.distanthorizons.core.render.LodQuadTree;
 import com.seibel.distanthorizons.core.render.RenderBufferHandler;
 import com.seibel.distanthorizons.core.render.renderer.LodRenderer;
 import com.seibel.distanthorizons.core.util.LodUtil;
+import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
-import com.seibel.distanthorizons.coreapi.util.math.Mat4f;
 import org.apache.logging.log4j.Logger;
 
+import javax.annotation.WillNotClose;
 import java.io.Closeable;
+import java.util.ArrayList;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class ClientLevelModule implements Closeable
+public class ClientLevelModule implements Closeable, AbstractDataSourceHandler.IDataSourceUpdateFunc<FullDataSourceV2>
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
-	private final IDhClientLevel parentClientLevel;
+	
+	private final IDhClientLevel clientLevel;
+	
+	@WillNotClose
+	public final FullDataSourceProviderV2 fullDataSourceProvider;
 	public final AtomicReference<ClientRenderState> ClientRenderStateRef = new AtomicReference<>();
+	
 	public final F3Screen.NestedMessage f3Message;
-	public ClientLevelModule(IDhClientLevel parentClientLevel)
+	
+	
+	
+	//=============//
+	// constructor //
+	//=============//
+	
+	public ClientLevelModule(IDhClientLevel clientLevel)
 	{
-		this.parentClientLevel = parentClientLevel;
+		this.clientLevel = clientLevel;
 		this.f3Message = new F3Screen.NestedMessage(this::f3Log);
+		
+		this.fullDataSourceProvider = this.clientLevel.getFullDataProvider();
+		this.fullDataSourceProvider.dateSourceUpdateListeners.add(this);
 	}
+	
+	
 	
 	//==============//
 	// tick methods //
 	//==============//
 	
-	private EDebugRendering lastDebugRendering = EDebugRendering.OFF;
+	private EDhApiDebugRendering lastDebugRendering = EDhApiDebugRendering.OFF;
 	
 	public void clientTick()
 	{
@@ -85,14 +105,14 @@ public class ClientLevelModule implements Closeable
 				return;
 			}
 			
-			IClientLevelWrapper clientLevelWrapper = this.parentClientLevel.getClientLevelWrapper();
+			IClientLevelWrapper clientLevelWrapper = this.clientLevel.getClientLevelWrapper();
 			if (clientLevelWrapper == null)
 			{
 				return;
 			}
 			
 			clientRenderState.close();
-			clientRenderState = new ClientRenderState(this.parentClientLevel, clientLevelWrapper, this.parentClientLevel.getFileHandler(), this.parentClientLevel.getSaveStructure());
+			clientRenderState = new ClientRenderState(this.clientLevel, clientLevelWrapper, this.clientLevel.getFullDataProvider());
 			if (!this.ClientRenderStateRef.compareAndSet(null, clientRenderState))
 			{
 				//FIXME: How to handle this?
@@ -104,7 +124,7 @@ public class ClientLevelModule implements Closeable
 		clientRenderState.quadtree.tick(new DhBlockPos2D(MC_CLIENT.getPlayerBlockPos()));
 		
 		boolean isBuffersDirty = false;
-		EDebugRendering newDebugRendering = Config.Client.Advanced.Debugging.debugRendering.get();
+		EDhApiDebugRendering newDebugRendering = Config.Client.Advanced.Debugging.debugRendering.get();
 		if (newDebugRendering != lastDebugRendering)
 		{
 			lastDebugRendering = newDebugRendering;
@@ -124,7 +144,8 @@ public class ClientLevelModule implements Closeable
 	/** @return if the {@link ClientRenderState} was successfully swapped */
 	public boolean startRenderer(IClientLevelWrapper clientLevelWrapper)
 	{
-		ClientRenderState ClientRenderState = new ClientRenderState(parentClientLevel, clientLevelWrapper, parentClientLevel.getFileHandler(), parentClientLevel.getSaveStructure());
+		// TODO why are we passing in a level wrapper? Our client level is already defined.
+		ClientRenderState ClientRenderState = new ClientRenderState(this.clientLevel, clientLevelWrapper, this.clientLevel.getFullDataProvider());
 		if (!this.ClientRenderStateRef.compareAndSet(null, ClientRenderState))
 		{
 			LOGGER.warn("Failed to start renderer due to concurrency");
@@ -185,22 +206,21 @@ public class ClientLevelModule implements Closeable
 		ClientRenderState.close();
 	}
 	
+	
+	
 	//===============//
 	// data handling //
 	//===============//
-	public void updateDataSourcesWithChunkData(ChunkSizedFullDataAccessor data)
+	
+	public CompletableFuture<Void> updateDataSourcesAsync(FullDataSourceV2 data) { return this.clientLevel.getFullDataProvider().updateDataSourceAsync(data); }
+	@Override
+	public void OnDataSourceUpdated(FullDataSourceV2 updatedFullDataSource)
 	{
+		// if rendering, also update the render sources
 		ClientRenderState ClientRenderState = this.ClientRenderStateRef.get();
 		if (ClientRenderState != null)
 		{
-			ClientRenderState.renderSourceFileHandler
-					.updateDataSourcesWithChunkDataAsync(data)
-					// wait for the update to finish before triggering a reload to prevent holes in the world
-					.thenRun(() -> ClientRenderState.quadtree.reloadPos(data.sectionPos));
-		}
-		else
-		{
-			this.parentClientLevel.getFileHandler().updateDataSourcesWithChunkDataAsync(data);
+			ClientRenderState.quadtree.reloadPos(updatedFullDataSource.getPos());
 		}
 	}
 	
@@ -226,9 +246,10 @@ public class ClientLevelModule implements Closeable
 			}
 		}
 		
+		this.fullDataSourceProvider.dateSourceUpdateListeners.remove(this);
+		
 		this.f3Message.close();
 	}
-	
 	
 	
 	
@@ -236,24 +257,51 @@ public class ClientLevelModule implements Closeable
 	// misc helper functions //
 	//=======================//
 	
-	public void dumpRamUsage()
+	private String[] f3Log()
 	{
-		//TODO
-	}
-	
-	/** Returns what should be displayed in Minecraft's F3 debug menu */
-	protected String[] f3Log()
-	{
-		String dimName = parentClientLevel.getClientLevelWrapper().getDimensionType().getDimensionName();
-		ClientRenderState renderState = this.ClientRenderStateRef.get();
-		if (renderState == null)
+		String dimName = this.clientLevel.getLevelWrapper().getDimensionType().getDimensionName();
+		boolean rendererActive = this.ClientRenderStateRef.get() != null;
+		
+		ThreadPoolExecutor fileExecutor = ThreadPoolUtil.getFileHandlerExecutor();
+		String fileQueueSize = (fileExecutor != null) ? fileExecutor.getQueue().size()+"" : "-";
+		String fileCompletedTaskSize = (fileExecutor != null) ? fileExecutor.getCompletedTaskCount()+"" : "-";
+		
+		ThreadPoolExecutor updateExecutor = ThreadPoolUtil.getUpdatePropagatorExecutor();
+		String updateQueueSize = (updateExecutor != null) ? updateExecutor.getQueue().size()+"" : "-";
+		String updateCompletedTaskSize = (updateExecutor != null) ? updateExecutor.getCompletedTaskCount()+"" : "-";
+		
+		int unsavedDataSourceCount = this.fullDataSourceProvider.getUnsavedDataSourceCount();
+		long legacyDeletionCount = this.fullDataSourceProvider.getLegacyDeletionCount();
+		long migrationCount = this.fullDataSourceProvider.getTotalMigrationCount();
+		
+		
+		
+		ArrayList<String> lines = new ArrayList<>();
+		lines.add("");
+		lines.add("level [" + dimName + "] rendering: " + (rendererActive ? "Active" : "Inactive"));
+		// TODO a lot of these items only need to be rendered once, but we don't currently have a way of doing that, so only add them for the rendered level 
+		if (rendererActive)
 		{
-			return new String[]{"level @ " + dimName + ": Inactive"};
+			lines.add("File Handler [" + dimName + "]");
+			lines.add("  File thread pool tasks: " + fileQueueSize + " (completed: " + fileCompletedTaskSize + ")");
+			if (legacyDeletionCount > 0)
+			{
+				lines.add("  Legacy Deletion #: " + legacyDeletionCount);
+			}
+			if (migrationCount > 0)
+			{
+				lines.add("  Legacy Migration #: " + migrationCount);
+			}
+			lines.add("  Update thread pool tasks: " + updateQueueSize + " (completed: " + updateCompletedTaskSize + ")");
+			lines.add("  Level Unsaved #: " + this.clientLevel.getUnsavedDataSourceCount());
+			if (unsavedDataSourceCount != -1)
+			{
+				lines.add("  File Handler Unsaved #: " + unsavedDataSourceCount);
+			}
+			lines.add("  Parent Update #: " + this.fullDataSourceProvider.parentUpdatingPosSet.size());
 		}
-		else
-		{
-			return new String[]{"level @ " + dimName + ": Active"};
-		}
+		
+		return lines.toArray(new String[0]);
 	}
 	
 	public void clearRenderCache()
@@ -274,26 +322,28 @@ public class ClientLevelModule implements Closeable
 		}
 	}
 	
+	
+	
+	//================//
+	// helper classes //
+	//================//
+	
 	public static class ClientRenderState
 	{
 		private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 		
 		public final IClientLevelWrapper clientLevelWrapper;
 		public final LodQuadTree quadtree;
-		public final RenderSourceFileHandler renderSourceFileHandler;
 		public final LodRenderer renderer;
 		
-		public ClientRenderState(
-				IDhClientLevel dhClientLevel, IClientLevelWrapper clientLevelWrapper, IFullDataSourceProvider fullDataSourceProvider,
-				AbstractSaveStructure saveStructure)
+		public ClientRenderState(IDhClientLevel dhClientLevel, IClientLevelWrapper clientLevelWrapper, FullDataSourceProviderV2 fullDataSourceProvider)
 		{
 			this.clientLevelWrapper = clientLevelWrapper;
-			this.renderSourceFileHandler = new RenderSourceFileHandler(fullDataSourceProvider, dhClientLevel, saveStructure);
 			
 			this.quadtree = new LodQuadTree(dhClientLevel, Config.Client.Advanced.Graphics.Quality.lodChunkRenderDistanceRadius.get() * LodUtil.CHUNK_WIDTH * 2,
 					// initial position is (0,0) just in case the player hasn't loaded in yet, the tree will be moved once the level starts ticking
 					0, 0,
-					this.renderSourceFileHandler);
+					fullDataSourceProvider);
 			
 			RenderBufferHandler renderBufferHandler = new RenderBufferHandler(this.quadtree);
 			this.renderer = new LodRenderer(renderBufferHandler);
@@ -307,7 +357,6 @@ public class ClientLevelModule implements Closeable
 			
 			this.renderer.close();
 			this.quadtree.close();
-			this.renderSourceFileHandler.close();
 		}
 		
 	}

@@ -27,8 +27,7 @@ import com.seibel.distanthorizons.api.interfaces.data.IDhApiTerrainDataRepo;
 import com.seibel.distanthorizons.api.objects.math.DhApiVec3i;
 import com.seibel.distanthorizons.core.api.internal.SharedApi;
 import com.seibel.distanthorizons.core.dataObjects.fullData.FullDataPointIdMap;
-import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.SingleColumnFullDataAccessor;
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.interfaces.IFullDataSource;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.pos.DhLodPos;
@@ -47,6 +46,7 @@ import com.seibel.distanthorizons.coreapi.util.BitShiftUtil;
 import com.seibel.distanthorizons.coreapi.util.math.Vec3d;
 import com.seibel.distanthorizons.coreapi.util.math.Vec3f;
 import com.seibel.distanthorizons.coreapi.util.math.Vec3i;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -212,7 +212,7 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 		try
 		{
 			// attempt to get/generate the data source for this section
-			IFullDataSource dataSource = level.getFileHandler().getAsync(sectionPos).get();
+			FullDataSourceV2 dataSource = level.getFullDataProvider().getAsync(sectionPos).get();
 			if (dataSource == null)
 			{
 				return DhApiResult.createFail("Unable to find/generate any data at the " + DhSectionPos.class.getSimpleName() + " [" + sectionPos + "].");
@@ -220,11 +220,11 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 			else
 			{
 				// attempt to get the LOD data from the data source
-				FullDataPointIdMap mapping = dataSource.getMapping();
-				SingleColumnFullDataAccessor dataColumn = dataSource.tryGet(relativePos.x, relativePos.z);
+				FullDataPointIdMap mapping = dataSource.mapping;
+				LongArrayList dataColumn = dataSource.get(relativePos.x, relativePos.z);
 				if (dataColumn != null)
 				{
-					int dataColumnIndexCount = dataColumn.getSingleLength();
+					int dataColumnIndexCount = dataColumn.size();
 					DhApiTerrainDataPoint[] returnArray = new DhApiTerrainDataPoint[dataColumnIndexCount];
 					long dataPoint;
 					
@@ -235,7 +235,7 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 					// search for a datapoint that contains the block y position
 					for (int i = 0; i < dataColumnIndexCount; i++)
 					{
-						dataPoint = dataColumn.getSingle(i);
+						dataPoint = dataColumn.getLong(i);
 						
 						if (!getSpecificYCoordinate)
 						{
@@ -290,7 +290,8 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 		int topY = bottomY + height;
 		
 		return new DhApiTerrainDataPoint(detailLevel,
-				FullDataPointUtil.getLight(dataPoint), topY, bottomY,
+				FullDataPointUtil.getBlockLight(dataPoint), FullDataPointUtil.getSkyLight(dataPoint),
+				topY, bottomY,
 				blockState, biomeWrapper);
 	}
 	
@@ -460,7 +461,7 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 		
 		// this will throw a cast exception if the chunk object array isn't correct
 		IChunkWrapper chunk = SingletonInjector.INSTANCE.get(IWrapperFactory.class).createChunkWrapper(chunkObjectArray);
-		dhLevel.updateChunkAsync(chunk);
+		SharedApi.INSTANCE.applyChunkUpdate(chunk, dhLevel.getLevelWrapper(), true);
 		
 		
 		return DhApiResult.createSuccess();

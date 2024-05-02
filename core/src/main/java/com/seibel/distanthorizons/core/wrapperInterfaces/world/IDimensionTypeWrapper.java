@@ -22,10 +22,6 @@ package com.seibel.distanthorizons.core.wrapperInterfaces.world;
 import com.seibel.distanthorizons.api.interfaces.world.IDhApiDimensionTypeWrapper;
 import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IBindable;
 
-/**
- * @author James Seibel
- * @version 2023-6-17
- */
 public interface IDimensionTypeWrapper extends IDhApiDimensionTypeWrapper, IBindable
 {
 	@Override
@@ -36,6 +32,9 @@ public interface IDimensionTypeWrapper extends IDhApiDimensionTypeWrapper, IBind
 	
 	@Override
 	boolean hasSkyLight();
+	
+	// there's definitely a better way of doing this, but it should work well enough for now
+	default boolean isTheEnd() { return this.getDimensionName().equalsIgnoreCase("the_end"); }
 	
 	double getTeleportationScale(IDimensionTypeWrapper to);
 	

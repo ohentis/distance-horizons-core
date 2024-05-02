@@ -25,7 +25,7 @@ import com.seibel.distanthorizons.core.pos.DhLodPos;
 import com.seibel.distanthorizons.core.util.ColorUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.RenderDataPointUtil;
-import com.seibel.distanthorizons.api.enums.rendering.EDebugRendering;
+import com.seibel.distanthorizons.api.enums.rendering.EDhApiDebugRendering;
 import com.seibel.distanthorizons.core.dataObjects.render.columnViews.ColumnArrayView;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import com.seibel.distanthorizons.coreapi.util.BitShiftUtil;
@@ -42,7 +42,7 @@ public class CubicLodTemplate
 	public static void addLodToBuffer(
 			long data, long topData, long bottomData, ColumnArrayView[][] adjColumnViews,
 			byte detailLevel, int offsetPosX, int offsetOosZ, LodQuadBuilder quadBuilder,
-			EDebugRendering debugging, ColumnRenderSource.DebugSourceFlag debugSource)
+			EDhApiDebugRendering debugging, ColumnRenderSource.DebugSourceFlag debugSource)
 	{
 		DhLodPos blockOffsetPos = new DhLodPos(detailLevel, offsetPosX, offsetOosZ).convertToDetailLevel(LodUtil.BLOCK_DETAIL_LEVEL);
 		
@@ -88,7 +88,6 @@ public class CubicLodTemplate
 				break;
 			}
 			case SHOW_DETAIL:
-			case SHOW_GENMODE: 
 			{
 				color = LodUtil.DEBUG_DETAIL_LEVEL_COLORS[detailLevel];
 				fullBright = true;
@@ -104,7 +103,7 @@ public class CubicLodTemplate
 						break;
 						
 					case IBlockStateWrapper.IrisBlockMaterial.LEAVES:
-						color = ColorUtil.GREEN;
+						color = ColorUtil.DARK_GREEN;
 						break;
 					case IBlockStateWrapper.IrisBlockMaterial.STONE:
 						color = ColorUtil.GRAY;
@@ -138,6 +137,9 @@ public class CubicLodTemplate
 						break;
 					case IBlockStateWrapper.IrisBlockMaterial.WATER:
 						color = ColorUtil.BLUE;
+						break;
+					case IBlockStateWrapper.IrisBlockMaterial.GRASS:
+						color = ColorUtil.GREEN;
 						break;
 					case IBlockStateWrapper.IrisBlockMaterial.ILLUMINATED:
 						color = ColorUtil.YELLOW;

@@ -19,7 +19,7 @@
 
 package com.seibel.distanthorizons.core.logging;
 
-import com.seibel.distanthorizons.api.enums.config.ELoggerMode;
+import com.seibel.distanthorizons.api.enums.config.EDhApiLoggerMode;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import org.apache.logging.log4j.Level;
@@ -50,11 +50,11 @@ public class ConfigBasedLogger
 		});
 	}
 	
-	private ELoggerMode mode;
-	private final Supplier<ELoggerMode> getter;
+	private EDhApiLoggerMode mode;
+	private final Supplier<EDhApiLoggerMode> getter;
 	private final Logger logger;
 	
-	public ConfigBasedLogger(Logger logger, Supplier<ELoggerMode> configQuery)
+	public ConfigBasedLogger(Logger logger, Supplier<EDhApiLoggerMode> configQuery)
 	{
 		getter = configQuery;
 		mode = getter.get();
@@ -85,7 +85,7 @@ public class ConfigBasedLogger
 	
 	public boolean canMaybeLog()
 	{
-		return mode != ELoggerMode.DISABLED;
+		return mode != EDhApiLoggerMode.DISABLED;
 	}
 	
 	public void log(Level level, String str, Object... param)

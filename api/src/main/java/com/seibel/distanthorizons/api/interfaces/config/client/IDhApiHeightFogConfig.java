@@ -19,9 +19,9 @@
 
 package com.seibel.distanthorizons.api.interfaces.config.client;
 
-import com.seibel.distanthorizons.api.enums.rendering.EFogFalloff;
-import com.seibel.distanthorizons.api.enums.rendering.EHeightFogMixMode;
-import com.seibel.distanthorizons.api.enums.rendering.EHeightFogMode;
+import com.seibel.distanthorizons.api.enums.rendering.EDhApiFogFalloff;
+import com.seibel.distanthorizons.api.enums.rendering.EDhApiHeightFogMixMode;
+import com.seibel.distanthorizons.api.enums.rendering.EDhApiHeightFogMode;
 import com.seibel.distanthorizons.api.interfaces.config.IDhApiConfigGroup;
 import com.seibel.distanthorizons.api.interfaces.config.IDhApiConfigValue;
 
@@ -40,10 +40,10 @@ public interface IDhApiHeightFogConfig extends IDhApiConfigGroup
 {
 	
 	/** Defines how the height fog mixes. */
-	IDhApiConfigValue<EHeightFogMixMode> heightFogMixMode();
+	IDhApiConfigValue<EDhApiHeightFogMixMode> heightFogMixMode();
 	
 	/** Defines how the height fog is drawn relative to the camera or world. */
-	IDhApiConfigValue<EHeightFogMode> heightFogMode();
+	IDhApiConfigValue<EDhApiHeightFogMode> heightFogMode();
 	
 	/**
 	 * Defines the height fog's base height if {@link IDhApiHeightFogConfig#heightFogMode()}
@@ -64,7 +64,7 @@ public interface IDhApiHeightFogConfig extends IDhApiConfigGroup
 	IDhApiConfigValue<Double> heightFogMaxThickness();
 	
 	/** Defines how the height fog changes in thickness. */
-	IDhApiConfigValue<EFogFalloff> heightFogFalloff();
+	IDhApiConfigValue<EDhApiFogFalloff> heightFogFalloff();
 	
 	/** Defines the height fog's density. */
 	IDhApiConfigValue<Double> heightFogDensity();

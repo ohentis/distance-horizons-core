@@ -22,10 +22,10 @@ package com.seibel.distanthorizons.core.level;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
 import com.seibel.distanthorizons.core.config.AppliedConfigState;
 import com.seibel.distanthorizons.core.config.Config;
-import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
-import com.seibel.distanthorizons.core.file.fullDatafile.IFullDataSourceProvider;
-import com.seibel.distanthorizons.core.file.fullDatafile.RemoteFullDataFileHandler;
+import com.seibel.distanthorizons.core.file.fullDatafile.FullDataSourceProviderV2;
+import com.seibel.distanthorizons.core.file.fullDatafile.RemoteFullDataSourceProvider;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.generation.WorldRemoteGenerationQueue;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
@@ -51,6 +51,7 @@ import org.jetbrains.annotations.Nullable;
 import javax.annotation.CheckForNull;
 import java.awt.*;
 import java.io.File;
+import java.util.concurrent.CompletableFuture;
 
 /** The level used when connected to a server */
 public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
@@ -69,7 +70,7 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 	public final ClientLevelModule clientside;
 	public final IClientLevelWrapper levelWrapper;
 	public final AbstractSaveStructure saveStructure;
-	public final RemoteFullDataFileHandler dataFileHandler;
+	public final RemoteFullDataSourceProvider dataFileHandler;
 	
 	@CheckForNull
 	private final ClientNetworkState networkState;
@@ -111,9 +112,9 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 			this.dataRefreshQueue = null;
 		}
 		
-		this.dataFileHandler = new RemoteFullDataFileHandler(this, saveStructure, fullDataSaveDirOverride, this.dataRefreshQueue);
+		this.dataFileHandler = new RemoteFullDataSourceProvider(this, saveStructure, fullDataSaveDirOverride, this.dataRefreshQueue);
 		this.worldGeneratorEnabledConfig = new AppliedConfigState<>(Config.Client.Advanced.WorldGenerator.enableDistantGeneration);
-		this.worldGenModule = new WorldGenModule(this.dataFileHandler, this);
+		this.worldGenModule = new WorldGenModule(this);
 		
 		this.clientside = new ClientLevelModule(this);
 		if (enableRendering)
@@ -131,13 +132,12 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 		{
 			try
 			{
-				ChunkSizedFullDataAccessor fullDataAccessor = msg.getFullDataSource(this);
-				if (fullDataAccessor == null)
+				if (msg.dataSourceDto == null)
 				{
 					return;
 				}
 				
-				this.updateDataSourcesWithChunkData(fullDataAccessor);
+				this.updateDataSourcesAsync(msg.dataSourceDto.createPooledDataSource(this.levelWrapper));
 			}
 			catch (Exception e)
 			{
@@ -209,7 +209,7 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 			ClientLevelModule.ClientRenderState renderState = this.clientside.ClientRenderStateRef.get();
 			if (renderState != null && renderState.quadtree != null)
 			{
-				this.dataFileHandler.removeGenRequestIf(p -> !renderState.quadtree.isSectionPosInBounds(p));
+				this.dataFileHandler.removeRetrievalRequestIf(p -> !renderState.quadtree.isSectionPosInBounds(p));
 			}
 			
 			this.worldGenModule.worldGenTick(
@@ -249,7 +249,7 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 	public ILevelWrapper getLevelWrapper() { return this.levelWrapper; }
 	
 	@Override
-	public void updateDataSourcesWithChunkData(ChunkSizedFullDataAccessor data) { this.clientside.updateDataSourcesWithChunkData(data); }
+	public CompletableFuture<Void> updateDataSourcesAsync(FullDataSourceV2 data) { return this.clientside.updateDataSourcesAsync(data); }
 	
 	@Override
 	public int getMinY() { return this.levelWrapper.getMinHeight(); }
@@ -267,21 +267,11 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 		LOGGER.info("Closed " + DhClientLevel.class.getSimpleName() + " for " + this.levelWrapper);
 	}
 	
-	//=======================//
-	// misc helper functions //
-	//=======================//
+	@Override
+	public FullDataSourceProviderV2 getFullDataProvider() { return this.dataFileHandler; }
 	
 	@Override
-	public IFullDataSourceProvider getFileHandler()
-	{
-		return this.dataFileHandler;
-	}
-	
-	@Override
-	public AbstractSaveStructure getSaveStructure()
-	{
-		return this.saveStructure;
-	}
+	public AbstractSaveStructure getSaveStructure() { return this.saveStructure; }
 	
 	@Override
 	public boolean hasSkyLight() { return this.levelWrapper.hasSkyLight(); }
@@ -290,13 +280,13 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 	@Override
 	public void onWorldGenTaskComplete(DhSectionPos pos)
 	{
-		//if (pos.sectionDetailLevel == DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL)
 		DebugRenderer.makeParticle(
 				new DebugRenderer.BoxParticle(
 						new DebugRenderer.Box(pos, 128f, 156f, 0.09f, Color.red.darker()),
 						0.2, 32f
 				)
 		);
+		
 		this.clientside.reloadPos(pos);
 	}
 }

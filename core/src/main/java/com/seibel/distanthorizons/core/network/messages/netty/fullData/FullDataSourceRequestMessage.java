@@ -30,43 +30,42 @@ import javax.annotation.Nullable;
 
 public class FullDataSourceRequestMessage extends TrackableNettyMessage implements ILevelRelatedMessage
 {
-	private int levelHashCode;
+	private String levelName;
 	
 	public DhSectionPos sectionPos;
 	
 	/** Only present when requesting for changes. */
 	@Nullable
-	public Integer checksum;
+	public Long clientTimestamp;
 	
 	@Override
-	public int getLevelHashCode() { return this.levelHashCode; }
+	public String getLevelName() { return this.levelName; }
 	
 	public FullDataSourceRequestMessage() {}
-	public FullDataSourceRequestMessage(ILevelWrapper levelWrapper, DhSectionPos sectionPos, @Nullable Integer checksum)
+	public FullDataSourceRequestMessage(ILevelWrapper levelWrapper, DhSectionPos sectionPos, @Nullable Long clientTimestamp)
 	{
-		// TODO Multiverse support
-		this.levelHashCode = levelWrapper.getDimensionType().getDimensionName().hashCode();
+		this.levelName = levelWrapper.getDimensionType().getDimensionName();
 		this.sectionPos = sectionPos;
-		this.checksum = checksum;
+		this.clientTimestamp = clientTimestamp;
 	}
 
     @Override
     public void encode0(ByteBuf out)
 	{
-		out.writeInt(this.levelHashCode);
+		this.writeString(this.levelName, out);
 		this.sectionPos.encode(out);
-		if (this.writeOptional(out, this.checksum))
+		if (this.writeOptional(out, this.clientTimestamp))
 		{
-			out.writeInt(this.checksum);
+			out.writeLong(this.clientTimestamp);
 		}
     }
 
     @Override
     public void decode0(ByteBuf in)
 	{
-		this.levelHashCode = in.readInt();
+		this.levelName = this.readString(in);
 		this.sectionPos = INetworkObject.readToObject(DhSectionPos.zero(), in);
-		this.checksum = this.readOptional(in, in::readInt);
+		this.clientTimestamp = this.readOptional(in, in::readLong);
     }
 	
 	@Override
@@ -74,8 +73,8 @@ public class FullDataSourceRequestMessage extends TrackableNettyMessage implemen
 	{
 		return super.toString(
 				"dhSectionPos=" + this.sectionPos +
-						", levelHashCode=" + this.levelHashCode +
-						", checksum=" + this.checksum
+						", levelHashCode=" + this.levelName +
+						", checksum=" + this.clientTimestamp
 		);
 	}
 	

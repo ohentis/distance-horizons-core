@@ -19,19 +19,24 @@
 
 package com.seibel.distanthorizons.core.dataObjects.render.columnViews;
 
+import it.unimi.dsi.fastutil.longs.LongArrayList;
+
 public class ColumnQuadView implements IColumnDataView
 {
-	private final long[] data;
+	private final LongArrayList data;
 	private final int perColumnOffset; // per column (of columns of data) offset in longs
 	private final int xSize; // x size in datapoints
 	private final int zSize; // x size in datapoints
 	private final int offset; // offset in longs
 	private final int vertSize; // vertical size in longs
 	
-	public ColumnQuadView(long[] data, int dataZWidth, int dataVertSize, int viewXOffset, int viewZOffset, int xSize, int zSize)
+	public ColumnQuadView(LongArrayList data, int dataZWidth, int dataVertSize, int viewXOffset, int viewZOffset, int xSize, int zSize)
 	{
-		if (viewXOffset + xSize > (data.length / (dataZWidth * dataVertSize)) || viewZOffset + zSize > dataZWidth)
+		if (viewXOffset + xSize > (data.size() / (dataZWidth * dataVertSize)) || viewZOffset + zSize > dataZWidth)
+		{
 			throw new IllegalArgumentException("View is out of bounds");
+		}
+		
 		this.data = data;
 		this.xSize = xSize;
 		this.zSize = zSize;
@@ -39,7 +44,7 @@ public class ColumnQuadView implements IColumnDataView
 		this.perColumnOffset = dataZWidth * dataVertSize;
 		this.offset = viewXOffset * perColumnOffset + viewZOffset * dataVertSize;
 	}
-	private ColumnQuadView(long[] data, int perColumnOffset, int offset, int vertSize, int xSize, int zSize)
+	private ColumnQuadView(LongArrayList data, int perColumnOffset, int offset, int vertSize, int xSize, int zSize)
 	{
 		this.data = data;
 		this.perColumnOffset = perColumnOffset;
@@ -60,12 +65,12 @@ public class ColumnQuadView implements IColumnDataView
 	
 	public long get(int x, int z, int v)
 	{
-		return data[offset + x * perColumnOffset + z * vertSize + v];
+		return data.getLong(offset + x * perColumnOffset + z * vertSize + v);
 	}
 	
 	public long set(int x, int z, int v, long value)
 	{
-		return data[offset + x * perColumnOffset + z * vertSize + v] = value;
+		return data.set(offset + x * perColumnOffset + z * vertSize + v, value);
 	}
 	
 	public ColumnArrayView get(int x, int z)
@@ -82,7 +87,7 @@ public class ColumnQuadView implements IColumnDataView
 	{
 		if (singleColumn.verticalSize() != vertSize) throw new IllegalArgumentException("Vertical size of singleColumn must be equal to vertSize");
 		if (singleColumn.dataCount() != 1) throw new IllegalArgumentException("SingleColumn must contain exactly one data point");
-		singleColumn.copyTo(data, offset + x * perColumnOffset + z * vertSize, singleColumn.size());
+		singleColumn.copyTo(data.elements(), offset + x * perColumnOffset + z * vertSize, singleColumn.size());
 	}
 	
 	@Override

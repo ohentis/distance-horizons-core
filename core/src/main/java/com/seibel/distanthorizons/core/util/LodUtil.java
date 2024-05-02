@@ -24,7 +24,7 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.RejectedExecutionException;
 
-import com.seibel.distanthorizons.api.enums.config.EVanillaOverdraw;
+import com.seibel.distanthorizons.api.enums.config.EDhApiVanillaOverdraw;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
@@ -118,6 +118,13 @@ public class LodUtil
 	public static final int REGION_WIDTH_IN_CHUNKS = REGION_WIDTH / CHUNK_WIDTH;
 	
 	
+	/** maximum possible light level handled by Minecraft */
+	public static final byte MAX_MC_LIGHT = 15;
+	/** lowest possible light level handled by Minecraft */
+	public static final byte MIN_MC_LIGHT = 0;
+	
+	
+	
 	/**
 	 * This regex finds any characters that are invalid for use in a windows
 	 * (and by extension mac and linux) file path
@@ -172,10 +179,11 @@ public class LodUtil
 	public static int computeOverdrawOffset()
 	{
 		int chunkRenderDist = MC_RENDER.getRenderDistance() + 1;
-		EVanillaOverdraw overdraw = EVanillaOverdraw.ALWAYS; //Config.Client.Advanced.Graphics.AdvancedGraphics.vanillaOverdraw.get();
-		if (overdraw == EVanillaOverdraw.ALWAYS) return Integer.MAX_VALUE;
+		EDhApiVanillaOverdraw overdraw = EDhApiVanillaOverdraw.ALWAYS; //Config.Client.Advanced.Graphics.AdvancedGraphics.vanillaOverdraw.get();
+		if (overdraw == EDhApiVanillaOverdraw.ALWAYS) return Integer.MAX_VALUE;
+		
 		int offset;
-		if (overdraw == EVanillaOverdraw.NEVER)
+		if (overdraw == EDhApiVanillaOverdraw.NEVER)
 		{
 			offset = 0; //Config.Client.Advanced.Graphics.AdvancedGraphics.overdrawOffset.get();
 		}

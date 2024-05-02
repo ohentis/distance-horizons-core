@@ -20,27 +20,24 @@
 package com.seibel.distanthorizons.core.dataObjects.render;
 
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
-import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
-import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.SingleColumnFullDataAccessor;
-import com.seibel.distanthorizons.core.file.IDataSource;
-import com.seibel.distanthorizons.core.level.IDhLevel;
-import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.pos.DhLodPos;
-import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.dataObjects.transformers.FullDataToRenderDataTransformer;
-import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataOutputStream;
+import com.seibel.distanthorizons.core.file.DataSourcePool;
+import com.seibel.distanthorizons.core.file.IDataSource;
+import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
+import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.core.dataObjects.render.columnViews.ColumnArrayView;
 import com.seibel.distanthorizons.core.dataObjects.render.columnViews.ColumnQuadView;
-import com.seibel.distanthorizons.core.dataObjects.render.columnViews.IColumnDataView;
 import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.coreapi.util.BitShiftUtil;
 import com.seibel.distanthorizons.core.util.ColorUtil;
 import com.seibel.distanthorizons.core.util.RenderDataPointUtil;
-import com.seibel.distanthorizons.core.util.LodUtil;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.apache.logging.log4j.Logger;
 
-import java.io.*;
+import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -56,34 +53,20 @@ public class ColumnRenderSource implements IDataSource<IDhClientLevel>
 	public static final byte SECTION_SIZE_OFFSET = DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL;
 	public static final int SECTION_SIZE = BitShiftUtil.powerOfTwo(SECTION_SIZE_OFFSET);
 	
-	public static final byte DATA_FORMAT_VERSION = 1;
-	@Override
-	public byte getDataFormatVersion() { return DATA_FORMAT_VERSION; }
-	
-	public static final String DATA_NAME = "ColumnRenderSource";
-	@Override
-	public String getDataTypeName() { return DATA_NAME; }
-	
-	/**
-	 * This is the byte put between different sections in the binary save file.
-	 * The presence and absence of this byte indicates if the file is correctly formatted.
-	 */
-	public static final int DATA_GUARD_BYTE = 0xFFFFFFFF;
-	/** indicates the binary save file represents an empty data source */
-	public static final int NO_DATA_FLAG_BYTE = 0x00000001;
+	public static final DataSourcePool<ColumnRenderSource, IDhClientLevel> DATA_SOURCE_POOL = new DataSourcePool<>(ColumnRenderSource::createEmptyRenderSource, null /* data source prep/cleanup needs to be done outside the pool since it requires additional inputs */);
 	
 	
 	
+	/** will be zero if an empty data source was created */
 	public int verticalDataCount;
-	public final DhSectionPos sectionPos;
-	public final int yOffset;
+	public DhSectionPos pos;
+	public int yOffset;
 	
-	public long[] renderDataContainer;
+	public LongArrayList renderDataContainer;
 	
 	public final DebugSourceFlag[] debugSourceFlags;
 	
 	private boolean isEmpty = true;
-	public EDhApiWorldGenerationStep worldGenStep;
 	
 	public AtomicLong localVersion = new AtomicLong(0); // used to track changes to the data source, so that buffers can be updated when necessary
 	
@@ -93,44 +76,53 @@ public class ColumnRenderSource implements IDataSource<IDhClientLevel>
 	// constructors //
 	//==============//
 	
-	public static ColumnRenderSource createEmptyRenderSource(DhSectionPos sectionPos) { return new ColumnRenderSource(sectionPos, 0, 0); }
+	/** 
+	 * This is separate from {@link DataSourcePool#getPooledSource(DhSectionPos, boolean)} 
+	 * because we need to pass in a couple extra values, 
+	 * specifically maxVerticalSize and yOffset.
+	 */
+	public static ColumnRenderSource getPooledRenderSource(DhSectionPos pos, int maxVerticalSize, int yOffset, boolean clearData)
+	{
+		ColumnRenderSource renderSource = DATA_SOURCE_POOL.getPooledSource(pos);
+		
+		// set necessary properties
+		renderSource.pos = pos;
+		renderSource.verticalDataCount = maxVerticalSize;
+		renderSource.yOffset = yOffset;
+		
+		
+		// resize the array if necessary
+		int dataArraySize = SECTION_SIZE * SECTION_SIZE * maxVerticalSize;
+		renderSource.renderDataContainer.ensureCapacity(dataArraySize);
+		while (renderSource.renderDataContainer.size() < dataArraySize)
+		{
+			renderSource.renderDataContainer.add(0);
+		}
+		
+		if (clearData)
+		{
+			Arrays.fill(renderSource.renderDataContainer.elements(), 0);
+			Arrays.fill(renderSource.debugSourceFlags, null);
+		}
+		
+		return renderSource;
+	}
+	
+	
+	private static ColumnRenderSource createEmptyRenderSource(DhSectionPos sectionPos) { return new ColumnRenderSource(sectionPos, 0, 0); }
 	/**
 	 * Creates an empty ColumnRenderSource.
 	 *
-	 * @param sectionPos the relative position of the container
+	 * @param pos the relative position of the container
 	 * @param maxVerticalSize the maximum vertical size of the container
 	 */
-	public ColumnRenderSource(DhSectionPos sectionPos, int maxVerticalSize, int yOffset)
+	private ColumnRenderSource(DhSectionPos pos, int maxVerticalSize, int yOffset)
 	{
 		this.verticalDataCount = maxVerticalSize;
-		this.renderDataContainer = new long[SECTION_SIZE * SECTION_SIZE * this.verticalDataCount];
+		this.renderDataContainer = new LongArrayList(new long[SECTION_SIZE * SECTION_SIZE * this.verticalDataCount]);
 		this.debugSourceFlags = new DebugSourceFlag[SECTION_SIZE * SECTION_SIZE];
-		this.sectionPos = sectionPos;
+		this.pos = pos;
 		this.yOffset = yOffset;
-		this.worldGenStep = EDhApiWorldGenerationStep.EMPTY;
-	}
-	
-	/**
-	 * Creates a new ColumnRenderSource from the parsedColumnData.
-	 *
-	 * @throws IOException if the DataInputStream's detail level isn't what was expected
-	 */
-	public ColumnRenderSource(DhSectionPos sectionPos, ColumnRenderSourceLoader.ParsedColumnData parsedColumnData, IDhLevel level) throws IOException
-	{
-		if (sectionPos.getDetailLevel() - SECTION_SIZE_OFFSET != parsedColumnData.detailLevel)
-		{
-			throw new IOException("Invalid data: detail level does not match");
-		}
-		
-		this.sectionPos = sectionPos;
-		this.yOffset = level.getMinY();
-		this.verticalDataCount = parsedColumnData.verticalSize;
-		this.renderDataContainer = parsedColumnData.dataContainer;
-		this.worldGenStep = parsedColumnData.worldGenStep;
-		this.isEmpty = parsedColumnData.isEmpty;
-		
-		this.debugSourceFlags = new DebugSourceFlag[SECTION_SIZE * SECTION_SIZE];
-		this.fillDebugFlag(0, 0, SECTION_SIZE, SECTION_SIZE, DebugSourceFlag.FILE);
 	}
 	
 	
@@ -139,65 +131,7 @@ public class ColumnRenderSource implements IDataSource<IDhClientLevel>
 	// datapoint manipulation //
 	//========================//
 	
-	public void clearDataPoint(int posX, int posZ)
-	{
-		for (int verticalIndex = 0; verticalIndex < this.verticalDataCount; verticalIndex++)
-		{
-			this.renderDataContainer[posX * SECTION_SIZE * this.verticalDataCount + posZ * this.verticalDataCount + verticalIndex] = RenderDataPointUtil.EMPTY_DATA;
-		}
-	}
-	
-	public boolean setDataPoint(long data, int posX, int posZ, int verticalIndex)
-	{
-		this.renderDataContainer[posX * SECTION_SIZE * this.verticalDataCount + posZ * this.verticalDataCount + verticalIndex] = data;
-		return true;
-	}
-	
-	public boolean copyVerticalData(IColumnDataView newData, int posX, int posZ, boolean overwriteDataWithSameGenerationMode)
-	{
-		if (DO_SAFETY_CHECKS)
-		{
-			if (newData.size() != this.verticalDataCount)
-				throw new IllegalArgumentException("newData size not the same as this column's vertical size");
-			if (posX < 0 || posX >= SECTION_SIZE)
-				throw new IllegalArgumentException("X position is out of bounds");
-			if (posZ < 0 || posZ >= SECTION_SIZE)
-				throw new IllegalArgumentException("Z position is out of bounds");
-		}
-		
-		int dataOffset = posX * SECTION_SIZE * this.verticalDataCount + posZ * this.verticalDataCount;
-		int compare = RenderDataPointUtil.compareDatapointPriority(newData.get(0), this.renderDataContainer[dataOffset]);
-		if (overwriteDataWithSameGenerationMode)
-		{
-			if (compare < 0)
-			{
-				return false;
-			}
-		}
-		else
-		{
-			if (compare <= 0)
-			{
-				return false;
-			}
-		}
-		
-		// copy the newData into this column's data
-		newData.copyTo(this.renderDataContainer, dataOffset, newData.size());
-		return true;
-	}
-	
-	
-	public long getFirstDataPoint(int posX, int posZ) { return getDataPoint(posX, posZ, 0); }
-	public long getDataPoint(int posX, int posZ, int verticalIndex) { return this.renderDataContainer[posX * SECTION_SIZE * this.verticalDataCount + posZ * this.verticalDataCount + verticalIndex]; }
-	
-	public long[] getVerticalDataPointArray(int posX, int posZ)
-	{
-		long[] result = new long[this.verticalDataCount];
-		int index = posX * SECTION_SIZE * this.verticalDataCount + posZ * this.verticalDataCount;
-		System.arraycopy(this.renderDataContainer, index, result, 0, this.verticalDataCount);
-		return result;
-	}
+	public long getDataPoint(int posX, int posZ, int verticalIndex) { return this.renderDataContainer.getLong(posX * SECTION_SIZE * this.verticalDataCount + posZ * this.verticalDataCount + verticalIndex); }
 	
 	public ColumnArrayView getVerticalDataPointView(int posX, int posZ)
 	{
@@ -209,201 +143,70 @@ public class ColumnRenderSource implements IDataSource<IDhClientLevel>
 	public ColumnQuadView getFullQuadView() { return this.getQuadViewOverRange(0, 0, SECTION_SIZE, SECTION_SIZE); }
 	public ColumnQuadView getQuadViewOverRange(int quadX, int quadZ, int quadXSize, int quadZSize) { return new ColumnQuadView(this.renderDataContainer, SECTION_SIZE, this.verticalDataCount, quadX, quadZ, quadXSize, quadZSize); }
 	
-	public int getVerticalSize() { return this.verticalDataCount; }
 	
 	
-	
-	//========================//
-	// data update and output //
-	//========================//
+	//=============//
+	// data update //
+	//=============//
 	
 	@Override
-	public void writeToStream(DhDataOutputStream outputStream, IDhClientLevel level) throws IOException { this.writeToStream(outputStream); }
-	public void writeToStream(DhDataOutputStream outputStream) throws IOException
+	public boolean update(FullDataSourceV2 inputFullDataSource, IDhClientLevel level)
 	{
-		outputStream.flush();
-		
-		outputStream.writeByte(this.getDataDetailLevel());
-		outputStream.writeInt(this.verticalDataCount);
-		
-		if (this.isEmpty)
-		{
-			// no data is present
-			outputStream.writeByte(NO_DATA_FLAG_BYTE);
-		}
-		else
-		{
-			// data is present
-			outputStream.writeByte(DATA_GUARD_BYTE);
-			outputStream.writeInt(this.yOffset);
-			
-			// write the data for each column
-			for (int xz = 0; xz < SECTION_SIZE * SECTION_SIZE; xz++)
-			{
-				for (int y = 0; y < this.verticalDataCount; y++)
-				{
-					long currentDatapoint = this.renderDataContainer[xz * this.verticalDataCount + y];
-					outputStream.writeLong(Long.reverseBytes(currentDatapoint)); // the reverse bytes is necessary to ensure the data is read in correctly
-				}
-			}
-		}
-		
-		outputStream.writeByte(DATA_GUARD_BYTE);
-		outputStream.writeByte(this.worldGenStep.value);
-		
-		outputStream.flush();
-	}
-	
-	/** Overrides any data that has not been written directly using write(). Skips empty source dataPoints. */
-	public void updateFromRenderSource(ColumnRenderSource renderSource)
-	{
-		// validate we are writing for the same location
-		LodUtil.assertTrue(renderSource.sectionPos.equals(this.sectionPos));
-		
-		// change the vertical size if necessary (this can happen if the vertical quality was changed in the config) 
-		this.clearAndChangeVerticalSize(renderSource.verticalDataCount);
-		// validate both objects have the same number of dataPoints
-		LodUtil.assertTrue(renderSource.verticalDataCount == this.verticalDataCount);
-		
-		
-		if (renderSource.isEmpty)
-		{
-			// the source is empty, don't attempt to update anything
-			return;
-		}
-		// the source isn't empty, this object won't be empty after the method finishes
-		this.isEmpty = false;
-		
-		localVersion.incrementAndGet();
-	}
-	/**
-	 * If the newVerticalSize is different than the current verticalSize,
-	 * this will delete any data currently in this object and re-size it. <Br>
-	 * Otherwise this method will do nothing.
-	 */
-	private void clearAndChangeVerticalSize(int newVerticalSize)
-	{
-		if (newVerticalSize != this.verticalDataCount)
-		{
-			this.verticalDataCount = newVerticalSize;
-			this.renderDataContainer = new long[SECTION_SIZE * SECTION_SIZE * this.verticalDataCount];
-			this.localVersion.incrementAndGet();
-		}
-	}
-	
-	@Override
-	public void update(ChunkSizedFullDataAccessor chunkDataView, IDhClientLevel level)
-	{
-		final String errorMessagePrefix = "Unable to complete fastWrite for RenderSource pos: [" + this.sectionPos + "] and chunk pos: [" + chunkDataView.chunkPos + "]. Error:";
-		
-		final DhSectionPos renderSourcePos = this.getSectionPos();
-		
-		final int sourceBlockX = renderSourcePos.getMinCornerLodPos().getCornerBlockPos().x;
-		final int sourceBlockZ = renderSourcePos.getMinCornerLodPos().getCornerBlockPos().z;
-		
-		// offset between the incoming chunk data and this render source
-		final int blockOffsetX = (chunkDataView.chunkPos.x * LodUtil.CHUNK_WIDTH) - sourceBlockX;
-		final int blockOffsetZ = (chunkDataView.chunkPos.z * LodUtil.CHUNK_WIDTH) - sourceBlockZ;
-		
-		final int sourceDataPointBlockWidth = BitShiftUtil.powerOfTwo(this.getDataDetailLevel());
+		final String errorMessagePrefix = "Unable to complete update for RenderSource pos: [" + this.pos + "] and pos: [" + inputFullDataSource.getPos() + "]. Error:";
 		
 		boolean dataChanged = false;
-		
-		if (chunkDataView.detailLevel == this.getDataDetailLevel())
+		if (inputFullDataSource.getPos().getDetailLevel() == this.pos.getDetailLevel())
 		{
-			this.markNotEmpty();
-			// confirm the render source contains this chunk
-			if (blockOffsetX < 0
-					|| blockOffsetX + LodUtil.CHUNK_WIDTH > this.getWidthInDataPoints()
-					|| blockOffsetZ < 0
-					|| blockOffsetZ + LodUtil.CHUNK_WIDTH > this.getWidthInDataPoints())
+			try
 			{
-				LOGGER.warn(errorMessagePrefix+"Data offset is out of bounds.");
-				return;
-			}
-			
-			
-			if (Thread.interrupted())
-			{
-				LOGGER.warn(errorMessagePrefix+"write interrupted.");
-				return;
-			}
-			
-			
-			for (int x = 0; x < LodUtil.CHUNK_WIDTH; x++)
-			{
-				for (int z = 0; z < LodUtil.CHUNK_WIDTH; z++)
+				if (Thread.interrupted())
 				{
-					ColumnArrayView columnArrayView = this.getVerticalDataPointView(blockOffsetX + x, blockOffsetZ + z);
-					int hash = columnArrayView.getDataHash();
-					SingleColumnFullDataAccessor fullArrayView = chunkDataView.get(x, z);
-					FullDataToRenderDataTransformer.convertColumnData(level,
-							sourceBlockX + sourceDataPointBlockWidth * (blockOffsetX + x),
-							sourceBlockZ + sourceDataPointBlockWidth * (blockOffsetZ + z),
-							columnArrayView, fullArrayView);
-					dataChanged |= hash != columnArrayView.getDataHash();
+					LOGGER.warn(errorMessagePrefix + "write interrupted.");
+					return false;
+				}
+				
+				
+				
+				DhBlockPos2D centerBlockPos = inputFullDataSource.getPos().getCenterBlockPos();
+				int halfBlockWidth = inputFullDataSource.getPos().getBlockWidth() / 2;
+				DhBlockPos2D minBlockPos = new DhBlockPos2D(centerBlockPos.x - halfBlockWidth, centerBlockPos.z - halfBlockWidth);
+				
+				for (int x = 0; x < FullDataSourceV2.WIDTH; x++)
+				{
+					for (int z = 0; z < FullDataSourceV2.WIDTH; z++)
+					{
+						ColumnArrayView columnArrayView = this.getVerticalDataPointView(x, z);
+						int columnHash = columnArrayView.getDataHash();
+						
+						LongArrayList dataColumn = inputFullDataSource.get(x, z);
+						EDhApiWorldGenerationStep worldGenStep = inputFullDataSource.getWorldGenStepAtRelativePos(x, z);
+						if (dataColumn != null && worldGenStep != EDhApiWorldGenerationStep.EMPTY)
+						{
+							FullDataToRenderDataTransformer.convertColumnData(
+									level, inputFullDataSource.mapping,
+									minBlockPos.x + x,
+									minBlockPos.z + z,
+									columnArrayView, dataColumn);
+							dataChanged |= columnHash != columnArrayView.getDataHash();
+							
+							this.fillDebugFlag(x, z, 1, 1, ColumnRenderSource.DebugSourceFlag.DIRECT);
+						}
+					}
 				}
 			}
-			this.fillDebugFlag(blockOffsetX, blockOffsetZ, LodUtil.CHUNK_WIDTH, LodUtil.CHUNK_WIDTH, ColumnRenderSource.DebugSourceFlag.DIRECT);
-		}
-		else if (chunkDataView.detailLevel < this.getDataDetailLevel() && this.getDataDetailLevel() <= chunkDataView.getSectionPos().getDetailLevel())
-		{
-			this.markNotEmpty();
-			// multiple chunk data points converting to 1 column data point
-			DhLodPos dataCornerPos = chunkDataView.getSectionPos().getMinCornerLodPos(chunkDataView.detailLevel);
-			DhLodPos sourceCornerPos = renderSourcePos.getMinCornerLodPos(this.getDataDetailLevel());
-			DhLodPos sourceStartingChangePos = dataCornerPos.convertToDetailLevel(this.getDataDetailLevel());
-			int relStartX = Math.floorMod(sourceStartingChangePos.x, this.getWidthInDataPoints());
-			int relStartZ = Math.floorMod(sourceStartingChangePos.z, this.getWidthInDataPoints());
-			int dataToSourceScale = sourceCornerPos.getWidthAtDetail(chunkDataView.detailLevel);
-			int columnsInChunk = chunkDataView.getSectionPos().getWidthCountForLowerDetailedSection(this.getDataDetailLevel());
-			
-			for (int xOffset = 0; xOffset < columnsInChunk; xOffset++)
+			catch (Exception e)
 			{
-				for (int zOffset = 0; zOffset < columnsInChunk; zOffset++)
-				{
-					int relSourceX = relStartX + xOffset;
-					int relSourceZ = relStartZ + zOffset;
-					ColumnArrayView columnArrayView = this.getVerticalDataPointView(relSourceX, relSourceZ);
-					int hash = columnArrayView.getDataHash();
-					SingleColumnFullDataAccessor fullArrayView = chunkDataView.get(xOffset * dataToSourceScale, zOffset * dataToSourceScale);
-					FullDataToRenderDataTransformer.convertColumnData(level,
-							sourceBlockX + sourceDataPointBlockWidth * relSourceX,
-							sourceBlockZ + sourceDataPointBlockWidth * relSourceZ,
-							columnArrayView, fullArrayView);
-					dataChanged |= hash != columnArrayView.getDataHash();
-				}
+				LOGGER.error(errorMessagePrefix + e.getMessage(), e);
 			}
-			this.fillDebugFlag(relStartX, relStartZ, columnsInChunk, columnsInChunk, ColumnRenderSource.DebugSourceFlag.DIRECT);
 		}
-		else if (chunkDataView.getSectionPos().getDetailLevel() < this.getDataDetailLevel())
-		{
-			// The entire chunk is being converted to a single column data point, possibly.
-			DhLodPos dataCornerPos = chunkDataView.getSectionPos().getMinCornerLodPos(chunkDataView.detailLevel);
-			DhLodPos sourceCornerPos = renderSourcePos.getMinCornerLodPos(this.getDataDetailLevel());
-			DhLodPos sourceStartingChangePos = dataCornerPos.convertToDetailLevel(this.getDataDetailLevel());
-			int chunksPerColumn = sourceStartingChangePos.getWidthAtDetail(chunkDataView.getSectionPos().getDetailLevel());
-			if (chunkDataView.getSectionPos().getX() % chunksPerColumn != 0 || chunkDataView.getSectionPos().getZ() % chunksPerColumn != 0)
-			{
-				return; // not a multiple of the column size, so no change
-			}
-			int relStartX = Math.floorMod(sourceStartingChangePos.x, this.getWidthInDataPoints());
-			int relStartZ = Math.floorMod(sourceStartingChangePos.z, this.getWidthInDataPoints());
-			ColumnArrayView columnArrayView = this.getVerticalDataPointView(relStartX, relStartZ);
-			int hash = columnArrayView.getDataHash();
-			SingleColumnFullDataAccessor fullArrayView = chunkDataView.get(0, 0);
-			FullDataToRenderDataTransformer.convertColumnData(level, dataCornerPos.x * sourceDataPointBlockWidth,
-					dataCornerPos.z * sourceDataPointBlockWidth,
-					columnArrayView, fullArrayView);
-			dataChanged = hash != columnArrayView.getDataHash();
-			this.fillDebugFlag(relStartX, relStartZ, 1, 1, ColumnRenderSource.DebugSourceFlag.DIRECT);
-		}
-		
 		
 		if (dataChanged)
 		{
 			this.localVersion.incrementAndGet();
+			this.markNotEmpty();
 		}
+		
+		return dataChanged;
 	}
 	
 	
@@ -412,39 +215,11 @@ public class ColumnRenderSource implements IDataSource<IDhClientLevel>
 	// data helper methods //
 	//=====================//
 	
-	public boolean doesDataPointExist(int posX, int posZ) { return RenderDataPointUtil.doesDataPointExist(this.getFirstDataPoint(posX, posZ)); }
-	
-	public void generateData(ColumnRenderSource lowerDataContainer, int posX, int posZ)
-	{
-		ColumnArrayView outputView = this.getVerticalDataPointView(posX, posZ);
-		ColumnQuadView quadView = lowerDataContainer.getQuadViewOverRange(posX * 2, posZ * 2, 2, 2);
-		outputView.mergeMultiDataFrom(quadView);
-	}
-	
-	public int getMaxLodCount() { return SECTION_SIZE * SECTION_SIZE * this.getVerticalSize(); }
-	
-	public long getRoughRamUsageInBytes() { return (long) this.renderDataContainer.length * Long.BYTES; }
-	
-	public DhSectionPos getSectionPos() { return this.sectionPos; }
+	public DhSectionPos getPos() { return this.pos; }
 	@Override
-	public String getPrimaryKeyString() { return this.sectionPos.serialize(); }
+	public DhSectionPos getKey() { return this.pos; }
 	
-	public byte getDataDetailLevel() { return (byte) (this.sectionPos.getDetailLevel() - SECTION_SIZE_OFFSET); }
-	
-	@Override
-	public EDhApiWorldGenerationStep getWorldGenStep() { return EDhApiWorldGenerationStep.EMPTY; } 
-	
-	/** @return how many data points wide this {@link ColumnRenderSource} is. */
-	public int getWidthInDataPoints() { return BitShiftUtil.powerOfTwo(this.getDetailOffset()); }
-	public byte getDetailOffset() { return SECTION_SIZE_OFFSET; }
-	
-	public byte getRenderDataFormatVersion() { return DATA_FORMAT_VERSION; }
-	
-	/**
-	 * Whether this object is still valid. If not, a new one should be created.
-	 * TODO this will be necessary for dedicated multiplayer support, if the server has newer data this section should no longer be valid
-	 */
-	public boolean isValid() { return true; }
+	public byte getDataDetailLevel() { return (byte) (this.pos.getDetailLevel() - SECTION_SIZE_OFFSET); }
 	
 	public boolean isEmpty() { return this.isEmpty; }
 	public void markNotEmpty() { this.isEmpty = false; }
@@ -493,7 +268,6 @@ public class ColumnRenderSource implements IDataSource<IDhClientLevel>
 				this.debugSourceFlags[x * SECTION_SIZE + z] = flag;
 			}
 		}
-		localVersion.incrementAndGet();
 	}
 	
 	public DebugSourceFlag debugGetFlag(int ox, int oz) { return this.debugSourceFlags[ox * SECTION_SIZE + oz]; }
@@ -512,7 +286,7 @@ public class ColumnRenderSource implements IDataSource<IDhClientLevel>
 		String SUBDATA_DELIMITER = ",";
 		StringBuilder stringBuilder = new StringBuilder();
 		
-		stringBuilder.append(this.sectionPos);
+		stringBuilder.append(this.pos);
 		stringBuilder.append(LINE_DELIMITER);
 		
 		int size = 1;
@@ -538,6 +312,12 @@ public class ColumnRenderSource implements IDataSource<IDhClientLevel>
 		return stringBuilder.toString();
 	}
 	
+	@Override
+	public void close() throws Exception
+	{
+		DATA_SOURCE_POOL.returnPooledDataSource(this);
+	}
+	
 	
 	
 	//==============//
@@ -548,7 +328,6 @@ public class ColumnRenderSource implements IDataSource<IDhClientLevel>
 	{
 		FULL(ColorUtil.BLUE),
 		DIRECT(ColorUtil.WHITE),
-		SPARSE(ColorUtil.YELLOW),
 		FILE(ColorUtil.BROWN);
 		
 		public final int color;

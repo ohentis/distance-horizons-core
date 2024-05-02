@@ -19,9 +19,9 @@
 
 package com.seibel.distanthorizons.core.level;
 
-import com.seibel.distanthorizons.core.file.fullDatafile.GeneratedFullDataFileHandler;
+import com.seibel.distanthorizons.core.file.fullDatafile.GeneratedFullDataSourceProvider;
 
-public interface IDhWorldGenLevel extends IDhLevel, GeneratedFullDataFileHandler.IOnWorldGenCompleteListener
+public interface IDhWorldGenLevel extends IDhLevel, GeneratedFullDataSourceProvider.IOnWorldGenCompleteListener
 {
 	void doWorldGen();
 	

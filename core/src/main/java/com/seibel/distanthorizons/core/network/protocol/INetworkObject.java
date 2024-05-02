@@ -57,6 +57,14 @@ public interface INetworkObject
 				: null;
 	}
 	
+	default void readOptional(ByteBuf inputByteBuf, Runnable decoder)
+	{
+		if (inputByteBuf.readBoolean())
+		{
+			decoder.run();
+		}
+	}
+	
 	default void writeString(String inputString, ByteBuf outputByteBuf)
 	{
 		byte[] bytes = inputString.getBytes(StandardCharsets.UTF_8);

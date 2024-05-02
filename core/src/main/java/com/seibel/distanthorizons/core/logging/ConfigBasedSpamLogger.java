@@ -19,7 +19,7 @@
 
 package com.seibel.distanthorizons.core.logging;
 
-import com.seibel.distanthorizons.api.enums.config.ELoggerMode;
+import com.seibel.distanthorizons.api.enums.config.EDhApiLoggerMode;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import org.apache.logging.log4j.Level;
@@ -52,13 +52,13 @@ public class ConfigBasedSpamLogger
 		});
 	}
 	
-	private ELoggerMode mode;
-	private final Supplier<ELoggerMode> getter;
+	private EDhApiLoggerMode mode;
+	private final Supplier<EDhApiLoggerMode> getter;
 	private final int maxLogCount;
 	private final AtomicInteger logTries = new AtomicInteger(0);
 	private final Logger logger;
 	
-	public ConfigBasedSpamLogger(Logger logger, Supplier<ELoggerMode> configQuery, int maxLogPerSec)
+	public ConfigBasedSpamLogger(Logger logger, Supplier<EDhApiLoggerMode> configQuery, int maxLogPerSec)
 	{
 		getter = configQuery;
 		mode = getter.get();
@@ -74,7 +74,7 @@ public class ConfigBasedSpamLogger
 	
 	public boolean canMaybeLog()
 	{
-		return mode != ELoggerMode.DISABLED && logTries.get() < maxLogCount;
+		return mode != EDhApiLoggerMode.DISABLED && logTries.get() < maxLogCount;
 	}
 	
 	public void update()

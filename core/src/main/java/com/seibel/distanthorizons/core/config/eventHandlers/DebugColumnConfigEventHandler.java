@@ -20,24 +20,8 @@
 package com.seibel.distanthorizons.core.config.eventHandlers;
 
 import com.seibel.distanthorizons.api.DhApi;
-import com.seibel.distanthorizons.api.enums.config.EHorizontalQuality;
-import com.seibel.distanthorizons.api.enums.config.EMaxHorizontalResolution;
-import com.seibel.distanthorizons.api.enums.config.EVerticalQuality;
-import com.seibel.distanthorizons.api.enums.config.quickOptions.EQualityPreset;
-import com.seibel.distanthorizons.api.enums.rendering.ETransparency;
 import com.seibel.distanthorizons.api.interfaces.render.IDhApiRenderProxy;
-import com.seibel.distanthorizons.core.config.Config;
-import com.seibel.distanthorizons.core.config.ConfigEntryWithPresetOptions;
-import com.seibel.distanthorizons.core.config.eventHandlers.presets.AbstractPresetConfigEventHandler;
-import com.seibel.distanthorizons.core.config.listeners.ConfigChangeListener;
 import com.seibel.distanthorizons.core.config.listeners.IConfigListener;
-import com.seibel.distanthorizons.coreapi.interfaces.config.IConfigEntry;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
 
 public class DebugColumnConfigEventHandler implements IConfigListener
 {

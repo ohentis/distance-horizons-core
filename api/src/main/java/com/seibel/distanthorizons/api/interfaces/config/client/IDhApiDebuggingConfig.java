@@ -19,7 +19,7 @@
 
 package com.seibel.distanthorizons.api.interfaces.config.client;
 
-import com.seibel.distanthorizons.api.enums.rendering.EDebugRendering;
+import com.seibel.distanthorizons.api.enums.rendering.EDhApiDebugRendering;
 import com.seibel.distanthorizons.api.interfaces.config.IDhApiConfigValue;
 import com.seibel.distanthorizons.api.interfaces.config.IDhApiConfigGroup;
 
@@ -33,7 +33,7 @@ import com.seibel.distanthorizons.api.interfaces.config.IDhApiConfigGroup;
 public interface IDhApiDebuggingConfig extends IDhApiConfigGroup
 {
 	/** Can be used to debug the standard fake chunk rendering. */
-	IDhApiConfigValue<EDebugRendering> debugRendering();
+	IDhApiConfigValue<EDhApiDebugRendering> debugRendering();
 	
 	/** If enabled debug keybindings can be used. */
 	IDhApiConfigValue<Boolean> debugKeybindings();

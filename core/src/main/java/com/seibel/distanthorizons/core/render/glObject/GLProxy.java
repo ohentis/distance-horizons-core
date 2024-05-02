@@ -20,9 +20,9 @@
 package com.seibel.distanthorizons.core.render.glObject;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import com.seibel.distanthorizons.api.enums.config.EGLErrorHandlingMode;
-import com.seibel.distanthorizons.api.enums.config.EGlProfileMode;
-import com.seibel.distanthorizons.api.enums.config.EGpuUploadMethod;
+import com.seibel.distanthorizons.api.enums.config.EDhApiGLErrorHandlingMode;
+import com.seibel.distanthorizons.api.enums.config.EDhApiGlProfileMode;
+import com.seibel.distanthorizons.api.enums.config.EDhApiGpuUploadMethod;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.enums.EGLProxyContext;
@@ -107,7 +107,7 @@ public class GLProxy
 	public boolean bufferStorageSupported = false; // ~OpenGL 4.4
 	public boolean VertexAttributeBufferBindingSupported = false; // ~OpenGL 4.3
 	
-	private final EGpuUploadMethod preferredUploadMethod;
+	private final EDhApiGpuUploadMethod preferredUploadMethod;
 	
 	public final GLMessage.Builder vanillaDebugMessageBuilder = GLMessage.Builder.DEFAULT_MESSAGE_BUILDER;
 	public final GLMessage.Builder lodBuilderDebugMessageBuilder = GLMessage.Builder.DEFAULT_MESSAGE_BUILDER;
@@ -209,7 +209,7 @@ public class GLProxy
 			
 			GLFW.glfwWindowHint(GLFW.GLFW_OPENGL_FORWARD_COMPAT, forwardCompatEnabled ? GLFW.GLFW_TRUE : GLFW.GLFW_FALSE);
 			int profileModeInt;
-			EGlProfileMode profileModeEnum = Config.Client.Advanced.Debugging.OpenGl.glProfileMode.get();
+			EDhApiGlProfileMode profileModeEnum = Config.Client.Advanced.Debugging.OpenGl.glProfileMode.get();
 			switch (profileModeEnum)
 			{
 				case CORE:
@@ -322,12 +322,12 @@ public class GLProxy
 		if (vendor.contains("NVIDIA") || vendor.contains("GEFORCE"))
 		{
 			// NVIDIA card
-			this.preferredUploadMethod = this.bufferStorageSupported ? EGpuUploadMethod.BUFFER_STORAGE : EGpuUploadMethod.SUB_DATA;
+			this.preferredUploadMethod = this.bufferStorageSupported ? EDhApiGpuUploadMethod.BUFFER_STORAGE : EDhApiGpuUploadMethod.SUB_DATA;
 		}
 		else
 		{
 			// AMD or Intel card
-			this.preferredUploadMethod = this.bufferStorageSupported ? EGpuUploadMethod.BUFFER_STORAGE : EGpuUploadMethod.DATA;
+			this.preferredUploadMethod = this.bufferStorageSupported ? EDhApiGpuUploadMethod.BUFFER_STORAGE : EDhApiGpuUploadMethod.DATA;
 		}
 		GL_LOGGER.info("GPU Vendor [" + vendor + "], Preferred upload method is [" + this.preferredUploadMethod + "].");
 		
@@ -445,16 +445,16 @@ public class GLProxy
 		return instance;
 	}
 	
-	public EGpuUploadMethod getGpuUploadMethod()
+	public EDhApiGpuUploadMethod getGpuUploadMethod()
 	{
-		EGpuUploadMethod method = Config.Client.Advanced.GpuBuffers.gpuUploadMethod.get();
-		if (!this.bufferStorageSupported && method == EGpuUploadMethod.BUFFER_STORAGE)
+		EDhApiGpuUploadMethod method = Config.Client.Advanced.GpuBuffers.gpuUploadMethod.get();
+		if (!this.bufferStorageSupported && method == EDhApiGpuUploadMethod.BUFFER_STORAGE)
 		{
 			// if buffer storage isn't supported
 			// default to DATA since that is the most compatible
-			method = EGpuUploadMethod.DATA;
+			method = EDhApiGpuUploadMethod.DATA;
 		}
-		return method == EGpuUploadMethod.AUTO ? this.preferredUploadMethod : method;
+		return method == EDhApiGpuUploadMethod.AUTO ? this.preferredUploadMethod : method;
 	}
 	
 	
@@ -567,8 +567,8 @@ public class GLProxy
 	
 	private static void logMessage(GLMessage msg)
 	{
-		EGLErrorHandlingMode errorHandlingMode = Config.Client.Advanced.Debugging.OpenGl.glErrorHandlingMode.get();
-		if (errorHandlingMode == EGLErrorHandlingMode.IGNORE)
+		EDhApiGLErrorHandlingMode errorHandlingMode = Config.Client.Advanced.Debugging.OpenGl.glErrorHandlingMode.get();
+		if (errorHandlingMode == EDhApiGLErrorHandlingMode.IGNORE)
 		{
 			return;
 		}
@@ -581,7 +581,7 @@ public class GLProxy
 			
 			GL_LOGGER.error("GL ERROR " + msg.id + " from " + msg.source + ": " + msg.message);
 			
-			if (errorHandlingMode == EGLErrorHandlingMode.LOG_THROW)
+			if (errorHandlingMode == EDhApiGLErrorHandlingMode.LOG_THROW)
 			{
 				throw new RuntimeException("GL ERROR: " + msg);
 			}

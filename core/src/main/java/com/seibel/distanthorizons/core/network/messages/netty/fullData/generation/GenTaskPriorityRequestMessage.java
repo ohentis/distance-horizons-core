@@ -32,9 +32,9 @@ public class GenTaskPriorityRequestMessage extends TrackableNettyMessage impleme
 {
 	public List<DhSectionPos> posList = new ArrayList<>();
 	
-	private int levelHashCode;
+	private String levelName;
 	@Override
-	public int getLevelHashCode() { return this.levelHashCode; }
+	public String getLevelName() { return this.levelName; }
 	
 	
 	public GenTaskPriorityRequestMessage() { }
@@ -43,20 +43,20 @@ public class GenTaskPriorityRequestMessage extends TrackableNettyMessage impleme
 		this.posList = posList;
 		
 		// TODO Multiverse support
-		this.levelHashCode = level.getLevelWrapper().getDimensionType().getDimensionName().hashCode();
+		this.levelName = level.getLevelWrapper().getDimensionType().getDimensionName();
 	}
 	
 	@Override
 	protected void encode0(ByteBuf out)
 	{
-		out.writeInt(this.levelHashCode);
+		this.writeString(this.levelName, out);
 		this.writeCollection(out, this.posList);
 	}
 	
 	@Override
 	protected void decode0(ByteBuf in)
 	{
-		this.levelHashCode = in.readInt();
+		this.levelName = this.readString(in);
 		this.readCollection(in, this.posList, DhSectionPos::zero);
 	}
 	

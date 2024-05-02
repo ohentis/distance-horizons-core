@@ -24,6 +24,7 @@ import com.seibel.distanthorizons.api.interfaces.override.rendering.IDhApiCullin
 import com.seibel.distanthorizons.api.interfaces.override.rendering.IDhApiShadowCullingFrustum;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
 import com.seibel.distanthorizons.core.config.Config;
+import com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.ColumnRenderBuffer;
 import com.seibel.distanthorizons.core.dependencyInjection.ModAccessorInjector;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.enums.EDhDirection;
@@ -338,19 +339,8 @@ public class RenderBufferHandler implements AutoCloseable
 					}
 				}
 				
-				if (rebuildAllBuffers)
-				{
-					renderSection.markBufferDirty();
-				}
-				
-				renderSection.tryBuildAndSwapBuffer();
-				if (!renderSection.isRenderingEnabled())
-				{
-					continue;
-				}
-				
-				AbstractRenderBuffer buffer = renderSection.activeRenderBufferRef.get();
-				if (buffer == null)
+				ColumnRenderBuffer buffer = renderSection.renderBuffer;
+				if (buffer == null || !renderSection.renderingEnabled)
 				{
 					continue;
 				}
@@ -361,7 +351,6 @@ public class RenderBufferHandler implements AutoCloseable
 			catch (Exception e)
 			{
 				LOGGER.error("Error updating QuadTree render source at " + renderSection.pos + ".", e);
-				renderSection.markBufferDirty();
 			}
 		}
 		
@@ -420,7 +409,7 @@ public class RenderBufferHandler implements AutoCloseable
 			LodRenderSection renderSection = nodeIterator.next().value;
 			if (renderSection != null)
 			{
-				renderSection.dispose();
+				renderSection.close();
 			}
 		}
 		
@@ -435,10 +424,10 @@ public class RenderBufferHandler implements AutoCloseable
 	
 	private static class LoadedRenderBuffer
 	{
-		public final AbstractRenderBuffer buffer;
+		public final ColumnRenderBuffer buffer;
 		public final DhSectionPos pos;
 		
-		LoadedRenderBuffer(AbstractRenderBuffer buffer, DhSectionPos pos)
+		LoadedRenderBuffer(ColumnRenderBuffer buffer, DhSectionPos pos)
 		{
 			this.buffer = buffer;
 			this.pos = pos;

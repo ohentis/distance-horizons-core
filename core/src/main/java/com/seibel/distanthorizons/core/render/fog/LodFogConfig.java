@@ -48,11 +48,9 @@ public class LodFogConfig
 	
 	public final FogSettings farFogSetting;
 	public final FogSettings heightFogSetting;
-	public final EHeightFogMixMode heightFogMixMode;
-	public final EHeightFogMode heightFogMode;
+	public final EDhApiHeightFogMixMode heightFogMixMode;
+	public final EDhApiHeightFogMode heightFogMode;
 	public final float heightFogHeight;
-	
-	final boolean drawNearFog;
 	
 	// TODO: Move these out of here
 	public final int earthCurveRatio;
@@ -66,8 +64,8 @@ public class LodFogConfig
 	
 	public static LodFogConfig generateFogConfig()
 	{
-		EFogDrawMode fogMode = Config.Client.Advanced.Graphics.Fog.drawMode.get();
-		if (fogMode == EFogDrawMode.USE_OPTIFINE_SETTING && OPTIFINE != null)
+		EDhApiFogDrawMode fogMode = Config.Client.Advanced.Graphics.Fog.drawMode.get();
+		if (fogMode == EDhApiFogDrawMode.USE_OPTIFINE_SETTING && OPTIFINE != null)
 		{
 			fogMode = OPTIFINE.getFogDrawMode();
 		}
@@ -75,7 +73,7 @@ public class LodFogConfig
 	}
 	
 	/** sets all fog options from the config */
-	private LodFogConfig(EFogDrawMode fogDrawMode)
+	private LodFogConfig(EDhApiFogDrawMode fogDrawMode)
 	{
 		// TODO: Move these out of here
 		earthCurveRatio = Config.Client.Advanced.Graphics.AdvancedGraphics.earthCurveRatio.get();
@@ -86,74 +84,57 @@ public class LodFogConfig
 		noiseDropoff = Config.Client.Advanced.Graphics.NoiseTextureSettings.noiseDropoff.get();
 		
 		
-		if (fogDrawMode != EFogDrawMode.FOG_DISABLED)
+		if (fogDrawMode != EDhApiFogDrawMode.FOG_DISABLED)
 		{
-			EFogDistance fogDistance = Config.Client.Advanced.Graphics.Fog.distance.get();
-			drawNearFog = (fogDistance == EFogDistance.NEAR || fogDistance == EFogDistance.NEAR_AND_FAR);
+			// fog should be drawn
 			
-			if (fogDistance == EFogDistance.FAR || fogDistance == EFogDistance.NEAR_AND_FAR)
+			farFogSetting = new FogSettings(
+					Config.Client.Advanced.Graphics.Fog.AdvancedFog.farFogStart.get(),
+					Config.Client.Advanced.Graphics.Fog.AdvancedFog.farFogEnd.get(),
+					Config.Client.Advanced.Graphics.Fog.AdvancedFog.farFogMin.get(),
+					Config.Client.Advanced.Graphics.Fog.AdvancedFog.farFogMax.get(),
+					Config.Client.Advanced.Graphics.Fog.AdvancedFog.farFogDensity.get(),
+					Config.Client.Advanced.Graphics.Fog.AdvancedFog.farFogFalloff.get()
+			);
+			
+			heightFogMixMode = Config.Client.Advanced.Graphics.Fog.AdvancedFog.HeightFog.heightFogMixMode.get();
+			if (heightFogMixMode == EDhApiHeightFogMixMode.IGNORE_HEIGHT || heightFogMixMode == EDhApiHeightFogMixMode.BASIC)
 			{
-				// far fog should be drawn
+				// basic fog mixing
 				
-				farFogSetting = new FogSettings(
-						Config.Client.Advanced.Graphics.Fog.AdvancedFog.farFogStart.get(),
-						Config.Client.Advanced.Graphics.Fog.AdvancedFog.farFogEnd.get(),
-						Config.Client.Advanced.Graphics.Fog.AdvancedFog.farFogMin.get(),
-						Config.Client.Advanced.Graphics.Fog.AdvancedFog.farFogMax.get(),
-						Config.Client.Advanced.Graphics.Fog.AdvancedFog.farFogDensity.get(),
-						Config.Client.Advanced.Graphics.Fog.AdvancedFog.farFogFalloff.get()
+				heightFogSetting = null;
+				heightFogMode = null;
+				heightFogHeight = 0.f;
+			}
+			else
+			{
+				// advanced fog mixing
+				
+				heightFogSetting = new FogSettings(
+						Config.Client.Advanced.Graphics.Fog.AdvancedFog.HeightFog.heightFogDensity.get(),
+						Config.Client.Advanced.Graphics.Fog.AdvancedFog.HeightFog.heightFogEnd.get(),
+						Config.Client.Advanced.Graphics.Fog.AdvancedFog.HeightFog.heightFogMin.get(),
+						Config.Client.Advanced.Graphics.Fog.AdvancedFog.HeightFog.heightFogMax.get(),
+						Config.Client.Advanced.Graphics.Fog.AdvancedFog.HeightFog.heightFogDensity.get(),
+						Config.Client.Advanced.Graphics.Fog.AdvancedFog.HeightFog.heightFogFalloff.get()
 				);
 				
-				heightFogMixMode = Config.Client.Advanced.Graphics.Fog.AdvancedFog.HeightFog.heightFogMixMode.get();
-				if (heightFogMixMode == EHeightFogMixMode.IGNORE_HEIGHT || heightFogMixMode == EHeightFogMixMode.BASIC)
+				heightFogMode = Config.Client.Advanced.Graphics.Fog.AdvancedFog.HeightFog.heightFogMode.get();
+				
+				if (heightFogMode.basedOnCamera)
 				{
-					// basic fog mixing
-					
-					heightFogSetting = null;
-					heightFogMode = null;
 					heightFogHeight = 0.f;
 				}
 				else
 				{
-					// advanced fog mixing
-					
-					heightFogSetting = new FogSettings(
-							Config.Client.Advanced.Graphics.Fog.AdvancedFog.HeightFog.heightFogDensity.get(),
-							Config.Client.Advanced.Graphics.Fog.AdvancedFog.HeightFog.heightFogEnd.get(),
-							Config.Client.Advanced.Graphics.Fog.AdvancedFog.HeightFog.heightFogMin.get(),
-							Config.Client.Advanced.Graphics.Fog.AdvancedFog.HeightFog.heightFogMax.get(),
-							Config.Client.Advanced.Graphics.Fog.AdvancedFog.HeightFog.heightFogDensity.get(),
-							Config.Client.Advanced.Graphics.Fog.AdvancedFog.HeightFog.heightFogFalloff.get()
-					);
-					
-					heightFogMode = Config.Client.Advanced.Graphics.Fog.AdvancedFog.HeightFog.heightFogMode.get();
-					
-					if (heightFogMode.basedOnCamera)
-					{
-						heightFogHeight = 0.f;
-					}
-					else
-					{
-						heightFogHeight = Config.Client.Advanced.Graphics.Fog.AdvancedFog.HeightFog.heightFogBaseHeight.get().floatValue();
-					}
+					heightFogHeight = Config.Client.Advanced.Graphics.Fog.AdvancedFog.HeightFog.heightFogBaseHeight.get().floatValue();
 				}
-			}
-			else
-			{
-				// far fog should not be drawn
-				
-				farFogSetting = null;
-				heightFogSetting = null;
-				heightFogMode = null;
-				heightFogMixMode = null;
-				heightFogHeight = 0.f;
 			}
 		}
 		else
 		{
 			// fog disabled
 			
-			drawNearFog = false;
 			farFogSetting = null;
 			heightFogMixMode = null;
 			heightFogMode = null;
@@ -205,7 +186,7 @@ public class LodFogConfig
 					"float calculateHeightFogDepth(float vertical, float realY) { return 0.0; } \n" +
 					"float mixFogThickness(float near, float far, float height) \n" +
 					"{ \n" +
-					(drawNearFog ? "return 1.0-near;" : "return 0.0;") +
+					"    return 0.0; \n" +
 					"} \n\n");
 		}
 		else
@@ -238,7 +219,7 @@ public class LodFogConfig
 			str.append("" +
 					"float calculateFarFogDepth(float horizontal, float dist, float nearFogStart) \n" +
 					"{ \n" +
-					"	return " + (heightFogMixMode == EHeightFogMixMode.BASIC ?
+					"	return " + (heightFogMixMode == EDhApiHeightFogMixMode.BASIC ?
 					"(dist - nearFogStart)/(1.0 - nearFogStart);" :
 					"(horizontal - nearFogStart)/(1.0 - nearFogStart);") +
 					"} \n");
@@ -247,7 +228,7 @@ public class LodFogConfig
 			str.append("" +
 					"float mixFogThickness(float near, float far, float height) \n" +
 					"{ \n" +
-					getMixFogLine(heightFogMixMode, drawNearFog) + "\n" +
+					getMixFogLine(heightFogMixMode) + "\n" +
 					"} \n");
 		}
 	}
@@ -286,7 +267,7 @@ public class LodFogConfig
 		return str;
 	}
 	
-	private static String getFarFogMethod(EFogFalloff fogType)
+	private static String getFarFogMethod(EDhApiFogFalloff fogType)
 	{
 		switch (fogType)
 		{
@@ -302,7 +283,7 @@ public class LodFogConfig
 		}
 	}
 	
-	private static String getHeightDepthMethod(EHeightFogMode heightMode, float heightFogHeight)
+	private static String getHeightDepthMethod(EDhApiHeightFogMode heightMode, float heightFogHeight)
 	{
 		String str = "";
 		if (!heightMode.basedOnCamera)
@@ -334,7 +315,7 @@ public class LodFogConfig
 	 * Example: <br>
 	 * <code>"	return linearFog(dist, heightFogStart, heightFogLength, heightFogMin, heightFogRange);"</code>
 	 */
-	private static String getHeightFogMethod(EFogFalloff fogType)
+	private static String getHeightFogMethod(EDhApiFogFalloff fogType)
 	{
 		switch (fogType)
 		{
@@ -354,7 +335,7 @@ public class LodFogConfig
 	 * creates a line in the format <br>
 	 * <code>"	return max(1.0-near, far);" </code>
 	 */
-	private static String getMixFogLine(EHeightFogMixMode heightFogMode, boolean drawNearFog)
+	private static String getMixFogLine(EDhApiHeightFogMixMode heightFogMode)
 	{
 		String str = "	return ";
 		
@@ -362,65 +343,38 @@ public class LodFogConfig
 		{
 			case BASIC:
 			case IGNORE_HEIGHT:
-				if (drawNearFog)
-					str += "max(1.0-near, far);\n";
-				else
 					str += "near * far;\n";
 				break;
 			
 			case ADDITION:
-				if (drawNearFog)
-					str += "max(1.0-near, far + height);\n";
-				else
 					str += "near * (far + height);\n";
 				break;
 			
 			case MAX:
-				if (drawNearFog)
-					str += "max(1.0-near, max(far, height));\n";
-				else
 					str += "near * max(far, height);\n";
 				break;
 			
 			case INVERSE_MULTIPLY:
-				if (drawNearFog)
-					str += "max(1.0-near, 1.0 - (1.0-far)*(1.0-height));\n";
-				else
 					str += "near * (1.0 - (1.0-far)*(1.0-height));\n";
 				break;
 			
 			case MULTIPLY:
-				if (drawNearFog)
-					str += "max(1.0-near, far*height);\n";
-				else
 					str += "near * far * height;\n";
 				break;
 			
 			case LIMITED_ADDITION:
-				if (drawNearFog)
-					str += "max(1.0-near, far + max(far, height));\n";
-				else
 					str += "near * (far + max(far, height));\n";
 				break;
 			
 			case MULTIPLY_ADDITION:
-				if (drawNearFog)
-					str += "max(1.0-near, far + far*height);\n";
-				else
 					str += "near * (far + far*height);\n";
 				break;
 			
 			case INVERSE_MULTIPLY_ADDITION:
-				if (drawNearFog)
-					str += "max(1.0-near, far + 1.0 - (1.0-far)*(1.0-height));\n";
-				else
 					str += "near * (far + 1.0 - (1.0-far)*(1.0-height));\n";
 				break;
 			
 			case AVERAGE:
-				if (drawNearFog)
-					str += "max(1.0-near, far*0.5 + height*0.5);\n";
-				else
 					str += "near * (far*0.5 + height*0.5);\n";
 				break;
 			
@@ -449,7 +403,7 @@ public class LodFogConfig
 			return false;
 		LodFogConfig that = (LodFogConfig) o;
 		return Float.compare(that.heightFogHeight, heightFogHeight) == 0 &&
-				drawNearFog == that.drawNearFog && Objects.equals(farFogSetting, that.farFogSetting) &&
+				Objects.equals(farFogSetting, that.farFogSetting) &&
 				Objects.equals(heightFogSetting, that.heightFogSetting) && heightFogMixMode == that.heightFogMixMode &&
 				heightFogMode == that.heightFogMode
 				// TODO: Move these out of here
@@ -460,7 +414,7 @@ public class LodFogConfig
 	@Override
 	public int hashCode()
 	{
-		return Objects.hash(farFogSetting, heightFogSetting, heightFogMixMode, heightFogMode, heightFogHeight, drawNearFog, earthCurveRatio, noiseEnable, noiseSteps, noiseIntensity, noiseDropoff);
+		return Objects.hash(farFogSetting, heightFogSetting, heightFogMixMode, heightFogMode, heightFogHeight, earthCurveRatio, noiseEnable, noiseSteps, noiseIntensity, noiseDropoff);
 	}
 	
 }

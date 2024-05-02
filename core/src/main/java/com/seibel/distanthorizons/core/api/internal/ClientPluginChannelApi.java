@@ -12,7 +12,6 @@ import com.seibel.distanthorizons.core.network.messages.plugin.PluginHelloMessag
 import com.seibel.distanthorizons.core.network.messages.plugin.ServerConnectInfoMessage;
 import com.seibel.distanthorizons.core.network.plugin.PluginChannelHandler;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
-import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import io.netty.buffer.ByteBuf;
 import org.apache.logging.log4j.LogManager;

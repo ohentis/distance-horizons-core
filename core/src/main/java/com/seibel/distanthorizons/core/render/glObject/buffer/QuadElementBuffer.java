@@ -19,7 +19,7 @@
 
 package com.seibel.distanthorizons.core.render.glObject.buffer;
 
-import com.seibel.distanthorizons.api.enums.config.EGpuUploadMethod;
+import com.seibel.distanthorizons.api.enums.config.EDhApiGpuUploadMethod;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.render.glObject.GLEnums;
 import com.seibel.distanthorizons.core.render.glObject.GLProxy;
@@ -160,13 +160,13 @@ public class QuadElementBuffer extends GLElementBuffer
 		{
 			
 			bind();
-			super.uploadBuffer(buffer, EGpuUploadMethod.DATA,
+			super.uploadBuffer(buffer, EDhApiGpuUploadMethod.DATA,
 					indicesCount * GLEnums.getTypeSize(type), GL32.GL_STATIC_DRAW);
 		}
 		else
 		{
 			bind();
-			super.uploadBuffer(buffer, EGpuUploadMethod.BUFFER_STORAGE,
+			super.uploadBuffer(buffer, EDhApiGpuUploadMethod.BUFFER_STORAGE,
 					indicesCount * GLEnums.getTypeSize(type), 0);
 		}
 	}

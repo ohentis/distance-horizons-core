@@ -33,7 +33,7 @@ public final class ModInfo
 	// region Protocol versions
 	// Incremented every time any packets are added, changed or removed, with a few exceptions.
 	/** Netty protocol version. */
-	public static final int PROTOCOL_VERSION = 2;
+	public static final int PROTOCOL_VERSION = 3;
 	/** Plugin channel protocol version. */
 	public static final int PLUGIN_PROTOCOL_VERSION = 1;
 	public static final String PLUGIN_CHANNEL_PATH = "plugin_channel";
@@ -45,7 +45,7 @@ public final class ModInfo
 	public static final String NAME = "DistantHorizons";
 	/** Human-readable version of NAME */
 	public static final String READABLE_NAME = "Distant Horizons";
-	public static final String VERSION = "2.0.2-a-dev";
+	public static final String VERSION = "2.0.4-a-dev";
 	/** Returns true if the current build is an unstable developer build, false otherwise. */
 	public static boolean IS_DEV_BUILD = VERSION.toLowerCase().contains("dev");
 	

@@ -23,7 +23,7 @@ import com.seibel.distanthorizons.api.interfaces.config.IDhApiConfigValue;
 import com.seibel.distanthorizons.api.interfaces.config.client.IDhApiDebuggingConfig;
 import com.seibel.distanthorizons.api.objects.config.DhApiConfigValue;
 import com.seibel.distanthorizons.core.config.Config;
-import com.seibel.distanthorizons.api.enums.rendering.EDebugRendering;
+import com.seibel.distanthorizons.api.enums.rendering.EDhApiDebugRendering;
 
 public class DhApiDebuggingConfig implements IDhApiDebuggingConfig
 {
@@ -33,8 +33,8 @@ public class DhApiDebuggingConfig implements IDhApiDebuggingConfig
 	
 	
 	
-	public IDhApiConfigValue<EDebugRendering> debugRendering()
-	{ return new DhApiConfigValue<EDebugRendering, EDebugRendering>(Config.Client.Advanced.Debugging.debugRendering); }
+	public IDhApiConfigValue<EDhApiDebugRendering> debugRendering()
+	{ return new DhApiConfigValue<EDhApiDebugRendering, EDhApiDebugRendering>(Config.Client.Advanced.Debugging.debugRendering); }
 	
 	public IDhApiConfigValue<Boolean> debugKeybindings()
 	{ return new DhApiConfigValue<Boolean, Boolean>(Config.Client.Advanced.Debugging.enableDebugKeybindings); }

@@ -20,7 +20,7 @@
 package com.seibel.distanthorizons.api.interfaces.config.client;
 
 import com.seibel.distanthorizons.api.interfaces.config.IDhApiConfigValue;
-import com.seibel.distanthorizons.api.enums.config.EServerFolderNameMode;
+import com.seibel.distanthorizons.api.enums.config.EDhApiServerFolderNameMode;
 import com.seibel.distanthorizons.api.interfaces.config.IDhApiConfigGroup;
 
 /**
@@ -37,7 +37,7 @@ public interface IDhApiMultiplayerConfig extends IDhApiConfigGroup
 	 * Defines how multiplayer server folders are named. <br>
 	 * Note: Changing this while connected to a multiplayer world will cause undefined behavior!
 	 */
-	IDhApiConfigValue<EServerFolderNameMode> folderSavingMode();
+	IDhApiConfigValue<EDhApiServerFolderNameMode> folderSavingMode();
 	
 	/**
 	 * Defines the necessary similarity (as a percent) that two potential levels

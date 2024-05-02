@@ -23,7 +23,7 @@ import com.seibel.distanthorizons.core.config.listeners.ConfigChangeListener;
 import com.seibel.distanthorizons.core.config.types.ConfigEntry;
 import com.seibel.distanthorizons.core.util.threading.DhThreadFactory;
 import com.seibel.distanthorizons.core.util.threading.RateLimitedThreadPoolExecutor;
-import com.seibel.distanthorizons.core.util.threading.ThreadPools;
+import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -33,7 +33,7 @@ import java.util.concurrent.*;
 /**
  * Handles thread pool creation.
  * 
- * @see ThreadPools
+ * @see ThreadPoolUtil
  * @see TimerUtil
  */
 public class ThreadUtil
@@ -80,9 +80,9 @@ public class ThreadUtil
 	
 	
 	/** should only be used if there isn't a config controlling the run time ratio of this thread pool */
-	public static RateLimitedThreadPoolExecutor makeRateLimitedThreadPool(int poolSize, String name, Double runTimeRatio, int relativePriority, Semaphore activeThreadCountSemaphore) 
+	public static RateLimitedThreadPoolExecutor makeRateLimitedThreadPool(int poolSize, String name, Double runTimeRatio, int threadPriority, Semaphore activeThreadCountSemaphore) 
 	{
-		return new RateLimitedThreadPoolExecutor(poolSize, runTimeRatio, new DhThreadFactory(name, Thread.NORM_PRIORITY + relativePriority), activeThreadCountSemaphore);
+		return new RateLimitedThreadPoolExecutor(poolSize, runTimeRatio, new DhThreadFactory(name, threadPriority), activeThreadCountSemaphore);
 	}
 	public static RateLimitedThreadPoolExecutor makeRateLimitedThreadPool(int poolSize, Double runTimeRatio, DhThreadFactory threadFactory, Semaphore activeThreadCountSemaphore) 
 	{

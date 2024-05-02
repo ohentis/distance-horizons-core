@@ -27,3 +27,6 @@ forge*changelog.txt
 
 # Sqlite databases
 *.sqlite
+*.sqlite-journal
+*.sqlite-shm
+*.sqlite-wal

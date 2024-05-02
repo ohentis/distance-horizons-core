@@ -19,62 +19,36 @@
 
 package com.seibel.distanthorizons.core.network.messages.netty.fullData;
 
-import com.seibel.distanthorizons.core.dataObjects.fullData.accessor.ChunkSizedFullDataAccessor;
-import com.seibel.distanthorizons.core.level.DhServerLevel;
-import com.seibel.distanthorizons.core.level.IDhLevel;
+import com.seibel.distanthorizons.api.enums.config.EDhApiDataCompressionMode;
+import com.seibel.distanthorizons.core.config.Config;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.network.messages.netty.ILevelRelatedMessage;
 import com.seibel.distanthorizons.core.network.netty.NettyMessage;
-import com.seibel.distanthorizons.core.pos.DhChunkPos;
-import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataInputStream;
-import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataOutputStream;
+import com.seibel.distanthorizons.core.network.protocol.INetworkObject;
+import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV2DTO;
+import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufInputStream;
 
-import javax.annotation.Nullable;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 public class FullDataPartialUpdateMessage extends NettyMessage implements ILevelRelatedMessage
 {
-	private ChunkSizedFullDataAccessor fullDataAccessor;
-	private DhServerLevel level;
-	
-	private int levelHashCode;
+	private String levelName;
 	@Override
-	public int getLevelHashCode() { return this.levelHashCode; }
+	public String getLevelName() { return this.levelName; }
 	
-	private DhChunkPos chunkPos;
-	private ByteBuf dataBuffer;
+	public FullDataSourceV2DTO dataSourceDto;
 	
-	@Override
-	public boolean warnWhenUnhandled() { return false; }
 	
-	public FullDataPartialUpdateMessage() {}
-	public FullDataPartialUpdateMessage(ChunkSizedFullDataAccessor fullDataAccessor, DhServerLevel level)
+	public FullDataPartialUpdateMessage() { }
+	public FullDataPartialUpdateMessage(ILevelWrapper level, FullDataSourceV2 fullDataSource)
 	{
-		this.fullDataAccessor = fullDataAccessor;
-		this.level = level;
+		this.levelName = level.getDimensionType().getDimensionName();
 		
-		// TODO Multiverse support
-		this.levelHashCode = level.getLevelWrapper().getDimensionType().getDimensionName().hashCode();
-	}
-	
-	@Override
-	public void encode(ByteBuf out)
-	{
-		try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream())
+		try
 		{
-			DhDataOutputStream dhOutputStream = new DhDataOutputStream(outputStream);
-			this.fullDataAccessor.writeToStream(dhOutputStream, this.level);
-			dhOutputStream.flush();
-			
-			out.writeInt(this.levelHashCode);
-			
-			out.writeInt(this.fullDataAccessor.chunkPos.x);
-			out.writeInt(this.fullDataAccessor.chunkPos.z);
-			
-			out.writeInt(outputStream.size());
-			out.writeBytes(outputStream.toByteArray());
+			EDhApiDataCompressionMode compressionMode = Config.Client.Advanced.LodBuilding.dataCompression.get();
+			this.dataSourceDto = FullDataSourceV2DTO.CreateFromDataSource(fullDataSource, compressionMode);
 		}
 		catch (IOException e)
 		{
@@ -82,40 +56,29 @@ public class FullDataPartialUpdateMessage extends NettyMessage implements ILevel
 		}
 	}
 	
+	
+	@Override
+	public boolean warnWhenUnhandled() { return false; }
+	
+	@Override
+	public void encode(ByteBuf out)
+	{
+		this.writeString(this.levelName, out);
+		this.dataSourceDto.encode(out);
+	}
+	
 	@Override
 	public void decode(ByteBuf in)
 	{
-		this.levelHashCode = in.readInt();
-		this.chunkPos = new DhChunkPos(in.readInt(), in.readInt());
-		this.dataBuffer = in.readBytes(in.readInt());
+		this.levelName = this.readString(in);
+		this.dataSourceDto = INetworkObject.readToObject(new FullDataSourceV2DTO(), in);
 	}
 	
-	@Nullable
-	public ChunkSizedFullDataAccessor getFullDataSource(IDhLevel level) throws IOException, InterruptedException
-	{
-		if (!this.isSameLevelAs(level.getLevelWrapper()))
-		{
-			return null;
-		}
-		
-		try (ByteBufInputStream inputStream = new ByteBufInputStream(this.dataBuffer))
-		{
-			ChunkSizedFullDataAccessor result = new ChunkSizedFullDataAccessor(this.chunkPos);
-			result.populateFromStream(new DhDataInputStream(inputStream), level);
-			return result;
-		}
-		finally
-		{
-			this.dataBuffer.release();
-		}
-	}
-	
-	@Override public String toString()
+	@Override
+	public String toString()
 	{
 		return super.toString(
-				"levelHashCode=" + this.levelHashCode +
-						", chunkPos=" + this.chunkPos +
-						", dataBuffer=" + this.dataBuffer
+				"levelHashCode=" + this.levelName
 		);
 	}
 	

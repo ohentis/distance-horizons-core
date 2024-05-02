@@ -2,7 +2,6 @@ package com.seibel.distanthorizons.core.generation;
 
 import com.google.common.base.Stopwatch;
 import com.seibel.distanthorizons.core.config.Config;
-import com.seibel.distanthorizons.core.config.types.ConfigEntry;
 import com.seibel.distanthorizons.core.generation.tasks.IWorldGenTaskTracker;
 import com.seibel.distanthorizons.core.generation.tasks.WorldGenResult;
 import com.seibel.distanthorizons.core.level.IDhClientLevel;
@@ -24,14 +23,11 @@ import java.util.List;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
-public class WorldRemoteGenerationQueue extends AbstractFullDataRequestQueue implements IWorldGenerationQueue, IDebugRenderable
+public class WorldRemoteGenerationQueue extends AbstractFullDataRequestQueue implements IFullDataSourceRetrievalQueue, IDebugRenderable
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
-	// Used to prevent requests for section very far away, as result of request list not completely filled.
-	// Kinda a hack, since queue is not notified when file handler is done with feeding sections to generate
-	private static final ConfigEntry<Integer> REQUEST_BEGIN_DELAY = Config.Client.Advanced.Multiplayer.ServerNetworking.generationRequestBeginDelay;
-	private final Stopwatch requestBeginStopwatch = Stopwatch.createStarted();
+	private int estimatedTotalTaskCount;
 	
 	private CompletableFuture<?> genTaskPriorityRequest = CompletableFuture.completedFuture(null);
 	private final Semaphore genTaskPriorityRequestSemaphore = new Semaphore(1, true);
@@ -77,12 +73,8 @@ public class WorldRemoteGenerationQueue extends AbstractFullDataRequestQueue imp
 	}
 	
 	@Override
-	public void startGenerationQueueAndSetTargetPos(DhBlockPos2D targetPos)
+	public void startAndSetTargetPos(DhBlockPos2D targetPos)
 	{
-		if (this.requestBeginStopwatch.elapsed(TimeUnit.SECONDS) < REQUEST_BEGIN_DELAY.get())
-		{
-			return;
-		}
 		if (!super.tick(targetPos))
 		{
 			return;
@@ -133,11 +125,11 @@ public class WorldRemoteGenerationQueue extends AbstractFullDataRequestQueue imp
 		}
 	}
 	
+	
 	@Override
-	public void cancelGenTasks(Iterable<DhSectionPos> positions)
-	{
-		super.cancelRequests(positions);
-	}
+	public int getEstimatedTotalTaskCount() { return this.estimatedTotalTaskCount; }
+	@Override
+	public void setEstimatedTotalTaskCount(int newEstimate) { this.estimatedTotalTaskCount = newEstimate; }
 	
 	@Override
 	public CompletableFuture<Void> startClosing(boolean cancelCurrentGeneration, boolean alsoInterruptRunning)

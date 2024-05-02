@@ -37,7 +37,8 @@ public class JavaScreenHandlerScreen extends AbstractScreen
 	
 	static
 	{
-		// Required to run this
+		// Needs to be called before any Swing code is called, otherwise
+		// Swing will get stuck thinking it's headless
 		System.setProperty("java.awt.headless", "false");
 	}
 	
