@@ -345,7 +345,7 @@ public class FullDataSourceV2DTO implements IBaseDTO<DhSectionPos>, INetworkObje
 	@Override
 	public void decode(ByteBuf in)
 	{
-		this.pos.decode(in);
+		this.pos = INetworkObject.readToObject(DhSectionPos.zero(), in);
 		this.dataChecksum = in.readInt();
 		
 		this.compressedDataByteArray = new byte[in.readInt()];

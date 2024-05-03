@@ -134,7 +134,7 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 				}
 				
 				Long serverTimestamp = this.serverside.fullDataFileHandler.getTimestampForPos(msg.sectionPos);
-				if (serverTimestamp == null || serverTimestamp < msg.clientTimestamp)
+				if (serverTimestamp == null || serverTimestamp <= msg.clientTimestamp)
 				{
 					rateLimiterSet.loginDataSyncRCLimiter.release();
 					msg.sendResponse(new FullDataSourceResponseMessage(null));
@@ -338,6 +338,10 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 			if (this.serverside.fullDataFileHandler.isFullyGenerated(fullDataSource.columnGenerationSteps))
 			{
 				entry.fullDataSource = fullDataSource;
+			}
+			else
+			{
+				this.serverside.fullDataFileHandler.queuePositionForRetrieval(pos);
 			}
 		});
 	}

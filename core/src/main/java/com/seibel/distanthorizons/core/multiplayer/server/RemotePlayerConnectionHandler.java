@@ -90,6 +90,7 @@ public class RemotePlayerConnectionHandler implements Closeable
 			ServerPlayerState dhPlayer = this.playersByConnection.remove(closeEvent.getConnection());
 			if (dhPlayer != null)
 			{
+				dhPlayer.clearRateLimiterSets();
 				dhPlayer.connection = null;
 			}
 		});

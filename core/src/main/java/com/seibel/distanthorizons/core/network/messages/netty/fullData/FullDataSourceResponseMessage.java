@@ -64,7 +64,8 @@ public class FullDataSourceResponseMessage extends TrackableNettyMessage
 		}
 	}
 	
-	@Override public void decode0(ByteBuf in)
+	@Override
+	public void decode0(ByteBuf in)
 	{
 		this.dataSourceDto = this.readOptional(in, () -> INetworkObject.readToObject(new FullDataSourceV2DTO(), in));
 	}

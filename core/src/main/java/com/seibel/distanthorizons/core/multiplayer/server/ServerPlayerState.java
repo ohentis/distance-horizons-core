@@ -50,6 +50,10 @@ public class ServerPlayerState
 	{
 		return this.rateLimiterSets.computeIfAbsent(level, ignored -> new RateLimiterSet());
 	}
+	public void clearRateLimiterSets()
+	{
+		this.rateLimiterSets.clear();
+	}
 	
 	public ServerPlayerState(IServerPlayerWrapper serverPlayer, int serverPort)
 	{
@@ -116,4 +120,3 @@ public class ServerPlayerState
 	}
 	
 }
-

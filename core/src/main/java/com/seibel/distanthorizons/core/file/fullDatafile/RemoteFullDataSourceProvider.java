@@ -46,7 +46,7 @@ public class RemoteFullDataSourceProvider extends GeneratedFullDataSourceProvide
 	public FullDataSourceV2 get(DhSectionPos pos)
 	{
 		FullDataSourceV2 fullDataSource = super.get(pos);
-		if (fullDataSource == null || this.isFullyGenerated(fullDataSource.columnGenerationSteps) || this.dataRefreshQueue == null)
+		if (fullDataSource == null || this.dataRefreshQueue == null)
 		{
 			return fullDataSource;
 		}

@@ -180,18 +180,18 @@ public class FullDataSourceProviderV2
 		try
 		{
 			PreparedStatement preparedStatement = this.repo.createPreparedStatement(
-					"SELECT LastModifiedDateTime" +
-							"FROM " + this.repo.getTableName() +
-							"WHERE DetailLevel = ?" +
-							"AND PosX = ?" +
-							"AND PosZ = ?"
+					"SELECT LastModifiedUnixDateTime " +
+							"FROM " + this.repo.getTableName() + " " +
+							"WHERE DetailLevel = ? " +
+							"AND PosX = ? " +
+							"AND PosZ = ?;"
 			);
-			preparedStatement.setInt(1, pos.getDetailLevel());
+			preparedStatement.setInt(1, pos.getDetailLevel() - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
 			preparedStatement.setInt(2, pos.getX());
 			preparedStatement.setInt(3, pos.getX());
 			
 			List<Map<String, Object>> row = this.repo.query(preparedStatement);
-			return !row.isEmpty() ? (Long) row.get(0).get("LastModifiedDateTime") : null;
+			return !row.isEmpty() ? (Long) row.get(0).get("LastModifiedUnixDateTime") : null;
 		}
 		catch (SQLException e)
 		{
@@ -208,13 +208,13 @@ public class FullDataSourceProviderV2
 		try
 		{
 			PreparedStatement preparedStatement = this.repo.createPreparedStatement(
-					"SELECT PosX, PosZ, LastModifiedDateTime" +
-							"FROM " + this.repo.getTableName() +
-							"WHERE DetailLevel = ?" +
-							"AND PosX BETWEEN ? AND ?" +
-							"AND PosZ BETWEEN ? AND ?"
+					"SELECT PosX, PosZ, LastModifiedUnixDateTime " +
+							"FROM " + this.repo.getTableName() + " " +
+							"WHERE DetailLevel = ? " +
+							"AND PosX BETWEEN ? AND ? " +
+							"AND PosZ BETWEEN ? AND ?;"
 			);
-			preparedStatement.setInt(1, start.getDetailLevel());
+			preparedStatement.setInt(1, start.getDetailLevel() - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
 			preparedStatement.setInt(2, start.getX());
 			preparedStatement.setInt(3, end.getX());
 			preparedStatement.setInt(4, start.getZ());
@@ -222,7 +222,7 @@ public class FullDataSourceProviderV2
 			
 			return this.repo.query(preparedStatement).stream().collect(Collectors.toMap(
 					row -> new DhSectionPos(start.getDetailLevel(), (int) row.get("PosX"), (int) row.get("PosZ")),
-					row -> (long) row.get("LastModifiedDateTime"))
+					row -> (long) row.get("LastModifiedUnixDateTime"))
 			);
 		}
 		catch (SQLException e)

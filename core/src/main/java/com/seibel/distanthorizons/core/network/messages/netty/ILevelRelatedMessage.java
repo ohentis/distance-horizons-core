@@ -12,7 +12,7 @@ public interface ILevelRelatedMessage
 	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
 	default boolean isSameLevelAs(ILevelWrapper levelWrapper)
 	{
-		return levelWrapper.getDimensionType().getDimensionName().equals(levelWrapper.getDimensionType().getDimensionName());
+		return this.getLevelName().equals(levelWrapper.getDimensionType().getDimensionName());
 	}
 	
 }
