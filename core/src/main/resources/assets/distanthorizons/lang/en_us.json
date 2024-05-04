@@ -321,7 +321,7 @@
   "distanthorizons.config.client.advanced.worldGenerator.distantGeneratorMode":
     "Distance Generator Mode",
   "distanthorizons.config.client.advanced.worldGenerator.distantGeneratorMode.@tooltip":
-    "How complicated the generation should be when generating LODs outside the vanilla render distance.\n\n§6§6Fastest:§r Biome only\n§6Best Quality:§r Features (suggested)",
+    "How complicated the generation should be when generating LODs outside the vanilla render distance.",
   "distanthorizons.config.client.advanced.worldGenerator.worldGenLightingEngine":
     "Lighting Engine",
   "distanthorizons.config.client.advanced.worldGenerator.worldGenLightingEngine.@tooltip":
