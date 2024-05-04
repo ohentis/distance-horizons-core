@@ -29,7 +29,7 @@ import com.seibel.distanthorizons.api.enums.config.DisallowSelectingViaConfigGui
  * BALANCED, <br>
  * AGGRESSIVE, <br>
  * 
- * @since API 1.1.0
+ * @since API 2.0.0
  * @version 2024-4-6
  */
 public enum EDhApiThreadPreset

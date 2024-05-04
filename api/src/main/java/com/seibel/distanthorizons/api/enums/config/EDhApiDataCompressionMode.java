@@ -29,7 +29,7 @@ package com.seibel.distanthorizons.api.enums.config;
  * and should only be used for estimated comparisons.
  * 
  * @version 2024-3-16
- * @since API 1.1.0
+ * @since API 2.0.0
  */
 public enum EDhApiDataCompressionMode
 {

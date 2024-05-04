@@ -168,7 +168,7 @@ public interface IDhApiWorldGenerator extends Closeable, IDhApiOverrideable
 	 *
 	 * @return a future that should run on the worldGeneratorThreadPool and complete once the given generation task has completed.
 	 *
-	 * @since API 1.1.0
+	 * @since API 2.0.0
 	 */
 	default CompletableFuture<Void> generateApiChunks(
 		int chunkPosMinX,
@@ -189,7 +189,7 @@ public interface IDhApiWorldGenerator extends Closeable, IDhApiOverrideable
 	 * which means that {@link #generateChunks(int, int, byte, byte, EDhApiDistantGeneratorMode, ExecutorService, Consumer)}
 	 * will be invoked whenever Distant Horizons wants to generate terrain with this world generator.
 	 *
-	 * @since API 1.1.0
+	 * @since API 2.0.0
 	 */
 	default EDhApiWorldGeneratorReturnType getReturnType() { return EDhApiWorldGeneratorReturnType.VANILLA_CHUNKS; }
 	

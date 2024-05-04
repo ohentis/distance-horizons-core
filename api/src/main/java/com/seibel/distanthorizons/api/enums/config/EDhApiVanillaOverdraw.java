@@ -28,7 +28,7 @@ package com.seibel.distanthorizons.api.enums.config;
  * the vanilla Minecraft terrain.
  *
  * @author James Seibel
- * @since API 1.1.0
+ * @since API 2.0.0
  * @version 2024-4-6
  */
 @Deprecated // not currently in use, if the config this enum represents is re-implemented, the deprecated flag can be removed

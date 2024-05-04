@@ -29,7 +29,7 @@ import com.seibel.distanthorizons.api.interfaces.render.IDhApiRenderProxy;
  *
  * @author James Seibel
  * @version 2024-1-22
- * @since API 1.1.0
+ * @since API 2.0.0
  */
 public abstract class DhApiBeforeDeferredRenderEvent extends DhApiBeforeRenderEvent
 {

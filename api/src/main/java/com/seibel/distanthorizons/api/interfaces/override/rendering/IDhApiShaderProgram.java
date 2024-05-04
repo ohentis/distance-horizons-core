@@ -27,7 +27,7 @@ import com.seibel.distanthorizons.coreapi.util.math.Vec3f;
 /**
  * @author James Seibel
  * @version 2024-1-24
- * @since API 1.1.0
+ * @since API 2.0.0
  */
 public interface IDhApiShaderProgram extends IDhApiOverrideable
 {

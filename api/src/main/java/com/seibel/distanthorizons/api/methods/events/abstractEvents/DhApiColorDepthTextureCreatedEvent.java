@@ -28,7 +28,7 @@ import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhAp
  * 
  * @author James Seibel
  * @version 2024-3-2
- * @since API 1.1.0
+ * @since API 2.0.0
  */
 public abstract class DhApiColorDepthTextureCreatedEvent implements IDhApiEvent<DhApiColorDepthTextureCreatedEvent.EventParam>
 {

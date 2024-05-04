@@ -121,7 +121,7 @@ public interface IDhApiGraphicsConfig extends IDhApiConfigGroup
 	 * Setting this to 0 will reduce/prevent holes in the world due to clipping to close to the camera
 	 * but may cause overdraw issues with transparent or non-full blocks.
 	 * 
-	 * @since API 1.1.0
+	 * @since API 2.0.0
 	 */
 	IDhApiConfigValue<Double> overdrawPreventionRadius();
 	
@@ -158,7 +158,7 @@ public interface IDhApiGraphicsConfig extends IDhApiConfigGroup
 	/**
 	 * Determines how LODs should be shaded.
 	 *
-	 * @since API 1.1.0
+	 * @since API 2.0.0
 	 */
 	IDhApiConfigValue<EDhApiLodShading> lodShading();
 	
@@ -171,7 +171,7 @@ public interface IDhApiGraphicsConfig extends IDhApiConfigGroup
 	 * start/stop rendering incorrectly based on the camera direction,
 	 * but will also reduce FPS.
 	 *
-	 * @since API 1.1.0
+	 * @since API 2.0.0
 	 * @see IDhApiGraphicsConfig#disableShadowFrustumCulling()
 	 */
 	IDhApiConfigValue<Boolean> disableFrustumCulling();
@@ -183,7 +183,7 @@ public interface IDhApiGraphicsConfig extends IDhApiConfigGroup
 	 * 
 	 * Disable this if shadows render incorrectly.
 	 *
-	 * @since API 1.1.0
+	 * @since API 2.0.0
 	 * @see IDhApiGraphicsConfig#disableFrustumCulling() 
 	 */
 	IDhApiConfigValue<Boolean> disableShadowFrustumCulling();

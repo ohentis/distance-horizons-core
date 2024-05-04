@@ -24,7 +24,7 @@ import com.seibel.distanthorizons.api.interfaces.override.IDhApiOverrideable;
 /**
  * @author James Seibel
  * @version 2024-1-24
- * @since API 1.1.0
+ * @since API 2.0.0
  */
 public interface IDhApiFramebuffer extends IDhApiOverrideable
 {

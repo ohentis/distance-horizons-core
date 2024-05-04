@@ -30,7 +30,7 @@ import java.util.List;
  *
  * @author Builderb0y, James Seibel
  * @version 2023-12-21
- * @since API 1.1.0
+ * @since API 2.0.0
  * 
  * @see IDhApiWrapperFactory
  * @see DhApiTerrainDataPoint

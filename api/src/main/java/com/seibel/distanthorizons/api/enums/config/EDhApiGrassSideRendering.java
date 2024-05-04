@@ -24,7 +24,7 @@ package com.seibel.distanthorizons.api.enums.config;
  * FADE_TO_DIRT <br>
  * AS_DIRT <br>
  *
- * @since API 1.1.0
+ * @since API 2.0.0
  * @version 2024-4-7
  */
 public enum EDhApiGrassSideRendering

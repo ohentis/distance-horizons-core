@@ -31,7 +31,7 @@ import java.util.function.Consumer;
  * 
  * @author Builderb0y, James Seibel
  * @version 2023-12-21
- * @since API 1.1.0
+ * @since API 2.0.0
  */
 public enum EDhApiWorldGeneratorReturnType
 {
@@ -40,7 +40,7 @@ public enum EDhApiWorldGeneratorReturnType
 	 * {@link IDhApiWorldGenerator#generateChunks(int, int, byte, byte, EDhApiDistantGeneratorMode, ExecutorService, Consumer)}
 	 * will be used when generating terrain.
 	 * 
-	 * @since API 1.1.0
+	 * @since API 2.0.0
 	 */
 	VANILLA_CHUNKS,
 	
@@ -49,7 +49,7 @@ public enum EDhApiWorldGeneratorReturnType
 	 * {@link IDhApiWorldGenerator#generateApiChunks(int, int, byte, byte, EDhApiDistantGeneratorMode, ExecutorService, Consumer)}
 	 * will be used when generating terrain.
 	 * 
-	 * @since API 1.1.0
+	 * @since API 2.0.0
 	 */
 	API_CHUNKS;
 	

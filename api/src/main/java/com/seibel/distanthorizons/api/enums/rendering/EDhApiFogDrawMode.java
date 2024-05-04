@@ -25,7 +25,7 @@ package com.seibel.distanthorizons.api.enums.rendering;
  * FOG_DISABLED <br>
  *
  * @author James Seibel
- * @since API 1.1.0
+ * @since API 2.0.0
  * @version 2022-6-2
  */
 public enum EDhApiFogDrawMode
