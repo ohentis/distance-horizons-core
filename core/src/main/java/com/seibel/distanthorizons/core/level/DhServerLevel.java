@@ -235,7 +235,7 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 	{
 		if (!Config.Client.Advanced.Multiplayer.ServerNetworking.enableRealTimeUpdates.get())
 		{
-			this.getFullDataProvider().updateDataSourceAsync(data);
+			return this.getFullDataProvider().updateDataSourceAsync(data);
 		}
 		
 		for (ServerPlayerState serverPlayerState : this.remotePlayerConnectionHandler.getConnectedPlayers())
@@ -246,9 +246,9 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 			}
 			
 			Vec3d playerPosition = serverPlayerState.serverPlayer.getPosition();
-			double distanceFromPlayer = data.getPos().getManhattanBlockDistance(new DhBlockPos2D((int) playerPosition.x, (int) playerPosition.z));
-			if (distanceFromPlayer > serverPlayerState.serverPlayer.getViewDistance() &&
-					distanceFromPlayer < serverPlayerState.config.getRenderDistanceRadius())
+			int distanceFromPlayer = data.getPos().getManhattanBlockDistance(new DhBlockPos2D((int) playerPosition.x, (int) playerPosition.z)) / 16;
+			if (distanceFromPlayer >= serverPlayerState.serverPlayer.getViewDistance() &&
+					distanceFromPlayer <= serverPlayerState.config.getRenderDistanceRadius())
 			{
 				serverPlayerState.connection.sendMessage(new FullDataPartialUpdateMessage(this.serverLevelWrapper, data));
 			}

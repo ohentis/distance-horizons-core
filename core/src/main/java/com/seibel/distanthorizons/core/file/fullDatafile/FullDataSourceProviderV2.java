@@ -188,7 +188,7 @@ public class FullDataSourceProviderV2
 			);
 			preparedStatement.setInt(1, pos.getDetailLevel() - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
 			preparedStatement.setInt(2, pos.getX());
-			preparedStatement.setInt(3, pos.getX());
+			preparedStatement.setInt(3, pos.getZ());
 			
 			List<Map<String, Object>> row = this.repo.query(preparedStatement);
 			return !row.isEmpty() ? (Long) row.get(0).get("LastModifiedUnixDateTime") : null;
