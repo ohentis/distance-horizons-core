@@ -35,6 +35,7 @@ import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
 import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV2DTO;
 import com.seibel.distanthorizons.core.sql.repo.FullDataSourceV2Repo;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
+import com.seibel.distanthorizons.core.util.objects.DataCorruptedException;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import org.apache.logging.log4j.Logger;
@@ -89,6 +90,8 @@ public class FullDataSourceProviderV2
 	 */
 	protected final AtomicBoolean migrationThreadRunning = new AtomicBoolean(true);
 	protected final FullDataSourceProviderV1<IDhLevel> legacyFileHandler;
+	
+	protected boolean migrationStartMessageQueued = false;
 	
 	protected long legacyDeletionCount = -1;
 	protected long migrationCount = -1;
@@ -168,7 +171,7 @@ public class FullDataSourceProviderV2
 	}
 	
 	@Override
-	protected FullDataSourceV2 createDataSourceFromDto(FullDataSourceV2DTO dto) throws InterruptedException, IOException
+	protected FullDataSourceV2 createDataSourceFromDto(FullDataSourceV2DTO dto) throws InterruptedException, IOException, DataCorruptedException
 	{ return dto.createPooledDataSource(this.level.getLevelWrapper()); }
 	
 	@Override
@@ -323,7 +326,7 @@ public class FullDataSourceProviderV2
 											}
 											catch (Exception e)
 											{
-												LOGGER.error("issue in update for parent pos: " + parentUpdatePos);
+												LOGGER.error("issue in update for parent pos: " + parentUpdatePos+ " Error: "+e.getMessage(), e);
 											}
 											finally
 											{
@@ -394,7 +397,7 @@ public class FullDataSourceProviderV2
 		{
 			// this should only be shown once per session but should be shown during 
 			// either when the deletion or migration phases start
-			ClientApi.INSTANCE.showMigrationMessageOnNextFrame();
+			this.showMigrationStartMessage();
 			
 			
 			LOGGER.info("deleting [" + dimensionName + "] - [" + totalDeleteCount + "] unused data sources...");
@@ -447,7 +450,7 @@ public class FullDataSourceProviderV2
 		ArrayList<FullDataSourceV1> legacyDataSourceList = this.legacyFileHandler.getDataSourcesToMigrate(MIGRATION_BATCH_COUNT);
 		if (!legacyDataSourceList.isEmpty())
 		{
-			ClientApi.INSTANCE.showMigrationMessageOnNextFrame();
+			this.showMigrationStartMessage();
 			
 			
 			// keep going until every data source has been migrated
@@ -520,11 +523,13 @@ public class FullDataSourceProviderV2
 			if (this.migrationThreadRunning.get())
 			{
 				LOGGER.info("migration complete for: [" + dimensionName + "]-[" + this.saveDir + "].");
+				this.showMigrationEndMessage(true);
 				this.migrationCount = 0;
 			}
 			else
 			{
 				LOGGER.info("migration stopped for: [" + dimensionName + "]-[" + this.saveDir + "].");
+				this.showMigrationEndMessage(false);
 			}
 		}
 		else
@@ -537,6 +542,41 @@ public class FullDataSourceProviderV2
 	
 	public long getLegacyDeletionCount() { return this.legacyDeletionCount; }
 	public long getTotalMigrationCount() { return this.migrationCount; }
+	
+	
+	private void showMigrationStartMessage()
+	{
+		if (this.migrationStartMessageQueued)
+		{
+			return;
+		}
+		this.migrationStartMessageQueued = true;
+		
+		String dimName = this.level.getLevelWrapper().getDimensionType().getDimensionName();
+		ClientApi.INSTANCE.showChatMessageNextFrame(
+				"Old Distant Horizons data is being migrated for ["+dimName+"]. \n" +
+				"While migrating LODs may load slowly \n" +
+				"and DH world gen will be disabled. \n" +
+				"You can see migration progress in the F3 menu."
+			);
+	}
+	
+	private void showMigrationEndMessage(boolean success)
+	{
+		String dimName = this.level.getLevelWrapper().getDimensionType().getDimensionName();
+		
+		if (success)
+		{
+			ClientApi.INSTANCE.showChatMessageNextFrame("Distant Horizons data migration for ["+dimName+"] completed.");
+		}
+		else
+		{
+			ClientApi.INSTANCE.showChatMessageNextFrame(
+					"Distant Horizons data migration for ["+dimName+"] stopped. \n" +
+					"Some data may not have been migrated."
+				);
+		}
+	}
 	
 	
 	

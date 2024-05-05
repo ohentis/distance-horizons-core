@@ -213,11 +213,11 @@ public class CompressionTest
 	}
 	
 	//@Test
-	public void Zstd() // middle of the road
-	{
-		String compressorName = "Zstd";
-		this.testCompressor(compressorName, EDhApiDataCompressionMode.Z_STD);
-	}
+	//public void Zstd() // middle of the road
+	//{
+	//	String compressorName = "Zstd";
+	//	this.testCompressor(compressorName, EDhApiDataCompressionMode.Z_STD);
+	//}
 	
 	//@Test
 	public void LZMA2() // very slow, very good compression though
@@ -293,7 +293,7 @@ public class CompressionTest
 					// uncompressed input //
 					
 					FullDataSourceV2DTO uncompressedDto = uncompressedRepo.getByKey(pos);
-					Assert.assertEquals(uncompressedDto.compressionModeEnum, EDhApiDataCompressionMode.UNCOMPRESSED);
+					Assert.assertEquals(uncompressedDto.compressionModeValue, EDhApiDataCompressionMode.UNCOMPRESSED.value);
 					FullDataSourceV2 uncompressedDataSource = uncompressedDto.createUnitTestDataSource();
 					
 					long uncompressedDtoSize = uncompressedRepo.getDataSizeInBytes(pos);

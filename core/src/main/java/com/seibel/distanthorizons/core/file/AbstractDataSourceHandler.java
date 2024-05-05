@@ -8,6 +8,7 @@ import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.sql.repo.AbstractDhRepo;
 import com.seibel.distanthorizons.core.sql.dto.IBaseDTO;
 import com.seibel.distanthorizons.core.util.LodUtil;
+import com.seibel.distanthorizons.core.util.objects.DataCorruptedException;
 import com.seibel.distanthorizons.core.util.threading.PositionalLockProvider;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import org.apache.logging.log4j.Logger;
@@ -16,6 +17,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.StreamCorruptedException;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -31,6 +33,8 @@ public abstract class AbstractDataSourceHandler
 		implements AutoCloseable
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	private static final Set<String> CORRUPT_DATA_ERRORS_LOGGED = Collections.newSetFromMap(new ConcurrentHashMap<>());
+	
 	
 	/**
 	 * The highest numerical detail level possible. 
@@ -95,7 +99,7 @@ public abstract class AbstractDataSourceHandler
 	/** When this is called the parent folders should be created */
 	protected abstract TRepo createRepo();
 	
-	protected abstract TDataSource createDataSourceFromDto(TDTO dto) throws InterruptedException, IOException;
+	protected abstract TDataSource createDataSourceFromDto(TDTO dto) throws InterruptedException, IOException, DataCorruptedException;
 	protected abstract TDTO createDtoFromDataSource(TDataSource dataSource);
 	
 	protected abstract TDataSource makeEmptyDataSource(DhSectionPos pos);
@@ -145,8 +149,23 @@ public abstract class AbstractDataSourceHandler
 			TDTO dto = this.repo.getByKey(pos);
 			if (dto != null)
 			{
-				// load from database
-				dataSource = this.createDataSourceFromDto(dto);
+				try
+				{
+					// load from database
+					dataSource = this.createDataSourceFromDto(dto);
+				}
+				catch (DataCorruptedException e)
+				{
+					// Only log each message type once.
+					// This is done to prevent logging "No compression mode with the value [2]" 10,000 times 
+					// if the user is migrating from a nightly build and used ZStd. 
+					if (CORRUPT_DATA_ERRORS_LOGGED.add(e.getMessage()))
+					{
+						LOGGER.warn("Corrupted data found at pos " + pos + ". Data at position will be deleted so it can be re-generated to prevent issues. Future errors with this same message won't be logged. Error: " + e.getMessage(), e);
+					}
+					
+					this.repo.deleteWithKey(pos);
+				}
 			}
 			else
 			{

@@ -36,6 +36,7 @@ import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
 import com.seibel.distanthorizons.core.util.LodUtil.AssertFailureException;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
+import com.seibel.distanthorizons.core.util.objects.DataCorruptedException;
 import com.seibel.distanthorizons.core.util.objects.UncheckedInterruptedException;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
@@ -468,6 +469,11 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 						{
 							FullDataSourceV2 dataSource = LodDataBuilder.createFromApiChunkData(dataPoints);
 							chunkDataConsumer.accept(dataSource);
+						}
+						catch (DataCorruptedException e)
+						{
+							LOGGER.error("World generator returned a corrupt chunk. Error: [" + e.getMessage() + "]. World generator disabled.", e);
+							Config.Client.Advanced.WorldGenerator.enableDistantGeneration.set(false);
 						}
 						catch (ClassCastException e)
 						{

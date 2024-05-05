@@ -21,6 +21,7 @@ package com.seibel.distanthorizons.core.dataObjects.fullData;
 
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.util.objects.DataCorruptedException;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataInputStream;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataOutputStream;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
@@ -259,9 +260,14 @@ public class FullDataPointIdMap
 	}
 	
 	/** Creates a new IdBiomeBlockStateMap from the given UTF formatted stream */
-	public static FullDataPointIdMap deserialize(DhDataInputStream inputStream, DhSectionPos pos, ILevelWrapper levelWrapper) throws IOException, InterruptedException
+	public static FullDataPointIdMap deserialize(DhDataInputStream inputStream, DhSectionPos pos, ILevelWrapper levelWrapper) throws IOException, InterruptedException, DataCorruptedException
 	{
 		int entityCount = inputStream.readInt();
+		if (entityCount < 0)
+		{
+			throw new DataCorruptedException("FullDataPointIdMap deserialize entry count should have a number greater than or equal to 0, returned value ["+entityCount+"].");
+		}
+		
 		
 		// only used when debugging
 		HashMap<String, FullDataPointIdMap.Entry> dataPointEntryBySerialization = new HashMap<>();
@@ -269,6 +275,13 @@ public class FullDataPointIdMap
 		FullDataPointIdMap newMap = new FullDataPointIdMap(pos);
 		for (int i = 0; i < entityCount; i++)
 		{
+			// necessary to prevent issues with deserializing objects after the level has been closed
+			if (Thread.interrupted())
+			{
+				throw new InterruptedException(FullDataPointIdMap.class.getSimpleName() + " task interrupted.");
+			}
+			
+			
 			String entryString = inputStream.readUTF();
 			Entry newEntry = Entry.deserialize(entryString, levelWrapper);
 			newMap.entryList.add(newEntry);
@@ -457,18 +470,12 @@ public class FullDataPointIdMap
 		
 		public String serialize() { return this.biome.getSerialString() + BLOCK_STATE_SEPARATOR_STRING + this.blockState.getSerialString(); }
 		
-		public static Entry deserialize(String str, ILevelWrapper levelWrapper) throws IOException, InterruptedException
+		public static Entry deserialize(String str, ILevelWrapper levelWrapper) throws IOException, DataCorruptedException
 		{
 			String[] stringArray = str.split(BLOCK_STATE_SEPARATOR_STRING);
 			if (stringArray.length != 2)
 			{
-				throw new IOException("Failed to deserialize BiomeBlockStateEntry");
-			}
-			
-			// necessary to prevent issues with deserializing objects after the level has been closed
-			if (Thread.interrupted())
-			{
-				throw new InterruptedException(FullDataPointIdMap.class.getSimpleName() + " task interrupted.");
+				throw new DataCorruptedException("Failed to deserialize BiomeBlockStateEntry");
 			}
 			
 			IBiomeWrapper biome = WRAPPER_FACTORY.deserializeBiomeWrapper(stringArray[0], levelWrapper);

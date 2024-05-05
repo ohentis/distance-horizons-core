@@ -27,6 +27,7 @@ import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV1DTO;
 import com.seibel.distanthorizons.core.util.FullDataPointUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
+import com.seibel.distanthorizons.core.util.objects.DataCorruptedException;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataInputStream;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataOutputStream;
 import com.seibel.distanthorizons.core.dataObjects.fullData.FullDataPointIdMap;
@@ -152,7 +153,7 @@ public class FullDataSourceV1 implements IDataSource<IDhLevel>
 	 * Clears and then overwrites any data in this object with the data from the given file and stream.
 	 * This is expected to be used with an existing {@link FullDataSourceV1} and can be used in place of a constructor to reuse an existing {@link FullDataSourceV1} object.
 	 */
-	public void repopulateFromStream(FullDataSourceV1DTO dto, DhDataInputStream inputStream, IDhLevel level) throws IOException, InterruptedException
+	public void repopulateFromStream(FullDataSourceV1DTO dto, DhDataInputStream inputStream, IDhLevel level) throws IOException, InterruptedException, DataCorruptedException
 	{
 		// clear/overwrite the old data
 		this.resizeDataStructuresForRepopulation(dto.pos);
@@ -166,7 +167,7 @@ public class FullDataSourceV1 implements IDataSource<IDhLevel>
 	 * Overwrites any data in this object with the data from the given file and stream.
 	 * This is expected to be used with an empty {@link FullDataSourceV1} and functions similar to a constructor.
 	 */
-	public void populateFromStream(FullDataSourceV1DTO dto, DhDataInputStream inputStream, IDhLevel level) throws IOException, InterruptedException
+	public void populateFromStream(FullDataSourceV1DTO dto, DhDataInputStream inputStream, IDhLevel level) throws IOException, InterruptedException, DataCorruptedException
 	{
 		FullDataSourceSummaryData summaryData = this.readSourceSummaryInfo(dto, inputStream, level);
 		this.setSourceSummaryData(summaryData);
@@ -361,7 +362,7 @@ public class FullDataSourceV1 implements IDataSource<IDhLevel>
 		outputStream.writeInt(DATA_GUARD_BYTE);
 		this.mapping.serialize(outputStream);
 	}
-	public FullDataPointIdMap readIdMappings(DhDataInputStream inputStream, ILevelWrapper levelWrapper) throws IOException, InterruptedException
+	public FullDataPointIdMap readIdMappings(DhDataInputStream inputStream, ILevelWrapper levelWrapper) throws IOException, InterruptedException, DataCorruptedException
 	{
 		int guardByte = inputStream.readInt();
 		if (guardByte != DATA_GUARD_BYTE)

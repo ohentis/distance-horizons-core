@@ -2,6 +2,7 @@ package com.seibel.distanthorizons.core.util;
 
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV1;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
+import com.seibel.distanthorizons.core.util.objects.DataCorruptedException;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import org.jetbrains.annotations.Contract;
 
@@ -72,23 +73,11 @@ public class FullDataPointUtil
 	 * creates a new datapoint with the given values 
 	 * @param relMinY relative to the minimum level Y value
 	 */
-	public static long encode(int id, int height, int relMinY, byte blockLight, byte skyLight)
+	public static long encode(int id, int height, int relMinY, byte blockLight, byte skyLight) throws DataCorruptedException
 	{
 		if (RUN_VALIDATION)
 		{
-			// assertions are inside if-blocks to prevent unnecessary string concatenations
-			if (relMinY < 0 || relMinY >= RenderDataPointUtil.MAX_WORLD_Y_SIZE)
-			{
-				LodUtil.assertNotReach("Trying to create datapoint with y[" + relMinY + "] out of range!");
-			}
-			if (height <= 0 || height >= RenderDataPointUtil.MAX_WORLD_Y_SIZE)
-			{
-				LodUtil.assertNotReach("Trying to create datapoint with height[" + height + "] out of range!");
-			}
-			if (relMinY + height > RenderDataPointUtil.MAX_WORLD_Y_SIZE)
-			{
-				LodUtil.assertNotReach("Trying to create datapoint with y+depth[" + (relMinY + height) + "] out of range!");
-			}
+			validateData(id, height, relMinY, blockLight, skyLight);
 		}
 		
 		
@@ -114,6 +103,44 @@ public class FullDataPointUtil
 		}
 		
 		return data;
+	}
+	
+	public static void validateDatapoint(long datapoint) throws DataCorruptedException { validateData(getId(datapoint), getHeight(datapoint), getBottomY(datapoint), (byte)getBlockLight(datapoint), (byte)getSkyLight(datapoint)); }
+	/**
+	 * Throws {@link DataCorruptedException} if any of the given values are outside
+	 * their expected range. 
+	 */
+	public static void validateData(int id, int height, int relMinY, byte blockLight, byte skyLight) throws DataCorruptedException
+	{
+		// ID
+		if (id < 0)
+		{
+			throw new DataCorruptedException("Full datapoint ID [" + relMinY + "] must be greater than zero.");
+		}
+		
+		// height
+		if (relMinY < 0 || relMinY >= RenderDataPointUtil.MAX_WORLD_Y_SIZE)
+		{
+			throw new DataCorruptedException("Full datapoint relative min y [" + relMinY + "] must be in the range [0 - "+RenderDataPointUtil.MAX_WORLD_Y_SIZE+"] (inclusive).");
+		}
+		if (height <= 0 || height >= RenderDataPointUtil.MAX_WORLD_Y_SIZE)
+		{
+			throw new DataCorruptedException("Full datapoint height [" + height + "] must be in the range [1 - "+RenderDataPointUtil.MAX_WORLD_Y_SIZE+"] (inclusive).");
+		}
+		if (relMinY + height > RenderDataPointUtil.MAX_WORLD_Y_SIZE)
+		{
+			throw new DataCorruptedException("Full datapoint y+depth [" + (relMinY + height) + "] is higher than the maximum world Y height ["+RenderDataPointUtil.MAX_WORLD_Y_SIZE+"].");
+		}
+		
+		// lighting
+		if (blockLight < LodUtil.MIN_MC_LIGHT || blockLight > LodUtil.MAX_MC_LIGHT)
+		{
+			throw new DataCorruptedException("Full datapoint block light [" + blockLight + "] must be in the range ["+LodUtil.MIN_MC_LIGHT+" - "+LodUtil.MAX_MC_LIGHT+"] (inclusive).");
+		}
+		if (skyLight < LodUtil.MIN_MC_LIGHT || skyLight > LodUtil.MAX_MC_LIGHT)
+		{
+			throw new DataCorruptedException("Full datapoint sky light [" + skyLight + "] must be in the range ["+LodUtil.MIN_MC_LIGHT+" - "+LodUtil.MAX_MC_LIGHT+"] (inclusive).");
+		}
 	}
 	
 	

@@ -28,6 +28,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public interface IClientLevelWrapper extends ILevelWrapper
 {
+	
 	@Nullable
 	IServerLevelWrapper tryGetServerSideWrapper();
 	
@@ -35,5 +36,9 @@ public interface IClientLevelWrapper extends ILevelWrapper
 	
 	/** @return -1 if there was a problem getting the color */
 	int getDirtBlockColor();
+	
+	/** Will return null if there was an issue finding the biome. */
+	@Nullable
+	IBiomeWrapper getPlainsBiomeWrapper();
 	
 }

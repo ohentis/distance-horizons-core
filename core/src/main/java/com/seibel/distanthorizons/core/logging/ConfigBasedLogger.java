@@ -111,29 +111,10 @@ public class ConfigBasedLogger
 		}
 	}
 	
-	public void error(String str, Object... param)
-	{
-		log(Level.ERROR, str, param);
-	}
-	
-	public void warn(String str, Object... param)
-	{
-		log(Level.WARN, str, param);
-	}
-	
-	public void info(String str, Object... param)
-	{
-		log(Level.INFO, str, param);
-	}
-	
-	public void debug(String str, Object... param)
-	{
-		log(Level.DEBUG, str, param);
-	}
-	
-	public void trace(String str, Object... param)
-	{
-		log(Level.TRACE, str, param);
-	}
+	public void error(String str, Object... param) { this.log(Level.ERROR, str, param); }
+	public void warn(String str, Object... param) { this.log(Level.WARN, str, param); }
+	public void info(String str, Object... param) { this.log(Level.INFO, str, param); }
+	public void debug(String str, Object... param) { this.log(Level.DEBUG, str, param); }
+	public void trace(String str, Object... param) { this.log(Level.TRACE, str, param); }
 	
 }

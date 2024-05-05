@@ -56,14 +56,15 @@ public enum EDhApiDataCompressionMode
 	 */
 	LZ4(1),
 	
-	/**
+	/*
 	 * Decent speed and good compression. <br><br> 
 	 *
 	 * Read Speed: 11.78 MS / DTO <br>
 	 * Write Speed: 16.76 MS / DTO <br>
 	 * Compression ratio: 0.2199 <br>
 	 */
-	Z_STD(2),
+	//@Deprecated
+	//Z_STD(2),
 	
 	/** 
 	 * Extremely slow, but very good compression. <br><br> 
@@ -82,7 +83,8 @@ public enum EDhApiDataCompressionMode
 	EDhApiDataCompressionMode(int value) { this.value = (byte) value; }
 	
 	
-	public static EDhApiDataCompressionMode getFromValue(byte value)
+	/** @throws IllegalArgumentException if the value doesn't map to a value */
+	public static EDhApiDataCompressionMode getFromValue(byte value) throws IllegalArgumentException
 	{
 		EDhApiDataCompressionMode[] enumList = EDhApiDataCompressionMode.values();
 		for (int i = 0; i < enumList.length; i++)

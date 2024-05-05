@@ -57,6 +57,9 @@ import org.apache.logging.log4j.LogManager;
 import org.lwjgl.opengl.GL32;
 
 import java.awt.*;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
@@ -402,15 +405,8 @@ public class LodRenderer
 					this.renderTransparentBuffers(profiler, renderEventParam, renderEventParam.partialTicks);
 				}
 				
-				
-				if (this.usingMcFrameBuffer)
-				{
-					// If MC's framebuffer is being used the depth needs to be cleared to prevent rendering on top of MC.
-					// This should only happen when Optifine shaders are being used.
-					GL32.glClear(GL32.GL_DEPTH_BUFFER_BIT);
-				}
-				
 				drawLagSpikeCatcher.end("LodDraw");
+				
 				
 				
 				//=================//
@@ -425,8 +421,17 @@ public class LodRenderer
 					combinedMatrix.multiply(renderEventParam.dhModelViewMatrix);
 					
 					// Note: this can be very slow if a lot of boxes are being rendered 
- 					DebugRenderer.INSTANCE.render(combinedMatrix);
+					DebugRenderer.INSTANCE.render(combinedMatrix);
 					profiler.popPush("LOD cleanup");
+				}
+				
+				
+				
+				if (this.usingMcFrameBuffer)
+				{
+					// If MC's framebuffer is being used the depth needs to be cleared to prevent rendering on top of MC.
+					// This should only happen when Optifine shaders are being used.
+					GL32.glClear(GL32.GL_DEPTH_BUFFER_BIT);
 				}
 				
 				
@@ -591,8 +596,6 @@ public class LodRenderer
 		{
 			if (this.usingMcFrameBuffer && framebufferOverride == null)
 			{
-				// recreating the GL State at this point is necessary in order to get the correct depth texture
-				minecraftGlState.saveState();
 				if (ENABLE_DUMP_GL_STATE)
 				{
 					tickLogger.debug("Re-saving GL state due to Optifine presence: " + minecraftGlState);

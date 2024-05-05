@@ -114,6 +114,8 @@ public class SharedApi
 			{
 				DebugRenderer.clearRenderables();
 				MC_RENDER.clearTargetFrameBuffer();
+				// needs to be closed on world shutdown to clear out un-processed chunks
+				UPDATING_CHUNK_POS_SET.clear();
 			}
 			
 			// recommend that the garbage collector cleans up any objects from the old world and thread pools

@@ -208,14 +208,18 @@ public class SubDimensionLevelMatcher implements AutoCloseable
 		for (File testLevelFolder : this.potentialLevelFolders)
 		{
 			LOGGER.info("Testing level folder: [" + LodUtil.shortenString(testLevelFolder.getName(), 8) + "]");
+			
+			FullDataSourceV2 testFullDataSource = null;
 			try
 			{
 				// get the data source to compare against
-				IDhLevel tempLevel = new DhClientLevel(new ClientOnlySaveStructure(), this.currentClientLevel, testLevelFolder, false, null);
-				FullDataSourceV2 testFullDataSource = tempLevel.getFullDataProvider().getAsync(new DhSectionPos(this.playerData.playerBlockPos)).join();
-				if (testFullDataSource == null)
+				try (IDhLevel tempLevel = new DhClientLevel(new ClientOnlySaveStructure(), this.currentClientLevel, testLevelFolder, false, null))
 				{
-					continue;
+					testFullDataSource = tempLevel.getFullDataProvider().getAsync(new DhSectionPos(this.playerData.playerBlockPos)).join();
+					if (testFullDataSource == null)
+					{
+						continue;
+					}
 				}
 				
 				
@@ -333,6 +337,13 @@ public class SubDimensionLevelMatcher implements AutoCloseable
 				// this sub dimension isn't formatted correctly
 				// for now we are just assuming it is an unrelated file
 				LOGGER.warn("Error checking level: "+e.getMessage(), e);
+			}
+			finally
+			{
+				if (testFullDataSource != null)
+				{
+					try { testFullDataSource.close(); } catch (Exception ignore) {}
+				}
 			}
 		}
 		

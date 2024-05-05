@@ -26,6 +26,8 @@ import com.seibel.distanthorizons.core.dataObjects.fullData.FullDataPointIdMap;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.network.protocol.INetworkObject;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.util.FullDataPointUtil;
+import com.seibel.distanthorizons.core.util.objects.DataCorruptedException;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataInputStream;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataOutputStream;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
@@ -33,15 +35,16 @@ import io.netty.buffer.ByteBuf;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.util.zip.Adler32;
 import java.util.zip.CheckedOutputStream;
 
 /** handles storing {@link FullDataSourceV2}'s in the database. */
 public class FullDataSourceV2DTO implements IBaseDTO<DhSectionPos>, INetworkObject
 {
+	public static final boolean VALIDATE_INPUT_DATAPOINTS = true;
+	
+	
 	public DhSectionPos pos;
 	
 	public int levelMinY;
@@ -59,7 +62,7 @@ public class FullDataSourceV2DTO implements IBaseDTO<DhSectionPos>, INetworkObje
 	public byte[] compressedMappingByteArray;
 	
 	public byte dataFormatVersion;
-	public EDhApiDataCompressionMode compressionModeEnum;
+	public byte compressionModeValue;
 	
 	public boolean applyToParent;
 	
@@ -81,7 +84,7 @@ public class FullDataSourceV2DTO implements IBaseDTO<DhSectionPos>, INetworkObje
 		
 		return new FullDataSourceV2DTO(
 				dataSource.getPos(),
-				checkedDataPointArray.checksum, compressedWorldGenStepByteArray, compressedWorldCompressionModeByteArray, FullDataSourceV2.DATA_FORMAT_VERSION, compressionModeEnum, checkedDataPointArray.byteArray,
+				checkedDataPointArray.checksum, compressedWorldGenStepByteArray, compressedWorldCompressionModeByteArray, FullDataSourceV2.DATA_FORMAT_VERSION, compressionModeEnum.value, checkedDataPointArray.byteArray,
 				dataSource.lastModifiedUnixDateTime, dataSource.createdUnixDateTime,
 				mappingByteArray, dataSource.applyToParent,
 				dataSource.levelMinY
@@ -93,7 +96,7 @@ public class FullDataSourceV2DTO implements IBaseDTO<DhSectionPos>, INetworkObje
 	
 	public FullDataSourceV2DTO(
 			DhSectionPos pos,
-			int dataChecksum, byte[] compressedColumnGenStepByteArray, byte[] compressedWorldCompressionModeByteArray, byte dataFormatVersion, EDhApiDataCompressionMode compressionModeEnum, byte[] compressedDataByteArray,
+			int dataChecksum, byte[] compressedColumnGenStepByteArray, byte[] compressedWorldCompressionModeByteArray, byte dataFormatVersion, byte compressionModeValue, byte[] compressedDataByteArray,
 			long lastModifiedUnixDateTime, long createdUnixDateTime,
 			byte[] compressedMappingByteArray, boolean applyToParent,
 			int levelMinY)
@@ -104,7 +107,7 @@ public class FullDataSourceV2DTO implements IBaseDTO<DhSectionPos>, INetworkObje
 		this.compressedWorldCompressionModeByteArray = compressedWorldCompressionModeByteArray;
 		
 		this.dataFormatVersion = dataFormatVersion;
-		this.compressionModeEnum = compressionModeEnum;
+		this.compressionModeValue = compressionModeValue;
 		
 		this.compressedDataByteArray = compressedDataByteArray;
 		this.compressedMappingByteArray = compressedMappingByteArray;
@@ -123,32 +126,46 @@ public class FullDataSourceV2DTO implements IBaseDTO<DhSectionPos>, INetworkObje
 	// data source population //
 	//========================//
 	
-	public FullDataSourceV2 createPooledDataSource(@NotNull ILevelWrapper levelWrapper) throws IOException, InterruptedException
+	public FullDataSourceV2 createPooledDataSource(@NotNull ILevelWrapper levelWrapper) throws IOException, InterruptedException, DataCorruptedException
 	{
 		FullDataSourceV2 dataSource = FullDataSourceV2.DATA_SOURCE_POOL.getPooledSource(this.pos, false);
 		return this.populateDataSource(dataSource, levelWrapper);
 	}
 	
-	public FullDataSourceV2 populateDataSource(FullDataSourceV2 dataSource, @NotNull ILevelWrapper levelWrapper) throws IOException, InterruptedException
+	public FullDataSourceV2 populateDataSource(FullDataSourceV2 dataSource, @NotNull ILevelWrapper levelWrapper) throws IOException, InterruptedException, DataCorruptedException 
 	{ return this.internalPopulateDataSource(dataSource, levelWrapper, false); }
 	
 	/**
 	 * May be missing one or more data fields. <br>
 	 * Designed to be used without access to Minecraft or any supporting objects.
 	 */
-	public FullDataSourceV2 createUnitTestDataSource() throws IOException, InterruptedException
+	public FullDataSourceV2 createUnitTestDataSource() throws IOException, InterruptedException, DataCorruptedException 
 	{ return this.internalPopulateDataSource(FullDataSourceV2.createEmpty(this.pos), null, true); }
 	
-	private FullDataSourceV2 internalPopulateDataSource(FullDataSourceV2 dataSource, ILevelWrapper levelWrapper, boolean unitTest) throws IOException, InterruptedException
+	private FullDataSourceV2 internalPopulateDataSource(FullDataSourceV2 dataSource, ILevelWrapper levelWrapper, boolean unitTest) throws IOException, InterruptedException, DataCorruptedException
 	{
 		if (FullDataSourceV2.DATA_FORMAT_VERSION != this.dataFormatVersion)
 		{
 			throw new IllegalStateException("There should only be one data format [" + FullDataSourceV2.DATA_FORMAT_VERSION + "].");
 		}
 		
-		dataSource.columnGenerationSteps = readBlobToGenerationSteps(this.compressedColumnGenStepByteArray, this.compressionModeEnum);
-		dataSource.columnWorldCompressionMode = readBlobToGenerationSteps(this.compressedWorldCompressionModeByteArray, this.compressionModeEnum);
-		dataSource.dataPoints = readBlobToDataSourceDataArray(this.compressedDataByteArray, this.compressionModeEnum);
+		
+		EDhApiDataCompressionMode compressionModeEnum;
+		try
+		{
+			compressionModeEnum = this.getCompressionMode();
+		}
+		catch (IllegalArgumentException e)
+		{
+			// may happen if ZStd was used (which was added and removed during the nightly builds)
+			// or if the compressor value is changed to an invalid option
+			throw new DataCorruptedException(e);
+		}
+		
+		
+		dataSource.columnGenerationSteps = readBlobToGenerationSteps(this.compressedColumnGenStepByteArray, compressionModeEnum);
+		dataSource.columnWorldCompressionMode = readBlobToGenerationSteps(this.compressedWorldCompressionModeByteArray, compressionModeEnum);
+		dataSource.dataPoints = readBlobToDataSourceDataArray(this.compressedDataByteArray, compressionModeEnum);
 		
 		dataSource.mapping.clear(dataSource.getPos());
 		// should only be null when used in a unit test
@@ -159,7 +176,7 @@ public class FullDataSourceV2DTO implements IBaseDTO<DhSectionPos>, INetworkObje
 				throw new NullPointerException("No level wrapper present, unable to deserialize data map. This should only be used for unit tests.");
 			}
 			
-			dataSource.mapping.mergeAndReturnRemappedEntityIds(readBlobToDataMapping(this.compressedMappingByteArray, dataSource.getPos(), levelWrapper, this.compressionModeEnum));
+			dataSource.mapping.mergeAndReturnRemappedEntityIds(readBlobToDataMapping(this.compressedMappingByteArray, dataSource.getPos(), levelWrapper,  compressionModeEnum));
 		}
 		
 		dataSource.lastModifiedUnixDateTime = this.lastModifiedUnixDateTime;
@@ -217,7 +234,7 @@ public class FullDataSourceV2DTO implements IBaseDTO<DhSectionPos>, INetworkObje
 		
 		return new CheckedByteArray(checksum, byteArrayOutputStream.toByteArray());
 	}
-	private static LongArrayList[] readBlobToDataSourceDataArray(byte[] compressedDataByteArray, EDhApiDataCompressionMode compressionModeEnum) throws IOException
+	private static LongArrayList[] readBlobToDataSourceDataArray(byte[] compressedDataByteArray, EDhApiDataCompressionMode compressionModeEnum) throws IOException, DataCorruptedException
 	{
 		ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(compressedDataByteArray);
 		DhDataInputStream compressedIn = new DhDataInputStream(byteArrayInputStream, compressionModeEnum);
@@ -230,12 +247,21 @@ public class FullDataSourceV2DTO implements IBaseDTO<DhSectionPos>, INetworkObje
 		{
 			// read the column length
 			short dataColumnLength = compressedIn.readShort(); // separate variables are used for debugging and in case validation wants to be added later 
+			if (dataColumnLength < 0)
+			{
+				throw new DataCorruptedException("Read DataSource Blob data at index ["+xz+"], column length ["+dataColumnLength+"] should be greater than zero.");
+			}
+			
 			LongArrayList dataColumn = new LongArrayList(new long[dataColumnLength]);
 			
 			// read column data (will be skipped if no data was present)
 			for (int y = 0; y < dataColumnLength; y++)
 			{
 				long dataPoint = compressedIn.readLong();
+				if (VALIDATE_INPUT_DATAPOINTS)
+				{
+					FullDataPointUtil.validateDatapoint(dataPoint);
+				}
 				dataColumn.set(y, dataPoint);
 			}
 			
@@ -259,15 +285,22 @@ public class FullDataSourceV2DTO implements IBaseDTO<DhSectionPos>, INetworkObje
 		
 		return byteArrayOutputStream.toByteArray();
 	}
-	private static byte[] readBlobToGenerationSteps(byte[] dataByteArray, EDhApiDataCompressionMode compressionModeEnum) throws IOException, InterruptedException
+	private static byte[] readBlobToGenerationSteps(byte[] dataByteArray, EDhApiDataCompressionMode compressionModeEnum) throws IOException, DataCorruptedException
 	{
 		ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(dataByteArray);
 		DhDataInputStream compressedIn = new DhDataInputStream(byteArrayInputStream, compressionModeEnum);
 		
-		byte[] columnGenStepByteArray = new byte[FullDataSourceV2.WIDTH * FullDataSourceV2.WIDTH];
-		compressedIn.readFully(columnGenStepByteArray);
-		
-		return columnGenStepByteArray;
+		try
+		{
+			byte[] columnGenStepByteArray = new byte[FullDataSourceV2.WIDTH * FullDataSourceV2.WIDTH];
+			compressedIn.readFully(columnGenStepByteArray);
+			
+			return columnGenStepByteArray;
+		}
+		catch (EOFException e)
+		{
+			throw new DataCorruptedException(e);
+		}
 	}
 	
 	
@@ -307,7 +340,7 @@ public class FullDataSourceV2DTO implements IBaseDTO<DhSectionPos>, INetworkObje
 		
 		return byteArrayOutputStream.toByteArray();
 	}
-	private static FullDataPointIdMap readBlobToDataMapping(byte[] compressedMappingByteArray, DhSectionPos pos, @NotNull ILevelWrapper levelWrapper, EDhApiDataCompressionMode compressionModeEnum) throws IOException, InterruptedException
+	private static FullDataPointIdMap readBlobToDataMapping(byte[] compressedMappingByteArray, DhSectionPos pos, @NotNull ILevelWrapper levelWrapper, EDhApiDataCompressionMode compressionModeEnum) throws IOException, InterruptedException, DataCorruptedException
 	{
 		ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(compressedMappingByteArray);
 		DhDataInputStream compressedIn = new DhDataInputStream(byteArrayInputStream, compressionModeEnum);
@@ -334,7 +367,7 @@ public class FullDataSourceV2DTO implements IBaseDTO<DhSectionPos>, INetworkObje
 		out.writeBytes(this.compressedMappingByteArray);
 		
 		out.writeByte(this.dataFormatVersion);
-		out.writeByte(this.compressionModeEnum.ordinal());
+		out.writeByte(this.compressionModeValue);
 		
 		out.writeBoolean(this.applyToParent);
 		
@@ -360,7 +393,7 @@ public class FullDataSourceV2DTO implements IBaseDTO<DhSectionPos>, INetworkObje
 		in.readBytes(this.compressedMappingByteArray);
 		
 		this.dataFormatVersion = in.readByte();
-		this.compressionModeEnum = EDhApiDataCompressionMode.values()[in.readByte()];
+		this.compressionModeValue = in.readByte();
 		
 		this.applyToParent = in.readBoolean();
 		
@@ -377,6 +410,13 @@ public class FullDataSourceV2DTO implements IBaseDTO<DhSectionPos>, INetworkObje
 	@Override
 	public DhSectionPos getKey() { return this.pos; }
 	
+	
+	
+	//================//
+	// helper methods //
+	//================//
+	
+	public EDhApiDataCompressionMode getCompressionMode() throws IllegalArgumentException { return EDhApiDataCompressionMode.getFromValue(this.compressionModeValue); }
 	
 	
 	//================//
