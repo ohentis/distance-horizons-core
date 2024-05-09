@@ -57,7 +57,18 @@ public class SubDimCompare implements Comparable<SubDimCompare>
 	}
 	
 	/** returns a number between 0 (no equal datapoint) and 1 (totally equal) */
-	public double getPercentEqual() { return (double) this.equalDataPoints / (double) this.totalDataPoints; }
+	public double getPercentEqual() 
+	{
+		// its possible the comparison didn't find any data points
+		if (this.totalDataPoints != 0)
+		{
+			return (double) this.equalDataPoints / (double) this.totalDataPoints;
+		}
+		else
+		{
+			return 0;
+		}
+	}
 	
 	
 	@Override
