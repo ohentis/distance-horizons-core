@@ -21,6 +21,7 @@ package com.seibel.distanthorizons.core.dataObjects.fullData;
 
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.objects.DataCorruptedException;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataInputStream;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataOutputStream;
@@ -118,6 +119,8 @@ public class FullDataPointIdMap
 	
 	/** @return -1 if the list is empty */
 	public int getMaxValidId() { return this.entryList.size() - 1; }
+	public int size() { return this.entryList.size(); }
+	
 	public boolean isEmpty() { return this.entryList.isEmpty(); }
 	
 	public DhSectionPos getPos() { return this.pos; }
@@ -169,9 +172,67 @@ public class FullDataPointIdMap
 		}
 	}
 	
+	/** allows for adding duplicate {@link Entry} */
+	private void add(Entry biomeBlockStateEntry, boolean useWriteLocks)
+	{
+		try
+		{
+			if (useWriteLocks)
+			{
+				this.readWriteLock.writeLock().lock();
+			}
+			
+			
+			int id = this.entryList.size();
+			this.entryList.add(biomeBlockStateEntry);
+			this.idMap.put(biomeBlockStateEntry, id);
+		}
+		finally
+		{
+			if (useWriteLocks)
+			{
+				this.readWriteLock.writeLock().unlock();
+			}
+		}
+	}
+	
 	
 	/**
-	 * Adds each entry from the given map to this map.
+	 * Adds every {@link Entry} from inputMap into this map. <br>
+	 * Allows duplicate entries. <br><br>
+	 * 
+	 * Allowing duplicate entries should be done if a datasource is just being read in and 
+	 * a merge step isn't being done afterwards. If duplicates are removed it may cause 
+	 * the ID's to get out of sync since everything will be shifted down after the removed
+	 * ID(s).
+	 */
+	public void addAll(FullDataPointIdMap inputMap)
+	{
+		try
+		{
+			//LOGGER.trace("adding {" + this.pos + ", " + this.entryList.size() + "} and {" + inputMap.pos + ", " + inputMap.entryList.size() + "}");
+			
+			inputMap.readWriteLock.readLock().lock();
+			this.readWriteLock.writeLock().lock();
+			
+			ArrayList<Entry> entriesToMerge = inputMap.entryList;
+			for (int i = 0; i < entriesToMerge.size(); i++)
+			{
+				Entry entity = entriesToMerge.get(i);
+				this.add(entity, false);
+			}
+		}
+		finally
+		{
+			this.readWriteLock.writeLock().unlock();
+			inputMap.readWriteLock.readLock().unlock();
+			
+			//LOGGER.trace("finished merging {" + this.pos + ", " + this.entryList.size() + "} and {" + inputMap.pos + ", " + inputMap.entryList.size() + "}");
+		}
+	}
+	
+	/**
+	 * Adds each entry from the given map to this map. <br><br>
 	 * 
 	 * Note: when using this function be careful about re-mapping the
 	 * same data source multiple times.
@@ -301,6 +362,12 @@ public class FullDataPointIdMap
 		}
 		
 		//LOGGER.trace("deserialized " + pos + " " + newMap.entryList.size() + "-" + entityCount);
+		
+		if (newMap.size() != entityCount)
+		{
+			// if the mappings are out of sync then the LODs will render incorrectly due to IDs being wrong
+			LodUtil.assertNotReach("ID maps failed to deserialize for pos: "+pos+", incorrect entity count. Expected count ["+entityCount+"], actual count ["+newMap.size()+"]");
+		}
 		
 		return newMap;
 	}
