@@ -47,7 +47,7 @@ public abstract class NettyMessage implements INetworkObject
 	@Override
 	public String toString()
 	{
-		return this.toString("");
+		return this.toString(" ");
 	}
 	
 	protected String toString(@Nullable String extraData)
@@ -56,4 +56,3 @@ public abstract class NettyMessage implements INetworkObject
 	}
 	
 }
-
