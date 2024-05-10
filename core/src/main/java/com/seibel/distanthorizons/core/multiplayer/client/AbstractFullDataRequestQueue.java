@@ -233,7 +233,20 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 				return entry.future.complete(false);
 			}
 			
-			return entry.future.complete(true);
+			// Hack to work around a race condition
+			// If you finish the request too quickly, the section will never render
+			new Thread(() -> {
+				try
+				{
+					Thread.sleep(5000);
+					entry.future.complete(true);
+				}
+				catch (InterruptedException e)
+				{
+					throw new RuntimeException(e);
+				}
+			}).start();
+			return null;
 		});
 	}
 	

@@ -350,12 +350,10 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 	public void onWorldGenTaskComplete(DhSectionPos pos)
 	{
 		IncompleteDataSourceEntry entry = this.incompleteDataSources.get(pos);
-		if (entry == null)
+		if (entry != null)
 		{
-			return;
+			this.trySetGeneratedDataSourceToEntry(entry, pos);
 		}
-		
-		this.trySetGeneratedDataSourceToEntry(entry, pos);
 	}
 	
 	private static class IncompleteDataSourceEntry
