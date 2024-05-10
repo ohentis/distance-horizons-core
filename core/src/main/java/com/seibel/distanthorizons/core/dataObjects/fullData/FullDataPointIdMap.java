@@ -545,8 +545,8 @@ public class FullDataPointIdMap
 				throw new DataCorruptedException("Failed to deserialize BiomeBlockStateEntry");
 			}
 			
-			IBiomeWrapper biome = WRAPPER_FACTORY.deserializeBiomeWrapper(stringArray[0], levelWrapper);
-			IBlockStateWrapper blockState = WRAPPER_FACTORY.deserializeBlockStateWrapper(stringArray[1], levelWrapper);
+			IBiomeWrapper biome = WRAPPER_FACTORY.deserializeBiomeWrapperOrGetDefault(stringArray[0], levelWrapper);
+			IBlockStateWrapper blockState = WRAPPER_FACTORY.deserializeBlockStateWrapperOrGetDefault(stringArray[1], levelWrapper);
 			return Entry.getEntry(biome, blockState);
 		}
 		
