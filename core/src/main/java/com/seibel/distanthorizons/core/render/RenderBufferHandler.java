@@ -344,7 +344,7 @@ public class RenderBufferHandler implements AutoCloseable
 				{
 					continue;
 				}
-					
+				
 				
 				this.loadedNearToFarBuffers.add(new LoadedRenderBuffer(buffer, sectionPos));
 			}
