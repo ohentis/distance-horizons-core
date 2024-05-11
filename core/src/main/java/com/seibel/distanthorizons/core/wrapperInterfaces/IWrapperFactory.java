@@ -40,9 +40,43 @@ import java.util.HashSet;
 public interface IWrapperFactory extends IDhApiWrapperFactory, IBindable
 {
 	AbstractBatchGenerationEnvironmentWrapper createBatchGenerator(IDhLevel targetLevel);
+	
 	IBiomeWrapper deserializeBiomeWrapper(String str, ILevelWrapper levelWrapper) throws IOException;
+	IBiomeWrapper getPlainsBiomeWrapper(ILevelWrapper levelWrapper); // TODO it would be nice to remove the level wrapper if possible to put this in line with getAirBlockStateWrapper() but it isn't necessary 
+	default IBiomeWrapper deserializeBiomeWrapperOrGetDefault(String str, ILevelWrapper levelWrapper)
+	{
+		IBiomeWrapper biome;
+		try
+		{
+			biome = this.deserializeBiomeWrapper(str, levelWrapper);
+		}
+		catch (IOException e)
+		{
+			biome = this.getPlainsBiomeWrapper(levelWrapper);
+		}
+		
+		return biome;
+	}
+	
+	
 	IBlockStateWrapper deserializeBlockStateWrapper(String str, ILevelWrapper levelWrapper) throws IOException;
 	IBlockStateWrapper getAirBlockStateWrapper();
+	default IBlockStateWrapper deserializeBlockStateWrapperOrGetDefault(String str, ILevelWrapper levelWrapper)
+	{
+		IBlockStateWrapper blockState;
+		try
+		{
+			blockState = this.deserializeBlockStateWrapper(str, levelWrapper);
+		}
+		catch (IOException e)
+		{
+			blockState = this.getAirBlockStateWrapper();
+		}
+		
+		return blockState;
+	}
+	
+	
 	/**
 	 * Returns the set of {@link IBlockStateWrapper}'s that shouldn't be rendered. <br>
 	 * Generally this contains blocks like: air, barriers, light blocks, etc. 

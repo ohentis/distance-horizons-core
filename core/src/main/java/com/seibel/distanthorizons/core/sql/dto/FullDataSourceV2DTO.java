@@ -27,6 +27,7 @@ import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSour
 import com.seibel.distanthorizons.core.network.protocol.INetworkObject;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.util.FullDataPointUtil;
+import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.objects.DataCorruptedException;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataInputStream;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataOutputStream;
@@ -176,7 +177,13 @@ public class FullDataSourceV2DTO implements IBaseDTO<DhSectionPos>, INetworkObje
 				throw new NullPointerException("No level wrapper present, unable to deserialize data map. This should only be used for unit tests.");
 			}
 			
-			dataSource.mapping.mergeAndReturnRemappedEntityIds(readBlobToDataMapping(this.compressedMappingByteArray, dataSource.getPos(), levelWrapper,  compressionModeEnum));
+			FullDataPointIdMap newMap = readBlobToDataMapping(this.compressedMappingByteArray, dataSource.getPos(), levelWrapper,  compressionModeEnum);
+			dataSource.mapping.addAll(newMap);
+			if (dataSource.mapping.size() != newMap.size())
+			{
+				// if the mappings are out of sync then the LODs will render incorrectly due to IDs being wrong
+				LodUtil.assertNotReach("ID maps out of sync for pos: "+this.pos);
+			}
 		}
 		
 		dataSource.lastModifiedUnixDateTime = this.lastModifiedUnixDateTime;
