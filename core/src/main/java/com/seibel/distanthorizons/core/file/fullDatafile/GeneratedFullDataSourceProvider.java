@@ -55,7 +55,7 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 	 * TODO this should be dynamically allocated based on CPU load
 	 *  and abilities.
 	 */
-	public static final int MAX_WORLD_GEN_REQUESTS_PER_THREAD = 2; 
+	public static final int MAX_WORLD_GEN_REQUESTS_PER_THREAD = 20; 
 	
 	
 	private final AtomicReference<IFullDataSourceRetrievalQueue> worldGenQueueRef = new AtomicReference<>(null);
