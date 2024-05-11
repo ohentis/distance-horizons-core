@@ -343,17 +343,24 @@ public class ColumnRenderBuffer implements AutoCloseable
 	//==============//
 	
 	/** can be used when debugging */
-	public boolean hasNonEmptyBuffers()
+	public boolean hasNonNullVbos() { return this.vbos != null || this.vbosTransparent != null; }
+	
+	/** can be used when debugging */
+	public int vboBufferCount() 
 	{
-		for (GLVertexBuffer vertexBuffer : this.vbos)
+		int count = 0;
+		
+		if (this.vbos != null)
 		{
-			if (vertexBuffer != null && vertexBuffer.getSize() != 0)
-			{
-				return true;
-			}
+			count += this.vbos.length;
 		}
 		
-		return false;
+		if (this.vbosTransparent != null)
+		{
+			count += this.vbosTransparent.length;
+		}
+		
+		return count;
 	}
 	
 	public void debugDumpStats(StatsMap statsMap)

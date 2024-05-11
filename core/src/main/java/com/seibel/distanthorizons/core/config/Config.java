@@ -1252,6 +1252,11 @@ public class Config
 							.comment("Render LOD section status?")
 							.build();
 					
+					public static ConfigEntry<Boolean> showQuadTreeRenderStatus = new ConfigEntry.Builder<Boolean>()
+							.set(false)
+							.comment("Render Quad Tree Rendering status?")
+							.build();
+					
 					public static ConfigEntry<Boolean> showFullDataUpdateStatus = new ConfigEntry.Builder<Boolean>()
 							.set(false)
 							.comment("Render full data update/lock status?")
