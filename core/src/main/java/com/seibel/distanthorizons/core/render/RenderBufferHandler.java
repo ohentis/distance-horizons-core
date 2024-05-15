@@ -31,7 +31,7 @@ import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
 import com.seibel.distanthorizons.core.pos.DhLodPos;
-import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.pos.OldDhSectionPos;
 import com.seibel.distanthorizons.core.pos.Pos2D;
 import com.seibel.distanthorizons.core.render.renderer.LodRenderer;
 import com.seibel.distanthorizons.core.util.LodUtil;
@@ -309,7 +309,7 @@ public class RenderBufferHandler implements AutoCloseable
 		{
 			QuadNode<LodRenderSection> node = nodeIterator.next();
 			
-			DhSectionPos sectionPos = node.sectionPos;
+			OldDhSectionPos sectionPos = node.sectionPos;
 			LodRenderSection renderSection = node.value;
 			if (renderSection == null)
 			{
@@ -425,9 +425,9 @@ public class RenderBufferHandler implements AutoCloseable
 	private static class LoadedRenderBuffer
 	{
 		public final ColumnRenderBuffer buffer;
-		public final DhSectionPos pos;
+		public final OldDhSectionPos pos;
 		
-		LoadedRenderBuffer(ColumnRenderBuffer buffer, DhSectionPos pos)
+		LoadedRenderBuffer(ColumnRenderBuffer buffer, OldDhSectionPos pos)
 		{
 			this.buffer = buffer;
 			this.pos = pos;

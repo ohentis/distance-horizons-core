@@ -4,7 +4,7 @@ import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSour
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.pos.OldDhSectionPos;
 import com.seibel.distanthorizons.core.sql.repo.AbstractDhRepo;
 import com.seibel.distanthorizons.core.sql.dto.IBaseDTO;
 import com.seibel.distanthorizons.core.util.LodUtil;
@@ -17,7 +17,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.StreamCorruptedException;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -27,8 +26,8 @@ import java.util.concurrent.locks.ReentrantLock;
 //  We shouldn't need multiple data source handlers
 public abstract class AbstractDataSourceHandler
 		<TDataSource extends IDataSource<TDhLevel>, 
-				TDTO extends IBaseDTO<DhSectionPos>,
-				TRepo extends AbstractDhRepo<DhSectionPos, TDTO>,
+				TDTO extends IBaseDTO<OldDhSectionPos>,
+				TRepo extends AbstractDhRepo<OldDhSectionPos, TDTO>,
 				TDhLevel extends IDhLevel>
 		implements AutoCloseable
 {
@@ -42,13 +41,13 @@ public abstract class AbstractDataSourceHandler
 	 * 
 	 * @see AbstractDataSourceHandler#MIN_SECTION_DETAIL_LEVEL
 	 */
-	public static final byte TOP_SECTION_DETAIL_LEVEL = DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL + LodUtil.REGION_DETAIL_LEVEL;
+	public static final byte TOP_SECTION_DETAIL_LEVEL = OldDhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL + LodUtil.REGION_DETAIL_LEVEL;
 	/** 
 	 * The lowest numerical detail level possible. 
 	 *
 	 * @see AbstractDataSourceHandler#TOP_SECTION_DETAIL_LEVEL
 	 * */
-	public static final byte MIN_SECTION_DETAIL_LEVEL = DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL;
+	public static final byte MIN_SECTION_DETAIL_LEVEL = OldDhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL;
 	
 	
 	protected final PositionalLockProvider updateLockProvider = new PositionalLockProvider();
@@ -56,8 +55,8 @@ public abstract class AbstractDataSourceHandler
 	 * generally just used for debugging,
 	 * keeps track of which positions are currently locked.
 	 */
-	public final Set<DhSectionPos> lockedPosSet = ConcurrentHashMap.newKeySet();
-	public final ConcurrentHashMap<DhSectionPos, AtomicInteger> queuedUpdateCountsByPos = new ConcurrentHashMap<>();
+	public final Set<OldDhSectionPos> lockedPosSet = ConcurrentHashMap.newKeySet();
+	public final ConcurrentHashMap<OldDhSectionPos, AtomicInteger> queuedUpdateCountsByPos = new ConcurrentHashMap<>();
 	
 	
 	protected final ReentrantLock closeLock = new ReentrantLock();
@@ -102,7 +101,7 @@ public abstract class AbstractDataSourceHandler
 	protected abstract TDataSource createDataSourceFromDto(TDTO dto) throws InterruptedException, IOException, DataCorruptedException;
 	protected abstract TDTO createDtoFromDataSource(TDataSource dataSource);
 	
-	protected abstract TDataSource makeEmptyDataSource(DhSectionPos pos);
+	protected abstract TDataSource makeEmptyDataSource(OldDhSectionPos pos);
 	
 	
 	
@@ -116,7 +115,7 @@ public abstract class AbstractDataSourceHandler
 	 *
 	 * This call is concurrent. I.e. it supports being called by multiple threads at the same time.
 	 */
-	public CompletableFuture<TDataSource> getAsync(DhSectionPos pos)
+	public CompletableFuture<TDataSource> getAsync(OldDhSectionPos pos)
 	{
 		ThreadPoolExecutor executor = ThreadPoolUtil.getFileHandlerExecutor();
 		if (executor == null || executor.isTerminated())
@@ -138,10 +137,10 @@ public abstract class AbstractDataSourceHandler
 	/**
 	 * Should only be used in internal file handler methods where we are already running on a file handler thread.
 	 * Can return null if the repo is in the process of being shut down
-	 * @see AbstractDataSourceHandler#getAsync(DhSectionPos)
+	 * @see AbstractDataSourceHandler#getAsync(OldDhSectionPos)
 	 */
 	@Nullable
-	public TDataSource get(DhSectionPos pos)
+	public TDataSource get(OldDhSectionPos pos)
 	{
 		TDataSource dataSource = null;
 		try
@@ -231,7 +230,7 @@ public abstract class AbstractDataSourceHandler
 	 * After this method returns the inputData will be written to file.
 	 * @param updatePos the position to update 
 	 */
-	protected void updateDataSourceAtPos(DhSectionPos updatePos, @NotNull FullDataSourceV2 inputData, boolean lockOnUpdatePos)
+	protected void updateDataSourceAtPos(OldDhSectionPos updatePos, @NotNull FullDataSourceV2 inputData, boolean lockOnUpdatePos)
 	{
 		boolean methodLocked = false;
 		// a lock is necessary to prevent two threads from writing to the same position at once,
@@ -293,7 +292,7 @@ public abstract class AbstractDataSourceHandler
 	//================//
 	
 	/** used for debugging to track which positions are queued for updating */
-	private void markUpdateStart(DhSectionPos dataSourcePos)
+	private void markUpdateStart(OldDhSectionPos dataSourcePos)
 	{
 		this.queuedUpdateCountsByPos.compute(dataSourcePos, (pos, atomicCount) ->
 		{
@@ -306,7 +305,7 @@ public abstract class AbstractDataSourceHandler
 		});
 	}
 	/** used for debugging to track which positions are queued for updating */
-	private void markUpdateEnd(DhSectionPos dataSourcePos)
+	private void markUpdateEnd(OldDhSectionPos dataSourcePos)
 	{
 		this.queuedUpdateCountsByPos.compute(dataSourcePos, (pos, atomicCount) ->
 		{

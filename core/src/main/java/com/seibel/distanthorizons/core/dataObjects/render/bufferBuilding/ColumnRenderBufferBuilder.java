@@ -27,7 +27,7 @@ import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
-import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.pos.OldDhSectionPos;
 import com.seibel.distanthorizons.core.render.glObject.GLProxy;
 import com.seibel.distanthorizons.core.render.glObject.buffer.GLVertexBuffer;
 import com.seibel.distanthorizons.core.util.LodUtil;
@@ -98,7 +98,7 @@ public class ColumnRenderBufferBuilder
 									&& !clientLevel.getLevelWrapper().getDimensionType().isTheEnd()
 									// FIXME temporary fix
 									//  Cave culling is currently broken for any detail level above 0
-									&& renderSource.pos.getDetailLevel() == DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL
+									&& renderSource.pos.getDetailLevel() == OldDhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL
 								);
 						
 						int skyLightCullingBelow = Config.Client.Advanced.Graphics.AdvancedGraphics.caveCullingHeight.get();

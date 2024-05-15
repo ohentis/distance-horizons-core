@@ -28,7 +28,7 @@ import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
 import com.seibel.distanthorizons.core.logging.ConfigBasedSpamLogger;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhLodPos;
-import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.pos.OldDhSectionPos;
 import com.seibel.distanthorizons.core.render.glObject.GLState;
 import com.seibel.distanthorizons.core.render.glObject.buffer.GLElementBuffer;
 import com.seibel.distanthorizons.core.render.glObject.buffer.GLVertexBuffer;
@@ -288,12 +288,12 @@ public class DebugRenderer
 			this.color = color;
 		}
 		
-		public Box(DhSectionPos pos, float minY, float maxY, float marginPercent, Color color)
+		public Box(OldDhSectionPos pos, float minY, float maxY, float marginPercent, Color color)
 		{
 			this(pos.getSectionBBoxPos(), minY, maxY, marginPercent, color);
 		}
 		
-		public Box(DhSectionPos pos, float y, float yDiff, Object hash, float marginPercent, Color color)
+		public Box(OldDhSectionPos pos, float y, float yDiff, Object hash, float marginPercent, Color color)
 		{
 			this(pos.getSectionBBoxPos(), y, yDiff, hash, marginPercent, color);
 		}

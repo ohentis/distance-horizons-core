@@ -21,7 +21,7 @@ package tests;
 
 import com.seibel.distanthorizons.api.enums.config.EDhApiDataCompressionMode;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
-import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.pos.OldDhSectionPos;
 import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV2DTO;
 import com.seibel.distanthorizons.core.sql.repo.FullDataSourceV2Repo;
 import org.junit.Assert;
@@ -272,7 +272,7 @@ public class CompressionTest
 			
 			
 			
-			ArrayList<DhSectionPos> positionList = uncompressedRepo.getAllPositions();
+			ArrayList<OldDhSectionPos> positionList = uncompressedRepo.getAllPositions();
 			totalUncompressedFileSizeInBytes = uncompressedRepo.getTotalDataSizeInBytes();
 			System.out.println("Found [" + positionList.size() + "] DTOs.");
 			
@@ -282,7 +282,7 @@ public class CompressionTest
 			{
 				try
 				{
-					DhSectionPos pos = positionList.get(i);
+					OldDhSectionPos pos = positionList.get(i);
 					if (i % 20 == 0)
 					{
 						System.out.println(i + "/" + maxTestPosition);

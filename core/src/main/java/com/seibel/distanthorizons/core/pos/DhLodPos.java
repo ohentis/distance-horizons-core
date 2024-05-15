@@ -53,7 +53,7 @@ public class DhLodPos implements Comparable<DhLodPos>
 		this.x = x;
 		this.z = z;
 	}
-	public DhLodPos(DhSectionPos sectionPos) { this(sectionPos.getDetailLevel(), sectionPos.getX(), sectionPos.getZ()); }
+	public DhLodPos(OldDhSectionPos sectionPos) { this(sectionPos.getDetailLevel(), sectionPos.getX(), sectionPos.getZ()); }
 	
 	
 	
@@ -162,10 +162,10 @@ public class DhLodPos implements Comparable<DhLodPos>
 	}
 	
 	/**
-	 * @param sectionDetailLevel This is different from the normal LOD Detail level, see {@link DhSectionPos} for more information
+	 * @param sectionDetailLevel This is different from the normal LOD Detail level, see {@link OldDhSectionPos} for more information
 	 * @throws IllegalArgumentException if this position's detail level is lower than the output detail level
 	 */
-	public DhSectionPos getSectionPosWithSectionDetailLevel(byte sectionDetailLevel) throws IllegalArgumentException
+	public OldDhSectionPos getSectionPosWithSectionDetailLevel(byte sectionDetailLevel) throws IllegalArgumentException
 	{
 		if (sectionDetailLevel < this.detailLevel)
 		{
@@ -174,7 +174,7 @@ public class DhLodPos implements Comparable<DhLodPos>
 		
 		DhLodPos lodPos = new DhLodPos(this.detailLevel, this.x, this.z);
 		lodPos = lodPos.convertToDetailLevel(sectionDetailLevel);
-		return new DhSectionPos(lodPos.detailLevel, lodPos.x, lodPos.z);
+		return new OldDhSectionPos(lodPos.detailLevel, lodPos.x, lodPos.z);
 	}
 	
 	

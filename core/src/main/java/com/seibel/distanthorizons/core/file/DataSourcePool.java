@@ -1,8 +1,7 @@
 package com.seibel.distanthorizons.core.file;
 
 import com.seibel.distanthorizons.core.level.IDhLevel;
-import com.seibel.distanthorizons.core.pos.DhSectionPos;
-import com.seibel.distanthorizons.core.util.ThreadUtil;
+import com.seibel.distanthorizons.core.pos.OldDhSectionPos;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -27,7 +26,7 @@ public class DataSourcePool<TDataSource extends IDataSource<TDhLevel>, TDhLevel 
 	private final ArrayList<TDataSource> pooledDataSources = new ArrayList<>();
 	private final ReentrantLock poolLock = new ReentrantLock();
 	
-	private final Function<DhSectionPos, TDataSource> createEmptyDatasourceFunc;
+	private final Function<OldDhSectionPos, TDataSource> createEmptyDatasourceFunc;
 	@Nullable
 	private final IPrepPooledDataSourceFunc<TDataSource, TDhLevel> prepDatasourceFunc;
 	
@@ -37,7 +36,7 @@ public class DataSourcePool<TDataSource extends IDataSource<TDhLevel>, TDhLevel 
 	// constructor //
 	//=============//
 	
-	public DataSourcePool(Function<DhSectionPos, TDataSource> createEmptyDatasourceFunc, @Nullable IPrepPooledDataSourceFunc<TDataSource, TDhLevel> prepDatasourceFunc)
+	public DataSourcePool(Function<OldDhSectionPos, TDataSource> createEmptyDatasourceFunc, @Nullable IPrepPooledDataSourceFunc<TDataSource, TDhLevel> prepDatasourceFunc)
 	{
 		this.createEmptyDatasourceFunc = createEmptyDatasourceFunc;
 		this.prepDatasourceFunc = prepDatasourceFunc;
@@ -51,12 +50,12 @@ public class DataSourcePool<TDataSource extends IDataSource<TDhLevel>, TDhLevel 
 	
 	/** 
 	 * Returns a cleared data source.
-	 * @see DataSourcePool#getPooledSource(DhSectionPos, boolean) 
+	 * @see DataSourcePool#getPooledSource(OldDhSectionPos, boolean) 
 	 */
-	public TDataSource getPooledSource(DhSectionPos pos) { return this.getPooledSource(pos, true);}
+	public TDataSource getPooledSource(OldDhSectionPos pos) { return this.getPooledSource(pos, true);}
 	
 	/** @return an empty data source if non are cached */
-	public TDataSource getPooledSource(DhSectionPos pos, boolean clearData)
+	public TDataSource getPooledSource(OldDhSectionPos pos, boolean clearData)
 	{
 		try
 		{
@@ -133,7 +132,7 @@ public class DataSourcePool<TDataSource extends IDataSource<TDhLevel>, TDhLevel 
 	public interface IPrepPooledDataSourceFunc<TDataSource extends IDataSource<TDhLevel>, TDhLevel extends IDhLevel>
 	{
 		/** @param clearData will be false if the data will be immediately overwritten anyway */
-		void prepDataSource(DhSectionPos pos, boolean clearData, TDataSource dataSource);
+		void prepDataSource(OldDhSectionPos pos, boolean clearData, TDataSource dataSource);
 	}
 	
 }

@@ -30,7 +30,7 @@ import com.seibel.distanthorizons.core.config.types.*;
 import com.seibel.distanthorizons.core.config.types.enums.*;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.pos.OldDhSectionPos;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftSharedWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.coreapi.util.StringUtil;
@@ -1208,7 +1208,7 @@ public class Config
 						.addListener(DebugColumnConfigEventHandler.INSTANCE)
 						.build();
 				public static ConfigEntry<Integer> columnBuilderDebugDetailLevel = new ConfigEntry.Builder<Integer>()
-						.set((int) DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL)
+						.set((int) OldDhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL)
 						.setAppearance(EConfigEntryAppearance.ONLY_IN_GUI)
 						.addListener(DebugColumnConfigEventHandler.INSTANCE)
 						.build();

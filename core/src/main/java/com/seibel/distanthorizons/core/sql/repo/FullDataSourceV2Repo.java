@@ -22,9 +22,8 @@ package com.seibel.distanthorizons.core.sql.repo;
 import com.seibel.distanthorizons.api.enums.config.EDhApiDataCompressionMode;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.pos.OldDhSectionPos;
 import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV2DTO;
-import com.seibel.distanthorizons.core.util.objects.DataCorruptedException;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataInputStream;
 import org.apache.logging.log4j.Logger;
 
@@ -36,7 +35,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class FullDataSourceV2Repo extends AbstractDhRepo<DhSectionPos, FullDataSourceV2DTO>
+public class FullDataSourceV2Repo extends AbstractDhRepo<OldDhSectionPos, FullDataSourceV2DTO>
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
@@ -61,9 +60,9 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<DhSectionPos, FullDataS
 	public String getTableName() { return "FullData"; }
 	
 	@Override
-	public String createWhereStatement(DhSectionPos pos) 
+	public String createWhereStatement(OldDhSectionPos pos) 
 	{
-		int detailLevel = pos.getDetailLevel() - DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL;
+		int detailLevel = pos.getDetailLevel() - OldDhSectionPos.SECTION_BLOCK_DETAIL_LEVEL;
 		return "DetailLevel = '"+detailLevel+"' AND PosX = '"+pos.getX()+"' AND PosZ = '"+pos.getZ()+"'"; 
 	}
 	
@@ -77,10 +76,10 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<DhSectionPos, FullDataS
 	public FullDataSourceV2DTO convertDictionaryToDto(Map<String, Object> objectMap) throws ClassCastException
 	{
 		byte detailLevel = (Byte) objectMap.get("DetailLevel");
-		byte sectionDetailLevel = (byte) (detailLevel + DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
+		byte sectionDetailLevel = (byte) (detailLevel + OldDhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
 		int posX = (Integer) objectMap.get("PosX");
 		int posZ = (Integer) objectMap.get("PosZ");
-		DhSectionPos pos = new DhSectionPos(sectionDetailLevel, posX, posZ);
+		OldDhSectionPos pos = new OldDhSectionPos(sectionDetailLevel, posX, posZ);
 		
 		int minY = (Integer) objectMap.get("MinY");
 		int dataChecksum = (Integer) objectMap.get("DataChecksum");
@@ -128,7 +127,7 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<DhSectionPos, FullDataS
 		PreparedStatement statement = this.createPreparedStatement(sql);
 		
 		int i = 1;
-		statement.setObject(i++, dto.pos.getDetailLevel() - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
+		statement.setObject(i++, dto.pos.getDetailLevel() - OldDhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
 		statement.setObject(i++, dto.pos.getX());
 		statement.setObject(i++, dto.pos.getZ());
 		
@@ -190,7 +189,7 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<DhSectionPos, FullDataS
 		statement.setObject(i++, System.currentTimeMillis()); // last modified unix time
 		statement.setObject(i++, dto.createdUnixDateTime);
 		
-		statement.setObject(i++, dto.pos.getDetailLevel() - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
+		statement.setObject(i++, dto.pos.getDetailLevel() - OldDhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
 		statement.setObject(i++, dto.pos.getX());
 		statement.setObject(i++, dto.pos.getZ());
 		
@@ -201,9 +200,9 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<DhSectionPos, FullDataS
 	
 	// updates //
 	
-	public void setApplyToParent(DhSectionPos pos, boolean applyToParent) throws SQLException
+	public void setApplyToParent(OldDhSectionPos pos, boolean applyToParent) throws SQLException
 	{
-		int detailLevel = pos.getDetailLevel() - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL;
+		int detailLevel = pos.getDetailLevel() - OldDhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL;
 		
 		String sql =
 			"UPDATE "+this.getTableName()+" \n" +
@@ -213,9 +212,9 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<DhSectionPos, FullDataS
 		this.queryDictionaryFirst(sql);
 	}
 	
-	public ArrayList<DhSectionPos> getPositionsToUpdate(int returnCount)
+	public ArrayList<OldDhSectionPos> getPositionsToUpdate(int returnCount)
 	{
-		ArrayList<DhSectionPos> list = new ArrayList<>();
+		ArrayList<OldDhSectionPos> list = new ArrayList<>();
 		
 		List<Map<String, Object>> resultMapList = this.queryDictionary(
 				"select DetailLevel, PosX, PosZ " +
@@ -226,11 +225,11 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<DhSectionPos, FullDataS
 		for (Map<String, Object> resultMap : resultMapList)
 		{
 			byte detailLevel = (Byte) resultMap.get("DetailLevel");
-			byte sectionDetailLevel = (byte) (detailLevel + DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
+			byte sectionDetailLevel = (byte) (detailLevel + OldDhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
 			int posX = (Integer) resultMap.get("PosX");
 			int posZ = (Integer) resultMap.get("PosZ");
 			
-			DhSectionPos pos = new DhSectionPos(sectionDetailLevel, posX, posZ);
+			OldDhSectionPos pos = new OldDhSectionPos(sectionDetailLevel, posX, posZ);
 			list.add(pos);
 		}
 		
@@ -238,9 +237,9 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<DhSectionPos, FullDataS
 	}
 	
 	/** @return null if nothing exists for this position */
-	public byte[] getColumnGenerationStepForPos(DhSectionPos pos)
+	public byte[] getColumnGenerationStepForPos(OldDhSectionPos pos)
 	{
-		int detailLevel = pos.getDetailLevel() - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL;
+		int detailLevel = pos.getDetailLevel() - OldDhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL;
 		
 		Map<String, Object> resultMap = this.queryDictionaryFirst(
 				"select ColumnGenerationStep, CompressionMode " +
@@ -284,9 +283,9 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<DhSectionPos, FullDataS
 	//===================//
 	
 	/** @return every position in this database */
-	public ArrayList<DhSectionPos> getAllPositions()
+	public ArrayList<OldDhSectionPos> getAllPositions()
 	{
-		ArrayList<DhSectionPos> list = new ArrayList<>();
+		ArrayList<OldDhSectionPos> list = new ArrayList<>();
 
 		List<Map<String, Object>> resultMapList = this.queryDictionary(
 				"select DetailLevel, PosX, PosZ " +
@@ -295,11 +294,11 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<DhSectionPos, FullDataS
 		for (Map<String, Object> resultMap : resultMapList)
 		{
 			byte detailLevel = (Byte) resultMap.get("DetailLevel");
-			byte sectionDetailLevel = (byte) (detailLevel + DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
+			byte sectionDetailLevel = (byte) (detailLevel + OldDhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
 			int posX = (Integer) resultMap.get("PosX");
 			int posZ = (Integer) resultMap.get("PosZ");
 
-			DhSectionPos pos = new DhSectionPos(sectionDetailLevel, posX, posZ);
+			OldDhSectionPos pos = new OldDhSectionPos(sectionDetailLevel, posX, posZ);
 			list.add(pos);
 		}
 
@@ -310,9 +309,9 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<DhSectionPos, FullDataS
 	 * @return the size of the full data at the given position 
 	 *          (doesn't include the size of the mapping or any other column)
 	 */
-	public long getDataSizeInBytes(DhSectionPos pos)
+	public long getDataSizeInBytes(OldDhSectionPos pos)
 	{
-		int detailLevel = pos.getDetailLevel() - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL;
+		int detailLevel = pos.getDetailLevel() - OldDhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL;
 
 		Map<String, Object> resultMap = this.queryDictionaryFirst(
 				"select LENGTH(Data) as dataSize " +

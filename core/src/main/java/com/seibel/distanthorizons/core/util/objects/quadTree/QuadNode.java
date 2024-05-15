@@ -20,7 +20,7 @@
 package com.seibel.distanthorizons.core.util.objects.quadTree;
 
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.pos.OldDhSectionPos;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.objects.quadTree.iterators.QuadNodeDirectChildIterator;
 import com.seibel.distanthorizons.core.util.objects.quadTree.iterators.QuadNodeDirectChildPosIterator;
@@ -35,7 +35,7 @@ public class QuadNode<T>
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
 	
-	public final DhSectionPos sectionPos;
+	public final OldDhSectionPos sectionPos;
 	public final byte minimumDetailLevel;
 	public T value;
 	
@@ -67,7 +67,7 @@ public class QuadNode<T>
 	
 	
 	
-	public QuadNode(DhSectionPos sectionPos, byte minimumDetailLevel)
+	public QuadNode(OldDhSectionPos sectionPos, byte minimumDetailLevel)
 	{
 		this.sectionPos = sectionPos;
 		this.minimumDetailLevel = minimumDetailLevel;
@@ -145,14 +145,14 @@ public class QuadNode<T>
 	 * @return the node at the given position
 	 * @throws IllegalArgumentException if childSectionPos has the wrong detail level or is outside the bounds of this node
 	 */
-	public QuadNode<T> getNode(DhSectionPos sectionPos) throws IllegalArgumentException { return this.getOrSetValue(sectionPos, false, null); }
+	public QuadNode<T> getNode(OldDhSectionPos sectionPos) throws IllegalArgumentException { return this.getOrSetValue(sectionPos, false, null); }
 	
 	/**
 	 * @param sectionPos must be 1 detail level lower than this node's detail level
 	 * @return the value at the given position before the new value was set
 	 * @throws IllegalArgumentException if childSectionPos has the wrong detail level or is outside the bounds of this node
 	 */
-	public T setValue(DhSectionPos sectionPos, T newValue) throws IllegalArgumentException
+	public T setValue(OldDhSectionPos sectionPos, T newValue) throws IllegalArgumentException
 	{
 		QuadNode<T> previousNode = this.getNode(sectionPos);
 		if (previousNode != null)
@@ -173,7 +173,7 @@ public class QuadNode<T>
 	 * @return the node at the given position before the new node was set (if the new node should be set)
 	 * @throws IllegalArgumentException if childSectionPos has the wrong detail level or is outside the bounds of this
 	 */
-	private QuadNode<T> getOrSetValue(DhSectionPos inputSectionPos, boolean replaceValue, T newValue) throws IllegalArgumentException
+	private QuadNode<T> getOrSetValue(OldDhSectionPos inputSectionPos, boolean replaceValue, T newValue) throws IllegalArgumentException
 	{
 		// debug validation
 		
@@ -217,10 +217,10 @@ public class QuadNode<T>
 
 //			LOGGER.info((replaceValue ? "set " : "get ")+inputSectionPos+" center block: "+inputSectionPos.getCenter().getCornerBlockPos()+", this pos: "+this.sectionPos+" this center block: "+this.sectionPos.getCenter().getCornerBlockPos());
 			
-			DhSectionPos nwPos = this.sectionPos.getChildByIndex(0);
-			DhSectionPos swPos = this.sectionPos.getChildByIndex(1);
-			DhSectionPos nePos = this.sectionPos.getChildByIndex(2);
-			DhSectionPos sePos = this.sectionPos.getChildByIndex(3);
+			OldDhSectionPos nwPos = this.sectionPos.getChildByIndex(0);
+			OldDhSectionPos swPos = this.sectionPos.getChildByIndex(1);
+			OldDhSectionPos nePos = this.sectionPos.getChildByIndex(2);
+			OldDhSectionPos sePos = this.sectionPos.getChildByIndex(3);
 			
 			// look for the child that contains the input position (there may be a faster way to do this, but this works for now)
 			QuadNode<T> childNode;
@@ -293,7 +293,7 @@ public class QuadNode<T>
 	public Iterator<QuadNode<T>> getLeafNodeIterator() { return new QuadTreeNodeIterator<>(this, true); }
 	
 	/** positions can point to null children */
-	public Iterator<DhSectionPos> getChildPosIterator() { return new QuadNodeDirectChildPosIterator<>(this); }
+	public Iterator<OldDhSectionPos> getChildPosIterator() { return new QuadNodeDirectChildPosIterator<>(this); }
 	public Iterator<QuadNode<T>> getChildNodeIterator() { return new QuadNodeDirectChildIterator<>(this); }
 	
 	

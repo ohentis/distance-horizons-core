@@ -20,7 +20,7 @@
 package com.seibel.distanthorizons.core.dataObjects.fullData;
 
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
-import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.pos.OldDhSectionPos;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.objects.DataCorruptedException;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataInputStream;
@@ -67,7 +67,7 @@ public class FullDataPointIdMap
 	private final ReentrantReadWriteLock readWriteLock = new ReentrantReadWriteLock();
 	
 	/** should only be used for debugging */
-	private DhSectionPos pos;
+	private OldDhSectionPos pos;
 	
 	/** The index should be the same as the Entry's ID */
 	private final ArrayList<Entry> entryList = new ArrayList<>();
@@ -79,7 +79,7 @@ public class FullDataPointIdMap
 	// constructor //
 	//=============//
 	
-	public FullDataPointIdMap(DhSectionPos pos) { this.pos = pos; }
+	public FullDataPointIdMap(OldDhSectionPos pos) { this.pos = pos; }
 	
 	
 	
@@ -123,7 +123,7 @@ public class FullDataPointIdMap
 	
 	public boolean isEmpty() { return this.entryList.isEmpty(); }
 	
-	public DhSectionPos getPos() { return this.pos; }
+	public OldDhSectionPos getPos() { return this.pos; }
 	
 	
 	
@@ -270,7 +270,7 @@ public class FullDataPointIdMap
 	}
 	
 	/** Should only be used if this map is going to be reused, otherwise bad things will happen. */
-	public void clear(DhSectionPos pos)
+	public void clear(OldDhSectionPos pos)
 	{
 		this.pos = pos;
 		this.entryList.clear();
@@ -321,7 +321,7 @@ public class FullDataPointIdMap
 	}
 	
 	/** Creates a new IdBiomeBlockStateMap from the given UTF formatted stream */
-	public static FullDataPointIdMap deserialize(DhDataInputStream inputStream, DhSectionPos pos, ILevelWrapper levelWrapper) throws IOException, InterruptedException, DataCorruptedException
+	public static FullDataPointIdMap deserialize(DhDataInputStream inputStream, OldDhSectionPos pos, ILevelWrapper levelWrapper) throws IOException, InterruptedException, DataCorruptedException
 	{
 		int entityCount = inputStream.readInt();
 		if (entityCount < 0)

@@ -29,7 +29,7 @@ import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
-import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.pos.OldDhSectionPos;
 import com.seibel.distanthorizons.core.util.ColorUtil;
 import com.seibel.distanthorizons.core.util.FullDataPointUtil;
 import com.seibel.distanthorizons.core.util.RenderDataPointUtil;
@@ -52,7 +52,7 @@ public class FullDataToRenderDataTransformer
 	private static final IWrapperFactory WRAPPER_FACTORY = SingletonInjector.INSTANCE.get(IWrapperFactory.class);
 	private static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	
-	private static final HashSet<DhSectionPos> brokenPos = new HashSet<>();
+	private static final HashSet<OldDhSectionPos> brokenPos = new HashSet<>();
 	
 	
 	
@@ -98,7 +98,7 @@ public class FullDataToRenderDataTransformer
 	 */
 	private static ColumnRenderSource transformCompleteFullDataToColumnData(IDhClientLevel level, FullDataSourceV2 fullDataSource) throws InterruptedException
 	{
- 		final DhSectionPos pos = fullDataSource.getPos();
+ 		final OldDhSectionPos pos = fullDataSource.getPos();
 		final byte dataDetail = fullDataSource.getDataDetailLevel();
 		final int vertSize = Config.Client.Advanced.Graphics.Quality.verticalQuality.get().calculateMaxVerticalData(fullDataSource.getDataDetailLevel());
 		final ColumnRenderSource columnSource = ColumnRenderSource.getPooledRenderSource(pos, vertSize, level.getMinY(), true);

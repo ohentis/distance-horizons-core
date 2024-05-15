@@ -22,7 +22,7 @@ package com.seibel.distanthorizons.core.generation;
 import com.seibel.distanthorizons.core.generation.tasks.IWorldGenTaskTracker;
 import com.seibel.distanthorizons.core.generation.tasks.WorldGenResult;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
-import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.pos.OldDhSectionPos;
 import com.seibel.distanthorizons.core.render.LodQuadTree;
 
 import java.io.Closeable;
@@ -80,9 +80,9 @@ public interface IFullDataSourceRetrievalQueue extends Closeable
 	 * Generally the retrieval queue should be fairly small, so its faster to iterate over the existing list
 	 * and check if each one is valid vs dumbly attempting to remove every position that just went out of range.
 	 */
-	void removeRetrievalRequestIf(Function<DhSectionPos, Boolean> removeIf);
+	void removeRetrievalRequestIf(Function<OldDhSectionPos, Boolean> removeIf);
 	
-	CompletableFuture<WorldGenResult> submitGenTask(DhSectionPos pos, byte requiredDataDetail, IWorldGenTaskTracker tracker);
+	CompletableFuture<WorldGenResult> submitGenTask(OldDhSectionPos pos, byte requiredDataDetail, IWorldGenTaskTracker tracker);
 	
 	
 	

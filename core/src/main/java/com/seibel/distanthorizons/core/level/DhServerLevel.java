@@ -23,7 +23,7 @@ import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSour
 import com.seibel.distanthorizons.core.file.fullDatafile.FullDataSourceProviderV2;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
-import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.pos.OldDhSectionPos;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
@@ -105,7 +105,7 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 	public boolean hasSkyLight() { return this.serverLevelWrapper.hasSkyLight(); }
 	
 	@Override
-	public void onWorldGenTaskComplete(DhSectionPos pos)
+	public void onWorldGenTaskComplete(OldDhSectionPos pos)
 	{
 		//TODO: Send packet to client
 	}

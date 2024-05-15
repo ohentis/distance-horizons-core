@@ -28,7 +28,7 @@ import com.seibel.distanthorizons.core.generation.tasks.IWorldGenTaskTracker;
 import com.seibel.distanthorizons.core.generation.tasks.WorldGenResult;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.pos.OldDhSectionPos;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
 import com.seibel.distanthorizons.core.util.LodUtil;
@@ -116,7 +116,7 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 	}
 	
 	// TODO only fire after the section has finished generated or once every X seconds
-	private void fireOnGenPosSuccessListeners(DhSectionPos pos)
+	private void fireOnGenPosSuccessListeners(OldDhSectionPos pos)
 	{
 		// fire the event listeners 
 		for (IOnWorldGenCompleteListener listener : this.onWorldGenTaskCompleteListeners)
@@ -205,7 +205,7 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 	}
 	
 	@Override
-	public boolean queuePositionForRetrieval(DhSectionPos genPos)
+	public boolean queuePositionForRetrieval(OldDhSectionPos genPos)
 	{
 		IFullDataSourceRetrievalQueue worldGenQueue = this.worldGenQueueRef.get();
 		if (worldGenQueue == null)
@@ -214,14 +214,14 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 		}
 		
 		GenTask genTask = new GenTask(genPos);
-		CompletableFuture<WorldGenResult> worldGenFuture = worldGenQueue.submitGenTask(genPos, (byte) (genPos.getDetailLevel() - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL), genTask);
+		CompletableFuture<WorldGenResult> worldGenFuture = worldGenQueue.submitGenTask(genPos, (byte) (genPos.getDetailLevel() - OldDhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL), genTask);
 		worldGenFuture.whenComplete((genTaskResult, ex) -> this.onWorldGenTaskComplete(genTaskResult, ex));
 		
 		return true;
 	}
 	
 	@Override
-	public void removeRetrievalRequestIf(Function<DhSectionPos, Boolean> removeIf)
+	public void removeRetrievalRequestIf(Function<OldDhSectionPos, Boolean> removeIf)
 	{
 		IFullDataSourceRetrievalQueue worldGenQueue = this.worldGenQueueRef.get();
 		if (worldGenQueue != null)
@@ -238,7 +238,7 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 	
 	
 	@Override
-	public ArrayList<DhSectionPos> getPositionsToRetrieve(DhSectionPos pos)
+	public ArrayList<OldDhSectionPos> getPositionsToRetrieve(OldDhSectionPos pos)
 	{
 		IFullDataSourceRetrievalQueue worldGenQueue = this.worldGenQueueRef.get();
 		if (worldGenQueue == null)
@@ -277,8 +277,8 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 		
 		// this section is missing one or more columns, queue the missing ones for generation.
 		// TODO speed up this logic by only checking ungenerated columns
-		ArrayList<DhSectionPos> generationList = new ArrayList<>();
-		byte minGeneratorSectionDetailLevel = (byte) (worldGenQueue.highestDataDetail() + DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
+		ArrayList<OldDhSectionPos> generationList = new ArrayList<>();
+		byte minGeneratorSectionDetailLevel = (byte) (worldGenQueue.highestDataDetail() + OldDhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
 		pos.forEachChildAtDetailLevel(minGeneratorSectionDetailLevel, (genPos) ->
 		{
 			if (!this.repo.existsWithKey(genPos))
@@ -336,7 +336,7 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 	}
 	
 	@Override
-	public int getMaxPossibleRetrievalPositionCountForPos(DhSectionPos pos)  
+	public int getMaxPossibleRetrievalPositionCountForPos(OldDhSectionPos pos)  
 	{
 		IFullDataSourceRetrievalQueue worldGenQueue = this.worldGenQueueRef.get();
 		if (worldGenQueue == null)
@@ -344,7 +344,7 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 			return -1;
 		}
 		
-		int minGeneratorSectionDetailLevel = worldGenQueue.highestDataDetail() + DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL;
+		int minGeneratorSectionDetailLevel = worldGenQueue.highestDataDetail() + OldDhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL;
 		int detailLevelDiff = pos.getDetailLevel() - minGeneratorSectionDetailLevel;
 		
 		return BitShiftUtil.powerOfTwo(detailLevelDiff);
@@ -375,9 +375,9 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 	// TODO may not be needed
 	private class GenTask implements IWorldGenTaskTracker
 	{
-		private final DhSectionPos pos;
+		private final OldDhSectionPos pos;
 		
-		public GenTask(DhSectionPos pos)
+		public GenTask(OldDhSectionPos pos)
 		{
 			this.pos = pos;
 		}
@@ -406,7 +406,7 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 	public interface IOnWorldGenCompleteListener
 	{
 		/** Fired whenever a section has completed generating */
-		void onWorldGenTaskComplete(DhSectionPos pos);
+		void onWorldGenTaskComplete(OldDhSectionPos pos);
 		
 	}
 	

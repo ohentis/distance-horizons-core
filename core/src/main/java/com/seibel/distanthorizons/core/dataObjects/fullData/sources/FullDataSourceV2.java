@@ -28,7 +28,7 @@ import com.seibel.distanthorizons.core.file.DataSourcePool;
 import com.seibel.distanthorizons.core.file.IDataSource;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.pos.OldDhSectionPos;
 import com.seibel.distanthorizons.core.util.FullDataPointUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.RenderDataPointUtil;
@@ -43,7 +43,7 @@ import javax.annotation.Nullable;
 import java.util.Arrays;
 
 /**
- * This data source contains every datapoint over its given {@link DhSectionPos}. <br><br>
+ * This data source contains every datapoint over its given {@link OldDhSectionPos}. <br><br>
  * 
  * @see FullDataPointUtil
  * @see FullDataSourceV1
@@ -71,9 +71,9 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 	
 	private int cachedHashCode = 0;
 	
-	private DhSectionPos pos;
+	private OldDhSectionPos pos;
 	@Override
-	public DhSectionPos getKey() { return this.pos; }
+	public OldDhSectionPos getKey() { return this.pos; }
 	
 	
 	public final FullDataPointIdMap mapping;
@@ -112,8 +112,8 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 	// constructors //
 	//==============//
 	
-	public static FullDataSourceV2 createEmpty(DhSectionPos pos) { return new FullDataSourceV2(pos); }
-	private FullDataSourceV2(DhSectionPos pos) 
+	public static FullDataSourceV2 createEmpty(OldDhSectionPos pos) { return new FullDataSourceV2(pos); }
+	private FullDataSourceV2(OldDhSectionPos pos) 
 	{
 		this.pos = pos;
 		this.dataPoints = new LongArrayList[WIDTH * WIDTH];
@@ -126,8 +126,8 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 		this.columnWorldCompressionMode = new byte[WIDTH * WIDTH];
 	}
 	
-	public static FullDataSourceV2 createWithData(DhSectionPos pos, FullDataPointIdMap mapping, LongArrayList[] data, byte[] columnGenerationStep, byte[] columnWorldCompressionMode) { return new FullDataSourceV2(pos, mapping, data, columnGenerationStep, columnWorldCompressionMode); }
-	private FullDataSourceV2(DhSectionPos pos, FullDataPointIdMap mapping, LongArrayList[] data, byte[] columnGenerationSteps, byte[] columnWorldCompressionMode)
+	public static FullDataSourceV2 createWithData(OldDhSectionPos pos, FullDataPointIdMap mapping, LongArrayList[] data, byte[] columnGenerationStep, byte[] columnWorldCompressionMode) { return new FullDataSourceV2(pos, mapping, data, columnGenerationStep, columnWorldCompressionMode); }
+	private FullDataSourceV2(OldDhSectionPos pos, FullDataPointIdMap mapping, LongArrayList[] data, byte[] columnGenerationSteps, byte[] columnWorldCompressionMode)
 	{
 		LodUtil.assertTrue(data.length == WIDTH * WIDTH);
 		
@@ -783,7 +783,7 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 	 * 
 	 * @see FullDataSourceV2#dataPoints
 	 */
-	public static void throwIfDataColumnInWrongOrder(DhSectionPos pos, LongArrayList dataArray) throws IllegalStateException
+	public static void throwIfDataColumnInWrongOrder(OldDhSectionPos pos, LongArrayList dataArray) throws IllegalStateException
 	{
 		long firstDataPoint = dataArray.getLong(0);
 		int firstBottomY = FullDataPointUtil.getBottomY(firstDataPoint);
@@ -829,7 +829,7 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 	// pooling //
 	//=========//
 	
-	private static void prepPooledDataSource(DhSectionPos pos, boolean clearData, FullDataSourceV2 dataSource)
+	private static void prepPooledDataSource(OldDhSectionPos pos, boolean clearData, FullDataSourceV2 dataSource)
 	{
 		dataSource.pos = pos;
 		
@@ -857,10 +857,10 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 	//=====================//
 	
 	@Override
-	public DhSectionPos getPos() { return this.pos; }
+	public OldDhSectionPos getPos() { return this.pos; }
 	
 	@Override
-	public byte getDataDetailLevel() { return (byte) (this.pos.getDetailLevel() - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL); }
+	public byte getDataDetailLevel() { return (byte) (this.pos.getDetailLevel() - OldDhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL); }
 	
 	public EDhApiWorldGenerationStep getWorldGenStepAtRelativePos(int relX, int relZ) 
 	{

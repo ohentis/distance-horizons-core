@@ -28,7 +28,7 @@ import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.file.fullDatafile.FullDataSourceProviderV2;
 import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.pos.OldDhSectionPos;
 import com.seibel.distanthorizons.core.render.glObject.GLProxy;
 import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
 import com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.ColumnRenderBuffer;
@@ -56,7 +56,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	
 	
 	
-	public final DhSectionPos pos;
+	public final OldDhSectionPos pos;
 	
 	private final IDhClientLevel level;
 	@WillNotClose
@@ -85,7 +85,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	
 	private boolean missingPositionsCalculated = false;
 	/** should be an empty array if no positions need to be generated */
-	private ArrayList<DhSectionPos> missingGenerationPos = null;
+	private ArrayList<OldDhSectionPos> missingGenerationPos = null;
 	
 	
 	
@@ -93,7 +93,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	// constructor //
 	//=============//
 	
-	public LodRenderSection(DhSectionPos pos, LodQuadTree quadTree, IDhClientLevel level, FullDataSourceProviderV2 fullDataSourceProvider)
+	public LodRenderSection(OldDhSectionPos pos, LodQuadTree quadTree, IDhClientLevel level, FullDataSourceProviderV2 fullDataSourceProvider)
 	{
 		this.pos = pos;
 		this.quadTree = quadTree;
@@ -236,7 +236,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 			EDhDirection direction = EDhDirection.ADJ_DIRECTIONS[i];
 			int arrayIndex = direction.ordinal() - 2;
 			
-			DhSectionPos adjPos = this.pos.getAdjacentPos(direction);
+			OldDhSectionPos adjPos = this.pos.getAdjacentPos(direction);
 			try
 			{
 				LodRenderSection adjRenderSection = this.quadTree.getValue(adjPos);
@@ -350,7 +350,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 						break;
 					}
 					
-					DhSectionPos pos = this.missingGenerationPos.remove(i);
+					OldDhSectionPos pos = this.missingGenerationPos.remove(i);
 					boolean positionQueued = this.fullDataSourceProvider.queuePositionForRetrieval(pos);
 					if (!positionQueued)
 					{

@@ -24,7 +24,7 @@ import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSour
 import com.seibel.distanthorizons.core.dataObjects.transformers.ChunkToLodBuilder;
 import com.seibel.distanthorizons.core.file.fullDatafile.DelayedFullDataSourceSaveCache;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
-import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.pos.OldDhSectionPos;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
 
@@ -36,8 +36,8 @@ public abstract class AbstractDhLevel implements IDhLevel
 	public final ChunkToLodBuilder chunkToLodBuilder;
 	
 	protected final DelayedFullDataSourceSaveCache delayedFullDataSourceSaveCache = new DelayedFullDataSourceSaveCache(this::onDataSourceSave, 2_000);
-	/** contains the {@link DhChunkPos} for each {@link DhSectionPos} that are queued to save via {@link AbstractDhLevel#delayedFullDataSourceSaveCache} */
-	protected final ConcurrentHashMap<DhSectionPos, HashSet<DhChunkPos>> updatedChunkPosSetBySectionPos = new ConcurrentHashMap<>();
+	/** contains the {@link DhChunkPos} for each {@link OldDhSectionPos} that are queued to save via {@link AbstractDhLevel#delayedFullDataSourceSaveCache} */
+	protected final ConcurrentHashMap<OldDhSectionPos, HashSet<DhChunkPos>> updatedChunkPosSetBySectionPos = new ConcurrentHashMap<>();
 	
 	
 	

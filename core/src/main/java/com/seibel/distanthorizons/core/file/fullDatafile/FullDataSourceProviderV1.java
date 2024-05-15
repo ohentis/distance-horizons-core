@@ -4,7 +4,7 @@ import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSour
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.pos.OldDhSectionPos;
 import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV1DTO;
 import com.seibel.distanthorizons.core.sql.repo.FullDataSourceV1Repo;
 import com.seibel.distanthorizons.core.util.objects.DataCorruptedException;
@@ -92,7 +92,7 @@ public class FullDataSourceProviderV1<TDhLevel extends IDhLevel>
 	 *
 	 * This call is concurrent. I.e. it supports being called by multiple threads at the same time.
 	 */
-	public CompletableFuture<FullDataSourceV1> getAsync(DhSectionPos pos)
+	public CompletableFuture<FullDataSourceV1> getAsync(OldDhSectionPos pos)
 	{
 		ThreadPoolExecutor executor = ThreadPoolUtil.getFileHandlerExecutor();
 		if (executor == null || executor.isTerminated())
@@ -113,10 +113,10 @@ public class FullDataSourceProviderV1<TDhLevel extends IDhLevel>
 	/**
 	 * Should only be used in internal file handler methods where we are already running on a file handler thread.
 	 * Can return null.
-	 * @see FullDataSourceProviderV1#getAsync(DhSectionPos)
+	 * @see FullDataSourceProviderV1#getAsync(OldDhSectionPos)
 	 */
 	@Nullable
-	public FullDataSourceV1 get(DhSectionPos pos)
+	public FullDataSourceV1 get(OldDhSectionPos pos)
 	{
 		FullDataSourceV1 dataSource = null;
 		try
@@ -156,10 +156,10 @@ public class FullDataSourceProviderV1<TDhLevel extends IDhLevel>
 	{
 		ArrayList<FullDataSourceV1> dataSourceList = new ArrayList<>();
 		
-		ArrayList<DhSectionPos> migrationPosList = this.repo.getPositionsToMigrate(limit);
+		ArrayList<OldDhSectionPos> migrationPosList = this.repo.getPositionsToMigrate(limit);
 		for (int i = 0; i < migrationPosList.size(); i++)
 		{
-			DhSectionPos pos = migrationPosList.get(i);
+			OldDhSectionPos pos = migrationPosList.get(i);
 			FullDataSourceV1 dataSource = this.get(pos);
 			if (dataSource != null)
 			{
@@ -170,7 +170,7 @@ public class FullDataSourceProviderV1<TDhLevel extends IDhLevel>
 		return dataSourceList;
 	}
 	
-	public void markMigrationFailed(DhSectionPos pos) { ((FullDataSourceV1Repo) this.repo).markMigrationFailed(pos); }
+	public void markMigrationFailed(OldDhSectionPos pos) { ((FullDataSourceV1Repo) this.repo).markMigrationFailed(pos); }
 	
 	
 	
