@@ -30,6 +30,7 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
+import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
 import com.seibel.distanthorizons.core.util.objects.quadTree.QuadNode;
@@ -42,6 +43,7 @@ import javax.annotation.WillNotClose;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -51,7 +53,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * This quadTree structure is our core data structure and holds
  * all rendering data.
  */
-public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoCloseable
+public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRenderable, AutoCloseable
 {
 	public static final byte TREE_LOWEST_DETAIL_LEVEL = ColumnRenderSource.SECTION_SIZE_OFFSET;
 	
@@ -75,6 +77,10 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 	private final ReentrantLock treeReadWriteLock = new ReentrantLock();
 	private final AtomicBoolean fullDataRetrievalQueueRunning = new AtomicBoolean(false);
 	
+	private ArrayList<LodRenderSection> debugRenderSections = new ArrayList<>();
+	private ArrayList<LodRenderSection> altDebugRenderSections = new ArrayList<>();
+	private final ReentrantLock debugRenderSectionLock = new ReentrantLock();
+	
 	/** the smallest numerical detail level number that can be rendered */
 	private byte maxRenderDetailLevel;
 	/** the largest numerical detail level number that can be rendered */
@@ -97,6 +103,8 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 			FullDataSourceProviderV2 fullDataSourceProvider)
 	{
 		super(viewDiameterInBlocks, new DhBlockPos2D(initialPlayerBlockX, initialPlayerBlockZ), TREE_LOWEST_DETAIL_LEVEL);
+		
+		DebugRenderer.register(this, Config.Client.Advanced.Debugging.DebugWireframe.showQuadTreeRenderStatus);
 		
 		this.level = level;
 		this.fullDataSourceProvider = fullDataSourceProvider;
@@ -152,6 +160,26 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 	}
 	private void updateAllRenderSections(DhBlockPos2D playerPos)
 	{
+		if (Config.Client.Advanced.Debugging.DebugWireframe.showQuadTreeRenderStatus.get())
+		{
+			try
+			{
+				// lock to prevent accidentally rendering an array that's being populated/cleared
+				this.debugRenderSectionLock.lock();
+				
+				// swap the debug arrays
+				this.debugRenderSections.clear();
+				ArrayList<LodRenderSection> temp = this.debugRenderSections;
+				this.debugRenderSections = this.altDebugRenderSections;
+				this.altDebugRenderSections = temp;
+			}
+			finally
+			{
+				this.debugRenderSectionLock.unlock();
+			}
+		}
+		
+		
 		// reload any sections that need it
 		DhSectionPos pos;
 		while ((pos = this.sectionsToReload.poll()) != null)
@@ -347,6 +375,11 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 				if (!renderSection.gpuUploadInProgress() && renderSection.renderBuffer == null)
 				{
 					nodesNeedingLoading.add(renderSection);
+				}
+				
+				if (Config.Client.Advanced.Debugging.DebugWireframe.showQuadTreeRenderStatus.get())
+				{
+					this.debugRenderSections.add(renderSection);
 				}
 				
 				// wait for the parent to disable before enabling this section, so we don't overdraw/overlap render sections
@@ -593,6 +626,56 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 	private void onHorizontalQualityChange() { this.clearRenderDataCache(); }
 	
 	
+	//===========//
+	// debugging //
+	//===========//
+	
+	@Override
+	public void debugRender(DebugRenderer debugRenderer)
+	{
+		try
+		{
+			// lock to prevent accidentally rendering the array that's being cleared
+			this.debugRenderSectionLock.lock();
+			
+			
+			for (int i = 0; i < this.debugRenderSections.size(); i++)
+			{
+				LodRenderSection renderSection = this.debugRenderSections.get(i);
+				
+				Color color = Color.BLACK;
+				if (renderSection.gpuUploadInProgress())
+				{
+					color = Color.ORANGE;
+				}
+				else if (renderSection.renderBuffer == null)
+				{
+					// uploaded but the buffer is missing
+					color = Color.PINK;
+				}
+				else if (renderSection.renderBuffer.hasNonNullVbos())
+				{
+					if (renderSection.renderBuffer.vboBufferCount() != 0)
+					{
+						color = Color.GREEN;
+					}
+					else
+					{
+						// This section is probably rendering an empty chunk
+						color = Color.RED;
+					}
+				}
+				
+				debugRenderer.renderBox(new DebugRenderer.Box(renderSection.pos, 400, 400f, Objects.hashCode(this), 0.05f, color));
+			}
+		}
+		finally
+		{
+			this.debugRenderSectionLock.unlock();
+		}
+	}
+	
+	
 	
 	//==============//
 	// base methods //
@@ -604,6 +687,8 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 		LOGGER.info("Shutting down " + LodQuadTree.class.getSimpleName() + "...");
 		
 		this.horizontalScaleChangeListener.close();
+		
+		DebugRenderer.unregister(this, Config.Client.Advanced.Debugging.DebugWireframe.showQuadTreeRenderStatus);
 		
 		Iterator<QuadNode<LodRenderSection>> nodeIterator = this.nodeIterator();
 		while (nodeIterator.hasNext())

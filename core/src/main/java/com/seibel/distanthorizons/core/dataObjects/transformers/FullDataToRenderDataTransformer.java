@@ -52,6 +52,8 @@ public class FullDataToRenderDataTransformer
 	private static final IWrapperFactory WRAPPER_FACTORY = SingletonInjector.INSTANCE.get(IWrapperFactory.class);
 	private static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	
+	private static final HashSet<DhSectionPos> brokenPos = new HashSet<>();
+	
 	
 	
 	//==============================//
@@ -96,7 +98,7 @@ public class FullDataToRenderDataTransformer
 	 */
 	private static ColumnRenderSource transformCompleteFullDataToColumnData(IDhClientLevel level, FullDataSourceV2 fullDataSource) throws InterruptedException
 	{
-		final DhSectionPos pos = fullDataSource.getPos();
+ 		final DhSectionPos pos = fullDataSource.getPos();
 		final byte dataDetail = fullDataSource.getDataDetailLevel();
 		final int vertSize = Config.Client.Advanced.Graphics.Quality.verticalQuality.get().calculateMaxVerticalData(fullDataSource.getDataDetailLevel());
 		final ColumnRenderSource columnSource = ColumnRenderSource.getPooledRenderSource(pos, vertSize, level.getMinY(), true);
@@ -153,8 +155,6 @@ public class FullDataToRenderDataTransformer
 			throw new InterruptedException(FullDataToRenderDataTransformer.class.getSimpleName() + " task interrupted.");
 		}
 	}
-	
-	private static HashSet<DhSectionPos> brokenPos = new HashSet<>();
 	
 	
 	// TODO what does this mean?

@@ -168,6 +168,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 						
 						// nothing needs to be rendered
 						this.canRender = false;
+						this.uploadRenderDataToGpuFuture = null;
 						return;
 					}
 					

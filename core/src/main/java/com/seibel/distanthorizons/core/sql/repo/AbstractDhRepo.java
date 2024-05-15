@@ -39,7 +39,8 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public abstract class AbstractDhRepo<TKey, TDTO extends IBaseDTO<TKey>> implements AutoCloseable
 {
-	public static final int TIMEOUT_SECONDS = 30;
+	/** a value of 0 means there's no timeout */
+	public static final int TIMEOUT_SECONDS = 0;
 	
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	private static final ConcurrentHashMap<String, Connection> CONNECTIONS_BY_CONNECTION_STRING = new ConcurrentHashMap<>();

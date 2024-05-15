@@ -47,6 +47,14 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
+	/** 
+	 * Having this number too high causes the system to become overwhelmed by
+	 * world gen requests and other jobs won't be done. <br>
+	 * IE: LODs won't update or render because world gen is hogging the CPU.
+	 * <br><br>
+	 * TODO this should be dynamically allocated based on CPU load
+	 *  and abilities.
+	 */
 	public static final int MAX_WORLD_GEN_REQUESTS_PER_THREAD = 20; 
 	
 	
@@ -168,6 +176,15 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 		if (updateExecutor == null || updateExecutor.getQueue().size() >= MAX_UPDATE_TASK_COUNT / 2)
 		{
 			// don't queue additional world gen requests if the updater is behind
+			return false;
+		}
+		
+		
+		ThreadPoolExecutor fileExecutor = ThreadPoolUtil.getFileHandlerExecutor();
+		if (fileExecutor == null || fileExecutor.getQueue().size() >= MAX_UPDATE_TASK_COUNT / 2)
+		{
+			// don't queue additional world gen requests if the file handler is overwhelmed,
+			// otherwise LODs may not load in properly
 			return false;
 		}
 		
