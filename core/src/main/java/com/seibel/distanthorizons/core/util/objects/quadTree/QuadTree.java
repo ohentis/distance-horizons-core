@@ -30,10 +30,7 @@ import com.seibel.distanthorizons.coreapi.util.MathUtil;
 import com.seibel.distanthorizons.core.util.gridList.MovableGridRingList;
 import org.apache.logging.log4j.Logger;
 
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.NoSuchElementException;
-import java.util.Queue;
+import java.util.*;
 import java.util.function.Consumer;
 
 /**
@@ -399,7 +396,7 @@ public class QuadTree<T>
 	
 	private class QuadTreeRootPosIterator implements Iterator<DhSectionPos>
 	{
-		private final Queue<DhSectionPos> iteratorPosQueue = new LinkedList<>();
+		private final Queue<DhSectionPos> iteratorPosQueue = new ArrayDeque<>();
 		
 		
 		
