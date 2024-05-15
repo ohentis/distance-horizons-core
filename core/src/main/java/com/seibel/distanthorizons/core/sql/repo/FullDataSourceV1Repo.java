@@ -20,9 +20,11 @@
 package com.seibel.distanthorizons.core.sql.repo;
 
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
+import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.pos.OldDhSectionPos;
 import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV1DTO;
 import com.seibel.distanthorizons.coreapi.util.StringUtil;
+import org.jetbrains.annotations.Nullable;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -55,7 +57,7 @@ public class FullDataSourceV1Repo extends AbstractDhRepo<OldDhSectionPos, FullDa
 	public String getTableName() { return TABLE_NAME; }
 	
 	@Override
-	public String createWhereStatement(OldDhSectionPos pos) { return "DhSectionPos = '"+pos.serialize()+"'"; }
+	public String createWhereStatement(OldDhSectionPos pos) { return "DhSectionPos = '"+serializeSectionPos(pos)+"'"; }
 	
 	
 	
@@ -67,7 +69,7 @@ public class FullDataSourceV1Repo extends AbstractDhRepo<OldDhSectionPos, FullDa
 	public FullDataSourceV1DTO convertDictionaryToDto(Map<String, Object> objectMap) throws ClassCastException
 	{
 		String posString = (String) objectMap.get("DhSectionPos");
-		OldDhSectionPos pos = OldDhSectionPos.deserialize(posString);
+		OldDhSectionPos pos = deserializeSectionPos(posString);
 		
 		// meta data
 		int checksum = (Integer) objectMap.get("Checksum");
@@ -106,7 +108,7 @@ public class FullDataSourceV1Repo extends AbstractDhRepo<OldDhSectionPos, FullDa
 		PreparedStatement statement = this.createPreparedStatement(sql);
 		
 		int i = 1;
-		statement.setObject(i++, dto.pos.serialize());
+		statement.setObject(i++, serializeSectionPos(dto.pos));
 		
 		statement.setObject(i++, dto.checksum);
 		statement.setObject(i++, 0 /*dto.dataVersion*/);
@@ -149,7 +151,7 @@ public class FullDataSourceV1Repo extends AbstractDhRepo<OldDhSectionPos, FullDa
 		
 		statement.setObject(i++, dto.dataArray);
 		
-		statement.setObject(i++, dto.pos.serialize());
+		statement.setObject(i++, serializeSectionPos(dto.pos));
 		
 		return statement;
 	}
@@ -218,7 +220,7 @@ public class FullDataSourceV1Repo extends AbstractDhRepo<OldDhSectionPos, FullDa
 		for (Map<String, Object> resultMap : resultMapList)
 		{
 			// returned in the format [sectionDetailLevel,x,z] IE [6,0,0]
-			OldDhSectionPos sectionPos = OldDhSectionPos.deserialize((String) resultMap.get("DhSectionPos"));
+			OldDhSectionPos sectionPos = deserializeSectionPos((String) resultMap.get("DhSectionPos"));
 			list.add(sectionPos);
 		}
 		
@@ -230,7 +232,7 @@ public class FullDataSourceV1Repo extends AbstractDhRepo<OldDhSectionPos, FullDa
 		String sql =
 				"UPDATE "+this.getTableName()+" \n" +
 						"SET MigrationFailed = 1 \n" +
-						"WHERE DhSectionPos = '"+pos.serialize()+"'";
+						"WHERE DhSectionPos = '"+serializeSectionPos(pos)+"'";
 		
 		this.queryDictionaryFirst(sql);
 	}
@@ -281,6 +283,25 @@ public class FullDataSourceV1Repo extends AbstractDhRepo<OldDhSectionPos, FullDa
 	{
 		String sectionPosCsv = StringUtil.join(",", deletePosList);
 		this.queryDictionaryFirst("delete from " + this.getTableName() + " where DhSectionPos in (" + sectionPosCsv + ")");
+	}
+	
+	
+	
+	//=====================//
+	// section pos helpers //
+	//=====================//
+	
+	private static String serializeSectionPos(OldDhSectionPos pos) { return "[" + pos.getDetailLevel() + ',' + pos.getX() + ',' + pos.getZ() + ']'; }
+	
+	
+	@Nullable
+	private static OldDhSectionPos deserializeSectionPos(String value)
+	{
+		if (value.charAt(0) != '[' || value.charAt(value.length() - 1) != ']') return null;
+		String[] split = value.substring(1, value.length() - 1).split(",");
+		if (split.length != 3) return null;
+		return new OldDhSectionPos(Byte.parseByte(split[0]), Integer.parseInt(split[1]), Integer.parseInt(split[2]));
+		
 	}
 	
 }

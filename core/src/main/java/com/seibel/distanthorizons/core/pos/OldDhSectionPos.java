@@ -175,16 +175,6 @@ public class OldDhSectionPos
 				this.z * BitShiftUtil.powerOfTwo(offset));
 	}
 	
-	public OldDhSectionPos getMinCornerPos(byte returnDetailLevel)
-	{
-		LodUtil.assertTrue(returnDetailLevel <= this.detailLevel, "returnDetailLevel must be less than sectionDetail");
-		
-		byte offset = (byte) (this.detailLevel - returnDetailLevel);
-		return new OldDhSectionPos(returnDetailLevel,
-				this.x * BitShiftUtil.powerOfTwo(offset),
-				this.z * BitShiftUtil.powerOfTwo(offset));
-	}
-	
 	/** 
 	 * A detail level of X lower than this section's detail level will return: <br>
 	 * 0 -> 1 <br>
@@ -291,27 +281,6 @@ public class OldDhSectionPos
 	// comparisons //
 	//=============//
 	
-	public boolean overlapsExactly(OldDhSectionPos other)
-	{
-		// original logic from DhLodPos
-		if (this.equals(other))
-		{
-			return true;
-		}
-		else if (this.detailLevel == other.detailLevel)
-		{
-			return false;
-		}
-		else if (this.detailLevel > other.detailLevel)
-		{
-			return this.equals(other.convertNewToDetailLevel(this.detailLevel));
-		}
-		else
-		{
-			return other.equals(this.convertNewToDetailLevel(other.detailLevel));
-		}
-	}
-	
 	public boolean contains(OldDhSectionPos otherPos)
 	{
 		DhBlockPos2D thisMinBlockPos = this.getMinCornerLodPos(LodUtil.BLOCK_DETAIL_LEVEL).getCornerBlockPos();
@@ -379,27 +348,6 @@ public class OldDhSectionPos
 		}
 		
 		this.getParentPos().forEachPosUpToDetailLevel(maxSectionDetailLevel, callback);
-	}
-	
-	
-	
-	
-	
-	//===============//
-	// serialization //
-	//===============//
-	
-	/** Serialize() is different from toString() as it must NEVER be changed, and should be in a short format */
-	public String serialize() { return "[" + this.detailLevel + ',' + this.x + ',' + this.z + ']'; }
-	
-	@Nullable
-	public static OldDhSectionPos deserialize(String value)
-	{
-		if (value.charAt(0) != '[' || value.charAt(value.length() - 1) != ']') return null;
-		String[] split = value.substring(1, value.length() - 1).split(",");
-		if (split.length != 3) return null;
-		return new OldDhSectionPos(Byte.parseByte(split[0]), Integer.parseInt(split[1]), Integer.parseInt(split[2]));
-		
 	}
 	
 	
