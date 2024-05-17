@@ -1,7 +1,7 @@
 package com.seibel.distanthorizons.core.util.threading;
 
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.pos.OldDhSectionPos;
+import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
 import org.apache.logging.log4j.Logger;
 
@@ -15,7 +15,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 /** 
  * Handles creating and destroying {@link ReentrantLock}'s for 
- * a given {@link OldDhSectionPos}.
+ * a given {@link DhSectionPos}.
  * This is necessary since we need an unlimited number of locks
  * when handling data updating, but we don't want to infinitely create locks.
  * This provider will create/destroy locks as necessary given the current requirements by the file handlers.
@@ -32,7 +32,7 @@ public class PositionalLockProvider
 	private static final int MAX_NUMBER_OF_LOCKS = 100;
 	
 	
-	private final ConcurrentHashMap<OldDhSectionPos, ExpiringLock> lockByPos = new ConcurrentHashMap<>();
+	private final ConcurrentHashMap<Long, ExpiringLock> lockByPos = new ConcurrentHashMap<>();
 	
 	private final AtomicBoolean lockRemovalThreadRunning = new AtomicBoolean(false);
 	
@@ -50,7 +50,7 @@ public class PositionalLockProvider
 	// getter //
 	//========//
 	
-	public ReentrantLock getLock(OldDhSectionPos pos)
+	public ReentrantLock getLock(long pos)
 	{
 		return this.lockByPos.compute(pos, (ignorePos, lock) ->
 		{
@@ -76,14 +76,14 @@ public class PositionalLockProvider
 			Thread.sleep(CLEANUP_THREAD_MAX_FREQUENCY_IN_MS);
 			
 			// walk over every lock and check which ones need to be removed
-			Iterator<OldDhSectionPos> keySet = this.lockByPos.keySet().iterator();
+			Iterator<Long> keySet = this.lockByPos.keySet().iterator();
 			while (keySet.hasNext())
 			{
 				try
 				{
 					long currentTime = System.currentTimeMillis();
 					
-					OldDhSectionPos pos = keySet.next();
+					long pos = keySet.next();
 					ExpiringLock lock = this.lockByPos.get(pos);
 					
 					// don't try removing a lock that's currently in use
@@ -92,7 +92,7 @@ public class PositionalLockProvider
 						if (currentTime > lock.expirationTimeInMs)
 						{
 							this.lockByPos.remove(pos);
-							//LOGGER.info("removed lock: "+pos);
+							//LOGGER.info("removed lock: "+DhSectionPos.toString(pos));
 						}
 						lock.unlock();
 					}

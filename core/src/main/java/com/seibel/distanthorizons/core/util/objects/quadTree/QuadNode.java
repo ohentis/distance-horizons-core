@@ -20,11 +20,12 @@
 package com.seibel.distanthorizons.core.util.objects.quadTree;
 
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.pos.OldDhSectionPos;
+import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.objects.quadTree.iterators.QuadNodeDirectChildIterator;
 import com.seibel.distanthorizons.core.util.objects.quadTree.iterators.QuadNodeDirectChildPosIterator;
 import com.seibel.distanthorizons.core.util.objects.quadTree.iterators.QuadTreeNodeIterator;
+import it.unimi.dsi.fastutil.longs.LongIterator;
 import org.apache.logging.log4j.Logger;
 
 import java.util.Iterator;
@@ -35,7 +36,7 @@ public class QuadNode<T>
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
 	
-	public final OldDhSectionPos sectionPos;
+	public final long sectionPos;
 	public final byte minimumDetailLevel;
 	public T value;
 	
@@ -67,7 +68,7 @@ public class QuadNode<T>
 	
 	
 	
-	public QuadNode(OldDhSectionPos sectionPos, byte minimumDetailLevel)
+	public QuadNode(long sectionPos, byte minimumDetailLevel)
 	{
 		this.sectionPos = sectionPos;
 		this.minimumDetailLevel = minimumDetailLevel;
@@ -145,14 +146,14 @@ public class QuadNode<T>
 	 * @return the node at the given position
 	 * @throws IllegalArgumentException if childSectionPos has the wrong detail level or is outside the bounds of this node
 	 */
-	public QuadNode<T> getNode(OldDhSectionPos sectionPos) throws IllegalArgumentException { return this.getOrSetValue(sectionPos, false, null); }
+	public QuadNode<T> getNode(long sectionPos) throws IllegalArgumentException { return this.getOrSetValue(sectionPos, false, null); }
 	
 	/**
 	 * @param sectionPos must be 1 detail level lower than this node's detail level
 	 * @return the value at the given position before the new value was set
 	 * @throws IllegalArgumentException if childSectionPos has the wrong detail level or is outside the bounds of this node
 	 */
-	public T setValue(OldDhSectionPos sectionPos, T newValue) throws IllegalArgumentException
+	public T setValue(long sectionPos, T newValue) throws IllegalArgumentException
 	{
 		QuadNode<T> previousNode = this.getNode(sectionPos);
 		if (previousNode != null)
@@ -173,27 +174,27 @@ public class QuadNode<T>
 	 * @return the node at the given position before the new node was set (if the new node should be set)
 	 * @throws IllegalArgumentException if childSectionPos has the wrong detail level or is outside the bounds of this
 	 */
-	private QuadNode<T> getOrSetValue(OldDhSectionPos inputSectionPos, boolean replaceValue, T newValue) throws IllegalArgumentException
+	private QuadNode<T> getOrSetValue(long inputSectionPos, boolean replaceValue, T newValue) throws IllegalArgumentException
 	{
 		// debug validation
 		
-		if (!this.sectionPos.contains(inputSectionPos))
+		if (!DhSectionPos.contains(this.sectionPos, inputSectionPos))
 		{
-			LOGGER.error((replaceValue ? "set " : "get ") + inputSectionPos + " center block: " + inputSectionPos.getCenterBlockPos() + ", this pos: " + this.sectionPos + " this center block: " + this.sectionPos.getCenterBlockPos());
-			throw new IllegalArgumentException("Input section pos " + inputSectionPos + " outside of this quadNode's pos: " + this.sectionPos + ", this node's blockPos: " + this.sectionPos.convertNewToDetailLevel(LodUtil.BLOCK_DETAIL_LEVEL) + " block width: " + this.sectionPos.getBlockWidth() + " input detail level: " + inputSectionPos.convertNewToDetailLevel(LodUtil.BLOCK_DETAIL_LEVEL) + " width: " + inputSectionPos.getBlockWidth());
+			LOGGER.error((replaceValue ? "set " : "get ") + inputSectionPos + " center block: " + DhSectionPos.getCenterBlockPos(inputSectionPos) + ", this pos: " + this.sectionPos + " this center block: " + DhSectionPos.getCenterBlockPos(this.sectionPos));
+			throw new IllegalArgumentException("Input section pos " + inputSectionPos + " outside of this quadNode's pos: " + this.sectionPos + ", this node's blockPos: " + DhSectionPos.convertToDetailLevel(LodUtil.BLOCK_DETAIL_LEVEL, this.sectionPos) + " block width: " + DhSectionPos.getBlockWidth(this.sectionPos) + " input detail level: " + DhSectionPos.convertToDetailLevel(LodUtil.BLOCK_DETAIL_LEVEL, inputSectionPos) + " width: " + DhSectionPos.getBlockWidth(inputSectionPos));
 		}
 		
-		if (inputSectionPos.getDetailLevel() > this.sectionPos.getDetailLevel())
+		if (DhSectionPos.getDetailLevel(inputSectionPos) > DhSectionPos.getDetailLevel(this.sectionPos))
 		{
-			throw new IllegalArgumentException("detail level higher than this node. Node Detail level: " + this.sectionPos.getDetailLevel() + " input detail level: " + inputSectionPos.getDetailLevel());
+			throw new IllegalArgumentException("detail level higher than this node. Node Detail level: " + DhSectionPos.getDetailLevel(this.sectionPos) + " input detail level: " + DhSectionPos.getDetailLevel(inputSectionPos));
 		}
 		
-		if (inputSectionPos.getDetailLevel() == this.sectionPos.getDetailLevel() && !inputSectionPos.equals(this.sectionPos))
+		if (DhSectionPos.getDetailLevel(inputSectionPos) == DhSectionPos.getDetailLevel(this.sectionPos) && inputSectionPos != this.sectionPos)
 		{
 			throw new IllegalArgumentException("Node and input detail level are equal, however positions are not; this tree doesn't contain the requested position. Node pos: " + this.sectionPos + ", input pos: " + inputSectionPos);
 		}
 		
-		if (inputSectionPos.getDetailLevel() < this.minimumDetailLevel)
+		if (DhSectionPos.getDetailLevel(inputSectionPos) < this.minimumDetailLevel)
 		{
 			throw new IllegalArgumentException("Input position is requesting a detail level lower than what this node can provide. Node minimum detail level: " + this.minimumDetailLevel + ", input pos: " + inputSectionPos);
 		}
@@ -201,7 +202,7 @@ public class QuadNode<T>
 		
 		
 		// get/set logic
-		if (inputSectionPos.getDetailLevel() == this.sectionPos.getDetailLevel())
+		if (DhSectionPos.getDetailLevel(inputSectionPos) == DhSectionPos.getDetailLevel(this.sectionPos))
 		{
 			// this node is the requested position
 			if (replaceValue)
@@ -217,14 +218,14 @@ public class QuadNode<T>
 
 //			LOGGER.info((replaceValue ? "set " : "get ")+inputSectionPos+" center block: "+inputSectionPos.getCenter().getCornerBlockPos()+", this pos: "+this.sectionPos+" this center block: "+this.sectionPos.getCenter().getCornerBlockPos());
 			
-			OldDhSectionPos nwPos = this.sectionPos.getChildByIndex(0);
-			OldDhSectionPos swPos = this.sectionPos.getChildByIndex(1);
-			OldDhSectionPos nePos = this.sectionPos.getChildByIndex(2);
-			OldDhSectionPos sePos = this.sectionPos.getChildByIndex(3);
+			long nwPos = DhSectionPos.getChildByIndex(0, this.sectionPos);
+			long swPos = DhSectionPos.getChildByIndex(1, this.sectionPos);
+			long nePos = DhSectionPos.getChildByIndex(2, this.sectionPos);
+			long sePos = DhSectionPos.getChildByIndex(3, this.sectionPos);
 			
 			// look for the child that contains the input position (there may be a faster way to do this, but this works for now)
 			QuadNode<T> childNode;
-			if (nwPos.contains(inputSectionPos))
+			if (DhSectionPos.contains(nwPos, inputSectionPos))
 			{
 				// TODO merge duplicate code
 				if (replaceValue && this.nwChild == null)
@@ -237,7 +238,7 @@ public class QuadNode<T>
 				// childNode should only be null when replaceValue = false and the end of a node chain has been reached
 				return (childNode != null) ? childNode.getOrSetValue(inputSectionPos, replaceValue, newValue) : null;
 			}
-			else if (swPos.contains(inputSectionPos))
+			else if (DhSectionPos.contains(swPos, inputSectionPos))
 			{
 				// TODO merge duplicate code
 				if (replaceValue && this.swChild == null)
@@ -250,7 +251,7 @@ public class QuadNode<T>
 				// childNode should only be null when replaceValue = false and the end of a node chain has been reached
 				return (childNode != null) ? childNode.getOrSetValue(inputSectionPos, replaceValue, newValue) : null;
 			}
-			else if (nePos.contains(inputSectionPos))
+			else if (DhSectionPos.contains(nePos, inputSectionPos))
 			{
 				// TODO merge duplicate code
 				if (replaceValue && this.neChild == null)
@@ -263,7 +264,7 @@ public class QuadNode<T>
 				// childNode should only be null when replaceValue = false and the end of a node chain has been reached
 				return (childNode != null) ? childNode.getOrSetValue(inputSectionPos, replaceValue, newValue) : null;
 			}
-			else if (sePos.contains(inputSectionPos))
+			else if (DhSectionPos.contains(sePos, inputSectionPos))
 			{
 				// TODO merge duplicate code
 				if (replaceValue && this.seChild == null)
@@ -293,7 +294,7 @@ public class QuadNode<T>
 	public Iterator<QuadNode<T>> getLeafNodeIterator() { return new QuadTreeNodeIterator<>(this, true); }
 	
 	/** positions can point to null children */
-	public Iterator<OldDhSectionPos> getChildPosIterator() { return new QuadNodeDirectChildPosIterator<>(this); }
+	public LongIterator getChildPosIterator() { return new QuadNodeDirectChildPosIterator<>(this); }
 	public Iterator<QuadNode<T>> getChildNodeIterator() { return new QuadNodeDirectChildIterator<>(this); }
 	
 	

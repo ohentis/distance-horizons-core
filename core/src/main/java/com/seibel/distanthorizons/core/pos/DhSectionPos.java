@@ -23,6 +23,8 @@ import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.coreapi.util.BitShiftUtil;
 
+import java.util.function.LongConsumer;
+
 /**
  * The position object used to define LOD objects in the quad trees. <br><br>
  *
@@ -175,13 +177,15 @@ public class DhSectionPos
 	/** @return the block X pos that represents the smallest X coordinate of this section */
 	public static int getMinCornerBlockX(long pos)
 	{
-		int halfBlockWidth = DhSectionPos.getBlockWidth(pos) / 2;
+		// detail level 1 (2x2 blocks) is a special case,
+		// if this isn't done it will return (1,1) instead of (0,0)
+		int halfBlockWidth = (getDetailLevel(pos) != 1) ? (DhSectionPos.getBlockWidth(pos) / 2) : 0;
 		return DhSectionPos.getCenterBlockPosX(pos) - halfBlockWidth;
 	}
 	/** @return the block Z pos that represents the smallest Z coordinate of this section */
 	public static int getMinCornerBlockZ(long pos)
 	{
-		int halfBlockWidth = DhSectionPos.getBlockWidth(pos) / 2;
+		int halfBlockWidth = (getDetailLevel(pos) != 1) ? (DhSectionPos.getBlockWidth(pos) / 2) : 0;
 		return DhSectionPos.getCenterBlockPosZ(pos) - halfBlockWidth;
 	}
 	
@@ -298,7 +302,8 @@ public class DhSectionPos
 				getZ(pos) + dir.getNormal().z);
 	}
 	
-	//public DhLodPos getSectionBBoxPos() { return new DhLodPos(this.detailLevel, this.x, this.z); }
+	@Deprecated
+	public static DhLodPos getSectionBBoxPos(long pos) { return new DhLodPos(getDetailLevel(pos), getX(pos), getZ(pos)); }
 
 
 
@@ -329,7 +334,7 @@ public class DhSectionPos
 	//===========//
 
 	/** Applies the given consumer to all 4 of this position's children. */
-	public static void forEachChild(IPrimitiveLongConsumer callback, long pos) throws IllegalArgumentException, IllegalStateException
+	public static void forEachChild(LongConsumer callback, long pos) throws IllegalArgumentException, IllegalStateException
 	{
 		for (int i = 0; i < 4; i++)
 		{
@@ -353,7 +358,7 @@ public class DhSectionPos
 	}
 
 	/** Applies the given consumer to all children of the position at the given section detail level. */
-	public static void forEachChildAtDetailLevel(byte sectionDetailLevel, IPrimitiveLongConsumer callback, long pos) throws IllegalArgumentException, IllegalStateException
+	public static void forEachChildAtDetailLevel(byte sectionDetailLevel, LongConsumer callback, long pos) throws IllegalArgumentException, IllegalStateException
 	{
 		if (sectionDetailLevel == getDetailLevel(pos))
 		{
@@ -368,7 +373,7 @@ public class DhSectionPos
 	}
 
 	/** Applies the given consumer to all children of the position at the given section detail level. */
-	public static void forEachPosUpToDetailLevel(byte maxSectionDetailLevel, IPrimitiveLongConsumer callback, long pos)
+	public static void forEachPosUpToDetailLevel(byte maxSectionDetailLevel, LongConsumer callback, long pos)
 	{
 		callback.accept(pos);
 		if (maxSectionDetailLevel == getDetailLevel(pos))
@@ -386,19 +391,13 @@ public class DhSectionPos
 	//==============//
 	
 	public static String toString(long pos) { return getDetailLevel(pos) + "*" + getX(pos) + "," + getZ(pos); }
+	public static int hashCode(long pos) { return Long.hashCode(pos); }
 	
 	
 	
 	//================//
 	// helper methods //
 	//================//
-	
-	/** Used instead of {@link java.util.function.Consumer} to prevent unnecessary (un)wrapping. */
-	@FunctionalInterface
-	public interface IPrimitiveLongConsumer
-	{
-		void accept(long value);
-	}
 	
 	/** Used instead of {@link java.util.function.Function} to prevent unnecessary (un)wrapping. */
 	@FunctionalInterface

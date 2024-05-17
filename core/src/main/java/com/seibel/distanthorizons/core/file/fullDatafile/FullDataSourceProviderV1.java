@@ -4,11 +4,12 @@ import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSour
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.pos.OldDhSectionPos;
+import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV1DTO;
 import com.seibel.distanthorizons.core.sql.repo.FullDataSourceV1Repo;
 import com.seibel.distanthorizons.core.util.objects.DataCorruptedException;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
@@ -92,7 +93,7 @@ public class FullDataSourceProviderV1<TDhLevel extends IDhLevel>
 	 *
 	 * This call is concurrent. I.e. it supports being called by multiple threads at the same time.
 	 */
-	public CompletableFuture<FullDataSourceV1> getAsync(OldDhSectionPos pos)
+	public CompletableFuture<FullDataSourceV1> getAsync(long pos)
 	{
 		ThreadPoolExecutor executor = ThreadPoolUtil.getFileHandlerExecutor();
 		if (executor == null || executor.isTerminated())
@@ -113,10 +114,10 @@ public class FullDataSourceProviderV1<TDhLevel extends IDhLevel>
 	/**
 	 * Should only be used in internal file handler methods where we are already running on a file handler thread.
 	 * Can return null.
-	 * @see FullDataSourceProviderV1#getAsync(OldDhSectionPos)
+	 * @see FullDataSourceProviderV1#getAsync(long)
 	 */
 	@Nullable
-	public FullDataSourceV1 get(OldDhSectionPos pos)
+	public FullDataSourceV1 get(Long pos)
 	{
 		FullDataSourceV1 dataSource = null;
 		try
@@ -133,12 +134,12 @@ public class FullDataSourceProviderV1<TDhLevel extends IDhLevel>
 		{
 			// stack trace not included since a lot of corrupt data would cause the log to get quite messy, 
 			// and it should be fairly easy to see what the problem was from the message
-			LOGGER.warn("Corrupted data found at pos "+pos+". Data at position will be deleted so it can be re-generated and to prevent future issues. Error: "+e.getMessage());
+			LOGGER.warn("Corrupted data found at pos ["+DhSectionPos.toString(pos)+"]. Data at position will be deleted so it can be re-generated and to prevent future issues. Error: "+e.getMessage());
 			this.repo.deleteWithKey(pos);
 		}
 		catch (IOException e)
 		{
-			LOGGER.warn("File read Error for pos ["+pos+"], error: "+e.getMessage(), e);
+			LOGGER.warn("File read Error for pos ["+DhSectionPos.toString(pos)+"], error: "+e.getMessage(), e);
 		}
 		
 		return dataSource;
@@ -156,10 +157,10 @@ public class FullDataSourceProviderV1<TDhLevel extends IDhLevel>
 	{
 		ArrayList<FullDataSourceV1> dataSourceList = new ArrayList<>();
 		
-		ArrayList<OldDhSectionPos> migrationPosList = this.repo.getPositionsToMigrate(limit);
+		LongArrayList migrationPosList = this.repo.getPositionsToMigrate(limit);
 		for (int i = 0; i < migrationPosList.size(); i++)
 		{
-			OldDhSectionPos pos = migrationPosList.get(i);
+			Long pos = migrationPosList.getLong(i);
 			FullDataSourceV1 dataSource = this.get(pos);
 			if (dataSource != null)
 			{
@@ -170,7 +171,7 @@ public class FullDataSourceProviderV1<TDhLevel extends IDhLevel>
 		return dataSourceList;
 	}
 	
-	public void markMigrationFailed(OldDhSectionPos pos) { ((FullDataSourceV1Repo) this.repo).markMigrationFailed(pos); }
+	public void markMigrationFailed(long pos) { ((FullDataSourceV1Repo) this.repo).markMigrationFailed(pos); }
 	
 	
 	

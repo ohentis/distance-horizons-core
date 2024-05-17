@@ -19,6 +19,7 @@
 
 package com.seibel.distanthorizons.core.util.objects.quadTree.iterators;
 
+import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.util.objects.quadTree.QuadNode;
 
 import java.util.Iterator;
@@ -46,7 +47,7 @@ public class QuadTreeNodeIterator<T> implements Iterator<QuadNode<T>>
 		this.onlyReturnLeafValues = onlyReturnLeafValues;
 		// TODO the naming conversion for these are flipped in a lot of places
 		this.highestDetailLevel = rootNode.minimumDetailLevel;
-		this.iteratorDetailLevel = rootNode.sectionPos.getDetailLevel();
+		this.iteratorDetailLevel = DhSectionPos.getDetailLevel(rootNode.sectionPos);
 		
 		
 		if (!this.onlyReturnLeafValues)

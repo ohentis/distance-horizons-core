@@ -23,7 +23,7 @@ import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGeneratio
 import com.seibel.distanthorizons.core.file.IDataSource;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.pos.OldDhSectionPos;
+import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV1DTO;
 import com.seibel.distanthorizons.core.util.FullDataPointUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
@@ -51,7 +51,7 @@ public class FullDataSourceV1 implements IDataSource<IDhLevel>
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
-	public static final byte SECTION_SIZE_OFFSET = OldDhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL;
+	public static final byte SECTION_SIZE_OFFSET = DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL;
 	/** measured in dataPoints */
 	public static final int WIDTH = BitShiftUtil.powerOfTwo(SECTION_SIZE_OFFSET);
 	
@@ -75,7 +75,7 @@ public class FullDataSourceV1 implements IDataSource<IDhLevel>
 	/** A flattened 2D array (for the X and Z directions) containing an array for the Y direction. */
 	private final long[][] dataArrays;
 	
-	private OldDhSectionPos sectionPos;
+	private long sectionPos;
 	
 	private boolean isEmpty = true;
 	
@@ -85,8 +85,8 @@ public class FullDataSourceV1 implements IDataSource<IDhLevel>
 	// constructors //
 	//==============//
 	
-	public static FullDataSourceV1 createEmpty(OldDhSectionPos pos) { return new FullDataSourceV1(pos); }
-	private FullDataSourceV1(OldDhSectionPos sectionPos)
+	public static FullDataSourceV1 createEmpty(long pos) { return new FullDataSourceV1(pos); }
+	private FullDataSourceV1(long sectionPos)
 	{
 		this.dataArrays = new long[WIDTH * WIDTH][0];
 		this.mapping = new FullDataPointIdMap(sectionPos);
@@ -111,19 +111,19 @@ public class FullDataSourceV1 implements IDataSource<IDhLevel>
 	//=====================//
 	
 	@Override
-	public OldDhSectionPos getKey() { return this.sectionPos; }
+	public Long getKey() { return this.sectionPos; }
 	
 	@Override
-	public OldDhSectionPos getPos() { return this.sectionPos; }
+	public Long getPos() { return this.sectionPos; }
 	
-	public void resizeDataStructuresForRepopulation(OldDhSectionPos pos)
+	public void resizeDataStructuresForRepopulation(long pos)
 	{
 		// no data structures need to be changed, only the source's position 
 		this.sectionPos = pos;
 	}
 	
 	@Override
-	public byte getDataDetailLevel() { return (byte) (this.sectionPos.getDetailLevel() - SECTION_SIZE_OFFSET); }
+	public byte getDataDetailLevel() { return (byte) (DhSectionPos.getDetailLevel(this.sectionPos) - SECTION_SIZE_OFFSET); }
 	
 	public boolean isEmpty() { return this.isEmpty; }
 	

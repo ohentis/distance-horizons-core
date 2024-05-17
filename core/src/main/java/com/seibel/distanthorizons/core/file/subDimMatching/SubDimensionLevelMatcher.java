@@ -29,7 +29,7 @@ import com.seibel.distanthorizons.core.level.DhClientLevel;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
-import com.seibel.distanthorizons.core.pos.OldDhSectionPos;
+import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.dataObjects.transformers.LodDataBuilder;
 import com.seibel.distanthorizons.core.util.FullDataPointUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
@@ -190,7 +190,7 @@ public class SubDimensionLevelMatcher implements AutoCloseable
 		}
 		FullDataSourceV2 newChunkSizedFullDataView = FullDataSourceV2.createFromChunk(newlyLoadedChunk);
 		// convert to a data source for easier comparing
-		FullDataSourceV2 newDataSource = FullDataSourceV2.createEmpty(new OldDhSectionPos(this.playerData.playerBlockPos));
+		FullDataSourceV2 newDataSource = FullDataSourceV2.createEmpty(DhSectionPos.encode(this.playerData.playerBlockPos));
 		newDataSource.update(newChunkSizedFullDataView);
 		
 		
@@ -215,7 +215,7 @@ public class SubDimensionLevelMatcher implements AutoCloseable
 				// get the data source to compare against
 				try (IDhLevel tempLevel = new DhClientLevel(new ClientOnlySaveStructure(), this.currentClientLevel, testLevelFolder, false))
 				{
-					testFullDataSource = tempLevel.getFullDataProvider().getAsync(new OldDhSectionPos(this.playerData.playerBlockPos)).join();
+					testFullDataSource = tempLevel.getFullDataProvider().getAsync(DhSectionPos.encode(this.playerData.playerBlockPos)).join();
 					if (testFullDataSource == null)
 					{
 						continue;
@@ -224,9 +224,9 @@ public class SubDimensionLevelMatcher implements AutoCloseable
 				
 				
 				// confirm both data sources have the same section pos
-				OldDhSectionPos newSectionChunkPos = newDataSource.getPos().convertNewToDetailLevel(OldDhSectionPos.SECTION_CHUNK_DETAIL_LEVEL);
-				OldDhSectionPos testSectionChunkPos = testFullDataSource.getPos().convertNewToDetailLevel(OldDhSectionPos.SECTION_CHUNK_DETAIL_LEVEL);
-				LodUtil.assertTrue(newSectionChunkPos.equals(testSectionChunkPos), "data source positions don't match");
+				long newSectionChunkPos = DhSectionPos.convertToDetailLevel(DhSectionPos.SECTION_CHUNK_DETAIL_LEVEL, newDataSource.getPos());
+				long testSectionChunkPos = DhSectionPos.convertToDetailLevel(DhSectionPos.SECTION_CHUNK_DETAIL_LEVEL, testFullDataSource.getPos());
+				LodUtil.assertTrue(newSectionChunkPos == testSectionChunkPos, "data source positions don't match");
 				
 				
 				

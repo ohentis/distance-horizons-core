@@ -28,7 +28,7 @@ import com.seibel.distanthorizons.core.file.fullDatafile.FullDataSourceProviderV
 import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
-import com.seibel.distanthorizons.core.pos.OldDhSectionPos;
+import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
 import com.seibel.distanthorizons.core.util.LodUtil;
@@ -36,6 +36,7 @@ import com.seibel.distanthorizons.core.util.ThreadUtil;
 import com.seibel.distanthorizons.core.util.objects.quadTree.QuadNode;
 import com.seibel.distanthorizons.core.util.objects.quadTree.QuadTree;
 import com.seibel.distanthorizons.coreapi.util.MathUtil;
+import it.unimi.dsi.fastutil.longs.LongIterator;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
@@ -68,10 +69,10 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 	private final FullDataSourceProviderV2 fullDataSourceProvider;
 	
 	/**
-	 * This holds every {@link OldDhSectionPos} that should be reloaded next tick. <br>
+	 * This holds every {@link DhSectionPos} that should be reloaded next tick. <br>
 	 * This is a {@link ConcurrentLinkedQueue} because new sections can be added to this list via the world generator threads.
 	 */
-	private final ConcurrentLinkedQueue<OldDhSectionPos> sectionsToReload = new ConcurrentLinkedQueue<>();
+	private final ConcurrentLinkedQueue<Long> sectionsToReload = new ConcurrentLinkedQueue<>();
 	private final IDhClientLevel level; //FIXME: Proper hierarchy to remove this reference!
 	private final ConfigChangeListener<EDhApiHorizontalQuality> horizontalScaleChangeListener;
 	private final ReentrantLock treeReadWriteLock = new ReentrantLock();
@@ -181,12 +182,12 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 		
 		
 		// reload any sections that need it
-		OldDhSectionPos pos;
+		Long pos;
 		while ((pos = this.sectionsToReload.poll()) != null)
 		{
 			// walk up the tree until we hit the root node
 			// this is done so any high detail changes flow up to the lower detail render sections as well
-			while (pos.getDetailLevel() <= this.treeMinDetailLevel)
+			while (DhSectionPos.getDetailLevel(pos) <= this.treeMinDetailLevel)
 			{
 				try
 				{
@@ -199,7 +200,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 				catch (IndexOutOfBoundsException e)
 				{ /* the section is now out of bounds, it doesn't need to be reloaded */ }
 				
-				pos = pos.getParentPos();
+				pos = DhSectionPos.getParentPos(pos);
 			}
 		}
 		
@@ -207,11 +208,11 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 		// walk through each root node
 		ArrayList<LodRenderSection> nodesNeedingRetrieval = new ArrayList<>();
 		ArrayList<LodRenderSection> nodesNeedingLoading = new ArrayList<>();
-		Iterator<OldDhSectionPos> rootPosIterator = this.rootNodePosIterator();
+		LongIterator rootPosIterator = this.rootNodePosIterator();
 		while (rootPosIterator.hasNext())
 		{
 			// make sure all root nodes have been created
-			OldDhSectionPos rootPos = rootPosIterator.next();
+			long rootPos = rootPosIterator.nextLong();
 			if (this.getNode(rootPos) == null)
 			{
 				this.setValue(rootPos, new LodRenderSection(rootPos, this, this.level, this.fullDataSourceProvider));
@@ -232,8 +233,8 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 		
 		nodesNeedingLoading.sort((a, b) ->
 		{
-			int aDist = a.pos.getManhattanBlockDistance(playerPos);
-			int bDist = b.pos.getManhattanBlockDistance(playerPos);
+			int aDist = DhSectionPos.getManhattanBlockDistance(playerPos, a.pos);
+			int bDist = DhSectionPos.getManhattanBlockDistance(playerPos, b.pos);
 			return Integer.compare(aDist, bDist);
 		});
 		
@@ -250,7 +251,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 	/** @return whether the current position is able to render (note: not if it IS rendering, just if it is ABLE to.) */
 	private boolean recursivelyUpdateRenderSectionNode(
 			DhBlockPos2D playerPos, 
-			QuadNode<LodRenderSection> rootNode, QuadNode<LodRenderSection> quadNode, OldDhSectionPos sectionPos, 
+			QuadNode<LodRenderSection> rootNode, QuadNode<LodRenderSection> quadNode, long sectionPos, 
 			boolean parentSectionIsRendering,
 			ArrayList<LodRenderSection> nodesNeedingRetrieval,
 			ArrayList<LodRenderSection> nodesNeedingLoading)
@@ -292,20 +293,20 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 		//byte expectedDetailLevel = DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL + 3; // can be used instead of the following logic for testing
 		byte expectedDetailLevel = this.calculateExpectedDetailLevel(playerPos, sectionPos);
 		expectedDetailLevel = (byte) Math.min(expectedDetailLevel, this.minRenderDetailLevel);
-		expectedDetailLevel += OldDhSectionPos.SECTION_BLOCK_DETAIL_LEVEL;
+		expectedDetailLevel += DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL;
 		
 		
-		if (sectionPos.getDetailLevel() > expectedDetailLevel)
+		if (DhSectionPos.getDetailLevel(sectionPos) > expectedDetailLevel)
 		{
 			// section detail level too high //
 			boolean thisPosIsRendering = renderSection.renderingEnabled;
 			boolean allChildrenSectionsAreLoaded = true;
 			
 			// recursively update all child render sections
-			Iterator<OldDhSectionPos> childPosIterator = quadNode.getChildPosIterator();
+			LongIterator childPosIterator = quadNode.getChildPosIterator();
 			while (childPosIterator.hasNext())
 			{
-				OldDhSectionPos childPos = childPosIterator.next();
+				long childPos = childPosIterator.nextLong();
 				QuadNode<LodRenderSection> childNode = rootNode.getNode(childPos);
 				
 				boolean childSectionLoaded = this.recursivelyUpdateRenderSectionNode(playerPos, rootNode, childNode, childPos, thisPosIsRendering || parentSectionIsRendering, nodesNeedingRetrieval, nodesNeedingLoading);
@@ -338,7 +339,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 				childPosIterator = quadNode.getChildPosIterator();
 				while (childPosIterator.hasNext())
 				{
-					OldDhSectionPos childPos = childPosIterator.next();
+					long childPos = childPosIterator.nextLong();
 					QuadNode<LodRenderSection> childNode = rootNode.getNode(childPos);
 					
 					boolean childSectionLoaded = this.recursivelyUpdateRenderSectionNode(playerPos, rootNode, childNode, childPos, parentSectionIsRendering, nodesNeedingRetrieval, nodesNeedingLoading);
@@ -348,7 +349,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 				{
 					// FIXME having world generation enabled in a pre-generated world that doesn't have any DH data can cause this to happen
 					//  surprisingly reloadPos() doesn't appear to be the culprit, maybe there is an issue with reloading/changing the full data source?
-					//LOGGER.warn("Potential QuadTree concurrency issue. All child sections should be enabled and ready to render for pos: "+sectionPos);
+					//LOGGER.warn("Potential QuadTree concurrency issue. All child sections should be enabled and ready to render for pos: "+DhSectionPos.toString(sectionPos));
 				}
 				
 				// this section is now being rendered via its children
@@ -356,7 +357,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 			}
 		}
 		// TODO this should only equal the expected detail level, the (expectedDetailLevel-1) is a temporary fix to prevent corners from being cut out 
-		else if (sectionPos.getDetailLevel() == expectedDetailLevel || sectionPos.getDetailLevel() == expectedDetailLevel - 1)
+		else if (DhSectionPos.getDetailLevel(sectionPos) == expectedDetailLevel || DhSectionPos.getDetailLevel(sectionPos) == expectedDetailLevel - 1)
 		{
 			// this is the detail level we want to render //
 			
@@ -445,7 +446,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 	 * @param sectionPos section position
 	 * @return detail level of this section pos
 	 */
-	public byte calculateExpectedDetailLevel(DhBlockPos2D playerPos, OldDhSectionPos sectionPos) { return this.getDetailLevelFromDistance(playerPos.dist(sectionPos.getCenterBlockPosX(), sectionPos.getCenterBlockPosZ())); }
+	public byte calculateExpectedDetailLevel(DhBlockPos2D playerPos, long sectionPos) { return this.getDetailLevelFromDistance(playerPos.dist(DhSectionPos.getCenterBlockPosX(sectionPos), DhSectionPos.getCenterBlockPosZ(sectionPos))); }
 	private byte getDetailLevelFromDistance(double distance)
 	{
 		double maxDetailDistance = this.getDrawDistanceFromDetail(Byte.MAX_VALUE - 1);
@@ -537,16 +538,8 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 	 * Can be called whenever a render section's data needs to be refreshed. <br>
 	 * This should be called whenever a world generation task is completed or if the connected server has new data to show.
 	 */
-	public void reloadPos(@NotNull OldDhSectionPos pos)
+	public void reloadPos(long pos)
 	{
-		if (pos == null)
-		{
-			// shouldn't happen, but James saw it happen once, so this is here just in case
-			LOGGER.warn("reloadPos given a null pos.");
-			return;
-		}
-		
-		
 		this.sectionsToReload.add(pos);
 		
 		// the adjacent locations also need to be updated to make sure lighting
@@ -554,7 +547,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 		// and lights may not show up over LOD borders
 		for (EDhDirection direction : EDhDirection.ADJ_DIRECTIONS)
 		{
-			this.sectionsToReload.add(pos.getAdjacentPos(direction));
+			this.sectionsToReload.add(DhSectionPos.getAdjacentPos(direction, pos));
 		}
 	}
 	
@@ -574,8 +567,8 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 			// sort the nodes from nearest to farthest
 			nodesNeedingRetrieval.sort((a, b) ->
 			{
-				int aDist = a.pos.getManhattanBlockDistance(playerPos);
-				int bDist = b.pos.getManhattanBlockDistance(playerPos);
+				int aDist = DhSectionPos.getManhattanBlockDistance(playerPos, a.pos);
+				int bDist = DhSectionPos.getManhattanBlockDistance(playerPos, b.pos);
 				return Integer.compare(aDist, bDist);
 			});
 			

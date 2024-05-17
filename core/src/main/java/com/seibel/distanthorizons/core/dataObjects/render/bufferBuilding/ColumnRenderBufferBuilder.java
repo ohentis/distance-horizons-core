@@ -27,7 +27,7 @@ import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
-import com.seibel.distanthorizons.core.pos.OldDhSectionPos;
+import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.render.glObject.GLProxy;
 import com.seibel.distanthorizons.core.render.glObject.buffer.GLVertexBuffer;
 import com.seibel.distanthorizons.core.util.LodUtil;
@@ -98,7 +98,7 @@ public class ColumnRenderBufferBuilder
 									&& !clientLevel.getLevelWrapper().getDimensionType().isTheEnd()
 									// FIXME temporary fix
 									//  Cave culling is currently broken for any detail level above 0
-									&& renderSource.pos.getDetailLevel() == OldDhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL
+									&& DhSectionPos.getDetailLevel(renderSource.pos) == DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL
 								);
 						
 						int skyLightCullingBelow = Config.Client.Advanced.Graphics.AdvancedGraphics.caveCullingHeight.get();
@@ -131,7 +131,7 @@ public class ColumnRenderBufferBuilder
 				{
 					try
 					{
-						ColumnRenderBuffer buffer = new ColumnRenderBuffer(new DhBlockPos(renderSource.pos.getMinCornerLodPos().getCornerBlockPos(), clientLevel.getMinY()));
+						ColumnRenderBuffer buffer = new ColumnRenderBuffer(new DhBlockPos(DhSectionPos.getMinCornerBlockX(renderSource.pos), clientLevel.getMinY(), DhSectionPos.getMinCornerBlockZ(renderSource.pos)));
 						try
 						{
 							buffer.uploadBuffer(quadBuilder, GLProxy.getInstance().getGpuUploadMethod());
@@ -174,9 +174,9 @@ public class ColumnRenderBufferBuilder
 		boolean enableColumnBufferLimit = Config.Client.Advanced.Debugging.columnBuilderDebugEnable.get();
 		if (enableColumnBufferLimit)
 		{
-			if (renderSource.pos.getDetailLevel() == Config.Client.Advanced.Debugging.columnBuilderDebugDetailLevel.get()
-				&& renderSource.pos.getX() == Config.Client.Advanced.Debugging.columnBuilderDebugXPos.get()
-				&& renderSource.pos.getZ() == Config.Client.Advanced.Debugging.columnBuilderDebugZPos.get())
+			if (DhSectionPos.getDetailLevel(renderSource.pos) == Config.Client.Advanced.Debugging.columnBuilderDebugDetailLevel.get()
+				&& DhSectionPos.getX(renderSource.pos) == Config.Client.Advanced.Debugging.columnBuilderDebugXPos.get()
+				&& DhSectionPos.getZ(renderSource.pos) == Config.Client.Advanced.Debugging.columnBuilderDebugZPos.get())
 			{
 				int test = 0;
 			}

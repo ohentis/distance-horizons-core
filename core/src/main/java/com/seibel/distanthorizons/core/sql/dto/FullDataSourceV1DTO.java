@@ -22,7 +22,7 @@ package com.seibel.distanthorizons.core.sql.dto;
 import com.seibel.distanthorizons.api.enums.config.EDhApiDataCompressionMode;
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV1;
-import com.seibel.distanthorizons.core.pos.OldDhSectionPos;
+import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataInputStream;
 
 import java.io.ByteArrayInputStream;
@@ -32,9 +32,9 @@ import java.io.InputStream;
 /**
  * Handles storing{@link FullDataSourceV1}'s in the database.
  */
-public class FullDataSourceV1DTO implements IBaseDTO<OldDhSectionPos>
+public class FullDataSourceV1DTO implements IBaseDTO<Long>
 {
-	public OldDhSectionPos pos;
+	public long pos;
 	public int checksum;
 	public byte dataDetailLevel;
 	public EDhApiWorldGenerationStep worldGenStep;
@@ -52,7 +52,7 @@ public class FullDataSourceV1DTO implements IBaseDTO<OldDhSectionPos>
 	// constructor //
 	//=============//
 	
-	public FullDataSourceV1DTO(OldDhSectionPos pos, int checksum, byte dataDetailLevel, EDhApiWorldGenerationStep worldGenStep, String dataType, byte binaryDataFormatVersion, byte[] dataArray)
+	public FullDataSourceV1DTO(long pos, int checksum, byte dataDetailLevel, EDhApiWorldGenerationStep worldGenStep, String dataType, byte binaryDataFormatVersion, byte[] dataArray)
 	{
 		this.pos = pos;
 		this.checksum = checksum;
@@ -81,7 +81,7 @@ public class FullDataSourceV1DTO implements IBaseDTO<OldDhSectionPos>
 	//===========//
 	
 	@Override
-	public OldDhSectionPos getKey() { return this.pos; }
+	public Long getKey() { return this.pos; }
 	
 	
 }

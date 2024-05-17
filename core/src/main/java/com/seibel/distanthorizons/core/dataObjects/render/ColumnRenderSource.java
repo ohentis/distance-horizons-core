@@ -26,7 +26,7 @@ import com.seibel.distanthorizons.core.file.DataSourcePool;
 import com.seibel.distanthorizons.core.file.IDataSource;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
-import com.seibel.distanthorizons.core.pos.OldDhSectionPos;
+import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.core.dataObjects.render.columnViews.ColumnArrayView;
 import com.seibel.distanthorizons.core.dataObjects.render.columnViews.ColumnQuadView;
@@ -50,7 +50,7 @@ public class ColumnRenderSource implements IDataSource<IDhClientLevel>
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
 	public static final boolean DO_SAFETY_CHECKS = ModInfo.IS_DEV_BUILD;
-	public static final byte SECTION_SIZE_OFFSET = OldDhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL;
+	public static final byte SECTION_SIZE_OFFSET = DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL;
 	public static final int SECTION_SIZE = BitShiftUtil.powerOfTwo(SECTION_SIZE_OFFSET);
 	
 	public static final DataSourcePool<ColumnRenderSource, IDhClientLevel> DATA_SOURCE_POOL = new DataSourcePool<>(ColumnRenderSource::createEmptyRenderSource, null /* data source prep/cleanup needs to be done outside the pool since it requires additional inputs */);
@@ -59,7 +59,7 @@ public class ColumnRenderSource implements IDataSource<IDhClientLevel>
 	
 	/** will be zero if an empty data source was created */
 	public int verticalDataCount;
-	public OldDhSectionPos pos;
+	public long pos;
 	public int yOffset;
 	
 	public LongArrayList renderDataContainer;
@@ -77,11 +77,11 @@ public class ColumnRenderSource implements IDataSource<IDhClientLevel>
 	//==============//
 	
 	/** 
-	 * This is separate from {@link DataSourcePool#getPooledSource(OldDhSectionPos, boolean)} 
+	 * This is separate from {@link DataSourcePool#getPooledSource(long, boolean)} 
 	 * because we need to pass in a couple extra values, 
 	 * specifically maxVerticalSize and yOffset.
 	 */
-	public static ColumnRenderSource getPooledRenderSource(OldDhSectionPos pos, int maxVerticalSize, int yOffset, boolean clearData)
+	public static ColumnRenderSource getPooledRenderSource(long pos, int maxVerticalSize, int yOffset, boolean clearData)
 	{
 		ColumnRenderSource renderSource = DATA_SOURCE_POOL.getPooledSource(pos);
 		
@@ -109,14 +109,14 @@ public class ColumnRenderSource implements IDataSource<IDhClientLevel>
 	}
 	
 	
-	private static ColumnRenderSource createEmptyRenderSource(OldDhSectionPos sectionPos) { return new ColumnRenderSource(sectionPos, 0, 0); }
+	private static ColumnRenderSource createEmptyRenderSource(long sectionPos) { return new ColumnRenderSource(sectionPos, 0, 0); }
 	/**
 	 * Creates an empty ColumnRenderSource.
 	 *
 	 * @param pos the relative position of the container
 	 * @param maxVerticalSize the maximum vertical size of the container
 	 */
-	private ColumnRenderSource(OldDhSectionPos pos, int maxVerticalSize, int yOffset)
+	private ColumnRenderSource(long pos, int maxVerticalSize, int yOffset)
 	{
 		this.verticalDataCount = maxVerticalSize;
 		this.renderDataContainer = new LongArrayList(new long[SECTION_SIZE * SECTION_SIZE * this.verticalDataCount]);
@@ -155,7 +155,7 @@ public class ColumnRenderSource implements IDataSource<IDhClientLevel>
 		final String errorMessagePrefix = "Unable to complete update for RenderSource pos: [" + this.pos + "] and pos: [" + inputFullDataSource.getPos() + "]. Error:";
 		
 		boolean dataChanged = false;
-		if (inputFullDataSource.getPos().getDetailLevel() == this.pos.getDetailLevel())
+		if (DhSectionPos.getDetailLevel(inputFullDataSource.getPos()) == DhSectionPos.getDetailLevel(this.pos))
 		{
 			try
 			{
@@ -167,8 +167,8 @@ public class ColumnRenderSource implements IDataSource<IDhClientLevel>
 				
 				
 				
-				DhBlockPos2D centerBlockPos = inputFullDataSource.getPos().getCenterBlockPos();
-				int halfBlockWidth = inputFullDataSource.getPos().getBlockWidth() / 2;
+				DhBlockPos2D centerBlockPos = DhSectionPos.getCenterBlockPos(inputFullDataSource.getPos());
+				int halfBlockWidth = DhSectionPos.getBlockWidth(inputFullDataSource.getPos()) / 2;
 				DhBlockPos2D minBlockPos = new DhBlockPos2D(centerBlockPos.x - halfBlockWidth, centerBlockPos.z - halfBlockWidth);
 				
 				for (int x = 0; x < FullDataSourceV2.WIDTH; x++)
@@ -215,11 +215,11 @@ public class ColumnRenderSource implements IDataSource<IDhClientLevel>
 	// data helper methods //
 	//=====================//
 	
-	public OldDhSectionPos getPos() { return this.pos; }
+	public Long getPos() { return this.pos; }
 	@Override
-	public OldDhSectionPos getKey() { return this.pos; }
+	public Long getKey() { return this.pos; }
 	
-	public byte getDataDetailLevel() { return (byte) (this.pos.getDetailLevel() - SECTION_SIZE_OFFSET); }
+	public byte getDataDetailLevel() { return (byte) (DhSectionPos.getDetailLevel(this.pos) - SECTION_SIZE_OFFSET); }
 	
 	public boolean isEmpty() { return this.isEmpty; }
 	public void markNotEmpty() { this.isEmpty = false; }

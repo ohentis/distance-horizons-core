@@ -20,7 +20,7 @@
 package com.seibel.distanthorizons.core.dataObjects.fullData;
 
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
-import com.seibel.distanthorizons.core.pos.OldDhSectionPos;
+import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.objects.DataCorruptedException;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataInputStream;
@@ -67,7 +67,7 @@ public class FullDataPointIdMap
 	private final ReentrantReadWriteLock readWriteLock = new ReentrantReadWriteLock();
 	
 	/** should only be used for debugging */
-	private OldDhSectionPos pos;
+	private long pos;
 	
 	/** The index should be the same as the Entry's ID */
 	private final ArrayList<Entry> entryList = new ArrayList<>();
@@ -79,7 +79,7 @@ public class FullDataPointIdMap
 	// constructor //
 	//=============//
 	
-	public FullDataPointIdMap(OldDhSectionPos pos) { this.pos = pos; }
+	public FullDataPointIdMap(long pos) { this.pos = pos; }
 	
 	
 	
@@ -123,7 +123,7 @@ public class FullDataPointIdMap
 	
 	public boolean isEmpty() { return this.entryList.isEmpty(); }
 	
-	public OldDhSectionPos getPos() { return this.pos; }
+	public long getPos() { return this.pos; }
 	
 	
 	
@@ -270,7 +270,7 @@ public class FullDataPointIdMap
 	}
 	
 	/** Should only be used if this map is going to be reused, otherwise bad things will happen. */
-	public void clear(OldDhSectionPos pos)
+	public void clear(long pos)
 	{
 		this.pos = pos;
 		this.entryList.clear();
@@ -321,7 +321,7 @@ public class FullDataPointIdMap
 	}
 	
 	/** Creates a new IdBiomeBlockStateMap from the given UTF formatted stream */
-	public static FullDataPointIdMap deserialize(DhDataInputStream inputStream, OldDhSectionPos pos, ILevelWrapper levelWrapper) throws IOException, InterruptedException, DataCorruptedException
+	public static FullDataPointIdMap deserialize(DhDataInputStream inputStream, long pos, ILevelWrapper levelWrapper) throws IOException, InterruptedException, DataCorruptedException
 	{
 		int entityCount = inputStream.readInt();
 		if (entityCount < 0)
@@ -361,12 +361,10 @@ public class FullDataPointIdMap
 			}
 		}
 		
-		//LOGGER.trace("deserialized " + pos + " " + newMap.entryList.size() + "-" + entityCount);
-		
 		if (newMap.size() != entityCount)
 		{
 			// if the mappings are out of sync then the LODs will render incorrectly due to IDs being wrong
-			LodUtil.assertNotReach("ID maps failed to deserialize for pos: "+pos+", incorrect entity count. Expected count ["+entityCount+"], actual count ["+newMap.size()+"]");
+			LodUtil.assertNotReach("ID maps failed to deserialize for pos: ["+DhSectionPos.toString(pos)+"], incorrect entity count. Expected count ["+entityCount+"], actual count ["+newMap.size()+"]");
 		}
 		
 		return newMap;

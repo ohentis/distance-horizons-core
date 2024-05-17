@@ -29,7 +29,7 @@ import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.file.AbstractDataSourceHandler;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.pos.OldDhSectionPos;
+import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
 import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV2DTO;
@@ -38,6 +38,7 @@ import com.seibel.distanthorizons.core.util.ThreadUtil;
 import com.seibel.distanthorizons.core.util.objects.DataCorruptedException;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
@@ -97,7 +98,7 @@ public class FullDataSourceProviderV2
 	 * Tracks which positions are currently being updated
 	 * to prevent duplicate concurrent updates.
 	 */
-	public final Set<OldDhSectionPos> parentUpdatingPosSet = ConcurrentHashMap.newKeySet();
+	public final Set<Long> parentUpdatingPosSet = ConcurrentHashMap.newKeySet();
 	
 	// TODO only run thread if modifications happened recently
 	/** 
@@ -172,7 +173,7 @@ public class FullDataSourceProviderV2
 	{ return dto.createPooledDataSource(this.level.getLevelWrapper()); }
 	
 	@Override
-	protected FullDataSourceV2 makeEmptyDataSource(OldDhSectionPos pos) { return FullDataSourceV2.DATA_SOURCE_POOL.getPooledSource(pos, true); }
+	protected FullDataSourceV2 makeEmptyDataSource(long pos) { return FullDataSourceV2.DATA_SOURCE_POOL.getPooledSource(pos, true); }
 	
 	
 	
@@ -201,13 +202,13 @@ public class FullDataSourceProviderV2
 					&& this.parentUpdatingPosSet.size() < MAX_UPDATE_TASK_COUNT)
 				{
 					// get the positions that need to be applied to their parents
-					ArrayList<OldDhSectionPos> parentUpdatePosList = this.repo.getPositionsToUpdate(MAX_UPDATE_TASK_COUNT);
+					LongArrayList parentUpdatePosList = this.repo.getPositionsToUpdate(MAX_UPDATE_TASK_COUNT);
 					
 					// combine updates together based on their parent
-					HashMap<OldDhSectionPos, HashSet<OldDhSectionPos>> updatePosByParentPos = new HashMap<>();
-					for (OldDhSectionPos pos : parentUpdatePosList)
+					HashMap<Long, HashSet<Long>> updatePosByParentPos = new HashMap<>();
+					for (Long pos : parentUpdatePosList)
 					{
-						updatePosByParentPos.compute(pos.getParentPos(), (parentPos, updatePosSet) -> 
+						updatePosByParentPos.compute(DhSectionPos.getParentPos(pos), (parentPos, updatePosSet) -> 
 						{
 							if (updatePosSet == null)
 							{
@@ -219,7 +220,7 @@ public class FullDataSourceProviderV2
 					}
 					
 					// queue the updates
-					for (OldDhSectionPos parentUpdatePos : updatePosByParentPos.keySet())
+					for (Long parentUpdatePos : updatePosByParentPos.keySet())
 					{
 						// stop if there are already a bunch of updates queued
 						if (this.parentUpdatingPosSet.size() > MAX_UPDATE_TASK_COUNT
@@ -246,7 +247,7 @@ public class FullDataSourceProviderV2
 										this.lockedPosSet.add(parentUpdatePos);
 										
 										// apply each child pos to the parent
-										for (OldDhSectionPos childPos : updatePosByParentPos.get(parentUpdatePos))
+										for (Long childPos : updatePosByParentPos.get(parentUpdatePos))
 										{
 											ReentrantLock childReadLock = this.updateLockProvider.getLock(childPos);
 											try
@@ -423,7 +424,7 @@ public class FullDataSourceProviderV2
 					}
 					catch (Exception e)
 					{
-						OldDhSectionPos migrationPos = legacyDataSource.getPos();
+						Long migrationPos = legacyDataSource.getPos();
 						LOGGER.warn("Unexpected issue migrating data source at pos " + migrationPos + ". Error: " + e.getMessage(), e);
 						this.legacyFileHandler.markMigrationFailed(migrationPos);
 					}
@@ -555,18 +556,18 @@ public class FullDataSourceProviderV2
 	 * an empty array if all positions were generated 
 	 */
 	@Nullable
-	public ArrayList<OldDhSectionPos> getPositionsToRetrieve(OldDhSectionPos pos)  { return null; }
+	public LongArrayList getPositionsToRetrieve(Long pos)  { return null; }
 	/**
 	 * Returns how many positions could potentially be generated for this position assuming the position is empty.
 	 * Used when estimating the total number of retrieval requests.
 	 */
-	public int getMaxPossibleRetrievalPositionCountForPos(OldDhSectionPos pos)  { return -1; }
+	public int getMaxPossibleRetrievalPositionCountForPos(Long pos)  { return -1; }
 
 	/** @return true if the position was queued, false if not */
-	public boolean queuePositionForRetrieval(OldDhSectionPos genPos) { return false; }
+	public boolean queuePositionForRetrieval(Long genPos) { return false; }
 	
 	/** does nothing if the given position isn't present in the queue */
-	public void removeRetrievalRequestIf(Function<OldDhSectionPos, Boolean> removeIf) { }
+	public void removeRetrievalRequestIf(DhSectionPos.ICancelablePrimitiveLongConsumer removeIf) { }
 	
 	public void clearRetrievalQueue() { }
 	

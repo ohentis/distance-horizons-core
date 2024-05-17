@@ -31,7 +31,7 @@ import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSour
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.pos.DhLodPos;
-import com.seibel.distanthorizons.core.pos.OldDhSectionPos;
+import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.util.FullDataPointUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.RayCastUtil;
@@ -202,10 +202,10 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 		
 		// get the detail levels for this request
 		byte requestedDetailLevel = requestedColumnPos.detailLevel;
-		byte sectionDetailLevel = (byte) (requestedDetailLevel + OldDhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
+		byte sectionDetailLevel = (byte) (requestedDetailLevel + DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
 		
 		// get the positions for this request
-		OldDhSectionPos sectionPos = requestedColumnPos.getSectionPosWithSectionDetailLevel(sectionDetailLevel);
+		long sectionPos = requestedColumnPos.getSectionPosWithSectionDetailLevel(sectionDetailLevel);
 		DhLodPos relativePos = requestedColumnPos.getDhSectionRelativePositionForDetailLevel();
 		
 		
@@ -215,7 +215,7 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 			FullDataSourceV2 dataSource = level.getFullDataProvider().getAsync(sectionPos).get();
 			if (dataSource == null)
 			{
-				return DhApiResult.createFail("Unable to find/generate any data at the " + OldDhSectionPos.class.getSimpleName() + " [" + sectionPos + "].");
+				return DhApiResult.createFail("Unable to find/generate any data at the " + DhSectionPos.class.getSimpleName() + " [" + DhSectionPos.toString(sectionPos) + "].");
 			}
 			else
 			{

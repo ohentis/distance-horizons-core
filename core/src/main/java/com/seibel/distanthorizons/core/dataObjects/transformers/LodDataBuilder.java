@@ -32,7 +32,7 @@ import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
-import com.seibel.distanthorizons.core.pos.OldDhSectionPos;
+import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.util.FullDataPointUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.objects.DataCorruptedException;
@@ -73,7 +73,7 @@ public class LodDataBuilder
 		sectionPosX = (sectionPosX < 0) ? ((sectionPosX + 1) / NUMB_OF_CHUNKS_WIDE) - 1 : (sectionPosX / NUMB_OF_CHUNKS_WIDE);
 		int sectionPosZ = chunkWrapper.getChunkPos().z;
 		sectionPosZ = (sectionPosZ < 0) ? ((sectionPosZ + 1) / NUMB_OF_CHUNKS_WIDE) - 1 : (sectionPosZ / NUMB_OF_CHUNKS_WIDE);
-		OldDhSectionPos pos = new OldDhSectionPos(OldDhSectionPos.SECTION_BLOCK_DETAIL_LEVEL, sectionPosX, sectionPosZ);
+		long pos = DhSectionPos.encode(DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL, sectionPosX, sectionPosZ);
 		
 		FullDataSourceV2 dataSource = FullDataSourceV2.createEmpty(pos);
 		dataSource.isEmpty = false;
@@ -303,7 +303,7 @@ public class LodDataBuilder
 	/** @throws ClassCastException if an API user returns the wrong object type(s) */
 	public static FullDataSourceV2 createFromApiChunkData(DhApiChunk dataPoints) throws ClassCastException, DataCorruptedException
 	{
-		FullDataSourceV2 accessor = FullDataSourceV2.createEmpty(new OldDhSectionPos(new DhChunkPos(dataPoints.chunkPosX, dataPoints.chunkPosZ)));
+		FullDataSourceV2 accessor = FullDataSourceV2.createEmpty(DhSectionPos.encode(new DhChunkPos(dataPoints.chunkPosX, dataPoints.chunkPosZ)));
 		for (int relZ = 0; relZ < LodUtil.CHUNK_WIDTH; relZ++)
 		{
 			for (int relX = 0; relX < LodUtil.CHUNK_WIDTH; relX++)

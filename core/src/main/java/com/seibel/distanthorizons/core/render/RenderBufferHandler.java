@@ -31,7 +31,7 @@ import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
 import com.seibel.distanthorizons.core.pos.DhLodPos;
-import com.seibel.distanthorizons.core.pos.OldDhSectionPos;
+import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.pos.Pos2D;
 import com.seibel.distanthorizons.core.render.renderer.LodRenderer;
 import com.seibel.distanthorizons.core.util.LodUtil;
@@ -205,8 +205,8 @@ public class RenderBufferHandler implements AutoCloseable
 		// Now that we have the axis directions, we can sort the render list
 		Comparator<LoadedRenderBuffer> farToNearComparator = (loadedBufferA, loadedBufferB) ->
 		{
-			Pos2D aPos = loadedBufferA.pos.getCenterBlockPos().toPos2D();
-			Pos2D bPos = loadedBufferB.pos.getCenterBlockPos().toPos2D();
+			Pos2D aPos = DhSectionPos.getCenterBlockPos(loadedBufferA.pos).toPos2D();
+			Pos2D bPos = DhSectionPos.getCenterBlockPos(loadedBufferB.pos).toPos2D();
 			if (true)
 			{
 				int aManhattanDistance = aPos.manhattanDist(cPos);
@@ -243,7 +243,7 @@ public class RenderBufferHandler implements AutoCloseable
 				return abPosDifference;
 			}
 			
-			return loadedBufferA.pos.getDetailLevel() - loadedBufferB.pos.getDetailLevel(); // If all else fails, sort by detail
+			return DhSectionPos.getDetailLevel(loadedBufferA.pos) - DhSectionPos.getDetailLevel(loadedBufferB.pos); // If all else fails, sort by detail
 		};
 		this.loadedNearToFarBuffers = new SortedArraySet<>((a, b) -> -farToNearComparator.compare(a, b)); // TODO is the comparator named wrong?
 		
@@ -309,7 +309,7 @@ public class RenderBufferHandler implements AutoCloseable
 		{
 			QuadNode<LodRenderSection> node = nodeIterator.next();
 			
-			OldDhSectionPos sectionPos = node.sectionPos;
+			long sectionPos = node.sectionPos;
 			LodRenderSection renderSection = node.value;
 			if (renderSection == null)
 			{
@@ -320,7 +320,7 @@ public class RenderBufferHandler implements AutoCloseable
 			{
 				if (enableFrustumCulling)
 				{
-					DhLodPos lodBounds = renderSection.pos.getSectionBBoxPos();
+					DhLodPos lodBounds = DhSectionPos.getSectionBBoxPos(renderSection.pos);
 					int blockMinX = lodBounds.getMinX().toBlockWidth();
 					int blockMinZ = lodBounds.getMinZ().toBlockWidth();
 					int lodBlockWidth = lodBounds.getBlockWidth();
@@ -425,9 +425,9 @@ public class RenderBufferHandler implements AutoCloseable
 	private static class LoadedRenderBuffer
 	{
 		public final ColumnRenderBuffer buffer;
-		public final OldDhSectionPos pos;
+		public final long pos;
 		
-		LoadedRenderBuffer(ColumnRenderBuffer buffer, OldDhSectionPos pos)
+		LoadedRenderBuffer(ColumnRenderBuffer buffer, long pos)
 		{
 			this.buffer = buffer;
 			this.pos = pos;

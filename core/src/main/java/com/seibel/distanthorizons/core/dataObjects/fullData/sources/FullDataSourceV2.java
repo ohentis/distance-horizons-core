@@ -28,7 +28,7 @@ import com.seibel.distanthorizons.core.file.DataSourcePool;
 import com.seibel.distanthorizons.core.file.IDataSource;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.pos.OldDhSectionPos;
+import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.util.FullDataPointUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.RenderDataPointUtil;
@@ -43,7 +43,7 @@ import javax.annotation.Nullable;
 import java.util.Arrays;
 
 /**
- * This data source contains every datapoint over its given {@link OldDhSectionPos}. <br><br>
+ * This data source contains every datapoint over its given {@link DhSectionPos}. <br><br>
  * 
  * @see FullDataPointUtil
  * @see FullDataSourceV1
@@ -71,9 +71,9 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 	
 	private int cachedHashCode = 0;
 	
-	private OldDhSectionPos pos;
+	private long pos;
 	@Override
-	public OldDhSectionPos getKey() { return this.pos; }
+	public Long getKey() { return this.pos; }
 	
 	
 	public final FullDataPointIdMap mapping;
@@ -112,8 +112,8 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 	// constructors //
 	//==============//
 	
-	public static FullDataSourceV2 createEmpty(OldDhSectionPos pos) { return new FullDataSourceV2(pos); }
-	private FullDataSourceV2(OldDhSectionPos pos) 
+	public static FullDataSourceV2 createEmpty(long pos) { return new FullDataSourceV2(pos); }
+	private FullDataSourceV2(long pos) 
 	{
 		this.pos = pos;
 		this.dataPoints = new LongArrayList[WIDTH * WIDTH];
@@ -126,8 +126,8 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 		this.columnWorldCompressionMode = new byte[WIDTH * WIDTH];
 	}
 	
-	public static FullDataSourceV2 createWithData(OldDhSectionPos pos, FullDataPointIdMap mapping, LongArrayList[] data, byte[] columnGenerationStep, byte[] columnWorldCompressionMode) { return new FullDataSourceV2(pos, mapping, data, columnGenerationStep, columnWorldCompressionMode); }
-	private FullDataSourceV2(OldDhSectionPos pos, FullDataPointIdMap mapping, LongArrayList[] data, byte[] columnGenerationSteps, byte[] columnWorldCompressionMode)
+	public static FullDataSourceV2 createWithData(long pos, FullDataPointIdMap mapping, LongArrayList[] data, byte[] columnGenerationStep, byte[] columnWorldCompressionMode) { return new FullDataSourceV2(pos, mapping, data, columnGenerationStep, columnWorldCompressionMode); }
+	private FullDataSourceV2(long pos, FullDataPointIdMap mapping, LongArrayList[] data, byte[] columnGenerationSteps, byte[] columnWorldCompressionMode)
 	{
 		LodUtil.assertTrue(data.length == WIDTH * WIDTH);
 		
@@ -230,8 +230,8 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 		}
 		
 		
-		byte thisDetailLevel = this.pos.getDetailLevel();
-		byte inputDetailLevel = inputDataSource.pos.getDetailLevel();
+		byte thisDetailLevel = DhSectionPos.getDetailLevel(this.pos);
+		byte inputDetailLevel = DhSectionPos.getDetailLevel(inputDataSource.pos);
 		
 		
 		// determine the mapping changes necessary for the input to map onto this datasource
@@ -256,7 +256,7 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 		}
 		
 		// determine if this data source should be applied to its parent
-		this.applyToParent = (dataChanged && this.pos.getDetailLevel() < AbstractDataSourceHandler.TOP_SECTION_DETAIL_LEVEL);
+		this.applyToParent = (dataChanged && DhSectionPos.getDetailLevel(this.pos) < AbstractDataSourceHandler.TOP_SECTION_DETAIL_LEVEL);
 		
 		if (dataChanged)
 		{
@@ -269,9 +269,9 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 	public boolean updateFromSameDetailLevel(FullDataSourceV2 inputDataSource, int[] remappedIds)
 	{
 		// both data sources should have the same detail level
-		if (inputDataSource.pos.getDetailLevel() != this.pos.getDetailLevel())
+		if (DhSectionPos.getDetailLevel(inputDataSource.pos) != DhSectionPos.getDetailLevel(this.pos))
 		{
-			throw new IllegalArgumentException("Both data sources must have the same detail level. Expected ["+this.pos.getDetailLevel()+"], received ["+inputDataSource.pos.getDetailLevel()+"].");
+			throw new IllegalArgumentException("Both data sources must have the same detail level. Expected ["+DhSectionPos.getDetailLevel(this.pos)+"], received ["+DhSectionPos.getDetailLevel(inputDataSource.pos)+"].");
 		}
 		
 		// copy over everything from the input data source into this one
@@ -351,9 +351,9 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 	}
 	public boolean updateFromOneBelowDetailLevel(FullDataSourceV2 inputDataSource, int[] remappedIds)
 	{
-		if (inputDataSource.pos.getDetailLevel() + 1 != this.pos.getDetailLevel())
+		if (DhSectionPos.getDetailLevel(inputDataSource.pos) + 1 != DhSectionPos.getDetailLevel(this.pos))
 		{
-			throw new IllegalArgumentException("Input data source must be exactly 1 detail level below this data source. Expected [" + (this.pos.getDetailLevel() - 1) + "], received [" + inputDataSource.pos.getDetailLevel() + "].");
+			throw new IllegalArgumentException("Input data source must be exactly 1 detail level below this data source. Expected [" + (DhSectionPos.getDetailLevel(this.pos) - 1) + "], received [" + DhSectionPos.getDetailLevel(inputDataSource.pos) + "].");
 		}
 		
 		// input is one detail level lower (higher detail)
@@ -362,10 +362,10 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 		
 		// determine where in the input data source should be written to
 		// since the input is one detail level below it will be one of this position's 4 children
-		int minChildXPos = this.pos.getChildByIndex(0).getX();
-		int recipientOffsetX = (inputDataSource.pos.getX() == minChildXPos) ? 0 : (WIDTH / 2);
-		int minChildZPos = this.pos.getChildByIndex(0).getZ();
-		int recipientOffsetZ = (inputDataSource.pos.getZ() == minChildZPos) ? 0 : (WIDTH / 2);
+		int minChildXPos = DhSectionPos.getX(DhSectionPos.getChildByIndex(0, this.pos));
+		int recipientOffsetX = (DhSectionPos.getX(inputDataSource.pos) == minChildXPos) ? 0 : (WIDTH / 2);
+		int minChildZPos = DhSectionPos.getZ(DhSectionPos.getChildByIndex(0, this.pos));
+		int recipientOffsetZ = (DhSectionPos.getZ(inputDataSource.pos) == minChildZPos) ? 0 : (WIDTH / 2);
 		
 		
 		
@@ -783,7 +783,7 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 	 * 
 	 * @see FullDataSourceV2#dataPoints
 	 */
-	public static void throwIfDataColumnInWrongOrder(OldDhSectionPos pos, LongArrayList dataArray) throws IllegalStateException
+	public static void throwIfDataColumnInWrongOrder(long pos, LongArrayList dataArray) throws IllegalStateException
 	{
 		long firstDataPoint = dataArray.getLong(0);
 		int firstBottomY = FullDataPointUtil.getBottomY(firstDataPoint);
@@ -793,7 +793,7 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 		
 		if (firstBottomY < lastBottomY)
 		{
-			throw new IllegalStateException("Incorrect data point order at pos: "+pos+", first datapoint bottom Y ["+firstBottomY+"], last datapoint bottom Y ["+lastBottomY+"].");
+			throw new IllegalStateException("Incorrect data point order at pos: ["+DhSectionPos.toString(pos)+"], first datapoint bottom Y ["+firstBottomY+"], last datapoint bottom Y ["+lastBottomY+"].");
 		}
 	}
 	
@@ -829,7 +829,7 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 	// pooling //
 	//=========//
 	
-	private static void prepPooledDataSource(OldDhSectionPos pos, boolean clearData, FullDataSourceV2 dataSource)
+	private static void prepPooledDataSource(long pos, boolean clearData, FullDataSourceV2 dataSource)
 	{
 		dataSource.pos = pos;
 		
@@ -857,10 +857,10 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 	//=====================//
 	
 	@Override
-	public OldDhSectionPos getPos() { return this.pos; }
+	public Long getPos() { return this.pos; }
 	
 	@Override
-	public byte getDataDetailLevel() { return (byte) (this.pos.getDetailLevel() - OldDhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL); }
+	public byte getDataDetailLevel() { return (byte) (DhSectionPos.getDetailLevel(this.pos) - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL); }
 	
 	public EDhApiWorldGenerationStep getWorldGenStepAtRelativePos(int relX, int relZ) 
 	{
@@ -899,7 +899,7 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 	//================//
 	
 	@Override
-	public String toString() { return this.pos.toString(); }
+	public String toString() { return DhSectionPos.toString(this.pos); }
 	
 	@Override 
 	public int hashCode()
@@ -912,7 +912,7 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 	}
 	private void generateHashCode()
 	{
-		int result = this.pos.hashCode();
+		int result = DhSectionPos.hashCode(this.pos);
 		result = 31 * result + Arrays.deepHashCode(this.dataPoints);
 		result = 17 * result + Arrays.hashCode(this.columnGenerationSteps);
 		result = 43 * result + Arrays.hashCode(this.columnWorldCompressionMode);
@@ -929,7 +929,7 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 		}
 		FullDataSourceV2 other = (FullDataSourceV2) obj;
 		
-		if (!other.pos.equals(this.pos))
+		if (other.pos != this.pos)
 		{
 			return false;
 		}
