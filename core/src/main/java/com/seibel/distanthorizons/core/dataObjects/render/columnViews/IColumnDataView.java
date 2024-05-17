@@ -19,6 +19,8 @@
 
 package com.seibel.distanthorizons.core.dataObjects.render.columnViews;
 
+import it.unimi.dsi.fastutil.longs.LongIterator;
+
 import java.util.Iterator;
 
 public interface IColumnDataView
@@ -28,18 +30,18 @@ public interface IColumnDataView
 	// FIXME probably horizontal size in blocks?
 	int size();
 	
-	default Iterator<Long> iterator()
+	default LongIterator iterator()
 	{
-		return new Iterator<Long>()
+		return new LongIterator()
 		{
 			private int index = 0;
-			private final int size = size();
+			private final int size = IColumnDataView.this.size();
 			
 			@Override
 			public boolean hasNext() { return this.index < this.size; }
 			
 			@Override
-			public Long next() { return get(this.index++); }
+			public long nextLong() { return IColumnDataView.this.get(this.index++); }
 			
 		};
 	}

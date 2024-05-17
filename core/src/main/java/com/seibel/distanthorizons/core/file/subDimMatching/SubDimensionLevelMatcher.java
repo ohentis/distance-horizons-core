@@ -190,7 +190,7 @@ public class SubDimensionLevelMatcher implements AutoCloseable
 		}
 		FullDataSourceV2 newChunkSizedFullDataView = FullDataSourceV2.createFromChunk(newlyLoadedChunk);
 		// convert to a data source for easier comparing
-		FullDataSourceV2 newDataSource = FullDataSourceV2.createEmpty(new DhSectionPos(this.playerData.playerBlockPos));
+		FullDataSourceV2 newDataSource = FullDataSourceV2.createEmpty(DhSectionPos.encode(this.playerData.playerBlockPos));
 		newDataSource.update(newChunkSizedFullDataView);
 		
 		
@@ -215,7 +215,7 @@ public class SubDimensionLevelMatcher implements AutoCloseable
 				// get the data source to compare against
 				try (IDhLevel tempLevel = new DhClientLevel(new ClientOnlySaveStructure(), this.currentClientLevel, testLevelFolder, false))
 				{
-					testFullDataSource = tempLevel.getFullDataProvider().getAsync(new DhSectionPos(this.playerData.playerBlockPos)).join();
+					testFullDataSource = tempLevel.getFullDataProvider().getAsync(DhSectionPos.encode(this.playerData.playerBlockPos)).join();
 					if (testFullDataSource == null)
 					{
 						continue;
@@ -224,9 +224,9 @@ public class SubDimensionLevelMatcher implements AutoCloseable
 				
 				
 				// confirm both data sources have the same section pos
-				DhSectionPos newSectionChunkPos = newDataSource.getPos().convertNewToDetailLevel(DhSectionPos.SECTION_CHUNK_DETAIL_LEVEL);
-				DhSectionPos testSectionChunkPos = testFullDataSource.getPos().convertNewToDetailLevel(DhSectionPos.SECTION_CHUNK_DETAIL_LEVEL);
-				LodUtil.assertTrue(newSectionChunkPos.equals(testSectionChunkPos), "data source positions don't match");
+				long newSectionChunkPos = DhSectionPos.convertToDetailLevel(newDataSource.getPos(), DhSectionPos.SECTION_CHUNK_DETAIL_LEVEL);
+				long testSectionChunkPos = DhSectionPos.convertToDetailLevel(testFullDataSource.getPos(), DhSectionPos.SECTION_CHUNK_DETAIL_LEVEL);
+				LodUtil.assertTrue(newSectionChunkPos == testSectionChunkPos, "data source positions don't match");
 				
 				
 				

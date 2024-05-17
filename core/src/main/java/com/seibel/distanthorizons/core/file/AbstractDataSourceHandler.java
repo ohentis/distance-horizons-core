@@ -17,7 +17,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.StreamCorruptedException;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -27,8 +26,8 @@ import java.util.concurrent.locks.ReentrantLock;
 //  We shouldn't need multiple data source handlers
 public abstract class AbstractDataSourceHandler
 		<TDataSource extends IDataSource<TDhLevel>, 
-				TDTO extends IBaseDTO<DhSectionPos>,
-				TRepo extends AbstractDhRepo<DhSectionPos, TDTO>,
+				TDTO extends IBaseDTO<Long>,
+				TRepo extends AbstractDhRepo<Long, TDTO>,
 				TDhLevel extends IDhLevel>
 		implements AutoCloseable
 {
@@ -56,8 +55,8 @@ public abstract class AbstractDataSourceHandler
 	 * generally just used for debugging,
 	 * keeps track of which positions are currently locked.
 	 */
-	public final Set<DhSectionPos> lockedPosSet = ConcurrentHashMap.newKeySet();
-	public final ConcurrentHashMap<DhSectionPos, AtomicInteger> queuedUpdateCountsByPos = new ConcurrentHashMap<>();
+	public final Set<Long> lockedPosSet = ConcurrentHashMap.newKeySet();
+	public final ConcurrentHashMap<Long, AtomicInteger> queuedUpdateCountsByPos = new ConcurrentHashMap<>();
 	
 	
 	protected final ReentrantLock closeLock = new ReentrantLock();
@@ -102,7 +101,7 @@ public abstract class AbstractDataSourceHandler
 	protected abstract TDataSource createDataSourceFromDto(TDTO dto) throws InterruptedException, IOException, DataCorruptedException;
 	protected abstract TDTO createDtoFromDataSource(TDataSource dataSource);
 	
-	protected abstract TDataSource makeEmptyDataSource(DhSectionPos pos);
+	protected abstract TDataSource makeEmptyDataSource(long pos);
 	
 	
 	
@@ -116,7 +115,7 @@ public abstract class AbstractDataSourceHandler
 	 *
 	 * This call is concurrent. I.e. it supports being called by multiple threads at the same time.
 	 */
-	public CompletableFuture<TDataSource> getAsync(DhSectionPos pos)
+	public CompletableFuture<TDataSource> getAsync(long pos)
 	{
 		ThreadPoolExecutor executor = ThreadPoolUtil.getFileHandlerExecutor();
 		if (executor == null || executor.isTerminated())
@@ -138,10 +137,10 @@ public abstract class AbstractDataSourceHandler
 	/**
 	 * Should only be used in internal file handler methods where we are already running on a file handler thread.
 	 * Can return null if the repo is in the process of being shut down
-	 * @see AbstractDataSourceHandler#getAsync(DhSectionPos)
+	 * @see AbstractDataSourceHandler#getAsync(long)
 	 */
 	@Nullable
-	public TDataSource get(DhSectionPos pos)
+	public TDataSource get(long pos)
 	{
 		TDataSource dataSource = null;
 		try
@@ -161,7 +160,7 @@ public abstract class AbstractDataSourceHandler
 					// if the user is migrating from a nightly build and used ZStd. 
 					if (CORRUPT_DATA_ERRORS_LOGGED.add(e.getMessage()))
 					{
-						LOGGER.warn("Corrupted data found at pos " + pos + ". Data at position will be deleted so it can be re-generated to prevent issues. Future errors with this same message won't be logged. Error: " + e.getMessage(), e);
+						LOGGER.warn("Corrupted data found at pos [" + DhSectionPos.toString(pos) + "]. Data at position will be deleted so it can be re-generated to prevent issues. Future errors with this same message won't be logged. Error: " + e.getMessage(), e);
 					}
 					
 					this.repo.deleteWithKey(pos);
@@ -178,7 +177,7 @@ public abstract class AbstractDataSourceHandler
 		catch (InterruptedException ignore) { }
 		catch (IOException e)
 		{
-			LOGGER.warn("File read Error for pos ["+pos+"], error: "+e.getMessage(), e);
+			LOGGER.warn("File read Error for pos ["+ DhSectionPos.toString(pos)+"], error: "+e.getMessage(), e);
 		}
 		
 		return dataSource;
@@ -231,7 +230,7 @@ public abstract class AbstractDataSourceHandler
 	 * After this method returns the inputData will be written to file.
 	 * @param updatePos the position to update 
 	 */
-	protected void updateDataSourceAtPos(DhSectionPos updatePos, @NotNull FullDataSourceV2 inputData, boolean lockOnUpdatePos)
+	protected void updateDataSourceAtPos(long updatePos, @NotNull FullDataSourceV2 inputData, boolean lockOnUpdatePos)
 	{
 		boolean methodLocked = false;
 		// a lock is necessary to prevent two threads from writing to the same position at once,
@@ -293,7 +292,7 @@ public abstract class AbstractDataSourceHandler
 	//================//
 	
 	/** used for debugging to track which positions are queued for updating */
-	private void markUpdateStart(DhSectionPos dataSourcePos)
+	private void markUpdateStart(long dataSourcePos)
 	{
 		this.queuedUpdateCountsByPos.compute(dataSourcePos, (pos, atomicCount) ->
 		{
@@ -306,7 +305,7 @@ public abstract class AbstractDataSourceHandler
 		});
 	}
 	/** used for debugging to track which positions are queued for updating */
-	private void markUpdateEnd(DhSectionPos dataSourcePos)
+	private void markUpdateEnd(long dataSourcePos)
 	{
 		this.queuedUpdateCountsByPos.compute(dataSourcePos, (pos, atomicCount) ->
 		{

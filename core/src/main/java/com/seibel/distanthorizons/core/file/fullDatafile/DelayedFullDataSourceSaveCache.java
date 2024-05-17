@@ -2,7 +2,6 @@ package com.seibel.distanthorizons.core.file.fullDatafile;
 
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.util.TimerUtil;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -22,8 +21,8 @@ public class DelayedFullDataSourceSaveCache
 	private static final Timer DELAY_UPDATE_TIMER = TimerUtil.CreateTimer("Delayed Full Datasource Save Timer");
 	
 	
-	public final ConcurrentHashMap<DhSectionPos, FullDataSourceV2> dataSourceByPosition = new ConcurrentHashMap<>();
-	private final ConcurrentHashMap<DhSectionPos, TimerTask> saveTimerTasksBySectionPos = new ConcurrentHashMap<>();
+	public final ConcurrentHashMap<Long, FullDataSourceV2> dataSourceByPosition = new ConcurrentHashMap<>();
+	private final ConcurrentHashMap<Long, TimerTask> saveTimerTasksBySectionPos = new ConcurrentHashMap<>();
 	
 	private final ISaveDataSourceFunc onSaveTimeoutFunc;
 	private final int saveDelayInMs;
@@ -48,7 +47,7 @@ public class DelayedFullDataSourceSaveCache
 	
 	public void queueDataSourceForUpdateAndSave(FullDataSourceV2 inputDataSource)
 	{
-		DhSectionPos dataSourcePos = inputDataSource.getPos();
+		long dataSourcePos = inputDataSource.getPos();
 		this.dataSourceByPosition.compute(dataSourcePos, (inputPos, temporaryDataSource) ->
 		{
 			if (temporaryDataSource == null)

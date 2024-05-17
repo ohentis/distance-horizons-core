@@ -32,7 +32,7 @@ public class PositionalLockProvider
 	private static final int MAX_NUMBER_OF_LOCKS = 100;
 	
 	
-	private final ConcurrentHashMap<DhSectionPos, ExpiringLock> lockByPos = new ConcurrentHashMap<>();
+	private final ConcurrentHashMap<Long, ExpiringLock> lockByPos = new ConcurrentHashMap<>();
 	
 	private final AtomicBoolean lockRemovalThreadRunning = new AtomicBoolean(false);
 	
@@ -50,7 +50,7 @@ public class PositionalLockProvider
 	// getter //
 	//========//
 	
-	public ReentrantLock getLock(DhSectionPos pos)
+	public ReentrantLock getLock(long pos)
 	{
 		return this.lockByPos.compute(pos, (ignorePos, lock) ->
 		{
@@ -76,14 +76,14 @@ public class PositionalLockProvider
 			Thread.sleep(CLEANUP_THREAD_MAX_FREQUENCY_IN_MS);
 			
 			// walk over every lock and check which ones need to be removed
-			Iterator<DhSectionPos> keySet = this.lockByPos.keySet().iterator();
+			Iterator<Long> keySet = this.lockByPos.keySet().iterator();
 			while (keySet.hasNext())
 			{
 				try
 				{
 					long currentTime = System.currentTimeMillis();
 					
-					DhSectionPos pos = keySet.next();
+					long pos = keySet.next();
 					ExpiringLock lock = this.lockByPos.get(pos);
 					
 					// don't try removing a lock that's currently in use
@@ -92,7 +92,7 @@ public class PositionalLockProvider
 						if (currentTime > lock.expirationTimeInMs)
 						{
 							this.lockByPos.remove(pos);
-							//LOGGER.info("removed lock: "+pos);
+							//LOGGER.info("removed lock: "+DhSectionPos.toString(pos));
 						}
 						lock.unlock();
 					}

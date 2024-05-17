@@ -205,7 +205,7 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 		byte sectionDetailLevel = (byte) (requestedDetailLevel + DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
 		
 		// get the positions for this request
-		DhSectionPos sectionPos = requestedColumnPos.getSectionPosWithSectionDetailLevel(sectionDetailLevel);
+		long sectionPos = requestedColumnPos.getSectionPosWithSectionDetailLevel(sectionDetailLevel);
 		DhLodPos relativePos = requestedColumnPos.getDhSectionRelativePositionForDetailLevel();
 		
 		
@@ -215,7 +215,7 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 			FullDataSourceV2 dataSource = level.getFullDataProvider().getAsync(sectionPos).get();
 			if (dataSource == null)
 			{
-				return DhApiResult.createFail("Unable to find/generate any data at the " + DhSectionPos.class.getSimpleName() + " [" + sectionPos + "].");
+				return DhApiResult.createFail("Unable to find/generate any data at the " + DhSectionPos.class.getSimpleName() + " [" + DhSectionPos.toString(sectionPos) + "].");
 			}
 			else
 			{

@@ -38,6 +38,7 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrappe
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import org.apache.logging.log4j.Logger;
 
 import java.util.HashSet;
@@ -52,7 +53,7 @@ public class FullDataToRenderDataTransformer
 	private static final IWrapperFactory WRAPPER_FACTORY = SingletonInjector.INSTANCE.get(IWrapperFactory.class);
 	private static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	
-	private static final HashSet<DhSectionPos> brokenPos = new HashSet<>();
+	private static final LongOpenHashSet brokenPos = new LongOpenHashSet();
 	
 	
 	
@@ -98,7 +99,7 @@ public class FullDataToRenderDataTransformer
 	 */
 	private static ColumnRenderSource transformCompleteFullDataToColumnData(IDhClientLevel level, FullDataSourceV2 fullDataSource) throws InterruptedException
 	{
- 		final DhSectionPos pos = fullDataSource.getPos();
+ 		final long pos = fullDataSource.getPos();
 		final byte dataDetail = fullDataSource.getDataDetailLevel();
 		final int vertSize = Config.Client.Advanced.Graphics.Quality.verticalQuality.get().calculateMaxVerticalData(fullDataSource.getDataDetailLevel());
 		final ColumnRenderSource columnSource = ColumnRenderSource.getPooledRenderSource(pos, vertSize, level.getMinY(), true);
@@ -111,12 +112,12 @@ public class FullDataToRenderDataTransformer
 		
 		if (dataDetail == columnSource.getDataDetailLevel())
 		{
-			int baseX = pos.getMinCornerLodPos().getCornerBlockPos().x;
-			int baseZ = pos.getMinCornerLodPos().getCornerBlockPos().z;
+			int baseX = DhSectionPos.getMinCornerBlockX(pos);
+			int baseZ = DhSectionPos.getMinCornerBlockZ(pos);
 			
-			for (int x = 0; x < pos.getWidthCountForLowerDetailedSection(dataDetail); x++)
+			for (int x = 0; x < DhSectionPos.getWidthCountForLowerDetailedSection(pos, dataDetail); x++)
 			{
-				for (int z = 0; z < pos.getWidthCountForLowerDetailedSection(dataDetail); z++)
+				for (int z = 0; z < DhSectionPos.getWidthCountForLowerDetailedSection(pos, dataDetail); z++)
 				{
 					throwIfThreadInterrupted();
 					

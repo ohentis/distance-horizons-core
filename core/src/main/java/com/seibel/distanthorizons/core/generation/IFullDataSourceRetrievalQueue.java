@@ -27,7 +27,6 @@ import com.seibel.distanthorizons.core.render.LodQuadTree;
 
 import java.io.Closeable;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
 
 /**
  * Used to track what full data sources the system currently
@@ -80,9 +79,9 @@ public interface IFullDataSourceRetrievalQueue extends Closeable
 	 * Generally the retrieval queue should be fairly small, so its faster to iterate over the existing list
 	 * and check if each one is valid vs dumbly attempting to remove every position that just went out of range.
 	 */
-	void removeRetrievalRequestIf(Function<DhSectionPos, Boolean> removeIf);
+	void removeRetrievalRequestIf(DhSectionPos.ICancelablePrimitiveLongConsumer removeIf);
 	
-	CompletableFuture<WorldGenResult> submitGenTask(DhSectionPos pos, byte requiredDataDetail, IWorldGenTaskTracker tracker);
+	CompletableFuture<WorldGenResult> submitGenTask(long pos, byte requiredDataDetail, IWorldGenTaskTracker tracker);
 	
 	
 	

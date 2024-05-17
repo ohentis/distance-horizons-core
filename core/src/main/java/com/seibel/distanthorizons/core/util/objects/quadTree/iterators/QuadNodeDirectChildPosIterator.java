@@ -21,12 +21,12 @@ package com.seibel.distanthorizons.core.util.objects.quadTree.iterators;
 
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.util.objects.quadTree.QuadNode;
+import it.unimi.dsi.fastutil.longs.LongIterator;
 
-import java.util.Iterator;
 import java.util.NoSuchElementException;
-import java.util.function.Consumer;
+import java.util.function.LongConsumer;
 
-public class QuadNodeDirectChildPosIterator<T> implements Iterator<DhSectionPos>
+public class QuadNodeDirectChildPosIterator<T> implements LongIterator
 {
 	private final QuadNodeChildIndexIterator<T> childIndexIterator;
 	private final QuadNode<T> parentNode;
@@ -44,7 +44,7 @@ public class QuadNodeDirectChildPosIterator<T> implements Iterator<DhSectionPos>
 	public boolean hasNext() { return this.childIndexIterator.hasNext(); }
 	
 	@Override
-	public DhSectionPos next()
+	public long nextLong()
 	{
 		if (!this.hasNext())
 		{
@@ -53,7 +53,7 @@ public class QuadNodeDirectChildPosIterator<T> implements Iterator<DhSectionPos>
 		
 		
 		int childIndex = this.childIndexIterator.next();
-		DhSectionPos sectionPos = this.parentNode.sectionPos.getChildByIndex(childIndex);
+		long sectionPos = DhSectionPos.getChildByIndex(this.parentNode.sectionPos, childIndex);
 		return sectionPos;
 	}
 	
@@ -63,6 +63,6 @@ public class QuadNodeDirectChildPosIterator<T> implements Iterator<DhSectionPos>
 	public void remove() { throw new UnsupportedOperationException("remove"); }
 	
 	@Override
-	public void forEachRemaining(Consumer<? super DhSectionPos> action) { Iterator.super.forEachRemaining(action); }
+	public void forEachRemaining(LongConsumer action) { LongIterator.super.forEachRemaining(action); }
 	
 }
