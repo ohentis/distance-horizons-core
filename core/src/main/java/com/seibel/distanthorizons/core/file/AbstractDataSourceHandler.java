@@ -177,7 +177,7 @@ public abstract class AbstractDataSourceHandler
 		catch (InterruptedException ignore) { }
 		catch (IOException e)
 		{
-			LOGGER.warn("File read Error for pos ["+DhSectionPos.toString(pos)+"], error: "+e.getMessage(), e);
+			LOGGER.warn("File read Error for pos ["+ DhSectionPos.toString(pos)+"], error: "+e.getMessage(), e);
 		}
 		
 		return dataSource;

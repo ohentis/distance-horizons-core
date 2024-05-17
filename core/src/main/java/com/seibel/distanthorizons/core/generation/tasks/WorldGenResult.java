@@ -19,8 +19,6 @@
 
 package com.seibel.distanthorizons.core.generation.tasks;
 
-import com.seibel.distanthorizons.core.pos.DhSectionPos;
-
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.concurrent.CompletableFuture;

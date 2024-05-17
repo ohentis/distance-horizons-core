@@ -23,9 +23,7 @@ import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.util.objects.quadTree.QuadNode;
 import it.unimi.dsi.fastutil.longs.LongIterator;
 
-import java.util.Iterator;
 import java.util.NoSuchElementException;
-import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 
 public class QuadNodeDirectChildPosIterator<T> implements LongIterator
@@ -55,7 +53,7 @@ public class QuadNodeDirectChildPosIterator<T> implements LongIterator
 		
 		
 		int childIndex = this.childIndexIterator.next();
-		long sectionPos = DhSectionPos.getChildByIndex(childIndex, this.parentNode.sectionPos);
+		long sectionPos = DhSectionPos.getChildByIndex(this.parentNode.sectionPos, childIndex);
 		return sectionPos;
 	}
 	

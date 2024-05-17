@@ -237,7 +237,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 			EDhDirection direction = EDhDirection.ADJ_DIRECTIONS[i];
 			int arrayIndex = direction.ordinal() - 2;
 			
-			long adjPos = DhSectionPos.getAdjacentPos(direction, this.pos);
+			long adjPos = DhSectionPos.getAdjacentPos(this.pos, direction);
 			try
 			{
 				LodRenderSection adjRenderSection = this.quadTree.getValue(adjPos);

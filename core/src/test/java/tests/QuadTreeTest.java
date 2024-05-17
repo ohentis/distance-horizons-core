@@ -692,7 +692,7 @@ public class QuadTreeTest
 		
 		for (int i = 0; i < 4; i++)
 		{
-			long childPos = DhSectionPos.getChildByIndex(i, rootNode.sectionPos);
+			long childPos = DhSectionPos.getChildByIndex(rootNode.sectionPos, i);
 			QuadNode<Integer> childNode = rootNode.getChildByIndex(i);
 			Assert.assertEquals("child position not the same as " + long.class.getSimpleName() + "'s getChildByIndex()", childPos, childNode.sectionPos);
 		}

@@ -27,7 +27,6 @@ import com.seibel.distanthorizons.core.render.LodQuadTree;
 
 import java.io.Closeable;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
 
 /**
  * Used to track what full data sources the system currently

@@ -271,7 +271,7 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 		// both data sources should have the same detail level
 		if (DhSectionPos.getDetailLevel(inputDataSource.pos) != DhSectionPos.getDetailLevel(this.pos))
 		{
-			throw new IllegalArgumentException("Both data sources must have the same detail level. Expected ["+DhSectionPos.getDetailLevel(this.pos)+"], received ["+DhSectionPos.getDetailLevel(inputDataSource.pos)+"].");
+			throw new IllegalArgumentException("Both data sources must have the same detail level. Expected ["+ DhSectionPos.getDetailLevel(this.pos)+"], received ["+ DhSectionPos.getDetailLevel(inputDataSource.pos)+"].");
 		}
 		
 		// copy over everything from the input data source into this one
@@ -362,9 +362,9 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 		
 		// determine where in the input data source should be written to
 		// since the input is one detail level below it will be one of this position's 4 children
-		int minChildXPos = DhSectionPos.getX(DhSectionPos.getChildByIndex(0, this.pos));
+		int minChildXPos = DhSectionPos.getX(DhSectionPos.getChildByIndex(this.pos, 0));
 		int recipientOffsetX = (DhSectionPos.getX(inputDataSource.pos) == minChildXPos) ? 0 : (WIDTH / 2);
-		int minChildZPos = DhSectionPos.getZ(DhSectionPos.getChildByIndex(0, this.pos));
+		int minChildZPos = DhSectionPos.getZ(DhSectionPos.getChildByIndex(this.pos, 0));
 		int recipientOffsetZ = (DhSectionPos.getZ(inputDataSource.pos) == minChildZPos) ? 0 : (WIDTH / 2);
 		
 		
@@ -793,7 +793,7 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 		
 		if (firstBottomY < lastBottomY)
 		{
-			throw new IllegalStateException("Incorrect data point order at pos: ["+DhSectionPos.toString(pos)+"], first datapoint bottom Y ["+firstBottomY+"], last datapoint bottom Y ["+lastBottomY+"].");
+			throw new IllegalStateException("Incorrect data point order at pos: ["+ DhSectionPos.toString(pos)+"], first datapoint bottom Y ["+firstBottomY+"], last datapoint bottom Y ["+lastBottomY+"].");
 		}
 	}
 	

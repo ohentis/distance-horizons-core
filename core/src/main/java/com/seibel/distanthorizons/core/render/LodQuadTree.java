@@ -38,7 +38,6 @@ import com.seibel.distanthorizons.core.util.objects.quadTree.QuadTree;
 import com.seibel.distanthorizons.coreapi.util.MathUtil;
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.WillNotClose;
 import java.awt.*;
@@ -233,8 +232,8 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 		
 		nodesNeedingLoading.sort((a, b) ->
 		{
-			int aDist = DhSectionPos.getManhattanBlockDistance(playerPos, a.pos);
-			int bDist = DhSectionPos.getManhattanBlockDistance(playerPos, b.pos);
+			int aDist = DhSectionPos.getManhattanBlockDistance(a.pos, playerPos);
+			int bDist = DhSectionPos.getManhattanBlockDistance(b.pos, playerPos);
 			return Integer.compare(aDist, bDist);
 		});
 		
@@ -547,7 +546,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 		// and lights may not show up over LOD borders
 		for (EDhDirection direction : EDhDirection.ADJ_DIRECTIONS)
 		{
-			this.sectionsToReload.add(DhSectionPos.getAdjacentPos(direction, pos));
+			this.sectionsToReload.add(DhSectionPos.getAdjacentPos(pos, direction));
 		}
 	}
 	
@@ -567,8 +566,8 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 			// sort the nodes from nearest to farthest
 			nodesNeedingRetrieval.sort((a, b) ->
 			{
-				int aDist = DhSectionPos.getManhattanBlockDistance(playerPos, a.pos);
-				int bDist = DhSectionPos.getManhattanBlockDistance(playerPos, b.pos);
+				int aDist = DhSectionPos.getManhattanBlockDistance(a.pos, playerPos);
+				int bDist = DhSectionPos.getManhattanBlockDistance(b.pos, playerPos);
 				return Integer.compare(aDist, bDist);
 			});
 			

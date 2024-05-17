@@ -106,7 +106,7 @@ public class DhSectionPos
 	public static long encodeBlockPos(int blockX, int blockZ)
 	{
 		long pos = encode(LodUtil.BLOCK_DETAIL_LEVEL, blockX, blockZ);
-		pos = convertToDetailLevel(DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL, pos);
+		pos = convertToDetailLevel(pos, DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL);
 		return pos;
 	}
 	
@@ -114,7 +114,7 @@ public class DhSectionPos
 	public static long encodeChunkPos(int chunkX, int chunkZ)
 	{
 		long pos = encode(LodUtil.CHUNK_DETAIL_LEVEL, chunkX, chunkZ);
-		pos = convertToDetailLevel(DhSectionPos.SECTION_CHUNK_DETAIL_LEVEL, pos);
+		pos = convertToDetailLevel(pos, DhSectionPos.SECTION_CHUNK_DETAIL_LEVEL);
 		return pos;
 	}
 	
@@ -125,7 +125,7 @@ public class DhSectionPos
 	//============//
 
 	/** uses the absolute detail level aka detail levels like {@link LodUtil#CHUNK_DETAIL_LEVEL} instead of the dhSectionPos detailLevels. */
-	public static long convertToDetailLevel(byte newDetailLevel, long pos)
+	public static long convertToDetailLevel(long pos, byte newDetailLevel)
 	{
 		byte detailLevel = getDetailLevel(pos);
 		int x = getX(pos);
@@ -199,7 +199,7 @@ public class DhSectionPos
 	 * 
 	 * @return how many {@link DhSectionPos}'s at the given detail level it would take to span the width of this section.
 	 */
-	public static int getWidthCountForLowerDetailedSection(byte returnDetailLevel, long pos)
+	public static int getWidthCountForLowerDetailedSection(long pos, byte returnDetailLevel)
 	{
 		byte detailLevel = getDetailLevel(pos);
 		
@@ -214,9 +214,9 @@ public class DhSectionPos
 
 	public static DhBlockPos2D getCenterBlockPos(long pos) { return new DhBlockPos2D(getCenterBlockPosX(pos), getCenterBlockPosZ(pos)); }
 
-	public static int getCenterBlockPosX(long pos) { return getCenterBlockPosXOrZ(true, pos); }
-	public static int getCenterBlockPosZ(long pos) { return getCenterBlockPosXOrZ(false, pos); }
-	private static int getCenterBlockPosXOrZ(boolean returnX, long pos)
+	public static int getCenterBlockPosX(long pos) { return getCenterBlockPosXOrZ(pos, true); }
+	public static int getCenterBlockPosZ(long pos) { return getCenterBlockPosXOrZ(pos, false); }
+	private static int getCenterBlockPosXOrZ(long pos, boolean returnX)
 	{
 		byte detailLevel = getDetailLevel(pos);
 		int x = getX(pos);
@@ -241,7 +241,7 @@ public class DhSectionPos
 		return (centerBlockPos * BitShiftUtil.powerOfTwo(detailLevel)) + positionOffset;
 	}
 	
-	public static int getManhattanBlockDistance(DhBlockPos2D blockPos, long pos)
+	public static int getManhattanBlockDistance(long pos, DhBlockPos2D blockPos)
 	{
 		return Math.abs(getCenterBlockPosX(pos) - blockPos.x)
 				+ Math.abs(getCenterBlockPosZ(pos) - blockPos.z);
@@ -264,7 +264,7 @@ public class DhSectionPos
 	 *
 	 * @param child0to3 must be an int between 0 and 3
 	 */
-	public static long getChildByIndex(int child0to3, long pos) throws IllegalArgumentException, IllegalStateException
+	public static long getChildByIndex(long pos, int child0to3) throws IllegalArgumentException, IllegalStateException
 	{
 		byte detailLevel = getDetailLevel(pos);
 		int x = getX(pos);
@@ -290,7 +290,7 @@ public class DhSectionPos
 	
 
 
-	public static long getAdjacentPos(EDhDirection dir, long pos) throws IllegalArgumentException
+	public static long getAdjacentPos(long pos, EDhDirection dir) throws IllegalArgumentException
 	{
 		if (dir == EDhDirection.UP || dir == EDhDirection.DOWN)
 		{
@@ -334,16 +334,16 @@ public class DhSectionPos
 	//===========//
 
 	/** Applies the given consumer to all 4 of this position's children. */
-	public static void forEachChild(LongConsumer callback, long pos) throws IllegalArgumentException, IllegalStateException
+	public static void forEachChild(long pos, LongConsumer callback) throws IllegalArgumentException, IllegalStateException
 	{
 		for (int i = 0; i < 4; i++)
 		{
-			callback.accept(getChildByIndex(i, pos));
+			callback.accept(getChildByIndex(pos, i));
 		}
 	}
 
 	/** Applies the given consumer to all children of the position at the given section detail level. */
-	public static void forEachChildDownToDetailLevel(byte minSectionDetailLevel, ICancelablePrimitiveLongConsumer callback, long pos) throws IllegalArgumentException, IllegalStateException
+	public static void forEachChildDownToDetailLevel(long pos, byte minSectionDetailLevel, ICancelablePrimitiveLongConsumer callback) throws IllegalArgumentException, IllegalStateException
 	{
 		boolean stop = callback.accept(pos);
 		if (stop || minSectionDetailLevel == getDetailLevel(pos))
@@ -353,12 +353,12 @@ public class DhSectionPos
 		
 		for (int i = 0; i < 4; i++)
 		{
-			forEachChildDownToDetailLevel(minSectionDetailLevel, callback, getChildByIndex(i, pos));
+			forEachChildDownToDetailLevel(getChildByIndex(pos, i), minSectionDetailLevel, callback);
 		}
 	}
 
 	/** Applies the given consumer to all children of the position at the given section detail level. */
-	public static void forEachChildAtDetailLevel(byte sectionDetailLevel, LongConsumer callback, long pos) throws IllegalArgumentException, IllegalStateException
+	public static void forEachChildAtDetailLevel(long pos, byte sectionDetailLevel, LongConsumer callback) throws IllegalArgumentException, IllegalStateException
 	{
 		if (sectionDetailLevel == getDetailLevel(pos))
 		{
@@ -368,12 +368,12 @@ public class DhSectionPos
 
 		for (int i = 0; i < 4; i++)
 		{
-			forEachChildAtDetailLevel(sectionDetailLevel, callback, getChildByIndex(i, pos));
+			forEachChildAtDetailLevel(getChildByIndex(pos, i), sectionDetailLevel, callback);
 		}
 	}
 
 	/** Applies the given consumer to all children of the position at the given section detail level. */
-	public static void forEachPosUpToDetailLevel(byte maxSectionDetailLevel, LongConsumer callback, long pos)
+	public static void forEachPosUpToDetailLevel(long pos, byte maxSectionDetailLevel, LongConsumer callback)
 	{
 		callback.accept(pos);
 		if (maxSectionDetailLevel == getDetailLevel(pos))
@@ -381,7 +381,7 @@ public class DhSectionPos
 			return;
 		}
 		
-		forEachPosUpToDetailLevel(maxSectionDetailLevel, callback, getParentPos(pos));
+		forEachPosUpToDetailLevel(getParentPos(pos), maxSectionDetailLevel, callback);
 	}
 	
 	

@@ -115,9 +115,9 @@ public class FullDataToRenderDataTransformer
 			int baseX = DhSectionPos.getMinCornerBlockX(pos);
 			int baseZ = DhSectionPos.getMinCornerBlockZ(pos);
 			
-			for (int x = 0; x < DhSectionPos.getWidthCountForLowerDetailedSection(dataDetail, pos); x++)
+			for (int x = 0; x < DhSectionPos.getWidthCountForLowerDetailedSection(pos, dataDetail); x++)
 			{
-				for (int z = 0; z < DhSectionPos.getWidthCountForLowerDetailedSection(dataDetail, pos); z++)
+				for (int z = 0; z < DhSectionPos.getWidthCountForLowerDetailedSection(pos, dataDetail); z++)
 				{
 					throwIfThreadInterrupted();
 					

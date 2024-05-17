@@ -21,7 +21,6 @@ package tests;
 
 import com.seibel.distanthorizons.api.enums.config.EDhApiDataCompressionMode;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
-import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV2DTO;
 import com.seibel.distanthorizons.core.sql.repo.FullDataSourceV2Repo;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
@@ -30,7 +29,6 @@ import org.junit.Assert;
 import java.io.*;
 import java.text.CharacterIterator;
 import java.text.StringCharacterIterator;
-import java.util.ArrayList;
 
 /**
  * <strong>Note:</strong>

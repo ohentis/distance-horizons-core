@@ -20,7 +20,6 @@
 package com.seibel.distanthorizons.core.generation.tasks;
 
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
-import com.seibel.distanthorizons.core.pos.DhSectionPos;
 
 import java.util.Iterator;
 import java.util.LinkedList;

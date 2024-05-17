@@ -181,7 +181,7 @@ public class QuadNode<T>
 		if (!DhSectionPos.contains(this.sectionPos, inputSectionPos))
 		{
 			LOGGER.error((replaceValue ? "set " : "get ") + inputSectionPos + " center block: " + DhSectionPos.getCenterBlockPos(inputSectionPos) + ", this pos: " + this.sectionPos + " this center block: " + DhSectionPos.getCenterBlockPos(this.sectionPos));
-			throw new IllegalArgumentException("Input section pos " + inputSectionPos + " outside of this quadNode's pos: " + this.sectionPos + ", this node's blockPos: " + DhSectionPos.convertToDetailLevel(LodUtil.BLOCK_DETAIL_LEVEL, this.sectionPos) + " block width: " + DhSectionPos.getBlockWidth(this.sectionPos) + " input detail level: " + DhSectionPos.convertToDetailLevel(LodUtil.BLOCK_DETAIL_LEVEL, inputSectionPos) + " width: " + DhSectionPos.getBlockWidth(inputSectionPos));
+			throw new IllegalArgumentException("Input section pos " + inputSectionPos + " outside of this quadNode's pos: " + this.sectionPos + ", this node's blockPos: " + DhSectionPos.convertToDetailLevel(this.sectionPos, LodUtil.BLOCK_DETAIL_LEVEL) + " block width: " + DhSectionPos.getBlockWidth(this.sectionPos) + " input detail level: " + DhSectionPos.convertToDetailLevel(inputSectionPos, LodUtil.BLOCK_DETAIL_LEVEL) + " width: " + DhSectionPos.getBlockWidth(inputSectionPos));
 		}
 		
 		if (DhSectionPos.getDetailLevel(inputSectionPos) > DhSectionPos.getDetailLevel(this.sectionPos))
@@ -218,10 +218,10 @@ public class QuadNode<T>
 
 //			LOGGER.info((replaceValue ? "set " : "get ")+inputSectionPos+" center block: "+inputSectionPos.getCenter().getCornerBlockPos()+", this pos: "+this.sectionPos+" this center block: "+this.sectionPos.getCenter().getCornerBlockPos());
 			
-			long nwPos = DhSectionPos.getChildByIndex(0, this.sectionPos);
-			long swPos = DhSectionPos.getChildByIndex(1, this.sectionPos);
-			long nePos = DhSectionPos.getChildByIndex(2, this.sectionPos);
-			long sePos = DhSectionPos.getChildByIndex(3, this.sectionPos);
+			long nwPos = DhSectionPos.getChildByIndex(this.sectionPos, 0);
+			long swPos = DhSectionPos.getChildByIndex(this.sectionPos, 1);
+			long nePos = DhSectionPos.getChildByIndex(this.sectionPos, 2);
+			long sePos = DhSectionPos.getChildByIndex(this.sectionPos, 3);
 			
 			// look for the child that contains the input position (there may be a faster way to do this, but this works for now)
 			QuadNode<T> childNode;

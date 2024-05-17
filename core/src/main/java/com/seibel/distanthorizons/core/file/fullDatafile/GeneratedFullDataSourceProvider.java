@@ -42,7 +42,6 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 implements IDebugRenderable
 {
@@ -280,7 +279,7 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 		// TODO speed up this logic by only checking ungenerated columns
 		LongArrayList generationList = new LongArrayList();
 		byte minGeneratorSectionDetailLevel = (byte) (worldGenQueue.highestDataDetail() + DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
-		DhSectionPos.forEachChildAtDetailLevel(minGeneratorSectionDetailLevel, (genPos) ->
+		DhSectionPos.forEachChildAtDetailLevel(pos, minGeneratorSectionDetailLevel, (genPos) ->
 		{
 			if (!this.repo.existsWithKey(genPos))
 			{
@@ -331,7 +330,7 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 				
 				generationList.add(genPos);
 			}
-		}, pos);
+		});
 		
 		return generationList;
 	}

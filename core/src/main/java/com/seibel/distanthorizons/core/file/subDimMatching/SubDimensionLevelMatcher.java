@@ -224,8 +224,8 @@ public class SubDimensionLevelMatcher implements AutoCloseable
 				
 				
 				// confirm both data sources have the same section pos
-				long newSectionChunkPos = DhSectionPos.convertToDetailLevel(DhSectionPos.SECTION_CHUNK_DETAIL_LEVEL, newDataSource.getPos());
-				long testSectionChunkPos = DhSectionPos.convertToDetailLevel(DhSectionPos.SECTION_CHUNK_DETAIL_LEVEL, testFullDataSource.getPos());
+				long newSectionChunkPos = DhSectionPos.convertToDetailLevel(newDataSource.getPos(), DhSectionPos.SECTION_CHUNK_DETAIL_LEVEL);
+				long testSectionChunkPos = DhSectionPos.convertToDetailLevel(testFullDataSource.getPos(), DhSectionPos.SECTION_CHUNK_DETAIL_LEVEL);
 				LodUtil.assertTrue(newSectionChunkPos == testSectionChunkPos, "data source positions don't match");
 				
 				

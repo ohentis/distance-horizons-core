@@ -49,7 +49,6 @@ import java.awt.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDebugRenderable
 {
@@ -310,14 +309,14 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 			LinkedList<CompletableFuture<WorldGenResult>> childFutures = new LinkedList<>();
 			long sectionPos = closestTask.pos;
 			WorldGenTask finalClosestTask = closestTask;
-			DhSectionPos.forEachChild((childDhSectionPos) ->
+			DhSectionPos.forEachChild(sectionPos, (childDhSectionPos) ->
 			{
 				CompletableFuture<WorldGenResult> newFuture = new CompletableFuture<>();
 				childFutures.add(newFuture);
 				
 				WorldGenTask newGenTask = new WorldGenTask(childDhSectionPos, DhSectionPos.getDetailLevel(childDhSectionPos), finalClosestTask.taskTracker, newFuture);
 				this.waitingTasks.put(newGenTask.pos, newGenTask);
-			}, sectionPos);
+			});
 			
 			// send the child futures to the future recipient, to notify them of the new tasks
 			closestTask.future.complete(WorldGenResult.CreateSplit(childFutures));

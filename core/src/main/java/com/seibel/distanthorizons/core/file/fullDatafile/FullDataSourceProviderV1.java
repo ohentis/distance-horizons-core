@@ -134,12 +134,12 @@ public class FullDataSourceProviderV1<TDhLevel extends IDhLevel>
 		{
 			// stack trace not included since a lot of corrupt data would cause the log to get quite messy, 
 			// and it should be fairly easy to see what the problem was from the message
-			LOGGER.warn("Corrupted data found at pos ["+DhSectionPos.toString(pos)+"]. Data at position will be deleted so it can be re-generated and to prevent future issues. Error: "+e.getMessage());
+			LOGGER.warn("Corrupted data found at pos ["+ DhSectionPos.toString(pos)+"]. Data at position will be deleted so it can be re-generated and to prevent future issues. Error: "+e.getMessage());
 			this.repo.deleteWithKey(pos);
 		}
 		catch (IOException e)
 		{
-			LOGGER.warn("File read Error for pos ["+DhSectionPos.toString(pos)+"], error: "+e.getMessage(), e);
+			LOGGER.warn("File read Error for pos ["+ DhSectionPos.toString(pos)+"], error: "+e.getMessage(), e);
 		}
 		
 		return dataSource;

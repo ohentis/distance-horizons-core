@@ -32,7 +32,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -64,7 +63,7 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 	public String createWhereStatement(Long pos) 
 	{
 		int detailLevel = DhSectionPos.getDetailLevel(pos) - DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL;
-		return "DetailLevel = '"+detailLevel+"' AND PosX = '"+DhSectionPos.getX(pos)+"' AND PosZ = '"+DhSectionPos.getZ(pos)+"'"; 
+		return "DetailLevel = '"+detailLevel+"' AND PosX = '"+ DhSectionPos.getX(pos)+"' AND PosZ = '"+ DhSectionPos.getZ(pos)+"'"; 
 	}
 	
 	
@@ -208,7 +207,7 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 		String sql =
 			"UPDATE "+this.getTableName()+" \n" +
 			"SET ApplyToParent = "+applyToParent+" \n" +
-			"WHERE DetailLevel = "+detailLevel+" AND PosX = "+DhSectionPos.getX(pos)+" AND PosZ = "+DhSectionPos.getZ(pos);
+			"WHERE DetailLevel = "+detailLevel+" AND PosX = "+ DhSectionPos.getX(pos)+" AND PosZ = "+ DhSectionPos.getZ(pos);
 		
 		this.queryDictionaryFirst(sql);
 	}
@@ -245,7 +244,7 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 		Map<String, Object> resultMap = this.queryDictionaryFirst(
 				"select ColumnGenerationStep, CompressionMode " +
 						"from "+this.getTableName()+" " +
-						"WHERE DetailLevel = "+detailLevel+" AND PosX = "+DhSectionPos.getX(pos)+" AND PosZ = "+DhSectionPos.getZ(pos));
+						"WHERE DetailLevel = "+detailLevel+" AND PosX = "+ DhSectionPos.getX(pos)+" AND PosZ = "+ DhSectionPos.getZ(pos));
 		
 		if (resultMap != null)
 		{
@@ -317,7 +316,7 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 		Map<String, Object> resultMap = this.queryDictionaryFirst(
 				"select LENGTH(Data) as dataSize " +
 						"from "+this.getTableName()+" " +
-						"WHERE DetailLevel = "+detailLevel+" AND PosX = "+DhSectionPos.getX(pos)+" AND PosZ = "+DhSectionPos.getZ(pos));
+						"WHERE DetailLevel = "+detailLevel+" AND PosX = "+ DhSectionPos.getX(pos)+" AND PosZ = "+ DhSectionPos.getZ(pos));
 		
 		if (resultMap != null && resultMap.get("dataSize") != null)
 		{

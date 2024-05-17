@@ -1,7 +1,6 @@
 package com.seibel.distanthorizons.core.file;
 
 import com.seibel.distanthorizons.core.level.IDhLevel;
-import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;

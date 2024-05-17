@@ -364,7 +364,7 @@ public class FullDataPointIdMap
 		if (newMap.size() != entityCount)
 		{
 			// if the mappings are out of sync then the LODs will render incorrectly due to IDs being wrong
-			LodUtil.assertNotReach("ID maps failed to deserialize for pos: ["+DhSectionPos.toString(pos)+"], incorrect entity count. Expected count ["+entityCount+"], actual count ["+newMap.size()+"]");
+			LodUtil.assertNotReach("ID maps failed to deserialize for pos: ["+ DhSectionPos.toString(pos)+"], incorrect entity count. Expected count ["+entityCount+"], actual count ["+newMap.size()+"]");
 		}
 		
 		return newMap;

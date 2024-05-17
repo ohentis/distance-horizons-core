@@ -124,12 +124,12 @@ public class QuadTree<T>
 			int radius = this.diameterInBlocks() / 2;
 			DhBlockPos2D minPos = this.getCenterBlockPos().add(new DhBlockPos2D(-radius, -radius));
 			DhBlockPos2D maxPos = this.getCenterBlockPos().add(new DhBlockPos2D(radius, radius));
-			throw new IndexOutOfBoundsException("QuadTree GetOrSet failed. Position out of bounds, min pos: " + minPos + ", max pos: " + maxPos + ", min detail level: " + this.treeMaxDetailLevel + ", max detail level: " + this.treeMinDetailLevel + ". Given Position: [" + DhSectionPos.toString(pos) + "] = block pos: " + DhSectionPos.convertToDetailLevel(LodUtil.BLOCK_DETAIL_LEVEL, pos));
+			throw new IndexOutOfBoundsException("QuadTree GetOrSet failed. Position out of bounds, min pos: " + minPos + ", max pos: " + maxPos + ", min detail level: " + this.treeMaxDetailLevel + ", max detail level: " + this.treeMinDetailLevel + ". Given Position: [" + DhSectionPos.toString(pos) + "] = block pos: " + DhSectionPos.convertToDetailLevel(pos, LodUtil.BLOCK_DETAIL_LEVEL));
 		}
 		
 		
 		
-		long rootPos = DhSectionPos.convertToDetailLevel(this.treeMinDetailLevel, pos);
+		long rootPos = DhSectionPos.convertToDetailLevel(pos, this.treeMinDetailLevel);
 		int ringListPosX = DhSectionPos.getX(rootPos);
 		int ringListPosZ = DhSectionPos.getZ(rootPos);
 		
@@ -177,7 +177,7 @@ public class QuadTree<T>
 		DhBlockPos2D treeBlockCorner = this.centerBlockPos.add(new DhBlockPos2D(-this.diameterInBlocks / 2, -this.diameterInBlocks / 2));
 		DhLodPos treeCornerPos = new DhLodPos((byte) 0, treeBlockCorner.x, treeBlockCorner.z);
 		
-		long inputSectionCorner = DhSectionPos.convertToDetailLevel((byte) 0, testPos);
+		long inputSectionCorner = DhSectionPos.convertToDetailLevel(testPos, (byte) 0);
 		DhLodPos inputCornerPos = new DhLodPos((byte) 0, DhSectionPos.getX(inputSectionCorner), DhSectionPos.getZ(inputSectionCorner));
 		int inputBlockWidth = BitShiftUtil.powerOfTwo(DhSectionPos.getDetailLevel(testPos));
 		
@@ -211,7 +211,7 @@ public class QuadTree<T>
 		int childCount = 0;
 		for (int i = 0; i < 4; i++)
 		{
-			long childPos = DhSectionPos.getChildByIndex(i, pos);
+			long childPos = DhSectionPos.getChildByIndex(pos, i);
 			if (this.isSectionPosInBounds(childPos))
 			{
 				T value = this.getValue(childPos);
