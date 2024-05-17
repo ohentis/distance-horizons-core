@@ -965,7 +965,7 @@ public class Config
 							.setServersideShortName("enableRealTimeUpdates")
 							.set(false)
 							.comment(""
-									+ "Enables client-side real-time LOD updates from the server."
+									+ "If true, the client will receive real-time LOD updates for chunks outside the client's render distance."
 									+ "")
 							.build();
 					
