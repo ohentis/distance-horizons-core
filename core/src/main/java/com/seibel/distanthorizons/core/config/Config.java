@@ -874,14 +874,15 @@ public class Config
 							.setServersideShortName("enableServerNetworking")
 							.set(true)
 							.comment(""
-									+ "Attention: \n"
-									+ "  1. This feature is not fully implemented. \n"
-									+ "  2. If you really want to use it, enable it only on trusted server/with trusted players. \n"
+									+ "WARNING!\n"
+									+ "Server-client networking is not yet fully implemented!\n"
+									+ "Both the server and client must be running the server-side fork with this option enabled\n"
+									+ "for Distant Horizons data to be transceived.\n"
 									+ "\n"
-									+ "If true Distant Horizons will attempt to communicate with the connected \n"
-									+ "server in order to load LODs outside your vanilla render distance. \n"
+									+ "If true, the server and client will attempt to communicate to transceive Distant Horizons data.\n"
+									+ "This allows for further distant generation and LOD updates on all clients.\n"
 									+ "\n"
-									+ "Note: This requires DH to be installed on the server in order to function. \n"
+									+ "This should only be used on trusted servers with trusted players!\n"
 									+ "")
 							.build();
 					
@@ -895,7 +896,8 @@ public class Config
 							.setAppearance(EConfigEntryAppearance.ONLY_IN_FILE)
 							.setMinDefaultMax(1, 25049, 65535)
 							.comment(""
-									+ "The port on the server that's used for sending LOD data."
+									+ "The port used by the server to transceive Distant Horizons data.\n"
+									+ "Note: This port must be TCP."
 									+ "")
 							.build();
 					
@@ -904,8 +906,8 @@ public class Config
 							.setAppearance(EConfigEntryAppearance.ONLY_IN_FILE)
 							.set("")
 							.comment(""
-									+ "Overrides the IP address that is sent to the client for connecting to DH server.\n"
-									+ "Leave empty to let client use the IP used to connect to the MC server.\n"
+									+ "Overrides the IP address sent to the client to transceive Distant Horizons data.\n"
+									+ "Leave this field empty to let the client use the IP used to connect to the server."
 									+ "")
 							.build();
 					public static ConfigEntry<Integer> connectPortOverride = new ConfigEntry.Builder<Integer>()
@@ -913,8 +915,8 @@ public class Config
 							.setAppearance(EConfigEntryAppearance.ONLY_IN_FILE)
 							.setMinDefaultMax(0, 0, 65535)
 							.comment(""
-									+ "Overrides the port that is sent to the client for connecting to DH server.\n"
-									+ "Set to 0 to use port from serverPort.\n"
+									+ "Overrides the port sent to the client to transceive Distant Horizons data.\n"
+									+ "Set this field to 0 to use the value assigned to serverPort."
 									+ "")
 							.build();
 					public static ConfigEntry<Boolean> enableConnectOverridesInLan = new ConfigEntry.Builder<Boolean>()
@@ -932,8 +934,8 @@ public class Config
 							.setAppearance(EConfigEntryAppearance.ONLY_IN_FILE)
 							.setMinDefaultMax(1, 10, 100)
 							.comment(""
-									+ "Amount of rate/concurrency limit hits in one second before disconnecting the offending clients. \n"
-									+ "This setting is server-only; it does not have effect on the client.\n"
+									+ "The amount of rate/concurrency limit hits a client can make in one second before being disconnected by the server.\n"
+									+ "This setting only applies to the server and has no effect on clients."
 									+ "")
 							.build();
 					
@@ -943,24 +945,26 @@ public class Config
 							.setServersideShortName("generationRequestRCLimit")
 							.setMinDefaultMax(1, 20, 100)
 							.comment(""
-									+ "Limits the amount of generation requests sent by client and processed by server. \n"
+									+ "Limits the amount of generation requests the server will handle."
 									+ "")
 							.build();
 					
 					public static ConfigEntry<Double> genTaskPriorityDistanceRatio = new ConfigEntry.Builder<Double>()
 							.setServersideShortName("genTaskPriorityDistanceRatio")
 							.setMinDefaultMax(1d, 3d, 10d)
+							// todo: this comment should probably be rewritten, but it's outside my knowledge scope
+							// - yeshi
 							.comment(""
-									+ "Controls the max ratio between distances of nearest unloaded sections of each priority. \n"
-									+ "For example, value of 2 means that the nearest lower priority section will be allowed to stay \n"
-									+ "unloaded only if it's at most 2x closer than one of a higher priority. \n"
+									+ "Controls the max ratio between distances of nearest unloaded sections of each priority.\n"
+									+ "For example, value of 2 means that the nearest lower priority section will be allowed to stay\n"
+									+ "unloaded only if it's at most 2x closer than one of a higher priority."
 									+ "")
 							.build();
 					public static ConfigEntry<Integer> genTaskPriorityRequestRateLimit = new ConfigEntry.Builder<Integer>()
 							.setServersideShortName("genTaskPriorityRequestRateLimit")
 							.setMinDefaultMax(1, 50, 200)
 							.comment(""
-									+ "Limits the amount of LOD sections that the client can request states for, per second. \n"
+									+ "Limits the amount of LOD sections the client can request states for per second."
 									+ "")
 							.build();
 					
@@ -970,7 +974,7 @@ public class Config
 							.setServersideShortName("enableRealTimeUpdates")
 							.set(false)
 							.comment(""
-									+ "Enables real time updates from server."
+									+ "If true, the client will receive real-time LOD updates for chunks outside the client's render distance."
 									+ "")
 							.build();
 					
@@ -980,7 +984,7 @@ public class Config
 							.setServersideShortName("enableLoginDataSync")
 							.set(false)
 							.comment(""
-									+ "Enables updating of saved LODs after login."
+									+ "If true, clients will receive updated LODs on join if any changes occured since last join."
 									+ "")
 							.build();
 					
@@ -988,7 +992,7 @@ public class Config
 							.setServersideShortName("loginDataSyncRCLimit")
 							.setMinDefaultMax(1, 50, 100)
 							.comment(""
-									+ "Limits the amount of sent/processed LOD *update* requests concurrently, per player. \n"
+									+ "Limits the amount of sent/processed LOD *update* requests concurrently, per player."
 									+ "")
 							.build();
 					
@@ -997,11 +1001,11 @@ public class Config
 							.setServersideShortName("generateMultipleDimensions")
 							.set(false)
 							.comment(""
-									+ "Controls whether the players should be allowed to generate in multiple dimensions at once. \n"
+									+ "Controls whether clients will request for the server to generate LODs in multiple dimensions at once.\n"
 									+ ""
-									+ "For server owners: \n"
-									+ "All dimensions share the same thread pool. This means that empty dimensions (i.e. without players in them) \n"
-									+ "may slow down the generation of non-empty ones."
+									+ "Note that all dimensions share the same thread pool.\n"
+									+ "This means that dimensions without any connected clients inside could slow down LOD updates for\n"
+									+ "all connected clients in other dimensions."
 									+ "")
 							.build();
 				}
@@ -1011,17 +1015,17 @@ public class Config
 			public static class MultiThreading
 			{
 				public static final String THREAD_NOTE = ""
-						+ "Multi-threading Note: \n"
-						+ "If the total thread count in Distant Horizon's config is more threads than your CPU has cores, \n"
-						+ "CPU performance may suffer if Distant Horizons has a lot to load or generate. \n"
+						+ "Multi-threading Note:\n"
+						+ "If the total thread count in Distant Horizon's config is more threads than your CPU has cores,\n"
+						+ "CPU performance may suffer if Distant Horizons has a lot to load or generate.\n"
 						+ "This can be an issue when first loading into a world, when flying, and/or when generating new terrain.";
 				
 				public static final String THREAD_RUN_TIME_RATIO_NOTE = ""
-						+ "If this value is less than 1.0, it will be treated as a percentage \n"
-						+ "of time each thread can run before going idle. \n"
+						+ "If this value is less than 1.0, it will be treated as a percentage\n"
+						+ "of time each thread can run before going idle.\n"
 						+ "\n"
-						+ "This can be used to reduce CPU usage if the thread count \n"
-						+ "is already set to 1 for the given option, or more finely \n"
+						+ "This can be used to reduce CPU usage if the thread count\n"
+						+ "is already set to 1 for the given option, or more finely\n"
 						+ "tune CPU performance.";
 				
 				
@@ -1031,13 +1035,13 @@ public class Config
 								ThreadPresetConfigEventHandler.getWorldGenDefaultThreadCount(),
 								Runtime.getRuntime().availableProcessors())
 						.comment(""
-								+ "How many threads should be used when generating LOD \n"
-								+ "chunks outside the normal render distance? \n"
+								+ "How many threads should be used when generating LOD\n"
+								+ "chunks outside the normal render distance?\n"
 								+ "\n"
-								+ "If you experience stuttering when generating distant LODs, \n"
-								+ "decrease this number. \n"
-								+ "If you want to increase LOD \n"
-								+ "generation speed, increase this number. \n"
+								+ "If you experience stuttering when generating distant LODs,\n"
+								+ "decrease this number.\n"
+								+ "If you want to increase LOD\n"
+								+ "generation speed, increase this number.\n"
 								+ "\n"
 								+ THREAD_NOTE)
 						.build();
