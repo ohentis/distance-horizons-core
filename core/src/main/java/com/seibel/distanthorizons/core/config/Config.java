@@ -917,6 +917,15 @@ public class Config
 									+ "Set to 0 to use port from serverPort.\n"
 									+ "")
 							.build();
+					public static ConfigEntry<Boolean> enableConnectOverridesInLan = new ConfigEntry.Builder<Boolean>()
+							.setServersideShortName("enableConnectOverridesInLan")
+							.setAppearance(EConfigEntryAppearance.ONLY_IN_FILE)
+							.set(false)
+							.comment(""
+									+ "Controls whether the connect overrides are sent to the clients originating from LAN. \n"
+									+ "Unless you have a good reason to do otherwise, leave this disabled. \n"
+									+ "")
+							.build();
 					
 					public static ConfigEntry<Integer> rateLimitHitTolerance = new ConfigEntry.Builder<Integer>()
 							.setServersideShortName("rateLimitHitTolerance")

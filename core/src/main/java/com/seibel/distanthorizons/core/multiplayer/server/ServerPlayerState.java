@@ -17,7 +17,6 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapp
 import org.apache.logging.log4j.LogManager;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.Closeable;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.concurrent.ConcurrentHashMap;
@@ -26,8 +25,6 @@ import static com.seibel.distanthorizons.core.config.Config.Client.Advanced.Mult
 
 public class ServerPlayerState
 {
-	private static final boolean DEBUG_ENABLE_OVERRIDES_IN_LAN = false;
-	
 	private static final ConfigBasedLogger LOGGER = new ConfigBasedLogger(LogManager.getLogger(),
 			() -> Config.Client.Advanced.Logging.logNetworkEvent.get());
 	
@@ -74,10 +71,8 @@ public class ServerPlayerState
 		String ipOverride = ServerNetworking.connectIpOverride.get();
 		int portOverride = ServerNetworking.connectPortOverride.get();
 		
-		// IP/port overrides are intended for using with port forwarding services,
-		// and LAN clients are unlikely to need to hop through internet
 		InetAddress ip = ((InetSocketAddress) this.serverPlayer.getRemoteAddress()).getAddress();
-		boolean isLanPlayer = !DEBUG_ENABLE_OVERRIDES_IN_LAN && (ip.isLinkLocalAddress() || ip.isSiteLocalAddress());
+		boolean isLanPlayer = !ServerNetworking.enableConnectOverridesInLan.get() && (ip.isLinkLocalAddress() || ip.isSiteLocalAddress());
 		
 		this.pluginChannelHandler.sendMessageServer(this.serverPlayer, new ServerConnectInfoMessage(
 				!isLanPlayer && !ipOverride.isEmpty() ? ipOverride : null,
