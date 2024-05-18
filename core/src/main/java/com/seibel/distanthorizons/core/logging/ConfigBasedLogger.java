@@ -117,4 +117,11 @@ public class ConfigBasedLogger
 	public void debug(String str, Object... param) { this.log(Level.DEBUG, str, param); }
 	public void trace(String str, Object... param) { this.log(Level.TRACE, str, param); }
 	
+	/** Used by MC 1.20.6 getOrThrow() methods */
+	public Exception errorAndThrow(String str, Exception e)
+	{ 
+		this.log(Level.ERROR, str); 
+		return e;
+	}
+	
 }
