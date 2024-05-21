@@ -23,6 +23,8 @@ import com.seibel.distanthorizons.api.enums.config.EDhApiDataCompressionMode;
 import net.jpountz.lz4.LZ4Factory;
 import net.jpountz.lz4.LZ4FrameOutputStream;
 import net.jpountz.xxhash.XXHashFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.tukaani.xz.*;
 
 import java.io.*;
@@ -34,6 +36,7 @@ import java.io.*;
  */
 public class DhDataOutputStream extends DataOutputStream
 {
+	private static final Logger LOGGER = LogManager.getLogger();
 	private static final ThreadLocal<ResettableArrayCache> LZMA_RESETTABLE_ARRAY_CACHE_GETTER = ThreadLocal.withInitial(() -> new ResettableArrayCache(new LzmaArrayCache()));
 	
 	
@@ -44,29 +47,38 @@ public class DhDataOutputStream extends DataOutputStream
 	}
 	private static OutputStream warpStream(OutputStream stream, EDhApiDataCompressionMode compressionMode) throws IOException
 	{
-		switch (compressionMode)
+		try
 		{
-			case UNCOMPRESSED:
-				return stream;
-			case LZ4:
-				return new LZ4FrameOutputStream(stream, 
-						LZ4FrameOutputStream.BLOCKSIZE.SIZE_64KB, -1L, 
-						// using native instances reduce GC pressure
-						LZ4Factory.nativeInstance().fastCompressor(),
-						XXHashFactory.nativeInstance().hash32(), 
-						LZ4FrameOutputStream.FLG.Bits.BLOCK_INDEPENDENCE);
-			case LZMA2:
-				// using an array cache significantly reduces GC pressure
-				ResettableArrayCache arrayCache = LZMA_RESETTABLE_ARRAY_CACHE_GETTER.get();
-				arrayCache.reset();
-				// Note: if the LZMA2Options are changed the array cache may need to be re-tested.
-				// the array cache was specifically tested and tuned for LZMA preset 4
-				return new XZOutputStream(stream, new LZMA2Options(4), 
-						XZ.CHECK_CRC64, arrayCache);
-			
-			default:
-				throw new IllegalArgumentException("No compressor defined for ["+compressionMode+"]");
-		}
+			switch (compressionMode)
+			{
+				case UNCOMPRESSED:
+					return stream;
+				case LZ4:
+					return new LZ4FrameOutputStream(stream, 
+							LZ4FrameOutputStream.BLOCKSIZE.SIZE_64KB, -1L,
+							// using native instances reduce GC pressure
+							LZ4Factory.nativeInstance().fastCompressor(),
+							XXHashFactory.nativeInstance().hash32(), 
+							LZ4FrameOutputStream.FLG.Bits.BLOCK_INDEPENDENCE);
+				case LZMA2:
+					// using an array cache significantly reduces GC pressure
+					ResettableArrayCache arrayCache = LZMA_RESETTABLE_ARRAY_CACHE_GETTER.get();
+					arrayCache.reset();
+					// Note: if the LZMA2Options are changed the array cache may need to be re-tested.
+					// the array cache was specifically tested and tuned for LZMA preset 4
+					return new XZOutputStream(stream, new LZMA2Options(4), 
+							XZ.CHECK_CRC64, arrayCache);
+				
+				default:
+					throw new IllegalArgumentException("No compressor defined for ["+compressionMode+"]");
+				}
+			}
+			catch (Error e)
+			{
+				// Should only happen if there's a library issue
+				LOGGER.error("Unexpected error when wrapping DhDataInputStream, error: ["+e.getMessage()+"].", e);
+				throw e;
+			}
 	}
 	
 	@Override

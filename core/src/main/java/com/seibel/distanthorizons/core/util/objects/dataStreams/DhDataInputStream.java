@@ -20,8 +20,12 @@
 package com.seibel.distanthorizons.core.util.objects.dataStreams;
 
 import com.seibel.distanthorizons.api.enums.config.EDhApiDataCompressionMode;
+import com.seibel.distanthorizons.core.Initializer;
 import com.seibel.distanthorizons.core.util.objects.DataCorruptedException;
+import com.seibel.distanthorizons.coreapi.ModInfo;
 import net.jpountz.lz4.LZ4FrameInputStream;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.tukaani.xz.XZInputStream;
 
 import java.io.*;
@@ -38,24 +42,36 @@ import java.io.*;
  */
 public class DhDataInputStream extends DataInputStream
 {
+	private static final Logger LOGGER = LogManager.getLogger();
+	
+	
 	public DhDataInputStream(InputStream stream, EDhApiDataCompressionMode compressionMode) throws IOException
 	{ 
 		super(warpStream(new BufferedInputStream(stream), compressionMode)); 
 	}
 	private static InputStream warpStream(InputStream stream, EDhApiDataCompressionMode compressionMode) throws IOException
 	{
-		switch (compressionMode)
+		try
 		{
-			case UNCOMPRESSED:
-				return stream;
-			case LZ4:
-				return new LZ4FrameInputStream(stream);
-			case LZMA2:
-				// Note: all LZMA/XZ compressors can be decompressed using this same InputStream
-				return new XZInputStream(stream);
-			
-			default:
-				throw new IllegalArgumentException("No compressor defined for ["+compressionMode+"]");
+			switch (compressionMode)
+			{
+				case UNCOMPRESSED:
+					return stream;
+				case LZ4:
+					return new LZ4FrameInputStream(stream);
+				case LZMA2:
+					// Note: all LZMA/XZ compressors can be decompressed using this same InputStream
+					return new XZInputStream(stream);
+				
+				default:
+					throw new IllegalArgumentException("No compressor defined for [" + compressionMode + "]");
+			}
+		}
+		catch (Error e)
+		{
+			// Should only happen if there's a library issue
+			LOGGER.error("Unexpected error when wrapping DhDataInputStream, error: ["+e.getMessage()+"].", e);
+			throw e;
 		}
 	}
 	
