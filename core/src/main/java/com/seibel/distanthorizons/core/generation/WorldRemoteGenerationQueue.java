@@ -9,8 +9,8 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.multiplayer.client.AbstractFullDataRequestQueue;
 import com.seibel.distanthorizons.core.multiplayer.client.ClientNetworkState;
 import com.seibel.distanthorizons.core.network.exceptions.RateLimitedException;
-import com.seibel.distanthorizons.core.network.messages.netty.fullData.generation.GenTaskPriorityRequestMessage;
-import com.seibel.distanthorizons.core.network.messages.netty.fullData.generation.GenTaskPriorityResponseMessage;
+import com.seibel.distanthorizons.core.network.messages.plugin.fullData.generation.GenTaskPriorityRequestMessage;
+import com.seibel.distanthorizons.core.network.messages.plugin.fullData.generation.GenTaskPriorityResponseMessage;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
@@ -92,7 +92,7 @@ public class WorldRemoteGenerationQueue extends AbstractFullDataRequestQueue imp
 				return;
 			};
 			
-			CompletableFuture<GenTaskPriorityResponseMessage> request = this.networkState.getClient().sendRequest(new GenTaskPriorityRequestMessage(posList, this.level), GenTaskPriorityResponseMessage.class);
+			CompletableFuture<GenTaskPriorityResponseMessage> request = this.networkState.getSession().sendRequest(new GenTaskPriorityRequestMessage(posList, this.level), GenTaskPriorityResponseMessage.class);
 			this.genTaskPriorityRequest = request;
 			request.handleAsync((response, throwable) -> {
 				try

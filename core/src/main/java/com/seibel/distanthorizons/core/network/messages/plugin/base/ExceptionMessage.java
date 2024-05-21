@@ -17,19 +17,20 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.seibel.distanthorizons.core.network.messages.netty.base;
+package com.seibel.distanthorizons.core.network.messages.plugin.base;
 
 import com.seibel.distanthorizons.core.network.exceptions.InvalidLevelException;
 import com.seibel.distanthorizons.core.network.exceptions.InvalidSectionPosException;
 import com.seibel.distanthorizons.core.network.exceptions.RateLimitedException;
 import com.seibel.distanthorizons.core.network.exceptions.RequestRejectedException;
-import com.seibel.distanthorizons.core.network.netty.TrackableNettyMessage;
+import com.seibel.distanthorizons.core.network.plugin.TrackableMessage;
+import com.seibel.distanthorizons.core.network.plugin.TrackableNettyMessage;
 import io.netty.buffer.ByteBuf;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class ExceptionMessage extends TrackableNettyMessage
+public class ExceptionMessage extends TrackableMessage
 {
 	private static final List<Class<? extends Exception>> exceptionMap = new ArrayList<Class<? extends Exception>>()
 	{{

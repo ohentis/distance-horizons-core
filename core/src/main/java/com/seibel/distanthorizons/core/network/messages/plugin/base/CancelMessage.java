@@ -17,20 +17,23 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.seibel.distanthorizons.core.network.protocol.netty;
+package com.seibel.distanthorizons.core.network.messages.plugin.base;
 
-import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelOutboundHandlerAdapter;
-import io.netty.channel.ChannelPromise;
+import com.seibel.distanthorizons.core.network.plugin.TrackableMessage;
+import com.seibel.distanthorizons.core.network.plugin.TrackableNettyMessage;
+import io.netty.buffer.ByteBuf;
 
-public class NettyOutboundExceptionRouter extends ChannelOutboundHandlerAdapter
+public class CancelMessage extends TrackableMessage
 {
-    @Override
-    public void write(ChannelHandlerContext channelContext, Object messageObj, ChannelPromise promise) throws Exception
+	public CancelMessage() { }
+	
+	@Override
+	public void encode0(ByteBuf out)
 	{
-		promise.addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
-		super.write(channelContext, messageObj, promise);
 	}
 	
+	@Override
+	public void decode0(ByteBuf in)
+	{
+	}
 }

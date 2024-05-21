@@ -17,40 +17,34 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.seibel.distanthorizons.core.network.messages.netty.fullData.generation;
+package com.seibel.distanthorizons.core.network.messages.plugin.session;
 
-import com.seibel.distanthorizons.core.network.netty.TrackableNettyMessage;
-import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.network.plugin.TrackableMessage;
+import com.seibel.distanthorizons.core.network.plugin.TrackableNettyMessage;
 import io.netty.buffer.ByteBuf;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.UUID;
 
-public class GenTaskPriorityResponseMessage extends TrackableNettyMessage
+public class PlayerUUIDMessage extends TrackableMessage
 {
-	public Map<DhSectionPos, Integer> posList = new HashMap<>();
+	public UUID playerUUID;
+
+	public PlayerUUIDMessage() { }
+	public PlayerUUIDMessage(UUID playerUUID) { this.playerUUID = playerUUID; }
 	
-	public GenTaskPriorityResponseMessage() { }
-	public GenTaskPriorityResponseMessage(Map<DhSectionPos, Integer> posList)
+	@Override
+	public void encode0(ByteBuf out)
 	{
-		this.posList = posList;
+		out.writeLong(this.playerUUID.getMostSignificantBits());
+		out.writeLong(this.playerUUID.getLeastSignificantBits());
 	}
 	
 	@Override
-	protected void encode0(ByteBuf out)
-	{
-		this.writeCollection(out, this.posList.entrySet());
-	}
-	
-	@Override
-	protected void decode0(ByteBuf in)
-	{
-		this.readMap(in, this.posList, DhSectionPos::zero, () -> 0);
-	}
+	public void decode0(ByteBuf in) { this.playerUUID = new UUID(in.readLong(), in.readLong()); }
 	
 	@Override public String toString()
 	{
-		return super.toString("posList=" + this.posList);
+		return super.toString("playerUUID=" + this.playerUUID);
 	}
 	
 }

@@ -11,8 +11,8 @@ import com.seibel.distanthorizons.core.logging.f3.F3Screen;
 import com.seibel.distanthorizons.core.network.exceptions.InvalidLevelException;
 import com.seibel.distanthorizons.core.network.exceptions.RateLimitedException;
 import com.seibel.distanthorizons.core.network.exceptions.RequestRejectedException;
-import com.seibel.distanthorizons.core.network.messages.netty.fullData.FullDataSourceRequestMessage;
-import com.seibel.distanthorizons.core.network.messages.netty.fullData.FullDataSourceResponseMessage;
+import com.seibel.distanthorizons.core.network.messages.plugin.fullData.FullDataSourceRequestMessage;
+import com.seibel.distanthorizons.core.network.messages.plugin.fullData.FullDataSourceResponseMessage;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
@@ -181,7 +181,7 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 		DhSectionPos sectionPos = mapEntry.getKey();
 		RequestQueueEntry entry = mapEntry.getValue();
 		
-		CompletableFuture<FullDataSourceResponseMessage> request = this.networkState.getClient().sendRequest(new FullDataSourceRequestMessage(this.level.getLevelWrapper(), sectionPos, entry.updateTimestamp), FullDataSourceResponseMessage.class);
+		CompletableFuture<FullDataSourceResponseMessage> request = this.networkState.getSession().sendRequest(new FullDataSourceRequestMessage(this.level.getLevelWrapper(), sectionPos, entry.updateTimestamp), FullDataSourceResponseMessage.class);
 		entry.request = request;
 		request.handleAsync((response, throwable) ->
 		{

@@ -8,9 +8,9 @@ import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
 import com.seibel.distanthorizons.core.multiplayer.client.ClientNetworkState;
 import com.seibel.distanthorizons.core.network.messages.plugin.PluginCloseEvent;
 import com.seibel.distanthorizons.core.network.messages.plugin.CurrentLevelKeyMessage;
-import com.seibel.distanthorizons.core.network.messages.plugin.PluginHelloMessage;
+import com.seibel.distanthorizons.core.network.messages.plugin.base.HelloMessage;
 import com.seibel.distanthorizons.core.network.messages.plugin.ServerConnectInfoMessage;
-import com.seibel.distanthorizons.core.network.plugin.PluginChannelHandler;
+import com.seibel.distanthorizons.core.network.plugin.PluginChannelSession;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import io.netty.buffer.ByteBuf;
@@ -26,7 +26,7 @@ public class ClientPluginChannelApi implements AutoCloseable
 	private static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	private static final IKeyedClientLevelManager KEYED_CLIENT_LEVEL_MANAGER = SingletonInjector.INSTANCE.get(IKeyedClientLevelManager.class);
 	
-	private final PluginChannelHandler channelHandler = new PluginChannelHandler();
+	private final PluginChannelSession channelHandler = new PluginChannelSession();
 	
 	private final Consumer<IClientLevelWrapper> levelUnloadHandler;
 	private final Consumer<IServerKeyedClientLevel> multiverseLevelLoadHandler;
@@ -55,7 +55,7 @@ public class ClientPluginChannelApi implements AutoCloseable
 	public void onJoin(@Nullable ClientNetworkState networkState)
 	{
 		this.networkState = networkState;
-		this.channelHandler.sendMessageClient(new PluginHelloMessage());
+		this.channelHandler.sendMessageClient(new HelloMessage());
 	}
 	
 	private void onCurrentLevelKeyMessage(CurrentLevelKeyMessage msg)
@@ -84,7 +84,7 @@ public class ClientPluginChannelApi implements AutoCloseable
 	{
 		if (this.networkState != null)
 		{
-			this.networkState.getClient().resetAndConnectTo(
+			this.networkState.getSession().resetAndConnectTo(
 					msg.ipOverride != null
 							? msg.ipOverride
 							: MC.getCurrentServerIp().split(":")[0],
@@ -104,7 +104,7 @@ public class ClientPluginChannelApi implements AutoCloseable
 	
 	public void handlePacket(ByteBuf buffer)
 	{
-		this.channelHandler.decodeAndHandle(buffer, null);
+		this.channelHandler.decodeAndHandle(buffer);
 	}
 	
 	@Override

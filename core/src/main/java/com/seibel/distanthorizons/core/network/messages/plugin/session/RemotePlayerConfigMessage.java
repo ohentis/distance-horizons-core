@@ -17,23 +17,25 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.seibel.distanthorizons.core.network.messages.netty.base;
+package com.seibel.distanthorizons.core.network.messages.plugin.session;
 
-import com.seibel.distanthorizons.core.network.netty.TrackableNettyMessage;
+import com.seibel.distanthorizons.core.multiplayer.config.AbstractMultiplayerConfig;
+import com.seibel.distanthorizons.core.multiplayer.config.MultiplayerConfig;
+import com.seibel.distanthorizons.core.network.plugin.PluginChannelMessage;
+import com.seibel.distanthorizons.core.network.protocol.INetworkObject;
 import io.netty.buffer.ByteBuf;
 
-/**
- * Simple empty response message.
- * This message is not sent automatically.
- */
-public class AckMessage extends TrackableNettyMessage
+public class RemotePlayerConfigMessage extends PluginChannelMessage
 {
-	public AckMessage() { }
+	public AbstractMultiplayerConfig payload;
+	
+	public RemotePlayerConfigMessage() { }
+	public RemotePlayerConfigMessage(AbstractMultiplayerConfig payload) { this.payload = payload; }
 	
 	@Override
-	public void encode0(ByteBuf out) { }
+	public void encode(ByteBuf out) { this.payload.encode(out); }
 	
 	@Override
-	public void decode0(ByteBuf in) { }
+	public void decode(ByteBuf in) { this.payload = INetworkObject.readToObject(new MultiplayerConfig(), in); }
 	
 }

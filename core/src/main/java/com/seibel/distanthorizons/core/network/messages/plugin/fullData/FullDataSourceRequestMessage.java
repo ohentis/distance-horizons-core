@@ -17,10 +17,11 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.seibel.distanthorizons.core.network.messages.netty.fullData;
+package com.seibel.distanthorizons.core.network.messages.plugin.fullData;
 
-import com.seibel.distanthorizons.core.network.messages.netty.ILevelRelatedMessage;
-import com.seibel.distanthorizons.core.network.netty.TrackableNettyMessage;
+import com.seibel.distanthorizons.core.network.messages.plugin.ILevelRelatedMessage;
+import com.seibel.distanthorizons.core.network.plugin.TrackableMessage;
+import com.seibel.distanthorizons.core.network.plugin.TrackableNettyMessage;
 import com.seibel.distanthorizons.core.network.protocol.INetworkObject;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
@@ -28,7 +29,7 @@ import io.netty.buffer.ByteBuf;
 
 import javax.annotation.Nullable;
 
-public class FullDataSourceRequestMessage extends TrackableNettyMessage implements ILevelRelatedMessage
+public class FullDataSourceRequestMessage extends TrackableMessage implements ILevelRelatedMessage
 {
 	private String levelName;
 	

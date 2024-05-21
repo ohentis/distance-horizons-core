@@ -17,16 +17,31 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.seibel.distanthorizons.core.network.messages.netty.base;
+package com.seibel.distanthorizons.core.network.messages.plugin.base;
 
-import com.seibel.distanthorizons.core.network.messages.ICloseEvent;
 import com.seibel.distanthorizons.core.network.netty.NettyMessage;
+import com.seibel.distanthorizons.core.network.plugin.PluginChannelMessage;
+import io.netty.buffer.ByteBuf;
 
-/**
- * This is not a "real" message, and only used to indicate a disconnection.
- * To send a "disconnect reason" message, use {@link CloseReasonMessage}.
- */
-public class NettyCloseEvent extends NettyMessage implements ICloseEvent
+public class CloseReasonMessage extends PluginChannelMessage
 {
-}
+	public String reason;
 
+	public CloseReasonMessage() { }
+	public CloseReasonMessage(String reason) { this.reason = reason; }
+
+	@Override
+	public void encode(ByteBuf out)
+	{
+		this.writeString(this.reason, out);
+	}
+
+	@Override
+	public void decode(ByteBuf in) { this.reason = this.readString(in); }
+	
+	@Override public String toString()
+	{
+		return super.toString("reason='" + this.reason + '\'');
+	}
+	
+}

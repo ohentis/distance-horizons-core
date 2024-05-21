@@ -886,48 +886,6 @@ public class Config
 									+ "")
 							.build();
 					
-					/**
-					 * Server port. <br>
-					 * Do not use this to retrieve the current server's port;
-					 * Instead, use {@link com.seibel.distanthorizons.core.network.netty.NettyServer#port NettyServer#port}.
-					 */
-					public static ConfigEntry<Integer> serverPort = new ConfigEntry.Builder<Integer>()
-							.setServersideShortName("serverPort")
-							.setAppearance(EConfigEntryAppearance.ONLY_IN_FILE)
-							.setMinDefaultMax(1, 25049, 65535)
-							.comment(""
-									+ "The port used by the server to transceive Distant Horizons data.\n"
-									+ "Note: This port must be TCP."
-									+ "")
-							.build();
-					
-					public static ConfigEntry<String> connectIpOverride = new ConfigEntry.Builder<String>()
-							.setServersideShortName("connectIpOverride")
-							.setAppearance(EConfigEntryAppearance.ONLY_IN_FILE)
-							.set("")
-							.comment(""
-									+ "Overrides the IP address sent to the client to transceive Distant Horizons data.\n"
-									+ "Leave this field empty to let the client use the IP used to connect to the server."
-									+ "")
-							.build();
-					public static ConfigEntry<Integer> connectPortOverride = new ConfigEntry.Builder<Integer>()
-							.setServersideShortName("connectPortOverride")
-							.setAppearance(EConfigEntryAppearance.ONLY_IN_FILE)
-							.setMinDefaultMax(0, 0, 65535)
-							.comment(""
-									+ "Overrides the port sent to the client to transceive Distant Horizons data.\n"
-									+ "Set this field to 0 to use the value assigned to serverPort."
-									+ "")
-							.build();
-					public static ConfigEntry<Boolean> enableConnectOverridesInLan = new ConfigEntry.Builder<Boolean>()
-							.setServersideShortName("enableConnectOverridesInLan")
-							.setAppearance(EConfigEntryAppearance.ONLY_IN_FILE)
-							.set(false)
-							.comment(""
-									+ "Controls whether the connect overrides are sent to the clients originating from LAN. \n"
-									+ "Unless you have a good reason to do otherwise, leave this disabled. \n"
-									+ "")
-							.build();
 					
 					public static ConfigEntry<Integer> rateLimitHitTolerance = new ConfigEntry.Builder<Integer>()
 							.setServersideShortName("rateLimitHitTolerance")

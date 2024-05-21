@@ -17,20 +17,19 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.seibel.distanthorizons.core.network.netty;
+package com.seibel.distanthorizons.core.network.plugin;
 
 import com.google.common.collect.MapMaker;
 import com.seibel.distanthorizons.core.api.internal.SharedApi;
-import com.seibel.distanthorizons.core.network.messages.netty.base.ExceptionMessage;
+import com.seibel.distanthorizons.core.network.messages.plugin.base.ExceptionMessage;
 import com.seibel.distanthorizons.core.world.EWorldEnvironment;
 import io.netty.buffer.ByteBuf;
 
-import javax.annotation.Nullable;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public abstract class TrackableNettyMessage extends NettyMessage
+public abstract class TrackableMessage extends PluginChannelMessage
 {
 	private static final AtomicInteger lastId = new AtomicInteger();
 	// 32 bits - Context ID (not transmitted)
@@ -40,16 +39,16 @@ public abstract class TrackableNettyMessage extends NettyMessage
 			| ((Objects.requireNonNull(SharedApi.getEnvironment()) == EWorldEnvironment.Server_Only ? 1 : 0) << 31);
 	
 	private static final AtomicInteger lastContextId = new AtomicInteger();
-	private static final ConcurrentMap<INettyConnection, Integer> connectionToIdMap = new MapMaker().weakKeys().makeMap();
+	private static final ConcurrentMap<PluginChannelSessionAAAAA, Integer> connectionToIdMap = new MapMaker().weakKeys().makeMap();
 	
-	public void sendResponse(TrackableNettyMessage responseMessage)
+	public void sendResponse(TrackableMessage responseMessage)
 	{
 		responseMessage.futureId = this.futureId;
-		this.getConnection().sendMessage(responseMessage);
+		this.session.sendMessage(responseMessage);
 	}
 	
 	@Override
-	public void setConnection(INettyConnection connection)
+	public void setConnection(PluginChannelSession connection)
 	{
 		super.setConnection(connection);
 		this.futureId |= (long) connectionToIdMap.computeIfAbsent(connection, k -> lastContextId.getAndIncrement()) << 32;
@@ -90,19 +89,5 @@ public abstract class TrackableNettyMessage extends NettyMessage
 	
 	protected abstract void encode0(ByteBuf out) throws Exception;
 	protected abstract void decode0(ByteBuf in) throws Exception;
-	
-	@Override
-	public String toString()
-	{
-		return this.toString(null);
-	}
-	
-	@Override protected String toString(@Nullable String extraData)
-	{
-		return super.toString(
-				"futureId=" + this.futureId +
-				(extraData != null ? ", " + extraData : "")
-		);
-	}
 	
 }

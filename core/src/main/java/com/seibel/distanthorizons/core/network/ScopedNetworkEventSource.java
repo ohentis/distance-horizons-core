@@ -19,24 +19,24 @@
 
 package com.seibel.distanthorizons.core.network;
 
+import com.seibel.distanthorizons.core.network.plugin.PluginChannelMessage;
 import com.seibel.distanthorizons.core.network.protocol.INetworkObject;
 
 import java.util.function.Consumer;
 
 /** Provides a way to register network message handlers which are expected to be removed later. */
-public final class ScopedNetworkEventSource<TParent extends NetworkEventSource<TMessage>, TMessage extends INetworkObject> extends NetworkEventSource<TMessage>
+public final class ScopedNetworkEventSource extends NetworkEventSource
 {
-	public final TParent parent;
+	public final NetworkEventSource parent;
 	private boolean isClosed = false;
 	
-	public ScopedNetworkEventSource(TParent parent)
+	public ScopedNetworkEventSource(NetworkEventSource parent)
 	{
-		super(parent.messageRegistry);
 		this.parent = parent;
 	}
 	
 	@Override
-	public <T extends TMessage> void registerHandler(Class<T> handlerClass, Consumer<T> handlerImplementation)
+	public <T extends PluginChannelMessage> void registerHandler(Class<T> handlerClass, Consumer<T> handlerImplementation)
 	{
 		if (this.isClosed)
 		{
@@ -55,7 +55,7 @@ public final class ScopedNetworkEventSource<TParent extends NetworkEventSource<T
 	public void close()
 	{
 		this.isClosed = true;
-		for (Class<? extends TMessage> handlerClass : this.handlers.keySet())
+		for (Class<? extends PluginChannelMessage> handlerClass : this.handlers.keySet())
 		{
 			this.parent.removeHandler(handlerClass, this::handleMessage);
 		}

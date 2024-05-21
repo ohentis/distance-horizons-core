@@ -17,38 +17,39 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.seibel.distanthorizons.core.network.messages.netty.fullData;
+package com.seibel.distanthorizons.core.network.messages.plugin.fullData;
 
 import com.seibel.distanthorizons.api.enums.config.EDhApiDataCompressionMode;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
-import com.seibel.distanthorizons.core.network.messages.netty.ILevelRelatedMessage;
-import com.seibel.distanthorizons.core.network.netty.NettyMessage;
+import com.seibel.distanthorizons.core.network.plugin.TrackableMessage;
+import com.seibel.distanthorizons.core.network.plugin.TrackableNettyMessage;
 import com.seibel.distanthorizons.core.network.protocol.INetworkObject;
 import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV2DTO;
-import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import io.netty.buffer.ByteBuf;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 
-public class FullDataPartialUpdateMessage extends NettyMessage implements ILevelRelatedMessage
+/**
+ * Response message, containing the requested full data source,
+ * or nothing if requested in updates-only mode and the data was not updated.
+ */
+public class FullDataSourceResponseMessage extends TrackableMessage
 {
-	private String levelName;
-	@Override
-	public String getLevelName() { return this.levelName; }
-	
+	@Nullable
 	public FullDataSourceV2DTO dataSourceDto;
 	
-	
-	public FullDataPartialUpdateMessage() { }
-	public FullDataPartialUpdateMessage(ILevelWrapper level, FullDataSourceV2 fullDataSource)
+	public FullDataSourceResponseMessage() { }
+	public FullDataSourceResponseMessage(@Nullable FullDataSourceV2 fullDataSource)
 	{
-		this.levelName = level.getDimensionType().getDimensionName();
-		
 		try
 		{
-			EDhApiDataCompressionMode compressionMode = Config.Client.Advanced.LodBuilding.dataCompression.get();
-			this.dataSourceDto = FullDataSourceV2DTO.CreateFromDataSource(fullDataSource, compressionMode);
+			if (fullDataSource != null)
+			{
+				EDhApiDataCompressionMode compressionMode = Config.Client.Advanced.LodBuilding.dataCompression.get();
+				this.dataSourceDto = FullDataSourceV2DTO.CreateFromDataSource(fullDataSource, compressionMode);
+			}
 		}
 		catch (IOException e)
 		{
@@ -56,30 +57,19 @@ public class FullDataPartialUpdateMessage extends NettyMessage implements ILevel
 		}
 	}
 	
-	
 	@Override
-	public boolean warnWhenUnhandled() { return false; }
-	
-	@Override
-	public void encode(ByteBuf out)
+	public void encode0(ByteBuf out)
 	{
-		this.writeString(this.levelName, out);
-		this.dataSourceDto.encode(out);
+		if (this.writeOptional(out, this.dataSourceDto))
+		{
+			this.dataSourceDto.encode(out);
+		}
 	}
 	
 	@Override
-	public void decode(ByteBuf in)
+	public void decode0(ByteBuf in)
 	{
-		this.levelName = this.readString(in);
-		this.dataSourceDto = INetworkObject.readToObject(new FullDataSourceV2DTO(), in);
-	}
-	
-	@Override
-	public String toString()
-	{
-		return super.toString(
-				"levelHashCode=" + this.levelName
-		);
+		this.dataSourceDto = this.readOptional(in, () -> INetworkObject.readToObject(new FullDataSourceV2DTO(), in));
 	}
 	
 }

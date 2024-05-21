@@ -8,11 +8,12 @@ import com.seibel.distanthorizons.core.multiplayer.config.MultiplayerConfig;
 import com.seibel.distanthorizons.core.multiplayer.config.MultiplayerConfigChangeListener;
 import com.seibel.distanthorizons.core.network.netty.NettyClient;
 import com.seibel.distanthorizons.core.network.ScopedNetworkEventSource;
-import com.seibel.distanthorizons.core.network.messages.netty.base.AckMessage;
-import com.seibel.distanthorizons.core.network.messages.netty.base.NettyCloseEvent;
-import com.seibel.distanthorizons.core.network.messages.netty.base.HelloMessage;
-import com.seibel.distanthorizons.core.network.messages.netty.session.PlayerUUIDMessage;
-import com.seibel.distanthorizons.core.network.messages.netty.session.RemotePlayerConfigMessage;
+import com.seibel.distanthorizons.core.network.messages.plugin.base.AckMessage;
+import com.seibel.distanthorizons.core.network.messages.plugin.base.NettyCloseEvent;
+import com.seibel.distanthorizons.core.network.messages.plugin.base.HelloMessage;
+import com.seibel.distanthorizons.core.network.messages.plugin.session.PlayerUUIDMessage;
+import com.seibel.distanthorizons.core.network.messages.plugin.session.RemotePlayerConfigMessage;
+import com.seibel.distanthorizons.core.network.plugin.PluginChannelSession;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import org.apache.logging.log4j.LogManager;
 
@@ -26,7 +27,7 @@ public class ClientNetworkState implements Closeable
 			() -> Config.Client.Advanced.Logging.logNetworkEvent.get());
 	private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	
-	private final NettyClient client = new NettyClient();
+	private final PluginChannelSession session;
 	private final UUID playerUUID = MC_CLIENT.getPlayerUUID();
 	
 	
@@ -41,33 +42,35 @@ public class ClientNetworkState implements Closeable
 	 * Returns the client used by this instance. <p>
 	 * If you need to subscribe to any packet events, create an instance of {@link ScopedNetworkEventSource} using the returned instance.
 	 */
-	public NettyClient getClient() { return this.client; }
+	public PluginChannelSession getSession() { return this.session; }
 	
 	/**
 	 * Constructs a new instance.
 	 */
-	public ClientNetworkState()
+	public ClientNetworkState(PluginChannelSession session)
 	{
-		this.client.registerHandler(HelloMessage.class, helloMessage ->
+		this.session = session;
+		
+		this.session.registerHandler(HelloMessage.class, helloMessage ->
 		{
 			LOGGER.info("Connected to server: "+helloMessage.getConnection().getRemoteAddress());
 			
-			this.getClient().sendRequest(new PlayerUUIDMessage(this.playerUUID), AckMessage.class)
-					.thenAccept(ack -> this.getClient().sendMessage(new RemotePlayerConfigMessage(new MultiplayerConfig())))
+			this.getSession().sendRequest(new PlayerUUIDMessage(this.playerUUID), AckMessage.class)
+					.thenAccept(ack -> this.getSession().sendMessage(new RemotePlayerConfigMessage(new MultiplayerConfig())))
 					.exceptionally(throwable -> {
 						LOGGER.error("Error while fetching server's config", throwable);
 						return null;
 					});
 		});
 		
-		this.client.registerHandler(RemotePlayerConfigMessage.class, msg ->
+		this.session.registerHandler(RemotePlayerConfigMessage.class, msg ->
 		{
 			LOGGER.info("Connection config has been changed: " + msg.payload);
 			this.config = (MultiplayerConfig) msg.payload;
 			this.configReceived = true;
 		});
 		
-		this.client.registerHandler(NettyCloseEvent.class, msg ->
+		this.session.registerHandler(NettyCloseEvent.class, msg ->
 		{
 			this.configReceived = false;
 		});
@@ -76,29 +79,29 @@ public class ClientNetworkState implements Closeable
 	private void onConfigChanged()
 	{
 		this.configReceived = false;
-		this.getClient().sendMessage(new RemotePlayerConfigMessage(new MultiplayerConfig()));
+		this.getSession().sendMessage(new RemotePlayerConfigMessage(new MultiplayerConfig()));
 	}
 	
 	private String[] f3Log()
 	{
-		if (!this.client.isInitialized())
+		if (!this.session.isInitialized())
 		{
 			return new String[]{"Did not receive connection info yet..."};
 		}
 		
-		if (!this.client.isClosed())
+		if (!this.session.isClosed())
 		{
 			return new String[]{
-					this.client.getRemoteAddress() != null
+					this.session.getRemoteAddress() != null
 							? (this.isReady() ? "Connected to server" : "Connecting to server...")
-							: MessageFormat.format("Disconnected, attempts left: {0} / {1}", this.client.getReconnectionAttemptsLeft(), NettyClient.RECONNECTION_ATTEMPTS)
+							: MessageFormat.format("Disconnected, attempts left: {0} / {1}", this.session.getReconnectionAttemptsLeft(), NettyClient.RECONNECTION_ATTEMPTS)
 			};
 		}
 		else
 		{
 			return new String[]{
-					this.client.getCloseReason() != null
-							? "Disconnected: " + this.client.getCloseReason().getMessage()
+					this.session.getCloseReason() != null
+							? "Disconnected: " + this.session.getCloseReason().getMessage()
 							: "Disconnected (check logs for more information)"
 			};
 		}
@@ -109,6 +112,6 @@ public class ClientNetworkState implements Closeable
 	{
 		this.f3Message.close();
 		this.configChangeListener.close();
-		this.client.close();
+		this.session.close();
 	}
 }

@@ -33,7 +33,7 @@ import com.seibel.distanthorizons.core.multiplayer.client.ClientNetworkState;
 import com.seibel.distanthorizons.core.multiplayer.client.FullDataRefreshQueue;
 import com.seibel.distanthorizons.core.network.netty.NettyClient;
 import com.seibel.distanthorizons.core.network.ScopedNetworkEventSource;
-import com.seibel.distanthorizons.core.network.messages.netty.fullData.FullDataPartialUpdateMessage;
+import com.seibel.distanthorizons.core.network.messages.plugin.fullData.FullDataPartialUpdateMessage;
 import com.seibel.distanthorizons.core.network.netty.NettyMessage;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
@@ -102,7 +102,7 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 		this.networkState = networkState;
 		if (networkState != null)
 		{
-			this.eventSource = new ScopedNetworkEventSource<>(networkState.getClient());
+			this.eventSource = new ScopedNetworkEventSource<>(networkState.getSession());
 			this.dataRefreshQueue = new FullDataRefreshQueue(this, networkState);
 			this.registerNetworkHandlers();
 		}
@@ -177,7 +177,7 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 		boolean isClientUsable = false, isAllowedDimension = false;
 		if (networkState != null)
 		{
-			isClientUsable = !networkState.getClient().isClosed();
+			isClientUsable = !networkState.getSession().isClosed();
 			isAllowedDimension = MC_CLIENT.getWrappedClientLevel() == this.levelWrapper || networkState.config.generateMultipleDimensions;
 		}
 		
