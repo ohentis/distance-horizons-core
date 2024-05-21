@@ -57,7 +57,7 @@ artifacts {
 }
 
 shadowJar {
-    def librariesLocation = "distanthorizons.libraries"
+    def librariesLocation = "DistantHorizons.libraries"
 //    relocate "it.unimi.dsi.fastutil", "${librariesLocation}.unimi.dsi.fastutil"
     mergeServiceFiles()
 }
