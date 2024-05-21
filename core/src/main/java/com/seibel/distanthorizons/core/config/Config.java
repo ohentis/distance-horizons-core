@@ -106,6 +106,7 @@ public class Config
 		
 		public static ConfigEntry<Boolean> optionsButton = new ConfigEntry.Builder<Boolean>()
 				.set(true)
+				.setAppearance(EConfigEntryAppearance.ONLY_IN_FILE)
 				.comment("" +
 						"Should Distant Horizon's config button appear in the options screen next to fov slider?")
 				.build();
