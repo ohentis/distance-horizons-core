@@ -56,9 +56,12 @@ public class DhDataOutputStream extends DataOutputStream
 				case LZ4:
 					return new LZ4FrameOutputStream(stream, 
 							LZ4FrameOutputStream.BLOCKSIZE.SIZE_64KB, -1L,
-							// using native instances reduce GC pressure
-							LZ4Factory.nativeInstance().fastCompressor(),
-							XXHashFactory.nativeInstance().hash32(), 
+							// using native libraries has the least GC impact, however they also prevent
+							// shadowJar remapping, so we're going to use the normal fast instance for now
+							LZ4Factory.fastestInstance().fastCompressor(),
+							XXHashFactory.fastestInstance().hash32(),
+							//LZ4Factory.nativeInstance().fastCompressor(),
+							//XXHashFactory.nativeInstance().hash32(),
 							LZ4FrameOutputStream.FLG.Bits.BLOCK_INDEPENDENCE);
 				case LZMA2:
 					// using an array cache significantly reduces GC pressure
