@@ -10,10 +10,8 @@ import com.seibel.distanthorizons.core.network.messages.plugin.PluginCloseEvent;
 import com.seibel.distanthorizons.core.network.messages.plugin.base.HelloMessage;
 import com.seibel.distanthorizons.core.network.exceptions.RateLimitedException;
 import com.seibel.distanthorizons.core.network.messages.plugin.fullData.FullDataSourceRequestMessage;
-import com.seibel.distanthorizons.core.network.messages.plugin.fullData.generation.GenTaskPriorityRequestMessage;
 import com.seibel.distanthorizons.core.network.plugin.PluginChannelSession;
 import com.seibel.distanthorizons.core.util.ratelimiting.SupplierBasedRateAndConcurrencyLimiter;
-import com.seibel.distanthorizons.core.util.ratelimiting.SupplierBasedRateLimiter;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import org.apache.logging.log4j.LogManager;
 import org.jetbrains.annotations.NotNull;
@@ -27,12 +25,11 @@ public class ServerPlayerState
 	private static final ConfigBasedLogger LOGGER = new ConfigBasedLogger(LogManager.getLogger(),
 			() -> Config.Client.Advanced.Logging.logNetworkEvent.get());
 	
-	public final IServerPlayerWrapper serverPlayer;
-	public final PluginChannelSession connection = new PluginChannelSession();
-	private final MultiplayerConfigChangeListener configChangeListener = new MultiplayerConfigChangeListener(this::onConfigChanged);
+	public final PluginChannelSession session;
 	
 	@NotNull
 	public ConstrainedMultiplayerConfig config = new ConstrainedMultiplayerConfig();
+	private final MultiplayerConfigChangeListener configChangeListener = new MultiplayerConfigChangeListener(this::onConfigChanged);
 	
 	private final ConcurrentHashMap<DhServerLevel, RateLimiterSet> rateLimiterSets = new ConcurrentHashMap<>();
 	public RateLimiterSet getRateLimiterSet(DhServerLevel level)
@@ -44,24 +41,28 @@ public class ServerPlayerState
 		this.rateLimiterSets.clear();
 	}
 	
+	
+	
 	public ServerPlayerState(IServerPlayerWrapper serverPlayer)
 	{
-		this.serverPlayer = serverPlayer;
+		this.session = new PluginChannelSession(serverPlayer);
 		
-		this.connection.registerHandler(RemotePlayerConfigMessage.class, remotePlayerConfigMessage ->
+		this.session.registerHandler(RemotePlayerConfigMessage.class, remotePlayerConfigMessage ->
 		{
 			this.config.clientConfig = (MultiplayerConfig) remotePlayerConfigMessage.payload;
-			this.connection.sendMessage(new RemotePlayerConfigMessage(this.config));
+			this.session.sendMessage(new RemotePlayerConfigMessage(this.config));
 		});
 		
-		this.connection.registerHandler(HelloMessage.class, msg -> {
+		this.session.registerHandler(HelloMessage.class, msg -> {
 			this.initializeLodSession();
 		});
 		
-		this.connection.registerHandler(PluginCloseEvent.class, event -> {
+		this.session.registerHandler(PluginCloseEvent.class, event -> {
 			// Noop
 		});
 	}
+	
+	
 	
 	public void initializeLodSession()
 	{
@@ -70,12 +71,12 @@ public class ServerPlayerState
 	public void close()
 	{
 		this.configChangeListener.close();
-		this.connection.close();
+		this.session.close();
 	}
 	
 	private void onConfigChanged()
 	{
-		this.connection.sendMessage(new RemotePlayerConfigMessage(this.config));
+		this.session.sendMessage(new RemotePlayerConfigMessage(this.config));
 	}
 	
 	
@@ -85,13 +86,6 @@ public class ServerPlayerState
 				() -> ServerNetworking.generationRequestRCLimit.get(),
 				msg -> {
 					msg.sendResponse(new RateLimitedException("Full data request rate/concurrency limit: " + ServerPlayerState.this.config.getFullDataRequestConcurrencyLimit()));
-				}
-		);
-		
-		public final SupplierBasedRateLimiter<GenTaskPriorityRequestMessage> genTaskPriorityRequestRateLimiter = new SupplierBasedRateLimiter<>(
-				() -> ServerNetworking.genTaskPriorityRequestRateLimit.get(),
-				msg -> {
-					msg.sendResponse(new RateLimitedException("Generation task priority check rate limit: " + ServerPlayerState.this.config.getFullDataRequestConcurrencyLimit()));
 				}
 		);
 		

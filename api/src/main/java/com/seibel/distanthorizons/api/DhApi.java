@@ -191,7 +191,7 @@ public class DhApi
 	 * Returns the network protocol version. 
 	 * @since API 1.0.0 
 	 */
-	public static int getNetworkProtocolVersion() { return ModInfo.OLD_PROTOCOL_VERSION; }
+	public static int getNetworkProtocolVersion() { return ModInfo.PROTOCOL_VERSION; }
 	
 	
 	// methods //

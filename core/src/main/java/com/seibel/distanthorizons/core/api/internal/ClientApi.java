@@ -139,7 +139,7 @@ public class ClientApi
 			
 			this.waitingClientLevels.clear();
 			
-			this.pluginChannelApi.onJoin(world.networkState);
+			this.pluginChannelApi.onJoin(world.networkState.getSession());
 		}
 	}
 	
@@ -156,7 +156,6 @@ public class ClientApi
 		}
 		
 		// clear the previous server's information
-		this.pluginChannelApi.close();
 		this.pluginChannelApi = new ClientPluginChannelApi(this::clientLevelLoadEvent, this::clientLevelUnloadEvent);
 		
 		// remove any waiting items

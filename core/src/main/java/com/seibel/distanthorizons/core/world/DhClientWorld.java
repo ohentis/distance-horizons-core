@@ -39,8 +39,7 @@ public class DhClientWorld extends AbstractDhWorld implements IDhClientWorld
 {
 	private final ConcurrentHashMap<IClientLevelWrapper, DhClientLevel> levels;
 	public final ClientOnlySaveStructure saveStructure;
-	@Nullable
-	public final ClientNetworkState networkState;
+	public final ClientNetworkState networkState = new ClientNetworkState();
 	
 	public ExecutorService dhTickerThread = ThreadUtil.makeSingleThreadPool("Client World Ticker Thread");
 	public EventLoop eventLoop = new EventLoop(this.dhTickerThread, this::_clientTick);
@@ -57,10 +56,6 @@ public class DhClientWorld extends AbstractDhWorld implements IDhClientWorld
 		
 		this.saveStructure = new ClientOnlySaveStructure();
 		this.levels = new ConcurrentHashMap<>();
-		
-		this.networkState = Config.Client.Advanced.Multiplayer.ServerNetworking.enableServerNetworking.get()
-				? new ClientNetworkState()
-				: null;
 		
 		LOGGER.info("Started DhWorld of type " + this.environment);
 	}
@@ -137,10 +132,7 @@ public class DhClientWorld extends AbstractDhWorld implements IDhClientWorld
 	@Override
 	public void close()
 	{
-		if (this.networkState != null)
-		{
-			this.networkState.close();
-		}
+		this.networkState.close();
 		
 		
 		for (DhClientLevel dhClientLevel : this.levels.values())

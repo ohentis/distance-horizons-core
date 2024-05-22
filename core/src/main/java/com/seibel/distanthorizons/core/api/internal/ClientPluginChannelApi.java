@@ -9,7 +9,6 @@ import com.seibel.distanthorizons.core.multiplayer.client.ClientNetworkState;
 import com.seibel.distanthorizons.core.network.messages.plugin.PluginCloseEvent;
 import com.seibel.distanthorizons.core.network.messages.plugin.CurrentLevelKeyMessage;
 import com.seibel.distanthorizons.core.network.messages.plugin.base.HelloMessage;
-import com.seibel.distanthorizons.core.network.messages.plugin.ServerConnectInfoMessage;
 import com.seibel.distanthorizons.core.network.plugin.PluginChannelSession;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
@@ -19,20 +18,18 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.function.Consumer;
 
-public class ClientPluginChannelApi implements AutoCloseable
+/** This class is used to manage the plugin channel session and Multiverse level keys. */
+public class ClientPluginChannelApi
 {
 	private static final ConfigBasedLogger LOGGER = new ConfigBasedLogger(LogManager.getLogger(),
 			() -> Config.Client.Advanced.Logging.logNetworkEvent.get());
 	private static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	private static final IKeyedClientLevelManager KEYED_CLIENT_LEVEL_MANAGER = SingletonInjector.INSTANCE.get(IKeyedClientLevelManager.class);
 	
-	private final PluginChannelSession channelHandler = new PluginChannelSession();
-	
 	private final Consumer<IClientLevelWrapper> levelUnloadHandler;
 	private final Consumer<IServerKeyedClientLevel> multiverseLevelLoadHandler;
 	
-	@Nullable
-	private ClientNetworkState networkState;
+	private PluginChannelSession session;
 	
 	
 	public boolean allowLoadingLevel()
@@ -47,15 +44,16 @@ public class ClientPluginChannelApi implements AutoCloseable
 		this.levelUnloadHandler = levelUnloadHandler;
 		this.multiverseLevelLoadHandler = levelLoadHandler;
 		
-		this.channelHandler.registerHandler(CurrentLevelKeyMessage.class, this::onCurrentLevelKeyMessage);
-		this.channelHandler.registerHandler(ServerConnectInfoMessage.class, this::onServerConnectInfoMessage);
-		this.channelHandler.registerHandler(PluginCloseEvent.class, this::onClose);
 	}
 	
-	public void onJoin(@Nullable ClientNetworkState networkState)
+	public void onJoin(PluginChannelSession session)
 	{
-		this.networkState = networkState;
-		this.channelHandler.sendMessageClient(new HelloMessage());
+		this.session = session;
+		
+		this.session.sendMessage(new HelloMessage());
+		
+		this.session.registerHandler(CurrentLevelKeyMessage.class, this::onCurrentLevelKeyMessage);
+		this.session.registerHandler(PluginCloseEvent.class, this::onClose);
 	}
 	
 	private void onCurrentLevelKeyMessage(CurrentLevelKeyMessage msg)
@@ -80,18 +78,6 @@ public class ClientPluginChannelApi implements AutoCloseable
 		});
 	}
 	
-	private void onServerConnectInfoMessage(ServerConnectInfoMessage msg)
-	{
-		if (this.networkState != null)
-		{
-			this.networkState.getSession().resetAndConnectTo(
-					msg.ipOverride != null
-							? msg.ipOverride
-							: MC.getCurrentServerIp().split(":")[0],
-					msg.port);
-		}
-	}
-	
 	public void onClientLevelUnload()
 	{
 		KEYED_CLIENT_LEVEL_MANAGER.clearServerKeyedLevel();
@@ -104,13 +90,7 @@ public class ClientPluginChannelApi implements AutoCloseable
 	
 	public void handlePacket(ByteBuf buffer)
 	{
-		this.channelHandler.decodeAndHandle(buffer);
-	}
-	
-	@Override
-	public void close()
-	{
-		this.channelHandler.close();
+		this.session.decodeAndHandle(buffer);
 	}
 	
 }

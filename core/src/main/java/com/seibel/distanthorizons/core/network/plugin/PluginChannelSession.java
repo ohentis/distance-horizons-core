@@ -4,60 +4,48 @@ import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
 import com.seibel.distanthorizons.core.network.NetworkEventSource;
+import com.seibel.distanthorizons.core.network.messages.PluginMessageRegistry;
 import com.seibel.distanthorizons.core.network.messages.plugin.PluginCloseEvent;
-import com.seibel.distanthorizons.core.network.messages.plugin.PluginMessageRegistry;
-import com.seibel.distanthorizons.core.network.protocol.plugin.PluginMessageEncoder;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IPluginPacketSender;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
-import io.netty.channel.ChannelException;
-import io.netty.channel.ChannelHandlerContext;
 import org.apache.logging.log4j.LogManager;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 public class PluginChannelSession extends NetworkEventSource
 {
-	/**
-	 * 4 MiB should be enough for any transferred data. <br>
-	 * Currently largest transferred data is DH full data sections, which usually don't exceed 1-2 MiB in size.
-	 */
-	private static final int MAX_MESSAGE_LENGTH = 4194304;
-	
 	private static final ConfigBasedLogger LOGGER = new ConfigBasedLogger(LogManager.getLogger(),
 			() -> Config.Client.Advanced.Logging.logNetworkEvent.get());
 	
 	private final IPluginPacketSender packetSender = SingletonInjector.INSTANCE.get(IPluginPacketSender.class);
 	
 	/**
-	 * When set to true, any received data will be ignored. <br>
+	 * When non-null, any received data will be ignored. <br>
 	 * This does not include wrong versions, which are ignored without setting this flag,
 	 * to allow multi-compat servers.
 	 */
-	private final AtomicBoolean isClosed = new AtomicBoolean();
+	private final AtomicReference<Throwable> closeReason = new AtomicReference<>();
+	public Throwable getCloseReason() { return this.closeReason.get(); }
+	public boolean isClosed() { return this.closeReason.get() != null; }
+	
 	@Nullable
-	private IServerPlayerWrapper serverPlayer;
+	private final IServerPlayerWrapper serverPlayer;
 	
-	
-	public PluginChannelSession()
-	{
-		super(PluginMessageRegistry.INSTANCE);
-	}
 	public PluginChannelSession(@Nullable IServerPlayerWrapper serverPlayer)
 	{
-		super(PluginMessageRegistry.INSTANCE);
 		this.serverPlayer = serverPlayer;
 	}
 	
 	
 	public void decodeAndHandle(ByteBuf byteBuf)
 	{
-		if (this.isClosed.get())
+		if (this.closeReason.get() != null)
 		{
 			return;
 		}
@@ -72,7 +60,7 @@ public class PluginChannelSession extends NetworkEventSource
 			
 			PluginChannelMessage msg = PluginMessageRegistry.INSTANCE.createMessage(byteBuf.readUnsignedShort());
 			msg.decode(byteBuf);
-			msg.serverPlayer = this.serverPlayer;
+			msg.session = this;
 			
 			this.handleMessage(msg);
 		}
@@ -86,7 +74,7 @@ public class PluginChannelSession extends NetworkEventSource
 		}
 	}
 	
-	<TResponse extends TrackableMessage> CompletableFuture<TResponse> sendRequest(TrackableMessage msg, Class<TResponse> responseClass)
+	public <TResponse extends TrackableMessage> CompletableFuture<TResponse> sendRequest(TrackableMessage msg, Class<TResponse> responseClass)
 	{
 		CompletableFuture<TResponse> responseFuture = this.createRequest(this, msg, responseClass);
 		this.sendMessage(msg);
@@ -113,10 +101,9 @@ public class PluginChannelSession extends NetworkEventSource
 		}
 	}
 	
-	@Override
-	public void close()
+	public void close(Throwable closeReason)
 	{
-		if (!this.isClosed.compareAndSet(false, true))
+		if (!this.closeReason.compareAndSet(null, closeReason))
 		{
 			return;
 		}

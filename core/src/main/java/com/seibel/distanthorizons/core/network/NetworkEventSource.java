@@ -21,16 +21,15 @@ package com.seibel.distanthorizons.core.network;
 
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
+import com.seibel.distanthorizons.core.network.messages.PluginMessageRegistry;
 import com.seibel.distanthorizons.core.network.messages.plugin.base.CancelMessage;
 import com.seibel.distanthorizons.core.network.messages.plugin.base.ExceptionMessage;
 import com.seibel.distanthorizons.core.network.messages.plugin.PluginCloseEvent;
-import com.seibel.distanthorizons.core.network.messages.plugin.PluginMessageRegistry;
 import com.seibel.distanthorizons.core.network.plugin.PluginChannelMessage;
 import com.seibel.distanthorizons.core.network.plugin.PluginChannelSession;
 import com.seibel.distanthorizons.core.network.plugin.TrackableMessage;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import io.netty.channel.ChannelException;
-import io.netty.channel.ChannelHandlerContext;
 import org.apache.logging.log4j.LogManager;
 
 import java.io.InvalidClassException;
@@ -129,16 +128,16 @@ public abstract class NetworkEventSource
 	}
 	
 	
-	protected <TResponse extends TrackableMessage> CompletableFuture<TResponse> createRequest(PluginChannelSession connection, TrackableMessage msg, Class<TResponse> responseClass)
+	protected <TResponse extends TrackableMessage> CompletableFuture<TResponse> createRequest(PluginChannelSession session, TrackableMessage msg, Class<TResponse> responseClass)
 	{
-		msg.setConnection(connection);
+		msg.setConnection(session);
 		
 		CompletableFuture<TResponse> responseFuture = new CompletableFuture<>();
 		responseFuture.whenComplete((response, throwable) ->
 		{
 			if (!(throwable instanceof ChannelException))
 			{
-				ConcurrentMap<Long, FutureResponseData> subMap = this.pendingFutures.get(connection);
+				ConcurrentMap<Long, FutureResponseData> subMap = this.pendingFutures.get(session);
 				if (subMap != null)
 				{
 					subMap.remove(msg.futureId);
@@ -151,19 +150,19 @@ public abstract class NetworkEventSource
 			}
 		});
 		
-		ConcurrentMap<Long, FutureResponseData> subMap = this.pendingFutures.get(connection);
+		ConcurrentMap<Long, FutureResponseData> subMap = this.pendingFutures.get(session);
 		if (subMap == null)
 		{
 			// Was deleted before adding
-			responseFuture.completeExceptionally(connection.getCloseReason());
+			responseFuture.completeExceptionally(session.getCloseReason());
 			return responseFuture;
 		}
 		subMap.put(msg.futureId, new FutureResponseData(responseClass, responseFuture));
-		if (!this.pendingFutures.containsKey(connection))
+		if (!this.pendingFutures.containsKey(session))
 		{
 			// Was deleted while adding
 			// Note: removal from subMap will happen in whenComplete above
-			responseFuture.completeExceptionally(connection.getCloseReason());
+			responseFuture.completeExceptionally(session.getCloseReason());
 			return responseFuture;
 		}
 		// If passed until here, cancelling is up to the cleaning side

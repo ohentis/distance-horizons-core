@@ -100,10 +100,10 @@ public class PluginMessageRegistry
 	@SuppressWarnings("unchecked")
 	public int getMessageId(PluginChannelMessage message)
 	{
-		return this.gePluginChannelMessageId(message.getClass());
+		return this.getMessageId(message.getClass());
 	}
 	
-	public int gePluginChannelMessageId(Class<? extends PluginChannelMessage> messageClass)
+	public int getMessageId(Class<? extends PluginChannelMessage> messageClass)
 	{
 		try
 		{

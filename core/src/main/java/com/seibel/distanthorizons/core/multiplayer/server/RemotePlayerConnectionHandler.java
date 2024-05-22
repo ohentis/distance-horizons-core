@@ -31,7 +31,7 @@ public class RemotePlayerConnectionHandler implements Closeable
 	
 	public void handlePluginMessage(IServerPlayerWrapper player, ByteBuf buffer)
 	{
-		this.connectedPlayers.get(player).connection.decodeAndHandle(buffer);
+		this.connectedPlayers.get(player).session.decodeAndHandle(buffer);
 	}
 	
 	

@@ -6,10 +6,9 @@ import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
 import com.seibel.distanthorizons.core.multiplayer.config.MultiplayerConfig;
 import com.seibel.distanthorizons.core.multiplayer.config.MultiplayerConfigChangeListener;
-import com.seibel.distanthorizons.core.network.netty.NettyClient;
 import com.seibel.distanthorizons.core.network.ScopedNetworkEventSource;
+import com.seibel.distanthorizons.core.network.messages.plugin.PluginCloseEvent;
 import com.seibel.distanthorizons.core.network.messages.plugin.base.AckMessage;
-import com.seibel.distanthorizons.core.network.messages.plugin.base.NettyCloseEvent;
 import com.seibel.distanthorizons.core.network.messages.plugin.base.HelloMessage;
 import com.seibel.distanthorizons.core.network.messages.plugin.session.PlayerUUIDMessage;
 import com.seibel.distanthorizons.core.network.messages.plugin.session.RemotePlayerConfigMessage;
@@ -18,7 +17,6 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftCli
 import org.apache.logging.log4j.LogManager;
 
 import java.io.Closeable;
-import java.text.MessageFormat;
 import java.util.UUID;
 
 public class ClientNetworkState implements Closeable
@@ -27,8 +25,9 @@ public class ClientNetworkState implements Closeable
 			() -> Config.Client.Advanced.Logging.logNetworkEvent.get());
 	private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	
-	private final PluginChannelSession session;
 	private final UUID playerUUID = MC_CLIENT.getPlayerUUID();
+	private final PluginChannelSession session = new PluginChannelSession(null);
+	private EServerSupportStatus serverSupportStatus = EServerSupportStatus.NONE;
 	
 	
 	public MultiplayerConfig config = new MultiplayerConfig();
@@ -47,13 +46,12 @@ public class ClientNetworkState implements Closeable
 	/**
 	 * Constructs a new instance.
 	 */
-	public ClientNetworkState(PluginChannelSession session)
+	public ClientNetworkState()
 	{
-		this.session = session;
-		
 		this.session.registerHandler(HelloMessage.class, helloMessage ->
 		{
-			LOGGER.info("Connected to server: "+helloMessage.getConnection().getRemoteAddress());
+			LOGGER.info("Server reported full DH support.");
+			serverSupportStatus = EServerSupportStatus.FULL;
 			
 			this.getSession().sendRequest(new PlayerUUIDMessage(this.playerUUID), AckMessage.class)
 					.thenAccept(ack -> this.getSession().sendMessage(new RemotePlayerConfigMessage(new MultiplayerConfig())))
@@ -70,7 +68,7 @@ public class ClientNetworkState implements Closeable
 			this.configReceived = true;
 		});
 		
-		this.session.registerHandler(NettyCloseEvent.class, msg ->
+		this.session.registerHandler(PluginCloseEvent.class, msg ->
 		{
 			this.configReceived = false;
 		});
@@ -84,27 +82,22 @@ public class ClientNetworkState implements Closeable
 	
 	private String[] f3Log()
 	{
-		if (!this.session.isInitialized())
+		if (this.session.isClosed())
 		{
-			return new String[]{"Did not receive connection info yet..."};
+			return new String[]{
+					"Session closed: " + this.session.getCloseReason().getMessage()
+			};
 		}
 		
-		if (!this.session.isClosed())
+		if (!this.configReceived)
 		{
-			return new String[]{
-					this.session.getRemoteAddress() != null
-							? (this.isReady() ? "Connected to server" : "Connecting to server...")
-							: MessageFormat.format("Disconnected, attempts left: {0} / {1}", this.session.getReconnectionAttemptsLeft(), NettyClient.RECONNECTION_ATTEMPTS)
-			};
+			return new String[]{"Server does not support DH"};
 		}
-		else
-		{
-			return new String[]{
-					this.session.getCloseReason() != null
-							? "Disconnected: " + this.session.getCloseReason().getMessage()
-							: "Disconnected (check logs for more information)"
-			};
-		}
+		
+		if (!this.session.isClosed()) return new String[]{
+				"Server has full DH support"
+		};
+		return 
 	}
 	
 	@Override
@@ -113,5 +106,19 @@ public class ClientNetworkState implements Closeable
 		this.f3Message.close();
 		this.configChangeListener.close();
 		this.session.close();
+	}
+	
+	private enum EServerSupportStatus
+	{
+		NONE("Server does not support DH"),
+		LEVELS_ONLY("Server supports shared level keys"),
+		FULL("Server has full DH support");
+		
+		public final String message;
+		
+		EServerSupportStatus(String message)
+		{
+			this.message = message;
+		}
 	}
 }

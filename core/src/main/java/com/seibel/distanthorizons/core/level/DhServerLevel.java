@@ -250,7 +250,7 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 			if (distanceFromPlayer >= serverPlayerState.serverPlayer.getViewDistance() &&
 					distanceFromPlayer <= serverPlayerState.config.getRenderDistanceRadius())
 			{
-				serverPlayerState.connection.sendMessage(new FullDataPartialUpdateMessage(this.serverLevelWrapper, data));
+				serverPlayerState.session.sendMessage(new FullDataPartialUpdateMessage(this.serverLevelWrapper, data));
 			}
 		}
 		
