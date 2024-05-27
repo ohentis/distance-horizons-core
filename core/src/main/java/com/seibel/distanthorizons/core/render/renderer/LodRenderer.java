@@ -477,14 +477,6 @@ public class LodRenderer
 			LagSpikeCatcher drawCleanup = new LagSpikeCatcher();
 			ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeRenderCleanupEvent.class, renderEventParam);
 			
-			// GLProxy tasks should be run after all rendering has been done
-			boolean afterEnabledDeferredPass = deferTransparentRendering && !renderingFirstPass;
-			boolean afterOnlyRenderingPass = !deferTransparentRendering && renderingFirstPass;
-			if (afterEnabledDeferredPass || afterOnlyRenderingPass)
-			{
-				GLProxy.getInstance().runRenderThreadTasks();
-			}
-			
 			lightmap.unbind();
 			if (ENABLE_IBO)
 			{
