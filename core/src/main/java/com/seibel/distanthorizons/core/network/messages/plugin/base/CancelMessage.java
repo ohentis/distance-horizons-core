@@ -20,7 +20,6 @@
 package com.seibel.distanthorizons.core.network.messages.plugin.base;
 
 import com.seibel.distanthorizons.core.network.plugin.TrackableMessage;
-import com.seibel.distanthorizons.core.network.plugin.TrackableNettyMessage;
 import io.netty.buffer.ByteBuf;
 
 public class CancelMessage extends TrackableMessage

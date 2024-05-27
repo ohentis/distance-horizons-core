@@ -23,7 +23,7 @@ public class PluginChannelSession extends NetworkEventSource
 	private static final ConfigBasedLogger LOGGER = new ConfigBasedLogger(LogManager.getLogger(),
 			() -> Config.Client.Advanced.Logging.logNetworkEvent.get());
 	
-	private final IPluginPacketSender packetSender = SingletonInjector.INSTANCE.get(IPluginPacketSender.class);
+	private static final IPluginPacketSender PACKET_SENDER = SingletonInjector.INSTANCE.get(IPluginPacketSender.class);
 	
 	/**
 	 * When non-null, any received data will be ignored. <br>
@@ -35,7 +35,7 @@ public class PluginChannelSession extends NetworkEventSource
 	public boolean isClosed() { return this.closeReason.get() != null; }
 	
 	@Nullable
-	private final IServerPlayerWrapper serverPlayer;
+	public final IServerPlayerWrapper serverPlayer;
 	
 	public PluginChannelSession(@Nullable IServerPlayerWrapper serverPlayer)
 	{
@@ -93,11 +93,11 @@ public class PluginChannelSession extends NetworkEventSource
 		
 		if (this.serverPlayer != null)
 		{
-			this.packetSender.sendPluginPacketServer(this.serverPlayer, encoder);
+			PACKET_SENDER.sendPluginPacketServer(this.serverPlayer, encoder);
 		}
 		else
 		{
-			this.packetSender.sendPluginPacketClient(encoder);
+			PACKET_SENDER.sendPluginPacketClient(encoder);
 		}
 	}
 	

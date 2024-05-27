@@ -26,6 +26,7 @@ public class ServerPlayerState
 			() -> Config.Client.Advanced.Logging.logNetworkEvent.get());
 	
 	public final PluginChannelSession session;
+	public IServerPlayerWrapper serverPlayer() { return this.session.serverPlayer; }
 	
 	@NotNull
 	public ConstrainedMultiplayerConfig config = new ConstrainedMultiplayerConfig();

@@ -25,30 +25,34 @@ import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.multiplayer.server.ServerPlayerState;
 import com.seibel.distanthorizons.core.multiplayer.server.RemotePlayerConnectionHandler;
-import com.seibel.distanthorizons.core.network.ScopedNetworkEventSource;
-import com.seibel.distanthorizons.core.network.netty.NettyServer;
+import com.seibel.distanthorizons.core.network.exceptions.InvalidLevelException;
 import com.seibel.distanthorizons.core.network.exceptions.RequestRejectedException;
+import com.seibel.distanthorizons.core.network.messages.plugin.ILevelRelatedMessage;
 import com.seibel.distanthorizons.core.network.messages.plugin.base.CancelMessage;
 import com.seibel.distanthorizons.core.network.messages.plugin.fullData.FullDataSourceRequestMessage;
 import com.seibel.distanthorizons.core.network.messages.plugin.fullData.FullDataSourceResponseMessage;
-import com.seibel.distanthorizons.core.network.messages.plugin.fullData.generation.GenTaskPriorityRequestMessage;
-import com.seibel.distanthorizons.core.network.messages.plugin.fullData.generation.GenTaskPriorityResponseMessage;
 import com.seibel.distanthorizons.core.network.messages.plugin.fullData.FullDataPartialUpdateMessage;
-import com.seibel.distanthorizons.core.network.netty.NettyMessage;
+import com.seibel.distanthorizons.core.network.plugin.PluginChannelMessage;
+import com.seibel.distanthorizons.core.network.plugin.PluginChannelSession;
+import com.seibel.distanthorizons.core.network.plugin.TrackableMessage;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
 import com.seibel.distanthorizons.coreapi.util.math.Vec3d;
 import org.apache.logging.log4j.Logger;
 
+import java.text.MessageFormat;
 import java.util.concurrent.CompletableFuture;
 
 import javax.annotation.CheckForNull;
 import java.util.Map;
 import java.util.concurrent.*;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 {
@@ -58,7 +62,6 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 	private final IServerLevelWrapper serverLevelWrapper;
 	
 	private final RemotePlayerConnectionHandler remotePlayerConnectionHandler;
-	private final ScopedNetworkEventSource<NettyServer, NettyMessage> eventSource;
 	
 	private final ConcurrentLinkedQueue<IServerPlayerWrapper> worldGenLoopingQueue = new ConcurrentLinkedQueue<>();
 	private final ConcurrentMap<DhSectionPos, IncompleteDataSourceEntry> incompleteDataSources = new ConcurrentHashMap<>();
@@ -75,13 +78,11 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 		LOGGER.info("Started DHLevel for {} with saves at {}", serverLevelWrapper, saveStructure);
 	
 		this.remotePlayerConnectionHandler = remotePlayerConnectionHandler;
-		this.eventSource = new ScopedNetworkEventSource<>(remotePlayerConnectionHandler.server());
-		this.registerNetworkHandlers();
 	}
 	
-	private void registerNetworkHandlers()
+	public void registerNetworkHandlers(ServerPlayerState serverPlayerState)
 	{
-		this.eventSource.registerHandler(FullDataSourceRequestMessage.class, this.remotePlayerConnectionHandler.currentLevelOnly(this, (msg, serverPlayerState) ->
+		serverPlayerState.session.registerHandler(FullDataSourceRequestMessage.class, this.currentLevelOnly(msg ->
 		{
 			ServerPlayerState.RateLimiterSet rateLimiterSet = serverPlayerState.getRateLimiterSet(this);
 			
@@ -149,16 +150,7 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 			}
 		}));
 		
-		this.eventSource.registerHandler(GenTaskPriorityRequestMessage.class, this.remotePlayerConnectionHandler.currentLevelOnly(this, (msg, serverPlayerState) ->
-		{
-			msg.sendResponse(new GenTaskPriorityResponseMessage(
-					this.serverside.fullDataFileHandler.getLoadStates(msg.posList.stream()
-							.limit(serverPlayerState.getRateLimiterSet(this).genTaskPriorityRequestRateLimiter.acquireOrDrain(msg.posList.size()))
-							::iterator)
-			));
-		}));
-		
-		this.eventSource.registerHandler(CancelMessage.class, msg ->
+		serverPlayerState.session.registerHandler(CancelMessage.class, msg ->
 		{
 			IncompleteDataSourceEntry entry = this.fullDataRequests.remove(msg.futureId);
 			if (entry == null)
@@ -167,11 +159,7 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 			}
 			FullDataSourceRequestMessage requestMessage = entry.requestMessages.remove(msg.futureId);
 			
-			ServerPlayerState serverPlayerState = this.remotePlayerConnectionHandler.getConnectedPlayer(msg);
-			if (serverPlayerState != null)
-			{
-				serverPlayerState.getRateLimiterSet(this).fullDataRequestConcurrencyLimiter.release();
-			}
+			serverPlayerState.getRateLimiterSet(this).fullDataRequestConcurrencyLimiter.release();
 			
 			entry.requestCollectionSemaphore.acquireUninterruptibly(Short.MAX_VALUE);
 			if (entry.requestMessages.isEmpty())
@@ -182,6 +170,39 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 			
 			entry.requestCollectionSemaphore.release(Short.MAX_VALUE);
 		});
+	}
+	
+	public <T extends PluginChannelMessage> Consumer<T> currentLevelOnly(Consumer<T> next)
+	{
+		return msg ->
+		{
+			LodUtil.assertTrue(msg instanceof ILevelRelatedMessage, "Received message does not implement " + ILevelRelatedMessage.class.getSimpleName() + ": " + msg.getClass().getSimpleName());
+			
+			// Handle only in requested dimension
+			if (!((ILevelRelatedMessage) msg).isSameLevelAs(this.getLevelWrapper()))
+			{
+				return;
+			}
+			
+			// If player is not in this dimension and handling multiple dimensions at once is not allowed
+			assert msg.session.serverPlayer != null;
+			if (msg.session.serverPlayer.getLevel() != this.getLevelWrapper())
+			{
+				// If the message can be replied to - reply with error, otherwise just ignore
+				if (msg instanceof TrackableMessage)
+				{
+					((TrackableMessage) msg).sendResponse(new InvalidLevelException(MessageFormat.format(
+							"Generation not allowed. Requested dimension: {0}, player dimension: {1}",
+							this.getLevelWrapper().getDimensionType().getDimensionName(),
+							msg.session.serverPlayer.getLevel().getDimensionType().getDimensionName()
+					)));
+				}
+				
+				return;
+			}
+			
+			next.accept(msg);
+		};
 	}
 	
 	public void addPlayer(IServerPlayerWrapper serverPlayer)
@@ -218,7 +239,7 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 			{
 				this.fullDataRequests.remove(msg.futureId);
 				
-				ServerPlayerState serverPlayerState = this.remotePlayerConnectionHandler.getConnectedPlayer(msg);
+				ServerPlayerState serverPlayerState = this.remotePlayerConnectionHandler.getConnectedPlayer(msg.serverPlayer());
 				if (serverPlayerState == null)
 				{
 					continue;
@@ -245,9 +266,9 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 				continue;
 			}
 			
-			Vec3d playerPosition = serverPlayerState.serverPlayer.getPosition();
+			Vec3d playerPosition = serverPlayerState.serverPlayer().getPosition();
 			int distanceFromPlayer = data.getPos().getManhattanBlockDistance(new DhBlockPos2D((int) playerPosition.x, (int) playerPosition.z)) / 16;
-			if (distanceFromPlayer >= serverPlayerState.serverPlayer.getViewDistance() &&
+			if (distanceFromPlayer >= serverPlayerState.serverPlayer().getViewDistance() &&
 					distanceFromPlayer <= serverPlayerState.config.getRenderDistanceRadius())
 			{
 				serverPlayerState.session.sendMessage(new FullDataPartialUpdateMessage(this.serverLevelWrapper, data));

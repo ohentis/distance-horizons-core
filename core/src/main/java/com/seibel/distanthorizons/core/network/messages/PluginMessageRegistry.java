@@ -23,7 +23,6 @@ import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.seibel.distanthorizons.core.network.messages.plugin.CurrentLevelKeyMessage;
 import com.seibel.distanthorizons.core.network.messages.plugin.base.HelloMessage;
-import com.seibel.distanthorizons.core.network.messages.plugin.PluginMessageRegistry;
 import com.seibel.distanthorizons.core.network.messages.plugin.base.AckMessage;
 import com.seibel.distanthorizons.core.network.messages.plugin.base.CancelMessage;
 import com.seibel.distanthorizons.core.network.messages.plugin.base.CloseReasonMessage;
@@ -31,8 +30,6 @@ import com.seibel.distanthorizons.core.network.messages.plugin.base.ExceptionMes
 import com.seibel.distanthorizons.core.network.messages.plugin.fullData.FullDataPartialUpdateMessage;
 import com.seibel.distanthorizons.core.network.messages.plugin.fullData.FullDataSourceRequestMessage;
 import com.seibel.distanthorizons.core.network.messages.plugin.fullData.FullDataSourceResponseMessage;
-import com.seibel.distanthorizons.core.network.messages.plugin.fullData.generation.GenTaskPriorityRequestMessage;
-import com.seibel.distanthorizons.core.network.messages.plugin.fullData.generation.GenTaskPriorityResponseMessage;
 import com.seibel.distanthorizons.core.network.messages.plugin.session.PlayerUUIDMessage;
 import com.seibel.distanthorizons.core.network.messages.plugin.session.RemotePlayerConfigMessage;
 import com.seibel.distanthorizons.core.network.plugin.PluginChannelMessage;

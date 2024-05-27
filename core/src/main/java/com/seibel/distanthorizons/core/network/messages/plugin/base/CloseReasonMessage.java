@@ -19,7 +19,6 @@
 
 package com.seibel.distanthorizons.core.network.messages.plugin.base;
 
-import com.seibel.distanthorizons.core.network.netty.NettyMessage;
 import com.seibel.distanthorizons.core.network.plugin.PluginChannelMessage;
 import io.netty.buffer.ByteBuf;
 
@@ -38,10 +37,5 @@ public class CloseReasonMessage extends PluginChannelMessage
 
 	@Override
 	public void decode(ByteBuf in) { this.reason = this.readString(in); }
-	
-	@Override public String toString()
-	{
-		return super.toString("reason='" + this.reason + '\'');
-	}
 	
 }

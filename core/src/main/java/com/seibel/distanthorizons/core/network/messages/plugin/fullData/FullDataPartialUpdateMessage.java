@@ -23,7 +23,6 @@ import com.seibel.distanthorizons.api.enums.config.EDhApiDataCompressionMode;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.network.messages.plugin.ILevelRelatedMessage;
-import com.seibel.distanthorizons.core.network.netty.NettyMessage;
 import com.seibel.distanthorizons.core.network.plugin.PluginChannelMessage;
 import com.seibel.distanthorizons.core.network.protocol.INetworkObject;
 import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV2DTO;
@@ -73,14 +72,6 @@ public class FullDataPartialUpdateMessage extends PluginChannelMessage implement
 	{
 		this.levelName = this.readString(in);
 		this.dataSourceDto = INetworkObject.readToObject(new FullDataSourceV2DTO(), in);
-	}
-	
-	@Override
-	public String toString()
-	{
-		return super.toString(
-				"levelHashCode=" + this.levelName
-		);
 	}
 	
 }

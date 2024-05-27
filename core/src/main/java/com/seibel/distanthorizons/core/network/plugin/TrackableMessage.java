@@ -39,7 +39,7 @@ public abstract class TrackableMessage extends PluginChannelMessage
 			| ((Objects.requireNonNull(SharedApi.getEnvironment()) == EWorldEnvironment.Server_Only ? 1 : 0) << 31);
 	
 	private static final AtomicInteger lastContextId = new AtomicInteger();
-	private static final ConcurrentMap<PluginChannelSessionAAAAA, Integer> connectionToIdMap = new MapMaker().weakKeys().makeMap();
+	private static final ConcurrentMap<PluginChannelSession, Integer> connectionToIdMap = new MapMaker().weakKeys().makeMap();
 	
 	public void sendResponse(TrackableMessage responseMessage)
 	{

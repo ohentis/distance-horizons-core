@@ -953,19 +953,6 @@ public class Config
 									+ "Limits the amount of sent/processed LOD *update* requests concurrently, per player."
 									+ "")
 							.build();
-					
-					public static ConfigUIComment immersivePortalsSectionNote = new ConfigUIComment();
-					public static ConfigEntry<Boolean> generateMultipleDimensions = new ConfigEntry.Builder<Boolean>()
-							.setServersideShortName("generateMultipleDimensions")
-							.set(false)
-							.comment(""
-									+ "Controls whether clients will request for the server to generate LODs in multiple dimensions at once.\n"
-									+ ""
-									+ "Note that all dimensions share the same thread pool.\n"
-									+ "This means that dimensions without any connected clients inside could slow down LOD updates for\n"
-									+ "all connected clients in other dimensions."
-									+ "")
-							.build();
 				}
 				
 			}

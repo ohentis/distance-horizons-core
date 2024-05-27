@@ -21,7 +21,6 @@ package com.seibel.distanthorizons.core.network.messages.plugin.fullData;
 
 import com.seibel.distanthorizons.core.network.messages.plugin.ILevelRelatedMessage;
 import com.seibel.distanthorizons.core.network.plugin.TrackableMessage;
-import com.seibel.distanthorizons.core.network.plugin.TrackableNettyMessage;
 import com.seibel.distanthorizons.core.network.protocol.INetworkObject;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
@@ -68,15 +67,5 @@ public class FullDataSourceRequestMessage extends TrackableMessage implements IL
 		this.sectionPos = INetworkObject.readToObject(DhSectionPos.zero(), in);
 		this.clientTimestamp = this.readOptional(in, in::readLong);
     }
-	
-	@Override
-	public String toString()
-	{
-		return super.toString(
-				"dhSectionPos=" + this.sectionPos +
-						", levelHashCode=" + this.levelName +
-						", checksum=" + this.clientTimestamp
-		);
-	}
 	
 }

@@ -23,7 +23,6 @@ import com.seibel.distanthorizons.api.enums.config.EDhApiDataCompressionMode;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.network.plugin.TrackableMessage;
-import com.seibel.distanthorizons.core.network.plugin.TrackableNettyMessage;
 import com.seibel.distanthorizons.core.network.protocol.INetworkObject;
 import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV2DTO;
 import io.netty.buffer.ByteBuf;

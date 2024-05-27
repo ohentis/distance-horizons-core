@@ -6,6 +6,7 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapp
 public abstract class PluginChannelMessage implements INetworkObject
 {
 	public PluginChannelSession session = null;
+	public IServerPlayerWrapper serverPlayer() { return this.session.serverPlayer; }
 	
 	public boolean warnWhenUnhandled() { return true; }
 	
@@ -18,7 +19,7 @@ public abstract class PluginChannelMessage implements INetworkObject
 	{
 		if (this.session != null)
 		{
-			throw new IllegalStateException("Session cannot be changed after initialization.");
+			throw new IllegalStateException("Session object cannot be changed after initialization.");
 		}
 		this.session = connection;
 	}

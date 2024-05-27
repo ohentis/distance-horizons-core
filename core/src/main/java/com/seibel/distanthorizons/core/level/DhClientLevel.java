@@ -31,10 +31,8 @@ import com.seibel.distanthorizons.core.generation.WorldRemoteGenerationQueue;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.multiplayer.client.ClientNetworkState;
 import com.seibel.distanthorizons.core.multiplayer.client.FullDataRefreshQueue;
-import com.seibel.distanthorizons.core.network.netty.NettyClient;
 import com.seibel.distanthorizons.core.network.ScopedNetworkEventSource;
 import com.seibel.distanthorizons.core.network.messages.plugin.fullData.FullDataPartialUpdateMessage;
-import com.seibel.distanthorizons.core.network.netty.NettyMessage;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
@@ -75,7 +73,7 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 	@CheckForNull
 	private final ClientNetworkState networkState;
 	@Nullable
-	private final ScopedNetworkEventSource<NettyClient, NettyMessage> eventSource;
+	private final ScopedNetworkEventSource eventSource;
 	
 	public final WorldGenModule worldGenModule;
 	public final AppliedConfigState<Boolean> worldGeneratorEnabledConfig;
@@ -102,7 +100,7 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 		this.networkState = networkState;
 		if (networkState != null)
 		{
-			this.eventSource = new ScopedNetworkEventSource<>(networkState.getSession());
+			this.eventSource = new ScopedNetworkEventSource(networkState.getSession());
 			this.dataRefreshQueue = new FullDataRefreshQueue(this, networkState);
 			this.registerNetworkHandlers();
 		}

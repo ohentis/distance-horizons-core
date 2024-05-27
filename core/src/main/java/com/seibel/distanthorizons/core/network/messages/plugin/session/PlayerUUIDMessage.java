@@ -20,7 +20,6 @@
 package com.seibel.distanthorizons.core.network.messages.plugin.session;
 
 import com.seibel.distanthorizons.core.network.plugin.TrackableMessage;
-import com.seibel.distanthorizons.core.network.plugin.TrackableNettyMessage;
 import io.netty.buffer.ByteBuf;
 
 import java.util.UUID;
@@ -41,10 +40,5 @@ public class PlayerUUIDMessage extends TrackableMessage
 	
 	@Override
 	public void decode0(ByteBuf in) { this.playerUUID = new UUID(in.readLong(), in.readLong()); }
-	
-	@Override public String toString()
-	{
-		return super.toString("playerUUID=" + this.playerUUID);
-	}
 	
 }

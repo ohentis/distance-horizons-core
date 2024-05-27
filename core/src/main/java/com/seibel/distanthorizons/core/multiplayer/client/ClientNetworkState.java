@@ -51,7 +51,7 @@ public class ClientNetworkState implements Closeable
 		this.session.registerHandler(HelloMessage.class, helloMessage ->
 		{
 			LOGGER.info("Server reported full DH support.");
-			serverSupportStatus = EServerSupportStatus.FULL;
+			this.serverSupportStatus = EServerSupportStatus.FULL;
 			
 			this.getSession().sendRequest(new PlayerUUIDMessage(this.playerUUID), AckMessage.class)
 					.thenAccept(ack -> this.getSession().sendMessage(new RemotePlayerConfigMessage(new MultiplayerConfig())))
@@ -89,15 +89,9 @@ public class ClientNetworkState implements Closeable
 			};
 		}
 		
-		if (!this.configReceived)
-		{
-			return new String[]{"Server does not support DH"};
-		}
-		
-		if (!this.session.isClosed()) return new String[]{
-				"Server has full DH support"
+		return new String[]{
+				this.serverSupportStatus.message
 		};
-		return 
 	}
 	
 	@Override

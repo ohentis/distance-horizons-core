@@ -24,7 +24,6 @@ import com.seibel.distanthorizons.core.network.exceptions.InvalidSectionPosExcep
 import com.seibel.distanthorizons.core.network.exceptions.RateLimitedException;
 import com.seibel.distanthorizons.core.network.exceptions.RequestRejectedException;
 import com.seibel.distanthorizons.core.network.plugin.TrackableMessage;
-import com.seibel.distanthorizons.core.network.plugin.TrackableNettyMessage;
 import io.netty.buffer.ByteBuf;
 
 import java.util.ArrayList;
@@ -60,11 +59,6 @@ public class ExceptionMessage extends TrackableMessage
 		int id = in.readInt();
 		String message = this.readString(in);
 		this.exception = exceptionMap.get(id).getDeclaredConstructor(String.class).newInstance(message);
-	}
-	
-	@Override public String toString()
-	{
-		return super.toString("exception=" + this.exception);
 	}
 	
 }
