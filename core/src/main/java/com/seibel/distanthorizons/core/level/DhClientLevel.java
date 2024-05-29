@@ -176,7 +176,7 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 		if (networkState != null)
 		{
 			isClientUsable = !networkState.getSession().isClosed();
-			isAllowedDimension = MC_CLIENT.getWrappedClientLevel() == this.levelWrapper || networkState.config.generateMultipleDimensions;
+			isAllowedDimension = MC_CLIENT.getWrappedClientLevel() == this.levelWrapper;
 		}
 		
 		boolean shouldDoWorldGen = isClientUsable

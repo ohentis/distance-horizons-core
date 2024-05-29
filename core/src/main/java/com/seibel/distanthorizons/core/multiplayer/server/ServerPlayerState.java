@@ -7,7 +7,7 @@ import com.seibel.distanthorizons.core.multiplayer.config.MultiplayerConfig;
 import com.seibel.distanthorizons.core.multiplayer.config.MultiplayerConfigChangeListener;
 import com.seibel.distanthorizons.core.network.messages.plugin.session.RemotePlayerConfigMessage;
 import com.seibel.distanthorizons.core.network.messages.plugin.PluginCloseEvent;
-import com.seibel.distanthorizons.core.network.messages.plugin.base.HelloMessage;
+import com.seibel.distanthorizons.core.network.messages.plugin.base.ClientHelloMessage;
 import com.seibel.distanthorizons.core.network.exceptions.RateLimitedException;
 import com.seibel.distanthorizons.core.network.messages.plugin.fullData.FullDataSourceRequestMessage;
 import com.seibel.distanthorizons.core.network.plugin.PluginChannelSession;
@@ -54,9 +54,7 @@ public class ServerPlayerState
 			this.session.sendMessage(new RemotePlayerConfigMessage(this.config));
 		});
 		
-		this.session.registerHandler(HelloMessage.class, msg -> {
-			this.initializeLodSession();
-		});
+		this.session.registerHandler(ClientHelloMessage.class, msg -> this.onConfigChanged());
 		
 		this.session.registerHandler(PluginCloseEvent.class, event -> {
 			// Noop
@@ -65,8 +63,10 @@ public class ServerPlayerState
 	
 	
 	
-	public void initializeLodSession()
+	
+	private void onConfigChanged()
 	{
+		this.session.sendMessage(new RemotePlayerConfigMessage(this.config));
 	}
 	
 	public void close()
@@ -75,10 +75,6 @@ public class ServerPlayerState
 		this.session.close();
 	}
 	
-	private void onConfigChanged()
-	{
-		this.session.sendMessage(new RemotePlayerConfigMessage(this.config));
-	}
 	
 	
 	public class RateLimiterSet

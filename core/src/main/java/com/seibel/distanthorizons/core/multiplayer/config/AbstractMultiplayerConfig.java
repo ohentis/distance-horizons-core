@@ -12,7 +12,6 @@ public abstract class AbstractMultiplayerConfig implements INetworkObject
 	public abstract boolean isRealTimeUpdatesEnabled();
 	public abstract boolean isLoginDataSyncEnabled();
 	public abstract int getLoginDataSyncRCLimit();
-	public abstract boolean getGenerateMultipleDimensions();
 	
 	@Override
 	public void encode(ByteBuf out)
@@ -24,7 +23,6 @@ public abstract class AbstractMultiplayerConfig implements INetworkObject
 		out.writeBoolean(this.isRealTimeUpdatesEnabled());
 		out.writeBoolean(this.isLoginDataSyncEnabled());
 		out.writeInt(this.getLoginDataSyncRCLimit());
-		out.writeBoolean(this.getGenerateMultipleDimensions());
 	}
 	
 }

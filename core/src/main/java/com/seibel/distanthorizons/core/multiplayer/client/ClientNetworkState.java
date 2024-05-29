@@ -1,31 +1,23 @@
 package com.seibel.distanthorizons.core.multiplayer.client;
 
 import com.seibel.distanthorizons.core.config.Config;
-import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
 import com.seibel.distanthorizons.core.multiplayer.config.MultiplayerConfig;
 import com.seibel.distanthorizons.core.multiplayer.config.MultiplayerConfigChangeListener;
 import com.seibel.distanthorizons.core.network.ScopedNetworkEventSource;
 import com.seibel.distanthorizons.core.network.messages.plugin.PluginCloseEvent;
-import com.seibel.distanthorizons.core.network.messages.plugin.base.AckMessage;
-import com.seibel.distanthorizons.core.network.messages.plugin.base.HelloMessage;
-import com.seibel.distanthorizons.core.network.messages.plugin.session.PlayerUUIDMessage;
 import com.seibel.distanthorizons.core.network.messages.plugin.session.RemotePlayerConfigMessage;
 import com.seibel.distanthorizons.core.network.plugin.PluginChannelSession;
-import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import org.apache.logging.log4j.LogManager;
 
 import java.io.Closeable;
-import java.util.UUID;
 
 public class ClientNetworkState implements Closeable
 {
 	protected static final ConfigBasedLogger LOGGER = new ConfigBasedLogger(LogManager.getLogger(),
 			() -> Config.Client.Advanced.Logging.logNetworkEvent.get());
-	private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	
-	private final UUID playerUUID = MC_CLIENT.getPlayerUUID();
 	private final PluginChannelSession session = new PluginChannelSession(null);
 	private EServerSupportStatus serverSupportStatus = EServerSupportStatus.NONE;
 	
@@ -48,21 +40,10 @@ public class ClientNetworkState implements Closeable
 	 */
 	public ClientNetworkState()
 	{
-		this.session.registerHandler(HelloMessage.class, helloMessage ->
-		{
-			LOGGER.info("Server reported full DH support.");
-			this.serverSupportStatus = EServerSupportStatus.FULL;
-			
-			this.getSession().sendRequest(new PlayerUUIDMessage(this.playerUUID), AckMessage.class)
-					.thenAccept(ack -> this.getSession().sendMessage(new RemotePlayerConfigMessage(new MultiplayerConfig())))
-					.exceptionally(throwable -> {
-						LOGGER.error("Error while fetching server's config", throwable);
-						return null;
-					});
-		});
-		
 		this.session.registerHandler(RemotePlayerConfigMessage.class, msg ->
 		{
+			this.serverSupportStatus = EServerSupportStatus.FULL;
+			
 			LOGGER.info("Connection config has been changed: " + msg.payload);
 			this.config = (MultiplayerConfig) msg.payload;
 			this.configReceived = true;

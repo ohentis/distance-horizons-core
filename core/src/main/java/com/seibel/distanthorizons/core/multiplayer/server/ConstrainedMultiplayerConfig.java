@@ -55,12 +55,6 @@ public class ConstrainedMultiplayerConfig extends AbstractMultiplayerConfig
 	}
 	
 	@Override
-	public boolean getGenerateMultipleDimensions()
-	{
-		return this.clientConfig.generateMultipleDimensions && Config.Client.Advanced.Multiplayer.ServerNetworking.generateMultipleDimensions.get();
-	}
-	
-	@Override
 	public void decode(ByteBuf in)
 	{
 		throw new UnsupportedOperationException("Decoding is not supported for server-only class.");

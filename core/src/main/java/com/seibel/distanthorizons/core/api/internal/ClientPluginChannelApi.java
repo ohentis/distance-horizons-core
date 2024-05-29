@@ -5,16 +5,14 @@ import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.level.IKeyedClientLevelManager;
 import com.seibel.distanthorizons.core.level.IServerKeyedClientLevel;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
-import com.seibel.distanthorizons.core.multiplayer.client.ClientNetworkState;
 import com.seibel.distanthorizons.core.network.messages.plugin.PluginCloseEvent;
 import com.seibel.distanthorizons.core.network.messages.plugin.CurrentLevelKeyMessage;
-import com.seibel.distanthorizons.core.network.messages.plugin.base.HelloMessage;
+import com.seibel.distanthorizons.core.network.messages.plugin.base.ClientHelloMessage;
 import com.seibel.distanthorizons.core.network.plugin.PluginChannelSession;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import io.netty.buffer.ByteBuf;
 import org.apache.logging.log4j.LogManager;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.function.Consumer;
 
@@ -50,7 +48,7 @@ public class ClientPluginChannelApi
 	{
 		this.session = session;
 		
-		this.session.sendMessage(new HelloMessage());
+		this.session.sendMessage(new ClientHelloMessage());
 		
 		this.session.registerHandler(CurrentLevelKeyMessage.class, this::onCurrentLevelKeyMessage);
 		this.session.registerHandler(PluginCloseEvent.class, this::onClose);

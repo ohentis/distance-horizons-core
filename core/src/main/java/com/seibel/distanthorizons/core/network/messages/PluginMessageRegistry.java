@@ -22,15 +22,13 @@ package com.seibel.distanthorizons.core.network.messages;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.seibel.distanthorizons.core.network.messages.plugin.CurrentLevelKeyMessage;
-import com.seibel.distanthorizons.core.network.messages.plugin.base.HelloMessage;
-import com.seibel.distanthorizons.core.network.messages.plugin.base.AckMessage;
+import com.seibel.distanthorizons.core.network.messages.plugin.base.ClientHelloMessage;
 import com.seibel.distanthorizons.core.network.messages.plugin.base.CancelMessage;
 import com.seibel.distanthorizons.core.network.messages.plugin.base.CloseReasonMessage;
 import com.seibel.distanthorizons.core.network.messages.plugin.base.ExceptionMessage;
 import com.seibel.distanthorizons.core.network.messages.plugin.fullData.FullDataPartialUpdateMessage;
 import com.seibel.distanthorizons.core.network.messages.plugin.fullData.FullDataSourceRequestMessage;
 import com.seibel.distanthorizons.core.network.messages.plugin.fullData.FullDataSourceResponseMessage;
-import com.seibel.distanthorizons.core.network.messages.plugin.session.PlayerUUIDMessage;
 import com.seibel.distanthorizons.core.network.messages.plugin.session.RemotePlayerConfigMessage;
 import com.seibel.distanthorizons.core.network.plugin.PluginChannelMessage;
 
@@ -52,19 +50,17 @@ public class PluginMessageRegistry
 		// Note: Messages must have parameterless constructors
 		
 		// Always sent by the client
-		this.registerMessage(HelloMessage.class, HelloMessage::new);
+		this.registerMessage(ClientHelloMessage.class, ClientHelloMessage::new);
 		this.registerMessage(CloseReasonMessage.class, CloseReasonMessage::new);
 		
 		// Multiverse support
 		this.registerMessage(CurrentLevelKeyMessage.class, CurrentLevelKeyMessage::new);
 		
 		// Core
-		this.registerMessage(AckMessage.class, AckMessage::new);
 		this.registerMessage(CancelMessage.class, CancelMessage::new);
 		this.registerMessage(ExceptionMessage.class, ExceptionMessage::new);
 		
 		// ID & config
-		this.registerMessage(PlayerUUIDMessage.class, PlayerUUIDMessage::new);
 		this.registerMessage(RemotePlayerConfigMessage.class, RemotePlayerConfigMessage::new);
 		
 		// Full data requests & updates
@@ -94,7 +90,6 @@ public class PluginMessageRegistry
 		}
 	}
 	
-	@SuppressWarnings("unchecked")
 	public int getMessageId(PluginChannelMessage message)
 	{
 		return this.getMessageId(message.getClass());

@@ -28,9 +28,6 @@ public class MultiplayerConfig extends AbstractMultiplayerConfig
 	public int loginDataSyncRCLimit = Config.Client.Advanced.Multiplayer.ServerNetworking.loginDataSyncRCLimit.get();
 	@Override public int getLoginDataSyncRCLimit() { return this.loginDataSyncRCLimit; }
 	
-	public boolean generateMultipleDimensions = Config.Client.Advanced.Multiplayer.ServerNetworking.generateMultipleDimensions.get();
-	@Override public boolean getGenerateMultipleDimensions() { return this.generateMultipleDimensions; }
-	
 	
 	@Override
 	public void decode(ByteBuf in)
@@ -42,10 +39,10 @@ public class MultiplayerConfig extends AbstractMultiplayerConfig
 		this.realTimeUpdatesEnabled = in.readBoolean();
 		this.loginDataSyncEnabled = in.readBoolean();
 		this.loginDataSyncRCLimit = in.readInt();
-		this.generateMultipleDimensions = in.readBoolean();
 	}
 	
-	@Override public String toString()
+	@Override
+	public String toString()
 	{
 		return "MultiplayerConfig{" +
 				"renderDistanceRadius=" + this.renderDistanceRadius +
@@ -55,7 +52,6 @@ public class MultiplayerConfig extends AbstractMultiplayerConfig
 				", realTimeUpdatesEnabled=" + this.realTimeUpdatesEnabled +
 				", loginDataSyncEnabled=" + this.loginDataSyncEnabled +
 				", loginDataSyncRCLimit=" + this.loginDataSyncRCLimit +
-				", generateMultipleDimensions=" + this.generateMultipleDimensions +
 				'}';
 	}
 	

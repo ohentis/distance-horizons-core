@@ -46,7 +46,7 @@ public abstract class NetworkEventSource
 	private static final ConfigBasedLogger LOGGER = new ConfigBasedLogger(LogManager.getLogger(),
 			() -> Config.Client.Advanced.Logging.logNetworkEvent.get());
 	protected final ConcurrentMap<Class<? extends PluginChannelMessage>, Set<Consumer<PluginChannelMessage>>> handlers = new ConcurrentHashMap<>();
-	private final ConcurrentMap<PluginChannelSession, ConcurrentMap<Long, FutureResponseData>> pendingFutures = new ConcurrentHashMap<>();
+	private final ConcurrentMap<Long, FutureResponseData> pendingFutures = new ConcurrentHashMap<>();
 	
 	protected boolean hasHandler(Class<? extends PluginChannelMessage> handlerClass)
 	{
@@ -71,26 +71,22 @@ public abstract class NetworkEventSource
 		if (message instanceof TrackableMessage)
 		{
 			TrackableMessage trackableMessage = (TrackableMessage) message;
-			ConcurrentMap<Long, FutureResponseData> subMap = this.pendingFutures.get(message.getConnection());
-			if (subMap != null)
+			FutureResponseData responseData = this.pendingFutures.get(trackableMessage.futureId);
+			if (responseData != null)
 			{
-				FutureResponseData responseData = subMap.get(trackableMessage.futureId);
-				if (responseData != null)
+				handled = true;
+				
+				if (message instanceof ExceptionMessage)
 				{
-					handled = true;
-					
-					if (message instanceof ExceptionMessage)
-					{
-						responseData.future.completeExceptionally(((ExceptionMessage) message).exception);
-					}
-					else if (message.getClass() != responseData.responseClass)
-					{
-						responseData.future.completeExceptionally(new InvalidClassException("Response with invalid type: expected " + responseData.responseClass.getSimpleName() + ", got:" + message));
-					}
-					else
-					{
-						responseData.future.complete(trackableMessage);
-					}
+					responseData.future.completeExceptionally(((ExceptionMessage) message).exception);
+				}
+				else if (message.getClass() != responseData.responseClass)
+				{
+					responseData.future.completeExceptionally(new InvalidClassException("Response with invalid type: expected " + responseData.responseClass.getSimpleName() + ", got:" + message));
+				}
+				else
+				{
+					responseData.future.complete(trackableMessage);
 				}
 			}
 		}
@@ -99,11 +95,6 @@ public abstract class NetworkEventSource
 		{
 			LOGGER.warn("Unhandled message: " + message);
 		}
-	}
-	
-	protected void addNewConnection(PluginChannelSession connection)
-	{
-		this.pendingFutures.put(connection, new ConcurrentHashMap<>());
 	}
 	
 	public <T extends PluginChannelMessage> void registerHandler(Class<T> handlerClass, Consumer<T> handlerImplementation)
@@ -137,11 +128,7 @@ public abstract class NetworkEventSource
 		{
 			if (!(throwable instanceof ChannelException))
 			{
-				ConcurrentMap<Long, FutureResponseData> subMap = this.pendingFutures.get(session);
-				if (subMap != null)
-				{
-					subMap.remove(msg.futureId);
-				}
+				this.pendingFutures.remove(msg.futureId);
 			}
 			
 			if (throwable instanceof CancellationException)
@@ -150,45 +137,16 @@ public abstract class NetworkEventSource
 			}
 		});
 		
-		ConcurrentMap<Long, FutureResponseData> subMap = this.pendingFutures.get(session);
-		if (subMap == null)
-		{
-			// Was deleted before adding
-			responseFuture.completeExceptionally(session.getCloseReason());
-			return responseFuture;
-		}
-		subMap.put(msg.futureId, new FutureResponseData(responseClass, responseFuture));
-		if (!this.pendingFutures.containsKey(session))
-		{
-			// Was deleted while adding
-			// Note: removal from subMap will happen in whenComplete above
-			responseFuture.completeExceptionally(session.getCloseReason());
-			return responseFuture;
-		}
-		// If passed until here, cancelling is up to the cleaning side
+		this.pendingFutures.put(msg.futureId, new FutureResponseData(responseClass, responseFuture));
 		
 		return responseFuture;
 	}
 	
-	protected final void completeAllFuturesExceptionally(PluginChannelSession connection, Throwable cause)
-	{
-		ConcurrentMap<Long, FutureResponseData> map = this.pendingFutures.remove(connection);
-		if (map == null)
-		{
-			return;
-		}
-		
-		for (FutureResponseData responseData : map.values())
-		{
-			responseData.future.completeExceptionally(cause);
-		}
-	}
-	
 	protected final void completeAllFuturesExceptionally(Throwable cause)
 	{
-		for (PluginChannelSession connection : this.pendingFutures.keySet())
+		for (FutureResponseData responseData : this.pendingFutures.values())
 		{
-			this.completeAllFuturesExceptionally(connection, cause);
+			responseData.future.completeExceptionally(cause);
 		}
 	}
 	
