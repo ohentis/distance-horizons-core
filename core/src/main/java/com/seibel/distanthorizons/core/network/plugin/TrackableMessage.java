@@ -38,20 +38,10 @@ public abstract class TrackableMessage extends PluginChannelMessage
 	public long futureId = lastId.getAndIncrement()
 			| ((Objects.requireNonNull(SharedApi.getEnvironment()) == EWorldEnvironment.Server_Only ? 1 : 0) << 31);
 	
-	private static final AtomicInteger lastContextId = new AtomicInteger();
-	private static final ConcurrentMap<PluginChannelSession, Integer> connectionToIdMap = new MapMaker().weakKeys().makeMap();
-	
 	public void sendResponse(TrackableMessage responseMessage)
 	{
 		responseMessage.futureId = this.futureId;
 		this.session.sendMessage(responseMessage);
-	}
-	
-	@Override
-	public void setConnection(PluginChannelSession connection)
-	{
-		super.setConnection(connection);
-		this.futureId |= (long) connectionToIdMap.computeIfAbsent(connection, k -> lastContextId.getAndIncrement()) << 32;
 	}
 	
 	public void sendResponse(Exception e)

@@ -76,7 +76,8 @@ public class PluginChannelSession extends NetworkEventSource
 	
 	public <TResponse extends TrackableMessage> CompletableFuture<TResponse> sendRequest(TrackableMessage msg, Class<TResponse> responseClass)
 	{
-		CompletableFuture<TResponse> responseFuture = this.createRequest(this, msg, responseClass);
+		msg.setConnection(this);
+		CompletableFuture<TResponse> responseFuture = this.createRequest(msg, responseClass);
 		this.sendMessage(msg);
 		return responseFuture;
 	}

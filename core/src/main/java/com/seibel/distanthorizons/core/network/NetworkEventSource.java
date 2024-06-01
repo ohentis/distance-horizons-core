@@ -119,10 +119,8 @@ public abstract class NetworkEventSource
 	}
 	
 	
-	protected <TResponse extends TrackableMessage> CompletableFuture<TResponse> createRequest(PluginChannelSession session, TrackableMessage msg, Class<TResponse> responseClass)
+	protected <TResponse extends TrackableMessage> CompletableFuture<TResponse> createRequest(TrackableMessage msg, Class<TResponse> responseClass)
 	{
-		msg.setConnection(session);
-		
 		CompletableFuture<TResponse> responseFuture = new CompletableFuture<>();
 		responseFuture.whenComplete((response, throwable) ->
 		{
