@@ -60,6 +60,8 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 	
 	private final SupplierBasedRateLimiter<Void> rateLimiter = new SupplierBasedRateLimiter<>(this::getRequestConcurrencyLimit);
 	
+	private final ScheduledExecutorService taskFinishScheduler = Executors.newScheduledThreadPool(1);
+	
 	
 	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
 	protected boolean showInDebug() { return true; }
@@ -235,17 +237,9 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 			
 			// Hack to work around a race condition
 			// If you finish the request too quickly, the section will never render
-			new Thread(() -> {
-				try
-				{
-					Thread.sleep(5000);
+			this.taskFinishScheduler.schedule(() -> {
 					entry.future.complete(true);
-				}
-				catch (InterruptedException e)
-				{
-					throw new RuntimeException(e);
-				}
-			}).start();
+			}, 10, TimeUnit.SECONDS);
 			return null;
 		});
 	}

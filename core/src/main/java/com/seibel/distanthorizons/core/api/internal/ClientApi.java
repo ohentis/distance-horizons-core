@@ -86,7 +86,7 @@ public class ClientApi
 	
 	private long lastFlushNanoTime = 0;
 	
-	private ClientPluginChannelApi pluginChannelApi = new ClientPluginChannelApi(this::clientLevelLoadEvent, this::clientLevelUnloadEvent);
+	private final ClientPluginChannelApi pluginChannelApi = new ClientPluginChannelApi(this::clientLevelLoadEvent, this::clientLevelUnloadEvent);
 	
 	
 	/** Holds any levels that were loaded before the {@link ClientApi#onClientOnlyConnected} was fired. */
@@ -154,9 +154,6 @@ public class ClientApi
 			world.close();
 			SharedApi.setDhWorld(null);
 		}
-		
-		// clear the previous server's information
-		this.pluginChannelApi = new ClientPluginChannelApi(this::clientLevelLoadEvent, this::clientLevelUnloadEvent);
 		
 		// remove any waiting items
 		this.waitingChunkByClientLevelAndPos.clear();

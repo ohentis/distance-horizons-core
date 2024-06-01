@@ -16,7 +16,10 @@ import org.apache.logging.log4j.LogManager;
 
 import java.util.function.Consumer;
 
-/** This class is used to manage the plugin channel session and Multiverse level keys. */
+/**
+ * This class is used to manage the level keys.
+ * Its purpose is to separate MC's and plugin channel's event handling.
+ */
 public class ClientPluginChannelApi
 {
 	private static final ConfigBasedLogger LOGGER = new ConfigBasedLogger(LogManager.getLogger(),
