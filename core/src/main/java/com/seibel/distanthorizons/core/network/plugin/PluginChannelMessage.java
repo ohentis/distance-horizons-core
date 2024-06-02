@@ -15,7 +15,7 @@ public abstract class PluginChannelMessage implements INetworkObject
 		return this.session;
 	}
 	
-	public void setConnection(PluginChannelSession connection)
+	public void setSession(PluginChannelSession connection)
 	{
 		if (this.session != null)
 		{

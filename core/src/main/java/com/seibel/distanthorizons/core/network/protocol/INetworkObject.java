@@ -35,7 +35,7 @@ public interface INetworkObject
 	
 	void decode(ByteBuf in);
 	
-	static <T extends INetworkObject> T readToObject(T obj, ByteBuf inputByteBuf)
+	static <T extends INetworkObject> T decodeToInstance(T obj, ByteBuf inputByteBuf)
 	{
 		obj.decode(inputByteBuf);
 		return obj;
@@ -135,7 +135,7 @@ public interface INetworkObject
 			// Primitives must be added manually here
 			this.put(Integer.class, new Codec((obj, out) -> out.writeInt((int)obj), (obj, in) -> in.readInt()));
 			
-			this.put(INetworkObject.class, new Codec(INetworkObject::encode, INetworkObject::readToObject));
+			this.put(INetworkObject.class, new Codec(INetworkObject::encode, INetworkObject::decodeToInstance));
 			this.put(Map.Entry.class, new Codec(
 					(obj, out) -> {
 						Map.Entry<?, ?> entry = (Entry<?, ?>) obj;

@@ -2,8 +2,9 @@ package com.seibel.distanthorizons.core.multiplayer.server;
 
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
+import com.seibel.distanthorizons.core.network.plugin.PluginChannelMessage;
+import com.seibel.distanthorizons.core.network.plugin.PluginChannelSession;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
-import io.netty.buffer.ByteBuf;
 import org.apache.logging.log4j.LogManager;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -17,9 +18,11 @@ public class RemotePlayerConnectionHandler
 	private final ConcurrentMap<IServerPlayerWrapper, ServerPlayerState> connectedPlayers = new ConcurrentHashMap<>();
 	
 	
-	public void handlePluginMessage(IServerPlayerWrapper player, ByteBuf buffer)
+	public void handlePluginMessage(IServerPlayerWrapper player, PluginChannelMessage message)
 	{
-		this.connectedPlayers.get(player).session.decodeAndHandle(buffer);
+		PluginChannelSession session = this.connectedPlayers.get(player).session;
+		message.setSession(session);
+		session.tryHandleMessage(message);
 	}
 	
 	public ServerPlayerState getConnectedPlayer(IServerPlayerWrapper player)

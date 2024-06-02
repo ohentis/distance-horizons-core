@@ -276,7 +276,7 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 	
 	
 	@Override
-	public void onWorldGenTaskComplete(DhSectionPos pos)
+	public void onWorldGenTaskComplete(long pos)
 	{
 		DebugRenderer.makeParticle(
 				new DebugRenderer.BoxParticle(

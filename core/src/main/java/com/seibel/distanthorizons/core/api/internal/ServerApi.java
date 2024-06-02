@@ -23,6 +23,7 @@ import com.seibel.distanthorizons.api.methods.events.abstractEvents.DhApiLevelLo
 import com.seibel.distanthorizons.api.methods.events.abstractEvents.DhApiLevelUnloadEvent;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.generation.DhLightingEngine;
+import com.seibel.distanthorizons.core.network.plugin.PluginChannelMessage;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
@@ -38,6 +39,7 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
 import io.netty.buffer.ByteBuf;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * This holds the methods that should be called by the host mod loader (Fabric,
@@ -178,13 +180,13 @@ public class ServerApi
 		}
 	}
 	
-	public void pluginMessageReceived(IServerPlayerWrapper player, ByteBuf buffer)
+	public void pluginMessageReceived(IServerPlayerWrapper player, @NotNull PluginChannelMessage message)
 	{
 		IDhServerWorld serverWorld = SharedApi.getIDhServerWorld();
 		if (serverWorld instanceof DhServerWorld) // TODO add support for DhClientServerWorld's (lan worlds) as well
 		{
-			LOGGER.debug("Player " + player.getUUID() + " sent plugin message: " + buffer.toString());
-			((DhServerWorld) serverWorld).handlePluginMessage(player, buffer);
+			LOGGER.debug("Player " + player.getUUID() + " sent plugin message: " + message);
+			((DhServerWorld) serverWorld).remotePlayerConnectionHandler.handlePluginMessage(player, message);
 		}
 	}
 	

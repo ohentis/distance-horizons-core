@@ -10,7 +10,6 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IPluginPacketSende
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufUtil;
 import org.apache.logging.log4j.LogManager;
 import org.jetbrains.annotations.Nullable;
 
@@ -43,7 +42,7 @@ public class PluginChannelSession extends NetworkEventSource
 	}
 	
 	
-	public void decodeAndHandle(ByteBuf byteBuf)
+	public void tryHandleMessage(PluginChannelMessage message)
 	{
 		if (this.closeReason.get() != null)
 		{
@@ -52,31 +51,19 @@ public class PluginChannelSession extends NetworkEventSource
 		
 		try
 		{
-			int version = byteBuf.readShort();
-			if (version != ModInfo.PROTOCOL_VERSION)
-			{
-				return;
-			}
-			
-			PluginChannelMessage msg = PluginMessageRegistry.INSTANCE.createMessage(byteBuf.readUnsignedShort());
-			msg.decode(byteBuf);
-			msg.session = this;
-			
-			this.handleMessage(msg);
+			this.handleMessage(message);
 		}
 		catch (Throwable e)
 		{
 			LOGGER.error("Failed to handle the message. New messages will be ignored.", e);
-			LOGGER.error("Buffer: " + byteBuf.toString());
-			byteBuf.resetReaderIndex();
-			LOGGER.error("Buffer contents: " + ByteBufUtil.hexDump(byteBuf));
+			LOGGER.error("Message: " + message);
 			this.close();
 		}
 	}
 	
 	public <TResponse extends TrackableMessage> CompletableFuture<TResponse> sendRequest(TrackableMessage msg, Class<TResponse> responseClass)
 	{
-		msg.setConnection(this);
+		msg.setSession(this);
 		CompletableFuture<TResponse> responseFuture = this.createRequest(msg, responseClass);
 		this.sendMessage(msg);
 		return responseFuture;
@@ -94,11 +81,11 @@ public class PluginChannelSession extends NetworkEventSource
 		
 		if (this.serverPlayer != null)
 		{
-			PACKET_SENDER.sendPluginPacketServer(this.serverPlayer, encoder);
+			PACKET_SENDER.sendPluginPacketServer(this.serverPlayer, message);
 		}
 		else
 		{
-			PACKET_SENDER.sendPluginPacketClient(encoder);
+			PACKET_SENDER.sendPluginPacketClient(message);
 		}
 	}
 	

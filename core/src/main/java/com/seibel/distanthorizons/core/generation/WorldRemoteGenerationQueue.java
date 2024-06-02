@@ -1,6 +1,5 @@
 package com.seibel.distanthorizons.core.generation;
 
-import com.google.common.base.Stopwatch;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.generation.tasks.IWorldGenTaskTracker;
 import com.seibel.distanthorizons.core.generation.tasks.WorldGenResult;
@@ -8,18 +7,12 @@ import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.multiplayer.client.AbstractFullDataRequestQueue;
 import com.seibel.distanthorizons.core.multiplayer.client.ClientNetworkState;
-import com.seibel.distanthorizons.core.network.exceptions.RateLimitedException;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
-import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
 import com.seibel.distanthorizons.core.util.LodUtil;
-import io.netty.channel.ChannelException;
 import org.apache.logging.log4j.Logger;
 
-import java.util.*;
-import java.util.List;
 import java.util.concurrent.*;
-import java.util.stream.Collectors;
 
 public class WorldRemoteGenerationQueue extends AbstractFullDataRequestQueue implements IFullDataSourceRetrievalQueue, IDebugRenderable
 {
@@ -59,7 +52,7 @@ public class WorldRemoteGenerationQueue extends AbstractFullDataRequestQueue imp
 	}
 	
 	@Override
-	public CompletableFuture<WorldGenResult> submitGenTask(DhSectionPos sectionPos, byte requiredDataDetail, IWorldGenTaskTracker tracker)
+	public CompletableFuture<WorldGenResult> submitGenTask(long sectionPos, byte requiredDataDetail, IWorldGenTaskTracker tracker)
 	{
 		return super.submitRequest(sectionPos, tracker.getChunkDataConsumer())
 				.thenApply(result -> result

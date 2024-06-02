@@ -30,7 +30,7 @@ public class ClientPluginChannelApi
 	private final Consumer<IClientLevelWrapper> levelUnloadHandler;
 	private final Consumer<IServerKeyedClientLevel> multiverseLevelLoadHandler;
 	
-	private PluginChannelSession session;
+	public PluginChannelSession session;
 	
 	
 	public boolean allowLoadingLevel()
@@ -87,11 +87,6 @@ public class ClientPluginChannelApi
 	private void onClose(PluginCloseEvent event)
 	{
 		KEYED_CLIENT_LEVEL_MANAGER.disable();
-	}
-	
-	public void handlePacket(ByteBuf buffer)
-	{
-		this.session.decodeAndHandle(buffer);
 	}
 	
 }

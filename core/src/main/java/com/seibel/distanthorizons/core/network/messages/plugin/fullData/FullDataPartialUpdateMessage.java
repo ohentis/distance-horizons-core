@@ -71,7 +71,7 @@ public class FullDataPartialUpdateMessage extends PluginChannelMessage implement
 	public void decode(ByteBuf in)
 	{
 		this.levelName = this.readString(in);
-		this.dataSourceDto = INetworkObject.readToObject(new FullDataSourceV2DTO(), in);
+		this.dataSourceDto = INetworkObject.decodeToInstance(new FullDataSourceV2DTO(), in);
 	}
 	
 }

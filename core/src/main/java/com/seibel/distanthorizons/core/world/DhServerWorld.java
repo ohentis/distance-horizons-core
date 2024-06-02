@@ -24,6 +24,7 @@ import com.seibel.distanthorizons.core.level.DhServerLevel;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.multiplayer.server.RemotePlayerConnectionHandler;
 import com.seibel.distanthorizons.core.multiplayer.server.ServerPlayerState;
+import com.seibel.distanthorizons.core.network.plugin.PluginChannelMessage;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
@@ -39,7 +40,7 @@ public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 	private final HashMap<IServerLevelWrapper, DhServerLevel> levels;
 	public final LocalSaveStructure saveStructure;
 	
-	private final RemotePlayerConnectionHandler remotePlayerConnectionHandler;
+	public final RemotePlayerConnectionHandler remotePlayerConnectionHandler;
 	
 	
 	//==============//
@@ -74,6 +75,7 @@ public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 			level.registerNetworkHandlers(playerState);
 		}
 	}
+	
 	public void removePlayer(IServerPlayerWrapper serverPlayer)
 	{
 		this.getLevel(serverPlayer.getLevel()).removePlayer(serverPlayer);
@@ -81,15 +83,14 @@ public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 		
 		// If player's left, session is already closed
 	}
+	
 	public void changePlayerLevel(IServerPlayerWrapper player, IServerLevelWrapper origin, IServerLevelWrapper dest)
 	{
 		this.getLevel(dest).addPlayer(player);
 		this.getLevel(origin).removePlayer(player);
 	}
-	public void handlePluginMessage(IServerPlayerWrapper player, ByteBuf buffer)
-	{
-		this.remotePlayerConnectionHandler.handlePluginMessage(player, buffer);
-	}
+	
+	
 	
 	@Override
 	public DhServerLevel getOrLoadLevel(@NotNull ILevelWrapper wrapper)

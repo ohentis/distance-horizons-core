@@ -43,7 +43,7 @@ public class RemoteFullDataSourceProvider extends GeneratedFullDataSourceProvide
 	
 	@Override
 	@Nullable
-	public FullDataSourceV2 get(DhSectionPos pos)
+	public FullDataSourceV2 get(long pos)
 	{
 		FullDataSourceV2 fullDataSource = super.get(pos);
 		if (fullDataSource == null || this.dataRefreshQueue == null)
@@ -51,11 +51,15 @@ public class RemoteFullDataSourceProvider extends GeneratedFullDataSourceProvide
 			return fullDataSource;
 		}
 		
-		Map<DhSectionPos, Long> timestamps = this.getTimestampsForRange(
-				pos.getMinCornerPos(DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL),
-				pos.getMaxCornerPos(DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL)
+		int posToMinimumDetailScale = (DhSectionPos.getDetailLevel(pos) - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL + 1);
+		Map<Long, Long> timestamps = this.getTimestampsForRange(
+				DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL,
+				DhSectionPos.getX(pos) * posToMinimumDetailScale,
+				DhSectionPos.getZ(pos) * posToMinimumDetailScale,
+				(DhSectionPos.getX(pos) + 1) * posToMinimumDetailScale - 1,
+				(DhSectionPos.getZ(pos) + 1) * posToMinimumDetailScale - 1
 		);
-		for (Map.Entry<DhSectionPos, Long> entry : timestamps.entrySet())
+		for (Map.Entry<Long, Long> entry : timestamps.entrySet())
 		{
 			this.dataRefreshQueue.submitRequest(entry.getKey(), entry.getValue(), this.delayedFullDataSourceSaveCache::queueDataSourceForUpdateAndSave);
 		}

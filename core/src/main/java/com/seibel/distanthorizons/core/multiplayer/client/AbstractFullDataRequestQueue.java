@@ -48,7 +48,7 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 	
 	private volatile CompletableFuture<Void> closingFuture = null;
 	
-	protected final ConcurrentMap<DhSectionPos, RequestQueueEntry> waitingTasks = new ConcurrentHashMap<>();
+	protected final ConcurrentMap<Long, RequestQueueEntry> waitingTasks = new ConcurrentHashMap<>();
 	private final Semaphore pendingTasksSemaphore = new Semaphore(Short.MAX_VALUE, true);
 	
 	private final F3Screen.NestedMessage f3Message = new F3Screen.NestedMessage(this::f3Log);
@@ -56,7 +56,7 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 	private final AtomicInteger failedRequests = new AtomicInteger();
 	private final ConfigEntry<Boolean> showDebugWireframeConfig;
 	
-	private final Set<DhSectionPos> alreadyRequestedPositions = ConcurrentHashMap.newKeySet();
+	private final Set<Long> alreadyRequestedPositions = ConcurrentHashMap.newKeySet();
 	
 	private final SupplierBasedRateLimiter<Void> rateLimiter = new SupplierBasedRateLimiter<>(this::getRequestConcurrencyLimit);
 	
@@ -82,13 +82,13 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 		DebugRenderer.register(this, this.showDebugWireframeConfig);
 	}
 	
-	public CompletableFuture<Boolean> submitRequest(DhSectionPos sectionPos, Consumer<FullDataSourceV2> chunkDataConsumer)
+	public CompletableFuture<Boolean> submitRequest(long sectionPos, Consumer<FullDataSourceV2> chunkDataConsumer)
 	{
 		return this.submitRequest(sectionPos, null, chunkDataConsumer);
 	}
-	public CompletableFuture<Boolean> submitRequest(DhSectionPos sectionPos, @Nullable Long clientTimestamp, Consumer<FullDataSourceV2> chunkDataConsumer)
+	public CompletableFuture<Boolean> submitRequest(long sectionPos, @Nullable Long clientTimestamp, Consumer<FullDataSourceV2> chunkDataConsumer)
 	{
-		LodUtil.assertTrue(sectionPos.getDetailLevel() == DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL, "Only highest-detail sections are allowed.");
+		LodUtil.assertTrue(DhSectionPos.getDetailLevel(sectionPos) == DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL, "Only highest-detail sections are allowed.");
 		
 		// check if this is a duplicate task
 		if (this.alreadyRequestedPositions.contains(sectionPos))
@@ -104,9 +104,9 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 		return entry.future;
 	}
 	
-	protected int posDistanceSquared(DhBlockPos2D targetPos, DhSectionPos pos)
+	protected int posDistanceSquared(DhBlockPos2D targetPos, long pos)
 	{
-		return (int) pos.getCenterBlockPos().distSquared(targetPos);
+		return (int) DhSectionPos.getCenterBlockPos(pos).distSquared(targetPos);
 	}
 	
 	public synchronized boolean tick(DhBlockPos2D targetPos)
@@ -132,14 +132,14 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 		return true;
 	}
 	
-	public void removeRetrievalRequestIf(Function<DhSectionPos, Boolean> removeIf)
+	public void removeRetrievalRequestIf(DhSectionPos.ICancelablePrimitiveLongConsumer removeIf)
 	{
-		for (Map.Entry<DhSectionPos, RequestQueueEntry> mapEntry : this.waitingTasks.entrySet())
+		for (Map.Entry<Long, RequestQueueEntry> mapEntry : this.waitingTasks.entrySet())
 		{
-			DhSectionPos pos = mapEntry.getKey();
+			long pos = mapEntry.getKey();
 			RequestQueueEntry entry = mapEntry.getValue();
 			
-			if (removeIf.apply(pos))
+			if (removeIf.accept(pos))
 			{
 				entry.future.cancel(false);
 				if (entry.request != null)
@@ -153,7 +153,7 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 	
 	private void sendNewRequest(DhBlockPos2D targetPos)
 	{
-		Map.Entry<DhSectionPos, RequestQueueEntry> mapEntry = this.waitingTasks.entrySet().stream()
+		Map.Entry<Long, RequestQueueEntry> mapEntry = this.waitingTasks.entrySet().stream()
 				.filter(task -> task.getValue().request == null)
 				.reduce(null, (a, b) -> {
 					if (a == null)
@@ -163,7 +163,7 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 					
 					if (b.getValue().priority < a.getValue().priority)
 					{
-						Map.Entry<DhSectionPos, RequestQueueEntry> temp = b;
+						Map.Entry<Long, RequestQueueEntry> temp = b;
 						b = a;
 						a = temp;
 					}
@@ -180,7 +180,7 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 			return;
 		}
 		
-		DhSectionPos sectionPos = mapEntry.getKey();
+		long sectionPos = mapEntry.getKey();
 		RequestQueueEntry entry = mapEntry.getValue();
 		
 		CompletableFuture<FullDataSourceResponseMessage> request = this.networkState.getSession().sendRequest(new FullDataSourceRequestMessage(this.level.getLevelWrapper(), sectionPos, entry.updateTimestamp), FullDataSourceResponseMessage.class);
@@ -308,7 +308,7 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 			return;
 		}
 		
-		for (Map.Entry<DhSectionPos, RequestQueueEntry> mapEntry : this.waitingTasks.entrySet())
+		for (Map.Entry<Long, RequestQueueEntry> mapEntry : this.waitingTasks.entrySet())
 		{
 			r.renderBox(new DebugRenderer.Box(mapEntry.getKey(), -32f, 64f, 0.05f,
 					mapEntry.getValue().request != null ? Color.red

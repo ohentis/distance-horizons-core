@@ -32,7 +32,7 @@ public class FullDataSourceRequestMessage extends TrackableMessage implements IL
 {
 	private String levelName;
 	
-	public DhSectionPos sectionPos;
+	public long sectionPos;
 	
 	/** Only present when requesting for changes. */
 	@Nullable
@@ -42,7 +42,7 @@ public class FullDataSourceRequestMessage extends TrackableMessage implements IL
 	public String getLevelName() { return this.levelName; }
 	
 	public FullDataSourceRequestMessage() {}
-	public FullDataSourceRequestMessage(ILevelWrapper levelWrapper, DhSectionPos sectionPos, @Nullable Long clientTimestamp)
+	public FullDataSourceRequestMessage(ILevelWrapper levelWrapper, long sectionPos, @Nullable Long clientTimestamp)
 	{
 		this.levelName = levelWrapper.getDimensionType().getDimensionName();
 		this.sectionPos = sectionPos;
@@ -53,7 +53,7 @@ public class FullDataSourceRequestMessage extends TrackableMessage implements IL
     public void encode0(ByteBuf out)
 	{
 		this.writeString(this.levelName, out);
-		this.sectionPos.encode(out);
+		out.writeLong(this.sectionPos);
 		if (this.writeOptional(out, this.clientTimestamp))
 		{
 			out.writeLong(this.clientTimestamp);
@@ -64,7 +64,7 @@ public class FullDataSourceRequestMessage extends TrackableMessage implements IL
     public void decode0(ByteBuf in)
 	{
 		this.levelName = this.readString(in);
-		this.sectionPos = INetworkObject.readToObject(DhSectionPos.zero(), in);
+		this.sectionPos = in.readLong();
 		this.clientTimestamp = this.readOptional(in, in::readLong);
     }
 	

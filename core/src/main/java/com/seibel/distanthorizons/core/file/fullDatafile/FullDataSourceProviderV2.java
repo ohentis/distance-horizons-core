@@ -201,13 +201,8 @@ public class FullDataSourceProviderV2
 			throw new RuntimeException(e);
 		}
 	}
-	public Map<Long, Long> getTimestampsForRange(long startPos, long endPos)
+	public Map<Long, Long> getTimestampsForRange(byte detailLevel, int startPosX, int startPosZ, int endPosX, int endPosZ)
 	{
-		if (DhSectionPos.getDetailLevel(startPos) != DhSectionPos.getDetailLevel(endPos))
-		{
-			throw new IllegalArgumentException("Start and end must have the same detail level");
-		}
-		
 		try
 		{
 			PreparedStatement preparedStatement = this.repo.createPreparedStatement(
@@ -217,14 +212,14 @@ public class FullDataSourceProviderV2
 							"AND PosX BETWEEN ? AND ? " +
 							"AND PosZ BETWEEN ? AND ?;"
 			);
-			preparedStatement.setInt(1, DhSectionPos.getDetailLevel(startPos) - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
-			preparedStatement.setInt(2, DhSectionPos.getX(startPos));
-			preparedStatement.setInt(3, DhSectionPos.getX(endPos));
-			preparedStatement.setInt(4, DhSectionPos.getZ(startPos));
-			preparedStatement.setInt(5, DhSectionPos.getZ(endPos));
+			preparedStatement.setInt(1, detailLevel - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
+			preparedStatement.setInt(2, startPosX);
+			preparedStatement.setInt(3, endPosX);
+			preparedStatement.setInt(4, startPosZ);
+			preparedStatement.setInt(5, endPosZ);
 			
 			return this.repo.query(preparedStatement).stream().collect(Collectors.toMap(
-					row -> DhSectionPos.encode(DhSectionPos.getDetailLevel(startPos), (int) row.get("PosX"), (int) row.get("PosZ")),
+					row -> DhSectionPos.encode(detailLevel, (int) row.get("PosX"), (int) row.get("PosZ")),
 					row -> (long) row.get("LastModifiedUnixDateTime"))
 			);
 		}

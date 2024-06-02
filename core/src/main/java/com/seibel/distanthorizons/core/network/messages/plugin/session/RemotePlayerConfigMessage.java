@@ -36,6 +36,6 @@ public class RemotePlayerConfigMessage extends PluginChannelMessage
 	public void encode(ByteBuf out) { this.payload.encode(out); }
 	
 	@Override
-	public void decode(ByteBuf in) { this.payload = INetworkObject.readToObject(new MultiplayerConfig(), in); }
+	public void decode(ByteBuf in) { this.payload = INetworkObject.decodeToInstance(new MultiplayerConfig(), in); }
 	
 }

@@ -37,6 +37,7 @@ import com.seibel.distanthorizons.core.network.plugin.PluginChannelSession;
 import com.seibel.distanthorizons.core.network.plugin.TrackableMessage;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
@@ -63,7 +64,7 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 	private final RemotePlayerConnectionHandler remotePlayerConnectionHandler;
 	
 	private final ConcurrentLinkedQueue<IServerPlayerWrapper> worldGenLoopingQueue = new ConcurrentLinkedQueue<>();
-	private final ConcurrentMap<DhSectionPos, IncompleteDataSourceEntry> incompleteDataSources = new ConcurrentHashMap<>();
+	private final ConcurrentMap<Long, IncompleteDataSourceEntry> incompleteDataSources = new ConcurrentHashMap<>();
 	private final ConcurrentMap<Long, IncompleteDataSourceEntry> fullDataRequests = new ConcurrentHashMap<>();
 	
 	public DhServerLevel(AbstractSaveStructure saveStructure, IServerLevelWrapper serverLevelWrapper, RemotePlayerConnectionHandler remotePlayerConnectionHandler)
@@ -220,7 +221,7 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 		this.chunkToLodBuilder.tick();
 		
 		// Send finished data source requests
-		for (Map.Entry<DhSectionPos, IncompleteDataSourceEntry> mapEntry : this.incompleteDataSources.entrySet())
+		for (Map.Entry<Long, IncompleteDataSourceEntry> mapEntry : this.incompleteDataSources.entrySet())
 		{
 			IncompleteDataSourceEntry entry = mapEntry.getValue();
 			
@@ -266,7 +267,7 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 			}
 			
 			Vec3d playerPosition = serverPlayerState.serverPlayer().getPosition();
-			int distanceFromPlayer = data.getPos().getManhattanBlockDistance(new DhBlockPos2D((int) playerPosition.x, (int) playerPosition.z)) / 16;
+			int distanceFromPlayer = DhSectionPos.getManhattanBlockDistance(data.getPos(), new DhBlockPos2D((int) playerPosition.x, (int) playerPosition.z)) / 16;
 			if (distanceFromPlayer >= serverPlayerState.serverPlayer().getViewDistance() &&
 					distanceFromPlayer <= serverPlayerState.config.getRenderDistanceRadius())
 			{
@@ -352,7 +353,7 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 	@Override
 	public boolean hasSkyLight() { return this.serverLevelWrapper.hasSkyLight(); }
 	
-	private void trySetGeneratedDataSourceToEntry(IncompleteDataSourceEntry entry, DhSectionPos pos)
+	private void trySetGeneratedDataSourceToEntry(IncompleteDataSourceEntry entry, long pos)
 	{
 		this.serverside.fullDataFileHandler.getAsync(pos).thenAccept(fullDataSource -> {
 			if (this.serverside.fullDataFileHandler.isFullyGenerated(fullDataSource.columnGenerationSteps))
