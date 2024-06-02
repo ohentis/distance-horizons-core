@@ -247,6 +247,8 @@ public class DebugRenderer
 		public Vec3f b;
 		public Color color;
 		
+		
+		
 		public Box(Vec3f a, Vec3f b, Color color)
 		{
 			this.a = a;
@@ -288,14 +290,14 @@ public class DebugRenderer
 			this.color = color;
 		}
 		
-		public Box(DhSectionPos pos, float minY, float maxY, float marginPercent, Color color)
+		public Box(long pos, float minY, float maxY, float marginPercent, Color color)
 		{
-			this(pos.getSectionBBoxPos(), minY, maxY, marginPercent, color);
+			this(DhSectionPos.getSectionBBoxPos(pos), minY, maxY, marginPercent, color);
 		}
 		
-		public Box(DhSectionPos pos, float y, float yDiff, Object hash, float marginPercent, Color color)
+		public Box(long pos, float y, float yDiff, Object hash, float marginPercent, Color color)
 		{
-			this(pos.getSectionBBoxPos(), y, yDiff, hash, marginPercent, color);
+			this(DhSectionPos.getSectionBBoxPos(pos), y, yDiff, hash, marginPercent, color);
 		}
 		
 	}

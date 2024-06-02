@@ -75,7 +75,7 @@ public class FullDataSourceV1 implements IDataSource<IDhLevel>
 	/** A flattened 2D array (for the X and Z directions) containing an array for the Y direction. */
 	private final long[][] dataArrays;
 	
-	private DhSectionPos sectionPos;
+	private long sectionPos;
 	
 	private boolean isEmpty = true;
 	
@@ -85,8 +85,8 @@ public class FullDataSourceV1 implements IDataSource<IDhLevel>
 	// constructors //
 	//==============//
 	
-	public static FullDataSourceV1 createEmpty(DhSectionPos pos) { return new FullDataSourceV1(pos); }
-	private FullDataSourceV1(DhSectionPos sectionPos)
+	public static FullDataSourceV1 createEmpty(long pos) { return new FullDataSourceV1(pos); }
+	private FullDataSourceV1(long sectionPos)
 	{
 		this.dataArrays = new long[WIDTH * WIDTH][0];
 		this.mapping = new FullDataPointIdMap(sectionPos);
@@ -111,19 +111,19 @@ public class FullDataSourceV1 implements IDataSource<IDhLevel>
 	//=====================//
 	
 	@Override
-	public DhSectionPos getKey() { return this.sectionPos; }
+	public Long getKey() { return this.sectionPos; }
 	
 	@Override
-	public DhSectionPos getPos() { return this.sectionPos; }
+	public Long getPos() { return this.sectionPos; }
 	
-	public void resizeDataStructuresForRepopulation(DhSectionPos pos)
+	public void resizeDataStructuresForRepopulation(long pos)
 	{
 		// no data structures need to be changed, only the source's position 
 		this.sectionPos = pos;
 	}
 	
 	@Override
-	public byte getDataDetailLevel() { return (byte) (this.sectionPos.getDetailLevel() - SECTION_SIZE_OFFSET); }
+	public byte getDataDetailLevel() { return (byte) (DhSectionPos.getDetailLevel(this.sectionPos) - SECTION_SIZE_OFFSET); }
 	
 	public boolean isEmpty() { return this.isEmpty; }
 	

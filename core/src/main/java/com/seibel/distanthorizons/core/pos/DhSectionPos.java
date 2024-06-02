@@ -20,14 +20,10 @@
 package com.seibel.distanthorizons.core.pos;
 
 import com.seibel.distanthorizons.core.enums.EDhDirection;
-import com.seibel.distanthorizons.core.network.protocol.INetworkObject;
-import com.seibel.distanthorizons.coreapi.util.BitShiftUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
-import io.netty.buffer.ByteBuf;
-import org.jetbrains.annotations.Nullable;
+import com.seibel.distanthorizons.coreapi.util.BitShiftUtil;
 
-import java.util.function.Consumer;
-import java.util.function.Function;
+import java.util.function.LongConsumer;
 
 /**
  * The position object used to define LOD objects in the quad trees. <br><br>
@@ -45,63 +41,81 @@ import java.util.function.Function;
  *
  * @author Leetom
  */
-public class DhSectionPos implements INetworkObject
+public class DhSectionPos
 {
 	/**
 	 * The lowest detail level a Section position can hold.
 	 * This section DetailLevel holds 64 x 64 Block level (detail level 0) LODs.
 	 */
-	public final static byte SECTION_MINIMUM_DETAIL_LEVEL = 6;
+	public static final byte SECTION_MINIMUM_DETAIL_LEVEL = 6;
 	
-	public final static byte SECTION_BLOCK_DETAIL_LEVEL = SECTION_MINIMUM_DETAIL_LEVEL + LodUtil.BLOCK_DETAIL_LEVEL;
-	public final static byte SECTION_CHUNK_DETAIL_LEVEL = SECTION_MINIMUM_DETAIL_LEVEL + LodUtil.CHUNK_DETAIL_LEVEL;
-	public final static byte SECTION_REGION_DETAIL_LEVEL = SECTION_MINIMUM_DETAIL_LEVEL + LodUtil.REGION_DETAIL_LEVEL;
-	
-	
-	protected byte detailLevel;
-	
-	/** in a sectionDetailLevel grid */
-	protected int x;
-	/** in a sectionDetailLevel grid */
-	protected int z;
+	public static final byte SECTION_BLOCK_DETAIL_LEVEL = SECTION_MINIMUM_DETAIL_LEVEL + LodUtil.BLOCK_DETAIL_LEVEL;
+	public static final byte SECTION_CHUNK_DETAIL_LEVEL = SECTION_MINIMUM_DETAIL_LEVEL + LodUtil.CHUNK_DETAIL_LEVEL;
+	public static final byte SECTION_REGION_DETAIL_LEVEL = SECTION_MINIMUM_DETAIL_LEVEL + LodUtil.REGION_DETAIL_LEVEL;
 	
 	
-
-	public static DhSectionPos zero() { return new DhSectionPos((byte) 0, 0, 0); };
+	
+	public static final int DETAIL_LEVEL_WIDTH = 8;
+	public static final int X_POS_WIDTH = 28;
+	public static final int Z_POS_WIDTH = 28;
+	public static final int X_POS_MISSING_WIDTH = 32 - 28;
+	public static final int Z_POS_MISSING_WIDTH = 32 - 28;
+	
+	
+	public static final int DETAIL_LEVEL_OFFSET = 0;
+	public static final int POS_X_OFFSET = DETAIL_LEVEL_OFFSET + DETAIL_LEVEL_WIDTH;
+	/** indicates the Y position where the LOD starts relative to the level's minimum height */
+	public static final int POS_Z_OFFSET = POS_X_OFFSET + X_POS_WIDTH;
+	
+	public static final long DETAIL_LEVEL_MASK = Byte.MAX_VALUE;
+	public static final int POS_X_MASK = (int) Math.pow(2, X_POS_WIDTH) - 1;
+	public static final int POS_Z_MASK = (int) Math.pow(2, Z_POS_WIDTH) - 1;
+	
+	
 	
 	//==============//
 	// constructors //
 	//==============//
 	
-	public DhSectionPos(byte detailLevel, int x, int z)
+	/** 
+	 * This class just holds utility methods for handling a packed
+	 * {@link DhSectionPos} and shouldn't be constructed. <Br><br>
+	 * 
+	 * Use one of the {@link DhSectionPos#encode(byte, int, int)} methods instead
+	 */
+	private DhSectionPos() { }
+	
+	
+	
+	/** 
+	 * Note: 
+	 * no validation is done for whether the detail level is positive 
+	 * or if the X/Z positions can be represented by available bits. 
+	 */
+	public static long encode(byte detailLevel, int x, int z)
 	{
-		this.detailLevel = detailLevel;
-		this.x = x;
-		this.z = z;
+		long data = 0;
+		data |= detailLevel & DETAIL_LEVEL_MASK;
+		data |= (long) (x & POS_X_MASK) << POS_X_OFFSET;
+		data |= (long) (z & POS_Z_MASK) << POS_Z_OFFSET;
+		return data;
 	}
 	
-	public DhSectionPos(DhBlockPos blockPos)
+	public static long encode(DhBlockPos pos) { return encodeBlockPos(pos.x, pos.z); }
+	public static long encode(DhBlockPos2D pos) { return encodeBlockPos(pos.x, pos.z); }
+	public static long encodeBlockPos(int blockX, int blockZ)
 	{
-		this(LodUtil.BLOCK_DETAIL_LEVEL, blockPos.x, blockPos.z);
-		this.convertSelfToDetailLevel(DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL);
-	}
-	public DhSectionPos(DhBlockPos2D blockPos)
-	{
-		this(LodUtil.BLOCK_DETAIL_LEVEL, blockPos.x, blockPos.z);
-		this.convertSelfToDetailLevel(DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL);
+		long pos = encode(LodUtil.BLOCK_DETAIL_LEVEL, blockX, blockZ);
+		pos = convertToDetailLevel(pos, DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL);
+		return pos;
 	}
 	
-	public DhSectionPos(DhChunkPos chunkPos)
+	public static long encode(DhChunkPos pos) { return encodeChunkPos(pos.x, pos.z); }
+	public static long encodeChunkPos(int chunkX, int chunkZ)
 	{
-		this(LodUtil.CHUNK_DETAIL_LEVEL, chunkPos.x, chunkPos.z);
-		this.convertSelfToDetailLevel(DhSectionPos.SECTION_CHUNK_DETAIL_LEVEL);
-	}
-	
-	public DhSectionPos(byte detailLevel, DhLodPos dhLodPos)
-	{
-		this.detailLevel = detailLevel;
-		this.x = dhLodPos.x;
-		this.z = dhLodPos.z;
+		long pos = encode(LodUtil.CHUNK_DETAIL_LEVEL, chunkX, chunkZ);
+		pos = convertToDetailLevel(pos, DhSectionPos.SECTION_CHUNK_DETAIL_LEVEL);
+		return pos;
 	}
 	
 	
@@ -109,36 +123,27 @@ public class DhSectionPos implements INetworkObject
 	//============//
 	// converters //
 	//============//
-	
-	/**
-	 * uses the absolute detail level aka detail levels like {@link LodUtil#CHUNK_DETAIL_LEVEL} instead of the dhSectionPos detailLevels.
-	 *
-	 * @return the new position closest to negative infinity with the new detail level
-	 */
-	public DhSectionPos convertNewToDetailLevel(byte newSectionDetailLevel)
-	{
-		DhSectionPos newPos = new DhSectionPos(this.detailLevel, this.x, this.z);
-		newPos.convertSelfToDetailLevel(newSectionDetailLevel);
-		
-		return newPos;
-	}
-	
+
 	/** uses the absolute detail level aka detail levels like {@link LodUtil#CHUNK_DETAIL_LEVEL} instead of the dhSectionPos detailLevels. */
-	protected void convertSelfToDetailLevel(byte newDetailLevel)
+	public static long convertToDetailLevel(long pos, byte newDetailLevel)
 	{
+		byte detailLevel = getDetailLevel(pos);
+		int x = getX(pos);
+		int z = getZ(pos);
+		
 		// logic originally taken from DhLodPos
-		if (newDetailLevel >= this.detailLevel)
+		if (newDetailLevel >= detailLevel)
 		{
-			this.x = Math.floorDiv(this.x, BitShiftUtil.powerOfTwo(newDetailLevel - this.detailLevel));
-			this.z = Math.floorDiv(this.z, BitShiftUtil.powerOfTwo(newDetailLevel - this.detailLevel));
+			x = Math.floorDiv(x, BitShiftUtil.powerOfTwo(newDetailLevel - detailLevel));
+			z = Math.floorDiv(z, BitShiftUtil.powerOfTwo(newDetailLevel - detailLevel));
 		}
 		else
 		{
-			this.x = this.x * BitShiftUtil.powerOfTwo(this.detailLevel - newDetailLevel);
-			this.z = this.z * BitShiftUtil.powerOfTwo(this.detailLevel - newDetailLevel);
+			x = x * BitShiftUtil.powerOfTwo(detailLevel - newDetailLevel);
+			z = z * BitShiftUtil.powerOfTwo(detailLevel - newDetailLevel);
 		}
-		
-		this.detailLevel = newDetailLevel;
+
+		return encode(newDetailLevel, x, z);
 	}
 	
 	
@@ -147,56 +152,41 @@ public class DhSectionPos implements INetworkObject
 	// property getters //
 	//==================//
 	
-	public byte getDetailLevel() { return this.detailLevel; }
-	
-	public int getX() { return this.x; }
-	public int getZ() { return this.z; }
+	public static byte getDetailLevel(long pos) { return (byte) ((pos >> DETAIL_LEVEL_OFFSET) & DETAIL_LEVEL_MASK); }
+	public static int getX(long pos)
+	{
+		// unpack the position
+		int x = (int) ((pos >> POS_X_OFFSET) & POS_X_MASK);
+		// add the missing 2's compliment most-significant bits (if not done negative numbers will parse incorrectly)
+		x = (x << X_POS_MISSING_WIDTH) >> X_POS_MISSING_WIDTH;
+		return x;
+	}
+	public static int getZ(long pos)
+	{
+		int Z = (int) ((pos >> POS_Z_OFFSET) & POS_Z_MASK);
+		Z = (Z << Z_POS_MISSING_WIDTH) >> Z_POS_MISSING_WIDTH;
+		return Z;
+	}
 	
 	
 	
 	//=========//
 	// getters //
 	//=========//
-	
-	/**
-	 * @return the corner with the smallest X and Z coordinate
-	 * @deprecated use DhSectionPos instead
-	 */
-	@Deprecated
-	public DhLodPos getMinCornerLodPos() { return this.getMinCornerLodPos((byte) (this.detailLevel - 1)); }
-	/**
-	 * @return the corner with the smallest X and Z coordinate
-	 * @deprecated use DhSectionPos instead
-	 */
-	@Deprecated
-	public DhLodPos getMinCornerLodPos(byte returnDetailLevel)
+
+	/** @return the block X pos that represents the smallest X coordinate of this section */
+	public static int getMinCornerBlockX(long pos)
 	{
-		LodUtil.assertTrue(returnDetailLevel <= this.detailLevel, "returnDetailLevel must be less than sectionDetail");
-		
-		byte offset = (byte) (this.detailLevel - returnDetailLevel);
-		return new DhLodPos(returnDetailLevel,
-				this.x * BitShiftUtil.powerOfTwo(offset),
-				this.z * BitShiftUtil.powerOfTwo(offset));
+		// detail level 1 (2x2 blocks) is a special case,
+		// if this isn't done it will return (1,1) instead of (0,0)
+		int halfBlockWidth = (getDetailLevel(pos) != 1) ? (DhSectionPos.getBlockWidth(pos) / 2) : 0;
+		return DhSectionPos.getCenterBlockPosX(pos) - halfBlockWidth;
 	}
-	
-	public DhSectionPos getMinCornerPos(byte returnDetailLevel)
+	/** @return the block Z pos that represents the smallest Z coordinate of this section */
+	public static int getMinCornerBlockZ(long pos)
 	{
-		LodUtil.assertTrue(returnDetailLevel <= this.detailLevel, "returnDetailLevel must be less than sectionDetail");
-		
-		byte offset = (byte) (this.detailLevel - returnDetailLevel);
-		return new DhSectionPos(returnDetailLevel,
-				this.x * BitShiftUtil.powerOfTwo(offset),
-				this.z * BitShiftUtil.powerOfTwo(offset));
-	}
-	
-	public DhSectionPos getMaxCornerPos(byte returnDetailLevel)
-	{
-		LodUtil.assertTrue(returnDetailLevel <= this.detailLevel, "returnDetailLevel must be less than sectionDetail");
-		
-		byte offset = (byte) (this.detailLevel - returnDetailLevel);
-		return new DhSectionPos(returnDetailLevel,
-				(this.x + 1) * BitShiftUtil.powerOfTwo(offset) - 1,
-				(this.z + 1) * BitShiftUtil.powerOfTwo(offset) - 1);
+		int halfBlockWidth = (getDetailLevel(pos) != 1) ? (DhSectionPos.getBlockWidth(pos) / 2) : 0;
+		return DhSectionPos.getCenterBlockPosZ(pos) - halfBlockWidth;
 	}
 	
 	/** 
@@ -209,26 +199,33 @@ public class DhSectionPos implements INetworkObject
 	 * 
 	 * @return how many {@link DhSectionPos}'s at the given detail level it would take to span the width of this section.
 	 */
-	public int getWidthCountForLowerDetailedSection(byte returnDetailLevel)
+	public static int getWidthCountForLowerDetailedSection(long pos, byte returnDetailLevel)
 	{
-		LodUtil.assertTrue(returnDetailLevel <= this.detailLevel, "returnDetailLevel must be less than sectionDetail");
-		byte offset = (byte) (this.detailLevel - returnDetailLevel);
+		byte detailLevel = getDetailLevel(pos);
+		
+		LodUtil.assertTrue(returnDetailLevel <= detailLevel, "returnDetailLevel must be less than sectionDetail");
+		byte offset = (byte) (detailLevel - returnDetailLevel);
 		return BitShiftUtil.powerOfTwo(offset);
 	}
-	
+
 	/** @return how wide this section is in blocks */
-	public int getBlockWidth() { return BitShiftUtil.powerOfTwo(this.detailLevel); }
-	
-	
-	public DhBlockPos2D getCenterBlockPos() { return new DhBlockPos2D(this.getCenterBlockPosX(), this.getCenterBlockPosZ()); }
-	
-	public int getCenterBlockPosX() { return this.getCenterBlockPos(true); }
-	public int getCenterBlockPosZ() { return this.getCenterBlockPos(false); }
-	private int getCenterBlockPos(boolean returnX)
+	public static int getBlockWidth(long pos) { return BitShiftUtil.powerOfTwo(getDetailLevel(pos)); }
+
+
+	public static DhBlockPos2D getCenterBlockPos(long pos) { return new DhBlockPos2D(getCenterBlockPosX(pos), getCenterBlockPosZ(pos)); }
+
+	public static int getCenterBlockPosX(long pos) { return getCenterBlockPosXOrZ(pos, true); }
+	public static int getCenterBlockPosZ(long pos) { return getCenterBlockPosXOrZ(pos, false); }
+	private static int getCenterBlockPosXOrZ(long pos, boolean returnX)
 	{
-		int centerBlockPos = returnX ? this.x : this.z;
+		byte detailLevel = getDetailLevel(pos);
+		int x = getX(pos);
+		int z = getZ(pos);
 		
-		if (this.detailLevel == 0)
+		
+		int centerBlockPos = returnX ? x : z;
+
+		if (detailLevel == 0)
 		{
 			// already at block detail level, no conversion necessary
 			return centerBlockPos;
@@ -236,18 +233,18 @@ public class DhSectionPos implements INetworkObject
 		
 		// we can't get the center of the position at block level, only attempt to get the position offset for detail levels above 0
 		int positionOffset = 0;
-		if (this.detailLevel != 1)
+		if (detailLevel != 1)
 		{
-			positionOffset = BitShiftUtil.powerOfTwo(this.detailLevel - 1);
+			positionOffset = BitShiftUtil.powerOfTwo(detailLevel - 1);
 		}
 		
-		return (centerBlockPos * BitShiftUtil.powerOfTwo(this.detailLevel)) + positionOffset;
+		return (centerBlockPos * BitShiftUtil.powerOfTwo(detailLevel)) + positionOffset;
 	}
 	
-	public int getManhattanBlockDistance(DhBlockPos2D blockPos)
+	public static int getManhattanBlockDistance(long pos, DhBlockPos2D blockPos)
 	{
-		return Math.abs(this.getCenterBlockPosX() - blockPos.x)
-				+ Math.abs(this.getCenterBlockPosZ() - blockPos.z);
+		return Math.abs(getCenterBlockPosX(pos) - blockPos.x)
+				+ Math.abs(getCenterBlockPosZ(pos) - blockPos.z);
 	}
 	
 	
@@ -255,9 +252,9 @@ public class DhSectionPos implements INetworkObject
 	//==================//
 	// parent child pos //
 	//==================//
-	
+
 	/**
-	 * Returns the DhLodPos 1 detail level lower <br><br>
+	 * Returns a position 1 detail level lower. <br><br>
 	 *
 	 * Relative child positions returned for each index: <br>
 	 * 0 = (0,0) - North West <br>
@@ -267,267 +264,147 @@ public class DhSectionPos implements INetworkObject
 	 *
 	 * @param child0to3 must be an int between 0 and 3
 	 */
-	public DhSectionPos getChildByIndex(int child0to3) throws IllegalArgumentException, IllegalStateException
+	public static long getChildByIndex(long pos, int child0to3) throws IllegalArgumentException, IllegalStateException
 	{
+		byte detailLevel = getDetailLevel(pos);
+		int x = getX(pos);
+		int z = getZ(pos);
+		
 		if (child0to3 < 0 || child0to3 > 3)
 		{
 			throw new IllegalArgumentException("child0to3 must be between 0 and 3");
 		}
-		if (this.detailLevel <= 0)
+		if (detailLevel <= 0)
 		{
 			throw new IllegalStateException("section detail must be greater than 0");
 		}
-		
-		return new DhSectionPos((byte) (this.detailLevel - 1),
-				this.x * 2 + (child0to3 & 1),
-				this.z * 2 + BitShiftUtil.half(child0to3 & 2));
+
+		return DhSectionPos.encode((byte) (detailLevel - 1),
+				x * 2 + (child0to3 & 1),
+				z * 2 + BitShiftUtil.half(child0to3 & 2));
 	}
 	/** Returns this position's child index in its parent */
-	public int getChildIndexOfParent() { return (this.x & 1) + BitShiftUtil.square(this.z & 1); }
+	public static int getChildIndexOfParent(long pos) { return (getX(pos) & 1) + BitShiftUtil.square(getZ(pos) & 1); }
 	
-	public DhSectionPos getParentPos() { return new DhSectionPos((byte) (this.detailLevel + 1), BitShiftUtil.half(this.x), BitShiftUtil.half(this.z)); }
+	public static long getParentPos(long pos) { return DhSectionPos.encode((byte) (getDetailLevel(pos) + 1), BitShiftUtil.half(getX(pos)), BitShiftUtil.half(getZ(pos))); }
 	
-	
-	
-	
-	public DhSectionPos getAdjacentPos(EDhDirection dir)
+
+
+	public static long getAdjacentPos(long pos, EDhDirection dir) throws IllegalArgumentException
 	{
-		return new DhSectionPos(this.detailLevel,
-				this.x + dir.getNormal().x,
-				this.z + dir.getNormal().z);
+		if (dir == EDhDirection.UP || dir == EDhDirection.DOWN)
+		{
+			throw new IllegalArgumentException("getAdjacentPos can't be UP or DOWN, direction given: ["+dir.name()+"].");
+		}
+		
+		return DhSectionPos.encode(getDetailLevel(pos),
+				getX(pos) + dir.getNormal().x,
+				getZ(pos) + dir.getNormal().z);
 	}
 	
-	public DhLodPos getSectionBBoxPos() { return new DhLodPos(this.detailLevel, this.x, this.z); }
-	
-	
-	
+	@Deprecated
+	public static DhLodPos getSectionBBoxPos(long pos) { return new DhLodPos(getDetailLevel(pos), getX(pos), getZ(pos)); }
+
+
+
 	//=============//
 	// comparisons //
 	//=============//
 	
-	public boolean overlapsExactly(DhSectionPos other)
+	public static boolean contains(long aPos, long bPos)
 	{
-		// original logic from DhLodPos
-		if (this.equals(other))
-		{
-			return true;
-		}
-		else if (this.detailLevel == other.detailLevel)
-		{
-			return false;
-		}
-		else if (this.detailLevel > other.detailLevel)
-		{
-			return this.equals(other.convertNewToDetailLevel(this.detailLevel));
-		}
-		else
-		{
-			return other.equals(this.convertNewToDetailLevel(other.detailLevel));
-		}
-	}
-	
-	public boolean contains(DhSectionPos otherPos)
-	{
-		DhBlockPos2D thisMinBlockPos = this.getMinCornerLodPos(LodUtil.BLOCK_DETAIL_LEVEL).getCornerBlockPos();
-		DhBlockPos2D otherCornerBlockPos = otherPos.getMinCornerLodPos(LodUtil.BLOCK_DETAIL_LEVEL).getCornerBlockPos();
+		int aMinX = getMinCornerBlockX(aPos);
+		int aMinZ = getMinCornerBlockZ(aPos);
 		
-		int thisBlockWidth = this.getBlockWidth() - 1; // minus 1 to account for zero based positional indexing
-		DhBlockPos2D thisMaxBlockPos = new DhBlockPos2D(thisMinBlockPos.x + thisBlockWidth, thisMinBlockPos.z + thisBlockWidth);
-		
-		return thisMinBlockPos.x <= otherCornerBlockPos.x && otherCornerBlockPos.x <= thisMaxBlockPos.x &&
-				thisMinBlockPos.z <= otherCornerBlockPos.z && otherCornerBlockPos.z <= thisMaxBlockPos.z;
+		int bMinX = getMinCornerBlockX(bPos);
+		int bMinZ = getMinCornerBlockZ(bPos);
+
+		int aBlockWidth = getBlockWidth(aPos) - 1; // minus 1 to account for zero based positional indexing
+		int aMaxX = aMinX + aBlockWidth;
+		int aMaxZ = aMinZ + aBlockWidth;
+
+		return aMinX <= bMinX && bMinX <= aMaxX &&
+				aMinZ <= bMinZ && bMinZ <= aMaxZ;
 	}
-	
-	
-	
+
+
+
 	//===========//
 	// iterators //
 	//===========//
-	
+
 	/** Applies the given consumer to all 4 of this position's children. */
-	public void forEachChild(Consumer<DhSectionPos> callback)
+	public static void forEachChild(long pos, LongConsumer callback) throws IllegalArgumentException, IllegalStateException
 	{
 		for (int i = 0; i < 4; i++)
 		{
-			callback.accept(this.getChildByIndex(i));
+			callback.accept(getChildByIndex(pos, i));
 		}
-	}
-	
-	/** Applies the given consumer to all children of the position at the given section detail level. */
-	public void forEachChildDownToDetailLevel(byte minSectionDetailLevel, Function<DhSectionPos, Boolean> callback)
-	{
-		boolean stop = callback.apply(this);
-		if (stop || minSectionDetailLevel == this.detailLevel)
-		{
-			return;
-		}
-		
-		for (int i = 0; i < 4; i++)
-		{
-			this.getChildByIndex(i).forEachChildDownToDetailLevel(minSectionDetailLevel, callback);
-		}
-	}
-	
-	/** Applies the given consumer to all children of the position at the given section detail level. */
-	public void forEachChildAtDetailLevel(byte sectionDetailLevel, Consumer<DhSectionPos> callback)
-	{
-		if (sectionDetailLevel == this.detailLevel)
-		{
-			callback.accept(this);
-			return;
-		}
-		
-		for (int i = 0; i < 4; i++)
-		{
-			this.getChildByIndex(i).forEachChildAtDetailLevel(sectionDetailLevel, callback);
-		}
-	}
-	
-	/** Applies the given consumer to all children of the position at the given section detail level. */
-	public void forEachPosUpToDetailLevel(byte maxSectionDetailLevel, Consumer<DhSectionPos> callback)
-	{
-		callback.accept(this);
-		if (maxSectionDetailLevel == this.detailLevel)
-		{
-			return;
-		}
-		
-		this.getParentPos().forEachPosUpToDetailLevel(maxSectionDetailLevel, callback);
-	}
-	
-	
-	
-	
-	
-	//===============//
-	// serialization //
-	//===============//
-	
-	/** Serialize() is different from toString() as it must NEVER be changed, and should be in a short format */
-	public String serialize() { return "[" + this.detailLevel + ',' + this.x + ',' + this.z + ']'; }
-	
-	@Nullable
-	public static DhSectionPos deserialize(String value)
-	{
-		if (value.charAt(0) != '[' || value.charAt(value.length() - 1) != ']')
-		{
-			return null;
-		}
-		String[] split = value.substring(1, value.length() - 1).split(",");
-		if (split.length != 3)
-		{
-			return null;
-		}
-		return new DhSectionPos(Byte.parseByte(split[0]), Integer.parseInt(split[1]), Integer.parseInt(split[2]));
-		
-	}
-	
-	
-	
-	//===========//
-	// overrides //
-	//===========//
-	
-	@Override
-	public String toString() { return "{" + this.detailLevel + "*" + this.x + "," + this.z + "}"; }
-	
-	@Override
-	public boolean equals(Object obj)
-	{
-		if (this == obj)
-		{
-			return true;
-		}
-		if (obj == null || obj.getClass() != DhSectionPos.class)
-		{
-			return false;
-		}
-		
-		DhSectionPos that = (DhSectionPos) obj;
-		return this.detailLevel == that.detailLevel &&
-				this.x == that.x &&
-				this.z == that.z;
-	}
-	
-	@Override
-	public int hashCode()
-	{
-		return Integer.hashCode(this.detailLevel) ^ // XOR
-				Integer.hashCode(this.x) ^ // XOR
-				Integer.hashCode(this.z);
-	}
-	
-	
-	
-	//=============//
-	// sub classes //
-	//=============//
-	
-	/**
-	 * Identical to {@link DhSectionPos} except it is mutable.
-	 * See {@link DhSectionPos} for full documentation.
-	 * 
-	 * @see DhSectionPos
-	 */
-	public static class DhMutableSectionPos extends DhSectionPos
-	{
-		
-		//==============//
-		// constructors //
-		//==============//
-		
-		public DhMutableSectionPos(byte sectionDetailLevel, int sectionX, int sectionZ) { super(sectionDetailLevel, sectionX, sectionZ); }
-		public DhMutableSectionPos(DhBlockPos blockPos) { super(blockPos); }
-		public DhMutableSectionPos(DhBlockPos2D blockPos) { super(blockPos); }
-		public DhMutableSectionPos(DhChunkPos chunkPos) { super(chunkPos); }
-		public DhMutableSectionPos(byte detailLevel, DhLodPos dhLodPos) { super(detailLevel, dhLodPos); }
-		
-		
-		
-		//============//
-		// converters //
-		//============//
-		
-		/**
-		 * Overwrites this section pos with the given input. <br>
-		 * Can be useful to prevent duplicate allocations in high traffic loops but should 
-		 * be used sparingly as it could accidentally cause bugs due to unexpected modifications.
-		 */
-		public void mutate(byte sectionDetailLevel, int sectionX, int sectionZ)
-		{
-			this.detailLevel = sectionDetailLevel;
-			this.x = sectionX;
-			this.z = sectionZ;
-		}
-		
-		@Override
-		public void convertSelfToDetailLevel(byte newDetailLevel) { super.convertSelfToDetailLevel(newDetailLevel); }
-		
-		
-		
-		//==================//
-		// property getters //
-		//==================//
-		
-		public void setDetailLevel(byte sectionDetailLevel) { this.detailLevel = sectionDetailLevel; }
-		
-		public void setX(int sectionX) { this.x = sectionX; }
-		
-		public void setZ(int sectionZ) { this.z = sectionZ; }
-		
-	}
-	
-	@Override
-	public void encode(ByteBuf out) {
-		out.writeByte(this.detailLevel);
-		out.writeInt(this.x);
-		out.writeInt(this.z);
 	}
 
-	@Override
-	public void decode(ByteBuf in) {
-		this.detailLevel = in.readByte();
-		this.x = in.readInt();
-		this.z = in.readInt();
+	/** Applies the given consumer to all children of the position at the given section detail level. */
+	public static void forEachChildDownToDetailLevel(long pos, byte minSectionDetailLevel, ICancelablePrimitiveLongConsumer callback) throws IllegalArgumentException, IllegalStateException
+	{
+		boolean stop = callback.accept(pos);
+		if (stop || minSectionDetailLevel == getDetailLevel(pos))
+		{
+			return;
+		}
+		
+		for (int i = 0; i < 4; i++)
+		{
+			forEachChildDownToDetailLevel(getChildByIndex(pos, i), minSectionDetailLevel, callback);
+		}
 	}
+
+	/** Applies the given consumer to all children of the position at the given section detail level. */
+	public static void forEachChildAtDetailLevel(long pos, byte sectionDetailLevel, LongConsumer callback) throws IllegalArgumentException, IllegalStateException
+	{
+		if (sectionDetailLevel == getDetailLevel(pos))
+		{
+			callback.accept(pos);
+			return;
+		}
+
+		for (int i = 0; i < 4; i++)
+		{
+			forEachChildAtDetailLevel(getChildByIndex(pos, i), sectionDetailLevel, callback);
+		}
+	}
+
+	/** Applies the given consumer to all children of the position at the given section detail level. */
+	public static void forEachPosUpToDetailLevel(long pos, byte maxSectionDetailLevel, LongConsumer callback)
+	{
+		callback.accept(pos);
+		if (maxSectionDetailLevel == getDetailLevel(pos))
+		{
+			return;
+		}
+		
+		forEachPosUpToDetailLevel(getParentPos(pos), maxSectionDetailLevel, callback);
+	}
+	
+	
+	
+	//==============//
+	// Base methods //
+	//==============//
+	
+	public static String toString(long pos) { return getDetailLevel(pos) + "*" + getX(pos) + "," + getZ(pos); }
+	public static int hashCode(long pos) { return Long.hashCode(pos); }
+	
+	
+	
+	//================//
+	// helper methods //
+	//================//
+	
+	/** Used instead of {@link java.util.function.Function} to prevent unnecessary (un)wrapping. */
+	@FunctionalInterface
+	public interface ICancelablePrimitiveLongConsumer
+	{
+		/** @return true if this method should cancel further consumers. */
+		boolean accept(long value);
+	}
+	
 }

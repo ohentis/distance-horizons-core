@@ -43,11 +43,17 @@ import com.seibel.distanthorizons.coreapi.util.math.Vec3i;
  */
 public enum EDhDirection
 {
+	/** negative Y */
 	DOWN(0, 1, -1, "down", EDhDirection.AxisDirection.NEGATIVE, EDhDirection.Axis.Y, new Vec3i(0, -1, 0)),
+	/** positive Y */
 	UP(1, 0, -1, "up", EDhDirection.AxisDirection.POSITIVE, EDhDirection.Axis.Y, new Vec3i(0, 1, 0)),
+	/** negative Z */
 	NORTH(2, 3, 2, "north", EDhDirection.AxisDirection.NEGATIVE, EDhDirection.Axis.Z, new Vec3i(0, 0, -1)),
+	/** positive Z */
 	SOUTH(3, 2, 0, "south", EDhDirection.AxisDirection.POSITIVE, EDhDirection.Axis.Z, new Vec3i(0, 0, 1)),
+	/** negative X */
 	WEST(4, 5, 1, "west", EDhDirection.AxisDirection.NEGATIVE, EDhDirection.Axis.X, new Vec3i(-1, 0, 0)),
+	/** positive X */
 	EAST(5, 4, 3, "east", EDhDirection.AxisDirection.POSITIVE, EDhDirection.Axis.X, new Vec3i(1, 0, 0));
 	
 	/**

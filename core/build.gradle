@@ -1,6 +1,6 @@
 plugins {
     id "java"
-    id "com.github.johnrengelman.shadow" version '7.1.2' apply false // Set this to true if you're using the standalone Core project
+    id "com.github.johnrengelman.shadow" version '8.1.1' apply false // Set this to true if you're using the standalone Core project
 }
 
 apply plugin: "application"
@@ -57,7 +57,7 @@ artifacts {
 }
 
 shadowJar {
-    def librariesLocation = "distanthorizons.libraries"
+    def librariesLocation = "DistantHorizons.libraries"
 //    relocate "it.unimi.dsi.fastutil", "${librariesLocation}.unimi.dsi.fastutil"
     mergeServiceFiles()
 }

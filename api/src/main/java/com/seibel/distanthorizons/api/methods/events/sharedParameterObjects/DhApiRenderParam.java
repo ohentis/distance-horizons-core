@@ -58,9 +58,6 @@ public class DhApiRenderParam
 	/** The model view matrix Distant Horizons is using to render this frame. */
 	public final Mat4f dhModelViewMatrix;
 	
-	public final int lightmapBindingIndex = 0;
-	
-	// TODO why is this here? wouldn't it make more sense to have this built into the vertex buffer data?
 	public final int worldYOffset;
 	
 	

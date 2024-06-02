@@ -23,6 +23,8 @@ import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGeneratio
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV1DTO;
 import com.seibel.distanthorizons.coreapi.util.StringUtil;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
+import org.jetbrains.annotations.Nullable;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -30,7 +32,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class FullDataSourceV1Repo extends AbstractDhRepo<DhSectionPos, FullDataSourceV1DTO>
+public class FullDataSourceV1Repo extends AbstractDhRepo<Long, FullDataSourceV1DTO>
 {
 	public static final String TABLE_NAME = "Legacy_FullData_V1";
 	
@@ -55,7 +57,7 @@ public class FullDataSourceV1Repo extends AbstractDhRepo<DhSectionPos, FullDataS
 	public String getTableName() { return TABLE_NAME; }
 	
 	@Override
-	public String createWhereStatement(DhSectionPos pos) { return "DhSectionPos = '"+pos.serialize()+"'"; }
+	public String createWhereStatement(Long pos) { return "DhSectionPos = '"+serializeSectionPos(pos)+"'"; }
 	
 	
 	
@@ -67,7 +69,7 @@ public class FullDataSourceV1Repo extends AbstractDhRepo<DhSectionPos, FullDataS
 	public FullDataSourceV1DTO convertDictionaryToDto(Map<String, Object> objectMap) throws ClassCastException
 	{
 		String posString = (String) objectMap.get("DhSectionPos");
-		DhSectionPos pos = DhSectionPos.deserialize(posString);
+		Long pos = deserializeSectionPos(posString);
 		
 		// meta data
 		int checksum = (Integer) objectMap.get("Checksum");
@@ -106,7 +108,7 @@ public class FullDataSourceV1Repo extends AbstractDhRepo<DhSectionPos, FullDataS
 		PreparedStatement statement = this.createPreparedStatement(sql);
 		
 		int i = 1;
-		statement.setObject(i++, dto.pos.serialize());
+		statement.setObject(i++, serializeSectionPos(dto.pos));
 		
 		statement.setObject(i++, dto.checksum);
 		statement.setObject(i++, 0 /*dto.dataVersion*/);
@@ -149,7 +151,7 @@ public class FullDataSourceV1Repo extends AbstractDhRepo<DhSectionPos, FullDataS
 		
 		statement.setObject(i++, dto.dataArray);
 		
-		statement.setObject(i++, dto.pos.serialize());
+		statement.setObject(i++, serializeSectionPos(dto.pos));
 		
 		return statement;
 	}
@@ -205,9 +207,9 @@ public class FullDataSourceV1Repo extends AbstractDhRepo<DhSectionPos, FullDataS
 	}
 	
 	/** Returns the new "returnCount" positions that need to be migrated */
-	public ArrayList<DhSectionPos> getPositionsToMigrate(int returnCount)
+	public LongArrayList getPositionsToMigrate(int returnCount)
 	{
-		ArrayList<DhSectionPos> list = new ArrayList<>();
+		LongArrayList list = new LongArrayList();
 		
 		List<Map<String, Object>> resultMapList = this.queryDictionary(
 				"select DhSectionPos " +
@@ -218,19 +220,19 @@ public class FullDataSourceV1Repo extends AbstractDhRepo<DhSectionPos, FullDataS
 		for (Map<String, Object> resultMap : resultMapList)
 		{
 			// returned in the format [sectionDetailLevel,x,z] IE [6,0,0]
-			DhSectionPos sectionPos = DhSectionPos.deserialize((String) resultMap.get("DhSectionPos"));
+			long sectionPos = deserializeSectionPos((String) resultMap.get("DhSectionPos"));
 			list.add(sectionPos);
 		}
 		
 		return list;
 	}
 	
-	public void markMigrationFailed(DhSectionPos pos)
+	public void markMigrationFailed(long pos)
 	{
 		String sql =
 				"UPDATE "+this.getTableName()+" \n" +
 						"SET MigrationFailed = 1 \n" +
-						"WHERE DhSectionPos = '"+pos.serialize()+"'";
+						"WHERE DhSectionPos = '"+serializeSectionPos(pos)+"'";
 		
 		this.queryDictionaryFirst(sql);
 	}
@@ -281,6 +283,32 @@ public class FullDataSourceV1Repo extends AbstractDhRepo<DhSectionPos, FullDataS
 	{
 		String sectionPosCsv = StringUtil.join(",", deletePosList);
 		this.queryDictionaryFirst("delete from " + this.getTableName() + " where DhSectionPos in (" + sectionPosCsv + ")");
+	}
+	
+	
+	
+	//=====================//
+	// section pos helpers //
+	//=====================//
+	
+	private static String serializeSectionPos(long pos) { return "[" + DhSectionPos.getDetailLevel(pos) + ',' + DhSectionPos.getX(pos) + ',' + DhSectionPos.getZ(pos) + ']'; }
+	
+	
+	@Nullable
+	private static Long deserializeSectionPos(String value)
+	{
+		if (value.charAt(0) != '[' || value.charAt(value.length() - 1) != ']')
+		{
+			return null;
+		}
+		
+		String[] split = value.substring(1, value.length() - 1).split(",");
+		if (split.length != 3)
+		{
+			return null;
+		}
+		
+		return DhSectionPos.encode(Byte.parseByte(split[0]), Integer.parseInt(split[1]), Integer.parseInt(split[2]));
 	}
 	
 }

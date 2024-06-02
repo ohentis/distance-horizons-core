@@ -67,7 +67,7 @@ public class FullDataPointIdMap
 	private final ReentrantReadWriteLock readWriteLock = new ReentrantReadWriteLock();
 	
 	/** should only be used for debugging */
-	private DhSectionPos pos;
+	private long pos;
 	
 	/** The index should be the same as the Entry's ID */
 	private final ArrayList<Entry> entryList = new ArrayList<>();
@@ -79,7 +79,7 @@ public class FullDataPointIdMap
 	// constructor //
 	//=============//
 	
-	public FullDataPointIdMap(DhSectionPos pos) { this.pos = pos; }
+	public FullDataPointIdMap(long pos) { this.pos = pos; }
 	
 	
 	
@@ -123,7 +123,7 @@ public class FullDataPointIdMap
 	
 	public boolean isEmpty() { return this.entryList.isEmpty(); }
 	
-	public DhSectionPos getPos() { return this.pos; }
+	public long getPos() { return this.pos; }
 	
 	
 	
@@ -270,7 +270,7 @@ public class FullDataPointIdMap
 	}
 	
 	/** Should only be used if this map is going to be reused, otherwise bad things will happen. */
-	public void clear(DhSectionPos pos)
+	public void clear(long pos)
 	{
 		this.pos = pos;
 		this.entryList.clear();
@@ -321,7 +321,7 @@ public class FullDataPointIdMap
 	}
 	
 	/** Creates a new IdBiomeBlockStateMap from the given UTF formatted stream */
-	public static FullDataPointIdMap deserialize(DhDataInputStream inputStream, DhSectionPos pos, ILevelWrapper levelWrapper) throws IOException, InterruptedException, DataCorruptedException
+	public static FullDataPointIdMap deserialize(DhDataInputStream inputStream, long pos, ILevelWrapper levelWrapper) throws IOException, InterruptedException, DataCorruptedException
 	{
 		int entityCount = inputStream.readInt();
 		if (entityCount < 0)
@@ -361,12 +361,10 @@ public class FullDataPointIdMap
 			}
 		}
 		
-		//LOGGER.trace("deserialized " + pos + " " + newMap.entryList.size() + "-" + entityCount);
-		
 		if (newMap.size() != entityCount)
 		{
 			// if the mappings are out of sync then the LODs will render incorrectly due to IDs being wrong
-			LodUtil.assertNotReach("ID maps failed to deserialize for pos: "+pos+", incorrect entity count. Expected count ["+entityCount+"], actual count ["+newMap.size()+"]");
+			LodUtil.assertNotReach("ID maps failed to deserialize for pos: ["+ DhSectionPos.toString(pos)+"], incorrect entity count. Expected count ["+entityCount+"], actual count ["+newMap.size()+"]");
 		}
 		
 		return newMap;

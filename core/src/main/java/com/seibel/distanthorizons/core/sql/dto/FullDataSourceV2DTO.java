@@ -25,7 +25,6 @@ import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGeneratio
 import com.seibel.distanthorizons.core.dataObjects.fullData.FullDataPointIdMap;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.network.protocol.INetworkObject;
-import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.util.FullDataPointUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.objects.DataCorruptedException;
@@ -41,12 +40,12 @@ import java.util.zip.Adler32;
 import java.util.zip.CheckedOutputStream;
 
 /** handles storing {@link FullDataSourceV2}'s in the database. */
-public class FullDataSourceV2DTO implements IBaseDTO<DhSectionPos>, INetworkObject
+public class FullDataSourceV2DTO implements IBaseDTO<Long>, INetworkObject
 {
 	public static final boolean VALIDATE_INPUT_DATAPOINTS = true;
 	
 	
-	public DhSectionPos pos;
+	public long pos;
 	
 	public int levelMinY;
 	
@@ -96,7 +95,7 @@ public class FullDataSourceV2DTO implements IBaseDTO<DhSectionPos>, INetworkObje
 	public FullDataSourceV2DTO() { }
 	
 	public FullDataSourceV2DTO(
-			DhSectionPos pos,
+			long pos, 
 			int dataChecksum, byte[] compressedColumnGenStepByteArray, byte[] compressedWorldCompressionModeByteArray, byte dataFormatVersion, byte compressionModeValue, byte[] compressedDataByteArray,
 			long lastModifiedUnixDateTime, long createdUnixDateTime,
 			byte[] compressedMappingByteArray, boolean applyToParent,
@@ -347,7 +346,7 @@ public class FullDataSourceV2DTO implements IBaseDTO<DhSectionPos>, INetworkObje
 		
 		return byteArrayOutputStream.toByteArray();
 	}
-	private static FullDataPointIdMap readBlobToDataMapping(byte[] compressedMappingByteArray, DhSectionPos pos, @NotNull ILevelWrapper levelWrapper, EDhApiDataCompressionMode compressionModeEnum) throws IOException, InterruptedException, DataCorruptedException
+	private static FullDataPointIdMap readBlobToDataMapping(byte[] compressedMappingByteArray, long pos, @NotNull ILevelWrapper levelWrapper, EDhApiDataCompressionMode compressionModeEnum) throws IOException, InterruptedException, DataCorruptedException
 	{
 		ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(compressedMappingByteArray);
 		DhDataInputStream compressedIn = new DhDataInputStream(byteArrayInputStream, compressionModeEnum);
@@ -359,7 +358,7 @@ public class FullDataSourceV2DTO implements IBaseDTO<DhSectionPos>, INetworkObje
 	@Override
 	public void encode(ByteBuf out)
 	{
-		this.pos.encode(out);
+		out.writeLong(this.pos);
 		out.writeInt(this.dataChecksum);
 		
 		out.writeInt(this.compressedDataByteArray.length);
@@ -385,7 +384,7 @@ public class FullDataSourceV2DTO implements IBaseDTO<DhSectionPos>, INetworkObje
 	@Override
 	public void decode(ByteBuf in)
 	{
-		this.pos = INetworkObject.readToObject(DhSectionPos.zero(), in);
+		this.pos = in.readLong();
 		this.dataChecksum = in.readInt();
 		
 		this.compressedDataByteArray = new byte[in.readInt()];
@@ -415,7 +414,7 @@ public class FullDataSourceV2DTO implements IBaseDTO<DhSectionPos>, INetworkObje
 	//===========//
 	
 	@Override
-	public DhSectionPos getKey() { return this.pos; }
+	public Long getKey() { return this.pos; }
 	
 	
 	

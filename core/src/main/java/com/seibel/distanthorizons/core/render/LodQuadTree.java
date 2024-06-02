@@ -30,18 +30,20 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
+import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
 import com.seibel.distanthorizons.core.util.objects.quadTree.QuadNode;
 import com.seibel.distanthorizons.core.util.objects.quadTree.QuadTree;
 import com.seibel.distanthorizons.coreapi.util.MathUtil;
+import it.unimi.dsi.fastutil.longs.LongIterator;
 import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.WillNotClose;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -51,7 +53,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * This quadTree structure is our core data structure and holds
  * all rendering data.
  */
-public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoCloseable
+public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRenderable, AutoCloseable
 {
 	public static final byte TREE_LOWEST_DETAIL_LEVEL = ColumnRenderSource.SECTION_SIZE_OFFSET;
 	
@@ -69,11 +71,15 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 	 * This holds every {@link DhSectionPos} that should be reloaded next tick. <br>
 	 * This is a {@link ConcurrentLinkedQueue} because new sections can be added to this list via the world generator threads.
 	 */
-	private final ConcurrentLinkedQueue<DhSectionPos> sectionsToReload = new ConcurrentLinkedQueue<>();
+	private final ConcurrentLinkedQueue<Long> sectionsToReload = new ConcurrentLinkedQueue<>();
 	private final IDhClientLevel level; //FIXME: Proper hierarchy to remove this reference!
 	private final ConfigChangeListener<EDhApiHorizontalQuality> horizontalScaleChangeListener;
 	private final ReentrantLock treeReadWriteLock = new ReentrantLock();
 	private final AtomicBoolean fullDataRetrievalQueueRunning = new AtomicBoolean(false);
+	
+	private ArrayList<LodRenderSection> debugRenderSections = new ArrayList<>();
+	private ArrayList<LodRenderSection> altDebugRenderSections = new ArrayList<>();
+	private final ReentrantLock debugRenderSectionLock = new ReentrantLock();
 	
 	/** the smallest numerical detail level number that can be rendered */
 	private byte maxRenderDetailLevel;
@@ -97,6 +103,8 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 			FullDataSourceProviderV2 fullDataSourceProvider)
 	{
 		super(viewDiameterInBlocks, new DhBlockPos2D(initialPlayerBlockX, initialPlayerBlockZ), TREE_LOWEST_DETAIL_LEVEL);
+		
+		DebugRenderer.register(this, Config.Client.Advanced.Debugging.DebugWireframe.showQuadTreeRenderStatus);
 		
 		this.level = level;
 		this.fullDataSourceProvider = fullDataSourceProvider;
@@ -152,13 +160,33 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 	}
 	private void updateAllRenderSections(DhBlockPos2D playerPos)
 	{
+		if (Config.Client.Advanced.Debugging.DebugWireframe.showQuadTreeRenderStatus.get())
+		{
+			try
+			{
+				// lock to prevent accidentally rendering an array that's being populated/cleared
+				this.debugRenderSectionLock.lock();
+				
+				// swap the debug arrays
+				this.debugRenderSections.clear();
+				ArrayList<LodRenderSection> temp = this.debugRenderSections;
+				this.debugRenderSections = this.altDebugRenderSections;
+				this.altDebugRenderSections = temp;
+			}
+			finally
+			{
+				this.debugRenderSectionLock.unlock();
+			}
+		}
+		
+		
 		// reload any sections that need it
-		DhSectionPos pos;
+		Long pos;
 		while ((pos = this.sectionsToReload.poll()) != null)
 		{
 			// walk up the tree until we hit the root node
 			// this is done so any high detail changes flow up to the lower detail render sections as well
-			while (pos.getDetailLevel() <= this.treeMinDetailLevel)
+			while (DhSectionPos.getDetailLevel(pos) <= this.treeMinDetailLevel)
 			{
 				try
 				{
@@ -171,7 +199,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 				catch (IndexOutOfBoundsException e)
 				{ /* the section is now out of bounds, it doesn't need to be reloaded */ }
 				
-				pos = pos.getParentPos();
+				pos = DhSectionPos.getParentPos(pos);
 			}
 		}
 		
@@ -179,11 +207,11 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 		// walk through each root node
 		ArrayList<LodRenderSection> nodesNeedingRetrieval = new ArrayList<>();
 		ArrayList<LodRenderSection> nodesNeedingLoading = new ArrayList<>();
-		Iterator<DhSectionPos> rootPosIterator = this.rootNodePosIterator();
+		LongIterator rootPosIterator = this.rootNodePosIterator();
 		while (rootPosIterator.hasNext())
 		{
 			// make sure all root nodes have been created
-			DhSectionPos rootPos = rootPosIterator.next();
+			long rootPos = rootPosIterator.nextLong();
 			if (this.getNode(rootPos) == null)
 			{
 				this.setValue(rootPos, new LodRenderSection(rootPos, this, this.level, this.fullDataSourceProvider));
@@ -204,8 +232,8 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 		
 		nodesNeedingLoading.sort((a, b) ->
 		{
-			int aDist = a.pos.getManhattanBlockDistance(playerPos);
-			int bDist = b.pos.getManhattanBlockDistance(playerPos);
+			int aDist = DhSectionPos.getManhattanBlockDistance(a.pos, playerPos);
+			int bDist = DhSectionPos.getManhattanBlockDistance(b.pos, playerPos);
 			return Integer.compare(aDist, bDist);
 		});
 		
@@ -222,7 +250,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 	/** @return whether the current position is able to render (note: not if it IS rendering, just if it is ABLE to.) */
 	private boolean recursivelyUpdateRenderSectionNode(
 			DhBlockPos2D playerPos, 
-			QuadNode<LodRenderSection> rootNode, QuadNode<LodRenderSection> quadNode, DhSectionPos sectionPos, 
+			QuadNode<LodRenderSection> rootNode, QuadNode<LodRenderSection> quadNode, long sectionPos, 
 			boolean parentSectionIsRendering,
 			ArrayList<LodRenderSection> nodesNeedingRetrieval,
 			ArrayList<LodRenderSection> nodesNeedingLoading)
@@ -267,17 +295,17 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 		expectedDetailLevel += DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL;
 		
 		
-		if (sectionPos.getDetailLevel() > expectedDetailLevel)
+		if (DhSectionPos.getDetailLevel(sectionPos) > expectedDetailLevel)
 		{
 			// section detail level too high //
 			boolean thisPosIsRendering = renderSection.renderingEnabled;
 			boolean allChildrenSectionsAreLoaded = true;
 			
 			// recursively update all child render sections
-			Iterator<DhSectionPos> childPosIterator = quadNode.getChildPosIterator();
+			LongIterator childPosIterator = quadNode.getChildPosIterator();
 			while (childPosIterator.hasNext())
 			{
-				DhSectionPos childPos = childPosIterator.next();
+				long childPos = childPosIterator.nextLong();
 				QuadNode<LodRenderSection> childNode = rootNode.getNode(childPos);
 				
 				boolean childSectionLoaded = this.recursivelyUpdateRenderSectionNode(playerPos, rootNode, childNode, childPos, thisPosIsRendering || parentSectionIsRendering, nodesNeedingRetrieval, nodesNeedingLoading);
@@ -310,7 +338,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 				childPosIterator = quadNode.getChildPosIterator();
 				while (childPosIterator.hasNext())
 				{
-					DhSectionPos childPos = childPosIterator.next();
+					long childPos = childPosIterator.nextLong();
 					QuadNode<LodRenderSection> childNode = rootNode.getNode(childPos);
 					
 					boolean childSectionLoaded = this.recursivelyUpdateRenderSectionNode(playerPos, rootNode, childNode, childPos, parentSectionIsRendering, nodesNeedingRetrieval, nodesNeedingLoading);
@@ -320,7 +348,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 				{
 					// FIXME having world generation enabled in a pre-generated world that doesn't have any DH data can cause this to happen
 					//  surprisingly reloadPos() doesn't appear to be the culprit, maybe there is an issue with reloading/changing the full data source?
-					//LOGGER.warn("Potential QuadTree concurrency issue. All child sections should be enabled and ready to render for pos: "+sectionPos);
+					//LOGGER.warn("Potential QuadTree concurrency issue. All child sections should be enabled and ready to render for pos: "+DhSectionPos.toString(sectionPos));
 				}
 				
 				// this section is now being rendered via its children
@@ -328,7 +356,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 			}
 		}
 		// TODO this should only equal the expected detail level, the (expectedDetailLevel-1) is a temporary fix to prevent corners from being cut out 
-		else if (sectionPos.getDetailLevel() == expectedDetailLevel || sectionPos.getDetailLevel() == expectedDetailLevel - 1)
+		else if (DhSectionPos.getDetailLevel(sectionPos) == expectedDetailLevel || DhSectionPos.getDetailLevel(sectionPos) == expectedDetailLevel - 1)
 		{
 			// this is the detail level we want to render //
 			
@@ -347,6 +375,11 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 				if (!renderSection.gpuUploadInProgress() && renderSection.renderBuffer == null)
 				{
 					nodesNeedingLoading.add(renderSection);
+				}
+				
+				if (Config.Client.Advanced.Debugging.DebugWireframe.showQuadTreeRenderStatus.get())
+				{
+					this.debugRenderSections.add(renderSection);
 				}
 				
 				// wait for the parent to disable before enabling this section, so we don't overdraw/overlap render sections
@@ -412,7 +445,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 	 * @param sectionPos section position
 	 * @return detail level of this section pos
 	 */
-	public byte calculateExpectedDetailLevel(DhBlockPos2D playerPos, DhSectionPos sectionPos) { return this.getDetailLevelFromDistance(playerPos.dist(sectionPos.getCenterBlockPosX(), sectionPos.getCenterBlockPosZ())); }
+	public byte calculateExpectedDetailLevel(DhBlockPos2D playerPos, long sectionPos) { return this.getDetailLevelFromDistance(playerPos.dist(DhSectionPos.getCenterBlockPosX(sectionPos), DhSectionPos.getCenterBlockPosZ(sectionPos))); }
 	private byte getDetailLevelFromDistance(double distance)
 	{
 		double maxDetailDistance = this.getDrawDistanceFromDetail(Byte.MAX_VALUE - 1);
@@ -504,16 +537,8 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 	 * Can be called whenever a render section's data needs to be refreshed. <br>
 	 * This should be called whenever a world generation task is completed or if the connected server has new data to show.
 	 */
-	public void reloadPos(@NotNull DhSectionPos pos)
+	public void reloadPos(long pos)
 	{
-		if (pos == null)
-		{
-			// shouldn't happen, but James saw it happen once, so this is here just in case
-			LOGGER.warn("reloadPos given a null pos.");
-			return;
-		}
-		
-		
 		this.sectionsToReload.add(pos);
 		
 		// the adjacent locations also need to be updated to make sure lighting
@@ -521,7 +546,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 		// and lights may not show up over LOD borders
 		for (EDhDirection direction : EDhDirection.ADJ_DIRECTIONS)
 		{
-			this.sectionsToReload.add(pos.getAdjacentPos(direction));
+			this.sectionsToReload.add(DhSectionPos.getAdjacentPos(pos, direction));
 		}
 	}
 	
@@ -541,8 +566,8 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 			// sort the nodes from nearest to farthest
 			nodesNeedingRetrieval.sort((a, b) ->
 			{
-				int aDist = a.pos.getManhattanBlockDistance(playerPos);
-				int bDist = b.pos.getManhattanBlockDistance(playerPos);
+				int aDist = DhSectionPos.getManhattanBlockDistance(a.pos, playerPos);
+				int bDist = DhSectionPos.getManhattanBlockDistance(b.pos, playerPos);
 				return Integer.compare(aDist, bDist);
 			});
 			
@@ -593,6 +618,56 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 	private void onHorizontalQualityChange() { this.clearRenderDataCache(); }
 	
 	
+	//===========//
+	// debugging //
+	//===========//
+	
+	@Override
+	public void debugRender(DebugRenderer debugRenderer)
+	{
+		try
+		{
+			// lock to prevent accidentally rendering the array that's being cleared
+			this.debugRenderSectionLock.lock();
+			
+			
+			for (int i = 0; i < this.debugRenderSections.size(); i++)
+			{
+				LodRenderSection renderSection = this.debugRenderSections.get(i);
+				
+				Color color = Color.BLACK;
+				if (renderSection.gpuUploadInProgress())
+				{
+					color = Color.ORANGE;
+				}
+				else if (renderSection.renderBuffer == null)
+				{
+					// uploaded but the buffer is missing
+					color = Color.PINK;
+				}
+				else if (renderSection.renderBuffer.hasNonNullVbos())
+				{
+					if (renderSection.renderBuffer.vboBufferCount() != 0)
+					{
+						color = Color.GREEN;
+					}
+					else
+					{
+						// This section is probably rendering an empty chunk
+						color = Color.RED;
+					}
+				}
+				
+				debugRenderer.renderBox(new DebugRenderer.Box(renderSection.pos, 400, 400f, Objects.hashCode(this), 0.05f, color));
+			}
+		}
+		finally
+		{
+			this.debugRenderSectionLock.unlock();
+		}
+	}
+	
+	
 	
 	//==============//
 	// base methods //
@@ -604,6 +679,8 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements AutoClose
 		LOGGER.info("Shutting down " + LodQuadTree.class.getSimpleName() + "...");
 		
 		this.horizontalScaleChangeListener.close();
+		
+		DebugRenderer.unregister(this, Config.Client.Advanced.Debugging.DebugWireframe.showQuadTreeRenderStatus);
 		
 		Iterator<QuadNode<LodRenderSection>> nodeIterator = this.nodeIterator();
 		while (nodeIterator.hasNext())

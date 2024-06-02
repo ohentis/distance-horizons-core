@@ -34,6 +34,7 @@ import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.coreapi.util.BitShiftUtil;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
@@ -43,7 +44,6 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.stream.IntStream;
 
 public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 implements IDebugRenderable
@@ -58,7 +58,7 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 	 * TODO this should be dynamically allocated based on CPU load
 	 *  and abilities.
 	 */
-	public static final int MAX_WORLD_GEN_REQUESTS_PER_THREAD = 2; 
+	public static final int MAX_WORLD_GEN_REQUESTS_PER_THREAD = 20; 
 	
 	
 	private final AtomicReference<IFullDataSourceRetrievalQueue> worldGenQueueRef = new AtomicReference<>(null);
@@ -120,7 +120,7 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 	}
 	
 	// TODO only fire after the section has finished generated or once every X seconds
-	private void fireOnGenPosSuccessListeners(DhSectionPos pos)
+	private void fireOnGenPosSuccessListeners(long pos)
 	{
 		// fire the event listeners 
 		for (IOnWorldGenCompleteListener listener : this.onWorldGenTaskCompleteListeners)
@@ -209,7 +209,7 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 	}
 	
 	@Override
-	public boolean queuePositionForRetrieval(DhSectionPos genPos)
+	public boolean queuePositionForRetrieval(Long genPos)
 	{
 		IFullDataSourceRetrievalQueue worldGenQueue = this.worldGenQueueRef.get();
 		if (worldGenQueue == null)
@@ -218,14 +218,14 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 		}
 		
 		GenTask genTask = new GenTask(genPos);
-		CompletableFuture<WorldGenResult> worldGenFuture = worldGenQueue.submitGenTask(genPos, (byte) (genPos.getDetailLevel() - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL), genTask);
+		CompletableFuture<WorldGenResult> worldGenFuture = worldGenQueue.submitGenTask(genPos, (byte) (DhSectionPos.getDetailLevel(genPos) - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL), genTask);
 		worldGenFuture.whenComplete((genTaskResult, ex) -> this.onWorldGenTaskComplete(genTaskResult, ex));
 		
 		return true;
 	}
 	
 	@Override
-	public void removeRetrievalRequestIf(Function<DhSectionPos, Boolean> removeIf)
+	public void removeRetrievalRequestIf(DhSectionPos.ICancelablePrimitiveLongConsumer removeIf)
 	{
 		IFullDataSourceRetrievalQueue worldGenQueue = this.worldGenQueueRef.get();
 		if (worldGenQueue != null)
@@ -248,7 +248,7 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 	}
 	
 	@Override
-	public ArrayList<DhSectionPos> getPositionsToRetrieve(DhSectionPos pos)
+	public LongArrayList getPositionsToRetrieve(Long pos)
 	{
 		IFullDataSourceRetrievalQueue worldGenQueue = this.worldGenQueueRef.get();
 		if (worldGenQueue == null)
@@ -278,7 +278,7 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 				
 				if (positionFullyGenerated)
 				{
-					return new ArrayList<>();
+					return new LongArrayList();
 				}
 			}
 		}
@@ -287,9 +287,9 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 		
 		// this section is missing one or more columns, queue the missing ones for generation.
 		// TODO speed up this logic by only checking ungenerated columns
-		ArrayList<DhSectionPos> generationList = new ArrayList<>();
+		LongArrayList generationList = new LongArrayList();
 		byte minGeneratorSectionDetailLevel = (byte) (worldGenQueue.highestDataDetail() + DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
-		pos.forEachChildAtDetailLevel(minGeneratorSectionDetailLevel, (genPos) ->
+		DhSectionPos.forEachChildAtDetailLevel(pos, minGeneratorSectionDetailLevel, (genPos) ->
 		{
 			if (!this.repo.existsWithKey(genPos))
 			{
@@ -346,7 +346,7 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 	}
 	
 	@Override
-	public int getMaxPossibleRetrievalPositionCountForPos(DhSectionPos pos)
+	public int getMaxPossibleRetrievalPositionCountForPos(Long pos)  
 	{
 		IFullDataSourceRetrievalQueue worldGenQueue = this.worldGenQueueRef.get();
 		if (worldGenQueue == null)
@@ -355,15 +355,15 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 		}
 		
 		int minGeneratorSectionDetailLevel = worldGenQueue.highestDataDetail() + DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL;
-		int detailLevelDiff = pos.getDetailLevel() - minGeneratorSectionDetailLevel;
+		int detailLevelDiff = DhSectionPos.getDetailLevel(pos) - minGeneratorSectionDetailLevel;
 		
 		return BitShiftUtil.powerOfTwo(detailLevelDiff);
 	}
 	
-	public Map<DhSectionPos, Integer> getLoadStates(Iterable<DhSectionPos> posList)
+	public Map<Long, Integer> getLoadStates(Iterable<Long> posList)
 	{
-		HashMap<DhSectionPos, Integer> map = new HashMap<>();
-		for (DhSectionPos pos : posList)
+		HashMap<Long, Integer> map = new HashMap<>();
+		for (long pos : posList)
 		{
 			map.put(pos,
 					// Loaded
@@ -401,12 +401,9 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 	// TODO may not be needed
 	private class GenTask implements IWorldGenTaskTracker
 	{
-		private final DhSectionPos pos;
+		private final long pos;
 		
-		public GenTask(DhSectionPos pos)
-		{
-			this.pos = pos;
-		}
+		public GenTask(long pos) { this.pos = pos; }
 		
 		
 		
@@ -433,7 +430,7 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 	public interface IOnWorldGenCompleteListener
 	{
 		/** Fired whenever a section has completed generating */
-		void onWorldGenTaskComplete(DhSectionPos pos);
+		void onWorldGenTaskComplete(long pos);
 		
 	}
 	

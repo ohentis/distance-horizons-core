@@ -24,7 +24,7 @@ package com.seibel.distanthorizons.api.enums.config;
  * VISUALLY_EQUAL <br><br>
  * 
  * @version 2024-3-27
- * @since API 1.1.0
+ * @since API 2.0.0
  */
 public enum EDhApiWorldCompressionMode
 {

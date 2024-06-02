@@ -42,13 +42,13 @@ import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.IWrapperFactory;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
+import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
 import org.apache.logging.log4j.Logger;
 
 import java.awt.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDebugRenderable
 {
@@ -58,9 +58,9 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 	private final IDhApiWorldGenerator generator;
 	
 	/** contains the positions that need to be generated */
-	private final ConcurrentHashMap<DhSectionPos, WorldGenTask> waitingTasks = new ConcurrentHashMap<>();
+	private final ConcurrentHashMap<Long, WorldGenTask> waitingTasks = new ConcurrentHashMap<>();
 	
-	private final ConcurrentHashMap<DhSectionPos, InProgressWorldGenTaskGroup> inProgressGenTasksByLodPos = new ConcurrentHashMap<>();
+	private final ConcurrentHashMap<Long, InProgressWorldGenTaskGroup> inProgressGenTasksByLodPos = new ConcurrentHashMap<>();
 	
 	// granularity is the detail level for batching world generator requests together
 	public final byte maxGranularity;
@@ -89,8 +89,8 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 	// debug variables to test for duplicate world generator requests //
 	/** limits how many of the previous world gen requests we should track */
 	private static final int MAX_ALREADY_GENERATED_COUNT = 100;
-	private final HashMap<DhSectionPos, StackTraceElement[]> alreadyGeneratedPosHashSet = new HashMap<>(MAX_ALREADY_GENERATED_COUNT);
-	private final Queue<DhSectionPos> alreadyGeneratedPosQueue = new LinkedList<>();
+	private final HashMap<Long, StackTraceElement[]> alreadyGeneratedPosHashSet = new HashMap<>(MAX_ALREADY_GENERATED_COUNT);
+	private final LongArrayFIFOQueue alreadyGeneratedPosQueue = new LongArrayFIFOQueue();
 	
 	/** just used for rendering to the F3 menu */
 	private int estimatedTotalTaskCount = 0;
@@ -131,7 +131,7 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 	//=================//
 	
 	@Override
-	public CompletableFuture<WorldGenResult> submitGenTask(DhSectionPos pos, byte requiredDataDetail, IWorldGenTaskTracker tracker)
+	public CompletableFuture<WorldGenResult> submitGenTask(long pos, byte requiredDataDetail, IWorldGenTaskTracker tracker)
 	{
 		// the generator is shutting down, don't add new tasks
 		if (this.generatorClosingFuture != null)
@@ -151,7 +151,7 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 		}
 		
 		// Assert that the data at least can fill in 1 single ChunkSizedFullDataAccessor
-		LodUtil.assertTrue(pos.getDetailLevel() > requiredDataDetail + LodUtil.CHUNK_DETAIL_LEVEL);
+		LodUtil.assertTrue(DhSectionPos.getDetailLevel(pos) > requiredDataDetail + LodUtil.CHUNK_DETAIL_LEVEL);
 		
 		
 		CompletableFuture<WorldGenResult> future = new CompletableFuture<>();
@@ -160,11 +160,11 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 	}
 	
 	@Override
-	public void removeRetrievalRequestIf(Function<DhSectionPos, Boolean> removeIf)
+	public void removeRetrievalRequestIf(DhSectionPos.ICancelablePrimitiveLongConsumer removeIf)
 	{
 		this.waitingTasks.forEachKey(100, (genPos) -> 
 		{
-			if (removeIf.apply(genPos))
+			if (removeIf.accept(genPos))
 			{
 				this.waitingTasks.remove(genPos);
 			}
@@ -254,7 +254,7 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 		
 		
 		Mapper closestTaskMap = this.waitingTasks.reduceEntries(1024,
-				entry -> new Mapper(entry.getValue(), entry.getValue().pos.getSectionBBoxPos().getCenterBlockPos().toPos2D().chebyshevDist(targetPos.toPos2D())),
+				entry -> new Mapper(entry.getValue(), DhSectionPos.getSectionBBoxPos(entry.getValue().pos).getCenterBlockPos().toPos2D().chebyshevDist(targetPos.toPos2D())),
 				(aMapper, bMapper) -> aMapper.dist < bMapper.dist ? aMapper : bMapper);
 		
 		if (closestTaskMap == null)
@@ -307,14 +307,14 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 			
 			// split up the task and add each one to the tree
 			LinkedList<CompletableFuture<WorldGenResult>> childFutures = new LinkedList<>();
-			DhSectionPos sectionPos = new DhSectionPos(closestTask.pos.getDetailLevel(), closestTask.pos.getX(), closestTask.pos.getZ());
+			long sectionPos = closestTask.pos;
 			WorldGenTask finalClosestTask = closestTask;
-			sectionPos.forEachChild((childDhSectionPos) ->
+			DhSectionPos.forEachChild(sectionPos, (childDhSectionPos) ->
 			{
 				CompletableFuture<WorldGenResult> newFuture = new CompletableFuture<>();
 				childFutures.add(newFuture);
 				
-				WorldGenTask newGenTask = new WorldGenTask(childDhSectionPos, childDhSectionPos.getDetailLevel(), finalClosestTask.taskTracker, newFuture);
+				WorldGenTask newGenTask = new WorldGenTask(childDhSectionPos, DhSectionPos.getDetailLevel(childDhSectionPos), finalClosestTask.taskTracker, newFuture);
 				this.waitingTasks.put(newGenTask.pos, newGenTask);
 			});
 			
@@ -329,12 +329,12 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 	private boolean tryStartingWorldGenTaskGroup(InProgressWorldGenTaskGroup newTaskGroup)
 	{
 		byte taskDetailLevel = newTaskGroup.group.dataDetail;
-		DhSectionPos taskPos = newTaskGroup.group.pos;
-		byte granularity = (byte) (taskPos.getDetailLevel() - taskDetailLevel);
+		long taskPos = newTaskGroup.group.pos;
+		byte granularity = (byte) (DhSectionPos.getDetailLevel(taskPos) - taskDetailLevel);
 		LodUtil.assertTrue(granularity >= this.minGranularity && granularity <= this.maxGranularity);
 		LodUtil.assertTrue(taskDetailLevel >= this.highestDataDetail && taskDetailLevel <= this.lowestDataDetail);
 		
-		DhChunkPos chunkPosMin = new DhChunkPos(taskPos.getSectionBBoxPos().getCornerBlockPos());
+		DhChunkPos chunkPosMin = new DhChunkPos(DhSectionPos.getSectionBBoxPos(taskPos).getCornerBlockPos());
 		
 		// check if this is a duplicate generation task
 		if (this.alreadyGeneratedPosHashSet.containsKey(newTaskGroup.group.pos))
@@ -343,16 +343,16 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 			//LOGGER.trace("Duplicate generation section " + taskPos + " with granularity [" + granularity + "] at " + chunkPosMin + ". Skipping...");
 			
 			// sending a success result is necessary to make sure the render sections are reloaded correctly 
-			newTaskGroup.group.worldGenTasks.forEach(worldGenTask -> worldGenTask.future.complete(WorldGenResult.CreateSuccess(new DhSectionPos(granularity, taskPos.getX(), taskPos.getZ()))));
+			newTaskGroup.group.worldGenTasks.forEach(worldGenTask -> worldGenTask.future.complete(WorldGenResult.CreateSuccess(DhSectionPos.encode(granularity, DhSectionPos.getX(taskPos), DhSectionPos.getZ(taskPos)))));
 			return false;
 		}
 		this.alreadyGeneratedPosHashSet.put(newTaskGroup.group.pos, Thread.currentThread().getStackTrace());
-		this.alreadyGeneratedPosQueue.add(newTaskGroup.group.pos);
+		this.alreadyGeneratedPosQueue.enqueue(newTaskGroup.group.pos);
 		
 		// remove extra tracked duplicate positions
 		while (this.alreadyGeneratedPosQueue.size() > MAX_ALREADY_GENERATED_COUNT)
 		{
-			DhSectionPos posToRemove = this.alreadyGeneratedPosQueue.poll();
+			long posToRemove = this.alreadyGeneratedPosQueue.dequeueLong();
 			this.alreadyGeneratedPosHashSet.remove(posToRemove);
 		}
 		
@@ -380,8 +380,7 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 				}
 				else
 				{
-					//LOGGER.info("Section generation at "+pos+" completed");
-					newTaskGroup.group.worldGenTasks.forEach(worldGenTask -> worldGenTask.future.complete(WorldGenResult.CreateSuccess(new DhSectionPos(granularity, taskPos.getX(), taskPos.getZ()))));
+					newTaskGroup.group.worldGenTasks.forEach(worldGenTask -> worldGenTask.future.complete(WorldGenResult.CreateSuccess(DhSectionPos.encode(granularity, DhSectionPos.getX(taskPos), DhSectionPos.getZ(taskPos)))));
 				}
 				boolean worked = this.inProgressGenTasksByLodPos.remove(taskPos, newTaskGroup);
 				LodUtil.assertTrue(worked);
@@ -624,9 +623,9 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 	// helper methods //
 	//================//
 	
-	private boolean canGeneratePos(byte worldGenTaskGroupDetailLevel /*when in doubt use 0*/ , DhSectionPos taskPos)
+	private boolean canGeneratePos(byte worldGenTaskGroupDetailLevel /*when in doubt use 0*/ , long taskPos)
 	{
-		byte granularity = (byte) (taskPos.getDetailLevel() - worldGenTaskGroupDetailLevel);
+		byte granularity = (byte) (DhSectionPos.getDetailLevel(taskPos) - worldGenTaskGroupDetailLevel);
 		return (granularity >= this.minGranularity && granularity <= this.maxGranularity);
 	}
 	

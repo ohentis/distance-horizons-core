@@ -123,7 +123,7 @@ public class DhApi
 		
 		/** 
 		 * Used to create wrappers for Minecraft objects needed by other Distant Horizons API methods.
-		 * @since API 1.1.0
+		 * @since API 2.0.0
 		 */
 		public static IDhApiWrapperFactory wrapperFactory = null;
 		
@@ -198,7 +198,7 @@ public class DhApi
 	
 	/**
 	 * Returns true if the thread this method was called from is owned by Distant Horizons.
-	 * @since API 1.1.0
+	 * @since API 2.0.0
 	 */
 	public static boolean isDhThread() { return Thread.currentThread().getName().startsWith(ModInfo.THREAD_NAME_PREFIX); }
 	

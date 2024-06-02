@@ -29,7 +29,7 @@ import com.seibel.distanthorizons.coreapi.util.math.Mat4f;
  * 
  * @author James Seibel
  * @version 2024-2-6
- * @since API 1.1.0
+ * @since API 2.0.0
  */
 public interface IDhApiCullingFrustum extends IDhApiOverrideable
 {

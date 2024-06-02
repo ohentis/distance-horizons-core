@@ -492,6 +492,17 @@ public class ClientApi
 		}
 		finally
 		{
+			try
+			{
+				// these tasks always need to be called, regardless of whether the renderer is enabled or not to prevent memory leaks
+				GLProxy.getInstance().runRenderThreadTasks();
+			}
+			catch (Exception e)
+			{
+				LOGGER.error("Unexpected issue running render thread tasks.", e);
+			}
+			
+			
 			profiler.pop(); // end LOD
 			profiler.push("terrain"); // go back into "terrain"
 		}

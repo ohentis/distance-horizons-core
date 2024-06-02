@@ -30,7 +30,7 @@ import com.seibel.distanthorizons.coreapi.util.MathUtil;
  *
  * @author Leonardo Amato
  * @version 2024-4-6
- * @since API 1.1.0
+ * @since API 2.0.0
  */
 public enum EDhApiVerticalQuality
 {

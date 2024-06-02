@@ -3,7 +3,6 @@ package com.seibel.distanthorizons.core.file;
 import com.seibel.distanthorizons.api.enums.EDhApiDetailLevel;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.level.IDhLevel;
-import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.sql.dto.IBaseDTO;
 
 /**
@@ -13,9 +12,9 @@ import com.seibel.distanthorizons.core.sql.dto.IBaseDTO;
  * 
  * @param <TDhLevel> there are times when we need specifically a client level vs a more generic level
  */
-public interface IDataSource<TDhLevel extends IDhLevel> extends IBaseDTO<DhSectionPos>, AutoCloseable
+public interface IDataSource<TDhLevel extends IDhLevel> extends IBaseDTO<Long>, AutoCloseable
 {
-	DhSectionPos getPos();
+	Long getPos();
 	
 	/** @return true if the data was changed */
 	boolean update(FullDataSourceV2 chunkData, TDhLevel level);

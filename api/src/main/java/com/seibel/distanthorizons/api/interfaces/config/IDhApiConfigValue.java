@@ -47,7 +47,7 @@ public interface IDhApiConfigValue<T>
 	 * Returns the value of the config if it was set by the API.
 	 * Returns null if the config hasn't been set by the API.
 	 * 
-	 * @since API 1.1.0
+	 * @since API 2.0.0
 	 */
 	T getApiValue();
 	
@@ -68,7 +68,7 @@ public interface IDhApiConfigValue<T>
 	 * use the value set in the config menu.
 	 * 
 	 * @return true if the value was set, false otherwise.
-	 * @since API 1.1.0
+	 * @since API 2.0.0
 	 */
 	boolean clearValue();
 	

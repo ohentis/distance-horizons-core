@@ -20,7 +20,6 @@
 package com.seibel.distanthorizons.core.generation.tasks;
 
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
-import com.seibel.distanthorizons.core.pos.DhSectionPos;
 
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -33,14 +32,14 @@ import java.util.function.Consumer;
 @Deprecated // TODO look into how these are used and if they should continue to be used
 public final class WorldGenTaskGroup
 {
-	public final DhSectionPos pos;
+	public final long pos;
 	public byte dataDetail;
 	/** Only accessed by the generator polling thread */
 	public final LinkedList<WorldGenTask> worldGenTasks = new LinkedList<>();
 	
 	
 	
-	public WorldGenTaskGroup(DhSectionPos pos, byte dataDetail)
+	public WorldGenTaskGroup(long pos, byte dataDetail)
 	{
 		this.pos = pos;
 		this.dataDetail = dataDetail;

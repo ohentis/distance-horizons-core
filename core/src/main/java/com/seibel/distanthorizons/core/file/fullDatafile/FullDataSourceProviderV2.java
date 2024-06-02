@@ -38,6 +38,7 @@ import com.seibel.distanthorizons.core.util.ThreadUtil;
 import com.seibel.distanthorizons.core.util.objects.DataCorruptedException;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
@@ -51,7 +52,6 @@ import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -100,7 +100,7 @@ public class FullDataSourceProviderV2
 	 * Tracks which positions are currently being updated
 	 * to prevent duplicate concurrent updates.
 	 */
-	public final Set<DhSectionPos> parentUpdatingPosSet = ConcurrentHashMap.newKeySet();
+	public final Set<Long> parentUpdatingPosSet = ConcurrentHashMap.newKeySet();
 	
 	// TODO only run thread if modifications happened recently
 	/**
@@ -175,10 +175,10 @@ public class FullDataSourceProviderV2
 	{ return dto.createPooledDataSource(this.level.getLevelWrapper()); }
 	
 	@Override
-	protected FullDataSourceV2 makeEmptyDataSource(DhSectionPos pos) { return FullDataSourceV2.DATA_SOURCE_POOL.getPooledSource(pos, true); }
+	protected FullDataSourceV2 makeEmptyDataSource(long pos) { return FullDataSourceV2.DATA_SOURCE_POOL.getPooledSource(pos, true); }
 	
 	@Nullable
-	public Long getTimestampForPos(DhSectionPos pos)
+	public Long getTimestampForPos(long pos)
 	{
 		try
 		{
@@ -189,9 +189,9 @@ public class FullDataSourceProviderV2
 							"AND PosX = ? " +
 							"AND PosZ = ?;"
 			);
-			preparedStatement.setInt(1, pos.getDetailLevel() - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
-			preparedStatement.setInt(2, pos.getX());
-			preparedStatement.setInt(3, pos.getZ());
+			preparedStatement.setInt(1, DhSectionPos.getDetailLevel(pos) - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
+			preparedStatement.setInt(2, DhSectionPos.getX(pos));
+			preparedStatement.setInt(3, DhSectionPos.getZ(pos));
 			
 			List<Map<String, Object>> row = this.repo.query(preparedStatement);
 			return !row.isEmpty() ? (Long) row.get(0).get("LastModifiedUnixDateTime") : null;
@@ -201,9 +201,9 @@ public class FullDataSourceProviderV2
 			throw new RuntimeException(e);
 		}
 	}
-	public Map<DhSectionPos, Long> getTimestampsForRange(DhSectionPos start, DhSectionPos end)
+	public Map<Long, Long> getTimestampsForRange(long startPos, long endPos)
 	{
-		if (start.getDetailLevel() != end.getDetailLevel())
+		if (DhSectionPos.getDetailLevel(startPos) != DhSectionPos.getDetailLevel(endPos))
 		{
 			throw new IllegalArgumentException("Start and end must have the same detail level");
 		}
@@ -217,14 +217,14 @@ public class FullDataSourceProviderV2
 							"AND PosX BETWEEN ? AND ? " +
 							"AND PosZ BETWEEN ? AND ?;"
 			);
-			preparedStatement.setInt(1, start.getDetailLevel() - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
-			preparedStatement.setInt(2, start.getX());
-			preparedStatement.setInt(3, end.getX());
-			preparedStatement.setInt(4, start.getZ());
-			preparedStatement.setInt(5, end.getZ());
+			preparedStatement.setInt(1, DhSectionPos.getDetailLevel(startPos) - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
+			preparedStatement.setInt(2, DhSectionPos.getX(startPos));
+			preparedStatement.setInt(3, DhSectionPos.getX(endPos));
+			preparedStatement.setInt(4, DhSectionPos.getZ(startPos));
+			preparedStatement.setInt(5, DhSectionPos.getZ(endPos));
 			
 			return this.repo.query(preparedStatement).stream().collect(Collectors.toMap(
-					row -> new DhSectionPos(start.getDetailLevel(), (int) row.get("PosX"), (int) row.get("PosZ")),
+					row -> DhSectionPos.encode(DhSectionPos.getDetailLevel(startPos), (int) row.get("PosX"), (int) row.get("PosZ")),
 					row -> (long) row.get("LastModifiedUnixDateTime"))
 			);
 		}
@@ -261,13 +261,13 @@ public class FullDataSourceProviderV2
 						&& this.parentUpdatingPosSet.size() < MAX_UPDATE_TASK_COUNT)
 				{
 					// get the positions that need to be applied to their parents
-					ArrayList<DhSectionPos> parentUpdatePosList = this.repo.getPositionsToUpdate(MAX_UPDATE_TASK_COUNT);
+					LongArrayList parentUpdatePosList = this.repo.getPositionsToUpdate(MAX_UPDATE_TASK_COUNT);
 					
 					// combine updates together based on their parent
-					HashMap<DhSectionPos, HashSet<DhSectionPos>> updatePosByParentPos = new HashMap<>();
-					for (DhSectionPos pos : parentUpdatePosList)
+					HashMap<Long, HashSet<Long>> updatePosByParentPos = new HashMap<>();
+					for (Long pos : parentUpdatePosList)
 					{
-						updatePosByParentPos.compute(pos.getParentPos(), (parentPos, updatePosSet) ->
+						updatePosByParentPos.compute(DhSectionPos.getParentPos(pos), (parentPos, updatePosSet) ->
 						{
 							if (updatePosSet == null)
 							{
@@ -279,7 +279,7 @@ public class FullDataSourceProviderV2
 					}
 					
 					// queue the updates
-					for (DhSectionPos parentUpdatePos : updatePosByParentPos.keySet())
+					for (Long parentUpdatePos : updatePosByParentPos.keySet())
 					{
 						// stop if there are already a bunch of updates queued
 						if (this.parentUpdatingPosSet.size() > MAX_UPDATE_TASK_COUNT
@@ -306,7 +306,7 @@ public class FullDataSourceProviderV2
 										this.lockedPosSet.add(parentUpdatePos);
 										
 										// apply each child pos to the parent
-										for (DhSectionPos childPos : updatePosByParentPos.get(parentUpdatePos))
+										for (Long childPos : updatePosByParentPos.get(parentUpdatePos))
 										{
 											ReentrantLock childReadLock = this.updateLockProvider.getLock(childPos);
 											try
@@ -491,7 +491,7 @@ public class FullDataSourceProviderV2
 					}
 					catch (Exception e)
 					{
-						DhSectionPos migrationPos = legacyDataSource.getPos();
+						Long migrationPos = legacyDataSource.getPos();
 						LOGGER.warn("Unexpected issue migrating data source at pos " + migrationPos + ". Error: " + e.getMessage(), e);
 						this.legacyFileHandler.markMigrationFailed(migrationPos);
 					}
@@ -623,18 +623,18 @@ public class FullDataSourceProviderV2
 	 * an empty array if all positions were generated
 	 */
 	@Nullable
-	public ArrayList<DhSectionPos> getPositionsToRetrieve(DhSectionPos pos) { return null; }
+	public LongArrayList getPositionsToRetrieve(Long pos) { return null; }
 	/**
 	 * Returns how many positions could potentially be generated for this position assuming the position is empty.
 	 * Used when estimating the total number of retrieval requests.
 	 */
-	public int getMaxPossibleRetrievalPositionCountForPos(DhSectionPos pos) { return -1; }
+	public int getMaxPossibleRetrievalPositionCountForPos(Long pos) { return -1; }
 	
 	/** @return true if the position was queued, false if not */
-	public boolean queuePositionForRetrieval(DhSectionPos genPos) { return false; }
+	public boolean queuePositionForRetrieval(Long genPos) { return false; }
 	
 	/** does nothing if the given position isn't present in the queue */
-	public void removeRetrievalRequestIf(Function<DhSectionPos, Boolean> removeIf) { }
+	public void removeRetrievalRequestIf(DhSectionPos.ICancelablePrimitiveLongConsumer removeIf) { }
 	
 	public void clearRetrievalQueue() { }
 	
@@ -648,7 +648,7 @@ public class FullDataSourceProviderV2
 	 */
 	public int getUnsavedDataSourceCount() { return -1; }
 	
-	public boolean fileExists(DhSectionPos pos) { return this.repo.getDataSizeInBytes(pos) > 0; }
+	public boolean fileExists(long pos) { return this.repo.getDataSizeInBytes(pos) > 0; }
 	
 	
 	//===========//

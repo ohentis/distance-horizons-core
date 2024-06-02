@@ -59,7 +59,7 @@ public class ColumnRenderSource implements IDataSource<IDhClientLevel>
 	
 	/** will be zero if an empty data source was created */
 	public int verticalDataCount;
-	public DhSectionPos pos;
+	public long pos;
 	public int yOffset;
 	
 	public LongArrayList renderDataContainer;
@@ -77,11 +77,11 @@ public class ColumnRenderSource implements IDataSource<IDhClientLevel>
 	//==============//
 	
 	/** 
-	 * This is separate from {@link DataSourcePool#getPooledSource(DhSectionPos, boolean)} 
+	 * This is separate from {@link DataSourcePool#getPooledSource(long, boolean)} 
 	 * because we need to pass in a couple extra values, 
 	 * specifically maxVerticalSize and yOffset.
 	 */
-	public static ColumnRenderSource getPooledRenderSource(DhSectionPos pos, int maxVerticalSize, int yOffset, boolean clearData)
+	public static ColumnRenderSource getPooledRenderSource(long pos, int maxVerticalSize, int yOffset, boolean clearData)
 	{
 		ColumnRenderSource renderSource = DATA_SOURCE_POOL.getPooledSource(pos);
 		
@@ -109,14 +109,14 @@ public class ColumnRenderSource implements IDataSource<IDhClientLevel>
 	}
 	
 	
-	private static ColumnRenderSource createEmptyRenderSource(DhSectionPos sectionPos) { return new ColumnRenderSource(sectionPos, 0, 0); }
+	private static ColumnRenderSource createEmptyRenderSource(long sectionPos) { return new ColumnRenderSource(sectionPos, 0, 0); }
 	/**
 	 * Creates an empty ColumnRenderSource.
 	 *
 	 * @param pos the relative position of the container
 	 * @param maxVerticalSize the maximum vertical size of the container
 	 */
-	private ColumnRenderSource(DhSectionPos pos, int maxVerticalSize, int yOffset)
+	private ColumnRenderSource(long pos, int maxVerticalSize, int yOffset)
 	{
 		this.verticalDataCount = maxVerticalSize;
 		this.renderDataContainer = new LongArrayList(new long[SECTION_SIZE * SECTION_SIZE * this.verticalDataCount]);
@@ -155,7 +155,7 @@ public class ColumnRenderSource implements IDataSource<IDhClientLevel>
 		final String errorMessagePrefix = "Unable to complete update for RenderSource pos: [" + this.pos + "] and pos: [" + inputFullDataSource.getPos() + "]. Error:";
 		
 		boolean dataChanged = false;
-		if (inputFullDataSource.getPos().getDetailLevel() == this.pos.getDetailLevel())
+		if (DhSectionPos.getDetailLevel(inputFullDataSource.getPos()) == DhSectionPos.getDetailLevel(this.pos))
 		{
 			try
 			{
@@ -167,8 +167,8 @@ public class ColumnRenderSource implements IDataSource<IDhClientLevel>
 				
 				
 				
-				DhBlockPos2D centerBlockPos = inputFullDataSource.getPos().getCenterBlockPos();
-				int halfBlockWidth = inputFullDataSource.getPos().getBlockWidth() / 2;
+				DhBlockPos2D centerBlockPos = DhSectionPos.getCenterBlockPos(inputFullDataSource.getPos());
+				int halfBlockWidth = DhSectionPos.getBlockWidth(inputFullDataSource.getPos()) / 2;
 				DhBlockPos2D minBlockPos = new DhBlockPos2D(centerBlockPos.x - halfBlockWidth, centerBlockPos.z - halfBlockWidth);
 				
 				for (int x = 0; x < FullDataSourceV2.WIDTH; x++)
@@ -215,11 +215,11 @@ public class ColumnRenderSource implements IDataSource<IDhClientLevel>
 	// data helper methods //
 	//=====================//
 	
-	public DhSectionPos getPos() { return this.pos; }
+	public Long getPos() { return this.pos; }
 	@Override
-	public DhSectionPos getKey() { return this.pos; }
+	public Long getKey() { return this.pos; }
 	
-	public byte getDataDetailLevel() { return (byte) (this.pos.getDetailLevel() - SECTION_SIZE_OFFSET); }
+	public byte getDataDetailLevel() { return (byte) (DhSectionPos.getDetailLevel(this.pos) - SECTION_SIZE_OFFSET); }
 	
 	public boolean isEmpty() { return this.isEmpty; }
 	public void markNotEmpty() { this.isEmpty = false; }

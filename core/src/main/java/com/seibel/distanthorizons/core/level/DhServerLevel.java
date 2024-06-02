@@ -36,7 +36,6 @@ import com.seibel.distanthorizons.core.network.plugin.PluginChannelMessage;
 import com.seibel.distanthorizons.core.network.plugin.PluginChannelSession;
 import com.seibel.distanthorizons.core.network.plugin.TrackableMessage;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
-import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
@@ -368,7 +367,7 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 	}
 	
 	@Override
-	public void onWorldGenTaskComplete(DhSectionPos pos)
+	public void onWorldGenTaskComplete(long pos)
 	{
 		IncompleteDataSourceEntry entry = this.incompleteDataSources.get(pos);
 		if (entry != null)

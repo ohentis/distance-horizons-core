@@ -178,7 +178,7 @@ public class LodRenderProgram extends ShaderProgram implements IDhApiShaderProgr
 		setUniform(mircoOffsetUniform, 0.01f); // 0.01 block offset
 		
 		// setUniform(skyLightUniform, skyLight);
-		setUniform(lightMapUniform, renderParameters.lightmapBindingIndex);
+		setUniform(lightMapUniform, 0); // TODO this should probably be passed in
 		
 		if (worldYOffsetUniform != -1) setUniform(worldYOffsetUniform, (float) renderParameters.worldYOffset);
 		

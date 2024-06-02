@@ -106,6 +106,7 @@ public class Config
 		
 		public static ConfigEntry<Boolean> optionsButton = new ConfigEntry.Builder<Boolean>()
 				.set(true)
+				.setAppearance(EConfigEntryAppearance.ONLY_IN_FILE)
 				.comment("" +
 						"Should Distant Horizon's config button appear in the options screen next to fov slider?")
 				.build();
@@ -1350,6 +1351,11 @@ public class Config
 					public static ConfigEntry<Boolean> showRenderSectionStatus = new ConfigEntry.Builder<Boolean>()
 							.set(false)
 							.comment("Render LOD section status?")
+							.build();
+					
+					public static ConfigEntry<Boolean> showQuadTreeRenderStatus = new ConfigEntry.Builder<Boolean>()
+							.set(false)
+							.comment("Render Quad Tree Rendering status?")
 							.build();
 					
 					public static ConfigEntry<Boolean> showFullDataUpdateStatus = new ConfigEntry.Builder<Boolean>()

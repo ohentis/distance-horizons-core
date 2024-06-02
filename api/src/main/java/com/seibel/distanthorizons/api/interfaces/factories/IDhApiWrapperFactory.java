@@ -31,7 +31,7 @@ import java.io.IOException;
  *
  * @author James Seibel
  * @version 2023-12-16
- * @since API 1.1.0
+ * @since API 2.0.0
  */
 public interface IDhApiWrapperFactory
 {
@@ -50,7 +50,7 @@ public interface IDhApiWrapperFactory
 	 * @throws ClassCastException if any of the given parameters is of the wrong type. 
 	 * If thrown the error message will contain the list of expected object types in order. 
 	 * 
-	 * @since API 1.1.0
+	 * @since API 2.0.0
 	 */
 	IDhApiBiomeWrapper getBiomeWrapper(Object[] objectArray, IDhApiLevelWrapper levelWrapper) throws ClassCastException;
 	
@@ -67,13 +67,13 @@ public interface IDhApiWrapperFactory
 	 * @throws ClassCastException if any of the given parameters is of the wrong type. 
 	 * If thrown the error message will contain the list of expected object types in order. 
 	 * 
-	 * @since API 1.1.0
+	 * @since API 2.0.0
 	 */
 	IDhApiBlockStateWrapper getBlockStateWrapper(Object[] objectArray, IDhApiLevelWrapper levelWrapper) throws ClassCastException;
 	
 	/**
 	 * Returns the {@link IDhApiBlockStateWrapper} representing air.
-	 * @since API 1.1.0
+	 * @since API 2.0.0
 	 */
 	IDhApiBlockStateWrapper getAirBlockStateWrapper();
 	
