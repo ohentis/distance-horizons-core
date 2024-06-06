@@ -1,5 +1,6 @@
 package com.seibel.distanthorizons.core.network.messages.plugin;
 
+import com.google.common.base.MoreObjects;
 import com.seibel.distanthorizons.core.network.plugin.PluginChannelMessage;
 import io.netty.buffer.ByteBuf;
 
@@ -27,6 +28,15 @@ public class CurrentLevelKeyMessage extends PluginChannelMessage
 	{
 		this.levelKey = this.readString(in);
 		this.deleteExistingData = in.readBoolean();
+	}
+	
+	
+	@Override
+	public MoreObjects.ToStringHelper toStringHelper()
+	{
+		return super.toStringHelper()
+				.add("levelKey", this.levelKey)
+				.add("deleteExistingData", this.deleteExistingData);
 	}
 	
 }

@@ -51,6 +51,7 @@ public class PluginChannelSession extends NetworkEventSource
 		
 		try
 		{
+			LOGGER.debug("Received message: " + message);
 			this.handleMessage(message);
 		}
 		catch (Throwable e)

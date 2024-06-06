@@ -1,5 +1,6 @@
 package com.seibel.distanthorizons.core.network.plugin;
 
+import com.google.common.base.MoreObjects;
 import com.seibel.distanthorizons.core.network.protocol.INetworkObject;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 
@@ -23,4 +24,17 @@ public abstract class PluginChannelMessage implements INetworkObject
 		}
 		this.session = connection;
 	}
+	
+	
+	@Override
+	public String toString()
+	{
+		return this.toStringHelper().toString();
+	}
+	
+	public MoreObjects.ToStringHelper toStringHelper()
+	{
+		return MoreObjects.toStringHelper(this);
+	}
+	
 }

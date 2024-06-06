@@ -204,12 +204,6 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 		
 		if (this.worldGenModule.isWorldGenRunning())
 		{
-			ClientLevelModule.ClientRenderState renderState = this.clientside.ClientRenderStateRef.get();
-			if (renderState != null && renderState.quadtree != null)
-			{
-				this.dataFileHandler.removeRetrievalRequestIf(p -> !renderState.quadtree.isSectionPosInBounds(p));
-			}
-			
 			this.worldGenModule.worldGenTick(
 					new DhBlockPos2D(MC_CLIENT.getPlayerBlockPos())
 							.scale(MC_CLIENT.getWrappedClientLevel().getDimensionType().getTeleportationScale(this.getLevelWrapper().getDimensionType()))

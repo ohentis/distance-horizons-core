@@ -41,18 +41,4 @@ public class MultiplayerConfig extends AbstractMultiplayerConfig
 		this.loginDataSyncRCLimit = in.readInt();
 	}
 	
-	@Override
-	public String toString()
-	{
-		return "MultiplayerConfig{" +
-				"renderDistanceRadius=" + this.renderDistanceRadius +
-				", distantGenerationEnabled=" + this.distantGenerationEnabled +
-				", fullDataRequestConcurrencyLimit=" + this.fullDataRequestConcurrencyLimit +
-				", genTaskPriorityRequestRateLimit=" + this.genTaskPriorityRequestRateLimit +
-				", realTimeUpdatesEnabled=" + this.realTimeUpdatesEnabled +
-				", loginDataSyncEnabled=" + this.loginDataSyncEnabled +
-				", loginDataSyncRCLimit=" + this.loginDataSyncRCLimit +
-				'}';
-	}
-	
 }

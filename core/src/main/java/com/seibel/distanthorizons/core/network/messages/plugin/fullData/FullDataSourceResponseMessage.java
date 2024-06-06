@@ -19,6 +19,7 @@
 
 package com.seibel.distanthorizons.core.network.messages.plugin.fullData;
 
+import com.google.common.base.MoreObjects;
 import com.seibel.distanthorizons.api.enums.config.EDhApiDataCompressionMode;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
@@ -69,6 +70,14 @@ public class FullDataSourceResponseMessage extends TrackableMessage
 	public void decode0(ByteBuf in)
 	{
 		this.dataSourceDto = this.readOptional(in, () -> INetworkObject.decodeToInstance(new FullDataSourceV2DTO(), in));
+	}
+	
+	
+	@Override
+	public MoreObjects.ToStringHelper toStringHelper()
+	{
+		return super.toStringHelper()
+				.add("dataSourceDto", this.dataSourceDto);
 	}
 	
 }

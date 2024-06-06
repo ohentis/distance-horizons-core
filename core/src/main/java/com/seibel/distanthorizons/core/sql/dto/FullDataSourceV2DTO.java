@@ -19,6 +19,7 @@
 
 package com.seibel.distanthorizons.core.sql.dto;
 
+import com.google.common.base.MoreObjects;
 import com.seibel.distanthorizons.api.enums.config.EDhApiDataCompressionMode;
 import com.seibel.distanthorizons.api.enums.config.EDhApiWorldCompressionMode;
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
@@ -416,7 +417,24 @@ public class FullDataSourceV2DTO implements IBaseDTO<Long>, INetworkObject
 	@Override
 	public Long getKey() { return this.pos; }
 	
-	
+	@Override
+	public String toString()
+	{
+		return MoreObjects.toStringHelper(this)
+				.add("levelMinY", this.levelMinY)
+				.add("pos", this.pos)
+				.add("dataChecksum", this.dataChecksum)
+				.add("compressedDataByteArray", this.compressedDataByteArray)
+				.add("compressedColumnGenStepByteArray", this.compressedColumnGenStepByteArray)
+				.add("compressedWorldCompressionModeByteArray", this.compressedWorldCompressionModeByteArray)
+				.add("compressedMappingByteArray", this.compressedMappingByteArray)
+				.add("dataFormatVersion", this.dataFormatVersion)
+				.add("compressionModeValue", this.compressionModeValue)
+				.add("applyToParent", this.applyToParent)
+				.add("lastModifiedUnixDateTime", this.lastModifiedUnixDateTime)
+				.add("createdUnixDateTime", this.createdUnixDateTime)
+				.toString();
+	}
 	
 	//================//
 	// helper methods //

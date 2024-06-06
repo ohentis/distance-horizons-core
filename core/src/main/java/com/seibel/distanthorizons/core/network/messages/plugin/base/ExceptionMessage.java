@@ -19,6 +19,7 @@
 
 package com.seibel.distanthorizons.core.network.messages.plugin.base;
 
+import com.google.common.base.MoreObjects;
 import com.seibel.distanthorizons.core.network.exceptions.InvalidLevelException;
 import com.seibel.distanthorizons.core.network.exceptions.InvalidSectionPosException;
 import com.seibel.distanthorizons.core.network.exceptions.RateLimitedException;
@@ -60,6 +61,14 @@ public class ExceptionMessage extends TrackableMessage
 		int id = in.readInt();
 		String message = this.readString(in);
 		this.exception = exceptionMap.get(id).getDeclaredConstructor(String.class).newInstance(message);
+	}
+	
+	
+	@Override
+	public MoreObjects.ToStringHelper toStringHelper()
+	{
+		return super.toStringHelper()
+				.add("exception", this.exception);
 	}
 	
 }

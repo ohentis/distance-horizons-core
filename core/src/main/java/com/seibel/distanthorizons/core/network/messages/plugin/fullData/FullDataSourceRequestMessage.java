@@ -19,6 +19,7 @@
 
 package com.seibel.distanthorizons.core.network.messages.plugin.fullData;
 
+import com.google.common.base.MoreObjects;
 import com.seibel.distanthorizons.core.network.messages.plugin.ILevelRelatedMessage;
 import com.seibel.distanthorizons.core.network.plugin.TrackableMessage;
 import com.seibel.distanthorizons.core.network.protocol.INetworkObject;
@@ -67,5 +68,15 @@ public class FullDataSourceRequestMessage extends TrackableMessage implements IL
 		this.sectionPos = in.readLong();
 		this.clientTimestamp = this.readOptional(in, in::readLong);
     }
+	
+	
+	@Override
+	public MoreObjects.ToStringHelper toStringHelper()
+	{
+		return super.toStringHelper()
+				.add("levelName", this.levelName)
+				.add("sectionPos", this.sectionPos)
+				.add("clientTimestamp", this.clientTimestamp);
+	}
 	
 }

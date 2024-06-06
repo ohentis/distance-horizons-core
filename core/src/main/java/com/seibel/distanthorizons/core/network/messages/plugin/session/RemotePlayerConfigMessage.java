@@ -19,6 +19,7 @@
 
 package com.seibel.distanthorizons.core.network.messages.plugin.session;
 
+import com.google.common.base.MoreObjects;
 import com.seibel.distanthorizons.core.multiplayer.config.AbstractMultiplayerConfig;
 import com.seibel.distanthorizons.core.multiplayer.config.MultiplayerConfig;
 import com.seibel.distanthorizons.core.network.plugin.PluginChannelMessage;
@@ -37,5 +38,13 @@ public class RemotePlayerConfigMessage extends PluginChannelMessage
 	
 	@Override
 	public void decode(ByteBuf in) { this.payload = INetworkObject.decodeToInstance(new MultiplayerConfig(), in); }
+	
+	
+	@Override
+	public MoreObjects.ToStringHelper toStringHelper()
+	{
+		return super.toStringHelper()
+				.add("payload", this.payload);
+	}
 	
 }

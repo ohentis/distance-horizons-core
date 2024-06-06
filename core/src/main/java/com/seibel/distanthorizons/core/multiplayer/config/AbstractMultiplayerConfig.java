@@ -1,5 +1,6 @@
 package com.seibel.distanthorizons.core.multiplayer.config;
 
+import com.google.common.base.MoreObjects;
 import com.seibel.distanthorizons.core.network.protocol.INetworkObject;
 import io.netty.buffer.ByteBuf;
 
@@ -23,6 +24,21 @@ public abstract class AbstractMultiplayerConfig implements INetworkObject
 		out.writeBoolean(this.isRealTimeUpdatesEnabled());
 		out.writeBoolean(this.isLoginDataSyncEnabled());
 		out.writeInt(this.getLoginDataSyncRCLimit());
+	}
+	
+	
+	@Override
+	public String toString()
+	{
+		return MoreObjects.toStringHelper(this)
+				.add("renderDistanceRadius", this.getRenderDistanceRadius())
+				.add("distantGenerationEnabled", this.isDistantGenerationEnabled())
+				.add("fullDataRequestConcurrencyLimit", this.getFullDataRequestConcurrencyLimit())
+				.add("genTaskPriorityRequestRateLimit", this.getGenTaskPriorityRequestRateLimit())
+				.add("realTimeUpdatesEnabled", this.isRealTimeUpdatesEnabled())
+				.add("loginDataSyncEnabled", this.isLoginDataSyncEnabled())
+				.add("loginDataSyncRCLimit", this.getLoginDataSyncRCLimit())
+				.toString();
 	}
 	
 }

@@ -19,6 +19,7 @@
 
 package com.seibel.distanthorizons.core.network.plugin;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.collect.MapMaker;
 import com.seibel.distanthorizons.core.api.internal.SharedApi;
 import com.seibel.distanthorizons.core.network.messages.plugin.base.ExceptionMessage;
@@ -79,5 +80,12 @@ public abstract class TrackableMessage extends PluginChannelMessage
 	
 	protected abstract void encode0(ByteBuf out) throws Exception;
 	protected abstract void decode0(ByteBuf in) throws Exception;
+	
+	
+	@Override public MoreObjects.ToStringHelper toStringHelper()
+	{
+		return super.toStringHelper()
+				.add("futureId", this.futureId);
+	}
 	
 }

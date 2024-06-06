@@ -56,8 +56,6 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 	private final AtomicInteger failedRequests = new AtomicInteger();
 	private final ConfigEntry<Boolean> showDebugWireframeConfig;
 	
-	private final Set<Long> alreadyRequestedPositions = ConcurrentHashMap.newKeySet();
-	
 	private final SupplierBasedRateLimiter<Void> rateLimiter = new SupplierBasedRateLimiter<>(this::getRequestConcurrencyLimit);
 	
 	private final ScheduledExecutorService taskFinishScheduler = Executors.newScheduledThreadPool(1);
@@ -89,15 +87,6 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 	public CompletableFuture<Boolean> submitRequest(long sectionPos, @Nullable Long clientTimestamp, Consumer<FullDataSourceV2> chunkDataConsumer)
 	{
 		LodUtil.assertTrue(DhSectionPos.getDetailLevel(sectionPos) == DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL, "Only highest-detail sections are allowed.");
-		
-		// check if this is a duplicate task
-		if (this.alreadyRequestedPositions.contains(sectionPos))
-		{
-			// temporary solution to prevent requesting the same section multiple times
-			LOGGER.debug("Duplicate section " + sectionPos + ". Skipping...");
-			return CompletableFuture.completedFuture(false);
-		}
-		this.alreadyRequestedPositions.add(sectionPos);
 		
 		RequestQueueEntry entry = new RequestQueueEntry(chunkDataConsumer, clientTimestamp);
 		this.waitingTasks.put(sectionPos, entry);
@@ -141,12 +130,13 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 			
 			if (removeIf.accept(pos))
 			{
+				LOGGER.debug("Removing request  " + mapEntry.getKey() + "...");
+				
 				entry.future.cancel(false);
 				if (entry.request != null)
 				{
 					entry.request.cancel(false);
 				}
-				this.alreadyRequestedPositions.remove(pos);
 			}
 		}
 	}
@@ -183,7 +173,10 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 		long sectionPos = mapEntry.getKey();
 		RequestQueueEntry entry = mapEntry.getValue();
 		
-		CompletableFuture<FullDataSourceResponseMessage> request = this.networkState.getSession().sendRequest(new FullDataSourceRequestMessage(this.level.getLevelWrapper(), sectionPos, entry.updateTimestamp), FullDataSourceResponseMessage.class);
+		CompletableFuture<FullDataSourceResponseMessage> request = this.networkState.getSession().sendRequest(
+				new FullDataSourceRequestMessage(this.level.getLevelWrapper(), sectionPos, entry.updateTimestamp),
+				FullDataSourceResponseMessage.class
+		);
 		entry.request = request;
 		request.handleAsync((response, throwable) ->
 		{
@@ -192,12 +185,12 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 			
 			try
 			{
+				this.waitingTasks.remove(sectionPos);
+				
 				if (throwable != null)
 				{
 					throw throwable;
 				}
-				
-				this.waitingTasks.remove(sectionPos);
 				
 				if (response.dataSourceDto != null)
 				{
