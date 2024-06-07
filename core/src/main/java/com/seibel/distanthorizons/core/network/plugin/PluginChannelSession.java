@@ -51,7 +51,7 @@ public class PluginChannelSession extends NetworkEventSource
 		
 		try
 		{
-			LOGGER.debug("Received message: " + message);
+			LOGGER.debug("Received message: {}", message);
 			this.handleMessage(message);
 		}
 		catch (Throwable e)
@@ -72,7 +72,7 @@ public class PluginChannelSession extends NetworkEventSource
 	
 	public void sendMessage(PluginChannelMessage message)
 	{
-		LOGGER.debug("Sending message: " + message);
+		LOGGER.debug("Sending message: {}", message);
 		
 		Consumer<ByteBuf> encoder = buffer -> {
 			buffer.writeShort(ModInfo.PROTOCOL_VERSION);
