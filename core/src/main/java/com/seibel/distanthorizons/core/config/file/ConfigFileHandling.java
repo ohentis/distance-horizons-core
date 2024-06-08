@@ -265,7 +265,11 @@ public class ConfigFileHandling
 		)
 			return;
 		
-		nightConfig.setComment(entry.getNameWCategory(), " " + entry.getComment().replaceAll("\n", "\n ") + "\n ");
+		String comment = entry.getComment().replaceAll("\n", "\n ").trim();
+		// the new line makes it easier to read and separate configs
+		// the space makes sure the first word of a comment isn't directly in line with the "#" 
+		comment = "\n " + comment;
+		nightConfig.setComment(entry.getNameWCategory(), comment);
 	}
 	
 	
