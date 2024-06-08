@@ -1025,16 +1025,6 @@ public class Config
 								+ "")
 						.build();
 				
-				public static ConfigEntry<Boolean> gpuUploadAsync = new ConfigEntry.Builder<Boolean>()
-						.set(true)
-						.comment(""
-								+ "If true geometry data will be uploaded on a DH controlled thread, reducing FPS stuttering. \n"
-								+ "If false uploading will be done on Minecraft's main rendering thread. \n"
-								+ "\n"
-								+ "Setting this to false may reduce crashes or corrupted geometry on systems with an AMD GPU when Sodium is installed.\n"
-								+ "")
-						.build();
-				
 			}
 			
 			public static class AutoUpdater

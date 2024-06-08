@@ -22,7 +22,6 @@ package com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
-import com.seibel.distanthorizons.core.enums.EGLProxyContext;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
 import com.seibel.distanthorizons.core.render.glObject.GLProxy;
@@ -92,58 +91,36 @@ public class ColumnRenderBuffer implements AutoCloseable
 		LodUtil.assertTrue(Thread.currentThread().getName().startsWith(ThreadUtil.THREAD_NAME_PREFIX), "Buffer uploading needs to be done on a DH thread to prevent locking up any MC threads.");
 		
 		
-		// the async is relative to MC's render thread
-		boolean uploadAsync = Config.Client.Advanced.GpuBuffers.gpuUploadAsync.get();
-		if (uploadAsync)
+		// upload on MC's render thread
+		CompletableFuture<Void> uploadFuture = new CompletableFuture<>();
+		minecraftClient.executeOnRenderThread(() ->
 		{
-			// upload here on a DH thread
-			GLProxy glProxy = GLProxy.getInstance();
-			EGLProxyContext oldContext = glProxy.getGlContext();
-			glProxy.setGlContext(EGLProxyContext.LOD_BUILDER);
 			try
 			{
 				this.uploadBuffersUsingUploadMethod(builder, gpuUploadMethod);
+				uploadFuture.complete(null);
 			}
-			finally
+			catch (InterruptedException e)
 			{
-				glProxy.setGlContext(oldContext);
+				throw new CompletionException(e);
 			}
-		}
-		else
+		});
+		
+		
+		try
 		{
-			// upload on MC's render thread
-			CompletableFuture<Void> uploadFuture = new CompletableFuture<>();
-			minecraftClient.executeOnRenderThread(() ->
-			{
-				try
-				{
-					this.uploadBuffersUsingUploadMethod(builder, gpuUploadMethod);
-					uploadFuture.complete(null);
-				}
-				catch (InterruptedException e)
-				{
-					throw new CompletionException(e);
-				}
-			});
-			
-			
-			try
-			{
-				// wait for the upload to finish
-				uploadFuture.get(1000, TimeUnit.MILLISECONDS);
-			}
-			catch (ExecutionException e)
-			{
-				LOGGER.warn("Error uploading builder ["+builder+"] synchronously. Error: "+e.getMessage(), e);
-			}
-			catch (TimeoutException e)
-			{
-				// timeouts can be ignored because it generally means the
-				// MC Render thread executor was closed 
-				//LOGGER.warn("Error uploading builder ["+builder+"] synchronously. Error: "+e.getMessage(), e);
-			}
-			
-			
+			// wait for the upload to finish
+			uploadFuture.get(5_000, TimeUnit.MILLISECONDS);
+		}
+		catch (ExecutionException e)
+		{
+			LOGGER.warn("Error uploading builder ["+builder+"] synchronously. Error: "+e.getMessage(), e);
+		}
+		catch (TimeoutException e)
+		{
+			// timeouts can be ignored because it generally means the
+			// MC Render thread executor was closed 
+			//LOGGER.warn("Error uploading builder ["+builder+"] synchronously. Error: "+e.getMessage(), e);
 		}
 	}
 	private void uploadBuffersUsingUploadMethod(LodQuadBuilder builder, EDhApiGpuUploadMethod gpuUploadMethod) throws InterruptedException
@@ -403,7 +380,7 @@ public class ColumnRenderBuffer implements AutoCloseable
 			{
 				if (buffer != null)
 				{
-					buffer.destroy(false);
+					buffer.destroyAsync();
 				}
 			}
 			
@@ -411,7 +388,7 @@ public class ColumnRenderBuffer implements AutoCloseable
 			{
 				if (buffer != null)
 				{
-					buffer.destroy(false);
+					buffer.destroyAsync();
 				}
 			}
 		});

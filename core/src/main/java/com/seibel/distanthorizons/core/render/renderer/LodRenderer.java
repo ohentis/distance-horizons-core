@@ -849,7 +849,7 @@ public class LodRenderer
 				}
 				
 				if (this.quadIBO != null)
-					this.quadIBO.destroy(false);
+					this.quadIBO.destroyAsync();
 				
 				// Delete framebuffer, color texture, and depth texture
 				if (this.framebuffer != null && !this.usingMcFrameBuffer)

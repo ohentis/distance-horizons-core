@@ -20,7 +20,6 @@
 package com.seibel.distanthorizons.core.render.glObject.buffer;
 
 import com.seibel.distanthorizons.api.enums.config.EDhApiGpuUploadMethod;
-import com.seibel.distanthorizons.core.enums.EGLProxyContext;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.render.glObject.GLProxy;
 import com.seibel.distanthorizons.core.util.LodUtil;
@@ -94,9 +93,9 @@ public class GLBuffer implements AutoCloseable
 	
 	protected void create(boolean asBufferStorage)
 	{
-		if (GLProxy.getInstance().getGlContext() == EGLProxyContext.NONE)
+		if (!GLProxy.getInstance().runningOnRenderThread())
 		{
-			LodUtil.assertNotReach("Thread ["+Thread.currentThread()+"] tried to create a GLBuffer outside a OpenGL context.");
+			LodUtil.assertNotReach("Thread ["+Thread.currentThread()+"] tried to create a GLBuffer outside the MC render thread.");
 		}
 		
 		this.id = GL32.glGenBuffers();
@@ -109,7 +108,7 @@ public class GLBuffer implements AutoCloseable
 		
 	}
 	
-	protected void destroy(boolean async)
+	protected void destroyAsync()
 	{
 		if (this.id == 0)
 		{
@@ -117,40 +116,33 @@ public class GLBuffer implements AutoCloseable
 			return;
 		}
 		
-		destroyBufferId(async, this.id);
+		destroyBufferIdAsync(this.id);
 		
 		this.id = 0;
 		this.size = 0;
 	}
-	private static void destroyBufferId(boolean async, int id)
+	private static void destroyBufferIdAsync(int id)
 	{
-		EGLProxyContext glContext = GLProxy.getInstance().getGlContext();
-		if (async 
-			&& glContext != EGLProxyContext.PROXY_WORKER 
-			&& glContext != EGLProxyContext.MINECRAFT)
-		{
-			GLProxy.getInstance().queueRunningOnRenderThread(() -> destroyBufferId(false, id));
-		}
-		else
-		{
-			// remove the phantom references
-			if (BUFFER_ID_TO_PHANTOM.containsKey(id))
+		GLProxy.getInstance().queueRunningOnRenderThread(() -> 
 			{
-				Reference<? extends GLBuffer> phantom = BUFFER_ID_TO_PHANTOM.get(id);
-				PHANTOM_TO_BUFFER_ID.remove(phantom);
-				BUFFER_ID_TO_PHANTOM.remove(id);
-			}
-			
-			// destroy the buffer if it exists,
-			// the buffer may not exist if the destroy method is called twice
-			if (GL32.glIsBuffer(id))
-			{
-				GL32.glDeleteBuffers(id);
-				bufferCount.decrementAndGet();
+				// remove the phantom references
+				if (BUFFER_ID_TO_PHANTOM.containsKey(id))
+				{
+					Reference<? extends GLBuffer> phantom = BUFFER_ID_TO_PHANTOM.get(id);
+					PHANTOM_TO_BUFFER_ID.remove(phantom);
+					BUFFER_ID_TO_PHANTOM.remove(id);
+				}
 				
-				//LOGGER.info("destroyed buffer ["+id+"], remaining: ["+BUFFER_ID_TO_PHANTOM.size()+"]");
-			}
-		}
+				// destroy the buffer if it exists,
+				// the buffer may not exist if the destroy method is called twice
+				if (GL32.glIsBuffer(id))
+				{
+					GL32.glDeleteBuffers(id);
+					bufferCount.decrementAndGet();
+					
+					//LOGGER.info("destroyed buffer ["+id+"], remaining: ["+BUFFER_ID_TO_PHANTOM.size()+"]");
+				}
+			});
 	}
 	
 	
@@ -205,7 +197,7 @@ public class GLBuffer implements AutoCloseable
 		LodUtil.assertTrue(this.bufferStorage, "Buffer is not bufferStorage but its trying to use bufferStorage upload method!");
 		
 		int bbSize = bb.limit() - bb.position();
-		this.destroy(true);
+		this.destroyAsync();
 		this.create(true);
 		this.bind();
 		GL44.glBufferStorage(this.getBufferBindingTarget(), bb, bufferStorageHint);
@@ -293,7 +285,7 @@ public class GLBuffer implements AutoCloseable
 	//===========//
 	
 	@Override
-	public void close() { this.destroy(true); }
+	public void close() { this.destroyAsync(); }
 	
 	@Override
 	public String toString()
@@ -319,7 +311,7 @@ public class GLBuffer implements AutoCloseable
 		{
 			// recreate if the buffer storage type changed
 			this.bind();
-			this.destroy(true);
+			this.destroyAsync();
 			this.create(uploadMethod.useBufferStorage);
 			this.bind();
 		}
@@ -362,7 +354,7 @@ public class GLBuffer implements AutoCloseable
 					if (PHANTOM_TO_BUFFER_ID.containsKey(phantomRef))
 					{
 						int id = PHANTOM_TO_BUFFER_ID.get(phantomRef);
-						destroyBufferId(true, id);
+						destroyBufferIdAsync(id);
 					}
 					
 					phantomRef = PHANTOM_REFERENCE_QUEUE.poll();

@@ -39,7 +39,7 @@ public class GLVertexBuffer extends GLBuffer
 	 * bigger than the upload payload
 	 */
 	protected int vertexCount = 0;
-	public int getVertexCount() { return vertexCount; }
+	public int getVertexCount() { return this.vertexCount; }
 	// FIXME: This setter is needed for premapping buffer to manually set the vertexCount. Fix this.
 	public void setVertexCount(int vertexCount) { this.vertexCount = vertexCount; }
 	
@@ -52,9 +52,9 @@ public class GLVertexBuffer extends GLBuffer
 	
 	
 	@Override
-	public void destroy(boolean async)
+	public void destroyAsync()
 	{
-		super.destroy(async);
+		super.destroyAsync();
 		this.vertexCount = 0;
 	}
 	

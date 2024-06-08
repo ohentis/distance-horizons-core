@@ -35,7 +35,7 @@ public class GLElementBuffer extends GLBuffer
 	 * bigger than the upload payload
 	 */
 	protected int indicesCount = 0;
-	public int getIndicesCount() { return indicesCount; }
+	public int getIndicesCount() { return this.indicesCount; }
 	protected int type = GL32.GL_UNSIGNED_INT;
 	public int getType() { return type; }
 	
@@ -45,10 +45,10 @@ public class GLElementBuffer extends GLBuffer
 	}
 	
 	@Override
-	public void destroy(boolean async)
+	public void destroyAsync()
 	{
-		super.destroy(async);
-		indicesCount = 0;
+		super.destroyAsync();
+		this.indicesCount = 0;
 	}
 	
 	@Override

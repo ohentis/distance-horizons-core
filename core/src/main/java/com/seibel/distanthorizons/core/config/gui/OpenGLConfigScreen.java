@@ -82,8 +82,7 @@ public class OpenGLConfigScreen extends AbstractScreen
 	
 	private void createBuffer()
 	{
-		GLProxy.getInstance().recordOpenGlCall(() -> sharedContextBuffer = createTextingBuffer());
-		GLProxy.ensureAllGLJobCompleted();
+		sharedContextBuffer = createTextingBuffer();
 		sameContextBuffer = createTextingBuffer();
 	}
 	

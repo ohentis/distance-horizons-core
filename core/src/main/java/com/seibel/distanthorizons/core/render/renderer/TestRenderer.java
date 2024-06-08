@@ -97,8 +97,7 @@ public class TestRenderer
 	
 	private void createBuffer()
 	{
-		GLProxy.getInstance().recordOpenGlCall(() -> sharedContextBuffer = createTextingBuffer());
-		GLProxy.ensureAllGLJobCompleted();
+		sharedContextBuffer = createTextingBuffer();
 		sameContextBuffer = createTextingBuffer();
 	}
 	
