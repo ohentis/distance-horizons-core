@@ -19,6 +19,7 @@
 
 package com.seibel.distanthorizons.core.jar.updater;
 
+import com.seibel.distanthorizons.api.enums.config.EDhApiUpdateBranch;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.jar.JarUtils;
@@ -83,15 +84,8 @@ public class SelfUpdater
 		boolean returnValue = false;
 		try
 		{
-			switch (Config.Client.Advanced.AutoUpdater.updateBranch.get())
-			{
-				case STABLE:
-					returnValue = onStableStart();
-					break;
-				case NIGHTLY:
-					returnValue = onNightlyStart();
-					break;
-			};
+			EDhApiUpdateBranch updateBranch = EDhApiUpdateBranch.convertAutoToStableOrNightly(Config.Client.Advanced.AutoUpdater.updateBranch.get());
+			returnValue = (updateBranch == EDhApiUpdateBranch.STABLE) ? onStableStart() : onNightlyStart();
 		}
 		catch (Exception e) // Shouldn't be needed, but just in case
 		{

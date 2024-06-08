@@ -1054,11 +1054,12 @@ public class Config
 						.build();
 				
 				public static ConfigEntry<EDhApiUpdateBranch> updateBranch = new ConfigEntry.Builder<EDhApiUpdateBranch>()
-						.set(
-								ModInfo.IS_DEV_BUILD? EDhApiUpdateBranch.NIGHTLY: EDhApiUpdateBranch.STABLE // If it's already a nightly build, then download the nightly build ofc
-						)
+						.set(EDhApiUpdateBranch.AUTO)
 						.comment(""
-								+ " If DH should use the nightly (provided by Gitlab), or stable (provided by Modrinth) build")
+								+ "If DH should use the nightly (provided by Gitlab), or stable (provided by Modrinth) build. \n"
+								+ "If ["+EDhApiUpdateBranch.AUTO+"] is selected DH will update to new stable releases if the current jar is a stable jar \n"
+								+ "and will update to new nightly builds if the current jar is a nightly jar (IE the version number ends in '-dev')."
+								+ "")
 						.build();
 			}
 			
