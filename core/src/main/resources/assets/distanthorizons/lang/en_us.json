@@ -941,6 +941,8 @@
     "Stable",
   "distanthorizons.config.enum.EDhApiUpdateBranch.NIGHTLY":
     "Nightly",
+  "distanthorizons.config.enum.EDhApiUpdateBranch.AUTO":
+    "Auto",
 
   "distanthorizons.config.enum.EDhApiGrassSideRendering.AS_GRASS":
     "As Grass",

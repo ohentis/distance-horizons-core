@@ -1118,16 +1118,6 @@ public class Config
 								+ "")
 						.build();
 				
-				public static ConfigEntry<Boolean> gpuUploadAsync = new ConfigEntry.Builder<Boolean>()
-						.set(true)
-						.comment(""
-								+ "If true geometry data will be uploaded on a DH controlled thread, reducing FPS stuttering. \n"
-								+ "If false uploading will be done on Minecraft's main rendering thread. \n"
-								+ "\n"
-								+ "Setting this to false may reduce crashes or corrupted geometry on systems with an AMD GPU when Sodium is installed.\n"
-								+ "")
-						.build();
-				
 			}
 			
 			public static class AutoUpdater
@@ -1147,11 +1137,12 @@ public class Config
 						.build();
 				
 				public static ConfigEntry<EDhApiUpdateBranch> updateBranch = new ConfigEntry.Builder<EDhApiUpdateBranch>()
-						.set(
-								ModInfo.IS_DEV_BUILD ? EDhApiUpdateBranch.NIGHTLY : EDhApiUpdateBranch.STABLE // If it's already a nightly build, then download the nightly build ofc
-						)
+						.set(EDhApiUpdateBranch.AUTO)
 						.comment(""
-								+ " If DH should use the nightly (provided by Gitlab), or stable (provided by Modrinth) build")
+								+ "If DH should use the nightly (provided by Gitlab), or stable (provided by Modrinth) build. \n"
+								+ "If ["+EDhApiUpdateBranch.AUTO+"] is selected DH will update to new stable releases if the current jar is a stable jar \n"
+								+ "and will update to new nightly builds if the current jar is a nightly jar (IE the version number ends in '-dev')."
+								+ "")
 						.build();
 			}
 			
