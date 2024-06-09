@@ -176,7 +176,7 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 	{
 		return msg ->
 		{
-			LodUtil.assertTrue(msg instanceof ILevelRelatedMessage, "Received message does not implement " + ILevelRelatedMessage.class.getSimpleName() + ": " + msg.getClass().getSimpleName());
+			LodUtil.assertTrue(msg instanceof ILevelRelatedMessage, MessageFormat.format("Received message does not implement {0}: {1}", ILevelRelatedMessage.class.getSimpleName(), msg.getClass().getSimpleName()));
 			
 			// Handle only in requested dimension
 			if (!((ILevelRelatedMessage) msg).isSameLevelAs(this.getLevelWrapper()))
@@ -192,9 +192,10 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 				if (msg instanceof TrackableMessage)
 				{
 					((TrackableMessage) msg).sendResponse(new InvalidLevelException(MessageFormat.format(
-							"Generation not allowed. Requested dimension: {0}, player dimension: {1}",
-							this.getLevelWrapper().getDimensionType().getDimensionName(),
-							msg.session.serverPlayer.getLevel().getDimensionType().getDimensionName()
+							"Generation not allowed. Requested dimension: {0}, player dimension: {1}, handler dimension: {2}",
+							((ILevelRelatedMessage) msg).getLevelName(),
+							msg.session.serverPlayer.getLevel().getDimensionType().getDimensionName(),
+							this.getLevelWrapper().getDimensionType().getDimensionName()
 					)));
 				}
 				
