@@ -143,7 +143,7 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 	{
 		boolean oldQueueExists = this.worldGenQueueRef.compareAndSet(null, newWorldGenQueue);
 		LodUtil.assertTrue(oldQueueExists, "previous world gen queue is still here!");
-		LOGGER.info("Set world gen queue for level [" + this.level + "].");
+		LOGGER.info("Set world gen queue for level [" + this.level.getLevelWrapper().getDimensionType().getDimensionName() + "].");
 	}
 	
 	@Override
