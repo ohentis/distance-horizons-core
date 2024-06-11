@@ -223,7 +223,7 @@ public class SharedApi
 			if (msBetweenLastLog >= MIN_MS_BETWEEN_OVERLOADED_LOG_MESSAGE)
 			{
 				lastOverloadedLogMessageMsTime = System.currentTimeMillis();
-				LOGGER.warn("Too many chunks queued for updating, max queue count ["+maxQueueCount+"] (["+MAX_UPDATING_CHUNK_COUNT_PER_THREAD+"] per thread). Some LODs may not be updated or may be missing. Please move through the world slower, decrease your vanilla render distance, or increase the CPU load config.");
+				LOGGER.warn("Too many chunks queued for updating, max queue count ["+maxQueueCount+"] (["+MAX_UPDATING_CHUNK_COUNT_PER_THREAD+"] per thread). This may result in holes in your LODs. Please move through the world slower, decrease your vanilla render distance, slow down your world pre-generator, or increase the CPU load config.");
 			}
 			
 			return;
