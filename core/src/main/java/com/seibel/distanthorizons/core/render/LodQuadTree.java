@@ -302,13 +302,9 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 			boolean allChildrenSectionsAreLoaded = true;
 			
 			// recursively update all child render sections
-			LongIterator childPosIterator = quadNode.getChildPosIterator();
-			while (childPosIterator.hasNext())
+			for (int i = 0; i < 4; i++)
 			{
-				long childPos = childPosIterator.nextLong();
-				QuadNode<LodRenderSection> childNode = rootNode.getNode(childPos);
-				
-				boolean childSectionLoaded = this.recursivelyUpdateRenderSectionNode(playerPos, rootNode, childNode, childPos, thisPosIsRendering || parentSectionIsRendering, nodesNeedingRetrieval, nodesNeedingLoading);
+				boolean childSectionLoaded = this.recursivelyUpdateRenderSectionNode(playerPos, rootNode, quadNode.getChildByIndex(i), DhSectionPos.getChildByIndex(sectionPos, i), thisPosIsRendering || parentSectionIsRendering, nodesNeedingRetrieval, nodesNeedingLoading);
 				allChildrenSectionsAreLoaded = childSectionLoaded && allChildrenSectionsAreLoaded;
 			}
 			
@@ -335,13 +331,9 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 				renderSection.renderingEnabled = false;
 				
 				// walk back down the tree and enable the child sections //TODO there are probably more efficient ways of doing this, but this will work for now
-				childPosIterator = quadNode.getChildPosIterator();
-				while (childPosIterator.hasNext())
+				for (int i = 0; i < 4; i++)
 				{
-					long childPos = childPosIterator.nextLong();
-					QuadNode<LodRenderSection> childNode = rootNode.getNode(childPos);
-					
-					boolean childSectionLoaded = this.recursivelyUpdateRenderSectionNode(playerPos, rootNode, childNode, childPos, parentSectionIsRendering, nodesNeedingRetrieval, nodesNeedingLoading);
+					boolean childSectionLoaded = this.recursivelyUpdateRenderSectionNode(playerPos, rootNode, quadNode.getChildByIndex(i), DhSectionPos.getChildByIndex(sectionPos, i), parentSectionIsRendering, nodesNeedingRetrieval, nodesNeedingLoading);
 					allChildrenSectionsAreLoaded = childSectionLoaded && allChildrenSectionsAreLoaded;
 				}
 				if (!allChildrenSectionsAreLoaded)
