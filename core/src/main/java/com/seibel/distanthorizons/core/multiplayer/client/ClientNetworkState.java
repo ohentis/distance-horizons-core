@@ -24,7 +24,7 @@ public class ClientNetworkState implements Closeable
 	
 	public MultiplayerConfig config = new MultiplayerConfig();
 	private volatile boolean configReceived = false;
-	private final MultiplayerConfigChangeListener configChangeListener = new MultiplayerConfigChangeListener(this::onConfigChanged);
+	private final MultiplayerConfigChangeListener configChangeListener = new MultiplayerConfigChangeListener(this::sendConfigMessage);
 	public boolean isReady() { return this.configReceived; }
 	
 	private final F3Screen.NestedMessage f3Message = new F3Screen.NestedMessage(this::f3Log);
@@ -55,7 +55,7 @@ public class ClientNetworkState implements Closeable
 		});
 	}
 	
-	private void onConfigChanged()
+	public void sendConfigMessage()
 	{
 		this.configReceived = false;
 		this.getSession().sendMessage(new RemotePlayerConfigMessage(new MultiplayerConfig()));

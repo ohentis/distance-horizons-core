@@ -22,7 +22,6 @@ package com.seibel.distanthorizons.core.network.messages;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.seibel.distanthorizons.core.network.messages.plugin.CurrentLevelKeyMessage;
-import com.seibel.distanthorizons.core.network.messages.plugin.base.ClientHelloMessage;
 import com.seibel.distanthorizons.core.network.messages.plugin.base.CancelMessage;
 import com.seibel.distanthorizons.core.network.messages.plugin.base.CloseReasonMessage;
 import com.seibel.distanthorizons.core.network.messages.plugin.base.ExceptionMessage;
@@ -49,19 +48,18 @@ public class PluginMessageRegistry
 	{
 		// Note: Messages must have parameterless constructors
 		
-		// Always sent by the client
-		this.registerMessage(ClientHelloMessage.class, ClientHelloMessage::new);
+		// When the communication is about to be stopped, either side can send this message
 		this.registerMessage(CloseReasonMessage.class, CloseReasonMessage::new);
 		
-		// Multiverse support
+		// Level keys
 		this.registerMessage(CurrentLevelKeyMessage.class, CurrentLevelKeyMessage::new);
 		
-		// Core
+		// Config (for full DH support)
+		this.registerMessage(RemotePlayerConfigMessage.class, RemotePlayerConfigMessage::new);
+		
+		// Requests
 		this.registerMessage(CancelMessage.class, CancelMessage::new);
 		this.registerMessage(ExceptionMessage.class, ExceptionMessage::new);
-		
-		// ID & config
-		this.registerMessage(RemotePlayerConfigMessage.class, RemotePlayerConfigMessage::new);
 		
 		// Full data requests & updates
 		this.registerMessage(FullDataSourceRequestMessage.class, FullDataSourceRequestMessage::new);

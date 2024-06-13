@@ -50,7 +50,6 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrap
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
 import com.seibel.distanthorizons.coreapi.util.math.Mat4f;
-import io.netty.buffer.ByteBuf;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -132,6 +131,8 @@ public class ClientApi
 			DhClientWorld world = new DhClientWorld();
 			SharedApi.setDhWorld(world);
 			
+			this.pluginChannelApi.onJoin(world.networkState.getSession());
+			world.networkState.sendConfigMessage();
 			
 			LOGGER.info("Loading [" + this.waitingClientLevels.size() + "] waiting client level wrappers.");
 			for (IClientLevelWrapper level : this.waitingClientLevels)
@@ -140,8 +141,6 @@ public class ClientApi
 			}
 			
 			this.waitingClientLevels.clear();
-			
-			this.pluginChannelApi.onJoin(world.networkState.getSession());
 		}
 	}
 	
@@ -206,17 +205,20 @@ public class ClientApi
 	{
 		try
 		{
-			if (!this.pluginChannelApi.allowLoadingLevel())
-			{
-				LOGGER.info("Levels in this connection are managed by the server and loading is not allowed, ignoring auto-load.");
-				return;
-			}
-			
 			LOGGER.info("Loading client level [" + level + "]-["+level.getDimensionType().getDimensionName()+"].");
 			
 			AbstractDhWorld world = SharedApi.getAbstractDhWorld();
 			if (world != null)
 			{
+				if (!this.pluginChannelApi.allowLevelAutoload())
+				{
+					LOGGER.info("Levels in this connection are managed by the server, skipping auto-load.");
+					
+					// Instead of attempting to load themselves, send config and wait for level key.
+					((DhClientWorld) world).networkState.sendConfigMessage();
+					return;
+				}
+				
 				world.getOrLoadLevel(level);
 				ApiEventInjector.INSTANCE.fireAllEvents(DhApiLevelLoadEvent.class, new DhApiLevelLoadEvent.EventParam(level));
 				

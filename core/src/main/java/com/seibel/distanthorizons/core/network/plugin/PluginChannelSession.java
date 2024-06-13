@@ -74,12 +74,6 @@ public class PluginChannelSession extends NetworkEventSource
 	{
 		LOGGER.debug("Sending message: {}", message);
 		
-		Consumer<ByteBuf> encoder = buffer -> {
-			buffer.writeShort(ModInfo.PROTOCOL_VERSION);
-			buffer.writeShort(PluginMessageRegistry.INSTANCE.getMessageId(message));
-			message.encode(buffer);
-		};
-		
 		if (this.serverPlayer != null)
 		{
 			PACKET_SENDER.sendPluginPacketServer(this.serverPlayer, message);

@@ -19,7 +19,6 @@
 
 package com.seibel.distanthorizons.core.world;
 
-import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.file.structure.ClientOnlySaveStructure;
 import com.seibel.distanthorizons.core.level.DhClientLevel;
 import com.seibel.distanthorizons.core.level.IDhLevel;

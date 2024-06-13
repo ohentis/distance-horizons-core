@@ -31,12 +31,6 @@ public class ConstrainedMultiplayerConfig extends AbstractMultiplayerConfig
 	}
 	
 	@Override
-	public int getGenTaskPriorityRequestRateLimit()
-	{
-		return Math.min(this.clientConfig.genTaskPriorityRequestRateLimit, Config.Client.Advanced.Multiplayer.ServerNetworking.genTaskPriorityRequestRateLimit.get());
-	}
-	
-	@Override
 	public boolean isRealTimeUpdatesEnabled()
 	{
 		return this.clientConfig.realTimeUpdatesEnabled && Config.Client.Advanced.Multiplayer.ServerNetworking.enableRealTimeUpdates.get();

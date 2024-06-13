@@ -7,18 +7,17 @@ import com.seibel.distanthorizons.core.level.IServerKeyedClientLevel;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
 import com.seibel.distanthorizons.core.network.messages.plugin.PluginCloseEvent;
 import com.seibel.distanthorizons.core.network.messages.plugin.CurrentLevelKeyMessage;
-import com.seibel.distanthorizons.core.network.messages.plugin.base.ClientHelloMessage;
 import com.seibel.distanthorizons.core.network.plugin.PluginChannelSession;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
-import io.netty.buffer.ByteBuf;
 import org.apache.logging.log4j.LogManager;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.util.Objects;
 import java.util.function.Consumer;
 
 /**
  * This class is used to manage the level keys.
- * Its purpose is to separate MC's and plugin channel's event handling.
  */
 public class ClientPluginChannelApi
 {
@@ -33,7 +32,7 @@ public class ClientPluginChannelApi
 	public PluginChannelSession session;
 	
 	
-	public boolean allowLoadingLevel()
+	public boolean allowLevelAutoload()
 	{
 		return (KEYED_CLIENT_LEVEL_MANAGER.isEnabled() && KEYED_CLIENT_LEVEL_MANAGER.getServerKeyedLevel() != null)
 				|| !KEYED_CLIENT_LEVEL_MANAGER.isEnabled();
@@ -44,15 +43,12 @@ public class ClientPluginChannelApi
 	{
 		this.levelUnloadHandler = levelUnloadHandler;
 		this.multiverseLevelLoadHandler = levelLoadHandler;
-		
 	}
 	
-	public void onJoin(PluginChannelSession session)
+	public void onJoin(@NonNull PluginChannelSession session)
 	{
+		Objects.requireNonNull(session);
 		this.session = session;
-		
-		this.session.sendMessage(new ClientHelloMessage());
-		
 		this.session.registerHandler(CurrentLevelKeyMessage.class, this::onCurrentLevelKeyMessage);
 		this.session.registerHandler(PluginCloseEvent.class, this::onClose);
 	}
@@ -71,7 +67,9 @@ public class ClientPluginChannelApi
 			
 			if (clientLevel != null)
 			{
+				// In either case only one of them will have an effect.
 				this.levelUnloadHandler.accept(clientLevel);
+				this.levelUnloadHandler.accept(KEYED_CLIENT_LEVEL_MANAGER.getServerKeyedLevel());
 			}
 			
 			IServerKeyedClientLevel keyedLevel = KEYED_CLIENT_LEVEL_MANAGER.setServerKeyedLevel(clientLevel, msg.levelKey);

@@ -1,20 +1,14 @@
 package com.seibel.distanthorizons.core.multiplayer.server;
 
-import com.seibel.distanthorizons.core.config.Config;
-import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
 import com.seibel.distanthorizons.core.network.plugin.PluginChannelMessage;
 import com.seibel.distanthorizons.core.network.plugin.PluginChannelSession;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
-import org.apache.logging.log4j.LogManager;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 public class RemotePlayerConnectionHandler
 {
-	private static final ConfigBasedLogger LOGGER = new ConfigBasedLogger(LogManager.getLogger(),
-			() -> Config.Client.Advanced.Logging.logNetworkEvent.get());
-	
 	private final ConcurrentMap<IServerPlayerWrapper, ServerPlayerState> connectedPlayers = new ConcurrentHashMap<>();
 	
 	

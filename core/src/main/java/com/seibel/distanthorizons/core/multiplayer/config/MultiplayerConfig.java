@@ -16,9 +16,6 @@ public class MultiplayerConfig extends AbstractMultiplayerConfig
 	public int fullDataRequestConcurrencyLimit = Config.Client.Advanced.Multiplayer.ServerNetworking.generationRequestRCLimit.get();
 	@Override public int getFullDataRequestConcurrencyLimit() { return this.fullDataRequestConcurrencyLimit; }
 	
-	public int genTaskPriorityRequestRateLimit = Config.Client.Advanced.Multiplayer.ServerNetworking.genTaskPriorityRequestRateLimit.get();
-	@Override public int getGenTaskPriorityRequestRateLimit() { return this.genTaskPriorityRequestRateLimit; }
-	
 	public boolean realTimeUpdatesEnabled = Config.Client.Advanced.Multiplayer.ServerNetworking.enableRealTimeUpdates.get();
 	@Override public boolean isRealTimeUpdatesEnabled() { return this.realTimeUpdatesEnabled; }
 	
@@ -35,7 +32,6 @@ public class MultiplayerConfig extends AbstractMultiplayerConfig
 		this.renderDistanceRadius = in.readInt();
 		this.distantGenerationEnabled = in.readBoolean();
 		this.fullDataRequestConcurrencyLimit = in.readInt();
-		this.genTaskPriorityRequestRateLimit = in.readInt();
 		this.realTimeUpdatesEnabled = in.readBoolean();
 		this.loginDataSyncEnabled = in.readBoolean();
 		this.loginDataSyncRCLimit = in.readInt();

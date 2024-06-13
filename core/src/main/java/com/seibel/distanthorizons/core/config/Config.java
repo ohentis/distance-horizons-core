@@ -899,6 +899,28 @@ public class Config
 							.build();
 					
 					
+					
+					public static ConfigEntry<Boolean> sendLevelKeys = new ConfigEntry.Builder<Boolean>()
+							.setServersideShortName("sendLevelKeys")
+							.setAppearance(EConfigEntryAppearance.ONLY_IN_FILE)
+							.set(true)
+							.comment(""
+									+ "Makes the server send level keys for each world.\n"
+									+ "Disable this if you use alternative ways to send level keys.\n"
+									+ "")
+							.build();
+					public static ConfigEntry<String> levelKeyPrefix = new ConfigEntry.Builder<String>()
+							.setServersideShortName("levelKeyPrefix")
+							.setAppearance(EConfigEntryAppearance.ONLY_IN_FILE)
+							.set("")
+							.comment(""
+									+ "Prefix of the level keys sent to the clients.\n"
+									+ "Should be set to a unique value for each backend server behind a proxy,\n"
+									+ "or empty if you don't use a proxy.\n"
+									+ "")
+							.build();
+					
+					
 					public static ConfigUIComment generationSectionNote = new ConfigUIComment();
 					public static ConfigEntry<Integer> generationRequestRCLimit = new ConfigEntry.Builder<Integer>()
 							.setServersideShortName("generationRequestRCLimit")

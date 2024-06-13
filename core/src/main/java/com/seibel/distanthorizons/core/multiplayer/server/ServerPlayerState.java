@@ -5,9 +5,9 @@ import com.seibel.distanthorizons.core.level.DhServerLevel;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
 import com.seibel.distanthorizons.core.multiplayer.config.MultiplayerConfig;
 import com.seibel.distanthorizons.core.multiplayer.config.MultiplayerConfigChangeListener;
+import com.seibel.distanthorizons.core.network.messages.plugin.CurrentLevelKeyMessage;
 import com.seibel.distanthorizons.core.network.messages.plugin.session.RemotePlayerConfigMessage;
 import com.seibel.distanthorizons.core.network.messages.plugin.PluginCloseEvent;
-import com.seibel.distanthorizons.core.network.messages.plugin.base.ClientHelloMessage;
 import com.seibel.distanthorizons.core.network.exceptions.RateLimitedException;
 import com.seibel.distanthorizons.core.network.messages.plugin.fullData.FullDataSourceRequestMessage;
 import com.seibel.distanthorizons.core.network.plugin.PluginChannelSession;
@@ -22,9 +22,6 @@ import static com.seibel.distanthorizons.core.config.Config.Client.Advanced.Mult
 
 public class ServerPlayerState
 {
-	private static final ConfigBasedLogger LOGGER = new ConfigBasedLogger(LogManager.getLogger(),
-			() -> Config.Client.Advanced.Logging.logNetworkEvent.get());
-	
 	public final PluginChannelSession session;
 	public IServerPlayerWrapper serverPlayer() { return this.session.serverPlayer; }
 	
@@ -51,10 +48,27 @@ public class ServerPlayerState
 		this.session.registerHandler(RemotePlayerConfigMessage.class, remotePlayerConfigMessage ->
 		{
 			this.config.clientConfig = (MultiplayerConfig) remotePlayerConfigMessage.payload;
+			
+			if (ServerNetworking.sendLevelKeys.get())
+			{
+				String levelKeyPrefix = ServerNetworking.levelKeyPrefix.get();
+				String dimensionName = serverPlayer.getLevel().getDimensionType().getDimensionName();
+				
+				String levelKey;
+				if (!levelKeyPrefix.isEmpty())
+				{
+					levelKey = levelKeyPrefix + "_" + dimensionName;
+				}
+				else
+				{
+					levelKey = dimensionName;
+				}
+				
+				this.session.sendMessage(new CurrentLevelKeyMessage(levelKey));
+			}
+			
 			this.session.sendMessage(new RemotePlayerConfigMessage(this.config));
 		});
-		
-		this.session.registerHandler(ClientHelloMessage.class, msg -> this.onConfigChanged());
 		
 		this.session.registerHandler(PluginCloseEvent.class, event -> {
 			// Noop
