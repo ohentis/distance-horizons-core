@@ -304,7 +304,8 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 			// recursively update all child render sections
 			for (int i = 0; i < 4; i++)
 			{
-				boolean childSectionLoaded = this.recursivelyUpdateRenderSectionNode(playerPos, rootNode, quadNode.getChildByIndex(i), DhSectionPos.getChildByIndex(sectionPos, i), thisPosIsRendering || parentSectionIsRendering, nodesNeedingRetrieval, nodesNeedingLoading);
+				QuadNode<LodRenderSection> childNode = quadNode.getChildByIndex(i);
+				boolean childSectionLoaded = this.recursivelyUpdateRenderSectionNode(playerPos, rootNode, childNode, DhSectionPos.getChildByIndex(sectionPos, i), thisPosIsRendering || parentSectionIsRendering, nodesNeedingRetrieval, nodesNeedingLoading);
 				allChildrenSectionsAreLoaded = childSectionLoaded && allChildrenSectionsAreLoaded;
 			}
 			
@@ -333,7 +334,8 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 				// walk back down the tree and enable the child sections //TODO there are probably more efficient ways of doing this, but this will work for now
 				for (int i = 0; i < 4; i++)
 				{
-					boolean childSectionLoaded = this.recursivelyUpdateRenderSectionNode(playerPos, rootNode, quadNode.getChildByIndex(i), DhSectionPos.getChildByIndex(sectionPos, i), parentSectionIsRendering, nodesNeedingRetrieval, nodesNeedingLoading);
+					QuadNode<LodRenderSection> childNode = quadNode.getChildByIndex(i);
+					boolean childSectionLoaded = this.recursivelyUpdateRenderSectionNode(playerPos, rootNode, childNode, DhSectionPos.getChildByIndex(sectionPos, i), parentSectionIsRendering, nodesNeedingRetrieval, nodesNeedingLoading);
 					allChildrenSectionsAreLoaded = childSectionLoaded && allChildrenSectionsAreLoaded;
 				}
 				if (!allChildrenSectionsAreLoaded)
