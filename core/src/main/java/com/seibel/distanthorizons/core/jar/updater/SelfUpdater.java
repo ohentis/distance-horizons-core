@@ -30,6 +30,7 @@ import com.seibel.distanthorizons.core.jar.installer.WebDownloader;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.wrapperInterfaces.IVersionConstants;
 import com.seibel.distanthorizons.coreapi.ModInfo;
+import com.seibel.distanthorizons.coreapi.util.StringUtil;
 import com.seibel.distanthorizons.coreapi.util.jar.DeleteOnUnlock;
 import org.apache.logging.log4j.Logger;
 
@@ -104,7 +105,7 @@ public class SelfUpdater
 		}
 		if (!ModrinthGetter.mcVersions.contains(mcVersion))
 		{
-			LOGGER.warn("Minecraft version ["+ mcVersion +"] is not findable on Modrinth, only findable versions are ["+ ModrinthGetter.mcVersions.toString() +"]");
+			LOGGER.warn("Minecraft version ["+ mcVersion +"] is not findable on Modrinth, only findable versions are ["+ StringUtil.join(",", ModrinthGetter.mcVersions) +"]");
 			return false;
 		}
 		
@@ -151,7 +152,7 @@ public class SelfUpdater
 		
 		if (!GitlabGetter.INSTANCE.getDownloads(pipeline.get("id")).containsKey(mcVersion))
 		{
-			LOGGER.warn("Minecraft version ["+ mcVersion +"] is not findable on Gitlab, findable versions are ["+ GitlabGetter.INSTANCE.getDownloads(pipeline.get("id")).keySet().toArray().toString() +"].");
+			LOGGER.warn("Minecraft version ["+ mcVersion +"] is not findable on Gitlab, findable versions are ["+ StringUtil.join(",", GitlabGetter.INSTANCE.getDownloads(pipeline.get("id")).keySet().toArray()) +"].");
 			return false;
 		}
 		
