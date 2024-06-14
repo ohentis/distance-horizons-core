@@ -1,8 +1,6 @@
 package com.seibel.distanthorizons.core.multiplayer.server;
 
-import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.level.DhServerLevel;
-import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
 import com.seibel.distanthorizons.core.multiplayer.config.MultiplayerConfig;
 import com.seibel.distanthorizons.core.multiplayer.config.MultiplayerConfigChangeListener;
 import com.seibel.distanthorizons.core.network.messages.plugin.CurrentLevelKeyMessage;
@@ -13,7 +11,6 @@ import com.seibel.distanthorizons.core.network.messages.plugin.fullData.FullData
 import com.seibel.distanthorizons.core.network.plugin.PluginChannelSession;
 import com.seibel.distanthorizons.core.util.ratelimiting.SupplierBasedRateAndConcurrencyLimiter;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
-import org.apache.logging.log4j.LogManager;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -28,6 +25,7 @@ public class ServerPlayerState
 	@NotNull
 	public ConstrainedMultiplayerConfig config = new ConstrainedMultiplayerConfig();
 	private final MultiplayerConfigChangeListener configChangeListener = new MultiplayerConfigChangeListener(this::onConfigChanged);
+	private String lastLevelKey = "";
 	
 	private final ConcurrentHashMap<DhServerLevel, RateLimiterSet> rateLimiterSets = new ConcurrentHashMap<>();
 	public RateLimiterSet getRateLimiterSet(DhServerLevel level)
@@ -64,7 +62,11 @@ public class ServerPlayerState
 					levelKey = dimensionName;
 				}
 				
-				this.session.sendMessage(new CurrentLevelKeyMessage(levelKey));
+				if (!levelKey.equals(this.lastLevelKey))
+				{
+					this.lastLevelKey = levelKey;
+					this.session.sendMessage(new CurrentLevelKeyMessage(levelKey));
+				}
 			}
 			
 			this.session.sendMessage(new RemotePlayerConfigMessage(this.config));

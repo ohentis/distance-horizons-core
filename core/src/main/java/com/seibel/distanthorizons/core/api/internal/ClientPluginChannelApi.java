@@ -55,25 +55,41 @@ public class ClientPluginChannelApi
 	
 	private void onCurrentLevelKeyMessage(CurrentLevelKeyMessage msg)
 	{
-		if (!msg.levelKey.matches("[a-zA-Z0-9_]+"))
+		if (!msg.levelKey.matches("[a-zA-Z0-9_]{1,50}"))
 		{
-			throw new IllegalArgumentException("Server sent invalid world key name.");
+			throw new IllegalArgumentException("Server sent invalid level key.");
 		}
 		
-		LOGGER.info("Server level change event received, changing the level to [" + msg.levelKey + "].");
+		LOGGER.info("Server level key received: " + msg.levelKey);
 		
 		MC.executeOnRenderThread(() -> {
 			IClientLevelWrapper clientLevel = MC.getWrappedClientLevel(true);
-			
-			if (clientLevel != null)
+			IServerKeyedClientLevel existingKeyedClientLevel = KEYED_CLIENT_LEVEL_MANAGER.getServerKeyedLevel();
+
+			if (existingKeyedClientLevel != null)
 			{
-				// In either case only one of them will have an effect.
+				if (!existingKeyedClientLevel.getServerLevelKey().equals(msg.levelKey))
+				{
+					LOGGER.info("Unloading previous level with key: " + existingKeyedClientLevel.getServerLevelKey());
+					this.levelUnloadHandler.accept(existingKeyedClientLevel);
+				}
+				else
+				{
+					LOGGER.info("Level key matches the previous level key, ignoring the message.");
+				}
+			}
+			else
+			{
+				LOGGER.info("Unloading non-keyed level: " + clientLevel.getDimensionType().getDimensionName());
 				this.levelUnloadHandler.accept(clientLevel);
-				this.levelUnloadHandler.accept(KEYED_CLIENT_LEVEL_MANAGER.getServerKeyedLevel());
 			}
 			
-			IServerKeyedClientLevel keyedLevel = KEYED_CLIENT_LEVEL_MANAGER.setServerKeyedLevel(clientLevel, msg.levelKey);
-			this.multiverseLevelLoadHandler.accept(keyedLevel);
+			if (existingKeyedClientLevel == null || !existingKeyedClientLevel.getServerLevelKey().equals(msg.levelKey))
+			{
+				LOGGER.info("Loading level with key: " + msg.levelKey);
+				IServerKeyedClientLevel keyedLevel = KEYED_CLIENT_LEVEL_MANAGER.setServerKeyedLevel(clientLevel, msg.levelKey);
+				this.multiverseLevelLoadHandler.accept(keyedLevel);
+			}
 		});
 	}
 	
