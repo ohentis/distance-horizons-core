@@ -61,6 +61,8 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 		this.dataFileHandler = new RemoteFullDataSourceProvider(this, saveStructure, fullDataSaveDirOverride);
 		this.clientside = new ClientLevelModule(this);
 		
+		this.createAndSetChunkHashRepo(this.dataFileHandler.repo.databaseLocation);
+		
 		if (enableRendering)
 		{
 			this.clientside.startRenderer(clientLevelWrapper);

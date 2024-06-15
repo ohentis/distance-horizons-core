@@ -23,17 +23,29 @@ import com.seibel.distanthorizons.api.methods.events.abstractEvents.DhApiChunkMo
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.dataObjects.transformers.ChunkToLodBuilder;
 import com.seibel.distanthorizons.core.file.fullDatafile.DelayedFullDataSourceSaveCache;
+import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.sql.dto.ChunkHashDTO;
+import com.seibel.distanthorizons.core.sql.repo.ChunkHashRepo;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
+import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.Nullable;
 
+import java.sql.SQLException;
 import java.util.HashSet;
 import java.util.concurrent.ConcurrentHashMap;
 
 public abstract class AbstractDhLevel implements IDhLevel
 {
+	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	
 	public final ChunkToLodBuilder chunkToLodBuilder;
+	
+	/** if this is null then the other handler is probably null too, but just in case */
+	@Nullable
+	public ChunkHashRepo chunkHashRepo;
 	
 	protected final DelayedFullDataSourceSaveCache delayedFullDataSourceSaveCache = new DelayedFullDataSourceSaveCache(this::onDataSourceSave, 2_000);
 	/** contains the {@link DhChunkPos} for each {@link DhSectionPos} that are queued to save via {@link AbstractDhLevel#delayedFullDataSourceSaveCache} */
@@ -46,6 +58,20 @@ public abstract class AbstractDhLevel implements IDhLevel
 	//=============//
 	
 	protected AbstractDhLevel() { this.chunkToLodBuilder = new ChunkToLodBuilder(); }
+	
+	protected void createAndSetChunkHashRepo(String databaseFilePath)
+	{
+		ChunkHashRepo newChunkHashRepo = null;
+		try
+		{
+			newChunkHashRepo = new ChunkHashRepo("jdbc:sqlite", databaseFilePath);
+		}
+		catch (SQLException e)
+		{
+			LOGGER.error("Unable to create [ChunkHashRepo], error: ["+e.getMessage()+"].", e);
+		}
+		this.chunkHashRepo = newChunkHashRepo;
+	}
 	
 	
 	
@@ -98,6 +124,32 @@ public abstract class AbstractDhLevel implements IDhLevel
 		});
 	}
 	
+	
+	@Override
+	public int getChunkHash(DhChunkPos pos)
+	{
+		if (this.chunkHashRepo == null)
+		{
+			return 0;
+		}
+		
+		ChunkHashDTO dto = this.chunkHashRepo.getByKey(pos);
+		return (dto != null) ? dto.chunkHash : 0;
+	}
+	@Override
+	public void setChunkHash(DhChunkPos pos, int chunkHash)
+	{
+		if (this.chunkHashRepo != null)
+		{
+			this.chunkHashRepo.save(new ChunkHashDTO(pos, chunkHash));
+		}
+	}
+	
+	
+	
+	//================//
+	// base overrides //
+	//================//
 	
 	@Override
 	public void close() { this.chunkToLodBuilder.close(); }

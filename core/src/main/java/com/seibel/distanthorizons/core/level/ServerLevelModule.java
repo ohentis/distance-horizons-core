@@ -43,6 +43,10 @@ public class ServerLevelModule implements AutoCloseable
 	
 	
 	
+	//=============//
+	// constructor //
+	//=============//
+	
 	public ServerLevelModule(IDhServerLevel parentServerLevel, AbstractSaveStructure saveStructure)
 	{
 		this.parentServerLevel = parentServerLevel;
@@ -53,6 +57,10 @@ public class ServerLevelModule implements AutoCloseable
 	}
 	
 	
+	
+	//================//
+	// base overrides //
+	//================//
 	
 	@Override
 	public void close()

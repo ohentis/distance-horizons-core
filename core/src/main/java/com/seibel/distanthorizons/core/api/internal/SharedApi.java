@@ -41,10 +41,7 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.Set;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -302,6 +299,17 @@ public class SharedApi
 				
 				try
 				{
+					// check if this chunk has been converted into an LOD already
+					int oldChunkHash = dhLevel.getChunkHash(chunkWrapper.getChunkPos()); // shouldn't happen on the render thread since it may take a few moments to run
+					if (oldChunkHash == chunkWrapper.getBlockBiomeHashCode())
+					{
+						// if the chunk hashes are the same then we don't need to bother with lighting the chunk
+						// or creating/updating the LODs
+						return;
+					}
+					
+					
+					
 					// Save or populate the chunk wrapper's lighting
 					// this is done so we don't have to worry about MC unloading the lighting data for this chunk
 					boolean onlyUseDhLighting = Config.Client.Advanced.LodBuilding.onlyUseDhLightingEngine.get();
@@ -336,6 +344,7 @@ public class SharedApi
 					}
 					
 					dhLevel.updateChunkAsync(chunkWrapper);
+					dhLevel.setChunkHash(chunkWrapper.getChunkPos(), chunkWrapper.getBlockBiomeHashCode());
 				}
 				catch (Exception e)
 				{

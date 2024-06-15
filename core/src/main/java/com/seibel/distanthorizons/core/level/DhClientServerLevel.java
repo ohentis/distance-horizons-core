@@ -53,6 +53,10 @@ public class DhClientServerLevel extends AbstractDhLevel implements IDhClientLev
 	
 	
 	
+	//=============//
+	// constructor //
+	//=============//
+	
 	public DhClientServerLevel(AbstractSaveStructure saveStructure, IServerLevelWrapper serverLevelWrapper)
 	{
 		if (saveStructure.getFullDataFolder(serverLevelWrapper).mkdirs())
@@ -62,6 +66,8 @@ public class DhClientServerLevel extends AbstractDhLevel implements IDhClientLev
 		this.serverLevelWrapper = serverLevelWrapper;
 		this.serverside = new ServerLevelModule(this, saveStructure);
 		this.clientside = new ClientLevelModule(this);
+		this.createAndSetChunkHashRepo(this.serverside.fullDataFileHandler.repo.databaseLocation);
+		
 		LOGGER.info("Started " + DhClientServerLevel.class.getSimpleName() + " for " + serverLevelWrapper + " with saves at " + saveStructure);
 	}
 	
@@ -72,10 +78,7 @@ public class DhClientServerLevel extends AbstractDhLevel implements IDhClientLev
 	//==============//
 	
 	@Override
-	public void clientTick()
-	{
-		clientside.clientTick();
-	}
+	public void clientTick() { this.clientside.clientTick(); }
 	
 	@Override
 	public void render(DhApiRenderParam renderEventParam, IProfilerWrapper profiler)
@@ -124,6 +127,8 @@ public class DhClientServerLevel extends AbstractDhLevel implements IDhClientLev
 		}
 	}
 	
+	
+	
 	//========//
 	// render //
 	//========//
@@ -131,6 +136,8 @@ public class DhClientServerLevel extends AbstractDhLevel implements IDhClientLev
 	public void startRenderer(IClientLevelWrapper clientLevel) { this.clientside.startRenderer(clientLevel); }
 	
 	public void stopRenderer() { this.clientside.stopRenderer(); }
+	
+	
 	
 	//================//
 	// level handling //
@@ -180,7 +187,7 @@ public class DhClientServerLevel extends AbstractDhLevel implements IDhClientLev
 	public CompletableFuture<Void> updateDataSourcesAsync(FullDataSourceV2 data) { return this.clientside.updateDataSourcesAsync(data); }
 	
 	@Override
-	public int getMinY() { return getLevelWrapper().getMinHeight(); }
+	public int getMinY() { return this.getLevelWrapper().getMinHeight(); }
 	
 	
 	

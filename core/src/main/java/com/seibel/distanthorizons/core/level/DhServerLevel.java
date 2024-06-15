@@ -36,6 +36,8 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 	public final ServerLevelModule serverside;
 	private final IServerLevelWrapper serverLevelWrapper;
 	
+	
+	
 	public DhServerLevel(AbstractSaveStructure saveStructure, IServerLevelWrapper serverLevelWrapper)
 	{
 		if (saveStructure.getFullDataFolder(serverLevelWrapper).mkdirs())
@@ -44,8 +46,12 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 		}
 		this.serverLevelWrapper = serverLevelWrapper;
 		this.serverside = new ServerLevelModule(this, saveStructure);
+		this.createAndSetChunkHashRepo(this.serverside.fullDataFileHandler.repo.databaseLocation);
+		
 		LOGGER.info("Started DHLevel for {} with saves at {}", serverLevelWrapper, saveStructure);
 	}
+	
+	
 	
 	public void serverTick() { this.chunkToLodBuilder.tick(); }
 	

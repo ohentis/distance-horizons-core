@@ -52,14 +52,6 @@ public class LocalSaveStructure extends AbstractSaveStructure
 	}
 	
 	@Override
-	public File getRenderCacheFolder(ILevelWrapper level)
-	{
-		IServerLevelWrapper serverSide = (IServerLevelWrapper) level;
-		this.debugPath = serverSide.getSaveFolder();
-		return serverSide.getSaveFolder();
-	}
-	
-	@Override
 	public File getFullDataFolder(ILevelWrapper level)
 	{
 		IServerLevelWrapper serverLevelWrapper = (IServerLevelWrapper) level;
