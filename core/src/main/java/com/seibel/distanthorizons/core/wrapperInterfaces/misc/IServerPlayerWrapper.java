@@ -24,11 +24,10 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapp
 import com.seibel.distanthorizons.coreapi.util.math.Vec3d;
 
 import java.net.SocketAddress;
-import java.util.UUID;
 
 public interface IServerPlayerWrapper extends IDhApiUnsafeWrapper
 {
-	UUID getUUID();
+	String getName();
 	
 	IServerLevelWrapper getLevel();
 	

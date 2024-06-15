@@ -21,14 +21,9 @@ package com.seibel.distanthorizons.core.api.internal;
 
 import com.seibel.distanthorizons.api.methods.events.abstractEvents.DhApiLevelLoadEvent;
 import com.seibel.distanthorizons.api.methods.events.abstractEvents.DhApiLevelUnloadEvent;
-import com.seibel.distanthorizons.core.config.Config;
-import com.seibel.distanthorizons.core.generation.DhLightingEngine;
 import com.seibel.distanthorizons.core.network.plugin.PluginChannelMessage;
-import com.seibel.distanthorizons.core.util.ThreadUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
-import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
-import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.world.AbstractDhWorld;
 import com.seibel.distanthorizons.core.world.DhClientServerWorld;
 import com.seibel.distanthorizons.core.world.DhServerWorld;
@@ -37,7 +32,6 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
-import io.netty.buffer.ByteBuf;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
@@ -157,7 +151,7 @@ public class ServerApi
 		IDhServerWorld serverWorld = SharedApi.getIDhServerWorld();
 		if (serverWorld instanceof DhServerWorld) // TODO add support for DhClientServerWorld's (lan worlds) as well
 		{
-			LOGGER.debug("Waiting for player to connect: " + player.getUUID());
+			LOGGER.info("Creating state for player: " + player.getName());
 			((DhServerWorld) serverWorld).addPlayer(player);
 		}
 	}
@@ -166,7 +160,7 @@ public class ServerApi
 		IDhServerWorld serverWorld = SharedApi.getIDhServerWorld();
 		if (serverWorld instanceof DhServerWorld) // TODO add support for DhClientServerWorld's (lan worlds) as well
 		{
-			LOGGER.debug("Removing player from connect wait list: " + player.getUUID());
+			LOGGER.info("Destroying state for player: " + player.getName());
 			((DhServerWorld) serverWorld).removePlayer(player);
 		}
 	}
@@ -175,7 +169,7 @@ public class ServerApi
 		IDhServerWorld serverWorld = SharedApi.getIDhServerWorld();
 		if (serverWorld instanceof DhServerWorld) // TODO add support for DhClientServerWorld's (lan worlds) as well
 		{
-			LOGGER.debug("Player changed level: " + player.getUUID());
+			LOGGER.info("Player changed level: " + player.getName());
 			((DhServerWorld) serverWorld).changePlayerLevel(player, origin, dest);
 		}
 	}
@@ -185,7 +179,6 @@ public class ServerApi
 		IDhServerWorld serverWorld = SharedApi.getIDhServerWorld();
 		if (serverWorld instanceof DhServerWorld) // TODO add support for DhClientServerWorld's (lan worlds) as well
 		{
-			LOGGER.debug("Player " + player.getUUID() + " sent plugin message: " + message);
 			((DhServerWorld) serverWorld).remotePlayerConnectionHandler.handlePluginMessage(player, message);
 		}
 	}

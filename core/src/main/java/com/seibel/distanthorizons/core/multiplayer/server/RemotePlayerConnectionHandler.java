@@ -4,19 +4,30 @@ import com.seibel.distanthorizons.core.network.plugin.PluginChannelMessage;
 import com.seibel.distanthorizons.core.network.plugin.PluginChannelSession;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 
+import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 
 public class RemotePlayerConnectionHandler
 {
 	private final ConcurrentMap<IServerPlayerWrapper, ServerPlayerState> connectedPlayers = new ConcurrentHashMap<>();
+	private final ConcurrentMap<IServerPlayerWrapper, Queue<PluginChannelMessage>> messageQueue = new ConcurrentHashMap<>();
 	
 	
 	public void handlePluginMessage(IServerPlayerWrapper player, PluginChannelMessage message)
 	{
-		PluginChannelSession session = this.connectedPlayers.get(player).session;
-		message.setSession(session);
-		session.tryHandleMessage(message);
+		ServerPlayerState playerState = this.connectedPlayers.get(player);
+		if (playerState != null)
+		{
+			PluginChannelSession session = playerState.session;
+			message.setSession(session);
+			session.tryHandleMessage(message);
+		}
+		else
+		{
+			this.messageQueue.computeIfAbsent(player, k -> new ConcurrentLinkedQueue<>()).add(message);
+		}
 	}
 	
 	public ServerPlayerState getConnectedPlayer(IServerPlayerWrapper player)
@@ -33,6 +44,20 @@ public class RemotePlayerConnectionHandler
 	{
 		ServerPlayerState state = new ServerPlayerState(serverPlayer);
 		this.connectedPlayers.put(serverPlayer, state);
+		
+		Queue<PluginChannelMessage> queuedMessages = this.messageQueue.get(serverPlayer);
+		if (queuedMessages != null)
+		{
+			PluginChannelSession session = state.session;
+			for (PluginChannelMessage message : queuedMessages)
+			{
+				message.setSession(session);
+				session.tryHandleMessage(message);
+			}
+			
+			this.messageQueue.remove(serverPlayer);
+		}
+		
 		return state;
 	}
 	
