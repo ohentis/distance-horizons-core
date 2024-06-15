@@ -301,11 +301,17 @@ public class SharedApi
 				{
 					// check if this chunk has been converted into an LOD already
 					int oldChunkHash = dhLevel.getChunkHash(chunkWrapper.getChunkPos()); // shouldn't happen on the render thread since it may take a few moments to run
-					if (oldChunkHash == chunkWrapper.getBlockBiomeHashCode())
+					int newChunkHash = chunkWrapper.getBlockBiomeHashCode();
+					if (oldChunkHash == newChunkHash)
 					{
 						// if the chunk hashes are the same then we don't need to bother with lighting the chunk
 						// or creating/updating the LODs
+						//LOGGER.info("skipping: "+chunkWrapper.getChunkPos()+" "+newChunkHash);
 						return;
+					}
+					else
+					{
+						//LOGGER.info("g: "+chunkWrapper.getChunkPos()+" "+newChunkHash);
 					}
 					
 					
@@ -344,7 +350,7 @@ public class SharedApi
 					}
 					
 					dhLevel.updateChunkAsync(chunkWrapper);
-					dhLevel.setChunkHash(chunkWrapper.getChunkPos(), chunkWrapper.getBlockBiomeHashCode());
+					dhLevel.setChunkHash(chunkWrapper.getChunkPos(), newChunkHash);
 				}
 				catch (Exception e)
 				{

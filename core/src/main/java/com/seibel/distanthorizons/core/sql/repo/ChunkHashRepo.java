@@ -116,6 +116,7 @@ public class ChunkHashRepo extends AbstractDhRepo<DhChunkPos, ChunkHashDTO>
 		
 		int i = 1;
 		statement.setObject(i++, dto.chunkHash);
+		statement.setObject(i++, System.currentTimeMillis()); // last modified unix time
 		
 		statement.setObject(i++, dto.pos.x);
 		statement.setObject(i++, dto.pos.z);
