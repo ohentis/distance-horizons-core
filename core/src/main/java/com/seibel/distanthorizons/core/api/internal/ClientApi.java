@@ -71,7 +71,7 @@ public class ClientApi
 	public static boolean prefLoggerEnabled = false;
 	
 	public static final ClientApi INSTANCE = new ClientApi();
-	public static TestRenderer testRenderer = new TestRenderer();
+	public static final TestRenderer TEST_RENDERER = new TestRenderer();
 	
 	private static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	private static final IMinecraftRenderWrapper MC_RENDER = SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
@@ -80,6 +80,7 @@ public class ClientApi
 	public static final long SPAM_LOGGER_FLUSH_NS = TimeUnit.NANOSECONDS.convert(1, TimeUnit.SECONDS);
 	
 	private boolean configOverrideReminderPrinted = false;
+	private boolean lowMemoryWarningPrinted = false;
 	
 	private final Queue<String> chatMessageQueueForNextFrame = new LinkedBlockingQueue<>();
 	
@@ -475,29 +476,7 @@ public class ClientApi
 	{
 		// logging //
 		
-		// dev build
-		if (ModInfo.IS_DEV_BUILD && !this.configOverrideReminderPrinted && MC.playerExists())
-		{
-			this.configOverrideReminderPrinted = true;
-			
-			// remind the user that this is a development build
-			MC.sendChatMessage("Distant Horizons nightly/unstable build, version: [" + ModInfo.VERSION+"].");
-			MC.sendChatMessage("Issues may occur with this version.");
-			MC.sendChatMessage("Here be dragons!");
-			MC.sendChatMessage("");
-		}
-		
-		// generic messages
-		while (!this.chatMessageQueueForNextFrame.isEmpty())
-		{
-			String message = this.chatMessageQueueForNextFrame.poll();
-			if (message == null)
-			{
-				// done to prevent potential null pointers
-				message = "";
-			}
-			MC.sendChatMessage(message);
-		}
+		this.sendChatMessagesNow();
 		
 		IProfilerWrapper profiler = MC.getProfiler();
 		profiler.pop(); // get out of "terrain"
@@ -579,7 +558,7 @@ public class ClientApi
 				else if (Config.Client.Advanced.Debugging.rendererMode.get() == EDhApiRendererMode.DEBUG)
 				{
 					profiler.push("Render Debug");
-					ClientApi.testRenderer.render();
+					ClientApi.TEST_RENDERER.render();
 					profiler.pop();
 				}
 			}
@@ -656,6 +635,53 @@ public class ClientApi
 		{
 			prefLoggerEnabled = !prefLoggerEnabled;
 			MC.sendChatMessage("P: Debug Pref Logger is " + (prefLoggerEnabled ? "enabled" : "disabled"));
+		}
+	}
+	
+	private void sendChatMessagesNow()
+	{
+		// dev build
+		if (ModInfo.IS_DEV_BUILD && !this.configOverrideReminderPrinted && MC.playerExists())
+		{
+			this.configOverrideReminderPrinted = true;
+			
+			// remind the user that this is a development build
+			MC.sendChatMessage("\u00A72" + "Distant Horizons: nightly/unstable build, version: [" + ModInfo.VERSION+"]." + "\u00A7r");
+			MC.sendChatMessage("Issues may occur with this version.");
+			MC.sendChatMessage("Here be dragons!");
+			MC.sendChatMessage("");
+		}
+		
+		// memory
+		if (!this.lowMemoryWarningPrinted && Config.Client.Advanced.Logging.showLowMemoryWarningOnStartup.get())
+		{
+			this.lowMemoryWarningPrinted = true;
+			
+			// 4 GB
+			long minimumRecommendedMemoryInBytes = 4L * 1_000_000_000L;
+			
+			// Java returned 17,171,480,576 for 16 GB so it might be slightly off what you'd expect
+			long maxMemoryInBytes = Runtime.getRuntime().maxMemory();
+			if (maxMemoryInBytes < minimumRecommendedMemoryInBytes)
+			{
+				MC.sendChatMessage("\u00A76" + "Distant Horizons: Low memory detected." + "\u00A7r");
+				MC.sendChatMessage("Stuttering or low FPS may occur.");
+				MC.sendChatMessage("Please increase Minecraft's available memory to 4 gigabytes.");
+				MC.sendChatMessage("This can be disabled in DH's config under Advanced -> Logging.");
+				MC.sendChatMessage("");
+			}
+		}
+		
+		// generic messages
+		while (!this.chatMessageQueueForNextFrame.isEmpty())
+		{
+			String message = this.chatMessageQueueForNextFrame.poll();
+			if (message == null)
+			{
+				// done to prevent potential null pointers
+				message = "";
+			}
+			MC.sendChatMessage(message);
 		}
 	}
 	

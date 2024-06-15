@@ -1120,6 +1120,14 @@ public class Config
 								+ "This can be useful for debugging.")
 						.build();
 				
+				
+				public static ConfigEntry<Boolean> showLowMemoryWarningOnStartup = new ConfigEntry.Builder<Boolean>()
+						.set(true)
+						.comment(""
+								+ "If enabled, a chat message will be displayed if Java doesn't have enough \n"
+								+ "memory allocated to run DH well.")
+						.build();
+				
 			}
 			
 			public static class Debugging
