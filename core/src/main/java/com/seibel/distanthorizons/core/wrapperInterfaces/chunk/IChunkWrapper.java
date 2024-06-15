@@ -81,6 +81,65 @@ public interface IChunkWrapper extends IBindable
 	int getBlockLight(int relX, int relY, int relZ);
 	int getSkyLight(int relX, int relY, int relZ);
 	
+	
+	ArrayList<DhBlockPos> getBlockLightPosList();
+	
+	
+	default boolean blockPosInsideChunk(DhBlockPos blockPos) { return this.blockPosInsideChunk(blockPos.x, blockPos.y, blockPos.z); }
+	default boolean blockPosInsideChunk(int x, int y, int z)
+	{
+		return (x >= this.getMinBlockX() && x <= this.getMaxBlockX()
+				&& y >= this.getMinBuildHeight() && y < this.getMaxBuildHeight()
+				&& z >= this.getMinBlockZ() && z <= this.getMaxBlockZ());
+	}
+	default boolean blockPosInsideChunk(DhBlockPos2D blockPos)
+	{
+		return (blockPos.x >= this.getMinBlockX() && blockPos.x <= this.getMaxBlockX()
+				&& blockPos.z >= this.getMinBlockZ() && blockPos.z <= this.getMaxBlockZ());
+	}
+	
+	boolean doNearbyChunksExist();
+	String toString();
+	
+	
+	default IBlockStateWrapper getBlockState(DhBlockPos pos) { return this.getBlockState(pos.x, pos.y, pos.z); }
+	IBlockStateWrapper getBlockState(int relX, int relY, int relZ);
+	
+	IBiomeWrapper getBiome(int relX, int relY, int relZ);
+	
+	boolean isStillValid();
+	
+	
+	
+	//========================//
+	// default helper methods //
+	//========================//
+	
+	/** used to prevent accidentally attempting to get/set values outside this chunk's boundaries */
+	default void throwIndexOutOfBoundsIfRelativePosOutsideChunkBounds(int x, int y, int z) throws IndexOutOfBoundsException
+	{
+		if (!RUN_RELATIVE_POS_INDEX_VALIDATION)
+		{
+			return;
+		}
+		
+		
+		// FIXME +1 is to handle the fact that LodDataBuilder adds +1 to all block lighting calculations, also done in the constructor
+		int minHeight = this.getMinBuildHeight();
+		int maxHeight = this.getMaxBuildHeight() + 1;
+		
+		if (x < 0 || x >= LodUtil.CHUNK_WIDTH
+				|| z < 0 || z >= LodUtil.CHUNK_WIDTH
+				|| y < minHeight || y > maxHeight)
+		{
+			String errorMessage = "Relative position [" + x + "," + y + "," + z + "] out of bounds. \n" +
+					"X/Z must be between 0 and 15 (inclusive) \n" +
+					"Y must be between [" + minHeight + "] and [" + maxHeight + "] (inclusive).";
+			throw new IndexOutOfBoundsException(errorMessage);
+		}
+	}
+	
+	
 	/**
 	 * Populates DH's saved lighting using MC's lighting engine.
 	 * This is generally done in cases where MC's lighting is correct now, but may not be later (like when a chunk is unloading).
@@ -109,82 +168,6 @@ public interface IChunkWrapper extends IBindable
 		
 		this.setIsDhLightCorrect(true);
 		this.setUseDhLighting(true);
-	}
-	
-	
-	
-	ArrayList<DhBlockPos> getBlockLightPosList();
-	
-	
-	default boolean blockPosInsideChunk(DhBlockPos blockPos) { return this.blockPosInsideChunk(blockPos.x, blockPos.y, blockPos.z); }
-	default boolean blockPosInsideChunk(int x, int y, int z)
-	{
-		return (x >= this.getMinBlockX() && x <= this.getMaxBlockX()
-				&& y >= this.getMinBuildHeight() && y < this.getMaxBuildHeight()
-				&& z >= this.getMinBlockZ() && z <= this.getMaxBlockZ());
-	}
-	default boolean blockPosInsideChunk(DhBlockPos2D blockPos)
-	{
-		return (blockPos.x >= this.getMinBlockX() && blockPos.x <= this.getMaxBlockX()
-				&& blockPos.z >= this.getMinBlockZ() && blockPos.z <= this.getMaxBlockZ());
-	}
-	
-	boolean doNearbyChunksExist();
-	String toString();
-	
-	/** This is a bad hash algorithm, but can be used for rough debugging. */
-	default int roughHashCode()
-	{
-		int hash = 31;
-		int primeMultiplier = 227;
-		
-		for (int x = 0; x < LodUtil.CHUNK_WIDTH; x++)
-		{
-			for (int z = 0; z < LodUtil.CHUNK_WIDTH; z++)
-			{
-				hash = hash * primeMultiplier + Integer.hashCode(this.getLightBlockingHeightMapValue(x, z));
-			}
-		}
-		
-		return hash;
-	}
-	
-	
-	default IBlockStateWrapper getBlockState(DhBlockPos pos) { return this.getBlockState(pos.x, pos.y, pos.z); }
-	IBlockStateWrapper getBlockState(int relX, int relY, int relZ);
-	
-	IBiomeWrapper getBiome(int relX, int relY, int relZ);
-	
-	boolean isStillValid();
-	
-	
-	
-	//================//
-	// helper methods //
-	//================//
-	
-	/** used to prevent accidentally attempting to get/set values outside this chunk's boundaries */
-	default void throwIndexOutOfBoundsIfRelativePosOutsideChunkBounds(int x, int y, int z) throws IndexOutOfBoundsException
-	{
-		if (!RUN_RELATIVE_POS_INDEX_VALIDATION)
-		{
-			return;
-		}
-		
-		
-		// FIXME +1 is to handle the fact that LodDataBuilder adds +1 to all block lighting calculations, also done in the constructor
-		int minHeight = this.getMinBuildHeight();
-		int maxHeight = this.getMaxBuildHeight() + 1;
-		
-		if (x < 0 || x >= LodUtil.CHUNK_WIDTH
-				|| z < 0 || z >= LodUtil.CHUNK_WIDTH
-				|| y < minHeight || y > maxHeight)
-		{
-			String errorMessage = "Relative position [" + x + "," + y + "," + z + "] out of bounds. \n" +
-					"X/Z must be between 0 and 15 (inclusive) \n" +
-					"Y must be between [" + minHeight + "] and [" + maxHeight + "] (inclusive).";
-			throw new IndexOutOfBoundsException(errorMessage);
-		}
 	}
 	
 	
@@ -217,5 +200,48 @@ public interface IChunkWrapper extends IBindable
 		final int xRel = index % LodUtil.CHUNK_WIDTH;
 		return new DhBlockPos(xRel, yRel, zRel);
 	}
+	
+	
+	/** This is a bad hash algorithm since it only uses the heightmap, but can be used for rough debugging. */
+	default int roughHashCode()
+	{
+		int hash = 31;
+		int primeMultiplier = 227;
+		
+		for (int x = 0; x < LodUtil.CHUNK_WIDTH; x++)
+		{
+			for (int z = 0; z < LodUtil.CHUNK_WIDTH; z++)
+			{
+				hash = (hash * primeMultiplier) + Integer.hashCode(this.getLightBlockingHeightMapValue(x, z));
+			}
+		}
+		
+		return hash;
+	}
+	
+	default int getBlockBiomeHashCode()
+	{
+		int hash = 31;
+		int primeBlockMultiplier = 227;
+		int primeBiomeMultiplier = 701;
+		
+		int minBuildHeight = this.getMinBuildHeight();
+		int maxBuildHeight = this.getMaxBuildHeight();
+		
+		for (int x = 0; x < LodUtil.CHUNK_WIDTH; x++)
+		{
+			for (int z = 0; z < LodUtil.CHUNK_WIDTH; z++)
+			{
+				for (int y = minBuildHeight; y < maxBuildHeight; y++)
+				{
+					hash = (hash * primeBlockMultiplier) + this.getBlockState(x, y, z).hashCode();
+					hash = (hash * primeBiomeMultiplier) + this.getBiome(x, y, z).hashCode();
+				}
+			}
+		}
+		
+		return hash;
+	}
+	
 	
 }
