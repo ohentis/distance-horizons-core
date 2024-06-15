@@ -24,6 +24,7 @@ import com.seibel.distanthorizons.api.enums.config.EDhApiWorldCompressionMode;
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
 import com.seibel.distanthorizons.core.dataObjects.fullData.FullDataPointIdMap;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
+import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.util.FullDataPointUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.objects.DataCorruptedException;
@@ -358,6 +359,8 @@ public class FullDataSourceV2DTO implements IBaseDTO<Long>
 	
 	@Override 
 	public Long getKey() { return this.pos; }
+	@Override
+	public String getKeyDisplayString() { return DhSectionPos.toString(this.pos); }
 	
 	
 	
