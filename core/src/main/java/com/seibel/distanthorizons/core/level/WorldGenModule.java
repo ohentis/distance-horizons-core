@@ -37,30 +37,16 @@ public class WorldGenModule implements Closeable
 	private final GeneratedFullDataSourceProvider.IOnWorldGenCompleteListener onWorldGenCompleteListener;
 	
 	private final AtomicReference<AbstractWorldGenState> worldGenStateRef = new AtomicReference<>();
-	private final F3Screen.DynamicMessage worldGenF3Message;
 	
 	
+	
+	//=============//
+	// constructor //
+	//=============//
 	
 	public WorldGenModule(GeneratedFullDataSourceProvider.IOnWorldGenCompleteListener onWorldGenCompleteListener)
 	{
 		this.onWorldGenCompleteListener = onWorldGenCompleteListener;
-		this.worldGenF3Message = new F3Screen.DynamicMessage(() ->
-		{
-			AbstractWorldGenState worldGenState = this.worldGenStateRef.get();
-			if (worldGenState != null)
-			{
-				int waitingCount = worldGenState.worldGenerationQueue.getWaitingTaskCount();
-				int inProgressCount = worldGenState.worldGenerationQueue.getInProgressTaskCount();
-				int totalCountEstimate = worldGenState.worldGenerationQueue.getEstimatedTotalTaskCount();
-				
-				return "World Gen Tasks: "+waitingCount+"/"+totalCountEstimate+", (in progress: "+inProgressCount+")";
-			}
-			else
-			{
-				return "World Gen Disabled";
-			}
-		});
-		
 	}
 	
 	
@@ -114,6 +100,12 @@ public class WorldGenModule implements Closeable
 		}
 	}
 	
+	
+	
+	//=======================//
+	// base method overrides //
+	//=======================//
+	
 	@Override
 	public void close()
 	{
@@ -135,8 +127,6 @@ public class WorldGenModule implements Closeable
 				worldGenState.closeAsync(true).join(); //TODO: Make it async.
 			}
 		}
-		
-		this.worldGenF3Message.close();
 	}
 	
 	
@@ -146,6 +136,22 @@ public class WorldGenModule implements Closeable
 	//=========//
 	
 	public boolean isWorldGenRunning() { return this.worldGenStateRef.get() != null; }
+	
+	public String getDebugMenuString()
+	{
+		AbstractWorldGenState worldGenState = this.worldGenStateRef.get();
+		if (worldGenState == null)
+		{
+			return null;
+		}
+		
+		
+		String waitingCountStr = F3Screen.NUMBER_FORMAT.format(worldGenState.worldGenerationQueue.getWaitingTaskCount());
+		String inProgressCountStr = F3Screen.NUMBER_FORMAT.format(worldGenState.worldGenerationQueue.getInProgressTaskCount());
+		String totalCountEstimateStr = F3Screen.NUMBER_FORMAT.format(worldGenState.worldGenerationQueue.getEstimatedTotalTaskCount());
+		
+		return "World Gen Tasks: "+waitingCountStr+"/"+totalCountEstimateStr+" (in progress: "+inProgressCountStr+")";
+	}
 	
 	
 	

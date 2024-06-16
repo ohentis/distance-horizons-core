@@ -145,6 +145,8 @@ public class DhClientWorld extends AbstractDhWorld implements IDhClientWorld
 	
 	@Override
 	public Iterable<? extends IDhLevel> getAllLoadedLevels() { return this.levels.values(); }
+	@Override
+	public int getLoadedLevelCount() { return this.levels.size(); }
 	
 	@Override
 	public void unloadLevel(@NotNull ILevelWrapper wrapper)

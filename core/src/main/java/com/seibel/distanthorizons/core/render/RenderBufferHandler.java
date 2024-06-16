@@ -73,8 +73,6 @@ public class RenderBufferHandler implements AutoCloseable
 	
 	private final AtomicBoolean rebuildAllBuffers = new AtomicBoolean(false);
 	
-	public F3Screen.MultiDynamicMessage f3Message;
-	
 	private int visibleBufferCount;
 	private int culledBufferCount;
 	private int shadowVisibleBufferCount;
@@ -104,31 +102,7 @@ public class RenderBufferHandler implements AutoCloseable
 		}
 		
 		
-		this.f3Message = new F3Screen.MultiDynamicMessage(
-			() ->
-			{
-				String countText = this.visibleBufferCount + "";
-				if (!Config.Client.Advanced.Graphics.AdvancedGraphics.disableFrustumCulling.get())
-				{
-					countText += "/" + (this.visibleBufferCount + this.culledBufferCount);
-				}
-				return LodUtil.formatLog("Rendered Buffer Count: " + countText);
-			}, 
-			() -> 
-			{
-				boolean hasIrisShaders = (IRIS_ACCESSOR != null && IRIS_ACCESSOR.isShaderPackInUse());
-				if (!hasIrisShaders)
-				{
-					return null;
-				}
-				
-				String countText = this.shadowVisibleBufferCount + "";
-				if (!Config.Client.Advanced.Graphics.AdvancedGraphics.disableFrustumCulling.get())
-				{
-					countText += "/" + (this.shadowVisibleBufferCount + this.shadowCulledBufferCount);
-				}
-				return LodUtil.formatLog("Shadow Buffer Count: " + countText);
-		});
+		F3Screen.setRenderBufferHandler(this);
 	}
 	
 	
@@ -397,6 +371,37 @@ public class RenderBufferHandler implements AutoCloseable
 	
 	
 	//=========//
+	// F3 menu //
+	//=========//
+	
+	public String getVboRenderDebugMenuString()
+	{
+		String countText = F3Screen.NUMBER_FORMAT.format(this.visibleBufferCount);
+		if (!Config.Client.Advanced.Graphics.AdvancedGraphics.disableFrustumCulling.get())
+		{
+			countText += "/" + F3Screen.NUMBER_FORMAT.format(this.visibleBufferCount + this.culledBufferCount);
+		}
+		return LodUtil.formatLog("VBO Render Count: " + countText);
+	}
+	public String getShadowPassRenderDebugMenuString()
+	{
+		boolean hasIrisShaders = (IRIS_ACCESSOR != null && IRIS_ACCESSOR.isShaderPackInUse());
+		if (!hasIrisShaders)
+		{
+			return null;
+		}
+		
+		String countText = F3Screen.NUMBER_FORMAT.format(this.shadowVisibleBufferCount);
+		if (!Config.Client.Advanced.Graphics.AdvancedGraphics.disableFrustumCulling.get())
+		{
+			countText += "/" + F3Screen.NUMBER_FORMAT.format(this.shadowVisibleBufferCount + this.shadowCulledBufferCount);
+		}
+		return LodUtil.formatLog("Shadow VBO Render Count: " + countText);
+	}
+	
+	
+	
+	//=========//
 	// cleanup //
 	//=========//
 	
@@ -413,7 +418,7 @@ public class RenderBufferHandler implements AutoCloseable
 			}
 		}
 		
-		this.f3Message.close();
+		F3Screen.setRenderBufferHandler(null);
 	}
 	
 	

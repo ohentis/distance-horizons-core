@@ -26,6 +26,7 @@ import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 public interface IDhLevel extends AutoCloseable
@@ -56,5 +57,8 @@ public interface IDhLevel extends AutoCloseable
 	 * due to chunk modifications or loads.
 	 */
 	int getUnsavedDataSourceCount();
+	
+	void addDebugMenuStringsToList(List<String> messageList);
+	
 	
 }

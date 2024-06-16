@@ -19,159 +19,127 @@
 
 package com.seibel.distanthorizons.core.logging.f3;
 
+import com.seibel.distanthorizons.core.api.internal.SharedApi;
+import com.seibel.distanthorizons.core.level.IDhLevel;
+import com.seibel.distanthorizons.core.render.RenderBufferHandler;
+import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
+import com.seibel.distanthorizons.core.world.AbstractDhWorld;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.Nullable;
 
-import java.io.Closeable;
+import java.lang.ref.WeakReference;
+import java.text.NumberFormat;
 import java.util.*;
-import java.util.function.Supplier;
+import java.util.concurrent.ThreadPoolExecutor;
 
 public class F3Screen
 {
 	private static final Logger LOGGER = LogManager.getLogger();
 	
-	private static final String[] DEFAULT_STRING = {
-			"", // blank line for spacing
-			ModInfo.READABLE_NAME + " version: " + ModInfo.VERSION
-	};
-	private static final List<Message> SELF_UPDATE_MESSAGE_LIST = Collections.synchronizedList(new LinkedList<>());
+	public static final NumberFormat NUMBER_FORMAT = NumberFormat.getIntegerInstance();
 	
-	public static void addStringToDisplay(List<String> list)
+	
+	
+	//============//
+	// properties //
+	//============//
+	
+	private static WeakReference<RenderBufferHandler> renderBufferHandlerRef = new WeakReference<>(null);
+	public static void setRenderBufferHandler(@Nullable RenderBufferHandler renderBufferHandler)
 	{
-		list.addAll(Arrays.asList(DEFAULT_STRING));
-		synchronized (SELF_UPDATE_MESSAGE_LIST)
+		if (renderBufferHandler != null && renderBufferHandlerRef.get() != null)
 		{
-			Iterator<Message> iterator = SELF_UPDATE_MESSAGE_LIST.iterator();
-			while (iterator.hasNext())
+			LOGGER.warn("multiple RenderBufferHandlers are active at once, the F3 menu may not be accurate.");
+		}
+		
+		renderBufferHandlerRef = new WeakReference<>(renderBufferHandler);
+	}
+	
+	
+	
+	//=================//
+	// injection point //
+	//=================//
+	
+	/**
+	 * F3 menu example: <br>
+	 <code>
+	 Distant Horizons v: 2.1.1-a-dev <br><br>
+	 
+	 Queued chunk updates: 0 / 1000 <br>
+	 World Gen Tasks: 40/5304, (in progress: 7) <br><br>
+	 
+	 File thread pool tasks: 0 (complete: 759) <br>
+	 Update thread pool tasks: 10 (complete: 24) <br>
+	 Level Unsaved #: 0 <br>
+	 File Handler Unsaved #: 0 <br>
+	 Parent Update #: 12 <br><br>
+	 
+	 Client_Server World with 3 levels <br>
+	 [overworld] rendering: Active <br>
+	 [the_end] rendering: Inactive <br>
+	 [the_nether] rendering: Inactive <br><br>
+	 
+	 VBO Render Count: 199/374 <br>
+	 </code>
+	 */
+	public static void addStringToDisplay(List<String> messageList)
+	{
+		ThreadPoolExecutor worldGenPool = ThreadPoolUtil.getWorldGenExecutor();
+		ThreadPoolExecutor fileHandlerPool = ThreadPoolUtil.getFileHandlerExecutor();
+		ThreadPoolExecutor updatePool = ThreadPoolUtil.getUpdatePropagatorExecutor();
+		
+		AbstractDhWorld world = SharedApi.getAbstractDhWorld();
+		Iterable<? extends IDhLevel> levelIterator = world.getAllLoadedLevels();
+		
+		
+		messageList.add("");
+		messageList.add(ModInfo.READABLE_NAME+": "+ModInfo.VERSION);
+		messageList.add("");
+		// thread pools
+		messageList.add(getThreadPoolStatString("World Gen", worldGenPool));//"World Gen Tasks: 40/5304, (in progress: 7)");
+		messageList.add(getThreadPoolStatString("File Handler", fileHandlerPool));
+		messageList.add(getThreadPoolStatString("Update Propagator", updatePool));
+		messageList.add("");
+		// chunk updates
+		messageList.add(SharedApi.INSTANCE.getDebugMenuString());
+		messageList.add("");
+		// rendering
+		RenderBufferHandler renderBufferHandler = renderBufferHandlerRef.get();
+		if (renderBufferHandler != null)
+		{
+			messageList.add(renderBufferHandler.getVboRenderDebugMenuString());
+			String showPassString = renderBufferHandler.getShadowPassRenderDebugMenuString();
+			if (showPassString != null)
 			{
-				Message message = iterator.next();
-				if (message == null)
-				{
-					iterator.remove();
-				}
-				else
-				{
-					message.printTo(list);
-				}
+				messageList.add(showPassString);
 			}
+			messageList.add("");
+		}
+		// world / levels
+		messageList.add(world.GetDebugMenuString());
+		for (IDhLevel level : levelIterator)
+		{
+			level.addDebugMenuStringsToList(messageList);
 		}
 	}
 	
 	
 	
 	//================//
-	// helper classes //
+	// helper methods //
 	//================//
 	
-	// we are using Closeable instead of AutoCloseable because the close method should never throw exceptions
-	// and because this class shouldn't be used in a try {} block.
-	public static abstract class Message implements Closeable
+	private static String getThreadPoolStatString(String name, ThreadPoolExecutor pool)
 	{
-		protected Message()
-		{
-			SELF_UPDATE_MESSAGE_LIST.add(this);
-		}
+		String queueSize = (pool != null) ? NUMBER_FORMAT.format(pool.getQueue().size()) : "-";
+		String completedCount = (pool != null) ? NUMBER_FORMAT.format(pool.getCompletedTaskCount()) : "-";
 		
-		public abstract void printTo(List<String> output);
-		
-		@Override
-		public void close()
-		{
-			boolean removed = SELF_UPDATE_MESSAGE_LIST.remove(this);
-		}
-		
+		return name+", tasks: "+queueSize+", complete: "+completedCount;
 	}
 	
-	public static class StaticMessage extends Message
-	{
-		private final String[] lines;
-		
-		public StaticMessage(String... lines) { this.lines = lines; }
-		
-		@Override
-		public void printTo(List<String> output) { output.addAll(Arrays.asList(this.lines)); }
-		
-	}
 	
-	public static class DynamicMessage extends Message
-	{
-		private final Supplier<String> supplier;
-		
-		public DynamicMessage(Supplier<String> message) { this.supplier = message; }
-		
-		public void printTo(List<String> list)
-		{
-			
-			try
-			{
-				String message = this.supplier.get();
-				if (message != null)
-				{
-					list.add(message);
-				}
-			}
-			catch (Exception e)
-			{
-				LOGGER.error("Unexpected Exception in F3 ["+DynamicMessage.class.getSimpleName()+"], error: "+e.getMessage(), e);
-			}
-		}
-		
-	}
-	
-	public static class MultiDynamicMessage extends Message
-	{
-		private final Supplier<String>[] supplierList;
-		
-		@SafeVarargs
-		public MultiDynamicMessage(Supplier<String>... suppliers) { this.supplierList = suppliers; }
-		
-		public void printTo(List<String> list)
-		{
-			for (Supplier<String> supplier : this.supplierList)
-			{
-				try
-				{
-					String message = supplier.get();
-					if (message != null)
-					{
-						list.add(message);
-					}
-				}
-				catch (Exception e)
-				{
-					LOGGER.error("Unexpected Exception in F3 ["+DynamicMessage.class.getSimpleName()+"], error: "+e.getMessage(), e);
-				}
-			}
-		}
-		
-	}
-	
-	public static class NestedMessage extends Message
-	{
-		private final Supplier<String[]> supplier;
-		
-		public NestedMessage(Supplier<String[]> message)
-		{
-			this.supplier = message;
-		}
-		
-		public void printTo(List<String> list)
-		{
-			try
-			{
-				String[] message = this.supplier.get();
-				if (message != null)
-				{
-					list.addAll(Arrays.asList(message));
-				}
-			}
-			catch (Exception e)
-			{
-				LOGGER.error("Unexpected Exception in F3 ["+DynamicMessage.class.getSimpleName()+"], error: "+e.getMessage(), e);
-			}
-		}
-		
-	}
 	
 }

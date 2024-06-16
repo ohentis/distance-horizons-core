@@ -28,6 +28,8 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
 import org.apache.logging.log4j.Logger;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
@@ -113,6 +115,19 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 	public void onWorldGenTaskComplete(long pos)
 	{
 		//TODO: Send packet to client
+	}
+	
+	
+	
+	//===========//
+	// debugging //
+	//===========//
+	
+	@Override
+	public void addDebugMenuStringsToList(List<String> messageList)
+	{
+		String dimName = this.serverLevelWrapper.getDimensionType().getDimensionName();
+		messageList.add("["+dimName+"]");
 	}
 	
 }

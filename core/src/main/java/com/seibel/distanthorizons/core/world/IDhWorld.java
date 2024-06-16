@@ -31,6 +31,7 @@ public interface IDhWorld
 	IDhLevel getOrLoadLevel(@NotNull ILevelWrapper levelWrapper);
 	IDhLevel getLevel(@NotNull ILevelWrapper wrapper);
 	Iterable<? extends IDhLevel> getAllLoadedLevels();
+	int getLoadedLevelCount();
 	
 	void unloadLevel(@NotNull ILevelWrapper levelWrapper);
 	

@@ -46,8 +46,6 @@ public class DhClientServerWorld extends AbstractDhWorld implements IDhClientWor
 	public ExecutorService dhTickerThread = ThreadUtil.makeSingleThreadPool("Client Server World Ticker Thread", 2);
 	public EventLoop eventLoop = new EventLoop(this.dhTickerThread, this::_clientTick); //TODO: Rate-limit the loop
 	
-	public F3Screen.DynamicMessage f3Message;
-	
 	
 	
 	//=============//
@@ -57,10 +55,7 @@ public class DhClientServerWorld extends AbstractDhWorld implements IDhClientWor
 	public DhClientServerWorld()
 	{
 		super(EWorldEnvironment.Client_Server);
-		
 		LOGGER.info("Started DhWorld of type " + this.environment);
-		
-		this.f3Message = new F3Screen.DynamicMessage(() -> LodUtil.formatLog(this.environment + " World with " + this.dhLevels.size() + " levels"));
 	}
 	
 	
@@ -113,6 +108,8 @@ public class DhClientServerWorld extends AbstractDhWorld implements IDhClientWor
 	
 	@Override
 	public Iterable<? extends IDhLevel> getAllLoadedLevels() { return this.dhLevels; }
+	@Override 
+	public int getLoadedLevelCount() { return this.dhLevels.size(); }
 	
 	@Override
 	public void unloadLevel(@NotNull ILevelWrapper wrapper)
@@ -154,13 +151,16 @@ public class DhClientServerWorld extends AbstractDhWorld implements IDhClientWor
 	
 	public void doWorldGen() { this.dhLevels.forEach(DhClientServerLevel::doWorldGen); }
 	
+	
+	
+	//================//
+	// base overrides //
+	//================//
+	
 	/** synchronized to prevent a rare issue where the server tries closing the same world multiple times in rapid succession. */
 	@Override
 	public synchronized void close()
 	{
-		this.f3Message.close();
-		
-		
 		// clear dhLevels to prevent concurrent modification errors
 		HashSet<DhClientServerLevel> levelsToClose = new HashSet<>(this.dhLevels);
 		this.dhLevels.clear();

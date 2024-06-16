@@ -65,23 +65,13 @@ public class SharedApi
 	private static int lastWorldGenTickDelta = 0;
 	private static long lastOverloadedLogMessageMsTime = 0;
 	
-	public F3Screen.DynamicMessage f3Message;
-	
 	
 	
 	//=============//
 	// constructor //
 	//=============//
 	
-	private SharedApi() 
-	{
-		this.f3Message = new F3Screen.DynamicMessage(() ->
-		{
-			int maxUpdateCount = MAX_UPDATING_CHUNK_COUNT_PER_THREAD * Config.Client.Advanced.MultiThreading.numberOfLodBuilderThreads.get();
-			return LodUtil.formatLog("Queued chunk updates: " + UPDATING_CHUNK_POS_SET.size() + " / " + maxUpdateCount);
-		});
-	}
-	
+	private SharedApi() { }
 	public static void init() { Initializer.init(); }
 	
 	
@@ -378,6 +368,20 @@ public class SharedApi
 			});
 		}
 		catch (RejectedExecutionException ignore) { /* the executor was shut down, it should be back up shortly and able to accept new jobs */ }
+	}
+	
+	
+	
+	//=========//
+	// F3 Menu //
+	//=========//
+	
+	public String getDebugMenuString()
+	{
+		int maxUpdateCount = MAX_UPDATING_CHUNK_COUNT_PER_THREAD * Config.Client.Advanced.MultiThreading.numberOfLodBuilderThreads.get();
+		String updatingCountStr = F3Screen.NUMBER_FORMAT.format(UPDATING_CHUNK_POS_SET.size());
+		String maxUpdateCountStr = F3Screen.NUMBER_FORMAT.format(maxUpdateCount);
+		return "Queued chunk updates: "+updatingCountStr+" / "+maxUpdateCountStr;
 	}
 	
 	
