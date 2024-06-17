@@ -402,7 +402,7 @@
   "distanthorizons.config.client.advanced.multiThreading.numberOfFileHandlerThreads":
     "NO. of file handler threads",
   "distanthorizons.config.client.advanced.multiThreading.numberOfFileHandlerThreads.@tooltip":
-    "The number of threads used when building vertex buffers \n(The things sent to your GPU to draw the LODs). \nCan only be between 1 and your CPU's processor count.",
+    "The number of threads used when reading/writing LOD data to/from the disk. \nCan only be between 1 and your CPU's processor count.",
   "distanthorizons.config.client.advanced.multiThreading.runTimeRatioForFileHandlerThreads":
     "Runtime % for file handler threads",
   
