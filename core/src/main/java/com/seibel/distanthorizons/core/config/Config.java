@@ -716,7 +716,7 @@ public class Config
 						.build();
 				
 				public static ConfigEntry<Integer> worldGenerationTimeoutLengthInSeconds = new ConfigEntry.Builder<Integer>()
-						.setMinDefaultMax(5, 60, 60 * 10/*10 minutes*/ )
+						.setMinDefaultMax(5, 60 * 3, 60 * 10/*10 minutes*/ )
 						.comment(""
 								+ "How long should a world generator thread run for before timing out? \n"
 								+ "Note: If you are experiencing timeout errors it is better to lower your CPU usage first \n"
