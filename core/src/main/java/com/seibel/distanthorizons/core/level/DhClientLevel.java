@@ -35,7 +35,6 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -63,7 +62,7 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 		this.dataFileHandler = new RemoteFullDataSourceProvider(this, saveStructure, fullDataSaveDirOverride);
 		this.clientside = new ClientLevelModule(this);
 		
-		this.createAndSetChunkHashRepo(this.dataFileHandler.repo.databaseLocation);
+		this.createAndSetChunkHashRepo(this.dataFileHandler.repo.databaseFile);
 		
 		if (enableRendering)
 		{

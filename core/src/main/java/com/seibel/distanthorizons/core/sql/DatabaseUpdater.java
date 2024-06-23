@@ -97,7 +97,7 @@ public class DatabaseUpdater
 			Map<String, Object> scriptAlreadyRunResult = repo.queryDictionaryFirst("SELECT EXISTS(SELECT 1 FROM "+SCHEMA_TABLE_NAME+" WHERE ScriptName='"+resource.name+"') as 'existingCount';");
 			if (scriptAlreadyRunResult != null && (int) scriptAlreadyRunResult.get("existingCount") == 0)
 			{
-				LOGGER.info("Running SQL update script: ["+resource.name+"], for repo: ["+repo.databaseLocation+"]");
+				LOGGER.info("Running SQL update script: ["+resource.name+"], for repo: ["+repo.databaseFile +"]");
 				
 				
 				int sqlIndex = 0;
@@ -147,7 +147,7 @@ public class DatabaseUpdater
 				catch (RuntimeException e)
 				{
 					// updating needs to stop to prevent data corruption
-					LOGGER.error("Unexpected error running database update script ["+resource.name+"] on database ["+repo.databaseLocation+"], stopping database update. Database reading/writing may fail if you continue. \n" +
+					LOGGER.error("Unexpected error running database update script ["+resource.name+"] on database ["+repo.databaseFile +"], stopping database update. Database reading/writing may fail if you continue. \n" +
 							"Error: ["+e.getMessage()+"]. \n" +
 							"Sql Script:["+resource.queryString+"]", e);
 					throw e;

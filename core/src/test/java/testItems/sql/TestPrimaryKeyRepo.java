@@ -21,6 +21,7 @@ package testItems.sql;
 
 import com.seibel.distanthorizons.core.sql.repo.AbstractDhRepo;
 
+import java.io.File;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Map;
@@ -28,9 +29,9 @@ import java.util.Map;
 public class TestPrimaryKeyRepo extends AbstractDhRepo<Integer, TestSingleKeyDto>
 {
 	
-	public TestPrimaryKeyRepo(String databaseType, String databaseLocation) throws SQLException
+	public TestPrimaryKeyRepo(String databaseType, File databaseFile) throws SQLException
 	{
-		super(databaseType, databaseLocation, TestSingleKeyDto.class);
+		super(databaseType, databaseFile, TestSingleKeyDto.class);
 		
 		// note: this should only ever be done with the test repo.
 		// All long term tables should be created using a sql Script.

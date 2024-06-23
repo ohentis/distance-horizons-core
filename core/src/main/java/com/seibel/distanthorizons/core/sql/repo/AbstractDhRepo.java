@@ -26,6 +26,8 @@ import com.seibel.distanthorizons.core.sql.dto.IBaseDTO;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.File;
+import java.io.IOException;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -49,7 +51,7 @@ public abstract class AbstractDhRepo<TKey, TDTO extends IBaseDTO<TKey>> implemen
 	private final Connection connection;
 	
 	public final String databaseType;
-	public final String databaseLocation;
+	public final File databaseFile;
 	
 	public final Class<? extends TDTO> dtoClass;
 	
@@ -59,16 +61,15 @@ public abstract class AbstractDhRepo<TKey, TDTO extends IBaseDTO<TKey>> implemen
 	
 	
 	
-	
 	//=============//
 	// constructor //
 	//=============//
 	
 	/** @throws SQLException if the repo is unable to access the database or has trouble updating said database. */
-	public AbstractDhRepo(String databaseType, String databaseLocation, Class<? extends TDTO> dtoClass) throws SQLException
+	public AbstractDhRepo(String databaseType, File databaseFile, Class<? extends TDTO> dtoClass) throws SQLException
 	{
 		this.databaseType = databaseType;
-		this.databaseLocation = databaseLocation;
+		this.databaseFile = databaseFile;
 		this.dtoClass = dtoClass;
 		
 		
@@ -93,9 +94,55 @@ public abstract class AbstractDhRepo<TKey, TDTO extends IBaseDTO<TKey>> implemen
 		}
 		
 		
+		
+		//==========================//
+		// database file validation //
+		//==========================//
+		
+		// check that the database file exists
+		if (!databaseFile.exists())
+		{
+			// check that the parent folder exists
+			File parentFolder = databaseFile.getParentFile();
+			if (parentFolder != null && !parentFolder.exists())
+			{
+				if (!parentFolder.mkdirs())
+				{
+					throw new RuntimeException("Unable to create the necessary parent folders for the database file at location ["+databaseFile.getPath()+"].");
+				}
+			}
+			
+			if (!databaseFile.exists())
+			{
+				try
+				{
+					boolean fileCreated = databaseFile.createNewFile();
+				}
+				catch (IOException e)
+				{
+					throw new RuntimeException("Unable to create database file at location ["+databaseFile.getPath()+"] due to error: ["+e.getMessage()+"]", e);
+				}
+			}
+		}
+		
+		if (!databaseFile.canRead())
+		{
+			throw new RuntimeException("Unable to read database file at location ["+databaseFile.getPath()+"], please make sure the folder and file has the correct permissions.");
+		}
+		if (!databaseFile.canWrite())
+		{
+			throw new RuntimeException("Unable to write database file at location ["+databaseFile.getPath()+"], please make sure the folder and file aren't set to read-only.");
+		}
+		
+		
+		
+		//==================//
+		// connection setup //
+		//==================//
+		
 		// get or create the connection,
 		// reusing existing connections reduces the chance of locking the database during trivial queries
-		this.connectionString = this.databaseType+":"+this.databaseLocation;
+		this.connectionString = this.databaseType+":"+this.databaseFile.getPath();
 		
 		
 		this.connection = CONNECTIONS_BY_CONNECTION_STRING.computeIfAbsent(this.connectionString, (connectionString) ->

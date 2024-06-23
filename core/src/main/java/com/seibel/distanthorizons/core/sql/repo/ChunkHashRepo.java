@@ -26,6 +26,7 @@ import com.seibel.distanthorizons.core.sql.dto.ChunkHashDTO;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import org.apache.logging.log4j.Logger;
 
+import java.io.File;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Map;
@@ -40,9 +41,9 @@ public class ChunkHashRepo extends AbstractDhRepo<DhChunkPos, ChunkHashDTO>
 	// constructor //
 	//=============//
 	
-	public ChunkHashRepo(String databaseType, String databaseLocation) throws SQLException
+	public ChunkHashRepo(String databaseType, File databaseFile) throws SQLException
 	{
-		super(databaseType, databaseLocation, ChunkHashDTO.class);
+		super(databaseType, databaseFile, ChunkHashDTO.class);
 	}
 	
 	

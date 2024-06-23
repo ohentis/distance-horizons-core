@@ -28,7 +28,6 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
 import org.apache.logging.log4j.Logger;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -48,7 +47,7 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 		}
 		this.serverLevelWrapper = serverLevelWrapper;
 		this.serverside = new ServerLevelModule(this, saveStructure);
-		this.createAndSetChunkHashRepo(this.serverside.fullDataFileHandler.repo.databaseLocation);
+		this.createAndSetChunkHashRepo(this.serverside.fullDataFileHandler.repo.databaseFile);
 		
 		LOGGER.info("Started DHLevel for {} with saves at {}", serverLevelWrapper, saveStructure);
 	}

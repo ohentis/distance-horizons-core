@@ -80,11 +80,6 @@ public abstract class AbstractDataSourceHandler
 	{
 		this.level = level;
 		this.saveDir = (saveDirOverride == null) ? saveStructure.getFullDataFolder(level.getLevelWrapper()) : saveDirOverride;
-		if (!this.saveDir.exists() && !this.saveDir.mkdirs())
-		{
-			LOGGER.warn("Unable to create full data folder, file saving may fail.");
-		}
-		
 		this.repo = this.createRepo();
 	}
 	

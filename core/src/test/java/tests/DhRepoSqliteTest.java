@@ -62,7 +62,7 @@ public class DhRepoSqliteTest
 		TestPrimaryKeyRepo primaryKeyRepo = null;
 		try
 		{
-			primaryKeyRepo = new TestPrimaryKeyRepo(DATABASE_TYPE, DB_FILE_NAME);
+			primaryKeyRepo = new TestPrimaryKeyRepo(DATABASE_TYPE, new File(DB_FILE_NAME));
 			
 			
 			
@@ -78,8 +78,8 @@ public class DhRepoSqliteTest
 			}
 			
 			// check that the update scripts aren't run multiple times
-			TestPrimaryKeyRepo altDataRepoOne = new TestPrimaryKeyRepo(DATABASE_TYPE, DB_FILE_NAME);
-			TestPrimaryKeyRepo altDataRepoTwo = new TestPrimaryKeyRepo(DATABASE_TYPE, DB_FILE_NAME);
+			TestPrimaryKeyRepo altDataRepoOne = new TestPrimaryKeyRepo(DATABASE_TYPE, new File(DB_FILE_NAME));
+			TestPrimaryKeyRepo altDataRepoTwo = new TestPrimaryKeyRepo(DATABASE_TYPE, new File(DB_FILE_NAME));
 			
 			
 			
@@ -142,7 +142,7 @@ public class DhRepoSqliteTest
 		TestCompoundKeyRepo compoundKeyRepo = null;
 		try
 		{
-			compoundKeyRepo = new TestCompoundKeyRepo(DATABASE_TYPE, DB_FILE_NAME);
+			compoundKeyRepo = new TestCompoundKeyRepo(DATABASE_TYPE, new File(DB_FILE_NAME));
 			
 			
 			
