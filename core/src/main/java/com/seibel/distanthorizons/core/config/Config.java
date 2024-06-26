@@ -809,12 +809,12 @@ public class Config
 								+ "")
 						.build();
 				
-				public static ConfigEntry<Boolean> showMigrationChatWarning = new ConfigEntry.Builder<Boolean>()
-						.set(true)
-						.comment(""
-								+ "Determines if a message should be displayed in the chat when LOD migration starts. \n"
-								+ "")
-						.build();
+				//public static ConfigEntry<Boolean> showMigrationChatWarning = new ConfigEntry.Builder<Boolean>()
+				//		.set(true)
+				//		.comment(""
+				//				+ "Determines if a message should be displayed in the chat when LOD migration starts. \n"
+				//				+ "")
+				//		.build();
 				
 			}
 			
@@ -1240,6 +1240,14 @@ public class Config
 						.comment(""
 								+ "If enabled, the mod will log information about network operations. \n"
 								+ "This can be useful for debugging.")
+						.build();
+				
+				
+				public static ConfigEntry<Boolean> showLowMemoryWarningOnStartup = new ConfigEntry.Builder<Boolean>()
+						.set(true)
+						.comment(""
+								+ "If enabled, a chat message will be displayed if Java doesn't have enough \n"
+								+ "memory allocated to run DH well.")
 						.build();
 				
 			}

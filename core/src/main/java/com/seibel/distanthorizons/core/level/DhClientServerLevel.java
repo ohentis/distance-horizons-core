@@ -23,6 +23,7 @@ import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhAp
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.file.fullDatafile.FullDataSourceProviderV2;
+import com.seibel.distanthorizons.core.logging.f3.F3Screen;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
@@ -38,6 +39,8 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapp
 import org.apache.logging.log4j.Logger;
 
 import java.awt.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /** The level used on a singleplayer world */
@@ -53,6 +56,10 @@ public class DhClientServerLevel extends AbstractDhLevel implements IDhClientLev
 	
 	
 	
+	//=============//
+	// constructor //
+	//=============//
+	
 	public DhClientServerLevel(AbstractSaveStructure saveStructure, IServerLevelWrapper serverLevelWrapper)
 	{
 		if (saveStructure.getFullDataFolder(serverLevelWrapper).mkdirs())
@@ -62,6 +69,8 @@ public class DhClientServerLevel extends AbstractDhLevel implements IDhClientLev
 		this.serverLevelWrapper = serverLevelWrapper;
 		this.serverside = new ServerLevelModule(this, saveStructure);
 		this.clientside = new ClientLevelModule(this);
+		this.createAndSetChunkHashRepo(this.serverside.fullDataFileHandler.repo.databaseLocation);
+		
 		LOGGER.info("Started " + DhClientServerLevel.class.getSimpleName() + " for " + serverLevelWrapper + " with saves at " + saveStructure);
 	}
 	
@@ -72,10 +81,7 @@ public class DhClientServerLevel extends AbstractDhLevel implements IDhClientLev
 	//==============//
 	
 	@Override
-	public void clientTick()
-	{
-		clientside.clientTick();
-	}
+	public void clientTick() { this.clientside.clientTick(); }
 	
 	@Override
 	public void render(DhApiRenderParam renderEventParam, IProfilerWrapper profiler)
@@ -124,6 +130,8 @@ public class DhClientServerLevel extends AbstractDhLevel implements IDhClientLev
 		}
 	}
 	
+	
+	
 	//========//
 	// render //
 	//========//
@@ -131,6 +139,8 @@ public class DhClientServerLevel extends AbstractDhLevel implements IDhClientLev
 	public void startRenderer(IClientLevelWrapper clientLevel) { this.clientside.startRenderer(clientLevel); }
 	
 	public void stopRenderer() { this.clientside.stopRenderer(); }
+	
+	
 	
 	//================//
 	// level handling //
@@ -180,7 +190,52 @@ public class DhClientServerLevel extends AbstractDhLevel implements IDhClientLev
 	public CompletableFuture<Void> updateDataSourcesAsync(FullDataSourceV2 data) { return this.clientside.updateDataSourcesAsync(data); }
 	
 	@Override
-	public int getMinY() { return getLevelWrapper().getMinHeight(); }
+	public int getMinY() { return this.getLevelWrapper().getMinHeight(); }
+	
+	
+	
+	//===========//
+	// debugging //
+	//===========//
+	
+	@Override
+	public void addDebugMenuStringsToList(List<String> messageList)
+	{
+		// header
+		String dimName = this.serverLevelWrapper.getDimensionType().getDimensionName();
+		boolean rendering = this.clientside.isRendering();
+		messageList.add("["+dimName+"] rendering: "+(rendering ? "yes" : "no"));
+		
+		
+		// migration
+		boolean migrationErrored = this.serverside.fullDataFileHandler.getMigrationStoppedWithError();
+		if (!migrationErrored)
+		{
+			long legacyDeletionCount = this.serverside.fullDataFileHandler.getLegacyDeletionCount();
+			if (legacyDeletionCount > 0)
+			{
+				messageList.add("  Migrating - Deleting #: " + F3Screen.NUMBER_FORMAT.format(legacyDeletionCount));
+			}
+			long migrationCount = this.serverside.fullDataFileHandler.getTotalMigrationCount();
+			if (migrationCount > 0)
+			{
+				messageList.add("  Migrating - Conversion #: " + F3Screen.NUMBER_FORMAT.format(migrationCount));
+			}
+		}
+		else
+		{
+			messageList.add("  Migration Failed");
+		}
+		
+		
+		// world gen
+		WorldGenModule worldGenState = this.serverside.worldGenModule;
+		String worldGenDisplayString = worldGenState.getDebugMenuString();
+		if (worldGenDisplayString != null)
+		{
+			messageList.add(worldGenDisplayString);
+		}
+	}
 	
 	
 	

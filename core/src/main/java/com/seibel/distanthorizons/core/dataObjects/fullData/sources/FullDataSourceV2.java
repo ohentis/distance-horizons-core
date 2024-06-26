@@ -74,6 +74,8 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 	private long pos;
 	@Override
 	public Long getKey() { return this.pos; }
+	@Override
+	public String getKeyDisplayString() { return DhSectionPos.toString(this.pos); }
 	
 	
 	public final FullDataPointIdMap mapping;

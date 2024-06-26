@@ -169,18 +169,6 @@ public class ClientOnlySaveStructure extends AbstractSaveStructure
 	
 	
 	@Override
-	public File getRenderCacheFolder(ILevelWrapper level)
-	{
-		File levelFolder = this.levelWrapperToFileMap.get(level);
-		if (levelFolder == null)
-		{
-			return null;
-		}
-		
-		return levelFolder;
-	}
-	
-	@Override
 	public File getFullDataFolder(ILevelWrapper level)
 	{
 		File levelFolder = this.levelWrapperToFileMap.get(level);

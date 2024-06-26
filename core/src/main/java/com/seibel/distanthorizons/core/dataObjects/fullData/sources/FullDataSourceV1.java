@@ -75,7 +75,7 @@ public class FullDataSourceV1 implements IDataSource<IDhLevel>
 	/** A flattened 2D array (for the X and Z directions) containing an array for the Y direction. */
 	private final long[][] dataArrays;
 	
-	private long sectionPos;
+	private long pos;
 	
 	private boolean isEmpty = true;
 	
@@ -86,11 +86,11 @@ public class FullDataSourceV1 implements IDataSource<IDhLevel>
 	//==============//
 	
 	public static FullDataSourceV1 createEmpty(long pos) { return new FullDataSourceV1(pos); }
-	private FullDataSourceV1(long sectionPos)
+	private FullDataSourceV1(long pos)
 	{
 		this.dataArrays = new long[WIDTH * WIDTH][0];
-		this.mapping = new FullDataPointIdMap(sectionPos);
-		this.sectionPos = sectionPos;
+		this.mapping = new FullDataPointIdMap(pos);
+		this.pos = pos;
 	}
 	
 	
@@ -111,19 +111,21 @@ public class FullDataSourceV1 implements IDataSource<IDhLevel>
 	//=====================//
 	
 	@Override
-	public Long getKey() { return this.sectionPos; }
+	public Long getKey() { return this.pos; }
+	@Override
+	public String getKeyDisplayString() { return DhSectionPos.toString(this.pos); }
 	
 	@Override
-	public Long getPos() { return this.sectionPos; }
+	public Long getPos() { return this.pos; }
 	
 	public void resizeDataStructuresForRepopulation(long pos)
 	{
 		// no data structures need to be changed, only the source's position 
-		this.sectionPos = pos;
+		this.pos = pos;
 	}
 	
 	@Override
-	public byte getDataDetailLevel() { return (byte) (DhSectionPos.getDetailLevel(this.sectionPos) - SECTION_SIZE_OFFSET); }
+	public byte getDataDetailLevel() { return (byte) (DhSectionPos.getDetailLevel(this.pos) - SECTION_SIZE_OFFSET); }
 	
 	public boolean isEmpty() { return this.isEmpty; }
 	
@@ -370,7 +372,7 @@ public class FullDataSourceV1 implements IDataSource<IDhLevel>
 			throw new IOException("Invalid data content end guard for ID mapping");
 		}
 		
-		return FullDataPointIdMap.deserialize(inputStream, this.sectionPos, levelWrapper);
+		return FullDataPointIdMap.deserialize(inputStream, this.pos, levelWrapper);
 	}
 	public void setIdMapping(FullDataPointIdMap mappings) { this.mapping.mergeAndReturnRemappedEntityIds(mappings); }
 	

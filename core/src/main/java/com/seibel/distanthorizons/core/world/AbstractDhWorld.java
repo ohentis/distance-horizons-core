@@ -20,6 +20,7 @@
 package com.seibel.distanthorizons.core.world;
 
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.logging.f3.F3Screen;
 import org.apache.logging.log4j.Logger;
 
 import java.io.Closeable;
@@ -36,11 +37,22 @@ public abstract class AbstractDhWorld implements IDhWorld, Closeable
 	
 	
 	
+	// constructor //
+	
 	protected AbstractDhWorld(EWorldEnvironment environment) { this.environment = environment; }
 	
 	
-	// remove the "throws IOException"
+	
+	// abstract methods //
+	
+	// removes the "throws IOException"
 	@Override
 	public abstract void close();
+	
+	
+	
+	// helper methods //
+	
+	public String GetDebugMenuString() { return this.environment + " World with " + F3Screen.NUMBER_FORMAT.format(this.getLoadedLevelCount()) + " levels"; }
 	
 }

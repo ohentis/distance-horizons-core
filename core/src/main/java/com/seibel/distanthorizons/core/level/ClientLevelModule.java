@@ -57,8 +57,6 @@ public class ClientLevelModule implements Closeable, AbstractDataSourceHandler.I
 	public final FullDataSourceProviderV2 fullDataSourceProvider;
 	public final AtomicReference<ClientRenderState> ClientRenderStateRef = new AtomicReference<>();
 	
-	public final F3Screen.NestedMessage f3Message;
-	
 	
 	
 	//=============//
@@ -68,7 +66,6 @@ public class ClientLevelModule implements Closeable, AbstractDataSourceHandler.I
 	public ClientLevelModule(IDhClientLevel clientLevel)
 	{
 		this.clientLevel = clientLevel;
-		this.f3Message = new F3Screen.NestedMessage(this::f3Log);
 		
 		this.fullDataSourceProvider = this.clientLevel.getFullDataProvider();
 		this.fullDataSourceProvider.dateSourceUpdateListeners.add(this);
@@ -246,8 +243,6 @@ public class ClientLevelModule implements Closeable, AbstractDataSourceHandler.I
 		}
 		
 		this.fullDataSourceProvider.dateSourceUpdateListeners.remove(this);
-		
-		this.f3Message.close();
 	}
 	
 	
@@ -255,53 +250,6 @@ public class ClientLevelModule implements Closeable, AbstractDataSourceHandler.I
 	//=======================//
 	// misc helper functions //
 	//=======================//
-	
-	private String[] f3Log()
-	{
-		String dimName = this.clientLevel.getLevelWrapper().getDimensionType().getDimensionName();
-		boolean rendererActive = this.ClientRenderStateRef.get() != null;
-		
-		ThreadPoolExecutor fileExecutor = ThreadPoolUtil.getFileHandlerExecutor();
-		String fileQueueSize = (fileExecutor != null) ? fileExecutor.getQueue().size()+"" : "-";
-		String fileCompletedTaskSize = (fileExecutor != null) ? fileExecutor.getCompletedTaskCount()+"" : "-";
-		
-		ThreadPoolExecutor updateExecutor = ThreadPoolUtil.getUpdatePropagatorExecutor();
-		String updateQueueSize = (updateExecutor != null) ? updateExecutor.getQueue().size()+"" : "-";
-		String updateCompletedTaskSize = (updateExecutor != null) ? updateExecutor.getCompletedTaskCount()+"" : "-";
-		
-		int unsavedDataSourceCount = this.fullDataSourceProvider.getUnsavedDataSourceCount();
-		long legacyDeletionCount = this.fullDataSourceProvider.getLegacyDeletionCount();
-		long migrationCount = this.fullDataSourceProvider.getTotalMigrationCount();
-		
-		
-		
-		ArrayList<String> lines = new ArrayList<>();
-		lines.add("");
-		lines.add("level [" + dimName + "] rendering: " + (rendererActive ? "Active" : "Inactive"));
-		// TODO a lot of these items only need to be rendered once, but we don't currently have a way of doing that, so only add them for the rendered level 
-		if (rendererActive)
-		{
-			lines.add("File Handler [" + dimName + "]");
-			lines.add("  File thread pool tasks: " + fileQueueSize + " (completed: " + fileCompletedTaskSize + ")");
-			if (legacyDeletionCount > 0)
-			{
-				lines.add("  Legacy Deletion #: " + legacyDeletionCount);
-			}
-			if (migrationCount > 0)
-			{
-				lines.add("  Legacy Migration #: " + migrationCount);
-			}
-			lines.add("  Update thread pool tasks: " + updateQueueSize + " (completed: " + updateCompletedTaskSize + ")");
-			lines.add("  Level Unsaved #: " + this.clientLevel.getUnsavedDataSourceCount());
-			if (unsavedDataSourceCount != -1)
-			{
-				lines.add("  File Handler Unsaved #: " + unsavedDataSourceCount);
-			}
-			lines.add("  Parent Update #: " + this.fullDataSourceProvider.parentUpdatingPosSet.size());
-		}
-		
-		return lines.toArray(new String[0]);
-	}
 	
 	public void clearRenderCache()
 	{

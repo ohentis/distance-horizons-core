@@ -41,10 +41,7 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.Set;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -68,23 +65,13 @@ public class SharedApi
 	private static int lastWorldGenTickDelta = 0;
 	private static long lastOverloadedLogMessageMsTime = 0;
 	
-	public F3Screen.DynamicMessage f3Message;
-	
 	
 	
 	//=============//
 	// constructor //
 	//=============//
 	
-	private SharedApi() 
-	{
-		this.f3Message = new F3Screen.DynamicMessage(() ->
-		{
-			int maxUpdateCount = MAX_UPDATING_CHUNK_COUNT_PER_THREAD * Config.Client.Advanced.MultiThreading.numberOfLodBuilderThreads.get();
-			return LodUtil.formatLog("Queued chunk updates: " + UPDATING_CHUNK_POS_SET.size() + " / " + maxUpdateCount);
-		});
-	}
-	
+	private SharedApi() { }
 	public static void init() { Initializer.init(); }
 	
 	
@@ -228,7 +215,7 @@ public class SharedApi
 			if (msBetweenLastLog >= MIN_MS_BETWEEN_OVERLOADED_LOG_MESSAGE)
 			{
 				lastOverloadedLogMessageMsTime = System.currentTimeMillis();
-				LOGGER.warn("Too many chunks queued for updating, max queue count ["+maxQueueCount+"] (["+MAX_UPDATING_CHUNK_COUNT_PER_THREAD+"] per thread). Some LODs may not be updated or may be missing. Please move through the world slower, decrease your vanilla render distance, or increase the CPU load config.");
+				LOGGER.warn("Too many chunks queued for updating, max queue count ["+maxQueueCount+"] (["+MAX_UPDATING_CHUNK_COUNT_PER_THREAD+"] per thread). This may result in holes in your LODs. Please move through the world slower, decrease your vanilla render distance, slow down your world pre-generator, or increase the CPU load config.");
 			}
 			
 			return;
@@ -307,6 +294,23 @@ public class SharedApi
 				
 				try
 				{
+					// check if this chunk has been converted into an LOD already
+					int oldChunkHash = dhLevel.getChunkHash(chunkWrapper.getChunkPos()); // shouldn't happen on the render thread since it may take a few moments to run
+					int newChunkHash = chunkWrapper.getBlockBiomeHashCode();
+					if (oldChunkHash == newChunkHash)
+					{
+						// if the chunk hashes are the same then we don't need to bother with lighting the chunk
+						// or creating/updating the LODs
+						//LOGGER.info("skipping: "+chunkWrapper.getChunkPos()+" "+newChunkHash);
+						return;
+					}
+					else
+					{
+						//LOGGER.info("g: "+chunkWrapper.getChunkPos()+" "+newChunkHash);
+					}
+					
+					
+					
 					// Save or populate the chunk wrapper's lighting
 					// this is done so we don't have to worry about MC unloading the lighting data for this chunk
 					boolean onlyUseDhLighting = Config.Client.Advanced.LodBuilding.onlyUseDhLightingEngine.get();
@@ -315,7 +319,7 @@ public class SharedApi
 						try
 						{
 							// If MC's lighting engine isn't thread safe this may cause the server thread to lag
-							chunkWrapper.bakeDhLightingUsingMcLightingEngine();
+							chunkWrapper.bakeDhLightingUsingMcLightingEngine(); // TODO handle unlit chunks, would pulling in the chunk from disk be a good idea? Look at ChunkLoader in the world gen code for an example
 						}
 						catch (IllegalStateException e)
 						{
@@ -341,6 +345,7 @@ public class SharedApi
 					}
 					
 					dhLevel.updateChunkAsync(chunkWrapper);
+					dhLevel.setChunkHash(chunkWrapper.getChunkPos(), newChunkHash);
 				}
 				catch (Exception e)
 				{
@@ -368,6 +373,20 @@ public class SharedApi
 			});
 		}
 		catch (RejectedExecutionException ignore) { /* the executor was shut down, it should be back up shortly and able to accept new jobs */ }
+	}
+	
+	
+	
+	//=========//
+	// F3 Menu //
+	//=========//
+	
+	public String getDebugMenuString()
+	{
+		int maxUpdateCount = MAX_UPDATING_CHUNK_COUNT_PER_THREAD * Config.Client.Advanced.MultiThreading.numberOfLodBuilderThreads.get();
+		String updatingCountStr = F3Screen.NUMBER_FORMAT.format(UPDATING_CHUNK_POS_SET.size());
+		String maxUpdateCountStr = F3Screen.NUMBER_FORMAT.format(maxUpdateCount);
+		return "Queued chunk updates: "+updatingCountStr+" / "+maxUpdateCountStr;
 	}
 	
 	

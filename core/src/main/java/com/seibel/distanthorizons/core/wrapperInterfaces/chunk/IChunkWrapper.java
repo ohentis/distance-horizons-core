@@ -23,6 +23,7 @@ import com.seibel.distanthorizons.core.pos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
+import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IBindable;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
@@ -31,6 +32,11 @@ import java.util.ArrayList;
 
 public interface IChunkWrapper extends IBindable
 {
+	/** useful for debugging, but can slow down chunk operations quite a bit due to being called every time. */
+	boolean RUN_RELATIVE_POS_INDEX_VALIDATION = ModInfo.IS_DEV_BUILD;
+	
+	
+	
 	DhChunkPos getChunkPos();
 	
 	default int getHeight() { return this.getMaxBuildHeight() - this.getMinBuildHeight(); }
@@ -61,8 +67,6 @@ public interface IChunkWrapper extends IBindable
 	int getMinBlockX();
 	int getMinBlockZ();
 	
-	long getLongChunkPos();
-	
 	void setIsDhLightCorrect(boolean isDhLightCorrect);
 	void setUseDhLighting(boolean useDhLighting);
 	boolean isLightCorrect();
@@ -76,6 +80,65 @@ public interface IChunkWrapper extends IBindable
 	
 	int getBlockLight(int relX, int relY, int relZ);
 	int getSkyLight(int relX, int relY, int relZ);
+	
+	
+	ArrayList<DhBlockPos> getBlockLightPosList();
+	
+	
+	default boolean blockPosInsideChunk(DhBlockPos blockPos) { return this.blockPosInsideChunk(blockPos.x, blockPos.y, blockPos.z); }
+	default boolean blockPosInsideChunk(int x, int y, int z)
+	{
+		return (x >= this.getMinBlockX() && x <= this.getMaxBlockX()
+				&& y >= this.getMinBuildHeight() && y < this.getMaxBuildHeight()
+				&& z >= this.getMinBlockZ() && z <= this.getMaxBlockZ());
+	}
+	default boolean blockPosInsideChunk(DhBlockPos2D blockPos)
+	{
+		return (blockPos.x >= this.getMinBlockX() && blockPos.x <= this.getMaxBlockX()
+				&& blockPos.z >= this.getMinBlockZ() && blockPos.z <= this.getMaxBlockZ());
+	}
+	
+	boolean doNearbyChunksExist();
+	String toString();
+	
+	
+	default IBlockStateWrapper getBlockState(DhBlockPos pos) { return this.getBlockState(pos.x, pos.y, pos.z); }
+	IBlockStateWrapper getBlockState(int relX, int relY, int relZ);
+	
+	IBiomeWrapper getBiome(int relX, int relY, int relZ);
+	
+	boolean isStillValid();
+	
+	
+	
+	//========================//
+	// default helper methods //
+	//========================//
+	
+	/** used to prevent accidentally attempting to get/set values outside this chunk's boundaries */
+	default void throwIndexOutOfBoundsIfRelativePosOutsideChunkBounds(int x, int y, int z) throws IndexOutOfBoundsException
+	{
+		if (!RUN_RELATIVE_POS_INDEX_VALIDATION)
+		{
+			return;
+		}
+		
+		
+		// FIXME +1 is to handle the fact that LodDataBuilder adds +1 to all block lighting calculations, also done in the constructor
+		int minHeight = this.getMinBuildHeight();
+		int maxHeight = this.getMaxBuildHeight() + 1;
+		
+		if (x < 0 || x >= LodUtil.CHUNK_WIDTH
+				|| z < 0 || z >= LodUtil.CHUNK_WIDTH
+				|| y < minHeight || y > maxHeight)
+		{
+			String errorMessage = "Relative position [" + x + "," + y + "," + z + "] out of bounds. \n" +
+					"X/Z must be between 0 and 15 (inclusive) \n" +
+					"Y must be between [" + minHeight + "] and [" + maxHeight + "] (inclusive).";
+			throw new IndexOutOfBoundsException(errorMessage);
+		}
+	}
+	
 	
 	/**
 	 * Populates DH's saved lighting using MC's lighting engine.
@@ -108,27 +171,38 @@ public interface IChunkWrapper extends IBindable
 	}
 	
 	
-	
-	ArrayList<DhBlockPos> getBlockLightPosList();
-	
-	
-	default boolean blockPosInsideChunk(DhBlockPos blockPos) { return this.blockPosInsideChunk(blockPos.x, blockPos.y, blockPos.z); }
-	default boolean blockPosInsideChunk(int x, int y, int z)
+	/**
+	 * Converts a 3D position into a 1D array index. <br><br>
+	 *
+	 * Source: <br>
+	 * <a href="https://stackoverflow.com/questions/7367770/how-to-flatten-or-index-3d-array-in-1d-array">stackoverflow</a>
+	 */
+	default int relativeBlockPosToIndex(int xRel, int y, int zRel)
 	{
-		return (x >= this.getMinBlockX() && x <= this.getMaxBlockX()
-				&& y >= this.getMinBuildHeight() && y < this.getMaxBuildHeight()
-				&& z >= this.getMinBlockZ() && z <= this.getMaxBlockZ());
-	}
-	default boolean blockPosInsideChunk(DhBlockPos2D blockPos)
-	{
-		return (blockPos.x >= this.getMinBlockX() && blockPos.x <= this.getMaxBlockX()
-				&& blockPos.z >= this.getMinBlockZ() && blockPos.z <= this.getMaxBlockZ());
+		int yRel = y - this.getMinBuildHeight();
+		return (zRel * LodUtil.CHUNK_WIDTH * this.getHeight()) + (yRel * LodUtil.CHUNK_WIDTH) + xRel;
 	}
 	
-	boolean doNearbyChunksExist();
-	String toString();
+	/**
+	 * Converts a 3D position into a 1D array index. <br><br>
+	 *
+	 * Source: <br>
+	 * <a href="https://stackoverflow.com/questions/7367770/how-to-flatten-or-index-3d-array-in-1d-array">stackoverflow</a>
+	 */
+	default DhBlockPos indexToRelativeBlockPos(int index)
+	{
+		final int zRel = index / (LodUtil.CHUNK_WIDTH * this.getHeight());
+		index -= (zRel * LodUtil.CHUNK_WIDTH * this.getHeight());
+		
+		final int y = index / LodUtil.CHUNK_WIDTH;
+		final int yRel = y + this.getMinBuildHeight();
+		
+		final int xRel = index % LodUtil.CHUNK_WIDTH;
+		return new DhBlockPos(xRel, yRel, zRel);
+	}
 	
-	/** This is a bad hash algorithm, but can be used for rough debugging. */
+	
+	/** This is a bad hash algorithm since it only uses the heightmap, but can be used for rough debugging. */
 	default int roughHashCode()
 	{
 		int hash = 31;
@@ -138,19 +212,36 @@ public interface IChunkWrapper extends IBindable
 		{
 			for (int z = 0; z < LodUtil.CHUNK_WIDTH; z++)
 			{
-				hash = hash * primeMultiplier + Integer.hashCode(this.getLightBlockingHeightMapValue(x, z));
+				hash = (hash * primeMultiplier) + Integer.hashCode(this.getLightBlockingHeightMapValue(x, z));
 			}
 		}
 		
 		return hash;
 	}
 	
+	default int getBlockBiomeHashCode()
+	{
+		int hash = 31;
+		int primeBlockMultiplier = 227;
+		int primeBiomeMultiplier = 701;
+		
+		int minBuildHeight = this.getMinBuildHeight();
+		int maxBuildHeight = this.getMaxBuildHeight();
+		
+		for (int x = 0; x < LodUtil.CHUNK_WIDTH; x++)
+		{
+			for (int z = 0; z < LodUtil.CHUNK_WIDTH; z++)
+			{
+				for (int y = minBuildHeight; y < maxBuildHeight; y++)
+				{
+					hash = (hash * primeBlockMultiplier) + this.getBlockState(x, y, z).hashCode();
+					hash = (hash * primeBiomeMultiplier) + this.getBiome(x, y, z).hashCode();
+				}
+			}
+		}
+		
+		return hash;
+	}
 	
-	default IBlockStateWrapper getBlockState(DhBlockPos pos) { return this.getBlockState(pos.x, pos.y, pos.z); }
-	IBlockStateWrapper getBlockState(int relX, int relY, int relZ);
-	
-	IBiomeWrapper getBiome(int relX, int relY, int relZ);
-	
-	boolean isStillValid();
 	
 }

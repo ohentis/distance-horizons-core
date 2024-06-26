@@ -30,6 +30,13 @@ public class ArrayGridList<T> extends ArrayList<T>
 {
 	public final int gridSize;
 	
+	
+	
+	//==============//
+	// constructors //
+	//==============//
+	
+	/** @param filler the function called for each index to set the initial values */
 	public ArrayGridList(int gridSize, BiFunction<Integer, Integer, T> filler)
 	{
 		super((gridSize) * (gridSize));
@@ -66,6 +73,12 @@ public class ArrayGridList<T> extends ArrayList<T>
 		// this.toDetailString() + "\nTOOOOOOOOOOOOO\n"+subGrid.toDetailString()+
 		// "==========================================\n");
 	}
+	
+	
+	
+	//=========//
+	// methods //
+	//=========//
 	
 	protected int _indexOf(int x, int y)
 	{

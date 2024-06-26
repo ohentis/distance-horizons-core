@@ -49,6 +49,8 @@ import org.jetbrains.annotations.Nullable;
 import javax.annotation.CheckForNull;
 import java.awt.*;
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /** The level used when connected to a server */
@@ -115,6 +117,9 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 		this.worldGenModule = new WorldGenModule(this);
 		
 		this.clientside = new ClientLevelModule(this);
+		
+		this.createAndSetChunkHashRepo(this.dataFileHandler.repo.databaseLocation);
+		
 		if (enableRendering)
 		{
 			this.clientside.startRenderer(clientLevelWrapper);
@@ -245,6 +250,34 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 	
 	@Override
 	public int getMinY() { return this.levelWrapper.getMinHeight(); }
+	
+	@Override
+	public void addDebugMenuStringsToList(List<String> messageList)
+	{
+		String dimName = this.levelWrapper.getDimensionType().getDimensionName();
+		boolean rendering = this.clientside.isRendering();
+		messageList.add("["+dimName+"] rendering: "+(rendering ? "yes" : "no"));
+		
+		
+		boolean migrationErrored = this.dataFileHandler.getMigrationStoppedWithError();
+		if (!migrationErrored)
+		{
+			long legacyDeletionCount = this.dataFileHandler.getLegacyDeletionCount();
+			if (legacyDeletionCount > 0)
+			{
+				messageList.add("  Migrating - Deleting #: " + legacyDeletionCount);
+			}
+			long migrationCount = this.dataFileHandler.getTotalMigrationCount();
+			if (migrationCount > 0)
+			{
+				messageList.add("  Migrating - Conversion #: " + migrationCount);
+			}
+		}
+		else
+		{
+			messageList.add("  Migration Failed");
+		}
+	}
 	
 	@Override
 	public void close()

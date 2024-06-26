@@ -46,6 +46,8 @@ import com.seibel.distanthorizons.coreapi.util.math.Vec3d;
 import org.apache.logging.log4j.Logger;
 
 import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import javax.annotation.CheckForNull;
@@ -61,6 +63,8 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 	public final ServerLevelModule serverside;
 	private final IServerLevelWrapper serverLevelWrapper;
 	
+	
+	
 	private final RemotePlayerConnectionHandler remotePlayerConnectionHandler;
 	
 	private final ConcurrentLinkedQueue<IServerPlayerWrapper> worldGenLoopingQueue = new ConcurrentLinkedQueue<>();
@@ -75,6 +79,8 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 		}
 		this.serverLevelWrapper = serverLevelWrapper;
 		this.serverside = new ServerLevelModule(this, saveStructure);
+		this.createAndSetChunkHashRepo(this.serverside.fullDataFileHandler.repo.databaseLocation);
+		
 		LOGGER.info("Started DHLevel for {} with saves at {}", serverLevelWrapper, saveStructure);
 	
 		this.remotePlayerConnectionHandler = remotePlayerConnectionHandler;
@@ -171,6 +177,8 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 			entry.requestCollectionSemaphore.release(Short.MAX_VALUE);
 		});
 	}
+	
+	
 	
 	public <T extends PluginChannelMessage> Consumer<T> currentLevelOnly(Consumer<T> next)
 	{
@@ -376,6 +384,19 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 		{
 			this.trySetGeneratedDataSourceToEntry(entry, pos);
 		}
+	}
+	
+	
+	
+	//===========//
+	// debugging //
+	//===========//
+	
+	@Override
+	public void addDebugMenuStringsToList(List<String> messageList)
+	{
+		String dimName = this.serverLevelWrapper.getDimensionType().getDimensionName();
+		messageList.add("["+dimName+"]");
 	}
 	
 	private static class IncompleteDataSourceEntry

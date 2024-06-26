@@ -22,9 +22,11 @@ package com.seibel.distanthorizons.core.level;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.file.fullDatafile.FullDataSourceProviderV2;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
+import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 public interface IDhLevel extends AutoCloseable
@@ -37,6 +39,9 @@ public interface IDhLevel extends AutoCloseable
 	 */
 	ILevelWrapper getLevelWrapper();
 	
+	/** @return 0 if no hash is known */
+	int getChunkHash(DhChunkPos pos);
+	void setChunkHash(DhChunkPos pos, int chunkHash);
 	void updateChunkAsync(IChunkWrapper chunk);
 	
 	FullDataSourceProviderV2 getFullDataProvider();
@@ -52,5 +57,8 @@ public interface IDhLevel extends AutoCloseable
 	 * due to chunk modifications or loads.
 	 */
 	int getUnsavedDataSourceCount();
+	
+	void addDebugMenuStringsToList(List<String> messageList);
+	
 	
 }

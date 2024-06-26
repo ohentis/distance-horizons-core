@@ -46,8 +46,6 @@ public abstract class AbstractSaveStructure implements AutoCloseable
 	public abstract File getLevelFolder(ILevelWrapper wrapper);
 	
 	/** Will return null if no parent folder exists for the given {@link ILevelWrapper}. */
-	public abstract File getRenderCacheFolder(ILevelWrapper world);
-	/** Will return null if no parent folder exists for the given {@link ILevelWrapper}. */
 	public abstract File getFullDataFolder(ILevelWrapper world);
 	
 }

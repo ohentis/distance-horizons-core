@@ -95,6 +95,7 @@ public class FullDataSourceProviderV2
 	
 	protected long legacyDeletionCount = -1;
 	protected long migrationCount = -1;
+	protected boolean migrationStoppedWithError = false;
 	
 	/**
 	 * Tracks which positions are currently being updated
@@ -447,38 +448,39 @@ public class FullDataSourceProviderV2
 		{
 			this.showMigrationStartMessage();
 			
-			
-			// keep going until every data source has been migrated
-			int progressCount = 0;
-			while (!legacyDataSourceList.isEmpty() && this.migrationThreadRunning.get())
+			try
 			{
-				LOGGER.info("Migrating [" + dimensionName + "] - [" + progressCount + "/" + totalMigrationCount + "]...");
-				
-				ArrayList<CompletableFuture<Void>> updateFutureList = new ArrayList<>();
-				for (int i = 0; i < legacyDataSourceList.size() && this.migrationThreadRunning.get(); i++)
+				// keep going until every data source has been migrated
+				int progressCount = 0;
+				while (!legacyDataSourceList.isEmpty() && this.migrationThreadRunning.get())
 				{
-					FullDataSourceV1 legacyDataSource = legacyDataSourceList.get(i);
+					LOGGER.info("Migrating [" + dimensionName + "] - [" + progressCount + "/" + totalMigrationCount + "]...");
 					
-					try
+					ArrayList<CompletableFuture<Void>> updateFutureList = new ArrayList<>();
+					for (int i = 0; i < legacyDataSourceList.size() && this.migrationThreadRunning.get(); i++)
 					{
-						// convert the legacy data source to the new format,
-						// this is a relatively cheap operation
-						FullDataSourceV2 newDataSource = FullDataSourceV2.createFromLegacyDataSourceV1(legacyDataSource);
-						newDataSource.applyToParent = true;
+						FullDataSourceV1 legacyDataSource = legacyDataSourceList.get(i);
 						
-						// the actual update process can be moderately expensive due to having to update
-						// the render data along with the full data, so running it async on the update threads gains us a good bit of speed
-						CompletableFuture<Void> future = this.updateDataSourceAsync(newDataSource);
-						updateFutureList.add(future);
-						future.thenRun(() ->
+						try
 						{
-							// after the update finishes the legacy data source can be safely deleted
-							this.legacyFileHandler.repo.deleteWithKey(legacyDataSource.getPos());
+							// convert the legacy data source to the new format,
+							// this is a relatively cheap operation
+							FullDataSourceV2 newDataSource = FullDataSourceV2.createFromLegacyDataSourceV1(legacyDataSource);
+							newDataSource.applyToParent = true;
 							
-							try
+							// the actual update process can be moderately expensive due to having to update
+							// the render data along with the full data, so running it async on the update threads gains us a good bit of speed
+							CompletableFuture<Void> future = this.updateDataSourceAsync(newDataSource);
+							updateFutureList.add(future);
+							future.thenRun(() ->
 							{
-								newDataSource.close();
-							}
+								// after the update finishes the legacy data source can be safely deleted
+								this.legacyFileHandler.repo.deleteWithKey(legacyDataSource.getPos());
+								
+								try
+								{
+									newDataSource.close();
+								}
 							catch (Exception ignore)
 							{
 							}
@@ -513,8 +515,15 @@ public class FullDataSourceProviderV2
 				progressCount += legacyDataSourceList.size();
 				this.migrationCount -= legacyDataSourceList.size();
 			}
-			
-			
+			}
+			catch (Exception e)
+			{
+				LOGGER.info("migration stopped due to error for: ["+dimensionName+"]-["+this.saveDir+"], error: ["+e.getMessage()+"].", e);
+				this.showMigrationEndMessage(false);
+				this.migrationStoppedWithError = true;
+			}
+			finally
+			{
 			if (this.migrationThreadRunning.get())
 			{
 				LOGGER.info("migration complete for: [" + dimensionName + "]-[" + this.saveDir + "].");
@@ -525,6 +534,8 @@ public class FullDataSourceProviderV2
 			{
 				LOGGER.info("migration stopped for: [" + dimensionName + "]-[" + this.saveDir + "].");
 				this.showMigrationEndMessage(false);
+					this.migrationStoppedWithError = true;
+				}
 			}
 		}
 		else
@@ -537,6 +548,7 @@ public class FullDataSourceProviderV2
 	
 	public long getLegacyDeletionCount() { return this.legacyDeletionCount; }
 	public long getTotalMigrationCount() { return this.migrationCount; }
+	public boolean getMigrationStoppedWithError() { return this.migrationStoppedWithError; }
 	
 	
 	private void showMigrationStartMessage()

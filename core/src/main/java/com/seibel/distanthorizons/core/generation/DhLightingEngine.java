@@ -33,6 +33,7 @@ import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * This logic was roughly based on
@@ -67,7 +68,7 @@ public class DhLightingEngine
 	 * @param nearbyChunkList should also contain centerChunk
 	 * @param maxSkyLight should be a value between 0 and 15
 	 */
-	public void lightChunk(IChunkWrapper centerChunk, ArrayList<IChunkWrapper> nearbyChunkList, int maxSkyLight)
+	public void lightChunk(@NotNull IChunkWrapper centerChunk, @NotNull ArrayList<IChunkWrapper> nearbyChunkList, int maxSkyLight)
 	{
 		DhChunkPos centerChunkPos = centerChunk.getChunkPos();
 		AdjacentChunkHolder adjacentChunkHolder = new AdjacentChunkHolder(centerChunk);
@@ -104,7 +105,6 @@ public class DhLightingEngine
 			for (int chunkIndex = 0; chunkIndex < nearbyChunkList.size(); chunkIndex++) // using iterators in high traffic areas can cause GC issues due to allocating a bunch of iterators, use an indexed for-loop instead
 			{
 				IChunkWrapper chunk = nearbyChunkList.get(chunkIndex);
-				
 				if (chunk != null && requestedAdjacentPositions.contains(chunk.getChunkPos()))
 				{
 					// remove the newly found position
@@ -179,7 +179,7 @@ public class DhLightingEngine
 					break;
 				}
 			}
-
+			
 			// block light
 			this.propagateLightPosList(blockLightPosQueue, adjacentChunkHolder,
 					(neighbourChunk, relBlockPos) -> neighbourChunk.getDhBlockLight(relBlockPos.x, relBlockPos.y, relBlockPos.z),

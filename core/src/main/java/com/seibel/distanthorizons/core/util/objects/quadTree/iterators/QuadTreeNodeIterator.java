@@ -22,10 +22,7 @@ package com.seibel.distanthorizons.core.util.objects.quadTree.iterators;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.util.objects.quadTree.QuadNode;
 
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.NoSuchElementException;
-import java.util.Queue;
+import java.util.*;
 import java.util.function.Consumer;
 
 public class QuadTreeNodeIterator<T> implements Iterator<QuadNode<T>>
@@ -34,8 +31,8 @@ public class QuadTreeNodeIterator<T> implements Iterator<QuadNode<T>>
 	private final byte highestDetailLevel;
 	
 	
-	private final Queue<QuadNode<T>> validNodesForDetailLevel = new LinkedList<>();
-	private final Queue<QuadNode<T>> iteratorNodeQueue = new LinkedList<>();
+	private final Queue<QuadNode<T>> validNodesForDetailLevel = new ArrayDeque<>();
+	private final Queue<QuadNode<T>> iteratorNodeQueue = new ArrayDeque<>();
 	private byte iteratorDetailLevel = 0;
 	
 	private final boolean onlyReturnLeafValues;
@@ -64,7 +61,7 @@ public class QuadTreeNodeIterator<T> implements Iterator<QuadNode<T>>
 			// but it is simple and functions well enough for now
 			
 			
-			Queue<QuadNode<T>> parentNodeQueue = new LinkedList<>();
+			Queue<QuadNode<T>> parentNodeQueue = new ArrayDeque<>();
 			parentNodeQueue.add(rootNode);
 			
 			// walk through the whole tree and add each leaf node to the iterator queue

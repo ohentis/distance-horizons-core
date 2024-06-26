@@ -173,7 +173,7 @@ public abstract class AbstractDhRepo<TKey, TDTO extends IBaseDTO<TKey>> implemen
 		}
 		catch (DbConnectionClosedException ignored) 
 		{
-			LOGGER.warn("Attempted to insert [" + this.dtoClass.getSimpleName() + "] with primary key [" + (dto != null ? dto.getKey() : "NULL") + "] on closed repo [" + this.connectionString + "].");
+			LOGGER.warn("Attempted to insert ["+this.dtoClass.getSimpleName()+"] with primary key ["+(dto != null ? dto.getKeyDisplayString() : "NULL")+"] on closed repo ["+this.connectionString+"].");
 		}
 		catch (SQLException e)
 		{
@@ -190,7 +190,7 @@ public abstract class AbstractDhRepo<TKey, TDTO extends IBaseDTO<TKey>> implemen
 		}
 		catch (DbConnectionClosedException e)
 		{
-			LOGGER.warn("Attempted to update [" + this.dtoClass.getSimpleName() + "] with primary key [" + (dto != null ? dto.getKey() : "NULL") + "] on closed repo [" + this.connectionString + "].");
+			LOGGER.warn("Attempted to update ["+this.dtoClass.getSimpleName()+"] with primary key ["+(dto != null ? dto.getKeyDisplayString() : "NULL")+"] on closed repo ["+this.connectionString+"].");
 		}
 		catch (SQLException e)
 		{
