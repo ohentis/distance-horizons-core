@@ -46,14 +46,12 @@ import com.seibel.distanthorizons.coreapi.util.math.Vec3d;
 import org.apache.logging.log4j.Logger;
 
 import java.text.MessageFormat;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import javax.annotation.CheckForNull;
 import java.util.Map;
 import java.util.concurrent.*;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
@@ -79,7 +77,7 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 		}
 		this.serverLevelWrapper = serverLevelWrapper;
 		this.serverside = new ServerLevelModule(this, saveStructure);
-		this.createAndSetChunkHashRepo(this.serverside.fullDataFileHandler.repo.databaseLocation);
+		this.createAndSetChunkHashRepo(this.serverside.fullDataFileHandler.repo.databaseFile);
 		
 		LOGGER.info("Started DHLevel for {} with saves at {}", serverLevelWrapper, saveStructure);
 	

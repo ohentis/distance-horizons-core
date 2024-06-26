@@ -259,7 +259,7 @@ public class CompressionTest
 			File uncompressedDatabaseFile = new File(uncompressedDatabaseFilePath);
 			Assert.assertTrue(uncompressedDatabaseFile.exists());
 			
-			FullDataSourceV2Repo uncompressedRepo = new FullDataSourceV2Repo("jdbc:sqlite", uncompressedDatabaseFilePath);
+			FullDataSourceV2Repo uncompressedRepo = new FullDataSourceV2Repo("jdbc:sqlite", uncompressedDatabaseFile);
 			
 			
 			String compressedDatabaseFilePath = TEST_DIR + "/output/" + DB_FILE_NAME_PREFIX + "_" + compressorName + ".sqlite";
@@ -267,7 +267,7 @@ public class CompressionTest
 			compressedDatabaseFile.mkdirs();
 			compressedDatabaseFile.delete();
 			Assert.assertTrue(!compressedDatabaseFile.exists());
-			FullDataSourceV2Repo compressedRepo = new FullDataSourceV2Repo("jdbc:sqlite", compressedDatabaseFilePath);
+			FullDataSourceV2Repo compressedRepo = new FullDataSourceV2Repo("jdbc:sqlite", uncompressedDatabaseFile);
 			
 			
 			

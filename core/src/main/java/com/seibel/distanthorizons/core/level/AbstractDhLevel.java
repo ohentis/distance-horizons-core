@@ -33,6 +33,7 @@ import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.File;
 import java.sql.SQLException;
 import java.util.HashSet;
 import java.util.concurrent.ConcurrentHashMap;
@@ -59,12 +60,12 @@ public abstract class AbstractDhLevel implements IDhLevel
 	
 	protected AbstractDhLevel() { this.chunkToLodBuilder = new ChunkToLodBuilder(); }
 	
-	protected void createAndSetChunkHashRepo(String databaseFilePath)
+	protected void createAndSetChunkHashRepo(File databaseFile)
 	{
 		ChunkHashRepo newChunkHashRepo = null;
 		try
 		{
-			newChunkHashRepo = new ChunkHashRepo("jdbc:sqlite", databaseFilePath);
+			newChunkHashRepo = new ChunkHashRepo("jdbc:sqlite", databaseFile);
 		}
 		catch (SQLException e)
 		{

@@ -22,6 +22,7 @@ package testItems.sql;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.sql.repo.AbstractDhRepo;
 
+import java.io.File;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Map;
@@ -29,9 +30,9 @@ import java.util.Map;
 public class TestCompoundKeyRepo extends AbstractDhRepo<DhChunkPos, TestCompoundKeyDto>
 {
 	
-	public TestCompoundKeyRepo(String databaseType, String databaseLocation) throws SQLException
+	public TestCompoundKeyRepo(String databaseType, File databaseFile) throws SQLException
 	{
-		super(databaseType, databaseLocation, TestCompoundKeyDto.class);
+		super(databaseType, databaseFile, TestCompoundKeyDto.class);
 		
 		// note: this should only ever be done with the test repo.
 		// All long term tables should be created using a sql Script.

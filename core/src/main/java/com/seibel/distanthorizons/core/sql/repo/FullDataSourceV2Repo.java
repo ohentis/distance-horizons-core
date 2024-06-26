@@ -29,6 +29,7 @@ import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.apache.logging.log4j.Logger;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -45,9 +46,9 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 	// constructor //
 	//=============//
 	
-	public FullDataSourceV2Repo(String databaseType, String databaseLocation) throws SQLException
+	public FullDataSourceV2Repo(String databaseType, File databaseFile) throws SQLException
 	{
-		super(databaseType, databaseLocation, FullDataSourceV2DTO.class);
+		super(databaseType, databaseFile, FullDataSourceV2DTO.class);
 	}
 	
 	

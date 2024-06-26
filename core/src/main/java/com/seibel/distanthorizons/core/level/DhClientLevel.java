@@ -49,7 +49,6 @@ import org.jetbrains.annotations.Nullable;
 import javax.annotation.CheckForNull;
 import java.awt.*;
 import java.io.File;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -118,7 +117,7 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 		
 		this.clientside = new ClientLevelModule(this);
 		
-		this.createAndSetChunkHashRepo(this.dataFileHandler.repo.databaseLocation);
+		this.createAndSetChunkHashRepo(this.dataFileHandler.repo.databaseFile);
 		
 		if (enableRendering)
 		{
