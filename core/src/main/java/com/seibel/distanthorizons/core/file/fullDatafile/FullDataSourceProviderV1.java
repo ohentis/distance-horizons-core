@@ -64,7 +64,7 @@ public class FullDataSourceProviderV1<TDhLevel extends IDhLevel>
 	{
 		try
 		{
-			return new FullDataSourceV1Repo("jdbc:sqlite", new File(this.saveDir.getPath() + File.pathSeparator + AbstractSaveStructure.DATABASE_NAME));
+			return new FullDataSourceV1Repo("jdbc:sqlite", new File(this.saveDir.getPath() + File.separator + AbstractSaveStructure.DATABASE_NAME));
 		}
 		catch (SQLException e)
 		{

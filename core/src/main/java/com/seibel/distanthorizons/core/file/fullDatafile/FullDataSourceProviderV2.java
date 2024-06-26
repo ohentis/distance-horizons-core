@@ -142,7 +142,7 @@ public class FullDataSourceProviderV2
 	{
 		try
 		{
-			return new FullDataSourceV2Repo("jdbc:sqlite", new File(this.saveDir.getPath() + File.pathSeparator + AbstractSaveStructure.DATABASE_NAME));
+			return new FullDataSourceV2Repo("jdbc:sqlite", new File(this.saveDir.getPath() + File.separator + AbstractSaveStructure.DATABASE_NAME));
 		}
 		catch (SQLException e)
 		{
