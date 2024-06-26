@@ -17,34 +17,34 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.seibel.distanthorizons.core.network.messages.plugin.base;
+package com.seibel.distanthorizons.core.network.messages.base;
 
 import com.google.common.base.MoreObjects;
-import com.seibel.distanthorizons.core.network.plugin.PluginChannelMessage;
+import com.seibel.distanthorizons.core.multiplayer.config.AbstractMultiplayerConfig;
+import com.seibel.distanthorizons.core.multiplayer.config.MultiplayerConfig;
+import com.seibel.distanthorizons.core.network.INetworkObject;
+import com.seibel.distanthorizons.core.network.messages.NetworkMessage;
 import io.netty.buffer.ByteBuf;
 
-public class CloseReasonMessage extends PluginChannelMessage
+public class RemotePlayerConfigMessage extends NetworkMessage
 {
-	public String reason;
-
-	public CloseReasonMessage() { }
-	public CloseReasonMessage(String reason) { this.reason = reason; }
-
+	public AbstractMultiplayerConfig payload;
+	
+	public RemotePlayerConfigMessage() { }
+	public RemotePlayerConfigMessage(AbstractMultiplayerConfig payload) { this.payload = payload; }
+	
 	@Override
-	public void encode(ByteBuf out)
-	{
-		this.writeString(this.reason, out);
-	}
-
+	public void encode(ByteBuf out) { this.payload.encode(out); }
+	
 	@Override
-	public void decode(ByteBuf in) { this.reason = this.readString(in); }
+	public void decode(ByteBuf in) { this.payload = INetworkObject.decodeToInstance(new MultiplayerConfig(), in); }
 	
 	
 	@Override
 	public MoreObjects.ToStringHelper toStringHelper()
 	{
 		return super.toStringHelper()
-				.add("reason", this.reason);
+				.add("payload", this.payload);
 	}
 	
 }

@@ -17,22 +17,34 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.seibel.distanthorizons.core.network.messages.plugin.base;
+package com.seibel.distanthorizons.core.network.messages.base;
 
-import com.seibel.distanthorizons.core.network.plugin.TrackableMessage;
+import com.google.common.base.MoreObjects;
+import com.seibel.distanthorizons.core.network.messages.NetworkMessage;
 import io.netty.buffer.ByteBuf;
 
-public class CancelMessage extends TrackableMessage
+public class CloseReasonMessage extends NetworkMessage
 {
-	public CancelMessage() { }
+	public String reason;
+
+	public CloseReasonMessage() { }
+	public CloseReasonMessage(String reason) { this.reason = reason; }
+
+	@Override
+	public void encode(ByteBuf out)
+	{
+		this.writeString(this.reason, out);
+	}
+
+	@Override
+	public void decode(ByteBuf in) { this.reason = this.readString(in); }
+	
 	
 	@Override
-	public void encode0(ByteBuf out)
+	public MoreObjects.ToStringHelper toStringHelper()
 	{
+		return super.toStringHelper()
+				.add("reason", this.reason);
 	}
 	
-	@Override
-	public void decode0(ByteBuf in)
-	{
-	}
 }

@@ -27,14 +27,13 @@ import com.seibel.distanthorizons.core.multiplayer.server.ServerPlayerState;
 import com.seibel.distanthorizons.core.multiplayer.server.RemotePlayerConnectionHandler;
 import com.seibel.distanthorizons.core.network.exceptions.InvalidLevelException;
 import com.seibel.distanthorizons.core.network.exceptions.RequestRejectedException;
-import com.seibel.distanthorizons.core.network.messages.plugin.ILevelRelatedMessage;
-import com.seibel.distanthorizons.core.network.messages.plugin.base.CancelMessage;
-import com.seibel.distanthorizons.core.network.messages.plugin.fullData.FullDataSourceRequestMessage;
-import com.seibel.distanthorizons.core.network.messages.plugin.fullData.FullDataSourceResponseMessage;
-import com.seibel.distanthorizons.core.network.messages.plugin.fullData.FullDataPartialUpdateMessage;
-import com.seibel.distanthorizons.core.network.plugin.PluginChannelMessage;
-import com.seibel.distanthorizons.core.network.plugin.PluginChannelSession;
-import com.seibel.distanthorizons.core.network.plugin.TrackableMessage;
+import com.seibel.distanthorizons.core.network.messages.ILevelRelatedMessage;
+import com.seibel.distanthorizons.core.network.messages.requests.CancelMessage;
+import com.seibel.distanthorizons.core.network.messages.fullData.FullDataSourceRequestMessage;
+import com.seibel.distanthorizons.core.network.messages.fullData.FullDataSourceResponseMessage;
+import com.seibel.distanthorizons.core.network.messages.fullData.FullDataPartialUpdateMessage;
+import com.seibel.distanthorizons.core.network.messages.NetworkMessage;
+import com.seibel.distanthorizons.core.network.messages.TrackableMessage;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
@@ -178,7 +177,7 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 	
 	
 	
-	public <T extends PluginChannelMessage> Consumer<T> currentLevelOnly(Consumer<T> next)
+	public <T extends NetworkMessage> Consumer<T> currentLevelOnly(Consumer<T> next)
 	{
 		return msg ->
 		{

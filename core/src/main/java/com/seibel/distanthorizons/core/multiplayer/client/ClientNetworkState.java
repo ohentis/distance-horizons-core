@@ -2,13 +2,12 @@ package com.seibel.distanthorizons.core.multiplayer.client;
 
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
-import com.seibel.distanthorizons.core.logging.f3.F3Screen;
 import com.seibel.distanthorizons.core.multiplayer.config.MultiplayerConfig;
 import com.seibel.distanthorizons.core.multiplayer.config.MultiplayerConfigChangeListener;
-import com.seibel.distanthorizons.core.network.ScopedNetworkEventSource;
-import com.seibel.distanthorizons.core.network.messages.plugin.PluginCloseEvent;
-import com.seibel.distanthorizons.core.network.messages.plugin.session.RemotePlayerConfigMessage;
-import com.seibel.distanthorizons.core.network.plugin.PluginChannelSession;
+import com.seibel.distanthorizons.core.network.event.ScopedNetworkEventSource;
+import com.seibel.distanthorizons.core.network.event.PluginCloseEvent;
+import com.seibel.distanthorizons.core.network.messages.base.RemotePlayerConfigMessage;
+import com.seibel.distanthorizons.core.network.session.Session;
 import org.apache.logging.log4j.LogManager;
 
 import java.io.Closeable;
@@ -19,7 +18,7 @@ public class ClientNetworkState implements Closeable
 	protected static final ConfigBasedLogger LOGGER = new ConfigBasedLogger(LogManager.getLogger(),
 			() -> Config.Client.Advanced.Logging.logNetworkEvent.get());
 	
-	private final PluginChannelSession session = new PluginChannelSession(null);
+	private final Session session = new Session(null);
 	private EServerSupportStatus serverSupportStatus = EServerSupportStatus.NONE;
 	
 	
@@ -32,7 +31,7 @@ public class ClientNetworkState implements Closeable
 	 * Returns the client used by this instance. <p>
 	 * If you need to subscribe to any packet events, create an instance of {@link ScopedNetworkEventSource} using the returned instance.
 	 */
-	public PluginChannelSession getSession() { return this.session; }
+	public Session getSession() { return this.session; }
 	
 	/**
 	 * Constructs a new instance.

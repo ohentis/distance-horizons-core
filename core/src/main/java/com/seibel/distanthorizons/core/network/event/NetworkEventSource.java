@@ -17,17 +17,16 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.seibel.distanthorizons.core.network;
+package com.seibel.distanthorizons.core.network.event;
 
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
-import com.seibel.distanthorizons.core.network.exceptions.SessionClosedException;
-import com.seibel.distanthorizons.core.network.messages.PluginMessageRegistry;
-import com.seibel.distanthorizons.core.network.messages.plugin.base.CancelMessage;
-import com.seibel.distanthorizons.core.network.messages.plugin.base.ExceptionMessage;
-import com.seibel.distanthorizons.core.network.messages.plugin.PluginCloseEvent;
-import com.seibel.distanthorizons.core.network.plugin.PluginChannelMessage;
-import com.seibel.distanthorizons.core.network.plugin.TrackableMessage;
+import com.seibel.distanthorizons.core.network.messages.NetworkMessage;
+import com.seibel.distanthorizons.core.network.messages.TrackableMessage;
+import com.seibel.distanthorizons.core.network.messages.MessageRegistry;
+import com.seibel.distanthorizons.core.network.session.SessionClosedException;
+import com.seibel.distanthorizons.core.network.messages.requests.CancelMessage;
+import com.seibel.distanthorizons.core.network.messages.requests.ExceptionMessage;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import org.apache.logging.log4j.LogManager;
 
@@ -44,23 +43,23 @@ public abstract class NetworkEventSource
 {
 	private static final ConfigBasedLogger LOGGER = new ConfigBasedLogger(LogManager.getLogger(),
 			() -> Config.Client.Advanced.Logging.logNetworkEvent.get());
-	protected final ConcurrentMap<Class<? extends PluginChannelMessage>, Set<Consumer<PluginChannelMessage>>> handlers = new ConcurrentHashMap<>();
+	protected final ConcurrentMap<Class<? extends NetworkMessage>, Set<Consumer<NetworkMessage>>> handlers = new ConcurrentHashMap<>();
 	private final ConcurrentMap<Long, FutureResponseData> pendingFutures = new ConcurrentHashMap<>();
 	
-	protected boolean hasHandler(Class<? extends PluginChannelMessage> handlerClass)
+	protected boolean hasHandler(Class<? extends NetworkMessage> handlerClass)
 	{
 		return this.handlers.containsKey(handlerClass);
 	}
 	
 	
-	protected void handleMessage(PluginChannelMessage message)
+	protected void handleMessage(NetworkMessage message)
 	{
 		boolean handled = false;
 		
-		Set<Consumer<PluginChannelMessage>> handlerList = this.handlers.get(message.getClass());
+		Set<Consumer<NetworkMessage>> handlerList = this.handlers.get(message.getClass());
 		if (handlerList != null)
 		{
-			for (Consumer<PluginChannelMessage> handler : handlerList)
+			for (Consumer<NetworkMessage> handler : handlerList)
 			{
 				handled = true;
 				handler.accept(message);
@@ -96,7 +95,7 @@ public abstract class NetworkEventSource
 		}
 	}
 	
-	public <T extends PluginChannelMessage> void registerHandler(Class<T> handlerClass, Consumer<T> handlerImplementation)
+	public <T extends NetworkMessage> void registerHandler(Class<T> handlerClass, Consumer<T> handlerImplementation)
 	{
 		//noinspection unchecked
 		this.handlers.computeIfAbsent(handlerClass, missingHandlerClass ->
@@ -104,14 +103,14 @@ public abstract class NetworkEventSource
 					// Will throw if the handler class is not found
 					if (handlerClass != PluginCloseEvent.class)
 					{
-						PluginMessageRegistry.INSTANCE.getMessageId(handlerClass);
+						MessageRegistry.INSTANCE.getMessageId(handlerClass);
 					}
 					return new HashSet<>();
 				})
-				.add((Consumer<PluginChannelMessage>) handlerImplementation);
+				.add((Consumer<NetworkMessage>) handlerImplementation);
 	}
 	
-	protected <T extends PluginChannelMessage> void removeHandler(Class<T> handlerClass, Consumer<T> handlerImplementation)
+	protected <T extends NetworkMessage> void removeHandler(Class<T> handlerClass, Consumer<T> handlerImplementation)
 	{
 		this.handlers.computeIfAbsent(handlerClass, missingHandlerClass -> new HashSet<>())
 				.remove(handlerImplementation);

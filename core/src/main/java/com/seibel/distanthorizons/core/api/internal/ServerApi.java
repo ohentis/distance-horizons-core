@@ -21,7 +21,7 @@ package com.seibel.distanthorizons.core.api.internal;
 
 import com.seibel.distanthorizons.api.methods.events.abstractEvents.DhApiLevelLoadEvent;
 import com.seibel.distanthorizons.api.methods.events.abstractEvents.DhApiLevelUnloadEvent;
-import com.seibel.distanthorizons.core.network.plugin.PluginChannelMessage;
+import com.seibel.distanthorizons.core.network.messages.NetworkMessage;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
 import com.seibel.distanthorizons.core.world.AbstractDhWorld;
@@ -174,7 +174,7 @@ public class ServerApi
 		}
 	}
 	
-	public void pluginMessageReceived(IServerPlayerWrapper player, @NotNull PluginChannelMessage message)
+	public void pluginMessageReceived(IServerPlayerWrapper player, @NotNull NetworkMessage message)
 	{
 		IDhServerWorld serverWorld = SharedApi.getIDhServerWorld();
 		if (serverWorld instanceof DhServerWorld) // TODO add support for DhClientServerWorld's (lan worlds) as well

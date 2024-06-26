@@ -3,12 +3,12 @@ package com.seibel.distanthorizons.core.multiplayer.server;
 import com.seibel.distanthorizons.core.level.DhServerLevel;
 import com.seibel.distanthorizons.core.multiplayer.config.MultiplayerConfig;
 import com.seibel.distanthorizons.core.multiplayer.config.MultiplayerConfigChangeListener;
-import com.seibel.distanthorizons.core.network.messages.plugin.CurrentLevelKeyMessage;
-import com.seibel.distanthorizons.core.network.messages.plugin.session.RemotePlayerConfigMessage;
-import com.seibel.distanthorizons.core.network.messages.plugin.PluginCloseEvent;
+import com.seibel.distanthorizons.core.network.messages.base.CurrentLevelKeyMessage;
+import com.seibel.distanthorizons.core.network.messages.base.RemotePlayerConfigMessage;
+import com.seibel.distanthorizons.core.network.event.PluginCloseEvent;
 import com.seibel.distanthorizons.core.network.exceptions.RateLimitedException;
-import com.seibel.distanthorizons.core.network.messages.plugin.fullData.FullDataSourceRequestMessage;
-import com.seibel.distanthorizons.core.network.plugin.PluginChannelSession;
+import com.seibel.distanthorizons.core.network.messages.fullData.FullDataSourceRequestMessage;
+import com.seibel.distanthorizons.core.network.session.Session;
 import com.seibel.distanthorizons.core.util.ratelimiting.SupplierBasedRateAndConcurrencyLimiter;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import org.jetbrains.annotations.NotNull;
@@ -19,7 +19,7 @@ import static com.seibel.distanthorizons.core.config.Config.Client.Advanced.Mult
 
 public class ServerPlayerState
 {
-	public final PluginChannelSession session;
+	public final Session session;
 	public IServerPlayerWrapper serverPlayer() { return this.session.serverPlayer; }
 	
 	@NotNull
@@ -41,7 +41,7 @@ public class ServerPlayerState
 	
 	public ServerPlayerState(IServerPlayerWrapper serverPlayer)
 	{
-		this.session = new PluginChannelSession(serverPlayer);
+		this.session = new Session(serverPlayer);
 		
 		this.session.registerHandler(RemotePlayerConfigMessage.class, remotePlayerConfigMessage ->
 		{

@@ -1,7 +1,7 @@
 package com.seibel.distanthorizons.core.multiplayer.config;
 
 import com.google.common.base.MoreObjects;
-import com.seibel.distanthorizons.core.network.protocol.INetworkObject;
+import com.seibel.distanthorizons.core.network.INetworkObject;
 import io.netty.buffer.ByteBuf;
 
 public abstract class AbstractMultiplayerConfig implements INetworkObject

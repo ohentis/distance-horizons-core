@@ -1,23 +1,21 @@
-package com.seibel.distanthorizons.core.network.plugin;
+package com.seibel.distanthorizons.core.network.session;
 
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
-import com.seibel.distanthorizons.core.network.NetworkEventSource;
-import com.seibel.distanthorizons.core.network.messages.PluginMessageRegistry;
-import com.seibel.distanthorizons.core.network.messages.plugin.PluginCloseEvent;
+import com.seibel.distanthorizons.core.network.event.NetworkEventSource;
+import com.seibel.distanthorizons.core.network.event.PluginCloseEvent;
+import com.seibel.distanthorizons.core.network.messages.NetworkMessage;
+import com.seibel.distanthorizons.core.network.messages.TrackableMessage;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IPluginPacketSender;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
-import com.seibel.distanthorizons.coreapi.ModInfo;
-import io.netty.buffer.ByteBuf;
 import org.apache.logging.log4j.LogManager;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
 
-public class PluginChannelSession extends NetworkEventSource
+public class Session extends NetworkEventSource
 {
 	private static final ConfigBasedLogger LOGGER = new ConfigBasedLogger(LogManager.getLogger(),
 			() -> Config.Client.Advanced.Logging.logNetworkEvent.get());
@@ -36,13 +34,13 @@ public class PluginChannelSession extends NetworkEventSource
 	@Nullable
 	public final IServerPlayerWrapper serverPlayer;
 	
-	public PluginChannelSession(@Nullable IServerPlayerWrapper serverPlayer)
+	public Session(@Nullable IServerPlayerWrapper serverPlayer)
 	{
 		this.serverPlayer = serverPlayer;
 	}
 	
 	
-	public void tryHandleMessage(PluginChannelMessage message)
+	public void tryHandleMessage(NetworkMessage message)
 	{
 		if (this.closeReason.get() != null)
 		{
@@ -70,7 +68,7 @@ public class PluginChannelSession extends NetworkEventSource
 		return responseFuture;
 	}
 	
-	public void sendMessage(PluginChannelMessage message)
+	public void sendMessage(NetworkMessage message)
 	{
 		LOGGER.debug("Sending message: {}", message);
 		

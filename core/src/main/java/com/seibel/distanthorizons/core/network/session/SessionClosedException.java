@@ -1,4 +1,4 @@
-package com.seibel.distanthorizons.core.network.exceptions;
+package com.seibel.distanthorizons.core.network.session;
 
 import java.io.IOException;
 

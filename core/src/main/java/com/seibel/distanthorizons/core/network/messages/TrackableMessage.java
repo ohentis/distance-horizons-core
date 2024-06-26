@@ -17,20 +17,18 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.seibel.distanthorizons.core.network.plugin;
+package com.seibel.distanthorizons.core.network.messages;
 
 import com.google.common.base.MoreObjects;
-import com.google.common.collect.MapMaker;
 import com.seibel.distanthorizons.core.api.internal.SharedApi;
-import com.seibel.distanthorizons.core.network.messages.plugin.base.ExceptionMessage;
+import com.seibel.distanthorizons.core.network.messages.requests.ExceptionMessage;
 import com.seibel.distanthorizons.core.world.EWorldEnvironment;
 import io.netty.buffer.ByteBuf;
 
 import java.util.Objects;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public abstract class TrackableMessage extends PluginChannelMessage
+public abstract class TrackableMessage extends NetworkMessage
 {
 	private static final AtomicInteger lastId = new AtomicInteger();
 	// 32 bits - Context ID (not transmitted)

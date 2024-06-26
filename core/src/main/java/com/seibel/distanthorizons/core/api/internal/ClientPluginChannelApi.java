@@ -5,9 +5,9 @@ import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.level.IKeyedClientLevelManager;
 import com.seibel.distanthorizons.core.level.IServerKeyedClientLevel;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
-import com.seibel.distanthorizons.core.network.messages.plugin.PluginCloseEvent;
-import com.seibel.distanthorizons.core.network.messages.plugin.CurrentLevelKeyMessage;
-import com.seibel.distanthorizons.core.network.plugin.PluginChannelSession;
+import com.seibel.distanthorizons.core.network.event.PluginCloseEvent;
+import com.seibel.distanthorizons.core.network.messages.base.CurrentLevelKeyMessage;
+import com.seibel.distanthorizons.core.network.session.Session;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import org.apache.logging.log4j.LogManager;
@@ -29,7 +29,7 @@ public class ClientPluginChannelApi
 	private final Consumer<IClientLevelWrapper> levelUnloadHandler;
 	private final Consumer<IServerKeyedClientLevel> multiverseLevelLoadHandler;
 	
-	public PluginChannelSession session;
+	public Session session;
 	
 	
 	public boolean allowLevelAutoload()
@@ -45,7 +45,7 @@ public class ClientPluginChannelApi
 		this.multiverseLevelLoadHandler = levelLoadHandler;
 	}
 	
-	public void onJoin(@NonNull PluginChannelSession session)
+	public void onJoin(@NonNull Session session)
 	{
 		Objects.requireNonNull(session);
 		this.session = session;

@@ -17,14 +17,14 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.seibel.distanthorizons.core.network.messages.plugin.base;
+package com.seibel.distanthorizons.core.network.messages.requests;
 
 import com.google.common.base.MoreObjects;
 import com.seibel.distanthorizons.core.network.exceptions.InvalidLevelException;
 import com.seibel.distanthorizons.core.network.exceptions.InvalidSectionPosException;
 import com.seibel.distanthorizons.core.network.exceptions.RateLimitedException;
 import com.seibel.distanthorizons.core.network.exceptions.RequestRejectedException;
-import com.seibel.distanthorizons.core.network.plugin.TrackableMessage;
+import com.seibel.distanthorizons.core.network.messages.TrackableMessage;
 import io.netty.buffer.ByteBuf;
 
 import java.util.ArrayList;

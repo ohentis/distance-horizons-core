@@ -17,7 +17,7 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.seibel.distanthorizons.core.network.protocol;
+package com.seibel.distanthorizons.core.network;
 
 import io.netty.buffer.ByteBuf;
 import org.jetbrains.annotations.Contract;

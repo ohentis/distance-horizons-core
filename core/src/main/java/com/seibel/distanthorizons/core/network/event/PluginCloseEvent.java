@@ -1,13 +1,12 @@
-package com.seibel.distanthorizons.core.network.messages.plugin;
+package com.seibel.distanthorizons.core.network.event;
 
-import com.seibel.distanthorizons.core.network.plugin.PluginChannelMessage;
-import com.seibel.distanthorizons.core.network.protocol.INetworkObject;
+import com.seibel.distanthorizons.core.network.messages.NetworkMessage;
 import io.netty.buffer.ByteBuf;
 
 /**
  * This is not a "real" message, and only used to indicate a disconnection.
  */
-public class PluginCloseEvent extends PluginChannelMessage
+public class PluginCloseEvent extends NetworkMessage
 {
 	@Override
 	public void encode(ByteBuf out) { throw new UnsupportedOperationException(this.getClass().getSimpleName() + " is not a real message, and cannot be sent."); }

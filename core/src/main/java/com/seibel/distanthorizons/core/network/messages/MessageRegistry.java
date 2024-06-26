@@ -21,30 +21,29 @@ package com.seibel.distanthorizons.core.network.messages;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
-import com.seibel.distanthorizons.core.network.messages.plugin.CurrentLevelKeyMessage;
-import com.seibel.distanthorizons.core.network.messages.plugin.base.CancelMessage;
-import com.seibel.distanthorizons.core.network.messages.plugin.base.CloseReasonMessage;
-import com.seibel.distanthorizons.core.network.messages.plugin.base.ExceptionMessage;
-import com.seibel.distanthorizons.core.network.messages.plugin.fullData.FullDataPartialUpdateMessage;
-import com.seibel.distanthorizons.core.network.messages.plugin.fullData.FullDataSourceRequestMessage;
-import com.seibel.distanthorizons.core.network.messages.plugin.fullData.FullDataSourceResponseMessage;
-import com.seibel.distanthorizons.core.network.messages.plugin.session.RemotePlayerConfigMessage;
-import com.seibel.distanthorizons.core.network.plugin.PluginChannelMessage;
+import com.seibel.distanthorizons.core.network.messages.base.CurrentLevelKeyMessage;
+import com.seibel.distanthorizons.core.network.messages.base.RemotePlayerConfigMessage;
+import com.seibel.distanthorizons.core.network.messages.requests.CancelMessage;
+import com.seibel.distanthorizons.core.network.messages.base.CloseReasonMessage;
+import com.seibel.distanthorizons.core.network.messages.requests.ExceptionMessage;
+import com.seibel.distanthorizons.core.network.messages.fullData.FullDataPartialUpdateMessage;
+import com.seibel.distanthorizons.core.network.messages.fullData.FullDataSourceRequestMessage;
+import com.seibel.distanthorizons.core.network.messages.fullData.FullDataSourceResponseMessage;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
 
-public class PluginMessageRegistry
+public class MessageRegistry
 {
-	public static final PluginMessageRegistry INSTANCE = new PluginMessageRegistry();
+	public static final MessageRegistry INSTANCE = new MessageRegistry();
 	
-	private final Map<Integer, Supplier<? extends PluginChannelMessage>> idToSupplier = new HashMap<>();
-	private final BiMap<Class<? extends PluginChannelMessage>, Integer> classToId = HashBiMap.create();
+	private final Map<Integer, Supplier<? extends NetworkMessage>> idToSupplier = new HashMap<>();
+	private final BiMap<Class<? extends NetworkMessage>, Integer> classToId = HashBiMap.create();
 	
 	
 	
-	private PluginMessageRegistry()
+	private MessageRegistry()
 	{
 		// Note: Messages must have parameterless constructors
 		
@@ -69,14 +68,14 @@ public class PluginMessageRegistry
 	
 	
 	
-	protected <T extends PluginChannelMessage> void registerMessage(Class<T> clazz, Supplier<T> supplier)
+	protected <T extends NetworkMessage> void registerMessage(Class<T> clazz, Supplier<T> supplier)
 	{
 		int id = this.idToSupplier.size() + 1;
 		this.idToSupplier.put(id, supplier);
 		this.classToId.put(clazz, id);
 	}
 	
-	public PluginChannelMessage createMessage(int messageId) throws IllegalArgumentException
+	public NetworkMessage createMessage(int messageId) throws IllegalArgumentException
 	{
 		try
 		{
@@ -88,12 +87,12 @@ public class PluginMessageRegistry
 		}
 	}
 	
-	public int getMessageId(PluginChannelMessage message)
+	public int getMessageId(NetworkMessage message)
 	{
 		return this.getMessageId(message.getClass());
 	}
 	
-	public int getMessageId(Class<? extends PluginChannelMessage> messageClass)
+	public int getMessageId(Class<? extends NetworkMessage> messageClass)
 	{
 		try
 		{

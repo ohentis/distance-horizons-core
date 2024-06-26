@@ -1,10 +1,10 @@
-package com.seibel.distanthorizons.core.network.messages.plugin;
+package com.seibel.distanthorizons.core.network.messages.base;
 
 import com.google.common.base.MoreObjects;
-import com.seibel.distanthorizons.core.network.plugin.PluginChannelMessage;
+import com.seibel.distanthorizons.core.network.messages.NetworkMessage;
 import io.netty.buffer.ByteBuf;
 
-public class CurrentLevelKeyMessage extends PluginChannelMessage
+public class CurrentLevelKeyMessage extends NetworkMessage
 {
 	public String levelKey;
 	

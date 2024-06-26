@@ -1,4 +1,4 @@
-package com.seibel.distanthorizons.core.network.messages.plugin;
+package com.seibel.distanthorizons.core.network.messages;
 
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 

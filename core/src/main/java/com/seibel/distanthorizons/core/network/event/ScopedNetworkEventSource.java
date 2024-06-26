@@ -17,10 +17,9 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.seibel.distanthorizons.core.network;
+package com.seibel.distanthorizons.core.network.event;
 
-import com.seibel.distanthorizons.core.network.plugin.PluginChannelMessage;
-import com.seibel.distanthorizons.core.network.protocol.INetworkObject;
+import com.seibel.distanthorizons.core.network.messages.NetworkMessage;
 
 import java.util.function.Consumer;
 
@@ -36,7 +35,7 @@ public final class ScopedNetworkEventSource extends NetworkEventSource
 	}
 	
 	@Override
-	public <T extends PluginChannelMessage> void registerHandler(Class<T> handlerClass, Consumer<T> handlerImplementation)
+	public <T extends NetworkMessage> void registerHandler(Class<T> handlerClass, Consumer<T> handlerImplementation)
 	{
 		if (this.isClosed)
 		{
@@ -55,7 +54,7 @@ public final class ScopedNetworkEventSource extends NetworkEventSource
 	public void close()
 	{
 		this.isClosed = true;
-		for (Class<? extends PluginChannelMessage> handlerClass : this.handlers.keySet())
+		for (Class<? extends NetworkMessage> handlerClass : this.handlers.keySet())
 		{
 			this.parent.removeHandler(handlerClass, this::handleMessage);
 		}
