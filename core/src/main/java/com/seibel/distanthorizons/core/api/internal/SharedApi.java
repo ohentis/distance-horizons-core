@@ -56,7 +56,7 @@ public class SharedApi
 	private static final Set<DhChunkPos> UPDATING_CHUNK_POS_SET = ConcurrentHashMap.newKeySet();
 	/** how many chunks can be queued for updating per thread, used to prevent updates from infinitely pilling up if the user flys around extremely fast */
 	private static final int MAX_UPDATING_CHUNK_COUNT_PER_THREAD = 500;
-	private static final int MIN_MS_BETWEEN_OVERLOADED_LOG_MESSAGE = 5_000;
+	private static final int MIN_MS_BETWEEN_OVERLOADED_LOG_MESSAGE = 30_000;
 	
 	private static final Timer CHUNK_UPDATE_TIMER = TimerUtil.CreateTimer("ChunkUpdateTimer");
 	
@@ -210,7 +210,13 @@ public class SharedApi
 			if (msBetweenLastLog >= MIN_MS_BETWEEN_OVERLOADED_LOG_MESSAGE)
 			{
 				lastOverloadedLogMessageMsTime = System.currentTimeMillis();
-				LOGGER.warn("Too many chunks queued for updating, max queue count ["+maxQueueCount+"] (["+MAX_UPDATING_CHUNK_COUNT_PER_THREAD+"] per thread). This may result in holes in your LODs. Please move through the world slower, decrease your vanilla render distance, slow down your world pre-generator, or increase the CPU load config.");
+				
+				String message = "Distant Horizons overloaded, too many chunks queued for updating. " +
+						"\nThis may result in holes in your LODs. " +
+						"\nPlease move through the world slower, decrease your vanilla render distance, slow down your world pre-generator, or increase the Distant Horizons' CPU load config. " +
+						"\nMax queue count ["+maxQueueCount+"] (["+MAX_UPDATING_CHUNK_COUNT_PER_THREAD+"] per thread).";
+				ClientApi.INSTANCE.showChatMessageNextFrame(message);
+				LOGGER.warn(message);
 			}
 			
 			return;
