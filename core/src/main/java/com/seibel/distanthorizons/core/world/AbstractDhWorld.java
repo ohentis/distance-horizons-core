@@ -24,6 +24,7 @@ import com.seibel.distanthorizons.core.logging.f3.F3Screen;
 import org.apache.logging.log4j.Logger;
 
 import java.io.Closeable;
+import java.util.List;
 
 /**
  * Represents an entire world (aka server) and
@@ -53,6 +54,6 @@ public abstract class AbstractDhWorld implements IDhWorld, Closeable
 	
 	// helper methods //
 	
-	public String GetDebugMenuString() { return this.environment + " World with " + F3Screen.NUMBER_FORMAT.format(this.getLoadedLevelCount()) + " levels"; }
+	public void addDebugMenuStringsToList(List<String> messageList) { messageList.add(this.environment + " World with " + F3Screen.NUMBER_FORMAT.format(this.getLoadedLevelCount()) + " levels"); }
 	
 }

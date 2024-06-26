@@ -21,15 +21,14 @@ package com.seibel.distanthorizons.core.network;
 
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
+import com.seibel.distanthorizons.core.network.exceptions.SessionClosedException;
 import com.seibel.distanthorizons.core.network.messages.PluginMessageRegistry;
 import com.seibel.distanthorizons.core.network.messages.plugin.base.CancelMessage;
 import com.seibel.distanthorizons.core.network.messages.plugin.base.ExceptionMessage;
 import com.seibel.distanthorizons.core.network.messages.plugin.PluginCloseEvent;
 import com.seibel.distanthorizons.core.network.plugin.PluginChannelMessage;
-import com.seibel.distanthorizons.core.network.plugin.PluginChannelSession;
 import com.seibel.distanthorizons.core.network.plugin.TrackableMessage;
 import com.seibel.distanthorizons.coreapi.ModInfo;
-import io.netty.channel.ChannelException;
 import org.apache.logging.log4j.LogManager;
 
 import java.io.InvalidClassException;
@@ -124,7 +123,7 @@ public abstract class NetworkEventSource
 		CompletableFuture<TResponse> responseFuture = new CompletableFuture<>();
 		responseFuture.whenComplete((response, throwable) ->
 		{
-			if (!(throwable instanceof ChannelException))
+			if (!(throwable instanceof SessionClosedException))
 			{
 				this.pendingFutures.remove(msg.futureId);
 			}
@@ -151,7 +150,7 @@ public abstract class NetworkEventSource
 	public void close()
 	{
 		this.handlers.clear();
-		this.completeAllFuturesExceptionally(new ChannelException(this.getClass().getSimpleName() + " is closed."));
+		this.completeAllFuturesExceptionally(new SessionClosedException(this.getClass().getSimpleName() + " is closed."));
 	}
 	
 	private static class FutureResponseData

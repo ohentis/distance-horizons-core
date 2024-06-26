@@ -26,6 +26,7 @@ import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.render.LodQuadTree;
 
 import java.io.Closeable;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -104,6 +105,8 @@ public interface IFullDataSourceRetrievalQueue extends Closeable
 	/** used for rendering to the F3 menu */
 	int getEstimatedTotalTaskCount();
 	void setEstimatedTotalTaskCount(int newEstimate);
+
+	void addDebugMenuStringsToList(List<String> messageList);
 	
 	
 }

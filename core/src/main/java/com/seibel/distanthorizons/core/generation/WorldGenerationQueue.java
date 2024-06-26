@@ -47,6 +47,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.awt.*;
 import java.util.*;
+import java.util.List;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
 
@@ -508,6 +509,8 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 	public int getEstimatedTotalTaskCount() { return this.estimatedTotalTaskCount; }
 	@Override
 	public void setEstimatedTotalTaskCount(int newEstimate) { this.estimatedTotalTaskCount = newEstimate; }
+	
+	public void addDebugMenuStringsToList(List<String> messageList) { }
 	
 	
 	

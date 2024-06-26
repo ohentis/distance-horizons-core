@@ -27,6 +27,7 @@ import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
 import org.apache.logging.log4j.Logger;
 
 import java.io.Closeable;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -137,20 +138,21 @@ public class WorldGenModule implements Closeable
 	
 	public boolean isWorldGenRunning() { return this.worldGenStateRef.get() != null; }
 	
-	public String getDebugMenuString()
+	public void addDebugMenuStringsToList(List<String> messageList)
 	{
 		AbstractWorldGenState worldGenState = this.worldGenStateRef.get();
 		if (worldGenState == null)
 		{
-			return null;
+			return;
 		}
 		
 		
 		String waitingCountStr = F3Screen.NUMBER_FORMAT.format(worldGenState.worldGenerationQueue.getWaitingTaskCount());
 		String inProgressCountStr = F3Screen.NUMBER_FORMAT.format(worldGenState.worldGenerationQueue.getInProgressTaskCount());
 		String totalCountEstimateStr = F3Screen.NUMBER_FORMAT.format(worldGenState.worldGenerationQueue.getEstimatedTotalTaskCount());
-		
-		return "World Gen Tasks: "+waitingCountStr+"/"+totalCountEstimateStr+" (in progress: "+inProgressCountStr+")";
+		messageList.add("World Gen Tasks: "+waitingCountStr+"/"+totalCountEstimateStr+" (in progress: "+inProgressCountStr+")");
+
+		worldGenState.worldGenerationQueue.addDebugMenuStringsToList(messageList);
 	}
 	
 	

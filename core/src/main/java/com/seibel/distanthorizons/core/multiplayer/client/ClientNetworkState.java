@@ -12,6 +12,7 @@ import com.seibel.distanthorizons.core.network.plugin.PluginChannelSession;
 import org.apache.logging.log4j.LogManager;
 
 import java.io.Closeable;
+import java.util.List;
 
 public class ClientNetworkState implements Closeable
 {
@@ -26,8 +27,6 @@ public class ClientNetworkState implements Closeable
 	private volatile boolean configReceived = false;
 	private final MultiplayerConfigChangeListener configChangeListener = new MultiplayerConfigChangeListener(this::sendConfigMessage);
 	public boolean isReady() { return this.configReceived; }
-	
-	private final F3Screen.NestedMessage f3Message = new F3Screen.NestedMessage(this::f3Log);
 	
 	/**
 	 * Returns the client used by this instance. <p>
@@ -61,24 +60,20 @@ public class ClientNetworkState implements Closeable
 		this.getSession().sendMessage(new RemotePlayerConfigMessage(new MultiplayerConfig()));
 	}
 	
-	private String[] f3Log()
+	public void addDebugMenuStringsToList(List<String> messageList)
 	{
 		if (this.session.isClosed())
 		{
-			return new String[]{
-					"Session closed: " + this.session.getCloseReason().getMessage()
-			};
+			messageList.add("Session closed: " + this.session.getCloseReason().getMessage());
+			return;
 		}
 		
-		return new String[]{
-				this.serverSupportStatus.message
-		};
+		messageList.add(this.serverSupportStatus.message);
 	}
 	
 	@Override
 	public void close()
 	{
-		this.f3Message.close();
 		this.configChangeListener.close();
 		this.session.close();
 	}

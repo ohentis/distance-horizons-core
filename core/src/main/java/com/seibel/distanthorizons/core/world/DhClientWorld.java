@@ -29,8 +29,8 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapp
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import org.jetbrains.annotations.NotNull;
 
-import javax.annotation.Nullable;
 import java.io.File;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 
@@ -128,6 +128,13 @@ public class DhClientWorld extends AbstractDhWorld implements IDhClientWorld
 	@Override public void doWorldGen()
 	{
 		this.levels.values().forEach(DhClientLevel::doWorldGen);
+	}
+
+	@Override
+	public void addDebugMenuStringsToList(List<String> messageList)
+	{
+		super.addDebugMenuStringsToList(messageList);
+		networkState.addDebugMenuStringsToList(messageList);
 	}
 
 	@Override

@@ -229,12 +229,7 @@ public class DhClientServerLevel extends AbstractDhLevel implements IDhClientLev
 		
 		
 		// world gen
-		WorldGenModule worldGenState = this.serverside.worldGenModule;
-		String worldGenDisplayString = worldGenState.getDebugMenuString();
-		if (worldGenDisplayString != null)
-		{
-			messageList.add(worldGenDisplayString);
-		}
+		this.serverside.worldGenModule.addDebugMenuStringsToList(messageList);
 	}
 	
 	

@@ -277,6 +277,10 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 		{
 			messageList.add("  Migration Failed");
 		}
+		
+		
+		// world gen
+		this.worldGenModule.addDebugMenuStringsToList(messageList);
 	}
 	
 	@Override

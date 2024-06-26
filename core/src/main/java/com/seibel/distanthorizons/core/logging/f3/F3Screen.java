@@ -119,7 +119,7 @@ public class F3Screen
 			messageList.add("");
 		}
 		// world / levels
-		messageList.add(world.GetDebugMenuString());
+		world.addDebugMenuStringsToList(messageList);
 		for (IDhLevel level : levelIterator)
 		{
 			level.addDebugMenuStringsToList(messageList);

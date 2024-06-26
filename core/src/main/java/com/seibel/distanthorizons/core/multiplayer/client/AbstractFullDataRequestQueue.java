@@ -7,10 +7,10 @@ import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSour
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.logging.ConfigBasedSpamLogger;
-import com.seibel.distanthorizons.core.logging.f3.F3Screen;
 import com.seibel.distanthorizons.core.network.exceptions.InvalidLevelException;
 import com.seibel.distanthorizons.core.network.exceptions.RateLimitedException;
 import com.seibel.distanthorizons.core.network.exceptions.RequestRejectedException;
+import com.seibel.distanthorizons.core.network.exceptions.SessionClosedException;
 import com.seibel.distanthorizons.core.network.messages.plugin.fullData.FullDataSourceRequestMessage;
 import com.seibel.distanthorizons.core.network.messages.plugin.fullData.FullDataSourceResponseMessage;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
@@ -20,18 +20,16 @@ import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.ratelimiting.SupplierBasedRateLimiter;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
-import io.netty.channel.ChannelException;
 import org.apache.logging.log4j.LogManager;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import java.awt.*;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, AutoCloseable
 {
@@ -51,7 +49,6 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 	protected final ConcurrentMap<Long, RequestQueueEntry> waitingTasks = new ConcurrentHashMap<>();
 	private final Semaphore pendingTasksSemaphore = new Semaphore(Short.MAX_VALUE, true);
 	
-	private final F3Screen.NestedMessage f3Message = new F3Screen.NestedMessage(this::f3Log);
 	private final AtomicInteger finishedRequests = new AtomicInteger();
 	private final AtomicInteger failedRequests = new AtomicInteger();
 	private final ConfigEntry<Boolean> showDebugWireframeConfig;
@@ -207,7 +204,7 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 			{
 				// We're too late / some cases might trigger a bunch of expected rejections
 			}
-			catch (ChannelException | RateLimitedException e)
+			catch (SessionClosedException | RateLimitedException e)
 			{
 				if (e instanceof RateLimitedException)
 				{
@@ -237,17 +234,15 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 		});
 	}
 	
-	private String[] f3Log()
+	public void addDebugMenuStringsToList(List<String> messageList)
 	{
 		if (!this.showInDebug())
 		{
-			return new String[0];
+			return;
 		}
 		
-		return new String[]{
-				this.getQueueName() + " [" + this.level.getClientLevelWrapper().getDimensionType().getDimensionName() + "]",
-				"Requests: " + this.finishedRequests + " / " + (this.getWaitingTaskCount() + this.finishedRequests.get()) + " (failed: " + this.failedRequests + ", rate limit: " + this.getRequestConcurrencyLimit() + ")"
-		};
+		messageList.add(this.getQueueName() + " [" + this.level.getClientLevelWrapper().getDimensionType().getDimensionName() + "]");
+		messageList.add("Requests: " + this.finishedRequests + " / " + (this.getWaitingTaskCount() + this.finishedRequests.get()) + " (failed: " + this.failedRequests + ", rate limit: " + this.getRequestConcurrencyLimit() + ")");
 	}
 	
 	
@@ -284,7 +279,6 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 	@Override
 	public void close()
 	{
-		this.f3Message.close();
 		DebugRenderer.unregister(this, this.showDebugWireframeConfig);
 	}
 	
