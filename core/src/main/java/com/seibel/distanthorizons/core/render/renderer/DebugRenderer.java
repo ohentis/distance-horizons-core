@@ -66,7 +66,6 @@ public class DebugRenderer
 	private ShaderProgram basicShader;
 	private GLVertexBuffer vertexBuffer;
 	private GLElementBuffer outlineIndexBuffer;
-	private GLElementBuffer solidIndexBuffer;
 	private AbstractVertexAttribute va;
 	private boolean init = false;
 	
@@ -109,30 +108,6 @@ public class DebugRenderer
 			2, 6,
 			3, 7,
 	};
-	
-	private static final int[] SOLID_BOX_INDICES = {
-			// min Z, vertical face
-			0, 3, 2,
-			2, 1, 0,
-			// max Z, vertical face
-			4, 5, 6,
-			6, 7, 4,
-			
-			// min X, vertical face
-			7, 3, 0,
-			0, 4, 7,
-			// max X, vertical face
-			2, 6, 5,
-			5, 1, 2,
-			
-			// min Y, horizontal face
-			1, 5, 4,
-			4, 0, 1,
-			// max Y, horizontal face
-			3, 7, 6,
-			6, 2, 3,
-	};
-	
 	
 	
 	
@@ -210,16 +185,6 @@ public class DebugRenderer
 		this.outlineIndexBuffer = new GLElementBuffer(false);
 		this.outlineIndexBuffer.uploadBuffer(boxOutlineBuffer, EDhApiGpuUploadMethod.DATA, BOX_OUTLINE_INDICES.length * Integer.BYTES, GL32.GL_STATIC_DRAW);
 		
-		
-		// solid vertex indexes
-		ByteBuffer solidIndexBuffer = ByteBuffer.allocateDirect(SOLID_BOX_INDICES.length * Integer.BYTES);
-		solidIndexBuffer.order(ByteOrder.nativeOrder());
-		solidIndexBuffer.asIntBuffer().put(SOLID_BOX_INDICES);
-		solidIndexBuffer.rewind();
-		this.solidIndexBuffer = new GLElementBuffer(false);
-		this.solidIndexBuffer.uploadBuffer(solidIndexBuffer, EDhApiGpuUploadMethod.DATA, SOLID_BOX_INDICES.length * Integer.BYTES, GL32.GL_STATIC_DRAW);
-		this.solidIndexBuffer.bind();
-		
 	}
 	
 	public void render(Mat4f transform)
@@ -259,12 +224,6 @@ public class DebugRenderer
 		}
 		
 		
-		this.solidIndexBuffer.bind();
-		renderSolidBox(new Box(new Vec3f(0f,0f,0f), new Vec3f(16f,190f,16f), Color.CYAN), SOLID_BOX_INDICES);
-		
-		
-		
-		this.basicShader.unbind();
 		glState.restore();
 	}
 	
@@ -277,17 +236,6 @@ public class DebugRenderer
 		this.basicShader.setUniform(this.basicShader.getUniformLocation("transform"), t);
 		this.basicShader.setUniform(this.basicShader.getUniformLocation("uColor"), box.color);
 		GL32.glDrawElements(GL32.GL_LINES, BOX_OUTLINE_INDICES.length, GL32.GL_UNSIGNED_INT, 0);
-	}
-	
-	public void renderSolidBox(Box box, int[] drawIndices)
-	{
-		Mat4f boxTransform = Mat4f.createTranslateMatrix(box.a.x - this.camPosFloatThisFrame.x, box.a.y - this.camPosFloatThisFrame.y, box.a.z - this.camPosFloatThisFrame.z);
-		boxTransform.multiply(Mat4f.createScaleMatrix(box.b.x - box.a.x, box.b.y - box.a.y, box.b.z - box.a.z));
-		Mat4f transformMatrix = this.transformationMatrixThisFrame.copy();
-		transformMatrix.multiply(boxTransform);
-		this.basicShader.setUniform(this.basicShader.getUniformLocation("transform"), transformMatrix);
-		this.basicShader.setUniform(this.basicShader.getUniformLocation("uColor"), box.color);
-		GL32.glDrawElements(GL32.GL_TRIANGLES , drawIndices.length, GL32.GL_UNSIGNED_INT, 0);
 	}
 	
 	

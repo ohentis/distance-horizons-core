@@ -422,6 +422,15 @@ public class LodRenderer
 					
 					// Note: this can be very slow if a lot of boxes are being rendered 
 					DebugRenderer.INSTANCE.render(combinedMatrix);
+				}
+				
+				profiler.popPush("Generic Cubes");
+				
+				{
+					Mat4f combinedMatrix = new Mat4f(renderEventParam.dhProjectionMatrix);
+					combinedMatrix.multiply(renderEventParam.dhModelViewMatrix);
+					
+					GenericCubeRenderer.INSTANCE.render(combinedMatrix);
 					profiler.popPush("LOD cleanup");
 				}
 				
