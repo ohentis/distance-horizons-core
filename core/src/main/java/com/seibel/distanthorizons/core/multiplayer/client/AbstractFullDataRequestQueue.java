@@ -241,7 +241,7 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 			return;
 		}
 		
-		messageList.add(this.getQueueName() + " [" + this.level.getClientLevelWrapper().getDimensionType().getDimensionName() + "]");
+		messageList.add(this.getQueueName() + " [" + this.level.getClientLevelWrapper().getDimensionName() + "]");
 		messageList.add("Requests: " + this.finishedRequests + " / " + (this.getWaitingTaskCount() + this.finishedRequests.get()) + " (failed: " + this.failedRequests + ", rate limit: " + this.getRequestConcurrencyLimit() + ")");
 	}
 	

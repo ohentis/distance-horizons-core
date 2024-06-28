@@ -184,7 +184,7 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 			LodUtil.assertTrue(msg instanceof ILevelRelatedMessage, MessageFormat.format("Received message does not implement {0}: {1}", ILevelRelatedMessage.class.getSimpleName(), msg.getClass().getSimpleName()));
 			
 			// Handle only in requested dimension
-			if (!((ILevelRelatedMessage) msg).isSameLevelAs(this.getLevelWrapper()))
+			if (!((ILevelRelatedMessage) msg).isSameLevelAs(this.getServerLevelWrapper()))
 			{
 				return;
 			}
@@ -199,8 +199,8 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 					((TrackableMessage) msg).sendResponse(new InvalidLevelException(MessageFormat.format(
 							"Generation not allowed. Requested dimension: {0}, player dimension: {1}, handler dimension: {2}",
 							((ILevelRelatedMessage) msg).getLevelName(),
-							msg.session.serverPlayer.getLevel().getDimensionType().getDimensionName(),
-							this.getLevelWrapper().getDimensionType().getDimensionName()
+							msg.session.serverPlayer.getLevel().getDimensionName(),
+							this.getLevelWrapper().getDimensionName()
 					)));
 				}
 				
@@ -392,7 +392,7 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 	@Override
 	public void addDebugMenuStringsToList(List<String> messageList)
 	{
-		String dimName = this.serverLevelWrapper.getDimensionType().getDimensionName();
+		String dimName = this.serverLevelWrapper.getDimensionName();
 		messageList.add("["+dimName+"]");
 	}
 	

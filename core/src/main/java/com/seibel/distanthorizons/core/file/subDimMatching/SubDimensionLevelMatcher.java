@@ -200,7 +200,7 @@ public class SubDimensionLevelMatcher implements AutoCloseable
 		//================================//
 		
 		// log the start of this attempt
-		LOGGER.info("Attempting to determine sub-dimension for [" + MC_CLIENT.getWrappedClientLevel().getDimensionType().getDimensionName() + "]");
+		LOGGER.info("Attempting to determine sub-dimension for [" + MC_CLIENT.getWrappedClientLevel().getDimensionName() + "]");
 		LOGGER.info("Player block pos in dimension: [" + this.playerData.playerBlockPos.x + "," + this.playerData.playerBlockPos.y + "," + this.playerData.playerBlockPos.z + "]");
 		LOGGER.info("Potential Sub Dimension folders: [" + this.potentialLevelFolders.size() + "]");
 		
@@ -379,7 +379,7 @@ public class SubDimensionLevelMatcher implements AutoCloseable
 	}
 	
 	
-	private File CreateSubDimFolder(String subDimId) { return new File(this.levelsFolder.getPath() + File.separatorChar + this.currentClientLevel.getDimensionType().getDimensionName(), subDimId); }
+	private File CreateSubDimFolder(String subDimId) { return new File(this.levelsFolder.getPath() + File.separatorChar + this.currentClientLevel.getDimensionName(), subDimId); }
 	
 	@Override
 	public void close() { this.matcherThread.shutdownNow(); }

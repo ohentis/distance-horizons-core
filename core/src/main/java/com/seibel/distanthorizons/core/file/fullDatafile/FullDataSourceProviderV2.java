@@ -124,7 +124,7 @@ public class FullDataSourceProviderV2
 		
 		DebugRenderer.register(this, Config.Client.Advanced.Debugging.DebugWireframe.showFullDataUpdateStatus);
 		
-		String dimensionName = level.getLevelWrapper().getDimensionType().getDimensionName();
+		String dimensionName = level.getLevelWrapper().getDimensionName();
 		
 		// start migrating any legacy data sources present in the background
 		this.migrationThreadPool = ThreadUtil.makeRateLimitedThreadPool(1, MIGRATION_THREAD_NAME_PREFIX + "[" + dimensionName + "]", Config.Client.Advanced.MultiThreading.runTimeRatioForUpdatePropagatorThreads.get(), Thread.MIN_PRIORITY, (Semaphore) null);
@@ -376,7 +376,7 @@ public class FullDataSourceProviderV2
 	
 	private void convertLegacyDataSources()
 	{
-		String dimensionName = this.level.getLevelWrapper().getDimensionType().getDimensionName();
+		String dimensionName = this.level.getLevelWrapper().getDimensionName();
 		LOGGER.info("Attempting to migrate data sources for: [" + dimensionName + "]-[" + this.saveDir + "]...");
 		
 		
@@ -559,7 +559,7 @@ public class FullDataSourceProviderV2
 		}
 		this.migrationStartMessageQueued = true;
 		
-		String dimName = this.level.getLevelWrapper().getDimensionType().getDimensionName();
+		String dimName = this.level.getLevelWrapper().getDimensionName();
 		ClientApi.INSTANCE.showChatMessageNextFrame(
 				"Old Distant Horizons data is being migrated for ["+dimName+"]. \n" +
 				"While migrating LODs may load slowly \n" +
@@ -570,7 +570,7 @@ public class FullDataSourceProviderV2
 	
 	private void showMigrationEndMessage(boolean success)
 	{
-		String dimName = this.level.getLevelWrapper().getDimensionType().getDimensionName();
+		String dimName = this.level.getLevelWrapper().getDimensionName();
 		
 		if (success)
 		{

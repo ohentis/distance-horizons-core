@@ -78,9 +78,9 @@ public class F3Screen
 	 Parent Update #: 12 <br><br>
 	 
 	 Client_Server World with 3 levels <br>
-	 [overworld] rendering: Active <br>
-	 [the_end] rendering: Inactive <br>
-	 [the_nether] rendering: Inactive <br><br>
+	 [minecraft:overworld] rendering: Active <br>
+	 [minecraft:the_end] rendering: Inactive <br>
+	 [minecraft:the_nether] rendering: Inactive <br><br>
 	 
 	 VBO Render Count: 199/374 <br>
 	 </code>

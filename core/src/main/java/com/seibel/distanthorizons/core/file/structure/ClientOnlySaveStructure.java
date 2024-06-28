@@ -84,7 +84,7 @@ public class ClientOnlySaveStructure extends AbstractSaveStructure
 			if (newLevelWrapper instanceof IServerKeyedClientLevel)
 			{
 				IServerKeyedClientLevel keyedClientLevel = (IServerKeyedClientLevel) newLevelWrapper;
-				LOGGER.info("Loading level " + newLevelWrapper.getDimensionType().getDimensionName() + " with key: " + keyedClientLevel.getServerLevelKey());
+				LOGGER.info("Loading level " + newLevelWrapper.getDimensionName() + " with key: " + keyedClientLevel.getServerLevelKey());
 				// This world was identified by the server directly, so we can know for sure which folder to use.
 				return new File(getSaveStructureFolderPath() + File.separatorChar + keyedClientLevel.getServerLevelKey());
 			}
@@ -98,9 +98,9 @@ public class ClientOnlySaveStructure extends AbstractSaveStructure
 				// create the matcher if one doesn't exist
 				if (this.subDimMatcher == null || !this.subDimMatcher.isFindingLevel(newClientLevelWrapper))
 				{
-					LOGGER.info("Loading level " + newClientLevelWrapper.getDimensionType().getDimensionName());
+					LOGGER.info("Loading level " + newClientLevelWrapper.getDimensionName());
 					
-					List<File> levelFolders = this.getDhDataFoldersForDimension(newClientLevelWrapper.getDimensionType());
+					List<File> levelFolders = this.getDhDataFoldersForDimension(newClientLevelWrapper);
 					this.subDimMatcher = new SubDimensionLevelMatcher(newClientLevelWrapper, this.folder, levelFolders);
 				}
 				
@@ -129,7 +129,7 @@ public class ClientOnlySaveStructure extends AbstractSaveStructure
 	
 	private File getLevelFolderWithoutSimilarityMatching(ILevelWrapper level)
 	{
-		List<File> folders = this.getDhDataFoldersForDimension(level.getDimensionType());
+		List<File> folders = this.getDhDataFoldersForDimension(level);
 		if (!folders.isEmpty() && folders.get(0) != null)
 		{
 			// use the first existing sub-dimension
@@ -140,12 +140,12 @@ public class ClientOnlySaveStructure extends AbstractSaveStructure
 		else
 		{
 			// no valid sub dimension was found, create a new one
-			LOGGER.info("Default Sub Dimension not found. Creating: [" + level.getDimensionType().getDimensionName() + "]");
-			return new File(this.folder, level.getDimensionType().getDimensionName());
+			LOGGER.info("Default Sub Dimension not found. Creating: [" + level.getDimensionName() + "]");
+			return new File(this.folder, level.getDimensionName());
 		}
 	}
 	
-	public List<File> getDhDataFoldersForDimension(IDimensionTypeWrapper dimensionType)
+	public List<File> getDhDataFoldersForDimension(ILevelWrapper level)
 	{
 		File[] folders = this.folder.listFiles();
 		if (folders == null)
@@ -154,7 +154,7 @@ public class ClientOnlySaveStructure extends AbstractSaveStructure
 		}
 		
 		// filter by dimension name
-		String expectedDimName = dimensionType.getDimensionName();
+		String expectedDimName = level.getDimensionName();
 		ArrayList<File> possibleDimFolders = new ArrayList<>();
 		for (File dimFolder : folders)
 		{

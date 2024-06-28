@@ -165,13 +165,13 @@ public class DhClientServerLevel extends AbstractDhLevel implements IDhClientLev
 	@Override
 	public void clearRenderCache()
 	{
-		clientside.clearRenderCache();
+		this.clientside.clearRenderCache();
 	}
 	
 	@Override
-	public IServerLevelWrapper getServerLevelWrapper() { return serverLevelWrapper; }
+	public IServerLevelWrapper getServerLevelWrapper() { return this.serverLevelWrapper; }
 	@Override
-	public ILevelWrapper getLevelWrapper() { return getServerLevelWrapper(); }
+	public ILevelWrapper getLevelWrapper() { return this.getServerLevelWrapper(); }
 	
 	@Override
 	public FullDataSourceProviderV2 getFullDataProvider() { return this.serverside.fullDataFileHandler; }
@@ -179,7 +179,7 @@ public class DhClientServerLevel extends AbstractDhLevel implements IDhClientLev
 	@Override
 	public AbstractSaveStructure getSaveStructure()
 	{
-		return serverside.saveStructure;
+		return this.serverside.saveStructure;
 	}
 	
 	@Override
@@ -201,7 +201,7 @@ public class DhClientServerLevel extends AbstractDhLevel implements IDhClientLev
 	public void addDebugMenuStringsToList(List<String> messageList)
 	{
 		// header
-		String dimName = this.serverLevelWrapper.getDimensionType().getDimensionName();
+		String dimName = this.serverLevelWrapper.getDimensionName();
 		boolean rendering = this.clientside.isRendering();
 		messageList.add("["+dimName+"] rendering: "+(rendering ? "yes" : "no"));
 		

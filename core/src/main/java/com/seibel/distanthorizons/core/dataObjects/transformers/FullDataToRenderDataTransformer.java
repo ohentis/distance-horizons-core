@@ -215,7 +215,7 @@ public class FullDataToRenderDataTransformer
 				if (!brokenPos.contains(fullDataMapping.getPos()))
 				{
 					brokenPos.add(fullDataMapping.getPos());
-					String dimName = level.getLevelWrapper().getDimensionType().getDimensionName();
+					String dimName = level.getLevelWrapper().getDimensionName();
 					LOGGER.warn("Unable to get data point with id ["+id+"] " +
 							"(Max possible ID: ["+fullDataMapping.getMaxValidId()+"]) " +
 							"for pos ["+fullDataMapping.getPos()+"] in dimension ["+dimName+"]. " +

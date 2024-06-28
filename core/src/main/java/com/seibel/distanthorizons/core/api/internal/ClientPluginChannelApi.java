@@ -55,7 +55,7 @@ public class ClientPluginChannelApi
 	
 	private void onCurrentLevelKeyMessage(CurrentLevelKeyMessage msg)
 	{
-		if (!msg.levelKey.matches("[a-zA-Z0-9_]{1,50}"))
+		if (!msg.levelKey.matches("^(?=.{1,50}$)([a-zA-Z0-9-_]+@)?[a-zA-Z0-9-_]+(:[a-zA-Z0-9-_]+)?$"))
 		{
 			throw new IllegalArgumentException("Server sent invalid level key.");
 		}
@@ -80,7 +80,7 @@ public class ClientPluginChannelApi
 			}
 			else
 			{
-				LOGGER.info("Unloading non-keyed level: " + clientLevel.getDimensionType().getDimensionName());
+				LOGGER.info("Unloading non-keyed level: " + clientLevel.getDimensionName());
 				this.levelUnloadHandler.accept(clientLevel);
 			}
 			

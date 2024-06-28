@@ -43,7 +43,7 @@ public class FullDataSourceRequestMessage extends TrackableMessage implements IL
 	public FullDataSourceRequestMessage() {}
 	public FullDataSourceRequestMessage(ILevelWrapper levelWrapper, long sectionPos, @Nullable Long clientTimestamp)
 	{
-		this.levelName = levelWrapper.getDimensionType().getDimensionName();
+		this.levelName = levelWrapper.getDimensionName();
 		this.sectionPos = sectionPos;
 		this.clientTimestamp = clientTimestamp;
 	}

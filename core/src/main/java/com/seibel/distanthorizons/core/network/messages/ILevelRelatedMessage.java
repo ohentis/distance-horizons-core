@@ -1,6 +1,6 @@
 package com.seibel.distanthorizons.core.network.messages;
 
-import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
 
 public interface ILevelRelatedMessage
 {
@@ -10,9 +10,9 @@ public interface ILevelRelatedMessage
 	 * Checks whether the message's level matches the given level.
 	 */
 	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
-	default boolean isSameLevelAs(ILevelWrapper levelWrapper)
+	default boolean isSameLevelAs(IServerLevelWrapper levelWrapper)
 	{
-		return this.getLevelName().equals(levelWrapper.getDimensionType().getDimensionName());
+		return this.getLevelName().equals(levelWrapper.getKeyedLevelDimensionName());
 	}
 	
 }

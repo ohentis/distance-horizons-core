@@ -44,7 +44,7 @@ public class FullDataPartialUpdateMessage extends NetworkMessage implements ILev
 	public FullDataPartialUpdateMessage() { }
 	public FullDataPartialUpdateMessage(ILevelWrapper level, FullDataSourceV2 fullDataSource)
 	{
-		this.levelName = level.getDimensionType().getDimensionName();
+		this.levelName = level.getDimensionName();
 		
 		try
 		{

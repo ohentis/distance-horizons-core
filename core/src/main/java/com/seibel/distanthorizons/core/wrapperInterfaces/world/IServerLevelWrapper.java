@@ -22,11 +22,30 @@ package com.seibel.distanthorizons.core.wrapperInterfaces.world;
 import org.jetbrains.annotations.Nullable;
 import java.io.File;
 
+import static com.seibel.distanthorizons.core.config.Config.Client.Advanced.Multiplayer.ServerNetworking;
+
 public interface IServerLevelWrapper extends ILevelWrapper
 {
 	@Nullable
 	IClientLevelWrapper tryGetClientLevelWrapper();
 	
 	File getSaveFolder();
+
+	default String getKeyedLevelDimensionName()
+	{
+		String dimensionName = this.getDimensionName();
+		
+		if (ServerNetworking.sendLevelKeys.get())
+		{
+			String levelKeyPrefix = ServerNetworking.levelKeyPrefix.get();
+			
+			if (!levelKeyPrefix.isEmpty())
+			{
+				return levelKeyPrefix + "@" + dimensionName;
+			}
+		}
+
+		return dimensionName;
+	}
 	
 }

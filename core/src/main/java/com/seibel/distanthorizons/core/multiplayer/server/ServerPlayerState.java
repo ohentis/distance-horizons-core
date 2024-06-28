@@ -1,5 +1,6 @@
 package com.seibel.distanthorizons.core.multiplayer.server;
 
+import com.seibel.distanthorizons.core.config.listeners.ConfigChangeListener;
 import com.seibel.distanthorizons.core.level.DhServerLevel;
 import com.seibel.distanthorizons.core.multiplayer.config.MultiplayerConfig;
 import com.seibel.distanthorizons.core.multiplayer.config.MultiplayerConfigChangeListener;
@@ -25,8 +26,10 @@ public class ServerPlayerState
 	@NotNull
 	public ConstrainedMultiplayerConfig config = new ConstrainedMultiplayerConfig();
 	private final MultiplayerConfigChangeListener configChangeListener = new MultiplayerConfigChangeListener(this::onConfigChanged);
+
 	private String lastLevelKey = "";
-	
+	private final ConfigChangeListener<String> levelKeyPrefixChangeListener = new ConfigChangeListener<>(ServerNetworking.levelKeyPrefix, this::sendLevelKey);
+
 	private final ConcurrentHashMap<DhServerLevel, RateLimiterSet> rateLimiterSets = new ConcurrentHashMap<>();
 	public RateLimiterSet getRateLimiterSet(DhServerLevel level)
 	{
@@ -46,29 +49,7 @@ public class ServerPlayerState
 		this.session.registerHandler(RemotePlayerConfigMessage.class, remotePlayerConfigMessage ->
 		{
 			this.config.clientConfig = (MultiplayerConfig) remotePlayerConfigMessage.payload;
-			
-			if (ServerNetworking.sendLevelKeys.get())
-			{
-				String levelKeyPrefix = ServerNetworking.levelKeyPrefix.get();
-				String dimensionName = serverPlayer.getLevel().getDimensionType().getDimensionName();
-				
-				String levelKey;
-				if (!levelKeyPrefix.isEmpty())
-				{
-					levelKey = levelKeyPrefix + "_" + dimensionName;
-				}
-				else
-				{
-					levelKey = dimensionName;
-				}
-				
-				if (!levelKey.equals(this.lastLevelKey))
-				{
-					this.lastLevelKey = levelKey;
-					this.session.sendMessage(new CurrentLevelKeyMessage(levelKey));
-				}
-			}
-			
+			this.sendLevelKey(null);
 			this.session.sendMessage(new RemotePlayerConfigMessage(this.config));
 		});
 		
@@ -78,7 +59,18 @@ public class ServerPlayerState
 	}
 	
 	
-	
+	private void sendLevelKey(String ignored)
+	{
+		if (ServerNetworking.sendLevelKeys.get())
+		{
+			String levelKey = this.serverPlayer().getLevel().getKeyedLevelDimensionName();
+			if (!levelKey.equals(this.lastLevelKey))
+			{
+				this.lastLevelKey = levelKey;
+				this.session.sendMessage(new CurrentLevelKeyMessage(levelKey));
+			}
+		}
+	}
 	
 	private void onConfigChanged()
 	{
@@ -87,6 +79,7 @@ public class ServerPlayerState
 	
 	public void close()
 	{
+		this.levelKeyPrefixChangeListener.close();
 		this.configChangeListener.close();
 		this.session.close();
 	}
