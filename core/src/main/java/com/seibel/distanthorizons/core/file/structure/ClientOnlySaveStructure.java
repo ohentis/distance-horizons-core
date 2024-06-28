@@ -86,7 +86,7 @@ public class ClientOnlySaveStructure extends AbstractSaveStructure
 				IServerKeyedClientLevel keyedClientLevel = (IServerKeyedClientLevel) newLevelWrapper;
 				LOGGER.info("Loading level " + newLevelWrapper.getDimensionName() + " with key: " + keyedClientLevel.getServerLevelKey());
 				// This world was identified by the server directly, so we can know for sure which folder to use.
-				return new File(getSaveStructureFolderPath() + File.separatorChar + keyedClientLevel.getServerLevelKey());
+				return new File(getSaveStructureFolderPath() + File.separatorChar + keyedClientLevel.getServerLevelKey().replaceAll(":", "@@"));
 			}
 			
 			
@@ -141,7 +141,7 @@ public class ClientOnlySaveStructure extends AbstractSaveStructure
 		{
 			// no valid sub dimension was found, create a new one
 			LOGGER.info("Default Sub Dimension not found. Creating: [" + level.getDimensionName() + "]");
-			return new File(this.folder, level.getDimensionName());
+			return new File(this.folder, level.getDimensionName().replaceAll(":", "@@"));
 		}
 	}
 	
