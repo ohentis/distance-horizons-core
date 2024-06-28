@@ -33,7 +33,7 @@ public interface IServerLevelWrapper extends ILevelWrapper
 
 	default String getKeyedLevelDimensionName()
 	{
-		String dimensionName = this.getDimensionName();
+		String dimensionName = this.getDimensionName().replace(":", "@@");
 		
 		if (ServerNetworking.sendLevelKeys.get())
 		{
@@ -41,7 +41,7 @@ public interface IServerLevelWrapper extends ILevelWrapper
 			
 			if (!levelKeyPrefix.isEmpty())
 			{
-				return levelKeyPrefix + "@" + dimensionName.replace(":", "@@");
+				return levelKeyPrefix + "@" + dimensionName;
 			}
 		}
 
