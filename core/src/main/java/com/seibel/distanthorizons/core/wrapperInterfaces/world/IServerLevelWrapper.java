@@ -41,7 +41,7 @@ public interface IServerLevelWrapper extends ILevelWrapper
 			
 			if (!levelKeyPrefix.isEmpty())
 			{
-				return levelKeyPrefix + "@" + dimensionName;
+				return levelKeyPrefix + "@" + dimensionName.replace(":", "@@");
 			}
 		}
 

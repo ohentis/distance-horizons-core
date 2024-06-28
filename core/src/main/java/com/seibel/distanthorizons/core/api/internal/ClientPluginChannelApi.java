@@ -55,7 +55,7 @@ public class ClientPluginChannelApi
 	
 	private void onCurrentLevelKeyMessage(CurrentLevelKeyMessage msg)
 	{
-		if (!msg.levelKey.matches("^(?=.{1,50}$)([a-zA-Z0-9-_]+@)?[a-zA-Z0-9-_]+(:[a-zA-Z0-9-_]+)?$"))
+		if (!msg.levelKey.matches("^[a-zA-Z0-9-_@]{1,50}$"))
 		{
 			throw new IllegalArgumentException("Server sent invalid level key.");
 		}
