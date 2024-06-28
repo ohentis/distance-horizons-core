@@ -80,7 +80,7 @@ public class DebugRenderer
 	
 	
 	/** A box from 0,0,0 to 1,1,1 */
-	private static final float[] BOX_VERTICIES = {
+	private static final float[] BOX_VERTICES = {
 			// Pos x y z
 			0, 0, 0,
 			1, 0, 0,
@@ -115,7 +115,47 @@ public class DebugRenderer
 	// constructor //
 	//=============//
 	
-	public DebugRenderer() { }
+	private DebugRenderer() { }
+	
+	public void init()
+	{
+		if (this.init)
+		{
+			return;
+		}
+		this.init = true;
+		
+		this.va = AbstractVertexAttribute.create();
+		this.va.bind();
+		// Pos
+		this.va.setVertexAttribute(0, 0, VertexPointer.addVec3Pointer(false));
+		this.va.completeAndCheck(Float.BYTES * 3);
+		this.basicShader = new ShaderProgram("shaders/debug/vert.vert", "shaders/debug/frag.frag",
+				"fragColor", new String[]{"vPosition"});
+		this.createBuffer();
+	}
+	
+	private void createBuffer()
+	{
+		// box vertices 
+		ByteBuffer boxVerticesBuffer = ByteBuffer.allocateDirect(BOX_VERTICES.length * Float.BYTES);
+		boxVerticesBuffer.order(ByteOrder.nativeOrder());
+		boxVerticesBuffer.asFloatBuffer().put(BOX_VERTICES);
+		boxVerticesBuffer.rewind();
+		this.vertexBuffer = new GLVertexBuffer(false);
+		this.vertexBuffer.bind();
+		this.vertexBuffer.uploadBuffer(boxVerticesBuffer, 8, EDhApiGpuUploadMethod.DATA, BOX_VERTICES.length * Float.BYTES);
+		
+		
+		// outline vertex indexes
+		ByteBuffer boxOutlineBuffer = ByteBuffer.allocateDirect(BOX_OUTLINE_INDICES.length * Integer.BYTES);
+		boxOutlineBuffer.order(ByteOrder.nativeOrder());
+		boxOutlineBuffer.asIntBuffer().put(BOX_OUTLINE_INDICES);
+		boxOutlineBuffer.rewind();
+		this.outlineIndexBuffer = new GLElementBuffer(false);
+		this.outlineIndexBuffer.uploadBuffer(boxOutlineBuffer, EDhApiGpuUploadMethod.DATA, BOX_OUTLINE_INDICES.length * Integer.BYTES, GL32.GL_STATIC_DRAW);
+		
+	}
 	
 	
 	
@@ -141,51 +181,9 @@ public class DebugRenderer
 	
 	
 	
-	
-	
 	//===========//
 	// rendering //
 	//===========//
-	
-	public void init()
-	{
-		if (this.init)
-		{
-			return;
-		}
-		
-		this.init = true;
-		this.va = AbstractVertexAttribute.create();
-		this.va.bind();
-		// Pos
-		this.va.setVertexAttribute(0, 0, VertexPointer.addVec3Pointer(false));
-		this.va.completeAndCheck(Float.BYTES * 3);
-		this.basicShader = new ShaderProgram("shaders/debug/vert.vert", "shaders/debug/frag.frag",
-				"fragColor", new String[]{"vPosition"});
-		this.createBuffer();
-	}
-	
-	private void createBuffer()
-	{
-		// box vertices 
-		ByteBuffer boxVerticesBuffer = ByteBuffer.allocateDirect(BOX_VERTICIES.length * Float.BYTES);
-		boxVerticesBuffer.order(ByteOrder.nativeOrder());
-		boxVerticesBuffer.asFloatBuffer().put(BOX_VERTICIES);
-		boxVerticesBuffer.rewind();
-		this.vertexBuffer = new GLVertexBuffer(false);
-		this.vertexBuffer.bind();
-		this.vertexBuffer.uploadBuffer(boxVerticesBuffer, 8, EDhApiGpuUploadMethod.DATA, BOX_VERTICIES.length * Float.BYTES);
-		
-		
-		// outline vertex indexes
-		ByteBuffer boxOutlineBuffer = ByteBuffer.allocateDirect(BOX_OUTLINE_INDICES.length * Integer.BYTES);
-		boxOutlineBuffer.order(ByteOrder.nativeOrder());
-		boxOutlineBuffer.asIntBuffer().put(BOX_OUTLINE_INDICES);
-		boxOutlineBuffer.rewind();
-		this.outlineIndexBuffer = new GLElementBuffer(false);
-		this.outlineIndexBuffer.uploadBuffer(boxOutlineBuffer, EDhApiGpuUploadMethod.DATA, BOX_OUTLINE_INDICES.length * Integer.BYTES, GL32.GL_STATIC_DRAW);
-		
-	}
 	
 	public void render(Mat4f transform)
 	{
@@ -229,8 +227,8 @@ public class DebugRenderer
 	
 	public void renderBox(Box box)
 	{
-		Mat4f boxTransform = Mat4f.createTranslateMatrix(box.a.x - this.camPosFloatThisFrame.x, box.a.y - this.camPosFloatThisFrame.y, box.a.z - this.camPosFloatThisFrame.z);
-		boxTransform.multiply(Mat4f.createScaleMatrix(box.b.x - box.a.x, box.b.y - box.a.y, box.b.z - box.a.z));
+		Mat4f boxTransform = Mat4f.createTranslateMatrix(box.minPos.x - this.camPosFloatThisFrame.x, box.minPos.y - this.camPosFloatThisFrame.y, box.minPos.z - this.camPosFloatThisFrame.z);
+		boxTransform.multiply(Mat4f.createScaleMatrix(box.maxPos.x - box.minPos.x, box.maxPos.y - box.minPos.y, box.maxPos.z - box.minPos.z));
 		Mat4f t = this.transformationMatrixThisFrame.copy();
 		t.multiply(boxTransform);
 		this.basicShader.setUniform(this.basicShader.getUniformLocation("transform"), t);
@@ -246,25 +244,25 @@ public class DebugRenderer
 	
 	public static final class Box
 	{
-		public Vec3f a;
-		public Vec3f b;
+		public Vec3f minPos;
+		public Vec3f maxPos;
 		public Color color;
 		
 		
 		
-		public Box(Vec3f a, Vec3f b, Color color)
+		public Box(Vec3f minPos, Vec3f maxPos, Color color)
 		{
-			this.a = a;
-			this.b = b;
+			this.minPos = minPos;
+			this.maxPos = maxPos;
 			this.color = color;
 		}
 		
-		public Box(Vec3f a, Vec3f b, Color color, Vec3f margin)
+		public Box(Vec3f minPos, Vec3f maxPos, Color color, Vec3f margin)
 		{
-			this.a = a;
-			this.a.add(margin);
-			this.b = b;
-			this.b.subtract(margin);
+			this.minPos = minPos;
+			this.minPos.add(margin);
+			this.maxPos = maxPos;
+			this.maxPos.subtract(margin);
 			this.color = color;
 		}
 		
@@ -275,8 +273,8 @@ public class DebugRenderer
 			float edge = pos.getBlockWidth() * marginPercent;
 			Vec3f a = new Vec3f(blockMin.x + edge, minY, blockMin.z + edge);
 			Vec3f b = new Vec3f(blockMax.x - edge, maxY, blockMax.z - edge);
-			this.a = a;
-			this.b = b;
+			this.minPos = a;
+			this.maxPos = b;
 			this.color = color;
 		}
 		
@@ -288,8 +286,8 @@ public class DebugRenderer
 			float edge = pos.getBlockWidth() * marginPercent;
 			Vec3f a = new Vec3f(blockMin.x + edge, hashY, blockMin.z + edge);
 			Vec3f b = new Vec3f(blockMax.x - edge, hashY, blockMax.z - edge);
-			this.a = a;
-			this.b = b;
+			this.minPos = a;
+			this.maxPos = b;
 			this.color = color;
 		}
 		
@@ -337,7 +335,7 @@ public class DebugRenderer
 			float percent = (now - this.startTime) / (float) this.duration;
 			percent = (float) Math.pow(percent, 4);
 			float yDiff = this.yChange * percent;
-			return new Box(new Vec3f(this.box.a.x, this.box.a.y + yDiff, this.box.a.z), new Vec3f(this.box.b.x, this.box.b.y + yDiff, this.box.b.z), this.box.color);
+			return new Box(new Vec3f(this.box.minPos.x, this.box.minPos.y + yDiff, this.box.minPos.z), new Vec3f(this.box.maxPos.x, this.box.maxPos.y + yDiff, this.box.maxPos.z), this.box.color);
 		}
 		
 		public boolean isDead(long time) { return (time - this.startTime) > this.duration; }
@@ -353,7 +351,7 @@ public class DebugRenderer
 		public BoxWithLife(Box box, long ns, float yChange, Color deathColor)
 		{
 			this.box = box;
-			this.particaleOnClose = new BoxParticle(new Box(box.a, box.b, deathColor), -1, ns, yChange);
+			this.particaleOnClose = new BoxParticle(new Box(box.minPos, box.maxPos, deathColor), -1, ns, yChange);
 			register(this, null);
 		}
 		
@@ -363,7 +361,7 @@ public class DebugRenderer
 		public BoxWithLife(Box box, double s, float yChange, Color deathColor)
 		{
 			this.box = box;
-			this.particaleOnClose = new BoxParticle(new Box(box.a, box.b, deathColor), s, yChange);
+			this.particaleOnClose = new BoxParticle(new Box(box.minPos, box.maxPos, deathColor), s, yChange);
 		}
 		
 		public BoxWithLife(Box box, double s, float yChange) { this(box, s, yChange, box.color); }

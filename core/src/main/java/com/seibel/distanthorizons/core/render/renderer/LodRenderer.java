@@ -57,9 +57,6 @@ import org.apache.logging.log4j.LogManager;
 import org.lwjgl.opengl.GL32;
 
 import java.awt.*;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
@@ -424,15 +421,10 @@ public class LodRenderer
 					DebugRenderer.INSTANCE.render(combinedMatrix);
 				}
 				
-				profiler.popPush("Generic Cubes");
+				profiler.popPush("Custom Objects");
+				GenericObjectRenderer.INSTANCE.render(renderEventParam);
 				
-				{
-					Mat4f combinedMatrix = new Mat4f(renderEventParam.dhProjectionMatrix);
-					combinedMatrix.multiply(renderEventParam.dhModelViewMatrix);
-					
-					GenericCubeRenderer.INSTANCE.render(combinedMatrix);
-					profiler.popPush("LOD cleanup");
-				}
+				profiler.popPush("LOD cleanup");
 				
 				
 				

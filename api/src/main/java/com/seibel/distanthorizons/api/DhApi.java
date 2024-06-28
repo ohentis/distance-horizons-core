@@ -23,6 +23,7 @@ import com.seibel.distanthorizons.api.interfaces.events.IDhApiEventInjector;
 import com.seibel.distanthorizons.api.interfaces.factories.IDhApiWrapperFactory;
 import com.seibel.distanthorizons.api.interfaces.override.IDhApiOverrideable;
 import com.seibel.distanthorizons.api.interfaces.override.worldGenerator.IDhApiWorldGeneratorOverrideRegister;
+import com.seibel.distanthorizons.api.interfaces.render.IDhApiCustomRenderRegister;
 import com.seibel.distanthorizons.api.interfaces.render.IDhApiRenderProxy;
 import com.seibel.distanthorizons.api.methods.events.abstractEvents.DhApiAfterDhInitEvent;
 import com.seibel.distanthorizons.api.methods.override.DhApiWorldGeneratorOverrideRegister;
@@ -127,6 +128,7 @@ public class DhApi
 		 */
 		public static IDhApiWrapperFactory wrapperFactory = null;
 		
+		public static IDhApiCustomRenderRegister renderRegister = null;
 	}
 	
 	
