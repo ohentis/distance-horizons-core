@@ -43,6 +43,7 @@ import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import org.apache.logging.log4j.LogManager;
 import org.lwjgl.opengl.GL32;
+import org.lwjgl.opengl.GL33;
 
 import javax.annotation.Nullable;
 import java.awt.*;
@@ -77,9 +78,9 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 	private AbstractVertexAttribute va;
 	private boolean init = false;
 	
-	// used when rendering
-	private Mat4f transformationMatrixThisFrame;
-	private Vec3f camPosFloatThisFrame;
+	// instance data
+	private int instanceTransformVBO;
+	private int instanceColorVBO;
 	
 	
 	// TODO may need to be double buffered to prevent rendering lag
@@ -154,21 +155,21 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		
 		// testing //
 		
-		// single giant cube
-		IDhApiRenderableBoxGroup singleGiantCubeGroup = DhApi.Delayed.renderRegister.createForSingleBox(
-				new DhApiRenderableBox(
-						new Vec3f(0f,0f,0f), new Vec3f(16f,190f,16f),
-						new Color(Color.CYAN.getRed(), Color.CYAN.getGreen(), Color.CYAN.getBlue(), 125))
-				);
-		DhApi.Delayed.renderRegister.add(singleGiantCubeGroup);
-		
-		// single slender cube
-		singleGiantCubeGroup = DhApi.Delayed.renderRegister.createForSingleBox(
-				new DhApiRenderableBox(
-						new Vec3f(16f,0f,31f), new Vec3f(17f,2000f,32f),
-						new Color(Color.GREEN.getRed(), Color.GREEN.getGreen(), Color.GREEN.getBlue(), 125))
-		);
-		DhApi.Delayed.renderRegister.add(singleGiantCubeGroup);
+		//// single giant cube
+		//IDhApiRenderableBoxGroup singleGiantCubeGroup = DhApi.Delayed.renderRegister.createForSingleBox(
+		//		new DhApiRenderableBox(
+		//				new Vec3f(0f,0f,0f), new Vec3f(16f,190f,16f),
+		//				new Color(Color.CYAN.getRed(), Color.CYAN.getGreen(), Color.CYAN.getBlue(), 125))
+		//		);
+		//DhApi.Delayed.renderRegister.add(singleGiantCubeGroup);
+		//
+		//// single slender cube
+		//singleGiantCubeGroup = DhApi.Delayed.renderRegister.createForSingleBox(
+		//		new DhApiRenderableBox(
+		//				new Vec3f(16f,0f,31f), new Vec3f(17f,2000f,32f),
+		//				new Color(Color.GREEN.getRed(), Color.GREEN.getGreen(), Color.GREEN.getBlue(), 125))
+		//);
+		//DhApi.Delayed.renderRegister.add(singleGiantCubeGroup);
 		
 		// absolute cube group
 		ArrayList<DhApiRenderableBox> absCubeList = new ArrayList<>();
@@ -181,26 +182,26 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		IDhApiRenderableBoxGroup absolutePosCubeGroup = DhApi.Delayed.renderRegister.createAbsolutePositionedGroup(absCubeList);
 		DhApi.Delayed.renderRegister.add(absolutePosCubeGroup);
 		
-		// relative cube group
-		ArrayList<DhApiRenderableBox> relCubeList = new ArrayList<>();
-		for (int i = 0; i < 8; i+=2)
-		{
-			relCubeList.add(new DhApiRenderableBox(
-					new Vec3f(0f,0f+i,0f), new Vec3f(1f,1f+i,1f),
-					new Color(Color.MAGENTA.getRed(), Color.MAGENTA.getGreen(), Color.MAGENTA.getBlue())));
-		}
-		IDhApiRenderableBoxGroup relativePosCubeGroup = DhApi.Delayed.renderRegister.createRelativePositionedGroup(
-				24f, 140f, 24f,
-				relCubeList);
-		AtomicInteger frameCount = new AtomicInteger(0);
-		relativePosCubeGroup.setPreRenderFunc((event) -> 
-		{
-			float x = relativePosCubeGroup.getOriginBlockX();
-			x += event.partialTicks / 2;
-			x %= 32;
-			relativePosCubeGroup.setOriginBlockPos(x, relativePosCubeGroup.getOriginBlockY(), relativePosCubeGroup.getOriginBlockZ());
-		});
-		DhApi.Delayed.renderRegister.add(relativePosCubeGroup);
+		//// relative cube group
+		//ArrayList<DhApiRenderableBox> relCubeList = new ArrayList<>();
+		//for (int i = 0; i < 8; i+=2)
+		//{
+		//	relCubeList.add(new DhApiRenderableBox(
+		//			new Vec3f(0f,0f+i,0f), new Vec3f(1f,1f+i,1f),
+		//			new Color(Color.MAGENTA.getRed(), Color.MAGENTA.getGreen(), Color.MAGENTA.getBlue())));
+		//}
+		//IDhApiRenderableBoxGroup relativePosCubeGroup = DhApi.Delayed.renderRegister.createRelativePositionedGroup(
+		//		24f, 140f, 24f,
+		//		relCubeList);
+		//AtomicInteger frameCount = new AtomicInteger(0);
+		//relativePosCubeGroup.setPreRenderFunc((event) -> 
+		//{
+		//	float x = relativePosCubeGroup.getOriginBlockX();
+		//	x += event.partialTicks / 2;
+		//	x %= 32;
+		//	relativePosCubeGroup.setOriginBlockPos(x, relativePosCubeGroup.getOriginBlockY(), relativePosCubeGroup.getOriginBlockZ());
+		//});
+		//DhApi.Delayed.renderRegister.add(relativePosCubeGroup);
 		
 	}
 	private void createBuffers()
@@ -224,6 +225,10 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		this.solidIndexBuffer.uploadBuffer(solidIndexBuffer, EDhApiGpuUploadMethod.DATA, SOLID_BOX_INDICES.length * Integer.BYTES, GL32.GL_STATIC_DRAW);
 		this.solidIndexBuffer.bind();
 		
+		
+		// instance buffers
+		this.instanceTransformVBO = GL32.glGenBuffers();
+		this.instanceColorVBO = GL32.glGenBuffers();
 	}
 	
 	
@@ -313,13 +318,6 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 	
 	public void render(DhApiRenderParam renderEventParam)
 	{
-		Mat4f transform = new Mat4f(renderEventParam.dhProjectionMatrix);
-		transform.multiply(renderEventParam.dhModelViewMatrix);
-		
-		this.transformationMatrixThisFrame = transform;
-		Vec3d camPos = MC_RENDER.getCameraExactPosition();
-		this.camPosFloatThisFrame = new Vec3f((float) camPos.x, (float) camPos.y, (float) camPos.z);
-		
 		GLState glState = new GLState();
 		this.init();
 		
@@ -350,41 +348,138 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 	
 	private void renderCubeGroup(DhApiRenderableBoxGroup cubeGroup, DhApiRenderParam renderEventParam)
 	{
+		Mat4f transformMatrix = new Mat4f(renderEventParam.dhProjectionMatrix);
+		transformMatrix.multiply(renderEventParam.dhModelViewMatrix);
+		
+		Vec3d camPos = MC_RENDER.getCameraExactPosition();
+		Vec3f camPosFloat = new Vec3f((float) camPos.x, (float) camPos.y, (float) camPos.z);
+		
+		
+		
+		// update instance data //
+		
 		cubeGroup.preRender(renderEventParam);
+		int boxCount = updateInstanceBuffers(camPosFloat, transformMatrix);  // Update instance data
 		
-		for (DhApiRenderableBox cube : cubeGroup.cubeList)
-		{
-			renderCube(cubeGroup, cube);
-		}
+		
+		
+		// Bind instance data //
+		
+		GL32.glBindBuffer(GL32.GL_ARRAY_BUFFER, this.instanceColorVBO);
+		GL32.glEnableVertexAttribArray(1);
+		GL32.glVertexAttribPointer(1, 4, GL32.GL_FLOAT, false, 4 * Float.BYTES, 0);
+		GL33.glVertexAttribDivisor(1, 1);
+		
+		GL32.glBindBuffer(GL32.GL_ARRAY_BUFFER, this.instanceTransformVBO);
+		GL32.glEnableVertexAttribArray(2);
+		GL33.glVertexAttribDivisor(2, 1);
+		GL32.glVertexAttribPointer(2, 4, GL32.GL_FLOAT, false, 16 * Float.BYTES, 0);
+		GL32.glEnableVertexAttribArray(3);
+		GL33.glVertexAttribDivisor(3, 1);
+		GL32.glVertexAttribPointer(3, 4, GL32.GL_FLOAT, false, 16 * Float.BYTES, 16);
+		GL32.glEnableVertexAttribArray(4);
+		GL33.glVertexAttribDivisor(4, 1);
+		GL32.glVertexAttribPointer(4, 4, GL32.GL_FLOAT, false, 16 * Float.BYTES, 32);
+		GL32.glEnableVertexAttribArray(5);
+		GL33.glVertexAttribDivisor(5, 1);
+		GL32.glVertexAttribPointer(5, 4, GL32.GL_FLOAT, false, 16 * Float.BYTES, 48);
+		
+		
+		
+		// Draw instanced
+		GL32.glDrawElementsInstanced(GL32.GL_TRIANGLES, SOLID_BOX_INDICES.length, GL32.GL_UNSIGNED_INT, 0, boxCount);
+		
+		
+		// Clean up
+		GL32.glDisableVertexAttribArray(1);
+		GL32.glDisableVertexAttribArray(2);
+		GL32.glDisableVertexAttribArray(3);
+		GL32.glDisableVertexAttribArray(4);
+		GL32.glDisableVertexAttribArray(5);
 	}
-	private void renderCube(DhApiRenderableBoxGroup cubeGroup, DhApiRenderableBox cube)
+	private int updateInstanceBuffers(Vec3f camPos, Mat4f transformationMatrix)
 	{
-		float originOffsetX = 0;
-		float originOffsetY = 0;
-		float originOffsetZ = 0;
-		if (cubeGroup.positionCubesRelativeToGroupOrigin)
+		int boxCount = 0;
+		LongSet keys = boxGroupById.keySet();
+		for (long key : keys)
 		{
-			originOffsetX = cubeGroup.originBlockX;
-			originOffsetY = cubeGroup.originBlockY;
-			originOffsetZ = cubeGroup.originBlockZ;
+			DhApiRenderableBoxGroup cubeGroup = boxGroupById.get(key);
+			boxCount += cubeGroup.size();
 		}
 		
-		Mat4f boxTransform = Mat4f.createTranslateMatrix(
-				cube.minPos.x + originOffsetX - this.camPosFloatThisFrame.x,
-				cube.minPos.y + originOffsetY - this.camPosFloatThisFrame.y,
-				cube.minPos.z + originOffsetZ - this.camPosFloatThisFrame.z);
-		boxTransform.multiply(Mat4f.createScaleMatrix(
-				cube.maxPos.x - cube.minPos.x,
-				cube.maxPos.y - cube.minPos.y,
-				cube.maxPos.z - cube.minPos.z));
-		Mat4f transformMatrix = this.transformationMatrixThisFrame.copy();
-		transformMatrix.multiply(boxTransform);
-		this.basicUnlitShader.setUniform(this.basicUnlitShader.getUniformLocation("transform"), transformMatrix);
 		
-		this.basicUnlitShader.setUniform(this.basicUnlitShader.getUniformLocation("uColor"), cube.color);
+		// Prepare transformation matrices
+		float[] transformationData = new float[boxCount * 16];
+		int cubeIndex = 0;
+		for (long key : keys)
+		{
+			DhApiRenderableBoxGroup cubeGroup = boxGroupById.get(key);
+			for (DhApiRenderableBox cube : cubeGroup)
+			{
+				float originOffsetX = 0;
+				float originOffsetY = 0;
+				float originOffsetZ = 0;
+				if (cubeGroup.positionCubesRelativeToGroupOrigin)
+				{
+					originOffsetX = cubeGroup.originBlockX;
+					originOffsetY = cubeGroup.originBlockY;
+					originOffsetZ = cubeGroup.originBlockZ;
+				}
+				
+				Mat4f boxTransform = Mat4f.createTranslateMatrix(
+						cube.minPos.x + originOffsetX - camPos.x,
+						cube.minPos.y + originOffsetY - camPos.y,
+						cube.minPos.z + originOffsetZ - camPos.z);
+				boxTransform.multiply(Mat4f.createScaleMatrix(
+						cube.maxPos.x - cube.minPos.x,
+						cube.maxPos.y - cube.minPos.y,
+						cube.maxPos.z - cube.minPos.z));
+				Mat4f transformMatrix = transformationMatrix.copy();
+				transformMatrix.multiply(boxTransform);
+				// TODO transformation matrix could be passed on to shader, only box offset needed here
+				//this.basicUnlitShader.setUniform(this.basicUnlitShader.getUniformLocation("transform"), transformMatrix);
+				
+				// due to how the matrix is being read in by GL, we need to transpose it
+				// (This is probably a bug due to how James set up the vertex array attributes)
+				transformMatrix.transpose();
+				System.arraycopy(transformMatrix.getValuesAsArray(), 0, transformationData, cubeIndex * 16, 16);
+				
+				cubeIndex++;
+			}
+		}
 		
-		GL32.glDrawElements(GL32.GL_TRIANGLES , SOLID_BOX_INDICES.length, GL32.GL_UNSIGNED_INT, 0);
+		// Upload transformation matrices
+		GL32.glBindBuffer(GL32.GL_ARRAY_BUFFER, this.instanceTransformVBO);
+		GL32.glBufferData(GL32.GL_ARRAY_BUFFER, transformationData, GL32.GL_DYNAMIC_DRAW);
+		
+		
+		
+		// Prepare colors
+		float[] colors = new float[boxCount * 4];
+		cubeIndex = 0;
+		for (long key : keys)
+		{
+			DhApiRenderableBoxGroup cubeGroup = boxGroupById.get(key);
+			for (DhApiRenderableBox cube : cubeGroup)
+			{
+				Color color = cube.color;
+				colors[cubeIndex * 4] = color.getRed() / 255.0f;
+				colors[cubeIndex * 4 + 1] = color.getGreen() / 255.0f;
+				colors[cubeIndex * 4 + 2] = color.getBlue() / 255.0f;
+				colors[cubeIndex * 4 + 3] = color.getAlpha() / 255.0f;
+				
+				cubeIndex++;
+			}
+		}
+		
+		// Upload colors
+		GL32.glBindBuffer(GL32.GL_ARRAY_BUFFER, this.instanceColorVBO);
+		GL32.glBufferData(GL32.GL_ARRAY_BUFFER, colors, GL32.GL_DYNAMIC_DRAW);
+		
+		return boxCount;
 	}
+	
+	
 	
 	
 	
