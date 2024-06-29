@@ -154,7 +154,7 @@ public class ShaderProgram
 	 * @return Location of the Uniform
 	 * @throws RuntimeException if uniform not found
 	 */
-	public int getUniformLocation(CharSequence name)
+	public int getUniformLocation(CharSequence name) throws RuntimeException
 	{
 		int i = GL32.glGetUniformLocation(id, name);
 		if (i == -1)

@@ -102,7 +102,7 @@ public class LodRenderProgram extends ShaderProgram implements IDhApiShaderProgr
 		
 		// TODO: Add better use of the LODFormat thing
 		int vertexByteCount = LodUtil.LOD_VERTEX_FORMAT.getByteSize();
-		if (GLProxy.getInstance().VertexAttributeBufferBindingSupported)
+		if (GLProxy.getInstance().vertexAttributeBufferBindingSupported)
 			vao = new VertexAttributePostGL43(); // also binds AbstractVertexAttribute
 		else
 			vao = new VertexAttributePreGL43(); // also binds AbstractVertexAttribute

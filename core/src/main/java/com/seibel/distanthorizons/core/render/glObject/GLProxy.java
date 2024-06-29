@@ -27,7 +27,6 @@ import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.util.objects.GLMessage;
 import com.seibel.distanthorizons.core.util.objects.GLMessageOutputStream;
-import com.seibel.distanthorizons.core.util.objects.Pair;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import org.apache.logging.log4j.LogManager;
@@ -40,8 +39,6 @@ import org.lwjgl.opengl.GLUtil;
 
 import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
@@ -76,7 +73,9 @@ public class GLProxy
 	
 	public boolean namedObjectSupported = false; // ~OpenGL 4.5 (UNUSED CURRENTLY)
 	public boolean bufferStorageSupported = false; // ~OpenGL 4.4
-	public boolean VertexAttributeBufferBindingSupported = false; // ~OpenGL 4.3
+	public boolean vertexAttributeBufferBindingSupported = false; // ~OpenGL 4.3
+	public boolean instancedArraysSupported = false;
+	public boolean vertexAttribDivisorSupported = false; // OpenGL 3.3 or newer
 	
 	private final EDhApiGpuUploadMethod preferredUploadMethod;
 	
@@ -133,20 +132,25 @@ public class GLProxy
 		// get GPU capabilities //
 		//======================//
 		
-		// Check if we can use the make-over version of Vertex Attribute, which is available in GL4.3 or after
-		this.VertexAttributeBufferBindingSupported = this.glCapabilities.glBindVertexBuffer != 0L; // Nullptr
-		
 		// UNUSED currently
 		// Check if we can use the named version of all calls, which is available in GL4.5 or after
 		this.namedObjectSupported = this.glCapabilities.glNamedBufferData != 0L; //Nullptr
 		
-		// get specific capabilities
 		// Check if we can use the Buffer Storage, which is available in GL4.4 or after
 		this.bufferStorageSupported = this.glCapabilities.glBufferStorage != 0L; // Nullptr
 		if (!this.bufferStorageSupported)
 		{
-			GL_LOGGER.warn("This GPU doesn't support Buffer Storage (OpenGL 4.4), falling back to using other methods.");
+			GL_LOGGER.info("This GPU doesn't support Buffer Storage (OpenGL 4.4), falling back to using other methods.");
 		}
+		
+		// Check if we can use the make-over version of Vertex Attribute, which is available in GL4.3 or after
+		this.vertexAttributeBufferBindingSupported = this.glCapabilities.glBindVertexBuffer != 0L; // Nullptr
+		
+		// used by instanced rendering
+		this.vertexAttribDivisorSupported = this.glCapabilities.OpenGL33;
+		// denotes if ARBInstancedArrays.glVertexAttribDivisorARB() is available or not
+		// can be used as a backup if MC didn't create a GL 3.3+ context
+		this.instancedArraysSupported = this.glCapabilities.GL_ARB_instanced_arrays;
 		
 		// get the best automatic upload method
 		String vendor = GL32.glGetString(GL32.GL_VENDOR).toUpperCase(); // example return: "NVIDIA CORPORATION"
