@@ -27,7 +27,6 @@ import com.seibel.distanthorizons.api.interfaces.render.IDhApiCustomRenderRegist
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
 import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBox;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
-import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
 import com.seibel.distanthorizons.core.logging.ConfigBasedSpamLogger;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.render.glObject.GLProxy;
@@ -587,9 +586,9 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 				cube.maxPos.z - cube.minPos.z));
 		Mat4f transformMatrix = transformationMatrix.copy();
 		transformMatrix.multiply(boxTransform);
-		this.shader.setUniform(this.shader.getUniformLocation("transform"), transformMatrix);
+		this.shader.setUniform(this.transformUniformLocation, transformMatrix);
 		
-		this.shader.setUniform(this.shader.getUniformLocation("uColor"), cube.color);
+		this.shader.setUniform(this.directShaderColorUniformLocation, cube.color);
 		
 		GL32.glDrawElements(GL32.GL_TRIANGLES , SOLID_BOX_INDICES.length, GL32.GL_UNSIGNED_INT, 0);
 	}
