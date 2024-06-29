@@ -91,16 +91,14 @@ public class GLProxy
 	private GLProxy() throws IllegalStateException
 	{
 		// this must be created on minecraft's render context to work correctly
-		
-		GL_LOGGER.info("Creating " + GLProxy.class.getSimpleName() + "... If this is the last message you see there must have been an OpenGL error.");
-		GL_LOGGER.info("Lod Render OpenGL version [" + GL32.glGetString(GL32.GL_VERSION) + "].");
-		
-		// getting Minecraft's context has to be done on the render thread,
-		// where the GL context is
 		if (GLFW.glfwGetCurrentContext() == 0L)
 		{
 			throw new IllegalStateException(GLProxy.class.getSimpleName() + " was created outside the render thread!");
 		}
+		
+		GL_LOGGER.info("Creating " + GLProxy.class.getSimpleName() + "... If this is the last message you see there must have been an OpenGL error.");
+		GL_LOGGER.info("Lod Render OpenGL version [" + GL32.glGetString(GL32.GL_VERSION) + "].");
+		
 		
 		
 		
