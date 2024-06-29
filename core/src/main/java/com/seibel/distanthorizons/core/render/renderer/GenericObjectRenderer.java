@@ -92,8 +92,10 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 	private int instanceColorVBO;
 	
 	// shader uniforms
-	private int transformUniformLocation;
+	private int directShaderTransformUniformLocation;
 	private int directShaderColorUniformLocation;
+	
+	private int instancedShaderOriginOffsetUniformLocation;
 	
 	
 	// TODO may need to be double buffered to prevent rendering lag
@@ -174,8 +176,10 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 				this.useInstancedRendering ? "shaders/genericObject/instanced/frag.frag" : "shaders/genericObject/direct/frag.frag",
 				"fragColor", new String[]{"vPosition"});
 		
-		this.transformUniformLocation = this.shader.tryGetUniformLocation("transform");
+		this.directShaderTransformUniformLocation = this.shader.tryGetUniformLocation("uTransform");
 		this.directShaderColorUniformLocation = this.shader.tryGetUniformLocation("uColor");
+		
+		this.instancedShaderOriginOffsetUniformLocation = this.shader.tryGetUniformLocation("uOriginOffset");
 		
 		this.createBuffers();
 		
@@ -221,7 +225,6 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		IDhApiRenderableBoxGroup relativePosCubeGroup = DhApi.Delayed.renderRegister.createRelativePositionedGroup(
 				24f, 140f, 24f,
 				relCubeList);
-		AtomicInteger frameCount = new AtomicInteger(0);
 		relativePosCubeGroup.setPreRenderFunc((event) -> 
 		{
 			float x = relativePosCubeGroup.getOriginBlockX();
@@ -408,7 +411,10 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		// update instance data //
 		
 		cubeGroup.preRender(renderEventParam);
-		int boxCount = updateInstanceBuffers(camPos, transformMatrix);  // Update instance data
+		int boxCount = updateCubeGroupInstanceBuffers(cubeGroup, camPos, transformMatrix);  // Update instance data
+		
+		this.shader.setUniform(this.instancedShaderOriginOffsetUniformLocation, new Vec3f(cubeGroup.originBlockX, cubeGroup.originBlockY, cubeGroup.originBlockZ));
+		
 		
 		
 		
@@ -465,55 +471,32 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		}
 	}
 	
-	private int updateInstanceBuffers(Vec3f camPos, Mat4f transformationMatrix)
+	private int updateCubeGroupInstanceBuffers(DhApiRenderableBoxGroup cubeGroup, Vec3f camPos, Mat4f transformationMatrix)
 	{
-		int boxCount = 0;
-		LongSet keys = boxGroupById.keySet();
-		for (long key : keys)
-		{
-			DhApiRenderableBoxGroup cubeGroup = boxGroupById.get(key);
-			boxCount += cubeGroup.size();
-		}
+		int boxCount = cubeGroup.size();
 		
 		
 		// Prepare transformation matrices
 		float[] transformationData = new float[boxCount * 16];
-		int cubeIndex = 0;
-		for (long key : keys)
+		for (int i = 0; i < cubeGroup.size(); i++)
 		{
-			DhApiRenderableBoxGroup cubeGroup = boxGroupById.get(key);
-			for (DhApiRenderableBox cube : cubeGroup)
-			{
-				float originOffsetX = 0;
-				float originOffsetY = 0;
-				float originOffsetZ = 0;
-				if (cubeGroup.positionCubesRelativeToGroupOrigin)
-				{
-					originOffsetX = cubeGroup.originBlockX;
-					originOffsetY = cubeGroup.originBlockY;
-					originOffsetZ = cubeGroup.originBlockZ;
-				}
-				
-				Mat4f boxTransform = Mat4f.createTranslateMatrix(
-						cube.minPos.x + originOffsetX - camPos.x,
-						cube.minPos.y + originOffsetY - camPos.y,
-						cube.minPos.z + originOffsetZ - camPos.z);
-				boxTransform.multiply(Mat4f.createScaleMatrix(
-						cube.maxPos.x - cube.minPos.x,
-						cube.maxPos.y - cube.minPos.y,
-						cube.maxPos.z - cube.minPos.z));
-				Mat4f transformMatrix = transformationMatrix.copy();
-				transformMatrix.multiply(boxTransform);
-				// TODO transformation matrix could be passed on to shader, only box offset needed here
-				//this.basicUnlitShader.setUniform(this.basicUnlitShader.getUniformLocation("transform"), transformMatrix);
-				
-				// due to how the matrix is being read in by GL, we need to transpose it
-				// (This is probably a bug due to how James set up the vertex array attributes)
-				transformMatrix.transpose();
-				System.arraycopy(transformMatrix.getValuesAsArray(), 0, transformationData, cubeIndex * 16, 16);
-				
-				cubeIndex++;
-			}
+			DhApiRenderableBox cube = cubeGroup.get(i);
+			
+			Mat4f boxTransform = Mat4f.createTranslateMatrix(
+					cube.minPos.x - camPos.x,
+					cube.minPos.y - camPos.y,
+					cube.minPos.z - camPos.z);
+			boxTransform.multiply(Mat4f.createScaleMatrix(
+					cube.maxPos.x - cube.minPos.x,
+					cube.maxPos.y - cube.minPos.y,
+					cube.maxPos.z - cube.minPos.z));
+			Mat4f transformMatrix = transformationMatrix.copy();
+			transformMatrix.multiply(boxTransform);
+			
+			// due to how the matrix is being read in by GL, we need to transpose it
+			// (This is probably a bug due to how James set up the vertex array attributes)
+			transformMatrix.transpose();
+			System.arraycopy(transformMatrix.getValuesAsArray(), 0, transformationData, i * 16, 16);
 		}
 		
 		// Upload transformation matrices
@@ -524,20 +507,15 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		
 		// Prepare colors
 		float[] colors = new float[boxCount * 4];
-		cubeIndex = 0;
-		for (long key : keys)
+		for (int i = 0; i < cubeGroup.size(); i++)
 		{
-			DhApiRenderableBoxGroup cubeGroup = boxGroupById.get(key);
-			for (DhApiRenderableBox cube : cubeGroup)
-			{
-				Color color = cube.color;
-				colors[cubeIndex * 4] = color.getRed() / 255.0f;
-				colors[cubeIndex * 4 + 1] = color.getGreen() / 255.0f;
-				colors[cubeIndex * 4 + 2] = color.getBlue() / 255.0f;
-				colors[cubeIndex * 4 + 3] = color.getAlpha() / 255.0f;
-				
-				cubeIndex++;
-			}
+			DhApiRenderableBox cube = cubeGroup.get(i);
+			Color color = cube.color;
+			int colorIndex = i * 4;
+			colors[colorIndex] = color.getRed() / 255.0f;
+			colors[colorIndex + 1] = color.getGreen() / 255.0f;
+			colors[colorIndex + 2] = color.getBlue() / 255.0f;
+			colors[colorIndex + 3] = color.getAlpha() / 255.0f;
 		}
 		
 		// Upload colors
@@ -586,7 +564,7 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 				cube.maxPos.z - cube.minPos.z));
 		Mat4f transformMatrix = transformationMatrix.copy();
 		transformMatrix.multiply(boxTransform);
-		this.shader.setUniform(this.transformUniformLocation, transformMatrix);
+		this.shader.setUniform(this.directShaderTransformUniformLocation, transformMatrix);
 		
 		this.shader.setUniform(this.directShaderColorUniformLocation, cube.color);
 		
