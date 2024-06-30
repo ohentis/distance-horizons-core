@@ -73,6 +73,8 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 	
 	private static final IMinecraftRenderWrapper MC_RENDER = SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
 	
+	public static boolean RENDER_DEBUG_OBJECTS = true;
+	
 	
 	// rendering setup
 	private boolean init = false;
@@ -183,18 +185,44 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		
 		this.createBuffers();
 		
+		if (RENDER_DEBUG_OBJECTS)
+		{
+			this.addGenericDebugObjects();
+		}
+	}
+	private void createBuffers()
+	{
+		// box vertices 
+		ByteBuffer boxVerticesBuffer = ByteBuffer.allocateDirect(BOX_VERTICES.length * Float.BYTES);
+		boxVerticesBuffer.order(ByteOrder.nativeOrder());
+		boxVerticesBuffer.asFloatBuffer().put(BOX_VERTICES);
+		boxVerticesBuffer.rewind();
+		this.vertexBuffer = new GLVertexBuffer(false);
+		this.vertexBuffer.bind();
+		this.vertexBuffer.uploadBuffer(boxVerticesBuffer, 8, EDhApiGpuUploadMethod.DATA, BOX_VERTICES.length * Float.BYTES);
 		
 		
-		// testing //
+		// box vertex indexes
+		ByteBuffer solidIndexBuffer = ByteBuffer.allocateDirect(SOLID_BOX_INDICES.length * Integer.BYTES);
+		solidIndexBuffer.order(ByteOrder.nativeOrder());
+		solidIndexBuffer.asIntBuffer().put(SOLID_BOX_INDICES);
+		solidIndexBuffer.rewind();
+		this.solidIndexBuffer = new GLElementBuffer(false);
+		this.solidIndexBuffer.uploadBuffer(solidIndexBuffer, EDhApiGpuUploadMethod.DATA, SOLID_BOX_INDICES.length * Integer.BYTES, GL32.GL_STATIC_DRAW);
+		this.solidIndexBuffer.bind();
 		
+	}
+	private void addGenericDebugObjects()
+	{
 		// single giant box
 		IDhApiRenderableBoxGroup singleGiantBoxGroup = DhApi.Delayed.renderRegister.createForSingleBox(
 				new DhApiRenderableBox(
 						new Vec3f(0f,0f,0f), new Vec3f(16f,190f,16f),
 						new Color(Color.CYAN.getRed(), Color.CYAN.getGreen(), Color.CYAN.getBlue(), 125))
-				);
+		);
 		DhApi.Delayed.renderRegister.add(singleGiantBoxGroup);
-
+		
+		
 		// single slender box
 		IDhApiRenderableBoxGroup singleTallBoxGroup = DhApi.Delayed.renderRegister.createForSingleBox(
 				new DhApiRenderableBox(
@@ -202,6 +230,7 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 						new Color(Color.GREEN.getRed(), Color.GREEN.getGreen(), Color.GREEN.getBlue(), 125))
 		);
 		DhApi.Delayed.renderRegister.add(singleTallBoxGroup);
+		
 		
 		// absolute box group
 		ArrayList<DhApiRenderableBox> absBoxList = new ArrayList<>();
@@ -214,6 +243,7 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		IDhApiRenderableBoxGroup absolutePosBoxGroup = DhApi.Delayed.renderRegister.createAbsolutePositionedGroup(absBoxList);
 		DhApi.Delayed.renderRegister.add(absolutePosBoxGroup);
 		
+		
 		// relative box group
 		ArrayList<DhApiRenderableBox> relBoxList = new ArrayList<>();
 		for (int i = 0; i < 8; i+=2)
@@ -225,7 +255,7 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		IDhApiRenderableBoxGroup relativePosBoxGroup = DhApi.Delayed.renderRegister.createRelativePositionedGroup(
 				new DhApiVec3f(24f, 140f, 24f),
 				relBoxList);
-		relativePosBoxGroup.setPreRenderFunc((event) -> 
+		relativePosBoxGroup.setPreRenderFunc((event) ->
 		{
 			DhApiVec3f pos = relativePosBoxGroup.getOriginBlockPos();
 			pos.x += event.partialTicks / 2;
@@ -233,8 +263,6 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 			relativePosBoxGroup.setOriginBlockPos(pos);
 		});
 		DhApi.Delayed.renderRegister.add(relativePosBoxGroup);
-		
-		
 		
 		
 		// massive relative box group
@@ -267,31 +295,8 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 			massRelativePosBoxGroup.setOriginBlockPos(blockPos);
 		});
 		DhApi.Delayed.renderRegister.add(massRelativePosBoxGroup);
-		
-		
 	}
-	private void createBuffers()
-	{
-		// box vertices 
-		ByteBuffer boxVerticesBuffer = ByteBuffer.allocateDirect(BOX_VERTICES.length * Float.BYTES);
-		boxVerticesBuffer.order(ByteOrder.nativeOrder());
-		boxVerticesBuffer.asFloatBuffer().put(BOX_VERTICES);
-		boxVerticesBuffer.rewind();
-		this.vertexBuffer = new GLVertexBuffer(false);
-		this.vertexBuffer.bind();
-		this.vertexBuffer.uploadBuffer(boxVerticesBuffer, 8, EDhApiGpuUploadMethod.DATA, BOX_VERTICES.length * Float.BYTES);
-		
-		
-		// box vertex indexes
-		ByteBuffer solidIndexBuffer = ByteBuffer.allocateDirect(SOLID_BOX_INDICES.length * Integer.BYTES);
-		solidIndexBuffer.order(ByteOrder.nativeOrder());
-		solidIndexBuffer.asIntBuffer().put(SOLID_BOX_INDICES);
-		solidIndexBuffer.rewind();
-		this.solidIndexBuffer = new GLElementBuffer(false);
-		this.solidIndexBuffer.uploadBuffer(solidIndexBuffer, EDhApiGpuUploadMethod.DATA, SOLID_BOX_INDICES.length * Integer.BYTES, GL32.GL_STATIC_DRAW);
-		this.solidIndexBuffer.bind();
-		
-	}
+	
 	
 	
 	
