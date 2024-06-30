@@ -50,9 +50,9 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.IIrisAccess
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.OverrideInjector;
-import com.seibel.distanthorizons.coreapi.util.math.Mat4f;
-import com.seibel.distanthorizons.coreapi.util.math.Vec3d;
-import com.seibel.distanthorizons.coreapi.util.math.Vec3f;
+import com.seibel.distanthorizons.core.util.math.Mat4f;
+import com.seibel.distanthorizons.core.util.math.Vec3d;
+import com.seibel.distanthorizons.core.util.math.Vec3f;
 import org.apache.logging.log4j.LogManager;
 import org.lwjgl.opengl.GL32;
 
@@ -386,7 +386,7 @@ public class LodRenderer
 				if (Config.Client.Advanced.Graphics.Ssao.enabled.get())
 				{
 					profiler.popPush("LOD SSAO");
-					SSAORenderer.INSTANCE.render(minecraftGlState, renderEventParam.dhProjectionMatrix, renderEventParam.partialTicks);
+					SSAORenderer.INSTANCE.render(minecraftGlState, new Mat4f(renderEventParam.dhProjectionMatrix), renderEventParam.partialTicks);
 				}
 				
 				

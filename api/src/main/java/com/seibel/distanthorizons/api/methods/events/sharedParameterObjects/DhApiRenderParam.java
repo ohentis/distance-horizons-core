@@ -20,7 +20,7 @@
 package com.seibel.distanthorizons.api.methods.events.sharedParameterObjects;
 
 import com.seibel.distanthorizons.api.enums.rendering.EDhApiRenderPass;
-import com.seibel.distanthorizons.coreapi.util.math.Mat4f;
+import com.seibel.distanthorizons.api.objects.math.DhApiMat4f;
 
 /**
  * Contains information relevant to Distant Horizons and Minecraft rendering.
@@ -49,14 +49,14 @@ public class DhApiRenderParam
 	public final float farClipPlane;
 	
 	/** The projection matrix Minecraft is using to render this frame. */
-	public final Mat4f mcProjectionMatrix;
+	public final DhApiMat4f mcProjectionMatrix;
 	/** The model view matrix Minecraft is using to render this frame. */
-	public final Mat4f mcModelViewMatrix;
+	public final DhApiMat4f mcModelViewMatrix;
 	
 	/** The projection matrix Distant Horizons is using to render this frame. */
-	public final Mat4f dhProjectionMatrix;
+	public final DhApiMat4f dhProjectionMatrix;
 	/** The model view matrix Distant Horizons is using to render this frame. */
-	public final Mat4f dhModelViewMatrix;
+	public final DhApiMat4f dhModelViewMatrix;
 	
 	public final int worldYOffset;
 	
@@ -82,8 +82,8 @@ public class DhApiRenderParam
 			EDhApiRenderPass renderPass,
 			float newPartialTicks,
 			float nearClipPlane, float farClipPlane,
-			Mat4f newMcProjectionMatrix, Mat4f newMcModelViewMatrix,
-			Mat4f newDhProjectionMatrix, Mat4f newDhModelViewMatrix,
+			DhApiMat4f newMcProjectionMatrix, DhApiMat4f newMcModelViewMatrix,
+			DhApiMat4f newDhProjectionMatrix, DhApiMat4f newDhModelViewMatrix,
 			int worldYOffset
 			)
 	{

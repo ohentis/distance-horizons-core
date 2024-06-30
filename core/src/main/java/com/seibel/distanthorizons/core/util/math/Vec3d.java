@@ -17,54 +17,46 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.seibel.distanthorizons.coreapi.util.math;
+package com.seibel.distanthorizons.core.util.math;
 
-import com.seibel.distanthorizons.api.objects.math.DhApiVec3f;
 import com.seibel.distanthorizons.coreapi.util.MathUtil;
 
 /**
- * A (almost) exact copy of Minecraft's 1.16.5
- * implementation of a 3 element float vector.
+ * This is closer to MC's implementation of a
+ * 3 element float vector than a 3 element double
+ * vector. Hopefully that shouldn't cause any issues.
  *
  * @author James Seibel
- * @version 11-11-2021
+ * @version 11-18-2021
  */
-public class Vec3f
+public class Vec3d
 {
-	public static Vec3f XNeg = new Vec3f(-1.0F, 0.0F, 0.0F);
-	public static Vec3f XPos = new Vec3f(1.0F, 0.0F, 0.0F);
-	public static Vec3f YNeg = new Vec3f(0.0F, -1.0F, 0.0F);
-	public static Vec3f YPos = new Vec3f(0.0F, 1.0F, 0.0F);
-	public static Vec3f ZNeg = new Vec3f(0.0F, 0.0F, -1.0F);
-	public static Vec3f ZPos = new Vec3f(0.0F, 0.0F, 1.0F);
+	public static Vec3d XNeg = new Vec3d(-1.0F, 0.0F, 0.0F);
+	public static Vec3d XPos = new Vec3d(1.0F, 0.0F, 0.0F);
+	public static Vec3d YNeg = new Vec3d(0.0F, -1.0F, 0.0F);
+	public static Vec3d YPos = new Vec3d(0.0F, 1.0F, 0.0F);
+	public static Vec3d ZNeg = new Vec3d(0.0F, 0.0F, -1.0F);
+	public static Vec3d ZPos = new Vec3d(0.0F, 0.0F, 1.0F);
+	
+	public static final Vec3d ZERO_VECTOR = new Vec3d(0.0D, 0.0D, 0.0D);
+	
+	public double x;
+	public double y;
+	public double z;
 	
 	
-	public float x;
-	public float y;
-	public float z;
 	
-	
-	
-	public Vec3f()
+	public Vec3d()
 	{
 		
 	}
 	
-	public Vec3f(float x, float y, float z)
+	public Vec3d(double x, double y, double z)
 	{
 		this.x = x;
 		this.y = y;
 		this.z = z;
 	}
-	
-	public Vec3f(DhApiVec3f pos)
-	{
-		this.x = pos.x;
-		this.y = pos.y;
-		this.z = pos.z;
-	}
-	
-	
 	
 	@Override
 	public boolean equals(Object obj)
@@ -75,18 +67,18 @@ public class Vec3f
 		}
 		else if (obj != null && this.getClass() == obj.getClass())
 		{
-			Vec3f Vec3f = (Vec3f) obj;
-			if (Float.compare(Vec3f.x, this.x) != 0)
+			Vec3d Vec3f = (Vec3d) obj;
+			if (Double.compare(Vec3f.x, this.x) != 0)
 			{
 				return false;
 			}
-			else if (Float.compare(Vec3f.y, this.y) != 0)
+			else if (Double.compare(Vec3f.y, this.y) != 0)
 			{
 				return false;
 			}
 			else
 			{
-				return Float.compare(Vec3f.z, this.z) == 0;
+				return Double.compare(Vec3f.z, this.z) == 0;
 			}
 		}
 		else
@@ -98,91 +90,84 @@ public class Vec3f
 	@Override
 	public int hashCode()
 	{
-		int i = Float.floatToIntBits(this.x);
-		i = 31 * i + Float.floatToIntBits(this.y);
-		return 31 * i + Float.floatToIntBits(this.z);
+		long longVal = Double.doubleToLongBits(this.x);
+		
+		int intVal = (int) (longVal ^ longVal >>> 32);
+		longVal = Double.doubleToLongBits(this.y);
+		intVal = 31 * intVal + (int) (longVal ^ longVal >>> 32);
+		longVal = Double.doubleToLongBits(this.z);
+		
+		return 31 * intVal + (int) (longVal ^ longVal >>> 32);
 	}
 	
-	public void mul(float scalar)
+	public void mul(double scalar)
 	{
 		this.x *= scalar;
 		this.y *= scalar;
 		this.z *= scalar;
 	}
 	
-	public void mul(float x, float y, float z)
+	public void mul(double x, double y, double z)
 	{
 		this.x *= x;
 		this.y *= y;
 		this.z *= z;
 	}
 	
-	public void clamp(float min, float max)
+	public void clamp(double min, double max)
 	{
 		this.x = MathUtil.clamp(min, this.x, max);
 		this.y = MathUtil.clamp(min, this.y, max);
 		this.z = MathUtil.clamp(min, this.z, max);
 	}
 	
-	public void set(float x, float y, float z)
+	public void set(double x, double y, double z)
 	{
 		this.x = x;
 		this.y = y;
 		this.z = z;
 	}
 	
-	public void add(float x, float y, float z)
+	public void add(double x, double y, double z)
 	{
 		this.x += x;
 		this.y += y;
 		this.z += z;
 	}
 	
-	public void add(Vec3f vector)
+	public void add(Vec3d vector)
 	{
 		this.x += vector.x;
 		this.y += vector.y;
 		this.z += vector.z;
 	}
 	
-	public void subtract(Vec3f vector)
+	public void subtract(Vec3d vector)
 	{
 		this.x -= vector.x;
 		this.y -= vector.y;
 		this.z -= vector.z;
 	}
 	
-	public float dotProduct(Vec3f vector)
+	public double dotProduct(Vec3d vector)
 	{
 		return this.x * vector.x + this.y * vector.y + this.z * vector.z;
 	}
 	
-	/** Returns true if normalization had to be done */
-	public boolean normalize()
+	public Vec3d normalize()
 	{
-		float squaredSum = this.x * this.x + this.y * this.y + this.z * this.z;
-		if (squaredSum < 1.0E-5D)
-		{
-			return false;
-		}
-		else
-		{
-			float f1 = MathUtil.fastInvSqrt(squaredSum);
-			this.x *= f1;
-			this.y *= f1;
-			this.z *= f1;
-			return true;
-		}
+		double value = Math.sqrt(this.x * this.x + this.y * this.y + this.z * this.z);
+		return value < 1.0E-4D ? ZERO_VECTOR : new Vec3d(this.x / value, this.y / value, this.z / value);
 	}
 	
-	public void crossProduct(Vec3f vector)
+	public void crossProduct(Vec3d vector)
 	{
-		float f = this.x;
-		float f1 = this.y;
-		float f2 = this.z;
-		float f3 = vector.x;
-		float f4 = vector.y;
-		float f5 = vector.z;
+		double f = this.x;
+		double f1 = this.y;
+		double f2 = this.z;
+		double f3 = vector.x;
+		double f4 = vector.y;
+		double f5 = vector.z;
 		this.x = f1 * f5 - f2 * f4;
 		this.y = f2 * f3 - f * f5;
 		this.z = f * f4 - f1 * f3;
@@ -191,9 +176,9 @@ public class Vec3f
 	/* Matrix3f is not currently needed/implemented
 	public void transform(Matrix3f p_229188_1_)
 	{
-		float f = this.x;
-		float f1 = this.y;
-		float f2 = this.z;
+		double f = this.x;
+		double f1 = this.y;
+		double f2 = this.z;
 		this.x = p_229188_1_.m00 * f + p_229188_1_.m01 * f1 + p_229188_1_.m02 * f2;
 		this.y = p_229188_1_.m10 * f + p_229188_1_.m11 * f1 + p_229188_1_.m12 * f2;
 		this.z = p_229188_1_.m20 * f + p_229188_1_.m21 * f1 + p_229188_1_.m22 * f2;
@@ -214,9 +199,9 @@ public class Vec3f
 	
 	/* not currently needed
 	 * percent may actually be partial ticks (which is available when rendering)
-	public void linearInterp(Vec3f resultingVector, float percent)
+	public void linearInterp(Vec3f resultingVector, double percent)
 	{
-		float f = 1.0F - percent;
+		double f = 1.0F - percent;
 		this.x = this.x * f + resultingVector.x * percent;
 		this.y = this.y * f + resultingVector.y * percent;
 		this.z = this.z * f + resultingVector.z * percent;
@@ -224,26 +209,26 @@ public class Vec3f
 	*/
 	
 	/* Quaternions are not currently needed/implemented
-	public Quaternion rotation(float p_229193_1_)
+	public Quaternion rotation(double p_229193_1_)
 	{
 		return new Quaternion(this, p_229193_1_, false);
 	}
 	
 	
 	@OnlyIn(Dist.CLIENT)
-	public Quaternion rotationDegrees(float p_229187_1_)
+	public Quaternion rotationDegrees(double p_229187_1_)
 	{
 		return new Quaternion(this, p_229187_1_, true);
 	}
 	*/
 	
-	public Vec3f copy()
+	public Vec3d copy()
 	{
-		return new Vec3f(this.x, this.y, this.z);
+		return new Vec3d(this.x, this.y, this.z);
 	}
 	
 	/* not currently needed/implemented
-	public void map(Float2FloatFunction p_229191_1_)
+	public void map(double2doubleFunction p_229191_1_)
 	{
 		this.x = p_229191_1_.get(this.x);
 		this.y = p_229191_1_.get(this.y);
@@ -258,12 +243,12 @@ public class Vec3f
 	}
 	
 	// Forge start
-	public Vec3f(float[] values)
+	public Vec3d(double[] values)
 	{
 		set(values);
 	}
 	
-	public void set(float[] values)
+	public void set(double[] values)
 	{
 		this.x = values[0];
 		this.y = values[1];

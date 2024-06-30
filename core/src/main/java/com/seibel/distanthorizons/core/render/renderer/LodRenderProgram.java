@@ -21,6 +21,7 @@ package com.seibel.distanthorizons.core.render.renderer;
 
 import com.seibel.distanthorizons.api.interfaces.override.rendering.IDhApiShaderProgram;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
+import com.seibel.distanthorizons.api.objects.math.DhApiVec3f;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.render.glObject.GLProxy;
 import com.seibel.distanthorizons.core.render.glObject.shader.Shader;
@@ -31,8 +32,8 @@ import com.seibel.distanthorizons.core.render.glObject.vertexAttribute.VertexAtt
 import com.seibel.distanthorizons.core.render.glObject.vertexAttribute.VertexPointer;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.RenderUtil;
-import com.seibel.distanthorizons.coreapi.util.math.Mat4f;
-import com.seibel.distanthorizons.coreapi.util.math.Vec3f;
+import com.seibel.distanthorizons.core.util.math.Mat4f;
+import com.seibel.distanthorizons.core.util.math.Vec3f;
 
 public class LodRenderProgram extends ShaderProgram implements IDhApiShaderProgram
 {
@@ -201,7 +202,7 @@ public class LodRenderProgram extends ShaderProgram implements IDhApiShaderProgr
 	}
 	
 	@Override
-	public void setModelOffsetPos(Vec3f modelOffsetPos) { this.setUniform(this.modelOffsetUniform, modelOffsetPos); }
+	public void setModelOffsetPos(DhApiVec3f modelOffsetPos) { this.setUniform(this.modelOffsetUniform, new Vec3f(modelOffsetPos)); }
 	
 	@Override
 	public int getId() { return this.id; }
