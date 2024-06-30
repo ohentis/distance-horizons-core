@@ -84,7 +84,7 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 	 * Can be used to troubleshoot the renderer. 
 	 * If enabled several debug objects will render around (0,150,0). 
 	 */
-	public static final boolean RENDER_DEBUG_OBJECTS = true;
+	public static final boolean RENDER_DEBUG_OBJECTS = false;
 	
 	
 	// rendering setup
