@@ -5,7 +5,7 @@ import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.level.IKeyedClientLevelManager;
 import com.seibel.distanthorizons.core.level.IServerKeyedClientLevel;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
-import com.seibel.distanthorizons.core.network.event.PluginCloseEvent;
+import com.seibel.distanthorizons.core.network.event.CloseEvent;
 import com.seibel.distanthorizons.core.network.messages.base.CurrentLevelKeyMessage;
 import com.seibel.distanthorizons.core.network.session.Session;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
@@ -50,7 +50,7 @@ public class ClientPluginChannelApi
 		Objects.requireNonNull(session);
 		this.session = session;
 		this.session.registerHandler(CurrentLevelKeyMessage.class, this::onCurrentLevelKeyMessage);
-		this.session.registerHandler(PluginCloseEvent.class, this::onClose);
+		this.session.registerHandler(CloseEvent.class, this::onClose);
 	}
 	
 	private void onCurrentLevelKeyMessage(CurrentLevelKeyMessage msg)
@@ -98,7 +98,7 @@ public class ClientPluginChannelApi
 		KEYED_CLIENT_LEVEL_MANAGER.clearServerKeyedLevel();
 	}
 	
-	private void onClose(PluginCloseEvent event)
+	private void onClose(CloseEvent event)
 	{
 		KEYED_CLIENT_LEVEL_MANAGER.disable();
 	}

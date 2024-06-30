@@ -101,7 +101,7 @@ public abstract class NetworkEventSource
 		this.handlers.computeIfAbsent(handlerClass, missingHandlerClass ->
 				{
 					// Will throw if the handler class is not found
-					if (handlerClass != PluginCloseEvent.class)
+					if (handlerClass != CloseEvent.class)
 					{
 						MessageRegistry.INSTANCE.getMessageId(handlerClass);
 					}

@@ -6,7 +6,7 @@ import com.seibel.distanthorizons.core.multiplayer.config.MultiplayerConfig;
 import com.seibel.distanthorizons.core.multiplayer.config.MultiplayerConfigChangeListener;
 import com.seibel.distanthorizons.core.network.messages.base.CurrentLevelKeyMessage;
 import com.seibel.distanthorizons.core.network.messages.base.RemotePlayerConfigMessage;
-import com.seibel.distanthorizons.core.network.event.PluginCloseEvent;
+import com.seibel.distanthorizons.core.network.event.CloseEvent;
 import com.seibel.distanthorizons.core.network.exceptions.RateLimitedException;
 import com.seibel.distanthorizons.core.network.messages.fullData.FullDataSourceRequestMessage;
 import com.seibel.distanthorizons.core.network.session.Session;
@@ -53,7 +53,7 @@ public class ServerPlayerState
 			this.session.sendMessage(new RemotePlayerConfigMessage(this.config));
 		});
 		
-		this.session.registerHandler(PluginCloseEvent.class, event -> {
+		this.session.registerHandler(CloseEvent.class, event -> {
 			// Noop
 		});
 	}

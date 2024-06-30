@@ -6,7 +6,7 @@ import io.netty.buffer.ByteBuf;
 /**
  * This is not a "real" message, and only used to indicate a disconnection.
  */
-public class PluginCloseEvent extends NetworkMessage
+public class CloseEvent extends NetworkMessage
 {
 	@Override
 	public void encode(ByteBuf out) { throw new UnsupportedOperationException(this.getClass().getSimpleName() + " is not a real message, and cannot be sent."); }

@@ -5,7 +5,7 @@ import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
 import com.seibel.distanthorizons.core.multiplayer.config.MultiplayerConfig;
 import com.seibel.distanthorizons.core.multiplayer.config.MultiplayerConfigChangeListener;
 import com.seibel.distanthorizons.core.network.event.ScopedNetworkEventSource;
-import com.seibel.distanthorizons.core.network.event.PluginCloseEvent;
+import com.seibel.distanthorizons.core.network.event.CloseEvent;
 import com.seibel.distanthorizons.core.network.messages.base.RemotePlayerConfigMessage;
 import com.seibel.distanthorizons.core.network.session.Session;
 import org.apache.logging.log4j.LogManager;
@@ -47,7 +47,7 @@ public class ClientNetworkState implements Closeable
 			this.configReceived = true;
 		});
 		
-		this.session.registerHandler(PluginCloseEvent.class, msg ->
+		this.session.registerHandler(CloseEvent.class, msg ->
 		{
 			this.configReceived = false;
 		});

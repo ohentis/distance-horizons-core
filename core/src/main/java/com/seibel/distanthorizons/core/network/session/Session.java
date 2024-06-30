@@ -4,7 +4,7 @@ import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
 import com.seibel.distanthorizons.core.network.event.NetworkEventSource;
-import com.seibel.distanthorizons.core.network.event.PluginCloseEvent;
+import com.seibel.distanthorizons.core.network.event.CloseEvent;
 import com.seibel.distanthorizons.core.network.messages.NetworkMessage;
 import com.seibel.distanthorizons.core.network.messages.TrackableMessage;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IPluginPacketSender;
@@ -91,7 +91,7 @@ public class Session extends NetworkEventSource
 		
 		try
 		{
-			this.handleMessage(new PluginCloseEvent());
+			this.handleMessage(new CloseEvent());
 		}
 		catch (Throwable ignored)
 		{
