@@ -53,7 +53,6 @@ import org.lwjgl.opengl.GL33;
 import javax.annotation.Nullable;
 import java.awt.*;
 import java.io.Closeable;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.*;
@@ -98,7 +97,7 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 	
 	
 	// TODO may need to be double buffered to prevent rendering lag
-	private final Long2ReferenceOpenHashMap<DhApiRenderableBoxGroup> boxGroupById = new Long2ReferenceOpenHashMap<>();
+	private final Long2ReferenceOpenHashMap<RenderableBoxGroup> boxGroupById = new Long2ReferenceOpenHashMap<>();
 	private final ReentrantLock mapModifyLock = new ReentrantLock();
 	
 	
@@ -160,7 +159,7 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		this.useInstancedRendering = this.vertexAttribDivisorSupported || this.instancedArraysSupported;
 		if (!this.useInstancedRendering)
 		{
-			LOGGER.info("Instanced rendering not supported by this GPU, falling back to direct rendering. Generic object rendering may be slow.");
+			LOGGER.warn("Instanced rendering not supported by this GPU, falling back to direct rendering. Generic object rendering may be slow.");
 		}
 		
 		
@@ -188,87 +187,92 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		
 		// testing //
 		
-		// single giant cube
-		IDhApiRenderableBoxGroup singleGiantCubeGroup = DhApi.Delayed.renderRegister.createForSingleBox(
+		// single giant box
+		IDhApiRenderableBoxGroup singleGiantBoxGroup = DhApi.Delayed.renderRegister.createForSingleBox(
 				new DhApiRenderableBox(
 						new Vec3f(0f,0f,0f), new Vec3f(16f,190f,16f),
 						new Color(Color.CYAN.getRed(), Color.CYAN.getGreen(), Color.CYAN.getBlue(), 125))
 				);
-		DhApi.Delayed.renderRegister.add(singleGiantCubeGroup);
+		DhApi.Delayed.renderRegister.add(singleGiantBoxGroup);
 
-		// single slender cube
-		singleGiantCubeGroup = DhApi.Delayed.renderRegister.createForSingleBox(
+		// single slender box
+		IDhApiRenderableBoxGroup singleTallBoxGroup = DhApi.Delayed.renderRegister.createForSingleBox(
 				new DhApiRenderableBox(
 						new Vec3f(16f,0f,31f), new Vec3f(17f,2000f,32f),
 						new Color(Color.GREEN.getRed(), Color.GREEN.getGreen(), Color.GREEN.getBlue(), 125))
 		);
-		DhApi.Delayed.renderRegister.add(singleGiantCubeGroup);
+		DhApi.Delayed.renderRegister.add(singleTallBoxGroup);
 		
-		// absolute cube group
-		ArrayList<DhApiRenderableBox> absCubeList = new ArrayList<>();
+		// absolute box group
+		ArrayList<DhApiRenderableBox> absBoxList = new ArrayList<>();
 		for (int i = 0; i < 18; i++)
 		{
-			absCubeList.add(new DhApiRenderableBox(
+			absBoxList.add(new DhApiRenderableBox(
 					new Vec3f(0f+i,150f+i,24f), new Vec3f(1f+i,151f+i,25f),
 					new Color(Color.ORANGE.getRed(), Color.ORANGE.getGreen(), Color.ORANGE.getBlue())));
 		}
-		IDhApiRenderableBoxGroup absolutePosCubeGroup = DhApi.Delayed.renderRegister.createAbsolutePositionedGroup(absCubeList);
-		DhApi.Delayed.renderRegister.add(absolutePosCubeGroup);
+		IDhApiRenderableBoxGroup absolutePosBoxGroup = DhApi.Delayed.renderRegister.createAbsolutePositionedGroup(absBoxList);
+		DhApi.Delayed.renderRegister.add(absolutePosBoxGroup);
 		
-		// relative cube group
-		ArrayList<DhApiRenderableBox> relCubeList = new ArrayList<>();
+		// relative box group
+		ArrayList<DhApiRenderableBox> relBoxList = new ArrayList<>();
 		for (int i = 0; i < 8; i+=2)
 		{
-			relCubeList.add(new DhApiRenderableBox(
+			relBoxList.add(new DhApiRenderableBox(
 					new Vec3f(0f,0f+i,0f), new Vec3f(1f,1f+i,1f),
 					new Color(Color.MAGENTA.getRed(), Color.MAGENTA.getGreen(), Color.MAGENTA.getBlue())));
 		}
-		IDhApiRenderableBoxGroup relativePosCubeGroup = DhApi.Delayed.renderRegister.createRelativePositionedGroup(
+		IDhApiRenderableBoxGroup relativePosBoxGroup = DhApi.Delayed.renderRegister.createRelativePositionedGroup(
 				new DhApiVec3f(24f, 140f, 24f),
-				relCubeList);
-		relativePosCubeGroup.setPreRenderFunc((event) -> 
+				relBoxList);
+		relativePosBoxGroup.setPreRenderFunc((event) -> 
 		{
-			DhApiVec3f pos = relativePosCubeGroup.getOriginBlockPos();
+			DhApiVec3f pos = relativePosBoxGroup.getOriginBlockPos();
 			pos.x += event.partialTicks / 2;
 			pos.x %= 32;
-			relativePosCubeGroup.setOriginBlockPos(pos);
+			relativePosBoxGroup.setOriginBlockPos(pos);
 		});
-		DhApi.Delayed.renderRegister.add(relativePosCubeGroup);
+		DhApi.Delayed.renderRegister.add(relativePosBoxGroup);
 		
 		
 		
 		
-		// massive relative cube group
-		ArrayList<DhApiRenderableBox> massRelCubeList = new ArrayList<>();
+		// massive relative box group
+		ArrayList<DhApiRenderableBox> massRelBoxList = new ArrayList<>();
 		for (int x = 0; x < 50*2; x+=2)
 		{
 			for (int z = 0; z < 50*2; z+=2)
 			{
-				massRelCubeList.add(new DhApiRenderableBox(
+				massRelBoxList.add(new DhApiRenderableBox(
 						new Vec3f(0f-x, 0f, 0f-z), new Vec3f(1f-x, 1f, 1f-z),
 						new Color(Color.RED.getRed(), Color.RED.getGreen(), Color.RED.getBlue())));
 			}
 		}
-		IDhApiRenderableBoxGroup massRelativePosCubeGroup = DhApi.Delayed.renderRegister.createRelativePositionedGroup(
+		IDhApiRenderableBoxGroup massRelativePosBoxGroup = DhApi.Delayed.renderRegister.createRelativePositionedGroup(
 				new DhApiVec3f(-25f, 140f, 0f),
-				massRelCubeList);
-		massRelativePosCubeGroup.setPreRenderFunc((event) ->
+				massRelBoxList);
+		massRelativePosBoxGroup.setPreRenderFunc((event) ->
 		{
-			DhApiVec3f blockPos = massRelativePosCubeGroup.getOriginBlockPos();
+			DhApiVec3f blockPos = massRelativePosBoxGroup.getOriginBlockPos();
 			blockPos.y += event.partialTicks / 4;
 			if (blockPos.y > 150f)
 			{
 				blockPos.y = 140f;
+				
+				Color newColor = (massRelativePosBoxGroup.get(0).color == Color.RED) ? Color.RED.darker() : Color.RED;
+				massRelativePosBoxGroup.forEach((box) -> { box.color = newColor; });
+				massRelativePosBoxGroup.triggerBoxChange();
 			}
-			massRelativePosCubeGroup.setOriginBlockPos(blockPos);
+			
+			massRelativePosBoxGroup.setOriginBlockPos(blockPos);
 		});
-		DhApi.Delayed.renderRegister.add(massRelativePosCubeGroup);
+		DhApi.Delayed.renderRegister.add(massRelativePosBoxGroup);
 		
 		
 	}
 	private void createBuffers()
 	{
-		// cube vertices 
+		// box vertices 
 		ByteBuffer boxVerticesBuffer = ByteBuffer.allocateDirect(BOX_VERTICES.length * Float.BYTES);
 		boxVerticesBuffer.order(ByteOrder.nativeOrder());
 		boxVerticesBuffer.asFloatBuffer().put(BOX_VERTICES);
@@ -278,7 +282,7 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		this.vertexBuffer.uploadBuffer(boxVerticesBuffer, 8, EDhApiGpuUploadMethod.DATA, BOX_VERTICES.length * Float.BYTES);
 		
 		
-		// cube vertex indexes
+		// box vertex indexes
 		ByteBuffer solidIndexBuffer = ByteBuffer.allocateDirect(SOLID_BOX_INDICES.length * Integer.BYTES);
 		solidIndexBuffer.order(ByteOrder.nativeOrder());
 		solidIndexBuffer.asIntBuffer().put(SOLID_BOX_INDICES);
@@ -304,12 +308,12 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 	}
 	
 	@Override 
-	public IDhApiRenderableBoxGroup createRelativePositionedGroup(DhApiVec3f originBlockPos, List<DhApiRenderableBox> cubeList)
-	{ return new DhApiRenderableBoxGroup(new Vec3f(originBlockPos), cubeList, true); }
+	public IDhApiRenderableBoxGroup createRelativePositionedGroup(DhApiVec3f originBlockPos, List<DhApiRenderableBox> boxList)
+	{ return new RenderableBoxGroup(new Vec3f(originBlockPos), boxList, true); }
 	
 	@Override 
 	public IDhApiRenderableBoxGroup createAbsolutePositionedGroup(List<DhApiRenderableBox> boxList)
-	{ return new DhApiRenderableBoxGroup(new Vec3f(0, 0, 0), boxList, false); }
+	{ return new RenderableBoxGroup(new Vec3f(0, 0, 0), boxList, false); }
 	
 	
 	
@@ -320,11 +324,11 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 	@Override
 	public void add(IDhApiRenderableBoxGroup iBoxGroup) throws IllegalArgumentException 
 	{
-		if (!(iBoxGroup instanceof DhApiRenderableBoxGroup))
+		if (!(iBoxGroup instanceof RenderableBoxGroup))
 		{
-			throw new IllegalArgumentException("Box group must be of type ["+DhApiRenderableBoxGroup.class.getSimpleName()+"].");
+			throw new IllegalArgumentException("Box group must be of type ["+ RenderableBoxGroup.class.getSimpleName()+"].");
 		}
-		DhApiRenderableBoxGroup boxGroup = (DhApiRenderableBoxGroup) iBoxGroup;
+		RenderableBoxGroup boxGroup = (RenderableBoxGroup) iBoxGroup;
 		
 		
 		try
@@ -412,24 +416,26 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		
 		// rendering //
 		
-		
 		LongSet keys = boxGroupById.keySet();
 		for (long key : keys)
 		{
-			profiler.popPush("render prep");
-			
-			DhApiRenderableBoxGroup boxGroup = boxGroupById.get(key);
-			boxGroup.preRender(renderEventParam);
-			
-			if (this.useInstancedRendering)
+			RenderableBoxGroup boxGroup = boxGroupById.get(key);
+			// ignore inactive groups
+			if (boxGroup.active)
 			{
-				profiler.popPush("rendering");
-				this.renderBoxGroupInstanced(boxGroup, camPos, projectionMvmMatrix);
-			}
-			else
-			{
-				profiler.popPush("rendering");
-				this.renderBoxGroupDirect(boxGroup, projectionMvmMatrix, camPos);
+				profiler.popPush("render prep");
+				boxGroup.preRender(renderEventParam);
+				
+				if (this.useInstancedRendering)
+				{
+					profiler.popPush("rendering");
+					this.renderBoxGroupInstanced(boxGroup, camPos, projectionMvmMatrix);
+				}
+				else
+				{
+					profiler.popPush("rendering");
+					this.renderBoxGroupDirect(boxGroup, projectionMvmMatrix, camPos);
+				}
 			}
 		}
 		
@@ -450,7 +456,7 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 	// instanced rendering //
 	//=====================//
 	
-	private void renderBoxGroupInstanced(DhApiRenderableBoxGroup boxGroup, Vec3f camPos, Mat4f projectionMvmMatrix)
+	private void renderBoxGroupInstanced(RenderableBoxGroup boxGroup, Vec3f camPos, Mat4f projectionMvmMatrix)
 	{
 		// update instance data //
 		
@@ -532,40 +538,40 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 	// direct rendering //
 	//==================//
 	
-	private void renderBoxGroupDirect(DhApiRenderableBoxGroup cubeGroup, Mat4f transformMatrix, Vec3f camPos)
+	private void renderBoxGroupDirect(RenderableBoxGroup boxGroup, Mat4f transformMatrix, Vec3f camPos)
 	{
-		for (DhApiRenderableBox box : cubeGroup.cubeList)
+		for (DhApiRenderableBox box : boxGroup.boxList)
 		{
-			renderBox(cubeGroup, box, transformMatrix, camPos);
+			renderBox(boxGroup, box, transformMatrix, camPos);
 		}
 	}
 	private void renderBox(
-			DhApiRenderableBoxGroup cubeGroup, DhApiRenderableBox cube,
+			RenderableBoxGroup boxGroup, DhApiRenderableBox box,
 			Mat4f transformationMatrix, Vec3f camPos)
 	{
 		float originOffsetX = 0;
 		float originOffsetY = 0;
 		float originOffsetZ = 0;
-		if (cubeGroup.positionCubesRelativeToGroupOrigin)
+		if (boxGroup.positionBoxesRelativeToGroupOrigin)
 		{
-			originOffsetX = cubeGroup.originBlockPos.x;
-			originOffsetY = cubeGroup.originBlockPos.y;
-			originOffsetZ = cubeGroup.originBlockPos.z;
+			originOffsetX = boxGroup.originBlockPos.x;
+			originOffsetY = boxGroup.originBlockPos.y;
+			originOffsetZ = boxGroup.originBlockPos.z;
 		}
 		
 		Mat4f boxTransform = Mat4f.createTranslateMatrix(
-				cube.minPos.x + originOffsetX - camPos.x,
-				cube.minPos.y + originOffsetY - camPos.y,
-				cube.minPos.z + originOffsetZ - camPos.z);
+				box.minPos.x + originOffsetX - camPos.x,
+				box.minPos.y + originOffsetY - camPos.y,
+				box.minPos.z + originOffsetZ - camPos.z);
 		boxTransform.multiply(Mat4f.createScaleMatrix(
-				cube.maxPos.x - cube.minPos.x,
-				cube.maxPos.y - cube.minPos.y,
-				cube.maxPos.z - cube.minPos.z));
+				box.maxPos.x - box.minPos.x,
+				box.maxPos.y - box.minPos.y,
+				box.maxPos.z - box.minPos.z));
 		Mat4f transformMatrix = transformationMatrix.copy();
 		transformMatrix.multiply(boxTransform);
 		this.shader.setUniform(this.directShaderTransformUniformLocation, transformMatrix);
 		
-		this.shader.setUniform(this.directShaderColorUniformLocation, cube.color);
+		this.shader.setUniform(this.directShaderColorUniformLocation, box.color);
 		
 		GL32.glDrawElements(GL32.GL_TRIANGLES, SOLID_BOX_INDICES.length, GL32.GL_UNSIGNED_INT, 0);
 	}
@@ -576,7 +582,7 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 	// helper classes //
 	//================//
 	
-	private static final class DhApiRenderableBoxGroup 
+	private static final class RenderableBoxGroup 
 			extends AbstractList<DhApiRenderableBox> 
 			implements IDhApiRenderableBoxGroup, Closeable
 	{
@@ -586,10 +592,10 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		
 		public final long id;
 		
-		/** If false the cubes will be positioned relative to the level's origin */
-		public final boolean positionCubesRelativeToGroupOrigin;
+		/** If false the boxes will be positioned relative to the level's origin */
+		public final boolean positionBoxesRelativeToGroupOrigin;
 		
-		private final ArrayList<DhApiRenderableBox> cubeList;
+		private final ArrayList<DhApiRenderableBox> boxList;
 		
 		private final Vec3f originBlockPos;
 		
@@ -597,6 +603,7 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		public Consumer<DhApiRenderParam> beforeRenderFunc;
 		
 		private boolean vertexDataDirty = true;
+		public boolean active = true;
 		
 		// instance data
 		private int instanceTranslationVbo = 0;
@@ -625,16 +632,16 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		
 		// constructor //
 		
-		public DhApiRenderableBoxGroup(Vec3f originBlockPos, List<DhApiRenderableBox> cubeList, boolean positionCubesRelativeToGroupOrigin)
+		public RenderableBoxGroup(Vec3f originBlockPos, List<DhApiRenderableBox> boxList, boolean positionBoxesRelativeToGroupOrigin)
 		{
 			// TODO save to database
 			// TODO when?
 			
 			this.id = NEXT_ID_ATOMIC_INT.getAndIncrement();
-			this.cubeList = new ArrayList<>(cubeList);
+			this.boxList = new ArrayList<>(boxList);
 			
 			this.originBlockPos = originBlockPos;
-			this.positionCubesRelativeToGroupOrigin = positionCubesRelativeToGroupOrigin;
+			this.positionBoxesRelativeToGroupOrigin = positionBoxesRelativeToGroupOrigin;
 		}
 		
 		
@@ -642,12 +649,19 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		// methods //
 		
 		@Override
-		public boolean add(DhApiRenderableBox cube) { return this.cubeList.add(cube); }
+		public boolean add(DhApiRenderableBox box) { return this.boxList.add(box); }
 		
 		@Override
 		public void setPreRenderFunc(Consumer<DhApiRenderParam> func) { this.beforeRenderFunc = func; }
 		
-		//@Override
+		@Override 
+		public void triggerBoxChange() { this.vertexDataDirty = true; }
+		
+		@Override
+		public void setActive(boolean active) { this.active = active; }
+		@Override
+		public boolean isActive() { return this.active; }
+		
 		public void preRender(DhApiRenderParam renderEventParam) 
 		{
 			if (this.beforeRenderFunc != null)
@@ -661,23 +675,23 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		// overrides //
 		
 		@Override
-		public DhApiRenderableBox get(int index) { return this.cubeList.get(index); }
+		public DhApiRenderableBox get(int index) { return this.boxList.get(index); }
 		@Override 
-		public int size() { return this.cubeList.size(); }
+		public int size() { return this.boxList.size(); }
 		@Override 
-		public boolean removeIf(Predicate<? super DhApiRenderableBox> filter) { return this.cubeList.removeIf(filter); }
+		public boolean removeIf(Predicate<? super DhApiRenderableBox> filter) { return this.boxList.removeIf(filter); }
 		@Override 
-		public void replaceAll(UnaryOperator<DhApiRenderableBox> operator) { this.cubeList.replaceAll(operator); }
+		public void replaceAll(UnaryOperator<DhApiRenderableBox> operator) { this.boxList.replaceAll(operator); }
 		@Override 
-		public void sort(Comparator<? super DhApiRenderableBox> c) { this.cubeList.sort(c); }
+		public void sort(Comparator<? super DhApiRenderableBox> c) { this.boxList.sort(c); }
 		@Override 
-		public void forEach(Consumer<? super DhApiRenderableBox> action) { this.cubeList.forEach(action); }
+		public void forEach(Consumer<? super DhApiRenderableBox> action) { this.boxList.forEach(action); }
 		@Override 
-		public Spliterator<DhApiRenderableBox> spliterator() { return this.cubeList.spliterator(); }
+		public Spliterator<DhApiRenderableBox> spliterator() { return this.boxList.spliterator(); }
 		@Override 
-		public Stream<DhApiRenderableBox> stream() { return this.cubeList.stream(); }
+		public Stream<DhApiRenderableBox> stream() { return this.boxList.stream(); }
 		@Override 
-		public Stream<DhApiRenderableBox> parallelStream() { return this.cubeList.parallelStream(); }
+		public Stream<DhApiRenderableBox> parallelStream() { return this.boxList.parallelStream(); }
 		
 		
 		
@@ -685,6 +699,7 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		// vertex attributes //
 		//===================//
 		
+		/** Does nothing if the vertex data is already up-to-date */
 		private void updateVertexAttributeData()
 		{
 			if (!this.vertexDataDirty)
@@ -729,8 +744,8 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 			float[] colorData = new float[boxCount * 4];
 			for (int i = 0; i < boxCount; i++)
 			{
-				DhApiRenderableBox cube = this.get(i);
-				Color color = cube.color;
+				DhApiRenderableBox box = this.get(i);
+				Color color = box.color;
 				int colorIndex = i * 4;
 				colorData[colorIndex] = color.getRed() / 255.0f;
 				colorData[colorIndex + 1] = color.getGreen() / 255.0f;
@@ -751,6 +766,13 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		}
 		
 		
+		
+		//================//
+		// base overrides //
+		//================//
+		
+		@Override
+		public String toString() { return "ID:["+this.id+"], pos:["+this.originBlockPos.x+","+this.originBlockPos.y+","+this.originBlockPos.z+"], size:["+this.size()+"], active:["+this.active+"]"; }
 		
 		@Override 
 		public void close()
