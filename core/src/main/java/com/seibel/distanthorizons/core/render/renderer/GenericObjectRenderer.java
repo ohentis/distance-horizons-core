@@ -538,21 +538,18 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		float[] scaleData = new float[boxCount * 3];
 		for (int i = 0; i < cubeGroup.size(); i++)
 		{
-			DhApiRenderableBox cube = cubeGroup.get(i);
+			DhApiRenderableBox box = cubeGroup.get(i);
 			
-			System.arraycopy(new float[] 
-				{
-					cube.minPos.x,
-					cube.minPos.y,
-					cube.minPos.z
-				}, 0, translateData, i * 3, 3);
+			int dataIndex = i * 3;
 			
-			System.arraycopy(new float[]
-				{
-					cube.maxPos.x - cube.minPos.x,
-					cube.maxPos.y - cube.minPos.y,
-					cube.maxPos.z - cube.minPos.z
-				}, 0, scaleData, i * 3, 3);
+			translateData[dataIndex] = box.minPos.x;
+			translateData[dataIndex + 1] = box.minPos.y;
+			translateData[dataIndex + 2] = box.minPos.z;
+			
+			scaleData[dataIndex] = box.maxPos.x - box.minPos.x;
+			scaleData[dataIndex + 1] = box.maxPos.y - box.minPos.y;
+			scaleData[dataIndex + 2] = box.maxPos.z - box.minPos.z;
+			
 		}
 		
 		// Upload transformation matrices
