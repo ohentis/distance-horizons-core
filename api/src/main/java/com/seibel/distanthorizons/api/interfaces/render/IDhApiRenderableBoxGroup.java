@@ -7,21 +7,39 @@ import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBox;
 import java.util.List;
 import java.util.function.Consumer;
 
+/**
+ * A list of {@link DhApiRenderableBox}'s that
+ * can be rendered to DH's terrain pass.
+ * 
+ * @see DhApiRenderableBox
+ * 
+ * @author James Seibel
+ * @version 2024-6-30
+ * @since API 3.0.0
+ */
 public interface IDhApiRenderableBoxGroup extends List<DhApiRenderableBox>
 {
-	
+	/** @return the ID for this specific group */
 	long getId();
 	
+	/** Sets whether this group should render or not. */
 	void setActive(boolean active);
+	/** @return if active this group will render. */
 	boolean isActive();
 	
+	/** Sets where this group will render in the level. */
 	void setOriginBlockPos(DhApiVec3f pos);
+	/** @return the block position in the level that all {@see DhApiRenderableBox} will render relative to. */
 	DhApiVec3f getOriginBlockPos();
 	
+	/** 
+	 * Called right before this group is rendered. <br>
+	 * This is a good place to change the origin or notify of any box changes. 
+	 */
 	void setPreRenderFunc(Consumer<DhApiRenderParam> renderEventParam);
 	
 	/**
-	 * If a cube's color, position, or other property are changed this method
+	 * If a cube's color, position, or other property is changed this method
 	 * must be called for those changes to render. <br><br>
 	 * 
 	 * Note: changing the group's position via {@link #setOriginBlockPos} doesn't

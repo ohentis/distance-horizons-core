@@ -371,12 +371,18 @@ public class LodRenderer
 				// Disable blending for opaque rendering
 				GL32.glDisable(GL32.GL_BLEND);
 				
+				
+				// terrain
 				profiler.popPush("LOD Opaque");
 				ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeRenderPassEvent.class, renderEventParam);
-				
-				// TODO: Directional culling
 				this.bufferHandler.renderOpaque(this, renderEventParam);
 				
+				// custom objects
+				profiler.popPush("Custom Objects");
+				GenericObjectRenderer.INSTANCE.render(renderEventParam, profiler);
+				
+				
+				// SSAO
 				if (Config.Client.Advanced.Graphics.Ssao.enabled.get())
 				{
 					profiler.popPush("LOD SSAO");
@@ -420,9 +426,6 @@ public class LodRenderer
 					// Note: this can be very slow if a lot of boxes are being rendered 
 					DebugRenderer.INSTANCE.render(combinedMatrix);
 				}
-				
-				profiler.popPush("Custom Objects");
-				GenericObjectRenderer.INSTANCE.render(renderEventParam, profiler);
 				
 				profiler.popPush("LOD cleanup");
 				

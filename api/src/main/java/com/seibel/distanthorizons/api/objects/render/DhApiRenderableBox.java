@@ -1,21 +1,46 @@
 package com.seibel.distanthorizons.api.objects.render;
 
 
-import com.seibel.distanthorizons.coreapi.util.math.Vec3f;
+import com.seibel.distanthorizons.api.interfaces.render.IDhApiRenderableBoxGroup;
+import com.seibel.distanthorizons.api.objects.math.DhApiVec3f;
 
 import java.awt.*;
 
-public final class DhApiRenderableBox
+/**
+ * @see IDhApiRenderableBoxGroup
+ * 
+ * @author James Seibel
+ * @version 2024-6-30
+ * @since API 3.0.0
+ */
+public class DhApiRenderableBox
 {
-	public Vec3f minPos;
-	public Vec3f maxPos;
+	/** the position closest to (-inf,-inf) */
+	public DhApiVec3f minPos;
+	/** the position closest to (+inf,+inf) */
+	public DhApiVec3f maxPos;
+	
 	public Color color;
 	
-	public boolean fullBright = false;
+	/* TODO */
+	//public boolean fullBright = false;
 	
 	
 	
-	public DhApiRenderableBox(Vec3f minPos, Vec3f maxPos, Color color)
+	//==============//
+	// constructors //
+	//==============//
+	
+	public DhApiRenderableBox(DhApiVec3f minPos, float width, Color color)
+	{
+		this(minPos, new DhApiVec3f(
+				minPos.x + width,
+				minPos.y + width,
+				minPos.z + width
+		), color);
+	}
+	
+	public DhApiRenderableBox(DhApiVec3f minPos, DhApiVec3f maxPos, Color color)
 	{
 		this.minPos = minPos;
 		this.maxPos = maxPos;

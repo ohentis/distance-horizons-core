@@ -64,16 +64,26 @@ import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
+/**
+ * Handles rendering generic groups of {@link DhApiRenderableBox}.
+ * 
+ * @see IDhApiCustomRenderRegister
+ * @see DhApiRenderableBox
+ */
 public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 {
 	public static GenericObjectRenderer INSTANCE = new GenericObjectRenderer();
 	
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
-	public static final ConfigBasedSpamLogger SPAM_LOGGER = new ConfigBasedSpamLogger(LogManager.getLogger(TestRenderer.class), () -> EDhApiLoggerMode.LOG_ALL_TO_CHAT, 1);
+	public static final ConfigBasedSpamLogger SPAM_LOGGER = new ConfigBasedSpamLogger(LogManager.getLogger(GenericObjectRenderer.class), () -> EDhApiLoggerMode.LOG_ALL_TO_CHAT, 1);
 	
 	private static final IMinecraftRenderWrapper MC_RENDER = SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
 	
-	public static boolean RENDER_DEBUG_OBJECTS = true;
+	/** 
+	 * Can be used to troubleshoot the renderer. 
+	 * If enabled several debug objects will render around (0,150,0). 
+	 */
+	public static final boolean RENDER_DEBUG_OBJECTS = true;
 	
 	
 	// rendering setup
@@ -217,7 +227,7 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		// single giant box
 		IDhApiRenderableBoxGroup singleGiantBoxGroup = DhApi.Delayed.renderRegister.createForSingleBox(
 				new DhApiRenderableBox(
-						new Vec3f(0f,0f,0f), new Vec3f(16f,190f,16f),
+						new DhApiVec3f(0f,0f,0f), new DhApiVec3f(16f,190f,16f),
 						new Color(Color.CYAN.getRed(), Color.CYAN.getGreen(), Color.CYAN.getBlue(), 125))
 		);
 		DhApi.Delayed.renderRegister.add(singleGiantBoxGroup);
@@ -226,7 +236,7 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		// single slender box
 		IDhApiRenderableBoxGroup singleTallBoxGroup = DhApi.Delayed.renderRegister.createForSingleBox(
 				new DhApiRenderableBox(
-						new Vec3f(16f,0f,31f), new Vec3f(17f,2000f,32f),
+						new DhApiVec3f(16f,0f,31f), new DhApiVec3f(17f,2000f,32f),
 						new Color(Color.GREEN.getRed(), Color.GREEN.getGreen(), Color.GREEN.getBlue(), 125))
 		);
 		DhApi.Delayed.renderRegister.add(singleTallBoxGroup);
@@ -237,7 +247,7 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		for (int i = 0; i < 18; i++)
 		{
 			absBoxList.add(new DhApiRenderableBox(
-					new Vec3f(0f+i,150f+i,24f), new Vec3f(1f+i,151f+i,25f),
+					new DhApiVec3f(0f+i,150f+i,24f), new DhApiVec3f(1f+i,151f+i,25f),
 					new Color(Color.ORANGE.getRed(), Color.ORANGE.getGreen(), Color.ORANGE.getBlue())));
 		}
 		IDhApiRenderableBoxGroup absolutePosBoxGroup = DhApi.Delayed.renderRegister.createAbsolutePositionedGroup(absBoxList);
@@ -249,7 +259,7 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		for (int i = 0; i < 8; i+=2)
 		{
 			relBoxList.add(new DhApiRenderableBox(
-					new Vec3f(0f,0f+i,0f), new Vec3f(1f,1f+i,1f),
+					new DhApiVec3f(0f,0f+i,0f), new DhApiVec3f(1f,1f+i,1f),
 					new Color(Color.MAGENTA.getRed(), Color.MAGENTA.getGreen(), Color.MAGENTA.getBlue())));
 		}
 		IDhApiRenderableBoxGroup relativePosBoxGroup = DhApi.Delayed.renderRegister.createRelativePositionedGroup(
@@ -272,7 +282,7 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 			for (int z = 0; z < 50*2; z+=2)
 			{
 				massRelBoxList.add(new DhApiRenderableBox(
-						new Vec3f(0f-x, 0f, 0f-z), new Vec3f(1f-x, 1f, 1f-z),
+						new DhApiVec3f(0f-x, 0f, 0f-z), new DhApiVec3f(1f-x, 1f, 1f-z),
 						new Color(Color.RED.getRed(), Color.RED.getGreen(), Color.RED.getBlue())));
 			}
 		}

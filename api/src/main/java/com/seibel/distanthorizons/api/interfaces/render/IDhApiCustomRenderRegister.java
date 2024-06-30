@@ -5,6 +5,16 @@ import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBox;
 
 import java.util.List;
 
+/**
+ * Handles adding, removing, and creating
+ * {@link IDhApiRenderableBoxGroup} objects,
+ * which can be used to render custom objects into
+ * DH's terrain.
+ *
+ * @author James Seibel
+ * @version 2024-6-30
+ * @since API 3.0.0
+ */
 public interface IDhApiCustomRenderRegister
 {
 	void add(IDhApiRenderableBoxGroup cubeGroup) throws IllegalArgumentException;
