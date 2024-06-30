@@ -51,13 +51,12 @@ import org.lwjgl.opengl.GL33;
 
 import javax.annotation.Nullable;
 import java.awt.*;
+import java.io.Closeable;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.AbstractList;
-import java.util.ArrayList;
-import java.util.Comparator;
+import java.util.*;
 import java.util.List;
-import java.util.Spliterator;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
@@ -87,11 +86,6 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 	private boolean vertexAttribDivisorSupported;
 	private boolean instancedArraysSupported;
 	
-	
-	// instance data
-	private int instanceTranslateVBO;
-	private int instanceScaleVBO;
-	private int instanceColorVBO;
 	
 	// shader uniforms
 	private int directShaderTransformUniformLocation;
@@ -245,9 +239,9 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		
 		// massive relative cube group
 		ArrayList<DhApiRenderableBox> massRelCubeList = new ArrayList<>();
-		for (int x = 0; x < 40*2; x+=2)
+		for (int x = 0; x < 50*2; x+=2)
 		{
-			for (int z = 0; z < 40*2; z+=2)
+			for (int z = 0; z < 50*2; z+=2)
 			{
 				massRelCubeList.add(new DhApiRenderableBox(
 						new Vec3f(0f-x, 0f, 0f-z), new Vec3f(1f-x, 1f, 1f-z),
@@ -292,11 +286,6 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		this.solidIndexBuffer.uploadBuffer(solidIndexBuffer, EDhApiGpuUploadMethod.DATA, SOLID_BOX_INDICES.length * Integer.BYTES, GL32.GL_STATIC_DRAW);
 		this.solidIndexBuffer.bind();
 		
-		
-		// instance buffers
-		this.instanceTranslateVBO = GL32.glGenBuffers();
-		this.instanceScaleVBO = GL32.glGenBuffers();
-		this.instanceColorVBO = GL32.glGenBuffers();
 	}
 	
 	
@@ -328,8 +317,15 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 	//==============//
 	
 	@Override
-	public void add(IDhApiRenderableBoxGroup boxGroup) throws IllegalArgumentException 
+	public void add(IDhApiRenderableBoxGroup iBoxGroup) throws IllegalArgumentException 
 	{
+		if (!(iBoxGroup instanceof DhApiRenderableBoxGroup))
+		{
+			throw new IllegalArgumentException("Box group must be of type ["+DhApiRenderableBoxGroup.class.getSimpleName()+"].");
+		}
+		DhApiRenderableBoxGroup boxGroup = (DhApiRenderableBoxGroup) iBoxGroup;
+		
+		
 		try
 		{
 			mapModifyLock.lock();
@@ -337,10 +333,10 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 			long id = boxGroup.getId();
 			if (this.boxGroupById.containsKey(id))
 			{
-				throw new IllegalArgumentException("A cube group with the ID [" + id + "] is already present.");
+				throw new IllegalArgumentException("A box group with the ID [" + id + "] is already present.");
 			}
 			
-			this.boxGroupById.put(id, (DhApiRenderableBoxGroup) boxGroup);
+			this.boxGroupById.put(id, boxGroup);
 			
 			// TODO add to DB async?
 		}
@@ -426,8 +422,6 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 			
 			if (this.useInstancedRendering)
 			{
-				updateCubeGroupInstanceBuffers(boxGroup, camPos, projectionMvmMatrix);
-				
 				profiler.popPush("rendering");
 				this.renderBoxGroupInstanced(boxGroup, camPos, projectionMvmMatrix);
 			}
@@ -455,15 +449,17 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 	// instanced rendering //
 	//=====================//
 	
-	private void renderBoxGroupInstanced(DhApiRenderableBoxGroup cubeGroup, Vec3f camPos, Mat4f projectionMvmMatrix)
+	private void renderBoxGroupInstanced(DhApiRenderableBoxGroup boxGroup, Vec3f camPos, Mat4f projectionMvmMatrix)
 	{
 		// update instance data //
 		
+		boxGroup.updateVertexAttributeData();
+		
 		this.shader.setUniform(this.instancedShaderOffsetUniformLocation, 
 				new Vec3f(
-					cubeGroup.originBlockX, 
-					cubeGroup.originBlockY, 
-					cubeGroup.originBlockZ
+					boxGroup.originBlockX, 
+					boxGroup.originBlockY, 
+					boxGroup.originBlockZ
 				));
 		
 		this.shader.setUniform(this.instancedShaderCameraPosUniformLocation, 
@@ -481,24 +477,24 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		
 		// Bind instance data //
 		
-		GL32.glBindBuffer(GL32.GL_ARRAY_BUFFER, this.instanceColorVBO);
+		GL32.glBindBuffer(GL32.GL_ARRAY_BUFFER, boxGroup.instanceColorVbo);
 		GL32.glEnableVertexAttribArray(1);
 		GL32.glVertexAttribPointer(1, 4, GL32.GL_FLOAT, false, 4 * Float.BYTES, 0);
 		vertexAttribDivisor(1, 1);
 		
-		GL32.glBindBuffer(GL32.GL_ARRAY_BUFFER, this.instanceTranslateVBO);
+		GL32.glBindBuffer(GL32.GL_ARRAY_BUFFER, boxGroup.instanceTranslationVbo);
 		GL32.glEnableVertexAttribArray(2);
 		vertexAttribDivisor(2, 1);
 		GL32.glVertexAttribPointer(2, 3, GL32.GL_FLOAT, false, 3 * Float.BYTES, 0);
 		
-		GL32.glBindBuffer(GL32.GL_ARRAY_BUFFER, this.instanceScaleVBO);
+		GL32.glBindBuffer(GL32.GL_ARRAY_BUFFER, boxGroup.instanceScaleVbo);
 		GL32.glEnableVertexAttribArray(3);
 		vertexAttribDivisor(3, 1);
 		GL32.glVertexAttribPointer(3, 3, GL32.GL_FLOAT, false, 3 * Float.BYTES, 0);
 		
 		
 		// Draw instanced
-		GL32.glDrawElementsInstanced(GL32.GL_TRIANGLES, SOLID_BOX_INDICES.length, GL32.GL_UNSIGNED_INT, 0, cubeGroup.size());
+		GL32.glDrawElementsInstanced(GL32.GL_TRIANGLES, SOLID_BOX_INDICES.length, GL32.GL_UNSIGNED_INT, 0, boxGroup.size());
 		
 		
 		// Clean up
@@ -528,55 +524,6 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		}
 	}
 	
-	private void updateCubeGroupInstanceBuffers(DhApiRenderableBoxGroup cubeGroup, Vec3f camPos, Mat4f projectionMvmMatrix)
-	{
-		int boxCount = cubeGroup.size();
-		
-		
-		// Prepare transformation matrices
-		float[] translateData = new float[boxCount * 3];
-		float[] scaleData = new float[boxCount * 3];
-		for (int i = 0; i < cubeGroup.size(); i++)
-		{
-			DhApiRenderableBox box = cubeGroup.get(i);
-			
-			int dataIndex = i * 3;
-			
-			translateData[dataIndex] = box.minPos.x;
-			translateData[dataIndex + 1] = box.minPos.y;
-			translateData[dataIndex + 2] = box.minPos.z;
-			
-			scaleData[dataIndex] = box.maxPos.x - box.minPos.x;
-			scaleData[dataIndex + 1] = box.maxPos.y - box.minPos.y;
-			scaleData[dataIndex + 2] = box.maxPos.z - box.minPos.z;
-			
-		}
-		
-		// Upload transformation matrices
-		GL32.glBindBuffer(GL32.GL_ARRAY_BUFFER, this.instanceTranslateVBO);
-		GL32.glBufferData(GL32.GL_ARRAY_BUFFER, translateData, GL32.GL_DYNAMIC_DRAW);
-		GL32.glBindBuffer(GL32.GL_ARRAY_BUFFER, this.instanceScaleVBO);
-		GL32.glBufferData(GL32.GL_ARRAY_BUFFER, scaleData, GL32.GL_DYNAMIC_DRAW);
-		
-		
-		
-		// Prepare colors
-		float[] colors = new float[boxCount * 4];
-		for (int i = 0; i < cubeGroup.size(); i++)
-		{
-			DhApiRenderableBox cube = cubeGroup.get(i);
-			Color color = cube.color;
-			int colorIndex = i * 4;
-			colors[colorIndex] = color.getRed() / 255.0f;
-			colors[colorIndex + 1] = color.getGreen() / 255.0f;
-			colors[colorIndex + 2] = color.getBlue() / 255.0f;
-			colors[colorIndex + 3] = color.getAlpha() / 255.0f;
-		}
-		
-		// Upload colors
-		GL32.glBindBuffer(GL32.GL_ARRAY_BUFFER, this.instanceColorVBO);
-		GL32.glBufferData(GL32.GL_ARRAY_BUFFER, colors, GL32.GL_DYNAMIC_DRAW);
-	}
 	
 	
 	
@@ -619,7 +566,7 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		
 		this.shader.setUniform(this.directShaderColorUniformLocation, cube.color);
 		
-		GL32.glDrawElements(GL32.GL_TRIANGLES , SOLID_BOX_INDICES.length, GL32.GL_UNSIGNED_INT, 0);
+		GL32.glDrawElements(GL32.GL_TRIANGLES, SOLID_BOX_INDICES.length, GL32.GL_UNSIGNED_INT, 0);
 	}
 	
 	
@@ -628,9 +575,13 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 	// helper classes //
 	//================//
 	
-	private static final class DhApiRenderableBoxGroup extends AbstractList<DhApiRenderableBox> implements IDhApiRenderableBoxGroup
+	private static final class DhApiRenderableBoxGroup 
+			extends AbstractList<DhApiRenderableBox> 
+			implements IDhApiRenderableBoxGroup, Closeable
 	{
 		public final static AtomicInteger NEXT_ID_ATOMIC_INT = new AtomicInteger(0);
+		
+		
 		
 		public final long id;
 		
@@ -645,6 +596,14 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		
 		@Nullable
 		public Consumer<DhApiRenderParam> beforeRenderFunc;
+		
+		private boolean vertexDataDirty = true;
+		
+		// instance data
+		private int instanceTranslationVbo = 0;
+		private int instanceScaleVbo = 0;
+		private int instanceColorVbo = 0;
+		
 		
 		
 		// setters/getters //
@@ -726,6 +685,104 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		public Stream<DhApiRenderableBox> stream() { return this.cubeList.stream(); }
 		@Override 
 		public Stream<DhApiRenderableBox> parallelStream() { return this.cubeList.parallelStream(); }
+		
+		
+		
+		//===================//
+		// vertex attributes //
+		//===================//
+		
+		private void updateVertexAttributeData()
+		{
+			if (!this.vertexDataDirty)
+			{
+				return;
+			}
+			this.vertexDataDirty = false;
+			
+			if (this.instanceTranslationVbo == 0)
+			{
+				this.instanceTranslationVbo = GL32.glGenBuffers();
+				this.instanceScaleVbo = GL32.glGenBuffers();
+				this.instanceColorVbo = GL32.glGenBuffers();
+			}
+			
+			int boxCount = this.size();
+			
+			
+			// transformation / scaling //
+			
+			float[] translationData = new float[boxCount * 3];
+			float[] scalingData = new float[boxCount * 3];
+			for (int i = 0; i < boxCount; i++)
+			{
+				DhApiRenderableBox box = this.get(i);
+				
+				int dataIndex = i * 3;
+				
+				translationData[dataIndex] = box.minPos.x;
+				translationData[dataIndex + 1] = box.minPos.y;
+				translationData[dataIndex + 2] = box.minPos.z;
+				
+				scalingData[dataIndex] = box.maxPos.x - box.minPos.x;
+				scalingData[dataIndex + 1] = box.maxPos.y - box.minPos.y;
+				scalingData[dataIndex + 2] = box.maxPos.z - box.minPos.z;
+				
+			}
+			
+			
+			// colors //
+			
+			float[] colorData = new float[boxCount * 4];
+			for (int i = 0; i < boxCount; i++)
+			{
+				DhApiRenderableBox cube = this.get(i);
+				Color color = cube.color;
+				int colorIndex = i * 4;
+				colorData[colorIndex] = color.getRed() / 255.0f;
+				colorData[colorIndex + 1] = color.getGreen() / 255.0f;
+				colorData[colorIndex + 2] = color.getBlue() / 255.0f;
+				colorData[colorIndex + 3] = color.getAlpha() / 255.0f;
+			}
+			
+			
+			// Upload transformation matrices
+			GL32.glBindBuffer(GL32.GL_ARRAY_BUFFER, this.instanceTranslationVbo);
+			GL32.glBufferData(GL32.GL_ARRAY_BUFFER, translationData ,GL32.GL_DYNAMIC_DRAW);
+			GL32.glBindBuffer(GL32.GL_ARRAY_BUFFER, this.instanceScaleVbo);
+			GL32.glBufferData(GL32.GL_ARRAY_BUFFER, scalingData, GL32.GL_DYNAMIC_DRAW);
+			
+			// Upload colors
+			GL32.glBindBuffer(GL32.GL_ARRAY_BUFFER, this.instanceColorVbo);
+			GL32.glBufferData(GL32.GL_ARRAY_BUFFER, colorData, GL32.GL_DYNAMIC_DRAW);
+		}
+		
+		
+		
+		@Override 
+		public void close()
+		{
+			GLProxy.getInstance().queueRunningOnRenderThread(() ->
+			{
+				if (this.instanceTranslationVbo != 0)
+				{
+					GL32.glDeleteBuffers(this.instanceTranslationVbo);
+					this.instanceTranslationVbo = 0;
+				}
+				
+				if (this.instanceScaleVbo != 0)
+				{
+					GL32.glDeleteBuffers(this.instanceScaleVbo);
+					this.instanceScaleVbo = 0;
+				}
+				
+				if (this.instanceColorVbo != 0)
+				{
+					GL32.glDeleteBuffers(this.instanceColorVbo);
+					this.instanceColorVbo = 0;
+				}
+			});
+		}
 		
 	}
 	
