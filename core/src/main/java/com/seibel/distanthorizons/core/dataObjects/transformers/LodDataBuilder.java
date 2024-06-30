@@ -19,12 +19,16 @@
 
 package com.seibel.distanthorizons.core.dataObjects.transformers;
 
+import java.awt.*;
 import java.util.List;
 
 import com.seibel.distanthorizons.api.enums.config.EDhApiWorldCompressionMode;
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
+import com.seibel.distanthorizons.api.interfaces.render.IDhApiRenderableBoxGroup;
 import com.seibel.distanthorizons.api.objects.data.DhApiChunk;
 import com.seibel.distanthorizons.api.objects.data.DhApiTerrainDataPoint;
+import com.seibel.distanthorizons.api.objects.math.DhApiVec3f;
+import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBox;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
@@ -33,6 +37,7 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.render.renderer.GenericObjectRenderer;
 import com.seibel.distanthorizons.core.util.FullDataPointUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.objects.DataCorruptedException;
@@ -212,6 +217,28 @@ public class LodDataBuilder
 								longs.add(FullDataPointUtil.encode(mappedId, lastY - y, y + 1 - chunkWrapper.getMinBuildHeight(), blockLight, skyLight));
 								biome = newBiome;
 								blockState = newBlockState;
+								
+								// TODO temp
+								if (blockState.getSerialString().contains("beacon"))
+								{
+									int blockX = chunkWrapper.getChunkPos().x * LodUtil.CHUNK_WIDTH + relBlockX;
+									int blockZ = chunkWrapper.getChunkPos().z * LodUtil.CHUNK_WIDTH + relBlockZ;
+									
+									if (GenericObjectRenderer.INSTANCE.testBeaconPosSet
+											.add(new DhBlockPos(blockX, y, blockZ)))
+									{
+										IDhApiRenderableBoxGroup beaconBeam = GenericObjectRenderer.INSTANCE.createForSingleBox(
+											new DhApiRenderableBox(
+												new DhApiVec3f(blockX, y+1, blockZ),
+												new DhApiVec3f(blockX+1, 5_000, blockZ+1),
+												Color.WHITE)
+										);
+										beaconBeam.setBlockLight(15);
+										beaconBeam.setSkyLight(15);
+										GenericObjectRenderer.INSTANCE.add(beaconBeam);
+									}
+								}
+								
 								mappedId = dataSource.mapping.addIfNotPresentAndGetId(biome, blockState);
 								blockLight = newBlockLight;
 								skyLight = newSkyLight;

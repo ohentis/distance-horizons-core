@@ -30,6 +30,7 @@ import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBox;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.ConfigBasedSpamLogger;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.pos.DhBlockPos;
 import com.seibel.distanthorizons.core.render.glObject.GLProxy;
 import com.seibel.distanthorizons.core.render.glObject.GLState;
 import com.seibel.distanthorizons.core.render.glObject.buffer.GLElementBuffer;
@@ -116,6 +117,11 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 	// TODO may need to be double buffered to prevent rendering lag
 	private final Long2ReferenceOpenHashMap<RenderableBoxGroup> boxGroupById = new Long2ReferenceOpenHashMap<>();
 	private final ReentrantLock mapModifyLock = new ReentrantLock();
+	
+	
+	// TODO just for testing
+	@Deprecated
+	public final HashSet<DhBlockPos> testBeaconPosSet = new HashSet<>();
 	
 	
 	
