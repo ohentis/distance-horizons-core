@@ -422,7 +422,7 @@ public class LodRenderer
 				}
 				
 				profiler.popPush("Custom Objects");
-				GenericObjectRenderer.INSTANCE.render(renderEventParam);
+				GenericObjectRenderer.INSTANCE.render(renderEventParam, profiler);
 				
 				profiler.popPush("LOD cleanup");
 				
