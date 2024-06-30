@@ -19,6 +19,7 @@
 
 package com.seibel.distanthorizons.coreapi.util.math;
 
+import com.seibel.distanthorizons.api.objects.math.DhApiVec3f;
 import com.seibel.distanthorizons.coreapi.util.MathUtil;
 
 /**
@@ -55,6 +56,15 @@ public class Vec3f
 		this.y = y;
 		this.z = z;
 	}
+	
+	public Vec3f(DhApiVec3f pos)
+	{
+		this.x = pos.x;
+		this.y = pos.y;
+		this.z = pos.z;
+	}
+	
+	
 	
 	@Override
 	public boolean equals(Object obj)

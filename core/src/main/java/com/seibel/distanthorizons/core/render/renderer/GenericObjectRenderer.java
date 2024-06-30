@@ -25,6 +25,7 @@ import com.seibel.distanthorizons.api.enums.config.EDhApiLoggerMode;
 import com.seibel.distanthorizons.api.interfaces.render.IDhApiRenderableBoxGroup;
 import com.seibel.distanthorizons.api.interfaces.render.IDhApiCustomRenderRegister;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
+import com.seibel.distanthorizons.api.objects.math.DhApiVec3f;
 import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBox;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.ConfigBasedSpamLogger;
@@ -223,14 +224,14 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 					new Color(Color.MAGENTA.getRed(), Color.MAGENTA.getGreen(), Color.MAGENTA.getBlue())));
 		}
 		IDhApiRenderableBoxGroup relativePosCubeGroup = DhApi.Delayed.renderRegister.createRelativePositionedGroup(
-				24f, 140f, 24f,
+				new DhApiVec3f(24f, 140f, 24f),
 				relCubeList);
 		relativePosCubeGroup.setPreRenderFunc((event) -> 
 		{
-			float x = relativePosCubeGroup.getOriginBlockX();
-			x += event.partialTicks / 2;
-			x %= 32;
-			relativePosCubeGroup.setOriginBlockPos(x, relativePosCubeGroup.getOriginBlockY(), relativePosCubeGroup.getOriginBlockZ());
+			DhApiVec3f pos = relativePosCubeGroup.getOriginBlockPos();
+			pos.x += event.partialTicks / 2;
+			pos.x %= 32;
+			relativePosCubeGroup.setOriginBlockPos(pos);
 		});
 		DhApi.Delayed.renderRegister.add(relativePosCubeGroup);
 		
@@ -249,17 +250,17 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 			}
 		}
 		IDhApiRenderableBoxGroup massRelativePosCubeGroup = DhApi.Delayed.renderRegister.createRelativePositionedGroup(
-				-25f, 140f, 0f,
+				new DhApiVec3f(-25f, 140f, 0f),
 				massRelCubeList);
 		massRelativePosCubeGroup.setPreRenderFunc((event) ->
 		{
-			float y = massRelativePosCubeGroup.getOriginBlockY();
-			y += event.partialTicks / 4;
-			if (y > 150f)
+			DhApiVec3f blockPos = massRelativePosCubeGroup.getOriginBlockPos();
+			blockPos.y += event.partialTicks / 4;
+			if (blockPos.y > 150f)
 			{
-				y = 140f;
+				blockPos.y = 140f;
 			}
-			massRelativePosCubeGroup.setOriginBlockPos(massRelativePosCubeGroup.getOriginBlockX(), y, massRelativePosCubeGroup.getOriginBlockZ());
+			massRelativePosCubeGroup.setOriginBlockPos(blockPos);
 		});
 		DhApi.Delayed.renderRegister.add(massRelativePosCubeGroup);
 		
@@ -303,12 +304,12 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 	}
 	
 	@Override 
-	public IDhApiRenderableBoxGroup createRelativePositionedGroup(float originBlockX, float originBlockY, float originBlockZ, List<DhApiRenderableBox> cubeList)
-	{ return new DhApiRenderableBoxGroup(originBlockX, originBlockY, originBlockZ, cubeList, true); }
+	public IDhApiRenderableBoxGroup createRelativePositionedGroup(DhApiVec3f originBlockPos, List<DhApiRenderableBox> cubeList)
+	{ return new DhApiRenderableBoxGroup(new Vec3f(originBlockPos), cubeList, true); }
 	
 	@Override 
 	public IDhApiRenderableBoxGroup createAbsolutePositionedGroup(List<DhApiRenderableBox> boxList)
-	{ return new DhApiRenderableBoxGroup(0, 0, 0, boxList, false); }
+	{ return new DhApiRenderableBoxGroup(new Vec3f(0, 0, 0), boxList, false); }
 	
 	
 	
@@ -457,9 +458,9 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		
 		this.shader.setUniform(this.instancedShaderOffsetUniformLocation, 
 				new Vec3f(
-					boxGroup.originBlockX, 
-					boxGroup.originBlockY, 
-					boxGroup.originBlockZ
+					boxGroup.originBlockPos.x, 
+					boxGroup.originBlockPos.y, 
+					boxGroup.originBlockPos.z
 				));
 		
 		this.shader.setUniform(this.instancedShaderCameraPosUniformLocation, 
@@ -547,9 +548,9 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		float originOffsetZ = 0;
 		if (cubeGroup.positionCubesRelativeToGroupOrigin)
 		{
-			originOffsetX = cubeGroup.originBlockX;
-			originOffsetY = cubeGroup.originBlockY;
-			originOffsetZ = cubeGroup.originBlockZ;
+			originOffsetX = cubeGroup.originBlockPos.x;
+			originOffsetY = cubeGroup.originBlockPos.y;
+			originOffsetZ = cubeGroup.originBlockPos.z;
 		}
 		
 		Mat4f boxTransform = Mat4f.createTranslateMatrix(
@@ -590,9 +591,7 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		
 		private final ArrayList<DhApiRenderableBox> cubeList;
 		
-		private float originBlockX;
-		private float originBlockY;
-		private float originBlockZ;
+		private final Vec3f originBlockPos;
 		
 		@Nullable
 		public Consumer<DhApiRenderParam> beforeRenderFunc;
@@ -612,25 +611,21 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		public long getId() { return this.id; }
 		
 		@Override
-		public void setOriginBlockPos(float x, float y, float z)
+		public void setOriginBlockPos(DhApiVec3f pos)
 		{
-			this.originBlockX = x;
-			this.originBlockY = y;
-			this.originBlockZ = z;
+			this.originBlockPos.x = pos.x;
+			this.originBlockPos.y = pos.y;
+			this.originBlockPos.z = pos.z;
 		}
 		
 		@Override
-		public float getOriginBlockX() { return this.originBlockX; }
-		@Override
-		public float getOriginBlockY() { return this.originBlockY; }
-		@Override
-		public float getOriginBlockZ() { return this.originBlockZ; }
+		public DhApiVec3f getOriginBlockPos() { return new DhApiVec3f(this.originBlockPos.x, this.originBlockPos.y, this.originBlockPos.z); }
 		
 		
 		
 		// constructor //
 		
-		public DhApiRenderableBoxGroup(float originBlockX, float originBlockY, float originBlockZ, List<DhApiRenderableBox> cubeList, boolean positionCubesRelativeToGroupOrigin)
+		public DhApiRenderableBoxGroup(Vec3f originBlockPos, List<DhApiRenderableBox> cubeList, boolean positionCubesRelativeToGroupOrigin)
 		{
 			// TODO save to database
 			// TODO when?
@@ -638,9 +633,7 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 			this.id = NEXT_ID_ATOMIC_INT.getAndIncrement();
 			this.cubeList = new ArrayList<>(cubeList);
 			
-			this.originBlockX = originBlockX;
-			this.originBlockY = originBlockY;
-			this.originBlockZ = originBlockZ;
+			this.originBlockPos = originBlockPos;
 			this.positionCubesRelativeToGroupOrigin = positionCubesRelativeToGroupOrigin;
 		}
 		

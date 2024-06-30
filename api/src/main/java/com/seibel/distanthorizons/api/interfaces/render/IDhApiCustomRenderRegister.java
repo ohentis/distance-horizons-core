@@ -1,5 +1,6 @@
 package com.seibel.distanthorizons.api.interfaces.render;
 
+import com.seibel.distanthorizons.api.objects.math.DhApiVec3f;
 import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBox;
 
 import java.util.List;
@@ -12,7 +13,7 @@ public interface IDhApiCustomRenderRegister
 	
 	
 	IDhApiRenderableBoxGroup createForSingleBox(DhApiRenderableBox cube);
-	IDhApiRenderableBoxGroup createRelativePositionedGroup(float originBlockX, float originBlockY, float originBlockZ, List<DhApiRenderableBox> cubeList);
+	IDhApiRenderableBoxGroup createRelativePositionedGroup(DhApiVec3f originBlockPos, List<DhApiRenderableBox> cubeList);
 	IDhApiRenderableBoxGroup createAbsolutePositionedGroup(List<DhApiRenderableBox> cubeList);
 	
 }
