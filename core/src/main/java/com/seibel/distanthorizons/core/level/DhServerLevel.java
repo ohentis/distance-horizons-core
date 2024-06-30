@@ -241,6 +241,7 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 			// This semaphore is intentionally acquired forever
 			entry.requestCollectionSemaphore.acquireUninterruptibly(Short.MAX_VALUE);
 			
+			FullDataSourceResponseMessage response = new FullDataSourceResponseMessage(entry.fullDataSource);
 			for (FullDataSourceRequestMessage msg : entry.requestMessages.values())
 			{
 				this.fullDataRequests.remove(msg.futureId);
@@ -252,7 +253,7 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 				}
 				
 				serverPlayerState.getRateLimiterSet(this).fullDataRequestConcurrencyLimiter.release();
-				msg.sendResponse(new FullDataSourceResponseMessage(entry.fullDataSource));
+				msg.sendResponse(response);
 			}
 		}
 	}
@@ -265,6 +266,7 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 			return this.getFullDataProvider().updateDataSourceAsync(data);
 		}
 		
+		FullDataPartialUpdateMessage updateMessage = new FullDataPartialUpdateMessage(this.serverLevelWrapper, data);
 		for (ServerPlayerState serverPlayerState : this.remotePlayerConnectionHandler.getConnectedPlayers())
 		{
 			if (!serverPlayerState.config.isRealTimeUpdatesEnabled())
@@ -277,7 +279,7 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 			if (distanceFromPlayer >= serverPlayerState.serverPlayer().getViewDistance() &&
 					distanceFromPlayer <= serverPlayerState.config.getRenderDistanceRadius())
 			{
-				serverPlayerState.session.sendMessage(new FullDataPartialUpdateMessage(this.serverLevelWrapper, data));
+				serverPlayerState.session.sendMessage(updateMessage);
 			}
 		}
 		
