@@ -22,9 +22,6 @@ public class DhApiRenderableBox
 	
 	public Color color;
 	
-	/* TODO */
-	//public boolean fullBright = false;
-	
 	
 	
 	//==============//

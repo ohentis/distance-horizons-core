@@ -37,6 +37,7 @@ import com.seibel.distanthorizons.core.render.glObject.buffer.GLVertexBuffer;
 import com.seibel.distanthorizons.core.render.glObject.shader.ShaderProgram;
 import com.seibel.distanthorizons.core.render.glObject.vertexAttribute.AbstractVertexAttribute;
 import com.seibel.distanthorizons.core.render.glObject.vertexAttribute.VertexPointer;
+import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrapper;
 import com.seibel.distanthorizons.core.util.math.Mat4f;
@@ -100,12 +101,16 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 	
 	
 	// shader uniforms
-	private int directShaderTransformUniformLocation;
-	private int directShaderColorUniformLocation;
+	private int directShaderTransformUniform;
+	private int directShaderColorUniform;
 	
-	private int instancedShaderOffsetUniformLocation;
-	private int instancedShaderCameraPosUniformLocation;
-	private int instancedShaderProjectionModelViewMatrixUniformLocation;
+	private int instancedShaderOffsetUniform;
+	private int instancedShaderCameraPosUniform;
+	private int instancedShaderProjectionModelViewMatrixUniform;
+	
+	private int lightMapUniform;
+	private int skyLightUniform;
+	private int blockLightUniform;
 	
 	
 	// TODO may need to be double buffered to prevent rendering lag
@@ -171,7 +176,7 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		this.useInstancedRendering = this.vertexAttribDivisorSupported || this.instancedArraysSupported;
 		if (!this.useInstancedRendering)
 		{
-			LOGGER.warn("Instanced rendering not supported by this GPU, falling back to direct rendering. Generic object rendering may be slow.");
+			LOGGER.warn("Instanced rendering not supported by this GPU, falling back to direct rendering. Generic object rendering will be slow.");
 		}
 		
 		
@@ -186,12 +191,16 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 				this.useInstancedRendering ? "shaders/genericObject/instanced/frag.frag" : "shaders/genericObject/direct/frag.frag",
 				"fragColor", new String[]{"vPosition"});
 		
-		this.directShaderTransformUniformLocation = this.shader.tryGetUniformLocation("uTransform");
-		this.directShaderColorUniformLocation = this.shader.tryGetUniformLocation("uColor");
+		this.directShaderTransformUniform = this.shader.tryGetUniformLocation("uTransform");
+		this.directShaderColorUniform = this.shader.tryGetUniformLocation("uColor");
 		
-		this.instancedShaderOffsetUniformLocation = this.shader.tryGetUniformLocation("uOffset");
-		this.instancedShaderCameraPosUniformLocation = this.shader.tryGetUniformLocation("uCameraPos");
-		this.instancedShaderProjectionModelViewMatrixUniformLocation = this.shader.tryGetUniformLocation("uProjectionMvm");
+		this.instancedShaderOffsetUniform = this.shader.tryGetUniformLocation("uOffset");
+		this.instancedShaderCameraPosUniform = this.shader.tryGetUniformLocation("uCameraPos");
+		this.instancedShaderProjectionModelViewMatrixUniform = this.shader.tryGetUniformLocation("uProjectionMvm");
+		
+		this.lightMapUniform = this.shader.getUniformLocation("uLightMap");
+		this.skyLightUniform = this.shader.getUniformLocation("uSkyLight");
+		this.blockLightUniform = this.shader.getUniformLocation("uBlockLight");
 		
 		this.createBuffers();
 		
@@ -230,6 +239,8 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 						new DhApiVec3f(0f,0f,0f), new DhApiVec3f(16f,190f,16f),
 						new Color(Color.CYAN.getRed(), Color.CYAN.getGreen(), Color.CYAN.getBlue(), 125))
 		);
+		singleGiantBoxGroup.setSkyLight(LodUtil.MAX_MC_LIGHT);
+		singleGiantBoxGroup.setBlockLight(LodUtil.MAX_MC_LIGHT);
 		DhApi.Delayed.renderRegister.add(singleGiantBoxGroup);
 		
 		
@@ -239,6 +250,8 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 						new DhApiVec3f(16f,0f,31f), new DhApiVec3f(17f,2000f,32f),
 						new Color(Color.GREEN.getRed(), Color.GREEN.getGreen(), Color.GREEN.getBlue(), 125))
 		);
+		singleTallBoxGroup.setSkyLight(LodUtil.MAX_MC_LIGHT);
+		singleTallBoxGroup.setBlockLight(LodUtil.MAX_MC_LIGHT);
 		DhApi.Delayed.renderRegister.add(singleTallBoxGroup);
 		
 		
@@ -477,22 +490,26 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		
 		boxGroup.updateVertexAttributeData();
 		
-		this.shader.setUniform(this.instancedShaderOffsetUniformLocation, 
+		this.shader.setUniform(this.instancedShaderOffsetUniform, 
 				new Vec3f(
 					boxGroup.originBlockPos.x, 
 					boxGroup.originBlockPos.y, 
 					boxGroup.originBlockPos.z
 				));
 		
-		this.shader.setUniform(this.instancedShaderCameraPosUniformLocation, 
+		this.shader.setUniform(this.instancedShaderCameraPosUniform, 
 				new Vec3f(
 					camPos.x,
 					camPos.y,
 					camPos.z
 				));
 		
-		this.shader.setUniform(this.instancedShaderProjectionModelViewMatrixUniformLocation,
+		this.shader.setUniform(this.instancedShaderProjectionModelViewMatrixUniform,
 				projectionMvmMatrix);
+		
+		this.shader.setUniform(this.lightMapUniform, 0); // TODO this should probably be passed in
+		this.shader.setUniform(this.skyLightUniform, boxGroup.skyLight);
+		this.shader.setUniform(this.blockLightUniform, boxGroup.blockLight);
 		
 		
 		
@@ -555,6 +572,10 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 	
 	private void renderBoxGroupDirect(RenderableBoxGroup boxGroup, Mat4f transformMatrix, Vec3f camPos)
 	{
+		this.shader.setUniform(this.lightMapUniform, 0); // TODO this should probably be passed in
+		this.shader.setUniform(this.skyLightUniform, boxGroup.skyLight);
+		this.shader.setUniform(this.blockLightUniform, boxGroup.blockLight);
+		
 		for (DhApiRenderableBox box : boxGroup.boxList)
 		{
 			renderBox(boxGroup, box, transformMatrix, camPos);
@@ -584,9 +605,9 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 				box.maxPos.z - box.minPos.z));
 		Mat4f transformMatrix = transformationMatrix.copy();
 		transformMatrix.multiply(boxTransform);
-		this.shader.setUniform(this.directShaderTransformUniformLocation, transformMatrix);
+		this.shader.setUniform(this.directShaderTransformUniform, transformMatrix);
 		
-		this.shader.setUniform(this.directShaderColorUniformLocation, box.color);
+		this.shader.setUniform(this.directShaderColorUniform, box.color);
 		
 		GL32.glDrawElements(GL32.GL_TRIANGLES, SOLID_BOX_INDICES.length, GL32.GL_UNSIGNED_INT, 0);
 	}
@@ -613,6 +634,9 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		private final ArrayList<DhApiRenderableBox> boxList;
 		
 		private final Vec3f originBlockPos;
+		
+		public int skyLight = 15;
+		public int blockLight = 0;
 		
 		@Nullable
 		public Consumer<DhApiRenderParam> beforeRenderFunc;
@@ -644,8 +668,35 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		public DhApiVec3f getOriginBlockPos() { return new DhApiVec3f(this.originBlockPos.x, this.originBlockPos.y, this.originBlockPos.z); }
 		
 		
+		@Override
+		public void setSkyLight(int skyLight) 
+		{
+			if (skyLight < LodUtil.MIN_MC_LIGHT || skyLight > LodUtil.MAX_MC_LIGHT)
+			{
+				throw new IllegalArgumentException("Sky light ["+skyLight+"] must be between ["+LodUtil.MIN_MC_LIGHT+"] and ["+LodUtil.MAX_MC_LIGHT+"] (inclusive).");
+			}
+			this.skyLight = skyLight; 
+		}
+		@Override
+		public int getSkyLight() { return this.skyLight; }
 		
+		@Override
+		public void setBlockLight(int blockLight) 
+		{
+			if (blockLight < LodUtil.MIN_MC_LIGHT || blockLight > LodUtil.MAX_MC_LIGHT)
+			{
+				throw new IllegalArgumentException("Block light ["+blockLight+"] must be between ["+LodUtil.MIN_MC_LIGHT+"] and ["+LodUtil.MAX_MC_LIGHT+"] (inclusive).");
+			}
+			this.blockLight = blockLight; 
+		}
+		@Override
+		public int getBlockLight() { return this.blockLight; }
+		
+		
+		
+		//=============//
 		// constructor //
+		//=============//
 		
 		public RenderableBoxGroup(Vec3f originBlockPos, List<DhApiRenderableBox> boxList, boolean positionBoxesRelativeToGroupOrigin)
 		{

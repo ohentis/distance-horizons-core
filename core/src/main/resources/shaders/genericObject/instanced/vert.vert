@@ -7,6 +7,9 @@ layout (location = 3) in vec3 aScale;
 uniform vec3 uOffset;
 uniform vec3 uCameraPos;
 uniform mat4 uProjectionMvm;
+uniform int uSkyLight;
+uniform int uBlockLight;
+uniform sampler2D uLightMap;
 
 in vec3 vPosition;
 
@@ -34,5 +37,10 @@ void main()
     );
     
     gl_Position = uProjectionMvm * transform * vec4(vPosition, 1.0);
-    fColor = aColor;
+
+    float blockLight = (float(uBlockLight)+0.5) / 16.0;
+    float skyLight = (float(uSkyLight)+0.5) / 16.0;
+    vec4 lightColor = vec4(texture(uLightMap, vec2(blockLight, skyLight)).xyz, 1.0);
+    
+    fColor = lightColor * aColor;
 }

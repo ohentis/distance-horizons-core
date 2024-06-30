@@ -47,4 +47,12 @@ public interface IDhApiRenderableBoxGroup extends List<DhApiRenderableBox>
 	 */
 	void triggerBoxChange();
 	
+	/** Only accepts values between 0 and 15 */
+	void setSkyLight(int skyLight);
+	int getSkyLight();
+	
+	/** Only accepts values between 0 and 15 */
+	void setBlockLight(int blockLight);
+	int getBlockLight();
+	
 }
