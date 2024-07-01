@@ -68,7 +68,7 @@ public class DhClientServerLevel extends AbstractDhLevel implements IDhClientLev
 		this.serverLevelWrapper = serverLevelWrapper;
 		this.serverside = new ServerLevelModule(this, saveStructure);
 		this.clientside = new ClientLevelModule(this);
-		this.createAndSetChunkHashRepo(this.serverside.fullDataFileHandler.repo.databaseFile);
+		this.createAndSetSupportingRepos(this.serverside.fullDataFileHandler.repo.databaseFile);
 		
 		LOGGER.info("Started " + DhClientServerLevel.class.getSimpleName() + " for " + serverLevelWrapper + " with saves at " + saveStructure);
 	}

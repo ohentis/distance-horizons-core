@@ -74,6 +74,7 @@ import java.util.stream.Stream;
  */
 public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 {
+	@Deprecated
 	public static GenericObjectRenderer INSTANCE = new GenericObjectRenderer();
 	
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();

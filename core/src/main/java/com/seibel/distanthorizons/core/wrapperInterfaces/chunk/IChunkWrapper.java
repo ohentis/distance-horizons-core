@@ -22,13 +22,16 @@ package com.seibel.distanthorizons.core.wrapperInterfaces.chunk;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
+import com.seibel.distanthorizons.core.sql.dto.BeaconBeamDTO;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IBindable;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
 
+import java.awt.*;
 import java.util.ArrayList;
+import java.util.List;
 
 public interface IChunkWrapper extends IBindable
 {
@@ -243,5 +246,24 @@ public interface IChunkWrapper extends IBindable
 		return hash;
 	}
 	
+	default List<BeaconBeamDTO> getAllActiveBeacons()
+	{
+		ArrayList<BeaconBeamDTO> beaconPosList = new ArrayList<>();
+		
+		// since beacons emit light we can check only the positions that are emitting light
+		ArrayList<DhBlockPos> blockPosList = this.getBlockLightPosList();
+		for (int i = 0; i < blockPosList.size(); i++)
+		{
+			DhBlockPos pos = blockPosList.get(i).convertToChunkRelativePos();
+			IBlockStateWrapper block = this.getBlockState(pos);
+			if (block.getSerialString().equalsIgnoreCase("minecraft:beacon"))
+			{
+				BeaconBeamDTO beam = new BeaconBeamDTO(pos, Color.WHITE); // TODO
+				beaconPosList.add(beam);
+			}
+		}
+		
+		return beaconPosList;
+	}
 	
 }

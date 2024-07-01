@@ -26,10 +26,12 @@ import com.seibel.distanthorizons.core.generation.DhLightingEngine;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
+import com.seibel.distanthorizons.core.pos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
+import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
-import com.seibel.distanthorizons.core.util.LodUtil;
+import com.seibel.distanthorizons.core.sql.dto.BeaconBeamDTO;
 import com.seibel.distanthorizons.core.util.TimerUtil;
 import com.seibel.distanthorizons.core.util.objects.Pair;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
@@ -344,6 +346,12 @@ public class SharedApi
 						
 						DhLightingEngine.INSTANCE.lightChunk(chunkWrapper, nearbyChunkList, dhLevel.hasSkyLight() ? 15 : 0);
 					}
+					
+					
+					// get this chunk's active beacons
+					List<BeaconBeamDTO> beaconBeamList = chunkWrapper.getAllActiveBeacons();
+					dhLevel.ensureBeaconBeamsAtPos(DhSectionPos.encode(chunkWrapper.getChunkPos()), beaconBeamList);
+					
 					
 					dhLevel.updateChunkAsync(chunkWrapper);
 					dhLevel.setChunkHash(chunkWrapper.getChunkPos(), newChunkHash);

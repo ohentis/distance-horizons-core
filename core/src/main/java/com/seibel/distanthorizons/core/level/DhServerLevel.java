@@ -47,7 +47,7 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 		}
 		this.serverLevelWrapper = serverLevelWrapper;
 		this.serverside = new ServerLevelModule(this, saveStructure);
-		this.createAndSetChunkHashRepo(this.serverside.fullDataFileHandler.repo.databaseFile);
+		this.createAndSetSupportingRepos(this.serverside.fullDataFileHandler.repo.databaseFile);
 		
 		LOGGER.info("Started DHLevel for {} with saves at {}", serverLevelWrapper, saveStructure);
 	}
