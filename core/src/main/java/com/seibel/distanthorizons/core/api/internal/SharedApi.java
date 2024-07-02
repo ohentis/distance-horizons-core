@@ -26,10 +26,8 @@ import com.seibel.distanthorizons.core.generation.DhLightingEngine;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
-import com.seibel.distanthorizons.core.pos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
-import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.sql.dto.BeaconBeamDTO;
 import com.seibel.distanthorizons.core.util.TimerUtil;
@@ -350,7 +348,7 @@ public class SharedApi
 					
 					// get this chunk's active beacons
 					List<BeaconBeamDTO> beaconBeamList = chunkWrapper.getAllActiveBeacons();
-					dhLevel.ensureBeaconBeamsAtPos(DhSectionPos.encode(chunkWrapper.getChunkPos()), beaconBeamList);
+					dhLevel.setBeaconBeamsForChunk(chunkWrapper.getChunkPos(), beaconBeamList);
 					
 					
 					dhLevel.updateChunkAsync(chunkWrapper);

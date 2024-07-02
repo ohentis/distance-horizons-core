@@ -254,11 +254,11 @@ public interface IChunkWrapper extends IBindable
 		ArrayList<DhBlockPos> blockPosList = this.getBlockLightPosList();
 		for (int i = 0; i < blockPosList.size(); i++)
 		{
-			DhBlockPos pos = blockPosList.get(i).convertToChunkRelativePos();
-			IBlockStateWrapper block = this.getBlockState(pos);
+			DhBlockPos pos = blockPosList.get(i);
+			IBlockStateWrapper block = this.getBlockState(pos.convertToChunkRelativePos());
 			if (block.getSerialString().toLowerCase().contains("minecraft:beacon"))
 			{
-				BeaconBeamDTO beam = new BeaconBeamDTO(pos, Color.WHITE); // TODO
+				BeaconBeamDTO beam = new BeaconBeamDTO(blockPosList.get(i), Color.WHITE);
 				beaconPosList.add(beam);
 			}
 		}

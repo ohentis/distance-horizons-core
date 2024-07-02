@@ -121,7 +121,7 @@ public class BeaconBeamRepo extends AbstractDhRepo<DhBlockPos, BeaconBeamDTO>
 			"UPDATE "+this.getTableName()+" \n" +
 			"SET \n" +
 			"    ColorR = ?, ColorG = ?, ColorB = ?,  \n" +
-			"   ,LastModifiedUnixDateTime = ? \n" +
+			"    LastModifiedUnixDateTime = ? \n" +
 			"WHERE BlockPosX = ? AND BlockPosY = ? AND BlockPosZ = ?";
 		PreparedStatement statement = this.createPreparedStatement(sql);
 		
