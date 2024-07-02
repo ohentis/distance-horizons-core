@@ -21,10 +21,10 @@ package com.seibel.distanthorizons.core.sql.repo;
 
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
-import com.seibel.distanthorizons.core.pos.DhBlockPos;
+import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.sql.dto.BeaconBeamDTO;
-import com.seibel.distanthorizons.core.sql.dto.BeaconBeamDTO;
+import com.seibel.distanthorizons.core.util.LodUtil;
 import org.apache.logging.log4j.Logger;
 
 import java.awt.*;
@@ -145,20 +145,43 @@ public class BeaconBeamRepo extends AbstractDhRepo<DhBlockPos, BeaconBeamDTO>
 	// additional methods //
 	//====================//
 	
-	public List<BeaconBeamDTO> getAllBeamsForSectionPos(long pos)
+	public List<BeaconBeamDTO> getAllBeamsForPos(DhChunkPos chunkPos)
+	{
+		int minBlockX = chunkPos.getMinBlockX();
+		int minBlockZ = chunkPos.getMinBlockZ();
+		int maxBlockX = minBlockX + LodUtil.CHUNK_WIDTH;
+		int maxBlockZ = minBlockZ + LodUtil.CHUNK_WIDTH;
+		
+		return this.getAllBeamsInBlockPosRange(
+				minBlockX, minBlockZ,
+				maxBlockX, maxBlockZ
+		);
+	}
+	
+	public List<BeaconBeamDTO> getAllBeamsForPos(long pos)
 	{
 		int minBlockX = DhSectionPos.getMinCornerBlockX(pos);
 		int minBlockZ = DhSectionPos.getMinCornerBlockZ(pos);
 		int maxBlockX = minBlockX + DhSectionPos.getBlockWidth(pos);
 		int maxBlockZ = minBlockZ + DhSectionPos.getBlockWidth(pos);
 		
-		
+		return this.getAllBeamsInBlockPosRange(
+				minBlockX, minBlockZ,
+				maxBlockX, maxBlockZ
+			);
+	}
+	
+	public List<BeaconBeamDTO> getAllBeamsInBlockPosRange(
+			int minBlockX, int minBlockZ,
+			int maxBlockX, int maxBlockZ
+		)
+	{
 		List<Map<String, Object>> objectMapList = this.queryDictionary(
 				"SELECT * " +
-					"FROM "+this.getTableName()+" " +
-					"WHERE " +
-						"BlockPosX >= "+minBlockX+" AND BlockPosX <= "+maxBlockX+" " +
-						"AND BlockPosZ >= "+minBlockZ+" AND BlockPosX <= "+maxBlockZ);
+						"FROM "+this.getTableName()+" " +
+						"WHERE " +
+						minBlockX+" <= BlockPosX AND BlockPosX <= "+maxBlockX+" AND " +
+						minBlockZ+" <= BlockPosZ AND BlockPosZ <= "+maxBlockZ);
 		
 		ArrayList<BeaconBeamDTO> beamList = new ArrayList<>();
 		for (Map<String, Object> objectMap : objectMapList)

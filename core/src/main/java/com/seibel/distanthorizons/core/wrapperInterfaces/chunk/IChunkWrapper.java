@@ -255,15 +255,48 @@ public interface IChunkWrapper extends IBindable
 		for (int i = 0; i < blockPosList.size(); i++)
 		{
 			DhBlockPos pos = blockPosList.get(i);
-			IBlockStateWrapper block = this.getBlockState(pos.convertToChunkRelativePos());
+			DhBlockPos relPos = pos.convertToChunkRelativePos();
+			
+			IBlockStateWrapper block = this.getBlockState(relPos);
 			if (block.getSerialString().toLowerCase().contains("minecraft:beacon"))
 			{
-				BeaconBeamDTO beam = new BeaconBeamDTO(blockPosList.get(i), Color.WHITE);
-				beaconPosList.add(beam);
+				if (isBeaconActive(relPos.x, relPos.y, relPos.z, this))
+				{
+					BeaconBeamDTO beam = new BeaconBeamDTO(blockPosList.get(i), Color.WHITE);
+					beaconPosList.add(beam);
+				}
 			}
 		}
 		
 		return beaconPosList;
 	}
+	static boolean isBeaconActive(int relBlockX, int y, int relBlockZ, IChunkWrapper chunkWrapper) 
+	{
+		for (int x = -1; x<= 1; x++) 
+		{
+			for (int z = -1; z <= 1; z++)
+			{
+				if ((relBlockX + x < 0 || relBlockX + x >= LodUtil.CHUNK_WIDTH)
+					|| (relBlockZ + z < 0 || relBlockZ + z >= LodUtil.CHUNK_WIDTH)) 
+				{
+					// if the beacon is on the border of a chunk and all other blocks are there, assume it's complete
+					//TODO! Check adjacent chunk, if possible
+					continue;
+				}
+				String blockId = chunkWrapper.getBlockState(relBlockX + x, y -1, relBlockZ + z).getSerialString();
+				
+				if (!(blockId.contains("diamond_block")
+						|| blockId.contains("iron_block")
+						|| blockId.contains("emerald_block")
+						|| blockId.contains("netherite_block")
+						|| blockId.contains("gold_block"))) 
+				{
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+	
 	
 }

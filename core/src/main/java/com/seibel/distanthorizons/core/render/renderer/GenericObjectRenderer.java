@@ -74,6 +74,7 @@ import java.util.stream.Stream;
  */
 public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 {
+	// TODO should be level specific, not global
 	@Deprecated
 	public static GenericObjectRenderer INSTANCE = new GenericObjectRenderer();
 	

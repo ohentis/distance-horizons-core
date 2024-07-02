@@ -191,7 +191,7 @@ public abstract class AbstractDhLevel implements IDhLevel
 	{
 		if (this.beaconBeamRepo != null)
 		{
-			return this.beaconBeamRepo.getAllBeamsForSectionPos(pos);
+			return this.beaconBeamRepo.getAllBeamsForPos(pos);
 		}
 		else
 		{
@@ -221,7 +221,7 @@ public abstract class AbstractDhLevel implements IDhLevel
 			}
 			
 			// get existing beams
-			List<BeaconBeamDTO> existingBeamList = this.beaconBeamRepo.getAllBeamsForSectionPos(pos);
+			List<BeaconBeamDTO> existingBeamList = this.beaconBeamRepo.getAllBeamsForPos(chunkPos);
 			HashMap<DhBlockPos, BeaconBeamDTO> existingBeamByPos = new HashMap<>(existingBeamList.size());
 			for (int i = 0; i < existingBeamList.size(); i++)
 			{
@@ -296,7 +296,7 @@ public abstract class AbstractDhLevel implements IDhLevel
 		if (this.beaconBeamRepo != null)
 		{
 			// get beams in pos
-			List<BeaconBeamDTO> existingBeamList = this.beaconBeamRepo.getAllBeamsForSectionPos(pos);
+			List<BeaconBeamDTO> existingBeamList = this.beaconBeamRepo.getAllBeamsForPos(pos);
 			for (int i = 0; i < existingBeamList.size(); i++)
 			{
 				BeaconBeamDTO beam = existingBeamList.get(i);
@@ -334,7 +334,7 @@ public abstract class AbstractDhLevel implements IDhLevel
 		if (this.beaconBeamRepo != null)
 		{
 			// get beams in pos
-			List<BeaconBeamDTO> existingBeamList = this.beaconBeamRepo.getAllBeamsForSectionPos(pos);
+			List<BeaconBeamDTO> existingBeamList = this.beaconBeamRepo.getAllBeamsForPos(pos);
 			for (int i = 0; i < existingBeamList.size(); i++)
 			{
 				BeaconBeamDTO beam = existingBeamList.get(i);
