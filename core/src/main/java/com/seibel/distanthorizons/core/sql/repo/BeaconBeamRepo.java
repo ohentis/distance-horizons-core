@@ -22,6 +22,7 @@ package com.seibel.distanthorizons.core.sql.repo;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
+import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.sql.dto.BeaconBeamDTO;
 import com.seibel.distanthorizons.core.sql.dto.BeaconBeamDTO;
 import org.apache.logging.log4j.Logger;
@@ -30,6 +31,7 @@ import java.awt.*;
 import java.io.File;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -145,7 +147,26 @@ public class BeaconBeamRepo extends AbstractDhRepo<DhBlockPos, BeaconBeamDTO>
 	
 	public List<BeaconBeamDTO> getAllBeamsForSectionPos(long pos)
 	{
-		return null;
+		int minBlockX = DhSectionPos.getMinCornerBlockX(pos);
+		int minBlockZ = DhSectionPos.getMinCornerBlockZ(pos);
+		int maxBlockX = minBlockX + DhSectionPos.getBlockWidth(pos);
+		int maxBlockZ = minBlockZ + DhSectionPos.getBlockWidth(pos);
+		
+		
+		List<Map<String, Object>> objectMapList = this.queryDictionary(
+				"SELECT * " +
+					"FROM "+this.getTableName()+" " +
+					"WHERE " +
+						"BlockPosX >= "+minBlockX+" AND BlockPosX <= "+maxBlockX+" " +
+						"AND BlockPosZ >= "+minBlockZ+" AND BlockPosX <= "+maxBlockZ);
+		
+		ArrayList<BeaconBeamDTO> beamList = new ArrayList<>();
+		for (Map<String, Object> objectMap : objectMapList)
+		{
+			beamList.add(this.convertDictionaryToDto(objectMap));
+		}
+		
+		return beamList;
 	}
 	
 	

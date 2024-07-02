@@ -35,6 +35,7 @@ import com.seibel.distanthorizons.core.sql.dto.BeaconBeamDTO;
 import com.seibel.distanthorizons.core.sql.dto.ChunkHashDTO;
 import com.seibel.distanthorizons.core.sql.repo.BeaconBeamRepo;
 import com.seibel.distanthorizons.core.sql.repo.ChunkHashRepo;
+import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
 import org.apache.logging.log4j.Logger;
@@ -247,14 +248,16 @@ public abstract class AbstractDhLevel implements IDhLevel
 							new DhApiVec3f(newBeam.pos.x+1, 2_000, newBeam.pos.z+1),
 							newBeam.color
 					));
-					beamRenderGroupByPos.put(newBeam.pos, beaconBox);
+					beaconBox.setBlockLight(LodUtil.MAX_MC_LIGHT);
+					beaconBox.setSkyLight(LodUtil.MAX_MC_LIGHT);
+					this.beamRenderGroupByPos.put(newBeam.pos, beaconBox);
 					GenericObjectRenderer.INSTANCE.add(beaconBox);
 				}
 				else if (existingBeam != null && newBeam == null)
 				{
 					// beam no longer exists at position, remove
 					this.beaconBeamRepo.deleteWithKey(beaconPos);
-					IDhApiRenderableBoxGroup beaconBox = beamRenderGroupByPos.remove(newBeam.pos);
+					IDhApiRenderableBoxGroup beaconBox = this.beamRenderGroupByPos.remove(existingBeam.pos);
 					if (beaconBox != null)
 					{
 						GenericObjectRenderer.INSTANCE.remove(beaconBox.getId());

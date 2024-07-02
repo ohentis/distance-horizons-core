@@ -120,11 +120,6 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 	private final ReentrantLock mapModifyLock = new ReentrantLock();
 	
 	
-	// TODO just for testing
-	@Deprecated
-	public final HashSet<DhBlockPos> testBeaconPosSet = new HashSet<>();
-	
-	
 	
 	/** A box from 0,0,0 to 1,1,1 */
 	private static final float[] BOX_VERTICES = {

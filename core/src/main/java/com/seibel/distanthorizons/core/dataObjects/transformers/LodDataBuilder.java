@@ -218,27 +218,6 @@ public class LodDataBuilder
 								biome = newBiome;
 								blockState = newBlockState;
 								
-								// TODO temp
-								if (blockState.getSerialString().contains("beacon"))
-								{
-									int blockX = chunkWrapper.getChunkPos().x * LodUtil.CHUNK_WIDTH + relBlockX;
-									int blockZ = chunkWrapper.getChunkPos().z * LodUtil.CHUNK_WIDTH + relBlockZ;
-									
-									if (GenericObjectRenderer.INSTANCE.testBeaconPosSet
-											.add(new DhBlockPos(blockX, y, blockZ)))
-									{
-										IDhApiRenderableBoxGroup beaconBeam = GenericObjectRenderer.INSTANCE.createForSingleBox(
-											new DhApiRenderableBox(
-												new DhApiVec3f(blockX, y+1, blockZ),
-												new DhApiVec3f(blockX+1, 5_000, blockZ+1),
-												Color.WHITE)
-										);
-										beaconBeam.setBlockLight(15);
-										beaconBeam.setSkyLight(15);
-										GenericObjectRenderer.INSTANCE.add(beaconBeam);
-									}
-								}
-								
 								mappedId = dataSource.mapping.addIfNotPresentAndGetId(biome, blockState);
 								blockLight = newBlockLight;
 								skyLight = newSkyLight;
