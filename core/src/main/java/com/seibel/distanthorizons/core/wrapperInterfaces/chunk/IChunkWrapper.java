@@ -19,6 +19,7 @@
 
 package com.seibel.distanthorizons.core.wrapperInterfaces.chunk;
 
+import com.seibel.distanthorizons.core.generation.AdjacentChunkHolder;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
@@ -31,12 +32,23 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
 
 import java.awt.*;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 
 public interface IChunkWrapper extends IBindable
 {
 	/** useful for debugging, but can slow down chunk operations quite a bit due to being called every time. */
 	boolean RUN_RELATIVE_POS_INDEX_VALIDATION = ModInfo.IS_DEV_BUILD;
+	
+	/** should be all lowercase */
+	List<String> BEACON_BASE_BLOCK_NAME_LIST = Arrays.asList(
+			"iron_block",
+			"gold_block",
+			"diamond_block",
+			"emerald_block",
+			"netherite_block"
+	);
 	
 	
 	
@@ -246,9 +258,11 @@ public interface IChunkWrapper extends IBindable
 		return hash;
 	}
 	
-	default List<BeaconBeamDTO> getAllActiveBeacons()
+	default List<BeaconBeamDTO> getAllActiveBeacons(ArrayList<IChunkWrapper> neighbourChunkList)
 	{
 		ArrayList<BeaconBeamDTO> beaconPosList = new ArrayList<>();
+		
+		AdjacentChunkHolder adjacentChunkHolder = new AdjacentChunkHolder(this, neighbourChunkList);
 		
 		// since beacons emit light we can check only the positions that are emitting light
 		ArrayList<DhBlockPos> blockPosList = this.getBlockLightPosList();
@@ -260,7 +274,7 @@ public interface IChunkWrapper extends IBindable
 			IBlockStateWrapper block = this.getBlockState(relPos);
 			if (block.getSerialString().toLowerCase().contains("minecraft:beacon"))
 			{
-				if (isBeaconActive(relPos.x, relPos.y, relPos.z, this))
+				if (isBeaconActive(pos, adjacentChunkHolder))
 				{
 					BeaconBeamDTO beam = new BeaconBeamDTO(blockPosList.get(i), Color.WHITE);
 					beaconPosList.add(beam);
@@ -270,31 +284,43 @@ public interface IChunkWrapper extends IBindable
 		
 		return beaconPosList;
 	}
-	static boolean isBeaconActive(int relBlockX, int y, int relBlockZ, IChunkWrapper chunkWrapper) 
+	static boolean isBeaconActive(DhBlockPos beaconPos, AdjacentChunkHolder chunkHolder) 
 	{
+		DhBlockPos beaconRelPos = beaconPos.convertToChunkRelativePos();
+		DhBlockPos baseRelPos = new DhBlockPos(0, beaconRelPos.y-1, 0);
+		
 		for (int x = -1; x<= 1; x++) 
 		{
 			for (int z = -1; z <= 1; z++)
 			{
-				if ((relBlockX + x < 0 || relBlockX + x >= LodUtil.CHUNK_WIDTH)
-					|| (relBlockZ + z < 0 || relBlockZ + z >= LodUtil.CHUNK_WIDTH)) 
-				{
-					// if the beacon is on the border of a chunk and all other blocks are there, assume it's complete
-					//TODO! Check adjacent chunk, if possible
-					continue;
-				}
-				String blockId = chunkWrapper.getBlockState(relBlockX + x, y -1, relBlockZ + z).getSerialString();
+				baseRelPos.x = beaconRelPos.x + x;
+				baseRelPos.z = beaconRelPos.z + z;
+				baseRelPos.mutateToChunkRelativePos(baseRelPos);
 				
-				if (!(blockId.contains("diamond_block")
-						|| blockId.contains("iron_block")
-						|| blockId.contains("emerald_block")
-						|| blockId.contains("netherite_block")
-						|| blockId.contains("gold_block"))) 
-				{
-					return false;
+				IChunkWrapper chunk = chunkHolder.getByBlockPos(beaconPos.x + x, beaconPos.z + z);
+				if (chunk != null)
+				{ 
+					String blockSerial = chunk.getBlockState(baseRelPos.x, baseRelPos.y, baseRelPos.z).getSerialString();
+					
+					boolean baseBlockFound = false;
+					for (int i = 0; i < BEACON_BASE_BLOCK_NAME_LIST.size(); i++)
+					{
+						String baseBlockName = BEACON_BASE_BLOCK_NAME_LIST.get(i);
+						if (blockSerial.contains(baseBlockName))
+						{
+							baseBlockFound = true;
+							break;
+						}
+					}
+					
+					if (!baseBlockFound)
+					{
+						return false;
+					}
 				}
 			}
 		}
+		
 		return true;
 	}
 	

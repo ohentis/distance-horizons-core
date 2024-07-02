@@ -306,64 +306,6 @@ public class DhLightingEngine
 		
 	}
 	
-	/** holds the adjacent chunks without having to create new Pos objects */
-	private static class AdjacentChunkHolder
-	{
-		final IChunkWrapper[] chunkArray = new IChunkWrapper[9];		
-		
-		
-		public AdjacentChunkHolder(IChunkWrapper centerWrapper) { this.chunkArray[4] = centerWrapper; }
-		
-		
-		public void add(IChunkWrapper centerWrapper) 
-		{
-			DhChunkPos centerPos = this.chunkArray[4].getChunkPos();
-			DhChunkPos offsetPos = centerWrapper.getChunkPos();
-			
-			int offsetX = offsetPos.x - centerPos.x;
-			if (offsetX < -1 || offsetX > 1)
-			{
-				return;
-			}
-			
-			int offsetZ = offsetPos.z - centerPos.z;
-			if (offsetZ < -1 || offsetZ > 1)
-			{
-				return;
-			}
-			
-			// equivalent to 4 + offsetX + (offsetZ * 3).
-			this.chunkArray[4 + offsetX + offsetZ + (offsetZ << 1)] = centerWrapper;
-		}
-
-		public IChunkWrapper getByBlockPos(int blockX, int blockZ)
-		{
-			int chunkX = BitShiftUtil.divideByPowerOfTwo(blockX, 4);
-			int chunkZ = BitShiftUtil.divideByPowerOfTwo(blockZ, 4);
-			IChunkWrapper centerChunk = this.chunkArray[4];
-			DhChunkPos centerPos = centerChunk.getChunkPos();
-			if (centerPos.x == chunkX && centerPos.z == chunkZ)
-			{
-				return centerChunk;
-			}
-			
-			int offsetX = chunkX - centerPos.x;
-			if (offsetX < -1 || offsetX > 1)
-			{
-				return null;
-			}
-			
-			int offsetZ = chunkZ - centerPos.z;
-			if (offsetZ < -1 || offsetZ > 1)
-			{
-				return null;
-			}
-			
-			// equivalent to 4 + offsetX + (offsetZ * 3).
-			return this.chunkArray[4 + offsetX + offsetZ + (offsetZ << 1)];
-		}
-	}
-	
 	/** 
 	 * Holds all potential {@link LightPos} objects a lighting task may need.
 	 * This is done so existing {@link LightPos} objects can be repurposed instead of destroyed,

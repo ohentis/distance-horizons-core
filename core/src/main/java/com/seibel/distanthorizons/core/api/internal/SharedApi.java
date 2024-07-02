@@ -311,6 +311,18 @@ public class SharedApi
 					}
 					
 					
+					// having a list of the nearby chunks is needed for lighting and beacon generation
+					ArrayList<IChunkWrapper> nearbyChunkList;
+					if (neighbourChunkList != null)
+					{
+						nearbyChunkList = neighbourChunkList;
+					}
+					else
+					{
+						nearbyChunkList = new ArrayList<>(1);
+						nearbyChunkList.add(chunkWrapper);
+					}
+					
 					
 					// Save or populate the chunk wrapper's lighting
 					// this is done so we don't have to worry about MC unloading the lighting data for this chunk
@@ -330,24 +342,13 @@ public class SharedApi
 					else
 					{
 						// generate the chunk's lighting, using neighboring chunks if present
-						
-						ArrayList<IChunkWrapper> nearbyChunkList;
-						if (neighbourChunkList != null)
-						{
-							nearbyChunkList = neighbourChunkList;
-						}
-						else
-						{
-							nearbyChunkList = new ArrayList<>(1);
-							nearbyChunkList.add(chunkWrapper);
-						}
-						
 						DhLightingEngine.INSTANCE.lightChunk(chunkWrapper, nearbyChunkList, dhLevel.hasSkyLight() ? 15 : 0);
 					}
 					
 					
+					
 					// get this chunk's active beacons
-					List<BeaconBeamDTO> beaconBeamList = chunkWrapper.getAllActiveBeacons();
+					List<BeaconBeamDTO> beaconBeamList = chunkWrapper.getAllActiveBeacons(nearbyChunkList);
 					dhLevel.setBeaconBeamsForChunk(chunkWrapper.getChunkPos(), beaconBeamList);
 					
 					
