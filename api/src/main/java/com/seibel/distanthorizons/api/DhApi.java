@@ -128,11 +128,11 @@ public class DhApi
 		 */
 		public static IDhApiWrapperFactory wrapperFactory = null;
 		
-		/**
-		 * Used to add custom objects to DH's render pass.
-		 * @since API 3.0.0 
-		 */
-		public static IDhApiCustomRenderRegister renderRegister = null;
+		///**
+		// * Used to add custom objects to DH's render pass.
+		// * @since API 3.0.0 
+		// */
+		//public static IDhApiCustomRenderRegister renderRegister = null;
 	}
 	
 	

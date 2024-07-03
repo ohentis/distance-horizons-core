@@ -100,6 +100,8 @@ public class LodRenderer
 	private final ReentrantLock setupLock = new ReentrantLock();
 	
 	public final RenderBufferHandler bufferHandler;
+	public final GenericObjectRenderer genericObjectRenderer;
+	
 	
 	// The shader program
 	IDhApiShaderProgram lodRenderProgram = null;
@@ -124,9 +126,10 @@ public class LodRenderer
 	// constructor //
 	//=============//
 	
-	public LodRenderer(RenderBufferHandler bufferHandler)
+	public LodRenderer(RenderBufferHandler bufferHandler, GenericObjectRenderer genericObjectRenderer)
 	{
 		this.bufferHandler = bufferHandler;
+		this.genericObjectRenderer = genericObjectRenderer;
 	}
 	
 	private boolean rendererClosed = false;
@@ -301,7 +304,7 @@ public class LodRenderer
 				
 				// custom objects
 				profiler.popPush("Custom Objects");
-				GenericObjectRenderer.INSTANCE.render(renderEventParam, profiler);
+				this.genericObjectRenderer.render(renderEventParam, profiler);
 				
 				
 				// SSAO

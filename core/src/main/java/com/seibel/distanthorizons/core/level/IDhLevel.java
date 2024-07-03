@@ -19,13 +19,16 @@
 
 package com.seibel.distanthorizons.core.level;
 
+import com.seibel.distanthorizons.api.interfaces.render.IDhApiCustomRenderRegister;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.file.fullDatafile.FullDataSourceProviderV2;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
+import com.seibel.distanthorizons.core.render.renderer.GenericObjectRenderer;
 import com.seibel.distanthorizons.core.sql.dto.BeaconBeamDTO;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -66,5 +69,11 @@ public interface IDhLevel extends AutoCloseable
 	
 	void addDebugMenuStringsToList(List<String> messageList);
 	
+	/** 
+	 * Will return null if the renderer isn't set up yet. <br>
+	 * Not supported on the server-side. 
+	 */
+	@Nullable
+	GenericObjectRenderer getGenericRenderer();
 	
 }

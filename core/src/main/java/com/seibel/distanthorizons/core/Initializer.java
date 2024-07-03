@@ -94,7 +94,7 @@ public class Initializer
 		DhApi.Delayed.terrainRepo = DhApiTerrainDataRepo.INSTANCE;
 		DhApi.Delayed.worldProxy = DhApiWorldProxy.INSTANCE;
 		DhApi.Delayed.renderProxy = DhApiRenderProxy.INSTANCE;
-		DhApi.Delayed.renderRegister = GenericObjectRenderer.INSTANCE;
+		//DhApi.Delayed.renderRegister = GenericObjectRenderer.INSTANCE;
 		DhApi.Delayed.wrapperFactory = SingletonInjector.INSTANCE.get(IWrapperFactory.class);
 		if (DhApi.Delayed.wrapperFactory == null)
 		{

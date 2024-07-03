@@ -321,6 +321,8 @@ public interface IChunkWrapper extends IBindable
 			}
 		}
 		
+		// TODO check if the sky is visible
+		
 		return true;
 	}
 	

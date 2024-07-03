@@ -29,6 +29,7 @@ import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
+import com.seibel.distanthorizons.core.render.renderer.GenericObjectRenderer;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
@@ -102,20 +103,7 @@ public class DhClientServerLevel extends AbstractDhLevel implements IDhClientLev
 		if (shouldDoWorldGen && !isWorldGenRunning)
 		{
 			// start world gen
-			
-			// create a new queue
 			this.serverside.worldGenModule.startWorldGen(this.serverside.fullDataFileHandler, new ServerLevelModule.WorldGenState(this));
-			
-			// TODO I think this used to queue the world gen
-			//  is it still needed?
-			// populate the queue based on the current rendering tree
-			//ClientLevelModule.ClientRenderState renderState = this.clientside.ClientRenderStateRef.get();
-			//Iterator<QuadNode<LodRenderSection>> iterator = renderState.quadtree.leafNodeIterator();
-			//while (iterator.hasNext())
-			//{
-			//	QuadNode<LodRenderSection> node = iterator.next();
-			//	//this.serverside.dataFileHandler.getAsync(node.sectionPos);
-			//}
 		}
 		else if (!shouldDoWorldGen && isWorldGenRunning)
 		{
@@ -234,6 +222,14 @@ public class DhClientServerLevel extends AbstractDhLevel implements IDhClientLev
 		{
 			messageList.add(worldGenDisplayString);
 		}
+	}
+	
+	
+	@Override
+	public GenericObjectRenderer getGenericRenderer()
+	{
+		ClientLevelModule.ClientRenderState renderState = this.clientside.ClientRenderStateRef.get();
+		return (renderState != null) ? renderState.genericRenderer : null;
 	}
 	
 	

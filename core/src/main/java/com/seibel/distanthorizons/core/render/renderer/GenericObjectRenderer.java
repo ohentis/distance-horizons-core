@@ -74,10 +74,6 @@ import java.util.stream.Stream;
  */
 public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 {
-	// TODO should be level specific, not global
-	@Deprecated
-	public static GenericObjectRenderer INSTANCE = new GenericObjectRenderer();
-	
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	public static final ConfigBasedSpamLogger SPAM_LOGGER = new ConfigBasedSpamLogger(LogManager.getLogger(GenericObjectRenderer.class), () -> EDhApiLoggerMode.LOG_ALL_TO_CHAT, 1);
 	
@@ -164,7 +160,7 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 	// constructor //
 	//=============//
 	
-	private GenericObjectRenderer() { }
+	public GenericObjectRenderer() { }
 	
 	public void init()
 	{
@@ -237,27 +233,27 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 	private void addGenericDebugObjects()
 	{
 		// single giant box
-		IDhApiRenderableBoxGroup singleGiantBoxGroup = DhApi.Delayed.renderRegister.createForSingleBox(
+		IDhApiRenderableBoxGroup singleGiantBoxGroup = this.createForSingleBox(
 				new DhApiRenderableBox(
 						new DhApiVec3f(0f,0f,0f), new DhApiVec3f(16f,190f,16f),
 						new Color(Color.CYAN.getRed(), Color.CYAN.getGreen(), Color.CYAN.getBlue(), 125))
 		);
 		singleGiantBoxGroup.setSkyLight(LodUtil.MAX_MC_LIGHT);
 		singleGiantBoxGroup.setBlockLight(LodUtil.MAX_MC_LIGHT);
-		DhApi.Delayed.renderRegister.add(singleGiantBoxGroup);
-		
-		
+		this.add(singleGiantBoxGroup);
+
+
 		// single slender box
-		IDhApiRenderableBoxGroup singleTallBoxGroup = DhApi.Delayed.renderRegister.createForSingleBox(
+		IDhApiRenderableBoxGroup singleTallBoxGroup = this.createForSingleBox(
 				new DhApiRenderableBox(
 						new DhApiVec3f(16f,0f,31f), new DhApiVec3f(17f,2000f,32f),
 						new Color(Color.GREEN.getRed(), Color.GREEN.getGreen(), Color.GREEN.getBlue(), 125))
 		);
 		singleTallBoxGroup.setSkyLight(LodUtil.MAX_MC_LIGHT);
 		singleTallBoxGroup.setBlockLight(LodUtil.MAX_MC_LIGHT);
-		DhApi.Delayed.renderRegister.add(singleTallBoxGroup);
-		
-		
+		this.add(singleTallBoxGroup);
+
+
 		// absolute box group
 		ArrayList<DhApiRenderableBox> absBoxList = new ArrayList<>();
 		for (int i = 0; i < 18; i++)
@@ -266,10 +262,10 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 					new DhApiVec3f(0f+i,150f+i,24f), new DhApiVec3f(1f+i,151f+i,25f),
 					new Color(Color.ORANGE.getRed(), Color.ORANGE.getGreen(), Color.ORANGE.getBlue())));
 		}
-		IDhApiRenderableBoxGroup absolutePosBoxGroup = DhApi.Delayed.renderRegister.createAbsolutePositionedGroup(absBoxList);
-		DhApi.Delayed.renderRegister.add(absolutePosBoxGroup);
-		
-		
+		IDhApiRenderableBoxGroup absolutePosBoxGroup = this.createAbsolutePositionedGroup(absBoxList);
+		this.add(absolutePosBoxGroup);
+
+
 		// relative box group
 		ArrayList<DhApiRenderableBox> relBoxList = new ArrayList<>();
 		for (int i = 0; i < 8; i+=2)
@@ -278,7 +274,7 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 					new DhApiVec3f(0f,0f+i,0f), new DhApiVec3f(1f,1f+i,1f),
 					new Color(Color.MAGENTA.getRed(), Color.MAGENTA.getGreen(), Color.MAGENTA.getBlue())));
 		}
-		IDhApiRenderableBoxGroup relativePosBoxGroup = DhApi.Delayed.renderRegister.createRelativePositionedGroup(
+		IDhApiRenderableBoxGroup relativePosBoxGroup = this.createRelativePositionedGroup(
 				new DhApiVec3f(24f, 140f, 24f),
 				relBoxList);
 		relativePosBoxGroup.setPreRenderFunc((event) ->
@@ -288,9 +284,9 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 			pos.x %= 32;
 			relativePosBoxGroup.setOriginBlockPos(pos);
 		});
-		DhApi.Delayed.renderRegister.add(relativePosBoxGroup);
-		
-		
+		this.add(relativePosBoxGroup);
+
+
 		// massive relative box group
 		ArrayList<DhApiRenderableBox> massRelBoxList = new ArrayList<>();
 		for (int x = 0; x < 50*2; x+=2)
@@ -302,7 +298,7 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 						new Color(Color.RED.getRed(), Color.RED.getGreen(), Color.RED.getBlue())));
 			}
 		}
-		IDhApiRenderableBoxGroup massRelativePosBoxGroup = DhApi.Delayed.renderRegister.createRelativePositionedGroup(
+		IDhApiRenderableBoxGroup massRelativePosBoxGroup = this.createRelativePositionedGroup(
 				new DhApiVec3f(-25f, 140f, 0f),
 				massRelBoxList);
 		massRelativePosBoxGroup.setPreRenderFunc((event) ->
@@ -312,15 +308,15 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 			if (blockPos.y > 150f)
 			{
 				blockPos.y = 140f;
-				
+
 				Color newColor = (massRelativePosBoxGroup.get(0).color == Color.RED) ? Color.RED.darker() : Color.RED;
 				massRelativePosBoxGroup.forEach((box) -> { box.color = newColor; });
 				massRelativePosBoxGroup.triggerBoxChange();
 			}
-			
+
 			massRelativePosBoxGroup.setOriginBlockPos(blockPos);
 		});
-		DhApi.Delayed.renderRegister.add(massRelativePosBoxGroup);
+		this.add(massRelativePosBoxGroup);
 	}
 	
 	
@@ -522,16 +518,16 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		GL32.glBindBuffer(GL32.GL_ARRAY_BUFFER, boxGroup.instanceColorVbo);
 		GL32.glEnableVertexAttribArray(1);
 		GL32.glVertexAttribPointer(1, 4, GL32.GL_FLOAT, false, 4 * Float.BYTES, 0);
-		vertexAttribDivisor(1, 1);
+		this.vertexAttribDivisor(1, 1);
 		
 		GL32.glBindBuffer(GL32.GL_ARRAY_BUFFER, boxGroup.instanceTranslationVbo);
 		GL32.glEnableVertexAttribArray(2);
-		vertexAttribDivisor(2, 1);
+		this.vertexAttribDivisor(2, 1);
 		GL32.glVertexAttribPointer(2, 3, GL32.GL_FLOAT, false, 3 * Float.BYTES, 0);
 		
 		GL32.glBindBuffer(GL32.GL_ARRAY_BUFFER, boxGroup.instanceScaleVbo);
 		GL32.glEnableVertexAttribArray(3);
-		vertexAttribDivisor(3, 1);
+		this.vertexAttribDivisor(3, 1);
 		GL32.glVertexAttribPointer(3, 3, GL32.GL_FLOAT, false, 3 * Float.BYTES, 0);
 		
 		

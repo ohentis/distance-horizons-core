@@ -206,8 +206,9 @@ public abstract class AbstractDhLevel implements IDhLevel
 	@Override
 	public void setBeaconBeamsForChunk(DhChunkPos chunkPos, List<BeaconBeamDTO> newBeamList)
 	{
-		long pos = DhSectionPos.encode(chunkPos);
-		if (this.beaconBeamRepo != null)
+		GenericObjectRenderer genericObjectRenderer = this.getGenericRenderer();
+		if (this.beaconBeamRepo != null
+			&& genericObjectRenderer != null)
 		{
 			HashSet<DhBlockPos> allPosSet = new HashSet<>();
 			
@@ -252,7 +253,7 @@ public abstract class AbstractDhLevel implements IDhLevel
 					// new beam found, add to DB
 					this.beaconBeamRepo.save(newBeam);
 					
-					IDhApiRenderableBoxGroup beaconBox = GenericObjectRenderer.INSTANCE.createForSingleBox(new DhApiRenderableBox(
+					IDhApiRenderableBoxGroup beaconBox = genericObjectRenderer.createForSingleBox(new DhApiRenderableBox(
 							new DhApiVec3f(newBeam.pos.x, newBeam.pos.y+1, newBeam.pos.z),
 							new DhApiVec3f(newBeam.pos.x+1, 6_000, newBeam.pos.z+1),
 							newBeam.color
@@ -271,7 +272,7 @@ public abstract class AbstractDhLevel implements IDhLevel
 						return refCount;
 					});
 					
-					GenericObjectRenderer.INSTANCE.add(beaconBox);
+					genericObjectRenderer.add(beaconBox);
 				}
 				else if (existingBeam != null && newBeam == null)
 				{
@@ -281,7 +282,7 @@ public abstract class AbstractDhLevel implements IDhLevel
 					IDhApiRenderableBoxGroup beaconBox = this.beamRenderGroupByBlockPos.remove(existingBeam.pos);
 					if (beaconBox != null)
 					{
-						GenericObjectRenderer.INSTANCE.remove(beaconBox.getId());
+						genericObjectRenderer.remove(beaconBox.getId());
 					}
 				}
 				
@@ -293,7 +294,9 @@ public abstract class AbstractDhLevel implements IDhLevel
 	@Override
 	public void loadBeaconBeamsInPos(long pos)
 	{
-		if (this.beaconBeamRepo != null)
+		GenericObjectRenderer genericObjectRenderer = this.getGenericRenderer();
+		if (this.beaconBeamRepo != null
+			&& genericObjectRenderer != null)
 		{
 			// get beams in pos
 			List<BeaconBeamDTO> existingBeamList = this.beaconBeamRepo.getAllBeamsForPos(pos);
@@ -301,7 +304,7 @@ public abstract class AbstractDhLevel implements IDhLevel
 			{
 				BeaconBeamDTO beam = existingBeamList.get(i);
 				
-				IDhApiRenderableBoxGroup beaconBox = GenericObjectRenderer.INSTANCE.createForSingleBox(new DhApiRenderableBox(
+				IDhApiRenderableBoxGroup beaconBox = genericObjectRenderer.createForSingleBox(new DhApiRenderableBox(
 						new DhApiVec3f(beam.pos.x, beam.pos.y+1, beam.pos.z),
 						new DhApiVec3f(beam.pos.x+1, 6_000, beam.pos.z+1),
 						beam.color
@@ -319,7 +322,7 @@ public abstract class AbstractDhLevel implements IDhLevel
 					if (refCount.getAndIncrement() == 0)
 					{
 						this.beamRenderGroupByBlockPos.put(beam.pos, beaconBox);
-						GenericObjectRenderer.INSTANCE.add(beaconBox);
+						genericObjectRenderer.add(beaconBox);
 					}
 					
 					return refCount;
@@ -331,7 +334,9 @@ public abstract class AbstractDhLevel implements IDhLevel
 	@Override
 	public void unloadBeaconBeamsInPos(long pos)
 	{
-		if (this.beaconBeamRepo != null)
+		GenericObjectRenderer genericObjectRenderer = this.getGenericRenderer();
+		if (this.beaconBeamRepo != null
+			&& genericObjectRenderer != null)
 		{
 			// get beams in pos
 			List<BeaconBeamDTO> existingBeamList = this.beaconBeamRepo.getAllBeamsForPos(pos);
@@ -352,7 +357,7 @@ public abstract class AbstractDhLevel implements IDhLevel
 						IDhApiRenderableBoxGroup beaconBox = this.beamRenderGroupByBlockPos.remove(beam.pos);
 						if (beaconBox != null)
 						{
-							GenericObjectRenderer.INSTANCE.remove(beaconBox.getId());
+							genericObjectRenderer.remove(beaconBox.getId());
 						}
 						return null;
 					}
