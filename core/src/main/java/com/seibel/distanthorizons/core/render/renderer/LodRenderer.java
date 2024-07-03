@@ -94,84 +94,6 @@ public class LodRenderer
 	private int cachedWidth;
 	private int cachedHeight;
 	
-	
-	/** called by each {@link ColumnRenderBuffer} before rendering */
-	public void setModelViewMatrixOffset(DhBlockPos pos, DhApiRenderParam renderEventParam) throws IllegalStateException
-	{
-		Vec3d cam = MC_RENDER.getCameraExactPosition();
-		Vec3f modelPos = new Vec3f((float) (pos.x - cam.x), (float) (pos.y - cam.y), (float) (pos.z - cam.z));
-		
-		
-		IDhApiShaderProgram shaderProgram = this.lodRenderProgram;
-		IDhApiShaderProgram shaderProgramOverride = OverrideInjector.INSTANCE.get(IDhApiShaderProgram.class);
-		if (shaderProgramOverride != null && shaderProgram.overrideThisFrame())
-		{
-			shaderProgram = shaderProgramOverride;
-		}
-		
-		if (!GL32.glIsProgram(shaderProgram.getId()))
-		{
-			throw new IllegalStateException("No GL program exists with the ID: [" + shaderProgram.getId() + "]. This either means a shader program was freed while it was still in use or was never created.");
-		}
-		
-		shaderProgram.bind();
-		shaderProgram.setModelOffsetPos(modelPos);
-		
-		ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeBufferRenderEvent.class, new DhApiBeforeBufferRenderEvent.EventParam(renderEventParam, modelPos));
-	}
-	
-	public void drawVbo(GLVertexBuffer vbo)
-	{
-		//// can be uncommented to add additional debug validation to prevent crashes if invalid buffers are being created
-		//// shouldn't be used in production due to the performance hit
-		//if (GL32.glIsBuffer(vbo.getId()))
-		{
-			IDhApiShaderProgram shaderProgram = this.lodRenderProgram;
-			IDhApiShaderProgram shaderProgramOverride = OverrideInjector.INSTANCE.get(IDhApiShaderProgram.class);
-			if (shaderProgramOverride != null && shaderProgram.overrideThisFrame())
-			{
-				shaderProgram = shaderProgramOverride;
-			}
-			
-			
-			vbo.bind();
-			shaderProgram.bindVertexBuffer(vbo.getId());
-			GL32.glDrawElements(GL32.GL_TRIANGLES, (vbo.getVertexCount() / 4) * 6, // TODO what does the 4 and 6 here represent?
-					this.quadIBO.getType(), 0);
-			vbo.unbind();
-		}
-		//else
-		//{
-		//	// will spam the log if uncommented, but helpful for validation
-		//	//LOGGER.warn("Unable to draw VBO: "+vbo.getId());
-		//}
-	}
-	
-	
-	public static class LagSpikeCatcher
-	{
-		long timer = System.nanoTime();
-		
-		public LagSpikeCatcher() { }
-		
-		public void end(String source)
-		{
-			if (!ENABLE_DRAW_LAG_SPIKE_LOGGING)
-			{
-				return;
-			}
-			
-			this.timer = System.nanoTime() - this.timer;
-			if (this.timer > DRAW_LAG_SPIKE_THRESHOLD_NS)
-			{
-				//4 ms
-				EVENT_LOGGER.debug("NOTE: " + source + " took " + Duration.ofNanos(this.timer) + "!");
-			}
-			
-		}
-		
-	}
-	
 	private static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	private static final IMinecraftRenderWrapper MC_RENDER = SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
 	
@@ -528,6 +450,59 @@ public class LodRenderer
 		}
 	}
 	
+	/** called by each {@link ColumnRenderBuffer} before rendering */
+	public void setModelViewMatrixOffset(DhBlockPos pos, DhApiRenderParam renderEventParam) throws IllegalStateException
+	{
+		Vec3d cam = MC_RENDER.getCameraExactPosition();
+		Vec3f modelPos = new Vec3f((float) (pos.x - cam.x), (float) (pos.y - cam.y), (float) (pos.z - cam.z));
+		
+		
+		IDhApiShaderProgram shaderProgram = this.lodRenderProgram;
+		IDhApiShaderProgram shaderProgramOverride = OverrideInjector.INSTANCE.get(IDhApiShaderProgram.class);
+		if (shaderProgramOverride != null && shaderProgram.overrideThisFrame())
+		{
+			shaderProgram = shaderProgramOverride;
+		}
+		
+		if (!GL32.glIsProgram(shaderProgram.getId()))
+		{
+			throw new IllegalStateException("No GL program exists with the ID: [" + shaderProgram.getId() + "]. This either means a shader program was freed while it was still in use or was never created.");
+		}
+		
+		shaderProgram.bind();
+		shaderProgram.setModelOffsetPos(modelPos);
+		
+		ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeBufferRenderEvent.class, new DhApiBeforeBufferRenderEvent.EventParam(renderEventParam, modelPos));
+	}
+	
+	public void drawVbo(GLVertexBuffer vbo)
+	{
+		//// can be uncommented to add additional debug validation to prevent crashes if invalid buffers are being created
+		//// shouldn't be used in production due to the performance hit
+		//if (GL32.glIsBuffer(vbo.getId()))
+		{
+			IDhApiShaderProgram shaderProgram = this.lodRenderProgram;
+			IDhApiShaderProgram shaderProgramOverride = OverrideInjector.INSTANCE.get(IDhApiShaderProgram.class);
+			if (shaderProgramOverride != null && shaderProgram.overrideThisFrame())
+			{
+				shaderProgram = shaderProgramOverride;
+			}
+			
+			
+			vbo.bind();
+			shaderProgram.bindVertexBuffer(vbo.getId());
+			GL32.glDrawElements(GL32.GL_TRIANGLES, (vbo.getVertexCount() / 4) * 6, // TODO what does the 4 and 6 here represent?
+					this.quadIBO.getType(), 0);
+			vbo.unbind();
+		}
+		//else
+		//{
+		//	// will spam the log if uncommented, but helpful for validation
+		//	//LOGGER.warn("Unable to draw VBO: "+vbo.getId());
+		//}
+	}
+	
+	
 	
 	
 	//=================//
@@ -872,5 +847,36 @@ public class LodRenderer
 			this.setupLock.unlock();
 		}
 	}
+	
+	
+	
+	//================//
+	// helper classes //
+	//================//
+	
+	public static class LagSpikeCatcher
+	{
+		long timer = System.nanoTime();
+		
+		public LagSpikeCatcher() { }
+		
+		public void end(String source)
+		{
+			if (!ENABLE_DRAW_LAG_SPIKE_LOGGING)
+			{
+				return;
+			}
+			
+			this.timer = System.nanoTime() - this.timer;
+			if (this.timer > DRAW_LAG_SPIKE_THRESHOLD_NS)
+			{
+				//4 ms
+				EVENT_LOGGER.debug("NOTE: " + source + " took " + Duration.ofNanos(this.timer) + "!");
+			}
+			
+		}
+		
+	}
+	
 	
 }
