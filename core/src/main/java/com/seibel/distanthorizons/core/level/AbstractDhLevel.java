@@ -31,6 +31,7 @@ import com.seibel.distanthorizons.core.pos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.render.renderer.GenericObjectRenderer;
+import com.seibel.distanthorizons.core.render.renderer.GenericRenderObjectFactory;
 import com.seibel.distanthorizons.core.sql.dto.BeaconBeamDTO;
 import com.seibel.distanthorizons.core.sql.dto.ChunkHashDTO;
 import com.seibel.distanthorizons.core.sql.repo.BeaconBeamRepo;
@@ -207,6 +208,8 @@ public abstract class AbstractDhLevel implements IDhLevel
 	public void setBeaconBeamsForChunk(DhChunkPos chunkPos, List<BeaconBeamDTO> newBeamList)
 	{
 		GenericObjectRenderer genericObjectRenderer = this.getGenericRenderer();
+		
+		// should always be non-null, but just in case
 		if (this.beaconBeamRepo != null
 			&& genericObjectRenderer != null)
 		{
@@ -253,7 +256,7 @@ public abstract class AbstractDhLevel implements IDhLevel
 					// new beam found, add to DB
 					this.beaconBeamRepo.save(newBeam);
 					
-					IDhApiRenderableBoxGroup beaconBox = genericObjectRenderer.createForSingleBox(new DhApiRenderableBox(
+					IDhApiRenderableBoxGroup beaconBox = GenericRenderObjectFactory.INSTANCE.createForSingleBox(new DhApiRenderableBox(
 							new DhApiVec3f(newBeam.pos.x, newBeam.pos.y+1, newBeam.pos.z),
 							new DhApiVec3f(newBeam.pos.x+1, 6_000, newBeam.pos.z+1),
 							newBeam.color
@@ -295,6 +298,8 @@ public abstract class AbstractDhLevel implements IDhLevel
 	public void loadBeaconBeamsInPos(long pos)
 	{
 		GenericObjectRenderer genericObjectRenderer = this.getGenericRenderer();
+		
+		// should always be non-null, but just in case
 		if (this.beaconBeamRepo != null
 			&& genericObjectRenderer != null)
 		{
@@ -304,7 +309,7 @@ public abstract class AbstractDhLevel implements IDhLevel
 			{
 				BeaconBeamDTO beam = existingBeamList.get(i);
 				
-				IDhApiRenderableBoxGroup beaconBox = genericObjectRenderer.createForSingleBox(new DhApiRenderableBox(
+				IDhApiRenderableBoxGroup beaconBox = GenericRenderObjectFactory.INSTANCE.createForSingleBox(new DhApiRenderableBox(
 						new DhApiVec3f(beam.pos.x, beam.pos.y+1, beam.pos.z),
 						new DhApiVec3f(beam.pos.x+1, 6_000, beam.pos.z+1),
 						beam.color
@@ -335,6 +340,8 @@ public abstract class AbstractDhLevel implements IDhLevel
 	public void unloadBeaconBeamsInPos(long pos)
 	{
 		GenericObjectRenderer genericObjectRenderer = this.getGenericRenderer();
+		
+		// should always be non-null, but just in case
 		if (this.beaconBeamRepo != null
 			&& genericObjectRenderer != null)
 		{

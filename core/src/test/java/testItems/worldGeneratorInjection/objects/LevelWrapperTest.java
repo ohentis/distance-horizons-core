@@ -20,6 +20,7 @@
 package testItems.worldGeneratorInjection.objects;
 
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiLevelType;
+import com.seibel.distanthorizons.api.interfaces.render.IDhApiCustomRenderRegister;
 import com.seibel.distanthorizons.api.interfaces.world.IDhApiDimensionTypeWrapper;
 import com.seibel.distanthorizons.api.interfaces.world.IDhApiLevelWrapper;
 
@@ -51,5 +52,10 @@ public class LevelWrapperTest implements IDhApiLevelWrapper
 	
 	@Override
 	public int getMinHeight() { return IDhApiLevelWrapper.super.getMinHeight(); }
+	
+	@Override 
+	public IDhApiCustomRenderRegister getRenderRegister() { return null; }
+	
+	
 	
 }

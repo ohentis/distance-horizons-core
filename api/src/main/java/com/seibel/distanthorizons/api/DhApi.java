@@ -23,8 +23,9 @@ import com.seibel.distanthorizons.api.interfaces.events.IDhApiEventInjector;
 import com.seibel.distanthorizons.api.interfaces.factories.IDhApiWrapperFactory;
 import com.seibel.distanthorizons.api.interfaces.override.IDhApiOverrideable;
 import com.seibel.distanthorizons.api.interfaces.override.worldGenerator.IDhApiWorldGeneratorOverrideRegister;
-import com.seibel.distanthorizons.api.interfaces.render.IDhApiCustomRenderRegister;
+import com.seibel.distanthorizons.api.interfaces.render.IDhApiCustomRenderObjectFactory;
 import com.seibel.distanthorizons.api.interfaces.render.IDhApiRenderProxy;
+import com.seibel.distanthorizons.api.interfaces.world.IDhApiLevelWrapper;
 import com.seibel.distanthorizons.api.methods.events.abstractEvents.DhApiAfterDhInitEvent;
 import com.seibel.distanthorizons.api.methods.override.DhApiWorldGeneratorOverrideRegister;
 import com.seibel.distanthorizons.coreapi.ModInfo;
@@ -128,11 +129,12 @@ public class DhApi
 		 */
 		public static IDhApiWrapperFactory wrapperFactory = null;
 		
-		///**
-		// * Used to add custom objects to DH's render pass.
-		// * @since API 3.0.0 
-		// */
-		//public static IDhApiCustomRenderRegister renderRegister = null;
+		/**
+		 * Used to create custom renderable objects. <br>
+		 * These objects can be added to the renderer in {@link IDhApiLevelWrapper}
+		 * @since API 3.0.0 
+		 */
+		public static IDhApiCustomRenderObjectFactory customRenderObjectFactory = null;
 	}
 	
 	

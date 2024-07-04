@@ -41,6 +41,10 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 	
 	
 	
+	//=============//
+	// constructor //
+	//=============//
+	
 	public DhServerLevel(AbstractSaveStructure saveStructure, IServerLevelWrapper serverLevelWrapper)
 	{
 		if (saveStructure.getFullDataFolder(serverLevelWrapper).mkdirs())
@@ -55,6 +59,10 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 	}
 	
 	
+	
+	//=========//
+	// methods //
+	//=========//
 	
 	public void serverTick() { this.chunkToLodBuilder.tick(); }
 	

@@ -21,6 +21,7 @@ package com.seibel.distanthorizons.api.interfaces.world;
 
 import com.seibel.distanthorizons.api.interfaces.IDhApiUnsafeWrapper;
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiLevelType;
+import com.seibel.distanthorizons.api.interfaces.render.IDhApiCustomRenderRegister;
 
 /**
  * Can be either a Server or Client level.<br>
@@ -48,5 +49,11 @@ public interface IDhApiLevelWrapper extends IDhApiUnsafeWrapper
 	 * For MC versions before 1.18 this will return 0.
 	 */
 	default int getMinHeight() { return 0; }
+	
+	/** 
+	 * Will return null if called on the server,
+	 * or if called before the renderer has been set up.
+	 */
+	IDhApiCustomRenderRegister getRenderRegister();
 	
 }
