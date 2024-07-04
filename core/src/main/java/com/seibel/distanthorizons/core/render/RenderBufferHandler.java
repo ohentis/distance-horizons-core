@@ -100,9 +100,6 @@ public class RenderBufferHandler implements AutoCloseable
 		{
 			DhApi.overrides.bind(IDhApiShadowCullingFrustum.class, new NeverCullFrustum());
 		}
-		
-		
-		F3Screen.setRenderBufferHandler(this);
 	}
 	
 	
@@ -417,8 +414,6 @@ public class RenderBufferHandler implements AutoCloseable
 				renderSection.close();
 			}
 		}
-		
-		F3Screen.setRenderBufferHandler(null);
 	}
 	
 	

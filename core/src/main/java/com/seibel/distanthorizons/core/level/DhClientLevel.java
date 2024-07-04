@@ -26,6 +26,7 @@ import com.seibel.distanthorizons.core.file.fullDatafile.RemoteFullDataSourcePro
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
+import com.seibel.distanthorizons.core.render.RenderBufferHandler;
 import com.seibel.distanthorizons.core.render.renderer.GenericObjectRenderer;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrapper;
@@ -176,6 +177,12 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 	{ 
 		ClientLevelModule.ClientRenderState renderState = this.clientside.ClientRenderStateRef.get();
 		return (renderState != null) ? renderState.genericRenderer : null; 
+	}
+	@Override
+	public RenderBufferHandler getRenderBufferHandler()
+	{
+		ClientLevelModule.ClientRenderState renderState = this.clientside.ClientRenderStateRef.get();
+		return (renderState != null) ? renderState.renderBufferHandler : null;
 	}
 	
 }

@@ -24,6 +24,7 @@ import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSour
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.file.fullDatafile.FullDataSourceProviderV2;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
+import com.seibel.distanthorizons.core.render.RenderBufferHandler;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
@@ -230,6 +231,12 @@ public class DhClientServerLevel extends AbstractDhLevel implements IDhClientLev
 	{
 		ClientLevelModule.ClientRenderState renderState = this.clientside.ClientRenderStateRef.get();
 		return (renderState != null) ? renderState.genericRenderer : null;
+	}
+	@Override
+	public RenderBufferHandler getRenderBufferHandler()
+	{
+		ClientLevelModule.ClientRenderState renderState = this.clientside.ClientRenderStateRef.get();
+		return (renderState != null) ? renderState.renderBufferHandler : null;
 	}
 	
 	

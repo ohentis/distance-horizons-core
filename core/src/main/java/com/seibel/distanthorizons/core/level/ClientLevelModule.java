@@ -278,6 +278,7 @@ public class ClientLevelModule implements Closeable, AbstractDataSourceHandler.I
 		
 		public final IClientLevelWrapper clientLevelWrapper;
 		public final LodQuadTree quadtree;
+		public final RenderBufferHandler renderBufferHandler;
 		public final LodRenderer lodRenderer;
 		public final GenericObjectRenderer genericRenderer;
 		
@@ -296,9 +297,9 @@ public class ClientLevelModule implements Closeable, AbstractDataSourceHandler.I
 					0, 0,
 					fullDataSourceProvider);
 			
-			RenderBufferHandler renderBufferHandler = new RenderBufferHandler(this.quadtree);
 			this.genericRenderer = new GenericObjectRenderer();
-			this.lodRenderer = new LodRenderer(renderBufferHandler, this.genericRenderer);
+			this.renderBufferHandler = new RenderBufferHandler(this.quadtree);
+			this.lodRenderer = new LodRenderer(this.renderBufferHandler, this.genericRenderer);
 		}
 		
 		

@@ -27,9 +27,11 @@ import com.seibel.distanthorizons.api.interfaces.render.IDhApiCustomRenderRegist
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
 import com.seibel.distanthorizons.api.objects.math.DhApiVec3f;
 import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBox;
+import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.ConfigBasedSpamLogger;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.logging.f3.F3Screen;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
 import com.seibel.distanthorizons.core.render.glObject.GLProxy;
 import com.seibel.distanthorizons.core.render.glObject.GLState;
@@ -609,6 +611,33 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		this.shader.setUniform(this.directShaderColorUniform, box.color);
 		
 		GL32.glDrawElements(GL32.GL_TRIANGLES, SOLID_BOX_INDICES.length, GL32.GL_UNSIGNED_INT, 0);
+	}
+	
+	
+	
+	
+	//=========//
+	// F3 menu //
+	//=========//
+	
+	public String getVboRenderDebugMenuString()
+	{
+		// get counts
+		int totalCount = this.boxGroupById.size();
+		int activeCount = 0;
+		for (long key : this.boxGroupById.keySet())
+		{
+			RenderableBoxGroup renderGroup = this.boxGroupById.get(key);
+			if (renderGroup.active)
+			{
+				activeCount++;
+			}
+		}
+		
+		
+		String totalCountText = F3Screen.NUMBER_FORMAT.format(totalCount);
+		String activeCountText = F3Screen.NUMBER_FORMAT.format(activeCount);
+		return LodUtil.formatLog("Generic Obj Count: " + activeCountText + "/" + totalCountText);
 	}
 	
 	

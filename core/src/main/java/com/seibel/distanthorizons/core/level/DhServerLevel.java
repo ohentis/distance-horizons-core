@@ -24,6 +24,7 @@ import com.seibel.distanthorizons.core.file.fullDatafile.FullDataSourceProviderV
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.render.RenderBufferHandler;
 import com.seibel.distanthorizons.core.render.renderer.GenericObjectRenderer;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
@@ -123,7 +124,12 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 		// server-only levels don't support rendering
 		return null; 
 	}
-	
+	@Override
+	public RenderBufferHandler getRenderBufferHandler()
+	{ 
+		// server-only levels don't support rendering
+		return null; 
+	}
 	
 	
 	//===========//

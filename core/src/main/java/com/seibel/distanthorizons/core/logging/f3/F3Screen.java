@@ -22,6 +22,7 @@ package com.seibel.distanthorizons.core.logging.f3;
 import com.seibel.distanthorizons.core.api.internal.SharedApi;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.render.RenderBufferHandler;
+import com.seibel.distanthorizons.core.render.renderer.GenericObjectRenderer;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.world.AbstractDhWorld;
 import com.seibel.distanthorizons.coreapi.ModInfo;
@@ -39,23 +40,6 @@ public class F3Screen
 	private static final Logger LOGGER = LogManager.getLogger();
 	
 	public static final NumberFormat NUMBER_FORMAT = NumberFormat.getIntegerInstance();
-	
-	
-	
-	//============//
-	// properties //
-	//============//
-	
-	private static WeakReference<RenderBufferHandler> renderBufferHandlerRef = new WeakReference<>(null);
-	public static void setRenderBufferHandler(@Nullable RenderBufferHandler renderBufferHandler)
-	{
-		if (renderBufferHandler != null && renderBufferHandlerRef.get() != null)
-		{
-			LOGGER.warn("multiple RenderBufferHandlers are active at once, the F3 menu may not be accurate.");
-		}
-		
-		renderBufferHandlerRef = new WeakReference<>(renderBufferHandler);
-	}
 	
 	
 	
@@ -106,23 +90,28 @@ public class F3Screen
 		// chunk updates
 		messageList.add(SharedApi.INSTANCE.getDebugMenuString());
 		messageList.add("");
-		// rendering
-		RenderBufferHandler renderBufferHandler = renderBufferHandlerRef.get();
-		if (renderBufferHandler != null)
-		{
-			messageList.add(renderBufferHandler.getVboRenderDebugMenuString());
-			String showPassString = renderBufferHandler.getShadowPassRenderDebugMenuString();
-			if (showPassString != null)
-			{
-				messageList.add(showPassString);
-			}
-			messageList.add("");
-		}
 		// world / levels
 		messageList.add(world.GetDebugMenuString());
 		for (IDhLevel level : levelIterator)
 		{
 			level.addDebugMenuStringsToList(messageList);
+			// LOD rendering
+			RenderBufferHandler renderBufferHandler = level.getRenderBufferHandler();
+			if (renderBufferHandler != null)
+			{
+				messageList.add(renderBufferHandler.getVboRenderDebugMenuString());
+				String showPassString = renderBufferHandler.getShadowPassRenderDebugMenuString();
+				if (showPassString != null)
+				{
+					messageList.add(showPassString);
+				}
+			}
+			// Generic rendering
+			GenericObjectRenderer genericRenderer = level.getGenericRenderer();
+			if (genericRenderer != null)
+			{
+				messageList.add(genericRenderer.getVboRenderDebugMenuString());
+			}
 		}
 	}
 	

@@ -24,6 +24,7 @@ import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSour
 import com.seibel.distanthorizons.core.file.fullDatafile.FullDataSourceProviderV2;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
+import com.seibel.distanthorizons.core.render.RenderBufferHandler;
 import com.seibel.distanthorizons.core.render.renderer.GenericObjectRenderer;
 import com.seibel.distanthorizons.core.sql.dto.BeaconBeamDTO;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
@@ -75,5 +76,11 @@ public interface IDhLevel extends AutoCloseable
 	 */
 	@Nullable
 	GenericObjectRenderer getGenericRenderer();
+	/**
+	 * Will return null if the renderer isn't set up yet. <br>
+	 * Not supported on the server-side. 
+	 */
+	@Nullable
+	RenderBufferHandler getRenderBufferHandler();
 	
 }
