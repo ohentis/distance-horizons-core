@@ -150,7 +150,7 @@ public class DhClientServerLevel extends AbstractDhLevel implements IDhClientLev
 	}
 	
 	@Override
-	public IClientLevelWrapper getClientLevelWrapper() { return this.serverLevelWrapper.tryGetClientLevelWrapper(); }
+	public IClientLevelWrapper getClientLevelWrapper() { return MC_CLIENT.getWrappedClientLevel(); }
 	
 	@Override
 	public void clearRenderCache()
