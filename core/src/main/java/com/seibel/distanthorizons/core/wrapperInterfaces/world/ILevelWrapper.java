@@ -21,6 +21,7 @@ package com.seibel.distanthorizons.core.wrapperInterfaces.world;
 
 import com.seibel.distanthorizons.api.interfaces.world.IDhApiDimensionTypeWrapper;
 import com.seibel.distanthorizons.api.interfaces.world.IDhApiLevelWrapper;
+import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
@@ -63,5 +64,8 @@ public interface ILevelWrapper extends IDhApiLevelWrapper, IBindable
 	
 	/** Fired when the level is being unloaded. Doesn't unload the level. */
 	void onUnload();
+	
+	@Deprecated
+	void setParentLevel(IDhLevel parentLevel);
 	
 }

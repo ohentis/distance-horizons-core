@@ -19,7 +19,8 @@
 
 package com.seibel.distanthorizons.core.wrapperInterfaces.world;
 
-import com.seibel.distanthorizons.core.level.DhClientLevel;
+import com.seibel.distanthorizons.core.level.IDhClientLevel;
+import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import org.jetbrains.annotations.Nullable;
@@ -41,7 +42,5 @@ public interface IClientLevelWrapper extends ILevelWrapper
 	/** Will return null if there was an issue finding the biome. */
 	@Nullable
 	IBiomeWrapper getPlainsBiomeWrapper();
-	
-	void setParentClientLevel(DhClientLevel parentClientLevel);
 	
 }

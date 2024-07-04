@@ -68,6 +68,7 @@ public class DhClientServerLevel extends AbstractDhLevel implements IDhClientLev
 			LOGGER.warn("unable to create data folder.");
 		}
 		this.serverLevelWrapper = serverLevelWrapper;
+		this.serverLevelWrapper.setParentLevel(this);
 		this.serverside = new ServerLevelModule(this, saveStructure);
 		this.clientside = new ClientLevelModule(this);
 		this.createAndSetSupportingRepos(this.serverside.fullDataFileHandler.repo.databaseFile);

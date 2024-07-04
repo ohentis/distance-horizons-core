@@ -60,7 +60,7 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 	public DhClientLevel(AbstractSaveStructure saveStructure, IClientLevelWrapper clientLevelWrapper, @Nullable File fullDataSaveDirOverride, boolean enableRendering)
 	{
 		this.levelWrapper = clientLevelWrapper;
-		this.levelWrapper.setParentClientLevel(this);
+		this.levelWrapper.setParentLevel(this);
 		this.saveStructure = saveStructure;
 		this.dataFileHandler = new RemoteFullDataSourceProvider(this, saveStructure, fullDataSaveDirOverride);
 		this.clientside = new ClientLevelModule(this);
@@ -157,7 +157,7 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 	@Override
 	public void close()
 	{
-		this.levelWrapper.setParentClientLevel(null);
+		this.levelWrapper.setParentLevel(null);
 		this.clientside.close();
 		super.close();
 		this.dataFileHandler.close();
