@@ -332,7 +332,7 @@ public class SharedApi
 						try
 						{
 							// If MC's lighting engine isn't thread safe this may cause the server thread to lag
-							chunkWrapper.bakeDhLightingUsingMcLightingEngine(); // TODO handle unlit chunks, would pulling in the chunk from disk be a good idea? Look at ChunkLoader in the world gen code for an example
+							chunkWrapper.bakeDhLightingUsingMcLightingEngine();
 						}
 						catch (IllegalStateException e)
 						{

@@ -752,6 +752,20 @@ public class Config
 								+ "")
 						.build();
 				
+				public static ConfigEntry<Boolean> pullLightingForPregeneratedChunks = new ConfigEntry.Builder<Boolean>()
+						.set(false)
+						.comment(""
+								+ "If true LOD generation for pre-existing chunks will attempt to pull the lighting data \n"
+								+ "saved in Minecraft's Region files. \n"
+								+ "If false DH will pull in chunks without lighting and re-light them. \n"
+								+ " \n"
+								+ "Setting this to true will result in faster LOD generation \n"
+								+ "for already generated worlds, but is broken by most lighting mods. \n"
+								+ " \n"
+								+ "Set this to false if LODs are black. \n"
+								+ "")
+						.build();
+				
 				public static ConfigEntry<EDhApiDataCompressionMode> dataCompression = new ConfigEntry.Builder<EDhApiDataCompressionMode>()
 						.set(EDhApiDataCompressionMode.LZMA2)
 						.comment(""

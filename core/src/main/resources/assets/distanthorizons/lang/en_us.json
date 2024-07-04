@@ -348,6 +348,10 @@
     "Only Use DH Lighting Engine",
   "distanthorizons.config.client.advanced.lodBuilding.onlyUseDhLightingEngine.@tooltip":
     "If false LODs will be lit by Minecraft's lighting engine when possible \nand fall back to the DH lighting engine only when necessary. \n\nIf true LODs will only be lit using Distant Horizons' lighting engine. \n\nGenerally it is best to leave this disabled and should only be enabled \nif there are lighting issues or for debugging.",
+  "distanthorizons.config.client.advanced.lodBuilding.pullLightingForPregeneratedChunks":
+    "Pull Lighting For Pre-generated Chunks",
+  "distanthorizons.config.client.advanced.lodBuilding.pullLightingForPregeneratedChunks.@tooltip":
+    "If true LOD generation for pre-existing chunks will attempt to pull the lighting data \nsaved in Minecraft's Region files. \nIf false DH will pull in chunks without lighting and re-light them. \n\nSetting this to true will result in faster LOD generation \nfor already generated worlds, but is broken by most lighting mods. \n\nSet this to false if LODs are black.",
   "distanthorizons.config.client.advanced.lodBuilding.dataCompression":
     "Data Compression",
   "distanthorizons.config.client.advanced.lodBuilding.dataCompression.@tooltip":
