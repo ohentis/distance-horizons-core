@@ -511,7 +511,10 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		
 		
 		// Draw instanced
-		GL32.glDrawElementsInstanced(GL32.GL_TRIANGLES, SOLID_BOX_INDICES.length, GL32.GL_UNSIGNED_INT, 0, boxGroup.size());
+		if (boxGroup.uploadedBoxCount > 0)
+		{
+			GL32.glDrawElementsInstanced(GL32.GL_TRIANGLES, SOLID_BOX_INDICES.length, GL32.GL_UNSIGNED_INT, 0, boxGroup.uploadedBoxCount);
+		}
 		
 		
 		// Clean up

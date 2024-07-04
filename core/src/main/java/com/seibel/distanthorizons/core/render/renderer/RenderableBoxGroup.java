@@ -50,6 +50,7 @@ public class RenderableBoxGroup
 		public int instanceTranslationVbo = 0;
 		public int instanceScaleVbo = 0;
 		public int instanceColorVbo = 0;
+		public int uploadedBoxCount = -1;
 		
 		
 		
@@ -131,7 +132,7 @@ public class RenderableBoxGroup
 		{
 			if (this.beforeRenderFunc != null)
 			{
-				beforeRenderFunc.accept(renderEventParam);
+				this.beforeRenderFunc.accept(renderEventParam);
 			}
 		}
 		
@@ -181,6 +182,7 @@ public class RenderableBoxGroup
 			}
 			
 			int boxCount = this.size();
+			this.uploadedBoxCount = boxCount;
 			
 			
 			// transformation / scaling //
