@@ -30,8 +30,8 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
-import com.seibel.distanthorizons.core.render.renderer.GenericObjectRenderer;
-import com.seibel.distanthorizons.core.render.renderer.GenericRenderObjectFactory;
+import com.seibel.distanthorizons.core.render.renderer.generic.GenericObjectRenderer;
+import com.seibel.distanthorizons.core.render.renderer.generic.GenericRenderObjectFactory;
 import com.seibel.distanthorizons.core.sql.dto.BeaconBeamDTO;
 import com.seibel.distanthorizons.core.sql.dto.ChunkHashDTO;
 import com.seibel.distanthorizons.core.sql.repo.BeaconBeamRepo;
@@ -49,7 +49,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public abstract class AbstractDhLevel implements IDhLevel
 {
@@ -274,7 +273,6 @@ public abstract class AbstractDhLevel implements IDhLevel
 						// new beam found, add to DB
 						this.beaconBeamRepo.save(newBeam);
 						
-						// TODO put everything in a single group
 						DhApiRenderableBox beaconBox = new DhApiRenderableBox(
 								new DhApiVec3f(newBeam.pos.x, newBeam.pos.y+1, newBeam.pos.z),
 								new DhApiVec3f(newBeam.pos.x+1, 6_000, newBeam.pos.z+1),
