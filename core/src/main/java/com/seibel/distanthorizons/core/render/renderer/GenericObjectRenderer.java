@@ -58,6 +58,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.*;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
@@ -111,9 +112,7 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 	private int blockLightUniform;
 	
 	
-	// TODO may need to be double buffered to prevent rendering lag
-	private final Long2ReferenceOpenHashMap<RenderableBoxGroup> boxGroupById = new Long2ReferenceOpenHashMap<>();
-	private final ReentrantLock mapModifyLock = new ReentrantLock();
+	private final ConcurrentHashMap<Long, RenderableBoxGroup> boxGroupById = new ConcurrentHashMap<>();
 	
 	
 	
@@ -337,53 +336,19 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		RenderableBoxGroup boxGroup = (RenderableBoxGroup) iBoxGroup;
 		
 		
-		try
+		long id = boxGroup.getId();
+		if (this.boxGroupById.containsKey(id))
 		{
-			mapModifyLock.lock();
-			
-			long id = boxGroup.getId();
-			if (this.boxGroupById.containsKey(id))
-			{
-				throw new IllegalArgumentException("A box group with the ID [" + id + "] is already present.");
-			}
-			
-			this.boxGroupById.put(id, boxGroup);
-			
-			// TODO add to DB async?
+			throw new IllegalArgumentException("A box group with the ID [" + id + "] is already present.");
 		}
-		finally
-		{
-			mapModifyLock.unlock();
-		}
+		
+		this.boxGroupById.put(id, boxGroup);
 	}
 	
 	@Override
-	public IDhApiRenderableBoxGroup remove(long id)
-	{
-		try
-		{
-			mapModifyLock.lock();
-			// TODO remove from DB async?
-			return this.boxGroupById.remove(id);
-		}
-		finally
-		{
-			mapModifyLock.unlock();
-		}
-	}
+	public IDhApiRenderableBoxGroup remove(long id) { return this.boxGroupById.remove(id); }
 	
-	public void clear() 
-	{
-		try
-		{
-			mapModifyLock.lock();
-			this.boxGroupById.clear();
-		}
-		finally
-		{
-			mapModifyLock.unlock();
-		}
-	}
+	public void clear() { this.boxGroupById.clear(); }
 	
 	
 	
@@ -422,12 +387,11 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		
 		// rendering //
 		
-		LongSet keys = boxGroupById.keySet();
-		for (long key : keys)
+		Collection<RenderableBoxGroup> boxList = this.boxGroupById.values();
+		for (RenderableBoxGroup boxGroup : boxList)
 		{
-			RenderableBoxGroup boxGroup = boxGroupById.get(key);
 			// ignore inactive groups
-			if (boxGroup.active)
+			if (boxGroup != null && boxGroup.active)
 			{
 				profiler.popPush("render prep");
 				boxGroup.preRender(renderEventParam);
