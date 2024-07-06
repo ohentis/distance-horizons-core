@@ -25,6 +25,7 @@ import com.seibel.distanthorizons.api.methods.events.abstractEvents.*;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.network.messages.NetworkMessage;
+import com.seibel.distanthorizons.core.network.session.Session;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.api.enums.rendering.EDhApiDebugRendering;
 import com.seibel.distanthorizons.api.enums.rendering.EDhApiRendererMode;
@@ -156,6 +157,8 @@ public class ClientApi
 			world.close();
 			SharedApi.setDhWorld(null);
 		}
+		
+		this.pluginChannelApi.reset();
 		
 		// remove any waiting items
 		this.waitingChunkByClientLevelAndPos.clear();
@@ -332,7 +335,11 @@ public class ClientApi
 	
 	public void pluginMessageReceived(@NotNull NetworkMessage message)
 	{
-		this.pluginChannelApi.session.tryHandleMessage(message);
+		Session session = this.pluginChannelApi.session;
+		if (session != null)
+		{
+			session.tryHandleMessage(message);
+		}
 	}
 	
 	

@@ -12,6 +12,7 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftCli
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import org.apache.logging.log4j.LogManager;
 import org.checkerframework.checker.nullness.qual.NonNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -29,6 +30,7 @@ public class ClientPluginChannelApi
 	private final Consumer<IClientLevelWrapper> levelUnloadHandler;
 	private final Consumer<IServerKeyedClientLevel> multiverseLevelLoadHandler;
 	
+	@Nullable
 	public Session session;
 	
 	
@@ -49,8 +51,8 @@ public class ClientPluginChannelApi
 	{
 		Objects.requireNonNull(session);
 		this.session = session;
-		this.session.registerHandler(CurrentLevelKeyMessage.class, this::onCurrentLevelKeyMessage);
-		this.session.registerHandler(CloseEvent.class, this::onClose);
+		session.registerHandler(CurrentLevelKeyMessage.class, this::onCurrentLevelKeyMessage);
+		session.registerHandler(CloseEvent.class, this::onClose);
 	}
 	
 	private void onCurrentLevelKeyMessage(CurrentLevelKeyMessage msg)
@@ -100,6 +102,12 @@ public class ClientPluginChannelApi
 	
 	private void onClose(CloseEvent event)
 	{
+		this.reset();
+	}
+	
+	public void reset()
+	{
+		this.session = null;
 		KEYED_CLIENT_LEVEL_MANAGER.disable();
 	}
 	
