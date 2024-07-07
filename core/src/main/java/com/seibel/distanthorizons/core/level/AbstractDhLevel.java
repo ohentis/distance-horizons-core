@@ -23,6 +23,8 @@ import com.seibel.distanthorizons.api.interfaces.render.IDhApiRenderableBoxGroup
 import com.seibel.distanthorizons.api.methods.events.abstractEvents.DhApiChunkModifiedEvent;
 import com.seibel.distanthorizons.api.objects.math.DhApiVec3f;
 import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBox;
+import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBoxGroupShading;
+import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.dataObjects.transformers.ChunkToLodBuilder;
 import com.seibel.distanthorizons.core.file.fullDatafile.DelayedFullDataSourceSaveCache;
@@ -30,6 +32,7 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.render.renderer.generic.CloudRenderHandler;
 import com.seibel.distanthorizons.core.render.renderer.generic.GenericObjectRenderer;
 import com.seibel.distanthorizons.core.render.renderer.generic.GenericRenderObjectFactory;
 import com.seibel.distanthorizons.core.sql.dto.BeaconBeamDTO;
@@ -72,6 +75,8 @@ public abstract class AbstractDhLevel implements IDhLevel
 	
 	protected boolean beaconGroupBound = false;
 	
+	protected CloudRenderHandler cloudRenderHandler;
+	
 	
 	
 	//=============//
@@ -85,6 +90,8 @@ public abstract class AbstractDhLevel implements IDhLevel
 		this.beaconBoxGroup = GenericRenderObjectFactory.INSTANCE.createAbsolutePositionedGroup(new ArrayList<>(0));
 		this.beaconBoxGroup.setBlockLight(LodUtil.MAX_MC_LIGHT);
 		this.beaconBoxGroup.setSkyLight(LodUtil.MAX_MC_LIGHT);
+		this.beaconBoxGroup.setShading(DhApiRenderableBoxGroupShading.getUnshaded());
+		this.beaconBoxGroup.setPreRenderFunc((renderEventParam) -> this.beaconBoxGroup.setActive(Config.Client.Advanced.Graphics.GenericRendering.enableBeaconRendering.get()));
 	}
 	
 	protected void createAndSetSupportingRepos(File databaseFile)
@@ -221,12 +228,13 @@ public abstract class AbstractDhLevel implements IDhLevel
 			
 			// should always be non-null, but just in case
 			if (this.beaconBeamRepo != null
-					&& genericObjectRenderer != null)
+				&& genericObjectRenderer != null)
 			{
 				if (!this.beaconGroupBound)
 				{
 					this.beaconGroupBound = true;
 					genericObjectRenderer.add(this.beaconBoxGroup);
+					this.cloudRenderHandler = new CloudRenderHandler(this, genericObjectRenderer);
 				}
 				
 				
@@ -319,6 +327,7 @@ public abstract class AbstractDhLevel implements IDhLevel
 			{
 				this.beaconGroupBound = true;
 				genericObjectRenderer.add(this.beaconBoxGroup);
+				this.cloudRenderHandler = new CloudRenderHandler(this, genericObjectRenderer);
 			}
 			
 			

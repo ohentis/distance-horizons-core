@@ -4,6 +4,7 @@ import com.seibel.distanthorizons.api.interfaces.render.IDhApiRenderableBoxGroup
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
 import com.seibel.distanthorizons.api.objects.math.DhApiVec3f;
 import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBox;
+import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBoxGroupShading;
 import com.seibel.distanthorizons.core.render.glObject.GLProxy;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.math.Vec3f;
@@ -37,14 +38,18 @@ public class RenderableBoxGroup
 		
 		private final Vec3f originBlockPos;
 		
+		
+		public boolean active = true;
+		public boolean ssaoEnabled = true;
+		private boolean vertexDataDirty = true;
+		
 		public int skyLight = 15;
 		public int blockLight = 0;
+		public DhApiRenderableBoxGroupShading shading = DhApiRenderableBoxGroupShading.getDefaultShaded();
 		
 		@Nullable
 		public Consumer<DhApiRenderParam> beforeRenderFunc;
-		
-		private boolean vertexDataDirty = true;
-		public boolean active = true;
+		public Consumer<DhApiRenderParam> afterRenderFunc;
 		
 		// instance data
 		public int instanceTranslationVbo = 0;
@@ -120,6 +125,9 @@ public class RenderableBoxGroup
 		@Override
 		public void setPreRenderFunc(Consumer<DhApiRenderParam> func) { this.beforeRenderFunc = func; }
 		
+		@Override
+		public void setPostRenderFunc(Consumer<DhApiRenderParam> func) { this.afterRenderFunc = func; }
+		
 		@Override 
 		public void triggerBoxChange() { this.vertexDataDirty = true; }
 		
@@ -128,6 +136,11 @@ public class RenderableBoxGroup
 		@Override
 		public boolean isActive() { return this.active; }
 		
+		@Override
+		public void setSsaoEnabled(boolean ssaoEnabled) { this.ssaoEnabled = ssaoEnabled; }
+		@Override
+		public boolean isSsaoEnabled() { return this.ssaoEnabled; }
+		
 		public void preRender(DhApiRenderParam renderEventParam) 
 		{
 			if (this.beforeRenderFunc != null)
@@ -135,10 +148,24 @@ public class RenderableBoxGroup
 				this.beforeRenderFunc.accept(renderEventParam);
 			}
 		}
+		public void postRender(DhApiRenderParam renderEventParam) 
+		{
+			if (this.afterRenderFunc != null)
+			{
+				this.afterRenderFunc.accept(renderEventParam);
+			}
+		}
+		
+		@Override
+		public void setShading(DhApiRenderableBoxGroupShading shading) { this.shading = shading; }
+		@Override
+		public DhApiRenderableBoxGroupShading getShading() { return this.shading; }
 		
 		
 		
-		// overrides //
+		//================//
+		// List Overrides //
+		//================//
 		
 		@Override
 		public DhApiRenderableBox get(int index) { return this.boxList.get(index); }

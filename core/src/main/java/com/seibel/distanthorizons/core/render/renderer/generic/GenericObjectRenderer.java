@@ -26,6 +26,7 @@ import com.seibel.distanthorizons.api.interfaces.render.IDhApiCustomRenderRegist
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
 import com.seibel.distanthorizons.api.objects.math.DhApiVec3f;
 import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBox;
+import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBoxGroupShading;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.ConfigBasedSpamLogger;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
@@ -79,8 +80,8 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 	private boolean init = false;
 	
 	private ShaderProgram shader;
-	private GLVertexBuffer vertexBuffer;
-	private GLElementBuffer solidIndexBuffer;
+	private GLVertexBuffer boxVertexBuffer;
+	private GLElementBuffer boxIndexBuffer;
 	private AbstractVertexAttribute va;
 	
 	private boolean useInstancedRendering;
@@ -100,6 +101,13 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 	private int skyLightUniform;
 	private int blockLightUniform;
 	
+	private int northShadingUniform;
+	private int southShadingUniform;
+	private int eastShadingUniform;
+	private int westShadingUniform;
+	private int topShadingUniform;
+	private int bottomShadingUniform;
+	
 	
 	private final ConcurrentHashMap<Long, RenderableBoxGroup> boxGroupById = new ConcurrentHashMap<>();
 	
@@ -108,37 +116,62 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 	/** A box from 0,0,0 to 1,1,1 */
 	private static final float[] BOX_VERTICES = {
 			// Pos x y z
+			
+			// min X, vertical face
 			0, 0, 0,
 			1, 0, 0,
 			1, 1, 0,
 			0, 1, 0,
+			// max X, vertical face
+			0, 1, 1,
+			1, 1, 1,
+			1, 0, 1,
 			0, 0, 1,
+			
+			// min Z, vertical face
+			0, 0, 1,
+			0, 0, 0,
+			0, 1, 0,
+			0, 1, 1,
+			// max Z, vertical face
 			1, 0, 1,
 			1, 1, 1,
-			0, 1, 1,
-	};
-	
-	private static final int[] SOLID_BOX_INDICES = {
-			// min Z, vertical face
-			0, 3, 2,
-			2, 1, 0,
-			// max Z, vertical face
-			4, 5, 6,
-			6, 7, 4,
-			
-			// min X, vertical face
-			7, 3, 0,
-			0, 4, 7,
-			// max X, vertical face
-			2, 6, 5,
-			5, 1, 2,
+			1, 1, 0,
+			1, 0, 0,
 			
 			// min Y, horizontal face
-			1, 5, 4,
-			4, 0, 1,
+			0, 0, 1,
+			1, 0, 1,
+			1, 0, 0,
+			0, 0, 0,
 			// max Y, horizontal face
-			3, 7, 6,
-			6, 2, 3,
+			0, 1, 1,
+			1, 1, 1,
+			1, 1, 0,
+			0, 1, 0,
+	};
+	
+	private static final int[] BOX_INDICES = {
+			// min X, vertical face
+			2, 1, 0,    
+			0, 3, 2,
+			// max X, vertical face
+			6, 5, 4,
+			4, 7, 6,
+			
+			// min Z, vertical face
+			10, 9, 8,
+			8, 11, 10,
+			// max Z, vertical face
+			14, 13, 12,
+			12, 15, 14,
+			
+			// min Y, horizontal face
+			18, 17, 16,
+			16, 19, 18,
+			// max Y, horizontal face
+			20, 21, 22, 
+			22, 23, 20,
 	};
 	
 	
@@ -187,6 +220,14 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		this.lightMapUniform = this.shader.getUniformLocation("uLightMap");
 		this.skyLightUniform = this.shader.getUniformLocation("uSkyLight");
 		this.blockLightUniform = this.shader.getUniformLocation("uBlockLight");
+		//this.shadingModeUniform = this.shader.getUniformLocation("uShadingMode");
+		this.northShadingUniform = this.shader.getUniformLocation("uNorthShading");
+		this.southShadingUniform = this.shader.getUniformLocation("uSouthShading");
+		this.eastShadingUniform = this.shader.getUniformLocation("uEastShading");
+		this.westShadingUniform = this.shader.getUniformLocation("uWestShading");
+		this.topShadingUniform = this.shader.getUniformLocation("uTopShading");
+		this.bottomShadingUniform = this.shader.getUniformLocation("uBottomShading");
+		
 		
 		this.createBuffers();
 		
@@ -202,19 +243,19 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		boxVerticesBuffer.order(ByteOrder.nativeOrder());
 		boxVerticesBuffer.asFloatBuffer().put(BOX_VERTICES);
 		boxVerticesBuffer.rewind();
-		this.vertexBuffer = new GLVertexBuffer(false);
-		this.vertexBuffer.bind();
-		this.vertexBuffer.uploadBuffer(boxVerticesBuffer, 8, EDhApiGpuUploadMethod.DATA, BOX_VERTICES.length * Float.BYTES);
+		this.boxVertexBuffer = new GLVertexBuffer(false);
+		this.boxVertexBuffer.bind();
+		this.boxVertexBuffer.uploadBuffer(boxVerticesBuffer, 8, EDhApiGpuUploadMethod.DATA, BOX_VERTICES.length * Float.BYTES);
 		
 		
 		// box vertex indexes
-		ByteBuffer solidIndexBuffer = ByteBuffer.allocateDirect(SOLID_BOX_INDICES.length * Integer.BYTES);
+		ByteBuffer solidIndexBuffer = ByteBuffer.allocateDirect(BOX_INDICES.length * Integer.BYTES);
 		solidIndexBuffer.order(ByteOrder.nativeOrder());
-		solidIndexBuffer.asIntBuffer().put(SOLID_BOX_INDICES);
+		solidIndexBuffer.asIntBuffer().put(BOX_INDICES);
 		solidIndexBuffer.rewind();
-		this.solidIndexBuffer = new GLElementBuffer(false);
-		this.solidIndexBuffer.uploadBuffer(solidIndexBuffer, EDhApiGpuUploadMethod.DATA, SOLID_BOX_INDICES.length * Integer.BYTES, GL32.GL_STATIC_DRAW);
-		this.solidIndexBuffer.bind();
+		this.boxIndexBuffer = new GLElementBuffer(false);
+		this.boxIndexBuffer.uploadBuffer(solidIndexBuffer, EDhApiGpuUploadMethod.DATA, BOX_INDICES.length * Integer.BYTES, GL32.GL_STATIC_DRAW);
+		this.boxIndexBuffer.bind();
 		
 	}
 	private void addGenericDebugObjects()
@@ -345,7 +386,12 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 	// rendering //
 	//===========//
 	
-	public void render(DhApiRenderParam renderEventParam, IProfilerWrapper profiler)
+	/**
+	 * @param renderingWithSsao 
+	 *      if true that means this render call is happening before the SSAO pass
+     *      and any objects rendered in this pass will have SSAO applied to them.
+	 */
+	public void render(DhApiRenderParam renderEventParam, IProfilerWrapper profiler, boolean renderingWithSsao)
 	{
 		// render setup //
 		profiler.push("setup");
@@ -362,9 +408,9 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		
 		this.shader.bind();
 		this.va.bind();
-		this.va.bindBufferToAllBindingPoints(this.vertexBuffer.getId());
+		this.va.bindBufferToAllBindingPoints(this.boxVertexBuffer.getId());
 		
-		this.solidIndexBuffer.bind();
+		this.boxIndexBuffer.bind();
 		
 		Mat4f projectionMvmMatrix = new Mat4f(renderEventParam.dhProjectionMatrix);
 		projectionMvmMatrix.multiply(renderEventParam.dhModelViewMatrix);
@@ -379,21 +425,27 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		Collection<RenderableBoxGroup> boxList = this.boxGroupById.values();
 		for (RenderableBoxGroup boxGroup : boxList)
 		{
-			// ignore inactive groups
-			if (boxGroup != null && boxGroup.active)
+			// skip boxes that shouldn't render this pass
+			if (boxGroup.ssaoEnabled == renderingWithSsao)
 			{
 				profiler.popPush("render prep");
 				boxGroup.preRender(renderEventParam);
 				
-				if (this.useInstancedRendering)
+				// ignore inactive groups
+				if (boxGroup.active)
 				{
-					profiler.popPush("rendering");
-					this.renderBoxGroupInstanced(boxGroup, camPos, projectionMvmMatrix);
-				}
-				else
-				{
-					profiler.popPush("rendering");
-					this.renderBoxGroupDirect(boxGroup, projectionMvmMatrix, camPos);
+					if (this.useInstancedRendering)
+					{
+						profiler.popPush("rendering");
+						this.renderBoxGroupInstanced(boxGroup, camPos, projectionMvmMatrix);
+					}
+					else
+					{
+						profiler.popPush("rendering");
+						this.renderBoxGroupDirect(boxGroup, projectionMvmMatrix, camPos);
+					}
+					
+					boxGroup.postRender(renderEventParam);
 				}
 			}
 		}
@@ -442,6 +494,18 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		this.shader.setUniform(this.skyLightUniform, boxGroup.skyLight);
 		this.shader.setUniform(this.blockLightUniform, boxGroup.blockLight);
 		
+		DhApiRenderableBoxGroupShading shading = boxGroup.shading;
+		if (shading == null)
+		{
+			shading = DhApiRenderableBoxGroupShading.getUnshaded();
+		}
+		this.shader.setUniform(this.northShadingUniform, shading.north);
+		this.shader.setUniform(this.southShadingUniform, shading.south);
+		this.shader.setUniform(this.eastShadingUniform, shading.east);
+		this.shader.setUniform(this.westShadingUniform, shading.west);
+		this.shader.setUniform(this.topShadingUniform, shading.top);
+		this.shader.setUniform(this.bottomShadingUniform, shading.bottom);
+		
 		
 		
 		
@@ -466,7 +530,7 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		// Draw instanced
 		if (boxGroup.uploadedBoxCount > 0)
 		{
-			GL32.glDrawElementsInstanced(GL32.GL_TRIANGLES, SOLID_BOX_INDICES.length, GL32.GL_UNSIGNED_INT, 0, boxGroup.uploadedBoxCount);
+			GL32.glDrawElementsInstanced(GL32.GL_TRIANGLES, BOX_INDICES.length, GL32.GL_UNSIGNED_INT, 0, boxGroup.uploadedBoxCount);
 		}
 		
 		
@@ -512,7 +576,7 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		
 		for (DhApiRenderableBox box : boxGroup)
 		{
-			renderBox(boxGroup, box, transformMatrix, camPos);
+			this.renderBox(boxGroup, box, transformMatrix, camPos);
 		}
 	}
 	private void renderBox(
@@ -543,7 +607,7 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		
 		this.shader.setUniform(this.directShaderColorUniform, box.color);
 		
-		GL32.glDrawElements(GL32.GL_TRIANGLES, SOLID_BOX_INDICES.length, GL32.GL_UNSIGNED_INT, 0);
+		GL32.glDrawElements(GL32.GL_TRIANGLES, BOX_INDICES.length, GL32.GL_UNSIGNED_INT, 0);
 	}
 	
 	

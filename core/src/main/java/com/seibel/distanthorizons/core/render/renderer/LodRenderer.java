@@ -303,9 +303,12 @@ public class LodRenderer
 				ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeRenderPassEvent.class, renderEventParam);
 				this.bufferHandler.renderOpaque(this, renderEventParam);
 				
-				// custom objects
-				profiler.popPush("Custom Objects");
-				this.genericObjectRenderer.render(renderEventParam, profiler);
+				// custom objects with SSAO
+				if (Config.Client.Advanced.Graphics.GenericRendering.enableRendering.get())
+				{
+					profiler.popPush("Custom Objects");
+					this.genericObjectRenderer.render(renderEventParam, profiler, true);
+				}
 				
 				
 				// SSAO
@@ -313,6 +316,14 @@ public class LodRenderer
 				{
 					profiler.popPush("LOD SSAO");
 					SSAORenderer.INSTANCE.render(minecraftGlState, new Mat4f(renderEventParam.dhProjectionMatrix), renderEventParam.partialTicks);
+				}
+				
+				
+				// custom objects without SSAO
+				if (Config.Client.Advanced.Graphics.GenericRendering.enableRendering.get())
+				{
+					profiler.popPush("Custom Objects");
+					this.genericObjectRenderer.render(renderEventParam, profiler, false);
 				}
 				
 				
