@@ -322,7 +322,7 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 		rayDirection.normalize();
 		
 		int minBlockHeight = levelWrapper.getMinHeight();
-		int maxBlockHeight = levelWrapper.getHeight();
+		int maxBlockHeight = levelWrapper.getMaxHeight();
 		
 		
 		

@@ -244,7 +244,7 @@ public class RenderUtil
 			// if the player is a significant distance above the work, increase the
 			// near clip plane to fix Z imprecision issues
 			int playerHeight = MC.getPlayerBlockPos().y;
-			int levelMaxHeight = level.getHeight();
+			int levelMaxHeight = level.getMaxHeight();
 			if (playerHeight > levelMaxHeight + 1_000)
 			{
 				return playerHeight - (levelMaxHeight + 1000);

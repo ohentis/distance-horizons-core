@@ -47,8 +47,7 @@ public interface ILevelWrapper extends IDhApiLevelWrapper, IBindable
 	boolean hasSkyLight();
 	
 	@Override
-	int getHeight();
-	
+	int getMaxHeight();
 	@Override
 	default int getMinHeight() { return 0; }
 	

@@ -244,7 +244,7 @@ public class RenderBufferHandler implements AutoCloseable
 		if (enableFrustumCulling)
 		{
 			int worldMinY = clientLevelWrapper.getMinHeight();
-			int worldHeight = clientLevelWrapper.getHeight();
+			int worldHeight = clientLevelWrapper.getMaxHeight();
 			
 			Vec3d cameraPos = MC_RENDER.getCameraExactPosition();
 			

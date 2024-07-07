@@ -217,7 +217,7 @@ public class CloudRenderHandler
 		boxGroup.setOriginBlockPos(
 				new DhApiVec3f(
 					clouds.xOffset + (clouds.instanceOffsetX * clouds.widthInBlocks) + xOffset + clouds.halfWidthInBlocks,
-					this.level.getLevelWrapper().getHeight() + 200,
+					this.level.getLevelWrapper().getMaxHeight() + 200,
 					clouds.zOffset + (clouds.instanceOffsetZ * clouds.widthInBlocks) + zOffset + clouds.halfWidthInBlocks
 				)
 		);

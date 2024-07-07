@@ -48,7 +48,7 @@ public class LevelWrapperTest implements IDhApiLevelWrapper
 	public boolean hasSkyLight() { return false; }
 	
 	@Override
-	public int getHeight() { return 0; }
+	public int getMaxHeight() { return 0; }
 	
 	@Override
 	public int getMinHeight() { return IDhApiLevelWrapper.super.getMinHeight(); }
