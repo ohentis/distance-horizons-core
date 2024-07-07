@@ -137,6 +137,7 @@ public class Config
 				public static ConfigCategory ssao = new ConfigCategory.Builder().set(Ssao.class).build();
 				public static ConfigCategory noiseTextureSettings = new ConfigCategory.Builder().set(NoiseTextureSettings.class).build();
 				public static ConfigCategory advancedGraphics = new ConfigCategory.Builder().set(AdvancedGraphics.class).build();
+				public static ConfigCategory genericRendering = new ConfigCategory.Builder().set(GenericRendering.class).build();
 				
 				
 				public static class Quality
@@ -656,6 +657,31 @@ public class Config
 									+ EDhApiGrassSideRendering.AS_DIRT + ": sides render entirely as dirt. \n"
 									+ "")
 							.setPerformance(EConfigEntryPerformance.NONE)
+							.build();
+					
+				}
+				
+				public static class GenericRendering
+				{
+					public static ConfigEntry<Boolean> enableRendering = new ConfigEntry.Builder<Boolean>()
+							.set(true)
+							.comment(""
+									+ "\n"
+									+ "")
+							.build();
+					
+					public static ConfigEntry<Boolean> enableBeaconRendering = new ConfigEntry.Builder<Boolean>()
+							.set(true)
+							.comment(""
+									+ "\n"
+									+ "")
+							.build();
+					
+					public static ConfigEntry<Boolean> enableCloudRendering = new ConfigEntry.Builder<Boolean>()
+							.set(true)
+							.comment(""
+									+ "\n"
+									+ "")
 							.build();
 					
 				}
