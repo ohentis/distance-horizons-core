@@ -574,6 +574,19 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		this.shader.setUniform(this.skyLightUniform, boxGroup.skyLight);
 		this.shader.setUniform(this.blockLightUniform, boxGroup.blockLight);
 		
+		DhApiRenderableBoxGroupShading shading = boxGroup.shading;
+		if (shading == null)
+		{
+			shading = DhApiRenderableBoxGroupShading.getUnshaded();
+		}
+		this.shader.setUniform(this.northShadingUniform, shading.north);
+		this.shader.setUniform(this.southShadingUniform, shading.south);
+		this.shader.setUniform(this.eastShadingUniform, shading.east);
+		this.shader.setUniform(this.westShadingUniform, shading.west);
+		this.shader.setUniform(this.topShadingUniform, shading.top);
+		this.shader.setUniform(this.bottomShadingUniform, shading.bottom);
+		
+		
 		for (DhApiRenderableBox box : boxGroup)
 		{
 			this.renderBox(boxGroup, box, transformMatrix, camPos);

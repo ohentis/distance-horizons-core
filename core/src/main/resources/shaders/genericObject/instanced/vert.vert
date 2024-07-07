@@ -10,7 +10,6 @@ uniform mat4 uProjectionMvm;
 uniform int uSkyLight;
 uniform int uBlockLight;
 uniform sampler2D uLightMap;
-
 uniform float uNorthShading;
 uniform float uSouthShading;
 uniform float uEastShading;
