@@ -58,7 +58,7 @@ public class CloudRenderHandler
 	/** measured in blocks */
 	private static final int CLOUD_BOX_THICKNESS = 32;
 	
-	private final IDhApiRenderableBoxGroup[][] boxGroupByOffset;
+	private final IDhApiRenderableBoxGroup[][] boxGroupByOffset = new IDhApiRenderableBoxGroup[3][3];
 	private final IDhLevel level;
 	
 	private float moveSpeedInBlocksPerSecond = 3.0f;
@@ -73,6 +73,17 @@ public class CloudRenderHandler
 	{
 		this.level = level;
 		
+		if (!renderer.getUseInstancedRendering())
+		{
+			LOGGER.warn("Instanced rendering unavailable, cloud rendering disabled.");
+		}
+		
+		
+		
+		
+		//=======================//
+		// get the cloud texture //
+		//=======================//
 		
 		// default to a single empty slot in case the texture is broken
 		boolean[][] cloudLocations = new boolean[1][1];
@@ -96,6 +107,10 @@ public class CloudRenderHandler
 		}
 		
 		
+		
+		//===================//
+		// parse the texture //
+		//===================//
 		
 		int textureWidth = cloudLocations.length; 
 		ArrayList<DhApiRenderableBox> boxList = new ArrayList<>(512);
@@ -131,6 +146,11 @@ public class CloudRenderHandler
 		}
 		
 		
+		
+		//========================//
+		// create the renderables //
+		//========================//
+		
 		// slightly lighter shading than the default
 		DhApiRenderableBoxGroupShading cloudShading = DhApiRenderableBoxGroupShading.getUnshaded();
 		cloudShading.north = cloudShading.south = 0.9f;
@@ -138,7 +158,7 @@ public class CloudRenderHandler
 		cloudShading.top = 1.0f;
 		cloudShading.bottom = 0.7f;
 		
-		this.boxGroupByOffset = new IDhApiRenderableBoxGroup[3][3];
+		// 3x3 area so we clouds should always be overhead
 		for (int x = -1; x <= 1; x++)
 		{
 			for (int z = -1; z <= 1; z++)
@@ -151,16 +171,20 @@ public class CloudRenderHandler
 				boxGroup.setSsaoEnabled(false);
 				boxGroup.setShading(cloudShading);
 				
-				CloudParams offset = new CloudParams(textureWidth, x, z);
-				boxGroup.setPreRenderFunc((renderParam) -> this.preRender(offset));
+				CloudParams params = new CloudParams(textureWidth, x, z);
+				boxGroup.setPreRenderFunc((renderParam) -> this.preRender(params));
 				
-				renderer.add(boxGroup);
+				// we only stop before adding to the renderer to prevent accidental issues with null pointers and such 
+				if (renderer.getUseInstancedRendering())
+				{
+					renderer.add(boxGroup);
+				}
 				this.boxGroupByOffset[x+1][z+1] = boxGroup;
 			}
 		}
 	}
 	
-	public void preRender(CloudParams clouds)
+	private void preRender(CloudParams clouds)
 	{
 		IDhApiRenderableBoxGroup boxGroup = this.boxGroupByOffset[clouds.instanceOffsetX+1][clouds.instanceOffsetZ+1];
 		
@@ -229,7 +253,7 @@ public class CloudRenderHandler
 	// texture handling //
 	//==================//
 	
-	public static boolean[][] getCloudsFromTexture() throws FileNotFoundException, IOException
+	private static boolean[][] getCloudsFromTexture() throws FileNotFoundException, IOException
 	{
 		final ClassLoader loader = Thread.currentThread().getContextClassLoader();
 		

@@ -625,6 +625,13 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 	
 	
 	
+	//=========//
+	// getters //
+	//=========//
+	
+	public boolean getUseInstancedRendering() { return this.useInstancedRendering; }
+	
+	
 	
 	//=========//
 	// F3 menu //
