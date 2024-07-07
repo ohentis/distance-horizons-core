@@ -21,6 +21,7 @@ package com.seibel.distanthorizons.core.file.fullDatafile;
 
 import com.seibel.distanthorizons.api.enums.config.EDhApiDataCompressionMode;
 import com.seibel.distanthorizons.core.api.internal.ClientApi;
+import com.seibel.distanthorizons.core.api.internal.SharedApi;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV1;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
@@ -37,6 +38,7 @@ import com.seibel.distanthorizons.core.sql.repo.FullDataSourceV2Repo;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
 import com.seibel.distanthorizons.core.util.objects.DataCorruptedException;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
+import com.seibel.distanthorizons.core.world.EWorldEnvironment;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.apache.logging.log4j.Logger;
@@ -108,6 +110,7 @@ public class FullDataSourceProviderV2
 	 * This isn't in {@link AbstractDataSourceHandler} since we don't need parent updating logic
 	 * for render data, only full data.
 	 */
+	@Nullable
 	private final ThreadPoolExecutor updateQueueProcessor;
 	
 	
@@ -128,10 +131,17 @@ public class FullDataSourceProviderV2
 		
 		// start migrating any legacy data sources present in the background
 		this.migrationThreadPool = ThreadUtil.makeRateLimitedThreadPool(1, MIGRATION_THREAD_NAME_PREFIX + "[" + dimensionName + "]", Config.Client.Advanced.MultiThreading.runTimeRatioForUpdatePropagatorThreads.get(), Thread.MIN_PRIORITY, (Semaphore) null);
-		this.migrationThreadPool.execute(() -> this.convertLegacyDataSources());
+		this.migrationThreadPool.execute(this::convertLegacyDataSources);
 		
-		this.updateQueueProcessor = ThreadUtil.makeSingleThreadPool("Parent Update Queue [" + dimensionName + "]");
-		this.updateQueueProcessor.execute(() -> this.runUpdateQueue());
+		if (SharedApi.getEnvironment() != EWorldEnvironment.Server_Only)
+		{
+			this.updateQueueProcessor = ThreadUtil.makeSingleThreadPool("Parent Update Queue [" + dimensionName + "]");
+			this.updateQueueProcessor.execute(this::runUpdateQueue);
+		}
+		else
+		{
+			this.updateQueueProcessor = null;
+		}
 	}
 	
 	
@@ -678,7 +688,10 @@ public class FullDataSourceProviderV2
 	public void close()
 	{
 		super.close();
-		this.updateQueueProcessor.shutdownNow();
+		if (this.updateQueueProcessor != null)
+		{
+			this.updateQueueProcessor.shutdownNow();
+		}
 		
 		this.legacyFileHandler.close();
 		
