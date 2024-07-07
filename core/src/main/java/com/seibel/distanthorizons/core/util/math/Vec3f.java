@@ -20,6 +20,7 @@
 package com.seibel.distanthorizons.core.util.math;
 
 import com.seibel.distanthorizons.api.objects.math.DhApiVec3f;
+import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
 import com.seibel.distanthorizons.coreapi.util.MathUtil;
 
 /**
@@ -50,6 +51,14 @@ public class Vec3f extends DhApiVec3f
 		this.y = pos.y;
 		this.z = pos.z;
 	}
+	
+	public Vec3f(Vec3d pos)
+	{
+		this.x = (float) pos.x;
+		this.y = (float) pos.y;
+		this.z = (float) pos.z;
+	}
+	
 	
 	
 	
@@ -130,6 +139,20 @@ public class Vec3f extends DhApiVec3f
 		this.x = f1 * f5 - f2 * f4;
 		this.y = f2 * f3 - f * f5;
 		this.z = f * f4 - f1 * f3;
+	}
+	
+	public static float getManhattanDistance(DhApiVec3f a, DhApiVec3f b)
+	{
+		return Math.abs(a.x - b.x)
+				+ Math.abs(a.y - b.y)
+				+ Math.abs(a.z - b.z);
+	}
+	
+	public static double getDistance(DhApiVec3f a, DhApiVec3f b)
+	{
+		return Math.sqrt(Math.pow(a.x - b.x, 2)
+				+ Math.pow(a.y - b.y, 2)
+				+ Math.pow(a.z - b.z, 2));
 	}
 	
 	
