@@ -175,11 +175,7 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 	
 	
 	@Override
-	public GenericObjectRenderer getGenericRenderer() 
-	{ 
-		ClientLevelModule.ClientRenderState renderState = this.clientside.ClientRenderStateRef.get();
-		return (renderState != null) ? renderState.genericRenderer : null; 
-	}
+	public GenericObjectRenderer getGenericRenderer() { return this.clientside.genericRenderer; }
 	@Override
 	public RenderBufferHandler getRenderBufferHandler()
 	{

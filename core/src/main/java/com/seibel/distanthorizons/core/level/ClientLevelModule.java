@@ -53,6 +53,14 @@ public class ClientLevelModule implements Closeable, AbstractDataSourceHandler.I
 	@WillNotClose
 	public final FullDataSourceProviderV2 fullDataSourceProvider;
 	public final AtomicReference<ClientRenderState> ClientRenderStateRef = new AtomicReference<>();
+	/** 
+	 * This is handled outside of the {@link ClientRenderState} to prevent destroying
+	 * the {@link GenericObjectRenderer} when changing render distances or enabling/disabling rendering. <br><br>
+	 * 
+	 * Destroying the {@link GenericObjectRenderer} would cause any existing bindings to be 
+	 * erroneously removed.
+	 */
+	public final GenericObjectRenderer genericRenderer = new GenericObjectRenderer();
 	
 	
 	
@@ -105,7 +113,7 @@ public class ClientLevelModule implements Closeable, AbstractDataSourceHandler.I
 			}
 			
 			clientRenderState.close();
-			clientRenderState = new ClientRenderState(this.clientLevel, clientLevelWrapper, this.clientLevel.getFullDataProvider());
+			clientRenderState = new ClientRenderState(this.clientLevel, clientLevelWrapper, this.clientLevel.getFullDataProvider(), this.genericRenderer);
 			if (!this.ClientRenderStateRef.compareAndSet(null, clientRenderState))
 			{
 				//FIXME: How to handle this?
@@ -138,7 +146,7 @@ public class ClientLevelModule implements Closeable, AbstractDataSourceHandler.I
 	public boolean startRenderer(IClientLevelWrapper clientLevelWrapper)
 	{
 		// TODO why are we passing in a level wrapper? Our client level is already defined.
-		ClientRenderState ClientRenderState = new ClientRenderState(this.clientLevel, clientLevelWrapper, this.clientLevel.getFullDataProvider());
+		ClientRenderState ClientRenderState = new ClientRenderState(this.clientLevel, clientLevelWrapper, this.clientLevel.getFullDataProvider(), this.genericRenderer);
 		if (!this.ClientRenderStateRef.compareAndSet(null, ClientRenderState))
 		{
 			LOGGER.warn("Failed to start renderer due to concurrency");
@@ -280,7 +288,6 @@ public class ClientLevelModule implements Closeable, AbstractDataSourceHandler.I
 		public final LodQuadTree quadtree;
 		public final RenderBufferHandler renderBufferHandler;
 		public final LodRenderer lodRenderer;
-		public final GenericObjectRenderer genericRenderer;
 		
 		
 		
@@ -288,7 +295,10 @@ public class ClientLevelModule implements Closeable, AbstractDataSourceHandler.I
 		// constructor //
 		//=============//
 		
-		public ClientRenderState(IDhClientLevel dhClientLevel, IClientLevelWrapper clientLevelWrapper, FullDataSourceProviderV2 fullDataSourceProvider)
+		public ClientRenderState(
+				IDhClientLevel dhClientLevel, IClientLevelWrapper clientLevelWrapper, 
+				FullDataSourceProviderV2 fullDataSourceProvider,
+				GenericObjectRenderer genericRenderer)
 		{
 			this.clientLevelWrapper = clientLevelWrapper;
 			
@@ -297,9 +307,8 @@ public class ClientLevelModule implements Closeable, AbstractDataSourceHandler.I
 					0, 0,
 					fullDataSourceProvider);
 			
-			this.genericRenderer = new GenericObjectRenderer();
 			this.renderBufferHandler = new RenderBufferHandler(this.quadtree);
-			this.lodRenderer = new LodRenderer(this.renderBufferHandler, this.genericRenderer);
+			this.lodRenderer = new LodRenderer(this.renderBufferHandler, genericRenderer);
 		}
 		
 		

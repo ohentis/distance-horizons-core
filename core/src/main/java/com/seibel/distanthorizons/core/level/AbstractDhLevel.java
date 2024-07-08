@@ -75,6 +75,8 @@ public abstract class AbstractDhLevel implements IDhLevel
 	
 	protected boolean beaconGroupBound = false;
 	
+	/** Will be null if clouds shouldn't be rendered for this level. */
+	@Nullable
 	protected CloudRenderHandler cloudRenderHandler;
 	
 	
@@ -203,7 +205,9 @@ public abstract class AbstractDhLevel implements IDhLevel
 	
 	
 	
-	// beacon beam //
+	//=================//
+	// beacon handling //
+	//=================//
 	
 	@Override
 	public List<BeaconBeamDTO> getAllBeamsForSectionPos(long pos)
@@ -230,14 +234,6 @@ public abstract class AbstractDhLevel implements IDhLevel
 			if (this.beaconBeamRepo != null
 				&& genericObjectRenderer != null)
 			{
-				if (!this.beaconGroupBound)
-				{
-					this.beaconGroupBound = true;
-					genericObjectRenderer.add(this.beaconBoxGroup);
-					this.cloudRenderHandler = new CloudRenderHandler(this, genericObjectRenderer);
-				}
-				
-				
 				HashSet<DhBlockPos> allPosSet = new HashSet<>();
 				
 				// sort new beams
@@ -327,7 +323,12 @@ public abstract class AbstractDhLevel implements IDhLevel
 			{
 				this.beaconGroupBound = true;
 				genericObjectRenderer.add(this.beaconBoxGroup);
-				this.cloudRenderHandler = new CloudRenderHandler(this, genericObjectRenderer);
+				
+				if (!this.getLevelWrapper().hasCeiling()
+					&& !this.getLevelWrapper().getDimensionType().isTheEnd())
+				{
+					this.cloudRenderHandler = new CloudRenderHandler(this, genericObjectRenderer);
+				}
 			}
 			
 			
