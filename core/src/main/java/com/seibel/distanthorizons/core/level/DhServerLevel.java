@@ -38,6 +38,7 @@ import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.util.LodUtil;
+import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
@@ -145,11 +146,17 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 					return;
 				}
 				
-				this.serverside.fullDataFileHandler.getAsync(msg.sectionPos).thenAccept(fullDataSource ->
+				ThreadPoolExecutor executor = ThreadPoolUtil.getNetworkCompressionExecutor();
+				if (executor == null)
+				{
+					LOGGER.warn("Unable to send FullDataSourceResponseMessage - getNetworkCompressionExecutor() is null");
+					return;
+				}
+				this.serverside.fullDataFileHandler.getAsync(msg.sectionPos).thenAcceptAsync(fullDataSource ->
 				{
 					rateLimiterSet.loginDataSyncRCLimiter.release();
 					msg.sendResponse(new FullDataSourceResponseMessage(fullDataSource));
-				});
+				}, executor);
 			}
 		}));
 		
@@ -241,20 +248,29 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 			// This semaphore is intentionally acquired forever
 			entry.requestCollectionSemaphore.acquireUninterruptibly(Short.MAX_VALUE);
 			
-			FullDataSourceResponseMessage response = new FullDataSourceResponseMessage(entry.fullDataSource);
-			for (FullDataSourceRequestMessage msg : entry.requestMessages.values())
+			ThreadPoolExecutor executor = ThreadPoolUtil.getNetworkCompressionExecutor();
+			if (executor == null)
 			{
-				this.fullDataRequests.remove(msg.futureId);
-				
-				ServerPlayerState serverPlayerState = this.remotePlayerConnectionHandler.getConnectedPlayer(msg.serverPlayer());
-				if (serverPlayerState == null)
-				{
-					continue;
-				}
-				
-				serverPlayerState.getRateLimiterSet(this).fullDataRequestConcurrencyLimiter.release();
-				msg.sendResponse(response);
+				LOGGER.warn("Unable to send FullDataSourceResponseMessage - getNetworkCompressionExecutor() is null");
+				continue;
 			}
+			CompletableFuture.runAsync(() ->
+			{
+				FullDataSourceResponseMessage response = new FullDataSourceResponseMessage(entry.fullDataSource);
+				for (FullDataSourceRequestMessage msg : entry.requestMessages.values())
+				{
+					this.fullDataRequests.remove(msg.futureId);
+					
+					ServerPlayerState serverPlayerState = this.remotePlayerConnectionHandler.getConnectedPlayer(msg.serverPlayer());
+					if (serverPlayerState == null)
+					{
+						continue;
+					}
+					
+					serverPlayerState.getRateLimiterSet(this).fullDataRequestConcurrencyLimiter.release();
+					msg.sendResponse(response);
+				}
+			}, executor);
 		}
 	}
 	
@@ -266,22 +282,32 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 			return this.getFullDataProvider().updateDataSourceAsync(data);
 		}
 		
-		FullDataPartialUpdateMessage updateMessage = new FullDataPartialUpdateMessage(this.serverLevelWrapper, data);
-		for (ServerPlayerState serverPlayerState : this.remotePlayerConnectionHandler.getConnectedPlayers())
+		ThreadPoolExecutor executor = ThreadPoolUtil.getNetworkCompressionExecutor();
+		if (executor == null)
 		{
-			if (!serverPlayerState.config.isRealTimeUpdatesEnabled())
-			{
-				continue;
-			}
-			
-			Vec3d playerPosition = serverPlayerState.serverPlayer().getPosition();
-			int distanceFromPlayer = DhSectionPos.getManhattanBlockDistance(data.getPos(), new DhBlockPos2D((int) playerPosition.x, (int) playerPosition.z)) / 16;
-			if (distanceFromPlayer >= serverPlayerState.serverPlayer().getViewDistance() &&
-					distanceFromPlayer <= serverPlayerState.config.getRenderDistanceRadius())
-			{
-				serverPlayerState.session.sendMessage(updateMessage);
-			}
+			LOGGER.warn("Unable to send FullDataPartialUpdateMessage - getNetworkCompressionExecutor() is null");
+			return this.getFullDataProvider().updateDataSourceAsync(data);
 		}
+		CompletableFuture.runAsync(() ->
+		{
+			FullDataPartialUpdateMessage updateMessage = new FullDataPartialUpdateMessage(this.serverLevelWrapper, data);
+			for (ServerPlayerState serverPlayerState : this.remotePlayerConnectionHandler.getConnectedPlayers())
+			{
+				if (!serverPlayerState.config.isRealTimeUpdatesEnabled())
+				{
+					continue;
+				}
+				
+				Vec3d playerPosition = serverPlayerState.serverPlayer().getPosition();
+				int distanceFromPlayer = DhSectionPos.getManhattanBlockDistance(data.getPos(), new DhBlockPos2D((int) playerPosition.x, (int) playerPosition.z)) / 16;
+				if (distanceFromPlayer >= serverPlayerState.serverPlayer().getViewDistance() &&
+						distanceFromPlayer <= serverPlayerState.config.getRenderDistanceRadius())
+				{
+					serverPlayerState.session.sendMessage(updateMessage);
+				}
+			}
+		}, executor);
+		
 		
 		return this.getFullDataProvider().updateDataSourceAsync(data);
 	}

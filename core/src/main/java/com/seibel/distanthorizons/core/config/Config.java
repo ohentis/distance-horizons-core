@@ -1093,6 +1093,24 @@ public class Config
 								+ "")
 						.build();
 				
+				public static final ConfigEntry<Integer> numberOfNetworkCompressionThreads = new ConfigEntry.Builder<Integer>()
+						.setServersideShortName("numberOfNetworkCompressionThreads")
+						.setMinDefaultMax(1,
+								ThreadPresetConfigEventHandler.getNetworkCompressionDefaultThreadCount(),
+								Runtime.getRuntime().availableProcessors())
+						.comment(""
+								+ "How many threads should be used when building LODs? \n"
+								+ "\n"
+								+ "These threads run when terrain is generated, when\n"
+								+ "certain graphics settings are changed, and when moving around the world. \n"
+								+ "\n"
+								+ THREAD_NOTE)
+						.build();
+				public static final ConfigEntry<Double> runTimeRatioForNetworkCompressionThreads = new ConfigEntry.Builder<Double>()
+						.setServersideShortName("runTimeRatioForNetworkCompressionThreads")
+						.setMinDefaultMax(0.01, ThreadPresetConfigEventHandler.getNetworkCompressionDefaultRunTimeRatio(), 1.0)
+						.comment(THREAD_RUN_TIME_RATIO_NOTE)
+						.build();
 			}
 			
 			public static class GpuBuffers
