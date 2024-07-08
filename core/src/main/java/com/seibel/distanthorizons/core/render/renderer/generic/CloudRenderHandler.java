@@ -117,24 +117,94 @@ public class CloudRenderHandler
 			{
 				if (cloudLocations[x][z])
 				{
-					int minX = x * CLOUD_BOX_WIDTH;
-					int minZ = z * CLOUD_BOX_WIDTH;
-					int maxX = minX + CLOUD_BOX_WIDTH;
-					int maxZ = minZ + CLOUD_BOX_WIDTH;
+					// start a new box in Z direction
+					int startZ = z;
+					int startX = x;
+					int endZ = startZ;
+					int endX = x+1;
+					
+					
+					
+					//==========================//
+					// merge in the Z direction //
+					//==========================//
+					
+					// Find the cloud's length in the Z direction
+					while (endZ < textureWidth
+							&& cloudLocations[x][endZ])
+					{
+						endZ++;
+					}
+					// update the z iterator so we can skip over everything included in this cloud
+					z = endZ - 1;
+					
+					
+					
+					//==========================//
+					// merge in the X direction //
+					//==========================//
+					
+					for (int currentX = startX + 1; currentX < textureWidth; currentX++)
+					{
+						boolean canMergeInXDir = true;
+						
+						// check if all locations in this column are true
+						for (int adjacentZ = startZ; adjacentZ < endZ; adjacentZ++)
+						{
+							if (!cloudLocations[currentX][adjacentZ])
+							{
+								// at least one pixel in the texture is false,
+								// so we can't merge in this direction
+								canMergeInXDir = false;
+								break;
+							}
+						}
+						
+						
+						if (canMergeInXDir)
+						{
+							// mark the adjacent column as processed
+							for (int currentZ = startZ; currentZ < endZ; currentZ++)
+							{
+								// by flipping all the pixels in the adjacent column to false,
+								// we don't have to worry about adding another cloud
+								cloudLocations[currentX][currentZ] = false;
+							}
+							
+							endX = (currentX + 1);
+						}
+						else
+						{
+							break;
+						}
+					}
+					
+					
+					
+					//============================//
+					//  Create the renderable box //
+					//============================//
+					
+					// endZ contains the last cloud index
+					// so the cloud now goes from startZ to endZ (inclusive)
+					int minXBlockPos = startX * CLOUD_BOX_WIDTH;
+					int minZBlockPos = startZ * CLOUD_BOX_WIDTH;
+					int maxXBlockPos = endX * CLOUD_BOX_WIDTH;
+					int maxZBlockPos = endZ * CLOUD_BOX_WIDTH;
 					
 					Color color = CLOUD_COLOR;
 					if (DEBUG_BORDER_COLORS)
 					{
 						// equals is included so the board is 2 blocks wide, it makes it easier to see
-						if (x <= 1) { color = Color.RED; }
-						else if (x >= textureWidth-2) { color = Color.GREEN; }
-						if (z <= 1) { color = Color.BLUE; }
-						else if (z >= textureWidth-2) { color = Color.BLACK; }
+						if (startX <= 1) { color = Color.RED; }
+						else if (startX >= textureWidth - 2) { color = Color.GREEN; }
+						if (startZ <= 1) { color = Color.BLUE; }
+						else if (endZ >= textureWidth - 2) { color = Color.BLACK; }
 					}
 					
 					DhApiRenderableBox box = new DhApiRenderableBox(
-							new DhApiVec3f(minX, 0, minZ),
-							new DhApiVec3f(maxX, CLOUD_BOX_THICKNESS, maxZ),
+							new DhApiVec3f(minXBlockPos, 0, minZBlockPos),
+							new DhApiVec3f(maxXBlockPos, CLOUD_BOX_THICKNESS, maxZBlockPos),
 							color
 					);
 					boxList.add(box);
