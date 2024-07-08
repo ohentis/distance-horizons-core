@@ -75,26 +75,12 @@ public class BeaconRenderHandler
 	
 	
 	
-	//
-	// 
-	//
-	
-	public List<BeaconBeamDTO> getAllBeamsForSectionPos(long pos)
-	{
-		if (this.beaconBeamRepo != null)
-		{
-			return this.beaconBeamRepo.getAllBeamsForPos(pos);
-		}
-		else
-		{
-			return new ArrayList<>(0);
-		}
-	}
+	//=========================//
+	// level loading/unloading //
+	//=========================//
 	
 	public void setBeaconBeamsForChunk(DhChunkPos chunkPos, java.util.List<BeaconBeamDTO> newBeamList)
 	{
-		// TODO move beacon handling to its own BeaconRenderHandler class
-		
 		// synchronized to prevent two threads from updating the same chunk at the same time
 		synchronized (this)
 		{
@@ -177,9 +163,9 @@ public class BeaconRenderHandler
 	
 	
 	
-	//
-	//
-	//
+	//=================//
+	// render handling //
+	//=================//
 	
 	private void startRenderingBeacon(BeaconBeamDTO beacon)
 	{
@@ -223,6 +209,5 @@ public class BeaconRenderHandler
 			}
 		});
 	}
-	
 	
 }
