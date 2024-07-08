@@ -370,8 +370,8 @@ public abstract class AbstractDhLevel implements IDhLevel
 	{
 		this.beaconRefCountByBlockPos.compute(beaconPos, (pos, beaconRefCount) ->
 		{
-			if (beaconRefCount == null) { beaconRefCount = new AtomicInteger(); }
-			if (beaconRefCount.decrementAndGet() == 0)
+			if (beaconRefCount != null
+				&& beaconRefCount.decrementAndGet() <= 0)
 			{
 				this.beaconBoxGroup.removeIf((box) ->
 						box.minPos.x == beaconPos.x
