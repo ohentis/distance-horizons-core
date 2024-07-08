@@ -367,8 +367,7 @@ public abstract class AbstractDhLevel implements IDhLevel
 			{
 				BeaconBeamDTO beam = existingBeamList.get(i);
 				
-				// beam no longer exists at position, remove
-				this.beaconBeamRepo.deleteWithKey(beam.pos); // TODO broken when updating adjacent chunks
+				// beam no longer needs to be rendered, remove it from the renderer
 				if (this.beaconPosSet.remove(beam.pos))
 				{
 					this.beaconBoxGroup.removeIf((box) ->
