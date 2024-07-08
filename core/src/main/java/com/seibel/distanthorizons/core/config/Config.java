@@ -512,7 +512,8 @@ public class Config
 					public static ConfigEntry<Integer> noiseSteps = new ConfigEntry.Builder<Integer>()
 							.setMinDefaultMax(1, 4, null)
 							.comment(""
-									+ "How many steps of noise should be applied to LODs?")
+									+ "How many steps of noise should be applied to LODs?"
+									+ "")
 							.build();
 					
 					public static ConfigEntry<Double> noiseIntensity = new ConfigEntry.Builder<Double>()    // TODO: Make this a float (the ClassicConfigGUI doesn't support floats)
@@ -525,7 +526,8 @@ public class Config
 							.setMinDefaultMax(0, 1024, null)
 							.comment(""
 									+ "Defines how far should the noise texture render before it fades away. (in blocks) \n"
-									+ "Set to 0 to disable noise from fading away")
+									+ "Set to 0 to disable noise from fading away \n"
+									+ "")
 							.build();
 					
 				}
@@ -666,21 +668,22 @@ public class Config
 					public static ConfigEntry<Boolean> enableRendering = new ConfigEntry.Builder<Boolean>()
 							.set(true)
 							.comment(""
-									+ "\n"
+									+ "If true non terrain objects will be rendered in DH's terrain. \n"
+									+ "This includes beacon beams and clouds. \n"
 									+ "")
 							.build();
 					
 					public static ConfigEntry<Boolean> enableBeaconRendering = new ConfigEntry.Builder<Boolean>()
 							.set(true)
 							.comment(""
-									+ "\n"
+									+ "If true LOD beacon beams will be rendered. \n"
 									+ "")
 							.build();
 					
 					public static ConfigEntry<Boolean> enableCloudRendering = new ConfigEntry.Builder<Boolean>()
 							.set(true)
 							.comment(""
-									+ "\n"
+									+ "If true LOD clouds will be rendered. \n"
 									+ "")
 							.build();
 					
