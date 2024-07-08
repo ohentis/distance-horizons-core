@@ -32,6 +32,7 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.render.renderer.generic.BeaconRenderHandler;
 import com.seibel.distanthorizons.core.render.renderer.generic.CloudRenderHandler;
 import com.seibel.distanthorizons.core.render.renderer.generic.GenericObjectRenderer;
 import com.seibel.distanthorizons.core.render.renderer.generic.GenericRenderObjectFactory;
@@ -71,14 +72,10 @@ public abstract class AbstractDhLevel implements IDhLevel
 	/** contains the {@link DhChunkPos} for each {@link DhSectionPos} that are queued to save via {@link AbstractDhLevel#delayedFullDataSourceSaveCache} */
 	protected final ConcurrentHashMap<Long, HashSet<DhChunkPos>> updatedChunkPosSetBySectionPos = new ConcurrentHashMap<>();
 	
-	protected final IDhApiRenderableBoxGroup beaconBoxGroup;
-	protected final HashMap<DhBlockPos, AtomicInteger> beaconRefCountByBlockPos = new HashMap<>();
-	
-	protected boolean beaconGroupBound = false;
-	
 	/** Will be null if clouds shouldn't be rendered for this level. */
 	@Nullable
 	protected CloudRenderHandler cloudRenderHandler;
+	protected BeaconRenderHandler beaconRenderHandler;
 	
 	
 	
@@ -89,14 +86,12 @@ public abstract class AbstractDhLevel implements IDhLevel
 	protected AbstractDhLevel() 
 	{ 
 		this.chunkToLodBuilder = new ChunkToLodBuilder();
-		
-		this.beaconBoxGroup = GenericRenderObjectFactory.INSTANCE.createAbsolutePositionedGroup(new ArrayList<>(0));
-		this.beaconBoxGroup.setBlockLight(LodUtil.MAX_MC_LIGHT);
-		this.beaconBoxGroup.setSkyLight(LodUtil.MAX_MC_LIGHT);
-		this.beaconBoxGroup.setShading(DhApiRenderableBoxGroupShading.getUnshaded());
-		this.beaconBoxGroup.setPreRenderFunc((renderEventParam) -> this.beaconBoxGroup.setActive(Config.Client.Advanced.Graphics.GenericRendering.enableBeaconRendering.get()));
 	}
 	
+	/** 
+	 * Creating the repos requires access to the level file, which isn't
+	 * available at constructor time.
+	 */
 	protected void createAndSetSupportingRepos(File databaseFile)
 	{
 		// chunk hash
@@ -123,6 +118,28 @@ public abstract class AbstractDhLevel implements IDhLevel
 			LOGGER.error("Unable to create [BeaconBeamRepo], error: ["+e.getMessage()+"].", e);
 		}
 		this.beaconBeamRepo = newBeaconBeamRepo;
+	}
+	
+	/** handles any setup that needs the repos to be created */
+	protected void runRepoReliantSetup()
+	{
+		GenericObjectRenderer genericRenderer = this.getGenericRenderer();
+		if (genericRenderer != null)
+		{
+			// only add clouds for certain dimension types
+			if (!this.getLevelWrapper().hasCeiling()
+					&& !this.getLevelWrapper().getDimensionType().isTheEnd())
+			{
+				this.cloudRenderHandler = new CloudRenderHandler(this, genericRenderer);
+			}
+			
+			
+			// shouldn't happen, but just in case
+			if (this.beaconBeamRepo != null)
+			{
+				this.beaconRenderHandler = new BeaconRenderHandler(this.beaconBeamRepo, genericRenderer);
+			}
+		}
 	}
 	
 	
@@ -211,181 +228,29 @@ public abstract class AbstractDhLevel implements IDhLevel
 	//=================//
 	
 	@Override
-	public List<BeaconBeamDTO> getAllBeamsForSectionPos(long pos)
-	{
-		if (this.beaconBeamRepo != null)
-		{
-			return this.beaconBeamRepo.getAllBeamsForPos(pos);
-		}
-		else
-		{
-			return new ArrayList<>(0);
-		}
-	}
-	
-	
-	@Override
 	public void setBeaconBeamsForChunk(DhChunkPos chunkPos, List<BeaconBeamDTO> newBeamList)
 	{
-		// synchronized to prevent two threads from updating the same chunk at the same time
-		synchronized (this)
+		if (this.beaconRenderHandler != null)
 		{
-			GenericObjectRenderer genericObjectRenderer = this.getGenericRenderer();
-			
-			// should always be non-null, but just in case
-			if (this.beaconBeamRepo != null
-				&& genericObjectRenderer != null)
-			{
-				HashSet<DhBlockPos> allPosSet = new HashSet<>();
-				
-				// sort new beams
-				HashMap<DhBlockPos, BeaconBeamDTO> newBeamByPos = new HashMap<>(newBeamList.size());
-				for (int i = 0; i < newBeamList.size(); i++)
-				{
-					BeaconBeamDTO beam = newBeamList.get(i);
-					newBeamByPos.put(beam.pos, beam);
-					allPosSet.add(beam.pos);
-				}
-				
-				// get existing beams
-				List<BeaconBeamDTO> existingBeamList = this.beaconBeamRepo.getAllBeamsForPos(chunkPos);
-				HashMap<DhBlockPos, BeaconBeamDTO> existingBeamByPos = new HashMap<>(existingBeamList.size());
-				for (int i = 0; i < existingBeamList.size(); i++)
-				{
-					BeaconBeamDTO beam = existingBeamList.get(i);
-					existingBeamByPos.put(beam.pos, beam);
-					allPosSet.add(beam.pos);
-				}
-				
-				
-				
-				for (DhBlockPos beaconPos : allPosSet)
-				{
-					if (!chunkPos.contains(beaconPos))
-					{
-						// don't update beacons outside the updated chunk
-						continue;
-					}
-					
-					BeaconBeamDTO existingBeam = existingBeamByPos.get(beaconPos);
-					BeaconBeamDTO newBeam = newBeamByPos.get(beaconPos);
-					
-					if (existingBeam != null && newBeam != null)
-					{
-						// beam still exists in chunk, do nothing
-					}
-					else if (existingBeam == null && newBeam != null)
-					{
-						// new beam found, add to DB
-						this.beaconBeamRepo.save(newBeam);
-						this.startRenderingBeacon(newBeam);
-					}
-					else if (existingBeam != null && newBeam == null)
-					{
-						// beam no longer exists at position, remove
-						this.beaconBeamRepo.deleteWithKey(beaconPos); // TODO broken when updating adjacent chunks
-						this.stopRenderingBeaconAtPos(beaconPos);
-					}
-					
-				}
-				
-			}
+			this.beaconRenderHandler.setBeaconBeamsForChunk(chunkPos, newBeamList);
 		}
 	}
 	
 	@Override
 	public void loadBeaconBeamsInPos(long pos)
 	{
-		GenericObjectRenderer genericObjectRenderer = this.getGenericRenderer();
-		
-		// should always be non-null, but just in case
-		if (this.beaconBeamRepo != null
-			&& genericObjectRenderer != null)
+		if (this.beaconRenderHandler != null)
 		{
-			// generic setup is delayed to allow for the main renderer to start up
-			if (!this.beaconGroupBound)
-			{
-				this.beaconGroupBound = true;
-				genericObjectRenderer.add(this.beaconBoxGroup);
-				
-				if (!this.getLevelWrapper().hasCeiling()
-					&& !this.getLevelWrapper().getDimensionType().isTheEnd())
-				{
-					this.cloudRenderHandler = new CloudRenderHandler(this, genericObjectRenderer);
-				}
-			}
-			
-			
-			// get beams in pos
-			List<BeaconBeamDTO> existingBeamList = this.beaconBeamRepo.getAllBeamsForPos(pos);
-			for (int i = 0; i < existingBeamList.size(); i++)
-			{
-				BeaconBeamDTO newBeam = existingBeamList.get(i);
-				this.startRenderingBeacon(newBeam);
-			}
+			this.beaconRenderHandler.loadBeaconBeamsInPos(pos);
 		}
 	}
-	
 	@Override
 	public void unloadBeaconBeamsInPos(long pos)
 	{
-		GenericObjectRenderer genericObjectRenderer = this.getGenericRenderer();
-		
-		// should always be non-null, but just in case
-		if (this.beaconBeamRepo != null
-			&& genericObjectRenderer != null)
+		if (this.beaconRenderHandler != null)
 		{
-			// get beams in pos
-			List<BeaconBeamDTO> existingBeamList = this.beaconBeamRepo.getAllBeamsForPos(pos);
-			for (int i = 0; i < existingBeamList.size(); i++)
-			{
-				BeaconBeamDTO beam = existingBeamList.get(i);
-				this.stopRenderingBeaconAtPos(beam.pos);
-			}
+			this.beaconRenderHandler.unloadBeaconBeamsInPos(pos);
 		}
-	}
-	
-	private void startRenderingBeacon(BeaconBeamDTO beacon)
-	{
-		this.beaconRefCountByBlockPos.compute(beacon.pos, (beamPos, beaconRefCount) ->
-		{
-			if (beaconRefCount == null) { beaconRefCount = new AtomicInteger(); }
-			if (beaconRefCount.getAndIncrement() == 0)
-			{
-				DhApiRenderableBox beaconBox = new DhApiRenderableBox(
-						new DhApiVec3f(beacon.pos.x, beacon.pos.y+1, beacon.pos.z),
-						new DhApiVec3f(beacon.pos.x+1, 6_000, beacon.pos.z+1),
-						// TODO calculate color
-						beacon.color
-				);
-				
-				this.beaconBoxGroup.add(beaconBox);
-				this.beaconBoxGroup.triggerBoxChange();
-			}
-			return beaconRefCount;
-		});
-	}
-	
-	private void stopRenderingBeaconAtPos(DhBlockPos beaconPos)
-	{
-		this.beaconRefCountByBlockPos.compute(beaconPos, (pos, beaconRefCount) ->
-		{
-			if (beaconRefCount != null
-				&& beaconRefCount.decrementAndGet() <= 0)
-			{
-				this.beaconBoxGroup.removeIf((box) ->
-						box.minPos.x == beaconPos.x
-								&& box.minPos.y == beaconPos.y+1 // plus 1 because the beam starts above the beacon
-								&& box.minPos.z == beaconPos.z
-				);
-				this.beaconBoxGroup.triggerBoxChange();
-				return null;
-			}
-			else
-			{
-				return beaconRefCount;
-			}
-		});
 	}
 	
 	
@@ -400,11 +265,6 @@ public abstract class AbstractDhLevel implements IDhLevel
 		this.chunkToLodBuilder.close();
 		
 		GenericObjectRenderer genericObjectRenderer = this.getGenericRenderer();
-		if (genericObjectRenderer != null)
-		{
-			genericObjectRenderer.remove(this.beaconBoxGroup.getId());
-			this.beaconGroupBound = false;
-		}
 	}
 	
 }

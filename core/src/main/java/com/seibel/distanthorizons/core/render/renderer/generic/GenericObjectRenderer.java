@@ -629,7 +629,16 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 	// getters //
 	//=========//
 	
-	public boolean getUseInstancedRendering() { return this.useInstancedRendering; }
+	/** @throws IllegalStateException if {@link #init()} function hasn't been called yet */
+	public boolean getUseInstancedRendering() throws IllegalStateException
+	{
+		if (!this.init)
+		{
+			throw new IllegalStateException("GL initialization hasn't been completed.");
+		}
+		
+		return this.useInstancedRendering; 
+	}
 	
 	
 	

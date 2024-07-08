@@ -49,7 +49,6 @@ public interface IDhLevel extends AutoCloseable
 	void updateChunkAsync(IChunkWrapper chunk);
 	
 	void loadBeaconBeamsInPos(long pos);
-	List<BeaconBeamDTO> getAllBeamsForSectionPos(long pos);
 	void setBeaconBeamsForChunk(DhChunkPos chunkPos, List<BeaconBeamDTO> beamList);
 	void unloadBeaconBeamsInPos(long pos);
 	

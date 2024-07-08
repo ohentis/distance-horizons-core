@@ -66,6 +66,7 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 		this.clientside = new ClientLevelModule(this);
 		
 		this.createAndSetSupportingRepos(this.dataFileHandler.repo.databaseFile);
+		this.runRepoReliantSetup();
 		
 		if (enableRendering)
 		{

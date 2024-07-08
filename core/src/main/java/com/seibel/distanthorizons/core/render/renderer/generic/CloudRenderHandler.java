@@ -60,8 +60,10 @@ public class CloudRenderHandler
 	
 	private final IDhApiRenderableBoxGroup[][] boxGroupByOffset = new IDhApiRenderableBoxGroup[3][3];
 	private final IDhLevel level;
+	private final GenericObjectRenderer renderer;
 	
 	private float moveSpeedInBlocksPerSecond = 3.0f;
+	private boolean disabledWarningLogged = false;
 	
 	
 	
@@ -72,12 +74,7 @@ public class CloudRenderHandler
 	public CloudRenderHandler(IDhLevel level, GenericObjectRenderer renderer) 
 	{
 		this.level = level;
-		
-		if (!renderer.getUseInstancedRendering())
-		{
-			LOGGER.warn("Instanced rendering unavailable, cloud rendering disabled.");
-		}
-		
+		this.renderer = renderer;
 		
 		
 		
@@ -174,11 +171,7 @@ public class CloudRenderHandler
 				CloudParams params = new CloudParams(textureWidth, x, z);
 				boxGroup.setPreRenderFunc((renderParam) -> this.preRender(params));
 				
-				// we only stop before adding to the renderer to prevent accidental issues with null pointers and such 
-				if (renderer.getUseInstancedRendering())
-				{
-					renderer.add(boxGroup);
-				}
+				renderer.add(boxGroup);
 				this.boxGroupByOffset[x+1][z+1] = boxGroup;
 			}
 		}
@@ -195,6 +188,15 @@ public class CloudRenderHandler
 			return;
 		}
 		
+		if (!this.renderer.getUseInstancedRendering())
+		{
+			if (!this.disabledWarningLogged)
+			{
+				this.disabledWarningLogged = true;
+				LOGGER.warn("Instanced rendering unavailable, cloud rendering disabled.");
+			}
+			return;
+		}
 		
 		
 		//================//
