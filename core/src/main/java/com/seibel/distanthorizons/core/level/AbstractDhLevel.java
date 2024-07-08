@@ -52,6 +52,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public abstract class AbstractDhLevel implements IDhLevel
 {
@@ -71,7 +72,7 @@ public abstract class AbstractDhLevel implements IDhLevel
 	protected final ConcurrentHashMap<Long, HashSet<DhChunkPos>> updatedChunkPosSetBySectionPos = new ConcurrentHashMap<>();
 	
 	protected final IDhApiRenderableBoxGroup beaconBoxGroup;
-	protected final HashSet<DhBlockPos> beaconPosSet = new HashSet<>();
+	protected final HashMap<DhBlockPos, AtomicInteger> beaconRefCountByBlockPos = new HashMap<>();
 	
 	protected boolean beaconGroupBound = false;
 	
@@ -226,6 +227,7 @@ public abstract class AbstractDhLevel implements IDhLevel
 	@Override
 	public void setBeaconBeamsForChunk(DhChunkPos chunkPos, List<BeaconBeamDTO> newBeamList)
 	{
+		// synchronized to prevent two threads from updating the same chunk at the same time
 		synchronized (this)
 		{
 			GenericObjectRenderer genericObjectRenderer = this.getGenericRenderer();
@@ -276,32 +278,13 @@ public abstract class AbstractDhLevel implements IDhLevel
 					{
 						// new beam found, add to DB
 						this.beaconBeamRepo.save(newBeam);
-						
-						DhApiRenderableBox beaconBox = new DhApiRenderableBox(
-								new DhApiVec3f(newBeam.pos.x, newBeam.pos.y+1, newBeam.pos.z),
-								new DhApiVec3f(newBeam.pos.x+1, 6_000, newBeam.pos.z+1),
-								newBeam.color
-						);
-						
-						if (this.beaconPosSet.add(beaconPos))
-						{
-							this.beaconBoxGroup.add(beaconBox);
-							this.beaconBoxGroup.triggerBoxChange();
-						}
+						this.startRenderingBeacon(newBeam);
 					}
 					else if (existingBeam != null && newBeam == null)
 					{
 						// beam no longer exists at position, remove
 						this.beaconBeamRepo.deleteWithKey(beaconPos); // TODO broken when updating adjacent chunks
-						if (this.beaconPosSet.remove(existingBeam.pos))
-						{
-							this.beaconBoxGroup.removeIf((box) ->
-									box.minPos.x == beaconPos.x
-											&& box.minPos.y == beaconPos.y+1 // plus 1 because the beam starts above the beacon
-											&& box.minPos.z == beaconPos.z
-							);
-							this.beaconBoxGroup.triggerBoxChange();
-						}
+						this.stopRenderingBeaconAtPos(beaconPos);
 					}
 					
 				}
@@ -319,6 +302,7 @@ public abstract class AbstractDhLevel implements IDhLevel
 		if (this.beaconBeamRepo != null
 			&& genericObjectRenderer != null)
 		{
+			// generic setup is delayed to allow for the main renderer to start up
 			if (!this.beaconGroupBound)
 			{
 				this.beaconGroupBound = true;
@@ -337,17 +321,7 @@ public abstract class AbstractDhLevel implements IDhLevel
 			for (int i = 0; i < existingBeamList.size(); i++)
 			{
 				BeaconBeamDTO newBeam = existingBeamList.get(i);
-				
-				DhApiRenderableBox beaconBox = new DhApiRenderableBox(
-						new DhApiVec3f(newBeam.pos.x, newBeam.pos.y+1, newBeam.pos.z),
-						new DhApiVec3f(newBeam.pos.x+1, 6_000, newBeam.pos.z+1),
-						newBeam.color
-				);
-				if (this.beaconPosSet.add(newBeam.pos))
-				{
-					this.beaconBoxGroup.add(beaconBox);
-					this.beaconBoxGroup.triggerBoxChange();
-				}
+				this.startRenderingBeacon(newBeam);
 			}
 		}
 	}
@@ -366,19 +340,52 @@ public abstract class AbstractDhLevel implements IDhLevel
 			for (int i = 0; i < existingBeamList.size(); i++)
 			{
 				BeaconBeamDTO beam = existingBeamList.get(i);
-				
-				// beam no longer needs to be rendered, remove it from the renderer
-				if (this.beaconPosSet.remove(beam.pos))
-				{
-					this.beaconBoxGroup.removeIf((box) ->
-							box.minPos.x == beam.pos.x
-							&& box.minPos.y == beam.pos.y+1 // plus 1 because the beam starts above the beacon
-							&& box.minPos.z == beam.pos.z
-					);
-					this.beaconBoxGroup.triggerBoxChange();
-				}
+				this.stopRenderingBeaconAtPos(beam.pos);
 			}
 		}
+	}
+	
+	private void startRenderingBeacon(BeaconBeamDTO beacon)
+	{
+		this.beaconRefCountByBlockPos.compute(beacon.pos, (beamPos, beaconRefCount) ->
+		{
+			if (beaconRefCount == null) { beaconRefCount = new AtomicInteger(); }
+			if (beaconRefCount.getAndIncrement() == 0)
+			{
+				DhApiRenderableBox beaconBox = new DhApiRenderableBox(
+						new DhApiVec3f(beacon.pos.x, beacon.pos.y+1, beacon.pos.z),
+						new DhApiVec3f(beacon.pos.x+1, 6_000, beacon.pos.z+1),
+						// TODO calculate color
+						beacon.color
+				);
+				
+				this.beaconBoxGroup.add(beaconBox);
+				this.beaconBoxGroup.triggerBoxChange();
+			}
+			return beaconRefCount;
+		});
+	}
+	
+	private void stopRenderingBeaconAtPos(DhBlockPos beaconPos)
+	{
+		this.beaconRefCountByBlockPos.compute(beaconPos, (pos, beaconRefCount) ->
+		{
+			if (beaconRefCount == null) { beaconRefCount = new AtomicInteger(); }
+			if (beaconRefCount.decrementAndGet() == 0)
+			{
+				this.beaconBoxGroup.removeIf((box) ->
+						box.minPos.x == beaconPos.x
+								&& box.minPos.y == beaconPos.y+1 // plus 1 because the beam starts above the beacon
+								&& box.minPos.z == beaconPos.z
+				);
+				this.beaconBoxGroup.triggerBoxChange();
+				return null;
+			}
+			else
+			{
+				return beaconRefCount;
+			}
+		});
 	}
 	
 	
