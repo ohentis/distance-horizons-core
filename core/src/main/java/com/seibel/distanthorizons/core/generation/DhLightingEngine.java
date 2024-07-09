@@ -26,7 +26,6 @@ import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
-import com.seibel.distanthorizons.coreapi.util.BitShiftUtil;
 import org.apache.logging.log4j.Logger;
 
 import java.util.*;
@@ -152,7 +151,7 @@ public class DhLightingEngine
 								for (int y = maxY; y >= minY; y--)
 								{
 									IBlockStateWrapper block = chunk.getBlockState(relX, y, relZ);
-									if (block != null && block.getOpacity() != IBlockStateWrapper.FULLY_TRANSPARENT)
+									if (block != null && block.getOpacity() != LodUtil.BLOCK_FULLY_TRANSPARENT)
 									{
 										// keep moving down until we find a non-transparent block
 										break;

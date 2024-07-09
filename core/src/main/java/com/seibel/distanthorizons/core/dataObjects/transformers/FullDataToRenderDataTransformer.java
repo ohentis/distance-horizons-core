@@ -32,6 +32,7 @@ import com.seibel.distanthorizons.core.pos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.util.ColorUtil;
 import com.seibel.distanthorizons.core.util.FullDataPointUtil;
+import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.RenderDataPointUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.IWrapperFactory;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
@@ -236,7 +237,7 @@ public class FullDataToRenderDataTransformer
 			
 			
 			// solid block check
-			if (avoidSolidBlocks && !block.isSolid() && !block.isLiquid() && block.getOpacity() != IBlockStateWrapper.FULLY_OPAQUE)
+			if (avoidSolidBlocks && !block.isSolid() && !block.isLiquid() && block.getOpacity() != LodUtil.BLOCK_FULLY_OPAQUE)
 			{
 				if (colorBelowWithAvoidedBlocks)
 				{

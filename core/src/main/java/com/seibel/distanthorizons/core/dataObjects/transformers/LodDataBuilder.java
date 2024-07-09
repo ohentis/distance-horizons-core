@@ -297,7 +297,7 @@ public class LodDataBuilder
 		
 		// this block isn't on a chunk boundary, check if it is next to a transparent/air block
 		IBlockStateWrapper blockState = chunkWrapper.getBlockState(testBlockPos);
-		return blockState.isAir() || blockState.getOpacity() != IBlockStateWrapper.FULLY_OPAQUE;
+		return blockState.isAir() || blockState.getOpacity() != LodUtil.BLOCK_FULLY_OPAQUE;
 	}
 	
 	
