@@ -474,7 +474,11 @@
   "distanthorizons.config.client.advanced.debugging.showOverlappingQuadErrors":
     "Show overlapping quad errors",
   "distanthorizons.config.client.advanced.debugging.showOverlappingQuadErrors.@tooltip":
-    "f true overlapping quads will be rendered as bright red for easy identification. \nIf false the quads will be rendered normally.",
+    "If true overlapping quads will be rendered as bright red for easy identification. \nIf false the quads will be rendered normally.",
+  "distanthorizons.config.client.advanced.debugging.logBufferGarbageCollection":
+    "Log Buffer Garbage Collection",
+  "distanthorizons.config.client.advanced.debugging.logBufferGarbageCollection.@tooltip":
+    "If true OpenGL Buffer garbage collection will be logged \nthis also includes the number of live buffers. ",
   "distanthorizons.config.client.advanced.debugging.allowUnsafeValues":
     "Allow Unsafe UI Values",
   "distanthorizons.config.client.advanced.debugging.allowUnsafeValues.@tooltip":

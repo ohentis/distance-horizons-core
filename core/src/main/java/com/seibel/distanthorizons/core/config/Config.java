@@ -1238,6 +1238,15 @@ public class Config
 								+ "")
 						.build();
 				
+				public static ConfigEntry<Boolean> logBufferGarbageCollection = new ConfigEntry.Builder<Boolean>()
+						.set(false)
+						.comment(""
+								+ "If true OpenGL Buffer garbage collection will be logged \n"
+								+ "this also includes the number of live buffers. \n"
+								+ "")
+						.build();
+				
+				
 				// Note: This will reset on game restart, and should have a warning on the tooltip
 				public static ConfigEntry<Boolean> allowUnsafeValues = new ConfigEntry.Builder<Boolean>()
 						.set(false)
