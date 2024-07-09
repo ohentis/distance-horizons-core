@@ -21,6 +21,9 @@ package com.seibel.distanthorizons.core.wrapperInterfaces.block;
 
 import com.seibel.distanthorizons.api.interfaces.block.IDhApiBlockStateWrapper;
 
+import java.util.Arrays;
+import java.util.List;
+
 /** A Minecraft version independent way of handling Blocks. */
 public interface IBlockStateWrapper extends IDhApiBlockStateWrapper
 {
@@ -30,6 +33,15 @@ public interface IBlockStateWrapper extends IDhApiBlockStateWrapper
 	
 	int FULLY_TRANSPARENT = 0; 
 	int FULLY_OPAQUE = 16;
+	
+	/** should be all lowercase */
+	List<String> BEACON_BASE_BLOCK_NAME_LIST = Arrays.asList(
+			"iron_block",
+			"gold_block",
+			"diamond_block",
+			"emerald_block",
+			"netherite_block"
+	);
 	
 	/** contains the indices used by Iris to determine how different block types should be rendered */
 	class IrisBlockMaterial
@@ -76,5 +88,8 @@ public interface IBlockStateWrapper extends IDhApiBlockStateWrapper
 	int getLightEmission();
 	
 	byte getIrisBlockMaterialId();
+	
+	boolean isBeaconBlock();
+	boolean isBeaconBaseBlock();
 	
 }

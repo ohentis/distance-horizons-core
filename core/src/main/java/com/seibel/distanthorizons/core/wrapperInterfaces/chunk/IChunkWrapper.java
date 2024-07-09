@@ -41,15 +41,6 @@ public interface IChunkWrapper extends IBindable
 	/** useful for debugging, but can slow down chunk operations quite a bit due to being called every time. */
 	boolean RUN_RELATIVE_POS_INDEX_VALIDATION = ModInfo.IS_DEV_BUILD;
 	
-	/** should be all lowercase */
-	List<String> BEACON_BASE_BLOCK_NAME_LIST = Arrays.asList(
-			"iron_block",
-			"gold_block",
-			"diamond_block",
-			"emerald_block",
-			"netherite_block"
-	);
-	
 	
 	
 	DhChunkPos getChunkPos();
@@ -271,8 +262,9 @@ public interface IChunkWrapper extends IBindable
 			DhBlockPos pos = blockPosList.get(i);
 			DhBlockPos relPos = pos.convertToChunkRelativePos();
 			
+			
 			IBlockStateWrapper block = this.getBlockState(relPos);
-			if (block.getSerialString().toLowerCase().contains("minecraft:beacon"))
+			if (block.isBeaconBlock())
 			{
 				if (isBeaconActive(pos, adjacentChunkHolder))
 				{
@@ -299,21 +291,9 @@ public interface IChunkWrapper extends IBindable
 				
 				IChunkWrapper chunk = chunkHolder.getByBlockPos(beaconPos.x + x, beaconPos.z + z);
 				if (chunk != null)
-				{ 
-					String blockSerial = chunk.getBlockState(baseRelPos.x, baseRelPos.y, baseRelPos.z).getSerialString();
-					
-					boolean baseBlockFound = false;
-					for (int i = 0; i < BEACON_BASE_BLOCK_NAME_LIST.size(); i++)
-					{
-						String baseBlockName = BEACON_BASE_BLOCK_NAME_LIST.get(i);
-						if (blockSerial.contains(baseBlockName))
-						{
-							baseBlockFound = true;
-							break;
-						}
-					}
-					
-					if (!baseBlockFound)
+				{
+					IBlockStateWrapper block = chunk.getBlockState(baseRelPos.x, baseRelPos.y, baseRelPos.z);
+					if (!block.isBeaconBaseBlock())
 					{
 						return false;
 					}

@@ -104,4 +104,11 @@ public class LightingTestBlockStateWrapper implements IBlockStateWrapper
 	@Override
 	public byte getIrisBlockMaterialId() { throw new UnsupportedOperationException("Not Implemented"); }
 	
+	@Override
+	public boolean isBeaconBlock() { throw new UnsupportedOperationException("Not Implemented"); }
+	@Override
+	public boolean isBeaconBaseBlock() { throw new UnsupportedOperationException("Not Implemented"); }
+	
+	
+	
 }
