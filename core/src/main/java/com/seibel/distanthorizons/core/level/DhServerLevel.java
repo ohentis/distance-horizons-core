@@ -171,10 +171,12 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 			
 			serverPlayerState.getRateLimiterSet(this).fullDataRequestConcurrencyLimiter.release();
 			
+			// If this fails, group is being removed and completing cancellation is not necessary
 			if (requestGroup.requestRemoveSemaphore.tryAcquire())
 			{
-				// Prevent adding requests in case request will be removed by cancellation
+				// Prevent adding requests in case request will be removed by this cancellation
 				requestGroup.requestAddSemaphore.acquireUninterruptibly(Short.MAX_VALUE);
+				requestGroup.requestRemoveSemaphore.release();
 
 				if (requestGroup.requestMessages.isEmpty())
 				{
