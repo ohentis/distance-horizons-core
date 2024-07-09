@@ -260,11 +260,6 @@ public abstract class AbstractDhLevel implements IDhLevel
 	//================//
 	
 	@Override
-	public void close() 
-	{ 
-		this.chunkToLodBuilder.close();
-		
-		GenericObjectRenderer genericObjectRenderer = this.getGenericRenderer();
-	}
+	public void close() { this.chunkToLodBuilder.close(); }
 	
 }
