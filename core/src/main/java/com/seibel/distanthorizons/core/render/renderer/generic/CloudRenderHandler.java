@@ -54,9 +54,9 @@ public class CloudRenderHandler
 	 * How wide an individual box is. <br>
 	 * Measured in blocks.
 	 */
-	private static final int CLOUD_BOX_WIDTH = 128;
+	private static final int CLOUD_BOX_WIDTH = 192;
 	/** measured in blocks */
-	private static final int CLOUD_BOX_THICKNESS = 32;
+	private static final int CLOUD_BOX_THICKNESS = 48;
 	
 	private final IDhApiRenderableBoxGroup[][] boxGroupByOffset = new IDhApiRenderableBoxGroup[3][3];
 	private final IDhLevel level;
