@@ -29,11 +29,10 @@ import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IBindable;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
+import org.jetbrains.annotations.Nullable;
 
 import java.awt.*;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 
 public interface IChunkWrapper extends IBindable
@@ -251,7 +250,7 @@ public interface IChunkWrapper extends IBindable
 	
 	default List<BeaconBeamDTO> getAllActiveBeacons(ArrayList<IChunkWrapper> neighbourChunkList)
 	{
-		ArrayList<BeaconBeamDTO> beaconPosList = new ArrayList<>();
+		ArrayList<BeaconBeamDTO> beaconBeamList = new ArrayList<>();
 		
 		AdjacentChunkHolder adjacentChunkHolder = new AdjacentChunkHolder(this, neighbourChunkList);
 		
@@ -266,20 +265,29 @@ public interface IChunkWrapper extends IBindable
 			IBlockStateWrapper block = this.getBlockState(relPos);
 			if (block.isBeaconBlock())
 			{
-				if (isBeaconActive(pos, adjacentChunkHolder))
+				Color beaconColor = getBeaconColor(pos, adjacentChunkHolder);
+				if (beaconColor != null)
 				{
-					BeaconBeamDTO beam = new BeaconBeamDTO(blockPosList.get(i), Color.WHITE);
-					beaconPosList.add(beam);
+					BeaconBeamDTO beam = new BeaconBeamDTO(blockPosList.get(i), beaconColor);
+					beaconBeamList.add(beam);
 				}
 			}
 		}
 		
-		return beaconPosList;
+		return beaconBeamList;
 	}
-	static boolean isBeaconActive(DhBlockPos beaconPos, AdjacentChunkHolder chunkHolder) 
+	/** @return Null if the position isn't valid for a beacon beam. */
+	@Nullable
+	static Color getBeaconColor(DhBlockPos beaconPos, AdjacentChunkHolder chunkHolder) 
 	{
 		DhBlockPos beaconRelPos = beaconPos.convertToChunkRelativePos();
 		DhBlockPos baseRelPos = new DhBlockPos(0, beaconRelPos.y-1, 0);
+		
+		
+		
+		//===========================//
+		// check for the base blocks //
+		//===========================//
 		
 		for (int x = -1; x<= 1; x++) 
 		{
@@ -295,15 +303,53 @@ public interface IChunkWrapper extends IBindable
 					IBlockStateWrapper block = chunk.getBlockState(baseRelPos.x, baseRelPos.y, baseRelPos.z);
 					if (!block.isBeaconBaseBlock())
 					{
-						return false;
+						return null;
 					}
 				}
 			}
 		}
 		
-		// TODO check if the sky is visible
 		
-		return true;
+		
+		//=========================//
+		// get the beacon color    //
+		// and check for occlusion //
+		//=========================//
+		
+		int red = 0;
+		int green = 0;
+		int blue = 0;
+		boolean glassBlockFound = false;
+		
+		IChunkWrapper centerChunk = chunkHolder.getByBlockPos(beaconPos.x, beaconPos.z);
+		int maxY = centerChunk.getMaxNonEmptyHeight();
+		for (int y = beaconRelPos.y+1; y <= maxY; y++)
+		{
+			IBlockStateWrapper block = centerChunk.getBlockState(beaconRelPos.x, y, beaconRelPos.z);
+			if (!block.isAir() && block.getOpacity() == IBlockStateWrapper.FULLY_OPAQUE)
+			{
+				return null;
+			}
+			
+			if (block.isGlassBlock() 
+				// ignore invisible blocks (which have pure black as their map color, luckily black stained-glass is actually extremely dark gray)
+				&& !block.getMapColor().equals(Color.BLACK))
+			{
+ 				red += block.getMapColor().getRed();
+				green += block.getMapColor().getGreen();
+				blue += block.getMapColor().getBlue();
+				
+				if (glassBlockFound)
+				{
+					red /= 2;
+					green /= 2;
+					blue /= 2;
+				}
+				glassBlockFound = true;
+			}
+		}
+		
+		return glassBlockFound ? new Color(red, green, blue) : Color.WHITE;
 	}
 	
 	

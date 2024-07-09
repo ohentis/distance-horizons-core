@@ -21,6 +21,7 @@ package com.seibel.distanthorizons.core.wrapperInterfaces.block;
 
 import com.seibel.distanthorizons.api.interfaces.block.IDhApiBlockStateWrapper;
 
+import java.awt.*;
 import java.util.Arrays;
 import java.util.List;
 
@@ -91,5 +92,8 @@ public interface IBlockStateWrapper extends IDhApiBlockStateWrapper
 	
 	boolean isBeaconBlock();
 	boolean isBeaconBaseBlock();
+	
+	Color getMapColor();
+	boolean isGlassBlock();
 	
 }

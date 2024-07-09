@@ -25,7 +25,6 @@ import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBox;
 import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBoxGroupShading;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
-import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
@@ -46,6 +45,8 @@ public class BeaconRenderHandler
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	private static final IMinecraftRenderWrapper MC_RENDER = SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
+	
+	private static final int BEAM_TOP_Y = 6_000;
 	
 	
 	/** if this is null then the other handler is probably null too, but just in case */
@@ -79,7 +80,7 @@ public class BeaconRenderHandler
 	// level loading/unloading //
 	//=========================//
 	
-	public void setBeaconBeamsForChunk(DhChunkPos chunkPos, java.util.List<BeaconBeamDTO> newBeamList)
+	public void setBeaconBeamsForChunk(DhChunkPos chunkPos, List<BeaconBeamDTO> newBeamList)
 	{
 		// synchronized to prevent two threads from updating the same chunk at the same time
 		synchronized (this)
@@ -96,7 +97,7 @@ public class BeaconRenderHandler
 			}
 			
 			// get existing beams
-			java.util.List<BeaconBeamDTO> existingBeamList = this.beaconBeamRepo.getAllBeamsForPos(chunkPos);
+			List<BeaconBeamDTO> existingBeamList = this.beaconBeamRepo.getAllBeamsForPos(chunkPos);
 			HashMap<DhBlockPos, BeaconBeamDTO> existingBeamByPos = new HashMap<>(existingBeamList.size());
 			for (int i = 0; i < existingBeamList.size(); i++)
 			{
@@ -120,7 +121,13 @@ public class BeaconRenderHandler
 				
 				if (existingBeam != null && newBeam != null)
 				{
-					// beam still exists in chunk, do nothing
+					// beam still exists in chunk
+					if (!existingBeam.color.equals(newBeam.color))
+					{
+						// beam colors were changed
+						this.beaconBeamRepo.save(newBeam);
+						this.updateBeaconColor(newBeam);
+					}
 				}
 				else if (existingBeam == null && newBeam != null)
 				{
@@ -176,8 +183,7 @@ public class BeaconRenderHandler
 			{
 				DhApiRenderableBox beaconBox = new DhApiRenderableBox(
 						new DhApiVec3f(beacon.pos.x, beacon.pos.y+1, beacon.pos.z),
-						new DhApiVec3f(beacon.pos.x+1, 6_000, beacon.pos.z+1),
-						// TODO calculate color
+						new DhApiVec3f(beacon.pos.x+1, BEAM_TOP_Y, beacon.pos.z+1),
 						beacon.color
 				);
 				
@@ -208,6 +214,23 @@ public class BeaconRenderHandler
 				return beaconRefCount;
 			}
 		});
+	}
+	
+	private void updateBeaconColor(BeaconBeamDTO newBeam)
+	{
+		DhBlockPos pos = newBeam.pos;
+		for (int i = 0; i < this.beaconBoxGroup.size(); i++)
+		{
+			DhApiRenderableBox box = this.beaconBoxGroup.get(i);
+			if (box.minPos.x == pos.x
+				&& box.minPos.y == pos.y+1 // plus 1 because the beam starts above the beacon
+				&& box.minPos.z == pos.z)
+			{
+				box.color = newBeam.color;
+				this.beaconBoxGroup.triggerBoxChange();
+				break;
+			}
+		}
 	}
 	
 }
