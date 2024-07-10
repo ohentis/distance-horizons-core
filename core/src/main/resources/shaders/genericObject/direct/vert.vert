@@ -5,12 +5,14 @@ uniform vec4 uColor;
 uniform int uSkyLight;
 uniform int uBlockLight;
 uniform sampler2D uLightMap;
+
 uniform float uNorthShading;
 uniform float uSouthShading;
 uniform float uEastShading;
 uniform float uWestShading;
 uniform float uTopShading;
 uniform float uBottomShading;
+
 
 in vec3 vPosition;
 

@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Supplier;
 
+import com.seibel.distanthorizons.api.objects.math.DhApiVec3i;
 import org.lwjgl.opengl.GL32;
 import org.lwjgl.system.MemoryStack;
 
@@ -195,11 +196,10 @@ public class ShaderProgram
 	{
 		GL32.glUniform3f(location, value.x, value.y, value.z);
 	}
-	
 	/** Requires ShaderProgram binded. */
-	public void setUniform(int location, Vec3d value)
+	public void setUniform(int location, DhApiVec3i value)
 	{
-		GL32.glUniform3f(location, (float) value.x, (float) value.y, (float) value.z);
+		GL32.glUniform3i(location, value.x, value.y, value.z);
 	}
 	
 	/** Requires ShaderProgram binded. */

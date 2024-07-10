@@ -22,9 +22,11 @@ package com.seibel.distanthorizons.core.render.renderer.generic;
 import com.seibel.distanthorizons.api.interfaces.render.IDhApiCustomRenderObjectFactory;
 import com.seibel.distanthorizons.api.interfaces.render.IDhApiCustomRenderRegister;
 import com.seibel.distanthorizons.api.interfaces.render.IDhApiRenderableBoxGroup;
+import com.seibel.distanthorizons.api.objects.math.DhApiVec3d;
 import com.seibel.distanthorizons.api.objects.math.DhApiVec3f;
 import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBox;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.util.math.Vec3d;
 import com.seibel.distanthorizons.core.util.math.Vec3f;
 import org.apache.logging.log4j.Logger;
 
@@ -66,11 +68,11 @@ public class GenericRenderObjectFactory implements IDhApiCustomRenderObjectFacto
 	}
 	
 	@Override 
-	public IDhApiRenderableBoxGroup createRelativePositionedGroup(DhApiVec3f originBlockPos, List<DhApiRenderableBox> boxList)
-	{ return new RenderableBoxGroup(new Vec3f(originBlockPos), boxList, true); }
+	public IDhApiRenderableBoxGroup createRelativePositionedGroup(DhApiVec3d originBlockPos, List<DhApiRenderableBox> boxList)
+	{ return new RenderableBoxGroup(new DhApiVec3d(originBlockPos.x, originBlockPos.y, originBlockPos.z), boxList, true); }
 	
 	@Override 
 	public IDhApiRenderableBoxGroup createAbsolutePositionedGroup(List<DhApiRenderableBox> boxList)
-	{ return new RenderableBoxGroup(new Vec3f(0, 0, 0), boxList, false); }
+	{ return new RenderableBoxGroup(new DhApiVec3d(0, 0, 0), boxList, false); }
 	
 }

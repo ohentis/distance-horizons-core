@@ -2,7 +2,9 @@ package com.seibel.distanthorizons.api.interfaces.render;
 
 import com.seibel.distanthorizons.api.enums.config.EDhApiLodShading;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
+import com.seibel.distanthorizons.api.objects.math.DhApiVec3d;
 import com.seibel.distanthorizons.api.objects.math.DhApiVec3f;
+import com.seibel.distanthorizons.api.objects.math.DhApiVec3i;
 import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBox;
 import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBoxGroupShading;
 
@@ -35,9 +37,9 @@ public interface IDhApiRenderableBoxGroup extends List<DhApiRenderableBox>
 	boolean isSsaoEnabled();
 	
 	/** Sets where this group will render in the level. */
-	void setOriginBlockPos(DhApiVec3f pos);
+	void setOriginBlockPos(DhApiVec3d pos);
 	/** @return the block position in the level that all {@see DhApiRenderableBox} will render relative to. */
-	DhApiVec3f getOriginBlockPos();
+	DhApiVec3d getOriginBlockPos();
 	
 	/** 
 	 * Called right before this group is rendered. <br>

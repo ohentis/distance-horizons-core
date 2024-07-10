@@ -2,12 +2,11 @@ package com.seibel.distanthorizons.core.render.renderer.generic;
 
 import com.seibel.distanthorizons.api.interfaces.render.IDhApiRenderableBoxGroup;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
-import com.seibel.distanthorizons.api.objects.math.DhApiVec3f;
+import com.seibel.distanthorizons.api.objects.math.DhApiVec3d;
 import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBox;
 import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBoxGroupShading;
 import com.seibel.distanthorizons.core.render.glObject.GLProxy;
 import com.seibel.distanthorizons.core.util.LodUtil;
-import com.seibel.distanthorizons.core.util.math.Vec3f;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.opengl.GL32;
 
@@ -36,7 +35,7 @@ public class RenderableBoxGroup
 		
 		private final ArrayList<DhApiRenderableBox> boxList;
 		
-		private final Vec3f originBlockPos;
+		private final DhApiVec3d originBlockPos;
 		
 		
 		public boolean active = true;
@@ -52,9 +51,11 @@ public class RenderableBoxGroup
 		public Consumer<DhApiRenderParam> afterRenderFunc;
 		
 		// instance data
-		public int instanceTranslationVbo = 0;
-		public int instanceScaleVbo = 0;
 		public int instanceColorVbo = 0;
+		public int instanceScaleVbo = 0;
+		public int instanceChunkPosVbo = 0;
+		public int instanceSubChunkPosVbo = 0;
+		
 		public int uploadedBoxCount = -1;
 		
 		
@@ -65,7 +66,7 @@ public class RenderableBoxGroup
 		public long getId() { return this.id; }
 		
 		@Override
-		public void setOriginBlockPos(DhApiVec3f pos)
+		public void setOriginBlockPos(DhApiVec3d pos)
 		{
 			this.originBlockPos.x = pos.x;
 			this.originBlockPos.y = pos.y;
@@ -73,7 +74,7 @@ public class RenderableBoxGroup
 		}
 		
 		@Override
-		public DhApiVec3f getOriginBlockPos() { return new DhApiVec3f(this.originBlockPos.x, this.originBlockPos.y, this.originBlockPos.z); }
+		public DhApiVec3d getOriginBlockPos() { return new DhApiVec3d(this.originBlockPos.x, this.originBlockPos.y, this.originBlockPos.z); }
 		
 		
 		@Override
@@ -106,7 +107,7 @@ public class RenderableBoxGroup
 		// constructor //
 		//=============//
 		
-		public RenderableBoxGroup(Vec3f originBlockPos, List<DhApiRenderableBox> boxList, boolean positionBoxesRelativeToGroupOrigin)
+		public RenderableBoxGroup(DhApiVec3d originBlockPos, List<DhApiRenderableBox> boxList, boolean positionBoxesRelativeToGroupOrigin)
 		{
 			this.id = NEXT_ID_ATOMIC_INT.getAndIncrement();
 			this.boxList = new ArrayList<>(boxList);
@@ -201,9 +202,10 @@ public class RenderableBoxGroup
 			}
 			this.vertexDataDirty = false;
 			
-			if (this.instanceTranslationVbo == 0)
+			if (this.instanceChunkPosVbo == 0)
 			{
-				this.instanceTranslationVbo = GL32.glGenBuffers();
+				this.instanceChunkPosVbo = GL32.glGenBuffers();
+				this.instanceSubChunkPosVbo = GL32.glGenBuffers();
 				this.instanceScaleVbo = GL32.glGenBuffers();
 				this.instanceColorVbo = GL32.glGenBuffers();
 			}
@@ -214,7 +216,8 @@ public class RenderableBoxGroup
 			
 			// transformation / scaling //
 			
-			float[] translationData = new float[boxCount * 3];
+			int[] chunkPosData = new int[boxCount * 3];
+			float[] subChunkPosData = new float[boxCount * 3];
 			float[] scalingData = new float[boxCount * 3];
 			for (int i = 0; i < boxCount; i++)
 			{
@@ -222,13 +225,17 @@ public class RenderableBoxGroup
 				
 				int dataIndex = i * 3;
 				
-				translationData[dataIndex] = box.minPos.x;
-				translationData[dataIndex + 1] = box.minPos.y;
-				translationData[dataIndex + 2] = box.minPos.z;
+				chunkPosData[dataIndex] = LodUtil.getChunkPosFromDouble(box.minPos.x);
+				chunkPosData[dataIndex + 1] = LodUtil.getChunkPosFromDouble(box.minPos.y);
+				chunkPosData[dataIndex + 2] = LodUtil.getChunkPosFromDouble(box.minPos.z);
 				
-				scalingData[dataIndex] = box.maxPos.x - box.minPos.x;
-				scalingData[dataIndex + 1] = box.maxPos.y - box.minPos.y;
-				scalingData[dataIndex + 2] = box.maxPos.z - box.minPos.z;
+				subChunkPosData[dataIndex] = LodUtil.getSubChunkPosFromDouble(box.minPos.x);
+				subChunkPosData[dataIndex + 1] = LodUtil.getSubChunkPosFromDouble(box.minPos.y);
+				subChunkPosData[dataIndex + 2] = LodUtil.getSubChunkPosFromDouble(box.minPos.z);
+				
+				scalingData[dataIndex] = (float) (box.maxPos.x - box.minPos.x);
+				scalingData[dataIndex + 1] = (float) (box.maxPos.y - box.minPos.y);
+				scalingData[dataIndex + 2] = (float) (box.maxPos.z - box.minPos.z);
 				
 			}
 			
@@ -249,8 +256,10 @@ public class RenderableBoxGroup
 			
 			
 			// Upload transformation matrices
-			GL32.glBindBuffer(GL32.GL_ARRAY_BUFFER, this.instanceTranslationVbo);
-			GL32.glBufferData(GL32.GL_ARRAY_BUFFER, translationData ,GL32.GL_DYNAMIC_DRAW);
+			GL32.glBindBuffer(GL32.GL_ARRAY_BUFFER, this.instanceChunkPosVbo);
+			GL32.glBufferData(GL32.GL_ARRAY_BUFFER, chunkPosData ,GL32.GL_DYNAMIC_DRAW);
+			GL32.glBindBuffer(GL32.GL_ARRAY_BUFFER, this.instanceSubChunkPosVbo);
+			GL32.glBufferData(GL32.GL_ARRAY_BUFFER, subChunkPosData ,GL32.GL_DYNAMIC_DRAW);
 			GL32.glBindBuffer(GL32.GL_ARRAY_BUFFER, this.instanceScaleVbo);
 			GL32.glBufferData(GL32.GL_ARRAY_BUFFER, scalingData, GL32.GL_DYNAMIC_DRAW);
 			
@@ -273,10 +282,16 @@ public class RenderableBoxGroup
 		{
 			GLProxy.getInstance().queueRunningOnRenderThread(() ->
 			{
-				if (this.instanceTranslationVbo != 0)
+				if (this.instanceChunkPosVbo != 0)
 				{
-					GL32.glDeleteBuffers(this.instanceTranslationVbo);
-					this.instanceTranslationVbo = 0;
+					GL32.glDeleteBuffers(this.instanceChunkPosVbo);
+					this.instanceChunkPosVbo = 0;
+				}
+				
+				if (this.instanceSubChunkPosVbo != 0)
+				{
+					GL32.glDeleteBuffers(this.instanceSubChunkPosVbo);
+					this.instanceSubChunkPosVbo = 0;
 				}
 				
 				if (this.instanceScaleVbo != 0)

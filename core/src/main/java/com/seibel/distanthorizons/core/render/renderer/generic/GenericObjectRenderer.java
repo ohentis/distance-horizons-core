@@ -24,7 +24,8 @@ import com.seibel.distanthorizons.api.enums.config.EDhApiLoggerMode;
 import com.seibel.distanthorizons.api.interfaces.render.IDhApiRenderableBoxGroup;
 import com.seibel.distanthorizons.api.interfaces.render.IDhApiCustomRenderRegister;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
-import com.seibel.distanthorizons.api.objects.math.DhApiVec3f;
+import com.seibel.distanthorizons.api.objects.math.DhApiVec3d;
+import com.seibel.distanthorizons.api.objects.math.DhApiVec3i;
 import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBox;
 import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBoxGroupShading;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
@@ -93,8 +94,10 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 	private int directShaderTransformUniform;
 	private int directShaderColorUniform;
 	
-	private int instancedShaderOffsetUniform;
-	private int instancedShaderCameraPosUniform;
+	private int instancedShaderOffsetChunkUniform;
+	private int instancedShaderOffsetSubChunkUniform;
+	private int instancedShaderCameraChunkPosUniform;
+	private int instancedShaderCameraSubChunkPosUniform;
 	private int instancedShaderProjectionModelViewMatrixUniform;
 	
 	private int lightMapUniform;
@@ -213,8 +216,10 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		this.directShaderTransformUniform = this.shader.tryGetUniformLocation("uTransform");
 		this.directShaderColorUniform = this.shader.tryGetUniformLocation("uColor");
 		
-		this.instancedShaderOffsetUniform = this.shader.tryGetUniformLocation("uOffset");
-		this.instancedShaderCameraPosUniform = this.shader.tryGetUniformLocation("uCameraPos");
+		this.instancedShaderOffsetChunkUniform = this.shader.tryGetUniformLocation("uOffsetChunk");
+		this.instancedShaderOffsetSubChunkUniform = this.shader.tryGetUniformLocation("uOffsetSubChunk");
+		this.instancedShaderCameraChunkPosUniform = this.shader.tryGetUniformLocation("uCameraPosChunk");
+		this.instancedShaderCameraSubChunkPosUniform = this.shader.tryGetUniformLocation("uCameraPosSubChunk");
 		this.instancedShaderProjectionModelViewMatrixUniform = this.shader.tryGetUniformLocation("uProjectionMvm");
 		
 		this.lightMapUniform = this.shader.getUniformLocation("uLightMap");
@@ -266,7 +271,7 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		// single giant box
 		IDhApiRenderableBoxGroup singleGiantBoxGroup = factory.createForSingleBox(
 				new DhApiRenderableBox(
-						new DhApiVec3f(0f,0f,0f), new DhApiVec3f(16f,190f,16f),
+						new DhApiVec3d(0,0,0), new DhApiVec3d(16,190,16),
 						new Color(Color.CYAN.getRed(), Color.CYAN.getGreen(), Color.CYAN.getBlue(), 125))
 		);
 		singleGiantBoxGroup.setSkyLight(LodUtil.MAX_MC_LIGHT);
@@ -277,7 +282,7 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		// single slender box
 		IDhApiRenderableBoxGroup singleTallBoxGroup = factory.createForSingleBox(
 				new DhApiRenderableBox(
-						new DhApiVec3f(16f,0f,31f), new DhApiVec3f(17f,2000f,32f),
+						new DhApiVec3d(16,0,31), new DhApiVec3d(17,2000,32),
 						new Color(Color.GREEN.getRed(), Color.GREEN.getGreen(), Color.GREEN.getBlue(), 125))
 		);
 		singleTallBoxGroup.setSkyLight(LodUtil.MAX_MC_LIGHT);
@@ -290,7 +295,7 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		for (int i = 0; i < 18; i++)
 		{
 			absBoxList.add(new DhApiRenderableBox(
-					new DhApiVec3f(0f+i,150f+i,24f), new DhApiVec3f(1f+i,151f+i,25f),
+					new DhApiVec3d(i,150+i,24), new DhApiVec3d(1+i,151+i,25),
 					new Color(Color.ORANGE.getRed(), Color.ORANGE.getGreen(), Color.ORANGE.getBlue())));
 		}
 		IDhApiRenderableBoxGroup absolutePosBoxGroup = factory.createAbsolutePositionedGroup(absBoxList);
@@ -302,15 +307,15 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		for (int i = 0; i < 8; i+=2)
 		{
 			relBoxList.add(new DhApiRenderableBox(
-					new DhApiVec3f(0f,0f+i,0f), new DhApiVec3f(1f,1f+i,1f),
+					new DhApiVec3d(0,i,0), new DhApiVec3d(1,1+i,1),
 					new Color(Color.MAGENTA.getRed(), Color.MAGENTA.getGreen(), Color.MAGENTA.getBlue())));
 		}
 		IDhApiRenderableBoxGroup relativePosBoxGroup = factory.createRelativePositionedGroup(
-				new DhApiVec3f(24f, 140f, 24f),
+				new DhApiVec3d(24, 140, 24),
 				relBoxList);
 		relativePosBoxGroup.setPreRenderFunc((event) ->
 		{
-			DhApiVec3f pos = relativePosBoxGroup.getOriginBlockPos();
+			DhApiVec3d pos = relativePosBoxGroup.getOriginBlockPos();
 			pos.x += event.partialTicks / 2;
 			pos.x %= 32;
 			relativePosBoxGroup.setOriginBlockPos(pos);
@@ -325,16 +330,16 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 			for (int z = 0; z < 50*2; z+=2)
 			{
 				massRelBoxList.add(new DhApiRenderableBox(
-						new DhApiVec3f(0f-x, 0f, 0f-z), new DhApiVec3f(1f-x, 1f, 1f-z),
+						new DhApiVec3d(-x, 0, -z), new DhApiVec3d(1-x, 1, 1-z),
 						new Color(Color.RED.getRed(), Color.RED.getGreen(), Color.RED.getBlue())));
 			}
 		}
 		IDhApiRenderableBoxGroup massRelativePosBoxGroup = factory.createRelativePositionedGroup(
-				new DhApiVec3f(-25f, 140f, 0f),
+				new DhApiVec3d(-25, 140, 0),
 				massRelBoxList);
 		massRelativePosBoxGroup.setPreRenderFunc((event) ->
 		{
-			DhApiVec3f blockPos = massRelativePosBoxGroup.getOriginBlockPos();
+			DhApiVec3d blockPos = massRelativePosBoxGroup.getOriginBlockPos();
 			blockPos.y += event.partialTicks / 4;
 			if (blockPos.y > 150f)
 			{
@@ -415,8 +420,7 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		Mat4f projectionMvmMatrix = new Mat4f(renderEventParam.dhProjectionMatrix);
 		projectionMvmMatrix.multiply(renderEventParam.dhModelViewMatrix);
 		
-		Vec3d camPosDouble = MC_RENDER.getCameraExactPosition();
-		Vec3f camPos = new Vec3f((float) camPosDouble.x, (float) camPosDouble.y, (float) camPosDouble.z);
+		Vec3d camPos = MC_RENDER.getCameraExactPosition();
 		
 		
 		
@@ -467,24 +471,36 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 	// instanced rendering //
 	//=====================//
 	
-	private void renderBoxGroupInstanced(RenderableBoxGroup boxGroup, Vec3f camPos, Mat4f projectionMvmMatrix)
+	private void renderBoxGroupInstanced(RenderableBoxGroup boxGroup, Vec3d camPos, Mat4f projectionMvmMatrix)
 	{
 		// update instance data //
 		
 		boxGroup.updateVertexAttributeData();
 		
-		this.shader.setUniform(this.instancedShaderOffsetUniform, 
+		this.shader.setUniform(this.instancedShaderOffsetChunkUniform, 
+				new DhApiVec3i(
+					LodUtil.getChunkPosFromDouble(boxGroup.getOriginBlockPos().x),
+					LodUtil.getChunkPosFromDouble(boxGroup.getOriginBlockPos().y),
+					LodUtil.getChunkPosFromDouble(boxGroup.getOriginBlockPos().z)
+				));
+		this.shader.setUniform(this.instancedShaderOffsetSubChunkUniform, 
 				new Vec3f(
-					boxGroup.getOriginBlockPos().x, 
-					boxGroup.getOriginBlockPos().y, 
-					boxGroup.getOriginBlockPos().z
+					LodUtil.getSubChunkPosFromDouble(boxGroup.getOriginBlockPos().x),
+					LodUtil.getSubChunkPosFromDouble(boxGroup.getOriginBlockPos().y),
+					LodUtil.getSubChunkPosFromDouble(boxGroup.getOriginBlockPos().z)
 				));
 		
-		this.shader.setUniform(this.instancedShaderCameraPosUniform, 
+		this.shader.setUniform(this.instancedShaderCameraChunkPosUniform, 
+				new DhApiVec3i(
+					LodUtil.getChunkPosFromDouble(camPos.x),
+					LodUtil.getChunkPosFromDouble(camPos.y),
+					LodUtil.getChunkPosFromDouble(camPos.z)
+				));
+		this.shader.setUniform(this.instancedShaderCameraSubChunkPosUniform, 
 				new Vec3f(
-					camPos.x,
-					camPos.y,
-					camPos.z
+					LodUtil.getSubChunkPosFromDouble(camPos.x),
+					LodUtil.getSubChunkPosFromDouble(camPos.y),
+					LodUtil.getSubChunkPosFromDouble(camPos.z)
 				));
 		
 		this.shader.setUniform(this.instancedShaderProjectionModelViewMatrixUniform,
@@ -516,15 +532,20 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		GL32.glVertexAttribPointer(1, 4, GL32.GL_FLOAT, false, 4 * Float.BYTES, 0);
 		this.vertexAttribDivisor(1, 1);
 		
-		GL32.glBindBuffer(GL32.GL_ARRAY_BUFFER, boxGroup.instanceTranslationVbo);
+		GL32.glBindBuffer(GL32.GL_ARRAY_BUFFER, boxGroup.instanceScaleVbo);
 		GL32.glEnableVertexAttribArray(2);
 		this.vertexAttribDivisor(2, 1);
 		GL32.glVertexAttribPointer(2, 3, GL32.GL_FLOAT, false, 3 * Float.BYTES, 0);
 		
-		GL32.glBindBuffer(GL32.GL_ARRAY_BUFFER, boxGroup.instanceScaleVbo);
+		GL32.glBindBuffer(GL32.GL_ARRAY_BUFFER, boxGroup.instanceChunkPosVbo);
 		GL32.glEnableVertexAttribArray(3);
 		this.vertexAttribDivisor(3, 1);
-		GL32.glVertexAttribPointer(3, 3, GL32.GL_FLOAT, false, 3 * Float.BYTES, 0);
+		GL32.glVertexAttribIPointer(3, 3, GL32.GL_INT, 3 * Integer.BYTES, 0);
+		
+		GL32.glBindBuffer(GL32.GL_ARRAY_BUFFER, boxGroup.instanceSubChunkPosVbo);
+		GL32.glEnableVertexAttribArray(4);
+		this.vertexAttribDivisor(4, 1);
+		GL32.glVertexAttribPointer(4, 3, GL32.GL_FLOAT, false, 3 * Float.BYTES, 0);
 		
 		
 		// Draw instanced
@@ -568,7 +589,7 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 	// direct rendering //
 	//==================//
 	
-	private void renderBoxGroupDirect(RenderableBoxGroup boxGroup, Mat4f transformMatrix, Vec3f camPos)
+	private void renderBoxGroupDirect(RenderableBoxGroup boxGroup, Mat4f transformMatrix, Vec3d camPos)
 	{
 		this.shader.setUniform(this.lightMapUniform, 0); // TODO this should probably be passed in
 		this.shader.setUniform(this.skyLightUniform, boxGroup.skyLight);
@@ -594,32 +615,22 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 	}
 	private void renderBox(
 			RenderableBoxGroup boxGroup, DhApiRenderableBox box,
-			Mat4f transformationMatrix, Vec3f camPos)
+			Mat4f transformationMatrix, Vec3d camPos)
 	{
-		float originOffsetX = 0;
-		float originOffsetY = 0;
-		float originOffsetZ = 0;
-		if (boxGroup.positionBoxesRelativeToGroupOrigin)
-		{
-			originOffsetX = boxGroup.getOriginBlockPos().x;
-			originOffsetY = boxGroup.getOriginBlockPos().y;
-			originOffsetZ = boxGroup.getOriginBlockPos().z;
-		}
-		
 		Mat4f boxTransform = Mat4f.createTranslateMatrix(
-				box.minPos.x + originOffsetX - camPos.x,
-				box.minPos.y + originOffsetY - camPos.y,
-				box.minPos.z + originOffsetZ - camPos.z);
+				(float) (box.minPos.x + boxGroup.getOriginBlockPos().x - camPos.x),
+				(float) (box.minPos.y + boxGroup.getOriginBlockPos().y - camPos.y),
+				(float) (box.minPos.z + boxGroup.getOriginBlockPos().z - camPos.z));
 		boxTransform.multiply(Mat4f.createScaleMatrix(
-				box.maxPos.x - box.minPos.x,
-				box.maxPos.y - box.minPos.y,
-				box.maxPos.z - box.minPos.z));
+				(float) (box.maxPos.x - box.minPos.x),
+				(float) (box.maxPos.y - box.minPos.y),
+				(float) (box.maxPos.z - box.minPos.z)));
 		Mat4f transformMatrix = transformationMatrix.copy();
 		transformMatrix.multiply(boxTransform);
 		this.shader.setUniform(this.directShaderTransformUniform, transformMatrix);
-		
+
 		this.shader.setUniform(this.directShaderColorUniform, box.color);
-		
+
 		GL32.glDrawElements(GL32.GL_TRIANGLES, BOX_INDICES.length, GL32.GL_UNSIGNED_INT, 0);
 	}
 	

@@ -253,6 +253,15 @@ public class LodUtil
 				renderDist * 2 + 1);
 	}
 	
+	/** Returns the chunk int position for the given double position */
+	public static int getChunkPosFromDouble(double value) { return (int) Math.floor(value / CHUNK_WIDTH); }
+	/** Returns the float position inside the chunk for the given double position */
+	public static float getSubChunkPosFromDouble(double value)
+	{
+		double chunkPos = Math.floor(value / CHUNK_WIDTH);
+		return (float) (value - chunkPos * CHUNK_WIDTH);
+	}
+	
 	
 	// True if the requested threshold pass, or false otherwise
 	// For details, see:

@@ -20,6 +20,7 @@
 package com.seibel.distanthorizons.core.render.renderer.generic;
 
 import com.seibel.distanthorizons.api.interfaces.render.IDhApiRenderableBoxGroup;
+import com.seibel.distanthorizons.api.objects.math.DhApiVec3d;
 import com.seibel.distanthorizons.api.objects.math.DhApiVec3f;
 import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBox;
 import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBoxGroupShading;
@@ -203,8 +204,8 @@ public class CloudRenderHandler
 					}
 					
 					DhApiRenderableBox box = new DhApiRenderableBox(
-							new DhApiVec3f(minXBlockPos, 0, minZBlockPos),
-							new DhApiVec3f(maxXBlockPos, CLOUD_BOX_THICKNESS, maxZBlockPos),
+							new DhApiVec3d(minXBlockPos, 0, minZBlockPos),
+							new DhApiVec3d(maxXBlockPos, CLOUD_BOX_THICKNESS, maxZBlockPos),
 							color
 					);
 					boxList.add(box);
@@ -231,7 +232,7 @@ public class CloudRenderHandler
 			for (int z = -1; z <= 1; z++)
 			{
 				IDhApiRenderableBoxGroup boxGroup = GenericRenderObjectFactory.INSTANCE.createRelativePositionedGroup(
-						new DhApiVec3f(0, 0, 0), // the offset will be set during rendering
+						new DhApiVec3d(0, 0, 0), // the offset will be set during rendering
 						boxList);
 				boxGroup.setBlockLight(LodUtil.MIN_MC_LIGHT);
 				boxGroup.setSkyLight(LodUtil.MAX_MC_LIGHT);
@@ -265,6 +266,7 @@ public class CloudRenderHandler
 				this.disabledWarningLogged = true;
 				LOGGER.warn("Instanced rendering unavailable, cloud rendering disabled.");
 			}
+			boxGroup.setActive(false);
 			return;
 		}
 		
@@ -311,7 +313,7 @@ public class CloudRenderHandler
 		//==============//
 		
 		boxGroup.setOriginBlockPos(
-				new DhApiVec3f(
+				new DhApiVec3d(
 					clouds.xOffset + (clouds.instanceOffsetX * clouds.widthInBlocks) + xOffset + clouds.halfWidthInBlocks,
 					this.level.getLevelWrapper().getMaxHeight() + 200,
 					clouds.zOffset + (clouds.instanceOffsetZ * clouds.widthInBlocks) + zOffset + clouds.halfWidthInBlocks
