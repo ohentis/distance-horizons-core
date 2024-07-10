@@ -13,6 +13,7 @@ import org.apache.logging.log4j.LogManager;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class Session extends NetworkEventSource
@@ -22,6 +23,9 @@ public class Session extends NetworkEventSource
 	
 	private static final IPluginPacketSender PACKET_SENDER = SingletonInjector.INSTANCE.get(IPluginPacketSender.class);
 	
+	private static final AtomicInteger lastId = new AtomicInteger();
+	public final int id = lastId.getAndIncrement();
+
 	/**
 	 * When non-null, any received data will be ignored. <br>
 	 * This does not include wrong versions, which are ignored without setting this flag,

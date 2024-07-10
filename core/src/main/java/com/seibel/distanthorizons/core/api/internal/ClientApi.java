@@ -338,6 +338,7 @@ public class ClientApi
 		Session session = this.pluginChannelApi.session;
 		if (session != null)
 		{
+			message.setSession(session);
 			session.tryHandleMessage(message);
 		}
 	}

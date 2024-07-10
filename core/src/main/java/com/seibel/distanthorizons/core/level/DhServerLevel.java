@@ -113,14 +113,18 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 						this.tryFulfillDataSourceRequestGroup(newGroup, pos);
 						return newGroup;
 					});
-					// If this fails, current group is being drained and need to create another one
-					if (requestGroup.requestAddSemaphore.tryAcquire())
+					
+					// If this fails, loop until either permit is acquired or group is removed to create another one
+					if (!requestGroup.requestAddSemaphore.tryAcquire())
 					{
-						this.requestGroupsByFutureId.put(msg.futureId, requestGroup);
-						requestGroup.requestMessages.put(msg.futureId, msg);
-						requestGroup.requestAddSemaphore.release();
-						break;
+						Thread.yield();
+						continue;
 					}
+					
+					this.requestGroupsByFutureId.put(msg.futureId, requestGroup);
+					requestGroup.requestMessages.put(msg.futureId, msg);
+					requestGroup.requestAddSemaphore.release();
+					break;
 				}
 			}
 			else
@@ -167,17 +171,17 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 			{
 				return;
 			}
-			FullDataSourceRequestMessage requestMessage = requestGroup.requestMessages.remove(msg.futureId);
-			
-			serverPlayerState.getRateLimiterSet(this).fullDataRequestConcurrencyLimiter.release();
 			
 			// If this fails, group is being removed and completing cancellation is not necessary
 			if (requestGroup.requestRemoveSemaphore.tryAcquire())
 			{
-				// Prevent adding requests in case request will be removed by this cancellation
+				// Prevent adding requests in case the group will be removed by this cancellation
 				requestGroup.requestAddSemaphore.acquireUninterruptibly(Short.MAX_VALUE);
 				requestGroup.requestRemoveSemaphore.release();
-
+				
+				serverPlayerState.getRateLimiterSet(this).fullDataRequestConcurrencyLimiter.release();
+				
+				FullDataSourceRequestMessage requestMessage = requestGroup.requestMessages.remove(msg.futureId);
 				if (requestGroup.requestMessages.isEmpty())
 				{
 					this.requestGroupsByPos.remove(requestMessage.sectionPos);
@@ -441,6 +445,7 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 		@CheckForNull
 		public FullDataSourceV2 fullDataSource;
 		
+		// Maybe there's a better way to do synchronization, but this should suffice
 		public final Semaphore requestAddSemaphore = new Semaphore(Short.MAX_VALUE, true);
 		public final Semaphore requestRemoveSemaphore = new Semaphore(Short.MAX_VALUE, true);
 	}

@@ -22,6 +22,7 @@ package com.seibel.distanthorizons.core.network.messages;
 import com.google.common.base.MoreObjects;
 import com.seibel.distanthorizons.core.api.internal.SharedApi;
 import com.seibel.distanthorizons.core.network.messages.requests.ExceptionMessage;
+import com.seibel.distanthorizons.core.network.session.Session;
 import com.seibel.distanthorizons.core.world.EWorldEnvironment;
 import io.netty.buffer.ByteBuf;
 
@@ -31,11 +32,18 @@ import java.util.concurrent.atomic.AtomicInteger;
 public abstract class TrackableMessage extends NetworkMessage
 {
 	private static final AtomicInteger lastId = new AtomicInteger();
-	// 32 bits - Context ID (not transmitted)
+	
+	// 32 bits - Session ID (not transmitted)
 	// 1 bit - Requesting side (client - 0, server - 1)
 	// 31 bits - Request ID
 	public long futureId = lastId.getAndIncrement()
 			| ((Objects.requireNonNull(SharedApi.getEnvironment()) == EWorldEnvironment.Server_Only ? 1 : 0) << 31);
+	
+	public void setSession(Session session)
+	{
+		super.setSession(session);
+		this.futureId |= (long) session.id << 32;
+	}
 	
 	public void sendResponse(TrackableMessage responseMessage)
 	{
