@@ -21,6 +21,7 @@ package com.seibel.distanthorizons.core.render.renderer.generic;
 
 import com.seibel.distanthorizons.api.enums.config.EDhApiGpuUploadMethod;
 import com.seibel.distanthorizons.api.enums.config.EDhApiLoggerMode;
+import com.seibel.distanthorizons.api.enums.rendering.EDhApiBlockMaterial;
 import com.seibel.distanthorizons.api.interfaces.override.rendering.IDhApiGenericObjectShaderProgram;
 import com.seibel.distanthorizons.api.interfaces.render.IDhApiRenderableBoxGroup;
 import com.seibel.distanthorizons.api.interfaces.render.IDhApiCustomRenderRegister;
@@ -221,7 +222,8 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 				ModInfo.NAME + ":CyanChunkBox",
 				new DhApiRenderableBox(
 						new DhApiVec3d(0,0,0), new DhApiVec3d(16,190,16),
-						new Color(Color.CYAN.getRed(), Color.CYAN.getGreen(), Color.CYAN.getBlue(), 125))
+						new Color(Color.CYAN.getRed(), Color.CYAN.getGreen(), Color.CYAN.getBlue(), 125),
+						EDhApiBlockMaterial.WATER)
 		);
 		singleGiantBoxGroup.setSkyLight(LodUtil.MAX_MC_LIGHT);
 		singleGiantBoxGroup.setBlockLight(LodUtil.MAX_MC_LIGHT);
@@ -233,7 +235,8 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 				ModInfo.NAME + ":GreenBeacon",
 				new DhApiRenderableBox(
 						new DhApiVec3d(16,0,31), new DhApiVec3d(17,2000,32),
-						new Color(Color.GREEN.getRed(), Color.GREEN.getGreen(), Color.GREEN.getBlue(), 125))
+						new Color(Color.GREEN.getRed(), Color.GREEN.getGreen(), Color.GREEN.getBlue(), 125),
+						EDhApiBlockMaterial.ILLUMINATED)
 		);
 		singleTallBoxGroup.setSkyLight(LodUtil.MAX_MC_LIGHT);
 		singleTallBoxGroup.setBlockLight(LodUtil.MAX_MC_LIGHT);
@@ -246,7 +249,10 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		{
 			absBoxList.add(new DhApiRenderableBox(
 					new DhApiVec3d(i,150+i,24), new DhApiVec3d(1+i,151+i,25),
-					new Color(Color.ORANGE.getRed(), Color.ORANGE.getGreen(), Color.ORANGE.getBlue())));
+					new Color(Color.ORANGE.getRed(), Color.ORANGE.getGreen(), Color.ORANGE.getBlue()),
+					EDhApiBlockMaterial.LAVA
+				)
+			);
 		}
 		IDhApiRenderableBoxGroup absolutePosBoxGroup = factory.createAbsolutePositionedGroup(ModInfo.NAME + ":OrangeStairs", absBoxList);
 		this.add(absolutePosBoxGroup);
@@ -258,7 +264,10 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		{
 			relBoxList.add(new DhApiRenderableBox(
 					new DhApiVec3d(0,i,0), new DhApiVec3d(1,1+i,1),
-					new Color(Color.MAGENTA.getRed(), Color.MAGENTA.getGreen(), Color.MAGENTA.getBlue())));
+					new Color(Color.MAGENTA.getRed(), Color.MAGENTA.getGreen(), Color.MAGENTA.getBlue()),
+					EDhApiBlockMaterial.METAL
+				)
+			);
 		}
 		IDhApiRenderableBoxGroup relativePosBoxGroup = factory.createRelativePositionedGroup(
 				ModInfo.NAME + ":MovingMagentaGroup",
@@ -282,7 +291,10 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 			{
 				massRelBoxList.add(new DhApiRenderableBox(
 						new DhApiVec3d(-x, 0, -z), new DhApiVec3d(1-x, 1, 1-z),
-						new Color(Color.RED.getRed(), Color.RED.getGreen(), Color.RED.getBlue())));
+						new Color(Color.RED.getRed(), Color.RED.getGreen(), Color.RED.getBlue()),
+						EDhApiBlockMaterial.TERRACOTTA
+					)
+				);
 			}
 		}
 		IDhApiRenderableBoxGroup massRelativePosBoxGroup = factory.createRelativePositionedGroup(
@@ -473,6 +485,11 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		GL32.glEnableVertexAttribArray(4);
 		this.vertexAttribDivisor(4, 1);
 		GL32.glVertexAttribPointer(4, 3, GL32.GL_FLOAT, false, 3 * Float.BYTES, 0);
+		
+		GL32.glBindBuffer(GL32.GL_ARRAY_BUFFER, boxGroup.instanceMaterialVbo);
+		GL32.glEnableVertexAttribArray(5);
+		this.vertexAttribDivisor(5, 1);
+		GL32.glVertexAttribIPointer(5, 1, GL32.GL_BYTE, Byte.BYTES, 0);
 		
 		
 		// Draw instanced

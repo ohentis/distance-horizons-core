@@ -19,6 +19,7 @@
 
 package com.seibel.distanthorizons.core.render.renderer.generic;
 
+import com.seibel.distanthorizons.api.enums.rendering.EDhApiBlockMaterial;
 import com.seibel.distanthorizons.api.interfaces.render.IDhApiRenderableBoxGroup;
 import com.seibel.distanthorizons.api.objects.math.DhApiVec3d;
 import com.seibel.distanthorizons.api.objects.math.DhApiVec3f;
@@ -208,7 +209,8 @@ public class CloudRenderHandler
 					DhApiRenderableBox box = new DhApiRenderableBox(
 							new DhApiVec3d(minXBlockPos, 0, minZBlockPos),
 							new DhApiVec3d(maxXBlockPos, CLOUD_BOX_THICKNESS, maxZBlockPos),
-							color
+							color,
+							EDhApiBlockMaterial.UNKOWN
 					);
 					boxList.add(box);
 				}

@@ -4,6 +4,7 @@ layout (location = 1) in vec4 aColor;
 layout (location = 2) in vec3 aScale;
 layout (location = 3) in ivec3 aTranslateChunk;
 layout (location = 4) in vec3 aTranslateSubChunk;
+layout (location = 5) in int aMaterial;
 
 uniform ivec3 uOffsetChunk;
 uniform vec3 uOffsetSubChunk;

@@ -19,6 +19,7 @@
 
 package com.seibel.distanthorizons.core.render.renderer.generic;
 
+import com.seibel.distanthorizons.api.enums.rendering.EDhApiBlockMaterial;
 import com.seibel.distanthorizons.api.interfaces.render.IDhApiRenderableBoxGroup;
 import com.seibel.distanthorizons.api.objects.math.DhApiVec3d;
 import com.seibel.distanthorizons.api.objects.math.DhApiVec3f;
@@ -186,7 +187,8 @@ public class BeaconRenderHandler
 				DhApiRenderableBox beaconBox = new DhApiRenderableBox(
 						new DhApiVec3d(beacon.pos.x, beacon.pos.y+1, beacon.pos.z),
 						new DhApiVec3d(beacon.pos.x+1, BEAM_TOP_Y, beacon.pos.z+1),
-						beacon.color
+						beacon.color,
+						EDhApiBlockMaterial.ILLUMINATED
 				);
 				
 				this.beaconBoxGroup.add(beaconBox);

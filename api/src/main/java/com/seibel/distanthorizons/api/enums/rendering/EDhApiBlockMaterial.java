@@ -1,11 +1,25 @@
 package com.seibel.distanthorizons.api.enums.rendering;
 
 /**
- * contains the indices used by Iris to determine how different block types should be rendered
+ * contains the indices used by shaders to determine 
+ * how different block types should be rendered. <br><br>
  * 
- * USE_OPTIFINE_FOG_SETTING, <br>
- * FOG_ENABLED, <br>
- * FOG_DISABLED <br>
+ * UNKOWN, <br>
+ * LEAVES, <br>
+ * STONE, <br>
+ * WOOD, <br>
+ * METAL, <br>
+ * DIRT, <br>
+ * LAVA, <br>
+ * DEEPSLATE, <br>
+ * SNOW, <br>
+ * SAND, <br>
+ * TERRACOTTA, <br>
+ * NETHER_STONE, <br>
+ * WATER, <br>
+ * GRASS, <br>
+ * AIR, <br>
+ * ILLUMINATED, <br>
  * 
  * @author James Seibel
  * @since API 3.0.0

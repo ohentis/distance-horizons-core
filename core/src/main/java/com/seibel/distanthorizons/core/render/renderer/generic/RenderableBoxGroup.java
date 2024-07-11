@@ -55,6 +55,7 @@ public class RenderableBoxGroup
 		
 		// instance data
 		public int instanceColorVbo = 0;
+		public int instanceMaterialVbo = 0;
 		public int instanceScaleVbo = 0;
 		public int instanceChunkPosVbo = 0;
 		public int instanceSubChunkPosVbo = 0;
@@ -236,14 +237,15 @@ public class RenderableBoxGroup
 				this.instanceSubChunkPosVbo = GL32.glGenBuffers();
 				this.instanceScaleVbo = GL32.glGenBuffers();
 				this.instanceColorVbo = GL32.glGenBuffers();
+				this.instanceMaterialVbo = GL32.glGenBuffers();
 			}
 			
 			int boxCount = this.size();
 			this.uploadedBoxCount = boxCount;
 			
 			
-			// transformation / scaling //
 			
+			// transformation / scaling //
 			int[] chunkPosData = new int[boxCount * 3];
 			float[] subChunkPosData = new float[boxCount * 3];
 			float[] scalingData = new float[boxCount * 3];
@@ -268,9 +270,9 @@ public class RenderableBoxGroup
 			}
 			
 			
-			// colors //
-			
+			// colors/materials //
 			float[] colorData = new float[boxCount * 4];
+			byte[] materialData = new byte[boxCount];
 			for (int i = 0; i < boxCount; i++)
 			{
 				DhApiRenderableBox box = this.get(i);
@@ -280,6 +282,8 @@ public class RenderableBoxGroup
 				colorData[colorIndex + 1] = color.getGreen() / 255.0f;
 				colorData[colorIndex + 2] = color.getBlue() / 255.0f;
 				colorData[colorIndex + 3] = color.getAlpha() / 255.0f;
+				
+				materialData[i] = box.material;
 			}
 			
 			
@@ -293,6 +297,10 @@ public class RenderableBoxGroup
 			
 			// Upload colors
 			GL32.glBindBuffer(GL32.GL_ARRAY_BUFFER, this.instanceColorVbo);
+			GL32.glBufferData(GL32.GL_ARRAY_BUFFER, colorData, GL32.GL_DYNAMIC_DRAW);
+			
+			// Upload materials
+			GL32.glBindBuffer(GL32.GL_ARRAY_BUFFER, this.instanceMaterialVbo);
 			GL32.glBufferData(GL32.GL_ARRAY_BUFFER, colorData, GL32.GL_DYNAMIC_DRAW);
 		}
 		
@@ -332,6 +340,12 @@ public class RenderableBoxGroup
 				{
 					GL32.glDeleteBuffers(this.instanceColorVbo);
 					this.instanceColorVbo = 0;
+				}
+				
+				if (this.instanceMaterialVbo != 0)
+				{
+					GL32.glDeleteBuffers(this.instanceMaterialVbo);
+					this.instanceMaterialVbo = 0;
 				}
 			});
 		}
