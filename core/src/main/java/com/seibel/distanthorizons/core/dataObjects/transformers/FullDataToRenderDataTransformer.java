@@ -285,7 +285,7 @@ public class FullDataToRenderDataTransformer
 			{
 				// add the block
 				isVoid = false;
-				long columnData = RenderDataPointUtil.createDataPoint(bottomY + blockHeight, bottomY, color, skyLight, blockLight, block.getIrisBlockMaterialId());
+				long columnData = RenderDataPointUtil.createDataPoint(bottomY + blockHeight, bottomY, color, skyLight, blockLight, block.getMaterialId());
 				renderColumnData.set(columnOffset, columnData);
 				columnOffset++;
 			}

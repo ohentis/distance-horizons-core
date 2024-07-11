@@ -24,6 +24,7 @@ import java.nio.ByteOrder;
 import java.util.*;
 
 import com.seibel.distanthorizons.api.enums.config.EDhApiGrassSideRendering;
+import com.seibel.distanthorizons.api.enums.rendering.EDhApiBlockMaterial;
 import com.seibel.distanthorizons.api.enums.rendering.EDhApiDebugRendering;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
@@ -273,7 +274,7 @@ public class LodQuadBuilder
 			int color = quad.color;
 			
 			// use custom side color logic for grass blocks
-			if (quad.irisBlockMaterialId == IBlockStateWrapper.IrisBlockMaterial.GRASS)
+			if (quad.irisBlockMaterialId == EDhApiBlockMaterial.GRASS.index)
 			{
 				// only use dirt colors if debug rendering is disabled
 				if (this.debugRenderingMode == EDhApiDebugRendering.OFF)

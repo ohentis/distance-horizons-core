@@ -104,7 +104,7 @@ public class LightingTestBlockStateWrapper implements IBlockStateWrapper
 	public boolean isLiquid() { throw new UnsupportedOperationException("Not Implemented"); }
 	
 	@Override
-	public byte getIrisBlockMaterialId() { throw new UnsupportedOperationException("Not Implemented"); }
+	public byte getMaterialId() { throw new UnsupportedOperationException("Not Implemented"); }
 	
 	@Override
 	public boolean isBeaconBlock() { throw new UnsupportedOperationException("Not Implemented"); }
