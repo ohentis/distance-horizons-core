@@ -19,6 +19,7 @@
 
 package com.seibel.distanthorizons.core.network.event;
 
+import com.google.common.cache.CacheBuilder;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
 import com.seibel.distanthorizons.core.network.messages.NetworkMessage;
@@ -31,25 +32,28 @@ import com.seibel.distanthorizons.coreapi.ModInfo;
 import org.apache.logging.log4j.LogManager;
 
 import java.io.InvalidClassException;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.*;
 import java.util.function.Consumer;
 
 public abstract class NetworkEventSource
 {
 	private static final ConfigBasedLogger LOGGER = new ConfigBasedLogger(LogManager.getLogger(),
 			() -> Config.Client.Advanced.Logging.logNetworkEvent.get());
-	protected final ConcurrentMap<Class<? extends NetworkMessage>, Set<Consumer<NetworkMessage>>> handlers = new ConcurrentHashMap<>();
-	private final ConcurrentMap<Long, FutureResponseData> pendingFutures = new ConcurrentHashMap<>();
 	
+	protected final ConcurrentMap<Class<? extends NetworkMessage>, Set<Consumer<NetworkMessage>>> handlers = new ConcurrentHashMap<>();
 	protected boolean hasHandler(Class<? extends NetworkMessage> handlerClass)
 	{
 		return this.handlers.containsKey(handlerClass);
 	}
+	
+	private final ConcurrentMap<Long, FutureResponseData> pendingFutures = new ConcurrentHashMap<>();
+	private final Set<Long> cancelledFutures = Collections.newSetFromMap(CacheBuilder.newBuilder()
+			.expireAfterWrite(10, TimeUnit.SECONDS)
+			.<Long, Boolean>build()
+			.asMap());
 	
 	
 	protected void handleMessage(NetworkMessage message)
@@ -69,6 +73,7 @@ public abstract class NetworkEventSource
 		if (message instanceof TrackableMessage)
 		{
 			TrackableMessage trackableMessage = (TrackableMessage) message;
+			
 			FutureResponseData responseData = this.pendingFutures.get(trackableMessage.futureId);
 			if (responseData != null)
 			{
@@ -86,6 +91,10 @@ public abstract class NetworkEventSource
 				{
 					responseData.future.complete(trackableMessage);
 				}
+			}
+			else if (this.cancelledFutures.remove(trackableMessage.futureId))
+			{
+				handled = true;
 			}
 		}
 		
@@ -122,14 +131,15 @@ public abstract class NetworkEventSource
 		CompletableFuture<TResponse> responseFuture = new CompletableFuture<>();
 		responseFuture.whenComplete((response, throwable) ->
 		{
+			if (throwable instanceof CancellationException)
+			{
+				this.cancelledFutures.add(msg.futureId);
+				msg.sendResponse(new CancelMessage());
+			}
+			
 			if (!(throwable instanceof SessionClosedException))
 			{
 				this.pendingFutures.remove(msg.futureId);
-			}
-			
-			if (throwable instanceof CancellationException)
-			{
-				msg.sendResponse(new CancelMessage());
 			}
 		});
 		
