@@ -27,6 +27,8 @@ import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBox;
 import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBoxGroupShading;
 
 /**
+ * @see IDhApiShaderProgram
+ * 
  * @author James Seibel
  * @version 2024-7-11
  * @since API 3.0.0

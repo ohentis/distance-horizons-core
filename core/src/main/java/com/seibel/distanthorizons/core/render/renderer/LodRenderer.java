@@ -645,7 +645,7 @@ public class LodRenderer
 				this.fogConfig = newFogConfig;
 				
 				this.lodRenderProgram.free();
-				this.lodRenderProgram = new LodRenderProgram();
+				this.lodRenderProgram = new DhTerrainShaderProgram();
 				
 				FogShader.INSTANCE.free();
 				FogShader.INSTANCE = new FogShader(newFogConfig);
@@ -685,7 +685,7 @@ public class LodRenderer
 			
 			EVENT_LOGGER.info("Setting up renderer");
 			this.isSetupComplete = true;
-			this.lodRenderProgram = new LodRenderProgram();
+			this.lodRenderProgram = new DhTerrainShaderProgram();
 			if (ENABLE_IBO)
 			{
 				this.quadIBO = new QuadElementBuffer();

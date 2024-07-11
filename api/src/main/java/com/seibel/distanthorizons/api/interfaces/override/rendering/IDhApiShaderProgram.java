@@ -24,6 +24,8 @@ import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhAp
 import com.seibel.distanthorizons.api.objects.math.DhApiVec3f;
 
 /**
+ * @see IDhApiGenericObjectShaderProgram
+ * 
  * @author James Seibel
  * @version 2024-1-24
  * @since API 2.0.0

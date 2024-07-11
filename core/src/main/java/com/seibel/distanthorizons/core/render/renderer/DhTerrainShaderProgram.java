@@ -35,7 +35,10 @@ import com.seibel.distanthorizons.core.util.RenderUtil;
 import com.seibel.distanthorizons.core.util.math.Mat4f;
 import com.seibel.distanthorizons.core.util.math.Vec3f;
 
-public class LodRenderProgram extends ShaderProgram implements IDhApiShaderProgram
+/**
+ * Handles rendering the normal LOD terrain.
+ */
+public class DhTerrainShaderProgram extends ShaderProgram implements IDhApiShaderProgram
 {
 	public static final String VERTEX_SHADER_PATH = "shaders/standard.vert";
 	public static final String VERTEX_CURVE_SHADER_PATH = "shaders/curve.vert";
@@ -73,7 +76,7 @@ public class LodRenderProgram extends ShaderProgram implements IDhApiShaderProgr
 	//=============//
 	
 	// This will bind  AbstractVertexAttribute
-	public LodRenderProgram()
+	public DhTerrainShaderProgram()
 	{
 		super(() -> Shader.loadFile(Config.Client.Advanced.Graphics.AdvancedGraphics.earthCurveRatio.get() != 0 ? VERTEX_CURVE_SHADER_PATH : VERTEX_SHADER_PATH,
 						false, new StringBuilder()).toString(),
