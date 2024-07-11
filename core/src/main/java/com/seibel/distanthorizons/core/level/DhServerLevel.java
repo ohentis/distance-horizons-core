@@ -446,6 +446,7 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 		public FullDataSourceV2 fullDataSource;
 		
 		// Maybe there's a better way to do synchronization, but this should suffice
+		// Why not something like ReentrantReadWriteLock: locks should not be bound to threads
 		public final Semaphore requestAddSemaphore = new Semaphore(Short.MAX_VALUE, true);
 		public final Semaphore requestRemoveSemaphore = new Semaphore(Short.MAX_VALUE, true);
 	}
