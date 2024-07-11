@@ -164,8 +164,6 @@ public class LodRenderProgram extends ShaderProgram implements IDhApiShaderProgr
 	@Override
 	public void bindVertexBuffer(int vbo) { this.vao.bindBufferToAllBindingPoints(vbo); }
 	
-	public void unbindVertexBuffer() { this.vao.unbindBuffersFromAllBindingPoint(); }
-	
 	@Override
 	public void fillUniformData(DhApiRenderParam renderParameters)
 	{

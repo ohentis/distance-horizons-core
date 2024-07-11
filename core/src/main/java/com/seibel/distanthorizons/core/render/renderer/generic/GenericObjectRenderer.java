@@ -21,11 +21,11 @@ package com.seibel.distanthorizons.core.render.renderer.generic;
 
 import com.seibel.distanthorizons.api.enums.config.EDhApiGpuUploadMethod;
 import com.seibel.distanthorizons.api.enums.config.EDhApiLoggerMode;
+import com.seibel.distanthorizons.api.interfaces.override.rendering.IDhApiGenericObjectShaderProgram;
 import com.seibel.distanthorizons.api.interfaces.render.IDhApiRenderableBoxGroup;
 import com.seibel.distanthorizons.api.interfaces.render.IDhApiCustomRenderRegister;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
 import com.seibel.distanthorizons.api.objects.math.DhApiVec3d;
-import com.seibel.distanthorizons.api.objects.math.DhApiVec3i;
 import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBox;
 import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBoxGroupShading;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
@@ -36,15 +36,11 @@ import com.seibel.distanthorizons.core.render.glObject.GLProxy;
 import com.seibel.distanthorizons.core.render.glObject.GLState;
 import com.seibel.distanthorizons.core.render.glObject.buffer.GLElementBuffer;
 import com.seibel.distanthorizons.core.render.glObject.buffer.GLVertexBuffer;
-import com.seibel.distanthorizons.core.render.glObject.shader.ShaderProgram;
-import com.seibel.distanthorizons.core.render.glObject.vertexAttribute.AbstractVertexAttribute;
-import com.seibel.distanthorizons.core.render.glObject.vertexAttribute.VertexPointer;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrapper;
-import com.seibel.distanthorizons.core.util.math.Mat4f;
 import com.seibel.distanthorizons.core.util.math.Vec3d;
-import com.seibel.distanthorizons.core.util.math.Vec3f;
+import com.seibel.distanthorizons.coreapi.DependencyInjection.OverrideInjector;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.opengl.ARBInstancedArrays;
@@ -80,36 +76,14 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 	// rendering setup
 	private boolean init = false;
 	
-	private ShaderProgram shader;
+	private IDhApiGenericObjectShaderProgram shaderProgram;
 	private GLVertexBuffer boxVertexBuffer;
 	private GLElementBuffer boxIndexBuffer;
-	private AbstractVertexAttribute va;
 	
 	private boolean useInstancedRendering;
 	private boolean vertexAttribDivisorSupported;
 	private boolean instancedArraysSupported;
 	
-	
-	// shader uniforms
-	private int directShaderTransformUniform;
-	private int directShaderColorUniform;
-	
-	private int instancedShaderOffsetChunkUniform;
-	private int instancedShaderOffsetSubChunkUniform;
-	private int instancedShaderCameraChunkPosUniform;
-	private int instancedShaderCameraSubChunkPosUniform;
-	private int instancedShaderProjectionModelViewMatrixUniform;
-	
-	private int lightMapUniform;
-	private int skyLightUniform;
-	private int blockLightUniform;
-	
-	private int northShadingUniform;
-	private int southShadingUniform;
-	private int eastShadingUniform;
-	private int westShadingUniform;
-	private int topShadingUniform;
-	private int bottomShadingUniform;
 	
 	
 	private final ConcurrentHashMap<Long, RenderableBoxGroup> boxGroupById = new ConcurrentHashMap<>();
@@ -201,37 +175,7 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 			LOGGER.warn("Instanced rendering not supported by this GPU, falling back to direct rendering. Generic object rendering will be slow.");
 		}
 		
-		
-		this.va = AbstractVertexAttribute.create();
-		this.va.bind();
-		// Pos
-		this.va.setVertexAttribute(0, 0, VertexPointer.addVec3Pointer(false));
-		this.va.completeAndCheck(Float.BYTES * 3);
-		
-		this.shader = new ShaderProgram(
-				this.useInstancedRendering ? "shaders/genericObject/instanced/vert.vert" : "shaders/genericObject/direct/vert.vert",
-				this.useInstancedRendering ? "shaders/genericObject/instanced/frag.frag" : "shaders/genericObject/direct/frag.frag",
-				"fragColor", new String[]{"vPosition"});
-		
-		this.directShaderTransformUniform = this.shader.tryGetUniformLocation("uTransform");
-		this.directShaderColorUniform = this.shader.tryGetUniformLocation("uColor");
-		
-		this.instancedShaderOffsetChunkUniform = this.shader.tryGetUniformLocation("uOffsetChunk");
-		this.instancedShaderOffsetSubChunkUniform = this.shader.tryGetUniformLocation("uOffsetSubChunk");
-		this.instancedShaderCameraChunkPosUniform = this.shader.tryGetUniformLocation("uCameraPosChunk");
-		this.instancedShaderCameraSubChunkPosUniform = this.shader.tryGetUniformLocation("uCameraPosSubChunk");
-		this.instancedShaderProjectionModelViewMatrixUniform = this.shader.tryGetUniformLocation("uProjectionMvm");
-		
-		this.lightMapUniform = this.shader.getUniformLocation("uLightMap");
-		this.skyLightUniform = this.shader.getUniformLocation("uSkyLight");
-		this.blockLightUniform = this.shader.getUniformLocation("uBlockLight");
-		//this.shadingModeUniform = this.shader.getUniformLocation("uShadingMode");
-		this.northShadingUniform = this.shader.getUniformLocation("uNorthShading");
-		this.southShadingUniform = this.shader.getUniformLocation("uSouthShading");
-		this.eastShadingUniform = this.shader.getUniformLocation("uEastShading");
-		this.westShadingUniform = this.shader.getUniformLocation("uWestShading");
-		this.topShadingUniform = this.shader.getUniformLocation("uTopShading");
-		this.bottomShadingUniform = this.shader.getUniformLocation("uBottomShading");
+		this.shaderProgram = new GenericObjectShaderProgram(this.useInstancedRendering);
 		
 		
 		this.createBuffers();
@@ -411,14 +355,17 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		GL32.glBlendEquation(GL32.GL_FUNC_ADD);
 		GL32.glBlendFuncSeparate(GL32.GL_SRC_ALPHA, GL32.GL_ONE_MINUS_SRC_ALPHA, GL32.GL_ONE, GL32.GL_ONE_MINUS_SRC_ALPHA);
 		
-		this.shader.bind();
-		this.va.bind();
-		this.va.bindBufferToAllBindingPoints(this.boxVertexBuffer.getId());
+		IDhApiGenericObjectShaderProgram shaderProgram = this.shaderProgram;
+		IDhApiGenericObjectShaderProgram shaderProgramOverride = OverrideInjector.INSTANCE.get(IDhApiGenericObjectShaderProgram.class);
+		if (shaderProgramOverride != null && shaderProgram.overrideThisFrame())
+		{
+			shaderProgram = shaderProgramOverride;
+		}
+		
+		shaderProgram.bind();
+		shaderProgram.bindVertexBuffer(this.boxVertexBuffer.getId());
 		
 		this.boxIndexBuffer.bind();
-		
-		Mat4f projectionMvmMatrix = new Mat4f(renderEventParam.dhProjectionMatrix);
-		projectionMvmMatrix.multiply(renderEventParam.dhModelViewMatrix);
 		
 		Vec3d camPos = MC_RENDER.getCameraExactPosition();
 		
@@ -441,12 +388,12 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 					if (this.useInstancedRendering)
 					{
 						profiler.popPush("rendering");
-						this.renderBoxGroupInstanced(boxGroup, camPos, projectionMvmMatrix);
+						this.renderBoxGroupInstanced(shaderProgram, renderEventParam, boxGroup, camPos);
 					}
 					else
 					{
 						profiler.popPush("rendering");
-						this.renderBoxGroupDirect(boxGroup, projectionMvmMatrix, camPos);
+						this.renderBoxGroupDirect(shaderProgram, renderEventParam, boxGroup, camPos);
 					}
 					
 					boxGroup.postRender(renderEventParam);
@@ -459,7 +406,7 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		// clean up //
 		profiler.popPush("cleanup");
 		
-		this.shader.unbind();
+		shaderProgram.unbind();
 		glState.restore();
 		
 		profiler.pop();
@@ -471,57 +418,22 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 	// instanced rendering //
 	//=====================//
 	
-	private void renderBoxGroupInstanced(RenderableBoxGroup boxGroup, Vec3d camPos, Mat4f projectionMvmMatrix)
+	private void renderBoxGroupInstanced(IDhApiGenericObjectShaderProgram shaderProgram, DhApiRenderParam renderEventParam, RenderableBoxGroup boxGroup, Vec3d camPos)
 	{
 		// update instance data //
 		
 		boxGroup.updateVertexAttributeData();
-		
-		this.shader.setUniform(this.instancedShaderOffsetChunkUniform, 
-				new DhApiVec3i(
-					LodUtil.getChunkPosFromDouble(boxGroup.getOriginBlockPos().x),
-					LodUtil.getChunkPosFromDouble(boxGroup.getOriginBlockPos().y),
-					LodUtil.getChunkPosFromDouble(boxGroup.getOriginBlockPos().z)
-				));
-		this.shader.setUniform(this.instancedShaderOffsetSubChunkUniform, 
-				new Vec3f(
-					LodUtil.getSubChunkPosFromDouble(boxGroup.getOriginBlockPos().x),
-					LodUtil.getSubChunkPosFromDouble(boxGroup.getOriginBlockPos().y),
-					LodUtil.getSubChunkPosFromDouble(boxGroup.getOriginBlockPos().z)
-				));
-		
-		this.shader.setUniform(this.instancedShaderCameraChunkPosUniform, 
-				new DhApiVec3i(
-					LodUtil.getChunkPosFromDouble(camPos.x),
-					LodUtil.getChunkPosFromDouble(camPos.y),
-					LodUtil.getChunkPosFromDouble(camPos.z)
-				));
-		this.shader.setUniform(this.instancedShaderCameraSubChunkPosUniform, 
-				new Vec3f(
-					LodUtil.getSubChunkPosFromDouble(camPos.x),
-					LodUtil.getSubChunkPosFromDouble(camPos.y),
-					LodUtil.getSubChunkPosFromDouble(camPos.z)
-				));
-		
-		this.shader.setUniform(this.instancedShaderProjectionModelViewMatrixUniform,
-				projectionMvmMatrix);
-		
-		this.shader.setUniform(this.lightMapUniform, 0); // TODO this should probably be passed in
-		this.shader.setUniform(this.skyLightUniform, boxGroup.skyLight);
-		this.shader.setUniform(this.blockLightUniform, boxGroup.blockLight);
 		
 		DhApiRenderableBoxGroupShading shading = boxGroup.shading;
 		if (shading == null)
 		{
 			shading = DhApiRenderableBoxGroupShading.getUnshaded();
 		}
-		this.shader.setUniform(this.northShadingUniform, shading.north);
-		this.shader.setUniform(this.southShadingUniform, shading.south);
-		this.shader.setUniform(this.eastShadingUniform, shading.east);
-		this.shader.setUniform(this.westShadingUniform, shading.west);
-		this.shader.setUniform(this.topShadingUniform, shading.top);
-		this.shader.setUniform(this.bottomShadingUniform, shading.bottom);
 		
+		shaderProgram.fillIndirectUniformData(
+				renderEventParam,
+				shading, boxGroup,
+				camPos);
 		
 		
 		
@@ -589,48 +501,28 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 	// direct rendering //
 	//==================//
 	
-	private void renderBoxGroupDirect(RenderableBoxGroup boxGroup, Mat4f transformMatrix, Vec3d camPos)
+	private void renderBoxGroupDirect(IDhApiGenericObjectShaderProgram shaderProgram, DhApiRenderParam renderEventParam, RenderableBoxGroup boxGroup, Vec3d camPos)
 	{
-		this.shader.setUniform(this.lightMapUniform, 0); // TODO this should probably be passed in
-		this.shader.setUniform(this.skyLightUniform, boxGroup.skyLight);
-		this.shader.setUniform(this.blockLightUniform, boxGroup.blockLight);
-		
 		DhApiRenderableBoxGroupShading shading = boxGroup.shading;
 		if (shading == null)
 		{
 			shading = DhApiRenderableBoxGroupShading.getUnshaded();
 		}
-		this.shader.setUniform(this.northShadingUniform, shading.north);
-		this.shader.setUniform(this.southShadingUniform, shading.south);
-		this.shader.setUniform(this.eastShadingUniform, shading.east);
-		this.shader.setUniform(this.westShadingUniform, shading.west);
-		this.shader.setUniform(this.topShadingUniform, shading.top);
-		this.shader.setUniform(this.bottomShadingUniform, shading.bottom);
 		
+		shaderProgram.fillSharedDirectUniformData(renderEventParam, shading, boxGroup, camPos);
 		
 		for (DhApiRenderableBox box : boxGroup)
 		{
-			this.renderBox(boxGroup, box, transformMatrix, camPos);
+			this.renderBox(shaderProgram, renderEventParam, boxGroup, box, camPos);
 		}
 	}
 	private void renderBox(
+			IDhApiGenericObjectShaderProgram shaderProgram, 
+			DhApiRenderParam renderEventParam,
 			RenderableBoxGroup boxGroup, DhApiRenderableBox box,
-			Mat4f transformationMatrix, Vec3d camPos)
+			Vec3d camPos)
 	{
-		Mat4f boxTransform = Mat4f.createTranslateMatrix(
-				(float) (box.minPos.x + boxGroup.getOriginBlockPos().x - camPos.x),
-				(float) (box.minPos.y + boxGroup.getOriginBlockPos().y - camPos.y),
-				(float) (box.minPos.z + boxGroup.getOriginBlockPos().z - camPos.z));
-		boxTransform.multiply(Mat4f.createScaleMatrix(
-				(float) (box.maxPos.x - box.minPos.x),
-				(float) (box.maxPos.y - box.minPos.y),
-				(float) (box.maxPos.z - box.minPos.z)));
-		Mat4f transformMatrix = transformationMatrix.copy();
-		transformMatrix.multiply(boxTransform);
-		this.shader.setUniform(this.directShaderTransformUniform, transformMatrix);
-
-		this.shader.setUniform(this.directShaderColorUniform, box.color);
-
+		shaderProgram.fillDirectUniformData(renderEventParam, boxGroup, box, camPos);
 		GL32.glDrawElements(GL32.GL_TRIANGLES, BOX_INDICES.length, GL32.GL_UNSIGNED_INT, 0);
 	}
 	
