@@ -162,6 +162,10 @@ public class RenderableBoxGroup
 		@Override
 		public boolean isSsaoEnabled() { return this.ssaoEnabled; }
 		
+		/** 
+		 * This is called before every frame, even if {@link this#isActive()} returns false. <br>
+		 * {@link this#isActive()} can be changed at this point before the object is rendered to the frame.
+		 */
 		public void preRender(DhApiRenderParam renderEventParam) 
 		{
 			if (this.beforeRenderFunc != null)
@@ -169,6 +173,10 @@ public class RenderableBoxGroup
 				this.beforeRenderFunc.accept(renderEventParam);
 			}
 		}
+		/**
+		 * Called after rendering is completed. <br>
+		 * Can be used to handle any necessary cleanup.
+		 */
 		public void postRender(DhApiRenderParam renderEventParam) 
 		{
 			if (this.afterRenderFunc != null)

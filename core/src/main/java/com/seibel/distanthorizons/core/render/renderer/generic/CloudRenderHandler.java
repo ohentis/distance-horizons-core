@@ -30,6 +30,7 @@ import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
+import com.seibel.distanthorizons.coreapi.ModInfo;
 import org.apache.logging.log4j.Logger;
 
 import javax.imageio.ImageIO;
@@ -51,6 +52,7 @@ public class CloudRenderHandler
 	
 	private static final boolean DEBUG_BORDER_COLORS = false;
 	
+	// TODO resize and/or make clouds thicker
 	/** 
 	 * How wide an individual box is. <br>
 	 * Measured in blocks.
@@ -232,6 +234,7 @@ public class CloudRenderHandler
 			for (int z = -1; z <= 1; z++)
 			{
 				IDhApiRenderableBoxGroup boxGroup = GenericRenderObjectFactory.INSTANCE.createRelativePositionedGroup(
+						ModInfo.NAME + ":Clouds",
 						new DhApiVec3d(0, 0, 0), // the offset will be set during rendering
 						boxList);
 				boxGroup.setBlockLight(LodUtil.MIN_MC_LIGHT);

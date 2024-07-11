@@ -24,6 +24,8 @@ import com.seibel.distanthorizons.api.enums.config.EDhApiLoggerMode;
 import com.seibel.distanthorizons.api.interfaces.override.rendering.IDhApiGenericObjectShaderProgram;
 import com.seibel.distanthorizons.api.interfaces.render.IDhApiRenderableBoxGroup;
 import com.seibel.distanthorizons.api.interfaces.render.IDhApiCustomRenderRegister;
+import com.seibel.distanthorizons.api.methods.events.abstractEvents.DhApiBeforeGenericObjectRenderEvent;
+import com.seibel.distanthorizons.api.methods.events.abstractEvents.DhApiLevelLoadEvent;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
 import com.seibel.distanthorizons.api.objects.math.DhApiVec3d;
 import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBox;
@@ -40,6 +42,7 @@ import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrapper;
 import com.seibel.distanthorizons.core.util.math.Vec3d;
+import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.OverrideInjector;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import org.apache.logging.log4j.LogManager;
@@ -390,21 +393,25 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 				// ignore inactive groups
 				if (boxGroup.active)
 				{
-					profiler.popPush("rendering");
-					profiler.push(boxGroup.getResourceLocationNamespace());
-					profiler.push(boxGroup.getResourceLocationPath());
-					if (this.useInstancedRendering)
+					boolean cancelRendering = ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeGenericObjectRenderEvent.class, new DhApiBeforeGenericObjectRenderEvent.EventParam(renderEventParam, boxGroup));
+					if (cancelRendering)
 					{
-						this.renderBoxGroupInstanced(shaderProgram, renderEventParam, boxGroup, camPos);
+						profiler.popPush("rendering");
+						profiler.push(boxGroup.getResourceLocationNamespace());
+						profiler.push(boxGroup.getResourceLocationPath());
+						if (this.useInstancedRendering)
+						{
+							this.renderBoxGroupInstanced(shaderProgram, renderEventParam, boxGroup, camPos);
+						}
+						else
+						{
+							this.renderBoxGroupDirect(shaderProgram, renderEventParam, boxGroup, camPos);
+						}
+						profiler.pop(); // resource path
+						profiler.pop(); // resource namespace
+						
+						boxGroup.postRender(renderEventParam);
 					}
-					else
-					{
-						this.renderBoxGroupDirect(shaderProgram, renderEventParam, boxGroup, camPos);
-					}
-					profiler.pop(); // resource path
-					profiler.pop(); // resource namespace
-					
-					boxGroup.postRender(renderEventParam);
 				}
 			}
 		}
