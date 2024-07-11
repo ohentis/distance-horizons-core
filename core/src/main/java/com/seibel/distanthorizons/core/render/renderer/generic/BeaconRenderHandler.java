@@ -33,6 +33,7 @@ import com.seibel.distanthorizons.core.sql.dto.BeaconBeamDTO;
 import com.seibel.distanthorizons.core.sql.repo.BeaconBeamRepo;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
+import com.seibel.distanthorizons.coreapi.ModInfo;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
@@ -66,7 +67,7 @@ public class BeaconRenderHandler
 	{
 		this.beaconBeamRepo = beaconBeamRepo;
 		
-		this.beaconBoxGroup = GenericRenderObjectFactory.INSTANCE.createAbsolutePositionedGroup(new ArrayList<>(0));
+		this.beaconBoxGroup = GenericRenderObjectFactory.INSTANCE.createAbsolutePositionedGroup(ModInfo.NAME+":Beacons", new ArrayList<>(0));
 		this.beaconBoxGroup.setBlockLight(LodUtil.MAX_MC_LIGHT);
 		this.beaconBoxGroup.setSkyLight(LodUtil.MAX_MC_LIGHT);
 		this.beaconBoxGroup.setShading(DhApiRenderableBoxGroupShading.getUnshaded());

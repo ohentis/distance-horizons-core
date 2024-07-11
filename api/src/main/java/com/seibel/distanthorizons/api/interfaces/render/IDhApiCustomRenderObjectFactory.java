@@ -20,8 +20,48 @@ import java.util.List;
  */
 public interface IDhApiCustomRenderObjectFactory
 {
-	IDhApiRenderableBoxGroup createForSingleBox(DhApiRenderableBox cube);
-	IDhApiRenderableBoxGroup createRelativePositionedGroup(DhApiVec3d originBlockPos, List<DhApiRenderableBox> cubeList);
-	IDhApiRenderableBoxGroup createAbsolutePositionedGroup(List<DhApiRenderableBox> cubeList);
+	/**
+	 * Creates a {@link IDhApiRenderableBoxGroup} from for the given {@link DhApiRenderableBox}
+	 * where the box is positioned relative to the level's origin.
+	 * 
+	 * @param resourceLocation A colon separated Resource Location string, similar to vanilla Minecraft, for example: "DistantHorizons:Clouds"
+	 * 
+	 * @see DhApiRenderableBox
+	 * @see IDhApiRenderableBoxGroup#getResourceLocationNamespace() 
+	 * @see IDhApiRenderableBoxGroup#getResourceLocationPath() 
+	 * 
+	 * @throws IllegalArgumentException if <code>resourceLocation</code> is null, isn't separated by a colon, or has multiple colons.
+	 */
+	IDhApiRenderableBoxGroup createForSingleBox(String resourceLocation, DhApiRenderableBox cube) throws IllegalArgumentException;
+	
+	/**
+	 * Creates a {@link IDhApiRenderableBoxGroup} from the given list of {@link DhApiRenderableBox} where each
+	 * one is positioned relative to given <code>originBlockPos</code>, which in turn is relative to the level's origin.
+	 *
+	 * @param resourceLocation A colon separated Resource Location string, similar to vanilla Minecraft, for example: "DistantHorizons:Clouds"
+	 * @param originBlockPos The starting position for this {@link IDhApiRenderableBoxGroup}, can be changed during runtime.
+	 * 
+	 * 
+	 * @see DhApiRenderableBox
+	 * @see IDhApiRenderableBoxGroup#getResourceLocationNamespace()
+	 * @see IDhApiRenderableBoxGroup#getResourceLocationPath()
+	 * 
+	 * @throws IllegalArgumentException if <code>resourceLocation</code> is null, isn't separated by a colon, or has multiple colons.
+	 */
+	IDhApiRenderableBoxGroup createRelativePositionedGroup(String resourceLocation, DhApiVec3d originBlockPos, List<DhApiRenderableBox> cubeList);
+	
+	/**
+	 * Creates a {@link IDhApiRenderableBoxGroup} from the given list of {@link DhApiRenderableBox} where each
+	 * one is positioned relative to the level's origin.
+	 * 
+	 * @param resourceLocation A colon separated Resource Location string, similar to vanilla Minecraft, for example: "DistantHorizons:Clouds"
+	 *
+	 * @see DhApiRenderableBox
+	 * @see IDhApiRenderableBoxGroup#getResourceLocationNamespace()
+	 * @see IDhApiRenderableBoxGroup#getResourceLocationPath()
+	 * 
+	 * @throws IllegalArgumentException if <code>resourceLocation</code> is null, isn't separated by a colon, or has multiple colons.
+	 */
+	IDhApiRenderableBoxGroup createAbsolutePositionedGroup(String resourceLocation, List<DhApiRenderableBox> cubeList);
 	
 }

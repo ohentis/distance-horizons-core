@@ -23,8 +23,35 @@ import java.util.function.Consumer;
  */
 public interface IDhApiRenderableBoxGroup extends List<DhApiRenderableBox>
 {
-	/** @return the ID for this specific group */
+	/**
+	 * A unique numerical ID used by DH during rendering.
+	 * This can also be used to bind/unbind specific {@link IDhApiRenderableBoxGroup}'s from the renderer.
+	 * @return the ID for this specific group 
+	 */
 	long getId();
+	
+	/** 
+	 * Used to determine which mods have added what to the DH renderer.
+	 * This can be used both by the F3 pie chart so you as a mod developer can profile your code
+	 * or by shader developers who want to render your objects differently. <br><br>
+	 * 
+	 * Should be used the same as a vanilla Minecraft ResourceLocation.
+	 * For example if your mod named "Heavy Thunder" adds additional clouds named "Storm Front",
+	 * your Resource Location would be something like "HeavyThunder:StormFront"
+	 * and this method would return "HeavyThunder".
+	 */
+	String getResourceLocationNamespace();
+	/**
+	 * Used to determine what type of object mods have added what to the DH renderer.
+	 * This can be used both by the F3 pie chart so you as a mod developer can profile your code
+	 * or by shader developers who want to render your objects differently. <br><br>
+	 *
+	 * Should be used the same as a vanilla Minecraft ResourceLocation.
+	 * For example if your mod named "Heavy Thunder" adds additional clouds named "Storm Front",
+	 * your Resource Location would be something like "HeavyThunder:StormFront"
+	 * and this method would return "StormFront".
+	 */
+	String getResourceLocationPath();
 	
 	/** Sets whether this group should render or not. */
 	void setActive(boolean active);

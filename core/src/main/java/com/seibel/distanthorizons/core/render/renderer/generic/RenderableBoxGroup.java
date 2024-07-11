@@ -30,6 +30,9 @@ public class RenderableBoxGroup
 		
 		public final long id;
 		
+		public final String resourceLocationNamespace;
+		public final String resourceLocationPath;
+		
 		/** If false the boxes will be positioned relative to the level's origin */
 		public final boolean positionBoxesRelativeToGroupOrigin;
 		
@@ -64,6 +67,11 @@ public class RenderableBoxGroup
 		
 		@Override
 		public long getId() { return this.id; }
+		
+		@Override 
+		public String getResourceLocationNamespace() { return this.resourceLocationNamespace; }
+		@Override 
+		public String getResourceLocationPath() { return this.resourceLocationPath; }
 		
 		@Override
 		public void setOriginBlockPos(DhApiVec3d pos)
@@ -107,8 +115,20 @@ public class RenderableBoxGroup
 		// constructor //
 		//=============//
 		
-		public RenderableBoxGroup(DhApiVec3d originBlockPos, List<DhApiRenderableBox> boxList, boolean positionBoxesRelativeToGroupOrigin)
+		public RenderableBoxGroup(
+				String resourceLocation, 
+				DhApiVec3d originBlockPos, List<DhApiRenderableBox> boxList, 
+				boolean positionBoxesRelativeToGroupOrigin) throws IllegalArgumentException
 		{
+			String[] splitResourceLocation =  resourceLocation.split(":");
+			if (splitResourceLocation.length != 2)
+			{
+				throw new IllegalArgumentException("Resource Location must be a string that's separated by a single colon, for example: [DistantHorizons:Beacons], your namespace ["+resourceLocation+"], contains ["+(splitResourceLocation.length-1)+"] colons.");
+			}
+			
+			this.resourceLocationNamespace = splitResourceLocation[0];
+			this.resourceLocationPath = splitResourceLocation[1];
+			
 			this.id = NEXT_ID_ATOMIC_INT.getAndIncrement();
 			this.boxList = new ArrayList<>(boxList);
 			

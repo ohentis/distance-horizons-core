@@ -60,19 +60,19 @@ public class GenericRenderObjectFactory implements IDhApiCustomRenderObjectFacto
 	//================//
 	
 	@Override 
-	public IDhApiRenderableBoxGroup createForSingleBox(DhApiRenderableBox box)
+	public IDhApiRenderableBoxGroup createForSingleBox(String resourceLocation, DhApiRenderableBox box)
 	{
 		ArrayList<DhApiRenderableBox> list = new ArrayList<>();
 		list.add(box);
-		return this.createAbsolutePositionedGroup(list);
+		return this.createAbsolutePositionedGroup(resourceLocation, list);
 	}
 	
 	@Override 
-	public IDhApiRenderableBoxGroup createRelativePositionedGroup(DhApiVec3d originBlockPos, List<DhApiRenderableBox> boxList)
-	{ return new RenderableBoxGroup(new DhApiVec3d(originBlockPos.x, originBlockPos.y, originBlockPos.z), boxList, true); }
+	public IDhApiRenderableBoxGroup createRelativePositionedGroup(String resourceLocation, DhApiVec3d originBlockPos, List<DhApiRenderableBox> boxList)
+	{ return new RenderableBoxGroup(resourceLocation, new DhApiVec3d(originBlockPos.x, originBlockPos.y, originBlockPos.z), boxList, true); }
 	
 	@Override 
-	public IDhApiRenderableBoxGroup createAbsolutePositionedGroup(List<DhApiRenderableBox> boxList)
-	{ return new RenderableBoxGroup(new DhApiVec3d(0, 0, 0), boxList, false); }
+	public IDhApiRenderableBoxGroup createAbsolutePositionedGroup(String resourceLocation, List<DhApiRenderableBox> boxList)
+	{ return new RenderableBoxGroup(resourceLocation, new DhApiVec3d(0, 0, 0), boxList, false); }
 	
 }

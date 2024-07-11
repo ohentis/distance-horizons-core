@@ -41,6 +41,7 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRen
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrapper;
 import com.seibel.distanthorizons.core.util.math.Vec3d;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.OverrideInjector;
+import com.seibel.distanthorizons.coreapi.ModInfo;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.opengl.ARBInstancedArrays;
@@ -214,6 +215,7 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		
 		// single giant box
 		IDhApiRenderableBoxGroup singleGiantBoxGroup = factory.createForSingleBox(
+				ModInfo.NAME + ":CyanChunkBox",
 				new DhApiRenderableBox(
 						new DhApiVec3d(0,0,0), new DhApiVec3d(16,190,16),
 						new Color(Color.CYAN.getRed(), Color.CYAN.getGreen(), Color.CYAN.getBlue(), 125))
@@ -225,6 +227,7 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 
 		// single slender box
 		IDhApiRenderableBoxGroup singleTallBoxGroup = factory.createForSingleBox(
+				ModInfo.NAME + ":GreenBeacon",
 				new DhApiRenderableBox(
 						new DhApiVec3d(16,0,31), new DhApiVec3d(17,2000,32),
 						new Color(Color.GREEN.getRed(), Color.GREEN.getGreen(), Color.GREEN.getBlue(), 125))
@@ -242,7 +245,7 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 					new DhApiVec3d(i,150+i,24), new DhApiVec3d(1+i,151+i,25),
 					new Color(Color.ORANGE.getRed(), Color.ORANGE.getGreen(), Color.ORANGE.getBlue())));
 		}
-		IDhApiRenderableBoxGroup absolutePosBoxGroup = factory.createAbsolutePositionedGroup(absBoxList);
+		IDhApiRenderableBoxGroup absolutePosBoxGroup = factory.createAbsolutePositionedGroup(ModInfo.NAME + ":OrangeStairs", absBoxList);
 		this.add(absolutePosBoxGroup);
 
 
@@ -255,6 +258,7 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 					new Color(Color.MAGENTA.getRed(), Color.MAGENTA.getGreen(), Color.MAGENTA.getBlue())));
 		}
 		IDhApiRenderableBoxGroup relativePosBoxGroup = factory.createRelativePositionedGroup(
+				ModInfo.NAME + ":MovingMagentaGroup",
 				new DhApiVec3d(24, 140, 24),
 				relBoxList);
 		relativePosBoxGroup.setPreRenderFunc((event) ->
@@ -279,6 +283,7 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 			}
 		}
 		IDhApiRenderableBoxGroup massRelativePosBoxGroup = factory.createRelativePositionedGroup(
+				ModInfo.NAME + ":MassRedGroup",
 				new DhApiVec3d(-25, 140, 0),
 				massRelBoxList);
 		massRelativePosBoxGroup.setPreRenderFunc((event) ->
@@ -385,16 +390,19 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 				// ignore inactive groups
 				if (boxGroup.active)
 				{
+					profiler.popPush("rendering");
+					profiler.push(boxGroup.getResourceLocationNamespace());
+					profiler.push(boxGroup.getResourceLocationPath());
 					if (this.useInstancedRendering)
 					{
-						profiler.popPush("rendering");
 						this.renderBoxGroupInstanced(shaderProgram, renderEventParam, boxGroup, camPos);
 					}
 					else
 					{
-						profiler.popPush("rendering");
 						this.renderBoxGroupDirect(shaderProgram, renderEventParam, boxGroup, camPos);
 					}
+					profiler.pop(); // resource path
+					profiler.pop(); // resource namespace
 					
 					boxGroup.postRender(renderEventParam);
 				}
