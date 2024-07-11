@@ -394,7 +394,7 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 				if (boxGroup.active)
 				{
 					boolean cancelRendering = ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeGenericObjectRenderEvent.class, new DhApiBeforeGenericObjectRenderEvent.EventParam(renderEventParam, boxGroup));
-					if (cancelRendering)
+					if (!cancelRendering)
 					{
 						profiler.popPush("rendering");
 						profiler.push(boxGroup.getResourceLocationNamespace());
