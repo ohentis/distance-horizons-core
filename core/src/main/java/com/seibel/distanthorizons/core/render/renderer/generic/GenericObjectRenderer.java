@@ -25,8 +25,7 @@ import com.seibel.distanthorizons.api.enums.rendering.EDhApiBlockMaterial;
 import com.seibel.distanthorizons.api.interfaces.override.rendering.IDhApiGenericObjectShaderProgram;
 import com.seibel.distanthorizons.api.interfaces.render.IDhApiRenderableBoxGroup;
 import com.seibel.distanthorizons.api.interfaces.render.IDhApiCustomRenderRegister;
-import com.seibel.distanthorizons.api.methods.events.abstractEvents.DhApiBeforeGenericObjectRenderEvent;
-import com.seibel.distanthorizons.api.methods.events.abstractEvents.DhApiLevelLoadEvent;
+import com.seibel.distanthorizons.api.methods.events.abstractEvents.*;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
 import com.seibel.distanthorizons.api.objects.math.DhApiVec3d;
 import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBox;
@@ -368,6 +367,8 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		GLState glState = new GLState();
 		this.init();
 		
+		ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeGenericRenderSetupEvent.class, renderEventParam);
+		
 		GL32.glPolygonMode(GL32.GL_FRONT_AND_BACK, GL32.GL_FILL);
 		GL32.glEnable(GL32.GL_DEPTH_TEST);
 		
@@ -432,6 +433,8 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		
 		// clean up //
 		profiler.popPush("cleanup");
+		
+		ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeGenericRenderCleanupEvent.class, renderEventParam);
 		
 		shaderProgram.unbind();
 		glState.restore();
