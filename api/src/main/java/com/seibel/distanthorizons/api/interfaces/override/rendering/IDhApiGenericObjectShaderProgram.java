@@ -52,7 +52,7 @@ public interface IDhApiGenericObjectShaderProgram extends IDhApiOverrideable
 	void free();
 	
 	/** Runs any necessary binding this program needs so rendering can be done. */
-	void bind();
+	void bind(DhApiRenderParam renderEventParam);
 	/** Runs any necessary unbinding this program needs so rendering can be done by another program. */
 	void unbind();
 	

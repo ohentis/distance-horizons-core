@@ -383,7 +383,7 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 			shaderProgram = shaderProgramOverride;
 		}
 		
-		shaderProgram.bind();
+		shaderProgram.bind(renderEventParam);
 		shaderProgram.bindVertexBuffer(this.boxVertexBuffer.getId());
 		
 		this.boxIndexBuffer.bind();

@@ -92,7 +92,7 @@ public class GenericObjectShaderProgram extends ShaderProgram implements IDhApiG
 	//=========//
 	
 	@Override
-	public void bind()
+	public void bind(DhApiRenderParam renderEventParam)
 	{
 		super.bind();
 		this.va.bind();

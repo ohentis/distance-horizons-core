@@ -133,7 +133,8 @@ public class SharedApi
 	 * Used to prevent getting a full chunk from MC if it isn't necessary. <br>
 	 * This is important since asking MC for a chunk is slow and may block the render thread.
 	 */
-	public static boolean isChunkAtBlockPosAlreadyUpdating(int blockPosX, int blockPosZ) { return UPDATING_CHUNK_POS_SET.contains(new DhChunkPos(new DhBlockPos2D(blockPosX, blockPosZ))); }
+	public static boolean isChunkAtBlockPosAlreadyUpdating(int blockPosX, int blockPosZ)
+	{ return UPDATING_CHUNK_POS_SET.contains(new DhChunkPos(new DhBlockPos2D(blockPosX, blockPosZ))); }
 	
 	
 	/** handles both block place and break events */
