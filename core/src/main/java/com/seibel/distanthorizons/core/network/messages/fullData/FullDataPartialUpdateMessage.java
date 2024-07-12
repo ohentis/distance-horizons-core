@@ -27,7 +27,7 @@ import com.seibel.distanthorizons.core.network.messages.ILevelRelatedMessage;
 import com.seibel.distanthorizons.core.network.messages.NetworkMessage;
 import com.seibel.distanthorizons.core.network.INetworkObject;
 import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV2DTO;
-import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
 import io.netty.buffer.ByteBuf;
 
 import java.io.IOException;
@@ -42,9 +42,9 @@ public class FullDataPartialUpdateMessage extends NetworkMessage implements ILev
 	
 	
 	public FullDataPartialUpdateMessage() { }
-	public FullDataPartialUpdateMessage(ILevelWrapper level, FullDataSourceV2 fullDataSource)
+	public FullDataPartialUpdateMessage(IServerLevelWrapper level, FullDataSourceV2 fullDataSource)
 	{
-		this.levelName = level.getDimensionName();
+		this.levelName = level.getKeyedLevelDimensionName();
 		
 		try
 		{

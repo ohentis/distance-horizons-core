@@ -133,7 +133,7 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 		{
 			try
 			{
-				if (msg.dataSourceDto == null)
+				if (!msg.isSameLevelAs(this.levelWrapper))
 				{
 					return;
 				}
@@ -288,6 +288,12 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 		{
 			this.worldGenModule.close();
 		}
+		
+		if (this.eventSource != null)
+		{
+			this.eventSource.close();
+		}
+		
 		this.clientside.close();
 		super.close();
 		this.dataFileHandler.close();

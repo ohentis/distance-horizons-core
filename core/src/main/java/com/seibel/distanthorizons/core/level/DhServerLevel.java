@@ -61,13 +61,18 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 	public final ServerLevelModule serverside;
 	private final IServerLevelWrapper serverLevelWrapper;
 	
-	
-	
 	private final RemotePlayerConnectionHandler remotePlayerConnectionHandler;
 	
-	private final ConcurrentLinkedQueue<IServerPlayerWrapper> worldGenLoopingQueue = new ConcurrentLinkedQueue<>();
+	/**
+	 * This queue is used for ensuring fair generation speed for each player. <br>
+	 * Every tick the first player gets used for centering generation, and then is immediately moved into the back of the queue. <br>
+	 * TODO only add players that actually have something to generate
+	 */
+	private final ConcurrentLinkedQueue<IServerPlayerWrapper> worldGenPlayerCenteringQueue = new ConcurrentLinkedQueue<>();
+	
 	private final ConcurrentMap<Long, DataSourceRequestGroup> requestGroupsByPos = new ConcurrentHashMap<>();
 	private final ConcurrentMap<Long, DataSourceRequestGroup> requestGroupsByFutureId = new ConcurrentHashMap<>();
+	
 	
 	public DhServerLevel(AbstractSaveStructure saveStructure, IServerLevelWrapper serverLevelWrapper, RemotePlayerConnectionHandler remotePlayerConnectionHandler)
 	{
@@ -233,12 +238,12 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 	
 	public void addPlayer(IServerPlayerWrapper serverPlayer)
 	{
-		this.worldGenLoopingQueue.add(serverPlayer);
+		this.worldGenPlayerCenteringQueue.add(serverPlayer);
 	}
 	
 	public void removePlayer(IServerPlayerWrapper serverPlayer)
 	{
-		this.worldGenLoopingQueue.remove(serverPlayer);
+		this.worldGenPlayerCenteringQueue.remove(serverPlayer);
 	}
 	
 	@Override
@@ -307,6 +312,11 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 			FullDataPartialUpdateMessage updateMessage = new FullDataPartialUpdateMessage(this.serverLevelWrapper, data);
 			for (ServerPlayerState serverPlayerState : this.remotePlayerConnectionHandler.getConnectedPlayers())
 			{
+				if (serverPlayerState.serverPlayer().getLevel() != this.serverLevelWrapper)
+				{
+					continue;
+				}
+				
 				if (!serverPlayerState.config.isRealTimeUpdatesEnabled())
 				{
 					continue;
@@ -358,7 +368,7 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 		
 		if (this.serverside.worldGenModule.isWorldGenRunning())
 		{
-			IServerPlayerWrapper firstPlayer = this.worldGenLoopingQueue.peek();
+			IServerPlayerWrapper firstPlayer = this.worldGenPlayerCenteringQueue.peek();
 			if (firstPlayer == null)
 			{
 				return;
@@ -366,8 +376,8 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 			
 			// Put first player in back before removing from front, so it can be removed by other thread without blocking
 			// - if it gets removed, remove() below will remove the item we just put instead
-			this.worldGenLoopingQueue.add(firstPlayer);
-			this.worldGenLoopingQueue.remove(firstPlayer);
+			this.worldGenPlayerCenteringQueue.add(firstPlayer);
+			this.worldGenPlayerCenteringQueue.remove(firstPlayer);
 			
 			Vec3d position = firstPlayer.getPosition();
 			this.serverside.worldGenModule.worldGenTick(new DhBlockPos2D((int) position.x, (int) position.z));
