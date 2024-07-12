@@ -4,7 +4,7 @@ package com.seibel.distanthorizons.api.enums.rendering;
  * contains the indices used by shaders to determine 
  * how different block types should be rendered. <br><br>
  * 
- * UNKOWN, <br>
+ * UNKNOWN, <br>
  * LEAVES, <br>
  * STONE, <br>
  * WOOD, <br>
@@ -27,7 +27,7 @@ package com.seibel.distanthorizons.api.enums.rendering;
  */
 public enum EDhApiBlockMaterial
 {
-	UNKOWN(0),
+	UNKNOWN(0),
 	LEAVES(1),
 	STONE(2),
 	WOOD(3),
