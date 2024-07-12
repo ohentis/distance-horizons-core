@@ -61,7 +61,7 @@ public enum EDhApiBlockMaterial
 			}
 		}
 		
-		return EDhApiBlockMaterial.UNKOWN;
+		return EDhApiBlockMaterial.UNKNOWN;
 	}
 	
 }

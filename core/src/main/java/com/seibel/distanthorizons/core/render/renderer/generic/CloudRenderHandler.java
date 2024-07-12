@@ -210,7 +210,7 @@ public class CloudRenderHandler
 							new DhApiVec3d(minXBlockPos, 0, minZBlockPos),
 							new DhApiVec3d(maxXBlockPos, CLOUD_BOX_THICKNESS, maxZBlockPos),
 							color,
-							EDhApiBlockMaterial.UNKOWN
+							EDhApiBlockMaterial.UNKNOWN
 					);
 					boxList.add(box);
 				}

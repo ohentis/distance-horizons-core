@@ -99,7 +99,7 @@ public class CubicLodTemplate
 				
 				switch (EDhApiBlockMaterial.getFromIndex(blockMaterialId))
 				{
-					case UNKOWN:
+					case UNKNOWN:
 					case AIR: // shouldn't normally be rendered, but just in case
 						color = ColorUtil.HOT_PINK;
 						break;
