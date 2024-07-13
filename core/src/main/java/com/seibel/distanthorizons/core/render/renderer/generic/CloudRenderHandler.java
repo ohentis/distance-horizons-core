@@ -53,14 +53,13 @@ public class CloudRenderHandler
 	
 	private static final boolean DEBUG_BORDER_COLORS = false;
 	
-	// TODO resize and/or make clouds thicker
 	/** 
 	 * How wide an individual box is. <br>
 	 * Measured in blocks.
 	 */
-	private static final int CLOUD_BOX_WIDTH = 192;
+	private static final int CLOUD_BOX_WIDTH = 64;
 	/** measured in blocks */
-	private static final int CLOUD_BOX_THICKNESS = 48;
+	private static final int CLOUD_BOX_THICKNESS = 16;
 	
 	private final IDhApiRenderableBoxGroup[][] boxGroupByOffset = new IDhApiRenderableBoxGroup[3][3];
 	private final IDhLevel level;
