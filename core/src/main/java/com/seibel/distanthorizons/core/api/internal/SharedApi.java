@@ -30,6 +30,7 @@ import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.sql.dto.BeaconBeamDTO;
+import com.seibel.distanthorizons.core.sql.repo.AbstractDhRepo;
 import com.seibel.distanthorizons.core.util.TimerUtil;
 import com.seibel.distanthorizons.core.util.objects.Pair;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
@@ -97,6 +98,8 @@ public class SharedApi
 			ThreadPoolUtil.shutdownThreadPools();
 			DebugRenderer.clearRenderables();
 			MC_RENDER.clearTargetFrameBuffer();
+			// shouldn't be necessary, but if we missed closing one of the connections this should make sure they're all closed
+			AbstractDhRepo.closeAllConnections();
 			// needs to be closed on world shutdown to clear out un-processed chunks
 			UPDATING_CHUNK_POS_SET.clear();
 			

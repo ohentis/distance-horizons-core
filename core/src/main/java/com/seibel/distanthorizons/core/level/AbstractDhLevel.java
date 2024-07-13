@@ -260,6 +260,18 @@ public abstract class AbstractDhLevel implements IDhLevel
 	//================//
 	
 	@Override
-	public void close() { this.chunkToLodBuilder.close(); }
+	public void close() 
+	{ 
+		this.chunkToLodBuilder.close();
+		
+		if (this.chunkHashRepo != null)
+		{
+			this.chunkHashRepo.close();
+		}
+		if (this.beaconBeamRepo != null)
+		{
+			this.beaconBeamRepo.close();
+		}
+	}
 	
 }
