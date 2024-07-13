@@ -21,23 +21,23 @@ package com.seibel.distanthorizons.core.render.renderer;
 
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.render.glObject.GLState;
-import com.seibel.distanthorizons.core.render.renderer.shaders.SSAOApplyShader;
-import com.seibel.distanthorizons.core.render.renderer.shaders.SSAOShader;
-import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
+import com.seibel.distanthorizons.core.render.renderer.shaders.FogApplyShader;
+import com.seibel.distanthorizons.core.render.renderer.shaders.FogShader;
 import com.seibel.distanthorizons.core.util.math.Mat4f;
+import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
 import org.lwjgl.opengl.GL32;
 
 import java.nio.ByteBuffer;
 
 /**
- * Handles adding SSAO via {@link SSAOShader} and {@link SSAOApplyShader}. <br><br>
+ * Handles adding SSAO via {@link FogShader} and {@link FogApplyShader}. <br><br>
  * 
- * {@link SSAOShader} - draws the SSAO to a texture. <br>
- * {@link SSAOApplyShader} - draws the SSAO texture to DH's FrameBuffer. <br>
+ * {@link FogShader} - draws the Fog to a texture. <br>
+ * {@link FogApplyShader} - draws the Fog texture to DH's FrameBuffer. <br>
  */
-public class SSAORenderer
+public class FogRenderer
 {
-	public static SSAORenderer INSTANCE = new SSAORenderer();
+	public static FogRenderer INSTANCE = new FogRenderer();
 	
 	private static final IMinecraftRenderWrapper MC_RENDER = SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
 	
@@ -46,9 +46,9 @@ public class SSAORenderer
 	
 	private int width = -1;
 	private int height = -1;
-	private int ssaoFramebuffer = -1;
+	private int fogFramebuffer = -1;
 	
-	private int ssaoTexture = -1;
+	private int fogTexture = -1;
 	
 	
 	
@@ -56,40 +56,40 @@ public class SSAORenderer
 	// constructor //
 	//=============//
 	
-	private SSAORenderer() { }
+	private FogRenderer() { }
 	
 	public void init()
 	{
 		if (this.init) return;
 		this.init = true;
 		
-		SSAOShader.INSTANCE.init();
-		SSAOApplyShader.INSTANCE.init();
+		FogShader.INSTANCE.init();
+		FogApplyShader.INSTANCE.init();
 	}
 	
 	private void createFramebuffer(int width, int height)
 	{
-		if (this.ssaoFramebuffer != -1)
+		if (this.fogFramebuffer != -1)
 		{
-			GL32.glDeleteFramebuffers(this.ssaoFramebuffer);
-			this.ssaoFramebuffer = -1;
+			GL32.glDeleteFramebuffers(this.fogFramebuffer);
+			this.fogFramebuffer = -1;
 		}
 		
-		if (this.ssaoTexture != -1)
+		if (this.fogTexture != -1)
 		{
-			GL32.glDeleteTextures(this.ssaoTexture);
-			this.ssaoTexture = -1;
+			GL32.glDeleteTextures(this.fogTexture);
+			this.fogTexture = -1;
 		}
 		
-		this.ssaoFramebuffer = GL32.glGenFramebuffers();
-		GL32.glBindFramebuffer(GL32.GL_FRAMEBUFFER, this.ssaoFramebuffer);
+		this.fogFramebuffer = GL32.glGenFramebuffers();
+		GL32.glBindFramebuffer(GL32.GL_FRAMEBUFFER, this.fogFramebuffer);
 		
-		this.ssaoTexture = GL32.glGenTextures();
-		GL32.glBindTexture(GL32.GL_TEXTURE_2D, this.ssaoTexture);
-		GL32.glTexImage2D(GL32.GL_TEXTURE_2D, 0, GL32.GL_R16F, width, height, 0, GL32.GL_RED, GL32.GL_HALF_FLOAT, (ByteBuffer) null);
+		this.fogTexture = GL32.glGenTextures();
+		GL32.glBindTexture(GL32.GL_TEXTURE_2D, this.fogTexture);
+		GL32.glTexImage2D(GL32.GL_TEXTURE_2D, 0, GL32.GL_RGBA16, width, height, 0, GL32.GL_RGBA, GL32.GL_UNSIGNED_SHORT_4_4_4_4, (ByteBuffer) null);
 		GL32.glTexParameteri(GL32.GL_TEXTURE_2D, GL32.GL_TEXTURE_MIN_FILTER, GL32.GL_LINEAR);
 		GL32.glTexParameteri(GL32.GL_TEXTURE_2D, GL32.GL_TEXTURE_MAG_FILTER, GL32.GL_LINEAR);
-		GL32.glFramebufferTexture2D(GL32.GL_FRAMEBUFFER, GL32.GL_COLOR_ATTACHMENT0, GL32.GL_TEXTURE_2D, this.ssaoTexture, 0);
+		GL32.glFramebufferTexture2D(GL32.GL_FRAMEBUFFER, GL32.GL_COLOR_ATTACHMENT0, GL32.GL_TEXTURE_2D, this.fogTexture, 0);
 	}
 	
 	
@@ -113,23 +113,23 @@ public class SSAORenderer
 			this.createFramebuffer(width, height);
 		}
 		
-		SSAOShader.INSTANCE.frameBuffer = this.ssaoFramebuffer;
-		SSAOShader.INSTANCE.setProjectionMatrix(projectionMatrix);
-		SSAOShader.INSTANCE.render(partialTicks);
+		FogShader.INSTANCE.frameBuffer = this.fogFramebuffer;
+		FogShader.INSTANCE.setProjectionMatrix(projectionMatrix);
+		FogShader.INSTANCE.render(partialTicks);
 		
 		// restored so we can write the SSAO texture to the main frame buffer
 		primaryState.restore();
 		
-		SSAOApplyShader.INSTANCE.ssaoTexture = this.ssaoTexture;
-		SSAOApplyShader.INSTANCE.render(partialTicks);
+		FogApplyShader.INSTANCE.fogTexture = this.fogTexture;
+		FogApplyShader.INSTANCE.render(partialTicks);
 		
 		state.restore();
 	}
 	
 	public void free()
 	{
-		SSAOShader.INSTANCE.free();
-		SSAOApplyShader.INSTANCE.free();
+		FogShader.INSTANCE.free();
+		FogApplyShader.INSTANCE.free();
 	}
 	
 }

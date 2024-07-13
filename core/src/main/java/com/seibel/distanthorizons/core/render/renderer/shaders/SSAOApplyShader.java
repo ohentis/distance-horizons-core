@@ -50,6 +50,11 @@ public class SSAOApplyShader extends AbstractShaderRenderer
 	public int gFarUniform;
 	
 	
+	
+	//=============//
+	// constructor //
+	//=============//
+	
 	@Override
 	public void onInit()
 	{
@@ -67,6 +72,12 @@ public class SSAOApplyShader extends AbstractShaderRenderer
 		this.gNearUniform = this.shader.tryGetUniformLocation("gNear");
 		this.gFarUniform = this.shader.tryGetUniformLocation("gFar");
 	}
+	
+	
+	
+	//=============//
+	// render prep //
+	//=============//
 	
 	@Override
 	protected void onApplyUniforms(float partialTicks)
@@ -100,6 +111,7 @@ public class SSAOApplyShader extends AbstractShaderRenderer
 			GL32.glUniform1f(this.gFarUniform, farClipPlane);
 		}
 	}
+	
 	
 	
 	//========//

@@ -38,10 +38,12 @@ public class SSAOShader extends AbstractShaderRenderer
 {
 	public static SSAOShader INSTANCE = new SSAOShader();
 	
+	
 	public int frameBuffer;
 	
 	private Mat4f projection;
 	private Mat4f invertedProjection;
+	
 	
 	// uniforms
 	public int gProjUniform;
@@ -54,11 +56,17 @@ public class SSAOShader extends AbstractShaderRenderer
 	public int gDepthMapUniform;
 	
 	
+	
+	//=============//
+	// constructor //
+	//=============//
+	
 	@Override
 	public void onInit()
 	{
 		this.shader = new ShaderProgram("shaders/normal.vert", "shaders/ssao/ao.frag",
-				"fragColor", new String[]{"vPosition"});
+				"fragColor", new String[]{ "vPosition" }
+		);
 		
 		// uniform setup
 		this.gProjUniform = this.shader.getUniformLocation("gProj");
@@ -70,6 +78,12 @@ public class SSAOShader extends AbstractShaderRenderer
 		this.gBiasUniform = this.shader.getUniformLocation("gBias");
 		this.gDepthMapUniform = this.shader.getUniformLocation("gDepthMap");
 	}
+	
+	
+	
+	//=============//
+	// render prep //
+	//=============//
 	
 	public void setProjectionMatrix(Mat4f projectionMatrix)
 	{
@@ -106,6 +120,7 @@ public class SSAOShader extends AbstractShaderRenderer
 		
 		GL32.glUniform1i(this.gDepthMapUniform, 0);
 	}
+	
 	
 	
 	//========//

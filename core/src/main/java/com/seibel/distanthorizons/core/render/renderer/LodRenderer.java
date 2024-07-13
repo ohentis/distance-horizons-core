@@ -327,6 +327,14 @@ public class LodRenderer
 				}
 				
 				
+				//DarkShader.INSTANCE.render(partialTicks); // A test shader to make the world darker
+				
+				if (!deferTransparentRendering && Config.Client.Advanced.Graphics.Quality.transparency.get().transparencyEnabled)
+				{
+					this.renderTransparentBuffers(profiler, renderEventParam, renderEventParam.partialTicks);
+				}
+				
+				
 				if (Config.Client.Advanced.Graphics.Fog.drawMode.get() != EDhApiFogDrawMode.FOG_DISABLED)
 				{
 					profiler.popPush("LOD Fog");
@@ -334,16 +342,9 @@ public class LodRenderer
 					Mat4f combinedMatrix = new Mat4f(renderEventParam.dhProjectionMatrix);
 					combinedMatrix.multiply(renderEventParam.dhModelViewMatrix);
 					
-					FogShader.INSTANCE.setModelViewProjectionMatrix(combinedMatrix);
-					FogShader.INSTANCE.render(renderEventParam.partialTicks);
+					FogRenderer.INSTANCE.render(minecraftGlState, combinedMatrix, renderEventParam.partialTicks);
 				}
 				
-				//DarkShader.INSTANCE.render(partialTicks); // A test shader to make the world darker
-				
-				if (!deferTransparentRendering && Config.Client.Advanced.Graphics.Quality.transparency.get().transparencyEnabled)
-				{
-					this.renderTransparentBuffers(profiler, renderEventParam, renderEventParam.partialTicks);
-				}
 				
 				drawLagSpikeCatcher.end("LodDraw");
 				
@@ -403,6 +404,17 @@ public class LodRenderer
 				if (Config.Client.Advanced.Graphics.Quality.transparency.get().transparencyEnabled)
 				{
 					this.renderTransparentBuffers(profiler, renderEventParam, renderEventParam.partialTicks);
+					
+					
+					if (Config.Client.Advanced.Graphics.Fog.drawMode.get() != EDhApiFogDrawMode.FOG_DISABLED)
+					{
+						profiler.popPush("LOD Fog");
+						
+						Mat4f combinedMatrix = new Mat4f(renderEventParam.dhProjectionMatrix);
+						combinedMatrix.multiply(renderEventParam.dhModelViewMatrix);
+						
+						FogRenderer.INSTANCE.render(minecraftGlState, combinedMatrix, renderEventParam.partialTicks);
+					}
 				}
 				
 				drawLagSpikeCatcher.end("LodTranslucentDraw");
@@ -457,12 +469,6 @@ public class LodRenderer
 		this.bufferHandler.renderTransparent(this, renderEventParam);
 		GL32.glDepthMask(true); // Apparently the depth mask state is stored in the FBO, so glState fails to restore it...
 		
-		
-		if (Config.Client.Advanced.Graphics.Fog.drawMode.get() != EDhApiFogDrawMode.FOG_DISABLED)
-		{
-			profiler.popPush("LOD Fog");
-			FogShader.INSTANCE.render(partialTicks);
-		}
 	}
 	
 	/** called by each {@link ColumnRenderBuffer} before rendering */
