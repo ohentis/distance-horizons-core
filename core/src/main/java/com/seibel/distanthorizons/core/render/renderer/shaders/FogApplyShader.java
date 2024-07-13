@@ -19,13 +19,10 @@
 
 package com.seibel.distanthorizons.core.render.renderer.shaders;
 
-import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.render.glObject.shader.ShaderProgram;
 import com.seibel.distanthorizons.core.render.renderer.FogRenderer;
 import com.seibel.distanthorizons.core.render.renderer.LodRenderer;
-import com.seibel.distanthorizons.core.render.renderer.SSAORenderer;
 import com.seibel.distanthorizons.core.render.renderer.ScreenQuad;
-import com.seibel.distanthorizons.core.util.RenderUtil;
 import org.lwjgl.opengl.GL32;
 
 /**
@@ -42,8 +39,8 @@ public class FogApplyShader extends AbstractShaderRenderer
 	public int fogTexture;
 	
 	// uniforms
-	public int gColorTextureUniform;
-	public int gDepthTextureUniform;
+	public int colorTextureUniform;
+	public int depthTextureUniform;
 	
 	
 	
@@ -61,8 +58,8 @@ public class FogApplyShader extends AbstractShaderRenderer
 				new String[]{ "vPosition" });
 		
 		// uniform setup
-		this.gColorTextureUniform = this.shader.getUniformLocation("gColorTexture");
-		this.gDepthTextureUniform = this.shader.getUniformLocation("gDepthTexture");
+		this.colorTextureUniform = this.shader.getUniformLocation("uColorTexture");
+		this.depthTextureUniform = this.shader.getUniformLocation("uDepthTexture");
 		
 	}
 	
@@ -77,11 +74,11 @@ public class FogApplyShader extends AbstractShaderRenderer
 	{
 		GL32.glActiveTexture(GL32.GL_TEXTURE0);
 		GL32.glBindTexture(GL32.GL_TEXTURE_2D, this.fogTexture);
-		GL32.glUniform1i(this.gColorTextureUniform, 0);
+		GL32.glUniform1i(this.colorTextureUniform, 0);
 		
 		GL32.glActiveTexture(GL32.GL_TEXTURE1);
 		GL32.glBindTexture(GL32.GL_TEXTURE_2D, LodRenderer.getActiveDepthTextureId());
-		GL32.glUniform1i(this.gDepthTextureUniform, 1);
+		GL32.glUniform1i(this.depthTextureUniform, 1);
 	}
 	
 	

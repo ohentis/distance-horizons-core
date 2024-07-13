@@ -51,15 +51,16 @@ public class FogShader extends AbstractShaderRenderer
 	
 	
 	// Uniforms
-	public int fogColorUniform;
-	public int fogScaleUniform;
-	public int fogVerticalScaleUniform;
-	public int nearFogStartUniform;
-	public int nearFogLengthUniform;
-	public int fullFogModeUniform;
+	public int uFogColor;
+	public int uFogScale;
+	public int uFogVerticalScale;
+	public int uNearFogStart;
+	public int uNearFogLength;
+	public int uFullFogMode;
 	
-	public int gInvertedModelViewProjectionUniform;
-	public int gDepthMapUniform;
+	/** Inverted Model View Projection matrix */
+	public int uInvMvmProj;
+	public int uDepthMap;
 	
 	
 	
@@ -82,18 +83,19 @@ public class FogShader extends AbstractShaderRenderer
 		// all uniforms should be tryGet...
 		// because disabling fog can cause the GLSL to optimize out most (if not all) uniforms
 		
-		this.gInvertedModelViewProjectionUniform = this.shader.getUniformLocation("gInvMvmProj");
-		this.gDepthMapUniform = this.shader.getUniformLocation("gDepthMap");
+		this.uDepthMap = this.shader.getUniformLocation("uDepthMap");
+		this.uInvMvmProj = this.shader.getUniformLocation("uInvMvmProj");
 		
 		// Fog uniforms
-		this.fogColorUniform = this.shader.tryGetUniformLocation("fogColor");
-		this.fullFogModeUniform = this.shader.tryGetUniformLocation("fullFogMode");
-		this.fogScaleUniform = this.shader.tryGetUniformLocation("fogScale");
-		this.fogVerticalScaleUniform = this.shader.tryGetUniformLocation("fogVerticalScale");
+		this.uFogScale = this.shader.tryGetUniformLocation("uFogScale");
+		this.uFogVerticalScale = this.shader.tryGetUniformLocation("uFogVerticalScale");
+		this.uFogColor = this.shader.tryGetUniformLocation("uFogColor");
+		this.uFullFogMode = this.shader.tryGetUniformLocation("uFullFogMode");
 		
 		// near fog
-		this.nearFogStartUniform = this.shader.tryGetUniformLocation("nearFogStart");
-		this.nearFogLengthUniform = this.shader.tryGetUniformLocation("nearFogLength");
+		this.uNearFogStart = this.shader.tryGetUniformLocation("uNearFogStart");
+		this.uNearFogLength = this.shader.tryGetUniformLocation("uNearFogLength");
+		
 	}
 	
 	
@@ -107,23 +109,20 @@ public class FogShader extends AbstractShaderRenderer
 	{
 		if (this.inverseMvmProjMatrix != null)
 		{
-			this.shader.setUniform(this.gInvertedModelViewProjectionUniform, this.inverseMvmProjMatrix);
+			this.shader.setUniform(this.uInvMvmProj, this.inverseMvmProjMatrix);
 		}
 		
 		int lodDrawDistance = Config.Client.Advanced.Graphics.Quality.lodChunkRenderDistanceRadius.get() * LodUtil.CHUNK_WIDTH;
-		int vanillaDrawDistance = MC_RENDER.getRenderDistance() * LodUtil.CHUNK_WIDTH;
-		vanillaDrawDistance += LodUtil.CHUNK_WIDTH * 2; // Give it a 2 chunk boundary for near fog.
 		
 		// Fog
-		if (this.fullFogModeUniform != -1) this.shader.setUniform(this.fullFogModeUniform, MC_RENDER.isFogStateSpecial() ? 1 : 0);
-		if (this.fogColorUniform != -1) this.shader.setUniform(this.fogColorUniform, MC_RENDER.isFogStateSpecial() ? this.getSpecialFogColor(partialTicks) : this.getFogColor(partialTicks));
+		if (this.uFullFogMode != -1) this.shader.setUniform(this.uFullFogMode, MC_RENDER.isFogStateSpecial() ? 1 : 0);
+		if (this.uFogColor != -1) this.shader.setUniform(this.uFogColor, MC_RENDER.isFogStateSpecial() ? this.getSpecialFogColor(partialTicks) : this.getFogColor(partialTicks));
 		
-		float nearFogLen = vanillaDrawDistance * 0.2f / lodDrawDistance;
-		float nearFogStart = vanillaDrawDistance * (VERSION_CONSTANTS.isVanillaRenderedChunkSquare() ? (float) Math.sqrt(2.0) : 1.0f) / lodDrawDistance;
-		if (this.nearFogStartUniform != -1) this.shader.setUniform(this.nearFogStartUniform, nearFogStart);
-		if (this.nearFogLengthUniform != -1) this.shader.setUniform(this.nearFogLengthUniform, nearFogLen);
-		if (this.fogScaleUniform != -1) this.shader.setUniform(this.fogScaleUniform, 1.f / lodDrawDistance);
-		if (this.fogVerticalScaleUniform != -1) this.shader.setUniform(this.fogVerticalScaleUniform, 1.f / MC.getWrappedClientLevel().getMaxHeight());
+		float nearFogStart = (VERSION_CONSTANTS.isVanillaRenderedChunkSquare() ? (float) Math.sqrt(2.0) : 1.0f) / lodDrawDistance;
+		if (this.uNearFogStart != -1) this.shader.setUniform(this.uNearFogStart, nearFogStart);
+		if (this.uNearFogLength != -1) this.shader.setUniform(this.uNearFogLength, 0.0f);
+		if (this.uFogScale != -1) this.shader.setUniform(this.uFogScale, 1.f / lodDrawDistance);
+		if (this.uFogVerticalScale != -1) this.shader.setUniform(this.uFogVerticalScale, 1.f / MC.getWrappedClientLevel().getMaxHeight());
 	}
 	private Color getFogColor(float partialTicks)
 	{
@@ -166,7 +165,7 @@ public class FogShader extends AbstractShaderRenderer
 		
 		GL32.glActiveTexture(GL32.GL_TEXTURE0);
 		GL32.glBindTexture(GL32.GL_TEXTURE_2D, LodRenderer.getActiveDepthTextureId());
-		GL32.glUniform1i(this.gDepthMapUniform, 0);
+		GL32.glUniform1i(this.uDepthMap, 0);
 		
 		ScreenQuad.INSTANCE.render();
 		
