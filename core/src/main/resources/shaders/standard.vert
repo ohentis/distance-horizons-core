@@ -8,15 +8,15 @@ out vec4 vertexColor;
 out vec3 vertexWorldPos;
 out float vertexYPos;
 
-uniform bool whiteWorld;
+uniform bool uWhiteWorld;
 
-uniform mat4 combinedMatrix;
-uniform vec3 modelOffset;
-uniform float worldYOffset;
+uniform mat4 uCombinedMatrix;
+uniform vec3 uModelOffset;
+uniform float uWorldYOffset;
 
-uniform int worldSkyLight;
-uniform sampler2D lightMap;
-uniform float mircoOffset;
+uniform int uWorldSkyLight;
+uniform sampler2D uLightMap;
+uniform float uMircoOffset;
 
 
 /** 
@@ -33,9 +33,9 @@ void main()
 {
     vPos = vPosition; // This is so it can be passed to the fragment shader
 
-    vertexWorldPos = vPosition.xyz + modelOffset;
+    vertexWorldPos = vPosition.xyz + uModelOffset;
 
-    vertexYPos = vPosition.y + worldYOffset;
+    vertexYPos = vPosition.y + uWorldYOffset;
 
     uint meta = vPosition.a;
 
@@ -44,23 +44,23 @@ void main()
     // 0b01 = positive offset
     // 0b11 = negative offset
     // format is: 0b00zzyyxx
-    float mx = (mirco & 1u)!=0u ? mircoOffset : 0.0;
+    float mx = (mirco & 1u)!=0u ? uMircoOffset : 0.0;
     mx = (mirco & 2u)!=0u ? -mx : mx;
-    float my = (mirco & 4u)!=0u ? mircoOffset : 0.0;
+    float my = (mirco & 4u)!=0u ? uMircoOffset : 0.0;
     my = (mirco & 8u)!=0u ? -my : my;
-    float mz = (mirco & 16u)!=0u ? mircoOffset : 0.0;
+    float mz = (mirco & 16u)!=0u ? uMircoOffset : 0.0;
     mz = (mirco & 32u)!=0u ? -mz : mz;
 
     uint lights = meta & 0xFFu;
 
 	float light2 = (mod(float(lights), 16.0)+0.5) / 16.0;
 	float light = (float(lights/16u)+0.5) / 16.0;
-	vertexColor = vec4(texture(lightMap, vec2(light, light2)).xyz, 1.0);
+	vertexColor = vec4(texture(uLightMap, vec2(light, light2)).xyz, 1.0);
     
-    if (!whiteWorld)
+    if (!uWhiteWorld)
     {
         vertexColor *= color;
     }
 
-    gl_Position = combinedMatrix * vec4(vertexWorldPos + vec3(mx, 0, mz), 1.0);
+    gl_Position = uCombinedMatrix * vec4(vertexWorldPos + vec3(mx, 0, mz), 1.0);
 }

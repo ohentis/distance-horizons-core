@@ -231,7 +231,7 @@ public class DebugRenderer
 		boxTransform.multiply(Mat4f.createScaleMatrix(box.maxPos.x - box.minPos.x, box.maxPos.y - box.minPos.y, box.maxPos.z - box.minPos.z));
 		Mat4f t = this.transformationMatrixThisFrame.copy();
 		t.multiply(boxTransform);
-		this.basicShader.setUniform(this.basicShader.getUniformLocation("transform"), t);
+		this.basicShader.setUniform(this.basicShader.getUniformLocation("uTransform"), t);
 		this.basicShader.setUniform(this.basicShader.getUniformLocation("uColor"), box.color);
 		GL32.glDrawElements(GL32.GL_LINES, BOX_OUTLINE_INDICES.length, GL32.GL_UNSIGNED_INT, 0);
 	}
