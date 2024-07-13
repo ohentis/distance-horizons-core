@@ -584,6 +584,7 @@ public class ClientApi
 			
 			MC.sendChatMessage("\u00A74\u00A7l\u00A7uERROR: Distant Horizons renderer has encountered an exception!");
 			MC.sendChatMessage("\u00A74Renderer is now disabled to prevent further issues.");
+			MC.sendChatMessage("\u00A74Please restart your game to re-enable Distant Horizons' LOD rendering.");
 			MC.sendChatMessage("\u00A74Exception detail: " + e);
 		}
 		finally
