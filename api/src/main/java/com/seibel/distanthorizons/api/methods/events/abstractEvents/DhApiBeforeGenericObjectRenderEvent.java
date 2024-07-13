@@ -22,6 +22,7 @@ package com.seibel.distanthorizons.api.methods.events.abstractEvents;
 import com.seibel.distanthorizons.api.interfaces.render.IDhApiRenderableBoxGroup;
 import com.seibel.distanthorizons.api.interfaces.world.IDhApiLevelWrapper;
 import com.seibel.distanthorizons.api.methods.events.interfaces.IDhApiCancelableEvent;
+import com.seibel.distanthorizons.api.methods.events.interfaces.IDhApiEventParam;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiCancelableEventParam;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
 
@@ -51,11 +52,12 @@ public abstract class DhApiBeforeGenericObjectRenderEvent implements IDhApiCance
 	// parameter object //
 	//==================//
 	
-	public static class EventParam extends DhApiRenderParam
+	public static class EventParam extends DhApiRenderParam implements IDhApiEventParam
 	{
 		public final long boxGroupId;
 		public final String resourceLocationNamespace;
 		public final String resourceLocationPath;
+		
 		
 		public EventParam(
 				DhApiRenderParam renderParam,
@@ -68,7 +70,28 @@ public abstract class DhApiBeforeGenericObjectRenderEvent implements IDhApiCance
 			this.resourceLocationNamespace = boxGroup.getResourceLocationNamespace();
 			this.resourceLocationPath = boxGroup.getResourceLocationPath();
 		}
+		public EventParam(
+				DhApiRenderParam renderParam,
+				long boxGroupId, String resourceLocationNamespace, String resourceLocationPath
+			)
+		{
+			super(renderParam);
+			
+			this.boxGroupId = boxGroupId;
+			this.resourceLocationNamespace = resourceLocationNamespace;
+			this.resourceLocationPath = resourceLocationPath;
+		}
 		
+		
+		
+		@Override
+		public EventParam copy()
+		{
+			return new EventParam(
+				this, 
+				this.boxGroupId, this.resourceLocationNamespace, this.resourceLocationPath
+			);
+		}
 	}
 	
 }

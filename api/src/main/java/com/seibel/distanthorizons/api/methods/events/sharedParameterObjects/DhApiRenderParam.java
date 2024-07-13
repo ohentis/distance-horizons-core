@@ -20,6 +20,7 @@
 package com.seibel.distanthorizons.api.methods.events.sharedParameterObjects;
 
 import com.seibel.distanthorizons.api.enums.rendering.EDhApiRenderPass;
+import com.seibel.distanthorizons.api.methods.events.interfaces.IDhApiEventParam;
 import com.seibel.distanthorizons.api.objects.math.DhApiMat4f;
 
 /**
@@ -29,7 +30,7 @@ import com.seibel.distanthorizons.api.objects.math.DhApiMat4f;
  * @version 2024-1-31
  * @since API 1.0.0
  */
-public class DhApiRenderParam
+public class DhApiRenderParam implements IDhApiEventParam
 {
 	/** Indicates what render pass DH is currently rendering */
 	public final EDhApiRenderPass renderPass;
@@ -66,18 +67,18 @@ public class DhApiRenderParam
 	// constructors //
 	//==============//
 	
+	
 	public DhApiRenderParam(DhApiRenderParam parent)
 	{
 		this(
-			parent.renderPass,
-			parent.partialTicks,
-			parent.nearClipPlane, parent.farClipPlane,
-			parent.mcProjectionMatrix, parent.mcModelViewMatrix, 
-			parent.dhProjectionMatrix, parent.dhModelViewMatrix,
-			parent.worldYOffset	
-			);
+				parent.renderPass,
+				parent.partialTicks,
+				parent.nearClipPlane, parent.farClipPlane,
+				parent.mcProjectionMatrix.copy(), parent.mcModelViewMatrix.copy(),
+				parent.dhProjectionMatrix.copy(), parent.dhModelViewMatrix.copy(),
+				parent.worldYOffset
+		);
 	}
-	
 	public DhApiRenderParam(
 			EDhApiRenderPass renderPass,
 			float newPartialTicks,
@@ -102,6 +103,18 @@ public class DhApiRenderParam
 		
 		this.worldYOffset = worldYOffset;
 		
+	}
+	
+	
+	
+	//================//
+	// base overrides //
+	//================//
+	
+	@Override 
+	public DhApiRenderParam copy()
+	{
+		return new DhApiRenderParam(this); 
 	}
 	
 }

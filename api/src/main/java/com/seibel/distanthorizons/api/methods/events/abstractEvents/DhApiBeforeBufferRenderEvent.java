@@ -20,6 +20,7 @@
 package com.seibel.distanthorizons.api.methods.events.abstractEvents;
 
 import com.seibel.distanthorizons.api.methods.events.interfaces.IDhApiEvent;
+import com.seibel.distanthorizons.api.methods.events.interfaces.IDhApiEventParam;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiEventParam;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
 import com.seibel.distanthorizons.api.objects.math.DhApiVec3f;
@@ -52,7 +53,7 @@ public abstract class DhApiBeforeBufferRenderEvent implements IDhApiEvent<DhApiB
 	// parameter object //
 	//==================//
 	
-	public static class EventParam extends DhApiRenderParam
+	public static class EventParam extends DhApiRenderParam implements IDhApiEventParam
 	{
 		/** 
 		 * Measured in blocks.
@@ -65,6 +66,15 @@ public abstract class DhApiBeforeBufferRenderEvent implements IDhApiEvent<DhApiB
 		{
 			super(parent);
 			this.modelPos = modelPos;
+		}
+		
+		
+		@Override
+		public EventParam copy()
+		{
+			return new EventParam(
+					this, this.modelPos.copy()
+			);
 		}
 	}
 	

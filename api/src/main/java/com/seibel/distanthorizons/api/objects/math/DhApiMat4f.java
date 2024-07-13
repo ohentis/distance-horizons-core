@@ -19,6 +19,8 @@
 
 package com.seibel.distanthorizons.api.objects.math;
 
+import com.seibel.distanthorizons.api.interfaces.util.IDhApiCopyable;
+
 /**
  * An (almost) exact copy of Minecraft's 1.16.5
  * implementation of a 4x4 float matrix. <br><br>
@@ -33,7 +35,7 @@ package com.seibel.distanthorizons.api.objects.math;
  * @author James Seibel
  * @version 2024-6-30
  */
-public class DhApiMat4f
+public class DhApiMat4f implements IDhApiCopyable
 {
 	public float m00;
 	public float m01;
@@ -277,7 +279,6 @@ public class DhApiMat4f
 		this.m33 *= scalar;
 	}
 	
-	public DhApiMat4f copy() { return new DhApiMat4f(this); }
 	
 	
 	
@@ -383,5 +384,8 @@ public class DhApiMat4f
 				this.m20 + " " + this.m21 + " " + this.m22 + " " + this.m23 + "\n" +
 				this.m30 + " " + this.m31 + " " + this.m32 + " " + this.m33 + "\n";
 	}
+	
+	@Override
+	public DhApiMat4f copy() { return new DhApiMat4f(this); }
 	
 }

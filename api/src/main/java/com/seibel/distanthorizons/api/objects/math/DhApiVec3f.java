@@ -19,6 +19,8 @@
 
 package com.seibel.distanthorizons.api.objects.math;
 
+import com.seibel.distanthorizons.api.interfaces.util.IDhApiCopyable;
+
 /**
  * Often used to store block positions or any other
  * position in 3D space.
@@ -27,7 +29,7 @@ package com.seibel.distanthorizons.api.objects.math;
  * @version 2024-6-3
  * @since API 2.2.0
  */
-public class DhApiVec3f
+public class DhApiVec3f implements IDhApiCopyable
 {
 	public float x;
 	public float y;
@@ -89,5 +91,8 @@ public class DhApiVec3f
 	
 	@Override
 	public String toString() { return "[" + this.x + ", " + this.y + ", " + this.z + "]"; }
+	
+	@Override 
+	public DhApiVec3f copy() { return new DhApiVec3f(this.x, this.y, this.z); }
 	
 }
