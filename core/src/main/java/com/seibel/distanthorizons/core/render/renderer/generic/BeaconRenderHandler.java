@@ -71,6 +71,7 @@ public class BeaconRenderHandler
 		this.beaconBoxGroup = GenericRenderObjectFactory.INSTANCE.createAbsolutePositionedGroup(ModInfo.NAME+":Beacons", new ArrayList<>(0));
 		this.beaconBoxGroup.setBlockLight(LodUtil.MAX_MC_LIGHT);
 		this.beaconBoxGroup.setSkyLight(LodUtil.MAX_MC_LIGHT);
+		this.beaconBoxGroup.setSsaoEnabled(false);
 		this.beaconBoxGroup.setShading(DhApiRenderableBoxGroupShading.getUnshaded());
 		this.beaconBoxGroup.setPreRenderFunc((renderEventParam) -> this.beaconBoxGroup.setActive(Config.Client.Advanced.Graphics.GenericRendering.enableBeaconRendering.get()));
 		
