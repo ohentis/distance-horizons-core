@@ -281,7 +281,7 @@ public class Config
 						private static final Double FOG_RANGE_MAX = Math.sqrt(2.0);
 						
 						public static ConfigEntry<Double> farFogStart = new ConfigEntry.Builder<Double>()
-								.setMinDefaultMax(FOG_RANGE_MIN, 0.0, FOG_RANGE_MAX)
+								.setMinDefaultMax(FOG_RANGE_MIN, 0.4, FOG_RANGE_MAX)
 								.comment(""
 										+ "At what distance should the far fog start? \n"
 										+ "\n"
