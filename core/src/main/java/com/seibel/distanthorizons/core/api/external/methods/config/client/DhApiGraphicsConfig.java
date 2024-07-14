@@ -39,9 +39,13 @@ public class DhApiGraphicsConfig implements IDhApiGraphicsConfig
 	// inner layers //
 	//==============//
 	
+	@Override
 	public IDhApiFogConfig fog() { return DhApiFogConfig.INSTANCE; }
+	@Override
 	public IDhApiAmbientOcclusionConfig ambientOcclusion() { return DhApiAmbientOcclusionConfig.INSTANCE; }
+	@Override
 	public IDhApiNoiseTextureConfig noiseTexture() { return DhApiNoiseTextureConfig.INSTANCE; }
+	@Override
 	public IDhApiGenericRenderingConfig genericRendering() { return DhApiGenericRenderingConfig.INSTANCE; }
 	
 	
