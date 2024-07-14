@@ -39,7 +39,8 @@ public interface IDhApiBlockStateWrapper extends IDhApiUnsafeWrapper
 	boolean isLiquid();
 	
 	/**
-	 * Returns the full serialized form of the given block.
+	 * Returns the full serialized form of the given block
+	 * as defined by DH's serialization methods.
 	 * @since API 3.0.0 
 	 */
 	String getSerialString();
