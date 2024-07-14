@@ -552,7 +552,7 @@ public class ClientApi
 					
 					if (!DhApi.Delayed.renderProxy.getDeferTransparentRendering())
 					{
-						ApiEventInjector.INSTANCE.fireAllEvents(DhApiAfterRenderEvent.class, renderEventParam);
+						ApiEventInjector.INSTANCE.fireAllEvents(DhApiAfterRenderEvent.class, null);
 					}
 				}
 				else if (Config.Client.Advanced.Debugging.rendererMode.get() == EDhApiRendererMode.DEBUG)
@@ -573,7 +573,7 @@ public class ClientApi
 				
 				if (DhApi.Delayed.renderProxy.getDeferTransparentRendering())
 				{
-					ApiEventInjector.INSTANCE.fireAllEvents(DhApiAfterRenderEvent.class, renderEventParam);
+					ApiEventInjector.INSTANCE.fireAllEvents(DhApiAfterRenderEvent.class, null);
 				}
 			}
 		}
