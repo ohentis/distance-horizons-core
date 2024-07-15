@@ -30,15 +30,17 @@ import io.netty.buffer.ByteBuf;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
+import java.util.Objects;
 
 /**
  * Response message, containing the requested full data source,
  * or nothing if requested in updates-only mode and the data was not updated.
  */
-public class FullDataSourceResponseMessage extends TrackableMessage
+public class FullDataSourceResponseMessage extends TrackableMessage implements IFullDataPayloadMessage
 {
 	@Nullable
 	public FullDataSourceV2DTO dataSourceDto;
+	@Override public FullDataSourceV2DTO getDataSourceDto() { return Objects.requireNonNull(this.dataSourceDto); }
 	
 	public FullDataSourceResponseMessage() { }
 	public FullDataSourceResponseMessage(@Nullable FullDataSourceV2 fullDataSource)

@@ -23,40 +23,23 @@ import com.google.common.base.MoreObjects;
 import com.seibel.distanthorizons.api.enums.config.EDhApiDataCompressionMode;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
+import com.seibel.distanthorizons.core.network.INetworkObject;
 import com.seibel.distanthorizons.core.network.messages.ILevelRelatedMessage;
 import com.seibel.distanthorizons.core.network.messages.NetworkMessage;
-import com.seibel.distanthorizons.core.network.INetworkObject;
 import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV2DTO;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
 import io.netty.buffer.ByteBuf;
 
 import java.io.IOException;
-import java.util.Objects;
 
-public class FullDataPartialUpdateMessage extends NetworkMessage implements ILevelRelatedMessage, IFullDataPayloadMessage
+public class FullDataChunkMessage extends NetworkMessage
 {
-	private String levelName;
-	@Override
-	public String getLevelName() { return this.levelName; }
-	
-	public FullDataSourceV2DTO dataSourceDto;
-	@Override public FullDataSourceV2DTO getDataSourceDto() { return Objects.requireNonNull(this.dataSourceDto); }
+	public ByteBuf buffer;
 	
 	
-	public FullDataPartialUpdateMessage() { }
-	public FullDataPartialUpdateMessage(IServerLevelWrapper level, FullDataSourceV2 fullDataSource)
+	public FullDataChunkMessage() { }
+	public FullDataChunkMessage(ByteBuf buffer)
 	{
-		this.levelName = level.getKeyedLevelDimensionName();
-		
-		try
-		{
-			EDhApiDataCompressionMode compressionMode = Config.Client.Advanced.LodBuilding.dataCompression.get();
-			this.dataSourceDto = FullDataSourceV2DTO.CreateFromDataSource(fullDataSource, compressionMode);
-		}
-		catch (IOException e)
-		{
-			throw new RuntimeException(e);
-		}
 	}
 	
 	
@@ -66,15 +49,15 @@ public class FullDataPartialUpdateMessage extends NetworkMessage implements ILev
 	@Override
 	public void encode(ByteBuf out)
 	{
-		this.writeString(this.levelName, out);
-		// dataSourceDto must be sent separately
+		out.writeInt(this.buffer.writerIndex());
+		this.buffer.resetReaderIndex();
+		out.writeBytes(this.buffer);
 	}
 	
 	@Override
 	public void decode(ByteBuf in)
 	{
-		this.levelName = this.readString(in);
-		// dataSourceDto is received separately
+		this.buffer = in.readBytes(in.readInt());
 	}
 	
 	
