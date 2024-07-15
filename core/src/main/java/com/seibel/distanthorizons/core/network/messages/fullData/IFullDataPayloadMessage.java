@@ -1,36 +1,69 @@
 package com.seibel.distanthorizons.core.network.messages.fullData;
 
+import com.seibel.distanthorizons.api.enums.config.EDhApiDataCompressionMode;
+import com.seibel.distanthorizons.core.config.Config;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV2DTO;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
-import io.netty.buffer.CompositeByteBuf;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.io.IOException;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 public interface IFullDataPayloadMessage
 {
-	FullDataSourceV2DTO getDataSourceDto();
+	AtomicInteger lastBufferId = new AtomicInteger();
+	@Nullable
+	Integer getDtoBufferId();
+	void setDtoBufferId(int bufferId);
 	
-	default List<ByteBuf> getDataSourceDtoChunks(int chunkSize)
+	ByteBuf getDtoBuffer();
+	void setDtoBuffer(ByteBuf buffer);
+	
+	
+	default void createCompressedDtoBuffer(FullDataSourceV2 fullDataSource)
 	{
-		FullDataSourceV2DTO dto = this.getDataSourceDto();
-		int chunkCount = dto.estimatedEncodedSize() / chunkSize;
+		Objects.requireNonNull(fullDataSource);
 		
-		CompositeByteBuf composite = ByteBufAllocator.DEFAULT.compositeBuffer();
+		int bufferId = lastBufferId.getAndIncrement();
+		this.setDtoBufferId(bufferId);
 		
-		ArrayList<ByteBuf> result = new ArrayList<>();
-		for (int i = 0; i < chunkCount; i++)
+		try
 		{
+			EDhApiDataCompressionMode compressionMode = Config.Client.Advanced.LodBuilding.dataCompression.get();
+			FullDataSourceV2DTO dataSourceDto = FullDataSourceV2DTO.CreateFromDataSource(fullDataSource, compressionMode);
+			
 			ByteBuf buffer = ByteBufAllocator.DEFAULT.buffer();
-			result.add(buffer);
-			composite.addComponent(buffer);
+			dataSourceDto.encode(buffer);
+			this.setDtoBuffer(buffer);
 		}
+		catch (IOException e)
+		{
+			throw new RuntimeException(e);
+		}
+	}
+	
+	default void splitIntoChunks(int chunkSize, Consumer<FullDataChunkMessage> chunkMessageConsumer)
+	{
+		ByteBuf dtoBuffer = this.getDtoBuffer();
+		int bufferId = Objects.requireNonNull(this.getDtoBufferId());
 		
-		dto.encode(composite);
-		
-		composite.release();
-		return result;
+		for (int chunkNum = 0; ; chunkNum++)
+		{
+			int offset = chunkNum * chunkSize;
+			int bytesLeft = dtoBuffer.writerIndex() - offset;
+			
+			if (offset >= dtoBuffer.writerIndex())
+			{
+				break;
+			}
+			
+			FullDataChunkMessage chunk = new FullDataChunkMessage(bufferId, dtoBuffer.slice(offset, Math.min(bytesLeft, chunkSize)));
+			chunkMessageConsumer.accept(chunk);
+		}
 	}
 	
 }

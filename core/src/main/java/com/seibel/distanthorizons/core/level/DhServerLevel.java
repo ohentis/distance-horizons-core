@@ -57,6 +57,7 @@ import java.util.function.Consumer;
 public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	public static final int FULL_DATA_CHUNK_SIZE = 32766;
 	
 	public final ServerLevelModule serverside;
 	private final IServerLevelWrapper serverLevelWrapper;
@@ -164,7 +165,10 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 				this.serverside.fullDataFileHandler.getAsync(msg.sectionPos).thenAcceptAsync(fullDataSource ->
 				{
 					rateLimiterSet.loginDataSyncRCLimiter.release();
-					msg.sendResponse(new FullDataSourceResponseMessage(fullDataSource));
+					
+					FullDataSourceResponseMessage responseMessage = new FullDataSourceResponseMessage(fullDataSource);
+					responseMessage.splitIntoChunks(FULL_DATA_CHUNK_SIZE, msg.session::sendMessage);
+					msg.sendResponse(responseMessage);
 				}, executor);
 			}
 		}));
@@ -287,6 +291,7 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 					}
 					
 					serverPlayerState.getRateLimiterSet(this).fullDataRequestConcurrencyLimiter.release();
+					response.splitIntoChunks(FULL_DATA_CHUNK_SIZE, msg.session::sendMessage);
 					msg.sendResponse(response);
 				}
 			}, executor);
@@ -327,6 +332,7 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 				if (distanceFromPlayer >= serverPlayerState.serverPlayer().getViewDistance() &&
 						distanceFromPlayer <= serverPlayerState.config.getRenderDistanceRadius())
 				{
+					updateMessage.splitIntoChunks(FULL_DATA_CHUNK_SIZE, serverPlayerState.session::sendMessage);
 					serverPlayerState.session.sendMessage(updateMessage);
 				}
 			}

@@ -23,6 +23,7 @@ import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.seibel.distanthorizons.core.network.messages.base.CurrentLevelKeyMessage;
 import com.seibel.distanthorizons.core.network.messages.base.RemotePlayerConfigMessage;
+import com.seibel.distanthorizons.core.network.messages.fullData.FullDataChunkMessage;
 import com.seibel.distanthorizons.core.network.messages.requests.CancelMessage;
 import com.seibel.distanthorizons.core.network.messages.base.CloseReasonMessage;
 import com.seibel.distanthorizons.core.network.messages.requests.ExceptionMessage;
@@ -64,6 +65,7 @@ public class MessageRegistry
 		this.registerMessage(FullDataSourceRequestMessage.class, FullDataSourceRequestMessage::new);
 		this.registerMessage(FullDataSourceResponseMessage.class, FullDataSourceResponseMessage::new);
 		this.registerMessage(FullDataPartialUpdateMessage.class, FullDataPartialUpdateMessage::new);
+		this.registerMessage(FullDataChunkMessage.class, FullDataChunkMessage::new);
 	}
 	
 	

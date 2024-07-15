@@ -20,26 +20,20 @@
 package com.seibel.distanthorizons.core.network.messages.fullData;
 
 import com.google.common.base.MoreObjects;
-import com.seibel.distanthorizons.api.enums.config.EDhApiDataCompressionMode;
-import com.seibel.distanthorizons.core.config.Config;
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
-import com.seibel.distanthorizons.core.network.INetworkObject;
-import com.seibel.distanthorizons.core.network.messages.ILevelRelatedMessage;
 import com.seibel.distanthorizons.core.network.messages.NetworkMessage;
-import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV2DTO;
-import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
 import io.netty.buffer.ByteBuf;
-
-import java.io.IOException;
 
 public class FullDataChunkMessage extends NetworkMessage
 {
+	public int bufferId;
 	public ByteBuf buffer;
 	
 	
 	public FullDataChunkMessage() { }
-	public FullDataChunkMessage(ByteBuf buffer)
+	public FullDataChunkMessage(int bufferId, ByteBuf buffer)
 	{
+		this.bufferId = bufferId;
+		this.buffer = buffer;
 	}
 	
 	
@@ -49,6 +43,8 @@ public class FullDataChunkMessage extends NetworkMessage
 	@Override
 	public void encode(ByteBuf out)
 	{
+		out.writeInt(this.bufferId);
+		
 		out.writeInt(this.buffer.writerIndex());
 		this.buffer.resetReaderIndex();
 		out.writeBytes(this.buffer);
@@ -57,7 +53,8 @@ public class FullDataChunkMessage extends NetworkMessage
 	@Override
 	public void decode(ByteBuf in)
 	{
-		this.buffer = in.readBytes(in.readInt());
+		int bufferSize = in.readInt();
+		this.buffer = in.readBytes(bufferSize);
 	}
 	
 	
@@ -65,8 +62,8 @@ public class FullDataChunkMessage extends NetworkMessage
 	public MoreObjects.ToStringHelper toStringHelper()
 	{
 		return super.toStringHelper()
-				.add("levelName", this.levelName)
-				.add("dataSourceDto", this.dataSourceDto);
+				.add("bufferId", this.bufferId)
+				.add("buffer", this.buffer);
 	}
 	
 }

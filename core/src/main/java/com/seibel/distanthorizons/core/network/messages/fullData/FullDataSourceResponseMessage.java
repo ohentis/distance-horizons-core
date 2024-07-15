@@ -20,17 +20,10 @@
 package com.seibel.distanthorizons.core.network.messages.fullData;
 
 import com.google.common.base.MoreObjects;
-import com.seibel.distanthorizons.api.enums.config.EDhApiDataCompressionMode;
-import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.network.messages.TrackableMessage;
-import com.seibel.distanthorizons.core.network.INetworkObject;
-import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV2DTO;
 import io.netty.buffer.ByteBuf;
 import org.jetbrains.annotations.Nullable;
-
-import java.io.IOException;
-import java.util.Objects;
 
 /**
  * Response message, containing the requested full data source,
@@ -39,39 +32,42 @@ import java.util.Objects;
 public class FullDataSourceResponseMessage extends TrackableMessage implements IFullDataPayloadMessage
 {
 	@Nullable
-	public FullDataSourceV2DTO dataSourceDto;
-	@Override public FullDataSourceV2DTO getDataSourceDto() { return Objects.requireNonNull(this.dataSourceDto); }
+	public Integer dtoBufferId;
+	@Override @Nullable
+	public Integer getDtoBufferId() { return this.dtoBufferId; }
+	@Override
+	public void setDtoBufferId(int bufferId) { this.dtoBufferId = bufferId; }
+	
+	public ByteBuf dtoBuffer;
+	@Override
+	public ByteBuf getDtoBuffer() { return this.dtoBuffer; }
+	@Override
+	public void setDtoBuffer(ByteBuf buffer) { this.dtoBuffer = buffer; }
+	
 	
 	public FullDataSourceResponseMessage() { }
 	public FullDataSourceResponseMessage(@Nullable FullDataSourceV2 fullDataSource)
 	{
-		try
+		if (fullDataSource != null)
 		{
-			if (fullDataSource != null)
-			{
-				EDhApiDataCompressionMode compressionMode = Config.Client.Advanced.LodBuilding.dataCompression.get();
-				this.dataSourceDto = FullDataSourceV2DTO.CreateFromDataSource(fullDataSource, compressionMode);
-			}
-		}
-		catch (IOException e)
-		{
-			throw new RuntimeException(e);
+			this.createCompressedDtoBuffer(fullDataSource);
 		}
 	}
 	
 	@Override
 	public void encode0(ByteBuf out)
 	{
-		if (this.writeOptional(out, this.dataSourceDto))
+		if (this.writeOptional(out, this.dtoBufferId))
 		{
-			this.dataSourceDto.encode(out);
+			out.writeInt(this.dtoBufferId);
+			this.dtoBuffer.release();
 		}
 	}
 	
 	@Override
 	public void decode0(ByteBuf in)
 	{
-		this.dataSourceDto = this.readOptional(in, () -> INetworkObject.decodeToInstance(new FullDataSourceV2DTO(), in));
+		this.dtoBufferId = this.readOptional(in, in::readInt);
 	}
 	
 	
@@ -79,7 +75,8 @@ public class FullDataSourceResponseMessage extends TrackableMessage implements I
 	public MoreObjects.ToStringHelper toStringHelper()
 	{
 		return super.toStringHelper()
-				.add("dataSourceDto", this.dataSourceDto);
+				.add("dtoBufferId", this.dtoBufferId)
+				.add("dtoBuffer", this.dtoBuffer);
 	}
 	
 }

@@ -20,17 +20,13 @@
 package com.seibel.distanthorizons.core.network.messages.fullData;
 
 import com.google.common.base.MoreObjects;
-import com.seibel.distanthorizons.api.enums.config.EDhApiDataCompressionMode;
-import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.network.messages.ILevelRelatedMessage;
 import com.seibel.distanthorizons.core.network.messages.NetworkMessage;
-import com.seibel.distanthorizons.core.network.INetworkObject;
-import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV2DTO;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
 import io.netty.buffer.ByteBuf;
+import org.jetbrains.annotations.Nullable;
 
-import java.io.IOException;
 import java.util.Objects;
 
 public class FullDataPartialUpdateMessage extends NetworkMessage implements ILevelRelatedMessage, IFullDataPayloadMessage
@@ -39,24 +35,25 @@ public class FullDataPartialUpdateMessage extends NetworkMessage implements ILev
 	@Override
 	public String getLevelName() { return this.levelName; }
 	
-	public FullDataSourceV2DTO dataSourceDto;
-	@Override public FullDataSourceV2DTO getDataSourceDto() { return Objects.requireNonNull(this.dataSourceDto); }
+	@Nullable
+	public Integer dtoBufferId;
+	@Override @Nullable
+	public Integer getDtoBufferId() { return this.dtoBufferId; }
+	@Override
+	public void setDtoBufferId(int bufferId) { this.dtoBufferId = bufferId; }
+	
+	public ByteBuf dtoBuffer;
+	@Override
+	public ByteBuf getDtoBuffer() { return this.dtoBuffer; }
+	@Override
+	public void setDtoBuffer(ByteBuf buffer) { this.dtoBuffer = buffer; }
 	
 	
 	public FullDataPartialUpdateMessage() { }
 	public FullDataPartialUpdateMessage(IServerLevelWrapper level, FullDataSourceV2 fullDataSource)
 	{
 		this.levelName = level.getKeyedLevelDimensionName();
-		
-		try
-		{
-			EDhApiDataCompressionMode compressionMode = Config.Client.Advanced.LodBuilding.dataCompression.get();
-			this.dataSourceDto = FullDataSourceV2DTO.CreateFromDataSource(fullDataSource, compressionMode);
-		}
-		catch (IOException e)
-		{
-			throw new RuntimeException(e);
-		}
+		this.createCompressedDtoBuffer(fullDataSource);
 	}
 	
 	
@@ -67,14 +64,15 @@ public class FullDataPartialUpdateMessage extends NetworkMessage implements ILev
 	public void encode(ByteBuf out)
 	{
 		this.writeString(this.levelName, out);
-		// dataSourceDto must be sent separately
+		out.writeInt(Objects.requireNonNull(this.dtoBufferId));
+		this.dtoBuffer.release();
 	}
 	
 	@Override
 	public void decode(ByteBuf in)
 	{
 		this.levelName = this.readString(in);
-		// dataSourceDto is received separately
+		this.dtoBufferId = in.readInt();
 	}
 	
 	
@@ -83,7 +81,8 @@ public class FullDataPartialUpdateMessage extends NetworkMessage implements ILev
 	{
 		return super.toStringHelper()
 				.add("levelName", this.levelName)
-				.add("dataSourceDto", this.dataSourceDto);
+				.add("dtoBufferId", this.dtoBufferId)
+				.add("dtoBuffer", this.dtoBuffer);
 	}
 	
 }
