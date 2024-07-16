@@ -32,7 +32,7 @@ public final class ModInfo
 	
 	// region Protocol versions
 	// Incremented every time any packets are added, changed or removed, with a few exceptions.
-	public static final int PROTOCOL_VERSION = 2;
+	public static final int PROTOCOL_VERSION = 3;
 	public static final String PLUGIN_CHANNEL_PATH = "main";
 	public static final String WRAPPER_PACKET_PATH = "message";
 	// endregion
