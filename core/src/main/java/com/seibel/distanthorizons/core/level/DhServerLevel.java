@@ -57,7 +57,7 @@ import java.util.function.Consumer;
 public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
-	public static final int FULL_DATA_CHUNK_SIZE = 32766;
+	public static final int FULL_DATA_CHUNK_SIZE = 1048000; // 576 bytes left for other contents
 	
 	public final ServerLevelModule serverside;
 	private final IServerLevelWrapper serverLevelWrapper;
