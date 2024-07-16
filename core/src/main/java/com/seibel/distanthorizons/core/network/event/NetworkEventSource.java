@@ -33,7 +33,6 @@ import org.apache.logging.log4j.LogManager;
 
 import java.io.InvalidClassException;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
@@ -43,11 +42,7 @@ public abstract class NetworkEventSource
 	private static final ConfigBasedLogger LOGGER = new ConfigBasedLogger(LogManager.getLogger(),
 			() -> Config.Client.Advanced.Logging.logNetworkEvent.get());
 	
-	protected final ConcurrentMap<Class<? extends NetworkMessage>, Set<Consumer<NetworkMessage>>> handlers = new ConcurrentHashMap<>();
-	protected boolean hasHandler(Class<? extends NetworkMessage> handlerClass)
-	{
-		return this.handlers.containsKey(handlerClass);
-	}
+	protected final ConcurrentMap<Class<? extends NetworkMessage>, ConcurrentMap<NetworkEventSource, Consumer<NetworkMessage>>> handlers = new ConcurrentHashMap<>();
 	
 	private final ConcurrentMap<Long, FutureResponseData> pendingFutures = new ConcurrentHashMap<>();
 	private final Set<Long> cancelledFutures = Collections.newSetFromMap(CacheBuilder.newBuilder()
@@ -60,10 +55,10 @@ public abstract class NetworkEventSource
 	{
 		boolean handled = false;
 		
-		Set<Consumer<NetworkMessage>> handlerList = this.handlers.get(message.getClass());
-		if (handlerList != null)
+		ConcurrentMap<NetworkEventSource, Consumer<NetworkMessage>> handlerMap = this.handlers.get(message.getClass());
+		if (handlerMap != null)
 		{
-			for (Consumer<NetworkMessage> handler : handlerList)
+			for (Consumer<NetworkMessage> handler : handlerMap.values())
 			{
 				handled = true;
 				handler.accept(message);
@@ -104,25 +99,29 @@ public abstract class NetworkEventSource
 		}
 	}
 	
-	public <T extends NetworkMessage> void registerHandler(Class<T> handlerClass, Consumer<T> handlerImplementation)
+	public abstract <T extends NetworkMessage> void registerHandler(Class<T> handlerClass, Consumer<T> handlerImplementation);
+	
+	protected <T extends NetworkMessage> void registerHandler(NetworkEventSource instance, Class<T> handlerClass, Consumer<T> handlerImplementation)
 	{
 		//noinspection unchecked
 		this.handlers.computeIfAbsent(handlerClass, missingHandlerClass ->
 				{
 					// Will throw if the handler class is not found
-					if (handlerClass != CloseEvent.class)
+					if (missingHandlerClass != CloseEvent.class)
 					{
-						MessageRegistry.INSTANCE.getMessageId(handlerClass);
+						MessageRegistry.INSTANCE.getMessageId(missingHandlerClass);
 					}
-					return new HashSet<>();
+					return new ConcurrentHashMap<>();
 				})
-				.add((Consumer<NetworkMessage>) handlerImplementation);
+				.put(instance, (Consumer<NetworkMessage>) handlerImplementation);
 	}
 	
-	protected <T extends NetworkMessage> void removeHandler(Class<T> handlerClass, Consumer<T> handlerImplementation)
+	protected void removeAllHandlers(NetworkEventSource childInstance)
 	{
-		this.handlers.computeIfAbsent(handlerClass, missingHandlerClass -> new HashSet<>())
-				.remove(handlerImplementation);
+		for (ConcurrentMap<NetworkEventSource, Consumer<NetworkMessage>> handlerMap : this.handlers.values())
+		{
+			handlerMap.remove(childInstance);
+		}
 	}
 	
 	

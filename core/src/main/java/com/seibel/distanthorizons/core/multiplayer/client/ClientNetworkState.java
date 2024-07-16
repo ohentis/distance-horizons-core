@@ -89,10 +89,10 @@ public class ClientNetworkState implements Closeable
 	public FullDataSourceV2DTO decodeDataSourceAndReleaseBuffer(IFullDataPayloadMessage<?> msg)
 	{
 		CompositeByteBuf composite = this.fullDataBuffers.remove(msg.getDtoBufferId());
+		Objects.requireNonNull(composite);
 		
 		try
 		{
-			Objects.requireNonNull(composite);
 			return INetworkObject.decodeToInstance(new FullDataSourceV2DTO(), composite);
 		}
 		finally

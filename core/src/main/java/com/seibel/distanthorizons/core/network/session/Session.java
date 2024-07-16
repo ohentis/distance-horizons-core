@@ -15,6 +15,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 public class Session extends NetworkEventSource
 {
@@ -62,6 +63,17 @@ public class Session extends NetworkEventSource
 			LOGGER.error("Message: " + message);
 			this.close();
 		}
+	}
+	
+	@Override
+	public <T extends NetworkMessage> void registerHandler(Class<T> handlerClass, Consumer<T> handlerImplementation)
+	{
+		if (this.closeReason.get() != null)
+		{
+			return;
+		}
+		
+		this.registerHandler(this, handlerClass, handlerImplementation);
 	}
 	
 	public <TResponse extends TrackableMessage> CompletableFuture<TResponse> sendRequest(TrackableMessage msg, Class<TResponse> responseClass)

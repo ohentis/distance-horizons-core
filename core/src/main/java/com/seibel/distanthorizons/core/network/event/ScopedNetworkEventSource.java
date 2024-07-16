@@ -42,21 +42,13 @@ public final class ScopedNetworkEventSource extends NetworkEventSource
 			return;
 		}
 		
-		if (!this.hasHandler(handlerClass))
-		{
-			this.parent.registerHandler(handlerClass, this::handleMessage);
-		}
-		
-		super.registerHandler(handlerClass, handlerImplementation);
+		this.parent.registerHandler(this, handlerClass, this::handleMessage);
 	}
 	
 	@Override
 	public void close()
 	{
 		this.isClosed = true;
-		for (Class<? extends NetworkMessage> handlerClass : this.handlers.keySet())
-		{
-			this.parent.removeHandler(handlerClass, this::handleMessage);
-		}
+		this.parent.removeAllHandlers(this);
 	}
 }
