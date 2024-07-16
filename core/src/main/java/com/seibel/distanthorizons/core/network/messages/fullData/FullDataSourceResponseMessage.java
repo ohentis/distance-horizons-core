@@ -25,16 +25,18 @@ import com.seibel.distanthorizons.core.network.messages.TrackableMessage;
 import io.netty.buffer.ByteBuf;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Objects;
+
 /**
  * Response message, containing the requested full data source,
  * or nothing if requested in updates-only mode and the data was not updated.
  */
-public class FullDataSourceResponseMessage extends TrackableMessage implements IFullDataPayloadMessage
+public class FullDataSourceResponseMessage extends TrackableMessage implements IFullDataPayloadMessage<FullDataSourceResponseMessage>
 {
 	@Nullable
 	public Integer dtoBufferId;
-	@Override @Nullable
-	public Integer getDtoBufferId() { return this.dtoBufferId; }
+	@Override
+	public int getDtoBufferId() { return Objects.requireNonNull(this.dtoBufferId); }
 	@Override
 	public void setDtoBufferId(int bufferId) { this.dtoBufferId = bufferId; }
 	

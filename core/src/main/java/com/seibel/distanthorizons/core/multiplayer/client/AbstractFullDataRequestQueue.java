@@ -17,6 +17,7 @@ import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
+import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV2DTO;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.ratelimiting.SupplierBasedRateLimiter;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
@@ -189,9 +190,10 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 					throw throwable;
 				}
 				
-				if (response.dataSourceDto != null)
+				if (response.dtoBufferId != null)
 				{
-					FullDataSourceV2 fullDataSource = response.dataSourceDto.createPooledDataSource(this.level.getLevelWrapper());
+					FullDataSourceV2DTO dataSourceDto = this.networkState.decodeDataSourceAndReleaseBuffer(response);
+					FullDataSourceV2 fullDataSource = dataSourceDto.createPooledDataSource(this.level.getLevelWrapper());
 					entry.chunkDataConsumer.accept(fullDataSource);
 					FullDataSourceV2.DATA_SOURCE_POOL.returnPooledDataSource(fullDataSource);
 				}

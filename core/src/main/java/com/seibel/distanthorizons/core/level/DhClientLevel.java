@@ -36,6 +36,7 @@ import com.seibel.distanthorizons.core.network.messages.fullData.FullDataPartial
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
+import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV2DTO;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrapper;
@@ -128,17 +129,20 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 	private void registerNetworkHandlers()
 	{
 		assert this.eventSource != null;
+		assert this.networkState != null;
 		
 		this.eventSource.registerHandler(FullDataPartialUpdateMessage.class, msg ->
 		{
 			try
 			{
+				FullDataSourceV2DTO dataSourceDto = this.networkState.decodeDataSourceAndReleaseBuffer(msg);
+				
 				if (!msg.isSameLevelAs(this.levelWrapper))
 				{
 					return;
 				}
 				
-				this.updateDataSourcesAsync(msg.dataSourceDto.createPooledDataSource(this.levelWrapper));
+				this.updateDataSourcesAsync(dataSourceDto.createPooledDataSource(this.levelWrapper));
 			}
 			catch (Exception e)
 			{

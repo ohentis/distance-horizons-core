@@ -29,7 +29,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 
-public class FullDataPartialUpdateMessage extends NetworkMessage implements ILevelRelatedMessage, IFullDataPayloadMessage
+public class FullDataPartialUpdateMessage extends NetworkMessage implements ILevelRelatedMessage, IFullDataPayloadMessage<FullDataPartialUpdateMessage>
 {
 	private String levelName;
 	@Override
@@ -37,8 +37,8 @@ public class FullDataPartialUpdateMessage extends NetworkMessage implements ILev
 	
 	@Nullable
 	public Integer dtoBufferId;
-	@Override @Nullable
-	public Integer getDtoBufferId() { return this.dtoBufferId; }
+	@Override
+	public int getDtoBufferId() { return Objects.requireNonNull(this.dtoBufferId); }
 	@Override
 	public void setDtoBufferId(int bufferId) { this.dtoBufferId = bufferId; }
 	
@@ -55,7 +55,6 @@ public class FullDataPartialUpdateMessage extends NetworkMessage implements ILev
 		this.levelName = level.getKeyedLevelDimensionName();
 		this.createCompressedDtoBuffer(fullDataSource);
 	}
-	
 	
 	@Override
 	public boolean warnWhenUnhandled() { return false; }

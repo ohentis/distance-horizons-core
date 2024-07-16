@@ -27,13 +27,15 @@ public class FullDataChunkMessage extends NetworkMessage
 {
 	public int bufferId;
 	public ByteBuf buffer;
+	public boolean isFirst;
 	
 	
 	public FullDataChunkMessage() { }
-	public FullDataChunkMessage(int bufferId, ByteBuf buffer)
+	public FullDataChunkMessage(int bufferId, boolean isFirst, ByteBuf buffer)
 	{
 		this.bufferId = bufferId;
 		this.buffer = buffer;
+		this.isFirst = isFirst;
 	}
 	
 	
@@ -46,15 +48,20 @@ public class FullDataChunkMessage extends NetworkMessage
 		out.writeInt(this.bufferId);
 		
 		out.writeInt(this.buffer.writerIndex());
-		this.buffer.resetReaderIndex();
-		out.writeBytes(this.buffer);
+		out.writeBytes(this.buffer.readerIndex(0));
+
+		out.writeBoolean(this.isFirst);
 	}
 	
 	@Override
 	public void decode(ByteBuf in)
 	{
+		this.bufferId = in.readInt();
+		
 		int bufferSize = in.readInt();
 		this.buffer = in.readBytes(bufferSize);
+
+		this.isFirst = in.readBoolean();
 	}
 	
 	
@@ -63,7 +70,8 @@ public class FullDataChunkMessage extends NetworkMessage
 	{
 		return super.toStringHelper()
 				.add("bufferId", this.bufferId)
-				.add("buffer", this.buffer);
+				.add("buffer", this.buffer)
+				.add("isFirst", this.isFirst);
 	}
 	
 }

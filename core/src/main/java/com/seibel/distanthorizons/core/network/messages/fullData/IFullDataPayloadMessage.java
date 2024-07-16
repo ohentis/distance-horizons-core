@@ -6,18 +6,19 @@ import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSour
 import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV2DTO;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
-import org.jetbrains.annotations.Nullable;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
-public interface IFullDataPayloadMessage
+
+public interface IFullDataPayloadMessage<T extends IFullDataPayloadMessage<T>> extends Closeable
 {
 	AtomicInteger lastBufferId = new AtomicInteger();
-	@Nullable
-	Integer getDtoBufferId();
+	
+	int getDtoBufferId();
 	void setDtoBufferId(int bufferId);
 	
 	ByteBuf getDtoBuffer();
@@ -48,22 +49,34 @@ public interface IFullDataPayloadMessage
 	
 	default void splitIntoChunks(int chunkSize, Consumer<FullDataChunkMessage> chunkMessageConsumer)
 	{
+		int bufferId = this.getDtoBufferId();
 		ByteBuf dtoBuffer = this.getDtoBuffer();
-		int bufferId = Objects.requireNonNull(this.getDtoBufferId());
 		
 		for (int chunkNum = 0; ; chunkNum++)
 		{
 			int offset = chunkNum * chunkSize;
-			int bytesLeft = dtoBuffer.writerIndex() - offset;
-			
-			if (offset >= dtoBuffer.writerIndex())
+
+			int actualChunkSize = Math.min(dtoBuffer.writerIndex() - offset, chunkSize);
+			if (actualChunkSize <= 0)
 			{
 				break;
 			}
 			
-			FullDataChunkMessage chunk = new FullDataChunkMessage(bufferId, dtoBuffer.slice(offset, Math.min(bytesLeft, chunkSize)));
+			FullDataChunkMessage chunk = new FullDataChunkMessage(bufferId, chunkNum == 0, dtoBuffer.slice(offset, actualChunkSize));
 			chunkMessageConsumer.accept(chunk);
 		}
+	}
+
+	default T retain()
+	{
+		this.getDtoBuffer().retain();
+		//noinspection unchecked
+		return (T)this;
+	}
+
+	default void close()
+	{
+		this.getDtoBuffer().release();
 	}
 	
 }

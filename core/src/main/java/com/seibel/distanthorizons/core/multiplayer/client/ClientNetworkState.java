@@ -1,17 +1,27 @@
 package com.seibel.distanthorizons.core.multiplayer.client;
 
+import com.google.common.cache.CacheBuilder;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
 import com.seibel.distanthorizons.core.multiplayer.config.MultiplayerConfig;
 import com.seibel.distanthorizons.core.multiplayer.config.MultiplayerConfigChangeListener;
+import com.seibel.distanthorizons.core.network.INetworkObject;
 import com.seibel.distanthorizons.core.network.event.ScopedNetworkEventSource;
 import com.seibel.distanthorizons.core.network.event.CloseEvent;
 import com.seibel.distanthorizons.core.network.messages.base.RemotePlayerConfigMessage;
+import com.seibel.distanthorizons.core.network.messages.fullData.FullDataChunkMessage;
+import com.seibel.distanthorizons.core.network.messages.fullData.IFullDataPayloadMessage;
 import com.seibel.distanthorizons.core.network.session.Session;
+import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV2DTO;
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.CompositeByteBuf;
 import org.apache.logging.log4j.LogManager;
 
 import java.io.Closeable;
 import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 
 public class ClientNetworkState implements Closeable
 {
@@ -33,6 +43,12 @@ public class ClientNetworkState implements Closeable
 	 */
 	public Session getSession() { return this.session; }
 	
+	private final ConcurrentMap<Integer, CompositeByteBuf> fullDataBuffers = CacheBuilder.newBuilder()
+			.expireAfterAccess(10, TimeUnit.SECONDS)
+			.<Integer, CompositeByteBuf>build()
+			.asMap();
+	
+	
 	/**
 	 * Constructs a new instance.
 	 */
@@ -51,6 +67,38 @@ public class ClientNetworkState implements Closeable
 		{
 			this.configReceived = false;
 		});
+		
+		this.session.registerHandler(FullDataChunkMessage.class, msg ->
+		{
+			if (msg.isFirst)
+			{
+				CompositeByteBuf composite = this.fullDataBuffers.remove(msg.bufferId);
+				if (composite != null)
+				{
+					composite.release();
+					LOGGER.debug("Released full data buffer {}: {}", msg.bufferId, composite);
+				}
+			}
+			
+			CompositeByteBuf composite = this.fullDataBuffers.computeIfAbsent(msg.bufferId, bufferId -> ByteBufAllocator.DEFAULT.compositeBuffer());
+			composite.addComponent(true, msg.buffer);
+			LOGGER.debug("Full data buffer {}: {}", msg.bufferId, composite);
+		});
+	}
+	
+	public FullDataSourceV2DTO decodeDataSourceAndReleaseBuffer(IFullDataPayloadMessage<?> msg)
+	{
+		CompositeByteBuf composite = this.fullDataBuffers.remove(msg.getDtoBufferId());
+		
+		try
+		{
+			Objects.requireNonNull(composite);
+			return INetworkObject.decodeToInstance(new FullDataSourceV2DTO(), composite);
+		}
+		finally
+		{
+			composite.release();
+		}
 	}
 	
 	public void sendConfigMessage()

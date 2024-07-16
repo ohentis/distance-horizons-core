@@ -279,20 +279,22 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 			}
 			CompletableFuture.runAsync(() ->
 			{
-				FullDataSourceResponseMessage response = new FullDataSourceResponseMessage(requestGroup.fullDataSource);
-				for (FullDataSourceRequestMessage msg : requestGroup.requestMessages.values())
+				try (FullDataSourceResponseMessage response = new FullDataSourceResponseMessage(requestGroup.fullDataSource))
 				{
-					this.requestGroupsByFutureId.remove(msg.futureId);
-					
-					ServerPlayerState serverPlayerState = this.remotePlayerConnectionHandler.getConnectedPlayer(msg.serverPlayer());
-					if (serverPlayerState == null)
+					for (FullDataSourceRequestMessage msg : requestGroup.requestMessages.values())
 					{
-						continue;
+						this.requestGroupsByFutureId.remove(msg.futureId);
+						
+						ServerPlayerState serverPlayerState = this.remotePlayerConnectionHandler.getConnectedPlayer(msg.serverPlayer());
+						if (serverPlayerState == null)
+						{
+							continue;
+						}
+						
+						serverPlayerState.getRateLimiterSet(this).fullDataRequestConcurrencyLimiter.release();
+						response.splitIntoChunks(FULL_DATA_CHUNK_SIZE, msg.session::sendMessage);
+						msg.sendResponse(response.retain());
 					}
-					
-					serverPlayerState.getRateLimiterSet(this).fullDataRequestConcurrencyLimiter.release();
-					response.splitIntoChunks(FULL_DATA_CHUNK_SIZE, msg.session::sendMessage);
-					msg.sendResponse(response);
 				}
 			}, executor);
 		}
@@ -314,26 +316,28 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 		}
 		CompletableFuture.runAsync(() ->
 		{
-			FullDataPartialUpdateMessage updateMessage = new FullDataPartialUpdateMessage(this.serverLevelWrapper, data);
-			for (ServerPlayerState serverPlayerState : this.remotePlayerConnectionHandler.getConnectedPlayers())
+			try (FullDataPartialUpdateMessage updateMessage = new FullDataPartialUpdateMessage(this.serverLevelWrapper, data))
 			{
-				if (serverPlayerState.serverPlayer().getLevel() != this.serverLevelWrapper)
+				for (ServerPlayerState serverPlayerState : this.remotePlayerConnectionHandler.getConnectedPlayers())
 				{
-					continue;
-				}
-				
-				if (!serverPlayerState.config.isRealTimeUpdatesEnabled())
-				{
-					continue;
-				}
-				
-				Vec3d playerPosition = serverPlayerState.serverPlayer().getPosition();
-				int distanceFromPlayer = DhSectionPos.getManhattanBlockDistance(data.getPos(), new DhBlockPos2D((int) playerPosition.x, (int) playerPosition.z)) / 16;
-				if (distanceFromPlayer >= serverPlayerState.serverPlayer().getViewDistance() &&
-						distanceFromPlayer <= serverPlayerState.config.getRenderDistanceRadius())
-				{
-					updateMessage.splitIntoChunks(FULL_DATA_CHUNK_SIZE, serverPlayerState.session::sendMessage);
-					serverPlayerState.session.sendMessage(updateMessage);
+					if (serverPlayerState.serverPlayer().getLevel() != this.serverLevelWrapper)
+					{
+						continue;
+					}
+					
+					if (!serverPlayerState.config.isRealTimeUpdatesEnabled())
+					{
+						continue;
+					}
+					
+					Vec3d playerPosition = serverPlayerState.serverPlayer().getPosition();
+					int distanceFromPlayer = DhSectionPos.getManhattanBlockDistance(data.getPos(), new DhBlockPos2D((int) playerPosition.x, (int) playerPosition.z)) / 16;
+					if (distanceFromPlayer >= serverPlayerState.serverPlayer().getViewDistance() &&
+							distanceFromPlayer <= serverPlayerState.config.getRenderDistanceRadius())
+					{
+						updateMessage.splitIntoChunks(FULL_DATA_CHUNK_SIZE, serverPlayerState.session::sendMessage);
+						serverPlayerState.session.sendMessage(updateMessage.retain());
+					}
 				}
 			}
 		}, executor);
