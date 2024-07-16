@@ -409,15 +409,6 @@ public class FullDataSourceV2DTO implements IBaseDTO<Long>, INetworkObject
 		this.createdUnixDateTime = in.readLong();
 	}
 	
-	public int estimatedEncodedSize()
-	{
-		return 64 // Metadata (not exact)
-				+ this.compressedDataByteArray.length
-				+ this.compressedColumnGenStepByteArray.length
-				+ this.compressedWorldCompressionModeByteArray.length
-				+ this.compressedMappingByteArray.length;
-	}
-	
 	
 	
 	//===========//
