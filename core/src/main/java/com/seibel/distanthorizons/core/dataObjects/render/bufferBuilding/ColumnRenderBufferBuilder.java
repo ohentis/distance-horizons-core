@@ -54,11 +54,6 @@ public class ColumnRenderBufferBuilder
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
 	
-	public static final int MAX_NUMBER_OF_CONCURRENT_CALLS_PER_THREAD = 3;
-	public static int maxNumberOfConcurrentCalls = MAX_NUMBER_OF_CONCURRENT_CALLS_PER_THREAD;
-	
-	
-	
 	
 	//==============//
 	// vbo building //
