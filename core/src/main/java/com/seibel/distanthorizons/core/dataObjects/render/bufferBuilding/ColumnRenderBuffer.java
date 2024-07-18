@@ -53,7 +53,7 @@ public class ColumnRenderBuffer implements AutoCloseable
 	/** number of bytes a single quad takes */
 	public static final int QUADS_BYTE_SIZE = LodUtil.LOD_VERTEX_FORMAT.getByteSize() * 4;
 	/** how big a single VBO can be in bytes */
-	public static final int MAX_VBO_BYTE_SIZE = 1024 * 1024; // 1 MB
+	public static final int MAX_VBO_BYTE_SIZE = 10 * 1024 * 1024; // 10 MB
 	public static final int MAX_QUADS_PER_BUFFER = MAX_VBO_BYTE_SIZE / QUADS_BYTE_SIZE;
 	public static final int FULL_SIZED_BUFFER = MAX_QUADS_PER_BUFFER * QUADS_BYTE_SIZE;
 	
