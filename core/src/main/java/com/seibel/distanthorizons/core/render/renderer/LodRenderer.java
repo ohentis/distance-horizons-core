@@ -485,11 +485,6 @@ public class LodRenderer
 			shaderProgram = shaderProgramOverride;
 		}
 		
-		if (!GL32.glIsProgram(shaderProgram.getId()))
-		{
-			throw new IllegalStateException("No GL program exists with the ID: [" + shaderProgram.getId() + "]. This either means a shader program was freed while it was still in use or was never created.");
-		}
-		
 		shaderProgram.bind();
 		shaderProgram.setModelOffsetPos(modelPos);
 		
