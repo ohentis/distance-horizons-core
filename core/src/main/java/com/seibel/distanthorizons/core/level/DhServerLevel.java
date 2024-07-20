@@ -265,11 +265,10 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 				continue;
 			}
 			
-			// Prevent adding or removing requests
+			// Make this group unavailable for adding into
+			this.requestGroupsByPos.remove(entry.getKey());
 			requestGroup.requestRemoveSemaphore.acquireUninterruptibly(Short.MAX_VALUE);
 			requestGroup.requestAddSemaphore.acquireUninterruptibly(Short.MAX_VALUE);
-			
-			this.requestGroupsByPos.remove(entry.getKey());
 			
 			ThreadPoolExecutor executor = ThreadPoolUtil.getNetworkCompressionExecutor();
 			if (executor == null)

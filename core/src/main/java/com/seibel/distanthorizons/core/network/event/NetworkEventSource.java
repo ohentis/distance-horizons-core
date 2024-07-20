@@ -42,7 +42,13 @@ public abstract class NetworkEventSource
 	private static final ConfigBasedLogger LOGGER = new ConfigBasedLogger(LogManager.getLogger(),
 			() -> Config.Client.Advanced.Logging.logNetworkEvent.get());
 	
-	protected final ConcurrentMap<Class<? extends NetworkMessage>, ConcurrentMap<NetworkEventSource, Consumer<NetworkMessage>>> handlers = new ConcurrentHashMap<>();
+	protected final ConcurrentMap<
+			Class<? extends NetworkMessage>,
+			ConcurrentMap<
+					NetworkEventSource,
+					Set<Consumer<NetworkMessage>>
+			>
+	> handlers = new ConcurrentHashMap<>();
 	
 	private final ConcurrentMap<Long, FutureResponseData> pendingFutures = new ConcurrentHashMap<>();
 	private final Set<Long> cancelledFutures = Collections.newSetFromMap(CacheBuilder.newBuilder()
@@ -55,13 +61,16 @@ public abstract class NetworkEventSource
 	{
 		boolean handled = false;
 		
-		ConcurrentMap<NetworkEventSource, Consumer<NetworkMessage>> handlerMap = this.handlers.get(message.getClass());
-		if (handlerMap != null)
+		ConcurrentMap<NetworkEventSource, Set<Consumer<NetworkMessage>>> handlersByEventSource = this.handlers.get(message.getClass());
+		if (handlersByEventSource != null)
 		{
-			for (Consumer<NetworkMessage> handler : handlerMap.values())
+			for (Set<Consumer<NetworkMessage>> handlerSet : handlersByEventSource.values())
 			{
-				handled = true;
-				handler.accept(message);
+				for (Consumer<NetworkMessage> handler : handlerSet)
+				{
+					handled = true;
+					handler.accept(message);
+				}
 			}
 		}
 		
@@ -113,12 +122,13 @@ public abstract class NetworkEventSource
 					}
 					return new ConcurrentHashMap<>();
 				})
-				.put(instance, (Consumer<NetworkMessage>) handlerImplementation);
+				.computeIfAbsent(instance, _instance -> ConcurrentHashMap.newKeySet())
+				.add((Consumer<NetworkMessage>) handlerImplementation);
 	}
 	
 	protected void removeAllHandlers(NetworkEventSource childInstance)
 	{
-		for (ConcurrentMap<NetworkEventSource, Consumer<NetworkMessage>> handlerMap : this.handlers.values())
+		for (ConcurrentMap<NetworkEventSource, Set<Consumer<NetworkMessage>>> handlerMap : this.handlers.values())
 		{
 			handlerMap.remove(childInstance);
 		}
