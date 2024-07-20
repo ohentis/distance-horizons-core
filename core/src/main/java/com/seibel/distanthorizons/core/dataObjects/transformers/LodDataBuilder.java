@@ -31,7 +31,6 @@ import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
-import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.util.FullDataPointUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
@@ -67,12 +66,8 @@ public class LodDataBuilder
 		
 		
 		
-		// get the section position
-		int sectionPosX = chunkWrapper.getChunkPos().x;
-		// negative positions start at -1 so the logic there is slightly different
-		sectionPosX = (sectionPosX < 0) ? ((sectionPosX + 1) / NUMB_OF_CHUNKS_WIDE) - 1 : (sectionPosX / NUMB_OF_CHUNKS_WIDE);
-		int sectionPosZ = chunkWrapper.getChunkPos().z;
-		sectionPosZ = (sectionPosZ < 0) ? ((sectionPosZ + 1) / NUMB_OF_CHUNKS_WIDE) - 1 : (sectionPosZ / NUMB_OF_CHUNKS_WIDE);
+		int sectionPosX = getXOrZSectionPosFromChunkPos(chunkWrapper.getChunkPos().x);
+		int sectionPosZ = getXOrZSectionPosFromChunkPos(chunkWrapper.getChunkPos().z);
 		long pos = DhSectionPos.encodePos(DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL, sectionPosX, sectionPosZ);
 		
 		FullDataSourceV2 dataSource = FullDataSourceV2.createEmpty(pos);
@@ -304,10 +299,14 @@ public class LodDataBuilder
 	/** @throws ClassCastException if an API user returns the wrong object type(s) */
 	public static FullDataSourceV2 createFromApiChunkData(DhApiChunk apiChunk) throws ClassCastException, DataCorruptedException
 	{
-		// TODO
-		long pos = DhSectionPos.convertToDetailLevel(DhSectionPos.encodeChunkPos(apiChunk.chunkPosX, apiChunk.chunkPosZ), DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL);
-		int relSourceBlockX = Math.abs(apiChunk.chunkPosX % 4) * LodUtil.CHUNK_WIDTH;
-		int relSourceBlockZ = Math.abs(apiChunk.chunkPosZ % 4) * LodUtil.CHUNK_WIDTH;
+		// get the section position
+		int sectionPosX = getXOrZSectionPosFromChunkPos(apiChunk.chunkPosX);
+		int sectionPosZ = getXOrZSectionPosFromChunkPos(apiChunk.chunkPosZ);
+		long pos = DhSectionPos.encodePos(DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL, sectionPosX, sectionPosZ);
+		
+		// chunk relative block position in the data source
+		int relSourceBlockX = Math.floorMod(apiChunk.chunkPosX, 4) * LodUtil.CHUNK_WIDTH;
+		int relSourceBlockZ = Math.floorMod(apiChunk.chunkPosZ, 4) * LodUtil.CHUNK_WIDTH;
 		
 		FullDataSourceV2 dataSource = FullDataSourceV2.createEmpty(pos);
 		for (int relBlockZ = 0; relBlockZ < LodUtil.CHUNK_WIDTH; relBlockZ++)
@@ -336,7 +335,7 @@ public class LodDataBuilder
 					packedDataPoints.set(index, FullDataPointUtil.encode(
 							id,
 							dataPoint.topYBlockPos - dataPoint.bottomYBlockPos,
-							dataPoint.bottomYBlockPos - apiChunk.topYBlockPos,
+							dataPoint.bottomYBlockPos - apiChunk.bottomYBlockPos,
 							(byte) (dataPoint.blockLightLevel),
 							(byte) (dataPoint.skyLightLevel)
 					));
@@ -361,5 +360,14 @@ public class LodDataBuilder
 	//================//
 	
 	public static boolean canGenerateLodFromChunk(IChunkWrapper chunk) { return chunk != null && chunk.isLightCorrect(); }
+	
+	public static int getXOrZSectionPosFromChunkPos(int chunkXOrZPos)
+	{
+		// get the section position
+		int sectionPos = chunkXOrZPos;
+		// negative positions start at -1 so the logic there is slightly different
+		sectionPos = (sectionPos < 0) ? ((sectionPos + 1) / NUMB_OF_CHUNKS_WIDE) - 1 : (sectionPos / NUMB_OF_CHUNKS_WIDE);
+		return sectionPos;
+	}
 	
 }
