@@ -78,7 +78,7 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 	// TODO this logic isn't great and can cause a limit to how many threads could be used for world generation, 
 	//  however it won't cause duplicate requests or concurrency issues, so it will be good enough for now.
 	//  A good long term fix may be to either:
-	//  1. allow the generator to deal with larger sections (let the generator threads split up larger tasks into smaller one
+	//  1. allow the generator to deal with larger sections (let the generator threads split up larger tasks into smaller ones
 	//  2. batch requests better. instead of sending 4 individual tasks of detail level N, send 1 task of detail level n+1
 	private final ExecutorService queueingThread = ThreadUtil.makeSingleThreadPool("World Gen Queue");
 	private boolean generationQueueRunning = false;
@@ -226,6 +226,9 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 			catch (Exception e)
 			{
 				LOGGER.error("queueing exception: " + e.getMessage(), e);
+			}
+			finally
+			{
 				this.generationQueueRunning = false;
 			}
 		});
