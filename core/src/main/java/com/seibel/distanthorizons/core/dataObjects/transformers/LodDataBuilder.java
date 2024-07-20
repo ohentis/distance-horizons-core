@@ -73,7 +73,7 @@ public class LodDataBuilder
 		sectionPosX = (sectionPosX < 0) ? ((sectionPosX + 1) / NUMB_OF_CHUNKS_WIDE) - 1 : (sectionPosX / NUMB_OF_CHUNKS_WIDE);
 		int sectionPosZ = chunkWrapper.getChunkPos().z;
 		sectionPosZ = (sectionPosZ < 0) ? ((sectionPosZ + 1) / NUMB_OF_CHUNKS_WIDE) - 1 : (sectionPosZ / NUMB_OF_CHUNKS_WIDE);
-		long pos = DhSectionPos.encode(DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL, sectionPosX, sectionPosZ);
+		long pos = DhSectionPos.encodePos(DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL, sectionPosX, sectionPosZ);
 		
 		FullDataSourceV2 dataSource = FullDataSourceV2.createEmpty(pos);
 		dataSource.isEmpty = false;
@@ -302,14 +302,19 @@ public class LodDataBuilder
 	
 	
 	/** @throws ClassCastException if an API user returns the wrong object type(s) */
-	public static FullDataSourceV2 createFromApiChunkData(DhApiChunk dataPoints) throws ClassCastException, DataCorruptedException
+	public static FullDataSourceV2 createFromApiChunkData(DhApiChunk apiChunk) throws ClassCastException, DataCorruptedException
 	{
-		FullDataSourceV2 accessor = FullDataSourceV2.createEmpty(DhSectionPos.encode(new DhChunkPos(dataPoints.chunkPosX, dataPoints.chunkPosZ)));
-		for (int relZ = 0; relZ < LodUtil.CHUNK_WIDTH; relZ++)
+		// TODO
+		long pos = DhSectionPos.convertToDetailLevel(DhSectionPos.encodeChunkPos(apiChunk.chunkPosX, apiChunk.chunkPosZ), DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL);
+		int relSourceBlockX = Math.abs(apiChunk.chunkPosX % 4) * LodUtil.CHUNK_WIDTH;
+		int relSourceBlockZ = Math.abs(apiChunk.chunkPosZ % 4) * LodUtil.CHUNK_WIDTH;
+		
+		FullDataSourceV2 dataSource = FullDataSourceV2.createEmpty(pos);
+		for (int relBlockZ = 0; relBlockZ < LodUtil.CHUNK_WIDTH; relBlockZ++)
 		{
-			for (int relX = 0; relX < LodUtil.CHUNK_WIDTH; relX++)
+			for (int relBlockX = 0; relBlockX < LodUtil.CHUNK_WIDTH; relBlockX++)
 			{
-				List<DhApiTerrainDataPoint> columnDataPoints = dataPoints.getDataPoints(relX, relZ);
+				List<DhApiTerrainDataPoint> columnDataPoints = apiChunk.getDataPoints(relBlockX, relBlockZ);
 				
 				
 				// this null check does 2 nice things at the same time:
@@ -323,7 +328,7 @@ public class LodDataBuilder
 				{
 					DhApiTerrainDataPoint dataPoint = columnDataPoints.get(index);
 					
-					int id = accessor.mapping.addIfNotPresentAndGetId(
+					int id = dataSource.mapping.addIfNotPresentAndGetId(
 							(IBiomeWrapper) (dataPoint.biomeWrapper),
 							(IBlockStateWrapper) (dataPoint.blockStateWrapper)
 					);
@@ -331,7 +336,7 @@ public class LodDataBuilder
 					packedDataPoints.set(index, FullDataPointUtil.encode(
 							id,
 							dataPoint.topYBlockPos - dataPoint.bottomYBlockPos,
-							dataPoint.bottomYBlockPos - dataPoints.topYBlockPos,
+							dataPoint.bottomYBlockPos - apiChunk.topYBlockPos,
 							(byte) (dataPoint.blockLightLevel),
 							(byte) (dataPoint.skyLightLevel)
 					));
@@ -339,11 +344,14 @@ public class LodDataBuilder
 				
 				// TODO add the ability for API users to define a different compression mode
 				//  or add a "unkown" compression mode
-				accessor.setSingleColumn(packedDataPoints, relX, relZ, EDhApiWorldGenerationStep.LIGHT, EDhApiWorldCompressionMode.MERGE_SAME_BLOCKS);
+				dataSource.setSingleColumn(
+						packedDataPoints, 
+						relBlockX + relSourceBlockX, relBlockZ + relSourceBlockZ, 
+						EDhApiWorldGenerationStep.LIGHT, EDhApiWorldCompressionMode.MERGE_SAME_BLOCKS);
+				dataSource.isEmpty = false;
 			}
 		}
-		
-		return accessor;
+		return dataSource;
 	}
 	
 	

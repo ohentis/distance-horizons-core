@@ -409,7 +409,7 @@ public class QuadTree<T>
 			{
 				if (node != null || includeNullNodes)
 				{
-					long rootPos = DhSectionPos.encode(QuadTree.this.treeMinDetailLevel, pos2D.x, pos2D.y);
+					long rootPos = DhSectionPos.encodePos(QuadTree.this.treeMinDetailLevel, pos2D.x, pos2D.y);
 					if (QuadTree.this.isSectionPosInBounds(rootPos))
 					{
 						this.iteratorPosQueue.enqueue(rootPos);

@@ -81,7 +81,7 @@ public class DhSectionPos
 	 * This class just holds utility methods for handling a packed
 	 * {@link DhSectionPos} and shouldn't be constructed. <Br><br>
 	 * 
-	 * Use one of the {@link DhSectionPos#encode(byte, int, int)} methods instead
+	 * Use one of the {@link DhSectionPos#encodePos(byte, int, int)} methods instead
 	 */
 	private DhSectionPos() { }
 	
@@ -92,7 +92,7 @@ public class DhSectionPos
 	 * no validation is done for whether the detail level is positive 
 	 * or if the X/Z positions can be represented by available bits. 
 	 */
-	public static long encode(byte detailLevel, int x, int z)
+	public static long encodePos(byte detailLevel, int x, int z)
 	{
 		long data = 0;
 		data |= detailLevel & DETAIL_LEVEL_MASK;
@@ -101,22 +101,26 @@ public class DhSectionPos
 		return data;
 	}
 	
-	public static long encode(DhBlockPos pos) { return encodeBlockPos(pos.x, pos.z); }
-	public static long encode(DhBlockPos2D pos) { return encodeBlockPos(pos.x, pos.z); }
-	public static long encodeBlockPos(int blockX, int blockZ)
+	// TODO need changing
+	public static long encodeLodPos(DhBlockPos pos) { return encodeLodBlockPos(pos.x, pos.z); }
+	public static long encodeLodPos(DhBlockPos2D pos) { return encodeLodBlockPos(pos.x, pos.z); }
+	public static long encodeLodBlockPos(int blockX, int blockZ)
 	{
-		long pos = encode(LodUtil.BLOCK_DETAIL_LEVEL, blockX, blockZ);
+		long pos = encodePos(LodUtil.BLOCK_DETAIL_LEVEL, blockX, blockZ);
 		pos = convertToDetailLevel(pos, DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL);
 		return pos;
 	}
 	
-	public static long encode(DhChunkPos pos) { return encodeChunkPos(pos.x, pos.z); }
-	public static long encodeChunkPos(int chunkX, int chunkZ)
+	public static long encodeLodPos(DhChunkPos pos) { return encodeLodChunkPos(pos.x, pos.z); }
+	public static long encodeLodChunkPos(int chunkX, int chunkZ) // TODO broken?
 	{
-		long pos = encode(LodUtil.CHUNK_DETAIL_LEVEL, chunkX, chunkZ);
+		long pos = encodePos(LodUtil.CHUNK_DETAIL_LEVEL, chunkX, chunkZ);
 		pos = convertToDetailLevel(pos, DhSectionPos.SECTION_CHUNK_DETAIL_LEVEL);
 		return pos;
 	}
+	
+	public static long encodePos(DhChunkPos pos) { return encodeChunkPos(pos.x, pos.z); }
+	public static long encodeChunkPos(int chunkX, int chunkZ) { return encodePos(LodUtil.CHUNK_DETAIL_LEVEL, chunkX, chunkZ); }
 	
 	
 	
@@ -143,7 +147,7 @@ public class DhSectionPos
 			z = z * BitShiftUtil.powerOfTwo(detailLevel - newDetailLevel);
 		}
 
-		return encode(newDetailLevel, x, z);
+		return encodePos(newDetailLevel, x, z);
 	}
 	
 	
@@ -279,14 +283,14 @@ public class DhSectionPos
 			throw new IllegalStateException("section detail must be greater than 0");
 		}
 
-		return DhSectionPos.encode((byte) (detailLevel - 1),
+		return DhSectionPos.encodePos((byte) (detailLevel - 1),
 				x * 2 + (child0to3 & 1),
 				z * 2 + BitShiftUtil.half(child0to3 & 2));
 	}
 	/** Returns this position's child index in its parent */
 	public static int getChildIndexOfParent(long pos) { return (getX(pos) & 1) + BitShiftUtil.square(getZ(pos) & 1); }
 	
-	public static long getParentPos(long pos) { return DhSectionPos.encode((byte) (getDetailLevel(pos) + 1), BitShiftUtil.half(getX(pos)), BitShiftUtil.half(getZ(pos))); }
+	public static long getParentPos(long pos) { return DhSectionPos.encodePos((byte) (getDetailLevel(pos) + 1), BitShiftUtil.half(getX(pos)), BitShiftUtil.half(getZ(pos))); }
 	
 
 
@@ -297,7 +301,7 @@ public class DhSectionPos
 			throw new IllegalArgumentException("getAdjacentPos can't be UP or DOWN, direction given: ["+dir.name()+"].");
 		}
 		
-		return DhSectionPos.encode(getDetailLevel(pos),
+		return DhSectionPos.encodePos(getDetailLevel(pos),
 				getX(pos) + dir.getNormal().x,
 				getZ(pos) + dir.getNormal().z);
 	}
