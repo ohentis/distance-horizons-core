@@ -80,7 +80,7 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 		byte sectionDetailLevel = (byte) (detailLevel + DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
 		int posX = (Integer) objectMap.get("PosX");
 		int posZ = (Integer) objectMap.get("PosZ");
-		long pos = DhSectionPos.encodePos(sectionDetailLevel, posX, posZ);
+		long pos = DhSectionPos.encode(sectionDetailLevel, posX, posZ);
 		
 		int minY = (Integer) objectMap.get("MinY");
 		int dataChecksum = (Integer) objectMap.get("DataChecksum");
@@ -230,7 +230,7 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 			int posX = (Integer) resultMap.get("PosX");
 			int posZ = (Integer) resultMap.get("PosZ");
 			
-			long pos = DhSectionPos.encodePos(sectionDetailLevel, posX, posZ);
+			long pos = DhSectionPos.encode(sectionDetailLevel, posX, posZ);
 			list.add(pos);
 		}
 		
@@ -299,7 +299,7 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 			int posX = (Integer) resultMap.get("PosX");
 			int posZ = (Integer) resultMap.get("PosZ");
 
-			long pos = DhSectionPos.encodePos(sectionDetailLevel, posX, posZ);
+			long pos = DhSectionPos.encode(sectionDetailLevel, posX, posZ);
 			list.add(pos);
 		}
 

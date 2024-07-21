@@ -66,7 +66,7 @@ public class LodDataBuilder
 		
 		int sectionPosX = getXOrZSectionPosFromChunkPos(chunkWrapper.getChunkPos().x);
 		int sectionPosZ = getXOrZSectionPosFromChunkPos(chunkWrapper.getChunkPos().z);
-		long pos = DhSectionPos.encodePos(DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL, sectionPosX, sectionPosZ);
+		long pos = DhSectionPos.encode(DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL, sectionPosX, sectionPosZ);
 		
 		FullDataSourceV2 dataSource = FullDataSourceV2.createEmpty(pos);
 		dataSource.isEmpty = false;
@@ -300,7 +300,7 @@ public class LodDataBuilder
 		// get the section position
 		int sectionPosX = getXOrZSectionPosFromChunkPos(apiChunk.chunkPosX);
 		int sectionPosZ = getXOrZSectionPosFromChunkPos(apiChunk.chunkPosZ);
-		long pos = DhSectionPos.encodePos(DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL, sectionPosX, sectionPosZ);
+		long pos = DhSectionPos.encode(DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL, sectionPosX, sectionPosZ);
 		
 		// chunk relative block position in the data source
 		int relSourceBlockX = Math.floorMod(apiChunk.chunkPosX, 4) * LodUtil.CHUNK_WIDTH;

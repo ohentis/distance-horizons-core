@@ -309,7 +309,7 @@ public class FullDataSourceV1Repo extends AbstractDhRepo<Long, FullDataSourceV1D
 			return null;
 		}
 		
-		return DhSectionPos.encodePos(Byte.parseByte(split[0]), Integer.parseInt(split[1]), Integer.parseInt(split[2]));
+		return DhSectionPos.encode(Byte.parseByte(split[0]), Integer.parseInt(split[1]), Integer.parseInt(split[2]));
 	}
 	
 }

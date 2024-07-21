@@ -174,7 +174,7 @@ public class DhLodPos implements Comparable<DhLodPos>
 		
 		DhLodPos lodPos = new DhLodPos(this.detailLevel, this.x, this.z);
 		lodPos = lodPos.convertToDetailLevel(sectionDetailLevel);
-		return DhSectionPos.encodePos(lodPos.detailLevel, lodPos.x, lodPos.z);
+		return DhSectionPos.encode(lodPos.detailLevel, lodPos.x, lodPos.z);
 	}
 	
 	

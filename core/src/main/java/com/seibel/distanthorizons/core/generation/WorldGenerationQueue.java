@@ -346,7 +346,7 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 			//LOGGER.trace("Duplicate generation section " + taskPos + " with granularity [" + granularity + "] at " + chunkPosMin + ". Skipping...");
 			
 			// sending a success result is necessary to make sure the render sections are reloaded correctly 
-			newTaskGroup.group.worldGenTasks.forEach(worldGenTask -> worldGenTask.future.complete(WorldGenResult.CreateSuccess(DhSectionPos.encodePos(granularity, DhSectionPos.getX(taskPos), DhSectionPos.getZ(taskPos)))));
+			newTaskGroup.group.worldGenTasks.forEach(worldGenTask -> worldGenTask.future.complete(WorldGenResult.CreateSuccess(DhSectionPos.encode(granularity, DhSectionPos.getX(taskPos), DhSectionPos.getZ(taskPos)))));
 			return false;
 		}
 		this.alreadyGeneratedPosHashSet.put(newTaskGroup.group.pos, Thread.currentThread().getStackTrace());
@@ -383,7 +383,7 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 				}
 				else
 				{
-					newTaskGroup.group.worldGenTasks.forEach(worldGenTask -> worldGenTask.future.complete(WorldGenResult.CreateSuccess(DhSectionPos.encodePos(granularity, DhSectionPos.getX(taskPos), DhSectionPos.getZ(taskPos)))));
+					newTaskGroup.group.worldGenTasks.forEach(worldGenTask -> worldGenTask.future.complete(WorldGenResult.CreateSuccess(DhSectionPos.encode(granularity, DhSectionPos.getX(taskPos), DhSectionPos.getZ(taskPos)))));
 				}
 				boolean worked = this.inProgressGenTasksByLodPos.remove(taskPos, newTaskGroup);
 				LodUtil.assertTrue(worked, "Unable to find in progress generator task with position ["+DhSectionPos.toString(taskPos)+"]");
