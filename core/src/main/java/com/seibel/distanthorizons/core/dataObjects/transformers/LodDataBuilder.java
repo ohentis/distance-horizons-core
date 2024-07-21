@@ -46,8 +46,6 @@ public class LodDataBuilder
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	private static final IBlockStateWrapper AIR = SingletonInjector.INSTANCE.get(IWrapperFactory.class).getAirBlockStateWrapper();
-	/** how many chunks wide the {@link FullDataSourceV2} is. */
-	private static final int NUMB_OF_CHUNKS_WIDE = FullDataSourceV2.WIDTH / LodUtil.CHUNK_WIDTH;
 	
 	private static boolean getTopErrorLogged = false;
 	
@@ -93,30 +91,30 @@ public class LodDataBuilder
 			// -3 -> 1
 			// -4 -> 0 ---
 			// -5 -> 3
-			chunkOffsetX = ((chunkOffsetX) % NUMB_OF_CHUNKS_WIDE);
+			chunkOffsetX = ((chunkOffsetX) % FullDataSourceV2.NUMB_OF_CHUNKS_WIDE);
 			if (chunkOffsetX != 0)
 			{
-				chunkOffsetX += NUMB_OF_CHUNKS_WIDE;
+				chunkOffsetX += FullDataSourceV2.NUMB_OF_CHUNKS_WIDE;
 			}
 		}
 		else
 		{
-			chunkOffsetX %= NUMB_OF_CHUNKS_WIDE;
+			chunkOffsetX %= FullDataSourceV2.NUMB_OF_CHUNKS_WIDE;
 		}
 		chunkOffsetX *= LodUtil.CHUNK_WIDTH;
 		
 		int chunkOffsetZ = chunkWrapper.getChunkPos().z;
 		if (chunkWrapper.getChunkPos().z < 0)
 		{
-			chunkOffsetZ = ((chunkOffsetZ) % NUMB_OF_CHUNKS_WIDE);
+			chunkOffsetZ = ((chunkOffsetZ) % FullDataSourceV2.NUMB_OF_CHUNKS_WIDE);
 			if (chunkOffsetZ != 0)
 			{
-				chunkOffsetZ += NUMB_OF_CHUNKS_WIDE;
+				chunkOffsetZ += FullDataSourceV2.NUMB_OF_CHUNKS_WIDE;
 			}
 		}
 		else
 		{
-			chunkOffsetZ %= NUMB_OF_CHUNKS_WIDE;
+			chunkOffsetZ %= FullDataSourceV2.NUMB_OF_CHUNKS_WIDE;
 		}
 		chunkOffsetZ *= LodUtil.CHUNK_WIDTH;
 		
@@ -366,7 +364,7 @@ public class LodDataBuilder
 		// get the section position
 		int sectionPos = chunkXOrZPos;
 		// negative positions start at -1 so the logic there is slightly different
-		sectionPos = (sectionPos < 0) ? ((sectionPos + 1) / NUMB_OF_CHUNKS_WIDE) - 1 : (sectionPos / NUMB_OF_CHUNKS_WIDE);
+		sectionPos = (sectionPos < 0) ? ((sectionPos + 1) / FullDataSourceV2.NUMB_OF_CHUNKS_WIDE) - 1 : (sectionPos / FullDataSourceV2.NUMB_OF_CHUNKS_WIDE);
 		return sectionPos;
 	}
 	

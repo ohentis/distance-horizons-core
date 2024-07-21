@@ -192,41 +192,19 @@ public class DhSectionPosTest
 		// origin pos //
 		
 		DhBlockPos originBlockPos = new DhBlockPos(0, 0, 0);
-		long originsectionPos = DhSectionPos.encodeLodPos(originBlockPos);
-		assertSectionPosEqual(DhSectionPos.encodePos(DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL, 0, 0), originsectionPos);
+		long originSectionPos = DhSectionPos.encodeContainingPos(DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL, originBlockPos);
+		assertSectionPosEqual(DhSectionPos.encodePos(DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL, 0, 0), originSectionPos);
 		
 		
 		// offset pos //
 		long offsetSectionPos;
 		
 		DhBlockPos offsetBlockPos = new DhBlockPos(1000, 0, 42000);
-		offsetSectionPos = DhSectionPos.encodeLodPos(offsetBlockPos);
+		offsetSectionPos = DhSectionPos.encodeContainingPos(DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL, offsetBlockPos);
 		assertSectionPosEqual(DhSectionPos.encodePos(DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL, 15, 656), offsetSectionPos);
 		
 		offsetBlockPos = new DhBlockPos(-987654, 0, 46);
-		offsetSectionPos = DhSectionPos.encodeLodPos(offsetBlockPos);
-		assertSectionPosEqual(DhSectionPos.encodePos(DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL, -15433, 0), offsetSectionPos);
-		
-	}
-	
-	@Test
-	public void createFromBlockPos2D()
-	{
-		// origin pos //
-		
-		DhBlockPos2D originBlockPos = new DhBlockPos2D(0, 0);
-		long originSectionPos = DhSectionPos.encodeLodPos(originBlockPos);
-		assertSectionPosEqual(DhSectionPos.encodePos(DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL, 0, 0), originSectionPos);
-		
-		
-		// offset pos //
-		
-		DhBlockPos2D offsetBlockPos = new DhBlockPos2D(1000, 42000);
-		long offsetSectionPos = DhSectionPos.encodeLodPos(offsetBlockPos);
-		assertSectionPosEqual(DhSectionPos.encodePos(DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL, 15, 656), offsetSectionPos);
-		
-		offsetBlockPos = new DhBlockPos2D(-987654, 46);
-		offsetSectionPos = DhSectionPos.encodeLodPos(offsetBlockPos);
+		offsetSectionPos = DhSectionPos.encodeContainingPos(DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL, offsetBlockPos);
 		assertSectionPosEqual(DhSectionPos.encodePos(DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL, -15433, 0), offsetSectionPos);
 		
 	}
@@ -237,45 +215,19 @@ public class DhSectionPosTest
 		// origin pos //
 		
 		DhChunkPos originChunkPos = new DhChunkPos(0,0);
-		long originSectionPos = DhSectionPos.encodeLodPos(originChunkPos);
+		long originSectionPos = DhSectionPos.encodeContainingPos(DhSectionPos.SECTION_CHUNK_DETAIL_LEVEL, originChunkPos);
 		assertSectionPosEqual(DhSectionPos.encodePos(DhSectionPos.SECTION_CHUNK_DETAIL_LEVEL, 0, 0), originSectionPos);
 		
 		
 		// offset pos //
 		
 		DhChunkPos offsetChunkPos = new DhChunkPos(1000, 42000);
-		long offsetSectionPos = DhSectionPos.encodeLodPos(offsetChunkPos);
+		long offsetSectionPos = DhSectionPos.encodeContainingPos(DhSectionPos.SECTION_CHUNK_DETAIL_LEVEL, offsetChunkPos);
 		assertSectionPosEqual(DhSectionPos.encodePos(DhSectionPos.SECTION_CHUNK_DETAIL_LEVEL, 15, 656), offsetSectionPos);
 		
 		offsetChunkPos = new DhChunkPos(-987654, 46);
-		offsetSectionPos = DhSectionPos.encodeLodPos(offsetChunkPos);
+		offsetSectionPos = DhSectionPos.encodeContainingPos(DhSectionPos.SECTION_CHUNK_DETAIL_LEVEL, offsetChunkPos);
 		assertSectionPosEqual(DhSectionPos.encodePos(DhSectionPos.SECTION_CHUNK_DETAIL_LEVEL, -15433, 0), offsetSectionPos);
-		
-	}
-	
-	@Test
-	public void createFromChunkPos_test()
-	{
-		// origin pos //
-		
-		DhChunkPos originChunkPos = new DhChunkPos(0,0);
-		long originSectionPos = DhSectionPos.encodePos(originChunkPos);
-		assertSectionPosEqual(DhSectionPos.encodePos(LodUtil.CHUNK_DETAIL_LEVEL, 0, 0), originSectionPos);
-		
-		
-		// offset pos //
-		
-		DhChunkPos offsetChunkPos = new DhChunkPos(1, 1);
-		long offsetSectionPos = DhSectionPos.encodePos(offsetChunkPos);
-		assertSectionPosEqual(DhSectionPos.encodePos(LodUtil.CHUNK_DETAIL_LEVEL, 1, 1), offsetSectionPos);
-		
-		offsetChunkPos = new DhChunkPos(2, 2);
-		offsetSectionPos = DhSectionPos.encodePos(offsetChunkPos);
-		assertSectionPosEqual(DhSectionPos.encodePos(LodUtil.CHUNK_DETAIL_LEVEL, 2, 2), offsetSectionPos);
-		
-		offsetChunkPos = new DhChunkPos(-3, -2);
-		offsetSectionPos = DhSectionPos.encodePos(offsetChunkPos);
-		assertSectionPosEqual(DhSectionPos.encodePos(LodUtil.CHUNK_DETAIL_LEVEL, -3, -2), offsetSectionPos);
 		
 	}
 	
