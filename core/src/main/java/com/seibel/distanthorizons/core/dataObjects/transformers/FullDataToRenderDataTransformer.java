@@ -124,7 +124,7 @@ public class FullDataToRenderDataTransformer
 					
 					ColumnArrayView columnArrayView = columnSource.getVerticalDataPointView(x, z);
 					LongArrayList dataColumn = fullDataSource.get(x, z);
-					convertColumnData(level, fullDataSource.mapping, baseX + x, baseZ + z, columnArrayView, dataColumn);
+					updateRenderDataViewWithFullDataColumn(level, fullDataSource.mapping, baseX + x, baseZ + z, columnArrayView, dataColumn);
 				}
 			}
 			
@@ -139,30 +139,33 @@ public class FullDataToRenderDataTransformer
 		return columnSource;
 	}
 	
-	
-	
-	//================//
-	// helper methods //
-	//================//
-	
-	/**
-	 * Called in loops that may run for an extended period of time. <br>
-	 * This is necessary to allow canceling these transformers since running
-	 * them after the client has left a given world will throw exceptions.
-	 */
-	private static void throwIfThreadInterrupted() throws InterruptedException
+	/** Updates the given {@link ColumnArrayView} to match the incoming Full data {@link LongArrayList} */
+	public static void updateRenderDataViewWithFullDataColumn(
+			IDhClientLevel level, 
+			FullDataPointIdMap fullDataMapping, int blockX, int blockZ, 
+			ColumnArrayView columnArrayView, 
+			LongArrayList fullDataColumn)
 	{
-		if (Thread.interrupted())
+		if (fullDataColumn == null || fullDataColumn.size() == 0)
 		{
-			throw new InterruptedException(FullDataToRenderDataTransformer.class.getSimpleName() + " task interrupted.");
+			return;
+		}
+		
+		int dataTotalLength = fullDataColumn.size();
+		if (dataTotalLength > columnArrayView.verticalSize())
+		{
+			ColumnArrayView totalColumnData = new ColumnArrayView(new LongArrayList(new long[dataTotalLength]), dataTotalLength, 0, dataTotalLength);
+			iterateAndConvert(level, fullDataMapping, blockX, blockZ, totalColumnData, fullDataColumn);
+			columnArrayView.changeVerticalSizeFrom(totalColumnData);
+		}
+		else
+		{
+			iterateAndConvert(level, fullDataMapping, blockX, blockZ, columnArrayView, fullDataColumn); //Directly use the arrayView since it fits.
 		}
 	}
-	
-	
-	// TODO what does this mean?
 	private static void iterateAndConvert(
-			IDhClientLevel level, FullDataPointIdMap fullDataMapping, 
-			int blockX, int blockZ, 
+			IDhClientLevel level, FullDataPointIdMap fullDataMapping,
+			int blockX, int blockZ,
 			ColumnArrayView renderColumnData, LongArrayList fullColumnData)
 	{
 		boolean avoidSolidBlocks = (Config.Client.Advanced.Graphics.Quality.blocksToIgnore.get() == EDhApiBlocksToAvoid.NON_COLLIDING);
@@ -187,21 +190,6 @@ public class FullDataToRenderDataTransformer
 			int id = FullDataPointUtil.getId(fullData);
 			int blockLight = FullDataPointUtil.getBlockLight(fullData);
 			int skyLight = FullDataPointUtil.getSkyLight(fullData);
-			
-			// TODO how should corrupted data be handled?
-			// TODO why is the full data corrupted in the first place? FullDataPointUtil hasn't been changed in a long time, could one of the full data point objects be corrupted?
-			// TODO if either of these happen the ID might also be invalid
-			//if (bottomY + blockHeight > 300)
-			//{
-			//  // this data point is too tall, it's probably a monolith
-			//	int k = 0;
-			//	throw new RuntimeException();
-			//}
-			//if (light > 16 || light < 0)
-			//{
-			//  // light is out of range
-			//	throw new RuntimeException();
-			//}
 			
 			IBiomeWrapper biome;
 			IBlockStateWrapper block;
@@ -272,7 +260,7 @@ public class FullDataToRenderDataTransformer
 				skyLight = skylightToApplyToNextBlock;
 				blockLight = blocklightToApplyToNextBlock;
 			}
-
+			
 			//check if they share a top-bottom face and if they have same collor
 			if (color == lastColor && bottomY + blockHeight == lastBottom  && columnOffset > 0)
 			{
@@ -291,7 +279,7 @@ public class FullDataToRenderDataTransformer
 			}
 			lastBottom = bottomY;
 			lastColor = color;
-
+			
 		}
 		
 		
@@ -301,24 +289,22 @@ public class FullDataToRenderDataTransformer
 		}
 	}
 	
-	// TODO what does this mean?
-	public static void convertColumnData(IDhClientLevel level, FullDataPointIdMap fullDataMapping, int blockX, int blockZ, ColumnArrayView columnArrayView, LongArrayList fullDataColumn)
+	
+	
+	//================//
+	// helper methods //
+	//================//
+	
+	/**
+	 * Called in loops that may run for an extended period of time. <br>
+	 * This is necessary to allow canceling these transformers since running
+	 * them after the client has left a given world will throw exceptions.
+	 */
+	private static void throwIfThreadInterrupted() throws InterruptedException
 	{
-		if (fullDataColumn == null || fullDataColumn.size() == 0)
+		if (Thread.interrupted())
 		{
-			return;
-		}
-		
-		int dataTotalLength = fullDataColumn.size();
-		if (dataTotalLength > columnArrayView.verticalSize())
-		{
-			ColumnArrayView totalColumnData = new ColumnArrayView(new LongArrayList(new long[dataTotalLength]), dataTotalLength, 0, dataTotalLength);
-			iterateAndConvert(level, fullDataMapping, blockX, blockZ, totalColumnData, fullDataColumn);
-			columnArrayView.changeVerticalSizeFrom(totalColumnData);
-		}
-		else
-		{
-			iterateAndConvert(level, fullDataMapping, blockX, blockZ, columnArrayView, fullDataColumn); //Directly use the arrayView since it fits.
+			throw new InterruptedException(FullDataToRenderDataTransformer.class.getSimpleName() + " task interrupted.");
 		}
 	}
 	
