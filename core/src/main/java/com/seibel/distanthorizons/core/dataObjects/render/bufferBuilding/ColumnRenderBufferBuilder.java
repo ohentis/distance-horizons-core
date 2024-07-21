@@ -108,7 +108,7 @@ public class ColumnRenderBufferBuilder
 						
 						long builderEndTime = System.currentTimeMillis();
 						long buildMs = builderEndTime - builderStartTime;
-						LOGGER.debug("RenderRegion end QuadBuild @ " + renderSource.pos + " took: " + buildMs);
+						//LOGGER.debug("RenderRegion end QuadBuild @ " + renderSource.pos + " took: " + buildMs);
 						
 						return builder;
 					}
