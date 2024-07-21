@@ -379,7 +379,14 @@
     "How should block data be compressed when creating LOD data? \nThis setting will only affect new or updated LOD data, \nany data already generated when this setting is changed will be \nunaffected until it is modified or re-loaded. \n\nMost Accurate: Merge Same Blocks \nHighest Compression: Visually Equal",
   "distanthorizons.config.client.advanced.lodBuilding.showMigrationChatWarning":
     "Log Migration In Chat",
-    
+  "distanthorizons.config.client.advanced.lodBuilding.ignoredRenderBlockCsv":
+    "Ignored Block CSV",
+  "distanthorizons.config.client.advanced.lodBuilding.ignoredRenderBlockCsv.@tooltip":
+    "A comma separated list of block resource locations that won't be rendered by DH. \nNote: air is always included in this list.",
+  "distanthorizons.config.client.advanced.lodBuilding.ignoredRenderCaveBlockCsv":
+    "Ignored Cave Block CSV",
+  "distanthorizons.config.client.advanced.lodBuilding.ignoredRenderCaveBlockCsv.@tooltip":
+    "A comma separated list of block resource locations that shouldn't be rendered \nif they are in a 0 sky light underground area. \nNote: air is always included in this list.",
     
   "distanthorizons.config.client.advanced.multiplayer":
     "Multiplayer",

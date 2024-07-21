@@ -51,7 +51,9 @@ public class LodQuadBuilder
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	private static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	
+	@Deprecated
 	public final boolean skipQuadsWithZeroSkylight;
+	@Deprecated
 	public final short skyLightCullingBelow;
 	
 	@SuppressWarnings("unchecked")
@@ -123,7 +125,7 @@ public class LodQuadBuilder
 	// constructor //
 	//=============//
 	
-	public LodQuadBuilder(boolean enableSkylightCulling, short skyLightCullingBelow, boolean doTransparency, IClientLevelWrapper clientLevelWrapper)
+	public LodQuadBuilder(boolean doTransparency, IClientLevelWrapper clientLevelWrapper)
 	{
 		this.doTransparency = doTransparency;
 		for (int i = 0; i < 6; i++)
@@ -132,8 +134,8 @@ public class LodQuadBuilder
 			this.transparentQuads[i] = new ArrayList<>();
 		}
 		
-		this.skipQuadsWithZeroSkylight = enableSkylightCulling;
-		this.skyLightCullingBelow = skyLightCullingBelow;
+		this.skipQuadsWithZeroSkylight = false;
+		this.skyLightCullingBelow = 0;
 		this.clientLevelWrapper = clientLevelWrapper;
 		
 		this.debugRenderingMode = Config.Client.Advanced.Debugging.debugRendering.get();

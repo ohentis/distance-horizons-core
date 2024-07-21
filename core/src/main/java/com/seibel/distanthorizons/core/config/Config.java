@@ -20,17 +20,20 @@
 package com.seibel.distanthorizons.core.config;
 
 
+import com.seibel.distanthorizons.api.DhApi;
 import com.seibel.distanthorizons.api.enums.config.*;
 import com.seibel.distanthorizons.api.enums.config.quickOptions.*;
 import com.seibel.distanthorizons.api.enums.rendering.*;
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiDistantGeneratorMode;
 import com.seibel.distanthorizons.core.config.eventHandlers.*;
 import com.seibel.distanthorizons.core.config.eventHandlers.presets.*;
+import com.seibel.distanthorizons.core.config.listeners.ConfigChangeListener;
 import com.seibel.distanthorizons.core.config.types.*;
 import com.seibel.distanthorizons.core.config.types.enums.*;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.wrapperInterfaces.IWrapperFactory;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftSharedWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.coreapi.util.StringUtil;
@@ -610,6 +613,7 @@ public class Config
 									+ " does not have a ceiling.")
 							.build();
 					
+					@Deprecated
 					public static ConfigEntry<Integer> caveCullingHeight = new ConfigEntry.Builder<Integer>()
 							.setMinDefaultMax(-4096, 40, 4096)
 							.comment(""
@@ -843,13 +847,47 @@ public class Config
 								+ "")
 						.build();
 				
-				//public static ConfigEntry<Boolean> showMigrationChatWarning = new ConfigEntry.Builder<Boolean>()
-				//		.set(true)
-				//		.comment(""
-				//				+ "Determines if a message should be displayed in the chat when LOD migration starts. \n"
-				//				+ "")
-				//		.build();
+				public static ConfigEntry<String> ignoredRenderBlockCsv = new ConfigEntry.Builder<String>()
+						.set("minecraft:barrier,minecraft:structure_void,minecraft:light,minecraft:tripwire")
+						.comment(""
+								+ "A comma separated list of block resource locations that won't be rendered by DH. \n"
+								+ "Note: air is always included in this list. \n"
+								+ "")
+						.build();
 				
+				public static ConfigEntry<String> ignoredRenderCaveBlockCsv = new ConfigEntry.Builder<String>()
+						.set("minecraft:glow_lichen,minecraft:rail,minecraft:water,minecraft:lava,minecraft:bubble_column")
+						.comment(""
+								+ "A comma separated list of block resource locations that shouldn't be rendered \n"
+								+ "if they are in a 0 sky light underground area. \n"
+								+ "Note: air is always included in this list. \n"
+								+ "")
+						.build();
+				
+				static
+				{
+					ignoredRenderBlockCsv.addListener(new ConfigChangeListener<String>(Config.Client.Advanced.LodBuilding.ignoredRenderBlockCsv, 
+							(blockCsv) -> 
+							{
+								IWrapperFactory wrapperFactory = SingletonInjector.INSTANCE.get(IWrapperFactory.class);
+								if (wrapperFactory != null)
+								{
+									wrapperFactory.resetRendererIgnoredBlocksSet();
+									DhApi.Delayed.renderProxy.clearRenderDataCache();
+								}
+							}));
+					
+					ignoredRenderCaveBlockCsv.addListener(new ConfigChangeListener<String>(Config.Client.Advanced.LodBuilding.ignoredRenderCaveBlockCsv, 
+							(blockCsv) -> 
+							{
+								IWrapperFactory wrapperFactory = SingletonInjector.INSTANCE.get(IWrapperFactory.class);
+								if (wrapperFactory != null)
+								{
+									wrapperFactory.resetRendererIgnoredCaveBlocks();
+									DhApi.Delayed.renderProxy.clearRenderDataCache();
+								}
+							}));
+				}
 			}
 			
 			public static class Multiplayer

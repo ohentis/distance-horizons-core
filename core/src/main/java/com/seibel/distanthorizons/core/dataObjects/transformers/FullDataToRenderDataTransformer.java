@@ -20,6 +20,7 @@
 package com.seibel.distanthorizons.core.dataObjects.transformers;
 
 import com.seibel.distanthorizons.api.enums.config.EDhApiBlocksToAvoid;
+import com.seibel.distanthorizons.api.enums.rendering.EDhApiBlockMaterial;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.FullDataPointIdMap;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
@@ -110,32 +111,23 @@ public class FullDataToRenderDataTransformer
 		}
 		
 		columnSource.markNotEmpty();
+		int baseX = DhSectionPos.getMinCornerBlockX(pos);
+		int baseZ = DhSectionPos.getMinCornerBlockZ(pos);
 		
-		if (dataDetail == columnSource.getDataDetailLevel())
+		for (int x = 0; x < DhSectionPos.getWidthCountForLowerDetailedSection(pos, dataDetail); x++)
 		{
-			int baseX = DhSectionPos.getMinCornerBlockX(pos);
-			int baseZ = DhSectionPos.getMinCornerBlockZ(pos);
-			
-			for (int x = 0; x < DhSectionPos.getWidthCountForLowerDetailedSection(pos, dataDetail); x++)
+			for (int z = 0; z < DhSectionPos.getWidthCountForLowerDetailedSection(pos, dataDetail); z++)
 			{
-				for (int z = 0; z < DhSectionPos.getWidthCountForLowerDetailedSection(pos, dataDetail); z++)
-				{
-					throwIfThreadInterrupted();
-					
-					ColumnArrayView columnArrayView = columnSource.getVerticalDataPointView(x, z);
-					LongArrayList dataColumn = fullDataSource.get(x, z);
-					updateRenderDataViewWithFullDataColumn(level, fullDataSource.mapping, baseX + x, baseZ + z, columnArrayView, dataColumn);
-				}
+				throwIfThreadInterrupted();
+				
+				ColumnArrayView columnArrayView = columnSource.getVerticalDataPointView(x, z);
+				LongArrayList dataColumn = fullDataSource.get(x, z);
+				updateRenderDataViewWithFullDataColumn(level, fullDataSource.mapping, baseX + x, baseZ + z, columnArrayView, dataColumn);
 			}
-			
-			columnSource.fillDebugFlag(0, 0, ColumnRenderSource.SECTION_SIZE, ColumnRenderSource.SECTION_SIZE, ColumnRenderSource.DebugSourceFlag.FULL);
-			
 		}
-		else
-		{
-			throw new UnsupportedOperationException("To be implemented");
-			//FIXME: Implement different size creation of renderData
-		}
+		
+		columnSource.fillDebugFlag(0, 0, ColumnRenderSource.SECTION_SIZE, ColumnRenderSource.SECTION_SIZE, ColumnRenderSource.DebugSourceFlag.FULL);
+			
 		return columnSource;
 	}
 	
@@ -168,18 +160,35 @@ public class FullDataToRenderDataTransformer
 			int blockX, int blockZ,
 			ColumnArrayView renderColumnData, LongArrayList fullColumnData)
 	{
-		boolean avoidSolidBlocks = (Config.Client.Advanced.Graphics.Quality.blocksToIgnore.get() == EDhApiBlocksToAvoid.NON_COLLIDING);
+		boolean ignoreNonCollidingBlocks = (Config.Client.Advanced.Graphics.Quality.blocksToIgnore.get() == EDhApiBlocksToAvoid.NON_COLLIDING);
 		boolean colorBelowWithAvoidedBlocks = Config.Client.Advanced.Graphics.Quality.tintWithAvoidedBlocks.get();
 		
 		HashSet<IBlockStateWrapper> blockStatesToIgnore = WRAPPER_FACTORY.getRendererIgnoredBlocks(level.getLevelWrapper());
+		HashSet<IBlockStateWrapper> caveBlockStatesToIgnore = WRAPPER_FACTORY.getRendererIgnoredCaveBlocks(level.getLevelWrapper());
+		
+		boolean caveCullingEnabled = 
+			Config.Client.Advanced.Graphics.AdvancedGraphics.enableCaveCulling.get()
+			&& (
+				// dimensions with a ceiling will be all caves so we don't want cave culling
+				!level.getLevelWrapper().hasCeiling()
+				// the end has a lot of overhangs with 0 lighting above the void, which look broken with
+				// the current cave culling logic (this could probably be improved, but just skipping it works best for now)
+				&& !level.getLevelWrapper().getDimensionType().isTheEnd()
+			);
 		
 		boolean isVoid = true;
+		
 		int colorToApplyToNextBlock = -1;
 		int lastColor = 0;
 		int lastBottom = -10000;
+		
 		int skylightToApplyToNextBlock = -1;
 		int blocklightToApplyToNextBlock = -1;
 		int columnOffset = 0;
+		
+		IBiomeWrapper biome = null;
+		IBlockStateWrapper block = null;
+		
 		
 		// goes from the top down
 		for (int i = 0; i < fullColumnData.size(); i++)
@@ -191,8 +200,6 @@ public class FullDataToRenderDataTransformer
 			int blockLight = FullDataPointUtil.getBlockLight(fullData);
 			int skyLight = FullDataPointUtil.getSkyLight(fullData);
 			
-			IBiomeWrapper biome;
-			IBlockStateWrapper block;
 			try
 			{
 				biome = fullDataMapping.getBiomeWrapper(id);
@@ -217,28 +224,72 @@ public class FullDataToRenderDataTransformer
 			}
 			
 			
-			if (blockStatesToIgnore.contains(block))
+			//====================//
+			// ignored block and  //
+			// cave culling check //
+			//====================//
+			
+			boolean ignoreBlock = blockStatesToIgnore.contains(block);
+			boolean caveBlock = caveBlockStatesToIgnore.contains(block);
+			if (caveBlock)
 			{
-				// Don't render: air, barriers, light blocks, etc.
+				if (caveCullingEnabled
+					// assume this data point is underground if it has no sky-light
+					&& skyLight == LodUtil.MIN_MC_LIGHT
+					// cave culling shouldn't happen when at the top of the world
+					&& columnOffset != 0
+					// cave culling can't happen when at the bottom of the world
+					&& columnOffset != fullColumnData.size())
+				{
+					// we need to get the next sky/block lights because
+					// the air block here will always have a light of 0/0 due to only the top of the LOD's light being saved.
+					long nextFullData = fullColumnData.getLong(i+1);
+					int nextSkyLight = FullDataPointUtil.getSkyLight(nextFullData);
+					
+					if (nextSkyLight == LodUtil.MIN_MC_LIGHT
+							&& ColorUtil.getAlpha(lastColor) == 255)
+					{
+						// replace the previous block with new bottom
+						long columnData = renderColumnData.get(columnOffset - 1);
+						columnData = RenderDataPointUtil.setYMin(columnData, bottomY);
+						renderColumnData.set(columnOffset - 1, columnData);
+					}
+					
+					continue;
+				}
+				
+				
+				if (ignoreBlock)
+				{
+					// this is a merged block and a cave block, so it should never be rendered
+					continue;
+				}
+			}
+			else if (ignoreBlock)
+			{
+				// this is an ignored block, but shouldn't be merged like a cave block
 				continue;
 			}
 			
 			
-			// solid block check
-			if (avoidSolidBlocks && !block.isSolid() && !block.isLiquid() && block.getOpacity() != LodUtil.BLOCK_FULLY_OPAQUE)
+			//===================//
+			// solid block check //
+			//===================//
+			
+			if (ignoreNonCollidingBlocks && !block.isSolid() && !block.isLiquid() && block.getOpacity() != LodUtil.BLOCK_FULLY_OPAQUE)
 			{
 				if (colorBelowWithAvoidedBlocks)
 				{
 					int tempColor = level.computeBaseColor(new DhBlockPos(blockX, bottomY + level.getMinY(), blockZ), biome, block);
-					if (ColorUtil.getAlpha(tempColor) == 0)
+					// don't transfer the color when alpha is 0
+					if (ColorUtil.getAlpha(tempColor) != 0)
 					{
-						//make sure to not transfer the color when alpha is 0
-						continue;
+						// don't transfer alpha if for some reason grass is semi transparent
+						colorToApplyToNextBlock = ColorUtil.setAlpha(tempColor,255);
+						
+						skylightToApplyToNextBlock = skyLight;
+						blocklightToApplyToNextBlock = blockLight;
 					}
-					//mare sure to not trnasfer alpha if for some reason grass is semi transparent
-					colorToApplyToNextBlock = ColorUtil.setAlpha(tempColor,255);
-					skylightToApplyToNextBlock = skyLight;
-					blocklightToApplyToNextBlock = blockLight;
 				}
 				
 				// don't add this block
@@ -261,10 +312,10 @@ public class FullDataToRenderDataTransformer
 				blockLight = blocklightToApplyToNextBlock;
 			}
 			
-			//check if they share a top-bottom face and if they have same collor
+			//check if they share a top-bottom face and if they have same color
 			if (color == lastColor && bottomY + blockHeight == lastBottom  && columnOffset > 0)
 			{
-				//replace the previus block with new bottom
+				//replace the previous block with new bottom
 				long columnData = renderColumnData.get(columnOffset - 1);
 				columnData = RenderDataPointUtil.setYMin(columnData, bottomY);
 				renderColumnData.set(columnOffset - 1, columnData);
