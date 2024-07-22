@@ -616,6 +616,7 @@ public class Config
 					@Deprecated
 					public static ConfigEntry<Integer> caveCullingHeight = new ConfigEntry.Builder<Integer>()
 							.setMinDefaultMax(-4096, 40, 4096)
+							.setAppearance(EConfigEntryAppearance.ONLY_IN_API)
 							.comment(""
 									+ "At what Y value should cave culling start?")
 							.build();
@@ -1207,6 +1208,13 @@ public class Config
 						.comment(""
 								+ "If enabled, a chat message will be displayed if Java doesn't have enough \n"
 								+ "memory allocated to run DH well.")
+						.build();
+				
+				public static ConfigEntry<Boolean> showReplayWarningOnStartup = new ConfigEntry.Builder<Boolean>()
+						.set(true)
+						.comment(""
+								+ "If enabled, a chat message will be displayed when a replay is started \n"
+								+ "giving some basic information about how DH will function.")
 						.build();
 				
 			}

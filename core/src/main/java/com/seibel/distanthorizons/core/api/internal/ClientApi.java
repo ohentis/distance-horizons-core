@@ -23,6 +23,7 @@ import com.seibel.distanthorizons.api.DhApi;
 import com.seibel.distanthorizons.api.enums.rendering.EDhApiRenderPass;
 import com.seibel.distanthorizons.api.methods.events.abstractEvents.*;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
+import com.seibel.distanthorizons.core.file.structure.ClientOnlySaveStructure;
 import com.seibel.distanthorizons.core.level.IKeyedClientLevelManager;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.render.DhApiRenderProxy;
@@ -53,6 +54,7 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Queue;
@@ -125,9 +127,28 @@ public class ClientApi
 	public synchronized void onClientOnlyConnected()
 	{
 		// only continue if the client is connected to a different server
-		if (MC.clientConnectedToDedicatedServer())
+		boolean connectedToServer = MC.clientConnectedToDedicatedServer();
+		boolean connectedToReplay = MC.connectedToReplay();
+		if (connectedToServer || connectedToReplay)
 		{
-			LOGGER.info("Client on ClientOnly mode connecting.");
+			if (connectedToServer)
+			{
+				LOGGER.info("Client on ClientOnly mode connecting.");
+			}
+			else
+			{
+				LOGGER.info("Replay on ClientServer mode connecting.");
+				
+				if (Config.Client.Advanced.Logging.showReplayWarningOnStartup.get())
+				{
+					MC.sendChatMessage("\u00A76" + "Distant Horizons: Replay detected." + "\u00A7r"); // gold color
+					MC.sendChatMessage("DH may behave strangely or have missing functionality.");
+					MC.sendChatMessage("In order to use pre-generated LODs, put your DH database(s) in:");
+					MC.sendChatMessage("\u00A77"+".Minecraft" + File.separator + ClientOnlySaveStructure.SERVER_DATA_FOLDER_NAME + File.separator + ClientOnlySaveStructure.REPLAY_SERVER_FOLDER_NAME + File.separator + "DIMENSION_NAME"+"\u00A7r"); // light gray color
+					MC.sendChatMessage("This can be disabled in DH's config under Advanced -> Logging.");
+					MC.sendChatMessage("");
+				}
+			}
 			
 			// firing after clientLevelLoadEvent
 			// TODO if level has prepped to load it should fire level load event

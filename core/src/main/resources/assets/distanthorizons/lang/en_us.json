@@ -558,6 +558,8 @@
     "Network Events",
   "distanthorizons.config.client.advanced.logging.showLowMemoryWarningOnStartup":
     "Show Low Memory Warning",
+  "distanthorizons.config.client.advanced.logging.showReplayWarningOnStartup":
+    "Show Replay Warning",
     
     
     
