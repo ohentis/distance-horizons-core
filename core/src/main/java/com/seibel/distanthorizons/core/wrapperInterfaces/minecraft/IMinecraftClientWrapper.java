@@ -85,10 +85,6 @@ public interface IMinecraftClientWrapper extends IBindable
 	 */
 	IClientLevelWrapper getWrappedClientLevel();
 	
-	/** Please move over to getInstallationDirectory() within the IMinecraftSharedWrapper */
-	@Deprecated
-	File getGameDirectory();
-	
 	IProfilerWrapper getProfiler();
 	
 	/** Returns all worlds available to the server */
