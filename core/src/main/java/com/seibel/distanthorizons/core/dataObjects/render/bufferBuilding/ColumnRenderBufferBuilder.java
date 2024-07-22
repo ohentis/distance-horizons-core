@@ -167,14 +167,22 @@ public class ColumnRenderBufferBuilder
 		{
 			for (int z = 0; z < ColumnRenderSource.SECTION_SIZE; z++)
 			{
-				// TODO make a config for this
 				// can be uncommented to limit the buffer building to a specific
 				// relative position in this section.
 				// useful for debugging a single column's rendering
-//				if (x != 0 || (z != 0 && z != 1))
-//				{
-//					continue;
-//				}
+				if (Config.Client.Advanced.Debugging.columnBuilderDebugEnable.get())
+				{
+					int wantedX = Config.Client.Advanced.Debugging.columnBuilderDebugXRow.get();
+					if (wantedX >= 0 && x != wantedX)
+					{
+						continue;
+					}
+					int wantedZ = Config.Client.Advanced.Debugging.columnBuilderDebugZRow.get();
+					if (wantedZ >= 0 && z != wantedZ)
+					{
+						continue;
+					}
+				}
 				
 				
 				UncheckedInterruptedException.throwIfInterrupted();
@@ -286,12 +294,15 @@ public class ColumnRenderBufferBuilder
 				// We only stop when we find a block that is void or non-existing block
 				for (int i = 0; i < columnRenderData.size(); i++)
 				{
-					// TODO make a config for this
 					// can be uncommented to limit which vertical LOD is generated
-//					if (i != 0)
-//					{
-//						continue;
-//					}
+					if (Config.Client.Advanced.Debugging.columnBuilderDebugEnable.get())
+					{
+						int wantedColumnIndex = Config.Client.Advanced.Debugging.columnBuilderDebugColumnIndex.get();
+						if (wantedColumnIndex >= 0 && i != wantedColumnIndex)
+						{
+							continue;
+						}
+					}
 					
 					long data = columnRenderData.get(i);
 					// If the data is not render-able (Void or non-existing) we stop since there is
