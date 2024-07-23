@@ -20,7 +20,6 @@
 package com.seibel.distanthorizons.core.dataObjects.transformers;
 
 import com.seibel.distanthorizons.api.enums.config.EDhApiBlocksToAvoid;
-import com.seibel.distanthorizons.api.enums.rendering.EDhApiBlockMaterial;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.FullDataPointIdMap;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
@@ -122,7 +121,7 @@ public class FullDataToRenderDataTransformer
 				
 				ColumnArrayView columnArrayView = columnSource.getVerticalDataPointView(x, z);
 				LongArrayList dataColumn = fullDataSource.get(x, z);
-				updateRenderDataViewWithFullDataColumn(level, fullDataSource.mapping, baseX + x, baseZ + z, columnArrayView, dataColumn);
+				updateOrReplaceRenderDataViewColumnWithFullDataColumn(level, fullDataSource.mapping, baseX + x, baseZ + z, columnArrayView, dataColumn);
 			}
 		}
 		
@@ -132,34 +131,41 @@ public class FullDataToRenderDataTransformer
 	}
 	
 	/** Updates the given {@link ColumnArrayView} to match the incoming Full data {@link LongArrayList} */
-	public static void updateRenderDataViewWithFullDataColumn(
+	public static void updateOrReplaceRenderDataViewColumnWithFullDataColumn(
 			IDhClientLevel level, 
 			FullDataPointIdMap fullDataMapping, int blockX, int blockZ, 
 			ColumnArrayView columnArrayView, 
 			LongArrayList fullDataColumn)
 	{
+		// we can't do anything if the full data is missing or empty
 		if (fullDataColumn == null || fullDataColumn.size() == 0)
 		{
 			return;
 		}
 		
-		int dataTotalLength = fullDataColumn.size();
-		if (dataTotalLength > columnArrayView.verticalSize())
+		int fullDataLength = fullDataColumn.size();
+		if (fullDataLength <= columnArrayView.verticalSize())
 		{
-			ColumnArrayView totalColumnData = new ColumnArrayView(new LongArrayList(new long[dataTotalLength]), dataTotalLength, 0, dataTotalLength);
-			iterateAndConvert(level, fullDataMapping, blockX, blockZ, totalColumnData, fullDataColumn);
-			columnArrayView.changeVerticalSizeFrom(totalColumnData);
+			// Directly use the arrayView since it fits.
+			setRenderColumnView(level, fullDataMapping, blockX, blockZ, columnArrayView, fullDataColumn);
 		}
 		else
 		{
-			iterateAndConvert(level, fullDataMapping, blockX, blockZ, columnArrayView, fullDataColumn); //Directly use the arrayView since it fits.
+			// expand the ColumnArrayView to fit the new larger max vertical size
+			ColumnArrayView newColumnArrayView = new ColumnArrayView(new LongArrayList(new long[fullDataLength]), fullDataLength, 0, fullDataLength);
+			setRenderColumnView(level, fullDataMapping, blockX, blockZ, newColumnArrayView, fullDataColumn);
+			columnArrayView.changeVerticalSizeFrom(newColumnArrayView);
 		}
 	}
-	private static void iterateAndConvert(
+	private static void setRenderColumnView(
 			IDhClientLevel level, FullDataPointIdMap fullDataMapping,
 			int blockX, int blockZ,
 			ColumnArrayView renderColumnData, LongArrayList fullColumnData)
 	{
+		//===============//
+		// config values //
+		//===============//
+		
 		boolean ignoreNonCollidingBlocks = (Config.Client.Advanced.Graphics.Quality.blocksToIgnore.get() == EDhApiBlocksToAvoid.NON_COLLIDING);
 		boolean colorBelowWithAvoidedBlocks = Config.Client.Advanced.Graphics.Quality.tintWithAvoidedBlocks.get();
 		
@@ -176,30 +182,35 @@ public class FullDataToRenderDataTransformer
 				&& !level.getLevelWrapper().getDimensionType().isTheEnd()
 			);
 		
-		boolean isVoid = true;
+		boolean isColumnVoid = true;
 		
 		int colorToApplyToNextBlock = -1;
 		int lastColor = 0;
-		int lastBottom = -10000;
+		int lastBottom = -10_000;
 		
 		int skylightToApplyToNextBlock = -1;
 		int blocklightToApplyToNextBlock = -1;
 		int columnOffset = 0;
 		
-		IBiomeWrapper biome = null;
-		IBlockStateWrapper block = null;
 		
+		
+		//===========================//
+		// iterate through full data //
+		//===========================//
 		
 		// goes from the top down
 		for (int i = 0; i < fullColumnData.size(); i++)
 		{
 			long fullData = fullColumnData.getLong(i);
+			
 			int bottomY = FullDataPointUtil.getBottomY(fullData);
 			int blockHeight = FullDataPointUtil.getHeight(fullData);
 			int id = FullDataPointUtil.getId(fullData);
 			int blockLight = FullDataPointUtil.getBlockLight(fullData);
 			int skyLight = FullDataPointUtil.getSkyLight(fullData);
 			
+			IBiomeWrapper biome;
+			IBlockStateWrapper block;
 			try
 			{
 				biome = fullDataMapping.getBiomeWrapper(id);
@@ -207,7 +218,6 @@ public class FullDataToRenderDataTransformer
 			}
 			catch (IndexOutOfBoundsException e)
 			{
-				// FIXME sometimes the data map has a length of 0
 				if (!brokenPos.contains(fullDataMapping.getPos()))
 				{
 					brokenPos.add(fullDataMapping.getPos());
@@ -219,9 +229,10 @@ public class FullDataToRenderDataTransformer
 							"Further errors for this position won't be logged.");
 				}
 				
-				// skip rendering broken data
+				// don't render broken data
 				continue;
 			}
+			
 			
 			
 			//====================//
@@ -272,27 +283,28 @@ public class FullDataToRenderDataTransformer
 			}
 			
 			
-			//===================//
-			// solid block check //
-			//===================//
 			
-			if (ignoreNonCollidingBlocks && !block.isSolid() && !block.isLiquid() && block.getOpacity() != LodUtil.BLOCK_FULLY_OPAQUE)
+			//=======================//
+			// non-solid block check //
+			//=======================//
+			
+			if (ignoreNonCollidingBlocks 
+				&& !block.isSolid() && !block.isLiquid() && block.getOpacity() != LodUtil.BLOCK_FULLY_OPAQUE)
 			{
 				if (colorBelowWithAvoidedBlocks)
 				{
 					int tempColor = level.computeBaseColor(new DhBlockPos(blockX, bottomY + level.getMinY(), blockZ), biome, block);
 					// don't transfer the color when alpha is 0
+					// this prevents issues if grass is transparent
 					if (ColorUtil.getAlpha(tempColor) != 0)
 					{
-						// don't transfer alpha if for some reason grass is semi transparent
 						colorToApplyToNextBlock = ColorUtil.setAlpha(tempColor,255);
-						
 						skylightToApplyToNextBlock = skyLight;
 						blocklightToApplyToNextBlock = blockLight;
 					}
 				}
 				
-				// don't add this block
+				// skip this non-colliding block
 				continue;
 			}
 			
@@ -312,7 +324,13 @@ public class FullDataToRenderDataTransformer
 				blockLight = blocklightToApplyToNextBlock;
 			}
 			
-			//check if they share a top-bottom face and if they have same color
+			
+			
+			//=============================//
+			// merge same-colored adjacent //
+			//=============================//
+			
+			// check if they share a top-bottom face and if they have same color
 			if (color == lastColor && bottomY + blockHeight == lastBottom  && columnOffset > 0)
 			{
 				//replace the previous block with new bottom
@@ -323,18 +341,17 @@ public class FullDataToRenderDataTransformer
 			else
 			{
 				// add the block
-				isVoid = false;
+				isColumnVoid = false;
 				long columnData = RenderDataPointUtil.createDataPoint(bottomY + blockHeight, bottomY, color, skyLight, blockLight, block.getMaterialId());
 				renderColumnData.set(columnOffset, columnData);
 				columnOffset++;
 			}
 			lastBottom = bottomY;
 			lastColor = color;
-			
 		}
 		
 		
-		if (isVoid)
+		if (isColumnVoid)
 		{
 			renderColumnData.set(0, RenderDataPointUtil.createVoidDataPoint());
 		}
