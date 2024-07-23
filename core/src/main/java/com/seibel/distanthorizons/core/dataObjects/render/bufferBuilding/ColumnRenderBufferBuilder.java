@@ -19,6 +19,7 @@
 
 package com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding;
 
+import com.seibel.distanthorizons.api.enums.rendering.EDhApiBlockMaterial;
 import com.seibel.distanthorizons.api.enums.rendering.EDhApiDebugRendering;
 import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.config.Config;
@@ -27,14 +28,17 @@ import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
+import com.seibel.distanthorizons.core.pos.DhLodPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.render.glObject.GLProxy;
 import com.seibel.distanthorizons.core.render.glObject.buffer.GLVertexBuffer;
+import com.seibel.distanthorizons.core.util.ColorUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.RenderDataPointUtil;
 import com.seibel.distanthorizons.core.util.objects.UncheckedInterruptedException;
 import com.seibel.distanthorizons.core.dataObjects.render.columnViews.ColumnArrayView;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
+import com.seibel.distanthorizons.coreapi.util.BitShiftUtil;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -222,7 +226,7 @@ public class ColumnRenderBufferBuilder
 						int zAdj = z + lodDirection.getNormal().z;
 						boolean isCrossRegionBoundary =
 								(xAdj < 0 || xAdj >= ColumnRenderSource.SECTION_SIZE) ||
-										(zAdj < 0 || zAdj >= ColumnRenderSource.SECTION_SIZE);
+								(zAdj < 0 || zAdj >= ColumnRenderSource.SECTION_SIZE);
 						
 						ColumnRenderSource adjRenderSource;
 						byte adjDetailLevel;
@@ -315,7 +319,7 @@ public class ColumnRenderBufferBuilder
 					long topDataPoint = (i - 1) >= 0 ? columnRenderData.get(i - 1) : RenderDataPointUtil.EMPTY_DATA;
 					long bottomDataPoint = (i + 1) < columnRenderData.size() ? columnRenderData.get(i + 1) : RenderDataPointUtil.EMPTY_DATA;
 					
-					CubicLodTemplate.addLodToBuffer(data, topDataPoint, bottomDataPoint, adjColumnViews, detailLevel,
+					addLodToBuffer(data, topDataPoint, bottomDataPoint, adjColumnViews, detailLevel,
 							x, z, quadBuilder, debugMode, debugSourceFlag);
 				}
 				
@@ -323,6 +327,145 @@ public class ColumnRenderBufferBuilder
 		}// for x
 		
 		quadBuilder.finalizeData();
+	}
+	private static void addLodToBuffer(
+			long data, long topData, long bottomData, ColumnArrayView[][] adjColumnViews,
+			byte detailLevel, int offsetPosX, int offsetOosZ, LodQuadBuilder quadBuilder,
+			EDhApiDebugRendering debugging, ColumnRenderSource.DebugSourceFlag debugSource)
+	{
+		DhLodPos blockOffsetPos = new DhLodPos(detailLevel, offsetPosX, offsetOosZ).convertToDetailLevel(LodUtil.BLOCK_DETAIL_LEVEL);
+		
+		short width = (short) BitShiftUtil.powerOfTwo(detailLevel);
+		short x = (short) blockOffsetPos.x;
+		short yMin = RenderDataPointUtil.getYMin(data);
+		short z = (short) (short) blockOffsetPos.z;
+		short ySize = (short) (RenderDataPointUtil.getYMax(data) - yMin);
+		
+		if (ySize == 0)
+		{
+			return;
+		}
+		else if (ySize < 0)
+		{
+			throw new IllegalArgumentException("Negative y size for the data! Data: " + RenderDataPointUtil.toString(data));
+		}
+		
+		byte blockMaterialId = RenderDataPointUtil.getBlockMaterialId(data);
+		
+		
+		
+		int color;
+		boolean fullBright = false;
+		switch (debugging)
+		{
+			case OFF:
+			{
+				float saturationMultiplier = Config.Client.Advanced.Graphics.AdvancedGraphics.saturationMultiplier.get().floatValue();
+				float brightnessMultiplier = Config.Client.Advanced.Graphics.AdvancedGraphics.brightnessMultiplier.get().floatValue();
+				if (saturationMultiplier == 1.0 && brightnessMultiplier == 1.0)
+				{
+					color = RenderDataPointUtil.getColor(data);
+				}
+				else
+				{
+					float[] ahsv = ColorUtil.argbToAhsv(RenderDataPointUtil.getColor(data));
+					color = ColorUtil.ahsvToArgb(ahsv[0], ahsv[1], ahsv[2] * saturationMultiplier, ahsv[3] * brightnessMultiplier);
+				}
+				break;
+			}
+			case SHOW_DETAIL:
+			{
+				color = LodUtil.DEBUG_DETAIL_LEVEL_COLORS[detailLevel];
+				fullBright = true;
+				break;
+			}
+			case SHOW_BLOCK_MATERIAL:
+			{
+				
+				switch (EDhApiBlockMaterial.getFromIndex(blockMaterialId))
+				{
+					case UNKNOWN:
+					case AIR: // shouldn't normally be rendered, but just in case
+						color = ColorUtil.HOT_PINK;
+						break;
+					
+					case LEAVES:
+						color = ColorUtil.DARK_GREEN;
+						break;
+					case STONE:
+						color = ColorUtil.GRAY;
+						break;
+					case WOOD:
+						color = ColorUtil.BROWN;
+						break;
+					case METAL:
+						color = ColorUtil.DARK_GRAY;
+						break;
+					case DIRT:
+						color = ColorUtil.LIGHT_BROWN;
+						break;
+					case LAVA:
+						color = ColorUtil.ORANGE;
+						break;
+					case DEEPSLATE:
+						color = ColorUtil.BLACK;
+						break;
+					case SNOW:
+						color = ColorUtil.WHITE;
+						break;
+					case SAND:
+						color = ColorUtil.TAN;
+						break;
+					case TERRACOTTA:
+						color = ColorUtil.DARK_ORANGE;
+						break;
+					case NETHER_STONE:
+						color = ColorUtil.DARK_RED;
+						break;
+					case WATER:
+						color = ColorUtil.BLUE;
+						break;
+					case GRASS:
+						color = ColorUtil.GREEN;
+						break;
+					case ILLUMINATED:
+						color = ColorUtil.YELLOW;
+						break;
+					
+					default:
+						// undefined color
+						color = ColorUtil.CYAN;
+						break;
+				}
+				
+				fullBright = true;
+				break;
+			}
+			case SHOW_OVERLAPPING_QUADS:
+			{
+				color = ColorUtil.WHITE;
+				fullBright = true;
+				break;
+			}
+			case SHOW_RENDER_SOURCE_FLAG:
+			{
+				color = debugSource == null ? ColorUtil.RED : debugSource.color;
+				fullBright = true;
+				break;
+			}
+			default:
+				throw new IllegalArgumentException("Unknown debug mode: " + debugging);
+		}
+		
+		ColumnBox.addBoxQuadsToBuilder(
+				quadBuilder, // buffer
+				width, ySize, width, // setWidth
+				x, yMin, z, // setOffset
+				color, // setColor
+				blockMaterialId, // irisBlockMaterialId
+				RenderDataPointUtil.getLightSky(data), // setSkyLights
+				fullBright ? 15 : RenderDataPointUtil.getLightBlock(data), // setBlockLights
+				topData, bottomData, adjColumnViews); // setAdjData
 	}
 	
 	
