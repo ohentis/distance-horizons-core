@@ -194,9 +194,9 @@ public class FullDataToRenderDataTransformer
 		
 		
 		
-		//===========================//
-		// iterate through full data //
-		//===========================//
+		//==================================//
+		// convert full data to render data //
+		//==================================//
 		
 		// goes from the top down
 		for (int i = 0; i < fullColumnData.size(); i++)
