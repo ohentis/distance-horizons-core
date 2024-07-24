@@ -136,7 +136,9 @@ public class ColumnBox
 			if (adjCol == null)
 			{
 				if (!isTransparent || overVoid)
+				{
 					builder.addQuadAdj(EDhDirection.SOUTH, x, minY, maxZ, xSize, ySize, color, irisBlockMaterialId, LodUtil.MAX_MC_LIGHT, blockLight);
+				}
 			}
 			else
 			{
@@ -153,7 +155,9 @@ public class ColumnBox
 			if (adjCol == null)
 			{
 				if (!isTransparent || overVoid)
+				{
 					builder.addQuadAdj(EDhDirection.WEST, x, minY, z, zSize, ySize, color, irisBlockMaterialId, LodUtil.MAX_MC_LIGHT, blockLight);
+				}
 			}
 			else
 			{
@@ -170,7 +174,9 @@ public class ColumnBox
 			if (adjData[EDhDirection.EAST.ordinal() - 2] == null)
 			{
 				if (!isTransparent || overVoid)
+				{
 					builder.addQuadAdj(EDhDirection.EAST, maxX, minY, z, zSize, ySize, color, irisBlockMaterialId, LodUtil.MAX_MC_LIGHT, blockLight);
+				}
 			}
 			else
 			{
@@ -181,7 +187,7 @@ public class ColumnBox
 		}
 	}
 	
-	// the overlap color can be used to see faces that shouldn't be rendered
+	/** the overlap color can be used to see faces that shouldn't be rendered */
 	private static void makeAdjVerticalQuad(
 			LodQuadBuilder builder, ColumnArrayView adjColumnView, EDhDirection direction,
 			short x, short yMin, short z, short horizontalWidth, short ySize,
