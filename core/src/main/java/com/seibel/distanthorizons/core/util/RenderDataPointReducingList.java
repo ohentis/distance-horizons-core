@@ -829,7 +829,7 @@ public class RenderDataPointReducingList
 		int size = view.size();
 		if (size <= 0)
 		{
-			return RenderDataPointUtil.createVoidDataPoint();
+			return RenderDataPointUtil.EMPTY_DATA;
 		}
 		
 		long highestDataPoint;
@@ -849,7 +849,7 @@ public class RenderDataPointReducingList
 				}
 			}
 			//no visible segments, return void.
-			return RenderDataPointUtil.createVoidDataPoint();
+			return RenderDataPointUtil.EMPTY_DATA;
 		}
 		
 		//second loop: merge the rest of the segments.
@@ -889,7 +889,7 @@ public class RenderDataPointReducingList
 		// so, if we didn't set any data points, add a void data point.
 		if (writeIndex == 0)
 		{
-			view.set(writeIndex++, RenderDataPointUtil.createVoidDataPoint());
+			view.set(writeIndex++, RenderDataPointUtil.EMPTY_DATA);
 		}
 		
 		for (int size = view.size(); writeIndex < size; writeIndex++)

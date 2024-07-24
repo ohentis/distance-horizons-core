@@ -353,7 +353,7 @@ public class FullDataToRenderDataTransformer
 		
 		if (isColumnVoid)
 		{
-			renderColumnData.set(0, RenderDataPointUtil.createVoidDataPoint());
+			renderColumnData.set(0, RenderDataPointUtil.EMPTY_DATA);
 		}
 	}
 	
