@@ -35,6 +35,8 @@ public class ColumnBox
 {
 	private static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	
+	
+	
 	public static void addBoxQuadsToBuilder(
 			LodQuadBuilder builder,
 			short xSize, short ySize, short zSize,
@@ -42,6 +44,10 @@ public class ColumnBox
 			int color, byte irisBlockMaterialId, byte skyLight, byte blockLight,
 			long topData, long bottomData, ColumnArrayView[] adjData)
 	{
+		//================//
+		// variable setup //
+		//================//
+		
 		short maxX = (short) (x + xSize);
 		short maxY = (short) (minY + ySize);
 		short maxZ = (short) (z + zSize);
@@ -53,31 +59,13 @@ public class ColumnBox
 		boolean isTopTransparent = RenderDataPointUtil.getAlpha(topData) < 255 && LodRenderer.transparencyEnabled;
 		boolean isBottomTransparent = RenderDataPointUtil.getAlpha(bottomData) < 255 && LodRenderer.transparencyEnabled;
 		
+		
 		// if there isn't any data below this LOD, make this LOD's color opaque to prevent seeing void through transparent blocks
 		// Note: this LOD should still be considered transparent for this method's checks, otherwise rendering bugs may occur
-		// FIXME this transparency change should be applied before this point since this could affect other areas
-		//  This may also be better than handling the LOD as transparent, but that is TBD
 		if (!RenderDataPointUtil.doesDataPointExist(bottomData))
 		{
 			color = ColorUtil.setAlpha(color, 255);
 		}
-		
-		
-		// cave culling prevention
-		// prevents certain faces from being culled underground that should be allowed
-		if (builder.skipQuadsWithZeroSkylight
-			&& 0 == skyLight
-			&& builder.skyLightCullingBelow > maxY
-			&& (
-					(RenderDataPointUtil.getAlpha(topData) < 255 && RenderDataPointUtil.getYMax(topData) >= builder.skyLightCullingBelow)
-					|| (RenderDataPointUtil.getYMin(topData) >= builder.skyLightCullingBelow)
-					|| !RenderDataPointUtil.doesDataPointExist(topData)
-				)
-			)
-		{
-			maxY = builder.skyLightCullingBelow;
-		}
-		
 		
 		
 		// fake ocean transparency
@@ -99,7 +87,9 @@ public class ColumnBox
 		
 		
 		
-		// add top and bottom faces if requested //
+		//==========================//
+		// add top and bottom faces //
+		//==========================//
 		
 		boolean skipTop = RenderDataPointUtil.doesDataPointExist(topData) && (RenderDataPointUtil.getYMin(topData) == maxY) && !isTopTransparent;
 		if (!skipTop)
@@ -114,14 +104,16 @@ public class ColumnBox
 		}
 		
 		
-		// add North, south, east, and west faces if requested //
 		
-		// TODO merge duplicate code
-		//NORTH face vertex creation
+		//========================================//
+		// add North, south, east, and west faces //
+		//========================================//
+		
+		// NORTH face
 		{
-			ColumnArrayView adjDataNorth = adjData[EDhDirection.NORTH.ordinal() - 2]; // TODO can we use something other than ordinal-2?
-			int adjOverlapNorth = ColorUtil.INVISIBLE;
-			if (adjDataNorth == null)
+			ColumnArrayView adjCol = adjData[EDhDirection.NORTH.ordinal() - 2]; // TODO can we use something other than ordinal-2?
+			int adjOverlapNorth = ColorUtil.INVISIBLE; // can be set to a non-invisible color for debugging overlapping quads for a specific face
+			if (adjCol == null)
 			{
 				// add an adjacent face if this is opaque face or transparent over the void
 				if (!isTransparent || overVoid)
@@ -131,49 +123,49 @@ public class ColumnBox
 			}
 			else
 			{
-				makeAdjVerticalQuad(builder, adjDataNorth, EDhDirection.NORTH, x, minY, z, xSize, ySize,
+				makeAdjVerticalQuad(builder, adjCol, EDhDirection.NORTH, x, minY, z, xSize, ySize,
 						color, adjOverlapNorth, irisBlockMaterialId, skyLightTop, blockLight,
 						topData, bottomData);
 			}
 		}
 		
-		//SOUTH face vertex creation
+		// SOUTH face
 		{
-			ColumnArrayView adjDataSouth = adjData[EDhDirection.SOUTH.ordinal() - 2];
+			ColumnArrayView adjCol = adjData[EDhDirection.SOUTH.ordinal() - 2];
 			int adjOverlapSouth = ColorUtil.INVISIBLE;
-			if (adjDataSouth == null)
+			if (adjCol == null)
 			{
 				if (!isTransparent || overVoid)
 					builder.addQuadAdj(EDhDirection.SOUTH, x, minY, maxZ, xSize, ySize, color, irisBlockMaterialId, LodUtil.MAX_MC_LIGHT, blockLight);
 			}
 			else
 			{
-				makeAdjVerticalQuad(builder, adjDataSouth, EDhDirection.SOUTH, x, minY, maxZ, xSize, ySize,
+				makeAdjVerticalQuad(builder, adjCol, EDhDirection.SOUTH, x, minY, maxZ, xSize, ySize,
 						color, adjOverlapSouth, irisBlockMaterialId, skyLightTop, blockLight,
 						topData, bottomData);
 			}
 		}
 		
-		//WEST face vertex creation
+		// WEST face
 		{
-			ColumnArrayView adjDataWest = adjData[EDhDirection.WEST.ordinal() - 2];
+			ColumnArrayView adjCol = adjData[EDhDirection.WEST.ordinal() - 2];
 			int adjOverlapWest = ColorUtil.INVISIBLE;
-			if (adjDataWest == null)
+			if (adjCol == null)
 			{
 				if (!isTransparent || overVoid)
 					builder.addQuadAdj(EDhDirection.WEST, x, minY, z, zSize, ySize, color, irisBlockMaterialId, LodUtil.MAX_MC_LIGHT, blockLight);
 			}
 			else
 			{
-				makeAdjVerticalQuad(builder, adjDataWest, EDhDirection.WEST, x, minY, z, zSize, ySize,
+				makeAdjVerticalQuad(builder, adjCol, EDhDirection.WEST, x, minY, z, zSize, ySize,
 						color, adjOverlapWest, irisBlockMaterialId, skyLightTop, blockLight,
 						topData, bottomData);
 			}
 		}
 		
-		//EAST face vertex creation
+		// EAST face
 		{
-			ColumnArrayView adjDataEast = adjData[EDhDirection.EAST.ordinal() - 2];
+			ColumnArrayView adjCol = adjData[EDhDirection.EAST.ordinal() - 2];
 			int adjOverlapEast = ColorUtil.INVISIBLE;
 			if (adjData[EDhDirection.EAST.ordinal() - 2] == null)
 			{
@@ -182,7 +174,7 @@ public class ColumnBox
 			}
 			else
 			{
-				makeAdjVerticalQuad(builder, adjDataEast, EDhDirection.EAST, maxX, minY, z, zSize, ySize,
+				makeAdjVerticalQuad(builder, adjCol, EDhDirection.EAST, maxX, minY, z, zSize, ySize,
 						color, adjOverlapEast, irisBlockMaterialId, skyLightTop, blockLight,
 						topData, bottomData);
 			}
@@ -356,7 +348,7 @@ public class ColumnBox
 					if (yMax <= adjYMax)
 					{
 						// The input face is completely inside the adj's face, don't render it
-						if (debugOverlapColor != 0)
+						if (debugOverlapColor != ColorUtil.INVISIBLE)
 						{
 							builder.addQuadAdj(direction, x, yMin, z, horizontalWidth, ySize, debugOverlapColor, irisBlockMaterialId, LodUtil.MAX_MC_LIGHT, LodUtil.MAX_MC_LIGHT);
 						}
@@ -365,7 +357,7 @@ public class ColumnBox
 					{
 						// the adj data intersects the lower part of the input data, don't render below the intersection
 						
-						if (adjYMax > yMin && debugOverlapColor != 0)
+						if (adjYMax > yMin && debugOverlapColor != ColorUtil.INVISIBLE)
 						{
 							builder.addQuadAdj(direction, x, yMin, z, horizontalWidth, (short) (adjYMax - yMin), debugOverlapColor, irisBlockMaterialId, LodUtil.MAX_MC_LIGHT, LodUtil.MAX_MC_LIGHT);
 						}
@@ -374,6 +366,9 @@ public class ColumnBox
 						// if there was another face finish the last one and then break
 						if (firstFace)
 						{
+							// TODO sections next to transparent (water) need to be split up
+							//  everything works correctly with opaque water
+							
 							builder.addQuadAdj(direction, x, adjYMax, z, horizontalWidth, (short) (yMax - adjYMax), color, irisBlockMaterialId,
 									RenderDataPointUtil.getLightSky(adjPoint), blockLight);
 						}
@@ -411,7 +406,7 @@ public class ColumnBox
 					// Basically: y _______ < yMax <= height
 					// _______&&: y < depth < yMax
 					// the adj data intersects the higher part of the current data
-					if (debugOverlapColor != 0)
+					if (debugOverlapColor != ColorUtil.INVISIBLE)
 					{
 						builder.addQuadAdj(direction, x, adjYMin, z, horizontalWidth, (short) (yMax - adjYMin), debugOverlapColor, irisBlockMaterialId, LodUtil.MAX_MC_LIGHT, LodUtil.MAX_MC_LIGHT);
 					}
@@ -422,7 +417,7 @@ public class ColumnBox
 				{
 					// Otherwise: y < _____ height < yMax
 					// _______&&: y < depth ______ < yMax
-					if (debugOverlapColor != 0)
+					if (debugOverlapColor != ColorUtil.INVISIBLE)
 					{
 						builder.addQuadAdj(direction, x, adjYMin, z, horizontalWidth, (short) (adjYMax - adjYMin), debugOverlapColor, irisBlockMaterialId, LodUtil.MAX_MC_LIGHT, LodUtil.MAX_MC_LIGHT);
 					}

@@ -39,8 +39,6 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapp
 import com.seibel.distanthorizons.coreapi.util.MathUtil;
 import org.apache.logging.log4j.Logger;
 
-//TODO: Recheck this class for refactoring
-
 /**
  * Used to create the quads before they are converted to render-able buffers. <br><br>
  *
@@ -50,11 +48,6 @@ public class LodQuadBuilder
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	private static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
-	
-	@Deprecated
-	public final boolean skipQuadsWithZeroSkylight;
-	@Deprecated
-	public final short skyLightCullingBelow;
 	
 	@SuppressWarnings("unchecked")
 	private final ArrayList<BufferQuad>[] opaqueQuads = (ArrayList<BufferQuad>[]) new ArrayList[6];
@@ -134,8 +127,6 @@ public class LodQuadBuilder
 			this.transparentQuads[i] = new ArrayList<>();
 		}
 		
-		this.skipQuadsWithZeroSkylight = false;
-		this.skyLightCullingBelow = 0;
 		this.clientLevelWrapper = clientLevelWrapper;
 		
 		this.debugRenderingMode = Config.Client.Advanced.Debugging.debugRendering.get();
@@ -159,11 +150,6 @@ public class LodQuadBuilder
 			throw new IllegalArgumentException("addQuadAdj() is only for adj direction! Not UP or Down!");
 		}
 		
-		if (this.skipQuadsWithZeroSkylight && skyLight == 0 && y + widthNorthSouthOrUpDown < this.skyLightCullingBelow)
-		{
-			return;
-		}
-		
 		BufferQuad quad = new BufferQuad(x, y, z, widthEastWest, widthNorthSouthOrUpDown, color, irisBlockMaterialId, skyLight, blockLight, dir);
 		ArrayList<BufferQuad> quadList = (this.doTransparency && ColorUtil.getAlpha(color) < 255) ? this.transparentQuads[dir.ordinal()] : this.opaqueQuads[dir.ordinal()];
 		if (!quadList.isEmpty() &&
@@ -182,12 +168,6 @@ public class LodQuadBuilder
 	// XZ
 	public void addQuadUp(short x, short maxY, short z, short widthEastWest, short widthNorthSouthOrUpDown, int color, byte irisBlockMaterialId, byte skylight, byte blocklight) // TODO argument names are wrong
 	{
-		// cave culling
-		if (this.skipQuadsWithZeroSkylight && skylight == 0 && maxY < this.skyLightCullingBelow)
-		{
-			return;
-		}
-		
 		BufferQuad quad = new BufferQuad(x, maxY, z, widthEastWest, widthNorthSouthOrUpDown, color, irisBlockMaterialId, skylight, blocklight, EDhDirection.UP);
 		boolean isTransparent = (this.doTransparency && ColorUtil.getAlpha(color) < 255);
 		ArrayList<BufferQuad> quadList = isTransparent ? this.transparentQuads[EDhDirection.UP.ordinal()] : this.opaqueQuads[EDhDirection.UP.ordinal()];
@@ -209,15 +189,13 @@ public class LodQuadBuilder
 	
 	public void addQuadDown(short x, short y, short z, short width, short wz, int color, byte irisBlockMaterialId, byte skylight, byte blocklight)
 	{
-		if (skipQuadsWithZeroSkylight && skylight == 0 && y < skyLightCullingBelow)
-			return;
 		BufferQuad quad = new BufferQuad(x, y, z, width, wz, color, irisBlockMaterialId, skylight, blocklight, EDhDirection.DOWN);
 		ArrayList<BufferQuad> qs = (doTransparency && ColorUtil.getAlpha(color) < 255)
 				? transparentQuads[EDhDirection.DOWN.ordinal()] : opaqueQuads[EDhDirection.DOWN.ordinal()];
-		if (!qs.isEmpty() &&
-				(qs.get(qs.size() - 1).tryMerge(quad, BufferMergeDirectionEnum.EastWest)
+		if (!qs.isEmpty()
+				&& (qs.get(qs.size() - 1).tryMerge(quad, BufferMergeDirectionEnum.EastWest)
 						|| qs.get(qs.size() - 1).tryMerge(quad, BufferMergeDirectionEnum.NorthSouthOrUpDown))
-		)
+			)
 		{
 			premergeCount++;
 			return;
