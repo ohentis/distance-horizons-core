@@ -19,6 +19,7 @@
 
 package com.seibel.distanthorizons.core.util;
 
+import com.seibel.distanthorizons.api.enums.rendering.EDhApiBlockMaterial;
 import com.seibel.distanthorizons.core.level.AbstractDhLevel;
 import com.seibel.distanthorizons.core.logging.SpamReducedLogger;
 import com.seibel.distanthorizons.core.dataObjects.render.columnViews.ColumnArrayView;
@@ -247,7 +248,7 @@ public class RenderDataPointUtil
 					getBlue(dataPoint) +
 					" BL:" + getLightBlock(dataPoint) +
 					" SL:" + getLightSky(dataPoint) +
-					" BID:" + getBlockMaterialId(dataPoint);
+					" MAT:" + getBlockMaterialId(dataPoint) + "["+ EDhApiBlockMaterial.getFromIndex(getBlockMaterialId(dataPoint))+"]";
 		}
 	}
 	
