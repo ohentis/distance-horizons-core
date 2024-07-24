@@ -146,7 +146,7 @@ public class ColumnRenderBuffer implements AutoCloseable
 	{
 		// opaque vbos //
 		
-		this.vbos = ColumnRenderBufferBuilder.resizeBuffer(this.vbos, builder.getCurrentNeededOpaqueVertexBufferCount());
+		this.vbos = resizeBuffer(this.vbos, builder.getCurrentNeededOpaqueVertexBufferCount());
 		for (int i = 0; i < this.vbos.length; i++)
 		{
 			if (this.vbos[i] == null)
@@ -163,7 +163,7 @@ public class ColumnRenderBuffer implements AutoCloseable
 		
 		// transparent vbos //
 		
-		this.vbosTransparent = ColumnRenderBufferBuilder.resizeBuffer(this.vbosTransparent, builder.getCurrentNeededTransparentVertexBufferCount());
+		this.vbosTransparent = resizeBuffer(this.vbosTransparent, builder.getCurrentNeededTransparentVertexBufferCount());
 		for (int i = 0; i < this.vbosTransparent.length; i++)
 		{
 			if (this.vbosTransparent[i] == null)
@@ -180,10 +180,10 @@ public class ColumnRenderBuffer implements AutoCloseable
 	
 	private void uploadBuffersDirect(LodQuadBuilder builder, EDhApiGpuUploadMethod method) throws InterruptedException
 	{
-		this.vbos = ColumnRenderBufferBuilder.resizeBuffer(this.vbos, builder.getCurrentNeededOpaqueVertexBufferCount());
+		this.vbos = resizeBuffer(this.vbos, builder.getCurrentNeededOpaqueVertexBufferCount());
 		uploadBuffersDirect(this.vbos, builder.makeOpaqueVertexBuffers(), method);
 		
-		this.vbosTransparent = ColumnRenderBufferBuilder.resizeBuffer(this.vbosTransparent, builder.getCurrentNeededTransparentVertexBufferCount());
+		this.vbosTransparent = resizeBuffer(this.vbosTransparent, builder.getCurrentNeededTransparentVertexBufferCount());
 		uploadBuffersDirect(this.vbosTransparent, builder.makeTransparentVertexBuffers(), method);
 	}
 	private static void uploadBuffersDirect(GLVertexBuffer[] vbos, Iterator<ByteBuffer> iter, EDhApiGpuUploadMethod method) throws InterruptedException
@@ -318,9 +318,9 @@ public class ColumnRenderBuffer implements AutoCloseable
 	
 	
 	
-	//==============//
-	// misc methods //
-	//==============//
+	//================//
+	// helper methods //
+	//================//
 	
 	/** can be used when debugging */
 	public boolean hasNonNullVbos() { return this.vbos != null || this.vbosTransparent != null; }
@@ -365,6 +365,35 @@ public class ColumnRenderBuffer implements AutoCloseable
 			}
 		}
 	}
+	
+	public static GLVertexBuffer[] resizeBuffer(GLVertexBuffer[] vbos, int newSize)
+	{
+		if (vbos.length == newSize)
+		{
+			return vbos;
+		}
+		
+		GLVertexBuffer[] newVbos = new GLVertexBuffer[newSize];
+		System.arraycopy(vbos, 0, newVbos, 0, Math.min(vbos.length, newSize));
+		if (newSize < vbos.length)
+		{
+			for (int i = newSize; i < vbos.length; i++)
+			{
+				if (vbos[i] != null)
+				{
+					vbos[i].close();
+				}
+			}
+		}
+		return newVbos;
+	}
+	
+	
+	
+	
+	//================//
+	// base overrides //
+	//================//
 	
 	/**
 	 * This method is called when object is no longer in use.

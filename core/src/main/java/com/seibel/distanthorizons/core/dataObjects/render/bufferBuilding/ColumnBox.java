@@ -40,7 +40,7 @@ public class ColumnBox
 			short xSize, short ySize, short zSize,
 			short x, short minY, short z,
 			int color, byte irisBlockMaterialId, byte skyLight, byte blockLight,
-			long topData, long bottomData, ColumnArrayView[][] adjData)
+			long topData, long bottomData, ColumnArrayView[] adjData)
 	{
 		short maxX = (short) (x + xSize);
 		short maxY = (short) (minY + ySize);
@@ -119,7 +119,7 @@ public class ColumnBox
 		// TODO merge duplicate code
 		//NORTH face vertex creation
 		{
-			ColumnArrayView[] adjDataNorth = adjData[EDhDirection.NORTH.ordinal() - 2]; // TODO can we use something other than ordinal-2?
+			ColumnArrayView adjDataNorth = adjData[EDhDirection.NORTH.ordinal() - 2]; // TODO can we use something other than ordinal-2?
 			int adjOverlapNorth = ColorUtil.INVISIBLE;
 			if (adjDataNorth == null)
 			{
@@ -129,18 +129,9 @@ public class ColumnBox
 					builder.addQuadAdj(EDhDirection.NORTH, x, minY, z, xSize, ySize, color, irisBlockMaterialId, LodUtil.MAX_MC_LIGHT, blockLight);
 				}
 			}
-			else if (adjDataNorth.length == 1)
-			{
-				makeAdjVerticalQuad(builder, adjDataNorth[0], EDhDirection.NORTH, x, minY, z, xSize, ySize,
-						color, adjOverlapNorth, irisBlockMaterialId, skyLightTop, blockLight,
-						topData, bottomData);
-			}
 			else
 			{
-				makeAdjVerticalQuad(builder, adjDataNorth[0], EDhDirection.NORTH, x, minY, z, (short) (xSize / 2), ySize,
-						color, adjOverlapNorth, irisBlockMaterialId, skyLightTop, blockLight,
-						topData, bottomData);
-				makeAdjVerticalQuad(builder, adjDataNorth[1], EDhDirection.NORTH, (short) (x + xSize / 2), minY, z, (short) (xSize / 2), ySize,
+				makeAdjVerticalQuad(builder, adjDataNorth, EDhDirection.NORTH, x, minY, z, xSize, ySize,
 						color, adjOverlapNorth, irisBlockMaterialId, skyLightTop, blockLight,
 						topData, bottomData);
 			}
@@ -148,26 +139,16 @@ public class ColumnBox
 		
 		//SOUTH face vertex creation
 		{
-			ColumnArrayView[] adjDataSouth = adjData[EDhDirection.SOUTH.ordinal() - 2];
+			ColumnArrayView adjDataSouth = adjData[EDhDirection.SOUTH.ordinal() - 2];
 			int adjOverlapSouth = ColorUtil.INVISIBLE;
 			if (adjDataSouth == null)
 			{
 				if (!isTransparent || overVoid)
 					builder.addQuadAdj(EDhDirection.SOUTH, x, minY, maxZ, xSize, ySize, color, irisBlockMaterialId, LodUtil.MAX_MC_LIGHT, blockLight);
 			}
-			else if (adjDataSouth.length == 1)
-			{
-				makeAdjVerticalQuad(builder, adjDataSouth[0], EDhDirection.SOUTH, x, minY, maxZ, xSize, ySize,
-						color, adjOverlapSouth, irisBlockMaterialId, skyLightTop, blockLight,
-						topData, bottomData);
-			}
 			else
 			{
-				makeAdjVerticalQuad(builder, adjDataSouth[0], EDhDirection.SOUTH, x, minY, maxZ, (short) (xSize / 2), ySize,
-						color, adjOverlapSouth, irisBlockMaterialId, skyLightTop, blockLight,
-						topData, bottomData);
-				
-				makeAdjVerticalQuad(builder, adjDataSouth[1], EDhDirection.SOUTH, (short) (x + xSize / 2), minY, maxZ, (short) (xSize / 2), ySize,
+				makeAdjVerticalQuad(builder, adjDataSouth, EDhDirection.SOUTH, x, minY, maxZ, xSize, ySize,
 						color, adjOverlapSouth, irisBlockMaterialId, skyLightTop, blockLight,
 						topData, bottomData);
 			}
@@ -175,25 +156,16 @@ public class ColumnBox
 		
 		//WEST face vertex creation
 		{
-			ColumnArrayView[] adjDataWest = adjData[EDhDirection.WEST.ordinal() - 2];
+			ColumnArrayView adjDataWest = adjData[EDhDirection.WEST.ordinal() - 2];
 			int adjOverlapWest = ColorUtil.INVISIBLE;
 			if (adjDataWest == null)
 			{
 				if (!isTransparent || overVoid)
 					builder.addQuadAdj(EDhDirection.WEST, x, minY, z, zSize, ySize, color, irisBlockMaterialId, LodUtil.MAX_MC_LIGHT, blockLight);
 			}
-			else if (adjDataWest.length == 1)
-			{
-				makeAdjVerticalQuad(builder, adjDataWest[0], EDhDirection.WEST, x, minY, z, zSize, ySize,
-						color, adjOverlapWest, irisBlockMaterialId, skyLightTop, blockLight,
-						topData, bottomData);
-			}
 			else
 			{
-				makeAdjVerticalQuad(builder, adjDataWest[0], EDhDirection.WEST, x, minY, z, (short) (zSize / 2), ySize,
-						color, adjOverlapWest, irisBlockMaterialId, skyLightTop, blockLight,
-						topData, bottomData);
-				makeAdjVerticalQuad(builder, adjDataWest[1], EDhDirection.WEST, x, minY, (short) (z + zSize / 2), (short) (zSize / 2), ySize,
+				makeAdjVerticalQuad(builder, adjDataWest, EDhDirection.WEST, x, minY, z, zSize, ySize,
 						color, adjOverlapWest, irisBlockMaterialId, skyLightTop, blockLight,
 						topData, bottomData);
 			}
@@ -201,25 +173,16 @@ public class ColumnBox
 		
 		//EAST face vertex creation
 		{
-			ColumnArrayView[] adjDataEast = adjData[EDhDirection.EAST.ordinal() - 2];
+			ColumnArrayView adjDataEast = adjData[EDhDirection.EAST.ordinal() - 2];
 			int adjOverlapEast = ColorUtil.INVISIBLE;
 			if (adjData[EDhDirection.EAST.ordinal() - 2] == null)
 			{
 				if (!isTransparent || overVoid)
 					builder.addQuadAdj(EDhDirection.EAST, maxX, minY, z, zSize, ySize, color, irisBlockMaterialId, LodUtil.MAX_MC_LIGHT, blockLight);
 			}
-			else if (adjDataEast.length == 1)
-			{
-				makeAdjVerticalQuad(builder, adjDataEast[0], EDhDirection.EAST, maxX, minY, z, zSize, ySize,
-						color, adjOverlapEast, irisBlockMaterialId, skyLightTop, blockLight,
-						topData, bottomData);
-			}
 			else
 			{
-				makeAdjVerticalQuad(builder, adjDataEast[0], EDhDirection.EAST, maxX, minY, z, (short) (zSize / 2), ySize,
-						color, adjOverlapEast, irisBlockMaterialId, skyLightTop, blockLight,
-						topData, bottomData);
-				makeAdjVerticalQuad(builder, adjDataEast[1], EDhDirection.EAST, maxX, minY, (short) (z + zSize / 2), (short) (zSize / 2), ySize,
+				makeAdjVerticalQuad(builder, adjDataEast, EDhDirection.EAST, maxX, minY, z, zSize, ySize,
 						color, adjOverlapEast, irisBlockMaterialId, skyLightTop, blockLight,
 						topData, bottomData);
 			}

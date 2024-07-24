@@ -288,7 +288,7 @@ public class ColumnRenderSource implements IDataSource<IDhClientLevel>
 		String SUBDATA_DELIMITER = ",";
 		StringBuilder stringBuilder = new StringBuilder();
 		
-		stringBuilder.append(this.pos);
+		stringBuilder.append(DhSectionPos.toString(this.pos));
 		stringBuilder.append(LINE_DELIMITER);
 		
 		int size = 1;
