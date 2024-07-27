@@ -1311,23 +1311,23 @@ public class Config
 						.addListener(DebugColumnConfigEventHandler.INSTANCE)
 						.build();
 				public static ConfigEntry<Integer> columnBuilderDebugXPos = new ConfigEntry.Builder<Integer>()
-						.set(-1)
+						.set(0)
 						.setAppearance(EConfigEntryAppearance.ONLY_IN_GUI)
 						.addListener(DebugColumnConfigEventHandler.INSTANCE)
 						.build();
 				public static ConfigEntry<Integer> columnBuilderDebugZPos = new ConfigEntry.Builder<Integer>()
-						.set(-2)
+						.set(0)
 						.setAppearance(EConfigEntryAppearance.ONLY_IN_GUI)
 						.addListener(DebugColumnConfigEventHandler.INSTANCE)
 						.build();
 				
 				public static ConfigEntry<Integer> columnBuilderDebugXRow = new ConfigEntry.Builder<Integer>()
-						.set(52)
+						.set(-1)
 						.setAppearance(EConfigEntryAppearance.ONLY_IN_GUI)
 						.addListener(DebugColumnConfigEventHandler.INSTANCE)
 						.build();
 				public static ConfigEntry<Integer> columnBuilderDebugZRow = new ConfigEntry.Builder<Integer>()
-						.set(14)
+						.set(-1)
 						.setAppearance(EConfigEntryAppearance.ONLY_IN_GUI)
 						.addListener(DebugColumnConfigEventHandler.INSTANCE)
 						.build();
