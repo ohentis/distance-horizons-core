@@ -25,7 +25,7 @@ import java.util.Map;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import com.seibel.distanthorizons.coreapi.util.math.Vec3i;
+import com.seibel.distanthorizons.core.util.math.Vec3i;
 
 /**
  * An (almost) exact copy of Minecraft's

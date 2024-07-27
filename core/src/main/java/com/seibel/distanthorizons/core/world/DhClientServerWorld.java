@@ -98,6 +98,7 @@ public class DhClientServerWorld extends AbstractDhWorld implements IDhClientWor
 				}
 				
 				level.startRenderer(clientLevelWrapper);
+				clientLevelWrapper.setParentLevel(level);
 				return level;
 			});
 		}

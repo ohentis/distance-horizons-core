@@ -292,7 +292,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 				}
 				catch (Exception e)
 				{
-					LOGGER.warn("Unable to get render source " + this.pos + ", error: " + e.getMessage(), e);
+					LOGGER.warn("Unable to get render source " + DhSectionPos.toString(this.pos) + ", error: " + e.getMessage(), e);
 					this.renderSourceLoadingRefFuture = null;
 					return null;
 				}
@@ -416,6 +416,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		}
 		
 		
+		this.level.unloadBeaconBeamsInPos(this.pos);
 		
 		if (this.renderBuffer != null)
 		{

@@ -23,6 +23,12 @@ import com.seibel.distanthorizons.api.DhApi;
 import com.seibel.distanthorizons.api.enums.rendering.EDhApiRenderPass;
 import com.seibel.distanthorizons.api.methods.events.abstractEvents.*;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
+import com.seibel.distanthorizons.core.file.structure.ClientOnlySaveStructure;
+import com.seibel.distanthorizons.core.pos.DhChunkPos;
+import com.seibel.distanthorizons.core.render.DhApiRenderProxy;
+import com.seibel.distanthorizons.core.util.objects.Pair;
+import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
+import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.network.messages.NetworkMessage;
 import com.seibel.distanthorizons.core.network.session.Session;
@@ -30,17 +36,14 @@ import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.api.enums.rendering.EDhApiDebugRendering;
 import com.seibel.distanthorizons.api.enums.rendering.EDhApiRendererMode;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
-import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.level.IServerKeyedClientLevel;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
 import com.seibel.distanthorizons.core.logging.ConfigBasedSpamLogger;
 import com.seibel.distanthorizons.core.logging.SpamReducedLogger;
-import com.seibel.distanthorizons.core.pos.DhChunkPos;
-import com.seibel.distanthorizons.core.render.DhApiRenderProxy;
+import com.seibel.distanthorizons.core.util.math.Mat4f;
 import com.seibel.distanthorizons.core.render.glObject.GLProxy;
 import com.seibel.distanthorizons.core.render.renderer.TestRenderer;
 import com.seibel.distanthorizons.core.util.RenderUtil;
-import com.seibel.distanthorizons.core.util.objects.Pair;
 import com.seibel.distanthorizons.core.world.AbstractDhWorld;
 import com.seibel.distanthorizons.core.world.DhClientServerWorld;
 import com.seibel.distanthorizons.core.world.DhClientWorld;
@@ -49,13 +52,12 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
-import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
-import com.seibel.distanthorizons.coreapi.util.math.Mat4f;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.lwjgl.glfw.GLFW;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Queue;
@@ -124,9 +126,28 @@ public class ClientApi
 	public synchronized void onClientOnlyConnected()
 	{
 		// only continue if the client is connected to a different server
-		if (MC.clientConnectedToDedicatedServer())
+		boolean connectedToServer = MC.clientConnectedToDedicatedServer();
+		boolean connectedToReplay = MC.connectedToReplay();
+		if (connectedToServer || connectedToReplay)
 		{
-			LOGGER.info("Client on ClientOnly mode connecting.");
+			if (connectedToServer)
+			{
+				LOGGER.info("Client on ClientOnly mode connecting.");
+			}
+			else
+			{
+				LOGGER.info("Replay on ClientServer mode connecting.");
+				
+				if (Config.Client.Advanced.Logging.showReplayWarningOnStartup.get())
+				{
+					MC.sendChatMessage("\u00A76" + "Distant Horizons: Replay detected." + "\u00A7r"); // gold color
+					MC.sendChatMessage("DH may behave strangely or have missing functionality.");
+					MC.sendChatMessage("In order to use pre-generated LODs, put your DH database(s) in:");
+					MC.sendChatMessage("\u00A77"+".Minecraft" + File.separator + ClientOnlySaveStructure.SERVER_DATA_FOLDER_NAME + File.separator + ClientOnlySaveStructure.REPLAY_SERVER_FOLDER_NAME + File.separator + "DIMENSION_NAME"+"\u00A7r"); // light gray color
+					MC.sendChatMessage("This can be disabled in DH's config under Advanced -> Logging.");
+					MC.sendChatMessage("");
+				}
+			}
 			
 			// firing after clientLevelLoadEvent
 			// TODO if level has prepped to load it should fire level load event
@@ -447,7 +468,7 @@ public class ClientApi
 					
 					if (!DhApi.Delayed.renderProxy.getDeferTransparentRendering())
 					{
-						ApiEventInjector.INSTANCE.fireAllEvents(DhApiAfterRenderEvent.class, renderEventParam);
+						ApiEventInjector.INSTANCE.fireAllEvents(DhApiAfterRenderEvent.class, null);
 					}
 				}
 				else if (Config.Client.Advanced.Debugging.rendererMode.get() == EDhApiRendererMode.DEBUG)
@@ -468,7 +489,7 @@ public class ClientApi
 				
 				if (DhApi.Delayed.renderProxy.getDeferTransparentRendering())
 				{
-					ApiEventInjector.INSTANCE.fireAllEvents(DhApiAfterRenderEvent.class, renderEventParam);
+					ApiEventInjector.INSTANCE.fireAllEvents(DhApiAfterRenderEvent.class, null);
 				}
 			}
 		}
@@ -479,6 +500,7 @@ public class ClientApi
 			
 			MC.sendChatMessage("\u00A74\u00A7l\u00A7uERROR: Distant Horizons renderer has encountered an exception!");
 			MC.sendChatMessage("\u00A74Renderer is now disabled to prevent further issues.");
+			MC.sendChatMessage("\u00A74Please restart your game to re-enable Distant Horizons' LOD rendering.");
 			MC.sendChatMessage("\u00A74Exception detail: " + e);
 		}
 		finally

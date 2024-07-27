@@ -30,12 +30,21 @@ import com.seibel.distanthorizons.api.interfaces.IDhApiUnsafeWrapper;
  */
 public interface IDhApiBlockStateWrapper extends IDhApiUnsafeWrapper
 {
+	/** @since API 1.0.0 */
 	boolean isAir();
 	
+	/** @since API 1.0.0 */
 	boolean isSolid();
+	/** @since API 1.0.0 */
 	boolean isLiquid();
 	
-	// TODO:
-	//    boolean hasNoCollision();
-	//    boolean noFaceIsFullFace();
+	/**
+	 * Returns the full serialized form of the given block
+	 * as defined by DH's serialization methods.
+	 * @since API 3.0.0 
+	 */
+	String getSerialString();
+	/** @since API 3.0.0 */
+	byte getMaterialId();
+	
 }

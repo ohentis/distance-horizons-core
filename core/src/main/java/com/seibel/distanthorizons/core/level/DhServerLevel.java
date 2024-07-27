@@ -40,9 +40,11 @@ import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
+import com.seibel.distanthorizons.core.render.RenderBufferHandler;
+import com.seibel.distanthorizons.core.render.renderer.generic.GenericObjectRenderer;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
-import com.seibel.distanthorizons.coreapi.util.math.Vec3d;
+import com.seibel.distanthorizons.core.util.math.Vec3d;
 import org.apache.logging.log4j.Logger;
 
 import java.text.MessageFormat;
@@ -75,6 +77,10 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 	private final ConcurrentMap<Long, DataSourceRequestGroup> requestGroupsByFutureId = new ConcurrentHashMap<>();
 	
 	
+	//=============//
+	// constructor //
+	//=============//
+	
 	public DhServerLevel(AbstractSaveStructure saveStructure, IServerLevelWrapper serverLevelWrapper, RemotePlayerConnectionHandler remotePlayerConnectionHandler)
 	{
 		if (saveStructure.getFullDataFolder(serverLevelWrapper).mkdirs())
@@ -83,7 +89,8 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 		}
 		this.serverLevelWrapper = serverLevelWrapper;
 		this.serverside = new ServerLevelModule(this, saveStructure);
-		this.createAndSetChunkHashRepo(this.serverside.fullDataFileHandler.repo.databaseFile);
+		this.createAndSetSupportingRepos(this.serverside.fullDataFileHandler.repo.databaseFile);
+		this.runRepoReliantSetup();
 		
 		LOGGER.info("Started DHLevel for {} with saves at {}", serverLevelWrapper, saveStructure);
 	
@@ -244,6 +251,10 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 	{
 		this.worldGenPlayerCenteringQueue.add(serverPlayer);
 	}
+	
+	//=========//
+	// methods //
+	//=========//
 	
 	public void removePlayer(IServerPlayerWrapper serverPlayer)
 	{
@@ -444,6 +455,18 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 		}
 	}
 	
+	@Override
+	public GenericObjectRenderer getGenericRenderer() 
+	{ 
+		// server-only levels don't support rendering
+		return null; 
+	}
+	@Override
+	public RenderBufferHandler getRenderBufferHandler()
+	{ 
+		// server-only levels don't support rendering
+		return null; 
+	}
 	
 	
 	//===========//

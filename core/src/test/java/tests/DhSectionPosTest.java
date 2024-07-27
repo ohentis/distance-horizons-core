@@ -191,41 +191,19 @@ public class DhSectionPosTest
 		// origin pos //
 		
 		DhBlockPos originBlockPos = new DhBlockPos(0, 0, 0);
-		long originsectionPos = DhSectionPos.encode(originBlockPos);
-		assertSectionPosEqual(DhSectionPos.encode(DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL, 0, 0), originsectionPos);
+		long originSectionPos = DhSectionPos.encodeContaining(DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL, originBlockPos);
+		assertSectionPosEqual(DhSectionPos.encode(DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL, 0, 0), originSectionPos);
 		
 		
 		// offset pos //
 		long offsetSectionPos;
 		
 		DhBlockPos offsetBlockPos = new DhBlockPos(1000, 0, 42000);
-		offsetSectionPos = DhSectionPos.encode(offsetBlockPos);
+		offsetSectionPos = DhSectionPos.encodeContaining(DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL, offsetBlockPos);
 		assertSectionPosEqual(DhSectionPos.encode(DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL, 15, 656), offsetSectionPos);
 		
 		offsetBlockPos = new DhBlockPos(-987654, 0, 46);
-		offsetSectionPos = DhSectionPos.encode(offsetBlockPos);
-		assertSectionPosEqual(DhSectionPos.encode(DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL, -15433, 0), offsetSectionPos);
-		
-	}
-	
-	@Test
-	public void createFromBlockPos2D()
-	{
-		// origin pos //
-		
-		DhBlockPos2D originBlockPos = new DhBlockPos2D(0, 0);
-		long originSectionPos = DhSectionPos.encode(originBlockPos);
-		assertSectionPosEqual(DhSectionPos.encode(DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL, 0, 0), originSectionPos);
-		
-		
-		// offset pos //
-		
-		DhBlockPos2D offsetBlockPos = new DhBlockPos2D(1000, 42000);
-		long offsetSectionPos = DhSectionPos.encode(offsetBlockPos);
-		assertSectionPosEqual(DhSectionPos.encode(DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL, 15, 656), offsetSectionPos);
-		
-		offsetBlockPos = new DhBlockPos2D(-987654, 46);
-		offsetSectionPos = DhSectionPos.encode(offsetBlockPos);
+		offsetSectionPos = DhSectionPos.encodeContaining(DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL, offsetBlockPos);
 		assertSectionPosEqual(DhSectionPos.encode(DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL, -15433, 0), offsetSectionPos);
 		
 	}
@@ -236,18 +214,18 @@ public class DhSectionPosTest
 		// origin pos //
 		
 		DhChunkPos originChunkPos = new DhChunkPos(0,0);
-		long originSectionPos = DhSectionPos.encode(originChunkPos);
+		long originSectionPos = DhSectionPos.encodeContaining(DhSectionPos.SECTION_CHUNK_DETAIL_LEVEL, originChunkPos);
 		assertSectionPosEqual(DhSectionPos.encode(DhSectionPos.SECTION_CHUNK_DETAIL_LEVEL, 0, 0), originSectionPos);
 		
 		
 		// offset pos //
 		
 		DhChunkPos offsetChunkPos = new DhChunkPos(1000, 42000);
-		long offsetSectionPos = DhSectionPos.encode(offsetChunkPos);
+		long offsetSectionPos = DhSectionPos.encodeContaining(DhSectionPos.SECTION_CHUNK_DETAIL_LEVEL, offsetChunkPos);
 		assertSectionPosEqual(DhSectionPos.encode(DhSectionPos.SECTION_CHUNK_DETAIL_LEVEL, 15, 656), offsetSectionPos);
 		
 		offsetChunkPos = new DhChunkPos(-987654, 46);
-		offsetSectionPos = DhSectionPos.encode(offsetChunkPos);
+		offsetSectionPos = DhSectionPos.encodeContaining(DhSectionPos.SECTION_CHUNK_DETAIL_LEVEL, offsetChunkPos);
 		assertSectionPosEqual(DhSectionPos.encode(DhSectionPos.SECTION_CHUNK_DETAIL_LEVEL, -15433, 0), offsetSectionPos);
 		
 	}

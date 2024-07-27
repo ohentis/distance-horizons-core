@@ -82,6 +82,17 @@ public interface IWrapperFactory extends IDhApiWrapperFactory, IBindable
 	 * Generally this contains blocks like: air, barriers, light blocks, etc. 
 	 */
 	HashSet<IBlockStateWrapper> getRendererIgnoredBlocks(ILevelWrapper levelWrapper);
+	/**
+	 * Returns the set of {@link IBlockStateWrapper}'s that shouldn't be rendered in caves. <br>
+	 * Generally this contains blocks like: air, rails, glow lichen, etc. 
+	 */
+	HashSet<IBlockStateWrapper> getRendererIgnoredCaveBlocks(ILevelWrapper levelWrapper);
+	
+	/** clears the cached values */
+	void resetRendererIgnoredCaveBlocks();
+	/** clears the cached values */
+	void resetRendererIgnoredBlocksSet();
+	
 	
 	/**
 	 * Specifically designed to be used with the API.

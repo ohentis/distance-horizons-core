@@ -22,6 +22,8 @@ package testItems.lightingEngine;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import tests.LightingEngineTest;
 
+import java.awt.*;
+
 /**
  * @see LightingEngineTest
  * @see LightingTestChunkWrapper
@@ -102,6 +104,18 @@ public class LightingTestBlockStateWrapper implements IBlockStateWrapper
 	public boolean isLiquid() { throw new UnsupportedOperationException("Not Implemented"); }
 	
 	@Override
-	public byte getIrisBlockMaterialId() { throw new UnsupportedOperationException("Not Implemented"); }
+	public byte getMaterialId() { throw new UnsupportedOperationException("Not Implemented"); }
+	
+	@Override
+	public boolean isBeaconBlock() { throw new UnsupportedOperationException("Not Implemented"); }
+	@Override
+	public boolean isBeaconBaseBlock() { throw new UnsupportedOperationException("Not Implemented"); }
+	
+	@Override 
+	public Color getMapColor() { throw new UnsupportedOperationException("Not Implemented"); }
+	@Override 
+	public boolean isGlassBlock() { throw new UnsupportedOperationException("Not Implemented"); }
+	
+	
 	
 }

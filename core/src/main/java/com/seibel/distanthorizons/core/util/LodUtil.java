@@ -19,7 +19,9 @@
 
 package com.seibel.distanthorizons.core.util;
 
+import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.RejectedExecutionException;
@@ -33,6 +35,7 @@ import com.seibel.distanthorizons.core.render.vertexFormat.DefaultLodVertexForma
 import com.seibel.distanthorizons.core.render.vertexFormat.LodVertexFormat;
 import com.seibel.distanthorizons.core.util.gridList.EdgeDistanceBooleanGrid;
 import com.seibel.distanthorizons.core.util.objects.UncheckedInterruptedException;
+import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IDimensionTypeWrapper;
@@ -65,9 +68,6 @@ public class LodUtil
 	
 	
 	
-	
-	/** The maximum number of LODs that can be rendered vertically */
-	public static final int MAX_NUMBER_OF_VERTICAL_LODS = 32;
 	
 	/**
 	 * alpha used when drawing chunks in debug mode
@@ -122,6 +122,23 @@ public class LodUtil
 	public static final byte MAX_MC_LIGHT = 15;
 	/** lowest possible light level handled by Minecraft */
 	public static final byte MIN_MC_LIGHT = 0;
+	
+	/** the opacity value returned by {@link IBlockStateWrapper#getOpacity()} if a block is fully transparent */
+	public static final int BLOCK_FULLY_TRANSPARENT = 0;
+	/** the opacity value returned by {@link IBlockStateWrapper#getOpacity()} if a block is fully opaque */
+	public static final int BLOCK_FULLY_OPAQUE = 16;
+	
+	/**
+	 * List of every block that can be used in a beacon's base. <br> 
+	 * Should be all lowercase 
+	 */
+	public static final List<String> BEACON_BASE_BLOCK_NAME_LIST = Arrays.asList(
+			"iron_block",
+			"gold_block",
+			"diamond_block",
+			"emerald_block",
+			"netherite_block"
+	);
 	
 	
 	
@@ -234,6 +251,15 @@ public class LodUtil
 				MC_CLIENT.getPlayerChunkPos().x - renderDist,
 				MC_CLIENT.getPlayerChunkPos().z - renderDist,
 				renderDist * 2 + 1);
+	}
+	
+	/** Returns the chunk int position for the given double position */
+	public static int getChunkPosFromDouble(double value) { return (int) Math.floor(value / CHUNK_WIDTH); }
+	/** Returns the float position inside the chunk for the given double position */
+	public static float getSubChunkPosFromDouble(double value)
+	{
+		double chunkPos = Math.floor(value / CHUNK_WIDTH);
+		return (float) (value - chunkPos * CHUNK_WIDTH);
 	}
 	
 	

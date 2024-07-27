@@ -20,6 +20,7 @@
 package com.seibel.distanthorizons.core.render.glObject.buffer;
 
 import com.seibel.distanthorizons.api.enums.config.EDhApiGpuUploadMethod;
+import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.render.glObject.GLProxy;
 import com.seibel.distanthorizons.core.util.LodUtil;
@@ -140,7 +141,10 @@ public class GLBuffer implements AutoCloseable
 					GL32.glDeleteBuffers(id);
 					bufferCount.decrementAndGet();
 					
-					//LOGGER.info("destroyed buffer ["+id+"], remaining: ["+BUFFER_ID_TO_PHANTOM.size()+"]");
+					if (Config.Client.Advanced.Debugging.logBufferGarbageCollection.get())
+					{
+						LOGGER.info("destroyed buffer [" + id + "], remaining: [" + BUFFER_ID_TO_PHANTOM.size() + "]");
+					}
 				}
 			});
 	}

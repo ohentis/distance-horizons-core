@@ -31,7 +31,6 @@ import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
-import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.util.FullDataPointUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
@@ -47,8 +46,6 @@ public class LodDataBuilder
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	private static final IBlockStateWrapper AIR = SingletonInjector.INSTANCE.get(IWrapperFactory.class).getAirBlockStateWrapper();
-	/** how many chunks wide the {@link FullDataSourceV2} is. */
-	private static final int NUMB_OF_CHUNKS_WIDE = FullDataSourceV2.WIDTH / LodUtil.CHUNK_WIDTH;
 	
 	private static boolean getTopErrorLogged = false;
 	
@@ -67,12 +64,8 @@ public class LodDataBuilder
 		
 		
 		
-		// get the section position
-		int sectionPosX = chunkWrapper.getChunkPos().x;
-		// negative positions start at -1 so the logic there is slightly different
-		sectionPosX = (sectionPosX < 0) ? ((sectionPosX + 1) / NUMB_OF_CHUNKS_WIDE) - 1 : (sectionPosX / NUMB_OF_CHUNKS_WIDE);
-		int sectionPosZ = chunkWrapper.getChunkPos().z;
-		sectionPosZ = (sectionPosZ < 0) ? ((sectionPosZ + 1) / NUMB_OF_CHUNKS_WIDE) - 1 : (sectionPosZ / NUMB_OF_CHUNKS_WIDE);
+		int sectionPosX = getXOrZSectionPosFromChunkPos(chunkWrapper.getChunkPos().x);
+		int sectionPosZ = getXOrZSectionPosFromChunkPos(chunkWrapper.getChunkPos().z);
 		long pos = DhSectionPos.encode(DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL, sectionPosX, sectionPosZ);
 		
 		FullDataSourceV2 dataSource = FullDataSourceV2.createEmpty(pos);
@@ -98,30 +91,30 @@ public class LodDataBuilder
 			// -3 -> 1
 			// -4 -> 0 ---
 			// -5 -> 3
-			chunkOffsetX = ((chunkOffsetX) % NUMB_OF_CHUNKS_WIDE);
+			chunkOffsetX = ((chunkOffsetX) % FullDataSourceV2.NUMB_OF_CHUNKS_WIDE);
 			if (chunkOffsetX != 0)
 			{
-				chunkOffsetX += NUMB_OF_CHUNKS_WIDE;
+				chunkOffsetX += FullDataSourceV2.NUMB_OF_CHUNKS_WIDE;
 			}
 		}
 		else
 		{
-			chunkOffsetX %= NUMB_OF_CHUNKS_WIDE;
+			chunkOffsetX %= FullDataSourceV2.NUMB_OF_CHUNKS_WIDE;
 		}
 		chunkOffsetX *= LodUtil.CHUNK_WIDTH;
 		
 		int chunkOffsetZ = chunkWrapper.getChunkPos().z;
 		if (chunkWrapper.getChunkPos().z < 0)
 		{
-			chunkOffsetZ = ((chunkOffsetZ) % NUMB_OF_CHUNKS_WIDE);
+			chunkOffsetZ = ((chunkOffsetZ) % FullDataSourceV2.NUMB_OF_CHUNKS_WIDE);
 			if (chunkOffsetZ != 0)
 			{
-				chunkOffsetZ += NUMB_OF_CHUNKS_WIDE;
+				chunkOffsetZ += FullDataSourceV2.NUMB_OF_CHUNKS_WIDE;
 			}
 		}
 		else
 		{
-			chunkOffsetZ %= NUMB_OF_CHUNKS_WIDE;
+			chunkOffsetZ %= FullDataSourceV2.NUMB_OF_CHUNKS_WIDE;
 		}
 		chunkOffsetZ *= LodUtil.CHUNK_WIDTH;
 		
@@ -212,6 +205,7 @@ public class LodDataBuilder
 								longs.add(FullDataPointUtil.encode(mappedId, lastY - y, y + 1 - chunkWrapper.getMinBuildHeight(), blockLight, skyLight));
 								biome = newBiome;
 								blockState = newBlockState;
+								
 								mappedId = dataSource.mapping.addIfNotPresentAndGetId(biome, blockState);
 								blockLight = newBlockLight;
 								skyLight = newSkyLight;
@@ -296,19 +290,28 @@ public class LodDataBuilder
 		
 		// this block isn't on a chunk boundary, check if it is next to a transparent/air block
 		IBlockStateWrapper blockState = chunkWrapper.getBlockState(testBlockPos);
-		return blockState.isAir() || blockState.getOpacity() != IBlockStateWrapper.FULLY_OPAQUE;
+		return blockState.isAir() || blockState.getOpacity() != LodUtil.BLOCK_FULLY_OPAQUE;
 	}
 	
 	
 	/** @throws ClassCastException if an API user returns the wrong object type(s) */
-	public static FullDataSourceV2 createFromApiChunkData(DhApiChunk dataPoints) throws ClassCastException, DataCorruptedException
+	public static FullDataSourceV2 createFromApiChunkData(DhApiChunk apiChunk) throws ClassCastException, DataCorruptedException
 	{
-		FullDataSourceV2 accessor = FullDataSourceV2.createEmpty(DhSectionPos.encode(new DhChunkPos(dataPoints.chunkPosX, dataPoints.chunkPosZ)));
-		for (int relZ = 0; relZ < LodUtil.CHUNK_WIDTH; relZ++)
+		// get the section position
+		int sectionPosX = getXOrZSectionPosFromChunkPos(apiChunk.chunkPosX);
+		int sectionPosZ = getXOrZSectionPosFromChunkPos(apiChunk.chunkPosZ);
+		long pos = DhSectionPos.encode(DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL, sectionPosX, sectionPosZ);
+		
+		// chunk relative block position in the data source
+		int relSourceBlockX = Math.floorMod(apiChunk.chunkPosX, 4) * LodUtil.CHUNK_WIDTH;
+		int relSourceBlockZ = Math.floorMod(apiChunk.chunkPosZ, 4) * LodUtil.CHUNK_WIDTH;
+		
+		FullDataSourceV2 dataSource = FullDataSourceV2.createEmpty(pos);
+		for (int relBlockZ = 0; relBlockZ < LodUtil.CHUNK_WIDTH; relBlockZ++)
 		{
-			for (int relX = 0; relX < LodUtil.CHUNK_WIDTH; relX++)
+			for (int relBlockX = 0; relBlockX < LodUtil.CHUNK_WIDTH; relBlockX++)
 			{
-				List<DhApiTerrainDataPoint> columnDataPoints = dataPoints.getDataPoints(relX, relZ);
+				List<DhApiTerrainDataPoint> columnDataPoints = apiChunk.getDataPoints(relBlockX, relBlockZ);
 				
 				
 				// this null check does 2 nice things at the same time:
@@ -322,7 +325,7 @@ public class LodDataBuilder
 				{
 					DhApiTerrainDataPoint dataPoint = columnDataPoints.get(index);
 					
-					int id = accessor.mapping.addIfNotPresentAndGetId(
+					int id = dataSource.mapping.addIfNotPresentAndGetId(
 							(IBiomeWrapper) (dataPoint.biomeWrapper),
 							(IBlockStateWrapper) (dataPoint.blockStateWrapper)
 					);
@@ -330,7 +333,7 @@ public class LodDataBuilder
 					packedDataPoints.set(index, FullDataPointUtil.encode(
 							id,
 							dataPoint.topYBlockPos - dataPoint.bottomYBlockPos,
-							dataPoint.bottomYBlockPos - dataPoints.topYBlockPos,
+							dataPoint.bottomYBlockPos - apiChunk.bottomYBlockPos,
 							(byte) (dataPoint.blockLightLevel),
 							(byte) (dataPoint.skyLightLevel)
 					));
@@ -338,11 +341,14 @@ public class LodDataBuilder
 				
 				// TODO add the ability for API users to define a different compression mode
 				//  or add a "unkown" compression mode
-				accessor.setSingleColumn(packedDataPoints, relX, relZ, EDhApiWorldGenerationStep.LIGHT, EDhApiWorldCompressionMode.MERGE_SAME_BLOCKS);
+				dataSource.setSingleColumn(
+						packedDataPoints, 
+						relBlockX + relSourceBlockX, relBlockZ + relSourceBlockZ, 
+						EDhApiWorldGenerationStep.LIGHT, EDhApiWorldCompressionMode.MERGE_SAME_BLOCKS);
+				dataSource.isEmpty = false;
 			}
 		}
-		
-		return accessor;
+		return dataSource;
 	}
 	
 	
@@ -352,5 +358,14 @@ public class LodDataBuilder
 	//================//
 	
 	public static boolean canGenerateLodFromChunk(IChunkWrapper chunk) { return chunk != null && chunk.isLightCorrect(); }
+	
+	public static int getXOrZSectionPosFromChunkPos(int chunkXOrZPos)
+	{
+		// get the section position
+		int sectionPos = chunkXOrZPos;
+		// negative positions start at -1 so the logic there is slightly different
+		sectionPos = (sectionPos < 0) ? ((sectionPos + 1) / FullDataSourceV2.NUMB_OF_CHUNKS_WIDE) - 1 : (sectionPos / FullDataSourceV2.NUMB_OF_CHUNKS_WIDE);
+		return sectionPos;
+	}
 	
 }

@@ -24,11 +24,13 @@ import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSour
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.file.fullDatafile.FullDataSourceProviderV2;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
+import com.seibel.distanthorizons.core.render.RenderBufferHandler;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
+import com.seibel.distanthorizons.core.render.renderer.generic.GenericObjectRenderer;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
@@ -66,9 +68,11 @@ public class DhClientServerLevel extends AbstractDhLevel implements IDhClientLev
 			LOGGER.warn("unable to create data folder.");
 		}
 		this.serverLevelWrapper = serverLevelWrapper;
+		this.serverLevelWrapper.setParentLevel(this);
 		this.serverside = new ServerLevelModule(this, saveStructure);
 		this.clientside = new ClientLevelModule(this);
-		this.createAndSetChunkHashRepo(this.serverside.fullDataFileHandler.repo.databaseFile);
+		this.createAndSetSupportingRepos(this.serverside.fullDataFileHandler.repo.databaseFile);
+		this.runRepoReliantSetup();
 		
 		LOGGER.info("Started " + DhClientServerLevel.class.getSimpleName() + " for " + serverLevelWrapper + " with saves at " + saveStructure);
 	}
@@ -102,20 +106,7 @@ public class DhClientServerLevel extends AbstractDhLevel implements IDhClientLev
 		if (shouldDoWorldGen && !isWorldGenRunning)
 		{
 			// start world gen
-			
-			// create a new queue
 			this.serverside.worldGenModule.startWorldGen(this.serverside.fullDataFileHandler, new ServerLevelModule.WorldGenState(this));
-			
-			// TODO I think this used to queue the world gen
-			//  is it still needed?
-			// populate the queue based on the current rendering tree
-			//ClientLevelModule.ClientRenderState renderState = this.clientside.ClientRenderStateRef.get();
-			//Iterator<QuadNode<LodRenderSection>> iterator = renderState.quadtree.leafNodeIterator();
-			//while (iterator.hasNext())
-			//{
-			//	QuadNode<LodRenderSection> node = iterator.next();
-			//	//this.serverside.dataFileHandler.getAsync(node.sectionPos);
-			//}
 		}
 		else if (!shouldDoWorldGen && isWorldGenRunning)
 		{
@@ -160,7 +151,7 @@ public class DhClientServerLevel extends AbstractDhLevel implements IDhClientLev
 	}
 	
 	@Override
-	public IClientLevelWrapper getClientLevelWrapper() { return this.serverLevelWrapper.tryGetClientLevelWrapper(); }
+	public IClientLevelWrapper getClientLevelWrapper() { return MC_CLIENT.getWrappedClientLevel(); }
 	
 	@Override
 	public void clearRenderCache()
@@ -229,6 +220,16 @@ public class DhClientServerLevel extends AbstractDhLevel implements IDhClientLev
 		
 		// world gen
 		this.serverside.worldGenModule.addDebugMenuStringsToList(messageList);
+	}
+	
+	
+	@Override
+	public GenericObjectRenderer getGenericRenderer() { return this.clientside.genericRenderer; }
+	@Override
+	public RenderBufferHandler getRenderBufferHandler()
+	{
+		ClientLevelModule.ClientRenderState renderState = this.clientside.ClientRenderStateRef.get();
+		return (renderState != null) ? renderState.renderBufferHandler : null;
 	}
 	
 	

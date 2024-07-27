@@ -21,6 +21,7 @@ package com.seibel.distanthorizons.core.render.renderer;
 
 import com.seibel.distanthorizons.api.interfaces.override.rendering.IDhApiShaderProgram;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
+import com.seibel.distanthorizons.api.objects.math.DhApiVec3f;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.render.glObject.GLProxy;
 import com.seibel.distanthorizons.core.render.glObject.shader.Shader;
@@ -31,39 +32,38 @@ import com.seibel.distanthorizons.core.render.glObject.vertexAttribute.VertexAtt
 import com.seibel.distanthorizons.core.render.glObject.vertexAttribute.VertexPointer;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.RenderUtil;
-import com.seibel.distanthorizons.coreapi.util.math.Mat4f;
-import com.seibel.distanthorizons.coreapi.util.math.Vec3f;
+import com.seibel.distanthorizons.core.util.math.Mat4f;
+import com.seibel.distanthorizons.core.util.math.Vec3f;
 
-public class LodRenderProgram extends ShaderProgram implements IDhApiShaderProgram
+/**
+ * Handles rendering the normal LOD terrain.
+ */
+public class DhTerrainShaderProgram extends ShaderProgram implements IDhApiShaderProgram
 {
-	public static final String VERTEX_SHADER_PATH = "shaders/standard.vert";
-	public static final String VERTEX_CURVE_SHADER_PATH = "shaders/curve.vert";
-	public static final String FRAGMENT_SHADER_PATH = "shaders/flat_shaded.frag";
-	
 	public final AbstractVertexAttribute vao;
 	
 	// Uniforms
-	public final int combinedMatUniform;
-	public final int modelOffsetUniform;
-	public final int worldYOffsetUniform;
+	public final int uCombinedMatrix;
+	public final int uModelOffset;
+	public final int uWorldYOffset;
 	
-	public final int mircoOffsetUniform;
+	public final int uMircoOffset;
 	
-	public final int earthRadiusUniform;
+	public final int uEarthRadius;
 	
-	public final int lightMapUniform;
+	public final int uLightMap;
 	
 	// Fog/Clip Uniforms
-	public final int clipDistanceUniform;
+	public final int uClipDistance;
 	
 	// Noise Uniforms
-	public final int noiseEnabledUniform;
-	public final int noiseStepsUniform;
-	public final int noiseIntensityUniform;
-	public final int noiseDropoffUniform;
+	public final int uNoiseEnabled;
+	public final int uNoiseSteps;
+	public final int uNoiseIntensity;
+	public final int uNoiseDropoff;
 	
 	// Debug Uniform
-	public final int whiteWorldUniform;
+	public final int uWhiteWorld;
 	
 	
 	
@@ -72,50 +72,57 @@ public class LodRenderProgram extends ShaderProgram implements IDhApiShaderProgr
 	//=============//
 	
 	// This will bind  AbstractVertexAttribute
-	public LodRenderProgram()
+	public DhTerrainShaderProgram()
 	{
-		super(() -> Shader.loadFile(Config.Client.Advanced.Graphics.AdvancedGraphics.earthCurveRatio.get() != 0 ? VERTEX_CURVE_SHADER_PATH : VERTEX_SHADER_PATH,
+		super(
+				() -> Shader.loadFile(Config.Client.Advanced.Graphics.AdvancedGraphics.earthCurveRatio.get() != 0 
+								? "shaders/curve.vert"
+								: "shaders/standard.vert",
 						false, new StringBuilder()).toString(),
-				() -> Shader.loadFile(FRAGMENT_SHADER_PATH, false, new StringBuilder()).toString(),
+				() -> Shader.loadFile("shaders/flat_shaded.frag", false, new StringBuilder()).toString(),
 				"fragColor", new String[]{"vPosition", "color"});
 		
-		combinedMatUniform = getUniformLocation("combinedMatrix");
-		modelOffsetUniform = getUniformLocation("modelOffset");
-		worldYOffsetUniform = tryGetUniformLocation("worldYOffset");
-		mircoOffsetUniform = getUniformLocation("mircoOffset");
-		earthRadiusUniform = tryGetUniformLocation("earthRadius");
+		this.uCombinedMatrix = this.getUniformLocation("uCombinedMatrix");
+		this.uModelOffset = this.getUniformLocation("uModelOffset");
+		this.uWorldYOffset = this.tryGetUniformLocation("uWorldYOffset");
+		this.uMircoOffset = this.getUniformLocation("uMircoOffset");
+		this.uEarthRadius = this.tryGetUniformLocation("uEarthRadius");
 		
-		lightMapUniform = getUniformLocation("lightMap");
+		this.uLightMap = this.getUniformLocation("uLightMap");
 		
 		// Fog/Clip Uniforms
-		clipDistanceUniform = getUniformLocation("clipDistance");
+		this.uClipDistance = this.getUniformLocation("uClipDistance");
 		
 		// Noise Uniforms
-		noiseEnabledUniform = getUniformLocation("noiseEnabled");
-		noiseStepsUniform = getUniformLocation("noiseSteps");
-		noiseIntensityUniform = getUniformLocation("noiseIntensity");
-		noiseDropoffUniform = getUniformLocation("noiseDropoff");
+		this.uNoiseEnabled = this.getUniformLocation("uNoiseEnabled");
+		this.uNoiseSteps = this.getUniformLocation("uNoiseSteps");
+		this.uNoiseIntensity = this.getUniformLocation("uNoiseIntensity");
+		this.uNoiseDropoff = this.getUniformLocation("uNoiseDropoff");
 		
 		// Debug Uniform
-		whiteWorldUniform = getUniformLocation("whiteWorld");
+		this.uWhiteWorld = this.getUniformLocation("uWhiteWorld");
 		
 		
 		// TODO: Add better use of the LODFormat thing
 		int vertexByteCount = LodUtil.LOD_VERTEX_FORMAT.getByteSize();
-		if (GLProxy.getInstance().VertexAttributeBufferBindingSupported)
-			vao = new VertexAttributePostGL43(); // also binds AbstractVertexAttribute
+		if (GLProxy.getInstance().vertexAttributeBufferBindingSupported)
+		{
+			this.vao = new VertexAttributePostGL43(); // also binds AbstractVertexAttribute
+		}
 		else
-			vao = new VertexAttributePreGL43(); // also binds AbstractVertexAttribute
-		vao.bind();
+		{
+			this.vao = new VertexAttributePreGL43(); // also binds AbstractVertexAttribute
+		}
+		this.vao.bind();
 		
 		// TODO comment what each attribute represents
-		vao.setVertexAttribute(0, 0, VertexPointer.addUnsignedShortsPointer(4, false, true)); // 2+2+2+2 // TODO probably color, blockpos
-		vao.setVertexAttribute(0, 1, VertexPointer.addUnsignedBytesPointer(4, true, false)); // +4 // TODO ?
-		vao.setVertexAttribute(0, 2, VertexPointer.addUnsignedBytesPointer(4, true, true)); // +4 // TODO probably normal index and Iris block ID
+		this.vao.setVertexAttribute(0, 0, VertexPointer.addUnsignedShortsPointer(4, false, true)); // 2+2+2+2 // TODO probably color, blockpos
+		this.vao.setVertexAttribute(0, 1, VertexPointer.addUnsignedBytesPointer(4, true, false)); // +4 // TODO ?
+		this.vao.setVertexAttribute(0, 2, VertexPointer.addUnsignedBytesPointer(4, true, true)); // +4 // TODO probably normal index and Iris block ID
 		
 		try
 		{
-			vao.completeAndCheck(vertexByteCount);
+			this.vao.completeAndCheck(vertexByteCount);
 		}
 		catch (RuntimeException e)
 		{
@@ -123,15 +130,15 @@ public class LodRenderProgram extends ShaderProgram implements IDhApiShaderProgr
 			throw e;
 		}
 		
-		if (earthRadiusUniform != -1) setUniform(earthRadiusUniform,
+		if (this.uEarthRadius != -1) this.setUniform(this.uEarthRadius,
 				/*6371KM*/ 6371000.0f / Config.Client.Advanced.Graphics.AdvancedGraphics.earthCurveRatio.get());
 		
 		
 		// Noise Uniforms
-		setUniform(noiseEnabledUniform, Config.Client.Advanced.Graphics.NoiseTextureSettings.noiseEnabled.get());
-		setUniform(noiseStepsUniform, Config.Client.Advanced.Graphics.NoiseTextureSettings.noiseSteps.get());
-		setUniform(noiseIntensityUniform, Config.Client.Advanced.Graphics.NoiseTextureSettings.noiseIntensity.get().floatValue());
-		setUniform(noiseDropoffUniform, Config.Client.Advanced.Graphics.NoiseTextureSettings.noiseDropoff.get());
+		this.setUniform(this.uNoiseEnabled, Config.Client.Advanced.Graphics.NoiseTextureSettings.noiseEnabled.get());
+		this.setUniform(this.uNoiseSteps, Config.Client.Advanced.Graphics.NoiseTextureSettings.noiseSteps.get());
+		this.setUniform(this.uNoiseIntensity, Config.Client.Advanced.Graphics.NoiseTextureSettings.noiseIntensity.get().floatValue());
+		this.setUniform(this.uNoiseDropoff, Config.Client.Advanced.Graphics.NoiseTextureSettings.noiseDropoff.get());
 	}
 	
 	
@@ -144,26 +151,24 @@ public class LodRenderProgram extends ShaderProgram implements IDhApiShaderProgr
 	public void bind()
 	{
 		super.bind();
-		vao.bind();
+		this.vao.bind();
 	}
 	@Override
 	public void unbind()
 	{
 		super.unbind();
-		vao.unbind();
+		this.vao.unbind();
 	}
 	
 	@Override
 	public void free()
 	{
-		vao.free();
+		this.vao.free();
 		super.free();
 	}
 	
 	@Override
 	public void bindVertexBuffer(int vbo) { this.vao.bindBufferToAllBindingPoints(vbo); }
-	
-	public void unbindVertexBuffer() { this.vao.unbindBuffersFromAllBindingPoint(); }
 	
 	@Override
 	public void fillUniformData(DhApiRenderParam renderParameters)
@@ -174,16 +179,16 @@ public class LodRenderProgram extends ShaderProgram implements IDhApiShaderProgr
 		super.bind();
 
 		// uniforms
-		setUniform(combinedMatUniform, combinedMatrix);
-		setUniform(mircoOffsetUniform, 0.01f); // 0.01 block offset
+		this.setUniform(this.uCombinedMatrix, combinedMatrix);
+		this.setUniform(this.uMircoOffset, 0.01f); // 0.01 block offset
 		
 		// setUniform(skyLightUniform, skyLight);
-		setUniform(lightMapUniform, 0); // TODO this should probably be passed in
+		this.setUniform(this.uLightMap, 0); // TODO this should probably be passed in
 		
-		if (worldYOffsetUniform != -1) setUniform(worldYOffsetUniform, (float) renderParameters.worldYOffset);
+		if (this.uWorldYOffset != -1) this.setUniform(this.uWorldYOffset, (float) renderParameters.worldYOffset);
 		
 		// Debug
-		setUniform(whiteWorldUniform, Config.Client.Advanced.Debugging.enableWhiteWorld.get());
+		this.setUniform(this.uWhiteWorld, Config.Client.Advanced.Debugging.enableWhiteWorld.get());
 		
 		// Clip Uniform
 		float dhNearClipDistance = RenderUtil.getNearClipPlaneDistanceInBlocks(renderParameters.partialTicks);
@@ -197,11 +202,11 @@ public class LodRenderProgram extends ShaderProgram implements IDhApiShaderProgr
 		{
 			dhNearClipDistance = 1.0f;
 		}
-		this.setUniform(this.clipDistanceUniform, dhNearClipDistance);
+		this.setUniform(this.uClipDistance, dhNearClipDistance);
 	}
 	
 	@Override
-	public void setModelOffsetPos(Vec3f modelOffsetPos) { this.setUniform(this.modelOffsetUniform, modelOffsetPos); }
+	public void setModelOffsetPos(DhApiVec3f modelOffsetPos) { this.setUniform(this.uModelOffset, new Vec3f(modelOffsetPos)); }
 	
 	@Override
 	public int getId() { return this.id; }

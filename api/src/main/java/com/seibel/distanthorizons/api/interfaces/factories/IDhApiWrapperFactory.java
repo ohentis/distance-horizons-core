@@ -79,11 +79,34 @@ public interface IDhApiWrapperFactory
 	
 	
 	
-	///**
-	// * Specifically designed to be used with the API.
-	// *
-	// * @throws ClassCastException with instructions on expected objects if the object couldn't be cast
-	// */
-	//IChunkWrapper createChunkWrapper(Object[] objectArray) throws ClassCastException;
+	/**
+	 * Constructs a {@link IDhApiBiomeWrapper} for use by other DhApi methods.
+	 *
+	 * @param resourceLocationString example: "minecraft:plains"
+	 *
+	 * @param levelWrapper Expects a {@link IDhApiLevelWrapper} returned by one of DH's {@link DhApi.Delayed#worldProxy} methods. <br>
+	 *                      A custom implementation of {@link IDhApiLevelWrapper} will not be accepted.
+	 *
+	 * @throws IOException if the resourceLocationString wasn't able to be parsed or converted into a valid {@link IDhApiBiomeWrapper}
+	 * @throws ClassCastException if the wrong levelWrapper type was given
+	 *
+	 * @since API 3.0.0
+	 */
+	IDhApiBiomeWrapper getBiomeWrapper(String resourceLocationString, IDhApiLevelWrapper levelWrapper) throws IOException, ClassCastException;
+	
+	/**
+	 * Constructs a {@link IDhApiBlockStateWrapper} for use by other DhApi methods.
+	 * This returns the default blockstate for the given resource location.
+	 *
+	 * @param resourceLocationString examples: "minecraft:bedrock", "minecraft:stone", "minecraft:grass_block"
+	 * @param levelWrapper Expects a {@link IDhApiBlockStateWrapper} returned by one of DH's {@link DhApi.Delayed#worldProxy} methods. <br>
+	 *                      A custom implementation of {@link IDhApiBlockStateWrapper} will not be accepted.
+	 *
+	 * @throws IOException if the resourceLocationString wasn't able to be parsed or converted into a valid {@link IDhApiBlockStateWrapper}
+	 * @throws ClassCastException if the wrong levelWrapper type was given
+	 *
+	 * @since API 3.0.0
+	 */
+	IDhApiBlockStateWrapper getDefaultBlockStateWrapper(String resourceLocationString, IDhApiLevelWrapper levelWrapper) throws IOException, ClassCastException;
 	
 }

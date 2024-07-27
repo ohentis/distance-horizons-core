@@ -1,6 +1,7 @@
 #version 150 core
 
 in vec2 vPosition;
+
 out vec2 TexCoord;
 
 /** 

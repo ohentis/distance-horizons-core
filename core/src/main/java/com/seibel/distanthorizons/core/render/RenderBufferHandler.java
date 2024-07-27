@@ -41,9 +41,9 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRen
 import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.IIrisAccessor;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IOverrideInjector;
-import com.seibel.distanthorizons.coreapi.util.math.Mat4f;
-import com.seibel.distanthorizons.coreapi.util.math.Vec3d;
-import com.seibel.distanthorizons.coreapi.util.math.Vec3f;
+import com.seibel.distanthorizons.core.util.math.Mat4f;
+import com.seibel.distanthorizons.core.util.math.Vec3d;
+import com.seibel.distanthorizons.core.util.math.Vec3f;
 import org.apache.logging.log4j.Logger;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fc;
@@ -100,9 +100,6 @@ public class RenderBufferHandler implements AutoCloseable
 		{
 			DhApi.overrides.bind(IDhApiShadowCullingFrustum.class, new NeverCullFrustum());
 		}
-		
-		
-		F3Screen.setRenderBufferHandler(this);
 	}
 	
 	
@@ -247,7 +244,7 @@ public class RenderBufferHandler implements AutoCloseable
 		if (enableFrustumCulling)
 		{
 			int worldMinY = clientLevelWrapper.getMinHeight();
-			int worldHeight = clientLevelWrapper.getHeight();
+			int worldHeight = clientLevelWrapper.getMaxHeight();
 			
 			Vec3d cameraPos = MC_RENDER.getCameraExactPosition();
 			
@@ -417,8 +414,6 @@ public class RenderBufferHandler implements AutoCloseable
 				renderSection.close();
 			}
 		}
-		
-		F3Screen.setRenderBufferHandler(null);
 	}
 	
 	

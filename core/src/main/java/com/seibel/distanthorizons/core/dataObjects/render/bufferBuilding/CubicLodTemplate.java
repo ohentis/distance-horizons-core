@@ -19,6 +19,7 @@
 
 package com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding;
 
+import com.seibel.distanthorizons.api.enums.rendering.EDhApiBlockMaterial;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSource;
 import com.seibel.distanthorizons.core.pos.DhLodPos;
@@ -95,53 +96,54 @@ public class CubicLodTemplate
 			}
 			case SHOW_BLOCK_MATERIAL:
 			{
-				switch (blockMaterialId)
+				
+				switch (EDhApiBlockMaterial.getFromIndex(blockMaterialId))
 				{
-					case IBlockStateWrapper.IrisBlockMaterial.UNKOWN:
-					case IBlockStateWrapper.IrisBlockMaterial.AIR: // shouldn't normally be rendered, but just in case
+					case UNKNOWN:
+					case AIR: // shouldn't normally be rendered, but just in case
 						color = ColorUtil.HOT_PINK;
 						break;
 						
-					case IBlockStateWrapper.IrisBlockMaterial.LEAVES:
+					case LEAVES:
 						color = ColorUtil.DARK_GREEN;
 						break;
-					case IBlockStateWrapper.IrisBlockMaterial.STONE:
+					case STONE:
 						color = ColorUtil.GRAY;
 						break;
-					case IBlockStateWrapper.IrisBlockMaterial.WOOD:
+					case WOOD:
 						color = ColorUtil.BROWN;
 						break;
-					case IBlockStateWrapper.IrisBlockMaterial.METAL:
+					case METAL:
 						color = ColorUtil.DARK_GRAY;
 						break;
-					case IBlockStateWrapper.IrisBlockMaterial.DIRT:
+					case DIRT:
 						color = ColorUtil.LIGHT_BROWN;
 						break;
-					case IBlockStateWrapper.IrisBlockMaterial.LAVA:
+					case LAVA:
 						color = ColorUtil.ORANGE;
 						break;
-					case IBlockStateWrapper.IrisBlockMaterial.DEEPSLATE:
+					case DEEPSLATE:
 						color = ColorUtil.BLACK;
 						break;
-					case IBlockStateWrapper.IrisBlockMaterial.SNOW:
+					case SNOW:
 						color = ColorUtil.WHITE;
 						break;
-					case IBlockStateWrapper.IrisBlockMaterial.SAND:
+					case SAND:
 						color = ColorUtil.TAN;
 						break;
-					case IBlockStateWrapper.IrisBlockMaterial.TERRACOTTA:
+					case TERRACOTTA:
 						color = ColorUtil.DARK_ORANGE;
 						break;
-					case IBlockStateWrapper.IrisBlockMaterial.NETHER_STONE:
+					case NETHER_STONE:
 						color = ColorUtil.DARK_RED;
 						break;
-					case IBlockStateWrapper.IrisBlockMaterial.WATER:
+					case WATER:
 						color = ColorUtil.BLUE;
 						break;
-					case IBlockStateWrapper.IrisBlockMaterial.GRASS:
+					case GRASS:
 						color = ColorUtil.GREEN;
 						break;
-					case IBlockStateWrapper.IrisBlockMaterial.ILLUMINATED:
+					case ILLUMINATED:
 						color = ColorUtil.YELLOW;
 						break;
 					

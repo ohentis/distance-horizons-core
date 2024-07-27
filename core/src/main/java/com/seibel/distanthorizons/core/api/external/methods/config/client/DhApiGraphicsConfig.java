@@ -22,10 +22,7 @@ package com.seibel.distanthorizons.core.api.external.methods.config.client;
 import com.seibel.distanthorizons.api.enums.config.*;
 import com.seibel.distanthorizons.api.enums.rendering.EDhApiTransparency;
 import com.seibel.distanthorizons.api.interfaces.config.IDhApiConfigValue;
-import com.seibel.distanthorizons.api.interfaces.config.client.IDhApiAmbientOcclusionConfig;
-import com.seibel.distanthorizons.api.interfaces.config.client.IDhApiFogConfig;
-import com.seibel.distanthorizons.api.interfaces.config.client.IDhApiGraphicsConfig;
-import com.seibel.distanthorizons.api.interfaces.config.client.IDhApiNoiseTextureConfig;
+import com.seibel.distanthorizons.api.interfaces.config.client.*;
 import com.seibel.distanthorizons.api.objects.config.DhApiConfigValue;
 import com.seibel.distanthorizons.api.enums.rendering.EDhApiRendererMode;
 import com.seibel.distanthorizons.core.config.Config;
@@ -42,9 +39,14 @@ public class DhApiGraphicsConfig implements IDhApiGraphicsConfig
 	// inner layers //
 	//==============//
 	
+	@Override
 	public IDhApiFogConfig fog() { return DhApiFogConfig.INSTANCE; }
+	@Override
 	public IDhApiAmbientOcclusionConfig ambientOcclusion() { return DhApiAmbientOcclusionConfig.INSTANCE; }
+	@Override
 	public IDhApiNoiseTextureConfig noiseTexture() { return DhApiNoiseTextureConfig.INSTANCE; }
+	@Override
+	public IDhApiGenericRenderingConfig genericRendering() { return DhApiGenericRenderingConfig.INSTANCE; }
 	
 	
 	

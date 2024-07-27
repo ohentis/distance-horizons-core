@@ -41,13 +41,17 @@ import java.util.*;
  */
 public class ClientOnlySaveStructure extends AbstractSaveStructure
 {
-	final File folder;
-	private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
-	private static final IMinecraftSharedWrapper MC_SHARED = SingletonInjector.INSTANCE.get(IMinecraftSharedWrapper.class);
+	public static final String SERVER_DATA_FOLDER_NAME = "Distant_Horizons_server_data";
+	public static final String REPLAY_SERVER_FOLDER_NAME = "REPLAY";
 	public static final String INVALID_FILE_CHARACTERS_REGEX = "[\\\\/:*?\"<>|]";
 	
-	SubDimensionLevelMatcher subDimMatcher = null;
-	final HashMap<ILevelWrapper, File> levelWrapperToFileMap = new HashMap<>();
+	private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
+	private static final IMinecraftSharedWrapper MC_SHARED = SingletonInjector.INSTANCE.get(IMinecraftSharedWrapper.class);
+	
+	
+	private SubDimensionLevelMatcher subDimMatcher = null;
+	private final File folder;
+	private final HashMap<ILevelWrapper, File> levelWrapperToFileMap = new HashMap<>();
 	
 	
 	
@@ -237,7 +241,7 @@ public class ClientOnlySaveStructure extends AbstractSaveStructure
 	private static String getSaveStructureFolderPath()
 	{
 		String path = MC_SHARED.getInstallationDirectory().getPath() + File.separatorChar
-				+ "Distant_Horizons_server_data" + File.separatorChar
+				+ SERVER_DATA_FOLDER_NAME + File.separatorChar
 				+ getServerFolderName();
 		return path;
 	}
@@ -245,6 +249,14 @@ public class ClientOnlySaveStructure extends AbstractSaveStructure
 	/** Generated from the server the client is currently connected to. */
 	private static String getServerFolderName()
 	{
+		// if connected to a replay we won't have any server info
+		// use the dedicated replay server folder
+		if (MC_CLIENT.connectedToReplay())
+		{
+			return REPLAY_SERVER_FOLDER_NAME;
+		}
+		
+		
 		// parse the current server's IP
 		ParsedIp parsedIp = new ParsedIp(MC_CLIENT.getCurrentServerIp());
 		String serverIpCleaned = parsedIp.ip.replaceAll(INVALID_FILE_CHARACTERS_REGEX, "");

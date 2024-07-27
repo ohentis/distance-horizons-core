@@ -50,8 +50,11 @@ public class ColumnRenderBuffer implements AutoCloseable
 	
 	private static final long MAX_BUFFER_UPLOAD_TIMEOUT_NANOSECONDS = 1_000_000;
 	
-	public static final int QUADS_BYTE_SIZE = LodUtil.LOD_VERTEX_FORMAT.getByteSize() * 4; // TODO what does the 4 represent
-	public static final int MAX_QUADS_PER_BUFFER = (1024 * 1024 * 1) / QUADS_BYTE_SIZE; // TODO what do these multiples represent?
+	/** number of bytes a single quad takes */
+	public static final int QUADS_BYTE_SIZE = LodUtil.LOD_VERTEX_FORMAT.getByteSize() * 4;
+	/** how big a single VBO can be in bytes */
+	public static final int MAX_VBO_BYTE_SIZE = 10 * 1024 * 1024; // 10 MB
+	public static final int MAX_QUADS_PER_BUFFER = MAX_VBO_BYTE_SIZE / QUADS_BYTE_SIZE;
 	public static final int FULL_SIZED_BUFFER = MAX_QUADS_PER_BUFFER * QUADS_BYTE_SIZE;
 	
 	
