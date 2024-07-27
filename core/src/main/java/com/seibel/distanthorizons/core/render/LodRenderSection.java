@@ -306,6 +306,20 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	}
 	
 	
+	/** 
+	 * Note: can cause issues with neighboring LOD sections 
+	 * if only some (vs all) futures are canceled.
+	 */
+	public void cancelGpuUpload()
+	{
+		CompletableFuture<Void> future = this.uploadRenderDataToGpuFuture;
+		if (future != null)
+		{
+			future.cancel(true);
+		}
+	}
+	
+	
 	
 	//========================//
 	// getters and properties //

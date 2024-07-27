@@ -33,9 +33,9 @@ public interface IClientLevelWrapper extends ILevelWrapper
 	IServerLevelWrapper tryGetServerSideWrapper();
 	
 	int getBlockColor(DhBlockPos pos, IBiomeWrapper biome, IBlockStateWrapper blockState);
-	
 	/** @return -1 if there was a problem getting the color */
 	int getDirtBlockColor();
+	void clearBlockColorCache();
 	
 	/** Will return null if there was an issue finding the biome. */
 	@Nullable
