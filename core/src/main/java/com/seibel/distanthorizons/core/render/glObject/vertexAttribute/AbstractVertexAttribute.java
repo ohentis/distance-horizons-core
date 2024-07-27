@@ -48,7 +48,7 @@ public abstract class AbstractVertexAttribute
 	
 	public static AbstractVertexAttribute create()
 	{
-		if (GLProxy.getInstance().vertexAttributeBufferBindingSupported)
+		if (GLProxy.getInstance().VertexAttributeBufferBindingSupported)
 		{
 			return new VertexAttributePostGL43();
 		}

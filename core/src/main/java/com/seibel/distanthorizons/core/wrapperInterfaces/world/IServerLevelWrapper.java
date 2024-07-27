@@ -26,6 +26,9 @@ import static com.seibel.distanthorizons.core.config.Config.Client.Advanced.Mult
 
 public interface IServerLevelWrapper extends ILevelWrapper
 {
+	@Nullable
+	IClientLevelWrapper tryGetClientLevelWrapper();
+	
 	File getSaveFolder();
 
 	default String getKeyedLevelDimensionName()

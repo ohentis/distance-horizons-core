@@ -245,8 +245,8 @@ public class RenderDataPointUtil
 					" Y-:" + getYMin(dataPoint) +
 					" argb:" + getAlpha(dataPoint) + " " +
 					getRed(dataPoint) + " " +
-					getGreen(dataPoint) + " " +
-					getBlue(dataPoint) +
+					getBlue(dataPoint) + " " +
+					getGreen(dataPoint) +
 					" BL:" + getLightBlock(dataPoint) +
 					" SL:" + getLightSky(dataPoint) +
 					" BID:" + getBlockMaterialId(dataPoint);

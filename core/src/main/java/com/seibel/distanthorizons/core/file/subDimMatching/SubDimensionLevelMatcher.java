@@ -190,7 +190,7 @@ public class SubDimensionLevelMatcher implements AutoCloseable
 		}
 		FullDataSourceV2 newChunkSizedFullDataView = FullDataSourceV2.createFromChunk(newlyLoadedChunk);
 		// convert to a data source for easier comparing
-		FullDataSourceV2 newDataSource = FullDataSourceV2.createEmpty(DhSectionPos.encodeContaining(DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL, this.playerData.playerBlockPos));
+		FullDataSourceV2 newDataSource = FullDataSourceV2.createEmpty(DhSectionPos.encode(this.playerData.playerBlockPos));
 		newDataSource.update(newChunkSizedFullDataView);
 		
 		
@@ -215,7 +215,7 @@ public class SubDimensionLevelMatcher implements AutoCloseable
 				// get the data source to compare against
 				try (IDhLevel tempLevel = new DhClientLevel(new ClientOnlySaveStructure(), this.currentClientLevel, testLevelFolder, false, null))
 				{
-					testFullDataSource = tempLevel.getFullDataProvider().getAsync(DhSectionPos.encodeContaining(DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL, this.playerData.playerBlockPos)).join();
+					testFullDataSource = tempLevel.getFullDataProvider().getAsync(DhSectionPos.encode(this.playerData.playerBlockPos)).join();
 					if (testFullDataSource == null)
 					{
 						continue;

@@ -29,8 +29,7 @@ import com.seibel.distanthorizons.core.logging.f3.F3Screen;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
-import com.seibel.distanthorizons.core.sql.dto.BeaconBeamDTO;
-import com.seibel.distanthorizons.core.sql.repo.AbstractDhRepo;
+import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.TimerUtil;
 import com.seibel.distanthorizons.core.util.objects.Pair;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
@@ -57,7 +56,7 @@ public class SharedApi
 	private static final Set<DhChunkPos> UPDATING_CHUNK_POS_SET = ConcurrentHashMap.newKeySet();
 	/** how many chunks can be queued for updating per thread, used to prevent updates from infinitely pilling up if the user flys around extremely fast */
 	private static final int MAX_UPDATING_CHUNK_COUNT_PER_THREAD = 500;
-	private static final int MIN_MS_BETWEEN_OVERLOADED_LOG_MESSAGE = 30_000;
+	private static final int MIN_MS_BETWEEN_OVERLOADED_LOG_MESSAGE = 5_000;
 	
 	private static final Timer CHUNK_UPDATE_TIMER = TimerUtil.CreateTimer("ChunkUpdateTimer");
 	
@@ -102,9 +101,7 @@ public class SharedApi
 			{
 				DebugRenderer.clearRenderables();
 				MC_RENDER.clearTargetFrameBuffer();
-				// shouldn't be necessary, but if we missed closing one of the connections this should make sure they're all closed
-			AbstractDhRepo.closeAllConnections();
-			// needs to be closed on world shutdown to clear out un-processed chunks
+				// needs to be closed on world shutdown to clear out un-processed chunks
 				UPDATING_CHUNK_POS_SET.clear();
 			}
 			
@@ -141,8 +138,7 @@ public class SharedApi
 	 * Used to prevent getting a full chunk from MC if it isn't necessary. <br>
 	 * This is important since asking MC for a chunk is slow and may block the render thread.
 	 */
-	public static boolean isChunkAtBlockPosAlreadyUpdating(int blockPosX, int blockPosZ)
-	{ return UPDATING_CHUNK_POS_SET.contains(new DhChunkPos(new DhBlockPos2D(blockPosX, blockPosZ))); }
+	public static boolean isChunkAtBlockPosAlreadyUpdating(int blockPosX, int blockPosZ) { return UPDATING_CHUNK_POS_SET.contains(new DhChunkPos(new DhBlockPos2D(blockPosX, blockPosZ))); }
 	
 	
 	/** handles both block place and break events */
@@ -219,13 +215,7 @@ public class SharedApi
 			if (msBetweenLastLog >= MIN_MS_BETWEEN_OVERLOADED_LOG_MESSAGE)
 			{
 				lastOverloadedLogMessageMsTime = System.currentTimeMillis();
-				
-				String message = "Distant Horizons overloaded, too many chunks queued for updating. " +
-						"\nThis may result in holes in your LODs. " +
-						"\nPlease move through the world slower, decrease your vanilla render distance, slow down your world pre-generator, or increase the Distant Horizons' CPU load config. " +
-						"\nMax queue count ["+maxQueueCount+"] (["+MAX_UPDATING_CHUNK_COUNT_PER_THREAD+"] per thread).";
-				ClientApi.INSTANCE.showChatMessageNextFrame(message);
-				LOGGER.warn(message);
+				LOGGER.warn("Too many chunks queued for updating, max queue count ["+maxQueueCount+"] (["+MAX_UPDATING_CHUNK_COUNT_PER_THREAD+"] per thread). This may result in holes in your LODs. Please move through the world slower, decrease your vanilla render distance, slow down your world pre-generator, or increase the CPU load config.");
 			}
 			
 			return;
@@ -320,18 +310,6 @@ public class SharedApi
 					}
 					
 					
-					// having a list of the nearby chunks is needed for lighting and beacon generation
-					ArrayList<IChunkWrapper> nearbyChunkList;
-					if (neighbourChunkList != null)
-					{
-						nearbyChunkList = neighbourChunkList;
-					}
-					else
-					{
-						nearbyChunkList = new ArrayList<>(1);
-						nearbyChunkList.add(chunkWrapper);
-					}
-					
 					
 					// Save or populate the chunk wrapper's lighting
 					// this is done so we don't have to worry about MC unloading the lighting data for this chunk
@@ -341,7 +319,7 @@ public class SharedApi
 						try
 						{
 							// If MC's lighting engine isn't thread safe this may cause the server thread to lag
-							chunkWrapper.bakeDhLightingUsingMcLightingEngine();
+							chunkWrapper.bakeDhLightingUsingMcLightingEngine(); // TODO handle unlit chunks, would pulling in the chunk from disk be a good idea? Look at ChunkLoader in the world gen code for an example
 						}
 						catch (IllegalStateException e)
 						{
@@ -351,15 +329,20 @@ public class SharedApi
 					else
 					{
 						// generate the chunk's lighting, using neighboring chunks if present
+						
+						ArrayList<IChunkWrapper> nearbyChunkList;
+						if (neighbourChunkList != null)
+						{
+							nearbyChunkList = neighbourChunkList;
+						}
+						else
+						{
+							nearbyChunkList = new ArrayList<>(1);
+							nearbyChunkList.add(chunkWrapper);
+						}
+						
 						DhLightingEngine.INSTANCE.lightChunk(chunkWrapper, nearbyChunkList, dhLevel.hasSkyLight() ? 15 : 0);
 					}
-					
-					
-					
-					// get this chunk's active beacons
-					List<BeaconBeamDTO> beaconBeamList = chunkWrapper.getAllActiveBeacons(nearbyChunkList);
-					dhLevel.setBeaconBeamsForChunk(chunkWrapper.getChunkPos(), beaconBeamList);
-					
 					
 					dhLevel.updateChunkAsync(chunkWrapper);
 					dhLevel.setChunkHash(chunkWrapper.getChunkPos(), newChunkHash);

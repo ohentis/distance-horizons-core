@@ -21,7 +21,6 @@ package com.seibel.distanthorizons.api.methods.events.abstractEvents;
 
 import com.seibel.distanthorizons.api.interfaces.world.IDhApiLevelWrapper;
 import com.seibel.distanthorizons.api.methods.events.interfaces.IDhApiEvent;
-import com.seibel.distanthorizons.api.methods.events.interfaces.IDhApiEventParam;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiEventParam;
 
 /**
@@ -50,16 +49,13 @@ public abstract class DhApiLevelLoadEvent implements IDhApiEvent<DhApiLevelLoadE
 	// parameter object //
 	//==================//
 	
-	public static class EventParam implements IDhApiEventParam
+	public static class EventParam
 	{
 		/** The newly loaded level. */
 		public final IDhApiLevelWrapper levelWrapper;
 		
 		public EventParam(IDhApiLevelWrapper newLevelWrapper) { this.levelWrapper = newLevelWrapper; }
 		
-		
-		@Override
-		public EventParam copy() { return new EventParam(this.levelWrapper); }
 	}
 	
 }

@@ -31,7 +31,6 @@ import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
-import com.seibel.distanthorizons.core.sql.repo.BeaconBeamRepo;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
 import com.seibel.distanthorizons.core.util.objects.quadTree.QuadNode;
@@ -330,10 +329,6 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 				}
 				
 				// all child positions are loaded, disable this section and enable its children.
-				if (renderSection.renderingEnabled)
-				{
-					this.level.unloadBeaconBeamsInPos(renderSection.pos);
-				}
 				renderSection.renderingEnabled = false;
 				
 				// walk back down the tree and enable the child sections //TODO there are probably more efficient ways of doing this, but this will work for now
@@ -388,7 +383,6 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 					if (!renderSection.renderingEnabled)
 					{
 						renderSection.renderingEnabled = true;
-						this.level.loadBeaconBeamsInPos(renderSection.pos);
 						
 						// delete/disable children, all of them will be a lower detail level than requested
 						quadNode.deleteAllChildren((childRenderSection) ->

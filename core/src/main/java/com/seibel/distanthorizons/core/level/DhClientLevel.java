@@ -34,8 +34,6 @@ import com.seibel.distanthorizons.core.multiplayer.client.FullDataRefreshQueue;
 import com.seibel.distanthorizons.core.network.event.ScopedNetworkEventSource;
 import com.seibel.distanthorizons.core.network.messages.fullData.FullDataPartialUpdateMessage;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
-import com.seibel.distanthorizons.core.render.RenderBufferHandler;
-import com.seibel.distanthorizons.core.render.renderer.generic.GenericObjectRenderer;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV2DTO;
@@ -98,7 +96,6 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 			LOGGER.warn("unable to create data folder.");
 		}
 		this.levelWrapper = clientLevelWrapper;
-		this.levelWrapper.setParentLevel(this);
 		this.saveStructure = saveStructure;
 		
 		this.networkState = networkState;
@@ -120,8 +117,7 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 		
 		this.clientside = new ClientLevelModule(this);
 		
-		this.createAndSetSupportingRepos(this.dataFileHandler.repo.databaseFile);
-		this.runRepoReliantSetup();
+		this.createAndSetChunkHashRepo(this.dataFileHandler.repo.databaseFile);
 		
 		if (enableRendering)
 		{
@@ -302,11 +298,10 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 			this.eventSource.close();
 		}
 		
-		this.levelWrapper.setParentLevel(null);
 		this.clientside.close();
 		super.close();
 		this.dataFileHandler.close();
-		LOGGER.info("Closed [" + DhClientLevel.class.getSimpleName() + "] for [" + this.levelWrapper + "]");
+		LOGGER.info("Closed " + DhClientLevel.class.getSimpleName() + " for " + this.levelWrapper);
 	}
 	
 	@Override
@@ -318,15 +313,6 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 	@Override
 	public boolean hasSkyLight() { return this.levelWrapper.hasSkyLight(); }
 	
-	
-	@Override
-	public GenericObjectRenderer getGenericRenderer() { return this.clientside.genericRenderer; }
-	@Override
-	public RenderBufferHandler getRenderBufferHandler()
-	{
-		ClientLevelModule.ClientRenderState renderState = this.clientside.ClientRenderStateRef.get();
-		return (renderState != null) ? renderState.renderBufferHandler : null;
-	}
 	
 	@Override
 	public void onWorldGenTaskComplete(long pos)

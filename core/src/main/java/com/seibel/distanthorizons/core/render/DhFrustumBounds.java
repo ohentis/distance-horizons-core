@@ -1,9 +1,8 @@
 package com.seibel.distanthorizons.core.render;
 
 import com.seibel.distanthorizons.api.interfaces.override.rendering.IDhApiCullingFrustum;
-import com.seibel.distanthorizons.api.objects.math.DhApiMat4f;
 import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IOverrideInjector;
-import com.seibel.distanthorizons.core.util.math.Mat4f;
+import com.seibel.distanthorizons.coreapi.util.math.Mat4f;
 import org.joml.FrustumIntersection;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fc;
@@ -36,12 +35,12 @@ public class DhFrustumBounds implements IDhApiCullingFrustum
 	//=========//
 	
 	@Override
-	public void update(int worldMinBlockY, int worldMaxBlockY, DhApiMat4f dhWorldViewProjection)
+	public void update(int worldMinBlockY, int worldMaxBlockY, Mat4f dhWorldViewProjection)
 	{
 		this.worldMinY = worldMinBlockY;
 		this.worldMaxY = worldMaxBlockY;
 		
-		Matrix4f worldViewProjection = new Matrix4f(Mat4f.createJomlMatrix(dhWorldViewProjection));
+		Matrix4f worldViewProjection = new Matrix4f(dhWorldViewProjection.createJomlMatrix());
 		this.frustum.set(worldViewProjection);
 		
 		Matrix4fc matWorldViewProjectionInv = new Matrix4f(worldViewProjection).invert();

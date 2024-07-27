@@ -29,7 +29,7 @@ import java.util.List;
  * Contains a list of {@link DhApiTerrainDataPoint} representing the blocks in a Minecraft chunk.
  *
  * @author Builderb0y, James Seibel
- * @version 2024-7-21
+ * @version 2023-12-21
  * @since API 2.0.0
  * 
  * @see IDhApiWrapperFactory
@@ -41,8 +41,8 @@ public class DhApiChunk
 	public final int chunkPosX;
 	public final int chunkPosZ;
 	
-	public final int bottomYBlockPos;
 	public final int topYBlockPos;
+	public final int bottomYBlockPos;
 	
 	private final List<List<DhApiTerrainDataPoint>> dataPoints;
 	
@@ -52,12 +52,12 @@ public class DhApiChunk
 	// constructors //
 	//==============//
 	
-	public DhApiChunk(int chunkPosX, int chunkPosZ, int bottomYBlockPos, int topYBlockPos) 
+	public DhApiChunk(int chunkPosX, int chunkPosZ, int topYBlockPos, int bottomYBlockPos) 
 	{
 		this.chunkPosX = chunkPosX;
 		this.chunkPosZ = chunkPosZ;
-		this.bottomYBlockPos = bottomYBlockPos;
 		this.topYBlockPos = topYBlockPos;
+		this.bottomYBlockPos = bottomYBlockPos;
 		
 		// populate the array to prevent null pointers
 		this.dataPoints = new ArrayList<>(16 * 16); // 256

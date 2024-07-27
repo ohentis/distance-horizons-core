@@ -19,8 +19,7 @@
 
 package com.seibel.distanthorizons.core.pos;
 
-import com.seibel.distanthorizons.core.util.LodUtil;
-import com.seibel.distanthorizons.core.util.math.Vec3d;
+import com.seibel.distanthorizons.coreapi.util.math.Vec3d;
 
 public class DhChunkPos
 {
@@ -31,10 +30,6 @@ public class DhChunkPos
 	public final int hashCode;
 	
 	
-	
-	//==============//
-	// constructors //
-	//==============//
 	
 	public DhChunkPos(int x, int z)
 	{
@@ -62,10 +57,6 @@ public class DhChunkPos
 	
 	
 	
-	//=========//
-	// methods //
-	//=========//
-	
 	public DhBlockPos center() { return new DhBlockPos(8 + this.x << 4, 0, 8 + this.z << 4); }
 	public DhBlockPos corner() { return new DhBlockPos(this.x << 4, 0, this.z << 4); }
 	
@@ -79,28 +70,12 @@ public class DhChunkPos
 	
 	public DhBlockPos2D getMinBlockPos() { return new DhBlockPos2D(this.x << 4, this.z << 4); }
 	
-	public boolean contains(DhBlockPos pos)
-	{
-		int minBlockX = this.getMinBlockX();
-		int minBlockZ = this.getMinBlockZ();
-		int maxBlockX = minBlockX + LodUtil.CHUNK_WIDTH;
-		int maxBlockZ = minBlockZ + LodUtil.CHUNK_WIDTH;
-		
-		return minBlockX <= pos.x && pos.x <= maxBlockX
-				&& minBlockZ <= pos.z && pos.z <= maxBlockZ;
-	}
-	
 	public long getLong() { return toLong(this.x, this.z); }
 	
 	public double distance(DhChunkPos other)
 	{
 		return Math.sqrt(Math.pow(x - other.x, 2) + Math.pow(z - other.z, 2));
 	}
-	
-	
-	//================//
-	// base overrides //
-	//================//
 	
 	@Override
 	public boolean equals(Object obj)

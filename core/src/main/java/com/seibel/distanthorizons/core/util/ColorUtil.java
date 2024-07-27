@@ -19,8 +19,6 @@
 
 package com.seibel.distanthorizons.core.util;
 
-import java.awt.*;
-
 /**
  * Handles the bit-wise math used when
  * dealing with colors stored as integers.
@@ -213,8 +211,5 @@ public class ColorUtil
 				",G:" + getGreen(color) +
 				",B:" + getBlue(color);
 	}
-	
-	public static Color toColorObjRGB(int color) { return new Color(getRed(color), getGreen(color), getBlue(color)); }
-	public static Color toColorObjRGBA(int color) { return new Color(getRed(color), getGreen(color), getBlue(color), getAlpha(color)); }
 	
 }

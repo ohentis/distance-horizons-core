@@ -20,20 +20,17 @@
 package com.seibel.distanthorizons.core.config;
 
 
-import com.seibel.distanthorizons.api.DhApi;
 import com.seibel.distanthorizons.api.enums.config.*;
 import com.seibel.distanthorizons.api.enums.config.quickOptions.*;
 import com.seibel.distanthorizons.api.enums.rendering.*;
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiDistantGeneratorMode;
 import com.seibel.distanthorizons.core.config.eventHandlers.*;
 import com.seibel.distanthorizons.core.config.eventHandlers.presets.*;
-import com.seibel.distanthorizons.core.config.listeners.ConfigChangeListener;
 import com.seibel.distanthorizons.core.config.types.*;
 import com.seibel.distanthorizons.core.config.types.enums.*;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
-import com.seibel.distanthorizons.core.wrapperInterfaces.IWrapperFactory;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftSharedWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.coreapi.util.StringUtil;
@@ -139,7 +136,6 @@ public class Config
 				public static ConfigCategory fog = new ConfigCategory.Builder().set(Fog.class).build();
 				public static ConfigCategory ssao = new ConfigCategory.Builder().set(Ssao.class).build();
 				public static ConfigCategory noiseTextureSettings = new ConfigCategory.Builder().set(NoiseTextureSettings.class).build();
-				public static ConfigCategory genericRendering = new ConfigCategory.Builder().set(GenericRendering.class).build();
 				public static ConfigCategory advancedGraphics = new ConfigCategory.Builder().set(AdvancedGraphics.class).build();
 				
 				
@@ -292,7 +288,7 @@ public class Config
 						private static final Double FOG_RANGE_MAX = Math.sqrt(2.0);
 						
 						public static ConfigEntry<Double> farFogStart = new ConfigEntry.Builder<Double>()
-								.setMinDefaultMax(FOG_RANGE_MIN, 0.4, FOG_RANGE_MAX)
+								.setMinDefaultMax(FOG_RANGE_MIN, 0.0, FOG_RANGE_MAX)
 								.comment(""
 										+ "At what distance should the far fog start? \n"
 										+ "\n"
@@ -523,8 +519,7 @@ public class Config
 					public static ConfigEntry<Integer> noiseSteps = new ConfigEntry.Builder<Integer>()
 							.setMinDefaultMax(1, 4, null)
 							.comment(""
-									+ "How many steps of noise should be applied to LODs?"
-									+ "")
+									+ "How many steps of noise should be applied to LODs?")
 							.build();
 					
 					public static ConfigEntry<Double> noiseIntensity = new ConfigEntry.Builder<Double>()    // TODO: Make this a float (the ClassicConfigGUI doesn't support floats)
@@ -537,34 +532,7 @@ public class Config
 							.setMinDefaultMax(0, 1024, null)
 							.comment(""
 									+ "Defines how far should the noise texture render before it fades away. (in blocks) \n"
-									+ "Set to 0 to disable noise from fading away \n"
-									+ "")
-							.build();
-					
-				}
-				
-				public static class GenericRendering
-				{
-					public static ConfigEntry<Boolean> enableRendering = new ConfigEntry.Builder<Boolean>()
-							.set(true)
-							.comment(""
-									+ "If true non terrain objects will be rendered in DH's terrain. \n"
-									+ "This includes beacon beams and clouds. \n"
-									+ "")
-							.build();
-					
-					public static ConfigEntry<Boolean> enableBeaconRendering = new ConfigEntry.Builder<Boolean>()
-							.set(true)
-							.comment(""
-									+ "If true LOD beacon beams will be rendered. \n"
-									+ "")
-							.build();
-					
-					public static ConfigEntry<Boolean> enableCloudRendering = new ConfigEntry.Builder<Boolean>()
-							.set(true)
-							.comment(""
-									+ "If true LOD clouds will be rendered. \n"
-									+ "")
+									+ "Set to 0 to disable noise from fading away")
 							.build();
 					
 				}
@@ -621,10 +589,8 @@ public class Config
 									+ " does not have a ceiling.")
 							.build();
 					
-					@Deprecated
 					public static ConfigEntry<Integer> caveCullingHeight = new ConfigEntry.Builder<Integer>()
 							.setMinDefaultMax(-4096, 40, 4096)
-							.setAppearance(EConfigEntryAppearance.ONLY_IN_API)
 							.comment(""
 									+ "At what Y value should cave culling start?")
 							.build();
@@ -795,20 +761,6 @@ public class Config
 								+ "")
 						.build();
 				
-				public static ConfigEntry<Boolean> pullLightingForPregeneratedChunks = new ConfigEntry.Builder<Boolean>()
-						.set(false)
-						.comment(""
-								+ "If true LOD generation for pre-existing chunks will attempt to pull the lighting data \n"
-								+ "saved in Minecraft's Region files. \n"
-								+ "If false DH will pull in chunks without lighting and re-light them. \n"
-								+ " \n"
-								+ "Setting this to true will result in faster LOD generation \n"
-								+ "for already generated worlds, but is broken by most lighting mods. \n"
-								+ " \n"
-								+ "Set this to false if LODs are black. \n"
-								+ "")
-						.build();
-				
 				public static ConfigEntry<EDhApiDataCompressionMode> dataCompression = new ConfigEntry.Builder<EDhApiDataCompressionMode>()
 						.set(EDhApiDataCompressionMode.LZMA2)
 						.comment(""
@@ -857,47 +809,13 @@ public class Config
 								+ "")
 						.build();
 				
-				public static ConfigEntry<String> ignoredRenderBlockCsv = new ConfigEntry.Builder<String>()
-						.set("minecraft:barrier,minecraft:structure_void,minecraft:light,minecraft:tripwire")
-						.comment(""
-								+ "A comma separated list of block resource locations that won't be rendered by DH. \n"
-								+ "Note: air is always included in this list. \n"
-								+ "")
-						.build();
+				//public static ConfigEntry<Boolean> showMigrationChatWarning = new ConfigEntry.Builder<Boolean>()
+				//		.set(true)
+				//		.comment(""
+				//				+ "Determines if a message should be displayed in the chat when LOD migration starts. \n"
+				//				+ "")
+				//		.build();
 				
-				public static ConfigEntry<String> ignoredRenderCaveBlockCsv = new ConfigEntry.Builder<String>()
-						.set("minecraft:glow_lichen,minecraft:rail,minecraft:water,minecraft:lava,minecraft:bubble_column")
-						.comment(""
-								+ "A comma separated list of block resource locations that shouldn't be rendered \n"
-								+ "if they are in a 0 sky light underground area. \n"
-								+ "Note: air is always included in this list. \n"
-								+ "")
-						.build();
-				
-				static
-				{
-					ignoredRenderBlockCsv.addListener(new ConfigChangeListener<String>(Config.Client.Advanced.LodBuilding.ignoredRenderBlockCsv, 
-							(blockCsv) -> 
-							{
-								IWrapperFactory wrapperFactory = SingletonInjector.INSTANCE.get(IWrapperFactory.class);
-								if (wrapperFactory != null)
-								{
-									wrapperFactory.resetRendererIgnoredBlocksSet();
-									DhApi.Delayed.renderProxy.clearRenderDataCache();
-								}
-							}));
-					
-					ignoredRenderCaveBlockCsv.addListener(new ConfigChangeListener<String>(Config.Client.Advanced.LodBuilding.ignoredRenderCaveBlockCsv, 
-							(blockCsv) -> 
-							{
-								IWrapperFactory wrapperFactory = SingletonInjector.INSTANCE.get(IWrapperFactory.class);
-								if (wrapperFactory != null)
-								{
-									wrapperFactory.resetRendererIgnoredCaveBlocks();
-									DhApi.Delayed.renderProxy.clearRenderDataCache();
-								}
-							}));
-				}
 			}
 			
 			public static class Multiplayer
@@ -1274,7 +1192,7 @@ public class Config
 				// TODO default to error chat and info file
 				public static ConfigEntry<EDhApiLoggerMode> logWorldGenEvent = new ConfigEntry.Builder<EDhApiLoggerMode>()
 						.setServersideShortName("logWorldGenEvent")
-						.set(EDhApiLoggerMode.LOG_ERROR_TO_CHAT)
+						.set(EDhApiLoggerMode.LOG_WARNING_TO_CHAT_AND_FILE)
 						.comment(""
 								+ "If enabled, the mod will log information about the world generation process. \n"
 								+ "This can be useful for debugging.")
@@ -1282,7 +1200,7 @@ public class Config
 				
 				public static ConfigEntry<EDhApiLoggerMode> logWorldGenPerformance = new ConfigEntry.Builder<EDhApiLoggerMode>()
 						.setServersideShortName("logWorldGenPerformance")
-						.set(EDhApiLoggerMode.LOG_ERROR_TO_CHAT)
+						.set(EDhApiLoggerMode.LOG_WARNING_TO_CHAT_AND_FILE)
 						.comment(""
 								+ "If enabled, the mod will log performance about the world generation process. \n"
 								+ "This can be useful for debugging.")
@@ -1290,7 +1208,7 @@ public class Config
 				
 				public static ConfigEntry<EDhApiLoggerMode> logWorldGenLoadEvent = new ConfigEntry.Builder<EDhApiLoggerMode>()
 						.setServersideShortName("logWorldGenPerformance")
-						.set(EDhApiLoggerMode.LOG_ERROR_TO_CHAT)
+						.set(EDhApiLoggerMode.LOG_WARNING_TO_CHAT_AND_FILE)
 						.comment(""
 								+ "If enabled, the mod will log information about the world generation process. \n"
 								+ "This can be useful for debugging.")
@@ -1298,21 +1216,21 @@ public class Config
 				
 				public static ConfigEntry<EDhApiLoggerMode> logLodBuilderEvent = new ConfigEntry.Builder<EDhApiLoggerMode>()
 						.setServersideShortName("logLodBuilderEvent")
-						.set(EDhApiLoggerMode.LOG_ERROR_TO_CHAT)
+						.set(EDhApiLoggerMode.LOG_WARNING_TO_CHAT_AND_INFO_TO_FILE)
 						.comment(""
 								+ "If enabled, the mod will log information about the LOD generation process. \n"
 								+ "This can be useful for debugging.")
 						.build();
 				
 				public static ConfigEntry<EDhApiLoggerMode> logRendererBufferEvent = new ConfigEntry.Builder<EDhApiLoggerMode>()
-						.set(EDhApiLoggerMode.LOG_ERROR_TO_CHAT)
+						.set(EDhApiLoggerMode.LOG_WARNING_TO_CHAT_AND_INFO_TO_FILE)
 						.comment(""
 								+ "If enabled, the mod will log information about the renderer buffer process. \n"
 								+ "This can be useful for debugging.")
 						.build();
 				
 				public static ConfigEntry<EDhApiLoggerMode> logRendererGLEvent = new ConfigEntry.Builder<EDhApiLoggerMode>()
-						.set(EDhApiLoggerMode.LOG_ERROR_TO_CHAT)
+						.set(EDhApiLoggerMode.LOG_WARNING_TO_CHAT_AND_INFO_TO_FILE)
 						.comment(""
 								+ "If enabled, the mod will log information about the renderer OpenGL process. \n"
 								+ "This can be useful for debugging.")
@@ -1320,7 +1238,7 @@ public class Config
 				
 				public static ConfigEntry<EDhApiLoggerMode> logFileReadWriteEvent = new ConfigEntry.Builder<EDhApiLoggerMode>()
 						.setServersideShortName("logFileReadWriteEvent")
-						.set(EDhApiLoggerMode.LOG_ERROR_TO_CHAT)
+						.set(EDhApiLoggerMode.LOG_WARNING_TO_CHAT_AND_INFO_TO_FILE)
 						.comment(""
 								+ "If enabled, the mod will log information about file read/write operations. \n"
 								+ "This can be useful for debugging.")
@@ -1328,7 +1246,7 @@ public class Config
 				
 				public static ConfigEntry<EDhApiLoggerMode> logFileSubDimEvent = new ConfigEntry.Builder<EDhApiLoggerMode>()
 						.setServersideShortName("logFileSubDimEvent")
-						.set(EDhApiLoggerMode.LOG_ERROR_TO_CHAT)
+						.set(EDhApiLoggerMode.LOG_WARNING_TO_CHAT_AND_INFO_TO_FILE)
 						.comment(""
 								+ "If enabled, the mod will log information about file sub-dimension operations. \n"
 								+ "This can be useful for debugging.")
@@ -1336,7 +1254,7 @@ public class Config
 				
 				public static ConfigEntry<EDhApiLoggerMode> logNetworkEvent = new ConfigEntry.Builder<EDhApiLoggerMode>()
 						.setServersideShortName("logNetworkEvent")
-						.set(EDhApiLoggerMode.LOG_ERROR_TO_CHAT)
+						.set(EDhApiLoggerMode.LOG_WARNING_TO_CHAT_AND_INFO_TO_FILE)
 						.comment(""
 								+ "If enabled, the mod will log information about network operations. \n"
 								+ "This can be useful for debugging.")
@@ -1348,13 +1266,6 @@ public class Config
 						.comment(""
 								+ "If enabled, a chat message will be displayed if Java doesn't have enough \n"
 								+ "memory allocated to run DH well.")
-						.build();
-				
-				public static ConfigEntry<Boolean> showReplayWarningOnStartup = new ConfigEntry.Builder<Boolean>()
-						.set(true)
-						.comment(""
-								+ "If enabled, a chat message will be displayed when a replay is started \n"
-								+ "giving some basic information about how DH will function.")
 						.build();
 				
 			}
@@ -1423,15 +1334,6 @@ public class Config
 								+ "If false the quads will be rendered normally. \n"
 								+ "")
 						.build();
-				
-				public static ConfigEntry<Boolean> logBufferGarbageCollection = new ConfigEntry.Builder<Boolean>()
-						.set(false)
-						.comment(""
-								+ "If true OpenGL Buffer garbage collection will be logged \n"
-								+ "this also includes the number of live buffers. \n"
-								+ "")
-						.build();
-				
 				
 				// Note: This will reset on game restart, and should have a warning on the tooltip
 				public static ConfigEntry<Boolean> allowUnsafeValues = new ConfigEntry.Builder<Boolean>()

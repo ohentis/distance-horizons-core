@@ -21,11 +21,10 @@ package com.seibel.distanthorizons.api.interfaces.override.rendering;
 
 import com.seibel.distanthorizons.api.interfaces.override.IDhApiOverrideable;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
-import com.seibel.distanthorizons.api.objects.math.DhApiVec3f;
+import com.seibel.distanthorizons.coreapi.util.math.Mat4f;
+import com.seibel.distanthorizons.coreapi.util.math.Vec3f;
 
 /**
- * @see IDhApiGenericObjectShaderProgram
- * 
  * @author James Seibel
  * @version 2024-1-24
  * @since API 2.0.0
@@ -58,7 +57,7 @@ public interface IDhApiShaderProgram extends IDhApiOverrideable
 	void fillUniformData(DhApiRenderParam renderParameters);
 	
 	/** sets the vec3 that all DH verticies should be offset by when rendering */
-	void setModelOffsetPos(DhApiVec3f modelPos);
+	void setModelOffsetPos(Vec3f modelPos);
 	
 	/** Binds the given Vertex Buffer Object to this shader program for rendering. */
 	void bindVertexBuffer(int vbo);

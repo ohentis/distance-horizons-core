@@ -33,7 +33,7 @@ import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhAp
  */
 public abstract class DhApiBeforeRenderCleanupEvent implements IDhApiEvent<DhApiRenderParam>
 {
-	/** Fired before Distant Horizons starts the cleanup process once rendering has finished. */
+	/** Fired before Distant Horizons renders LODs. */
 	public abstract void beforeCleanup(DhApiEventParam<DhApiRenderParam> event);
 	
 	

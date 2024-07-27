@@ -19,7 +19,6 @@
 
 package com.seibel.distanthorizons.core.pos;
 
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.coreapi.util.BitShiftUtil;
@@ -102,32 +101,21 @@ public class DhSectionPos
 		return data;
 	}
 	
-	/** Returns the section pos at the requested detail level containing the given BlockPos */
-	public static long encodeContaining(byte outputSectionDetailLevel, DhBlockPos pos)
+	public static long encode(DhBlockPos pos) { return encodeBlockPos(pos.x, pos.z); }
+	public static long encode(DhBlockPos2D pos) { return encodeBlockPos(pos.x, pos.z); }
+	public static long encodeBlockPos(int blockX, int blockZ)
 	{
-		int sectionPosX = getXOrZSectionPosFromChunkOrBlockPos(pos.x, false);
-		int sectionPosZ = getXOrZSectionPosFromChunkOrBlockPos(pos.z, false);
-		long blockPos = DhSectionPos.encode(DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL, sectionPosX, sectionPosZ);
-		return convertToDetailLevel(blockPos, outputSectionDetailLevel);
+		long pos = encode(LodUtil.BLOCK_DETAIL_LEVEL, blockX, blockZ);
+		pos = convertToDetailLevel(pos, DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL);
+		return pos;
 	}
-	/** Returns the section pos at the requested detail level containing the given ChunkPos */
-	public static long encodeContaining(byte outputSectionDetailLevel, DhChunkPos pos)
+	
+	public static long encode(DhChunkPos pos) { return encodeChunkPos(pos.x, pos.z); }
+	public static long encodeChunkPos(int chunkX, int chunkZ)
 	{
-		int sectionPosX = getXOrZSectionPosFromChunkOrBlockPos(pos.x, true);
-		int sectionPosZ = getXOrZSectionPosFromChunkOrBlockPos(pos.z, true);
-		long blockPos = DhSectionPos.encode(DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL, sectionPosX, sectionPosZ);
-		return convertToDetailLevel(blockPos, outputSectionDetailLevel);
-	}
-	private static int getXOrZSectionPosFromChunkOrBlockPos(int chunkXOrZPos, boolean isChunkPos)
-	{
-		int sectionPos = chunkXOrZPos;
-		int fullDataSourceWidth = isChunkPos ? FullDataSourceV2.NUMB_OF_CHUNKS_WIDE : (FullDataSourceV2.NUMB_OF_CHUNKS_WIDE * LodUtil.CHUNK_WIDTH);
-		
-		// negative positions start at -1 so the logic there is slightly different
-		sectionPos = (sectionPos < 0) 
-				? ((sectionPos + 1) / fullDataSourceWidth) - 1 
-				: (sectionPos / fullDataSourceWidth);
-		return sectionPos;
+		long pos = encode(LodUtil.CHUNK_DETAIL_LEVEL, chunkX, chunkZ);
+		pos = convertToDetailLevel(pos, DhSectionPos.SECTION_CHUNK_DETAIL_LEVEL);
+		return pos;
 	}
 	
 	

@@ -62,8 +62,6 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 	
 	/** measured in data columns */
 	public static final int WIDTH = 64;
-	/** how many chunks wide this datasource is. */
-	public static final int NUMB_OF_CHUNKS_WIDE = WIDTH / LodUtil.CHUNK_WIDTH;
 	
 	public static final byte DATA_FORMAT_VERSION = 1;
 	

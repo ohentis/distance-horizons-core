@@ -20,10 +20,9 @@
 package com.seibel.distanthorizons.api.methods.events.abstractEvents;
 
 import com.seibel.distanthorizons.api.methods.events.interfaces.IDhApiEvent;
-import com.seibel.distanthorizons.api.methods.events.interfaces.IDhApiEventParam;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiEventParam;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
-import com.seibel.distanthorizons.api.objects.math.DhApiVec3f;
+import com.seibel.distanthorizons.coreapi.util.math.Vec3f;
 
 /**
  * Called before Distant Horizons starts rendering a buffer. <br>
@@ -53,28 +52,19 @@ public abstract class DhApiBeforeBufferRenderEvent implements IDhApiEvent<DhApiB
 	// parameter object //
 	//==================//
 	
-	public static class EventParam extends DhApiRenderParam implements IDhApiEventParam
+	public static class EventParam extends DhApiRenderParam
 	{
 		/** 
 		 * Measured in blocks.
 		 * Should be applied to the model view matrix to move the buffer into its proper place. 
 		 */
-		public final DhApiVec3f modelPos;
+		public final Vec3f modelPos;
 		
 		
-		public EventParam(DhApiRenderParam parent, DhApiVec3f modelPos)
+		public EventParam(DhApiRenderParam parent, Vec3f modelPos)
 		{
 			super(parent);
 			this.modelPos = modelPos;
-		}
-		
-		
-		@Override
-		public EventParam copy()
-		{
-			return new EventParam(
-					this, this.modelPos.copy()
-			);
 		}
 	}
 	

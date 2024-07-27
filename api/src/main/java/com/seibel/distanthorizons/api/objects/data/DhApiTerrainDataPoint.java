@@ -26,7 +26,7 @@ import com.seibel.distanthorizons.api.interfaces.block.IDhApiBlockStateWrapper;
  * Holds a single datapoint of terrain data.
  *
  * @author James Seibel
- * @version 2024-7-20
+ * @version 2022-11-13
  * @since API 1.0.0
  */
 public class DhApiTerrainDataPoint
@@ -42,22 +42,22 @@ public class DhApiTerrainDataPoint
 	
 	public final int blockLightLevel;
 	public final int skyLightLevel;
-	public final int bottomYBlockPos;
 	public final int topYBlockPos;
+	public final int bottomYBlockPos;
 	
 	public final IDhApiBlockStateWrapper blockStateWrapper;
 	public final IDhApiBiomeWrapper biomeWrapper;
 	
 	
 	
-	public DhApiTerrainDataPoint(byte detailLevel, int blockLightLevel, int skyLightLevel, int bottomYBlockPos, int topYBlockPos, IDhApiBlockStateWrapper blockStateWrapper, IDhApiBiomeWrapper biomeWrapper)
+	public DhApiTerrainDataPoint(byte detailLevel, int blockLightLevel, int skyLightLevel, int topYBlockPos, int bottomYBlockPos, IDhApiBlockStateWrapper blockStateWrapper, IDhApiBiomeWrapper biomeWrapper)
 	{
 		this.detailLevel = detailLevel;
 		
 		this.blockLightLevel = blockLightLevel;
 		this.skyLightLevel = skyLightLevel;
-		this.bottomYBlockPos = bottomYBlockPos;
 		this.topYBlockPos = topYBlockPos;
+		this.bottomYBlockPos = bottomYBlockPos;
 		
 		this.blockStateWrapper = blockStateWrapper;
 		this.biomeWrapper = biomeWrapper;

@@ -38,7 +38,6 @@ import com.seibel.distanthorizons.core.render.glObject.GLState;
 import com.seibel.distanthorizons.core.render.glObject.buffer.GLVertexBuffer;
 import com.seibel.distanthorizons.core.render.glObject.buffer.QuadElementBuffer;
 import com.seibel.distanthorizons.core.render.glObject.texture.*;
-import com.seibel.distanthorizons.core.render.renderer.generic.GenericObjectRenderer;
 import com.seibel.distanthorizons.core.render.renderer.shaders.*;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
@@ -51,13 +50,16 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.IIrisAccess
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.OverrideInjector;
-import com.seibel.distanthorizons.core.util.math.Mat4f;
-import com.seibel.distanthorizons.core.util.math.Vec3d;
-import com.seibel.distanthorizons.core.util.math.Vec3f;
+import com.seibel.distanthorizons.coreapi.util.math.Mat4f;
+import com.seibel.distanthorizons.coreapi.util.math.Vec3d;
+import com.seibel.distanthorizons.coreapi.util.math.Vec3f;
 import org.apache.logging.log4j.LogManager;
 import org.lwjgl.opengl.GL32;
 
 import java.awt.*;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
@@ -95,14 +97,90 @@ public class LodRenderer
 	private int cachedWidth;
 	private int cachedHeight;
 	
+	
+	/** called by each {@link ColumnRenderBuffer} before rendering */
+	public void setModelViewMatrixOffset(DhBlockPos pos, DhApiRenderParam renderEventParam) throws IllegalStateException
+	{
+		Vec3d cam = MC_RENDER.getCameraExactPosition();
+		Vec3f modelPos = new Vec3f((float) (pos.x - cam.x), (float) (pos.y - cam.y), (float) (pos.z - cam.z));
+		
+		
+		IDhApiShaderProgram shaderProgram = this.lodRenderProgram;
+		IDhApiShaderProgram shaderProgramOverride = OverrideInjector.INSTANCE.get(IDhApiShaderProgram.class);
+		if (shaderProgramOverride != null && shaderProgram.overrideThisFrame())
+		{
+			shaderProgram = shaderProgramOverride;
+		}
+		
+		if (!GL32.glIsProgram(shaderProgram.getId()))
+		{
+			throw new IllegalStateException("No GL program exists with the ID: [" + shaderProgram.getId() + "]. This either means a shader program was freed while it was still in use or was never created.");
+		}
+		
+		shaderProgram.bind();
+		shaderProgram.setModelOffsetPos(modelPos);
+		
+		ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeBufferRenderEvent.class, new DhApiBeforeBufferRenderEvent.EventParam(renderEventParam, modelPos));
+	}
+	
+	public void drawVbo(GLVertexBuffer vbo)
+	{
+		//// can be uncommented to add additional debug validation to prevent crashes if invalid buffers are being created
+		//// shouldn't be used in production due to the performance hit
+		//if (GL32.glIsBuffer(vbo.getId()))
+		{
+			IDhApiShaderProgram shaderProgram = this.lodRenderProgram;
+			IDhApiShaderProgram shaderProgramOverride = OverrideInjector.INSTANCE.get(IDhApiShaderProgram.class);
+			if (shaderProgramOverride != null && shaderProgram.overrideThisFrame())
+			{
+				shaderProgram = shaderProgramOverride;
+			}
+			
+			
+			vbo.bind();
+			shaderProgram.bindVertexBuffer(vbo.getId());
+			GL32.glDrawElements(GL32.GL_TRIANGLES, (vbo.getVertexCount() / 4) * 6, // TODO what does the 4 and 6 here represent?
+					this.quadIBO.getType(), 0);
+			vbo.unbind();
+		}
+		//else
+		//{
+		//	// will spam the log if uncommented, but helpful for validation
+		//	//LOGGER.warn("Unable to draw VBO: "+vbo.getId());
+		//}
+	}
+	
+	
+	public static class LagSpikeCatcher
+	{
+		long timer = System.nanoTime();
+		
+		public LagSpikeCatcher() { }
+		
+		public void end(String source)
+		{
+			if (!ENABLE_DRAW_LAG_SPIKE_LOGGING)
+			{
+				return;
+			}
+			
+			this.timer = System.nanoTime() - this.timer;
+			if (this.timer > DRAW_LAG_SPIKE_THRESHOLD_NS)
+			{
+				//4 ms
+				EVENT_LOGGER.debug("NOTE: " + source + " took " + Duration.ofNanos(this.timer) + "!");
+			}
+			
+		}
+		
+	}
+	
 	private static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	private static final IMinecraftRenderWrapper MC_RENDER = SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
 	
 	private final ReentrantLock setupLock = new ReentrantLock();
 	
 	public final RenderBufferHandler bufferHandler;
-	public final GenericObjectRenderer genericObjectRenderer;
-	
 	
 	// The shader program
 	IDhApiShaderProgram lodRenderProgram = null;
@@ -127,10 +205,9 @@ public class LodRenderer
 	// constructor //
 	//=============//
 	
-	public LodRenderer(RenderBufferHandler bufferHandler, GenericObjectRenderer genericObjectRenderer)
+	public LodRenderer(RenderBufferHandler bufferHandler)
 	{
 		this.bufferHandler = bufferHandler;
-		this.genericObjectRenderer = genericObjectRenderer;
 	}
 	
 	private boolean rendererClosed = false;
@@ -297,41 +374,16 @@ public class LodRenderer
 				// Disable blending for opaque rendering
 				GL32.glDisable(GL32.GL_BLEND);
 				
-				
-				// terrain
 				profiler.popPush("LOD Opaque");
 				ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeRenderPassEvent.class, renderEventParam);
+				
+				// TODO: Directional culling
 				this.bufferHandler.renderOpaque(this, renderEventParam);
 				
-				// custom objects with SSAO
-				if (Config.Client.Advanced.Graphics.GenericRendering.enableRendering.get())
-				{
-					profiler.popPush("Custom Objects");
-					this.genericObjectRenderer.render(renderEventParam, profiler, true);
-				}
-				
-				
-				// SSAO
 				if (Config.Client.Advanced.Graphics.Ssao.enabled.get())
 				{
 					profiler.popPush("LOD SSAO");
-					SSAORenderer.INSTANCE.render(minecraftGlState, new Mat4f(renderEventParam.dhProjectionMatrix), renderEventParam.partialTicks);
-				}
-				
-				
-				// custom objects without SSAO
-				if (Config.Client.Advanced.Graphics.GenericRendering.enableRendering.get())
-				{
-					profiler.popPush("Custom Objects");
-					this.genericObjectRenderer.render(renderEventParam, profiler, false);
-				}
-				
-				
-				//DarkShader.INSTANCE.render(partialTicks); // A test shader to make the world darker
-				
-				if (!deferTransparentRendering && Config.Client.Advanced.Graphics.Quality.transparency.get().transparencyEnabled)
-				{
-					this.renderTransparentBuffers(profiler, renderEventParam, renderEventParam.partialTicks);
+					SSAORenderer.INSTANCE.render(minecraftGlState, renderEventParam.dhProjectionMatrix, renderEventParam.partialTicks);
 				}
 				
 				
@@ -342,9 +394,16 @@ public class LodRenderer
 					Mat4f combinedMatrix = new Mat4f(renderEventParam.dhProjectionMatrix);
 					combinedMatrix.multiply(renderEventParam.dhModelViewMatrix);
 					
-					FogRenderer.INSTANCE.render(minecraftGlState, combinedMatrix, renderEventParam.partialTicks);
+					FogShader.INSTANCE.setModelViewProjectionMatrix(combinedMatrix);
+					FogShader.INSTANCE.render(renderEventParam.partialTicks);
 				}
 				
+				//DarkShader.INSTANCE.render(partialTicks); // A test shader to make the world darker
+				
+				if (!deferTransparentRendering && Config.Client.Advanced.Graphics.Quality.transparency.get().transparencyEnabled)
+				{
+					this.renderTransparentBuffers(profiler, renderEventParam, renderEventParam.partialTicks);
+				}
 				
 				drawLagSpikeCatcher.end("LodDraw");
 				
@@ -363,9 +422,8 @@ public class LodRenderer
 					
 					// Note: this can be very slow if a lot of boxes are being rendered 
 					DebugRenderer.INSTANCE.render(combinedMatrix);
+					profiler.popPush("LOD cleanup");
 				}
-				
-				profiler.popPush("LOD cleanup");
 				
 				
 				
@@ -404,17 +462,6 @@ public class LodRenderer
 				if (Config.Client.Advanced.Graphics.Quality.transparency.get().transparencyEnabled)
 				{
 					this.renderTransparentBuffers(profiler, renderEventParam, renderEventParam.partialTicks);
-					
-					
-					if (Config.Client.Advanced.Graphics.Fog.drawMode.get() != EDhApiFogDrawMode.FOG_DISABLED)
-					{
-						profiler.popPush("LOD Fog");
-						
-						Mat4f combinedMatrix = new Mat4f(renderEventParam.dhProjectionMatrix);
-						combinedMatrix.multiply(renderEventParam.dhModelViewMatrix);
-						
-						FogRenderer.INSTANCE.render(minecraftGlState, combinedMatrix, renderEventParam.partialTicks);
-					}
 				}
 				
 				drawLagSpikeCatcher.end("LodTranslucentDraw");
@@ -469,55 +516,13 @@ public class LodRenderer
 		this.bufferHandler.renderTransparent(this, renderEventParam);
 		GL32.glDepthMask(true); // Apparently the depth mask state is stored in the FBO, so glState fails to restore it...
 		
-	}
-	
-	/** called by each {@link ColumnRenderBuffer} before rendering */
-	public void setModelViewMatrixOffset(DhBlockPos pos, DhApiRenderParam renderEventParam) throws IllegalStateException
-	{
-		Vec3d cam = MC_RENDER.getCameraExactPosition();
-		Vec3f modelPos = new Vec3f((float) (pos.x - cam.x), (float) (pos.y - cam.y), (float) (pos.z - cam.z));
 		
-		
-		IDhApiShaderProgram shaderProgram = this.lodRenderProgram;
-		IDhApiShaderProgram shaderProgramOverride = OverrideInjector.INSTANCE.get(IDhApiShaderProgram.class);
-		if (shaderProgramOverride != null && shaderProgram.overrideThisFrame())
+		if (Config.Client.Advanced.Graphics.Fog.drawMode.get() != EDhApiFogDrawMode.FOG_DISABLED)
 		{
-			shaderProgram = shaderProgramOverride;
+			profiler.popPush("LOD Fog");
+			FogShader.INSTANCE.render(partialTicks);
 		}
-		
-		shaderProgram.bind();
-		shaderProgram.setModelOffsetPos(modelPos);
-		
-		ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeBufferRenderEvent.class, new DhApiBeforeBufferRenderEvent.EventParam(renderEventParam, modelPos));
 	}
-	
-	public void drawVbo(GLVertexBuffer vbo)
-	{
-		//// can be uncommented to add additional debug validation to prevent crashes if invalid buffers are being created
-		//// shouldn't be used in production due to the performance hit
-		//if (GL32.glIsBuffer(vbo.getId()))
-		{
-			IDhApiShaderProgram shaderProgram = this.lodRenderProgram;
-			IDhApiShaderProgram shaderProgramOverride = OverrideInjector.INSTANCE.get(IDhApiShaderProgram.class);
-			if (shaderProgramOverride != null && shaderProgram.overrideThisFrame())
-			{
-				shaderProgram = shaderProgramOverride;
-			}
-			
-			
-			vbo.bind();
-			shaderProgram.bindVertexBuffer(vbo.getId());
-			GL32.glDrawElements(GL32.GL_TRIANGLES, (vbo.getVertexCount() / 4) * 6, // TODO what does the 4 and 6 here represent?
-					this.quadIBO.getType(), 0);
-			vbo.unbind();
-		}
-		//else
-		//{
-		//	// will spam the log if uncommented, but helpful for validation
-		//	//LOGGER.warn("Unable to draw VBO: "+vbo.getId());
-		//}
-	}
-	
 	
 	
 	
@@ -611,7 +616,6 @@ public class LodRenderer
 		boolean renderWireframe = Config.Client.Advanced.Debugging.renderWireframe.get();
 		if (renderWireframe)
 		{
-			// TODO fix
 			GL32.glPolygonMode(GL32.GL_FRONT_AND_BACK, GL32.GL_LINE);
 			//GL32.glDisable(GL32.GL_CULL_FACE);
 		}
@@ -646,7 +650,7 @@ public class LodRenderer
 				this.fogConfig = newFogConfig;
 				
 				this.lodRenderProgram.free();
-				this.lodRenderProgram = new DhTerrainShaderProgram();
+				this.lodRenderProgram = new LodRenderProgram();
 				
 				FogShader.INSTANCE.free();
 				FogShader.INSTANCE = new FogShader(newFogConfig);
@@ -686,7 +690,7 @@ public class LodRenderer
 			
 			EVENT_LOGGER.info("Setting up renderer");
 			this.isSetupComplete = true;
-			this.lodRenderProgram = new DhTerrainShaderProgram();
+			this.lodRenderProgram = new LodRenderProgram();
 			if (ENABLE_IBO)
 			{
 				this.quadIBO = new QuadElementBuffer();
@@ -863,36 +867,5 @@ public class LodRenderer
 			this.setupLock.unlock();
 		}
 	}
-	
-	
-	
-	//================//
-	// helper classes //
-	//================//
-	
-	public static class LagSpikeCatcher
-	{
-		long timer = System.nanoTime();
-		
-		public LagSpikeCatcher() { }
-		
-		public void end(String source)
-		{
-			if (!ENABLE_DRAW_LAG_SPIKE_LOGGING)
-			{
-				return;
-			}
-			
-			this.timer = System.nanoTime() - this.timer;
-			if (this.timer > DRAW_LAG_SPIKE_THRESHOLD_NS)
-			{
-				//4 ms
-				EVENT_LOGGER.debug("NOTE: " + source + " took " + Duration.ofNanos(this.timer) + "!");
-			}
-			
-		}
-		
-	}
-	
 	
 }

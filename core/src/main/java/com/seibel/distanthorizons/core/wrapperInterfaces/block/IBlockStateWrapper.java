@@ -20,13 +20,44 @@
 package com.seibel.distanthorizons.core.wrapperInterfaces.block;
 
 import com.seibel.distanthorizons.api.interfaces.block.IDhApiBlockStateWrapper;
-import com.seibel.distanthorizons.core.util.LodUtil;
-
-import java.awt.*;
 
 /** A Minecraft version independent way of handling Blocks. */
 public interface IBlockStateWrapper extends IDhApiBlockStateWrapper
 {
+	//===========//
+	// constants //
+	//===========//
+	
+	int FULLY_TRANSPARENT = 0; 
+	int FULLY_OPAQUE = 16;
+	
+	/** contains the indices used by Iris to determine how different block types should be rendered */
+	class IrisBlockMaterial
+	{
+		public static final byte UNKOWN = 0;
+		public static final byte LEAVES = 1;
+		public static final byte STONE = 2;
+		public static final byte WOOD = 3;
+		public static final byte METAL = 4;
+		public static final byte DIRT = 5;
+		public static final byte LAVA = 6;
+		public static final byte DEEPSLATE = 7;
+		public static final byte SNOW = 8;
+		public static final byte SAND = 9;
+		public static final byte TERRACOTTA = 10;
+		public static final byte NETHER_STONE = 11;
+		public static final byte WATER = 12;
+		public static final byte GRASS = 13;
+		
+		/** shouldn't normally be needed, but just in case */
+		public static final byte AIR = 14;
+		public static final byte ILLUMINATED = 15; // Max value
+	}
+	
+	
+	
+	
+	
 	//=========//
 	// methods //
 	//=========//
@@ -37,19 +68,13 @@ public interface IBlockStateWrapper extends IDhApiBlockStateWrapper
 	 * Returning a value of 0 means the block is completely transparent. <br.
 	 * Returning a value of 15 means the block is completely opaque.
 	 *
-	 * @see LodUtil#BLOCK_FULLY_OPAQUE
-	 * @see LodUtil#BLOCK_FULLY_TRANSPARENT
+	 * @see IBlockStateWrapper#FULLY_OPAQUE
+	 * @see IBlockStateWrapper#FULLY_TRANSPARENT
 	 */
 	int getOpacity();
 	
 	int getLightEmission();
 	
-	byte getMaterialId();
-	
-	boolean isBeaconBlock();
-	boolean isBeaconBaseBlock();
-	
-	Color getMapColor();
-	boolean isGlassBlock();
+	byte getIrisBlockMaterialId();
 	
 }

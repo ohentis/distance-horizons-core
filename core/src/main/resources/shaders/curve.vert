@@ -8,17 +8,17 @@ out vec4 vertexColor;
 out vec3 vertexWorldPos;
 out float vertexYPos;
 
-uniform bool uWhiteWorld;
+uniform bool whiteWorld;
 
-uniform mat4 uCombinedMatrix;
-uniform vec3 uModelOffset;
-uniform float uWorldYOffset;
+uniform mat4 combinedMatrix;
+uniform vec3 modelOffset;
+uniform float worldYOffset;
 
-uniform int uWorldSkyLight;
-uniform sampler2D uLightMap;
-uniform float uMircoOffset;
+uniform int worldSkyLight;
+uniform sampler2D lightMap;
+uniform float mircoOffset;
 
-uniform float uEarthRadius;
+uniform float earthRadius;
 
 /** 
  * TODO in the future this and standard.vert should be merged together to prevent inconsistencies between the two
@@ -35,9 +35,9 @@ void main()
 {
     vPos = vPosition; // This is so it can be passed to the fragment shader
 
-    vertexWorldPos = vPosition.xyz + uModelOffset;
+    vertexWorldPos = vPosition.xyz + modelOffset;
 
-    vertexYPos = vPosition.y + uWorldYOffset;
+    vertexYPos = vPosition.y + worldYOffset;
 
     uint meta = vPosition.a;
 
@@ -46,11 +46,11 @@ void main()
     // 0b01 = positive offset
     // 0b11 = negative offset
     // format is: 0b00zzyyxx
-    float mx = (mirco & 1u) != 0u ? uMircoOffset : 0.0;
+    float mx = (mirco & 1u) != 0u ? mircoOffset : 0.0;
     mx = (mirco & 2u) != 0u ? -mx : mx;
-    float my = (mirco & 4u) != 0u ? uMircoOffset : 0.0;
+    float my = (mirco & 4u) != 0u ? mircoOffset : 0.0;
     my = (mirco & 8u) != 0u ? -my : my;
-    float mz = (mirco & 16u) != 0u ? uMircoOffset : 0.0;
+    float mz = (mirco & 16u) != 0u ? mircoOffset : 0.0;
     mz = (mirco & 32u) != 0u ? -mz : mz;
     vertexWorldPos.x += mx;
     vertexWorldPos.y += my;
@@ -58,7 +58,7 @@ void main()
     
     
     // vertex transformation logic - stduhpf
-    float localRadius = uEarthRadius + vertexYPos;
+    float localRadius = earthRadius + vertexYPos;
     float phi = length(vertexWorldPos.xz) / localRadius;
     vertexWorldPos.y += (cos(phi) - 1.0) * localRadius;
     vertexWorldPos.xz = vertexWorldPos.xz * sin(phi) / phi;
@@ -68,12 +68,12 @@ void main()
 
     float light2 = (mod(float(lights), 16.0) + 0.5) / 16.0;
     float light = (float(lights / 16u) + 0.5) / 16.0;
-    vertexColor = vec4(texture(uLightMap, vec2(light, light2)).xyz, 1.0);
+    vertexColor = vec4(texture(lightMap, vec2(light, light2)).xyz, 1.0);
     
-    if (!uWhiteWorld)
+    if (!whiteWorld)
     {
         vertexColor *= color;
     }
     
-    gl_Position = uCombinedMatrix * vec4(vertexWorldPos, 1.0);
+    gl_Position = combinedMatrix * vec4(vertexWorldPos, 1.0);
 }

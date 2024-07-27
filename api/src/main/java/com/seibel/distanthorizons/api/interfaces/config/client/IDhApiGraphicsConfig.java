@@ -41,7 +41,6 @@ public interface IDhApiGraphicsConfig extends IDhApiConfigGroup
 	IDhApiFogConfig fog();
 	IDhApiAmbientOcclusionConfig ambientOcclusion();
 	IDhApiNoiseTextureConfig noiseTexture();
-	IDhApiGenericRenderingConfig genericRendering();
 	
 	
 	

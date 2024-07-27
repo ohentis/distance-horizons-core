@@ -36,9 +36,9 @@ import com.seibel.distanthorizons.core.render.glObject.shader.ShaderProgram;
 import com.seibel.distanthorizons.core.render.glObject.vertexAttribute.AbstractVertexAttribute;
 import com.seibel.distanthorizons.core.render.glObject.vertexAttribute.VertexPointer;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
-import com.seibel.distanthorizons.core.util.math.Mat4f;
-import com.seibel.distanthorizons.core.util.math.Vec3d;
-import com.seibel.distanthorizons.core.util.math.Vec3f;
+import com.seibel.distanthorizons.coreapi.util.math.Mat4f;
+import com.seibel.distanthorizons.coreapi.util.math.Vec3d;
+import com.seibel.distanthorizons.coreapi.util.math.Vec3f;
 import org.apache.logging.log4j.LogManager;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -64,13 +64,13 @@ public class DebugRenderer
 	
 	// rendering setup
 	private ShaderProgram basicShader;
-	private GLVertexBuffer vertexBuffer;
-	private GLElementBuffer outlineIndexBuffer;
+	private GLVertexBuffer boxBuffer;
+	private GLElementBuffer boxOutlineBuffer;
 	private AbstractVertexAttribute va;
 	private boolean init = false;
 	
 	// used when rendering
-	private Mat4f transformationMatrixThisFrame;
+	private Mat4f transformThiFrame;
 	private Vec3f camPosFloatThisFrame;
 	
 	
@@ -79,8 +79,8 @@ public class DebugRenderer
 	
 	
 	
-	/** A box from 0,0,0 to 1,1,1 */
-	private static final float[] BOX_VERTICES = {
+	// A box from 0,0,0 to 1,1,1
+	private static final float[] box_vertices = {
 			// Pos x y z
 			0, 0, 0,
 			1, 0, 0,
@@ -92,7 +92,7 @@ public class DebugRenderer
 			0, 1, 1,
 	};
 	
-	private static final int[] BOX_OUTLINE_INDICES = {
+	private static final int[] box_outline_indices = {
 			0, 1,
 			1, 2,
 			2, 3,
@@ -115,47 +115,7 @@ public class DebugRenderer
 	// constructor //
 	//=============//
 	
-	private DebugRenderer() { }
-	
-	public void init()
-	{
-		if (this.init)
-		{
-			return;
-		}
-		this.init = true;
-		
-		this.va = AbstractVertexAttribute.create();
-		this.va.bind();
-		// Pos
-		this.va.setVertexAttribute(0, 0, VertexPointer.addVec3Pointer(false));
-		this.va.completeAndCheck(Float.BYTES * 3);
-		this.basicShader = new ShaderProgram("shaders/debug/vert.vert", "shaders/debug/frag.frag",
-				"fragColor", new String[]{"vPosition"});
-		this.createBuffer();
-	}
-	
-	private void createBuffer()
-	{
-		// box vertices 
-		ByteBuffer boxVerticesBuffer = ByteBuffer.allocateDirect(BOX_VERTICES.length * Float.BYTES);
-		boxVerticesBuffer.order(ByteOrder.nativeOrder());
-		boxVerticesBuffer.asFloatBuffer().put(BOX_VERTICES);
-		boxVerticesBuffer.rewind();
-		this.vertexBuffer = new GLVertexBuffer(false);
-		this.vertexBuffer.bind();
-		this.vertexBuffer.uploadBuffer(boxVerticesBuffer, 8, EDhApiGpuUploadMethod.DATA, BOX_VERTICES.length * Float.BYTES);
-		
-		
-		// outline vertex indexes
-		ByteBuffer boxOutlineBuffer = ByteBuffer.allocateDirect(BOX_OUTLINE_INDICES.length * Integer.BYTES);
-		boxOutlineBuffer.order(ByteOrder.nativeOrder());
-		boxOutlineBuffer.asIntBuffer().put(BOX_OUTLINE_INDICES);
-		boxOutlineBuffer.rewind();
-		this.outlineIndexBuffer = new GLElementBuffer(false);
-		this.outlineIndexBuffer.uploadBuffer(boxOutlineBuffer, EDhApiGpuUploadMethod.DATA, BOX_OUTLINE_INDICES.length * Integer.BYTES, GL32.GL_STATIC_DRAW);
-		
-	}
+	public DebugRenderer() { }
 	
 	
 	
@@ -181,13 +141,53 @@ public class DebugRenderer
 	
 	
 	
+	
+	
 	//===========//
 	// rendering //
 	//===========//
 	
+	public void init()
+	{
+		if (this.init)
+		{
+			return;
+		}
+		
+		this.init = true;
+		this.va = AbstractVertexAttribute.create();
+		this.va.bind();
+		// Pos
+		this.va.setVertexAttribute(0, 0, VertexPointer.addVec3Pointer(false));
+		this.va.completeAndCheck(Float.BYTES * 3);
+		this.basicShader = new ShaderProgram("shaders/debug/vert.vert", "shaders/debug/frag.frag",
+				"fragColor", new String[]{"vPosition"});
+		this.createBuffer();
+	}
+	
+	private void createBuffer()
+	{
+		ByteBuffer buffer = ByteBuffer.allocateDirect(box_vertices.length * Float.BYTES);
+		buffer.order(ByteOrder.nativeOrder());
+		buffer.asFloatBuffer().put(box_vertices);
+		buffer.rewind();
+		
+		this.boxBuffer = new GLVertexBuffer(false);
+		this.boxBuffer.bind();
+		this.boxBuffer.uploadBuffer(buffer, 8, EDhApiGpuUploadMethod.DATA, box_vertices.length * Float.BYTES);
+		
+		buffer = ByteBuffer.allocateDirect(box_outline_indices.length * Integer.BYTES);
+		buffer.order(ByteOrder.nativeOrder());
+		buffer.asIntBuffer().put(box_outline_indices);
+		buffer.rewind();
+		
+		this.boxOutlineBuffer = new GLElementBuffer(false);
+		this.boxOutlineBuffer.uploadBuffer(buffer, EDhApiGpuUploadMethod.DATA, box_outline_indices.length * Integer.BYTES, GL32.GL_STATIC_DRAW);
+	}
+	
 	public void render(Mat4f transform)
 	{
-		this.transformationMatrixThisFrame = transform;
+		this.transformThiFrame = transform;
 		Vec3d camPos = MC_RENDER.getCameraExactPosition();
 		this.camPosFloatThisFrame = new Vec3f((float) camPos.x, (float) camPos.y, (float) camPos.z);
 		
@@ -199,23 +199,22 @@ public class DebugRenderer
 		
 		this.basicShader.bind();
 		this.va.bind();
-		this.va.bindBufferToAllBindingPoints(this.vertexBuffer.getId());
+		this.va.bindBufferToAllBindingPoints(this.boxBuffer.getId());
 		
-		this.outlineIndexBuffer.bind();
+		this.boxOutlineBuffer.bind();
 		
 		this.rendererLists.render(this);
 		
 		
 		BoxParticle head = null;
 		while ((head = this.particles.poll()) != null && head.isDead(System.nanoTime()))
-		{ /* remove dead particles */ }
+		{
+		}
 		if (head != null)
 		{
-			// re-add the popped off head
 			this.particles.add(head);
 		}
 		
-		GL32.glPolygonMode(GL32.GL_FRONT_AND_BACK, GL32.GL_FILL);
 		for (BoxParticle particle : this.particles)
 		{
 			this.renderBox(particle.getBox());
@@ -227,13 +226,13 @@ public class DebugRenderer
 	
 	public void renderBox(Box box)
 	{
-		Mat4f boxTransform = Mat4f.createTranslateMatrix(box.minPos.x - this.camPosFloatThisFrame.x, box.minPos.y - this.camPosFloatThisFrame.y, box.minPos.z - this.camPosFloatThisFrame.z);
-		boxTransform.multiply(Mat4f.createScaleMatrix(box.maxPos.x - box.minPos.x, box.maxPos.y - box.minPos.y, box.maxPos.z - box.minPos.z));
-		Mat4f t = this.transformationMatrixThisFrame.copy();
+		Mat4f boxTransform = Mat4f.createTranslateMatrix(box.a.x - this.camPosFloatThisFrame.x, box.a.y - this.camPosFloatThisFrame.y, box.a.z - this.camPosFloatThisFrame.z);
+		boxTransform.multiply(Mat4f.createScaleMatrix(box.b.x - box.a.x, box.b.y - box.a.y, box.b.z - box.a.z));
+		Mat4f t = this.transformThiFrame.copy();
 		t.multiply(boxTransform);
-		this.basicShader.setUniform(this.basicShader.getUniformLocation("uTransform"), t);
+		this.basicShader.setUniform(this.basicShader.getUniformLocation("transform"), t);
 		this.basicShader.setUniform(this.basicShader.getUniformLocation("uColor"), box.color);
-		GL32.glDrawElements(GL32.GL_LINES, BOX_OUTLINE_INDICES.length, GL32.GL_UNSIGNED_INT, 0);
+		GL32.glDrawElements(GL32.GL_LINES, box_outline_indices.length, GL32.GL_UNSIGNED_INT, 0);
 	}
 	
 	
@@ -244,25 +243,25 @@ public class DebugRenderer
 	
 	public static final class Box
 	{
-		public Vec3f minPos;
-		public Vec3f maxPos;
+		public Vec3f a;
+		public Vec3f b;
 		public Color color;
 		
 		
 		
-		public Box(Vec3f minPos, Vec3f maxPos, Color color)
+		public Box(Vec3f a, Vec3f b, Color color)
 		{
-			this.minPos = minPos;
-			this.maxPos = maxPos;
+			this.a = a;
+			this.b = b;
 			this.color = color;
 		}
 		
-		public Box(Vec3f minPos, Vec3f maxPos, Color color, Vec3f margin)
+		public Box(Vec3f a, Vec3f b, Color color, Vec3f margin)
 		{
-			this.minPos = minPos;
-			this.minPos.add(margin);
-			this.maxPos = maxPos;
-			this.maxPos.subtract(margin);
+			this.a = a;
+			this.a.add(margin);
+			this.b = b;
+			this.b.subtract(margin);
 			this.color = color;
 		}
 		
@@ -273,8 +272,8 @@ public class DebugRenderer
 			float edge = pos.getBlockWidth() * marginPercent;
 			Vec3f a = new Vec3f(blockMin.x + edge, minY, blockMin.z + edge);
 			Vec3f b = new Vec3f(blockMax.x - edge, maxY, blockMax.z - edge);
-			this.minPos = a;
-			this.maxPos = b;
+			this.a = a;
+			this.b = b;
 			this.color = color;
 		}
 		
@@ -286,8 +285,8 @@ public class DebugRenderer
 			float edge = pos.getBlockWidth() * marginPercent;
 			Vec3f a = new Vec3f(blockMin.x + edge, hashY, blockMin.z + edge);
 			Vec3f b = new Vec3f(blockMax.x - edge, hashY, blockMax.z - edge);
-			this.minPos = a;
-			this.maxPos = b;
+			this.a = a;
+			this.b = b;
 			this.color = color;
 		}
 		
@@ -335,7 +334,7 @@ public class DebugRenderer
 			float percent = (now - this.startTime) / (float) this.duration;
 			percent = (float) Math.pow(percent, 4);
 			float yDiff = this.yChange * percent;
-			return new Box(new Vec3f(this.box.minPos.x, this.box.minPos.y + yDiff, this.box.minPos.z), new Vec3f(this.box.maxPos.x, this.box.maxPos.y + yDiff, this.box.maxPos.z), this.box.color);
+			return new Box(new Vec3f(this.box.a.x, this.box.a.y + yDiff, this.box.a.z), new Vec3f(this.box.b.x, this.box.b.y + yDiff, this.box.b.z), this.box.color);
 		}
 		
 		public boolean isDead(long time) { return (time - this.startTime) > this.duration; }
@@ -351,7 +350,7 @@ public class DebugRenderer
 		public BoxWithLife(Box box, long ns, float yChange, Color deathColor)
 		{
 			this.box = box;
-			this.particaleOnClose = new BoxParticle(new Box(box.minPos, box.maxPos, deathColor), -1, ns, yChange);
+			this.particaleOnClose = new BoxParticle(new Box(box.a, box.b, deathColor), -1, ns, yChange);
 			register(this, null);
 		}
 		
@@ -361,7 +360,7 @@ public class DebugRenderer
 		public BoxWithLife(Box box, double s, float yChange, Color deathColor)
 		{
 			this.box = box;
-			this.particaleOnClose = new BoxParticle(new Box(box.minPos, box.maxPos, deathColor), s, yChange);
+			this.particaleOnClose = new BoxParticle(new Box(box.a, box.b, deathColor), s, yChange);
 		}
 		
 		public BoxWithLife(Box box, double s, float yChange) { this(box, s, yChange, box.color); }

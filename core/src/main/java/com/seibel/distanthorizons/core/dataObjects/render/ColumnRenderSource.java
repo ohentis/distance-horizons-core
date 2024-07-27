@@ -182,7 +182,7 @@ public class ColumnRenderSource implements IDataSource<IDhClientLevel>
 						EDhApiWorldGenerationStep worldGenStep = inputFullDataSource.getWorldGenStepAtRelativePos(x, z);
 						if (dataColumn != null && worldGenStep != EDhApiWorldGenerationStep.EMPTY)
 						{
-							FullDataToRenderDataTransformer.updateRenderDataViewWithFullDataColumn(
+							FullDataToRenderDataTransformer.convertColumnData(
 									level, inputFullDataSource.mapping,
 									minBlockPos.x + x,
 									minBlockPos.z + z,

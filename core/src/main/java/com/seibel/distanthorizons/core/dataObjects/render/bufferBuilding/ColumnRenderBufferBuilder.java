@@ -54,6 +54,11 @@ public class ColumnRenderBufferBuilder
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
 	
+	public static final int MAX_NUMBER_OF_CONCURRENT_CALLS_PER_THREAD = 3;
+	public static int maxNumberOfConcurrentCalls = MAX_NUMBER_OF_CONCURRENT_CALLS_PER_THREAD;
+	
+	
+	
 	
 	//==============//
 	// vbo building //
@@ -82,14 +87,33 @@ public class ColumnRenderBufferBuilder
 					{
 						boolean enableTransparency = Config.Client.Advanced.Graphics.Quality.transparency.get().transparencyEnabled;
 						
+						//EVENT_LOGGER.trace("RenderRegion start QuadBuild @ " + renderSource.sectionPos);
+						boolean enableSkyLightCulling =
+								Config.Client.Advanced.Graphics.AdvancedGraphics.enableCaveCulling.get()
+								&& (
+									// dimensions with a ceiling will be all caves so we don't want cave culling
+									!clientLevel.getLevelWrapper().hasCeiling()
+									// the end has a lot of overhangs with 0 lighting above the void, which look broken with
+									// the current cave culling logic (this could probably be improved, but just skipping it works best for now)
+									&& !clientLevel.getLevelWrapper().getDimensionType().isTheEnd()
+									// FIXME temporary fix
+									//  Cave culling is currently broken for any detail level above 0
+									&& DhSectionPos.getDetailLevel(renderSource.pos) == DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL
+								);
+						
+						int skyLightCullingBelow = Config.Client.Advanced.Graphics.AdvancedGraphics.caveCullingHeight.get();
+						// FIXME: Clamp also to the max world height.
+						skyLightCullingBelow = Math.max(skyLightCullingBelow, clientLevel.getMinY());
+						
+						
 						long builderStartTime = System.currentTimeMillis();
 						
-						LodQuadBuilder builder = new LodQuadBuilder(enableTransparency, clientLevel.getClientLevelWrapper());
+						LodQuadBuilder builder = new LodQuadBuilder(enableSkyLightCulling, (short) (skyLightCullingBelow - clientLevel.getMinY()), enableTransparency, clientLevel.getClientLevelWrapper());
 						makeLodRenderData(builder, renderSource, adjData);
 						
 						long builderEndTime = System.currentTimeMillis();
 						long buildMs = builderEndTime - builderStartTime;
-						//LOGGER.debug("RenderRegion end QuadBuild @ " + renderSource.pos + " took: " + buildMs);
+						LOGGER.debug("RenderRegion end QuadBuild @ " + renderSource.pos + " took: " + buildMs);
 						
 						return builder;
 					}

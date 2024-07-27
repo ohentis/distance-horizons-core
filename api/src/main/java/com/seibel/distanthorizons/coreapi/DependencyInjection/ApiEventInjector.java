@@ -22,7 +22,6 @@ package com.seibel.distanthorizons.coreapi.DependencyInjection;
 import com.seibel.distanthorizons.api.interfaces.events.IDhApiEventInjector;
 import com.seibel.distanthorizons.api.methods.events.interfaces.IDhApiCancelableEvent;
 import com.seibel.distanthorizons.api.methods.events.interfaces.IDhApiEvent;
-import com.seibel.distanthorizons.api.methods.events.interfaces.IDhApiEventParam;
 import com.seibel.distanthorizons.api.methods.events.interfaces.IDhApiOneTimeEvent;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiCancelableEventParam;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiEventParam;
@@ -141,26 +140,7 @@ public class ApiEventInjector extends DependencyInjector<IDhApiEvent> implements
 					// fire each event and record if any of them
 					// request to cancel the event.
 					
-					
-					// attempt to clone the event input if possible
-					// this is done to reduce the likely hood that one event listener 
-					// will make change the event parameter for other listeners 
-					T input = eventInput;
-					if (eventInput instanceof IDhApiEventParam)
-					{
-						try
-						{
-							//noinspection unchecked
-							input = (T) ((IDhApiEventParam) eventInput).copy();
-						}
-						catch (Exception e)
-						{
-							LOGGER.error("Unable to clone event parameter ["+eventInput.getClass().getSimpleName()+"], error: ["+e.getMessage()+"].", e);
-						}
-					}
-					
-					
-					DhApiEventParam<T> eventParam = createEventParamWrapper(event, input);
+					DhApiEventParam<T> eventParam = createEventParamWrapper(event, eventInput);
 					event.fireEvent(eventParam);
 					
 					if (eventParam instanceof DhApiCancelableEventParam)

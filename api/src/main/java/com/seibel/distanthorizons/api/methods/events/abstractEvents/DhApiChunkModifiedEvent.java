@@ -22,7 +22,6 @@ package com.seibel.distanthorizons.api.methods.events.abstractEvents;
 import com.seibel.distanthorizons.api.interfaces.data.IDhApiTerrainDataRepo;
 import com.seibel.distanthorizons.api.interfaces.world.IDhApiLevelWrapper;
 import com.seibel.distanthorizons.api.methods.events.interfaces.IDhApiEvent;
-import com.seibel.distanthorizons.api.methods.events.interfaces.IDhApiEventParam;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiEventParam;
 
 /**
@@ -54,7 +53,7 @@ public abstract class DhApiChunkModifiedEvent implements IDhApiEvent<DhApiChunkM
 	// parameter object //
 	//==================//
 	
-	public static class EventParam implements IDhApiEventParam
+	public static class EventParam
 	{
 		/** The saved level. */
 		public final IDhApiLevelWrapper levelWrapper;
@@ -72,15 +71,6 @@ public abstract class DhApiChunkModifiedEvent implements IDhApiEvent<DhApiChunkM
 			this.chunkZ = chunkZ;
 		}
 		
-		
-		@Override
-		public EventParam copy()
-		{
-			return new EventParam(
-					this.levelWrapper,
-					this.chunkX, this.chunkZ
-			);
-		}
 	}
 	
 }

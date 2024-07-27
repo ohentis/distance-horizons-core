@@ -3,17 +3,17 @@ in vec2 TexCoord;
 
 out vec4 fragColor;
 
-uniform sampler2D uDepthMap;
+uniform sampler2D gDepthMap;
 // inverted model view matrix and projection matrix
-uniform mat4 uInvMvmProj;
+uniform mat4 gInvMvmProj;
 
-uniform float uFogScale;
-uniform float uFogVerticalScale;
-uniform vec4 uFogColor;
-uniform int uFullFogMode;
+uniform float fogScale;
+uniform float fogVerticalScale;
+uniform float nearFogStart;
+uniform float nearFogLength;
+uniform int fullFogMode;
 
-uniform float uNearFogStart;
-uniform float uNearFogLength;
+uniform vec4 fogColor;
 
 
 /* ========MARCO DEFINED BY RUNTIME CODE GEN=========
@@ -53,7 +53,7 @@ vec3 calcViewPosition(float fragmentDepth) {
     vec4 ndc = vec4(TexCoord.xy, fragmentDepth, 1.0);
     ndc.xyz = ndc.xyz * 2.0 - 1.0;
 
-    vec4 eyeCoord = uInvMvmProj * ndc;
+    vec4 eyeCoord = gInvMvmProj * ndc;
     return eyeCoord.xyz / eyeCoord.w;
 }
 
@@ -66,19 +66,19 @@ vec3 calcViewPosition(float fragmentDepth) {
 void main() 
 {
     float vertexYPos = 100.0f;
-    float fragmentDepth = texture(uDepthMap, TexCoord).r;
-    fragColor = vec4(uFogColor.rgb, 0.0);
+    float fragmentDepth = texture(gDepthMap, TexCoord).r;
+    fragColor = vec4(fogColor.rgb, 0.0);
 
     // a fragment depth of "1" means the fragment wasn't drawn to,
     // we only want to apply Fog to LODs, not to the sky outside the LODs
     if (fragmentDepth < 1.0) {
-        if (uFullFogMode == 0) {
+        if (fullFogMode == 0) {
             // render fog based on distance from the camera
             vec3 vertexWorldPos = calcViewPosition(fragmentDepth);
 
-            float horizontalDist = length(vertexWorldPos.xz) * uFogScale;
-            float heightDist = calculateHeightFogDepth(vertexWorldPos.y, vertexYPos) * uFogVerticalScale;
-            float farDist = calculateFarFogDepth(horizontalDist, length(vertexWorldPos.xyz) * uFogScale, uNearFogStart);
+            float horizontalDist = length(vertexWorldPos.xz) * fogScale;
+            float heightDist = calculateHeightFogDepth(vertexWorldPos.y, vertexYPos) * fogVerticalScale;
+            float farDist = calculateFarFogDepth(horizontalDist, length(vertexWorldPos.xyz) * fogScale, nearFogStart);
 
             float nearFogThickness = getNearFogThickness(horizontalDist);
             float farFogThickness = getFarFogThickness(farDist);
@@ -89,7 +89,7 @@ void main()
             float dither = InterleavedGradientNoise(gl_FragCoord.xy) - 0.5;
             fragColor.a += dither / 255.0;
         }
-        else if (uFullFogMode == 1) {
+        else if (fullFogMode == 1) {
             // render everything with the fog color
             fragColor.a = 1.0;
         }
@@ -101,7 +101,7 @@ void main()
             // a uniform we don't have to worry about GLSL optimizing away different
             // options when testing, causing a bunch of headaches if we just want to render the screen red.
 
-            float depthValue = textureLod(uDepthMap, TexCoord, 0).r;
+            float depthValue = textureLod(gDepthMap, TexCoord, 0).r;
             fragColor.rgb = vec3(depthValue); // Convert depth value to grayscale color
             fragColor.a = 1.0;
         }

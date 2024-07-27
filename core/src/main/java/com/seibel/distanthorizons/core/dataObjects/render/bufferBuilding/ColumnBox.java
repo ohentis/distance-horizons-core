@@ -19,7 +19,6 @@
 
 package com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding;
 
-import com.seibel.distanthorizons.api.enums.rendering.EDhApiBlockMaterial;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.util.ColorUtil;
@@ -476,10 +475,10 @@ public class ColumnBox
 							throw new RuntimeException("Loop error");
 						if (previousAdjDepth > adjYMax)
 						{
-							if (irisBlockMaterialId == EDhApiBlockMaterial.GRASS.index)
+							if (irisBlockMaterialId == IBlockStateWrapper.IrisBlockMaterial.GRASS)
 							{
 								// this LOD is underneath another, grass will never show here
-								irisBlockMaterialId = EDhApiBlockMaterial.DIRT.index;
+								irisBlockMaterialId = IBlockStateWrapper.IrisBlockMaterial.DIRT;
 							}
 							
 							builder.addQuadAdj(direction, x, adjYMax, z, horizontalWidth, (short) (previousAdjDepth - adjYMax), color, irisBlockMaterialId,

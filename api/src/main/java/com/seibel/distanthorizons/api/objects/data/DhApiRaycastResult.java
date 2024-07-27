@@ -20,6 +20,7 @@
 package com.seibel.distanthorizons.api.objects.data;
 
 import com.seibel.distanthorizons.api.objects.math.DhApiVec3i;
+import com.seibel.distanthorizons.coreapi.util.math.Vec3i;
 
 /**
  * Holds a single datapoint of terrain data
@@ -46,7 +47,7 @@ public class DhApiRaycastResult
 	
 	
 	
-	public DhApiRaycastResult(DhApiTerrainDataPoint dataPoint, DhApiVec3i blockPos)
+	public DhApiRaycastResult(DhApiTerrainDataPoint dataPoint, Vec3i blockPos)
 	{
 		this.dataPoint = dataPoint;
 		this.pos = blockPos;

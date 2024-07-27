@@ -67,11 +67,10 @@ public interface IConfigEntry<T>
 	 * Checks if the option is valid
 	 *
 	 * 0 == valid
-	 * 2 == invalid
 	 * 1 == number too high
 	 * -1 == number too low
 	 */
-	byte isValid(); // TODO replace with an enum
+	byte isValid();
 	/** Checks if a value is valid */
 	byte isValid(T value);
 	

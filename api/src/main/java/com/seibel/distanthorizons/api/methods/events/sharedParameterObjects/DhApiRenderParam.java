@@ -20,8 +20,7 @@
 package com.seibel.distanthorizons.api.methods.events.sharedParameterObjects;
 
 import com.seibel.distanthorizons.api.enums.rendering.EDhApiRenderPass;
-import com.seibel.distanthorizons.api.methods.events.interfaces.IDhApiEventParam;
-import com.seibel.distanthorizons.api.objects.math.DhApiMat4f;
+import com.seibel.distanthorizons.coreapi.util.math.Mat4f;
 
 /**
  * Contains information relevant to Distant Horizons and Minecraft rendering.
@@ -30,7 +29,7 @@ import com.seibel.distanthorizons.api.objects.math.DhApiMat4f;
  * @version 2024-1-31
  * @since API 1.0.0
  */
-public class DhApiRenderParam implements IDhApiEventParam
+public class DhApiRenderParam
 {
 	/** Indicates what render pass DH is currently rendering */
 	public final EDhApiRenderPass renderPass;
@@ -50,14 +49,14 @@ public class DhApiRenderParam implements IDhApiEventParam
 	public final float farClipPlane;
 	
 	/** The projection matrix Minecraft is using to render this frame. */
-	public final DhApiMat4f mcProjectionMatrix;
+	public final Mat4f mcProjectionMatrix;
 	/** The model view matrix Minecraft is using to render this frame. */
-	public final DhApiMat4f mcModelViewMatrix;
+	public final Mat4f mcModelViewMatrix;
 	
 	/** The projection matrix Distant Horizons is using to render this frame. */
-	public final DhApiMat4f dhProjectionMatrix;
+	public final Mat4f dhProjectionMatrix;
 	/** The model view matrix Distant Horizons is using to render this frame. */
-	public final DhApiMat4f dhModelViewMatrix;
+	public final Mat4f dhModelViewMatrix;
 	
 	public final int worldYOffset;
 	
@@ -67,24 +66,24 @@ public class DhApiRenderParam implements IDhApiEventParam
 	// constructors //
 	//==============//
 	
-	
 	public DhApiRenderParam(DhApiRenderParam parent)
 	{
 		this(
-				parent.renderPass,
-				parent.partialTicks,
-				parent.nearClipPlane, parent.farClipPlane,
-				parent.mcProjectionMatrix.copy(), parent.mcModelViewMatrix.copy(),
-				parent.dhProjectionMatrix.copy(), parent.dhModelViewMatrix.copy(),
-				parent.worldYOffset
-		);
+			parent.renderPass,
+			parent.partialTicks,
+			parent.nearClipPlane, parent.farClipPlane,
+			parent.mcProjectionMatrix, parent.mcModelViewMatrix, 
+			parent.dhProjectionMatrix, parent.dhModelViewMatrix,
+			parent.worldYOffset	
+			);
 	}
+	
 	public DhApiRenderParam(
 			EDhApiRenderPass renderPass,
 			float newPartialTicks,
 			float nearClipPlane, float farClipPlane,
-			DhApiMat4f newMcProjectionMatrix, DhApiMat4f newMcModelViewMatrix,
-			DhApiMat4f newDhProjectionMatrix, DhApiMat4f newDhModelViewMatrix,
+			Mat4f newMcProjectionMatrix, Mat4f newMcModelViewMatrix,
+			Mat4f newDhProjectionMatrix, Mat4f newDhModelViewMatrix,
 			int worldYOffset
 			)
 	{
@@ -103,18 +102,6 @@ public class DhApiRenderParam implements IDhApiEventParam
 		
 		this.worldYOffset = worldYOffset;
 		
-	}
-	
-	
-	
-	//================//
-	// base overrides //
-	//================//
-	
-	@Override 
-	public DhApiRenderParam copy()
-	{
-		return new DhApiRenderParam(this); 
 	}
 	
 }

@@ -6,4 +6,3 @@
 0040-sqlite-removeRenderCache.sql
 0050-sqlite-addApplyToParentIndex.sql
 0060-sqlite-createChunkHashTable.sql
-0070-sqlite-createBeaconBeamTable.sql

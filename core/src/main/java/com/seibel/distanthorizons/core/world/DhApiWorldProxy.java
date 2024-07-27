@@ -50,17 +50,9 @@ public class DhApiWorldProxy implements IDhApiWorldProxy
 	
 	
 	
-	//=============//
-	// constructor // 
-	//=============//
-	
 	private DhApiWorldProxy() { }
 	
 	
-	
-	//=========//
-	// methods //
-	//=========//
 	
 	@Override
 	public boolean worldLoaded() { return SharedApi.getAbstractDhWorld() != null; }

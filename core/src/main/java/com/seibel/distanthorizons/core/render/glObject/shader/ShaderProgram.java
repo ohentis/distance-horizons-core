@@ -26,13 +26,12 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Supplier;
 
-import com.seibel.distanthorizons.api.objects.math.DhApiVec3i;
 import org.lwjgl.opengl.GL32;
 import org.lwjgl.system.MemoryStack;
 
-import com.seibel.distanthorizons.core.util.math.Mat4f;
-import com.seibel.distanthorizons.core.util.math.Vec3d;
-import com.seibel.distanthorizons.core.util.math.Vec3f;
+import com.seibel.distanthorizons.coreapi.util.math.Mat4f;
+import com.seibel.distanthorizons.coreapi.util.math.Vec3d;
+import com.seibel.distanthorizons.coreapi.util.math.Vec3f;
 
 
 /**
@@ -155,7 +154,7 @@ public class ShaderProgram
 	 * @return Location of the Uniform
 	 * @throws RuntimeException if uniform not found
 	 */
-	public int getUniformLocation(CharSequence name) throws RuntimeException
+	public int getUniformLocation(CharSequence name)
 	{
 		int i = GL32.glGetUniformLocation(id, name);
 		if (i == -1)
@@ -196,10 +195,11 @@ public class ShaderProgram
 	{
 		GL32.glUniform3f(location, value.x, value.y, value.z);
 	}
+	
 	/** Requires ShaderProgram binded. */
-	public void setUniform(int location, DhApiVec3i value)
+	public void setUniform(int location, Vec3d value)
 	{
-		GL32.glUniform3i(location, value.x, value.y, value.z);
+		GL32.glUniform3f(location, (float) value.x, (float) value.y, (float) value.z);
 	}
 	
 	/** Requires ShaderProgram binded. */

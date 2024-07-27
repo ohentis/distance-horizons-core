@@ -173,7 +173,7 @@ public class LodFogConfig
 		str.append("" +
 				"float getNearFogThickness(float dist) \n" +
 				"{ \n" +
-				"	return linearFog(dist, uNearFogStart, uNearFogLength, 0.0, 1.0); \n" +
+				"	return linearFog(dist, nearFogStart, nearFogLength, 0.0, 1.0); \n" +
 				"} \n");
 		
 		
@@ -182,7 +182,7 @@ public class LodFogConfig
 			str.append("\n" +
 					"float getFarFogThickness(float dist) { return 0.0; } \n" +
 					"float getHeightFogThickness(float dist) { return 0.0; } \n" +
-					"float calculateFarFogDepth(float horizontal, float dist, float uNearFogStart) { return 0.0; } \n" +
+					"float calculateFarFogDepth(float horizontal, float dist, float nearFogStart) { return 0.0; } \n" +
 					"float calculateHeightFogDepth(float vertical, float realY) { return 0.0; } \n" +
 					"float mixFogThickness(float near, float far, float height) \n" +
 					"{ \n" +
@@ -215,13 +215,13 @@ public class LodFogConfig
 					"} \n");
 			
 			
-			// Generate method: calculateFarFogDepth(float horizontal, float dist, float uNearFogStart);
+			// Generate method: calculateFarFogDepth(float horizontal, float dist, float nearFogStart);
 			str.append("" +
-					"float calculateFarFogDepth(float horizontal, float dist, float uNearFogStart) \n" +
+					"float calculateFarFogDepth(float horizontal, float dist, float nearFogStart) \n" +
 					"{ \n" +
 					"	return " + (heightFogMixMode == EDhApiHeightFogMixMode.BASIC ?
-					"(dist - uNearFogStart)/(1.0 - uNearFogStart);" :
-					"(horizontal - uNearFogStart)/(1.0 - uNearFogStart);") +
+					"(dist - nearFogStart)/(1.0 - nearFogStart);" :
+					"(horizontal - nearFogStart)/(1.0 - nearFogStart);") +
 					"} \n");
 			
 			// Generate method: float mixFogThickness(float near, float far, float height);

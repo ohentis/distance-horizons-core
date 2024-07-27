@@ -9,13 +9,13 @@ out vec4 fragColor;
 
 
 // Fog/Clip Uniforms
-uniform float uClipDistance = 0.0;
+uniform float clipDistance = 0.0;
 
 // Noise Uniforms
-uniform bool uNoiseEnabled;
-uniform int uNoiseSteps;
-uniform float uNoiseIntensity;
-uniform int uNoiseDropoff;
+uniform bool noiseEnabled;
+uniform int noiseSteps;
+uniform float noiseIntensity;
+uniform int noiseDropoff;
 
 
 // The random functions for diffrent dimentions
@@ -38,13 +38,13 @@ void applyNoise(inout vec4 fragColor, const in float viewDist)
     // This bit of code is required to fix the vertex position problem cus of floats in the verted world position varuable
     vec3 fixedVPos = vPos.xyz + vertexNormal * 0.001;
 
-    float noiseAmplification = uNoiseIntensity * 0.01;
+    float noiseAmplification = noiseIntensity * 0.01;
     float lum = (fragColor.r + fragColor.g + fragColor.b) / 3.0;
     noiseAmplification = (1.0 - pow(lum * 2.0 - 1.0, 2.0)) * noiseAmplification; // Lessen the effect on depending on how dark the object is, equasion for this is -(2x-1)^{2}+1
     noiseAmplification *= fragColor.a; // The effect would lessen on transparent objects
 
     // Random value for each position
-    float randomValue = rand(quantize(fixedVPos, uNoiseSteps))
+    float randomValue = rand(quantize(fixedVPos, noiseSteps))
     * 2.0 * noiseAmplification - noiseAmplification;
 
     // Modifies the color
@@ -52,8 +52,8 @@ void applyNoise(inout vec4 fragColor, const in float viewDist)
     vec3 newCol = fragColor.rgb + (1.0 - fragColor.rgb) * randomValue;
     newCol = clamp(newCol, 0.0, 1.0);
 
-    if (uNoiseDropoff != 0) {
-        float distF = min(viewDist / uNoiseDropoff, 1.0);
+    if (noiseDropoff != 0) {
+        float distF = min(viewDist / noiseDropoff, 1.0);
         newCol = mix(newCol, fragColor.rgb, distF); // The further away it gets, the less noise gets applied
     }
 
@@ -67,12 +67,12 @@ void main()
     fragColor = vertexColor;
     
     float viewDist = length(vertexWorldPos);
-    if (viewDist < uClipDistance && uClipDistance > 0.0)
+    if (viewDist < clipDistance && clipDistance > 0.0)
     {
         discard;
     }
     
-    if (uNoiseEnabled)
+    if (noiseEnabled)
     {
         applyNoise(fragColor, viewDist);
     }

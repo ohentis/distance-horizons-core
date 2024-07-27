@@ -260,38 +260,20 @@ public class ConfigEntry<T> extends AbstractConfigType<T, ConfigEntry<T>> implem
 	public byte isValid(T value, T min, T max)
 	{
 		if (this.configBase.disableMinMax)
-		{
 			return 0;
-		}
-		else if (min == null && max == null)
-		{
-			// no validation is needed for this field
-			return 0;
-		}
-		else if (value == null || this.value == null
-				|| value.getClass() != this.value.getClass())
-		{
-			// If the 2 variables aren't the same type then it will be invalid
+		
+		if (value == null || this.value == null || value.getClass() != this.value.getClass()) // If the 2 variables aren't the same type then it will be invalid
 			return 2;
-		}
-		else if (Number.class.isAssignableFrom(value.getClass()))
-		{ 
-			// Only check min max if it is a number
+		if (Number.class.isAssignableFrom(value.getClass()))
+		{ // Only check min max if it is a number
 			if (max != null && NumberUtil.greaterThan((Number) value, (Number) max))
-			{
 				return 1;
-			}
 			if (min != null && NumberUtil.lessThan((Number) value, (Number) min))
-			{
 				return -1;
-			}
 			
 			return 0;
 		}
-		else
-		{
-			return 0;
-		}
+		return 0;
 	}
 	
 	/** This should normally not be called since set() automatically calls this */

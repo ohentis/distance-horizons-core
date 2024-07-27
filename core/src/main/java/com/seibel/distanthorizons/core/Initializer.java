@@ -20,7 +20,6 @@
 package com.seibel.distanthorizons.core;
 
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
-import com.seibel.distanthorizons.core.render.renderer.generic.GenericRenderObjectFactory;
 import com.seibel.distanthorizons.core.sql.DatabaseUpdater;
 import com.seibel.distanthorizons.core.wrapperInterfaces.IWrapperFactory;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
@@ -97,7 +96,6 @@ public class Initializer
 		DhApi.Delayed.terrainRepo = DhApiTerrainDataRepo.INSTANCE;
 		DhApi.Delayed.worldProxy = DhApiWorldProxy.INSTANCE;
 		DhApi.Delayed.renderProxy = DhApiRenderProxy.INSTANCE;
-		DhApi.Delayed.customRenderObjectFactory = GenericRenderObjectFactory.INSTANCE;
 		DhApi.Delayed.wrapperFactory = SingletonInjector.INSTANCE.get(IWrapperFactory.class);
 		if (DhApi.Delayed.wrapperFactory == null)
 		{

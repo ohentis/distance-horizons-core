@@ -154,7 +154,6 @@ public interface IDhApiWorldGenerator extends Closeable, IDhApiOverrideable
 	 *
 	 * After the {@link DhApiChunk} has been generated, it should be passed into the
 	 * resultConsumer's {@link Consumer#accept(Object)} method.
-	 * Note: if air blocks aren't included in the with the {@link DhApiChunk} with proper lighting, lower detail levels will appear as black/unlit.
 	 *
 	 * @implNote the default implementation of this method throws an {@link UnsupportedOperationException},
 	 * and must be overridden when {@link #getReturnType()} returns {@link EDhApiWorldGeneratorReturnType#API_CHUNKS}.
