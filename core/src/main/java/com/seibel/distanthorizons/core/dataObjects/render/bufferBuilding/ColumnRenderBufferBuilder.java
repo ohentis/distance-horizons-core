@@ -95,7 +95,7 @@ public class ColumnRenderBufferBuilder
 					}
 					catch (Throwable e3)
 					{
-						LOGGER.error("\"LodNodeBufferBuilder\" was unable to build quads: ", e3);
+						LOGGER.error("LodNodeBufferBuilder was unable to build quads for pos ["+DhSectionPos.toString(renderSource.pos)+"], error: ["+ e3.getMessage()+"].", e3);
 						throw e3;
 					}
 				}, bufferBuilderExecutor)

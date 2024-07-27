@@ -171,7 +171,7 @@ public class ColumnBox
 		{
 			ColumnArrayView adjCol = adjData[EDhDirection.EAST.ordinal() - 2];
 			int adjOverlapEast = ColorUtil.INVISIBLE;
-			if (adjData[EDhDirection.EAST.ordinal() - 2] == null)
+			if (adjCol == null)
 			{
 				if (!isTransparent || overVoid)
 				{
