@@ -122,7 +122,7 @@ public class FullDataToRenderDataTransformer
 				
 				ColumnArrayView columnArrayView = columnSource.getVerticalDataPointView(x, z);
 				LongArrayList dataColumn = fullDataSource.get(x, z);
-				updateRenderDataViewWithFullDataColumn(level, fullDataSource.mapping, baseX + x, baseZ + z, columnArrayView, dataColumn);
+				updateRenderDataViewWithFullDataColumn(level, fullDataSource.mapping, baseX + (x << dataDetail), baseZ + (z << dataDetail), columnArrayView, dataColumn);
 			}
 		}
 		
