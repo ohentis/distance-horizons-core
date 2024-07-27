@@ -146,7 +146,7 @@ public class DhClientServerLevel extends AbstractDhLevel implements IDhClientLev
 		}
 		else
 		{
-			return clientLevel.computeBaseColor(pos, biome, block);
+			return clientLevel.getBlockColor(pos, biome, block);
 		}
 	}
 	
