@@ -146,7 +146,7 @@ public class DhClientServerLevel extends AbstractDhLevel implements IDhClientLev
 		}
 		else
 		{
-			return clientLevel.computeBaseColor(pos, biome, block);
+			return clientLevel.getBlockColor(pos, biome, block);
 		}
 	}
 	
@@ -154,8 +154,7 @@ public class DhClientServerLevel extends AbstractDhLevel implements IDhClientLev
 	public IClientLevelWrapper getClientLevelWrapper() { return MC_CLIENT.getWrappedClientLevel(); }
 	
 	@Override
-	public void clearRenderCache()
-	{
+	public void clearRenderCache() {
 		this.clientside.clearRenderCache();
 	}
 	

@@ -1461,6 +1461,22 @@ public class Config
 						.addListener(DebugColumnConfigEventHandler.INSTANCE)
 						.build();
 				
+				public static ConfigEntry<Integer> columnBuilderDebugXRow = new ConfigEntry.Builder<Integer>()
+						.set(-1)
+						.setAppearance(EConfigEntryAppearance.ONLY_IN_GUI)
+						.addListener(DebugColumnConfigEventHandler.INSTANCE)
+						.build();
+				public static ConfigEntry<Integer> columnBuilderDebugZRow = new ConfigEntry.Builder<Integer>()
+						.set(-1)
+						.setAppearance(EConfigEntryAppearance.ONLY_IN_GUI)
+						.addListener(DebugColumnConfigEventHandler.INSTANCE)
+						.build();
+				public static ConfigEntry<Integer> columnBuilderDebugColumnIndex = new ConfigEntry.Builder<Integer>()
+						.set(-1)
+						.setAppearance(EConfigEntryAppearance.ONLY_IN_GUI)
+						.addListener(DebugColumnConfigEventHandler.INSTANCE)
+						.build();
+				
 				
 				
 				public static ConfigCategory debugWireframe = new ConfigCategory.Builder()

@@ -19,8 +19,11 @@
 
 package com.seibel.distanthorizons.api.objects.data;
 
+import com.seibel.distanthorizons.api.enums.EDhApiDetailLevel;
 import com.seibel.distanthorizons.api.interfaces.block.IDhApiBiomeWrapper;
 import com.seibel.distanthorizons.api.interfaces.block.IDhApiBlockStateWrapper;
+
+import java.util.ArrayList;
 
 /**
  * Holds a single datapoint of terrain data.
@@ -37,6 +40,8 @@ public class DhApiTerrainDataPoint
 	 * 2 = 4x4 blocks <br>
 	 * 4 = chunk (16x16 blocks) <br>
 	 * 9 = region (512x512 blocks) <br>
+	 * 
+	 * @see EDhApiDetailLevel
 	 */
 	public final byte detailLevel;
 	
@@ -50,7 +55,57 @@ public class DhApiTerrainDataPoint
 	
 	
 	
-	public DhApiTerrainDataPoint(byte detailLevel, int blockLightLevel, int skyLightLevel, int bottomYBlockPos, int topYBlockPos, IDhApiBlockStateWrapper blockStateWrapper, IDhApiBiomeWrapper biomeWrapper)
+	//==============//
+	// constructors //
+	//==============//
+	
+	/**
+	 * Deprecated due to the topYBlockPos and bottomYBlockPos variables being put in the wrong order. 
+	 * They should have been in bottom -> top order. 
+	 *
+	 * @see DhApiTerrainDataPoint#create(byte, int, int, int, int, IDhApiBlockStateWrapper, IDhApiBiomeWrapper) 
+	 */
+	@Deprecated
+	public DhApiTerrainDataPoint(
+			byte detailLevel, 
+			int blockLightLevel, int skyLightLevel, 
+			int topYBlockPos, int bottomYBlockPos, 
+			IDhApiBlockStateWrapper blockStateWrapper, IDhApiBiomeWrapper biomeWrapper)
+	{
+		this(detailLevel, blockLightLevel, skyLightLevel,
+			bottomYBlockPos, topYBlockPos,
+			blockStateWrapper, biomeWrapper, 
+			false);
+	}
+	
+	/**
+	 * @since API 3.0.0 
+	 */
+	public static DhApiTerrainDataPoint create(
+			byte detailLevel,
+			int blockLightLevel, int skyLightLevel,
+			int bottomYBlockPos, int topYBlockPos,
+			IDhApiBlockStateWrapper blockStateWrapper, IDhApiBiomeWrapper biomeWrapper
+		)
+	{ 
+		return new DhApiTerrainDataPoint(
+			detailLevel, blockLightLevel, skyLightLevel,
+			bottomYBlockPos, topYBlockPos,
+			blockStateWrapper, biomeWrapper,
+			false); 
+	}
+	
+	/**
+	 * Only visible to internal DH methods 
+	 * @param ignoredParameter is only present to differentiate the two constructors and isn't actually used
+	 */
+	private DhApiTerrainDataPoint(
+			byte detailLevel,
+			int blockLightLevel, int skyLightLevel,
+			int bottomYBlockPos, int topYBlockPos,
+			IDhApiBlockStateWrapper blockStateWrapper, IDhApiBiomeWrapper biomeWrapper,
+			boolean ignoredParameter
+		)
 	{
 		this.detailLevel = detailLevel;
 		

@@ -512,14 +512,20 @@
   "distanthorizons.config.client.advanced.debugging.allowUnsafeValues.@tooltip":
     "If enabled, very limited config input validation will be performed. \n\nWarning: enabling this can cause instability or crashing, use at your own risk. \nNote: this option isn't saved between sessions.",
   
-    "distanthorizons.config.client.advanced.debugging.columnBuilderDebugEnable":
+  "distanthorizons.config.client.advanced.debugging.columnBuilderDebugEnable":
     "Enable Column Builder Limiting",
-    "distanthorizons.config.client.advanced.debugging.columnBuilderDebugDetailLevel":
+  "distanthorizons.config.client.advanced.debugging.columnBuilderDebugDetailLevel":
     "Column Builder Limit - Detail Level",
-    "distanthorizons.config.client.advanced.debugging.columnBuilderDebugXPos":
+  "distanthorizons.config.client.advanced.debugging.columnBuilderDebugXPos":
     "Column Builder Limit - X Pos",
-    "distanthorizons.config.client.advanced.debugging.columnBuilderDebugZPos":
+  "distanthorizons.config.client.advanced.debugging.columnBuilderDebugZPos":
     "Column Builder Limit - Z Pos",
+  "distanthorizons.config.client.advanced.debugging.columnBuilderDebugXRow":
+    "Column Builder Limit - X Row",
+  "distanthorizons.config.client.advanced.debugging.columnBuilderDebugZRow":
+    "Column Builder Limit - Z Row",
+  "distanthorizons.config.client.advanced.debugging.columnBuilderDebugColumnIndex":
+    "Column Builder Limit - Col Index",
   
     
   "distanthorizons.config.client.advanced.buffers":

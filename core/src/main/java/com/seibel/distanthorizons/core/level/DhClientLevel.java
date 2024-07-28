@@ -237,7 +237,7 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 	//================//
 	
 	@Override
-	public int computeBaseColor(DhBlockPos pos, IBiomeWrapper biome, IBlockStateWrapper block) { return this.levelWrapper.computeBaseColor(pos, biome, block); }
+	public int computeBaseColor(DhBlockPos pos, IBiomeWrapper biome, IBlockStateWrapper block) { return this.levelWrapper.getBlockColor(pos, biome, block); }
 	
 	@Override
 	public IClientLevelWrapper getClientLevelWrapper() { return this.levelWrapper; }

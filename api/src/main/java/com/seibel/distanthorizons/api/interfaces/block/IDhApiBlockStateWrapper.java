@@ -19,6 +19,7 @@
 
 package com.seibel.distanthorizons.api.interfaces.block;
 
+import com.seibel.distanthorizons.api.enums.rendering.EDhApiBlockMaterial;
 import com.seibel.distanthorizons.api.interfaces.IDhApiUnsafeWrapper;
 
 /**
@@ -44,7 +45,11 @@ public interface IDhApiBlockStateWrapper extends IDhApiUnsafeWrapper
 	 * @since API 3.0.0 
 	 */
 	String getSerialString();
-	/** @since API 3.0.0 */
+	/**
+	 * Returns the byte value representing the {@link EDhApiBlockMaterial} enum.
+	 * @see EDhApiBlockMaterial 
+	 * @since API 3.0.0 
+	 */
 	byte getMaterialId();
 	
 }

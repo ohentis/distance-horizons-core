@@ -26,7 +26,7 @@ import com.seibel.distanthorizons.api.objects.DhApiResult;
  * Used to interact with Distant Horizons' rendering system.
  *
  * @author James Seibel
- * @version 2023-10-13
+ * @version 2024-7-27
  * @since API 1.0.0
  */
 public interface IDhApiRenderProxy
@@ -39,10 +39,8 @@ public interface IDhApiRenderProxy
 	 * If this is called on a dedicated server it won't do anything and will return {@link DhApiResult#success} = false <Br><Br>
 	 *
 	 * Background: <Br>
-	 * Distant Horizons has two different file formats: Full data and Render data. <Br>
-	 * - Full data files store the block, biome, etc. information and is the result of loading or generating new chunks. <Br>
-	 * - Render data files store LOD colors and are created using the Full data and currently loaded resource packs. <Br>
-	 * This is the data cleared by this method.
+	 * When rendering Distant Horizons bakes each block's color into the geometry that's rendered. <Br>
+	 * This improves rendering speed and VRAM size, but prevents dynamically changing LOD colors. <Br>
 	 */
 	DhApiResult<Boolean> clearRenderDataCache();
 	

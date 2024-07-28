@@ -20,6 +20,7 @@
 package com.seibel.distanthorizons.core.dataObjects.render.columnViews;
 
 
+import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSource;
 import com.seibel.distanthorizons.core.util.RenderDataPointUtil;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 
@@ -28,41 +29,60 @@ import java.util.Arrays;
 public final class ColumnArrayView implements IColumnDataView
 {
 	public final LongArrayList data;
+	
+	/** 
+	 * How many data points are currently being represented by this view. <br>
+	 * Will be equal to or less than {@link ColumnArrayView#verticalSize}.
+	 */
 	public final int size;
-	public final int offset; // offset in longs
-	/** can be 0 if this column was created for an empty data source */
-	public final int vertSize; // vertical size in longs
+	/** 
+	 * Vertical size in data points. <Br>
+	 * Can be 0 if this column was created for an empty data source.
+	 */
+	public final int verticalSize;
+	
+	/**
+	 * Where the relative starting index is in the {@link ColumnArrayView#data} array
+	 * if this view is representing part of a {@link ColumnRenderSource}.
+	 */
+	public final int offset;
 	
 	
 	
-	public ColumnArrayView(LongArrayList data, int size, int offset, int vertSize)
+	//=============//
+	// constructor //
+	//=============//
+	
+	public ColumnArrayView(LongArrayList data, int size, int offset, int verticalSize)
 	{
 		this.data = data;
 		this.size = size;
 		this.offset = offset;
-		this.vertSize = vertSize;
+		this.verticalSize = verticalSize;
 	}
 	
 	
 	
+	//=====================//
+	// getters and setters //
+	//=====================//
+	
 	@Override
 	public long get(int index) { return data.getLong(index + offset); }
-	
 	public void set(int index, long value) { data.set(index + offset, value); }
 	
 	@Override
 	public int size() { return size; }
+	@Override
+	public int verticalSize() { return verticalSize; }
 	
 	@Override
-	public int verticalSize() { return vertSize; }
-	
-	@Override
-	public int dataCount() { return (this.vertSize != 0) ? (this.size / this.vertSize) : 0; }
+	public int dataCount() { return (this.verticalSize != 0) ? (this.size / this.verticalSize) : 0; } // TODO what does the divide by mean?
 	
 	@Override
 	public ColumnArrayView subView(int dataIndexStart, int dataCount)
 	{
-		return new ColumnArrayView(data, dataCount * vertSize, offset + dataIndexStart * vertSize, vertSize);
+		return new ColumnArrayView(data, dataCount * verticalSize, offset + dataIndexStart * verticalSize, verticalSize);
 	}
 	
 	public void fill(long value) { Arrays.fill(data.elements(), offset, offset + size, value); }
@@ -70,7 +90,7 @@ public final class ColumnArrayView implements IColumnDataView
 	public void copyFrom(IColumnDataView source) { copyFrom(source, 0); }
 	public void copyFrom(IColumnDataView source, int outputDataIndexOffset)
 	{
-		if (source.verticalSize() > vertSize)
+		if (source.verticalSize() > verticalSize)
 		{
 			throw new IllegalArgumentException("source verticalSize must be <= self's verticalSize to copy");
 		}
@@ -78,19 +98,19 @@ public final class ColumnArrayView implements IColumnDataView
 		{
 			throw new IllegalArgumentException("dataIndexStart + source.dataCount() must be <= self.dataCount() to copy");
 		}
-		else if (source.verticalSize() != vertSize)
+		else if (source.verticalSize() != verticalSize)
 		{
 			for (int i = 0; i < source.dataCount(); i++)
 			{
-				int outputOffset = offset + outputDataIndexOffset * vertSize + i * vertSize;
+				int outputOffset = offset + outputDataIndexOffset * verticalSize + i * verticalSize;
 				source.subView(i, 1).copyTo(data.elements(), outputOffset, source.verticalSize());
 				Arrays.fill(data.elements(), outputOffset + source.verticalSize(),
-						outputOffset + vertSize, 0);
+						outputOffset + verticalSize, 0);
 			}
 		}
 		else
 		{
-			source.copyTo(data.elements(), offset + outputDataIndexOffset * vertSize, source.size());
+			source.copyTo(data.elements(), offset + outputDataIndexOffset * verticalSize, source.size());
 		}
 	}
 	
@@ -103,19 +123,19 @@ public final class ColumnArrayView implements IColumnDataView
 		{
 			throw new IllegalArgumentException("Cannot merge views of different sizes");
 		}
-		if (vertSize != source.vertSize)
+		if (verticalSize != source.verticalSize)
 		{
 			throw new IllegalArgumentException("Cannot merge views of different vertical sizes");
 		}
 		boolean anyChange = false;
-		for (int o = 0; o < (source.size() * vertSize); o += vertSize)
+		for (int o = 0; o < (source.size() * verticalSize); o += verticalSize)
 		{
 			if (override)
 			{
 				if (RenderDataPointUtil.compareDatapointPriority(source.get(o), get(o)) >= 0)
 				{
 					anyChange = true;
-					System.arraycopy(source.data, source.offset + o, data, offset + o, vertSize);
+					System.arraycopy(source.data, source.offset + o, data, offset + o, verticalSize);
 				}
 			}
 			else
@@ -123,7 +143,7 @@ public final class ColumnArrayView implements IColumnDataView
 				if (RenderDataPointUtil.compareDatapointPriority(source.get(o), get(o)) > 0)
 				{
 					anyChange = true;
-					System.arraycopy(source.data, source.offset + o, data, offset + o, vertSize);
+					System.arraycopy(source.data, source.offset + o, data, offset + o, verticalSize);
 				}
 			}
 		}
@@ -137,7 +157,7 @@ public final class ColumnArrayView implements IColumnDataView
 			throw new IllegalArgumentException("Cannot copy and resize to views with different dataCounts");
 		}
 		
-		if (this.vertSize >= source.verticalSize())
+		if (this.verticalSize >= source.verticalSize())
 		{
 			this.copyFrom(source);
 		}
@@ -160,12 +180,18 @@ public final class ColumnArrayView implements IColumnDataView
 		RenderDataPointUtil.mergeMultiData(source, this);
 	}
 	
+	
+	
+	//================//
+	// base overrides //
+	//================//
+	
 	@Override
 	public String toString()
 	{
 		StringBuilder sb = new StringBuilder();
 		sb.append("S:").append(size);
-		sb.append(" V:").append(vertSize);
+		sb.append(" V:").append(verticalSize);
 		sb.append(" O:").append(offset);
 		
 		sb.append(" [");
@@ -181,6 +207,7 @@ public final class ColumnArrayView implements IColumnDataView
 		
 		return sb.toString();
 	}
+	
 	
 	public int getDataHash()
 	{

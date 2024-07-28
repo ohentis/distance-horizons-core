@@ -74,7 +74,6 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 	 */
 	private final ConcurrentLinkedQueue<Long> sectionsToReload = new ConcurrentLinkedQueue<>();
 	private final IDhClientLevel level; //FIXME: Proper hierarchy to remove this reference!
-	private final ConfigChangeListener<EDhApiHorizontalQuality> horizontalScaleChangeListener;
 	private final ReentrantLock treeReadWriteLock = new ReentrantLock();
 	private final AtomicBoolean fullDataRetrievalQueueRunning = new AtomicBoolean(false);
 	
@@ -110,8 +109,6 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 		this.level = level;
 		this.fullDataSourceProvider = fullDataSourceProvider;
 		this.blockRenderDistanceDiameter = viewDiameterInBlocks;
-		
-		this.horizontalScaleChangeListener = new ConfigChangeListener<>(Config.Client.Advanced.Graphics.Quality.horizontalQuality, (newHorizontalScale) -> this.onHorizontalQualityChange());
 	}
 	
 	
@@ -151,7 +148,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 			}
 			catch (Exception e)
 			{
-				LOGGER.error("Quad Tree tick exception for dimension: " + this.level.getClientLevelWrapper().getDimensionName() + ", exception: " + e.getMessage(), e);
+				LOGGER.error("Quad Tree tick exception for dimension: " + this.level.getLevelWrapper().getDimensionName() + ", exception: " + e.getMessage(), e);
 			}
 			finally
 			{
@@ -293,7 +290,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 		//byte expectedDetailLevel = DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL + 3; // can be used instead of the following logic for testing
 		byte expectedDetailLevel = this.calculateExpectedDetailLevel(playerPos, sectionPos);
 		expectedDetailLevel = (byte) Math.min(expectedDetailLevel, this.minRenderDetailLevel);
-		expectedDetailLevel += DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL;
+		expectedDetailLevel += DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL;
 		
 		
 		if (DhSectionPos.getDetailLevel(sectionPos) > expectedDetailLevel)
@@ -615,7 +612,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 	// config listeners //
 	//==================//
 	
-	private void onHorizontalQualityChange() { this.clearRenderDataCache(); }
+	private void onHorizontalQualityChange() { /*this.clearRenderDataCache();*/ }
 	
 	
 	//===========//
@@ -677,8 +674,6 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 	public void close()
 	{
 		LOGGER.info("Shutting down " + LodQuadTree.class.getSimpleName() + "...");
-		
-		this.horizontalScaleChangeListener.close();
 		
 		DebugRenderer.unregister(this, Config.Client.Advanced.Debugging.DebugWireframe.showQuadTreeRenderStatus);
 		

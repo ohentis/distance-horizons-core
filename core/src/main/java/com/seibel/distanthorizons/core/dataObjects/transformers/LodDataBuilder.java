@@ -152,8 +152,8 @@ public class LodDataBuilder
 					else
 					{
 						//we are at the height limit. There are no torches here, and sky is not obscured.
-						blockLight = 0;
-						skyLight = 15;
+						blockLight = LodUtil.MIN_MC_LIGHT;
+						skyLight = LodUtil.MAX_MC_LIGHT;
 					}
 					
 					
