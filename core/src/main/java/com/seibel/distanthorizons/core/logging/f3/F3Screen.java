@@ -20,6 +20,7 @@
 package com.seibel.distanthorizons.core.logging.f3;
 
 import com.seibel.distanthorizons.core.api.internal.SharedApi;
+import com.seibel.distanthorizons.core.jar.ModJarInfo;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.render.RenderBufferHandler;
 import com.seibel.distanthorizons.core.render.renderer.generic.GenericObjectRenderer;
@@ -79,6 +80,10 @@ public class F3Screen
 		
 		messageList.add("");
 		messageList.add(ModInfo.READABLE_NAME+": "+ModInfo.VERSION);
+		if (ModInfo.IS_DEV_BUILD)
+		{
+			messageList.add("Build: " + ModJarInfo.Git_Commit.substring(0, 8) + " (" + ModJarInfo.Git_Branch + ")");
+		}
 		messageList.add("");
 		// thread pools
 		messageList.add(getThreadPoolStatString("World Gen", worldGenPool));//"World Gen Tasks: 40/5304, (in progress: 7)");
