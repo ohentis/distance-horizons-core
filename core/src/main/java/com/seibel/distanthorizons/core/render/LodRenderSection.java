@@ -24,16 +24,19 @@ import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSour
 import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSource;
 import com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.ColumnRenderBufferBuilder;
 import com.seibel.distanthorizons.core.dataObjects.transformers.FullDataToRenderDataTransformer;
+import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.file.fullDatafile.FullDataSourceProviderV2;
 import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.render.glObject.GLProxy;
 import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
 import com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.ColumnRenderBuffer;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
+import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
@@ -54,6 +57,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public class LodRenderSection implements IDebugRenderable, AutoCloseable
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	private static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	
 	
 	
@@ -241,10 +245,17 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 			long adjPos = DhSectionPos.getAdjacentPos(this.pos, direction);
 			try
 			{
-				LodRenderSection adjRenderSection = this.quadTree.getValue(adjPos);
-				if (adjRenderSection != null)
+				// ignore adjacent positions that aren't the same detail level
+				// since the LodDataBuilder can't handle different detail levels
+				byte detailLevel = this.quadTree.calculateExpectedDetailLevel(new DhBlockPos2D(MC.getPlayerBlockPos()), adjPos);
+				detailLevel += DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL;
+				if (detailLevel == DhSectionPos.getDetailLevel(this.pos))
 				{
-					futureArray[arrayIndex] = adjRenderSection.getRenderSourceAsync();
+					LodRenderSection adjRenderSection = this.quadTree.getValue(adjPos);
+					if (adjRenderSection != null)
+					{
+						futureArray[arrayIndex] = adjRenderSection.getRenderSourceAsync();
+					}
 				}
 			}
 			catch (IndexOutOfBoundsException ignore) {}

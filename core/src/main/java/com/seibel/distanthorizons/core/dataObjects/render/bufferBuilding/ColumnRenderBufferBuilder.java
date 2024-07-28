@@ -61,6 +61,7 @@ public class ColumnRenderBufferBuilder
 	// vbo building //
 	//==============//
 	
+	/** @link adjData should be null for adjacent sections that cross detail level boundaries */
 	public static CompletableFuture<ColumnRenderBuffer> buildAndUploadBuffersAsync(
 			IDhClientLevel clientLevel,
 			ColumnRenderSource renderSource, ColumnRenderSource[] adjData)
@@ -276,14 +277,6 @@ public class ColumnRenderBufferBuilder
 								{
 									zAdj -= ColumnRenderSource.SECTION_SIZE;
 								}
-							}
-							else
-							{
-								// TODO: handle adjacent sections with a lower detail level
-								//  if not handled sometimes holes will appear on the boarder
-								//  between high and low detail sections,
-								//  since the low detail section assumes it is next to another
-								//  low detail section that would cover the hole.
 							}
 						}
 						

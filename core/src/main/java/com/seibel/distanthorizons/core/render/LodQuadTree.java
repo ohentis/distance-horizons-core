@@ -290,7 +290,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 		//byte expectedDetailLevel = DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL + 3; // can be used instead of the following logic for testing
 		byte expectedDetailLevel = this.calculateExpectedDetailLevel(playerPos, sectionPos);
 		expectedDetailLevel = (byte) Math.min(expectedDetailLevel, this.minRenderDetailLevel);
-		expectedDetailLevel += DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL;
+		expectedDetailLevel += DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL;
 		
 		
 		if (DhSectionPos.getDetailLevel(sectionPos) > expectedDetailLevel)

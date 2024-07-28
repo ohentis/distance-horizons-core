@@ -28,6 +28,7 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftCli
 import com.seibel.distanthorizons.core.dataObjects.render.columnViews.ColumnArrayView;
 import com.seibel.distanthorizons.core.render.renderer.LodRenderer;
 import com.seibel.distanthorizons.coreapi.util.MathUtil;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 
@@ -134,9 +135,12 @@ public class ColumnBox
 		// NORTH face
 		{
 			ColumnArrayView adjCol = adjData[EDhDirection.NORTH.ordinal() - 2]; // TODO can we use something other than ordinal-2?
+			// if the adjacent column is null that generally means it's representing a different detail level
 			if (adjCol == null)
 			{
-				// add an adjacent face if this is opaque face or transparent over the void
+				// Add an adjacent face if this is opaque face or transparent over the void.
+				// By skipping transparent faces that aren't over the void we prevent adding ocean faces
+				// between detail levels.
 				if (!isTransparent || overVoid)
 				{
 					builder.addQuadAdj(EDhDirection.NORTH, x, minY, z, xSize, ySize, color, irisBlockMaterialId, LodUtil.MAX_MC_LIGHT, blockLight);
@@ -202,7 +206,7 @@ public class ColumnBox
 	}
 	
 	private static void makeAdjVerticalQuad(
-			LodQuadBuilder builder, ColumnArrayView adjColumnView, EDhDirection direction,
+			LodQuadBuilder builder, @NotNull ColumnArrayView adjColumnView, EDhDirection direction,
 			short x, short yMin, short z, short horizontalWidth, short ySize,
 			int color, byte irisBlockMaterialId, byte blockLight)
 	{
@@ -215,7 +219,7 @@ public class ColumnBox
 		
 		// if there isn't any data adjacent to this LOD,
 		// just add the full vertical quad
-		if (adjColumnView == null || adjColumnView.size == 0 || RenderDataPointUtil.isVoid(adjColumnView.get(0)))
+		if (adjColumnView.size == 0 || RenderDataPointUtil.isVoid(adjColumnView.get(0)))
 		{
 			
 			builder.addQuadAdj(direction, x, yMin, z, horizontalWidth, ySize, color, irisBlockMaterialId, LodUtil.MAX_MC_LIGHT, blockLight);
