@@ -27,13 +27,12 @@ import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.file.AbstractDataSourceHandler;
 import com.seibel.distanthorizons.core.file.fullDatafile.FullDataSourceProviderV2;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.logging.f3.F3Screen;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.render.LodQuadTree;
 import com.seibel.distanthorizons.core.render.RenderBufferHandler;
+import com.seibel.distanthorizons.core.render.renderer.generic.GenericObjectRenderer;
 import com.seibel.distanthorizons.core.render.renderer.LodRenderer;
 import com.seibel.distanthorizons.core.util.LodUtil;
-import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
@@ -41,9 +40,7 @@ import org.apache.logging.log4j.Logger;
 
 import javax.annotation.WillNotClose;
 import java.io.Closeable;
-import java.util.ArrayList;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class ClientLevelModule implements Closeable, AbstractDataSourceHandler.IDataSourceUpdateFunc<FullDataSourceV2>
@@ -56,6 +53,14 @@ public class ClientLevelModule implements Closeable, AbstractDataSourceHandler.I
 	@WillNotClose
 	public final FullDataSourceProviderV2 fullDataSourceProvider;
 	public final AtomicReference<ClientRenderState> ClientRenderStateRef = new AtomicReference<>();
+	/** 
+	 * This is handled outside of the {@link ClientRenderState} to prevent destroying
+	 * the {@link GenericObjectRenderer} when changing render distances or enabling/disabling rendering. <br><br>
+	 * 
+	 * Destroying the {@link GenericObjectRenderer} would cause any existing bindings to be 
+	 * erroneously removed.
+	 */
+	public final GenericObjectRenderer genericRenderer = new GenericObjectRenderer();
 	
 	
 	
@@ -108,7 +113,7 @@ public class ClientLevelModule implements Closeable, AbstractDataSourceHandler.I
 			}
 			
 			clientRenderState.close();
-			clientRenderState = new ClientRenderState(this.clientLevel, clientLevelWrapper, this.clientLevel.getFullDataProvider());
+			clientRenderState = new ClientRenderState(this.clientLevel, clientLevelWrapper, this.clientLevel.getFullDataProvider(), this.genericRenderer);
 			if (!this.ClientRenderStateRef.compareAndSet(null, clientRenderState))
 			{
 				//FIXME: How to handle this?
@@ -128,7 +133,7 @@ public class ClientLevelModule implements Closeable, AbstractDataSourceHandler.I
 		}
 		if (isBuffersDirty)
 		{
-			clientRenderState.renderer.bufferHandler.MarkAllBuffersDirty();
+			clientRenderState.lodRenderer.bufferHandler.MarkAllBuffersDirty();
 		}
 	}
 	
@@ -141,7 +146,7 @@ public class ClientLevelModule implements Closeable, AbstractDataSourceHandler.I
 	public boolean startRenderer(IClientLevelWrapper clientLevelWrapper)
 	{
 		// TODO why are we passing in a level wrapper? Our client level is already defined.
-		ClientRenderState ClientRenderState = new ClientRenderState(this.clientLevel, clientLevelWrapper, this.clientLevel.getFullDataProvider());
+		ClientRenderState ClientRenderState = new ClientRenderState(this.clientLevel, clientLevelWrapper, this.clientLevel.getFullDataProvider(), this.genericRenderer);
 		if (!this.ClientRenderStateRef.compareAndSet(null, ClientRenderState))
 		{
 			LOGGER.warn("Failed to start renderer due to concurrency");
@@ -167,7 +172,7 @@ public class ClientLevelModule implements Closeable, AbstractDataSourceHandler.I
 			// either the renderer hasn't been started yet, or is being reloaded
 			return;
 		}
-		ClientRenderState.renderer.drawLods(ClientRenderState.clientLevelWrapper, renderEventParam, profiler);
+		ClientRenderState.lodRenderer.drawLods(ClientRenderState.clientLevelWrapper, renderEventParam, profiler);
 	}
 	
 	public void renderDeferred(DhApiRenderParam renderEventParam, IProfilerWrapper profiler)
@@ -178,7 +183,7 @@ public class ClientLevelModule implements Closeable, AbstractDataSourceHandler.I
 			// either the renderer hasn't been started yet, or is being reloaded
 			return;
 		}
-		ClientRenderState.renderer.drawDeferredLods(ClientRenderState.clientLevelWrapper, renderEventParam, profiler);
+		ClientRenderState.lodRenderer.drawDeferredLods(ClientRenderState.clientLevelWrapper, renderEventParam, profiler);
 	}
 	
 	public void stopRenderer()
@@ -275,15 +280,25 @@ public class ClientLevelModule implements Closeable, AbstractDataSourceHandler.I
 	// helper classes //
 	//================//
 	
-	public static class ClientRenderState
+	public static class ClientRenderState implements Closeable
 	{
 		private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 		
 		public final IClientLevelWrapper clientLevelWrapper;
 		public final LodQuadTree quadtree;
-		public final LodRenderer renderer;
+		public final RenderBufferHandler renderBufferHandler;
+		public final LodRenderer lodRenderer;
 		
-		public ClientRenderState(IDhClientLevel dhClientLevel, IClientLevelWrapper clientLevelWrapper, FullDataSourceProviderV2 fullDataSourceProvider)
+		
+		
+		//=============//
+		// constructor //
+		//=============//
+		
+		public ClientRenderState(
+				IDhClientLevel dhClientLevel, IClientLevelWrapper clientLevelWrapper, 
+				FullDataSourceProviderV2 fullDataSourceProvider,
+				GenericObjectRenderer genericRenderer)
 		{
 			this.clientLevelWrapper = clientLevelWrapper;
 			
@@ -292,17 +307,22 @@ public class ClientLevelModule implements Closeable, AbstractDataSourceHandler.I
 					0, 0,
 					fullDataSourceProvider);
 			
-			RenderBufferHandler renderBufferHandler = new RenderBufferHandler(this.quadtree);
-			this.renderer = new LodRenderer(renderBufferHandler);
+			this.renderBufferHandler = new RenderBufferHandler(this.quadtree);
+			this.lodRenderer = new LodRenderer(this.renderBufferHandler, genericRenderer);
 		}
 		
 		
 		
+		//================//
+		// base overrides //
+		//================//
+		
+		@Override
 		public void close()
 		{
 			LOGGER.info("Shutting down " + ClientRenderState.class.getSimpleName());
 			
-			this.renderer.close();
+			this.lodRenderer.close();
 			this.quadtree.close();
 		}
 		

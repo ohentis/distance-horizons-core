@@ -90,7 +90,7 @@ public class LightingTestChunkWrapper implements IChunkWrapper
 					IBlockStateWrapper block = chunkWrapper.getBlockState(x,y,z);
 					
 					int opacity = block.getOpacity();
-					if (opacity >= IBlockStateWrapper.FULLY_OPAQUE)
+					if (opacity >= LodUtil.BLOCK_FULLY_OPAQUE)
 					{
 						opacity = 3;
 					}

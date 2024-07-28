@@ -17,7 +17,7 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.seibel.distanthorizons.coreapi.util.math;
+package com.seibel.distanthorizons.core.util.math;
 
 import com.seibel.distanthorizons.coreapi.util.MathUtil;
 import com.seibel.distanthorizons.api.objects.math.DhApiVec3i;

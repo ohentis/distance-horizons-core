@@ -19,16 +19,21 @@
 
 package com.seibel.distanthorizons.core.wrapperInterfaces.chunk;
 
+import com.seibel.distanthorizons.core.generation.AdjacentChunkHolder;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
+import com.seibel.distanthorizons.core.sql.dto.BeaconBeamDTO;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IBindable;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
+import org.jetbrains.annotations.Nullable;
 
+import java.awt.*;
 import java.util.ArrayList;
+import java.util.List;
 
 public interface IChunkWrapper extends IBindable
 {
@@ -241,6 +246,110 @@ public interface IChunkWrapper extends IBindable
 		}
 		
 		return hash;
+	}
+	
+	default List<BeaconBeamDTO> getAllActiveBeacons(ArrayList<IChunkWrapper> neighbourChunkList)
+	{
+		ArrayList<BeaconBeamDTO> beaconBeamList = new ArrayList<>();
+		
+		AdjacentChunkHolder adjacentChunkHolder = new AdjacentChunkHolder(this, neighbourChunkList);
+		
+		// since beacons emit light we can check only the positions that are emitting light
+		ArrayList<DhBlockPos> blockPosList = this.getBlockLightPosList();
+		for (int i = 0; i < blockPosList.size(); i++)
+		{
+			DhBlockPos pos = blockPosList.get(i);
+			DhBlockPos relPos = pos.convertToChunkRelativePos();
+			
+			
+			IBlockStateWrapper block = this.getBlockState(relPos);
+			if (block.isBeaconBlock())
+			{
+				Color beaconColor = getBeaconColor(pos, adjacentChunkHolder);
+				if (beaconColor != null)
+				{
+					BeaconBeamDTO beam = new BeaconBeamDTO(blockPosList.get(i), beaconColor);
+					beaconBeamList.add(beam);
+				}
+			}
+		}
+		
+		return beaconBeamList;
+	}
+	/** @return Null if the position isn't valid for a beacon beam. */
+	@Nullable
+	static Color getBeaconColor(DhBlockPos beaconPos, AdjacentChunkHolder chunkHolder) 
+	{
+		DhBlockPos beaconRelPos = beaconPos.convertToChunkRelativePos();
+		DhBlockPos baseRelPos = new DhBlockPos(0, beaconRelPos.y-1, 0);
+		
+		
+		
+		//===========================//
+		// check for the base blocks //
+		//===========================//
+		
+		for (int x = -1; x<= 1; x++) 
+		{
+			for (int z = -1; z <= 1; z++)
+			{
+				baseRelPos.x = beaconRelPos.x + x;
+				baseRelPos.z = beaconRelPos.z + z;
+				baseRelPos.mutateToChunkRelativePos(baseRelPos);
+				
+				IChunkWrapper chunk = chunkHolder.getByBlockPos(beaconPos.x + x, beaconPos.z + z);
+				if (chunk != null)
+				{
+					IBlockStateWrapper block = chunk.getBlockState(baseRelPos.x, baseRelPos.y, baseRelPos.z);
+					if (!block.isBeaconBaseBlock())
+					{
+						return null;
+					}
+				}
+			}
+		}
+		
+		
+		
+		//=========================//
+		// get the beacon color    //
+		// and check for occlusion //
+		//=========================//
+		
+		int red = 0;
+		int green = 0;
+		int blue = 0;
+		boolean glassBlockFound = false;
+		
+		IChunkWrapper centerChunk = chunkHolder.getByBlockPos(beaconPos.x, beaconPos.z);
+		int maxY = centerChunk.getMaxNonEmptyHeight();
+		for (int y = beaconRelPos.y+1; y <= maxY; y++)
+		{
+			IBlockStateWrapper block = centerChunk.getBlockState(beaconRelPos.x, y, beaconRelPos.z);
+			if (!block.isAir() && block.getOpacity() == LodUtil.BLOCK_FULLY_OPAQUE)
+			{
+				return null;
+			}
+			
+			if (block.isGlassBlock() 
+				// ignore invisible blocks (which have pure black as their map color, luckily black stained-glass is actually extremely dark gray)
+				&& !block.getMapColor().equals(Color.BLACK))
+			{
+ 				red += block.getMapColor().getRed();
+				green += block.getMapColor().getGreen();
+				blue += block.getMapColor().getBlue();
+				
+				if (glassBlockFound)
+				{
+					red /= 2;
+					green /= 2;
+					blue /= 2;
+				}
+				glassBlockFound = true;
+			}
+		}
+		
+		return glassBlockFound ? new Color(red, green, blue) : Color.WHITE;
 	}
 	
 	

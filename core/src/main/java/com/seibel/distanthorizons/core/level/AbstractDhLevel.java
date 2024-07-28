@@ -19,15 +19,28 @@
 
 package com.seibel.distanthorizons.core.level;
 
+import com.seibel.distanthorizons.api.interfaces.render.IDhApiRenderableBoxGroup;
 import com.seibel.distanthorizons.api.methods.events.abstractEvents.DhApiChunkModifiedEvent;
+import com.seibel.distanthorizons.api.objects.math.DhApiVec3f;
+import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBox;
+import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBoxGroupShading;
+import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.dataObjects.transformers.ChunkToLodBuilder;
 import com.seibel.distanthorizons.core.file.fullDatafile.DelayedFullDataSourceSaveCache;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.pos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.render.renderer.generic.BeaconRenderHandler;
+import com.seibel.distanthorizons.core.render.renderer.generic.CloudRenderHandler;
+import com.seibel.distanthorizons.core.render.renderer.generic.GenericObjectRenderer;
+import com.seibel.distanthorizons.core.render.renderer.generic.GenericRenderObjectFactory;
+import com.seibel.distanthorizons.core.sql.dto.BeaconBeamDTO;
 import com.seibel.distanthorizons.core.sql.dto.ChunkHashDTO;
+import com.seibel.distanthorizons.core.sql.repo.BeaconBeamRepo;
 import com.seibel.distanthorizons.core.sql.repo.ChunkHashRepo;
+import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
 import org.apache.logging.log4j.Logger;
@@ -35,8 +48,12 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public abstract class AbstractDhLevel implements IDhLevel
 {
@@ -47,10 +64,18 @@ public abstract class AbstractDhLevel implements IDhLevel
 	/** if this is null then the other handler is probably null too, but just in case */
 	@Nullable
 	public ChunkHashRepo chunkHashRepo;
+	/** if this is null then the other handler is probably null too, but just in case */
+	@Nullable
+	public BeaconBeamRepo beaconBeamRepo;
 	
 	protected final DelayedFullDataSourceSaveCache delayedFullDataSourceSaveCache = new DelayedFullDataSourceSaveCache(this::onDataSourceSave, 2_000);
 	/** contains the {@link DhChunkPos} for each {@link DhSectionPos} that are queued to save via {@link AbstractDhLevel#delayedFullDataSourceSaveCache} */
 	protected final ConcurrentHashMap<Long, HashSet<DhChunkPos>> updatedChunkPosSetBySectionPos = new ConcurrentHashMap<>();
+	
+	/** Will be null if clouds shouldn't be rendered for this level. */
+	@Nullable
+	protected CloudRenderHandler cloudRenderHandler;
+	protected BeaconRenderHandler beaconRenderHandler;
 	
 	
 	
@@ -58,10 +83,18 @@ public abstract class AbstractDhLevel implements IDhLevel
 	// constructor //
 	//=============//
 	
-	protected AbstractDhLevel() { this.chunkToLodBuilder = new ChunkToLodBuilder(); }
+	protected AbstractDhLevel() 
+	{ 
+		this.chunkToLodBuilder = new ChunkToLodBuilder();
+	}
 	
-	protected void createAndSetChunkHashRepo(File databaseFile)
+	/** 
+	 * Creating the repos requires access to the level file, which isn't
+	 * available at constructor time.
+	 */
+	protected void createAndSetSupportingRepos(File databaseFile)
 	{
+		// chunk hash
 		ChunkHashRepo newChunkHashRepo = null;
 		try
 		{
@@ -72,6 +105,41 @@ public abstract class AbstractDhLevel implements IDhLevel
 			LOGGER.error("Unable to create [ChunkHashRepo], error: ["+e.getMessage()+"].", e);
 		}
 		this.chunkHashRepo = newChunkHashRepo;
+		
+		
+		// beacon beam
+		BeaconBeamRepo newBeaconBeamRepo = null;
+		try
+		{
+			newBeaconBeamRepo = new BeaconBeamRepo("jdbc:sqlite", databaseFile);
+		}
+		catch (SQLException e)
+		{
+			LOGGER.error("Unable to create [BeaconBeamRepo], error: ["+e.getMessage()+"].", e);
+		}
+		this.beaconBeamRepo = newBeaconBeamRepo;
+	}
+	
+	/** handles any setup that needs the repos to be created */
+	protected void runRepoReliantSetup()
+	{
+		GenericObjectRenderer genericRenderer = this.getGenericRenderer();
+		if (genericRenderer != null)
+		{
+			// only add clouds for certain dimension types
+			if (!this.getLevelWrapper().hasCeiling()
+					&& !this.getLevelWrapper().getDimensionType().isTheEnd())
+			{
+				this.cloudRenderHandler = new CloudRenderHandler(this, genericRenderer);
+			}
+			
+			
+			// shouldn't happen, but just in case
+			if (this.beaconBeamRepo != null)
+			{
+				this.beaconRenderHandler = new BeaconRenderHandler(this.beaconBeamRepo, genericRenderer);
+			}
+		}
 	}
 	
 	
@@ -126,6 +194,13 @@ public abstract class AbstractDhLevel implements IDhLevel
 	}
 	
 	
+	
+	//=======//
+	// repos //
+	//=======//
+	
+	// chunk hash //
+	
 	@Override
 	public int getChunkHash(DhChunkPos pos)
 	{
@@ -148,11 +223,55 @@ public abstract class AbstractDhLevel implements IDhLevel
 	
 	
 	
+	//=================//
+	// beacon handling //
+	//=================//
+	
+	@Override
+	public void setBeaconBeamsForChunk(DhChunkPos chunkPos, List<BeaconBeamDTO> newBeamList)
+	{
+		if (this.beaconRenderHandler != null)
+		{
+			this.beaconRenderHandler.setBeaconBeamsForChunk(chunkPos, newBeamList);
+		}
+	}
+	
+	@Override
+	public void loadBeaconBeamsInPos(long pos)
+	{
+		if (this.beaconRenderHandler != null)
+		{
+			this.beaconRenderHandler.loadBeaconBeamsInPos(pos);
+		}
+	}
+	@Override
+	public void unloadBeaconBeamsInPos(long pos)
+	{
+		if (this.beaconRenderHandler != null)
+		{
+			this.beaconRenderHandler.unloadBeaconBeamsInPos(pos);
+		}
+	}
+	
+	
+	
 	//================//
 	// base overrides //
 	//================//
 	
 	@Override
-	public void close() { this.chunkToLodBuilder.close(); }
+	public void close() 
+	{ 
+		this.chunkToLodBuilder.close();
+		
+		if (this.chunkHashRepo != null)
+		{
+			this.chunkHashRepo.close();
+		}
+		if (this.beaconBeamRepo != null)
+		{
+			this.beaconBeamRepo.close();
+		}
+	}
 	
 }

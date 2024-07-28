@@ -24,6 +24,7 @@ import java.nio.ByteOrder;
 import java.util.*;
 
 import com.seibel.distanthorizons.api.enums.config.EDhApiGrassSideRendering;
+import com.seibel.distanthorizons.api.enums.rendering.EDhApiBlockMaterial;
 import com.seibel.distanthorizons.api.enums.rendering.EDhApiDebugRendering;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
@@ -50,7 +51,9 @@ public class LodQuadBuilder
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	private static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	
+	@Deprecated
 	public final boolean skipQuadsWithZeroSkylight;
+	@Deprecated
 	public final short skyLightCullingBelow;
 	
 	@SuppressWarnings("unchecked")
@@ -122,7 +125,7 @@ public class LodQuadBuilder
 	// constructor //
 	//=============//
 	
-	public LodQuadBuilder(boolean enableSkylightCulling, short skyLightCullingBelow, boolean doTransparency, IClientLevelWrapper clientLevelWrapper)
+	public LodQuadBuilder(boolean doTransparency, IClientLevelWrapper clientLevelWrapper)
 	{
 		this.doTransparency = doTransparency;
 		for (int i = 0; i < 6; i++)
@@ -131,8 +134,8 @@ public class LodQuadBuilder
 			this.transparentQuads[i] = new ArrayList<>();
 		}
 		
-		this.skipQuadsWithZeroSkylight = enableSkylightCulling;
-		this.skyLightCullingBelow = skyLightCullingBelow;
+		this.skipQuadsWithZeroSkylight = false;
+		this.skyLightCullingBelow = 0;
 		this.clientLevelWrapper = clientLevelWrapper;
 		
 		this.debugRenderingMode = Config.Client.Advanced.Debugging.debugRendering.get();
@@ -273,7 +276,7 @@ public class LodQuadBuilder
 			int color = quad.color;
 			
 			// use custom side color logic for grass blocks
-			if (quad.irisBlockMaterialId == IBlockStateWrapper.IrisBlockMaterial.GRASS)
+			if (quad.irisBlockMaterialId == EDhApiBlockMaterial.GRASS.index)
 			{
 				// only use dirt colors if debug rendering is disabled
 				if (this.debugRenderingMode == EDhApiDebugRendering.OFF)

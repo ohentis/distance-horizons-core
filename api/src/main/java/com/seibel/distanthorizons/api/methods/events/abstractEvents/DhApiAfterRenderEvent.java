@@ -26,17 +26,20 @@ import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhAp
 /**
  * Fired after Distant Horizons finishes rendering a frame. <br>
  * At this point DH will have also finished cleaning up any modifications it
- * did to the OpenGL state, so the state should be back to Minecraft's defaults.
+ * did to the OpenGL state, so the state should be back to Minecraft's defaults. <br><br>
  *
+ * Note: as of API v 3.0.0 no {@link DhApiRenderParam} is included in this event 
+ * because the specific parameters may change
+ * depending on whether deferred rendering is enabled or not.
+ * 
  * @author James Seibel
- * @version 2024-1-31
- * @see DhApiRenderParam
+ * @version 2024-7-14
  * @since API 1.0.0
  */
-public abstract class DhApiAfterRenderEvent implements IDhApiEvent<DhApiRenderParam>
+public abstract class DhApiAfterRenderEvent implements IDhApiEvent<Void>
 {
 	/** Fired after Distant Horizons finishes rendering fake chunks. */
-	public abstract void afterRender(DhApiEventParam<DhApiRenderParam> event);
+	public abstract void afterRender(DhApiEventParam<Void> event);
 	
 	
 	//=========================//
@@ -44,6 +47,6 @@ public abstract class DhApiAfterRenderEvent implements IDhApiEvent<DhApiRenderPa
 	//=========================//
 	
 	@Override
-	public final void fireEvent(DhApiEventParam<DhApiRenderParam> event) { this.afterRender(event); }
+	public final void fireEvent(DhApiEventParam<Void> event) { this.afterRender(event); }
 	
 }

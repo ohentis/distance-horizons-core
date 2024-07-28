@@ -24,7 +24,7 @@ import com.seibel.distanthorizons.core.render.glObject.GLState;
 import com.seibel.distanthorizons.core.render.renderer.shaders.SSAOApplyShader;
 import com.seibel.distanthorizons.core.render.renderer.shaders.SSAOShader;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
-import com.seibel.distanthorizons.coreapi.util.math.Mat4f;
+import com.seibel.distanthorizons.core.util.math.Mat4f;
 import org.lwjgl.opengl.GL32;
 
 import java.nio.ByteBuffer;
@@ -49,6 +49,7 @@ public class SSAORenderer
 	private int ssaoFramebuffer = -1;
 	
 	private int ssaoTexture = -1;
+	
 	
 	
 	//=============//
@@ -92,6 +93,7 @@ public class SSAORenderer
 	}
 	
 	
+	
 	//========//
 	// render //
 	//========//
@@ -99,12 +101,11 @@ public class SSAORenderer
 	public void render(GLState primaryState, Mat4f projectionMatrix, float partialTicks)
 	{
 		GLState state = new GLState();
-		
 		this.init();
-
+		
+		// resize the framebuffer if necessary
 		int width = MC_RENDER.getTargetFrameBufferViewportWidth();
 		int height = MC_RENDER.getTargetFrameBufferViewportHeight();
-		
 		if (this.width != width || this.height != height)
 		{
 			this.width = width;
@@ -116,6 +117,7 @@ public class SSAORenderer
 		SSAOShader.INSTANCE.setProjectionMatrix(projectionMatrix);
 		SSAOShader.INSTANCE.render(partialTicks);
 		
+		// restored so we can write the SSAO texture to the main frame buffer
 		primaryState.restore();
 		
 		SSAOApplyShader.INSTANCE.ssaoTexture = this.ssaoTexture;
@@ -129,4 +131,5 @@ public class SSAORenderer
 		SSAOShader.INSTANCE.free();
 		SSAOApplyShader.INSTANCE.free();
 	}
+	
 }

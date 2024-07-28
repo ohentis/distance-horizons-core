@@ -79,7 +79,7 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 	// TODO this logic isn't great and can cause a limit to how many threads could be used for world generation, 
 	//  however it won't cause duplicate requests or concurrency issues, so it will be good enough for now.
 	//  A good long term fix may be to either:
-	//  1. allow the generator to deal with larger sections (let the generator threads split up larger tasks into smaller one
+	//  1. allow the generator to deal with larger sections (let the generator threads split up larger tasks into smaller ones
 	//  2. batch requests better. instead of sending 4 individual tasks of detail level N, send 1 task of detail level n+1
 	private final ExecutorService queueingThread = ThreadUtil.makeSingleThreadPool("World Gen Queue");
 	private boolean generationQueueRunning = false;
@@ -227,6 +227,9 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 			catch (Exception e)
 			{
 				LOGGER.error("queueing exception: " + e.getMessage(), e);
+			}
+			finally
+			{
 				this.generationQueueRunning = false;
 			}
 		});
@@ -374,7 +377,7 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 					// don't log the shutdown exceptions
 					if (!LodUtil.isInterruptOrReject(exception))
 					{
-						LOGGER.error("Error generating data for section " + taskPos, exception);
+						LOGGER.error("Error generating data for pos: " + DhSectionPos.toString(taskPos), exception);
 					}
 					
 					newTaskGroup.group.worldGenTasks.forEach(worldGenTask -> worldGenTask.future.complete(WorldGenResult.CreateFail()));
@@ -384,11 +387,11 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 					newTaskGroup.group.worldGenTasks.forEach(worldGenTask -> worldGenTask.future.complete(WorldGenResult.CreateSuccess(DhSectionPos.encode(granularity, DhSectionPos.getX(taskPos), DhSectionPos.getZ(taskPos)))));
 				}
 				boolean worked = this.inProgressGenTasksByLodPos.remove(taskPos, newTaskGroup);
-				LodUtil.assertTrue(worked);
+				LodUtil.assertTrue(worked, "Unable to find in progress generator task with position ["+DhSectionPos.toString(taskPos)+"]");
 			}
 			catch (Exception e)
 			{
-				LOGGER.error("Unexpected error completing world gen task: "+taskPos, e);
+				LOGGER.error("Unexpected error completing world gen task at pos: ["+DhSectionPos.toString(taskPos)+"].", e);
 			}
 		});
 		

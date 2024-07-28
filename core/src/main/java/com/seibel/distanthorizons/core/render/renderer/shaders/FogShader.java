@@ -31,7 +31,7 @@ import com.seibel.distanthorizons.core.render.renderer.ScreenQuad;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.IVersionConstants;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
-import com.seibel.distanthorizons.coreapi.util.math.Mat4f;
+import com.seibel.distanthorizons.core.util.math.Mat4f;
 import org.lwjgl.opengl.GL32;
 
 import java.awt.*;
@@ -44,24 +44,31 @@ public class FogShader extends AbstractShaderRenderer
 	private static final IVersionConstants VERSION_CONSTANTS = SingletonInjector.INSTANCE.get(IVersionConstants.class);
 	
 	
+	public int frameBuffer;
+	
 	private final LodFogConfig fogConfig;
 	private Mat4f inverseMvmProjMatrix;
-	public int gInvertedModelViewProjectionUniform;
-	public int gDepthMapUniform;
-	
-	// Fog Uniforms
-	public int fogColorUniform;
-	public int fogScaleUniform;
-	public int fogVerticalScaleUniform;
-	public int nearFogStartUniform;
-	public int nearFogLengthUniform;
-	public int fullFogModeUniform;
 	
 	
-	public FogShader(LodFogConfig fogConfig)
-	{
-		this.fogConfig = fogConfig;
-	}
+	// Uniforms
+	public int uFogColor;
+	public int uFogScale;
+	public int uFogVerticalScale;
+	public int uNearFogStart;
+	public int uNearFogLength;
+	public int uFullFogMode;
+	
+	/** Inverted Model View Projection matrix */
+	public int uInvMvmProj;
+	public int uDepthMap;
+	
+	
+	
+	//=============//
+	// constructor //
+	//=============//
+	
+	public FogShader(LodFogConfig fogConfig) { this.fogConfig = fogConfig; }
 
 	@Override
 	public void onInit()
@@ -76,49 +83,47 @@ public class FogShader extends AbstractShaderRenderer
 		// all uniforms should be tryGet...
 		// because disabling fog can cause the GLSL to optimize out most (if not all) uniforms
 		
-		this.gInvertedModelViewProjectionUniform = this.shader.tryGetUniformLocation("gInvMvmProj");
-		this.gDepthMapUniform = this.shader.tryGetUniformLocation("gDepthMap");
+		this.uDepthMap = this.shader.getUniformLocation("uDepthMap");
+		this.uInvMvmProj = this.shader.getUniformLocation("uInvMvmProj");
 		
 		// Fog uniforms
-		this.fogColorUniform = this.shader.tryGetUniformLocation("fogColor");
-		this.fullFogModeUniform = this.shader.tryGetUniformLocation("fullFogMode");
-		this.fogScaleUniform = this.shader.tryGetUniformLocation("fogScale");
-		this.fogVerticalScaleUniform = this.shader.tryGetUniformLocation("fogVerticalScale");
+		this.uFogScale = this.shader.tryGetUniformLocation("uFogScale");
+		this.uFogVerticalScale = this.shader.tryGetUniformLocation("uFogVerticalScale");
+		this.uFogColor = this.shader.tryGetUniformLocation("uFogColor");
+		this.uFullFogMode = this.shader.tryGetUniformLocation("uFullFogMode");
 		
 		// near fog
-		this.nearFogStartUniform = this.shader.tryGetUniformLocation("nearFogStart");
-		this.nearFogLengthUniform = this.shader.tryGetUniformLocation("nearFogLength");
+		this.uNearFogStart = this.shader.tryGetUniformLocation("uNearFogStart");
+		this.uNearFogLength = this.shader.tryGetUniformLocation("uNearFogLength");
+		
 	}
+	
+	
+	
+	//=============//
+	// render prep //
+	//=============//
 	
 	@Override
 	protected void onApplyUniforms(float partialTicks)
 	{
-		this.shader.setUniform(this.gInvertedModelViewProjectionUniform, this.inverseMvmProjMatrix);
-		
-		int lodDrawDistance = Config.Client.Advanced.Graphics.Quality.lodChunkRenderDistanceRadius.get() * LodUtil.CHUNK_WIDTH;
-		int vanillaDrawDistance = MC_RENDER.getRenderDistance() * LodUtil.CHUNK_WIDTH;
-		vanillaDrawDistance += LodUtil.CHUNK_WIDTH * 2; // Give it a 2 chunk boundary for near fog.
-		
-		// bind the depth buffer
-		if (this.gDepthMapUniform != -1)
+		if (this.inverseMvmProjMatrix != null)
 		{
-			GL32.glActiveTexture(GL32.GL_TEXTURE1);
-			GL32.glBindTexture(GL32.GL_TEXTURE_2D, LodRenderer.getActiveDepthTextureId());
-			GL32.glUniform1i(this.gDepthMapUniform, 1);
+			this.shader.setUniform(this.uInvMvmProj, this.inverseMvmProjMatrix);
 		}
 		
-		// Fog
-		if (this.fullFogModeUniform != -1) this.shader.setUniform(this.fullFogModeUniform, MC_RENDER.isFogStateSpecial() ? 1 : 0);
-		if (this.fogColorUniform != -1) this.shader.setUniform(this.fogColorUniform, MC_RENDER.isFogStateSpecial() ? this.getSpecialFogColor(partialTicks) : this.getFogColor(partialTicks));
+		int lodDrawDistance = Config.Client.Advanced.Graphics.Quality.lodChunkRenderDistanceRadius.get() * LodUtil.CHUNK_WIDTH;
 		
-		float nearFogLen = vanillaDrawDistance * 0.2f / lodDrawDistance;
-		float nearFogStart = vanillaDrawDistance * (VERSION_CONSTANTS.isVanillaRenderedChunkSquare() ? (float) Math.sqrt(2.0) : 1.0f) / lodDrawDistance;
-		if (this.nearFogStartUniform != -1) this.shader.setUniform(this.nearFogStartUniform, nearFogStart);
-		if (this.nearFogLengthUniform != -1) this.shader.setUniform(this.nearFogLengthUniform, nearFogLen);
-		if (this.fogScaleUniform != -1) this.shader.setUniform(this.fogScaleUniform, 1.f / lodDrawDistance);
-		if (this.fogVerticalScaleUniform != -1) this.shader.setUniform(this.fogVerticalScaleUniform, 1.f / MC.getWrappedClientLevel().getHeight());
+		// Fog
+		if (this.uFullFogMode != -1) this.shader.setUniform(this.uFullFogMode, MC_RENDER.isFogStateSpecial() ? 1 : 0);
+		if (this.uFogColor != -1) this.shader.setUniform(this.uFogColor, MC_RENDER.isFogStateSpecial() ? this.getSpecialFogColor(partialTicks) : this.getFogColor(partialTicks));
+		
+		float nearFogStart = (VERSION_CONSTANTS.isVanillaRenderedChunkSquare() ? (float) Math.sqrt(2.0) : 1.0f) / lodDrawDistance;
+		if (this.uNearFogStart != -1) this.shader.setUniform(this.uNearFogStart, nearFogStart);
+		if (this.uNearFogLength != -1) this.shader.setUniform(this.uNearFogLength, 0.0f);
+		if (this.uFogScale != -1) this.shader.setUniform(this.uFogScale, 1.f / lodDrawDistance);
+		if (this.uFogVerticalScale != -1) this.shader.setUniform(this.uFogVerticalScale, 1.f / MC.getWrappedClientLevel().getMaxHeight());
 	}
-	
 	private Color getFogColor(float partialTicks)
 	{
 		Color fogColor;
@@ -134,29 +139,34 @@ public class FogShader extends AbstractShaderRenderer
 		
 		return fogColor;
 	}
-	
 	private Color getSpecialFogColor(float partialTicks) { return MC_RENDER.getSpecialFogColor(partialTicks); }
 	
-	public void setModelViewProjectionMatrix(Mat4f combinedModelViewProjectionMatrix)
+	public void setProjectionMatrix(Mat4f projectionMatrix)
 	{
-		this.inverseMvmProjMatrix = new Mat4f(combinedModelViewProjectionMatrix);
+		this.inverseMvmProjMatrix = new Mat4f(projectionMatrix);
 		this.inverseMvmProjMatrix.invert();
 	}
+	
+	
+	
+	//========//
+	// render //
+	//========//
 	
 	@Override
 	protected void onRender()
 	{
 		GLState state = new GLState();
 		
-		GL32.glDisable(GL32.GL_DEPTH_TEST);
+		GL32.glBindFramebuffer(GL32.GL_FRAMEBUFFER, this.frameBuffer);
 		GL32.glDisable(GL32.GL_SCISSOR_TEST);
-		
-		GL32.glEnable(GL32.GL_BLEND);
-		GL32.glBlendEquation(GL32.GL_FUNC_ADD);
-		GL32.glBlendFuncSeparate(GL32.GL_SRC_ALPHA, GL32.GL_ONE_MINUS_SRC_ALPHA, GL32.GL_ONE, GL32.GL_ONE);
+		GL32.glDisable(GL32.GL_DEPTH_TEST);
+		GL32.glDisable(GL32.GL_BLEND);
 		
 		GL32.glActiveTexture(GL32.GL_TEXTURE0);
-		GL32.glBindTexture(GL32.GL_TEXTURE_2D, LodRenderer.getActiveColorTextureId());
+		GL32.glBindTexture(GL32.GL_TEXTURE_2D, LodRenderer.getActiveDepthTextureId());
+		GL32.glUniform1i(this.uDepthMap, 0);
+		
 		ScreenQuad.INSTANCE.render();
 		
 		state.restore();

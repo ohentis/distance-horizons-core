@@ -426,6 +426,36 @@ public abstract class AbstractDhRepo<TKey, TDTO extends IBaseDTO<TKey>> implemen
 		}
 	}
 	
+	/** can be used to make sure everything is closed when the world closes */
+	public static void closeAllConnections()
+	{
+		LOGGER.info("Closing all ["+ACTIVE_CONNECTION_STRINGS_BY_REPO.size()+"] database connections...");
+		for (String connectionString : ACTIVE_CONNECTION_STRINGS_BY_REPO.values())
+		{
+			try
+			{
+				Connection connection = CONNECTIONS_BY_CONNECTION_STRING.remove(connectionString);
+				if (connection != null)
+				{
+					if (!connection.isClosed())
+					{
+						LOGGER.info("Closing database connection: [" + connectionString + "]");
+						connection.close();
+					}
+					else
+					{
+						LOGGER.warn("Attempting to close already closed database connection: [" + connectionString + "]");
+					}
+				}
+			}
+			catch(SQLException e)
+			{
+				// connection close failed.
+				LOGGER.error("Unable to close the connection ["+connectionString+"], error: ["+e.getMessage()+"]");
+			}
+		}
+	}
+	
 	@Override
 	public void close()
 	{
