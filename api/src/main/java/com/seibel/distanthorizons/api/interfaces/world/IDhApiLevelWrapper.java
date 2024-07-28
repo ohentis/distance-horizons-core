@@ -41,7 +41,18 @@ public interface IDhApiLevelWrapper extends IDhApiUnsafeWrapper
 	
 	boolean hasSkyLight();
 	
-	/** Returns the max block height of the level(?) */
+	/** 
+	 * Deprecated, use {@link IDhApiLevelWrapper#getMaxHeight} instead. <br>
+	 * Returns the max block height of the level.
+	 * 
+	 * @see IDhApiLevelWrapper#getMaxHeight
+	 */
+	@Deprecated
+	default int getHeight() { return this.getMaxHeight(); }
+	/** 
+	 * Returns the max block height of the level 
+	 * @since API 3.0.0 
+	 */
 	int getMaxHeight();
 	
 	/**
