@@ -188,11 +188,12 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 						{
 							adjacentRenderSections[i] = adjLoadRefFutures[i].future.getNow(null);
 						}
-						ColumnRenderBufferBuilder.buildAndUploadBuffersAsync(this.level, renderSource, adjacentRenderSections).thenAccept((buffer) ->
+						ColumnRenderBufferBuilder.buildAndUploadBuffersAsync(this.level, renderSource, adjacentRenderSections)
+								.thenAccept((buffer) ->
 						{
 							// upload complete, clean up the old data if 
 							this.renderBuffer = buffer;
-							this.canRender = true;
+							this.canRender = (buffer != null);
 							this.uploadRenderDataToGpuFuture = null;
 							
 							
