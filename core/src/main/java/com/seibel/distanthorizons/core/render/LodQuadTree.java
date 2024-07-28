@@ -512,12 +512,8 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 					QuadNode<LodRenderSection> quadNode = nodeIterator.next();
 					if (quadNode.value != null)
 					{
-						if (quadNode.value.renderingEnabled)
-						{
-							quadNode.value.cancelGpuUpload();
-							quadNode.value.uploadRenderDataToGpuAsync();
-						}
-						
+						quadNode.value.close();
+						quadNode.value = null;
 					}
 				}
 				
