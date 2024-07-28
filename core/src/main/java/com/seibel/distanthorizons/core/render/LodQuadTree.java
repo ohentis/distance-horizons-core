@@ -74,7 +74,6 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 	 */
 	private final ConcurrentLinkedQueue<Long> sectionsToReload = new ConcurrentLinkedQueue<>();
 	private final IDhClientLevel level; //FIXME: Proper hierarchy to remove this reference!
-	private final ConfigChangeListener<EDhApiHorizontalQuality> horizontalScaleChangeListener;
 	private final ReentrantLock treeReadWriteLock = new ReentrantLock();
 	private final AtomicBoolean fullDataRetrievalQueueRunning = new AtomicBoolean(false);
 	
@@ -110,8 +109,6 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 		this.level = level;
 		this.fullDataSourceProvider = fullDataSourceProvider;
 		this.blockRenderDistanceDiameter = viewDiameterInBlocks;
-		
-		this.horizontalScaleChangeListener = new ConfigChangeListener<>(Config.Client.Advanced.Graphics.Quality.horizontalQuality, (newHorizontalScale) -> this.onHorizontalQualityChange());
 	}
 	
 	
@@ -619,7 +616,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 	// config listeners //
 	//==================//
 	
-	private void onHorizontalQualityChange() { this.clearRenderDataCache(); }
+	private void onHorizontalQualityChange() { /*this.clearRenderDataCache();*/ }
 	
 	
 	//===========//
@@ -681,8 +678,6 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 	public void close()
 	{
 		LOGGER.info("Shutting down " + LodQuadTree.class.getSimpleName() + "...");
-		
-		this.horizontalScaleChangeListener.close();
 		
 		DebugRenderer.unregister(this, Config.Client.Advanced.Debugging.DebugWireframe.showQuadTreeRenderStatus);
 		
