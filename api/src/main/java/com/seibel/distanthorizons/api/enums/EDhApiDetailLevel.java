@@ -24,7 +24,7 @@ package com.seibel.distanthorizons.api.enums;
  * CHUNK  - Detail Level: 4, width 16 block, <br>
  * REGION - Detail Level: 9, width 512 block <br> <br>
  *
- * Detail levels in Distant Horizons represent how large a section (of either LODs or MC chunks)
+ * Detail levels in Distant Horizons represent how large a LOD
  * is, with the smallest being 0 (1 block wide). <br>
  * The width of a detail level can be calculated by putting the detail level to the power of 2. <br>
  * Example for the chunk detail level (4): 2^4 = 16 blocks wide <Br><br>

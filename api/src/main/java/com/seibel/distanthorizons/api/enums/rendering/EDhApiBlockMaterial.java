@@ -21,6 +21,7 @@ package com.seibel.distanthorizons.api.enums.rendering;
  * AIR, <br>
  * ILLUMINATED, <br>
  * 
+ * @author IMS
  * @author James Seibel
  * @since API 3.0.0
  * @version 2024-7-11

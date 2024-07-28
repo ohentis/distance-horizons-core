@@ -28,7 +28,7 @@ import com.seibel.distanthorizons.api.interfaces.render.IDhApiCustomRenderRegist
  * A level is equivalent to a dimension in vanilla Minecraft.
  *
  * @author James Seibel
- * @version 2022-7-14
+ * @version 2024-7-28
  * @since API 1.0.0
  */
 public interface IDhApiLevelWrapper extends IDhApiUnsafeWrapper
@@ -53,6 +53,8 @@ public interface IDhApiLevelWrapper extends IDhApiUnsafeWrapper
 	/** 
 	 * Will return null if called on the server,
 	 * or if called before the renderer has been set up.
+	 * 
+	 * @since API 3.0.0
 	 */
 	IDhApiCustomRenderRegister getRenderRegister();
 	
