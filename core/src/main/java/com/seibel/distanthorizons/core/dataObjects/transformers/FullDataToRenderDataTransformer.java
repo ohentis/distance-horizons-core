@@ -38,6 +38,7 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.IWrapperFactory;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
+import com.seibel.distanthorizons.coreapi.util.BitShiftUtil;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import org.apache.logging.log4j.Logger;
@@ -121,7 +122,12 @@ public class FullDataToRenderDataTransformer
 				
 				ColumnArrayView columnArrayView = columnSource.getVerticalDataPointView(x, z);
 				LongArrayList dataColumn = fullDataSource.get(x, z);
-				updateOrReplaceRenderDataViewColumnWithFullDataColumn(level, fullDataSource.mapping, baseX + x, baseZ + z, columnArrayView, dataColumn);
+				
+				updateOrReplaceRenderDataViewColumnWithFullDataColumn(
+						level, fullDataSource.mapping, 
+						// bitshift is to account for LODs with a detail level greater than 0 so the block pos is correct
+						baseX + BitShiftUtil.pow(x,dataDetail), baseZ + BitShiftUtil.pow(z,dataDetail), 
+						columnArrayView, dataColumn);
 			}
 		}
 		
