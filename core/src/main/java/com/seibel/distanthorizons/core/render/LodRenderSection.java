@@ -23,6 +23,7 @@ import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSource;
 import com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.ColumnRenderBufferBuilder;
+import com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.LodQuadBuilder;
 import com.seibel.distanthorizons.core.dataObjects.transformers.FullDataToRenderDataTransformer;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.enums.EDhDirection;
@@ -80,7 +81,19 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	 * Encapsulates everything between pulling data from the database (including neighbors)
 	 * up to the point when geometry data is uploaded to the GPU.
 	 */
-	private CompletableFuture<Void> uploadRenderDataToGpuFuture = null;
+	private CompletableFuture<Void> buildAndUploadRenderDataToGpuFuture = null;
+	/** 
+	 * Represents just building the {@link LodQuadBuilder}. <br>
+	 * Separate from {@link LodRenderSection#bufferUploadFuture} because they run on
+	 * different thread pools and need to be canceled separately.
+	 */
+	private CompletableFuture<LodQuadBuilder> bufferBuildFuture = null;
+	/** 
+	 * Represents just uploading the {@link LodQuadBuilder} to the GPU. <br>
+	 * Separate from {@link LodRenderSection#bufferBuildFuture} because they run on
+	 * different thread pools and need to be canceled separately.
+	 */
+	private CompletableFuture<ColumnRenderBuffer> bufferUploadFuture = null;
 	
 	private final ReentrantLock getRenderSourceLock = new ReentrantLock();
 	/** Stored as a class variable so we can reuse it's result across multiple LOD loads if necessary */
@@ -123,7 +136,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 			return;
 		}
 		
-		if (this.uploadRenderDataToGpuFuture != null)
+		if (this.buildAndUploadRenderDataToGpuFuture != null)
 		{
 			// don't accidentally queue multiple uploads at the same time
 			return;
@@ -137,7 +150,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 			return;
 		}
 		
-		this.uploadRenderDataToGpuFuture = CompletableFuture.runAsync(() -> 
+		this.buildAndUploadRenderDataToGpuFuture = CompletableFuture.runAsync(() -> 
 		{
 			//==================//
 			// load render data //
@@ -145,15 +158,15 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 			
 			this.tryDecrementingLoadFutureArray(this.adjacentLoadRefFutures);
 			
-			ReferencedFutureWrapper thisLoadFuture = this.getRenderSourceAsync();
-			ReferencedFutureWrapper[] adjLoadRefFutures = this.getNeighborRenderSourcesAsync();
+			ReferencedFutureWrapper thisRenderSourceLoadFuture = this.getRenderSourceAsync();
+			ReferencedFutureWrapper[] adjRenderSourceLoadRefFutures = this.getNeighborRenderSourcesAsync();
 			
 			
 			// wait for all futures to complete together,
 			// merging the futures makes loading significantly faster than loading this position then loading its neighbors
 			ArrayList<CompletableFuture<ColumnRenderSource>> futureList = new ArrayList<>();
-			futureList.add(thisLoadFuture.future);
-			for (ReferencedFutureWrapper refFuture : adjLoadRefFutures)
+			futureList.add(thisRenderSourceLoadFuture.future);
+			for (ReferencedFutureWrapper refFuture : adjRenderSourceLoadRefFutures)
 			{
 				futureList.add(refFuture.future);
 			}
@@ -162,26 +175,26 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 			{
 				try
 				{
-					ColumnRenderSource renderSource = thisLoadFuture.future.get();
+					ColumnRenderSource renderSource = thisRenderSourceLoadFuture.future.get();
 					if (renderSource == null || renderSource.isEmpty())
 					{
-						thisLoadFuture.decrementRefCount();
-						for (ReferencedFutureWrapper futureWrapper : adjLoadRefFutures)
+						thisRenderSourceLoadFuture.decrementRefCount();
+						for (ReferencedFutureWrapper futureWrapper : adjRenderSourceLoadRefFutures)
 						{
 							futureWrapper.decrementRefCount();
 						}
 						
 						// nothing needs to be rendered
 						this.canRender = false;
-						this.uploadRenderDataToGpuFuture = null;
+						this.buildAndUploadRenderDataToGpuFuture = null;
 						return;
 					}
 					
 					
 					
-					//==============================//
-					// build/upload new render data //
-					//==============================//
+					//=======================//
+					// build new render data //
+					//=======================//
 					
 					try
 					{
@@ -190,45 +203,69 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 						ColumnRenderSource[] adjacentRenderSections = new ColumnRenderSource[EDhDirection.ADJ_DIRECTIONS.length];
 						for (int i = 0; i < EDhDirection.ADJ_DIRECTIONS.length; i++)
 						{
-							adjacentRenderSections[i] = adjLoadRefFutures[i].future.getNow(null);
+							adjacentRenderSections[i] = adjRenderSourceLoadRefFutures[i].future.getNow(null);
 						}
-						ColumnRenderBufferBuilder.buildAndUploadBuffersAsync(this.level, renderSource, adjacentRenderSections)
-								.thenAccept((buffer) ->
+						
+						if (this.bufferBuildFuture != null)
 						{
-							// upload complete, clean up the old data if 
-							this.renderBuffer = buffer;
-							this.canRender = (buffer != null);
-							this.uploadRenderDataToGpuFuture = null;
+							// shouldn't normally happen, but just in case canceling the previous future
+							// prevents the CPU from working on something that won't be used
+							this.bufferBuildFuture.cancel(true);
+						}
+						this.bufferBuildFuture = ColumnRenderBufferBuilder.buildBuffersAsync(this.level, renderSource, adjacentRenderSections);
+						this.bufferBuildFuture.thenAccept((lodQuadBuilder) ->
+						{
 							
 							
-							if (previousBuffer != null)
+							
+							//===================================//
+							// upload new render data to the GPU //
+							//===================================//
+							
+							if (this.bufferUploadFuture != null)
 							{
-								previousBuffer.close();
+								// shouldn't normally happen, but just in case canceling the previous future
+								// prevents the CPU from working on something that won't be used
+								this.bufferUploadFuture.cancel(true);
 							}
-							
-							thisLoadFuture.decrementRefCount();
-							this.tryDecrementingLoadFutureArray(adjLoadRefFutures);
-							this.adjacentLoadRefFutures = null;
+							this.bufferUploadFuture = ColumnRenderBufferBuilder.uploadBuffersAsync(this.level, renderSource, lodQuadBuilder);
+							this.bufferUploadFuture.thenAccept((buffer) ->
+							{
+								// upload complete, clean up the old data if 
+								this.renderBuffer = buffer;
+								this.canRender = (buffer != null);
+								this.buildAndUploadRenderDataToGpuFuture = null;
+								
+								
+								if (previousBuffer != null)
+								{
+									previousBuffer.close();
+								}
+								
+								thisRenderSourceLoadFuture.decrementRefCount();
+								this.tryDecrementingLoadFutureArray(adjRenderSourceLoadRefFutures);
+								this.adjacentLoadRefFutures = null;
+							});
 						});
 					}
 					catch (Exception e)
 					{
-						thisLoadFuture.decrementRefCount();
-						this.tryDecrementingLoadFutureArray(adjLoadRefFutures);
+						thisRenderSourceLoadFuture.decrementRefCount();
+						this.tryDecrementingLoadFutureArray(adjRenderSourceLoadRefFutures);
 						this.adjacentLoadRefFutures = null;
 						
 						LOGGER.error("Unexpected error in LodRenderSection loading, Error: "+e.getMessage(), e);
-						this.uploadRenderDataToGpuFuture = null;
+						this.buildAndUploadRenderDataToGpuFuture = null;
 					}
 				}
 				catch (Exception e)
 				{
-					thisLoadFuture.decrementRefCount();
-					this.tryDecrementingLoadFutureArray(adjLoadRefFutures);
+					thisRenderSourceLoadFuture.decrementRefCount();
+					this.tryDecrementingLoadFutureArray(adjRenderSourceLoadRefFutures);
 					this.adjacentLoadRefFutures = null;
 					
 					LOGGER.error("Unexpected error in LodRenderSection loading, Error: "+e.getMessage(), e);
-					this.uploadRenderDataToGpuFuture = null;
+					this.buildAndUploadRenderDataToGpuFuture = null;
 				}
 			});
 		}, executor);
@@ -324,8 +361,8 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	 */
 	public void cancelGpuUpload()
 	{
-		CompletableFuture<Void> future = this.uploadRenderDataToGpuFuture;
-		this.uploadRenderDataToGpuFuture = null;
+		CompletableFuture<Void> future = this.buildAndUploadRenderDataToGpuFuture;
+		this.buildAndUploadRenderDataToGpuFuture = null;
 		if (future != null)
 		{
 			// interrupting the future speeds things up, but also causes
@@ -342,7 +379,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	
 	public boolean canRender() { return this.canRender; }
 	
-	public boolean gpuUploadInProgress() { return this.uploadRenderDataToGpuFuture != null; }
+	public boolean gpuUploadInProgress() { return this.buildAndUploadRenderDataToGpuFuture != null; }
 	
 	
 	
@@ -452,9 +489,18 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 			this.renderBuffer.close();
 		}
 		
-		if (this.uploadRenderDataToGpuFuture != null)
+		// cancel all in-progress futures since they aren't needed any more
+		if (this.buildAndUploadRenderDataToGpuFuture != null)
 		{
-			this.uploadRenderDataToGpuFuture.cancel(true);
+			this.buildAndUploadRenderDataToGpuFuture.cancel(true);
+		}
+		if (this.bufferBuildFuture != null)
+		{
+			this.bufferBuildFuture.cancel(true);
+		}
+		if (this.bufferUploadFuture != null)
+		{
+			this.bufferUploadFuture.cancel(true);
 		}
 		
 		// this render section won't be rendering, we don't need to load any data for it
@@ -489,7 +535,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		{
 			color = Color.green;
 		}
-		else if (this.uploadRenderDataToGpuFuture != null)
+		else if (this.buildAndUploadRenderDataToGpuFuture != null)
 		{
 			color = Color.yellow;
 		}

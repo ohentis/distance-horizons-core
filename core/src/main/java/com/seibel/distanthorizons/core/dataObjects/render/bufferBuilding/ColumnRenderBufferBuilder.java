@@ -61,21 +61,20 @@ public class ColumnRenderBufferBuilder
 	// vbo building //
 	//==============//
 	
-	/** @link adjData should be null for adjacent sections that cross detail level boundaries */
-	public static CompletableFuture<ColumnRenderBuffer> buildAndUploadBuffersAsync(
+	public static CompletableFuture<LodQuadBuilder> buildBuffersAsync(
 			IDhClientLevel clientLevel,
-			ColumnRenderSource renderSource, ColumnRenderSource[] adjData)
+			ColumnRenderSource renderSource, ColumnRenderSource[] adjData
+		)
 	{
 		ThreadPoolExecutor bufferBuilderExecutor = ThreadPoolUtil.getBufferBuilderExecutor();
-		ThreadPoolExecutor bufferUploaderExecutor = ThreadPoolUtil.getBufferUploaderExecutor();
-		if ((bufferBuilderExecutor == null || bufferBuilderExecutor.isTerminated()) ||
-			(bufferUploaderExecutor == null || bufferUploaderExecutor.isTerminated()))
+		if (bufferBuilderExecutor == null || bufferBuilderExecutor.isTerminated())
 		{
 			// one or more of the thread pools has been shut down
-			CompletableFuture<ColumnRenderBuffer> future = new CompletableFuture<>();
+			CompletableFuture<LodQuadBuilder> future = new CompletableFuture<>();
 			future.cancel(true);
 			return future;
 		}
+		
 		
 		try
 		{
@@ -97,8 +96,39 @@ public class ColumnRenderBufferBuilder
 						LOGGER.error("LodNodeBufferBuilder was unable to build quads for pos ["+DhSectionPos.toString(renderSource.pos)+"], error: ["+ e3.getMessage()+"].", e3);
 						throw e3;
 					}
-				}, bufferBuilderExecutor)
-				.thenApplyAsync((quadBuilder) ->
+				}, bufferBuilderExecutor);
+		}
+		catch (RejectedExecutionException ignore)
+		{
+			// the thread pool was probably shut down because it's size is being changed, just wait a sec and it should be back
+			
+			CompletableFuture<LodQuadBuilder> future = new CompletableFuture<>();
+			future.cancel(true);
+			return future;
+		}
+	}
+	
+	/** @link adjData should be null for adjacent sections that cross detail level boundaries */
+	public static CompletableFuture<ColumnRenderBuffer> uploadBuffersAsync(
+			IDhClientLevel clientLevel,
+			ColumnRenderSource renderSource,
+			LodQuadBuilder quadBuilder
+		)
+	{
+		// TODO put into a single future/thread so it can be easily canceled
+		ThreadPoolExecutor bufferUploaderExecutor = ThreadPoolUtil.getBufferUploaderExecutor();
+		if (bufferUploaderExecutor == null || bufferUploaderExecutor.isTerminated())
+		{
+			// one or more of the thread pools has been shut down
+			CompletableFuture<ColumnRenderBuffer> future = new CompletableFuture<>();
+			future.cancel(true);
+			return future;
+		}
+		
+		
+		try
+		{
+			return CompletableFuture.supplyAsync(() ->
 				{
 					try
 					{
@@ -128,14 +158,14 @@ public class ColumnRenderBufferBuilder
 					}
 					catch (Throwable e3)
 					{
-						LOGGER.error("LodNodeBufferBuilder was unable to upload buffer: " + e3.getMessage(), e3);
+						LOGGER.error("LodNodeBufferBuilder was unable to upload buffer for pos ["+DhSectionPos.toString(renderSource.pos)+"], error: [" + e3.getMessage() + "].", e3);
 						throw e3;
 					}
 				}, bufferUploaderExecutor);
 		}
 		catch (RejectedExecutionException ignore) 
 		{
-			// the thread pool was probably shut down because it's size is being changed, just wait a sec and it should be back
+			// shouldn't happen, but just in case
 			
 			CompletableFuture<ColumnRenderBuffer> future = new CompletableFuture<>();
 			future.cancel(true);
