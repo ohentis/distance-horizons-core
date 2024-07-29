@@ -66,7 +66,7 @@ public class DhApiChunk
 	 * @since API 3.0.0 
 	 */
 	public static DhApiChunk create(int chunkPosX, int chunkPosZ, int bottomYBlockPos, int topYBlockPos)
-	{ return new DhApiChunk(chunkPosX, chunkPosZ, topYBlockPos, bottomYBlockPos, false); }
+	{ return new DhApiChunk(chunkPosX, chunkPosZ, bottomYBlockPos, topYBlockPos, false); }
 	
 	/** 
 	 * Only visible to internal DH methods 
