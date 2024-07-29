@@ -190,9 +190,9 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 					throw throwable;
 				}
 				
-				if (response.dtoBufferId != null)
+				if (response.payload != null)
 				{
-					FullDataSourceV2DTO dataSourceDto = this.networkState.decodeDataSourceAndReleaseBuffer(response);
+					FullDataSourceV2DTO dataSourceDto = this.networkState.decodeDataSourceAndReleaseBuffer(response.payload);
 					FullDataSourceV2 fullDataSource = dataSourceDto.createPooledDataSource(this.level.getLevelWrapper());
 					entry.chunkDataConsumer.accept(fullDataSource);
 					FullDataSourceV2.DATA_SOURCE_POOL.returnPooledDataSource(fullDataSource);

@@ -139,7 +139,7 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 		{
 			try
 			{
-				FullDataSourceV2DTO dataSourceDto = this.networkState.decodeDataSourceAndReleaseBuffer(msg);
+				FullDataSourceV2DTO dataSourceDto = this.networkState.decodeDataSourceAndReleaseBuffer(msg.payload);
 				
 				if (!msg.isSameLevelAs(this.levelWrapper))
 				{

@@ -20,56 +20,43 @@
 package com.seibel.distanthorizons.core.network.messages.fullData;
 
 import com.google.common.base.MoreObjects;
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
+import com.seibel.distanthorizons.core.network.INetworkObject;
 import com.seibel.distanthorizons.core.network.messages.TrackableMessage;
 import io.netty.buffer.ByteBuf;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Objects;
 
 /**
  * Response message, containing the requested full data source,
  * or nothing if requested in updates-only mode and the data was not updated.
  */
-public class FullDataSourceResponseMessage extends TrackableMessage implements IFullDataPayloadMessage<FullDataSourceResponseMessage>
+public class FullDataSourceResponseMessage extends TrackableMessage
 {
 	@Nullable
-	public Integer dtoBufferId;
-	@Override
-	public int getDtoBufferId() { return Objects.requireNonNull(this.dtoBufferId); }
-	@Override
-	public void setDtoBufferId(int bufferId) { this.dtoBufferId = bufferId; }
-	
-	public ByteBuf dtoBuffer;
-	@Override
-	public ByteBuf getDtoBuffer() { return this.dtoBuffer; }
-	@Override
-	public void setDtoBuffer(ByteBuf buffer) { this.dtoBuffer = buffer; }
+	public FullDataPayload payload;
 	
 	
 	public FullDataSourceResponseMessage() { }
-	public FullDataSourceResponseMessage(@Nullable FullDataSourceV2 fullDataSource)
+	public FullDataSourceResponseMessage(@Nullable FullDataPayload payload)
 	{
-		if (fullDataSource != null)
+		if (payload != null)
 		{
-			this.createCompressedDtoBuffer(fullDataSource);
+			this.payload = payload;
 		}
 	}
 	
 	@Override
 	public void encode0(ByteBuf out)
 	{
-		if (this.writeOptional(out, this.dtoBufferId))
+		if (this.writeOptional(out, this.payload))
 		{
-			out.writeInt(this.dtoBufferId);
-			this.dtoBuffer.release();
+			this.payload.encode(out);
 		}
 	}
 	
 	@Override
 	public void decode0(ByteBuf in)
 	{
-		this.dtoBufferId = this.readOptional(in, in::readInt);
+		this.payload = this.readOptional(in, () -> INetworkObject.decodeToInstance(new FullDataPayload(), in));
 	}
 	
 	
@@ -77,8 +64,7 @@ public class FullDataSourceResponseMessage extends TrackableMessage implements I
 	public MoreObjects.ToStringHelper toStringHelper()
 	{
 		return super.toStringHelper()
-				.add("dtoBufferId", this.dtoBufferId)
-				.add("dtoBuffer", this.dtoBuffer);
+				.add("payload", this.payload);
 	}
 	
 }

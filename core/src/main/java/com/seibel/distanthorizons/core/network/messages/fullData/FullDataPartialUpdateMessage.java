@@ -20,40 +20,26 @@
 package com.seibel.distanthorizons.core.network.messages.fullData;
 
 import com.google.common.base.MoreObjects;
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
+import com.seibel.distanthorizons.core.network.INetworkObject;
 import com.seibel.distanthorizons.core.network.messages.ILevelRelatedMessage;
 import com.seibel.distanthorizons.core.network.messages.NetworkMessage;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
 import io.netty.buffer.ByteBuf;
-import org.jetbrains.annotations.Nullable;
 
-import java.util.Objects;
-
-public class FullDataPartialUpdateMessage extends NetworkMessage implements ILevelRelatedMessage, IFullDataPayloadMessage<FullDataPartialUpdateMessage>
+public class FullDataPartialUpdateMessage extends NetworkMessage implements ILevelRelatedMessage
 {
 	private String levelName;
 	@Override
 	public String getLevelName() { return this.levelName; }
 	
-	@Nullable
-	public Integer dtoBufferId;
-	@Override
-	public int getDtoBufferId() { return Objects.requireNonNull(this.dtoBufferId); }
-	@Override
-	public void setDtoBufferId(int bufferId) { this.dtoBufferId = bufferId; }
-	
-	public ByteBuf dtoBuffer;
-	@Override
-	public ByteBuf getDtoBuffer() { return this.dtoBuffer; }
-	@Override
-	public void setDtoBuffer(ByteBuf buffer) { this.dtoBuffer = buffer; }
+	public FullDataPayload payload;
 	
 	
 	public FullDataPartialUpdateMessage() { }
-	public FullDataPartialUpdateMessage(IServerLevelWrapper level, FullDataSourceV2 fullDataSource)
+	public FullDataPartialUpdateMessage(IServerLevelWrapper level, FullDataPayload payload)
 	{
 		this.levelName = level.getKeyedLevelDimensionName();
-		this.createCompressedDtoBuffer(fullDataSource);
+		this.payload = payload;
 	}
 	
 	@Override
@@ -63,15 +49,14 @@ public class FullDataPartialUpdateMessage extends NetworkMessage implements ILev
 	public void encode(ByteBuf out)
 	{
 		this.writeString(this.levelName, out);
-		out.writeInt(Objects.requireNonNull(this.dtoBufferId));
-		this.dtoBuffer.release();
+		this.payload.encode(out);
 	}
 	
 	@Override
 	public void decode(ByteBuf in)
 	{
 		this.levelName = this.readString(in);
-		this.dtoBufferId = in.readInt();
+		this.payload = INetworkObject.decodeToInstance(new FullDataPayload(), in);
 	}
 	
 	
@@ -80,8 +65,7 @@ public class FullDataPartialUpdateMessage extends NetworkMessage implements ILev
 	{
 		return super.toStringHelper()
 				.add("levelName", this.levelName)
-				.add("dtoBufferId", this.dtoBufferId)
-				.add("dtoBuffer", this.dtoBuffer);
+				.add("payload", this.payload);
 	}
 	
 }

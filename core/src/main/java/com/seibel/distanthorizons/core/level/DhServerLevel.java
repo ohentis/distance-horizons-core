@@ -28,6 +28,7 @@ import com.seibel.distanthorizons.core.multiplayer.server.RemotePlayerConnection
 import com.seibel.distanthorizons.core.network.exceptions.InvalidLevelException;
 import com.seibel.distanthorizons.core.network.exceptions.RequestRejectedException;
 import com.seibel.distanthorizons.core.network.messages.ILevelRelatedMessage;
+import com.seibel.distanthorizons.core.network.messages.fullData.FullDataPayload;
 import com.seibel.distanthorizons.core.network.messages.requests.CancelMessage;
 import com.seibel.distanthorizons.core.network.messages.fullData.FullDataSourceRequestMessage;
 import com.seibel.distanthorizons.core.network.messages.fullData.FullDataSourceResponseMessage;
@@ -173,9 +174,9 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 				{
 					rateLimiterSet.loginDataSyncRCLimiter.release();
 					
-					FullDataSourceResponseMessage responseMessage = new FullDataSourceResponseMessage(fullDataSource);
-					responseMessage.splitIntoChunks(FULL_DATA_CHUNK_SIZE, msg.session::sendMessage);
-					msg.sendResponse(responseMessage);
+					FullDataPayload payload = new FullDataPayload(fullDataSource);
+					payload.acceptInChunkMessages(FULL_DATA_CHUNK_SIZE, msg.session::sendMessage);
+					msg.sendResponse(new FullDataSourceResponseMessage(payload));
 				}, executor);
 			}
 		}));
@@ -289,7 +290,7 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 			}
 			CompletableFuture.runAsync(() ->
 			{
-				try (FullDataSourceResponseMessage response = new FullDataSourceResponseMessage(requestGroup.fullDataSource))
+				try (FullDataPayload payload = new FullDataPayload(requestGroup.fullDataSource))
 				{
 					for (FullDataSourceRequestMessage msg : requestGroup.requestMessages.values())
 					{
@@ -302,8 +303,8 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 						}
 						
 						serverPlayerState.getRateLimiterSet(this).fullDataRequestConcurrencyLimiter.release();
-						response.splitIntoChunks(FULL_DATA_CHUNK_SIZE, msg.session::sendMessage);
-						msg.sendResponse(response.retain());
+						payload.acceptInChunkMessages(FULL_DATA_CHUNK_SIZE, msg.session::sendMessage);
+						msg.sendResponse(new FullDataSourceResponseMessage(payload.retain()));
 					}
 				}
 			}, executor);
@@ -326,7 +327,7 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 		}
 		CompletableFuture.runAsync(() ->
 		{
-			try (FullDataPartialUpdateMessage updateMessage = new FullDataPartialUpdateMessage(this.serverLevelWrapper, data))
+			try (FullDataPayload payload = new FullDataPayload(data))
 			{
 				for (ServerPlayerState serverPlayerState : this.remotePlayerConnectionHandler.getConnectedPlayers())
 				{
@@ -345,8 +346,8 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 					if (distanceFromPlayer >= serverPlayerState.serverPlayer().getViewDistance() &&
 							distanceFromPlayer <= serverPlayerState.config.getRenderDistanceRadius())
 					{
-						updateMessage.splitIntoChunks(FULL_DATA_CHUNK_SIZE, serverPlayerState.session::sendMessage);
-						serverPlayerState.session.sendMessage(updateMessage.retain());
+						payload.acceptInChunkMessages(FULL_DATA_CHUNK_SIZE, serverPlayerState.session::sendMessage);
+						serverPlayerState.session.sendMessage(new FullDataPartialUpdateMessage(this.serverLevelWrapper, payload.retain()));
 					}
 				}
 			}

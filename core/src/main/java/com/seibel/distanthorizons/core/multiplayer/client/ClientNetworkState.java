@@ -10,7 +10,7 @@ import com.seibel.distanthorizons.core.network.event.ScopedNetworkEventSource;
 import com.seibel.distanthorizons.core.network.event.CloseEvent;
 import com.seibel.distanthorizons.core.network.messages.base.RemotePlayerConfigMessage;
 import com.seibel.distanthorizons.core.network.messages.fullData.FullDataChunkMessage;
-import com.seibel.distanthorizons.core.network.messages.fullData.IFullDataPayloadMessage;
+import com.seibel.distanthorizons.core.network.messages.fullData.FullDataPayload;
 import com.seibel.distanthorizons.core.network.session.Session;
 import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV2DTO;
 import io.netty.buffer.ByteBufAllocator;
@@ -86,9 +86,9 @@ public class ClientNetworkState implements Closeable
 		});
 	}
 	
-	public FullDataSourceV2DTO decodeDataSourceAndReleaseBuffer(IFullDataPayloadMessage<?> msg)
+	public FullDataSourceV2DTO decodeDataSourceAndReleaseBuffer(FullDataPayload msg)
 	{
-		CompositeByteBuf composite = this.fullDataBuffers.remove(msg.getDtoBufferId());
+		CompositeByteBuf composite = this.fullDataBuffers.remove(msg.dtoBufferId);
 		Objects.requireNonNull(composite);
 		
 		try
