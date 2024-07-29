@@ -127,6 +127,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	// render data loading/uploading //
 	//===============================//
 	
+	// TODO cleanup, there's a lot of nested futures and duplicate error handling here and it's hard to read
 	public synchronized void uploadRenderDataToGpuAsync()
 	{
 		if (!GLProxy.hasInstance())
