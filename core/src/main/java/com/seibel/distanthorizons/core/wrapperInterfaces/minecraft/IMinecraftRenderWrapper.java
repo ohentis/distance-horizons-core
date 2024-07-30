@@ -48,17 +48,9 @@ public interface IMinecraftRenderWrapper extends IBindable
 {
 	Vec3f getLookAtVector();
 	
-	DhBlockPos getCameraBlockPosition();
-	
 	boolean playerHasBlindingEffect();
 	
 	Vec3d getCameraExactPosition();
-	
-	Mat4f getWorldViewMatrix();
-	
-	Mat4f getDefaultProjectionMatrix(float partialTicks);
-	
-	double getGamma();
 	
 	Color getFogColor(float partialTicks);
 	
@@ -89,63 +81,6 @@ public interface IMinecraftRenderWrapper extends IBindable
 	 * but in case something goes wrong this allows for re-getting the buffer ID.
 	 */
 	void clearTargetFrameBuffer();
-	
-	/**
-	 * This method returns the ChunkPos of all chunks that Minecraft
-	 * is going to render this frame.
-	 * <br>
-	 * If not implemented this calls {@link #getMaximumRenderedChunks()}.
-	 */
-	default HashSet<DhChunkPos> getVanillaRenderedChunks()
-	{
-		// FIXME: Is this actually required? Does it make a differance if it exists or not?
-		ISodiumAccessor sodium = ModAccessorInjector.INSTANCE.get(ISodiumAccessor.class);
-		return sodium == null ? getMaximumRenderedChunks() : sodium.getNormalRenderedChunks();
-	}
-	
-	static boolean correctedCheckRadius(int dx, int dz, int radius2Mul4)
-	{
-		dx = dx * 2;// + (dx < 0 ? -1 : 1);
-		dz = dz * 2;// + (dz < 0 ? -1 : 1);
-		return (dx * dx + dz * dz <= radius2Mul4);
-	}
-	
-	/**
-	 * <strong>Doesn't need to be implemented.</strong> <br>
-	 * Returns every chunk position within the vanilla render distance.
-	 */
-	default HashSet<DhChunkPos> getMaximumRenderedChunks()
-	{
-		IMinecraftClientWrapper mcWrapper = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
-		IWrapperFactory factory = SingletonInjector.INSTANCE.get(IWrapperFactory.class);
-		IVersionConstants versionConstants = SingletonInjector.INSTANCE.get(IVersionConstants.class);
-		IMinecraftClientWrapper minecraft = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
-		ILevelWrapper clientWorld = minecraft.getWrappedClientLevel();
-		
-		int chunkDist = this.getRenderDistance() + 1; // For some reason having '+1' is actually closer to real value
-		
-		DhChunkPos centerChunkPos = mcWrapper.getPlayerChunkPos();
-		int centerChunkX = centerChunkPos.x;
-		int centerChunkZ = centerChunkPos.z;
-		int chunkDist2Mul4 = chunkDist * chunkDist * 4;
-		
-		// add every position within render distance
-		HashSet<DhChunkPos> renderedPos = new HashSet<DhChunkPos>();
-		for (int deltaChunkX = -chunkDist; deltaChunkX <= chunkDist; deltaChunkX++)
-		{
-			for (int deltaChunkZ = -chunkDist; deltaChunkZ <= chunkDist; deltaChunkZ++)
-			{
-				if (!versionConstants.isVanillaRenderedChunkSquare() &&
-						!correctedCheckRadius(deltaChunkX, deltaChunkZ, chunkDist2Mul4))
-				{
-					continue;
-				}
-				if (!clientWorld.hasChunkLoaded(centerChunkX + deltaChunkX, centerChunkZ + deltaChunkZ)) continue;
-				renderedPos.add(new DhChunkPos(centerChunkX + deltaChunkX, centerChunkZ + deltaChunkZ));
-			}
-		}
-		return renderedPos;
-	}
 	
 	/** Can return null if the given level hasn't had a light map assigned to it */
 	@Nullable

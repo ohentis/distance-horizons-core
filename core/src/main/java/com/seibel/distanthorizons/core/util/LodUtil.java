@@ -29,11 +29,8 @@ import java.util.concurrent.RejectedExecutionException;
 import com.seibel.distanthorizons.api.enums.config.EDhApiVanillaOverdraw;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.pos.DhChunkPos;
-import com.seibel.distanthorizons.core.pos.Pos2D;
 import com.seibel.distanthorizons.core.render.vertexFormat.DefaultLodVertexFormats;
 import com.seibel.distanthorizons.core.render.vertexFormat.LodVertexFormat;
-import com.seibel.distanthorizons.core.util.gridList.EdgeDistanceBooleanGrid;
 import com.seibel.distanthorizons.core.util.objects.UncheckedInterruptedException;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
@@ -223,36 +220,6 @@ public class LodUtil
 		return offset;
 	}
 	
-	/** not currently used since the new rendering system can't easily toggle single chunks to render */
-	@Deprecated
-	public static EdgeDistanceBooleanGrid readVanillaRenderedChunks()
-	{
-		int offset = computeOverdrawOffset();
-		if (offset == Integer.MAX_VALUE) return null;
-		int renderDist = MC_RENDER.getRenderDistance() + 1;
-		
-		Iterator<DhChunkPos> posIter = MC_RENDER.getVanillaRenderedChunks().iterator();
-		
-		return new EdgeDistanceBooleanGrid(new Iterator<Pos2D>()
-		{
-			@Override
-			public boolean hasNext()
-			{
-				return posIter.hasNext();
-			}
-			
-			@Override
-			public Pos2D next()
-			{
-				DhChunkPos pos = posIter.next();
-				return new Pos2D(pos.x, pos.z);
-			}
-		},
-				MC_CLIENT.getPlayerChunkPos().x - renderDist,
-				MC_CLIENT.getPlayerChunkPos().z - renderDist,
-				renderDist * 2 + 1);
-	}
-	
 	/** Returns the chunk int position for the given double position */
 	public static int getChunkPosFromDouble(double value) { return (int) Math.floor(value / CHUNK_WIDTH); }
 	/** Returns the float position inside the chunk for the given double position */
@@ -275,11 +242,6 @@ public class LodUtil
 		return true;
 	}
 	
-	public static void checkInterrupts() throws InterruptedException
-	{
-		if (Thread.interrupted()) throw new InterruptedException();
-	}
-	
 	/**
 	 * Format a given string with params using log4j's MessageFormat
 	 *
@@ -295,6 +257,7 @@ public class LodUtil
 		return LOGGER.getMessageFactory().newMessage(str, param).getFormattedMessage();
 	}
 	
+	// TODO move
 	/**
 	 * Returns a shortened version of the given string that is no longer than maxLength. <br>
 	 * If null returns the empty string.
