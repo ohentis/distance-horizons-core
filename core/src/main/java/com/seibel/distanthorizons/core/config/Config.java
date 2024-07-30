@@ -1140,63 +1140,63 @@ public class Config
 				// TODO add change all option
 				// TODO default to error chat and info file
 				public static ConfigEntry<EDhApiLoggerMode> logWorldGenEvent = new ConfigEntry.Builder<EDhApiLoggerMode>()
-						.set(EDhApiLoggerMode.LOG_ERROR_TO_CHAT)
+						.set(EDhApiLoggerMode.LOG_ERROR_TO_CHAT_AND_INFO_TO_FILE)
 						.comment(""
 								+ "If enabled, the mod will log information about the world generation process. \n"
 								+ "This can be useful for debugging.")
 						.build();
 				
 				public static ConfigEntry<EDhApiLoggerMode> logWorldGenPerformance = new ConfigEntry.Builder<EDhApiLoggerMode>()
-						.set(EDhApiLoggerMode.LOG_ERROR_TO_CHAT)
+						.set(EDhApiLoggerMode.LOG_ERROR_TO_CHAT_AND_INFO_TO_FILE)
 						.comment(""
 								+ "If enabled, the mod will log performance about the world generation process. \n"
 								+ "This can be useful for debugging.")
 						.build();
 				
 				public static ConfigEntry<EDhApiLoggerMode> logWorldGenLoadEvent = new ConfigEntry.Builder<EDhApiLoggerMode>()
-						.set(EDhApiLoggerMode.LOG_ERROR_TO_CHAT)
+						.set(EDhApiLoggerMode.LOG_ERROR_TO_CHAT_AND_INFO_TO_FILE)
 						.comment(""
 								+ "If enabled, the mod will log information about the world generation process. \n"
 								+ "This can be useful for debugging.")
 						.build();
 				
 				public static ConfigEntry<EDhApiLoggerMode> logLodBuilderEvent = new ConfigEntry.Builder<EDhApiLoggerMode>()
-						.set(EDhApiLoggerMode.LOG_ERROR_TO_CHAT)
+						.set(EDhApiLoggerMode.LOG_ERROR_TO_CHAT_AND_INFO_TO_FILE)
 						.comment(""
 								+ "If enabled, the mod will log information about the LOD generation process. \n"
 								+ "This can be useful for debugging.")
 						.build();
 				
 				public static ConfigEntry<EDhApiLoggerMode> logRendererBufferEvent = new ConfigEntry.Builder<EDhApiLoggerMode>()
-						.set(EDhApiLoggerMode.LOG_ERROR_TO_CHAT)
+						.set(EDhApiLoggerMode.LOG_ERROR_TO_CHAT_AND_INFO_TO_FILE)
 						.comment(""
 								+ "If enabled, the mod will log information about the renderer buffer process. \n"
 								+ "This can be useful for debugging.")
 						.build();
 				
 				public static ConfigEntry<EDhApiLoggerMode> logRendererGLEvent = new ConfigEntry.Builder<EDhApiLoggerMode>()
-						.set(EDhApiLoggerMode.LOG_ERROR_TO_CHAT)
+						.set(EDhApiLoggerMode.LOG_ERROR_TO_CHAT_AND_INFO_TO_FILE)
 						.comment(""
 								+ "If enabled, the mod will log information about the renderer OpenGL process. \n"
 								+ "This can be useful for debugging.")
 						.build();
 				
 				public static ConfigEntry<EDhApiLoggerMode> logFileReadWriteEvent = new ConfigEntry.Builder<EDhApiLoggerMode>()
-						.set(EDhApiLoggerMode.LOG_ERROR_TO_CHAT)
+						.set(EDhApiLoggerMode.LOG_ERROR_TO_CHAT_AND_INFO_TO_FILE)
 						.comment(""
 								+ "If enabled, the mod will log information about file read/write operations. \n"
 								+ "This can be useful for debugging.")
 						.build();
 				
 				public static ConfigEntry<EDhApiLoggerMode> logFileSubDimEvent = new ConfigEntry.Builder<EDhApiLoggerMode>()
-						.set(EDhApiLoggerMode.LOG_ERROR_TO_CHAT)
+						.set(EDhApiLoggerMode.LOG_ERROR_TO_CHAT_AND_INFO_TO_FILE)
 						.comment(""
 								+ "If enabled, the mod will log information about file sub-dimension operations. \n"
 								+ "This can be useful for debugging.")
 						.build();
 				
 				public static ConfigEntry<EDhApiLoggerMode> logNetworkEvent = new ConfigEntry.Builder<EDhApiLoggerMode>()
-						.set(EDhApiLoggerMode.LOG_ERROR_TO_CHAT)
+						.set(EDhApiLoggerMode.LOG_ERROR_TO_CHAT_AND_INFO_TO_FILE)
 						.comment(""
 								+ "If enabled, the mod will log information about network operations. \n"
 								+ "This can be useful for debugging.")
