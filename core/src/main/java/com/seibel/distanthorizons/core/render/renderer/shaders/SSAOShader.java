@@ -103,17 +103,19 @@ public class SSAOShader extends AbstractShaderRenderer
 		this.shader.setUniform(this.gSampleCountUniform,
 				Config.Client.Advanced.Graphics.Ssao.sampleCount.get());
 		
-		this.shader.setUniform(this.gRadiusUniform,
-				Config.Client.Advanced.Graphics.Ssao.radius.get().floatValue());
+		// Implicit Number cast needs to be done to prevent issues with the default value being a int
+		Number radius = Config.Client.Advanced.Graphics.Ssao.radius.get(); 
+		this.shader.setUniform(this.gRadiusUniform, radius.floatValue());
 		
-		this.shader.setUniform(this.gStrengthUniform,
-				Config.Client.Advanced.Graphics.Ssao.strength.get().floatValue());
 		
-		this.shader.setUniform(this.gMinLightUniform,
-				Config.Client.Advanced.Graphics.Ssao.minLight.get().floatValue());
+		Number strength = Config.Client.Advanced.Graphics.Ssao.strength.get();
+		this.shader.setUniform(this.gStrengthUniform, strength.floatValue());
 		
-		this.shader.setUniform(this.gBiasUniform,
-				Config.Client.Advanced.Graphics.Ssao.bias.get().floatValue());
+		Number minLight = Config.Client.Advanced.Graphics.Ssao.minLight.get();
+		this.shader.setUniform(this.gMinLightUniform, minLight.floatValue());
+		
+		Number bias = Config.Client.Advanced.Graphics.Ssao.bias.get();
+		this.shader.setUniform(this.gBiasUniform, bias.floatValue());
 		
 		GL32.glActiveTexture(GL32.GL_TEXTURE0);
 		GL32.glBindTexture(GL32.GL_TEXTURE_2D, LodRenderer.getActiveDepthTextureId());
