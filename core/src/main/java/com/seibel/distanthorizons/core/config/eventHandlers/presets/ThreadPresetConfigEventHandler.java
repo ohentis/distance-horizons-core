@@ -32,6 +32,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
+@SuppressWarnings("FieldCanBeLocal")
 public class ThreadPresetConfigEventHandler extends AbstractPresetConfigEventHandler<EDhApiThreadPreset>
 {
 	public static final ThreadPresetConfigEventHandler INSTANCE = new ThreadPresetConfigEventHandler();
@@ -128,24 +129,24 @@ public class ThreadPresetConfigEventHandler extends AbstractPresetConfigEventHan
 			}});
 	
 	
-	public static int getNetworkCompressionDefaultThreadCount() { return getThreadCountByPercent(0.1); }
+	public static int getNetworkCompressionDefaultThreadCount() { return getThreadCountByPercent(0.3); }
 	private final ConfigEntryWithPresetOptions<EDhApiThreadPreset, Integer> networkCompressionThreadCount = new ConfigEntryWithPresetOptions<>(Config.Client.Advanced.MultiThreading.numberOfNetworkCompressionThreads,
 			new HashMap<EDhApiThreadPreset, Integer>()
 			{{
 				this.put(EDhApiThreadPreset.MINIMAL_IMPACT, 1);
 				this.put(EDhApiThreadPreset.LOW_IMPACT, getNetworkCompressionDefaultThreadCount());
-				this.put(EDhApiThreadPreset.BALANCED, getThreadCountByPercent(0.2));
-				this.put(EDhApiThreadPreset.AGGRESSIVE, getThreadCountByPercent(0.4));
-				this.put(EDhApiThreadPreset.I_PAID_FOR_THE_WHOLE_CPU, getThreadCountByPercent(0.6));
+				this.put(EDhApiThreadPreset.BALANCED, getThreadCountByPercent(0.4));
+				this.put(EDhApiThreadPreset.AGGRESSIVE, getThreadCountByPercent(0.6));
+				this.put(EDhApiThreadPreset.I_PAID_FOR_THE_WHOLE_CPU, getThreadCountByPercent(0.8));
 			}});
-	public static double getNetworkCompressionDefaultRunTimeRatio() { return 0.25; }
+	public static double getNetworkCompressionDefaultRunTimeRatio() { return 0.5; }
 	private final ConfigEntryWithPresetOptions<EDhApiThreadPreset, Double> networkCompressionRunTime = new ConfigEntryWithPresetOptions<>(Config.Client.Advanced.MultiThreading.runTimeRatioForNetworkCompressionThreads,
 			new HashMap<EDhApiThreadPreset, Double>()
 			{{
-				this.put(EDhApiThreadPreset.MINIMAL_IMPACT, 0.1);
+				this.put(EDhApiThreadPreset.MINIMAL_IMPACT, 0.25);
 				this.put(EDhApiThreadPreset.LOW_IMPACT, getNetworkCompressionDefaultRunTimeRatio());
-				this.put(EDhApiThreadPreset.BALANCED, 0.5);
-				this.put(EDhApiThreadPreset.AGGRESSIVE, 0.75);
+				this.put(EDhApiThreadPreset.BALANCED, 0.75);
+				this.put(EDhApiThreadPreset.AGGRESSIVE, 1.0);
 				this.put(EDhApiThreadPreset.I_PAID_FOR_THE_WHOLE_CPU, 1.0);
 			}});
 	
