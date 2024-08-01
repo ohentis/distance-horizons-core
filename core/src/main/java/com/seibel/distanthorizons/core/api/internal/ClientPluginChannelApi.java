@@ -52,7 +52,7 @@ public class ClientPluginChannelApi
 		Objects.requireNonNull(session);
 		this.session = session;
 		session.registerHandler(CurrentLevelKeyMessage.class, this::onCurrentLevelKeyMessage);
-		session.registerHandler(CloseEvent.class, this::onClose);
+		session.registerHandler(CloseEvent.class, false, this::onClose);
 	}
 	
 	private void onCurrentLevelKeyMessage(CurrentLevelKeyMessage msg)

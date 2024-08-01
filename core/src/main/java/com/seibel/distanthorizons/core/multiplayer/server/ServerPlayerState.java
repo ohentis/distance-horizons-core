@@ -53,7 +53,7 @@ public class ServerPlayerState
 			this.session.sendMessage(new RemotePlayerConfigMessage(this.config));
 		});
 		
-		this.session.registerHandler(CloseEvent.class, event -> {
+		this.session.registerHandler(CloseEvent.class, false, event -> {
 			// Noop
 		});
 	}

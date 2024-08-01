@@ -66,14 +66,14 @@ public class Session extends NetworkEventSource
 	}
 	
 	@Override
-	public <T extends NetworkMessage> void registerHandler(Class<T> handlerClass, Consumer<T> handlerImplementation)
+	public <T extends NetworkMessage> void registerHandler(Class<T> handlerClass, boolean throwIfMessageNotRegistered, Consumer<T> handlerImplementation)
 	{
 		if (this.closeReason.get() != null)
 		{
 			return;
 		}
 		
-		this.registerHandler(this, handlerClass, handlerImplementation);
+		this.registerHandler(this, handlerClass, throwIfMessageNotRegistered, handlerImplementation);
 	}
 	
 	public <TResponse extends TrackableMessage> CompletableFuture<TResponse> sendRequest(TrackableMessage msg, Class<TResponse> responseClass)
