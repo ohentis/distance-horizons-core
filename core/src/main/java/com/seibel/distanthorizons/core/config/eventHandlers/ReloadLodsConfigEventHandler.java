@@ -23,9 +23,9 @@ import com.seibel.distanthorizons.api.DhApi;
 import com.seibel.distanthorizons.api.interfaces.render.IDhApiRenderProxy;
 import com.seibel.distanthorizons.core.config.listeners.IConfigListener;
 
-public class DebugColumnConfigEventHandler implements IConfigListener
+public class ReloadLodsConfigEventHandler implements IConfigListener
 {
-	public static DebugColumnConfigEventHandler INSTANCE = new DebugColumnConfigEventHandler();
+	public static ReloadLodsConfigEventHandler INSTANCE = new ReloadLodsConfigEventHandler();
 	
 	@Override
 	public void onConfigValueSet()

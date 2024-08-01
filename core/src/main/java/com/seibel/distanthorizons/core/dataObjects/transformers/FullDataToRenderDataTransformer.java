@@ -178,6 +178,7 @@ public class FullDataToRenderDataTransformer
 		HashSet<IBlockStateWrapper> blockStatesToIgnore = WRAPPER_FACTORY.getRendererIgnoredBlocks(level.getLevelWrapper());
 		HashSet<IBlockStateWrapper> caveBlockStatesToIgnore = WRAPPER_FACTORY.getRendererIgnoredCaveBlocks(level.getLevelWrapper());
 		
+		int caveCullingMaxY = Config.Client.Advanced.Graphics.AdvancedGraphics.caveCullingHeight.get() - level.getMinY();
 		boolean caveCullingEnabled = 
 			Config.Client.Advanced.Graphics.AdvancedGraphics.enableCaveCulling.get()
 			&& (
@@ -211,6 +212,7 @@ public class FullDataToRenderDataTransformer
 			
 			int bottomY = FullDataPointUtil.getBottomY(fullData);
 			int blockHeight = FullDataPointUtil.getHeight(fullData);
+			int topY = bottomY + blockHeight;
 			int id = FullDataPointUtil.getId(fullData);
 			int blockLight = FullDataPointUtil.getBlockLight(fullData);
 			int skyLight = FullDataPointUtil.getSkyLight(fullData);
@@ -252,7 +254,9 @@ public class FullDataToRenderDataTransformer
 			{
 				if (caveCullingEnabled
 					// assume this data point is underground if it has no sky-light
-					&& skyLight == LodUtil.MIN_MC_LIGHT
+					&& skyLight == LodUtil.MIN_MC_LIGHT	
+					// ignore caves above a certain height to prevent floating islands from having walls underneath them
+					&& topY < caveCullingMaxY
 					// cave culling shouldn't happen when at the top of the world
 					&& columnOffset != 0
 					// cave culling can't happen when at the bottom of the world
