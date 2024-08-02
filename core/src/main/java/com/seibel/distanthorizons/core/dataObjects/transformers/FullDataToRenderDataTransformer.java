@@ -260,7 +260,7 @@ public class FullDataToRenderDataTransformer
 					// cave culling shouldn't happen when at the top of the world
 					&& renderDataIndex != 0 && fullDataIndex != 0
 					// cave culling can't happen when at the bottom of the world
-					&& fullDataIndex != fullColumnData.size())
+					&& (fullDataIndex+1) < fullColumnData.size())
 				{
 					// we need to get the next sky/block lights because
 					// the air block here will always have a light of 0/0 due to only the top of the LOD's light being saved.
