@@ -60,6 +60,7 @@ public abstract class AbstractDhLevel implements IDhLevel
 	protected final DelayedFullDataSourceSaveCache delayedFullDataSourceSaveCache = new DelayedFullDataSourceSaveCache(this::onDataSourceSave, 2_000);
 	/** contains the {@link DhChunkPos} for each {@link DhSectionPos} that are queued to save via {@link AbstractDhLevel#delayedFullDataSourceSaveCache} */
 	protected final ConcurrentHashMap<Long, HashSet<DhChunkPos>> updatedChunkPosSetBySectionPos = new ConcurrentHashMap<>();
+	protected final ConcurrentHashMap<DhChunkPos, Integer> updatedChunkHashesByChunkPos = new ConcurrentHashMap<>();
 	
 	/** Will be null if clouds shouldn't be rendered for this level. */
 	@Nullable
@@ -138,7 +139,7 @@ public abstract class AbstractDhLevel implements IDhLevel
 	public int getUnsavedDataSourceCount() { return this.delayedFullDataSourceSaveCache.getUnsavedCount(); }
 	
 	@Override
-	public void updateChunkAsync(IChunkWrapper chunkWrapper)
+	public void updateChunkAsync(IChunkWrapper chunkWrapper, int chunkHash)
 	{
 		FullDataSourceV2 dataSource = FullDataSourceV2.createFromChunk(chunkWrapper);
 		if (dataSource == null)
@@ -157,6 +158,7 @@ public abstract class AbstractDhLevel implements IDhLevel
 			chunkPosSet.add(chunkWrapper.getChunkPos());
 			return chunkPosSet;
 		});
+		this.updatedChunkHashesByChunkPos.put(chunkWrapper.getChunkPos(), chunkHash);
 		
 		// batch updates to reduce overhead when flying around or breaking/placing a lot of blocks in an area
 		this.delayedFullDataSourceSaveCache.queueDataSourceForUpdateAndSave(dataSource);
@@ -171,6 +173,13 @@ public abstract class AbstractDhLevel implements IDhLevel
 			{
 				for (DhChunkPos chunkPos : updatedChunkPosSet)
 				{
+					// save after the data source has been updated to prevent saving the hash without the associated datasource
+					Integer chunkHash = this.updatedChunkHashesByChunkPos.remove(chunkPos);
+					if (this.chunkHashRepo != null && chunkHash != null)
+					{
+						this.chunkHashRepo.save(new ChunkHashDTO(chunkPos, chunkHash));
+					}
+					
 					ApiEventInjector.INSTANCE.fireAllEvents(
 							DhApiChunkModifiedEvent.class,
 							new DhApiChunkModifiedEvent.EventParam(this.getLevelWrapper(), chunkPos.x, chunkPos.z));
@@ -197,14 +206,6 @@ public abstract class AbstractDhLevel implements IDhLevel
 		
 		ChunkHashDTO dto = this.chunkHashRepo.getByKey(pos);
 		return (dto != null) ? dto.chunkHash : 0;
-	}
-	@Override
-	public void setChunkHash(DhChunkPos pos, int chunkHash)
-	{
-		if (this.chunkHashRepo != null)
-		{
-			this.chunkHashRepo.save(new ChunkHashDTO(pos, chunkHash));
-		}
 	}
 	
 	

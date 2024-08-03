@@ -356,8 +356,7 @@ public class SharedApi
 					dhLevel.setBeaconBeamsForChunk(chunkWrapper.getChunkPos(), beaconBeamList);
 					
 					
-					dhLevel.updateChunkAsync(chunkWrapper);
-					dhLevel.setChunkHash(chunkWrapper.getChunkPos(), newChunkHash);
+					dhLevel.updateChunkAsync(chunkWrapper, newChunkHash);
 				}
 				catch (Exception e)
 				{
