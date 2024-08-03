@@ -65,7 +65,7 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 	// methods //
 	//=========//
 	
-	public void serverTick() { this.chunkToLodBuilder.tick(); }
+	public void serverTick() {  }
 	
 	@Override
 	public CompletableFuture<Void> updateDataSourcesAsync(FullDataSourceV2 data) { return this.getFullDataProvider().updateDataSourceAsync(data); }

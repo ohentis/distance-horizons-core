@@ -86,7 +86,6 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 	{
 		try
 		{
-			this.chunkToLodBuilder.tick();
 			this.clientside.clientTick();
 		}
 		catch (Exception e)
