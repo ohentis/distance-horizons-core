@@ -141,6 +141,25 @@ public class ChunkLightStorage
 		lightSection.set(x, y, z, lightLevel);
 	}
 	
+	public void clear() 
+	{
+		if (this.lightSections != null)
+		{
+			for (int i = 0; i < this.lightSections.length; i++)
+			{
+				LightSection section = this.lightSections[i];
+				if (section != null)
+				{
+					section.constantValue = LodUtil.MIN_MC_LIGHT;
+					if (section.data != null)
+					{
+						Arrays.fill(section.data, 0L);
+					}
+				}
+			}
+		}
+	}
+	
 	
 	
 	//================//

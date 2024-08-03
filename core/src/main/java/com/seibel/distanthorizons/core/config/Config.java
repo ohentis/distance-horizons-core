@@ -781,8 +781,10 @@ public class Config
 								+ "")
 						.build();
 				
+				@Deprecated
 				public static ConfigEntry<Boolean> onlyUseDhLightingEngine = new ConfigEntry.Builder<Boolean>()
 						.set(false)
+						.setAppearance(EConfigEntryAppearance.ONLY_IN_API)
 						.comment(""
 								+ "If false LODs will be lit by Minecraft's lighting engine when possible \n"
 								+ "and fall back to the DH lighting engine only when necessary. \n"

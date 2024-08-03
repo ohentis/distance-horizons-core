@@ -24,6 +24,7 @@ import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.generation.DhLightingEngine;
 import com.seibel.distanthorizons.core.level.IDhLevel;
+import com.seibel.distanthorizons.core.level.IDhServerLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
@@ -31,6 +32,7 @@ import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.sql.dto.BeaconBeamDTO;
 import com.seibel.distanthorizons.core.sql.repo.AbstractDhRepo;
+import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.TimerUtil;
 import com.seibel.distanthorizons.core.util.objects.Pair;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
@@ -46,6 +48,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /** Contains code and variables used by both {@link ClientApi} and {@link ServerApi} */
 public class SharedApi
@@ -328,26 +331,41 @@ public class SharedApi
 					}
 					
 					
-					// Save or populate the chunk wrapper's lighting
-					// this is done so we don't have to worry about MC unloading the lighting data for this chunk
-					boolean onlyUseDhLighting = Config.Client.Advanced.LodBuilding.onlyUseDhLightingEngine.get();
-					if (!onlyUseDhLighting && chunkWrapper.isLightCorrect())
+					// chunk light baking is disabled since profiling revealed it used
+					// roughly the same amount of time as generating the lighting ourselves and
+					// was much more likely to have issues with corrupt (all black or all bright) chunks
+					boolean tryUsingMcLightingEngine = false;
+					if (tryUsingMcLightingEngine)
 					{
-						try
+						// Save or populate the chunk wrapper's lighting
+						// this is done so we don't have to worry about MC unloading the lighting data for this chunk
+						boolean chunkLightPopulated = false;
+						boolean onlyUseDhLighting = Config.Client.Advanced.LodBuilding.onlyUseDhLightingEngine.get();
+						if (!onlyUseDhLighting && chunkWrapper.isLightCorrect())
 						{
 							// If MC's lighting engine isn't thread safe this may cause the server thread to lag
-							chunkWrapper.bakeDhLightingUsingMcLightingEngine();
+							chunkLightPopulated = chunkWrapper.bakeDhLightingUsingMcLightingEngine(dhLevel.getLevelWrapper());
+							if (!chunkLightPopulated)
+							{
+								// clear any existing data to prevent partial or corrupt lighting
+								// when re-generating it
+								chunkWrapper.clearDhBlockLighting();
+								chunkWrapper.clearDhSkyLighting();
+							}
 						}
-						catch (IllegalStateException e)
+						
+						// something went wrong during the baking process so we have to generate the lighting ourselves
+						if (!chunkLightPopulated)
 						{
-							LOGGER.warn("Chunk light baking error: " + e.getMessage(), e);
+							DhLightingEngine.INSTANCE.lightChunk(chunkWrapper, nearbyChunkList, dhLevel.hasSkyLight() ? LodUtil.MAX_MC_LIGHT : LodUtil.MIN_MC_LIGHT);
 						}
 					}
 					else
 					{
-						// generate the chunk's lighting, using neighboring chunks if present
-						DhLightingEngine.INSTANCE.lightChunk(chunkWrapper, nearbyChunkList, dhLevel.hasSkyLight() ? 15 : 0);
+						DhLightingEngine.INSTANCE.lightChunk(chunkWrapper, nearbyChunkList, dhLevel.hasSkyLight() ? LodUtil.MAX_MC_LIGHT : LodUtil.MIN_MC_LIGHT);
 					}
+					
+					
 					
 					
 					
