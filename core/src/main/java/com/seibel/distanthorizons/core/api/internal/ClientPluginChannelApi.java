@@ -27,24 +27,24 @@ public class ClientPluginChannelApi
 	private static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	private static final IKeyedClientLevelManager KEYED_CLIENT_LEVEL_MANAGER = SingletonInjector.INSTANCE.get(IKeyedClientLevelManager.class);
 	
+	private final Consumer<IServerKeyedClientLevel> levelLoadHandler;
 	private final Consumer<IClientLevelWrapper> levelUnloadHandler;
-	private final Consumer<IServerKeyedClientLevel> multiverseLevelLoadHandler;
 	
 	@Nullable
 	public Session session;
 	
 	
-	public boolean allowLevelAutoload()
+	public boolean allowLevelLoading(IClientLevelWrapper level)
 	{
-		return (KEYED_CLIENT_LEVEL_MANAGER.isEnabled() && KEYED_CLIENT_LEVEL_MANAGER.getServerKeyedLevel() != null)
+		return (KEYED_CLIENT_LEVEL_MANAGER.isEnabled() && level instanceof IServerKeyedClientLevel)
 				|| !KEYED_CLIENT_LEVEL_MANAGER.isEnabled();
 	}
 	
 	
 	public ClientPluginChannelApi(Consumer<IServerKeyedClientLevel> levelLoadHandler, Consumer<IClientLevelWrapper> levelUnloadHandler)
 	{
+		this.levelLoadHandler = levelLoadHandler;
 		this.levelUnloadHandler = levelUnloadHandler;
-		this.multiverseLevelLoadHandler = levelLoadHandler;
 	}
 	
 	public void onJoin(@NonNull Session session)
@@ -90,7 +90,7 @@ public class ClientPluginChannelApi
 			{
 				LOGGER.info("Loading level with key: " + msg.levelKey);
 				IServerKeyedClientLevel keyedLevel = KEYED_CLIENT_LEVEL_MANAGER.setServerKeyedLevel(clientLevel, msg.levelKey);
-				this.multiverseLevelLoadHandler.accept(keyedLevel);
+				this.levelLoadHandler.accept(keyedLevel);
 			}
 		});
 	}

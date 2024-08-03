@@ -235,7 +235,7 @@ public class ClientApi
 			AbstractDhWorld world = SharedApi.getAbstractDhWorld();
 			if (world != null)
 			{
-				if (!this.pluginChannelApi.allowLevelAutoload())
+				if (!this.pluginChannelApi.allowLevelLoading(level))
 				{
 					LOGGER.info("Levels in this connection are managed by the server, skipping auto-load.");
 					
