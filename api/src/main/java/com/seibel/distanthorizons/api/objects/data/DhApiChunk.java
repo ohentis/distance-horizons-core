@@ -21,8 +21,10 @@ package com.seibel.distanthorizons.api.objects.data;
 
 import com.seibel.distanthorizons.api.interfaces.factories.IDhApiWrapperFactory;
 import com.seibel.distanthorizons.api.interfaces.override.worldGenerator.IDhApiWorldGenerator;
+import org.apache.logging.log4j.LogManager;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -114,27 +116,50 @@ public class DhApiChunk
 	 */
 	public void setDataPoints(int relX, int relZ, List<DhApiTerrainDataPoint> dataPoints) throws IndexOutOfBoundsException, IllegalArgumentException
 	{
+		//================//
+		// validate input //
+		//================//
+		
+		int internalArrayIndex = (relZ << 4) | relX;
 		throwIfRelativePosOutOfBounds(relX, relZ);
 		
-		// validate the incoming datapoints
-		if (dataPoints != null)
+		// ignore empty inputs
+		if (dataPoints == null)
 		{
-			for (int i = 0; i < dataPoints.size(); i++) // standard for-loop used instead of an enhanced for-loop to slightly reduce GC overhead due to iterator allocation
+			return;
+		}
+		
+		// check that each datapoint is valid
+		for (int i = 0; i < dataPoints.size(); i++) // standard for-loop used instead of an enhanced for-loop to slightly reduce GC overhead due to iterator allocation
+		{
+			DhApiTerrainDataPoint dataPoint = dataPoints.get(i);
+			if (dataPoint == null)
 			{
-				DhApiTerrainDataPoint dataPoint = dataPoints.get(i);
-				if (dataPoint == null)
-				{
-					throw new IllegalArgumentException("Null DhApiTerrainDataPoints are not allowed. If you want to represent empty terrain, please use AIR.");
-				}
-				
-				if (dataPoint.detailLevel != 0)
-				{
-					throw new IllegalArgumentException("DhApiTerrainDataPoints has the wrong detail level ["+dataPoint.detailLevel+"], all data points must be block sized; IE their detail level must be [0].");
-				}
+				throw new IllegalArgumentException("Null DhApiTerrainDataPoints are not allowed. If you want to represent empty terrain, please use AIR.");
+			}
+			
+			if (dataPoint.detailLevel != 0)
+			{
+				throw new IllegalArgumentException("DhApiTerrainDataPoints has the wrong detail level ["+dataPoint.detailLevel+"], all data points must be block sized; IE their detail level must be [0].");
 			}
 		}
 		
-		this.dataPoints.set((relZ << 4) | relX, dataPoints); 
+		
+		
+		//================//
+		// set datapoints //
+		//================//
+		
+		// DH expects datapoints to be in a top-down order
+		DhApiTerrainDataPoint first = dataPoints.get(0);
+		DhApiTerrainDataPoint last = dataPoints.get(dataPoints.size() - 1);
+		if (first.bottomYBlockPos < last.bottomYBlockPos)
+		{
+			// flip the array if it's in bottom-up order
+			Collections.reverse(dataPoints);
+		}
+		
+		this.dataPoints.set(internalArrayIndex, dataPoints); 
 	}
 	
 	
