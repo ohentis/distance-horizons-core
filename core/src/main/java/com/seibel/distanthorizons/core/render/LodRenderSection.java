@@ -202,9 +202,15 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 						ColumnRenderBuffer previousBuffer = this.renderBuffer;
 						
 						ColumnRenderSource[] adjacentRenderSections = new ColumnRenderSource[EDhDirection.ADJ_DIRECTIONS.length];
+						boolean[] adjIsSameDetailLevel = new boolean[EDhDirection.ADJ_DIRECTIONS.length];
 						for (int i = 0; i < EDhDirection.ADJ_DIRECTIONS.length; i++)
 						{
 							adjacentRenderSections[i] = adjRenderSourceLoadRefFutures[i].future.getNow(null);
+							
+							// if the adjacent position isn't the same detail level the buffer building logic
+							// will need to be slightly different in order to reduce holes in the LODs
+							EDhDirection direction = EDhDirection.ADJ_DIRECTIONS[i];
+							adjIsSameDetailLevel[direction.ordinal() - 2] = this.isAdjacentPosSameDetailLevel(direction);
 						}
 						
 						if (this.bufferBuildFuture != null)
@@ -213,7 +219,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 							// prevents the CPU from working on something that won't be used
 							this.bufferBuildFuture.cancel(true);
 						}
-						this.bufferBuildFuture = ColumnRenderBufferBuilder.buildBuffersAsync(this.level, renderSource, adjacentRenderSections);
+						this.bufferBuildFuture = ColumnRenderBufferBuilder.buildBuffersAsync(this.level, renderSource, adjacentRenderSections, adjIsSameDetailLevel);
 						this.bufferBuildFuture.thenAccept((lodQuadBuilder) ->
 						{
 							
@@ -283,17 +289,10 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 			long adjPos = DhSectionPos.getAdjacentPos(this.pos, direction);
 			try
 			{
-				// ignore adjacent positions that aren't the same detail level
-				// since the LodDataBuilder can't handle different detail levels
-				byte detailLevel = this.quadTree.calculateExpectedDetailLevel(new DhBlockPos2D(MC.getPlayerBlockPos()), adjPos);
-				detailLevel += DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL;
-				if (detailLevel == DhSectionPos.getDetailLevel(this.pos))
+				LodRenderSection adjRenderSection = this.quadTree.getValue(adjPos);
+				if (adjRenderSection != null)
 				{
-					LodRenderSection adjRenderSection = this.quadTree.getValue(adjPos);
-					if (adjRenderSection != null)
-					{
-						futureArray[arrayIndex] = adjRenderSection.getRenderSourceAsync();
-					}
+					futureArray[arrayIndex] = adjRenderSection.getRenderSourceAsync();
 				}
 			}
 			catch (IndexOutOfBoundsException ignore) {}
@@ -353,6 +352,14 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		{
 			this.getRenderSourceLock.unlock();
 		}
+	}
+	private boolean isAdjacentPosSameDetailLevel(EDhDirection direction)
+	{
+		long adjPos = DhSectionPos.getAdjacentPos(this.pos, direction);
+		byte detailLevel = this.quadTree.calculateExpectedDetailLevel(new DhBlockPos2D(MC.getPlayerBlockPos()), adjPos);
+		detailLevel += DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL;
+		boolean adjacentIsSameDetailLevel = (detailLevel == DhSectionPos.getDetailLevel(this.pos));
+		return adjacentIsSameDetailLevel;
 	}
 	
 	

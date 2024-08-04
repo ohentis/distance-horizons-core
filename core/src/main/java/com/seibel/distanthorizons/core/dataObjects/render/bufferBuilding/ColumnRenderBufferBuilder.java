@@ -63,7 +63,7 @@ public class ColumnRenderBufferBuilder
 	
 	public static CompletableFuture<LodQuadBuilder> buildBuffersAsync(
 			IDhClientLevel clientLevel,
-			ColumnRenderSource renderSource, ColumnRenderSource[] adjData
+			ColumnRenderSource renderSource, ColumnRenderSource[] adjData, boolean[] isSameDetailLevel
 		)
 	{
 		ThreadPoolExecutor bufferBuilderExecutor = ThreadPoolUtil.getBufferBuilderExecutor();
@@ -84,7 +84,7 @@ public class ColumnRenderBufferBuilder
 					{
 						boolean enableTransparency = Config.Client.Advanced.Graphics.Quality.transparency.get().transparencyEnabled;
 						LodQuadBuilder builder = new LodQuadBuilder(enableTransparency, clientLevel.getClientLevelWrapper());
-						makeLodRenderData(builder, renderSource, adjData);
+						makeLodRenderData(builder, renderSource, clientLevel, adjData, isSameDetailLevel);
 						return builder;
 					}
 					catch (UncheckedInterruptedException e)
@@ -172,7 +172,9 @@ public class ColumnRenderBufferBuilder
 			return future;
 		}
 	}
-	private static void makeLodRenderData(LodQuadBuilder quadBuilder, ColumnRenderSource renderSource, ColumnRenderSource[] adjRegions)
+	private static void makeLodRenderData(
+			LodQuadBuilder quadBuilder, ColumnRenderSource renderSource, IDhClientLevel clientLevel,
+			ColumnRenderSource[] adjRegions, boolean[] isSameDetailLevel)
 	{
 		//=============//
 		// debug check //
@@ -362,8 +364,9 @@ public class ColumnRenderBufferBuilder
 					long bottomDataPoint = (i + 1) < columnRenderData.size() ? columnRenderData.get(i + 1) : RenderDataPointUtil.EMPTY_DATA;
 					
 					addLodToBuffer(
+							clientLevel,
 							data, topDataPoint, bottomDataPoint, 
-							adjColumnViews,
+							adjColumnViews, isSameDetailLevel,
 							thisDetailLevel, relX, relZ, 
 							quadBuilder, debugSourceFlag);
 				}
@@ -374,8 +377,9 @@ public class ColumnRenderBufferBuilder
 		quadBuilder.finalizeData();
 	}
 	private static void addLodToBuffer(
+			IDhClientLevel clientLevel,
 			long data, long topData, long bottomData, 
-			ColumnArrayView[] adjColumnViews,
+			ColumnArrayView[] adjColumnViews, boolean[] isSameDetailLevel,
 			byte detailLevel, int renderSourceOffsetPosX, int renderSourceOffsetPosZ, 
 			LodQuadBuilder quadBuilder, ColumnRenderSource.DebugSourceFlag debugSource)
 	{
@@ -505,14 +509,14 @@ public class ColumnRenderBufferBuilder
 		}
 		
 		ColumnBox.addBoxQuadsToBuilder(
-				quadBuilder, // buffer
-				width, ySize, width, // setWidth
-				x, yMin, z, // setOffset
-				color, // setColor
-				blockMaterialId, // irisBlockMaterialId
-				RenderDataPointUtil.getLightSky(data), // setSkyLights
-				fullBright ? 15 : RenderDataPointUtil.getLightBlock(data), // setBlockLights
-				topData, bottomData, adjColumnViews); // setAdjData
+				quadBuilder, clientLevel,
+				width, ySize, width,
+				x, yMin, z,
+				color,
+				blockMaterialId,
+				RenderDataPointUtil.getLightSky(data),
+				fullBright ? 15 : RenderDataPointUtil.getLightBlock(data),
+				topData, bottomData, adjColumnViews, isSameDetailLevel);
 	}
 	
 }
