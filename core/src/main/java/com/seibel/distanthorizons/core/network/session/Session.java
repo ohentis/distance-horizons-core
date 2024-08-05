@@ -86,15 +86,25 @@ public class Session extends NetworkEventSource
 	
 	public void sendMessage(NetworkMessage message)
 	{
+		if (this.closeReason.get() != null) return;
 		LOGGER.debug("Sending message: {}", message);
 		
-		if (this.serverPlayer != null)
+		try
 		{
-			PACKET_SENDER.sendPluginPacketServer(this.serverPlayer, message);
+			if (this.serverPlayer != null)
+			{
+				PACKET_SENDER.sendPluginPacketServer(this.serverPlayer, message);
+			}
+			else
+			{
+				PACKET_SENDER.sendPluginPacketClient(message);
+			}
 		}
-		else
+		catch (Throwable throwable)
 		{
-			PACKET_SENDER.sendPluginPacketClient(message);
+			LOGGER.info("Failed to send a message", throwable);
+			LOGGER.info("Message: {}", message);
+			this.close(throwable);
 		}
 	}
 	
