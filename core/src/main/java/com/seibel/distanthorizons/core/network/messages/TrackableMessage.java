@@ -39,7 +39,8 @@ public abstract class TrackableMessage extends NetworkMessage
 	public long futureId = lastId.getAndIncrement()
 			| ((Objects.requireNonNull(SharedApi.getEnvironment()) == EWorldEnvironment.Server_Only ? 1 : 0) << 31);
 	
-	public void setSession(Session session)
+	@Override
+    public void setSession(Session session)
 	{
 		super.setSession(session);
 		this.futureId |= (long) session.id << 32;

@@ -42,8 +42,6 @@ public class FullDataPartialUpdateMessage extends NetworkMessage implements ILev
 		this.payload = payload;
 	}
 	
-	@Override
-	public boolean warnWhenUnhandled() { return false; }
 	
 	@Override
 	public void encode(ByteBuf out)

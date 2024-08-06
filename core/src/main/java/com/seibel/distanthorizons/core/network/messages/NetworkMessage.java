@@ -10,8 +10,6 @@ public abstract class NetworkMessage implements INetworkObject
 	public Session session = null;
 	public IServerPlayerWrapper serverPlayer() { return this.session.serverPlayer; }
 	
-	public boolean warnWhenUnhandled() { return true; }
-	
 	public Session getConnection()
 	{
 		return this.session;

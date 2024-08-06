@@ -10,6 +10,7 @@ import com.seibel.distanthorizons.core.network.event.ScopedNetworkEventSource;
 import com.seibel.distanthorizons.core.network.event.CloseEvent;
 import com.seibel.distanthorizons.core.network.messages.base.RemotePlayerConfigMessage;
 import com.seibel.distanthorizons.core.network.messages.fullData.FullDataChunkMessage;
+import com.seibel.distanthorizons.core.network.messages.fullData.FullDataPartialUpdateMessage;
 import com.seibel.distanthorizons.core.network.messages.fullData.FullDataPayload;
 import com.seibel.distanthorizons.core.network.session.Session;
 import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV2DTO;
@@ -83,6 +84,11 @@ public class ClientNetworkState implements Closeable
 			CompositeByteBuf composite = this.fullDataBuffers.computeIfAbsent(msg.bufferId, bufferId -> ByteBufAllocator.DEFAULT.compositeBuffer());
 			composite.addComponent(true, msg.buffer);
 			LOGGER.debug("Full data buffer {}: {}", msg.bufferId, composite);
+		});
+
+		this.session.registerHandler(FullDataPartialUpdateMessage.class, msg ->
+		{
+			// Dummy handler to prevent unhandled message warnings
 		});
 	}
 	

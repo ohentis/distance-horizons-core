@@ -29,10 +29,14 @@ public final class ScopedNetworkEventSource extends NetworkEventSource
 	public final NetworkEventSource parent;
 	private boolean isClosed = false;
 	
+	private final Consumer<NetworkMessage> actualHandleMessageStable = this::handleMessage;
+	
+	
 	public ScopedNetworkEventSource(NetworkEventSource parent)
 	{
 		this.parent = parent;
 	}
+	
 	
 	@Override
 	public <T extends NetworkMessage> void registerHandler(Class<T> handlerClass, Consumer<T> handlerImplementation)
@@ -42,8 +46,12 @@ public final class ScopedNetworkEventSource extends NetworkEventSource
 			return;
 		}
 		
-		this.parent.registerHandler(this, handlerClass, this::handleMessage);
+		//noinspection unchecked
+		this.parent.registerHandler(this, handlerClass, (Consumer<T>) this.actualHandleMessageStable);
+		
+		super.registerHandler(this, handlerClass, handlerImplementation);
 	}
+	
 	
 	@Override
 	public void close()

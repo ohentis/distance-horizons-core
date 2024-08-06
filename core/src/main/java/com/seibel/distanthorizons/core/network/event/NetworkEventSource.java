@@ -102,7 +102,7 @@ public abstract class NetworkEventSource
 			}
 		}
 		
-		if (!handled && ModInfo.IS_DEV_BUILD && message.warnWhenUnhandled())
+		if (!handled && ModInfo.IS_DEV_BUILD)
 		{
 			LOGGER.warn("Unhandled message: " + message);
 		}

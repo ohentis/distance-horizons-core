@@ -40,9 +40,6 @@ public class FullDataChunkMessage extends NetworkMessage
 	
 	
 	@Override
-	public boolean warnWhenUnhandled() { return false; }
-	
-	@Override
 	public void encode(ByteBuf out)
 	{
 		out.writeInt(this.bufferId);
