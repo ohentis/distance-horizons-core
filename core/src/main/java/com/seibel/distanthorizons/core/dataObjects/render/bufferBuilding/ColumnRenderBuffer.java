@@ -33,6 +33,7 @@ import com.seibel.distanthorizons.core.util.objects.StatsMap;
 import com.seibel.distanthorizons.api.enums.config.EDhApiGpuUploadMethod;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import org.apache.logging.log4j.Logger;
+import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
 import java.util.Iterator;
@@ -220,6 +221,10 @@ public class ColumnRenderBuffer implements AutoCloseable
 				vbos[vboIndex] = null;
 				vbo.close();
 				LOGGER.error("Failed to upload buffer: ", e);
+			} 
+			finally
+			{
+				MemoryUtil.memFree(bb);
 			}
 			
 			

@@ -25,6 +25,7 @@ import com.seibel.distanthorizons.core.render.glObject.GLEnums;
 import com.seibel.distanthorizons.core.render.glObject.GLProxy;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.opengl.GL32;
+import org.lwjgl.system.MemoryUtil;
 
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
@@ -154,7 +155,7 @@ public class QuadElementBuffer extends GLElementBuffer
 		LOGGER.info("Quad IBO Resizing from [" + getCapacity() + "] to [" + quadCount + "]" + " with type: " +
 				GLEnums.getString(type));
 		
-		ByteBuffer buffer = ByteBuffer.allocateDirect(indicesCount * GLEnums.getTypeSize(type)).order(ByteOrder.nativeOrder());
+		ByteBuffer buffer = MemoryUtil.memAlloc(indicesCount * GLEnums.getTypeSize(type));
 		buildBuffer(quadCount, buffer, type);
 		if (!gl.bufferStorageSupported)
 		{
@@ -169,6 +170,8 @@ public class QuadElementBuffer extends GLElementBuffer
 			super.uploadBuffer(buffer, EDhApiGpuUploadMethod.BUFFER_STORAGE,
 					indicesCount * GLEnums.getTypeSize(type), 0);
 		}
+		
+		MemoryUtil.memFree(buffer);
 	}
 	
 }

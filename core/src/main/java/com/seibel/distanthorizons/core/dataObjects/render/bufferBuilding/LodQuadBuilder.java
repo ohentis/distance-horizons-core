@@ -38,6 +38,7 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftCli
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.coreapi.util.MathUtil;
 import org.apache.logging.log4j.Logger;
+import org.lwjgl.system.MemoryUtil;
 
 /**
  * Used to create the quads before they are converted to render-able buffers. <br><br>
@@ -414,9 +415,8 @@ public class LodQuadBuilder
 	{
 		return new Iterator<ByteBuffer>()
 		{
-			final ByteBuffer bb = ByteBuffer.allocateDirect(ColumnRenderBuffer.FULL_SIZED_BUFFER)
-					.order(ByteOrder.nativeOrder());
-			int dir = skipEmpty(0);
+			final ByteBuffer bb = MemoryUtil.memAlloc(ColumnRenderBuffer.FULL_SIZED_BUFFER);
+			int dir = this.skipEmpty(0);
 			int quad = 0;
 			
 			private int skipEmpty(int d)
@@ -482,8 +482,7 @@ public class LodQuadBuilder
 	{
 		return new Iterator<ByteBuffer>()
 		{
-			final ByteBuffer bb = ByteBuffer.allocateDirect(ColumnRenderBuffer.FULL_SIZED_BUFFER)
-					.order(ByteOrder.nativeOrder());
+			final ByteBuffer bb = MemoryUtil.memAlloc(ColumnRenderBuffer.FULL_SIZED_BUFFER);
 			int directionIndex = this.skipEmptyDirectionIndices(0);
 			int quad = 0;
 			
