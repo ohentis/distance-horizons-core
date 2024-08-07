@@ -23,13 +23,12 @@ package com.seibel.distanthorizons.api.enums.config;
  * AUTO, 					<br>
  * BUFFER_STORAGE, 			<br>
  * SUB_DATA, 				<br>
- * BUFFER_MAPPING, 			<br>
  * DATA						<br>
  *
  * @author Leetom
  * @author James Seibel
  * @version 2024-4-6
- * @since API 2.0.0
+ * @since API 3.0.0
  */
 public enum EDhApiGpuUploadMethod
 {
@@ -49,7 +48,10 @@ public enum EDhApiGpuUploadMethod
 	 * May end up storing buffers in System memory. <br>
 	 * Fast rending if in GPU memory, slow if in system memory, <br>
 	 * but won't stutter when uploading.
+	 * 
+	 * @deprecated not currently supported
 	 */
+	@Deprecated
 	BUFFER_MAPPING(true, false),
 	
 	/** Fast rendering but may stutter when uploading. */

@@ -193,17 +193,7 @@ public class GLProxy
 		return instance;
 	}
 	
-	public EDhApiGpuUploadMethod getGpuUploadMethod()
-	{
-		EDhApiGpuUploadMethod method = Config.Client.Advanced.GpuBuffers.gpuUploadMethod.get();
-		if (!this.bufferStorageSupported && method == EDhApiGpuUploadMethod.BUFFER_STORAGE)
-		{
-			// if buffer storage isn't supported
-			// default to DATA since that is the most compatible
-			method = EDhApiGpuUploadMethod.DATA;
-		}
-		return method == EDhApiGpuUploadMethod.AUTO ? this.preferredUploadMethod : method;
-	}
+	public EDhApiGpuUploadMethod getGpuUploadMethod() { return this.preferredUploadMethod; }
 	
 	public boolean runningOnRenderThread()
 	{

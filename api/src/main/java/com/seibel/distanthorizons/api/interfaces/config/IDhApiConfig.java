@@ -36,7 +36,6 @@ public interface IDhApiConfig
 	IDhApiWorldGenerationConfig worldGenerator();
 	IDhApiMultiplayerConfig multiplayer();
 	IDhApiMultiThreadingConfig multiThreading();
-	IDhApiGpuBuffersConfig gpuBuffers();
 	// note: DON'T add the Auto Updater to this API. We only want the user's to have the ability to control when things are downloaded to their machines.
 	//IDhApiLoggingConfig logging(); // TODO implement
 	IDhApiDebuggingConfig debugging();

@@ -125,7 +125,6 @@ public class Config
 			public static ConfigCategory multiplayer = new ConfigCategory.Builder().set(Multiplayer.class).build();
 			public static ConfigCategory lodBuilding = new ConfigCategory.Builder().set(LodBuilding.class).build();
 			public static ConfigCategory multiThreading = new ConfigCategory.Builder().set(MultiThreading.class).build();
-			public static ConfigCategory buffers = new ConfigCategory.Builder().set(GpuBuffers.class).build();
 			public static ConfigCategory autoUpdater = new ConfigCategory.Builder().set(AutoUpdater.class).build();
 			
 			public static ConfigCategory logging = new ConfigCategory.Builder().set(Logging.class).build();
@@ -1067,53 +1066,6 @@ public class Config
 								+ "This will cause CPU usage to drastically increase for the Lod Builder threads. \n"
 								+ "\n"
 								+ "Note that if deadlock did occur restarting MC may be necessary to stop the locked threads. \n"
-								+ "")
-						.build();
-				
-			}
-			
-			public static class GpuBuffers
-			{
-				public static ConfigEntry<EDhApiGpuUploadMethod> gpuUploadMethod = new ConfigEntry.Builder<EDhApiGpuUploadMethod>()
-						.set(EDhApiGpuUploadMethod.AUTO)
-						.comment(""
-								+ "What method should be used to upload geometry to the GPU? \n"
-								+ "\n"
-								+ EDhApiGpuUploadMethod.AUTO + ": Picks the best option based on the GPU you have. \n"
-								+ "\n"
-								+ EDhApiGpuUploadMethod.BUFFER_STORAGE + ": Default if OpenGL 4.5 is supported. \n"
-								+ "    Fast rendering, no stuttering. \n"
-								+ "\n"
-								+ EDhApiGpuUploadMethod.SUB_DATA + ": Backup option for NVIDIA. \n"
-								+ "    Fast rendering but may stutter when uploading. \n"
-								+ "\n"
-								+ EDhApiGpuUploadMethod.BUFFER_MAPPING + ": Slow rendering but won't stutter when uploading. \n"
-								+ "    Generally the best option for integrated GPUs. \n"
-								+ "    Default option for AMD/Intel if OpenGL 4.5 isn't supported. \n"
-								+ "    May end up storing buffers in System memory. \n"
-								+ "    Fast rendering if in GPU memory, slow if in system memory, \n"
-								+ "    but won't stutter when uploading.  \n"
-								+ "\n"
-								+ EDhApiGpuUploadMethod.DATA + ": Fast rendering but will stutter when uploading. \n"
-								+ "    Backup option for AMD/Intel. \n"
-								+ "    Fast rendering but may stutter when uploading. \n"
-								+ "\n"
-								+ "If you don't see any difference when changing these settings, \n"
-								+ "or the world looks corrupted: restart your game."
-								+ "")
-						.build();
-				
-				public static ConfigEntry<Integer> gpuUploadPerMegabyteInMilliseconds = new ConfigEntry.Builder<Integer>()
-						.setMinDefaultMax(0, 0, 50)
-						.comment(""
-								+ "How long should a buffer wait per Megabyte of data uploaded? \n"
-								+ "Helpful resource for frame times: https://fpstoms.com \n"
-								+ "\n"
-								+ "Longer times may reduce stuttering but will make LODs \n"
-								+ "transition and load slower. Change this to [0] for no timeout. \n"
-								+ "\n"
-								+ "NOTE:\n"
-								+ "Before changing this config, try changing the \"GPU Upload method\" first. \n"
 								+ "")
 						.build();
 				

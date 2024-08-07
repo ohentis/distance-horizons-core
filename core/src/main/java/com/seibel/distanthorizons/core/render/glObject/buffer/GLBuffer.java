@@ -238,7 +238,7 @@ public class GLBuffer implements AutoCloseable
 	// buffer mapping //
 	//================//
 	
-	public ByteBuffer mapBuffer(int targetSize, EDhApiGpuUploadMethod uploadMethod, int maxExpensionSize, int bufferHint, int mapFlags)
+	public ByteBuffer mapBuffer(int targetSize, EDhApiGpuUploadMethod uploadMethod, int maxExpansionSize, int bufferHint, int mapFlags)
 	{
 		LodUtil.assertTrue(targetSize != 0, "MapBuffer targetSize is 0");
 		LodUtil.assertTrue(uploadMethod.useEarlyMapping, "Upload method must be one that use early mappings in order to call mapBuffer");
@@ -252,7 +252,7 @@ public class GLBuffer implements AutoCloseable
 		if (this.size < targetSize || this.size > targetSize * BUFFER_SHRINK_TRIGGER)
 		{
 			int newSize = (int) (targetSize * BUFFER_EXPANSION_MULTIPLIER);
-			if (newSize > maxExpensionSize) newSize = maxExpensionSize;
+			if (newSize > maxExpansionSize) newSize = maxExpansionSize;
 			this.size = newSize;
 			if (this.bufferStorage)
 			{
