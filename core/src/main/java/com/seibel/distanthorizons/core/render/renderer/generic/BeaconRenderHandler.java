@@ -143,7 +143,7 @@ public class BeaconRenderHandler
 				{
 					// beam no longer exists at position, remove from DB
 					this.beaconBeamRepo.deleteWithKey(beaconPos); // TODO broken when updating adjacent chunks
-					this.stopRenderingBeaconAtPos(beaconPos);
+					this.stopRenderingBeaconAtPos(beaconPos, true);
 				}
 				
 			}
@@ -168,7 +168,7 @@ public class BeaconRenderHandler
 		for (int i = 0; i < existingBeamList.size(); i++)
 		{
 			BeaconBeamDTO beam = existingBeamList.get(i);
-			this.stopRenderingBeaconAtPos(beam.pos);
+			this.stopRenderingBeaconAtPos(beam.pos, false);
 		}
 	}
 	
@@ -199,18 +199,25 @@ public class BeaconRenderHandler
 		});
 	}
 	
-	private void stopRenderingBeaconAtPos(DhBlockPos beaconPos)
+	private void stopRenderingBeaconAtPos(DhBlockPos beaconPos, boolean ignoreReferenceCount)
 	{
 		this.beaconRefCountByBlockPos.compute(beaconPos, (pos, beaconRefCount) ->
 		{
-			if (beaconRefCount != null
-					&& beaconRefCount.decrementAndGet() <= 0)
+			// ignoring the reference count is needed when deleting beacons
+			if (ignoreReferenceCount
+				|| 
+				// respecting the reference count is used when unloading beacons
+				(
+					beaconRefCount != null
+					&& beaconRefCount.decrementAndGet() <= 0
+				))
 			{
 				this.beaconBoxGroup.removeIf((box) ->
 						box.minPos.x == beaconPos.x
-								&& box.minPos.y == beaconPos.y+1 // plus 1 because the beam starts above the beacon
-								&& box.minPos.z == beaconPos.z
+						&& box.minPos.y == beaconPos.y+1 // plus 1 because the beam starts above the beacon
+						&& box.minPos.z == beaconPos.z
 				);
+				
 				this.beaconBoxGroup.triggerBoxChange();
 				return null;
 			}
