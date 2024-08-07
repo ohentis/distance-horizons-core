@@ -54,10 +54,6 @@ public class DhFrustumBounds implements IDhApiCullingFrustum
 		Vector3f lodMin = new Vector3f(lodBlockPosMinX, this.worldMinY, lodBlockPosMinZ);
 		Vector3f lodMax = new Vector3f(lodBlockPosMinX + lodBlockWidth, this.worldMaxY, lodBlockPosMinZ + lodBlockWidth);
 		
-		if (lodMax.x < this.boundsMin.x || lodMin.x > this.boundsMax.x) return false;
-		if (lodMax.z < this.boundsMin.z || lodMin.z > this.boundsMax.z) return false;
-		if (this.worldMaxY < this.boundsMin.y || this.worldMinY > this.boundsMax.y) return false;
-		
 		return this.frustum.testAab(lodMin, lodMax);
 	}
 	
