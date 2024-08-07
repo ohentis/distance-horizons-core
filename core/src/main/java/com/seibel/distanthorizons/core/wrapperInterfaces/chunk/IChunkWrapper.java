@@ -280,6 +280,7 @@ public interface IChunkWrapper extends IBindable
 		int hash = 31;
 		int primeBlockMultiplier = 227;
 		int primeBiomeMultiplier = 701;
+		int primeHeightMultiplier = 137;
 		
 		int minBuildHeight = this.getMaxNonEmptyHeight();
 		int maxBuildHeight = this.getMinNonEmptyHeight();
@@ -294,6 +295,7 @@ public interface IChunkWrapper extends IBindable
 				{
 					hash = (hash * primeBlockMultiplier) + this.getBlockState(x, y, z).hashCode();
 					hash = (hash * primeBiomeMultiplier) + this.getBiome(x, y, z).hashCode();
+					hash = (hash * primeHeightMultiplier) + y;
 				}
 			}
 		}
@@ -306,12 +308,14 @@ public interface IChunkWrapper extends IBindable
 				int lightBlockingY = this.getLightBlockingHeightMapValue(x, z);
 				hash = (hash * primeBlockMultiplier) + this.getBlockState(x, lightBlockingY, z).hashCode();
 				hash = (hash * primeBiomeMultiplier) + this.getBiome(x, lightBlockingY, z).hashCode();
+				hash = (hash * primeHeightMultiplier) + lightBlockingY;
 				
 				int solidY = this.getSolidHeightMapValue(x, z);
 				if (solidY != lightBlockingY)
 				{
 					hash = (hash * primeBlockMultiplier) + this.getBlockState(x, solidY, z).hashCode();
 					hash = (hash * primeBiomeMultiplier) + this.getBiome(x, solidY, z).hashCode();
+					hash = (hash * primeHeightMultiplier) + solidY;
 				}
 			}
 		}
