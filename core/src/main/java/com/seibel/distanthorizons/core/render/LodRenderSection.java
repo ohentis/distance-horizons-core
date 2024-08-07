@@ -188,6 +188,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 						// nothing needs to be rendered
 						this.canRender = false;
 						this.buildAndUploadRenderDataToGpuFuture = null;
+						this.bufferBuildFuture = null;
 						return;
 					}
 					
@@ -242,6 +243,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 								this.renderBuffer = buffer;
 								this.canRender = (buffer != null);
 								this.buildAndUploadRenderDataToGpuFuture = null;
+								this.bufferBuildFuture = null;
 								
 								
 								if (previousBuffer != null)
@@ -263,6 +265,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 						
 						LOGGER.error("Unexpected error in LodRenderSection loading, Error: "+e.getMessage(), e);
 						this.buildAndUploadRenderDataToGpuFuture = null;
+						this.bufferBuildFuture = null;
 					}
 				}
 				catch (Exception e)
@@ -273,6 +276,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 					
 					LOGGER.error("Unexpected error in LodRenderSection loading, Error: "+e.getMessage(), e);
 					this.buildAndUploadRenderDataToGpuFuture = null;
+					this.bufferBuildFuture = null;
 				}
 			});
 		}, executor);
@@ -371,6 +375,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	{
 		CompletableFuture<Void> future = this.buildAndUploadRenderDataToGpuFuture;
 		this.buildAndUploadRenderDataToGpuFuture = null;
+		this.bufferBuildFuture = null;
 		if (future != null)
 		{
 			// interrupting the future speeds things up, but also causes
