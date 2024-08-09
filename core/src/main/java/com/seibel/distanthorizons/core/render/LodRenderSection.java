@@ -70,7 +70,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	private final LodQuadTree quadTree;
 	
 	
-	public boolean renderingEnabled = false;
+	private boolean renderingEnabled = false;
 	private boolean canRender = false;
 	
 	/** this reference is necessary so we can determine what VBO to render */
@@ -391,6 +391,38 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	//========================//
 	
 	public boolean canRender() { return this.canRender; }
+	
+	public boolean getRenderingEnabled() { return this.renderingEnabled; }
+	public void setRenderingEnabled(boolean enabled) 
+	{
+		// some logic should only be run when enabling/disabling
+		// a section for the first time
+		boolean stateChanged = (this.renderingEnabled != enabled);
+		if (stateChanged)
+		{
+			if (enabled)
+			{
+				this.level.loadBeaconBeamsInPos(this.pos);
+			}
+			else
+			{
+				this.level.unloadBeaconBeamsInPos(this.pos);
+				
+				if (Config.Client.Advanced.Debugging.DebugWireframe.showRenderSectionStatus.get())
+				{
+					// show that this position has just been disabled
+					DebugRenderer.makeParticle(
+							new DebugRenderer.BoxParticle(
+									new DebugRenderer.Box(this.pos, 128f, 156f, 0.09f, Color.CYAN.darker()),
+									0.2, 32f
+							)
+					);
+				}
+			}
+		}
+		
+		this.renderingEnabled = enabled;
+	}
 	
 	public boolean gpuUploadInProgress() { return this.buildAndUploadRenderDataToGpuFuture != null; }
 	

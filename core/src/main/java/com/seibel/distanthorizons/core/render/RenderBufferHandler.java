@@ -311,7 +311,7 @@ public class RenderBufferHandler implements AutoCloseable
 				}
 				
 				ColumnRenderBuffer buffer = renderSection.renderBuffer;
-				if (buffer == null || !renderSection.renderingEnabled)
+				if (buffer == null || !renderSection.getRenderingEnabled())
 				{
 					continue;
 				}

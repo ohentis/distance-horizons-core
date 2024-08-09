@@ -147,7 +147,7 @@ public class DhLightingEngine
 						{
 							for (int relZ = 0; relZ < LodUtil.CHUNK_WIDTH; relZ++)
 							{
-								// set each pos' sky light all the way down until a opaque block is hit
+								// set each pos' sky light all the way down until an opaque block is hit
 								for (int y = maxY; y >= minY; y--)
 								{
 									IBlockStateWrapper block = chunk.getBlockState(relX, y, relZ);

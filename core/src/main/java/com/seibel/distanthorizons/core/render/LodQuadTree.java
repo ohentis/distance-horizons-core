@@ -189,7 +189,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 				try
 				{
 					LodRenderSection renderSection = this.getValue(pos);
-					if (renderSection != null && renderSection.renderingEnabled)
+					if (renderSection != null && renderSection.getRenderingEnabled())
 					{
 						renderSection.uploadRenderDataToGpuAsync();
 					}
@@ -296,7 +296,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 		if (DhSectionPos.getDetailLevel(sectionPos) > expectedDetailLevel)
 		{
 			// section detail level too high //
-			boolean thisPosIsRendering = renderSection.renderingEnabled;
+			boolean thisPosIsRendering = renderSection.getRenderingEnabled();
 			boolean allChildrenSectionsAreLoaded = true;
 			
 			// recursively update all child render sections
@@ -314,24 +314,8 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 			}
 			else
 			{
-				if (renderSection.renderingEnabled
-					&& Config.Client.Advanced.Debugging.DebugWireframe.showRenderSectionStatus.get())
-				{
-					// show that this position has just been disabled
-					DebugRenderer.makeParticle(
-						new DebugRenderer.BoxParticle(
-							new DebugRenderer.Box(renderSection.pos, 128f, 156f, 0.09f, Color.CYAN.darker()),
-							0.2, 32f
-						)
-					);
-				}
-				
 				// all child positions are loaded, disable this section and enable its children.
-				if (renderSection.renderingEnabled)
-				{
-					this.level.unloadBeaconBeamsInPos(renderSection.pos);
-				}
-				renderSection.renderingEnabled = false;
+				renderSection.setRenderingEnabled(false);
 				
 				// walk back down the tree and enable the child sections //TODO there are probably more efficient ways of doing this, but this will work for now
 				for (int i = 0; i < 4; i++)
@@ -382,17 +366,14 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 				if (!parentSectionIsRendering && renderSection.canRender())
 				{
 					// if rendering is already enabled we don't have to re-enable it
-					if (!renderSection.renderingEnabled)
+					if (!renderSection.getRenderingEnabled())
 					{
-						renderSection.renderingEnabled = true;
-						this.level.loadBeaconBeamsInPos(renderSection.pos);
-						
 						// delete/disable children, all of them will be a lower detail level than requested
 						quadNode.deleteAllChildren((childRenderSection) ->
 						{
 							if (childRenderSection != null)
 							{
-								if (childRenderSection.renderingEnabled)
+								if (childRenderSection.getRenderingEnabled())
 								{
 									// show that this position's rendering has been disabled due to a parent rendering
 									DebugRenderer.makeParticle(
@@ -403,10 +384,12 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 									);
 								}
 								
-								childRenderSection.renderingEnabled = false;
+								childRenderSection.setRenderingEnabled(false);
 								childRenderSection.close();
 							}
 						});
+						
+						renderSection.setRenderingEnabled(true);
 					}
 				}
 				
