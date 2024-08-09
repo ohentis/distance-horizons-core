@@ -21,14 +21,13 @@ package com.seibel.distanthorizons.core.sql.dto;
 
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
-import com.seibel.distanthorizons.core.pos.DhBlockPos;
 
 import java.awt.*;
 
 /** handles storing {@link FullDataSourceV2}'s in the database. */
 public class BeaconBeamDTO implements IBaseDTO<DhBlockPos>
 {
-	public DhBlockPos pos;
+	public DhBlockPos blockPos;
 	public Color color;
 	
 	
@@ -37,9 +36,9 @@ public class BeaconBeamDTO implements IBaseDTO<DhBlockPos>
 	// constructor //
 	//=============//
 	
-	public BeaconBeamDTO(DhBlockPos pos, Color color)
+	public BeaconBeamDTO(DhBlockPos blockPos, Color color)
 	{
-		this.pos = pos;
+		this.blockPos = blockPos;
 		this.color = color;
 	}
 	
@@ -50,6 +49,6 @@ public class BeaconBeamDTO implements IBaseDTO<DhBlockPos>
 	//===========//
 	
 	@Override 
-	public DhBlockPos getKey() { return this.pos; }
+	public DhBlockPos getKey() { return this.blockPos; }
 	
 }

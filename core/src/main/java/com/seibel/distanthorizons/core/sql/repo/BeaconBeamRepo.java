@@ -100,9 +100,9 @@ public class BeaconBeamRepo extends AbstractDhRepo<DhBlockPos, BeaconBeamDTO>
 		PreparedStatement statement = this.createPreparedStatement(sql);
 		
 		int i = 1;
-		statement.setObject(i++, dto.pos.x);
-		statement.setObject(i++, dto.pos.y);
-		statement.setObject(i++, dto.pos.z);
+		statement.setObject(i++, dto.blockPos.x);
+		statement.setObject(i++, dto.blockPos.y);
+		statement.setObject(i++, dto.blockPos.z);
 		
 		statement.setObject(i++, dto.color.getRed());
 		statement.setObject(i++, dto.color.getGreen());
@@ -132,9 +132,9 @@ public class BeaconBeamRepo extends AbstractDhRepo<DhBlockPos, BeaconBeamDTO>
 		
 		statement.setObject(i++, System.currentTimeMillis()); // last modified unix time
 		
-		statement.setObject(i++, dto.pos.x);
-		statement.setObject(i++, dto.pos.y);
-		statement.setObject(i++, dto.pos.z);
+		statement.setObject(i++, dto.blockPos.x);
+		statement.setObject(i++, dto.blockPos.y);
+		statement.setObject(i++, dto.blockPos.z);
 		
 		return statement;
 	}
