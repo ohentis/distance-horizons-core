@@ -22,6 +22,7 @@ package com.seibel.distanthorizons.core.network.event;
 import com.google.common.cache.CacheBuilder;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
+import com.seibel.distanthorizons.core.network.event.internal.InternalEvent;
 import com.seibel.distanthorizons.core.network.messages.NetworkMessage;
 import com.seibel.distanthorizons.core.network.messages.TrackableMessage;
 import com.seibel.distanthorizons.core.network.messages.MessageRegistry;

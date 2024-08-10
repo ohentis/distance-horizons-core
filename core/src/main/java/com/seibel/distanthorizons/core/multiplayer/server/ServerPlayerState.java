@@ -6,7 +6,7 @@ import com.seibel.distanthorizons.core.multiplayer.config.MultiplayerConfig;
 import com.seibel.distanthorizons.core.multiplayer.config.MultiplayerConfigChangeListener;
 import com.seibel.distanthorizons.core.network.messages.base.CurrentLevelKeyMessage;
 import com.seibel.distanthorizons.core.network.messages.base.RemotePlayerConfigMessage;
-import com.seibel.distanthorizons.core.network.event.CloseEvent;
+import com.seibel.distanthorizons.core.network.event.internal.CloseEvent;
 import com.seibel.distanthorizons.core.network.exceptions.RateLimitedException;
 import com.seibel.distanthorizons.core.network.messages.fullData.FullDataSourceRequestMessage;
 import com.seibel.distanthorizons.core.network.session.Session;

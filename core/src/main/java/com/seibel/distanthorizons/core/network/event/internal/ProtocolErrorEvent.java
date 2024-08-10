@@ -1,4 +1,4 @@
-package com.seibel.distanthorizons.core.network.event;
+package com.seibel.distanthorizons.core.network.event.internal;
 
 import com.seibel.distanthorizons.core.network.messages.NetworkMessage;
 import org.jetbrains.annotations.Nullable;
