@@ -39,7 +39,7 @@ public final class ScopedNetworkEventSource extends NetworkEventSource
 	
 	
 	@Override
-	public <T extends NetworkMessage> void registerHandler(Class<T> handlerClass, boolean throwIfMessageNotRegistered, Consumer<T> handlerImplementation)
+	public <T extends NetworkMessage> void registerHandler(Class<T> handlerClass, Consumer<T> handlerImplementation)
 	{
 		if (this.isClosed)
 		{
@@ -47,9 +47,9 @@ public final class ScopedNetworkEventSource extends NetworkEventSource
 		}
 		
 		//noinspection unchecked
-		this.parent.registerHandler(this, handlerClass, throwIfMessageNotRegistered, (Consumer<T>) this.actualHandleMessageStable);
+		this.parent.registerHandler(this, handlerClass, (Consumer<T>) this.actualHandleMessageStable);
 		
-		super.registerHandler(this, handlerClass, throwIfMessageNotRegistered, handlerImplementation);
+		super.registerHandler(this, handlerClass, handlerImplementation);
 	}
 	
 	

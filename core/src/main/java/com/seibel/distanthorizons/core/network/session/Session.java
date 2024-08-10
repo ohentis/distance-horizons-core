@@ -5,6 +5,7 @@ import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
 import com.seibel.distanthorizons.core.network.event.NetworkEventSource;
 import com.seibel.distanthorizons.core.network.event.CloseEvent;
+import com.seibel.distanthorizons.core.network.event.ProtocolErrorEvent;
 import com.seibel.distanthorizons.core.network.messages.NetworkMessage;
 import com.seibel.distanthorizons.core.network.messages.TrackableMessage;
 import com.seibel.distanthorizons.core.network.messages.base.CloseReasonMessage;
@@ -48,6 +49,16 @@ public class Session extends NetworkEventSource
 		{
 			this.close(new SessionClosedException(msg.reason));
 		});
+		
+		this.registerHandler(ProtocolErrorEvent.class, event ->
+		{
+			if (event.replyWithCloseReason)
+			{
+				this.sendMessage(new CloseReasonMessage("Internal error on other side"));
+			}
+			
+			this.close(event.reason);
+		});
 	}
 	
 	
@@ -68,20 +79,20 @@ public class Session extends NetworkEventSource
 		catch (Throwable e)
 		{
 			LOGGER.error("Failed to handle the message. New messages will be ignored.", e);
-			LOGGER.error("Message: " + message);
+			LOGGER.error("Message: {}", message);
 			this.close();
 		}
 	}
 	
 	@Override
-	public <T extends NetworkMessage> void registerHandler(Class<T> handlerClass, boolean throwIfMessageNotRegistered, Consumer<T> handlerImplementation)
+	public <T extends NetworkMessage> void registerHandler(Class<T> handlerClass, Consumer<T> handlerImplementation)
 	{
 		if (this.closeReason.get() != null)
 		{
 			return;
 		}
 		
-		this.registerHandler(this, handlerClass, throwIfMessageNotRegistered, handlerImplementation);
+		this.registerHandler(this, handlerClass, handlerImplementation);
 	}
 	
 	public <TResponse extends TrackableMessage> CompletableFuture<TResponse> sendRequest(TrackableMessage msg, Class<TResponse> responseClass)

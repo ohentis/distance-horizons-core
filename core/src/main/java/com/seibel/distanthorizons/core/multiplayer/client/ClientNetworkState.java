@@ -64,7 +64,7 @@ public class ClientNetworkState implements Closeable
 			this.configReceived = true;
 		});
 		
-		this.session.registerHandler(CloseEvent.class, false, msg ->
+		this.session.registerHandler(CloseEvent.class, msg ->
 		{
 			this.configReceived = false;
 		});

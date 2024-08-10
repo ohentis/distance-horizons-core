@@ -52,11 +52,13 @@ public class ClientPluginChannelApi
 		Objects.requireNonNull(session);
 		this.session = session;
 		session.registerHandler(CurrentLevelKeyMessage.class, this::onCurrentLevelKeyMessage);
-		session.registerHandler(CloseEvent.class, false, this::onClose);
+		session.registerHandler(CloseEvent.class, this::onClose);
 	}
 	
 	private void onCurrentLevelKeyMessage(CurrentLevelKeyMessage msg)
 	{
+		// prefix@namespace:path
+		// 1-50 characters in total, all parts except namespace can be omitted
 		if (!msg.levelKey.matches("^(?=.{1,50}$)([a-zA-Z0-9-_]+@)?[a-zA-Z0-9-_]+(:[a-zA-Z0-9-_]+)?$"))
 		{
 			throw new IllegalArgumentException("Server sent invalid level key.");

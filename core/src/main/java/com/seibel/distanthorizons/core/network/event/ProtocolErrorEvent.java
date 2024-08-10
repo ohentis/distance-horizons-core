@@ -8,14 +8,16 @@ import org.jetbrains.annotations.Nullable;
  */
 public class ProtocolErrorEvent extends InternalEvent
 {
-	public final Throwable throwable;
+	public final Throwable reason;
 	@Nullable
 	public final NetworkMessage message;
+	public final boolean replyWithCloseReason;
 	
-	public ProtocolErrorEvent(Throwable throwable, @Nullable NetworkMessage message)
+	public ProtocolErrorEvent(Throwable reason, @Nullable NetworkMessage message, boolean replyWithCloseReason)
 	{
-		this.throwable = throwable;
+		this.reason = reason;
 		this.message = message;
+		this.replyWithCloseReason = replyWithCloseReason;
 	}
 	
 }

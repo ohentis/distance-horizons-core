@@ -53,8 +53,8 @@ public class ServerPlayerState
 			this.session.sendMessage(new RemotePlayerConfigMessage(this.config));
 		});
 		
-		this.session.registerHandler(CloseEvent.class, false, event -> {
-			// Noop
+		this.session.registerHandler(CloseEvent.class, event -> {
+			// No-op. removes "Unhandled message" log entries
 		});
 	}
 	

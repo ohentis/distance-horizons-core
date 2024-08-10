@@ -108,16 +108,11 @@ public abstract class NetworkEventSource
 		}
 	}
 	
-	public abstract <T extends NetworkMessage> void registerHandler(Class<T> handlerClass, boolean throwIfMessageNotRegistered, Consumer<T> handlerImplementation);
-
-	public final <T extends NetworkMessage> void registerHandler(Class<T> handlerClass, Consumer<T> handlerImplementation)
+	public abstract <T extends NetworkMessage> void registerHandler(Class<T> handlerClass, Consumer<T> handlerImplementation);
+	
+	protected final <T extends NetworkMessage> void registerHandler(NetworkEventSource instance, Class<T> handlerClass, Consumer<T> handlerImplementation)
 	{
-		this.registerHandler(handlerClass, true, handlerImplementation);
-	}
-
-	protected final <T extends NetworkMessage> void registerHandler(NetworkEventSource instance, Class<T> handlerClass, boolean throwIfMessageNotRegistered, Consumer<T> handlerImplementation)
-	{
-		if (throwIfMessageNotRegistered)
+		if (!InternalEvent.class.isAssignableFrom(handlerClass))
 		{
 			MessageRegistry.INSTANCE.getMessageId(handlerClass);
 		}

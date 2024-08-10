@@ -21,6 +21,7 @@ package com.seibel.distanthorizons.core.network.messages;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import com.seibel.distanthorizons.core.network.messages.base.CodecCrashMessage;
 import com.seibel.distanthorizons.core.network.messages.base.CurrentLevelKeyMessage;
 import com.seibel.distanthorizons.core.network.messages.base.RemotePlayerConfigMessage;
 import com.seibel.distanthorizons.core.network.messages.fullData.FullDataChunkMessage;
@@ -30,6 +31,7 @@ import com.seibel.distanthorizons.core.network.messages.requests.ExceptionMessag
 import com.seibel.distanthorizons.core.network.messages.fullData.FullDataPartialUpdateMessage;
 import com.seibel.distanthorizons.core.network.messages.fullData.FullDataSourceRequestMessage;
 import com.seibel.distanthorizons.core.network.messages.fullData.FullDataSourceResponseMessage;
+import com.seibel.distanthorizons.coreapi.ModInfo;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -37,6 +39,7 @@ import java.util.function.Supplier;
 
 public class MessageRegistry
 {
+	public static final boolean DEBUG_ENABLE_CODEC_CRASH_MESSAGE = ModInfo.IS_DEV_BUILD;
 	public static final MessageRegistry INSTANCE = new MessageRegistry();
 	
 	private final Map<Integer, Supplier<? extends NetworkMessage>> idToSupplier = new HashMap<>();
@@ -49,6 +52,7 @@ public class MessageRegistry
 		// Note: Messages must have parameterless constructors
 		
 		// When the communication is about to be stopped, either side can send this message
+		// There may be messages after this, but they should be ignored if it's possible
 		this.registerMessage(CloseReasonMessage.class, CloseReasonMessage::new);
 		
 		// Level keys
@@ -66,6 +70,12 @@ public class MessageRegistry
 		this.registerMessage(FullDataSourceResponseMessage.class, FullDataSourceResponseMessage::new);
 		this.registerMessage(FullDataPartialUpdateMessage.class, FullDataPartialUpdateMessage::new);
 		this.registerMessage(FullDataChunkMessage.class, FullDataChunkMessage::new);
+		
+		// Debug messages are always last, and not included into release builds.
+		if (DEBUG_ENABLE_CODEC_CRASH_MESSAGE)
+		{
+			this.registerMessage(CodecCrashMessage.class, CodecCrashMessage::new);
+		}
 	}
 	
 	
