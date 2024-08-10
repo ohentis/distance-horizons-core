@@ -175,7 +175,7 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 					rateLimiterSet.loginDataSyncRCLimiter.release();
 					
 					FullDataPayload payload = new FullDataPayload(fullDataSource);
-					payload.acceptInChunkMessages(FULL_DATA_CHUNK_SIZE, msg.session::sendMessage);
+					payload.acceptInChunkMessages(FULL_DATA_CHUNK_SIZE, msg.getSession()::sendMessage);
 					msg.sendResponse(new FullDataSourceResponseMessage(payload));
 				}, executor);
 			}
@@ -227,8 +227,8 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 			}
 			
 			// If player is not in this dimension and handling multiple dimensions at once is not allowed
-			assert msg.session.serverPlayer != null;
-			if (msg.session.serverPlayer.getLevel() != this.getLevelWrapper())
+			assert msg.getSession().serverPlayer != null;
+			if (msg.getSession().serverPlayer.getLevel() != this.getLevelWrapper())
 			{
 				// If the message can be replied to - reply with error, otherwise just ignore
 				if (msg instanceof TrackableMessage)
@@ -236,7 +236,7 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 					((TrackableMessage) msg).sendResponse(new InvalidLevelException(MessageFormat.format(
 							"Generation not allowed. Requested dimension: {0}, player dimension: {1}, handler dimension: {2}",
 							((ILevelRelatedMessage) msg).getLevelName(),
-							msg.session.serverPlayer.getLevel().getDimensionName(),
+							msg.getSession().serverPlayer.getLevel().getDimensionName(),
 							this.getLevelWrapper().getDimensionName()
 					)));
 				}
@@ -303,7 +303,7 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 						}
 						
 						serverPlayerState.getRateLimiterSet(this).fullDataRequestConcurrencyLimiter.release();
-						payload.acceptInChunkMessages(FULL_DATA_CHUNK_SIZE, msg.session::sendMessage);
+						payload.acceptInChunkMessages(FULL_DATA_CHUNK_SIZE, msg.getSession()::sendMessage);
 						msg.sendResponse(new FullDataSourceResponseMessage(payload.retain()));
 					}
 				}

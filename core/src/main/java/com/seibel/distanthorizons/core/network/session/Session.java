@@ -7,6 +7,7 @@ import com.seibel.distanthorizons.core.network.event.NetworkEventSource;
 import com.seibel.distanthorizons.core.network.event.CloseEvent;
 import com.seibel.distanthorizons.core.network.messages.NetworkMessage;
 import com.seibel.distanthorizons.core.network.messages.TrackableMessage;
+import com.seibel.distanthorizons.core.network.messages.base.CloseReasonMessage;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IPluginPacketSender;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import org.apache.logging.log4j.LogManager;
@@ -42,6 +43,11 @@ public class Session extends NetworkEventSource
 	public Session(@Nullable IServerPlayerWrapper serverPlayer)
 	{
 		this.serverPlayer = serverPlayer;
+		
+		this.registerHandler(CloseReasonMessage.class, msg ->
+		{
+			this.close(new SessionClosedException(msg.reason));
+		});
 	}
 	
 	
@@ -51,6 +57,8 @@ public class Session extends NetworkEventSource
 		{
 			return;
 		}
+		
+		message.setSession(this);
 		
 		try
 		{
@@ -86,8 +94,13 @@ public class Session extends NetworkEventSource
 	
 	public void sendMessage(NetworkMessage message)
 	{
-		if (this.closeReason.get() != null) return;
+		if (this.closeReason.get() != null)
+		{
+			return;
+		}
+		
 		LOGGER.debug("Sending message: {}", message);
+		message.setSession(this);
 		
 		try
 		{

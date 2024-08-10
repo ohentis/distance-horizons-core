@@ -70,7 +70,7 @@ public class MessageRegistry
 	
 	
 	
-	protected <T extends NetworkMessage> void registerMessage(Class<T> clazz, Supplier<T> supplier)
+	public <T extends NetworkMessage> void registerMessage(Class<T> clazz, Supplier<T> supplier)
 	{
 		int id = this.idToSupplier.size() + 1;
 		this.idToSupplier.put(id, supplier);

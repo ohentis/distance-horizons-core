@@ -49,7 +49,7 @@ public abstract class TrackableMessage extends NetworkMessage
 	public void sendResponse(TrackableMessage responseMessage)
 	{
 		responseMessage.futureId = this.futureId;
-		this.session.sendMessage(responseMessage);
+		this.getSession().sendMessage(responseMessage);
 	}
 	
 	public void sendResponse(Exception e)

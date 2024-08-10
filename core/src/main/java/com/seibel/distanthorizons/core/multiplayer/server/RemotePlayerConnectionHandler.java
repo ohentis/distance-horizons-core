@@ -20,9 +20,7 @@ public class RemotePlayerConnectionHandler
 		ServerPlayerState playerState = this.connectedPlayers.get(player);
 		if (playerState != null)
 		{
-			Session session = playerState.session;
-			message.setSession(session);
-			session.tryHandleMessage(message);
+			playerState.session.tryHandleMessage(message);
 		}
 		else
 		{
@@ -51,7 +49,6 @@ public class RemotePlayerConnectionHandler
 			Session session = state.session;
 			for (NetworkMessage message : queuedMessages)
 			{
-				message.setSession(session);
 				session.tryHandleMessage(message);
 			}
 			
