@@ -19,8 +19,10 @@
 
 package com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding;
 
+import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.enums.EDhDirection;
+import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.util.ColorUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.RenderDataPointUtil;
@@ -61,11 +63,11 @@ public class ColumnBox
 	//=========//
 	
 	public static void addBoxQuadsToBuilder(
-			LodQuadBuilder builder,
+			LodQuadBuilder builder, IDhClientLevel clientLevel,
 			short xSize, short ySize, short zSize,
 			short x, short minY, short z,
 			int color, byte irisBlockMaterialId, byte skyLight, byte blockLight,
-			long topData, long bottomData, ColumnArrayView[] adjData)
+			long topData, long bottomData, ColumnArrayView[] adjData, boolean[] isAdjDataSameDetailLevel)
 	{
 		//================//
 		// variable setup //
@@ -81,6 +83,15 @@ public class ColumnBox
 		boolean overVoid = !RenderDataPointUtil.doesDataPointExist(bottomData);
 		boolean isTopTransparent = RenderDataPointUtil.getAlpha(topData) < 255 && LodRenderer.transparencyEnabled;
 		boolean isBottomTransparent = RenderDataPointUtil.getAlpha(bottomData) < 255 && LodRenderer.transparencyEnabled;
+		
+		// defaulting to a value far below what we can normally render means we
+		// don't need to have an additional "is cave culling enabled" check
+		int caveCullingMaxY = Integer.MIN_VALUE;
+		if (Config.Client.Advanced.Graphics.AdvancedGraphics.enableCaveCulling.get())
+		{
+			caveCullingMaxY = Config.Client.Advanced.Graphics.AdvancedGraphics.caveCullingHeight.get() - clientLevel.getMinY();
+		}
+		
 		
 		
 		// if there isn't any data below this LOD, make this LOD's color opaque to prevent seeing void through transparent blocks
@@ -135,12 +146,11 @@ public class ColumnBox
 		// NORTH face
 		{
 			ColumnArrayView adjCol = adjData[EDhDirection.NORTH.ordinal() - 2]; // TODO can we use something other than ordinal-2?
-			// if the adjacent column is null that generally means it's representing a different detail level
+			boolean adjSameDetailLevel = isAdjDataSameDetailLevel[EDhDirection.NORTH.ordinal() - 2];
+			// if the adjacent column is null that generally means the adjacent area hasn't been generated yet
 			if (adjCol == null)
 			{
 				// Add an adjacent face if this is opaque face or transparent over the void.
-				// By skipping transparent faces that aren't over the void we prevent adding ocean faces
-				// between detail levels.
 				if (!isTransparent || overVoid)
 				{
 					builder.addQuadAdj(EDhDirection.NORTH, x, minY, z, xSize, ySize, color, irisBlockMaterialId, LodUtil.MAX_MC_LIGHT, blockLight);
@@ -148,7 +158,7 @@ public class ColumnBox
 			}
 			else
 			{
-				makeAdjVerticalQuad(builder, adjCol, EDhDirection.NORTH, x, minY, z, xSize, ySize,
+				makeAdjVerticalQuad(builder, adjCol, adjSameDetailLevel, caveCullingMaxY, EDhDirection.NORTH, x, minY, z, xSize, ySize,
 						color, irisBlockMaterialId, blockLight);
 			}
 		}
@@ -156,6 +166,7 @@ public class ColumnBox
 		// SOUTH face
 		{
 			ColumnArrayView adjCol = adjData[EDhDirection.SOUTH.ordinal() - 2];
+			boolean adjSameDetailLevel = isAdjDataSameDetailLevel[EDhDirection.SOUTH.ordinal() - 2];
 			if (adjCol == null)
 			{
 				if (!isTransparent || overVoid)
@@ -165,7 +176,7 @@ public class ColumnBox
 			}
 			else
 			{
-				makeAdjVerticalQuad(builder, adjCol, EDhDirection.SOUTH, x, minY, maxZ, xSize, ySize,
+				makeAdjVerticalQuad(builder, adjCol, adjSameDetailLevel, caveCullingMaxY, EDhDirection.SOUTH, x, minY, maxZ, xSize, ySize,
 						color, irisBlockMaterialId, blockLight);
 			}
 		}
@@ -173,6 +184,7 @@ public class ColumnBox
 		// WEST face
 		{
 			ColumnArrayView adjCol = adjData[EDhDirection.WEST.ordinal() - 2];
+			boolean adjSameDetailLevel = isAdjDataSameDetailLevel[EDhDirection.WEST.ordinal() - 2];
 			if (adjCol == null)
 			{
 				if (!isTransparent || overVoid)
@@ -182,7 +194,7 @@ public class ColumnBox
 			}
 			else
 			{
-				makeAdjVerticalQuad(builder, adjCol, EDhDirection.WEST, x, minY, z, zSize, ySize,
+				makeAdjVerticalQuad(builder, adjCol, adjSameDetailLevel, caveCullingMaxY, EDhDirection.WEST, x, minY, z, zSize, ySize,
 						color, irisBlockMaterialId, blockLight);
 			}
 		}
@@ -190,6 +202,7 @@ public class ColumnBox
 		// EAST face
 		{
 			ColumnArrayView adjCol = adjData[EDhDirection.EAST.ordinal() - 2];
+			boolean adjSameDetailLevel = isAdjDataSameDetailLevel[EDhDirection.EAST.ordinal() - 2];
 			if (adjCol == null)
 			{
 				if (!isTransparent || overVoid)
@@ -199,14 +212,14 @@ public class ColumnBox
 			}
 			else
 			{
-				makeAdjVerticalQuad(builder, adjCol, EDhDirection.EAST, maxX, minY, z, zSize, ySize,
+				makeAdjVerticalQuad(builder, adjCol, adjSameDetailLevel, caveCullingMaxY, EDhDirection.EAST, maxX, minY, z, zSize, ySize,
 						color, irisBlockMaterialId, blockLight);
 			}
 		}
 	}
 	
 	private static void makeAdjVerticalQuad(
-			LodQuadBuilder builder, @NotNull ColumnArrayView adjColumnView, EDhDirection direction,
+			LodQuadBuilder builder, @NotNull ColumnArrayView adjColumnView, boolean adjacentIsSameDetailLevel, int caveCullingMaxY, EDhDirection direction, 
 			short x, short yMin, short z, short horizontalWidth, short ySize,
 			int color, byte irisBlockMaterialId, byte blockLight)
 	{
@@ -283,10 +296,30 @@ public class ColumnBox
 				{
 					// adj opaque
 					// mark positions adjacent is covering
+					byte adjSkyLight = RenderDataPointUtil.getLightSky(adjPoint);
 					for (int i = adjMinY; i < adjMaxY; i++)
 					{
 						byte skyLightAtPos = skyLightAtInputPos[i];
-						skyLightAtInputPos[i] = (byte) Math.min(SKYLIGHT_COVERED, skyLightAtPos);
+						
+						// if the adjacent is a different detail level, we want to render adjacent opaque
+						// faces to try and reduce the chance of holes on detail level borders
+						boolean adjacentCoversThis = 
+								// if the adjacent is the same detail level, no special handling is necessary
+								!adjacentIsSameDetailLevel
+								// if the adjacent face is underground we probably don't need it
+								&& RenderDataPointUtil.getYMax(adjPoint) >= caveCullingMaxY
+								// check if this face is on a border
+								&& 
+								(
+									(x == 0 && direction == EDhDirection.WEST)
+									|| (z == 0 && direction == EDhDirection.NORTH)
+									// TODO why does 256 represent a border? aren't LODs only 64 datapoints wide?
+									|| (x == 256 && direction == EDhDirection.EAST)
+									|| (z == 256 && direction == EDhDirection.SOUTH)
+								);
+						
+						byte newSkyLightAtPos = adjacentCoversThis ? adjSkyLight : SKYLIGHT_COVERED;
+						skyLightAtInputPos[i] = (byte) Math.min(newSkyLightAtPos, skyLightAtPos);
 					}
 				}
 				else

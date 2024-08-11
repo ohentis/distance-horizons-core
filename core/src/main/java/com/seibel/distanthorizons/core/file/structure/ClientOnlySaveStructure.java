@@ -26,12 +26,12 @@ import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.api.enums.config.EDhApiServerFolderNameMode;
 import com.seibel.distanthorizons.core.level.IServerKeyedClientLevel;
 import com.seibel.distanthorizons.core.util.objects.ParsedIp;
-import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftSharedWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IDimensionTypeWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
+import com.seibel.distanthorizons.coreapi.util.StringUtil;
 
 import java.io.File;
 import java.util.*;
@@ -138,7 +138,7 @@ public class ClientOnlySaveStructure extends AbstractSaveStructure
 		{
 			// use the first existing sub-dimension
 			String folderName = folders.get(0).getName();
-			LOGGER.info("Default Sub Dimension set to: [" + LodUtil.shortenString(folderName, 8) + "...]");
+			LOGGER.info("Default Sub Dimension set to: [" + StringUtil.shortenString(folderName, 8) + "...]");
 			return folders.get(0);
 		}
 		else

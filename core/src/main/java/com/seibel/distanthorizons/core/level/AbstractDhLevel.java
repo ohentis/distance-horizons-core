@@ -19,28 +19,19 @@
 
 package com.seibel.distanthorizons.core.level;
 
-import com.seibel.distanthorizons.api.interfaces.render.IDhApiRenderableBoxGroup;
 import com.seibel.distanthorizons.api.methods.events.abstractEvents.DhApiChunkModifiedEvent;
-import com.seibel.distanthorizons.api.objects.math.DhApiVec3f;
-import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBox;
-import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBoxGroupShading;
-import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
-import com.seibel.distanthorizons.core.dataObjects.transformers.ChunkToLodBuilder;
 import com.seibel.distanthorizons.core.file.fullDatafile.DelayedFullDataSourceSaveCache;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.pos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.render.renderer.generic.BeaconRenderHandler;
 import com.seibel.distanthorizons.core.render.renderer.generic.CloudRenderHandler;
 import com.seibel.distanthorizons.core.render.renderer.generic.GenericObjectRenderer;
-import com.seibel.distanthorizons.core.render.renderer.generic.GenericRenderObjectFactory;
 import com.seibel.distanthorizons.core.sql.dto.BeaconBeamDTO;
 import com.seibel.distanthorizons.core.sql.dto.ChunkHashDTO;
 import com.seibel.distanthorizons.core.sql.repo.BeaconBeamRepo;
 import com.seibel.distanthorizons.core.sql.repo.ChunkHashRepo;
-import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
 import org.apache.logging.log4j.Logger;
@@ -59,8 +50,6 @@ public abstract class AbstractDhLevel implements IDhLevel
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
-	public final ChunkToLodBuilder chunkToLodBuilder;
-	
 	/** if this is null then the other handler is probably null too, but just in case */
 	@Nullable
 	public ChunkHashRepo chunkHashRepo;
@@ -71,6 +60,7 @@ public abstract class AbstractDhLevel implements IDhLevel
 	protected final DelayedFullDataSourceSaveCache delayedFullDataSourceSaveCache = new DelayedFullDataSourceSaveCache(this::onDataSourceSave, 2_000);
 	/** contains the {@link DhChunkPos} for each {@link DhSectionPos} that are queued to save via {@link AbstractDhLevel#delayedFullDataSourceSaveCache} */
 	protected final ConcurrentHashMap<Long, HashSet<DhChunkPos>> updatedChunkPosSetBySectionPos = new ConcurrentHashMap<>();
+	protected final ConcurrentHashMap<DhChunkPos, Integer> updatedChunkHashesByChunkPos = new ConcurrentHashMap<>();
 	
 	/** Will be null if clouds shouldn't be rendered for this level. */
 	@Nullable
@@ -83,10 +73,7 @@ public abstract class AbstractDhLevel implements IDhLevel
 	// constructor //
 	//=============//
 	
-	protected AbstractDhLevel() 
-	{ 
-		this.chunkToLodBuilder = new ChunkToLodBuilder();
-	}
+	protected AbstractDhLevel() {  }
 	
 	/** 
 	 * Creating the repos requires access to the level file, which isn't
@@ -152,7 +139,7 @@ public abstract class AbstractDhLevel implements IDhLevel
 	public int getUnsavedDataSourceCount() { return this.delayedFullDataSourceSaveCache.getUnsavedCount(); }
 	
 	@Override
-	public void updateChunkAsync(IChunkWrapper chunkWrapper)
+	public void updateChunkAsync(IChunkWrapper chunkWrapper, int chunkHash)
 	{
 		FullDataSourceV2 dataSource = FullDataSourceV2.createFromChunk(chunkWrapper);
 		if (dataSource == null)
@@ -171,6 +158,7 @@ public abstract class AbstractDhLevel implements IDhLevel
 			chunkPosSet.add(chunkWrapper.getChunkPos());
 			return chunkPosSet;
 		});
+		this.updatedChunkHashesByChunkPos.put(chunkWrapper.getChunkPos(), chunkHash);
 		
 		// batch updates to reduce overhead when flying around or breaking/placing a lot of blocks in an area
 		this.delayedFullDataSourceSaveCache.queueDataSourceForUpdateAndSave(dataSource);
@@ -185,6 +173,13 @@ public abstract class AbstractDhLevel implements IDhLevel
 			{
 				for (DhChunkPos chunkPos : updatedChunkPosSet)
 				{
+					// save after the data source has been updated to prevent saving the hash without the associated datasource
+					Integer chunkHash = this.updatedChunkHashesByChunkPos.remove(chunkPos);
+					if (this.chunkHashRepo != null && chunkHash != null)
+					{
+						this.chunkHashRepo.save(new ChunkHashDTO(chunkPos, chunkHash));
+					}
+					
 					ApiEventInjector.INSTANCE.fireAllEvents(
 							DhApiChunkModifiedEvent.class,
 							new DhApiChunkModifiedEvent.EventParam(this.getLevelWrapper(), chunkPos.x, chunkPos.z));
@@ -211,14 +206,6 @@ public abstract class AbstractDhLevel implements IDhLevel
 		
 		ChunkHashDTO dto = this.chunkHashRepo.getByKey(pos);
 		return (dto != null) ? dto.chunkHash : 0;
-	}
-	@Override
-	public void setChunkHash(DhChunkPos pos, int chunkHash)
-	{
-		if (this.chunkHashRepo != null)
-		{
-			this.chunkHashRepo.save(new ChunkHashDTO(pos, chunkHash));
-		}
 	}
 	
 	
@@ -262,8 +249,6 @@ public abstract class AbstractDhLevel implements IDhLevel
 	@Override
 	public void close() 
 	{ 
-		this.chunkToLodBuilder.close();
-		
 		if (this.chunkHashRepo != null)
 		{
 			this.chunkHashRepo.close();

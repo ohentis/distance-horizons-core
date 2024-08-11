@@ -54,7 +54,6 @@ import java.util.List;
  * Otherwise, you will have issues where only some of the config entries will exist when your listener is created.
  *
  * @author coolGi
- * @version 2023-7-16
  */
 
 public class Config
@@ -126,7 +125,6 @@ public class Config
 			public static ConfigCategory multiplayer = new ConfigCategory.Builder().set(Multiplayer.class).build();
 			public static ConfigCategory lodBuilding = new ConfigCategory.Builder().set(LodBuilding.class).build();
 			public static ConfigCategory multiThreading = new ConfigCategory.Builder().set(MultiThreading.class).build();
-			public static ConfigCategory buffers = new ConfigCategory.Builder().set(GpuBuffers.class).build();
 			public static ConfigCategory autoUpdater = new ConfigCategory.Builder().set(AutoUpdater.class).build();
 			
 			public static ConfigCategory logging = new ConfigCategory.Builder().set(Logging.class).build();
@@ -187,6 +185,7 @@ public class Config
 									+ "Lowest Quality: " + EDhApiVerticalQuality.HEIGHT_MAP + "\n"
 									+ "Highest Quality: " + EDhApiVerticalQuality.EXTREME)
 							.setPerformance(EConfigEntryPerformance.VERY_HIGH)
+							.addListener(ReloadLodsConfigEventHandler.INSTANCE)
 							.build();
 					
 					public static ConfigEntry<EDhApiHorizontalQuality> horizontalQuality = new ConfigEntry.Builder<EDhApiHorizontalQuality>()
@@ -208,6 +207,7 @@ public class Config
 									+ EDhApiTransparency.DISABLED + ": LODs will be opaque. \n"
 									+ "")
 							.setPerformance(EConfigEntryPerformance.MEDIUM)
+							.addListener(ReloadLodsConfigEventHandler.INSTANCE)
 							.build();
 					
 					public static ConfigEntry<EDhApiBlocksToAvoid> blocksToIgnore = new ConfigEntry.Builder<EDhApiBlocksToAvoid>()
@@ -219,6 +219,7 @@ public class Config
 									+ EDhApiBlocksToAvoid.NON_COLLIDING + ": Only represent solid blocks in the LODs (tall grass, torches, etc. won't count for a LOD's height) \n"
 									+ "")
 							.setPerformance(EConfigEntryPerformance.NONE)
+							.addListener(ReloadLodsConfigEventHandler.INSTANCE)
 							.build();
 					
 					public static ConfigEntry<Boolean> tintWithAvoidedBlocks = new ConfigEntry.Builder<Boolean>()
@@ -230,6 +231,7 @@ public class Config
 									+ "False: skipped blocks will not change color of surface below them. "
 									+ "")
 							.setPerformance(EConfigEntryPerformance.NONE)
+							.addListener(ReloadLodsConfigEventHandler.INSTANCE)
 							.build();
 					
 					// TODO fixme
@@ -595,6 +597,7 @@ public class Config
 									+ "0 = black \n"
 									+ "1 = normal \n"
 									+ "2 = near white")
+							.addListener(ReloadLodsConfigEventHandler.INSTANCE)
 							.build();
 					
 					public static ConfigEntry<Double> saturationMultiplier = new ConfigEntry.Builder<Double>() // TODO: Make this a float (the ClassicConfigGUI doesnt support floats)
@@ -605,6 +608,7 @@ public class Config
 									+ "0 = black and white \n"
 									+ "1 = normal \n"
 									+ "2 = very saturated")
+							.addListener(ReloadLodsConfigEventHandler.INSTANCE)
 							.build();
 					
 					public static ConfigEntry<Boolean> enableCaveCulling = new ConfigEntry.Builder<Boolean>()
@@ -619,14 +623,15 @@ public class Config
 									+ "Additional Info: Currently this cull all faces \n"
 									+ " with skylight value of 0 in dimensions that \n"
 									+ " does not have a ceiling.")
+							.addListener(ReloadLodsConfigEventHandler.INSTANCE)
 							.build();
 					
-					@Deprecated
 					public static ConfigEntry<Integer> caveCullingHeight = new ConfigEntry.Builder<Integer>()
-							.setMinDefaultMax(-4096, 40, 4096)
-							.setAppearance(EConfigEntryAppearance.ONLY_IN_API)
+							.setMinDefaultMax(-4096, 60, 4096)
 							.comment(""
-									+ "At what Y value should cave culling start?")
+									+ "At what Y value should cave culling start? \n"
+									+ "Lower this value if you get walls for areas with 0 light.")
+							.addListener(ReloadLodsConfigEventHandler.INSTANCE)
 							.build();
 					
 					public static ConfigEntry<Integer> earthCurveRatio = new ConfigEntry.Builder<Integer>()
@@ -664,6 +669,7 @@ public class Config
 									+ EDhApiLodShading.DISABLED + ": All LOD sides will be rendered with the same brightness. \n"
 									+ "")
 							.setPerformance(EConfigEntryPerformance.NONE)
+							.addListener(ReloadLodsConfigEventHandler.INSTANCE)
 							.build();
 					
 					public static ConfigEntry<Boolean> disableFrustumCulling = new ConfigEntry.Builder<Boolean>()
@@ -698,6 +704,7 @@ public class Config
 									+ EDhApiGrassSideRendering.AS_DIRT + ": sides render entirely as dirt. \n"
 									+ "")
 							.setPerformance(EConfigEntryPerformance.NONE)
+							.addListener(ReloadLodsConfigEventHandler.INSTANCE)
 							.build();
 					
 				}
@@ -782,8 +789,10 @@ public class Config
 								+ "")
 						.build();
 				
+				@Deprecated
 				public static ConfigEntry<Boolean> onlyUseDhLightingEngine = new ConfigEntry.Builder<Boolean>()
 						.set(false)
+						.setAppearance(EConfigEntryAppearance.ONLY_IN_API)
 						.comment(""
 								+ "If false LODs will be lit by Minecraft's lighting engine when possible \n"
 								+ "and fall back to the DH lighting engine only when necessary. \n"
@@ -1195,53 +1204,6 @@ public class Config
 						.build();
 			}
 			
-			public static class GpuBuffers
-			{
-				public static ConfigEntry<EDhApiGpuUploadMethod> gpuUploadMethod = new ConfigEntry.Builder<EDhApiGpuUploadMethod>()
-						.set(EDhApiGpuUploadMethod.AUTO)
-						.comment(""
-								+ "What method should be used to upload geometry to the GPU? \n"
-								+ "\n"
-								+ EDhApiGpuUploadMethod.AUTO + ": Picks the best option based on the GPU you have. \n"
-								+ "\n"
-								+ EDhApiGpuUploadMethod.BUFFER_STORAGE + ": Default if OpenGL 4.5 is supported. \n"
-								+ "    Fast rendering, no stuttering. \n"
-								+ "\n"
-								+ EDhApiGpuUploadMethod.SUB_DATA + ": Backup option for NVIDIA. \n"
-								+ "    Fast rendering but may stutter when uploading. \n"
-								+ "\n"
-								+ EDhApiGpuUploadMethod.BUFFER_MAPPING + ": Slow rendering but won't stutter when uploading. \n"
-								+ "    Generally the best option for integrated GPUs. \n"
-								+ "    Default option for AMD/Intel if OpenGL 4.5 isn't supported. \n"
-								+ "    May end up storing buffers in System memory. \n"
-								+ "    Fast rendering if in GPU memory, slow if in system memory, \n"
-								+ "    but won't stutter when uploading.  \n"
-								+ "\n"
-								+ EDhApiGpuUploadMethod.DATA + ": Fast rendering but will stutter when uploading. \n"
-								+ "    Backup option for AMD/Intel. \n"
-								+ "    Fast rendering but may stutter when uploading. \n"
-								+ "\n"
-								+ "If you don't see any difference when changing these settings, \n"
-								+ "or the world looks corrupted: restart your game."
-								+ "")
-						.build();
-				
-				public static ConfigEntry<Integer> gpuUploadPerMegabyteInMilliseconds = new ConfigEntry.Builder<Integer>()
-						.setMinDefaultMax(0, 0, 50)
-						.comment(""
-								+ "How long should a buffer wait per Megabyte of data uploaded? \n"
-								+ "Helpful resource for frame times: https://fpstoms.com \n"
-								+ "\n"
-								+ "Longer times may reduce stuttering but will make LODs \n"
-								+ "transition and load slower. Change this to [0] for no timeout. \n"
-								+ "\n"
-								+ "NOTE:\n"
-								+ "Before changing this config, try changing the \"GPU Upload method\" first. \n"
-								+ "")
-						.build();
-				
-			}
-			
 			public static class AutoUpdater
 			{
 				public static ConfigEntry<Boolean> enableAutoUpdater = new ConfigEntry.Builder<Boolean>()
@@ -1274,7 +1236,7 @@ public class Config
 				// TODO default to error chat and info file
 				public static ConfigEntry<EDhApiLoggerMode> logWorldGenEvent = new ConfigEntry.Builder<EDhApiLoggerMode>()
 						.setServersideShortName("logWorldGenEvent")
-						.set(EDhApiLoggerMode.LOG_ERROR_TO_CHAT)
+						.set(EDhApiLoggerMode.LOG_ERROR_TO_CHAT_AND_INFO_TO_FILE)
 						.comment(""
 								+ "If enabled, the mod will log information about the world generation process. \n"
 								+ "This can be useful for debugging.")
@@ -1282,7 +1244,7 @@ public class Config
 				
 				public static ConfigEntry<EDhApiLoggerMode> logWorldGenPerformance = new ConfigEntry.Builder<EDhApiLoggerMode>()
 						.setServersideShortName("logWorldGenPerformance")
-						.set(EDhApiLoggerMode.LOG_ERROR_TO_CHAT)
+						.set(EDhApiLoggerMode.LOG_ERROR_TO_CHAT_AND_INFO_TO_FILE)
 						.comment(""
 								+ "If enabled, the mod will log performance about the world generation process. \n"
 								+ "This can be useful for debugging.")
@@ -1290,7 +1252,7 @@ public class Config
 				
 				public static ConfigEntry<EDhApiLoggerMode> logWorldGenLoadEvent = new ConfigEntry.Builder<EDhApiLoggerMode>()
 						.setServersideShortName("logWorldGenPerformance")
-						.set(EDhApiLoggerMode.LOG_ERROR_TO_CHAT)
+						.set(EDhApiLoggerMode.LOG_ERROR_TO_CHAT_AND_INFO_TO_FILE)
 						.comment(""
 								+ "If enabled, the mod will log information about the world generation process. \n"
 								+ "This can be useful for debugging.")
@@ -1298,21 +1260,21 @@ public class Config
 				
 				public static ConfigEntry<EDhApiLoggerMode> logLodBuilderEvent = new ConfigEntry.Builder<EDhApiLoggerMode>()
 						.setServersideShortName("logLodBuilderEvent")
-						.set(EDhApiLoggerMode.LOG_ERROR_TO_CHAT)
+						.set(EDhApiLoggerMode.LOG_ERROR_TO_CHAT_AND_INFO_TO_FILE)
 						.comment(""
 								+ "If enabled, the mod will log information about the LOD generation process. \n"
 								+ "This can be useful for debugging.")
 						.build();
 				
 				public static ConfigEntry<EDhApiLoggerMode> logRendererBufferEvent = new ConfigEntry.Builder<EDhApiLoggerMode>()
-						.set(EDhApiLoggerMode.LOG_ERROR_TO_CHAT)
+						.set(EDhApiLoggerMode.LOG_ERROR_TO_CHAT_AND_INFO_TO_FILE)
 						.comment(""
 								+ "If enabled, the mod will log information about the renderer buffer process. \n"
 								+ "This can be useful for debugging.")
 						.build();
 				
 				public static ConfigEntry<EDhApiLoggerMode> logRendererGLEvent = new ConfigEntry.Builder<EDhApiLoggerMode>()
-						.set(EDhApiLoggerMode.LOG_ERROR_TO_CHAT)
+						.set(EDhApiLoggerMode.LOG_ERROR_TO_CHAT_AND_INFO_TO_FILE)
 						.comment(""
 								+ "If enabled, the mod will log information about the renderer OpenGL process. \n"
 								+ "This can be useful for debugging.")
@@ -1320,7 +1282,7 @@ public class Config
 				
 				public static ConfigEntry<EDhApiLoggerMode> logFileReadWriteEvent = new ConfigEntry.Builder<EDhApiLoggerMode>()
 						.setServersideShortName("logFileReadWriteEvent")
-						.set(EDhApiLoggerMode.LOG_ERROR_TO_CHAT)
+						.set(EDhApiLoggerMode.LOG_ERROR_TO_CHAT_AND_INFO_TO_FILE)
 						.comment(""
 								+ "If enabled, the mod will log information about file read/write operations. \n"
 								+ "This can be useful for debugging.")
@@ -1328,7 +1290,7 @@ public class Config
 				
 				public static ConfigEntry<EDhApiLoggerMode> logFileSubDimEvent = new ConfigEntry.Builder<EDhApiLoggerMode>()
 						.setServersideShortName("logFileSubDimEvent")
-						.set(EDhApiLoggerMode.LOG_ERROR_TO_CHAT)
+						.set(EDhApiLoggerMode.LOG_ERROR_TO_CHAT_AND_INFO_TO_FILE)
 						.comment(""
 								+ "If enabled, the mod will log information about file sub-dimension operations. \n"
 								+ "This can be useful for debugging.")
@@ -1336,7 +1298,7 @@ public class Config
 				
 				public static ConfigEntry<EDhApiLoggerMode> logNetworkEvent = new ConfigEntry.Builder<EDhApiLoggerMode>()
 						.setServersideShortName("logNetworkEvent")
-						.set(EDhApiLoggerMode.LOG_ERROR_TO_CHAT)
+						.set(EDhApiLoggerMode.LOG_ERROR_TO_CHAT_AND_INFO_TO_FILE)
 						.comment(""
 								+ "If enabled, the mod will log information about network operations. \n"
 								+ "This can be useful for debugging.")
@@ -1355,6 +1317,13 @@ public class Config
 						.comment(""
 								+ "If enabled, a chat message will be displayed when a replay is started \n"
 								+ "giving some basic information about how DH will function.")
+						.build();
+				
+				public static ConfigEntry<Boolean> showModCompatibilityWarningsOnStartup = new ConfigEntry.Builder<Boolean>()
+						.set(true)
+						.comment(""
+								+ "If enabled, a chat message will be displayed when a potentially problematic \n"
+								+ "mod is installed alongside DH.")
 						.build();
 				
 			}
@@ -1443,38 +1412,38 @@ public class Config
 				public static ConfigEntry<Boolean> columnBuilderDebugEnable = new ConfigEntry.Builder<Boolean>()
 						.set(false)
 						.setAppearance(EConfigEntryAppearance.ONLY_IN_GUI)
-						.addListener(DebugColumnConfigEventHandler.INSTANCE)
+						.addListener(ReloadLodsConfigEventHandler.INSTANCE)
 						.build();
 				public static ConfigEntry<Integer> columnBuilderDebugDetailLevel = new ConfigEntry.Builder<Integer>()
 						.set((int) DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL)
 						.setAppearance(EConfigEntryAppearance.ONLY_IN_GUI)
-						.addListener(DebugColumnConfigEventHandler.INSTANCE)
+						.addListener(ReloadLodsConfigEventHandler.INSTANCE)
 						.build();
 				public static ConfigEntry<Integer> columnBuilderDebugXPos = new ConfigEntry.Builder<Integer>()
 						.set(0)
 						.setAppearance(EConfigEntryAppearance.ONLY_IN_GUI)
-						.addListener(DebugColumnConfigEventHandler.INSTANCE)
+						.addListener(ReloadLodsConfigEventHandler.INSTANCE)
 						.build();
 				public static ConfigEntry<Integer> columnBuilderDebugZPos = new ConfigEntry.Builder<Integer>()
 						.set(0)
 						.setAppearance(EConfigEntryAppearance.ONLY_IN_GUI)
-						.addListener(DebugColumnConfigEventHandler.INSTANCE)
+						.addListener(ReloadLodsConfigEventHandler.INSTANCE)
 						.build();
 				
 				public static ConfigEntry<Integer> columnBuilderDebugXRow = new ConfigEntry.Builder<Integer>()
 						.set(-1)
 						.setAppearance(EConfigEntryAppearance.ONLY_IN_GUI)
-						.addListener(DebugColumnConfigEventHandler.INSTANCE)
+						.addListener(ReloadLodsConfigEventHandler.INSTANCE)
 						.build();
 				public static ConfigEntry<Integer> columnBuilderDebugZRow = new ConfigEntry.Builder<Integer>()
 						.set(-1)
 						.setAppearance(EConfigEntryAppearance.ONLY_IN_GUI)
-						.addListener(DebugColumnConfigEventHandler.INSTANCE)
+						.addListener(ReloadLodsConfigEventHandler.INSTANCE)
 						.build();
 				public static ConfigEntry<Integer> columnBuilderDebugColumnIndex = new ConfigEntry.Builder<Integer>()
 						.set(-1)
 						.setAppearance(EConfigEntryAppearance.ONLY_IN_GUI)
-						.addListener(DebugColumnConfigEventHandler.INSTANCE)
+						.addListener(ReloadLodsConfigEventHandler.INSTANCE)
 						.build();
 				
 				

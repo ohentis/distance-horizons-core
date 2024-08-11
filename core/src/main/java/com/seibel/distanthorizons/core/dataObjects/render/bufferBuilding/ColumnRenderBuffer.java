@@ -33,9 +33,10 @@ import com.seibel.distanthorizons.core.util.objects.StatsMap;
 import com.seibel.distanthorizons.api.enums.config.EDhApiGpuUploadMethod;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import org.apache.logging.log4j.Logger;
+import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
-import java.util.Iterator;
+import java.util.ArrayList;
 import java.util.concurrent.*;
 
 /**
@@ -100,7 +101,7 @@ public class ColumnRenderBuffer implements AutoCloseable
 		{
 			try
 			{
-				this.uploadBuffersUsingUploadMethod(builder, gpuUploadMethod);
+				this.uploadBuffers(builder, gpuUploadMethod);
 				uploadFuture.complete(null);
 			}
 			catch (InterruptedException e)
@@ -126,72 +127,46 @@ public class ColumnRenderBuffer implements AutoCloseable
 			//LOGGER.warn("Error uploading builder ["+builder+"] synchronously. Error: "+e.getMessage(), e);
 		}
 	}
-	private void uploadBuffersUsingUploadMethod(LodQuadBuilder builder, EDhApiGpuUploadMethod gpuUploadMethod) throws InterruptedException
+	private void uploadBuffers(LodQuadBuilder builder, EDhApiGpuUploadMethod method) throws InterruptedException
 	{
-		if (gpuUploadMethod.useEarlyMapping)
-		{
-			this.uploadBuffersMapped(builder, gpuUploadMethod);
-		}
-		else
-		{
-			this.uploadBuffersDirect(builder, gpuUploadMethod);
-		}
+		// uploading mapped buffers used to be done here,
+		// however due to a memory leak and complication with the previous code,
+		// now we only allow direct uploading.
+		// (There's also insufficient data to state whether mapped buffers are necessary
+		// for DH to upload without stuttering the main thread)
+		
+		this.vbos = makeAndUploadBuffers(builder, method, this.vbos, builder.makeOpaqueVertexBuffers());
+		this.vbosTransparent = makeAndUploadBuffers(builder, method, this.vbosTransparent, builder.makeTransparentVertexBuffers());
 		
 		this.buffersUploaded = true;
 	}
-	
-	
-	
-	private void uploadBuffersMapped(LodQuadBuilder builder, EDhApiGpuUploadMethod method)
+	/** This resizes and returns the vbo array if necessary based on the amount of data needed for this area. */
+	private static GLVertexBuffer[] makeAndUploadBuffers(LodQuadBuilder builder, EDhApiGpuUploadMethod method, GLVertexBuffer[] vbos, ArrayList<ByteBuffer> buffers) throws InterruptedException
 	{
-		// opaque vbos //
-		
-		this.vbos = resizeBuffer(this.vbos, builder.getCurrentNeededOpaqueVertexBufferCount());
-		for (int i = 0; i < this.vbos.length; i++)
+		try
 		{
-			if (this.vbos[i] == null)
+			vbos = resizeBuffer(vbos, buffers.size());
+			uploadBuffersDirect(vbos, buffers, method);
+		}
+		finally
+		{
+			// all the buffers must be manually freed to prevent memory leaks
+			if (buffers != null)
 			{
-				this.vbos[i] = new GLVertexBuffer(method.useBufferStorage);
+				for (ByteBuffer buffer : buffers)
+				{
+					MemoryUtil.memFree(buffer);
+				}
 			}
 		}
-		LodQuadBuilder.BufferFiller func = builder.makeOpaqueBufferFiller(method);
-		for (GLVertexBuffer vbo : this.vbos)
-		{
-			func.fill(vbo);
-		}
 		
-		
-		// transparent vbos //
-		
-		this.vbosTransparent = resizeBuffer(this.vbosTransparent, builder.getCurrentNeededTransparentVertexBufferCount());
-		for (int i = 0; i < this.vbosTransparent.length; i++)
-		{
-			if (this.vbosTransparent[i] == null)
-			{
-				this.vbosTransparent[i] = new GLVertexBuffer(method.useBufferStorage);
-			}
-		}
-		LodQuadBuilder.BufferFiller transparentFillerFunc = builder.makeTransparentBufferFiller(method);
-		for (GLVertexBuffer vbo : this.vbosTransparent)
-		{
-			transparentFillerFunc.fill(vbo);
-		}
+		// return the array in case it was resized
+		return vbos;
 	}
-	
-	private void uploadBuffersDirect(LodQuadBuilder builder, EDhApiGpuUploadMethod method) throws InterruptedException
+	private static void uploadBuffersDirect(GLVertexBuffer[] vbos, ArrayList<ByteBuffer> byteBuffers, EDhApiGpuUploadMethod method) throws InterruptedException
 	{
-		this.vbos = resizeBuffer(this.vbos, builder.getCurrentNeededOpaqueVertexBufferCount());
-		uploadBuffersDirect(this.vbos, builder.makeOpaqueVertexBuffers(), method);
-		
-		this.vbosTransparent = resizeBuffer(this.vbosTransparent, builder.getCurrentNeededTransparentVertexBufferCount());
-		uploadBuffersDirect(this.vbosTransparent, builder.makeTransparentVertexBuffers(), method);
-	}
-	private static void uploadBuffersDirect(GLVertexBuffer[] vbos, Iterator<ByteBuffer> iter, EDhApiGpuUploadMethod method) throws InterruptedException
-	{
-		long remainingMS = 0;
-		long MBPerMS = Config.Client.Advanced.GpuBuffers.gpuUploadPerMegabyteInMilliseconds.get();
 		int vboIndex = 0;
-		while (iter.hasNext())
+		for (int i = 0; i < byteBuffers.size(); i++)
 		{
 			if (vboIndex >= vbos.length)
 			{
@@ -207,37 +182,19 @@ public class ColumnRenderBuffer implements AutoCloseable
 			GLVertexBuffer vbo = vbos[vboIndex];
 			
 			
-			ByteBuffer bb = iter.next();
-			int size = bb.limit() - bb.position();
+			ByteBuffer buffer = byteBuffers.get(i);
+			int size = buffer.limit() - buffer.position();
 			
 			try
 			{
 				vbo.bind();
-				vbo.uploadBuffer(bb, size / LodUtil.LOD_VERTEX_FORMAT.getByteSize(), method, FULL_SIZED_BUFFER);
+				vbo.uploadBuffer(buffer, size / LodUtil.LOD_VERTEX_FORMAT.getByteSize(), method, FULL_SIZED_BUFFER);
 			}
 			catch (Exception e)
 			{
 				vbos[vboIndex] = null;
 				vbo.close();
 				LOGGER.error("Failed to upload buffer: ", e);
-			}
-			
-			
-			if (MBPerMS > 0)
-			{
-				// upload buffers over an extended period of time
-				// to hopefully prevent stuttering.
-				remainingMS += size * MBPerMS;
-				if (remainingMS >= TimeUnit.NANOSECONDS.convert(1000 / 60, TimeUnit.MILLISECONDS))
-				{
-					if (remainingMS > MAX_BUFFER_UPLOAD_TIMEOUT_NANOSECONDS)
-					{
-						remainingMS = MAX_BUFFER_UPLOAD_TIMEOUT_NANOSECONDS;
-					}
-					
-					Thread.sleep(remainingMS / 1000000, (int) (remainingMS % 1000000));
-					remainingMS = 0;
-				}
 			}
 			
 			vboIndex++;

@@ -95,7 +95,7 @@ public class DhClientServerLevel extends AbstractDhLevel implements IDhClientLev
 	{ this.clientside.renderDeferred(renderEventParam, profiler); }
 	
 	@Override
-	public void serverTick() { this.chunkToLodBuilder.tick(); }
+	public void serverTick() {  }
 	
 	@Override
 	public void doWorldGen()

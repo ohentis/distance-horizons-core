@@ -350,6 +350,8 @@ public class LightingTestChunkWrapper implements IChunkWrapper
 		}
 		return this.blockLightStorage;
 	}
+	@Override
+	public void clearDhBlockLighting() { throw new UnsupportedOperationException("Not implemented"); }
 	
 	
 	@Override
@@ -364,6 +366,8 @@ public class LightingTestChunkWrapper implements IChunkWrapper
 		this.throwIndexOutOfBoundsIfRelativePosOutsideChunkBounds(relX, y, relZ);
 		this.getSkyLightStorage().set(relX, y, relZ, lightValue);
 	}
+	@Override
+	public void clearDhSkyLighting() { throw new UnsupportedOperationException("Not implemented"); }
 	
 	private ChunkLightStorage getSkyLightStorage()
 	{

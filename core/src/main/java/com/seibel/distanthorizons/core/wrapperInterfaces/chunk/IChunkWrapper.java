@@ -25,6 +25,7 @@ import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.sql.dto.BeaconBeamDTO;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IBindable;
 import com.seibel.distanthorizons.core.util.LodUtil;
@@ -79,9 +80,11 @@ public interface IChunkWrapper extends IBindable
 	
 	int getDhSkyLight(int relX, int relY, int relZ);
 	void setDhSkyLight(int relX, int relY, int relZ, int lightValue);
+	void clearDhSkyLighting();
 	
 	int getDhBlockLight(int relX, int relY, int relZ);
 	void setDhBlockLight(int relX, int relY, int relZ, int lightValue);
+	void clearDhBlockLighting();
 	
 	int getBlockLight(int relX, int relY, int relZ);
 	int getSkyLight(int relX, int relY, int relZ);
@@ -150,29 +153,77 @@ public interface IChunkWrapper extends IBindable
 	 * This is generally done in cases where MC's lighting is correct now, but may not be later (like when a chunk is unloading).
 	 *
 	 * @throws IllegalStateException if the chunk's lighting isn't valid. This is done to prevent accidentally baking broken lighting.
+	 * @return true if the chunk's lighting was successfully populated, false otherwise
 	 */
-	default void bakeDhLightingUsingMcLightingEngine() throws IllegalStateException
+	@Deprecated
+	default boolean bakeDhLightingUsingMcLightingEngine(ILevelWrapper levelWrapper) throws IllegalStateException
 	{
 		if (!this.isLightCorrect())
 		{
-			throw new IllegalStateException("Unable to bake lighting for for chunk [" + this.getChunkPos() + "], Minecraft lighting not valid.");
+			return false;
 		}
 		
-		// get the lighting for every relative block pos
+		//=======================//
+		// get lighting for each //
+		// relative block pos    //
+		//=======================//
+		
+		boolean lightingFound = false;
+		// if the level doesn't have sky lights, then this check can be ignored
+		// since all sky light values will be 0 anyway
+		boolean skyLightingFound = !levelWrapper.hasSkyLight();
+		
 		for (int relX = 0; relX < LodUtil.CHUNK_WIDTH; relX++)
 		{
 			for (int relZ = 0; relZ < LodUtil.CHUNK_WIDTH; relZ++)
 			{
 				for (int y = this.getMinBuildHeight(); y < this.getMaxBuildHeight(); y++)
 				{
-					this.setDhSkyLight(relX, y, relZ, this.getSkyLight(relX, y, relZ));
-					this.setDhBlockLight(relX, y, relZ, this.getBlockLight(relX, y, relZ));
+					int skyLight = this.getSkyLight(relX, y, relZ);
+					this.setDhSkyLight(relX, y, relZ, skyLight);
+					int blockLight = this.getBlockLight(relX, y, relZ);
+					this.setDhBlockLight(relX, y, relZ, blockLight);
+					
+					// MC defaults to max sky light and no block light, including underground blocks.
+					// If any position has something different then those default values, it's likely that the
+					// lighting was properly populated for at least part of the chunk
+					if (!lightingFound &&
+						(skyLight != LodUtil.MAX_MC_LIGHT || blockLight != LodUtil.MIN_MC_LIGHT))
+					{
+						lightingFound = true;
+					}
+					
+					if (!skyLightingFound
+						&& skyLight != LodUtil.MIN_MC_LIGHT)
+					{
+						skyLightingFound = true;
+					}
 				}
 			}
 		}
 		
+		
+		
+		//=================//
+		// validate result //
+		//=================//
+		
+		// if no lighting was found or the sky is always black, the lighting is likely broken
+		if (!lightingFound || !skyLightingFound
+			// if lighting is no longer correct or doesn't match the saved values
+			// its very likely it broke halfway through and will need regenerating
+			|| !this.isLightCorrect()
+			|| this.getSkyLight(0, 0, 0) != this.getDhSkyLight(0,0,0)
+			|| this.getBlockLight(0, 0, 0) != this.getDhBlockLight(0,0,0))
+		{
+			return false;
+		}
+		
+		
+		// lighting is valid
 		this.setIsDhLightCorrect(true);
 		this.setUseDhLighting(true);
+		return true;
 	}
 	
 	
@@ -229,18 +280,42 @@ public interface IChunkWrapper extends IBindable
 		int hash = 31;
 		int primeBlockMultiplier = 227;
 		int primeBiomeMultiplier = 701;
+		int primeHeightMultiplier = 137;
 		
-		int minBuildHeight = this.getMinBuildHeight();
-		int maxBuildHeight = this.getMaxBuildHeight();
+		int minBuildHeight = this.getMaxNonEmptyHeight();
+		int maxBuildHeight = this.getMinNonEmptyHeight();
 		
+		
+		// most blocks (only some blocks are sampled since checking every block is a very slow operation)
+		for (int x = 0; x < LodUtil.CHUNK_WIDTH; x+=2)
+		{
+			for (int z = 0; z < LodUtil.CHUNK_WIDTH; z+=2)
+			{
+				for (int y = minBuildHeight; y < maxBuildHeight; y+=8)
+				{
+					hash = (hash * primeBlockMultiplier) + this.getBlockState(x, y, z).hashCode();
+					hash = (hash * primeBiomeMultiplier) + this.getBiome(x, y, z).hashCode();
+					hash = (hash * primeHeightMultiplier) + y;
+				}
+			}
+		}
+		
+		// surface (this should cover most cases for when users modify chunks)
 		for (int x = 0; x < LodUtil.CHUNK_WIDTH; x++)
 		{
 			for (int z = 0; z < LodUtil.CHUNK_WIDTH; z++)
 			{
-				for (int y = minBuildHeight; y < maxBuildHeight; y++)
+				int lightBlockingY = this.getLightBlockingHeightMapValue(x, z);
+				hash = (hash * primeBlockMultiplier) + this.getBlockState(x, lightBlockingY, z).hashCode();
+				hash = (hash * primeBiomeMultiplier) + this.getBiome(x, lightBlockingY, z).hashCode();
+				hash = (hash * primeHeightMultiplier) + lightBlockingY;
+				
+				int solidY = this.getSolidHeightMapValue(x, z);
+				if (solidY != lightBlockingY)
 				{
-					hash = (hash * primeBlockMultiplier) + this.getBlockState(x, y, z).hashCode();
-					hash = (hash * primeBiomeMultiplier) + this.getBiome(x, y, z).hashCode();
+					hash = (hash * primeBlockMultiplier) + this.getBlockState(x, solidY, z).hashCode();
+					hash = (hash * primeBiomeMultiplier) + this.getBiome(x, solidY, z).hashCode();
+					hash = (hash * primeHeightMultiplier) + solidY;
 				}
 			}
 		}

@@ -24,12 +24,12 @@ import java.util.Arrays;
 
 /**
  * Miscellaneous string helper functions.
- *
- * @author James Seibel
- * @version 2022-7-19
  */
 public class StringUtil
 {
+	private static final char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();
+	
+	
 	/**
 	 * Returns the n-th index of the given string. <br> <br>
 	 *
@@ -67,8 +67,6 @@ public class StringUtil
 		return stringBuilder.toString();
 	}
 	
-	
-	private static final char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();
 	/**
 	 * Converts the given byte array into a hex string representation. <br>
 	 * source: https://stackoverflow.com/a/9855338
@@ -83,6 +81,22 @@ public class StringUtil
 			hexChars[i * 2 + 1] = HEX_ARRAY[v & 0x0F];
 		}
 		return new String(hexChars);
+	}
+	
+	/**
+	 * Returns a shortened version of the given string that is no longer than maxLength. <br>
+	 * If null returns the empty string.
+	 */
+	public static String shortenString(String str, int maxLength)
+	{
+		if (str == null)
+		{
+			return "";
+		}
+		else
+		{
+			return str.substring(0, Math.min(str.length(), maxLength));
+		}
 	}
 	
 }

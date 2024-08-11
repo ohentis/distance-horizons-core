@@ -45,8 +45,7 @@ public interface IDhLevel extends AutoCloseable
 	
 	/** @return 0 if no hash is known */
 	int getChunkHash(DhChunkPos pos);
-	void setChunkHash(DhChunkPos pos, int chunkHash);
-	void updateChunkAsync(IChunkWrapper chunk);
+	void updateChunkAsync(IChunkWrapper chunk, int newChunkHash);
 	
 	void loadBeaconBeamsInPos(long pos);
 	void setBeaconBeamsForChunk(DhChunkPos chunkPos, List<BeaconBeamDTO> beamList);

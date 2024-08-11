@@ -50,6 +50,7 @@ import org.apache.logging.log4j.Logger;
 import org.lwjgl.opengl.ARBInstancedArrays;
 import org.lwjgl.opengl.GL32;
 import org.lwjgl.opengl.GL33;
+import org.lwjgl.system.MemoryUtil;
 
 import java.awt.*;
 import java.nio.ByteBuffer;
@@ -192,24 +193,22 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 	private void createBuffers()
 	{
 		// box vertices 
-		ByteBuffer boxVerticesBuffer = ByteBuffer.allocateDirect(BOX_VERTICES.length * Float.BYTES);
-		boxVerticesBuffer.order(ByteOrder.nativeOrder());
+		ByteBuffer boxVerticesBuffer = MemoryUtil.memAlloc(BOX_VERTICES.length * Float.BYTES);
 		boxVerticesBuffer.asFloatBuffer().put(BOX_VERTICES);
 		boxVerticesBuffer.rewind();
 		this.boxVertexBuffer = new GLVertexBuffer(false);
 		this.boxVertexBuffer.bind();
 		this.boxVertexBuffer.uploadBuffer(boxVerticesBuffer, 8, EDhApiGpuUploadMethod.DATA, BOX_VERTICES.length * Float.BYTES);
-		
+		MemoryUtil.memFree(boxVerticesBuffer);
 		
 		// box vertex indexes
-		ByteBuffer solidIndexBuffer = ByteBuffer.allocateDirect(BOX_INDICES.length * Integer.BYTES);
-		solidIndexBuffer.order(ByteOrder.nativeOrder());
+		ByteBuffer solidIndexBuffer = MemoryUtil.memAlloc(BOX_INDICES.length * Integer.BYTES);
 		solidIndexBuffer.asIntBuffer().put(BOX_INDICES);
 		solidIndexBuffer.rewind();
 		this.boxIndexBuffer = new GLElementBuffer(false);
 		this.boxIndexBuffer.uploadBuffer(solidIndexBuffer, EDhApiGpuUploadMethod.DATA, BOX_INDICES.length * Integer.BYTES, GL32.GL_STATIC_DRAW);
 		this.boxIndexBuffer.bind();
-		
+		MemoryUtil.memFree(solidIndexBuffer);
 	}
 	private void addGenericDebugObjects()
 	{

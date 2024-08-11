@@ -320,6 +320,8 @@ public class LodDataBuilder
 				// AND the below loop won't run.
 				int size = (columnDataPoints != null) ? columnDataPoints.size() : 0;
 				
+				// TODO make missing air LODs
+				// TODO merge duplicate datapoints
 				LongArrayList packedDataPoints = new LongArrayList(new long[size]);
 				for (int index = 0; index < size; index++)
 				{

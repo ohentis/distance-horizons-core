@@ -48,93 +48,6 @@ public class RenderUtil
 	
 	
 	
-	//=================//
-	// culling methods //
-	//=================//
-	
-	/**
-	 * Returns if the given ChunkPos is in the loaded area of the world.
-	 *
-	 * @param center the center of the loaded world (probably the player's ChunkPos)
-	 */
-	public static boolean isChunkPosInLoadedArea(DhChunkPos pos, DhChunkPos center)
-	{
-		return (pos.x >= center.x - MC_RENDER.getRenderDistance()
-				&& pos.x <= center.x + MC_RENDER.getRenderDistance())
-				&&
-				(pos.z >= center.z - MC_RENDER.getRenderDistance()
-				&& pos.z <= center.z + MC_RENDER.getRenderDistance());
-	}
-	
-	/**
-	 * Returns if the given coordinate is in the loaded area of the world.
-	 *
-	 * @param centerCoordinate the center of the loaded world
-	 */
-	public static boolean isCoordinateInLoadedArea(int x, int z, int centerCoordinate)
-	{
-		return (x >= centerCoordinate - MC_RENDER.getRenderDistance()
-				&& x <= centerCoordinate + MC_RENDER.getRenderDistance())
-				&&
-				(z >= centerCoordinate - MC_RENDER.getRenderDistance()
-				&& z <= centerCoordinate + MC_RENDER.getRenderDistance());
-	}
-	
-	/**
-	 * Find the coordinates that are in the center half of the given
-	 * 2D matrix, starting at (0,0) and going to (2 * lodRadius, 2 * lodRadius).
-	 */
-	public static boolean isCoordinateInNearFogArea(int i, int j, int lodRadius)
-	{
-		int halfRadius = lodRadius / 2;
-		
-		return (i >= lodRadius - halfRadius
-				&& i <= lodRadius + halfRadius)
-				&&
-				(j >= lodRadius - halfRadius
-				&& j <= lodRadius + halfRadius);
-	}
-	
-	/**
-	 * Returns true if one of the region's 4 corners is in front
-	 * of the camera.
-	 */
-	public static boolean isRegionInViewFrustum(DhBlockPos playerBlockPos, Vec3f cameraDir, int vboRegionX, int vboRegionZ)
-	{
-		// convert the vbo position into a direction vector
-		// starting from the player's position
-		Vec3f vboVec = new Vec3f(vboRegionX * LodUtil.REGION_WIDTH, 0, vboRegionZ * LodUtil.REGION_WIDTH);
-		Vec3f playerVec = new Vec3f(playerBlockPos.x, playerBlockPos.y, playerBlockPos.z);
-		
-		vboVec.subtract(playerVec);
-		
-		// calculate the 4 corners
-		Vec3f vboSeVec = new Vec3f(vboVec.x + LodUtil.REGION_WIDTH, vboVec.y, vboVec.z + LodUtil.REGION_WIDTH);
-		Vec3f vboSwVec = new Vec3f(vboVec.x, vboVec.y, vboVec.z + LodUtil.REGION_WIDTH);
-		Vec3f vboNwVec = new Vec3f(vboVec.x, vboVec.y, vboVec.z);
-		Vec3f vboNeVec = new Vec3f(vboVec.x + LodUtil.REGION_WIDTH, vboVec.y, vboVec.z);
-		
-		// if any corner is visible, this region should be rendered
-		return isNormalizedVectorInViewFrustum(vboSeVec, cameraDir) ||
-				isNormalizedVectorInViewFrustum(vboSwVec, cameraDir) ||
-				isNormalizedVectorInViewFrustum(vboNwVec, cameraDir) ||
-				isNormalizedVectorInViewFrustum(vboNeVec, cameraDir);
-	}
-	
-	/**
-	 * Currently takes the dot product of the two vectors,
-	 * but in the future could do more complicated frustum culling tests.
-	 */
-	private static boolean isNormalizedVectorInViewFrustum(Vec3f objectVector, Vec3f cameraDir)
-	{
-		// the -0.1 is to offer a slight buffer, so we are
-		// more likely to render LODs and thus, hopefully prevent
-		// flickering or odd disappearances
-		return objectVector.dotProduct(cameraDir) > -0.1;
-	}
-	
-	
-	
 	//=====================//
 	// matrix manipulation //
 	//=====================//
@@ -164,19 +77,6 @@ public class RenderUtil
 		// nothing beyond copying needs to be done to MC's MVM currently,
 		// this method is just here in case that changes in the future
 		return mcModelViewMat.copy();
-	}
-	
-	/**
-	 * create and return a new combined modelView/projection matrix based on MC's modelView and projection matrices
-	 *
-	 * @param mcProjMat Minecraft's current projection matrix
-	 * @param mcModelViewMat Minecraft's current model view matrix
-	 */
-	public static Mat4f createCombinedModelViewProjectionMatrix(Mat4f mcProjMat, Mat4f mcModelViewMat, float partialTicks)
-	{
-		Mat4f lodProj = createLodProjectionMatrix(mcProjMat, partialTicks);
-		lodProj.multiply(createLodModelViewMatrix(mcModelViewMat));
-		return lodProj;
 	}
 	
 	public static float getNearClipPlaneDistanceInBlocks(float partialTicks)

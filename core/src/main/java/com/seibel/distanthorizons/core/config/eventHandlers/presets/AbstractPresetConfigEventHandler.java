@@ -170,7 +170,7 @@ public abstract class AbstractPresetConfigEventHandler<TPresetEnum extends Enum<
 		
 		if (newPreset != currentPreset)
 		{
-			this.getPresetConfigEntry().set(this.getCustomPresetEnum());
+			this.getPresetConfigEntry().set(newPreset);
 		}
 	}
 	

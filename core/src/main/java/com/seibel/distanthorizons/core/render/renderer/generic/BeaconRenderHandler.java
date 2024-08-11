@@ -22,7 +22,6 @@ package com.seibel.distanthorizons.core.render.renderer.generic;
 import com.seibel.distanthorizons.api.enums.rendering.EDhApiBlockMaterial;
 import com.seibel.distanthorizons.api.interfaces.render.IDhApiRenderableBoxGroup;
 import com.seibel.distanthorizons.api.objects.math.DhApiVec3d;
-import com.seibel.distanthorizons.api.objects.math.DhApiVec3f;
 import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBox;
 import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBoxGroupShading;
 import com.seibel.distanthorizons.core.config.Config;
@@ -42,7 +41,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class BeaconRenderHandler
 {
@@ -56,7 +54,7 @@ public class BeaconRenderHandler
 	private final BeaconBeamRepo beaconBeamRepo;
 	
 	private final IDhApiRenderableBoxGroup beaconBoxGroup;
-	private final HashMap<DhBlockPos, AtomicInteger> beaconRefCountByBlockPos = new HashMap<>();
+	private final HashSet<DhBlockPos> beaconBlockPosSet = new HashSet<>();
 	
 	
 	
@@ -96,8 +94,8 @@ public class BeaconRenderHandler
 			for (int i = 0; i < newBeamList.size(); i++)
 			{
 				BeaconBeamDTO beam = newBeamList.get(i);
-				newBeamByPos.put(beam.pos, beam);
-				allPosSet.add(beam.pos);
+				newBeamByPos.put(beam.blockPos, beam);
+				allPosSet.add(beam.blockPos);
 			}
 			
 			// get existing beams
@@ -106,8 +104,8 @@ public class BeaconRenderHandler
 			for (int i = 0; i < existingBeamList.size(); i++)
 			{
 				BeaconBeamDTO beam = existingBeamList.get(i);
-				existingBeamByPos.put(beam.pos, beam);
-				allPosSet.add(beam.pos);
+				existingBeamByPos.put(beam.blockPos, beam);
+				allPosSet.add(beam.blockPos);
 			}
 			
 			
@@ -168,7 +166,7 @@ public class BeaconRenderHandler
 		for (int i = 0; i < existingBeamList.size(); i++)
 		{
 			BeaconBeamDTO beam = existingBeamList.get(i);
-			this.stopRenderingBeaconAtPos(beam.pos);
+			this.stopRenderingBeaconAtPos(beam.blockPos);
 		}
 	}
 	
@@ -180,50 +178,37 @@ public class BeaconRenderHandler
 	
 	private void startRenderingBeacon(BeaconBeamDTO beacon)
 	{
-		this.beaconRefCountByBlockPos.compute(beacon.pos, (beamPos, beaconRefCount) ->
+		if (this.beaconBlockPosSet.add(beacon.blockPos))
 		{
-			if (beaconRefCount == null) { beaconRefCount = new AtomicInteger(); }
-			if (beaconRefCount.getAndIncrement() == 0)
-			{
-				DhApiRenderableBox beaconBox = new DhApiRenderableBox(
-						new DhApiVec3d(beacon.pos.x, beacon.pos.y+1, beacon.pos.z),
-						new DhApiVec3d(beacon.pos.x+1, BEAM_TOP_Y, beacon.pos.z+1),
-						beacon.color,
-						EDhApiBlockMaterial.ILLUMINATED
-				);
-				
-				this.beaconBoxGroup.add(beaconBox);
-				this.beaconBoxGroup.triggerBoxChange();
-			}
-			return beaconRefCount;
-		});
+			DhApiRenderableBox beaconBox = new DhApiRenderableBox(
+					new DhApiVec3d(beacon.blockPos.x, beacon.blockPos.y+1, beacon.blockPos.z),
+					new DhApiVec3d(beacon.blockPos.x+1, BEAM_TOP_Y, beacon.blockPos.z+1),
+					beacon.color,
+					EDhApiBlockMaterial.ILLUMINATED
+			);
+			
+			this.beaconBoxGroup.add(beaconBox);
+			this.beaconBoxGroup.triggerBoxChange();
+		}
 	}
 	
 	private void stopRenderingBeaconAtPos(DhBlockPos beaconPos)
 	{
-		this.beaconRefCountByBlockPos.compute(beaconPos, (pos, beaconRefCount) ->
+		if (this.beaconBlockPosSet.remove(beaconPos))
 		{
-			if (beaconRefCount != null
-					&& beaconRefCount.decrementAndGet() <= 0)
+			this.beaconBoxGroup.removeIf((box) ->
 			{
-				this.beaconBoxGroup.removeIf((box) ->
-						box.minPos.x == beaconPos.x
-								&& box.minPos.y == beaconPos.y+1 // plus 1 because the beam starts above the beacon
-								&& box.minPos.z == beaconPos.z
-				);
-				this.beaconBoxGroup.triggerBoxChange();
-				return null;
-			}
-			else
-			{
-				return beaconRefCount;
-			}
-		});
+				return box.minPos.x == beaconPos.x
+						&& box.minPos.y == beaconPos.y+1 // plus 1 because the beam starts above the beacon
+						&& box.minPos.z == beaconPos.z;
+			});
+			this.beaconBoxGroup.triggerBoxChange();
+		}
 	}
 	
 	private void updateBeaconColor(BeaconBeamDTO newBeam)
 	{
-		DhBlockPos pos = newBeam.pos;
+		DhBlockPos pos = newBeam.blockPos;
 		for (int i = 0; i < this.beaconBoxGroup.size(); i++)
 		{
 			DhApiRenderableBox box = this.beaconBoxGroup.get(i);

@@ -40,6 +40,7 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftCli
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
+import com.seibel.distanthorizons.coreapi.util.StringUtil;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.apache.logging.log4j.LogManager;
 
@@ -92,7 +93,7 @@ public class SubDimensionLevelMatcher implements AutoCloseable
 		if (potentialLevelFolders.size() == 0)
 		{
 			String newId = UUID.randomUUID().toString();
-			LOGGER.info("No potential level files found. Creating a new sub dimension with the ID ["+LodUtil.shortenString(newId, 8)+"]...");
+			LOGGER.info("No potential level files found. Creating a new sub dimension with the ID ["+ StringUtil.shortenString(newId, 8)+"]...");
 			this.foundLevelFile = this.CreateSubDimFolder(newId);
 		}
 	}
@@ -207,7 +208,7 @@ public class SubDimensionLevelMatcher implements AutoCloseable
 		SubDimCompare mostSimilarSubDim = null;
 		for (File testLevelFolder : this.potentialLevelFolders)
 		{
-			LOGGER.info("Testing level folder: [" + LodUtil.shortenString(testLevelFolder.getName(), 8) + "]");
+			LOGGER.info("Testing level folder: [" + StringUtil.shortenString(testLevelFolder.getName(), 8) + "]");
 			
 			FullDataSourceV2 testFullDataSource = null;
 			try
@@ -328,8 +329,8 @@ public class SubDimensionLevelMatcher implements AutoCloseable
 				}
 				
 				
-				String subDimShortName = LodUtil.shortenString(testLevelFolder.getName(), 8); // variables are separated out for easier debugging
-				String equalPercent = LodUtil.shortenString(mostSimilarSubDim.getPercentEqual()+"", 5);
+				String subDimShortName = StringUtil.shortenString(testLevelFolder.getName(), 8); // variables are separated out for easier debugging
+				String equalPercent = StringUtil.shortenString(mostSimilarSubDim.getPercentEqual()+"", 5);
 				LOGGER.info("Sub dimension ["+subDimShortName+"...] is current dimension probability: "+equalPercent+" ("+equalDataPoints+"/"+totalDataPointCount+")");
 			}
 			catch (Exception e)
@@ -359,7 +360,7 @@ public class SubDimensionLevelMatcher implements AutoCloseable
 		{
 			// we found a sub dim folder that is similar, use it
 			
-			LOGGER.info("Sub Dimension set to: [" + LodUtil.shortenString(mostSimilarSubDim.folder.getName(), 8) + "...] with an equality of [" + mostSimilarSubDim.getPercentEqual() + "]");
+			LOGGER.info("Sub Dimension set to: [" + StringUtil.shortenString(mostSimilarSubDim.folder.getName(), 8) + "...] with an equality of [" + mostSimilarSubDim.getPercentEqual() + "]");
 			return mostSimilarSubDim.folder;
 		}
 		else
@@ -369,7 +370,7 @@ public class SubDimensionLevelMatcher implements AutoCloseable
 			String newId = UUID.randomUUID().toString();
 			
 			double highestEqualityPercent = mostSimilarSubDim != null ? mostSimilarSubDim.getPercentEqual() : 0;
-			String message = "No suitable sub dimension found. The highest equality was [" + LodUtil.shortenString(highestEqualityPercent + "", 5) + "]. Creating a new sub dimension with ID: " + LodUtil.shortenString(newId, 8) + "...";
+			String message = "No suitable sub dimension found. The highest equality was [" + StringUtil.shortenString(highestEqualityPercent + "", 5) + "]. Creating a new sub dimension with ID: " + StringUtil.shortenString(newId, 8) + "...";
 			LOGGER.info(message);
 			
 			File folder = this.CreateSubDimFolder(newId);

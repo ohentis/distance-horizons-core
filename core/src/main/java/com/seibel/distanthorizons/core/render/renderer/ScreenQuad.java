@@ -24,6 +24,7 @@ import com.seibel.distanthorizons.core.render.glObject.buffer.GLVertexBuffer;
 import com.seibel.distanthorizons.core.render.glObject.vertexAttribute.AbstractVertexAttribute;
 import com.seibel.distanthorizons.core.render.glObject.vertexAttribute.VertexPointer;
 import org.lwjgl.opengl.GL32;
+import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -86,14 +87,14 @@ public class ScreenQuad
 	
 	private void createBuffer()
 	{
-		ByteBuffer buffer = ByteBuffer.allocateDirect(box_vertices.length * Float.BYTES);
-		buffer.order(ByteOrder.nativeOrder());
+		ByteBuffer buffer = MemoryUtil.memAlloc(box_vertices.length * Float.BYTES);
 		buffer.asFloatBuffer().put(box_vertices);
 		buffer.rewind();
 		
 		this.boxBuffer = new GLVertexBuffer(false);
 		this.boxBuffer.bind();
 		this.boxBuffer.uploadBuffer(buffer, box_vertices.length, EDhApiGpuUploadMethod.DATA, box_vertices.length * Float.BYTES);
+		MemoryUtil.memFree(buffer);
 	}
 	
 }

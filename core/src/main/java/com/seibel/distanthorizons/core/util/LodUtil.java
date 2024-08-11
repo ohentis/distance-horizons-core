@@ -20,7 +20,6 @@
 package com.seibel.distanthorizons.core.util;
 
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletionException;
@@ -29,11 +28,8 @@ import java.util.concurrent.RejectedExecutionException;
 import com.seibel.distanthorizons.api.enums.config.EDhApiVanillaOverdraw;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.pos.DhChunkPos;
-import com.seibel.distanthorizons.core.pos.Pos2D;
 import com.seibel.distanthorizons.core.render.vertexFormat.DefaultLodVertexFormats;
 import com.seibel.distanthorizons.core.render.vertexFormat.LodVertexFormat;
-import com.seibel.distanthorizons.core.util.gridList.EdgeDistanceBooleanGrid;
 import com.seibel.distanthorizons.core.util.objects.UncheckedInterruptedException;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
@@ -44,9 +40,6 @@ import org.apache.logging.log4j.Logger;
 
 /**
  * This class holds methods and constants that may be used in multiple places.
- *
- * @author James Seibel
- * @version 2022-12-5
  */
 public class LodUtil
 {
@@ -54,31 +47,7 @@ public class LodUtil
 	private static final IMinecraftRenderWrapper MC_RENDER = SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
-	/**
-	 * Vanilla render distances less than or equal to this will not allow partial
-	 * overdraw. The VanillaOverdraw will either be ALWAYS or NEVER.
-	 */
-	public static final int MINIMUM_RENDER_DISTANCE_FOR_PARTIAL_OVERDRAW = 4;
 	
-	/**
-	 * Vanilla render distances less than or equal to this will cause the overdraw to
-	 * run at a smaller fraction of the vanilla render distance.
-	 */
-	public static final int MINIMUM_RENDER_DISTANCE_FOR_FAR_OVERDRAW = 11;
-	
-	
-	
-	
-	/**
-	 * alpha used when drawing chunks in debug mode
-	 */
-	public static final int DEBUG_ALPHA = 255; // 0 - 25;
-	
-	public static final int COLOR_DEBUG_BLACK = ColorUtil.rgbToInt(DEBUG_ALPHA, 0, 0, 0);
-	public static final int COLOR_DEBUG_WHITE = ColorUtil.rgbToInt(DEBUG_ALPHA, 255, 255, 255);
-	public static final int COLOR_INVISIBLE = ColorUtil.rgbToInt(0, 0, 0, 0);
-	
-	//FIXME: WE NEED MORE COLORS!!!!
 	/**
 	 * In order of nearest to farthest: <br>
 	 * Red, Orange, Yellow, Green, Cyan, Blue, Magenta, white, gray, black
@@ -166,92 +135,9 @@ public class LodUtil
 	
 	
 	
-	
-	/**
-	 * Gets the ServerWorld for the relevant dimension.
-	 *
-	 * @return null if there is no ServerWorld for the given dimension
-	 */
-	public static ILevelWrapper getServerWorldFromDimension(IDimensionTypeWrapper newDimension)
-	{
-		if (!MC_CLIENT.hasSinglePlayerServer())
-			return null;
-		
-		Iterable<ILevelWrapper> worlds = MC_CLIENT.getAllServerWorlds();
-		ILevelWrapper returnWorld = null;
-		
-		for (ILevelWrapper world : worlds)
-		{
-			if (world.getDimensionType() == newDimension)
-			{
-				returnWorld = world;
-				break;
-			}
-		}
-		
-		return returnWorld;
-	}
-	
-	
-	public static int computeOverdrawOffset()
-	{
-		int chunkRenderDist = MC_RENDER.getRenderDistance() + 1;
-		EDhApiVanillaOverdraw overdraw = EDhApiVanillaOverdraw.ALWAYS; //Config.Client.Advanced.Graphics.AdvancedGraphics.vanillaOverdraw.get();
-		if (overdraw == EDhApiVanillaOverdraw.ALWAYS) return Integer.MAX_VALUE;
-		
-		int offset;
-		if (overdraw == EDhApiVanillaOverdraw.NEVER)
-		{
-			offset = 0; //Config.Client.Advanced.Graphics.AdvancedGraphics.overdrawOffset.get();
-		}
-		else
-		{
-			if (chunkRenderDist < MINIMUM_RENDER_DISTANCE_FOR_FAR_OVERDRAW)
-			{
-				offset = 1;
-			}
-			else
-			{
-				offset = chunkRenderDist / 5;
-			}
-		}
-		
-		if (chunkRenderDist - offset <= 1)
-		{
-			return Integer.MAX_VALUE;
-		}
-		return offset;
-	}
-	
-	/** not currently used since the new rendering system can't easily toggle single chunks to render */
-	@Deprecated
-	public static EdgeDistanceBooleanGrid readVanillaRenderedChunks()
-	{
-		int offset = computeOverdrawOffset();
-		if (offset == Integer.MAX_VALUE) return null;
-		int renderDist = MC_RENDER.getRenderDistance() + 1;
-		
-		Iterator<DhChunkPos> posIter = MC_RENDER.getVanillaRenderedChunks().iterator();
-		
-		return new EdgeDistanceBooleanGrid(new Iterator<Pos2D>()
-		{
-			@Override
-			public boolean hasNext()
-			{
-				return posIter.hasNext();
-			}
-			
-			@Override
-			public Pos2D next()
-			{
-				DhChunkPos pos = posIter.next();
-				return new Pos2D(pos.x, pos.z);
-			}
-		},
-				MC_CLIENT.getPlayerChunkPos().x - renderDist,
-				MC_CLIENT.getPlayerChunkPos().z - renderDist,
-				renderDist * 2 + 1);
-	}
+	//=========//
+	// methods //
+	//=========//
 	
 	/** Returns the chunk int position for the given double position */
 	public static int getChunkPosFromDouble(double value) { return (int) Math.floor(value / CHUNK_WIDTH); }
@@ -275,11 +161,6 @@ public class LodUtil
 		return true;
 	}
 	
-	public static void checkInterrupts() throws InterruptedException
-	{
-		if (Thread.interrupted()) throw new InterruptedException();
-	}
-	
 	/**
 	 * Format a given string with params using log4j's MessageFormat
 	 *
@@ -290,26 +171,7 @@ public class LodUtil
 	 * Do not use it for deserialization or naming of objects.</b>
 	 * @author leetom
 	 */
-	public static String formatLog(String str, Object... param)
-	{
-		return LOGGER.getMessageFactory().newMessage(str, param).getFormattedMessage();
-	}
-	
-	/**
-	 * Returns a shortened version of the given string that is no longer than maxLength. <br>
-	 * If null returns the empty string.
-	 */
-	public static String shortenString(String str, int maxLength)
-	{
-		if (str == null)
-		{
-			return "";
-		}
-		else
-		{
-			return str.substring(0, Math.min(str.length(), maxLength));
-		}
-	}
+	public static String formatLog(String str, Object... param) { return LOGGER.getMessageFactory().newMessage(str, param).getFormattedMessage(); }
 	
 	public static class AssertFailureException extends RuntimeException
 	{

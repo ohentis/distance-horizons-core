@@ -73,6 +73,8 @@ public class F3Screen
 		ThreadPoolExecutor worldGenPool = ThreadPoolUtil.getWorldGenExecutor();
 		ThreadPoolExecutor fileHandlerPool = ThreadPoolUtil.getFileHandlerExecutor();
 		ThreadPoolExecutor updatePool = ThreadPoolUtil.getUpdatePropagatorExecutor();
+		ThreadPoolExecutor bufferBuilderPool = ThreadPoolUtil.getBufferBuilderExecutor();
+		ThreadPoolExecutor bufferUploaderPool = ThreadPoolUtil.getBufferUploaderExecutor();
 		
 		AbstractDhWorld world = SharedApi.getAbstractDhWorld();
 		Iterable<? extends IDhLevel> levelIterator = world.getAllLoadedLevels();
@@ -89,6 +91,8 @@ public class F3Screen
 		messageList.add(getThreadPoolStatString("World Gen", worldGenPool));//"World Gen Tasks: 40/5304, (in progress: 7)");
 		messageList.add(getThreadPoolStatString("File Handler", fileHandlerPool));
 		messageList.add(getThreadPoolStatString("Update Propagator", updatePool));
+		messageList.add(getThreadPoolStatString("Buffer Builder", bufferBuilderPool));
+		messageList.add(getThreadPoolStatString("Buffer Uploader", bufferUploaderPool));
 		messageList.add("");
 		// chunk updates
 		messageList.add(SharedApi.INSTANCE.getDebugMenuString());

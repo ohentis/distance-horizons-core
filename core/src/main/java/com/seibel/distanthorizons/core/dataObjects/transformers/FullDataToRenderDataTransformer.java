@@ -178,6 +178,7 @@ public class FullDataToRenderDataTransformer
 		HashSet<IBlockStateWrapper> blockStatesToIgnore = WRAPPER_FACTORY.getRendererIgnoredBlocks(level.getLevelWrapper());
 		HashSet<IBlockStateWrapper> caveBlockStatesToIgnore = WRAPPER_FACTORY.getRendererIgnoredCaveBlocks(level.getLevelWrapper());
 		
+		int caveCullingMaxY = Config.Client.Advanced.Graphics.AdvancedGraphics.caveCullingHeight.get() - level.getMinY();
 		boolean caveCullingEnabled = 
 			Config.Client.Advanced.Graphics.AdvancedGraphics.enableCaveCulling.get()
 			&& (
@@ -196,7 +197,7 @@ public class FullDataToRenderDataTransformer
 		
 		int skylightToApplyToNextBlock = -1;
 		int blocklightToApplyToNextBlock = -1;
-		int columnOffset = 0;
+		int renderDataIndex = 0;
 		
 		
 		
@@ -205,12 +206,13 @@ public class FullDataToRenderDataTransformer
 		//==================================//
 		
 		// goes from the top down
-		for (int i = 0; i < fullColumnData.size(); i++)
+		for (int fullDataIndex = 0; fullDataIndex < fullColumnData.size(); fullDataIndex++)
 		{
-			long fullData = fullColumnData.getLong(i);
+			long fullData = fullColumnData.getLong(fullDataIndex);
 			
 			int bottomY = FullDataPointUtil.getBottomY(fullData);
 			int blockHeight = FullDataPointUtil.getHeight(fullData);
+			int topY = bottomY + blockHeight;
 			int id = FullDataPointUtil.getId(fullData);
 			int blockLight = FullDataPointUtil.getBlockLight(fullData);
 			int skyLight = FullDataPointUtil.getSkyLight(fullData);
@@ -252,24 +254,26 @@ public class FullDataToRenderDataTransformer
 			{
 				if (caveCullingEnabled
 					// assume this data point is underground if it has no sky-light
-					&& skyLight == LodUtil.MIN_MC_LIGHT
+					&& skyLight == LodUtil.MIN_MC_LIGHT	
+					// ignore caves above a certain height to prevent floating islands from having walls underneath them
+					&& topY < caveCullingMaxY
 					// cave culling shouldn't happen when at the top of the world
-					&& columnOffset != 0
+					&& renderDataIndex != 0 && fullDataIndex != 0
 					// cave culling can't happen when at the bottom of the world
-					&& columnOffset != fullColumnData.size())
+					&& (fullDataIndex+1) < fullColumnData.size())
 				{
 					// we need to get the next sky/block lights because
 					// the air block here will always have a light of 0/0 due to only the top of the LOD's light being saved.
-					long nextFullData = fullColumnData.getLong(i+1);
+					long nextFullData = fullColumnData.getLong(fullDataIndex+1);
 					int nextSkyLight = FullDataPointUtil.getSkyLight(nextFullData);
 					
 					if (nextSkyLight == LodUtil.MIN_MC_LIGHT
 							&& ColorUtil.getAlpha(lastColor) == 255)
 					{
 						// replace the previous block with new bottom
-						long columnData = renderColumnData.get(columnOffset - 1);
+						long columnData = renderColumnData.get(renderDataIndex - 1);
 						columnData = RenderDataPointUtil.setYMin(columnData, bottomY);
-						renderColumnData.set(columnOffset - 1, columnData);
+						renderColumnData.set(renderDataIndex - 1, columnData);
 					}
 					
 					continue;
@@ -337,20 +341,20 @@ public class FullDataToRenderDataTransformer
 			//=============================//
 			
 			// check if they share a top-bottom face and if they have same color
-			if (color == lastColor && bottomY + blockHeight == lastBottom  && columnOffset > 0)
+			if (color == lastColor && bottomY + blockHeight == lastBottom  && renderDataIndex > 0)
 			{
 				//replace the previous block with new bottom
-				long columnData = renderColumnData.get(columnOffset - 1);
+				long columnData = renderColumnData.get(renderDataIndex - 1);
 				columnData = RenderDataPointUtil.setYMin(columnData, bottomY);
-				renderColumnData.set(columnOffset - 1, columnData);
+				renderColumnData.set(renderDataIndex - 1, columnData);
 			}
 			else
 			{
 				// add the block
 				isColumnVoid = false;
 				long columnData = RenderDataPointUtil.createDataPoint(bottomY + blockHeight, bottomY, color, skyLight, blockLight, block.getMaterialId());
-				renderColumnData.set(columnOffset, columnData);
-				columnOffset++;
+				renderColumnData.set(renderDataIndex, columnData);
+				renderDataIndex++;
 			}
 			lastBottom = bottomY;
 			lastColor = color;

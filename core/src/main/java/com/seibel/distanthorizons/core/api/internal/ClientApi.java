@@ -386,7 +386,7 @@ public class ClientApi
 	{
 		// logging //
 		
-		this.sendChatMessagesNow();
+		this.sendQueuedChatMessages();
 		
 		IProfilerWrapper profiler = MC.getProfiler();
 		profiler.pop(); // get out of "terrain"
@@ -554,7 +554,7 @@ public class ClientApi
 		}
 	}
 	
-	private void sendChatMessagesNow()
+	private void sendQueuedChatMessages()
 	{
 		// dev build
 		if (ModInfo.IS_DEV_BUILD && !this.configOverrideReminderPrinted && MC.playerExists())
@@ -562,10 +562,12 @@ public class ClientApi
 			this.configOverrideReminderPrinted = true;
 			
 			// remind the user that this is a development build
-			MC.sendChatMessage("\u00A72" + "Distant Horizons: nightly/unstable build, version: [" + ModInfo.VERSION+"]." + "\u00A7r");
-			MC.sendChatMessage("Issues may occur with this version.");
-			MC.sendChatMessage("Here be dragons!");
-			MC.sendChatMessage("");
+			String message = 
+					// green text
+					"\u00A72" + "Distant Horizons: nightly/unstable build, version: [" + ModInfo.VERSION+"]." + "\u00A7r\n" +
+					"Issues may occur with this version.\n" +
+					"Here be dragons!\n";
+			MC.sendChatMessage(message);
 		}
 		
 		// memory
@@ -580,11 +582,13 @@ public class ClientApi
 			long maxMemoryInBytes = Runtime.getRuntime().maxMemory();
 			if (maxMemoryInBytes < minimumRecommendedMemoryInBytes)
 			{
-				MC.sendChatMessage("\u00A76" + "Distant Horizons: Low memory detected." + "\u00A7r");
-				MC.sendChatMessage("Stuttering or low FPS may occur.");
-				MC.sendChatMessage("Please increase Minecraft's available memory to 4 gigabytes.");
-				MC.sendChatMessage("This warning can be disabled in DH's config under Advanced -> Logging.");
-				MC.sendChatMessage("");
+				String message =
+						// orange text		
+						"\u00A76" + "Distant Horizons: Low memory detected." + "\u00A7r \n" +
+						"Stuttering or low FPS may occur. \n" +
+						"Please increase Minecraft's available memory to 4 gigabytes. \n" +
+						"This warning can be disabled in DH's config under Advanced -> Logging. \n";
+				MC.sendChatMessage(message);
 			}
 		}
 		

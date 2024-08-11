@@ -42,8 +42,6 @@ public class DhApiConfig implements IDhApiConfig
 	@Override
 	public IDhApiMultiThreadingConfig multiThreading() { return DhApiMultiThreadingConfig.INSTANCE; }
 	@Override
-	public IDhApiGpuBuffersConfig gpuBuffers() { return DhApiGpuBuffersConfig.INSTANCE; }
-	@Override
 	public IDhApiDebuggingConfig debugging() { return DhApiDebuggingConfig.INSTANCE; }
 	
 }

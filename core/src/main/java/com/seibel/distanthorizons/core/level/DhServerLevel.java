@@ -265,8 +265,6 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 	@Override
 	public void serverTick()
 	{
-		this.chunkToLodBuilder.tick();
-		
 		// Send finished data source requests
 		for (Map.Entry<Long, DataSourceRequestGroup> entry : this.requestGroupsByPos.entrySet())
 		{
