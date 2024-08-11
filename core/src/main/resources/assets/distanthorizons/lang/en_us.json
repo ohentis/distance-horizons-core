@@ -566,6 +566,8 @@
     "Show Low Memory Warning",
   "distanthorizons.config.client.advanced.logging.showReplayWarningOnStartup":
     "Show Replay Warning",
+  "distanthorizons.config.client.advanced.logging.showModCompatibilityWarningsOnStartup":
+    "Show Mod Compatibility Warnings",
     
     
     

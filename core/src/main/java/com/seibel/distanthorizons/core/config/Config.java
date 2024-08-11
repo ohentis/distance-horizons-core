@@ -1179,6 +1179,13 @@ public class Config
 								+ "giving some basic information about how DH will function.")
 						.build();
 				
+				public static ConfigEntry<Boolean> showModCompatibilityWarningsOnStartup = new ConfigEntry.Builder<Boolean>()
+						.set(true)
+						.comment(""
+								+ "If enabled, a chat message will be displayed when a potentially problematic \n"
+								+ "mod is installed alongside DH.")
+						.build();
+				
 			}
 			
 			public static class Debugging
