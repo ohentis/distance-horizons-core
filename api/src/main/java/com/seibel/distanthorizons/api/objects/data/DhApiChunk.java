@@ -124,7 +124,7 @@ public class DhApiChunk
 		throwIfRelativePosOutOfBounds(relX, relZ);
 		
 		// ignore empty inputs
-		if (dataPoints == null)
+		if (dataPoints == null || dataPoints.size() == 0)
 		{
 			return;
 		}
