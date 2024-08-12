@@ -124,7 +124,7 @@ public class DhApiChunk
 		throwIfRelativePosOutOfBounds(relX, relZ);
 		
 		// ignore empty inputs
-		if (dataPoints == null || dataPoints.size() == 0)
+		if (dataPoints == null)
 		{
 			return;
 		}
@@ -150,13 +150,17 @@ public class DhApiChunk
 		// set datapoints //
 		//================//
 		
-		// DH expects datapoints to be in a top-down order
-		DhApiTerrainDataPoint first = dataPoints.get(0);
-		DhApiTerrainDataPoint last = dataPoints.get(dataPoints.size() - 1);
-		if (first.bottomYBlockPos < last.bottomYBlockPos)
+		// order doesn't need to be checked if there is 0 or 1 items
+		if (dataPoints.size() > 1)
 		{
-			// flip the array if it's in bottom-up order
-			Collections.reverse(dataPoints);
+			// DH expects datapoints to be in a top-down order
+			DhApiTerrainDataPoint first = dataPoints.get(0);
+			DhApiTerrainDataPoint last = dataPoints.get(dataPoints.size() - 1);
+			if (first.bottomYBlockPos < last.bottomYBlockPos)
+			{
+				// flip the array if it's in bottom-up order
+				Collections.reverse(dataPoints);
+			}
 		}
 		
 		this.dataPoints.set(internalArrayIndex, dataPoints); 
