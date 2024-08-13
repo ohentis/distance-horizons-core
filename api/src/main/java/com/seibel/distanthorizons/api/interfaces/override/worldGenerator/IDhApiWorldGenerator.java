@@ -90,11 +90,17 @@ public interface IDhApiWorldGenerator extends Closeable, IDhApiOverrideable
 	 */
 	default byte getMaxGenerationGranularity() { return (byte) (EDhApiDetailLevel.CHUNK.detailLevel + 2); }
 	
-	/** 
-	 * @return true if the generator is unable to accept new generation requests.
+	/**
+	 * Starting in API 3.0.0 DH now handles future queuing/management internally. <br><br>
+	 * 
+	 * Previous description: <br>
+	 * true if the generator is unable to accept new generation requests. <br>
+	 * 
 	 * @since API 1.0.0
+	 * @deprecated API 3.0.0
 	 */
-	boolean isBusy();
+	@Deprecated
+	default boolean isBusy() { return false; }
 	
 	/** 
 	 * Only used if {@link #getReturnType()} returns {@link EDhApiWorldGeneratorReturnType#API_CHUNKS}. <Br> 

@@ -55,6 +55,16 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	private static final IWrapperFactory WRAPPER_FACTORY = SingletonInjector.INSTANCE.get(IWrapperFactory.class);
 	
+	/**
+	 * Defines how many tasks can be queued per thread. <br><br>
+	 *
+	 * TODO the multiplier here should change dynamically based on how fast the generator is vs the queuing thread,
+	 *  if this is too high it may cause issues when moving,
+	 *  but if it is too low the generator threads won't have enough tasks to work on
+	 */
+	private static final int MAX_QUEUED_TASKS_PER_THREAD = 3;
+	
+	
 	private final IDhApiWorldGenerator generator;
 	
 	/** contains the positions that need to be generated */
@@ -206,7 +216,7 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 					
 					// queue generation tasks until the generator is full, or there are no more tasks to generate
 					boolean taskStarted = true;
-					while (!this.generator.isBusy() && taskStarted)
+					while (!this.isGeneratorBusy() && taskStarted)
 					{
 						taskStarted = this.startNextWorldGenTask(this.generationTargetPos);
 						if (!taskStarted)
@@ -232,6 +242,19 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 				this.generationQueueRunning = false;
 			}
 		});
+	}
+	public boolean isGeneratorBusy()
+	{
+		ThreadPoolExecutor executor = ThreadPoolUtil.getWorldGenExecutor();
+		if (executor == null)
+		{
+			// shouldn't happen, but just in case, don't queue more tasks
+			return true;
+		}
+		
+		int worldGenThreadCount = Math.max(Config.Client.Advanced.MultiThreading.numberOfWorldGenerationThreads.get(), 1);
+		int maxWorldGenTaskCount = worldGenThreadCount * MAX_QUEUED_TASKS_PER_THREAD;
+		return executor.getQueue().size() > maxWorldGenTaskCount;
 	}
 	
 	/**
