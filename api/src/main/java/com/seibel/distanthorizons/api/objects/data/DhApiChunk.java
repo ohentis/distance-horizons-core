@@ -116,32 +116,19 @@ public class DhApiChunk
 	 */
 	public void setDataPoints(int relX, int relZ, List<DhApiTerrainDataPoint> dataPoints) throws IndexOutOfBoundsException, IllegalArgumentException
 	{
-		//================//
-		// validate input //
-		//================//
+		//==================//
+		// basic validation //
+		//==================//
+		
+		// heavier validation is done in the world generator if requested
 		
 		int internalArrayIndex = (relZ << 4) | relX;
 		throwIfRelativePosOutOfBounds(relX, relZ);
 		
-		// ignore empty inputs
 		if (dataPoints == null)
 		{
-			return;
-		}
-		
-		// check that each datapoint is valid
-		for (int i = 0; i < dataPoints.size(); i++) // standard for-loop used instead of an enhanced for-loop to slightly reduce GC overhead due to iterator allocation
-		{
-			DhApiTerrainDataPoint dataPoint = dataPoints.get(i);
-			if (dataPoint == null)
-			{
-				throw new IllegalArgumentException("Null DhApiTerrainDataPoints are not allowed. If you want to represent empty terrain, please use AIR.");
-			}
-			
-			if (dataPoint.detailLevel != 0)
-			{
-				throw new IllegalArgumentException("DhApiTerrainDataPoints has the wrong detail level ["+dataPoint.detailLevel+"], all data points must be block sized; IE their detail level must be [0].");
-			}
+			// we don't allow null columns
+			throw new IllegalArgumentException("Null columns aren't allowed. If you want to remove all data from a column please clear the list or pass in an empty list.");
 		}
 		
 		
@@ -150,20 +137,13 @@ public class DhApiChunk
 		// set datapoints //
 		//================//
 		
-		// order doesn't need to be checked if there is 0 or 1 items
-		if (dataPoints.size() > 1)
+		List<DhApiTerrainDataPoint> column = this.dataPoints.get(internalArrayIndex);
+		if (column == null)
 		{
-			// DH expects datapoints to be in a top-down order
-			DhApiTerrainDataPoint first = dataPoints.get(0);
-			DhApiTerrainDataPoint last = dataPoints.get(dataPoints.size() - 1);
-			if (first.bottomYBlockPos < last.bottomYBlockPos)
-			{
-				// flip the array if it's in bottom-up order
-				Collections.reverse(dataPoints);
-			}
+			column = new ArrayList<>();
+			this.dataPoints.set(internalArrayIndex, column);
 		}
-		
-		this.dataPoints.set(internalArrayIndex, dataPoints); 
+		column.addAll(dataPoints); 
 	}
 	
 	

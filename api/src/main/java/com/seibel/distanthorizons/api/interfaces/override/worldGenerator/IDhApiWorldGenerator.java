@@ -96,6 +96,18 @@ public interface IDhApiWorldGenerator extends Closeable, IDhApiOverrideable
 	 */
 	boolean isBusy();
 	
+	/** 
+	 * Only used if {@link #getReturnType()} returns {@link EDhApiWorldGeneratorReturnType#API_CHUNKS}. <Br> 
+	 * If true DH will run additional validation on the {@link DhApiChunk}'s returned. <Br>
+	 * This should be disabled during release but should be enabled during development to help spot issues with your data format.
+	 * 
+	 * @see #getReturnType()
+	 * @see DhApiChunk
+	 * @see EDhApiWorldGeneratorReturnType#API_CHUNKS
+	 * @since API 3.0.0
+	 */
+	default boolean runApiChunkValidation() { return true; }
+	
 	
 	
 	

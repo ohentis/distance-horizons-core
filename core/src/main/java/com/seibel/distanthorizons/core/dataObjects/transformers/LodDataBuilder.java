@@ -19,6 +19,7 @@
 
 package com.seibel.distanthorizons.core.dataObjects.transformers;
 
+import java.util.Collections;
 import java.util.List;
 
 import com.seibel.distanthorizons.api.enums.config.EDhApiWorldCompressionMode;
@@ -34,6 +35,7 @@ import com.seibel.distanthorizons.core.pos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.util.FullDataPointUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
+import com.seibel.distanthorizons.core.util.RenderDataPointUtil;
 import com.seibel.distanthorizons.core.util.objects.DataCorruptedException;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
@@ -295,7 +297,7 @@ public class LodDataBuilder
 	
 	
 	/** @throws ClassCastException if an API user returns the wrong object type(s) */
-	public static FullDataSourceV2 createFromApiChunkData(DhApiChunk apiChunk) throws ClassCastException, DataCorruptedException
+	public static FullDataSourceV2 createFromApiChunkData(DhApiChunk apiChunk, boolean runAdditionalValidation) throws ClassCastException, DataCorruptedException, IllegalArgumentException
 	{
 		// get the section position
 		int sectionPosX = getXOrZSectionPosFromChunkPos(apiChunk.chunkPosX);
@@ -312,6 +314,10 @@ public class LodDataBuilder
 			for (int relBlockX = 0; relBlockX < LodUtil.CHUNK_WIDTH; relBlockX++)
 			{
 				List<DhApiTerrainDataPoint> columnDataPoints = apiChunk.getDataPoints(relBlockX, relBlockZ);
+				if (runAdditionalValidation)
+				{
+					validateOrThrowDataColumn(columnDataPoints);
+				}
 				
 				
 				// this null check does 2 nice things at the same time:
@@ -352,6 +358,75 @@ public class LodDataBuilder
 		}
 		return dataSource;
 	}
+	private static void validateOrThrowDataColumn(List<DhApiTerrainDataPoint> dataPoints) throws IllegalArgumentException
+	{
+		// order doesn't need to be checked if there is 0 or 1 items
+		if (dataPoints.size() > 1)
+		{
+			// DH expects datapoints to be in a top-down order
+			DhApiTerrainDataPoint first = dataPoints.get(0);
+			DhApiTerrainDataPoint last = dataPoints.get(dataPoints.size() - 1);
+			if (first.bottomYBlockPos < last.bottomYBlockPos)
+			{
+				// flip the array if it's in bottom-up order
+				Collections.reverse(dataPoints);
+			}
+			
+		}
+		
+		
+		
+		// check that each datapoint is valid
+		int lastBottomYPos = Integer.MIN_VALUE;
+		for (int i = 0; i < dataPoints.size(); i++) // standard for-loop used instead of an enhanced for-loop to slightly reduce GC overhead due to iterator allocation
+		{
+			DhApiTerrainDataPoint dataPoint = dataPoints.get(i);
+			
+			if (dataPoint == null)
+			{
+				throw new IllegalArgumentException("Datapoint: ["+i+"] is null DhApiTerrainDataPoints are not allowed. If you want to represent empty terrain, please use AIR.");
+			}
+			
+			if (dataPoint.detailLevel != 0)
+			{
+				throw new IllegalArgumentException("Datapoint: ["+i+"] has the wrong detail level ["+dataPoint.detailLevel+"], all data points must be block sized; IE their detail level must be [0].");
+			}
+			
+			
+			
+			int bottomYPos = dataPoint.bottomYBlockPos;
+			int topYPos = dataPoint.topYBlockPos;
+			int height = (dataPoint.topYBlockPos - dataPoint.bottomYBlockPos);
+			
+			// is the datapoint right side up?
+			if (bottomYPos > topYPos)
+			{
+				throw new IllegalArgumentException("Datapoint: ["+i+"] is upside down. Top Pos: ["+topYPos+"], bottom pos: ["+bottomYPos+"].");
+			}
+			// valid height?
+			if (height <= 0 || height >= RenderDataPointUtil.MAX_WORLD_Y_SIZE)
+			{
+				throw new IllegalArgumentException("Datapoint: ["+i+"] has invalid height. Height must be in the range [1 - "+RenderDataPointUtil.MAX_WORLD_Y_SIZE+"] (inclusive).");
+			}
+			
+			// is this datapoint overlapping the last one?
+			if (lastBottomYPos > topYPos)
+			{
+				throw new IllegalArgumentException("DhApiTerrainDataPoint ["+i+"] is overlapping with the last datapoint, this top Y: ["+topYPos+"], lastBottomYPos: ["+lastBottomYPos+"].");
+			}
+			// is there a gap between the last datapoint?
+			if (topYPos != lastBottomYPos
+				&& lastBottomYPos != Integer.MIN_VALUE)
+			{
+				throw new IllegalArgumentException("DhApiTerrainDataPoint ["+i+"] has a gap between it and index ["+(i-1)+"]. Empty spaces should be filled by air, otherwise DH's downsampling won't calculate lighting correctly.");
+			}
+			
+			
+			lastBottomYPos = bottomYPos; 
+		}
+		
+	}
+	
 	
 	
 	

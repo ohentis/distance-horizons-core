@@ -469,10 +469,10 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 					{
 						try
 						{
-							FullDataSourceV2 dataSource = LodDataBuilder.createFromApiChunkData(dataPoints);
+							FullDataSourceV2 dataSource = LodDataBuilder.createFromApiChunkData(dataPoints, this.generator.runApiChunkValidation());
 							chunkDataConsumer.accept(dataSource);
 						}
-						catch (DataCorruptedException e)
+						catch (DataCorruptedException | IllegalArgumentException e)
 						{
 							LOGGER.error("World generator returned a corrupt chunk. Error: [" + e.getMessage() + "]. World generator disabled.", e);
 							Config.Client.Advanced.WorldGenerator.enableDistantGeneration.set(false);
