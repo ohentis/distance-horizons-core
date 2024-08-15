@@ -19,40 +19,40 @@
 
 package com.seibel.distanthorizons.core.level;
 
+import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.file.fullDatafile.FullDataSourceProviderV2;
-import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
-import com.seibel.distanthorizons.core.multiplayer.server.ServerPlayerState;
+import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
+import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.multiplayer.server.RemotePlayerConnectionHandler;
+import com.seibel.distanthorizons.core.multiplayer.server.ServerPlayerState;
 import com.seibel.distanthorizons.core.network.exceptions.InvalidLevelException;
 import com.seibel.distanthorizons.core.network.exceptions.RequestRejectedException;
 import com.seibel.distanthorizons.core.network.messages.ILevelRelatedMessage;
-import com.seibel.distanthorizons.core.network.messages.fullData.FullDataPayload;
-import com.seibel.distanthorizons.core.network.messages.requests.CancelMessage;
-import com.seibel.distanthorizons.core.network.messages.fullData.FullDataSourceRequestMessage;
-import com.seibel.distanthorizons.core.network.messages.fullData.FullDataSourceResponseMessage;
-import com.seibel.distanthorizons.core.network.messages.fullData.FullDataPartialUpdateMessage;
 import com.seibel.distanthorizons.core.network.messages.NetworkMessage;
 import com.seibel.distanthorizons.core.network.messages.TrackableMessage;
+import com.seibel.distanthorizons.core.network.messages.fullData.FullDataPartialUpdateMessage;
+import com.seibel.distanthorizons.core.network.messages.fullData.FullDataPayload;
+import com.seibel.distanthorizons.core.network.messages.fullData.FullDataSourceRequestMessage;
+import com.seibel.distanthorizons.core.network.messages.fullData.FullDataSourceResponseMessage;
+import com.seibel.distanthorizons.core.network.messages.requests.CancelMessage;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
-import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
-import com.seibel.distanthorizons.core.util.LodUtil;
-import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
-import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import com.seibel.distanthorizons.core.render.RenderBufferHandler;
 import com.seibel.distanthorizons.core.render.renderer.generic.GenericObjectRenderer;
+import com.seibel.distanthorizons.core.util.LodUtil;
+import com.seibel.distanthorizons.core.util.math.Vec3d;
+import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
+import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
-import com.seibel.distanthorizons.core.util.math.Vec3d;
+import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.annotation.CheckForNull;
 import java.text.MessageFormat;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-
-import javax.annotation.CheckForNull;
 import java.util.Map;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
@@ -60,6 +60,9 @@ import java.util.function.Consumer;
 public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	private static final ConfigBasedLogger NETWORK_LOGGER = new ConfigBasedLogger(LogManager.getLogger(),
+			() -> Config.Client.Advanced.Logging.logNetworkEvent.get());
+	
 	public static final int FULL_DATA_CHUNK_SIZE = 1048000; // 576 bytes left for other contents
 	
 	public final ServerLevelModule serverside;
@@ -125,6 +128,7 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 					{
 						DataSourceRequestGroup newGroup = new DataSourceRequestGroup();
 						this.tryFulfillDataSourceRequestGroup(newGroup, pos);
+						NETWORK_LOGGER.debug("[{}] Created request group for pos {}", this.serverLevelWrapper.getDimensionName(), pos);
 						return newGroup;
 					});
 					
@@ -201,6 +205,7 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 				FullDataSourceRequestMessage requestMessage = requestGroup.requestMessages.remove(msg.futureId);
 				if (requestGroup.requestMessages.isEmpty())
 				{
+					NETWORK_LOGGER.debug("[{}] Cancelled request group {}", this.serverLevelWrapper.getDimensionName(), requestMessage.sectionPos);
 					this.requestGroupsByPos.remove(requestMessage.sectionPos);
 					this.serverside.fullDataFileHandler.removeRetrievalRequestIf(pos -> pos == requestMessage.sectionPos);
 				}
@@ -248,15 +253,14 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 		};
 	}
 	
-	public void addPlayer(IServerPlayerWrapper serverPlayer)
-	{
-		this.worldGenPlayerCenteringQueue.add(serverPlayer);
-	}
-	
 	//=========//
 	// methods //
 	//=========//
 	
+	public void addPlayer(IServerPlayerWrapper serverPlayer)
+	{
+		this.worldGenPlayerCenteringQueue.add(serverPlayer);
+	}
 	public void removePlayer(IServerPlayerWrapper serverPlayer)
 	{
 		this.worldGenPlayerCenteringQueue.remove(serverPlayer);
@@ -274,6 +278,8 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 			{
 				continue;
 			}
+			
+			NETWORK_LOGGER.debug("[{}] Fulfilled request group {}", this.serverLevelWrapper.getDimensionName(), entry.getKey());
 			
 			// Make this group unavailable for adding into
 			this.requestGroupsByPos.remove(entry.getKey());
