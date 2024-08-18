@@ -145,20 +145,7 @@ public class SharedApi
 	
 	/** handles both block place and break events */
 	public void chunkBlockChangedEvent(IChunkWrapper chunk, ILevelWrapper level) { this.applyChunkUpdate(chunk, level, true); }
-	
 	public void chunkLoadEvent(IChunkWrapper chunk, ILevelWrapper level) { this.applyChunkUpdate(chunk, level, false); }
-	public void chunkUnloadEvent(IChunkWrapper chunk, ILevelWrapper level) 
-	{
-		// temporarily disabled since this was originally incorrectly designated as "chunkSaveEvent"
-		// but didn't actually fire on chunk save
-		// and generally this is unnecessary and drastically reduces LOD building performance
-		// when traveling around the world
-		if (false)
-		{
-			this.applyChunkUpdate(chunk, level, false);
-		}
-	}
-	
 	
 	public void applyChunkUpdate(IChunkWrapper chunkWrapper, ILevelWrapper level, boolean updateNeighborChunks)
 	{
