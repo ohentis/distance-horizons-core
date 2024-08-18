@@ -94,6 +94,12 @@ public class FogApplyShader extends AbstractShaderRenderer
 		GL32.glBlendEquation(GL32.GL_FUNC_ADD);
 		GL32.glBlendFuncSeparate(GL32.GL_SRC_ALPHA, GL32.GL_ONE_MINUS_SRC_ALPHA, GL32.GL_ONE, GL32.GL_ONE_MINUS_SRC_ALPHA);
 		
+		// Depth testing must be disabled otherwise this application shader won't apply anything.
+		// setting this isn't necessary in vanilla, but some mods may change this, requiring it to be set manually, 
+		// it should be automatically restored after rendering is complete.
+		GL32.glDisable(GL32.GL_DEPTH_TEST);
+		
+		
 		// apply the rendered Fog to DH's framebuffer
 		GL32.glBindFramebuffer(GL32.GL_READ_FRAMEBUFFER, FogShader.INSTANCE.frameBuffer);
 		GL32.glBindFramebuffer(GL32.GL_DRAW_FRAMEBUFFER, LodRenderer.getActiveFramebufferId());
