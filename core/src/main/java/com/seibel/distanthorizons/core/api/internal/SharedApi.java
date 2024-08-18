@@ -142,6 +142,9 @@ public class SharedApi
 	public static boolean isChunkAtBlockPosAlreadyUpdating(int blockPosX, int blockPosZ)
 	{ return UPDATING_CHUNK_POS_SET.contains(new DhChunkPos(new DhBlockPos2D(blockPosX, blockPosZ))); }
 	
+	public static boolean isChunkAtChunkPosAlreadyUpdating(int chunkPosX, int chunkPosZ)
+	{ return UPDATING_CHUNK_POS_SET.contains(new DhChunkPos(chunkPosX, chunkPosZ)); }
+	
 	
 	/** handles both block place and break events */
 	public void chunkBlockChangedEvent(IChunkWrapper chunk, ILevelWrapper level) { this.applyChunkUpdate(chunk, level, true); }
