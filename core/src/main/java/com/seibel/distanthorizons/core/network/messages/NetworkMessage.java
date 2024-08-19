@@ -15,9 +15,9 @@ public abstract class NetworkMessage implements INetworkObject
 		return this.session;
 	}
 	
-	public void setSession(Session connection)
+	public void setSession(Session session)
 	{
-		this.session = connection;
+		this.session = session;
 	}
 	
 	
