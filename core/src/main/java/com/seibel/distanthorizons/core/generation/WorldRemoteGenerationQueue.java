@@ -45,11 +45,6 @@ public class WorldRemoteGenerationQueue extends AbstractFullDataRequestQueue imp
 		return LodUtil.BLOCK_DETAIL_LEVEL;
 	}
 	
-	@Override
-	protected double getPriorityDistanceRatio()
-	{
-		return Config.Client.Advanced.Multiplayer.ServerNetworking.genTaskPriorityDistanceRatio.get();
-	}
 	
 	@Override
 	public CompletableFuture<WorldGenResult> submitGenTask(long sectionPos, byte requiredDataDetail, IWorldGenTaskTracker tracker)

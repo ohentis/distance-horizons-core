@@ -14,7 +14,6 @@ public class MultiplayerConfigChangeListener implements Closeable
 			Config.Client.Advanced.Graphics.Quality.lodChunkRenderDistanceRadius,
 			Config.Client.Advanced.WorldGenerator.enableDistantGeneration,
 			Config.Client.Advanced.Multiplayer.ServerNetworking.generationRequestRCLimit,
-			Config.Client.Advanced.Multiplayer.ServerNetworking.genTaskPriorityRequestRateLimit,
 			Config.Client.Advanced.Multiplayer.ServerNetworking.enableRealTimeUpdates,
 			Config.Client.Advanced.Multiplayer.ServerNetworking.enableLoginDataSync,
 			Config.Client.Advanced.Multiplayer.ServerNetworking.loginDataSyncRCLimit,
