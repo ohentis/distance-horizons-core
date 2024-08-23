@@ -125,6 +125,12 @@ public class SSAOApplyShader extends AbstractShaderRenderer
 		GL32.glBlendEquation(GL32.GL_FUNC_ADD);
 		GL32.glBlendFuncSeparate(GL32.GL_ZERO, GL32.GL_SRC_ALPHA, GL32.GL_ZERO, GL32.GL_ONE);
 		
+		// Depth testing must be disabled otherwise this application shader won't apply anything.
+		// setting this isn't necessary in vanilla, but some mods may change this, requiring it to be set manually, 
+		// it should be automatically restored after rendering is complete.
+		GL32.glDisable(GL32.GL_DEPTH_TEST);
+		
+		
 		// apply the rendered SSAO to the LODs 
 		GL32.glBindFramebuffer(GL32.GL_READ_FRAMEBUFFER, SSAOShader.INSTANCE.frameBuffer);
 		GL32.glBindFramebuffer(GL32.GL_DRAW_FRAMEBUFFER, LodRenderer.getActiveFramebufferId());

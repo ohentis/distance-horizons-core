@@ -147,23 +147,13 @@ public class SharedApi
 	public static boolean isChunkAtBlockPosAlreadyUpdating(int blockPosX, int blockPosZ)
 	{ return UPDATING_CHUNK_POS_SET.contains(new DhChunkPos(new DhBlockPos2D(blockPosX, blockPosZ))); }
 	
+	public static boolean isChunkAtChunkPosAlreadyUpdating(int chunkPosX, int chunkPosZ)
+	{ return UPDATING_CHUNK_POS_SET.contains(new DhChunkPos(chunkPosX, chunkPosZ)); }
+	
 	
 	/** handles both block place and break events */
 	public void chunkBlockChangedEvent(IChunkWrapper chunk, ILevelWrapper level) { this.applyChunkUpdate(chunk, level, true); }
-	
 	public void chunkLoadEvent(IChunkWrapper chunk, ILevelWrapper level) { this.applyChunkUpdate(chunk, level, false); }
-	public void chunkUnloadEvent(IChunkWrapper chunk, ILevelWrapper level) 
-	{
-		// temporarily disabled since this was originally incorrectly designated as "chunkSaveEvent"
-		// but didn't actually fire on chunk save
-		// and generally this is unnecessary and drastically reduces LOD building performance
-		// when traveling around the world
-		if (false)
-		{
-			this.applyChunkUpdate(chunk, level, false);
-		}
-	}
-	
 	
 	public void applyChunkUpdate(IChunkWrapper chunkWrapper, ILevelWrapper level, boolean updateNeighborChunks)
 	{

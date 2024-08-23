@@ -47,15 +47,6 @@ public class BatchGenerator implements IDhApiWorldGenerator
 	private static final IWrapperFactory FACTORY = SingletonInjector.INSTANCE.get(IWrapperFactory.class);
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
-	/**
-	 * Defines how many tasks can be queued per thread. <br><br>
-	 *
-	 * TODO the multiplier here should change dynamically based on how fast the generator is vs the queuing thread,
-	 *  if this is too high it may cause issues when moving,
-	 *  but if it is too low the generator threads won't have enough tasks to work on
-	 */
-	private static final int MAX_QUEUED_TASKS_PER_THREAD = 3;
-	
 	public AbstractBatchGenerationEnvironmentWrapper generationEnvironment;
 	public IDhLevel targetDhLevel;
 	
@@ -146,14 +137,6 @@ public class BatchGenerator implements IDhApiWorldGenerator
 	
 	@Override
 	public void preGeneratorTaskStart() { this.generationEnvironment.updateAllFutures(); }
-	
-	@Override
-	public boolean isBusy()
-	{
-		int worldGenThreadCount = Math.max(Config.Client.Advanced.MultiThreading.numberOfWorldGenerationThreads.get(), 1);
-		int maxWorldGenTaskCount = worldGenThreadCount * MAX_QUEUED_TASKS_PER_THREAD;
-		return this.generationEnvironment.getEventCount() > maxWorldGenTaskCount;
-	}
 	
 	
 	
