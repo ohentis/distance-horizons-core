@@ -159,6 +159,7 @@ public class ThreadPoolUtil
 		fileHandlerThreadPool.shutdownExecutorService();
 		updatePropagatorThreadPool.shutdownExecutorService();
 		worldGenThreadPool.shutdownExecutorService();
+		networkCompressionThreadPool.shutdownExecutorService();
 		bufferUploaderThreadPool.shutdown();
 		cleanupThreadPool.shutdown();
 		
