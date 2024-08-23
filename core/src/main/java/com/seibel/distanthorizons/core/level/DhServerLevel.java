@@ -294,22 +294,20 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 			}
 			CompletableFuture.runAsync(() ->
 			{
-				try (FullDataPayload payload = new FullDataPayload(requestGroup.fullDataSource))
+				FullDataPayload payload = new FullDataPayload(requestGroup.fullDataSource);
+				for (FullDataSourceRequestMessage msg : requestGroup.requestMessages.values())
 				{
-					for (FullDataSourceRequestMessage msg : requestGroup.requestMessages.values())
+					this.requestGroupsByFutureId.remove(msg.futureId);
+					
+					ServerPlayerState serverPlayerState = this.remotePlayerConnectionHandler.getConnectedPlayer(msg.serverPlayer());
+					if (serverPlayerState == null)
 					{
-						this.requestGroupsByFutureId.remove(msg.futureId);
-						
-						ServerPlayerState serverPlayerState = this.remotePlayerConnectionHandler.getConnectedPlayer(msg.serverPlayer());
-						if (serverPlayerState == null)
-						{
-							continue;
-						}
-						
-						serverPlayerState.getRateLimiterSet(this).fullDataRequestConcurrencyLimiter.release();
-						payload.acceptInChunkMessages(FULL_DATA_CHUNK_SIZE, msg.getSession()::sendMessage);
-						msg.sendResponse(new FullDataSourceResponseMessage(payload.retain()));
+						continue;
 					}
+					
+					serverPlayerState.getRateLimiterSet(this).fullDataRequestConcurrencyLimiter.release();
+					payload.acceptInChunkMessages(FULL_DATA_CHUNK_SIZE, msg.getSession()::sendMessage);
+					msg.sendResponse(new FullDataSourceResponseMessage(payload));
 				}
 			}, executor);
 		}
@@ -331,28 +329,26 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 		}
 		CompletableFuture.runAsync(() ->
 		{
-			try (FullDataPayload payload = new FullDataPayload(data))
+			FullDataPayload payload = new FullDataPayload(data);
+			for (ServerPlayerState serverPlayerState : this.remotePlayerConnectionHandler.getConnectedPlayers())
 			{
-				for (ServerPlayerState serverPlayerState : this.remotePlayerConnectionHandler.getConnectedPlayers())
+				if (serverPlayerState.serverPlayer().getLevel() != this.serverLevelWrapper)
 				{
-					if (serverPlayerState.serverPlayer().getLevel() != this.serverLevelWrapper)
-					{
-						continue;
-					}
-					
-					if (!serverPlayerState.config.isRealTimeUpdatesEnabled())
-					{
-						continue;
-					}
-					
-					Vec3d playerPosition = serverPlayerState.serverPlayer().getPosition();
-					int distanceFromPlayer = DhSectionPos.getManhattanBlockDistance(data.getPos(), new DhBlockPos2D((int) playerPosition.x, (int) playerPosition.z)) / 16;
-					if (distanceFromPlayer >= serverPlayerState.serverPlayer().getViewDistance() &&
-							distanceFromPlayer <= serverPlayerState.config.getRenderDistanceRadius())
-					{
-						payload.acceptInChunkMessages(FULL_DATA_CHUNK_SIZE, serverPlayerState.session::sendMessage);
-						serverPlayerState.session.sendMessage(new FullDataPartialUpdateMessage(this.serverLevelWrapper, payload.retain()));
-					}
+					continue;
+				}
+				
+				if (!serverPlayerState.config.isRealTimeUpdatesEnabled())
+				{
+					continue;
+				}
+				
+				Vec3d playerPosition = serverPlayerState.serverPlayer().getPosition();
+				int distanceFromPlayer = DhSectionPos.getManhattanBlockDistance(data.getPos(), new DhBlockPos2D((int) playerPosition.x, (int) playerPosition.z)) / 16;
+				if (distanceFromPlayer >= serverPlayerState.serverPlayer().getViewDistance() &&
+						distanceFromPlayer <= serverPlayerState.config.getRenderDistanceRadius())
+				{
+					payload.acceptInChunkMessages(FULL_DATA_CHUNK_SIZE, serverPlayerState.session::sendMessage);
+					serverPlayerState.session.sendMessage(new FullDataPartialUpdateMessage(this.serverLevelWrapper, payload));
 				}
 			}
 		}, executor);

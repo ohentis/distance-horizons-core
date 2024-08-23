@@ -75,7 +75,7 @@ public interface INetworkObject
 	default String readString(ByteBuf inputByteBuf)
 	{
 		int length = inputByteBuf.readUnsignedShort();
-		return inputByteBuf.readBytes(length).toString(StandardCharsets.UTF_8);
+		return inputByteBuf.readSlice(length).toString(StandardCharsets.UTF_8);
 	}
 	
 	default <T> void writeCollection(ByteBuf outputByteBuf, Collection<T> collection)

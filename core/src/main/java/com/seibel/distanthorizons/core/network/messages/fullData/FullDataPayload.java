@@ -6,20 +6,25 @@ import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.network.INetworkObject;
 import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV2DTO;
+import com.seibel.distanthorizons.core.util.TimerUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.util.Objects;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 
-public class FullDataPayload implements INetworkObject, Closeable
+public class FullDataPayload implements INetworkObject
 {
 	private static final AtomicInteger lastBufferId = new AtomicInteger();
+	
+	// Reference counting is unreliable here for some reason so this is a "fix"
+	private static final Timer bufferCleanupTimer = TimerUtil.CreateTimer("FullDataBufferCleanupTimer");
 	
 	public int dtoBufferId;
 	public ByteBuf dtoBuffer;
@@ -39,6 +44,15 @@ public class FullDataPayload implements INetworkObject, Closeable
 			
 			this.dtoBuffer = ByteBufAllocator.DEFAULT.buffer();
 			dataSourceDto.encode(this.dtoBuffer);
+			
+			bufferCleanupTimer.schedule(new TimerTask()
+			{
+				@Override
+				public void run()
+				{
+					FullDataPayload.this.dtoBuffer.release();
+				}
+			}, 5000L);
 		}
 		catch (IOException e)
 		{
@@ -64,24 +78,11 @@ public class FullDataPayload implements INetworkObject, Closeable
 		}
 	}
 	
-
-	public FullDataPayload retain()
-	{
-		this.dtoBuffer.retain();
-		return this;
-	}
-	
-	@Override public void close()
-	{
-		this.dtoBuffer.release();
-	}
-	
 	
 	@Override
 	public void encode(ByteBuf out)
 	{
 		out.writeInt(this.dtoBufferId);
-		this.dtoBuffer.release();
 	}
 	
 	@Override
