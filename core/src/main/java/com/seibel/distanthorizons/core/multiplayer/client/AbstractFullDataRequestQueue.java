@@ -54,7 +54,7 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 	private final AtomicInteger failedRequests = new AtomicInteger();
 	private final ConfigEntry<Boolean> showDebugWireframeConfig;
 	
-	private final SupplierBasedRateLimiter<Void> rateLimiter = new SupplierBasedRateLimiter<>(this::getRequestConcurrencyLimit);
+	private final SupplierBasedRateLimiter<Void> rateLimiter = new SupplierBasedRateLimiter<>(this::getRequestRateLimit);
 	
 	private final ScheduledExecutorService taskFinishScheduler = Executors.newScheduledThreadPool(1);
 	
@@ -62,7 +62,7 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
 	protected boolean showInDebug() { return true; }
 	
-	protected abstract int getRequestConcurrencyLimit();
+	protected abstract int getRequestRateLimit();
 	
 	protected abstract String getQueueName();
 	
@@ -104,7 +104,7 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 		}
 		
 		while (this.getWaitingTaskCount() > this.getInProgressTaskCount()
-				&& this.getInProgressTaskCount() < this.getRequestConcurrencyLimit()
+				&& this.getInProgressTaskCount() < this.getRequestRateLimit()
 				&& this.pendingTasksSemaphore.tryAcquire())
 		{
 			if (!this.rateLimiter.tryAcquire())
@@ -244,7 +244,7 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 		}
 		
 		messageList.add(this.getQueueName() + " [" + this.level.getClientLevelWrapper().getDimensionName() + "]");
-		messageList.add("Requests: " + this.finishedRequests + " / " + (this.getWaitingTaskCount() + this.finishedRequests.get()) + " (failed: " + this.failedRequests + ", rate limit: " + this.getRequestConcurrencyLimit() + ")");
+		messageList.add("Requests: " + this.finishedRequests + " / " + (this.getWaitingTaskCount() + this.finishedRequests.get()) + " (failed: " + this.failedRequests + ", rate limit: " + this.getRequestRateLimit() + ")");
 	}
 	
 	

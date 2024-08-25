@@ -13,17 +13,17 @@ public class MultiplayerConfig extends AbstractMultiplayerConfig
 	public boolean distantGenerationEnabled = Config.Client.Advanced.WorldGenerator.enableDistantGeneration.get();
 	@Override public boolean isDistantGenerationEnabled() { return this.distantGenerationEnabled; }
 	
-	public int fullDataRequestConcurrencyLimit = Config.Client.Advanced.Multiplayer.ServerNetworking.generationRequestRCLimit.get();
-	@Override public int getFullDataRequestConcurrencyLimit() { return this.fullDataRequestConcurrencyLimit; }
+	public int generationRequestRateLimit = Config.Client.Advanced.Multiplayer.ServerNetworking.generationRequestRateLimit.get();
+	@Override public int getGenerationRequestRateLimit() { return this.generationRequestRateLimit; }
 	
 	public boolean realTimeUpdatesEnabled = Config.Client.Advanced.Multiplayer.ServerNetworking.enableRealTimeUpdates.get();
 	@Override public boolean isRealTimeUpdatesEnabled() { return this.realTimeUpdatesEnabled; }
 	
-	public boolean loginDataSyncEnabled = Config.Client.Advanced.Multiplayer.ServerNetworking.enableLoginDataSync.get();
-	@Override public boolean isLoginDataSyncEnabled() { return this.loginDataSyncEnabled; }
+	public boolean synchronizeOnLogin = Config.Client.Advanced.Multiplayer.ServerNetworking.synchronizeOnLogin.get();
+	@Override public boolean getSynchronizeOnLogin() { return this.synchronizeOnLogin; }
 	
-	public int loginDataSyncRCLimit = Config.Client.Advanced.Multiplayer.ServerNetworking.loginDataSyncRCLimit.get();
-	@Override public int getLoginDataSyncRCLimit() { return this.loginDataSyncRCLimit; }
+	public int syncOnLoginRateLimit = Config.Client.Advanced.Multiplayer.ServerNetworking.syncOnLoginRateLimit.get();
+	@Override public int getSyncOnLoginRateLimit() { return this.syncOnLoginRateLimit; }
 	
 	
 	@Override
@@ -31,10 +31,10 @@ public class MultiplayerConfig extends AbstractMultiplayerConfig
 	{
 		this.renderDistanceRadius = in.readInt();
 		this.distantGenerationEnabled = in.readBoolean();
-		this.fullDataRequestConcurrencyLimit = in.readInt();
+		this.generationRequestRateLimit = in.readInt();
 		this.realTimeUpdatesEnabled = in.readBoolean();
-		this.loginDataSyncEnabled = in.readBoolean();
-		this.loginDataSyncRCLimit = in.readInt();
+		this.synchronizeOnLogin = in.readBoolean();
+		this.syncOnLoginRateLimit = in.readInt();
 	}
 	
 }

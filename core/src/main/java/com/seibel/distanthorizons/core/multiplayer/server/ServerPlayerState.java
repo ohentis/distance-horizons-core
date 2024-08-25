@@ -88,17 +88,17 @@ public class ServerPlayerState
 	
 	public class RateLimiterSet
 	{
-		public final SupplierBasedRateAndConcurrencyLimiter<FullDataSourceRequestMessage> fullDataRequestConcurrencyLimiter = new SupplierBasedRateAndConcurrencyLimiter<>(
-				() -> ServerNetworking.generationRequestRCLimit.get(),
+		public final SupplierBasedRateAndConcurrencyLimiter<FullDataSourceRequestMessage> generationRequestRateLimiter = new SupplierBasedRateAndConcurrencyLimiter<>(
+				() -> ServerNetworking.generationRequestRateLimit.get(),
 				msg -> {
-					msg.sendResponse(new RateLimitedException("Full data request rate/concurrency limit: " + ServerPlayerState.this.config.getFullDataRequestConcurrencyLimit()));
+					msg.sendResponse(new RateLimitedException("Full data request rate/concurrency limit: " + ServerPlayerState.this.config.getGenerationRequestRateLimit()));
 				}
 		);
 		
-		public final SupplierBasedRateAndConcurrencyLimiter<FullDataSourceRequestMessage> loginDataSyncRCLimiter = new SupplierBasedRateAndConcurrencyLimiter<>(
-				() -> ServerNetworking.loginDataSyncRCLimit.get(),
+		public final SupplierBasedRateAndConcurrencyLimiter<FullDataSourceRequestMessage> syncOnLoginRateLimiter = new SupplierBasedRateAndConcurrencyLimiter<>(
+				() -> ServerNetworking.syncOnLoginRateLimit.get(),
 				msg -> {
-					msg.sendResponse(new RateLimitedException("Data sync rate/concurrency limit: " + ServerPlayerState.this.config.getLoginDataSyncRCLimit()));
+					msg.sendResponse(new RateLimitedException("Data sync rate/concurrency limit: " + ServerPlayerState.this.config.getSyncOnLoginRateLimit()));
 				}
 		);
 		

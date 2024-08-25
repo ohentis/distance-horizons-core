@@ -8,20 +8,20 @@ public abstract class AbstractMultiplayerConfig implements INetworkObject
 {
 	public abstract int getRenderDistanceRadius();
 	public abstract boolean isDistantGenerationEnabled();
-	public abstract int getFullDataRequestConcurrencyLimit();
+	public abstract int getGenerationRequestRateLimit();
 	public abstract boolean isRealTimeUpdatesEnabled();
-	public abstract boolean isLoginDataSyncEnabled();
-	public abstract int getLoginDataSyncRCLimit();
+	public abstract boolean getSynchronizeOnLogin();
+	public abstract int getSyncOnLoginRateLimit();
 	
 	@Override
 	public void encode(ByteBuf out)
 	{
 		out.writeInt(this.getRenderDistanceRadius());
 		out.writeBoolean(this.isDistantGenerationEnabled());
-		out.writeInt(this.getFullDataRequestConcurrencyLimit());
+		out.writeInt(this.getGenerationRequestRateLimit());
 		out.writeBoolean(this.isRealTimeUpdatesEnabled());
-		out.writeBoolean(this.isLoginDataSyncEnabled());
-		out.writeInt(this.getLoginDataSyncRCLimit());
+		out.writeBoolean(this.getSynchronizeOnLogin());
+		out.writeInt(this.getSyncOnLoginRateLimit());
 	}
 	
 	
@@ -31,10 +31,10 @@ public abstract class AbstractMultiplayerConfig implements INetworkObject
 		return MoreObjects.toStringHelper(this)
 				.add("renderDistanceRadius", this.getRenderDistanceRadius())
 				.add("distantGenerationEnabled", this.isDistantGenerationEnabled())
-				.add("fullDataRequestConcurrencyLimit", this.getFullDataRequestConcurrencyLimit())
+				.add("generationRequestRateLimit", this.getGenerationRequestRateLimit())
 				.add("realTimeUpdatesEnabled", this.isRealTimeUpdatesEnabled())
-				.add("loginDataSyncEnabled", this.isLoginDataSyncEnabled())
-				.add("loginDataSyncRCLimit", this.getLoginDataSyncRCLimit())
+				.add("synchronizeOnLogin", this.getSynchronizeOnLogin())
+				.add("syncOnLoginRateLimit", this.getSyncOnLoginRateLimit())
 				.toString();
 	}
 	

@@ -165,7 +165,7 @@ public class Config
 							.setMinDefaultMax(32, 128, 4096)
 							.comment("" +
 									"The radius of the mod's render distance. (measured in chunks)\n" +
-									"On server changes the distance players will receive real time updates for, if enabled." +
+									"On server changes the distance players will receive real-time updates for, if enabled." +
 									"\n" +
 									"Note for servers:\n" +
 									"This setting does not prevent players from generating farther out.\n" +
@@ -1013,11 +1013,12 @@ public class Config
 					
 					
 					public static ConfigUIComment generationSectionNote = new ConfigUIComment();
-					public static ConfigEntry<Integer> generationRequestRCLimit = new ConfigEntry.Builder<Integer>()
-							.setServersideShortName("generationRequestRCLimit")
+					public static ConfigEntry<Integer> generationRequestRateLimit = new ConfigEntry.Builder<Integer>()
+							.setServersideShortName("generationRequestRateLimit")
 							.setMinDefaultMax(1, 20, 100)
 							.comment(""
-									+ "Limits the amount of generation requests the server will handle."
+									+ "How many LOD generation requests per second should a client send? \n"
+									+ "Also limits the amount of player's requests allowed to stay in the server's queue."
 									+ "")
 							.build();
 					
@@ -1032,20 +1033,21 @@ public class Config
 							.build();
 					
 					
-					public static ConfigUIComment loginDataSyncSectionNote = new ConfigUIComment();
-					public static ConfigEntry<Boolean> enableLoginDataSync = new ConfigEntry.Builder<Boolean>()
-							.setServersideShortName("enableLoginDataSync")
+					public static ConfigUIComment syncOnLoginSectionNote = new ConfigUIComment();
+					public static ConfigEntry<Boolean> synchronizeOnLogin = new ConfigEntry.Builder<Boolean>()
+							.setServersideShortName("synchronizeOnLogin")
 							.set(false)
 							.comment(""
-									+ "If true, clients will receive updated LODs on join if any changes occured since last join."
+									+ "If true, clients will receive updated LODs on join if any changes occurred since last join."
 									+ "")
 							.build();
 					
-					public static ConfigEntry<Integer> loginDataSyncRCLimit = new ConfigEntry.Builder<Integer>()
-							.setServersideShortName("loginDataSyncRCLimit")
+					public static ConfigEntry<Integer> syncOnLoginRateLimit = new ConfigEntry.Builder<Integer>()
+							.setServersideShortName("syncOnLoginRateLimit")
 							.setMinDefaultMax(1, 50, 100)
 							.comment(""
-									+ "Limits the amount of sent/processed LOD *update* requests concurrently, per player."
+									+ "How many LOD sync requests per second should a client send? \n"
+									+ "Also limits the amount of player's requests allowed to stay in the server's queue."
 									+ "")
 							.build();
 				}

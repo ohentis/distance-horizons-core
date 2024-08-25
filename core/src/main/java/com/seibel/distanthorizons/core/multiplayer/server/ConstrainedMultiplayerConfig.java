@@ -25,9 +25,9 @@ public class ConstrainedMultiplayerConfig extends AbstractMultiplayerConfig
 	}
 	
 	@Override
-	public int getFullDataRequestConcurrencyLimit()
+	public int getGenerationRequestRateLimit()
 	{
-		return Math.min(this.clientConfig.fullDataRequestConcurrencyLimit, Config.Client.Advanced.Multiplayer.ServerNetworking.generationRequestRCLimit.get());
+		return Math.min(this.clientConfig.generationRequestRateLimit, Config.Client.Advanced.Multiplayer.ServerNetworking.generationRequestRateLimit.get());
 	}
 	
 	@Override
@@ -37,15 +37,15 @@ public class ConstrainedMultiplayerConfig extends AbstractMultiplayerConfig
 	}
 	
 	@Override
-	public boolean isLoginDataSyncEnabled()
+	public boolean getSynchronizeOnLogin()
 	{
-		return this.clientConfig.loginDataSyncEnabled && Config.Client.Advanced.Multiplayer.ServerNetworking.enableLoginDataSync.get();
+		return this.clientConfig.synchronizeOnLogin && Config.Client.Advanced.Multiplayer.ServerNetworking.synchronizeOnLogin.get();
 	}
 	
 	@Override
-	public int getLoginDataSyncRCLimit()
+	public int getSyncOnLoginRateLimit()
 	{
-		return Math.min(this.clientConfig.loginDataSyncRCLimit, Config.Client.Advanced.Multiplayer.ServerNetworking.loginDataSyncRCLimit.get());
+		return Math.min(this.clientConfig.syncOnLoginRateLimit, Config.Client.Advanced.Multiplayer.ServerNetworking.syncOnLoginRateLimit.get());
 	}
 	
 	@Override

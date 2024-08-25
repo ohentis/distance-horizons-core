@@ -117,7 +117,7 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 					return;
 				}
 				
-				if (!rateLimiterSet.fullDataRequestConcurrencyLimiter.tryAcquire(msg))
+				if (!rateLimiterSet.generationRequestRateLimiter.tryAcquire(msg))
 				{
 					return;
 				}
@@ -149,13 +149,13 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 			{
 				// Sync only
 				
-				if (!serverPlayerState.config.isLoginDataSyncEnabled())
+				if (!serverPlayerState.config.getSynchronizeOnLogin())
 				{
 					msg.sendResponse(new RequestRejectedException("Operation is disabled from config."));
 					return;
 				}
 				
-				if (!rateLimiterSet.loginDataSyncRCLimiter.tryAcquire(msg))
+				if (!rateLimiterSet.syncOnLoginRateLimiter.tryAcquire(msg))
 				{
 					return;
 				}
@@ -163,7 +163,7 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 				Long serverTimestamp = this.serverside.fullDataFileHandler.getTimestampForPos(msg.sectionPos);
 				if (serverTimestamp == null || serverTimestamp <= msg.clientTimestamp)
 				{
-					rateLimiterSet.loginDataSyncRCLimiter.release();
+					rateLimiterSet.syncOnLoginRateLimiter.release();
 					msg.sendResponse(new FullDataSourceResponseMessage(null));
 					return;
 				}
@@ -176,7 +176,7 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 				}
 				this.serverside.fullDataFileHandler.getAsync(msg.sectionPos).thenAcceptAsync(fullDataSource ->
 				{
-					rateLimiterSet.loginDataSyncRCLimiter.release();
+					rateLimiterSet.syncOnLoginRateLimiter.release();
 					
 					FullDataPayload payload = new FullDataPayload(fullDataSource);
 					payload.acceptInChunkMessages(FULL_DATA_CHUNK_SIZE, msg.getSession()::sendMessage);
@@ -200,7 +200,7 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 				requestGroup.requestAddSemaphore.acquireUninterruptibly(Short.MAX_VALUE);
 				requestGroup.requestRemoveSemaphore.release();
 				
-				serverPlayerState.getRateLimiterSet(this).fullDataRequestConcurrencyLimiter.release();
+				serverPlayerState.getRateLimiterSet(this).generationRequestRateLimiter.release();
 				
 				FullDataSourceRequestMessage requestMessage = requestGroup.requestMessages.remove(msg.futureId);
 				if (requestGroup.requestMessages.isEmpty())
@@ -305,7 +305,7 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 						continue;
 					}
 					
-					serverPlayerState.getRateLimiterSet(this).fullDataRequestConcurrencyLimiter.release();
+					serverPlayerState.getRateLimiterSet(this).generationRequestRateLimiter.release();
 					payload.acceptInChunkMessages(FULL_DATA_CHUNK_SIZE, msg.getSession()::sendMessage);
 					msg.sendResponse(new FullDataSourceResponseMessage(payload));
 				}

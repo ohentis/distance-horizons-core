@@ -12,10 +12,10 @@ public class FullDataRefreshQueue extends AbstractFullDataRequestQueue
 	}
 	
 	@Override
-	protected boolean showInDebug() { return this.networkState.config.loginDataSyncEnabled; }
+	protected boolean showInDebug() { return this.networkState.config.synchronizeOnLogin; }
 	
 	@Override
-	protected int getRequestConcurrencyLimit() { return this.networkState.config.loginDataSyncRCLimit; }
+	protected int getRequestRateLimit() { return this.networkState.config.syncOnLoginRateLimit; }
 	
 	@Override
 	protected String getQueueName() { return "Data Refresh Queue"; }
@@ -23,7 +23,7 @@ public class FullDataRefreshQueue extends AbstractFullDataRequestQueue
 	@Override
 	public boolean tick(DhBlockPos2D targetPos)
 	{
-		if (!this.networkState.config.loginDataSyncEnabled)
+		if (!this.networkState.config.synchronizeOnLogin)
 		{
 			return false;
 		}
