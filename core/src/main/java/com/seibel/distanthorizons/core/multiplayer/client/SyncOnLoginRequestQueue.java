@@ -4,15 +4,12 @@ import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
 
-public class FullDataRefreshQueue extends AbstractFullDataRequestQueue
+public class SyncOnLoginRequestQueue extends AbstractFullDataRequestQueue
 {
-	public FullDataRefreshQueue(IDhClientLevel level, ClientNetworkState networkState)
+	public SyncOnLoginRequestQueue(IDhClientLevel level, ClientNetworkState networkState)
 	{
 		super(networkState, level, true, Config.Client.Advanced.Debugging.DebugWireframe.showWorldGenQueue);
 	}
-	
-	@Override
-	protected boolean showInDebug() { return this.networkState.config.synchronizeOnLogin; }
 	
 	@Override
 	protected int getRequestRateLimit() { return this.networkState.config.syncOnLoginRateLimit; }

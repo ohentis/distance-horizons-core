@@ -30,7 +30,7 @@ import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.generation.WorldRemoteGenerationQueue;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.multiplayer.client.ClientNetworkState;
-import com.seibel.distanthorizons.core.multiplayer.client.FullDataRefreshQueue;
+import com.seibel.distanthorizons.core.multiplayer.client.SyncOnLoginRequestQueue;
 import com.seibel.distanthorizons.core.network.event.ScopedNetworkEventSource;
 import com.seibel.distanthorizons.core.network.messages.fullData.FullDataPartialUpdateMessage;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
@@ -82,7 +82,7 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 	public final AppliedConfigState<Boolean> worldGeneratorEnabledConfig;
 	
 	@Nullable
-	private final FullDataRefreshQueue dataRefreshQueue;
+	private final SyncOnLoginRequestQueue syncOnLoginRequestQueue;
 	
 	
 	
@@ -105,16 +105,16 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 		if (networkState != null)
 		{
 			this.eventSource = new ScopedNetworkEventSource(networkState.getSession());
-			this.dataRefreshQueue = new FullDataRefreshQueue(this, networkState);
+			this.syncOnLoginRequestQueue = new SyncOnLoginRequestQueue(this, networkState);
 			this.registerNetworkHandlers();
 		}
 		else
 		{
 			this.eventSource = null;
-			this.dataRefreshQueue = null;
+			this.syncOnLoginRequestQueue = null;
 		}
 		
-		this.dataFileHandler = new RemoteFullDataSourceProvider(this, saveStructure, fullDataSaveDirOverride, this.dataRefreshQueue);
+		this.dataFileHandler = new RemoteFullDataSourceProvider(this, saveStructure, fullDataSaveDirOverride, this.syncOnLoginRequestQueue);
 		this.worldGeneratorEnabledConfig = new AppliedConfigState<>(Config.Client.Advanced.WorldGenerator.enableDistantGeneration);
 		this.worldGenModule = new WorldGenModule(this);
 		
@@ -166,9 +166,9 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 		{
 			this.clientside.clientTick();
 			
-			if (this.dataRefreshQueue != null)
+			if (this.syncOnLoginRequestQueue != null)
 			{
-				this.dataRefreshQueue.tick(new DhBlockPos2D(MC_CLIENT.getPlayerBlockPos()));
+				this.syncOnLoginRequestQueue.tick(new DhBlockPos2D(MC_CLIENT.getPlayerBlockPos()));
 			}
 		}
 		catch (Exception e)
@@ -286,6 +286,14 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 		
 		// world gen
 		this.worldGenModule.addDebugMenuStringsToList(messageList);
+		if (this.syncOnLoginRequestQueue != null)
+		{
+			assert this.networkState != null;
+			if (this.networkState.config.synchronizeOnLogin)
+			{
+				this.syncOnLoginRequestQueue.addDebugMenuStringsToList(messageList);
+			}
+		}
 	}
 	
 	@Override

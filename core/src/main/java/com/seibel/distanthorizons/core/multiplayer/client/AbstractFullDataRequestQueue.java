@@ -19,6 +19,7 @@ import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
 import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV2DTO;
 import com.seibel.distanthorizons.core.util.LodUtil;
+import com.seibel.distanthorizons.core.util.TimerUtil;
 import com.seibel.distanthorizons.core.util.ratelimiting.SupplierBasedRateLimiter;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import org.apache.logging.log4j.LogManager;
@@ -28,6 +29,8 @@ import javax.annotation.Nullable;
 import java.awt.*;
 import java.util.List;
 import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -38,6 +41,8 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 			() -> Config.Client.Advanced.Logging.logNetworkEvent.get(), 3);
 	
 	private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
+	
+	private static final Timer TASK_FINISH_TIMER = TimerUtil.CreateTimer("RequestTaskFinishTimer");
 	
 	protected static final long SHUTDOWN_TIMEOUT_SECONDS = 5;
 	
@@ -56,17 +61,10 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 	
 	private final SupplierBasedRateLimiter<Void> rateLimiter = new SupplierBasedRateLimiter<>(this::getRequestRateLimit);
 	
-	private final ScheduledExecutorService taskFinishScheduler = Executors.newScheduledThreadPool(1);
-	
-	
-	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
-	protected boolean showInDebug() { return true; }
 	
 	protected abstract int getRequestRateLimit();
 	
 	protected abstract String getQueueName();
-	
-	protected double getPriorityDistanceRatio() { return 1; }
 	
 	
 	public AbstractFullDataRequestQueue(ClientNetworkState networkState, IDhClientLevel level, boolean changedOnly, ConfigEntry<Boolean> showDebugWireframeConfig)
@@ -91,11 +89,6 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 		return entry.future;
 	}
 	
-	protected int posDistanceSquared(DhBlockPos2D targetPos, long pos)
-	{
-		return (int) DhSectionPos.getCenterBlockPos(pos).distSquared(targetPos);
-	}
-	
 	public synchronized boolean tick(DhBlockPos2D targetPos)
 	{
 		if (this.closingFuture != null || !this.networkState.isReady())
@@ -113,7 +106,7 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 				break;
 			}
 			
-			this.sendNewRequest(targetPos);
+			this.sendNewRequest();
 		}
 		
 		return true;
@@ -139,28 +132,11 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 		}
 	}
 	
-	private void sendNewRequest(DhBlockPos2D targetPos)
+	private void sendNewRequest()
 	{
 		Map.Entry<Long, RequestQueueEntry> mapEntry = this.waitingTasks.entrySet().stream()
 				.filter(task -> task.getValue().request == null)
-				.reduce(null, (a, b) -> {
-					if (a == null)
-					{
-						return b;
-					}
-					
-					if (b.getValue().priority < a.getValue().priority)
-					{
-						Map.Entry<Long, RequestQueueEntry> temp = b;
-						b = a;
-						a = temp;
-					}
-					
-					double distanceRatio = Math.sqrt(this.posDistanceSquared(targetPos, b.getKey())) / Math.sqrt(this.posDistanceSquared(targetPos, a.getKey()));
-					double maxDistanceRatioScaled = Math.pow(this.getPriorityDistanceRatio(), b.getValue().priority - a.getValue().priority);
-					
-					return distanceRatio < maxDistanceRatioScaled ? b : a;
-				});
+				.findAny().orElse(null);
 		
 		if (mapEntry == null)
 		{
@@ -199,7 +175,7 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 				}
 				else
 				{
-					LodUtil.assertTrue(this.changedOnly, "Received empty data source response for not changed-only request");
+					LodUtil.assertTrue(this.changedOnly, "Received empty data source response for not changes-only request");
 				}
 			}
 			catch (InvalidLevelException | RequestRejectedException ignored)
@@ -229,20 +205,20 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 			
 			// Hack to work around a race condition
 			// If you finish the request too quickly, the section will never render
-			this.taskFinishScheduler.schedule(() -> {
+			TASK_FINISH_TIMER.schedule(new TimerTask()
+			{
+				@Override
+				public void run()
+				{
 					entry.future.complete(true);
-			}, 10, TimeUnit.SECONDS);
+				}
+			}, 10000);
 			return null;
 		});
 	}
 	
 	public void addDebugMenuStringsToList(List<String> messageList)
 	{
-		if (!this.showInDebug())
-		{
-			return;
-		}
-		
 		messageList.add(this.getQueueName() + " [" + this.level.getClientLevelWrapper().getDimensionName() + "]");
 		messageList.add("Requests: " + this.finishedRequests + " / " + (this.getWaitingTaskCount() + this.finishedRequests.get()) + " (failed: " + this.failedRequests + ", rate limit: " + this.getRequestRateLimit() + ")");
 	}
@@ -287,11 +263,6 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 	@Override
 	public void debugRender(DebugRenderer r)
 	{
-		if (!this.showInDebug())
-		{
-			return;
-		}
-		
 		if (MC_CLIENT.getWrappedClientLevel() != this.level.getClientLevelWrapper())
 		{
 			return;
@@ -300,11 +271,7 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 		for (Map.Entry<Long, RequestQueueEntry> mapEntry : this.waitingTasks.entrySet())
 		{
 			r.renderBox(new DebugRenderer.Box(mapEntry.getKey(), -32f, 64f, 0.05f,
-					mapEntry.getValue().request != null ? Color.red
-							: mapEntry.getValue().priority == 3 ? Color.orange
-							: mapEntry.getValue().priority == 2 ? Color.cyan
-							: mapEntry.getValue().priority == 1 ? Color.blue
-							: Color.gray
+					mapEntry.getValue().request != null ? Color.red : Color.gray
 			));
 		}
 	}
@@ -316,9 +283,6 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 		@Nullable
 		public final Long updateTimestamp;
 		
-		// Higher value = higher priority.
-		// Priority of 0 is reserved for unassigned value
-		public int priority = 0;
 		@CheckForNull
 		public CompletableFuture<?> request;
 		
