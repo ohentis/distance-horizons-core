@@ -34,22 +34,22 @@ public class ClientNetworkState implements Closeable
 			() -> Config.Client.Advanced.Logging.logNetworkEvent.get());
 	
 	private final Session session = new Session(null);
-	private EServerSupportStatus serverSupportStatus = EServerSupportStatus.NONE;
-	
+	/**
+	 * Returns the client used by this instance. <p>
+	 * If you need to subscribe to any packet events, create an instance of {@link ScopedNetworkEventSource} using the returned instance.
+	 */
+	public Session getSession() { return this.session; }
 	
 	public MultiplayerConfig config = new MultiplayerConfig();
 	private volatile boolean configReceived = false;
 	private final MultiplayerConfigChangeListener configChangeListener = new MultiplayerConfigChangeListener(this::sendConfigMessage);
 	public boolean isReady() { return this.configReceived; }
 	
+	private EServerSupportStatus serverSupportStatus = EServerSupportStatus.NONE;
+	/** Protocol version closest to supported by this mod version */
 	@Nullable
 	private Integer closestProtocolVersion;
 	
-	/**
-	 * Returns the client used by this instance. <p>
-	 * If you need to subscribe to any packet events, create an instance of {@link ScopedNetworkEventSource} using the returned instance.
-	 */
-	public Session getSession() { return this.session; }
 	
 	private final ConcurrentMap<Integer, CompositeByteBuf> fullDataBuffers = CacheBuilder.newBuilder()
 			.expireAfterAccess(10, TimeUnit.SECONDS)
