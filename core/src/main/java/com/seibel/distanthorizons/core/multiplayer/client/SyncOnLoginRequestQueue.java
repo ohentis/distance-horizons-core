@@ -15,7 +15,7 @@ public class SyncOnLoginRequestQueue extends AbstractFullDataRequestQueue
 	protected int getRequestRateLimit() { return this.networkState.config.syncOnLoginRateLimit; }
 	
 	@Override
-	protected String getQueueName() { return "Data Refresh Queue"; }
+	protected String getQueueName() { return "Sync On Login Queue"; }
 	
 	@Override
 	public boolean tick(DhBlockPos2D targetPos)

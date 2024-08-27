@@ -8,15 +8,19 @@ import com.seibel.distanthorizons.core.multiplayer.config.MultiplayerConfigChang
 import com.seibel.distanthorizons.core.network.INetworkObject;
 import com.seibel.distanthorizons.core.network.event.ScopedNetworkEventSource;
 import com.seibel.distanthorizons.core.network.event.internal.CloseEvent;
+import com.seibel.distanthorizons.core.network.event.internal.IncompatibleMessageEvent;
+import com.seibel.distanthorizons.core.network.messages.base.CurrentLevelKeyMessage;
 import com.seibel.distanthorizons.core.network.messages.base.RemotePlayerConfigMessage;
 import com.seibel.distanthorizons.core.network.messages.fullData.FullDataChunkMessage;
 import com.seibel.distanthorizons.core.network.messages.fullData.FullDataPartialUpdateMessage;
 import com.seibel.distanthorizons.core.network.messages.fullData.FullDataPayload;
 import com.seibel.distanthorizons.core.network.session.Session;
 import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV2DTO;
+import com.seibel.distanthorizons.coreapi.ModInfo;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.CompositeByteBuf;
 import org.apache.logging.log4j.LogManager;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.Closeable;
 import java.util.List;
@@ -38,6 +42,9 @@ public class ClientNetworkState implements Closeable
 	private final MultiplayerConfigChangeListener configChangeListener = new MultiplayerConfigChangeListener(this::sendConfigMessage);
 	public boolean isReady() { return this.configReceived; }
 	
+	@Nullable
+	private Integer closestProtocolVersion;
+	
 	/**
 	 * Returns the client used by this instance. <p>
 	 * If you need to subscribe to any packet events, create an instance of {@link ScopedNetworkEventSource} using the returned instance.
@@ -55,6 +62,22 @@ public class ClientNetworkState implements Closeable
 	 */
 	public ClientNetworkState()
 	{
+		this.session.registerHandler(IncompatibleMessageEvent.class, event ->
+		{
+			if (this.closestProtocolVersion == null || Math.abs(event.protocolVersion - ModInfo.PROTOCOL_VERSION) < this.closestProtocolVersion)
+			{
+				this.closestProtocolVersion = event.protocolVersion;
+			}
+		});
+		
+		this.session.registerHandler(CurrentLevelKeyMessage.class, msg ->
+		{
+			if (this.serverSupportStatus == EServerSupportStatus.NONE)
+			{
+				this.serverSupportStatus = EServerSupportStatus.LEVELS_ONLY;
+			}
+		});
+		
 		this.session.registerHandler(RemotePlayerConfigMessage.class, msg ->
 		{
 			this.serverSupportStatus = EServerSupportStatus.FULL;
@@ -118,6 +141,12 @@ public class ClientNetworkState implements Closeable
 		if (this.session.isClosed())
 		{
 			messageList.add("Session closed: " + this.session.getCloseReason().getMessage());
+			return;
+		}
+		
+		if (this.serverSupportStatus == EServerSupportStatus.NONE && this.closestProtocolVersion != null)
+		{
+			messageList.add("Incompatible protocol version: " + this.closestProtocolVersion + ", required: " + ModInfo.PROTOCOL_VERSION);
 			return;
 		}
 		
