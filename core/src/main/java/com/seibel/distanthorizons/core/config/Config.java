@@ -106,6 +106,8 @@ public class Config
 		
 		public static ConfigLinkedEntry quickEnableWorldGenerator = new ConfigLinkedEntry(Advanced.WorldGenerator.enableDistantGeneration);
 		
+		public static ConfigLinkedEntry quickLodCloudRendering = new ConfigLinkedEntry(Advanced.Graphics.GenericRendering.enableCloudRendering);
+		
 		public static ConfigEntry<Boolean> optionsButton = new ConfigEntry.Builder<Boolean>()
 				.set(true)
 				.setAppearance(EConfigEntryAppearance.ONLY_IN_FILE)
