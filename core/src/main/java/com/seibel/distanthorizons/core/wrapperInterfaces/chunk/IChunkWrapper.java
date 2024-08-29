@@ -282,8 +282,8 @@ public interface IChunkWrapper extends IBindable
 		int primeBiomeMultiplier = 701;
 		int primeHeightMultiplier = 137;
 		
-		int minBuildHeight = this.getMaxNonEmptyHeight();
-		int maxBuildHeight = this.getMinNonEmptyHeight();
+		int minBuildHeight = this.getMinNonEmptyHeight();
+		int maxBuildHeight = this.getMaxNonEmptyHeight();
 		
 		
 		// most blocks (only some blocks are sampled since checking every block is a very slow operation)
@@ -291,7 +291,7 @@ public interface IChunkWrapper extends IBindable
 		{
 			for (int z = 0; z < LodUtil.CHUNK_WIDTH; z+=2)
 			{
-				for (int y = minBuildHeight; y < maxBuildHeight; y+=8)
+				for (int y = minBuildHeight; y < maxBuildHeight; y+=2)
 				{
 					hash = (hash * primeBlockMultiplier) + this.getBlockState(x, y, z).hashCode();
 					hash = (hash * primeBiomeMultiplier) + this.getBiome(x, y, z).hashCode();
@@ -319,6 +319,18 @@ public interface IChunkWrapper extends IBindable
 				}
 			}
 		}
+		
+		// light emitting blocks (if the light changes then the LOD definitely needs to be updated)
+		ArrayList<DhBlockPos> lightPosList = this.getBlockLightPosList();
+		for (int i = 0; i < lightPosList.size(); i++)
+		{
+			DhBlockPos pos = lightPosList.get(i);
+			pos = pos.mutateToChunkRelativePos(pos);
+			
+			hash = (hash * primeBlockMultiplier) + this.getBlockState(pos.x, pos.y, pos.z).hashCode();
+			hash = (hash * primeHeightMultiplier) + pos.y;
+		}
+		
 		
 		return hash;
 	}
