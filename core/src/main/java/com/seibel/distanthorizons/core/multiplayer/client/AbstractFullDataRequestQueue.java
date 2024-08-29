@@ -89,6 +89,11 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 		return entry.future;
 	}
 	
+	protected int posDistanceSquared(DhBlockPos2D targetPos, long pos)
+	{
+		return (int) DhSectionPos.getCenterBlockPos(pos).distSquared(targetPos);
+	}
+	
 	public synchronized boolean tick(DhBlockPos2D targetPos)
 	{
 		if (this.closingFuture != null || !this.networkState.isReady())
@@ -106,7 +111,7 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 				break;
 			}
 			
-			this.sendNewRequest();
+			this.sendNewRequest(targetPos);
 		}
 		
 		return true;
@@ -132,11 +137,12 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 		}
 	}
 	
-	private void sendNewRequest()
+	private void sendNewRequest(DhBlockPos2D targetPos)
 	{
 		Map.Entry<Long, RequestQueueEntry> mapEntry = this.waitingTasks.entrySet().stream()
 				.filter(task -> task.getValue().request == null)
-				.findAny().orElse(null);
+				.min((x, y) -> this.posDistanceSquared(targetPos, x.getKey()) - this.posDistanceSquared(targetPos, y.getKey()))
+				.orElse(null);
 		
 		if (mapEntry == null)
 		{
