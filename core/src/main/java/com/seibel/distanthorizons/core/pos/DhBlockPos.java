@@ -22,18 +22,25 @@ package com.seibel.distanthorizons.core.pos;
 import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.util.LodUtil;
 
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import java.util.Objects;
 
+/** @see DhBlockPosMutable */
 public class DhBlockPos
 {
 	/** Useful for methods that need a position passed in but won't actually be used */
 	public static final DhBlockPos ZERO = new DhBlockPos(0, 0, 0);
 	
 	
-	public int x;
-	public int y;
-	public int z;
+	protected int x;
+	public int getX() { return this.x; }
+	
+	protected int y;
+	public int getY() { return this.y; }
+	
+	protected int z;
+	public int getZ() { return this.z; }
 	
 	
 	
@@ -59,12 +66,14 @@ public class DhBlockPos
 	//========//
 	
 	/** creates a new {@link DhBlockPos} with the given offset from the current pos. */
-	public DhBlockPos offset(EDhDirection direction) { return this.mutateOffset(direction, null); }
+	public DhBlockPos createOffset(EDhDirection direction) { return this.mutateOrCreateOffset(direction.getNormal().x, direction.getNormal().y, direction.getNormal().z, null); }
 	/** if not null, mutates "mutablePos" so it matches the current pos after being offset. Otherwise creates a new {@link DhBlockPos}. */
-	public DhBlockPos mutateOffset(EDhDirection direction, @Nullable DhBlockPos mutablePos) { return this.mutateOffset(direction.getNormal().x, direction.getNormal().y, direction.getNormal().z, mutablePos); }
+	public void mutateOffset(EDhDirection direction, @NotNull DhBlockPosMutable mutablePos) { this.mutateOrCreateOffset(direction.getNormal().x, direction.getNormal().y, direction.getNormal().z, mutablePos); }
 	
-	public DhBlockPos offset(int x, int y, int z) { return this.mutateOffset(x,y,z, null); }
-	public DhBlockPos mutateOffset(int x, int y, int z, @Nullable DhBlockPos mutablePos) 
+	public DhBlockPos createOffset(int x, int y, int z) { return this.mutateOrCreateOffset(x,y,z, null); }
+	public void mutateOffset(int x, int y, int z, @NotNull DhBlockPosMutable mutablePos) { this.mutateOrCreateOffset(x, y, z, mutablePos); }
+	
+	protected DhBlockPos mutateOrCreateOffset(int x, int y, int z, @Nullable DhBlockPosMutable mutablePos) 
 	{
 		int newX = this.x + x;
 		int newY = this.y + y;
@@ -86,31 +95,25 @@ public class DhBlockPos
 	
 	
 	
-	//==========//
-	// mutators //
-	//==========//
+	//================//
+	// chunk relative //
+	//================//
 	
 	/** Returns a new {@link DhBlockPos} limited to a value between 0 and 15 (inclusive) */
 	public DhBlockPos createChunkRelativePos() { return this.mutateOrCreateChunkRelativePos(null); }
 	/** Limits the input {@link DhBlockPos} to a value between 0 and 15 (inclusive) */
-	public void mutateToChunkRelativePos(DhBlockPos mutableBlockPos) { this.mutateOrCreateChunkRelativePos(mutableBlockPos); }
+	public void mutateToChunkRelativePos(DhBlockPosMutable mutableBlockPos) { this.mutateOrCreateChunkRelativePos(mutableBlockPos); }
 	/** 
 	 * Limits the block position to a value between 0 and 15 (inclusive) 
 	 * If not null, mutates "mutableBlockPos" 
 	 * 
 	 * @return the mutated or created {@link DhBlockPos}
 	 */
-	private DhBlockPos mutateOrCreateChunkRelativePos(@Nullable DhBlockPos mutableBlockPos)
+	protected DhBlockPos mutateOrCreateChunkRelativePos(@Nullable DhBlockPosMutable mutableBlockPos)
 	{
-		// move the position into the range -15 and +15
-		int relX = (this.x % LodUtil.CHUNK_WIDTH);
-		// if the position is negative move it into the range 0 and 15
-		relX = (relX < 0) ? (relX + LodUtil.CHUNK_WIDTH) : relX;
-		
-		int relZ = (this.z % LodUtil.CHUNK_WIDTH);
-		relZ = (relZ < 0) ? (relZ + LodUtil.CHUNK_WIDTH) : relZ;
-		
+		int relX = convertWorldPosToChunkRelative(this.x);
 		// the y value shouldn't need to be changed
+		int relZ = convertWorldPosToChunkRelative(this.z);
 		
 		
 		if (mutableBlockPos != null)
@@ -126,6 +129,15 @@ public class DhBlockPos
 			return new DhBlockPos(relX, this.y, relZ);
 		}
 	}
+	
+	protected static int convertWorldPosToChunkRelative(int xOrZ)
+	{
+		// move the position into the range -15 and +15
+		int relPos = (xOrZ % LodUtil.CHUNK_WIDTH);
+		// if the position is negative move it into the range 0 and 15
+		relPos = (relPos < 0) ? (relPos + LodUtil.CHUNK_WIDTH) : relPos;
+		return relPos;
+	}	
 	
 	
 	
@@ -170,6 +182,6 @@ public class DhBlockPos
 	@Override
 	public int hashCode() { return Objects.hash(this.x, this.y, this.z); }
 	@Override
-	public String toString() { return "DHBlockPos["+this.x+", "+this.y+", "+this.z+"]"; }
+	public String toString() { return "DHBlockPos["+ this.x +", "+ this.y +", "+ this.z +"]"; }
 	
 }

@@ -181,8 +181,8 @@ public class BeaconRenderHandler
 		if (this.beaconBlockPosSet.add(beacon.blockPos))
 		{
 			DhApiRenderableBox beaconBox = new DhApiRenderableBox(
-					new DhApiVec3d(beacon.blockPos.x, beacon.blockPos.y+1, beacon.blockPos.z),
-					new DhApiVec3d(beacon.blockPos.x+1, BEAM_TOP_Y, beacon.blockPos.z+1),
+					new DhApiVec3d(beacon.blockPos.getX(), beacon.blockPos.getY() +1, beacon.blockPos.getZ()),
+					new DhApiVec3d(beacon.blockPos.getX() +1, BEAM_TOP_Y, beacon.blockPos.getZ() +1),
 					beacon.color,
 					EDhApiBlockMaterial.ILLUMINATED
 			);
@@ -198,9 +198,9 @@ public class BeaconRenderHandler
 		{
 			this.beaconBoxGroup.removeIf((box) ->
 			{
-				return box.minPos.x == beaconPos.x
-						&& box.minPos.y == beaconPos.y+1 // plus 1 because the beam starts above the beacon
-						&& box.minPos.z == beaconPos.z;
+				return box.minPos.x == beaconPos.getX()
+						&& box.minPos.y == beaconPos.getY() +1 // plus 1 because the beam starts above the beacon
+						&& box.minPos.z == beaconPos.getZ();
 			});
 			this.beaconBoxGroup.triggerBoxChange();
 		}
@@ -212,9 +212,9 @@ public class BeaconRenderHandler
 		for (int i = 0; i < this.beaconBoxGroup.size(); i++)
 		{
 			DhApiRenderableBox box = this.beaconBoxGroup.get(i);
-			if (box.minPos.x == pos.x
-				&& box.minPos.y == pos.y+1 // plus 1 because the beam starts above the beacon
-				&& box.minPos.z == pos.z)
+			if (box.minPos.x == pos.getX()
+				&& box.minPos.y == pos.getY() +1 // plus 1 because the beam starts above the beacon
+				&& box.minPos.z == pos.getZ())
 			{
 				box.color = newBeam.color;
 				this.beaconBoxGroup.triggerBoxChange();

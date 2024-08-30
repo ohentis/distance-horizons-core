@@ -46,7 +46,7 @@ public class DhChunkPos
 	public DhChunkPos(DhBlockPos blockPos)
 	{
 		// >> 4 is the Same as div 16
-		this(blockPos.x >> 4, blockPos.z >> 4);
+		this(blockPos.getX() >> 4, blockPos.getZ() >> 4);
 	}
 	public DhChunkPos(DhBlockPos2D blockPos)
 	{
@@ -81,8 +81,8 @@ public class DhChunkPos
 		int maxBlockX = minBlockX + LodUtil.CHUNK_WIDTH;
 		int maxBlockZ = minBlockZ + LodUtil.CHUNK_WIDTH;
 		
-		return minBlockX <= pos.x && pos.x <= maxBlockX
-				&& minBlockZ <= pos.z && pos.z <= maxBlockZ;
+		return minBlockX <= pos.getX() && pos.getX() <= maxBlockX
+				&& minBlockZ <= pos.getZ() && pos.getZ() <= maxBlockZ;
 	}
 	
 	public long getLong() { return toLong(this.x, this.z); }

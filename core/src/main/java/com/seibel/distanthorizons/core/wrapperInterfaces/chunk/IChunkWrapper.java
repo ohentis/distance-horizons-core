@@ -22,6 +22,7 @@ package com.seibel.distanthorizons.core.wrapperInterfaces.chunk;
 import com.seibel.distanthorizons.core.generation.AdjacentChunkHolder;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
+import com.seibel.distanthorizons.core.pos.DhBlockPosMutable;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.sql.dto.BeaconBeamDTO;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
@@ -94,7 +95,7 @@ public interface IChunkWrapper extends IBindable
 	ArrayList<DhBlockPos> getWorldBlockLightPosList();
 	
 	
-	default boolean blockPosInsideChunk(DhBlockPos blockPos) { return this.blockPosInsideChunk(blockPos.x, blockPos.y, blockPos.z); }
+	default boolean blockPosInsideChunk(DhBlockPos blockPos) { return this.blockPosInsideChunk(blockPos.getX(), blockPos.getY(), blockPos.getZ()); }
 	default boolean blockPosInsideChunk(int x, int y, int z)
 	{
 		return (x >= this.getMinBlockX() && x <= this.getMaxBlockX()
@@ -111,7 +112,7 @@ public interface IChunkWrapper extends IBindable
 	String toString();
 	
 	
-	default IBlockStateWrapper getBlockState(DhBlockPos pos) { return this.getBlockState(pos.x, pos.y, pos.z); }
+	default IBlockStateWrapper getBlockState(DhBlockPos pos) { return this.getBlockState(pos.getX(), pos.getY(), pos.getZ()); }
 	IBlockStateWrapper getBlockState(int relX, int relY, int relZ);
 	
 	IBiomeWrapper getBiome(int relX, int relY, int relZ);
@@ -322,15 +323,15 @@ public interface IChunkWrapper extends IBindable
 		}
 		
 		// light emitting blocks (if the light changes then the LOD definitely needs to be updated)
-		final DhBlockPos relPos = new DhBlockPos(); 
+		final DhBlockPosMutable relPos = new DhBlockPosMutable(); 
 		ArrayList<DhBlockPos> lightPosList = this.getWorldBlockLightPosList();
 		for (int i = 0; i < lightPosList.size(); i++)
 		{
 			DhBlockPos pos = lightPosList.get(i);
 			pos.mutateToChunkRelativePos(relPos);
 			
-			hash = (hash * primeBlockMultiplier) + this.getBlockState(relPos.x, relPos.y, relPos.z).hashCode();
-			hash = (hash * primeHeightMultiplier) + relPos.y;
+			hash = (hash * primeBlockMultiplier) + this.getBlockState(relPos.getX(), relPos.getY(), relPos.getZ()).hashCode();
+			hash = (hash * primeHeightMultiplier) + relPos.getY();
 		}
 		
 		
@@ -344,7 +345,7 @@ public interface IChunkWrapper extends IBindable
 		AdjacentChunkHolder adjacentChunkHolder = new AdjacentChunkHolder(this, neighbourChunkList);
 		
 		// since beacons emit light we can check only the positions that are emitting light
-		final DhBlockPos relPos = new DhBlockPos();
+		final DhBlockPosMutable relPos = new DhBlockPosMutable();
 		ArrayList<DhBlockPos> blockPosList = this.getWorldBlockLightPosList();
 		for (int i = 0; i < blockPosList.size(); i++)
 		{
@@ -371,7 +372,7 @@ public interface IChunkWrapper extends IBindable
 	static Color getBeaconColor(DhBlockPos beaconPos, AdjacentChunkHolder chunkHolder) 
 	{
 		DhBlockPos beaconRelPos = beaconPos.createChunkRelativePos();
-		DhBlockPos baseRelPos = new DhBlockPos(0, beaconRelPos.y-1, 0);
+		DhBlockPosMutable baseRelPos = new DhBlockPosMutable(0, beaconRelPos.getY() -1, 0);
 		
 		
 		
@@ -383,14 +384,14 @@ public interface IChunkWrapper extends IBindable
 		{
 			for (int z = -1; z <= 1; z++)
 			{
-				baseRelPos.x = beaconRelPos.x + x;
-				baseRelPos.z = beaconRelPos.z + z;
+				baseRelPos.setX(beaconRelPos.getX() + x);
+				baseRelPos.setZ(beaconRelPos.getZ() + z);
 				baseRelPos.mutateToChunkRelativePos(baseRelPos);
 				
-				IChunkWrapper chunk = chunkHolder.getByBlockPos(beaconPos.x + x, beaconPos.z + z);
+				IChunkWrapper chunk = chunkHolder.getByBlockPos(beaconPos.getX() + x, beaconPos.getZ() + z);
 				if (chunk != null)
 				{
-					IBlockStateWrapper block = chunk.getBlockState(baseRelPos.x, baseRelPos.y, baseRelPos.z);
+					IBlockStateWrapper block = chunk.getBlockState(baseRelPos.getX(), baseRelPos.getY(), baseRelPos.getZ());
 					if (!block.isBeaconBaseBlock())
 					{
 						return null;
@@ -411,11 +412,11 @@ public interface IChunkWrapper extends IBindable
 		int blue = 0;
 		boolean glassBlockFound = false;
 		
-		IChunkWrapper centerChunk = chunkHolder.getByBlockPos(beaconPos.x, beaconPos.z);
+		IChunkWrapper centerChunk = chunkHolder.getByBlockPos(beaconPos.getX(), beaconPos.getZ());
 		int maxY = centerChunk.getMaxNonEmptyHeight();
-		for (int y = beaconRelPos.y+1; y <= maxY; y++)
+		for (int y = beaconRelPos.getY() +1; y <= maxY; y++)
 		{
-			IBlockStateWrapper block = centerChunk.getBlockState(beaconRelPos.x, y, beaconRelPos.z);
+			IBlockStateWrapper block = centerChunk.getBlockState(beaconRelPos.getX(), y, beaconRelPos.getZ());
 			if (!block.isAir() && block.getOpacity() == LodUtil.BLOCK_FULLY_OPAQUE)
 			{
 				return null;

@@ -60,7 +60,7 @@ public class BeaconBeamRepo extends AbstractDhRepo<DhBlockPos, BeaconBeamDTO>
 	public String getTableName() { return "BeaconBeam"; }
 	
 	@Override
-	public String createWhereStatement(DhBlockPos pos) { return "BlockPosX = "+pos.x+" AND BlockPosY = "+pos.y+" AND BlockPosZ = "+pos.z; }
+	public String createWhereStatement(DhBlockPos pos) { return "BlockPosX = "+ pos.getX() +" AND BlockPosY = "+ pos.getY() +" AND BlockPosZ = "+ pos.getZ(); }
 	
 	
 	
@@ -100,9 +100,9 @@ public class BeaconBeamRepo extends AbstractDhRepo<DhBlockPos, BeaconBeamDTO>
 		PreparedStatement statement = this.createPreparedStatement(sql);
 		
 		int i = 1;
-		statement.setObject(i++, dto.blockPos.x);
-		statement.setObject(i++, dto.blockPos.y);
-		statement.setObject(i++, dto.blockPos.z);
+		statement.setObject(i++, dto.blockPos.getX());
+		statement.setObject(i++, dto.blockPos.getY());
+		statement.setObject(i++, dto.blockPos.getZ());
 		
 		statement.setObject(i++, dto.color.getRed());
 		statement.setObject(i++, dto.color.getGreen());
@@ -132,9 +132,9 @@ public class BeaconBeamRepo extends AbstractDhRepo<DhBlockPos, BeaconBeamDTO>
 		
 		statement.setObject(i++, System.currentTimeMillis()); // last modified unix time
 		
-		statement.setObject(i++, dto.blockPos.x);
-		statement.setObject(i++, dto.blockPos.y);
-		statement.setObject(i++, dto.blockPos.z);
+		statement.setObject(i++, dto.blockPos.getX());
+		statement.setObject(i++, dto.blockPos.getY());
+		statement.setObject(i++, dto.blockPos.getZ());
 		
 		return statement;
 	}

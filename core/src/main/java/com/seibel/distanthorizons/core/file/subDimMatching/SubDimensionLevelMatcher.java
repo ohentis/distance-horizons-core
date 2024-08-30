@@ -202,7 +202,7 @@ public class SubDimensionLevelMatcher implements AutoCloseable
 		
 		// log the start of this attempt
 		LOGGER.info("Attempting to determine sub-dimension for [" + MC_CLIENT.getWrappedClientLevel().getDimensionType().getDimensionName() + "]");
-		LOGGER.info("Player block pos in dimension: [" + this.playerData.playerBlockPos.x + "," + this.playerData.playerBlockPos.y + "," + this.playerData.playerBlockPos.z + "]");
+		LOGGER.info("Player block pos in dimension: [" + this.playerData.playerBlockPos.getX() + "," + this.playerData.playerBlockPos.getY() + "," + this.playerData.playerBlockPos.getZ() + "]");
 		LOGGER.info("Potential Sub Dimension folders: [" + this.potentialLevelFolders.size() + "]");
 		
 		SubDimCompare mostSimilarSubDim = null;
@@ -315,7 +315,7 @@ public class SubDimensionLevelMatcher implements AutoCloseable
 				
 				// get the player data for this dimension folder
 				SubDimensionPlayerData testPlayerData = new SubDimensionPlayerData(testLevelFolder);
-				LOGGER.info("Last known player pos: [" + testPlayerData.playerBlockPos.x + "," + testPlayerData.playerBlockPos.y + "," + testPlayerData.playerBlockPos.z + "]");
+				LOGGER.info("Last known player pos: [" + testPlayerData.playerBlockPos.getX() + "," + testPlayerData.playerBlockPos.getY() + "," + testPlayerData.playerBlockPos.getZ() + "]");
 				
 				// check if the block positions are close
 				int playerBlockDist = testPlayerData.playerBlockPos.getManhattanDistance(this.playerData.playerBlockPos);

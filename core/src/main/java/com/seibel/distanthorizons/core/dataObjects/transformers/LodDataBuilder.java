@@ -32,6 +32,7 @@ import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
+import com.seibel.distanthorizons.core.pos.DhBlockPosMutable;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.util.FullDataPointUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
@@ -237,7 +238,7 @@ public class LodDataBuilder
 	private static boolean blockVisible(IChunkWrapper chunkWrapper, int relBlockX, int blockY, int relBlockZ)
 	{
 		DhBlockPos originalBlockPos = new DhBlockPos(relBlockX,blockY,relBlockZ);
-		DhBlockPos testBlockPos = new DhBlockPos(relBlockX,blockY,relBlockZ);
+		final DhBlockPosMutable testBlockPos = new DhBlockPosMutable(relBlockX,blockY,relBlockZ);
 		
 		// up/down
 		if (blockInDirectionVisible(chunkWrapper, EDhDirection.UP, originalBlockPos, testBlockPos))
@@ -272,20 +273,20 @@ public class LodDataBuilder
 		
 		return false;
 	}
-	private static boolean blockInDirectionVisible(IChunkWrapper chunkWrapper, EDhDirection direction, DhBlockPos originalBlockPos, DhBlockPos testBlockPos)
+	private static boolean blockInDirectionVisible(IChunkWrapper chunkWrapper, EDhDirection direction, DhBlockPos originalBlockPos, DhBlockPosMutable testBlockPos)
 	{
 		originalBlockPos.mutateOffset(direction, testBlockPos);
 		
 		// if the block is next to the border of a chunk, assume it's visible
-		if (testBlockPos.x < 0 || testBlockPos.x >= LodUtil.CHUNK_WIDTH)
+		if (testBlockPos.getX() < 0 || testBlockPos.getX() >= LodUtil.CHUNK_WIDTH)
 		{
 			return true;
 		}
-		if (testBlockPos.z < 0 || testBlockPos.z >= LodUtil.CHUNK_WIDTH)
+		if (testBlockPos.getZ() < 0 || testBlockPos.getZ() >= LodUtil.CHUNK_WIDTH)
 		{
 			return true;
 		}
-		if (testBlockPos.y < chunkWrapper.getMinBuildHeight() || testBlockPos.y > chunkWrapper.getMaxBuildHeight())
+		if (testBlockPos.getY() < chunkWrapper.getMinBuildHeight() || testBlockPos.getY() > chunkWrapper.getMaxBuildHeight())
 		{
 			return true;
 		}

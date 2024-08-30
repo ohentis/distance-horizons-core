@@ -41,8 +41,8 @@ public class DhBlockPos2D
 	
 	public DhBlockPos2D(DhBlockPos blockPos)
 	{
-		this.x = blockPos.x;
-		this.z = blockPos.z;
+		this.x = blockPos.getX();
+		this.z = blockPos.getZ();
 	}
 	
 	public static DhBlockPos2D fromPos2D(Pos2D pos) { return new DhBlockPos2D(pos.x, pos.y); }

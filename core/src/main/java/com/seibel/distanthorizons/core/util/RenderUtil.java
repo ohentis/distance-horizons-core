@@ -23,15 +23,12 @@ import com.seibel.distanthorizons.core.api.internal.SharedApi;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.level.IDhClientLevel;
-import com.seibel.distanthorizons.core.pos.DhBlockPos;
-import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.world.IDhClientWorld;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.coreapi.util.MathUtil;
 import com.seibel.distanthorizons.core.util.math.Mat4f;
-import com.seibel.distanthorizons.core.util.math.Vec3f;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 
 /**
@@ -143,7 +140,7 @@ public class RenderUtil
 		{
 			// if the player is a significant distance above the work, increase the
 			// near clip plane to fix Z imprecision issues
-			int playerHeight = MC.getPlayerBlockPos().y;
+			int playerHeight = MC.getPlayerBlockPos().getY();
 			int levelMaxHeight = level.getMaxHeight();
 			if (playerHeight > levelMaxHeight + 1_000)
 			{
