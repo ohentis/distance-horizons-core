@@ -27,24 +27,6 @@ import java.util.Objects;
 
 public class DhBlockPos
 {
-	public static final boolean DO_CHECKS = false;
-	
-	// 26 bits wide as that just encompasses the maximum possible value
-	// of +- 30,000,000 blocks in each direction. Yes this packing method
-	// is how Minecraft packs it.
-	
-	// NOTE: Remember to ALWAYS check that DHBlockPos packing is EXACTLY
-	// the same as Minecraft's!!!!
-	public static final int PACKED_X_LENGTH = 26;
-	public static final int PACKED_Z_LENGTH = 26;
-	public static final int PACKED_Y_LENGTH = 12;
-	public static final long PACKED_X_MASK = (1L << PACKED_X_LENGTH) - 1L;
-	public static final long PACKED_Y_MASK = (1L << PACKED_Y_LENGTH) - 1L;
-	public static final long PACKED_Z_MASK = (1L << PACKED_Z_LENGTH) - 1L;
-	public static final int PACKED_Y_OFFSET = 0;
-	public static final int PACKED_Z_OFFSET = PACKED_Y_LENGTH;
-	public static final int PACKED_X_OFFSET = PACKED_Y_LENGTH + PACKED_Z_LENGTH;
-	
 	/** Useful for methods that need a position passed in but won't actually be used */
 	public static final DhBlockPos ZERO = new DhBlockPos(0, 0, 0);
 	
@@ -55,69 +37,26 @@ public class DhBlockPos
 	
 	
 	
+	//==============//
+	// constructors //
+	//==============//
+	
 	public DhBlockPos(int x, int y, int z)
 	{
 		this.x = x;
 		this.y = y;
 		this.z = z;
 	}
-	public DhBlockPos()
-	{
-		this(0, 0, 0);
-	}
-	public DhBlockPos(DhBlockPos pos)
-	{
-		this(pos.x, pos.y, pos.z);
-	}
+	public DhBlockPos() { this(0, 0, 0); }
+	public DhBlockPos(DhBlockPos pos) { this(pos.x, pos.y, pos.z); }
 	
-	public DhBlockPos(DhBlockPos2D pos, int y)
-	{
-		this(pos.x, y, pos.z);
-	}
+	public DhBlockPos(DhBlockPos2D pos, int y) { this(pos.x, y, pos.z); }
 	
-	public static long asLong(int x, int y, int z)
-	{
-		if (DO_CHECKS)
-		{
-			if ((x & ~PACKED_X_MASK) != 0)
-			{
-				throw new IllegalArgumentException("x is out of range: " + x);
-			}
-			if ((y & ~PACKED_Y_MASK) != 0)
-			{
-				throw new IllegalArgumentException("y is out of range: " + y);
-			}
-			if ((z & ~PACKED_Z_MASK) != 0)
-			{
-				throw new IllegalArgumentException("z is out of range: " + z);
-			}
-		}
-		return ((long) x & PACKED_X_MASK) << PACKED_X_OFFSET |
-				((long) y & PACKED_Y_MASK) << PACKED_Y_OFFSET |
-				((long) z & PACKED_Z_MASK) << PACKED_Z_OFFSET;
-	}
 	
-	public static int getX(long packed)
-	{ // X is at the top
-		return (int) (packed << (64 - PACKED_X_OFFSET - PACKED_X_LENGTH) >> (64 - PACKED_X_LENGTH));
-	}
-	public static int getY(long packed)
-	{ // Y is at the bottom
-		return (int) (packed << (64 - PACKED_Y_OFFSET - PACKED_Y_LENGTH) >> (64 - PACKED_Y_LENGTH));
-	}
-	public static int getZ(long packed)
-	{ // Z is at the middle
-		return (int) (packed << (64 - PACKED_Z_OFFSET - PACKED_Z_LENGTH) >> (64 - PACKED_Z_LENGTH));
-	}
-	public DhBlockPos(long packed)
-	{
-		this(getX(packed), getY(packed), getZ(packed));
-	}
 	
-	public long asLong()
-	{
-		return asLong(x, y, z);
-	}
+	//========//
+	// offset //
+	//========//
 	
 	/** creates a new {@link DhBlockPos} with the given offset from the current pos. */
 	public DhBlockPos offset(EDhDirection direction) { return this.mutateOffset(direction, null); }
@@ -144,6 +83,12 @@ public class DhBlockPos
 			return new DhBlockPos(newX, newY, newZ);
 		}
 	}
+	
+	
+	
+	//==========//
+	// mutators //
+	//==========//
 	
 	/** Returns a new {@link DhBlockPos} limited to a value between 0 and 15 (inclusive) */
 	public DhBlockPos createChunkRelativePos() { return this.mutateOrCreateChunkRelativePos(null); }
@@ -182,6 +127,12 @@ public class DhBlockPos
 		}
 	}
 	
+	
+	
+	//==========//
+	// distance //
+	//==========//
+	
 	/**
 	 * Can be used to quickly determine the rough distance between two points<Br>
 	 * or determine the taxi cab (manhattan) distance between two points. <Br><Br>
@@ -190,46 +141,35 @@ public class DhBlockPos
 	 * where you can only drive along each street, instead of directly to the other point.
 	 */
 	public int getManhattanDistance(DhBlockPos otherPos)
-	{
-		return Math.abs(this.x - otherPos.x) + Math.abs(this.y - otherPos.y) + Math.abs(this.z - otherPos.z);
-	}
+	{ return Math.abs(this.x - otherPos.x) + Math.abs(this.y - otherPos.y) + Math.abs(this.z - otherPos.z); }
+	
+	
+	
+	//================//
+	// base overrides //
+	//================//
 	
 	@Override
-	public boolean equals(Object o)
+	public boolean equals(Object obj)
 	{
-		if (this == o) return true;
-		if (o == null || getClass() != o.getClass()) return false;
-		DhBlockPos that = (DhBlockPos) o;
-		return x == that.x && y == that.y && z == that.z;
-	}
-	
-	@Override
-	public int hashCode()
-	{
-		return Objects.hash(x, y, z);
-	}
-	@Override
-	public String toString()
-	{
-		return "DHBlockPos[" +
-				"" + x +
-				", " + y +
-				", " + z +
-				']';
-	}
-	
-	public static void _DebugCheckPacker(int x, int y, int z, long expected)
-	{
-		long packed = asLong(x, y, z);
-		if (packed != expected)
+		if (this == obj)
 		{
-			throw new IllegalArgumentException("Packed values don't match: " + packed + " != " + expected);
+			return true;
 		}
-		DhBlockPos pos = new DhBlockPos(packed);
-		if (pos.x != x || pos.y != y || pos.z != z)
+		else if (obj == null || this.getClass() != obj.getClass())
 		{
-			throw new IllegalArgumentException("Values after decode don't match: " + pos + " != " + x + ", " + y + ", " + z);
+			return false;
+		}
+		else
+		{
+			DhBlockPos that = (DhBlockPos) obj;
+			return this.x == that.x && this.y == that.y && this.z == that.z;
 		}
 	}
+	
+	@Override
+	public int hashCode() { return Objects.hash(this.x, this.y, this.z); }
+	@Override
+	public String toString() { return "DHBlockPos["+this.x+", "+this.y+", "+this.z+"]"; }
 	
 }
