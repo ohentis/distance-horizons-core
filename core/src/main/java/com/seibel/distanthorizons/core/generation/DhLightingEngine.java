@@ -76,12 +76,12 @@ public class DhLightingEngine
 		
 		
 		// try-finally to handle the stableArray resources
-		StableLightPosStack blockLightPosQueue = null;
-		StableLightPosStack skyLightPosQueue = null;
+		StableLightPosStack blockLightWorldPosQueue = null;
+		StableLightPosStack skyLightWorldPosQueue = null;
 		try
 		{
-			blockLightPosQueue = StableLightPosStack.borrowStableLightPosArray();
-			skyLightPosQueue = StableLightPosStack.borrowStableLightPosArray();
+			blockLightWorldPosQueue = StableLightPosStack.borrowStableLightPosArray();
+			skyLightWorldPosQueue = StableLightPosStack.borrowStableLightPosArray();
 			
 			
 			
@@ -114,11 +114,15 @@ public class DhLightingEngine
 					
 					
 					
+					//==================//
+					// set block lights //
+					//==================//
+					
 					// get and set the adjacent chunk's initial block lights
 					final DhBlockPos relLightBlockPos = PRIMARY_BLOCK_POS_REF.get();
 					final DhBlockPos relBlockPos = SECONDARY_BLOCK_POS_REF.get();
 					
-					ArrayList<DhBlockPos> blockLightPosList = chunk.getBlockLightPosList();
+					ArrayList<DhBlockPos> blockLightPosList = chunk.getWorldBlockLightPosList();
 					for (int blockLightIndex = 0; blockLightIndex < blockLightPosList.size(); blockLightIndex++) // using iterators in high traffic areas can cause GC issues due to allocating a bunch of iterators, use an indexed for-loop instead
 					{
 						DhBlockPos blockLightPos = blockLightPosList.get(blockLightIndex);
@@ -127,13 +131,17 @@ public class DhLightingEngine
 						// get the light
 						IBlockStateWrapper blockState = chunk.getBlockState(relLightBlockPos);
 						int lightValue = blockState.getLightEmission();
-						blockLightPosQueue.push(blockLightPos.x, blockLightPos.y, blockLightPos.z, lightValue);
+						blockLightWorldPosQueue.push(blockLightPos.x, blockLightPos.y, blockLightPos.z, lightValue);
 						
 						// set the light
-						blockLightPos.mutateToChunkRelativePos(relBlockPos);
 						chunk.setDhBlockLight(relBlockPos.x, relBlockPos.y, relBlockPos.z, lightValue);
 					}
 					
+					
+					
+					//================//
+					// set sky lights //
+					//================//
 					
 					// get and set the adjacent chunk's initial skylights,
 					// if the dimension has skylights
@@ -160,7 +168,7 @@ public class DhLightingEngine
 									
 									// add sky light to the queue
 									DhBlockPos skyLightPos = new DhBlockPos(chunk.getMinBlockX() + relX, y, chunk.getMinBlockZ() + relZ);
-									skyLightPosQueue.push(skyLightPos.x, skyLightPos.y, skyLightPos.z, maxSkyLight);
+									skyLightWorldPosQueue.push(skyLightPos.x, skyLightPos.y, skyLightPos.z, maxSkyLight);
 									
 									// set the chunk's sky light
 									skyLightPos.mutateToChunkRelativePos(relBlockPos);
@@ -180,12 +188,12 @@ public class DhLightingEngine
 			}
 			
 			// block light
-			this.propagateLightPosList(blockLightPosQueue, adjacentChunkHolder,
+			this.propagateLightPosList(blockLightWorldPosQueue, adjacentChunkHolder,
 					(neighbourChunk, relBlockPos) -> neighbourChunk.getDhBlockLight(relBlockPos.x, relBlockPos.y, relBlockPos.z),
 					(neighbourChunk, relBlockPos, newLightValue) -> neighbourChunk.setDhBlockLight(relBlockPos.x, relBlockPos.y, relBlockPos.z, newLightValue));
 			
 			// sky light
-			this.propagateLightPosList(skyLightPosQueue, adjacentChunkHolder,
+			this.propagateLightPosList(skyLightWorldPosQueue, adjacentChunkHolder,
 					(neighbourChunk, relBlockPos) -> neighbourChunk.getDhSkyLight(relBlockPos.x, relBlockPos.y, relBlockPos.z),
 					(neighbourChunk, relBlockPos, newLightValue) -> neighbourChunk.setDhSkyLight(relBlockPos.x, relBlockPos.y, relBlockPos.z, newLightValue));
 		}
@@ -195,8 +203,8 @@ public class DhLightingEngine
 		}
 		finally
 		{
-			StableLightPosStack.returnStableLightPosArray(blockLightPosQueue);
-			StableLightPosStack.returnStableLightPosArray(skyLightPosQueue);
+			StableLightPosStack.returnStableLightPosArray(blockLightWorldPosQueue);
+			StableLightPosStack.returnStableLightPosArray(skyLightWorldPosQueue);
 		}
 		
 		

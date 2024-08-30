@@ -351,7 +351,6 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 			//	))
 			{
 				// prepare this section for rendering
-				// TODO this should fire for the lowest detail level first to improve loading speed
 				if (!renderSection.gpuUploadInProgress() && renderSection.renderBuffer == null)
 				{
 					nodesNeedingLoading.add(renderSection);

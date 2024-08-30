@@ -145,13 +145,17 @@ public class DhBlockPos
 		}
 	}
 	
-	/** Returns a new {@link DhBlockPos} limits to a value between 0 and 15 (inclusive) */
-	public DhBlockPos convertToChunkRelativePos() { return this.mutateToChunkRelativePos(null); }
+	/** Returns a new {@link DhBlockPos} limited to a value between 0 and 15 (inclusive) */
+	public DhBlockPos createChunkRelativePos() { return this.mutateOrCreateChunkRelativePos(null); }
+	/** Limits the input {@link DhBlockPos} to a value between 0 and 15 (inclusive) */
+	public void mutateToChunkRelativePos(DhBlockPos mutableBlockPos) { this.mutateOrCreateChunkRelativePos(mutableBlockPos); }
 	/** 
 	 * Limits the block position to a value between 0 and 15 (inclusive) 
 	 * If not null, mutates "mutableBlockPos" 
+	 * 
+	 * @return the mutated or created {@link DhBlockPos}
 	 */
-	public DhBlockPos mutateToChunkRelativePos(@Nullable DhBlockPos mutableBlockPos)
+	private DhBlockPos mutateOrCreateChunkRelativePos(@Nullable DhBlockPos mutableBlockPos)
 	{
 		// move the position into the range -15 and +15
 		int relX = (this.x % LodUtil.CHUNK_WIDTH);

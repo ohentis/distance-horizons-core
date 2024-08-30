@@ -399,7 +399,7 @@ public class LightingTestChunkWrapper implements IChunkWrapper
 	}
 	
 	@Override
-	public ArrayList<DhBlockPos> getBlockLightPosList() { return this.blockLightPosList; }
+	public ArrayList<DhBlockPos> getWorldBlockLightPosList() { return this.blockLightPosList; }
 	
 	@Override
 	public boolean doNearbyChunksExist() { return false; }

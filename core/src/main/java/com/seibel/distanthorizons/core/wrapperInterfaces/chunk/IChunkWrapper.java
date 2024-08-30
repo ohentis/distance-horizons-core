@@ -90,7 +90,8 @@ public interface IChunkWrapper extends IBindable
 	int getSkyLight(int relX, int relY, int relZ);
 	
 	
-	ArrayList<DhBlockPos> getBlockLightPosList();
+	/** Note: don't modify this array, it will only be generated once and then shared between uses */
+	ArrayList<DhBlockPos> getWorldBlockLightPosList();
 	
 	
 	default boolean blockPosInsideChunk(DhBlockPos blockPos) { return this.blockPosInsideChunk(blockPos.x, blockPos.y, blockPos.z); }
@@ -321,14 +322,15 @@ public interface IChunkWrapper extends IBindable
 		}
 		
 		// light emitting blocks (if the light changes then the LOD definitely needs to be updated)
-		ArrayList<DhBlockPos> lightPosList = this.getBlockLightPosList();
+		final DhBlockPos relPos = new DhBlockPos(); 
+		ArrayList<DhBlockPos> lightPosList = this.getWorldBlockLightPosList();
 		for (int i = 0; i < lightPosList.size(); i++)
 		{
 			DhBlockPos pos = lightPosList.get(i);
-			pos = pos.mutateToChunkRelativePos(pos);
+			pos.mutateToChunkRelativePos(relPos);
 			
-			hash = (hash * primeBlockMultiplier) + this.getBlockState(pos.x, pos.y, pos.z).hashCode();
-			hash = (hash * primeHeightMultiplier) + pos.y;
+			hash = (hash * primeBlockMultiplier) + this.getBlockState(relPos.x, relPos.y, relPos.z).hashCode();
+			hash = (hash * primeHeightMultiplier) + relPos.y;
 		}
 		
 		
@@ -342,11 +344,12 @@ public interface IChunkWrapper extends IBindable
 		AdjacentChunkHolder adjacentChunkHolder = new AdjacentChunkHolder(this, neighbourChunkList);
 		
 		// since beacons emit light we can check only the positions that are emitting light
-		ArrayList<DhBlockPos> blockPosList = this.getBlockLightPosList();
+		final DhBlockPos relPos = new DhBlockPos();
+		ArrayList<DhBlockPos> blockPosList = this.getWorldBlockLightPosList();
 		for (int i = 0; i < blockPosList.size(); i++)
 		{
 			DhBlockPos pos = blockPosList.get(i);
-			DhBlockPos relPos = pos.convertToChunkRelativePos();
+			pos.mutateToChunkRelativePos(relPos);
 			
 			
 			IBlockStateWrapper block = this.getBlockState(relPos);
@@ -367,7 +370,7 @@ public interface IChunkWrapper extends IBindable
 	@Nullable
 	static Color getBeaconColor(DhBlockPos beaconPos, AdjacentChunkHolder chunkHolder) 
 	{
-		DhBlockPos beaconRelPos = beaconPos.convertToChunkRelativePos();
+		DhBlockPos beaconRelPos = beaconPos.createChunkRelativePos();
 		DhBlockPos baseRelPos = new DhBlockPos(0, beaconRelPos.y-1, 0);
 		
 		
