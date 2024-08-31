@@ -92,6 +92,7 @@ public class ClientApi
 	
 	private final ClientPluginChannelApi pluginChannelApi = new ClientPluginChannelApi(this::clientLevelLoadEvent, this::clientLevelUnloadEvent);
 	
+	// Delay loading the first level to give server some time to respond with level to actually load
 	private Timer firstLevelLoadTimer;
 	private static final long FIRST_LEVEL_LOAD_DELAY = 1000;
 	
