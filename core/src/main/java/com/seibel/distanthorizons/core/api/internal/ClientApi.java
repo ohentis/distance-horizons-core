@@ -26,6 +26,7 @@ import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhAp
 import com.seibel.distanthorizons.core.file.structure.ClientOnlySaveStructure;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.render.DhApiRenderProxy;
+import com.seibel.distanthorizons.core.util.TimerUtil;
 import com.seibel.distanthorizons.core.util.objects.Pair;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
 import com.seibel.distanthorizons.core.level.IDhClientLevel;
@@ -58,9 +59,7 @@ import org.jetbrains.annotations.NotNull;
 import org.lwjgl.glfw.GLFW;
 
 import java.io.File;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Queue;
+import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
@@ -93,6 +92,8 @@ public class ClientApi
 	
 	private final ClientPluginChannelApi pluginChannelApi = new ClientPluginChannelApi(this::clientLevelLoadEvent, this::clientLevelUnloadEvent);
 	
+	private Timer firstLevelLoadTimer;
+	private static final long FIRST_LEVEL_LOAD_DELAY = 1000;
 	
 	/** Holds any levels that were loaded before the {@link ClientApi#onClientOnlyConnected} was fired. */
 	public final HashSet<IClientLevelWrapper> waitingClientLevels = new HashSet<>();
@@ -170,6 +171,12 @@ public class ClientApi
 	/** Synchronized to prevent a rare issue where multiple disconnect events are triggered on top of each other. */
 	public synchronized void onClientOnlyDisconnected()
 	{
+		if (this.firstLevelLoadTimer != null)
+		{
+			this.firstLevelLoadTimer.cancel();
+			this.firstLevelLoadTimer = null;
+		}
+		
 		AbstractDhWorld world = SharedApi.getAbstractDhWorld();
 		if (world != null)
 		{
@@ -228,6 +235,24 @@ public class ClientApi
 	
 	public void clientLevelLoadEvent(IClientLevelWrapper level)
 	{
+		if (MC.clientConnectedToDedicatedServer())
+		{
+			if (this.firstLevelLoadTimer == null)
+			{
+				this.firstLevelLoadTimer = TimerUtil.CreateTimer("FirstLevelLoadTimer");
+				this.firstLevelLoadTimer.schedule(new TimerTask()
+				{
+					@Override
+					public void run()
+					{
+						ClientApi.this.clientLevelLoadEvent(level);
+					}
+				}, FIRST_LEVEL_LOAD_DELAY);
+				return;
+			}
+			this.firstLevelLoadTimer.cancel();
+		}
+		
 		try
 		{
 			LOGGER.info("Loading client level [" + level + "]-["+level.getDimensionName()+"].");
