@@ -24,11 +24,14 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.DhBlockPosMutable;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
+import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import org.apache.logging.log4j.Logger;
 
+import java.awt.*;
 import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -53,11 +56,24 @@ public class DhLightingEngine
 	private static final ThreadLocal<DhBlockPosMutable> PRIMARY_BLOCK_POS_REF = ThreadLocal.withInitial(() -> new DhBlockPosMutable());
 	private static final ThreadLocal<DhBlockPosMutable> SECONDARY_BLOCK_POS_REF = ThreadLocal.withInitial(() -> new DhBlockPosMutable());
 	
+	/** if enabled will render each block light value when the lighting engine is run */
+	private static final boolean RENDER_BLOCK_LIGHT_WIREFRAME = false;
+	/** if enabled will render each sky light value when the lighting engine is run */
+	private static final boolean RENDER_SKY_LIGHT_WIREFRAME = false;
 	
+	
+	
+	//=============//
+	// constructor //
+	//=============//
 	
 	private DhLightingEngine() { }
 	
 	
+	
+	//=========//
+	// methods //
+	//=========//
 	
 	/**
 	 * Note: depending on the implementation of {@link IChunkWrapper#setDhBlockLight(int, int, int, int)} and {@link IChunkWrapper#setDhSkyLight(int, int, int, int)}
@@ -121,7 +137,6 @@ public class DhLightingEngine
 					
 					// get and set the adjacent chunk's initial block lights
 					final DhBlockPosMutable relLightBlockPos = PRIMARY_BLOCK_POS_REF.get();
-					final DhBlockPosMutable relBlockPos = SECONDARY_BLOCK_POS_REF.get();
 					
 					ArrayList<DhBlockPos> blockLightPosList = chunk.getWorldBlockLightPosList();
 					for (int blockLightIndex = 0; blockLightIndex < blockLightPosList.size(); blockLightIndex++) // using iterators in high traffic areas can cause GC issues due to allocating a bunch of iterators, use an indexed for-loop instead
@@ -135,7 +150,7 @@ public class DhLightingEngine
 						blockLightWorldPosQueue.push(blockLightPos.getX(), blockLightPos.getY(), blockLightPos.getZ(), lightValue);
 						
 						// set the light
-						chunk.setDhBlockLight(relBlockPos.getX(), relBlockPos.getY(), relBlockPos.getZ(), lightValue);
+						chunk.setDhBlockLight(relLightBlockPos.getX(), relLightBlockPos.getY(), relLightBlockPos.getZ(), lightValue);
 					}
 					
 					
@@ -172,8 +187,8 @@ public class DhLightingEngine
 									skyLightWorldPosQueue.push(skyLightPos.getX(), skyLightPos.getY(), skyLightPos.getZ(), maxSkyLight);
 									
 									// set the chunk's sky light
-									skyLightPos.mutateToChunkRelativePos(relBlockPos);
-									chunk.setDhSkyLight(relBlockPos.getX(), relBlockPos.getY(), relBlockPos.getZ(), maxSkyLight);
+									skyLightPos.mutateToChunkRelativePos(relLightBlockPos);
+									chunk.setDhSkyLight(relLightBlockPos.getX(), relLightBlockPos.getY(), relLightBlockPos.getZ(), maxSkyLight);
 								}
 							}
 						}
@@ -191,12 +206,14 @@ public class DhLightingEngine
 			// block light
 			this.propagateLightPosList(blockLightWorldPosQueue, adjacentChunkHolder,
 					(neighbourChunk, relBlockPos) -> neighbourChunk.getDhBlockLight(relBlockPos.getX(), relBlockPos.getY(), relBlockPos.getZ()),
-					(neighbourChunk, relBlockPos, newLightValue) -> neighbourChunk.setDhBlockLight(relBlockPos.getX(), relBlockPos.getY(), relBlockPos.getZ(), newLightValue));
+					(neighbourChunk, relBlockPos, newLightValue) -> neighbourChunk.setDhBlockLight(relBlockPos.getX(), relBlockPos.getY(), relBlockPos.getZ(), newLightValue),
+					true);
 			
 			// sky light
 			this.propagateLightPosList(skyLightWorldPosQueue, adjacentChunkHolder,
 					(neighbourChunk, relBlockPos) -> neighbourChunk.getDhSkyLight(relBlockPos.getX(), relBlockPos.getY(), relBlockPos.getZ()),
-					(neighbourChunk, relBlockPos, newLightValue) -> neighbourChunk.setDhSkyLight(relBlockPos.getX(), relBlockPos.getY(), relBlockPos.getZ(), newLightValue));
+					(neighbourChunk, relBlockPos, newLightValue) -> neighbourChunk.setDhSkyLight(relBlockPos.getX(), relBlockPos.getY(), relBlockPos.getZ(), newLightValue),
+					false);
 		}
 		catch (Exception e)
 		{
@@ -221,7 +238,8 @@ public class DhLightingEngine
 	/** Applies each {@link LightPos} from the queue to the given set of {@link IChunkWrapper}'s. */
 	private void propagateLightPosList(
 			StableLightPosStack lightPosQueue, AdjacentChunkHolder adjacentChunkHolder,
-			IGetLightFunc getLightFunc, ISetLightFunc setLightFunc)
+			IGetLightFunc getLightFunc, ISetLightFunc setLightFunc,
+			boolean propagatingBlockLights)
 	{
 		// these objects are saved so they can be mutated throughout the method,
 		// this reduces the number of allocations necessary, reducing GC pressure
@@ -287,7 +305,94 @@ public class DhLightingEngine
 			}
 		}
 		
+		
+		// can be enable if troubleshooting lighting issues
+		if (RENDER_BLOCK_LIGHT_WIREFRAME && propagatingBlockLights)
+		{
+			RenderDhLightValuesAsWireframe(adjacentChunkHolder, true);
+		}
+		else if (RENDER_SKY_LIGHT_WIREFRAME && !propagatingBlockLights)
+		{
+			RenderDhLightValuesAsWireframe(adjacentChunkHolder, false);
+		}
+		
+		
 		// propagation complete
+	}
+	
+	
+	
+	//===========//
+	// debugging //
+	//===========//
+	
+	/** Draw a wireframe representing each block's light value */
+	private static void RenderDhLightValuesAsWireframe(AdjacentChunkHolder adjacentChunkHolder, boolean renderBlockLights)
+	{
+		for (IChunkWrapper chunk : adjacentChunkHolder.chunkArray)
+		{
+			if (chunk == null)
+			{
+				continue;
+			}
+			
+			
+			
+			int chunkMinX = chunk.getMinBlockX();
+			int chunkMinZ = chunk.getMinBlockZ();
+			
+			int minY = chunk.getMinNonEmptyHeight();
+			int maxY = chunk.getMaxNonEmptyHeight();
+			
+			// check each position's light
+			for (int x = 0; x < LodUtil.CHUNK_WIDTH; x++)
+			{
+				for (int z = 0; z < LodUtil.CHUNK_WIDTH; z++)
+				{
+					for (int y = minY; y < maxY; y++)
+					{
+						int lightValue = renderBlockLights? chunk.getDhBlockLight(x, y, z) : chunk.getDhSkyLight(x, y, z);
+						if (lightValue != LodUtil.MIN_MC_LIGHT)
+						{
+							// hotter colors for more intense light
+							Color color;
+							if (lightValue >= 14)
+							{
+								color = Color.WHITE;
+							}
+							else if (lightValue >= 10)
+							{
+								color = Color.PINK;
+							}
+							else if (lightValue >= 6)
+							{
+								color = Color.YELLOW;
+							}
+							else if (lightValue >= 4)
+							{
+								color = Color.ORANGE;
+							}
+							else
+							{
+								color = Color.RED;
+							}
+							
+							
+							// a color can be set to null if you only want to troubleshoot up to a certain light level
+							if (color != null)
+							{
+								DebugRenderer.makeParticle(
+									new DebugRenderer.BoxParticle(
+										new DebugRenderer.Box(DhSectionPos.encode((byte) 0, chunkMinX + x, chunkMinZ + z), y, y + 1, 0.2f, color),
+										10.0, 0f
+									)
+								);
+							}
+						}
+					}
+				}
+			}
+		}
 	}
 	
 	
@@ -311,6 +416,11 @@ public class DhLightingEngine
 			super(x, y, z);
 			this.lightValue = lightValue;
 		}
+		
+		
+		@Override
+		public String toString() { return this.lightValue+" - ["+ this.x +", "+ this.y +", "+ this.z +"]"; }
+		
 		
 	}
 	
