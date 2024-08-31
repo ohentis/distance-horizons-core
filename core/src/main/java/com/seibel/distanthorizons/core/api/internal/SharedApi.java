@@ -24,7 +24,6 @@ import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.generation.DhLightingEngine;
 import com.seibel.distanthorizons.core.level.IDhLevel;
-import com.seibel.distanthorizons.core.level.IDhServerLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
 import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
@@ -45,10 +44,7 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.*;
 
 /** Contains code and variables used by both {@link ClientApi} and {@link ServerApi} */
 public class SharedApi
@@ -63,6 +59,7 @@ public class SharedApi
 	private static final int MIN_MS_BETWEEN_OVERLOADED_LOG_MESSAGE = 30_000;
 	
 	private static final Timer CHUNK_UPDATE_TIMER = TimerUtil.CreateTimer("ChunkUpdateTimer");
+	
 	
 	
 	private static AbstractDhWorld currentWorld;
@@ -275,18 +272,20 @@ public class SharedApi
 			}
 		}
 	}
-	private static void bakeChunkLightingAndSendToLevelAsync(IChunkWrapper chunkWrapper, @Nullable ArrayList<IChunkWrapper> neighbourChunkList, IDhLevel dhLevel)
+	/** returning a {@link CompletableFuture} isn't necessary, but allows Intellij to properly show the full stack trace when debugging. */
+	@SuppressWarnings("UnusedReturnValue")
+	private static CompletableFuture<Void> bakeChunkLightingAndSendToLevelAsync(IChunkWrapper chunkWrapper, @Nullable ArrayList<IChunkWrapper> neighbourChunkList, IDhLevel dhLevel)
 	{
 		// lighting the chunk needs to be done on a separate thread to prevent lagging any of the event threads
 		ThreadPoolExecutor executor = ThreadPoolUtil.getChunkToLodBuilderExecutor();
 		if (executor == null)
 		{
-			return;
+			return CompletableFuture.completedFuture(null);
 		}
 		
 		try
 		{
-			executor.execute(() ->
+			return CompletableFuture.runAsync(() ->		
 			{
 				//LOGGER.trace(chunkWrapper.getChunkPos() + " " + executor.getActiveCount() + " / " + executor.getQueue().size() + " - " + executor.getCompletedTaskCount());
 				
@@ -389,9 +388,13 @@ public class SharedApi
 						UPDATING_CHUNK_POS_SET.remove(chunkWrapper.getChunkPos());
 					}
 				}
-			});
+			}, executor);
 		}
-		catch (RejectedExecutionException ignore) { /* the executor was shut down, it should be back up shortly and able to accept new jobs */ }
+		catch (RejectedExecutionException ignore) 
+		{ 
+			// the executor was shut down, it should be back up shortly and able to accept new jobs
+			return CompletableFuture.completedFuture(null);
+		}
 	}
 	
 	
