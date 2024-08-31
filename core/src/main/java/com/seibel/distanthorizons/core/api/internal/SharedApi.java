@@ -278,7 +278,7 @@ public class SharedApi
 	private static void bakeChunkLightingAndSendToLevelAsync(IChunkWrapper chunkWrapper, @Nullable ArrayList<IChunkWrapper> neighbourChunkList, IDhLevel dhLevel)
 	{
 		// lighting the chunk needs to be done on a separate thread to prevent lagging any of the event threads
-		ThreadPoolExecutor executor = ThreadPoolUtil.getLightPopulatorExecutor();
+		ThreadPoolExecutor executor = ThreadPoolUtil.getChunkToLodBuilderExecutor();
 		if (executor == null)
 		{
 			return;
