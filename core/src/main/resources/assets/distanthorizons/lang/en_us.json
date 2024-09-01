@@ -358,9 +358,12 @@
 
   "distanthorizons.config.client.advanced.lodBuilding.minTimeBetweenChunkUpdatesInSeconds":
     "Minimum Time Between Chunk Updates In Seconds",
-    
   "distanthorizons.config.client.advanced.lodBuilding.minTimeBetweenChunkUpdatesInSeconds.@tooltip":
     "Determines how long must pass between LOD chunk updates before another. \nupdate can occur\n\nIncreasing this value will reduce CPU load but may may cause \nLODs to become outdated more frequently or for longer.",
+  "distanthorizons.config.client.advanced.lodBuilding.disableUnchangedChunkCheck":
+    "Disable Unchanged Chunk Check",
+  "distanthorizons.config.client.advanced.lodBuilding.disableUnchangedChunkCheck.@tooltip":
+    "Disabling this check may fix issues where LODs aren't updated after\nblocks have been changed.\n",
   "distanthorizons.config.client.advanced.lodBuilding.onlyUseDhLightingEngine":
     "Only Use DH Lighting Engine",
   "distanthorizons.config.client.advanced.lodBuilding.onlyUseDhLightingEngine.@tooltip":

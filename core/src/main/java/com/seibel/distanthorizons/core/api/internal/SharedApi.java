@@ -291,19 +291,24 @@ public class SharedApi
 				
 				try
 				{
+					boolean checkChunkHash = !Config.Client.Advanced.LodBuilding.disableUnchangedChunkCheck.get();
+					
 					// check if this chunk has been converted into an LOD already
 					int oldChunkHash = dhLevel.getChunkHash(chunkWrapper.getChunkPos()); // shouldn't happen on the render thread since it may take a few moments to run
 					int newChunkHash = chunkWrapper.getBlockBiomeHashCode();
-					if (oldChunkHash == newChunkHash)
+					if (checkChunkHash)
 					{
-						// if the chunk hashes are the same then we don't need to bother with lighting the chunk
-						// or creating/updating the LODs
-						//LOGGER.info("skipping: "+chunkWrapper.getChunkPos()+" "+newChunkHash);
-						return;
-					}
-					else
-					{
-						//LOGGER.info("g: "+chunkWrapper.getChunkPos()+" "+newChunkHash);
+						if (oldChunkHash == newChunkHash)
+						{
+							// if the chunk hashes are the same then we don't need to bother with lighting the chunk
+							// or creating/updating the LODs
+							//LOGGER.info("skipping: "+chunkWrapper.getChunkPos()+" "+newChunkHash);
+							return;
+						}
+						else
+						{
+							//LOGGER.info("g: "+chunkWrapper.getChunkPos()+" "+newChunkHash);
+						}
 					}
 					
 					

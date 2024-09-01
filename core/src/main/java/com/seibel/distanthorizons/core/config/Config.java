@@ -782,6 +782,19 @@ public class Config
 								+ "")
 						.build();
 				
+				public static ConfigEntry<Boolean> disableUnchangedChunkCheck = new ConfigEntry.Builder<Boolean>()
+						.set(false)
+						.comment(""
+								+ "Normally DH will attempt to skip creating LODs for chunks it's already seen\n"
+								+ "and that haven't changed.\n"
+								+ "\n"
+								+ "However sometimes that logic incorrecly prevents LODs from being updated.\n"
+								+ "Disabling this check may fix issues where LODs aren't updated after\n"
+								+ "blocks have been changed.\n"
+								+ "")
+						.build();
+				
+				/** Currently we always use the DH lighting engine because there's a high likelyhood of MC returning incorrect lighting otherwise */
 				@Deprecated
 				public static ConfigEntry<Boolean> onlyUseDhLightingEngine = new ConfigEntry.Builder<Boolean>()
 						.set(false)
