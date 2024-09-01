@@ -20,6 +20,7 @@
 package com.seibel.distanthorizons.core.util.math;
 
 import com.seibel.distanthorizons.api.objects.math.DhApiVec3d;
+import com.seibel.distanthorizons.api.objects.math.DhApiVec3f;
 import com.seibel.distanthorizons.coreapi.util.MathUtil;
 
 /**
@@ -134,7 +135,6 @@ public class Vec3d extends DhApiVec3d
 	
 	public Vec3d copy() { return new Vec3d(this.x, this.y, this.z); }
 	
-	// Forge start
 	public Vec3d(double[] values) { this.set(values); }
 	
 	public void set(double[] values)
@@ -142,6 +142,27 @@ public class Vec3d extends DhApiVec3d
 		this.x = values[0];
 		this.y = values[1];
 		this.z = values[2];
+	}
+	
+	public static double getManhattanDistance(DhApiVec3d a, DhApiVec3d b)
+	{
+		return Math.abs(a.x - b.x)
+				+ Math.abs(a.y - b.y)
+				+ Math.abs(a.z - b.z);
+	}
+	
+	public static double getDistance(DhApiVec3d a, DhApiVec3d b)
+	{
+		return Math.sqrt(Math.pow(a.x - b.x, 2)
+				+ Math.pow(a.y - b.y, 2)
+				+ Math.pow(a.z - b.z, 2));
+	}
+	/** slightly faster version of {@link Vec3d#getDistance} */
+	public static double getSquaredDistance(DhApiVec3d a, DhApiVec3d b)
+	{
+		return Math.pow(a.x - b.x, 2)
+				+ Math.pow(a.y - b.y, 2)
+				+ Math.pow(a.z - b.z, 2);
 	}
 	
 }

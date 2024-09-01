@@ -66,6 +66,11 @@ public class ThreadPoolUtil
 	@Nullable
 	public static ThreadPoolExecutor getCleanupExecutor() { return cleanupThreadPool; }
 	
+	public static final String BEACON_CULLING_THREAD_NAME = "Beacon Culling";
+	private static ThreadPoolExecutor beaconCullingThreadPool;
+	@Nullable
+	public static ThreadPoolExecutor getBeaconCullingExecutor() { return beaconCullingThreadPool; }
+	
 	
 	
 	//======================//
@@ -109,6 +114,7 @@ public class ThreadPoolUtil
 		worldGenThreadPool = new ConfigThreadPool(WORLD_GEN_THREAD_FACTORY, Config.Client.Advanced.MultiThreading.numberOfWorldGenerationThreads, Config.Client.Advanced.MultiThreading.runTimeRatioForWorldGenerationThreads, null);
 		bufferUploaderThreadPool = ThreadUtil.makeSingleThreadPool(BUFFER_UPLOADER_THREAD_NAME);
 		cleanupThreadPool = ThreadUtil.makeSingleThreadPool(CLEANUP_THREAD_NAME);
+		beaconCullingThreadPool = ThreadUtil.makeSingleThreadPool(BEACON_CULLING_THREAD_NAME);
 		
 		
 		
@@ -149,6 +155,7 @@ public class ThreadPoolUtil
 		worldGenThreadPool.shutdownExecutorService();
 		bufferUploaderThreadPool.shutdown();
 		cleanupThreadPool.shutdown();
+		beaconCullingThreadPool.shutdown();
 		
 		
 		// worker threads
