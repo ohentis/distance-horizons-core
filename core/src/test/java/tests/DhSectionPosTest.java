@@ -22,8 +22,8 @@ package tests;
 import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
-import com.seibel.distanthorizons.core.pos.DhBlockPos;
-import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
+import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos;
+import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
 import org.junit.Assert;
 import org.junit.Test;
 

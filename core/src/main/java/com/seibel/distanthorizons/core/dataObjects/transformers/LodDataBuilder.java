@@ -31,8 +31,8 @@ import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSour
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.pos.DhBlockPos;
-import com.seibel.distanthorizons.core.pos.DhBlockPosMutable;
+import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos;
+import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPosMutable;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.util.FullDataPointUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
@@ -67,8 +67,8 @@ public class LodDataBuilder
 		
 		
 		
-		int sectionPosX = getXOrZSectionPosFromChunkPos(chunkWrapper.getChunkPos().x);
-		int sectionPosZ = getXOrZSectionPosFromChunkPos(chunkWrapper.getChunkPos().z);
+		int sectionPosX = getXOrZSectionPosFromChunkPos(chunkWrapper.getChunkPos().getX());
+		int sectionPosZ = getXOrZSectionPosFromChunkPos(chunkWrapper.getChunkPos().getZ());
 		long pos = DhSectionPos.encode(DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL, sectionPosX, sectionPosZ);
 		
 		FullDataSourceV2 dataSource = FullDataSourceV2.createEmpty(pos);
@@ -78,8 +78,8 @@ public class LodDataBuilder
 		
 		// compute the chunk dataSource offset
 		// this offset is used to determine where in the dataSource this chunk's data should go
-		int chunkOffsetX = chunkWrapper.getChunkPos().x;
-		if (chunkWrapper.getChunkPos().x < 0)
+		int chunkOffsetX = chunkWrapper.getChunkPos().getX();
+		if (chunkWrapper.getChunkPos().getX() < 0)
 		{
 			// expected offset positions:
 			// chunkPos -> offset
@@ -106,8 +106,8 @@ public class LodDataBuilder
 		}
 		chunkOffsetX *= LodUtil.CHUNK_WIDTH;
 		
-		int chunkOffsetZ = chunkWrapper.getChunkPos().z;
-		if (chunkWrapper.getChunkPos().z < 0)
+		int chunkOffsetZ = chunkWrapper.getChunkPos().getZ();
+		if (chunkWrapper.getChunkPos().getZ() < 0)
 		{
 			chunkOffsetZ = ((chunkOffsetZ) % FullDataSourceV2.NUMB_OF_CHUNKS_WIDE);
 			if (chunkOffsetZ != 0)

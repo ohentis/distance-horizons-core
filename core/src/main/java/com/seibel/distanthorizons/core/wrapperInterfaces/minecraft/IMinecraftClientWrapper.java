@@ -19,12 +19,11 @@
 
 package com.seibel.distanthorizons.core.wrapperInterfaces.minecraft;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.UUID;
 
 import com.seibel.distanthorizons.core.enums.EDhDirection;
-import com.seibel.distanthorizons.core.pos.DhBlockPos;
+import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;

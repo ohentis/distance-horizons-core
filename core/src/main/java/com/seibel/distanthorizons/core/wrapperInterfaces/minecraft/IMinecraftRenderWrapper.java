@@ -20,20 +20,11 @@
 package com.seibel.distanthorizons.core.wrapperInterfaces.minecraft;
 
 import java.awt.Color;
-import java.util.HashSet;
 
-import com.seibel.distanthorizons.core.dependencyInjection.ModAccessorInjector;
-import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
-import com.seibel.distanthorizons.core.pos.DhBlockPos;
-import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.ILightMapWrapper;
 import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IBindable;
-import com.seibel.distanthorizons.core.util.math.Mat4f;
 import com.seibel.distanthorizons.core.util.math.Vec3d;
 import com.seibel.distanthorizons.core.util.math.Vec3f;
-import com.seibel.distanthorizons.core.wrapperInterfaces.IVersionConstants;
-import com.seibel.distanthorizons.core.wrapperInterfaces.IWrapperFactory;
-import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.ISodiumAccessor;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import org.jetbrains.annotations.Nullable;
 

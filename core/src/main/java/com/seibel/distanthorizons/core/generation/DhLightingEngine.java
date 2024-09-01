@@ -21,8 +21,8 @@ package com.seibel.distanthorizons.core.generation;
 
 import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.pos.DhBlockPos;
-import com.seibel.distanthorizons.core.pos.DhBlockPosMutable;
+import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos;
+import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPosMutable;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
@@ -109,7 +109,7 @@ public class DhLightingEngine
 			{
 				for (int zOffset = -1; zOffset <= 1; zOffset++)
 				{
-					DhChunkPos adjacentPos = new DhChunkPos(centerChunkPos.x + xOffset, centerChunkPos.z + zOffset);
+					DhChunkPos adjacentPos = new DhChunkPos(centerChunkPos.getX() + xOffset, centerChunkPos.getZ() + zOffset);
 					requestedAdjacentPositions.add(adjacentPos);
 				}
 			}

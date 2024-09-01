@@ -27,7 +27,7 @@ import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSour
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.generation.tasks.*;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
+import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.config.Config;
@@ -456,8 +456,8 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 			case VANILLA_CHUNKS: 
 			{
 				return this.generator.generateChunks(
-					chunkPosMin.x,
-					chunkPosMin.z,
+					chunkPosMin.getX(),
+					chunkPosMin.getZ(),
 					granularity,
 					targetDataDetail,
 					generatorMode,
@@ -482,8 +482,8 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 			case API_CHUNKS: 
 			{
 				return this.generator.generateApiChunks(
-					chunkPosMin.x,
-					chunkPosMin.z,
+					chunkPosMin.getX(),
+					chunkPosMin.getZ(),
 					granularity,
 					targetDataDetail,
 					generatorMode,

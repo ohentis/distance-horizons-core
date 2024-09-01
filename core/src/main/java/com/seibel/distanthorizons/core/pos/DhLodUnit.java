@@ -36,12 +36,21 @@ public class DhLodUnit
 	
 	
 	
+	//==============//
+	// constructors //
+	//==============//
+	
 	public DhLodUnit(byte detailLevel, int numberOfLodSectionsWide)
 	{
 		this.detailLevel = detailLevel;
 		this.numberOfLodSectionsWide = numberOfLodSectionsWide;
 	}
 	
+	
+	
+	//=========//
+	// methods //
+	//=========//
 	
 	/** @return the size of this LOD unit in Minecraft blocks */
 	public int toBlockWidth() { return BitShiftUtil.pow(this.numberOfLodSectionsWide, this.detailLevel); }

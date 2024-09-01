@@ -23,7 +23,7 @@ import com.seibel.distanthorizons.core.file.fullDatafile.GeneratedFullDataSource
 import com.seibel.distanthorizons.core.generation.IFullDataSourceRetrievalQueue;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
-import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
+import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
 import org.apache.logging.log4j.Logger;
 
 import java.io.Closeable;

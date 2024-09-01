@@ -179,7 +179,7 @@ public abstract class AbstractDhLevel implements IDhLevel
 					
 					ApiEventInjector.INSTANCE.fireAllEvents(
 							DhApiChunkModifiedEvent.class,
-							new DhApiChunkModifiedEvent.EventParam(this.getLevelWrapper(), chunkPos.x, chunkPos.z));
+							new DhApiChunkModifiedEvent.EventParam(this.getLevelWrapper(), chunkPos.getX(), chunkPos.getZ()));
 				}
 			}
 		});

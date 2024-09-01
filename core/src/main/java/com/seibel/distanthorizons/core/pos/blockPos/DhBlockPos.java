@@ -17,7 +17,7 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.seibel.distanthorizons.core.pos;
+package com.seibel.distanthorizons.core.pos.blockPos;
 
 import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.util.LodUtil;
@@ -26,7 +26,14 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import java.util.Objects;
 
-/** @see DhBlockPosMutable */
+/**
+ * immutable  <br><br>
+ *  
+ * Dev note: if for some reason we want to store these as longs check the old commits. <br>
+ * That logic was removed since it wasn't needed at the time.
+ * 
+ * @see DhBlockPosMutable 
+ */
 public class DhBlockPos
 {
 	/** Useful for methods that need a position passed in but won't actually be used */

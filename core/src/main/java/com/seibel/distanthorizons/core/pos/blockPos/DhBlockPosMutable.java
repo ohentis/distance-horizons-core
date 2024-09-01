@@ -17,14 +17,9 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.seibel.distanthorizons.core.pos;
+package com.seibel.distanthorizons.core.pos.blockPos;
 
 import com.seibel.distanthorizons.core.enums.EDhDirection;
-import com.seibel.distanthorizons.core.util.LodUtil;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
-import java.util.Objects;
 
 public class DhBlockPosMutable extends DhBlockPos
 {

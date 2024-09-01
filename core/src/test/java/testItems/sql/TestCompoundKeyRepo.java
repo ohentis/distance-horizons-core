@@ -52,7 +52,7 @@ public class TestCompoundKeyRepo extends AbstractDhRepo<DhChunkPos, TestCompound
 	@Override
 	public String getTableName() { return "TestCompound"; }
 	@Override 
-	public String createWhereStatement(DhChunkPos key) { return "XPos = '"+key.x+"' AND ZPos = '"+key.z+"'"; }
+	public String createWhereStatement(DhChunkPos key) { return "XPos = '"+key.getX()+"' AND ZPos = '"+key.getZ()+"'"; }
 	
 	
 	@Override 
@@ -75,8 +75,8 @@ public class TestCompoundKeyRepo extends AbstractDhRepo<DhChunkPos, TestCompound
 		PreparedStatement statement = this.createPreparedStatement(sql);
 		
 		int i = 1; // post-increment for the win!
-		statement.setObject(i++, dto.id.x);
-		statement.setObject(i++, dto.id.z);
+		statement.setObject(i++, dto.id.getX());
+		statement.setObject(i++, dto.id.getZ());
 		
 		statement.setObject(i++, dto.value);
 		
@@ -96,8 +96,8 @@ public class TestCompoundKeyRepo extends AbstractDhRepo<DhChunkPos, TestCompound
 		int i = 1;
 		statement.setObject(i++, dto.value);
 		
-		statement.setObject(i++, dto.id.x);
-		statement.setObject(i++, dto.id.z);
+		statement.setObject(i++, dto.id.getX());
+		statement.setObject(i++, dto.id.getZ());
 		
 		return statement;
 	}
