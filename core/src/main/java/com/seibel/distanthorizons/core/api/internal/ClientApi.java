@@ -552,8 +552,17 @@ public class ClientApi
 			}
 			IDhClientLevel level = dhClientWorld.getOrLoadClientLevel(levelWrapper);
 			
+			
 			if (this.rendererDisabledBecauseOfExceptions)
 			{
+				// re-enable rendering if the user toggles DH rendering
+				if (!Config.Client.quickEnableRendering.get())
+				{
+					LOGGER.info("DH Renderer re-enabled after exception. Some rendering issues may occur. Please reboot Minecraft if you see any rendering issues.");
+					this.rendererDisabledBecauseOfExceptions = false;
+					Config.Client.quickEnableRendering.set(true);
+				}
+				
 				return;
 			}
 			
@@ -604,9 +613,9 @@ public class ClientApi
 			LOGGER.error("Unexpected Renderer error in render pass [" + renderPass + "]. Error: " + e.getMessage(), e);
 			
 			MC.sendChatMessage("\u00A74\u00A7l\u00A7uERROR: Distant Horizons renderer has encountered an exception!");
-			MC.sendChatMessage("\u00A74Renderer is now disabled to prevent further issues.");
-			MC.sendChatMessage("\u00A74Please restart your game to re-enable Distant Horizons' LOD rendering.");
-			MC.sendChatMessage("\u00A74Exception detail: " + e);
+			MC.sendChatMessage("\u00A74Renderer disabled to try preventing GL state corruption.");
+			MC.sendChatMessage("\u00A74Toggle DH rendering via the config UI to re-activate DH rendering.");
+			MC.sendChatMessage("\u00A74Error: " + e);
 		}
 		finally
 		{
