@@ -164,5 +164,11 @@ public class Vec3d extends DhApiVec3d
 				+ Math.pow(a.y - b.y, 2)
 				+ Math.pow(a.z - b.z, 2);
 	}
+	/** Gets the distance between points A and B, ignoring Y height. */
+	public static double getHorizontalDistance(DhApiVec3d a, DhApiVec3d b)
+	{
+		return Math.sqrt(Math.pow(a.x - b.x, 2)
+				+ Math.pow(a.z - b.z, 2));
+	}
 	
 }

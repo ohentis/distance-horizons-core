@@ -307,9 +307,7 @@ public class BeaconRenderHandler
 					{
 						Thread.sleep(MAX_CULLING_FREQUENCY_IN_MS);
 					}
-					catch (InterruptedException ignore)
-					{
-					}
+					catch (InterruptedException ignore) { }
 					
 					try
 					{
@@ -331,7 +329,7 @@ public class BeaconRenderHandler
 						for (DhApiRenderableBox box : this.fullBeaconBoxList)
 						{
 							// if a beacon is outside the vanilla render distance render it
-							double distance = Vec3d.getDistance(cameraPos, box.minPos);
+							double distance = Vec3d.getHorizontalDistance(cameraPos, box.minPos);
 							if (distance > mcRenderDistance)
 							{
 								this.beaconBoxGroup.add(box);
