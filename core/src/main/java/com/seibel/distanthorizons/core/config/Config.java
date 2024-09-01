@@ -701,6 +701,17 @@ public class Config
 							.addListener(ReloadLodsConfigEventHandler.INSTANCE)
 							.build();
 					
+					public static ConfigEntry<Boolean> disableBeaconDistanceCulling = new ConfigEntry.Builder<Boolean>()
+							.set(false)
+							.comment(""
+									+ "If true all beacons near the camera won't be drawn to prevent vanilla overdraw. \n"
+									+ "If false all beacons will be rendered. \n"
+									+ "\n"
+									+ "Generally this should be left as false. It's main purpose is for debugging\n"
+									+ "beacon updating/rendering.\n"
+									+ "")
+							.build();
+					
 				}
 				
 			}

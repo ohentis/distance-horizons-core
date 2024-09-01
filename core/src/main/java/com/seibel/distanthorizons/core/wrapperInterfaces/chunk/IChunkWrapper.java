@@ -347,7 +347,8 @@ public interface IChunkWrapper extends IBindable
 		
 		AdjacentChunkHolder adjacentChunkHolder = new AdjacentChunkHolder(this, neighbourChunkList);
 		
-		// since beacons emit light we can check only the positions that are emitting light
+		// find the beacon block positions,
+		// since beacons emit light we only need to check the positions that emit light
 		final DhBlockPosMutable relPos = new DhBlockPosMutable();
 		ArrayList<DhBlockPos> blockPosList = this.getWorldBlockLightPosList();
 		for (int i = 0; i < blockPosList.size(); i++)
@@ -359,9 +360,11 @@ public interface IChunkWrapper extends IBindable
 			IBlockStateWrapper block = this.getBlockState(relPos);
 			if (block.isBeaconBlock())
 			{
+				// check if this beacon is active and if so what color it should be
 				Color beaconColor = getBeaconColor(pos, adjacentChunkHolder);
 				if (beaconColor != null)
 				{
+					// beacon is active
 					BeaconBeamDTO beam = new BeaconBeamDTO(blockPosList.get(i), beaconColor);
 					beaconBeamList.add(beam);
 				}
@@ -390,7 +393,8 @@ public interface IChunkWrapper extends IBindable
 				baseRelPos.setX(beaconRelPos.getX() + x);
 				baseRelPos.setZ(beaconRelPos.getZ() + z);
 				baseRelPos.mutateToChunkRelativePos(baseRelPos);
-				
+
+				// if no chunk is loaded assume the beacon is complete in that direction
 				IChunkWrapper chunk = chunkHolder.getByBlockPos(beaconPos.getX() + x, beaconPos.getZ() + z);
 				if (chunk != null)
 				{

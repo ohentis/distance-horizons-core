@@ -39,6 +39,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -216,11 +217,12 @@ public abstract class AbstractDhLevel implements IDhLevel
 	//=================//
 	
 	@Override
-	public void setBeaconBeamsForChunk(DhChunkPos chunkPos, List<BeaconBeamDTO> newBeamList)
+	public void updateBeaconBeamsForChunk(IChunkWrapper chunkToUpdate, ArrayList<IChunkWrapper> nearbyChunkList)
 	{
 		if (this.beaconRenderHandler != null)
 		{
-			this.beaconRenderHandler.setBeaconBeamsForChunk(chunkPos, newBeamList);
+			List<BeaconBeamDTO> activeBeamList = chunkToUpdate.getAllActiveBeacons(nearbyChunkList);
+			this.beaconRenderHandler.setBeaconBeamsForChunk(chunkToUpdate.getChunkPos(), activeBeamList);
 		}
 	}
 	

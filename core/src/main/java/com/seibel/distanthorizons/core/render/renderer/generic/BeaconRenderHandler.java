@@ -99,7 +99,7 @@ public class BeaconRenderHandler
 	// level loading/unloading //
 	//=========================//
 	
-	public void setBeaconBeamsForChunk(DhChunkPos chunkPos, List<BeaconBeamDTO> newBeamList)
+	public void setBeaconBeamsForChunk(DhChunkPos chunkPos, List<BeaconBeamDTO> activeBeamList)
 	{
 		// synchronized to prevent two threads from updating the same chunk at the same time
 		synchronized (this)
@@ -107,11 +107,11 @@ public class BeaconRenderHandler
 			HashSet<DhBlockPos> allPosSet = new HashSet<>();
 			
 			// sort new beams
-			HashMap<DhBlockPos, BeaconBeamDTO> newBeamByPos = new HashMap<>(newBeamList.size());
-			for (int i = 0; i < newBeamList.size(); i++)
+			HashMap<DhBlockPos, BeaconBeamDTO> activeBeamByPos = new HashMap<>(activeBeamList.size());
+			for (int i = 0; i < activeBeamList.size(); i++)
 			{
-				BeaconBeamDTO beam = newBeamList.get(i);
-				newBeamByPos.put(beam.blockPos, beam);
+				BeaconBeamDTO beam = activeBeamList.get(i);
+				activeBeamByPos.put(beam.blockPos, beam);
 				allPosSet.add(beam.blockPos);
 			}
 			
@@ -136,28 +136,28 @@ public class BeaconRenderHandler
 				}
 				
 				BeaconBeamDTO existingBeam = existingBeamByPos.get(beaconPos);
-				BeaconBeamDTO newBeam = newBeamByPos.get(beaconPos);
+				BeaconBeamDTO activeBeam = activeBeamByPos.get(beaconPos);
 				
-				if (existingBeam != null && newBeam != null)
+				if (existingBeam != null && activeBeam != null)
 				{
 					// beam still exists in chunk
-					if (!existingBeam.color.equals(newBeam.color))
+					if (!existingBeam.color.equals(activeBeam.color))
 					{
 						// beam colors were changed
-						this.beaconBeamRepo.save(newBeam);
-						this.updateBeaconColor(newBeam);
+						this.beaconBeamRepo.save(activeBeam);
+						this.updateBeaconColor(activeBeam);
 					}
 				}
-				else if (existingBeam == null && newBeam != null)
+				else if (existingBeam == null && activeBeam != null)
 				{
 					// new beam found, add to DB
-					this.beaconBeamRepo.save(newBeam);
-					this.startRenderingBeacon(newBeam);
+					this.beaconBeamRepo.save(activeBeam);
+					this.startRenderingBeacon(activeBeam);
 				}
-				else if (existingBeam != null && newBeam == null)
+				else if (existingBeam != null && activeBeam == null)
 				{
 					// beam no longer exists at position, remove from DB
-					this.beaconBeamRepo.deleteWithKey(beaconPos); // TODO broken when updating adjacent chunks
+					this.beaconBeamRepo.deleteWithKey(beaconPos);
 					this.stopRenderingBeaconAtPos(beaconPos);
 				}
 				
@@ -274,9 +274,13 @@ public class BeaconRenderHandler
 	
 	private void beforeRender(DhApiRenderParam renderEventParam) 
 	{
-		// this could be called only when the player moves, but it's an extremely cheap check, 
-		// so there isn't much of a reason to bother 
-		this.tryUpdateBeaconCullingAsync();
+		if (!Config.Client.Advanced.Graphics.AdvancedGraphics.disableBeaconDistanceCulling.get())
+		{
+			// this could be called only when the player moves, but it's an extremely cheap check, 
+			// so there isn't much of a reason to bother 
+			this.tryUpdateBeaconCullingAsync();
+		}
+		
 		
 		// this must be called on the render thread to prevent concurrency issues
 		if (this.updateRenderDataNextFrame)

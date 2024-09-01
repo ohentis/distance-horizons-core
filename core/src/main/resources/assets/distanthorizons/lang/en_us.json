@@ -308,7 +308,11 @@
   "distanthorizons.config.client.advanced.graphics.advancedGraphics.grassSideRendering":
     "Grass Side Rendering",
   "distanthorizons.config.client.advanced.graphics.advancedGraphics.grassSideRendering.@tooltip":
-    "How should the sides and bottom of grass block LODs render?",
+    "How should the sides and bottom of grass block LODs render?",  
+  "distanthorizons.config.client.advanced.graphics.advancedGraphics.disableBeaconDistanceCulling":
+    "Disable Beacon Distance Culling",
+  "distanthorizons.config.client.advanced.graphics.advancedGraphics.disableBeaconDistanceCulling.@tooltip":
+    "If true all beacons near the camera won't be drawn to prevent vanilla overdraw. \nIf false all beacons will be rendered.",
 
 
   "distanthorizons.config.client.advanced.graphics.genericRendering":
