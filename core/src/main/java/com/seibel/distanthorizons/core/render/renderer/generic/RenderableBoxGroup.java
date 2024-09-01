@@ -215,7 +215,8 @@ public class RenderableBoxGroup
 		public Stream<DhApiRenderableBox> stream() { return this.boxList.stream(); }
 		@Override 
 		public Stream<DhApiRenderableBox> parallelStream() { return this.boxList.parallelStream(); }
-		
+		@Override 
+		public void clear() { this.boxList.clear(); }
 		
 		
 		//===================//
