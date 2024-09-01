@@ -23,6 +23,8 @@ import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import org.jetbrains.annotations.Nullable;
 
+import java.awt.*;
+
 /**
  * @version 2022-9-16
  */
@@ -40,5 +42,7 @@ public interface IClientLevelWrapper extends ILevelWrapper
 	/** Will return null if there was an issue finding the biome. */
 	@Nullable
 	IBiomeWrapper getPlainsBiomeWrapper();
+	
+	Color getCloudColor(float tickDelta);
 	
 }

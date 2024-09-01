@@ -110,11 +110,15 @@ public abstract class AbstractDhLevel implements IDhLevel
 		GenericObjectRenderer genericRenderer = this.getGenericRenderer();
 		if (genericRenderer != null)
 		{
-			// only add clouds for certain dimension types
-			if (!this.getLevelWrapper().hasCeiling()
-					&& !this.getLevelWrapper().getDimensionType().isTheEnd())
+			// only client levels can render clouds
+			if (this instanceof IDhClientLevel)
 			{
-				this.cloudRenderHandler = new CloudRenderHandler(this, genericRenderer);
+				// only add clouds for certain dimension types
+				if (!this.getLevelWrapper().hasCeiling()
+						&& !this.getLevelWrapper().getDimensionType().isTheEnd())
+				{
+					this.cloudRenderHandler = new CloudRenderHandler((IDhClientLevel)this, genericRenderer);
+				}
 			}
 			
 			
