@@ -20,12 +20,15 @@
 package com.seibel.distanthorizons.core.wrapperInterfaces.chunk;
 
 import com.seibel.distanthorizons.core.generation.AdjacentChunkHolder;
+import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPosMutable;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.sql.dto.BeaconBeamDTO;
+import com.seibel.distanthorizons.core.util.ColorUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IBindable;
@@ -410,7 +413,7 @@ public interface IChunkWrapper extends IBindable
 		int red = 0;
 		int green = 0;
 		int blue = 0;
-		boolean glassBlockFound = false;
+		boolean beaconTintBlockFound = false;
 		
 		IChunkWrapper centerChunk = chunkHolder.getByBlockPos(beaconPos.getX(), beaconPos.getZ());
 		int maxY = centerChunk.getMaxNonEmptyHeight();
@@ -422,25 +425,23 @@ public interface IChunkWrapper extends IBindable
 				return null;
 			}
 			
-			if (block.isGlassBlock() 
-				// ignore invisible blocks (which have pure black as their map color, luckily black stained-glass is actually extremely dark gray)
-				&& !block.getMapColor().equals(Color.BLACK))
+			if (block.isBeaconTintBlock())
 			{
- 				red += block.getMapColor().getRed();
-				green += block.getMapColor().getGreen();
-				blue += block.getMapColor().getBlue();
+ 				red += block.getBeaconTintColor().getRed();
+				green += block.getBeaconTintColor().getGreen();
+				blue += block.getBeaconTintColor().getBlue();
 				
-				if (glassBlockFound)
+				if (beaconTintBlockFound)
 				{
 					red /= 2;
 					green /= 2;
 					blue /= 2;
 				}
-				glassBlockFound = true;
+				beaconTintBlockFound = true;
 			}
 		}
 		
-		return glassBlockFound ? new Color(red, green, blue) : Color.WHITE;
+		return beaconTintBlockFound ? new Color(red, green, blue) : Color.WHITE;
 	}
 	
 	
