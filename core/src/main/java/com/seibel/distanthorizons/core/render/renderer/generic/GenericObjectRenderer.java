@@ -32,6 +32,7 @@ import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBox;
 import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBoxGroupShading;
 import com.seibel.distanthorizons.core.dependencyInjection.ModAccessorInjector;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
+import com.seibel.distanthorizons.core.jar.EPlatform;
 import com.seibel.distanthorizons.core.logging.ConfigBasedSpamLogger;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
@@ -192,7 +193,7 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		}
 		else
 		{
-			boolean isMac = GLFW.glfwGetPlatform() == GLFW.GLFW_PLATFORM_COCOA;
+			boolean isMac = (EPlatform.get() == EPlatform.MACOS);
 			if (isMac && SODIUM != null)
 			{
 				this.useInstancedRendering = false;
