@@ -40,20 +40,12 @@ public class SupplierBasedRateLimiter<T>
 	{
 		this.rateLimiter.setRate(this.maxRateSupplier.get());
 		
-		if (this.rateLimiter.tryAcquire(permits))
-		{
-			return permits;
-		}
-		
 		int acquired = 0;
-		while ((permits /= 2) > 0)
+		while (permits > 0 && this.rateLimiter.tryAcquire())
 		{
-			if (this.rateLimiter.tryAcquire(permits))
-			{
-				acquired += permits;
-			}
+			acquired++;
+			permits--;
 		}
-		
 		return acquired;
 	}
 	
