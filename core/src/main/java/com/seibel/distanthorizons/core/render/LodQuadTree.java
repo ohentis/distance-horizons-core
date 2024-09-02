@@ -250,11 +250,12 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 			ArrayList<LodRenderSection> nodesNeedingRetrieval,
 			ArrayList<LodRenderSection> nodesNeedingLoading)
 	{
-		//===============================//
-		// node and render section setup //
-		//===============================//
+		//=====================//
+		// get/create the node //
+		// and render section  //
+		//=====================//
 		
-		// make sure the node is created
+		// create the node
 		if (quadNode == null && this.isSectionPosInBounds(sectionPos)) // the position bounds should only fail when at the edge of the user's render distance
 		{
 			rootNode.setValue(sectionPos, new LodRenderSection(sectionPos, this, this.level, this.fullDataSourceProvider));
@@ -266,15 +267,12 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 			return false;
 		}
 		
-		// make sure the render section is created
+		// make sure the render section is created (shouldn't be necessary, but just in case)
 		LodRenderSection renderSection = quadNode.value;
-		// create a new render section if missing
 		if (renderSection == null)
 		{
-			LodRenderSection newRenderSection = new LodRenderSection(sectionPos, this, this.level, this.fullDataSourceProvider);
-			rootNode.setValue(sectionPos, newRenderSection);
-			
-			renderSection = newRenderSection; // TODO this never seemed to be called, is it necessary?
+			renderSection = new LodRenderSection(sectionPos, this, this.level, this.fullDataSourceProvider);
+			rootNode.setValue(sectionPos, renderSection);
 		}
 		
 		
@@ -283,26 +281,29 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 		// handle enabling, loading,     //
 		// and disabling render sections //
 		//===============================//
-
+		
 		//byte expectedDetailLevel = DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL + 3; // can be used instead of the following logic for testing
 		byte expectedDetailLevel = this.calculateExpectedDetailLevel(playerPos, sectionPos);
 		expectedDetailLevel = (byte) Math.min(expectedDetailLevel, this.minRenderDetailLevel);
 		expectedDetailLevel += DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL;
 		
-		
 		if (DhSectionPos.getDetailLevel(sectionPos) > expectedDetailLevel)
 		{
-			// section detail level too high //
+			//=======================//
+			// detail level too high //
+			//=======================//
+			
 			boolean thisPosIsRendering = renderSection.getRenderingEnabled();
 			boolean allChildrenSectionsAreLoaded = true;
 			
-			// recursively update all child render sections
+			// recursively update each child render section
 			for (int i = 0; i < 4; i++)
 			{
 				QuadNode<LodRenderSection> childNode = quadNode.getChildByIndex(i);
 				boolean childSectionLoaded = this.recursivelyUpdateRenderSectionNode(playerPos, rootNode, childNode, DhSectionPos.getChildByIndex(sectionPos, i), thisPosIsRendering || parentSectionIsRendering, nodesNeedingRetrieval, nodesNeedingLoading);
 				allChildrenSectionsAreLoaded = childSectionLoaded && allChildrenSectionsAreLoaded;
 			}
+			
 			
 			if (!allChildrenSectionsAreLoaded)
 			{
@@ -311,93 +312,90 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 			}
 			else
 			{
-				// all child positions are loaded, disable this section and enable its children.
-				renderSection.setRenderingEnabled(false);
+				// onRenderingDisabled() needs to be fired before the children are enabled so beacons render correctly
+				if (renderSection.getRenderingEnabled())
+				{
+					renderSection.onRenderingDisabled();
+					
+					// this position's rendering has been disabled due to children being rendered
+					DebugRenderer.makeParticle(new DebugRenderer.BoxParticle(new DebugRenderer.Box(renderSection.pos, 128f, 156f, 0.09f, Color.WHITE), 0.2, 32f));
+				}
 				
-				// walk back down the tree and enable the child sections //TODO there are probably more efficient ways of doing this, but this will work for now
+				
+				// walk back down the tree and enable each child section
 				for (int i = 0; i < 4; i++)
 				{
 					QuadNode<LodRenderSection> childNode = quadNode.getChildByIndex(i);
-					boolean childSectionLoaded = this.recursivelyUpdateRenderSectionNode(playerPos, rootNode, childNode, DhSectionPos.getChildByIndex(sectionPos, i), parentSectionIsRendering, nodesNeedingRetrieval, nodesNeedingLoading);
-					allChildrenSectionsAreLoaded = childSectionLoaded && allChildrenSectionsAreLoaded;
-				}
-				if (!allChildrenSectionsAreLoaded)
-				{
-					// FIXME having world generation enabled in a pre-generated world that doesn't have any DH data can cause this to happen
-					//  surprisingly reloadPos() doesn't appear to be the culprit, maybe there is an issue with reloading/changing the full data source?
-					//LOGGER.warn("Potential QuadTree concurrency issue. All child sections should be enabled and ready to render for pos: "+DhSectionPos.toString(sectionPos));
+					this.recursivelyUpdateRenderSectionNode(playerPos, rootNode, childNode, DhSectionPos.getChildByIndex(sectionPos, i), parentSectionIsRendering, nodesNeedingRetrieval, nodesNeedingLoading);
 				}
 				
+				// disabling rendering must be done after the children are enabled
+				// otherwise holes may appear in the world, overlaps are less noticeable
+				renderSection.setRenderingEnabled(false);
+				
 				// this section is now being rendered via its children
-				return allChildrenSectionsAreLoaded;
+				return true;
 			}
 		}
 		// TODO this should only equal the expected detail level, the (expectedDetailLevel-1) is a temporary fix to prevent corners from being cut out 
 		else if (DhSectionPos.getDetailLevel(sectionPos) == expectedDetailLevel || DhSectionPos.getDetailLevel(sectionPos) == expectedDetailLevel - 1)
 		{
-			// this is the detail level we want to render //
+			//======================//
+			// desired detail level //
+			//======================//
 			
 			
-			/* Can be uncommented to easily debug a single render section. */ 
-			/* Don't forget the disableRendering() at the bottom though. */
-			//if (sectionPos.getDetailLevel() == 10
-			//	&&
-			//	(
-			//			sectionPos.getX() == 0 &&
-			//			sectionPos.getZ() == -4
-			//	))
+			// prepare this section for rendering
+			if (!renderSection.gpuUploadInProgress() && renderSection.renderBuffer == null)
 			{
-				// prepare this section for rendering
-				if (!renderSection.gpuUploadInProgress() && renderSection.renderBuffer == null)
+				nodesNeedingLoading.add(renderSection);
+			}
+			
+			// queue world gen if needed
+			if (!renderSection.isFullyGenerated())
+			{
+				nodesNeedingRetrieval.add(renderSection);
+			}
+			
+			// update debug if needed
+			if (Config.Client.Advanced.Debugging.DebugWireframe.showQuadTreeRenderStatus.get())
+			{
+				this.debugRenderSections.add(renderSection);
+			}
+			
+			
+			
+			// wait for the parent to disable before enabling this section, so we don't have a hole
+			if (!parentSectionIsRendering && renderSection.canRender())
+			{
+				// if rendering is already enabled we don't have to re-enable it
+				if (!renderSection.getRenderingEnabled())
 				{
-					nodesNeedingLoading.add(renderSection);
-				}
-				
-				if (Config.Client.Advanced.Debugging.DebugWireframe.showQuadTreeRenderStatus.get())
-				{
-					this.debugRenderSections.add(renderSection);
-				}
-				
-				// wait for the parent to disable before enabling this section, so we don't overdraw/overlap render sections
-				if (!parentSectionIsRendering && renderSection.canRender())
-				{
-					// if rendering is already enabled we don't have to re-enable it
-					if (!renderSection.getRenderingEnabled())
+					renderSection.setRenderingEnabled(true);
+					
+					// disabling rendering must be done after the parent is enabled
+					// otherwise holes may appear in the world, overlaps are less noticeable
+					quadNode.deleteAllChildren((childRenderSection) ->
 					{
-						// delete/disable children, all of them will be a lower detail level than requested
-						quadNode.deleteAllChildren((childRenderSection) ->
+						if (childRenderSection != null)
 						{
-							if (childRenderSection != null)
+							if (childRenderSection.getRenderingEnabled())
 							{
-								if (childRenderSection.getRenderingEnabled())
-								{
-									// show that this position's rendering has been disabled due to a parent rendering
-									DebugRenderer.makeParticle(
-										new DebugRenderer.BoxParticle(
-											new DebugRenderer.Box(childRenderSection.pos, 128f, 156f, 0.09f, Color.MAGENTA.darker()),
-											0.2, 32f
-										)
-									);
-								}
-								
-								childRenderSection.setRenderingEnabled(false);
-								childRenderSection.close();
+								// this position's rendering has been disabled due to a parent rendering
+								DebugRenderer.makeParticle(new DebugRenderer.BoxParticle(new DebugRenderer.Box(childRenderSection.pos, 128f, 156f, 0.09f, Color.MAGENTA),0.2, 32f));
 							}
-						});
-						
-						renderSection.setRenderingEnabled(true);
-					}
-				}
-				
-				if (!renderSection.isFullyGenerated())
-				{
-					nodesNeedingRetrieval.add(renderSection);
+							
+							childRenderSection.setRenderingEnabled(false);
+							childRenderSection.onRenderingDisabled();
+							childRenderSection.close();
+						}
+					});
+					
+					// onRenderingEnabled() needs to be fired after the children are disabled so beacons render correctly
+					renderSection.onRenderingEnabled();
+					
 				}
 			}
-			//else
-			//{
-			//	renderSection.disableRendering();
-			//}
 			
 			return renderSection.canRender();
 		}
@@ -586,12 +584,6 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 		}
 	}
 	
-	
-	//==================//
-	// config listeners //
-	//==================//
-	
-	private void onHorizontalQualityChange() { /*this.clearRenderDataCache();*/ }
 	
 	
 	//===========//
