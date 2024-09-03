@@ -169,8 +169,9 @@ public class Config
 									"\n" +
 									"Note for servers:\n" +
 									"This setting does not prevent players from generating farther out.\n" +
-									"If you want to limit performance impact, change rate/concurrency (RC) limits\n" +
-									"and thread count/runtime ratio settings instead.")
+									"If you want to limit performance impact, change rate limits\n" +
+									"and thread count/runtime ratio settings instead.\n" +
+									"It also does not affect the visuals on clients.")
 							.setPerformance(EConfigEntryPerformance.HIGH)
 							.build();
 					
@@ -975,17 +976,6 @@ public class Config
 									+ "This allows for further distant generation and LOD updates on all clients.\n"
 									+ "\n"
 									+ "This should only be used on trusted servers with trusted players!\n"
-									+ "")
-							.build();
-					
-					
-					public static ConfigEntry<Integer> rateLimitHitTolerance = new ConfigEntry.Builder<Integer>()
-							.setServersideShortName("rateLimitHitTolerance")
-							.setAppearance(EConfigEntryAppearance.ONLY_IN_FILE)
-							.setMinDefaultMax(1, 10, 100)
-							.comment(""
-									+ "The amount of rate/concurrency limit hits a client can make in one second before being disconnected by the server.\n"
-									+ "This setting only applies to the server and has no effect on clients."
 									+ "")
 							.build();
 					
