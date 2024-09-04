@@ -106,6 +106,8 @@ public class Config
 		
 		public static ConfigLinkedEntry quickEnableWorldGenerator = new ConfigLinkedEntry(Advanced.WorldGenerator.enableDistantGeneration);
 		
+		public static ConfigLinkedEntry quickLodCloudRendering = new ConfigLinkedEntry(Advanced.Graphics.GenericRendering.enableCloudRendering);
+		
 		public static ConfigEntry<Boolean> optionsButton = new ConfigEntry.Builder<Boolean>()
 				.set(true)
 				.setAppearance(EConfigEntryAppearance.ONLY_IN_FILE)
@@ -708,6 +710,17 @@ public class Config
 							.addListener(ReloadLodsConfigEventHandler.INSTANCE)
 							.build();
 					
+					public static ConfigEntry<Boolean> disableBeaconDistanceCulling = new ConfigEntry.Builder<Boolean>()
+							.set(false)
+							.comment(""
+									+ "If true all beacons near the camera won't be drawn to prevent vanilla overdraw. \n"
+									+ "If false all beacons will be rendered. \n"
+									+ "\n"
+									+ "Generally this should be left as false. It's main purpose is for debugging\n"
+									+ "beacon updating/rendering.\n"
+									+ "")
+							.build();
+					
 				}
 				
 			}
@@ -790,6 +803,19 @@ public class Config
 								+ "")
 						.build();
 				
+				public static ConfigEntry<Boolean> disableUnchangedChunkCheck = new ConfigEntry.Builder<Boolean>()
+						.set(false)
+						.comment(""
+								+ "Normally DH will attempt to skip creating LODs for chunks it's already seen\n"
+								+ "and that haven't changed.\n"
+								+ "\n"
+								+ "However sometimes that logic incorrecly prevents LODs from being updated.\n"
+								+ "Disabling this check may fix issues where LODs aren't updated after\n"
+								+ "blocks have been changed.\n"
+								+ "")
+						.build();
+				
+				/** Currently we always use the DH lighting engine because there's a high likelyhood of MC returning incorrect lighting otherwise */
 				@Deprecated
 				public static ConfigEntry<Boolean> onlyUseDhLightingEngine = new ConfigEntry.Builder<Boolean>()
 						.set(false)

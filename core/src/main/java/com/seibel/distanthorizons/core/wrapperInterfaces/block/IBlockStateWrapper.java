@@ -47,9 +47,15 @@ public interface IBlockStateWrapper extends IDhApiBlockStateWrapper
 	byte getMaterialId();
 	
 	boolean isBeaconBlock();
+	/** IE a glass block that can affect the beacon beam color */
+	boolean isBeaconTintBlock();
+	/** 
+	 * The blocks used by a beacon's base
+	 * IE Iron, diamond, gold, etc. 
+	 */
 	boolean isBeaconBaseBlock();
 	
 	Color getMapColor();
-	boolean isGlassBlock();
+	Color getBeaconTintColor();
 	
 }

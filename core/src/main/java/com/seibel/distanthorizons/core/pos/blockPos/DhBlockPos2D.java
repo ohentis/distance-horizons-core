@@ -17,10 +17,12 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.seibel.distanthorizons.core.pos;
+package com.seibel.distanthorizons.core.pos.blockPos;
 
+import com.seibel.distanthorizons.core.pos.Pos2D;
 import com.seibel.distanthorizons.coreapi.util.MathUtil;
 
+/** immutable */
 public class DhBlockPos2D
 {
 	public static final DhBlockPos2D ZERO = new DhBlockPos2D(0, 0);
@@ -41,11 +43,11 @@ public class DhBlockPos2D
 	
 	public DhBlockPos2D(DhBlockPos blockPos)
 	{
-		this.x = blockPos.x;
-		this.z = blockPos.z;
+		this.x = blockPos.getX();
+		this.z = blockPos.getZ();
 	}
 	
-	public static DhBlockPos2D fromPos2D(Pos2D pos) { return new DhBlockPos2D(pos.x, pos.y); }
+	public static DhBlockPos2D fromPos2D(Pos2D pos) { return new DhBlockPos2D(pos.getX(), pos.getY()); }
 	
 	
 	

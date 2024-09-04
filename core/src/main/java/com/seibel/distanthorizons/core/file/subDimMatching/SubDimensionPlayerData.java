@@ -22,7 +22,7 @@ package com.seibel.distanthorizons.core.file.subDimMatching;
 
 import com.electronwill.nightconfig.core.file.CommentedFileConfig;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
-import com.seibel.distanthorizons.core.pos.DhBlockPos;
+import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos;
 import com.seibel.distanthorizons.core.wrapperInterfaces.IWrapperFactory;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 
@@ -127,9 +127,9 @@ public class SubDimensionPlayerData
 	public void toTomlFile(CommentedFileConfig toml)
 	{
 		// player block pos
-		toml.add(PLAYER_BLOCK_POS_X_PATH, this.playerBlockPos.x);
-		toml.add(PLAYER_BLOCK_POS_Y_PATH, this.playerBlockPos.y);
-		toml.add(PLAYER_BLOCK_POS_Z_PATH, this.playerBlockPos.z);
+		toml.add(PLAYER_BLOCK_POS_X_PATH, this.playerBlockPos.getX());
+		toml.add(PLAYER_BLOCK_POS_Y_PATH, this.playerBlockPos.getY());
+		toml.add(PLAYER_BLOCK_POS_Z_PATH, this.playerBlockPos.getZ());
 		
 		toml.save();
 	}
@@ -138,7 +138,7 @@ public class SubDimensionPlayerData
 	@Override
 	public String toString()
 	{
-		return "PlayerBlockPos: [" + this.playerBlockPos.x + "," + this.playerBlockPos.y + "," + this.playerBlockPos.z + "]";
+		return "PlayerBlockPos: [" + this.playerBlockPos.getX() + "," + this.playerBlockPos.getY() + "," + this.playerBlockPos.getZ() + "]";
 	}
 	
 }

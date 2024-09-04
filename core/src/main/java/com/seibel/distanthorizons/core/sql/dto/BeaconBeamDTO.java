@@ -20,7 +20,7 @@
 package com.seibel.distanthorizons.core.sql.dto;
 
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
-import com.seibel.distanthorizons.core.pos.DhBlockPos;
+import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos;
 
 import java.awt.*;
 

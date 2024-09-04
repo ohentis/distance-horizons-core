@@ -19,11 +19,9 @@
 
 package com.seibel.distanthorizons.core.sql.repo;
 
-import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.sql.dto.ChunkHashDTO;
-import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
@@ -56,7 +54,7 @@ public class ChunkHashRepo extends AbstractDhRepo<DhChunkPos, ChunkHashDTO>
 	public String getTableName() { return "ChunkHash"; }
 	
 	@Override
-	public String createWhereStatement(DhChunkPos pos) { return "ChunkPosX = '"+pos.x+"' AND ChunkPosZ = '"+pos.z+"'"; }
+	public String createWhereStatement(DhChunkPos pos) { return "ChunkPosX = '"+ pos.getX() +"' AND ChunkPosZ = '"+ pos.getZ() +"'"; }
 	
 	
 	
@@ -93,8 +91,8 @@ public class ChunkHashRepo extends AbstractDhRepo<DhChunkPos, ChunkHashDTO>
 		PreparedStatement statement = this.createPreparedStatement(sql);
 		
 		int i = 1;
-		statement.setObject(i++, dto.pos.x);
-		statement.setObject(i++, dto.pos.z);
+		statement.setObject(i++, dto.pos.getX());
+		statement.setObject(i++, dto.pos.getZ());
 		
 		statement.setObject(i++, dto.chunkHash);
 		
@@ -119,8 +117,8 @@ public class ChunkHashRepo extends AbstractDhRepo<DhChunkPos, ChunkHashDTO>
 		statement.setObject(i++, dto.chunkHash);
 		statement.setObject(i++, System.currentTimeMillis()); // last modified unix time
 		
-		statement.setObject(i++, dto.pos.x);
-		statement.setObject(i++, dto.pos.z);
+		statement.setObject(i++, dto.pos.getX());
+		statement.setObject(i++, dto.pos.getZ());
 		
 		return statement;
 	}

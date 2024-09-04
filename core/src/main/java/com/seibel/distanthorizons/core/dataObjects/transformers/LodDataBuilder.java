@@ -31,7 +31,8 @@ import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSour
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.pos.DhBlockPos;
+import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos;
+import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPosMutable;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.util.FullDataPointUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
@@ -66,8 +67,8 @@ public class LodDataBuilder
 		
 		
 		
-		int sectionPosX = getXOrZSectionPosFromChunkPos(chunkWrapper.getChunkPos().x);
-		int sectionPosZ = getXOrZSectionPosFromChunkPos(chunkWrapper.getChunkPos().z);
+		int sectionPosX = getXOrZSectionPosFromChunkPos(chunkWrapper.getChunkPos().getX());
+		int sectionPosZ = getXOrZSectionPosFromChunkPos(chunkWrapper.getChunkPos().getZ());
 		long pos = DhSectionPos.encode(DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL, sectionPosX, sectionPosZ);
 		
 		FullDataSourceV2 dataSource = FullDataSourceV2.createEmpty(pos);
@@ -77,8 +78,8 @@ public class LodDataBuilder
 		
 		// compute the chunk dataSource offset
 		// this offset is used to determine where in the dataSource this chunk's data should go
-		int chunkOffsetX = chunkWrapper.getChunkPos().x;
-		if (chunkWrapper.getChunkPos().x < 0)
+		int chunkOffsetX = chunkWrapper.getChunkPos().getX();
+		if (chunkWrapper.getChunkPos().getX() < 0)
 		{
 			// expected offset positions:
 			// chunkPos -> offset
@@ -105,8 +106,8 @@ public class LodDataBuilder
 		}
 		chunkOffsetX *= LodUtil.CHUNK_WIDTH;
 		
-		int chunkOffsetZ = chunkWrapper.getChunkPos().z;
-		if (chunkWrapper.getChunkPos().z < 0)
+		int chunkOffsetZ = chunkWrapper.getChunkPos().getZ();
+		if (chunkWrapper.getChunkPos().getZ() < 0)
 		{
 			chunkOffsetZ = ((chunkOffsetZ) % FullDataSourceV2.NUMB_OF_CHUNKS_WIDE);
 			if (chunkOffsetZ != 0)
@@ -237,7 +238,7 @@ public class LodDataBuilder
 	private static boolean blockVisible(IChunkWrapper chunkWrapper, int relBlockX, int blockY, int relBlockZ)
 	{
 		DhBlockPos originalBlockPos = new DhBlockPos(relBlockX,blockY,relBlockZ);
-		DhBlockPos testBlockPos = new DhBlockPos(relBlockX,blockY,relBlockZ);
+		final DhBlockPosMutable testBlockPos = new DhBlockPosMutable(relBlockX,blockY,relBlockZ);
 		
 		// up/down
 		if (blockInDirectionVisible(chunkWrapper, EDhDirection.UP, originalBlockPos, testBlockPos))
@@ -272,20 +273,20 @@ public class LodDataBuilder
 		
 		return false;
 	}
-	private static boolean blockInDirectionVisible(IChunkWrapper chunkWrapper, EDhDirection direction, DhBlockPos originalBlockPos, DhBlockPos testBlockPos)
+	private static boolean blockInDirectionVisible(IChunkWrapper chunkWrapper, EDhDirection direction, DhBlockPos originalBlockPos, DhBlockPosMutable testBlockPos)
 	{
 		originalBlockPos.mutateOffset(direction, testBlockPos);
 		
 		// if the block is next to the border of a chunk, assume it's visible
-		if (testBlockPos.x < 0 || testBlockPos.x >= LodUtil.CHUNK_WIDTH)
+		if (testBlockPos.getX() < 0 || testBlockPos.getX() >= LodUtil.CHUNK_WIDTH)
 		{
 			return true;
 		}
-		if (testBlockPos.z < 0 || testBlockPos.z >= LodUtil.CHUNK_WIDTH)
+		if (testBlockPos.getZ() < 0 || testBlockPos.getZ() >= LodUtil.CHUNK_WIDTH)
 		{
 			return true;
 		}
-		if (testBlockPos.y < chunkWrapper.getMinBuildHeight() || testBlockPos.y > chunkWrapper.getMaxBuildHeight())
+		if (testBlockPos.getY() < chunkWrapper.getMinBuildHeight() || testBlockPos.getY() > chunkWrapper.getMaxBuildHeight())
 		{
 			return true;
 		}

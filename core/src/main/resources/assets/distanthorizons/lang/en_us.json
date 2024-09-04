@@ -308,7 +308,11 @@
   "distanthorizons.config.client.advanced.graphics.advancedGraphics.grassSideRendering":
     "Grass Side Rendering",
   "distanthorizons.config.client.advanced.graphics.advancedGraphics.grassSideRendering.@tooltip":
-    "How should the sides and bottom of grass block LODs render?",
+    "How should the sides and bottom of grass block LODs render?",  
+  "distanthorizons.config.client.advanced.graphics.advancedGraphics.disableBeaconDistanceCulling":
+    "Disable Beacon Distance Culling",
+  "distanthorizons.config.client.advanced.graphics.advancedGraphics.disableBeaconDistanceCulling.@tooltip":
+    "If true all beacons near the camera won't be drawn to prevent vanilla overdraw. \nIf false all beacons will be rendered.",
 
 
   "distanthorizons.config.client.advanced.graphics.genericRendering":
@@ -358,9 +362,12 @@
 
   "distanthorizons.config.client.advanced.lodBuilding.minTimeBetweenChunkUpdatesInSeconds":
     "Minimum Time Between Chunk Updates In Seconds",
-    
   "distanthorizons.config.client.advanced.lodBuilding.minTimeBetweenChunkUpdatesInSeconds.@tooltip":
     "Determines how long must pass between LOD chunk updates before another. \nupdate can occur\n\nIncreasing this value will reduce CPU load but may may cause \nLODs to become outdated more frequently or for longer.",
+  "distanthorizons.config.client.advanced.lodBuilding.disableUnchangedChunkCheck":
+    "Disable Unchanged Chunk Check",
+  "distanthorizons.config.client.advanced.lodBuilding.disableUnchangedChunkCheck.@tooltip":
+    "Disabling this check may fix issues where LODs aren't updated after\nblocks have been changed.\n",
   "distanthorizons.config.client.advanced.lodBuilding.onlyUseDhLightingEngine":
     "Only Use DH Lighting Engine",
   "distanthorizons.config.client.advanced.lodBuilding.onlyUseDhLightingEngine.@tooltip":

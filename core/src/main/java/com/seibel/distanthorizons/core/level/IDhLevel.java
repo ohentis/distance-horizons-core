@@ -25,11 +25,11 @@ import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.render.RenderBufferHandler;
 import com.seibel.distanthorizons.core.render.renderer.generic.GenericObjectRenderer;
-import com.seibel.distanthorizons.core.sql.dto.BeaconBeamDTO;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -48,7 +48,7 @@ public interface IDhLevel extends AutoCloseable
 	void updateChunkAsync(IChunkWrapper chunk, int newChunkHash);
 	
 	void loadBeaconBeamsInPos(long pos);
-	void setBeaconBeamsForChunk(DhChunkPos chunkPos, List<BeaconBeamDTO> beamList);
+	void updateBeaconBeamsForChunk(IChunkWrapper chunkToUpdate, ArrayList<IChunkWrapper> nearbyChunkList);
 	void unloadBeaconBeamsInPos(long pos);
 	
 	FullDataSourceProviderV2 getFullDataProvider();

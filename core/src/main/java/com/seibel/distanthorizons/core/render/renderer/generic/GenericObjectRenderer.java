@@ -30,7 +30,9 @@ import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhAp
 import com.seibel.distanthorizons.api.objects.math.DhApiVec3d;
 import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBox;
 import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBoxGroupShading;
+import com.seibel.distanthorizons.core.dependencyInjection.ModAccessorInjector;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
+import com.seibel.distanthorizons.core.jar.EPlatform;
 import com.seibel.distanthorizons.core.logging.ConfigBasedSpamLogger;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
@@ -42,11 +44,14 @@ import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrapper;
 import com.seibel.distanthorizons.core.util.math.Vec3d;
+import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.IModAccessor;
+import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.ISodiumAccessor;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.OverrideInjector;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.ARBInstancedArrays;
 import org.lwjgl.opengl.GL32;
 import org.lwjgl.opengl.GL33;
@@ -70,6 +75,7 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 	public static final ConfigBasedSpamLogger SPAM_LOGGER = new ConfigBasedSpamLogger(LogManager.getLogger(GenericObjectRenderer.class), () -> EDhApiLoggerMode.LOG_ALL_TO_CHAT, 1);
 	
 	private static final IMinecraftRenderWrapper MC_RENDER = SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
+	private static final ISodiumAccessor SODIUM = ModAccessorInjector.INSTANCE.get(ISodiumAccessor.class);
 	
 	/** 
 	 * Can be used to troubleshoot the renderer. 
@@ -172,16 +178,36 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		}
 		this.init = true;
 		
+		
+		
+		//===================================//
+		// is instanced rendering available? //
+		//===================================//
+		
 		this.vertexAttribDivisorSupported = GLProxy.getInstance().vertexAttribDivisorSupported;
 		this.instancedArraysSupported = GLProxy.getInstance().instancedArraysSupported;
 		this.useInstancedRendering = this.vertexAttribDivisorSupported || this.instancedArraysSupported;
 		if (!this.useInstancedRendering)
 		{
-			LOGGER.warn("Instanced rendering not supported by this GPU, falling back to direct rendering. Generic object rendering will be slow.");
+			LOGGER.warn("Instanced rendering not supported by this GPU, falling back to direct rendering. Generic object rendering will be slow and some effects may be disabled.");
+		}
+		else
+		{
+			boolean isMac = (EPlatform.get() == EPlatform.MACOS);
+			if (isMac && SODIUM != null)
+			{
+				this.useInstancedRendering = false;
+				LOGGER.warn("Instanced rendering is broken on Mac when Sodium is present, falling back to direct rendering. Generic object rendering will be slow and some effects may be disabled.");
+			}
 		}
 		
-		this.shaderProgram = new GenericObjectShaderProgram(this.useInstancedRendering);
 		
+		
+		//======================//
+		// startup the renderer //
+		//======================//
+		
+		this.shaderProgram = new GenericObjectShaderProgram(this.useInstancedRendering);
 		
 		this.createBuffers();
 		

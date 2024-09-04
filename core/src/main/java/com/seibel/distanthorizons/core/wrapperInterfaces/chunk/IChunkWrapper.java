@@ -20,11 +20,15 @@
 package com.seibel.distanthorizons.core.wrapperInterfaces.chunk;
 
 import com.seibel.distanthorizons.core.generation.AdjacentChunkHolder;
-import com.seibel.distanthorizons.core.pos.DhBlockPos;
-import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
+import com.seibel.distanthorizons.core.level.IDhLevel;
+import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos;
+import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
+import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPosMutable;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.sql.dto.BeaconBeamDTO;
+import com.seibel.distanthorizons.core.util.ColorUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IBindable;
@@ -90,10 +94,11 @@ public interface IChunkWrapper extends IBindable
 	int getSkyLight(int relX, int relY, int relZ);
 	
 	
-	ArrayList<DhBlockPos> getBlockLightPosList();
+	/** Note: don't modify this array, it will only be generated once and then shared between uses */
+	ArrayList<DhBlockPos> getWorldBlockLightPosList();
 	
 	
-	default boolean blockPosInsideChunk(DhBlockPos blockPos) { return this.blockPosInsideChunk(blockPos.x, blockPos.y, blockPos.z); }
+	default boolean blockPosInsideChunk(DhBlockPos blockPos) { return this.blockPosInsideChunk(blockPos.getX(), blockPos.getY(), blockPos.getZ()); }
 	default boolean blockPosInsideChunk(int x, int y, int z)
 	{
 		return (x >= this.getMinBlockX() && x <= this.getMaxBlockX()
@@ -110,7 +115,7 @@ public interface IChunkWrapper extends IBindable
 	String toString();
 	
 	
-	default IBlockStateWrapper getBlockState(DhBlockPos pos) { return this.getBlockState(pos.x, pos.y, pos.z); }
+	default IBlockStateWrapper getBlockState(DhBlockPos pos) { return this.getBlockState(pos.getX(), pos.getY(), pos.getZ()); }
 	IBlockStateWrapper getBlockState(int relX, int relY, int relZ);
 	
 	IBiomeWrapper getBiome(int relX, int relY, int relZ);
@@ -282,8 +287,8 @@ public interface IChunkWrapper extends IBindable
 		int primeBiomeMultiplier = 701;
 		int primeHeightMultiplier = 137;
 		
-		int minBuildHeight = this.getMaxNonEmptyHeight();
-		int maxBuildHeight = this.getMinNonEmptyHeight();
+		int minBuildHeight = this.getMinNonEmptyHeight();
+		int maxBuildHeight = this.getMaxNonEmptyHeight();
 		
 		
 		// most blocks (only some blocks are sampled since checking every block is a very slow operation)
@@ -291,7 +296,7 @@ public interface IChunkWrapper extends IBindable
 		{
 			for (int z = 0; z < LodUtil.CHUNK_WIDTH; z+=2)
 			{
-				for (int y = minBuildHeight; y < maxBuildHeight; y+=8)
+				for (int y = minBuildHeight; y < maxBuildHeight; y+=2)
 				{
 					hash = (hash * primeBlockMultiplier) + this.getBlockState(x, y, z).hashCode();
 					hash = (hash * primeBiomeMultiplier) + this.getBiome(x, y, z).hashCode();
@@ -320,6 +325,19 @@ public interface IChunkWrapper extends IBindable
 			}
 		}
 		
+		// light emitting blocks (if the light changes then the LOD definitely needs to be updated)
+		final DhBlockPosMutable relPos = new DhBlockPosMutable(); 
+		ArrayList<DhBlockPos> lightPosList = this.getWorldBlockLightPosList();
+		for (int i = 0; i < lightPosList.size(); i++)
+		{
+			DhBlockPos pos = lightPosList.get(i);
+			pos.mutateToChunkRelativePos(relPos);
+			
+			hash = (hash * primeBlockMultiplier) + this.getBlockState(relPos.getX(), relPos.getY(), relPos.getZ()).hashCode();
+			hash = (hash * primeHeightMultiplier) + relPos.getY();
+		}
+		
+		
 		return hash;
 	}
 	
@@ -329,20 +347,24 @@ public interface IChunkWrapper extends IBindable
 		
 		AdjacentChunkHolder adjacentChunkHolder = new AdjacentChunkHolder(this, neighbourChunkList);
 		
-		// since beacons emit light we can check only the positions that are emitting light
-		ArrayList<DhBlockPos> blockPosList = this.getBlockLightPosList();
+		// find the beacon block positions,
+		// since beacons emit light we only need to check the positions that emit light
+		final DhBlockPosMutable relPos = new DhBlockPosMutable();
+		ArrayList<DhBlockPos> blockPosList = this.getWorldBlockLightPosList();
 		for (int i = 0; i < blockPosList.size(); i++)
 		{
 			DhBlockPos pos = blockPosList.get(i);
-			DhBlockPos relPos = pos.convertToChunkRelativePos();
+			pos.mutateToChunkRelativePos(relPos);
 			
 			
 			IBlockStateWrapper block = this.getBlockState(relPos);
 			if (block.isBeaconBlock())
 			{
+				// check if this beacon is active and if so what color it should be
 				Color beaconColor = getBeaconColor(pos, adjacentChunkHolder);
 				if (beaconColor != null)
 				{
+					// beacon is active
 					BeaconBeamDTO beam = new BeaconBeamDTO(blockPosList.get(i), beaconColor);
 					beaconBeamList.add(beam);
 				}
@@ -355,8 +377,8 @@ public interface IChunkWrapper extends IBindable
 	@Nullable
 	static Color getBeaconColor(DhBlockPos beaconPos, AdjacentChunkHolder chunkHolder) 
 	{
-		DhBlockPos beaconRelPos = beaconPos.convertToChunkRelativePos();
-		DhBlockPos baseRelPos = new DhBlockPos(0, beaconRelPos.y-1, 0);
+		DhBlockPos beaconRelPos = beaconPos.createChunkRelativePos();
+		DhBlockPosMutable baseRelPos = new DhBlockPosMutable(0, beaconRelPos.getY() -1, 0);
 		
 		
 		
@@ -368,14 +390,15 @@ public interface IChunkWrapper extends IBindable
 		{
 			for (int z = -1; z <= 1; z++)
 			{
-				baseRelPos.x = beaconRelPos.x + x;
-				baseRelPos.z = beaconRelPos.z + z;
+				baseRelPos.setX(beaconRelPos.getX() + x);
+				baseRelPos.setZ(beaconRelPos.getZ() + z);
 				baseRelPos.mutateToChunkRelativePos(baseRelPos);
-				
-				IChunkWrapper chunk = chunkHolder.getByBlockPos(beaconPos.x + x, beaconPos.z + z);
+
+				// if no chunk is loaded assume the beacon is complete in that direction
+				IChunkWrapper chunk = chunkHolder.getByBlockPos(beaconPos.getX() + x, beaconPos.getZ() + z);
 				if (chunk != null)
 				{
-					IBlockStateWrapper block = chunk.getBlockState(baseRelPos.x, baseRelPos.y, baseRelPos.z);
+					IBlockStateWrapper block = chunk.getBlockState(baseRelPos.getX(), baseRelPos.getY(), baseRelPos.getZ());
 					if (!block.isBeaconBaseBlock())
 					{
 						return null;
@@ -394,37 +417,35 @@ public interface IChunkWrapper extends IBindable
 		int red = 0;
 		int green = 0;
 		int blue = 0;
-		boolean glassBlockFound = false;
+		boolean beaconTintBlockFound = false;
 		
-		IChunkWrapper centerChunk = chunkHolder.getByBlockPos(beaconPos.x, beaconPos.z);
+		IChunkWrapper centerChunk = chunkHolder.getByBlockPos(beaconPos.getX(), beaconPos.getZ());
 		int maxY = centerChunk.getMaxNonEmptyHeight();
-		for (int y = beaconRelPos.y+1; y <= maxY; y++)
+		for (int y = beaconRelPos.getY() +1; y <= maxY; y++)
 		{
-			IBlockStateWrapper block = centerChunk.getBlockState(beaconRelPos.x, y, beaconRelPos.z);
+			IBlockStateWrapper block = centerChunk.getBlockState(beaconRelPos.getX(), y, beaconRelPos.getZ());
 			if (!block.isAir() && block.getOpacity() == LodUtil.BLOCK_FULLY_OPAQUE)
 			{
 				return null;
 			}
 			
-			if (block.isGlassBlock() 
-				// ignore invisible blocks (which have pure black as their map color, luckily black stained-glass is actually extremely dark gray)
-				&& !block.getMapColor().equals(Color.BLACK))
+			if (block.isBeaconTintBlock())
 			{
- 				red += block.getMapColor().getRed();
-				green += block.getMapColor().getGreen();
-				blue += block.getMapColor().getBlue();
+ 				red += block.getBeaconTintColor().getRed();
+				green += block.getBeaconTintColor().getGreen();
+				blue += block.getBeaconTintColor().getBlue();
 				
-				if (glassBlockFound)
+				if (beaconTintBlockFound)
 				{
 					red /= 2;
 					green /= 2;
 					blue /= 2;
 				}
-				glassBlockFound = true;
+				beaconTintBlockFound = true;
 			}
 		}
 		
-		return glassBlockFound ? new Color(red, green, blue) : Color.WHITE;
+		return beaconTintBlockFound ? new Color(red, green, blue) : Color.WHITE;
 	}
 	
 	

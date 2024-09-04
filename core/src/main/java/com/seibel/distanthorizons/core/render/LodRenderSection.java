@@ -30,7 +30,7 @@ import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.file.fullDatafile.FullDataSourceProviderV2;
 import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
+import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.render.glObject.GLProxy;
 import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
@@ -393,36 +393,34 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	public boolean canRender() { return this.canRender; }
 	
 	public boolean getRenderingEnabled() { return this.renderingEnabled; }
-	public void setRenderingEnabled(boolean enabled) 
+	/**
+	 * Separate from {@link LodRenderSection#onRenderingEnabled} and {@link LodRenderSection#onRenderingDisabled}
+	 * since we need to trigger external changes in disabled -> enabled order
+	 * so beacons are removed and then re-added.
+	 * However, to prevent holes in the world when disabling sections we need to
+	 * enable the new section(s) first before disabling the old one(s).
+	 */
+	public void setRenderingEnabled(boolean enabled) { this.renderingEnabled = enabled;}
+	
+	/** @see LodRenderSection#setRenderingEnabled */
+	public void onRenderingEnabled() { this.level.loadBeaconBeamsInPos(this.pos); }
+	/** @see LodRenderSection#setRenderingEnabled */
+	public void onRenderingDisabled() 
 	{
-		// some logic should only be run when enabling/disabling
-		// a section for the first time
-		boolean stateChanged = (this.renderingEnabled != enabled);
-		if (stateChanged)
-		{
-			if (enabled)
-			{
-				this.level.loadBeaconBeamsInPos(this.pos);
-			}
-			else
-			{
-				this.level.unloadBeaconBeamsInPos(this.pos);
-				
-				if (Config.Client.Advanced.Debugging.DebugWireframe.showRenderSectionStatus.get())
-				{
-					// show that this position has just been disabled
-					DebugRenderer.makeParticle(
-							new DebugRenderer.BoxParticle(
-									new DebugRenderer.Box(this.pos, 128f, 156f, 0.09f, Color.CYAN.darker()),
-									0.2, 32f
-							)
-					);
-				}
-			}
-		}
+		this.level.unloadBeaconBeamsInPos(this.pos);
 		
-		this.renderingEnabled = enabled;
+		if (Config.Client.Advanced.Debugging.DebugWireframe.showRenderSectionStatus.get())
+		{
+			// show that this position has just been disabled
+			DebugRenderer.makeParticle(
+					new DebugRenderer.BoxParticle(
+							new DebugRenderer.Box(this.pos, 128f, 156f, 0.09f, Color.CYAN.darker()),
+							0.2, 32f
+					)
+			);
+		}
 	}
+	
 	
 	public boolean gpuUploadInProgress() { return this.buildAndUploadRenderDataToGpuFuture != null; }
 	
@@ -505,9 +503,9 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	@Override
 	public String toString()
 	{
-		return "LodRenderSection{" +
-				"pos=" + this.pos +
-				'}';
+		return  "pos=[" + DhSectionPos.toString(this.pos) + "] " +
+				"enabled=[" + this.renderingEnabled + "] " +
+				"uploading=[" + this.gpuUploadInProgress() + "] ";
 	}
 	
 	@Override

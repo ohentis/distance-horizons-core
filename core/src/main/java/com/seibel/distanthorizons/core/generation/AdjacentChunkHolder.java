@@ -33,7 +33,7 @@ public class AdjacentChunkHolder
 		{
 			for (int zOffset = -1; zOffset <= 1; zOffset++)
 			{
-				DhChunkPos adjacentPos = new DhChunkPos(centerChunkPos.x + xOffset, centerChunkPos.z + zOffset);
+				DhChunkPos adjacentPos = new DhChunkPos(centerChunkPos.getX() + xOffset, centerChunkPos.getZ() + zOffset);
 				requestedAdjacentPositions.add(adjacentPos);
 			}
 		}
@@ -69,13 +69,13 @@ public class AdjacentChunkHolder
 		DhChunkPos centerPos = this.chunkArray[4].getChunkPos();
 		DhChunkPos offsetPos = centerWrapper.getChunkPos();
 		
-		int offsetX = offsetPos.x - centerPos.x;
+		int offsetX = offsetPos.getX() - centerPos.getX();
 		if (offsetX < -1 || offsetX > 1)
 		{
 			return;
 		}
 		
-		int offsetZ = offsetPos.z - centerPos.z;
+		int offsetZ = offsetPos.getZ() - centerPos.getZ();
 		if (offsetZ < -1 || offsetZ > 1)
 		{
 			return;
@@ -91,18 +91,18 @@ public class AdjacentChunkHolder
 		int chunkZ = BitShiftUtil.divideByPowerOfTwo(blockZ, 4);
 		IChunkWrapper centerChunk = this.chunkArray[4];
 		DhChunkPos centerPos = centerChunk.getChunkPos();
-		if (centerPos.x == chunkX && centerPos.z == chunkZ)
+		if (centerPos.getX() == chunkX && centerPos.getZ() == chunkZ)
 		{
 			return centerChunk;
 		}
 		
-		int offsetX = chunkX - centerPos.x;
+		int offsetX = chunkX - centerPos.getX();
 		if (offsetX < -1 || offsetX > 1)
 		{
 			return null;
 		}
 		
-		int offsetZ = chunkZ - centerPos.z;
+		int offsetZ = chunkZ - centerPos.getZ();
 		if (offsetZ < -1 || offsetZ > 1)
 		{
 			return null;

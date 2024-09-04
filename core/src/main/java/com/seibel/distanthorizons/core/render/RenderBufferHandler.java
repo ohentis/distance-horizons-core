@@ -195,11 +195,11 @@ public class RenderBufferHandler implements AutoCloseable
 				int abPosDifference;
 				if (axisDirection.getAxis().equals(EDhDirection.Axis.X))
 				{
-					abPosDifference = aPos.x - bPos.x;
+					abPosDifference = aPos.getX() - bPos.getX();
 				}
 				else
 				{
-					abPosDifference = aPos.y - bPos.y;
+					abPosDifference = aPos.getY() - bPos.getY();
 				}
 				
 				if (abPosDifference == 0)

@@ -350,6 +350,6 @@ public class QuadNode<T>
 	//==============//
 	
 	@Override
-	public String toString() { return "pos: " + this.sectionPos + ", children #: " + this.getTotalChildCount() + ", value: " + this.value; }
+	public String toString() { return "pos: " + DhSectionPos.toString(this.sectionPos) + ", children #: " + this.getTotalChildCount() + ", value: " + this.value; }
 	
 }

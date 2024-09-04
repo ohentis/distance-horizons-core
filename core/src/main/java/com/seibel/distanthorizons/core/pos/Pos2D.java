@@ -23,14 +23,22 @@ import com.seibel.distanthorizons.coreapi.util.MathUtil;
 
 import java.util.Objects;
 
+/** immutable */
 public class Pos2D
 {
 	public static final Pos2D ZERO = new Pos2D(0, 0);
 	
-	public final int x;
-	public final int y;
+	private final int x;
+	public int getX() { return this.x; }
+	
+	private final int y;
+	public int getY() { return this.y; }
 	
 	
+	
+	//==============//
+	// constructors //
+	//==============//
 	
 	public Pos2D(int x, int y)
 	{
@@ -39,6 +47,11 @@ public class Pos2D
 	}
 	
 	
+	
+	
+	//======//
+	// math //
+	//======//
 	
 	public Pos2D add(Pos2D other) { return new Pos2D(this.x + other.x, this.y + other.y); }
 	public Pos2D subtract(Pos2D other) { return new Pos2D(this.x - other.x, this.y - other.y); }
@@ -72,10 +85,17 @@ public class Pos2D
 	
 	
 	
+	//================//
+	// base overrides //
+	//================//
+	
+	@Override
 	public int hashCode() { return Objects.hash(this.x, this.y); }
 	
+	@Override
 	public String toString() { return "[" + this.x + ", " + this.y + "]"; }
 	
+	@Override
 	public boolean equals(Object otherObj)
 	{
 		if (otherObj == this)

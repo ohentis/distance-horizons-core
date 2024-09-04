@@ -66,6 +66,11 @@ public class ThreadPoolUtil
 	@Nullable
 	public static ThreadPoolExecutor getCleanupExecutor() { return cleanupThreadPool; }
 	
+	public static final String BEACON_CULLING_THREAD_NAME = "Beacon Culling";
+	private static ThreadPoolExecutor beaconCullingThreadPool;
+	@Nullable
+	public static ThreadPoolExecutor getBeaconCullingExecutor() { return beaconCullingThreadPool; }
+	
 	public static final DhThreadFactory NETWORK_COMPRESSION_THREAD_FACTORY = new DhThreadFactory("Network Compression", Thread.MIN_PRIORITY);
 	private static ConfigThreadPool networkCompressionThreadPool;
 	@Nullable
@@ -80,11 +85,6 @@ public class ThreadPoolUtil
 	// worker thread pools are generally related with LOD building
 	// and all share an underlying number of threads.
 	// WARNING: great care should be used when setting up these threads since deadlock can occur if they are handled poorly.
-	
-	public static final DhThreadFactory LIGHT_POPULATOR_THREAD_FACTORY = new DhThreadFactory("LOD Builder - Light Populator", Thread.MIN_PRIORITY);
-	private static ConfigThreadPool lightPopulatorThreadPool;
-	@Nullable
-	public static ThreadPoolExecutor getLightPopulatorExecutor() { return (lightPopulatorThreadPool != null) ? lightPopulatorThreadPool.executor : null; }
 	
 	public static final DhThreadFactory CHUNK_TO_LOD_BUILDER_THREAD_FACTORY = new DhThreadFactory("LOD Builder - Chunk to Lod Builder", Thread.MIN_PRIORITY);
 	private static ConfigThreadPool chunkToLodBuilderThreadPool;
@@ -120,6 +120,7 @@ public class ThreadPoolUtil
 		networkCompressionThreadPool = new ConfigThreadPool(NETWORK_COMPRESSION_THREAD_FACTORY, Config.Client.Advanced.MultiThreading.numberOfNetworkCompressionThreads, Config.Client.Advanced.MultiThreading.runTimeRatioForNetworkCompressionThreads, null);
 		bufferUploaderThreadPool = ThreadUtil.makeSingleThreadPool(BUFFER_UPLOADER_THREAD_NAME);
 		cleanupThreadPool = ThreadUtil.makeSingleThreadPool(CLEANUP_THREAD_NAME);
+		beaconCullingThreadPool = ThreadUtil.makeSingleThreadPool(BEACON_CULLING_THREAD_NAME);
 		
 		
 		
@@ -147,7 +148,6 @@ public class ThreadPoolUtil
 		}
 		
 		// create thread pools
-		lightPopulatorThreadPool = new ConfigThreadPool(LIGHT_POPULATOR_THREAD_FACTORY, Config.Client.Advanced.MultiThreading.numberOfLodBuilderThreads, Config.Client.Advanced.MultiThreading.runTimeRatioForLodBuilderThreads, workerThreadSemaphore);
 		chunkToLodBuilderThreadPool = new ConfigThreadPool(CHUNK_TO_LOD_BUILDER_THREAD_FACTORY, Config.Client.Advanced.MultiThreading.numberOfLodBuilderThreads, Config.Client.Advanced.MultiThreading.runTimeRatioForLodBuilderThreads, workerThreadSemaphore);
 		bufferBuilderThreadPool = new ConfigThreadPool(BUFFER_BUILDER_THREAD_FACTORY, Config.Client.Advanced.MultiThreading.numberOfLodBuilderThreads, Config.Client.Advanced.MultiThreading.runTimeRatioForLodBuilderThreads, workerThreadSemaphore);
 		
@@ -162,10 +162,10 @@ public class ThreadPoolUtil
 		networkCompressionThreadPool.shutdownExecutorService();
 		bufferUploaderThreadPool.shutdown();
 		cleanupThreadPool.shutdown();
+		beaconCullingThreadPool.shutdown();
 		
 		
 		// worker threads
-		ThreadPoolUtil.lightPopulatorThreadPool.shutdownExecutorService();
 		ThreadPoolUtil.chunkToLodBuilderThreadPool.shutdownExecutorService();
 		ThreadPoolUtil.bufferBuilderThreadPool.shutdownExecutorService();
 		

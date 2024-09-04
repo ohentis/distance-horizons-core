@@ -21,6 +21,8 @@ package com.seibel.distanthorizons.core.pos;
 
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.enums.EDhDirection;
+import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos;
+import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.coreapi.util.BitShiftUtil;
 
@@ -105,16 +107,16 @@ public class DhSectionPos
 	/** Returns the section pos at the requested detail level containing the given BlockPos */
 	public static long encodeContaining(byte outputSectionDetailLevel, DhBlockPos pos)
 	{
-		int sectionPosX = getXOrZSectionPosFromChunkOrBlockPos(pos.x, false);
-		int sectionPosZ = getXOrZSectionPosFromChunkOrBlockPos(pos.z, false);
+		int sectionPosX = getXOrZSectionPosFromChunkOrBlockPos(pos.getX(), false);
+		int sectionPosZ = getXOrZSectionPosFromChunkOrBlockPos(pos.getZ(), false);
 		long blockPos = DhSectionPos.encode(DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL, sectionPosX, sectionPosZ);
 		return convertToDetailLevel(blockPos, outputSectionDetailLevel);
 	}
 	/** Returns the section pos at the requested detail level containing the given ChunkPos */
 	public static long encodeContaining(byte outputSectionDetailLevel, DhChunkPos pos)
 	{
-		int sectionPosX = getXOrZSectionPosFromChunkOrBlockPos(pos.x, true);
-		int sectionPosZ = getXOrZSectionPosFromChunkOrBlockPos(pos.z, true);
+		int sectionPosX = getXOrZSectionPosFromChunkOrBlockPos(pos.getX(), true);
+		int sectionPosZ = getXOrZSectionPosFromChunkOrBlockPos(pos.getZ(), true);
 		long blockPos = DhSectionPos.encode(DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL, sectionPosX, sectionPosZ);
 		return convertToDetailLevel(blockPos, outputSectionDetailLevel);
 	}

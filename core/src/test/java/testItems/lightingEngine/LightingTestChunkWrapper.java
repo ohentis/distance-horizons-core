@@ -20,7 +20,7 @@
 package testItems.lightingEngine;
 
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.pos.DhBlockPos;
+import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.objects.DataCorruptedException;
@@ -399,7 +399,7 @@ public class LightingTestChunkWrapper implements IChunkWrapper
 	}
 	
 	@Override
-	public ArrayList<DhBlockPos> getBlockLightPosList() { return this.blockLightPosList; }
+	public ArrayList<DhBlockPos> getWorldBlockLightPosList() { return this.blockLightPosList; }
 	
 	@Override
 	public boolean doNearbyChunksExist() { return false; }

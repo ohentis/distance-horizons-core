@@ -20,7 +20,7 @@
 package com.seibel.distanthorizons.core.util.objects.quadTree;
 
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
+import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhLodPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.pos.Pos2D;
@@ -31,6 +31,7 @@ import com.seibel.distanthorizons.core.util.gridList.MovableGridRingList;
 import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -85,7 +86,7 @@ public class QuadTree<T>
 		Pos2D ringListCenterPos = new Pos2D(
 				BitShiftUtil.divideByPowerOfTwo(this.centerBlockPos.x, this.treeMinDetailLevel),
 				BitShiftUtil.divideByPowerOfTwo(this.centerBlockPos.z, this.treeMinDetailLevel));
-		this.topRingList = new MovableGridRingList<>(halfSizeInRootNodes, ringListCenterPos.x, ringListCenterPos.y);
+		this.topRingList = new MovableGridRingList<>(halfSizeInRootNodes, ringListCenterPos.getX(), ringListCenterPos.getY());
 		
 	}
 	
@@ -96,8 +97,10 @@ public class QuadTree<T>
 	//=====================//
 	
 	/** @return the node at the given section position */
+	@Nullable
 	public final QuadNode<T> getNode(long pos) throws IndexOutOfBoundsException { return this.getOrSetNode(pos, false, null, true); }
 	/** @return the value at the given section position */
+	@Nullable
 	public final T getValue(long pos) throws IndexOutOfBoundsException
 	{
 		QuadNode<T> node = this.getNode(pos);
@@ -109,6 +112,7 @@ public class QuadTree<T>
 	}
 	
 	/** @return the value that was previously in the given position, null if nothing */
+	@Nullable
 	public final T setValue(long pos, T value) throws IndexOutOfBoundsException
 	{
 		T previousValue = this.getValue(pos);
@@ -117,6 +121,7 @@ public class QuadTree<T>
 	}
 	
 	/** @param runBoundaryChecks should only ever be set to true internally for removing out of bound nodes */
+	@Nullable
 	protected final QuadNode<T> getOrSetNode(long pos, boolean setNewValue, T newValue, boolean runBoundaryChecks) throws IndexOutOfBoundsException
 	{
 		if (runBoundaryChecks && !this.isSectionPosInBounds(pos))
@@ -260,7 +265,7 @@ public class QuadTree<T>
 		
 		
 		// remove out of bounds root nodes
-		this.topRingList.moveTo(expectedCenterPos.x, expectedCenterPos.y, (quadNode) ->
+		this.topRingList.moveTo(expectedCenterPos.getX(), expectedCenterPos.getY(), (quadNode) ->
 		{
 			if (quadNode != null && removedItemConsumer != null)
 			{
@@ -409,7 +414,7 @@ public class QuadTree<T>
 			{
 				if (node != null || includeNullNodes)
 				{
-					long rootPos = DhSectionPos.encode(QuadTree.this.treeMinDetailLevel, pos2D.x, pos2D.y);
+					long rootPos = DhSectionPos.encode(QuadTree.this.treeMinDetailLevel, pos2D.getX(), pos2D.getY());
 					if (QuadTree.this.isSectionPosInBounds(rootPos))
 					{
 						this.iteratorPosQueue.enqueue(rootPos);

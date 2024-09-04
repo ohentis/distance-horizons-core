@@ -19,13 +19,24 @@
 
 package com.seibel.distanthorizons.core.pos;
 
+import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos;
+import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.math.Vec3d;
 
+/**
+ * immutable <br><br>
+ * 
+ * Dev note: if for some reason we want to store these as longs check the old commits. <br>
+ * That logic was removed since it wasn't needed at the time
+ */
 public class DhChunkPos
 {
-	public final int x; // Low 32 bits
-	public final int z; // High 32 bits
+	private final int x;
+	public int getX() { return x; }
+	
+	private final int z;
+	public int getZ() { return z; }
 	
 	/** cached to improve hashing speed */
 	public final int hashCode;
@@ -46,8 +57,8 @@ public class DhChunkPos
 	}
 	public DhChunkPos(DhBlockPos blockPos)
 	{
-		// >> 4 is the Same as div 16
-		this(blockPos.x >> 4, blockPos.z >> 4);
+		// >> 4 is the Same as divide by 16
+		this(blockPos.getX() >> 4, blockPos.getZ() >> 4);
 	}
 	public DhChunkPos(DhBlockPos2D blockPos)
 	{
@@ -58,7 +69,6 @@ public class DhChunkPos
 	{
 		this(((int)pos.x) >> 4, ((int)pos.z) >> 4);
 	}
-	public DhChunkPos(long packed) { this(getXFromPackedLong(packed), getZFromPackedLong(packed)); }
 	
 	
 	
@@ -66,13 +76,8 @@ public class DhChunkPos
 	// methods //
 	//=========//
 	
-	public DhBlockPos center() { return new DhBlockPos(8 + this.x << 4, 0, 8 + this.z << 4); }
-	public DhBlockPos corner() { return new DhBlockPos(this.x << 4, 0, this.z << 4); }
-	
-	public static long toLong(int x, int z) { return ((long) x & 0xFFFFFFFFL) << 32 | (long) z & 0xFFFFFFFFL; }
-	
-	private static int getXFromPackedLong(long chunkPos) { return (int) (chunkPos >> 32); }
-	private static int getZFromPackedLong(long chunkPos) { return (int) (chunkPos & 0xFFFFFFFFL); }
+	public DhBlockPos centerBlockPos() { return new DhBlockPos(8 + this.x << 4, 0, 8 + this.z << 4); }
+	public DhBlockPos minCornerBlockPos() { return new DhBlockPos(this.x << 4, 0, this.z << 4); }
 	
 	public int getMinBlockX() { return this.x << 4; }
 	public int getMinBlockZ() { return this.z << 4; }
@@ -86,11 +91,10 @@ public class DhChunkPos
 		int maxBlockX = minBlockX + LodUtil.CHUNK_WIDTH;
 		int maxBlockZ = minBlockZ + LodUtil.CHUNK_WIDTH;
 		
-		return minBlockX <= pos.x && pos.x <= maxBlockX
-				&& minBlockZ <= pos.z && pos.z <= maxBlockZ;
+		return minBlockX <= pos.getX() && pos.getX() < maxBlockX
+				&& minBlockZ <= pos.getZ() && pos.getZ() < maxBlockZ;
 	}
 	
-	public long getLong() { return toLong(this.x, this.z); }
 	
 	public double distance(DhChunkPos other)
 	{
@@ -125,40 +129,5 @@ public class DhChunkPos
 	
 	@Override
 	public String toString() { return "C[" + this.x + "," + this.z + "]"; }
-	
-	
-	
-	//=======================//
-	// static helper methods //
-	//=======================//
-	
-	public static void _DebugCheckPacker(int x, int z, long expected)
-	{
-		long packed = toLong(x, z);
-		if (packed != expected)
-		{
-			throw new IllegalArgumentException("Packed values don't match: " + packed + " != " + expected);
-		}
-		
-		DhChunkPos pos = new DhChunkPos(packed);
-		if (pos.x != x || pos.z != z)
-		{
-			throw new IllegalArgumentException("Values after decode don't match: " + pos + " != " + x + ", " + z);
-		}
-	}
-	
-	/** @return true if testPos is within the area defined by the min and max positions. */
-	public static boolean isChunkPosBetween(DhChunkPos minChunkPos, DhChunkPos testPos, DhChunkPos maxChunkPos)
-	{
-		int minChunkX = Math.min(minChunkPos.x, maxChunkPos.x);
-		int minChunkZ = Math.min(minChunkPos.z, maxChunkPos.z);
-		
-		int maxChunkX = Math.max(minChunkPos.x, maxChunkPos.x);
-		int maxChunkZ = Math.max(minChunkPos.z, maxChunkPos.z);
-		
-		return minChunkX <= testPos.x && testPos.x <= maxChunkX &&
-				minChunkZ <= testPos.z && testPos.z <= maxChunkZ;
-	}
-	
 	
 }

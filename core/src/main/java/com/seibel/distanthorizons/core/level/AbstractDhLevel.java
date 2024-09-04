@@ -40,11 +40,9 @@ import org.jetbrains.annotations.Nullable;
 import java.io.File;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public abstract class AbstractDhLevel implements IDhLevel
 {
@@ -57,7 +55,7 @@ public abstract class AbstractDhLevel implements IDhLevel
 	@Nullable
 	public BeaconBeamRepo beaconBeamRepo;
 	
-	protected final DelayedFullDataSourceSaveCache delayedFullDataSourceSaveCache = new DelayedFullDataSourceSaveCache(this::onDataSourceSave, 2_000);
+	protected final DelayedFullDataSourceSaveCache delayedFullDataSourceSaveCache = new DelayedFullDataSourceSaveCache(this::onDataSourceSave, 500);
 	/** contains the {@link DhChunkPos} for each {@link DhSectionPos} that are queued to save via {@link AbstractDhLevel#delayedFullDataSourceSaveCache} */
 	protected final ConcurrentHashMap<Long, HashSet<DhChunkPos>> updatedChunkPosSetBySectionPos = new ConcurrentHashMap<>();
 	protected final ConcurrentHashMap<DhChunkPos, Integer> updatedChunkHashesByChunkPos = new ConcurrentHashMap<>();
@@ -113,11 +111,15 @@ public abstract class AbstractDhLevel implements IDhLevel
 		GenericObjectRenderer genericRenderer = this.getGenericRenderer();
 		if (genericRenderer != null)
 		{
-			// only add clouds for certain dimension types
-			if (!this.getLevelWrapper().hasCeiling()
-					&& !this.getLevelWrapper().getDimensionType().isTheEnd())
+			// only client levels can render clouds
+			if (this instanceof IDhClientLevel)
 			{
-				this.cloudRenderHandler = new CloudRenderHandler(this, genericRenderer);
+				// only add clouds for certain dimension types
+				if (!this.getLevelWrapper().hasCeiling()
+						&& !this.getLevelWrapper().getDimensionType().isTheEnd())
+				{
+					this.cloudRenderHandler = new CloudRenderHandler((IDhClientLevel)this, genericRenderer);
+				}
 			}
 			
 			
@@ -182,7 +184,7 @@ public abstract class AbstractDhLevel implements IDhLevel
 					
 					ApiEventInjector.INSTANCE.fireAllEvents(
 							DhApiChunkModifiedEvent.class,
-							new DhApiChunkModifiedEvent.EventParam(this.getLevelWrapper(), chunkPos.x, chunkPos.z));
+							new DhApiChunkModifiedEvent.EventParam(this.getLevelWrapper(), chunkPos.getX(), chunkPos.getZ()));
 				}
 			}
 		});
@@ -215,11 +217,12 @@ public abstract class AbstractDhLevel implements IDhLevel
 	//=================//
 	
 	@Override
-	public void setBeaconBeamsForChunk(DhChunkPos chunkPos, List<BeaconBeamDTO> newBeamList)
+	public void updateBeaconBeamsForChunk(IChunkWrapper chunkToUpdate, ArrayList<IChunkWrapper> nearbyChunkList)
 	{
 		if (this.beaconRenderHandler != null)
 		{
-			this.beaconRenderHandler.setBeaconBeamsForChunk(chunkPos, newBeamList);
+			List<BeaconBeamDTO> activeBeamList = chunkToUpdate.getAllActiveBeacons(nearbyChunkList);
+			this.beaconRenderHandler.setBeaconBeamsForChunk(chunkToUpdate.getChunkPos(), activeBeamList);
 		}
 	}
 	

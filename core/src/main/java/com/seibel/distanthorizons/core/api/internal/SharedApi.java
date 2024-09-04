@@ -24,13 +24,11 @@ import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.generation.DhLightingEngine;
 import com.seibel.distanthorizons.core.level.IDhLevel;
-import com.seibel.distanthorizons.core.level.IDhServerLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
-import com.seibel.distanthorizons.core.pos.DhBlockPos2D;
+import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
-import com.seibel.distanthorizons.core.sql.dto.BeaconBeamDTO;
 import com.seibel.distanthorizons.core.sql.repo.AbstractDhRepo;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.TimerUtil;
@@ -45,10 +43,7 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.*;
 
 /** Contains code and variables used by both {@link ClientApi} and {@link ServerApi} */
 public class SharedApi
@@ -63,6 +58,7 @@ public class SharedApi
 	private static final int MIN_MS_BETWEEN_OVERLOADED_LOG_MESSAGE = 30_000;
 	
 	private static final Timer CHUNK_UPDATE_TIMER = TimerUtil.CreateTimer("ChunkUpdateTimer");
+	
 	
 	
 	private static AbstractDhWorld currentWorld;
@@ -263,7 +259,7 @@ public class SharedApi
 					else
 					{
 						// neighboring chunk
-						DhChunkPos neighbourPos = new DhChunkPos(chunkWrapper.getChunkPos().x + xOffset, chunkWrapper.getChunkPos().z + zOffset);
+						DhChunkPos neighbourPos = new DhChunkPos(chunkWrapper.getChunkPos().getX() + xOffset, chunkWrapper.getChunkPos().getZ() + zOffset);
 						IChunkWrapper neighbourChunk = dhLevel.getLevelWrapper().tryGetChunk(neighbourPos);
 						if (neighbourChunk != null)
 						{
@@ -280,36 +276,43 @@ public class SharedApi
 			}
 		}
 	}
-	private static void bakeChunkLightingAndSendToLevelAsync(IChunkWrapper chunkWrapper, @Nullable ArrayList<IChunkWrapper> neighbourChunkList, IDhLevel dhLevel)
+	/** returning a {@link CompletableFuture} isn't necessary, but allows Intellij to properly show the full stack trace when debugging. */
+	@SuppressWarnings("UnusedReturnValue")
+	private static CompletableFuture<Void> bakeChunkLightingAndSendToLevelAsync(IChunkWrapper chunkWrapper, @Nullable ArrayList<IChunkWrapper> neighbourChunkList, IDhLevel dhLevel)
 	{
 		// lighting the chunk needs to be done on a separate thread to prevent lagging any of the event threads
-		ThreadPoolExecutor executor = ThreadPoolUtil.getLightPopulatorExecutor();
+		ThreadPoolExecutor executor = ThreadPoolUtil.getChunkToLodBuilderExecutor();
 		if (executor == null)
 		{
-			return;
+			return CompletableFuture.completedFuture(null);
 		}
 		
 		try
 		{
-			executor.execute(() ->
+			return CompletableFuture.runAsync(() ->		
 			{
 				//LOGGER.trace(chunkWrapper.getChunkPos() + " " + executor.getActiveCount() + " / " + executor.getQueue().size() + " - " + executor.getCompletedTaskCount());
 				
 				try
 				{
+					boolean checkChunkHash = !Config.Client.Advanced.LodBuilding.disableUnchangedChunkCheck.get();
+					
 					// check if this chunk has been converted into an LOD already
 					int oldChunkHash = dhLevel.getChunkHash(chunkWrapper.getChunkPos()); // shouldn't happen on the render thread since it may take a few moments to run
 					int newChunkHash = chunkWrapper.getBlockBiomeHashCode();
-					if (oldChunkHash == newChunkHash)
+					if (checkChunkHash)
 					{
-						// if the chunk hashes are the same then we don't need to bother with lighting the chunk
-						// or creating/updating the LODs
-						//LOGGER.info("skipping: "+chunkWrapper.getChunkPos()+" "+newChunkHash);
-						return;
-					}
-					else
-					{
-						//LOGGER.info("g: "+chunkWrapper.getChunkPos()+" "+newChunkHash);
+						if (oldChunkHash == newChunkHash)
+						{
+							// if the chunk hashes are the same then we don't need to bother with lighting the chunk
+							// or creating/updating the LODs
+							//LOGGER.info("skipping: "+chunkWrapper.getChunkPos()+" "+newChunkHash);
+							return;
+						}
+						else
+						{
+							//LOGGER.info("g: "+chunkWrapper.getChunkPos()+" "+newChunkHash);
+						}
 					}
 					
 					
@@ -362,13 +365,7 @@ public class SharedApi
 					
 					
 					
-					
-					
-					// get this chunk's active beacons
-					List<BeaconBeamDTO> beaconBeamList = chunkWrapper.getAllActiveBeacons(nearbyChunkList);
-					dhLevel.setBeaconBeamsForChunk(chunkWrapper.getChunkPos(), beaconBeamList);
-					
-					
+					dhLevel.updateBeaconBeamsForChunk(chunkWrapper, nearbyChunkList);
 					dhLevel.updateChunkAsync(chunkWrapper, newChunkHash);
 				}
 				catch (Exception e)
@@ -394,9 +391,13 @@ public class SharedApi
 						UPDATING_CHUNK_POS_SET.remove(chunkWrapper.getChunkPos());
 					}
 				}
-			});
+			}, executor);
 		}
-		catch (RejectedExecutionException ignore) { /* the executor was shut down, it should be back up shortly and able to accept new jobs */ }
+		catch (RejectedExecutionException ignore) 
+		{ 
+			// the executor was shut down, it should be back up shortly and able to accept new jobs
+			return CompletableFuture.completedFuture(null);
+		}
 	}
 	
 	

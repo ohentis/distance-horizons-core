@@ -114,8 +114,8 @@ public class LightingTestBlockStateWrapper implements IBlockStateWrapper
 	@Override 
 	public Color getMapColor() { throw new UnsupportedOperationException("Not Implemented"); }
 	@Override 
-	public boolean isGlassBlock() { throw new UnsupportedOperationException("Not Implemented"); }
-	
-	
+	public boolean isBeaconTintBlock() { throw new UnsupportedOperationException("Not Implemented"); }
+	@Override 
+	public Color getBeaconTintColor() { throw new UnsupportedOperationException("Not Implemented"); }
 	
 }

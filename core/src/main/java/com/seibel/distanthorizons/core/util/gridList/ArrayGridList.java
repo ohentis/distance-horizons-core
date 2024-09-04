@@ -87,11 +87,11 @@ public class ArrayGridList<T> extends ArrayList<T>
 	
 	public final T get(Pos2D pos)
 	{
-		return get(pos.x, pos.y);
+		return get(pos.getX(), pos.getY());
 	}
 	public final T set(Pos2D pos, T e)
 	{
-		return set(pos.x, pos.y, e);
+		return set(pos.getX(), pos.getY(), e);
 	}
 	public T get(int x, int y)
 	{
