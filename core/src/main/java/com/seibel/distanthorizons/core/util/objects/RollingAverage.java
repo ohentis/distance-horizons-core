@@ -10,10 +10,10 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class RollingAverage
 {
-	// properties //
-	
 	private final double[] values;
-	private final int size;
+	private final int maxSize;
+	
+	private int currentSize = 0;
 	private int index = 0;
 	private double sum = 0.0;
 	private final Lock arrayLock = new ReentrantLock();
@@ -31,7 +31,7 @@ public class RollingAverage
 			throw new IllegalArgumentException("Size must be greater than 0");
 		}
 		
-		this.size = size;
+		this.maxSize = size;
 		this.values = new double[size];
 	}
 	
@@ -53,7 +53,9 @@ public class RollingAverage
 			// Add the new value to the sum
 			this.sum += value;
 			// Move to the next index
-			this.index = (this.index + 1) % this.size;
+			this.index = (this.index + 1) % this.maxSize;
+			
+			this.currentSize = Math.max(this.index+1, this.currentSize);
 		}
 		finally
 		{
@@ -68,6 +70,7 @@ public class RollingAverage
 		{
 			this.sum = 0;
 			this.index = 0;
+			this.currentSize = 0;
 			Arrays.fill(this.values, 0);
 		}
 		finally
@@ -88,7 +91,7 @@ public class RollingAverage
 		this.arrayLock.lock();
 		try
 		{
-			return (this.sum / this.size);
+			return (this.sum / this.currentSize);
 		}
 		finally
 		{
@@ -105,7 +108,7 @@ public class RollingAverage
 	//================//
 	
 	@Override 
-	public String toString() { return "avg: "+this.getAverageRoundedString()+" max count: "+this.size; }
+	public String toString() { return "avg: ["+this.getAverageRoundedString()+"], count: ["+this.currentSize+"], max count: ["+this.maxSize+"]."; }
 	
 }
 
