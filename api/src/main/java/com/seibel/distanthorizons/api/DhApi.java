@@ -180,7 +180,7 @@ public class DhApi
 	 * This version should be updated whenever non-breaking fixes are added to the Distant Horizons API. 
 	 * @since API 1.0.0 
 	 */
-	public static int getApiPatchVersion() { return ModInfo.API_PATH_VERSION; }
+	public static int getApiPatchVersion() { return ModInfo.API_PATCH_VERSION; }
 	
 	/**
 	 * Returns the mod's semantic version number in the format: Major.Minor.Patch
