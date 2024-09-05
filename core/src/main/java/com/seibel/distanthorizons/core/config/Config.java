@@ -43,6 +43,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.util.*;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 
 /**
@@ -1019,7 +1020,11 @@ public class Config
 					public static ConfigEntry<String> levelKeyPrefix = new ConfigEntry.Builder<String>()
 							.setServersideShortName("levelKeyPrefix")
 							.setAppearance(EConfigEntryAppearance.ONLY_IN_FILE)
-							.set("")
+							.set(
+									SingletonInjector.INSTANCE.get(IMinecraftSharedWrapper.class).isWorldInitialized()
+											? ""
+											: "server" + ThreadLocalRandom.current().nextInt(1, 1000)
+							)
 							.comment(""
 									+ "Prefix of the level keys sent to the clients.\n"
 									+ "Should be set to a unique value for each backend server behind a proxy,\n"

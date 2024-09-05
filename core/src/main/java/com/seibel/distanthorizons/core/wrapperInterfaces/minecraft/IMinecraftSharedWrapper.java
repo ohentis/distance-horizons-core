@@ -30,4 +30,6 @@ public interface IMinecraftSharedWrapper extends IBindable
 	
 	File getInstallationDirectory();
 	
+	boolean isWorldInitialized();
+	
 }
