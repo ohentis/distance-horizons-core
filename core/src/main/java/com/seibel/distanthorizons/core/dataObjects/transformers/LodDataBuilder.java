@@ -40,6 +40,7 @@ import com.seibel.distanthorizons.core.util.RenderDataPointUtil;
 import com.seibel.distanthorizons.core.util.objects.DataCorruptedException;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IMutableBlockPosWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.IWrapperFactory;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
@@ -132,6 +133,9 @@ public class LodDataBuilder
 		
 		try
 		{
+			IMutableBlockPosWrapper mcBlockPos = chunkWrapper.getMutableBlockPosWrapper();
+			IBlockStateWrapper previousBlockState = null;
+			
 			int minBuildHeight = chunkWrapper.getMinNonEmptyHeight();
 			for (int relBlockX = 0; relBlockX < LodUtil.CHUNK_WIDTH; relBlockX++)
 			{
@@ -163,7 +167,7 @@ public class LodDataBuilder
 					// determine the starting Y Pos
 					int y = chunkWrapper.getLightBlockingHeightMapValue(relBlockX, relBlockZ);
 					// go up until we reach open air or the world limit
-					IBlockStateWrapper topBlockState = chunkWrapper.getBlockState(relBlockX, y, relBlockZ);
+					IBlockStateWrapper topBlockState = previousBlockState = chunkWrapper.getBlockState(relBlockX, y, relBlockZ, mcBlockPos, previousBlockState);
 					while (!topBlockState.isAir() && y < chunkWrapper.getMaxBuildHeight())
 					{
 						try
@@ -171,7 +175,7 @@ public class LodDataBuilder
 							// This is necessary in some edge cases with snow layers and some other blocks that may not appear in the height map but do block light.
 							// Interestingly this doesn't appear to be the case in the DhLightingEngine, if this same logic is added there the lighting breaks for the affected blocks.
 							y++;
-							topBlockState = chunkWrapper.getBlockState(relBlockX, y, relBlockZ);
+							topBlockState = previousBlockState = chunkWrapper.getBlockState(relBlockX, y, relBlockZ, mcBlockPos, previousBlockState);
 						}
 						catch (Exception e)
 						{
@@ -190,7 +194,7 @@ public class LodDataBuilder
 					for (; y >= minBuildHeight; y--)
 					{
 						IBiomeWrapper newBiome = chunkWrapper.getBiome(relBlockX, y, relBlockZ);
-						IBlockStateWrapper newBlockState = chunkWrapper.getBlockState(relBlockX, y, relBlockZ);
+						IBlockStateWrapper newBlockState = previousBlockState = chunkWrapper.getBlockState(relBlockX, y, relBlockZ, mcBlockPos, previousBlockState);
 						byte newBlockLight = (byte) chunkWrapper.getBlockLight(relBlockX, y + 1, relBlockZ);
 						byte newSkyLight = (byte) chunkWrapper.getSkyLight(relBlockX, y + 1, relBlockZ);
 						

@@ -29,6 +29,7 @@ import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IMutableBlockPosWrapper;
 import org.apache.logging.log4j.Logger;
 
 import java.awt.*;
@@ -163,6 +164,9 @@ public class DhLightingEngine
 					// if the dimension has skylights
 					if (maxSkyLight > 0)
 					{
+						IMutableBlockPosWrapper mcBlockPos = chunk.getMutableBlockPosWrapper();
+						IBlockStateWrapper previousBlockState = null;
+						
 						int maxY = chunk.getMaxNonEmptyHeight();
 						int minY = chunk.getMinBuildHeight();
 						
@@ -174,7 +178,7 @@ public class DhLightingEngine
 								// set each pos' sky light all the way down until an opaque block is hit
 								for (int y = maxY; y >= minY; y--)
 								{
-									IBlockStateWrapper block = chunk.getBlockState(relX, y, relZ);
+									IBlockStateWrapper block = previousBlockState = chunk.getBlockState(relX, y, relZ, mcBlockPos, previousBlockState);
 									if (block != null && block.getOpacity() != LodUtil.BLOCK_FULLY_TRANSPARENT)
 									{
 										// keep moving down until we find a non-transparent block
@@ -247,6 +251,8 @@ public class DhLightingEngine
 		final DhBlockPosMutable neighbourBlockPos = PRIMARY_BLOCK_POS_REF.get();
 		final DhBlockPosMutable relNeighbourBlockPos = SECONDARY_BLOCK_POS_REF.get();
 		
+		IMutableBlockPosWrapper mcBlockPos = null;
+		IBlockStateWrapper previousBlockState = null;
 		
 		// update each light position
 		while (!lightPosQueue.isEmpty())
@@ -290,7 +296,15 @@ public class DhLightingEngine
 				}
 				
 				
-				IBlockStateWrapper neighbourBlockState = neighbourChunk.getBlockState(relNeighbourBlockPos);
+				if (mcBlockPos == null)
+				{
+					// it doesn't matter what chunk we get the position object from
+					// TODO move this getter logic out of ChunkWrapper
+					mcBlockPos = neighbourChunk.getMutableBlockPosWrapper();
+				}
+				
+				
+				IBlockStateWrapper neighbourBlockState = previousBlockState = neighbourChunk.getBlockState(relNeighbourBlockPos, mcBlockPos, previousBlockState);
 				// Math.max(1, ...) is used so that the propagated light level always drops by at least 1, preventing infinite cycles.
 				int targetLevel = lightValue - Math.max(1, neighbourBlockState.getOpacity());
 				if (targetLevel > currentBlockLight)

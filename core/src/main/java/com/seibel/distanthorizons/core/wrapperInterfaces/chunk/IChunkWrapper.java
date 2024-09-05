@@ -20,15 +20,13 @@
 package com.seibel.distanthorizons.core.wrapperInterfaces.chunk;
 
 import com.seibel.distanthorizons.core.generation.AdjacentChunkHolder;
-import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPosMutable;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.sql.dto.BeaconBeamDTO;
-import com.seibel.distanthorizons.core.util.ColorUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
-import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IMutableBlockPosWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IBindable;
@@ -117,6 +115,15 @@ public interface IChunkWrapper extends IBindable
 	
 	default IBlockStateWrapper getBlockState(DhBlockPos pos) { return this.getBlockState(pos.getX(), pos.getY(), pos.getZ()); }
 	IBlockStateWrapper getBlockState(int relX, int relY, int relZ);
+	/** @see IChunkWrapper#getBlockState(int, int, int, IMutableBlockPosWrapper, IBlockStateWrapper)  */
+	default IBlockStateWrapper getBlockState(DhBlockPos pos, IMutableBlockPosWrapper mcBlockPos, IBlockStateWrapper guess) { return this.getBlockState(pos.getX(), pos.getY(), pos.getZ(), mcBlockPos, guess); }
+	/** 
+	 * Can be faster than {@link IChunkWrapper#getBlockState} in some cases
+	 * due to directly passing in several shared objects.
+	 */
+	IBlockStateWrapper getBlockState(int relX, int relY, int relZ, IMutableBlockPosWrapper mcBlockPos, IBlockStateWrapper guess);
+	
+	IMutableBlockPosWrapper getMutableBlockPosWrapper();
 	
 	IBiomeWrapper getBiome(int relX, int relY, int relZ);
 	
@@ -290,6 +297,9 @@ public interface IChunkWrapper extends IBindable
 		int minBuildHeight = this.getMinNonEmptyHeight();
 		int maxBuildHeight = this.getMaxNonEmptyHeight();
 		
+		IMutableBlockPosWrapper mcBlockPos = this.getMutableBlockPosWrapper();
+		IBlockStateWrapper previousBlockState = null;
+		
 		
 		// most blocks (only some blocks are sampled since checking every block is a very slow operation)
 		for (int x = 0; x < LodUtil.CHUNK_WIDTH; x+=2)
@@ -298,7 +308,9 @@ public interface IChunkWrapper extends IBindable
 			{
 				for (int y = minBuildHeight; y < maxBuildHeight; y+=2)
 				{
-					hash = (hash * primeBlockMultiplier) + this.getBlockState(x, y, z).hashCode();
+					previousBlockState = this.getBlockState(x, y, z, mcBlockPos, previousBlockState);
+					
+					hash = (hash * primeBlockMultiplier) + previousBlockState.hashCode();
 					hash = (hash * primeBiomeMultiplier) + this.getBiome(x, y, z).hashCode();
 					hash = (hash * primeHeightMultiplier) + y;
 				}
@@ -311,14 +323,18 @@ public interface IChunkWrapper extends IBindable
 			for (int z = 0; z < LodUtil.CHUNK_WIDTH; z++)
 			{
 				int lightBlockingY = this.getLightBlockingHeightMapValue(x, z);
-				hash = (hash * primeBlockMultiplier) + this.getBlockState(x, lightBlockingY, z).hashCode();
+				previousBlockState = this.getBlockState(x, lightBlockingY, z, mcBlockPos, previousBlockState);
+				
+				hash = (hash * primeBlockMultiplier) + previousBlockState.hashCode();
 				hash = (hash * primeBiomeMultiplier) + this.getBiome(x, lightBlockingY, z).hashCode();
 				hash = (hash * primeHeightMultiplier) + lightBlockingY;
 				
 				int solidY = this.getSolidHeightMapValue(x, z);
 				if (solidY != lightBlockingY)
 				{
-					hash = (hash * primeBlockMultiplier) + this.getBlockState(x, solidY, z).hashCode();
+					previousBlockState = this.getBlockState(x, lightBlockingY, z, mcBlockPos, previousBlockState);
+					
+					hash = (hash * primeBlockMultiplier) + previousBlockState.hashCode();
 					hash = (hash * primeBiomeMultiplier) + this.getBiome(x, solidY, z).hashCode();
 					hash = (hash * primeHeightMultiplier) + solidY;
 				}
