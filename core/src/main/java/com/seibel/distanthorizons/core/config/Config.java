@@ -20,6 +20,7 @@
 package com.seibel.distanthorizons.core.config;
 
 
+import com.google.common.base.Suppliers;
 import com.seibel.distanthorizons.api.DhApi;
 import com.seibel.distanthorizons.api.enums.config.*;
 import com.seibel.distanthorizons.api.enums.config.quickOptions.*;
@@ -1021,7 +1022,7 @@ public class Config
 							.setServersideShortName("levelKeyPrefix")
 							.setAppearance(EConfigEntryAppearance.ONLY_IN_FILE)
 							.set(
-									SingletonInjector.INSTANCE.get(IMinecraftSharedWrapper.class).isWorldInitialized()
+									Suppliers.compose(wrapper -> !wrapper.isDedicatedServer() || wrapper.isWorldInitialized(), () -> SingletonInjector.INSTANCE.get(IMinecraftSharedWrapper.class)).get()
 											? ""
 											: "server" + ThreadLocalRandom.current().nextInt(1, 1000)
 							)
