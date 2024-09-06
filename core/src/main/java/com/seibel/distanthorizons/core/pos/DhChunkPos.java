@@ -90,6 +90,11 @@ public class DhChunkPos
 				&& minBlockZ <= pos.getZ() && pos.getZ() < maxBlockZ;
 	}
 	
+	public double distance(DhChunkPos other)
+	{ return Math.sqrt(Math.pow(this.x - other.x, 2) + Math.pow(this.z - other.z, 2)); }
+	public double squaredDistance(DhChunkPos other)
+	{ return Math.pow(this.x - other.x, 2) + Math.pow(this.z - other.z, 2); }
+	
 	
 	
 	//================//

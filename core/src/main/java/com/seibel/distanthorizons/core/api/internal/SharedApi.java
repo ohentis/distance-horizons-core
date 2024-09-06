@@ -31,11 +31,11 @@ import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.sql.repo.AbstractDhRepo;
 import com.seibel.distanthorizons.core.util.LodUtil;
-import com.seibel.distanthorizons.core.util.TimerUtil;
 import com.seibel.distanthorizons.core.util.objects.Pair;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.world.*;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
@@ -44,6 +44,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.locks.ReentrantLock;
 
 /** Contains code and variables used by both {@link ClientApi} and {@link ServerApi} */
 public class SharedApi
@@ -52,18 +53,15 @@ public class SharedApi
 	
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	private static final IMinecraftRenderWrapper MC_RENDER = SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
-	private static final Set<DhChunkPos> UPDATING_CHUNK_POS_SET = ConcurrentHashMap.newKeySet();
-	/** how many chunks can be queued for updating per thread, used to prevent updates from infinitely pilling up if the user flys around extremely fast */
+	private static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
+	
+	private static final UpdateChunkPosManager UPDATE_POS_MANAGER = new UpdateChunkPosManager();
+	/** how many chunks can be queued for updating per thread, used to prevent updates from infinitely pilling up if the user flies around extremely fast */
 	private static final int MAX_UPDATING_CHUNK_COUNT_PER_THREAD = 500;
-	private static final int MIN_MS_BETWEEN_OVERLOADED_LOG_MESSAGE = 30_000;
-	
-	private static final Timer CHUNK_UPDATE_TIMER = TimerUtil.CreateTimer("ChunkUpdateTimer");
-	
 	
 	
 	private static AbstractDhWorld currentWorld;
 	private static int lastWorldGenTickDelta = 0;
-	private static long lastOverloadedLogMessageMsTime = 0;
 	
 	
 	
@@ -100,7 +98,7 @@ public class SharedApi
 			// shouldn't be necessary, but if we missed closing one of the connections this should make sure they're all closed
 			AbstractDhRepo.closeAllConnections();
 			// needs to be closed on world shutdown to clear out un-processed chunks
-			UPDATING_CHUNK_POS_SET.clear();
+			UPDATE_POS_MANAGER.clear();
 			
 			// recommend that the garbage collector cleans up any objects from the old world and thread pools
 			System.gc();
@@ -136,10 +134,10 @@ public class SharedApi
 	 * This is important since asking MC for a chunk is slow and may block the render thread.
 	 */
 	public static boolean isChunkAtBlockPosAlreadyUpdating(int blockPosX, int blockPosZ)
-	{ return UPDATING_CHUNK_POS_SET.contains(new DhChunkPos(new DhBlockPos2D(blockPosX, blockPosZ))); }
+	{ return UPDATE_POS_MANAGER.contains(new DhChunkPos(new DhBlockPos2D(blockPosX, blockPosZ))); }
 	
 	public static boolean isChunkAtChunkPosAlreadyUpdating(int chunkPosX, int chunkPosZ)
-	{ return UPDATING_CHUNK_POS_SET.contains(new DhChunkPos(chunkPosX, chunkPosZ)); }
+	{ return UPDATE_POS_MANAGER.contains(new DhChunkPos(chunkPosX, chunkPosZ)); }
 	
 	
 	/** handles both block place and break events */
@@ -188,43 +186,6 @@ public class SharedApi
 		
 		
 		
-		//=====================//
-		// task limiting check //
-		//=====================//
-		
-		int currentQueueCount = UPDATING_CHUNK_POS_SET.size();
-		int maxQueueCount = MAX_UPDATING_CHUNK_COUNT_PER_THREAD * Config.Client.Advanced.MultiThreading.numberOfLodBuilderThreads.get();
-		if (currentQueueCount >= maxQueueCount)
-		{
-			// The maximum number of chunks are already queued, don't add more.
-			// This is done to prevent overloading the system if the user fly's extremely fast and queues too many chunks
-			
-			long msBetweenLastLog = System.currentTimeMillis() - lastOverloadedLogMessageMsTime;
-			if (msBetweenLastLog >= MIN_MS_BETWEEN_OVERLOADED_LOG_MESSAGE)
-			{
-				lastOverloadedLogMessageMsTime = System.currentTimeMillis();
-				
-				String message = "Distant Horizons overloaded, too many chunks queued for updating. " +
-						"\nThis may result in holes in your LODs. " +
-						"\nPlease move through the world slower, decrease your vanilla render distance, slow down your world pre-generator, or increase the Distant Horizons' CPU load config. " +
-						"\nMax queue count ["+maxQueueCount+"] (["+MAX_UPDATING_CHUNK_COUNT_PER_THREAD+"] per thread).";
-				ClientApi.INSTANCE.showChatMessageNextFrame(message);
-				LOGGER.warn(message);
-			}
-			
-			return;
-		}
-		
-		// prevent duplicate update requests
-		if (UPDATING_CHUNK_POS_SET.contains(chunkWrapper.getChunkPos()))
-		{
-			// this chunk is already being updated
-			return;
-		}
-		UPDATING_CHUNK_POS_SET.add(chunkWrapper.getChunkPos());
-		
-		
-		
 		//===============================//
 		// update the necessary chunk(s) //
 		//===============================//
@@ -233,7 +194,7 @@ public class SharedApi
 		{
 			// only update the center chunk
 			
-			bakeChunkLightingAndSendToLevelAsync(chunkWrapper, null, dhLevel);
+			queueChunkUpdate(chunkWrapper, null, dhLevel);
 		}
 		else
 		{
@@ -267,131 +228,152 @@ public class SharedApi
 			// light and send the chunks
 			for (IChunkWrapper litChunk : neighbourChunkList)
 			{
-				bakeChunkLightingAndSendToLevelAsync(litChunk, neighbourChunkList, dhLevel);
+				queueChunkUpdate(litChunk, neighbourChunkList, dhLevel);
 			}
 		}
 	}
+	private static void queueChunkUpdate(IChunkWrapper chunkWrapper, @Nullable ArrayList<IChunkWrapper> neighbourChunkList, IDhLevel dhLevel)
+	{
+		if (MC.playerExists())
+		{
+			UPDATE_POS_MANAGER.setCenter(MC.getPlayerChunkPos());
+			UPDATE_POS_MANAGER.maxSize = MAX_UPDATING_CHUNK_COUNT_PER_THREAD * Config.Client.Advanced.MultiThreading.numberOfLodBuilderThreads.get();
+		}
+		
+		UpdateChunkData updateData = new UpdateChunkData(chunkWrapper, neighbourChunkList, dhLevel);
+		UPDATE_POS_MANAGER.addItem(chunkWrapper.getChunkPos(), updateData);
+		
+		
+		
+		// queue updates up to the number of CPU cores allocated for the job
+		// (this prevents doing extra work queuing tasks that may not be necessary)
+		// and makes sure the chunks closest to the player are updated first
+		ThreadPoolExecutor executor = ThreadPoolUtil.getChunkToLodBuilderExecutor();
+		if (executor != null && executor.getQueue().size() < executor.getCorePoolSize())
+		{
+			try
+			{
+				executor.execute(SharedApi::processQueuedChunkUpdate);
+			}
+			catch (RejectedExecutionException ignore)
+			{
+				// the executor was shut down, it should be back up shortly and able to accept new jobs
+			}
+		}
+	}
+	
+	
 	/** returning a {@link CompletableFuture} isn't necessary, but allows Intellij to properly show the full stack trace when debugging. */
 	@SuppressWarnings("UnusedReturnValue")
-	private static CompletableFuture<Void> bakeChunkLightingAndSendToLevelAsync(IChunkWrapper chunkWrapper, @Nullable ArrayList<IChunkWrapper> neighbourChunkList, IDhLevel dhLevel)
+	private static void processQueuedChunkUpdate()
 	{
-		// lighting the chunk needs to be done on a separate thread to prevent lagging any of the event threads
-		ThreadPoolExecutor executor = ThreadPoolUtil.getChunkToLodBuilderExecutor();
-		if (executor == null)
+		//LOGGER.trace(chunkWrapper.getChunkPos() + " " + executor.getActiveCount() + " / " + executor.getQueue().size() + " - " + executor.getCompletedTaskCount());
+		
+		UpdateChunkData updateData = UPDATE_POS_MANAGER.popClosest();
+		if (updateData == null)
 		{
-			return CompletableFuture.completedFuture(null);
+			return;
 		}
+		
+		IChunkWrapper chunkWrapper = updateData.chunkWrapper;
+		@Nullable ArrayList<IChunkWrapper> neighbourChunkList = updateData.neighbourChunkList;
+		IDhLevel dhLevel = updateData.dhLevel;
+		
 		
 		try
 		{
-			return CompletableFuture.runAsync(() ->		
+			boolean checkChunkHash = !Config.Client.Advanced.LodBuilding.disableUnchangedChunkCheck.get();
+			
+			// check if this chunk has been converted into an LOD already
+			int oldChunkHash = dhLevel.getChunkHash(chunkWrapper.getChunkPos()); // shouldn't happen on the render thread since it may take a few moments to run
+			int newChunkHash = chunkWrapper.getBlockBiomeHashCode();
+			if (checkChunkHash)
 			{
-				//LOGGER.trace(chunkWrapper.getChunkPos() + " " + executor.getActiveCount() + " / " + executor.getQueue().size() + " - " + executor.getCompletedTaskCount());
+				if (oldChunkHash == newChunkHash)
+				{
+					// if the chunk hashes are the same then we don't need to bother with lighting the chunk
+					// or creating/updating the LODs
+					//LOGGER.info("skipping: "+chunkWrapper.getChunkPos()+" "+newChunkHash);
+					return;
+				}
+				else
+				{
+					//LOGGER.info("g: "+chunkWrapper.getChunkPos()+" "+newChunkHash);
+				}
+			}
+			
+			
+			// having a list of the nearby chunks is needed for lighting and beacon generation
+			ArrayList<IChunkWrapper> nearbyChunkList;
+			if (neighbourChunkList != null)
+			{
+				nearbyChunkList = neighbourChunkList;
+			}
+			else
+			{
+				nearbyChunkList = new ArrayList<>(1);
+				nearbyChunkList.add(chunkWrapper);
+			}
+			
+			
+			// chunk light baking is disabled since profiling revealed it used
+			// roughly the same amount of time as generating the lighting ourselves and
+			// was much more likely to have issues with corrupt (all black or all bright) chunks
+			boolean tryUsingMcLightingEngine = false;
+			if (tryUsingMcLightingEngine)
+			{
+				// Save or populate the chunk wrapper's lighting
+				// this is done so we don't have to worry about MC unloading the lighting data for this chunk
+				boolean chunkLightPopulated = false;
+				boolean onlyUseDhLighting = Config.Client.Advanced.LodBuilding.onlyUseDhLightingEngine.get();
+				if (!onlyUseDhLighting && chunkWrapper.isLightCorrect())
+				{
+					// If MC's lighting engine isn't thread safe this may cause the server thread to lag
+					chunkLightPopulated = chunkWrapper.bakeDhLightingUsingMcLightingEngine(dhLevel.getLevelWrapper());
+					if (!chunkLightPopulated)
+					{
+						// clear any existing data to prevent partial or corrupt lighting
+						// when re-generating it
+						chunkWrapper.clearDhBlockLighting();
+						chunkWrapper.clearDhSkyLighting();
+					}
+				}
 				
+				// something went wrong during the baking process so we have to generate the lighting ourselves
+				if (!chunkLightPopulated)
+				{
+					DhLightingEngine.INSTANCE.lightChunk(chunkWrapper, nearbyChunkList, dhLevel.hasSkyLight() ? LodUtil.MAX_MC_LIGHT : LodUtil.MIN_MC_LIGHT);
+				}
+			}
+			else
+			{
+				DhLightingEngine.INSTANCE.lightChunk(chunkWrapper, nearbyChunkList, dhLevel.hasSkyLight() ? LodUtil.MAX_MC_LIGHT : LodUtil.MIN_MC_LIGHT);
+			}
+			
+			
+			
+			dhLevel.updateBeaconBeamsForChunk(chunkWrapper, nearbyChunkList);
+			dhLevel.updateChunkAsync(chunkWrapper, newChunkHash);
+		}
+		catch (Exception e)
+		{
+			LOGGER.error("Unexpected error when updating chunk at pos: [" + chunkWrapper.getChunkPos() + "]", e);
+		}
+		finally
+		{
+			// queue the next position if there are still positions to process
+			ThreadPoolExecutor executor = ThreadPoolUtil.getChunkToLodBuilderExecutor();
+			if (executor != null && !UPDATE_POS_MANAGER.positionMap.isEmpty())
+			{
 				try
 				{
-					boolean checkChunkHash = !Config.Client.Advanced.LodBuilding.disableUnchangedChunkCheck.get();
-					
-					// check if this chunk has been converted into an LOD already
-					int oldChunkHash = dhLevel.getChunkHash(chunkWrapper.getChunkPos()); // shouldn't happen on the render thread since it may take a few moments to run
-					int newChunkHash = chunkWrapper.getBlockBiomeHashCode();
-					if (checkChunkHash)
-					{
-						if (oldChunkHash == newChunkHash)
-						{
-							// if the chunk hashes are the same then we don't need to bother with lighting the chunk
-							// or creating/updating the LODs
-							//LOGGER.info("skipping: "+chunkWrapper.getChunkPos()+" "+newChunkHash);
-							return;
-						}
-						else
-						{
-							//LOGGER.info("g: "+chunkWrapper.getChunkPos()+" "+newChunkHash);
-						}
-					}
-					
-					
-					// having a list of the nearby chunks is needed for lighting and beacon generation
-					ArrayList<IChunkWrapper> nearbyChunkList;
-					if (neighbourChunkList != null)
-					{
-						nearbyChunkList = neighbourChunkList;
-					}
-					else
-					{
-						nearbyChunkList = new ArrayList<>(1);
-						nearbyChunkList.add(chunkWrapper);
-					}
-					
-					
-					// chunk light baking is disabled since profiling revealed it used
-					// roughly the same amount of time as generating the lighting ourselves and
-					// was much more likely to have issues with corrupt (all black or all bright) chunks
-					boolean tryUsingMcLightingEngine = false;
-					if (tryUsingMcLightingEngine)
-					{
-						// Save or populate the chunk wrapper's lighting
-						// this is done so we don't have to worry about MC unloading the lighting data for this chunk
-						boolean chunkLightPopulated = false;
-						boolean onlyUseDhLighting = Config.Client.Advanced.LodBuilding.onlyUseDhLightingEngine.get();
-						if (!onlyUseDhLighting && chunkWrapper.isLightCorrect())
-						{
-							// If MC's lighting engine isn't thread safe this may cause the server thread to lag
-							chunkLightPopulated = chunkWrapper.bakeDhLightingUsingMcLightingEngine(dhLevel.getLevelWrapper());
-							if (!chunkLightPopulated)
-							{
-								// clear any existing data to prevent partial or corrupt lighting
-								// when re-generating it
-								chunkWrapper.clearDhBlockLighting();
-								chunkWrapper.clearDhSkyLighting();
-							}
-						}
-						
-						// something went wrong during the baking process so we have to generate the lighting ourselves
-						if (!chunkLightPopulated)
-						{
-							DhLightingEngine.INSTANCE.lightChunk(chunkWrapper, nearbyChunkList, dhLevel.hasSkyLight() ? LodUtil.MAX_MC_LIGHT : LodUtil.MIN_MC_LIGHT);
-						}
-					}
-					else
-					{
-						DhLightingEngine.INSTANCE.lightChunk(chunkWrapper, nearbyChunkList, dhLevel.hasSkyLight() ? LodUtil.MAX_MC_LIGHT : LodUtil.MIN_MC_LIGHT);
-					}
-					
-					
-					
-					dhLevel.updateBeaconBeamsForChunk(chunkWrapper, nearbyChunkList);
-					dhLevel.updateChunkAsync(chunkWrapper, newChunkHash);
+					executor.execute(SharedApi::processQueuedChunkUpdate);
 				}
-				catch (Exception e)
+				catch (RejectedExecutionException ignore)
 				{
-					LOGGER.error("Unexpected error when updating chunk at pos: [" + chunkWrapper.getChunkPos() + "]", e);
+					// the executor was shut down, it should be back up shortly and able to accept new jobs
 				}
-				finally
-				{
-					// the LOD chunk has finished being updated
-					int updateTimeoutInSec = Config.Client.Advanced.LodBuilding.minTimeBetweenChunkUpdatesInSeconds.get();
-					if (updateTimeoutInSec != 0)
-					{
-						// prevent updating this chunk again until the timeout finishes
-						CHUNK_UPDATE_TIMER.schedule(new TimerTask()
-						{
-							@Override
-							public void run() { UPDATING_CHUNK_POS_SET.remove(chunkWrapper.getChunkPos()); }
-						}, updateTimeoutInSec * 1000L);
-					}
-					else
-					{
-						// instantly allow this chunk to be updated again
-						UPDATING_CHUNK_POS_SET.remove(chunkWrapper.getChunkPos());
-					}
-				}
-			}, executor);
-		}
-		catch (RejectedExecutionException ignore) 
-		{ 
-			// the executor was shut down, it should be back up shortly and able to accept new jobs
-			return CompletableFuture.completedFuture(null);
+			}
 		}
 	}
 	
@@ -403,11 +385,185 @@ public class SharedApi
 	
 	public String getDebugMenuString()
 	{
-		int maxUpdateCount = MAX_UPDATING_CHUNK_COUNT_PER_THREAD * Config.Client.Advanced.MultiThreading.numberOfLodBuilderThreads.get();
-		String updatingCountStr = F3Screen.NUMBER_FORMAT.format(UPDATING_CHUNK_POS_SET.size());
-		String maxUpdateCountStr = F3Screen.NUMBER_FORMAT.format(maxUpdateCount);
+		String updatingCountStr = F3Screen.NUMBER_FORMAT.format(UPDATE_POS_MANAGER.closestQueue.size());
+		String maxUpdateCountStr = F3Screen.NUMBER_FORMAT.format(UPDATE_POS_MANAGER.maxSize);
 		return "Queued chunk updates: "+updatingCountStr+" / "+maxUpdateCountStr;
 	}
+	
+	
+	
+	//================//
+	// helper classes //
+	//================//
+	
+	/** contains the objects needed to update a chunk */
+	private static class UpdateChunkData
+	{
+		public IChunkWrapper chunkWrapper;
+		@Nullable
+		public ArrayList<IChunkWrapper> neighbourChunkList;
+		public IDhLevel dhLevel;
+		
+		public UpdateChunkData(IChunkWrapper chunkWrapper, @Nullable ArrayList<IChunkWrapper> neighbourChunkList, IDhLevel dhLevel)
+		{
+			this.chunkWrapper = chunkWrapper;
+			this.neighbourChunkList = neighbourChunkList;
+			this.dhLevel = dhLevel;
+		}
+	}
+	
+	/** keeps track of which chunks need to be updated */
+	private static class UpdateChunkPosManager
+	{
+		private final PriorityQueue<DhChunkPos> closestQueue;
+		private final PriorityQueue<DhChunkPos> furthestQueue;
+		private final HashMap<DhChunkPos, UpdateChunkData> positionMap;
+		
+		private final ReentrantLock lock = new ReentrantLock();
+		
+		private DhChunkPos center;
+		private int maxSize = 500;
+		
+		
+		
+		//=============//
+		// constructor //
+		//=============//
+		
+		public UpdateChunkPosManager()
+		{
+			this.closestQueue = new PriorityQueue<>(Comparator.comparingDouble(pos -> pos.squaredDistance(this.center)));
+			this.furthestQueue = new PriorityQueue<>(Comparator.comparingDouble(pos -> ((DhChunkPos)pos).squaredDistance(this.center)).reversed());
+			this.positionMap = new HashMap<>();
+			// defaulting to 0,0 is fine since it'll be updated once we start adding items 
+			this.center = new DhChunkPos(0, 0);
+		}
+		
+		
+		
+		//==================//
+		// list/set methods //
+		//==================//
+		
+		public boolean contains(DhChunkPos pos)
+		{
+			try
+			{
+				this.lock.lock();
+				
+				return this.positionMap.containsKey(pos);
+			}
+			finally
+			{
+				this.lock.unlock();
+			}
+		}
+		
+		public void clear()
+		{
+			try
+			{
+				this.lock.lock();
+				
+				this.positionMap.clear();
+				this.closestQueue.clear();
+				this.furthestQueue.clear();
+			}
+			finally
+			{
+				this.lock.unlock();
+			}
+		}
+		
+		public void addItem(DhChunkPos pos, UpdateChunkData updateData)
+		{
+			try
+			{
+				this.lock.lock();
+				
+				if (this.positionMap.containsKey(pos))
+				{
+					return;
+				}
+				
+				if (this.positionMap.size() >= this.maxSize)
+				{
+					// Remove item furthest from the center
+					DhChunkPos furthest = this.furthestQueue.poll();
+					this.closestQueue.remove(furthest);
+					this.positionMap.remove(furthest);
+				}
+				
+				this.positionMap.put(pos, updateData);
+				this.closestQueue.add(pos);
+				this.furthestQueue.add(pos);
+			}
+			finally
+			{
+				this.lock.unlock();
+			}
+		}
+		
+		
+		
+		//==================//
+		// position methods //
+		//==================//
+		
+		public void setCenter(DhChunkPos newCenter)
+		{
+			// if the rebuild time takes too long 
+			// (in James' testing a queue of 500 items only took around 0.1 milliseconds)
+			// this equation could be changed to only update after moving 2 or 4 chunks from the center
+			if (newCenter.equals(this.center))
+			{
+				return;
+			}
+			
+			try
+			{
+				this.lock.lock();
+				
+				this.center = newCenter;
+				
+				// rebuild the priority queues to match the new center
+				this.closestQueue.clear();
+				this.furthestQueue.clear();
+				for (DhChunkPos pos : this.positionMap.keySet())
+				{
+					this.closestQueue.add(pos);
+					this.furthestQueue.add(pos);
+				}
+			}
+			finally
+			{
+				this.lock.unlock();
+			}
+		}
+		
+		public UpdateChunkData popClosest()
+		{
+			if (this.closestQueue.isEmpty())
+			{
+				return null;
+			}
+			
+			try
+			{
+				this.lock.lock();
+				
+				DhChunkPos closest = this.closestQueue.poll();
+				this.furthestQueue.remove(closest);
+				return this.positionMap.remove(closest);
+			}
+			finally
+			{
+				this.lock.unlock();
+			}
+		}
+		
+	}
+	
 	
 	
 }

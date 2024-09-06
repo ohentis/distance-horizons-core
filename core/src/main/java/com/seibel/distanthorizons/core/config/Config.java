@@ -782,8 +782,10 @@ public class Config
 			
 			public static class LodBuilding
 			{
+				@Deprecated
 				public static ConfigEntry<Integer> minTimeBetweenChunkUpdatesInSeconds = new ConfigEntry.Builder<Integer>()
 						.setMinDefaultMax(0, 1, 60)
+						.setAppearance(EConfigEntryAppearance.ONLY_IN_API)
 						.comment(""
 								+ "Determines how long must pass between LOD chunk updates before another. \n"
 								+ "update can occur\n"
