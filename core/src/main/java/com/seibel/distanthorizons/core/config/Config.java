@@ -886,7 +886,7 @@ public class Config
 						.build();
 				
 				public static ConfigEntry<String> ignoredRenderBlockCsv = new ConfigEntry.Builder<String>()
-						.set("minecraft:barrier,minecraft:structure_void,minecraft:light,minecraft:tripwire")
+						.set("minecraft:barrier,minecraft:structure_void,minecraft:light,minecraft:tripwire,minecraft:brown_mushroom")
 						.comment(""
 								+ "A comma separated list of block resource locations that won't be rendered by DH. \n"
 								+ "Note: air is always included in this list. \n"
