@@ -27,6 +27,7 @@ import com.seibel.distanthorizons.core.util.objects.DataCorruptedException;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.ChunkLightStorage;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IMutableBlockPosWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
@@ -415,6 +416,15 @@ public class LightingTestChunkWrapper implements IChunkWrapper
 		int opacity = this.blockOpacityStorage.get(new DhBlockPos(relX, relY, relZ).hashCode());
 		int lightEmission = this.blockEmissionStorage.get(new DhBlockPos(relX, relY, relZ).hashCode());
 		return new LightingTestBlockStateWrapper(opacity, lightEmission);
+	}
+	@Override 
+	public IBlockStateWrapper getBlockState(int relX, int relY, int relZ, IMutableBlockPosWrapper mcBlockPos, IBlockStateWrapper guess)
+	{ return this.getBlockState(relX, relY, relZ); }
+	
+	@Override 
+	public IMutableBlockPosWrapper getMutableBlockPosWrapper()
+	{
+		return null;
 	}
 	
 	@Override
