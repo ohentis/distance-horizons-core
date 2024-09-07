@@ -467,7 +467,7 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 						try
 						{
 							IChunkWrapper chunk = WRAPPER_FACTORY.createChunkWrapper(generatedObjectArray);
-							FullDataSourceV2 dataSource = LodDataBuilder.createGeneratedDataSource(chunk);
+							FullDataSourceV2 dataSource = LodDataBuilder.createFromChunk(chunk);
 							LodUtil.assertTrue(dataSource != null);
 							chunkDataConsumer.accept(dataSource);
 						}

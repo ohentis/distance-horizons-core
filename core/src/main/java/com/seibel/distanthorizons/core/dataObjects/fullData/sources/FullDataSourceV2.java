@@ -144,7 +144,7 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 		this.columnWorldCompressionMode = columnWorldCompressionMode;
 	}
 	
-	public static FullDataSourceV2 createFromChunk(IChunkWrapper chunkWrapper) { return LodDataBuilder.createGeneratedDataSource(chunkWrapper); }
+	public static FullDataSourceV2 createFromChunk(IChunkWrapper chunkWrapper) { return LodDataBuilder.createFromChunk(chunkWrapper); }
 	
 	public static FullDataSourceV2 createFromLegacyDataSourceV1(FullDataSourceV1 legacyData)
 	{

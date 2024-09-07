@@ -23,6 +23,7 @@ import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGeneratio
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
+import com.seibel.distanthorizons.core.generation.DhLightingEngine;
 import com.seibel.distanthorizons.core.generation.IFullDataSourceRetrievalQueue;
 import com.seibel.distanthorizons.core.generation.tasks.IWorldGenTaskTracker;
 import com.seibel.distanthorizons.core.generation.tasks.WorldGenResult;
@@ -394,7 +395,14 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 		}
 	}
 	private void onDataSourceSave(FullDataSourceV2 fullDataSource) 
-	{ GeneratedFullDataSourceProvider.this.updateDataSourceAsync(fullDataSource); }
+	{
+		// block lights should have been populated at the chunkWrapper stage
+		// waiting to populate the data source's skylight at this stage prevents re-lighting and
+		// allows us to reduce cross-chunk lighting issues by lighting the whole 4x4 LOD at once
+		DhLightingEngine.INSTANCE.bakeDataSourceSkyLight(fullDataSource, LodUtil.MAX_MC_LIGHT);
+		
+		GeneratedFullDataSourceProvider.this.updateDataSourceAsync(fullDataSource); 
+	}
 	
 	
 	

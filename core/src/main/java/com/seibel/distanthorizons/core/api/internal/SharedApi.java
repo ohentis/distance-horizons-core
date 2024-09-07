@@ -316,41 +316,8 @@ public class SharedApi
 			}
 			
 			
-			// chunk light baking is disabled since profiling revealed it used
-			// roughly the same amount of time as generating the lighting ourselves and
-			// was much more likely to have issues with corrupt (all black or all bright) chunks
-			boolean tryUsingMcLightingEngine = false;
-			if (tryUsingMcLightingEngine)
-			{
-				// Save or populate the chunk wrapper's lighting
-				// this is done so we don't have to worry about MC unloading the lighting data for this chunk
-				boolean chunkLightPopulated = false;
-				boolean onlyUseDhLighting = Config.Client.Advanced.LodBuilding.onlyUseDhLightingEngine.get();
-				if (!onlyUseDhLighting && chunkWrapper.isLightCorrect())
-				{
-					// If MC's lighting engine isn't thread safe this may cause the server thread to lag
-					chunkLightPopulated = chunkWrapper.bakeDhLightingUsingMcLightingEngine(dhLevel.getLevelWrapper());
-					if (!chunkLightPopulated)
-					{
-						// clear any existing data to prevent partial or corrupt lighting
-						// when re-generating it
-						chunkWrapper.clearDhBlockLighting();
-						chunkWrapper.clearDhSkyLighting();
-					}
-				}
-				
-				// something went wrong during the baking process so we have to generate the lighting ourselves
-				if (!chunkLightPopulated)
-				{
-					DhLightingEngine.INSTANCE.lightChunk(chunkWrapper, nearbyChunkList, dhLevel.hasSkyLight() ? LodUtil.MAX_MC_LIGHT : LodUtil.MIN_MC_LIGHT);
-				}
-			}
-			else
-			{
-				DhLightingEngine.INSTANCE.lightChunk(chunkWrapper, nearbyChunkList, dhLevel.hasSkyLight() ? LodUtil.MAX_MC_LIGHT : LodUtil.MIN_MC_LIGHT);
-			}
-			
-			
+			// sky lighting is populated later at the data source level
+			DhLightingEngine.INSTANCE.bakeChunkBlockLighting(chunkWrapper, nearbyChunkList, dhLevel.hasSkyLight() ? LodUtil.MAX_MC_LIGHT : LodUtil.MIN_MC_LIGHT);
 			
 			dhLevel.updateBeaconBeamsForChunk(chunkWrapper, nearbyChunkList);
 			dhLevel.updateChunkAsync(chunkWrapper, newChunkHash);

@@ -59,12 +59,10 @@ public class LodDataBuilder
 	// converters //
 	//============//
 	
-	public static FullDataSourceV2 createGeneratedDataSource(IChunkWrapper chunkWrapper)
+	public static FullDataSourceV2 createFromChunk(IChunkWrapper chunkWrapper)
 	{
-		if (!canGenerateLodFromChunk(chunkWrapper))
-		{
-			return null;
-		}
+		// only block lighting is needed here, sky lighting is populated at the data source stage
+		LodUtil.assertTrue(chunkWrapper.isDhBlockLightingCorrect());
 		
 		
 		
@@ -153,8 +151,8 @@ public class LodDataBuilder
 					if (lastY < chunkWrapper.getMaxBuildHeight())
 					{
 						// FIXME: The lastY +1 offset is to reproduce the old behavior. Remove this when we get per-face lighting
-						blockLight = (byte) chunkWrapper.getBlockLight(relBlockX, lastY + 1, relBlockZ);
-						skyLight = (byte) chunkWrapper.getSkyLight(relBlockX, lastY + 1, relBlockZ);
+						blockLight = (byte) chunkWrapper.getDhBlockLight(relBlockX, lastY + 1, relBlockZ);
+						skyLight = (byte) chunkWrapper.getDhSkyLight(relBlockX, lastY + 1, relBlockZ);
 					}
 					else
 					{
@@ -195,8 +193,8 @@ public class LodDataBuilder
 					{
 						IBiomeWrapper newBiome = chunkWrapper.getBiome(relBlockX, y, relBlockZ);
 						IBlockStateWrapper newBlockState = previousBlockState = chunkWrapper.getBlockState(relBlockX, y, relBlockZ, mcBlockPos, previousBlockState);
-						byte newBlockLight = (byte) chunkWrapper.getBlockLight(relBlockX, y + 1, relBlockZ);
-						byte newSkyLight = (byte) chunkWrapper.getSkyLight(relBlockX, y + 1, relBlockZ);
+						byte newBlockLight = (byte) chunkWrapper.getDhBlockLight(relBlockX, y + 1, relBlockZ);
+						byte newSkyLight = (byte) chunkWrapper.getDhSkyLight(relBlockX, y + 1, relBlockZ);
 						
 						// save the biome/block change
 						if (!newBiome.equals(biome) || !newBlockState.equals(blockState))
@@ -438,8 +436,6 @@ public class LodDataBuilder
 	//================//
 	// helper methods //
 	//================//
-	
-	public static boolean canGenerateLodFromChunk(IChunkWrapper chunk) { return chunk != null && chunk.isLightCorrect(); }
 	
 	public static int getXOrZSectionPosFromChunkPos(int chunkXOrZPos)
 	{

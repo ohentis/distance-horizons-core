@@ -75,9 +75,11 @@ public interface IChunkWrapper extends IBindable
 	int getMinBlockX();
 	int getMinBlockZ();
 	
-	void setIsDhLightCorrect(boolean isDhLightCorrect);
-	void setUseDhLighting(boolean useDhLighting);
-	boolean isLightCorrect();
+	void setIsDhBlockLightCorrect(boolean isDhLightCorrect);
+	void setIsDhSkyLightCorrect(boolean isDhLightCorrect);
+	
+	boolean isDhBlockLightingCorrect();
+	boolean isDhSkyLightCorrect();
 	
 	
 	int getDhSkyLight(int relX, int relY, int relZ);
@@ -87,9 +89,6 @@ public interface IChunkWrapper extends IBindable
 	int getDhBlockLight(int relX, int relY, int relZ);
 	void setDhBlockLight(int relX, int relY, int relZ, int lightValue);
 	void clearDhBlockLighting();
-	
-	int getBlockLight(int relX, int relY, int relZ);
-	int getSkyLight(int relX, int relY, int relZ);
 	
 	
 	/** Note: don't modify this array, it will only be generated once and then shared between uses */
@@ -157,85 +156,6 @@ public interface IChunkWrapper extends IBindable
 					"Y must be between [" + minHeight + "] and [" + maxHeight + "] (inclusive).";
 			throw new IndexOutOfBoundsException(errorMessage);
 		}
-	}
-	
-	
-	/**
-	 * Populates DH's saved lighting using MC's lighting engine.
-	 * This is generally done in cases where MC's lighting is correct now, but may not be later (like when a chunk is unloading).
-	 *
-	 * @throws IllegalStateException if the chunk's lighting isn't valid. This is done to prevent accidentally baking broken lighting.
-	 * @return true if the chunk's lighting was successfully populated, false otherwise
-	 */
-	@Deprecated
-	default boolean bakeDhLightingUsingMcLightingEngine(ILevelWrapper levelWrapper) throws IllegalStateException
-	{
-		if (!this.isLightCorrect())
-		{
-			return false;
-		}
-		
-		//=======================//
-		// get lighting for each //
-		// relative block pos    //
-		//=======================//
-		
-		boolean lightingFound = false;
-		// if the level doesn't have sky lights, then this check can be ignored
-		// since all sky light values will be 0 anyway
-		boolean skyLightingFound = !levelWrapper.hasSkyLight();
-		
-		for (int relX = 0; relX < LodUtil.CHUNK_WIDTH; relX++)
-		{
-			for (int relZ = 0; relZ < LodUtil.CHUNK_WIDTH; relZ++)
-			{
-				for (int y = this.getMinBuildHeight(); y < this.getMaxBuildHeight(); y++)
-				{
-					int skyLight = this.getSkyLight(relX, y, relZ);
-					this.setDhSkyLight(relX, y, relZ, skyLight);
-					int blockLight = this.getBlockLight(relX, y, relZ);
-					this.setDhBlockLight(relX, y, relZ, blockLight);
-					
-					// MC defaults to max sky light and no block light, including underground blocks.
-					// If any position has something different then those default values, it's likely that the
-					// lighting was properly populated for at least part of the chunk
-					if (!lightingFound &&
-						(skyLight != LodUtil.MAX_MC_LIGHT || blockLight != LodUtil.MIN_MC_LIGHT))
-					{
-						lightingFound = true;
-					}
-					
-					if (!skyLightingFound
-						&& skyLight != LodUtil.MIN_MC_LIGHT)
-					{
-						skyLightingFound = true;
-					}
-				}
-			}
-		}
-		
-		
-		
-		//=================//
-		// validate result //
-		//=================//
-		
-		// if no lighting was found or the sky is always black, the lighting is likely broken
-		if (!lightingFound || !skyLightingFound
-			// if lighting is no longer correct or doesn't match the saved values
-			// its very likely it broke halfway through and will need regenerating
-			|| !this.isLightCorrect()
-			|| this.getSkyLight(0, 0, 0) != this.getDhSkyLight(0,0,0)
-			|| this.getBlockLight(0, 0, 0) != this.getDhBlockLight(0,0,0))
-		{
-			return false;
-		}
-		
-		
-		// lighting is valid
-		this.setIsDhLightCorrect(true);
-		this.setUseDhLighting(true);
-		return true;
 	}
 	
 	

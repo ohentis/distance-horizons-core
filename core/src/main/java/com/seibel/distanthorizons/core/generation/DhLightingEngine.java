@@ -60,10 +60,22 @@ public class DhLightingEngine
 	private static final ThreadLocal<DhBlockPosMutable> PRIMARY_BLOCK_POS_REF = ThreadLocal.withInitial(() -> new DhBlockPosMutable());
 	private static final ThreadLocal<DhBlockPosMutable> SECONDARY_BLOCK_POS_REF = ThreadLocal.withInitial(() -> new DhBlockPosMutable());
 	
-	/** if enabled will render each block light value when the lighting engine is run */
+	/** if enabled will render each block light value when the chunk lighting engine is run */
 	private static final boolean RENDER_BLOCK_LIGHT_WIREFRAME = false;
-	/** if enabled will render each sky light value when the lighting engine is run */
+	/** if enabled will render each sky light value when the chunk lighting engine is run */
 	private static final boolean RENDER_SKY_LIGHT_WIREFRAME = false;
+	
+	/**
+	 * Used for dataSource lighting. <br> 
+	 * Packed as alternating x and z offsets. 
+	 */
+	private static final byte[] ADJACENT_DIRECTION_OFFSETS = new byte[]
+			{
+					-1, 0,
+					+1, 0,
+					0, -1,
+					0, +1
+			};
 	
 	
 	
@@ -75,9 +87,28 @@ public class DhLightingEngine
 	
 	
 	
-	//=========//
-	// methods //
-	//=========//
+	//================//
+	// chunk lighting //
+	//================//
+	
+	/**
+	 * Populates both block and sky lighting. 
+	 * @see DhLightingEngine#lightChunk(IChunkWrapper, ArrayList, int, boolean, boolean) 
+	 */
+	public void lightChunk(
+			@NotNull IChunkWrapper centerChunk, @NotNull ArrayList<IChunkWrapper> nearbyChunkList,
+			int maxSkyLight)
+	{ this.lightChunk(centerChunk, nearbyChunkList, maxSkyLight, true, true); }
+	
+	/**
+	 * Only populates block lights. 
+	 * @see DhLightingEngine#lightChunk(IChunkWrapper, ArrayList, int, boolean, boolean) 
+	 */
+	public void bakeChunkBlockLighting(
+			@NotNull IChunkWrapper centerChunk, @NotNull ArrayList<IChunkWrapper> nearbyChunkList,
+			int maxSkyLight)
+	{ this.lightChunk(centerChunk, nearbyChunkList, maxSkyLight, true, false); }
+	
 	
 	/**
 	 * Note: depending on the implementation of {@link IChunkWrapper#setDhBlockLight(int, int, int, int)} and {@link IChunkWrapper#setDhSkyLight(int, int, int, int)}
@@ -88,12 +119,12 @@ public class DhLightingEngine
 	 * @param nearbyChunkList should also contain centerChunk
 	 * @param maxSkyLight should be a value between 0 and 15
 	 */
-	public void lightChunk(@NotNull IChunkWrapper centerChunk, @NotNull ArrayList<IChunkWrapper> nearbyChunkList, int maxSkyLight)
+	private void lightChunk(
+			@NotNull IChunkWrapper centerChunk, @NotNull ArrayList<IChunkWrapper> nearbyChunkList, 
+			int maxSkyLight, boolean updateBlockLight, boolean updateSkyLight)
 	{
 		DhChunkPos centerChunkPos = centerChunk.getChunkPos();
 		AdjacentChunkHolder adjacentChunkHolder = new AdjacentChunkHolder(centerChunk);
-		
-		long startTimeNs = System.nanoTime();
 		
 		
 		// try-finally to handle the stableArray resources
@@ -121,7 +152,6 @@ public class DhLightingEngine
 			
 			// find all adjacent chunks
 			// and get any necessary info from them
-			boolean warningLogged = false;
 			for (int chunkIndex = 0; chunkIndex < nearbyChunkList.size(); chunkIndex++) // using iterators in high traffic areas can cause GC issues due to allocating a bunch of iterators, use an indexed for-loop instead
 			{
 				IChunkWrapper chunk = nearbyChunkList.get(chunkIndex);
@@ -133,28 +163,31 @@ public class DhLightingEngine
 					// add the adjacent chunk
 					adjacentChunkHolder.add(chunk);
 					
+					// get and set the adjacent chunk's initial block lights
+					final DhBlockPosMutable relLightBlockPos = PRIMARY_BLOCK_POS_REF.get();
+					
 					
 					
 					//==================//
 					// set block lights //
 					//==================//
 					
-					// get and set the adjacent chunk's initial block lights
-					final DhBlockPosMutable relLightBlockPos = PRIMARY_BLOCK_POS_REF.get();
-					
-					ArrayList<DhBlockPos> blockLightPosList = chunk.getWorldBlockLightPosList();
-					for (int blockLightIndex = 0; blockLightIndex < blockLightPosList.size(); blockLightIndex++) // using iterators in high traffic areas can cause GC issues due to allocating a bunch of iterators, use an indexed for-loop instead
+					if (updateBlockLight)
 					{
-						DhBlockPos blockLightPos = blockLightPosList.get(blockLightIndex);
-						blockLightPos.mutateToChunkRelativePos(relLightBlockPos);
-						
-						// get the light
-						IBlockStateWrapper blockState = chunk.getBlockState(relLightBlockPos);
-						int lightValue = blockState.getLightEmission();
-						blockLightWorldPosQueue.push(blockLightPos.getX(), blockLightPos.getY(), blockLightPos.getZ(), lightValue);
-						
-						// set the light
-						chunk.setDhBlockLight(relLightBlockPos.getX(), relLightBlockPos.getY(), relLightBlockPos.getZ(), lightValue);
+						ArrayList<DhBlockPos> blockLightPosList = chunk.getWorldBlockLightPosList();
+						for (int blockLightIndex = 0; blockLightIndex < blockLightPosList.size(); blockLightIndex++) // using iterators in high traffic areas can cause GC issues due to allocating a bunch of iterators, use an indexed for-loop instead
+						{
+							DhBlockPos blockLightPos = blockLightPosList.get(blockLightIndex);
+							blockLightPos.mutateToChunkRelativePos(relLightBlockPos);
+							
+							// get the light
+							IBlockStateWrapper blockState = chunk.getBlockState(relLightBlockPos);
+							int lightValue = blockState.getLightEmission();
+							blockLightWorldPosQueue.push(blockLightPos.getX(), blockLightPos.getY(), blockLightPos.getZ(), lightValue);
+							
+							// set the light
+							chunk.setDhBlockLight(relLightBlockPos.getX(), relLightBlockPos.getY(), relLightBlockPos.getZ(), lightValue);
+						}
 					}
 					
 					
@@ -165,7 +198,7 @@ public class DhLightingEngine
 					
 					// get and set the adjacent chunk's initial skylights,
 					// if the dimension has skylights
-					if (maxSkyLight > 0)
+					if (updateSkyLight && maxSkyLight > 0)
 					{
 						IMutableBlockPosWrapper mcBlockPos = chunk.getMutableBlockPosWrapper();
 						IBlockStateWrapper previousBlockState = null;
@@ -211,16 +244,22 @@ public class DhLightingEngine
 			}
 			
 			// block light
-			this.propagateLightPosList(blockLightWorldPosQueue, adjacentChunkHolder,
-					(neighbourChunk, relBlockPos) -> neighbourChunk.getDhBlockLight(relBlockPos.getX(), relBlockPos.getY(), relBlockPos.getZ()),
-					(neighbourChunk, relBlockPos, newLightValue) -> neighbourChunk.setDhBlockLight(relBlockPos.getX(), relBlockPos.getY(), relBlockPos.getZ(), newLightValue),
-					true);
+			if (updateBlockLight)
+			{
+				this.propagateChunkLightPosList(blockLightWorldPosQueue, adjacentChunkHolder,
+						(neighbourChunk, relBlockPos) -> neighbourChunk.getDhBlockLight(relBlockPos.getX(), relBlockPos.getY(), relBlockPos.getZ()),
+						(neighbourChunk, relBlockPos, newLightValue) -> neighbourChunk.setDhBlockLight(relBlockPos.getX(), relBlockPos.getY(), relBlockPos.getZ(), newLightValue),
+						true);
+			}
 			
 			// sky light
-			this.propagateLightPosList(skyLightWorldPosQueue, adjacentChunkHolder,
-					(neighbourChunk, relBlockPos) -> neighbourChunk.getDhSkyLight(relBlockPos.getX(), relBlockPos.getY(), relBlockPos.getZ()),
-					(neighbourChunk, relBlockPos, newLightValue) -> neighbourChunk.setDhSkyLight(relBlockPos.getX(), relBlockPos.getY(), relBlockPos.getZ(), newLightValue),
-					false);
+			if (updateSkyLight)
+			{
+				this.propagateChunkLightPosList(skyLightWorldPosQueue, adjacentChunkHolder,
+						(neighbourChunk, relBlockPos) -> neighbourChunk.getDhSkyLight(relBlockPos.getX(), relBlockPos.getY(), relBlockPos.getZ()),
+						(neighbourChunk, relBlockPos, newLightValue) -> neighbourChunk.setDhSkyLight(relBlockPos.getX(), relBlockPos.getY(), relBlockPos.getZ(), newLightValue),
+						false);
+			}
 		}
 		catch (Exception e)
 		{
@@ -233,17 +272,18 @@ public class DhLightingEngine
 		}
 		
 		
-		
-		centerChunk.setIsDhLightCorrect(true);
-		centerChunk.setUseDhLighting(true);
-		
-		long endTimeNs = System.nanoTime();
-		float totalTimeMs = (endTimeNs - startTimeNs) / 1_000_000.0f;
-		//LOGGER.trace("Finished generating lighting for chunk: [" + centerChunkPos + "] in ["+totalTimeMs+"] milliseconds");
+		if (updateBlockLight)
+		{
+			centerChunk.setIsDhBlockLightCorrect(true);
+		}
+		if (updateSkyLight)
+		{
+			centerChunk.setIsDhSkyLightCorrect(true);
+		}
 	}
 	
 	/** Applies each {@link LightPos} from the queue to the given set of {@link IChunkWrapper}'s. */
-	private void propagateLightPosList(
+	private void propagateChunkLightPosList(
 			StableLightPosStack lightPosQueue, AdjacentChunkHolder adjacentChunkHolder,
 			IGetLightFunc getLightFunc, ISetLightFunc setLightFunc,
 			boolean propagatingBlockLights)
@@ -339,10 +379,239 @@ public class DhLightingEngine
 	
 	
 	
+	//======================//
+	// data source lighting //
+	//======================//
 	
-	//
-	// test
-	//
+	/** @author BuilderB0y */
+	public void bakeDataSourceSkyLight(FullDataSourceV2 dataSource, int maxSkyLight)
+	{
+		// create a cache of all the IDs which are completely transparent.
+		// FullDataPointIdMap is thread-safe with locks, and is also a map lookup,
+		// and both of these things add a bit of overhead which is not necessary
+		// in this context.
+		// note: since IDs map to both biomes and blocks, there can be more than
+		// one ID which corresponds to air.
+		BitSet airIDs = new BitSet(dataSource.mapping.size());
+		for (int id = 0, size = dataSource.mapping.size(); id < size; id++)
+		{
+			if (dataSource.mapping.getBlockStateWrapper(id).getOpacity() == 0)
+			{
+				airIDs.set(id, true);
+			}
+		}
+		
+		
+		for (int z = 0; z < FullDataSourceV2.WIDTH; z++)
+		{
+			for (int x = 0; x < FullDataSourceV2.WIDTH; x++)
+			{
+				LongArrayList dataPoints = dataSource.get(x, z);
+				if (dataPoints != null && !dataPoints.isEmpty())
+				{
+					// iterate through the data points in this column top-down
+					// until we reach light level 0 in some way. at this point,
+					// no more propagation needs to be performed for this column.
+					int size = dataPoints.size();
+					for (int index = 0; index < size; index++)
+					{
+						long point = dataPoints.getLong(index);
+						// if the data point in the column is transparent,
+						// then fill it with light and then propagate 
+						// that light both horizontally and downwards.
+						if (airIDs.get(FullDataPointUtil.getId(point)))
+						{
+							int skylight;
+							if (index == 0)
+							{
+								// top-most data point in the column.
+								skylight = maxSkyLight;
+							}
+							else
+							{
+								// handle down propagation here. sort of.
+								// down propagation is also handled partially elsewhere.
+								// basically if the data point above is transparent,
+								// we copy its light level.
+								// otherwise, if the data point above is opaque,
+								// then no light can propagate downwards from it.
+								// therefore, this data point should be light level 0*
+								// and no more propagation needs to be performed for this column.
+								//
+								// *unless light propagates into it horizontally,
+								// but that is handled separately.
+								long above = dataPoints.getLong(index - 1);
+								if (airIDs.get(FullDataPointUtil.getId(above)))
+								{
+									skylight = FullDataPointUtil.getSkyLight(above);
+								}
+								else
+								{
+									continue;
+								}
+							}
+							
+							// update the data point to contain the correct starting skylight level.
+							point = FullDataPointUtil.setSkyLight(point, skylight);
+							dataPoints.set(index, point);
+							// now for the propagation.
+							recursivelyLightAdjacentDataPoints(dataSource, airIDs, x, z, point);
+						}
+					}
+				}
+			}
+		}
+		
+		
+		// at this point, all transparent data points have been lit,
+		// but opaque ones still have light level 0.
+		// in this loop we make opaque data points copy the light level
+		// above them if, and only if, the data point above is translucent.
+		// with one exception: if the data point above is only partially translucent,
+		// we use a slightly different way of computing how much light it absorbed.
+		// this is how we handle water and ocean floors.
+		// note that this alternate logic assumes the 
+		// data point above is being lit from the top.
+		// this is a fine assumption for water and oceans.
+		for (LongArrayList list : dataSource.dataPoints)
+		{
+			if (list != null)
+			{
+				for (int index = 0, size = list.size(); index < size; index++)
+				{
+					long dataPoint = list.getLong(index);
+					if (index == 0)
+					{
+						// top data point, assume "above" has the max sky light.
+						dataPoint = FullDataPointUtil.setSkyLight(dataPoint, maxSkyLight);
+						list.set(index, dataPoint);
+					}
+					else
+					{
+						// there is another data point above this one.
+						// check to see how opaque this data point is first.
+						// we will check the above one after that.
+						if (!airIDs.get(FullDataPointUtil.getId(dataPoint)))
+						{
+							// this data point is not transparent.
+							// it should be lit from above.
+							long above = list.getLong(index - 1);
+							int aboveLight = FullDataPointUtil.getSkyLight(above);
+							if (airIDs.get(FullDataPointUtil.getId(above)))
+							{
+								// the above data point is transparent,
+								// and does not absorb any light.
+								// its light level can be copied as-is.
+								dataPoint = FullDataPointUtil.setSkyLight(dataPoint, aboveLight);
+								list.set(index, dataPoint);
+							}
+							else
+							{
+								// determine how much light should be absorbed by this column
+								int absorption = dataSource.mapping.getBlockStateWrapper(FullDataPointUtil.getId(above)).getOpacity() * FullDataPointUtil.getHeight(above);
+								if (absorption < aboveLight)
+								{
+									// the above data point is partially translucent,
+									// and absorbs some light. however, it did not absorb
+									// enough light to bring the light level down to 0.
+									// so, the remaining light can still be copied.
+									dataPoint = FullDataPointUtil.setSkyLight(dataPoint, aboveLight - absorption);
+									list.set(index, dataPoint);
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	
+	/** @author BuilderB0y */
+	public void recursivelyLightAdjacentDataPoints(
+			FullDataSourceV2 chunk,
+			BitSet airIDs,
+			int relativeX,
+			int relativeZ,
+			long dataPoint
+		)
+	{
+		int lightLevel = FullDataPointUtil.getSkyLight(dataPoint);
+		// early exit condition:
+		// in this case, propagating light is guaranteed to be 0 at adjacent positions,
+		// and therefore we do not need to waste time propagating it.
+		if (lightLevel <= 1)
+		{
+			return;
+		}
+		
+		
+		
+		int minY = FullDataPointUtil.getBottomY(dataPoint);
+		int maxY = FullDataPointUtil.getHeight(dataPoint) + minY;
+		// try to propagate in all 4 directions.
+		for (int offsetIndex = 0; offsetIndex < ADJACENT_DIRECTION_OFFSETS.length; )
+		{
+			int adjacentX = relativeX + ADJACENT_DIRECTION_OFFSETS[offsetIndex++];
+			int adjacentZ = relativeZ + ADJACENT_DIRECTION_OFFSETS[offsetIndex++];
+			
+			// check if the adjacent position is within the bounds of this data source...
+			if (adjacentX >= 0 && adjacentX < FullDataSourceV2.WIDTH && adjacentZ >= 0 && adjacentZ < FullDataSourceV2.WIDTH)
+			{
+				LongArrayList adjacentDataPoints = chunk.get(adjacentX, adjacentZ);
+				// ...and also check to make sure we have some data points
+				// (potentially transparent ones) to propagate through in the adjacent column.
+				if (adjacentDataPoints != null)
+				{
+					// try to find adjacent data points we can propagate into.
+					// we go top-down for this, which will be important for some
+					// later conditions.
+					int size = adjacentDataPoints.size();
+					for (int adjacentIndex = 0; adjacentIndex < size; adjacentIndex++)
+					{
+						long adjacentDataPoint = adjacentDataPoints.getLong(adjacentIndex);
+						int adjacentMinY = FullDataPointUtil.getBottomY(adjacentDataPoint);
+						int adjacentMaxY = FullDataPointUtil.getHeight(adjacentDataPoint) + adjacentMinY;
+						if (adjacentMinY >= maxY)
+						{
+							// if the adjacent data point is completely above this one,
+							// then there is no overlap between this one and the adjacent one,
+							// and therefore light cannot propagate here.
+							// try to propagate to the next data point down from the adjacent one.
+							continue;
+						}
+						else if (adjacentMaxY <= minY)
+						{
+							// if the adjacent data point is completely below this one,
+							// then it also has no overlap and can't propagate,
+							// but since we're going top-down, neither can any subsequent adjacent data points.
+							break;
+						}
+						else if (!airIDs.get(FullDataPointUtil.getId(adjacentDataPoint)))
+						{
+							// assume for now that we cannot propagate into non-transparent data points.
+							continue; // TODO how does this work with water? Do we care?
+						}
+						else
+						{
+							// now we can try to propagate.
+							int adjacentLightLevel = FullDataPointUtil.getSkyLight(adjacentDataPoint);
+							// if the resulting light level after propagation would INCREASE
+							// the light level of the adjacent data point, then propagate to it.
+							// otherwise, don't do that.
+							if (lightLevel - 1 > adjacentLightLevel)
+							{
+								adjacentDataPoint = FullDataPointUtil.setSkyLight(adjacentDataPoint, lightLevel - 1);
+								adjacentDataPoints.set(adjacentIndex, adjacentDataPoint);
+								// if propagation succeeded, recursively propagate again starting at the adjacent data point.
+								recursivelyLightAdjacentDataPoints(chunk, airIDs, adjacentX, adjacentZ, adjacentDataPoint);
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	
 	
 	
 	//===========//
