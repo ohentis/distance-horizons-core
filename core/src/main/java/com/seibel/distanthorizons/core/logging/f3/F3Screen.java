@@ -85,7 +85,8 @@ public class F3Screen
 		messageList.add(ModInfo.READABLE_NAME+": "+ModInfo.VERSION);
 		if (ModInfo.IS_DEV_BUILD)
 		{
-			messageList.add("Build: " + ModJarInfo.Git_Commit.substring(0, 8) + " (" + ModJarInfo.Git_Branch + ")");
+			String shortCommitHash = ModJarInfo.Git_Commit.length() >= 8 ? ModJarInfo.Git_Commit.substring(0, 8) : ModJarInfo.Git_Commit;
+			messageList.add("Build: " + shortCommitHash + " (" + ModJarInfo.Git_Branch + ")");
 		}
 		messageList.add("");
 		// thread pools
