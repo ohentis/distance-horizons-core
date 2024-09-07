@@ -20,13 +20,16 @@ import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
 import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV2DTO;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.TimerUtil;
+import com.seibel.distanthorizons.core.util.objects.DataCorruptedException;
 import com.seibel.distanthorizons.core.util.ratelimiting.SupplierBasedRateLimiter;
+import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import org.apache.logging.log4j.LogManager;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import java.awt.*;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Timer;
@@ -170,7 +173,7 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 				FullDataSourceResponseMessage.class
 		);
 		entry.request = request;
-		request.handleAsync((response, throwable) ->
+		request.handle((response, throwable) ->
 		{
 			this.pendingTasksSemaphore.release();
 			
@@ -184,9 +187,26 @@ public abstract class AbstractFullDataRequestQueue implements IDebugRenderable, 
 				if (response.payload != null)
 				{
 					FullDataSourceV2DTO dataSourceDto = this.networkState.decodeDataSourceAndReleaseBuffer(response.payload);
-					FullDataSourceV2 fullDataSource = dataSourceDto.createPooledDataSource(this.level.getLevelWrapper());
-					entry.chunkDataConsumer.accept(fullDataSource);
-					FullDataSourceV2.DATA_SOURCE_POOL.returnPooledDataSource(fullDataSource);
+					
+					ThreadPoolExecutor executor = ThreadPoolUtil.getNetworkCompressionExecutor();
+					if (executor == null)
+					{
+						LOGGER.warn("Unable to handle FullDataPayload - getNetworkCompressionExecutor() is null");
+						return null;
+					}
+					CompletableFuture.runAsync(() ->
+					{
+						try
+						{
+							FullDataSourceV2 fullDataSource = dataSourceDto.createPooledDataSource(this.level.getLevelWrapper());
+							entry.chunkDataConsumer.accept(fullDataSource);
+							FullDataSourceV2.DATA_SOURCE_POOL.returnPooledDataSource(fullDataSource);
+						}
+						catch (IOException | DataCorruptedException | InterruptedException e)
+						{
+							throw new RuntimeException(e);
+						}
+					}, executor);
 				}
 				else
 				{
