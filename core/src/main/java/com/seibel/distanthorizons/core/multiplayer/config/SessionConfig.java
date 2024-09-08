@@ -8,7 +8,6 @@ import io.netty.buffer.ByteBuf;
 
 import java.io.Closeable;
 import java.util.*;
-import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -17,13 +16,13 @@ import static com.seibel.distanthorizons.core.config.Config.Client.Advanced.*;
 
 public class SessionConfig implements INetworkObject
 {
-	private static final Map<String, Entry> CONFIG_ENTRIES = new HashMap<>();
+	private static final LinkedHashMap<String, Entry> CONFIG_ENTRIES = new LinkedHashMap<>();
 	private static <T> void registerConfigEntry(ConfigEntry<T> configEntry, BiFunction<T, T, T> valueConstrainer)
 	{
 		CONFIG_ENTRIES.put(Objects.requireNonNull(configEntry.getServersideShortName()), new Entry(configEntry, valueConstrainer));
 	}
 	
-	private final SortedMap<String, Object> values = new ConcurrentSkipListMap<>();
+	private final LinkedHashMap<String, Object> values = new LinkedHashMap<>();
 	public SessionConfig constrainingConfig;
 	
 	
@@ -72,7 +71,12 @@ public class SessionConfig implements INetworkObject
 	
 	private Map<String, ?> getValues()
 	{
-		return CONFIG_ENTRIES.keySet().stream().collect(Collectors.toMap(Function.identity(), this::getValue));
+		return CONFIG_ENTRIES.keySet().stream().collect(Collectors.toMap(
+				Function.identity(),
+				this::getValue,
+				(x, y) -> x,
+				LinkedHashMap::new
+		));
 	}
 	
 	
