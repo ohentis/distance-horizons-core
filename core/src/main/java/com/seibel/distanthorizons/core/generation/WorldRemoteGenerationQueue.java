@@ -22,7 +22,7 @@ public class WorldRemoteGenerationQueue extends AbstractFullDataRequestQueue imp
 	
 	
 	@Override
-	protected int getRequestRateLimit() { return this.networkState.config.generationRequestRateLimit; }
+	protected int getRequestRateLimit() { return this.networkState.config.getGenerationRequestRateLimit(); }
 	
 	@Override
 	protected String getQueueName() { return "World Remote Generation Queue"; }

@@ -20,31 +20,30 @@
 package com.seibel.distanthorizons.core.network.messages.base;
 
 import com.google.common.base.MoreObjects;
-import com.seibel.distanthorizons.core.multiplayer.config.AbstractMultiplayerConfig;
-import com.seibel.distanthorizons.core.multiplayer.config.MultiplayerConfig;
+import com.seibel.distanthorizons.core.multiplayer.config.SessionConfig;
 import com.seibel.distanthorizons.core.network.INetworkObject;
 import com.seibel.distanthorizons.core.network.messages.NetworkMessage;
 import io.netty.buffer.ByteBuf;
 
-public class RemotePlayerConfigMessage extends NetworkMessage
+public class SessionConfigMessage extends NetworkMessage
 {
-	public AbstractMultiplayerConfig payload;
+	public SessionConfig config;
 	
-	public RemotePlayerConfigMessage() { }
-	public RemotePlayerConfigMessage(AbstractMultiplayerConfig payload) { this.payload = payload; }
-	
-	@Override
-	public void encode(ByteBuf out) { this.payload.encode(out); }
+	public SessionConfigMessage() { }
+	public SessionConfigMessage(SessionConfig config) { this.config = config; }
 	
 	@Override
-	public void decode(ByteBuf in) { this.payload = INetworkObject.decodeToInstance(new MultiplayerConfig(), in); }
+	public void encode(ByteBuf out) { this.config.encode(out); }
+	
+	@Override
+	public void decode(ByteBuf in) { this.config = INetworkObject.decodeToInstance(new SessionConfig(), in); }
 	
 	
 	@Override
 	public MoreObjects.ToStringHelper toStringHelper()
 	{
 		return super.toStringHelper()
-				.add("payload", this.payload);
+				.add("config", this.config);
 	}
 	
 }

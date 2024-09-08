@@ -3,14 +3,13 @@ package com.seibel.distanthorizons.core.multiplayer.client;
 import com.google.common.cache.CacheBuilder;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
-import com.seibel.distanthorizons.core.multiplayer.config.MultiplayerConfig;
-import com.seibel.distanthorizons.core.multiplayer.config.MultiplayerConfigChangeListener;
+import com.seibel.distanthorizons.core.multiplayer.config.SessionConfig;
 import com.seibel.distanthorizons.core.network.INetworkObject;
 import com.seibel.distanthorizons.core.network.event.ScopedNetworkEventSource;
 import com.seibel.distanthorizons.core.network.event.internal.CloseEvent;
 import com.seibel.distanthorizons.core.network.event.internal.IncompatibleMessageEvent;
 import com.seibel.distanthorizons.core.network.messages.base.CurrentLevelKeyMessage;
-import com.seibel.distanthorizons.core.network.messages.base.RemotePlayerConfigMessage;
+import com.seibel.distanthorizons.core.network.messages.base.SessionConfigMessage;
 import com.seibel.distanthorizons.core.network.messages.fullData.FullDataChunkMessage;
 import com.seibel.distanthorizons.core.network.messages.fullData.FullDataPartialUpdateMessage;
 import com.seibel.distanthorizons.core.network.messages.fullData.FullDataPayload;
@@ -40,9 +39,9 @@ public class ClientNetworkState implements Closeable
 	 */
 	public Session getSession() { return this.session; }
 	
-	public MultiplayerConfig config = new MultiplayerConfig();
+	public SessionConfig config = new SessionConfig();
 	private volatile boolean configReceived = false;
-	private final MultiplayerConfigChangeListener configChangeListener = new MultiplayerConfigChangeListener(this::sendConfigMessage);
+	private final SessionConfig.ChangeListener configChangeListener = new SessionConfig.ChangeListener(this::sendConfigMessage);
 	public boolean isReady() { return this.configReceived; }
 	
 	private EServerSupportStatus serverSupportStatus = EServerSupportStatus.NONE;
@@ -78,12 +77,12 @@ public class ClientNetworkState implements Closeable
 			}
 		});
 		
-		this.session.registerHandler(RemotePlayerConfigMessage.class, msg ->
+		this.session.registerHandler(SessionConfigMessage.class, msg ->
 		{
 			this.serverSupportStatus = EServerSupportStatus.FULL;
 			
-			LOGGER.info("Connection config has been changed: " + msg.payload);
-			this.config = (MultiplayerConfig) msg.payload;
+			LOGGER.info("Connection config has been changed: {}", msg.config);
+			this.config = msg.config;
 			this.configReceived = true;
 		});
 		
@@ -133,7 +132,7 @@ public class ClientNetworkState implements Closeable
 	public void sendConfigMessage()
 	{
 		this.configReceived = false;
-		this.getSession().sendMessage(new RemotePlayerConfigMessage(new MultiplayerConfig()));
+		this.getSession().sendMessage(new SessionConfigMessage(new SessionConfig()));
 	}
 	
 	public void addDebugMenuStringsToList(List<String> messageList)

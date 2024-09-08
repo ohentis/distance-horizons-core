@@ -190,7 +190,7 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 		}
 		
 		boolean shouldDoWorldGen = isClientUsable
-				&& networkState.config.distantGenerationEnabled
+				&& networkState.config.isDistantGenerationEnabled()
 				&& isAllowedDimension
 				&& this.clientside.isRendering();
 		
@@ -289,7 +289,7 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 		if (this.syncOnLoginRequestQueue != null)
 		{
 			assert this.networkState != null;
-			if (this.networkState.config.synchronizeOnLogin)
+			if (this.networkState.config.getSynchronizeOnLogin())
 			{
 				this.syncOnLoginRequestQueue.addDebugMenuStringsToList(messageList);
 			}

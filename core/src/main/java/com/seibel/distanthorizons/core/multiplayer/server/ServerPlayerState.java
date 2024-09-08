@@ -2,10 +2,9 @@ package com.seibel.distanthorizons.core.multiplayer.server;
 
 import com.seibel.distanthorizons.core.config.listeners.ConfigChangeListener;
 import com.seibel.distanthorizons.core.level.DhServerLevel;
-import com.seibel.distanthorizons.core.multiplayer.config.MultiplayerConfig;
-import com.seibel.distanthorizons.core.multiplayer.config.MultiplayerConfigChangeListener;
+import com.seibel.distanthorizons.core.multiplayer.config.SessionConfig;
 import com.seibel.distanthorizons.core.network.messages.base.CurrentLevelKeyMessage;
-import com.seibel.distanthorizons.core.network.messages.base.RemotePlayerConfigMessage;
+import com.seibel.distanthorizons.core.network.messages.base.SessionConfigMessage;
 import com.seibel.distanthorizons.core.network.event.internal.CloseEvent;
 import com.seibel.distanthorizons.core.network.exceptions.RateLimitedException;
 import com.seibel.distanthorizons.core.network.messages.fullData.FullDataSourceRequestMessage;
@@ -24,8 +23,8 @@ public class ServerPlayerState
 	public IServerPlayerWrapper serverPlayer() { return this.session.serverPlayer; }
 	
 	@NotNull
-	public ConstrainedMultiplayerConfig config = new ConstrainedMultiplayerConfig();
-	private final MultiplayerConfigChangeListener configChangeListener = new MultiplayerConfigChangeListener(this::onConfigChanged);
+	public SessionConfig config = new SessionConfig();
+	private final SessionConfig.ChangeListener configChangeListener = new SessionConfig.ChangeListener(this::onConfigChanged);
 
 	private String lastLevelKey = "";
 	private final ConfigChangeListener<String> levelKeyPrefixChangeListener = new ConfigChangeListener<>(ServerNetworking.levelKeyPrefix, this::sendLevelKey);
@@ -46,11 +45,11 @@ public class ServerPlayerState
 	{
 		this.session = new Session(serverPlayer);
 		
-		this.session.registerHandler(RemotePlayerConfigMessage.class, remotePlayerConfigMessage ->
+		this.session.registerHandler(SessionConfigMessage.class, sessionConfigMessage ->
 		{
-			this.config.clientConfig = (MultiplayerConfig) remotePlayerConfigMessage.payload;
+			this.config.constrainingConfig = sessionConfigMessage.config;
 			this.sendLevelKey(null);
-			this.session.sendMessage(new RemotePlayerConfigMessage(this.config));
+			this.session.sendMessage(new SessionConfigMessage(this.config));
 		});
 		
 		this.session.registerHandler(CloseEvent.class, event -> {
@@ -74,7 +73,7 @@ public class ServerPlayerState
 	
 	private void onConfigChanged()
 	{
-		this.session.sendMessage(new RemotePlayerConfigMessage(this.config));
+		this.session.sendMessage(new SessionConfigMessage(this.config));
 	}
 	
 	public void close()

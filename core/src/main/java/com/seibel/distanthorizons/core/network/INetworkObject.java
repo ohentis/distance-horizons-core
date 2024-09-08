@@ -67,12 +67,22 @@ public interface INetworkObject
 	
 	default void writeString(String inputString, ByteBuf outputByteBuf)
 	{
+		INetworkObject.writeStringStatic(inputString, outputByteBuf);
+	}
+	
+	default String readString(ByteBuf inputByteBuf)
+	{
+		return INetworkObject.readStringStatic(inputByteBuf);
+	}
+	
+	static void writeStringStatic(String inputString, ByteBuf outputByteBuf)
+	{
 		byte[] bytes = inputString.getBytes(StandardCharsets.UTF_8);
 		outputByteBuf.writeShort(bytes.length);
 		outputByteBuf.writeBytes(bytes);
 	}
 	
-	default String readString(ByteBuf inputByteBuf)
+	static String readStringStatic(ByteBuf inputByteBuf)
 	{
 		int length = inputByteBuf.readUnsignedShort();
 		return inputByteBuf.readSlice(length).toString(StandardCharsets.UTF_8);
@@ -81,14 +91,13 @@ public interface INetworkObject
 	default <T> void writeCollection(ByteBuf outputByteBuf, Collection<T> collection)
 	{
 		outputByteBuf.writeInt(collection.size());
-		
-		Codec codec = null;
+		this.writeFixedLengthCollection(outputByteBuf, collection);
+	}
+	default <T> void writeFixedLengthCollection(ByteBuf outputByteBuf, Collection<T> collection)
+	{
 		for (T item : collection)
 		{
-			if (codec == null)
-			{
-				codec = Codec.getCodec(item.getClass());
-			}
+			Codec codec = Codec.getCodec(item.getClass());
 			codec.encode.accept(item, outputByteBuf);
 		}
 	}
@@ -134,6 +143,8 @@ public interface INetworkObject
 		{{
 			// Primitives must be added manually here
 			this.put(Integer.class, new Codec((obj, out) -> out.writeInt((int)obj), (obj, in) -> in.readInt()));
+			this.put(Boolean.class, new Codec((obj, out) -> out.writeBoolean((boolean) obj), (obj, in) -> in.readBoolean()));
+			this.put(String.class, new Codec((obj, out) -> INetworkObject.writeStringStatic((String) obj, out), (obj, in) -> INetworkObject.readStringStatic(in)));
 			
 			this.put(INetworkObject.class, new Codec(INetworkObject::encode, INetworkObject::decodeToInstance));
 			this.put(Map.Entry.class, new Codec(
@@ -162,7 +173,8 @@ public interface INetworkObject
 			this.decode = (BiFunction<Object, ByteBuf, Object>) decode;
 		}
 		
-		public static Codec getCodec(Class<?> clazz) {
+		public static <T> Codec getCodec(Class<T> clazz)
+		{
 			return codecMap.computeIfAbsent(clazz, ignored -> {
 				for (Map.Entry<Class<?>, Codec> entry : codecMap.entrySet())
 				{
@@ -172,8 +184,9 @@ public interface INetworkObject
 					}
 				}
 				
-				throw new AssertionError("Class has no compatible codec: "+clazz.getSimpleName());
+				throw new AssertionError("Class has no compatible codec: " + clazz.getSimpleName());
 			});
 		}
+		
 	}
 }

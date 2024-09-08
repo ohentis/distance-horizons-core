@@ -12,7 +12,7 @@ public class SyncOnLoginRequestQueue extends AbstractFullDataRequestQueue
 	}
 	
 	@Override
-	protected int getRequestRateLimit() { return this.networkState.config.syncOnLoginRateLimit; }
+	protected int getRequestRateLimit() { return this.networkState.config.getSyncOnLoginRateLimit(); }
 	
 	@Override
 	protected String getQueueName() { return "Sync On Login Queue"; }
@@ -20,7 +20,7 @@ public class SyncOnLoginRequestQueue extends AbstractFullDataRequestQueue
 	@Override
 	public boolean tick(DhBlockPos2D targetPos)
 	{
-		if (!this.networkState.config.synchronizeOnLogin)
+		if (!this.networkState.config.getSynchronizeOnLogin())
 		{
 			return false;
 		}
