@@ -186,8 +186,11 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 				try
 				{
 					LodRenderSection renderSection = this.getValue(pos);
-					if (renderSection != null && renderSection.getRenderingEnabled())
+					if (renderSection != null)
 					{
+						// We need to update every non-null section, including those that aren't currently rendering.
+						// If this isn't done, and the player moves so a lower quality section is now being rendered,
+						// that section will not have updated correctly and may refuse to load in at all.
 						renderSection.uploadRenderDataToGpuAsync();
 					}
 				}
