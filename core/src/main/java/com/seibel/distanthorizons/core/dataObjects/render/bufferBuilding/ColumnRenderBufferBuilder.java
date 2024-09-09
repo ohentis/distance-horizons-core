@@ -111,7 +111,7 @@ public class ColumnRenderBufferBuilder
 	/** @link adjData should be null for adjacent sections that cross detail level boundaries */
 	public static CompletableFuture<ColumnRenderBuffer> uploadBuffersAsync(
 			IDhClientLevel clientLevel,
-			ColumnRenderSource renderSource,
+			long pos,
 			LodQuadBuilder quadBuilder
 		)
 	{
@@ -132,7 +132,7 @@ public class ColumnRenderBufferBuilder
 				{
 					try
 					{
-						ColumnRenderBuffer buffer = new ColumnRenderBuffer(new DhBlockPos(DhSectionPos.getMinCornerBlockX(renderSource.pos), clientLevel.getMinY(), DhSectionPos.getMinCornerBlockZ(renderSource.pos)));
+						ColumnRenderBuffer buffer = new ColumnRenderBuffer(new DhBlockPos(DhSectionPos.getMinCornerBlockX(pos), clientLevel.getMinY(), DhSectionPos.getMinCornerBlockZ(pos)));
 						try
 						{
 							buffer.uploadBuffer(quadBuilder, GLProxy.getInstance().getGpuUploadMethod());
@@ -158,7 +158,7 @@ public class ColumnRenderBufferBuilder
 					}
 					catch (Throwable e3)
 					{
-						LOGGER.error("LodNodeBufferBuilder was unable to upload buffer for pos ["+DhSectionPos.toString(renderSource.pos)+"], error: [" + e3.getMessage() + "].", e3);
+						LOGGER.error("LodNodeBufferBuilder was unable to upload buffer for pos ["+DhSectionPos.toString(pos)+"], error: [" + e3.getMessage() + "].", e3);
 						throw e3;
 					}
 				}, bufferUploaderExecutor);
