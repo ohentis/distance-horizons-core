@@ -90,12 +90,14 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 	
 	/** 
 	 * stores how far each column has been generated should start with {@link EDhApiWorldGenerationStep#EMPTY}
-	 * @see EDhApiWorldGenerationStep 
+	 *
+	 * @see EDhApiWorldGenerationStep
 	 */
 	public byte[] columnGenerationSteps;
 	/** 
 	 * stores what world compression was used for each column.
-	 * @see EDhApiWorldCompressionMode 
+	 *
+	 * @see EDhApiWorldCompressionMode
 	 */
 	public byte[] columnWorldCompressionMode;
 	
@@ -379,7 +381,7 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 		for (int x = 0; x < WIDTH; x += 2)
 		{
 			for (int z = 0; z < WIDTH; z += 2)
-			{			
+			{
 				int recipientX = (x / 2) + recipientOffsetX;
 				int recipientZ = (z / 2) + recipientOffsetZ;
 				int recipientIndex = relativePosToIndex(recipientX, recipientZ);
@@ -612,7 +614,7 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 			int id = determineMostValueInColumnSlice(mergeIds, inputDataSource.mapping);
 			byte blockLight = (byte) determineAverageValueInColumnSlice(mergeBlockLights);
 			byte skyLight = (byte) determineAverageValueInColumnSlice(mergeSkyLights);
-
+			
 			// if this slice is different then the last one, create a new one
 			if (id != lastId
 				// block and sky light might not be necessary
@@ -698,7 +700,7 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 		{
 			LodUtil.assertTrue(sliceArray.length == 4, "Column Slice should only contain 4 values.");
 		}
-			
+		
 		int value0 = sliceArray[0];
 		int count0 = 0;
 		int value1 = sliceArray[1];
@@ -719,26 +721,42 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 			}
 			
 			if (value == value0)
+			{
 				count0++;
+			}
 			else if (value == value1)
+			{
 				count1++;
+			}
 			else if (value == value2)
+			{
 				count2++;
+			}
 			else
+			{
 				count3++;
+			}
 		}
 		
 		// return the most common occurance
 		int maxCount = Math.max(count0, Math.max(count1, Math.max(count2, count3)));
 		if (maxCount == count0)
-			// if the max count is 1 then we'll just go with the first column
+		// if the max count is 1 then we'll just go with the first column
+		{
 			return value0;
+		}
 		else if (maxCount == count1)
+		{
 			return value1;
+		}
 		else if (maxCount == count2)
+		{
 			return value2;
-		else 
+		}
+		else
+		{
 			return value3;
+		}
 	}
 	private static int determineAverageValueInColumnSlice(int[] sliceArray)
 	{
@@ -876,8 +894,8 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 	{
 		int index = relativePosToIndex(relX, relZ);
 		this.dataPoints[index] = longArray;
-		this.columnGenerationSteps[index] =  worldGenStep.value;
-		this.columnWorldCompressionMode[index] =  worldCompressionMode.value;
+		this.columnGenerationSteps[index] = worldGenStep.value;
+		this.columnWorldCompressionMode[index] = worldCompressionMode.value;
 		
 		
 		if (RUN_UPDATE_DEV_VALIDATION)
@@ -942,7 +960,7 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 			// the positions are the same, use the hash as a quick method
 			// to determine if the data inside is the same.
 			// Note: this isn't perfect, but should work well enough for our use case.
-			return other.hashCode() == this.hashCode();	
+			return other.hashCode() == this.hashCode();
 		}
 	}
 	

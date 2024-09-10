@@ -289,7 +289,8 @@ public class FullDataSourceProviderV2
 								}
 							});
 						}
-						catch (RejectedExecutionException ignore) { /* the executor was shut down, it should be back up shortly and able to accept new jobs */ }
+						catch (RejectedExecutionException ignore)
+						{ /* the executor was shut down, it should be back up shortly and able to accept new jobs */ }
 						catch (Exception e)
 						{
 							this.parentUpdatingPosSet.remove(parentUpdatePos);
@@ -299,7 +300,10 @@ public class FullDataSourceProviderV2
 				}
 				
 			}
-			catch (InterruptedException ignored) { Thread.currentThread().interrupt(); }
+			catch (InterruptedException ignored)
+			{
+				Thread.currentThread().interrupt();
+			}
 			catch (Exception e)
 			{
 				LOGGER.error("Unexpected error in the parent update queue thread. Error: " + e.getMessage(), e);
@@ -339,7 +343,7 @@ public class FullDataSourceProviderV2
 			
 			LOGGER.info("deleting [" + dimensionName + "] - ["+totalDeleteCount+"] unused data sources...");
 			this.legacyDeletionCount = totalDeleteCount;
-
+			
 			ArrayList<String> unusedDataPosList = this.legacyFileHandler.repo.getUnusedDataSourcePositionStringList(50);
 			while (unusedDataPosList.size() != 0)
 			{
@@ -368,8 +372,8 @@ public class FullDataSourceProviderV2
 				}
 				catch (InterruptedException ignore){}
 			}
-
 			LOGGER.info("Done deleting [" + dimensionName + "] - ["+totalDeleteCount+"] unused data sources.");
+			
 		}
 		
 		
@@ -553,8 +557,8 @@ public class FullDataSourceProviderV2
 	 *      return false; <br>
 	 * } <br>
 	 * </code>
-	 *  to the beginning of your override.
-	 *  Otherwise, parent retrieval limits will be ignored.
+	 * to the beginning of your override.
+	 * Otherwise, parent retrieval limits will be ignored.
 	 */
 	public boolean canQueueRetrieval()
 	{
@@ -569,13 +573,13 @@ public class FullDataSourceProviderV2
 	 * an empty array if all positions were generated 
 	 */
 	@Nullable
-	public LongArrayList getPositionsToRetrieve(Long pos)  { return null; }
+	public LongArrayList getPositionsToRetrieve(Long pos) { return null; }
 	/**
 	 * Returns how many positions could potentially be generated for this position assuming the position is empty.
 	 * Used when estimating the total number of retrieval requests.
 	 */
-	public int getMaxPossibleRetrievalPositionCountForPos(Long pos)  { return -1; }
-
+	public int getMaxPossibleRetrievalPositionCountForPos(Long pos) { return -1; }
+	
 	/** @return true if the position was queued, false if not */
 	public boolean queuePositionForRetrieval(Long genPos) { return false; }
 	
@@ -585,7 +589,7 @@ public class FullDataSourceProviderV2
 	public void clearRetrievalQueue() { }
 	
 	/** Can be used to display how many total retrieval requests might be available. */
-	public void setTotalRetrievalPositionCount(int newCount) {  }
+	public void setTotalRetrievalPositionCount(int newCount) { }
 	
 	/** 
 	 * Returns how many data sources are currently in memory and haven't

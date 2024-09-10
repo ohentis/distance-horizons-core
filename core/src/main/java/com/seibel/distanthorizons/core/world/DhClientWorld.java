@@ -156,10 +156,7 @@ public class DhClientWorld extends AbstractDhWorld implements IDhClientWorld
 		}
 	}
 	
-	private void _clientTick()
-	{
-		this.levels.values().forEach(DhClientLevel::clientTick);
-	}
+	private void _clientTick() { this.levels.values().forEach(DhClientLevel::clientTick); }
 	
 	public void clientTick() { this.eventLoop.tick(); }
 	

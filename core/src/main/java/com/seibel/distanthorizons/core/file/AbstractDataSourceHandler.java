@@ -46,7 +46,7 @@ public abstract class AbstractDataSourceHandler
 	 * The lowest numerical detail level possible. 
 	 *
 	 * @see AbstractDataSourceHandler#TOP_SECTION_DETAIL_LEVEL
-	 * */
+	 */
 	public static final byte MIN_SECTION_DETAIL_LEVEL = DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL;
 	
 	
@@ -223,7 +223,8 @@ public abstract class AbstractDataSourceHandler
 	
 	/** 
 	 * After this method returns the inputData will be written to file.
-	 * @param updatePos the position to update 
+	 *
+	 * @param updatePos the position to update
 	 */
 	protected void updateDataSourceAtPos(long updatePos, @NotNull FullDataSourceV2 inputData, boolean lockOnUpdatePos)
 	{

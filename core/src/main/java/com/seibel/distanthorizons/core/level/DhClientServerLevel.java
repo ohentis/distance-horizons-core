@@ -157,9 +157,9 @@ public class DhClientServerLevel extends AbstractDhLevel implements IDhClientLev
 	public void clearRenderCache() { this.clientside.clearRenderCache(); }
 	
 	@Override
-	public IServerLevelWrapper getServerLevelWrapper() { return serverLevelWrapper; }
+	public IServerLevelWrapper getServerLevelWrapper() { return this.serverLevelWrapper; }
 	@Override
-	public ILevelWrapper getLevelWrapper() { return getServerLevelWrapper(); }
+	public ILevelWrapper getLevelWrapper() { return this.getServerLevelWrapper(); }
 	
 	@Override
 	public FullDataSourceProviderV2 getFullDataProvider() { return this.serverside.fullDataFileHandler; }
@@ -167,7 +167,7 @@ public class DhClientServerLevel extends AbstractDhLevel implements IDhClientLev
 	@Override
 	public AbstractSaveStructure getSaveStructure()
 	{
-		return serverside.saveStructure;
+		return this.serverside.saveStructure;
 	}
 	
 	@Override
