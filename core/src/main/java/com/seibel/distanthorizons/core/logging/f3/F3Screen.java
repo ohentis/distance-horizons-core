@@ -20,12 +20,14 @@
 package com.seibel.distanthorizons.core.logging.f3;
 
 import com.seibel.distanthorizons.core.api.internal.SharedApi;
+import com.seibel.distanthorizons.core.jar.ModJarInfo;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.render.RenderBufferHandler;
 import com.seibel.distanthorizons.core.render.renderer.generic.GenericObjectRenderer;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.world.AbstractDhWorld;
 import com.seibel.distanthorizons.coreapi.ModInfo;
+import com.seibel.distanthorizons.coreapi.util.StringUtil;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -48,7 +50,8 @@ public class F3Screen
 	/**
 	 * F3 menu example: <br>
 	 <code>
-	 Distant Horizons v: 2.1.1-a-dev <br><br>
+	 Distant Horizons v: 2.1.1-a-dev <br> 
+	 Build: 7e163ce6 (main) <br><br>
 	 
 	 Queued chunk updates: 0 / 1000 <br>
 	 World Gen Tasks: 40/5304, (in progress: 7) <br><br>
@@ -82,6 +85,10 @@ public class F3Screen
 		
 		messageList.add("");
 		messageList.add(ModInfo.READABLE_NAME+": "+ModInfo.VERSION);
+		if (ModInfo.IS_DEV_BUILD)
+		{
+			messageList.add("Build: " + StringUtil.shortenString(ModJarInfo.Git_Commit, 8) + " (" + ModJarInfo.Git_Branch + ")");
+		}
 		messageList.add("");
 		// thread pools
 		messageList.add(getThreadPoolStatString("World Gen", worldGenPool));//"World Gen Tasks: 40/5304, (in progress: 7)");
