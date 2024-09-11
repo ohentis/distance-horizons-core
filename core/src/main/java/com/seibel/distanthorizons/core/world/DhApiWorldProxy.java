@@ -73,15 +73,13 @@ public class DhApiWorldProxy implements IDhApiWorldProxy
 			throw new IllegalStateException(NO_WORLD_EXCEPTION_STRING);
 		}
 		
-		
-		if (!MC_SHARED.isDedicatedServer())
-		{
-			return MC_CLIENT.getWrappedClientLevel();
-		}
-		else
+		if (MC_SHARED.isDedicatedServer())
 		{
 			return null;
 		}
+		
+		
+		return MC_CLIENT.getWrappedClientLevel();
 	}
 	
 	

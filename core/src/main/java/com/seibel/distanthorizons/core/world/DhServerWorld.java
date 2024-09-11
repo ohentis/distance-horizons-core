@@ -186,8 +186,10 @@ public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 		}
 	}
 	
+	@Override 
 	public void serverTick() { this.levels.values().forEach(DhServerLevel::serverTick); }
 	
+	@Override 
 	public void doWorldGen() { this.levels.values().forEach(DhServerLevel::doWorldGen); }
 	
 	

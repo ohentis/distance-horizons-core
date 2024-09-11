@@ -25,6 +25,7 @@ import com.seibel.distanthorizons.core.config.ConfigBase;
 import com.seibel.distanthorizons.core.config.types.AbstractConfigType;
 import com.seibel.distanthorizons.core.config.types.ConfigEntry;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftSharedWrapper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -40,6 +41,9 @@ import java.nio.file.Path;
  */
 public class ConfigFileHandling
 {
+	private static final IMinecraftSharedWrapper MC_SHARED = SingletonInjector.INSTANCE.get(IMinecraftSharedWrapper.class);
+	
+	
 	public final ConfigBase configBase;
 	public final Path configPath;
 	
@@ -47,6 +51,12 @@ public class ConfigFileHandling
 	
 	/** This is the object for night-config */
 	private final CommentedFileConfig nightConfig;
+	
+	
+	
+	//=============//
+	// constructor //
+	//=============//
 	
 	public ConfigFileHandling(ConfigBase configBase, Path configPath)
 	{
@@ -56,6 +66,9 @@ public class ConfigFileHandling
 		
 		this.nightConfig = CommentedFileConfig.builder(this.configPath.toFile()).build();
 	}
+	
+	
+	
 	
 	/** Saves the entire config to the file */
 	public void saveToFile()
@@ -190,9 +203,20 @@ public class ConfigFileHandling
 	/** Save an entry */
 	public void saveEntry(ConfigEntry<?> entry, CommentedFileConfig workConfig)
 	{
-		if (!entry.getAppearance().showInFile) return;
-		if (entry.getTrueValue() == null)
-			throw new IllegalArgumentException("Entry [" + entry.getNameWCategory() + "] is null, this may be a problem with [" + configBase.modName + "]. Please contact the authors");
+		if (!entry.getAppearance().showInFile)
+		{
+			return;
+		}
+		else if (MC_SHARED.isDedicatedServer() && entry.getServersideShortName() == null)
+		{
+			// don't save server configs on the client
+			return;
+		}
+		else if (entry.getTrueValue() == null)
+		{
+			// TODO when can this happen?
+			throw new IllegalArgumentException("Entry [" + entry.getNameWCategory() + "] is null, this may be a problem with [" + configBase.modName + "]. Please contact the authors.");
+		}
 		
 		workConfig.set(entry.getNameWCategory(), ConfigTypeConverters.attemptToConvertToString(entry.getType(), entry.getTrueValue()));
 	}
@@ -259,11 +283,17 @@ public class ConfigFileHandling
 	// Creates a comment for an entry
 	public void createComment(ConfigEntry<?> entry, CommentedFileConfig nightConfig)
 	{
-		if (
-				!entry.getAppearance().showInFile || 
-				entry.getComment() == null
-		)
+		if (!entry.getAppearance().showInFile 
+			|| entry.getComment() == null)
+		{
 			return;
+		}
+		
+		if (MC_SHARED.isDedicatedServer() && entry.getServersideShortName() == null)
+		{
+			return;
+		}
+		
 		
 		String comment = entry.getComment().replaceAll("\n", "\n ").trim();
 		// the new line makes it easier to read and separate configs
