@@ -31,6 +31,7 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 
@@ -158,12 +159,17 @@ public class DhClientWorld extends AbstractDhWorld implements IDhClientWorld
 	
 	private void _clientTick() { this.levels.values().forEach(DhClientLevel::clientTick); }
 	
+	@Override 
 	public void clientTick() { this.eventLoop.tick(); }
 	
 	public void doWorldGen() {
 		// Not implemented
+	@Override
+	public void addDebugMenuStringsToList(List<String> messageList)
+	{
+		super.addDebugMenuStringsToList(messageList);
 	}
-
+	
 	@Override
 	public void close()
 	{
