@@ -29,7 +29,6 @@ import com.seibel.distanthorizons.core.util.objects.ParsedIp;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftSharedWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
-import com.seibel.distanthorizons.core.wrapperInterfaces.world.IDimensionTypeWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.coreapi.util.StringUtil;
 
@@ -104,7 +103,7 @@ public class ClientOnlySaveStructure extends AbstractSaveStructure
 				{
 					LOGGER.info("Loading level " + newClientLevelWrapper.getDimensionName());
 					
-					List<File> levelFolders = this.getDhDataFoldersForDimension(newClientLevelWrapper.getDimensionType());
+					List<File> levelFolders = this.getDhDataFoldersForLevel(newClientLevelWrapper);
 					this.subDimMatcher = new SubDimensionLevelMatcher(newClientLevelWrapper, this.folder, levelFolders);
 				}
 				
@@ -133,7 +132,7 @@ public class ClientOnlySaveStructure extends AbstractSaveStructure
 	
 	private File getLevelFolderWithoutSimilarityMatching(ILevelWrapper level)
 	{
-		List<File> folders = this.getDhDataFoldersForDimension(level.getDimensionType());
+		List<File> folders = this.getDhDataFoldersForLevel(level);
 		if (!folders.isEmpty() && folders.get(0) != null)
 		{
 			// use the first existing sub-dimension
@@ -149,7 +148,7 @@ public class ClientOnlySaveStructure extends AbstractSaveStructure
 		}
 	}
 	
-	public List<File> getDhDataFoldersForDimension(IDimensionTypeWrapper dimensionType)
+	public List<File> getDhDataFoldersForLevel(ILevelWrapper level)
 	{
 		File[] folders = this.folder.listFiles();
 		if (folders == null)
@@ -158,7 +157,7 @@ public class ClientOnlySaveStructure extends AbstractSaveStructure
 		}
 		
 		// filter by dimension name
-		String expectedDimName = dimensionType.getDimensionName();
+		String expectedDimName = level.getDimensionName();
 		ArrayList<File> possibleDimFolders = new ArrayList<>();
 		for (File dimFolder : folders)
 		{
