@@ -32,6 +32,4 @@ public interface IDimensionTypeWrapper extends IDhApiDimensionTypeWrapper, IBind
 	
 	boolean isTheEnd();
 	
-	double getTeleportationScale(IDimensionTypeWrapper to);
-	
 }
