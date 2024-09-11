@@ -1097,6 +1097,25 @@ public class Config
 								+ "")
 						.build();
 				
+				public static final ConfigEntry<Integer> numberOfNetworkCompressionThreads = new ConfigEntry.Builder<Integer>()
+						.setServersideShortName("numberOfNetworkCompressionThreads")
+						.setMinDefaultMax(1,
+								ThreadPresetConfigEventHandler.getNetworkCompressionDefaultThreadCount(),
+								Runtime.getRuntime().availableProcessors())
+						.comment(""
+								+ "How many threads should be used when (de)compressing LODs \n"
+								+ "that are received/sent over the network?\n"
+								+ "\n"
+								+ "This pool doesn't do anything in singleplayer or when connected \n"
+								+ "to a server that doesn't support DH networking. \n"
+								+ "\n"
+								+ THREAD_NOTE)
+						.build();
+				public static final ConfigEntry<Double> runTimeRatioForNetworkCompressionThreads = new ConfigEntry.Builder<Double>()
+						.setServersideShortName("runTimeRatioForNetworkCompressionThreads")
+						.setMinDefaultMax(0.01, ThreadPresetConfigEventHandler.getNetworkCompressionDefaultRunTimeRatio(), 1.0)
+						.comment(THREAD_RUN_TIME_RATIO_NOTE)
+						.build();
 			}
 			
 			public static class AutoUpdater
