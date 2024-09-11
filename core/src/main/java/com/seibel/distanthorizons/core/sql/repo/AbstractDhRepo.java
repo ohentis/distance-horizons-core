@@ -283,12 +283,36 @@ public abstract class AbstractDhRepo<TKey, TDTO extends IBaseDTO<TKey>> implemen
 			return new ArrayList<>();
 		}
 	}
+	public List<Map<String, Object>> queryDictionary(PreparedStatement preparedStatement)
+	{
+		try
+		{
+			return this.query(preparedStatement);
+		}
+		catch (DbConnectionClosedException e)
+		{
+			return new ArrayList<>();
+		}
+	}
 	@Nullable
 	public Map<String, Object> queryDictionaryFirst(String sql) 
 	{
 		try
 		{
 			List<Map<String, Object>> objectList = this.query(sql);
+			return !objectList.isEmpty() ? objectList.get(0) : null;
+		}
+		catch (DbConnectionClosedException e)
+		{
+			return null;
+		}
+	}
+	@Nullable
+	public Map<String, Object> queryDictionaryFirst(PreparedStatement preparedStatement)
+	{
+		try
+		{
+			List<Map<String, Object>> objectList = this.query(preparedStatement);
 			return !objectList.isEmpty() ? objectList.get(0) : null;
 		}
 		catch (DbConnectionClosedException e)

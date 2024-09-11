@@ -27,6 +27,7 @@ import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV2DTO;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataInputStream;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -35,6 +36,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2DTO>
 {
@@ -199,7 +201,9 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 	
 	
 	
+	//=========//
 	// updates //
+	//=========//
 	
 	public void setApplyToParent(long pos, boolean applyToParent) throws SQLException
 	{
@@ -274,6 +278,70 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 		else
 		{
 			return null;
+		}
+	}
+	
+	
+	
+	//=============//
+	// multiplayer //
+	//=============//
+	
+	@Nullable
+	public Long getTimestampForPos(long pos)
+	{
+		try
+		{
+			PreparedStatement preparedStatement = this.createPreparedStatement(
+					"SELECT LastModifiedUnixDateTime " +
+						"FROM " + this.getTableName() + " " +
+						"WHERE DetailLevel = ? " +
+							"AND PosX = ? " +
+							"AND PosZ = ?;"
+			);
+			
+			int i = 1;
+			preparedStatement.setInt(i++, DhSectionPos.getDetailLevel(pos) - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
+			preparedStatement.setInt(i++, DhSectionPos.getX(pos));
+			preparedStatement.setInt(i++, DhSectionPos.getZ(pos));
+			
+			List<Map<String, Object>> row = this.queryDictionary(preparedStatement);
+			return !row.isEmpty() ? (Long) row.get(0).get("LastModifiedUnixDateTime") : null;
+		}
+		catch (SQLException e)
+		{
+			throw new RuntimeException(e);
+		}
+	}
+	
+	public Map<Long, Long> getTimestampsForRange(byte detailLevel, int startPosX, int startPosZ, int endPosX, int endPosZ)
+	{
+		try
+		{
+			PreparedStatement preparedStatement = this.createPreparedStatement(
+					"SELECT PosX, PosZ, LastModifiedUnixDateTime " +
+						"FROM " + this.getTableName() + " " +
+						"WHERE DetailLevel = ? " +
+							"AND PosX BETWEEN ? AND ? " +
+							"AND PosZ BETWEEN ? AND ?;"
+			);
+			
+			int i = 1;
+			preparedStatement.setInt(i++, detailLevel - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
+			preparedStatement.setInt(i++, startPosX);
+			preparedStatement.setInt(i++, endPosX);
+			preparedStatement.setInt(i++, startPosZ);
+			preparedStatement.setInt(i++, endPosZ);
+			
+			return this.queryDictionary(preparedStatement)
+				.stream().collect(Collectors.toMap(
+					row -> DhSectionPos.encode(detailLevel, (int) row.get("PosX"), (int) row.get("PosZ")),
+					row -> (long) row.get("LastModifiedUnixDateTime"))
+				);
+		}
+		catch (SQLException e)
+		{
+			throw new RuntimeException(e);
 		}
 	}
 	
