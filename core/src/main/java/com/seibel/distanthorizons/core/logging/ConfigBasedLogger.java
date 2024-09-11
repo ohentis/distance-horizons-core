@@ -101,7 +101,8 @@ public class ConfigBasedLogger
 			else
 				logger.log(logLevel, msgStr);
 		}
-		if (mode.levelForChat.isLessSpecificThan(level))
+		
+		if (MC != null && mode.levelForChat.isLessSpecificThan(level))
 		{
 			if (param.length > 0 && param[param.length - 1] instanceof Throwable)
 				MC.logToChat(level, msgStr + "\n" +
