@@ -23,6 +23,7 @@ import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.render.renderer.generic.GenericRenderObjectFactory;
 import com.seibel.distanthorizons.core.sql.DatabaseUpdater;
 import com.seibel.distanthorizons.core.wrapperInterfaces.IWrapperFactory;
+import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.core.world.DhApiWorldProxy;
 import com.seibel.distanthorizons.core.api.external.methods.config.DhApiConfig;
@@ -40,6 +41,8 @@ import java.awt.*;
 public class Initializer
 {
 	private static final Logger LOGGER = LogManager.getLogger(ModInfo.NAME + "-" + Initializer.class.getSimpleName());
+	private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
+	
 	
 	public static void init()
 	{
@@ -77,16 +80,18 @@ public class Initializer
 			throw new RuntimeException(e);
 		}
 		
-		
-		// attempt to setup Swing so we can display dialogs (popup windows)
-		System.setProperty("java.awt.headless", "false");
-		if (GraphicsEnvironment.isHeadless())
+		if (MC_CLIENT != null)
 		{
-			LOGGER.warn("Java.awt.headless is false. This means Distant Horizons can't display error and info dialog windows.");
-		}
-		else
-		{
-			LOGGER.info("Java.awt.headless set to true. Distant Horizons can correctly display error and info dialog windows.");
+			// attempt to set up Swing so we can display dialogs (popup windows)
+			System.setProperty("java.awt.headless", "false");
+			if (GraphicsEnvironment.isHeadless())
+			{
+				LOGGER.warn("Java.awt.headless is false. This means Distant Horizons can't display error and info dialog windows.");
+			}
+			else
+			{
+				LOGGER.info("Java.awt.headless set to true. Distant Horizons can correctly display error and info dialog windows.");
+			}
 		}
 		
 		// link Core's config to the API
