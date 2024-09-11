@@ -19,7 +19,6 @@
 
 package com.seibel.distanthorizons.core.config.eventHandlers.presets;
 
-import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.config.ConfigBase;
 import com.seibel.distanthorizons.core.config.ConfigEntryWithPresetOptions;
 import com.seibel.distanthorizons.core.config.listeners.IConfigListener;
@@ -30,6 +29,7 @@ import com.seibel.distanthorizons.coreapi.interfaces.config.IConfigEntry;
 import com.seibel.distanthorizons.coreapi.util.StringUtil;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
@@ -38,6 +38,7 @@ public abstract class AbstractPresetConfigEventHandler<TPresetEnum extends Enum<
 	private static final Logger LOGGER = LogManager.getLogger();
 	private static final long MS_DELAY_BEFORE_APPLYING_PRESET = 3_000;
 	
+	@Nullable
 	private static IConfigGui configGui = SingletonInjector.INSTANCE.get(IConfigGui.class);
 	private static boolean guiListenersAdded = false;
 	
@@ -57,7 +58,11 @@ public abstract class AbstractPresetConfigEventHandler<TPresetEnum extends Enum<
 	
 	public AbstractPresetConfigEventHandler()
 	{
-		configGui.addOnScreenChangeListener(() -> this.onConfigUiClosed());
+		// don't update the UI when running on a server
+		if (configGui != null) 
+		{
+			configGui.addOnScreenChangeListener(this::onConfigUiClosed);
+		}
 	}
 	
 	
