@@ -189,7 +189,7 @@ public class DhClientServerLevel extends AbstractDhLevel implements IDhClientLev
 	public void addDebugMenuStringsToList(List<String> messageList)
 	{
 		// header
-		String dimName = this.serverLevelWrapper.getDimensionType().getDimensionName();
+		String dimName = this.serverLevelWrapper.getDimensionName();
 		boolean rendering = this.clientside.isRendering();
 		messageList.add("["+dimName+"] rendering: "+(rendering ? "yes" : "no"));
 		

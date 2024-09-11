@@ -94,7 +94,7 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 			// don't log shutdown exceptions
 			if (!(exception instanceof CancellationException || exception.getCause() instanceof CancellationException))
 			{
-				LOGGER.error("Uncaught Gen Task Exception at [" + genTaskResult.pos + "], error: ["+ exception.getMessage() + "].", exception);
+				LOGGER.error("Uncaught Gen Task Exception at ["+genTaskResult.pos+"], error: ["+exception.getMessage()+"].", exception);
 			}
 		}
 		else if (genTaskResult.success)
@@ -140,7 +140,7 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 	{
 		boolean oldQueueExists = this.worldGenQueueRef.compareAndSet(null, newWorldGenQueue);
 		LodUtil.assertTrue(oldQueueExists, "previous world gen queue is still here!");
-		LOGGER.info("Set world gen queue for level ["+this.level+"].");
+		LOGGER.info("Set world gen queue for level [" + this.level.getLevelWrapper().getDimensionName() + "].");
 	}
 	
 	@Override

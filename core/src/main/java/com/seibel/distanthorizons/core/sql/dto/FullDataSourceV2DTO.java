@@ -385,6 +385,7 @@ public class FullDataSourceV2DTO implements IBaseDTO<Long>
 			this.checksum = checksum;
 			this.byteArray = byteArray;
 		}
+		
 	}
 	
 }

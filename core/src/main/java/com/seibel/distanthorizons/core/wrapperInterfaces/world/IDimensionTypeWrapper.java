@@ -25,15 +25,13 @@ import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IBindab
 public interface IDimensionTypeWrapper extends IDhApiDimensionTypeWrapper, IBindable
 {
 	@Override
-	String getDimensionName();
-	
-	@Override
 	boolean hasCeiling();
 	
 	@Override
 	boolean hasSkyLight();
 	
-	// there's definitely a better way of doing this, but it should work well enough for now
-	default boolean isTheEnd() { return this.getDimensionName().equalsIgnoreCase("the_end"); }
+	boolean isTheEnd();
+	
+	double getTeleportationScale(IDimensionTypeWrapper to);
 	
 }

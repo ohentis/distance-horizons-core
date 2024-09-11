@@ -40,6 +40,9 @@ public interface ILevelWrapper extends IDhApiLevelWrapper, IBindable
 	IDimensionTypeWrapper getDimensionType();
 	
 	@Override
+	String getDimensionName();
+
+	@Override
 	boolean hasCeiling();
 	
 	@Override

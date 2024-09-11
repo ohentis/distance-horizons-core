@@ -182,7 +182,7 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 						
 						boolean isAir = legacyData.mapping.getBlockStateWrapper(FullDataPointUtil.getId(dataPoint)).isAir();
 						byte blockLight = (byte) FullDataPointUtil.getBlockLight(dataPoint);
-
+						
 						if (isAir)
 						{
 							// air shouldn't have any light, otherwise down sampling will look weird

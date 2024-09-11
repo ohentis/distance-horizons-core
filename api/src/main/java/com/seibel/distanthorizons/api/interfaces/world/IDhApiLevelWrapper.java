@@ -35,6 +35,9 @@ public interface IDhApiLevelWrapper extends IDhApiUnsafeWrapper
 {
 	IDhApiDimensionTypeWrapper getDimensionType();
 	
+	/** @since API 4.0.0 */
+	String getDimensionName();
+
 	EDhApiLevelType getLevelType();
 	
 	boolean hasCeiling();

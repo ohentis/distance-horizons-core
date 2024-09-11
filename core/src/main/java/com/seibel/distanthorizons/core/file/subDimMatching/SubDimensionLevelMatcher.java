@@ -375,7 +375,7 @@ public class SubDimensionLevelMatcher implements AutoCloseable
 	}
 	
 	
-	private File CreateSubDimFolder(String subDimId) { return new File(this.levelsFolder.getPath() + File.separatorChar + this.currentClientLevel.getDimensionType().getDimensionName(), subDimId); }
+	private File CreateSubDimFolder(String subDimId) { return new File(this.levelsFolder.getPath() + File.separatorChar + this.currentClientLevel.getDimensionName(), subDimId); }
 	
 	@Override
 	public void close() { this.matcherThread.shutdownNow(); }

@@ -77,15 +77,15 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 	public void close()
 	{
 		super.close();
-		serverside.close();
-		LOGGER.info("Closed DHLevel for {}", getLevelWrapper());
+		this.serverside.close();
+		LOGGER.info("Closed DHLevel for {}", this.getLevelWrapper());
 	}
 	
 	@Override
 	public void doWorldGen()
 	{
 		boolean shouldDoWorldGen = true; //todo;
-		boolean isWorldGenRunning = serverside.worldGenModule.isWorldGenRunning();
+		boolean isWorldGenRunning = this.serverside.worldGenModule.isWorldGenRunning();
 		if (shouldDoWorldGen && !isWorldGenRunning)
 		{
 			// start world gen
@@ -97,26 +97,23 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 			serverside.worldGenModule.stopWorldGen(serverside.fullDataFileHandler);
 		}
 		
-		if (serverside.worldGenModule.isWorldGenRunning())
+		if (this.serverside.worldGenModule.isWorldGenRunning())
 		{
 			serverside.worldGenModule.worldGenTick(new DhBlockPos2D(0, 0)); // todo;
 		}
 	}
 	
 	@Override
-	public IServerLevelWrapper getServerLevelWrapper() { return serverLevelWrapper; }
+	public IServerLevelWrapper getServerLevelWrapper() { return this.serverLevelWrapper; }
 	
 	@Override
-	public ILevelWrapper getLevelWrapper() { return getServerLevelWrapper(); }
+	public ILevelWrapper getLevelWrapper() { return this.getServerLevelWrapper(); }
 	
 	@Override
 	public FullDataSourceProviderV2 getFullDataProvider() { return this.serverside.fullDataFileHandler; }
 	
 	@Override
-	public AbstractSaveStructure getSaveStructure()
-	{
-		return serverside.saveStructure;
-	}
+	public AbstractSaveStructure getSaveStructure() { return this.serverside.saveStructure; }
 	
 	@Override
 	public boolean hasSkyLight() { return this.serverLevelWrapper.hasSkyLight(); }
@@ -148,7 +145,7 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 	@Override
 	public void addDebugMenuStringsToList(List<String> messageList)
 	{
-		String dimName = this.serverLevelWrapper.getDimensionType().getDimensionName();
+		String dimName = this.serverLevelWrapper.getDimensionName();
 		messageList.add("["+dimName+"]");
 	}
 	

@@ -28,8 +28,6 @@ import com.seibel.distanthorizons.api.interfaces.IDhApiUnsafeWrapper;
  */
 public interface IDhApiDimensionTypeWrapper extends IDhApiUnsafeWrapper
 {
-	String getDimensionName();
-	
 	boolean hasCeiling();
 	
 	boolean hasSkyLight();
