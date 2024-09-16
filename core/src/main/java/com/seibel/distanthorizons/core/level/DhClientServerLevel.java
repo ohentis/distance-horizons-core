@@ -98,7 +98,7 @@ public class DhClientServerLevel extends AbstractDhLevel implements IDhClientLev
 	public void serverTick() {  }
 	
 	@Override
-	public void doWorldGen()
+	public void worldGenTick()
 	{
 		this.serverside.worldGeneratorEnabledConfig.pollNewValue(); // if not called the get() line below may not 
 		boolean shouldDoWorldGen = this.serverside.worldGeneratorEnabledConfig.get() && this.clientside.isRendering();
@@ -216,12 +216,7 @@ public class DhClientServerLevel extends AbstractDhLevel implements IDhClientLev
 		
 		
 		// world gen
-		WorldGenModule worldGenState = this.serverside.worldGenModule;
-		String worldGenDisplayString = worldGenState.getDebugMenuString();
-		if (worldGenDisplayString != null)
-		{
-			messageList.add(worldGenDisplayString);
-		}
+		this.serverside.worldGenModule.addDebugMenuStringsToList(messageList);
 	}
 	
 	

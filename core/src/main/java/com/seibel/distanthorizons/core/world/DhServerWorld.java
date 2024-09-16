@@ -19,35 +19,26 @@
 
 package com.seibel.distanthorizons.core.world;
 
-import com.google.common.collect.BiMap;
-import com.google.common.collect.HashBiMap;
 import com.seibel.distanthorizons.core.file.structure.LocalSaveStructure;
 import com.seibel.distanthorizons.core.level.DhServerLevel;
 import com.seibel.distanthorizons.core.level.IDhLevel;
-import com.seibel.distanthorizons.core.network.NetworkServer;
-import com.seibel.distanthorizons.core.network.messages.*;
-import com.seibel.distanthorizons.core.network.messages.RequestChunksMessage;
-import com.seibel.distanthorizons.core.network.objects.RemotePlayer;
+import com.seibel.distanthorizons.core.multiplayer.server.RemotePlayerConnectionHandler;
+import com.seibel.distanthorizons.core.multiplayer.server.ServerPlayerState;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
-import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
 import org.jetbrains.annotations.NotNull;
-//import io.netty.channel.ChannelHandlerContext;
 
 import java.io.File;
 import java.util.HashMap;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 
 public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 {
 	private final HashMap<IServerLevelWrapper, DhServerLevel> levels;
 	public final LocalSaveStructure saveStructure;
-
-//	private final NetworkServer networkServer;
-//	private final HashMap<UUID, RemotePlayer> playersByUUID;
-//	private final BiMap<ChannelHandlerContext, RemotePlayer> playersByConnection;
+	
+	public final RemotePlayerConnectionHandler remotePlayerConnectionHandler;
 	
 	
 	
@@ -62,81 +53,47 @@ public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 		this.saveStructure = new LocalSaveStructure();
 		this.levels = new HashMap<>();
 		
-		// TODO move to global payload once server specific configs are implemented
-//		this.networkServer = new NetworkServer(25049);
-//		this.playersByUUID = new HashMap<>();
-//		this.playersByConnection = HashBiMap.create();
-//		this.registerNetworkHandlers();
-		
-		LOGGER.info("Started " + DhServerWorld.class.getSimpleName() + " of type " + this.environment);
-	}
-	
-	private void registerNetworkHandlers()
-	{
-//		this.networkServer.registerHandler(CloseMessage.class, (closeMessage, channelContext) -> 
-//		{
-//			RemotePlayer dhPlayer = this.playersByConnection.remove(channelContext);
-//			if (dhPlayer != null)
-//			{
-//				dhPlayer.channelContext = null;
-//			}
-//		});
-//		
-//		this.networkServer.registerHandler(PlayerUUIDMessage.class, (playerUUIDMessage, channelContext) -> 
-//		{
-//			RemotePlayer dhPlayer = this.playersByUUID.get(playerUUIDMessage.playerUUID);
-//			
-//			if (dhPlayer == null)
-//			{
-//				this.networkServer.disconnectClient(channelContext, "Player is not logged in.");
-//				return;
-//			}
-//			
-//			if (dhPlayer.channelContext != null)
-//			{
-//				this.networkServer.disconnectClient(channelContext, "Another connection is already in use.");
-//				return;
-//			}
-//			
-//			dhPlayer.channelContext = channelContext;
-//			this.playersByConnection.put(channelContext, dhPlayer);
-//			
-//			channelContext.writeAndFlush(new AckMessage(PlayerUUIDMessage.class));
-//		});
-//		
-//		this.networkServer.registerHandler(RemotePlayerConfigMessage.class, (dhRemotePlayerConfigMessage, channelContext) -> 
-//		{
-//			// TODO Take notice of received payload and possibly echo back a constrained version
-//			channelContext.writeAndFlush(new AckMessage(RemotePlayerConfigMessage.class));
-//		});
-//		
-//		this.networkServer.registerHandler(RequestChunksMessage.class, (msg, ctx) -> 
-//		{
-//			LOGGER.info("RequestChunksMessage");
-//			// hasReceivedChunkRequest should be false somewhere ???
-//			// to avoid sending updates until client says at least something about its state
-//		});
+		this.remotePlayerConnectionHandler = new RemotePlayerConnectionHandler();
+
+		LOGGER.info("Started ["+DhServerWorld.class.getSimpleName()+"] of type ["+this.environment+"].");
 	}
 	
 	
 	
-	//=========//
-	// methods //
-	//=========//
+	//=================//
+	// player handling //
+	//=================//
 	
 	public void addPlayer(IServerPlayerWrapper serverPlayer)
 	{
-		//this.playersByUUID.put(serverPlayer.getUUID(), new RemotePlayer(serverPlayer));
+		ServerPlayerState playerState = this.remotePlayerConnectionHandler.registerJoinedPlayer(serverPlayer);
+		this.getLevel(serverPlayer.getLevel()).addPlayer(serverPlayer);
+		
+		for (DhServerLevel level : this.levels.values())
+		{
+			level.registerNetworkHandlers(playerState);
+		}
 	}
+	
 	public void removePlayer(IServerPlayerWrapper serverPlayer)
 	{
-//		RemotePlayer dhPlayer = this.playersByUUID.remove(serverPlayer.getUUID());
-//		ChannelHandlerContext channelContext = this.playersByConnection.inverse().remove(dhPlayer);
-//		if (channelContext != null)
-//		{
-//			this.networkServer.disconnectClient(channelContext, "You are being disconnected.");
-//		}
+		this.getLevel(serverPlayer.getLevel()).removePlayer(serverPlayer);
+		this.remotePlayerConnectionHandler.unregisterLeftPlayer(serverPlayer);
+		
+		// If player's left, networkSession is already closed
 	}
+	
+	public void changePlayerLevel(IServerPlayerWrapper player, IServerLevelWrapper originLevel, IServerLevelWrapper destinationLevel)
+	{
+		this.getLevel(destinationLevel).addPlayer(player);
+		this.getLevel(originLevel).removePlayer(player);
+	}
+	
+	
+	
+	//================//
+	// level handling //
+	//================//
 	
 	@Override
 	public DhServerLevel getOrLoadLevel(@NotNull ILevelWrapper wrapper)
@@ -150,7 +107,7 @@ public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 		{
 			File levelFile = this.saveStructure.getLevelFolder(wrapper);
 			LodUtil.assertTrue(levelFile != null);
-			return new DhServerLevel(this.saveStructure, serverLevelWrapper);
+			return new DhServerLevel(this.saveStructure, serverLevelWrapper, this.remotePlayerConnectionHandler);
 		});
 	}
 	
@@ -186,11 +143,17 @@ public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 		}
 	}
 	
+	
+	
+	//==============//
+	// tick methods //
+	//==============//
+	
 	@Override 
 	public void serverTick() { this.levels.values().forEach(DhServerLevel::serverTick); }
 	
 	@Override 
-	public void doWorldGen() { this.levels.values().forEach(DhServerLevel::doWorldGen); }
+	public void worldGenTick() { this.levels.values().forEach(DhServerLevel::worldGenTick); }
 	
 	
 	
@@ -203,7 +166,7 @@ public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 	{
 		for (DhServerLevel level : this.levels.values())
 		{
-			LOGGER.info("Unloading level " + level.getLevelWrapper().getDimensionName());
+			LOGGER.info("Unloading level [" + level.getLevelWrapper().getDimensionName() + "].");
 			
 			// level wrapper shouldn't be null, but just in case
 			IServerLevelWrapper serverLevelWrapper = level.getServerLevelWrapper();
@@ -216,7 +179,7 @@ public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 		}
 		
 		this.levels.clear();
-		LOGGER.info("Closed DhWorld of type " + this.environment);
+		LOGGER.info("Closed DhWorld of type [" + this.environment + "].");
 	}
 	
 }

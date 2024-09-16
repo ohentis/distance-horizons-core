@@ -37,12 +37,15 @@ import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.coreapi.util.BitShiftUtil;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.Nullable;
 
 import java.awt.*;
+import java.io.File;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.stream.IntStream;
 
 public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 implements IDebugRenderable
 {
@@ -71,6 +74,7 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 	//=============//
 	
 	public GeneratedFullDataSourceProvider(IDhLevel level, AbstractSaveStructure saveStructure) { super(level, saveStructure); }
+	public GeneratedFullDataSourceProvider(IDhLevel level, AbstractSaveStructure saveStructure, @Nullable File saveDirOverride) { super(level, saveStructure, saveDirOverride); }
 	
 	
 	
@@ -215,7 +219,7 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 		}
 		
 		GenTask genTask = new GenTask(genPos);
-		CompletableFuture<WorldGenResult> worldGenFuture = worldGenQueue.submitGenTask(genPos, (byte) (DhSectionPos.getDetailLevel(genPos) - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL), genTask);
+		CompletableFuture<WorldGenResult> worldGenFuture = worldGenQueue.submitRetrievalTask(genPos, (byte) (DhSectionPos.getDetailLevel(genPos) - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL), genTask);
 		worldGenFuture.whenComplete((genTaskResult, ex) -> this.onWorldGenTaskComplete(genTaskResult, ex));
 		
 		return true;
@@ -237,6 +241,12 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 	@Override
 	public int getUnsavedDataSourceCount() { return this.delayedFullDataSourceSaveCache.getUnsavedCount(); }
 	
+	
+	public boolean isFullyGenerated(byte[] columnGenerationSteps)
+	{
+		return IntStream.range(0, columnGenerationSteps.length)
+				.noneMatch(i -> columnGenerationSteps[i] == EDhApiWorldGenerationStep.EMPTY.value);
+	}
 	
 	@Override
 	public LongArrayList getPositionsToRetrieve(Long pos)
@@ -386,7 +396,7 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 		public boolean isMemoryAddressValid() { return true; }
 		
 		@Override
-		public Consumer<FullDataSourceV2> getChunkDataConsumer()
+		public Consumer<FullDataSourceV2> getDataSourceConsumer()
 		{
 			return (chunkSizedFullDataSource) ->
 			{

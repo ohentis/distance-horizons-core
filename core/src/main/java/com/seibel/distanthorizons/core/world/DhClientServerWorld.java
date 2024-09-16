@@ -21,7 +21,6 @@ package com.seibel.distanthorizons.core.world;
 
 import com.seibel.distanthorizons.core.file.structure.LocalSaveStructure;
 import com.seibel.distanthorizons.core.level.IDhLevel;
-import com.seibel.distanthorizons.core.logging.f3.F3Screen;
 import com.seibel.distanthorizons.core.level.DhClientServerLevel;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
 import com.seibel.distanthorizons.core.util.objects.EventLoop;
@@ -34,7 +33,6 @@ import org.jetbrains.annotations.NotNull;
 import java.io.File;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 
 public class DhClientServerWorld extends AbstractDhWorld implements IDhClientWorld, IDhServerWorld
@@ -150,7 +148,7 @@ public class DhClientServerWorld extends AbstractDhWorld implements IDhClientWor
 	
 	public void serverTick() { this.dhLevels.forEach(DhClientServerLevel::serverTick); }
 	
-	public void doWorldGen() { this.dhLevels.forEach(DhClientServerLevel::doWorldGen); }
+	public void worldGenTick() { this.dhLevels.forEach(DhClientServerLevel::worldGenTick); }
 	
 	
 	

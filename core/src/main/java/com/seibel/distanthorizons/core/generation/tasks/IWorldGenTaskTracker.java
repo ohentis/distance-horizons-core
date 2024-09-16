@@ -34,6 +34,6 @@ public interface IWorldGenTaskTracker
 	boolean isMemoryAddressValid();
 	
 	@Nullable
-	Consumer<FullDataSourceV2> getChunkDataConsumer();
+	Consumer<FullDataSourceV2> getDataSourceConsumer();
 	
 }

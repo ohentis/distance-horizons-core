@@ -47,6 +47,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.awt.*;
 import java.util.*;
+import java.util.List;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
 
@@ -141,7 +142,7 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 	//=================//
 	
 	@Override
-	public CompletableFuture<WorldGenResult> submitGenTask(long pos, byte requiredDataDetail, IWorldGenTaskTracker tracker)
+	public CompletableFuture<WorldGenResult> submitRetrievalTask(long pos, byte requiredDataDetail, IWorldGenTaskTracker tracker)
 	{
 		// the generator is shutting down, don't add new tasks
 		if (this.generatorClosingFuture != null)
@@ -535,13 +536,15 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 	@Override
 	public void setEstimatedTotalTaskCount(int newEstimate) { this.estimatedTotalTaskCount = newEstimate; }
 	
+	public void addDebugMenuStringsToList(List<String> messageList) { }
+	
 	
 	
 	//==========//
 	// shutdown //
 	//==========//
 	
-	public CompletableFuture<Void> startClosing(boolean cancelCurrentGeneration, boolean alsoInterruptRunning)
+	public CompletableFuture<Void> startClosingAsync(boolean cancelCurrentGeneration, boolean alsoInterruptRunning)
 	{
 		LOGGER.info("Closing world gen queue");
 		this.queueingThread.shutdownNow();
@@ -592,7 +595,7 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 		
 		if (this.generatorClosingFuture == null)
 		{
-			this.startClosing(true, true);
+			this.startClosingAsync(true, true);
 		}
 		LodUtil.assertTrue(this.generatorClosingFuture != null);
 		

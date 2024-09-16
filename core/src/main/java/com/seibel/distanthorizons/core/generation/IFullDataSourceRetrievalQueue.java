@@ -26,6 +26,7 @@ import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.render.LodQuadTree;
 
 import java.io.Closeable;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -49,9 +50,17 @@ public interface IFullDataSourceRetrievalQueue extends Closeable
 	// getters //
 	//=========//
 	
-	/** the largest numerical detail level */
+	/** 
+	 * The largest numerical detail level. <br>
+	 * Detail level is absolute, not section;
+	 * IE 0 = Block, 1 = 2x2 blocks, etc.
+	 */
 	byte lowestDataDetail();
-	/** the smallest numerical detail level */
+	/** 
+	 * The smallest numerical detail level. <br>
+	 * Detail level is absolute, not section;
+	 * IE 0 = Block, 1 = 2x2 blocks, etc.
+	 */
 	byte highestDataDetail();
 	
 	
@@ -81,7 +90,7 @@ public interface IFullDataSourceRetrievalQueue extends Closeable
 	 */
 	void removeRetrievalRequestIf(DhSectionPos.ICancelablePrimitiveLongConsumer removeIf);
 	
-	CompletableFuture<WorldGenResult> submitGenTask(long pos, byte requiredDataDetail, IWorldGenTaskTracker tracker);
+	CompletableFuture<WorldGenResult> submitRetrievalTask(long pos, byte requiredDataDetail, IWorldGenTaskTracker tracker);
 	
 	
 	
@@ -89,7 +98,10 @@ public interface IFullDataSourceRetrievalQueue extends Closeable
 	// shutdown //
 	//==========//
 	
-	CompletableFuture<Void> startClosing(boolean cancelCurrentGeneration, boolean alsoInterruptRunning);
+	/** Can be used to let any lingering generation requests finish before fully shutting down the system */
+	CompletableFuture<Void> startClosingAsync(boolean cancelCurrentGeneration, boolean alsoInterruptRunning);
+	
+	@Override
 	void close();
 	
 	
@@ -104,6 +116,8 @@ public interface IFullDataSourceRetrievalQueue extends Closeable
 	/** used for rendering to the F3 menu */
 	int getEstimatedTotalTaskCount();
 	void setEstimatedTotalTaskCount(int newEstimate);
+
+	void addDebugMenuStringsToList(List<String> messageList);
 	
 	
 }

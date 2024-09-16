@@ -26,10 +26,14 @@ package com.seibel.distanthorizons.coreapi;
 public final class ModInfo
 {
 	public static final String ID = "distanthorizons";
-	/** The internal protocol version used for networking */
-	public static final int PROTOCOL_VERSION = 1;
-	/** The protocol version used for multiverse networking */
-	public static final int MULTIVERSE_PLUGIN_PROTOCOL_VERSION = 1;
+	
+	public static final String RESOURCE_NAMESPACE = "distant_horizons";
+	public static final String DEDICATED_SERVER_INITIAL_PATH = "dedicated_server_initial";
+	
+	/** Incremented every time any packets are added, changed or removed, with a few exceptions. */
+	public static final int PROTOCOL_VERSION = 3;
+	public static final String WRAPPER_PACKET_PATH = "message";
+	
 	/** The internal mod name */
 	public static final String NAME = "DistantHorizons";
 	/** Human-readable version of NAME */
@@ -44,9 +48,6 @@ public final class ModInfo
 	public static final int API_MINOR_VERSION = 0;
 	/** This version should be updated whenever non-breaking fixes are added to the DH API */
 	public static final int API_PATCH_VERSION = 1;
-	
-	public static final String NETWORKING_RESOURCE_NAMESPACE = "distant_horizons";
-	public static final String MULTIVERSE_PLUGIN_NAMESPACE = "world_control";
 	
 	/** All DH owned threads should start with this string to allow for easier debugging and profiling. */
 	public static final String THREAD_NAME_PREFIX = "DH-";

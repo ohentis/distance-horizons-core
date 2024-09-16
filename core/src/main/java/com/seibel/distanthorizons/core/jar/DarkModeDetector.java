@@ -102,7 +102,7 @@ public class DarkModeDetector
 		for (String de : de_location.list())
 		{
 //            System.out.println(de);
-			if (de.contains("gnome-session")) // Gnome uses GTK
+			if (de.contains("gnome-networkSession")) // Gnome uses GTK
 				return GTKChecker();
 			if (de.contains("plasma_session")) // KDE plasma uses QT
 				return QTChecker();

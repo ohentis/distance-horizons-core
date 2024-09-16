@@ -19,15 +19,119 @@
 
 package com.seibel.distanthorizons.core.file.fullDatafile;
 
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
+import com.seibel.distanthorizons.core.generation.RemoteWorldRetrievalQueue;
 import com.seibel.distanthorizons.core.level.IDhLevel;
+import com.seibel.distanthorizons.core.level.WorldGenModule;
+import com.seibel.distanthorizons.core.multiplayer.client.SyncOnLoginRequestQueue;
+import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
-public class RemoteFullDataSourceProvider extends FullDataSourceProviderV2
+/**
+ * Only handles {@link SyncOnLoginRequestQueue} requests (IE updating existing LODs based on a timestamp).
+ * Missing data is handled by {@link WorldGenModule} and {@link RemoteWorldRetrievalQueue}.
+ */
+public class RemoteFullDataSourceProvider extends GeneratedFullDataSourceProvider
 {
-	public RemoteFullDataSourceProvider(IDhLevel level, AbstractSaveStructure saveStructure) { super(level, saveStructure); }
-	public RemoteFullDataSourceProvider(IDhLevel level, AbstractSaveStructure saveStructure, @Nullable File saveDirOverride) { super(level, saveStructure, saveDirOverride); }
+	@Nullable
+	private final SyncOnLoginRequestQueue syncOnLoginRequestQueue;
+	private final Set<Long> finishedTaskPositions = ConcurrentHashMap.newKeySet();
+	
+	
+	
+	//=============//
+	// constructor //
+	//=============//
+	
+	public RemoteFullDataSourceProvider(
+			IDhLevel level, AbstractSaveStructure saveStructure, @Nullable File saveDirOverride, 
+			@Nullable SyncOnLoginRequestQueue syncOnLoginRequestQueue)
+	{
+		super(level, saveStructure, saveDirOverride);
+		this.syncOnLoginRequestQueue = syncOnLoginRequestQueue;
+	}
+	
+	
+	
+	//==================//
+	// override methods //
+	//==================//
+	
+	@Override
+	@Nullable
+	public FullDataSourceV2 get(long pos)
+	{
+		//=======================//
+		// get local data source //
+		//=======================//
+		
+		FullDataSourceV2 fullDataSource = super.get(pos);
+		if (fullDataSource == null)
+		{
+			// we don't have any local data for this position,
+			// we can't queue updates based on a timestamp
+			return null;	
+		}
+		
+		if (this.syncOnLoginRequestQueue == null)
+		{
+			// we have local data, but aren't allowed to
+			// request timestamp updates from the server.
+			return fullDataSource;
+		}
+		
+		
+		
+		//===========================//
+		// request timestamp updates //
+		// from server               //
+		//===========================//
+		
+		// get the timestamp for every maximum detail position in this section
+		int posToMinimumDetailScale = (DhSectionPos.getDetailLevel(pos) - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL + 1);
+		Map<Long, Long> timestamps = this.getTimestampsForRange(
+				DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL,
+				DhSectionPos.getX(pos) * posToMinimumDetailScale,
+				DhSectionPos.getZ(pos) * posToMinimumDetailScale,
+				(DhSectionPos.getX(pos) + 1) * posToMinimumDetailScale - 1,
+				(DhSectionPos.getZ(pos) + 1) * posToMinimumDetailScale - 1
+		);
+		
+		// check if the server has newer versions of these LODs
+		for (Map.Entry<Long, Long> timestampBySectionPos : timestamps.entrySet())
+		{
+			Long subPos = timestampBySectionPos.getKey();
+			Long subTimestamp = timestampBySectionPos.getValue();
+			
+			if (this.finishedTaskPositions.add(subPos))
+			{
+				this.syncOnLoginRequestQueue.submitRequest(subPos, subTimestamp, this.delayedFullDataSourceSaveCache::queueDataSourceForUpdateAndSave);
+			}
+		}
+		
+		return fullDataSource;
+	}
+	
+	
+	
+	//==========//
+	// shutdown //
+	//==========//
+	
+	@Override
+	public void close()
+	{
+		if (this.syncOnLoginRequestQueue != null)
+		{
+			this.syncOnLoginRequestQueue.close();
+		}
+		super.close();
+	}
 	
 }

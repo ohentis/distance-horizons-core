@@ -89,7 +89,7 @@ public class ClientOnlySaveStructure extends AbstractSaveStructure
 				IServerKeyedClientLevel keyedClientLevel = (IServerKeyedClientLevel) newLevelWrapper;
 				LOGGER.info("Loading level " + newLevelWrapper.getDimensionName() + " with key: " + keyedClientLevel.getServerLevelKey());
 				// This world was identified by the server directly, so we can know for sure which folder to use.
-				return new File(getSaveStructureFolderPath() + File.separatorChar + keyedClientLevel.getServerLevelKey());
+				return new File(getSaveStructureFolderPath() + File.separatorChar + keyedClientLevel.getServerLevelKey().replaceAll(":", "@@"));
 			}
 			
 			

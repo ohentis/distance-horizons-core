@@ -26,7 +26,6 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 public interface IDhServerWorld extends IDhWorld
 {
 	void serverTick();
-	void doWorldGen();
 	
 	default IDhServerLevel getOrLoadServerLevel(ILevelWrapper levelWrapper) { return (IDhServerLevel) this.getOrLoadLevel(levelWrapper); }
 	

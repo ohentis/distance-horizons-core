@@ -19,13 +19,12 @@
 
 package com.seibel.distanthorizons.core.world;
 
-import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.file.structure.ClientOnlySaveStructure;
-import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.level.DhClientLevel;
+import com.seibel.distanthorizons.core.level.IDhLevel;
+import com.seibel.distanthorizons.core.multiplayer.client.ClientNetworkState;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
 import com.seibel.distanthorizons.core.util.objects.EventLoop;
-import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import org.jetbrains.annotations.NotNull;
@@ -37,12 +36,9 @@ import java.util.concurrent.ExecutorService;
 
 public class DhClientWorld extends AbstractDhWorld implements IDhClientWorld
 {
-	private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
-	
 	private final ConcurrentHashMap<IClientLevelWrapper, DhClientLevel> levels;
 	public final ClientOnlySaveStructure saveStructure;
-
-//    private final NetworkClient networkClient;
+	public final ClientNetworkState networkState = new ClientNetworkState();
 	
 	public ExecutorService dhTickerThread = ThreadUtil.makeSingleThreadPool("Client World Ticker Thread");
 	public EventLoop eventLoop = new EventLoop(this.dhTickerThread, this::_clientTick);
@@ -60,42 +56,7 @@ public class DhClientWorld extends AbstractDhWorld implements IDhClientWorld
 		this.saveStructure = new ClientOnlySaveStructure();
 		this.levels = new ConcurrentHashMap<>();
 		
-		//if (Config.Client.Advanced.Multiplayer.enableServerNetworking.get())
-		//{
-		//	// TODO server specific configs
-		//	this.networkClient = new NetworkClient(MC_CLIENT.getCurrentServerIp(), 25049);
-		//	this.registerNetworkHandlers();
-		//}
-		//else
-		//{
-		//	this.networkClient = null;
-		//}
-		
 		LOGGER.info("Started DhWorld of type " + this.environment);
-	}
-	
-	private void registerNetworkHandlers()
-	{
-//        this.networkClient.registerHandler(HelloMessage.class, (msg, ctx) ->
-//        {
-//            ctx.writeAndFlush(new PlayerUUIDMessage(MC_CLIENT.getPlayerUUID()));
-//        });
-//
-//        // TODO Proper payload handling
-//	    this.networkClient.registerAckHandler(PlayerUUIDMessage.class, ctx ->
-//        {
-//            ctx.writeAndFlush(new RemotePlayerConfigMessage(new RemotePlayer.Payload()));
-//        });
-//	    this.networkClient.registerHandler(RemotePlayerConfigMessage.class, (msg, ctx) ->
-//        {
-//
-//        });
-//	    
-//	    this.networkClient.registerAckHandler(RemotePlayerConfigMessage.class, ctx ->
-//        {
-//            // TODO Actually request chunks
-//            ctx.writeAndFlush(new RequestChunksMessage());
-//        });
 	}
 	
 	
@@ -121,7 +82,7 @@ public class DhClientWorld extends AbstractDhWorld implements IDhClientWorld
 				return null;
 			}
 			
-			return new DhClientLevel(this.saveStructure, clientLevelWrapper);
+			return new DhClientLevel(this.saveStructure, clientLevelWrapper, this.networkState);
 		});
 	}
 	
@@ -162,26 +123,25 @@ public class DhClientWorld extends AbstractDhWorld implements IDhClientWorld
 	@Override 
 	public void clientTick() { this.eventLoop.tick(); }
 	
-	public void doWorldGen() {
-		// Not implemented
+	@Override 
+	public void worldGenTick() { this.levels.values().forEach(DhClientLevel::worldGenTick); }
+	
 	@Override
 	public void addDebugMenuStringsToList(List<String> messageList)
 	{
 		super.addDebugMenuStringsToList(messageList);
+		this.networkState.addDebugMenuStringsToList(messageList);
 	}
 	
 	@Override
 	public void close()
 	{
-//		if (this.networkClient != null)
-//		{
-////			this.networkClient.close();
-//		}
+		this.networkState.close();
 		
 		
 		for (DhClientLevel dhClientLevel : this.levels.values())
 		{
-			LOGGER.info("Unloading level " + dhClientLevel.getLevelWrapper().getDimensionName());
+			LOGGER.info("Unloading level [" + dhClientLevel.getLevelWrapper().getDimensionName() + "].");
 			
 			// level wrapper shouldn't be null, but just in case
 			IClientLevelWrapper clientLevelWrapper = dhClientLevel.getClientLevelWrapper();
@@ -195,7 +155,7 @@ public class DhClientWorld extends AbstractDhWorld implements IDhClientWorld
 		
 		this.levels.clear();
 		this.eventLoop.close();
-		LOGGER.info("Closed DhWorld of type " + this.environment);
+		LOGGER.info("Closed DhWorld of type [" + this.environment + "].");
 	}
 	
 }

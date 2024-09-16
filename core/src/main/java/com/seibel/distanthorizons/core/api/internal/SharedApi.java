@@ -53,7 +53,7 @@ public class SharedApi
 	
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	private static final IMinecraftRenderWrapper MC_RENDER = SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
-	private static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
+	private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	
 	private static final UpdateChunkPosManager UPDATE_POS_MANAGER = new UpdateChunkPosManager();
 	/** how many chunks can be queued for updating per thread, used to prevent updates from infinitely pilling up if the user flies around extremely fast */
@@ -234,9 +234,9 @@ public class SharedApi
 	}
 	private static void queueChunkUpdate(IChunkWrapper chunkWrapper, @Nullable ArrayList<IChunkWrapper> neighbourChunkList, IDhLevel dhLevel)
 	{
-		if (MC.playerExists())
+		if (MC_CLIENT != null && MC_CLIENT.playerExists())
 		{
-			UPDATE_POS_MANAGER.setCenter(MC.getPlayerChunkPos());
+			UPDATE_POS_MANAGER.setCenter(MC_CLIENT.getPlayerChunkPos());
 			UPDATE_POS_MANAGER.maxSize = MAX_UPDATING_CHUNK_COUNT_PER_THREAD * Config.Client.Advanced.MultiThreading.numberOfLodBuilderThreads.get();
 		}
 		

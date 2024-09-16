@@ -21,6 +21,7 @@ package com.seibel.distanthorizons.core.file.fullDatafile;
 
 import com.seibel.distanthorizons.api.enums.config.EDhApiDataCompressionMode;
 import com.seibel.distanthorizons.core.api.internal.ClientApi;
+import com.seibel.distanthorizons.core.api.internal.SharedApi;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV1;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
@@ -37,6 +38,7 @@ import com.seibel.distanthorizons.core.sql.repo.FullDataSourceV2Repo;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
 import com.seibel.distanthorizons.core.util.objects.DataCorruptedException;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
+import com.seibel.distanthorizons.core.world.EWorldEnvironment;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.apache.logging.log4j.Logger;
@@ -45,11 +47,14 @@ import org.jetbrains.annotations.Nullable;
 import java.awt.*;
 import java.io.File;
 import java.io.IOException;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
 
 /**
  * Handles reading/writing {@link FullDataSourceV2} 
@@ -102,9 +107,14 @@ public class FullDataSourceProviderV2
 	
 	// TODO only run thread if modifications happened recently
 	/** 
-	 * This isn't in {@link AbstractDataSourceHandler} since we don't need parent updating logic
-	 * for render data, only full data.
+	 * This isn't in {@link AbstractDataSourceHandler} since we only want to update
+	 * the newest version of the full data, so if we have providers for either
+	 * render data or old full data, we don't want to update them. <br><br>
+	 * 
+	 * Will be null on the dedicated server since updates don't need to be propagated,
+	 * only the highest detail level is needed.
 	 */
+	@Nullable
 	private final ThreadPoolExecutor updateQueueProcessor;
 	
 	
@@ -124,11 +134,19 @@ public class FullDataSourceProviderV2
 		String dimensionName = level.getLevelWrapper().getDimensionName();
 		
 		// start migrating any legacy data sources present in the background
-		this.migrationThreadPool = ThreadUtil.makeRateLimitedThreadPool(1, MIGRATION_THREAD_NAME_PREFIX +"["+dimensionName+"]", Config.Client.Advanced.MultiThreading.runTimeRatioForUpdatePropagatorThreads.get(), Thread.MIN_PRIORITY, (Semaphore)null);
-		this.migrationThreadPool.execute(() -> this.convertLegacyDataSources());
+		this.migrationThreadPool = ThreadUtil.makeRateLimitedThreadPool(1, MIGRATION_THREAD_NAME_PREFIX + "["+dimensionName+"]", Config.Client.Advanced.MultiThreading.runTimeRatioForUpdatePropagatorThreads.get(), Thread.MIN_PRIORITY, (Semaphore) null);
+		this.migrationThreadPool.execute(this::convertLegacyDataSources);
 		
-		this.updateQueueProcessor = ThreadUtil.makeSingleThreadPool("Parent Update Queue ["+dimensionName+"]");
-		this.updateQueueProcessor.execute(() -> this.runUpdateQueue());
+		// update propagation doesn't need to be run on the server since only the highest detail level is needed
+		if (SharedApi.getEnvironment() != EWorldEnvironment.Server_Only)
+		{
+			this.updateQueueProcessor = ThreadUtil.makeSingleThreadPool("Parent Update Queue ["+dimensionName+"]");
+			this.updateQueueProcessor.execute(this::runUpdateQueue);
+		}
+		else
+		{
+			this.updateQueueProcessor = null;
+		}
 	}
 	
 	
@@ -336,7 +354,7 @@ public class FullDataSourceProviderV2
 		long totalDeleteCount = this.legacyFileHandler.repo.getUnusedDataSourceCount();
 		if (totalDeleteCount != 0)
 		{
-			// this should only be shown once per session but should be shown during 
+			// this should only be shown once per networkSession but should be shown during 
 			// either when the deletion or migration phases start
 			this.showMigrationStartMessage();
 			
@@ -596,6 +614,20 @@ public class FullDataSourceProviderV2
 	 */
 	public int getUnsavedDataSourceCount() { return -1; }
 	
+	public boolean fileExists(long pos) { return this.repo.getDataSizeInBytes(pos) > 0; }
+	
+	
+	
+	//========================//
+	// multiplayer networking //
+	//========================//
+	
+	@Nullable
+	public Long getTimestampForPos(long pos)
+	{ return this.repo.getTimestampForPos(pos); }
+	public Map<Long, Long> getTimestampsForRange(byte detailLevel, int startPosX, int startPosZ, int endPosX, int endPosZ)
+	{ return this.repo.getTimestampsForRange(detailLevel, startPosX, startPosZ, endPosX, endPosZ); }
+	
 	
 	
 	//===========//
@@ -618,7 +650,10 @@ public class FullDataSourceProviderV2
 	public void close()
 	{
 		super.close();
-		this.updateQueueProcessor.shutdownNow();
+		if (this.updateQueueProcessor != null)
+		{
+			this.updateQueueProcessor.shutdownNow();
+		}
 		
 		this.legacyFileHandler.close();
 		

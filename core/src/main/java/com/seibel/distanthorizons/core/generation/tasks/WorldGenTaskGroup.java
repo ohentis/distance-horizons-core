@@ -51,7 +51,7 @@ public final class WorldGenTaskGroup
 		while (tasks.hasNext())
 		{
 			WorldGenTask task = tasks.next();
-			Consumer<FullDataSourceV2> chunkDataConsumer = task.taskTracker.getChunkDataConsumer();
+			Consumer<FullDataSourceV2> chunkDataConsumer = task.taskTracker.getDataSourceConsumer();
 			if (chunkDataConsumer == null)
 			{
 				tasks.remove();

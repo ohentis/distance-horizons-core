@@ -1,0 +1,123 @@
+package com.seibel.distanthorizons.core.multiplayer.server;
+
+import com.seibel.distanthorizons.core.config.Config;
+import com.seibel.distanthorizons.core.config.listeners.ConfigChangeListener;
+import com.seibel.distanthorizons.core.level.DhServerLevel;
+import com.seibel.distanthorizons.core.multiplayer.config.SessionConfig;
+import com.seibel.distanthorizons.core.network.messages.base.CurrentLevelKeyMessage;
+import com.seibel.distanthorizons.core.network.messages.base.SessionConfigMessage;
+import com.seibel.distanthorizons.core.network.event.internal.CloseInternalEvent;
+import com.seibel.distanthorizons.core.network.exceptions.RateLimitedException;
+import com.seibel.distanthorizons.core.network.messages.fullData.FullDataSourceRequestMessage;
+import com.seibel.distanthorizons.core.network.session.NetworkSession;
+import com.seibel.distanthorizons.core.util.ratelimiting.SupplierBasedRateAndConcurrencyLimiter;
+import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
+import org.jetbrains.annotations.NotNull;
+
+import java.io.Closeable;
+import java.util.concurrent.ConcurrentHashMap;
+
+public class ServerPlayerState implements Closeable
+{
+	private final ConfigChangeListener<String> levelKeyPrefixChangeListener
+			= new ConfigChangeListener<>(Config.Client.Advanced.Multiplayer.ServerNetworking.levelKeyPrefix, this::onLevelKeyPrefixConfigChanged);
+	private final SessionConfig.AnyChangeListener configAnyChangeListener = new SessionConfig.AnyChangeListener(this::onSessionConfigChanged);
+	
+	
+	private String lastLevelKey = "";
+	
+	
+	public final NetworkSession networkSession;
+	public IServerPlayerWrapper getServerPlayer() { return this.networkSession.serverPlayer; }
+	
+	@NotNull
+	public final SessionConfig sessionConfig = new SessionConfig();
+	
+	private final ConcurrentHashMap<DhServerLevel, RateLimiterSet> rateLimiterSets = new ConcurrentHashMap<>();
+	public RateLimiterSet getRateLimiterSet(DhServerLevel level) { return this.rateLimiterSets.computeIfAbsent(level, ignored -> new RateLimiterSet()); }
+	public void clearRateLimiterSets() { this.rateLimiterSets.clear(); }
+	
+	
+	
+	//==============//
+	// constructors //
+	//==============//
+	
+	public ServerPlayerState(IServerPlayerWrapper serverPlayer)
+	{
+		this.networkSession = new NetworkSession(serverPlayer);
+		
+		this.networkSession.registerHandler(SessionConfigMessage.class, (sessionConfigMessage) ->
+		{
+			this.sessionConfig.constrainingConfig = sessionConfigMessage.config;
+			this.sendLevelKey();
+			this.networkSession.sendMessage(new SessionConfigMessage(this.sessionConfig));
+		});
+		
+		this.networkSession.registerHandler(CloseInternalEvent.class, event -> {
+			// No-op. prevents "Unhandled message" log entries
+		});
+	}
+	
+	
+	
+	//=================//
+	// client updating //
+	//=================//
+	
+	private void onLevelKeyPrefixConfigChanged(String newLevelKey) { this.sendLevelKey(); }
+	private void sendLevelKey()
+	{
+		if (Config.Client.Advanced.Multiplayer.ServerNetworking.sendLevelKeys.get())
+		{
+			// let the client's know about the change
+			String levelKey = this.getServerPlayer().getLevel().getKeyedLevelDimensionName();
+			if (!levelKey.equals(this.lastLevelKey))
+			{
+				this.lastLevelKey = levelKey;
+				this.networkSession.sendMessage(new CurrentLevelKeyMessage(levelKey));
+			}
+		}
+	}
+	
+	private void onSessionConfigChanged() { this.networkSession.sendMessage(new SessionConfigMessage(this.sessionConfig)); }
+	
+	
+	
+	//==========//
+	// shutdown //
+	//==========//
+	
+	@Override
+	public void close()
+	{
+		this.levelKeyPrefixChangeListener.close();
+		this.configAnyChangeListener.close();
+		this.networkSession.close();
+	}
+	
+	
+	
+	//================//
+	// helper classes //
+	//================//
+	
+	public class RateLimiterSet
+	{
+		public final SupplierBasedRateAndConcurrencyLimiter<FullDataSourceRequestMessage> generationRequestRateLimiter = new SupplierBasedRateAndConcurrencyLimiter<>(
+				() -> Config.Client.Advanced.Multiplayer.ServerNetworking.generationRequestRateLimit.get(),
+				msg -> {
+					msg.sendResponse(new RateLimitedException("Full data request rate limit: " + ServerPlayerState.this.sessionConfig.getGenerationRequestRateLimit()));
+				}
+		);
+		
+		public final SupplierBasedRateAndConcurrencyLimiter<FullDataSourceRequestMessage> syncOnLoginRateLimiter = new SupplierBasedRateAndConcurrencyLimiter<>(
+				() -> Config.Client.Advanced.Multiplayer.ServerNetworking.syncOnLoginRateLimit.get(),
+				msg -> {
+					msg.sendResponse(new RateLimitedException("Sync on login rate limit: " + ServerPlayerState.this.sessionConfig.getSyncOnLoginRateLimit()));
+				}
+		);
+		
+	}
+	
+}

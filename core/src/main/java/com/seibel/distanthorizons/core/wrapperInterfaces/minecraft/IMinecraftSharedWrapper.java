@@ -30,4 +30,7 @@ public interface IMinecraftSharedWrapper extends IBindable
 	
 	File getInstallationDirectory();
 	
+	/** @return true if this is the first time loading this world */
+	boolean isWorldNew();
+	
 }

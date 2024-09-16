@@ -21,6 +21,7 @@ package com.seibel.distanthorizons.core.level;
 
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.file.fullDatafile.FullDataSourceProviderV2;
+import com.seibel.distanthorizons.core.file.fullDatafile.GeneratedFullDataSourceProvider;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.render.RenderBufferHandler;
@@ -33,8 +34,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
-public interface IDhLevel extends AutoCloseable
+public interface IDhLevel extends AutoCloseable, GeneratedFullDataSourceProvider.IOnWorldGenCompleteListener
 {
+	void worldGenTick();
+	
 	int getMinY();
 	
 	/**

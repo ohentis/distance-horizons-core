@@ -43,6 +43,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.util.*;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 
 /**
@@ -163,9 +164,19 @@ public class Config
 							.build();
 					
 					public static ConfigEntry<Integer> lodChunkRenderDistanceRadius = new ConfigEntry.Builder<Integer>()
+							.setServersideShortName("renderDistanceRadius")
 							.setMinDefaultMax(32, 128, 4096)
-							.comment("The radius of the mod's render distance. (measured in chunks)")
+							.comment("" +
+									"The radius of the mod's render distance. (measured in chunks)\n" +
+									"On server changes the distance players will receive real-time updates for, if enabled." +
+									"\n" +
+									"Note for servers:\n" +
+									"This setting does not prevent players from generating farther out.\n" +
+									"If you want to limit performance impact, change rate limits\n" +
+									"and thread count/runtime ratio settings instead.\n" +
+									"It also does not affect the visuals on clients.")
 							.setPerformance(EConfigEntryPerformance.HIGH)
+							.setSide(EConfigEntryRelevantSide.BOTH)
 							.build();
 					
 					public static ConfigEntry<EDhApiVerticalQuality> verticalQuality = new ConfigEntry.Builder<EDhApiVerticalQuality>()
@@ -719,16 +730,16 @@ public class Config
 			public static class WorldGenerator
 			{
 				public static ConfigEntry<Boolean> enableDistantGeneration = new ConfigEntry.Builder<Boolean>()
+						.setServersideShortName("enableDistantGeneration")
 						.set(true)
 						.comment(""
 								+ " Should Distant Horizons slowly generate LODs \n"
-								+ " outside the vanilla render distance?\n"
-								+ "\n"
-								+ " Note: when on a server, distant generation isn't supported \n"
-								+ " and will always be disabled.")
+								+ " outside the vanilla render distance?")
+						.setSide(EConfigEntryRelevantSide.BOTH)
 						.build();
 				
 				public static ConfigEntry<EDhApiDistantGeneratorMode> distantGeneratorMode = new ConfigEntry.Builder<EDhApiDistantGeneratorMode>()
+						.setServersideShortName("distantGeneratorMode")
 						.set(EDhApiDistantGeneratorMode.FEATURES)
 						.comment(""
 								+ "How detailed should LODs be generated outside the vanilla render distance? \n"
@@ -758,24 +769,25 @@ public class Config
 								+ EDhApiDistantGeneratorMode.FEATURES + " \n"
 								+ "Generate everything except structures. \n"
 								+ "WARNING: This may cause world generator bugs or instability when paired with certain world generator mods. \n"
+								//not currently implemented
+								//+ "\n"
+								//+ EDhApiDistantGeneratorMode.FULL + " \n"
+								//+ "Ask the local server to generate/load each chunk. \n"
+								//+ "This is the most compatible, but will cause server/simulation lag. \n"
+								//+ "- Slow (15-50 ms, with spikes up to 200 ms) \n"
 								+ "")
-						/*
-							// FULL isn't currently implemented
-							+ "\n"
-							+ EDhApiDistantGeneratorMode.FULL + " \n"
-							+ "Ask the local server to generate/load each chunk. \n"
-							+ "This is the most compatible, but will cause server/simulation lag. \n"
-							+ "- Slow (15-50 ms, with spikes up to 200 ms) \n"
-						*/
+						.setSide(EConfigEntryRelevantSide.BOTH)
 						.build();
 				
 				public static ConfigEntry<Integer> worldGenerationTimeoutLengthInSeconds = new ConfigEntry.Builder<Integer>()
+						.setServersideShortName("worldGenerationTimeout")
 						.setMinDefaultMax(5, 60 * 3, 60 * 10/*10 minutes*/ )
 						.comment(""
 								+ "How long should a world generator thread run for before timing out? \n"
 								+ "Note: If you are experiencing timeout errors it is better to lower your CPU usage first \n"
 								+ "via the thread config before changing this value. \n"
 								+ "")
+						.setSide(EConfigEntryRelevantSide.BOTH)
 						.build();
 				
 			}
@@ -784,6 +796,7 @@ public class Config
 			{
 				@Deprecated
 				public static ConfigEntry<Integer> minTimeBetweenChunkUpdatesInSeconds = new ConfigEntry.Builder<Integer>()
+						.setServersideShortName("minTimeBetweenChunkUpdates")
 						.setMinDefaultMax(0, 1, 60)
 						.setAppearance(EConfigEntryAppearance.ONLY_IN_API)
 						.comment(""
@@ -967,27 +980,98 @@ public class Config
 								+ "")
 						.build();
 				
-				// not currently implemented
-				private static ConfigEntry<Boolean> enableMultiverseNetworking = new ConfigEntry.Builder<Boolean>()
-						.set(true)
-						.comment(""
-								+ "If true Distant Horizons will attempt to communicate with the connected \n"
-								+ "server in order to improve multiverse support. \n"
-								+ "")
-						.build();
 				
-				// not currently implemented
-				private static ConfigEntry<Boolean> enableServerNetworking = new ConfigEntry.Builder<Boolean>()
-						.set(false)
-						.comment(""
-								+ "Attention: this is only for developers and hasn't been implemented.\n"
-								+ "\n"
-								+ "If true Distant Horizons will attempt to communicate with the connected \n"
-								+ "server in order to load LODs outside your vanilla render distance. \n"
-								+ "\n"
-								+ "Note: This requires DH to be installed on the server in order to function. \n"
-								+ "")
-						.build();
+				
+				public static ConfigCategory serverNetworking = new ConfigCategory.Builder().set(ServerNetworking.class).build();
+				
+				public static class ServerNetworking
+				{
+					public static ConfigUIComment generalSectionNote = new ConfigUIComment();
+					public static ConfigEntry<Boolean> enableServerNetworking = new ConfigEntry.Builder<Boolean>()
+							.setServersideShortName("enableServerNetworking")
+							.set(true)
+							.comment(""
+									+ "WARNING!\n"
+									+ "Server-client networking is not yet fully implemented!\n"
+									+ "Both the server and client must be running the server-side fork with this option enabled\n"
+									+ "for Distant Horizons data to be transceived.\n"
+									+ "\n"
+									+ "If true, the server and client will attempt to communicate to transceive Distant Horizons data.\n"
+									+ "This allows for further distant generation and LOD updates on all clients.\n"
+									+ "\n"
+									+ "This should only be used on trusted servers with trusted players!\n"
+									+ "")
+							.setSide(EConfigEntryRelevantSide.BOTH)
+							.build();
+					
+					
+					public static ConfigEntry<Boolean> sendLevelKeys = new ConfigEntry.Builder<Boolean>()
+							.setServersideShortName("sendLevelKeys")
+							.setAppearance(EConfigEntryAppearance.ONLY_IN_FILE)
+							.set(true)
+							.comment(""
+									+ "Makes the server send level keys for each world.\n"
+									+ "Disable this if you use alternative ways to send level keys.\n"
+									+ "")
+							.setSide(EConfigEntryRelevantSide.BOTH)
+							.build();
+					public static ConfigEntry<String> levelKeyPrefix = new ConfigEntry.Builder<String>()
+							.setServersideShortName("levelKeyPrefix")
+							.setAppearance(EConfigEntryAppearance.ONLY_IN_FILE)
+							.set(getDefaultLevelKeyPrefix())
+							.comment(""
+									+ "Prefix of the level keys sent to the clients.\n"
+									+ "Should be set to a unique value for each backend server behind a proxy,\n"
+									+ "or empty if you don't use a proxy.\n"
+									+ "")
+							.setSide(EConfigEntryRelevantSide.BOTH)
+							.build();
+					
+					
+					public static ConfigUIComment generationSectionNote = new ConfigUIComment();
+					public static ConfigEntry<Integer> generationRequestRateLimit = new ConfigEntry.Builder<Integer>()
+							.setServersideShortName("generationRequestRateLimit")
+							.setMinDefaultMax(1, 20, 100)
+							.comment(""
+									+ "How many LOD generation requests per second should a client send? \n"
+									+ "Also limits the amount of player's requests allowed to stay in the server's queue."
+									+ "")
+							.setSide(EConfigEntryRelevantSide.BOTH)
+							.build();
+					
+					
+					public static ConfigUIComment realTimeUpdatesSectionNote = new ConfigUIComment();
+					public static ConfigEntry<Boolean> enableRealTimeUpdates = new ConfigEntry.Builder<Boolean>()
+							.setServersideShortName("enableRealTimeUpdates")
+							.set(false)
+							.comment(""
+									+ "If true, the client will receive real-time LOD updates for chunks outside the client's render distance."
+									+ "")
+							.setSide(EConfigEntryRelevantSide.BOTH)
+							.build();
+					
+					
+					// TODO rename
+					public static ConfigUIComment syncOnLoginSectionNote = new ConfigUIComment();
+					public static ConfigEntry<Boolean> synchronizeOnLogin = new ConfigEntry.Builder<Boolean>()
+							.setServersideShortName("synchronizeOnLogin")
+							.set(false)
+							.comment(""
+									+ "If true, clients will receive updated LODs on join if any changes occurred since last join."
+									+ "")
+							.setSide(EConfigEntryRelevantSide.BOTH)
+							.build();
+					
+					public static ConfigEntry<Integer> syncOnLoginRateLimit = new ConfigEntry.Builder<Integer>()
+							.setServersideShortName("syncOnLoginRateLimit")
+							.setMinDefaultMax(1, 50, 100)
+							.comment(""
+									+ "How many LOD sync requests per second should a client send? \n"
+									+ "Also limits the amount of player's requests allowed to stay in the server's queue."
+									+ "")
+							.setSide(EConfigEntryRelevantSide.BOTH)
+							.build();
+				}
 				
 			}
 			
@@ -1009,6 +1093,7 @@ public class Config
 				
 				
 				public static final ConfigEntry<Integer> numberOfWorldGenerationThreads = new ConfigEntry.Builder<Integer>()
+						.setServersideShortName("numberOfWorldGenerationThreads")
 						.setMinDefaultMax(1,
 								ThreadPresetConfigEventHandler.getWorldGenDefaultThreadCount(),
 								Runtime.getRuntime().availableProcessors())
@@ -1022,13 +1107,17 @@ public class Config
 								+ "generation speed, increase this number. \n"
 								+ "\n"
 								+ THREAD_NOTE)
+						.setSide(EConfigEntryRelevantSide.BOTH)
 						.build();
 				public static final ConfigEntry<Double> runTimeRatioForWorldGenerationThreads = new ConfigEntry.Builder<Double>()
+						.setServersideShortName("runTimeRatioForWorldGenerationThreads")
 						.setMinDefaultMax(0.01, ThreadPresetConfigEventHandler.getWorldGenDefaultRunTimeRatio(), 1.0)
 						.comment(THREAD_RUN_TIME_RATIO_NOTE)
+						.setSide(EConfigEntryRelevantSide.BOTH)
 						.build();
 				
 				public static final ConfigEntry<Integer> numberOfFileHandlerThreads = new ConfigEntry.Builder<Integer>()
+						.setServersideShortName("numberOfFileHandlerThreads")
 						.setMinDefaultMax(1,
 								ThreadPresetConfigEventHandler.getFileHandlerDefaultThreadCount(),
 								Runtime.getRuntime().availableProcessors())
@@ -1040,10 +1129,13 @@ public class Config
 								+ "quickly flying through existing LODs. \n"
 								+ "\n"
 								+ THREAD_NOTE)
+						.setSide(EConfigEntryRelevantSide.BOTH)
 						.build();
 				public static final ConfigEntry<Double> runTimeRatioForFileHandlerThreads = new ConfigEntry.Builder<Double>()
+						.setServersideShortName("runTimeRatioForFileHandlerThreads")
 						.setMinDefaultMax(0.01, ThreadPresetConfigEventHandler.getFileHandlerDefaultRunTimeRatio(), 1.0)
 						.comment(THREAD_RUN_TIME_RATIO_NOTE)
+						.setSide(EConfigEntryRelevantSide.BOTH)
 						.build();
 				
 				public static final ConfigEntry<Integer> numberOfUpdatePropagatorThreads = new ConfigEntry.Builder<Integer>()
@@ -1072,6 +1164,7 @@ public class Config
 						.build();
 				
 				public static final ConfigEntry<Integer> numberOfLodBuilderThreads = new ConfigEntry.Builder<Integer>()
+						.setServersideShortName("numberOfLodBuilderThreads")
 						.setMinDefaultMax(1,
 								ThreadPresetConfigEventHandler.getLodBuilderDefaultThreadCount(),
 								Runtime.getRuntime().availableProcessors())
@@ -1082,12 +1175,16 @@ public class Config
 								+ "certain graphics settings are changed, and when moving around the world. \n"
 								+ "\n"
 								+ THREAD_NOTE)
+						.setSide(EConfigEntryRelevantSide.BOTH)
 						.build();
 				public static final ConfigEntry<Double> runTimeRatioForLodBuilderThreads = new ConfigEntry.Builder<Double>()
+						.setServersideShortName("runTimeRatioForLodBuilderThreads")
 						.setMinDefaultMax(0.01, ThreadPresetConfigEventHandler.getLodBuilderDefaultRunTimeRatio(), 1.0)
 						.comment(THREAD_RUN_TIME_RATIO_NOTE)
+						.setSide(EConfigEntryRelevantSide.BOTH)
 						.build();
 				public static final ConfigEntry<Boolean> enableLodBuilderThreadLimiting = new ConfigEntry.Builder<Boolean>()
+						.setServersideShortName("enableLodBuilderThreadLimiting")
 						.set(true)
 						.comment(""
 								+ "Should only be disabled if deadlock occurs and LODs refuse to update. \n"
@@ -1095,6 +1192,7 @@ public class Config
 								+ "\n"
 								+ "Note that if deadlock did occur restarting MC may be necessary to stop the locked threads. \n"
 								+ "")
+						.setSide(EConfigEntryRelevantSide.BOTH)
 						.build();
 				
 				public static final ConfigEntry<Integer> numberOfNetworkCompressionThreads = new ConfigEntry.Builder<Integer>()
@@ -1110,6 +1208,7 @@ public class Config
 								+ "to a server that doesn't support DH networking. \n"
 								+ "\n"
 								+ THREAD_NOTE)
+						.setSide(EConfigEntryRelevantSide.BOTH)
 						.build();
 				public static final ConfigEntry<Double> runTimeRatioForNetworkCompressionThreads = new ConfigEntry.Builder<Double>()
 						.setServersideShortName("runTimeRatioForNetworkCompressionThreads")
@@ -1149,31 +1248,39 @@ public class Config
 				// TODO add change all option
 				// TODO default to error chat and info file
 				public static ConfigEntry<EDhApiLoggerMode> logWorldGenEvent = new ConfigEntry.Builder<EDhApiLoggerMode>()
+						.setServersideShortName("logWorldGenEvent")
 						.set(EDhApiLoggerMode.LOG_ERROR_TO_CHAT_AND_INFO_TO_FILE)
 						.comment(""
 								+ "If enabled, the mod will log information about the world generation process. \n"
 								+ "This can be useful for debugging.")
+						.setSide(EConfigEntryRelevantSide.BOTH)
 						.build();
 				
 				public static ConfigEntry<EDhApiLoggerMode> logWorldGenPerformance = new ConfigEntry.Builder<EDhApiLoggerMode>()
+						.setServersideShortName("logWorldGenPerformance")
 						.set(EDhApiLoggerMode.LOG_ERROR_TO_CHAT_AND_INFO_TO_FILE)
 						.comment(""
 								+ "If enabled, the mod will log performance about the world generation process. \n"
 								+ "This can be useful for debugging.")
+						.setSide(EConfigEntryRelevantSide.BOTH)
 						.build();
 				
 				public static ConfigEntry<EDhApiLoggerMode> logWorldGenLoadEvent = new ConfigEntry.Builder<EDhApiLoggerMode>()
+						.setServersideShortName("logWorldGenPerformance")
 						.set(EDhApiLoggerMode.LOG_ERROR_TO_CHAT_AND_INFO_TO_FILE)
 						.comment(""
 								+ "If enabled, the mod will log information about the world generation process. \n"
 								+ "This can be useful for debugging.")
+						.setSide(EConfigEntryRelevantSide.BOTH)
 						.build();
 				
 				public static ConfigEntry<EDhApiLoggerMode> logLodBuilderEvent = new ConfigEntry.Builder<EDhApiLoggerMode>()
+						.setServersideShortName("logLodBuilderEvent")
 						.set(EDhApiLoggerMode.LOG_ERROR_TO_CHAT_AND_INFO_TO_FILE)
 						.comment(""
 								+ "If enabled, the mod will log information about the LOD generation process. \n"
 								+ "This can be useful for debugging.")
+						.setSide(EConfigEntryRelevantSide.BOTH)
 						.build();
 				
 				public static ConfigEntry<EDhApiLoggerMode> logRendererBufferEvent = new ConfigEntry.Builder<EDhApiLoggerMode>()
@@ -1191,24 +1298,30 @@ public class Config
 						.build();
 				
 				public static ConfigEntry<EDhApiLoggerMode> logFileReadWriteEvent = new ConfigEntry.Builder<EDhApiLoggerMode>()
+						.setServersideShortName("logFileReadWriteEvent")
 						.set(EDhApiLoggerMode.LOG_ERROR_TO_CHAT_AND_INFO_TO_FILE)
 						.comment(""
 								+ "If enabled, the mod will log information about file read/write operations. \n"
 								+ "This can be useful for debugging.")
+						.setSide(EConfigEntryRelevantSide.BOTH)
 						.build();
 				
 				public static ConfigEntry<EDhApiLoggerMode> logFileSubDimEvent = new ConfigEntry.Builder<EDhApiLoggerMode>()
+						.setServersideShortName("logFileSubDimEvent")
 						.set(EDhApiLoggerMode.LOG_ERROR_TO_CHAT_AND_INFO_TO_FILE)
 						.comment(""
 								+ "If enabled, the mod will log information about file sub-dimension operations. \n"
 								+ "This can be useful for debugging.")
+						.setSide(EConfigEntryRelevantSide.BOTH)
 						.build();
 				
 				public static ConfigEntry<EDhApiLoggerMode> logNetworkEvent = new ConfigEntry.Builder<EDhApiLoggerMode>()
+						.setServersideShortName("logNetworkEvent")
 						.set(EDhApiLoggerMode.LOG_ERROR_TO_CHAT_AND_INFO_TO_FILE)
 						.comment(""
 								+ "If enabled, the mod will log information about network operations. \n"
 								+ "This can be useful for debugging.")
+						.setSide(EConfigEntryRelevantSide.BOTH)
 						.build();
 				
 				
@@ -1617,6 +1730,19 @@ public class Config
 			{
 				LOGGER.error("Unexpected exception when running config delayed UI setup. Error: [" + e.getMessage() + "].", e);
 			}
+		}
+	}
+	
+	private static String getDefaultLevelKeyPrefix()
+	{
+		IMinecraftSharedWrapper mcWrapper = SingletonInjector.INSTANCE.get(IMinecraftSharedWrapper.class);
+		if (!mcWrapper.isDedicatedServer() || mcWrapper.isWorldNew())
+		{
+			return "";
+		}
+		else
+		{
+			return "server" + ThreadLocalRandom.current().nextInt(1, 1000); 
 		}
 	}
 	

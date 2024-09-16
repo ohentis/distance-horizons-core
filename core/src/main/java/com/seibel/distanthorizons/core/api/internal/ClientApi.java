@@ -24,18 +24,20 @@ import com.seibel.distanthorizons.api.enums.rendering.EDhApiRenderPass;
 import com.seibel.distanthorizons.api.methods.events.abstractEvents.*;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
 import com.seibel.distanthorizons.core.file.structure.ClientOnlySaveStructure;
-import com.seibel.distanthorizons.core.level.IKeyedClientLevelManager;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.render.DhApiRenderProxy;
+import com.seibel.distanthorizons.core.util.TimerUtil;
 import com.seibel.distanthorizons.core.util.objects.Pair;
-import com.seibel.distanthorizons.core.world.*;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
 import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.config.Config;
+import com.seibel.distanthorizons.core.network.messages.AbstractNetworkMessage;
+import com.seibel.distanthorizons.core.network.session.NetworkSession;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.api.enums.rendering.EDhApiDebugRendering;
 import com.seibel.distanthorizons.api.enums.rendering.EDhApiRendererMode;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
+import com.seibel.distanthorizons.core.level.IServerKeyedClientLevel;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
 import com.seibel.distanthorizons.core.logging.ConfigBasedSpamLogger;
 import com.seibel.distanthorizons.core.logging.SpamReducedLogger;
@@ -43,21 +45,21 @@ import com.seibel.distanthorizons.core.util.math.Mat4f;
 import com.seibel.distanthorizons.core.render.glObject.GLProxy;
 import com.seibel.distanthorizons.core.render.renderer.TestRenderer;
 import com.seibel.distanthorizons.core.util.RenderUtil;
+import com.seibel.distanthorizons.core.world.AbstractDhWorld;
+import com.seibel.distanthorizons.core.world.DhClientServerWorld;
+import com.seibel.distanthorizons.core.world.DhClientWorld;
+import com.seibel.distanthorizons.core.world.IDhClientWorld;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
-import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
-//import io.netty.buffer.ByteBuf;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.NotNull;
 import org.lwjgl.glfw.GLFW;
 
 import java.io.File;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Queue;
+import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
@@ -75,9 +77,7 @@ public class ClientApi
 	public static final ClientApi INSTANCE = new ClientApi();
 	public static final TestRenderer TEST_RENDERER = new TestRenderer();
 	
-	private static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
-	private static final IMinecraftRenderWrapper MC_RENDER = SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
-	private static final IKeyedClientLevelManager KEYED_CLIENT_LEVEL_MANAGER = SingletonInjector.INSTANCE.get(IKeyedClientLevelManager.class);
+	private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	
 	public static final long SPAM_LOGGER_FLUSH_NS = TimeUnit.NANOSECONDS.convert(1, TimeUnit.SECONDS);
 	
@@ -90,10 +90,11 @@ public class ClientApi
 	
 	private long lastFlushNanoTime = 0;
 	
-	private boolean isServerCommunicationEnabled = false;
+	private final ClientPluginChannelApi pluginChannelApi = new ClientPluginChannelApi(this::clientLevelLoadEvent, this::clientLevelUnloadEvent);
 	
-	/** set to true if any unexpected responses are received from the server */
-	private boolean serverNetworkingIsMalformed = false;
+	/** Delay loading the first level to give the server some time to respond with level to actually load */
+	private Timer firstLevelLoadTimer;
+	private static final long FIRST_LEVEL_LOAD_DELAY_IN_MS = 1_000;
 	
 	/** Holds any levels that were loaded before the {@link ClientApi#onClientOnlyConnected} was fired. */
 	public final HashSet<IClientLevelWrapper> waitingClientLevels = new HashSet<>();
@@ -127,8 +128,8 @@ public class ClientApi
 	public synchronized void onClientOnlyConnected()
 	{
 		// only continue if the client is connected to a different server
-		boolean connectedToServer = MC.clientConnectedToDedicatedServer();
-		boolean connectedToReplay = MC.connectedToReplay();
+		boolean connectedToServer = MC_CLIENT.clientConnectedToDedicatedServer();
+		boolean connectedToReplay = MC_CLIENT.connectedToReplay();
 		if (connectedToServer || connectedToReplay)
 		{
 			if (connectedToServer)
@@ -141,19 +142,22 @@ public class ClientApi
 				
 				if (Config.Client.Advanced.Logging.showReplayWarningOnStartup.get())
 				{
-					MC.sendChatMessage("\u00A76" + "Distant Horizons: Replay detected." + "\u00A7r"); // gold color
-					MC.sendChatMessage("DH may behave strangely or have missing functionality.");
-					MC.sendChatMessage("In order to use pre-generated LODs, put your DH database(s) in:");
-					MC.sendChatMessage("\u00A77"+".Minecraft" + File.separator + ClientOnlySaveStructure.SERVER_DATA_FOLDER_NAME + File.separator + ClientOnlySaveStructure.REPLAY_SERVER_FOLDER_NAME + File.separator + "DIMENSION_NAME"+"\u00A7r"); // light gray color
-					MC.sendChatMessage("This can be disabled in DH's config under Advanced -> Logging.");
-					MC.sendChatMessage("");
+					MC_CLIENT.sendChatMessage("\u00A76" + "Distant Horizons: Replay detected." + "\u00A7r"); // gold color
+					MC_CLIENT.sendChatMessage("DH may behave strangely or have missing functionality.");
+					MC_CLIENT.sendChatMessage("In order to use pre-generated LODs, put your DH database(s) in:");
+					MC_CLIENT.sendChatMessage("\u00A77"+".Minecraft" + File.separator + ClientOnlySaveStructure.SERVER_DATA_FOLDER_NAME + File.separator + ClientOnlySaveStructure.REPLAY_SERVER_FOLDER_NAME + File.separator + "DIMENSION_NAME"+"\u00A7r"); // light gray color
+					MC_CLIENT.sendChatMessage("This can be disabled in DH's config under Advanced -> Logging.");
+					MC_CLIENT.sendChatMessage("");
 				}
 			}
 			
 			// firing after clientLevelLoadEvent
 			// TODO if level has prepped to load it should fire level load event
-			SharedApi.setDhWorld(new DhClientWorld());
+			DhClientWorld world = new DhClientWorld();
+			SharedApi.setDhWorld(world);
 			
+			this.pluginChannelApi.onJoinServer(world.networkState.getSession());
+			world.networkState.sendConfigMessage();
 			
 			LOGGER.info("Loading [" + this.waitingClientLevels.size() + "] waiting client level wrappers.");
 			for (IClientLevelWrapper level : this.waitingClientLevels)
@@ -168,6 +172,13 @@ public class ClientApi
 	/** Synchronized to prevent a rare issue where multiple disconnect events are triggered on top of each other. */
 	public synchronized void onClientOnlyDisconnected()
 	{
+		// clear the first time timer
+		if (this.firstLevelLoadTimer != null)
+		{
+			this.firstLevelLoadTimer.cancel();
+			this.firstLevelLoadTimer = null;
+		}
+		
 		AbstractDhWorld world = SharedApi.getAbstractDhWorld();
 		if (world != null)
 		{
@@ -177,11 +188,7 @@ public class ClientApi
 			SharedApi.setDhWorld(null);
 		}
 		
-		// clear the previous server's information
-		this.isServerCommunicationEnabled = false;
-		this.serverNetworkingIsMalformed = false;
-		KEYED_CLIENT_LEVEL_MANAGER.setUseOverrideWrapper(false);
-		KEYED_CLIENT_LEVEL_MANAGER.setServerKeyedLevel(null);
+		this.pluginChannelApi.reset();
 		
 		// remove any waiting items
 		this.waitingChunkByClientLevelAndPos.clear();
@@ -194,16 +201,16 @@ public class ClientApi
 	// level events //
 	//==============//
 	
-	public void clientLevelUnloadEvent(@Nullable IClientLevelWrapper level)
+	public void clientLevelUnloadEvent(IClientLevelWrapper level)
 	{
 		try
 		{
-			if (level == null)
+			LOGGER.info("Unloading client level [" + level + "]-["+level.getDimensionName()+"].");
+			
+			if (level instanceof IServerKeyedClientLevel)
 			{
-				// can happen on certain multiverse servers
-				return;
+				this.pluginChannelApi.onClientLevelUnload();
 			}
-			LOGGER.info("Unloading client level [" + level + "]-["+level.getDimensionType().getDimensionName()+"].");
 			
 			AbstractDhWorld world = SharedApi.getAbstractDhWorld();
 			if (world != null)
@@ -223,30 +230,42 @@ public class ClientApi
 		}
 	}
 	
-	public void clientLevelLoadEvent(@Nullable IClientLevelWrapper level) { this.clientLevelLoadEvent(level, false); }
-	public void multiverseClientLevelLoadEvent(@Nullable IClientLevelWrapper level) { this.clientLevelLoadEvent(level, true); }
-	private void clientLevelLoadEvent(@Nullable IClientLevelWrapper level, boolean isServerCommunication)
+	public void clientLevelLoadEvent(IClientLevelWrapper level)
 	{
+		// wait a moment before loading the level to give the server a chance to handle the client's login request
+		if (MC_CLIENT.clientConnectedToDedicatedServer())
+		{
+			if (this.firstLevelLoadTimer == null)
+			{
+				this.firstLevelLoadTimer = TimerUtil.CreateTimer("FirstLevelLoadTimer");
+				this.firstLevelLoadTimer.schedule(new TimerTask()
+				{
+					@Override
+					public void run() { ClientApi.this.clientLevelLoadEvent(level); }
+				}, FIRST_LEVEL_LOAD_DELAY_IN_MS);
+				return;
+			}
+			this.firstLevelLoadTimer.cancel();
+		}
+		
+		
 		try
 		{
-			if (this.isServerCommunicationEnabled && !isServerCommunication)
-			{
-				LOGGER.info("Server supports communication, deferring loading.");
-				return;
-			}
-			if (level == null)
-			{
-				// can happen on certain multiverse servers
-				return;
-			}
-			
-			
-			
-			LOGGER.info("Loading " + (isServerCommunication ? "Multiverse" : "") + " client level [" + level + "]-["+level.getDimensionType().getDimensionName()+"].");
+			LOGGER.info("Loading client level [" + level + "]-["+level.getDimensionName()+"].");
 			
 			AbstractDhWorld world = SharedApi.getAbstractDhWorld();
 			if (world != null)
 			{
+				if (!this.pluginChannelApi.allowLevelLoading(level))
+				{
+					LOGGER.info("Levels in this connection are managed by the server, skipping auto-load.");
+					
+					// Instead of attempting to load themselves, send the config and wait for a server provided level key.
+					((DhClientWorld) world).networkState.sendConfigMessage();
+					return;
+				}
+				
+				
 				world.getOrLoadLevel(level);
 				ApiEventInjector.INSTANCE.fireAllEvents(DhApiLevelLoadEvent.class, new DhApiLevelLoadEvent.EventParam(level));
 				
@@ -295,7 +314,7 @@ public class ClientApi
 	{
 		LOGGER.info("Renderer shutting down.");
 		
-		IProfilerWrapper profiler = MC.getProfiler();
+		IProfilerWrapper profiler = MC_CLIENT.getProfiler();
 		profiler.push("DH-RendererShutdown");
 		
 		profiler.pop();
@@ -305,7 +324,7 @@ public class ClientApi
 	{
 		LOGGER.info("Renderer starting up.");
 		
-		IProfilerWrapper profiler = MC.getProfiler();
+		IProfilerWrapper profiler = MC_CLIENT.getProfiler();
 		profiler.push("DH-RendererStartup");
 		
 		// make sure the GLProxy is created before the LodBufferBuilder needs it
@@ -315,7 +334,7 @@ public class ClientApi
 	
 	public void clientTickEvent()
 	{
-		IProfilerWrapper profiler = MC.getProfiler();
+		IProfilerWrapper profiler = MC_CLIENT.getProfiler();
 		profiler.push("DH-ClientTick");
 		
 		try
@@ -337,7 +356,7 @@ public class ClientApi
 				// Ignore local world gen, as it's managed by server ticking
 				if (!(clientWorld instanceof DhClientServerWorld))
 				{
-					SharedApi.worldGenTick(clientWorld::doWorldGen);
+					SharedApi.worldGenTick(clientWorld::worldGenTick);
 				}
 			}
 		}
@@ -355,124 +374,15 @@ public class ClientApi
 	//============//
 	// networking //
 	//============//
-
-//	/** @param byteBuf is Netty's {@link ByteBuffer} wrapper. */
-//	public void serverMessageReceived(ByteBuf byteBuf)
-//	{
-//		if (!Config.Client.Advanced.Multiplayer.enableMultiverseNetworking.get())
-//		{
-//			// multiverse networking disabled, ignore anything sent from the server
-//			return;
-//		}
-//		
-//		
-//		
-//		// either value can be set to true to debug the received byte stream
-//		boolean stopAndDisplayInputAsByteArray = false;
-//		boolean stopAndDisplayInputAsString = false;
-//		if (stopAndDisplayInputAsByteArray || stopAndDisplayInputAsString)
-//		{
-//			String messageString = "";
-//			if (stopAndDisplayInputAsByteArray)
-//			{
-//				int byteCount = byteBuf.readableBytes();
-//				byte[] arr = new byte[byteCount];
-//				StringBuilder stringBuilder = new StringBuilder("Server message received: [");
-//				for (int i = 0; i < byteCount; i++)
-//				{
-//					arr[i] = byteBuf.readByte();
-//					stringBuilder.append(arr[i]);
-//				}
-//				stringBuilder.append("]");
-//				
-//				messageString = stringBuilder.toString();
-//			}
-//			else if (stopAndDisplayInputAsString)
-//			{
-//				messageString = byteBuf.toString(StandardCharsets.UTF_8);
-//			}
-//			
-//			// this is logged as an error so it is easier to see in an Intellij log
-//			LOGGER.error(messageString);
-//			return;
-//		}
-//		
-//		
-//		
-//		
-//		// It is important to ensure malicious server input is ignored.
-//		if (this.serverNetworkingIsMalformed)
-//		{
-//			return;
-//		}
-//		
-//		// check that the incoming message is within the expected size
-//		short commandLength = byteBuf.readShort();
-//		if (commandLength < 1 || commandLength > 32)
-//		{
-//			LOGGER.error("Server command length ["+commandLength+"] outside the expected range of 1 to 32 (inclusive).");
-//			ClientApi.INSTANCE.serverNetworkingIsMalformed = true;
-//			return;
-//		}
-//		
-//		// parse the command
-//		String eventType;
-//		try
-//		{
-//			eventType = byteBuf.readCharSequence(commandLength, StandardCharsets.UTF_8).toString();
-//		}
-//		catch (Exception e)
-//		{
-//			LOGGER.error("Server sent un-parsable command. Error: "+e.getMessage());
-//			return;
-//		}
-//		
-//		switch (eventType)
-//		{
-//			case "ServerCommsEnabled":
-//				LOGGER.info("Server supports DH multiverse protocol.");
-//				ClientApi.INSTANCE.isServerCommunicationEnabled = true;
-//				KEYED_CLIENT_LEVEL_MANAGER.setUseOverrideWrapper(true);
-//				MC.executeOnRenderThread(() -> 
-//				{
-//					// Unload the current world, since it may be wrong.
-//					// A followup WorldChanged event should be received from the server soon after this.
-//					LOGGER.info("Unloading current client level so the server can define the correct multiverse level.");
-//					this.clientLevelUnloadEvent((IClientLevelWrapper) MC.getWrappedClientWorld());
-//				});
-//				break;
-//			
-//			case "LevelChanged":
-//				short levelKeyLength = byteBuf.readShort();
-//				if (levelKeyLength < 1 || levelKeyLength > 128) // TODO 128 should be put into a constant somewhere
-//				{
-//					LOGGER.error("Server [LevelChanged] command length ["+commandLength+"] outside the expected range of 1 to 128 (inclusive).");
-//					this.serverNetworkingIsMalformed = true;
-//					return;
-//				}
-//				
-//				String levelKey = byteBuf.readCharSequence(levelKeyLength, StandardCharsets.UTF_8).toString();
-//				if (!levelKey.matches("[a-zA-Z0-9_]+"))
-//				{
-//					LOGGER.error("Server sent invalid world key name, and is being ignored.");
-//					this.isServerCommunicationEnabled = false;
-//					this.serverNetworkingIsMalformed = true;
-//					return;
-//				}
-//				
-//				LOGGER.info("Server level change event received, changing the level to ["+levelKey+"].");
-//				MC.executeOnRenderThread(() -> {
-//					if (MC.getWrappedClientWorld() != null)
-//					{
-//						this.clientLevelUnloadEvent((IClientLevelWrapper) MC.getWrappedClientWorld());
-//					}
-//					IServerKeyedClientLevel clientLevel = KEYED_CLIENT_LEVEL_MANAGER.getServerKeyedLevel(MC.getWrappedClientWorld(), levelKey);
-//					KEYED_CLIENT_LEVEL_MANAGER.setServerKeyedLevel(clientLevel);
-//					this.multiverseClientLevelLoadEvent(clientLevel);
-//				});
-//				break;
-//		}
-//	}
+	
+	public void pluginMessageReceived(@NotNull AbstractNetworkMessage message)
+	{
+		NetworkSession networkSession = this.pluginChannelApi.networkSession;
+		if (networkSession != null)
+		{
+			networkSession.tryHandleMessage(message);
+		}
+	}
 	
 	
 	
@@ -499,7 +409,7 @@ public class ClientApi
 		
 		this.sendQueuedChatMessages();
 		
-		IProfilerWrapper profiler = MC.getProfiler();
+		IProfilerWrapper profiler = MC_CLIENT.getProfiler();
 		profiler.pop(); // get out of "terrain"
 		profiler.push("DH-RenderLevel");
 		
@@ -550,7 +460,12 @@ public class ClientApi
 			{
 				return;
 			}
-			IDhClientLevel level = dhClientWorld.getOrLoadClientLevel(levelWrapper);
+			
+			IDhClientLevel level = (IDhClientLevel) dhClientWorld.getLevel(levelWrapper);
+			if (level == null)
+			{
+				return;
+			}
 			
 			
 			if (this.rendererDisabledBecauseOfExceptions)
@@ -612,10 +527,10 @@ public class ClientApi
 			this.rendererDisabledBecauseOfExceptions = true;
 			LOGGER.error("Unexpected Renderer error in render pass [" + renderPass + "]. Error: " + e.getMessage(), e);
 			
-			MC.sendChatMessage("\u00A74\u00A7l\u00A7uERROR: Distant Horizons renderer has encountered an exception!");
-			MC.sendChatMessage("\u00A74Renderer disabled to try preventing GL state corruption.");
-			MC.sendChatMessage("\u00A74Toggle DH rendering via the config UI to re-activate DH rendering.");
-			MC.sendChatMessage("\u00A74Error: " + e);
+			MC_CLIENT.sendChatMessage("\u00A74\u00A7l\u00A7uERROR: Distant Horizons renderer has encountered an exception!");
+			MC_CLIENT.sendChatMessage("\u00A74Renderer disabled to try preventing GL state corruption.");
+			MC_CLIENT.sendChatMessage("\u00A74Toggle DH rendering via the config UI to re-activate DH rendering.");
+			MC_CLIENT.sendChatMessage("\u00A74Error: " + e);
 		}
 		finally
 		{
@@ -655,24 +570,24 @@ public class ClientApi
 		if (glfwKey == GLFW.GLFW_KEY_F8)
 		{
 			Config.Client.Advanced.Debugging.debugRendering.set(EDhApiDebugRendering.next(Config.Client.Advanced.Debugging.debugRendering.get()));
-			MC.sendChatMessage("F8: Set debug mode to " + Config.Client.Advanced.Debugging.debugRendering.get());
+			MC_CLIENT.sendChatMessage("F8: Set debug mode to " + Config.Client.Advanced.Debugging.debugRendering.get());
 		}
 		else if (glfwKey == GLFW.GLFW_KEY_F6)
 		{
 			Config.Client.Advanced.Debugging.rendererMode.set(EDhApiRendererMode.next(Config.Client.Advanced.Debugging.rendererMode.get()));
-			MC.sendChatMessage("F6: Set rendering to " + Config.Client.Advanced.Debugging.rendererMode.get());
+			MC_CLIENT.sendChatMessage("F6: Set rendering to " + Config.Client.Advanced.Debugging.rendererMode.get());
 		}
 		else if (glfwKey == GLFW.GLFW_KEY_P)
 		{
 			prefLoggerEnabled = !prefLoggerEnabled;
-			MC.sendChatMessage("P: Debug Pref Logger is " + (prefLoggerEnabled ? "enabled" : "disabled"));
+			MC_CLIENT.sendChatMessage("P: Debug Pref Logger is " + (prefLoggerEnabled ? "enabled" : "disabled"));
 		}
 	}
 	
 	private void sendQueuedChatMessages()
 	{
 		// dev build
-		if (ModInfo.IS_DEV_BUILD && !this.configOverrideReminderPrinted && MC.playerExists())
+		if (ModInfo.IS_DEV_BUILD && !this.configOverrideReminderPrinted && MC_CLIENT.playerExists())
 		{
 			this.configOverrideReminderPrinted = true;
 			
@@ -682,7 +597,7 @@ public class ClientApi
 					"\u00A72" + "Distant Horizons: nightly/unstable build, version: [" + ModInfo.VERSION+"]." + "\u00A7r\n" +
 					"Issues may occur with this version.\n" +
 					"Here be dragons!\n";
-			MC.sendChatMessage(message);
+			MC_CLIENT.sendChatMessage(message);
 		}
 		
 		// memory
@@ -703,7 +618,7 @@ public class ClientApi
 						"Stuttering or low FPS may occur. \n" +
 						"Please increase Minecraft's available memory to 4 gigabytes. \n" +
 						"This warning can be disabled in DH's config under Advanced -> Logging. \n";
-				MC.sendChatMessage(message);
+				MC_CLIENT.sendChatMessage(message);
 			}
 		}
 		
@@ -716,7 +631,7 @@ public class ClientApi
 				// done to prevent potential null pointers
 				message = "";
 			}
-			MC.sendChatMessage(message);
+			MC_CLIENT.sendChatMessage(message);
 		}
 	}
 	

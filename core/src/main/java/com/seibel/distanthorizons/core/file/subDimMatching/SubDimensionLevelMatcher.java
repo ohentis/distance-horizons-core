@@ -60,6 +60,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author James Seibel
  * @version 12-17-2022
  */
+@Deprecated
 public class SubDimensionLevelMatcher implements AutoCloseable
 {
 	private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
@@ -209,7 +210,7 @@ public class SubDimensionLevelMatcher implements AutoCloseable
 			try
 			{
 				// get the data source to compare against
-				try (IDhLevel tempLevel = new DhClientLevel(new ClientOnlySaveStructure(), this.currentClientLevel, testLevelFolder, false))
+				try (IDhLevel tempLevel = new DhClientLevel(new ClientOnlySaveStructure(), this.currentClientLevel, testLevelFolder, false, null))
 				{
 					testFullDataSource = tempLevel.getFullDataProvider().getAsync(DhSectionPos.encodeContaining(DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL, this.playerData.playerBlockPos)).join();
 					if (testFullDataSource == null)

@@ -17,12 +17,20 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.seibel.distanthorizons.core.level;
+package com.seibel.distanthorizons.core.network.messages.requests;
 
-import com.seibel.distanthorizons.core.file.fullDatafile.GeneratedFullDataSourceProvider;
+import com.seibel.distanthorizons.core.network.messages.AbstractTrackableMessage;
+import io.netty.buffer.ByteBuf;
 
-public interface IDhWorldGenLevel extends IDhLevel, GeneratedFullDataSourceProvider.IOnWorldGenCompleteListener
+public class CancelMessage extends AbstractTrackableMessage
 {
-	void doWorldGen();
+	public CancelMessage() { }
+	
+	
+	
+	@Override
+	public void encodeInternal(ByteBuf out) { }
+	@Override
+	public void decodeInternal(ByteBuf in) { }
 	
 }

@@ -20,6 +20,7 @@
 package com.seibel.distanthorizons.core.config.file;
 
 import com.electronwill.nightconfig.core.file.CommentedFileConfig;
+import com.seibel.distanthorizons.core.config.types.enums.EConfigEntryRelevantSide;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.config.ConfigBase;
 import com.seibel.distanthorizons.core.config.types.AbstractConfigType;
@@ -47,7 +48,7 @@ public class ConfigFileHandling
 	public final ConfigBase configBase;
 	public final Path configPath;
 	
-	private final Logger LOGGER;
+	private final Logger logger;
 	
 	/** This is the object for night-config */
 	private final CommentedFileConfig nightConfig;
@@ -60,7 +61,7 @@ public class ConfigFileHandling
 	
 	public ConfigFileHandling(ConfigBase configBase, Path configPath)
 	{
-		this.LOGGER = LogManager.getLogger(this.getClass().getSimpleName() + ", " + configBase.modID);
+		this.logger = LogManager.getLogger(this.getClass().getSimpleName() + ", " + configBase.modID);
 		this.configBase = configBase;
 		this.configPath = configPath;
 		
@@ -115,7 +116,7 @@ public class ConfigFileHandling
 	 */
 	public void loadFromFile()
 	{
-		int currentCfgVersion = configBase.configVersion;
+		int currentCfgVersion = this.configBase.configVersion;
 		try
 		{
 			// Dont load the real `this.nightConfig`, instead create a tempoary one
@@ -126,27 +127,29 @@ public class ConfigFileHandling
 			tmpNightConfig.close();
 		} catch (Exception ignored) { }
 		
-		if (currentCfgVersion == configBase.configVersion)
-		{}
-		else if (currentCfgVersion > configBase.configVersion)
+		if (currentCfgVersion == this.configBase.configVersion)
 		{
-			LOGGER.warn("Found config version [" + String.valueOf(currentCfgVersion) + "] which is newer than current mods config version of [" + String.valueOf(configBase.configVersion) + "]. You may have downgraded the mod and items may have been moved, you have been warned");
+			// handle normally
+		}
+		else if (currentCfgVersion > this.configBase.configVersion)
+		{
+			this.logger.warn("Found config version [" + currentCfgVersion + "] which is newer than current mods config version of [" + this.configBase.configVersion + "]. You may have downgraded the mod and items may have been moved, you have been warned");
 		}
 		else // if (currentCfgVersion < configBase.configVersion)
 		{
-			LOGGER.warn(configBase.modName +" config is of an older version, currently there is no config updater... so resetting config");
+			this.logger.warn(this.configBase.modName +" config is of an older version, currently there is no config updater... so resetting config");
 			try
 			{
-				Files.delete(configPath);
+				Files.delete(this.configPath);
 			}
 			catch (Exception e)
 			{
-				LOGGER.error(e);
+				this.logger.error(e);
 			}
 		}
 		
-		loadFromFile(nightConfig);
-		nightConfig.set("_version", configBase.configVersion);
+		this.loadFromFile(this.nightConfig);
+		this.nightConfig.set("_version", this.configBase.configVersion);
 	}
 	/**
 	 * Loads the entire config from the file
@@ -197,8 +200,8 @@ public class ConfigFileHandling
 	// Save an entry when only given the entry
 	public void saveEntry(ConfigEntry<?> entry)
 	{
-		saveEntry(entry, nightConfig);
-		nightConfig.save();
+		this.saveEntry(entry, this.nightConfig);
+		this.nightConfig.save();
 	}
 	/** Save an entry */
 	public void saveEntry(ConfigEntry<?> entry, CommentedFileConfig workConfig)
@@ -207,25 +210,24 @@ public class ConfigFileHandling
 		{
 			return;
 		}
-		else if (MC_SHARED.isDedicatedServer() && entry.getServersideShortName() == null)
+		else if ((entry.getRelevantSide() == EConfigEntryRelevantSide.CLIENT && MC_SHARED.isDedicatedServer())
+				|| (entry.getRelevantSide() == EConfigEntryRelevantSide.SERVER && !MC_SHARED.isDedicatedServer()))
 		{
-			// don't save server configs on the client
+			// don't save server/client specific configs on the opposite
+			// (this keeps the config file clean of unnecessary items)
 			return;
 		}
 		else if (entry.getTrueValue() == null)
 		{
 			// TODO when can this happen?
-			throw new IllegalArgumentException("Entry [" + entry.getNameWCategory() + "] is null, this may be a problem with [" + configBase.modName + "]. Please contact the authors.");
+			throw new IllegalArgumentException("Entry [" + entry.getNameWCategory() + "] is null, this may be a problem with [" + this.configBase.modName + "]. Please contact the authors.");
 		}
 		
 		workConfig.set(entry.getNameWCategory(), ConfigTypeConverters.attemptToConvertToString(entry.getType(), entry.getTrueValue()));
 	}
 	
 	/** Loads an entry when only given the entry */
-	public void loadEntry(ConfigEntry<?> entry)
-	{
-		loadEntry(entry, nightConfig);
-	}
+	public void loadEntry(ConfigEntry<?> entry) { this.loadEntry(entry, this.nightConfig); }
 	/** Loads an entry */
 	@SuppressWarnings("unchecked")
 	public <T> void loadEntry(ConfigEntry<T> entry, CommentedFileConfig nightConfig)
@@ -235,7 +237,7 @@ public class ConfigFileHandling
 		
 		if (!nightConfig.contains(entry.getNameWCategory()))
 		{
-			saveEntry(entry, nightConfig);
+			this.saveEntry(entry, nightConfig);
 			return;
 		}
 		
@@ -254,7 +256,7 @@ public class ConfigFileHandling
 			Object convertedValue = ConfigTypeConverters.attemptToConvertFromString(expectedValueClass, value);
 			if (!convertedValue.getClass().equals(expectedValueClass))
 			{
-				LOGGER.error("Unable to convert config value ["+value+"] from ["+(value != null ? value.getClass() : "NULL")+"] to ["+expectedValueClass+"] for config ["+entry.name+"], " +
+				this.logger.error("Unable to convert config value ["+value+"] from ["+(value != null ? value.getClass() : "NULL")+"] to ["+expectedValueClass+"] for config ["+entry.name+"], " +
 						"the default config value will be used instead ["+entry.getDefaultValue()+"]. " +
 						"Make sure a converter is defined in ["+ConfigTypeConverters.class.getSimpleName()+"].");
 				convertedValue = entry.getDefaultValue();
@@ -263,23 +265,20 @@ public class ConfigFileHandling
 			
 			if (entry.getTrueValue() == null) 
 			{
-				LOGGER.warn("Entry [" + entry.getNameWCategory() + "] returned as null from the config. Using default value.");
+				this.logger.warn("Entry [" + entry.getNameWCategory() + "] returned as null from the config. Using default value.");
 				entry.pureSet(entry.getDefaultValue());
 			}
 		}
 		catch (Exception e)
 		{
 //                e.printStackTrace();
-			LOGGER.warn("Entry [" + entry.getNameWCategory() + "] had an invalid value when loading the config. Using default value.");
+			this.logger.warn("Entry [" + entry.getNameWCategory() + "] had an invalid value when loading the config. Using default value.");
 			entry.pureSet(entry.getDefaultValue());
 		}
 	}
 	
 	// Creates the comment for an entry when only given the entry
-	public void createComment(ConfigEntry<?> entry)
-	{
-		createComment(entry, nightConfig);
-	}
+	public void createComment(ConfigEntry<?> entry) { this.createComment(entry, this.nightConfig); }
 	// Creates a comment for an entry
 	public void createComment(ConfigEntry<?> entry, CommentedFileConfig nightConfig)
 	{
@@ -289,8 +288,13 @@ public class ConfigFileHandling
 			return;
 		}
 		
-		if (MC_SHARED.isDedicatedServer() && entry.getServersideShortName() == null)
+		
+		
+		if ((entry.getRelevantSide() == EConfigEntryRelevantSide.CLIENT && MC_SHARED.isDedicatedServer())
+				|| (entry.getRelevantSide() == EConfigEntryRelevantSide.SERVER && !MC_SHARED.isDedicatedServer()))
 		{
+			// don't save server/client specific configs on the opposite
+			// (this keeps the config file clean of unnecessary items)
 			return;
 		}
 		
@@ -332,7 +336,7 @@ public class ConfigFileHandling
 			}
 			catch (Exception e)
 			{
-				LOGGER.warn("Loading file failed because of this expectation:\n" + e);
+				this.logger.warn("Loading file failed because of this expectation:\n" + e);
 				
 				reCreateFile(this.configPath);
 				
@@ -342,7 +346,7 @@ public class ConfigFileHandling
 		catch (Exception ex)
 		{
 			System.out.println("Creating file failed");
-			LOGGER.error(ex);
+			this.logger.error(ex);
 			SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class).crashMinecraft("Loading file and resetting config file failed at path [" + configPath + "]. Please check the file is ok and you have the permissions", ex);
 		}
 	}

@@ -398,6 +398,21 @@
   "distanthorizons.config.client.advanced.multiplayer":
     "Multiplayer",
     
+  "distanthorizons.config.client.advanced.multiplayer.serverNetworking": "Server Networking",
+  "distanthorizons.config.client.advanced.multiplayer.serverNetworking.generalSectionNote": " \u25cf  General",
+  "distanthorizons.config.client.advanced.multiplayer.serverNetworking.enableServerNetworking": "Enable Server Networking",
+  "distanthorizons.config.client.advanced.multiplayer.serverNetworking.enableServerNetworking.@tooltip": "§6Attention:§r this feature is not fully implemented. \n\nIf true Distant Horizons will attempt to communicate with the connected \nserver in order to load LODs outside your vanilla render distance. \n\nNote: This requires DH to be installed on the server in order to function.",
+  "distanthorizons.config.client.advanced.multiplayer.serverNetworking.generationSectionNote": " \u25cf  Generation",
+  "distanthorizons.config.client.advanced.multiplayer.serverNetworking.generationRequestRateLimit": "Rate Limit for Generation Requests",
+  "distanthorizons.config.client.advanced.multiplayer.serverNetworking.generationRequestRateLimit.@tooltip": "How many LOD generation requests per second should a client send? \nAlso limits the amount of player's requests allowed to stay in the server's queue.",
+  "distanthorizons.config.client.advanced.multiplayer.serverNetworking.realTimeUpdatesSectionNote": " \u25cf  Real-time Updates",
+  "distanthorizons.config.client.advanced.multiplayer.serverNetworking.enableRealTimeUpdates": "Enable Real-time Updates",
+  "distanthorizons.config.client.advanced.multiplayer.serverNetworking.enableRealTimeUpdates.@tooltip": "If true, the client will receive real-time LOD updates for chunks outside the client's render distance.",
+  "distanthorizons.config.client.advanced.multiplayer.serverNetworking.syncOnLoginSectionNote": " \u25cf  Synchronization on Login",
+  "distanthorizons.config.client.advanced.multiplayer.serverNetworking.synchronizeOnLogin": "Synchronize LODs on Login",
+  "distanthorizons.config.client.advanced.multiplayer.serverNetworking.synchronizeOnLogin.@tooltip": "If true, clients will receive updated LODs on join if any changes occurred since last join.",
+  "distanthorizons.config.client.advanced.multiplayer.serverNetworking.syncOnLoginRateLimit": "Rate Limit for Sync on Login",
+  "distanthorizons.config.client.advanced.multiplayer.serverNetworking.syncOnLoginRateLimit.@tooltip": "How many LOD sync requests per second should a client send? \nAlso limits the amount of player's requests allowed to stay in the server's queue.",
   "distanthorizons.config.client.advanced.multiplayer.serverFolderNameMode":
     "Server Folder Mode",
   "distanthorizons.config.client.advanced.multiplayer.serverFolderNameMode.@tooltip":
@@ -410,13 +425,8 @@
     "Networked Multiverse Support",
   "distanthorizons.config.client.advanced.multiplayer.enableMultiverseNetworking.@tooltip":
     "If true Distant Horizons will attempt to communicate with the connected \nserver in order to improve multiverse support.",
-  "distanthorizons.config.client.advanced.multiplayer.enableServerNetworking":
-  "§4Unimplemented, Dev Use Only§r - Server Support",
-  "distanthorizons.config.client.advanced.multiplayer.enableServerNetworking.@tooltip":
-  "§6Attention:§r this is only for developers and hasn't been implemented. \n\nIf true Distant Horizons will attempt to communicate with the connected \nserver in order to load LODs outside your vanilla render distance. \n\nNote: This requires DH to be installed on the server in order to function.",
-  
-  
-  
+
+
   "distanthorizons.config.client.advanced.multiThreading":
     "Threading",
     

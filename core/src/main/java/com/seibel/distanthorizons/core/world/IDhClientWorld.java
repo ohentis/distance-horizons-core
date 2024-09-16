@@ -26,8 +26,6 @@ public interface IDhClientWorld extends IDhWorld
 {
 	void clientTick();
 	
-	void doWorldGen();
-	
 	default IDhClientLevel getOrLoadClientLevel(ILevelWrapper levelWrapper) { return (IDhClientLevel) this.getOrLoadLevel(levelWrapper); }
 	default IDhClientLevel getClientLevel(ILevelWrapper levelWrapper) { return (IDhClientLevel) this.getLevel(levelWrapper); }
 	

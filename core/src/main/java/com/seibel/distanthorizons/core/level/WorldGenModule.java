@@ -27,9 +27,14 @@ import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
 import org.apache.logging.log4j.Logger;
 
 import java.io.Closeable;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 
+/**
+ * Handles both single-player/server-side world gen and client side LOD requests.
+ * TODO rename
+ */
 public class WorldGenModule implements Closeable
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
@@ -137,20 +142,22 @@ public class WorldGenModule implements Closeable
 	
 	public boolean isWorldGenRunning() { return this.worldGenStateRef.get() != null; }
 	
-	public String getDebugMenuString()
+	/** mutates a list so it can be added to an existing {@link IDhLevel}'s debug list  */
+	public void addDebugMenuStringsToList(List<String> messageList)
 	{
 		AbstractWorldGenState worldGenState = this.worldGenStateRef.get();
 		if (worldGenState == null)
 		{
-			return null;
+			return;
 		}
 		
 		
 		String waitingCountStr = F3Screen.NUMBER_FORMAT.format(worldGenState.worldGenerationQueue.getWaitingTaskCount());
 		String inProgressCountStr = F3Screen.NUMBER_FORMAT.format(worldGenState.worldGenerationQueue.getInProgressTaskCount());
 		String totalCountEstimateStr = F3Screen.NUMBER_FORMAT.format(worldGenState.worldGenerationQueue.getEstimatedTotalTaskCount());
-		
-		return "World Gen Tasks: "+waitingCountStr+"/"+totalCountEstimateStr+" (in progress: "+inProgressCountStr+")";
+		messageList.add("World Gen Tasks: "+waitingCountStr+"/"+totalCountEstimateStr+" (in progress: "+inProgressCountStr+")");
+
+		worldGenState.worldGenerationQueue.addDebugMenuStringsToList(messageList);
 	}
 	
 	
@@ -166,18 +173,18 @@ public class WorldGenModule implements Closeable
 		
 		CompletableFuture<Void> closeAsync(boolean doInterrupt)
 		{
-			return this.worldGenerationQueue.startClosing(true, doInterrupt)
-					.exceptionally(ex ->
-							{
-								LOGGER.error("Error closing generation queue", ex);
-								return null;
-							}
-					).thenRun(this.worldGenerationQueue::close)
-					.exceptionally(ex ->
-					{
-						LOGGER.error("Error closing world gen", ex);
-						return null;
-					});
+			return this.worldGenerationQueue.startClosingAsync(true, doInterrupt)
+				.exceptionally(e ->
+				{
+					LOGGER.error("Error during first stage of generation queue shutdown, Error: ["+e.getMessage()+"].", e);
+					return null;
+				}
+				).thenRun(this.worldGenerationQueue::close)
+				.exceptionally(e ->
+				{
+					LOGGER.error("Error during second stage of generation queue shutdown, Error: ["+e.getMessage()+"].", e);
+					return null;
+				});
 		}
 		
 		/** @param targetPosForGeneration the position that world generation should be centered around */

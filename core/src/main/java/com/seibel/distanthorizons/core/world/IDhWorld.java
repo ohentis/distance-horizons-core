@@ -35,4 +35,6 @@ public interface IDhWorld
 	
 	void unloadLevel(@NotNull ILevelWrapper levelWrapper);
 	
+	void worldGenTick();
+	
 }

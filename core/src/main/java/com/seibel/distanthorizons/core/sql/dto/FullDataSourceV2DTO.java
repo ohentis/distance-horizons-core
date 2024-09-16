@@ -19,18 +19,21 @@
 
 package com.seibel.distanthorizons.core.sql.dto;
 
+import com.google.common.base.MoreObjects;
 import com.seibel.distanthorizons.api.enums.config.EDhApiDataCompressionMode;
 import com.seibel.distanthorizons.api.enums.config.EDhApiWorldCompressionMode;
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
 import com.seibel.distanthorizons.core.dataObjects.fullData.FullDataPointIdMap;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.network.INetworkObject;
 import com.seibel.distanthorizons.core.util.FullDataPointUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.objects.DataCorruptedException;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataInputStream;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataOutputStream;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
+import io.netty.buffer.ByteBuf;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.jetbrains.annotations.NotNull;
 
@@ -39,7 +42,7 @@ import java.util.zip.Adler32;
 import java.util.zip.CheckedOutputStream;
 
 /** handles storing {@link FullDataSourceV2}'s in the database. */
-public class FullDataSourceV2DTO implements IBaseDTO<Long>
+public class FullDataSourceV2DTO implements IBaseDTO<Long>, INetworkObject
 {
 	public static final boolean VALIDATE_INPUT_DATAPOINTS = true;
 	
@@ -89,6 +92,10 @@ public class FullDataSourceV2DTO implements IBaseDTO<Long>
 				dataSource.levelMinY
 		);
 	}
+	
+	/** Should only be used for subsequent decoding */
+	public static FullDataSourceV2DTO CreateEmptyDataSource() { return new FullDataSourceV2DTO(); }
+	private FullDataSourceV2DTO() { }
 	
 	public FullDataSourceV2DTO(
 			long pos, 
@@ -353,6 +360,64 @@ public class FullDataSourceV2DTO implements IBaseDTO<Long>
 	
 	
 	
+	//============//
+	// networking //
+	//============//
+	
+	@Override
+	public void encode(ByteBuf out)
+	{
+		out.writeLong(this.pos);
+		out.writeInt(this.dataChecksum);
+		
+		out.writeInt(this.compressedDataByteArray.length);
+		out.writeBytes(this.compressedDataByteArray);
+		
+		out.writeInt(this.compressedColumnGenStepByteArray.length);
+		out.writeBytes(this.compressedColumnGenStepByteArray);
+		out.writeInt(this.compressedWorldCompressionModeByteArray.length);
+		out.writeBytes(this.compressedWorldCompressionModeByteArray);
+		
+		out.writeInt(this.compressedMappingByteArray.length);
+		out.writeBytes(this.compressedMappingByteArray);
+		
+		out.writeByte(this.dataFormatVersion);
+		out.writeByte(this.compressionModeValue);
+		
+		out.writeBoolean(this.applyToParent);
+		
+		out.writeLong(this.lastModifiedUnixDateTime);
+		out.writeLong(this.createdUnixDateTime);
+	}
+	
+	@Override
+	public void decode(ByteBuf in)
+	{
+		this.pos = in.readLong();
+		this.dataChecksum = in.readInt();
+		
+		this.compressedDataByteArray = new byte[in.readInt()];
+		in.readBytes(this.compressedDataByteArray);
+		
+		this.compressedColumnGenStepByteArray = new byte[in.readInt()];
+		in.readBytes(this.compressedColumnGenStepByteArray);
+		this.compressedWorldCompressionModeByteArray = new byte[in.readInt()];
+		in.readBytes(this.compressedWorldCompressionModeByteArray);
+		
+		this.compressedMappingByteArray = new byte[in.readInt()];
+		in.readBytes(this.compressedMappingByteArray);
+		
+		this.dataFormatVersion = in.readByte();
+		this.compressionModeValue = in.readByte();
+		
+		this.applyToParent = in.readBoolean();
+		
+		this.lastModifiedUnixDateTime = in.readLong();
+		this.createdUnixDateTime = in.readLong();
+	}
+	
+	
+	
 	//===========//
 	// overrides //
 	//===========//
@@ -362,7 +427,24 @@ public class FullDataSourceV2DTO implements IBaseDTO<Long>
 	@Override
 	public String getKeyDisplayString() { return DhSectionPos.toString(this.pos); }
 	
-	
+	@Override
+	public String toString()
+	{
+		return MoreObjects.toStringHelper(this)
+				.add("levelMinY", this.levelMinY)
+				.add("pos", this.pos)
+				.add("dataChecksum", this.dataChecksum)
+				.add("compressedDataByteArray length", this.compressedDataByteArray.length)
+				.add("compressedColumnGenStepByteArray length", this.compressedColumnGenStepByteArray.length)
+				.add("compressedWorldCompressionModeByteArray length", this.compressedWorldCompressionModeByteArray.length)
+				.add("compressedMappingByteArray length", this.compressedMappingByteArray.length)
+				.add("dataFormatVersion", this.dataFormatVersion)
+				.add("compressionModeValue", this.compressionModeValue)
+				.add("applyToParent", this.applyToParent)
+				.add("lastModifiedUnixDateTime", this.lastModifiedUnixDateTime)
+				.add("createdUnixDateTime", this.createdUnixDateTime)
+				.toString();
+	}
 	
 	//================//
 	// helper methods //
