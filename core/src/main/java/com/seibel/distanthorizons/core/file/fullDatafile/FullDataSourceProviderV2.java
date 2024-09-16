@@ -354,7 +354,7 @@ public class FullDataSourceProviderV2
 		long totalDeleteCount = this.legacyFileHandler.repo.getUnusedDataSourceCount();
 		if (totalDeleteCount != 0)
 		{
-			// this should only be shown once per networkSession but should be shown during 
+			// this should only be shown once per session but should be shown during 
 			// either when the deletion or migration phases start
 			this.showMigrationStartMessage();
 			
