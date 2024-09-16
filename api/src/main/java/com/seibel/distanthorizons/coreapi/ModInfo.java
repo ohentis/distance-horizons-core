@@ -43,11 +43,11 @@ public final class ModInfo
 	public static boolean IS_DEV_BUILD = VERSION.toLowerCase().contains("dev");
 	
 	/** This version should only be updated when breaking changes are introduced to the DH API */
-	public static final int API_MAJOR_VERSION = 3;
+	public static final int API_MAJOR_VERSION = 4;
 	/** This version should be updated whenever new methods are added to the DH API */
 	public static final int API_MINOR_VERSION = 0;
 	/** This version should be updated whenever non-breaking fixes are added to the DH API */
-	public static final int API_PATCH_VERSION = 1;
+	public static final int API_PATCH_VERSION = 0;
 	
 	/** All DH owned threads should start with this string to allow for easier debugging and profiling. */
 	public static final String THREAD_NAME_PREFIX = "DH-";
