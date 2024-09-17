@@ -95,7 +95,7 @@ public abstract class AbstractTrackableMessage extends AbstractNetworkMessage
     public void setSession(NetworkSession networkSession)
 	{
 		super.setSession(networkSession);
-		// networkSession ID is written in the most significant bits
+		// Session ID is written in the most significant bits
 		this.futureId |= (long) networkSession.id << 32;
 	}
 	

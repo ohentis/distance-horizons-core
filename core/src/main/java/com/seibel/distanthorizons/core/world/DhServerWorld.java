@@ -80,7 +80,7 @@ public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 		this.getLevel(serverPlayer.getLevel()).removePlayer(serverPlayer);
 		this.remotePlayerConnectionHandler.unregisterLeftPlayer(serverPlayer);
 		
-		// If player's left, networkSession is already closed
+		// If player's left, session is already closed
 	}
 	
 	public void changePlayerLevel(IServerPlayerWrapper player, IServerLevelWrapper originLevel, IServerLevelWrapper destinationLevel)

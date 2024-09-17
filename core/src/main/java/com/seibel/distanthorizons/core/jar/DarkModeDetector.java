@@ -102,10 +102,14 @@ public class DarkModeDetector
 		for (String de : de_location.list())
 		{
 //            System.out.println(de);
-			if (de.contains("gnome-networkSession")) // Gnome uses GTK
+			if (de.contains("gnome-session")) // Gnome uses GTK
+			{
 				return GTKChecker();
+			}
 			if (de.contains("plasma_session")) // KDE plasma uses QT
+			{
 				return QTChecker();
+			}
 		}
 		return GTKChecker(); // GTK works best with non plasma desktops (desktops includes window managers)
 	}
@@ -134,7 +138,9 @@ public class DarkModeDetector
 			while (themeLine != null)
 			{ // Go through each line till you find "KWinPalette\activeBackground"
 				if (themeLine.contains("KWinPalette\\activeBackground"))
+				{
 					break;
+				}
 				themeLine = reader.readLine();
 			}
 			reader.close();
@@ -145,9 +151,13 @@ public class DarkModeDetector
 			short g = (short) Integer.parseInt("" + themeLine.charAt(index + 3) + themeLine.charAt(index + 4), 16);
 			short b = (short) Integer.parseInt("" + themeLine.charAt(index + 5) + themeLine.charAt(index + 6), 16);
 			if ((r + g + b) / 2 >= 128)
+			{
 				return false;
+			}
 			else
+			{
 				return true;
+			}
 		}
 		catch (Exception e)
 		{
@@ -170,7 +180,9 @@ public class DarkModeDetector
 				while ((actualReadLine = reader.readLine()) != null)
 				{
 					if (stringBuilder.length() != 0)
+					{
 						stringBuilder.append('\n');
+					}
 					stringBuilder.append(actualReadLine);
 				}
 			}

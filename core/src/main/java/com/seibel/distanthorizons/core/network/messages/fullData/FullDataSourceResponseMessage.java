@@ -58,14 +58,14 @@ public class FullDataSourceResponseMessage extends AbstractTrackableMessage
 	@Override
 	public void encodeInternal(ByteBuf out)
 	{
-		if (this.tryWrite(out, this.payload))
+		if (this.writeOptional(out, this.payload))
 		{
 			this.payload.encode(out);
 		}
 	}
 	
 	@Override
-	public void decodeInternal(ByteBuf in) { this.payload = this.tryRead(in, () -> INetworkObject.decodeToInstance(new FullDataPayload(), in)); }
+	public void decodeInternal(ByteBuf in) { this.payload = this.readOptional(in, () -> INetworkObject.decodeToInstance(new FullDataPayload(), in)); }
 	
 	
 	

@@ -64,7 +64,7 @@ public class FullDataSourceRequestMessage extends AbstractTrackableMessage imple
 	{
 		this.writeString(this.levelName, out);
 		out.writeLong(this.sectionPos);
-		if (this.tryWrite(out, this.clientTimestamp))
+		if (this.writeOptional(out, this.clientTimestamp))
 		{
 			out.writeLong(this.clientTimestamp);
 		}
@@ -75,7 +75,7 @@ public class FullDataSourceRequestMessage extends AbstractTrackableMessage imple
 	{
 		this.levelName = this.readString(in);
 		this.sectionPos = in.readLong();
-		this.clientTimestamp = this.tryRead(in, in::readLong);
+		this.clientTimestamp = this.readOptional(in, in::readLong);
     }
 	
 	

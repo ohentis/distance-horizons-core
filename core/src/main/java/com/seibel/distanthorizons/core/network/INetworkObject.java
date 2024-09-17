@@ -55,7 +55,7 @@ public interface INetworkObject
 	
 	
 	@Contract("_, null -> false; _, !null -> true")
-	default boolean tryWrite(ByteBuf outputByteBuf, Object value)
+	default boolean writeOptional(ByteBuf outputByteBuf, Object value)
 	{
 		boolean isNull = value != null;
 		outputByteBuf.writeBoolean(isNull);
@@ -63,13 +63,13 @@ public interface INetworkObject
 	}
 	
 	@Nullable
-	default <T> T tryRead(ByteBuf inputByteBuf, Supplier<T> decoder)
+	default <T> T readOptional(ByteBuf inputByteBuf, Supplier<T> decoder)
 	{
 		return inputByteBuf.readBoolean()
 				? decoder.get() 
 				: null;
 	}
-	default void tryRead(ByteBuf inputByteBuf, Runnable decoder)
+	default void readOptional(ByteBuf inputByteBuf, Runnable decoder)
 	{
 		if (inputByteBuf.readBoolean())
 		{

@@ -134,11 +134,11 @@ public class NetworkSession extends AbstractNetworkEventSource
 		{
 			if (this.serverPlayer != null)
 			{
-				PACKET_SENDER.sendPluginServerPacket(this.serverPlayer, message);
+				PACKET_SENDER.sendToClient(this.serverPlayer, message);
 			}
 			else
 			{
-				PACKET_SENDER.sendPluginClientPacket(message);
+				PACKET_SENDER.sendToServer(message);
 			}
 		}
 		catch (Throwable throwable)

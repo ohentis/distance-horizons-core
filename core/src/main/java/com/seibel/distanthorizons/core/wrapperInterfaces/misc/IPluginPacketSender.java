@@ -6,8 +6,8 @@ import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IBindab
 public interface IPluginPacketSender extends IBindable
 {
 	/** Sends a packet from the client */
-	void sendPluginClientPacket(AbstractNetworkMessage message);
+	void sendToServer(AbstractNetworkMessage message);
 	/** Sends a packet from the server */
-	void sendPluginServerPacket(IServerPlayerWrapper serverPlayer, AbstractNetworkMessage message);
+	void sendToClient(IServerPlayerWrapper serverPlayer, AbstractNetworkMessage message);
 	
 }
