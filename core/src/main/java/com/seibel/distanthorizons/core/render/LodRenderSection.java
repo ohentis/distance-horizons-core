@@ -27,6 +27,7 @@ import com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.LodQuad
 import com.seibel.distanthorizons.core.dataObjects.transformers.FullDataToRenderDataTransformer;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.enums.EDhDirection;
+import com.seibel.distanthorizons.core.file.DataSourcePool;
 import com.seibel.distanthorizons.core.file.fullDatafile.FullDataSourceProviderV2;
 import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
@@ -37,6 +38,7 @@ import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
 import com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.ColumnRenderBuffer;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.util.ListUtil;
+import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
@@ -48,6 +50,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -96,7 +99,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	
 	private final ReentrantLock getRenderSourceLock = new ReentrantLock();
 	/** Stored as a class variable so we can reuse it's result across multiple LOD loads if necessary */
-	private CompletableFuture<ColumnRenderSource> renderSourceLoadingRefFuture = null;
+	private ReferencedRenderSourceFutureWrapper renderSourceLoadingRefFuture = null;
 	
 	private boolean missingPositionsCalculated = false;
 	/** should be an empty array if no positions need to be generated */
@@ -160,15 +163,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 								if (thisRenderSource != null && !thisRenderSource.isEmpty())
 								{
 									CompletableFuture<LodQuadBuilder> buildDataFuture = this.buildNewRenderDataAsync(thisRenderSource, loadedRenderSources);
-									buildDataFuture.thenRun(() -> 
-									{
-										ColumnRenderSource.DATA_SOURCE_POOL.returnPooledDataSource(thisRenderSource);
-										ArrayList<ColumnRenderSource> adjacentSourceList = loadedRenderSources.getAdjacentRenderSourceList();
-										for (int i = 0; i < adjacentSourceList.size(); i++)
-										{
-											ColumnRenderSource.DATA_SOURCE_POOL.returnPooledDataSource(adjacentSourceList.get(i));
-										}
-									});
+									buildDataFuture.thenRun(loadedRenderSources::decrementRefCounts);
 									return buildDataFuture;
 								}
 								else
@@ -222,18 +217,21 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	}
 	private CompletableFuture<LoadedRenderSourcesFutureWrapper> loadRenderDataAsync()
 	{
-		CompletableFuture<ColumnRenderSource> thisRenderSourceLoadFuture = this.getRenderSourceAsync();
-		ArrayList<CompletableFuture<ColumnRenderSource>> adjRenderSourceLoadRefFutures = this.getNeighborRenderSourcesAsync();
+		ReferencedRenderSourceFutureWrapper thisRenderSourceLoadFuture = this.getRenderSourceAsync();
+		ArrayList<ReferencedRenderSourceFutureWrapper> adjRenderSourceLoadRefFutures = this.getNeighborRenderSourcesAsync();
 		
 		
 		// wait for all futures to complete together,
 		// merging the futures makes loading significantly faster than loading this position then loading its neighbors
 		ArrayList<CompletableFuture<ColumnRenderSource>> futureList = new ArrayList<>();
-		futureList.add(thisRenderSourceLoadFuture);
-		futureList.addAll(adjRenderSourceLoadRefFutures);
+		futureList.add(thisRenderSourceLoadFuture.future);
+		for(ReferencedRenderSourceFutureWrapper futureWrapper : adjRenderSourceLoadRefFutures)
+		{
+			futureList.add(futureWrapper.future);
+		}
 		CompletableFuture<Void> allLoadedFuture = CompletableFuture.allOf(futureList.toArray(new CompletableFuture[0]));
 		
-		return allLoadedFuture.thenApply((voidObj) -> new LoadedRenderSourcesFutureWrapper(allLoadedFuture, thisRenderSourceLoadFuture, adjRenderSourceLoadRefFutures));
+		return allLoadedFuture.thenApply((voidObj) -> new LoadedRenderSourcesFutureWrapper(thisRenderSourceLoadFuture, adjRenderSourceLoadRefFutures));
 	}
 	private CompletableFuture<LodQuadBuilder> buildNewRenderDataAsync(
 			ColumnRenderSource thisRenderSource,
@@ -296,9 +294,9 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	//=====================//
 	
 	/** Should be called on the {@link ThreadPoolUtil#getFileHandlerExecutor()} */
-	private ArrayList<CompletableFuture<ColumnRenderSource>> getNeighborRenderSourcesAsync()
+	private ArrayList<ReferencedRenderSourceFutureWrapper> getNeighborRenderSourcesAsync()
 	{
-		ArrayList<CompletableFuture<ColumnRenderSource>> futureList = ListUtil.createEmptyList(EDhDirection.ADJ_DIRECTIONS.length);
+		ArrayList<ReferencedRenderSourceFutureWrapper> futureList = ListUtil.createEmptyList(EDhDirection.ADJ_DIRECTIONS.length);
 		
 		for (int i = 0; i < EDhDirection.ADJ_DIRECTIONS.length; i++)
 		{
@@ -318,7 +316,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 			
 			if (futureList.get(arrayIndex) == null)
 			{
-				futureList.set(arrayIndex, CompletableFuture.completedFuture(null));
+				futureList.set(arrayIndex, new ReferencedRenderSourceFutureWrapper(CompletableFuture.completedFuture(null)));
 			}
 		}
 		
@@ -326,19 +324,28 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	}
 	
 	/** Will try to return the same {@link CompletableFuture} if multiple requests are made for the same position */
-	private CompletableFuture<ColumnRenderSource> getRenderSourceAsync()
+	private ReferencedRenderSourceFutureWrapper getRenderSourceAsync()
 	{
 		try
 		{
 			this.getRenderSourceLock.lock();
 			
+			// use the already loading future if one is present
+			ReferencedRenderSourceFutureWrapper oldFuture = this.renderSourceLoadingRefFuture;
+			if (oldFuture != null)
+			{
+				oldFuture.incrementRefCount();
+				return oldFuture;
+			}
+			
+			
 			ThreadPoolExecutor executor = ThreadPoolUtil.getFileHandlerExecutor();
 			if (executor == null || executor.isTerminated())
 			{
-				return CompletableFuture.completedFuture(null);
+				return new ReferencedRenderSourceFutureWrapper(CompletableFuture.completedFuture(null));
 			}
 			
-			this.renderSourceLoadingRefFuture = CompletableFuture.supplyAsync(() ->
+			this.renderSourceLoadingRefFuture = new ReferencedRenderSourceFutureWrapper(CompletableFuture.supplyAsync(() ->
 			{
 				try (FullDataSourceV2 fullDataSource = this.fullDataSourceProvider.get(this.pos))
 				{
@@ -352,7 +359,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 					this.renderSourceLoadingRefFuture = null;
 					return null;
 				}
-			}, executor);
+			}, executor));
 			return this.renderSourceLoadingRefFuture;
 		}
 		finally
@@ -563,37 +570,81 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	/** Used to easily pass around the loaded {@link ColumnRenderSource}'s. */
 	private static class LoadedRenderSourcesFutureWrapper
 	{
-		//private final CompletableFuture<Void> future;
-		private final CompletableFuture<ColumnRenderSource> thisRenderSourceFuture;
-		private final ArrayList<CompletableFuture<ColumnRenderSource>> adjacentRenderSourceFutures;
+		private final ReferencedRenderSourceFutureWrapper thisRenderSourceFutureRef;
+		private final ArrayList<ReferencedRenderSourceFutureWrapper> adjacentRenderSourceFutureRefList;
 		
 		
 		
-		public LoadedRenderSourcesFutureWrapper(CompletableFuture<Void> future, CompletableFuture<ColumnRenderSource> thisRenderSourceFuture, ArrayList<CompletableFuture<ColumnRenderSource>> adjacentRenderSourceFutures)
+		public LoadedRenderSourcesFutureWrapper(ReferencedRenderSourceFutureWrapper thisRenderSourceFutureRef, ArrayList<ReferencedRenderSourceFutureWrapper> adjacentRenderSourceFutureRefList)
 		{
-			//this.future = future;
-			this.thisRenderSourceFuture = thisRenderSourceFuture;
-			this.adjacentRenderSourceFutures = adjacentRenderSourceFutures;
+			this.thisRenderSourceFutureRef = thisRenderSourceFutureRef;
+			this.adjacentRenderSourceFutureRefList = adjacentRenderSourceFutureRefList;
 		}
 		
 		
 		
-		//public CompletableFuture<Void> getFuture() { return this.future; }
-		public ColumnRenderSource getThisRenderSource() { return this.thisRenderSourceFuture != null ? this.thisRenderSourceFuture.getNow(null) : null; }
+		public ColumnRenderSource getThisRenderSource() { return (this.thisRenderSourceFutureRef != null && this.thisRenderSourceFutureRef.future != null) ? this.thisRenderSourceFutureRef.future.getNow(null) : null; }
 		public ColumnRenderSource getAdjacentRenderSource(int i)
 		{
-			CompletableFuture<ColumnRenderSource> future = this.adjacentRenderSourceFutures.get(i);
-			return future != null ? future.getNow(null) : null;
+			ReferencedRenderSourceFutureWrapper futureWrapper = this.adjacentRenderSourceFutureRefList.get(i);
+			return (futureWrapper != null && futureWrapper.future != null) ? futureWrapper.future.getNow(null) : null;
 		}
-		public ArrayList<ColumnRenderSource> getAdjacentRenderSourceList()
+		
+		public void decrementRefCounts()
 		{
-			ArrayList<ColumnRenderSource> list = new ArrayList<>();
-			for (int i = 0; i < this.adjacentRenderSourceFutures.size(); i++)
+			this.thisRenderSourceFutureRef.decrementRefCount();
+			
+			for (int i = 0; i < this.adjacentRenderSourceFutureRefList.size(); i++)
 			{
-				list.add(this.getAdjacentRenderSource(i));
-			}			
-			return list;
+				this.adjacentRenderSourceFutureRefList.get(i).decrementRefCount();
+			}
 		}
+		
 	}
+	
+	/**
+	 * Used to keep track of whether a {@link ColumnRenderSource} {@link CompletableFuture}
+	 * is in use or not, and if not in use returns the data source to the {@link DataSourcePool}. <br> <br>
+	 *
+	 * This reduces GC overhead by pooling shared {@link ColumnRenderSource}.
+	 */
+	private static class ReferencedRenderSourceFutureWrapper
+	{
+		public final CompletableFuture<ColumnRenderSource> future;
+		// starts at 1 since the constructing method is referencing this future
+		private final AtomicInteger refCount = new AtomicInteger(1);
+		
+		
+		
+		public ReferencedRenderSourceFutureWrapper(CompletableFuture<ColumnRenderSource> future) { this.future = future; }
+		
+		public void incrementRefCount() { this.refCount.incrementAndGet(); }
+		public void decrementRefCount()
+		{
+			int refCount = this.refCount.decrementAndGet();
+			if (refCount <= 0)
+			{
+				// this render section should only be released once
+				if (refCount < 0)
+				{
+					LodUtil.assertNotReach("ReferencedRenderSourceFutureWrapper was released more than once! Ref Count ["+refCount+"].");
+				}
+				
+				// return data source to the pool
+				ColumnRenderSource source = this.future.getNow(null);
+				if (source != null)
+				{
+					ColumnRenderSource.DATA_SOURCE_POOL.returnPooledDataSource(source);
+				}
+			}
+		}
+		
+		
+		
+		@Override
+		public String toString() { return this.future.toString() + " - " + this.refCount.get(); }
+		
+	}
+	
 	
 }
