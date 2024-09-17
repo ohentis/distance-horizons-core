@@ -31,7 +31,7 @@ public final class ModInfo
 	public static final String DEDICATED_SERVER_INITIAL_PATH = "dedicated_server_initial";
 	
 	/** Incremented every time any packets are added, changed or removed, with a few exceptions. */
-	public static final int PROTOCOL_VERSION = 3;
+	public static final int PROTOCOL_VERSION = 4;
 	public static final String WRAPPER_PACKET_PATH = "message";
 	
 	/** The internal mod name */
