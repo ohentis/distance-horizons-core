@@ -5,6 +5,7 @@ import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.config.types.ConfigEntry;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
+import com.seibel.distanthorizons.core.level.DhServerLevel;
 import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.logging.ConfigBasedSpamLogger;
 import com.seibel.distanthorizons.core.network.exceptions.InvalidLevelException;
@@ -60,6 +61,13 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 	private volatile CompletableFuture<Void> closingFuture = null;
 	
 	protected final ConcurrentMap<Long, RequestQueueEntry> waitingTasksBySectionPos = new ConcurrentHashMap<>();
+	/**
+	 * This semaphore prevents a given thread from accidentally locking on the same group
+	 * multiple times, as the semaphore is tied to the given thread. <br>
+	 * Reentrant Lock isn't used since it would allow the thread to lock on the same group. <br>
+	 * the Short.MAX_VALUE is just a very large number that should be larger than the number of
+	 * threads we'll have.
+	 */
 	private final Semaphore pendingTasksSemaphore = new Semaphore(Short.MAX_VALUE, true);
 	
 	private final AtomicInteger finishedRequests = new AtomicInteger();

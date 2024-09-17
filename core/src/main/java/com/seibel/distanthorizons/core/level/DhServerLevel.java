@@ -536,9 +536,15 @@ public class DhServerLevel extends AbstractDhLevel implements IDhServerLevel
 		@CheckForNull
 		public FullDataSourceV2 fullDataSource;
 		
-		// Maybe there's a better way to do synchronization, but this should suffice
-		// Why not something like ReentrantReadWriteLock: locks should not be bound to threads
+		/**
+		 * These semaphores prevent a given thread from accidentally locking on the same group
+		 * multiple times, as the semaphore is tied to the given thread. <br>
+		 * Reentrant Lock isn't used since it would allow the thread to lock on the same group. <br>
+		 * the Short.MAX_VALUE is just a very large number that should be larger than the number of
+		 * threads we'll have.
+		 */
 		public final Semaphore requestAddSemaphore = new Semaphore(Short.MAX_VALUE, true);
+		/** @see DataSourceRequestGroup#requestAddSemaphore */
 		public final Semaphore requestRemoveSemaphore = new Semaphore(Short.MAX_VALUE, true);
 		
 	}
