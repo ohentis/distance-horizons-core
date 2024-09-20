@@ -33,6 +33,7 @@ import org.apache.logging.log4j.Logger;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Handles reading and writing config files.
@@ -53,6 +54,9 @@ public class ConfigFileHandling
 	/** This is the object for night-config */
 	private final CommentedFileConfig nightConfig;
 	
+	/** prevents readers/writers from overlapping and causing the config file from being duplicated or corrupted */
+	private final ReentrantLock readWriteLock = new ReentrantLock();
+	
 	
 	
 	//=============//
@@ -72,40 +76,49 @@ public class ConfigFileHandling
 	
 	
 	/** Saves the entire config to the file */
-	public void saveToFile()
-	{
-		saveToFile(this.nightConfig);
-	}
+	public void saveToFile() { this.saveToFile(this.nightConfig); }
 	/** Saves the entire config to the file */
 	public void saveToFile(CommentedFileConfig nightConfig)
 	{
-		if (!Files.exists(configPath)) // Try to check if the config exists
-		{
-			reCreateFile(configPath);
-		}
-		
-		
-		loadNightConfig(nightConfig);
-		
-		
-		for (AbstractConfigType<?, ?> entry : this.configBase.entries)
-		{
-			if (ConfigEntry.class.isAssignableFrom(entry.getClass()))
-			{
-				createComment((ConfigEntry<?>) entry, nightConfig);
-				saveEntry((ConfigEntry<?>) entry, nightConfig);
-			}
-		}
-		
-		
 		try
 		{
-			nightConfig.save();
+			this.readWriteLock.lock();
+			
+			
+			
+			if (!Files.exists(this.configPath)) // Try to check if the config exists
+			{
+				reCreateFile(this.configPath);
+			}
+			
+			
+			this.loadNightConfig(nightConfig);
+			
+			
+			for (AbstractConfigType<?, ?> entry : this.configBase.entries)
+			{
+				if (ConfigEntry.class.isAssignableFrom(entry.getClass()))
+				{
+					this.createComment((ConfigEntry<?>) entry, nightConfig);
+					this.saveEntry((ConfigEntry<?>) entry, nightConfig);
+				}
+			}
+			
+			
+			try
+			{
+				nightConfig.save();
+			}
+			catch (Exception e)
+			{
+				// If it fails to save, crash game
+				SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class).crashMinecraft("Failed to save config at [" + this.configPath + "]", e);
+			}
+			
 		}
-		catch (Exception e)
+		finally
 		{
-			// If it fails to save, crash game
-			SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class).crashMinecraft("Failed to save config at [" + configPath.toString() + "]", e);
+			this.readWriteLock.unlock();
 		}
 	}
 	
@@ -116,69 +129,77 @@ public class ConfigFileHandling
 	 */
 	public void loadFromFile()
 	{
-		int currentCfgVersion = this.configBase.configVersion;
 		try
 		{
-			// Dont load the real `this.nightConfig`, instead create a tempoary one
-			CommentedFileConfig tmpNightConfig = CommentedFileConfig.builder(this.configPath.toFile()).build();
-			tmpNightConfig.load();
-			// Attempt to get the version number
-			currentCfgVersion = (Integer) tmpNightConfig.get("_version");
-			tmpNightConfig.close();
-		} catch (Exception ignored) { }
-		
-		if (currentCfgVersion == this.configBase.configVersion)
-		{
-			// handle normally
-		}
-		else if (currentCfgVersion > this.configBase.configVersion)
-		{
-			this.logger.warn("Found config version [" + currentCfgVersion + "] which is newer than current mods config version of [" + this.configBase.configVersion + "]. You may have downgraded the mod and items may have been moved, you have been warned");
-		}
-		else // if (currentCfgVersion < configBase.configVersion)
-		{
-			this.logger.warn(this.configBase.modName +" config is of an older version, currently there is no config updater... so resetting config");
+			this.readWriteLock.lock();
+			
+			int currentCfgVersion = this.configBase.configVersion;
 			try
 			{
-				Files.delete(this.configPath);
+				// Dont load the real `this.nightConfig`, instead create a tempoary one
+				CommentedFileConfig tmpNightConfig = CommentedFileConfig.builder(this.configPath.toFile()).build();
+				tmpNightConfig.load();
+				// Attempt to get the version number
+				currentCfgVersion = (Integer) tmpNightConfig.get("_version");
+				tmpNightConfig.close();
 			}
-			catch (Exception e)
+			catch (Exception ignored) { }
+			
+			if (currentCfgVersion == this.configBase.configVersion)
 			{
-				this.logger.error(e);
+				// handle normally
 			}
+			else if (currentCfgVersion > this.configBase.configVersion)
+			{
+				this.logger.warn("Found config version [" + currentCfgVersion + "] which is newer than current mods config version of [" + this.configBase.configVersion + "]. You may have downgraded the mod and items may have been moved, you have been warned");
+			}
+			else // if (currentCfgVersion < configBase.configVersion)
+			{
+				this.logger.warn(this.configBase.modName + " config is of an older version, currently there is no config updater... so resetting config");
+				try
+				{
+					Files.delete(this.configPath);
+				}
+				catch (Exception e)
+				{
+					this.logger.error(e);
+				}
+			}
+			
+			this.loadFromFile(this.nightConfig);
+			this.nightConfig.set("_version", this.configBase.configVersion);
 		}
-		
-		this.loadFromFile(this.nightConfig);
-		this.nightConfig.set("_version", this.configBase.configVersion);
+		finally
+		{
+			this.readWriteLock.unlock();
+		}
 	}
 	/**
 	 * Loads the entire config from the file
 	 *
 	 * @apiNote This overwrites any value currently stored in the config
 	 */
-	public void loadFromFile(CommentedFileConfig nightConfig)
+	private void loadFromFile(CommentedFileConfig nightConfig)
 	{
 		// Attempt to load the file and if it fails then save config to file
-		if (Files.exists(configPath))
+		if (Files.exists(this.configPath))
 		{
-			loadNightConfig(nightConfig);
+			this.loadNightConfig(nightConfig);
 		}
 		else
 		{
-			reCreateFile(configPath);
+			reCreateFile(this.configPath);
 		}
 		
 		
 		// Load all the entries
 		for (AbstractConfigType<?, ?> entry : this.configBase.entries)
 		{
-			if (
-					ConfigEntry.class.isAssignableFrom(entry.getClass()) &&
-					entry.getAppearance().showInFile
-			)
+			if (ConfigEntry.class.isAssignableFrom(entry.getClass())
+				&& entry.getAppearance().showInFile)
 			{
-				createComment((ConfigEntry<?>) entry, nightConfig);
-				loadEntry((ConfigEntry<?>) entry, nightConfig);
+				this.createComment((ConfigEntry<?>) entry, nightConfig);
+				this.loadEntry((ConfigEntry<?>) entry, nightConfig);
 			}
 		}
 		
@@ -190,7 +211,7 @@ public class ConfigFileHandling
 		catch (Exception e)
 		{
 			// If it fails to save, crash game
-			SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class).crashMinecraft("Failed to save config at [" + configPath.toString() + "]", e);
+			SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class).crashMinecraft("Failed to save config at [" + this.configPath + "]", e);
 		}
 	}
 	
