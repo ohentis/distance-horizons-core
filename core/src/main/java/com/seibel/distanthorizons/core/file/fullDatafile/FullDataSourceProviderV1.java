@@ -6,6 +6,7 @@ import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV1DTO;
+import com.seibel.distanthorizons.core.sql.repo.AbstractDhRepo;
 import com.seibel.distanthorizons.core.sql.repo.FullDataSourceV1Repo;
 import com.seibel.distanthorizons.core.util.objects.DataCorruptedException;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
@@ -64,7 +65,7 @@ public class FullDataSourceProviderV1<TDhLevel extends IDhLevel>
 	{
 		try
 		{
-			return new FullDataSourceV1Repo("jdbc:sqlite", new File(this.saveDir.getPath() + File.separator + AbstractSaveStructure.DATABASE_NAME));
+			return new FullDataSourceV1Repo(AbstractDhRepo.DEFAULT_DATABASE_TYPE, new File(this.saveDir.getPath() + File.separator + AbstractSaveStructure.DATABASE_NAME));
 		}
 		catch (SQLException e)
 		{

@@ -31,6 +31,7 @@ import com.seibel.distanthorizons.core.render.renderer.generic.CloudRenderHandle
 import com.seibel.distanthorizons.core.render.renderer.generic.GenericObjectRenderer;
 import com.seibel.distanthorizons.core.sql.dto.BeaconBeamDTO;
 import com.seibel.distanthorizons.core.sql.dto.ChunkHashDTO;
+import com.seibel.distanthorizons.core.sql.repo.AbstractDhRepo;
 import com.seibel.distanthorizons.core.sql.repo.BeaconBeamRepo;
 import com.seibel.distanthorizons.core.sql.repo.ChunkHashRepo;
 import com.seibel.distanthorizons.core.util.LodUtil;
@@ -85,7 +86,7 @@ public abstract class AbstractDhLevel implements IDhLevel
 		ChunkHashRepo newChunkHashRepo = null;
 		try
 		{
-			newChunkHashRepo = new ChunkHashRepo("jdbc:sqlite", databaseFile);
+			newChunkHashRepo = new ChunkHashRepo(AbstractDhRepo.DEFAULT_DATABASE_TYPE, databaseFile);
 		}
 		catch (SQLException e)
 		{
@@ -98,7 +99,7 @@ public abstract class AbstractDhLevel implements IDhLevel
 		BeaconBeamRepo newBeaconBeamRepo = null;
 		try
 		{
-			newBeaconBeamRepo = new BeaconBeamRepo("jdbc:sqlite", databaseFile);
+			newBeaconBeamRepo = new BeaconBeamRepo(AbstractDhRepo.DEFAULT_DATABASE_TYPE, databaseFile);
 		}
 		catch (SQLException e)
 		{
