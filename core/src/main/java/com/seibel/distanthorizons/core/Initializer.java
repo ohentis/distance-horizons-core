@@ -33,9 +33,12 @@ import com.seibel.distanthorizons.core.render.DhApiRenderProxy;
 import net.jpountz.lz4.LZ4FrameOutputStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.sqlite.SQLiteJDBCLoader;
+import org.sqlite.util.OSInfo;
 import org.tukaani.xz.XZOutputStream;
 
 import java.awt.*;
+import java.io.File;
 
 /** Handles first time Core setup. */
 public class Initializer
@@ -57,12 +60,44 @@ public class Initializer
 			Class<?> config = com.electronwill.nightconfig.core.Config.class;
 			Class<?> oldFastUtil = it.unimi.dsi.fastutil.longs.LongArrayList.class; // available in 8.2.1
 			//Class<?> newFastUtil = it.unimi.dsi.fastutil.ints.IntUnaryOperator.class; // available in 8.5.13
+			Class<?> sqliteJava = org.sqlite.SQLiteConnection.class;
+			Class<?> sqliteNative = org.sqlite.core.NativeDB.class;
+			
+			//// maybe these lines are needed to shade SQLite, James isn't sure.
+			//// Although they never seemed to fail, which is a bit odd.
+			//try
+			//{
+			//	// needed by Forge to load the Java database connection
+			//	Class.forName("org.sqlite.JDBC");
+			//	LOGGER.info("loaded normal SQLITE");
+			//}
+			//catch (ClassNotFoundException e)
+			//{
+			//	LOGGER.warn("normal: " + e.getMessage(), e);
+			//}
+			//
+			//try
+			//{
+			//	// needed by Forge to load the Java database connection
+			//	Class.forName("DistantHorizons.libraries.sqlite.JDBC");
+			//	LOGGER.info("loaded shaded SQLITE");
+			//}
+			//catch (ClassNotFoundException e)
+			//{
+			//	LOGGER.warn("shaded: " + e.getMessage(), e);
+			//}
+			
+			boolean sqliteLoaded = SQLiteJDBCLoader.initialize();
+			if (!sqliteLoaded)
+			{
+				throw new RuntimeException("Failed to load SQLite native library. Hopefully SQLite logged a reason for this failure.");
+			}
 		}
 		catch (Throwable e)
 		{
-			LOGGER.fatal("Critical programmer error: One or more libraries aren't present. Error: [" + e.getMessage() + "].");
+			LOGGER.fatal("Critical programmer error: One or more libraries aren't present. Error: [" + e.getMessage() + "].", e);
 			// throwing here should crash the game, notifying the developer that something is wrong
-			throw e;
+			throw new RuntimeException(e);
 		}
 		
 		// confirm the resource directory is present
