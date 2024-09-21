@@ -34,7 +34,7 @@ public class ServerLevelModule implements AutoCloseable
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
-	public final IDhServerLevel parentServerLevel;
+	private final IDhServerLevel parentServerLevel;
 	public final AbstractSaveStructure saveStructure;
 	public final GeneratedFullDataSourceProvider fullDataFileHandler;
 	public final AppliedConfigState<Boolean> worldGeneratorEnabledConfig;
@@ -53,7 +53,7 @@ public class ServerLevelModule implements AutoCloseable
 		this.saveStructure = saveStructure;
 		this.fullDataFileHandler = new GeneratedFullDataSourceProvider(parentServerLevel, saveStructure);
 		this.worldGeneratorEnabledConfig = new AppliedConfigState<>(Config.Client.Advanced.WorldGenerator.enableDistantGeneration);
-		this.worldGenModule = new WorldGenModule(this.parentServerLevel);
+		this.worldGenModule = new WorldGenModule(this.parentServerLevel, this.fullDataFileHandler, () -> new ServerLevelModule.WorldGenState(this.parentServerLevel));
 	}
 	
 	

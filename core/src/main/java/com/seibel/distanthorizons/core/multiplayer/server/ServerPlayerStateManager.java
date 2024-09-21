@@ -9,11 +9,12 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-public class RemotePlayerConnectionHandler
+public class ServerPlayerStateManager
 {
 	private final ConcurrentMap<IServerPlayerWrapper, ServerPlayerState> connectedPlayerStateByPlayerWrapper = new ConcurrentHashMap<>();
-	private final ConcurrentMap<IServerPlayerWrapper, Queue<AbstractNetworkMessage>> messageQueueByPlayerWrapper = new ConcurrentHashMap<>();
+	private final ConcurrentMap<IServerPlayerWrapper, MessageQueueState> messageQueueByPlayerWrapper = new ConcurrentHashMap<>();
 	
 	
 	
@@ -26,17 +27,8 @@ public class RemotePlayerConnectionHandler
 		ServerPlayerState playerState = new ServerPlayerState(serverPlayer);
 		this.connectedPlayerStateByPlayerWrapper.put(serverPlayer, playerState);
 		
-		Queue<AbstractNetworkMessage> queuedMessages = this.messageQueueByPlayerWrapper.get(serverPlayer);
-		if (queuedMessages != null)
-		{
-			NetworkSession networkSession = playerState.networkSession;
-			for (AbstractNetworkMessage message : queuedMessages)
-			{
-				networkSession.tryHandleMessage(message);
-			}
-			
-			this.messageQueueByPlayerWrapper.remove(serverPlayer);
-		}
+		MessageQueueState messageQueue = this.messageQueueByPlayerWrapper.computeIfAbsent(serverPlayer, k -> new MessageQueueState());
+		this.handlePluginMessagesFromQueue(playerState, messageQueue);
 		
 		return playerState;
 	}
@@ -58,14 +50,24 @@ public class RemotePlayerConnectionHandler
 	
 	public void handlePluginMessage(IServerPlayerWrapper player, AbstractNetworkMessage message)
 	{
+		MessageQueueState messageQueue = this.messageQueueByPlayerWrapper.computeIfAbsent(player, k -> new MessageQueueState());
+		messageQueue.messageQueue.add(message);
+		
 		ServerPlayerState playerState = this.connectedPlayerStateByPlayerWrapper.get(player);
 		if (playerState != null)
 		{
-			playerState.networkSession.tryHandleMessage(message);
+			this.handlePluginMessagesFromQueue(playerState, messageQueue);
 		}
-		else
+	}
+	
+	private void handlePluginMessagesFromQueue(ServerPlayerState playerState, MessageQueueState messageQueueState)
+	{
+		while (!messageQueueState.messageQueue.isEmpty() && messageQueueState.isBeingDrained.compareAndSet(false, true))
 		{
-			this.messageQueueByPlayerWrapper.computeIfAbsent(player, k -> new ConcurrentLinkedQueue<>()).add(message);
+			AbstractNetworkMessage message = messageQueueState.messageQueue.poll();
+			playerState.networkSession.tryHandleMessage(message);
+			
+			messageQueueState.isBeingDrained.set(false);
 		}
 	}
 	
@@ -80,6 +82,12 @@ public class RemotePlayerConnectionHandler
 	public Iterable<ServerPlayerState> getConnectedPlayers() { return this.connectedPlayerStateByPlayerWrapper.values(); }
 	
 	
+	private static class MessageQueueState
+	{
+		public final Queue<AbstractNetworkMessage> messageQueue = new ConcurrentLinkedQueue<>();
+		public final AtomicBoolean isBeingDrained = new AtomicBoolean();
+		
+	}
 	
 	
 }

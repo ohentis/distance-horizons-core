@@ -19,29 +19,16 @@
 
 package com.seibel.distanthorizons.core.world;
 
-import com.seibel.distanthorizons.core.file.structure.LocalSaveStructure;
 import com.seibel.distanthorizons.core.level.DhServerLevel;
-import com.seibel.distanthorizons.core.level.IDhLevel;
-import com.seibel.distanthorizons.core.multiplayer.server.RemotePlayerConnectionHandler;
-import com.seibel.distanthorizons.core.multiplayer.server.ServerPlayerState;
 import com.seibel.distanthorizons.core.util.LodUtil;
-import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
-import java.util.HashMap;
 
-public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
+public class DhServerWorld extends AbstractDhServerWorld<DhServerLevel>
 {
-	private final HashMap<IServerLevelWrapper, DhServerLevel> levels;
-	public final LocalSaveStructure saveStructure;
-	
-	public final RemotePlayerConnectionHandler remotePlayerConnectionHandler;
-	
-	
-	
 	//==============//
 	// constructors //
 	//==============//
@@ -49,46 +36,8 @@ public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 	public DhServerWorld()
 	{
 		super(EWorldEnvironment.Server_Only);
-		
-		this.saveStructure = new LocalSaveStructure();
-		this.levels = new HashMap<>();
-		
-		this.remotePlayerConnectionHandler = new RemotePlayerConnectionHandler();
-
 		LOGGER.info("Started ["+DhServerWorld.class.getSimpleName()+"] of type ["+this.environment+"].");
 	}
-	
-	
-	
-	//=================//
-	// player handling //
-	//=================//
-	
-	public void addPlayer(IServerPlayerWrapper serverPlayer)
-	{
-		ServerPlayerState playerState = this.remotePlayerConnectionHandler.registerJoinedPlayer(serverPlayer);
-		this.getLevel(serverPlayer.getLevel()).addPlayer(serverPlayer);
-		
-		for (DhServerLevel level : this.levels.values())
-		{
-			level.registerNetworkHandlers(playerState);
-		}
-	}
-	
-	public void removePlayer(IServerPlayerWrapper serverPlayer)
-	{
-		this.getLevel(serverPlayer.getLevel()).removePlayer(serverPlayer);
-		this.remotePlayerConnectionHandler.unregisterLeftPlayer(serverPlayer);
-		
-		// If player's left, session is already closed
-	}
-	
-	public void changePlayerLevel(IServerPlayerWrapper player, IServerLevelWrapper originLevel, IServerLevelWrapper destinationLevel)
-	{
-		this.getLevel(destinationLevel).addPlayer(player);
-		this.getLevel(originLevel).removePlayer(player);
-	}
-	
 	
 	
 	//================//
@@ -103,29 +52,13 @@ public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 			return null;
 		}
 		
-		return this.levels.computeIfAbsent((IServerLevelWrapper) wrapper, (serverLevelWrapper) ->
+		return this.levelWrapperByDhLevel.computeIfAbsent(wrapper, (serverLevelWrapper) ->
 		{
 			File levelFile = this.saveStructure.getLevelFolder(wrapper);
 			LodUtil.assertTrue(levelFile != null);
-			return new DhServerLevel(this.saveStructure, serverLevelWrapper, this.remotePlayerConnectionHandler);
+			return new DhServerLevel(this.saveStructure, (IServerLevelWrapper) serverLevelWrapper, this.getServerPlayerStateManager());
 		});
 	}
-	
-	@Override
-	public DhServerLevel getLevel(@NotNull ILevelWrapper wrapper)
-	{
-		if (!(wrapper instanceof IServerLevelWrapper))
-		{
-			return null;
-		}
-		
-		return this.levels.get(wrapper);
-	}
-	
-	@Override
-	public Iterable<? extends IDhLevel> getAllLoadedLevels() { return this.levels.values(); }
-	@Override
-	public int getLoadedLevelCount() { return this.levels.size(); }
 	
 	@Override
 	public void unloadLevel(@NotNull ILevelWrapper wrapper)
@@ -135,51 +68,12 @@ public class DhServerWorld extends AbstractDhWorld implements IDhServerWorld
 			return;
 		}
 		
-		if (this.levels.containsKey(wrapper))
+		if (this.levelWrapperByDhLevel.containsKey(wrapper))
 		{
-			LOGGER.info("Unloading level {} ", this.levels.get(wrapper));
+			LOGGER.info("Unloading level {} ", this.levelWrapperByDhLevel.get(wrapper));
 			wrapper.onUnload();
-			this.levels.remove(wrapper).close();
+			this.levelWrapperByDhLevel.remove(wrapper).close();
 		}
-	}
-	
-	
-	
-	//==============//
-	// tick methods //
-	//==============//
-	
-	@Override 
-	public void serverTick() { this.levels.values().forEach(DhServerLevel::serverTick); }
-	
-	@Override 
-	public void worldGenTick() { this.levels.values().forEach(DhServerLevel::worldGenTick); }
-	
-	
-	
-	//================//
-	// base overrides //
-	//================//
-	
-	@Override
-	public void close()
-	{
-		for (DhServerLevel level : this.levels.values())
-		{
-			LOGGER.info("Unloading level [" + level.getLevelWrapper().getDimensionName() + "].");
-			
-			// level wrapper shouldn't be null, but just in case
-			IServerLevelWrapper serverLevelWrapper = level.getServerLevelWrapper();
-			if (serverLevelWrapper != null)
-			{
-				serverLevelWrapper.onUnload();
-			}
-			
-			level.close();
-		}
-		
-		this.levels.clear();
-		LOGGER.info("Closed DhWorld of type [" + this.environment + "].");
 	}
 	
 }

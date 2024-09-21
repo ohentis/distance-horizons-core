@@ -28,8 +28,10 @@ import com.seibel.distanthorizons.core.generation.IFullDataSourceRetrievalQueue;
 import com.seibel.distanthorizons.core.generation.tasks.IWorldGenTaskTracker;
 import com.seibel.distanthorizons.core.generation.tasks.WorldGenResult;
 import com.seibel.distanthorizons.core.level.IDhLevel;
+import com.seibel.distanthorizons.core.level.WorldGenModule;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
 import com.seibel.distanthorizons.core.util.LodUtil;
@@ -418,9 +420,13 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 	
 	
 	/** used by external event listeners */
-	@FunctionalInterface
 	public interface IOnWorldGenCompleteListener
 	{
+		boolean shouldDoWorldGen();
+		
+		@Nullable
+		DhBlockPos2D getTargetPosForGeneration();
+		
 		/** Fired whenever a section has completed generating */
 		void onWorldGenTaskComplete(long pos);
 		
