@@ -1,7 +1,7 @@
-# Distant Horizons
+![Distant-Horizons-Core.svg](_Misc%20Files%2Flogo%20files%2Fnew%2FSVG%2FDistant-Horizons-Core.svg)
 
 This repo is for the Distant Horizons mod.
-The purpose of this submodule is to isolate code that isn't tied to a specific version of minecraft. This prevents us from having duplicate code; reducing errors and potentially helping us port to different versions faster and easier.
+The purpose of this submodule is to isolate code that isn't tied to a specific version of minecraft. This prevents us from having duplicate code; reducing errors and helping us port to different versions faster and easier.
 
 Check out the mod's main GitLab page here:
 https://gitlab.com/jeseibel/distant-horizons
