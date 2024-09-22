@@ -25,11 +25,15 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.Closeable;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
 
 /**
  * Handles both single-player/server-side world gen and client side LOD requests.
@@ -41,6 +45,9 @@ public class WorldGenModule implements Closeable
 	
 	private final GeneratedFullDataSourceProvider.IOnWorldGenCompleteListener onWorldGenCompleteListener;
 	
+	private final GeneratedFullDataSourceProvider dataSourceProvider;
+	private final Supplier<? extends AbstractWorldGenState> worldGenStateSupplier;
+	
 	private final AtomicReference<AbstractWorldGenState> worldGenStateRef = new AtomicReference<>();
 	
 	
@@ -49,9 +56,15 @@ public class WorldGenModule implements Closeable
 	// constructor //
 	//=============//
 	
-	public WorldGenModule(GeneratedFullDataSourceProvider.IOnWorldGenCompleteListener onWorldGenCompleteListener)
+	public WorldGenModule(
+			GeneratedFullDataSourceProvider.IOnWorldGenCompleteListener onWorldGenCompleteListener,
+			GeneratedFullDataSourceProvider dataSourceProvider,
+			Supplier<? extends AbstractWorldGenState> worldGenStateSupplier
+	)
 	{
 		this.onWorldGenCompleteListener = onWorldGenCompleteListener;
+		this.dataSourceProvider = dataSourceProvider;
+		this.worldGenStateSupplier = worldGenStateSupplier;
 	}
 	
 	
@@ -95,13 +108,33 @@ public class WorldGenModule implements Closeable
 		dataFileHandler.removeWorldGenCompleteListener(this.onWorldGenCompleteListener);
 	}
 	
-	/** @param targetPosForGeneration the position that world generation should be centered around */
-	public void worldGenTick(DhBlockPos2D targetPosForGeneration)
+	public void worldGenTick()
 	{
-		AbstractWorldGenState worldGenState = this.worldGenStateRef.get();
-		if (worldGenState != null)
+		boolean shouldDoWorldGen = this.onWorldGenCompleteListener.shouldDoWorldGen();
+		
+		boolean isWorldGenRunning = this.isWorldGenRunning();
+		if (shouldDoWorldGen && !isWorldGenRunning)
 		{
-			worldGenState.startGenerationQueueAndSetTargetPos(targetPosForGeneration);
+			// start world gen
+			this.startWorldGen(this.dataSourceProvider, this.worldGenStateSupplier.get());
+		}
+		else if (!shouldDoWorldGen && isWorldGenRunning)
+		{
+			// stop world gen
+			this.stopWorldGen(this.dataSourceProvider);
+		}
+		
+		if (this.isWorldGenRunning())
+		{
+			AbstractWorldGenState worldGenState = this.worldGenStateRef.get();
+			if (worldGenState != null)
+			{
+				DhBlockPos2D targetPosForGeneration = this.onWorldGenCompleteListener.getTargetPosForGeneration();
+				if (targetPosForGeneration != null)
+				{
+					worldGenState.startGenerationQueueAndSetTargetPos(targetPosForGeneration);
+				}
+			}
 		}
 	}
 	

@@ -149,37 +149,37 @@ public class ServerApi
 	public void serverPlayerJoinEvent(IServerPlayerWrapper player)
 	{
 		IDhServerWorld serverWorld = SharedApi.getIDhServerWorld();
-		if (serverWorld instanceof DhServerWorld) // TODO add support for DhClientServerWorld's (lan worlds) as well
+		LOGGER.info("Player [${player.getName()}] joined.");
+		if (serverWorld != null)
 		{
-			LOGGER.info("Player [" + player.getName()+ "] joined.");
-			((DhServerWorld) serverWorld).addPlayer(player);
+			serverWorld.addPlayer(player);
 		}
 	}
 	public void serverPlayerDisconnectEvent(IServerPlayerWrapper player)
 	{
 		IDhServerWorld serverWorld = SharedApi.getIDhServerWorld();
-		if (serverWorld instanceof DhServerWorld) // TODO add support for DhClientServerWorld's (lan worlds) as well
+		LOGGER.info("Player [${player.getName()}] disconnected.");
+		if (serverWorld != null)
 		{
-			LOGGER.info("Player [" + player.getName() + "] disconnected.");
-			((DhServerWorld) serverWorld).removePlayer(player);
+			serverWorld.removePlayer(player);
 		}
 	}
 	public void serverPlayerLevelChangeEvent(IServerPlayerWrapper player, IServerLevelWrapper originLevel, IServerLevelWrapper destinationLevel)
 	{
 		IDhServerWorld serverWorld = SharedApi.getIDhServerWorld();
-		if (serverWorld instanceof DhServerWorld) // TODO add support for DhClientServerWorld's (lan worlds) as well
+		LOGGER.info("Player [${player.getName()}] changed level: [${originLevel.getKeyedLevelDimensionName()}] -> [${destinationLevel.getKeyedLevelDimensionName()}].");
+		if (serverWorld != null)
 		{
-			LOGGER.info("Player [" + player.getName() + "] changed level: ["+originLevel.getKeyedLevelDimensionName()+"] -> ["+destinationLevel.getKeyedLevelDimensionName()+"].");
-			((DhServerWorld) serverWorld).changePlayerLevel(player, originLevel, destinationLevel);
+			serverWorld.changePlayerLevel(player, originLevel, destinationLevel);
 		}
 	}
 	
 	public void pluginMessageReceived(IServerPlayerWrapper player, @NotNull AbstractNetworkMessage message)
 	{
 		IDhServerWorld serverWorld = SharedApi.getIDhServerWorld();
-		if (serverWorld instanceof DhServerWorld) // TODO add support for DhClientServerWorld's (lan worlds) as well
+		if (serverWorld != null)
 		{
-			((DhServerWorld) serverWorld).remotePlayerConnectionHandler.handlePluginMessage(player, message);
+			serverWorld.getServerPlayerStateManager().handlePluginMessage(player, message);
 		}
 	}
 	
