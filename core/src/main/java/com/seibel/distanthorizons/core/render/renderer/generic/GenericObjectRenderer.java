@@ -612,21 +612,26 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 	public String getVboRenderDebugMenuString()
 	{
 		// get counts
-		int totalCount = this.boxGroupById.size();
-		int activeCount = 0;
+		int totalGroupCount = this.boxGroupById.size();
+		int totalBoxCount = 0;
+		
+		int activeGroupCount = 0;
+		int activeBoxCount = 0;
+		
 		for (long key : this.boxGroupById.keySet())
 		{
 			RenderableBoxGroup renderGroup = this.boxGroupById.get(key);
 			if (renderGroup.active)
 			{
-				activeCount++;
+				activeGroupCount++;
+				activeBoxCount += renderGroup.size();
 			}
+			totalBoxCount += renderGroup.size();
 		}
 		
 		
-		String totalCountText = F3Screen.NUMBER_FORMAT.format(totalCount);
-		String activeCountText = F3Screen.NUMBER_FORMAT.format(activeCount);
-		return LodUtil.formatLog("Generic Obj Count: " + activeCountText + "/" + totalCountText);
+		return "Generic Obj #: " + F3Screen.NUMBER_FORMAT.format(activeGroupCount) + "/" + F3Screen.NUMBER_FORMAT.format(totalGroupCount) + ", " +
+				"Cube #: " + F3Screen.NUMBER_FORMAT.format(activeBoxCount) + "/" + F3Screen.NUMBER_FORMAT.format(totalBoxCount);
 	}
 	
 }
