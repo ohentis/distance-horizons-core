@@ -195,6 +195,15 @@ public class CloudRenderHandler
 					
 					// this color is changed at render time based on the level time
 					Color color = new Color(255,255,255,255);
+					if (DEBUG_BORDER_COLORS)
+					{
+						// equals is included so the boarder is 2 blocks wide, making it easier to see
+						if (x <= 1) { color = Color.RED; }
+						else if (x >= textureWidth - 2) { color = Color.GREEN; }
+						if (z <= 1) { color = Color.BLUE; }
+						else if (z >= textureWidth - 2) { color = Color.BLACK; }
+					}
+					
 					DhApiRenderableBox box = new DhApiRenderableBox(
 							new DhApiVec3d(minXBlockPos, 0, minZBlockPos),
 							new DhApiVec3d(maxXBlockPos, CLOUD_BOX_THICKNESS, maxZBlockPos),
@@ -281,20 +290,15 @@ public class CloudRenderHandler
 		// FIXME transparency sorting makes having transparent clouds impossible
 		//  maybe someday we could add the option to cull individual faces? a single bit for each direction should be enough 
 		
-		// cloud color changes based on the time of day and weather so we need to get it from the level
-		Color cloudColor = this.level.getClientLevelWrapper().getCloudColor(renderParam.partialTicks);
-		if (DEBUG_BORDER_COLORS)
+		// if debug colors are enabled don't change them
+		if (!DEBUG_BORDER_COLORS)
 		{
-			// equals is included so the board is 2 blocks wide, it makes it easier to see
-			if (cloudParams.instanceOffsetX <= 1) { cloudColor = Color.RED; }
-			else if (cloudParams.instanceOffsetX >= cloudParams.textureWidth - 2) { cloudColor = Color.GREEN; }
-			if (cloudParams.instanceOffsetZ <= 1) { cloudColor = Color.BLUE; }
-			else if (cloudParams.instanceOffsetZ >= cloudParams.textureWidth - 2) { cloudColor = Color.BLACK; }
-		}
-		
-		for (DhApiRenderableBox box : boxGroup)
-		{
-			box.color = cloudColor;
+			// cloud color changes based on the time of day and weather so we need to get it from the level
+			Color cloudColor = this.level.getClientLevelWrapper().getCloudColor(renderParam.partialTicks);
+			for (DhApiRenderableBox box : boxGroup)
+			{
+				box.color = cloudColor;
+			}
 		}
 		boxGroup.triggerBoxChange();
 		
