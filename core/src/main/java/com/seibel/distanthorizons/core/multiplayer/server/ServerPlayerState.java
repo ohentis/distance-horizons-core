@@ -2,7 +2,7 @@ package com.seibel.distanthorizons.core.multiplayer.server;
 
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.config.listeners.ConfigChangeListener;
-import com.seibel.distanthorizons.core.level.DhServerLevel;
+import com.seibel.distanthorizons.core.level.AbstractDhServerLevel;
 import com.seibel.distanthorizons.core.multiplayer.config.SessionConfig;
 import com.seibel.distanthorizons.core.network.messages.base.CurrentLevelKeyMessage;
 import com.seibel.distanthorizons.core.network.messages.base.SessionConfigMessage;
@@ -33,8 +33,8 @@ public class ServerPlayerState implements Closeable
 	@NotNull
 	public final SessionConfig sessionConfig = new SessionConfig();
 	
-	private final ConcurrentHashMap<DhServerLevel, RateLimiterSet> rateLimiterSets = new ConcurrentHashMap<>();
-	public RateLimiterSet getRateLimiterSet(DhServerLevel level) { return this.rateLimiterSets.computeIfAbsent(level, ignored -> new RateLimiterSet()); }
+	private final ConcurrentHashMap<AbstractDhServerLevel, RateLimiterSet> rateLimiterSets = new ConcurrentHashMap<>();
+	public RateLimiterSet getRateLimiterSet(AbstractDhServerLevel level) { return this.rateLimiterSets.computeIfAbsent(level, ignored -> new RateLimiterSet()); }
 	public void clearRateLimiterSets() { this.rateLimiterSets.clear(); }
 	
 	

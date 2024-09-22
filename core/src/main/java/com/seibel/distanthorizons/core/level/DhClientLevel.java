@@ -52,6 +52,7 @@ import javax.annotation.CheckForNull;
 import java.awt.*;
 import java.io.File;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 /** The level used when connected to a server */
@@ -108,7 +109,7 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 		
 		this.dataFileHandler = new RemoteFullDataSourceProvider(this, saveStructure, fullDataSaveDirOverride, this.syncOnLoginRequestQueue);
 		this.worldGeneratorEnabledConfig = new AppliedConfigState<>(Config.Client.Advanced.WorldGenerator.enableDistantGeneration);
-		this.worldGenModule = new WorldGenModule(this);
+		this.worldGenModule = new WorldGenModule(this, this.dataFileHandler, () -> new WorldGenState(this, networkState));
 		
 		this.clientside = new ClientLevelModule(this);
 		
@@ -171,7 +172,7 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 	}
 	
 	@Override
-	public void worldGenTick()
+	public boolean shouldDoWorldGen()
 	{
 		ClientNetworkState networkState = this.networkState;
 		
@@ -182,33 +183,23 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 			isAllowedDimension = MC_CLIENT.getWrappedClientLevel() == this.levelWrapper;
 		}
 		
-		boolean shouldDoWorldGen = isClientUsable
+		return isClientUsable
 				&& networkState.sessionConfig.isDistantGenerationEnabled()
 				&& isAllowedDimension
 				&& this.clientside.isRendering();
-		
-		boolean isWorldGenRunning = this.worldGenModule.isWorldGenRunning();
-		if (shouldDoWorldGen && !isWorldGenRunning)
-		{
-			// start world gen
-			this.worldGenModule.startWorldGen(this.dataFileHandler, new WorldGenState(this, networkState));
-			
-			// populate the queue based on the current rendering tree
-			ClientLevelModule.ClientRenderState renderState = this.clientside.ClientRenderStateRef.get();
-			renderState.quadtree.leafNodeIterator().forEachRemaining(node -> {
-				this.dataFileHandler.getAsync(node.sectionPos);
-			});
-		}
-		else if (!shouldDoWorldGen && isWorldGenRunning)
-		{
-			// stop world gen
-			this.worldGenModule.stopWorldGen(this.dataFileHandler);
-		}
-		
-		if (this.worldGenModule.isWorldGenRunning())
-		{
-			this.worldGenModule.worldGenTick(new DhBlockPos2D(MC_CLIENT.getPlayerBlockPos()));
-		}
+	}
+	
+	@Override
+	@Nullable
+	public DhBlockPos2D getTargetPosForGeneration()
+	{
+		return new DhBlockPos2D(MC_CLIENT.getPlayerBlockPos());
+	}
+	
+	@Override
+	public void worldGenTick()
+	{
+		this.worldGenModule.worldGenTick();
 	}
 	
 	

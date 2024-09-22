@@ -22,38 +22,30 @@ package com.seibel.distanthorizons.core.level;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
-import com.seibel.distanthorizons.core.file.fullDatafile.FullDataSourceProviderV2;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
+import com.seibel.distanthorizons.core.multiplayer.server.ServerPlayerStateManager;
 import com.seibel.distanthorizons.core.render.RenderBufferHandler;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
-import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos;
-import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.render.renderer.generic.GenericObjectRenderer;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
-import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
-import org.apache.logging.log4j.Logger;
 
 import java.awt.*;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /** The level used on a singleplayer world */
-public class DhClientServerLevel extends AbstractDhLevel implements IDhClientLevel, IDhServerLevel
+public class DhClientServerLevel extends AbstractDhServerLevel implements IDhClientLevel
 {
-	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	
-	public final ServerLevelModule serverside;
 	public final ClientLevelModule clientside;
-	
-	private final IServerLevelWrapper serverLevelWrapper;
 	
 	
 	
@@ -61,20 +53,13 @@ public class DhClientServerLevel extends AbstractDhLevel implements IDhClientLev
 	// constructor //
 	//=============//
 	
-	public DhClientServerLevel(AbstractSaveStructure saveStructure, IServerLevelWrapper serverLevelWrapper)
+	public DhClientServerLevel(AbstractSaveStructure saveStructure, IServerLevelWrapper serverLevelWrapper, ServerPlayerStateManager serverPlayerStateManager)
 	{
-		if (saveStructure.getFullDataFolder(serverLevelWrapper).mkdirs())
-		{
-			LOGGER.warn("unable to create data folder.");
-		}
-		this.serverLevelWrapper = serverLevelWrapper;
-		this.serverLevelWrapper.setParentLevel(this);
-		this.serverside = new ServerLevelModule(this, saveStructure);
-		this.clientside = new ClientLevelModule(this);
-		this.createAndSetSupportingRepos(this.serverside.fullDataFileHandler.repo.databaseFile);
-		this.runRepoReliantSetup();
+		super(saveStructure, serverLevelWrapper, serverPlayerStateManager, false);
 		
-		LOGGER.info("Started " + DhClientServerLevel.class.getSimpleName() + " for " + serverLevelWrapper + " with saves at " + saveStructure);
+		this.serverLevelWrapper.setParentLevel(this);
+		this.clientside = new ClientLevelModule(this);
+		this.runRepoReliantSetup();
 	}
 	
 	
@@ -93,34 +78,6 @@ public class DhClientServerLevel extends AbstractDhLevel implements IDhClientLev
 	@Override
 	public void renderDeferred(DhApiRenderParam renderEventParam, IProfilerWrapper profiler)
 	{ this.clientside.renderDeferred(renderEventParam, profiler); }
-	
-	@Override
-	public void serverTick() {  }
-	
-	@Override
-	public void worldGenTick()
-	{
-		this.serverside.worldGeneratorEnabledConfig.pollNewValue(); // if not called the get() line below may not 
-		boolean shouldDoWorldGen = this.serverside.worldGeneratorEnabledConfig.get() && this.clientside.isRendering();
-		boolean isWorldGenRunning = this.serverside.worldGenModule.isWorldGenRunning();
-		if (shouldDoWorldGen && !isWorldGenRunning)
-		{
-			// start world gen
-			this.serverside.worldGenModule.startWorldGen(this.serverside.fullDataFileHandler, new ServerLevelModule.WorldGenState(this));
-		}
-		else if (!shouldDoWorldGen && isWorldGenRunning)
-		{
-			// stop world gen
-			this.serverside.worldGenModule.stopWorldGen(this.serverside.fullDataFileHandler);
-		}
-		
-		if (isWorldGenRunning)
-		{
-			this.serverside.worldGenModule.worldGenTick(new DhBlockPos2D(MC_CLIENT.getPlayerBlockPos()));
-		}
-	}
-	
-	
 	
 	//========//
 	// render //
@@ -157,27 +114,13 @@ public class DhClientServerLevel extends AbstractDhLevel implements IDhClientLev
 	public void clearRenderCache() { this.clientside.clearRenderCache(); }
 	
 	@Override
-	public IServerLevelWrapper getServerLevelWrapper() { return this.serverLevelWrapper; }
-	@Override
-	public ILevelWrapper getLevelWrapper() { return this.getServerLevelWrapper(); }
-	
-	@Override
-	public FullDataSourceProviderV2 getFullDataProvider() { return this.serverside.fullDataFileHandler; }
-	
-	@Override
-	public AbstractSaveStructure getSaveStructure()
+	public CompletableFuture<Void> updateDataSourcesAsync(FullDataSourceV2 data)
 	{
-		return this.serverside.saveStructure;
+		return CompletableFuture.allOf(
+				super.updateDataSourcesAsync(data),
+				this.clientside.updateDataSourcesAsync(data)
+		);
 	}
-	
-	@Override
-	public boolean hasSkyLight() { return this.serverLevelWrapper.hasSkyLight(); }
-	
-	@Override
-	public CompletableFuture<Void> updateDataSourcesAsync(FullDataSourceV2 data) { return this.clientside.updateDataSourcesAsync(data); }
-	
-	@Override
-	public int getMinY() { return this.getLevelWrapper().getMinHeight(); }
 	
 	
 	
@@ -247,6 +190,8 @@ public class DhClientServerLevel extends AbstractDhLevel implements IDhClientLev
 	@Override
 	public void onWorldGenTaskComplete(long pos)
 	{
+		super.onWorldGenTaskComplete(pos);
+		
 		DebugRenderer.makeParticle(
 				new DebugRenderer.BoxParticle(
 						new DebugRenderer.Box(pos, 128f, 156f, 0.09f, Color.red.darker()),
