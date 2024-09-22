@@ -78,8 +78,7 @@ public class DhServerLevel extends AbstractDhServerLevel
 	@Override
 	public void addDebugMenuStringsToList(List<String> messageList)
 	{
-		String dimName = this.serverLevelWrapper.getDimensionName();
-		messageList.add("["+dimName+"]");
+		messageList.add("[${this.serverLevelWrapper.getDimensionName()}]");
 	}
 	
 	
@@ -93,7 +92,7 @@ public class DhServerLevel extends AbstractDhServerLevel
 	{
 		super.close();
 		this.serverside.close();
-		LOGGER.info("Closed DHLevel for ["+this.getLevelWrapper()+"].");
+		LOGGER.info("Closed DHLevel for [${this.getLevelWrapper()}].");
 	}
 	
 }

@@ -52,7 +52,7 @@ public class DhServerWorld extends AbstractDhServerWorld<DhServerLevel>
 			return null;
 		}
 		
-		return this.levelWrapperByDhLevel.computeIfAbsent(wrapper, (serverLevelWrapper) ->
+		return this.dhLevelByLevelWrapper.computeIfAbsent(wrapper, (serverLevelWrapper) ->
 		{
 			File levelFile = this.saveStructure.getLevelFolder(wrapper);
 			LodUtil.assertTrue(levelFile != null);
@@ -68,11 +68,11 @@ public class DhServerWorld extends AbstractDhServerWorld<DhServerLevel>
 			return;
 		}
 		
-		if (this.levelWrapperByDhLevel.containsKey(wrapper))
+		if (this.dhLevelByLevelWrapper.containsKey(wrapper))
 		{
-			LOGGER.info("Unloading level {} ", this.levelWrapperByDhLevel.get(wrapper));
+			LOGGER.info("Unloading level {} ", this.dhLevelByLevelWrapper.get(wrapper));
 			wrapper.onUnload();
-			this.levelWrapperByDhLevel.remove(wrapper).close();
+			this.dhLevelByLevelWrapper.remove(wrapper).close();
 		}
 	}
 	

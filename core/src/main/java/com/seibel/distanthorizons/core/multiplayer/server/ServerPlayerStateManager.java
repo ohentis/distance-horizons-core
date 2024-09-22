@@ -1,7 +1,6 @@
 package com.seibel.distanthorizons.core.multiplayer.server;
 
 import com.seibel.distanthorizons.core.network.messages.AbstractNetworkMessage;
-import com.seibel.distanthorizons.core.network.session.NetworkSession;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import org.jetbrains.annotations.Nullable;
 
@@ -26,10 +25,6 @@ public class ServerPlayerStateManager
 	{
 		ServerPlayerState playerState = new ServerPlayerState(serverPlayer);
 		this.connectedPlayerStateByPlayerWrapper.put(serverPlayer, playerState);
-		
-		MessageQueueState messageQueue = this.messageQueueByPlayerWrapper.computeIfAbsent(serverPlayer, k -> new MessageQueueState());
-		this.handlePluginMessagesFromQueue(playerState, messageQueue);
-		
 		return playerState;
 	}
 	
@@ -58,6 +53,12 @@ public class ServerPlayerStateManager
 		{
 			this.handlePluginMessagesFromQueue(playerState, messageQueue);
 		}
+	}
+	
+	public void handlePluginMessagesFromQueue(ServerPlayerState playerState)
+	{
+		MessageQueueState messageQueue = this.messageQueueByPlayerWrapper.computeIfAbsent(playerState.getServerPlayer(), k -> new MessageQueueState());
+		this.handlePluginMessagesFromQueue(playerState, messageQueue);
 	}
 	
 	private void handlePluginMessagesFromQueue(ServerPlayerState playerState, MessageQueueState messageQueueState)

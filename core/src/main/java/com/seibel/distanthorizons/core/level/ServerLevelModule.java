@@ -37,7 +37,6 @@ public class ServerLevelModule implements AutoCloseable
 	private final IDhServerLevel parentServerLevel;
 	public final AbstractSaveStructure saveStructure;
 	public final GeneratedFullDataSourceProvider fullDataFileHandler;
-	public final AppliedConfigState<Boolean> worldGeneratorEnabledConfig;
 	
 	public final WorldGenModule worldGenModule;
 	
@@ -52,7 +51,6 @@ public class ServerLevelModule implements AutoCloseable
 		this.parentServerLevel = parentServerLevel;
 		this.saveStructure = saveStructure;
 		this.fullDataFileHandler = new GeneratedFullDataSourceProvider(parentServerLevel, saveStructure);
-		this.worldGeneratorEnabledConfig = new AppliedConfigState<>(Config.Client.Advanced.WorldGenerator.enableDistantGeneration);
 		this.worldGenModule = new WorldGenModule(this.parentServerLevel, this.fullDataFileHandler, () -> new ServerLevelModule.WorldGenState(this.parentServerLevel));
 	}
 	

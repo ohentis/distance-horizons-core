@@ -28,7 +28,6 @@ import com.seibel.distanthorizons.core.render.RenderBufferHandler;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos;
-import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.render.renderer.generic.GenericObjectRenderer;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrapper;
@@ -36,7 +35,6 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftCli
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
-import org.jetbrains.annotations.Nullable;
 
 import java.awt.*;
 import java.util.List;
@@ -48,7 +46,6 @@ public class DhClientServerLevel extends AbstractDhServerLevel implements IDhCli
 	private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	
 	public final ClientLevelModule clientside;
-	private int localPlayerWorldGenPosInQueue = 0;
 	
 	
 	
@@ -81,28 +78,6 @@ public class DhClientServerLevel extends AbstractDhServerLevel implements IDhCli
 	@Override
 	public void renderDeferred(DhApiRenderParam renderEventParam, IProfilerWrapper profiler)
 	{ this.clientside.renderDeferred(renderEventParam, profiler); }
-	
-	@Override
-	public boolean shouldDoWorldGen()
-	{
-		return this.serverside.worldGeneratorEnabledConfig.get() && this.clientside.isRendering() || !this.worldGenPlayerCenteringQueue.isEmpty();
-	}
-	
-	@Override
-	@Nullable
-	public DhBlockPos2D getTargetPosForGeneration()
-	{
-		if (this.localPlayerWorldGenPosInQueue > 0)
-		{
-			this.localPlayerWorldGenPosInQueue--;
-			return super.getTargetPosForGeneration();
-		}
-		else
-		{
-			this.localPlayerWorldGenPosInQueue = this.worldGenPlayerCenteringQueue.size();
-			return new DhBlockPos2D(MC_CLIENT.getPlayerBlockPos());
-		}
-	}
 	
 	//========//
 	// render //

@@ -64,7 +64,7 @@ public class DhClientServerWorld extends AbstractDhServerWorld<DhClientServerLev
 	{
 		if (wrapper instanceof IServerLevelWrapper)
 		{
-			return this.levelWrapperByDhLevel.computeIfAbsent(wrapper, (levelWrapper) ->
+			return this.dhLevelByLevelWrapper.computeIfAbsent(wrapper, (levelWrapper) ->
 			{
 				File levelFile = this.saveStructure.getLevelFolder(levelWrapper);
 				LodUtil.assertTrue(levelFile != null);
@@ -75,7 +75,7 @@ public class DhClientServerWorld extends AbstractDhServerWorld<DhClientServerLev
 		}
 		else
 		{
-			return this.levelWrapperByDhLevel.computeIfAbsent(wrapper, (levelWrapper) ->
+			return this.dhLevelByLevelWrapper.computeIfAbsent(wrapper, (levelWrapper) ->
 			{
 				IClientLevelWrapper clientLevelWrapper = (IClientLevelWrapper) levelWrapper;
 				IServerLevelWrapper serverLevelWrapper = clientLevelWrapper.tryGetServerSideWrapper();
@@ -86,7 +86,7 @@ public class DhClientServerWorld extends AbstractDhServerWorld<DhClientServerLev
 				}
 				
 				
-				DhClientServerLevel level = this.levelWrapperByDhLevel.get(serverLevelWrapper);
+				DhClientServerLevel level = this.dhLevelByLevelWrapper.get(serverLevelWrapper);
 				if (level == null)
 				{
 					return null;
@@ -102,14 +102,14 @@ public class DhClientServerWorld extends AbstractDhServerWorld<DhClientServerLev
 	@Override
 	public void unloadLevel(@NotNull ILevelWrapper wrapper)
 	{
-		if (this.levelWrapperByDhLevel.containsKey(wrapper))
+		if (this.dhLevelByLevelWrapper.containsKey(wrapper))
 		{
 			if (wrapper instanceof IServerLevelWrapper)
 			{
-				LOGGER.info("Unloading level " + this.levelWrapperByDhLevel.get(wrapper));
+				LOGGER.info("Unloading level " + this.dhLevelByLevelWrapper.get(wrapper));
 				wrapper.onUnload();
 				
-				DhClientServerLevel clientServerLevel = this.levelWrapperByDhLevel.remove(wrapper);
+				DhClientServerLevel clientServerLevel = this.dhLevelByLevelWrapper.remove(wrapper);
 				clientServerLevel.close();
 				this.dhLevels.remove(clientServerLevel);
 			}
@@ -118,7 +118,7 @@ public class DhClientServerWorld extends AbstractDhServerWorld<DhClientServerLev
 				// If the level wrapper is a Client Level Wrapper, then that means the client side leaves the level,
 				// but note that the server side still has the level loaded. So, we don't want to unload the level,
 				// we just want to stop rendering it.
-				this.levelWrapperByDhLevel.remove(wrapper).stopRenderer(); // Ignore resource warning. The level obj is referenced elsewhere.
+				this.dhLevelByLevelWrapper.remove(wrapper).stopRenderer(); // Ignore resource warning. The level obj is referenced elsewhere.
 			}
 		}
 	}
@@ -163,7 +163,7 @@ public class DhClientServerWorld extends AbstractDhServerWorld<DhClientServerLev
 			}
 		}
 		
-		this.levelWrapperByDhLevel.clear();
+		this.dhLevelByLevelWrapper.clear();
 		this.eventLoop.close();
 		LOGGER.info("Closed DhWorld of type " + this.environment);
 	}

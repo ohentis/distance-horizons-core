@@ -14,7 +14,7 @@ import java.util.HashMap;
 
 public abstract class AbstractDhServerWorld<TDhServerLevel extends AbstractDhServerLevel> extends AbstractDhWorld implements IDhServerWorld
 {
-	protected final HashMap<ILevelWrapper, TDhServerLevel> levelWrapperByDhLevel = new HashMap<>();
+	protected final HashMap<ILevelWrapper, TDhServerLevel> dhLevelByLevelWrapper = new HashMap<>();
 	public final LocalSaveStructure saveStructure = new LocalSaveStructure();
 	
 	private final ServerPlayerStateManager serverPlayerStateManager;
@@ -43,10 +43,12 @@ public abstract class AbstractDhServerWorld<TDhServerLevel extends AbstractDhSer
 		ServerPlayerState playerState = this.serverPlayerStateManager.registerJoinedPlayer(serverPlayer);
 		this.getLevel(serverPlayer.getLevel()).addPlayer(serverPlayer);
 		
-		for (TDhServerLevel level : this.levelWrapperByDhLevel.values())
+		for (TDhServerLevel level : (Iterable<? extends TDhServerLevel>) this.dhLevelByLevelWrapper.values().stream().distinct()::iterator)
 		{
 			level.registerNetworkHandlers(playerState);
 		}
+		
+		this.serverPlayerStateManager.handlePluginMessagesFromQueue(playerState);
 	}
 	
 	@Override
@@ -72,11 +74,11 @@ public abstract class AbstractDhServerWorld<TDhServerLevel extends AbstractDhSer
 	//================//
 	
 	@Override
-	public TDhServerLevel getLevel(@NotNull ILevelWrapper wrapper) { return this.levelWrapperByDhLevel.get(wrapper); }
+	public TDhServerLevel getLevel(@NotNull ILevelWrapper wrapper) { return this.dhLevelByLevelWrapper.get(wrapper); }
 	@Override
-	public Iterable<? extends IDhLevel> getAllLoadedLevels() { return this.levelWrapperByDhLevel.values(); }
+	public Iterable<? extends IDhLevel> getAllLoadedLevels() { return this.dhLevelByLevelWrapper.values(); }
 	@Override
-	public int getLoadedLevelCount() { return this.levelWrapperByDhLevel.size(); }
+	public int getLoadedLevelCount() { return this.dhLevelByLevelWrapper.size(); }
 	
 	
 	
@@ -85,10 +87,10 @@ public abstract class AbstractDhServerWorld<TDhServerLevel extends AbstractDhSer
 	//==============//
 	
 	@Override
-	public void serverTick() { this.levelWrapperByDhLevel.values().forEach(TDhServerLevel::serverTick); }
+	public void serverTick() { this.dhLevelByLevelWrapper.values().forEach(TDhServerLevel::serverTick); }
 	
 	@Override
-	public void worldGenTick() { this.levelWrapperByDhLevel.values().forEach(TDhServerLevel::worldGenTick); }
+	public void worldGenTick() { this.dhLevelByLevelWrapper.values().forEach(TDhServerLevel::worldGenTick); }
 	
 	
 	
@@ -99,7 +101,7 @@ public abstract class AbstractDhServerWorld<TDhServerLevel extends AbstractDhSer
 	@Override
 	public void close()
 	{
-		for (TDhServerLevel level : this.levelWrapperByDhLevel.values())
+		for (TDhServerLevel level : this.dhLevelByLevelWrapper.values())
 		{
 			LOGGER.info("Unloading level [" + level.getLevelWrapper().getDimensionName() + "].");
 			
@@ -113,7 +115,7 @@ public abstract class AbstractDhServerWorld<TDhServerLevel extends AbstractDhSer
 			level.close();
 		}
 		
-		this.levelWrapperByDhLevel.clear();
+		this.dhLevelByLevelWrapper.clear();
 		LOGGER.info("Closed DhWorld of type [" + this.environment + "].");
 	}
 	

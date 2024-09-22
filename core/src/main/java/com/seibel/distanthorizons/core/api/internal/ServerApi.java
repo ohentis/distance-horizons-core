@@ -149,7 +149,7 @@ public class ServerApi
 	public void serverPlayerJoinEvent(IServerPlayerWrapper player)
 	{
 		IDhServerWorld serverWorld = SharedApi.getIDhServerWorld();
-		LOGGER.info("Player [" + player.getName() + "] joined.");
+		LOGGER.info("Player [${player.getName()}] joined.");
 		if (serverWorld != null)
 		{
 			serverWorld.addPlayer(player);
@@ -158,7 +158,7 @@ public class ServerApi
 	public void serverPlayerDisconnectEvent(IServerPlayerWrapper player)
 	{
 		IDhServerWorld serverWorld = SharedApi.getIDhServerWorld();
-		LOGGER.info("Player [" + player.getName() + "] disconnected.");
+		LOGGER.info("Player [${player.getName()}] disconnected.");
 		if (serverWorld != null)
 		{
 			serverWorld.removePlayer(player);
@@ -167,7 +167,7 @@ public class ServerApi
 	public void serverPlayerLevelChangeEvent(IServerPlayerWrapper player, IServerLevelWrapper originLevel, IServerLevelWrapper destinationLevel)
 	{
 		IDhServerWorld serverWorld = SharedApi.getIDhServerWorld();
-		LOGGER.info("Player [" + player.getName() + "] changed level: [" + originLevel.getKeyedLevelDimensionName() + "] -> [" + destinationLevel.getKeyedLevelDimensionName() + "].");
+		LOGGER.info("Player [${player.getName()}] changed level: [${originLevel.getKeyedLevelDimensionName()}] -> [${destinationLevel.getKeyedLevelDimensionName()}].");
 		if (serverWorld != null)
 		{
 			serverWorld.changePlayerLevel(player, originLevel, destinationLevel);

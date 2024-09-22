@@ -64,12 +64,10 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 	// constructor //
 	//=============//
 	
-	public AbstractDhServerLevel(
-			AbstractSaveStructure saveStructure,
-			IServerLevelWrapper serverLevelWrapper,
-			ServerPlayerStateManager serverPlayerStateManager
-	)
-	{ this(saveStructure, serverLevelWrapper, serverPlayerStateManager, true); }
+	public AbstractDhServerLevel(AbstractSaveStructure saveStructure, IServerLevelWrapper serverLevelWrapper, ServerPlayerStateManager serverPlayerStateManager)
+	{
+		this(saveStructure, serverLevelWrapper, serverPlayerStateManager, true);
+	}
 	public AbstractDhServerLevel(
 			AbstractSaveStructure saveStructure,
 			IServerLevelWrapper serverLevelWrapper,
@@ -89,7 +87,7 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 			this.runRepoReliantSetup();
 		}
 		
-		LOGGER.info("Started " + this.getClass().getSimpleName() + " for [" + serverLevelWrapper + "] at [" + saveStructure + "].");
+		LOGGER.info("Started ${this.getClass().getSimpleName()} for $serverLevelWrapper at $saveStructure.");
 		
 		this.serverPlayerStateManager = serverPlayerStateManager;
 	}
@@ -113,7 +111,7 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 				continue;
 			}
 			
-			NETWORK_LOGGER.debug("[" + this.serverLevelWrapper.getDimensionName() + "] Fulfilled request group [" + entry.getKey() + "]");
+			NETWORK_LOGGER.debug("[${this.serverLevelWrapper.getDimensionName()}] Fulfilled request group [${entry.getKey()}]");
 			
 			// Make this group unavailable for adding into
 			this.requestGroupByPos.remove(entry.getKey());
@@ -148,7 +146,10 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 	}
 	
 	@Override
-	public abstract boolean shouldDoWorldGen();
+	public boolean shouldDoWorldGen()
+	{
+		return Config.Client.Advanced.WorldGenerator.enableDistantGeneration.get() && !this.worldGenPlayerCenteringQueue.isEmpty();
+	}
 	
 	@Override
 	@Nullable
@@ -224,7 +225,7 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 				FullDataSourceRequestMessage requestMessage = requestGroup.requestMessages.remove(msg.futureId);
 				if (requestGroup.requestMessages.isEmpty())
 				{
-					NETWORK_LOGGER.debug("[" + this.serverLevelWrapper.getDimensionName() + "] Cancelled request group [" + DhSectionPos.toString(requestMessage.sectionPos) + "].");
+					NETWORK_LOGGER.debug("[${this.serverLevelWrapper.getDimensionName()}] Cancelled request group [${DhSectionPos.toString(requestMessage.sectionPos)}].");
 					this.requestGroupByPos.remove(requestMessage.sectionPos);
 					this.serverside.fullDataFileHandler.removeRetrievalRequestIf(pos -> pos == requestMessage.sectionPos);
 				}
@@ -300,7 +301,7 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 			{
 				DataSourceRequestGroup newGroup = new DataSourceRequestGroup();
 				this.tryFulfillDataSourceRequestGroup(newGroup, pos);
-				NETWORK_LOGGER.debug("[" + this.serverLevelWrapper.getDimensionName() + "] Created request group for pos [" + DhSectionPos.toString(pos) + "].");
+				NETWORK_LOGGER.debug("[${serverLevelWrapper.getDimensionName()}] Created request group for pos [${DhSectionPos.toString(pos)}].");
 				return newGroup;
 			});
 			
@@ -324,7 +325,7 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 	{
 		if (!(message instanceof ILevelRelatedMessage))
 		{
-			LodUtil.assertNotReach("Received message [" + ILevelRelatedMessage.class.getSimpleName() + "] does not implement [" + message.getClass().getSimpleName() + "]");
+			LodUtil.assertNotReach("Received message [$message] does not implement [${ILevelRelatedMessage.class.getSimpleName()}]");
 		}
 		
 		// Only handle requests for this level
@@ -345,9 +346,9 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 				((AbstractTrackableMessage) message).sendResponse(
 						new InvalidLevelException(
 								"Generation not allowed. " +
-										"Requested dimension: [" + ((ILevelRelatedMessage) message).getLevelName() + "], " +
-										"player dimension: [" + message.getSession().serverPlayer.getLevel().getDimensionName() + "], " +
-										"handler dimension: [" + this.getLevelWrapper().getDimensionName() + "]"
+										"Requested dimension: [${((ILevelRelatedMessage) message).getLevelName()}], " +
+										"player dimension: [${message.getSession().serverPlayer.getLevel().getDimensionName()}], " +
+										"handler dimension: [${this.getLevelWrapper().getDimensionName()}]"
 						)
 				);
 			}
@@ -495,11 +496,9 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 		public FullDataSourceV2 fullDataSource;
 		
 		/**
-		 * These semaphores prevent a given thread from accidentally locking on the same group
-		 * multiple times, as the semaphore is tied to the given thread. <br>
-		 * Reentrant Lock isn't used since it would allow the thread to lock on the same group. <br>
-		 * the Short.MAX_VALUE is just a very large number that should be larger than the number of
-		 * threads we'll have.
+		 * These two Semaphores are used to prevent all threads from locking on the group after it being fulfilled,
+		 * as opposed to ReentrantReadWriteLocks which would allow the locking thread continue using it anyway. <br>
+		 * Short.MAX_VALUE is chosen as a large enough number so non-exclusive accesses never block each other.
 		 */
 		public final Semaphore requestAddSemaphore = new Semaphore(Short.MAX_VALUE, true);
 		/** @see DataSourceRequestGroup#requestAddSemaphore */
