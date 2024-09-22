@@ -30,6 +30,7 @@ import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhAp
 import com.seibel.distanthorizons.api.objects.math.DhApiVec3d;
 import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBox;
 import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBoxGroupShading;
+import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.ModAccessorInjector;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.jar.EPlatform;
@@ -44,14 +45,12 @@ import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrapper;
 import com.seibel.distanthorizons.core.util.math.Vec3d;
-import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.IModAccessor;
 import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.ISodiumAccessor;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.OverrideInjector;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.ARBInstancedArrays;
 import org.lwjgl.opengl.GL32;
 import org.lwjgl.opengl.GL33;
@@ -59,7 +58,6 @@ import org.lwjgl.system.MemoryUtil;
 
 import java.awt.*;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -87,11 +85,12 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 	// rendering setup
 	private boolean init = false;
 	
-	private IDhApiGenericObjectShaderProgram shaderProgram;
+	private IDhApiGenericObjectShaderProgram instancedShaderProgram;
+	private IDhApiGenericObjectShaderProgram directShaderProgram;
 	private GLVertexBuffer boxVertexBuffer;
 	private GLElementBuffer boxIndexBuffer;
 	
-	private boolean useInstancedRendering;
+	private boolean instancedRenderingAvailable;
 	private boolean vertexAttribDivisorSupported;
 	private boolean instancedArraysSupported;
 	
@@ -186,8 +185,8 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		
 		this.vertexAttribDivisorSupported = GLProxy.getInstance().vertexAttribDivisorSupported;
 		this.instancedArraysSupported = GLProxy.getInstance().instancedArraysSupported;
-		this.useInstancedRendering = this.vertexAttribDivisorSupported || this.instancedArraysSupported;
-		if (!this.useInstancedRendering)
+		this.instancedRenderingAvailable = this.vertexAttribDivisorSupported || this.instancedArraysSupported;
+		if (!this.instancedRenderingAvailable)
 		{
 			LOGGER.warn("Instanced rendering not supported by this GPU, falling back to direct rendering. Generic object rendering will be slow and some effects may be disabled.");
 		}
@@ -196,8 +195,7 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 			boolean isMac = (EPlatform.get() == EPlatform.MACOS);
 			if (isMac && SODIUM != null)
 			{
-				this.useInstancedRendering = false;
-				LOGGER.warn("Instanced rendering is broken on Mac when Sodium is present, falling back to direct rendering. Generic object rendering will be slow and some effects may be disabled.");
+				LOGGER.warn("There have been reports of instanced rendering causing crashes on macOS when Sodium is present. Instanced rendering can be disabled via the DH config.");
 			}
 		}
 		
@@ -207,7 +205,8 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		// startup the renderer //
 		//======================//
 		
-		this.shaderProgram = new GenericObjectShaderProgram(this.useInstancedRendering);
+		this.instancedShaderProgram = new GenericObjectShaderProgram(true);
+		this.directShaderProgram = new GenericObjectShaderProgram(false);
 		
 		this.createBuffers();
 		
@@ -392,6 +391,9 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		GLState glState = new GLState();
 		this.init();
 		
+		boolean useInstancedRendering = this.instancedRenderingAvailable
+				&& !Config.Client.Advanced.Graphics.GenericRendering.disableInstancedRendering.get();
+		
 		ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeGenericRenderSetupEvent.class, renderEventParam);
 		
 		GL32.glPolygonMode(GL32.GL_FRONT_AND_BACK, GL32.GL_FILL);
@@ -401,7 +403,7 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		GL32.glBlendEquation(GL32.GL_FUNC_ADD);
 		GL32.glBlendFuncSeparate(GL32.GL_SRC_ALPHA, GL32.GL_ONE_MINUS_SRC_ALPHA, GL32.GL_ONE, GL32.GL_ONE_MINUS_SRC_ALPHA);
 		
-		IDhApiGenericObjectShaderProgram shaderProgram = this.shaderProgram;
+		IDhApiGenericObjectShaderProgram shaderProgram = useInstancedRendering ? this.instancedShaderProgram : this.directShaderProgram;
 		IDhApiGenericObjectShaderProgram shaderProgramOverride = OverrideInjector.INSTANCE.get(IDhApiGenericObjectShaderProgram.class);
 		if (shaderProgramOverride != null && shaderProgram.overrideThisFrame())
 		{
@@ -437,7 +439,7 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 						profiler.popPush("rendering");
 						profiler.push(boxGroup.getResourceLocationNamespace());
 						profiler.push(boxGroup.getResourceLocationPath());
-						if (this.useInstancedRendering)
+						if (useInstancedRendering)
 						{
 							this.renderBoxGroupInstanced(shaderProgram, renderEventParam, boxGroup, camPos);
 						}
@@ -593,14 +595,14 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 	//=========//
 	
 	/** @throws IllegalStateException if {@link #init()} function hasn't been called yet */
-	public boolean getUseInstancedRendering() throws IllegalStateException
+	public boolean getInstancedRenderingAvailable() throws IllegalStateException
 	{
 		if (!this.init)
 		{
 			throw new IllegalStateException("GL initialization hasn't been completed.");
 		}
 		
-		return this.useInstancedRendering; 
+		return this.instancedRenderingAvailable; 
 	}
 	
 	
