@@ -330,10 +330,10 @@
     "Enable Cloud Rendering",
   "distanthorizons.config.client.advanced.graphics.genericRendering.enableCloudRendering.@tooltip":
     "If true LOD clouds will be rendered.",
-  "distanthorizons.config.client.advanced.graphics.genericRendering.disableInstancedRendering":
-    "Disable Instanced Rendering",
-  "distanthorizons.config.client.advanced.graphics.genericRendering.disableInstancedRendering.@tooltip":
-    "If true much slower but more compatible direct rendering will be used instead of instanced rendering. \nCan be used to fix some crashes on Mac.",
+  "distanthorizons.config.client.advanced.graphics.genericRendering.enableInstancedRendering":
+    "Enable Instanced Rendering",
+  "distanthorizons.config.client.advanced.graphics.genericRendering.enableInstancedRendering.@tooltip":
+    "Can be disabled to use much slower but more compatible direct rendering. \nDisabling this can be used to fix some crashes on Mac.",
     
   
   "distanthorizons.config.client.advanced.worldGenerator":

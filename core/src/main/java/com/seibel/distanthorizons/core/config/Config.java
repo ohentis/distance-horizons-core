@@ -574,11 +574,11 @@ public class Config
 									+ "")
 							.build();
 					
-					public static ConfigEntry<Boolean> disableInstancedRendering = new ConfigEntry.Builder<Boolean>()
+					public static ConfigEntry<Boolean> enableInstancedRendering = new ConfigEntry.Builder<Boolean>()
 							.set(true)
 							.comment(""
-									+ "If true much slower but more compatible direct rendering will be used instead of instanced rendering. \n"
-									+ "Can be used to fix some crashes on Mac. \n"
+									+ "Can be disabled to use much slower but more compatible direct rendering. \n"
+									+ "Disabling this can be used to fix some crashes on Mac. \n"
 									+ "")
 							.build();
 					

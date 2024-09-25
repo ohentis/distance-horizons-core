@@ -392,7 +392,7 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		this.init();
 		
 		boolean useInstancedRendering = this.instancedRenderingAvailable
-				&& !Config.Client.Advanced.Graphics.GenericRendering.disableInstancedRendering.get();
+				&& Config.Client.Advanced.Graphics.GenericRendering.enableInstancedRendering.get();
 		
 		ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeGenericRenderSetupEvent.class, renderEventParam);
 		
