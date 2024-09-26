@@ -923,6 +923,7 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 	@Override
 	public String toString() { return DhSectionPos.toString(this.pos); }
 	
+	/** Only includes the base data in this object, not the mapping */
 	@Override 
 	public int hashCode()
 	{

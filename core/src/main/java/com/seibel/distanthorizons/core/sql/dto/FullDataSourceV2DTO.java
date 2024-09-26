@@ -23,6 +23,7 @@ import com.google.common.base.MoreObjects;
 import com.seibel.distanthorizons.api.enums.config.EDhApiDataCompressionMode;
 import com.seibel.distanthorizons.api.enums.config.EDhApiWorldCompressionMode;
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
+import com.seibel.distanthorizons.core.api.internal.ClientApi;
 import com.seibel.distanthorizons.core.dataObjects.fullData.FullDataPointIdMap;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
@@ -79,14 +80,16 @@ public class FullDataSourceV2DTO implements IBaseDTO<Long>, INetworkObject
 	
 	public static FullDataSourceV2DTO CreateFromDataSource(FullDataSourceV2 dataSource, EDhApiDataCompressionMode compressionModeEnum) throws IOException
 	{
-		CheckedByteArray checkedDataPointArray = writeDataSourceDataArrayToBlob(dataSource.dataPoints, compressionModeEnum);
+		byte[] dataPointByteArray = writeDataSourceDataArrayToBlob(dataSource.dataPoints, compressionModeEnum);
 		byte[] compressedWorldGenStepByteArray = writeGenerationStepsToBlob(dataSource.columnGenerationSteps, compressionModeEnum);
 		byte[] compressedWorldCompressionModeByteArray = writeWorldCompressionModeToBlob(dataSource.columnWorldCompressionMode, compressionModeEnum);
 		byte[] mappingByteArray = writeDataMappingToBlob(dataSource.mapping, compressionModeEnum);
 		
+		int checksum = (dataSource.mapping.hashCode() * 4217) + dataSource.hashCode();
+		
 		return new FullDataSourceV2DTO(
-				dataSource.getPos(), 
-				checkedDataPointArray.checksum, compressedWorldGenStepByteArray, compressedWorldCompressionModeByteArray, FullDataSourceV2.DATA_FORMAT_VERSION, compressionModeEnum.value, checkedDataPointArray.byteArray,
+				dataSource.getPos(),
+				checksum, compressedWorldGenStepByteArray, compressedWorldCompressionModeByteArray, FullDataSourceV2.DATA_FORMAT_VERSION, compressionModeEnum.value, dataPointByteArray,
 				dataSource.lastModifiedUnixDateTime, dataSource.createdUnixDateTime,
 				mappingByteArray, dataSource.applyToParent, 
 				dataSource.levelMinY
@@ -204,16 +207,14 @@ public class FullDataSourceV2DTO implements IBaseDTO<Long>, INetworkObject
 	// (de)serializing //
 	//=================//
 	
-	private static CheckedByteArray writeDataSourceDataArrayToBlob(LongArrayList[] dataArray, EDhApiDataCompressionMode compressionModeEnum) throws IOException
+	private static byte[] writeDataSourceDataArrayToBlob(LongArrayList[] dataArray, EDhApiDataCompressionMode compressionModeEnum) throws IOException
 	{
 		// write the outputs to a stream to prep for writing to the database
 		ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
 		
-		// the order of these streams is important, otherwise the checksum won't be calculated
-		CheckedOutputStream checkedOut = new CheckedOutputStream(byteArrayOutputStream, new Adler32());
 		// normally a DhStream should be the topmost stream to prevent closing the stream accidentally, 
 		// but since this stream will be closed immediately after writing anyway, it won't be an issue
-		DhDataOutputStream compressedOut = new DhDataOutputStream(checkedOut, compressionModeEnum);
+		DhDataOutputStream compressedOut = new DhDataOutputStream(byteArrayOutputStream, compressionModeEnum);
 		
 		
 		// write the data
@@ -238,10 +239,9 @@ public class FullDataSourceV2DTO implements IBaseDTO<Long>, INetworkObject
 		
 		// generate the checksum
 		compressedOut.flush();
-		int checksum = (int) checkedOut.getChecksum().getValue();
 		byteArrayOutputStream.close();
 		
-		return new CheckedByteArray(checksum, byteArrayOutputStream.toByteArray());
+		return byteArrayOutputStream.toByteArray();
 	}
 	private static LongArrayList[] readBlobToDataSourceDataArray(byte[] compressedDataByteArray, EDhApiDataCompressionMode compressionModeEnum) throws IOException, DataCorruptedException
 	{
@@ -451,23 +451,5 @@ public class FullDataSourceV2DTO implements IBaseDTO<Long>, INetworkObject
 	//================//
 	
 	public EDhApiDataCompressionMode getCompressionMode() throws IllegalArgumentException { return EDhApiDataCompressionMode.getFromValue(this.compressionModeValue); }
-	
-	
-	//================//
-	// helper classes //
-	//================//
-	
-	private static class CheckedByteArray
-	{
-		public final int checksum;
-		public final byte[] byteArray;
-		
-		public CheckedByteArray(int checksum, byte[] byteArray)
-		{
-			this.checksum = checksum;
-			this.byteArray = byteArray;
-		}
-		
-	}
 	
 }
