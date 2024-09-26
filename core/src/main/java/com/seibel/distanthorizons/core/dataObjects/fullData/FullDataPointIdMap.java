@@ -73,6 +73,8 @@ public class FullDataPointIdMap
 	private final ArrayList<Entry> entryList = new ArrayList<>();
 	private final HashMap<Entry, Integer> idMap = new HashMap<>();
 	
+	private int cachedHashCode = 0;
+	
 	
 	
 	//=============//
@@ -159,6 +161,9 @@ public class FullDataPointIdMap
 				id = this.entryList.size();
 				this.entryList.add(biomeBlockStateEntry);
 				this.idMap.put(biomeBlockStateEntry, id);
+				
+				// invalidate the cached hash code
+				this.cachedHashCode = 0;
 			}
 			
 			return id;
@@ -186,6 +191,9 @@ public class FullDataPointIdMap
 			int id = this.entryList.size();
 			this.entryList.add(biomeBlockStateEntry);
 			this.idMap.put(biomeBlockStateEntry, id);
+			
+			// invalidate the cached hash code
+			this.cachedHashCode = 0;
 		}
 		finally
 		{
@@ -275,6 +283,7 @@ public class FullDataPointIdMap
 		this.pos = pos;
 		this.entryList.clear();
 		this.idMap.clear();
+		this.cachedHashCode = 0;
 	}
 	
 	
@@ -388,6 +397,26 @@ public class FullDataPointIdMap
             if (!entries.get(i).equals(otherMap.entries.get(i))) return false;
         }*/
 		return false;
+	}
+	
+	/** Only includes the base data in this object, not the mapping */
+	@Override
+	public int hashCode()
+	{
+		if (this.cachedHashCode == 0)
+		{
+			this.generateHashCode();
+		}
+		return this.cachedHashCode;
+	}
+	private void generateHashCode()
+	{
+		int result = DhSectionPos.hashCode(this.pos);
+		for (int i = 0; i < this.entryList.size(); i++)
+		{
+			result = 31 * result + this.entryList.hashCode();
+		}
+		this.cachedHashCode = result;
 	}
 	
 	
