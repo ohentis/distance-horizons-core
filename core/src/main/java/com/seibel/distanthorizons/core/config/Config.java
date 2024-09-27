@@ -193,6 +193,22 @@ public class Config
 							.addListener(ReloadLodsConfigEventHandler.INSTANCE)
 							.build();
 					
+					@Deprecated
+					public static ConfigEntry<String> customVerticalQualityCsv = new ConfigEntry.Builder<String>()
+							.set("16,8,4,3,3,3,3,3,3,3,1")
+							.comment(" "
+									+ "Each CSV value represents a single horizontal quality drop \n"
+									+ "IE: \n"
+									+ "- value 1 = detail level 0 \n"
+									+ "- value 2 = detail level 1 \n"
+									+ "The last value will be used for all subsequent \n"
+									+ "detail levels. \n"
+									+ "If parsing fails this defaults to 1 (IE ${EDhApiVerticalQuality.HEIGHT_MAP}). \n"
+									+ "")
+							.setPerformance(EConfigEntryPerformance.VERY_HIGH)
+							.addListener(ReloadLodsConfigEventHandler.INSTANCE)
+							.build();
+					
 					public static ConfigEntry<EDhApiHorizontalQuality> horizontalQuality = new ConfigEntry.Builder<EDhApiHorizontalQuality>()
 							.set(EDhApiHorizontalQuality.MEDIUM)
 							.comment(""

@@ -44,6 +44,7 @@ public class RenderCacheConfigEventHandler
 	// previous values used to check if a watched setting was actually modified
 	private final ConfigChangeListener<EDhApiMaxHorizontalResolution> horizontalResolutionChangeListener;
 	private final ConfigChangeListener<EDhApiVerticalQuality> verticalQualityChangeListener;
+	private final ConfigChangeListener<String> customVerticalQualityChangeListener;
 	private final ConfigChangeListener<EDhApiTransparency> transparencyChangeListener;
 	private final ConfigChangeListener<EDhApiBlocksToAvoid> blocksToIgnoreChangeListener;
 	private final ConfigChangeListener<Boolean> tintWithAvoidedBlocksChangeListener;
@@ -76,6 +77,7 @@ public class RenderCacheConfigEventHandler
 	{
 		this.horizontalResolutionChangeListener = new ConfigChangeListener<>(Config.Client.Advanced.Graphics.Quality.maxHorizontalResolution, (newValue) -> this.refreshRenderDataAfterTimeout());
 		this.verticalQualityChangeListener = new ConfigChangeListener<>(Config.Client.Advanced.Graphics.Quality.verticalQuality, (newValue) -> this.refreshRenderDataAfterTimeout());
+		this.customVerticalQualityChangeListener = new ConfigChangeListener<>(Config.Client.Advanced.Graphics.Quality.customVerticalQualityCsv, (newValue) -> this.refreshRenderDataAfterTimeout());
 		this.transparencyChangeListener = new ConfigChangeListener<>(Config.Client.Advanced.Graphics.Quality.transparency, (newValue) -> this.refreshRenderDataAfterTimeout());
 		this.blocksToIgnoreChangeListener = new ConfigChangeListener<>(Config.Client.Advanced.Graphics.Quality.blocksToIgnore, (newValue) -> this.refreshRenderDataAfterTimeout());
 		this.tintWithAvoidedBlocksChangeListener = new ConfigChangeListener<>(Config.Client.Advanced.Graphics.Quality.tintWithAvoidedBlocks, (newValue) -> this.refreshRenderDataAfterTimeout());

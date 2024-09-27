@@ -20,6 +20,7 @@
 package com.seibel.distanthorizons.core.dataObjects.transformers;
 
 import com.seibel.distanthorizons.api.enums.config.EDhApiBlocksToAvoid;
+import com.seibel.distanthorizons.api.enums.config.EDhApiVerticalQuality;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.FullDataPointIdMap;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
@@ -39,10 +40,12 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrappe
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
 import com.seibel.distanthorizons.coreapi.util.BitShiftUtil;
+import com.seibel.distanthorizons.coreapi.util.MathUtil;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import org.apache.logging.log4j.Logger;
 
+import java.text.ParseException;
 import java.util.HashSet;
 
 /**
@@ -103,7 +106,35 @@ public class FullDataToRenderDataTransformer
 	{
  		final long pos = fullDataSource.getPos();
 		final byte dataDetail = fullDataSource.getDataDetailLevel();
-		final int vertSize = Config.Client.Advanced.Graphics.Quality.verticalQuality.get().calculateMaxVerticalData(fullDataSource.getDataDetailLevel());
+		
+		int tempVertSize = 1;
+		if (Config.Client.Advanced.Graphics.Quality.verticalQuality.get() != EDhApiVerticalQuality.CUSTOM)
+		{
+			tempVertSize = Config.Client.Advanced.Graphics.Quality.verticalQuality.get().calculateMaxVerticalData(fullDataSource.getDataDetailLevel());
+		}
+		else
+		{
+			// temporary code while we test additional vertical quality options
+			String verticalQualityCsv = Config.Client.Advanced.Graphics.Quality.customVerticalQualityCsv.get();
+			if (verticalQualityCsv != null)
+			{
+				String[] possibleVerticalValues = verticalQualityCsv.split(",");
+
+				// for detail levels lower than what the enum defines, use the lowest quality item
+				int index = MathUtil.clamp(0, dataDetail, possibleVerticalValues.length - 1);
+				String verticalValueString = possibleVerticalValues[index];
+
+				try
+				{
+					tempVertSize = Integer.parseInt(verticalValueString);
+				}
+				catch (NumberFormatException ignore) { }
+			}
+		}
+		final int vertSize = tempVertSize;
+		
+		
+		
 		final ColumnRenderSource columnSource = ColumnRenderSource.getPooledRenderSource(pos, vertSize, level.getMinY(), true);
 		if (fullDataSource.isEmpty)
 		{

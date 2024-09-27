@@ -26,7 +26,9 @@ import com.seibel.distanthorizons.coreapi.util.MathUtil;
  * LOW <br>
  * MEDIUM <br>
  * HIGH <br>
+ * VERY_HIGH <br>
  * EXTREME <br>
+ * PIXEL_ART <br>
  *
  * @author Leonardo Amato
  * @version 2024-4-6
@@ -40,7 +42,11 @@ public enum EDhApiVerticalQuality
 	HIGH(       new int[]{16,   8,  4, 3, 3, 3, 3, 3, 3, 3, 1}),
 	VERY_HIGH(  new int[]{32,  16,  8, 4, 4, 3, 3, 3, 3, 3, 1}),
 	EXTREME(    new int[]{64,  32,  8, 4, 4, 3, 3, 3, 3, 3, 1}),
-	PIXEL_ART(  new int[]{512, 64, 16, 8, 4, 3, 3, 3, 3, 3, 1});
+	PIXEL_ART(  new int[]{512, 64, 16, 8, 4, 3, 3, 3, 3, 3, 1}),
+	
+	/** This is only intended for use while DH is in development and shouldn't be included in the release build */
+	@Deprecated
+	CUSTOM(     new int[0]);
 	
 	/** represents how many LODs can be rendered in a single vertical slice */
 	public final int[] maxVerticalData;
