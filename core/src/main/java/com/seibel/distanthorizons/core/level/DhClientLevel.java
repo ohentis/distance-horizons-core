@@ -325,9 +325,12 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 	
 	
 	
-	//==========//
-	// shutdown //
-	//==========//
+	//================//
+	// base overrides //
+	//================//
+	
+	@Override
+	public String toString() { return "DhClientLevel{"+this.getClientLevelWrapper().getDimensionName()+"}"; }
 	
 	@Override
 	public void close()

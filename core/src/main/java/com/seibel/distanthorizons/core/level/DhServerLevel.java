@@ -77,22 +77,23 @@ public class DhServerLevel extends AbstractDhServerLevel
 	
 	@Override
 	public void addDebugMenuStringsToList(List<String> messageList)
-	{
-		messageList.add("[${this.serverLevelWrapper.getDimensionName()}]");
-	}
+	{ messageList.add("["+this.serverLevelWrapper.getDimensionName()+"], SL"); }
 	
 	
 	
-	//==========//
-	// shutdown //
-	//==========//
+	//================//
+	// base overrides //
+	//================//
+	
+	@Override
+	public String toString() { return "DhServerLevel{"+this.serverLevelWrapper.getKeyedLevelDimensionName()+"}"; }
 	
 	@Override
 	public void close()
 	{
 		super.close();
 		this.serverside.close();
-		LOGGER.info("Closed DHLevel for [${this.getLevelWrapper()}].");
+		LOGGER.info("Closed DHLevel for ["+this.getLevelWrapper()+"].");
 	}
 	
 }

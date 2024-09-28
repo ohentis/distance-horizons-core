@@ -73,7 +73,7 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 			IServerLevelWrapper serverLevelWrapper,
 			ServerPlayerStateManager serverPlayerStateManager,
 			boolean runRepoReliantSetup
-	)
+		)
 	{
 		if (saveStructure.getFullDataFolder(serverLevelWrapper).mkdirs())
 		{
@@ -147,9 +147,7 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 	
 	@Override
 	public boolean shouldDoWorldGen()
-	{
-		return Config.Client.Advanced.WorldGenerator.enableDistantGeneration.get() && !this.worldGenPlayerCenteringQueue.isEmpty();
-	}
+	{ return Config.Client.Advanced.WorldGenerator.enableDistantGeneration.get() && !this.worldGenPlayerCenteringQueue.isEmpty(); }
 	
 	@Override
 	@Nullable
@@ -170,10 +168,8 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 		return new DhBlockPos2D((int) position.x, (int) position.z);
 	}
 	
-	@Override public void worldGenTick()
-	{
-		this.serverside.worldGenModule.worldGenTick();
-	}
+	@Override 
+	public void worldGenTick() { this.serverside.worldGenModule.worldGenTick(); }
 	
 	
 	

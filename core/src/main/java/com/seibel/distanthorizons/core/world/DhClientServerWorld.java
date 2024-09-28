@@ -129,7 +129,8 @@ public class DhClientServerWorld extends AbstractDhServerWorld<DhClientServerLev
 		this.dhLevels.forEach(DhClientServerLevel::clientTick);
 	}
 	
-	@Override public void clientTick()
+	@Override 
+	public void clientTick()
 	{
 		//LOGGER.info("Client world tick");
 		this.eventLoop.tick();

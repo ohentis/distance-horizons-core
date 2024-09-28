@@ -179,15 +179,6 @@ public class DhClientServerLevel extends AbstractDhServerLevel implements IDhCli
 	//===============//
 	
 	@Override
-	public void close()
-	{
-		this.clientside.close();
-		super.close();
-		this.serverside.close();
-		LOGGER.info("Closed " + this.getClass().getSimpleName() + " for " + this.getServerLevelWrapper());
-	}
-	
-	@Override
 	public void onWorldGenTaskComplete(long pos)
 	{
 		super.onWorldGenTaskComplete(pos);
@@ -200,6 +191,24 @@ public class DhClientServerLevel extends AbstractDhServerLevel implements IDhCli
 		);
 		
 		this.clientside.reloadPos(pos);
+	}
+	
+	
+	
+	//================//
+	// base overrides //
+	//================//
+	
+	@Override
+	public String toString() { return "DhClientServerLevel{"+this.serverLevelWrapper.getKeyedLevelDimensionName()+"}"; }
+	
+	@Override
+	public void close()
+	{
+		this.clientside.close();
+		super.close();
+		this.serverside.close();
+		LOGGER.info("Closed " + this.getClass().getSimpleName() + " for " + this.getServerLevelWrapper());
 	}
 	
 }
