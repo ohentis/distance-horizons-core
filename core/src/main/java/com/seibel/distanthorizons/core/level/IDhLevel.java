@@ -22,7 +22,7 @@ package com.seibel.distanthorizons.core.level;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.file.fullDatafile.FullDataSourceProviderV2;
 import com.seibel.distanthorizons.core.file.fullDatafile.GeneratedFullDataSourceProvider;
-import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
+import com.seibel.distanthorizons.core.file.structure.ISaveStructure;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.render.RenderBufferHandler;
 import com.seibel.distanthorizons.core.render.renderer.generic.GenericObjectRenderer;
@@ -56,7 +56,7 @@ public interface IDhLevel extends AutoCloseable, GeneratedFullDataSourceProvider
 	
 	FullDataSourceProviderV2 getFullDataProvider();
 	
-	AbstractSaveStructure getSaveStructure();
+	ISaveStructure getSaveStructure();
 	
 	boolean hasSkyLight();
 	

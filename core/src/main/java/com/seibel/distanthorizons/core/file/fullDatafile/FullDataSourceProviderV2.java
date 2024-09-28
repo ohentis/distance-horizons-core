@@ -26,7 +26,7 @@ import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV1;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
-import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
+import com.seibel.distanthorizons.core.file.structure.ISaveStructure;
 import com.seibel.distanthorizons.core.file.AbstractDataSourceHandler;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
@@ -121,8 +121,8 @@ public class FullDataSourceProviderV2
 	// constructor //
 	//=============//
 	
-	public FullDataSourceProviderV2(IDhLevel level, AbstractSaveStructure saveStructure) { this(level, saveStructure, null); }
-	public FullDataSourceProviderV2(IDhLevel level, AbstractSaveStructure saveStructure, @Nullable File saveDirOverride) 
+	public FullDataSourceProviderV2(IDhLevel level, ISaveStructure saveStructure) { this(level, saveStructure, null); }
+	public FullDataSourceProviderV2(IDhLevel level, ISaveStructure saveStructure, @Nullable File saveDirOverride) 
 	{
 		super(level, saveStructure, saveDirOverride);
 		this.legacyFileHandler = new FullDataSourceProviderV1<>(level, saveStructure, saveDirOverride);
@@ -158,7 +158,7 @@ public class FullDataSourceProviderV2
 	{
 		try
 		{
-			return new FullDataSourceV2Repo(AbstractDhRepo.DEFAULT_DATABASE_TYPE, new File(this.saveDir.getPath() + File.separator + AbstractSaveStructure.DATABASE_NAME));
+			return new FullDataSourceV2Repo(AbstractDhRepo.DEFAULT_DATABASE_TYPE, new File(this.saveDir.getPath() + File.separator + ISaveStructure.DATABASE_NAME));
 		}
 		catch (SQLException e)
 		{

@@ -26,7 +26,7 @@ import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSour
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.file.fullDatafile.FullDataSourceProviderV2;
 import com.seibel.distanthorizons.core.file.fullDatafile.RemoteFullDataSourceProvider;
-import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
+import com.seibel.distanthorizons.core.file.structure.ISaveStructure;
 import com.seibel.distanthorizons.core.generation.RemoteWorldRetrievalQueue;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.multiplayer.client.ClientNetworkState;
@@ -52,7 +52,6 @@ import javax.annotation.CheckForNull;
 import java.awt.*;
 import java.io.File;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 /** The level used when connected to a server */
@@ -63,7 +62,7 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 	
 	public final ClientLevelModule clientside;
 	public final IClientLevelWrapper levelWrapper;
-	public final AbstractSaveStructure saveStructure;
+	public final ISaveStructure saveStructure;
 	public final RemoteFullDataSourceProvider dataFileHandler;
 	
 	@CheckForNull
@@ -83,8 +82,8 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 	// constructor //
 	//=============//
 	
-	public DhClientLevel(AbstractSaveStructure saveStructure, IClientLevelWrapper clientLevelWrapper, @Nullable ClientNetworkState networkState) { this(saveStructure, clientLevelWrapper, null, true, networkState); }
-	public DhClientLevel(AbstractSaveStructure saveStructure, IClientLevelWrapper clientLevelWrapper, @Nullable File fullDataSaveDirOverride, boolean enableRendering, @Nullable ClientNetworkState networkState)
+	public DhClientLevel(ISaveStructure saveStructure, IClientLevelWrapper clientLevelWrapper, @Nullable ClientNetworkState networkState) { this(saveStructure, clientLevelWrapper, null, true, networkState); }
+	public DhClientLevel(ISaveStructure saveStructure, IClientLevelWrapper clientLevelWrapper, @Nullable File fullDataSaveDirOverride, boolean enableRendering, @Nullable ClientNetworkState networkState)
 	{
 		if (saveStructure.getFullDataFolder(clientLevelWrapper).mkdirs())
 		{
@@ -263,7 +262,7 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 	public FullDataSourceProviderV2 getFullDataProvider() { return this.dataFileHandler; }
 	
 	@Override
-	public AbstractSaveStructure getSaveStructure() { return this.saveStructure; }
+	public ISaveStructure getSaveStructure() { return this.saveStructure; }
 	
 	@Override
 	public boolean hasSkyLight() { return this.levelWrapper.hasSkyLight(); }

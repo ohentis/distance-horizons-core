@@ -3,7 +3,7 @@ package com.seibel.distanthorizons.core.level;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.file.fullDatafile.FullDataSourceProviderV2;
-import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
+import com.seibel.distanthorizons.core.file.structure.ISaveStructure;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.multiplayer.server.ServerPlayerState;
@@ -64,12 +64,12 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 	// constructor //
 	//=============//
 	
-	public AbstractDhServerLevel(AbstractSaveStructure saveStructure, IServerLevelWrapper serverLevelWrapper, ServerPlayerStateManager serverPlayerStateManager)
+	public AbstractDhServerLevel(ISaveStructure saveStructure, IServerLevelWrapper serverLevelWrapper, ServerPlayerStateManager serverPlayerStateManager)
 	{
 		this(saveStructure, serverLevelWrapper, serverPlayerStateManager, true);
 	}
 	public AbstractDhServerLevel(
-			AbstractSaveStructure saveStructure,
+			ISaveStructure saveStructure,
 			IServerLevelWrapper serverLevelWrapper,
 			ServerPlayerStateManager serverPlayerStateManager,
 			boolean runRepoReliantSetup
@@ -459,7 +459,7 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 	public FullDataSourceProviderV2 getFullDataProvider() { return this.serverside.fullDataFileHandler; }
 	
 	@Override
-	public AbstractSaveStructure getSaveStructure() { return this.serverside.saveStructure; }
+	public ISaveStructure getSaveStructure() { return this.serverside.saveStructure; }
 	
 	@Override
 	public boolean hasSkyLight() { return this.serverLevelWrapper.hasSkyLight(); }

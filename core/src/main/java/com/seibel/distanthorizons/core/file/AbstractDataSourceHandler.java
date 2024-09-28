@@ -1,7 +1,7 @@
 package com.seibel.distanthorizons.core.file;
 
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
-import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
+import com.seibel.distanthorizons.core.file.structure.ISaveStructure;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
@@ -75,8 +75,8 @@ public abstract class AbstractDataSourceHandler
 	// constructor //
 	//=============//
 	
-	public AbstractDataSourceHandler(TDhLevel level, AbstractSaveStructure saveStructure) { this(level, saveStructure, null); }
-	public AbstractDataSourceHandler(TDhLevel level, AbstractSaveStructure saveStructure, @Nullable File saveDirOverride)
+	public AbstractDataSourceHandler(TDhLevel level, ISaveStructure saveStructure) { this(level, saveStructure, null); }
+	public AbstractDataSourceHandler(TDhLevel level, ISaveStructure saveStructure, @Nullable File saveDirOverride)
 	{
 		this.level = level;
 		this.saveDir = (saveDirOverride == null) ? saveStructure.getFullDataFolder(level.getLevelWrapper()) : saveDirOverride;

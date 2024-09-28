@@ -22,13 +22,12 @@ package com.seibel.distanthorizons.core.file.fullDatafile;
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
-import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
+import com.seibel.distanthorizons.core.file.structure.ISaveStructure;
 import com.seibel.distanthorizons.core.generation.DhLightingEngine;
 import com.seibel.distanthorizons.core.generation.IFullDataSourceRetrievalQueue;
 import com.seibel.distanthorizons.core.generation.tasks.IWorldGenTaskTracker;
 import com.seibel.distanthorizons.core.generation.tasks.WorldGenResult;
 import com.seibel.distanthorizons.core.level.IDhLevel;
-import com.seibel.distanthorizons.core.level.WorldGenModule;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
@@ -75,8 +74,8 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 	// constructor //
 	//=============//
 	
-	public GeneratedFullDataSourceProvider(IDhLevel level, AbstractSaveStructure saveStructure) { super(level, saveStructure); }
-	public GeneratedFullDataSourceProvider(IDhLevel level, AbstractSaveStructure saveStructure, @Nullable File saveDirOverride) { super(level, saveStructure, saveDirOverride); }
+	public GeneratedFullDataSourceProvider(IDhLevel level, ISaveStructure saveStructure) { super(level, saveStructure); }
+	public GeneratedFullDataSourceProvider(IDhLevel level, ISaveStructure saveStructure, @Nullable File saveDirOverride) { super(level, saveStructure, saveDirOverride); }
 	
 	
 	

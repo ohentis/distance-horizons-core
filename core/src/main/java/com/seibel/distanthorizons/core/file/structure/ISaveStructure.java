@@ -25,28 +25,19 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 
-/**
- * Abstract class for determining where LOD data should be saved to.
- *
- * @version 2022-12-17
- */
-public abstract class AbstractSaveStructure implements AutoCloseable
+/** Used to determining where LOD data should be saved to. */
+public interface ISaveStructure extends AutoCloseable
 {
-	public static final String DATABASE_NAME = "DistantHorizons.sqlite";
-	
-	protected static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	String DATABASE_NAME = "DistantHorizons.sqlite";
 	
 	/**
-	 * Attempts to return the folder that contains LOD data for the given {@link ILevelWrapper}.
-	 * If no appropriate folder exists, one will be created. <br><br>
-	 *
-	 * This will always return a folder, however that folder may not be the best match
-	 * if multiverse support is enabled.
+	 * Returns the folder that contains LOD data for the given {@link ILevelWrapper}.
+	 * If no appropriate folder exists, one will be created.
 	 */
-	public abstract File getLevelFolder(ILevelWrapper wrapper);
+	File getLevelFolder(ILevelWrapper wrapper);
 	
 	/** Will return null if no parent folder exists for the given {@link ILevelWrapper}. */
-	public abstract File getFullDataFolder(ILevelWrapper world);
+	File getFullDataFolder(ILevelWrapper world);
 	
 }
 

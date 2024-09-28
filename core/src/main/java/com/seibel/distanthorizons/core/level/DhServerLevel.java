@@ -19,7 +19,7 @@
 
 package com.seibel.distanthorizons.core.level;
 
-import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
+import com.seibel.distanthorizons.core.file.structure.ISaveStructure;
 import com.seibel.distanthorizons.core.multiplayer.server.ServerPlayerStateManager;
 import com.seibel.distanthorizons.core.render.RenderBufferHandler;
 import com.seibel.distanthorizons.core.render.renderer.generic.GenericObjectRenderer;
@@ -33,7 +33,7 @@ public class DhServerLevel extends AbstractDhServerLevel
 	// constructor //
 	//=============//
 	
-	public DhServerLevel(AbstractSaveStructure saveStructure, IServerLevelWrapper serverLevelWrapper, ServerPlayerStateManager serverPlayerStateManager)
+	public DhServerLevel(ISaveStructure saveStructure, IServerLevelWrapper serverLevelWrapper, ServerPlayerStateManager serverPlayerStateManager)
 	{
 		super(saveStructure, serverLevelWrapper, serverPlayerStateManager);
 	}

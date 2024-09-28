@@ -25,12 +25,14 @@ import com.seibel.distanthorizons.core.file.subDimMatching.SubDimensionLevelMatc
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.api.enums.config.EDhApiServerFolderNameMode;
 import com.seibel.distanthorizons.core.level.IServerKeyedClientLevel;
+import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.util.objects.ParsedIp;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftSharedWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.coreapi.util.StringUtil;
+import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.util.*;
@@ -38,11 +40,13 @@ import java.util.*;
 /**
  * Designed for the Client_Only environment.
  */
-public class ClientOnlySaveStructure extends AbstractSaveStructure
+public class ClientOnlySaveStructure implements ISaveStructure
 {
 	public static final String SERVER_DATA_FOLDER_NAME = "Distant_Horizons_server_data";
 	public static final String REPLAY_SERVER_FOLDER_NAME = "REPLAY";
 	public static final String INVALID_FILE_CHARACTERS_REGEX = "[\\\\/:*?\"<>|]";
+	
+	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
 	private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	private static final IMinecraftSharedWrapper MC_SHARED = SingletonInjector.INSTANCE.get(IMinecraftSharedWrapper.class);
@@ -217,7 +221,7 @@ public class ClientOnlySaveStructure extends AbstractSaveStructure
 						for (File dataFolder : dataFolders)
 						{
 							// look for the DH database file
-							if (dataFolder.getName().equalsIgnoreCase(AbstractSaveStructure.DATABASE_NAME))
+							if (dataFolder.getName().equalsIgnoreCase(ISaveStructure.DATABASE_NAME))
 							{
 								isValidDhLevelFolder = true;
 								break;

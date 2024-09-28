@@ -20,7 +20,7 @@
 package com.seibel.distanthorizons.core.file.fullDatafile;
 
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
-import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
+import com.seibel.distanthorizons.core.file.structure.ISaveStructure;
 import com.seibel.distanthorizons.core.generation.RemoteWorldRetrievalQueue;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.level.WorldGenModule;
@@ -50,7 +50,7 @@ public class RemoteFullDataSourceProvider extends GeneratedFullDataSourceProvide
 	//=============//
 	
 	public RemoteFullDataSourceProvider(
-			IDhLevel level, AbstractSaveStructure saveStructure, @Nullable File saveDirOverride, 
+			IDhLevel level, ISaveStructure saveStructure, @Nullable File saveDirOverride, 
 			@Nullable SyncOnLoginRequestQueue syncOnLoginRequestQueue)
 	{
 		super(level, saveStructure, saveDirOverride);

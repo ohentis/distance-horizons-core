@@ -22,11 +22,11 @@ package com.seibel.distanthorizons.core.level;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
+import com.seibel.distanthorizons.core.file.structure.ISaveStructure;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
 import com.seibel.distanthorizons.core.multiplayer.server.ServerPlayerStateManager;
 import com.seibel.distanthorizons.core.render.RenderBufferHandler;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
-import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos;
 import com.seibel.distanthorizons.core.render.renderer.generic.GenericObjectRenderer;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
@@ -53,7 +53,7 @@ public class DhClientServerLevel extends AbstractDhServerLevel implements IDhCli
 	// constructor //
 	//=============//
 	
-	public DhClientServerLevel(AbstractSaveStructure saveStructure, IServerLevelWrapper serverLevelWrapper, ServerPlayerStateManager serverPlayerStateManager)
+	public DhClientServerLevel(ISaveStructure saveStructure, IServerLevelWrapper serverLevelWrapper, ServerPlayerStateManager serverPlayerStateManager)
 	{
 		super(saveStructure, serverLevelWrapper, serverPlayerStateManager, false);
 		

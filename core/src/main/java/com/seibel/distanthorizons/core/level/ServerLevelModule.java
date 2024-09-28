@@ -20,10 +20,8 @@
 package com.seibel.distanthorizons.core.level;
 
 import com.seibel.distanthorizons.api.interfaces.override.worldGenerator.IDhApiWorldGenerator;
-import com.seibel.distanthorizons.core.config.AppliedConfigState;
-import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.file.fullDatafile.GeneratedFullDataSourceProvider;
-import com.seibel.distanthorizons.core.file.structure.AbstractSaveStructure;
+import com.seibel.distanthorizons.core.file.structure.ISaveStructure;
 import com.seibel.distanthorizons.core.generation.BatchGenerator;
 import com.seibel.distanthorizons.core.generation.WorldGenerationQueue;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
@@ -35,7 +33,7 @@ public class ServerLevelModule implements AutoCloseable
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
 	private final IDhServerLevel parentServerLevel;
-	public final AbstractSaveStructure saveStructure;
+	public final ISaveStructure saveStructure;
 	public final GeneratedFullDataSourceProvider fullDataFileHandler;
 	
 	public final WorldGenModule worldGenModule;
@@ -46,7 +44,7 @@ public class ServerLevelModule implements AutoCloseable
 	// constructor //
 	//=============//
 	
-	public ServerLevelModule(IDhServerLevel parentServerLevel, AbstractSaveStructure saveStructure)
+	public ServerLevelModule(IDhServerLevel parentServerLevel, ISaveStructure saveStructure)
 	{
 		this.parentServerLevel = parentServerLevel;
 		this.saveStructure = saveStructure;

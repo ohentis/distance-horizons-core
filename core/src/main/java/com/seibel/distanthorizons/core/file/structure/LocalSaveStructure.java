@@ -29,7 +29,7 @@ import java.io.File;
  *
  * @version 2022-12-17
  */
-public class LocalSaveStructure extends AbstractSaveStructure
+public class LocalSaveStructure implements ISaveStructure
 {
 	private File debugPath = new File("");
 	
