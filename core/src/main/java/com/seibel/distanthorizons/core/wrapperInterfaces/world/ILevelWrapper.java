@@ -27,12 +27,7 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrappe
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IBindable;
 
-/**
- * Can be either a Server world or a Client world.
- *
- * @author James Seibel
- * @version 2023-6-17
- */
+/** Can be either a Server world or a Client world. */
 public interface ILevelWrapper extends IDhApiLevelWrapper, IBindable
 {
 	

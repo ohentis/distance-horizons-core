@@ -40,6 +40,7 @@ import com.seibel.distanthorizons.core.util.objects.DataCorruptedException;
 import com.seibel.distanthorizons.core.util.objects.UncheckedInterruptedException;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
+import com.seibel.distanthorizons.core.world.DhApiWorldProxy;
 import com.seibel.distanthorizons.core.wrapperInterfaces.IWrapperFactory;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
@@ -211,7 +212,7 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 			try
 			{
 				// loop until the generator is shutdown
-				while (!Thread.interrupted())
+				while (!Thread.interrupted() && !DhApiWorldProxy.INSTANCE.getReadOnly())
 				{
 					this.generator.preGeneratorTaskStart();
 					

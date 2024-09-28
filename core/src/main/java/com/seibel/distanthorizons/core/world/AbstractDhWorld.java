@@ -59,6 +59,18 @@ public abstract class AbstractDhWorld implements IDhWorld, Closeable
 	 * by overriding children.
 	 */
 	public void addDebugMenuStringsToList(List<String> messageList) 
-	{ messageList.add(this.environment + " World with " + F3Screen.NUMBER_FORMAT.format(this.getLoadedLevelCount()) + " levels"); }
+	{
+		EWorldEnvironment environment = this.environment;
+		String levelCountStr = F3Screen.NUMBER_FORMAT.format(this.getLoadedLevelCount());
+		
+		String readOnlyStr = "";
+		if (DhApiWorldProxy.INSTANCE.getReadOnly())
+		{
+			readOnlyStr += " - ReadOnly";
+		}
+		
+		String message = "${environment} World with ${levelCountStr} levels${readOnlyStr}";
+		messageList.add(message);
+	}
 	
 }

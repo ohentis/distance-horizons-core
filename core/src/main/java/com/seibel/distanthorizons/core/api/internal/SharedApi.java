@@ -19,6 +19,8 @@
 
 package com.seibel.distanthorizons.core.api.internal;
 
+import com.seibel.distanthorizons.api.methods.events.abstractEvents.DhApiWorldLoadEvent;
+import com.seibel.distanthorizons.api.methods.events.abstractEvents.DhApiWorldUnloadEvent;
 import com.seibel.distanthorizons.core.Initializer;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
@@ -39,6 +41,7 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftCli
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
+import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
@@ -89,6 +92,8 @@ public class SharedApi
 		if (currentWorld != null)
 		{
 			ThreadPoolUtil.setupThreadPools();
+			
+			ApiEventInjector.INSTANCE.fireAllEvents(DhApiWorldLoadEvent.class, new DhApiWorldLoadEvent.EventParam());
 		}
 		else
 		{
@@ -102,6 +107,11 @@ public class SharedApi
 			
 			// recommend that the garbage collector cleans up any objects from the old world and thread pools
 			System.gc();
+			
+			ApiEventInjector.INSTANCE.fireAllEvents(DhApiWorldUnloadEvent.class, new DhApiWorldUnloadEvent.EventParam());
+			
+			// fired after the unload event so API users can't change the read-only for any new worlds
+			DhApiWorldProxy.INSTANCE.setReadOnly(false, false);
 		}
 	}
 	
@@ -169,6 +179,13 @@ public class SharedApi
 			
 			return;
 		}
+		
+		// ignore updates if the world is read-only
+		if (DhApiWorldProxy.INSTANCE.getReadOnly())
+		{
+			return;
+		}
+		
 		
 		// only continue if the level is loaded
 		IDhLevel dhLevel = dhWorld.getLevel(level);
@@ -261,10 +278,7 @@ public class SharedApi
 			}
 		}
 	}
-	
-	
 	/** returning a {@link CompletableFuture} isn't necessary, but allows Intellij to properly show the full stack trace when debugging. */
-	@SuppressWarnings("UnusedReturnValue")
 	private static void processQueuedChunkUpdate()
 	{
 		//LOGGER.trace(chunkWrapper.getChunkPos() + " " + executor.getActiveCount() + " / " + executor.getQueue().size() + " - " + executor.getCompletedTaskCount());

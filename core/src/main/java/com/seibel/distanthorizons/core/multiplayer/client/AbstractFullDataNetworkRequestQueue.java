@@ -24,6 +24,7 @@ import com.seibel.distanthorizons.core.util.TimerUtil;
 import com.seibel.distanthorizons.core.util.objects.DataCorruptedException;
 import com.seibel.distanthorizons.core.util.ratelimiting.SupplierBasedRateLimiter;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
+import com.seibel.distanthorizons.core.world.DhApiWorldProxy;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import org.apache.logging.log4j.LogManager;
 
@@ -133,6 +134,11 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 	
 	public synchronized boolean tick(DhBlockPos2D targetPos)
 	{
+		if (DhApiWorldProxy.INSTANCE.getReadOnly())
+		{
+			return false;
+		}
+		
 		if (this.closingFuture != null || !this.networkState.isReady())
 		{
 			return false;

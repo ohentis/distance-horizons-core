@@ -24,6 +24,7 @@ import com.seibel.distanthorizons.core.generation.IFullDataSourceRetrievalQueue;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
+import com.seibel.distanthorizons.core.world.DhApiWorldProxy;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
@@ -60,7 +61,7 @@ public class WorldGenModule implements Closeable
 			GeneratedFullDataSourceProvider.IOnWorldGenCompleteListener onWorldGenCompleteListener,
 			GeneratedFullDataSourceProvider dataSourceProvider,
 			Supplier<? extends AbstractWorldGenState> worldGenStateSupplier
-	)
+		)
 	{
 		this.onWorldGenCompleteListener = onWorldGenCompleteListener;
 		this.dataSourceProvider = dataSourceProvider;
@@ -111,6 +112,8 @@ public class WorldGenModule implements Closeable
 	public void worldGenTick()
 	{
 		boolean shouldDoWorldGen = this.onWorldGenCompleteListener.shouldDoWorldGen();
+		// if the world is read only don't generate anything
+		shouldDoWorldGen &= !DhApiWorldProxy.INSTANCE.getReadOnly();
 		
 		boolean isWorldGenRunning = this.isWorldGenRunning();
 		if (shouldDoWorldGen && !isWorldGenRunning)
@@ -188,8 +191,8 @@ public class WorldGenModule implements Closeable
 		String waitingCountStr = F3Screen.NUMBER_FORMAT.format(worldGenState.worldGenerationQueue.getWaitingTaskCount());
 		String inProgressCountStr = F3Screen.NUMBER_FORMAT.format(worldGenState.worldGenerationQueue.getInProgressTaskCount());
 		String totalCountEstimateStr = F3Screen.NUMBER_FORMAT.format(worldGenState.worldGenerationQueue.getEstimatedTotalTaskCount());
-		messageList.add("World Gen Tasks: "+waitingCountStr+"/"+totalCountEstimateStr+" (in progress: "+inProgressCountStr+")");
-
+		messageList.add("World Gen Tasks: ${waitingCountStr}/${totalCountEstimateStr} (in progress: ${inProgressCountStr})");
+		
 		worldGenState.worldGenerationQueue.addDebugMenuStringsToList(messageList);
 	}
 	
