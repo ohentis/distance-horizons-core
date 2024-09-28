@@ -11,6 +11,7 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapp
 import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
+import java.util.HashSet;
 
 public abstract class AbstractDhServerWorld<TDhServerLevel extends AbstractDhServerLevel> extends AbstractDhWorld implements IDhServerWorld
 {
@@ -76,7 +77,13 @@ public abstract class AbstractDhServerWorld<TDhServerLevel extends AbstractDhSer
 	@Override
 	public TDhServerLevel getLevel(@NotNull ILevelWrapper wrapper) { return this.dhLevelByLevelWrapper.get(wrapper); }
 	@Override
-	public Iterable<? extends IDhLevel> getAllLoadedLevels() { return this.dhLevelByLevelWrapper.values(); }
+	public Iterable<? extends IDhLevel> getAllLoadedLevels() 
+	{
+		// hash set wrapper is used to filter out duplicate levels,
+		// which can happen when on a singleplayer world and both a server/client level wrapper
+		// are active for the same dimension
+		return new HashSet<>(this.dhLevelByLevelWrapper.values()); 
+	}
 	@Override
 	public int getLoadedLevelCount() { return this.dhLevelByLevelWrapper.size(); }
 	
