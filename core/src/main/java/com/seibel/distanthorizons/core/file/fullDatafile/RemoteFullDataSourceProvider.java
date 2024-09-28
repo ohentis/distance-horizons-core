@@ -26,6 +26,7 @@ import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.level.WorldGenModule;
 import com.seibel.distanthorizons.core.multiplayer.client.SyncOnLoginRequestQueue;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.coreapi.util.BitShiftUtil;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
@@ -41,7 +42,7 @@ public class RemoteFullDataSourceProvider extends GeneratedFullDataSourceProvide
 {
 	@Nullable
 	private final SyncOnLoginRequestQueue syncOnLoginRequestQueue;
-	private final Set<Long> finishedTaskPositions = ConcurrentHashMap.newKeySet();
+	private final Set<Long> visitedPositions = ConcurrentHashMap.newKeySet();
 	
 	
 	
@@ -67,25 +68,17 @@ public class RemoteFullDataSourceProvider extends GeneratedFullDataSourceProvide
 	@Nullable
 	public FullDataSourceV2 get(long pos)
 	{
-		//=======================//
-		// get local data source //
-		//=======================//
-		
-		FullDataSourceV2 fullDataSource = super.get(pos);
-		if (fullDataSource == null)
-		{
-			// we don't have any local data for this position,
-			// we can't queue updates based on a timestamp
-			return null;	
-		}
-		
 		if (this.syncOnLoginRequestQueue == null)
 		{
-			// we have local data, but aren't allowed to
-			// request timestamp updates from the server.
-			return fullDataSource;
+			// we have local data, but networking is unavailable.
+			return super.get(pos);
 		}
 		
+		if (!this.visitedPositions.add(pos))
+		{
+			// This position has already been accessed before
+			return super.get(pos);
+		}
 		
 		
 		//===========================//
@@ -94,28 +87,31 @@ public class RemoteFullDataSourceProvider extends GeneratedFullDataSourceProvide
 		//===========================//
 		
 		// get the timestamp for every maximum detail position in this section
-		int posToMinimumDetailScale = (DhSectionPos.getDetailLevel(pos) - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL + 1);
+		int posToMinimumDetailScale = BitShiftUtil.powerOfTwo(DhSectionPos.getDetailLevel(pos) - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
 		Map<Long, Long> timestamps = this.getTimestampsForRange(
 				DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL,
 				DhSectionPos.getX(pos) * posToMinimumDetailScale,
 				DhSectionPos.getZ(pos) * posToMinimumDetailScale,
-				(DhSectionPos.getX(pos) + 1) * posToMinimumDetailScale - 1,
-				(DhSectionPos.getZ(pos) + 1) * posToMinimumDetailScale - 1
+				(DhSectionPos.getX(pos) + 1) * posToMinimumDetailScale,
+				(DhSectionPos.getZ(pos) + 1) * posToMinimumDetailScale
 		);
 		
-		// check if the server has newer versions of these LODs
-		for (Map.Entry<Long, Long> timestampBySectionPos : timestamps.entrySet())
+		DhSectionPos.forEachChildAtDetailLevel(pos, DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL, childPos ->
 		{
-			Long subPos = timestampBySectionPos.getKey();
-			Long subTimestamp = timestampBySectionPos.getValue();
-			
-			if (this.finishedTaskPositions.add(subPos))
+			if (!this.visitedPositions.add(childPos))
 			{
-				this.syncOnLoginRequestQueue.submitRequest(subPos, subTimestamp, this.delayedFullDataSourceSaveCache::queueDataSourceForUpdateAndSave);
+				return;
 			}
-		}
+			
+			// check if the server has newer versions of these LODs
+			Long subTimestamp = timestamps.get(childPos);
+			if (subTimestamp != null)
+			{
+				this.syncOnLoginRequestQueue.submitRequest(childPos, subTimestamp, this.delayedFullDataSourceSaveCache::queueDataSourceForUpdateAndSave);
+			}
+		});
 		
-		return fullDataSource;
+		return super.get(pos);
 	}
 	
 	

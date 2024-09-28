@@ -329,9 +329,9 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 			int i = 1;
 			preparedStatement.setInt(i++, detailLevel - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
 			preparedStatement.setInt(i++, startPosX);
-			preparedStatement.setInt(i++, endPosX);
+			preparedStatement.setInt(i++, endPosX - 1);
 			preparedStatement.setInt(i++, startPosZ);
-			preparedStatement.setInt(i++, endPosZ);
+			preparedStatement.setInt(i++, endPosZ - 1);
 			
 			return this.queryDictionary(preparedStatement)
 				.stream().collect(Collectors.toMap(
