@@ -979,6 +979,7 @@ public class Config
 								+ EDhApiServerFolderNameMode.NAME_IP_PORT_MC_VERSION + ": Example: \"Minecraft Server IP 192.168.1.40:25565 GameVersion 1.16.5\"")
 						.build();
 				
+				@Deprecated
 				public static ConfigEntry<Double> multiverseSimilarityRequiredPercent = new ConfigEntry.Builder<Double>()
 						.setMinDefaultMax(0.0, 0.0, 1.0)
 						.comment(""
