@@ -66,8 +66,6 @@ public class DhClientServerWorld extends AbstractDhServerWorld<DhClientServerLev
 		{
 			return this.dhLevelByLevelWrapper.computeIfAbsent(wrapper, (levelWrapper) ->
 			{
-				File levelFile = this.saveStructure.getLevelFolder(levelWrapper);
-				LodUtil.assertTrue(levelFile != null);
 				DhClientServerLevel level = new DhClientServerLevel(this.saveStructure, (IServerLevelWrapper) levelWrapper, this.getServerPlayerStateManager());
 				this.dhLevels.add(level);
 				return level;

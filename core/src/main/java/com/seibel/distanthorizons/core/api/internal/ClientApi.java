@@ -230,7 +230,7 @@ public class ClientApi
 		}
 	}
 	
-	public void clientLevelLoadEvent(IClientLevelWrapper level)
+	public void clientLevelLoadEvent(IClientLevelWrapper levelWrapper)
 	{
 		// wait a moment before loading the level to give the server a chance to handle the client's login request
 		if (MC_CLIENT.clientConnectedToDedicatedServer())
@@ -241,7 +241,7 @@ public class ClientApi
 				this.firstLevelLoadTimer.schedule(new TimerTask()
 				{
 					@Override
-					public void run() { ClientApi.this.clientLevelLoadEvent(level); }
+					public void run() { ClientApi.this.clientLevelLoadEvent(levelWrapper); }
 				}, FIRST_LEVEL_LOAD_DELAY_IN_MS);
 				return;
 			}
@@ -251,12 +251,12 @@ public class ClientApi
 		
 		try
 		{
-			LOGGER.info("Loading client level [" + level + "]-["+level.getDimensionName()+"].");
+			LOGGER.info("Loading client level [" + levelWrapper + "]-["+levelWrapper.getDimensionName()+"].");
 			
 			AbstractDhWorld world = SharedApi.getAbstractDhWorld();
 			if (world != null)
 			{
-				if (!this.pluginChannelApi.allowLevelLoading(level))
+				if (!this.pluginChannelApi.allowLevelLoading(levelWrapper))
 				{
 					LOGGER.info("Levels in this connection are managed by the server, skipping auto-load.");
 					
@@ -266,14 +266,14 @@ public class ClientApi
 				}
 				
 				
-				world.getOrLoadLevel(level);
-				ApiEventInjector.INSTANCE.fireAllEvents(DhApiLevelLoadEvent.class, new DhApiLevelLoadEvent.EventParam(level));
+				world.getOrLoadLevel(levelWrapper);
+				ApiEventInjector.INSTANCE.fireAllEvents(DhApiLevelLoadEvent.class, new DhApiLevelLoadEvent.EventParam(levelWrapper));
 				
-				this.loadWaitingChunksForLevel(level);
+				this.loadWaitingChunksForLevel(levelWrapper);
 			}
 			else
 			{
-				this.waitingClientLevels.add(level);
+				this.waitingClientLevels.add(levelWrapper);
 			}
 		}
 		catch (Exception e)

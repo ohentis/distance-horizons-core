@@ -45,7 +45,7 @@ public class FullDataSourceProviderV1<TDhLevel extends IDhLevel>
 	public FullDataSourceProviderV1(TDhLevel level, ISaveStructure saveStructure, @Nullable File saveDirOverride)
 	{
 		this.level = level;
-		this.saveDir = (saveDirOverride == null) ? saveStructure.getFullDataFolder(level.getLevelWrapper()) : saveDirOverride;
+		this.saveDir = (saveDirOverride == null) ? saveStructure.getSaveFolder(level.getLevelWrapper()) : saveDirOverride;
 		if (!this.saveDir.exists() && !this.saveDir.mkdirs())
 		{
 			LOGGER.warn("Unable to create full data folder, file saving may fail.");

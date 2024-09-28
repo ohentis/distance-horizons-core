@@ -19,9 +19,7 @@
 
 package com.seibel.distanthorizons.core.file.structure;
 
-import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
-import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 
@@ -30,14 +28,11 @@ public interface ISaveStructure extends AutoCloseable
 {
 	String DATABASE_NAME = "DistantHorizons.sqlite";
 	
-	/**
+	/** 
 	 * Returns the folder that contains LOD data for the given {@link ILevelWrapper}.
-	 * If no appropriate folder exists, one will be created.
+	 * If no appropriate folder exists, one will be created. 
 	 */
-	File getLevelFolder(ILevelWrapper wrapper);
-	
-	/** Will return null if no parent folder exists for the given {@link ILevelWrapper}. */
-	File getFullDataFolder(ILevelWrapper world);
+	File getSaveFolder(ILevelWrapper levelWrapper);
 	
 }
 

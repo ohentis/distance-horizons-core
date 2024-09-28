@@ -39,15 +39,4 @@ public interface IDhApiMultiplayerConfig extends IDhApiConfigGroup
 	 */
 	IDhApiConfigValue<EDhApiServerFolderNameMode> folderSavingMode();
 	
-	/**
-	 * Defines the necessary similarity (as a percent) that two potential levels
-	 * need in order to be considered the same. <br> <br>
-	 *
-	 * Setting this to zero causes every level of a specific dimension type to be considered
-	 * the same level. <br>
-	 * Setting this to a non-zero value allows for usage in servers that user Multiverse
-	 * or similar mods.
-	 */
-	IDhApiConfigValue<Double> multiverseSimilarityRequirement();
-	
 }

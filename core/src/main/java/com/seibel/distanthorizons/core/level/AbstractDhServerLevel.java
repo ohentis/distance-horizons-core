@@ -75,7 +75,7 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 			boolean runRepoReliantSetup
 		)
 	{
-		if (saveStructure.getFullDataFolder(serverLevelWrapper).mkdirs())
+		if (saveStructure.getSaveFolder(serverLevelWrapper).mkdirs())
 		{
 			LOGGER.warn("unable to create data folder.");
 		}

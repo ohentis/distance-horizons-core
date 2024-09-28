@@ -89,7 +89,7 @@ public class SubDimCompare implements Comparable<SubDimCompare>
 	/** Returns true if this sub dimension is close enough to be considered a valid sub dimension */
 	public boolean isValidSubDim()
 	{
-		double minimumSimilarityRequired = Config.Client.Advanced.Multiplayer.multiverseSimilarityRequiredPercent.get();
+		double minimumSimilarityRequired = 0.5;//Config.Client.Advanced.Multiplayer.multiverseSimilarityRequiredPercent.get();
 		return this.getPercentEqual() >= minimumSimilarityRequired
 				|| this.playerPosDist <= MAX_SIMILAR_PLAYER_POS_DISTANCE_IN_BLOCKS;
 	}

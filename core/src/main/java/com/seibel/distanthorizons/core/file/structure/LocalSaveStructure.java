@@ -19,18 +19,25 @@
 
 package com.seibel.distanthorizons.core.file.structure;
 
+import com.seibel.distanthorizons.api.interfaces.override.levelHandling.IDhApiSaveStructure;
+import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.world.EWorldEnvironment;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
+import com.seibel.distanthorizons.coreapi.DependencyInjection.OverrideInjector;
+import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 
 /**
- * Designed for Client_Server & Server_Only environments.
+ * Designed for {@link EWorldEnvironment#Client_Server} & {@link EWorldEnvironment#Server_Only} environments.
  *
  * @version 2022-12-17
  */
 public class LocalSaveStructure implements ISaveStructure
 {
+	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	
 	private File debugPath = new File("");
 	
 	
@@ -44,19 +51,26 @@ public class LocalSaveStructure implements ISaveStructure
 	//================//
 	
 	@Override
-	public File getLevelFolder(ILevelWrapper wrapper)
+	public File getSaveFolder(ILevelWrapper levelWrapper)
 	{
-		IServerLevelWrapper serverSide = (IServerLevelWrapper) wrapper;
-		this.debugPath = serverSide.getSaveFolder();
-		return serverSide.getSaveFolder();
-	}
-	
-	@Override
-	public File getFullDataFolder(ILevelWrapper level)
-	{
-		IServerLevelWrapper serverLevelWrapper = (IServerLevelWrapper) level;
+		IServerLevelWrapper serverLevelWrapper = (IServerLevelWrapper) levelWrapper;
 		this.debugPath = serverLevelWrapper.getSaveFolder();
-		return serverLevelWrapper.getSaveFolder();
+		File saveFolder = serverLevelWrapper.getSaveFolder();
+		
+		
+		// Allow API users to override the save folder
+		IDhApiSaveStructure saveStructureOverride = OverrideInjector.INSTANCE.get(IDhApiSaveStructure.class);
+		if (saveStructureOverride != null)
+		{
+			File overrideFile = saveStructureOverride.overrideFilePath(saveFolder, levelWrapper);
+			if (overrideFile != null)
+			{
+				LOGGER.info("Save folder overridden from ["+saveFolder.getPath()+"] -> ["+overrideFile.getPath()+"].");
+				saveFolder = overrideFile;
+			}
+		}
+		
+		return saveFolder;
 	}
 	
 	

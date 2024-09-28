@@ -979,33 +979,6 @@ public class Config
 								+ EDhApiServerFolderNameMode.NAME_IP_PORT_MC_VERSION + ": Example: \"Minecraft Server IP 192.168.1.40:25565 GameVersion 1.16.5\"")
 						.build();
 				
-				@Deprecated
-				public static ConfigEntry<Double> multiverseSimilarityRequiredPercent = new ConfigEntry.Builder<Double>()
-						.setMinDefaultMax(0.0, 0.0, 1.0)
-						.comment(""
-								+ "AKA: Multiverse support. \n"
-								+ "\n"
-								+ "When matching levels (dimensions) of the same type (overworld, nether, etc.) the \n"
-								+ "loaded chunks must be at least this percent the same \n"
-								+ "in order to be considered the same world. \n"
-								+ "\n"
-								+ "Note: If you use portals to enter a dimension at two \n"
-								+ "different locations the system will think the dimension \n"
-								+ "it is two different levels. \n"
-								+ "\n"
-								+ "1.0 (100%) the chunks must be identical. \n"
-								+ "0.5 (50%)  the chunks must be half the same. \n"
-								+ "0.0 (0%)   disables multi-dimension support, \n"
-								+ "            only one world will be used per dimension. \n"
-								+ "\n"
-								+ "If multiverse support is needed start with a value of 0.2 \n"
-								+ "and tweak the sensitivity from there."
-								+ "Lower values mean the matching is less strict.\n"
-								+ "Higher values mean the matching is more strict.\n"
-								+ "")
-						.build();
-				
-				
 				
 				public static ConfigCategory serverNetworking = new ConfigCategory.Builder().set(ServerNetworking.class).build();
 				

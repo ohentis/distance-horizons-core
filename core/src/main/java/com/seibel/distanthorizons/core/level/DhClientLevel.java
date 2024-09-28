@@ -82,10 +82,11 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 	// constructor //
 	//=============//
 	
-	public DhClientLevel(ISaveStructure saveStructure, IClientLevelWrapper clientLevelWrapper, @Nullable ClientNetworkState networkState) { this(saveStructure, clientLevelWrapper, null, true, networkState); }
+	public DhClientLevel(ISaveStructure saveStructure, IClientLevelWrapper clientLevelWrapper, @Nullable ClientNetworkState networkState) 
+	{ this(saveStructure, clientLevelWrapper, null, true, networkState); }
 	public DhClientLevel(ISaveStructure saveStructure, IClientLevelWrapper clientLevelWrapper, @Nullable File fullDataSaveDirOverride, boolean enableRendering, @Nullable ClientNetworkState networkState)
 	{
-		if (saveStructure.getFullDataFolder(clientLevelWrapper).mkdirs())
+		if (saveStructure.getSaveFolder(clientLevelWrapper).mkdirs())
 		{
 			LOGGER.warn("unable to create data folder.");
 		}

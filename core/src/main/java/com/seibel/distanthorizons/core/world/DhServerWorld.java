@@ -52,12 +52,8 @@ public class DhServerWorld extends AbstractDhServerWorld<DhServerLevel>
 			return null;
 		}
 		
-		return this.dhLevelByLevelWrapper.computeIfAbsent(wrapper, (serverLevelWrapper) ->
-		{
-			File levelFile = this.saveStructure.getLevelFolder(wrapper);
-			LodUtil.assertTrue(levelFile != null);
-			return new DhServerLevel(this.saveStructure, (IServerLevelWrapper) serverLevelWrapper, this.getServerPlayerStateManager());
-		});
+		return this.dhLevelByLevelWrapper.computeIfAbsent(wrapper, 
+				(serverLevelWrapper) -> new DhServerLevel(this.saveStructure, (IServerLevelWrapper) serverLevelWrapper, this.getServerPlayerStateManager()));
 	}
 	
 	@Override

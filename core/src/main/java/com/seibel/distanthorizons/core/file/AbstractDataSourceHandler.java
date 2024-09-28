@@ -79,7 +79,7 @@ public abstract class AbstractDataSourceHandler
 	public AbstractDataSourceHandler(TDhLevel level, ISaveStructure saveStructure, @Nullable File saveDirOverride)
 	{
 		this.level = level;
-		this.saveDir = (saveDirOverride == null) ? saveStructure.getFullDataFolder(level.getLevelWrapper()) : saveDirOverride;
+		this.saveDir = (saveDirOverride == null) ? saveStructure.getSaveFolder(level.getLevelWrapper()) : saveDirOverride;
 		this.repo = this.createRepo();
 	}
 	

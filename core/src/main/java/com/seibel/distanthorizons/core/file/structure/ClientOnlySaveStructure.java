@@ -20,6 +20,7 @@
 package com.seibel.distanthorizons.core.file.structure;
 
 import com.google.common.net.PercentEscaper;
+import com.seibel.distanthorizons.api.interfaces.override.levelHandling.IDhApiSaveStructure;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.file.subDimMatching.SubDimensionLevelMatcher;
 import com.seibel.distanthorizons.core.config.Config;
@@ -31,6 +32,7 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftCli
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftSharedWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
+import com.seibel.distanthorizons.coreapi.DependencyInjection.OverrideInjector;
 import com.seibel.distanthorizons.coreapi.util.StringUtil;
 import org.apache.logging.log4j.Logger;
 
@@ -52,7 +54,6 @@ public class ClientOnlySaveStructure implements ISaveStructure
 	private static final IMinecraftSharedWrapper MC_SHARED = SingletonInjector.INSTANCE.get(IMinecraftSharedWrapper.class);
 	
 	
-	private SubDimensionLevelMatcher subDimMatcher = null;
 	private final File folder;
 	private final HashMap<ILevelWrapper, File> levelWrapperToFileMap = new HashMap<>();
 	
@@ -64,6 +65,8 @@ public class ClientOnlySaveStructure implements ISaveStructure
 	
 	public ClientOnlySaveStructure()
 	{
+		
+		
 		this.folder = new File(getSaveStructureFolderPath());
 		
 		if (!this.folder.exists())
@@ -81,58 +84,6 @@ public class ClientOnlySaveStructure implements ISaveStructure
 	//================//
 	// folder methods //
 	//================//
-	
-	@Override
-	public File getLevelFolder(ILevelWrapper levelWrapper)
-	{
-		return this.levelWrapperToFileMap.computeIfAbsent(levelWrapper, (newLevelWrapper) ->
-		{
-			// Use the server provided key if one was provided
-			if (newLevelWrapper instanceof IServerKeyedClientLevel)
-			{
-				IServerKeyedClientLevel keyedClientLevel = (IServerKeyedClientLevel) newLevelWrapper;
-				LOGGER.info("Loading level " + newLevelWrapper.getDimensionName() + " with key: " + keyedClientLevel.getServerLevelKey());
-				// This world was identified by the server directly, so we can know for sure which folder to use.
-				return new File(getSaveStructureFolderPath() + File.separatorChar + keyedClientLevel.getServerLevelKey().replaceAll(":", "@@"));
-			}
-			
-			
-			// use multiverse matching if enabled and in multiplayer (the server should already know where the player is)
-			if (newLevelWrapper instanceof IClientLevelWrapper && Config.Client.Advanced.Multiplayer.multiverseSimilarityRequiredPercent.get() != 0)
-			{
-				IClientLevelWrapper newClientLevelWrapper = (IClientLevelWrapper) newLevelWrapper;
-				
-				// create the matcher if one doesn't exist
-				if (this.subDimMatcher == null || !this.subDimMatcher.isFindingLevel(newClientLevelWrapper))
-				{
-					LOGGER.info("Loading level " + newClientLevelWrapper.getDimensionName());
-					
-					List<File> levelFolders = this.getDhDataFoldersForLevel(newClientLevelWrapper);
-					this.subDimMatcher = new SubDimensionLevelMatcher(newClientLevelWrapper, this.folder, levelFolders);
-				}
-				
-				File levelFile = this.subDimMatcher.tryGetLevel();
-				if (levelFile != null)
-				{
-					this.subDimMatcher.close();
-					this.subDimMatcher = null;
-				}
-				return levelFile;
-			}
-			
-			// we aren't using multiverse matching, shut down the matcher
-			// TODO this additional call may not be needed
-			if (this.subDimMatcher != null)
-			{
-				this.subDimMatcher.close();
-				this.subDimMatcher = null;
-			}
-			
-			
-			// get the default folder
-			return this.getLevelFolderWithoutSimilarityMatching(newLevelWrapper);
-		});
-	}
 	
 	private File getLevelFolderWithoutSimilarityMatching(ILevelWrapper level)
 	{
@@ -176,15 +127,40 @@ public class ClientOnlySaveStructure implements ISaveStructure
 	
 	
 	@Override
-	public File getFullDataFolder(ILevelWrapper level)
+	public File getSaveFolder(ILevelWrapper levelWrapper)
 	{
-		File levelFolder = this.levelWrapperToFileMap.get(level);
-		if (levelFolder == null)
+		return this.levelWrapperToFileMap.computeIfAbsent(levelWrapper, (newLevelWrapper) ->
 		{
-			return null;
-		}
-		
-		return levelFolder;
+			File saveFolder;
+			
+			// Use the server provided key if one was provided
+			if (newLevelWrapper instanceof IServerKeyedClientLevel)
+			{
+				IServerKeyedClientLevel keyedClientLevel = (IServerKeyedClientLevel) newLevelWrapper;
+				LOGGER.info("Loading level [" + newLevelWrapper.getDimensionName() + "] with key: [" + keyedClientLevel.getServerLevelKey() + "].");
+				// This world was identified by the server directly, so we can know for sure which folder to use.
+				saveFolder = new File(getSaveStructureFolderPath() + File.separatorChar + keyedClientLevel.getServerLevelKey().replaceAll(":", "@@"));
+			}
+			else
+			{
+				// get the default folder
+				saveFolder = this.getLevelFolderWithoutSimilarityMatching(newLevelWrapper);;
+			}
+			
+			// Allow API users to override the save folder
+			IDhApiSaveStructure saveStructureOverride = OverrideInjector.INSTANCE.get(IDhApiSaveStructure.class);
+			if (saveStructureOverride != null)
+			{
+				File overrideFile = saveStructureOverride.overrideFilePath(saveFolder, newLevelWrapper);
+				if (overrideFile != null)
+				{
+					LOGGER.info("Save folder overridden from ["+saveFolder.getPath()+"] -> ["+overrideFile.getPath()+"].");
+					saveFolder = overrideFile;
+				}
+			}
+			
+			return saveFolder;
+		});
 	}
 	
 	
@@ -307,7 +283,7 @@ public class ClientOnlySaveStructure implements ISaveStructure
 	//==================//
 	
 	@Override
-	public void close() { this.subDimMatcher.close(); }
+	public void close() {  }
 	
 	@Override
 	public String toString() { return "[" + this.getClass().getSimpleName() + "@" + this.folder.getName() + "]"; }
