@@ -72,7 +72,7 @@ public abstract class AbstractTrackableMessage extends AbstractNetworkMessage
 		// message/Request ID written as the least significant bits
 		long id = LAST_MESSAGE_ID_REF.getAndIncrement();
 		// write requesting side at bit 32
-		id |= ((worldEnvironment == EWorldEnvironment.Server_Only) ? 1 : 0) << 31;
+		id |= ((worldEnvironment == EWorldEnvironment.SERVER_ONLY) ? 1 : 0) << 31;
 		this.futureId = id;
 	}
 	

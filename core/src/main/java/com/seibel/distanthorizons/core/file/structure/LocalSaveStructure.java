@@ -30,7 +30,7 @@ import org.apache.logging.log4j.Logger;
 import java.io.File;
 
 /**
- * Designed for {@link EWorldEnvironment#Client_Server} & {@link EWorldEnvironment#Server_Only} environments.
+ * Designed for {@link EWorldEnvironment#CLIENT_SERVER} & {@link EWorldEnvironment#SERVER_ONLY} environments.
  *
  * @version 2022-12-17
  */

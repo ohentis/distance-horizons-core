@@ -20,13 +20,13 @@
 package com.seibel.distanthorizons.core.world;
 
 /**
- * Client_Only,
- * Client_Server,
- * Server_Only
+ * CLIENT_ONLY, <br>
+ * CLIENT_SERVER, <br>
+ * SERVER_ONLY <br>
  */
 public enum EWorldEnvironment
 {
-	Client_Only,
-	Client_Server,
-	Server_Only
+	CLIENT_ONLY,
+	CLIENT_SERVER,
+	SERVER_ONLY
 }

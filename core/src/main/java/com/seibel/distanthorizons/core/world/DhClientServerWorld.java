@@ -28,7 +28,6 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.File;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -49,7 +48,7 @@ public class DhClientServerWorld extends AbstractDhServerWorld<DhClientServerLev
 	
 	public DhClientServerWorld()
 	{
-		super(EWorldEnvironment.Client_Server);
+		super(EWorldEnvironment.CLIENT_SERVER);
 		LOGGER.info("Started DhWorld of type " + this.environment);
 	}
 	

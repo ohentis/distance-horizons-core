@@ -20,12 +20,9 @@
 package com.seibel.distanthorizons.core.world;
 
 import com.seibel.distanthorizons.core.level.DhServerLevel;
-import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
 import org.jetbrains.annotations.NotNull;
-
-import java.io.File;
 
 public class DhServerWorld extends AbstractDhServerWorld<DhServerLevel>
 {
@@ -35,7 +32,7 @@ public class DhServerWorld extends AbstractDhServerWorld<DhServerLevel>
 	
 	public DhServerWorld()
 	{
-		super(EWorldEnvironment.Server_Only);
+		super(EWorldEnvironment.SERVER_ONLY);
 		LOGGER.info("Started ["+DhServerWorld.class.getSimpleName()+"] of type ["+this.environment+"].");
 	}
 	

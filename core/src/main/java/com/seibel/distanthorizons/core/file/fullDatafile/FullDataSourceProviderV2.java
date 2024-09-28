@@ -136,7 +136,7 @@ public class FullDataSourceProviderV2
 		this.migrationThreadPool.execute(this::convertLegacyDataSources);
 		
 		// update propagation doesn't need to be run on the server since only the highest detail level is needed
-		if (SharedApi.getEnvironment() != EWorldEnvironment.Server_Only)
+		if (SharedApi.getEnvironment() != EWorldEnvironment.SERVER_ONLY)
 		{
 			this.updateQueueProcessor = ThreadUtil.makeSingleThreadPool("Parent Update Queue ["+dimensionName+"]");
 			this.updateQueueProcessor.execute(this::runUpdateQueue);

@@ -29,7 +29,6 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapp
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.File;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -51,7 +50,7 @@ public class DhClientWorld extends AbstractDhWorld implements IDhClientWorld
 	
 	public DhClientWorld()
 	{
-		super(EWorldEnvironment.Client_Only);
+		super(EWorldEnvironment.CLIENT_ONLY);
 		
 		this.saveStructure = new ClientOnlySaveStructure();
 		this.levels = new ConcurrentHashMap<>();
