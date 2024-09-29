@@ -32,6 +32,7 @@ public class ServerPlayerState implements Closeable
 	
 	@NotNull
 	public final SessionConfig sessionConfig = new SessionConfig();
+	public boolean isReady() { return this.sessionConfig.constrainingConfig != null; }
 	
 	private final ConcurrentHashMap<AbstractDhServerLevel, RateLimiterSet> rateLimiterSets = new ConcurrentHashMap<>();
 	public RateLimiterSet getRateLimiterSet(AbstractDhServerLevel level) { return this.rateLimiterSets.computeIfAbsent(level, ignored -> new RateLimiterSet()); }

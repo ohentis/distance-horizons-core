@@ -413,7 +413,7 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 		CompletableFuture.runAsync(() ->
 		{
 			FullDataPayload payload = new FullDataPayload(data);
-			for (ServerPlayerState serverPlayerState : this.serverPlayerStateManager.getConnectedPlayers())
+			for (ServerPlayerState serverPlayerState : this.serverPlayerStateManager.getReadyPlayers())
 			{
 				if (serverPlayerState.getServerPlayer().getLevel() != this.serverLevelWrapper)
 				{
