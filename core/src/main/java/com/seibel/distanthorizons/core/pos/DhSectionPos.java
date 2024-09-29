@@ -261,6 +261,14 @@ public class DhSectionPos
 				+ Math.abs(getCenterBlockPosZ(pos) - blockPos.z);
 	}
 	
+	public static int getChebyshevBlockDistance(long pos, DhBlockPos2D blockPos)
+	{
+		return Math.max(
+				Math.abs(getCenterBlockPosX(pos) - blockPos.x),
+				Math.abs(getCenterBlockPosZ(pos) - blockPos.z)
+		);
+	}
+	
 	
 	
 	//==================//
