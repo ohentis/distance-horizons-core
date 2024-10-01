@@ -255,6 +255,16 @@ public class Config
 							.addListener(ReloadLodsConfigEventHandler.INSTANCE)
 							.build();
 					
+					public static ConfigEntry<Boolean> fadeOutVanillaRendering = new ConfigEntry.Builder<Boolean>()
+							.set(true)
+							.comment(""
+									+ "If true vanilla chunks will fade out the further away they are \n"
+									+ "smoothing the transition between Distant Horizons and vanilla rendering. \n"
+									+ "")
+							.setPerformance(EConfigEntryPerformance.LOW)
+							.addListener(ReloadLodsConfigEventHandler.INSTANCE)
+							.build();
+					
 					// TODO fixme
 //					public static ConfigEntry<Integer> lodBiomeBlending = new ConfigEntry.Builder<Integer>()
 //							.setMinDefaultMax(0,1,7)

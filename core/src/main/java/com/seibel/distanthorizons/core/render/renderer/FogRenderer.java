@@ -98,7 +98,7 @@ public class FogRenderer
 	// render //
 	//========//
 	
-	public void render(GLState primaryState, Mat4f projectionMatrix, float partialTicks)
+	public void render(GLState primaryState, Mat4f modelViewProjectionMatrix, float partialTicks)
 	{
 		GLState state = new GLState();
 		this.init();
@@ -114,7 +114,7 @@ public class FogRenderer
 		}
 		
 		FogShader.INSTANCE.frameBuffer = this.fogFramebuffer;
-		FogShader.INSTANCE.setProjectionMatrix(projectionMatrix);
+		FogShader.INSTANCE.setProjectionMatrix(modelViewProjectionMatrix);
 		FogShader.INSTANCE.render(partialTicks);
 		
 		// restored so we can write the SSAO texture to the main frame buffer

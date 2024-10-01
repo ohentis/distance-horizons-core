@@ -114,6 +114,10 @@
     "Tint With Avoided Blocks",
   "distanthorizons.config.client.advanced.graphics.quality.tintWithAvoidedBlocks.@tooltip":
     "§4Note: makes snow, carpet, and trapdoors look really bad§r\nShould the blocks underneath avoided blocks gain the color of the avoided block?\n§6True:§r a red flower on grass will tint the grass below it red\n§6False:§r skipped blocks will not change color of surface below them",
+  "distanthorizons.config.client.advanced.graphics.quality.fadeOutVanillaRendering":
+    "Fade Out Vanilla Rendering",
+  "distanthorizons.config.client.advanced.graphics.quality.fadeOutVanillaRendering.@tooltip":
+    "If true vanilla chunks will fade out the further away they are\nsmoothing the transition between Distant Horizons and vanilla rendering.",
   "distanthorizons.config.client.advanced.graphics.quality.lodBiomeBlending":
     "Biome Blending",
   "distanthorizons.config.client.advanced.graphics.quality.lodBiomeBlending.@tooltip":

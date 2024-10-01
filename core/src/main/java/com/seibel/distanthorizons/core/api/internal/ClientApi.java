@@ -26,6 +26,7 @@ import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhAp
 import com.seibel.distanthorizons.core.file.structure.ClientOnlySaveStructure;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.render.DhApiRenderProxy;
+import com.seibel.distanthorizons.core.render.renderer.FadeRenderer;
 import com.seibel.distanthorizons.core.util.TimerUtil;
 import com.seibel.distanthorizons.core.util.objects.Pair;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
@@ -547,6 +548,15 @@ public class ClientApi
 			
 			profiler.pop(); // end LOD
 			profiler.push("terrain"); // go back into "terrain"
+		}
+	}
+	
+	/** should be called after DH and MC finish rendering so we can smooth the transition between the two */
+	public void renderFade(Mat4f mcModelViewMatrix, Mat4f mcProjectionMatrix, float partialTicks)
+	{
+		if (Config.Client.Advanced.Graphics.Quality.fadeOutVanillaRendering.get())
+		{
+			FadeRenderer.INSTANCE.render(mcModelViewMatrix, mcProjectionMatrix, partialTicks);
 		}
 	}
 	
