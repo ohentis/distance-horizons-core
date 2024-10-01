@@ -4,6 +4,7 @@ import com.seibel.distanthorizons.core.network.messages.AbstractNetworkMessage;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Collection;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -80,7 +81,8 @@ public class ServerPlayerStateManager
 	
 	@Nullable
 	public ServerPlayerState getConnectedPlayer(IServerPlayerWrapper player) { return this.connectedPlayerStateByPlayerWrapper.get(player); }
-	public Iterable<ServerPlayerState> getConnectedPlayers() { return this.connectedPlayerStateByPlayerWrapper.values(); }
+	public Collection<ServerPlayerState> getConnectedPlayers() { return this.connectedPlayerStateByPlayerWrapper.values(); }
+	public Iterable<ServerPlayerState> getReadyPlayers() { return this.getConnectedPlayers().stream().filter(ServerPlayerState::isReady)::iterator; }
 	
 	
 	private static class MessageQueueState

@@ -413,7 +413,7 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 		CompletableFuture.runAsync(() ->
 		{
 			FullDataPayload payload = new FullDataPayload(data);
-			for (ServerPlayerState serverPlayerState : this.serverPlayerStateManager.getConnectedPlayers())
+			for (ServerPlayerState serverPlayerState : this.serverPlayerStateManager.getReadyPlayers())
 			{
 				if (serverPlayerState.getServerPlayer().getLevel() != this.serverLevelWrapper)
 				{
@@ -426,7 +426,7 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 				}
 				
 				Vec3d playerPosition = serverPlayerState.getServerPlayer().getPosition();
-				int distanceFromPlayer = DhSectionPos.getManhattanBlockDistance(data.getPos(), new DhBlockPos2D((int) playerPosition.x, (int) playerPosition.z)) / 16;
+				int distanceFromPlayer = DhSectionPos.getChebyshevBlockDistance(data.getPos(), new DhBlockPos2D((int) playerPosition.x, (int) playerPosition.z)) / 16;
 				if (distanceFromPlayer >= serverPlayerState.getServerPlayer().getViewDistance()
 						&& distanceFromPlayer <= serverPlayerState.sessionConfig.getRenderDistanceRadius())
 				{
