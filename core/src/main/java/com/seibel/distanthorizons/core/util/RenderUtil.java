@@ -59,6 +59,15 @@ public class RenderUtil
 		// in James' testing a near clip plane distance of 2 blocks is enough to allow the fragment
 		// culling to take effect instead of seeing the near clip plane.
 		float nearClipDist = RenderUtil.getNearClipPlaneDistanceInBlocks(partialTicks);
+		// limit the near clip plane if we are close to the ground
+		if (getHeightBasedNearClipOverride() == -1)
+		{
+			// min() used to prevent the near clip plane from becoming visible at large vanilla render distances
+			// DH's dithering/discard shader handles everything farther away anyway so the near clip plane
+			// would just need to be far enough to prevent depth precision errors
+			nearClipDist = Math.min(nearClipDist, 7.5f);
+		}
+		
 		float farClipDist = (float) RenderUtil.getFarClipPlaneDistanceInBlocks();
 		
 		// Create a copy of the current matrix, so it won't be modified.
