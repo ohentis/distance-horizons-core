@@ -196,10 +196,8 @@ public class DhTerrainShaderProgram extends ShaderProgram implements IDhApiShade
 		
 		// Clip Uniform
 		float dhNearClipDistance = RenderUtil.getNearClipPlaneDistanceInBlocks(renderParameters.partialTicks);
-		// TODO a different multiplier might be necessary
-		//  this is to try and allow the fragment culling to go farther than the near clip plane.
-		//  Currently this only works for certain FOV/screen ratio combos.
-		dhNearClipDistance *= 2.0f;
+		// this added value prevents the near clip plane and discard circle from touching, which looks bad
+		dhNearClipDistance += 16f;
 		// if the player is very high up and the near clip plane has been modified, disable the distance clipping
 		// we're high enough that nothing will render on top of the player and this can cause issues otherwise
 		if (RenderUtil.getHeightBasedNearClipOverride() != -1)

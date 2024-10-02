@@ -61,9 +61,8 @@ void applyNoise(inout vec4 fragColor, const in float viewDist)
     fragColor.rgb = newCol;
 }
 
-float random(vec2 st) {
-    return fract(sin(dot(st.xy, vec2(12.9898, 78.233))) * 43758.5453);
-}
+float worldPosToNoise(vec2 st) { return fract(sin(dot(st.xy, vec2(12.9898, 78.233))) * 43758.5453); }
+
 
 
 void main()
@@ -74,18 +73,20 @@ void main()
     
     if (uDitherDhRendering)
     {
-        // only for opaque pass //
-        
         // Dither out the fragment based on distance and noise.
-        float noiseValue = random(vertexWorldPos.xy);
+        // Dithering is used since it works for both opaque and transparent rendering
+        
+        // noise increases as the distance increases
+        float worldNoise = worldPosToNoise(vertexWorldPos.xy);
         float fadeStep = smoothstep(uClipDistance, uClipDistance * 1.5, viewDist);
-        if (fadeStep < noiseValue)
+        if (fadeStep < worldNoise)
         {
-            discard; // Discard if the fadeStep is less than the noise.
+            discard;
         }
         
         
-        // only for transparent pass //
+        // this logic could be used for transparent rendering,
+        // however we don't currently have the logic needed to differentiate opaque/transparenet rendering
         //float fadeStep = smoothstep(uClipDistance, uClipDistance * 2, viewDist);
         //fragColor.a = min(fadeStep, fragColor.a);
     }

@@ -110,10 +110,15 @@ public class FadeShader extends AbstractShaderRenderer
 		if (this.inverseDhMvmProjMatrix != null) this.shader.setUniform(this.uDhInvMvmProj, this.inverseDhMvmProjMatrix);
 		
 		
-		int vanillaBlockRenderDistance = MC_RENDER.getRenderDistance() * LodUtil.CHUNK_WIDTH;
+		float dhNearClipDistance = RenderUtil.getNearClipPlaneDistanceInBlocks(partialTicks);
+		// this added value prevents the near clip plane and discard circle from touching, which looks bad
+		dhNearClipDistance += 16f;
+		
 		// measured in blocks
-		float fadeStartDistance = vanillaBlockRenderDistance * 0.5f;
-		float fadeEndDistance = vanillaBlockRenderDistance * 0.8f;
+		// these multipliers in James' tests should provide a fairly smooth transition
+		// without having underdraw issues
+		float fadeStartDistance = dhNearClipDistance * 1.5f;
+		float fadeEndDistance = dhNearClipDistance * 1.9f;
 		
 		if (this.uStartFadeBlockDistance != -1) this.shader.setUniform(this.uStartFadeBlockDistance, fadeStartDistance);
 		if (this.uEndFadeBlockDistance != -1) this.shader.setUniform(this.uEndFadeBlockDistance, fadeEndDistance);

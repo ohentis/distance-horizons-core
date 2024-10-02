@@ -114,7 +114,7 @@ public class RenderUtil
 		
 		// modify based on the player's FOV
 		double fov = MC_RENDER.getFov(partialTicks);
-		double aspectRatio = (double) MC_RENDER.getScreenWidth() / MC_RENDER.getScreenHeight();
+		double aspectRatio = (double) MC_RENDER.getTargetFrameBufferViewportWidth() / MC_RENDER.getTargetFrameBufferViewportHeight();
 		
 		// source: https://stackoverflow.com/questions/8101119/how-do-i-methodically-choose-the-near-clip-plane-distance-for-a-perspective-proj/8101234#8101234
 		return (float) (nearClipPlane
