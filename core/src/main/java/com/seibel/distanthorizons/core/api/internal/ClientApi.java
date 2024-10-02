@@ -556,7 +556,8 @@ public class ClientApi
 	public void renderFadeOpaque(Mat4f mcModelViewMatrix, Mat4f mcProjectionMatrix, float partialTicks, IClientLevelWrapper level)
 	{
 		if (Config.Client.Advanced.Graphics.Quality.fadeOutVanillaRendering.get()
-			&& Config.Client.Advanced.Graphics.Quality.twoPassVanillaFade.get())
+			&& Config.Client.Advanced.Graphics.Quality.twoPassVanillaFade.get()
+			&& Config.Client.Advanced.Debugging.rendererMode.get() == EDhApiRendererMode.DEFAULT)
 		{
 			FadeRenderer.INSTANCE.render(mcModelViewMatrix, mcProjectionMatrix, partialTicks, level);
 		}
@@ -564,7 +565,8 @@ public class ClientApi
 	/** should be called after DH and MC finish rendering so we can smooth the transition between the two */
 	public void renderFade(Mat4f mcModelViewMatrix, Mat4f mcProjectionMatrix, float partialTicks, IClientLevelWrapper level)
 	{
-		if (Config.Client.Advanced.Graphics.Quality.fadeOutVanillaRendering.get())
+		if (Config.Client.Advanced.Graphics.Quality.fadeOutVanillaRendering.get()
+			&& Config.Client.Advanced.Debugging.rendererMode.get() == EDhApiRendererMode.DEFAULT)
 		{
 			FadeRenderer.INSTANCE.render(mcModelViewMatrix, mcProjectionMatrix, partialTicks, level);
 		}
