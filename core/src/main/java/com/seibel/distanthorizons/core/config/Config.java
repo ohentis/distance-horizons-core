@@ -262,7 +262,22 @@ public class Config
 									+ "smoothing the transition between Distant Horizons and vanilla rendering. \n"
 									+ "")
 							.setPerformance(EConfigEntryPerformance.LOW)
-							.addListener(ReloadLodsConfigEventHandler.INSTANCE)
+							.build();
+					
+					public static ConfigEntry<Boolean> twoPassVanillaFade = new ConfigEntry.Builder<Boolean>()
+							.set(true)
+							.comment(""
+									+ "TODO \n"
+									+ "")
+							.setPerformance(EConfigEntryPerformance.LOW)
+							.build();
+					
+					public static ConfigEntry<Boolean> ditherDhFade = new ConfigEntry.Builder<Boolean>()
+							.set(true)
+							.comment(""
+									+ "TODO \n"
+									+ "")
+							.setPerformance(EConfigEntryPerformance.LOW)
 							.build();
 					
 					// TODO fixme

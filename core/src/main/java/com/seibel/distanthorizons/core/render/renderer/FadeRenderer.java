@@ -20,6 +20,7 @@
 package com.seibel.distanthorizons.core.render.renderer;
 
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
+import com.seibel.distanthorizons.core.level.DhClientLevel;
 import com.seibel.distanthorizons.core.render.glObject.GLState;
 import com.seibel.distanthorizons.core.render.renderer.shaders.FadeApplyShader;
 import com.seibel.distanthorizons.core.render.renderer.shaders.FadeShader;
@@ -27,6 +28,7 @@ import com.seibel.distanthorizons.core.util.math.Mat4f;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.opengl.GL32;
@@ -106,7 +108,7 @@ public class FadeRenderer
 	// render //
 	//========//
 	
-	public void render(Mat4f mcModelViewMatrix, Mat4f mcProjectionMatrix, float partialTicks)
+	public void render(Mat4f mcModelViewMatrix, Mat4f mcProjectionMatrix, float partialTicks, IClientLevelWrapper level)
 	{
 		IProfilerWrapper profiler = MC_CLIENT.getProfiler();
 		profiler.pop(); // get out of "terrain"
@@ -134,7 +136,8 @@ public class FadeRenderer
 			
 			
 			FadeShader.INSTANCE.frameBuffer = this.fadeFramebuffer;
-			FadeShader.INSTANCE.setProjectionMatrix(mcModelViewMatrix, mcProjectionMatrix);
+			FadeShader.INSTANCE.setProjectionMatrix(mcModelViewMatrix, mcProjectionMatrix, partialTicks);
+			FadeShader.INSTANCE.setLevelMaxHeight(level.getMaxHeight());
 			FadeShader.INSTANCE.render(partialTicks);
 			
 			// restored so we can write the fade texture to the main frame buffer

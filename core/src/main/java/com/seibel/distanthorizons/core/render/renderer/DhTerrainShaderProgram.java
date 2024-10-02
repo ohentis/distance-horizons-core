@@ -43,27 +43,28 @@ public class DhTerrainShaderProgram extends ShaderProgram implements IDhApiShade
 	public final AbstractVertexAttribute vao;
 	
 	// Uniforms
-	public final int uCombinedMatrix;
-	public final int uModelOffset;
-	public final int uWorldYOffset;
+	public int uCombinedMatrix = -1;
+	public int uModelOffset = -1;
+	public int uWorldYOffset = -1;
+	public int uDitherDhRendering = -1;
 	
-	public final int uMircoOffset;
+	public int uMircoOffset = -1;
 	
-	public final int uEarthRadius;
+	public int uEarthRadius = -1;
 	
-	public final int uLightMap;
+	public int uLightMap = -1;
 	
 	// Fog/Clip Uniforms
-	public final int uClipDistance;
+	public int uClipDistance = -1;
 	
 	// Noise Uniforms
-	public final int uNoiseEnabled;
-	public final int uNoiseSteps;
-	public final int uNoiseIntensity;
-	public final int uNoiseDropoff;
+	public int uNoiseEnabled = -1;
+	public int uNoiseSteps = -1;
+	public int uNoiseIntensity = -1;
+	public int uNoiseDropoff = -1;
 	
 	// Debug Uniform
-	public final int uWhiteWorld;
+	public int uWhiteWorld = -1;
 	
 	
 	
@@ -85,6 +86,7 @@ public class DhTerrainShaderProgram extends ShaderProgram implements IDhApiShade
 		this.uCombinedMatrix = this.getUniformLocation("uCombinedMatrix");
 		this.uModelOffset = this.getUniformLocation("uModelOffset");
 		this.uWorldYOffset = this.tryGetUniformLocation("uWorldYOffset");
+		this.uDitherDhRendering = this.tryGetUniformLocation("uDitherDhRendering");
 		this.uMircoOffset = this.getUniformLocation("uMircoOffset");
 		this.uEarthRadius = this.tryGetUniformLocation("uEarthRadius");
 		
@@ -186,6 +188,8 @@ public class DhTerrainShaderProgram extends ShaderProgram implements IDhApiShade
 		this.setUniform(this.uLightMap, 0); // TODO this should probably be passed in
 		
 		if (this.uWorldYOffset != -1) this.setUniform(this.uWorldYOffset, (float) renderParameters.worldYOffset);
+		
+		if (this.uDitherDhRendering != -1) this.setUniform(this.uDitherDhRendering, Config.Client.Advanced.Graphics.Quality.ditherDhFade.get());
 		
 		// Debug
 		this.setUniform(this.uWhiteWorld, Config.Client.Advanced.Debugging.enableWhiteWorld.get());

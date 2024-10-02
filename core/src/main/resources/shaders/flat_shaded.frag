@@ -16,6 +16,7 @@ uniform bool uNoiseEnabled;
 uniform int uNoiseSteps;
 uniform float uNoiseIntensity;
 uniform int uNoiseDropoff;
+uniform bool uDitherDhRendering;
 
 
 // The random functions for diffrent dimentions
@@ -60,16 +61,40 @@ void applyNoise(inout vec4 fragColor, const in float viewDist)
     fragColor.rgb = newCol;
 }
 
- 
+float random(vec2 st) {
+    return fract(sin(dot(st.xy, vec2(12.9898, 78.233))) * 43758.5453);
+}
+
 
 void main()
 {
     fragColor = vertexColor;
     
     float viewDist = length(vertexWorldPos);
-    if (viewDist < uClipDistance && uClipDistance > 0.0)
+    
+    if (uDitherDhRendering)
     {
-        discard;
+        // only for opaque pass //
+        
+        // Dither out the fragment based on distance and noise.
+        float noiseValue = random(vertexWorldPos.xy);
+        float fadeStep = smoothstep(uClipDistance, uClipDistance * 1.5, viewDist);
+        if (fadeStep < noiseValue)
+        {
+            discard; // Discard if the fadeStep is less than the noise.
+        }
+        
+        
+        // only for transparent pass //
+        //float fadeStep = smoothstep(uClipDistance, uClipDistance * 2, viewDist);
+        //fragColor.a = min(fadeStep, fragColor.a);
+    }
+    else
+    {
+        if (viewDist < uClipDistance && uClipDistance > 0.0)
+        {
+            discard;
+        }
     }
     
     if (uNoiseEnabled)

@@ -118,6 +118,12 @@
     "Fade Out Vanilla Rendering",
   "distanthorizons.config.client.advanced.graphics.quality.fadeOutVanillaRendering.@tooltip":
     "If true vanilla chunks will fade out the further away they are\nsmoothing the transition between Distant Horizons and vanilla rendering.",
+
+  "distanthorizons.config.client.advanced.graphics.quality.twoPassVanillaFade":
+    "Two Pass Vanilla Fade",
+  "distanthorizons.config.client.advanced.graphics.quality.ditherDhFade":
+    "Dither DH Near Rendering",
+    
   "distanthorizons.config.client.advanced.graphics.quality.lodBiomeBlending":
     "Biome Blending",
   "distanthorizons.config.client.advanced.graphics.quality.lodBiomeBlending.@tooltip":

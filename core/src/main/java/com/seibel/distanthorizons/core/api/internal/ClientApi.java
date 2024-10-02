@@ -24,6 +24,7 @@ import com.seibel.distanthorizons.api.enums.rendering.EDhApiRenderPass;
 import com.seibel.distanthorizons.api.methods.events.abstractEvents.*;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
 import com.seibel.distanthorizons.core.file.structure.ClientOnlySaveStructure;
+import com.seibel.distanthorizons.core.level.DhClientLevel;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.render.DhApiRenderProxy;
 import com.seibel.distanthorizons.core.render.renderer.FadeRenderer;
@@ -552,11 +553,20 @@ public class ClientApi
 	}
 	
 	/** should be called after DH and MC finish rendering so we can smooth the transition between the two */
-	public void renderFade(Mat4f mcModelViewMatrix, Mat4f mcProjectionMatrix, float partialTicks)
+	public void renderFadeOpaque(Mat4f mcModelViewMatrix, Mat4f mcProjectionMatrix, float partialTicks, IClientLevelWrapper level)
+	{
+		if (Config.Client.Advanced.Graphics.Quality.fadeOutVanillaRendering.get()
+			&& Config.Client.Advanced.Graphics.Quality.twoPassVanillaFade.get())
+		{
+			FadeRenderer.INSTANCE.render(mcModelViewMatrix, mcProjectionMatrix, partialTicks, level);
+		}
+	}
+	/** should be called after DH and MC finish rendering so we can smooth the transition between the two */
+	public void renderFade(Mat4f mcModelViewMatrix, Mat4f mcProjectionMatrix, float partialTicks, IClientLevelWrapper level)
 	{
 		if (Config.Client.Advanced.Graphics.Quality.fadeOutVanillaRendering.get())
 		{
-			FadeRenderer.INSTANCE.render(mcModelViewMatrix, mcProjectionMatrix, partialTicks);
+			FadeRenderer.INSTANCE.render(mcModelViewMatrix, mcProjectionMatrix, partialTicks, level);
 		}
 	}
 	

@@ -101,9 +101,7 @@ public class FadeApplyShader extends AbstractShaderRenderer
 	@Override
 	protected void onRender()
 	{
-		GL32.glEnable(GL32.GL_BLEND);
-		GL32.glBlendEquation(GL32.GL_FUNC_ADD);
-		GL32.glBlendFuncSeparate(GL32.GL_SRC_ALPHA, GL32.GL_ONE_MINUS_SRC_ALPHA, GL32.GL_ONE, GL32.GL_ONE_MINUS_SRC_ALPHA);
+		GL32.glDisable(GL32.GL_BLEND);
 		
 		// Depth testing must be disabled otherwise this application shader won't apply anything.
 		// setting this isn't necessary in vanilla, but some mods may change this, requiring it to be set manually, 

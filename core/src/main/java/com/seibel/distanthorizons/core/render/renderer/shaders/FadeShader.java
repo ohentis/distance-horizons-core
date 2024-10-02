@@ -25,6 +25,7 @@ import com.seibel.distanthorizons.core.render.glObject.shader.ShaderProgram;
 import com.seibel.distanthorizons.core.render.renderer.LodRenderer;
 import com.seibel.distanthorizons.core.render.renderer.ScreenQuad;
 import com.seibel.distanthorizons.core.util.LodUtil;
+import com.seibel.distanthorizons.core.util.RenderUtil;
 import com.seibel.distanthorizons.core.util.math.Mat4f;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
@@ -40,19 +41,25 @@ public class FadeShader extends AbstractShaderRenderer
 	
 	public int frameBuffer = -1;
 	
-	private Mat4f inverseMvmProjMatrix;
+	private Mat4f inverseMcMvmProjMatrix;
+	private Mat4f inverseDhMvmProjMatrix;
+	private float levelMaxHeight;
 	
 	
 	// Uniforms
 	public int uMcDepthTexture = -1;
+	public int uDhDepthTexture = -1;
 	public int uCombinedMcDhColorTexture = -1;
 	public int uDhColorTexture = -1;
 	
 	/** Inverted Model View Projection matrix */
-	public int uInvMvmProj = -1;
+	public int uDhInvMvmProj = -1;
+	public int uMcInvMvmProj = -1;
 	
 	public int uStartFadeBlockDistance = -1;
 	public int uEndFadeBlockDistance = -1;
+	
+	public int uMaxLevelHeight = -1;
 	
 	
 	
@@ -75,14 +82,18 @@ public class FadeShader extends AbstractShaderRenderer
 		// because disabling fade can cause the GLSL to optimize out most (if not all) uniforms
 		
 		// near fade
-		this.uInvMvmProj = this.shader.tryGetUniformLocation("uInvMvmProj");
+		this.uDhInvMvmProj = this.shader.tryGetUniformLocation("uDhInvMvmProj");
+		this.uMcInvMvmProj = this.shader.tryGetUniformLocation("uMcInvMvmProj");
 		
 		this.uMcDepthTexture = this.shader.tryGetUniformLocation("uMcDepthMap");
+		this.uDhDepthTexture = this.shader.tryGetUniformLocation("uDhDepthTexture");
 		this.uCombinedMcDhColorTexture = this.shader.tryGetUniformLocation("uCombinedMcDhColorTexture");
 		this.uDhColorTexture = this.shader.tryGetUniformLocation("uDhColorTexture");
 		
 		this.uStartFadeBlockDistance = this.shader.tryGetUniformLocation("uStartFadeBlockDistance");
 		this.uEndFadeBlockDistance = this.shader.tryGetUniformLocation("uEndFadeBlockDistance");
+		
+		this.uMaxLevelHeight = this.shader.tryGetUniformLocation("uMaxLevelHeight");
 		
 	}
 	
@@ -95,10 +106,8 @@ public class FadeShader extends AbstractShaderRenderer
 	@Override
 	protected void onApplyUniforms(float partialTicks)
 	{
-		if (this.inverseMvmProjMatrix != null)
-		{
-			this.shader.setUniform(this.uInvMvmProj, this.inverseMvmProjMatrix);
-		}
+		if (this.inverseMcMvmProjMatrix != null) this.shader.setUniform(this.uMcInvMvmProj, this.inverseMcMvmProjMatrix);
+		if (this.inverseDhMvmProjMatrix != null) this.shader.setUniform(this.uDhInvMvmProj, this.inverseDhMvmProjMatrix);
 		
 		
 		int vanillaBlockRenderDistance = MC_RENDER.getRenderDistance() * LodUtil.CHUNK_WIDTH;
@@ -108,16 +117,27 @@ public class FadeShader extends AbstractShaderRenderer
 		
 		if (this.uStartFadeBlockDistance != -1) this.shader.setUniform(this.uStartFadeBlockDistance, fadeStartDistance);
 		if (this.uEndFadeBlockDistance != -1) this.shader.setUniform(this.uEndFadeBlockDistance, fadeEndDistance);
+		
+		if (this.uMaxLevelHeight != -1) this.shader.setUniform(this.uMaxLevelHeight, this.levelMaxHeight);
 	}
 	
-	public void setProjectionMatrix(Mat4f mcModelViewMatrix, Mat4f mcProjectionMatrix)
+	public void setProjectionMatrix(Mat4f mcModelViewMatrix, Mat4f mcProjectionMatrix, float partialTicks)
 	{
-		Mat4f inverseModelViewProjectionMatrix = new Mat4f(mcProjectionMatrix);
-		inverseModelViewProjectionMatrix.multiply(mcModelViewMatrix);
-		inverseModelViewProjectionMatrix.invert();
+		Mat4f inverseMcModelViewProjectionMatrix = new Mat4f(mcProjectionMatrix);
+		inverseMcModelViewProjectionMatrix.multiply(mcModelViewMatrix);
+		inverseMcModelViewProjectionMatrix.invert();
+		this.inverseMcMvmProjMatrix = inverseMcModelViewProjectionMatrix;
 		
-		this.inverseMvmProjMatrix = inverseModelViewProjectionMatrix; 
+		
+		Mat4f dhProjectionMatrix = RenderUtil.createLodProjectionMatrix(mcProjectionMatrix, partialTicks);
+		Mat4f dhModelViewMatrix = RenderUtil.createLodModelViewMatrix(mcModelViewMatrix);
+		
+		Mat4f inverseDhModelViewProjectionMatrix = new Mat4f(dhProjectionMatrix);
+		inverseDhModelViewProjectionMatrix.multiply(dhModelViewMatrix);
+		inverseDhModelViewProjectionMatrix.invert();
+		this.inverseDhMvmProjMatrix = inverseDhModelViewProjectionMatrix;
 	}
+	public void setLevelMaxHeight(int levelMaxHeight) { this.levelMaxHeight = levelMaxHeight; }
 	
 	
 	
@@ -140,12 +160,16 @@ public class FadeShader extends AbstractShaderRenderer
 		GL32.glUniform1i(this.uMcDepthTexture, 0);
 		
 		GL32.glActiveTexture(GL32.GL_TEXTURE1);
-		GL32.glBindTexture(GL32.GL_TEXTURE_2D, MC_RENDER.getColorTextureId());
-		GL32.glUniform1i(this.uCombinedMcDhColorTexture, 1);
+		GL32.glBindTexture(GL32.GL_TEXTURE_2D, LodRenderer.getActiveDepthTextureId());
+		GL32.glUniform1i(this.uDhDepthTexture, 1);
 		
 		GL32.glActiveTexture(GL32.GL_TEXTURE2);
+		GL32.glBindTexture(GL32.GL_TEXTURE_2D, MC_RENDER.getColorTextureId());
+		GL32.glUniform1i(this.uCombinedMcDhColorTexture, 2);
+		
+		GL32.glActiveTexture(GL32.GL_TEXTURE3);
 		GL32.glBindTexture(GL32.GL_TEXTURE_2D, LodRenderer.getActiveColorTextureId());
-		GL32.glUniform1i(this.uDhColorTexture, 2);
+		GL32.glUniform1i(this.uDhColorTexture, 3);
 		
 		// this is necessary for MC 1.16 (IE Legacy OpenGL)
 		// otherwise the framebuffer isn't cleared correctly and the fade smears across the screen
