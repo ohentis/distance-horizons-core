@@ -123,6 +123,12 @@ public class RenderUtil
 		
 		// modify based on the player's FOV
 		double fov = MC_RENDER.getFov(partialTicks);
+		// we don't want an FOV of less than 30 since it causes issues where
+		// the near clip plane and fading render incorrectly.
+		// DH has been tested to work correctly with an FOV of 30 and up,
+		// and since MC doesn't normally allow an FOV lower than 30 this should work just fine.
+		fov = Math.max(fov, 30);
+		
 		double aspectRatio = (double) MC_RENDER.getTargetFrameBufferViewportWidth() / MC_RENDER.getTargetFrameBufferViewportHeight();
 		
 		// source: https://stackoverflow.com/questions/8101119/how-do-i-methodically-choose-the-near-clip-plane-distance-for-a-perspective-proj/8101234#8101234
