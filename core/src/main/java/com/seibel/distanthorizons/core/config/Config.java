@@ -255,19 +255,14 @@ public class Config
 							.addListener(ReloadLodsConfigEventHandler.INSTANCE)
 							.build();
 					
-					public static ConfigEntry<Boolean> fadeOutVanillaRendering = new ConfigEntry.Builder<Boolean>()
-							.set(true)
+					public static ConfigEntry<EDhApiMcRenderingFadeMode> vanillaFadeMode = new ConfigEntry.Builder<EDhApiMcRenderingFadeMode>()
+							.set(EDhApiMcRenderingFadeMode.DOUBLE_PASS)
 							.comment(""
-									+ "If true vanilla chunks will fade out the further away they are \n"
-									+ "smoothing the transition between Distant Horizons and vanilla rendering. \n"
-									+ "")
-							.setPerformance(EConfigEntryPerformance.LOW)
-							.build();
-					
-					public static ConfigEntry<Boolean> twoPassVanillaFade = new ConfigEntry.Builder<Boolean>()
-							.set(true)
-							.comment(""
-									+ "TODO \n"
+									+ "How should vanilla Minecraft fade into Distant Horizons LODs? \n"
+									+ "\n"
+									+ EDhApiMcRenderingFadeMode.NONE + ": Fastest, there will be a pronounced border between DH and MC rendering. \n"
+									+ EDhApiMcRenderingFadeMode.SINGLE_PASS + ": Fades after MC's transparent pass, opaque blocks underwater won't be faded. \n"
+									+ EDhApiMcRenderingFadeMode.DOUBLE_PASS + ": Slowest, fades after both MC's opaque and transparent passes, provides the smoothest transition. \n"
 									+ "")
 							.setPerformance(EConfigEntryPerformance.LOW)
 							.build();
@@ -275,7 +270,9 @@ public class Config
 					public static ConfigEntry<Boolean> ditherDhFade = new ConfigEntry.Builder<Boolean>()
 							.set(true)
 							.comment(""
-									+ "TODO \n"
+									+ "If true LODs will fade away as you get closer to them. \n"
+									+ "If false LODs will cut off abruptly at a set distance from the camera. \n"
+									+ "This setting is affected by the vanilla overdraw prevention config. \n"
 									+ "")
 							.setPerformance(EConfigEntryPerformance.LOW)
 							.build();

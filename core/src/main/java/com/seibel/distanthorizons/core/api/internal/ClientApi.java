@@ -20,11 +20,11 @@
 package com.seibel.distanthorizons.core.api.internal;
 
 import com.seibel.distanthorizons.api.DhApi;
+import com.seibel.distanthorizons.api.enums.config.EDhApiMcRenderingFadeMode;
 import com.seibel.distanthorizons.api.enums.rendering.EDhApiRenderPass;
 import com.seibel.distanthorizons.api.methods.events.abstractEvents.*;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
 import com.seibel.distanthorizons.core.file.structure.ClientOnlySaveStructure;
-import com.seibel.distanthorizons.core.level.DhClientLevel;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.render.DhApiRenderProxy;
 import com.seibel.distanthorizons.core.render.renderer.FadeRenderer;
@@ -555,20 +555,26 @@ public class ClientApi
 	/** should be called after DH and MC finish rendering so we can smooth the transition between the two */
 	public void renderFadeOpaque(Mat4f mcModelViewMatrix, Mat4f mcProjectionMatrix, float partialTicks, IClientLevelWrapper level)
 	{
-		if (Config.Client.Advanced.Graphics.Quality.fadeOutVanillaRendering.get()
-			&& Config.Client.Advanced.Graphics.Quality.twoPassVanillaFade.get()
-			&& Config.Client.Advanced.Debugging.rendererMode.get() == EDhApiRendererMode.DEFAULT)
+		// only fade when DH is rendering
+		if (Config.Client.Advanced.Debugging.rendererMode.get() == EDhApiRendererMode.DEFAULT)
 		{
-			FadeRenderer.INSTANCE.render(mcModelViewMatrix, mcProjectionMatrix, partialTicks, level);
+			if (Config.Client.Advanced.Graphics.Quality.vanillaFadeMode.get() == EDhApiMcRenderingFadeMode.DOUBLE_PASS)
+			{
+				FadeRenderer.INSTANCE.render(mcModelViewMatrix, mcProjectionMatrix, partialTicks, level);
+			}
 		}
 	}
 	/** should be called after DH and MC finish rendering so we can smooth the transition between the two */
 	public void renderFade(Mat4f mcModelViewMatrix, Mat4f mcProjectionMatrix, float partialTicks, IClientLevelWrapper level)
 	{
-		if (Config.Client.Advanced.Graphics.Quality.fadeOutVanillaRendering.get()
-			&& Config.Client.Advanced.Debugging.rendererMode.get() == EDhApiRendererMode.DEFAULT)
+		// only fade when DH is rendering
+		if (Config.Client.Advanced.Debugging.rendererMode.get() == EDhApiRendererMode.DEFAULT)
 		{
-			FadeRenderer.INSTANCE.render(mcModelViewMatrix, mcProjectionMatrix, partialTicks, level);
+			// fade if any level fading is active
+			if (Config.Client.Advanced.Graphics.Quality.vanillaFadeMode.get() != EDhApiMcRenderingFadeMode.NONE)
+			{
+				FadeRenderer.INSTANCE.render(mcModelViewMatrix, mcProjectionMatrix, partialTicks, level);
+			}
 		}
 	}
 	

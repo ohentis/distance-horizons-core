@@ -21,6 +21,7 @@ package com.seibel.distanthorizons.core.config.eventHandlers.presets;
 
 import com.seibel.distanthorizons.api.enums.config.EDhApiHorizontalQuality;
 import com.seibel.distanthorizons.api.enums.config.EDhApiMaxHorizontalResolution;
+import com.seibel.distanthorizons.api.enums.config.EDhApiMcRenderingFadeMode;
 import com.seibel.distanthorizons.api.enums.config.EDhApiVerticalQuality;
 import com.seibel.distanthorizons.api.enums.config.quickOptions.EDhApiQualityPreset;
 import com.seibel.distanthorizons.api.enums.rendering.EDhApiTransparency;
@@ -86,6 +87,24 @@ public class RenderQualityPresetConfigEventHandler extends AbstractPresetConfigE
 				this.put(EDhApiQualityPreset.HIGH, true);
 				this.put(EDhApiQualityPreset.EXTREME, true);
 			}});
+	private final ConfigEntryWithPresetOptions<EDhApiQualityPreset, EDhApiMcRenderingFadeMode> vanillaFade = new ConfigEntryWithPresetOptions<>(Config.Client.Advanced.Graphics.Quality.vanillaFadeMode,
+			new HashMap<EDhApiQualityPreset, EDhApiMcRenderingFadeMode>()
+			{{
+				this.put(EDhApiQualityPreset.MINIMUM, EDhApiMcRenderingFadeMode.NONE);
+				this.put(EDhApiQualityPreset.LOW, EDhApiMcRenderingFadeMode.SINGLE_PASS);
+				this.put(EDhApiQualityPreset.MEDIUM, EDhApiMcRenderingFadeMode.DOUBLE_PASS);
+				this.put(EDhApiQualityPreset.HIGH, EDhApiMcRenderingFadeMode.DOUBLE_PASS);
+				this.put(EDhApiQualityPreset.EXTREME, EDhApiMcRenderingFadeMode.DOUBLE_PASS);
+			}});
+	private final ConfigEntryWithPresetOptions<EDhApiQualityPreset, Boolean> dhDither = new ConfigEntryWithPresetOptions<>(Config.Client.Advanced.Graphics.Quality.ditherDhFade,
+			new HashMap<EDhApiQualityPreset, Boolean>()
+			{{
+				this.put(EDhApiQualityPreset.MINIMUM, false);
+				this.put(EDhApiQualityPreset.LOW, true);
+				this.put(EDhApiQualityPreset.MEDIUM, true);
+				this.put(EDhApiQualityPreset.HIGH, true);
+				this.put(EDhApiQualityPreset.EXTREME, true);
+			}});
 		
 	
 	
@@ -102,6 +121,8 @@ public class RenderQualityPresetConfigEventHandler extends AbstractPresetConfigE
 		this.configList.add(this.horizontalQuality);
 		this.configList.add(this.transparency);
 		this.configList.add(this.ssaoEnabled);
+		this.configList.add(this.vanillaFade);
+		this.configList.add(this.dhDither);
 		
 		
 		for (ConfigEntryWithPresetOptions<EDhApiQualityPreset, ?> config : this.configList)
