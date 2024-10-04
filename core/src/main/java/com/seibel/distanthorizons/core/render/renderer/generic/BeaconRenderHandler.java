@@ -316,6 +316,9 @@ public class BeaconRenderHandler
 						
 						Vec3d cameraPos = MC_RENDER.getCameraExactPosition();
 						double mcRenderDistance = MC_RENDER.getRenderDistance() * LodUtil.CHUNK_WIDTH;
+						// multiplying by overdraw prevention helps reduce beacons from rendering strangely
+						// on the border of DH's render distance
+						mcRenderDistance *= Config.Client.Advanced.Graphics.AdvancedGraphics.overdrawPrevention.get();
 						
 						
 						// Clear the existing box group so we can re-populate it.
