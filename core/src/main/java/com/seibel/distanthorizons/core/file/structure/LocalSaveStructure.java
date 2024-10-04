@@ -25,20 +25,20 @@ import com.seibel.distanthorizons.core.world.EWorldEnvironment;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.OverrideInjector;
+import com.seibel.distanthorizons.coreapi.util.StringUtil;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Designed for {@link EWorldEnvironment#CLIENT_SERVER} & {@link EWorldEnvironment#SERVER_ONLY} environments.
- *
- * @version 2022-12-17
  */
 public class LocalSaveStructure implements ISaveStructure
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
-	private File debugPath = new File("");
+	private final ConcurrentHashMap<ILevelWrapper, File> levelWrapperToFileMap = new ConcurrentHashMap<>();
 	
 	
 	
@@ -53,24 +53,26 @@ public class LocalSaveStructure implements ISaveStructure
 	@Override
 	public File getSaveFolder(ILevelWrapper levelWrapper)
 	{
-		IServerLevelWrapper serverLevelWrapper = (IServerLevelWrapper) levelWrapper;
-		this.debugPath = serverLevelWrapper.getSaveFolder();
-		File saveFolder = serverLevelWrapper.getSaveFolder();
-		
-		
-		// Allow API users to override the save folder
-		IDhApiSaveStructure saveStructureOverride = OverrideInjector.INSTANCE.get(IDhApiSaveStructure.class);
-		if (saveStructureOverride != null)
+		return this.levelWrapperToFileMap.computeIfAbsent(levelWrapper, (newLevelWrapper) ->
 		{
-			File overrideFile = saveStructureOverride.overrideFilePath(saveFolder, levelWrapper);
-			if (overrideFile != null)
+			IServerLevelWrapper serverLevelWrapper = (IServerLevelWrapper) levelWrapper;
+			File saveFolder = serverLevelWrapper.getMcSaveFolder();
+			
+			
+			// Allow API users to override the save folder
+			IDhApiSaveStructure saveStructureOverride = OverrideInjector.INSTANCE.get(IDhApiSaveStructure.class);
+			if (saveStructureOverride != null)
 			{
-				LOGGER.info("Save folder overridden from ["+saveFolder.getPath()+"] -> ["+overrideFile.getPath()+"].");
-				saveFolder = overrideFile;
+				File overrideFile = saveStructureOverride.overrideFilePath(saveFolder, levelWrapper);
+				if (overrideFile != null)
+				{
+					LOGGER.info("Save folder overridden from [" + saveFolder.getPath() + "] -> [" + overrideFile.getPath() + "].");
+					saveFolder = overrideFile;
+				}
 			}
-		}
-		
-		return saveFolder;
+			
+			return saveFolder;
+		});
 	}
 	
 	
@@ -83,6 +85,7 @@ public class LocalSaveStructure implements ISaveStructure
 	public void close() throws Exception { }
 	
 	@Override
-	public String toString() { return "[" + this.getClass().getSimpleName() + "@" + this.debugPath + "]"; }
+	public String toString() 
+	{ return "[" + this.getClass().getSimpleName() + "@(" + StringUtil.join(";", this.levelWrapperToFileMap.values()) + ")]"; }
 	
 }

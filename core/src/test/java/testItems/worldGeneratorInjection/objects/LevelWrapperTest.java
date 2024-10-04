@@ -24,6 +24,8 @@ import com.seibel.distanthorizons.api.interfaces.render.IDhApiCustomRenderRegist
 import com.seibel.distanthorizons.api.interfaces.world.IDhApiDimensionTypeWrapper;
 import com.seibel.distanthorizons.api.interfaces.world.IDhApiLevelWrapper;
 
+import java.io.File;
+
 /**
  * Stub implementation of a Level wrapper for basic unit testing.
  *
@@ -58,6 +60,10 @@ public class LevelWrapperTest implements IDhApiLevelWrapper
 	
 	@Override 
 	public IDhApiCustomRenderRegister getRenderRegister() { return null; }
+	
+	@Override
+	public File getDhSaveFolder()
+	{ return null; }
 	
 	
 	

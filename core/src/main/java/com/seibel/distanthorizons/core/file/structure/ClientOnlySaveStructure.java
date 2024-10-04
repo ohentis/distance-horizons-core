@@ -22,7 +22,6 @@ package com.seibel.distanthorizons.core.file.structure;
 import com.google.common.net.PercentEscaper;
 import com.seibel.distanthorizons.api.interfaces.override.levelHandling.IDhApiSaveStructure;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
-import com.seibel.distanthorizons.core.file.subDimMatching.SubDimensionLevelMatcher;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.api.enums.config.EDhApiServerFolderNameMode;
 import com.seibel.distanthorizons.core.level.IServerKeyedClientLevel;
@@ -30,7 +29,6 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.util.objects.ParsedIp;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftSharedWrapper;
-import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.OverrideInjector;
 import com.seibel.distanthorizons.coreapi.util.StringUtil;
@@ -38,6 +36,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Designed for the Client_Only environment.
@@ -54,8 +53,7 @@ public class ClientOnlySaveStructure implements ISaveStructure
 	private static final IMinecraftSharedWrapper MC_SHARED = SingletonInjector.INSTANCE.get(IMinecraftSharedWrapper.class);
 	
 	
-	private final File folder;
-	private final HashMap<ILevelWrapper, File> levelWrapperToFileMap = new HashMap<>();
+	private final ConcurrentHashMap<ILevelWrapper, File> levelWrapperToFileMap = new ConcurrentHashMap<>();
 	
 	
 	
@@ -63,68 +61,13 @@ public class ClientOnlySaveStructure implements ISaveStructure
 	// constructor //
 	//=============//
 	
-	public ClientOnlySaveStructure()
-	{
-		
-		
-		this.folder = new File(getSaveStructureFolderPath());
-		
-		if (!this.folder.exists())
-		{
-			if (!this.folder.mkdirs())
-			{
-				LOGGER.warn("Unable to create folder [" + this.folder.getPath() + "]");
-				//TODO: Deal with errors
-			}
-		}
-	}
+	public ClientOnlySaveStructure() { }
 	
 	
 	
 	//================//
 	// folder methods //
 	//================//
-	
-	private File getLevelFolderWithoutSimilarityMatching(ILevelWrapper level)
-	{
-		List<File> folders = this.getDhDataFoldersForLevel(level);
-		if (!folders.isEmpty() && folders.get(0) != null)
-		{
-			// use the first existing sub-dimension
-			String folderName = folders.get(0).getName();
-			LOGGER.info("Default Sub Dimension set to: [" + StringUtil.shortenString(folderName, 8) + "...]");
-			return folders.get(0);
-		}
-		else
-		{
-			// no valid sub dimension was found, create a new one
-			LOGGER.info("Default Sub Dimension not found. Creating: [" + level.getDimensionName() + "]");
-			return new File(this.folder, level.getDimensionName().replaceAll(":", "@@"));
-		}
-	}
-	
-	public List<File> getDhDataFoldersForLevel(ILevelWrapper level)
-	{
-		File[] folders = this.folder.listFiles();
-		if (folders == null)
-		{
-			return new ArrayList<>(0);
-		}
-		
-		// filter by dimension name
-		String expectedDimName = level.getDimensionName();
-		ArrayList<File> possibleDimFolders = new ArrayList<>();
-		for (File dimFolder : folders)
-		{
-			if (dimFolder.isDirectory() && dimFolder.getName().equals(expectedDimName))
-			{
-				possibleDimFolders.addAll(getValidDhDimensionFolders(dimFolder));
-			}
-		}
-		
-		return possibleDimFolders;
-	}
-	
 	
 	@Override
 	public File getSaveFolder(ILevelWrapper levelWrapper)
@@ -139,12 +82,12 @@ public class ClientOnlySaveStructure implements ISaveStructure
 				IServerKeyedClientLevel keyedClientLevel = (IServerKeyedClientLevel) newLevelWrapper;
 				LOGGER.info("Loading level [" + newLevelWrapper.getDimensionName() + "] with key: [" + keyedClientLevel.getServerLevelKey() + "].");
 				// This world was identified by the server directly, so we can know for sure which folder to use.
-				saveFolder = new File(getSaveStructureFolderPath() + File.separatorChar + keyedClientLevel.getServerLevelKey().replaceAll(":", "@@"));
+				saveFolder = new File(getDefaultSaveStructureFolderPath() + File.separatorChar + keyedClientLevel.getServerLevelKey().replaceAll(":", "@@"));
 			}
 			else
 			{
 				// get the default folder
-				saveFolder = this.getLevelFolderWithoutSimilarityMatching(newLevelWrapper);;
+				saveFolder = new File(getDefaultSaveStructureFolderPath());
 			}
 			
 			// Allow API users to override the save folder
@@ -217,7 +160,7 @@ public class ClientOnlySaveStructure implements ISaveStructure
 	}
 	
 	
-	private static String getSaveStructureFolderPath()
+	private static String getDefaultSaveStructureFolderPath()
 	{
 		String path = MC_SHARED.getInstallationDirectory().getPath() + File.separatorChar
 				+ SERVER_DATA_FOLDER_NAME + File.separatorChar
@@ -286,6 +229,6 @@ public class ClientOnlySaveStructure implements ISaveStructure
 	public void close() {  }
 	
 	@Override
-	public String toString() { return "[" + this.getClass().getSimpleName() + "@" + this.folder.getName() + "]"; }
+	public String toString() { return "[" + this.getClass().getSimpleName() + "@(" + StringUtil.join(";", this.levelWrapperToFileMap.values()) + ")]"; }
 	
 }

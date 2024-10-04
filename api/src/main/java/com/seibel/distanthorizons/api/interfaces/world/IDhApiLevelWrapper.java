@@ -23,6 +23,8 @@ import com.seibel.distanthorizons.api.interfaces.IDhApiUnsafeWrapper;
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiLevelType;
 import com.seibel.distanthorizons.api.interfaces.render.IDhApiCustomRenderRegister;
 
+import java.io.File;
+
 /**
  * Can be either a Server or Client level.<br>
  * A level is equivalent to a dimension in vanilla Minecraft.
@@ -71,5 +73,16 @@ public interface IDhApiLevelWrapper extends IDhApiUnsafeWrapper
 	 * @since API 3.0.0
 	 */
 	IDhApiCustomRenderRegister getRenderRegister();
+	
+	/**
+	 * Returns the folder Distant Horizons uses to save
+	 * data associated with this level. 
+	 * Will return null if the level is not loaded.
+	 *
+	 * @since API 4.0.0
+	 */
+	File getDhSaveFolder();
+	
+	
 	
 }
