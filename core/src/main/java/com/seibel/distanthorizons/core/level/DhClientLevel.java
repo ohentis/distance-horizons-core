@@ -130,6 +130,11 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 		
 		this.networkEventSource.registerHandler(FullDataPartialUpdateMessage.class, message ->
 		{
+			if (MC_CLIENT.connectedToReplay())
+			{
+				return;
+			}
+			
 			try
 			{
 				FullDataSourceV2DTO dataSourceDto = this.networkState.decodeDataSourceAndReleaseBuffer(message.payload);
