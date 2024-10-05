@@ -19,7 +19,11 @@
 
 package com.seibel.distanthorizons.core.wrapperInterfaces.world;
 
+import com.seibel.distanthorizons.core.api.internal.SharedApi;
 import com.seibel.distanthorizons.core.config.Config;
+import com.seibel.distanthorizons.core.network.messages.base.CurrentLevelKeyMessage;
+import com.seibel.distanthorizons.core.world.EWorldEnvironment;
+
 import java.io.File;
 
 public interface IServerLevelWrapper extends ILevelWrapper
@@ -33,9 +37,23 @@ public interface IServerLevelWrapper extends ILevelWrapper
 		if (Config.Client.Advanced.Multiplayer.ServerNetworking.sendLevelKeys.get())
 		{
 			String levelKeyPrefix = Config.Client.Advanced.Multiplayer.ServerNetworking.levelKeyPrefix.get();
+			
+			if (SharedApi.getEnvironment() == EWorldEnvironment.CLIENT_SERVER)
+			{
+				String cleanWorldFolderName = this.getMcSaveFolder().getParentFile().getName()
+						.replaceAll("[^" + CurrentLevelKeyMessage.PART_ALLOWED_CHARS_REGEX + " ]", "")
+						.replaceAll(" ", "_");
+				levelKeyPrefix += (!levelKeyPrefix.isEmpty() ? "_" : "") + cleanWorldFolderName;
+			}
+			
 			if (!levelKeyPrefix.isEmpty())
 			{
-				return levelKeyPrefix + "@" + dimensionName;
+				String mainPart = "@" + dimensionName;
+				
+				return levelKeyPrefix.substring(0, Math.min(
+						CurrentLevelKeyMessage.MAX_LENGTH - mainPart.length(),
+						levelKeyPrefix.length()
+				)) + mainPart;
 			}
 		}
 		
