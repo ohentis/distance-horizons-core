@@ -1041,8 +1041,8 @@ public class Config
 							.set(getDefaultLevelKeyPrefix())
 							.comment(""
 									+ "Prefix of the level keys sent to the clients.\n"
-									+ "Should be set to a unique value for each backend server behind a proxy,\n"
-									+ "or empty if you don't use a proxy.\n"
+									+ "If the mod is running behind a proxy, each backend should use a unique value (an empty string is allowed for one of the servers).\n"
+									+ "This value may be auto-generated if the mod is installed before the first start of the server.\n"
 									+ "")
 							.setSide(EConfigEntryRelevantSide.BOTH)
 							.build();
@@ -1756,13 +1756,13 @@ public class Config
 	private static String getDefaultLevelKeyPrefix()
 	{
 		IMinecraftSharedWrapper mcWrapper = SingletonInjector.INSTANCE.get(IMinecraftSharedWrapper.class);
-		if (!mcWrapper.isDedicatedServer() || mcWrapper.isWorldNew())
+		if (mcWrapper.isDedicatedServer() && mcWrapper.isWorldNew())
 		{
-			return "";
+			return "server" + ThreadLocalRandom.current().nextInt(1, 1000);
 		}
 		else
 		{
-			return "server" + ThreadLocalRandom.current().nextInt(1, 1000); 
+			return "";
 		}
 	}
 	
