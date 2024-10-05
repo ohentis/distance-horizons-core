@@ -2,7 +2,7 @@ package com.seibel.distanthorizons.core.multiplayer.client;
 
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.generation.RemoteWorldRetrievalQueue;
-import com.seibel.distanthorizons.core.level.IDhClientLevel;
+import com.seibel.distanthorizons.core.level.DhClientLevel;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
 
 /** 
@@ -20,7 +20,7 @@ public class SyncOnLoginRequestQueue extends AbstractFullDataNetworkRequestQueue
 	// constructor //
 	//=============//
 	
-	public SyncOnLoginRequestQueue(IDhClientLevel level, ClientNetworkState networkState)
+	public SyncOnLoginRequestQueue(DhClientLevel level, ClientNetworkState networkState)
 	{ super(networkState, level, true, Config.Client.Advanced.Debugging.DebugWireframe.showWorldGenQueue); }
 	
 	

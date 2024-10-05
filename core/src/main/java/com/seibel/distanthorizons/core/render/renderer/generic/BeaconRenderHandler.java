@@ -29,9 +29,7 @@ import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos;
-import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.sql.dto.BeaconBeamDTO;
-import com.seibel.distanthorizons.core.sql.repo.BeaconBeamRepo;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.math.Vec3d;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
@@ -41,9 +39,7 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.locks.ReentrantLock;
@@ -61,9 +57,6 @@ public class BeaconRenderHandler
 	
 	
 	
-	/** if this is null then the other handler is probably null too, but just in case */
-	private final BeaconBeamRepo beaconBeamRepo;
-	
 	private final ReentrantLock updateLock = new ReentrantLock();
 	
 	private final IDhApiRenderableBoxGroup beaconBoxGroup;
@@ -79,10 +72,8 @@ public class BeaconRenderHandler
 	// constructor //
 	//=============//
 	
-	public BeaconRenderHandler(@NotNull BeaconBeamRepo beaconBeamRepo, @NotNull GenericObjectRenderer renderer) 
+	public BeaconRenderHandler(@NotNull GenericObjectRenderer renderer)
 	{
-		this.beaconBeamRepo = beaconBeamRepo;
-		
 		this.beaconBoxGroup = GenericRenderObjectFactory.INSTANCE.createAbsolutePositionedGroup(ModInfo.NAME+":Beacons", new ArrayList<>(0));
 		this.beaconBoxGroup.setBlockLight(LodUtil.MAX_MC_LIGHT);
 		this.beaconBoxGroup.setSkyLight(LodUtil.MAX_MC_LIGHT);
@@ -95,105 +86,11 @@ public class BeaconRenderHandler
 	
 	
 	
-	//=========================//
-	// level loading/unloading //
-	//=========================//
-	
-	public void setBeaconBeamsForChunk(DhChunkPos chunkPos, List<BeaconBeamDTO> activeBeamList)
-	{
-		// synchronized to prevent two threads from updating the same chunk at the same time
-		synchronized (this)
-		{
-			HashSet<DhBlockPos> allPosSet = new HashSet<>();
-			
-			// sort new beams
-			HashMap<DhBlockPos, BeaconBeamDTO> activeBeamByPos = new HashMap<>(activeBeamList.size());
-			for (int i = 0; i < activeBeamList.size(); i++)
-			{
-				BeaconBeamDTO beam = activeBeamList.get(i);
-				activeBeamByPos.put(beam.blockPos, beam);
-				allPosSet.add(beam.blockPos);
-			}
-			
-			// get existing beams
-			List<BeaconBeamDTO> existingBeamList = this.beaconBeamRepo.getAllBeamsForPos(chunkPos);
-			HashMap<DhBlockPos, BeaconBeamDTO> existingBeamByPos = new HashMap<>(existingBeamList.size());
-			for (int i = 0; i < existingBeamList.size(); i++)
-			{
-				BeaconBeamDTO beam = existingBeamList.get(i);
-				existingBeamByPos.put(beam.blockPos, beam);
-				allPosSet.add(beam.blockPos);
-			}
-			
-			
-			
-			for (DhBlockPos beaconPos : allPosSet)
-			{
-				if (!chunkPos.contains(beaconPos))
-				{
-					// don't update beacons outside the updated chunk
-					continue;
-				}
-				
-				BeaconBeamDTO existingBeam = existingBeamByPos.get(beaconPos);
-				BeaconBeamDTO activeBeam = activeBeamByPos.get(beaconPos);
-				
-				if (existingBeam != null && activeBeam != null)
-				{
-					// beam still exists in chunk
-					if (!existingBeam.color.equals(activeBeam.color))
-					{
-						// beam colors were changed
-						this.beaconBeamRepo.save(activeBeam);
-						this.updateBeaconColor(activeBeam);
-					}
-				}
-				else if (existingBeam == null && activeBeam != null)
-				{
-					// new beam found, add to DB
-					this.beaconBeamRepo.save(activeBeam);
-					this.startRenderingBeacon(activeBeam);
-				}
-				else if (existingBeam != null && activeBeam == null)
-				{
-					// beam no longer exists at position, remove from DB
-					this.beaconBeamRepo.deleteWithKey(beaconPos);
-					this.stopRenderingBeaconAtPos(beaconPos);
-				}
-				
-			}
-		}
-	}
-	
-	public void loadBeaconBeamsInPos(long pos)
-	{
-		// get all beams in pos
-		List<BeaconBeamDTO> existingBeamList = this.beaconBeamRepo.getAllBeamsForPos(pos);
-		for (int i = 0; i < existingBeamList.size(); i++)
-		{
-			BeaconBeamDTO newBeam = existingBeamList.get(i);
-			this.startRenderingBeacon(newBeam);
-		}
-	}
-	
-	public void unloadBeaconBeamsInPos(long pos)
-	{
-		// get all beams in pos
-		List<BeaconBeamDTO> existingBeamList = this.beaconBeamRepo.getAllBeamsForPos(pos);
-		for (int i = 0; i < existingBeamList.size(); i++)
-		{
-			BeaconBeamDTO beam = existingBeamList.get(i);
-			this.stopRenderingBeaconAtPos(beam.blockPos);
-		}
-	}
-	
-	
-	
 	//=================//
 	// render handling //
 	//=================//
 	
-	private void startRenderingBeacon(BeaconBeamDTO beacon)
+	public void startRenderingBeacon(BeaconBeamDTO beacon)
 	{
 		try
 		{
@@ -219,7 +116,7 @@ public class BeaconRenderHandler
 		}
 	}
 	
-	private void stopRenderingBeaconAtPos(DhBlockPos beaconPos)
+	public void stopRenderingBeaconAtPos(DhBlockPos beaconPos)
 	{
 		try
 		{
@@ -245,7 +142,7 @@ public class BeaconRenderHandler
 		}
 	}
 	
-	private void updateBeaconColor(BeaconBeamDTO newBeam)
+	public void updateBeaconColor(BeaconBeamDTO newBeam)
 	{
 		try
 		{

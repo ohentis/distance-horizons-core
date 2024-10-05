@@ -3,7 +3,7 @@ package com.seibel.distanthorizons.core.generation;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.generation.tasks.IWorldGenTaskTracker;
 import com.seibel.distanthorizons.core.generation.tasks.WorldGenResult;
-import com.seibel.distanthorizons.core.level.IDhClientLevel;
+import com.seibel.distanthorizons.core.level.DhClientLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.multiplayer.client.AbstractFullDataNetworkRequestQueue;
 import com.seibel.distanthorizons.core.multiplayer.client.ClientNetworkState;
@@ -26,7 +26,7 @@ public class RemoteWorldRetrievalQueue extends AbstractFullDataNetworkRequestQue
 	// constructor //
 	//=============//
 	
-	public RemoteWorldRetrievalQueue(ClientNetworkState networkState, IDhClientLevel level)
+	public RemoteWorldRetrievalQueue(ClientNetworkState networkState, DhClientLevel level)
 	{ super(networkState, level, false, Config.Client.Advanced.Debugging.DebugWireframe.showWorldGenQueue); }
 	
 	
