@@ -30,9 +30,6 @@ import java.util.function.Consumer;
  */
 public interface IWorldGenTaskTracker
 {
-	/** Returns true if the task hasn't been garbage collected. */
-	boolean isMemoryAddressValid();
-	
 	@Nullable
 	Consumer<FullDataSourceV2> getDataSourceConsumer();
 	

@@ -45,21 +45,21 @@ public final class WorldGenTaskGroup
 		this.dataDetail = dataDetail;
 	}
 	
-	public void consumeChunkData(FullDataSourceV2 chunkSizedFullDataView)
+	public void consumeDataSource(FullDataSourceV2 dataSource)
 	{
 		Iterator<WorldGenTask> tasks = this.worldGenTasks.iterator();
 		while (tasks.hasNext())
 		{
 			WorldGenTask task = tasks.next();
-			Consumer<FullDataSourceV2> chunkDataConsumer = task.taskTracker.getDataSourceConsumer();
-			if (chunkDataConsumer == null)
+			Consumer<FullDataSourceV2> dataSourceConsumer = task.taskTracker.getDataSourceConsumer();
+			if (dataSourceConsumer == null)
 			{
 				tasks.remove();
 				task.future.complete(WorldGenResult.CreateFail());
 			}
 			else
 			{
-				chunkDataConsumer.accept(chunkSizedFullDataView);
+				dataSourceConsumer.accept(dataSource);
 			}
 		}
 	}

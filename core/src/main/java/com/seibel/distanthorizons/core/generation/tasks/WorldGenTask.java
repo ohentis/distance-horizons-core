@@ -19,6 +19,8 @@
 
 package com.seibel.distanthorizons.core.generation.tasks;
 
+import com.seibel.distanthorizons.core.file.fullDatafile.GeneratedFullDataSourceProvider;
+
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -41,7 +43,5 @@ public final class WorldGenTask
 		this.taskTracker = taskTracker;
 		this.future = future;
 	}
-	
-	public boolean StillValid() { return this.taskTracker.isMemoryAddressValid(); }
 	
 }

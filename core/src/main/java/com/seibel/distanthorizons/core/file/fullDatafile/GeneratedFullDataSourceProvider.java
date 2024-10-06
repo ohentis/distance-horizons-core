@@ -219,8 +219,8 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 			return false;
 		}
 		
-		GenTask genTask = new GenTask(genPos);
-		CompletableFuture<WorldGenResult> worldGenFuture = worldGenQueue.submitRetrievalTask(genPos, (byte) (DhSectionPos.getDetailLevel(genPos) - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL), genTask);
+		WorldGenTaskTracker genTaskTracker = new WorldGenTaskTracker(genPos);
+		CompletableFuture<WorldGenResult> worldGenFuture = worldGenQueue.submitRetrievalTask(genPos, (byte) (DhSectionPos.getDetailLevel(genPos) - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL), genTaskTracker);
 		worldGenFuture.whenComplete((genTaskResult, ex) -> this.onWorldGenTaskComplete(genTaskResult, ex));
 		
 		return true;
@@ -385,23 +385,19 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 	//================//
 	
 	// TODO may not be needed
-	private class GenTask implements IWorldGenTaskTracker
+	private class WorldGenTaskTracker implements IWorldGenTaskTracker
 	{
 		private final long pos;
 		
-		public GenTask(long pos) { this.pos = pos; }
+		public WorldGenTaskTracker(long pos) { this.pos = pos; }
 		
-		
-		
-		@Override
-		public boolean isMemoryAddressValid() { return true; }
 		
 		@Override
 		public Consumer<FullDataSourceV2> getDataSourceConsumer()
 		{
-			return (chunkSizedFullDataSource) ->
+			return (dataSource) ->
 			{
-				GeneratedFullDataSourceProvider.this.delayedFullDataSourceSaveCache.queueDataSourceForUpdateAndSave(chunkSizedFullDataSource);
+				GeneratedFullDataSourceProvider.this.delayedFullDataSourceSaveCache.queueDataSourceForUpdateAndSave(dataSource);
 			};
 		}
 		
