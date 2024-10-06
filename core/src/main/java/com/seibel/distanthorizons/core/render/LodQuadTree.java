@@ -40,6 +40,7 @@ import org.apache.logging.log4j.Logger;
 import javax.annotation.WillNotClose;
 import java.awt.*;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -175,36 +176,10 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 		}
 		
 		
-		// reload any sections that need it
-		Long pos;
-		while ((pos = this.sectionsToReload.poll()) != null)
-		{
-			// walk up the tree until we hit the root node
-			// this is done so any high detail changes flow up to the lower detail render sections as well
-			while (DhSectionPos.getDetailLevel(pos) <= this.treeMinDetailLevel)
-			{
-				try
-				{
-					LodRenderSection renderSection = this.getValue(pos);
-					if (renderSection != null)
-					{
-						// We need to update every non-null section, including those that aren't currently rendering.
-						// If this isn't done, and the player moves so a lower quality section is now being rendered,
-						// that section will not have updated correctly and may refuse to load in at all.
-						renderSection.uploadRenderDataToGpuAsync();
-					}
-				}
-				catch (IndexOutOfBoundsException e)
-				{ /* the section is now out of bounds, it doesn't need to be reloaded */ }
-				
-				pos = DhSectionPos.getParentPos(pos);
-			}
-		}
-		
 		
 		// walk through each root node
-		ArrayList<LodRenderSection> nodesNeedingRetrieval = new ArrayList<>();
-		ArrayList<LodRenderSection> nodesNeedingLoading = new ArrayList<>();
+		HashSet<LodRenderSection> nodesNeedingRetrieval = new HashSet<>();
+		HashSet<LodRenderSection> nodesNeedingLoading = new HashSet<>();
 		LongIterator rootPosIterator = this.rootNodePosIterator();
 		while (rootPosIterator.hasNext())
 		{
@@ -228,21 +203,11 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 		}
 		
 		
-		nodesNeedingLoading.sort((a, b) ->
-		{
-			int aDist = DhSectionPos.getManhattanBlockDistance(a.pos, playerPos);
-			int bDist = DhSectionPos.getManhattanBlockDistance(b.pos, playerPos);
-			return Integer.compare(aDist, bDist);
-		});
+		// reloading is for sections that have been loaded once already
+		this.reloadQueuedSections();
 		
-		for (int i = 0; i < nodesNeedingLoading.size(); i++)
-		{
-			LodRenderSection renderSection = nodesNeedingLoading.get(i);
-			if (!renderSection.gpuUploadInProgress() && renderSection.renderBuffer == null)
-			{
-				renderSection.uploadRenderDataToGpuAsync();
-			}
-		}
+		// loading is for sections that haven't rendered yet
+		this.loadQueuedSections(playerPos, nodesNeedingLoading);
 		
 	}
 	/** @return whether the current position is able to render (note: not if it IS rendering, just if it is ABLE to.) */
@@ -250,8 +215,8 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 			DhBlockPos2D playerPos, 
 			QuadNode<LodRenderSection> rootNode, QuadNode<LodRenderSection> quadNode, long sectionPos, 
 			boolean parentSectionIsRendering,
-			ArrayList<LodRenderSection> nodesNeedingRetrieval,
-			ArrayList<LodRenderSection> nodesNeedingLoading)
+			HashSet<LodRenderSection> nodesNeedingRetrieval,
+			HashSet<LodRenderSection> nodesNeedingLoading)
 	{
 		//=====================//
 		// get/create the node //
@@ -407,6 +372,71 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 			throw new IllegalStateException("LodQuadTree shouldn't be updating renderSections below the expected detail level: [" + expectedDetailLevel + "].");
 		}
 	}
+	private void reloadQueuedSections()
+	{
+		Long pos;
+		HashSet<Long> positionsToRequeue = new HashSet<>();
+		while ((pos = this.sectionsToReload.poll()) != null)
+		{
+			// walk up the tree until we hit the root node
+			// this is done so any high detail changes flow up to the lower detail render sections as well
+			while (DhSectionPos.getDetailLevel(pos) <= this.treeMinDetailLevel)
+			{
+				if (positionsToRequeue.contains(pos))
+				{
+					// don't attempt to re-load positions that are already in the process of reloading
+					break;
+				}
+				
+				try
+				{
+					// We need to update every non-null section, including those that aren't currently rendering.
+					// If this isn't done, and the player moves so a lower quality section is now being rendered,
+					// that section will not have updated correctly and may refuse to load in at all.
+					LodRenderSection renderSection = this.getValue(pos);
+					if (renderSection != null)
+					{
+						if (!renderSection.gpuUploadInProgress())
+						{
+							renderSection.uploadRenderDataToGpuAsync();
+						}
+						else
+						{
+							// if a section is already loading we need to wait to trigger it again
+							// if we don't trigger it again the LOD will be out of date
+							// and may be invisible/missing
+							positionsToRequeue.add(pos);
+							break;
+						}
+					}
+				}
+				catch (IndexOutOfBoundsException e)
+				{ /* the section is now out of bounds, it doesn't need to be reloaded */ }
+				
+				pos = DhSectionPos.getParentPos(pos);
+			}
+		}
+		this.sectionsToReload.addAll(positionsToRequeue);
+	}
+	private void loadQueuedSections(DhBlockPos2D playerPos, HashSet<LodRenderSection> nodesNeedingLoading)
+	{
+		ArrayList<LodRenderSection> loadSectionList = new ArrayList<>(nodesNeedingLoading);
+		loadSectionList.sort((a, b) ->
+		{
+			int aDist = DhSectionPos.getManhattanBlockDistance(a.pos, playerPos);
+			int bDist = DhSectionPos.getManhattanBlockDistance(b.pos, playerPos);
+			return Integer.compare(aDist, bDist);
+		});
+		
+		for (int i = 0; i < loadSectionList.size(); i++)
+		{
+			LodRenderSection renderSection = loadSectionList.get(i);
+			if (!renderSection.gpuUploadInProgress() && renderSection.renderBuffer == null)
+			{
+				renderSection.uploadRenderDataToGpuAsync();
+			}
+		}
+	}
 	
 	
 	
@@ -435,7 +465,6 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 		int detailLevel = (int) (Math.log(distance / this.detailDropOffDistanceUnit) / this.detailDropOffLogBase);
 		return (byte) MathUtil.clamp(this.maxRenderDetailLevel, detailLevel, Byte.MAX_VALUE - 1);
 	}
-	
 	private double getDrawDistanceFromDetail(int detail)
 	{
 		if (detail <= this.maxRenderDetailLevel)
@@ -533,7 +562,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 	// full data retrieval (world gen) //
 	//=================================//
 	
-	private void queueFullDataRetrievalTasks(DhBlockPos2D playerPos, ArrayList<LodRenderSection> nodesNeedingRetrieval)
+	private void queueFullDataRetrievalTasks(DhBlockPos2D playerPos, HashSet<LodRenderSection> nodesNeedingRetrieval)
 	{
 		try
 		{
@@ -541,7 +570,8 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 			Thread.sleep(WORLD_GEN_QUEUE_UPDATE_DELAY_IN_MS);
 			
 			// sort the nodes from nearest to farthest
-			nodesNeedingRetrieval.sort((a, b) ->
+			ArrayList<LodRenderSection> nodeList = new ArrayList<>(nodesNeedingRetrieval);
+			nodeList.sort((a, b) ->
 			{
 				int aDist = DhSectionPos.getManhattanBlockDistance(a.pos, playerPos);
 				int bDist = DhSectionPos.getManhattanBlockDistance(b.pos, playerPos);
@@ -549,9 +579,9 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 			});
 			
 			// add retrieval tasks to the queue
-			for (int i = 0; i < nodesNeedingRetrieval.size(); i++)
+			for (int i = 0; i < nodeList.size(); i++)
 			{
-				LodRenderSection renderSection = nodesNeedingRetrieval.get(i);
+				LodRenderSection renderSection = nodeList.get(i);
 				if (!this.fullDataSourceProvider.canQueueRetrieval())
 				{
 					break;
@@ -562,9 +592,9 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 			
 			// calculate an estimate for the max number of tasks for the queue
 			int totalWorldGenCount = 0;
-			for (int i = 0; i < nodesNeedingRetrieval.size(); i++)
+			for (int i = 0; i < nodeList.size(); i++)
 			{
-				LodRenderSection renderSection = nodesNeedingRetrieval.get(i);
+				LodRenderSection renderSection = nodeList.get(i);
 				if (!renderSection.missingPositionsCalculated())
 				{
 					// may be higher than the actual amount
