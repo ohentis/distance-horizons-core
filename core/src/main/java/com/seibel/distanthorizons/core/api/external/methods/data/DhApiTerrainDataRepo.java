@@ -33,16 +33,15 @@ import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.pos.DhLodPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.util.DhApiTerrainDataPointUtil;
 import com.seibel.distanthorizons.core.util.FullDataPointUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.RayCastUtil;
 import com.seibel.distanthorizons.core.util.math.Vec3f;
 import com.seibel.distanthorizons.core.world.AbstractDhWorld;
 import com.seibel.distanthorizons.core.wrapperInterfaces.IWrapperFactory;
-import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
-import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.coreapi.util.BitShiftUtil;
 import com.seibel.distanthorizons.core.util.math.Vec3d;
@@ -272,7 +271,7 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 					if (!getSpecificYCoordinate)
 					{
 						// if we aren't look for a specific datapoint, add each datapoint to the return array
-						returnArray[i] = generateApiDatapoint(levelWrapper, mapping, requestedDetailLevel, dataPoint);
+						returnArray[i] = DhApiTerrainDataPointUtil.createApiDatapoint(levelWrapper, mapping, requestedDetailLevel, dataPoint);
 					}
 					else
 					{
@@ -289,7 +288,7 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 							if (bottomY <= requestedY && requestedY < topY) // blockPositions start from the bottom of the block, thus "<=" for bottomY, just "<" for topY
 							{
 								// this datapoint contains the requested block position, return it
-								DhApiTerrainDataPoint apiTerrainData = generateApiDatapoint(levelWrapper, mapping, requestedDetailLevel, dataPoint);
+								DhApiTerrainDataPoint apiTerrainData = DhApiTerrainDataPointUtil.createApiDatapoint(levelWrapper, mapping, requestedDetailLevel, dataPoint);
 								return DhApiResult.createSuccess(new DhApiTerrainDataPoint[]{apiTerrainData});
 							}
 						}
@@ -315,22 +314,6 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 			LOGGER.error("Unexpected exception in getTerrainDataColumnArray. Error: [" + e.getMessage() + "]", e);
 			return DhApiResult.createFail("Unexpected exception: [" + e.getMessage() + "].");
 		}
-	}
-	
-	private static DhApiTerrainDataPoint generateApiDatapoint(IDhApiLevelWrapper levelWrapper, FullDataPointIdMap mapping, byte detailLevel, long dataPoint)
-	{
-		IBlockStateWrapper blockState = mapping.getBlockStateWrapper(FullDataPointUtil.getId(dataPoint));
-		IBiomeWrapper biomeWrapper = mapping.getBiomeWrapper(FullDataPointUtil.getId(dataPoint));
-		
-		int bottomY = FullDataPointUtil.getBottomY(dataPoint) + levelWrapper.getMinHeight();
-		int height = FullDataPointUtil.getHeight(dataPoint);
-		int topY = bottomY + height;
-		
-		return DhApiTerrainDataPoint.create(
-				detailLevel,
-				FullDataPointUtil.getBlockLight(dataPoint), FullDataPointUtil.getSkyLight(dataPoint),
-				bottomY, topY,
-				blockState, biomeWrapper);
 	}
 	
 	
