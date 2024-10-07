@@ -270,15 +270,6 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 			return false;
 		}
 		
-		this.waitingTasks.forEach((pos, task) -> 
-		{
-			if (!task.StillValid())
-			{
-				this.waitingTasks.remove(pos);
-				task.future.complete(WorldGenResult.CreateFail());
-			}
-		});
-		
 		
 		
 		Mapper closestTaskMap = this.waitingTasks.reduceEntries(1024,
@@ -297,12 +288,12 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 		this.waitingTasks.remove(closestTask.pos, closestTask);
 		
 		// do we need to modify this task to generate it?
-		if (this.canGeneratePos((byte) 0, closestTask.pos)) // TODO should detail level 0 be replaced?
+		if (this.canGeneratePos(closestTask.pos))
 		{
 			// detail level is correct for generation, start generation
 			
-			WorldGenTaskGroup closestTaskGroup = new WorldGenTaskGroup(closestTask.pos, (byte) 0);  // TODO should 0 be replaced?
-			closestTaskGroup.worldGenTasks.add(closestTask); // TODO
+			WorldGenTaskGroup closestTaskGroup = new WorldGenTaskGroup(closestTask.pos, (byte)(closestTask.pos - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL));
+			closestTaskGroup.worldGenTasks.add(closestTask);
 			
 			if (!this.inProgressGenTasksByLodPos.containsKey(closestTask.pos))
 			{
@@ -388,7 +379,7 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 		//LOGGER.info("Generating section "+taskPos+" with granularity "+granularity+" at "+chunkPosMin);
 		
 		this.numberOfTasksQueued++;
-		newTaskGroup.genFuture = this.startGenerationEvent(chunkPosMin, granularity, taskDetailLevel, newTaskGroup.group::consumeChunkData);
+		newTaskGroup.genFuture = this.startGenerationEvent(chunkPosMin, taskPos, granularity, taskDetailLevel, newTaskGroup.group::consumeDataSource);
 		LodUtil.assertTrue(newTaskGroup.genFuture != null);
 		
 		newTaskGroup.genFuture.whenComplete((voidObj, exception) ->
@@ -448,7 +439,7 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 		DhChunkPos chunkPosMin,
 		byte granularity,
 		byte targetDataDetail,
-		Consumer<FullDataSourceV2> chunkDataConsumer
+		Consumer<FullDataSourceV2> dataSourceConsumer
 		)
 	{
 		EDhApiDistantGeneratorMode generatorMode = Config.Client.Advanced.WorldGenerator.distantGeneratorMode.get();
@@ -471,7 +462,7 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 							IChunkWrapper chunk = WRAPPER_FACTORY.createChunkWrapper(generatedObjectArray);
 							FullDataSourceV2 dataSource = LodDataBuilder.createFromChunk(chunk);
 							LodUtil.assertTrue(dataSource != null);
-							chunkDataConsumer.accept(dataSource);
+							dataSourceConsumer.accept(dataSource);
 						}
 						catch (ClassCastException e)
 						{
@@ -495,7 +486,7 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 						try
 						{
 							FullDataSourceV2 dataSource = LodDataBuilder.createFromApiChunkData(dataPoints, this.generator.runApiChunkValidation());
-							chunkDataConsumer.accept(dataSource);
+							dataSourceConsumer.accept(dataSource);
 						}
 						catch (DataCorruptedException | IllegalArgumentException e)
 						{
@@ -653,35 +644,10 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 	// helper methods //
 	//================//
 	
-	private boolean canGeneratePos(byte worldGenTaskGroupDetailLevel /*when in doubt use 0*/ , long taskPos)
+	private boolean canGeneratePos(long taskPos)
 	{
-		byte granularity = (byte) (DhSectionPos.getDetailLevel(taskPos) - worldGenTaskGroupDetailLevel);
-		return (granularity >= this.minGranularity && granularity <= this.maxGranularity);
-	}
-	
-	/**
-	 * Source: <a href="https://stackoverflow.com/questions/3706219/algorithm-for-iterating-over-an-outward-spiral-on-a-discrete-2d-grid-from-the-or">...</a>
-	 * Description: Left-upper semi-diagonal (0-4-16-36-64) contains squared layer number (4 * layer^2).
-	 * External if-statement defines layer and finds (pre-)result for position in corresponding row or
-	 * column of left-upper semi-plane, and internal if-statement corrects result for mirror position.
-	 */
-	private static int gridSpiralIndexing(int X, int Y)
-	{
-		int index = 0;
-		if (X * X >= Y * Y)
-		{
-			index = 4 * X * X - X - Y;
-			if (X < Y)
-				index = index - 2 * (X - Y);
-		}
-		else
-		{
-			index = 4 * Y * Y - X - Y;
-			if (X < Y)
-				index = index + 2 * (X - Y);
-		}
-		
-		return index;
+		byte requestedDetailLevel = (byte) (DhSectionPos.getDetailLevel(taskPos) - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
+		return (this.highestDataDetail <= requestedDetailLevel && requestedDetailLevel <= this.lowestDataDetail);
 	}
 	
 	

@@ -290,8 +290,12 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 		// this section is missing one or more columns, queue the missing ones for generation.
 		// TODO speed up this logic by only checking ungenerated columns
 		LongArrayList generationList = new LongArrayList();
-		byte minGeneratorSectionDetailLevel = (byte) (worldGenQueue.highestDataDetail() + DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
-		DhSectionPos.forEachChildAtDetailLevel(pos, minGeneratorSectionDetailLevel, (genPos) ->
+		
+		byte lowestGeneratorDetailLevel = (byte) Math.min(
+				worldGenQueue.lowestDataDetail()  + DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL,
+				DhSectionPos.getDetailLevel(pos));
+		
+		DhSectionPos.forEachChildAtDetailLevel(pos, lowestGeneratorDetailLevel, (genPos) ->
 		{
 			if (!this.repo.existsWithKey(genPos))
 			{
