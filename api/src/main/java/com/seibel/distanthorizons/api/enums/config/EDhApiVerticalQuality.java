@@ -36,13 +36,13 @@ import com.seibel.distanthorizons.coreapi.util.MathUtil;
  */
 public enum EDhApiVerticalQuality
 {
-	HEIGHT_MAP( new int[]{1,    1,  1, 1, 1, 1, 1, 1, 1, 1, 1}),
-	LOW(        new int[]{4,    3,  3, 2, 2, 1, 1, 1, 1, 1, 1}),
-	MEDIUM(     new int[]{6,    4,  3, 3, 3, 3, 3, 2, 2, 2, 1}),
-	HIGH(       new int[]{16,   8,  4, 3, 3, 3, 3, 3, 3, 3, 1}),
-	VERY_HIGH(  new int[]{32,  16,  8, 4, 4, 3, 3, 3, 3, 3, 1}),
-	EXTREME(    new int[]{64,  32,  8, 4, 4, 3, 3, 3, 3, 3, 1}),
-	PIXEL_ART(  new int[]{512, 64, 16, 8, 4, 3, 3, 3, 3, 3, 1}),
+	HEIGHT_MAP( new int[]{1,     1,   1,  1,  1,  1,  1,  1,  1,  1, 1}),
+	LOW(        new int[]{4,     4,   4,  3,  3,  3,  3,  3,  3,  3, 1}),
+	MEDIUM(     new int[]{6,     6,   6,  4,  4,  4,  4,  4,  4,  4, 1}),
+	HIGH(       new int[]{16,   16,  12, 12,  8,  8,  8,  8,  8,  8, 1}),
+	VERY_HIGH(  new int[]{32,   16,  12, 12, 12, 12, 12, 12, 12, 12, 1}),
+	EXTREME(    new int[]{64,   32,  32, 32, 16, 16, 16, 16, 16, 16, 1}),
+	PIXEL_ART(  new int[]{512, 256, 128, 64, 32, 32, 16, 16, 16, 16, 1}),
 	
 	/** This is only intended for use while DH is in development and shouldn't be included in the release build */
 	@Deprecated
