@@ -121,13 +121,11 @@ public class RenderUtil
 		}
 		
 		
-		// modify based on the player's FOV
-		double fov = MC_RENDER.getFov(partialTicks);
-		// we don't want an FOV of less than 30 since it causes issues where
-		// the near clip plane and fading render incorrectly.
-		// DH has been tested to work correctly with an FOV of 30 and up,
-		// and since MC doesn't normally allow an FOV lower than 30 this should work just fine.
-		fov = Math.max(fov, 30);
+		// the player's FOV setting doesn't affect vanilla's render distance,
+		// which can cause issues for certain zoom mods.
+		// So the FOV setting should not affect DH's near clip plane;
+		// therefore, the FOV is left at a fixed value of 70 (MC's default)
+		double fov = 70;
 		
 		double aspectRatio = (double) MC_RENDER.getTargetFrameBufferViewportWidth() / MC_RENDER.getTargetFrameBufferViewportHeight();
 		
