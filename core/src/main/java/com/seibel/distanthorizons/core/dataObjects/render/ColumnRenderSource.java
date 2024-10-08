@@ -135,9 +135,21 @@ public class ColumnRenderSource implements IDataSource<IDhClientLevel>
 	
 	public ColumnArrayView getVerticalDataPointView(int posX, int posZ)
 	{
+		int offset = posX * SECTION_SIZE * this.verticalDataCount + posZ * this.verticalDataCount;
+		
+		// don't allow returning views that are outside this render source's bounds
+		if (offset >= this.renderDataContainer.size())
+		{
+			return null;
+		}
+		else if (posX < 0 || posX >= 64
+				|| posZ < 0 || posZ >= 64)
+		{
+			return null;
+		}
+		
 		return new ColumnArrayView(this.renderDataContainer, this.verticalDataCount,
-				posX * SECTION_SIZE * this.verticalDataCount + posZ * this.verticalDataCount,
-				this.verticalDataCount);
+				offset, this.verticalDataCount);
 	}
 	
 	public ColumnQuadView getFullQuadView() { return this.getQuadViewOverRange(0, 0, SECTION_SIZE, SECTION_SIZE); }
