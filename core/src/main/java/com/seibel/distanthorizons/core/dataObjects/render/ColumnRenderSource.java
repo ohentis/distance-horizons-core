@@ -51,7 +51,8 @@ public class ColumnRenderSource implements IDataSource<IDhClientLevel>
 	
 	public static final boolean DO_SAFETY_CHECKS = ModInfo.IS_DEV_BUILD;
 	public static final byte SECTION_SIZE_OFFSET = DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL;
-	public static final int SECTION_SIZE = BitShiftUtil.powerOfTwo(SECTION_SIZE_OFFSET);
+	/** width of this data in columns */
+	public static final int SECTION_SIZE = BitShiftUtil.powerOfTwo(SECTION_SIZE_OFFSET); // 64
 	
 	public static final DataSourcePool<ColumnRenderSource, IDhClientLevel> DATA_SOURCE_POOL = new DataSourcePool<>(ColumnRenderSource::createEmptyRenderSource, null /* data source prep/cleanup needs to be done outside the pool since it requires additional inputs */);
 	
@@ -142,8 +143,8 @@ public class ColumnRenderSource implements IDataSource<IDhClientLevel>
 		{
 			return null;
 		}
-		else if (posX < 0 || posX >= 64
-				|| posZ < 0 || posZ >= 64)
+		else if (posX < 0 || posX >= SECTION_SIZE
+				|| posZ < 0 || posZ >= SECTION_SIZE)
 		{
 			return null;
 		}
