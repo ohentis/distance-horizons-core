@@ -59,11 +59,6 @@ public class TestWorldGenerator implements IDhApiWorldGenerator
 	@Override
 	public byte getLargestDataDetailLevel() { return LodUtil.BLOCK_DETAIL_LEVEL; }
 	
-	@Override
-	public byte getMinGenerationGranularity() { return LodUtil.CHUNK_DETAIL_LEVEL; }
-	
-	@Override
-	public byte getMaxGenerationGranularity() { return LodUtil.CHUNK_DETAIL_LEVEL + 2; }
 	
 	
 	//===================//
@@ -74,10 +69,7 @@ public class TestWorldGenerator implements IDhApiWorldGenerator
 	public void close() { }
 	
 	@Override
-	public boolean isBusy() { return false; }
-	
-	@Override
-	public CompletableFuture<Void> generateChunks(int chunkPosMinX, int chunkPosMinZ, byte granularity, byte targetDataDetail, EDhApiDistantGeneratorMode maxGenerationStep, ExecutorService executorService, Consumer<Object[]> resultConsumer) { return null; }
+	public CompletableFuture<Void> generateChunks(int chunkPosMinX, int chunkPosMinZ, int generationRequestChunkWidthCount, byte targetDataDetail, EDhApiDistantGeneratorMode maxGenerationStep, ExecutorService executorService, Consumer<Object[]> resultConsumer) { return null; }
 	
 	@Override
 	public void preGeneratorTaskStart() { }

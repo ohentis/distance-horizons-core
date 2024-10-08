@@ -52,7 +52,7 @@ public class DelayedFullDataSourceSaveCache
 		{
 			if (temporaryDataSource == null)
 			{
-				temporaryDataSource = FullDataSourceV2.createEmpty(inputPos);
+				temporaryDataSource = FullDataSourceV2.DATA_SOURCE_POOL.getPooledSource(inputPos);
 			}
 			temporaryDataSource.update(inputDataSource);
 			
@@ -103,6 +103,14 @@ public class DelayedFullDataSourceSaveCache
 	}
 	
 	public int getUnsavedCount() { return this.dataSourceByPosition.size(); }
+	
+	public void flush()
+	{
+		this.saveTimerTasksBySectionPos.forEach((pos, timerTask)-> 
+		{
+			timerTask.run();
+		});
+	}
 	
 	
 	

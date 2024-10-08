@@ -21,6 +21,8 @@ package com.seibel.distanthorizons.core.dataObjects.fullData.sources;
 
 import com.seibel.distanthorizons.api.enums.config.EDhApiWorldCompressionMode;
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
+import com.seibel.distanthorizons.api.objects.data.DhApiTerrainDataPoint;
+import com.seibel.distanthorizons.api.objects.data.IDhApiFullDataSource;
 import com.seibel.distanthorizons.core.dataObjects.fullData.FullDataPointIdMap;
 import com.seibel.distanthorizons.core.dataObjects.transformers.LodDataBuilder;
 import com.seibel.distanthorizons.core.file.AbstractDataSourceHandler;
@@ -29,6 +31,7 @@ import com.seibel.distanthorizons.core.file.IDataSource;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.util.DhApiTerrainDataPointUtil;
 import com.seibel.distanthorizons.core.util.FullDataPointUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.RenderDataPointUtil;
@@ -40,7 +43,9 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * This data source contains every datapoint over its given {@link DhSectionPos}. <br><br>
@@ -48,7 +53,7 @@ import java.util.Arrays;
  * @see FullDataPointUtil
  * @see FullDataSourceV1
  */
-public class FullDataSourceV2 implements IDataSource<IDhLevel>
+public class FullDataSourceV2 implements IDataSource<IDhLevel>, IDhApiFullDataSource
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	/** useful for debugging, but can slow down update operations quite a bit due to being called so often. */
@@ -111,6 +116,9 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 	
 	public boolean isEmpty;
 	public boolean applyToParent = false;
+	
+	/** should only be used by methods exposed by the DH API */
+	private boolean runApiChunkValidation = false;
 	
 	
 	
@@ -870,6 +878,10 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 			Arrays.fill(dataSource.columnGenerationSteps, (byte) 0);
 			Arrays.fill(dataSource.columnWorldCompressionMode, (byte) 0);
 		}
+		
+		// default to API validation disabled so it's opt-in
+		// to reduce the chance of performance loss with unnecessary validation
+		dataSource.setRunApiChunkValidation(false);
 	}
 	
 	
@@ -912,6 +924,59 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 				}
 			}
 		}
+	}
+	
+	
+	
+	//=============//
+	// API methods //
+	//=============//
+	
+	public void setRunApiChunkValidation(boolean runValidation) { this.runApiChunkValidation = runValidation; }
+	
+	@Override
+	public int getWidthInDataColumns() { return WIDTH; }
+	
+	@Override
+	public List<DhApiTerrainDataPoint> setApiDataPointColumn(int relX, int relZ, List<DhApiTerrainDataPoint> columnDataPoints) 
+				throws IndexOutOfBoundsException, IllegalArgumentException
+	{
+		try
+		{
+			LodDataBuilder.correctDataColumnOrder(columnDataPoints);
+			if (this.runApiChunkValidation)
+			{
+				LodDataBuilder.validateOrThrowApiDataColumn(columnDataPoints);
+			}
+			
+			LongArrayList packedDataPoints = LodDataBuilder.convertApiDataPointListToPackedLongArray(columnDataPoints, this, 0);
+			
+			// TODO there should be an "unknown" compression and generation step, or be defined via the datapoints
+			this.setSingleColumn(packedDataPoints, relX, relZ, EDhApiWorldGenerationStep.LIGHT, EDhApiWorldCompressionMode.MERGE_SAME_BLOCKS);
+			
+			return columnDataPoints;
+		}
+		catch (DataCorruptedException e)
+		{
+			throw new IllegalArgumentException(e.getMessage(), e);
+		}
+	}
+	
+	@Override 
+	public List<DhApiTerrainDataPoint> getApiDataPointColumn(int relX, int relZ) throws IndexOutOfBoundsException
+	{
+		LongArrayList dataColumn = this.get(relX, relZ);
+		
+		ArrayList<DhApiTerrainDataPoint> apiList = new ArrayList<>();
+		for (int i = 0; i < dataColumn.size(); i++)
+		{
+			long datapoint = dataColumn.getLong(i);
+			
+			DhApiTerrainDataPoint apiDataPoint = DhApiTerrainDataPointUtil.createApiDatapoint(this.levelMinY, this.mapping, DhSectionPos.getDetailLevel(this.pos), datapoint);
+			apiList.add(apiDataPoint);
+		}
+		
+		return apiList;
 	}
 	
 	
@@ -967,8 +1032,6 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>
 	
 	@Override
 	public void close() throws Exception
-	{
-		DATA_SOURCE_POOL.returnPooledDataSource(this);
-	}
+	{ DATA_SOURCE_POOL.returnPooledDataSource(this); }
 	
 }

@@ -83,11 +83,6 @@ public class BatchGenerator implements IDhApiWorldGenerator
 	@Override
 	public byte getLargestDataDetailLevel() { return LodUtil.BLOCK_DETAIL_LEVEL; }
 	
-	@Override
-	public byte getMinGenerationGranularity() { return LodUtil.CHUNK_DETAIL_LEVEL; }
-	@Override
-	public byte getMaxGenerationGranularity() { return LodUtil.CHUNK_DETAIL_LEVEL + 2; }
-	
 	
 	
 	
@@ -97,7 +92,7 @@ public class BatchGenerator implements IDhApiWorldGenerator
 	
 	@Override
 	public CompletableFuture<Void> generateChunks(
-			int chunkPosMinX, int chunkPosMinZ, byte granularity, byte targetDataDetail, EDhApiDistantGeneratorMode generatorMode,
+			int chunkPosMinX, int chunkPosMinZ, int generationRequestChunkWidthCount, byte targetDataDetail, EDhApiDistantGeneratorMode generatorMode,
 			ExecutorService worldGeneratorThreadPool, Consumer<Object[]> resultConsumer)
 	{
 		EDhApiWorldGenerationStep targetStep = null;
@@ -118,13 +113,11 @@ public class BatchGenerator implements IDhApiWorldGenerator
 				break;
 		}
 		
-		int genChunkSize = BitShiftUtil.powerOfTwo(granularity - 4); // minus 4 is equal to dividing by 16 to convert to chunk scale
-		
 		// the consumer needs to be wrapped like this because the API can't use DH core objects (and IChunkWrapper can't be easily put into the API project)
 		Consumer<IChunkWrapper> consumerWrapper = (chunkWrapper) -> resultConsumer.accept(new Object[]{chunkWrapper});
 		try
 		{
-			return this.generationEnvironment.generateChunks(chunkPosMinX, chunkPosMinZ, genChunkSize, targetStep, worldGeneratorThreadPool, consumerWrapper);
+			return this.generationEnvironment.generateChunks(chunkPosMinX, chunkPosMinZ, generationRequestChunkWidthCount, targetStep, worldGeneratorThreadPool, consumerWrapper);
 		}
 		catch (Exception e)
 		{

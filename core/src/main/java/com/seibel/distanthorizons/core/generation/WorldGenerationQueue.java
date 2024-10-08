@@ -23,6 +23,7 @@ import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiDistantGenerat
 import com.seibel.distanthorizons.api.interfaces.override.worldGenerator.IDhApiWorldGenerator;
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGeneratorReturnType;
 import com.seibel.distanthorizons.api.objects.data.DhApiChunk;
+import com.seibel.distanthorizons.api.objects.data.IDhApiFullDataSource;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.generation.tasks.*;
@@ -43,7 +44,7 @@ import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.world.DhApiWorldProxy;
 import com.seibel.distanthorizons.core.wrapperInterfaces.IWrapperFactory;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
-import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
+import com.seibel.distanthorizons.coreapi.util.BitShiftUtil;
 import org.apache.logging.log4j.Logger;
 
 import java.awt.*;
@@ -74,10 +75,6 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 	
 	private final ConcurrentHashMap<Long, InProgressWorldGenTaskGroup> inProgressGenTasksByLodPos = new ConcurrentHashMap<>();
 	
-	// granularity is the detail level for batching world generator requests together
-	public final byte maxGranularity;
-	public final byte minGranularity;
-	
 	/** largest numerical detail level allowed */
 	public final byte lowestDataDetail;
 	/** smallest numerical detail level allowed */
@@ -95,15 +92,7 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 	private final ExecutorService queueingThread = ThreadUtil.makeSingleThreadPool("World Gen Queue");
 	private boolean generationQueueRunning = false;
 	private DhBlockPos2D generationTargetPos = DhBlockPos2D.ZERO;
-	/** can be used for debugging how many tasks are currently in the queue */
-	private int numberOfTasksQueued = 0;
-	
-	// debug variables to test for duplicate world generator requests //
-	/** limits how many of the previous world gen requests we should track */
-	private static final int MAX_ALREADY_GENERATED_COUNT = 100;
-	private final HashMap<Long, StackTraceElement[]> alreadyGeneratedPosHashSet = new HashMap<>(MAX_ALREADY_GENERATED_COUNT);
-	private final LongArrayFIFOQueue alreadyGeneratedPosQueue = new LongArrayFIFOQueue();
-	
+		
 	/** just used for rendering to the F3 menu */
 	private int estimatedTotalTaskCount = 0;
 	
@@ -117,20 +106,9 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 	{
 		LOGGER.info("Creating world gen queue");
 		this.generator = generator;
-		this.maxGranularity = generator.getMaxGenerationGranularity();
-		this.minGranularity = generator.getMinGenerationGranularity();
 		this.lowestDataDetail = generator.getLargestDataDetailLevel();
 		this.highestDataDetail = generator.getSmallestDataDetailLevel();
 		
-		
-		if (this.minGranularity < LodUtil.CHUNK_DETAIL_LEVEL)
-		{
-			throw new IllegalArgumentException(IDhApiWorldGenerator.class.getSimpleName() + ": min granularity must be at least 4 (Chunk sized)!");
-		}
-		if (this.maxGranularity < this.minGranularity)
-		{
-			throw new IllegalArgumentException(IDhApiWorldGenerator.class.getSimpleName() + ": max granularity smaller than min granularity!");
-		}
 		DebugRenderer.register(this, Config.Client.Advanced.Debugging.DebugWireframe.showWorldGenQueue);
 		LOGGER.info("Created world gen queue");
 	}
@@ -349,44 +327,15 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 	{
 		byte taskDetailLevel = newTaskGroup.group.dataDetail;
 		long taskPos = newTaskGroup.group.pos;
-		byte granularity = (byte) (DhSectionPos.getDetailLevel(taskPos) - taskDetailLevel);
-		LodUtil.assertTrue(granularity >= this.minGranularity && granularity <= this.maxGranularity);
 		LodUtil.assertTrue(taskDetailLevel >= this.highestDataDetail && taskDetailLevel <= this.lowestDataDetail);
 		
-		DhChunkPos chunkPosMin = new DhChunkPos(DhSectionPos.getSectionBBoxPos(taskPos).getCornerBlockPos());
-		
-		// check if this is a duplicate generation task
-		if (this.alreadyGeneratedPosHashSet.containsKey(newTaskGroup.group.pos))
-		{
-			// temporary solution to prevent generating the same section multiple times
-			//LOGGER.trace("Duplicate generation section " + taskPos + " with granularity [" + granularity + "] at " + chunkPosMin + ". Skipping...");
-			
-			// sending a success result is necessary to make sure the render sections are reloaded correctly 
-			newTaskGroup.group.worldGenTasks.forEach(worldGenTask -> worldGenTask.future.complete(WorldGenResult.CreateSuccess(DhSectionPos.encode(granularity, DhSectionPos.getX(taskPos), DhSectionPos.getZ(taskPos)))));
-			return false;
-		}
-		this.alreadyGeneratedPosHashSet.put(newTaskGroup.group.pos, Thread.currentThread().getStackTrace());
-		this.alreadyGeneratedPosQueue.enqueue(newTaskGroup.group.pos);
-		
-		// remove extra tracked duplicate positions
-		while (this.alreadyGeneratedPosQueue.size() > MAX_ALREADY_GENERATED_COUNT)
-		{
-			long posToRemove = this.alreadyGeneratedPosQueue.dequeueLong();
-			this.alreadyGeneratedPosHashSet.remove(posToRemove);
-		}
-		
-		
-		//LOGGER.info("Generating section "+taskPos+" with granularity "+granularity+" at "+chunkPosMin);
-		
-		this.numberOfTasksQueued++;
-		newTaskGroup.genFuture = this.startGenerationEvent(chunkPosMin, taskPos, granularity, taskDetailLevel, newTaskGroup.group::consumeDataSource);
+		newTaskGroup.genFuture = this.startGenerationEvent(taskPos, taskDetailLevel, newTaskGroup.group::consumeDataSource);
 		LodUtil.assertTrue(newTaskGroup.genFuture != null);
 		
 		newTaskGroup.genFuture.whenComplete((voidObj, exception) ->
 		{
 			try
 			{
-				this.numberOfTasksQueued--;
 				if (exception != null)
 				{
 					// don't log the shutdown exceptions
@@ -399,7 +348,7 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 				}
 				else
 				{
-					newTaskGroup.group.worldGenTasks.forEach(worldGenTask -> worldGenTask.future.complete(WorldGenResult.CreateSuccess(DhSectionPos.encode(granularity, DhSectionPos.getX(taskPos), DhSectionPos.getZ(taskPos)))));
+					newTaskGroup.group.worldGenTasks.forEach(worldGenTask -> worldGenTask.future.complete(WorldGenResult.CreateSuccess(taskPos)));
 				}
 				boolean worked = this.inProgressGenTasksByLodPos.remove(taskPos, newTaskGroup);
 				LodUtil.assertTrue(worked, "Unable to find in progress generator task with position ["+DhSectionPos.toString(taskPos)+"]");
@@ -413,35 +362,15 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 		this.inProgressGenTasksByLodPos.put(taskPos, newTaskGroup);
 		return true;
 	}
-	/**
-	 * The chunkPos is always aligned to the granularity.
-	 * For example: if the granularity is 4 (chunk sized) with a data detail level of 0 (block sized),
-	 * the chunkPos will be aligned to 16x16 blocks. <br> <br>
-	 *
-	 *
-	 * <strong>Full Granularity definition (as of 2023-6-21): </strong> <br> <br>
-	 *
-	 * world gen actually supports (in theory) generating stuff with a data detail that's higher than the per-block. <br> <br>
-	 *
-	 * Granularity basically means, on a single generation task, how big such group should be, in terms of the data points it will make. <br> <br>
-	 *
-	 * For example, a granularity of 4 means the task will generate a 16 by 16 data points.
-	 * Now, those data points might be per block, or per 4 by 4 blocks. Granularity doesn't say what detail those would be. <br> <br>
-	 *
-	 * Note: currently the core system sends data via the chunk sized container,
-	 * which has the locked granularity of 4 (16 by 16 data columns), and thus generators should at least have min granularity of 4.
-	 * (Gen chunk width in that context means how many 'chunk sized containers' it will fill up.
-	 * Again, note that a 'chunk sized container' isn't necessary 16 by 16 Minecraft blocks wide.
-	 * It only has to contain 16 by 16 columns of data points, in whatever data detail it might be in.)
-	 * (So, with a generator whose only gen data detail is 0, it is the same as a MC chunk.)
-	 */
 	private CompletableFuture<Void> startGenerationEvent(
-		DhChunkPos chunkPosMin,
-		byte granularity,
+		long requestPos, 
 		byte targetDataDetail,
 		Consumer<FullDataSourceV2> dataSourceConsumer
 		)
 	{
+		DhChunkPos chunkPosMin = new DhChunkPos(DhSectionPos.getSectionBBoxPos(requestPos).getCornerBlockPos());
+		int generationRequestChunkWidthCount = BitShiftUtil.powerOfTwo(DhSectionPos.getDetailLevel(requestPos) - targetDataDetail - 4); // minus 4 is equal to dividing by 16 to convert to chunk scale
+		
 		EDhApiDistantGeneratorMode generatorMode = Config.Client.Advanced.WorldGenerator.distantGeneratorMode.get();
 		EDhApiWorldGeneratorReturnType returnType = this.generator.getReturnType();
 		switch (returnType) 
@@ -449,9 +378,8 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 			case VANILLA_CHUNKS: 
 			{
 				return this.generator.generateChunks(
-					chunkPosMin.getX(),
-					chunkPosMin.getZ(),
-					granularity,
+					chunkPosMin.getX(), chunkPosMin.getZ(),
+					generationRequestChunkWidthCount,
 					targetDataDetail,
 					generatorMode,
 					ThreadPoolUtil.getWorldGenExecutor(),
@@ -475,9 +403,8 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 			case API_CHUNKS: 
 			{
 				return this.generator.generateApiChunks(
-					chunkPosMin.getX(),
-					chunkPosMin.getZ(),
-					granularity,
+					chunkPosMin.getX(), chunkPosMin.getZ(),
+					generationRequestChunkWidthCount,
 					targetDataDetail,
 					generatorMode,
 					ThreadPoolUtil.getWorldGenExecutor(),
@@ -485,7 +412,7 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 					{
 						try
 						{
-							FullDataSourceV2 dataSource = LodDataBuilder.createFromApiChunkData(dataPoints, this.generator.runApiChunkValidation());
+							FullDataSourceV2 dataSource = LodDataBuilder.createFromApiChunkData(dataPoints, this.generator.runApiValidation());
 							dataSourceConsumer.accept(dataSource);
 						}
 						catch (DataCorruptedException | IllegalArgumentException e)
@@ -499,6 +426,39 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 							Config.Client.Advanced.WorldGenerator.enableDistantGeneration.set(false);
 						}
 					}
+				);
+			}
+			case API_DATA_SOURCES:
+			{
+				// done to reduce GC overhead
+				FullDataSourceV2 pooledDataSource = FullDataSourceV2.DATA_SOURCE_POOL.getPooledSource(requestPos);
+				// set here so the API user doesn't have to pass in this value anywhere themselves
+				pooledDataSource.setRunApiChunkValidation(this.generator.runApiValidation());
+				
+				return this.generator.generateLod(
+						chunkPosMin.getX(), chunkPosMin.getZ(),
+						DhSectionPos.getX(requestPos), DhSectionPos.getZ(requestPos),
+						(byte) (DhSectionPos.getDetailLevel(requestPos) - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL),
+						pooledDataSource,
+						generatorMode,
+						ThreadPoolUtil.getWorldGenExecutor(),
+						(IDhApiFullDataSource dataSource) ->
+						{
+							try
+							{
+								dataSourceConsumer.accept((FullDataSourceV2)dataSource);
+							}
+							catch (IllegalArgumentException e)
+							{
+								LOGGER.error("World generator returned a corrupt data source. Error: [" + e.getMessage() + "]. World generator disabled.", e);
+								Config.Client.Advanced.WorldGenerator.enableDistantGeneration.set(false);
+							}
+							catch (ClassCastException e)
+							{
+								LOGGER.error("World generator return type incorrect. Error: [" + e.getMessage() + "]. World generator disabled.", e);
+								Config.Client.Advanced.WorldGenerator.enableDistantGeneration.set(false);
+							}
+						}
 				);
 			}
 			default: 

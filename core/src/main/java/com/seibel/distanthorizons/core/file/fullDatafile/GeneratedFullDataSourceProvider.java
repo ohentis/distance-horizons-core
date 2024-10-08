@@ -199,6 +199,9 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 		
 		if (this.delayedFullDataSourceSaveCache.getUnsavedCount() >= maxQueueCount)
 		{
+			// flushing since we're waiting for this timer to expire anyway
+			this.delayedFullDataSourceSaveCache.flush();
+			
 			// don't queue additional world gen requests if there are
 			// a lot of data sources in memory 
 			// (this is done to prevent infinite memory growth)
@@ -391,6 +394,7 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 	// TODO may not be needed
 	private class WorldGenTaskTracker implements IWorldGenTaskTracker
 	{
+		/** just used when debugging/troubleshooting */
 		private final long pos;
 		
 		public WorldGenTaskTracker(long pos) { this.pos = pos; }
@@ -413,7 +417,19 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 		// allows us to reduce cross-chunk lighting issues by lighting the whole 4x4 LOD at once
 		DhLightingEngine.INSTANCE.bakeDataSourceSkyLight(fullDataSource, LodUtil.MAX_MC_LIGHT);
 		
-		GeneratedFullDataSourceProvider.this.updateDataSourceAsync(fullDataSource); 
+		GeneratedFullDataSourceProvider.this.updateDataSourceAsync(fullDataSource)
+			.thenRun(() -> 
+			{
+				try
+				{
+					// send this datasource back to the pool to hopefully reduce GC overhead
+					fullDataSource.close();
+				}
+				catch (Exception e) 
+				{ 
+					LOGGER.error("Unexpected issue closing full data source", e); 
+				}
+			}); 
 	}
 	
 	

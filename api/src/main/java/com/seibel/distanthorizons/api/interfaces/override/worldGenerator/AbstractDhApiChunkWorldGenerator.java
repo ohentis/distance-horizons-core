@@ -46,10 +46,6 @@ public abstract class AbstractDhApiChunkWorldGenerator implements Closeable, IDh
 	public final byte getSmallestDataDetailLevel() { return EDhApiDetailLevel.BLOCK.detailLevel; }
 	@Override
 	public final byte getLargestDataDetailLevel() { return EDhApiDetailLevel.BLOCK.detailLevel; }
-	@Override
-	public final byte getMinGenerationGranularity() { return EDhApiDetailLevel.CHUNK.detailLevel; }
-	@Override
-	public final byte getMaxGenerationGranularity() { return (byte) (EDhApiDetailLevel.CHUNK.detailLevel + 2); }
 	
 	
 	
@@ -60,17 +56,14 @@ public abstract class AbstractDhApiChunkWorldGenerator implements Closeable, IDh
 	@Override
 	public final CompletableFuture<Void> generateChunks(
 			int chunkPosMinX, int chunkPosMinZ,
-			byte granularity, byte targetDataDetail, EDhApiDistantGeneratorMode generatorMode,
+			int generationRequestChunkWidthCount, byte targetDataDetail, EDhApiDistantGeneratorMode generatorMode,
 			ExecutorService worldGeneratorThreadPool, Consumer<Object[]> resultConsumer) throws ClassCastException
 	{
 		return CompletableFuture.runAsync(() ->
 		{
-			// TODO what does this mean?
-			int genChunkWidth = BitShiftUtil.powerOfTwo(granularity - 4);
-			
-			for (int chunkX = chunkPosMinX; chunkX < chunkPosMinX + genChunkWidth; chunkX++)
+			for (int chunkX = chunkPosMinX; chunkX < chunkPosMinX + generationRequestChunkWidthCount; chunkX++)
 			{
-				for (int chunkZ = chunkPosMinZ; chunkZ < chunkPosMinZ + genChunkWidth; chunkZ++)
+				for (int chunkZ = chunkPosMinZ; chunkZ < chunkPosMinZ + generationRequestChunkWidthCount; chunkZ++)
 				{
 					Object[] rawMcObjectArray = this.generateChunk(chunkX, chunkZ, generatorMode);
 					resultConsumer.accept(rawMcObjectArray);
@@ -83,7 +76,7 @@ public abstract class AbstractDhApiChunkWorldGenerator implements Closeable, IDh
 	public final CompletableFuture<Void> generateApiChunks(
 			int chunkPosMinX,
 			int chunkPosMinZ,
-			byte granularity,
+			int generationRequestChunkWidthCount,
 			byte targetDataDetail,
 			EDhApiDistantGeneratorMode generatorMode,
 			ExecutorService worldGeneratorThreadPool,
@@ -92,12 +85,9 @@ public abstract class AbstractDhApiChunkWorldGenerator implements Closeable, IDh
 	{
 		return CompletableFuture.runAsync(() ->
 		{
-			// TODO what does this mean?
-			int genChunkWidth = BitShiftUtil.powerOfTwo(granularity - 4);
-			
-			for (int chunkX = chunkPosMinX; chunkX < chunkPosMinX + genChunkWidth; chunkX++)
+			for (int chunkX = chunkPosMinX; chunkX < chunkPosMinX + generationRequestChunkWidthCount; chunkX++)
 			{
-				for (int chunkZ = chunkPosMinZ; chunkZ < chunkPosMinZ + genChunkWidth; chunkZ++)
+				for (int chunkZ = chunkPosMinZ; chunkZ < chunkPosMinZ + generationRequestChunkWidthCount; chunkZ++)
 				{
 					DhApiChunk apiChunk = this.generateApiChunk(chunkX, chunkZ, generatorMode);
 					resultConsumer.accept(apiChunk);
@@ -115,10 +105,10 @@ public abstract class AbstractDhApiChunkWorldGenerator implements Closeable, IDh
 	 * @param chunkPosZ the chunk Z position in the level (not to be confused with the chunk's BlockPos in the level)
 	 * @param generatorMode how far into the world gen pipeline this method should run. See {@link EDhApiDistantGeneratorMode} for additional documentation.
 	 * 
-	 * @return See {@link IDhApiWorldGenerator#generateChunks(int, int, byte, byte, EDhApiDistantGeneratorMode, ExecutorService, Consumer) IDhApiWorldGenerator.generateChunks}
+	 * @return See {@link IDhApiWorldGenerator#generateChunks(int, int, int, byte, EDhApiDistantGeneratorMode, ExecutorService, Consumer) IDhApiWorldGenerator.generateChunks}
 	 *         for the list of Object's this method should return along with additional documentation.
 	 *         
-	 * @see IDhApiWorldGenerator#generateChunks(int, int, byte, byte, EDhApiDistantGeneratorMode, ExecutorService, Consumer) IDhApiWorldGenerator#generateChunks
+	 * @see IDhApiWorldGenerator#generateChunks(int, int, int, byte, EDhApiDistantGeneratorMode, ExecutorService, Consumer) IDhApiWorldGenerator#generateChunks
 	 */
 	public abstract Object[] generateChunk(int chunkPosX, int chunkPosZ, EDhApiDistantGeneratorMode generatorMode);
 	
@@ -133,7 +123,7 @@ public abstract class AbstractDhApiChunkWorldGenerator implements Closeable, IDh
 	 * @return A {@link DhApiChunk} with the generated {@link DhApiTerrainDataPoint} including air blocks.
 	 *          Note: if air blocks aren't included with the proper lighting, lower detail levels will appear as black/unlit.
 	 *         
-	 * @see IDhApiWorldGenerator#generateApiChunks(int, int, byte, byte, EDhApiDistantGeneratorMode, ExecutorService, Consumer)
+	 * @see IDhApiWorldGenerator#generateApiChunks(int, int, int, byte, EDhApiDistantGeneratorMode, ExecutorService, Consumer)
 	 * 
 	 * @since API 3.0.0
 	 */

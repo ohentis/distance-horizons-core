@@ -45,6 +45,7 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.IWrapperFactory;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.Nullable;
 
 public class LodDataBuilder
 {
@@ -70,7 +71,7 @@ public class LodDataBuilder
 		int sectionPosZ = getXOrZSectionPosFromChunkPos(chunkWrapper.getChunkPos().getZ());
 		long pos = DhSectionPos.encode(DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL, sectionPosX, sectionPosZ);
 		
-		FullDataSourceV2 dataSource = FullDataSourceV2.createEmpty(pos);
+		FullDataSourceV2 dataSource = FullDataSourceV2.DATA_SOURCE_POOL.getPooledSource(pos);
 		dataSource.isEmpty = false;
 		
 		
@@ -311,44 +312,19 @@ public class LodDataBuilder
 		int relSourceBlockX = Math.floorMod(apiChunk.chunkPosX, 4) * LodUtil.CHUNK_WIDTH;
 		int relSourceBlockZ = Math.floorMod(apiChunk.chunkPosZ, 4) * LodUtil.CHUNK_WIDTH;
 		
-		FullDataSourceV2 dataSource = FullDataSourceV2.createEmpty(pos);
+		FullDataSourceV2 dataSource = FullDataSourceV2.DATA_SOURCE_POOL.getPooledSource(pos);
 		for (int relBlockZ = 0; relBlockZ < LodUtil.CHUNK_WIDTH; relBlockZ++)
 		{
 			for (int relBlockX = 0; relBlockX < LodUtil.CHUNK_WIDTH; relBlockX++)
 			{
 				List<DhApiTerrainDataPoint> columnDataPoints = apiChunk.getDataPoints(relBlockX, relBlockZ);
+				LodDataBuilder.correctDataColumnOrder(columnDataPoints);
 				if (runAdditionalValidation)
 				{
-					validateOrThrowDataColumn(columnDataPoints);
+					validateOrThrowApiDataColumn(columnDataPoints);
 				}
 				
-				
-				// this null check does 2 nice things at the same time:
-				// if columnDataPoints is null,
-				// then packedDataPoints will be of length 0
-				// AND the below loop won't run.
-				int size = (columnDataPoints != null) ? columnDataPoints.size() : 0;
-				
-				// TODO make missing air LODs
-				// TODO merge duplicate datapoints
-				LongArrayList packedDataPoints = new LongArrayList(new long[size]);
-				for (int index = 0; index < size; index++)
-				{
-					DhApiTerrainDataPoint dataPoint = columnDataPoints.get(index);
-					
-					int id = dataSource.mapping.addIfNotPresentAndGetId(
-							(IBiomeWrapper) (dataPoint.biomeWrapper),
-							(IBlockStateWrapper) (dataPoint.blockStateWrapper)
-					);
-					
-					packedDataPoints.set(index, FullDataPointUtil.encode(
-							id,
-							dataPoint.topYBlockPos - dataPoint.bottomYBlockPos,
-							dataPoint.bottomYBlockPos - apiChunk.bottomYBlockPos,
-							(byte) (dataPoint.blockLightLevel),
-							(byte) (dataPoint.skyLightLevel)
-					));
-				}
+				LongArrayList packedDataPoints = convertApiDataPointListToPackedLongArray(columnDataPoints, dataSource, apiChunk.bottomYBlockPos);
 				
 				// TODO add the ability for API users to define a different compression mode
 				//  or add a "unkown" compression mode
@@ -361,7 +337,50 @@ public class LodDataBuilder
 		}
 		return dataSource;
 	}
-	private static void validateOrThrowDataColumn(List<DhApiTerrainDataPoint> dataPoints) throws IllegalArgumentException
+	
+	
+	
+	//================//
+	// public helpers //
+	//================//
+	
+	/** @see FullDataPointUtil */
+	public static LongArrayList convertApiDataPointListToPackedLongArray(
+			@Nullable List<DhApiTerrainDataPoint> columnDataPoints, FullDataSourceV2 dataSource, 
+			int bottomYBlockPos) throws DataCorruptedException
+	{
+		// this null check does 2 nice things at the same time:
+		// if columnDataPoints is null,
+		// then packedDataPoints will be of length 0
+		// AND the below loop won't run.
+		int size = (columnDataPoints != null) ? columnDataPoints.size() : 0;
+		
+		// TODO make missing air LODs
+		// TODO merge duplicate datapoints
+		LongArrayList packedDataPoints = new LongArrayList(new long[size]);
+		for (int index = 0; index < size; index++)
+		{
+			DhApiTerrainDataPoint dataPoint = columnDataPoints.get(index);
+			
+			int id = dataSource.mapping.addIfNotPresentAndGetId(
+					(IBiomeWrapper) (dataPoint.biomeWrapper),
+					(IBlockStateWrapper) (dataPoint.blockStateWrapper)
+			);
+			
+			packedDataPoints.set(index, FullDataPointUtil.encode(
+					id,
+					dataPoint.topYBlockPos - dataPoint.bottomYBlockPos,
+					dataPoint.bottomYBlockPos - bottomYBlockPos,
+					(byte) (dataPoint.blockLightLevel),
+					(byte) (dataPoint.skyLightLevel)
+			));
+		}
+		
+		return packedDataPoints;
+	}
+	
+	/** also corrects the order if it's backwards */
+	public static void correctDataColumnOrder(List<DhApiTerrainDataPoint> dataPoints)
 	{
 		// order doesn't need to be checked if there is 0 or 1 items
 		if (dataPoints.size() > 1)
@@ -376,9 +395,10 @@ public class LodDataBuilder
 			}
 			
 		}
-		
-		
-		
+	}
+	
+	public static void validateOrThrowApiDataColumn(List<DhApiTerrainDataPoint> dataPoints) throws IllegalArgumentException
+	{
 		// check that each datapoint is valid
 		int lastBottomYPos = Integer.MIN_VALUE;
 		for (int i = 0; i < dataPoints.size(); i++) // standard for-loop used instead of an enhanced for-loop to slightly reduce GC overhead due to iterator allocation
@@ -429,7 +449,6 @@ public class LodDataBuilder
 		}
 		
 	}
-	
 	
 	
 	
