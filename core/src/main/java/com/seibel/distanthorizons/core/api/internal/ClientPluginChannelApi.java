@@ -54,8 +54,8 @@ public class ClientPluginChannelApi
 	/** @return true if the level loading is handled by the server */
 	public boolean allowLevelLoading(IClientLevelWrapper level)
 	{
-		return (KEYED_CLIENT_LEVEL_MANAGER.hasLevelSet() && level instanceof IServerKeyedClientLevel)
-				|| !KEYED_CLIENT_LEVEL_MANAGER.hasLevelSet();
+		return (KEYED_CLIENT_LEVEL_MANAGER.isEnabled() && level instanceof IServerKeyedClientLevel)
+				|| !KEYED_CLIENT_LEVEL_MANAGER.isEnabled();
 	}
 	
 	
@@ -126,7 +126,7 @@ public class ClientPluginChannelApi
 	public void reset()
 	{
 		this.networkSession = null;
-		KEYED_CLIENT_LEVEL_MANAGER.clearKeyedLevel();
+		KEYED_CLIENT_LEVEL_MANAGER.disable();
 	}
 	
 }

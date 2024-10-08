@@ -33,6 +33,7 @@ public interface IKeyedClientLevelManager extends IBindable
 	IServerKeyedClientLevel setServerKeyedLevel(IClientLevelWrapper clientLevel, String levelKey);
 	
 	void clearKeyedLevel();
-	boolean hasLevelSet();
+	boolean isEnabled();
+	void disable();
 	
 }
