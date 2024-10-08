@@ -98,21 +98,21 @@ public interface INetworkObject
 	
 	// collections //
 	
-	default <T> void writeCollection(ByteBuf outputByteBuf, Collection<T> collection)
+	default void writeCollection(ByteBuf outputByteBuf, Collection<?> collection)
 	{
 		outputByteBuf.writeInt(collection.size());
 		this.writeFixedLengthCollection(outputByteBuf, collection);
 	}
-	default <T> void writeFixedLengthCollection(ByteBuf outputByteBuf, Collection<T> collection)
+	default void writeFixedLengthCollection(ByteBuf outputByteBuf, Collection<?> collection)
 	{
-		for (T item : collection)
+		for (Object item : collection)
 		{
 			Codec codec = Codec.getCodec(item.getClass());
 			codec.encode.accept(item, outputByteBuf);
 		}
 	}
 	
-	default <T> void readCollection(ByteBuf inputByteBuf, Collection<T> collection, Supplier<T> innerValueConstructor)
+	default <TCollection extends Collection<T>, T> TCollection readCollection(ByteBuf inputByteBuf, TCollection collection, Supplier<T> innerValueConstructor)
 	{
 		int size = inputByteBuf.readInt();
 		
@@ -130,9 +130,11 @@ public interface INetworkObject
 			
 			collection.add(item);
 		}
+		
+		return collection;
 	}
 	
-	default <K, V> void readMap(ByteBuf inputByteBuf, Map<K, V> map, Supplier<K> keySupplier, Supplier<V> valueSupplier)
+	default <TMap extends Map<K, V>, K, V> TMap readMap(ByteBuf inputByteBuf, TMap map, Supplier<K> keySupplier, Supplier<V> valueSupplier)
 	{
 		ArrayList<Map.Entry<K, V>> entryList = new ArrayList<>();
 		
@@ -141,6 +143,8 @@ public interface INetworkObject
 		{
 			map.put(entry.getKey(), entry.getValue());
 		}
+		
+		return map;
 	}
 	
 	
@@ -150,11 +154,10 @@ public interface INetworkObject
 	//================//
 	
 	/**
-	 * Defines (de)serialization for different classes,
-	 * specifically for base classes like {@link Integer}, {@link Boolean}, and {@link String}. <br><br>
-	 * 
-	 * Should only be used for non-editable classes;
-	 * otherwise, you may want to implement {@link INetworkObject} and use its methods where applicable.
+	 * Defines (de)serialization for classes that cannot be directly edited,
+	 * specifically for primitives, Java and third-party library classes and other types.
+	 * <p> 
+	 * If you're able to edit the target class yourself, implement {@link INetworkObject} and use its methods where applicable instead.
 	 */
 	class Codec
 	{
@@ -209,18 +212,18 @@ public interface INetworkObject
 		
 		public static <T> Codec getCodec(Class<T> clazz)
 		{
-			return CODEC_MAP.computeIfAbsent(clazz, ignored -> 
-			{
-				// TODO when would this ever return true?
+			return CODEC_MAP.computeIfAbsent(clazz, classToAdd -> {
+				// Check if the class is a subclass of any existing key in the map.
+				// If it is, return the existing codec and bind it to this class for faster future searches.
 				for (Map.Entry<Class<?>, Codec> entry : CODEC_MAP.entrySet())
 				{
-					if (entry.getKey().isAssignableFrom(clazz))
+					if (entry.getKey().isAssignableFrom(classToAdd))
 					{
 						return entry.getValue();
 					}
 				}
 				
-				throw new AssertionError("Class has no compatible codec: " + clazz.getSimpleName());
+				throw new AssertionError("Class has no compatible codec: " + classToAdd.getSimpleName());
 			});
 		}
 		

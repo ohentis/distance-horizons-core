@@ -21,6 +21,7 @@ package com.seibel.distanthorizons.core.level;
 
 import com.seibel.distanthorizons.api.methods.events.abstractEvents.DhApiChunkModifiedEvent;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
+import com.seibel.distanthorizons.core.file.beacon.BeaconBeamDataHandler;
 import com.seibel.distanthorizons.core.file.fullDatafile.DelayedFullDataSourceSaveCache;
 import com.seibel.distanthorizons.core.generation.DhLightingEngine;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
@@ -66,7 +67,7 @@ public abstract class AbstractDhLevel implements IDhLevel
 	/** Will be null if clouds shouldn't be rendered for this level. */
 	@Nullable
 	protected CloudRenderHandler cloudRenderHandler;
-	protected BeaconRenderHandler beaconRenderHandler;
+	protected BeaconBeamDataHandler beaconBeamDataHandler;
 	
 	
 	
@@ -124,13 +125,13 @@ public abstract class AbstractDhLevel implements IDhLevel
 					this.cloudRenderHandler = new CloudRenderHandler((IDhClientLevel)this, genericRenderer);
 				}
 			}
-			
-			
-			// shouldn't happen, but just in case
-			if (this.beaconBeamRepo != null)
-			{
-				this.beaconRenderHandler = new BeaconRenderHandler(this.beaconBeamRepo, genericRenderer);
-			}
+		}
+		
+		
+		// shouldn't happen, but just in case
+		if (this.beaconBeamRepo != null)
+		{
+			this.beaconBeamDataHandler = new BeaconBeamDataHandler(this.beaconBeamRepo, genericRenderer);
 		}
 	}
 	
@@ -228,27 +229,27 @@ public abstract class AbstractDhLevel implements IDhLevel
 	@Override
 	public void updateBeaconBeamsForChunk(IChunkWrapper chunkToUpdate, ArrayList<IChunkWrapper> nearbyChunkList)
 	{
-		if (this.beaconRenderHandler != null)
+		if (this.beaconBeamDataHandler != null)
 		{
 			List<BeaconBeamDTO> activeBeamList = chunkToUpdate.getAllActiveBeacons(nearbyChunkList);
-			this.beaconRenderHandler.setBeaconBeamsForChunk(chunkToUpdate.getChunkPos(), activeBeamList);
+			this.beaconBeamDataHandler.setBeaconBeamsForChunk(chunkToUpdate.getChunkPos(), activeBeamList);
 		}
 	}
 	
 	@Override
 	public void loadBeaconBeamsInPos(long pos)
 	{
-		if (this.beaconRenderHandler != null)
+		if (this.beaconBeamDataHandler != null)
 		{
-			this.beaconRenderHandler.loadBeaconBeamsInPos(pos);
+			this.beaconBeamDataHandler.loadBeaconBeamsInPos(pos);
 		}
 	}
 	@Override
 	public void unloadBeaconBeamsInPos(long pos)
 	{
-		if (this.beaconRenderHandler != null)
+		if (this.beaconBeamDataHandler != null)
 		{
-			this.beaconRenderHandler.unloadBeaconBeamsInPos(pos);
+			this.beaconBeamDataHandler.unloadBeaconBeamsInPos(pos);
 		}
 	}
 	

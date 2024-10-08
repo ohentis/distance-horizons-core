@@ -24,6 +24,7 @@ import com.seibel.distanthorizons.core.config.AppliedConfigState;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
+import com.seibel.distanthorizons.core.file.beacon.BeaconBeamDataHandler;
 import com.seibel.distanthorizons.core.file.fullDatafile.FullDataSourceProviderV2;
 import com.seibel.distanthorizons.core.file.fullDatafile.RemoteFullDataSourceProvider;
 import com.seibel.distanthorizons.core.file.structure.ISaveStructure;
@@ -129,6 +130,11 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 		
 		this.networkEventSource.registerHandler(FullDataPartialUpdateMessage.class, message ->
 		{
+			if (MC_CLIENT.connectedToReplay())
+			{
+				return;
+			}
+			
 			try
 			{
 				FullDataSourceV2DTO dataSourceDto = this.networkState.decodeDataSourceAndReleaseBuffer(message.payload);
@@ -138,6 +144,7 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 					return;
 				}
 				
+				this.beaconBeamDataHandler.setBeaconBeamsForPos(dataSourceDto.pos, message.payload.beaconBeams);
 				this.updateDataSourcesAsync(dataSourceDto.createPooledDataSource(this.levelWrapper));
 			}
 			catch (Exception e)
@@ -276,6 +283,7 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 		ClientLevelModule.ClientRenderState renderState = this.clientside.ClientRenderStateRef.get();
 		return (renderState != null) ? renderState.renderBufferHandler : null;
 	}
+	public BeaconBeamDataHandler getBeaconBeamDataHandler() { return this.beaconBeamDataHandler; }
 	
 	
 	
@@ -360,7 +368,7 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 	
 	private static class WorldGenState extends WorldGenModule.AbstractWorldGenState
 	{
-		WorldGenState(IDhClientLevel level, ClientNetworkState networkState)
+		WorldGenState(DhClientLevel level, ClientNetworkState networkState)
 		{
 			this.worldGenerationQueue = new RemoteWorldRetrievalQueue(networkState, level);
 		}

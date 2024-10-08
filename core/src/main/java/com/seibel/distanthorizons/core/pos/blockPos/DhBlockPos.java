@@ -20,8 +20,10 @@
 package com.seibel.distanthorizons.core.pos.blockPos;
 
 import com.seibel.distanthorizons.core.enums.EDhDirection;
+import com.seibel.distanthorizons.core.network.INetworkObject;
 import com.seibel.distanthorizons.core.util.LodUtil;
 
+import io.netty.buffer.ByteBuf;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import java.util.Objects;
@@ -34,7 +36,7 @@ import java.util.Objects;
  * 
  * @see DhBlockPosMutable 
  */
-public class DhBlockPos
+public class DhBlockPos implements INetworkObject
 {
 	/** Useful for methods that need a position passed in but won't actually be used */
 	public static final DhBlockPos ZERO = new DhBlockPos(0, 0, 0);
@@ -190,5 +192,27 @@ public class DhBlockPos
 	public int hashCode() { return Objects.hash(this.x, this.y, this.z); }
 	@Override
 	public String toString() { return "DHBlockPos["+ this.x +", "+ this.y +", "+ this.z +"]"; }
+	
+	
+	
+	//=========//
+	// network //
+	//=========//
+	
+	@Override
+	public void encode(ByteBuf out)
+	{
+		out.writeInt(this.x);
+		out.writeInt(this.y);
+		out.writeInt(this.z);
+	}
+	
+	@Override
+	public void decode(ByteBuf in)
+	{
+		this.x = in.readInt();
+		this.y = in.readInt();
+		this.z = in.readInt();
+	}
 	
 }

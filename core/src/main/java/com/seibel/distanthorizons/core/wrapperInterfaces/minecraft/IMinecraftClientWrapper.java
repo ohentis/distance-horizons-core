@@ -76,6 +76,8 @@ public interface IMinecraftClientWrapper extends IBindable
 	
 	UUID getPlayerUUID();
 	
+	String getUsername();
+	
 	DhBlockPos getPlayerBlockPos();
 	
 	DhChunkPos getPlayerChunkPos();

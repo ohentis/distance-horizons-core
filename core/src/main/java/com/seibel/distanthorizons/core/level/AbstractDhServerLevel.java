@@ -32,6 +32,7 @@ import org.apache.logging.log4j.Logger;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.*;
 
 public abstract class AbstractDhServerLevel extends AbstractDhLevel implements IDhServerLevel
@@ -126,7 +127,8 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 			}
 			CompletableFuture.runAsync(() ->
 			{
-				FullDataPayload payload = new FullDataPayload(requestGroup.fullDataSource);
+				Objects.requireNonNull(this.beaconBeamRepo);
+				FullDataPayload payload = new FullDataPayload(requestGroup.fullDataSource, this.beaconBeamRepo.getAllBeamsForPos(entry.getKey()));
 				for (FullDataSourceRequestMessage msg : requestGroup.requestMessages.values())
 				{
 					this.requestGroupByFutureId.remove(msg.futureId);
@@ -273,7 +275,8 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 		{
 			rateLimiterSet.syncOnLoginRateLimiter.release();
 			
-			FullDataPayload payload = new FullDataPayload(fullDataSource);
+			Objects.requireNonNull(this.beaconBeamRepo);
+			FullDataPayload payload = new FullDataPayload(fullDataSource, this.beaconBeamRepo.getAllBeamsForPos(message.sectionPos));
 			payload.splitAndSend(FULL_DATA_SPLIT_SIZE_IN_BYTES, message.getSession()::sendMessage);
 			message.sendResponse(new FullDataSourceResponseMessage(payload));
 		}, executor);
@@ -412,7 +415,8 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 		}
 		CompletableFuture.runAsync(() ->
 		{
-			FullDataPayload payload = new FullDataPayload(data);
+			Objects.requireNonNull(this.beaconBeamRepo);
+			FullDataPayload payload = new FullDataPayload(data, this.beaconBeamRepo.getAllBeamsForPos(data.getPos()));
 			for (ServerPlayerState serverPlayerState : this.serverPlayerStateManager.getReadyPlayers())
 			{
 				if (serverPlayerState.getServerPlayer().getLevel() != this.serverLevelWrapper)

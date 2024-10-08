@@ -5,8 +5,7 @@ import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.config.types.ConfigEntry;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
-import com.seibel.distanthorizons.core.level.DhServerLevel;
-import com.seibel.distanthorizons.core.level.IDhClientLevel;
+import com.seibel.distanthorizons.core.level.DhClientLevel;
 import com.seibel.distanthorizons.core.logging.ConfigBasedSpamLogger;
 import com.seibel.distanthorizons.core.network.exceptions.InvalidLevelException;
 import com.seibel.distanthorizons.core.network.exceptions.RateLimitedException;
@@ -56,7 +55,7 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 	
 	
 	public final ClientNetworkState networkState;
-	protected final IDhClientLevel level;
+	protected final DhClientLevel level;
 	private final boolean changedOnly;
 	
 	private volatile CompletableFuture<Void> closingFuture = null;
@@ -84,7 +83,7 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 	//=============//
 	
 	public AbstractFullDataNetworkRequestQueue(
-			ClientNetworkState networkState, IDhClientLevel level, 
+			ClientNetworkState networkState, DhClientLevel level,
 			boolean changedOnly, ConfigEntry<Boolean> showDebugWireframeConfig)
 	{
 		this.networkState = networkState;
@@ -206,6 +205,7 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 					{
 						try
 						{
+							this.level.getBeaconBeamDataHandler().setBeaconBeamsForPos(dataSourceDto.pos, response.payload.beaconBeams);
 							FullDataSourceV2 fullDataSource = dataSourceDto.createPooledDataSource(this.level.getLevelWrapper());
 							entry.dataSourceConsumer.accept(fullDataSource);
 							FullDataSourceV2.DATA_SOURCE_POOL.returnPooledDataSource(fullDataSource);

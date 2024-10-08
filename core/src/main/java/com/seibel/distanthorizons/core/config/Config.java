@@ -34,6 +34,7 @@ import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.wrapperInterfaces.IWrapperFactory;
+import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftSharedWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.coreapi.util.StringUtil;
@@ -64,7 +65,7 @@ public class Config
 	public static ConfigCategory client = new ConfigCategory.Builder().set(Client.class).build();
 	
 	
-	
+	@SuppressWarnings("ConcatenationWithEmptyString")
 	public static class Client
 	{
 		public static ConfigEntry<Boolean> quickEnableRendering = new ConfigEntry.Builder<Boolean>()
@@ -1007,24 +1008,6 @@ public class Config
 				public static class ServerNetworking
 				{
 					public static ConfigUIComment generalSectionNote = new ConfigUIComment();
-					public static ConfigEntry<Boolean> enableServerNetworking = new ConfigEntry.Builder<Boolean>()
-							.setServersideShortName("enableServerNetworking")
-							.set(true)
-							.comment(""
-									+ "WARNING!\n"
-									+ "Server-client networking is not yet fully implemented!\n"
-									+ "Both the server and client must be running the server-side fork with this option enabled\n"
-									+ "for Distant Horizons data to be transceived.\n"
-									+ "\n"
-									+ "If true, the server and client will attempt to communicate to transceive Distant Horizons data.\n"
-									+ "This allows for further distant generation and LOD updates on all clients.\n"
-									+ "\n"
-									+ "This should only be used on trusted servers with trusted players!\n"
-									+ "")
-							.setSide(EConfigEntryRelevantSide.BOTH)
-							.build();
-					
-					
 					public static ConfigEntry<Boolean> sendLevelKeys = new ConfigEntry.Builder<Boolean>()
 							.setServersideShortName("sendLevelKeys")
 							.setAppearance(EConfigEntryAppearance.ONLY_IN_FILE)
@@ -1037,12 +1020,11 @@ public class Config
 							.build();
 					public static ConfigEntry<String> levelKeyPrefix = new ConfigEntry.Builder<String>()
 							.setServersideShortName("levelKeyPrefix")
-							.setAppearance(EConfigEntryAppearance.ONLY_IN_FILE)
 							.set(getDefaultLevelKeyPrefix())
 							.comment(""
 									+ "Prefix of the level keys sent to the clients.\n"
-									+ "Should be set to a unique value for each backend server behind a proxy,\n"
-									+ "or empty if you don't use a proxy.\n"
+									+ "If the mod is running behind a proxy, each backend should use a unique value (an empty string is allowed for one of the servers).\n"
+									+ "This value may be auto-generated if the mod is installed before the first start of the server.\n"
 									+ "")
 							.setSide(EConfigEntryRelevantSide.BOTH)
 							.build();
@@ -1756,13 +1738,15 @@ public class Config
 	private static String getDefaultLevelKeyPrefix()
 	{
 		IMinecraftSharedWrapper mcWrapper = SingletonInjector.INSTANCE.get(IMinecraftSharedWrapper.class);
-		if (!mcWrapper.isDedicatedServer() || mcWrapper.isWorldNew())
+		if (mcWrapper.isDedicatedServer())
 		{
-			return "";
+			return mcWrapper.isWorldNew()
+					? "server" + ThreadLocalRandom.current().nextInt(1, 1000)
+					: "";
 		}
 		else
 		{
-			return "server" + ThreadLocalRandom.current().nextInt(1, 1000); 
+			return SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class).getUsername();
 		}
 	}
 	

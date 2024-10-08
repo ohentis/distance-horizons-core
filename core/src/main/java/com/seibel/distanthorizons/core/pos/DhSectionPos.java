@@ -348,6 +348,22 @@ public class DhSectionPos
 		return aMinX <= bMinX && bMinX <= aMaxX &&
 				aMinZ <= bMinZ && bMinZ <= aMaxZ;
 	}
+	
+	public static boolean contains(long aPos, DhBlockPos blockPos)
+	{
+		int sectionMinX = getMinCornerBlockX(aPos);
+		int sectionMinZ = getMinCornerBlockZ(aPos);
+		
+		int blockX = blockPos.getX();
+		int blockZ = blockPos.getZ();
+		
+		int sectionBlockWidth = getBlockWidth(aPos) - 1; // minus 1 to account for zero based positional indexing
+		int sectionMaxX = sectionMinX + sectionBlockWidth;
+		int sectionMaxZ = sectionMinZ + sectionBlockWidth;
+		
+		return sectionMinX <= blockX && blockX <= sectionMaxX &&
+				sectionMinZ <= blockZ && blockZ <= sectionMaxZ;
+	}
 
 
 

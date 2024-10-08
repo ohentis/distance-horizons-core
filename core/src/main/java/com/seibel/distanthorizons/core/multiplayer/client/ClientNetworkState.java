@@ -2,6 +2,7 @@ package com.seibel.distanthorizons.core.multiplayer.client;
 
 import com.google.common.cache.CacheBuilder;
 import com.seibel.distanthorizons.core.config.Config;
+import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
 import com.seibel.distanthorizons.core.multiplayer.config.SessionConfig;
 import com.seibel.distanthorizons.core.network.INetworkObject;
@@ -10,12 +11,14 @@ import com.seibel.distanthorizons.core.network.event.internal.CloseInternalEvent
 import com.seibel.distanthorizons.core.network.event.internal.IncompatibleMessageInternalEvent;
 import com.seibel.distanthorizons.core.network.messages.base.CurrentLevelKeyMessage;
 import com.seibel.distanthorizons.core.network.messages.base.SessionConfigMessage;
+import com.seibel.distanthorizons.core.network.messages.fullData.FullDataSourceResponseMessage;
 import com.seibel.distanthorizons.core.network.messages.fullData.FullDataSplitMessage;
 import com.seibel.distanthorizons.core.network.messages.fullData.FullDataPartialUpdateMessage;
 import com.seibel.distanthorizons.core.network.messages.fullData.FullDataPayload;
 import com.seibel.distanthorizons.core.network.session.NetworkSession;
 import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV2DTO;
 import com.seibel.distanthorizons.core.util.LodUtil;
+import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.CompositeByteBuf;
@@ -31,6 +34,8 @@ public class ClientNetworkState implements Closeable
 {
 	protected static final ConfigBasedLogger LOGGER = new ConfigBasedLogger(LogManager.getLogger(),
 			() -> Config.Client.Advanced.Logging.logNetworkEvent.get());
+	
+	private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	
 	
 	private final ConcurrentMap<Integer, CompositeByteBuf> fullDataBufferById = CacheBuilder.newBuilder()
@@ -85,41 +90,53 @@ public class ClientNetworkState implements Closeable
 			}
 		});
 		
-		this.networkSession.registerHandler(SessionConfigMessage.class, message ->
-		{
-			this.serverSupportStatus = EServerSupportStatus.FULL;
-			
-			LOGGER.info("Connection config has been changed: ["+message.config+"].");
-			this.sessionConfig = message.config;
-			this.configReceived = true;
-		});
-		
 		this.networkSession.registerHandler(CloseInternalEvent.class, message ->
 		{
 			this.configReceived = false;
 		});
 		
-		this.networkSession.registerHandler(FullDataSplitMessage.class, message ->
-		{
-			if (message.isFirst)
-			{
-				CompositeByteBuf composite = this.fullDataBufferById.remove(message.bufferId);
-				if (composite != null)
-				{
-					composite.release();
-					LOGGER.debug("Released full data buffer ["+message.bufferId+"]: ["+composite+"]");
-				}
-			}
-			
-			CompositeByteBuf byteBuffer = this.fullDataBufferById.computeIfAbsent(message.bufferId, bufferId -> ByteBufAllocator.DEFAULT.compositeBuffer());
-			byteBuffer.addComponent(true, message.buffer);
-			LOGGER.debug("Full data buffer ["+message.bufferId+"]: ["+byteBuffer+"].");
-		});
-
 		this.networkSession.registerHandler(FullDataPartialUpdateMessage.class, msg ->
 		{
 			// Dummy handler to prevent unhandled message warnings
 		});
+		
+		if (MC_CLIENT.connectedToReplay())
+		{
+			// Prevent handling specific messages because replay server is not interactive.
+			// Level keys are still good because they don't affect anything other than level loading.
+			
+			this.networkSession.registerHandler(SessionConfigMessage.class, message -> { });
+			this.networkSession.registerHandler(FullDataSourceResponseMessage.class, message -> { });
+			this.networkSession.registerHandler(FullDataSplitMessage.class, message -> { });
+		}
+		else
+		{
+			this.networkSession.registerHandler(SessionConfigMessage.class, message ->
+			{
+				this.serverSupportStatus = EServerSupportStatus.FULL;
+				
+				LOGGER.info("Connection config has been changed: [" + message.config + "].");
+				this.sessionConfig = message.config;
+				this.configReceived = true;
+			});
+			
+			this.networkSession.registerHandler(FullDataSplitMessage.class, message ->
+			{
+				if (message.isFirst)
+				{
+					CompositeByteBuf composite = this.fullDataBufferById.remove(message.bufferId);
+					if (composite != null)
+					{
+						composite.release();
+						LOGGER.debug("Released full data buffer [" + message.bufferId + "]: [" + composite + "]");
+					}
+				}
+				
+				CompositeByteBuf byteBuffer = this.fullDataBufferById.computeIfAbsent(message.bufferId, bufferId -> ByteBufAllocator.DEFAULT.compositeBuffer());
+				byteBuffer.addComponent(true, message.buffer);
+				LOGGER.debug("Full data buffer [" + message.bufferId + "]: [" + byteBuffer + "].");
+			});
+		}
 	}
 	
 	

@@ -75,9 +75,7 @@ public class ClientPluginChannelApi
 	
 	private void onCurrentLevelKeyMessage(CurrentLevelKeyMessage msg)
 	{
-		// prefix@namespace:path
-		// 1-50 characters in total, all parts except namespace can be omitted
-		if (!msg.levelKey.matches("^(?=.{1,50}$)([a-zA-Z0-9-_]+@)?[a-zA-Z0-9-_]+(:[a-zA-Z0-9-_]+)?$"))
+		if (!msg.levelKey.matches(CurrentLevelKeyMessage.VALIDATION_REGEX))
 		{
 			throw new IllegalArgumentException("Server sent invalid level key.");
 		}

@@ -90,8 +90,10 @@ public class ConfigBasedLogger
 	
 	public void log(Level level, String str, Object... param)
 	{
+		Message msg = param.length > 0
+				? this.logger.getMessageFactory().newMessage(str, param)
+				: this.logger.getMessageFactory().newMessage("{}", str);
 		
-		Message msg = logger.getMessageFactory().newMessage(str, param);
 		String msgStr = msg.getFormattedMessage();
 		if (mode.levelForFile.isLessSpecificThan(level))
 		{
