@@ -417,19 +417,7 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 		// allows us to reduce cross-chunk lighting issues by lighting the whole 4x4 LOD at once
 		DhLightingEngine.INSTANCE.bakeDataSourceSkyLight(fullDataSource, LodUtil.MAX_MC_LIGHT);
 		
-		GeneratedFullDataSourceProvider.this.updateDataSourceAsync(fullDataSource)
-			.thenRun(() -> 
-			{
-				try
-				{
-					// send this datasource back to the pool to hopefully reduce GC overhead
-					fullDataSource.close();
-				}
-				catch (Exception e) 
-				{ 
-					LOGGER.error("Unexpected issue closing full data source", e); 
-				}
-			}); 
+		GeneratedFullDataSourceProvider.this.updateDataSourceAsync(fullDataSource); 
 	}
 	
 	
