@@ -160,7 +160,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 							try
 							{
 								ColumnRenderSource thisRenderSource = loadedRenderSources.getThisRenderSource();
-								if (thisRenderSource != null && !thisRenderSource.isEmpty())
+								if (thisRenderSource != null)
 								{
 									CompletableFuture<LodQuadBuilder> buildDataFuture = this.buildNewRenderDataAsync(thisRenderSource, loadedRenderSources);
 									buildDataFuture.thenRun(loadedRenderSources::decrementRefCounts);
@@ -169,6 +169,9 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 								else
 								{
 									// nothing needs to be rendered
+									// TODO how doesn't this cause infinite file handler loops?
+									//  to trigger an upload we check if the buffer is null, and we aren't
+									//  setting the render buffer here
 									this.canRender = false;
 									this.buildAndUploadRenderDataToGpuFuture = null;
 									this.bufferBuildFuture = null;
