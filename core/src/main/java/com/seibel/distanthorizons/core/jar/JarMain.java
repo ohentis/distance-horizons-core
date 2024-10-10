@@ -19,6 +19,10 @@
 
 package com.seibel.distanthorizons.core.jar;
 
+import com.seibel.distanthorizons.core.file.fullDatafile.FullDataSourceProviderV2;
+import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV2DTO;
+import com.seibel.distanthorizons.core.sql.repo.FullDataSourceV2Repo;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.core.jar.gui.BaseJFrame;
 import com.seibel.distanthorizons.core.jar.gui.cusomJObject.JBox;
@@ -32,6 +36,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.io.*;
 import java.net.URL;
+import java.sql.SQLException;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -84,7 +89,42 @@ public class JarMain
 		}
 		JarDependencySetup.createInitialBindings();
 		
-		if (args.length == 0 || Arrays.asList(args).contains("--gui"))
+		if (Arrays.asList(args).contains("--parse"))
+		{
+			// proof-of-concept ability to open DH Sqlite files for parsing by external programs.
+			FullDataSourceV2Repo repo = null;
+			try
+			{
+				long pos = DhSectionPos.encode(DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL, 0, 0);
+				File dbFile = new File("./DistantHorizons.sqlite");
+				logger.info("Attempting to parse pos ["+DhSectionPos.toString(pos)+"] for DB file ["+dbFile+"].");
+				
+				
+				repo = new FullDataSourceV2Repo(FullDataSourceV2Repo.DEFAULT_DATABASE_TYPE, dbFile);
+				FullDataSourceV2DTO dto = repo.getByKey(pos);
+				if (dto == null)
+				{
+					logger.info("No DTO found at pos ["+DhSectionPos.toString(pos)+"]");
+				}
+				else
+				{
+					logger.info("DTO ["+DhSectionPos.toString(pos)+"] checksum: ["+dto.dataChecksum+"].");
+				}
+			}
+			catch (SQLException e)
+			{
+				System.err.println(e.getMessage()+"\n\n");
+				e.printStackTrace();
+			}
+			finally
+			{
+				if (repo != null)
+				{
+					repo.close();
+				}
+			}
+		}
+		else if (args.length == 0 || Arrays.asList(args).contains("--gui"))
 		{
 			startGUI();
 			return;
