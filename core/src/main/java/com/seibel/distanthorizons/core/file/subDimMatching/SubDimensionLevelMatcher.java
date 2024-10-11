@@ -182,7 +182,7 @@ public class SubDimensionLevelMatcher implements AutoCloseable
 		{
 			return null;
 		}
-		DhLightingEngine.INSTANCE.lightChunk(newlyLoadedChunk, new ArrayList<>(), MC_CLIENT.getWrappedClientLevel().hasSkyLight() ? 15 : 0);
+		DhLightingEngine.INSTANCE.lightChunk(newlyLoadedChunk, new ArrayList<>(), MC_CLIENT.getWrappedClientLevel().hasSkyLight() ? LodUtil.MAX_MC_LIGHT : LodUtil.MIN_MC_LIGHT);
 		
 		// build the chunk LOD
 		FullDataSourceV2 newChunkSizedFullDataView = FullDataSourceV2.createFromChunk(newlyLoadedChunk);
