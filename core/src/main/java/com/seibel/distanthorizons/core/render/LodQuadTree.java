@@ -343,7 +343,11 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 			
 			
 			// prepare this section for rendering
-			if (!renderSection.gpuUploadInProgress() && renderSection.renderBuffer == null)
+			if (!renderSection.gpuUploadInProgress()
+				&& renderSection.renderBuffer == null
+				// this check is specifically for N-sized world generators where the higher quality
+				// data source may not exist yet
+				&& renderSection.getFullDataSourceExists())
 			{
 				nodesNeedingLoading.add(renderSection);
 			}
@@ -417,20 +421,25 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 			{
 				// the section only needs to be updated if a buffer is currently present 
 				LodRenderSection renderSection = this.getValue(pos);
-				if (renderSection != null
-					&& renderSection.canRender())
+				if (renderSection != null)
 				{
-					if (!renderSection.gpuUploadInProgress())
+					// this data source may now exist
+					renderSection.updateFullDataSourceExists();	
+					
+					if (renderSection.canRender())
 					{
-						renderSection.uploadRenderDataToGpuAsync();
-					}
-					else
-					{
-						// if a section is already loading we need to wait to trigger it again
-						// if we don't trigger it again the LOD will be out of date
-						// and may be invisible/missing
-						positionsToRequeue.add(pos);
-						break;
+						if (!renderSection.gpuUploadInProgress())
+						{
+							renderSection.uploadRenderDataToGpuAsync();
+						}
+						else
+						{
+							// if a section is already loading we need to wait to trigger it again
+							// if we don't trigger it again the LOD will be out of date
+							// and may be invisible/missing
+							positionsToRequeue.add(pos);
+							break;
+						}
 					}
 				}
 			}
@@ -715,5 +724,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 		
 		LOGGER.info("Finished shutting down " + LodQuadTree.class.getSimpleName());
 	}
+	
+	
 	
 }

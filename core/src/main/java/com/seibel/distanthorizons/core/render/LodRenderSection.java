@@ -104,6 +104,9 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	/** should be an empty array if no positions need to be generated */
 	private LongArrayList missingGenerationPos = null;
 	
+	private boolean checkedIfFullDataSourceExists = false;
+	private boolean fullDataSourceExists = false;
+	
 	
 	
 	//=============//
@@ -429,6 +432,28 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	//=================================//
 	
 	public boolean isFullyGenerated() { return this.missingPositionsCalculated && this.missingGenerationPos.isEmpty(); }
+	/** Returns true if an LOD exists, regardless of what data is in it */
+	public boolean getFullDataSourceExists() 
+	{  
+		if (!this.checkedIfFullDataSourceExists)
+		{
+			this.fullDataSourceExists = this.fullDataSourceProvider.repo.existsWithKey(this.pos);
+			this.checkedIfFullDataSourceExists = true;
+		}
+		
+		return this.fullDataSourceExists;
+	}
+	public void updateFullDataSourceExists() 
+	{
+		// we don't have any ability to remove LODs so we only
+		// need to check if an LOD was previously missing
+		if (!this.fullDataSourceExists)
+		{
+			this.checkedIfFullDataSourceExists = false;
+			this.getFullDataSourceExists();
+		}
+	}
+	
 	public boolean missingPositionsCalculated() { return this.missingPositionsCalculated; }
 	public int ungeneratedPositionCount() { return (this.missingGenerationPos != null) ? this.missingGenerationPos.size() : 0; }
 	
