@@ -55,7 +55,11 @@ public class SharedApi
 	public static final SharedApi INSTANCE = new SharedApi();
 	
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	/** will be null on the server-side */
+	@Nullable
 	private static final IMinecraftRenderWrapper MC_RENDER = SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
+	/** will be null on the server-side */
+	@Nullable
 	private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	
 	private static final UpdateChunkPosManager UPDATE_POS_MANAGER = new UpdateChunkPosManager();
@@ -220,41 +224,42 @@ public class SharedApi
 		}
 		else
 		{
-			// update the center and any existing neighbour chunks. 
+			// update the center with any existing neighbour chunks. 
 			// this is done so lighting changes are propagated correctly
-			
-			// get the neighboring chunk list
-			ArrayList<IChunkWrapper> neighbourChunkList = new ArrayList<>(9);
-			for (int xOffset = -1; xOffset <= 1; xOffset++)
+			queueChunkUpdate(chunkWrapper, getNeighbourChunkListForChunk(chunkWrapper,dhLevel), dhLevel);
+		}
+	}
+	private static ArrayList<IChunkWrapper> getNeighbourChunkListForChunk(IChunkWrapper chunkWrapper, IDhLevel dhLevel)
+	{
+		// get the neighboring chunk list
+		ArrayList<IChunkWrapper> neighbourChunkList = new ArrayList<>(9);
+		for (int xOffset = -1; xOffset <= 1; xOffset++)
+		{
+			for (int zOffset = -1; zOffset <= 1; zOffset++)
 			{
-				for (int zOffset = -1; zOffset <= 1; zOffset++)
+				if (xOffset == 0 && zOffset == 0)
 				{
-					if (xOffset == 0 && zOffset == 0)
+					// center chunk
+					neighbourChunkList.add(chunkWrapper);
+				}
+				else
+				{
+					// neighboring chunk
+					DhChunkPos neighbourPos = new DhChunkPos(chunkWrapper.getChunkPos().getX() + xOffset, chunkWrapper.getChunkPos().getZ() + zOffset);
+					IChunkWrapper neighbourChunk = dhLevel.getLevelWrapper().tryGetChunk(neighbourPos);
+					if (neighbourChunk != null)
 					{
-						// center chunk
-						neighbourChunkList.add(chunkWrapper);
-					}
-					else
-					{
-						// neighboring chunk
-						DhChunkPos neighbourPos = new DhChunkPos(chunkWrapper.getChunkPos().getX() + xOffset, chunkWrapper.getChunkPos().getZ() + zOffset);
-						IChunkWrapper neighbourChunk = dhLevel.getLevelWrapper().tryGetChunk(neighbourPos);
-						if (neighbourChunk != null)
-						{
-							neighbourChunkList.add(neighbourChunk);
-						}
+						neighbourChunkList.add(neighbourChunk);
 					}
 				}
 			}
-			
-			// light and send the chunks
-			for (IChunkWrapper litChunk : neighbourChunkList)
-			{
-				queueChunkUpdate(litChunk, neighbourChunkList, dhLevel);
-			}
 		}
+		return neighbourChunkList;
 	}
-	private static void queueChunkUpdate(IChunkWrapper chunkWrapper, @Nullable ArrayList<IChunkWrapper> neighbourChunkList, IDhLevel dhLevel)
+	
+	private static void queueChunkUpdate(IChunkWrapper chunkWrapper, @Nullable ArrayList<IChunkWrapper> neighbourChunkList, IDhLevel dhLevel) 
+	{ queueChunkUpdate(chunkWrapper, neighbourChunkList, dhLevel,false); }
+	private static void queueChunkUpdate(IChunkWrapper chunkWrapper, @Nullable ArrayList<IChunkWrapper> neighbourChunkList, IDhLevel dhLevel, boolean lightUpdateOnly)
 	{
 		if (MC_CLIENT != null && MC_CLIENT.playerExists())
 		{
@@ -262,7 +267,11 @@ public class SharedApi
 			UPDATE_POS_MANAGER.maxSize = MAX_UPDATING_CHUNK_COUNT_PER_THREAD * Config.Client.Advanced.MultiThreading.numberOfLodBuilderThreads.get();
 		}
 		
-		UpdateChunkData updateData = new UpdateChunkData(chunkWrapper, neighbourChunkList, dhLevel);
+		UpdateChunkData updateData = new UpdateChunkData(chunkWrapper, neighbourChunkList, dhLevel, lightUpdateOnly);
+		if(lightUpdateOnly)
+		{
+			UPDATE_POS_MANAGER.removeItem(chunkWrapper.getChunkPos());
+		}
 		UPDATE_POS_MANAGER.addItem(chunkWrapper.getChunkPos(), updateData);
 		
 		
@@ -308,16 +317,11 @@ public class SharedApi
 			int newChunkHash = chunkWrapper.getBlockBiomeHashCode();
 			if (checkChunkHash)
 			{
-				if (oldChunkHash == newChunkHash)
+				if (oldChunkHash == newChunkHash && !updateData.lightUpdateOnly)
 				{
 					// if the chunk hashes are the same then we don't need to bother with lighting the chunk
 					// or creating/updating the LODs
-					//LOGGER.info("skipping: "+chunkWrapper.getChunkPos()+" "+newChunkHash);
 					return;
-				}
-				else
-				{
-					//LOGGER.info("g: "+chunkWrapper.getChunkPos()+" "+newChunkHash);
 				}
 			}
 			
@@ -334,6 +338,17 @@ public class SharedApi
 				nearbyChunkList.add(chunkWrapper);
 			}
 			
+			// if this chunk will update its lighting
+			// then queue adjacent chunks to update theirs as well
+			// adjacent chunk will have 'lightUpdateOnly' true 
+			// so they won't schedule further chunk updates
+			if (!updateData.lightUpdateOnly)
+			{
+				for (IChunkWrapper adjacentChunk : nearbyChunkList)
+				{
+					queueChunkUpdate(adjacentChunk, getNeighbourChunkListForChunk(adjacentChunk, dhLevel), dhLevel, true);
+				}
+			}
 			
 			// sky lighting is populated later at the data source level
 			DhLightingEngine.INSTANCE.bakeChunkBlockLighting(chunkWrapper, nearbyChunkList, dhLevel.hasSkyLight() ? LodUtil.MAX_MC_LIGHT : LodUtil.MIN_MC_LIGHT);
@@ -389,12 +404,15 @@ public class SharedApi
 		@Nullable
 		public ArrayList<IChunkWrapper> neighbourChunkList;
 		public IDhLevel dhLevel;
+		/** adjacent chunks will only update their light */
+		public boolean lightUpdateOnly;
 		
-		public UpdateChunkData(IChunkWrapper chunkWrapper, @Nullable ArrayList<IChunkWrapper> neighbourChunkList, IDhLevel dhLevel)
+		public UpdateChunkData(IChunkWrapper chunkWrapper, @Nullable ArrayList<IChunkWrapper> neighbourChunkList, IDhLevel dhLevel, boolean lightUpdateOnly)
 		{
 			this.chunkWrapper = chunkWrapper;
 			this.neighbourChunkList = neighbourChunkList;
 			this.dhLevel = dhLevel;
+			this.lightUpdateOnly = lightUpdateOnly;
 		}
 	}
 	
@@ -454,6 +472,22 @@ public class SharedApi
 				this.positionMap.clear();
 				this.closestQueue.clear();
 				this.furthestQueue.clear();
+			}
+			finally
+			{
+				this.lock.unlock();
+			}
+		}
+		
+		public void removeItem(DhChunkPos pos)
+		{
+			try
+			{
+				this.lock.lock();
+				
+				this.positionMap.remove(pos);
+				this.closestQueue.remove(pos);
+				this.furthestQueue.remove(pos);
 			}
 			finally
 			{
