@@ -21,6 +21,7 @@ package com.seibel.distanthorizons.core.render;
 
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSource;
+import com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.ColumnRenderBuffer;
 import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.file.fullDatafile.FullDataSourceProviderV2;
 import com.seibel.distanthorizons.core.level.IDhClientLevel;
@@ -285,6 +286,34 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 				{
 					renderSection.onRenderingDisabled();
 					
+					
+					// unload parent sections so they don't become
+					// outdated when child LODs are updated.
+					// (They'd have to be reloaded from file anyway during an update)
+					long parentPos = renderSection.pos;
+					while (DhSectionPos.getDetailLevel(parentPos) <= this.treeMinDetailLevel)
+					{
+						QuadNode<LodRenderSection> parentNode = this.getNode(parentPos);
+						if (parentNode != null)
+						{
+							LodRenderSection parentRenderSection = parentNode.value;
+							if (parentRenderSection != null)
+							{
+								// onRenderDisabled doesn't need to be 
+								// called since these sections shouldn't be loaded
+								parentRenderSection.setRenderingEnabled(false);
+								ColumnRenderBuffer buffer = parentRenderSection.renderBuffer;
+								if (buffer != null)
+								{
+									buffer.close();
+									parentRenderSection.renderBuffer = null;
+								}
+							}
+						}
+						
+						parentPos = DhSectionPos.getParentPos(parentPos);
+					}
+					
 					// this position's rendering has been disabled due to children being rendered
 					DebugRenderer.makeParticle(new DebugRenderer.BoxParticle(new DebugRenderer.Box(renderSection.pos, 128f, 156f, 0.09f, Color.WHITE), 0.2, 32f));
 				}
@@ -378,43 +407,35 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 		HashSet<Long> positionsToRequeue = new HashSet<>();
 		while ((pos = this.sectionsToReload.poll()) != null)
 		{
-			// walk up the tree until we hit the root node
-			// this is done so any high detail changes flow up to the lower detail render sections as well
-			while (DhSectionPos.getDetailLevel(pos) <= this.treeMinDetailLevel)
+			if (positionsToRequeue.contains(pos))
 			{
-				if (positionsToRequeue.contains(pos))
+				// don't attempt to re-load positions that are already in the process of reloading
+				break;
+			}
+			
+			try
+			{
+				// the section only needs to be updated if a buffer is currently present 
+				LodRenderSection renderSection = this.getValue(pos);
+				if (renderSection != null
+					&& renderSection.canRender())
 				{
-					// don't attempt to re-load positions that are already in the process of reloading
-					break;
-				}
-				
-				try
-				{
-					// We need to update every non-null section, including those that aren't currently rendering.
-					// If this isn't done, and the player moves so a lower quality section is now being rendered,
-					// that section will not have updated correctly and may refuse to load in at all.
-					LodRenderSection renderSection = this.getValue(pos);
-					if (renderSection != null)
+					if (!renderSection.gpuUploadInProgress())
 					{
-						if (!renderSection.gpuUploadInProgress())
-						{
-							renderSection.uploadRenderDataToGpuAsync();
-						}
-						else
-						{
-							// if a section is already loading we need to wait to trigger it again
-							// if we don't trigger it again the LOD will be out of date
-							// and may be invisible/missing
-							positionsToRequeue.add(pos);
-							break;
-						}
+						renderSection.uploadRenderDataToGpuAsync();
+					}
+					else
+					{
+						// if a section is already loading we need to wait to trigger it again
+						// if we don't trigger it again the LOD will be out of date
+						// and may be invisible/missing
+						positionsToRequeue.add(pos);
+						break;
 					}
 				}
-				catch (IndexOutOfBoundsException e)
-				{ /* the section is now out of bounds, it doesn't need to be reloaded */ }
-				
-				pos = DhSectionPos.getParentPos(pos);
 			}
+			catch (IndexOutOfBoundsException e)
+			{ /* the section is now out of bounds, it doesn't need to be reloaded */ }
 		}
 		this.sectionsToReload.addAll(positionsToRequeue);
 	}

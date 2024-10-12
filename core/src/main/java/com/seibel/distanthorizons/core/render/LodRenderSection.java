@@ -73,7 +73,6 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	
 	
 	private boolean renderingEnabled = false;
-	private boolean canRender = false;
 	
 	/** this reference is necessary so we can determine what VBO to render */
 	public ColumnRenderBuffer renderBuffer; 
@@ -172,7 +171,6 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 									// TODO how doesn't this cause infinite file handler loops?
 									//  to trigger an upload we check if the buffer is null, and we aren't
 									//  setting the render buffer here
-									this.canRender = false;
 									this.buildAndUploadRenderDataToGpuFuture = null;
 									this.bufferBuildFuture = null;
 									return CompletableFuture.completedFuture(null);
@@ -277,7 +275,6 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 			
 			// upload complete, clean up the old data if 
 			this.renderBuffer = buffer;
-			this.canRender = (buffer != null);
 			this.buildAndUploadRenderDataToGpuFuture = null;
 			this.bufferBuildFuture = null;
 			
@@ -391,7 +388,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	// getters and properties //
 	//========================//
 	
-	public boolean canRender() { return this.canRender; }
+	public boolean canRender() { return this.renderBuffer != null; }
 	
 	public boolean getRenderingEnabled() { return this.renderingEnabled; }
 	/**
@@ -556,7 +553,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		{
 			color = Color.yellow;
 		}
-		else if (this.canRender)
+		else if (this.canRender())
 		{
 			color = Color.cyan;
 		}
