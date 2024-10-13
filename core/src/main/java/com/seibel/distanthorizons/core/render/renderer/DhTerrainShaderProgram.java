@@ -76,7 +76,7 @@ public class DhTerrainShaderProgram extends ShaderProgram implements IDhApiShade
 	public DhTerrainShaderProgram()
 	{
 		super(
-				() -> Shader.loadFile(Config.Client.Advanced.Graphics.AdvancedGraphics.earthCurveRatio.get() != 0 
+				() -> Shader.loadFile(Config.Client.Advanced.Graphics.Experimental.earthCurveRatio.get() != 0 
 								? "shaders/curve.vert"
 								: "shaders/standard.vert",
 						false, new StringBuilder()).toString(),
@@ -133,14 +133,14 @@ public class DhTerrainShaderProgram extends ShaderProgram implements IDhApiShade
 		}
 		
 		if (this.uEarthRadius != -1) this.setUniform(this.uEarthRadius,
-				/*6371KM*/ 6371000.0f / Config.Client.Advanced.Graphics.AdvancedGraphics.earthCurveRatio.get());
+				/*6371KM*/ 6371000.0f / Config.Client.Advanced.Graphics.Experimental.earthCurveRatio.get());
 		
 		
 		// Noise Uniforms
-		this.setUniform(this.uNoiseEnabled, Config.Client.Advanced.Graphics.NoiseTextureSettings.noiseEnabled.get());
-		this.setUniform(this.uNoiseSteps, Config.Client.Advanced.Graphics.NoiseTextureSettings.noiseSteps.get());
-		this.setUniform(this.uNoiseIntensity, Config.Client.Advanced.Graphics.NoiseTextureSettings.noiseIntensity.get().floatValue());
-		this.setUniform(this.uNoiseDropoff, Config.Client.Advanced.Graphics.NoiseTextureSettings.noiseDropoff.get());
+		this.setUniform(this.uNoiseEnabled, Config.Client.Advanced.Graphics.NoiseTexture.enableNoiseTexture.get());
+		this.setUniform(this.uNoiseSteps, Config.Client.Advanced.Graphics.NoiseTexture.noiseSteps.get());
+		this.setUniform(this.uNoiseIntensity, Config.Client.Advanced.Graphics.NoiseTexture.noiseIntensity.get().floatValue());
+		this.setUniform(this.uNoiseDropoff, Config.Client.Advanced.Graphics.NoiseTexture.noiseDropoff.get());
 	}
 	
 	

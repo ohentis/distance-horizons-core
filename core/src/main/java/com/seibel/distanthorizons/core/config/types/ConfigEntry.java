@@ -25,7 +25,6 @@ import com.seibel.distanthorizons.core.config.listeners.ConfigChangeListener;
 import com.seibel.distanthorizons.core.config.listeners.IConfigListener;
 import com.seibel.distanthorizons.core.config.types.enums.EConfigEntryAppearance;
 import com.seibel.distanthorizons.core.config.types.enums.EConfigEntryPerformance;
-import com.seibel.distanthorizons.core.config.types.enums.EConfigEntryRelevantSide;
 import com.seibel.distanthorizons.coreapi.interfaces.config.IConfigEntry;
 
 import java.util.ArrayList;
@@ -48,7 +47,6 @@ public class ConfigEntry<T> extends AbstractConfigType<T, ConfigEntry<T>> implem
 	private final String serversideShortName;
 	
 	private final EConfigEntryPerformance performance;
-	private final EConfigEntryRelevantSide relevantSide;
 	
 	// API control //
 	/**
@@ -65,7 +63,7 @@ public class ConfigEntry<T> extends AbstractConfigType<T, ConfigEntry<T>> implem
 			EConfigEntryAppearance appearance, 
 			T value, String comment, T min, T max, 
 			String serversideShortName, boolean allowApiOverride, 
-			EConfigEntryPerformance performance, EConfigEntryRelevantSide relevantSide, 
+			EConfigEntryPerformance performance, 
 			ArrayList<IConfigListener> listenerList)
 	{
 		super(appearance, value);
@@ -76,7 +74,6 @@ public class ConfigEntry<T> extends AbstractConfigType<T, ConfigEntry<T>> implem
 		this.serversideShortName = serversideShortName;
 		this.allowApiOverride = allowApiOverride;
 		this.performance = performance;
-		this.relevantSide = relevantSide;
 		this.listenerList = listenerList;
 	}
 	
@@ -200,8 +197,6 @@ public class ConfigEntry<T> extends AbstractConfigType<T, ConfigEntry<T>> implem
 	
 	/** Gets the performance impact of an option */
 	public EConfigEntryPerformance getPerformance() { return this.performance; }
-	/** Gets whether this config should apply to the client, server, or both */
-	public EConfigEntryRelevantSide getRelevantSide() { return this.relevantSide; }
 	
 	/** Fired whenever the config value changes to a new value. */
 	public void addValueChangeListener(Consumer<T> onValueChangeFunc)
@@ -334,7 +329,6 @@ public class ConfigEntry<T> extends AbstractConfigType<T, ConfigEntry<T>> implem
 		protected String tmpServersideShortName = null;
 		private boolean tmpUseApiOverwrite = true;
 		private EConfigEntryPerformance tmpPerformance = EConfigEntryPerformance.DONT_SHOW;
-		private EConfigEntryRelevantSide tmpRelevantSide = EConfigEntryRelevantSide.CLIENT;
 		protected ArrayList<IConfigListener> tmpIConfigListener = new ArrayList<>();
 		
 		public Builder<T> comment(String newComment)
@@ -388,12 +382,6 @@ public class ConfigEntry<T> extends AbstractConfigType<T, ConfigEntry<T>> implem
 			return this;
 		}
 		
-		public Builder<T> setSide(EConfigEntryRelevantSide relevantSide)
-		{
-			this.tmpRelevantSide = relevantSide;
-			return this;
-		}
-		
 		
 		
 		public Builder<T> replaceListeners(ArrayList<IConfigListener> newConfigListener)
@@ -428,7 +416,7 @@ public class ConfigEntry<T> extends AbstractConfigType<T, ConfigEntry<T>> implem
 					this.tmpAppearance, 
 					this.tmpValue, this.tmpComment, this.tmpMin, this.tmpMax, 
 					this.tmpServersideShortName, this.tmpUseApiOverwrite, 
-					this.tmpPerformance, this.tmpRelevantSide, this.tmpIConfigListener);
+					this.tmpPerformance, this.tmpIConfigListener);
 		}
 		
 	}

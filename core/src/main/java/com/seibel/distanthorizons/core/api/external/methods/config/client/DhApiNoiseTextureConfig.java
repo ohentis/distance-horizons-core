@@ -34,18 +34,18 @@ public class DhApiNoiseTextureConfig implements IDhApiNoiseTextureConfig
 	
 	@Override
 	public IDhApiConfigValue<Boolean> noiseEnabled()
-	{ return new DhApiConfigValue<Boolean, Boolean>(Config.Client.Advanced.Graphics.NoiseTextureSettings.noiseEnabled); }
+	{ return new DhApiConfigValue<Boolean, Boolean>(Config.Client.Advanced.Graphics.NoiseTexture.enableNoiseTexture); }
 	
 	@Override
 	public IDhApiConfigValue<Integer> noiseSteps()
-	{ return new DhApiConfigValue<Integer, Integer>(Config.Client.Advanced.Graphics.NoiseTextureSettings.noiseSteps); }
+	{ return new DhApiConfigValue<Integer, Integer>(Config.Client.Advanced.Graphics.NoiseTexture.noiseSteps); }
 	
 	@Override
 	public IDhApiConfigValue<Double> noiseIntensity()
-	{ return new DhApiConfigValue<Double, Double>(Config.Client.Advanced.Graphics.NoiseTextureSettings.noiseIntensity); }
+	{ return new DhApiConfigValue<Double, Double>(Config.Client.Advanced.Graphics.NoiseTexture.noiseIntensity); }
 	
 	@Override
 	public IDhApiConfigValue<Integer> noiseDropoff()
-	{ return new DhApiConfigValue<Integer, Integer>(Config.Client.Advanced.Graphics.NoiseTextureSettings.noiseDropoff); }
+	{ return new DhApiConfigValue<Integer, Integer>(Config.Client.Advanced.Graphics.NoiseTexture.noiseDropoff); }
 	
 }

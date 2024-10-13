@@ -11,16 +11,16 @@ import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
  * and the player already loaded the LODs once.
  * {@link RemoteWorldRetrievalQueue} is used for all other requests.
  * 
- * @see Config.Client.Advanced.Multiplayer.ServerNetworking#synchronizeOnLogin
+ * @see Config.Server#synchronizeOnLoad
  * @see RemoteWorldRetrievalQueue
  */
-public class SyncOnLoginRequestQueue extends AbstractFullDataNetworkRequestQueue
+public class SyncOnLoadRequestQueue extends AbstractFullDataNetworkRequestQueue
 {
 	//=============//
 	// constructor //
 	//=============//
 	
-	public SyncOnLoginRequestQueue(DhClientLevel level, ClientNetworkState networkState)
+	public SyncOnLoadRequestQueue(DhClientLevel level, ClientNetworkState networkState)
 	{ super(networkState, level, true, Config.Client.Advanced.Debugging.DebugWireframe.showWorldGenQueue); }
 	
 	
@@ -44,7 +44,7 @@ public class SyncOnLoginRequestQueue extends AbstractFullDataNetworkRequestQueue
 	@Override
 	public boolean tick(DhBlockPos2D targetPos)
 	{
-		if (!this.networkState.sessionConfig.getSynchronizeOnLogin())
+		if (!this.networkState.sessionConfig.getSynchronizeOnLoad())
 		{
 			return false;
 		}

@@ -28,9 +28,9 @@ import com.seibel.distanthorizons.core.generation.DhLightingEngine;
 import com.seibel.distanthorizons.core.level.DhClientLevel;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
+import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
-import com.seibel.distanthorizons.core.dataObjects.transformers.LodDataBuilder;
 import com.seibel.distanthorizons.core.util.FullDataPointUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
@@ -43,6 +43,7 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.coreapi.util.StringUtil;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
@@ -64,8 +65,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class SubDimensionLevelMatcher implements AutoCloseable
 {
 	private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
-	public static final ConfigBasedLogger LOGGER = new ConfigBasedLogger(LogManager.getLogger(),
-			() -> Config.Client.Advanced.Logging.logFileSubDimEvent.get());
+	public static final Logger LOGGER = DhLoggerBuilder.getLogger();
+			//new ConfigBasedLogger(LogManager.getLogger(),
+			//() -> Config.Common.Logging.logFileSubDimEvent.get());
 	
 	private final ExecutorService matcherThread = ThreadUtil.makeSingleThreadPool("Sub Dimension Matcher");
 	

@@ -98,7 +98,7 @@ public class ThreadPoolUtil
 	
 	
 	/** how many total worker threads can be used */
-	private static int workerThreadSemaphoreCount = Config.Client.Advanced.MultiThreading.numberOfLodBuilderThreads.get();
+	private static int workerThreadSemaphoreCount = Config.Common.MultiThreading.numberOfLodBuilderThreads.get();
 	public static int getWorkerThreadCount() { return workerThreadSemaphoreCount; }
 	
 	private static Semaphore workerThreadSemaphore = null;
@@ -114,10 +114,10 @@ public class ThreadPoolUtil
 	{
 		// standalone threads //
 		
-		fileHandlerThreadPool = new ConfigThreadPool(FILE_HANDLER_THREAD_FACTORY, Config.Client.Advanced.MultiThreading.numberOfFileHandlerThreads, Config.Client.Advanced.MultiThreading.runTimeRatioForFileHandlerThreads, null);
-		updatePropagatorThreadPool = new ConfigThreadPool(UPDATE_PROPAGATOR_THREAD_FACTORY, Config.Client.Advanced.MultiThreading.numberOfUpdatePropagatorThreads, Config.Client.Advanced.MultiThreading.runTimeRatioForUpdatePropagatorThreads, null);
-		worldGenThreadPool = new ConfigThreadPool(WORLD_GEN_THREAD_FACTORY, Config.Client.Advanced.MultiThreading.numberOfWorldGenerationThreads, Config.Client.Advanced.MultiThreading.runTimeRatioForWorldGenerationThreads, null);
-		networkCompressionThreadPool = new ConfigThreadPool(NETWORK_COMPRESSION_THREAD_FACTORY, Config.Client.Advanced.MultiThreading.numberOfNetworkCompressionThreads, Config.Client.Advanced.MultiThreading.runTimeRatioForNetworkCompressionThreads, null);
+		fileHandlerThreadPool = new ConfigThreadPool(FILE_HANDLER_THREAD_FACTORY, Config.Common.MultiThreading.numberOfFileHandlerThreads, Config.Common.MultiThreading.runTimeRatioForFileHandlerThreads, null);
+		updatePropagatorThreadPool = new ConfigThreadPool(UPDATE_PROPAGATOR_THREAD_FACTORY, Config.Common.MultiThreading.numberOfUpdatePropagatorThreads, Config.Common.MultiThreading.runTimeRatioForUpdatePropagatorThreads, null);
+		worldGenThreadPool = new ConfigThreadPool(WORLD_GEN_THREAD_FACTORY, Config.Common.MultiThreading.numberOfWorldGenerationThreads, Config.Common.MultiThreading.runTimeRatioForWorldGenerationThreads, null);
+		networkCompressionThreadPool = new ConfigThreadPool(NETWORK_COMPRESSION_THREAD_FACTORY, Config.Common.MultiThreading.numberOfNetworkCompressionThreads, Config.Common.MultiThreading.runTimeRatioForNetworkCompressionThreads, null);
 		bufferUploaderThreadPool = ThreadUtil.makeSingleThreadPool(BUFFER_UPLOADER_THREAD_NAME);
 		cleanupThreadPool = ThreadUtil.makeSingleThreadPool(CLEANUP_THREAD_NAME);
 		beaconCullingThreadPool = ThreadUtil.makeSingleThreadPool(BEACON_CULLING_THREAD_NAME);
@@ -127,12 +127,12 @@ public class ThreadPoolUtil
 		// worker threads //
 		
 		// create thread semaphore
-		if (Config.Client.Advanced.MultiThreading.enableLodBuilderThreadLimiting.get())
+		if (Config.Common.MultiThreading.enableLodBuilderThreadLimiting.get())
 		{
-			workerThreadSemaphoreCount = Config.Client.Advanced.MultiThreading.numberOfLodBuilderThreads.get();
+			workerThreadSemaphoreCount = Config.Common.MultiThreading.numberOfLodBuilderThreads.get();
 			workerThreadSemaphore = new Semaphore(workerThreadSemaphoreCount);
 			
-			workerThreadSemaphoreConfigListener = new ConfigChangeListener<>(Config.Client.Advanced.MultiThreading.numberOfLodBuilderThreads, (val) ->
+			workerThreadSemaphoreConfigListener = new ConfigChangeListener<>(Config.Common.MultiThreading.numberOfLodBuilderThreads, (val) ->
 			{
 				int changePermit = val - workerThreadSemaphoreCount;
 				if (changePermit > 0)
@@ -148,8 +148,8 @@ public class ThreadPoolUtil
 		}
 		
 		// create thread pools
-		chunkToLodBuilderThreadPool = new ConfigThreadPool(CHUNK_TO_LOD_BUILDER_THREAD_FACTORY, Config.Client.Advanced.MultiThreading.numberOfLodBuilderThreads, Config.Client.Advanced.MultiThreading.runTimeRatioForLodBuilderThreads, workerThreadSemaphore);
-		bufferBuilderThreadPool = new ConfigThreadPool(BUFFER_BUILDER_THREAD_FACTORY, Config.Client.Advanced.MultiThreading.numberOfLodBuilderThreads, Config.Client.Advanced.MultiThreading.runTimeRatioForLodBuilderThreads, workerThreadSemaphore);
+		chunkToLodBuilderThreadPool = new ConfigThreadPool(CHUNK_TO_LOD_BUILDER_THREAD_FACTORY, Config.Common.MultiThreading.numberOfLodBuilderThreads, Config.Common.MultiThreading.runTimeRatioForLodBuilderThreads, workerThreadSemaphore);
+		bufferBuilderThreadPool = new ConfigThreadPool(BUFFER_BUILDER_THREAD_FACTORY, Config.Common.MultiThreading.numberOfLodBuilderThreads, Config.Common.MultiThreading.runTimeRatioForLodBuilderThreads, workerThreadSemaphore);
 		
 	}
 	

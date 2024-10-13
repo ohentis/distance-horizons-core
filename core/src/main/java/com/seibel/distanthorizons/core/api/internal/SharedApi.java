@@ -264,7 +264,7 @@ public class SharedApi
 		if (MC_CLIENT != null && MC_CLIENT.playerExists())
 		{
 			UPDATE_POS_MANAGER.setCenter(MC_CLIENT.getPlayerChunkPos());
-			UPDATE_POS_MANAGER.maxSize = MAX_UPDATING_CHUNK_COUNT_PER_THREAD * Config.Client.Advanced.MultiThreading.numberOfLodBuilderThreads.get();
+			UPDATE_POS_MANAGER.maxSize = MAX_UPDATING_CHUNK_COUNT_PER_THREAD * Config.Common.MultiThreading.numberOfLodBuilderThreads.get();
 		}
 		
 		UpdateChunkData updateData = new UpdateChunkData(chunkWrapper, neighbourChunkList, dhLevel, lightUpdateOnly);
@@ -310,7 +310,7 @@ public class SharedApi
 		
 		try
 		{
-			boolean checkChunkHash = !Config.Client.Advanced.LodBuilding.disableUnchangedChunkCheck.get();
+			boolean checkChunkHash = !Config.Common.LodBuilding.disableUnchangedChunkCheck.get();
 			
 			// check if this chunk has been converted into an LOD already
 			int oldChunkHash = dhLevel.getChunkHash(chunkWrapper.getChunkPos()); // shouldn't happen on the render thread since it may take a few moments to run

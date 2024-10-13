@@ -21,7 +21,6 @@ package com.seibel.distanthorizons.core.api.external.methods.config.client;
 
 import com.seibel.distanthorizons.api.interfaces.config.IDhApiConfigValue;
 import com.seibel.distanthorizons.api.interfaces.config.client.IDhApiGenericRenderingConfig;
-import com.seibel.distanthorizons.api.interfaces.config.client.IDhApiNoiseTextureConfig;
 import com.seibel.distanthorizons.api.objects.config.DhApiConfigValue;
 import com.seibel.distanthorizons.core.config.Config;
 
@@ -35,7 +34,7 @@ public class DhApiGenericRenderingConfig implements IDhApiGenericRenderingConfig
 	
 	@Override 
 	public IDhApiConfigValue<Boolean> renderingEnabled()
-	{ return new DhApiConfigValue<Boolean, Boolean>(Config.Client.Advanced.Graphics.GenericRendering.enableRendering); }
+	{ return new DhApiConfigValue<Boolean, Boolean>(Config.Client.Advanced.Graphics.GenericRendering.enableGenericRendering); }
 	@Override
 	public IDhApiConfigValue<Boolean> beaconRenderingEnabled()
 	{ return new DhApiConfigValue<Boolean, Boolean>(Config.Client.Advanced.Graphics.GenericRendering.enableBeaconRendering); }

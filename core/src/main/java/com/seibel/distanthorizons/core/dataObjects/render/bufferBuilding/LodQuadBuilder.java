@@ -131,7 +131,7 @@ public class LodQuadBuilder
 		this.clientLevelWrapper = clientLevelWrapper;
 		
 		this.debugRenderingMode = Config.Client.Advanced.Debugging.debugRendering.get();
-		this.grassSideRenderingMode = Config.Client.Advanced.Graphics.AdvancedGraphics.grassSideRendering.get();
+		this.grassSideRenderingMode = Config.Client.Advanced.Graphics.Quality.grassSideRendering.get();
 		
 	}
 	

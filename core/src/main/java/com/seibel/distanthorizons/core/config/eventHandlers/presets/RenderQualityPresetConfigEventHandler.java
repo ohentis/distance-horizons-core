@@ -78,7 +78,7 @@ public class RenderQualityPresetConfigEventHandler extends AbstractPresetConfigE
 				this.put(EDhApiQualityPreset.HIGH, EDhApiTransparency.COMPLETE);
 				this.put(EDhApiQualityPreset.EXTREME, EDhApiTransparency.COMPLETE);
 			}});
-	private final ConfigEntryWithPresetOptions<EDhApiQualityPreset, Boolean> ssaoEnabled = new ConfigEntryWithPresetOptions<>(Config.Client.Advanced.Graphics.Ssao.enabled,
+	private final ConfigEntryWithPresetOptions<EDhApiQualityPreset, Boolean> ssaoEnabled = new ConfigEntryWithPresetOptions<>(Config.Client.Advanced.Graphics.Ssao.enableSsao,
 			new HashMap<EDhApiQualityPreset, Boolean>()
 			{{
 				this.put(EDhApiQualityPreset.MINIMUM, false);

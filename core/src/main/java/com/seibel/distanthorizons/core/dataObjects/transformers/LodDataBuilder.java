@@ -127,7 +127,7 @@ public class LodDataBuilder
 		// populate the data source //
 		//==========================//
 		
-		EDhApiWorldCompressionMode worldCompressionMode = Config.Client.Advanced.LodBuilding.worldCompression.get();
+		EDhApiWorldCompressionMode worldCompressionMode = Config.Common.LodBuilding.worldCompression.get();
 		boolean ignoreHiddenBlocks = (worldCompressionMode != EDhApiWorldCompressionMode.MERGE_SAME_BLOCKS);
 		
 		try

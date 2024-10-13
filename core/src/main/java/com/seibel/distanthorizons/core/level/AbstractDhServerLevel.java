@@ -39,7 +39,7 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 {
 	protected static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	private static final ConfigBasedLogger NETWORK_LOGGER = new ConfigBasedLogger(LogManager.getLogger(),
-			() -> Config.Client.Advanced.Logging.logNetworkEvent.get());
+			() -> Config.Common.Logging.logNetworkEvent.get());
 	
 	/** 1 Mebibyte minus 576 bytes for other info */
 	public static final int FULL_DATA_SPLIT_SIZE_IN_BYTES = 1_048_000;
@@ -149,7 +149,7 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 	
 	@Override
 	public boolean shouldDoWorldGen()
-	{ return Config.Client.Advanced.WorldGenerator.enableDistantGeneration.get() && !this.worldGenPlayerCenteringQueue.isEmpty(); }
+	{ return Config.Common.WorldGenerator.enableDistantGeneration.get() && !this.worldGenPlayerCenteringQueue.isEmpty(); }
 	
 	@Override
 	@Nullable
@@ -236,7 +236,7 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 	}
 	private void queueLodSyncForRequestMessage(ServerPlayerState serverPlayerState, FullDataSourceRequestMessage message, ServerPlayerState.RateLimiterSet rateLimiterSet)
 	{
-		if (!serverPlayerState.sessionConfig.getSynchronizeOnLogin())
+		if (!serverPlayerState.sessionConfig.getSynchronizeOnLoad())
 		{
 			message.sendResponse(new RequestRejectedException("Operation is disabled in config."));
 			return;
@@ -402,7 +402,7 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 	@Override
 	public CompletableFuture<Void> updateDataSourcesAsync(FullDataSourceV2 data)
 	{
-		if (!Config.Client.Advanced.Multiplayer.ServerNetworking.enableRealTimeUpdates.get())
+		if (!Config.Server.enableRealTimeUpdates.get())
 		{
 			return this.getFullDataProvider().updateDataSourceAsync(data);
 		}
@@ -432,7 +432,7 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 				Vec3d playerPosition = serverPlayerState.getServerPlayer().getPosition();
 				int distanceFromPlayer = DhSectionPos.getChebyshevBlockDistance(data.getPos(), new DhBlockPos2D((int) playerPosition.x, (int) playerPosition.z)) / 16;
 				if (distanceFromPlayer >= serverPlayerState.getServerPlayer().getViewDistance()
-						&& distanceFromPlayer <= serverPlayerState.sessionConfig.getRenderDistanceRadius())
+						&& distanceFromPlayer <= serverPlayerState.sessionConfig.getMaxUpdateDistanceRadius())
 				{
 					payload.splitAndSend(FULL_DATA_SPLIT_SIZE_IN_BYTES, serverPlayerState.networkSession::sendMessage);
 					serverPlayerState.networkSession.sendMessage(new FullDataPartialUpdateMessage(this.serverLevelWrapper, payload));

@@ -109,27 +109,27 @@ public class DhApiGraphicsConfig implements IDhApiGraphicsConfig
 
 	@Override
 	public IDhApiConfigValue<Double> overdrawPreventionRadius()
-	{ return new DhApiConfigValue<Double, Double>(Config.Client.Advanced.Graphics.AdvancedGraphics.overdrawPrevention); }
+	{ return new DhApiConfigValue<Double, Double>(Config.Client.Advanced.Graphics.Culling.overdrawPrevention); }
 	
 	@Override
 	public IDhApiConfigValue<Double> brightnessMultiplier()
-	{ return new DhApiConfigValue<Double, Double>(Config.Client.Advanced.Graphics.AdvancedGraphics.brightnessMultiplier); }
+	{ return new DhApiConfigValue<Double, Double>(Config.Client.Advanced.Graphics.Quality.brightnessMultiplier); }
 	
 	@Override
 	public IDhApiConfigValue<Double> saturationMultiplier()
-	{ return new DhApiConfigValue<Double, Double>(Config.Client.Advanced.Graphics.AdvancedGraphics.saturationMultiplier); }
+	{ return new DhApiConfigValue<Double, Double>(Config.Client.Advanced.Graphics.Quality.saturationMultiplier); }
 	
 	@Override
 	public IDhApiConfigValue<Boolean> caveCullingEnabled()
-	{ return new DhApiConfigValue<Boolean, Boolean>(Config.Client.Advanced.Graphics.AdvancedGraphics.enableCaveCulling); }
+	{ return new DhApiConfigValue<Boolean, Boolean>(Config.Client.Advanced.Graphics.Culling.enableCaveCulling); }
 	
 	@Override
 	public IDhApiConfigValue<Integer> caveCullingHeight()
-	{ return new DhApiConfigValue<Integer, Integer>(Config.Client.Advanced.Graphics.AdvancedGraphics.caveCullingHeight); }
+	{ return new DhApiConfigValue<Integer, Integer>(Config.Client.Advanced.Graphics.Culling.caveCullingHeight); }
 	
 	@Override
 	public IDhApiConfigValue<Integer> earthCurvatureRatio()
-	{ return new DhApiConfigValue<Integer, Integer>(Config.Client.Advanced.Graphics.AdvancedGraphics.earthCurveRatio); }
+	{ return new DhApiConfigValue<Integer, Integer>(Config.Client.Advanced.Graphics.Experimental.earthCurveRatio); }
 	
 	@Override
 	public IDhApiConfigValue<Boolean> lodOnlyMode()
@@ -137,19 +137,19 @@ public class DhApiGraphicsConfig implements IDhApiGraphicsConfig
 	
 	@Override
 	public IDhApiConfigValue<Double> lodBias()
-	{ return new DhApiConfigValue<Double, Double>(Config.Client.Advanced.Graphics.AdvancedGraphics.lodBias); }
+	{ return new DhApiConfigValue<Double, Double>(Config.Client.Advanced.Graphics.Quality.lodBias); }
 	
 	@Override
 	public IDhApiConfigValue<EDhApiLodShading> lodShading()
-	{ return new DhApiConfigValue<EDhApiLodShading, EDhApiLodShading>(Config.Client.Advanced.Graphics.AdvancedGraphics.lodShading); }
+	{ return new DhApiConfigValue<EDhApiLodShading, EDhApiLodShading>(Config.Client.Advanced.Graphics.Quality.lodShading); }
 	
 	@Override
 	public IDhApiConfigValue<Boolean> disableFrustumCulling()
-	{ return new DhApiConfigValue<Boolean, Boolean>(Config.Client.Advanced.Graphics.AdvancedGraphics.disableFrustumCulling); }
+	{ return new DhApiConfigValue<Boolean, Boolean>(Config.Client.Advanced.Graphics.Culling.disableFrustumCulling); }
 	
 	@Override
 	public IDhApiConfigValue<Boolean> disableShadowFrustumCulling()
-	{ return new DhApiConfigValue<Boolean, Boolean>(Config.Client.Advanced.Graphics.AdvancedGraphics.disableShadowPassFrustumCulling); }
+	{ return new DhApiConfigValue<Boolean, Boolean>(Config.Client.Advanced.Graphics.Culling.disableShadowPassFrustumCulling); }
 	
 	
 	

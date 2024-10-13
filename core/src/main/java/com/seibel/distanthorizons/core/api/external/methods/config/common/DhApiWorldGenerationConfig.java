@@ -22,8 +22,8 @@ package com.seibel.distanthorizons.core.api.external.methods.config.common;
 import com.seibel.distanthorizons.api.interfaces.config.IDhApiConfigValue;
 import com.seibel.distanthorizons.api.interfaces.config.both.IDhApiWorldGenerationConfig;
 import com.seibel.distanthorizons.api.objects.config.DhApiConfigValue;
-import com.seibel.distanthorizons.core.config.Config.Client.Advanced.WorldGenerator;
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiDistantGeneratorMode;
+import com.seibel.distanthorizons.core.config.Config;
 
 /**
  * Distant Horizons' world generation configuration. <br><br>
@@ -43,11 +43,11 @@ public class DhApiWorldGenerationConfig implements IDhApiWorldGenerationConfig
 	
 	@Override
 	public IDhApiConfigValue<Boolean> enableDistantWorldGeneration()
-	{ return new DhApiConfigValue<>(WorldGenerator.enableDistantGeneration); }
+	{ return new DhApiConfigValue<>(Config.Common.WorldGenerator.enableDistantGeneration); }
 	
 	@Override
 	public IDhApiConfigValue<EDhApiDistantGeneratorMode> distantGeneratorMode()
-	{ return new DhApiConfigValue<>(WorldGenerator.distantGeneratorMode); }
+	{ return new DhApiConfigValue<>(Config.Common.WorldGenerator.distantGeneratorMode); }
 	
 	
 }

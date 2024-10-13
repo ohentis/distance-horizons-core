@@ -20,7 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ServerPlayerState implements Closeable
 {
 	private final ConfigChangeListener<String> levelKeyPrefixChangeListener
-			= new ConfigChangeListener<>(Config.Client.Advanced.Multiplayer.ServerNetworking.levelKeyPrefix, this::onLevelKeyPrefixConfigChanged);
+			= new ConfigChangeListener<>(Config.Server.levelKeyPrefix, this::onLevelKeyPrefixConfigChanged);
 	private final SessionConfig.AnyChangeListener configAnyChangeListener = new SessionConfig.AnyChangeListener(this::onSessionConfigChanged);
 	
 	
@@ -69,7 +69,7 @@ public class ServerPlayerState implements Closeable
 	private void onLevelKeyPrefixConfigChanged(String newLevelKey) { this.sendLevelKey(); }
 	private void sendLevelKey()
 	{
-		if (Config.Client.Advanced.Multiplayer.ServerNetworking.sendLevelKeys.get())
+		if (Config.Server.sendLevelKeys.get())
 		{
 			// let the client's know about the change
 			String levelKey = this.getServerPlayer().getLevel().getKeyedLevelDimensionName();
@@ -106,14 +106,14 @@ public class ServerPlayerState implements Closeable
 	public class RateLimiterSet
 	{
 		public final SupplierBasedRateAndConcurrencyLimiter<FullDataSourceRequestMessage> generationRequestRateLimiter = new SupplierBasedRateAndConcurrencyLimiter<>(
-				() -> Config.Client.Advanced.Multiplayer.ServerNetworking.generationRequestRateLimit.get(),
+				() -> Config.Server.generationRequestRateLimit.get(),
 				msg -> {
 					msg.sendResponse(new RateLimitedException("Full data request rate limit: " + ServerPlayerState.this.sessionConfig.getGenerationRequestRateLimit()));
 				}
 		);
 		
 		public final SupplierBasedRateAndConcurrencyLimiter<FullDataSourceRequestMessage> syncOnLoginRateLimiter = new SupplierBasedRateAndConcurrencyLimiter<>(
-				() -> Config.Client.Advanced.Multiplayer.ServerNetworking.syncOnLoginRateLimit.get(),
+				() -> Config.Server.syncOnLoadRateLimit.get(),
 				msg -> {
 					msg.sendResponse(new RateLimitedException("Sync on login rate limit: " + ServerPlayerState.this.sessionConfig.getSyncOnLoginRateLimit()));
 				}

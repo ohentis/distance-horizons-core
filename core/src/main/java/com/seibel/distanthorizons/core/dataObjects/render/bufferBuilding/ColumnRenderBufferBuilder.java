@@ -52,7 +52,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 public class ColumnRenderBufferBuilder
 {
 	public static final ConfigBasedLogger EVENT_LOGGER = new ConfigBasedLogger(LogManager.getLogger(),
-			() -> Config.Client.Advanced.Logging.logRendererBufferEvent.get());
+			() -> Config.Common.Logging.logRendererBufferEvent.get());
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
 	
@@ -182,12 +182,12 @@ public class ColumnRenderBufferBuilder
 		
 		// can be used to limit which section positions are build and thus, rendered
 		// useful when debugging a specific section
-		boolean columnBuilderDebugEnabled = Config.Client.Advanced.Debugging.columnBuilderDebugEnable.get();
+		boolean columnBuilderDebugEnabled = Config.Client.Advanced.Debugging.ColumnBuilderDebugging.columnBuilderDebugEnable.get();
 		if (columnBuilderDebugEnabled)
 		{
-			if (DhSectionPos.getDetailLevel(renderSource.pos) == Config.Client.Advanced.Debugging.columnBuilderDebugDetailLevel.get()
-				&& DhSectionPos.getX(renderSource.pos) == Config.Client.Advanced.Debugging.columnBuilderDebugXPos.get()
-				&& DhSectionPos.getZ(renderSource.pos) == Config.Client.Advanced.Debugging.columnBuilderDebugZPos.get())
+			if (DhSectionPos.getDetailLevel(renderSource.pos) == Config.Client.Advanced.Debugging.ColumnBuilderDebugging.columnBuilderDebugDetailLevel.get()
+				&& DhSectionPos.getX(renderSource.pos) == Config.Client.Advanced.Debugging.ColumnBuilderDebugging.columnBuilderDebugXPos.get()
+				&& DhSectionPos.getZ(renderSource.pos) == Config.Client.Advanced.Debugging.ColumnBuilderDebugging.columnBuilderDebugZPos.get())
 			{
 				int breakpoint = 0;
 			}
@@ -230,12 +230,12 @@ public class ColumnRenderBufferBuilder
 				// useful for debugging a single column
 				if (columnBuilderDebugEnabled)
 				{
-					int wantedX = Config.Client.Advanced.Debugging.columnBuilderDebugXRow.get();
+					int wantedX = Config.Client.Advanced.Debugging.ColumnBuilderDebugging.columnBuilderDebugXRow.get();
 					if (wantedX >= 0 && relX != wantedX)
 					{
 						continue;
 					}
-					int wantedZ = Config.Client.Advanced.Debugging.columnBuilderDebugZRow.get();
+					int wantedZ = Config.Client.Advanced.Debugging.ColumnBuilderDebugging.columnBuilderDebugZRow.get();
 					if (wantedZ >= 0 && relZ != wantedZ)
 					{
 						continue;
@@ -343,9 +343,9 @@ public class ColumnRenderBufferBuilder
 				for (int i = 0; i < columnRenderData.size(); i++)
 				{
 					// can be uncommented to limit which vertical LOD is generated
-					if (Config.Client.Advanced.Debugging.columnBuilderDebugEnable.get())
+					if (Config.Client.Advanced.Debugging.ColumnBuilderDebugging.columnBuilderDebugEnable.get())
 					{
-						int wantedColumnIndex = Config.Client.Advanced.Debugging.columnBuilderDebugColumnIndex.get();
+						int wantedColumnIndex = Config.Client.Advanced.Debugging.ColumnBuilderDebugging.columnBuilderDebugColumnIndex.get();
 						if (wantedColumnIndex >= 0 && i != wantedColumnIndex)
 						{
 							continue;
@@ -411,8 +411,8 @@ public class ColumnRenderBufferBuilder
 		{
 			case OFF:
 			{
-				float saturationMultiplier = Config.Client.Advanced.Graphics.AdvancedGraphics.saturationMultiplier.get().floatValue();
-				float brightnessMultiplier = Config.Client.Advanced.Graphics.AdvancedGraphics.brightnessMultiplier.get().floatValue();
+				float saturationMultiplier = Config.Client.Advanced.Graphics.Quality.saturationMultiplier.get().floatValue();
+				float brightnessMultiplier = Config.Client.Advanced.Graphics.Quality.brightnessMultiplier.get().floatValue();
 				if (saturationMultiplier == 1.0 && brightnessMultiplier == 1.0)
 				{
 					color = RenderDataPointUtil.getColor(data);

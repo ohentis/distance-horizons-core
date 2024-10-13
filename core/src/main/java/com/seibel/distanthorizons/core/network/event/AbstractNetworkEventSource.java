@@ -41,7 +41,7 @@ import java.util.function.Consumer;
 public abstract class AbstractNetworkEventSource
 {
 	private static final ConfigBasedLogger LOGGER = new ConfigBasedLogger(LogManager.getLogger(),
-			() -> Config.Client.Advanced.Logging.logNetworkEvent.get());
+			() -> Config.Common.Logging.logNetworkEvent.get());
 	
 	
 	/**

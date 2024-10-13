@@ -43,9 +43,9 @@ public class ConfigCategory extends AbstractConfigType<Class<?>, ConfigCategory>
 		return this.destination;
 	}
 	
+	/** Use get() instead for category */
 	@Override
 	@Deprecated
-	/** Use get() instead for category */
 	public Class<?> getType()
 	{
 		return value;

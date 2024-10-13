@@ -31,15 +31,15 @@ public class SessionConfig implements INetworkObject
 	{
 		// Note: config values are ordered by serversideShortName when transmitted
 		
-		registerConfigEntry(Config.Client.Advanced.Graphics.Quality.lodChunkRenderDistanceRadius, Math::min);
+		registerConfigEntry(Config.Server.realTimeUpdateDistanceRadiusInChunks, Math::min);
 		
-		registerConfigEntry(Config.Client.Advanced.WorldGenerator.enableDistantGeneration, (x, y) -> x && y);
-		registerConfigEntry(Config.Client.Advanced.Multiplayer.ServerNetworking.generationRequestRateLimit, Math::min);
+		registerConfigEntry(Config.Common.WorldGenerator.enableDistantGeneration, (x, y) -> x && y);
+		registerConfigEntry(Config.Server.generationRequestRateLimit, Math::min);
 		
-		registerConfigEntry(Config.Client.Advanced.Multiplayer.ServerNetworking.enableRealTimeUpdates, (x, y) -> x && y);
+		registerConfigEntry(Config.Server.enableRealTimeUpdates, (x, y) -> x && y);
 		
-		registerConfigEntry(Config.Client.Advanced.Multiplayer.ServerNetworking.synchronizeOnLogin, (x, y) -> x && y);
-		registerConfigEntry(Config.Client.Advanced.Multiplayer.ServerNetworking.syncOnLoginRateLimit, Math::min);
+		registerConfigEntry(Config.Server.synchronizeOnLoad, (x, y) -> x && y);
+		registerConfigEntry(Config.Server.syncOnLoadRateLimit, Math::min);
 	}
 	
 	public SessionConfig() {}
@@ -50,12 +50,12 @@ public class SessionConfig implements INetworkObject
 	// public values //
 	//===============//
 	
-	public int getRenderDistanceRadius() { return this.getValue(Config.Client.Advanced.Graphics.Quality.lodChunkRenderDistanceRadius); }
-	public boolean isDistantGenerationEnabled() { return this.getValue(Config.Client.Advanced.WorldGenerator.enableDistantGeneration); }
-	public int getGenerationRequestRateLimit() { return this.getValue(Config.Client.Advanced.Multiplayer.ServerNetworking.generationRequestRateLimit); }
-	public boolean isRealTimeUpdatesEnabled() { return this.getValue(Config.Client.Advanced.Multiplayer.ServerNetworking.enableRealTimeUpdates); }
-	public boolean getSynchronizeOnLogin() { return this.getValue(Config.Client.Advanced.Multiplayer.ServerNetworking.synchronizeOnLogin); }
-	public int getSyncOnLoginRateLimit() { return this.getValue(Config.Client.Advanced.Multiplayer.ServerNetworking.syncOnLoginRateLimit); }
+	public int getMaxUpdateDistanceRadius() { return this.getValue(Config.Server.realTimeUpdateDistanceRadiusInChunks); }
+	public boolean isDistantGenerationEnabled() { return this.getValue(Config.Common.WorldGenerator.enableDistantGeneration); }
+	public int getGenerationRequestRateLimit() { return this.getValue(Config.Server.generationRequestRateLimit); }
+	public boolean isRealTimeUpdatesEnabled() { return this.getValue(Config.Server.enableRealTimeUpdates); }
+	public boolean getSynchronizeOnLoad() { return this.getValue(Config.Server.synchronizeOnLoad); }
+	public int getSyncOnLoginRateLimit() { return this.getValue(Config.Server.syncOnLoadRateLimit); }
 	
 	
 	

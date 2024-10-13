@@ -37,38 +37,38 @@ public class DhApiHeightFogConfig implements IDhApiHeightFogConfig
 	
 	@Override
 	public IDhApiConfigValue<EDhApiHeightFogMixMode> heightFogMixMode()
-	{ return new DhApiConfigValue<EDhApiHeightFogMixMode, EDhApiHeightFogMixMode>(Config.Client.Advanced.Graphics.Fog.AdvancedFog.HeightFog.heightFogMixMode); }
+	{ return new DhApiConfigValue<EDhApiHeightFogMixMode, EDhApiHeightFogMixMode>(Config.Client.Advanced.Graphics.Fog.HeightFog.heightFogMixMode); }
 	
 	@Override
 	public IDhApiConfigValue<EDhApiHeightFogMode> heightFogMode()
-	{ return new DhApiConfigValue<EDhApiHeightFogMode, EDhApiHeightFogMode>(Config.Client.Advanced.Graphics.Fog.AdvancedFog.HeightFog.heightFogMode); }
+	{ return new DhApiConfigValue<EDhApiHeightFogMode, EDhApiHeightFogMode>(Config.Client.Advanced.Graphics.Fog.HeightFog.heightFogMode); }
 	
 	@Override
 	public IDhApiConfigValue<Double> heightFogBaseHeight()
-	{ return new DhApiConfigValue<Double, Double>(Config.Client.Advanced.Graphics.Fog.AdvancedFog.HeightFog.heightFogBaseHeight); }
+	{ return new DhApiConfigValue<Double, Double>(Config.Client.Advanced.Graphics.Fog.HeightFog.heightFogBaseHeight); }
 	
 	@Override
 	public IDhApiConfigValue<Double> heightFogStartingHeightPercent()
-	{ return new DhApiConfigValue<Double, Double>(Config.Client.Advanced.Graphics.Fog.AdvancedFog.HeightFog.heightFogStart); }
+	{ return new DhApiConfigValue<Double, Double>(Config.Client.Advanced.Graphics.Fog.HeightFog.heightFogStart); }
 	
 	@Override
 	public IDhApiConfigValue<Double> heightFogEndingHeightPercent()
-	{ return new DhApiConfigValue<Double, Double>(Config.Client.Advanced.Graphics.Fog.AdvancedFog.HeightFog.heightFogEnd); }
+	{ return new DhApiConfigValue<Double, Double>(Config.Client.Advanced.Graphics.Fog.HeightFog.heightFogEnd); }
 	
 	@Override
 	public IDhApiConfigValue<Double> heightFogMinThickness()
-	{ return new DhApiConfigValue<Double, Double>(Config.Client.Advanced.Graphics.Fog.AdvancedFog.HeightFog.heightFogMin); }
+	{ return new DhApiConfigValue<Double, Double>(Config.Client.Advanced.Graphics.Fog.HeightFog.heightFogMin); }
 	
 	@Override
 	public IDhApiConfigValue<Double> heightFogMaxThickness()
-	{ return new DhApiConfigValue<Double, Double>(Config.Client.Advanced.Graphics.Fog.AdvancedFog.HeightFog.heightFogMax); }
+	{ return new DhApiConfigValue<Double, Double>(Config.Client.Advanced.Graphics.Fog.HeightFog.heightFogMax); }
 	
 	@Override
 	public IDhApiConfigValue<EDhApiFogFalloff> heightFogFalloff()
-	{ return new DhApiConfigValue<EDhApiFogFalloff, EDhApiFogFalloff>(Config.Client.Advanced.Graphics.Fog.AdvancedFog.HeightFog.heightFogFalloff); }
+	{ return new DhApiConfigValue<EDhApiFogFalloff, EDhApiFogFalloff>(Config.Client.Advanced.Graphics.Fog.HeightFog.heightFogFalloff); }
 	
 	@Override
 	public IDhApiConfigValue<Double> heightFogDensity()
-	{ return new DhApiConfigValue<Double, Double>(Config.Client.Advanced.Graphics.Fog.AdvancedFog.HeightFog.heightFogDensity); }
+	{ return new DhApiConfigValue<Double, Double>(Config.Client.Advanced.Graphics.Fog.HeightFog.heightFogDensity); }
 	
 }

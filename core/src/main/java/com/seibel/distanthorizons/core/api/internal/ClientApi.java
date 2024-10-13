@@ -142,7 +142,7 @@ public class ClientApi
 			{
 				LOGGER.info("Replay on ClientServer mode connecting.");
 				
-				if (Config.Client.Advanced.Logging.showReplayWarningOnStartup.get())
+				if (Config.Common.Logging.Warning.showReplayWarningOnStartup.get())
 				{
 					MC_CLIENT.sendChatMessage("\u00A76" + "Distant Horizons: Replay detected." + "\u00A7r"); // gold color
 					MC_CLIENT.sendChatMessage("DH may behave strangely or have missing functionality.");
@@ -629,7 +629,7 @@ public class ClientApi
 		}
 		
 		// memory
-		if (!this.lowMemoryWarningPrinted && Config.Client.Advanced.Logging.showLowMemoryWarningOnStartup.get())
+		if (!this.lowMemoryWarningPrinted && Config.Common.Logging.Warning.showLowMemoryWarningOnStartup.get())
 		{
 			this.lowMemoryWarningPrinted = true;
 			

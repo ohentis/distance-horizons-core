@@ -61,7 +61,7 @@ public class GLProxy
 	
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger(MethodHandles.lookup().lookupClass().getSimpleName());
 	public static final ConfigBasedLogger GL_LOGGER = new ConfigBasedLogger(LogManager.getLogger(GLProxy.class),
-			() -> Config.Client.Advanced.Logging.logRendererGLEvent.get());
+			() -> Config.Common.Logging.logRendererGLEvent.get());
 	
 	private static GLProxy instance = null;
 	

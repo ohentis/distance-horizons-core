@@ -87,9 +87,9 @@ public class ColumnBox
 		// defaulting to a value far below what we can normally render means we
 		// don't need to have an additional "is cave culling enabled" check
 		int caveCullingMaxY = Integer.MIN_VALUE;
-		if (Config.Client.Advanced.Graphics.AdvancedGraphics.enableCaveCulling.get())
+		if (Config.Client.Advanced.Graphics.Culling.enableCaveCulling.get())
 		{
-			caveCullingMaxY = Config.Client.Advanced.Graphics.AdvancedGraphics.caveCullingHeight.get() - clientLevel.getMinY();
+			caveCullingMaxY = Config.Client.Advanced.Graphics.Culling.caveCullingHeight.get() - clientLevel.getMinY();
 		}
 		
 		

@@ -34,9 +34,9 @@ public interface IServerLevelWrapper extends ILevelWrapper
 	{
 		String dimensionName = this.getDimensionName();
 		
-		if (Config.Client.Advanced.Multiplayer.ServerNetworking.sendLevelKeys.get())
+		if (Config.Server.sendLevelKeys.get())
 		{
-			String levelKeyPrefix = Config.Client.Advanced.Multiplayer.ServerNetworking.levelKeyPrefix.get();
+			String levelKeyPrefix = Config.Server.levelKeyPrefix.get();
 			
 			if (SharedApi.getEnvironment() == EWorldEnvironment.CLIENT_SERVER)
 			{

@@ -46,11 +46,11 @@ public class WorldCurvatureConfigEventHandler implements IConfigListener
 	@Override
 	public void onConfigValueSet()
 	{
-		int curveRatio = Config.Client.Advanced.Graphics.AdvancedGraphics.earthCurveRatio.get();
+		int curveRatio = Config.Client.Advanced.Graphics.Experimental.earthCurveRatio.get();
 		if (curveRatio > 0 && curveRatio < MIN_VALID_CURVE_VALUE)
 		{
 			// shouldn't update the UI, otherwise we may end up fighting the user
-			Config.Client.Advanced.Graphics.AdvancedGraphics.earthCurveRatio.set(MIN_VALID_CURVE_VALUE);
+			Config.Client.Advanced.Graphics.Experimental.earthCurveRatio.set(MIN_VALID_CURVE_VALUE);
 		}
 		
 	}

@@ -29,10 +29,7 @@ public class ConfigUIButton extends AbstractConfigType<Runnable, ConfigUIButton>
 	}
 	
 	/** Runs the action of the button. NOTE: Will run on the main thread (so can halt the main process if not offloaded to a different thread) */
-	public void runAction()
-	{
-		this.value.run();
-	}
+	public void runAction() { this.value.run(); }
 	
 	public static class Builder extends AbstractConfigType.Builder<Runnable, Builder>
 	{

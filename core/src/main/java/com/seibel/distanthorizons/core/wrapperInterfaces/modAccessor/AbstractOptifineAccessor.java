@@ -74,7 +74,8 @@ public abstract class AbstractOptifineAccessor implements IOptifineAccessor
 	// interface methods //
 	//===================//
 	
-	@Override
+	//@Override
+	@Deprecated
 	public EDhApiFogDrawMode getFogDrawMode()
 	{
 		if (this.ofFogField == null)
@@ -84,9 +85,9 @@ public abstract class AbstractOptifineAccessor implements IOptifineAccessor
 			// the setup method wasn't called yet.
 			return EDhApiFogDrawMode.FOG_ENABLED;
 		}
-		
+
 		int returnNum = 0;
-		
+
 		try
 		{
 			returnNum = (int) this.ofFogField.get(this.mcOptionsObject);
@@ -95,13 +96,13 @@ public abstract class AbstractOptifineAccessor implements IOptifineAccessor
 		{
 			e.printStackTrace();
 		}
-		
+
 		switch (returnNum)
 		{
 			default:
 			case 0: // optifine's "default" option,
 				// it should never be used, so default to fog Enabled
-				
+
 				// normal options
 			case 1: // fast
 			case 2: // fancy

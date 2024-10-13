@@ -230,12 +230,12 @@ public class RenderBufferHandler implements AutoCloseable
 		boolean isShadowPass = (IRIS_ACCESSOR != null && IRIS_ACCESSOR.isRenderingShadowPass());
 		if (isShadowPass)
 		{
-			enableFrustumCulling = !Config.Client.Advanced.Graphics.AdvancedGraphics.disableShadowPassFrustumCulling.get();
+			enableFrustumCulling = !Config.Client.Advanced.Graphics.Culling.disableShadowPassFrustumCulling.get();
 			frustum = DhApi.overrides.get(IDhApiShadowCullingFrustum.class);
 		}
 		else
 		{
-			enableFrustumCulling = !Config.Client.Advanced.Graphics.AdvancedGraphics.disableFrustumCulling.get();
+			enableFrustumCulling = !Config.Client.Advanced.Graphics.Culling.disableFrustumCulling.get();
 			frustum = DhApi.overrides.get(IDhApiCullingFrustum.class);
 		}
 		
@@ -374,7 +374,7 @@ public class RenderBufferHandler implements AutoCloseable
 	public String getVboRenderDebugMenuString()
 	{
 		String countText = F3Screen.NUMBER_FORMAT.format(this.visibleBufferCount);
-		if (!Config.Client.Advanced.Graphics.AdvancedGraphics.disableFrustumCulling.get())
+		if (!Config.Client.Advanced.Graphics.Culling.disableFrustumCulling.get())
 		{
 			countText += "/" + F3Screen.NUMBER_FORMAT.format(this.visibleBufferCount + this.culledBufferCount);
 		}
@@ -389,7 +389,7 @@ public class RenderBufferHandler implements AutoCloseable
 		}
 		
 		String countText = F3Screen.NUMBER_FORMAT.format(this.shadowVisibleBufferCount);
-		if (!Config.Client.Advanced.Graphics.AdvancedGraphics.disableFrustumCulling.get())
+		if (!Config.Client.Advanced.Graphics.Culling.disableFrustumCulling.get())
 		{
 			countText += "/" + F3Screen.NUMBER_FORMAT.format(this.shadowVisibleBufferCount + this.shadowCulledBufferCount);
 		}

@@ -20,7 +20,6 @@
 package com.seibel.distanthorizons.core.config.file;
 
 import com.electronwill.nightconfig.core.file.CommentedFileConfig;
-import com.seibel.distanthorizons.core.config.types.enums.EConfigEntryRelevantSide;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.config.ConfigBase;
 import com.seibel.distanthorizons.core.config.types.AbstractConfigType;
@@ -231,13 +230,6 @@ public class ConfigFileHandling
 		{
 			return;
 		}
-		else if ((entry.getRelevantSide() == EConfigEntryRelevantSide.CLIENT && MC_SHARED.isDedicatedServer())
-				|| (entry.getRelevantSide() == EConfigEntryRelevantSide.SERVER && !MC_SHARED.isDedicatedServer()))
-		{
-			// don't save server/client specific configs on the opposite
-			// (this keeps the config file clean of unnecessary items)
-			return;
-		}
 		else if (entry.getTrueValue() == null)
 		{
 			// TODO when can this happen?
@@ -309,15 +301,6 @@ public class ConfigFileHandling
 			return;
 		}
 		
-		
-		
-		if ((entry.getRelevantSide() == EConfigEntryRelevantSide.CLIENT && MC_SHARED.isDedicatedServer())
-				|| (entry.getRelevantSide() == EConfigEntryRelevantSide.SERVER && !MC_SHARED.isDedicatedServer()))
-		{
-			// don't save server/client specific configs on the opposite
-			// (this keeps the config file clean of unnecessary items)
-			return;
-		}
 		
 		
 		String comment = entry.getComment().replaceAll("\n", "\n ").trim();
@@ -394,56 +377,4 @@ public class ConfigFileHandling
 	
 	
 	
-	
-	// ========== API (server) STUFF ========== //
-	/* * ALWAYS CLEAR WHEN NOT ON SERVER!!!! */
-	// We are not using this stuff, so comment it out for now (if we ever do need it then we can uncomment it)
-    /*
-    @SuppressWarnings("unchecked")
-    public static void clearApiValues() {
-        for (AbstractConfigType<?, ?> entry : ConfigBase.entries) {
-            if (ConfigEntry.class.isAssignableFrom(entry.getClass()) && ((ConfigEntry) entry).allowApiOverride) {
-                ((ConfigEntry) entry).setApiValue(null);
-            }
-        }
-    }
-    @SuppressWarnings("unchecked")
-    public static String exportApiValues() {
-        JSONObject jsonObject = new JSONObject();
-        jsonObject.put("configVersion", ConfigBase.configVersion);
-        for (AbstractConfigType<?, ?> entry : ConfigBase.entries) {
-            if (ConfigEntry.class.isAssignableFrom(entry.getClass()) && ((ConfigEntry) entry).allowApiOverride) {
-                if (ConfigTypeConverters.convertObjects.containsKey(entry.getType())) {
-                    jsonObject.put(entry.getNameWCategory(), ConfigTypeConverters.convertToString(entry.getType(), ((ConfigEntry<?>) entry).getTrueValue()));
-                } else {
-                    jsonObject.put(entry.getNameWCategory(), ((ConfigEntry<?>) entry).getTrueValue());
-                }
-            }
-        }
-        return jsonObject.toJSONString();
-    }
-    @SuppressWarnings("unchecked") // Suppress due to its always safe
-    public static void importApiValues(String values) {
-        JSONObject jsonObject = null;
-        try {
-            jsonObject = (JSONObject) new JSONParser().parse(values);
-        } catch (ParseException p) {
-            p.printStackTrace();
-        }
-
-        // Importing code
-        for (AbstractConfigType<?, ?> entry : ConfigBase.entries) {
-            if (ConfigEntry.class.isAssignableFrom(entry.getClass()) && ((ConfigEntry) entry).allowApiOverride) {
-                Object jsonItem = jsonObject.get(entry.getNameWCategory());
-                if (entry.getType().isEnum()) {
-                    ((ConfigEntry) entry).setApiValue(Enum.valueOf((Class<? extends Enum>) entry.getType(), jsonItem.toString()));
-                } else if (ConfigTypeConverters.convertObjects.containsKey(entry.getType())) {
-                    ((ConfigEntry) entry).setApiValue(ConfigTypeConverters.convertFromString(entry.getType(), jsonItem.toString()));
-                } else {
-                    ((ConfigEntry) entry).setApiValue(jsonItem);
-                }
-            }
-        }
-    }
-     */
 }

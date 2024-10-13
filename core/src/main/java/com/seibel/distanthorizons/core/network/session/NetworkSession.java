@@ -22,7 +22,7 @@ import java.util.function.Consumer;
 public class NetworkSession extends AbstractNetworkEventSource
 {
 	private static final ConfigBasedLogger LOGGER = new ConfigBasedLogger(LogManager.getLogger(),
-			() -> Config.Client.Advanced.Logging.logNetworkEvent.get());
+			() -> Config.Common.Logging.logNetworkEvent.get());
 	
 	private static final IPluginPacketSender PACKET_SENDER = SingletonInjector.INSTANCE.get(IPluginPacketSender.class);
 	

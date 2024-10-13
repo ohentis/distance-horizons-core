@@ -17,36 +17,36 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.seibel.distanthorizons.api.enums.rendering;
+package com.seibel.distanthorizons.coreapi.util.converters;
+
+import com.seibel.distanthorizons.api.enums.rendering.EDhApiFogDrawMode;
+import com.seibel.distanthorizons.coreapi.interfaces.config.IConverter;
 
 /**
- * USE_OPTIFINE_FOG_SETTING, <br>
- * FOG_ENABLED, <br>
- * FOG_DISABLED <br>
+ * Used for supporting the deprecated {@link EDhApiFogDrawMode}.
  *
- * @deprecated since API 4.0.0 since {@link EDhApiFogDrawMode#USE_OPTIFINE_SETTING} is no longer supported.
- * 
  * @author James Seibel
- * @since API 2.0.0
- * @version 2022-6-2
+ * @version 2024-10-12
  */
 @Deprecated
-public enum EDhApiFogDrawMode
+public class ApiFogDrawModeConverter implements IConverter<Boolean, EDhApiFogDrawMode>
 {
-	// Reminder:
-	// when adding items up the API minor version
-	// when removing items up the API major version
 	
-	/**
-	 * Use whatever Fog setting Optifine is using.
-	 * If Optifine isn't installed this defaults to {@link EDhApiFogDrawMode#FOG_ENABLED}.
-	 * 
-	 * @deprecated Since API 4.0.0 is equivalent to {@link EDhApiFogDrawMode#FOG_ENABLED}
-	 */
-	@Deprecated
-	USE_OPTIFINE_SETTING,
+	@Override 
+	public Boolean convertToCoreType(EDhApiFogDrawMode renderingMode)
+	{
+		if (renderingMode == EDhApiFogDrawMode.USE_OPTIFINE_SETTING)
+		{
+			return true;
+		}
+		else
+		{
+			return renderingMode == EDhApiFogDrawMode.FOG_ENABLED;	
+		}
+	}
 	
-	FOG_ENABLED,
-	FOG_DISABLED;
+	@Override 
+	public EDhApiFogDrawMode convertToApiType(Boolean renderingEnabled)
+	{ return renderingEnabled ? EDhApiFogDrawMode.FOG_ENABLED : EDhApiFogDrawMode.FOG_DISABLED; }
 	
 }

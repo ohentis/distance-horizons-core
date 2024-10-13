@@ -19,7 +19,6 @@
 
 package com.seibel.distanthorizons.core.render.renderer;
 
-import com.seibel.distanthorizons.api.enums.rendering.EDhApiFogDrawMode;
 import com.seibel.distanthorizons.api.interfaces.override.rendering.IDhApiFramebuffer;
 import com.seibel.distanthorizons.api.interfaces.override.rendering.IDhApiShaderProgram;
 import com.seibel.distanthorizons.api.methods.events.abstractEvents.*;
@@ -69,9 +68,9 @@ import java.util.concurrent.locks.ReentrantLock;
 public class LodRenderer
 {
 	public static final ConfigBasedLogger EVENT_LOGGER = new ConfigBasedLogger(LogManager.getLogger(LodRenderer.class),
-			() -> Config.Client.Advanced.Logging.logRendererBufferEvent.get());
+			() -> Config.Common.Logging.logRendererBufferEvent.get());
 	public static ConfigBasedSpamLogger tickLogger = new ConfigBasedSpamLogger(LogManager.getLogger(LodRenderer.class),
-			() -> Config.Client.Advanced.Logging.logRendererBufferEvent.get(), 1);
+			() -> Config.Common.Logging.logRendererBufferEvent.get(), 1);
 	
 	private static final IIrisAccessor IRIS_ACCESSOR = ModAccessorInjector.INSTANCE.get(IIrisAccessor.class);
 	
@@ -304,7 +303,7 @@ public class LodRenderer
 				this.bufferHandler.renderOpaque(this, renderEventParam);
 				
 				// custom objects with SSAO
-				if (Config.Client.Advanced.Graphics.GenericRendering.enableRendering.get())
+				if (Config.Client.Advanced.Graphics.GenericRendering.enableGenericRendering.get())
 				{
 					profiler.popPush("Custom Objects");
 					this.genericObjectRenderer.render(renderEventParam, profiler, true);
@@ -312,7 +311,7 @@ public class LodRenderer
 				
 				
 				// SSAO
-				if (Config.Client.Advanced.Graphics.Ssao.enabled.get())
+				if (Config.Client.Advanced.Graphics.Ssao.enableSsao.get())
 				{
 					profiler.popPush("LOD SSAO");
 					SSAORenderer.INSTANCE.render(minecraftGlState, new Mat4f(renderEventParam.dhProjectionMatrix), renderEventParam.partialTicks);
@@ -320,7 +319,7 @@ public class LodRenderer
 				
 				
 				// custom objects without SSAO
-				if (Config.Client.Advanced.Graphics.GenericRendering.enableRendering.get())
+				if (Config.Client.Advanced.Graphics.GenericRendering.enableGenericRendering.get())
 				{
 					profiler.popPush("Custom Objects");
 					this.genericObjectRenderer.render(renderEventParam, profiler, false);
@@ -335,7 +334,7 @@ public class LodRenderer
 				}
 				
 				
-				if (Config.Client.Advanced.Graphics.Fog.drawMode.get() != EDhApiFogDrawMode.FOG_DISABLED)
+				if (Config.Client.Advanced.Graphics.Fog.enableDhFog.get())
 				{
 					profiler.popPush("LOD Fog");
 					
@@ -406,7 +405,7 @@ public class LodRenderer
 					this.renderTransparentBuffers(profiler, renderEventParam, renderEventParam.partialTicks);
 					
 					
-					if (Config.Client.Advanced.Graphics.Fog.drawMode.get() != EDhApiFogDrawMode.FOG_DISABLED)
+					if (Config.Client.Advanced.Graphics.Fog.enableDhFog.get())
 					{
 						profiler.popPush("LOD Fog");
 						

@@ -101,7 +101,7 @@ public class RenderUtil
 			//  If the player is flying quickly, lower the near clip plane to account for slow chunk loading.
 			//  If the player is moving quickly they are less likely to notice overdraw.
 			
-			nearClipPlane = Config.Client.Advanced.Graphics.AdvancedGraphics.overdrawPrevention.get().floatValue();
+			nearClipPlane = Config.Client.Advanced.Graphics.Culling.overdrawPrevention.get().floatValue();
 			nearClipPlane *= vanillaBlockRenderedDistance; 
 			
 			// the near clip plane should never be closer than 1/10th of a block,

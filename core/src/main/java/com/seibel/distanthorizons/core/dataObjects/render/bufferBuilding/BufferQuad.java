@@ -256,7 +256,7 @@ public final class BufferQuad
 		
 		// quad width should only be limited when earth curvature is enabled
 		int maxQuadWidth = NORMAL_MAX_QUAD_WIDTH;
-		if (Config.Client.Advanced.Graphics.AdvancedGraphics.earthCurveRatio.get() != 0)
+		if (Config.Client.Advanced.Graphics.Experimental.earthCurveRatio.get() != 0)
 		{
 			maxQuadWidth = MAX_QUAD_WIDTH_FOR_EARTH_CURVATURE;
 		}

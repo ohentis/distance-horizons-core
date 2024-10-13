@@ -24,7 +24,7 @@ import com.seibel.distanthorizons.core.file.structure.ISaveStructure;
 import com.seibel.distanthorizons.core.generation.RemoteWorldRetrievalQueue;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.level.WorldGenModule;
-import com.seibel.distanthorizons.core.multiplayer.client.SyncOnLoginRequestQueue;
+import com.seibel.distanthorizons.core.multiplayer.client.SyncOnLoadRequestQueue;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.coreapi.util.BitShiftUtil;
 import org.jetbrains.annotations.Nullable;
@@ -35,13 +35,13 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Only handles {@link SyncOnLoginRequestQueue} requests (IE updating existing LODs based on a timestamp).
+ * Only handles {@link SyncOnLoadRequestQueue} requests (IE updating existing LODs based on a timestamp).
  * Missing data is handled by {@link WorldGenModule} and {@link RemoteWorldRetrievalQueue}.
  */
 public class RemoteFullDataSourceProvider extends GeneratedFullDataSourceProvider
 {
 	@Nullable
-	private final SyncOnLoginRequestQueue syncOnLoginRequestQueue;
+	private final SyncOnLoadRequestQueue syncOnLoadRequestQueue;
 	private final Set<Long> visitedPositions = ConcurrentHashMap.newKeySet();
 	
 	
@@ -52,10 +52,10 @@ public class RemoteFullDataSourceProvider extends GeneratedFullDataSourceProvide
 	
 	public RemoteFullDataSourceProvider(
 			IDhLevel level, ISaveStructure saveStructure, @Nullable File saveDirOverride, 
-			@Nullable SyncOnLoginRequestQueue syncOnLoginRequestQueue)
+			@Nullable SyncOnLoadRequestQueue syncOnLoadRequestQueue)
 	{
 		super(level, saveStructure, saveDirOverride);
-		this.syncOnLoginRequestQueue = syncOnLoginRequestQueue;
+		this.syncOnLoadRequestQueue = syncOnLoadRequestQueue;
 	}
 	
 	
@@ -68,7 +68,7 @@ public class RemoteFullDataSourceProvider extends GeneratedFullDataSourceProvide
 	@Nullable
 	public FullDataSourceV2 get(long pos)
 	{
-		if (this.syncOnLoginRequestQueue == null)
+		if (this.syncOnLoadRequestQueue == null)
 		{
 			// we have local data, but networking is unavailable.
 			return super.get(pos);
@@ -107,7 +107,7 @@ public class RemoteFullDataSourceProvider extends GeneratedFullDataSourceProvide
 			Long subTimestamp = timestamps.get(childPos);
 			if (subTimestamp != null)
 			{
-				this.syncOnLoginRequestQueue.submitRequest(childPos, subTimestamp, this.delayedFullDataSourceSaveCache::queueDataSourceForUpdateAndSave);
+				this.syncOnLoadRequestQueue.submitRequest(childPos, subTimestamp, this.delayedFullDataSourceSaveCache::queueDataSourceForUpdateAndSave);
 			}
 		});
 		
@@ -123,9 +123,9 @@ public class RemoteFullDataSourceProvider extends GeneratedFullDataSourceProvide
 	@Override
 	public void close()
 	{
-		if (this.syncOnLoginRequestQueue != null)
+		if (this.syncOnLoadRequestQueue != null)
 		{
-			this.syncOnLoginRequestQueue.close();
+			this.syncOnLoadRequestQueue.close();
 		}
 		super.close();
 	}

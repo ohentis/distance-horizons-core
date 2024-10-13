@@ -42,7 +42,7 @@ import java.util.function.Consumer;
 public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRenderable, AutoCloseable
 {
 	private static final ConfigBasedSpamLogger LOGGER = new ConfigBasedSpamLogger(LogManager.getLogger(),
-			() -> Config.Client.Advanced.Logging.logNetworkEvent.get(), 3);
+			() -> Config.Common.Logging.logNetworkEvent.get(), 3);
 	
 	private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	

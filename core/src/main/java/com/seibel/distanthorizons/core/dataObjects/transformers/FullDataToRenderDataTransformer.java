@@ -107,31 +107,7 @@ public class FullDataToRenderDataTransformer
  		final long pos = fullDataSource.getPos();
 		final byte dataDetail = fullDataSource.getDataDetailLevel();
 		
-		int tempVertSize = 1;
-		if (Config.Client.Advanced.Graphics.Quality.verticalQuality.get() != EDhApiVerticalQuality.CUSTOM)
-		{
-			tempVertSize = Config.Client.Advanced.Graphics.Quality.verticalQuality.get().calculateMaxVerticalData(fullDataSource.getDataDetailLevel());
-		}
-		else
-		{
-			// temporary code while we test additional vertical quality options
-			String verticalQualityCsv = Config.Client.Advanced.Graphics.Quality.customVerticalQualityCsv.get();
-			if (verticalQualityCsv != null)
-			{
-				String[] possibleVerticalValues = verticalQualityCsv.split(",");
-
-				// for detail levels lower than what the enum defines, use the lowest quality item
-				int index = MathUtil.clamp(0, dataDetail, possibleVerticalValues.length - 1);
-				String verticalValueString = possibleVerticalValues[index];
-
-				try
-				{
-					tempVertSize = Integer.parseInt(verticalValueString);
-				}
-				catch (NumberFormatException ignore) { }
-			}
-		}
-		final int vertSize = tempVertSize;
+		final int vertSize = Config.Client.Advanced.Graphics.Quality.verticalQuality.get().calculateMaxVerticalData(fullDataSource.getDataDetailLevel());
 		
 		
 		
@@ -209,9 +185,9 @@ public class FullDataToRenderDataTransformer
 		HashSet<IBlockStateWrapper> blockStatesToIgnore = WRAPPER_FACTORY.getRendererIgnoredBlocks(level.getLevelWrapper());
 		HashSet<IBlockStateWrapper> caveBlockStatesToIgnore = WRAPPER_FACTORY.getRendererIgnoredCaveBlocks(level.getLevelWrapper());
 		
-		int caveCullingMaxY = Config.Client.Advanced.Graphics.AdvancedGraphics.caveCullingHeight.get() - level.getMinY();
+		int caveCullingMaxY = Config.Client.Advanced.Graphics.Culling.caveCullingHeight.get() - level.getMinY();
 		boolean caveCullingEnabled = 
-			Config.Client.Advanced.Graphics.AdvancedGraphics.enableCaveCulling.get()
+			Config.Client.Advanced.Graphics.Culling.enableCaveCulling.get()
 			&& (
 				// dimensions with a ceiling will be all caves so we don't want cave culling
 				!level.getLevelWrapper().hasCeiling()

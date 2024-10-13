@@ -67,7 +67,7 @@ public class FullDataSourceProviderV2
 	
 	protected static final int NUMBER_OF_PARENT_UPDATE_TASKS_PER_THREAD = 50;
 	/** how many parent update tasks can be in the queue at once */
-	protected static final int MAX_UPDATE_TASK_COUNT = NUMBER_OF_PARENT_UPDATE_TASKS_PER_THREAD * Config.Client.Advanced.MultiThreading.numberOfFileHandlerThreads.get();
+	protected static final int MAX_UPDATE_TASK_COUNT = NUMBER_OF_PARENT_UPDATE_TASKS_PER_THREAD * Config.Common.MultiThreading.numberOfFileHandlerThreads.get();
 	
 	/** indicates how long the update queue thread should wait between queuing ticks */
 	protected static final int UPDATE_QUEUE_THREAD_DELAY_IN_MS = 250;
@@ -132,7 +132,7 @@ public class FullDataSourceProviderV2
 		String dimensionName = level.getLevelWrapper().getDimensionName();
 		
 		// start migrating any legacy data sources present in the background
-		this.migrationThreadPool = ThreadUtil.makeRateLimitedThreadPool(1, MIGRATION_THREAD_NAME_PREFIX + "["+dimensionName+"]", Config.Client.Advanced.MultiThreading.runTimeRatioForUpdatePropagatorThreads.get(), Thread.MIN_PRIORITY, (Semaphore) null);
+		this.migrationThreadPool = ThreadUtil.makeRateLimitedThreadPool(1, MIGRATION_THREAD_NAME_PREFIX + "["+dimensionName+"]", Config.Common.MultiThreading.runTimeRatioForUpdatePropagatorThreads.get(), Thread.MIN_PRIORITY, (Semaphore) null);
 		this.migrationThreadPool.execute(this::convertLegacyDataSources);
 		
 		// update propagation doesn't need to be run on the server since only the highest detail level is needed
@@ -174,7 +174,7 @@ public class FullDataSourceProviderV2
 		try
 		{
 			// when creating new data use the compressor currently selected in the config
-			EDhApiDataCompressionMode compressionModeEnum = Config.Client.Advanced.LodBuilding.dataCompression.get();
+			EDhApiDataCompressionMode compressionModeEnum = Config.Common.LodBuilding.dataCompression.get();
 			return FullDataSourceV2DTO.CreateFromDataSource(dataSource, compressionModeEnum);
 		}
 		catch (IOException e)

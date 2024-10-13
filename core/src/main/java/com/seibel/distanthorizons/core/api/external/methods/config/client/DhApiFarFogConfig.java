@@ -35,26 +35,26 @@ public class DhApiFarFogConfig implements IDhApiFarFogConfig
 	
 	@Override
 	public IDhApiConfigValue<Double> farFogStartDistance()
-	{ return new DhApiConfigValue<Double, Double>(Config.Client.Advanced.Graphics.Fog.AdvancedFog.farFogStart); }
+	{ return new DhApiConfigValue<Double, Double>(Config.Client.Advanced.Graphics.Fog.farFogStart); }
 	
 	@Override
 	public IDhApiConfigValue<Double> farFogEndDistance()
-	{ return new DhApiConfigValue<Double, Double>(Config.Client.Advanced.Graphics.Fog.AdvancedFog.farFogEnd); }
+	{ return new DhApiConfigValue<Double, Double>(Config.Client.Advanced.Graphics.Fog.farFogEnd); }
 	
 	@Override
 	public IDhApiConfigValue<Double> farFogMinThickness()
-	{ return new DhApiConfigValue<Double, Double>(Config.Client.Advanced.Graphics.Fog.AdvancedFog.farFogMin); }
+	{ return new DhApiConfigValue<Double, Double>(Config.Client.Advanced.Graphics.Fog.farFogMin); }
 	
 	@Override
 	public IDhApiConfigValue<Double> farFogMaxThickness()
-	{ return new DhApiConfigValue<Double, Double>(Config.Client.Advanced.Graphics.Fog.AdvancedFog.farFogMax); }
+	{ return new DhApiConfigValue<Double, Double>(Config.Client.Advanced.Graphics.Fog.farFogMax); }
 	
 	@Override
 	public IDhApiConfigValue<EDhApiFogFalloff> farFogFalloff()
-	{ return new DhApiConfigValue<EDhApiFogFalloff, EDhApiFogFalloff>(Config.Client.Advanced.Graphics.Fog.AdvancedFog.farFogFalloff); }
+	{ return new DhApiConfigValue<EDhApiFogFalloff, EDhApiFogFalloff>(Config.Client.Advanced.Graphics.Fog.farFogFalloff); }
 	
 	@Override
 	public IDhApiConfigValue<Double> farFogDensity()
-	{ return new DhApiConfigValue<Double, Double>(Config.Client.Advanced.Graphics.Fog.AdvancedFog.farFogDensity); }
+	{ return new DhApiConfigValue<Double, Double>(Config.Client.Advanced.Graphics.Fog.farFogDensity); }
 	
 }

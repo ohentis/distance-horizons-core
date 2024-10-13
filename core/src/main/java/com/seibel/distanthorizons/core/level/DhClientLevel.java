@@ -31,7 +31,7 @@ import com.seibel.distanthorizons.core.file.structure.ISaveStructure;
 import com.seibel.distanthorizons.core.generation.RemoteWorldRetrievalQueue;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.multiplayer.client.ClientNetworkState;
-import com.seibel.distanthorizons.core.multiplayer.client.SyncOnLoginRequestQueue;
+import com.seibel.distanthorizons.core.multiplayer.client.SyncOnLoadRequestQueue;
 import com.seibel.distanthorizons.core.network.event.ScopedNetworkEventSource;
 import com.seibel.distanthorizons.core.network.messages.fullData.FullDataPartialUpdateMessage;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos;
@@ -75,7 +75,7 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 	public final AppliedConfigState<Boolean> worldGeneratorEnabledConfig;
 	
 	@Nullable
-	private final SyncOnLoginRequestQueue syncOnLoginRequestQueue;
+	private final SyncOnLoadRequestQueue syncOnLoadRequestQueue;
 	
 	
 	
@@ -99,17 +99,17 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 		if (this.networkState != null)
 		{
 			this.networkEventSource = new ScopedNetworkEventSource(this.networkState.getSession());
-			this.syncOnLoginRequestQueue = new SyncOnLoginRequestQueue(this, this.networkState);
+			this.syncOnLoadRequestQueue = new SyncOnLoadRequestQueue(this, this.networkState);
 			this.registerNetworkHandlers();
 		}
 		else
 		{
 			this.networkEventSource = null;
-			this.syncOnLoginRequestQueue = null;
+			this.syncOnLoadRequestQueue = null;
 		}
 		
-		this.dataFileHandler = new RemoteFullDataSourceProvider(this, saveStructure, fullDataSaveDirOverride, this.syncOnLoginRequestQueue);
-		this.worldGeneratorEnabledConfig = new AppliedConfigState<>(Config.Client.Advanced.WorldGenerator.enableDistantGeneration);
+		this.dataFileHandler = new RemoteFullDataSourceProvider(this, saveStructure, fullDataSaveDirOverride, this.syncOnLoadRequestQueue);
+		this.worldGeneratorEnabledConfig = new AppliedConfigState<>(Config.Common.WorldGenerator.enableDistantGeneration);
 		this.worldGenModule = new WorldGenModule(this, this.dataFileHandler, () -> new WorldGenState(this, networkState));
 		
 		this.clientside = new ClientLevelModule(this);
@@ -167,9 +167,9 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 		{
 			this.clientside.clientTick();
 			
-			if (this.syncOnLoginRequestQueue != null)
+			if (this.syncOnLoadRequestQueue != null)
 			{
-				this.syncOnLoginRequestQueue.tick(new DhBlockPos2D(MC_CLIENT.getPlayerBlockPos()));
+				this.syncOnLoadRequestQueue.tick(new DhBlockPos2D(MC_CLIENT.getPlayerBlockPos()));
 			}
 		}
 		catch (Exception e)
@@ -321,12 +321,12 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 		
 		// world gen
 		this.worldGenModule.addDebugMenuStringsToList(messageList);
-		if (this.syncOnLoginRequestQueue != null)
+		if (this.syncOnLoadRequestQueue != null)
 		{
 			assert this.networkState != null;
-			if (this.networkState.sessionConfig.getSynchronizeOnLogin())
+			if (this.networkState.sessionConfig.getSynchronizeOnLoad())
 			{
-				this.syncOnLoginRequestQueue.addDebugMenuStringsToList(messageList);
+				this.syncOnLoadRequestQueue.addDebugMenuStringsToList(messageList);
 			}
 		}
 	}

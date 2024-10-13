@@ -232,7 +232,7 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 			return true;
 		}
 		
-		int worldGenThreadCount = Math.max(Config.Client.Advanced.MultiThreading.numberOfWorldGenerationThreads.get(), 1);
+		int worldGenThreadCount = Math.max(Config.Common.MultiThreading.numberOfWorldGenerationThreads.get(), 1);
 		int maxWorldGenTaskCount = worldGenThreadCount * MAX_QUEUED_TASKS_PER_THREAD;
 		return executor.getQueue().size() > maxWorldGenTaskCount;
 	}
@@ -371,7 +371,7 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 		DhChunkPos chunkPosMin = new DhChunkPos(DhSectionPos.getSectionBBoxPos(requestPos).getCornerBlockPos());
 		int generationRequestChunkWidthCount = BitShiftUtil.powerOfTwo(DhSectionPos.getDetailLevel(requestPos) - targetDataDetail - 4); // minus 4 is equal to dividing by 16 to convert to chunk scale
 		
-		EDhApiDistantGeneratorMode generatorMode = Config.Client.Advanced.WorldGenerator.distantGeneratorMode.get();
+		EDhApiDistantGeneratorMode generatorMode = Config.Common.WorldGenerator.distantGeneratorMode.get();
 		EDhApiWorldGeneratorReturnType returnType = this.generator.getReturnType();
 		switch (returnType) 
 		{
@@ -395,7 +395,7 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 						catch (ClassCastException e)
 						{
 							LOGGER.error("World generator return type incorrect. Error: [" + e.getMessage() + "]. World generator disabled.", e);
-							Config.Client.Advanced.WorldGenerator.enableDistantGeneration.set(false);
+							Config.Common.WorldGenerator.enableDistantGeneration.set(false);
 						}
 					}
 				);
@@ -418,12 +418,12 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 						catch (DataCorruptedException | IllegalArgumentException e)
 						{
 							LOGGER.error("World generator returned a corrupt chunk. Error: [" + e.getMessage() + "]. World generator disabled.", e);
-							Config.Client.Advanced.WorldGenerator.enableDistantGeneration.set(false);
+							Config.Common.WorldGenerator.enableDistantGeneration.set(false);
 						}
 						catch (ClassCastException e)
 						{
 							LOGGER.error("World generator return type incorrect. Error: [" + e.getMessage() + "]. World generator disabled.", e);
-							Config.Client.Advanced.WorldGenerator.enableDistantGeneration.set(false);
+							Config.Common.WorldGenerator.enableDistantGeneration.set(false);
 						}
 					}
 				);
@@ -451,19 +451,19 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 							catch (IllegalArgumentException e)
 							{
 								LOGGER.error("World generator returned a corrupt data source. Error: [" + e.getMessage() + "]. World generator disabled.", e);
-								Config.Client.Advanced.WorldGenerator.enableDistantGeneration.set(false);
+								Config.Common.WorldGenerator.enableDistantGeneration.set(false);
 							}
 							catch (ClassCastException e)
 							{
 								LOGGER.error("World generator return type incorrect. Error: [" + e.getMessage() + "]. World generator disabled.", e);
-								Config.Client.Advanced.WorldGenerator.enableDistantGeneration.set(false);
+								Config.Common.WorldGenerator.enableDistantGeneration.set(false);
 							}
 						}
 				);
 			}
 			default: 
 			{
-				Config.Client.Advanced.WorldGenerator.enableDistantGeneration.set(false);
+				Config.Common.WorldGenerator.enableDistantGeneration.set(false);
 				throw new AssertFailureException("Unknown return type: " + returnType);
 			}
 		}

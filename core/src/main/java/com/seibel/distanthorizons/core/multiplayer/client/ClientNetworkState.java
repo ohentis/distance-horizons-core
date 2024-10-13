@@ -33,7 +33,7 @@ import java.util.concurrent.TimeUnit;
 public class ClientNetworkState implements Closeable
 {
 	protected static final ConfigBasedLogger LOGGER = new ConfigBasedLogger(LogManager.getLogger(),
-			() -> Config.Client.Advanced.Logging.logNetworkEvent.get());
+			() -> Config.Common.Logging.logNetworkEvent.get());
 	
 	private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	

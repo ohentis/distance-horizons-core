@@ -24,7 +24,7 @@ import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.config.types.AbstractConfigType;
 import com.seibel.distanthorizons.core.config.types.ConfigCategory;
 import com.seibel.distanthorizons.core.config.types.ConfigEntry;
-import com.seibel.distanthorizons.core.config.types.ConfigLinkedEntry;
+import com.seibel.distanthorizons.core.config.types.ConfigUiLinkedEntry;
 import com.seibel.distanthorizons.core.wrapperInterfaces.config.ILangWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftSharedWrapper;
 import org.apache.logging.log4j.LogManager;
@@ -48,7 +48,7 @@ public class ConfigBase
 	public static ConfigBase INSTANCE;
 	public ConfigFileHandling configFileINSTANCE;
 	
-	private final Logger LOGGER;
+	private final Logger logger;
 	public final String modID;
 	public final String modName;
 	public final int configVersion;
@@ -100,56 +100,56 @@ public class ConfigBase
 	public final List<AbstractConfigType<?, ?>> entries = new ArrayList<>();
 	
 	
-	public ConfigBase(String modID, String modName, Class<?> config)
+	public ConfigBase(String modID, String modName, Class<?> configClass)
 	{
-		this(modID, modName, config, getConfigPath(modName), -1);
+		this(modID, modName, configClass, getConfigPath(modName), -1);
 	}
-	public ConfigBase(String modID, String modName, Class<?> config, Path configPath)
+	public ConfigBase(String modID, String modName, Class<?> configClass, Path configPath)
 	{
-		this(modID, modName, config, configPath, -1);
+		this(modID, modName, configClass, configPath, -1);
 	}
-	public ConfigBase(String modID, String modName, Class<?> config, int configVersion)
+	public ConfigBase(String modID, String modName, Class<?> configClass, int configVersion)
 	{
-		this(modID, modName, config, getConfigPath(modName), configVersion);
+		this(modID, modName, configClass, getConfigPath(modName), configVersion);
 	}
 	
-	public ConfigBase(String modID, String modName, Class<?> config, Path configPath, int configVersion)
+	public ConfigBase(String modID, String modName, Class<?> configClass, Path configPath, int configVersion)
 	{
-		this.LOGGER = LogManager.getLogger(this.getClass().getSimpleName() + ", " + modID);
+		this.logger = LogManager.getLogger(this.getClass().getSimpleName() + ", " + modID);
 		
-		LOGGER.info("Initialising config for " + modName);
+		this.logger.info("Initialising config for " + modName);
 		this.modID = modID;
 		this.modName = modName;
 		this.configVersion = configVersion;
 		
-		initNestedClass(config, ""); // Init root category
+		this.initNestedClass(configClass, ""); // Init root category
 		
 		// File handling (load from file)
 		this.configFileINSTANCE = new ConfigFileHandling(this, configPath);
 		this.configFileINSTANCE.loadFromFile();
 		
-		isLoaded = true;
-		LOGGER.info("Config for " + modName + " initialised");
+		this.isLoaded = true;
+		this.logger.info("Config for " + modName + " initialised");
 	}
 	
-	private void initNestedClass(Class<?> config, String category)
+	private void initNestedClass(Class<?> configClass, String category)
 	{
 		// Put all the entries in entries
 		
-		for (Field field : config.getFields())
+		for (Field field : configClass.getFields())
 		{
 			if (AbstractConfigType.class.isAssignableFrom(field.getType()))
 			{
 				try
 				{
-					entries.add((AbstractConfigType<?, ?>) field.get(field.getType()));
+					this.entries.add((AbstractConfigType<?, ?>) field.get(field.getType()));
 				}
 				catch (IllegalAccessException exception)
 				{
-					LOGGER.warn(exception);
+					this.logger.warn(exception);
 				}
 				
-				AbstractConfigType<?, ?> entry = entries.get(entries.size() - 1);
+				AbstractConfigType<?, ?> entry = this.entries.get(this.entries.size() - 1);
 				entry.category = category;
 				entry.name = field.getName();
 				entry.configBase = this;
@@ -158,9 +158,9 @@ public class ConfigBase
 				{ // If item is type ConfigEntry
 					if (!isAcceptableType(entry.getType()))
 					{
-						LOGGER.error("Invalid variable type at [" + (category.isEmpty() ? "" : category + ".") + field.getName() + "].");
-						LOGGER.error("Type [" + entry.getType() + "] is not one of these types [" + acceptableInputs.toString() + "]");
-						entries.remove(entries.size() - 1); // Delete the entry if it is invalid so the game can still run
+						this.logger.error("Invalid variable type at [" + (category.isEmpty() ? "" : category + ".") + field.getName() + "].");
+						this.logger.error("Type [" + entry.getType() + "] is not one of these types [" + acceptableInputs.toString() + "]");
+						this.entries.remove(this.entries.size() - 1); // Delete the entry if it is invalid so the game can still run
 					}
 				}
 				
@@ -171,7 +171,7 @@ public class ConfigBase
 						((ConfigCategory) entry).destination = entry.getNameWCategory();
 					if (entry.get() != null)
 					{
-						initNestedClass(((ConfigCategory) entry).get(), ((ConfigCategory) entry).getDestination());
+						this.initNestedClass(((ConfigCategory) entry).get(), ((ConfigCategory) entry).getDestination());
 					}
 				}
 			}
@@ -223,7 +223,7 @@ public class ConfigBase
 			}
 			if (!onlyShowNew || langWrapper.langExists(entryPrefix))
 			{
-				if (!ConfigLinkedEntry.class.isAssignableFrom(entry.getClass()))
+				if (!ConfigUiLinkedEntry.class.isAssignableFrom(entry.getClass()))
 				{ // If it is a linked item, dont generate the base lang
 					generatedLang += starter
 							+ entryPrefix

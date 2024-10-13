@@ -47,7 +47,7 @@ public class FullDataPayload implements INetworkObject
 		
 		try
 		{
-			EDhApiDataCompressionMode compressionMode = Config.Client.Advanced.LodBuilding.dataCompression.get();
+			EDhApiDataCompressionMode compressionMode = Config.Common.LodBuilding.dataCompression.get();
 			FullDataSourceV2DTO dataSourceDto = FullDataSourceV2DTO.CreateFromDataSource(fullDataSource, compressionMode);
 			
 			this.dtoBuffer = ByteBufAllocator.DEFAULT.buffer();

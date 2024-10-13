@@ -171,7 +171,7 @@ public class BeaconRenderHandler
 	
 	private void beforeRender(DhApiRenderParam renderEventParam) 
 	{
-		if (!Config.Client.Advanced.Graphics.AdvancedGraphics.disableBeaconDistanceCulling.get())
+		if (Config.Client.Advanced.Graphics.Culling.disableBeaconDistanceCulling.get())
 		{
 			// this could be called only when the player moves, but it's an extremely cheap check, 
 			// so there isn't much of a reason to bother 
@@ -215,7 +215,7 @@ public class BeaconRenderHandler
 						double mcRenderDistance = MC_RENDER.getRenderDistance() * LodUtil.CHUNK_WIDTH;
 						// multiplying by overdraw prevention helps reduce beacons from rendering strangely
 						// on the border of DH's render distance
-						mcRenderDistance *= Config.Client.Advanced.Graphics.AdvancedGraphics.overdrawPrevention.get();
+						mcRenderDistance *= Config.Client.Advanced.Graphics.Culling.overdrawPrevention.get();
 						
 						
 						// Clear the existing box group so we can re-populate it.
