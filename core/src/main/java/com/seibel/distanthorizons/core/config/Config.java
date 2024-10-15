@@ -37,6 +37,7 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftCli
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftSharedWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import org.apache.logging.log4j.Logger;
+import org.lwjgl.util.tinyfd.TinyFileDialogs;
 
 import javax.swing.*;
 import java.awt.*;
@@ -1098,7 +1099,9 @@ public class Config
 						{
 							if (!GraphicsEnvironment.isHeadless())
 							{
-								JOptionPane.showMessageDialog(null, "Button pressed!", "UITester dialog", JOptionPane.INFORMATION_MESSAGE);
+								LOGGER.info("Attempting to show tinyfd message box...");
+								boolean buttonPress = TinyFileDialogs.tinyfd_messageBox("Button pressed!", "UITester dialog", "ok", "info", false);
+								LOGGER.info("dialog returned with ["+(buttonPress ? "TRUE" : "FALSE")+"]");
 							}
 							else
 							{

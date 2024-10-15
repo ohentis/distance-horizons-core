@@ -33,6 +33,7 @@ import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.coreapi.util.StringUtil;
 import com.seibel.distanthorizons.coreapi.util.jar.DeleteOnUnlock;
 import org.apache.logging.log4j.Logger;
+import org.lwjgl.util.tinyfd.TinyFileDialogs;
 
 import javax.swing.*;
 import java.awt.*;
@@ -223,7 +224,7 @@ public class SelfUpdater
 				String message = ModInfo.READABLE_NAME + " updated, this will be applied on game restart.";
 				if (!GraphicsEnvironment.isHeadless())
 				{
-					JOptionPane.showMessageDialog(null, message, ModInfo.READABLE_NAME, JOptionPane.INFORMATION_MESSAGE);
+					TinyFileDialogs.tinyfd_messageBox(ModInfo.READABLE_NAME, message, "ok", "info", false);
 				}
 				else
 				{
@@ -279,7 +280,7 @@ public class SelfUpdater
 						String message = ModInfo.READABLE_NAME + " updated, this will be applied on game restart.";
 						if (!GraphicsEnvironment.isHeadless())
 						{
-							JOptionPane.showMessageDialog(null, message, ModInfo.READABLE_NAME, JOptionPane.INFORMATION_MESSAGE);
+							TinyFileDialogs.tinyfd_messageBox(ModInfo.READABLE_NAME, message, "ok", "info", false);
 						}
 						else
 						{

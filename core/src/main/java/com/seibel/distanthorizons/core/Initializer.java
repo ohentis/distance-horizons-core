@@ -115,19 +115,21 @@ public class Initializer
 			throw new RuntimeException(e);
 		}
 		
-		if (MC_CLIENT != null)
-		{
-			// attempt to set up Swing so we can display dialogs (popup windows)
-			System.setProperty("java.awt.headless", "false");
-			if (GraphicsEnvironment.isHeadless())
-			{
-				LOGGER.warn("Java.awt.headless is false. This means Distant Horizons can't display error and info dialog windows.");
-			}
-			else
-			{
-				LOGGER.info("Java.awt.headless set to true. Distant Horizons can correctly display error and info dialog windows.");
-			}
-		}
+		// This code has been disabled since it can cause Mac
+		// to lock up and refuse the load (there's a bug with Java.awt texture loading)
+		//if (MC_CLIENT != null)
+		//{
+		//	// attempt to set up Swing so we can display dialogs (popup windows)
+		//	System.setProperty("java.awt.headless", "false");
+		//	if (GraphicsEnvironment.isHeadless())
+		//	{
+		//		LOGGER.warn("Java.awt.headless is false. This means Distant Horizons can't display error and info dialog windows.");
+		//	}
+		//	else
+		//	{
+		//		LOGGER.info("Java.awt.headless set to true. Distant Horizons can correctly display error and info dialog windows.");
+		//	}
+		//}
 		
 		// link Core's config to the API
 		DhApi.Delayed.configs = DhApiConfig.INSTANCE;

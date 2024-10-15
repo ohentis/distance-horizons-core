@@ -37,6 +37,9 @@ public class JavaScreenHandlerScreen extends AbstractScreen
 	
 	static
 	{
+		// Note: this code can cause Mac
+		// to lock up and refuse the load (there's a bug with Java.awt texture loading)
+		
 		// Needs to be called before any Swing code is called, otherwise
 		// Swing will get stuck thinking it's headless
 		System.setProperty("java.awt.headless", "false");

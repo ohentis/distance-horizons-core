@@ -31,6 +31,7 @@ import com.seibel.distanthorizons.core.jar.installer.WebDownloader;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.LoggerContext;
+import org.lwjgl.util.tinyfd.TinyFileDialogs;
 
 import javax.swing.*;
 import java.awt.*;
@@ -313,7 +314,7 @@ public class JarMain
 		installMod.addActionListener(e -> {
 			if (minecraftDirPop.getSelectedFile() == null)
 			{
-				JOptionPane.showMessageDialog(frame, "Please select your install directory", ModInfo.READABLE_NAME, JOptionPane.WARNING_MESSAGE);
+				TinyFileDialogs.tinyfd_messageBox(ModInfo.READABLE_NAME, "Please select your install directory", "ok", "warning", false);
 				return;
 			}
 			
@@ -327,11 +328,11 @@ public class JarMain
 								ModInfo.NAME + "-" + ModrinthGetter.releaseNames.get(downloadID.get()) + ".jar"
 						).toFile());
 				
-				JOptionPane.showMessageDialog(frame, "Installation done. \nYou can now close the installer", ModInfo.READABLE_NAME, JOptionPane.INFORMATION_MESSAGE);
+				TinyFileDialogs.tinyfd_messageBox(ModInfo.READABLE_NAME, "Installation done. \nYou can now close the installer", "ok", "info", false);
 			}
 			catch (Exception f)
 			{
-				JOptionPane.showMessageDialog(frame, "Download failed. Check your internet connection \nStacktrace: " + f.getMessage(), ModInfo.READABLE_NAME, JOptionPane.ERROR_MESSAGE);
+				TinyFileDialogs.tinyfd_messageBox(ModInfo.READABLE_NAME, "Download failed. Check your internet connection \nStacktrace: " + f.getMessage(), "error", "info", false);
 			}
 		});
 		frame.add(installMod);
