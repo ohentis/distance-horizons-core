@@ -56,7 +56,7 @@ public enum EDhApiWorldGeneratorReturnType
 	
 	/**
 	 * when this constant is returned by {@link IDhApiWorldGenerator#getReturnType()},
-	 * {@link IDhApiWorldGenerator#generateLod(int, int, byte, IDhApiFullDataSource, EDhApiDistantGeneratorMode, ExecutorService, Consumer)}
+	 * {@link IDhApiWorldGenerator#generateLod(int, int, int, int, byte, IDhApiFullDataSource, EDhApiDistantGeneratorMode, ExecutorService, Consumer)}
 	 * will be used when generating terrain.
 	 * 
 	 * @since API 4.0.0
