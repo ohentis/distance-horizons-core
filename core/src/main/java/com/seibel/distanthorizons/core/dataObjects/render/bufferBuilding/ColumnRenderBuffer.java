@@ -46,7 +46,7 @@ import java.util.concurrent.*;
 public class ColumnRenderBuffer implements AutoCloseable
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
-	private static final IMinecraftClientWrapper minecraftClient = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
+	private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	
 	private static final long MAX_BUFFER_UPLOAD_TIMEOUT_NANOSECONDS = 1_000_000;
 	
@@ -96,7 +96,7 @@ public class ColumnRenderBuffer implements AutoCloseable
 		
 		// upload on MC's render thread
 		CompletableFuture<Void> uploadFuture = new CompletableFuture<>();
-		minecraftClient.executeOnRenderThread(() ->
+		MC_CLIENT.executeOnRenderThread(() ->
 		{
 			try
 			{
@@ -161,6 +161,27 @@ public class ColumnRenderBuffer implements AutoCloseable
 		
 		// return the array in case it was resized
 		return vbos;
+	}
+	public static GLVertexBuffer[] resizeBuffer(GLVertexBuffer[] vbos, int newSize)
+	{
+		if (vbos.length == newSize)
+		{
+			return vbos;
+		}
+		
+		GLVertexBuffer[] newVbos = new GLVertexBuffer[newSize];
+		System.arraycopy(vbos, 0, newVbos, 0, Math.min(vbos.length, newSize));
+		if (newSize < vbos.length)
+		{
+			for (int i = newSize; i < vbos.length; i++)
+			{
+				if (vbos[i] != null)
+				{
+					vbos[i].close();
+				}
+			}
+		}
+		return newVbos;
 	}
 	private static void uploadBuffersDirect(GLVertexBuffer[] vbos, ArrayList<ByteBuffer> byteBuffers, EDhApiGpuUploadMethod method) throws InterruptedException
 	{
@@ -320,28 +341,6 @@ public class ColumnRenderBuffer implements AutoCloseable
 				statsMap.incBytesStat("TotalUsage", vertexBuffer.getSize());
 			}
 		}
-	}
-	
-	public static GLVertexBuffer[] resizeBuffer(GLVertexBuffer[] vbos, int newSize)
-	{
-		if (vbos.length == newSize)
-		{
-			return vbos;
-		}
-		
-		GLVertexBuffer[] newVbos = new GLVertexBuffer[newSize];
-		System.arraycopy(vbos, 0, newVbos, 0, Math.min(vbos.length, newSize));
-		if (newSize < vbos.length)
-		{
-			for (int i = newSize; i < vbos.length; i++)
-			{
-				if (vbos[i] != null)
-				{
-					vbos[i].close();
-				}
-			}
-		}
-		return newVbos;
 	}
 	
 	

@@ -386,9 +386,9 @@ public class ColumnRenderBufferBuilder
 		long sectionPos = DhSectionPos.encode(detailLevel, renderSourceOffsetPosX, renderSourceOffsetPosZ);
 		
 		short width = (short) BitShiftUtil.powerOfTwo(detailLevel);
-		short x = (short) DhSectionPos.getMinCornerBlockX(sectionPos);
+		short xMin = (short) DhSectionPos.getMinCornerBlockX(sectionPos);
 		short yMin = RenderDataPointUtil.getYMin(data);
-		short z = (short) DhSectionPos.getMinCornerBlockZ(sectionPos);
+		short zMin = (short) DhSectionPos.getMinCornerBlockZ(sectionPos);
 		short ySize = (short) (RenderDataPointUtil.getYMax(data) - yMin);
 		
 		if (ySize == 0)
@@ -511,7 +511,7 @@ public class ColumnRenderBufferBuilder
 		ColumnBox.addBoxQuadsToBuilder(
 				quadBuilder, clientLevel,
 				width, ySize, width,
-				x, yMin, z,
+				xMin, yMin, zMin,
 				color,
 				blockMaterialId,
 				RenderDataPointUtil.getLightSky(data),
