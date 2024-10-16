@@ -36,7 +36,7 @@ public class ColorUtil
 	//OpenGL RGBA format native order: 0xRR GG BB AA
 	//_ OpenGL RGBA format Java Order: 0xAA BB GG RR
 	
-	public static final int INVISIBLE = rgbToInt(0, 0, 0, 0);
+	public static final int INVISIBLE = argbToInt(0, 0, 0, 0);
 	
 	public static final int BLACK = rgbToInt(0, 0, 0);
 	public static final int WHITE = rgbToInt(255, 255, 255);
@@ -63,8 +63,8 @@ public class ColorUtil
 	
 	
 	public static int rgbToInt(int red, int green, int blue) { return (0xFF << 24) | (red << 16) | (green << 8) | blue; }
-	public static int rgbToInt(int alpha, int red, int green, int blue) { return (alpha << 24) | (red << 16) | (green << 8) | blue; }
-	public static int rgbToInt(float alpha, float red, float green, float blue) { return rgbToInt((int) (alpha * 255f), (int) (red * 255f), (int) (green * 255f), (int) (blue * 255f)); }
+	public static int argbToInt(int alpha, int red, int green, int blue) { return (alpha << 24) | (red << 16) | (green << 8) | blue; }
+	public static int argbToInt(float alpha, float red, float green, float blue) { return argbToInt((int) (alpha * 255f), (int) (red * 255f), (int) (green * 255f), (int) (blue * 255f)); }
 	
 	
 	
@@ -170,7 +170,7 @@ public class ColorUtil
 		if (s == 0f)
 		{
 			// achromatic (grey)
-			return ColorUtil.rgbToInt(a, v, v, v);
+			return ColorUtil.argbToInt(a, v, v, v);
 		}
 		h /= 60f;
 		int i = (int) (Math.floor(h));
@@ -182,17 +182,17 @@ public class ColorUtil
 		switch (i)
 		{
 			case 0:
-				return ColorUtil.rgbToInt(a, v, t, p);
+				return ColorUtil.argbToInt(a, v, t, p);
 			case 1:
-				return ColorUtil.rgbToInt(a, q, v, p);
+				return ColorUtil.argbToInt(a, q, v, p);
 			case 2:
-				return ColorUtil.rgbToInt(a, p, v, t);
+				return ColorUtil.argbToInt(a, p, v, t);
 			case 3:
-				return ColorUtil.rgbToInt(a, p, q, v);
+				return ColorUtil.argbToInt(a, p, q, v);
 			case 4:
-				return ColorUtil.rgbToInt(a, t, p, v);
+				return ColorUtil.argbToInt(a, t, p, v);
 			default:
-				return ColorUtil.rgbToInt(a, v, p, q);  // case 5
+				return ColorUtil.argbToInt(a, v, p, q);  // case 5
 		}
 	}
 	
@@ -216,5 +216,7 @@ public class ColorUtil
 	
 	public static Color toColorObjRGB(int color) { return new Color(getRed(color), getGreen(color), getBlue(color)); }
 	public static Color toColorObjRGBA(int color) { return new Color(getRed(color), getGreen(color), getBlue(color), getAlpha(color)); }
+	
+	public static int toColorInt(Color color) { return argbToInt(color.getAlpha(), color.getRed(), color.getGreen(), color.getBlue()); }
 	
 }
