@@ -20,8 +20,12 @@
 package com.seibel.distanthorizons.core.network.messages.fullData;
 
 import com.google.common.base.MoreObjects;
+import com.seibel.distanthorizons.core.multiplayer.fullData.FullDataPayload;
 import com.seibel.distanthorizons.core.network.messages.AbstractNetworkMessage;
+import com.seibel.distanthorizons.core.util.TimerUtil;
 import io.netty.buffer.ByteBuf;
+
+import java.util.Timer;
 
 /**
  * Used to send part of a {@link FullDataPayload}.
@@ -30,10 +34,15 @@ import io.netty.buffer.ByteBuf;
  */
 public class FullDataSplitMessage extends AbstractNetworkMessage
 {
+	private static final long BUFFER_RELEASE_DELAY_MS = 5000L;
+	
 	public int bufferId;
 	public ByteBuf buffer;
 	public boolean isFirst;
 	
+	// Reference counting is unreliable here for some reason so this is a "fix"
+	private static final Timer bufferReleaseTimer = TimerUtil.CreateTimer("FullDataBufferCleanupTimer");
+	private boolean releaseScheduled = false;
 	
 	
 	//==============//
@@ -41,7 +50,7 @@ public class FullDataSplitMessage extends AbstractNetworkMessage
 	//==============//
 	
 	public FullDataSplitMessage() { }
-	public FullDataSplitMessage(int bufferId, boolean isFirst, ByteBuf buffer)
+	public FullDataSplitMessage(int bufferId, ByteBuf buffer, boolean isFirst)
 	{
 		this.bufferId = bufferId;
 		this.buffer = buffer;
@@ -63,6 +72,12 @@ public class FullDataSplitMessage extends AbstractNetworkMessage
 		out.writeBytes(this.buffer.readerIndex(0));
 
 		out.writeBoolean(this.isFirst);
+		
+		if (!this.releaseScheduled)
+		{
+			bufferReleaseTimer.schedule(TimerUtil.createTimerTask(this.buffer::release), BUFFER_RELEASE_DELAY_MS);
+			this.releaseScheduled = true;
+		}
 	}
 	
 	@Override

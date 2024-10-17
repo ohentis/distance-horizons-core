@@ -4,6 +4,7 @@ import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.config.listeners.ConfigChangeListener;
 import com.seibel.distanthorizons.core.level.AbstractDhServerLevel;
 import com.seibel.distanthorizons.core.multiplayer.config.SessionConfig;
+import com.seibel.distanthorizons.core.multiplayer.fullData.FullDataPayloadSender;
 import com.seibel.distanthorizons.core.network.messages.base.CurrentLevelKeyMessage;
 import com.seibel.distanthorizons.core.network.messages.base.SessionConfigMessage;
 import com.seibel.distanthorizons.core.network.event.internal.CloseInternalEvent;
@@ -34,10 +35,11 @@ public class ServerPlayerState implements Closeable
 	public final SessionConfig sessionConfig = new SessionConfig();
 	public boolean isReady() { return this.sessionConfig.constrainingConfig != null; }
 	
+	public final FullDataPayloadSender fullDataPayloadSender;
+	
 	private final ConcurrentHashMap<AbstractDhServerLevel, RateLimiterSet> rateLimiterSets = new ConcurrentHashMap<>();
 	public RateLimiterSet getRateLimiterSet(AbstractDhServerLevel level) { return this.rateLimiterSets.computeIfAbsent(level, ignored -> new RateLimiterSet()); }
 	public void clearRateLimiterSets() { this.rateLimiterSets.clear(); }
-	
 	
 	
 	//==============//
@@ -47,6 +49,7 @@ public class ServerPlayerState implements Closeable
 	public ServerPlayerState(IServerPlayerWrapper serverPlayer)
 	{
 		this.networkSession = new NetworkSession(serverPlayer);
+		this.fullDataPayloadSender = new FullDataPayloadSender(this.networkSession, this.sessionConfig::getMaxDataTransferSpeed);
 		
 		this.networkSession.registerHandler(SessionConfigMessage.class, (sessionConfigMessage) ->
 		{
@@ -92,6 +95,7 @@ public class ServerPlayerState implements Closeable
 	@Override
 	public void close()
 	{
+		this.fullDataPayloadSender.close();
 		this.levelKeyPrefixChangeListener.close();
 		this.configAnyChangeListener.close();
 		this.networkSession.close();

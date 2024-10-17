@@ -46,8 +46,6 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 	
 	private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	
-	private static final Timer TASK_FINISH_TIMER = TimerUtil.CreateTimer("RequestTaskFinishTimer");
-	
 	private static final int MAX_RETRY_ATTEMPTS = 3;
 	
 	protected static final long SHUTDOWN_TIMEOUT_SECONDS = 5;
@@ -193,7 +191,7 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 				
 				if (response.payload != null)
 				{
-					FullDataSourceV2DTO dataSourceDto = this.networkState.decodeDataSourceAndReleaseBuffer(response.payload);
+					FullDataSourceV2DTO dataSourceDto = this.networkState.fullDataPayloadReceiver.decodeDataSourceAndReleaseBuffer(response.payload);
 					
 					ThreadPoolExecutor executor = ThreadPoolUtil.getNetworkCompressionExecutor();
 					if (executor == null)
@@ -258,17 +256,7 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 				}
 			}
 			
-			// Hack to work around a race condition
-			// If you finish the request too quickly, the section will never render
-			TASK_FINISH_TIMER.schedule(new TimerTask()
-			{
-				@Override
-				public void run()
-				{
-					entry.future.complete(true);
-				}
-			}, 10000);
-			return null;
+			return entry.future.complete(true);
 		});
 	}
 	

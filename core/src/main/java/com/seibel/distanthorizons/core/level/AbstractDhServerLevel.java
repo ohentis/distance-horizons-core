@@ -14,7 +14,7 @@ import com.seibel.distanthorizons.core.network.messages.AbstractNetworkMessage;
 import com.seibel.distanthorizons.core.network.messages.AbstractTrackableMessage;
 import com.seibel.distanthorizons.core.network.messages.ILevelRelatedMessage;
 import com.seibel.distanthorizons.core.network.messages.fullData.FullDataPartialUpdateMessage;
-import com.seibel.distanthorizons.core.network.messages.fullData.FullDataPayload;
+import com.seibel.distanthorizons.core.multiplayer.fullData.FullDataPayload;
 import com.seibel.distanthorizons.core.network.messages.fullData.FullDataSourceRequestMessage;
 import com.seibel.distanthorizons.core.network.messages.fullData.FullDataSourceResponseMessage;
 import com.seibel.distanthorizons.core.network.messages.requests.CancelMessage;
@@ -128,20 +128,23 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 			CompletableFuture.runAsync(() ->
 			{
 				Objects.requireNonNull(this.beaconBeamRepo);
-				FullDataPayload payload = new FullDataPayload(requestGroup.fullDataSource, this.beaconBeamRepo.getAllBeamsForPos(entry.getKey()));
-				for (FullDataSourceRequestMessage msg : requestGroup.requestMessages.values())
+				try (FullDataPayload payload = new FullDataPayload(requestGroup.fullDataSource, this.beaconBeamRepo.getAllBeamsForPos(entry.getKey())))
 				{
-					this.requestGroupByFutureId.remove(msg.futureId);
-					
-					ServerPlayerState serverPlayerState = this.serverPlayerStateManager.getConnectedPlayer(msg.serverPlayer());
-					if (serverPlayerState == null)
+					for (FullDataSourceRequestMessage msg : requestGroup.requestMessages.values())
 					{
-						continue;
+						this.requestGroupByFutureId.remove(msg.futureId);
+						
+						ServerPlayerState serverPlayerState = this.serverPlayerStateManager.getConnectedPlayer(msg.serverPlayer());
+						if (serverPlayerState == null)
+						{
+							continue;
+						}
+						
+						serverPlayerState.fullDataPayloadSender.sendInChunks(payload, () -> {
+							msg.sendResponse(new FullDataSourceResponseMessage(payload));
+							serverPlayerState.getRateLimiterSet(this).generationRequestRateLimiter.release();
+						});
 					}
-					
-					serverPlayerState.getRateLimiterSet(this).generationRequestRateLimiter.release();
-					payload.splitAndSend(FULL_DATA_SPLIT_SIZE_IN_BYTES, msg.getSession()::sendMessage);
-					msg.sendResponse(new FullDataSourceResponseMessage(payload));
 				}
 			}, executor);
 		}
@@ -273,12 +276,14 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 		
 		this.serverside.fullDataFileHandler.getAsync(message.sectionPos).thenAcceptAsync(fullDataSource ->
 		{
-			rateLimiterSet.syncOnLoginRateLimiter.release();
-			
 			Objects.requireNonNull(this.beaconBeamRepo);
-			FullDataPayload payload = new FullDataPayload(fullDataSource, this.beaconBeamRepo.getAllBeamsForPos(message.sectionPos));
-			payload.splitAndSend(FULL_DATA_SPLIT_SIZE_IN_BYTES, message.getSession()::sendMessage);
-			message.sendResponse(new FullDataSourceResponseMessage(payload));
+			try (FullDataPayload payload = new FullDataPayload(fullDataSource, this.beaconBeamRepo.getAllBeamsForPos(message.sectionPos)))
+			{
+				serverPlayerState.fullDataPayloadSender.sendInChunks(payload, () -> {
+					message.sendResponse(new FullDataSourceResponseMessage(payload));
+					rateLimiterSet.syncOnLoginRateLimiter.release();
+				});
+			}
 		}, executor);
 	}
 	private void queueWorldGenForRequestMessage(ServerPlayerState serverPlayerState, FullDataSourceRequestMessage message, ServerPlayerState.RateLimiterSet rateLimiterSet)
@@ -371,6 +376,7 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 		DataSourceRequestGroup requestGroup = this.requestGroupByPos.get(pos);
 		if (requestGroup != null)
 		{
+			requestGroup.worldGenTaskComplete = true;
 			this.tryFulfillDataSourceRequestGroup(requestGroup, pos);
 		}
 	}
@@ -379,7 +385,7 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 	{
 		this.serverside.fullDataFileHandler.getAsync(pos).thenAccept(fullDataSource ->
 		{
-			if (this.serverside.fullDataFileHandler.isFullyGenerated(fullDataSource.columnGenerationSteps))
+			if (requestGroup.worldGenTaskComplete || this.serverside.fullDataFileHandler.isFullyGenerated(fullDataSource.columnGenerationSteps))
 			{
 				requestGroup.fullDataSource = fullDataSource;
 			}
@@ -416,26 +422,30 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 		CompletableFuture.runAsync(() ->
 		{
 			Objects.requireNonNull(this.beaconBeamRepo);
-			FullDataPayload payload = new FullDataPayload(data, this.beaconBeamRepo.getAllBeamsForPos(data.getPos()));
-			for (ServerPlayerState serverPlayerState : this.serverPlayerStateManager.getReadyPlayers())
+			try (FullDataPayload payload = new FullDataPayload(data, this.beaconBeamRepo.getAllBeamsForPos(data.getPos())))
 			{
-				if (serverPlayerState.getServerPlayer().getLevel() != this.serverLevelWrapper)
+				for (ServerPlayerState serverPlayerState : this.serverPlayerStateManager.getReadyPlayers())
 				{
-					continue;
-				}
-				
-				if (!serverPlayerState.sessionConfig.isRealTimeUpdatesEnabled())
-				{
-					continue;
-				}
-				
-				Vec3d playerPosition = serverPlayerState.getServerPlayer().getPosition();
-				int distanceFromPlayer = DhSectionPos.getChebyshevBlockDistance(data.getPos(), new DhBlockPos2D((int) playerPosition.x, (int) playerPosition.z)) / 16;
-				if (distanceFromPlayer >= serverPlayerState.getServerPlayer().getViewDistance()
-						&& distanceFromPlayer <= serverPlayerState.sessionConfig.getMaxUpdateDistanceRadius())
-				{
-					payload.splitAndSend(FULL_DATA_SPLIT_SIZE_IN_BYTES, serverPlayerState.networkSession::sendMessage);
-					serverPlayerState.networkSession.sendMessage(new FullDataPartialUpdateMessage(this.serverLevelWrapper, payload));
+					if (serverPlayerState.getServerPlayer().getLevel() != this.serverLevelWrapper)
+					{
+						continue;
+					}
+					
+					if (!serverPlayerState.sessionConfig.isRealTimeUpdatesEnabled())
+					{
+						continue;
+					}
+					
+					Vec3d playerPosition = serverPlayerState.getServerPlayer().getPosition();
+					int distanceFromPlayer = DhSectionPos.getChebyshevBlockDistance(data.getPos(), new DhBlockPos2D((int) playerPosition.x, (int) playerPosition.z)) / 16;
+					if (distanceFromPlayer >= serverPlayerState.getServerPlayer().getViewDistance()
+							&& distanceFromPlayer <= serverPlayerState.sessionConfig.getMaxUpdateDistanceRadius())
+					{
+						serverPlayerState.fullDataPayloadSender.sendInChunks(payload, () ->
+						{
+							serverPlayerState.networkSession.sendMessage(new FullDataPartialUpdateMessage(this.serverLevelWrapper, payload));
+						});
+					}
 				}
 			}
 		}, executor);
@@ -492,8 +502,11 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 	{
 		public final ConcurrentMap<Long, FullDataSourceRequestMessage> requestMessages = new ConcurrentHashMap<>();
 		
+		/** If this variable is true, we definitely know that generation is complete and there's no need for checking column gen steps */
+		boolean worldGenTaskComplete = false;
+		
 		@CheckForNull
-		public FullDataSourceV2 fullDataSource;
+		public FullDataSourceV2 fullDataSource = null;
 		
 		/**
 		 * These two Semaphores are used to prevent all threads from locking on the group after it being fulfilled,

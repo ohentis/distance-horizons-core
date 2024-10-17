@@ -687,6 +687,10 @@
     "Rate Limit for Sync on Load",
   "distanthorizons.config.server.syncOnLoadRateLimit.@tooltip":
     "How many LOD sync requests per second should a client send? \nAlso limits the amount of player's requests allowed to stay in the server's queue.",
+  "distanthorizons.config.server.maxDataTransferSpeed":
+    "Maximum Data Transfer Speed, KB/s",
+  "distanthorizons.config.server.maxDataTransferSpeed.@tooltip":
+    "Maximum speed for uploading LODs to the clients, in KB/s",
 
 
   
