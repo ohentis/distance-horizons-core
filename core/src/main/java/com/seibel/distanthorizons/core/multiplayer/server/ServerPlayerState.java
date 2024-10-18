@@ -5,7 +5,7 @@ import com.seibel.distanthorizons.core.config.listeners.ConfigChangeListener;
 import com.seibel.distanthorizons.core.level.AbstractDhServerLevel;
 import com.seibel.distanthorizons.core.multiplayer.config.SessionConfig;
 import com.seibel.distanthorizons.core.multiplayer.fullData.FullDataPayloadSender;
-import com.seibel.distanthorizons.core.network.messages.base.CurrentLevelKeyMessage;
+import com.seibel.distanthorizons.core.network.messages.base.LevelInitMessage;
 import com.seibel.distanthorizons.core.network.messages.base.SessionConfigMessage;
 import com.seibel.distanthorizons.core.network.event.internal.CloseInternalEvent;
 import com.seibel.distanthorizons.core.network.exceptions.RateLimitedException;
@@ -79,7 +79,7 @@ public class ServerPlayerState implements Closeable
 			if (!levelKey.equals(this.lastLevelKey))
 			{
 				this.lastLevelKey = levelKey;
-				this.networkSession.sendMessage(new CurrentLevelKeyMessage(levelKey));
+				this.networkSession.sendMessage(new LevelInitMessage(levelKey));
 			}
 		}
 	}

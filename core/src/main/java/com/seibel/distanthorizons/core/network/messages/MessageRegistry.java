@@ -22,7 +22,7 @@ package com.seibel.distanthorizons.core.network.messages;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.seibel.distanthorizons.core.network.messages.base.CodecCrashMessage;
-import com.seibel.distanthorizons.core.network.messages.base.CurrentLevelKeyMessage;
+import com.seibel.distanthorizons.core.network.messages.base.LevelInitMessage;
 import com.seibel.distanthorizons.core.network.messages.base.SessionConfigMessage;
 import com.seibel.distanthorizons.core.network.messages.fullData.FullDataSplitMessage;
 import com.seibel.distanthorizons.core.network.messages.requests.CancelMessage;
@@ -59,7 +59,7 @@ public class MessageRegistry
 		this.registerMessage(CloseReasonMessage.class, CloseReasonMessage::new);
 		
 		// Level keys
-		this.registerMessage(CurrentLevelKeyMessage.class, CurrentLevelKeyMessage::new);
+		this.registerMessage(LevelInitMessage.class, LevelInitMessage::new);
 		
 		// Config (for full DH support)
 		this.registerMessage(SessionConfigMessage.class, SessionConfigMessage::new);

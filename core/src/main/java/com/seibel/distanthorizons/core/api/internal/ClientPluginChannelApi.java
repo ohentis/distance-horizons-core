@@ -6,7 +6,7 @@ import com.seibel.distanthorizons.core.level.IKeyedClientLevelManager;
 import com.seibel.distanthorizons.core.level.IServerKeyedClientLevel;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
 import com.seibel.distanthorizons.core.network.event.internal.CloseInternalEvent;
-import com.seibel.distanthorizons.core.network.messages.base.CurrentLevelKeyMessage;
+import com.seibel.distanthorizons.core.network.messages.base.LevelInitMessage;
 import com.seibel.distanthorizons.core.network.session.NetworkSession;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
@@ -69,13 +69,13 @@ public class ClientPluginChannelApi
 	{
 		Objects.requireNonNull(networkSession);
 		this.networkSession = networkSession;
-		this.networkSession.registerHandler(CurrentLevelKeyMessage.class, this::onCurrentLevelKeyMessage);
+		this.networkSession.registerHandler(LevelInitMessage.class, this::onLevelInitMessage);
 		this.networkSession.registerHandler(CloseInternalEvent.class, this::onClose);
 	}
 	
-	private void onCurrentLevelKeyMessage(CurrentLevelKeyMessage msg)
+	private void onLevelInitMessage(LevelInitMessage msg)
 	{
-		if (!msg.levelKey.matches(CurrentLevelKeyMessage.VALIDATION_REGEX))
+		if (!msg.levelKey.matches(LevelInitMessage.VALIDATION_REGEX))
 		{
 			throw new IllegalArgumentException("Server sent invalid level key.");
 		}

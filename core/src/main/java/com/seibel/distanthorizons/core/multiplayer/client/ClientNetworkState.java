@@ -8,7 +8,7 @@ import com.seibel.distanthorizons.core.multiplayer.fullData.FullDataPayloadRecei
 import com.seibel.distanthorizons.core.network.event.ScopedNetworkEventSource;
 import com.seibel.distanthorizons.core.network.event.internal.CloseInternalEvent;
 import com.seibel.distanthorizons.core.network.event.internal.IncompatibleMessageInternalEvent;
-import com.seibel.distanthorizons.core.network.messages.base.CurrentLevelKeyMessage;
+import com.seibel.distanthorizons.core.network.messages.base.LevelInitMessage;
 import com.seibel.distanthorizons.core.network.messages.base.SessionConfigMessage;
 import com.seibel.distanthorizons.core.network.messages.fullData.FullDataSourceResponseMessage;
 import com.seibel.distanthorizons.core.network.messages.fullData.FullDataSplitMessage;
@@ -53,6 +53,9 @@ public class ClientNetworkState implements Closeable
 	@Nullable
 	private Integer closestProtocolVersion;
 	
+	private long serverTimeOffset = 0;
+	public long getServerTimeOffset() { return this.serverTimeOffset; }
+	
 	
 	
 	//=============//
@@ -70,13 +73,16 @@ public class ClientNetworkState implements Closeable
 			}
 		});
 		
-		this.networkSession.registerHandler(CurrentLevelKeyMessage.class, message ->
+		this.networkSession.registerHandler(LevelInitMessage.class, message ->
 		{
 			// we will also receive this message when we have full support
 			if (this.serverSupportStatus == EServerSupportStatus.NONE)
 			{
 				this.serverSupportStatus = EServerSupportStatus.LEVELS_ONLY;
 			}
+			
+			this.serverTimeOffset = message.serverTime - System.currentTimeMillis();
+			LOGGER.info("Server time offset: [${this.serverTimeOffset}] ms");
 		});
 		
 		this.networkSession.registerHandler(CloseInternalEvent.class, message ->
