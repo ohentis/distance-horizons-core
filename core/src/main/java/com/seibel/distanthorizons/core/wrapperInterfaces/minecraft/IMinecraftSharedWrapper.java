@@ -33,4 +33,6 @@ public interface IMinecraftSharedWrapper extends IBindable
 	/** @return true if this is the first time loading this world */
 	boolean isWorldNew();
 	
+	int getPlayerCount();
+	
 }

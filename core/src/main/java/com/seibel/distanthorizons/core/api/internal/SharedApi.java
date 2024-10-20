@@ -39,6 +39,7 @@ import com.seibel.distanthorizons.core.world.*;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftSharedWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
@@ -61,6 +62,7 @@ public class SharedApi
 	/** will be null on the server-side */
 	@Nullable
 	private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
+	private static final IMinecraftSharedWrapper MC_SHARED = SingletonInjector.INSTANCE.get(IMinecraftSharedWrapper.class);
 	
 	private static final UpdateChunkPosManager UPDATE_POS_MANAGER = new UpdateChunkPosManager();
 	/** how many chunks can be queued for updating per thread, used to prevent updates from infinitely pilling up if the user flies around extremely fast */
@@ -261,11 +263,21 @@ public class SharedApi
 	{ queueChunkUpdate(chunkWrapper, neighbourChunkList, dhLevel,false); }
 	private static void queueChunkUpdate(IChunkWrapper chunkWrapper, @Nullable ArrayList<IChunkWrapper> neighbourChunkList, IDhLevel dhLevel, boolean lightUpdateOnly)
 	{
+		int playerCount;
 		if (MC_CLIENT != null && MC_CLIENT.playerExists())
 		{
 			UPDATE_POS_MANAGER.setCenter(MC_CLIENT.getPlayerChunkPos());
-			UPDATE_POS_MANAGER.maxSize = MAX_UPDATING_CHUNK_COUNT_PER_THREAD * Config.Common.MultiThreading.numberOfLodBuilderThreads.get();
+			playerCount = MC_CLIENT.clientConnectedToDedicatedServer() ? 0 : MC_SHARED.getPlayerCount();
 		}
+		else
+		{
+			playerCount = MC_SHARED.getPlayerCount();
+		}
+		
+		// Dedicated server get +1 to multiplier since it runs persistently and has spawn chunks
+		UPDATE_POS_MANAGER.maxSize = MAX_UPDATING_CHUNK_COUNT_PER_THREAD
+				* Config.Common.MultiThreading.numberOfLodBuilderThreads.get()
+				* (playerCount + (MC_SHARED.isDedicatedServer() ? 1 : 0));
 		
 		UpdateChunkData updateData = new UpdateChunkData(chunkWrapper, neighbourChunkList, dhLevel, lightUpdateOnly);
 		if(lightUpdateOnly)
