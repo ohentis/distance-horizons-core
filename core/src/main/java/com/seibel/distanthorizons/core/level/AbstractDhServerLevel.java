@@ -387,9 +387,14 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 	{
 		this.serverside.fullDataFileHandler.getAsync(pos).thenAccept(fullDataSource ->
 		{
-			if (requestGroup.worldGenTaskComplete || this.serverside.fullDataFileHandler.isFullyGenerated(fullDataSource.columnGenerationSteps))
+			if (this.serverside.fullDataFileHandler.isFullyGenerated(fullDataSource.columnGenerationSteps))
 			{
 				requestGroup.fullDataSource = fullDataSource;
+			}
+			else if (requestGroup.worldGenTaskComplete)
+			{
+				// If the returned data source is not fully generated, try reading it again
+				this.tryFulfillDataSourceRequestGroup(requestGroup, pos);
 			}
 			else
 			{
