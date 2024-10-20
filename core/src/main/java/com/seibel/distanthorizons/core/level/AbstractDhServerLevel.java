@@ -6,6 +6,7 @@ import com.seibel.distanthorizons.core.file.fullDatafile.FullDataSourceProviderV
 import com.seibel.distanthorizons.core.file.structure.ISaveStructure;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.logging.f3.F3Screen;
 import com.seibel.distanthorizons.core.multiplayer.server.ServerPlayerState;
 import com.seibel.distanthorizons.core.multiplayer.server.ServerPlayerStateManager;
 import com.seibel.distanthorizons.core.network.exceptions.InvalidLevelException;
@@ -31,6 +32,7 @@ import org.apache.logging.log4j.Logger;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.*;
@@ -452,6 +454,39 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 		
 		
 		return this.getFullDataProvider().updateDataSourceAsync(data);
+	}
+	
+	
+	
+	//===========//
+	// debugging //
+	//===========//
+	
+	@Override
+	public void addDebugMenuStringsToList(List<String> messageList)
+	{
+		// migration
+		boolean migrationErrored = this.serverside.fullDataFileHandler.getMigrationStoppedWithError();
+		if (!migrationErrored)
+		{
+			long legacyDeletionCount = this.serverside.fullDataFileHandler.getLegacyDeletionCount();
+			if (legacyDeletionCount > 0)
+			{
+				messageList.add("  Migrating - Deleting #: " + F3Screen.NUMBER_FORMAT.format(legacyDeletionCount));
+			}
+			long migrationCount = this.serverside.fullDataFileHandler.getTotalMigrationCount();
+			if (migrationCount > 0)
+			{
+				messageList.add("  Migrating - Conversion #: " + F3Screen.NUMBER_FORMAT.format(migrationCount));
+			}
+		}
+		else
+		{
+			messageList.add("  Migration Failed");
+		}
+		
+		// world gen
+		this.serverside.worldGenModule.addDebugMenuStringsToList(messageList);
 	}
 	
 	

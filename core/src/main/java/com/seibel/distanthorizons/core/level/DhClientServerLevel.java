@@ -136,30 +136,7 @@ public class DhClientServerLevel extends AbstractDhServerLevel implements IDhCli
 		boolean rendering = this.clientside.isRendering();
 		messageList.add("["+dimName+"] rendering: "+(rendering ? "yes" : "no"));
 		
-		
-		// migration
-		boolean migrationErrored = this.serverside.fullDataFileHandler.getMigrationStoppedWithError();
-		if (!migrationErrored)
-		{
-			long legacyDeletionCount = this.serverside.fullDataFileHandler.getLegacyDeletionCount();
-			if (legacyDeletionCount > 0)
-			{
-				messageList.add("  Migrating - Deleting #: " + F3Screen.NUMBER_FORMAT.format(legacyDeletionCount));
-			}
-			long migrationCount = this.serverside.fullDataFileHandler.getTotalMigrationCount();
-			if (migrationCount > 0)
-			{
-				messageList.add("  Migrating - Conversion #: " + F3Screen.NUMBER_FORMAT.format(migrationCount));
-			}
-		}
-		else
-		{
-			messageList.add("  Migration Failed");
-		}
-		
-		
-		// world gen
-		this.serverside.worldGenModule.addDebugMenuStringsToList(messageList);
+		super.addDebugMenuStringsToList(messageList);
 	}
 	
 	
