@@ -1,6 +1,7 @@
 package com.seibel.distanthorizons.core.multiplayer.fullData;
 
 import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.RemovalCause;
 import com.google.common.cache.RemovalNotification;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
@@ -23,7 +24,14 @@ public class FullDataPayloadReceiver implements AutoCloseable
 	
 	private final ConcurrentMap<Integer, CompositeByteBuf> buffersById = CacheBuilder.newBuilder()
 			.expireAfterAccess(10, TimeUnit.SECONDS)
-			.removalListener((RemovalNotification<Integer, CompositeByteBuf> notification) -> Objects.requireNonNull(notification.getValue()).release())
+			.removalListener((RemovalNotification<Integer, CompositeByteBuf> notification) ->
+			{
+				// If an entry was replaced without removing, the buffer has to be released manually
+				if (notification.getCause() != RemovalCause.REPLACED)
+				{
+					Objects.requireNonNull(notification.getValue()).release();
+				}
+			})
 			.build().asMap();
 	
 	
