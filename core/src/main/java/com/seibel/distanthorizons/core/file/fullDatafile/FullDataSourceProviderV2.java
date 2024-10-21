@@ -31,6 +31,7 @@ import com.seibel.distanthorizons.core.file.AbstractDataSourceHandler;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
 import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV2DTO;
@@ -63,7 +64,7 @@ public class FullDataSourceProviderV2
 		implements IDebugRenderable
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
-	private static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
+	private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	
 	protected static final int NUMBER_OF_PARENT_UPDATE_TASKS_PER_THREAD = 50;
 	/** how many parent update tasks can be in the queue at once */
@@ -213,12 +214,20 @@ public class FullDataSourceProviderV2
 				
 				// TODO it might be worth skipping this logic if no parent updates happened
 				
+				// update positions closest to the player (if not on a server)
+				// to make world gen appear faster
+				DhBlockPos targetBlockPos = DhBlockPos.ZERO;
+				if (MC_CLIENT != null && MC_CLIENT.playerExists())
+				{
+					targetBlockPos = MC_CLIENT.getPlayerBlockPos(); 
+				}
+				
 				// queue parent updates
 				if (executor.getQueue().size() < MAX_UPDATE_TASK_COUNT
 					&& this.parentUpdatingPosSet.size() < MAX_UPDATE_TASK_COUNT)
 				{
 					// get the positions that need to be applied to their parents
-					LongArrayList parentUpdatePosList = this.repo.getPositionsToUpdate(MAX_UPDATE_TASK_COUNT);
+					LongArrayList parentUpdatePosList = this.repo.getPositionsToUpdate(targetBlockPos.getX(), targetBlockPos.getZ(), MAX_UPDATE_TASK_COUNT);
 					
 					// combine updates together based on their parent
 					HashMap<Long, HashSet<Long>> updatePosByParentPos = new HashMap<>();

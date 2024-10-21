@@ -217,15 +217,18 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 		this.queryDictionaryFirst(sql);
 	}
 	
-	public LongArrayList getPositionsToUpdate(int returnCount)
+	public LongArrayList getPositionsToUpdate(int targetBlockPosX, int targetBlockPosZ, int returnCount)
 	{
 		LongArrayList list = new LongArrayList();
 		
 		List<Map<String, Object>> resultMapList = this.queryDictionary(
-				"select DetailLevel, PosX, PosZ " +
-					"from "+this.getTableName()+" " +
-					"where ApplyToParent = 1 " +
-					"order by DetailLevel asc LIMIT "+returnCount+";");
+				"SELECT DetailLevel, PosX, PosZ, " +
+						"(sqrt(pow(PosX - "+targetBlockPosX+", 2) + pow(PosZ - "+targetBlockPosZ+", 2))) AS Distance " +
+					"FROM "+this.getTableName()+" " +
+					"WHERE ApplyToParent = 1 " +
+					"ORDER BY Distance ASC " +
+					"LIMIT "+returnCount+"; "
+		);
 		
 		for (Map<String, Object> resultMap : resultMapList)
 		{
