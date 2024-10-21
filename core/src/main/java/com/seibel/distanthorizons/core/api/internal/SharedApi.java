@@ -290,11 +290,19 @@ public class SharedApi
 						"\nFix: move through the world slower, decrease your vanilla render distance, slow down your world pre-generator (IE Chunky), or increase the Distant Horizons' CPU thread counts. " +
 						"\nMax queue count ["+UPDATE_POS_MANAGER.maxSize+"] (["+MAX_UPDATING_CHUNK_COUNT_PER_THREAD+"] per thread).";
 				
-				if (Config.Common.Logging.Warning.showUpdateQueueOverloadedChatWarning.get())
+				boolean showWarningInChat = Config.Common.Logging.Warning.showUpdateQueueOverloadedChatWarning.get();
+				if (showWarningInChat)
 				{
 					ClientApi.INSTANCE.showChatMessageNextFrame(message);
 				}
-				LOGGER.warn(message);
+				
+				// Don't log warnings in singleplayer or in hosted LAN since it usually isn't a problem (and if it is it's easy to notice).
+				// Servers should always log since being overloaded is harder to notice. 
+				EWorldEnvironment environment = SharedApi.getEnvironment();
+				if (showWarningInChat || environment == EWorldEnvironment.SERVER_ONLY)
+				{
+					LOGGER.warn(message);
+				}
 			}
 		}
 		
