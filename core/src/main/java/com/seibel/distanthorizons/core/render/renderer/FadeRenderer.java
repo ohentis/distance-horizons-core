@@ -148,6 +148,9 @@ public class FadeRenderer
 			FadeApplyShader.INSTANCE.fadeTexture = this.fadeTexture;
 			FadeApplyShader.INSTANCE.render(partialTicks);
 			
+			// restored to remove FadeApplyShader GL state changes
+			mcState.restore();
+			
 			profiler.pop(); 
 		}
 		catch (Exception e)
