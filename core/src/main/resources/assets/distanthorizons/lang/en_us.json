@@ -652,6 +652,8 @@
     "Show Low Memory Warning",
   "distanthorizons.config.common.logging.warning.showReplayWarningOnStartup":
     "Show Replay Warning",
+  "distanthorizons.config.common.logging.warning.showUpdateQueueOverloadedChatWarning":
+    "Show Update Queue Overloaded Warning",
   "distanthorizons.config.common.logging.warning.showModCompatibilityWarningsOnStartup":
     "Show Mod Compatibility Warnings",
 

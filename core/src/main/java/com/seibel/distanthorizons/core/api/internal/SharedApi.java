@@ -66,9 +66,13 @@ public class SharedApi
 	/** how many chunks can be queued for updating per thread, used to prevent updates from infinitely pilling up if the user flies around extremely fast */
 	private static final int MAX_UPDATING_CHUNK_COUNT_PER_THREAD = 500;
 	
+	/** how many milliseconds must pass before an overloaded message can be sent in chat or the log */
+	private static final int MIN_MS_BETWEEN_OVERLOADED_LOG_MESSAGE = 30_000;
+	
 	
 	private static AbstractDhWorld currentWorld;
 	private static int lastWorldGenTickDelta = 0;
+	private static long lastOverloadedLogMessageMsTime = 0;
 	
 	
 	
@@ -272,7 +276,27 @@ public class SharedApi
 		{
 			UPDATE_POS_MANAGER.removeItem(chunkWrapper.getChunkPos());
 		}
-		UPDATE_POS_MANAGER.addItem(chunkWrapper.getChunkPos(), updateData);
+		boolean queueHasRemainingCapacity = UPDATE_POS_MANAGER.addItem(chunkWrapper.getChunkPos(), updateData);
+		if (!queueHasRemainingCapacity)
+		{
+			// limit how often an overloaded message can be sent
+			long msBetweenLastLog = System.currentTimeMillis() - lastOverloadedLogMessageMsTime;
+			if (msBetweenLastLog >= MIN_MS_BETWEEN_OVERLOADED_LOG_MESSAGE)
+			{
+				lastOverloadedLogMessageMsTime = System.currentTimeMillis();
+				
+				String message = "\u00A76" + "Distant Horizons overloaded, too many chunks queued for LOD processing. " + "\u00A7r" +
+						"\nThis may result in holes in your LODs. " +
+						"\nFix: move through the world slower, decrease your vanilla render distance, slow down your world pre-generator (IE Chunky), or increase the Distant Horizons' CPU thread counts. " +
+						"\nMax queue count ["+UPDATE_POS_MANAGER.maxSize+"] (["+MAX_UPDATING_CHUNK_COUNT_PER_THREAD+"] per thread).";
+				
+				if (Config.Common.Logging.Warning.showUpdateQueueOverloadedChatWarning.get())
+				{
+					ClientApi.INSTANCE.showChatMessageNextFrame(message);
+				}
+				LOGGER.warn(message);
+			}
+		}
 		
 		
 		
@@ -495,7 +519,8 @@ public class SharedApi
 			}
 		}
 		
-		public void addItem(DhChunkPos pos, UpdateChunkData updateData)
+		/** @return true if the queue has remaining slots, false if the queue is full */
+		public boolean addItem(DhChunkPos pos, UpdateChunkData updateData)
 		{
 			try
 			{
@@ -503,20 +528,27 @@ public class SharedApi
 				
 				if (this.positionMap.containsKey(pos))
 				{
-					return;
+					// assume the queue has additional slots
+					return true;
 				}
 				
+				
+				boolean queueFull = false;
 				if (this.positionMap.size() >= this.maxSize)
 				{
 					// Remove item furthest from the center
 					DhChunkPos furthest = this.furthestQueue.poll();
 					this.closestQueue.remove(furthest);
 					this.positionMap.remove(furthest);
+					
+					queueFull = true;
 				}
 				
 				this.positionMap.put(pos, updateData);
 				this.closestQueue.add(pos);
 				this.furthestQueue.add(pos);
+				
+				return queueFull;
 			}
 			finally
 			{
