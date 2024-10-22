@@ -40,6 +40,8 @@ public class SessionConfig implements INetworkObject
 		
 		registerConfigEntry(Config.Server.synchronizeOnLoad, (x, y) -> x && y);
 		registerConfigEntry(Config.Server.syncOnLoadRateLimit, Math::min);
+		
+		registerConfigEntry(Config.Server.maxDataTransferSpeed, Math::min);
 	}
 	
 	public SessionConfig() {}
@@ -56,6 +58,7 @@ public class SessionConfig implements INetworkObject
 	public boolean isRealTimeUpdatesEnabled() { return this.getValue(Config.Server.enableRealTimeUpdates); }
 	public boolean getSynchronizeOnLoad() { return this.getValue(Config.Server.synchronizeOnLoad); }
 	public int getSyncOnLoginRateLimit() { return this.getValue(Config.Server.syncOnLoadRateLimit); }
+	public int getMaxDataTransferSpeed() { return this.getValue(Config.Server.maxDataTransferSpeed); }
 	
 	
 	

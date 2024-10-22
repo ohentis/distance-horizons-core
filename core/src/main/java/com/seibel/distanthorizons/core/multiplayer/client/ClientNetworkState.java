@@ -1,34 +1,26 @@
 package com.seibel.distanthorizons.core.multiplayer.client;
 
-import com.google.common.cache.CacheBuilder;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
 import com.seibel.distanthorizons.core.multiplayer.config.SessionConfig;
-import com.seibel.distanthorizons.core.network.INetworkObject;
+import com.seibel.distanthorizons.core.multiplayer.fullData.FullDataPayloadReceiver;
 import com.seibel.distanthorizons.core.network.event.ScopedNetworkEventSource;
 import com.seibel.distanthorizons.core.network.event.internal.CloseInternalEvent;
 import com.seibel.distanthorizons.core.network.event.internal.IncompatibleMessageInternalEvent;
-import com.seibel.distanthorizons.core.network.messages.base.CurrentLevelKeyMessage;
+import com.seibel.distanthorizons.core.network.messages.base.LevelInitMessage;
 import com.seibel.distanthorizons.core.network.messages.base.SessionConfigMessage;
 import com.seibel.distanthorizons.core.network.messages.fullData.FullDataSourceResponseMessage;
 import com.seibel.distanthorizons.core.network.messages.fullData.FullDataSplitMessage;
 import com.seibel.distanthorizons.core.network.messages.fullData.FullDataPartialUpdateMessage;
-import com.seibel.distanthorizons.core.network.messages.fullData.FullDataPayload;
 import com.seibel.distanthorizons.core.network.session.NetworkSession;
-import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV2DTO;
-import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
-import io.netty.buffer.ByteBufAllocator;
-import io.netty.buffer.CompositeByteBuf;
 import org.apache.logging.log4j.LogManager;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.Closeable;
 import java.util.List;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
 
 public class ClientNetworkState implements Closeable
 {
@@ -38,10 +30,7 @@ public class ClientNetworkState implements Closeable
 	private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	
 	
-	private final ConcurrentMap<Integer, CompositeByteBuf> fullDataBufferById = CacheBuilder.newBuilder()
-			.expireAfterAccess(10, TimeUnit.SECONDS)
-			.<Integer, CompositeByteBuf>build()
-			.asMap();
+	public final FullDataPayloadReceiver fullDataPayloadReceiver = new FullDataPayloadReceiver();
 	
 	private final SessionConfig.AnyChangeListener configAnyChangeListener = new SessionConfig.AnyChangeListener(this::sendConfigMessage);
 	
@@ -64,6 +53,9 @@ public class ClientNetworkState implements Closeable
 	@Nullable
 	private Integer closestProtocolVersion;
 	
+	private long serverTimeOffset = 0;
+	public long getServerTimeOffset() { return this.serverTimeOffset; }
+	
 	
 	
 	//=============//
@@ -81,13 +73,16 @@ public class ClientNetworkState implements Closeable
 			}
 		});
 		
-		this.networkSession.registerHandler(CurrentLevelKeyMessage.class, message ->
+		this.networkSession.registerHandler(LevelInitMessage.class, message ->
 		{
 			// we will also receive this message when we have full support
 			if (this.serverSupportStatus == EServerSupportStatus.NONE)
 			{
 				this.serverSupportStatus = EServerSupportStatus.LEVELS_ONLY;
 			}
+			
+			this.serverTimeOffset = message.serverTime - System.currentTimeMillis();
+			LOGGER.info("Server time offset: [${this.serverTimeOffset}] ms");
 		});
 		
 		this.networkSession.registerHandler(CloseInternalEvent.class, message ->
@@ -120,22 +115,7 @@ public class ClientNetworkState implements Closeable
 				this.configReceived = true;
 			});
 			
-			this.networkSession.registerHandler(FullDataSplitMessage.class, message ->
-			{
-				if (message.isFirst)
-				{
-					CompositeByteBuf composite = this.fullDataBufferById.remove(message.bufferId);
-					if (composite != null)
-					{
-						composite.release();
-						LOGGER.debug("Released full data buffer [" + message.bufferId + "]: [" + composite + "]");
-					}
-				}
-				
-				CompositeByteBuf byteBuffer = this.fullDataBufferById.computeIfAbsent(message.bufferId, bufferId -> ByteBufAllocator.DEFAULT.compositeBuffer());
-				byteBuffer.addComponent(true, message.buffer);
-				LOGGER.debug("Full data buffer [" + message.bufferId + "]: [" + byteBuffer + "].");
-			});
+			this.networkSession.registerHandler(FullDataSplitMessage.class, this.fullDataPayloadReceiver::receiveChunk);
 		}
 	}
 	
@@ -145,20 +125,7 @@ public class ClientNetworkState implements Closeable
 	// send message //
 	//==============//
 	
-	public FullDataSourceV2DTO decodeDataSourceAndReleaseBuffer(FullDataPayload msg)
-	{
-		CompositeByteBuf compositeByteBuffer = this.fullDataBufferById.remove(msg.dtoBufferId);
-		LodUtil.assertTrue(compositeByteBuffer != null);
-		
-		try
-		{
-			return INetworkObject.decodeToInstance(FullDataSourceV2DTO.CreateEmptyDataSource(), compositeByteBuffer);
-		}
-		finally
-		{
-			compositeByteBuffer.release();
-		}
-	}
+	
 	
 	public void sendConfigMessage()
 	{
@@ -198,6 +165,7 @@ public class ClientNetworkState implements Closeable
 	@Override
 	public void close()
 	{
+		this.fullDataPayloadReceiver.close();
 		this.configAnyChangeListener.close();
 		this.networkSession.close();
 	}

@@ -31,10 +31,8 @@ import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import java.awt.*;
 import java.io.IOException;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -45,8 +43,6 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 			() -> Config.Common.Logging.logNetworkEvent.get(), 3);
 	
 	private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
-	
-	private static final Timer TASK_FINISH_TIMER = TimerUtil.CreateTimer("RequestTaskFinishTimer");
 	
 	private static final int MAX_RETRY_ATTEMPTS = 3;
 	
@@ -163,7 +159,7 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 	{
 		Map.Entry<Long, RequestQueueEntry> mapEntry = this.waitingTasksBySectionPos.entrySet().stream()
 				.filter(task -> task.getValue().networkDataSourceFuture == null)
-				.min((x, y) -> posDistanceSquared(targetPos, x.getKey()) - posDistanceSquared(targetPos, y.getKey()))
+				.min(Comparator.comparingInt(x -> posDistanceSquared(targetPos, x.getKey())))
 				.orElse(null);
 		
 		if (mapEntry == null)
@@ -175,8 +171,12 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 		long sectionPos = mapEntry.getKey();
 		RequestQueueEntry entry = mapEntry.getValue();
 		
+		Long offsetEntryTimestamp = entry.updateTimestamp != null
+				? entry.updateTimestamp + this.networkState.getServerTimeOffset()
+				: null;
+		
 		CompletableFuture<FullDataSourceResponseMessage> dataSourceFuture = this.networkState.getSession().sendRequest(
-				new FullDataSourceRequestMessage(this.level.getLevelWrapper(), sectionPos, entry.updateTimestamp),
+				new FullDataSourceRequestMessage(this.level.getLevelWrapper(), sectionPos, offsetEntryTimestamp),
 				FullDataSourceResponseMessage.class
 			);
 		entry.networkDataSourceFuture = dataSourceFuture;
@@ -193,7 +193,7 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 				
 				if (response.payload != null)
 				{
-					FullDataSourceV2DTO dataSourceDto = this.networkState.decodeDataSourceAndReleaseBuffer(response.payload);
+					FullDataSourceV2DTO dataSourceDto = this.networkState.fullDataPayloadReceiver.decodeDataSourceAndReleaseBuffer(response.payload);
 					
 					ThreadPoolExecutor executor = ThreadPoolUtil.getNetworkCompressionExecutor();
 					if (executor == null)
@@ -258,17 +258,7 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 				}
 			}
 			
-			// Hack to work around a race condition
-			// If you finish the request too quickly, the section will never render
-			TASK_FINISH_TIMER.schedule(new TimerTask()
-			{
-				@Override
-				public void run()
-				{
-					entry.future.complete(true);
-				}
-			}, 10000);
-			return null;
+			return entry.future.complete(true);
 		});
 	}
 	

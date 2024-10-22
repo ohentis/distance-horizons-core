@@ -77,7 +77,10 @@ public class DhServerLevel extends AbstractDhServerLevel
 	
 	@Override
 	public void addDebugMenuStringsToList(List<String> messageList)
-	{ messageList.add("["+this.serverLevelWrapper.getDimensionName()+"], SL"); }
+	{
+		messageList.add("[" + this.serverLevelWrapper.getDimensionName() + "]");
+		super.addDebugMenuStringsToList(messageList);
+	}
 	
 	
 	

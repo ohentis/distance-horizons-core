@@ -4,7 +4,7 @@ import com.google.common.base.MoreObjects;
 import com.seibel.distanthorizons.core.network.messages.AbstractNetworkMessage;
 import io.netty.buffer.ByteBuf;
 
-public class CurrentLevelKeyMessage extends AbstractNetworkMessage
+public class LevelInitMessage extends AbstractNetworkMessage
 {
 	public static final int MAX_LENGTH = 150;
 	
@@ -16,6 +16,7 @@ public class CurrentLevelKeyMessage extends AbstractNetworkMessage
 	
 	
 	public String levelKey;
+	public long serverTime;
 	
 	
 	
@@ -23,8 +24,12 @@ public class CurrentLevelKeyMessage extends AbstractNetworkMessage
 	// constructors //
 	//==============//
 	
-	public CurrentLevelKeyMessage() { }
-	public CurrentLevelKeyMessage(String levelKey) { this.levelKey = levelKey; }
+	public LevelInitMessage() { }
+	public LevelInitMessage(String levelKey)
+	{
+		this.levelKey = levelKey;
+		this.serverTime = System.currentTimeMillis();
+	}
 	
 	
 	
@@ -33,10 +38,18 @@ public class CurrentLevelKeyMessage extends AbstractNetworkMessage
 	//===============//
 	
 	@Override
-	public void encode(ByteBuf out) { this.writeString(this.levelKey, out); }
+	public void encode(ByteBuf out)
+	{
+		this.writeString(this.levelKey, out);
+		out.writeLong(this.serverTime);
+	}
 	
 	@Override
-	public void decode(ByteBuf in) { this.levelKey = this.readString(in); }
+	public void decode(ByteBuf in)
+	{
+		this.levelKey = this.readString(in);
+		this.serverTime = in.readLong();
+	}
 	
 	
 	
@@ -48,7 +61,8 @@ public class CurrentLevelKeyMessage extends AbstractNetworkMessage
 	public MoreObjects.ToStringHelper toStringHelper()
 	{
 		return super.toStringHelper()
-				.add("levelKey", this.levelKey);
+				.add("levelKey", this.levelKey)
+				.add("serverTime", this.serverTime);
 	}
 	
 }

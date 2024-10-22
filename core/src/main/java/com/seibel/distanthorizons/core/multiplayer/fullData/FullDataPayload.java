@@ -1,13 +1,13 @@
-package com.seibel.distanthorizons.core.network.messages.fullData;
+package com.seibel.distanthorizons.core.multiplayer.fullData;
 
 import com.google.common.base.MoreObjects;
 import com.seibel.distanthorizons.api.enums.config.EDhApiDataCompressionMode;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.network.INetworkObject;
+import com.seibel.distanthorizons.core.network.messages.fullData.FullDataSplitMessage;
 import com.seibel.distanthorizons.core.sql.dto.BeaconBeamDTO;
 import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV2DTO;
-import com.seibel.distanthorizons.core.util.TimerUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import org.jetbrains.annotations.NotNull;
@@ -20,12 +20,9 @@ import java.util.function.Consumer;
 /**
  * @see FullDataSplitMessage
  */
-public class FullDataPayload implements INetworkObject
+public class FullDataPayload implements INetworkObject, AutoCloseable
 {
 	private static final AtomicInteger lastBufferId = new AtomicInteger();
-	
-	// Reference counting is unreliable here for some reason so this is a "fix"
-	private static final Timer bufferCleanupTimer = TimerUtil.CreateTimer("FullDataBufferCleanupTimer");
 	
 	public int dtoBufferId;
 	public ByteBuf dtoBuffer;
@@ -52,15 +49,6 @@ public class FullDataPayload implements INetworkObject
 			
 			this.dtoBuffer = ByteBufAllocator.DEFAULT.buffer();
 			dataSourceDto.encode(this.dtoBuffer);
-			
-			bufferCleanupTimer.schedule(new TimerTask()
-			{
-				@Override
-				public void run()
-				{
-					FullDataPayload.this.dtoBuffer.release();
-				}
-			}, 5000L);
 		}
 		catch (IOException e)
 		{
@@ -90,35 +78,17 @@ public class FullDataPayload implements INetworkObject
 		this.beaconBeams = this.readCollection(in, new ArrayList<>(), () -> new BeaconBeamDTO(null, null));
 	}
 	
-	/**
-	 * Used to send {@link FullDataPayload}'s since the data they contain may be larger
-	 * than what a single packet could contain.
-	 *
-	 * @param payloadChunkSizeInBytes how many bytes can be sent in a single message 
-	 */
-	public void splitAndSend(int payloadChunkSizeInBytes, Consumer<FullDataSplitMessage> sendMessageConsumer)
-	{
-		// chunk in this context means chunk of data, not a MC chunk
-		for (int payloadChunkNum = 0; ; payloadChunkNum++)
-		{
-			int offset = payloadChunkNum * payloadChunkSizeInBytes;
-			
-			int actualChunkSize = Math.min(this.dtoBuffer.writerIndex() - offset, payloadChunkSizeInBytes);
-			if (actualChunkSize <= 0)
-			{
-				break;
-			}
-			
-			FullDataSplitMessage chunk = new FullDataSplitMessage(this.dtoBufferId, payloadChunkNum == 0, this.dtoBuffer.slice(offset, actualChunkSize));
-			sendMessageConsumer.accept(chunk);
-		}
-	}
-	
 	
 	
 	//================//
 	// base overrides //
 	//================//
+	
+	@Override
+	public void close()
+	{
+		this.dtoBuffer.release();
+	}
 	
 	@Override
 	public String toString()
