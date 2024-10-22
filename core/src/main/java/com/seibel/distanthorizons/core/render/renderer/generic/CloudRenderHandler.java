@@ -79,7 +79,7 @@ public class CloudRenderHandler
 	private final IDhClientLevel level;
 	private final GenericObjectRenderer renderer;
 	
-	private float moveSpeedInBlocksPerSecond = 3.0f;
+	private float moveSpeedInBlocksPerSecond = 6.0f;
 	private boolean disabledWarningLogged = false;
 	
 	
