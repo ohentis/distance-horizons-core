@@ -59,7 +59,7 @@ public class CloudRenderHandler
 	 */
 	private static final int CLOUD_BOX_WIDTH = 128;
 	/** measured in blocks */
-	private static final int CLOUD_BOX_THICKNESS = 16;
+	private static final int CLOUD_BOX_THICKNESS = 32;
 	
 	/** 
 	 * How many cloud groups wide can we render at maximum? <br> 
