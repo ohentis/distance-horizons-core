@@ -36,10 +36,13 @@ public class GLState
 	public int activeTextureNumber;
 	public int texture0;
 	public int texture1;
+	public int texture2;
+	public int texture3;
 	public int frameBufferTexture0;
 	public int frameBufferTexture1;
 	public int frameBufferDepthTexture;
 	public boolean blend;
+	public boolean scissor;
 	public int blendEqRGB;
 	public int blendEqAlpha;
 	public int blendSrcColor;
@@ -83,6 +86,12 @@ public class GLState
 		GL32.glActiveTexture(GL32.GL_TEXTURE1);
 		this.texture1 = GL32.glGetInteger(GL32.GL_TEXTURE_BINDING_2D);
 		
+		GL32.glActiveTexture(GL32.GL_TEXTURE2);
+		this.texture2 = GL32.glGetInteger(GL32.GL_TEXTURE_BINDING_2D);
+		
+		GL32.glActiveTexture(GL32.GL_TEXTURE3);
+		this.texture3= GL32.glGetInteger(GL32.GL_TEXTURE_BINDING_2D);
+		
 		GL32.glActiveTexture(this.activeTextureNumber);
 		
 		this.frameBufferTexture0 = GL32.glGetFramebufferAttachmentParameteri(GL32.GL_FRAMEBUFFER, GL32.GL_COLOR_ATTACHMENT0, GL32.GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME);
@@ -90,6 +99,7 @@ public class GLState
 		this.frameBufferDepthTexture = GL32.glGetFramebufferAttachmentParameteri(GL32.GL_FRAMEBUFFER, GL32.GL_DEPTH_ATTACHMENT, GL32.GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME);
 		
 		this.blend = GL32.glIsEnabled(GL32.GL_BLEND);
+		this.scissor = GL32.glIsEnabled(GL32.GL_SCISSOR_TEST);
 		this.blendEqRGB = GL32.glGetInteger(GL32.GL_BLEND_EQUATION_RGB);
 		this.blendEqAlpha = GL32.glGetInteger(GL32.GL_BLEND_EQUATION_ALPHA);
 		this.blendSrcColor = GL32.glGetInteger(GL32.GL_BLEND_SRC_RGB);
@@ -119,7 +129,7 @@ public class GLState
 				", FB text0=" + this.frameBufferTexture0 +
 				", FB text1=" + this.frameBufferTexture1 +
 				", FB depth=" + this.frameBufferDepthTexture +
-				", blend=" + this.blend + ", blendMode=" + GLEnums.getString(this.blendSrcColor) + "," + GLEnums.getString(this.blendDstColor) +
+				", blend=" + this.blend + ", scissor=" + this.scissor + ", blendMode=" + GLEnums.getString(this.blendSrcColor) + "," + GLEnums.getString(this.blendDstColor) +
 				", depth=" + this.depth +
 				", depthFunc=" + GLEnums.getString(this.depthFunc) + ", stencil=" + this.stencil + ", stencilFunc=" +
 				GLEnums.getString(this.stencilFunc) + ", stencilRef=" + this.stencilRef + ", stencilMask=" + this.stencilMask +
@@ -156,11 +166,26 @@ public class GLState
 			GL32.glDisable(GL32.GL_BLEND);
 		}
 		
+		if (this.scissor)
+		{
+			GL32.glEnable(GL32.GL_SCISSOR_TEST);
+		}
+		else
+		{
+			GL32.glDisable(GL32.GL_SCISSOR_TEST);
+		}
+		
 		GL32.glActiveTexture(GL32.GL_TEXTURE0);
 		GL32.glBindTexture(GL32.GL_TEXTURE_2D, GL32.glIsTexture(this.texture0) ? this.texture0 : 0);
 		
 		GL32.glActiveTexture(GL32.GL_TEXTURE1);
 		GL32.glBindTexture(GL32.GL_TEXTURE_2D, GL32.glIsTexture(this.texture1) ? this.texture1 : 0);
+		
+		GL32.glActiveTexture(GL32.GL_TEXTURE2);
+		GL32.glBindTexture(GL32.GL_TEXTURE_2D, GL32.glIsTexture(this.texture2) ? this.texture2 : 0);
+		
+		GL32.glActiveTexture(GL32.GL_TEXTURE3);
+		GL32.glBindTexture(GL32.GL_TEXTURE_2D, GL32.glIsTexture(this.texture3) ? this.texture3 : 0);
 		
 		GL32.glActiveTexture(this.activeTextureNumber);
 		GL32.glBindTexture(GL32.GL_TEXTURE_2D, GL32.glIsTexture(this.texture2D) ? this.texture2D : 0);

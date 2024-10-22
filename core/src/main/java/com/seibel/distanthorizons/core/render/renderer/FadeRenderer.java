@@ -116,7 +116,6 @@ public class FadeRenderer
 		
 		
 		GLState mcState = new GLState();
-		GLState state = new GLState();
 		
 		try
 		{
@@ -148,9 +147,6 @@ public class FadeRenderer
 			FadeApplyShader.INSTANCE.fadeTexture = this.fadeTexture;
 			FadeApplyShader.INSTANCE.render(partialTicks);
 			
-			// restored to remove FadeApplyShader GL state changes
-			mcState.restore();
-			
 			profiler.pop(); 
 		}
 		catch (Exception e)
@@ -159,7 +155,8 @@ public class FadeRenderer
 		}
 		finally
 		{
-			state.restore();
+			// make sure we always revert to MC's state to prevent GL state corruption
+			mcState.restore();
 		}
 	}
 	

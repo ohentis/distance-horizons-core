@@ -176,10 +176,6 @@ public class FadeShader extends AbstractShaderRenderer
 		GL32.glBindTexture(GL32.GL_TEXTURE_2D, LodRenderer.getActiveColorTextureId());
 		GL32.glUniform1i(this.uDhColorTexture, 3);
 		
-		// this is necessary for MC 1.16 (IE Legacy OpenGL)
-		// otherwise the framebuffer isn't cleared correctly and the fade smears across the screen
-		GL32.glClear(GL32.GL_COLOR_BUFFER_BIT | GL32.GL_DEPTH_BUFFER_BIT);
-		
 		
 		ScreenQuad.INSTANCE.render();
 		
