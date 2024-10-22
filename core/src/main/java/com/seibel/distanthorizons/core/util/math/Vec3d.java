@@ -57,20 +57,32 @@ public class Vec3d extends DhApiVec3d
 		this.z = z;
 	}
 	
+	public Vec3d(DhApiVec3d that)
+	{
+		this.x = that.x;
+		this.y = that.y;
+		this.z = that.z;
+	}
+	
+	public Vec3d(double[] values) { this.set(values); }
+	
+	
+	public Vec3d copy() { return new Vec3d(this); }
+	
 	
 	
 	//=========//
 	// methods //
 	//=========//
 	
-	public void mul(double scalar)
+	public void multiply(double scalar)
 	{
 		this.x *= scalar;
 		this.y *= scalar;
 		this.z *= scalar;
 	}
 	
-	public void mul(double x, double y, double z)
+	public void multiply(double x, double y, double z)
 	{
 		this.x *= x;
 		this.y *= y;
@@ -133,10 +145,6 @@ public class Vec3d extends DhApiVec3d
 		this.z = f * f4 - f1 * f3;
 	}
 	
-	public Vec3d copy() { return new Vec3d(this.x, this.y, this.z); }
-	
-	public Vec3d(double[] values) { this.set(values); }
-	
 	public void set(double[] values)
 	{
 		this.x = values[0];
@@ -144,6 +152,7 @@ public class Vec3d extends DhApiVec3d
 		this.z = values[2];
 	}
 	
+	public double getManhattanDistance(DhApiVec3d other) { return getManhattanDistance(this, other); }
 	public static double getManhattanDistance(DhApiVec3d a, DhApiVec3d b)
 	{
 		return Math.abs(a.x - b.x)
@@ -151,12 +160,16 @@ public class Vec3d extends DhApiVec3d
 				+ Math.abs(a.z - b.z);
 	}
 	
+	public double getDistance(DhApiVec3d other) { return getDistance(this, other); }
 	public static double getDistance(DhApiVec3d a, DhApiVec3d b)
 	{
 		return Math.sqrt(Math.pow(a.x - b.x, 2)
 				+ Math.pow(a.y - b.y, 2)
 				+ Math.pow(a.z - b.z, 2));
 	}
+	
+	/** @see Vec3d#getSquaredDistance(DhApiVec3d, DhApiVec3d)  */
+	public double getSquaredDistance(DhApiVec3d other) { return getSquaredDistance(this, other); }
 	/** slightly faster version of {@link Vec3d#getDistance} */
 	public static double getSquaredDistance(DhApiVec3d a, DhApiVec3d b)
 	{
@@ -164,6 +177,9 @@ public class Vec3d extends DhApiVec3d
 				+ Math.pow(a.y - b.y, 2)
 				+ Math.pow(a.z - b.z, 2);
 	}
+	
+	/** @see Vec3d#getHorizontalDistance(DhApiVec3d, DhApiVec3d)  */
+	public double getHorizontalDistance(DhApiVec3d other) { return getHorizontalDistance(this, other); }
 	/** Gets the distance between points A and B, ignoring Y height. */
 	public static double getHorizontalDistance(DhApiVec3d a, DhApiVec3d b)
 	{

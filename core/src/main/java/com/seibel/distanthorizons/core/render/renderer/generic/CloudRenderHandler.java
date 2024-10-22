@@ -30,6 +30,8 @@ import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.util.LodUtil;
+import com.seibel.distanthorizons.core.util.math.Vec3d;
+import com.seibel.distanthorizons.core.util.math.Vec3f;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import org.apache.logging.log4j.Logger;
@@ -55,11 +57,25 @@ public class CloudRenderHandler
 	 * How wide an individual box is. <br>
 	 * Measured in blocks.
 	 */
-	private static final int CLOUD_BOX_WIDTH = 64;
+	private static final int CLOUD_BOX_WIDTH = 128;
 	/** measured in blocks */
 	private static final int CLOUD_BOX_THICKNESS = 16;
 	
-	private final IDhApiRenderableBoxGroup[][] boxGroupByOffset = new IDhApiRenderableBoxGroup[3][3];
+	/** 
+	 * How many cloud groups wide can we render at maximum? <br> 
+	 * 1 = 3x3 or 9 total <br>
+	 * 2 = 5x5 or 25 total <br> <br>
+	 * 
+	 * 5 seems like a good count since it can cover up to around 2048 render distance.
+	 */
+	private static final int CLOUD_INSTANCE_RADIUS_COUNT = 5;
+	
+	
+	private final IDhApiRenderableBoxGroup[][] boxGroupByOffset
+			// radius * 2 to get the diameter
+			// + 1 so we get an odd number wide (needed so we can have a center position)
+			= new IDhApiRenderableBoxGroup[(CLOUD_INSTANCE_RADIUS_COUNT * 2) + 1][(CLOUD_INSTANCE_RADIUS_COUNT * 2) + 1];
+	
 	private final IDhClientLevel level;
 	private final GenericObjectRenderer renderer;
 	
@@ -228,10 +244,10 @@ public class CloudRenderHandler
 		cloudShading.top = 1.0f;
 		cloudShading.bottom = 0.7f;
 		
-		// 3x3 area so we clouds should always be overhead
-		for (int x = -1; x <= 1; x++)
+		
+		for (int x = -CLOUD_INSTANCE_RADIUS_COUNT; x <= CLOUD_INSTANCE_RADIUS_COUNT; x++)
 		{
-			for (int z = -1; z <= 1; z++)
+			for (int z = -CLOUD_INSTANCE_RADIUS_COUNT; z <= CLOUD_INSTANCE_RADIUS_COUNT; z++)
 			{
 				IDhApiRenderableBoxGroup boxGroup = GenericRenderObjectFactory.INSTANCE.createRelativePositionedGroup(
 						ModInfo.NAME + ":Clouds",
@@ -248,14 +264,14 @@ public class CloudRenderHandler
 				boxGroup.setPreRenderFunc((renderParam) -> this.preRender(renderParam, cloudParams));
 				
 				renderer.add(boxGroup);
-				this.boxGroupByOffset[x+1][z+1] = boxGroup;
+				this.boxGroupByOffset[x+CLOUD_INSTANCE_RADIUS_COUNT][z+CLOUD_INSTANCE_RADIUS_COUNT] = boxGroup;
 			}
 		}
 	}
 	
 	private void preRender(DhApiRenderParam renderParam, CloudParams cloudParams)
 	{
-		IDhApiRenderableBoxGroup boxGroup = this.boxGroupByOffset[cloudParams.instanceOffsetX+1][cloudParams.instanceOffsetZ+1];
+		IDhApiRenderableBoxGroup boxGroup = this.boxGroupByOffset[cloudParams.instanceOffsetX+CLOUD_INSTANCE_RADIUS_COUNT][cloudParams.instanceOffsetZ+CLOUD_INSTANCE_RADIUS_COUNT];
 		
 		
 		
@@ -283,27 +299,6 @@ public class CloudRenderHandler
 		
 		
 		
-		//=============//
-		// cloud color //
-		//=============//
-		
-		// FIXME transparency sorting makes having transparent clouds impossible
-		//  maybe someday we could add the option to cull individual faces? a single bit for each direction should be enough 
-		
-		// if debug colors are enabled don't change them
-		if (!DEBUG_BORDER_COLORS)
-		{
-			// cloud color changes based on the time of day and weather so we need to get it from the level
-			Color cloudColor = this.level.getClientLevelWrapper().getCloudColor(renderParam.partialTicks);
-			for (DhApiRenderableBox box : boxGroup)
-			{
-				box.color = cloudColor;
-			}
-		}
-		boxGroup.triggerBoxChange();
-		
-		
-		
 		//================//
 		// cloud movement //
 		//================//
@@ -314,9 +309,9 @@ public class CloudRenderHandler
 		
 		float deltaX = this.moveSpeedInBlocksPerSecond * deltaTime;
 		// negative delta is to match vanilla's cloud movement
-		cloudParams.xOffset -= deltaX;
+		cloudParams.deltaOffsetX -= deltaX;
 		// wrap the cloud around after reaching the edge
-		cloudParams.xOffset %= cloudParams.widthInBlocks;
+		cloudParams.deltaOffsetX %= cloudParams.widthInBlocks;
 		
 		
 		
@@ -332,27 +327,152 @@ public class CloudRenderHandler
 		if (cameraPosZ < 0) { cameraPosZ -= (int)cloudParams.widthInBlocks; }
 		
 		// determine how many cloud instances away from the origin we are
-		int cloudInstanceOffsetX = cameraPosX / (int)cloudParams.widthInBlocks;
-		int cloudInstanceOffsetZ = cameraPosZ / (int)cloudParams.widthInBlocks;
-		
+		int cloudInstanceOffsetCountX = (cameraPosX / (int)cloudParams.widthInBlocks);
+		int cloudInstanceOffsetCountZ = (cameraPosZ / (int)cloudParams.widthInBlocks);
 		// calculate the new offset
-		float xOffset = (cloudInstanceOffsetX * cloudParams.widthInBlocks);
-		float zOffset = (cloudInstanceOffsetZ * cloudParams.widthInBlocks);
+		float instanceOffsetX = (cloudInstanceOffsetCountX * cloudParams.widthInBlocks);
+		float instanceOffsetZ = (cloudInstanceOffsetCountZ * cloudParams.widthInBlocks);
+		
+		
+		float newMinPosX = 
+				cloudParams.deltaOffsetX
+				+ (cloudParams.instanceOffsetX * cloudParams.widthInBlocks)
+				+ instanceOffsetX + cloudParams.halfWidthInBlocks;
+		float newMinPosY = this.level.getLevelWrapper().getMaxHeight() + 200;
+		float newMinPosZ = cloudParams.deltaOffsetZ
+				+ (cloudParams.instanceOffsetZ * cloudParams.widthInBlocks)
+				+ instanceOffsetZ + cloudParams.halfWidthInBlocks;
+		
+		boolean cullCloud = this.shouldCloudBeCulled(
+				newMinPosX, newMinPosY, newMinPosZ,
+				cloudParams
+			);
+		if(cullCloud)
+		{
+			boxGroup.setActive(false);
+		}
 		
 		
 		
-		//==============//
-		// update group //
-		//==============//
+		//===========================//
+		// update color and position //
+		//===========================//
 		
-		boxGroup.setOriginBlockPos(
-				new DhApiVec3d(
-					cloudParams.xOffset + (cloudParams.instanceOffsetX * cloudParams.widthInBlocks) + xOffset + cloudParams.halfWidthInBlocks,
-					this.level.getLevelWrapper().getMaxHeight() + 200,
-					cloudParams.zOffset + (cloudParams.instanceOffsetZ * cloudParams.widthInBlocks) + zOffset + cloudParams.halfWidthInBlocks
-				)
-		);
+		// FIXME transparency sorting makes having transparent clouds impossible
+		//  maybe someday we could add the option to cull individual faces? a single bit for each direction should be enough 
+		
+		// if debug colors are enabled don't change them
+		if (!DEBUG_BORDER_COLORS
+			// don't modify cloud groups that aren't active
+			&& boxGroup.isActive())
+		{
+			// cloud color changes based on the time of day and weather so we need to get it from the level
+			Color cloudColor = this.level.getClientLevelWrapper().getCloudColor(renderParam.partialTicks);
+			
+			// all boxes should have the same color, so we can get the previous color
+			// using the first box
+			DhApiRenderableBox firstBox = boxGroup.get(0);
+			Color currentColor = firstBox.color;
+			
+			// only trigger an update if the color changed
+			if (!cloudColor.equals(currentColor))
+			{
+				for (DhApiRenderableBox box : boxGroup)
+				{
+					box.color = cloudColor;
+				}
+				
+				boxGroup.triggerBoxChange();
+			}
+		}
+		
+		boxGroup.setOriginBlockPos(new DhApiVec3d(newMinPosX, newMinPosY, newMinPosZ));
 	}
+	
+	private synchronized boolean shouldCloudBeCulled(
+			float minPosX, float minPosY, float minPosZ,
+			CloudParams cloudParams)
+	{
+		//========================//
+		// skip center 3x3 clouds //
+		//========================//
+		
+		// always render the center 3x3 clouds, otherwise we may see 
+		// an un-rendered border
+		if (cloudParams.instanceOffsetX >= -1 && cloudParams.instanceOffsetX <= 1
+			&& cloudParams.instanceOffsetZ >= -1 && cloudParams.instanceOffsetZ <= 1)
+		{
+			return false;
+		}
+		
+		
+		
+		//==============//
+		// culling prep //
+		//==============//
+		
+		// we need all 4 corners since we want to draw any clouds that
+		// could potentially be within render distance
+		Vec3d[] corners = new Vec3d[] // TODO cache this array?
+		{	
+			new Vec3d(minPosX, minPosY, minPosZ),
+			new Vec3d(minPosX, minPosY, minPosZ + cloudParams.widthInBlocks),
+			new Vec3d(minPosX + cloudParams.widthInBlocks, minPosY, minPosZ),
+			new Vec3d(minPosX + cloudParams.widthInBlocks, minPosY, minPosZ + cloudParams.widthInBlocks),
+		};
+		
+		Vec3d cameraPos = MC_RENDER.getCameraExactPosition();
+		Vec3f cameraLookAtVector = MC_RENDER.getLookAtVector();
+		cameraLookAtVector.normalize();
+		
+		double renderDistance = Config.Client.Advanced.Graphics.Quality.lodChunkRenderDistanceRadius.get()
+				// * 1.5 is so we have a little extra buffer where clouds will render further than
+				// necessary to prevent seeing the cloud border
+				* LodUtil.CHUNK_WIDTH * 1.5;
+		
+		
+		
+		//===================//
+		// check each corner //
+		//===================//
+		
+		boolean allOutsideRenderDistance = true;
+		boolean allBehindCamera = true;
+		
+		for (Vec3d corner : corners)
+		{
+			// Check if the corner is within the render distance
+			// (ignoring height, since LODs also ignore height)
+			
+			Vec3d cornerNoHeight = new Vec3d(corner); 
+			cornerNoHeight.y = 0;
+			Vec3d cameraPosNoHeight = new Vec3d(cameraPos); 
+			cameraPosNoHeight.y = 0;
+			
+			double cornerDistance = cornerNoHeight.getDistance(cameraPosNoHeight);
+			if (cornerDistance <= renderDistance)
+			{
+				allOutsideRenderDistance = false;
+			}
+			
+			
+			// Check if the corner is in front of the camera (dot product > 0 means in front)
+			Vec3f toCorner = new Vec3f(
+					(float) (corner.x - cameraPos.x),
+					(float) (corner.y - cameraPos.y),
+					(float) (corner.z - cameraPos.z));
+			toCorner.normalize();
+			
+			if (cameraLookAtVector.dotProduct(toCorner) > 0)
+			{
+				allBehindCamera = false;
+			}
+		}
+		
+		// Cull if all corners are either behind the camera or outside the render distance
+		return allOutsideRenderDistance || allBehindCamera;
+	}
+	
 	
 	
 	
@@ -408,8 +528,10 @@ public class CloudRenderHandler
 		public final int instanceOffsetZ;
 		
 		
-		public float xOffset = 0;
-		public float zOffset = 0;
+		/** how far this cloud group has moved in the X direction based on time */
+		public float deltaOffsetX = 0;
+		/** how far this cloud group has moved in the Z direction based on time */
+		public float deltaOffsetZ = 0;
 		
 		public long lastFrameTime = System.currentTimeMillis();
 		
