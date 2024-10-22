@@ -138,8 +138,8 @@ public class RenderUtil
 	{
 		int lodChunkDist = Config.Client.Advanced.Graphics.Quality.lodChunkRenderDistanceRadius.get();
 		int lodBlockDist = lodChunkDist * LodUtil.CHUNK_WIDTH;
-		// sqrt 2 to prevent the corners from being cut off
-		return (int)((lodBlockDist + LodUtil.REGION_WIDTH) * Math.sqrt(2));
+		// * 2 to prevent clipping when high above the world
+		return (lodBlockDist + LodUtil.REGION_WIDTH) * 2;
 	}
 	
 	/** @return -1 if no override is necessary */
