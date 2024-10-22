@@ -323,12 +323,12 @@ public class CloudRenderHandler
 		int cameraPosX = (int)MC_RENDER.getCameraExactPosition().x;
 		int cameraPosZ = (int)MC_RENDER.getCameraExactPosition().z;
 		// offset the camera position by negative 1 width when below zero to fix off-by-one errors in the negative direction
-		if (cameraPosX < 0) { cameraPosX -= (int)cloudParams.widthInBlocks; }
-		if (cameraPosZ < 0) { cameraPosZ -= (int)cloudParams.widthInBlocks; }
+		if (cameraPosX < 0) { cameraPosX -= cloudParams.widthInBlocks; }
+		if (cameraPosZ < 0) { cameraPosZ -= cloudParams.widthInBlocks; }
 		
 		// determine how many cloud instances away from the origin we are
-		int cloudInstanceOffsetCountX = (cameraPosX / (int)cloudParams.widthInBlocks);
-		int cloudInstanceOffsetCountZ = (cameraPosZ / (int)cloudParams.widthInBlocks);
+		int cloudInstanceOffsetCountX = (cameraPosX / cloudParams.widthInBlocks);
+		int cloudInstanceOffsetCountZ = (cameraPosZ / cloudParams.widthInBlocks);
 		// calculate the new offset
 		float instanceOffsetX = (cloudInstanceOffsetCountX * cloudParams.widthInBlocks);
 		float instanceOffsetZ = (cloudInstanceOffsetCountZ * cloudParams.widthInBlocks);
@@ -520,9 +520,9 @@ public class CloudRenderHandler
 	
 	private static class CloudParams
 	{
-		public final float textureWidth;
-		public final float widthInBlocks;
-		public final float halfWidthInBlocks;
+		public final int textureWidth;
+		public final int widthInBlocks;
+		public final int halfWidthInBlocks;
 		
 		public final int instanceOffsetX;
 		public final int instanceOffsetZ;
@@ -539,7 +539,7 @@ public class CloudRenderHandler
 		
 		// constructor //
 		
-		public CloudParams(float textureWidth, int instanceOffsetX, int instanceOffsetZ)
+		public CloudParams(int textureWidth, int instanceOffsetX, int instanceOffsetZ)
 		{
 			this.textureWidth = textureWidth;
 			this.widthInBlocks = (this.textureWidth * CLOUD_BOX_WIDTH);
