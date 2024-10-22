@@ -266,18 +266,21 @@ public class SharedApi
 		int playerCount;
 		if (MC_CLIENT != null && MC_CLIENT.playerExists())
 		{
+			// Multiplayer & local world
 			UPDATE_POS_MANAGER.setCenter(MC_CLIENT.getPlayerChunkPos());
-			playerCount = MC_CLIENT.clientConnectedToDedicatedServer() ? 0 : MC_SHARED.getPlayerCount();
+			
+			// Exclude yourself in local worlds
+			playerCount = MC_CLIENT.clientConnectedToDedicatedServer() ? 0 : MC_SHARED.getPlayerCount() - 1;
 		}
 		else
 		{
+			// Dedicated server
 			playerCount = MC_SHARED.getPlayerCount();
 		}
 		
-		// Dedicated server get +1 to multiplier since it runs persistently and has spawn chunks
 		UPDATE_POS_MANAGER.maxSize = MAX_UPDATING_CHUNK_COUNT_PER_THREAD
 				* Config.Common.MultiThreading.numberOfLodBuilderThreads.get()
-				* (playerCount + (MC_SHARED.isDedicatedServer() ? 1 : 0));
+				* (playerCount + 1);
 		
 		UpdateChunkData updateData = new UpdateChunkData(chunkWrapper, neighbourChunkList, dhLevel, lightUpdateOnly);
 		if(lightUpdateOnly)
