@@ -273,7 +273,7 @@ public class RenderableBoxGroup
 			
 			// colors/materials //
 			float[] colorData = new float[boxCount * 4];
-			byte[] materialData = new byte[boxCount];
+			int[] materialData = new int[boxCount];
 			for (int i = 0; i < boxCount; i++)
 			{
 				DhApiRenderableBox box = this.get(i);
@@ -290,9 +290,9 @@ public class RenderableBoxGroup
 			
 			// Upload transformation matrices
 			GL32.glBindBuffer(GL32.GL_ARRAY_BUFFER, this.instanceChunkPosVbo);
-			GL32.glBufferData(GL32.GL_ARRAY_BUFFER, chunkPosData ,GL32.GL_DYNAMIC_DRAW);
+			GL32.glBufferData(GL32.GL_ARRAY_BUFFER, chunkPosData, GL32.GL_DYNAMIC_DRAW);
 			GL32.glBindBuffer(GL32.GL_ARRAY_BUFFER, this.instanceSubChunkPosVbo);
-			GL32.glBufferData(GL32.GL_ARRAY_BUFFER, subChunkPosData ,GL32.GL_DYNAMIC_DRAW);
+			GL32.glBufferData(GL32.GL_ARRAY_BUFFER, subChunkPosData, GL32.GL_DYNAMIC_DRAW);
 			GL32.glBindBuffer(GL32.GL_ARRAY_BUFFER, this.instanceScaleVbo);
 			GL32.glBufferData(GL32.GL_ARRAY_BUFFER, scalingData, GL32.GL_DYNAMIC_DRAW);
 			
@@ -302,7 +302,7 @@ public class RenderableBoxGroup
 			
 			// Upload materials
 			GL32.glBindBuffer(GL32.GL_ARRAY_BUFFER, this.instanceMaterialVbo);
-			GL32.glBufferData(GL32.GL_ARRAY_BUFFER, colorData, GL32.GL_DYNAMIC_DRAW);
+			GL32.glBufferData(GL32.GL_ARRAY_BUFFER, materialData, GL32.GL_DYNAMIC_DRAW);
 		}
 		
 		
