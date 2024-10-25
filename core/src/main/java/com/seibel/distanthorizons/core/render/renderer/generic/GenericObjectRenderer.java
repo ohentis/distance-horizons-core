@@ -441,7 +441,7 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 						profiler.push(boxGroup.getResourceLocationPath());
 						if (useInstancedRendering)
 						{
-							this.renderBoxGroupInstanced(shaderProgram, renderEventParam, boxGroup, camPos);
+							this.renderBoxGroupInstanced(shaderProgram, renderEventParam, boxGroup, camPos, profiler);
 						}
 						else
 						{
@@ -475,10 +475,14 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 	// instanced rendering //
 	//=====================//
 	
-	private void renderBoxGroupInstanced(IDhApiGenericObjectShaderProgram shaderProgram, DhApiRenderParam renderEventParam, RenderableBoxGroup boxGroup, Vec3d camPos)
+	private void renderBoxGroupInstanced(
+			IDhApiGenericObjectShaderProgram shaderProgram, DhApiRenderParam renderEventParam, 
+			RenderableBoxGroup boxGroup, Vec3d camPos,
+			IProfilerWrapper profiler)
 	{
 		// update instance data //
 		
+		profiler.push("setup");
 		boxGroup.updateVertexAttributeData();
 		
 		DhApiRenderableBoxGroupShading shading = boxGroup.shading;
@@ -523,6 +527,7 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		
 		
 		// Draw instanced
+		profiler.popPush("render");
 		if (boxGroup.uploadedBoxCount > 0)
 		{
 			GL32.glDrawElementsInstanced(GL32.GL_TRIANGLES, BOX_INDICES.length, GL32.GL_UNSIGNED_INT, 0, boxGroup.uploadedBoxCount);
@@ -530,11 +535,15 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		
 		
 		// Clean up
+		profiler.popPush("cleanup");
+		
 		GL32.glDisableVertexAttribArray(1);
 		GL32.glDisableVertexAttribArray(2);
 		GL32.glDisableVertexAttribArray(3);
 		GL32.glDisableVertexAttribArray(4);
 		GL32.glDisableVertexAttribArray(5);
+		
+		profiler.pop();
 	}
 	/** 
 	 * Clean way to handle both {@link GL33#glVertexAttribDivisor} and {@link ARBInstancedArrays#glVertexAttribDivisorARB}
