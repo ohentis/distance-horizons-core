@@ -692,7 +692,7 @@
   "distanthorizons.config.server.maxDataTransferSpeed":
     "Maximum Data Transfer Speed, KB/s",
   "distanthorizons.config.server.maxDataTransferSpeed.@tooltip":
-    "Maximum speed for uploading LODs to the clients, in KB/s",
+    "Maximum speed for uploading LODs to the clients, in KB/s.\nValue of 0 disables the limit.",
 
 
   

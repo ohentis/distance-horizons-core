@@ -1574,9 +1574,10 @@ public class Config
 		
 		public static ConfigEntry<Integer> maxDataTransferSpeed = new ConfigEntry.Builder<Integer>()
 				.setServersideShortName("maxDataTransferSpeed")
-				.setMinDefaultMax(1, 500, 1000000 /* 1 GB/s */)
+				.setMinDefaultMax(0, 500, 1000000 /* 1 GB/s */)
 				.comment(""
-						+ "Maximum speed for uploading LODs to the clients, in KB/s."
+						+ "Maximum speed for uploading LODs to the clients, in KB/s.\n"
+						+ "Value of 0 disables the limit."
 						+ "")
 				.build();
 		
