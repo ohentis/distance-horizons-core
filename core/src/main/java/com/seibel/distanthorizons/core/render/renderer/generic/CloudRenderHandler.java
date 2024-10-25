@@ -367,20 +367,31 @@ public class CloudRenderHandler
 			&& boxGroup.isActive())
 		{
 			// cloud color changes based on the time of day and weather so we need to get it from the level
-			Color cloudColor = this.level.getClientLevelWrapper().getCloudColor(renderParam.partialTicks);
+			Color newCloudColor = this.level.getClientLevelWrapper().getCloudColor(renderParam.partialTicks);
 			
-			// all boxes should have the same color, so we can get the previous color
-			// using the first box
+			
+			// all boxes should have the same color, so we can get their current color
+			// via the first box
 			DhApiRenderableBox firstBox = boxGroup.get(0);
-			Color currentColor = firstBox.color;
+			Color currentBoxColor = firstBox.color;
 			
-			// only trigger an update if the color changed
-			if (!cloudColor.equals(currentColor))
+			// update the boxes if their color should be changed
+			if (!newCloudColor.equals(currentBoxColor))
 			{
+				// Note: cloud instances may share boxes
+				// because of that this method may only need to be called once per all clouds
 				for (DhApiRenderableBox box : boxGroup)
 				{
-					box.color = cloudColor;
+					box.color = newCloudColor;
 				}
+			}
+			
+			
+			// trigger an update if this cloud section has a different color
+			// TODO merge all cloud VBOs so we only need to trigger this once
+			if (!cloudParams.previousColor.equals(newCloudColor))
+			{
+				cloudParams.previousColor = newCloudColor;
 				
 				boxGroup.triggerBoxChange();
 			}
@@ -534,6 +545,9 @@ public class CloudRenderHandler
 		public float deltaOffsetZ = 0;
 		
 		public long lastFrameTime = System.currentTimeMillis();
+		
+		/** used so we can trigger a VBO update when necessary */
+		public Color previousColor = Color.WHITE;
 		
 		
 		
