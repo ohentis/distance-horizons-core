@@ -24,7 +24,7 @@ public class RenderableBoxGroup
 			extends AbstractList<DhApiRenderableBox> 
 			implements IDhApiRenderableBoxGroup, Closeable
 	{
-		public final static AtomicInteger NEXT_ID_ATOMIC_INT = new AtomicInteger(0);
+		public static final AtomicInteger NEXT_ID_ATOMIC_INT = new AtomicInteger(0);
 		
 		
 		
@@ -247,9 +247,9 @@ public class RenderableBoxGroup
 			
 			
 			// transformation / scaling //
-			int[] chunkPosData = new int[boxCount * 3];
-			float[] subChunkPosData = new float[boxCount * 3];
-			float[] scalingData = new float[boxCount * 3];
+			int[] chunkPosData = RenderBoxArrayCache.getCachedIntArray(boxCount * 3, 0);
+			float[] subChunkPosData = RenderBoxArrayCache.getCachedFloatArray(boxCount * 3, 1);
+			float[] scalingData = RenderBoxArrayCache.getCachedFloatArray(boxCount * 3, 2);
 			for (int i = 0; i < boxCount; i++)
 			{
 				DhApiRenderableBox box = this.get(i);
@@ -272,8 +272,8 @@ public class RenderableBoxGroup
 			
 			
 			// colors/materials //
-			float[] colorData = new float[boxCount * 4];
-			int[] materialData = new int[boxCount];
+			float[] colorData = RenderBoxArrayCache.getCachedFloatArray(boxCount * 4, 3);
+			int[] materialData = RenderBoxArrayCache.getCachedIntArray(boxCount, 4);
 			for (int i = 0; i < boxCount; i++)
 			{
 				DhApiRenderableBox box = this.get(i);
