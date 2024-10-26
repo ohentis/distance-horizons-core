@@ -269,7 +269,7 @@ public abstract class AbstractDataSourceHandler
 		}
 		catch (Exception e)
 		{
-			LOGGER.error("Error updating pos ["+updatePos+"], error: "+e.getMessage(), e);
+			LOGGER.error("Error updating pos ["+DhSectionPos.toString(updatePos)+"], error: "+e.getMessage(), e);
 		}
 		finally
 		{
