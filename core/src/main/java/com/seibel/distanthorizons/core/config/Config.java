@@ -168,7 +168,7 @@ public class Config
 				{
 					public static ConfigEntry<Integer> lodChunkRenderDistanceRadius = new ConfigEntry.Builder<Integer>()
 							.setServersideShortName("renderDistanceRadius")
-							.setMinDefaultMax(32, 128, 4096)
+							.setMinDefaultMax(32, 256, 4096)
 							.comment("" +
 									"The radius of the mod's render distance. (measured in chunks)\n" +
 									"")
@@ -1504,7 +1504,7 @@ public class Config
 	{
 		public static ConfigEntry<Integer> realTimeUpdateDistanceRadiusInChunks = new ConfigEntry.Builder<Integer>()
 				.setServersideShortName("renderDistanceRadius")
-				.setMinDefaultMax(32, 128, 4096)
+				.setMinDefaultMax(32, 256, 4096)
 				.comment("" +
 						"Defines the distance players will receive real-time updates for if enabled. \n" +
 						"\n" +
