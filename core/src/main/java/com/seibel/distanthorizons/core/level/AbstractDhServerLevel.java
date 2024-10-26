@@ -90,7 +90,7 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 			this.runRepoReliantSetup();
 		}
 		
-		LOGGER.info("Started ${this.getClass().getSimpleName()} for $serverLevelWrapper at $saveStructure.");
+		LOGGER.info("Started "+this.getClass().getSimpleName()+" for ["+serverLevelWrapper+"] at ["+saveStructure+"].");
 		
 		this.serverPlayerStateManager = serverPlayerStateManager;
 	}
@@ -114,7 +114,7 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 				continue;
 			}
 			
-			NETWORK_LOGGER.debug("[${this.serverLevelWrapper.getDimensionName()}] Fulfilled request group [${entry.getKey()}]");
+			NETWORK_LOGGER.debug("["+this.serverLevelWrapper.getDimensionName()+"] Fulfilled request group ["+entry.getKey()+"]");
 			
 			// Make this group unavailable for adding into
 			this.requestGroupByPos.remove(entry.getKey());
@@ -228,7 +228,7 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 				FullDataSourceRequestMessage requestMessage = requestGroup.requestMessages.remove(msg.futureId);
 				if (requestGroup.requestMessages.isEmpty())
 				{
-					NETWORK_LOGGER.debug("[${this.serverLevelWrapper.getDimensionName()}] Cancelled request group [${DhSectionPos.toString(requestMessage.sectionPos)}].");
+					NETWORK_LOGGER.debug("["+this.serverLevelWrapper.getDimensionName()+"] Cancelled request group ["+DhSectionPos.toString(requestMessage.sectionPos)+"].");
 					this.requestGroupByPos.remove(requestMessage.sectionPos);
 					this.serverside.fullDataFileHandler.removeRetrievalRequestIf(pos -> pos == requestMessage.sectionPos);
 				}
@@ -307,7 +307,7 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 			{
 				DataSourceRequestGroup newGroup = new DataSourceRequestGroup();
 				this.tryFulfillDataSourceRequestGroup(newGroup, pos);
-				NETWORK_LOGGER.debug("[${serverLevelWrapper.getDimensionName()}] Created request group for pos [${DhSectionPos.toString(pos)}].");
+				NETWORK_LOGGER.debug("["+this.serverLevelWrapper.getDimensionName()+"] Created request group for pos ["+DhSectionPos.toString(pos)+"].");
 				return newGroup;
 			});
 			
@@ -331,7 +331,7 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 	{
 		if (!(message instanceof ILevelRelatedMessage))
 		{
-			LodUtil.assertNotReach("Received message [$message] does not implement [${ILevelRelatedMessage.class.getSimpleName()}]");
+			LodUtil.assertNotReach("Received message ["+message+"] does not implement ["+ILevelRelatedMessage.class.getSimpleName()+"]");
 		}
 		
 		// Only handle requests for this level
@@ -352,16 +352,15 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 				((AbstractTrackableMessage) message).sendResponse(
 						new InvalidLevelException(
 								"Generation not allowed. " +
-										"Requested dimension: [${((ILevelRelatedMessage) message).getLevelName()}], " +
-										"player dimension: [${message.getSession().serverPlayer.getLevel().getDimensionName()}], " +
-										"handler dimension: [${this.getLevelWrapper().getDimensionName()}]"
+										"Requested dimension: ["+((ILevelRelatedMessage) message).getLevelName()+"], " +
+										"player dimension: ["+message.getSession().serverPlayer.getLevel().getDimensionName()+"], " +
+										"handler dimension: ["+this.getLevelWrapper().getDimensionName()+"]"
 						)
 				);
 			}
 			
 			return false;
 		}
-		
 		
 		return true;
 	}
