@@ -15,12 +15,17 @@ public class FullDataPayloadSender implements AutoCloseable
 {
 	private static final int TICK_RATE = 4;
 	
+	/** 1 Mebibyte minus 576 bytes for other info */
+	public static final int FULL_DATA_SPLIT_SIZE_IN_BYTES = 1_048_000;
+	
+	
 	private static final Timer UPLOAD_TIMER = TimerUtil.CreateTimer("FullDataPayloadSender");
 	private final TimerTask tickTimerTask = TimerUtil.createTimerTask(this::tick);
 	
 	private final NetworkSession session;
 	private final IntSupplier maxKBpsSupplier;
 	private final ConcurrentLinkedQueue<PendingTransfer> transferQueue = new ConcurrentLinkedQueue<>();
+	
 	
 	public FullDataPayloadSender(NetworkSession session, IntSupplier maxKBpsSupplier)
 	{
@@ -49,7 +54,11 @@ public class FullDataPayloadSender implements AutoCloseable
 	
 	private void tick()
 	{
-		int bytesToSend = (this.maxKBpsSupplier.getAsInt() * 1000) / TICK_RATE;
+		int convertedMaxRate = this.maxKBpsSupplier.getAsInt();
+		convertedMaxRate = convertedMaxRate > 0 ? convertedMaxRate : Integer.MAX_VALUE / 1000;
+		
+		// + 1 to account for rounding errors on values of < 4
+		int bytesToSend = (convertedMaxRate * 1000) / TICK_RATE + 1;
 		while (bytesToSend > 0)
 		{
 			PendingTransfer pendingTransfer = this.transferQueue.peek();
@@ -58,7 +67,7 @@ public class FullDataPayloadSender implements AutoCloseable
 				return;
 			}
 			
-			int chunkSize = Math.min(bytesToSend, pendingTransfer.buffer.readableBytes());
+			int chunkSize = Math.min(Math.min(bytesToSend, FULL_DATA_SPLIT_SIZE_IN_BYTES), pendingTransfer.buffer.readableBytes());
 			boolean isFirstChunk = pendingTransfer.buffer.readerIndex() == 0;
 			
 			FullDataSplitMessage chunkMessage = new FullDataSplitMessage(pendingTransfer.bufferId, pendingTransfer.buffer.readRetainedSlice(chunkSize), isFirstChunk);

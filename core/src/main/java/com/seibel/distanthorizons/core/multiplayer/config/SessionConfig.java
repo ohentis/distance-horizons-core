@@ -29,7 +29,7 @@ public class SessionConfig implements INetworkObject
 	
 	static
 	{
-		// Note: config values are ordered by serversideShortName when transmitted
+		// Note: config values are transmitted in the insertion order
 		
 		registerConfigEntry(Config.Server.realTimeUpdateDistanceRadiusInChunks, Math::min);
 		
@@ -41,7 +41,17 @@ public class SessionConfig implements INetworkObject
 		registerConfigEntry(Config.Server.synchronizeOnLoad, (x, y) -> x && y);
 		registerConfigEntry(Config.Server.syncOnLoadRateLimit, Math::min);
 		
-		registerConfigEntry(Config.Server.maxDataTransferSpeed, Math::min);
+		registerConfigEntry(Config.Server.maxDataTransferSpeed, (x, y) -> {
+			if (x == 0 && y == 0)
+			{
+				return 0;
+			}
+			
+			return Math.min(
+					x > 0 ? x : Integer.MAX_VALUE,
+					y > 0 ? y : Integer.MAX_VALUE
+			);
+		});
 	}
 	
 	public SessionConfig() {}

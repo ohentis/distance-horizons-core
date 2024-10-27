@@ -291,8 +291,8 @@ public class SharedApi
 		{
 			UPDATE_POS_MANAGER.removeItem(chunkWrapper.getChunkPos());
 		}
-		boolean queueHasRemainingCapacity = UPDATE_POS_MANAGER.addItem(chunkWrapper.getChunkPos(), updateData);
-		if (!queueHasRemainingCapacity)
+		int remainingCapacity = UPDATE_POS_MANAGER.addItem(chunkWrapper.getChunkPos(), updateData);
+		if (remainingCapacity <= 0)
 		{
 			// limit how often an overloaded message can be sent
 			long msBetweenLastLog = System.currentTimeMillis() - lastOverloadedLogMessageMsTime;
@@ -542,36 +542,38 @@ public class SharedApi
 			}
 		}
 		
-		/** @return true if the queue has remaining slots, false if the queue is full */
-		public boolean addItem(DhChunkPos pos, UpdateChunkData updateData)
+		/**
+		 * Adds an item to the queue of chunks that need to be updated.
+		 * If there are no more slots, replaces the item furthest from the center.
+		 *
+		 * @return The number of remaining slots available in the queue.
+		 */
+		public int addItem(DhChunkPos pos, UpdateChunkData updateData)
 		{
 			try
 			{
 				this.lock.lock();
 				
+				int remainingSlots = this.maxSize - this.positionMap.size();
 				if (this.positionMap.containsKey(pos))
 				{
-					// assume the queue has additional slots
-					return true;
+					// Chunk is already present in queue, no need to insert
+					return remainingSlots;
 				}
 				
-				
-				boolean queueFull = false;
-				if (this.positionMap.size() >= this.maxSize)
+				// If no slots are left, get one by removing the item furthest from the center
+				if (remainingSlots <= 0)
 				{
-					// Remove item furthest from the center
 					DhChunkPos furthest = this.furthestQueue.poll();
 					this.closestQueue.remove(furthest);
 					this.positionMap.remove(furthest);
-					
-					queueFull = true;
 				}
 				
 				this.positionMap.put(pos, updateData);
 				this.closestQueue.add(pos);
 				this.furthestQueue.add(pos);
 				
-				return queueFull;
+				return remainingSlots;
 			}
 			finally
 			{
