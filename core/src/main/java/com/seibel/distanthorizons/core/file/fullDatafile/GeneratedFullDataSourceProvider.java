@@ -20,6 +20,7 @@
 package com.seibel.distanthorizons.core.file.fullDatafile;
 
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
+import com.seibel.distanthorizons.core.api.internal.SharedApi;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.file.structure.ISaveStructure;
@@ -35,9 +36,11 @@ import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
+import com.seibel.distanthorizons.core.world.EWorldEnvironment;
 import com.seibel.distanthorizons.coreapi.util.BitShiftUtil;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.awt.*;
@@ -214,19 +217,34 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 	}
 	
 	@Override
-	public boolean queuePositionForRetrieval(Long genPos)
+	public CompletableFuture<WorldGenResult> queuePositionForRetrieval(Long genPos)
 	{
 		IFullDataSourceRetrievalQueue worldGenQueue = this.worldGenQueueRef.get();
 		if (worldGenQueue == null)
 		{
-			return false;
+			return null;
 		}
 		
 		WorldGenTaskTracker genTaskTracker = new WorldGenTaskTracker(genPos);
 		CompletableFuture<WorldGenResult> worldGenFuture = worldGenQueue.submitRetrievalTask(genPos, (byte) (DhSectionPos.getDetailLevel(genPos) - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL), genTaskTracker);
-		worldGenFuture.whenComplete((genTaskResult, ex) -> this.onWorldGenTaskComplete(genTaskResult, ex));
+		worldGenFuture.whenComplete((genTaskResult, ex) ->
+		{
+			LOGGER.info("gen task complete ["+DhSectionPos.toString(genPos)+"]");
+			//this.onWorldGenTaskComplete(genTaskResult, ex);
+		});
 		
-		return true;
+		return worldGenFuture;
+	}
+	
+	@Override
+	protected void updateDataSourceAtPos(long updatePos, @NotNull FullDataSourceV2 inputData, boolean lockOnUpdatePos)
+	{
+		super.updateDataSourceAtPos(updatePos, inputData, lockOnUpdatePos);
+		
+		//if (SharedApi.getEnvironment() != EWorldEnvironment.CLIENT_ONLY)
+		//	LOGGER.info("updated ["+DhSectionPos.toString(updatePos)+"]");
+		
+		this.onWorldGenTaskComplete(WorldGenResult.CreateSuccess(updatePos), null);
 	}
 	
 	@Override

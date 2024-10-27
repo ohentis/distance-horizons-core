@@ -143,6 +143,7 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 		// Assert that the data at least can fill in 1 single ChunkSizedFullDataAccessor
 		LodUtil.assertTrue(DhSectionPos.getDetailLevel(pos) > requiredDataDetail + LodUtil.CHUNK_DETAIL_LEVEL);
 		
+		LOGGER.info("queueing gen ["+DhSectionPos.toString(pos)+"]");
 		
 		CompletableFuture<WorldGenResult> future = new CompletableFuture<>();
 		this.waitingTasks.put(pos, new WorldGenTask(pos, requiredDataDetail, tracker, future));
@@ -282,6 +283,8 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 				{
 					//LOGGER.trace("Unable to start task: "+closestTask.pos+", skipping. Task position may have already been generated.");
 				}
+				
+				//LOGGER.info("started gen ["+DhSectionPos.toString(closestTask.pos)+"]");
 			}
 			else
 			{
@@ -317,6 +320,8 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 			
 			// send the child futures to the future recipient, to notify them of the new tasks
 			closestTask.future.complete(WorldGenResult.CreateSplit(childFutures));
+			
+			//LOGGER.info("split ["+DhSectionPos.toString(sectionPos)+"]");
 			
 			// return true so we attempt to generate again
 			return true;

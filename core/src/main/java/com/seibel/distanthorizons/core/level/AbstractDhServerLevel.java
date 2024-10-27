@@ -197,6 +197,8 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 			
 			ServerPlayerState.RateLimiterSet rateLimiterSet = serverPlayerState.getRateLimiterSet(this);
 			
+			LOGGER.info("received message ["+DhSectionPos.toString(message.sectionPos)+"]");
+			
 			if (message.clientTimestamp == null)
 			{
 				this.queueWorldGenForRequestMessage(serverPlayerState, message, rateLimiterSet);
@@ -281,7 +283,8 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 			Objects.requireNonNull(this.beaconBeamRepo);
 			try (FullDataPayload payload = new FullDataPayload(fullDataSource, this.beaconBeamRepo.getAllBeamsForPos(message.sectionPos)))
 			{
-				serverPlayerState.fullDataPayloadSender.sendInChunks(payload, () -> {
+				serverPlayerState.fullDataPayloadSender.sendInChunks(payload, () -> 
+				{
 					message.sendResponse(new FullDataSourceResponseMessage(payload));
 					rateLimiterSet.syncOnLoginRateLimiter.release();
 				});
@@ -388,15 +391,19 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 		{
 			if (this.serverside.fullDataFileHandler.isFullyGenerated(fullDataSource.columnGenerationSteps))
 			{
+				LOGGER.info("sending - complete ["+DhSectionPos.toString(pos)+"]");
 				requestGroup.fullDataSource = fullDataSource;
 			}
 			else if (requestGroup.worldGenTaskComplete)
 			{
-				// If the returned data source is not fully generated, try reading it again
+				LOGGER.info("sending - retry ["+DhSectionPos.toString(pos)+"]");
+				// If the returned data source is not fully generated, try reading it again // can wait for a while if waiting for worldgen and/or update propagation
+				try { Thread.sleep(250); } catch (InterruptedException ignore) {}
 				this.tryFulfillDataSourceRequestGroup(requestGroup, pos);
 			}
 			else
 			{
+				LOGGER.info("sending - queueing ["+DhSectionPos.toString(pos)+"]");
 				this.serverside.fullDataFileHandler.queuePositionForRetrieval(pos);
 			}
 		});

@@ -19,7 +19,6 @@ import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
 import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV2DTO;
 import com.seibel.distanthorizons.core.util.LodUtil;
-import com.seibel.distanthorizons.core.util.TimerUtil;
 import com.seibel.distanthorizons.core.util.objects.DataCorruptedException;
 import com.seibel.distanthorizons.core.util.ratelimiting.SupplierBasedRateLimiter;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
@@ -109,19 +108,24 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 	{ return this.submitRequest(sectionPos, null, dataSourceConsumer); }
 	public CompletableFuture<Boolean> submitRequest(long sectionPos, @Nullable Long clientTimestamp, Consumer<FullDataSourceV2> dataSourceConsumer)
 	{
-		LodUtil.assertTrue(DhSectionPos.getDetailLevel(sectionPos) == DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL, "Only highest-detail sections are allowed.");
+		//LodUtil.assertTrue(DhSectionPos.getDetailLevel(sectionPos) == DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL, "Only highest-detail sections are allowed.");
 		
 		RequestQueueEntry entry = new RequestQueueEntry(dataSourceConsumer, clientTimestamp);
 		entry.future.whenComplete((success, throwable) ->
 		{
+			LOGGER.info("received ["+DhSectionPos.toString(sectionPos)+"]");
+			
 			this.waitingTasksBySectionPos.remove(sectionPos);
 			
 			this.finishedRequests.incrementAndGet();
-			if (!success || throwable != null)
+			if ((success == null || !success) 
+				|| throwable != null)
 			{
 				this.failedRequests.incrementAndGet();
 			}
 		});
+		
+		LOGGER.info("asking server for ["+DhSectionPos.toString(sectionPos)+"]");
 		
 		this.waitingTasksBySectionPos.put(sectionPos, entry);
 		return entry.future;
@@ -157,7 +161,8 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 	}
 	private void sendNextRequest(DhBlockPos2D targetPos)
 	{
-		Map.Entry<Long, RequestQueueEntry> mapEntry = this.waitingTasksBySectionPos.entrySet().stream()
+		Map.Entry<Long, RequestQueueEntry> mapEntry = this.waitingTasksBySectionPos
+				.entrySet().stream()
 				.filter(task -> task.getValue().networkDataSourceFuture == null)
 				.min(Comparator.comparingInt(x -> posDistanceSquared(targetPos, x.getKey())))
 				.orElse(null);
@@ -201,6 +206,7 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 						LOGGER.warn("Unable to handle FullDataPayload - getNetworkCompressionExecutor() is null");
 						return null;
 					}
+					
 					CompletableFuture.runAsync(() ->
 					{
 						try

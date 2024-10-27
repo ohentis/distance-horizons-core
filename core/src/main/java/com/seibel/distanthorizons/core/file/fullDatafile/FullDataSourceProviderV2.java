@@ -28,6 +28,7 @@ import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSour
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.file.structure.ISaveStructure;
 import com.seibel.distanthorizons.core.file.AbstractDataSourceHandler;
+import com.seibel.distanthorizons.core.generation.tasks.WorldGenResult;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
@@ -137,15 +138,15 @@ public class FullDataSourceProviderV2
 		this.migrationThreadPool.execute(this::convertLegacyDataSources);
 		
 		// update propagation doesn't need to be run on the server since only the highest detail level is needed
-		if (SharedApi.getEnvironment() != EWorldEnvironment.SERVER_ONLY)
-		{
+		//if (SharedApi.getEnvironment() != EWorldEnvironment.SERVER_ONLY) // TODO
+		//{
 			this.updateQueueProcessor = ThreadUtil.makeSingleThreadPool("Parent Update Queue ["+dimensionName+"]");
 			this.updateQueueProcessor.execute(this::runUpdateQueue);
-		}
-		else
-		{
-			this.updateQueueProcessor = null;
-		}
+		//}
+		//else
+		//{
+		//	this.updateQueueProcessor = null;
+		//}
 	}
 	
 	
@@ -604,7 +605,8 @@ public class FullDataSourceProviderV2
 	public int getMaxPossibleRetrievalPositionCountForPos(Long pos) { return -1; }
 	
 	/** @return true if the position was queued, false if not */
-	public boolean queuePositionForRetrieval(Long genPos) { return false; }
+	@Nullable
+	public CompletableFuture<WorldGenResult> queuePositionForRetrieval(Long genPos) { return null; }
 	
 	/** does nothing if the given position isn't present in the queue */
 	public void removeRetrievalRequestIf(DhSectionPos.ICancelablePrimitiveLongConsumer removeIf) { }
@@ -632,8 +634,6 @@ public class FullDataSourceProviderV2
 	@Nullable
 	public Long getTimestampForPos(long pos)
 	{ return this.repo.getTimestampForPos(pos); }
-	public Map<Long, Long> getTimestampsForRange(byte detailLevel, int startPosX, int startPosZ, int endPosX, int endPosZ)
-	{ return this.repo.getTimestampsForRange(detailLevel, startPosX, startPosZ, endPosX, endPosZ); }
 	
 	
 	
