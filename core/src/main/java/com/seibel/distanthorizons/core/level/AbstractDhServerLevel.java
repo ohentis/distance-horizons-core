@@ -11,6 +11,7 @@ import com.seibel.distanthorizons.core.multiplayer.server.ServerPlayerState;
 import com.seibel.distanthorizons.core.multiplayer.server.ServerPlayerStateManager;
 import com.seibel.distanthorizons.core.network.exceptions.InvalidLevelException;
 import com.seibel.distanthorizons.core.network.exceptions.RequestRejectedException;
+import com.seibel.distanthorizons.core.network.exceptions.SectionRequiresSplittingException;
 import com.seibel.distanthorizons.core.network.messages.AbstractNetworkMessage;
 import com.seibel.distanthorizons.core.network.messages.AbstractTrackableMessage;
 import com.seibel.distanthorizons.core.network.messages.ILevelRelatedMessage;
@@ -43,9 +44,6 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 	private static final ConfigBasedLogger NETWORK_LOGGER = new ConfigBasedLogger(LogManager.getLogger(),
 			() -> Config.Common.Logging.logNetworkEvent.get());
 	
-	/** 1 Mebibyte minus 576 bytes for other info */
-	public static final int FULL_DATA_SPLIT_SIZE_IN_BYTES = 1_048_000;
-	
 	public final ServerLevelModule serverside;
 	protected final IServerLevelWrapper serverLevelWrapper;
 	
@@ -61,6 +59,8 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 	private final ConcurrentMap<Long, DataSourceRequestGroup> requestGroupByPos = new ConcurrentHashMap<>();
 	private final ConcurrentMap<Long, DataSourceRequestGroup> requestGroupByFutureId = new ConcurrentHashMap<>();
 	
+	
+	private final boolean generatorSupportsNSizedGeneration = false;
 	
 	
 	//=============//
@@ -394,11 +394,29 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 				LOGGER.info("sending - complete ["+DhSectionPos.toString(pos)+"]");
 				requestGroup.fullDataSource = fullDataSource;
 			}
+			else if (!this.generatorSupportsNSizedGeneration && DhSectionPos.getDetailLevel(pos) > DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL)
+			{
+				// Make this group unavailable for adding into
+				this.requestGroupByPos.remove(pos);
+				requestGroup.requestRemoveSemaphore.acquireUninterruptibly(Short.MAX_VALUE);
+				requestGroup.requestAddSemaphore.acquireUninterruptibly(Short.MAX_VALUE);
+				
+				for (FullDataSourceRequestMessage msg : requestGroup.requestMessages.values())
+				{
+					this.requestGroupByFutureId.remove(msg.futureId);
+					
+					ServerPlayerState serverPlayerState = this.serverPlayerStateManager.getConnectedPlayer(msg.serverPlayer());
+					if (serverPlayerState != null)
+					{
+						serverPlayerState.getRateLimiterSet(this).generationRequestRateLimiter.release();
+					}
+					
+					msg.sendResponse(new SectionRequiresSplittingException());
+				}
+			}
 			else if (requestGroup.worldGenTaskComplete)
 			{
 				LOGGER.info("sending - retry ["+DhSectionPos.toString(pos)+"]");
-				// If the returned data source is not fully generated, try reading it again // can wait for a while if waiting for worldgen and/or update propagation
-				try { Thread.sleep(250); } catch (InterruptedException ignore) {}
 				this.tryFulfillDataSourceRequestGroup(requestGroup, pos);
 			}
 			else

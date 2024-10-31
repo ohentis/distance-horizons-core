@@ -10,6 +10,7 @@ import com.seibel.distanthorizons.core.logging.ConfigBasedSpamLogger;
 import com.seibel.distanthorizons.core.network.exceptions.InvalidLevelException;
 import com.seibel.distanthorizons.core.network.exceptions.RateLimitedException;
 import com.seibel.distanthorizons.core.network.exceptions.RequestRejectedException;
+import com.seibel.distanthorizons.core.network.exceptions.SectionRequiresSplittingException;
 import com.seibel.distanthorizons.core.network.session.SessionClosedException;
 import com.seibel.distanthorizons.core.network.messages.fullData.FullDataSourceRequestMessage;
 import com.seibel.distanthorizons.core.network.messages.fullData.FullDataSourceResponseMessage;
@@ -104,28 +105,28 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 	// request submitting //
 	//====================//
 	
-	public CompletableFuture<Boolean> submitRequest(long sectionPos, Consumer<FullDataSourceV2> dataSourceConsumer)
+	public CompletableFuture<RequestResult> submitRequest(long sectionPos, Consumer<FullDataSourceV2> dataSourceConsumer)
 	{ return this.submitRequest(sectionPos, null, dataSourceConsumer); }
-	public CompletableFuture<Boolean> submitRequest(long sectionPos, @Nullable Long clientTimestamp, Consumer<FullDataSourceV2> dataSourceConsumer)
+	public CompletableFuture<RequestResult> submitRequest(long sectionPos, @Nullable Long clientTimestamp, Consumer<FullDataSourceV2> dataSourceConsumer)
 	{
 		//LodUtil.assertTrue(DhSectionPos.getDetailLevel(sectionPos) == DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL, "Only highest-detail sections are allowed.");
 		
 		RequestQueueEntry entry = new RequestQueueEntry(dataSourceConsumer, clientTimestamp);
-		entry.future.whenComplete((success, throwable) ->
+		entry.future.whenComplete((requestResult, throwable) ->
 		{
-			LOGGER.info("received ["+DhSectionPos.toString(sectionPos)+"]");
-			
 			this.waitingTasksBySectionPos.remove(sectionPos);
 			
-			this.finishedRequests.incrementAndGet();
-			if ((success == null || !success) 
-				|| throwable != null)
+			if (requestResult != RequestResult.REQUIRES_SPLITTING)
+			{
+				this.finishedRequests.incrementAndGet();
+			}
+			
+			if ((requestResult == null || requestResult == RequestResult.FAILED)
+					|| (throwable != null && !(throwable instanceof CancellationException)))
 			{
 				this.failedRequests.incrementAndGet();
 			}
 		});
-		
-		LOGGER.info("asking server for ["+DhSectionPos.toString(sectionPos)+"]");
 		
 		this.waitingTasksBySectionPos.put(sectionPos, entry);
 		return entry.future;
@@ -164,7 +165,7 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 		Map.Entry<Long, RequestQueueEntry> mapEntry = this.waitingTasksBySectionPos
 				.entrySet().stream()
 				.filter(task -> task.getValue().networkDataSourceFuture == null)
-				.min(Comparator.comparingInt(x -> posDistanceSquared(targetPos, x.getKey())))
+				.min(Comparator.comparingInt(x -> posDistance(targetPos, x.getKey())))
 				.orElse(null);
 		
 		if (mapEntry == null)
@@ -183,7 +184,7 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 		CompletableFuture<FullDataSourceResponseMessage> dataSourceFuture = this.networkState.getSession().sendRequest(
 				new FullDataSourceRequestMessage(this.level.getLevelWrapper(), sectionPos, offsetEntryTimestamp),
 				FullDataSourceResponseMessage.class
-			);
+		);
 		entry.networkDataSourceFuture = dataSourceFuture;
 		dataSourceFuture.handle((response, throwable) ->
 		{
@@ -227,10 +228,14 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 					LodUtil.assertTrue(this.changedOnly, "Received empty data source response for not changes-only request");
 				}
 			}
+			catch (SectionRequiresSplittingException ignored)
+			{
+				return entry.future.complete(RequestResult.REQUIRES_SPLITTING);
+			}
 			catch (InvalidLevelException | RequestRejectedException ignored)
 			{
 				// We're too late / some cases might trigger a bunch of expected rejections
-				return entry.future.complete(false);
+				return entry.future.complete(RequestResult.FAILED);
 			}
 			catch (SessionClosedException | CancellationException ignored)
 			{
@@ -260,11 +265,11 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 				}
 				else
 				{
-					return entry.future.complete(false);
+					return entry.future.complete(RequestResult.FAILED);
 				}
 			}
 			
-			return entry.future.complete(true);
+			return entry.future.complete(RequestResult.SUCCEEDED);
 		});
 	}
 	
@@ -370,8 +375,10 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 	// helper methods //
 	//================//
 	
-	protected static int posDistanceSquared(DhBlockPos2D targetPos, long pos)
-	{ return (int) DhSectionPos.getCenterBlockPos(pos).distSquared(targetPos); }
+	protected static int posDistance(DhBlockPos2D targetPos, long pos)
+	{
+		return DhSectionPos.signedDistance(pos, targetPos);
+	}
 	
 	
 	
@@ -382,7 +389,7 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 	protected static class RequestQueueEntry
 	{
 		/** encapsulates the entire request, including client side queuing and the actual server request */
-		public final CompletableFuture<Boolean> future = new CompletableFuture<>();
+		public final CompletableFuture<RequestResult> future = new CompletableFuture<>();
 		public final Consumer<FullDataSourceV2> dataSourceConsumer;
 		/** will be null if we want to retrieve the LOD regardless of when it was last updated */
 		@Nullable
@@ -410,6 +417,13 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 			this.updateTimestamp = updateTimestamp;
 		}
 		
+	}
+	
+	public enum RequestResult
+	{
+		SUCCEEDED,
+		REQUIRES_SPLITTING,
+		FAILED,
 	}
 	
 	

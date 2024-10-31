@@ -7,11 +7,14 @@ import com.seibel.distanthorizons.core.level.DhClientLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.multiplayer.client.AbstractFullDataNetworkRequestQueue;
 import com.seibel.distanthorizons.core.multiplayer.client.ClientNetworkState;
+import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import org.apache.logging.log4j.Logger;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.*;
 
 public class RemoteWorldRetrievalQueue extends AbstractFullDataNetworkRequestQueue implements IFullDataSourceRetrievalQueue, IDebugRenderable
@@ -47,9 +50,23 @@ public class RemoteWorldRetrievalQueue extends AbstractFullDataNetworkRequestQue
 	public CompletableFuture<WorldGenResult> submitRetrievalTask(long sectionPos, byte requiredDataDetail, IWorldGenTaskTracker tracker)
 	{
 		return super.submitRequest(sectionPos, tracker.getDataSourceConsumer())
-				.thenApply(retrievalSuccess -> retrievalSuccess
-						? WorldGenResult.CreateSuccess(sectionPos)
-						: WorldGenResult.CreateFail());
+				.thenApply(requestResult ->
+				{
+					switch (requestResult)
+					{
+						case SUCCEEDED:
+							return WorldGenResult.CreateSuccess(sectionPos);
+						case FAILED:
+							return WorldGenResult.CreateFail();
+						case REQUIRES_SPLITTING:
+							List<CompletableFuture<WorldGenResult>> childFutures = new ArrayList<>(4);
+							DhSectionPos.forEachChild(sectionPos, childPos -> childFutures.add(this.submitRetrievalTask(childPos, requiredDataDetail, tracker)));
+							return WorldGenResult.CreateSplit(childFutures);
+					}
+					
+					LodUtil.assertNotReach();
+					return WorldGenResult.CreateFail();
+				});
 	}
 	
 	@Override
