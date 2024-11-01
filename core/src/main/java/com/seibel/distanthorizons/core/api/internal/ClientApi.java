@@ -312,28 +312,6 @@ public class ClientApi
 	// render events //
 	//===============//
 	
-	public void rendererShutdownEvent()
-	{
-		LOGGER.info("Renderer shutting down.");
-		
-		IProfilerWrapper profiler = MC_CLIENT.getProfiler();
-		profiler.push("DH-RendererShutdown");
-		
-		profiler.pop();
-	}
-	
-	public void rendererStartupEvent()
-	{
-		LOGGER.info("Renderer starting up.");
-		
-		IProfilerWrapper profiler = MC_CLIENT.getProfiler();
-		profiler.push("DH-RendererStartup");
-		
-		// make sure the GLProxy is created before the LodBufferBuilder needs it
-		GLProxy.getInstance();
-		profiler.pop();
-	}
-	
 	public void clientTickEvent()
 	{
 		IProfilerWrapper profiler = MC_CLIENT.getProfiler();
