@@ -189,14 +189,6 @@ public class RenderUtil
 			return false; //Level is not ready yet.
 		}
 		
-		/* if (MC_RENDER.isFogStateSpecial())
-		{
-			// if the player is blind/under-water, don't render LODs,
-			// and don't change minecraft's fog
-			// which blindness relies on.
-			return false;
-		} */
-		
 		if (MC_RENDER.getLightmapWrapper(levelWrapper) == null)
 		{
 			return false;
