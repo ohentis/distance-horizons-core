@@ -106,10 +106,18 @@ public class ChunkLightStorage
 		
 		if (this.lightSections != null)
 		{
-			LightSection lightSection = this.lightSections[BitShiftUtil.divideByPowerOfTwo(y - this.minY, 4)];
-			if (lightSection != null)
+			int sectionIndex = BitShiftUtil.divideByPowerOfTwo(y - this.minY, 4);
+			try
 			{
-				return lightSection.get(x, y, z);
+				LightSection lightSection = this.lightSections[sectionIndex];
+				if (lightSection != null)
+				{
+					return lightSection.get(x, y, z);
+				}
+			}
+			catch (IndexOutOfBoundsException e)
+			{
+				throw new IndexOutOfBoundsException("Failed to get light at x:["+x+"], y:["+y+"], z:["+z+"], index:["+sectionIndex+"]. MinY:["+this.minY+"], maxY:["+this.maxY+"], section length:["+this.lightSections.length+"].  Original error: ["+e.getMessage()+"].");
 			}
 		}
 		
