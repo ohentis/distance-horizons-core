@@ -158,6 +158,27 @@ public interface IChunkWrapper extends IBindable
 			throw new IndexOutOfBoundsException(errorMessage);
 		}
 	}
+	/** used to prevent accidentally attempting to get/set values outside this chunk's boundaries */
+	default void throwIndexOutOfBoundsIfRelativePosOutsideChunkBounds(int x, int z) throws IndexOutOfBoundsException
+	{
+		if (!RUN_RELATIVE_POS_INDEX_VALIDATION)
+		{
+			return;
+		}
+		
+		
+		// FIXME +1 is to handle the fact that LodDataBuilder adds +1 to all block lighting calculations, also done in the constructor
+		int minHeight = this.getInclusiveMinBuildHeight();
+		int maxHeight = this.getExclusiveMaxBuildHeight() + 1;
+		
+		if (x < 0 || x >= LodUtil.CHUNK_WIDTH
+				|| z < 0 || z >= LodUtil.CHUNK_WIDTH)
+		{
+			String errorMessage = "Relative position [" + x + "," + z + "] out of bounds. \n" +
+					"X/Z must be between 0 and 15 (inclusive).";
+			throw new IndexOutOfBoundsException(errorMessage);
+		}
+	}
 	
 	
 	/**
