@@ -1268,6 +1268,19 @@ public class Config
 							+ "Expected Compression Ratio: 0.7\n"
 							+ "")
 					.build();
+			
+			public static ConfigEntry<Boolean> recalculateChunkHeightmaps = new ConfigEntry.Builder<Boolean>()
+					.set(false)
+					.comment(""
+							+ "True: Recalculate chunk height maps before chunks can be used by DH.\n"
+							+ "      This can fix problems with worlds created by World Painter or \n"
+							+ "      other external tools where the heightmap format may be incorrect. \n"
+							+ "False: Assume any height maps handled by Minecraft are correct. \n"
+							+ "\n"
+							+ "Fastest: False\n"
+							+ "Most Compatible: True\n"
+							+ "")
+					.build();
 		}
 		
 		public static class MultiThreading

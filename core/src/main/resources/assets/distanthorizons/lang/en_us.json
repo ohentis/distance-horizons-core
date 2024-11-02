@@ -571,6 +571,10 @@
     "Lossy World Compression",
   "distanthorizons.config.common.lodBuilding.worldCompression.@tooltip":
     "How should block data be compressed when creating LOD data? \nThis setting will only affect new or updated LOD data, \nany data already generated when this setting is changed will be \nunaffected until it is modified or re-loaded. \n\nMost Accurate: Merge Same Blocks \nHighest Compression: Visually Equal",
+  "distanthorizons.config.common.lodBuilding.recalculateChunkHeightmaps":
+    "Recalculate Chunk Heightmaps",
+  "distanthorizons.config.common.lodBuilding.recalculateChunkHeightmaps.@tooltip":
+    "True: Recalculate chunk height maps before chunks can be used by DH. This can fix problems with worlds created by external tools. \nFalse: Assume any height maps handled by Minecraft are correct. \n\nFastest: False\nMost Compatible: True",
   "distanthorizons.config.common.lodBuilding.showMigrationChatWarning":
     "Log Migration In Chat",
 
