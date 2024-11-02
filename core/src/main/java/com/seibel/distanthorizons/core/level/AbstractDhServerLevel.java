@@ -425,36 +425,44 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 			LOGGER.warn("Unable to send FullDataPartialUpdateMessage - getNetworkCompressionExecutor() is null");
 			return this.getFullDataProvider().updateDataSourceAsync(data);
 		}
-		CompletableFuture.runAsync(() ->
+		
+		try
 		{
-			Objects.requireNonNull(this.beaconBeamRepo);
-			try (FullDataPayload payload = new FullDataPayload(data, this.beaconBeamRepo.getAllBeamsForPos(data.getPos())))
+			CompletableFuture.runAsync(() ->
 			{
-				for (ServerPlayerState serverPlayerState : this.serverPlayerStateManager.getReadyPlayers())
+				Objects.requireNonNull(this.beaconBeamRepo);
+				try (FullDataPayload payload = new FullDataPayload(data, this.beaconBeamRepo.getAllBeamsForPos(data.getPos())))
 				{
-					if (serverPlayerState.getServerPlayer().getLevel() != this.serverLevelWrapper)
+					for (ServerPlayerState serverPlayerState : this.serverPlayerStateManager.getReadyPlayers())
 					{
-						continue;
-					}
-					
-					if (!serverPlayerState.sessionConfig.isRealTimeUpdatesEnabled())
-					{
-						continue;
-					}
-					
-					Vec3d playerPosition = serverPlayerState.getServerPlayer().getPosition();
-					int distanceFromPlayer = DhSectionPos.getChebyshevBlockDistance(data.getPos(), new DhBlockPos2D((int) playerPosition.x, (int) playerPosition.z)) / 16;
-					if (distanceFromPlayer >= serverPlayerState.getServerPlayer().getViewDistance()
-							&& distanceFromPlayer <= serverPlayerState.sessionConfig.getMaxUpdateDistanceRadius())
-					{
-						serverPlayerState.fullDataPayloadSender.sendInChunks(payload, () ->
+						if (serverPlayerState.getServerPlayer().getLevel() != this.serverLevelWrapper)
 						{
-							serverPlayerState.networkSession.sendMessage(new FullDataPartialUpdateMessage(this.serverLevelWrapper, payload));
-						});
+							continue;
+						}
+						
+						if (!serverPlayerState.sessionConfig.isRealTimeUpdatesEnabled())
+						{
+							continue;
+						}
+						
+						Vec3d playerPosition = serverPlayerState.getServerPlayer().getPosition();
+						int distanceFromPlayer = DhSectionPos.getChebyshevBlockDistance(data.getPos(), new DhBlockPos2D((int) playerPosition.x, (int) playerPosition.z)) / 16;
+						if (distanceFromPlayer >= serverPlayerState.getServerPlayer().getViewDistance()
+								&& distanceFromPlayer <= serverPlayerState.sessionConfig.getMaxUpdateDistanceRadius())
+						{
+							serverPlayerState.fullDataPayloadSender.sendInChunks(payload, () ->
+							{
+								serverPlayerState.networkSession.sendMessage(new FullDataPartialUpdateMessage(this.serverLevelWrapper, payload));
+							});
+						}
 					}
 				}
-			}
-		}, executor);
+			}, executor);
+		}
+		catch (RejectedExecutionException ignore)
+		{
+			// the executor was shut down, it should be back up shortly and able to accept new jobs
+		}
 		
 		
 		return this.getFullDataProvider().updateDataSourceAsync(data);
