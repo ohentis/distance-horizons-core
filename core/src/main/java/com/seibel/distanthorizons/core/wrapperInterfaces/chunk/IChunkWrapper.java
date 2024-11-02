@@ -27,7 +27,6 @@ import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.sql.dto.BeaconBeamDTO;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IMutableBlockPosWrapper;
-import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IBindable;
 import com.seibel.distanthorizons.core.util.LodUtil;
@@ -47,18 +46,20 @@ public interface IChunkWrapper extends IBindable
 	
 	DhChunkPos getChunkPos();
 	
-	default int getHeight() { return this.getMaxBuildHeight() - this.getMinBuildHeight(); }
-	int getMinBuildHeight();
-	int getMaxBuildHeight();
+	default int getHeight() { return this.getExclusiveMaxBuildHeight() - this.getInclusiveMinBuildHeight(); }
+	/** inclusive (IE if returning -64 the min block can be placed at -64) */
+	int getInclusiveMinBuildHeight();
+	/** exclusive (IE if returning 320 the max block can be placed at 319) */
+	int getExclusiveMaxBuildHeight();
 	
 	/**
 	 * returns the Y level for the last non-empty section in this chunk,
-	 * or {@link IChunkWrapper#getMinBuildHeight()} if this chunk is completely empty.
+	 * or {@link IChunkWrapper#getInclusiveMinBuildHeight()} if this chunk is completely empty.
 	 */
 	int getMinNonEmptyHeight();
 	/**
 	 * returns the Y level for the first non-empty section in this chunk,
-	 * or {@link IChunkWrapper#getMaxBuildHeight()} if this chunk is completely empty.
+	 * or {@link IChunkWrapper#getExclusiveMaxBuildHeight()} if this chunk is completely empty.
 	 */
 	int getMaxNonEmptyHeight();
 	
@@ -99,7 +100,7 @@ public interface IChunkWrapper extends IBindable
 	default boolean blockPosInsideChunk(int x, int y, int z)
 	{
 		return (x >= this.getMinBlockX() && x <= this.getMaxBlockX()
-				&& y >= this.getMinBuildHeight() && y < this.getMaxBuildHeight()
+				&& y >= this.getInclusiveMinBuildHeight() && y < this.getExclusiveMaxBuildHeight()
 				&& z >= this.getMinBlockZ() && z <= this.getMaxBlockZ());
 	}
 	default boolean blockPosInsideChunk(DhBlockPos2D blockPos)
@@ -144,8 +145,8 @@ public interface IChunkWrapper extends IBindable
 		
 		
 		// FIXME +1 is to handle the fact that LodDataBuilder adds +1 to all block lighting calculations, also done in the constructor
-		int minHeight = this.getMinBuildHeight();
-		int maxHeight = this.getMaxBuildHeight() + 1;
+		int minHeight = this.getInclusiveMinBuildHeight();
+		int maxHeight = this.getExclusiveMaxBuildHeight() + 1;
 		
 		if (x < 0 || x >= LodUtil.CHUNK_WIDTH
 				|| z < 0 || z >= LodUtil.CHUNK_WIDTH
@@ -167,7 +168,7 @@ public interface IChunkWrapper extends IBindable
 	 */
 	default int relativeBlockPosToIndex(int xRel, int y, int zRel)
 	{
-		int yRel = y - this.getMinBuildHeight();
+		int yRel = y - this.getInclusiveMinBuildHeight();
 		return (zRel * LodUtil.CHUNK_WIDTH * this.getHeight()) + (yRel * LodUtil.CHUNK_WIDTH) + xRel;
 	}
 	
@@ -183,7 +184,7 @@ public interface IChunkWrapper extends IBindable
 		index -= (zRel * LodUtil.CHUNK_WIDTH * this.getHeight());
 		
 		final int y = index / LodUtil.CHUNK_WIDTH;
-		final int yRel = y + this.getMinBuildHeight();
+		final int yRel = y + this.getInclusiveMinBuildHeight();
 		
 		final int xRel = index % LodUtil.CHUNK_WIDTH;
 		return new DhBlockPos(xRel, yRel, zRel);

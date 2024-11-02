@@ -23,18 +23,19 @@ import java.awt.*;
 
 /**
  * Handles the bit-wise math used when
- * dealing with colors stored as integers.
+ * dealing with colors stored as integers. <br><br>
  *
+ * Minecraft color format is:       0xAA BB GG RR <br>
+ * DH mod color format is:          0xAA RR GG BB <br>
+ * OpenGL RGBA format native order: 0xRR GG BB AA <br>
+ * OpenGL RGBA format Java Order:   0xAA BB GG RR <br>
+ * 
  * @author Cola
  * @author Leonardo Amato
  * @version 2023-5-15
  */
 public class ColorUtil
 {
-	//note: Minecraft color format is: 0xAA BB GG RR
-	//________ DH mod color format is: 0xAA RR GG BB
-	//OpenGL RGBA format native order: 0xRR GG BB AA
-	//_ OpenGL RGBA format Java Order: 0xAA BB GG RR
 	
 	public static final int INVISIBLE = argbToInt(0, 0, 0, 0);
 	
@@ -215,7 +216,7 @@ public class ColorUtil
 	}
 	
 	public static Color toColorObjRGB(int color) { return new Color(getRed(color), getGreen(color), getBlue(color)); }
-	public static Color toColorObjRGBA(int color) { return new Color(getRed(color), getGreen(color), getBlue(color), getAlpha(color)); }
+	public static Color toColorObjARGB(int color) { return new Color(getRed(color), getGreen(color), getBlue(color), getAlpha(color)); }
 	
 	public static int toColorInt(Color color) { return argbToInt(color.getAlpha(), color.getRed(), color.getGreen(), color.getBlue()); }
 	

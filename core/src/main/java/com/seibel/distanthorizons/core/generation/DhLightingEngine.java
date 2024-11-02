@@ -204,7 +204,7 @@ public class DhLightingEngine
 						IBlockStateWrapper previousBlockState = null;
 						
 						int maxY = chunk.getMaxNonEmptyHeight();
-						int minY = chunk.getMinBuildHeight();
+						int minY = chunk.getInclusiveMinBuildHeight();
 						
 						// get the adjacent chunk's sky lights
 						for (int relX = 0; relX < LodUtil.CHUNK_WIDTH; relX++) // relative block pos
@@ -322,7 +322,7 @@ public class DhLightingEngine
 					continue;
 				}
 				
-				if (relNeighbourBlockPos.getY() < neighbourChunk.getMinNonEmptyHeight() || relNeighbourBlockPos.getY() > neighbourChunk.getMaxBuildHeight())
+				if (relNeighbourBlockPos.getY() < neighbourChunk.getMinNonEmptyHeight() || relNeighbourBlockPos.getY() > neighbourChunk.getExclusiveMaxBuildHeight())
 				{
 					// the light pos is outside the chunk's min/max height,
 					// this can happen if given a chunk that hasn't finished generating
