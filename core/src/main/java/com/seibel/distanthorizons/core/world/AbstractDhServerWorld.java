@@ -12,13 +12,25 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.concurrent.ConcurrentHashMap;
 
 public abstract class AbstractDhServerWorld<TDhServerLevel extends AbstractDhServerLevel> extends AbstractDhWorld implements IDhServerWorld
 {
-	protected final HashMap<ILevelWrapper, TDhServerLevel> dhLevelByLevelWrapper = new HashMap<>();
+	/** 
+	 * Concurrent since levels can be added/remove while other processing is happening.
+	 * (Otherwise we may need to just put the logic in a lock.
+	 */
+	protected final ConcurrentHashMap<ILevelWrapper, TDhServerLevel> dhLevelByLevelWrapper = new ConcurrentHashMap<>();
 	public final LocalSaveStructure saveStructure = new LocalSaveStructure();
 	
 	private final ServerPlayerStateManager serverPlayerStateManager;
+	
+	
+	
+	//=============//
+	// constructor //
+	//=============//
 	
 	public AbstractDhServerWorld(EWorldEnvironment worldEnvironment)
 	{
@@ -30,7 +42,6 @@ public abstract class AbstractDhServerWorld<TDhServerLevel extends AbstractDhSer
 	//=================//
 	// player handling //
 	//=================//
-	
 	
 	@Override
 	public ServerPlayerStateManager getServerPlayerStateManager()
@@ -44,8 +55,10 @@ public abstract class AbstractDhServerWorld<TDhServerLevel extends AbstractDhSer
 		ServerPlayerState playerState = this.serverPlayerStateManager.registerJoinedPlayer(serverPlayer);
 		this.getLevel(serverPlayer.getLevel()).addPlayer(serverPlayer);
 		
-		for (TDhServerLevel level : (Iterable<? extends TDhServerLevel>) this.dhLevelByLevelWrapper.values().stream().distinct()::iterator)
+		Iterator<TDhServerLevel> it = this.dhLevelByLevelWrapper.values().stream().distinct().iterator();
+		while (it.hasNext())
 		{
+			TDhServerLevel level = it.next();
 			level.registerNetworkHandlers(playerState);
 		}
 		
