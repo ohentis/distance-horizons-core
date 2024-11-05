@@ -29,6 +29,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.Objects;
@@ -46,26 +47,43 @@ public class JarUtils
 	@Nullable
 	public static File jarFile = null;
 	
+	
+	
+	//=============//
+	// constructor //
+	//=============//
+	
 	static 
 	{
 		try 
 		{
-			jarFile = new File(JarUtils.class.getProtectionDomain().getCodeSource().getLocation().toURI()); // Always safe
+			// this will fail in development environments due to how the jars are compiled
+			// this may also fail in forge production 
+			URI jarUri = JarUtils.class.getProtectionDomain().getCodeSource().getLocation().toURI();
+			jarFile = new File(jarUri);
 		}
-		catch (Exception e) 
+		catch (Exception eGetUri) 
 		{
 			try
 			{
-				LOGGER.warn("Unable to get the jar file, trying backup method... Error: "+e.getMessage(), e);
 				jarFile = SingletonInjector.INSTANCE.get(IModChecker.class).modLocation(ModInfo.ID);
 			}
-			catch (Exception f)
+			catch (Exception eGetModLoc)
 			{
-				LOGGER.warn("Backup jar file getter failed. Error: "+f.getMessage(), f);
+				// only log if both methods fail since it isn't a problem unless both
+				// methods fail
+				LOGGER.warn("Unable to get jar file via URI or Mod Checker Location.");
+				LOGGER.warn("URI Error: ["+ eGetUri.getMessage()+"]", eGetUri);
+				LOGGER.warn("Mod Location Error: ["+ eGetModLoc.getMessage()+"]", eGetModLoc);
 			}
 		}
 	}
 	
+	
+	
+	//=========//
+	// methods //
+	//=========//
 	
 	/**
 	 * Gets the URI of a resource
@@ -75,9 +93,7 @@ public class JarUtils
 	 * @throws URISyntaxException If the file doesnt exist
 	 */
 	public static URI accessFileURI(String resource) throws URISyntaxException
-	{
-		return Objects.requireNonNull(JarUtils.class.getResource(resource)).toURI();
-	}
+	{ return Objects.requireNonNull(JarUtils.class.getResource(resource)).toURI(); }
 	
 	/**
 	 * Get a file within the mods resources
@@ -146,7 +162,7 @@ public class JarUtils
 		while ((bytesCount = fis.read(byteArray)) != -1)
 		{
 			digest.update(byteArray, 0, bytesCount);
-		} ;
+		}
 		
 		//close the stream; We don't need it now.
 		fis.close();
@@ -174,7 +190,8 @@ public class JarUtils
 	/** Please use the EPlatform enum instead */
 	@Deprecated
 	public static OperatingSystem getOperatingSystem()
-	{ // Get the os and turn it into that enum
+	{ 
+		// Get the os and turn it into that enum
 		switch (EPlatform.get())
 		{
 			case WINDOWS:
