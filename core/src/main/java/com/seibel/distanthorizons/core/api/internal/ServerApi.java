@@ -22,12 +22,9 @@ package com.seibel.distanthorizons.core.api.internal;
 import com.seibel.distanthorizons.api.methods.events.abstractEvents.DhApiLevelLoadEvent;
 import com.seibel.distanthorizons.api.methods.events.abstractEvents.DhApiLevelUnloadEvent;
 import com.seibel.distanthorizons.core.network.messages.AbstractNetworkMessage;
+import com.seibel.distanthorizons.core.world.*;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
-import com.seibel.distanthorizons.core.world.AbstractDhWorld;
-import com.seibel.distanthorizons.core.world.DhClientServerWorld;
-import com.seibel.distanthorizons.core.world.DhServerWorld;
-import com.seibel.distanthorizons.core.world.IDhServerWorld;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
@@ -148,6 +145,11 @@ public class ServerApi
 	
 	public void serverPlayerJoinEvent(IServerPlayerWrapper player)
 	{
+		if (DhApiWorldProxy.INSTANCE.getReadOnly())
+		{
+			return;
+		}
+		
 		IDhServerWorld serverWorld = SharedApi.getIDhServerWorld();
 		LOGGER.info("Player [${player.getName()}] joined.");
 		if (serverWorld != null)
@@ -157,6 +159,11 @@ public class ServerApi
 	}
 	public void serverPlayerDisconnectEvent(IServerPlayerWrapper player)
 	{
+		if (DhApiWorldProxy.INSTANCE.getReadOnly())
+		{
+			return;
+		}
+		
 		IDhServerWorld serverWorld = SharedApi.getIDhServerWorld();
 		LOGGER.info("Player [${player.getName()}] disconnected.");
 		if (serverWorld != null)
@@ -166,6 +173,11 @@ public class ServerApi
 	}
 	public void serverPlayerLevelChangeEvent(IServerPlayerWrapper player, IServerLevelWrapper originLevel, IServerLevelWrapper destinationLevel)
 	{
+		if (DhApiWorldProxy.INSTANCE.getReadOnly())
+		{
+			return;
+		}
+		
 		IDhServerWorld serverWorld = SharedApi.getIDhServerWorld();
 		LOGGER.info("Player [${player.getName()}] changed level: [${originLevel.getKeyedLevelDimensionName()}] -> [${destinationLevel.getKeyedLevelDimensionName()}].");
 		if (serverWorld != null)
@@ -176,6 +188,11 @@ public class ServerApi
 	
 	public void pluginMessageReceived(IServerPlayerWrapper player, @NotNull AbstractNetworkMessage message)
 	{
+		if (DhApiWorldProxy.INSTANCE.getReadOnly())
+		{
+			return;
+		}
+		
 		IDhServerWorld serverWorld = SharedApi.getIDhServerWorld();
 		if (serverWorld != null)
 		{
