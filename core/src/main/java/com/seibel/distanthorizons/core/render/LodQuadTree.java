@@ -147,7 +147,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 			}
 			catch (Exception e)
 			{
-				LOGGER.error("Quad Tree tick exception for dimension: " + this.level.getLevelWrapper().getDimensionName() + ", exception: " + e.getMessage(), e);
+				LOGGER.error("Quad Tree tick exception for level: [" + this.level.getLevelWrapper().getLevelIdString() + "], error: [" + e.getMessage() + "].", e);
 			}
 			finally
 			{

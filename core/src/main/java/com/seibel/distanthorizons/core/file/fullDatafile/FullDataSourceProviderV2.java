@@ -130,16 +130,16 @@ public class FullDataSourceProviderV2
 		
 		DebugRenderer.register(this, Config.Client.Advanced.Debugging.DebugWireframe.showFullDataUpdateStatus);
 		
-		String dimensionName = level.getLevelWrapper().getDimensionName();
+		String levelId = level.getLevelWrapper().getLevelIdString();
 		
 		// start migrating any legacy data sources present in the background
-		this.migrationThreadPool = ThreadUtil.makeRateLimitedThreadPool(1, MIGRATION_THREAD_NAME_PREFIX + "["+dimensionName+"]", Config.Common.MultiThreading.runTimeRatioForUpdatePropagatorThreads.get(), Thread.MIN_PRIORITY, (Semaphore) null);
+		this.migrationThreadPool = ThreadUtil.makeRateLimitedThreadPool(1, MIGRATION_THREAD_NAME_PREFIX + "["+levelId+"]", Config.Common.MultiThreading.runTimeRatioForUpdatePropagatorThreads.get(), Thread.MIN_PRIORITY, (Semaphore) null);
 		this.migrationThreadPool.execute(this::convertLegacyDataSources);
 		
 		// update propagation doesn't need to be run on the server since only the highest detail level is needed
 		if (SharedApi.getEnvironment() != EWorldEnvironment.SERVER_ONLY)
 		{
-			this.updateQueueProcessor = ThreadUtil.makeSingleThreadPool("Parent Update Queue ["+dimensionName+"]");
+			this.updateQueueProcessor = ThreadUtil.makeSingleThreadPool("Parent Update Queue ["+levelId+"]");
 			this.updateQueueProcessor.execute(this::runUpdateQueue);
 		}
 		else
@@ -346,8 +346,8 @@ public class FullDataSourceProviderV2
 	
 	private void convertLegacyDataSources()
 	{
-		String dimensionName = this.level.getLevelWrapper().getDimensionName();
-		LOGGER.info("Attempting to migrate data sources for: ["+dimensionName+"]-["+this.saveDir+"]...");
+		String levelId = this.level.getLevelWrapper().getLevelIdString();
+		LOGGER.info("Attempting to migrate data sources for: ["+levelId+"]-["+this.saveDir+"]...");
 		
 		
 		
@@ -366,7 +366,7 @@ public class FullDataSourceProviderV2
 			this.showMigrationStartMessage();
 			
 			
-			LOGGER.info("deleting [" + dimensionName + "] - ["+totalDeleteCount+"] unused data sources...");
+			LOGGER.info("deleting [" + levelId + "] - ["+totalDeleteCount+"] unused data sources...");
 			this.legacyDeletionCount = totalDeleteCount;
 			
 			ArrayList<String> unusedDataPosList = this.legacyFileHandler.repo.getUnusedDataSourcePositionStringList(50);
@@ -384,7 +384,7 @@ public class FullDataSourceProviderV2
 				
 				long endStart = System.currentTimeMillis();
 				long deleteTime = endStart - startTime;
-				LOGGER.info("Deleting [" + dimensionName + "] - [" + unusedCount + "/" + totalDeleteCount + "] in ["+deleteTime+"]ms ...");
+				LOGGER.info("Deleting [" + levelId + "] - [" + unusedCount + "/" + totalDeleteCount + "] in ["+deleteTime+"]ms ...");
 				
 				
 				// a slight delay is added to prevent accidentally locking the database when deleting a lot of rows
@@ -397,7 +397,7 @@ public class FullDataSourceProviderV2
 				}
 				catch (InterruptedException ignore){}
 			}
-			LOGGER.info("Done deleting [" + dimensionName + "] - ["+totalDeleteCount+"] unused data sources.");
+			LOGGER.info("Done deleting [" + levelId + "] - ["+totalDeleteCount+"] unused data sources.");
 			
 		}
 		
@@ -422,7 +422,7 @@ public class FullDataSourceProviderV2
 				int progressCount = 0;
 				while (!legacyDataSourceList.isEmpty() && this.migrationThreadRunning.get())
 				{
-					LOGGER.info("Migrating [" + dimensionName + "] - [" + progressCount + "/" + totalMigrationCount + "]...");
+					LOGGER.info("Migrating [" + levelId + "] - [" + progressCount + "/" + totalMigrationCount + "]...");
 					
 					ArrayList<CompletableFuture<Void>> updateFutureList = new ArrayList<>();
 					for (int i = 0; i < legacyDataSourceList.size() && this.migrationThreadRunning.get(); i++)
@@ -484,7 +484,7 @@ public class FullDataSourceProviderV2
 			}
 			catch (Exception e)
 			{
-				LOGGER.info("migration stopped due to error for: ["+dimensionName+"]-["+this.saveDir+"], error: ["+e.getMessage()+"].", e);
+				LOGGER.info("migration stopped due to error for: ["+levelId+"]-["+this.saveDir+"], error: ["+e.getMessage()+"].", e);
 				this.showMigrationEndMessage(false);
 				this.migrationStoppedWithError = true;
 			}
@@ -492,13 +492,13 @@ public class FullDataSourceProviderV2
 			{
 				if (this.migrationThreadRunning.get())
 				{
-					LOGGER.info("migration complete for: ["+dimensionName+"]-["+this.saveDir+"].");
+					LOGGER.info("migration complete for: ["+levelId+"]-["+this.saveDir+"].");
 					this.showMigrationEndMessage(true);
 					this.migrationCount = 0;
 				}
 				else
 				{
-					LOGGER.info("migration stopped for: ["+dimensionName+"]-["+this.saveDir+"].");
+					LOGGER.info("migration stopped for: ["+levelId+"]-["+this.saveDir+"].");
 					this.showMigrationEndMessage(false);
 					this.migrationStoppedWithError = true;
 				}
@@ -525,9 +525,9 @@ public class FullDataSourceProviderV2
 		}
 		this.migrationStartMessageQueued = true;
 		
-		String dimName = this.level.getLevelWrapper().getDimensionName();
+		String levelId = this.level.getLevelWrapper().getLevelIdString();
 		ClientApi.INSTANCE.showChatMessageNextFrame(
-				"Old Distant Horizons data is being migrated for ["+dimName+"]. \n" +
+				"Old Distant Horizons data is being migrated for ["+levelId+"]. \n" +
 				"While migrating LODs may load slowly \n" +
 				"and DH world gen will be disabled. \n" +
 				"You can see migration progress in the F3 menu."
@@ -536,16 +536,16 @@ public class FullDataSourceProviderV2
 	
 	private void showMigrationEndMessage(boolean success)
 	{
-		String dimName = this.level.getLevelWrapper().getDimensionName();
+		String levelId = this.level.getLevelWrapper().getLevelIdString();
 		
 		if (success)
 		{
-			ClientApi.INSTANCE.showChatMessageNextFrame("Distant Horizons data migration for ["+dimName+"] completed.");
+			ClientApi.INSTANCE.showChatMessageNextFrame("Distant Horizons data migration for ["+levelId+"] completed.");
 		}
 		else
 		{
 			ClientApi.INSTANCE.showChatMessageNextFrame(
-					"Distant Horizons data migration for ["+dimName+"] stopped. \n" +
+					"Distant Horizons data migration for ["+levelId+"] stopped. \n" +
 					"Some data may not have been migrated."
 				);
 		}

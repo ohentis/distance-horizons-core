@@ -291,7 +291,7 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 	
 	public void addDebugMenuStringsToList(List<String> messageList)
 	{
-		messageList.add(this.getQueueName() + " [" + this.level.getClientLevelWrapper().getDimensionName() + "]");
+		messageList.add(this.getQueueName() + " [" + this.level.getClientLevelWrapper().getLevelIdString() + "]");
 		messageList.add("Requests: " + this.finishedRequests + " / " + (this.getWaitingTaskCount() + this.finishedRequests.get()) + " (failed: " + this.failedRequests + ", rate limit: " + this.getRequestRateLimit() + ")");
 	}
 	

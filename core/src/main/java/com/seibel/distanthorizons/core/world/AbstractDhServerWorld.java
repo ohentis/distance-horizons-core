@@ -110,7 +110,7 @@ public abstract class AbstractDhServerWorld<TDhServerLevel extends AbstractDhSer
 	{
 		for (TDhServerLevel level : this.dhLevelByLevelWrapper.values())
 		{
-			LOGGER.info("Unloading level [" + level.getLevelWrapper().getDimensionName() + "].");
+			LOGGER.info("Unloading level [" + level.getLevelWrapper().getLevelIdString() + "].");
 			
 			// level wrapper shouldn't be null, but just in case
 			IServerLevelWrapper serverLevelWrapper = level.getServerLevelWrapper();

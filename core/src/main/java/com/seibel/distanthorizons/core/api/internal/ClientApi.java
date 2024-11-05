@@ -207,7 +207,7 @@ public class ClientApi
 	{
 		try
 		{
-			LOGGER.info("Unloading client level [" + level + "]-["+level.getDimensionName()+"].");
+			LOGGER.info("Unloading client level [" + level.getClass().getSimpleName() + "]-["+level.getLevelIdString()+"].");
 			
 			if (level instanceof IServerKeyedClientLevel)
 			{
@@ -253,7 +253,7 @@ public class ClientApi
 		
 		try
 		{
-			LOGGER.info("Loading client level [" + levelWrapper + "]-["+levelWrapper.getDimensionName()+"].");
+			LOGGER.info("Loading client level [" + levelWrapper + "]-["+levelWrapper.getLevelIdString()+"].");
 			
 			AbstractDhWorld world = SharedApi.getAbstractDhWorld();
 			if (world != null)

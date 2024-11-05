@@ -236,10 +236,10 @@ public class FullDataToRenderDataTransformer
 				if (!brokenPos.contains(fullDataMapping.getPos()))
 				{
 					brokenPos.add(fullDataMapping.getPos());
-					String dimName = level.getLevelWrapper().getDimensionName();
+					String levelId = level.getLevelWrapper().getLevelIdString();
 					LOGGER.warn("Unable to get data point with id ["+id+"] " +
 							"(Max possible ID: ["+fullDataMapping.getMaxValidId()+"]) " +
-							"for pos ["+fullDataMapping.getPos()+"] in dimension ["+dimName+"]. " +
+							"for pos ["+fullDataMapping.getPos()+"] in level ["+levelId+"]. " +
 							"Error: ["+e.getMessage()+"]. " +
 							"Further errors for this position won't be logged.");
 				}
