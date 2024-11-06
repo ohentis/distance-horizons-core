@@ -190,7 +190,7 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 			try
 			{
 				// loop until the generator is shutdown
-				while (!Thread.interrupted() && !DhApiWorldProxy.INSTANCE.getReadOnly())
+				while (!Thread.interrupted() && DhApiWorldProxy.INSTANCE.worldLoaded() && !DhApiWorldProxy.INSTANCE.getReadOnly())
 				{
 					this.generator.preGeneratorTaskStart();
 					
