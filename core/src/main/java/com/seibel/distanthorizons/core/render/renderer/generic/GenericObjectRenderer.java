@@ -582,6 +582,7 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		
 		shaderProgram.fillSharedDirectUniformData(renderEventParam, shading, boxGroup, camPos);
 		
+		// TODO handle empty arrays (concurrency issue?)
 		for (DhApiRenderableBox box : boxGroup)
 		{
 			this.renderBox(shaderProgram, renderEventParam, boxGroup, box, camPos);
