@@ -89,23 +89,47 @@ public class ColumnRenderBuffer implements AutoCloseable
 	//==================//
 	
 	/** Should be run on a DH thread. */
-	public void uploadBuffer(LodQuadBuilder builder, EDhApiGpuUploadMethod gpuUploadMethod) throws InterruptedException
+	public void makeAndUploadBuffers(LodQuadBuilder builder, EDhApiGpuUploadMethod gpuUploadMethod) throws InterruptedException
 	{
 		LodUtil.assertTrue(DhApi.isDhThread(), "Buffer uploading needs to be done on a DH thread to prevent locking up any MC threads.");
 		
 		
+		// make the buffers
+		ArrayList<ByteBuffer> opaqueBuffers = builder.makeOpaqueVertexBuffers();
+		ArrayList<ByteBuffer> transparentBuffers = builder.makeTransparentVertexBuffers();
+		
+		vbos = resizeBuffer(vbos, opaqueBuffers.size());
+		vbosTransparent = resizeBuffer(vbosTransparent, transparentBuffers.size());
+		
+		
 		// upload on MC's render thread
 		CompletableFuture<Void> uploadFuture = new CompletableFuture<>();
-		MC_CLIENT.executeOnRenderThread(() ->
+		GLProxy.getInstance().queueRunningOnRenderThread(() ->
 		{
 			try
 			{
-				this.uploadBuffers(builder, gpuUploadMethod);
+				uploadBuffersDirect(vbos, opaqueBuffers, gpuUploadMethod);
+				uploadBuffersDirect(vbosTransparent, transparentBuffers, gpuUploadMethod);
+				this.buffersUploaded = true;
 				uploadFuture.complete(null);
 			}
 			catch (InterruptedException e)
 			{
 				throw new CompletionException(e);
+			}
+			finally
+			{
+				// all the buffers must be manually freed to prevent memory leaks
+				
+				for (ByteBuffer buffer : opaqueBuffers)
+				{
+					MemoryUtil.memFree(buffer);
+				}
+				
+				for (ByteBuffer buffer : transparentBuffers)
+				{
+					MemoryUtil.memFree(buffer);
+				}
 			}
 		});
 		
@@ -126,43 +150,7 @@ public class ColumnRenderBuffer implements AutoCloseable
 			//LOGGER.warn("Error uploading builder ["+builder+"] synchronously. Error: "+e.getMessage(), e);
 		}
 	}
-	private void uploadBuffers(LodQuadBuilder builder, EDhApiGpuUploadMethod method) throws InterruptedException
-	{
-		// uploading mapped buffers used to be done here,
-		// however due to a memory leak and complication with the previous code,
-		// now we only allow direct uploading.
-		// (There's also insufficient data to state whether mapped buffers are necessary
-		// for DH to upload without stuttering the main thread)
-		
-		this.vbos = makeAndUploadBuffers(builder, method, this.vbos, builder.makeOpaqueVertexBuffers());
-		this.vbosTransparent = makeAndUploadBuffers(builder, method, this.vbosTransparent, builder.makeTransparentVertexBuffers());
-		
-		this.buffersUploaded = true;
-	}
-	/** This resizes and returns the vbo array if necessary based on the amount of data needed for this area. */
-	private static GLVertexBuffer[] makeAndUploadBuffers(LodQuadBuilder builder, EDhApiGpuUploadMethod method, GLVertexBuffer[] vbos, ArrayList<ByteBuffer> buffers) throws InterruptedException
-	{
-		try
-		{
-			vbos = resizeBuffer(vbos, buffers.size());
-			uploadBuffersDirect(vbos, buffers, method);
-		}
-		finally
-		{
-			// all the buffers must be manually freed to prevent memory leaks
-			if (buffers != null)
-			{
-				for (ByteBuffer buffer : buffers)
-				{
-					MemoryUtil.memFree(buffer);
-				}
-			}
-		}
-		
-		// return the array in case it was resized
-		return vbos;
-	}
-	public static GLVertexBuffer[] resizeBuffer(GLVertexBuffer[] vbos, int newSize)
+	private static GLVertexBuffer[] resizeBuffer(GLVertexBuffer[] vbos, int newSize)
 	{
 		if (vbos.length == newSize)
 		{
@@ -225,8 +213,6 @@ public class ColumnRenderBuffer implements AutoCloseable
 			throw new RuntimeException("Too few vertex buffers!!");
 		}
 	}
-	
-	
 	
 	
 	

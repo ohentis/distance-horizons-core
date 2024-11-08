@@ -135,7 +135,7 @@ public class ColumnRenderBufferBuilder
 						ColumnRenderBuffer buffer = new ColumnRenderBuffer(new DhBlockPos(DhSectionPos.getMinCornerBlockX(pos), clientLevel.getMinY(), DhSectionPos.getMinCornerBlockZ(pos)));
 						try
 						{
-							buffer.uploadBuffer(quadBuilder, GLProxy.getInstance().getGpuUploadMethod());
+							buffer.makeAndUploadBuffers(quadBuilder, GLProxy.getInstance().getGpuUploadMethod());
 							if (buffer.buffersUploaded)
 							{
 								return buffer;	
