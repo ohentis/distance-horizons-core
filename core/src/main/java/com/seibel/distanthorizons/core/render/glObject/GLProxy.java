@@ -243,7 +243,7 @@ public class GLProxy
 			// only try running for 4ms at a time to (hopefully) prevent random lag spikes
 			if (runDuration > 4_000_000)
 			{
-				break;
+				//break;
 			}
 			
 			
