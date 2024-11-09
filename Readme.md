@@ -1,10 +1,10 @@
-# <img src="https://gitlab.com/jeseibel/distant-horizons-core/-/raw/main/_Misc%20Files%2Flogo%20files%2Fnew%2FSVG%2FDistant-Horizons-Core.svg" height="128px">
+# <img src="https://gitlab.com/distant-horizons-team/distant-horizons-core/-/raw/main/_Misc%20Files/logo%20files/new/SVG/Distant-Horizons-Core.svg" height="128px">
 
 This repo is for the Distant Horizons mod.
 The purpose of this submodule is to isolate code that isn't tied to a specific version of minecraft. This prevents us from having duplicate code; reducing errors and helping us port to different versions faster and easier.
 
 Check out the mod's main GitLab page here:
-https://gitlab.com/jeseibel/distant-horizons
+https://gitlab.com/distant-horizons-team/distant-horizons
 
 ## source code installation
 
