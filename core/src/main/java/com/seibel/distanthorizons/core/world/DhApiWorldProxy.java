@@ -190,7 +190,7 @@ public class DhApiWorldProxy implements IDhApiWorldProxy
 		for (IDhLevel dhLevel : world.getAllLoadedLevels())
 		{
 			ILevelWrapper levelWrapper = dhLevel.getLevelWrapper();
-			String levelDimName = levelWrapper.getDimensionName().toLowerCase();
+			String levelDimName = levelWrapper.getDhIdentifier().toLowerCase();
 			if (levelDimName.contains(soughtDimName))
 			{
 				returnList.add(levelWrapper);

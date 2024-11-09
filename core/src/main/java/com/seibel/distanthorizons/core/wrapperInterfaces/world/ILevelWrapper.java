@@ -26,7 +26,6 @@ import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IBindable;
-import com.seibel.distanthorizons.coreapi.util.StringUtil;
 
 /** Can be either a Server world or a Client world. */
 public interface ILevelWrapper extends IDhApiLevelWrapper, IBindable
@@ -38,13 +37,12 @@ public interface ILevelWrapper extends IDhApiLevelWrapper, IBindable
 	@Override
 	String getDimensionName();
 	
-	long getHashedSeed();
+	int getHashedSeed();
 	
-	/** 
-	 * A combination of the dimension name and hashed seed
-	 * intended to uniquely identify this level.
+	/**
+	 * A string intended to uniquely identify this level.
 	 */
-	default String getLevelIdString() { return this.getDimensionName() + "_" + this.getHashedSeed(); }
+	@Override String getDhIdentifier();
 	
 	@Override
 	boolean hasCeiling();

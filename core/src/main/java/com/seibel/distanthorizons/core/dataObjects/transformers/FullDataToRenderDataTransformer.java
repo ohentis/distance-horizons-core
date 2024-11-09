@@ -20,7 +20,6 @@
 package com.seibel.distanthorizons.core.dataObjects.transformers;
 
 import com.seibel.distanthorizons.api.enums.config.EDhApiBlocksToAvoid;
-import com.seibel.distanthorizons.api.enums.config.EDhApiVerticalQuality;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.FullDataPointIdMap;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
@@ -40,12 +39,10 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrappe
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
 import com.seibel.distanthorizons.coreapi.util.BitShiftUtil;
-import com.seibel.distanthorizons.coreapi.util.MathUtil;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import org.apache.logging.log4j.Logger;
 
-import java.text.ParseException;
 import java.util.HashSet;
 
 /**
@@ -236,7 +233,7 @@ public class FullDataToRenderDataTransformer
 				if (!brokenPos.contains(fullDataMapping.getPos()))
 				{
 					brokenPos.add(fullDataMapping.getPos());
-					String levelId = level.getLevelWrapper().getLevelIdString();
+					String levelId = level.getLevelWrapper().getDhIdentifier();
 					LOGGER.warn("Unable to get data point with id ["+id+"] " +
 							"(Max possible ID: ["+fullDataMapping.getMaxValidId()+"]) " +
 							"for pos ["+fullDataMapping.getPos()+"] in level ["+levelId+"]. " +

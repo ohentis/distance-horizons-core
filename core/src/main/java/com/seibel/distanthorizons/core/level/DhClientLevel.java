@@ -294,7 +294,7 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 	@Override
 	public void addDebugMenuStringsToList(List<String> messageList)
 	{
-		String dimName = this.levelWrapper.getDimensionName();
+		String dimName = this.levelWrapper.getDhIdentifier();
 		boolean rendering = this.clientside.isRendering();
 		messageList.add("["+dimName+"] rendering: "+(rendering ? "yes" : "no"));
 		
@@ -338,7 +338,7 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 	//================//
 	
 	@Override
-	public String toString() { return "DhClientLevel{"+this.getClientLevelWrapper().getLevelIdString()+"}"; }
+	public String toString() { return "DhClientLevel{" + this.getClientLevelWrapper().getDhIdentifier() + "}"; }
 	
 	@Override
 	public void close()

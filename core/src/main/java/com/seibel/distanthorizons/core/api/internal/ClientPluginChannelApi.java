@@ -101,7 +101,7 @@ public class ClientPluginChannelApi
 			}
 			else
 			{
-				LOGGER.info("Unloading non-keyed level: [" + clientLevel.getLevelIdString() + "].");
+				LOGGER.info("Unloading non-keyed level: [" + clientLevel.getDhIdentifier() + "].");
 				this.levelUnloadHandler.accept(clientLevel);
 			}
 			

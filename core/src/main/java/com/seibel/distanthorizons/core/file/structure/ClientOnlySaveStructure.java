@@ -80,14 +80,14 @@ public class ClientOnlySaveStructure implements ISaveStructure
 			if (newLevelWrapper instanceof IServerKeyedClientLevel)
 			{
 				IServerKeyedClientLevel keyedClientLevel = (IServerKeyedClientLevel) newLevelWrapper;
-				LOGGER.info("Loading level [" + newLevelWrapper.getLevelIdString() + "] with key: [" + keyedClientLevel.getServerLevelKey() + "].");
+				LOGGER.info("Loading level [" + newLevelWrapper.getDhIdentifier() + "] with key: [" + keyedClientLevel.getServerLevelKey() + "].");
 				// This world was identified by the server directly, so we can know for sure which folder to use.
 				saveFolder = getSaveFolderByLevelId(keyedClientLevel.getServerLevelKey());
 			}
 			else
 			{
 				// get the default folder
-				saveFolder = getSaveFolderByLevelId(levelWrapper.getLevelIdString());
+				saveFolder = getSaveFolderByLevelId(levelWrapper.getDhIdentifier());
 			}
 			
 			// Allow API users to override the save folder
