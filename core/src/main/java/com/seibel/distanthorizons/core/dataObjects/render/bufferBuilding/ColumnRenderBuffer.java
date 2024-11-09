@@ -105,15 +105,18 @@ public class ColumnRenderBuffer implements AutoCloseable
 		{
 			try
 			{
-				if (Thread.interrupted())
+				// skip this event if requested
+				if (Thread.interrupted() || this.uploadFuture.isCancelled())
 				{
 					throw new InterruptedException();
 				}
 				
+				// upload on the render thread
 				uploadBuffersDirect(this.vbos, opaqueBuffers, gpuUploadMethod);
 				uploadBuffersDirect(this.vbosTransparent, transparentBuffers, gpuUploadMethod);
 				this.buffersUploaded = true;
 				
+				// success
 				this.uploadFuture.complete(this);
 				this.uploadFuture = null;
 			}
