@@ -274,10 +274,11 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		this.bufferUploadFuture = ColumnRenderBufferBuilder.uploadBuffersAsync(this.level, this.pos, lodQuadBuilder);
 		return this.bufferUploadFuture.thenCompose((buffer) ->
 		{
+			// needed to clean up the old data
 			ColumnRenderBuffer previousBuffer = this.renderBuffer;
 			
-			// upload complete, clean up the old data if 
-			this.renderBuffer = buffer;
+			// upload complete
+			this.renderBuffer = buffer.buffersUploaded ? buffer : null;
 			this.buildAndUploadRenderDataToGpuFuture = null;
 			this.bufferBuildFuture = null;
 			

@@ -19,9 +19,7 @@
 
 package com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding;
 
-import com.seibel.distanthorizons.api.DhApi;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
-import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos;
 import com.seibel.distanthorizons.core.render.glObject.GLProxy;
@@ -30,7 +28,6 @@ import com.seibel.distanthorizons.core.render.renderer.LodRenderer;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.objects.StatsMap;
 import com.seibel.distanthorizons.api.enums.config.EDhApiGpuUploadMethod;
-import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.system.MemoryUtil;
 
@@ -46,9 +43,6 @@ import java.util.concurrent.*;
 public class ColumnRenderBuffer implements AutoCloseable
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
-	private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
-	
-	private static final long MAX_BUFFER_UPLOAD_TIMEOUT_NANOSECONDS = 1_000_000;
 	
 	/** number of bytes a single quad takes */
 	public static final int QUADS_BYTE_SIZE = LodUtil.LOD_VERTEX_FORMAT.getByteSize() * 4;
@@ -59,13 +53,14 @@ public class ColumnRenderBuffer implements AutoCloseable
 	
 	
 	
-	
-	public final DhBlockPos pos;
+	public final DhBlockPos blockPos;
 	
 	public boolean buffersUploaded = false;
 	
 	private GLVertexBuffer[] vbos;
 	private GLVertexBuffer[] vbosTransparent;
+	
+	private CompletableFuture<ColumnRenderBuffer> uploadFuture = null;
 	
 	
 	
@@ -73,14 +68,12 @@ public class ColumnRenderBuffer implements AutoCloseable
 	// constructors //
 	//==============//
 	
-	public ColumnRenderBuffer(DhBlockPos pos)
+	public ColumnRenderBuffer(DhBlockPos blockPos)
 	{
-		this.pos = pos;
+		this.blockPos = blockPos;
 		this.vbos = new GLVertexBuffer[0];
 		this.vbosTransparent = new GLVertexBuffer[0];
 	}
-	
-	
 	
 	
 	
@@ -89,33 +82,52 @@ public class ColumnRenderBuffer implements AutoCloseable
 	//==================//
 	
 	/** Should be run on a DH thread. */
-	public void makeAndUploadBuffers(LodQuadBuilder builder, EDhApiGpuUploadMethod gpuUploadMethod) throws InterruptedException
+	public synchronized CompletableFuture<ColumnRenderBuffer> makeAndUploadBuffersAsync(LodQuadBuilder builder, EDhApiGpuUploadMethod gpuUploadMethod)
 	{
-		LodUtil.assertTrue(DhApi.isDhThread(), "Buffer uploading needs to be done on a DH thread to prevent locking up any MC threads.");
+		if (this.uploadFuture != null)
+		{
+			return this.uploadFuture;
+		}
+		this.uploadFuture = new CompletableFuture<>();
+		
 		
 		
 		// make the buffers
 		ArrayList<ByteBuffer> opaqueBuffers = builder.makeOpaqueVertexBuffers();
 		ArrayList<ByteBuffer> transparentBuffers = builder.makeTransparentVertexBuffers();
 		
-		vbos = resizeBuffer(vbos, opaqueBuffers.size());
-		vbosTransparent = resizeBuffer(vbosTransparent, transparentBuffers.size());
+		this.vbos = resizeBuffer(this.vbos, opaqueBuffers.size());
+		this.vbosTransparent = resizeBuffer(this.vbosTransparent, transparentBuffers.size());
 		
 		
 		// upload on MC's render thread
-		CompletableFuture<Void> uploadFuture = new CompletableFuture<>();
 		GLProxy.getInstance().queueRunningOnRenderThread(() ->
 		{
 			try
 			{
-				uploadBuffersDirect(vbos, opaqueBuffers, gpuUploadMethod);
-				uploadBuffersDirect(vbosTransparent, transparentBuffers, gpuUploadMethod);
+				if (Thread.interrupted())
+				{
+					throw new InterruptedException();
+				}
+				
+				uploadBuffersDirect(this.vbos, opaqueBuffers, gpuUploadMethod);
+				uploadBuffersDirect(this.vbosTransparent, transparentBuffers, gpuUploadMethod);
 				this.buffersUploaded = true;
-				uploadFuture.complete(null);
+				
+				this.uploadFuture.complete(this);
+				this.uploadFuture = null;
 			}
-			catch (InterruptedException e)
+			catch (InterruptedException ignore) 
 			{
-				throw new CompletionException(e);
+				this.uploadFuture.complete(this);
+				this.uploadFuture = null;
+			}
+			catch (Exception e)
+			{
+				LOGGER.error("Unexpected issue uploading buffer ["+this.blockPos +"], error: ["+e.getMessage()+"].", e);
+				
+				this.uploadFuture.completeExceptionally(e);
+				this.uploadFuture = null;
 			}
 			finally
 			{
@@ -133,22 +145,7 @@ public class ColumnRenderBuffer implements AutoCloseable
 			}
 		});
 		
-		
-		try
-		{
-			// wait for the upload to finish
-			uploadFuture.get(5_000, TimeUnit.MILLISECONDS);
-		}
-		catch (ExecutionException e)
-		{
-			LOGGER.warn("Error uploading builder ["+builder+"] synchronously. Error: "+e.getMessage(), e);
-		}
-		catch (TimeoutException e)
-		{
-			// timeouts can be ignored because it generally means the
-			// MC Render thread executor was closed 
-			//LOGGER.warn("Error uploading builder ["+builder+"] synchronously. Error: "+e.getMessage(), e);
-		}
+		return this.uploadFuture;
 	}
 	private static GLVertexBuffer[] resizeBuffer(GLVertexBuffer[] vbos, int newSize)
 	{
@@ -224,7 +221,7 @@ public class ColumnRenderBuffer implements AutoCloseable
 	public boolean renderOpaque(LodRenderer renderContext, DhApiRenderParam renderEventParam)
 	{
 		boolean hasRendered = false;
-		renderContext.setModelViewMatrixOffset(this.pos, renderEventParam);
+		renderContext.setModelViewMatrixOffset(this.blockPos, renderEventParam);
 		for (GLVertexBuffer vbo : this.vbos)
 		{
 			if (vbo == null)
@@ -252,7 +249,7 @@ public class ColumnRenderBuffer implements AutoCloseable
 		try
 		{
 			// can throw an IllegalStateException if the GL program was freed before it should've been
-			renderContext.setModelViewMatrixOffset(this.pos, renderEventParam);
+			renderContext.setModelViewMatrixOffset(this.blockPos, renderEventParam);
 			
 			for (GLVertexBuffer vbo : this.vbosTransparent)
 			{
@@ -273,7 +270,7 @@ public class ColumnRenderBuffer implements AutoCloseable
 		}
 		catch (IllegalStateException e)
 		{
-			LOGGER.error("renderContext program doesn't exist for pos: "+this.pos, e);
+			LOGGER.error("renderContext program doesn't exist for pos: "+this.blockPos, e);
 		}
 		
 		return hasRendered;

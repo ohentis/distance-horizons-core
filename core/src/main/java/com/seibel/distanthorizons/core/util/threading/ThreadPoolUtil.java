@@ -56,11 +56,6 @@ public class ThreadPoolUtil
 	@Nullable
 	public static ThreadPoolExecutor getWorldGenExecutor() { return worldGenThreadPool.executor; }
 	
-	public static final String BUFFER_UPLOADER_THREAD_NAME = "Buffer Uploader";
-	private static ThreadPoolExecutor bufferUploaderThreadPool;
-	@Nullable
-	public static ThreadPoolExecutor getBufferUploaderExecutor() { return bufferUploaderThreadPool; }
-	
 	public static final String CLEANUP_THREAD_NAME = "Cleanup";
 	private static ThreadPoolExecutor cleanupThreadPool;
 	@Nullable
@@ -118,7 +113,6 @@ public class ThreadPoolUtil
 		updatePropagatorThreadPool = new ConfigThreadPool(UPDATE_PROPAGATOR_THREAD_FACTORY, Config.Common.MultiThreading.numberOfUpdatePropagatorThreads, Config.Common.MultiThreading.runTimeRatioForUpdatePropagatorThreads, null);
 		worldGenThreadPool = new ConfigThreadPool(WORLD_GEN_THREAD_FACTORY, Config.Common.MultiThreading.numberOfWorldGenerationThreads, Config.Common.MultiThreading.runTimeRatioForWorldGenerationThreads, null);
 		networkCompressionThreadPool = new ConfigThreadPool(NETWORK_COMPRESSION_THREAD_FACTORY, Config.Common.MultiThreading.numberOfNetworkCompressionThreads, Config.Common.MultiThreading.runTimeRatioForNetworkCompressionThreads, null);
-		bufferUploaderThreadPool = ThreadUtil.makeSingleThreadPool(BUFFER_UPLOADER_THREAD_NAME);
 		cleanupThreadPool = ThreadUtil.makeSingleThreadPool(CLEANUP_THREAD_NAME);
 		beaconCullingThreadPool = ThreadUtil.makeSingleThreadPool(BEACON_CULLING_THREAD_NAME);
 		
@@ -160,7 +154,6 @@ public class ThreadPoolUtil
 		updatePropagatorThreadPool.shutdownExecutorService();
 		worldGenThreadPool.shutdownExecutorService();
 		networkCompressionThreadPool.shutdownExecutorService();
-		bufferUploaderThreadPool.shutdown();
 		cleanupThreadPool.shutdown();
 		beaconCullingThreadPool.shutdown();
 		

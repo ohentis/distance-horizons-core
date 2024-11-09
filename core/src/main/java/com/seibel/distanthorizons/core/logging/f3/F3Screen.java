@@ -77,7 +77,6 @@ public class F3Screen
 		ThreadPoolExecutor updatePool = ThreadPoolUtil.getUpdatePropagatorExecutor();
 		ThreadPoolExecutor lodBuilderPool = ThreadPoolUtil.getChunkToLodBuilderExecutor();
 		ThreadPoolExecutor bufferBuilderPool = ThreadPoolUtil.getBufferBuilderExecutor();
-		ThreadPoolExecutor bufferUploaderPool = ThreadPoolUtil.getBufferUploaderExecutor();
 		
 		AbstractDhWorld world = SharedApi.getAbstractDhWorld();
 		Iterable<? extends IDhLevel> levelIterator = world.getAllLoadedLevels();
@@ -96,7 +95,6 @@ public class F3Screen
 		messageList.add(getThreadPoolStatString("Update Propagator", updatePool));
 		messageList.add(getThreadPoolStatString("LOD Builder", lodBuilderPool));
 		messageList.add(getThreadPoolStatString("Buffer Builder", bufferBuilderPool));
-		messageList.add(getThreadPoolStatString("Buffer Uploader", bufferUploaderPool));
 		messageList.add("");
 		// chunk updates
 		messageList.add(SharedApi.INSTANCE.getDebugMenuString());
