@@ -582,10 +582,23 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		
 		shaderProgram.fillSharedDirectUniformData(renderEventParam, shading, boxGroup, camPos);
 		
-		// TODO handle empty arrays (concurrency issue?)
-		for (DhApiRenderableBox box : boxGroup)
+		for (int i = 0; i < boxGroup.size(); i++)
 		{
-			this.renderBox(shaderProgram, renderEventParam, boxGroup, box, camPos);
+			try
+			{
+				DhApiRenderableBox box = boxGroup.get(i);
+				if (box != null)
+				{
+					this.renderBox(shaderProgram, renderEventParam, boxGroup, box, camPos);
+				}
+			}
+			catch (IndexOutOfBoundsException e)
+			{
+				// Concurrency issue, the list was modified while rendering
+				// this can probably be ignored.
+				// However, if it does become a problem we can add locks to the box group. 
+				break;
+			}
 		}
 	}
 	private void renderBox(
