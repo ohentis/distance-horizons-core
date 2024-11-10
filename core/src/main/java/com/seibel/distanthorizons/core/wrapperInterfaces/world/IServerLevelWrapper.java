@@ -32,7 +32,7 @@ public interface IServerLevelWrapper extends ILevelWrapper
 	
 	default String getKeyedLevelDimensionName()
 	{
-		String dimensionName = this.getDimensionName();
+		String dimensionName = this.getDhIdentifier();
 		
 		if (Config.Server.sendLevelKeys.get())
 		{
@@ -43,18 +43,22 @@ public interface IServerLevelWrapper extends ILevelWrapper
 				String cleanWorldFolderName = this.getMcSaveFolder().getParentFile().getName()
 						.replaceAll("[^" + LevelInitMessage.PART_ALLOWED_CHARS_REGEX + " ]", "")
 						.replaceAll(" ", "_");
-				levelKeyPrefix += (!levelKeyPrefix.isEmpty() ? "_" : "") + cleanWorldFolderName;
+				
+				levelKeyPrefix += (!levelKeyPrefix.isEmpty() ? "_" : "") + cleanWorldFolderName
+						+ "_" + this.getHashedSeed();
 			}
 			
-			if (!levelKeyPrefix.isEmpty())
+			if (levelKeyPrefix.isEmpty())
 			{
-				String mainPart = "@" + dimensionName;
-				
-				return levelKeyPrefix.substring(0, Math.min(
-						LevelInitMessage.MAX_LENGTH - mainPart.length(),
-						levelKeyPrefix.length()
-				)) + mainPart;
+				levelKeyPrefix = String.valueOf(this.getHashedSeed());
 			}
+			
+			String mainPart = "@" + dimensionName;
+			
+			return levelKeyPrefix.substring(0, Math.min(
+					LevelInitMessage.MAX_LENGTH - mainPart.length(),
+					levelKeyPrefix.length()
+			)) + mainPart;
 		}
 		
 		return dimensionName;

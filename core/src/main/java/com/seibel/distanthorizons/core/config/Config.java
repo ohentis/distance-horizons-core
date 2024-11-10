@@ -1541,11 +1541,11 @@ public class Config
 		
 		public static ConfigEntry<String> levelKeyPrefix = new ConfigEntry.Builder<String>()
 				.setServersideShortName("levelKeyPrefix")
-				.set(getDefaultLevelKeyPrefix())
+				.set("")
 				.comment(""
 						+ "Prefix of the level keys sent to the clients.\n"
-						+ "If the mod is running behind a proxy, each backend should use a unique value (an empty string is allowed for one of the servers).\n"
-						+ "This value may be auto-generated if the mod is installed before the first start of the server.\n"
+						+ "If the mod is running behind a proxy, each backend should use a unique value.\n"
+						+ "If this value is empty, level key will be based on the server's seed hash.\n"
 						+ "")
 				.build();
 		
@@ -1629,21 +1629,6 @@ public class Config
 			{
 				LOGGER.error("Unexpected exception when running config delayed UI setup. Error: [" + e.getMessage() + "].", e);
 			}
-		}
-	}
-	
-	private static String getDefaultLevelKeyPrefix()
-	{
-		IMinecraftSharedWrapper mcWrapper = SingletonInjector.INSTANCE.get(IMinecraftSharedWrapper.class);
-		if (mcWrapper.isDedicatedServer())
-		{
-			return mcWrapper.isWorldNew()
-					? "server" + ThreadLocalRandom.current().nextInt(1, 1000)
-					: "";
-		}
-		else
-		{
-			return SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class).getUsername();
 		}
 	}
 	

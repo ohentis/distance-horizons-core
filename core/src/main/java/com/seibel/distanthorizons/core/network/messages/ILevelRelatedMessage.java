@@ -17,7 +17,7 @@ public interface ILevelRelatedMessage
 			return this.getLevelName().equals(((IServerLevelWrapper) levelWrapper).getKeyedLevelDimensionName());
 		}
 		
-		return this.getLevelName().equals(levelWrapper.getDimensionName());
+		return this.getLevelName().equals(levelWrapper.getDhIdentifier());
 	}
 	
 }

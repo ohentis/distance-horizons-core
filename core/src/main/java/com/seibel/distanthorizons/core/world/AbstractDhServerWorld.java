@@ -10,7 +10,6 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
@@ -123,7 +122,7 @@ public abstract class AbstractDhServerWorld<TDhServerLevel extends AbstractDhSer
 	{
 		for (TDhServerLevel level : this.dhLevelByLevelWrapper.values())
 		{
-			LOGGER.info("Unloading level [" + level.getLevelWrapper().getLevelIdString() + "].");
+			LOGGER.info("Unloading level [" + level.getLevelWrapper().getDhIdentifier() + "].");
 			
 			// level wrapper shouldn't be null, but just in case
 			IServerLevelWrapper serverLevelWrapper = level.getServerLevelWrapper();

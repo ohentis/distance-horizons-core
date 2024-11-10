@@ -130,7 +130,7 @@ public class FullDataSourceProviderV2
 		
 		DebugRenderer.register(this, Config.Client.Advanced.Debugging.DebugWireframe.showFullDataUpdateStatus);
 		
-		String levelId = level.getLevelWrapper().getLevelIdString();
+		String levelId = level.getLevelWrapper().getDhIdentifier();
 		
 		// start migrating any legacy data sources present in the background
 		this.migrationThreadPool = ThreadUtil.makeRateLimitedThreadPool(1, MIGRATION_THREAD_NAME_PREFIX + "["+levelId+"]", Config.Common.MultiThreading.runTimeRatioForUpdatePropagatorThreads.get(), Thread.MIN_PRIORITY, (Semaphore) null);
@@ -346,7 +346,7 @@ public class FullDataSourceProviderV2
 	
 	private void convertLegacyDataSources()
 	{
-		String levelId = this.level.getLevelWrapper().getLevelIdString();
+		String levelId = this.level.getLevelWrapper().getDhIdentifier();
 		LOGGER.info("Attempting to migrate data sources for: ["+levelId+"]-["+this.saveDir+"]...");
 		
 		
@@ -525,7 +525,7 @@ public class FullDataSourceProviderV2
 		}
 		this.migrationStartMessageQueued = true;
 		
-		String levelId = this.level.getLevelWrapper().getLevelIdString();
+		String levelId = this.level.getLevelWrapper().getDhIdentifier();
 		ClientApi.INSTANCE.showChatMessageNextFrame(
 				"Old Distant Horizons data is being migrated for ["+levelId+"]. \n" +
 				"While migrating LODs may load slowly \n" +
@@ -536,7 +536,7 @@ public class FullDataSourceProviderV2
 	
 	private void showMigrationEndMessage(boolean success)
 	{
-		String levelId = this.level.getLevelWrapper().getLevelIdString();
+		String levelId = this.level.getLevelWrapper().getDhIdentifier();
 		
 		if (success)
 		{

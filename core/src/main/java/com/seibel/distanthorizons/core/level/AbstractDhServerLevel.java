@@ -114,7 +114,7 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 				continue;
 			}
 			
-			NETWORK_LOGGER.debug("["+this.serverLevelWrapper.getLevelIdString()+"] Fulfilled request group ["+entry.getKey()+"]");
+			NETWORK_LOGGER.debug("[" + this.serverLevelWrapper.getDhIdentifier() + "] Fulfilled request group [" + entry.getKey() + "]");
 			
 			// Make this group unavailable for adding into
 			this.requestGroupByPos.remove(entry.getKey());
@@ -228,7 +228,7 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 				FullDataSourceRequestMessage requestMessage = requestGroup.requestMessages.remove(msg.futureId);
 				if (requestGroup.requestMessages.isEmpty())
 				{
-					NETWORK_LOGGER.debug("["+this.serverLevelWrapper.getLevelIdString()+"] Cancelled request group ["+DhSectionPos.toString(requestMessage.sectionPos)+"].");
+					NETWORK_LOGGER.debug("[" + this.serverLevelWrapper.getDhIdentifier() + "] Cancelled request group [" + DhSectionPos.toString(requestMessage.sectionPos) + "].");
 					this.requestGroupByPos.remove(requestMessage.sectionPos);
 					this.serverside.fullDataFileHandler.removeRetrievalRequestIf(pos -> pos == requestMessage.sectionPos);
 				}
@@ -307,7 +307,7 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 			{
 				DataSourceRequestGroup newGroup = new DataSourceRequestGroup();
 				this.tryFulfillDataSourceRequestGroup(newGroup, pos);
-				NETWORK_LOGGER.debug("["+this.serverLevelWrapper.getLevelIdString()+"] Created request group for pos ["+DhSectionPos.toString(pos)+"].");
+				NETWORK_LOGGER.debug("[" + this.serverLevelWrapper.getDhIdentifier() + "] Created request group for pos [" + DhSectionPos.toString(pos) + "].");
 				return newGroup;
 			});
 			
@@ -353,8 +353,8 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 						new InvalidLevelException(
 								"Generation not allowed. " +
 										"Requested dimension: ["+((ILevelRelatedMessage) message).getLevelName()+"], " +
-										"player dimension: ["+message.getSession().serverPlayer.getLevel().getLevelIdString()+"], " +
-										"handler dimension: ["+this.getLevelWrapper().getLevelIdString()+"]"
+										"player dimension: [" + message.getSession().serverPlayer.getLevel().getDhIdentifier() + "], " +
+										"handler dimension: [" + this.getLevelWrapper().getDhIdentifier() + "]"
 						)
 				);
 			}

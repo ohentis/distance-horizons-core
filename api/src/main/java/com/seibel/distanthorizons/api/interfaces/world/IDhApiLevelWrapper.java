@@ -39,6 +39,13 @@ public interface IDhApiLevelWrapper extends IDhApiUnsafeWrapper
 	
 	/** @since API 4.0.0 */
 	String getDimensionName();
+	
+	/**
+	 * Returns a string intended to uniquely identify this level.
+	 *
+	 * @since API 4.0.0
+	 */
+	String getDhIdentifier();
 
 	EDhApiLevelType getLevelType();
 	

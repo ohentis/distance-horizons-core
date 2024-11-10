@@ -19,7 +19,6 @@ import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
 import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV2DTO;
 import com.seibel.distanthorizons.core.util.LodUtil;
-import com.seibel.distanthorizons.core.util.TimerUtil;
 import com.seibel.distanthorizons.core.util.objects.DataCorruptedException;
 import com.seibel.distanthorizons.core.util.ratelimiting.SupplierBasedRateLimiter;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
@@ -291,7 +290,7 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 	
 	public void addDebugMenuStringsToList(List<String> messageList)
 	{
-		messageList.add(this.getQueueName() + " [" + this.level.getClientLevelWrapper().getLevelIdString() + "]");
+		messageList.add(this.getQueueName() + " [" + this.level.getClientLevelWrapper().getDhIdentifier() + "]");
 		messageList.add("Requests: " + this.finishedRequests + " / " + (this.getWaitingTaskCount() + this.finishedRequests.get()) + " (failed: " + this.failedRequests + ", rate limit: " + this.getRequestRateLimit() + ")");
 	}
 	
