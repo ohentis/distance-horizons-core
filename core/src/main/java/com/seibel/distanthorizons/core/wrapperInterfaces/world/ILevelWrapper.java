@@ -37,12 +37,13 @@ public interface ILevelWrapper extends IDhApiLevelWrapper, IBindable
 	@Override
 	String getDimensionName();
 	
-	int getHashedSeed();
+	long getHashedSeed();
 	
 	/**
 	 * A string intended to uniquely identify this level.
 	 */
-	@Override String getDhIdentifier();
+	@Override 
+	default String getDhIdentifier() { return this.getDimensionName() + "_" + this.getHashedSeed(); }
 	
 	@Override
 	boolean hasCeiling();
