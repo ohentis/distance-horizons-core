@@ -269,10 +269,10 @@
   "distanthorizons.config.client.advanced.graphics.fog.heightFog.heightFogMixMode":
     "Height Fog Mix Mode",
   "distanthorizons.config.client.advanced.graphics.fog.heightFog.heightFogMixMode.@tooltip":
-    "How the height should effect the fog thickness combined with the normal function? \n\nBASIC: No special height fog effect. Fog is calculated based on camera distance \nIGNORE_HEIGHT: Ignore height completely. Fog is calculated based on horizontal distance \nADDITION: heightFog + farFog \nMAX: max(heightFog, farFog) \nMULTIPLY: heightFog * farFog \nINVERSE_MULTIPLY: 1 - (1-heightFog) * (1-farFog) \nLIMITED_ADDITION: farFog + max(farFog, heightFog) \nMULTIPLY_ADDITION: farFog + farFog * heightFog \nINVERSE_MULTIPLY_ADDITION: farFog + 1 - (1-heightFog) * (1-farFog) \nAVERAGE: farFog*0.5 + heightFog*0.5 \n\nNote that for 'BASIC' mode and 'IGNORE_HEIGHT' mode, fog settings for height fog has no effect.\n",
-  "distanthorizons.config.client.advanced.graphics.fog.heightFog.heightFogMode":
-    "Height Fog Mode",
-  "distanthorizons.config.client.advanced.graphics.fog.heightFog.heightFogMode.@tooltip":
+    "Defines how height effects fog. \nWhen in doubt start with SPHERICAL, ADDITION, or MAX. \n\nSPHERICAL: Fog is calculated based on camera distance. \nCYLINDRICAL: Ignore height, fog is calculated based on horizontal distance. \nMAX: max(heightFog, farFog) \nADDITION: heightFog + farFog \nMULTIPLY: heightFog * farFog \nINVERSE_MULTIPLY: 1 - (1-heightFog) * (1-farFog) \nLIMITED_ADDITION: farFog + max(farFog, heightFog) \nMULTIPLY_ADDITION: farFog + farFog * heightFog \nINVERSE_MULTIPLY_ADDITION: farFog + 1 - (1-heightFog) * (1-farFog) \nAVERAGE: farFog*0.5 + heightFog*0.5",
+  "distanthorizons.config.client.advanced.graphics.fog.heightFog.heightFogDirection":
+    "Height Fog Direction",
+  "distanthorizons.config.client.advanced.graphics.fog.heightFog.heightFogDirection.@tooltip":
     "Where should the height fog be located? \n\nABOVE_CAMERA: Height fog starts from camera to the sky \nBELOW_CAMERA: Height fog starts from camera to the void \nABOVE_AND_BELOW_CAMERA: Height fog starts from camera to both the sky and the void \nABOVE_SET_HEIGHT: Height fog starts from a set height to the sky \nBELOW_SET_HEIGHT: Height fog starts from a set height to the void \nABOVE_AND_BELOW_SET_HEIGHT: Height fog starts from a set height to both the sky and the void \n",
   "distanthorizons.config.client.advanced.graphics.fog.heightFog.heightFogBaseHeight":
     "Height Fog Base Height",
@@ -805,10 +805,10 @@
   "distanthorizons.config.enum.EDhApiFogFalloff.EXPONENTIAL_SQUARED":
     "Exponential squared",
     
-  "distanthorizons.config.enum.EDhApiHeightFogMixMode.BASIC":
-    "Basic",
-  "distanthorizons.config.enum.EDhApiHeightFogMixMode.IGNORE_HEIGHT":
-    "Ignore Height",
+  "distanthorizons.config.enum.EDhApiHeightFogMixMode.SPHERICAL":
+    "Spherical",
+  "distanthorizons.config.enum.EDhApiHeightFogMixMode.CYLINDRICAL":
+    "Cylindrical",
   "distanthorizons.config.enum.EDhApiHeightFogMixMode.ADDITION":
     "Addition",
   "distanthorizons.config.enum.EDhApiHeightFogMixMode.MAX":
@@ -826,17 +826,17 @@
   "distanthorizons.config.enum.EDhApiHeightFogMixMode.AVERAGE":
     "Average",
     
-  "distanthorizons.config.enum.EDhApiHeightFogMode.ABOVE_CAMERA":
+  "distanthorizons.config.enum.EDhApiHeightFogDirection.ABOVE_CAMERA":
     "Above Camera",
-  "distanthorizons.config.enum.EDhApiHeightFogMode.BELOW_CAMERA":
+  "distanthorizons.config.enum.EDhApiHeightFogDirection.BELOW_CAMERA":
     "Below Camera",
-  "distanthorizons.config.enum.EDhApiHeightFogMode.ABOVE_AND_BELOW_CAMERA":
+  "distanthorizons.config.enum.EDhApiHeightFogDirection.ABOVE_AND_BELOW_CAMERA":
     "Above And Below Camera",
-  "distanthorizons.config.enum.EDhApiHeightFogMode.ABOVE_SET_HEIGHT":
+  "distanthorizons.config.enum.EDhApiHeightFogDirection.ABOVE_SET_HEIGHT":
     "Above Set Height",
-  "distanthorizons.config.enum.EDhApiHeightFogMode.BELOW_SET_HEIGHT":
+  "distanthorizons.config.enum.EDhApiHeightFogDirection.BELOW_SET_HEIGHT":
     "Below Set Height",
-  "distanthorizons.config.enum.EDhApiHeightFogMode.ABOVE_AND_BELOW_SET_HEIGHT":
+  "distanthorizons.config.enum.EDhApiHeightFogDirection.ABOVE_AND_BELOW_SET_HEIGHT":
     "Above And Below Set Height",
     
   "distanthorizons.config.enum.EDhApiVanillaOverdraw.NEVER":
