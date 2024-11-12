@@ -64,6 +64,8 @@ public class RemoteWorldRetrievalQueue extends AbstractFullDataNetworkRequestQue
 	
 	@Override
 	protected int getRequestRateLimit() { return this.networkState.sessionConfig.getGenerationRequestRateLimit(); }
+	@Override
+	protected int getMaxRequestDistance() { return this.networkState.sessionConfig.getMaxGenerationRequestDistance(); }
 	
 	@Override
 	protected String getQueueName() { return "World Remote Generation Queue"; }

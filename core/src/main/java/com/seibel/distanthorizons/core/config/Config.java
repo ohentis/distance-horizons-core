@@ -33,7 +33,6 @@ import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.wrapperInterfaces.IWrapperFactory;
-import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftSharedWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import org.apache.logging.log4j.Logger;
@@ -43,7 +42,6 @@ import java.awt.*;
 import java.io.File;
 import java.util.*;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * This handles any configuration the user has access to. <br><br>
@@ -1512,23 +1510,9 @@ public class Config
 		
 	}
 	
-	public static class Server 
+	public static class Server
 	{
-		public static ConfigEntry<Integer> realTimeUpdateDistanceRadiusInChunks = new ConfigEntry.Builder<Integer>()
-				.setServersideShortName("renderDistanceRadius")
-				.setMinDefaultMax(32, 256, 4096)
-				.comment("" +
-						"Defines the distance players will receive real-time updates for if enabled. \n" +
-						"\n" +
-						"Note: \n" +
-						"This setting does not prevent players from generating farther out. \n" +
-						"If you want to limit performance impact, change rate limits \n" +
-						"and thread count/runtime ratio settings instead. \n" +
-						"It also does not affect the visuals on clients. \n" +
-						"")
-				.setPerformance(EConfigEntryPerformance.HIGH)
-				.build();
-		
+		// Level keys
 		public static ConfigEntry<Boolean> sendLevelKeys = new ConfigEntry.Builder<Boolean>()
 				.setServersideShortName("sendLevelKeys")
 				.setAppearance(EConfigEntryAppearance.ONLY_IN_FILE)
@@ -1549,6 +1533,8 @@ public class Config
 						+ "")
 				.build();
 		
+		
+		// Generation
 		public static ConfigEntry<Integer> generationRequestRateLimit = new ConfigEntry.Builder<Integer>()
 				.setServersideShortName("generationRequestRateLimit")
 				.setMinDefaultMax(1, 20, 100)
@@ -1558,6 +1544,23 @@ public class Config
 						+ "")
 				.build();
 		
+		public static ConfigEntry<Integer> maxGenerationRequestDistance = new ConfigEntry.Builder<Integer>()
+				.setServersideShortName("maxGenerationRequestDistance")
+				.setMinDefaultMax(32, 1024, 4096)
+				.comment("" +
+						"Defines the distance players will receive real-time updates for if enabled. \n" +
+						"\n" +
+						"Note: \n" +
+						"This setting does not prevent players from generating farther out. \n" +
+						"If you want to limit performance impact, change rate limits \n" +
+						"and thread count/runtime ratio settings instead. \n" +
+						"It also does not affect the visuals on clients. \n" +
+						"")
+				.setPerformance(EConfigEntryPerformance.HIGH)
+				.build();
+		
+		
+		// Real-time updates
 		public static ConfigEntry<Boolean> enableRealTimeUpdates = new ConfigEntry.Builder<Boolean>()
 				.setServersideShortName("enableRealTimeUpdates")
 				.set(true)
@@ -1566,7 +1569,23 @@ public class Config
 						+ "")
 				.build();
 		
+		public static ConfigEntry<Integer> realTimeUpdateDistanceRadiusInChunks = new ConfigEntry.Builder<Integer>()
+				.setServersideShortName("realTimeUpdateDistanceRadius")
+				.setMinDefaultMax(32, 256, 4096)
+				.comment("" +
+						"Defines the distance players will receive real-time updates for if enabled. \n" +
+						"\n" +
+						"Note: \n" +
+						"This setting does not prevent players from generating farther out. \n" +
+						"If you want to limit performance impact, change rate limits \n" +
+						"and thread count/runtime ratio settings instead. \n" +
+						"It also does not affect the visuals on clients. \n" +
+						"")
+				.setPerformance(EConfigEntryPerformance.HIGH)
+				.build();
 		
+		
+		// Sync on load
 		public static ConfigEntry<Boolean> synchronizeOnLoad = new ConfigEntry.Builder<Boolean>()
 				.setServersideShortName("synchronizeOnLoad")
 				.set(true)
@@ -1584,6 +1603,23 @@ public class Config
 						+ "")
 				.build();
 		
+		public static ConfigEntry<Integer> maxSyncOnLoadRequestDistance = new ConfigEntry.Builder<Integer>()
+				.setServersideShortName("maxSyncOnLoadRequestDistance")
+				.setMinDefaultMax(32, 1024, 4096)
+				.comment("" +
+						"Defines the distance players will receive real-time updates for if enabled. \n" +
+						"\n" +
+						"Note: \n" +
+						"This setting does not prevent players from generating farther out. \n" +
+						"If you want to limit performance impact, change rate limits \n" +
+						"and thread count/runtime ratio settings instead. \n" +
+						"It also does not affect the visuals on clients. \n" +
+						"")
+				.setPerformance(EConfigEntryPerformance.HIGH)
+				.build();
+		
+		
+		// Common
 		public static ConfigEntry<Integer> maxDataTransferSpeed = new ConfigEntry.Builder<Integer>()
 				.setServersideShortName("maxDataTransferSpeed")
 				.setMinDefaultMax(0, 500, 1000000 /* 1 GB/s */)

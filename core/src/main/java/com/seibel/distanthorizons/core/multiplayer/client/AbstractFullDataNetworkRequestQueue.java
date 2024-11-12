@@ -7,8 +7,8 @@ import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSour
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.level.DhClientLevel;
 import com.seibel.distanthorizons.core.logging.ConfigBasedSpamLogger;
-import com.seibel.distanthorizons.core.network.exceptions.InvalidLevelException;
 import com.seibel.distanthorizons.core.network.exceptions.RateLimitedException;
+import com.seibel.distanthorizons.core.network.exceptions.RequestOutOfRangeException;
 import com.seibel.distanthorizons.core.network.exceptions.RequestRejectedException;
 import com.seibel.distanthorizons.core.network.session.SessionClosedException;
 import com.seibel.distanthorizons.core.network.messages.fullData.FullDataSourceRequestMessage;
@@ -71,6 +71,8 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 	
 	private final SupplierBasedRateLimiter<Void> rateLimiter = new SupplierBasedRateLimiter<>(this::getRequestRateLimit);
 	
+	private DhBlockPos2D lastTargetPos = new DhBlockPos2D(0, 0);
+	
 	
 	
 	//=============//
@@ -95,6 +97,7 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 	//==================//
 	
 	protected abstract int getRequestRateLimit();
+	protected abstract int getMaxRequestDistance();
 	
 	protected abstract String getQueueName();
 	
@@ -138,6 +141,8 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 			return false;
 		}
 		
+		this.lastTargetPos = targetPos;
+		
 		// queue requests until the queue is full
 		while (this.getInProgressTaskCount() < this.getWaitingTaskCount()
 				&& this.getInProgressTaskCount() < this.getRequestRateLimit()
@@ -158,7 +163,8 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 	{
 		Map.Entry<Long, RequestQueueEntry> mapEntry = this.waitingTasksBySectionPos.entrySet().stream()
 				.filter(task -> task.getValue().networkDataSourceFuture == null)
-				.min(Comparator.comparingInt(x -> posDistanceSquared(targetPos, x.getKey())))
+				.filter(task -> DhSectionPos.getChebyshevSignedBlockDistance(task.getKey(), targetPos) <= this.getMaxRequestDistance())
+				.min(Comparator.comparingInt(task -> DhSectionPos.getChebyshevSignedBlockDistance(task.getKey(), targetPos)))
 				.orElse(null);
 		
 		if (mapEntry == null)
@@ -220,15 +226,14 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 					LodUtil.assertTrue(this.changedOnly, "Received empty data source response for not changes-only request");
 				}
 			}
-			catch (InvalidLevelException | RequestRejectedException ignored)
-			{
-				// We're too late / some cases might trigger a bunch of expected rejections
-				return entry.future.complete(false);
-			}
 			catch (SessionClosedException | CancellationException ignored)
 			{
-				// Triggered when level is unloaded
 				return entry.future.cancel(false);
+			}
+			catch (RequestRejectedException e)
+			{
+				LOGGER.info("Request rejected by the server: " + e.getMessage());
+				return entry.future.complete(false);
 			}
 			catch (RateLimitedException e)
 			{
@@ -236,6 +241,13 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 				
 				// Skip all requests for 1 second
 				this.rateLimiter.acquireAll();
+				
+				entry.networkDataSourceFuture = null;
+				return null;
+			}
+			catch (RequestOutOfRangeException e)
+			{
+				LOGGER.warn("Out of range, re-queueing task [" + DhSectionPos.toString(sectionPos) + "]: " + e.getMessage());
 				
 				entry.networkDataSourceFuture = null;
 				return null;
@@ -352,19 +364,12 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 		for (Map.Entry<Long, RequestQueueEntry> mapEntry : this.waitingTasksBySectionPos.entrySet())
 		{
 			renderer.renderBox(new DebugRenderer.Box(mapEntry.getKey(), -32f, 64f, 0.05f,
-					mapEntry.getValue().networkDataSourceFuture != null ? Color.red : Color.gray
+					mapEntry.getValue().networkDataSourceFuture != null ? Color.red
+							: DhSectionPos.getChebyshevSignedBlockDistance(mapEntry.getKey(), this.lastTargetPos) <= this.getMaxRequestDistance() ? Color.gray
+							: Color.lightGray
 			));
 		}
 	}
-	
-	
-	
-	//================//
-	// helper methods //
-	//================//
-	
-	protected static int posDistanceSquared(DhBlockPos2D targetPos, long pos)
-	{ return (int) DhSectionPos.getCenterBlockPos(pos).distSquared(targetPos); }
 	
 	
 	

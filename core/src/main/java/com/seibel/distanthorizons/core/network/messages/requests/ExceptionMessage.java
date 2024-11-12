@@ -20,8 +20,8 @@
 package com.seibel.distanthorizons.core.network.messages.requests;
 
 import com.google.common.base.MoreObjects;
-import com.seibel.distanthorizons.core.network.exceptions.InvalidLevelException;
 import com.seibel.distanthorizons.core.network.exceptions.RateLimitedException;
+import com.seibel.distanthorizons.core.network.exceptions.RequestOutOfRangeException;
 import com.seibel.distanthorizons.core.network.exceptions.RequestRejectedException;
 import com.seibel.distanthorizons.core.network.messages.AbstractTrackableMessage;
 import io.netty.buffer.ByteBuf;
@@ -36,7 +36,7 @@ public class ExceptionMessage extends AbstractTrackableMessage
 	{{
 		// All exceptions here must include constructor: (String)
 		this.add(RateLimitedException.class);
-		this.add(InvalidLevelException.class);
+		this.add(RequestOutOfRangeException.class);
 		this.add(RequestRejectedException.class);
 	}};
 	

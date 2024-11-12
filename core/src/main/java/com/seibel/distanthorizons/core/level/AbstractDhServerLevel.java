@@ -9,7 +9,7 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
 import com.seibel.distanthorizons.core.multiplayer.server.ServerPlayerState;
 import com.seibel.distanthorizons.core.multiplayer.server.ServerPlayerStateManager;
-import com.seibel.distanthorizons.core.network.exceptions.InvalidLevelException;
+import com.seibel.distanthorizons.core.network.exceptions.RequestOutOfRangeException;
 import com.seibel.distanthorizons.core.network.exceptions.RequestRejectedException;
 import com.seibel.distanthorizons.core.network.messages.AbstractNetworkMessage;
 import com.seibel.distanthorizons.core.network.messages.AbstractTrackableMessage;
@@ -194,6 +194,13 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 				return;
 			}
 			
+			Vec3d playerPosition = serverPlayerState.getServerPlayer().getPosition();
+			int distanceFromPlayer = DhSectionPos.getChebyshevSignedBlockDistance(message.sectionPos, new DhBlockPos2D((int) playerPosition.x, (int) playerPosition.z)) / 16;
+			if (distanceFromPlayer > Config.Server.maxGenerationRequestDistance.get())
+			{
+				message.sendResponse(new RequestOutOfRangeException("Distance too large: " + distanceFromPlayer + " > " + Config.Server.maxGenerationRequestDistance.get()));
+				return;
+			}
 			
 			ServerPlayerState.RateLimiterSet rateLimiterSet = serverPlayerState.getRateLimiterSet(this);
 			
@@ -241,6 +248,8 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 	}
 	private void queueLodSyncForRequestMessage(ServerPlayerState serverPlayerState, FullDataSourceRequestMessage message, ServerPlayerState.RateLimiterSet rateLimiterSet)
 	{
+		
+		
 		if (!serverPlayerState.sessionConfig.getSynchronizeOnLoad())
 		{
 			message.sendResponse(new RequestRejectedException("Operation is disabled in config."));
@@ -350,7 +359,7 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 			if (message instanceof AbstractTrackableMessage)
 			{
 				((AbstractTrackableMessage) message).sendResponse(
-						new InvalidLevelException(
+						new RequestRejectedException(
 								"Generation not allowed. " +
 										"Requested dimension: ["+((ILevelRelatedMessage) message).getLevelName()+"], " +
 										"player dimension: [" + message.getSession().serverPlayer.getLevel().getDhIdentifier() + "], " +
@@ -446,7 +455,7 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 						}
 						
 						Vec3d playerPosition = serverPlayerState.getServerPlayer().getPosition();
-						int distanceFromPlayer = DhSectionPos.getChebyshevBlockDistance(data.getPos(), new DhBlockPos2D((int) playerPosition.x, (int) playerPosition.z)) / 16;
+						int distanceFromPlayer = DhSectionPos.getChebyshevSignedBlockDistance(data.getPos(), new DhBlockPos2D((int) playerPosition.x, (int) playerPosition.z)) / 16;
 						if (distanceFromPlayer >= serverPlayerState.getServerPlayer().getViewDistance()
 								&& distanceFromPlayer <= serverPlayerState.sessionConfig.getMaxUpdateDistanceRadius())
 						{
