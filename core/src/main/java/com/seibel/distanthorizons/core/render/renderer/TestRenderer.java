@@ -58,19 +58,23 @@ public class TestRenderer
 	
 	public void init()
 	{
-		if (init) return;
+		if (this.init)
+		{
+			return;
+		}
+		
 		logger.info("init");
-		init = true;
-		va = AbstractVertexAttribute.create();
-		va.bind();
+		this.init = true;
+		this.va = AbstractVertexAttribute.create();
+		this.va.bind();
 		// Pos
-		va.setVertexAttribute(0, 0, VertexPointer.addVec2Pointer(false));
+		this.va.setVertexAttribute(0, 0, VertexPointer.addVec2Pointer(false));
 		// Color
-		va.setVertexAttribute(0, 1, VertexPointer.addVec4Pointer(false));
-		va.completeAndCheck(Float.BYTES * 6);
-		basicShader = new ShaderProgram("shaders/test/vert.vert", "shaders/test/frag.frag",
+		this.va.setVertexAttribute(0, 1, VertexPointer.addVec4Pointer(false));
+		this.va.completeAndCheck(Float.BYTES * 6);
+		this.basicShader = new ShaderProgram("shaders/test/vert.vert", "shaders/test/frag.frag",
 				"fragColor", new String[]{"vPosition", "color"});
-		createBuffer();
+		this.createBuffer();
 	}
 	
 	// Render a square with uv color
@@ -97,8 +101,8 @@ public class TestRenderer
 	
 	private void createBuffer()
 	{
-		sharedContextBuffer = createTextingBuffer();
-		sameContextBuffer = createTextingBuffer();
+		this.sharedContextBuffer = createTextingBuffer();
+		this.sameContextBuffer = createTextingBuffer();
 	}
 	
 	public void render()
@@ -106,7 +110,7 @@ public class TestRenderer
 		spamLogger.debug("rendering");
 		
 		GLState state = new GLState();
-		init();
+		this.init();
 		GL32.glBindFramebuffer(GL32.GL_FRAMEBUFFER, MC_RENDER.getTargetFrameBuffer());
 		GL32.glViewport(0, 0, MC_RENDER.getTargetFrameBufferViewportWidth(), MC_RENDER.getTargetFrameBufferViewportHeight());
 		GL32.glPolygonMode(GL32.GL_FRONT_AND_BACK, GL32.GL_FILL);
@@ -116,20 +120,20 @@ public class TestRenderer
 		GL32.glDisable(GL32.GL_BLEND);
 		//GL32.glDisable(GL32.GL_SCISSOR_TEST);
 		
-		basicShader.bind();
-		va.bind();
+		this.basicShader.bind();
+		this.va.bind();
 		
 		// Switch between the two buffers per second
 		if (System.currentTimeMillis() % 2000 < 1000)
 		{
-			sameContextBuffer.bind();
-			va.bindBufferToAllBindingPoints(sameContextBuffer.getId());
+			this.sameContextBuffer.bind();
+			this.va.bindBufferToAllBindingPoints(this.sameContextBuffer.getId());
 			spamLogger.debug("same context buffer");
 		}
 		else
 		{
-			sameContextBuffer.bind();
-			va.bindBufferToAllBindingPoints(sharedContextBuffer.getId());
+			this.sameContextBuffer.bind();
+			this.va.bindBufferToAllBindingPoints(this.sharedContextBuffer.getId());
 			spamLogger.debug("shared context buffer");
 		}
 		// Render the square

@@ -25,7 +25,7 @@ package com.seibel.distanthorizons.api.enums.rendering;
  * EXPONENTIAL_SQUARED 	<br>
  *
  * @author Leetom
- * @version 2022-6-30
+ * @version 2024-11-09
  * @since API 2.0.0
  */
 public enum EDhApiFogFalloff
@@ -35,8 +35,17 @@ public enum EDhApiFogFalloff
 	// when removing items up the API major version
 	
 	
-	LINEAR,
-	EXPONENTIAL,
-	EXPONENTIAL_SQUARED,
+	LINEAR(0),
+	EXPONENTIAL(1),
+	EXPONENTIAL_SQUARED(2);
+	
+	
+	/** 
+	 * Stable version of {@link EDhApiFogFalloff#ordinal()} 
+	 * @since API 4.0.0
+	 */
+	public final int value;
+	
+	EDhApiFogFalloff(int value) { this.value = value; }
 	
 }

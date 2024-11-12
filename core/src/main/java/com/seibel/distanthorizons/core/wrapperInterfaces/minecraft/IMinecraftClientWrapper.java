@@ -25,6 +25,7 @@ import java.util.UUID;
 import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
+import com.seibel.distanthorizons.core.render.glObject.GLProxy;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IBindable;
@@ -147,7 +148,11 @@ public interface IMinecraftClientWrapper extends IBindable
 	
 	Object getOptionsObject();
 	
-	/** Executes the given task on Minecraft's render thread. */
+	/** 
+	 * Executes the given task on Minecraft's render thread.
+	 * @deprecated use {@link GLProxy#runningOnRenderThread()} instead
+	 */
+	@Deprecated
 	void executeOnRenderThread(Runnable runnable);
 	
 }

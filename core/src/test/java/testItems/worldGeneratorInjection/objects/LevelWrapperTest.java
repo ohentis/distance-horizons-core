@@ -39,9 +39,10 @@ public class LevelWrapperTest implements IDhApiLevelWrapper
 	
 	@Override
 	public IDhApiDimensionTypeWrapper getDimensionType() { return null; }
-	
 	@Override
 	public String getDimensionName() { return null; }
+	@Override
+	public String getDhIdentifier() { return null; }
 	
 	@Override
 	public EDhApiLevelType getLevelType() { return null; }

@@ -60,7 +60,7 @@ public class ChunkLightStorage
 	// constructor //
 	//=============//
 	
-	public static ChunkLightStorage createSkyLightStorage(IChunkWrapper chunkWrapper) { return createSkyLightStorage(chunkWrapper.getMinBuildHeight(), chunkWrapper.getMaxBuildHeight());  }
+	public static ChunkLightStorage createSkyLightStorage(IChunkWrapper chunkWrapper) { return createSkyLightStorage(chunkWrapper.getInclusiveMinBuildHeight(), chunkWrapper.getExclusiveMaxBuildHeight());  }
 	public static ChunkLightStorage createSkyLightStorage(int minY, int maxY)
 	{
 		return new ChunkLightStorage(
@@ -68,7 +68,7 @@ public class ChunkLightStorage
 				// positions above should be lit but positions below should be unlit
 				LodUtil.MAX_MC_LIGHT, LodUtil.MIN_MC_LIGHT);
 	}
-	public static ChunkLightStorage createBlockLightStorage(IChunkWrapper chunkWrapper) { return createBlockLightStorage(chunkWrapper.getMinBuildHeight(), chunkWrapper.getMaxBuildHeight());  }
+	public static ChunkLightStorage createBlockLightStorage(IChunkWrapper chunkWrapper) { return createBlockLightStorage(chunkWrapper.getInclusiveMinBuildHeight(), chunkWrapper.getExclusiveMaxBuildHeight());  }
 	public static ChunkLightStorage createBlockLightStorage(int minY, int maxY)
 	{
 		return new ChunkLightStorage(
@@ -106,10 +106,18 @@ public class ChunkLightStorage
 		
 		if (this.lightSections != null)
 		{
-			LightSection lightSection = this.lightSections[BitShiftUtil.divideByPowerOfTwo(y - this.minY, 4)];
-			if (lightSection != null)
+			int sectionIndex = BitShiftUtil.divideByPowerOfTwo(y - this.minY, 4);
+			try
 			{
-				return lightSection.get(x, y, z);
+				LightSection lightSection = this.lightSections[sectionIndex];
+				if (lightSection != null)
+				{
+					return lightSection.get(x, y, z);
+				}
+			}
+			catch (IndexOutOfBoundsException e)
+			{
+				throw new IndexOutOfBoundsException("Failed to get light at x:["+x+"], y:["+y+"], z:["+z+"], index:["+sectionIndex+"]. MinY:["+this.minY+"], maxY:["+this.maxY+"], section length:["+this.lightSections.length+"].  Original error: ["+e.getMessage()+"].");
 			}
 		}
 		
@@ -126,7 +134,8 @@ public class ChunkLightStorage
 		//populate array if it doesn't exist.
 		if (this.lightSections == null)
 		{
-			this.lightSections = new LightSection[BitShiftUtil.divideByPowerOfTwo(this.maxY - this.minY, 4)];
+			int arrayLength = (this.maxY - this.minY) / 16;
+			this.lightSections = new LightSection[arrayLength];
 		}
 		
 		int index = (y - this.minY) >> 4;

@@ -36,7 +36,15 @@ public interface ILevelWrapper extends IDhApiLevelWrapper, IBindable
 	
 	@Override
 	String getDimensionName();
-
+	
+	long getHashedSeed();
+	
+	/**
+	 * A string intended to uniquely identify this level.
+	 */
+	@Override 
+	default String getDhIdentifier() { return this.getDimensionName() + "_" + this.getHashedSeed(); }
+	
 	@Override
 	boolean hasCeiling();
 	
@@ -61,7 +69,7 @@ public interface ILevelWrapper extends IDhApiLevelWrapper, IBindable
 	/** Fired when the level is being unloaded. Doesn't unload the level. */
 	void onUnload();
 	
-	// TODO I don't like the circular reference, can we merge the level wrapper and DhLevels?
+	// TODO James doesn't like this circular reference, can we merge the level wrapper and DhLevels?
 	@Deprecated
 	void setParentLevel(IDhLevel parentLevel);
 	

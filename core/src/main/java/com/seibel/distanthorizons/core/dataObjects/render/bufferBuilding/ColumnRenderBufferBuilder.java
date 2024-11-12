@@ -115,62 +115,17 @@ public class ColumnRenderBufferBuilder
 			LodQuadBuilder quadBuilder
 		)
 	{
-		// TODO put into a single future/thread so it can be easily canceled
-		ThreadPoolExecutor bufferUploaderExecutor = ThreadPoolUtil.getBufferUploaderExecutor();
-		if (bufferUploaderExecutor == null || bufferUploaderExecutor.isTerminated())
+		ColumnRenderBuffer buffer = new ColumnRenderBuffer(new DhBlockPos(DhSectionPos.getMinCornerBlockX(pos), clientLevel.getMinY(), DhSectionPos.getMinCornerBlockZ(pos)));
+		CompletableFuture<ColumnRenderBuffer> uploadFuture = buffer.makeAndUploadBuffersAsync(quadBuilder, GLProxy.getInstance().getGpuUploadMethod());
+		uploadFuture.whenComplete((uploadedBuffer, exception) -> 
 		{
-			// one or more of the thread pools has been shut down
-			CompletableFuture<ColumnRenderBuffer> future = new CompletableFuture<>();
-			future.cancel(true);
-			return future;
-		}
-		
-		
-		try
-		{
-			return CompletableFuture.supplyAsync(() ->
-				{
-					try
-					{
-						ColumnRenderBuffer buffer = new ColumnRenderBuffer(new DhBlockPos(DhSectionPos.getMinCornerBlockX(pos), clientLevel.getMinY(), DhSectionPos.getMinCornerBlockZ(pos)));
-						try
-						{
-							buffer.uploadBuffer(quadBuilder, GLProxy.getInstance().getGpuUploadMethod());
-							if (buffer.buffersUploaded)
-							{
-								return buffer;	
-							}
-							else
-							{
-								buffer.close();
-								return null;
-							}
-						}
-						catch (Exception e)
-						{
-							buffer.close();
-							throw e;
-						}
-					}
-					catch (InterruptedException e)
-					{
-						throw UncheckedInterruptedException.convert(e);
-					}
-					catch (Throwable e3)
-					{
-						LOGGER.error("LodNodeBufferBuilder was unable to upload buffer for pos ["+DhSectionPos.toString(pos)+"], error: [" + e3.getMessage() + "].", e3);
-						throw e3;
-					}
-				}, bufferUploaderExecutor);
-		}
-		catch (RejectedExecutionException ignore) 
-		{
-			// shouldn't happen, but just in case
-			
-			CompletableFuture<ColumnRenderBuffer> future = new CompletableFuture<>();
-			future.cancel(true);
-			return future;
-		}
+			// clean up if not uploaded
+			if (!uploadedBuffer.buffersUploaded)
+			{
+				uploadedBuffer.close();
+			}
+		});
+		return uploadFuture;
 	}
 	private static void makeLodRenderData(
 			LodQuadBuilder quadBuilder, ColumnRenderSource renderSource, IDhClientLevel clientLevel,

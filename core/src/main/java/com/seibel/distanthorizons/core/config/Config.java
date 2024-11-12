@@ -39,7 +39,6 @@ import com.seibel.distanthorizons.coreapi.ModInfo;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.util.tinyfd.TinyFileDialogs;
 
-import javax.swing.*;
 import java.awt.*;
 import java.io.File;
 import java.util.*;
@@ -549,40 +548,40 @@ public class Config
 					public static class HeightFog
 					{
 						public static ConfigEntry<EDhApiHeightFogMixMode> heightFogMixMode = new ConfigEntry.Builder<EDhApiHeightFogMixMode>()
-								.set(EDhApiHeightFogMixMode.BASIC)
+								.set(EDhApiHeightFogMixMode.SPHERICAL)
 								.comment(""
 										+ "How should height effect the fog thickness? \n"
 										+ "Note: height fog is combined with the other fog settings. \n"
 										+ "\n"
-										+ EDhApiHeightFogMixMode.BASIC + ": No special height fog effect. Fog is calculated based on camera distance \n"
-										+ EDhApiHeightFogMixMode.IGNORE_HEIGHT + ": Ignore height completely. Fog is only calculated with horizontal distance \n"
-										+ EDhApiHeightFogMixMode.ADDITION + ": heightFog + farFog \n"
+										+ EDhApiHeightFogMixMode.SPHERICAL + ": Fog is calculated based on camera distance. \n"
+										+ EDhApiHeightFogMixMode.CYLINDRICAL + ": Ignore height, fog is calculated based on horizontal distance. \n"
+										+ "\n"
 										+ EDhApiHeightFogMixMode.MAX + ": max(heightFog, farFog) \n"
+										+ EDhApiHeightFogMixMode.ADDITION + ": heightFog + farFog \n"
 										+ EDhApiHeightFogMixMode.MULTIPLY + ": heightFog * farFog \n"
 										+ EDhApiHeightFogMixMode.INVERSE_MULTIPLY + ": 1 - (1-heightFog) * (1-farFog) \n"
 										+ EDhApiHeightFogMixMode.LIMITED_ADDITION + ": farFog + max(farFog, heightFog) \n"
 										+ EDhApiHeightFogMixMode.MULTIPLY_ADDITION + ": farFog + farFog * heightFog \n"
 										+ EDhApiHeightFogMixMode.INVERSE_MULTIPLY_ADDITION + ": farFog + 1 - (1-heightFog) * (1-farFog) \n"
 										+ EDhApiHeightFogMixMode.AVERAGE + ": farFog*0.5 + heightFog*0.5 \n"
-										+ "\n"
-										+ "Note: height fog settings are ignored if '" + EDhApiHeightFogMixMode.BASIC + "' or '" + EDhApiHeightFogMixMode.IGNORE_HEIGHT + "' are selected.")
+										+ "\n")
 								.build();
 						
-						public static ConfigEntry<EDhApiHeightFogMode> heightFogMode = new ConfigEntry.Builder<EDhApiHeightFogMode>()
-								.set(EDhApiHeightFogMode.ABOVE_AND_BELOW_CAMERA)
+						public static ConfigEntry<EDhApiHeightFogDirection> heightFogDirection = new ConfigEntry.Builder<EDhApiHeightFogDirection>()
+								.set(EDhApiHeightFogDirection.BELOW_SET_HEIGHT)
 								.comment(""
 										+ "Where should the height fog start? \n"
 										+ "\n"
-										+ EDhApiHeightFogMode.ABOVE_CAMERA + ": Height fog starts at the camera and goes towards the sky \n"
-										+ EDhApiHeightFogMode.BELOW_CAMERA + ": Height fog starts at the camera and goes towards the void \n"
-										+ EDhApiHeightFogMode.ABOVE_AND_BELOW_CAMERA + ": Height fog starts from the camera to goes towards both the sky and void \n"
-										+ EDhApiHeightFogMode.ABOVE_SET_HEIGHT + ": Height fog starts from a set height and goes towards the sky \n"
-										+ EDhApiHeightFogMode.BELOW_SET_HEIGHT + ": Height fog starts from a set height and goes towards the void \n"
-										+ EDhApiHeightFogMode.ABOVE_AND_BELOW_SET_HEIGHT + ": Height fog starts from a set height and goes towards both the sky and void")
+										+ EDhApiHeightFogDirection.ABOVE_CAMERA + ": Height fog starts at the camera and goes towards the sky \n"
+										+ EDhApiHeightFogDirection.BELOW_CAMERA + ": Height fog starts at the camera and goes towards the void \n"
+										+ EDhApiHeightFogDirection.ABOVE_AND_BELOW_CAMERA + ": Height fog starts from the camera to goes towards both the sky and void \n"
+										+ EDhApiHeightFogDirection.ABOVE_SET_HEIGHT + ": Height fog starts from a set height and goes towards the sky \n"
+										+ EDhApiHeightFogDirection.BELOW_SET_HEIGHT + ": Height fog starts from a set height and goes towards the void \n"
+										+ EDhApiHeightFogDirection.ABOVE_AND_BELOW_SET_HEIGHT + ": Height fog starts from a set height and goes towards both the sky and void")
 								.build();
 						
 						public static ConfigEntry<Double> heightFogBaseHeight = new ConfigEntry.Builder<Double>()
-								.setMinDefaultMax(-4096.0, 70.0, 4096.0)
+								.setMinDefaultMax(-4096.0, 80.0, 4096.0)
 								.comment("If the height fog is calculated around a set height, what is that height position?")
 								.build();
 						
@@ -596,7 +595,7 @@ public class Config
 								.build();
 						
 						public static ConfigEntry<Double> heightFogEnd = new ConfigEntry.Builder<Double>()
-								.setMinDefaultMax(FOG_RANGE_MIN, 1.0, FOG_RANGE_MAX)
+								.setMinDefaultMax(FOG_RANGE_MIN, 0.6, FOG_RANGE_MAX)
 								.comment(""
 										+ "Should the end of the height fog be offset? \n"
 										+ "\n"
@@ -605,7 +604,7 @@ public class Config
 								.build();
 						
 						public static ConfigEntry<Double> heightFogMin = new ConfigEntry.Builder<Double>()
-								.setMinDefaultMax(-5.0, 0.0, FOG_RANGE_MAX)
+								.setMinDefaultMax(0.0, 0.0, FOG_RANGE_MAX)
 								.comment(""
 										+ "What is the minimum fog thickness? \n"
 										+ "\n"
@@ -633,7 +632,7 @@ public class Config
 								.build();
 						
 						public static ConfigEntry<Double> heightFogDensity = new ConfigEntry.Builder<Double>()
-								.setMinDefaultMax(0.01, 2.5, 50.0)
+								.setMinDefaultMax(0.01, 20.0, 50.0)
 								.comment("What is the height fog's density?")
 								.build();
 						
@@ -1268,6 +1267,19 @@ public class Config
 							+ "Expected Compression Ratio: 0.7\n"
 							+ "")
 					.build();
+			
+			public static ConfigEntry<Boolean> recalculateChunkHeightmaps = new ConfigEntry.Builder<Boolean>()
+					.set(false)
+					.comment(""
+							+ "True: Recalculate chunk height maps before chunks can be used by DH.\n"
+							+ "      This can fix problems with worlds created by World Painter or \n"
+							+ "      other external tools where the heightmap format may be incorrect. \n"
+							+ "False: Assume any height maps handled by Minecraft are correct. \n"
+							+ "\n"
+							+ "Fastest: False\n"
+							+ "Most Compatible: True\n"
+							+ "")
+					.build();
 		}
 		
 		public static class MultiThreading
@@ -1531,11 +1543,11 @@ public class Config
 		
 		public static ConfigEntry<String> levelKeyPrefix = new ConfigEntry.Builder<String>()
 				.setServersideShortName("levelKeyPrefix")
-				.set(getDefaultLevelKeyPrefix())
+				.set("")
 				.comment(""
 						+ "Prefix of the level keys sent to the clients.\n"
-						+ "If the mod is running behind a proxy, each backend should use a unique value (an empty string is allowed for one of the servers).\n"
-						+ "This value may be auto-generated if the mod is installed before the first start of the server.\n"
+						+ "If the mod is running behind a proxy, each backend should use a unique value.\n"
+						+ "If this value is empty, level key will be based on the server's seed hash.\n"
 						+ "")
 				.build();
 		
@@ -1619,21 +1631,6 @@ public class Config
 			{
 				LOGGER.error("Unexpected exception when running config delayed UI setup. Error: [" + e.getMessage() + "].", e);
 			}
-		}
-	}
-	
-	private static String getDefaultLevelKeyPrefix()
-	{
-		IMinecraftSharedWrapper mcWrapper = SingletonInjector.INSTANCE.get(IMinecraftSharedWrapper.class);
-		if (mcWrapper.isDedicatedServer())
-		{
-			return mcWrapper.isWorldNew()
-					? "server" + ThreadLocalRandom.current().nextInt(1, 1000)
-					: "";
-		}
-		else
-		{
-			return SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class).getUsername();
 		}
 	}
 	

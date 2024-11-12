@@ -72,13 +72,13 @@ public class DhApiWorldProxy implements IDhApiWorldProxy
 	public boolean worldLoaded() { return SharedApi.getAbstractDhWorld() != null; }
 	
 	@Override
-	public void setReadOnly(boolean readOnly) { this.setReadOnly(readOnly, true); }
+	public void setReadOnly(boolean readOnly) throws IllegalStateException { this.setReadOnly(readOnly, true); }
 	/** 
 	 * Not part of the public API. 
 	 * Normal API users shouldn't be able to change the upcoming world state
 	 * this is only here so DH can revert the readonly value after the world is unloaded
 	 */
-	public void setReadOnly(boolean readOnly, boolean throwIfWorldUnloaded)
+	public void setReadOnly(boolean readOnly, boolean throwIfWorldUnloaded) throws IllegalStateException
 	{
 		if (throwIfWorldUnloaded && SharedApi.getAbstractDhWorld() == null)
 		{
@@ -102,7 +102,7 @@ public class DhApiWorldProxy implements IDhApiWorldProxy
 	}
 	
 	@Override
-	public boolean getReadOnly()
+	public boolean getReadOnly() throws IllegalStateException
 	{
 		if (SharedApi.getAbstractDhWorld() == null)
 		{
@@ -120,7 +120,7 @@ public class DhApiWorldProxy implements IDhApiWorldProxy
 	//================//
 	
 	@Override
-	public IDhApiLevelWrapper getSinglePlayerLevel()
+	public IDhApiLevelWrapper getSinglePlayerLevel() throws IllegalStateException
 	{
 		if (SharedApi.getAbstractDhWorld() == null)
 		{
@@ -138,7 +138,7 @@ public class DhApiWorldProxy implements IDhApiWorldProxy
 	
 	
 	@Override
-	public Iterable<IDhApiLevelWrapper> getAllLoadedLevelWrappers()
+	public Iterable<IDhApiLevelWrapper> getAllLoadedLevelWrappers() throws IllegalStateException
 	{
 		AbstractDhWorld world = SharedApi.getAbstractDhWorld();
 		if (world == null)
@@ -155,7 +155,7 @@ public class DhApiWorldProxy implements IDhApiWorldProxy
 	}
 	
 	@Override
-	public Iterable<IDhApiLevelWrapper> getAllLoadedLevelsForDimensionType(IDhApiDimensionTypeWrapper dimensionTypeWrapper)
+	public Iterable<IDhApiLevelWrapper> getAllLoadedLevelsForDimensionType(IDhApiDimensionTypeWrapper dimensionTypeWrapper) throws IllegalStateException
 	{
 		AbstractDhWorld world = SharedApi.getAbstractDhWorld();
 		if (world == null)
@@ -176,7 +176,7 @@ public class DhApiWorldProxy implements IDhApiWorldProxy
 	}
 	
 	@Override
-	public Iterable<IDhApiLevelWrapper> getAllLoadedLevelsWithDimensionNameLike(String dimensionName)
+	public Iterable<IDhApiLevelWrapper> getAllLoadedLevelsWithDimensionNameLike(String dimensionName) throws IllegalStateException
 	{
 		AbstractDhWorld world = SharedApi.getAbstractDhWorld();
 		if (world == null)
@@ -190,7 +190,7 @@ public class DhApiWorldProxy implements IDhApiWorldProxy
 		for (IDhLevel dhLevel : world.getAllLoadedLevels())
 		{
 			ILevelWrapper levelWrapper = dhLevel.getLevelWrapper();
-			String levelDimName = levelWrapper.getDimensionName().toLowerCase();
+			String levelDimName = levelWrapper.getDhIdentifier().toLowerCase();
 			if (levelDimName.contains(soughtDimName))
 			{
 				returnList.add(levelWrapper);

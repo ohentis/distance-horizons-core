@@ -31,28 +31,28 @@ package com.seibel.distanthorizons.api.enums.rendering;
  * @version 2024-4-6
  * @since API 2.0.0
  */
-public enum EDhApiHeightFogMode
+public enum EDhApiHeightFogDirection
 {
 	// Reminder:
 	// when adding items up the API minor version
 	// when removing items up the API major version
 	
 	
-	ABOVE_CAMERA(true, true, false),
-	BELOW_CAMERA(true, false, true),
-	ABOVE_AND_BELOW_CAMERA(true, true, true),
-	ABOVE_SET_HEIGHT(false, true, false),
-	BELOW_SET_HEIGHT(false, false, true),
-	ABOVE_AND_BELOW_SET_HEIGHT(false, true, true);
+	ABOVE_CAMERA                (true,  true,  false),
+	BELOW_CAMERA                (true,  false, true),
+	ABOVE_AND_BELOW_CAMERA      (true,  true,  true),
+	ABOVE_SET_HEIGHT            (false, true,  false),
+	BELOW_SET_HEIGHT            (false, false, true),
+	ABOVE_AND_BELOW_SET_HEIGHT  (false, true,  true);
 	
 	public final boolean basedOnCamera;
-	public final boolean above;
-	public final boolean below;
+	public final boolean fogAppliesUp;
+	public final boolean fogAppliesDown;
 	
-	EDhApiHeightFogMode(boolean basedOnCamera, boolean above, boolean below)
+	EDhApiHeightFogDirection(boolean basedOnCamera, boolean fogAppliesUp, boolean fogAppliesDown)
 	{
 		this.basedOnCamera = basedOnCamera;
-		this.above = above;
-		this.below = below;
+		this.fogAppliesUp = fogAppliesUp;
+		this.fogAppliesDown = fogAppliesDown;
 	}
 }

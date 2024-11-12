@@ -21,7 +21,7 @@ package com.seibel.distanthorizons.api.interfaces.config.client;
 
 import com.seibel.distanthorizons.api.enums.rendering.EDhApiFogFalloff;
 import com.seibel.distanthorizons.api.enums.rendering.EDhApiHeightFogMixMode;
-import com.seibel.distanthorizons.api.enums.rendering.EDhApiHeightFogMode;
+import com.seibel.distanthorizons.api.enums.rendering.EDhApiHeightFogDirection;
 import com.seibel.distanthorizons.api.interfaces.config.IDhApiConfigGroup;
 import com.seibel.distanthorizons.api.interfaces.config.IDhApiConfigValue;
 
@@ -42,11 +42,14 @@ public interface IDhApiHeightFogConfig extends IDhApiConfigGroup
 	/** Defines how the height fog mixes. */
 	IDhApiConfigValue<EDhApiHeightFogMixMode> heightFogMixMode();
 	
-	/** Defines how the height fog is drawn relative to the camera or world. */
-	IDhApiConfigValue<EDhApiHeightFogMode> heightFogMode();
+	/**
+	 * Defines which direction height fog is drawn relative to the world. 
+	 * @since API 4.0.0
+	 */
+	IDhApiConfigValue<EDhApiHeightFogDirection> heightFogDirection();
 	
 	/**
-	 * Defines the height fog's base height if {@link IDhApiHeightFogConfig#heightFogMode()}
+	 * Defines the height fog's base height if {@link IDhApiHeightFogConfig#heightFogDirection()}
 	 * is set to use a specific height.
 	 */
 	IDhApiConfigValue<Double> heightFogBaseHeight();

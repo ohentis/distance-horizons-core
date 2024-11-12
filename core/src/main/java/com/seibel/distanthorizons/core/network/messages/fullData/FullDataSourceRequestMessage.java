@@ -48,7 +48,7 @@ public class FullDataSourceRequestMessage extends AbstractTrackableMessage imple
 	public FullDataSourceRequestMessage() {}
 	public FullDataSourceRequestMessage(ILevelWrapper levelWrapper, long sectionPos, @Nullable Long clientTimestamp)
 	{
-		this.levelName = levelWrapper.getDimensionName();
+		this.levelName = levelWrapper.getDhIdentifier();
 		this.sectionPos = sectionPos;
 		this.clientTimestamp = clientTimestamp;
 	}

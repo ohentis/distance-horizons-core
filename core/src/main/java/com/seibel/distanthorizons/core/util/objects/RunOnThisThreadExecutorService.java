@@ -19,6 +19,8 @@
 
 package com.seibel.distanthorizons.core.util.objects;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -30,45 +32,43 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-public class DummyRunExecutorService implements ExecutorService
+/**
+ * This runs the given {@link Runnable}'s on the same
+ * thread as they're queued.
+ * This can be used to change MC threads to run on DH threads.
+ * This is done to prevent concurrent issues with world generation
+ * and reduce putting undue load on MC threads.
+ */
+public class RunOnThisThreadExecutorService implements ExecutorService
 {
 	private boolean shutdownCalled = false;
 	
-	@Override
-	public void execute(Runnable command)
-	{
-		command.run();
-	}
+	
 	
 	@Override
-	public void shutdown()
-	{
-		shutdownCalled = true;
-	}
+	public void execute(Runnable command) { command.run(); }
 	
 	@Override
+	public void shutdown() { this.shutdownCalled = true; }
+	
+	@Override
+	@NotNull
 	public List<Runnable> shutdownNow()
 	{
-		shutdownCalled = true;
-		return new ArrayList<Runnable>();
+		this.shutdownCalled = true;
+		return new ArrayList<>(); 
 	}
 	
 	@Override
-	public boolean isShutdown()
-	{
-		return shutdownCalled;
-	}
+	public boolean isShutdown() { return this.shutdownCalled; }
 	
 	@Override
-	public boolean isTerminated()
-	{
-		return shutdownCalled;
-	}
+	public boolean isTerminated() { return this.shutdownCalled; }
 	
 	@Override
 	public boolean awaitTermination(long timeout, TimeUnit unit)
 	{
-		shutdownCalled = true;
+		this.shutdownCalled = true;
 		return true;
 	}
 	
@@ -119,7 +119,7 @@ public class DummyRunExecutorService implements ExecutorService
 		List<Future<T>> futures = new ArrayList<Future<T>>(tasks.size());
 		for (Callable<T> t : tasks)
 		{
-			futures.add(submit(t));
+			futures.add(this.submit(t));
 		}
 		return futures;
 	}
@@ -151,7 +151,7 @@ public class DummyRunExecutorService implements ExecutorService
 	@Override
 	public <T> T invokeAny(Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit) throws ExecutionException
 	{
-		return invokeAny(tasks);
+		return this.invokeAny(tasks);
 	}
 	
 }

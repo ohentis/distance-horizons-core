@@ -132,7 +132,7 @@ public class DhClientServerLevel extends AbstractDhServerLevel implements IDhCli
 	public void addDebugMenuStringsToList(List<String> messageList)
 	{
 		// header
-		String dimName = this.serverLevelWrapper.getDimensionName();
+		String dimName = this.serverLevelWrapper.getDhIdentifier();
 		boolean rendering = this.clientside.isRendering();
 		messageList.add("["+dimName+"] rendering: "+(rendering ? "yes" : "no"));
 		

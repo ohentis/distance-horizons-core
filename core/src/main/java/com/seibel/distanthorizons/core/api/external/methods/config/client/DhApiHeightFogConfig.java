@@ -21,7 +21,7 @@ package com.seibel.distanthorizons.core.api.external.methods.config.client;
 
 import com.seibel.distanthorizons.api.enums.rendering.EDhApiFogFalloff;
 import com.seibel.distanthorizons.api.enums.rendering.EDhApiHeightFogMixMode;
-import com.seibel.distanthorizons.api.enums.rendering.EDhApiHeightFogMode;
+import com.seibel.distanthorizons.api.enums.rendering.EDhApiHeightFogDirection;
 import com.seibel.distanthorizons.api.interfaces.config.IDhApiConfigValue;
 import com.seibel.distanthorizons.api.interfaces.config.client.IDhApiHeightFogConfig;
 import com.seibel.distanthorizons.api.objects.config.DhApiConfigValue;
@@ -40,8 +40,8 @@ public class DhApiHeightFogConfig implements IDhApiHeightFogConfig
 	{ return new DhApiConfigValue<EDhApiHeightFogMixMode, EDhApiHeightFogMixMode>(Config.Client.Advanced.Graphics.Fog.HeightFog.heightFogMixMode); }
 	
 	@Override
-	public IDhApiConfigValue<EDhApiHeightFogMode> heightFogMode()
-	{ return new DhApiConfigValue<EDhApiHeightFogMode, EDhApiHeightFogMode>(Config.Client.Advanced.Graphics.Fog.HeightFog.heightFogMode); }
+	public IDhApiConfigValue<EDhApiHeightFogDirection> heightFogDirection()
+	{ return new DhApiConfigValue<EDhApiHeightFogDirection, EDhApiHeightFogDirection>(Config.Client.Advanced.Graphics.Fog.HeightFog.heightFogDirection); }
 	
 	@Override
 	public IDhApiConfigValue<Double> heightFogBaseHeight()

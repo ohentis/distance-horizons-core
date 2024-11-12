@@ -238,16 +238,16 @@ public class GLProxy
 		Runnable runnable = this.renderThreadRunnableQueue.poll();
 		while(runnable != null)
 		{
+			runnable.run();
+			
+			// only try running for 4ms (240 FPS) at a time to prevent random lag spikes
 			long currentTime = System.nanoTime();
 			long runDuration = currentTime - startTime;
-			// only try running for 4ms at a time to (hopefully) prevent random lag spikes
 			if (runDuration > 4_000_000)
 			{
 				break;
 			}
 			
-			
-			runnable.run();
 			runnable = this.renderThreadRunnableQueue.poll();
 		}
 	}

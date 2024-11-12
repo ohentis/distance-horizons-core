@@ -79,7 +79,7 @@ public class DhClientServerWorld extends AbstractDhServerWorld<DhClientServerLev
 				LodUtil.assertTrue(serverLevelWrapper != null);
 				if (!clientLevelWrapper.getDimensionType().equals(serverLevelWrapper.getDimensionType()))
 				{
-					LodUtil.assertNotReach("tryGetServerSideWrapper returned a level for a different dimension. ClientLevelWrapper dim: " + clientLevelWrapper.getDimensionName() + " ServerLevelWrapper dim: " + serverLevelWrapper.getDimensionName());
+					LodUtil.assertNotReach("tryGetServerSideWrapper returned a level for a different dimension. ClientLevelWrapper dim: [" + clientLevelWrapper.getDhIdentifier() + "] ServerLevelWrapper dim: [" + serverLevelWrapper.getDhIdentifier() + "].");
 				}
 				
 				
@@ -148,7 +148,7 @@ public class DhClientServerWorld extends AbstractDhServerWorld<DhClientServerLev
 			// close each level
 			for (DhClientServerLevel level : this.dhLevels)
 			{
-				LOGGER.info("Unloading level " + level.getServerLevelWrapper().getDimensionName());
+				LOGGER.info("Unloading level [" + level.getServerLevelWrapper().getDhIdentifier() + "].");
 				
 				// level wrapper shouldn't be null, but just in case
 				IServerLevelWrapper serverLevelWrapper = level.getServerLevelWrapper();

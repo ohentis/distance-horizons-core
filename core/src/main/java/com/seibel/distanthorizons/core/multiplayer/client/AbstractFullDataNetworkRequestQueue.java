@@ -134,7 +134,7 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 	
 	public synchronized boolean tick(DhBlockPos2D targetPos)
 	{
-		if (DhApiWorldProxy.INSTANCE.getReadOnly())
+		if (DhApiWorldProxy.INSTANCE.worldLoaded() && DhApiWorldProxy.INSTANCE.getReadOnly())
 		{
 			return false;
 		}
@@ -302,7 +302,7 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 	
 	public void addDebugMenuStringsToList(List<String> messageList)
 	{
-		messageList.add(this.getQueueName() + " [" + this.level.getClientLevelWrapper().getDimensionName() + "]");
+		messageList.add(this.getQueueName() + " [" + this.level.getClientLevelWrapper().getDhIdentifier() + "]");
 		messageList.add("Requests: " + this.finishedRequests + " / " + (this.getWaitingTaskCount() + this.finishedRequests.get()) + " (failed: " + this.failedRequests + ", rate limit: " + this.getRequestRateLimit() + ")");
 	}
 	

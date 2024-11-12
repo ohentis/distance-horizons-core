@@ -44,7 +44,6 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRen
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.ILightMapWrapper;
 import com.seibel.distanthorizons.api.enums.rendering.EDhApiFogColorMode;
-import com.seibel.distanthorizons.core.render.fog.LodFogConfig;
 import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.AbstractOptifineAccessor;
 import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.IIrisAccessor;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
@@ -104,8 +103,7 @@ public class LodRenderer
 	
 	
 	// The shader program
-	IDhApiShaderProgram lodRenderProgram = null;
-	LodFogConfig fogConfig;
+	private IDhApiShaderProgram lodRenderProgram = null;
 	public QuadElementBuffer quadIBO = null;
 	public boolean isSetupComplete = false;
 	
@@ -634,22 +632,6 @@ public class LodRenderer
 		}
 		else
 		{
-			LodFogConfig newFogConfig = LodFogConfig.generateFogConfig(); // TODO use a config listener instead
-			if (this.fogConfig == null)
-			{
-				this.fogConfig = newFogConfig;
-			}
-			
-			if (!this.fogConfig.equals(newFogConfig))
-			{
-				this.fogConfig = newFogConfig;
-				
-				this.lodRenderProgram.free();
-				this.lodRenderProgram = new DhTerrainShaderProgram();
-				
-				FogShader.INSTANCE.free();
-				FogShader.INSTANCE = new FogShader(newFogConfig);
-			}
 			this.lodRenderProgram.bind();
 		}
 		

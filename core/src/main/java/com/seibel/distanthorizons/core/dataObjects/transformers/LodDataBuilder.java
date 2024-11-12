@@ -141,7 +141,7 @@ public class LodDataBuilder
 				for (int relBlockZ = 0; relBlockZ < LodUtil.CHUNK_WIDTH; relBlockZ++)
 				{
 					LongArrayList longs = new LongArrayList(chunkWrapper.getHeight() / 4);
-					int lastY = chunkWrapper.getMaxBuildHeight();
+					int lastY = chunkWrapper.getExclusiveMaxBuildHeight();
 					IBiomeWrapper biome = chunkWrapper.getBiome(relBlockX, lastY, relBlockZ);
 					IBlockStateWrapper blockState = AIR;
 					int mappedId = dataSource.mapping.addIfNotPresentAndGetId(biome, blockState);
@@ -149,7 +149,7 @@ public class LodDataBuilder
 					
 					byte blockLight;
 					byte skyLight;
-					if (lastY < chunkWrapper.getMaxBuildHeight())
+					if (lastY < chunkWrapper.getExclusiveMaxBuildHeight())
 					{
 						// FIXME: The lastY +1 offset is to reproduce the old behavior. Remove this when we get per-face lighting
 						blockLight = (byte) chunkWrapper.getDhBlockLight(relBlockX, lastY + 1, relBlockZ);
@@ -167,7 +167,7 @@ public class LodDataBuilder
 					int y = chunkWrapper.getLightBlockingHeightMapValue(relBlockX, relBlockZ);
 					// go up until we reach open air or the world limit
 					IBlockStateWrapper topBlockState = previousBlockState = chunkWrapper.getBlockState(relBlockX, y, relBlockZ, mcBlockPos, previousBlockState);
-					while (!topBlockState.isAir() && y < chunkWrapper.getMaxBuildHeight())
+					while (!topBlockState.isAir() && y < chunkWrapper.getExclusiveMaxBuildHeight())
 					{
 						try
 						{
@@ -180,7 +180,7 @@ public class LodDataBuilder
 						{
 							if (!getTopErrorLogged)
 							{
-								LOGGER.warn("Unexpected issue in LodDataBuilder, future errors won't be logged. Chunk [" + chunkWrapper.getChunkPos() + "] with max height: [" + chunkWrapper.getMaxBuildHeight() + "] had issue getting block at pos [" + relBlockX + "," + y + "," + relBlockZ + "] error: " + e.getMessage(), e);
+								LOGGER.warn("Unexpected issue in LodDataBuilder, future errors won't be logged. Chunk [" + chunkWrapper.getChunkPos() + "] with max height: [" + chunkWrapper.getExclusiveMaxBuildHeight() + "] had issue getting block at pos [" + relBlockX + "," + y + "," + relBlockZ + "] error: " + e.getMessage(), e);
 								getTopErrorLogged = true;
 							}
 							
@@ -208,7 +208,7 @@ public class LodDataBuilder
 									// check if this block is visible from any direction 
 									|| blockVisible(chunkWrapper, relBlockX, y, relBlockZ))
 							{
-								longs.add(FullDataPointUtil.encode(mappedId, lastY - y, y + 1 - chunkWrapper.getMinBuildHeight(), blockLight, skyLight));
+								longs.add(FullDataPointUtil.encode(mappedId, lastY - y, y + 1 - chunkWrapper.getInclusiveMinBuildHeight(), blockLight, skyLight));
 								biome = newBiome;
 								blockState = newBlockState;
 								
@@ -219,7 +219,7 @@ public class LodDataBuilder
 							}
 						}
 					}
-					longs.add(FullDataPointUtil.encode(mappedId, lastY - y, y + 1 - chunkWrapper.getMinBuildHeight(), blockLight, skyLight));
+					longs.add(FullDataPointUtil.encode(mappedId, lastY - y, y + 1 - chunkWrapper.getInclusiveMinBuildHeight(), blockLight, skyLight));
 					
 					dataSource.setSingleColumn(longs,
 							relBlockX + chunkOffsetX,
@@ -289,7 +289,7 @@ public class LodDataBuilder
 		{
 			return true;
 		}
-		if (testBlockPos.getY() < chunkWrapper.getMinBuildHeight() || testBlockPos.getY() > chunkWrapper.getMaxBuildHeight())
+		if (testBlockPos.getY() < chunkWrapper.getInclusiveMinBuildHeight() || testBlockPos.getY() > chunkWrapper.getExclusiveMaxBuildHeight())
 		{
 			return true;
 		}

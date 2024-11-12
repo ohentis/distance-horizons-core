@@ -26,7 +26,11 @@ import com.seibel.distanthorizons.api.objects.data.DhApiChunk;
 import com.seibel.distanthorizons.api.objects.data.IDhApiFullDataSource;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
-import com.seibel.distanthorizons.core.generation.tasks.*;
+import com.seibel.distanthorizons.core.generation.tasks.IWorldGenTaskTracker;
+import com.seibel.distanthorizons.core.generation.tasks.InProgressWorldGenTaskGroup;
+import com.seibel.distanthorizons.core.generation.tasks.WorldGenResult;
+import com.seibel.distanthorizons.core.generation.tasks.WorldGenTask;
+import com.seibel.distanthorizons.core.generation.tasks.WorldGenTaskGroup;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
@@ -191,7 +195,7 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 			try
 			{
 				// loop until the generator is shutdown
-				while (!Thread.interrupted() && !DhApiWorldProxy.INSTANCE.getReadOnly())
+				while (!Thread.interrupted() && DhApiWorldProxy.INSTANCE.worldLoaded() && !DhApiWorldProxy.INSTANCE.getReadOnly())
 				{
 					this.generator.preGeneratorTaskStart();
 					
