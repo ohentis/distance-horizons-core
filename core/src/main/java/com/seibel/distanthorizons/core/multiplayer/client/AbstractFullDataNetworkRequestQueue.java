@@ -34,6 +34,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
@@ -111,24 +112,40 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 	{
 		//LodUtil.assertTrue(DhSectionPos.getDetailLevel(sectionPos) == DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL, "Only highest-detail sections are allowed.");
 		
-		RequestQueueEntry entry = new RequestQueueEntry(dataSourceConsumer, clientTimestamp);
-		entry.future.whenComplete((requestResult, throwable) ->
+		AtomicBoolean added = new AtomicBoolean(false);
+		RequestQueueEntry entry = this.waitingTasksBySectionPos.compute(sectionPos, (k, existingQueueEntry) ->
 		{
-			this.waitingTasksBySectionPos.remove(sectionPos);
-			
-			if (requestResult != RequestResult.REQUIRES_SPLITTING)
+			if (existingQueueEntry != null)
 			{
-				this.finishedRequests.incrementAndGet();
+				return existingQueueEntry;
 			}
 			
-			if ((requestResult == null || requestResult == RequestResult.FAILED)
-					|| (throwable != null && !(throwable instanceof CancellationException)))
+			RequestQueueEntry newEntry = new RequestQueueEntry(dataSourceConsumer, clientTimestamp);
+			newEntry.future.whenComplete((requestResult, throwable) ->
 			{
-				this.failedRequests.incrementAndGet();
-			}
+				this.waitingTasksBySectionPos.remove(sectionPos);
+				
+				if (requestResult != RequestResult.REQUIRES_SPLITTING)
+				{
+					this.finishedRequests.incrementAndGet();
+				}
+				
+				if ((requestResult == null || requestResult == RequestResult.FAILED)
+						|| (throwable != null && !(throwable instanceof CancellationException)))
+				{
+					this.failedRequests.incrementAndGet();
+				}
+			});
+			
+			added.set(true);
+			return newEntry;
 		});
 		
-		this.waitingTasksBySectionPos.put(sectionPos, entry);
+		if (!added.get())
+		{
+			return CompletableFuture.completedFuture(RequestResult.FAILED);
+		}
+		
 		return entry.future;
 	}
 	
