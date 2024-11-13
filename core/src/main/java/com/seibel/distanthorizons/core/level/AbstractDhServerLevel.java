@@ -4,21 +4,18 @@ import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.file.fullDatafile.FullDataSourceProviderV2;
 import com.seibel.distanthorizons.core.file.structure.ISaveStructure;
-import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
+import com.seibel.distanthorizons.core.multiplayer.server.FullDataSourceRequestHandler;
 import com.seibel.distanthorizons.core.multiplayer.server.ServerPlayerState;
 import com.seibel.distanthorizons.core.multiplayer.server.ServerPlayerStateManager;
 import com.seibel.distanthorizons.core.network.exceptions.InvalidLevelException;
-import com.seibel.distanthorizons.core.network.exceptions.RequestRejectedException;
-import com.seibel.distanthorizons.core.network.exceptions.SectionRequiresSplittingException;
 import com.seibel.distanthorizons.core.network.messages.AbstractNetworkMessage;
 import com.seibel.distanthorizons.core.network.messages.AbstractTrackableMessage;
 import com.seibel.distanthorizons.core.network.messages.ILevelRelatedMessage;
 import com.seibel.distanthorizons.core.network.messages.fullData.FullDataPartialUpdateMessage;
 import com.seibel.distanthorizons.core.multiplayer.fullData.FullDataPayload;
 import com.seibel.distanthorizons.core.network.messages.fullData.FullDataSourceRequestMessage;
-import com.seibel.distanthorizons.core.network.messages.fullData.FullDataSourceResponseMessage;
 import com.seibel.distanthorizons.core.network.messages.requests.CancelMessage;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
@@ -28,21 +25,16 @@ import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
-import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.*;
 
 public abstract class AbstractDhServerLevel extends AbstractDhLevel implements IDhServerLevel
 {
 	protected static final Logger LOGGER = DhLoggerBuilder.getLogger();
-	private static final ConfigBasedLogger NETWORK_LOGGER = new ConfigBasedLogger(LogManager.getLogger(),
-			() -> Config.Common.Logging.logNetworkEvent.get());
 	
 	public final ServerLevelModule serverside;
 	protected final IServerLevelWrapper serverLevelWrapper;
@@ -56,11 +48,9 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 	 */
 	protected final ConcurrentLinkedQueue<IServerPlayerWrapper> worldGenPlayerCenteringQueue = new ConcurrentLinkedQueue<>();
 	
-	private final ConcurrentMap<Long, DataSourceRequestGroup> requestGroupByPos = new ConcurrentHashMap<>();
-	private final ConcurrentMap<Long, DataSourceRequestGroup> requestGroupByFutureId = new ConcurrentHashMap<>();
+	private final FullDataSourceRequestHandler requestHandler = new FullDataSourceRequestHandler(this);
 	
-	
-	private final boolean generatorSupportsNSizedGeneration = false;
+	private final boolean NSizedGenerationSupported = false;
 	
 	
 	//=============//
@@ -104,52 +94,7 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 	@Override
 	public void serverTick()
 	{
-		// Send finished data source requests
-		for (Map.Entry<Long, DataSourceRequestGroup> entry : this.requestGroupByPos.entrySet())
-		{
-			DataSourceRequestGroup requestGroup = entry.getValue();
-			
-			if (requestGroup.fullDataSource == null)
-			{
-				continue;
-			}
-			
-			NETWORK_LOGGER.debug("[" + this.serverLevelWrapper.getDhIdentifier() + "] Fulfilled request group [" + entry.getKey() + "]");
-			
-			// Make this group unavailable for adding into
-			this.requestGroupByPos.remove(entry.getKey());
-			requestGroup.requestRemoveSemaphore.acquireUninterruptibly(Short.MAX_VALUE);
-			requestGroup.requestAddSemaphore.acquireUninterruptibly(Short.MAX_VALUE);
-			
-			ThreadPoolExecutor executor = ThreadPoolUtil.getNetworkCompressionExecutor();
-			if (executor == null)
-			{
-				LOGGER.warn("Unable to send FullDataSourceResponseMessage - getNetworkCompressionExecutor() is null");
-				continue;
-			}
-			CompletableFuture.runAsync(() ->
-			{
-				Objects.requireNonNull(this.beaconBeamRepo);
-				try (FullDataPayload payload = new FullDataPayload(requestGroup.fullDataSource, this.beaconBeamRepo.getAllBeamsForPos(entry.getKey())))
-				{
-					for (FullDataSourceRequestMessage msg : requestGroup.requestMessages.values())
-					{
-						this.requestGroupByFutureId.remove(msg.futureId);
-						
-						ServerPlayerState serverPlayerState = this.serverPlayerStateManager.getConnectedPlayer(msg.serverPlayer());
-						if (serverPlayerState == null)
-						{
-							continue;
-						}
-						
-						serverPlayerState.fullDataPayloadSender.sendInChunks(payload, () -> {
-							msg.sendResponse(new FullDataSourceResponseMessage(payload));
-							serverPlayerState.getRateLimiterSet(this).generationRequestRateLimiter.release();
-						});
-					}
-				}
-			}, executor);
-		}
+		this.requestHandler.tick();
 	}
 	
 	@Override
@@ -188,12 +133,10 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 	{
 		serverPlayerState.networkSession.registerHandler(FullDataSourceRequestMessage.class, (message) ->
 		{
-			if (!this.messagePlayerInThisLevel(message))
+			if (!this.validatePlayerInCurrentLevel(message))
 			{
-				// we can't handle players in other levels, don't continue
 				return;
 			}
-			
 			
 			ServerPlayerState.RateLimiterSet rateLimiterSet = serverPlayerState.getRateLimiterSet(this);
 			
@@ -201,136 +144,24 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 			
 			if (message.clientTimestamp == null)
 			{
-				this.queueWorldGenForRequestMessage(serverPlayerState, message, rateLimiterSet);
+				this.requestHandler.queueWorldGenForRequestMessage(serverPlayerState, message, rateLimiterSet);
 			}
 			else
 			{
-				this.queueLodSyncForRequestMessage(serverPlayerState, message, rateLimiterSet);
+				this.requestHandler.queueLodSyncForRequestMessage(serverPlayerState, message, rateLimiterSet);
 			}
 		});
 		
 		
 		serverPlayerState.networkSession.registerHandler(CancelMessage.class, msg ->
 		{
-			DataSourceRequestGroup requestGroup = this.requestGroupByFutureId.remove(msg.futureId);
-			if (requestGroup == null)
-			{
-				return;
-			}
-			
-			// If this fails, the group is being removed and completing cancellation is not necessary
-			if (requestGroup.requestRemoveSemaphore.tryAcquire())
-			{
-				// Prevent adding requests in case the group will be removed by this cancellation
-				requestGroup.requestAddSemaphore.acquireUninterruptibly(Short.MAX_VALUE);
-				requestGroup.requestRemoveSemaphore.release();
-				
-				serverPlayerState.getRateLimiterSet(this).generationRequestRateLimiter.release();
-				
-				FullDataSourceRequestMessage requestMessage = requestGroup.requestMessages.remove(msg.futureId);
-				if (requestGroup.requestMessages.isEmpty())
-				{
-					NETWORK_LOGGER.debug("[" + this.serverLevelWrapper.getDhIdentifier() + "] Cancelled request group [" + DhSectionPos.toString(requestMessage.sectionPos) + "].");
-					this.requestGroupByPos.remove(requestMessage.sectionPos);
-					this.serverside.fullDataFileHandler.removeRetrievalRequestIf(pos -> pos == requestMessage.sectionPos);
-				}
-				else
-				{
-					requestGroup.requestAddSemaphore.release(Short.MAX_VALUE);
-				}
-			}
+			this.requestHandler.cancelRequest(msg.futureId);
 		});
-	}
-	private void queueLodSyncForRequestMessage(ServerPlayerState serverPlayerState, FullDataSourceRequestMessage message, ServerPlayerState.RateLimiterSet rateLimiterSet)
-	{
-		if (!serverPlayerState.sessionConfig.getSynchronizeOnLoad())
-		{
-			message.sendResponse(new RequestRejectedException("Operation is disabled in config."));
-			return;
-		}
-		
-		if (!rateLimiterSet.syncOnLoginRateLimiter.tryAcquire(message))
-		{
-			return;
-		}
-		
-		
-		// the client timestamp will be null if we want to retrieve the LOD regardless of when it was last updated
-		long clientTimestamp = (message.clientTimestamp != null) ? message.clientTimestamp : -1;
-		// the server timestamp will be null if no LOD data exists for this position
-		Long serverTimestamp = this.serverside.fullDataFileHandler.getTimestampForPos(message.sectionPos);
-		if (serverTimestamp == null
-				|| serverTimestamp <= clientTimestamp)
-		{
-			// either no data exists to sync, or the client is already up to date
-			rateLimiterSet.syncOnLoginRateLimiter.release();
-			message.sendResponse(new FullDataSourceResponseMessage(null));
-			return;
-		}
-		
-		
-		
-		ThreadPoolExecutor executor = ThreadPoolUtil.getNetworkCompressionExecutor();
-		if (executor == null)
-		{
-			// shouldn't normally happen, but just in case
-			LOGGER.warn("Unable to send FullDataSourceResponseMessage - getNetworkCompressionExecutor() is null");
-			return;
-		}
-		
-		this.serverside.fullDataFileHandler.getAsync(message.sectionPos).thenAcceptAsync(fullDataSource ->
-		{
-			Objects.requireNonNull(this.beaconBeamRepo);
-			try (FullDataPayload payload = new FullDataPayload(fullDataSource, this.beaconBeamRepo.getAllBeamsForPos(message.sectionPos)))
-			{
-				serverPlayerState.fullDataPayloadSender.sendInChunks(payload, () -> 
-				{
-					message.sendResponse(new FullDataSourceResponseMessage(payload));
-					rateLimiterSet.syncOnLoginRateLimiter.release();
-				});
-			}
-		}, executor);
-	}
-	private void queueWorldGenForRequestMessage(ServerPlayerState serverPlayerState, FullDataSourceRequestMessage message, ServerPlayerState.RateLimiterSet rateLimiterSet)
-	{
-		if (!serverPlayerState.sessionConfig.isDistantGenerationEnabled())
-		{
-			message.sendResponse(new RequestRejectedException("Operation is disabled in config."));
-			return;
-		}
-		
-		if (!rateLimiterSet.generationRequestRateLimiter.tryAcquire(message))
-		{
-			return;
-		}
-		
-		while (true)
-		{
-			DataSourceRequestGroup requestGroup = this.requestGroupByPos.computeIfAbsent(message.sectionPos, pos ->
-			{
-				DataSourceRequestGroup newGroup = new DataSourceRequestGroup();
-				this.tryFulfillDataSourceRequestGroup(newGroup, pos);
-				NETWORK_LOGGER.debug("[" + this.serverLevelWrapper.getDhIdentifier() + "] Created request group for pos [" + DhSectionPos.toString(pos) + "].");
-				return newGroup;
-			});
-			
-			// If this fails, loop until either a permit is acquired or the group is removed to create another one
-			if (!requestGroup.requestAddSemaphore.tryAcquire())
-			{
-				Thread.yield();
-				continue;
-			}
-			
-			this.requestGroupByFutureId.put(message.futureId, requestGroup);
-			requestGroup.requestMessages.put(message.futureId, message);
-			requestGroup.requestAddSemaphore.release();
-			break;
-		}
 	}
 	
 	
 	/** May send an error message in response if the message is a {@link AbstractTrackableMessage} */
-	private <T extends AbstractNetworkMessage> boolean messagePlayerInThisLevel(T message)
+	private <T extends AbstractNetworkMessage> boolean validatePlayerInCurrentLevel(T message)
 	{
 		if (!(message instanceof ILevelRelatedMessage))
 		{
@@ -374,57 +205,12 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 	// world gen //
 	//===========//
 	
+	public boolean isNSizedGenerationSupported() { return this.NSizedGenerationSupported; }
+	
 	@Override
 	public void onWorldGenTaskComplete(long pos)
 	{
-		DataSourceRequestGroup requestGroup = this.requestGroupByPos.get(pos);
-		if (requestGroup != null)
-		{
-			requestGroup.worldGenTaskComplete = true;
-			this.tryFulfillDataSourceRequestGroup(requestGroup, pos);
-		}
-	}
-	
-	private void tryFulfillDataSourceRequestGroup(DataSourceRequestGroup requestGroup, long pos)
-	{
-		this.serverside.fullDataFileHandler.getAsync(pos).thenAccept(fullDataSource ->
-		{
-			if (this.serverside.fullDataFileHandler.isFullyGenerated(fullDataSource.columnGenerationSteps))
-			{
-				LOGGER.info("sending - complete ["+DhSectionPos.toString(pos)+"]");
-				requestGroup.fullDataSource = fullDataSource;
-			}
-			else if (!this.generatorSupportsNSizedGeneration && DhSectionPos.getDetailLevel(pos) > DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL)
-			{
-				// Make this group unavailable for adding into
-				this.requestGroupByPos.remove(pos);
-				requestGroup.requestRemoveSemaphore.acquireUninterruptibly(Short.MAX_VALUE);
-				requestGroup.requestAddSemaphore.acquireUninterruptibly(Short.MAX_VALUE);
-				
-				for (FullDataSourceRequestMessage msg : requestGroup.requestMessages.values())
-				{
-					this.requestGroupByFutureId.remove(msg.futureId);
-					
-					ServerPlayerState serverPlayerState = this.serverPlayerStateManager.getConnectedPlayer(msg.serverPlayer());
-					if (serverPlayerState != null)
-					{
-						serverPlayerState.getRateLimiterSet(this).generationRequestRateLimiter.release();
-					}
-					
-					msg.sendResponse(new SectionRequiresSplittingException());
-				}
-			}
-			else if (requestGroup.worldGenTaskComplete)
-			{
-				LOGGER.info("sending - retry ["+DhSectionPos.toString(pos)+"]");
-				this.tryFulfillDataSourceRequestGroup(requestGroup, pos);
-			}
-			else
-			{
-				LOGGER.info("sending - queueing ["+DhSectionPos.toString(pos)+"]");
-				this.serverside.fullDataFileHandler.queuePositionForRetrieval(pos);
-			}
-		});
+		this.requestHandler.onWorldGenTaskComplete(pos);
 	}
 	
 	
@@ -562,33 +348,6 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 		super.close();
 		this.serverside.close();
 		LOGGER.info("Closed DHLevel for [" + this.getLevelWrapper() + "].");
-	}
-	
-	
-	
-	//================//
-	// helper classes //
-	//================//
-	
-	private static class DataSourceRequestGroup
-	{
-		public final ConcurrentMap<Long, FullDataSourceRequestMessage> requestMessages = new ConcurrentHashMap<>();
-		
-		/** If this variable is true, we definitely know that generation is complete and there's no need for checking column gen steps */
-		boolean worldGenTaskComplete = false;
-		
-		@CheckForNull
-		public FullDataSourceV2 fullDataSource = null;
-		
-		/**
-		 * These two Semaphores are used to prevent all threads from locking on the group after it being fulfilled,
-		 * as opposed to ReentrantReadWriteLocks which would allow the locking thread continue using it anyway. <br>
-		 * Short.MAX_VALUE is chosen as a large enough number so non-exclusive accesses never block each other.
-		 */
-		public final Semaphore requestAddSemaphore = new Semaphore(Short.MAX_VALUE, true);
-		/** @see DataSourceRequestGroup#requestAddSemaphore */
-		public final Semaphore requestRemoveSemaphore = new Semaphore(Short.MAX_VALUE, true);
-		
 	}
 	
 }
