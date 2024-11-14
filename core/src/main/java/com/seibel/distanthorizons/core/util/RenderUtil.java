@@ -19,6 +19,7 @@
 
 package com.seibel.distanthorizons.core.util;
 
+import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
 import com.seibel.distanthorizons.core.api.internal.SharedApi;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
@@ -164,37 +165,43 @@ public class RenderUtil
 		return -1.0f;
 	}
 	
-	/** @return false if LODs shouldn't be rendered for any reason */
-	public static boolean shouldLodsRender(ILevelWrapper levelWrapper)
+	/** @return a message if LODs shouldn't be rendered, null if the LODs can render */
+	public static String shouldLodsRender(ILevelWrapper levelWrapper, DhApiRenderParam renderEventParam)
 	{
 		if (!MC.playerExists())
 		{
-			return false;
+			return "No Player Exists";
 		}
 		
 		if (levelWrapper == null)
 		{
-			return false;
+			return "No Level Given";
 		}
 		
 		IDhClientWorld clientWorld = SharedApi.getIDhClientWorld();
 		if (clientWorld == null)
 		{
-			return false;
+			return "No Client World Loaded";
 		}
 		
 		IDhClientLevel level = clientWorld.getClientLevel(levelWrapper);
 		if (level == null)
 		{
-			return false; //Level is not ready yet.
+			return "No Client Level Loaded"; //Level is not ready yet.
 		}
 		
 		if (MC_RENDER.getLightmapWrapper(levelWrapper) == null)
 		{
-			return false;
+			return "No Lightmap loaded";
 		}
 		
-		return true;
+		if (renderEventParam.dhModelViewMatrix == null 
+			|| renderEventParam.mcModelViewMatrix == null)
+		{
+			return "No MVM or Proj Matrix Given";
+		}
+		
+		return null;
 	}
 	
 }

@@ -267,7 +267,7 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 		// the server timestamp will be null if no LOD data exists for this position
 		Long serverTimestamp = this.serverside.fullDataFileHandler.getTimestampForPos(message.sectionPos);
 		if (serverTimestamp == null
-				|| serverTimestamp <= clientTimestamp)
+			|| serverTimestamp <= clientTimestamp)
 		{
 			// either no data exists to sync, or the client is already up to date
 			rateLimiterSet.syncOnLoginRateLimiter.release();

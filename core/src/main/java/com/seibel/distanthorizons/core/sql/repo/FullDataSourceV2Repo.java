@@ -23,6 +23,7 @@ import com.seibel.distanthorizons.api.enums.config.EDhApiDataCompressionMode;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.sql.DbConnectionClosedException;
 import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV2DTO;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataInputStream;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
@@ -34,6 +35,7 @@ import java.io.File;
 import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -311,6 +313,10 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 			List<Map<String, Object>> row = this.queryDictionary(preparedStatement);
 			return !row.isEmpty() ? (Long) row.get(0).get("LastModifiedUnixDateTime") : null;
 		}
+		catch (DbConnectionClosedException e)
+		{
+			return null;
+		}
 		catch (SQLException e)
 		{
 			throw new RuntimeException(e);
@@ -341,6 +347,10 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 					row -> DhSectionPos.encode(detailLevel, (int) row.get("PosX"), (int) row.get("PosZ")),
 					row -> (long) row.get("LastModifiedUnixDateTime"))
 				);
+		}
+		catch (DbConnectionClosedException e)
+		{
+			return new HashMap<>();
 		}
 		catch (SQLException e)
 		{

@@ -54,9 +54,9 @@ public class ConfigChangeListener<T> implements IConfigListener, Closeable
 	public void onConfigValueSet()
 	{
 		T newValue = this.configEntry.get();
-		if (newValue != previousValue)
+		if (newValue != this.previousValue)
 		{
-			previousValue = newValue;
+			this.previousValue = newValue;
 			this.onValueChangeFunc.accept(newValue);
 		}
 	}
