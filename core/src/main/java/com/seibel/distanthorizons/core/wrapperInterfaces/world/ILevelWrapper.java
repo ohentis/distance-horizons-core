@@ -19,6 +19,7 @@
 
 package com.seibel.distanthorizons.core.wrapperInterfaces.world;
 
+import com.google.common.io.BaseEncoding;
 import com.google.common.primitives.Longs;
 import com.seibel.distanthorizons.api.interfaces.world.IDhApiLevelWrapper;
 import com.seibel.distanthorizons.core.level.IDhLevel;
@@ -27,13 +28,10 @@ import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IBindable;
-import org.apache.commons.codec.binary.Base32;
 
 /** Can be either a Server world or a Client world. */
 public interface ILevelWrapper extends IDhApiLevelWrapper, IBindable
 {
-	Base32 base32 = new Base32(true);
-	
 	@Override
 	IDimensionTypeWrapper getDimensionType();
 	
@@ -47,7 +45,7 @@ public interface ILevelWrapper extends IDhApiLevelWrapper, IBindable
 	 */
 	default String getHashedSeedEncoded()
 	{
-		String encoded = base32.encodeAsString(Longs.toByteArray(this.getHashedSeed()));
+		String encoded = BaseEncoding.base32Hex().encode(Longs.toByteArray(this.getHashedSeed()));
 		return encoded.substring(0, 13).toLowerCase(); // Remaining 3 chars are padding
 	}
 	
