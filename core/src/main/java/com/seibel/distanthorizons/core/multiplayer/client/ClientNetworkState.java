@@ -82,7 +82,7 @@ public class ClientNetworkState implements Closeable
 			}
 			
 			this.serverTimeOffset = message.serverTime - System.currentTimeMillis();
-			LOGGER.info("Server time offset: [${this.serverTimeOffset}] ms");
+			LOGGER.info("Server time offset: ["+this.serverTimeOffset+"] ms");
 		});
 		
 		this.networkSession.registerHandler(CloseInternalEvent.class, message ->

@@ -191,7 +191,7 @@ public class WorldGenModule implements Closeable
 		String waitingCountStr = F3Screen.NUMBER_FORMAT.format(worldGenState.worldGenerationQueue.getWaitingTaskCount());
 		String inProgressCountStr = F3Screen.NUMBER_FORMAT.format(worldGenState.worldGenerationQueue.getInProgressTaskCount());
 		String totalCountEstimateStr = F3Screen.NUMBER_FORMAT.format(worldGenState.worldGenerationQueue.getEstimatedTotalTaskCount());
-		messageList.add("World Gen Tasks: ${waitingCountStr}/${totalCountEstimateStr} (in progress: ${inProgressCountStr})");
+		messageList.add("World Gen Tasks: "+waitingCountStr+"/"+totalCountEstimateStr+" (in progress "+inProgressCountStr+")");
 		
 		worldGenState.worldGenerationQueue.addDebugMenuStringsToList(messageList);
 	}
