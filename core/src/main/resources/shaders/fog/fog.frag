@@ -255,7 +255,7 @@ float calculateHeightFogDepth(float worldYPos)
     else
     {
         // shouldn't happen,
-        return 0;
+        return 0.0;
     }
 
 }
