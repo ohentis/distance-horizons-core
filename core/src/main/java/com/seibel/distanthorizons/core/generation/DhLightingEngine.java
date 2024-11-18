@@ -246,6 +246,10 @@ public class DhLightingEngine
 			// block light
 			if (updateBlockLight)
 			{
+				// done to prevent a rare issue where the light values are incorrectly set to -1
+				// TODO why could that happen?
+				centerChunk.clearDhBlockLighting();
+				
 				this.propagateChunkLightPosList(blockLightWorldPosQueue, adjacentChunkHolder,
 						(neighbourChunk, relBlockPos) -> neighbourChunk.getDhBlockLight(relBlockPos.getX(), relBlockPos.getY(), relBlockPos.getZ()),
 						(neighbourChunk, relBlockPos, newLightValue) -> neighbourChunk.setDhBlockLight(relBlockPos.getX(), relBlockPos.getY(), relBlockPos.getZ(), newLightValue),
@@ -255,6 +259,8 @@ public class DhLightingEngine
 			// sky light
 			if (updateSkyLight)
 			{
+				centerChunk.clearDhSkyLighting();
+				
 				this.propagateChunkLightPosList(skyLightWorldPosQueue, adjacentChunkHolder,
 						(neighbourChunk, relBlockPos) -> neighbourChunk.getDhSkyLight(relBlockPos.getX(), relBlockPos.getY(), relBlockPos.getZ()),
 						(neighbourChunk, relBlockPos, newLightValue) -> neighbourChunk.setDhSkyLight(relBlockPos.getX(), relBlockPos.getY(), relBlockPos.getZ(), newLightValue),
