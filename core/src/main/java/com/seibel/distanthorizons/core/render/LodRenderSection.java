@@ -272,7 +272,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		}
 		
 		this.bufferUploadFuture = ColumnRenderBufferBuilder.uploadBuffersAsync(this.level, this.pos, lodQuadBuilder);
-		return this.bufferUploadFuture.thenCompose((buffer) ->
+		return this.bufferUploadFuture.thenAccept((buffer) ->
 		{
 			// needed to clean up the old data
 			ColumnRenderBuffer previousBuffer = this.renderBuffer;
@@ -286,8 +286,6 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 			{
 				previousBuffer.close();
 			}
-			
-			return null;
 		});
 	}
 	
