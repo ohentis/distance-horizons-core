@@ -196,20 +196,25 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 			
 			Vec3d playerPosition = serverPlayerState.getServerPlayer().getPosition();
 			int distanceFromPlayer = DhSectionPos.getChebyshevSignedBlockDistance(message.sectionPos, new DhBlockPos2D((int) playerPosition.x, (int) playerPosition.z)) / 16;
-			if (distanceFromPlayer > Config.Server.maxGenerationRequestDistance.get())
-			{
-				message.sendResponse(new RequestOutOfRangeException("Distance too large: " + distanceFromPlayer + " > " + Config.Server.maxGenerationRequestDistance.get()));
-				return;
-			}
 			
 			ServerPlayerState.RateLimiterSet rateLimiterSet = serverPlayerState.getRateLimiterSet(this);
 			
 			if (message.clientTimestamp == null)
 			{
+				if (distanceFromPlayer > Config.Server.maxGenerationRequestDistance.get())
+				{
+					message.sendResponse(new RequestOutOfRangeException("Distance too large: " + distanceFromPlayer + " > " + Config.Server.maxGenerationRequestDistance.get()));
+					return;
+				}
 				this.queueWorldGenForRequestMessage(serverPlayerState, message, rateLimiterSet);
 			}
 			else
 			{
+				if (distanceFromPlayer > Config.Server.maxSyncOnLoadRequestDistance.get())
+				{
+					message.sendResponse(new RequestOutOfRangeException("Distance too large: " + distanceFromPlayer + " > " + Config.Server.maxSyncOnLoadRequestDistance.get()));
+					return;
+				}
 				this.queueLodSyncForRequestMessage(serverPlayerState, message, rateLimiterSet);
 			}
 		});

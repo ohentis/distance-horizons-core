@@ -22,10 +22,11 @@ package com.seibel.distanthorizons.core.file.fullDatafile;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.file.structure.ISaveStructure;
 import com.seibel.distanthorizons.core.generation.RemoteWorldRetrievalQueue;
-import com.seibel.distanthorizons.core.level.IDhLevel;
+import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.level.WorldGenModule;
 import com.seibel.distanthorizons.core.multiplayer.client.SyncOnLoadRequestQueue;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
 import com.seibel.distanthorizons.coreapi.util.BitShiftUtil;
 import org.jetbrains.annotations.Nullable;
 
@@ -51,13 +52,31 @@ public class RemoteFullDataSourceProvider extends GeneratedFullDataSourceProvide
 	//=============//
 	
 	public RemoteFullDataSourceProvider(
-			IDhLevel level, ISaveStructure saveStructure, @Nullable File saveDirOverride, 
+			IDhClientLevel level, ISaveStructure saveStructure, @Nullable File saveDirOverride,
 			@Nullable SyncOnLoadRequestQueue syncOnLoadRequestQueue)
 	{
 		super(level, saveStructure, saveDirOverride);
 		this.syncOnLoadRequestQueue = syncOnLoadRequestQueue;
 	}
 	
+	
+	@Override
+	public boolean queuePositionForRetrieval(Long genPos)
+	{
+		if (this.syncOnLoadRequestQueue == null)
+		{
+			return super.queuePositionForRetrieval(genPos);
+		}
+		
+		int maxGenerationRequestDistance = this.syncOnLoadRequestQueue.networkState.sessionConfig.getMaxGenerationRequestDistance();
+		DhBlockPos2D targetPos = this.level.getTargetPosForGeneration();
+		if (targetPos == null || DhSectionPos.getChebyshevSignedBlockDistance(genPos, targetPos) / 16 > maxGenerationRequestDistance)
+		{
+			return false;
+		}
+		
+		return super.queuePositionForRetrieval(genPos);
+	}
 	
 	
 	//==================//
@@ -98,6 +117,13 @@ public class RemoteFullDataSourceProvider extends GeneratedFullDataSourceProvide
 		
 		DhSectionPos.forEachChildAtDetailLevel(pos, DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL, childPos ->
 		{
+			int maxSyncOnLoadDistance = this.syncOnLoadRequestQueue.networkState.sessionConfig.getMaxSyncOnLoadDistance();
+			DhBlockPos2D targetPos = this.level.getTargetPosForGeneration();
+			if (targetPos == null || DhSectionPos.getChebyshevSignedBlockDistance(childPos, targetPos) / 16 > maxSyncOnLoadDistance)
+			{
+				return;
+			}
+			
 			if (!this.visitedPositions.add(childPos))
 			{
 				return;

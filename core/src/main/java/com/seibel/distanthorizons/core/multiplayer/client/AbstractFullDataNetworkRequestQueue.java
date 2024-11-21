@@ -118,6 +118,11 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 		{
 			this.waitingTasksBySectionPos.remove(sectionPos);
 			
+			if (throwable instanceof CancellationException)
+			{
+				return;
+			}
+			
 			this.finishedRequests.incrementAndGet();
 			if (!success || throwable != null)
 			{
@@ -163,7 +168,6 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 	{
 		Map.Entry<Long, RequestQueueEntry> mapEntry = this.waitingTasksBySectionPos.entrySet().stream()
 				.filter(task -> task.getValue().networkDataSourceFuture == null)
-				.filter(task -> DhSectionPos.getChebyshevSignedBlockDistance(task.getKey(), targetPos) <= this.getMaxRequestDistance())
 				.min(Comparator.comparingInt(task -> DhSectionPos.getChebyshevSignedBlockDistance(task.getKey(), targetPos)))
 				.orElse(null);
 		
@@ -175,6 +179,13 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 		
 		long sectionPos = mapEntry.getKey();
 		RequestQueueEntry entry = mapEntry.getValue();
+		
+		if (DhSectionPos.getChebyshevSignedBlockDistance(sectionPos, targetPos) > this.getMaxRequestDistance() * 16)
+		{
+			entry.future.cancel(false);
+			this.pendingTasksSemaphore.release();
+			return;
+		}
 		
 		Long offsetEntryTimestamp = entry.updateTimestamp != null
 				? entry.updateTimestamp + this.networkState.getServerTimeOffset()
@@ -365,8 +376,8 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 		{
 			renderer.renderBox(new DebugRenderer.Box(mapEntry.getKey(), -32f, 64f, 0.05f,
 					mapEntry.getValue().networkDataSourceFuture != null ? Color.red
-							: DhSectionPos.getChebyshevSignedBlockDistance(mapEntry.getKey(), this.lastTargetPos) <= this.getMaxRequestDistance() ? Color.gray
-							: Color.lightGray
+							: DhSectionPos.getChebyshevSignedBlockDistance(mapEntry.getKey(), this.lastTargetPos) <= this.getMaxRequestDistance() * 16 ? Color.gray
+							: Color.darkGray
 			));
 		}
 	}

@@ -490,7 +490,6 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 					{
 						// shouldn't normally happen, but just in case
 						this.missingGenerationPos.add(pos);
-						break;
 					}
 				}
 			}
