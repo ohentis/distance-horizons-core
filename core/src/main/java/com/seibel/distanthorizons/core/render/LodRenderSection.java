@@ -334,9 +334,8 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 			
 			// use the already loading future if one is present
 			ReferencedRenderSourceFutureWrapper oldFuture = this.renderSourceLoadingRefFuture;
-			if (oldFuture != null)
+			if (oldFuture != null && oldFuture.tryIncrementRefCount())
 			{
-				oldFuture.incrementRefCount();
 				return oldFuture;
 			}
 			
@@ -642,23 +641,49 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		
 		public ReferencedRenderSourceFutureWrapper(CompletableFuture<ColumnRenderSource> future) { this.future = future; }
 		
-		public void incrementRefCount() { this.refCount.incrementAndGet(); }
+		
+		
+		/** @return true if this {@link ReferencedRenderSourceFutureWrapper} can be acquired, false if it has already been freed */
+		public boolean tryIncrementRefCount() 
+		{
+			// synchronized to prevent incrementing/decrementing at the same time
+			synchronized (this.refCount)
+			{
+				int refCount = this.refCount.get();
+				if (refCount <= 0)
+				{
+					// there are no references to this data source and it has been returned to the pool
+					// a new reference will be needed
+					return false;
+				}
+				else
+				{
+					// at least one other 
+					this.refCount.getAndIncrement();
+					return true;
+				}
+			}
+		}
 		public void decrementRefCount()
 		{
-			int refCount = this.refCount.decrementAndGet();
-			if (refCount <= 0)
+			// synchronized to prevent incrementing/decrementing at the same time
+			synchronized (this.refCount)
 			{
-				// this render section should only be released once
-				if (refCount < 0)
+				int refCount = this.refCount.decrementAndGet();
+				if (refCount <= 0)
 				{
-					LodUtil.assertNotReach("ReferencedRenderSourceFutureWrapper was released more than once! Ref Count ["+refCount+"].");
-				}
-				
-				// return data source to the pool
-				ColumnRenderSource source = this.future.getNow(null);
-				if (source != null)
-				{
-					ColumnRenderSource.DATA_SOURCE_POOL.returnPooledDataSource(source);
+					// this should only be released once
+					if (refCount < 0)
+					{
+						LodUtil.assertNotReach("ReferencedRenderSourceFutureWrapper was released more than once! Ref Count [" + refCount + "].");
+					}
+					
+					// return data source to the pool
+					ColumnRenderSource source = this.future.getNow(null);
+					if (source != null)
+					{
+						ColumnRenderSource.DATA_SOURCE_POOL.returnPooledDataSource(source);
+					}
 				}
 			}
 		}
