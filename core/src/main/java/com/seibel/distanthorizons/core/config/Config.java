@@ -1546,15 +1546,9 @@ public class Config
 		
 		public static ConfigEntry<Integer> maxGenerationRequestDistance = new ConfigEntry.Builder<Integer>()
 				.setServersideShortName("maxGenerationRequestDistance")
-				.setMinDefaultMax(32, 1024, 4096)
+				.setMinDefaultMax(256, 4096, 4096)
 				.comment("" +
-						"Defines the distance players will receive real-time updates for if enabled. \n" +
-						"\n" +
-						"Note: \n" +
-						"This setting does not prevent players from generating farther out. \n" +
-						"If you want to limit performance impact, change rate limits \n" +
-						"and thread count/runtime ratio settings instead. \n" +
-						"It also does not affect the visuals on clients. \n" +
+						"Defines the distance allowed to generate around the player." +
 						"")
 				.setPerformance(EConfigEntryPerformance.HIGH)
 				.build();
@@ -1573,13 +1567,7 @@ public class Config
 				.setServersideShortName("realTimeUpdateDistanceRadius")
 				.setMinDefaultMax(32, 256, 4096)
 				.comment("" +
-						"Defines the distance players will receive real-time updates for if enabled. \n" +
-						"\n" +
-						"Note: \n" +
-						"This setting does not prevent players from generating farther out. \n" +
-						"If you want to limit performance impact, change rate limits \n" +
-						"and thread count/runtime ratio settings instead. \n" +
-						"It also does not affect the visuals on clients. \n" +
+						"Defines the distance the player will receive updates around." +
 						"")
 				.setPerformance(EConfigEntryPerformance.HIGH)
 				.build();
@@ -1605,15 +1593,10 @@ public class Config
 		
 		public static ConfigEntry<Integer> maxSyncOnLoadRequestDistance = new ConfigEntry.Builder<Integer>()
 				.setServersideShortName("maxSyncOnLoadRequestDistance")
-				.setMinDefaultMax(32, 1024, 4096)
+				.setMinDefaultMax(256, 4096, 4096)
 				.comment("" +
-						"Defines the distance players will receive real-time updates for if enabled. \n" +
-						"\n" +
-						"Note: \n" +
-						"This setting does not prevent players from generating farther out. \n" +
-						"If you want to limit performance impact, change rate limits \n" +
-						"and thread count/runtime ratio settings instead. \n" +
-						"It also does not affect the visuals on clients. \n" +
+						"Defines the distance allowed to be synchronized around the player. \n" +
+						"Should be the same or larger than maxGenerationRequestDistance in most cases." +
 						"")
 				.setPerformance(EConfigEntryPerformance.HIGH)
 				.build();

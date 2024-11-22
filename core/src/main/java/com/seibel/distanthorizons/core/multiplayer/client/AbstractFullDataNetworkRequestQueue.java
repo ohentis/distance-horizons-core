@@ -71,8 +71,6 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 	
 	private final SupplierBasedRateLimiter<Void> rateLimiter = new SupplierBasedRateLimiter<>(this::getRequestRateLimit);
 	
-	private DhBlockPos2D lastTargetPos = new DhBlockPos2D(0, 0);
-	
 	
 	
 	//=============//
@@ -145,8 +143,6 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 		{
 			return false;
 		}
-		
-		this.lastTargetPos = targetPos;
 		
 		// queue requests until the queue is full
 		while (this.getInProgressTaskCount() < this.getWaitingTaskCount()
@@ -376,7 +372,7 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 		{
 			renderer.renderBox(new DebugRenderer.Box(mapEntry.getKey(), -32f, 64f, 0.05f,
 					mapEntry.getValue().networkDataSourceFuture != null ? Color.red
-							: DhSectionPos.getChebyshevSignedBlockDistance(mapEntry.getKey(), this.lastTargetPos) <= this.getMaxRequestDistance() * 16 ? Color.gray
+							: DhSectionPos.getChebyshevSignedBlockDistance(mapEntry.getKey(), Objects.requireNonNull(this.level.getTargetPosForGeneration())) <= this.getMaxRequestDistance() * 16 ? Color.gray
 							: Color.darkGray
 			));
 		}

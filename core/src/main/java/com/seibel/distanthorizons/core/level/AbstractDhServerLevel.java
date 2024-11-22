@@ -253,8 +253,6 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 	}
 	private void queueLodSyncForRequestMessage(ServerPlayerState serverPlayerState, FullDataSourceRequestMessage message, ServerPlayerState.RateLimiterSet rateLimiterSet)
 	{
-		
-		
 		if (!serverPlayerState.sessionConfig.getSynchronizeOnLoad())
 		{
 			message.sendResponse(new RequestRejectedException("Operation is disabled in config."));
