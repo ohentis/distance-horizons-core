@@ -254,7 +254,7 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 			}
 			catch (RequestOutOfRangeException e)
 			{
-				LOGGER.warn("Out of range, re-queueing task [" + DhSectionPos.toString(sectionPos) + "]: " + e.getMessage());
+				LOGGER.debug("Out of range, re-queueing task [" + DhSectionPos.toString(sectionPos) + "]: " + e.getMessage());
 				
 				entry.networkDataSourceFuture = null;
 				return null;
