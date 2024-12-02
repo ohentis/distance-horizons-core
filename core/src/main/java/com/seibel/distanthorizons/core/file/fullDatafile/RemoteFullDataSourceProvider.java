@@ -24,15 +24,20 @@ import com.seibel.distanthorizons.core.file.structure.ISaveStructure;
 import com.seibel.distanthorizons.core.generation.RemoteWorldRetrievalQueue;
 import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.level.WorldGenModule;
+import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.multiplayer.client.SyncOnLoadRequestQueue;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
+import com.seibel.distanthorizons.core.util.TimerUtil;
 import com.seibel.distanthorizons.coreapi.util.BitShiftUtil;
+import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.util.Map;
 import java.util.Set;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -41,6 +46,11 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class RemoteFullDataSourceProvider extends GeneratedFullDataSourceProvider
 {
+	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	private static final Timer DELAY_UPDATE_TIMER = TimerUtil.CreateTimer("Remote DataSource Visited Pos Removal Timer");
+	/** auto remove visited positions from the set after a given amount of time to prevent the set from growing infinitely */
+	private static final int VISITED_POSITION_REMOVAL_TIME_IN_MS = 20 * 60 * 1_000; // 20 minutes
+	
 	@Nullable
 	private final SyncOnLoadRequestQueue syncOnLoadRequestQueue;
 	private final Set<Long> visitedPositions = ConcurrentHashMap.newKeySet();
@@ -128,6 +138,7 @@ public class RemoteFullDataSourceProvider extends GeneratedFullDataSourceProvide
 			{
 				return;
 			}
+			this.queueVisitedPositionForRemoval(childPos);
 			
 			// check if the server has newer versions of these LODs
 			Long subTimestamp = timestamps.get(childPos);
@@ -138,6 +149,23 @@ public class RemoteFullDataSourceProvider extends GeneratedFullDataSourceProvide
 		});
 		
 		return super.get(pos);
+	}
+	/** this is done to prevent infinite set growth */
+	private void queueVisitedPositionForRemoval(long pos)
+	{
+		TimerTask timerTask = new TimerTask()
+		{
+			@Override
+			public void run()
+			{
+				RemoteFullDataSourceProvider.this.visitedPositions.remove(pos);
+			}
+		};
+		try
+		{
+			DELAY_UPDATE_TIMER.schedule(timerTask, VISITED_POSITION_REMOVAL_TIME_IN_MS);
+		}
+		catch (IllegalStateException ignore) { /* shouldn't happen, but there have been issues like this in the past */ }
 	}
 	
 	
