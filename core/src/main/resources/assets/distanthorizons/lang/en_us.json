@@ -669,30 +669,51 @@
     "Server",
 
 
-  "distanthorizons.config.server.realTimeUpdateDistanceRadiusInChunks":
-    "Realtime update Radius In Chunks",
-  "distanthorizons.config.server.realTimeUpdateDistanceRadiusInChunks.@tooltip":
-    "Defines the how far away players will receive real-time updates for if enabled.",
+  "distanthorizons.config.server.sendLevelKeys":
+    "Send Level Keys",
+  "distanthorizons.config.server.sendLevelKeys.@tooltip":
+    "Makes the server send level keys for each world.\nDisable this if you use alternative ways to send level keys.",
+
   "distanthorizons.config.server.levelKeyPrefix":
     "Level Key Prefix",
   "distanthorizons.config.server.levelKeyPrefix.@tooltip":
-    "Prefix of the level keys sent to the clients.",
+    "Prefix of the level keys sent to the clients.\nIf the mod is running behind a proxy, each backend should use a unique value.\nIf this value is empty, level key will be based on the server's seed hash.",
+
   "distanthorizons.config.server.generationRequestRateLimit":
     "Rate Limit for Generation Requests",
   "distanthorizons.config.server.generationRequestRateLimit.@tooltip":
-    "How many LOD generation requests per second should a client send? \nAlso limits the amount of player's requests allowed to stay in the server's queue.",
+    "How many LOD generation requests per second should a client send?\nAlso limits the number of client requests allowed to stay in the server's queue.",
+
+  "distanthorizons.config.server.maxGenerationRequestDistance":
+    "Max Generation Request Distance",
+  "distanthorizons.config.server.maxGenerationRequestDistance.@tooltip":
+    "Defines the distance allowed to generate around the player.",
+
   "distanthorizons.config.server.enableRealTimeUpdates":
     "Enable Real-time Updates",
   "distanthorizons.config.server.enableRealTimeUpdates.@tooltip":
     "If true, clients will receive real-time LOD updates for chunks outside the client's render distance.",
+
+  "distanthorizons.config.server.realTimeUpdateDistanceRadiusInChunks":
+    "Real-time Update Radius in Chunks",
+  "distanthorizons.config.server.realTimeUpdateDistanceRadiusInChunks.@tooltip":
+    "Defines the distance the player will receive updates around.",
+
   "distanthorizons.config.server.synchronizeOnLoad":
     "Synchronize LODs on Load",
   "distanthorizons.config.server.synchronizeOnLoad.@tooltip":
-    "If true, clients will receive updated LODs on join if any changes occurred since last join.",
+    "If true, clients will receive updated LODs when joining or loading new LODs.",
+
   "distanthorizons.config.server.syncOnLoadRateLimit":
     "Rate Limit for Sync on Load",
   "distanthorizons.config.server.syncOnLoadRateLimit.@tooltip":
-    "How many LOD sync requests per second should a client send? \nAlso limits the amount of player's requests allowed to stay in the server's queue.",
+    "How many LOD sync requests per second should a client send?\nAlso limits the number of client's requests allowed to stay in the server's queue.",
+
+  "distanthorizons.config.server.maxSyncOnLoadRequestDistance":
+    "Max Sync on Load Request Distance",
+  "distanthorizons.config.server.maxSyncOnLoadRequestDistance.@tooltip":
+    "Defines the distance allowed to be synchronized around the player.\nShould be the same or larger than maxGenerationRequestDistance in most cases.",
+
   "distanthorizons.config.server.maxDataTransferSpeed":
     "Maximum Data Transfer Speed, KB/s",
   "distanthorizons.config.server.maxDataTransferSpeed.@tooltip":

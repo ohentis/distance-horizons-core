@@ -19,6 +19,8 @@
 
 package com.seibel.distanthorizons.core.wrapperInterfaces.world;
 
+import com.google.common.io.BaseEncoding;
+import com.google.common.primitives.Longs;
 import com.seibel.distanthorizons.api.interfaces.world.IDhApiLevelWrapper;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos;
@@ -30,7 +32,6 @@ import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IBindab
 /** Can be either a Server world or a Client world. */
 public interface ILevelWrapper extends IDhApiLevelWrapper, IBindable
 {
-	
 	@Override
 	IDimensionTypeWrapper getDimensionType();
 	
@@ -38,12 +39,21 @@ public interface ILevelWrapper extends IDhApiLevelWrapper, IBindable
 	String getDimensionName();
 	
 	long getHashedSeed();
+	/**
+	 * Returns the result of {@link #getHashedSeed()}, encoded into a short string. <br>
+	 * Prefer using this method over stringifying the number directly.
+	 */
+	default String getHashedSeedEncoded()
+	{
+		String encoded = BaseEncoding.base32Hex().encode(Longs.toByteArray(this.getHashedSeed()));
+		return encoded.substring(0, 13).toLowerCase(); // Remaining 3 chars are padding
+	}
 	
 	/**
 	 * A string intended to uniquely identify this level.
 	 */
-	@Override 
-	default String getDhIdentifier() { return this.getDimensionName() + "_" + this.getHashedSeed(); }
+	@Override
+	String getDhIdentifier();
 	
 	@Override
 	boolean hasCeiling();

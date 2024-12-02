@@ -22,6 +22,7 @@ package com.seibel.distanthorizons.core.api.internal;
 import com.seibel.distanthorizons.api.methods.events.abstractEvents.DhApiLevelLoadEvent;
 import com.seibel.distanthorizons.api.methods.events.abstractEvents.DhApiLevelUnloadEvent;
 import com.seibel.distanthorizons.core.network.messages.AbstractNetworkMessage;
+import com.seibel.distanthorizons.core.network.messages.MessageRegistry;
 import com.seibel.distanthorizons.core.world.*;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
@@ -186,6 +187,11 @@ public class ServerApi
 		}
 	}
 	
+	/**
+	 * Forwards a decoded message into the registered handlers.
+	 *
+	 * @see MessageRegistry
+	 */
 	public void pluginMessageReceived(IServerPlayerWrapper player, @NotNull AbstractNetworkMessage message)
 	{
 		if (DhApiWorldProxy.INSTANCE.worldLoaded() && DhApiWorldProxy.INSTANCE.getReadOnly())

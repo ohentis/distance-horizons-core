@@ -31,14 +31,14 @@ public final class ModInfo
 	public static final String DEDICATED_SERVER_INITIAL_PATH = "dedicated_server_initial";
 	
 	/** Incremented every time any packets are added, changed or removed, with a few exceptions. */
-	public static final int PROTOCOL_VERSION = 6;
+	public static final int PROTOCOL_VERSION = 7;
 	public static final String WRAPPER_PACKET_PATH = "message";
 	
 	/** The internal mod name */
 	public static final String NAME = "DistantHorizons";
 	/** Human-readable version of NAME */
 	public static final String READABLE_NAME = "Distant Horizons";
-	public static final String VERSION = "2.3.0-a-dev";
+	public static final String VERSION = "2.3.0-b-dev";
 	/** Returns true if the current build is an unstable developer build, false otherwise. */
 	public static boolean IS_DEV_BUILD = VERSION.toLowerCase().contains("dev");
 	

@@ -275,7 +275,11 @@ public class ColumnRenderBufferBuilder
 						
 						// the old logic handled additional cases, but they never appeared to fire,
 						// so just these two cases should be fine
-						LodUtil.assertTrue(adjDetailLevel == thisDetailLevel || adjDetailLevel > thisDetailLevel);
+						boolean expectedDetailLevels = (adjDetailLevel == thisDetailLevel) || (adjDetailLevel > thisDetailLevel);
+						if (!expectedDetailLevels)
+						{
+							LodUtil.assertNotReach("Mismatch between adjacent detail level ["+adjDetailLevel+"] and this render source's detail level ["+thisDetailLevel+"]. Detail levels should be adj >= this.");	
+						}
 						
 						adjColumnViews[lodDirection.ordinal() - 2] = adjRenderSource.getVerticalDataPointView(xAdj, zAdj);
 					}

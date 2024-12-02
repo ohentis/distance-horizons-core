@@ -25,6 +25,7 @@ import com.seibel.distanthorizons.api.enums.rendering.EDhApiRenderPass;
 import com.seibel.distanthorizons.api.methods.events.abstractEvents.*;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
 import com.seibel.distanthorizons.core.file.structure.ClientOnlySaveStructure;
+import com.seibel.distanthorizons.core.network.messages.MessageRegistry;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.render.DhApiRenderProxy;
 import com.seibel.distanthorizons.core.render.renderer.FadeRenderer;
@@ -355,6 +356,11 @@ public class ClientApi
 	// networking //
 	//============//
 	
+	/**
+	 * Forwards a decoded message into the registered handlers.
+	 *
+	 * @see MessageRegistry
+	 */
 	public void pluginMessageReceived(@NotNull AbstractNetworkMessage message)
 	{
 		NetworkSession networkSession = this.pluginChannelApi.networkSession;
@@ -430,7 +436,9 @@ public class ClientApi
 		
 		try
 		{
-			if (!RenderUtil.shouldLodsRender(levelWrapper))
+			// TODO write this message to the F3 menu so people can see when a different mod screws with the lightmap
+			String reasonLodsCannotRender = RenderUtil.shouldLodsRender(levelWrapper, renderEventParam);
+			if (reasonLodsCannotRender != null)
 			{
 				return;
 			}

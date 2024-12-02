@@ -31,6 +31,8 @@ public class SyncOnLoadRequestQueue extends AbstractFullDataNetworkRequestQueue
 	
 	@Override
 	protected int getRequestRateLimit() { return this.networkState.sessionConfig.getSyncOnLoginRateLimit(); }
+	@Override
+	protected int getMaxRequestDistance() { return this.networkState.sessionConfig.getMaxSyncOnLoadDistance(); }
 	
 	@Override
 	protected String getQueueName() { return "Sync On Login Queue"; }

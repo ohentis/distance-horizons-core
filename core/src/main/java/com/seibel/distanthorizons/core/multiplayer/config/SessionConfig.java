@@ -31,14 +31,15 @@ public class SessionConfig implements INetworkObject
 	{
 		// Note: config values are transmitted in the insertion order
 		
-		registerConfigEntry(Config.Server.realTimeUpdateDistanceRadiusInChunks, Math::min);
-		
-		registerConfigEntry(Config.Common.WorldGenerator.enableDistantGeneration, (x, y) -> x && y);
+		registerConfigEntry(Config.Common.WorldGenerator.enableDistantGeneration, Boolean::logicalAnd);
+		registerConfigEntry(Config.Server.maxGenerationRequestDistance, Math::min);
 		registerConfigEntry(Config.Server.generationRequestRateLimit, Math::min);
 		
-		registerConfigEntry(Config.Server.enableRealTimeUpdates, (x, y) -> x && y);
+		registerConfigEntry(Config.Server.enableRealTimeUpdates, Boolean::logicalAnd);
+		registerConfigEntry(Config.Server.realTimeUpdateDistanceRadiusInChunks, Math::min);
 		
-		registerConfigEntry(Config.Server.synchronizeOnLoad, (x, y) -> x && y);
+		registerConfigEntry(Config.Server.synchronizeOnLoad, Boolean::logicalAnd);
+		registerConfigEntry(Config.Server.maxSyncOnLoadRequestDistance, Math::min);
 		registerConfigEntry(Config.Server.syncOnLoadRateLimit, Math::min);
 		
 		registerConfigEntry(Config.Server.maxDataTransferSpeed, (x, y) -> {
@@ -62,12 +63,17 @@ public class SessionConfig implements INetworkObject
 	// public values //
 	//===============//
 	
-	public int getMaxUpdateDistanceRadius() { return this.getValue(Config.Server.realTimeUpdateDistanceRadiusInChunks); }
 	public boolean isDistantGenerationEnabled() { return this.getValue(Config.Common.WorldGenerator.enableDistantGeneration); }
+	public int getMaxGenerationRequestDistance() { return this.getValue(Config.Server.maxGenerationRequestDistance); }
 	public int getGenerationRequestRateLimit() { return this.getValue(Config.Server.generationRequestRateLimit); }
+	
 	public boolean isRealTimeUpdatesEnabled() { return this.getValue(Config.Server.enableRealTimeUpdates); }
+	public int getMaxUpdateDistanceRadius() { return this.getValue(Config.Server.realTimeUpdateDistanceRadiusInChunks); }
+	
 	public boolean getSynchronizeOnLoad() { return this.getValue(Config.Server.synchronizeOnLoad); }
+	public int getMaxSyncOnLoadDistance() { return this.getValue(Config.Server.maxSyncOnLoadRequestDistance); }
 	public int getSyncOnLoginRateLimit() { return this.getValue(Config.Server.syncOnLoadRateLimit); }
+	
 	public int getMaxDataTransferSpeed() { return this.getValue(Config.Server.maxDataTransferSpeed); }
 	
 	
@@ -78,7 +84,14 @@ public class SessionConfig implements INetworkObject
 	
 	private static <T> void registerConfigEntry(ConfigEntry<T> configEntry, BiFunction<T, T, T> valueConstrainer)
 	{
-		CONFIG_ENTRIES.put(Objects.requireNonNull(configEntry.getServersideShortName()), new Entry(configEntry, valueConstrainer));
+		CONFIG_ENTRIES.compute(Objects.requireNonNull(configEntry.getServersideShortName()), (key, existingEntry) -> {
+			if (existingEntry != null)
+			{
+				throw new IllegalArgumentException("Attempted to register config entry with duplicate serversideShortName: " + key);
+			}
+			
+			return new Entry(configEntry, valueConstrainer);
+		});
 	}
 	
 	

@@ -69,7 +69,7 @@ public abstract class AbstractDhWorld implements IDhWorld, Closeable
 			readOnlyStr += " - ReadOnly";
 		}
 		
-		String message = "${environment} World with ${levelCountStr} levels${readOnlyStr}";
+		String message = environment+" World with "+levelCountStr+" levels"+readOnlyStr;
 		messageList.add(message);
 	}
 	

@@ -33,6 +33,7 @@ public abstract class AbstractConfigType<T, S>
 	public String category = "";    // This should only be set once in the init
 	public String name;            // This should only be set once in the init
 	protected final T defaultValue;
+	protected final boolean isFloatingPointNumber;
 	protected T value;
 	public ConfigBase configBase;
 	
@@ -40,54 +41,45 @@ public abstract class AbstractConfigType<T, S>
 	
 	protected EConfigEntryAppearance appearance;
 	
-	protected AbstractConfigType(EConfigEntryAppearance appearance, T value)
+	
+	
+	//=============//
+	// constructor //
+	//=============//
+	
+	protected AbstractConfigType(EConfigEntryAppearance appearance, T defaultValue)
 	{
-		this.defaultValue = value;
-		this.value = value;
+		this.defaultValue = defaultValue;
+		this.value = defaultValue;
 		this.appearance = appearance;
+		
+		Class<?> defaultValueClass = defaultValue.getClass();
+		this.isFloatingPointNumber = (defaultValueClass == Double.class || defaultValueClass == Float.class);
 	}
 	
+	
+	
+	//=========//
+	// methods //
+	//=========//
 	
 	/** Gets the value */
-	public T get()
-	{
-		return this.value;
-	}
+	public T get() { return this.value; }
 	/** Sets the value */
-	public void set(T newValue)
-	{
-		this.value = newValue;
-	}
+	public void set(T newValue) { this.value = newValue; }
 	
-	public EConfigEntryAppearance getAppearance()
-	{
-		return appearance;
-	}
-	public void setAppearance(EConfigEntryAppearance newAppearance)
-	{
-		this.appearance = newAppearance;
-	}
+	public EConfigEntryAppearance getAppearance() { return this.appearance; }
+	public void setAppearance(EConfigEntryAppearance newAppearance) { this.appearance = newAppearance; }
 	
 	
-	public String getCategory()
-	{
-		return this.category;
-	}
-	public String getName()
-	{
-		return this.name;
-	}
-	public String getNameWCategory()
-	{
-		return (this.category.isEmpty() ? "" : this.category + ".") + this.name;
-	}
+	public String getCategory() { return this.category; }
+	public String getName() { return this.name; }
+	public String getNameWCategory() { return (this.category.isEmpty() ? "" : this.category + ".") + this.name; }
 	
 	
-	// Gets the class of T
-	public Class<?> getType()
-	{
-		return this.defaultValue.getClass();
-	}
+	/** Gets the class of T */
+	public Class<?> getType() { return this.defaultValue.getClass(); }
+	public boolean typeIsFloatingPointNumber() { return this.isFloatingPointNumber; }
 	
 	protected static abstract class Builder<T, S>
 	{

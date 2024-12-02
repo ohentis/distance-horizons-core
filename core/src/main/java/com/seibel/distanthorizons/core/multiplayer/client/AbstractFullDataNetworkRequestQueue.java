@@ -7,8 +7,8 @@ import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSour
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.level.DhClientLevel;
 import com.seibel.distanthorizons.core.logging.ConfigBasedSpamLogger;
-import com.seibel.distanthorizons.core.network.exceptions.InvalidLevelException;
 import com.seibel.distanthorizons.core.network.exceptions.RateLimitedException;
+import com.seibel.distanthorizons.core.network.exceptions.RequestOutOfRangeException;
 import com.seibel.distanthorizons.core.network.exceptions.RequestRejectedException;
 import com.seibel.distanthorizons.core.network.exceptions.SectionRequiresSplittingException;
 import com.seibel.distanthorizons.core.network.session.SessionClosedException;
@@ -97,6 +97,7 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 	//==================//
 	
 	protected abstract int getRequestRateLimit();
+	protected abstract int getMaxRequestDistance();
 	
 	protected abstract String getQueueName();
 	
@@ -182,7 +183,7 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 		Map.Entry<Long, RequestQueueEntry> mapEntry = this.waitingTasksBySectionPos
 				.entrySet().stream()
 				.filter(task -> task.getValue().networkDataSourceFuture == null)
-				.min(Comparator.comparingInt(x -> posDistance(targetPos, x.getKey())))
+				.min(Comparator.comparingInt(x -> posDistanceSquared(targetPos, x.getKey())))
 				.orElse(null);
 		
 		if (mapEntry == null)
@@ -193,6 +194,13 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 		
 		long sectionPos = mapEntry.getKey();
 		RequestQueueEntry entry = mapEntry.getValue();
+		
+		if (DhSectionPos.getChebyshevSignedBlockDistance(sectionPos, targetPos) > this.getMaxRequestDistance() * 16)
+		{
+			entry.future.cancel(false);
+			this.pendingTasksSemaphore.release();
+			return;
+		}
 		
 		Long offsetEntryTimestamp = entry.updateTimestamp != null
 				? entry.updateTimestamp + this.networkState.getServerTimeOffset()
@@ -249,15 +257,14 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 			{
 				return entry.future.complete(RequestResult.REQUIRES_SPLITTING);
 			}
-			catch (InvalidLevelException | RequestRejectedException ignored)
-			{
-				// We're too late / some cases might trigger a bunch of expected rejections
-				return entry.future.complete(RequestResult.FAILED);
-			}
 			catch (SessionClosedException | CancellationException ignored)
 			{
-				// Triggered when level is unloaded
 				return entry.future.cancel(false);
+			}
+			catch (RequestRejectedException e)
+			{
+				LOGGER.info("Request rejected by the server: " + e.getMessage());
+				return entry.future.complete(RequestResult.FAILED);
 			}
 			catch (RateLimitedException e)
 			{
@@ -265,6 +272,13 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 				
 				// Skip all requests for 1 second
 				this.rateLimiter.acquireAll();
+				
+				entry.networkDataSourceFuture = null;
+				return null;
+			}
+			catch (RequestOutOfRangeException e)
+			{
+				LOGGER.debug("Out of range, re-queueing task [" + DhSectionPos.toString(sectionPos) + "]: " + e.getMessage());
 				
 				entry.networkDataSourceFuture = null;
 				return null;
@@ -381,7 +395,9 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 		for (Map.Entry<Long, RequestQueueEntry> mapEntry : this.waitingTasksBySectionPos.entrySet())
 		{
 			renderer.renderBox(new DebugRenderer.Box(mapEntry.getKey(), -32f, 64f, 0.05f,
-					mapEntry.getValue().networkDataSourceFuture != null ? Color.red : Color.gray
+					mapEntry.getValue().networkDataSourceFuture != null ? Color.red
+							: DhSectionPos.getChebyshevSignedBlockDistance(mapEntry.getKey(), Objects.requireNonNull(this.level.getTargetPosForGeneration())) <= this.getMaxRequestDistance() * 16 ? Color.gray
+							: Color.darkGray
 			));
 		}
 	}
@@ -392,10 +408,8 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 	// helper methods //
 	//================//
 	
-	protected static int posDistance(DhBlockPos2D targetPos, long pos)
-	{
-		return DhSectionPos.signedDistance(pos, targetPos);
-	}
+	protected static int posDistanceSquared(DhBlockPos2D targetPos, long pos)
+	{ return (int) DhSectionPos.getCenterBlockPos(pos).distSquared(targetPos); }
 	
 	
 	

@@ -45,12 +45,12 @@ public interface IServerLevelWrapper extends ILevelWrapper
 						.replaceAll(" ", "_");
 				
 				levelKeyPrefix += (!levelKeyPrefix.isEmpty() ? "_" : "") + cleanWorldFolderName
-						+ "_" + this.getHashedSeed();
+						+ "_" + this.getHashedSeedEncoded();
 			}
 			
 			if (levelKeyPrefix.isEmpty())
 			{
-				levelKeyPrefix = String.valueOf(this.getHashedSeed());
+				levelKeyPrefix = this.getHashedSeedEncoded();
 			}
 			
 			String mainPart = "@" + dimensionName;

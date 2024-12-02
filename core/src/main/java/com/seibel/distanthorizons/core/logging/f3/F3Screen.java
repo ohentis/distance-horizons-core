@@ -20,12 +20,16 @@
 package com.seibel.distanthorizons.core.logging.f3;
 
 import com.seibel.distanthorizons.core.api.internal.SharedApi;
+import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.jar.ModJarInfo;
 import com.seibel.distanthorizons.core.level.IDhLevel;
+import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.render.RenderBufferHandler;
 import com.seibel.distanthorizons.core.render.renderer.generic.GenericObjectRenderer;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.world.AbstractDhWorld;
+import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
+import com.seibel.distanthorizons.coreapi.DependencyInjection.DependencyInjector;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.coreapi.util.StringUtil;
 import org.apache.logging.log4j.LogManager;
@@ -38,6 +42,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 public class F3Screen
 {
 	private static final Logger LOGGER = LogManager.getLogger();
+	private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	
 	public static final NumberFormat NUMBER_FORMAT = NumberFormat.getIntegerInstance();
 	
@@ -87,6 +92,11 @@ public class F3Screen
 		if (ModInfo.IS_DEV_BUILD)
 		{
 			messageList.add("Build: " + StringUtil.shortenString(ModJarInfo.Git_Commit, 8) + " (" + ModJarInfo.Git_Branch + ")");
+		}
+		if (MC_CLIENT != null)
+		{
+			// player pos
+			messageList.add("LOD Pos: " + DhSectionPos.toString(DhSectionPos.encodeContaining(DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL,  MC_CLIENT.getPlayerChunkPos())) );
 		}
 		messageList.add("");
 		// thread pools
