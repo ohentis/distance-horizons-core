@@ -63,10 +63,10 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 	 * TODO this should be dynamically allocated based on CPU load
 	 *  and abilities.
 	 */
-	public static final int MAX_WORLD_GEN_REQUESTS_PER_THREAD = 20; 
+	public static final int MAX_WORLD_GEN_REQUESTS_PER_THREAD = 20;
 	
 	
-	private final AtomicReference<IFullDataSourceRetrievalQueue> worldGenQueueRef = new AtomicReference<>(null);
+	protected final AtomicReference<IFullDataSourceRetrievalQueue> worldGenQueueRef = new AtomicReference<>(null);
 	private final ArrayList<IOnWorldGenCompleteListener> onWorldGenTaskCompleteListeners = new ArrayList<>();
 	
 	protected final DelayedFullDataSourceSaveCache delayedFullDataSourceSaveCache = new DelayedFullDataSourceSaveCache(this::onDataSourceSave, 5_000);
@@ -173,8 +173,7 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 		}
 		
 		
-		IFullDataSourceRetrievalQueue worldGenQueue = this.worldGenQueueRef.get();
-		if (worldGenQueue == null)
+		if (this.worldGenQueueRef.get() == null)
 		{
 			// we can't queue anything if the world generator isn't set up yet
 			return false;
@@ -211,18 +210,25 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 			return false;
 		}
 		
-		
-		// don't queue additional world gen requests beyond the max allotted count
-		return worldGenQueue.getWaitingTaskCount() < maxQueueCount; 
+		return true;
 	}
 	
 	@Override
-	public CompletableFuture<WorldGenResult> queuePositionForRetrieval(Long genPos)
+	public CompletableFuture<WorldGenResult> queuePositionForRetrieval(long genPos, boolean allowAboveMaxGenRequests)
 	{
 		IFullDataSourceRetrievalQueue worldGenQueue = this.worldGenQueueRef.get();
 		if (worldGenQueue == null)
 		{
 			return null;
+		}
+		
+		if (!allowAboveMaxGenRequests)
+		{
+			int maxQueueCount = MAX_WORLD_GEN_REQUESTS_PER_THREAD * Config.Common.MultiThreading.numberOfWorldGenerationThreads.get();
+			if (worldGenQueue.getWaitingTaskCount() >= maxQueueCount)
+			{
+				return null;
+			}
 		}
 		
 		WorldGenTaskTracker genTaskTracker = new WorldGenTaskTracker(genPos);

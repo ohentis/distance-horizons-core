@@ -183,7 +183,7 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 		Map.Entry<Long, RequestQueueEntry> mapEntry = this.waitingTasksBySectionPos
 				.entrySet().stream()
 				.filter(task -> task.getValue().networkDataSourceFuture == null)
-				.min(Comparator.comparingInt(x -> posDistanceSquared(targetPos, x.getKey())))
+				.min(Comparator.comparingInt(x -> DhSectionPos.getChebyshevSignedBlockDistance(x.getKey(), targetPos)))
 				.orElse(null);
 		
 		if (mapEntry == null)
@@ -305,6 +305,19 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 	}
 	
 	
+	public boolean isPosCloserThanFarthestWaiting(DhBlockPos2D targetPos, long pos)
+	{
+		Long farthestPos = this.waitingTasksBySectionPos
+				.keySet().stream()
+				.max(Comparator.comparingInt(x -> DhSectionPos.getChebyshevSignedBlockDistance(x, targetPos)))
+				.orElse(null);
+		if (farthestPos == null)
+		{
+			return true;
+		}
+		
+		return DhSectionPos.getChebyshevSignedBlockDistance(pos, targetPos) <= DhSectionPos.getChebyshevSignedBlockDistance(farthestPos, targetPos);
+	}
 	
 	
 	//=========================================//
@@ -401,15 +414,6 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 			));
 		}
 	}
-	
-	
-	
-	//================//
-	// helper methods //
-	//================//
-	
-	protected static int posDistanceSquared(DhBlockPos2D targetPos, long pos)
-	{ return (int) DhSectionPos.getCenterBlockPos(pos).distSquared(targetPos); }
 	
 	
 	
