@@ -91,32 +91,6 @@ public class RemoteFullDataSourceProvider extends GeneratedFullDataSourceProvide
 		// from server               //
 		//===========================//
 		
-		// TODO
-		//// get the timestamp for every maximum detail position in this section
-		//int posToMinimumDetailScale = BitShiftUtil.powerOfTwo(DhSectionPos.getDetailLevel(pos) - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
-		//Map<Long, Long> timestamps = this.getTimestampsForRange(
-		//		DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL,
-		//		DhSectionPos.getX(pos) * posToMinimumDetailScale,
-		//		DhSectionPos.getZ(pos) * posToMinimumDetailScale,
-		//		(DhSectionPos.getX(pos) + 1) * posToMinimumDetailScale,
-		//		(DhSectionPos.getZ(pos) + 1) * posToMinimumDetailScale
-		//);
-		//
-		//DhSectionPos.forEachChildAtDetailLevel(pos, DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL, childPos ->
-		//{
-		//	if (!this.visitedPositions.add(childPos))
-		//	{
-		//		return;
-		//	}
-		//	
-		//	// check if the server has newer versions of these LODs
-		//	Long subTimestamp = timestamps.get(childPos);
-		//	if (subTimestamp != null)
-		//	{
-		//		this.syncOnLoadRequestQueue.submitRequest(childPos, subTimestamp, this.delayedFullDataSourceSaveCache::queueDataSourceForUpdateAndSave);
-		//	}
-		//});
-		
 		Long timestamp = this.getTimestampForPos(pos);
 		if (timestamp != null)
 		{

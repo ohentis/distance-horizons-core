@@ -68,7 +68,7 @@ class DataSourceRequestGroup
 	}
 	
 	
-	public RequestData tryRemoveRequest(long requestId, HangingRequestTransferConsumer hangingRequestTransferConsumer)
+	public RequestData tryRemoveRequest(long requestId, IHangingRequestTransferConsumer hangingRequestTransferConsumer)
 	{
 		RequestData removed = this.requestMessages.remove(requestId);
 		
@@ -104,6 +104,6 @@ class DataSourceRequestGroup
 	 * This is a workaround that allows the caller to transfer these requests to a new group.
 	 */
 	@FunctionalInterface
-	interface HangingRequestTransferConsumer extends Consumer<Collection<RequestData>> { }
+	interface IHangingRequestTransferConsumer extends Consumer<Collection<RequestData>> { }
 	
 }

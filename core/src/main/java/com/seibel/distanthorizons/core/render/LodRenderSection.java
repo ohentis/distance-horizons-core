@@ -475,6 +475,12 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 				// queue from last to first to prevent shifting the array unnecessarily
 				for (int i = this.missingGenerationPos.size() - 1; i >= 0; i--)
 				{
+					if (!this.fullDataSourceProvider.canQueueRetrieval())
+					{
+						// the data source provider isn't accepting any more jobs
+						break;
+					}
+					
 					long pos = this.missingGenerationPos.removeLong(i);
 					boolean positionQueued = (this.fullDataSourceProvider.queuePositionForRetrieval(pos, false) != null);
 					if (!positionQueued)

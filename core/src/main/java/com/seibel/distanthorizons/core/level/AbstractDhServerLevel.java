@@ -144,8 +144,6 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 			
 			ServerPlayerState.RateLimiterSet rateLimiterSet = serverPlayerState.getRateLimiterSet(this);
 			
-			LOGGER.info("received message ["+DhSectionPos.toString(message.sectionPos)+"]");
-			
 			if (message.clientTimestamp == null)
 			{
 				if (distanceFromPlayer > Config.Server.maxGenerationRequestDistance.get())

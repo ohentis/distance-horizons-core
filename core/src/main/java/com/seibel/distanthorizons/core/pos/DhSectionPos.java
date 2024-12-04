@@ -275,28 +275,6 @@ public class DhSectionPos
 		) - getBlockWidth(pos) / 2;
 	}
 	
-	public static int signedDistance(long pos, DhBlockPos2D blockPos)
-	{
-		// Assuming Square2D has a method to get its center and size
-		double halfWidth = getBlockWidth(pos) / 2.0;
-		
-		// Calculate the distance from the point to the center of the square
-		double dx = blockPos.x - getCenterBlockPosX(pos);
-		double dy = blockPos.z - getCenterBlockPosZ(pos);
-		
-		// Calculate the horizontal and vertical distances to the edges of the square
-		double distanceX = Math.abs(dx) - halfWidth;
-		double distanceY = Math.abs(dy) - halfWidth;
-		
-		// The signed distance is the max of distanceX and distanceY
-		// This gives us the distance to the nearest edge
-		// If both distances are negative, the point is inside the square
-		double signedDistance = Math.max(distanceX, distanceY);
-		
-		return (int) signedDistance; // Cast to int, as per function signature
-	}
-	
-	
 	
 	
 	//==================//

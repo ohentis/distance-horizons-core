@@ -75,7 +75,6 @@ public class DhBlockPos2D
 	public long distSquared(DhBlockPos2D other) { return this.distSquared(other.x, other.z); }
 	public long distSquared(int x, int z) { return MathUtil.pow2((long) this.x - x) + MathUtil.pow2((long) this.z - z); }
 	
-	public long chebyshevDist(DhBlockPos2D other) { return Math.max(Math.abs(this.x - other.x), Math.abs(this.z - other.z)); }
 	
 	
 	//===========//

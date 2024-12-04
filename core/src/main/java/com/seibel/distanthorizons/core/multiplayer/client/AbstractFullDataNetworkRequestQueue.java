@@ -111,8 +111,6 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 	{ return this.submitRequest(sectionPos, null, dataSourceConsumer); }
 	public CompletableFuture<RequestResult> submitRequest(long sectionPos, @Nullable Long clientTimestamp, Consumer<FullDataSourceV2> dataSourceConsumer)
 	{
-		//LodUtil.assertTrue(DhSectionPos.getDetailLevel(sectionPos) == DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL, "Only highest-detail sections are allowed.");
-		
 		AtomicBoolean added = new AtomicBoolean(false);
 		RequestQueueEntry entry = this.waitingTasksBySectionPos.compute(sectionPos, (k, existingQueueEntry) ->
 		{
@@ -180,8 +178,7 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 	}
 	private void sendNextRequest(DhBlockPos2D targetPos)
 	{
-		Map.Entry<Long, RequestQueueEntry> mapEntry = this.waitingTasksBySectionPos
-				.entrySet().stream()
+		Map.Entry<Long, RequestQueueEntry> mapEntry = this.waitingTasksBySectionPos.entrySet().stream()
 				.filter(task -> task.getValue().networkDataSourceFuture == null)
 				.min(Comparator.comparingInt(x -> DhSectionPos.getChebyshevSignedBlockDistance(x.getKey(), targetPos)))
 				.orElse(null);
