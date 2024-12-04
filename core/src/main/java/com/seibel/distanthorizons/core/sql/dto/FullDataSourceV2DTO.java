@@ -55,6 +55,10 @@ public class FullDataSourceV2DTO implements IBaseDTO<Long>, INetworkObject
 	/** only for the data array */
 	public int dataChecksum;
 	
+	// TODO pool byte arrays, and use JDBC blobs or stream said arrays, to potentially reduce GC load
+	//resultSet.getBinaryStream(0);
+	//resultSet.getBlob(0).free();
+	
 	public byte[] compressedDataByteArray;
 	
 	/** @see EDhApiWorldGenerationStep */
