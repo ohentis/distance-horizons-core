@@ -66,7 +66,7 @@ public class SharedApi
 	
 	private static final UpdateChunkPosManager UPDATE_POS_MANAGER = new UpdateChunkPosManager();
 	/** how many chunks can be queued for updating per thread, used to prevent updates from infinitely pilling up if the user flies around extremely fast */
-	private static final int MAX_UPDATING_CHUNK_COUNT_PER_THREAD = 500;
+	private static final int MAX_UPDATING_CHUNK_COUNT_PER_THREAD = 1_000;
 	
 	/** how many milliseconds must pass before an overloaded message can be sent in chat or the log */
 	private static final int MIN_MS_BETWEEN_OVERLOADED_LOG_MESSAGE = 30_000;

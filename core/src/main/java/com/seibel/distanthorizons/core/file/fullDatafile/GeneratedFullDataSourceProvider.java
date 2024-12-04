@@ -38,6 +38,7 @@ import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.coreapi.util.BitShiftUtil;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.awt.*;
@@ -60,10 +61,10 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 	 * TODO this should be dynamically allocated based on CPU load
 	 *  and abilities.
 	 */
-	public static final int MAX_WORLD_GEN_REQUESTS_PER_THREAD = 20; 
+	public static final int MAX_WORLD_GEN_REQUESTS_PER_THREAD = 20;
 	
 	
-	private final AtomicReference<IFullDataSourceRetrievalQueue> worldGenQueueRef = new AtomicReference<>(null);
+	protected final AtomicReference<IFullDataSourceRetrievalQueue> worldGenQueueRef = new AtomicReference<>(null);
 	private final ArrayList<IOnWorldGenCompleteListener> onWorldGenTaskCompleteListeners = new ArrayList<>();
 	
 	protected final DelayedFullDataSourceSaveCache delayedFullDataSourceSaveCache = new DelayedFullDataSourceSaveCache(this::onDataSourceSave, 5_000);
@@ -170,8 +171,7 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 		}
 		
 		
-		IFullDataSourceRetrievalQueue worldGenQueue = this.worldGenQueueRef.get();
-		if (worldGenQueue == null)
+		if (this.worldGenQueueRef.get() == null)
 		{
 			// we can't queue anything if the world generator isn't set up yet
 			return false;
@@ -208,25 +208,47 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 			return false;
 		}
 		
-		
-		// don't queue additional world gen requests beyond the max allotted count
-		return worldGenQueue.getWaitingTaskCount() < maxQueueCount; 
+		return true;
 	}
 	
 	@Override
-	public boolean queuePositionForRetrieval(Long genPos)
+	public CompletableFuture<WorldGenResult> queuePositionForRetrieval(long genPos, boolean allowAboveMaxGenRequests)
 	{
 		IFullDataSourceRetrievalQueue worldGenQueue = this.worldGenQueueRef.get();
 		if (worldGenQueue == null)
 		{
-			return false;
+			return null;
+		}
+		
+		if (!allowAboveMaxGenRequests)
+		{
+			int maxQueueCount = MAX_WORLD_GEN_REQUESTS_PER_THREAD * Config.Common.MultiThreading.numberOfWorldGenerationThreads.get();
+			if (worldGenQueue.getWaitingTaskCount() >= maxQueueCount)
+			{
+				return null;
+			}
 		}
 		
 		WorldGenTaskTracker genTaskTracker = new WorldGenTaskTracker(genPos);
 		CompletableFuture<WorldGenResult> worldGenFuture = worldGenQueue.submitRetrievalTask(genPos, (byte) (DhSectionPos.getDetailLevel(genPos) - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL), genTaskTracker);
-		worldGenFuture.whenComplete((genTaskResult, ex) -> this.onWorldGenTaskComplete(genTaskResult, ex));
+		worldGenFuture.whenComplete((genTaskResult, ex) ->
+		{
+			LOGGER.info("gen task complete ["+DhSectionPos.toString(genPos)+"]");
+			//this.onWorldGenTaskComplete(genTaskResult, ex);
+		});
 		
-		return true;
+		return worldGenFuture;
+	}
+	
+	@Override
+	protected void updateDataSourceAtPos(long updatePos, @NotNull FullDataSourceV2 inputData, boolean lockOnUpdatePos)
+	{
+		super.updateDataSourceAtPos(updatePos, inputData, lockOnUpdatePos);
+		
+		//if (SharedApi.getEnvironment() != EWorldEnvironment.CLIENT_ONLY)
+		//	LOGGER.info("updated ["+DhSectionPos.toString(updatePos)+"]");
+		
+		this.onWorldGenTaskComplete(WorldGenResult.CreateSuccess(updatePos), null);
 	}
 	
 	@Override

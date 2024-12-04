@@ -1340,6 +1340,7 @@ public class Config
 					.build();
 			
 			public static final ConfigEntry<Integer> numberOfUpdatePropagatorThreads = new ConfigEntry.Builder<Integer>()
+					.setServersideShortName("numberOfUpdatePropagatorThreads")
 					.setMinDefaultMax(1,
 							ThreadPresetConfigEventHandler.getUpdatePropagatorDefaultThreadCount(),
 							Runtime.getRuntime().availableProcessors())
@@ -1360,6 +1361,7 @@ public class Config
 							+ THREAD_NOTE)
 					.build();
 			public static final ConfigEntry<Double> runTimeRatioForUpdatePropagatorThreads = new ConfigEntry.Builder<Double>()
+					.setServersideShortName("runTimeRatioForUpdatePropagatorThreads")
 					.setMinDefaultMax(0.01, ThreadPresetConfigEventHandler.getUpdatePropagatorDefaultRunTimeRatio(), 1.0)
 					.comment(THREAD_RUN_TIME_RATIO_NOTE)
 					.build();

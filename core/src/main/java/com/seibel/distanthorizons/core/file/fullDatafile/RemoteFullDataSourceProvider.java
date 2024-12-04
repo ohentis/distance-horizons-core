@@ -20,24 +20,20 @@
 package com.seibel.distanthorizons.core.file.fullDatafile;
 
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
+import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.file.structure.ISaveStructure;
 import com.seibel.distanthorizons.core.generation.RemoteWorldRetrievalQueue;
-import com.seibel.distanthorizons.core.level.IDhClientLevel;
+import com.seibel.distanthorizons.core.generation.tasks.WorldGenResult;
+import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.level.WorldGenModule;
-import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.multiplayer.client.SyncOnLoadRequestQueue;
-import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
-import com.seibel.distanthorizons.core.util.TimerUtil;
-import com.seibel.distanthorizons.coreapi.util.BitShiftUtil;
-import org.apache.logging.log4j.Logger;
+import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
-import java.util.Map;
 import java.util.Set;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -46,10 +42,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class RemoteFullDataSourceProvider extends GeneratedFullDataSourceProvider
 {
-	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
-	private static final Timer DELAY_UPDATE_TIMER = TimerUtil.CreateTimer("Remote DataSource Visited Pos Removal Timer");
-	/** auto remove visited positions from the set after a given amount of time to prevent the set from growing infinitely */
-	private static final int VISITED_POSITION_REMOVAL_TIME_IN_MS = 20 * 60 * 1_000; // 20 minutes
+	private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	
 	@Nullable
 	private final SyncOnLoadRequestQueue syncOnLoadRequestQueue;
@@ -62,31 +55,13 @@ public class RemoteFullDataSourceProvider extends GeneratedFullDataSourceProvide
 	//=============//
 	
 	public RemoteFullDataSourceProvider(
-			IDhClientLevel level, ISaveStructure saveStructure, @Nullable File saveDirOverride,
+			IDhLevel level, ISaveStructure saveStructure, @Nullable File saveDirOverride, 
 			@Nullable SyncOnLoadRequestQueue syncOnLoadRequestQueue)
 	{
 		super(level, saveStructure, saveDirOverride);
 		this.syncOnLoadRequestQueue = syncOnLoadRequestQueue;
 	}
 	
-	
-	@Override
-	public boolean queuePositionForRetrieval(Long genPos)
-	{
-		if (this.syncOnLoadRequestQueue == null)
-		{
-			return super.queuePositionForRetrieval(genPos);
-		}
-		
-		int maxGenerationRequestDistance = this.syncOnLoadRequestQueue.networkState.sessionConfig.getMaxGenerationRequestDistance();
-		DhBlockPos2D targetPos = this.level.getTargetPosForGeneration();
-		if (targetPos == null || DhSectionPos.getChebyshevSignedBlockDistance(genPos, targetPos) / 16 > maxGenerationRequestDistance)
-		{
-			return false;
-		}
-		
-		return super.queuePositionForRetrieval(genPos);
-	}
 	
 	
 	//==================//
@@ -110,62 +85,32 @@ public class RemoteFullDataSourceProvider extends GeneratedFullDataSourceProvide
 		}
 		
 		
+		
 		//===========================//
 		// request timestamp updates //
 		// from server               //
 		//===========================//
 		
-		// get the timestamp for every maximum detail position in this section
-		int posToMinimumDetailScale = BitShiftUtil.powerOfTwo(DhSectionPos.getDetailLevel(pos) - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
-		Map<Long, Long> timestamps = this.getTimestampsForRange(
-				DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL,
-				DhSectionPos.getX(pos) * posToMinimumDetailScale,
-				DhSectionPos.getZ(pos) * posToMinimumDetailScale,
-				(DhSectionPos.getX(pos) + 1) * posToMinimumDetailScale,
-				(DhSectionPos.getZ(pos) + 1) * posToMinimumDetailScale
-		);
-		
-		DhSectionPos.forEachChildAtDetailLevel(pos, DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL, childPos ->
+		Long timestamp = this.getTimestampForPos(pos);
+		if (timestamp != null)
 		{
-			int maxSyncOnLoadDistance = this.syncOnLoadRequestQueue.networkState.sessionConfig.getMaxSyncOnLoadDistance();
-			DhBlockPos2D targetPos = this.level.getTargetPosForGeneration();
-			if (targetPos == null || DhSectionPos.getChebyshevSignedBlockDistance(childPos, targetPos) / 16 > maxSyncOnLoadDistance)
-			{
-				return;
-			}
-			
-			if (!this.visitedPositions.add(childPos))
-			{
-				return;
-			}
-			this.queueVisitedPositionForRemoval(childPos);
-			
-			// check if the server has newer versions of these LODs
-			Long subTimestamp = timestamps.get(childPos);
-			if (subTimestamp != null)
-			{
-				this.syncOnLoadRequestQueue.submitRequest(childPos, subTimestamp, this.delayedFullDataSourceSaveCache::queueDataSourceForUpdateAndSave);
-			}
-		});
+			this.syncOnLoadRequestQueue.submitRequest(pos, timestamp, this.delayedFullDataSourceSaveCache::queueDataSourceForUpdateAndSave);
+		}
 		
 		return super.get(pos);
 	}
-	/** this is done to prevent infinite set growth */
-	private void queueVisitedPositionForRemoval(long pos)
+	
+	
+	@Override
+	public CompletableFuture<WorldGenResult> queuePositionForRetrieval(long genPos, boolean allowAboveMaxGenRequests)
 	{
-		TimerTask timerTask = new TimerTask()
+		RemoteWorldRetrievalQueue worldGenQueue = (RemoteWorldRetrievalQueue) this.worldGenQueueRef.get();
+		if (worldGenQueue == null)
 		{
-			@Override
-			public void run()
-			{
-				RemoteFullDataSourceProvider.this.visitedPositions.remove(pos);
-			}
-		};
-		try
-		{
-			DELAY_UPDATE_TIMER.schedule(timerTask, VISITED_POSITION_REMOVAL_TIME_IN_MS);
+			return null;
 		}
-		catch (IllegalStateException ignore) { /* shouldn't happen, but there have been issues like this in the past */ }
+		
+		return super.queuePositionForRetrieval(genPos, worldGenQueue.isPosCloserThanFarthestWaiting(new DhBlockPos2D(MC_CLIENT.getPlayerBlockPos()), genPos));
 	}
 	
 	

@@ -21,13 +21,13 @@ package com.seibel.distanthorizons.core.file.fullDatafile;
 
 import com.seibel.distanthorizons.api.enums.config.EDhApiDataCompressionMode;
 import com.seibel.distanthorizons.core.api.internal.ClientApi;
-import com.seibel.distanthorizons.core.api.internal.SharedApi;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV1;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.file.structure.ISaveStructure;
 import com.seibel.distanthorizons.core.file.AbstractDataSourceHandler;
+import com.seibel.distanthorizons.core.generation.tasks.WorldGenResult;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
@@ -40,7 +40,6 @@ import com.seibel.distanthorizons.core.sql.repo.FullDataSourceV2Repo;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
 import com.seibel.distanthorizons.core.util.objects.DataCorruptedException;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
-import com.seibel.distanthorizons.core.world.EWorldEnvironment;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.apache.logging.log4j.Logger;
@@ -137,15 +136,8 @@ public class FullDataSourceProviderV2
 		this.migrationThreadPool.execute(this::convertLegacyDataSources);
 		
 		// update propagation doesn't need to be run on the server since only the highest detail level is needed
-		if (SharedApi.getEnvironment() != EWorldEnvironment.SERVER_ONLY)
-		{
-			this.updateQueueProcessor = ThreadUtil.makeSingleThreadPool("Parent Update Queue ["+levelId+"]");
-			this.updateQueueProcessor.execute(this::runUpdateQueue);
-		}
-		else
-		{
-			this.updateQueueProcessor = null;
-		}
+		this.updateQueueProcessor = ThreadUtil.makeSingleThreadPool("Parent Update Queue [" + levelId + "]");
+		this.updateQueueProcessor.execute(this::runUpdateQueue);
 	}
 	
 	
@@ -604,7 +596,8 @@ public class FullDataSourceProviderV2
 	public int getMaxPossibleRetrievalPositionCountForPos(Long pos) { return -1; }
 	
 	/** @return true if the position was queued, false if not */
-	public boolean queuePositionForRetrieval(Long genPos) { return false; }
+	@Nullable
+	public CompletableFuture<WorldGenResult> queuePositionForRetrieval(long genPos, boolean allowAboveMaxGenRequests) { return null; }
 	
 	/** does nothing if the given position isn't present in the queue */
 	public void removeRetrievalRequestIf(DhSectionPos.ICancelablePrimitiveLongConsumer removeIf) { }
@@ -632,8 +625,6 @@ public class FullDataSourceProviderV2
 	@Nullable
 	public Long getTimestampForPos(long pos)
 	{ return this.repo.getTimestampForPos(pos); }
-	public Map<Long, Long> getTimestampsForRange(byte detailLevel, int startPosX, int startPosZ, int endPosX, int endPosZ)
-	{ return this.repo.getTimestampsForRange(detailLevel, startPosX, startPosZ, endPosX, endPosZ); }
 	
 	
 	

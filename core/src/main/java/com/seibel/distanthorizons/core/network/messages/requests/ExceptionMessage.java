@@ -23,6 +23,7 @@ import com.google.common.base.MoreObjects;
 import com.seibel.distanthorizons.core.network.exceptions.RateLimitedException;
 import com.seibel.distanthorizons.core.network.exceptions.RequestOutOfRangeException;
 import com.seibel.distanthorizons.core.network.exceptions.RequestRejectedException;
+import com.seibel.distanthorizons.core.network.exceptions.SectionRequiresSplittingException;
 import com.seibel.distanthorizons.core.network.messages.AbstractTrackableMessage;
 import io.netty.buffer.ByteBuf;
 
@@ -38,6 +39,7 @@ public class ExceptionMessage extends AbstractTrackableMessage
 		this.add(RateLimitedException.class);
 		this.add(RequestOutOfRangeException.class);
 		this.add(RequestRejectedException.class);
+		this.add(SectionRequiresSplittingException.class);
 	}};
 	
 	public Exception exception;
