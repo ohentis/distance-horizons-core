@@ -30,7 +30,6 @@ import io.netty.buffer.ByteBuf;
 import java.util.ArrayList;
 import java.util.List;
 
-// TODO appears to be useless yelling at user
 public class ExceptionMessage extends AbstractTrackableMessage
 {
 	private static final List<Class<? extends Exception>> EXCEPTION_LIST = new ArrayList<Class<? extends Exception>>()
