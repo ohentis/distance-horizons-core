@@ -16,10 +16,9 @@
  *    You should have received a copy of the GNU Lesser General Public License
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
 package com.seibel.distanthorizons.core.jar;
 
-import com.seibel.distanthorizons.core.file.fullDatafile.FullDataSourceProviderV2;
+
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV2DTO;
 import com.seibel.distanthorizons.core.sql.repo.FullDataSourceV2Repo;
@@ -51,7 +50,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public class JarMain
 {
 	public static final Logger logger = LogManager.getLogger(JarMain.class.getSimpleName());
-	public static List<String> programArgs;
+	public static List<String> argList;
 	public static final boolean isDarkTheme = DarkModeDetector.isDarkMode();
 	public static boolean isOffline = WebDownloader.netIsAvailable();
 	
@@ -61,9 +60,9 @@ public class JarMain
 	
 	public static void main(String[] args)
 	{
-		programArgs = Arrays.asList(args);
+		argList = Arrays.asList(args);
 		
-		if (!programArgs.contains("--no-custom-logger"))
+		if (!argList.contains("--no-custom-logger"))
 		{
 			LoggerContext context = (LoggerContext) LogManager.getContext(false);
 			try
@@ -80,57 +79,184 @@ public class JarMain
 		logger.debug("Running " + ModInfo.READABLE_NAME + " standalone jar");
 		logger.warn("The standalone jar is still a massive WIP, expect bugs");
 		logger.debug("Java version " + System.getProperty("java.version"));
-//        logger.debug(programArgs);
+		//logger.debug(argList);
 		
-		// Sets up the local
-		if (JarUtils.accessFile("assets/lod/lang/" + Locale.getDefault().toString().toLowerCase() + ".json") == null)
+		
+		if (args.length == 0 || Arrays.asList(args).contains("--gui"))
 		{
-			logger.warn("The language setting [" + Locale.getDefault().toString().toLowerCase() + "] isn't allowed yet. Defaulting to [" + Locale.US.toString().toLowerCase() + "].");
-			Locale.setDefault(Locale.US);
+			// Sets up the local
+			if (JarUtils.accessFile("assets/lod/lang/" + Locale.getDefault().toString().toLowerCase() + ".json") == null)
+			{
+				logger.warn("The language setting [" + Locale.getDefault().toString().toLowerCase() + "] isn't allowed yet. Defaulting to [" + Locale.US.toString().toLowerCase() + "].");
+				Locale.setDefault(Locale.US);
+			}
+			JarDependencySetup.createInitialBindings();
+			
+			startGUI();
 		}
-		JarDependencySetup.createInitialBindings();
-		
-		if (Arrays.asList(args).contains("--parse"))
+		else if (argList.get(0).equals("--export"))
 		{
-			// proof-of-concept ability to open DH Sqlite files for parsing by external programs.
-			FullDataSourceV2Repo repo = null;
+			Byte exportDetailLevel = null;
+			Long exportPos = null;
+			
+			boolean showHelp = argList.contains("help");
+			if (!showHelp)
+			{
+				// assume something is wrong unless we find a valid arg set
+				showHelp = true;
+				
+				
+				
+				if (argList.size() == 1)
+				{
+					// only --export
+					showHelp = false;
+				}
+				else if (argList.size() == 2)
+				{
+					// --export 0
+					
+					String detailLevelString = argList.get(1);
+					try
+					{
+						exportDetailLevel = Byte.parseByte(detailLevelString);
+						showHelp = false;
+					}
+					catch (NumberFormatException e)
+					{
+						logger.error("Unable to parse detail level ["+detailLevelString+"], error: ["+e.getMessage()+"].");
+					}
+				}
+				else if (argList.size() == 4)
+				{
+					// --export 0 1 -2
+					
+					String detailLevelString = argList.get(1);
+					String posXString = argList.get(2);
+					String posZString = argList.get(3);
+					try
+					{
+						byte detailLevel = Byte.parseByte(detailLevelString);
+						int posX = Integer.parseInt(posXString);
+						int posZ = Integer.parseInt(posZString);
+						
+						exportPos = DhSectionPos.encode(detailLevel, posX, posZ);
+						showHelp = false;
+					}
+					catch (NumberFormatException e)
+					{
+						logger.error("Unable to parse position ["+detailLevelString+"], ["+posXString+"], ["+posZString+"], error: ["+e.getMessage()+"].");
+					}
+				}
+			}
+			
+			if (showHelp)
+			{
+				logger.info("--export parses the 'DistantHorizons.sqlite' file next to this jar and exports the given data into a CSV file. \n" +
+						"Usage: \n" +
+						"--export [LOD position Detail Level] [LOD position X] [LOD position Z] \n" +
+						"\tExport the given position's data if present. \n" +
+						"\tThe detail level should be absolute, IE 0 = block sized, 1 = 2x2 blocks, etc. \n" +
+						"--export [LOD position Detail Level]\n" +
+						"\tExport all data for a given detail level.\n" +
+						"\tThe detail level should be absolute, IE 0 = block sized, 1 = 2x2 blocks, etc. \n" +
+						"--export\n" +
+						"\tExport the entire database.\n");
+				return;
+			}
+			
+			
+			// find the database file
+			File dbFile = new File("./DistantHorizons.sqlite");
+			if (!dbFile.exists())
+			{
+				logger.error("Unable to find a database to parse at: ["+dbFile.getAbsolutePath()+"].");
+				return;
+			}
+			
+			
+			
+			// set the export file
+			File exportFile = new File("DistantHorizons-export.csv"); // TODO allow setting an export folder
+			if (exportFile.isDirectory())
+			{
+				logger.error("Export file can't be a folder. Given path: ["+exportFile+"].");
+				return;
+			}
+			
+			
+			// create the export file
 			try
 			{
-				long pos = DhSectionPos.encode(DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL, 0, 0);
-				File dbFile = new File("./DistantHorizons.sqlite");
-				logger.info("Attempting to parse pos ["+DhSectionPos.toString(pos)+"] for DB file ["+dbFile+"].");
+				boolean ignored = exportFile.mkdirs(); // we don't care if we're making new directories of if they already exist
 				
-				
+				if (exportFile.exists())
+				{
+					logger.error("Export file already exists: ["+exportFile.getAbsolutePath()+"].");
+					return;
+				}
+				else if (exportFile.createNewFile())
+				{
+					logger.error("Failed to create file: ["+exportFile.getAbsolutePath()+"].");
+					return;
+				}
+			}
+			catch (Exception e)
+			{
+				logger.error("Unable to create export file: ["+exportFile.getAbsolutePath()+"].");
+				return;
+			}
+			
+			logger.info("LOD data will be exported to ["+exportFile.getAbsolutePath()+"].");
+			
+			
+			FullDataSourceV2Repo repo;
+			try
+			{
 				repo = new FullDataSourceV2Repo(FullDataSourceV2Repo.DEFAULT_DATABASE_TYPE, dbFile);
-				FullDataSourceV2DTO dto = repo.getByKey(pos);
-				if (dto == null)
-				{
-					logger.info("No DTO found at pos ["+DhSectionPos.toString(pos)+"]");
-				}
-				else
-				{
-					logger.info("DTO ["+DhSectionPos.toString(pos)+"] checksum: ["+dto.dataChecksum+"].");
-				}
 			}
 			catch (SQLException e)
 			{
-				System.err.println(e.getMessage()+"\n\n");
-				e.printStackTrace();
+				logger.error("Failed to initialize connection with database: ["+exportFile.getAbsolutePath()+"], error: ["+e.getMessage()+"].", e);
+				return;
 			}
-			finally
+			
+			if (exportPos != null)
 			{
-				if (repo != null)
-				{
-					repo.close();
-				}
+				exportLodDataAtPosition(repo, exportFile, exportPos);
 			}
-		}
-		else if (args.length == 0 || Arrays.asList(args).contains("--gui"))
-		{
-			startGUI();
-			return;
+			else if (exportDetailLevel != null)
+			{
+				exportAllAtDetailLevel(repo, exportFile, exportDetailLevel);
+			}
+			else
+			{
+				exportEntireDatabase(repo, exportFile);
+			}
 		}
 	}
+	
+	private static void exportLodDataAtPosition(FullDataSourceV2Repo repo, File exportFile, long pos)
+	{
+		FullDataSourceV2DTO dto = repo.getByKey(pos);
+		if (dto == null)
+		{
+			logger.error("Unable to find any data at the position ["+DhSectionPos.toString(pos)+"].");
+			return;
+		}
+		// TODO need a way to create datasources (specifically data mappings) without a MC level object to deserialize with
+		//dto.createPooledDataSource();
+		
+	}
+	private static void exportAllAtDetailLevel(FullDataSourceV2Repo repo, File exportFile, byte detailLevel)
+	{
+		// TODO
+	}
+	private static void exportEntireDatabase(FullDataSourceV2Repo repo, File exportFile)
+	{
+		// TODO
+	}
+	
 	
 	
 	
