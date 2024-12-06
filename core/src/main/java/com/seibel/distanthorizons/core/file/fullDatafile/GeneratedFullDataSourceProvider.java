@@ -138,6 +138,17 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 	// world gen (data source retrieval) //
 	//===================================//
 	
+	public byte lowestDataDetailLevel()
+	{
+		IFullDataSourceRetrievalQueue fullDataSourceRetrievalQueue = this.worldGenQueueRef.get();
+		if (fullDataSourceRetrievalQueue == null)
+		{
+			return DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL;
+		}
+		
+		return (byte) (DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL + fullDataSourceRetrievalQueue.lowestDataDetail());
+	}
+	
 	/**
 	 * Assigns the queue for handling world gen and does first time setup as well. <br> 
 	 * Assumes there isn't a pre-existing queue. 

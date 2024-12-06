@@ -219,10 +219,9 @@ public class FullDataSourceRequestHandler
 		{
 			if (this.fullDataSourceProvider().isFullyGenerated(fullDataSource.columnGenerationSteps))
 			{
-				LOGGER.info("sending - complete [" + DhSectionPos.toString(pos) + "]");
 				requestGroup.fullDataSource = fullDataSource;
 			}
-			else if (!this.serverLevel.isNSizedGenerationSupported() && DhSectionPos.getDetailLevel(pos) > DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL)
+			else if (DhSectionPos.getDetailLevel(pos) > this.serverLevel.serverside.fullDataFileHandler.lowestDataDetailLevel())
 			{
 				// Make this group unavailable for adding into
 				this.requestGroupsByPos.remove(pos);
