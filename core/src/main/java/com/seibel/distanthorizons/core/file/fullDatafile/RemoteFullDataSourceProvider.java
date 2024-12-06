@@ -19,6 +19,7 @@
 
 package com.seibel.distanthorizons.core.file.fullDatafile;
 
+import com.google.common.cache.CacheBuilder;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.file.structure.ISaveStructure;
@@ -32,9 +33,11 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftCli
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
+import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Only handles {@link SyncOnLoadRequestQueue} requests (IE updating existing LODs based on a timestamp).
@@ -46,7 +49,10 @@ public class RemoteFullDataSourceProvider extends GeneratedFullDataSourceProvide
 	
 	@Nullable
 	private final SyncOnLoadRequestQueue syncOnLoadRequestQueue;
-	private final Set<Long> visitedPositions = ConcurrentHashMap.newKeySet();
+	private final Set<Long> visitedPositions = Collections.newSetFromMap(CacheBuilder.newBuilder()
+			.expireAfterWrite(20, TimeUnit.MINUTES)
+			.<Long, Boolean>build()
+			.asMap());
 	
 	
 	
