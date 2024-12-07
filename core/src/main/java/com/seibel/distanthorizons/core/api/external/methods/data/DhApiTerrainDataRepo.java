@@ -559,6 +559,7 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 						LOGGER.info("raycast: [INFINITY]");
 					}
 					
+					// draw raycast position
 					if (rayCast.success && rayCast.payload != null)
 					{
 						DebugRenderer.makeParticle(

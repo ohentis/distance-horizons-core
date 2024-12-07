@@ -19,25 +19,24 @@
 
 package com.seibel.distanthorizons.api.methods.events.abstractEvents;
 
-import com.seibel.distanthorizons.api.interfaces.world.IDhApiLevelWrapper;
 import com.seibel.distanthorizons.api.interfaces.world.IDhApiWorldProxy;
 import com.seibel.distanthorizons.api.methods.events.interfaces.IDhApiEvent;
 import com.seibel.distanthorizons.api.methods.events.interfaces.IDhApiEventParam;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiEventParam;
 
 /**
- * Called after Distant Horizons has finished unloading a level.
+ * Called after Distant Horizons has finished unloading a world.
  *
  * @see IDhApiWorldProxy
  *
  * @author James Seibel
- * @version 2024-9-27
+ * @version 2024-12-7
  * @since API 4.0.0
  */
 public abstract class DhApiWorldUnloadEvent implements IDhApiEvent<DhApiWorldUnloadEvent.EventParam>
 {
-	/** Fired before Distant Horizons unloads a level. */
-	public abstract void onLevelUnload(DhApiEventParam<EventParam> input);
+	/** Fired before Distant Horizons unloads a world. */
+	public abstract void onWorldUnload(DhApiEventParam<EventParam> input);
 	
 	
 	//=========================//
@@ -45,7 +44,7 @@ public abstract class DhApiWorldUnloadEvent implements IDhApiEvent<DhApiWorldUnl
 	//=========================//
 	
 	@Override
-	public final void fireEvent(DhApiEventParam<EventParam> input) { this.onLevelUnload(input); }
+	public final void fireEvent(DhApiEventParam<EventParam> input) { this.onWorldUnload(input); }
 	
 	
 	//==================//

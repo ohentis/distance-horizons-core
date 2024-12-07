@@ -19,26 +19,25 @@
 
 package com.seibel.distanthorizons.api.methods.events.abstractEvents;
 
-import com.seibel.distanthorizons.api.interfaces.world.IDhApiLevelWrapper;
 import com.seibel.distanthorizons.api.interfaces.world.IDhApiWorldProxy;
 import com.seibel.distanthorizons.api.methods.events.interfaces.IDhApiEvent;
 import com.seibel.distanthorizons.api.methods.events.interfaces.IDhApiEventParam;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiEventParam;
 
 /**
- * Called after Distant Horizons finishes loading a new level. <br>
+ * Called after Distant Horizons finishes loading a new world. <br>
  * Note: this may be fired before Minecraft has loaded in the player.
  *
  * @see IDhApiWorldProxy
  * 
  * @author James Seibel
- * @version 2024-9-27
+ * @version 2024-12-7
  * @since API 4.0.0
  */
 public abstract class DhApiWorldLoadEvent implements IDhApiEvent<DhApiWorldLoadEvent.EventParam>
 {
-	/** Fired after Distant Horizons loads a new level. */
-	public abstract void onLevelLoad(DhApiEventParam<EventParam> input);
+	/** Fired after Distant Horizons loads a new world. */
+	public abstract void onWorldLoad(DhApiEventParam<EventParam> input);
 	
 	
 	//=========================//
@@ -46,7 +45,7 @@ public abstract class DhApiWorldLoadEvent implements IDhApiEvent<DhApiWorldLoadE
 	//=========================//
 	
 	@Override
-	public final void fireEvent(DhApiEventParam<EventParam> input) { this.onLevelLoad(input); }
+	public final void fireEvent(DhApiEventParam<EventParam> input) { this.onWorldLoad(input); }
 	
 	
 	//==================//
