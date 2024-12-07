@@ -20,6 +20,7 @@
 package com.seibel.distanthorizons.core.render.renderer.shaders;
 
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
+import com.seibel.distanthorizons.core.render.glObject.GLState;
 import com.seibel.distanthorizons.core.render.glObject.shader.ShaderProgram;
 import com.seibel.distanthorizons.core.render.renderer.LodRenderer;
 import com.seibel.distanthorizons.core.render.renderer.ScreenQuad;
@@ -82,6 +83,8 @@ public class DhApplyShader extends AbstractShaderRenderer
 		}
 		
 		
+		GLState state = new GLState();
+		
 		GLMC.disableDepthTest();
 		
 		GLMC.enableBlend();
@@ -100,6 +103,12 @@ public class DhApplyShader extends AbstractShaderRenderer
 		GLMC.glBindFramebuffer(GL32.GL_FRAMEBUFFER, targetFrameBuffer);
 		
 		ScreenQuad.INSTANCE.render();
+		
+		
+		// restore everything, except at this point the MC framebuffer should now be used instead
+		state.restore();
+		GLMC.glBindFramebuffer(GL32.GL_FRAMEBUFFER, targetFrameBuffer);
+		
 	}
 	
 }

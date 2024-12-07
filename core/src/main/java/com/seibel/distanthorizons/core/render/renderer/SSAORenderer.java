@@ -102,8 +102,6 @@ public class SSAORenderer
 	
 	public void render(Mat4f projectionMatrix, float partialTicks)
 	{
-		// TODO remove need for GLState, there are a few GL items that aren't being cleaned up correctly
-		//  note that this doesn't affect Iris since Iris disables SSAO
 		GLState state = new GLState();
 		
 		this.init();

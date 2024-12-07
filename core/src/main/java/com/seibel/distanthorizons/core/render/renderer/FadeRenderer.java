@@ -117,9 +117,7 @@ public class FadeRenderer
 		profiler.push("DH-RenderLevel");
 		
 		
-		// TODO try removing this now that we use GLMC
-		// if there are reports of things breaking, we might have to re-add it
-		//GLState mcState = new GLState();
+		GLState mcState = new GLState();
 		
 		try
 		{
@@ -160,7 +158,8 @@ public class FadeRenderer
 		finally
 		{
 			// make sure we always revert to MC's state to prevent GL state corruption
-			//mcState.restore();
+			// this is especially important on MC 1.16.5 or when other rendering mods are present
+			mcState.restore();
 		}
 	}
 	

@@ -20,6 +20,7 @@
 package com.seibel.distanthorizons.core.render.renderer;
 
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
+import com.seibel.distanthorizons.core.render.glObject.GLState;
 import com.seibel.distanthorizons.core.render.renderer.shaders.FogApplyShader;
 import com.seibel.distanthorizons.core.render.renderer.shaders.FogShader;
 import com.seibel.distanthorizons.core.util.math.Mat4f;
@@ -101,6 +102,9 @@ public class FogRenderer
 	
 	public void render(Mat4f modelViewProjectionMatrix, float partialTicks)
 	{
+		// needed in MC 1.16.5 probably due to MC not manually setting each GL state they need before the next rendering step
+		GLState state = new GLState();
+		
 		this.init();
 		
 		// resize the framebuffer if necessary
@@ -119,6 +123,8 @@ public class FogRenderer
 		
 		FogApplyShader.INSTANCE.fogTexture = this.fogTexture;
 		FogApplyShader.INSTANCE.render(partialTicks);
+		
+		state.restore();
 	}
 	
 	public void free()

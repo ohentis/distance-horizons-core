@@ -97,7 +97,7 @@ public class GLState
 		this.texture2 = GL32.glGetInteger(GL32.GL_TEXTURE_BINDING_2D);
 		
 		GLMC.glActiveTexture(GL32.GL_TEXTURE3);
-		this.texture3= GL32.glGetInteger(GL32.GL_TEXTURE_BINDING_2D);
+		this.texture3 = GL32.glGetInteger(GL32.GL_TEXTURE_BINDING_2D);
 		
 		GLMC.glActiveTexture(this.activeTextureNumber);
 		
