@@ -200,23 +200,14 @@ public class LodDataBuilder
 						// save the biome/block change
 						if (!newBiome.equals(biome) || !newBlockState.equals(blockState))
 						{
-							// if we ignore hidden blocks, don't save this biome/block change
-							// wait until the block is visible and then save the new datapoint
-							if (!ignoreHiddenBlocks
-									// if the last block is air, this block will always be visible
-									|| blockState.isAir()
-									// check if this block is visible from any direction 
-									|| blockVisible(chunkWrapper, relBlockX, y, relBlockZ))
-							{
-								longs.add(FullDataPointUtil.encode(mappedId, lastY - y, y + 1 - chunkWrapper.getInclusiveMinBuildHeight(), blockLight, skyLight));
-								biome = newBiome;
-								blockState = newBlockState;
-								
-								mappedId = dataSource.mapping.addIfNotPresentAndGetId(biome, blockState);
-								blockLight = newBlockLight;
-								skyLight = newSkyLight;
-								lastY = y;
-							}
+							longs.add(FullDataPointUtil.encode(mappedId, lastY - y, y + 1 - chunkWrapper.getInclusiveMinBuildHeight(), blockLight, skyLight));
+							biome = newBiome;
+							blockState = newBlockState;
+							
+							mappedId = dataSource.mapping.addIfNotPresentAndGetId(biome, blockState);
+							blockLight = newBlockLight;
+							skyLight = newSkyLight;
+							lastY = y;
 						}
 					}
 					longs.add(FullDataPointUtil.encode(mappedId, lastY - y, y + 1 - chunkWrapper.getInclusiveMinBuildHeight(), blockLight, skyLight));
@@ -228,6 +219,11 @@ public class LodDataBuilder
 							worldCompressionMode);
 				}
 			}
+			
+			if (ignoreHiddenBlocks) 
+			{
+				cullHiddenBlocks(dataSource, chunkOffsetX, chunkOffsetZ);
+			}
 		}
 		catch (DataCorruptedException e)
 		{
@@ -238,67 +234,147 @@ public class LodDataBuilder
 		LodUtil.assertTrue(!dataSource.isEmpty);
 		return dataSource;
 	}
-	private static boolean blockVisible(IChunkWrapper chunkWrapper, int relBlockX, int blockY, int relBlockZ)
-	{
-		DhBlockPos originalBlockPos = new DhBlockPos(relBlockX,blockY,relBlockZ);
-		final DhBlockPosMutable testBlockPos = new DhBlockPosMutable(relBlockX,blockY,relBlockZ);
-		
-		// up/down
-		if (blockInDirectionVisible(chunkWrapper, EDhDirection.UP, originalBlockPos, testBlockPos))
-		{
-			return true;
-		}
-		if (blockInDirectionVisible(chunkWrapper, EDhDirection.DOWN, originalBlockPos, testBlockPos))
-		{
-			return true;
-		}
-		
-		// north/south
-		if (blockInDirectionVisible(chunkWrapper, EDhDirection.NORTH, originalBlockPos, testBlockPos))
-		{
-			return true;
-		}
-		if (blockInDirectionVisible(chunkWrapper, EDhDirection.SOUTH, originalBlockPos, testBlockPos))
-		{
-			return true;
-		}
-		
-		// east/west
-		if (blockInDirectionVisible(chunkWrapper, EDhDirection.EAST, originalBlockPos, testBlockPos))
-		{
-			return true;
-		}
-		if (blockInDirectionVisible(chunkWrapper, EDhDirection.WEST, originalBlockPos, testBlockPos))
-		{
-			return true;
-		}
-		
-		
-		return false;
-	}
-	private static boolean blockInDirectionVisible(IChunkWrapper chunkWrapper, EDhDirection direction, DhBlockPos originalBlockPos, DhBlockPosMutable testBlockPos)
-	{
-		originalBlockPos.mutateOffset(direction, testBlockPos);
-		
-		// if the block is next to the border of a chunk, assume it's visible
-		if (testBlockPos.getX() < 0 || testBlockPos.getX() >= LodUtil.CHUNK_WIDTH)
-		{
-			return true;
-		}
-		if (testBlockPos.getZ() < 0 || testBlockPos.getZ() >= LodUtil.CHUNK_WIDTH)
-		{
-			return true;
-		}
-		if (testBlockPos.getY() < chunkWrapper.getInclusiveMinBuildHeight() || testBlockPos.getY() > chunkWrapper.getExclusiveMaxBuildHeight())
-		{
-			return true;
-		}
-		
-		// this block isn't on a chunk boundary, check if it is next to a transparent/air block
-		IBlockStateWrapper blockState = chunkWrapper.getBlockState(testBlockPos);
-		return blockState.isAir() || blockState.getOpacity() != LodUtil.BLOCK_FULLY_OPAQUE;
-	}
 	
+	private static void cullHiddenBlocks(FullDataSourceV2 dataSource, int chunkOffsetX, int chunkOffsetZ)
+	{
+		for (int relZ = 1; relZ < LodUtil.CHUNK_WIDTH - 1; relZ++)
+		{
+			for (int relX = 1; relX < LodUtil.CHUNK_WIDTH - 1; relX++)
+			{
+				LongArrayList
+						centerColumn = dataSource.get(relX + chunkOffsetX, relZ + chunkOffsetZ),
+						posXColumn = dataSource.get(relX + chunkOffsetX + 1, relZ + chunkOffsetZ),
+						negXColumn = dataSource.get(relX + chunkOffsetX - 1, relZ + chunkOffsetZ),
+						posZColumn = dataSource.get(relX + chunkOffsetX, relZ + chunkOffsetZ + 1),
+						negZColumn = dataSource.get(relX + chunkOffsetX, relZ + chunkOffsetZ - 1);
+				int
+						centerIndex = centerColumn.size() - 1,
+						posXIndex = posXColumn.size() - 1,
+						negXIndex = negXColumn.size() - 1,
+						posZIndex = posZColumn.size() - 1,
+						negZIndex = negZColumn.size() - 1;
+				for (; centerIndex >= 0; centerIndex--)
+				{
+					long currentPoint = centerColumn.getLong(centerIndex);
+					
+					// translucent data points are not eligible to be culled.
+					if (isTranslucent(dataSource, currentPoint))
+					{
+						continue;
+					}
+					
+					// the top segment should never be culled.
+					if (centerIndex == 0 
+						|| isTranslucent(dataSource, centerColumn.getLong(centerIndex - 1))
+						)
+					{
+						continue;
+					}
+					
+					// the bottom segment can sometimes be culled.
+					// assume it will not be seen from below,
+					// because this would imply the player is in the void.
+					if (centerIndex + 1 < centerColumn.size() 
+						&& isTranslucent(dataSource, centerColumn.getLong(centerIndex + 1))
+						)
+					{
+						continue;
+					}
+					
+					posXIndex = checkOcclusion(dataSource, currentPoint, posXColumn, posXIndex);
+					if (posXIndex < 0)
+					{
+						posXIndex = ~posXIndex;
+						continue;
+					}
+					
+					negXIndex = checkOcclusion(dataSource, currentPoint, negXColumn, negXIndex);
+					if (negXIndex < 0)
+					{
+						negXIndex = ~negXIndex;
+						continue;
+					}
+					
+					posZIndex = checkOcclusion(dataSource, currentPoint, posZColumn, posZIndex);
+					if (posZIndex < 0)
+					{
+						posZIndex = ~posZIndex;
+						continue;
+					}
+					
+					negZIndex = checkOcclusion(dataSource, currentPoint, negZColumn, negZIndex);
+					if (negZIndex < 0)
+					{
+						negZIndex = ~negZIndex;
+						continue;
+					}
+					
+					// current point is fully surrounded. remove it.
+					centerColumn.removeLong(centerIndex);
+					// make the above data point cover the area that the current point used to occupy.
+					long above = centerColumn.getLong(centerIndex - 1);
+					above = FullDataPointUtil.setBottomY(above, FullDataPointUtil.getBottomY(currentPoint));
+					above = FullDataPointUtil.setHeight(above, FullDataPointUtil.getHeight(currentPoint) + FullDataPointUtil.getHeight(above));
+					centerColumn.set(centerIndex - 1, above);
+				}
+			}
+		}
+	}
+
+	/**
+	checks if centerPoint is "covered" by opaque data points in adjacentColumn.
+	centerPoint counts as covered if, and only if, for all Y levels in its height range,
+	there exists an opaque data point in adjacentColumn which overlaps with that Y level.
+
+	@param source used to lookup blocks (and their opacities) based on their IDs.
+	@param centerPoint the point being checked to see if it's fully covered.
+	@param adjacentColumn the data points which might cover centerPoint.
+	@param adjacentIndex the starting index in adjacentColumn to start scanning at.
+	indices greater than adjacentIndex have already been checked and confirmed to
+	not overlap or only overlap partially with centerPoint's Y range.
+
+	@return if centerPoint is covered, returns the index of the segment which finishes covering it.
+	the start of the covering may be a smaller index. in this case, the returned index may be used
+	as the adjacentIndex provided to this method on the next iteration which yields a new centerPoint.
+
+	if centerPoint is NOT covered, returns the bitwise negation of the index of the
+	segment which did not cover it. this guarantees that the returned value is negative.
+	the caller should check for negative return values and manually un-negate them to proceed with the loop.
+
+	in other words, this function returns the index of the next adjacent data 
+	point to use in the loop, AND a boolean indicating whether or not the 
+	centerPoint is covered;	both are packed into the same int, and returned.
+	*/
+	private static int checkOcclusion(FullDataSourceV2 source, long centerPoint, LongArrayList adjacentColumn, int adjacentIndex)
+	{
+		int bottomOfCenter = FullDataPointUtil.getBottomY(centerPoint);
+		int topOfCenter = bottomOfCenter + FullDataPointUtil.getHeight(centerPoint);
+		for (; adjacentIndex >= 0; adjacentIndex--)
+		{
+			long adjacentPoint = adjacentColumn.getLong(adjacentIndex);
+			int topOfAdjacent = FullDataPointUtil.getBottomY(adjacentPoint) + FullDataPointUtil.getHeight(adjacentPoint);
+			if (topOfAdjacent <= bottomOfCenter)
+			{
+				continue;
+			}
+			else if (isTranslucent(source, adjacentPoint))
+			{
+				return ~adjacentIndex;
+			}
+			else if (topOfAdjacent >= topOfCenter)
+			{
+				return adjacentIndex;
+			}
+		}
+		
+		throw new LodUtil.AssertFailureException("Adjacent column ends before center column does.");
+	}
+
+	private static boolean isTranslucent(FullDataSourceV2 source, long point) {
+		return source.mapping.getBlockStateWrapper(FullDataPointUtil.getId(point)).getOpacity() < LodUtil.BLOCK_FULLY_OPAQUE;
+	}
+
+
 	
 	/** @throws ClassCastException if an API user returns the wrong object type(s) */
 	public static FullDataSourceV2 createFromApiChunkData(DhApiChunk apiChunk, boolean runAdditionalValidation) throws ClassCastException, DataCorruptedException, IllegalArgumentException
