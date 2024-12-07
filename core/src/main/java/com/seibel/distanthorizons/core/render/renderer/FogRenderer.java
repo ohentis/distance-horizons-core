@@ -20,10 +20,10 @@
 package com.seibel.distanthorizons.core.render.renderer;
 
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
-import com.seibel.distanthorizons.core.render.glObject.GLState;
 import com.seibel.distanthorizons.core.render.renderer.shaders.FogApplyShader;
 import com.seibel.distanthorizons.core.render.renderer.shaders.FogShader;
 import com.seibel.distanthorizons.core.util.math.Mat4f;
+import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftGLWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
 import org.lwjgl.opengl.GL32;
 
@@ -40,6 +40,7 @@ public class FogRenderer
 	public static FogRenderer INSTANCE = new FogRenderer();
 	
 	private static final IMinecraftRenderWrapper MC_RENDER = SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
+	private static final IMinecraftGLWrapper GLMC = SingletonInjector.INSTANCE.get(IMinecraftGLWrapper.class);
 	
 	
 	private boolean init = false;
@@ -77,15 +78,15 @@ public class FogRenderer
 		
 		if (this.fogTexture != -1)
 		{
-			GL32.glDeleteTextures(this.fogTexture);
+			GLMC.glDeleteTextures(this.fogTexture);
 			this.fogTexture = -1;
 		}
 		
 		this.fogFramebuffer = GL32.glGenFramebuffers();
-		GL32.glBindFramebuffer(GL32.GL_FRAMEBUFFER, this.fogFramebuffer);
+		GLMC.glBindFramebuffer(GL32.GL_FRAMEBUFFER, this.fogFramebuffer);
 		
-		this.fogTexture = GL32.glGenTextures();
-		GL32.glBindTexture(GL32.GL_TEXTURE_2D, this.fogTexture);
+		this.fogTexture = GLMC.glGenTextures();
+		GLMC.glBindTexture(this.fogTexture);
 		GL32.glTexImage2D(GL32.GL_TEXTURE_2D, 0, GL32.GL_RGBA16, width, height, 0, GL32.GL_RGBA, GL32.GL_UNSIGNED_SHORT_4_4_4_4, (ByteBuffer) null);
 		GL32.glTexParameteri(GL32.GL_TEXTURE_2D, GL32.GL_TEXTURE_MIN_FILTER, GL32.GL_LINEAR);
 		GL32.glTexParameteri(GL32.GL_TEXTURE_2D, GL32.GL_TEXTURE_MAG_FILTER, GL32.GL_LINEAR);
@@ -98,9 +99,8 @@ public class FogRenderer
 	// render //
 	//========//
 	
-	public void render(GLState primaryState, Mat4f modelViewProjectionMatrix, float partialTicks)
+	public void render(Mat4f modelViewProjectionMatrix, float partialTicks)
 	{
-		GLState state = new GLState();
 		this.init();
 		
 		// resize the framebuffer if necessary
@@ -117,13 +117,8 @@ public class FogRenderer
 		FogShader.INSTANCE.setProjectionMatrix(modelViewProjectionMatrix);
 		FogShader.INSTANCE.render(partialTicks);
 		
-		// restored so we can write the SSAO texture to the main frame buffer
-		primaryState.restore();
-		
 		FogApplyShader.INSTANCE.fogTexture = this.fogTexture;
 		FogApplyShader.INSTANCE.render(partialTicks);
-		
-		state.restore();
 	}
 	
 	public void free()

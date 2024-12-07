@@ -21,11 +21,13 @@ package com.seibel.distanthorizons.core.render.glObject.buffer;
 
 import com.seibel.distanthorizons.api.enums.config.EDhApiGpuUploadMethod;
 import com.seibel.distanthorizons.core.config.Config;
+import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.render.glObject.GLProxy;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
 import com.seibel.distanthorizons.core.util.math.UnitBytes;
+import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftGLWrapper;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.opengl.GL32;
 import org.lwjgl.opengl.GL44;
@@ -42,6 +44,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class GLBuffer implements AutoCloseable
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger(MethodHandles.lookup().lookupClass().getSimpleName());
+	
+	private static final IMinecraftGLWrapper GLMC = SingletonInjector.INSTANCE.get(IMinecraftGLWrapper.class);
+	
 	
 	public static final double BUFFER_EXPANSION_MULTIPLIER = 1.3;
 	public static final double BUFFER_SHRINK_TRIGGER = BUFFER_EXPANSION_MULTIPLIER * BUFFER_EXPANSION_MULTIPLIER;
@@ -99,7 +104,7 @@ public class GLBuffer implements AutoCloseable
 			LodUtil.assertNotReach("Thread ["+Thread.currentThread()+"] tried to create a GLBuffer outside the MC render thread.");
 		}
 		
-		this.id = GL32.glGenBuffers();
+		this.id = GLMC.glGenBuffers();
 		this.bufferStorage = asBufferStorage;
 		bufferCount.getAndIncrement();
 		
@@ -138,7 +143,7 @@ public class GLBuffer implements AutoCloseable
 				// the buffer may not exist if the destroy method is called twice
 				if (GL32.glIsBuffer(id))
 				{
-					GL32.glDeleteBuffers(id);
+					GLMC.glDeleteBuffers(id);
 					bufferCount.decrementAndGet();
 					
 					if (Config.Client.Advanced.Debugging.logBufferGarbageCollection.get())
@@ -256,8 +261,8 @@ public class GLBuffer implements AutoCloseable
 			this.size = newSize;
 			if (this.bufferStorage)
 			{
-				GL32.glDeleteBuffers(this.id);
-				this.id = GL32.glGenBuffers();
+				GLMC.glDeleteBuffers(this.id);
+				this.id = GLMC.glGenBuffers();
 				GL32.glBindBuffer(this.getBufferBindingTarget(), this.id);
 				GL32.glBindBuffer(this.getBufferBindingTarget(), this.id);
 				GL44.glBufferStorage(this.getBufferBindingTarget(), newSize, bufferHint);

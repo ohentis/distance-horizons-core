@@ -1,12 +1,16 @@
 package com.seibel.distanthorizons.core.render.glObject.texture;
 
 import com.seibel.distanthorizons.api.interfaces.override.rendering.IDhApiFramebuffer;
+import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
+import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftGLWrapper;
 import it.unimi.dsi.fastutil.ints.Int2IntArrayMap;
 import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import org.lwjgl.opengl.GL32;
 
 public class DhFramebuffer implements IDhApiFramebuffer
 {
+	private static final IMinecraftGLWrapper GLMC = SingletonInjector.INSTANCE.get(IMinecraftGLWrapper.class);
+	
 	private final Int2IntMap attachments;
 	private final int maxDrawBuffers;
 	private final int maxColorAttachments;
@@ -113,12 +117,12 @@ public class DhFramebuffer implements IDhApiFramebuffer
 		{
 			throw new IllegalStateException("Framebuffer does not exist!");
 		} 
-		GL32.glBindFramebuffer(GL32.GL_FRAMEBUFFER, this.id);
+		GLMC.glBindFramebuffer(GL32.GL_FRAMEBUFFER, this.id);
 	}
 	
-	public void bindAsReadBuffer() { GL32.glBindFramebuffer(GL32.GL_READ_FRAMEBUFFER, this.id); }
+	public void bindAsReadBuffer() { GLMC.glBindFramebuffer(GL32.GL_READ_FRAMEBUFFER, this.id); }
 	
-	public void bindAsDrawBuffer() { GL32.glBindFramebuffer(GL32.GL_DRAW_FRAMEBUFFER, this.id); }
+	public void bindAsDrawBuffer() { GLMC.glBindFramebuffer(GL32.GL_DRAW_FRAMEBUFFER, this.id); }
 	
 	@Override
 	public void destroy()

@@ -19,9 +19,11 @@
 
 package com.seibel.distanthorizons.core.render.renderer.shaders;
 
+import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.render.glObject.shader.ShaderProgram;
 import com.seibel.distanthorizons.core.render.renderer.LodRenderer;
 import com.seibel.distanthorizons.core.render.renderer.ScreenQuad;
+import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftGLWrapper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.opengl.GL32;
@@ -36,6 +38,8 @@ public class DhApplyShader extends AbstractShaderRenderer
 	public static DhApplyShader INSTANCE = new DhApplyShader();
 	
 	private static final Logger LOGGER = LogManager.getLogger();
+	private static final IMinecraftGLWrapper GLMC = SingletonInjector.INSTANCE.get(IMinecraftGLWrapper.class);
+	
 	
 	// uniforms
 	public int gDhColorTextureUniform;
@@ -78,22 +82,22 @@ public class DhApplyShader extends AbstractShaderRenderer
 		}
 		
 		
-		GL32.glDisable(GL32.GL_DEPTH_TEST);
+		GLMC.disableDepthTest();
 		
-		GL32.glEnable(GL32.GL_BLEND);
+		GLMC.enableBlend();
 		GL32.glBlendEquation(GL32.GL_FUNC_ADD);
-		GL32.glBlendFunc(GL32.GL_ONE, GL32.GL_ONE_MINUS_SRC_ALPHA);
+		GLMC.glBlendFunc(GL32.GL_ONE, GL32.GL_ONE_MINUS_SRC_ALPHA);
 		
-		GL32.glActiveTexture(GL32.GL_TEXTURE0);
-		GL32.glBindTexture(GL32.GL_TEXTURE_2D, LodRenderer.getActiveColorTextureId());
+		GLMC.glActiveTexture(GL32.GL_TEXTURE0);
+		GLMC.glBindTexture(LodRenderer.getActiveColorTextureId());
 		GL32.glUniform1i(this.gDhColorTextureUniform, 0);
 		
-		GL32.glActiveTexture(GL32.GL_TEXTURE1);
-		GL32.glBindTexture(GL32.GL_TEXTURE_2D, LodRenderer.getActiveDepthTextureId());
+		GLMC.glActiveTexture(GL32.GL_TEXTURE1);
+		GLMC.glBindTexture(LodRenderer.getActiveDepthTextureId());
 		GL32.glUniform1i(this.gDepthMapUniform, 1);
 		
 		// Copy to MC's framebuffer
-		GL32.glBindFramebuffer(GL32.GL_FRAMEBUFFER, targetFrameBuffer);
+		GLMC.glBindFramebuffer(GL32.GL_FRAMEBUFFER, targetFrameBuffer);
 		
 		ScreenQuad.INSTANCE.render();
 	}

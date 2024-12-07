@@ -24,14 +24,13 @@ import com.seibel.distanthorizons.api.enums.rendering.EDhApiHeightFogDirection;
 import com.seibel.distanthorizons.api.enums.rendering.EDhApiHeightFogMixMode;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
-import com.seibel.distanthorizons.core.render.glObject.GLState;
 import com.seibel.distanthorizons.core.render.glObject.shader.ShaderProgram;
 import com.seibel.distanthorizons.core.render.renderer.LodRenderer;
 import com.seibel.distanthorizons.core.render.renderer.ScreenQuad;
 import com.seibel.distanthorizons.core.util.LodUtil;
-import com.seibel.distanthorizons.core.wrapperInterfaces.IVersionConstants;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.util.math.Mat4f;
+import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftGLWrapper;
 import org.lwjgl.opengl.GL32;
 
 import java.awt.*;
@@ -41,7 +40,7 @@ public class FogShader extends AbstractShaderRenderer
 	public static final FogShader INSTANCE = new FogShader();
 	
 	private static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
-	private static final IVersionConstants VERSION_CONSTANTS = SingletonInjector.INSTANCE.get(IVersionConstants.class);
+	private static final IMinecraftGLWrapper GLMC = SingletonInjector.INSTANCE.get(IMinecraftGLWrapper.class);
 	
 	
 	public int frameBuffer;
@@ -243,15 +242,13 @@ public class FogShader extends AbstractShaderRenderer
 	@Override
 	protected void onRender()
 	{
-		GLState state = new GLState();
+		GLMC.glBindFramebuffer(GL32.GL_FRAMEBUFFER, this.frameBuffer);
+		GLMC.disableScissorTest();
+		GLMC.disableDepthTest();
+		GLMC.disableBlend();
 		
-		GL32.glBindFramebuffer(GL32.GL_FRAMEBUFFER, this.frameBuffer);
-		GL32.glDisable(GL32.GL_SCISSOR_TEST);
-		GL32.glDisable(GL32.GL_DEPTH_TEST);
-		GL32.glDisable(GL32.GL_BLEND);
-		
-		GL32.glActiveTexture(GL32.GL_TEXTURE0);
-		GL32.glBindTexture(GL32.GL_TEXTURE_2D, LodRenderer.getActiveDepthTextureId());
+		GLMC.glActiveTexture(GL32.GL_TEXTURE0);
+		GLMC.glBindTexture(LodRenderer.getActiveDepthTextureId());
 		GL32.glUniform1i(this.uDepthMap, 0);
 		
 		// this is necessary for MC 1.16 (IE Legacy OpenGL)
@@ -260,8 +257,6 @@ public class FogShader extends AbstractShaderRenderer
 		
 		
 		ScreenQuad.INSTANCE.render();
-		
-		state.restore();
 	}
 	
 }

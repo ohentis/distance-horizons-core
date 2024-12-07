@@ -29,12 +29,12 @@ import com.seibel.distanthorizons.core.logging.ConfigBasedSpamLogger;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhLodPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
-import com.seibel.distanthorizons.core.render.glObject.GLState;
 import com.seibel.distanthorizons.core.render.glObject.buffer.GLElementBuffer;
 import com.seibel.distanthorizons.core.render.glObject.buffer.GLVertexBuffer;
 import com.seibel.distanthorizons.core.render.glObject.shader.ShaderProgram;
 import com.seibel.distanthorizons.core.render.glObject.vertexAttribute.AbstractVertexAttribute;
 import com.seibel.distanthorizons.core.render.glObject.vertexAttribute.VertexPointer;
+import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftGLWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
 import com.seibel.distanthorizons.core.util.math.Mat4f;
 import com.seibel.distanthorizons.core.util.math.Vec3d;
@@ -52,14 +52,19 @@ import java.nio.ByteOrder;
 import java.util.*;
 import java.util.concurrent.PriorityBlockingQueue;
 
+/**
+ * Handles rendering the wireframe particles that are used for seeing what the system's doing.
+ */
 public class DebugRenderer
 {
 	public static DebugRenderer INSTANCE = new DebugRenderer();
 	
-	public static final ConfigBasedLogger LOGGER = new ConfigBasedLogger(LogManager.getLogger(TestRenderer.class), () -> EDhApiLoggerMode.LOG_ALL_TO_CHAT);
-	public static final ConfigBasedSpamLogger SPAM_LOGGER = new ConfigBasedSpamLogger(LogManager.getLogger(TestRenderer.class), () -> EDhApiLoggerMode.LOG_ALL_TO_CHAT, 1);
+	public static final ConfigBasedLogger LOGGER = new ConfigBasedLogger(LogManager.getLogger(DebugRenderer.class), () -> EDhApiLoggerMode.LOG_ALL_TO_CHAT);
+	public static final ConfigBasedSpamLogger SPAM_LOGGER = new ConfigBasedSpamLogger(LogManager.getLogger(DebugRenderer.class), () -> EDhApiLoggerMode.LOG_ALL_TO_CHAT, 1);
 	
 	private static final IMinecraftRenderWrapper MC_RENDER = SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
+	private static final IMinecraftGLWrapper GLMC = SingletonInjector.INSTANCE.get(IMinecraftGLWrapper.class);
+	
 	
 	
 	// rendering setup
@@ -191,21 +196,21 @@ public class DebugRenderer
 		Vec3d camPos = MC_RENDER.getCameraExactPosition();
 		this.camPosFloatThisFrame = new Vec3f((float) camPos.x, (float) camPos.y, (float) camPos.z);
 		
-		GLState glState = new GLState();
 		this.init();
 		
 		GL32.glPolygonMode(GL32.GL_FRONT_AND_BACK, GL32.GL_LINE);
-		GL32.glEnable(GL32.GL_DEPTH_TEST);
+		GLMC.enableDepthTest();
 		
 		this.basicShader.bind();
 		this.va.bind();
 		this.va.bindBufferToAllBindingPoints(this.vertexBuffer.getId());
 		
-		this.outlineIndexBuffer.bind();
 		
+		this.outlineIndexBuffer.bind();
 		this.rendererLists.render(this);
 		
 		
+		// particle rendering		
 		BoxParticle head = null;
 		while ((head = this.particles.poll()) != null && head.isDead(System.nanoTime()))
 		{ /* remove dead particles */ }
@@ -215,14 +220,13 @@ public class DebugRenderer
 			this.particles.add(head);
 		}
 		
+		
+		// box rendering
 		GL32.glPolygonMode(GL32.GL_FRONT_AND_BACK, GL32.GL_FILL);
 		for (BoxParticle particle : this.particles)
 		{
 			this.renderBox(particle.getBox());
 		}
-		
-		
-		glState.restore();
 	}
 	
 	public void renderBox(Box box)

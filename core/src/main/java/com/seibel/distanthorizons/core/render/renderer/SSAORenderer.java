@@ -23,6 +23,7 @@ import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.render.glObject.GLState;
 import com.seibel.distanthorizons.core.render.renderer.shaders.SSAOApplyShader;
 import com.seibel.distanthorizons.core.render.renderer.shaders.SSAOShader;
+import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftGLWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
 import com.seibel.distanthorizons.core.util.math.Mat4f;
 import org.lwjgl.opengl.GL32;
@@ -40,6 +41,7 @@ public class SSAORenderer
 	public static SSAORenderer INSTANCE = new SSAORenderer();
 	
 	private static final IMinecraftRenderWrapper MC_RENDER = SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
+	private static final IMinecraftGLWrapper GLMC = SingletonInjector.INSTANCE.get(IMinecraftGLWrapper.class);
 	
 	
 	private boolean init = false;
@@ -77,15 +79,15 @@ public class SSAORenderer
 		
 		if (this.ssaoTexture != -1)
 		{
-			GL32.glDeleteTextures(this.ssaoTexture);
+			GLMC.glDeleteTextures(this.ssaoTexture);
 			this.ssaoTexture = -1;
 		}
 		
 		this.ssaoFramebuffer = GL32.glGenFramebuffers();
-		GL32.glBindFramebuffer(GL32.GL_FRAMEBUFFER, this.ssaoFramebuffer);
+		GLMC.glBindFramebuffer(GL32.GL_FRAMEBUFFER, this.ssaoFramebuffer);
 		
-		this.ssaoTexture = GL32.glGenTextures();
-		GL32.glBindTexture(GL32.GL_TEXTURE_2D, this.ssaoTexture);
+		this.ssaoTexture = GLMC.glGenTextures();
+		GLMC.glBindTexture(this.ssaoTexture);
 		GL32.glTexImage2D(GL32.GL_TEXTURE_2D, 0, GL32.GL_R16F, width, height, 0, GL32.GL_RED, GL32.GL_HALF_FLOAT, (ByteBuffer) null);
 		GL32.glTexParameteri(GL32.GL_TEXTURE_2D, GL32.GL_TEXTURE_MIN_FILTER, GL32.GL_LINEAR);
 		GL32.glTexParameteri(GL32.GL_TEXTURE_2D, GL32.GL_TEXTURE_MAG_FILTER, GL32.GL_LINEAR);
@@ -98,9 +100,12 @@ public class SSAORenderer
 	// render //
 	//========//
 	
-	public void render(GLState primaryState, Mat4f projectionMatrix, float partialTicks)
+	public void render(Mat4f projectionMatrix, float partialTicks)
 	{
+		// TODO remove need for GLState, there are a few GL items that aren't being cleaned up correctly
+		//  note that this doesn't affect Iris since Iris disables SSAO
 		GLState state = new GLState();
+		
 		this.init();
 		
 		// resize the framebuffer if necessary
@@ -116,9 +121,6 @@ public class SSAORenderer
 		SSAOShader.INSTANCE.frameBuffer = this.ssaoFramebuffer;
 		SSAOShader.INSTANCE.setProjectionMatrix(projectionMatrix);
 		SSAOShader.INSTANCE.render(partialTicks);
-		
-		// restored so we can write the SSAO texture to the main frame buffer
-		primaryState.restore();
 		
 		SSAOApplyShader.INSTANCE.ssaoTexture = this.ssaoTexture;
 		SSAOApplyShader.INSTANCE.render(partialTicks);

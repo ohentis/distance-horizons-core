@@ -887,7 +887,6 @@ public class Config
 								+ "   Mod compatibility is not guaranteed.")
 						.build();
 				
-				@Deprecated // TODO fixme
 				public static ConfigEntry<Boolean> renderWireframe = new ConfigEntry.Builder<Boolean>()
 						.set(false)
 						.comment(""

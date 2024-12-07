@@ -39,7 +39,9 @@ import com.seibel.distanthorizons.core.render.glObject.buffer.QuadElementBuffer;
 import com.seibel.distanthorizons.core.render.glObject.texture.*;
 import com.seibel.distanthorizons.core.render.renderer.generic.GenericObjectRenderer;
 import com.seibel.distanthorizons.core.render.renderer.shaders.*;
+import com.seibel.distanthorizons.core.util.math.Mat4f;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftGLWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.ILightMapWrapper;
@@ -49,7 +51,6 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.IIrisAccess
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.OverrideInjector;
-import com.seibel.distanthorizons.core.util.math.Mat4f;
 import com.seibel.distanthorizons.core.util.math.Vec3d;
 import com.seibel.distanthorizons.core.util.math.Vec3f;
 import org.apache.logging.log4j.LogManager;
@@ -73,11 +74,14 @@ public class LodRenderer
 	
 	private static final IIrisAccessor IRIS_ACCESSOR = ModAccessorInjector.INSTANCE.get(IIrisAccessor.class);
 	
+	private static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
+	private static final IMinecraftRenderWrapper MC_RENDER = SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
+	private static final IMinecraftGLWrapper GLMC = SingletonInjector.INSTANCE.get(IMinecraftGLWrapper.class);
+	
 	public static final boolean ENABLE_DRAW_LAG_SPIKE_LOGGING = false;
-	public static final boolean ENABLE_DUMP_GL_STATE = true;
 	public static final long DRAW_LAG_SPIKE_THRESHOLD_NS = TimeUnit.NANOSECONDS.convert(20, TimeUnit.MILLISECONDS);
 	
-	public static final boolean ENABLE_IBO = true;
+	
 	
 	// TODO make these private, the LOD Builder can get these variables from the config itself
 	public static boolean transparencyEnabled = true;
@@ -92,9 +96,6 @@ public class LodRenderer
 	private static int activeDepthTextureId = -1;
 	private int cachedWidth;
 	private int cachedHeight;
-	
-	private static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
-	private static final IMinecraftRenderWrapper MC_RENDER = SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
 	
 	private final ReentrantLock setupLock = new ReentrantLock();
 	
@@ -241,7 +242,6 @@ public class LodRenderer
 		
 		try
 		{
-			// Note: Since lightmapTexture is changing every frame, it's faster to recreate it than to reuse the old one.
 			ILightMapWrapper lightmap = MC_RENDER.getLightmapWrapper(clientLevelWrapper);
 			if (lightmap == null)
 			{
@@ -249,23 +249,12 @@ public class LodRenderer
 				return;
 			}
 			
-			// Save Minecraft's GL state so it can be restored at the end of LOD rendering
-			LagSpikeCatcher drawSaveGLState = new LagSpikeCatcher();
-			GLState minecraftGlState = new GLState();
-			if (ENABLE_DUMP_GL_STATE)
-			{
-				tickLogger.debug("Saving GL state: " + minecraftGlState);
-			}
-			drawSaveGLState.end("drawSaveGLState");
 			
 			ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeRenderSetupEvent.class, renderEventParam);
-			this.setupGLStateAndRenderObjects(minecraftGlState, profiler, renderEventParam, renderingFirstPass);
+			this.setupGLStateAndRenderObjects(profiler, renderEventParam, renderingFirstPass);
 			
 			lightmap.bind();
-			if (ENABLE_IBO)
-			{
-				this.quadIBO.bind();
-			}
+			this.quadIBO.bind();
 			
 			if (renderingFirstPass)
 			{
@@ -282,23 +271,25 @@ public class LodRenderer
 			// rendering //
 			//===========//
 			
-			LagSpikeCatcher drawLagSpikeCatcher = new LagSpikeCatcher();
-			
 			if (!runningDeferredPass)
 			{
-				//===================================//
-				// standard (non-deferred) rendering //
-				//===================================//
+				//=================================//
+				// opaque (non-deferred) rendering //
+				//=================================//
 				
 				
 				// Disable blending for opaque rendering
-				GL32.glDisable(GL32.GL_BLEND);
+				GLMC.disableBlend();
 				
 				
 				// terrain
 				profiler.popPush("LOD Opaque");
 				ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeRenderPassEvent.class, renderEventParam);
+				
+				
 				this.bufferHandler.renderOpaque(this, renderEventParam);
+				
+				
 				
 				// custom objects with SSAO
 				if (Config.Client.Advanced.Graphics.GenericRendering.enableGenericRendering.get())
@@ -312,7 +303,7 @@ public class LodRenderer
 				if (Config.Client.Advanced.Graphics.Ssao.enableSsao.get())
 				{
 					profiler.popPush("LOD SSAO");
-					SSAORenderer.INSTANCE.render(minecraftGlState, new Mat4f(renderEventParam.dhProjectionMatrix), renderEventParam.partialTicks);
+					SSAORenderer.INSTANCE.render(new Mat4f(renderEventParam.dhProjectionMatrix), renderEventParam.partialTicks);
 				}
 				
 				
@@ -324,11 +315,9 @@ public class LodRenderer
 				}
 				
 				
-				//DarkShader.INSTANCE.render(partialTicks); // A test shader to make the world darker
-				
 				if (!deferTransparentRendering && Config.Client.Advanced.Graphics.Quality.transparency.get().transparencyEnabled)
 				{
-					this.renderTransparentBuffers(profiler, renderEventParam, renderEventParam.partialTicks);
+					this.renderTransparentBuffersAndFireApiEvent(profiler, renderEventParam);
 				}
 				
 				
@@ -339,11 +328,9 @@ public class LodRenderer
 					Mat4f combinedMatrix = new Mat4f(renderEventParam.dhProjectionMatrix);
 					combinedMatrix.multiply(renderEventParam.dhModelViewMatrix);
 					
-					FogRenderer.INSTANCE.render(minecraftGlState, combinedMatrix, renderEventParam.partialTicks);
+					FogRenderer.INSTANCE.render(combinedMatrix, renderEventParam.partialTicks);
 				}
 				
-				
-				drawLagSpikeCatcher.end("LodDraw");
 				
 				
 				
@@ -384,12 +371,8 @@ public class LodRenderer
 				{
 					profiler.popPush("LOD Apply");
 					
-					GLState dhApplyGlState = new GLState();
-					
 					// Copy the LOD framebuffer to Minecraft's framebuffer
 					DhApplyShader.INSTANCE.render(renderEventParam.partialTicks);
-					
-					dhApplyGlState.restore();
 				}
 			}
 			else
@@ -400,7 +383,9 @@ public class LodRenderer
 				
 				if (Config.Client.Advanced.Graphics.Quality.transparency.get().transparencyEnabled)
 				{
-					this.renderTransparentBuffers(profiler, renderEventParam, renderEventParam.partialTicks);
+					profiler.popPush("LOD Transparent");
+					
+					this.renderTransparentBuffersAndFireApiEvent(profiler, renderEventParam);
 					
 					
 					if (Config.Client.Advanced.Graphics.Fog.enableDhFog.get())
@@ -410,11 +395,9 @@ public class LodRenderer
 						Mat4f combinedMatrix = new Mat4f(renderEventParam.dhProjectionMatrix);
 						combinedMatrix.multiply(renderEventParam.dhModelViewMatrix);
 						
-						FogRenderer.INSTANCE.render(minecraftGlState, combinedMatrix, renderEventParam.partialTicks);
+						FogRenderer.INSTANCE.render(combinedMatrix, renderEventParam.partialTicks);
 					}
 				}
-				
-				drawLagSpikeCatcher.end("LodTranslucentDraw");
 			}
 			
 			
@@ -424,14 +407,10 @@ public class LodRenderer
 			//================//
 			
 			profiler.popPush("LOD cleanup");
-			LagSpikeCatcher drawCleanup = new LagSpikeCatcher();
 			ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeRenderCleanupEvent.class, renderEventParam);
 			
 			lightmap.unbind();
-			if (ENABLE_IBO)
-			{
-				this.quadIBO.unbind();
-			}
+			this.quadIBO.unbind();
 			
 			IDhApiShaderProgram shaderProgram = this.lodRenderProgram;
 			IDhApiShaderProgram shaderProgramOverride = OverrideInjector.INSTANCE.get(IDhApiShaderProgram.class);
@@ -441,8 +420,6 @@ public class LodRenderer
 			}
 			shaderProgram.unbind();
 			
-			minecraftGlState.restore();
-			drawCleanup.end("LodDrawCleanup");
 			
 			// end of internal LOD profiling
 			profiler.pop();
@@ -455,17 +432,18 @@ public class LodRenderer
 		}
 	}
 	
-	private void renderTransparentBuffers(IProfilerWrapper profiler, DhApiRenderParam renderEventParam, float partialTicks) 
+	private void renderTransparentBuffersAndFireApiEvent(IProfilerWrapper profiler, DhApiRenderParam renderEventParam) 
 	{
 		profiler.popPush("LOD Transparent");
 		
-		GL32.glEnable(GL32.GL_BLEND);
+		GLMC.enableBlend();
+		GLMC.enableDepthTest();
 		GL32.glBlendEquation(GL32.GL_FUNC_ADD);
-		GL32.glBlendFuncSeparate(GL32.GL_SRC_ALPHA, GL32.GL_ONE_MINUS_SRC_ALPHA, GL32.GL_ONE, GL32.GL_ONE_MINUS_SRC_ALPHA);
-		ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeRenderPassEvent.class, renderEventParam);
-		this.bufferHandler.renderTransparent(this, renderEventParam);
-		GL32.glDepthMask(true); // Apparently the depth mask state is stored in the FBO, so glState fails to restore it...
+		GLMC.glBlendFuncSeparate(GL32.GL_SRC_ALPHA, GL32.GL_ONE_MINUS_SRC_ALPHA, GL32.GL_ONE, GL32.GL_ONE_MINUS_SRC_ALPHA);
 		
+		ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeRenderPassEvent.class, renderEventParam);
+		
+		this.bufferHandler.renderTransparent(this, renderEventParam);
 	}
 	
 	/** called by each {@link ColumnRenderBuffer} before rendering */
@@ -523,7 +501,7 @@ public class LodRenderer
 	//=================//
 	
 	private void setupGLStateAndRenderObjects(
-			GLState minecraftGlState, IProfilerWrapper profiler,
+			IProfilerWrapper profiler,
 			DhApiRenderParam renderEventParam,
 			boolean firstPass)
 	{
@@ -580,12 +558,6 @@ public class LodRenderer
 		{
 			if (this.usingMcFrameBuffer && framebufferOverride == null)
 			{
-				if (ENABLE_DUMP_GL_STATE)
-				{
-					tickLogger.debug("Re-saving GL state due to Optifine presence: " + minecraftGlState);
-				}
-				
-				
 				// Due to using MC/Optifine's framebuffer we need to re-bind the depth texture,
 				// otherwise we'll be writing to MC/Optifine's depth texture which causes rendering issues
 				activeFrameBuffer.addDepthAttachment(this.depthTexture.getTextureId(), EDhDepthBufferFormat.DEPTH32F.isCombinedStencil());
@@ -600,28 +572,14 @@ public class LodRenderer
 			}
 		}
 		
-		
-		GL32.glEnable(GL32.GL_DEPTH_TEST);
-		GL32.glDepthFunc(GL32.GL_LESS);
-		
-		// Set OpenGL polygon mode
-		boolean renderWireframe = Config.Client.Advanced.Debugging.renderWireframe.get();
-		if (renderWireframe)
-		{
-			// TODO fix
-			GL32.glPolygonMode(GL32.GL_FRONT_AND_BACK, GL32.GL_LINE);
-			//GL32.glDisable(GL32.GL_CULL_FACE);
-		}
-		else
-		{
-			GL32.glPolygonMode(GL32.GL_FRONT_AND_BACK, GL32.GL_FILL);
-			GL32.glEnable(GL32.GL_CULL_FACE);
-		}
+		// by default draw everything as triangles
+		GL32.glPolygonMode(GL32.GL_FRONT_AND_BACK, GL32.GL_FILL);
+		GLMC.enableFaceCulling();
 		
 		// Enable depth test and depth mask
-		GL32.glEnable(GL32.GL_DEPTH_TEST);
-		GL32.glDepthFunc(GL32.GL_LESS);
-		GL32.glDepthMask(true);
+		GLMC.enableDepthTest();
+		GLMC.glDepthFunc(GL32.GL_LESS);
+		GLMC.enableDepthMask();
 		
 		/*---------Bind required objects--------*/
 		// Setup LodRenderProgram and the LightmapTexture if it has not yet been done
@@ -668,11 +626,9 @@ public class LodRenderer
 			EVENT_LOGGER.info("Setting up renderer");
 			this.isSetupComplete = true;
 			this.lodRenderProgram = new DhTerrainShaderProgram();
-			if (ENABLE_IBO)
-			{
-				this.quadIBO = new QuadElementBuffer();
-				this.quadIBO.reserve(ColumnRenderBuffer.MAX_QUADS_PER_BUFFER);
-			}
+			
+			this.quadIBO = new QuadElementBuffer();
+			this.quadIBO.reserve(ColumnRenderBuffer.MAX_QUADS_PER_BUFFER);
 			
 			
 			// create or get the frame buffer
@@ -851,6 +807,7 @@ public class LodRenderer
 	// helper classes //
 	//================//
 	
+	// TODO move
 	public static class LagSpikeCatcher
 	{
 		long timer = System.nanoTime();

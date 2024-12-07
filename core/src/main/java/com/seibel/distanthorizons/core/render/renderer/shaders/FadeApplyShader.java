@@ -24,6 +24,7 @@ import com.seibel.distanthorizons.core.render.glObject.shader.ShaderProgram;
 import com.seibel.distanthorizons.core.render.renderer.FadeRenderer;
 import com.seibel.distanthorizons.core.render.renderer.LodRenderer;
 import com.seibel.distanthorizons.core.render.renderer.ScreenQuad;
+import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftGLWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
 import org.lwjgl.opengl.GL32;
 
@@ -39,6 +40,8 @@ public class FadeApplyShader extends AbstractShaderRenderer
 	public static FadeApplyShader INSTANCE = new FadeApplyShader();
 	
 	private static final IMinecraftRenderWrapper MC_RENDER = SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
+	private static final IMinecraftGLWrapper GLMC = SingletonInjector.INSTANCE.get(IMinecraftGLWrapper.class);
+	
 	
 	
 	public int fadeTexture;
@@ -78,16 +81,16 @@ public class FadeApplyShader extends AbstractShaderRenderer
 	@Override
 	protected void onApplyUniforms(float partialTicks)
 	{
-		GL32.glActiveTexture(GL32.GL_TEXTURE0);
-		GL32.glBindTexture(GL32.GL_TEXTURE_2D, this.fadeTexture);
+		GLMC.glActiveTexture(GL32.GL_TEXTURE0);
+		GLMC.glBindTexture(this.fadeTexture);
 		GL32.glUniform1i(this.uFadeColorTextureUniform, 0);
-
-		GL32.glActiveTexture(GL32.GL_TEXTURE1);
-		GL32.glBindTexture(GL32.GL_TEXTURE_2D, LodRenderer.getActiveDepthTextureId());
+		
+		GLMC.glActiveTexture(GL32.GL_TEXTURE1);
+		GLMC.glBindTexture(LodRenderer.getActiveDepthTextureId());
 		GL32.glUniform1i(this.uDhDepthTextureUniform, 1);
 		
-		GL32.glActiveTexture(GL32.GL_TEXTURE2);
-		GL32.glBindTexture(GL32.GL_TEXTURE_2D, MC_RENDER.getDepthTextureId());
+		GLMC.glActiveTexture(GL32.GL_TEXTURE2);
+		GLMC.glBindTexture(MC_RENDER.getDepthTextureId());
 		GL32.glUniform1i(this.uMcDepthTextureUniform, 2);
 		
 	}
@@ -101,19 +104,21 @@ public class FadeApplyShader extends AbstractShaderRenderer
 	@Override
 	protected void onRender()
 	{
-		GL32.glDisable(GL32.GL_BLEND);
+		GLMC.disableBlend();
 		
 		// Depth testing must be disabled otherwise this application shader won't apply anything.
 		// setting this isn't necessary in vanilla, but some mods may change this, requiring it to be set manually, 
 		// it should be automatically restored after rendering is complete.
-		GL32.glDisable(GL32.GL_DEPTH_TEST);
+		GLMC.disableDepthTest();
 		
 		
 		// apply the rendered Fade to Minecraft's framebuffer
-		GL32.glBindFramebuffer(GL32.GL_READ_FRAMEBUFFER, FadeShader.INSTANCE.frameBuffer);
-		GL32.glBindFramebuffer(GL32.GL_DRAW_FRAMEBUFFER, MC_RENDER.getTargetFrameBuffer());
+		GLMC.glBindFramebuffer(GL32.GL_READ_FRAMEBUFFER, FadeShader.INSTANCE.frameBuffer);
+		GLMC.glBindFramebuffer(GL32.GL_DRAW_FRAMEBUFFER, MC_RENDER.getTargetFrameBuffer());
 		
 		ScreenQuad.INSTANCE.render();
+		
+		GLMC.enableDepthTest();
 	}
 	
 }

@@ -20,11 +20,13 @@
 package com.seibel.distanthorizons.core.render.renderer.shaders;
 
 import com.seibel.distanthorizons.core.config.Config;
+import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.render.glObject.shader.ShaderProgram;
 import com.seibel.distanthorizons.core.render.renderer.LodRenderer;
 import com.seibel.distanthorizons.core.render.renderer.SSAORenderer;
 import com.seibel.distanthorizons.core.render.renderer.ScreenQuad;
 import com.seibel.distanthorizons.core.util.math.Mat4f;
+import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftGLWrapper;
 import org.lwjgl.opengl.GL32;
 
 /**
@@ -37,6 +39,8 @@ import org.lwjgl.opengl.GL32;
 public class SSAOShader extends AbstractShaderRenderer
 {
 	public static SSAOShader INSTANCE = new SSAOShader();
+	
+	private static final IMinecraftGLWrapper GLMC = SingletonInjector.INSTANCE.get(IMinecraftGLWrapper.class);
 	
 	
 	public int frameBuffer;
@@ -117,9 +121,6 @@ public class SSAOShader extends AbstractShaderRenderer
 		Number bias = Config.Client.Advanced.Graphics.Ssao.bias.get();
 		this.shader.setUniform(this.gBiasUniform, bias.floatValue());
 		
-		GL32.glActiveTexture(GL32.GL_TEXTURE0);
-		GL32.glBindTexture(GL32.GL_TEXTURE_2D, LodRenderer.getActiveDepthTextureId());
-		
 		GL32.glUniform1i(this.gDepthMapUniform, 0);
 	}
 	
@@ -132,10 +133,13 @@ public class SSAOShader extends AbstractShaderRenderer
 	@Override
 	protected void onRender()
 	{
-		GL32.glBindFramebuffer(GL32.GL_FRAMEBUFFER, this.frameBuffer);
-		GL32.glDisable(GL32.GL_SCISSOR_TEST);
-		GL32.glDisable(GL32.GL_DEPTH_TEST);
-		GL32.glDisable(GL32.GL_BLEND);
+		GLMC.glBindFramebuffer(GL32.GL_FRAMEBUFFER, this.frameBuffer);
+		GLMC.disableScissorTest();
+		GLMC.disableDepthTest();
+		GLMC.disableBlend();
+		
+		GLMC.glActiveTexture(GL32.GL_TEXTURE0);
+		GLMC.glBindTexture(LodRenderer.getActiveDepthTextureId());
 		
 		ScreenQuad.INSTANCE.render();
 	}

@@ -33,11 +33,14 @@ import com.seibel.distanthorizons.core.logging.f3.F3Screen;
 import com.seibel.distanthorizons.core.pos.DhLodPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.pos.Pos2D;
+import com.seibel.distanthorizons.core.render.glObject.buffer.QuadElementBuffer;
 import com.seibel.distanthorizons.core.render.renderer.LodRenderer;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.objects.SortedArraySet;
 import com.seibel.distanthorizons.core.util.objects.quadTree.QuadNode;
+import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftGLWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.misc.ILightMapWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.IIrisAccessor;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IOverrideInjector;
@@ -47,6 +50,7 @@ import com.seibel.distanthorizons.core.util.math.Vec3f;
 import org.apache.logging.log4j.Logger;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fc;
+import org.lwjgl.opengl.GL32;
 
 import java.util.Comparator;
 import java.util.Iterator;
@@ -62,6 +66,7 @@ public class RenderBufferHandler implements AutoCloseable
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
 	private static final IMinecraftRenderWrapper MC_RENDER = SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
+	private static final IMinecraftGLWrapper GLMC = SingletonInjector.INSTANCE.get(IMinecraftGLWrapper.class);
 
 	private static final IIrisAccessor IRIS_ACCESSOR = ModAccessorInjector.INSTANCE.get(IIrisAccessor.class);
 	
@@ -343,26 +348,69 @@ public class RenderBufferHandler implements AutoCloseable
 	// render methods //
 	//================//
 	
-	public void renderOpaque(LodRenderer renderContext, DhApiRenderParam renderEventParam)
-	{
-		// TODO why can these sometimes be null when teleporting between multiverses
-		if (this.loadedNearToFarBuffers != null)
-		{
-			this.loadedNearToFarBuffers.forEach(loadedBuffer -> loadedBuffer.buffer.renderOpaque(renderContext, renderEventParam));
-		}
-	}
+	public void renderOpaque(LodRenderer renderContext,DhApiRenderParam renderEventParam)
+	{ this.renderPass(renderContext, renderEventParam, true); }
 	public void renderTransparent(LodRenderer renderContext, DhApiRenderParam renderEventParam)
+	{ this.renderPass(renderContext, renderEventParam, false); }
+	
+	private void renderPass(LodRenderer renderContext, DhApiRenderParam renderEventParam, boolean opaquePass)
 	{
-		// TODO why can these sometimes be null when teleporting between multiverses
-		if (this.loadedNearToFarBuffers != null)
+		//=======================//
+		// debug wireframe setup //
+		//=======================//
+		
+		boolean renderWireframe = Config.Client.Advanced.Debugging.renderWireframe.get();
+		if (renderWireframe)
 		{
-			ListIterator<LoadedRenderBuffer> iter = this.loadedNearToFarBuffers.listIterator(this.loadedNearToFarBuffers.size());
-			while (iter.hasPrevious())
+			GL32.glPolygonMode(GL32.GL_FRONT_AND_BACK, GL32.GL_LINE);
+			GLMC.disableFaceCulling();
+		}
+		else
+		{
+			GL32.glPolygonMode(GL32.GL_FRONT_AND_BACK, GL32.GL_FILL);
+			GLMC.enableFaceCulling();
+		}
+		
+		
+		//===========//
+		// rendering //
+		//===========//
+		
+		if (opaquePass)
+		{
+			// TODO why can these sometimes be null when teleporting between multiverses
+			if (this.loadedNearToFarBuffers != null)
 			{
-				LoadedRenderBuffer loadedBuffer = iter.previous();
-				loadedBuffer.buffer.renderTransparent(renderContext, renderEventParam);
+				this.loadedNearToFarBuffers.forEach(loadedBuffer -> loadedBuffer.buffer.renderOpaque(renderContext, renderEventParam));
 			}
 		}
+		else
+		{
+			// TODO why can these sometimes be null when teleporting between multiverses
+			if (this.loadedNearToFarBuffers != null)
+			{
+				ListIterator<LoadedRenderBuffer> iter = this.loadedNearToFarBuffers.listIterator(this.loadedNearToFarBuffers.size());
+				while (iter.hasPrevious())
+				{
+					LoadedRenderBuffer loadedBuffer = iter.previous();
+					loadedBuffer.buffer.renderTransparent(renderContext, renderEventParam);
+				}
+			}
+		}
+		
+		
+		
+		//=========================//
+		// debug wireframe cleanup //
+		//=========================//
+		
+		if (renderWireframe)
+		{
+			// default back to GL_FILL since all other rendering uses it 
+			GL32.glPolygonMode(GL32.GL_FRONT_AND_BACK, GL32.GL_FILL);
+			GLMC.enableFaceCulling();
+		}
+		
 	}
 	
 	

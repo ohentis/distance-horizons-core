@@ -20,12 +20,13 @@
 package com.seibel.distanthorizons.core.render.renderer.shaders;
 
 import com.seibel.distanthorizons.core.config.Config;
+import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.render.glObject.shader.ShaderProgram;
 import com.seibel.distanthorizons.core.render.renderer.LodRenderer;
 import com.seibel.distanthorizons.core.render.renderer.SSAORenderer;
 import com.seibel.distanthorizons.core.render.renderer.ScreenQuad;
-import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.RenderUtil;
+import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftGLWrapper;
 import org.lwjgl.opengl.GL32;
 
 /**
@@ -38,6 +39,9 @@ import org.lwjgl.opengl.GL32;
 public class SSAOApplyShader extends AbstractShaderRenderer
 {
 	public static SSAOApplyShader INSTANCE = new SSAOApplyShader();
+	
+	private static final IMinecraftGLWrapper GLMC = SingletonInjector.INSTANCE.get(IMinecraftGLWrapper.class);
+	
 	
 	public int ssaoTexture;
 	
@@ -82,12 +86,12 @@ public class SSAOApplyShader extends AbstractShaderRenderer
 	@Override
 	protected void onApplyUniforms(float partialTicks)
 	{
-		GL32.glActiveTexture(GL32.GL_TEXTURE0);
-		GL32.glBindTexture(GL32.GL_TEXTURE_2D, LodRenderer.getActiveDepthTextureId());
+		GLMC.glActiveTexture(GL32.GL_TEXTURE0);
+		GLMC.glBindTexture(LodRenderer.getActiveDepthTextureId());
 		GL32.glUniform1i(this.gDepthMapUniform, 0);
 		
-		GL32.glActiveTexture(GL32.GL_TEXTURE1);
-		GL32.glBindTexture(GL32.GL_TEXTURE_2D, this.ssaoTexture);
+		GLMC.glActiveTexture(GL32.GL_TEXTURE1);
+		GLMC.glBindTexture(this.ssaoTexture);
 		GL32.glUniform1i(this.gSSAOMapUniform, 1);
 		
 		GL32.glUniform1i(this.gBlurRadiusUniform, Config.Client.Advanced.Graphics.Ssao.blurRadius.get());
@@ -121,20 +125,24 @@ public class SSAOApplyShader extends AbstractShaderRenderer
 	@Override
 	protected void onRender()
 	{
-		GL32.glEnable(GL32.GL_BLEND);
+		GLMC.enableBlend();
 		GL32.glBlendEquation(GL32.GL_FUNC_ADD);
-		GL32.glBlendFuncSeparate(GL32.GL_ZERO, GL32.GL_SRC_ALPHA, GL32.GL_ZERO, GL32.GL_ONE);
-		
+		GLMC.glBlendFuncSeparate(GL32.GL_ZERO, GL32.GL_SRC_ALPHA, GL32.GL_ZERO, GL32.GL_ONE);
+
 		// Depth testing must be disabled otherwise this application shader won't apply anything.
 		// setting this isn't necessary in vanilla, but some mods may change this, requiring it to be set manually, 
 		// it should be automatically restored after rendering is complete.
-		GL32.glDisable(GL32.GL_DEPTH_TEST);
+		GLMC.disableDepthTest();
 		
+		GLMC.glActiveTexture(GL32.GL_TEXTURE0);
+		GLMC.glBindTexture(0);
 		
 		// apply the rendered SSAO to the LODs 
-		GL32.glBindFramebuffer(GL32.GL_READ_FRAMEBUFFER, SSAOShader.INSTANCE.frameBuffer);
-		GL32.glBindFramebuffer(GL32.GL_DRAW_FRAMEBUFFER, LodRenderer.getActiveFramebufferId());
+		GLMC.glBindFramebuffer(GL32.GL_READ_FRAMEBUFFER, SSAOShader.INSTANCE.frameBuffer);
+		GLMC.glBindFramebuffer(GL32.GL_DRAW_FRAMEBUFFER, LodRenderer.getActiveFramebufferId());
+		
 		
 		ScreenQuad.INSTANCE.render();
+		
 	}
 }

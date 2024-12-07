@@ -26,6 +26,7 @@ import com.seibel.distanthorizons.core.render.renderer.shaders.FadeApplyShader;
 import com.seibel.distanthorizons.core.render.renderer.shaders.FadeShader;
 import com.seibel.distanthorizons.core.util.math.Mat4f;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftGLWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
@@ -49,6 +50,7 @@ public class FadeRenderer
 	
 	private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	private static final IMinecraftRenderWrapper MC_RENDER = SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
+	private static final IMinecraftGLWrapper GLMC = SingletonInjector.INSTANCE.get(IMinecraftGLWrapper.class);
 	
 	
 	private boolean init = false;
@@ -86,15 +88,15 @@ public class FadeRenderer
 		
 		if (this.fadeTexture != -1)
 		{
-			GL32.glDeleteTextures(this.fadeTexture);
+			GLMC.glDeleteTextures(this.fadeTexture);
 			this.fadeTexture = -1;
 		}
 		
 		this.fadeFramebuffer = GL32.glGenFramebuffers();
-		GL32.glBindFramebuffer(GL32.GL_FRAMEBUFFER, this.fadeFramebuffer);
+		GLMC.glBindFramebuffer(GL32.GL_FRAMEBUFFER, this.fadeFramebuffer);
 		
 		this.fadeTexture = GL32.glGenTextures();
-		GL32.glBindTexture(GL32.GL_TEXTURE_2D, this.fadeTexture);
+		GLMC.glBindTexture(this.fadeTexture);
 		GL32.glTexImage2D(GL32.GL_TEXTURE_2D, 0, GL32.GL_RGBA16, width, height, 0, GL32.GL_RGBA, GL32.GL_UNSIGNED_SHORT_4_4_4_4, (ByteBuffer) null);
 		GL32.glTexParameteri(GL32.GL_TEXTURE_2D, GL32.GL_TEXTURE_MIN_FILTER, GL32.GL_LINEAR);
 		GL32.glTexParameteri(GL32.GL_TEXTURE_2D, GL32.GL_TEXTURE_MAG_FILTER, GL32.GL_LINEAR);
@@ -115,7 +117,9 @@ public class FadeRenderer
 		profiler.push("DH-RenderLevel");
 		
 		
-		GLState mcState = new GLState();
+		// TODO try removing this now that we use GLMC
+		// if there are reports of things breaking, we might have to re-add it
+		//GLState mcState = new GLState();
 		
 		try
 		{
@@ -140,7 +144,7 @@ public class FadeRenderer
 			FadeShader.INSTANCE.render(partialTicks);
 			
 			// restored so we can write the fade texture to the main frame buffer
-			mcState.restore();
+			//mcState.restore();
 			
 			profiler.popPush("Fade Apply");
 			
@@ -156,7 +160,7 @@ public class FadeRenderer
 		finally
 		{
 			// make sure we always revert to MC's state to prevent GL state corruption
-			mcState.restore();
+			//mcState.restore();
 		}
 	}
 	

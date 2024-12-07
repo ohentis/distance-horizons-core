@@ -24,12 +24,11 @@ import com.seibel.distanthorizons.api.enums.config.EDhApiLoggerMode;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
 import com.seibel.distanthorizons.core.logging.ConfigBasedSpamLogger;
-import com.seibel.distanthorizons.core.render.glObject.GLProxy;
-import com.seibel.distanthorizons.core.render.glObject.GLState;
 import com.seibel.distanthorizons.core.render.glObject.buffer.GLVertexBuffer;
 import com.seibel.distanthorizons.core.render.glObject.shader.ShaderProgram;
 import com.seibel.distanthorizons.core.render.glObject.vertexAttribute.AbstractVertexAttribute;
 import com.seibel.distanthorizons.core.render.glObject.vertexAttribute.VertexPointer;
+import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftGLWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
 
 import org.apache.logging.log4j.LogManager;
@@ -41,20 +40,25 @@ import java.nio.ByteOrder;
 
 public class TestRenderer
 {
-	
-	public TestRenderer() { }
-	
 	public static final ConfigBasedLogger logger = new ConfigBasedLogger(
 			LogManager.getLogger(TestRenderer.class), () -> EDhApiLoggerMode.LOG_ALL_TO_CHAT);
 	public static final ConfigBasedSpamLogger spamLogger = new ConfigBasedSpamLogger(
 			LogManager.getLogger(TestRenderer.class), () -> EDhApiLoggerMode.LOG_ALL_TO_CHAT, 1);
+	
 	private static final IMinecraftRenderWrapper MC_RENDER = SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
+	private static final IMinecraftGLWrapper GLMC = SingletonInjector.INSTANCE.get(IMinecraftGLWrapper.class);
+	
+	
 	
 	ShaderProgram basicShader;
-	GLVertexBuffer sameContextBuffer;
-	GLVertexBuffer sharedContextBuffer;
+	GLVertexBuffer vbo;
 	AbstractVertexAttribute va;
 	boolean init = false;
+	
+	
+	
+	
+	public TestRenderer() { }
 	
 	public void init()
 	{
@@ -74,6 +78,7 @@ public class TestRenderer
 		this.va.completeAndCheck(Float.BYTES * 6);
 		this.basicShader = new ShaderProgram("shaders/test/vert.vert", "shaders/test/frag.frag",
 				"fragColor", new String[]{"vPosition", "color"});
+		
 		this.createBuffer();
 	}
 	
@@ -86,61 +91,42 @@ public class TestRenderer
 			-0.2f, 0.2f, 0.0f, 1.0f, 1.0f, 1.0f
 	};
 	
-	private static GLVertexBuffer createTextingBuffer()
-	{
-		ByteBuffer buffer = ByteBuffer.allocateDirect(vertices.length * Float.BYTES);
-		// Fill buffer with the vertices.
-		buffer = buffer.order(ByteOrder.nativeOrder());
-		buffer.asFloatBuffer().put(vertices);
-		buffer.rewind();
-		GLVertexBuffer vbo = new GLVertexBuffer(false);
-		vbo.bind();
-		vbo.uploadBuffer(buffer, 4, EDhApiGpuUploadMethod.DATA, vertices.length * Float.BYTES);
-		return vbo;
-	}
-	
 	private void createBuffer()
 	{
-		this.sharedContextBuffer = createTextingBuffer();
-		this.sameContextBuffer = createTextingBuffer();
+		ByteBuffer buffer = ByteBuffer.allocateDirect(vertices.length * Float.BYTES);
+		// Fill buffer with vertices.
+		buffer.order(ByteOrder.nativeOrder());
+		buffer.asFloatBuffer().put(vertices);
+		buffer.rewind();
+		
+		this.vbo = new GLVertexBuffer(false);
+		this.vbo.bind();
+		this.vbo.uploadBuffer(buffer, 4, EDhApiGpuUploadMethod.DATA, vertices.length * Float.BYTES);
 	}
 	
 	public void render()
 	{
-		spamLogger.debug("rendering");
-		
-		GLState state = new GLState();
 		this.init();
-		GL32.glBindFramebuffer(GL32.GL_FRAMEBUFFER, MC_RENDER.getTargetFrameBuffer());
+		
+		GLMC.glBindFramebuffer(GL32.GL_FRAMEBUFFER, MC_RENDER.getTargetFrameBuffer());
 		GL32.glViewport(0, 0, MC_RENDER.getTargetFrameBufferViewportWidth(), MC_RENDER.getTargetFrameBufferViewportHeight());
 		GL32.glPolygonMode(GL32.GL_FRONT_AND_BACK, GL32.GL_FILL);
-		GL32.glDisable(GL32.GL_CULL_FACE);
-		GL32.glDisable(GL32.GL_DEPTH_TEST);
-		GL32.glDisable(GL32.GL_STENCIL_TEST);
-		GL32.glDisable(GL32.GL_BLEND);
-		//GL32.glDisable(GL32.GL_SCISSOR_TEST);
+		
+		GLMC.disableFaceCulling();
+		GLMC.disableDepthTest();
+		GLMC.disableBlend();
+		GLMC.disableScissorTest();
 		
 		this.basicShader.bind();
 		this.va.bind();
 		
-		// Switch between the two buffers per second
-		if (System.currentTimeMillis() % 2000 < 1000)
-		{
-			this.sameContextBuffer.bind();
-			this.va.bindBufferToAllBindingPoints(this.sameContextBuffer.getId());
-			spamLogger.debug("same context buffer");
-		}
-		else
-		{
-			this.sameContextBuffer.bind();
-			this.va.bindBufferToAllBindingPoints(this.sharedContextBuffer.getId());
-			spamLogger.debug("shared context buffer");
-		}
+		this.vbo.bind();
+		this.va.bindBufferToAllBindingPoints(this.vbo.getId());
+		
 		// Render the square
 		GL32.glDrawArrays(GL32.GL_TRIANGLE_FAN, 0, 4);
 		GL32.glClear(GL32.GL_DEPTH_BUFFER_BIT);
 		
-		state.restore();
 		spamLogger.incLogTries();
 	}
 	

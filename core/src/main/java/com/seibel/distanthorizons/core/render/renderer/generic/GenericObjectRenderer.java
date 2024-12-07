@@ -38,10 +38,10 @@ import com.seibel.distanthorizons.core.logging.ConfigBasedSpamLogger;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
 import com.seibel.distanthorizons.core.render.glObject.GLProxy;
-import com.seibel.distanthorizons.core.render.glObject.GLState;
 import com.seibel.distanthorizons.core.render.glObject.buffer.GLElementBuffer;
 import com.seibel.distanthorizons.core.render.glObject.buffer.GLVertexBuffer;
 import com.seibel.distanthorizons.core.util.LodUtil;
+import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftGLWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrapper;
 import com.seibel.distanthorizons.core.util.math.Vec3d;
@@ -74,6 +74,7 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 	
 	private static final IMinecraftRenderWrapper MC_RENDER = SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
 	private static final ISodiumAccessor SODIUM = ModAccessorInjector.INSTANCE.get(ISodiumAccessor.class);
+	private static final IMinecraftGLWrapper GLMC = SingletonInjector.INSTANCE.get(IMinecraftGLWrapper.class);
 	
 	/** 
 	 * Can be used to troubleshoot the renderer. 
@@ -388,7 +389,6 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		// render setup //
 		profiler.push("setup");
 		
-		GLState glState = new GLState();
 		this.init();
 		
 		boolean useInstancedRendering = this.instancedRenderingAvailable
@@ -396,12 +396,22 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		
 		ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeGenericRenderSetupEvent.class, renderEventParam);
 		
-		GL32.glPolygonMode(GL32.GL_FRONT_AND_BACK, GL32.GL_FILL);
-		GL32.glEnable(GL32.GL_DEPTH_TEST);
 		
-		GL32.glEnable(GL32.GL_BLEND);
+		boolean renderWireframe = Config.Client.Advanced.Debugging.renderWireframe.get();
+		if (renderWireframe)
+		{
+			GL32.glPolygonMode(GL32.GL_FRONT_AND_BACK, GL32.GL_LINE);
+			GLMC.disableFaceCulling();
+		}
+		else
+		{
+			GL32.glPolygonMode(GL32.GL_FRONT_AND_BACK, GL32.GL_FILL);
+			GLMC.enableFaceCulling();
+		}
+		
+		GLMC.enableBlend();
 		GL32.glBlendEquation(GL32.GL_FUNC_ADD);
-		GL32.glBlendFuncSeparate(GL32.GL_SRC_ALPHA, GL32.GL_ONE_MINUS_SRC_ALPHA, GL32.GL_ONE, GL32.GL_ONE_MINUS_SRC_ALPHA);
+		GLMC.glBlendFuncSeparate(GL32.GL_SRC_ALPHA, GL32.GL_ONE_MINUS_SRC_ALPHA, GL32.GL_ONE, GL32.GL_ONE_MINUS_SRC_ALPHA);
 		
 		IDhApiGenericObjectShaderProgram shaderProgram = useInstancedRendering ? this.instancedShaderProgram : this.directShaderProgram;
 		IDhApiGenericObjectShaderProgram shaderProgramOverride = OverrideInjector.INSTANCE.get(IDhApiGenericObjectShaderProgram.class);
@@ -457,14 +467,22 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		}
 		
 		
-		
+		//==========//
 		// clean up //
+		//==========//
+		
 		profiler.popPush("cleanup");
 		
 		ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeGenericRenderCleanupEvent.class, renderEventParam);
 		
+		if (renderWireframe)
+		{
+			// default back to GL_FILL since all other rendering uses it 
+			GL32.glPolygonMode(GL32.GL_FRONT_AND_BACK, GL32.GL_FILL);
+			GLMC.enableFaceCulling();
+		}
+		
 		shaderProgram.unbind();
-		glState.restore();
 		
 		profiler.pop();
 	}

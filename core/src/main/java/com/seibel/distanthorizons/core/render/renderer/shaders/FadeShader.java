@@ -28,6 +28,7 @@ import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.RenderUtil;
 import com.seibel.distanthorizons.core.util.math.Mat4f;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftGLWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
 import org.lwjgl.opengl.GL32;
 
@@ -37,6 +38,7 @@ public class FadeShader extends AbstractShaderRenderer
 	
 	private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	private static final IMinecraftRenderWrapper MC_RENDER = SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
+	private static final IMinecraftGLWrapper GLMC = SingletonInjector.INSTANCE.get(IMinecraftGLWrapper.class);
 	
 	
 	public int frameBuffer = -1;
@@ -153,33 +155,29 @@ public class FadeShader extends AbstractShaderRenderer
 	@Override
 	protected void onRender()
 	{
-		GLState state = new GLState();
+		GLMC.glBindFramebuffer(GL32.GL_FRAMEBUFFER, this.frameBuffer);
+		GLMC.disableScissorTest();
+		GLMC.disableDepthTest();
+		GLMC.disableBlend();
 		
-		GL32.glBindFramebuffer(GL32.GL_FRAMEBUFFER, this.frameBuffer);
-		GL32.glDisable(GL32.GL_SCISSOR_TEST);
-		GL32.glDisable(GL32.GL_DEPTH_TEST);
-		GL32.glDisable(GL32.GL_BLEND);
-		
-		GL32.glActiveTexture(GL32.GL_TEXTURE0);
-		GL32.glBindTexture(GL32.GL_TEXTURE_2D, MC_RENDER.getDepthTextureId());
+		GLMC.glActiveTexture(GL32.GL_TEXTURE0);
+		GLMC.glBindTexture(MC_RENDER.getDepthTextureId());
 		GL32.glUniform1i(this.uMcDepthTexture, 0);
 		
-		GL32.glActiveTexture(GL32.GL_TEXTURE1);
-		GL32.glBindTexture(GL32.GL_TEXTURE_2D, LodRenderer.getActiveDepthTextureId());
+		GLMC.glActiveTexture(GL32.GL_TEXTURE1);
+		GLMC.glBindTexture(LodRenderer.getActiveDepthTextureId());
 		GL32.glUniform1i(this.uDhDepthTexture, 1);
 		
-		GL32.glActiveTexture(GL32.GL_TEXTURE2);
-		GL32.glBindTexture(GL32.GL_TEXTURE_2D, MC_RENDER.getColorTextureId());
+		GLMC.glActiveTexture(GL32.GL_TEXTURE2);
+		GLMC.glBindTexture(MC_RENDER.getColorTextureId());
 		GL32.glUniform1i(this.uCombinedMcDhColorTexture, 2);
 		
-		GL32.glActiveTexture(GL32.GL_TEXTURE3);
-		GL32.glBindTexture(GL32.GL_TEXTURE_2D, LodRenderer.getActiveColorTextureId());
+		GLMC.glActiveTexture(GL32.GL_TEXTURE3);
+		GLMC.glBindTexture(LodRenderer.getActiveColorTextureId());
 		GL32.glUniform1i(this.uDhColorTexture, 3);
 		
 		
 		ScreenQuad.INSTANCE.render();
-		
-		state.restore();
 	}
 	
 }
