@@ -33,6 +33,7 @@ import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.pos.DhLodPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.util.DhApiTerrainDataPointUtil;
 import com.seibel.distanthorizons.core.util.FullDataPointUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
@@ -51,6 +52,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.concurrent.ExecutionException;
 
@@ -555,6 +557,17 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 					{
 						currentDebugVec3i = null;
 						LOGGER.info("raycast: [INFINITY]");
+					}
+					
+					if (rayCast.success && rayCast.payload != null)
+					{
+						DebugRenderer.makeParticle(
+							new DebugRenderer.BoxParticle(
+								new DebugRenderer.Box(
+									DhSectionPos.encode((byte) 0, rayCast.payload.pos.x, rayCast.payload.pos.z), rayCast.payload.dataPoint.bottomYBlockPos, rayCast.payload.dataPoint.topYBlockPos, -0.1f, Color.RED),
+							1.0, 0f
+							)
+						);
 					}
 					
 					

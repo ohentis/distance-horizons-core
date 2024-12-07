@@ -138,8 +138,8 @@ public class DhLodPos implements Comparable<DhLodPos>
 	 */
 	public DhLodPos getDhSectionRelativePositionForDetailLevel(byte outputDetailLevel) throws IllegalArgumentException
 	{
-		int xInput = this.x;
-		int zInput = this.z;
+		final int xInputOriginal = this.x;
+		final int zInputOriginal = this.z;
 		
 		byte detailLevelDifference = (byte) (outputDetailLevel - this.detailLevel);
 		if (outputDetailLevel < this.detailLevel)
@@ -152,16 +152,21 @@ public class DhLodPos implements Comparable<DhLodPos>
 		// negative values need to be offset by the detail level difference squared (in blocks)
 		// to skip over -0 (relative position) to -1 (relative position)
 		int blockOffset = BitShiftUtil.powerOfTwo(detailLevelDifference) - 1;
-		xInput += xInput < 0 ? -blockOffset : 0;
-		zInput += zInput < 0 ? -blockOffset : 0;
+		blockOffset = Math.max(1, blockOffset);
+		
+		int xInput = xInputOriginal;
+		xInput += (xInputOriginal < 0) ? blockOffset : 0;
+		
+		int zInput = zInputOriginal;
+		zInput += (zInputOriginal < 0) ? blockOffset : 0;
 		
 		// convert the input positions into the new detail level
 		int xRelativePos = xInput / BitShiftUtil.powerOfTwo(detailLevelDifference);
 		int zRelativePos = zInput / BitShiftUtil.powerOfTwo(detailLevelDifference);
 		
 		// convert the positions into section relative space (0-63)
-		xRelativePos = xInput >= 0 ? (xRelativePos % 64) : 63 + (xRelativePos % 64);
-		zRelativePos = zInput >= 0 ? (zRelativePos % 64) : 63 + (zRelativePos % 64);
+		xRelativePos = xInputOriginal >= 0 ? (xRelativePos % 64) : 63 + (xRelativePos % 64);
+		zRelativePos = zInputOriginal >= 0 ? (zRelativePos % 64) : 63 + (zRelativePos % 64);
 		
 		return new DhLodPos(outputDetailLevel, xRelativePos, zRelativePos);
 	}
