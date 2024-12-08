@@ -21,22 +21,16 @@ package com.seibel.distanthorizons.core.file.fullDatafile;
 
 import com.google.common.cache.CacheBuilder;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
-import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.file.structure.ISaveStructure;
 import com.seibel.distanthorizons.core.generation.RemoteWorldRetrievalQueue;
-import com.seibel.distanthorizons.core.generation.tasks.WorldGenResult;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.level.WorldGenModule;
 import com.seibel.distanthorizons.core.multiplayer.client.SyncOnLoadRequestQueue;
-import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
-import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.util.Collections;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -45,8 +39,6 @@ import java.util.concurrent.TimeUnit;
  */
 public class RemoteFullDataSourceProvider extends GeneratedFullDataSourceProvider
 {
-	private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
-	
 	@Nullable
 	private final SyncOnLoadRequestQueue syncOnLoadRequestQueue;
 	private final Set<Long> visitedPositions = Collections.newSetFromMap(CacheBuilder.newBuilder()
@@ -104,19 +96,6 @@ public class RemoteFullDataSourceProvider extends GeneratedFullDataSourceProvide
 		}
 		
 		return super.get(pos);
-	}
-	
-	
-	@Override
-	public CompletableFuture<WorldGenResult> queuePositionForRetrieval(long genPos, boolean allowAboveMaxGenRequests)
-	{
-		RemoteWorldRetrievalQueue worldGenQueue = (RemoteWorldRetrievalQueue) this.worldGenQueueRef.get();
-		if (worldGenQueue == null)
-		{
-			return null;
-		}
-		
-		return super.queuePositionForRetrieval(genPos, worldGenQueue.isPosCloserThanFarthestWaiting(new DhBlockPos2D(MC_CLIENT.getPlayerBlockPos()), genPos));
 	}
 	
 	

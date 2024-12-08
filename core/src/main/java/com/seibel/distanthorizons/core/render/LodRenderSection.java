@@ -482,7 +482,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 					}
 					
 					long pos = this.missingGenerationPos.removeLong(i);
-					boolean positionQueued = (this.fullDataSourceProvider.queuePositionForRetrieval(pos, false) != null);
+					boolean positionQueued = (this.fullDataSourceProvider.queuePositionForRetrieval(pos) != null);
 					if (!positionQueued)
 					{
 						// shouldn't normally happen, but just in case

@@ -245,7 +245,7 @@ public class FullDataSourceRequestHandler
 			else
 			{
 				LOGGER.info("sending - queueing [" + DhSectionPos.toString(pos) + "]");
-				this.fullDataSourceProvider().queuePositionForRetrieval(pos, true);
+				this.fullDataSourceProvider().queuePositionForRetrieval(pos);
 			}
 		});
 	}
