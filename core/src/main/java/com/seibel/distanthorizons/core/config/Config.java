@@ -87,6 +87,7 @@ public class Config
 				.build();
 		
 		public static ConfigEntry<EDhApiThreadPreset> threadPresetSetting = new ConfigEntry.Builder<EDhApiThreadPreset>()
+				.setServersideShortName("threadPreset")
 				.set(EDhApiThreadPreset.LOW_IMPACT) // the default value is set via the listener when accessed
 				.comment(""
 						+ "Changing this setting will modify a number of different settings that will change \n"
