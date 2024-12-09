@@ -20,6 +20,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class FullDataSourceRequestHandler
 {
@@ -115,16 +116,21 @@ public class FullDataSourceRequestHandler
 	{
 		while (true)
 		{
+			AtomicBoolean createdNewGroup = new AtomicBoolean(false);
 			DataSourceRequestGroup requestGroup = this.requestGroupsByPos.computeIfAbsent(requestData.sectionPos(), pos ->
 			{
 				DataSourceRequestGroup newGroup = new DataSourceRequestGroup(pos);
+				newGroup.tryAddRequest(requestData);
+				createdNewGroup.set(true);
+				
 				this.tryFulfillDataSourceRequestGroup(newGroup, pos);
+				
 				LOGGER.debug("[" + this.getLevelIdentifier() + "] Created request group for pos [" + DhSectionPos.toString(pos) + "].");
 				return newGroup;
 			});
 			
 			// If this fails, loop until either a permit is acquired or the group is removed to create another one
-			if (!requestGroup.tryAddRequest(requestData))
+			if (!createdNewGroup.get() && !requestGroup.tryAddRequest(requestData))
 			{
 				Thread.yield();
 				continue;
