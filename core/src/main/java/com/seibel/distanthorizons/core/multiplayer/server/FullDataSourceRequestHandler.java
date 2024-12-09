@@ -239,12 +239,12 @@ public class FullDataSourceRequestHandler
 			}
 			else if (requestGroup.isWorldGenTaskComplete())
 			{
-				LOGGER.info("sending - retry [" + DhSectionPos.toString(pos) + "]");
+				//LOGGER.info("sending - retry [" + DhSectionPos.toString(pos) + "]");
 				this.tryFulfillDataSourceRequestGroup(requestGroup, pos);
 			}
 			else
 			{
-				LOGGER.info("sending - queueing [" + DhSectionPos.toString(pos) + "]");
+				//LOGGER.info("sending - queueing [" + DhSectionPos.toString(pos) + "]");
 				this.fullDataSourceProvider().queuePositionForRetrieval(pos);
 			}
 		});

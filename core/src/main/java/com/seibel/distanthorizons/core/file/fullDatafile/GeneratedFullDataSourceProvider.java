@@ -45,6 +45,7 @@ import java.awt.*;
 import java.io.File;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
@@ -174,7 +175,8 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 	}
 	
 	@Override
-	public boolean canQueueRetrieval()
+	public boolean canQueueRetrieval() { return this.canQueueRetrieval(false); }
+	public boolean canQueueRetrieval(boolean pruneWaitingTasksAboveLimit)
 	{
 		if (!super.canQueueRetrieval())
 		{
@@ -220,9 +222,22 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 			return false;
 		}
 		
+		int availableTaskSlots = maxQueueCount - worldGenQueue.getWaitingTaskCount();
+		if (availableTaskSlots <= 0)
+		{
+			if (pruneWaitingTasksAboveLimit)
+			{
+				AtomicInteger tasksToCancel = new AtomicInteger(-availableTaskSlots + 1);
+				worldGenQueue.removeRetrievalRequestIf(x -> tasksToCancel.getAndDecrement() > 0);
+			}
+			else
+			{
+				// don't queue additional world gen requests beyond the max allotted count
+				return false;
+			}
+		}
 		
-		// don't queue additional world gen requests beyond the max allotted count
-		return worldGenQueue.getWaitingTaskCount() < maxQueueCount; 
+		return true;
 	}
 	
 	@Override
@@ -238,7 +253,7 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 		CompletableFuture<WorldGenResult> worldGenFuture = worldGenQueue.submitRetrievalTask(genPos, (byte) (DhSectionPos.getDetailLevel(genPos) - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL), genTaskTracker);
 		worldGenFuture.whenComplete((genTaskResult, ex) ->
 		{
-			LOGGER.info("gen task complete ["+DhSectionPos.toString(genPos)+"]");
+			//LOGGER.info("gen task complete ["+DhSectionPos.toString(genPos)+"]");
 			//this.onWorldGenTaskComplete(genTaskResult, ex);
 		});
 		

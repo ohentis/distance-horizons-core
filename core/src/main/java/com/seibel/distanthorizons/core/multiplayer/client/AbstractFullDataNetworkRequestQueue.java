@@ -180,7 +180,7 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 	{
 		Map.Entry<Long, RequestQueueEntry> mapEntry = this.waitingTasksBySectionPos.entrySet().stream()
 				.filter(task -> task.getValue().networkDataSourceFuture == null)
-				.min(Comparator.comparingInt(x -> posDistanceSquared(targetPos, x.getKey())))
+				.min(Comparator.comparingInt(x -> DhSectionPos.getChebyshevSignedBlockDistance(x.getKey(), targetPos)))
 				.orElse(null);
 		
 		if (mapEntry == null)
@@ -310,7 +310,9 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 	
 	public void removeRetrievalRequestIf(DhSectionPos.ICancelablePrimitiveLongConsumer removeIf)
 	{
-		for (Map.Entry<Long, RequestQueueEntry> mapEntry : this.waitingTasksBySectionPos.entrySet())
+		for (Map.Entry<Long, RequestQueueEntry> mapEntry : (Iterable<? extends Map.Entry<Long, RequestQueueEntry>>) this.waitingTasksBySectionPos.entrySet().stream()
+				.sorted(Comparator.comparingInt((Map.Entry<Long, RequestQueueEntry> entry) -> DhSectionPos.getChebyshevSignedBlockDistance(entry.getKey(), Objects.requireNonNull(this.level.getTargetPosForGeneration()))).reversed())
+				::iterator)
 		{
 			long pos = mapEntry.getKey();
 			RequestQueueEntry entry = mapEntry.getValue();
@@ -398,15 +400,6 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 			));
 		}
 	}
-	
-	
-	
-	//================//
-	// helper methods //
-	//================//
-	
-	protected static int posDistanceSquared(DhBlockPos2D targetPos, long pos)
-	{ return (int) DhSectionPos.getCenterBlockPos(pos).distSquared(targetPos); }
 	
 	
 	
