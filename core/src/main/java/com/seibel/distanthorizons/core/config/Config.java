@@ -1178,16 +1178,6 @@ public class Config
 							+ "")
 					.build();
 			
-			public static ConfigEntry<Integer> worldGenerationTimeoutLengthInSeconds = new ConfigEntry.Builder<Integer>()
-					.setServersideShortName("worldGenerationTimeout")
-					.setMinDefaultMax(5, 60 * 3, 60 * 10/*10 minutes*/ )
-					.comment(""
-							+ "How long should a world generator thread run for before timing out? \n"
-							+ "Note: If you are experiencing timeout errors it is better to lower your CPU usage first \n"
-							+ "via the thread config before changing this value. \n"
-							+ "")
-					.build();
-			
 		}
 		
 		public static class LodBuilding
