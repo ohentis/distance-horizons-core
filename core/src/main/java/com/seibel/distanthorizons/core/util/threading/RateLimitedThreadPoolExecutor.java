@@ -20,6 +20,7 @@
 package com.seibel.distanthorizons.core.util.threading;
 
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.util.objects.RollingAverage;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
@@ -36,6 +37,7 @@ public class RateLimitedThreadPoolExecutor extends ThreadPoolExecutor
 	/** logs include the thread name by default which can help diagnose deadlocks */
 	private static final boolean LOG_SEMAPHORE_ACTIONS = false;
 	
+	
 	public volatile double runTimeRatio;
 	
 	/** When this thread started running its last task */
@@ -50,6 +52,8 @@ public class RateLimitedThreadPoolExecutor extends ThreadPoolExecutor
 	private final Semaphore activeThreadCountSemaphore;
 	/** will always be zero if no semaphore is present */
 	private final AtomicInteger semaphoresAcquired = new AtomicInteger(0);
+	
+	private final RollingAverage runTimeInMsRollingAverage = new RollingAverage(200);
 	
 	
 	
@@ -85,11 +89,10 @@ public class RateLimitedThreadPoolExecutor extends ThreadPoolExecutor
 			try
 			{
 				long deltaMs = TimeUnit.NANOSECONDS.toMillis(this.lastRunDurationNanoTimeRef.get());
+				this.runTimeInMsRollingAverage.addValue(deltaMs);
 				Thread.sleep((long) (deltaMs / this.runTimeRatio - deltaMs));
 			}
-			catch (InterruptedException ignored)
-			{
-			}
+			catch (InterruptedException ignored) { }
 		}
 		
 		if (this.activeThreadCountSemaphore != null)
@@ -161,5 +164,8 @@ public class RateLimitedThreadPoolExecutor extends ThreadPoolExecutor
 	
 	/** only one event handler can be present at a time */
 	public void setOnTerminatedEventHandler(Runnable runnable) { this.onTerminatedEventHandler = runnable; }
+	
+	/** will return Nan if nothing has been submitted yet */
+	public double getAverageRunTimeInMs() { return this.runTimeInMsRollingAverage.getAverage(); }
 	
 }

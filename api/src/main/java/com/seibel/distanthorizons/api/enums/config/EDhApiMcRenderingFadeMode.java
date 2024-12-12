@@ -25,7 +25,8 @@ package com.seibel.distanthorizons.api.enums.config;
  * between MC and DH rendering. <br><br>
  * 
  * NONE, <br>
- * NON_COLLIDING, <br>
+ * SINGLE_PASS, <br>
+ * DOUBLE_PASS, <br>
  *
  * @since API 4.0.0
  * @version 2024-10-3

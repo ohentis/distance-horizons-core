@@ -26,6 +26,7 @@ import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.render.RenderBufferHandler;
 import com.seibel.distanthorizons.core.render.renderer.generic.GenericObjectRenderer;
+import com.seibel.distanthorizons.core.util.threading.RateLimitedThreadPoolExecutor;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.world.AbstractDhWorld;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
@@ -145,7 +146,28 @@ public class F3Screen
 		String queueSize = (pool != null) ? NUMBER_FORMAT.format(pool.getQueue().size()) : "-";
 		String completedCount = (pool != null) ? NUMBER_FORMAT.format(pool.getCompletedTaskCount()) : "-";
 		
-		return name+", tasks: "+queueSize+", complete: "+completedCount;
+		String message = name+", Tasks: "+queueSize+", Done: "+completedCount;
+		
+		if (pool != null && pool.getClass() == RateLimitedThreadPoolExecutor.class)
+		{
+			RateLimitedThreadPoolExecutor rateLimitedPool = ((RateLimitedThreadPoolExecutor) pool);
+			
+			String runTimeAvgStr;
+			double runTimeAvgInMs = rateLimitedPool.getAverageRunTimeInMs();
+			if (!Double.isNaN(runTimeAvgInMs))
+			{
+				runTimeAvgStr = NUMBER_FORMAT.format(runTimeAvgInMs);
+			}
+			else
+			{
+				runTimeAvgStr = ">0";
+			}
+			
+			message += ", Avg: "+runTimeAvgStr+"ms";
+		}
+		
+		
+		return message;
 	}
 	
 	
