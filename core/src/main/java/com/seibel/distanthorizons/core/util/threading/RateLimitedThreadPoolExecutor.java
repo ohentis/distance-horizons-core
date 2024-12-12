@@ -84,12 +84,13 @@ public class RateLimitedThreadPoolExecutor extends ThreadPoolExecutor
 	{
 		super.beforeExecute(thread, runnable);
 		
+		long deltaMs = TimeUnit.NANOSECONDS.toMillis(this.lastRunDurationNanoTimeRef.get());
+		this.runTimeInMsRollingAverage.addValue(deltaMs);
+		
 		if (this.runTimeRatio < 1.0 && this.lastRunDurationNanoTimeRef.get() != -1)
 		{
 			try
 			{
-				long deltaMs = TimeUnit.NANOSECONDS.toMillis(this.lastRunDurationNanoTimeRef.get());
-				this.runTimeInMsRollingAverage.addValue(deltaMs);
 				Thread.sleep((long) (deltaMs / this.runTimeRatio - deltaMs));
 			}
 			catch (InterruptedException ignored) { }
