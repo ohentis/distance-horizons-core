@@ -241,7 +241,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 		if (renderSection == null)
 		{
 			renderSection = new LodRenderSection(sectionPos, this, this.level, this.fullDataSourceProvider);
-			rootNode.setValue(sectionPos, renderSection);
+			quadNode.setValue(sectionPos, renderSection);
 		}
 		
 		
