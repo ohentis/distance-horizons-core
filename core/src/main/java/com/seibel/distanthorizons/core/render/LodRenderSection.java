@@ -19,7 +19,6 @@
 
 package com.seibel.distanthorizons.core.render;
 
-import com.google.common.base.Suppliers;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSource;
@@ -44,7 +43,6 @@ import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.WillNotClose;
 import java.awt.*;
@@ -52,10 +50,8 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Supplier;
 
 /**
  * A render section represents an area that could be rendered.
@@ -104,9 +100,9 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	/** Stored as a class variable so we can reuse it's result across multiple LOD loads if necessary */
 	private ReferencedRenderSourceFutureWrapper renderSourceLoadingRefFuture = null;
 	
+	private boolean missingPositionsCalculated = false;
 	/** should be an empty array if no positions need to be generated */
-	@Nullable
-	private Supplier<LongArrayList> missingGenerationPos;
+	private LongArrayList missingGenerationPos = null;
 	
 	private boolean checkedIfFullDataSourceExists = false;
 	private boolean fullDataSourceExists = false;
@@ -433,7 +429,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	// full data retrieval (world gen) //
 	//=================================//
 	
-	public boolean isFullyGenerated() { return this.missingGenerationPos != null && this.missingGenerationPos.get().isEmpty(); }
+	public boolean isFullyGenerated() { return this.missingPositionsCalculated && this.missingGenerationPos.isEmpty(); }
 	/** Returns true if an LOD exists, regardless of what data is in it */
 	public boolean getFullDataSourceExists() 
 	{  
@@ -456,35 +452,42 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		}
 	}
 	
-	public boolean missingPositionsCalculated() { return this.missingGenerationPos != null; }
-	public int ungeneratedPositionCount() { return (this.missingGenerationPos != null) ? this.missingGenerationPos.get().size() : 0; }
+	public boolean missingPositionsCalculated() { return this.missingPositionsCalculated; }
+	public int ungeneratedPositionCount() { return (this.missingGenerationPos != null) ? this.missingGenerationPos.size() : 0; }
 	
 	public void tryQueuingMissingLodRetrieval()
 	{
 		if (this.fullDataSourceProvider.canRetrieveMissingDataSources() && this.fullDataSourceProvider.canQueueRetrieval())
 		{
 			// calculate the missing positions if not already done
-			if (this.missingGenerationPos == null)
+			if (!this.missingPositionsCalculated)
 			{
-				//this.missingGenerationPos = Suppliers.memoize(() -> this.fullDataSourceProvider.getPositionsToRetrieve(this.pos));
-				this.missingGenerationPos = Suppliers.memoizeWithExpiration(() -> this.fullDataSourceProvider.getPositionsToRetrieve(this.pos), 1, TimeUnit.MINUTES);
+				this.missingGenerationPos = this.fullDataSourceProvider.getPositionsToRetrieve(this.pos);
+				if (this.missingGenerationPos != null)
+				{
+					this.missingPositionsCalculated = true;
+				}
 			}
 			
-			// queue from last to first to prevent shifting the array unnecessarily
-			for (int i = this.missingGenerationPos.get().size() - 1; i >= 0; i--)
+			// if the missing positions were found, queue them
+			if (this.missingGenerationPos != null)
 			{
-				if (!this.fullDataSourceProvider.canQueueRetrieval())
+				// queue from last to first to prevent shifting the array unnecessarily
+				for (int i = this.missingGenerationPos.size() - 1; i >= 0; i--)
 				{
-					// the data source provider isn't accepting any more jobs
-					break;
-				}
-				
-				long pos = this.missingGenerationPos.get().removeLong(i);
-				boolean positionQueued = (this.fullDataSourceProvider.queuePositionForRetrieval(pos) != null);
-				if (!positionQueued)
-				{
-					// shouldn't normally happen, but just in case
-					this.missingGenerationPos.get().add(pos);
+					if (!this.fullDataSourceProvider.canQueueRetrieval())
+					{
+						// the data source provider isn't accepting any more jobs
+						break;
+					}
+					
+					long pos = this.missingGenerationPos.removeLong(i);
+					boolean positionQueued = (this.fullDataSourceProvider.queuePositionForRetrieval(pos) != null);
+					if (!positionQueued)
+					{
+						// shouldn't normally happen, but just in case
+						this.missingGenerationPos.add(pos);
+					}
 				}
 			}
 		}
