@@ -62,6 +62,9 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	private static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	
+	/** This is necessary for server-side support since the server may reject handling some positions */
+	private static final long MS_TO_RECALCULATE_MISSING_WORLD_GEN_POS = 60_000;
+	
 	
 	
 	public final long pos;
@@ -103,6 +106,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	private boolean missingPositionsCalculated = false;
 	/** should be an empty array if no positions need to be generated */
 	private LongArrayList missingGenerationPos = null;
+	private long missingPosCalculatedTimeMs = 0;
 	
 	private boolean checkedIfFullDataSourceExists = false;
 	private boolean fullDataSourceExists = false;
@@ -429,7 +433,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	// full data retrieval (world gen) //
 	//=================================//
 	
-	public boolean isFullyGenerated() { return this.missingPositionsCalculated && this.missingGenerationPos.isEmpty(); }
+	public boolean isFullyGenerated() { return this.missingPosCalculatedTimeMs != 0 && this.missingGenerationPos.isEmpty(); }
 	/** Returns true if an LOD exists, regardless of what data is in it */
 	public boolean getFullDataSourceExists() 
 	{  
@@ -452,20 +456,22 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		}
 	}
 	
-	public boolean missingPositionsCalculated() { return this.missingPositionsCalculated; }
+	public boolean missingPositionsCalculated() { return this.missingPosCalculatedTimeMs != 0; }
 	public int ungeneratedPositionCount() { return (this.missingGenerationPos != null) ? this.missingGenerationPos.size() : 0; }
 	
 	public void tryQueuingMissingLodRetrieval()
 	{
 		if (this.fullDataSourceProvider.canRetrieveMissingDataSources() && this.fullDataSourceProvider.canQueueRetrieval())
 		{
-			// calculate the missing positions if not already done
-			if (!this.missingPositionsCalculated)
+			// calculate the missing positions if not already done 
+			// or enough time has passed
+			long lastCalculatedTimeInMs = System.currentTimeMillis() - this.missingPosCalculatedTimeMs;
+			if (lastCalculatedTimeInMs > MS_TO_RECALCULATE_MISSING_WORLD_GEN_POS)
 			{
 				this.missingGenerationPos = this.fullDataSourceProvider.getPositionsToRetrieve(this.pos);
 				if (this.missingGenerationPos != null)
 				{
-					this.missingPositionsCalculated = true;
+					this.missingPosCalculatedTimeMs = System.currentTimeMillis();
 				}
 			}
 			
