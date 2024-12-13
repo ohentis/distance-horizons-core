@@ -363,12 +363,15 @@ public class SharedApi
 			
 			processUpdateChunkData(updateData);
 			
-			DebugRenderer.makeParticle(
-				new DebugRenderer.BoxParticle(
-					new DebugRenderer.Box(DhSectionPos.encodeContaining(LodUtil.CHUNK_DETAIL_LEVEL, chunkWrapper.getChunkPos()), 128f, 156f, 0.09f, Color.RED)
-					,0.2, 32f
-				)
-			);
+			if (Config.Client.Advanced.Debugging.DebugWireframe.showFullDataUpdateStatus.get())
+			{
+				DebugRenderer.makeParticle(
+					new DebugRenderer.BoxParticle(
+						new DebugRenderer.Box(DhSectionPos.encodeContaining(LodUtil.CHUNK_DETAIL_LEVEL, chunkWrapper.getChunkPos()), 128f, 156f, 0.09f, Color.RED)
+						, 0.2, 32f
+					)
+				);
+			}
 			
 			UPDATE_POS_MANAGER.removeItem(chunkWrapper.getChunkPos());
 		}
