@@ -111,6 +111,9 @@ public class BatchGenerator implements IDhApiWorldGenerator
 			case FEATURES:
 				targetStep = EDhApiWorldGenerationStep.FEATURES;
 				break;
+			case FULL:
+				targetStep = EDhApiWorldGenerationStep.LIGHT;  // TODO using something other than LIGHT would be good for clarity
+				break;
 		}
 		
 		// the consumer needs to be wrapped like this because the API can't use DH core objects (and IChunkWrapper can't be easily put into the API project)

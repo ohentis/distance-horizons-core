@@ -22,13 +22,14 @@ package com.seibel.distanthorizons.api.enums.worldGeneration;
 /**
  * PRE_EXISTING_ONLY <br>
  * SURFACE <br>
- * FEATURES <br><br>
+ * FEATURES <br>
+ * FULL <br><br>
  *
  * In order of fastest to slowest.
  *
  * @author James Seibel
  * @author Leonardo Amato
- * @version 2022-12-10
+ * @version 2024-12-13
  * @since API 1.0.0
  */
 public enum EDhApiDistantGeneratorMode
@@ -73,7 +74,17 @@ public enum EDhApiDistantGeneratorMode
 	 * NOTE: This may cause world generation bugs or instability,
 	 * since some features can cause concurrentModification exceptions.
 	 */
-	FEATURES((byte) 5);
+	FEATURES((byte) 5),
+	
+	/**
+	 * Ask the server to generate/load each chunk.
+	 * This is the most compatible and will generate structures correctly, 
+	 * but will cause server/simulation lag. <br><br>
+	 * 
+	 * Unlike other modes this option DOES save generated chunks to
+	 * Minecraft's region files.
+	 */
+	FULL((byte) 7);
 	
 	
 	
