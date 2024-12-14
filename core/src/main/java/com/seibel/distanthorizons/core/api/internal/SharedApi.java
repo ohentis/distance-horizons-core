@@ -28,7 +28,6 @@ import com.seibel.distanthorizons.core.generation.DhLightingEngine;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
-import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
@@ -41,14 +40,12 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftSharedWrapper;
-import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.IModChecker;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
-import java.awt.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.ReentrantLock;
@@ -78,12 +75,6 @@ public class SharedApi
 	private static AbstractDhWorld currentWorld;
 	private static int lastWorldGenTickDelta = 0;
 	private static long lastOverloadedLogMessageMsTime = 0;
-	
-	/** 
-	 * Running async is preferred since it prevents 
-	 * lagging the server thread (where most chunk updates occur). 
-	 */
-	public static boolean runChunkUpdatesAsync = false;
 	
 	
 	
@@ -295,7 +286,6 @@ public class SharedApi
 				* Config.Common.MultiThreading.numberOfLodBuilderThreads.get()
 				* (playerCount + 1);
 		
-		boolean dhThreadPoolOverloaded = false;
 		UpdateChunkData updateData = new UpdateChunkData(chunkWrapper, neighbourChunkList, dhLevel, lightUpdateOnly);
 		if(lightUpdateOnly)
 		{
@@ -304,8 +294,6 @@ public class SharedApi
 		int remainingCapacity = UPDATE_POS_MANAGER.addItem(chunkWrapper.getChunkPos(), updateData);
 		if (remainingCapacity <= 0)
 		{
-			dhThreadPoolOverloaded = true;
-			
 			// limit how often an overloaded message can be sent
 			long msBetweenLastLog = System.currentTimeMillis() - lastOverloadedLogMessageMsTime;
 			if (msBetweenLastLog >= MIN_MS_BETWEEN_OVERLOADED_LOG_MESSAGE)
@@ -334,45 +322,24 @@ public class SharedApi
 		}
 		
 		
-		// prefer to run async to prevent lag, however fallback to running on
-		// MC's server thread if necessary
-		if (runChunkUpdatesAsync && !dhThreadPoolOverloaded)
+		
+		// queue updates up to the number of CPU cores allocated for the job
+		// (this prevents doing extra work queuing tasks that may not be necessary)
+		// and makes sure the chunks closest to the player are updated first
+		ThreadPoolExecutor executor = ThreadPoolUtil.getChunkToLodBuilderExecutor();
+		if (executor != null && executor.getQueue().size() < executor.getCorePoolSize())
 		{
-			// queue updates up to the number of CPU cores allocated for the job
-			// (this prevents doing extra work queuing tasks that may not be necessary)
-			// and makes sure the chunks closest to the player are updated first
-			ThreadPoolExecutor executor = ThreadPoolUtil.getChunkToLodBuilderExecutor();
-			if (executor != null && executor.getQueue().size() < executor.getCorePoolSize())
+			try
 			{
-				try
-				{
-					executor.execute(SharedApi::processQueuedChunkUpdate);
-				}
-				catch (RejectedExecutionException ignore)
-				{
-					// the executor was shut down, it should be back up shortly and able to accept new jobs
-				}
+				executor.execute(SharedApi::processQueuedChunkUpdate);
+			}
+			catch (RejectedExecutionException ignore)
+			{
+				// the executor was shut down, it should be back up shortly and able to accept new jobs
 			}
 		}
-		else
-		{
-			// when running on the server thread some logic needs to be disabled 
-			// (specifically getting adjacent chunks and queuing a new DH thread task)
-			// to prevent locking up the server thread
-			updateData.runSync = true;
-			
-			processUpdateChunkData(updateData);
-			
-			DebugRenderer.makeParticle(
-				new DebugRenderer.BoxParticle(
-					new DebugRenderer.Box(DhSectionPos.encodeContaining(LodUtil.CHUNK_DETAIL_LEVEL, chunkWrapper.getChunkPos()), 128f, 156f, 0.09f, Color.RED)
-					,0.2, 32f
-				)
-			);
-			
-			UPDATE_POS_MANAGER.removeItem(chunkWrapper.getChunkPos());
-		}
 	}
+	/** returning a {@link CompletableFuture} isn't necessary, but allows Intellij to properly show the full stack trace when debugging. */
 	private static void processQueuedChunkUpdate()
 	{
 		//LOGGER.trace(chunkWrapper.getChunkPos() + " " + executor.getActiveCount() + " / " + executor.getQueue().size() + " - " + executor.getCompletedTaskCount());
@@ -383,10 +350,6 @@ public class SharedApi
 			return;
 		}
 		
-		processUpdateChunkData(updateData);
-	}
-	private static void processUpdateChunkData(UpdateChunkData updateData)
-	{
 		IChunkWrapper chunkWrapper = updateData.chunkWrapper;
 		@Nullable ArrayList<IChunkWrapper> neighbourChunkList = updateData.neighbourChunkList;
 		IDhLevel dhLevel = updateData.dhLevel;
@@ -422,19 +385,15 @@ public class SharedApi
 				nearbyChunkList.add(chunkWrapper);
 			}
 			
-			// getting neighbor chunks can lock up the server thread
-			if (!updateData.runSync)
+			// if this chunk will update its lighting
+			// then queue adjacent chunks to update theirs as well
+			// adjacent chunk will have 'lightUpdateOnly' true 
+			// so they won't schedule further chunk updates
+			if (!updateData.lightUpdateOnly)
 			{
-				// if this chunk will update its lighting
-				// then queue adjacent chunks to update theirs as well
-				// adjacent chunk will have 'lightUpdateOnly' true 
-				// so they won't schedule further chunk updates
-				if (!updateData.lightUpdateOnly)
+				for (IChunkWrapper adjacentChunk : nearbyChunkList)
 				{
-					for (IChunkWrapper adjacentChunk : nearbyChunkList)
-					{
-						queueChunkUpdate(adjacentChunk, getNeighbourChunkListForChunk(adjacentChunk, dhLevel), dhLevel, true);
-					}
+					queueChunkUpdate(adjacentChunk, getNeighbourChunkListForChunk(adjacentChunk, dhLevel), dhLevel, true);
 				}
 			}
 			
@@ -450,21 +409,17 @@ public class SharedApi
 		}
 		finally
 		{
-			// only queue a new DH thread task if this is running on a DH thread
-			if (!updateData.runSync)
+			// queue the next position if there are still positions to process
+			ThreadPoolExecutor executor = ThreadPoolUtil.getChunkToLodBuilderExecutor();
+			if (executor != null && !UPDATE_POS_MANAGER.positionMap.isEmpty())
 			{
-				// queue the next position if there are still positions to process
-				ThreadPoolExecutor executor = ThreadPoolUtil.getChunkToLodBuilderExecutor();
-				if (executor != null && !UPDATE_POS_MANAGER.positionMap.isEmpty())
+				try
 				{
-					try
-					{
-						executor.execute(SharedApi::processQueuedChunkUpdate);
-					}
-					catch (RejectedExecutionException ignore)
-					{
-						// the executor was shut down, it should be back up shortly and able to accept new jobs
-					}
+					executor.execute(SharedApi::processQueuedChunkUpdate);
+				}
+				catch (RejectedExecutionException ignore)
+				{
+					// the executor was shut down, it should be back up shortly and able to accept new jobs
 				}
 			}
 		}
@@ -498,8 +453,6 @@ public class SharedApi
 		public IDhLevel dhLevel;
 		/** adjacent chunks will only update their light */
 		public boolean lightUpdateOnly;
-		/** If set to true this will run synchronously, probably on the MC server thread */
-		public boolean runSync = false;
 		
 		public UpdateChunkData(IChunkWrapper chunkWrapper, @Nullable ArrayList<IChunkWrapper> neighbourChunkList, IDhLevel dhLevel, boolean lightUpdateOnly)
 		{
