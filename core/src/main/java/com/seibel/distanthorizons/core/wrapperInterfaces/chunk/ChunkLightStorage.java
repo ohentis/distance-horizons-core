@@ -21,9 +21,12 @@ package com.seibel.distanthorizons.core.wrapperInterfaces.chunk;
 
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.coreapi.util.BitShiftUtil;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Compact, efficient storage for light levels. 
@@ -35,6 +38,9 @@ import java.util.Arrays;
 */
 public class ChunkLightStorage 
 {
+	private static final Logger LOGGER = LogManager.getLogger();
+	
+	
 	/** the minimum Y level in the chunk which this storage is storing light levels for (inclusive). */
 	public int minY;
 	/** the maximum Y level in the chunk which this storage is storing light levels for (exclusive). */
@@ -144,7 +150,7 @@ public class ChunkLightStorage
 		//populate lightSection in array if it doesn't exist.
 		if (lightSection == null)
 		{
-			lightSection = new LightSection(0);
+			lightSection = new LightSection(LodUtil.MIN_MC_LIGHT);
 			this.lightSections[index] = lightSection;
 		}
 		lightSection.set(x, y, z, lightLevel);
@@ -183,6 +189,11 @@ public class ChunkLightStorage
 		
 		public LightSection(int initialValue)
 		{
+			if (initialValue < LodUtil.MIN_MC_LIGHT)
+			{
+				throw new IllegalArgumentException("The initial light value must be greater than ["+LodUtil.MIN_MC_LIGHT+"].");
+			}
+			
 			this.constantValue = (byte) (initialValue);
 			this.counts = new short[16];
 			this.counts[initialValue] = 16 * 16 * 16;
@@ -265,21 +276,46 @@ public class ChunkLightStorage
 	
 	static class DataRecycler
 	{
-		private static final ArrayList<long[]> recycled = new ArrayList<>(256);
+		private static final ArrayList<long[]> ARRAY_LIST = new ArrayList<>(256);
+		private static final ReentrantLock ACCESS_LOCK = new ReentrantLock();
 		
-		static synchronized long[] get()
+		static long[] get()
 		{
-			if (recycled.isEmpty())
+			try
 			{
-				return new long[256];
+				ACCESS_LOCK.lock();
+				
+				if (ARRAY_LIST.isEmpty())
+				{
+					return new long[256];
+				}
+				else
+				{
+					return ARRAY_LIST.remove(ARRAY_LIST.size() - 1);
+				}
 			}
-			else
+			finally
 			{
-				return recycled.remove(recycled.size() - 1);
+				ACCESS_LOCK.unlock();
 			}
 		}
 		
-		static synchronized void reclaim(long[] data) { if (recycled.size() < 256) recycled.add(data); }
+		static void reclaim(long[] data) 
+		{ 
+			try
+			{
+				ACCESS_LOCK.lock();
+				
+				if (ARRAY_LIST.size() < 256)
+				{
+					ARRAY_LIST.add(data);
+				}
+			}
+			finally
+			{
+				ACCESS_LOCK.unlock();
+			}
+		}
 	}
 	
 }
