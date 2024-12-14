@@ -962,6 +962,15 @@ public class Config
 							.set(false)
 							.comment("Render LOD section status?")
 							.build();
+					public static ConfigEntry<Boolean> showRenderSectionToggling = new ConfigEntry.Builder<Boolean>()
+							.set(false)
+							.comment("" +
+									"A white box will be drawn when an LOD starts rendering \n" +
+									"and a purple box when an LOD stops rendering. \n" +
+									"\n" +
+									"This can be used to debug Quad Tree holes.\n" +
+									"")
+							.build();
 					
 					public static ConfigEntry<Boolean> showQuadTreeRenderStatus = new ConfigEntry.Builder<Boolean>()
 							.set(false)

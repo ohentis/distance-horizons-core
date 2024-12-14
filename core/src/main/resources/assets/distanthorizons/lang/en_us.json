@@ -452,6 +452,8 @@
     "Show World Gen Queue",
   "distanthorizons.config.client.advanced.debugging.debugWireframe.showRenderSectionStatus":
     "Show Render Section Status",
+  "distanthorizons.config.client.advanced.debugging.debugWireframe.showRenderSectionToggling":
+    "Show Render Section Toggling",
   "distanthorizons.config.client.advanced.debugging.debugWireframe.showQuadTreeRenderStatus":
     "Show Quad Tree Render Status",
   "distanthorizons.config.client.advanced.debugging.debugWireframe.showFullDataUpdateStatus":

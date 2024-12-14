@@ -315,7 +315,10 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 					}
 					
 					// this position's rendering has been disabled due to children being rendered
-					DebugRenderer.makeParticle(new DebugRenderer.BoxParticle(new DebugRenderer.Box(renderSection.pos, 128f, 156f, 0.09f, Color.WHITE), 0.2, 32f));
+					if (Config.Client.Advanced.Debugging.DebugWireframe.showRenderSectionToggling.get())
+					{
+						DebugRenderer.makeParticle(new DebugRenderer.BoxParticle(new DebugRenderer.Box(renderSection.pos, 128f, 156f, 0.09f, Color.WHITE), 0.2, 32f));
+					}
 				}
 				
 				
@@ -389,7 +392,10 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 							if (childRenderSection.getRenderingEnabled())
 							{
 								// this position's rendering has been disabled due to a parent rendering
-								DebugRenderer.makeParticle(new DebugRenderer.BoxParticle(new DebugRenderer.Box(childRenderSection.pos, 128f, 156f, 0.09f, Color.MAGENTA),0.2, 32f));
+								if (Config.Client.Advanced.Debugging.DebugWireframe.showRenderSectionToggling.get())
+								{
+									DebugRenderer.makeParticle(new DebugRenderer.BoxParticle(new DebugRenderer.Box(childRenderSection.pos, 128f, 156f, 0.09f, Color.MAGENTA), 0.2, 32f));
+								}
 							}
 							
 							childRenderSection.setRenderingEnabled(false);
