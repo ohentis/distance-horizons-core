@@ -879,8 +879,8 @@
     "Surface",
   "distanthorizons.config.enum.EDhApiDistantGeneratorMode.FEATURES":
     "Features",
-  "distanthorizons.config.enum.EDhApiDistantGeneratorMode.FULL":
-    "Full",
+  "distanthorizons.config.enum.EDhApiDistantGeneratorMode.INTERNAL_SERVER":
+    "Internal Server",
     
   "distanthorizons.config.enum.EDhApiDataCompressionMode.UNCOMPRESSED":
     "Uncompressed",

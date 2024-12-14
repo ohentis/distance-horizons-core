@@ -1170,13 +1170,12 @@ public class Config
 							+ "Generate everything except structures. \n"
 							+ "WARNING: This may cause world generator bugs or instability when paired with certain world generator mods. \n"
 							+ "\n"
-							+ EDhApiDistantGeneratorMode.FULL + " \n"
+							+ EDhApiDistantGeneratorMode.INTERNAL_SERVER + " \n"
 							+ "Ask the local server to generate/load each chunk. \n"
 							+ "This is the most compatible and will generate structures correctly, \n"
-							+ "but will cause server/simulation lag. \n"
+							+ "but may cause server/simulation lag. \n"
 							+ "Note: unlike other modes this option DOES save generated chunks to \n"
 							+ "Minecraft's region files. \n"
-							+ "- Slow (15-50 ms, with spikes up to 200 ms) \n"
 							+ "")
 					.build();
 			

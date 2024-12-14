@@ -109,7 +109,6 @@ public interface IChunkWrapper extends IBindable
 				&& blockPos.z >= this.getMinBlockZ() && blockPos.z <= this.getMaxBlockZ());
 	}
 	
-	boolean doNearbyChunksExist();
 	String toString();
 	
 	

@@ -26,9 +26,7 @@ import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IOverrideInjector;
-import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiDistantGeneratorMode;
-import com.seibel.distanthorizons.coreapi.util.BitShiftUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.IWrapperFactory;
 import com.seibel.distanthorizons.core.wrapperInterfaces.worldGeneration.AbstractBatchGenerationEnvironmentWrapper;
@@ -111,7 +109,7 @@ public class BatchGenerator implements IDhApiWorldGenerator
 			case FEATURES:
 				targetStep = EDhApiWorldGenerationStep.FEATURES;
 				break;
-			case FULL:
+			case INTERNAL_SERVER:
 				targetStep = EDhApiWorldGenerationStep.LIGHT;  // TODO using something other than LIGHT would be good for clarity
 				break;
 		}

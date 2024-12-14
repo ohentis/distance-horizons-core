@@ -79,12 +79,12 @@ public enum EDhApiDistantGeneratorMode
 	/**
 	 * Ask the server to generate/load each chunk.
 	 * This is the most compatible and will generate structures correctly, 
-	 * but will cause server/simulation lag. <br><br>
+	 * but may cause server/simulation lag. <br><br>
 	 * 
 	 * Unlike other modes this option DOES save generated chunks to
 	 * Minecraft's region files.
 	 */
-	FULL((byte) 7);
+	INTERNAL_SERVER((byte) 6);
 	
 	
 	
