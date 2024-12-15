@@ -205,10 +205,9 @@ public class ChunkLightStorage
 		
 		public int get(int x, int y, int z)
 		{
-			String lockStr = this.concurrencyCheckLock.toString();
 			if (!this.concurrencyCheckLock.tryLock())
 			{
-				throw new ConcurrentModificationException("Thread ["+Thread.currentThread().getName()+"] attempted to get chunk light, lock: ["+lockStr+"].");
+				throw new ConcurrentModificationException("Thread ["+Thread.currentThread().getName()+"] attempted to get chunk light, lock: ["+this.concurrencyCheckLock+"].");
 			}
 			
 			try
