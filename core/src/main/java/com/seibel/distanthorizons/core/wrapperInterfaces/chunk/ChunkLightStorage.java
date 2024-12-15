@@ -26,6 +26,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.ConcurrentModificationException;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -187,6 +188,9 @@ public class ChunkLightStorage
 		public long[] data;
 		public short[] counts;
 		
+		private final ReentrantLock concurrencyCheckLock = new ReentrantLock();
+		
+		
 		public LightSection(int initialValue)
 		{
 			if (initialValue < LodUtil.MIN_MC_LIGHT)
@@ -201,74 +205,102 @@ public class ChunkLightStorage
 		
 		public int get(int x, int y, int z)
 		{
-			if (this.constantValue >= 0)
+			String lockStr = this.concurrencyCheckLock.toString();
+			if (!this.concurrencyCheckLock.tryLock())
 			{
-				return this.constantValue;
+				throw new ConcurrentModificationException("Thread ["+Thread.currentThread().getName()+"] attempted to get chunk light, lock: ["+lockStr+"].");
 			}
 			
-			x &= 15;
-			y &= 15;
-			z &= 15;
-			long bits = this.data[(z << 4) | x];
-			return ((int) (bits >>> (y << 2))) & 15;
+			try
+			{
+				if (this.constantValue >= 0)
+				{
+					return this.constantValue;
+				}
+				
+				x &= 15;
+				y &= 15;
+				z &= 15;
+				long bits = this.data[(z << 4) | x];
+				return ((int) (bits >>> (y << 2))) & 15;
+			}
+			finally
+			{
+				this.concurrencyCheckLock.unlock();
+			}
 		}
 		
 		public void set(int x, int y, int z, int lightLevel)
 		{
-			int oldLightLevel = -1;
-			if (this.constantValue >= 0)
+			if (!this.concurrencyCheckLock.tryLock())
 			{
-				oldLightLevel = this.constantValue;
-				
-				//if the light level didn't change, then there's nothing to do.
-				if (oldLightLevel == lightLevel) return;
-				
-				//if we are a constant value and need to change something,
-				//then that means we need to convert to a non-constant value.
-				this.data = DataRecycler.get();
-				
-				//repeat oldLightLevel 16 times as a bit pattern.
-				long payload = oldLightLevel;
-				payload |= payload << 4;
-				payload |= payload << 8;
-				payload |= payload << 16;
-				payload |= payload << 32;
-				
-				//fill our data with our constant value.
-				Arrays.fill(this.data, payload);
-				
-				//we are no longer a constant value.
-				this.constantValue = -1;
+				throw new ConcurrentModificationException("Thread ["+Thread.currentThread().getName()+"] attempted to set chunk light, lock: ["+this.concurrencyCheckLock+"].");
 			}
 			
-			x &= 15;
-			y &= 15;
-			z &= 15;
-			int index = (z << 4) | x;
-			long bits = this.data[index];
-			//if we weren't a constant value before, now's the time to initialize oldLightLevel.
-			if (oldLightLevel < 0)
+			try
 			{
-				oldLightLevel = ((int) (bits >>> (y << 2))) & 15;
+				int oldLightLevel = -1;
+				if (this.constantValue >= 0)
+				{
+					oldLightLevel = this.constantValue;
+					
+					//if the light level didn't change, then there's nothing to do.
+					if (oldLightLevel == lightLevel) return;
+					
+					//if we are a constant value and need to change something,
+					//then that means we need to convert to a non-constant value.
+					this.data = DataRecycler.get();
+					LodUtil.assertTrue(this.data != null);
+					
+					//repeat oldLightLevel 16 times as a bit pattern.
+					long payload = oldLightLevel;
+					payload |= payload << 4;
+					payload |= payload << 8;
+					payload |= payload << 16;
+					payload |= payload << 32;
+					
+					//fill our data with our constant value.
+					Arrays.fill(this.data, payload);
+					
+					//we are no longer a constant value.
+					this.constantValue = -1;
+				}
+				
+				x &= 15;
+				y &= 15;
+				z &= 15;
+				int index = (z << 4) | x;
+				long bits = this.data[index];
+				//if we weren't a constant value before, now's the time to initialize oldLightLevel.
+				if (oldLightLevel < 0)
+				{
+					oldLightLevel = ((int) (bits >>> (y << 2))) & 15;
+				}
+				//clear the 4 bits that correspond to the light level at x, y, z...
+				bits &= ~(15L << (y << 2));
+				//...and then re-populate those bits with the new light level.
+				bits |= ((long) (lightLevel)) << (y << 2);
+				//store the updated bits in our data.
+				this.data[index] = bits;
+				
+				//we have one less of the old light level...
+				this.counts[oldLightLevel]--;
+				//...and one more of the new level.
+				//if the number associated with the new level is now 4096 (AKA 16 ^ 3),
+				//then this implies every position in this section has the same light level,
+				//and therefore we can convert back to a constant value.
+				if (++this.counts[lightLevel] == 4096)
+				{
+					this.constantValue = (byte) (lightLevel);
+					LodUtil.assertTrue(this.constantValue >= 0);
+					
+					DataRecycler.reclaim(this.data);
+					this.data = null;
+				}
 			}
-			//clear the 4 bits that correspond to the light level at x, y, z...
-			bits &= ~(15L << (y << 2));
-			//...and then re-populate those bits with the new light level.
-			bits |= ((long) (lightLevel)) << (y << 2);
-			//store the updated bits in our data.
-			this.data[index] = bits;
-			
-			//we have one less of the old light level...
-			this.counts[oldLightLevel]--;
-			//...and one more of the new level.
-			//if the number associated with the new level is now 4096 (AKA 16 ^ 3),
-			//then this implies every position in this section has the same light level,
-			//and therefore we can convert back to a constant value.
-			if (++this.counts[lightLevel] == 4096)
+			finally
 			{
-				this.constantValue = (byte) (lightLevel);
-				DataRecycler.reclaim(this.data);
-				this.data = null;
+				this.concurrencyCheckLock.unlock();
 			}
 		}
 		
