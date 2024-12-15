@@ -393,7 +393,12 @@ public class SharedApi
 			{
 				for (IChunkWrapper adjacentChunk : nearbyChunkList)
 				{
-					queueChunkUpdate(adjacentChunk, getNeighbourChunkListForChunk(adjacentChunk, dhLevel), dhLevel, true);
+					// pulling a new chunkWrapper is necessary to prevent concurrent modification on the existing chunkWrappers
+					IChunkWrapper newCenterChunk = dhLevel.getLevelWrapper().tryGetChunk(adjacentChunk.getChunkPos());
+					if (newCenterChunk != null)
+					{
+						queueChunkUpdate(newCenterChunk, getNeighbourChunkListForChunk(newCenterChunk, dhLevel), dhLevel, true);
+					}
 				}
 			}
 			
@@ -620,14 +625,14 @@ public class SharedApi
 		
 		public UpdateChunkData popClosest()
 		{
-			if (this.closestQueue.isEmpty())
-			{
-				return null;
-			}
-			
 			try
 			{
 				this.lock.lock();
+				
+				if (this.closestQueue.isEmpty())
+				{
+					return null;
+				}
 				
 				DhChunkPos closest = this.closestQueue.poll();
 				this.furthestQueue.remove(closest);
