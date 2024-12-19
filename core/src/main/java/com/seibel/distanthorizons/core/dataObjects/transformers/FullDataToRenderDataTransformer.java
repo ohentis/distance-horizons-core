@@ -30,6 +30,7 @@ import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPosMutable;
 import com.seibel.distanthorizons.core.util.ColorUtil;
 import com.seibel.distanthorizons.core.util.FullDataPointUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
@@ -209,6 +210,8 @@ public class FullDataToRenderDataTransformer
 		// convert full data to render data //
 		//==================================//
 		
+		DhBlockPosMutable mutableBlockPos = new DhBlockPosMutable(blockX, 0, blockZ);
+		
 		// goes from the top down
 		for (int fullDataIndex = 0; fullDataIndex < fullColumnData.size(); fullDataIndex++)
 		{
@@ -220,6 +223,8 @@ public class FullDataToRenderDataTransformer
 			int id = FullDataPointUtil.getId(fullData);
 			int blockLight = FullDataPointUtil.getBlockLight(fullData);
 			int skyLight = FullDataPointUtil.getSkyLight(fullData);
+			
+			mutableBlockPos.setY(bottomY + level.getMinY());
 			
 			IBiomeWrapper biome;
 			IBlockStateWrapper block;
@@ -307,7 +312,7 @@ public class FullDataToRenderDataTransformer
 			{
 				if (colorBelowWithAvoidedBlocks)
 				{
-					int tempColor = level.computeBaseColor(new DhBlockPos(blockX, bottomY + level.getMinY(), blockZ), biome, block);
+					int tempColor = level.computeBaseColor(mutableBlockPos, biome, block);
 					// don't transfer the color when alpha is 0
 					// this prevents issues if grass is transparent
 					if (ColorUtil.getAlpha(tempColor) != 0)
@@ -327,7 +332,7 @@ public class FullDataToRenderDataTransformer
 			if (colorToApplyToNextBlock == -1)
 			{
 				// use this block's color
-				color = level.computeBaseColor(new DhBlockPos(blockX, bottomY + level.getMinY(), blockZ), biome, block);
+				color = level.computeBaseColor(mutableBlockPos, biome, block);
 			}
 			else
 			{
