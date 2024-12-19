@@ -23,6 +23,7 @@ import com.seibel.distanthorizons.api.enums.config.EDhApiDataCompressionMode;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV2DTO;
 import com.seibel.distanthorizons.core.sql.repo.FullDataSourceV2Repo;
+import com.seibel.distanthorizons.coreapi.util.StringUtil;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.junit.Assert;
 
@@ -356,10 +357,10 @@ public class CompressionTest
 			System.out.println("\n");
 			System.out.println("Results: " + compressorName);
 			System.out.println();
-			System.out.println("Total uncompressed data: [" + humanReadableByteCountSI(totalUncompressedFileSizeInBytes) + "] Total compressed data: [" + humanReadableByteCountSI(totalCompressedFileSizeInBytes) + "]. Compression ratio: [" + compressionRatioString + "].");
-			System.out.println("Min uncompressed data: [" + humanReadableByteCountSI(minUncompressedDtoSizeInBytes) + "] Min compressed data: [" + humanReadableByteCountSI(minCompressedDtoSizeInBytes) + "].");
-			System.out.println("Max uncompressed data: [" + humanReadableByteCountSI(maxUncompressedDtoSizeInBytes) + "] Max compressed data: [" + humanReadableByteCountSI(maxCompressedDtoSizeInBytes) + "].");
-			System.out.println("Avg uncompressed data: [" + humanReadableByteCountSI(avgUncompressedDtoSizeInBytes) + "] Avg compressed data: [" + humanReadableByteCountSI(avgCompressedDtoSizeInBytes) + "].");
+			System.out.println("Total uncompressed data: [" + StringUtil.convertBytesToHumanReadable(totalUncompressedFileSizeInBytes) + "] Total compressed data: [" + StringUtil.convertBytesToHumanReadable(totalCompressedFileSizeInBytes) + "]. Compression ratio: [" + compressionRatioString + "].");
+			System.out.println("Min uncompressed data: [" + StringUtil.convertBytesToHumanReadable(minUncompressedDtoSizeInBytes) + "] Min compressed data: [" + StringUtil.convertBytesToHumanReadable(minCompressedDtoSizeInBytes) + "].");
+			System.out.println("Max uncompressed data: [" + StringUtil.convertBytesToHumanReadable(maxUncompressedDtoSizeInBytes) + "] Max compressed data: [" + StringUtil.convertBytesToHumanReadable(maxCompressedDtoSizeInBytes) + "].");
+			System.out.println("Avg uncompressed data: [" + StringUtil.convertBytesToHumanReadable(avgUncompressedDtoSizeInBytes) + "] Avg compressed data: [" + StringUtil.convertBytesToHumanReadable(avgCompressedDtoSizeInBytes) + "].");
 			System.out.println();
 			System.out.println("Total read time in MS: [" + totalReadTimeInNano / 1_000_000.0 + "] Average read time per dto: [" + (totalReadTimeInNano / processedDtoCount) / 1_000_000.0 + "]");
 			System.out.println("Total write time in MS: [" + totalWriteTimeInNano / 1_000_000.0 + "] Average write time per dto: [" + (totalWriteTimeInNano / processedDtoCount) / 1_000_000.0 + "]");
@@ -373,23 +374,5 @@ public class CompressionTest
 	}
 	
 	
-	/**
-	 * Source:
-	 * https://stackoverflow.com/questions/3758606/how-can-i-convert-byte-size-into-a-human-readable-format-in-java#3758880
-	 */
-	public static String humanReadableByteCountSI(long bytes)
-	{
-		if (-1000 < bytes && bytes < 1000)
-		{
-			return bytes + " B";
-		}
-		CharacterIterator ci = new StringCharacterIterator("kMGTPE");
-		while (bytes <= -999_950 || bytes >= 999_950)
-		{
-			bytes /= 1000;
-			ci.next();
-		}
-		return String.format("%.1f %cB", bytes / 1000.0, ci.current());
-	}
 	
 }
