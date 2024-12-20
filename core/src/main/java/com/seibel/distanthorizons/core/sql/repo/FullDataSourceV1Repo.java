@@ -21,6 +21,7 @@ package com.seibel.distanthorizons.core.sql.repo;
 
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.sql.dto.ChunkHashDTO;
 import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV1DTO;
 import com.seibel.distanthorizons.coreapi.util.StringUtil;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
@@ -28,6 +29,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -58,7 +60,14 @@ public class FullDataSourceV1Repo extends AbstractDhRepo<Long, FullDataSourceV1D
 	public String getTableName() { return TABLE_NAME; }
 	
 	@Override
-	public String createWhereStatement(Long pos) { return "DhSectionPos = '"+serializeSectionPos(pos)+"'"; }
+	protected String CreateParameterizedWhereString() { return "DhSectionPos = ?"; }
+	
+	@Override
+	protected int setPreparedStatementWhereClause(PreparedStatement statement, int index, Long pos) throws SQLException
+	{
+		statement.setString(index++, serializeSectionPos(pos));
+		return index;
+	}
 	
 	
 	
@@ -66,23 +75,24 @@ public class FullDataSourceV1Repo extends AbstractDhRepo<Long, FullDataSourceV1D
 	// repo required methods //
 	//=======================//
 	
-	@Override 
-	public FullDataSourceV1DTO convertDictionaryToDto(Map<String, Object> objectMap) throws ClassCastException
+	@Override
+	@Nullable
+	public FullDataSourceV1DTO convertResultSetToDto(ResultSet resultSet) throws ClassCastException, SQLException
 	{
-		String posString = (String) objectMap.get("DhSectionPos");
+		String posString = resultSet.getString("DhSectionPos");
 		Long pos = deserializeSectionPos(posString);
 		
 		// meta data
-		int checksum = (Integer) objectMap.get("Checksum");
-		byte dataDetailLevel = (Byte) objectMap.get("DataDetailLevel");
-		String worldGenStepString = (String) objectMap.get("WorldGenStep");
+		int checksum = resultSet.getInt("Checksum");
+		byte dataDetailLevel = resultSet.getByte("DataDetailLevel");
+		String worldGenStepString = resultSet.getString("WorldGenStep");
 		EDhApiWorldGenerationStep worldGenStep = EDhApiWorldGenerationStep.fromName(worldGenStepString);
 		
-		String dataType = (String) objectMap.get("DataType");
-		byte binaryDataFormatVersion = (Byte) objectMap.get("BinaryDataFormatVersion");
+		String dataType = resultSet.getString("DataType");
+		byte binaryDataFormatVersion = resultSet.getByte("BinaryDataFormatVersion");
 		
 		// binary data
-		byte[] dataByteArray = (byte[]) objectMap.get("Data");
+		byte[] dataByteArray = resultSet.getBytes("Data");
 		
 		FullDataSourceV1DTO dto = new FullDataSourceV1DTO(
 				pos,
@@ -92,41 +102,43 @@ public class FullDataSourceV1Repo extends AbstractDhRepo<Long, FullDataSourceV1D
 		return dto;
 	}
 	
+	private final String insertSqlTemplate =
+			"INSERT INTO "+this.getTableName() + "\n" +
+					"  (DhSectionPos, \n" +
+					"Checksum, DataVersion, DataDetailLevel, WorldGenStep, DataType, BinaryDataFormatVersion, \n" +
+					"Data) \n" +
+					"   VALUES( \n" +
+					"    ? \n" +
+					"   ,? ,? ,? ,? ,? ,? \n" +
+					"   ,? \n" +
+					// created/lastModified are automatically set by Sqlite
+					");";
 	@Override
 	public PreparedStatement createInsertStatement(FullDataSourceV1DTO dto) throws SQLException
 	{
-		String sql =
-			"INSERT INTO "+this.getTableName() + "\n" +
-			"  (DhSectionPos, \n" +
-			"Checksum, DataVersion, DataDetailLevel, WorldGenStep, DataType, BinaryDataFormatVersion, \n" +
-			"Data) \n" +
-			"   VALUES( \n" +
-			"    ? \n" +
-			"   ,? ,? ,? ,? ,? ,? \n" +
-			"   ,? \n" +
-			// created/lastModified are automatically set by Sqlite
-			");";
-		PreparedStatement statement = this.createPreparedStatement(sql);
+		PreparedStatement statement = this.createPreparedStatement(this.insertSqlTemplate);
+		if (statement == null)
+		{
+			return null;
+		}
+		
 		
 		int i = 1;
-		statement.setObject(i++, serializeSectionPos(dto.pos));
+		statement.setString(i++, serializeSectionPos(dto.pos));
 		
-		statement.setObject(i++, dto.checksum);
-		statement.setObject(i++, 0 /*dto.dataVersion*/);
-		statement.setObject(i++, dto.dataDetailLevel);
+		statement.setInt(i++, dto.checksum);
+		statement.setInt(i++, 0 /*dto.dataVersion*/);
+		statement.setByte(i++, dto.dataDetailLevel);
 		statement.setObject(i++, dto.worldGenStep);
-		statement.setObject(i++, dto.dataType);
-		statement.setObject(i++, dto.binaryDataFormatVersion);
+		statement.setString(i++, dto.dataType);
+		statement.setByte(i++, dto.binaryDataFormatVersion);
 		
 		statement.setObject(i++, dto.dataArray);
 		
 		return statement;
 	}
 	
-	@Override
-	public PreparedStatement createUpdateStatement(FullDataSourceV1DTO dto) throws SQLException
-	{
-		String sql =
+	private final String updateSqlTemplate =
 			"UPDATE "+this.getTableName()+" \n" +
 			"SET \n" +
 			"    Checksum = ? \n" +
@@ -135,52 +147,34 @@ public class FullDataSourceV1Repo extends AbstractDhRepo<Long, FullDataSourceV1D
 			"   ,WorldGenStep = ? \n" +
 			"   ,DataType = ? \n" +
 			"   ,BinaryDataFormatVersion = ? \n" +
-					
+			
 			"   ,Data = ? \n" +
 			
 			"   ,LastModifiedDateTime = CURRENT_TIMESTAMP \n" +
 			"WHERE DhSectionPos = ?";
-		PreparedStatement statement = this.createPreparedStatement(sql);
+	@Override
+	public PreparedStatement createUpdateStatement(FullDataSourceV1DTO dto) throws SQLException
+	{
+		PreparedStatement statement = this.createPreparedStatement(this.updateSqlTemplate);
+		if (statement == null)
+		{
+			return null;
+		}
+		
 		
 		int i = 1;
-		statement.setObject(i++, dto.checksum);
-		statement.setObject(i++, 0 /*dto.dataVersion*/);
-		statement.setObject(i++, dto.dataDetailLevel);
+		statement.setInt(i++, dto.checksum);
+		statement.setInt(i++, 0 /*dto.dataVersion*/);
+		statement.setByte(i++, dto.dataDetailLevel);
 		statement.setObject(i++, dto.worldGenStep);
-		statement.setObject(i++, dto.dataType);
-		statement.setObject(i++, dto.binaryDataFormatVersion);
+		statement.setString(i++, dto.dataType);
+		statement.setByte(i++, dto.binaryDataFormatVersion);
 		
 		statement.setObject(i++, dto.dataArray);
 		
-		statement.setObject(i++, serializeSectionPos(dto.pos));
+		statement.setString(i++, serializeSectionPos(dto.pos));
 		
 		return statement;
-	}
-	
-	
-	
-	//=====================//
-	// data source methods //
-	//=====================//
-	
-	/** 
-	 * Returns the highest numerical detail level in this table. <Br>
-	 * Returns {@link DhSectionPos#SECTION_MINIMUM_DETAIL_LEVEL} if no data is present.
-	 */
-	public int getMaxSectionDetailLevel()
-	{
-		Map<String, Object> resultMap = this.queryDictionaryFirst("select MAX(DataDetailLevel) as maxDetailLevel from "+this.getTableName()+";");
-		int maxDetailLevel;
-		if (resultMap == null || resultMap.get("maxDetailLevel") == null)
-		{
-			maxDetailLevel = 0;
-		}
-		else
-		{
-			maxDetailLevel = (int)resultMap.get("maxDetailLevel");
-		}
-		
-		return maxDetailLevel + DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL;
 	}
 	
 	
@@ -207,25 +201,47 @@ public class FullDataSourceV1Repo extends AbstractDhRepo<Long, FullDataSourceV1D
 		}
 	}
 	
+	private final String getMigrationPositionsSqlTemplate =
+			"SELECT DhSectionPos " +
+			"FROM "+this.getTableName()+" " +
+			"WHERE MigrationFailed <> 1 " +
+			"LIMIT ?;";
 	/** Returns the new "returnCount" positions that need to be migrated */
 	public LongArrayList getPositionsToMigrate(int returnCount)
 	{
-		LongArrayList list = new LongArrayList();
+		LongArrayList posList = new LongArrayList();
 		
-		List<Map<String, Object>> resultMapList = this.queryDictionary(
-				"select DhSectionPos " +
-						"from "+this.getTableName()+" " +
-						"WHERE MigrationFailed <> 1 " +
-						"LIMIT "+returnCount+";");
-		
-		for (Map<String, Object> resultMap : resultMapList)
+		try(PreparedStatement statement = this.createPreparedStatement(this.getMigrationPositionsSqlTemplate))
 		{
-			// returned in the format [sectionDetailLevel,x,z] IE [6,0,0]
-			long sectionPos = deserializeSectionPos((String) resultMap.get("DhSectionPos"));
-			list.add(sectionPos);
+			if (statement == null)
+			{
+				return posList;
+			}
+			
+			
+			int i = 1;
+			statement.setInt(i++, returnCount);
+			
+			try (ResultSet result = this.query(statement))
+			{
+				while (result != null && result.next())
+				{
+					String posString = result.getString("DhSectionPos");
+					// returned in the format [sectionDetailLevel,x,z] IE [6,0,0]
+					Long sectionPos = deserializeSectionPos(posString);
+					if (sectionPos != null)
+					{
+						posList.add(sectionPos.longValue());
+					}
+				}
+			}
+		}
+		catch (Exception e)
+		{
+			throw new RuntimeException(e);
 		}
 		
-		return list;
+		return posList;
 	}
 	
 	public void markMigrationFailed(long pos)
@@ -263,17 +279,38 @@ public class FullDataSourceV1Repo extends AbstractDhRepo<Long, FullDataSourceV1D
 		}
 	}
 	
+	private final String getUnusedPositionSqlTemplate =
+			"SELECT DhSectionPos " +
+			"FROM "+this.getTableName()+" " +
+			"WHERE DataDetailLevel <> 0 OR DataType <> 'CompleteFullDataSource' " +
+			"LIMIT ?";
 	/** Returns single quote surrounded {@link DhSectionPos} serailzed values */
-	public ArrayList<String> getUnusedDataSourcePositionStringList(int deleteCount)
+	public ArrayList<String> getUnusedDataSourcePositionStringList(int limit)
 	{
-		List<Map<String, Object>> deletePosResultMapList = this.queryDictionary(
-				"select DhSectionPos from "+this.getTableName()+" where DataDetailLevel <> 0 or DataType <> 'CompleteFullDataSource' limit "+deleteCount);
-		
 		ArrayList<String> deletePosList = new ArrayList<>();
-		for (Map<String, Object> deletePosMap : deletePosResultMapList)
+		
+		try(PreparedStatement statement = this.createPreparedStatement(this.getUnusedPositionSqlTemplate))
 		{
-			String posString = (String) deletePosMap.get("DhSectionPos");
-			deletePosList.add("'"+posString+"'");
+			if (statement == null)
+			{
+				return deletePosList;
+			}
+			
+			int i = 1;
+			statement.setInt(i++, limit);
+			
+			try (ResultSet result = this.query(statement))
+			{
+				while (result != null && result.next())
+				{
+					String posString = result.getString("DhSectionPos");
+					deletePosList.add("'"+posString+"'");
+				}
+			}
+		}
+		catch (SQLException e)
+		{
+			throw new RuntimeException(e);
 		}
 		
 		return deletePosList;
@@ -294,7 +331,6 @@ public class FullDataSourceV1Repo extends AbstractDhRepo<Long, FullDataSourceV1D
 	
 	private static String serializeSectionPos(long pos) { return "[" + DhSectionPos.getDetailLevel(pos) + ',' + DhSectionPos.getX(pos) + ',' + DhSectionPos.getZ(pos) + ']'; }
 	
-	
 	@Nullable
 	private static Long deserializeSectionPos(String value)
 	{
@@ -311,5 +347,7 @@ public class FullDataSourceV1Repo extends AbstractDhRepo<Long, FullDataSourceV1D
 		
 		return DhSectionPos.encode(Byte.parseByte(split[0]), Integer.parseInt(split[1]), Integer.parseInt(split[2]));
 	}
+	
+	
 	
 }

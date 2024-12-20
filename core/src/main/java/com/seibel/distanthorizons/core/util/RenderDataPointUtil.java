@@ -25,6 +25,8 @@ import com.seibel.distanthorizons.core.logging.SpamReducedLogger;
 import com.seibel.distanthorizons.core.dataObjects.render.columnViews.ColumnArrayView;
 import com.seibel.distanthorizons.core.dataObjects.render.columnViews.IColumnDataView;
 import com.seibel.distanthorizons.coreapi.ModInfo;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 
 /**
@@ -66,6 +68,8 @@ public class RenderDataPointUtil
 	// If there is a bug with color then it's probably caused by this.
 	
 	public static final boolean RUN_VALIDATION = ModInfo.IS_DEV_BUILD;
+	
+	private static final Logger LOGGER = LogManager.getLogger();
 	
 	
 	public final static int EMPTY_DATA = 0;
@@ -298,9 +302,11 @@ public class RenderDataPointUtil
 		}
 		else
 		{
-			RenderDataPointReducingList list = new RenderDataPointReducingList(sourceData);
-			list.reduce(output.verticalSize());
-			list.copyTo(output);
+			try (RenderDataPointReducingList list = new RenderDataPointReducingList(sourceData))
+			{
+				list.reduce(output.verticalSize());
+				list.copyTo(output);
+			}
 		}
 	}
 	

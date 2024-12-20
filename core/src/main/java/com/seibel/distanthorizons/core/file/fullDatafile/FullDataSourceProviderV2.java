@@ -21,7 +21,6 @@ package com.seibel.distanthorizons.core.file.fullDatafile;
 
 import com.seibel.distanthorizons.api.enums.config.EDhApiDataCompressionMode;
 import com.seibel.distanthorizons.core.api.internal.ClientApi;
-import com.seibel.distanthorizons.core.api.internal.SharedApi;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV1;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
@@ -41,7 +40,6 @@ import com.seibel.distanthorizons.core.sql.repo.FullDataSourceV2Repo;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
 import com.seibel.distanthorizons.core.util.objects.DataCorruptedException;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
-import com.seibel.distanthorizons.core.world.EWorldEnvironment;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.apache.logging.log4j.Logger;
@@ -181,10 +179,11 @@ public class FullDataSourceProviderV2
 	
 	@Override
 	protected FullDataSourceV2 createDataSourceFromDto(FullDataSourceV2DTO dto) throws InterruptedException, IOException, DataCorruptedException
-	{ return dto.createPooledDataSource(this.level.getLevelWrapper()); }
+	{ return dto.createDataSource(this.level.getLevelWrapper()); }
 	
 	@Override
-	protected FullDataSourceV2 makeEmptyDataSource(long pos) { return FullDataSourceV2.DATA_SOURCE_POOL.getPooledSource(pos, true); }
+	protected FullDataSourceV2 makeEmptyDataSource(long pos) 
+	{ return FullDataSourceV2.createEmpty(pos); }
 	
 	
 	
@@ -286,7 +285,7 @@ public class FullDataSourceProviderV2
 											}
 											catch (Exception e)
 											{
-												LOGGER.error("issue in update for parent pos: " + parentUpdatePos+ " Error: "+e.getMessage(), e);
+												LOGGER.error("Unexpected in update for parent pos: [" + DhSectionPos.toString(parentUpdatePos) + "] Error: [" + e.getMessage() + "].", e);
 											}
 											finally
 											{

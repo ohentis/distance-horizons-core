@@ -67,4 +67,10 @@ public class TestSingleKeyDto implements IBaseDTO<Integer>
 		return this.id + ", " + this.value + ", " + this.longValue + ", " + this.byteValue;
 	}
 	
+	@Override
+	public void close()
+	{ /* no closing needed */ }
+	
+	
+	
 }

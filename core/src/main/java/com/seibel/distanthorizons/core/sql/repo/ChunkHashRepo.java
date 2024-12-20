@@ -21,11 +21,14 @@ package com.seibel.distanthorizons.core.sql.repo;
 
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
+import com.seibel.distanthorizons.core.sql.dto.BeaconBeamDTO;
 import com.seibel.distanthorizons.core.sql.dto.ChunkHashDTO;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Map;
 
@@ -54,7 +57,15 @@ public class ChunkHashRepo extends AbstractDhRepo<DhChunkPos, ChunkHashDTO>
 	public String getTableName() { return "ChunkHash"; }
 	
 	@Override
-	public String createWhereStatement(DhChunkPos pos) { return "ChunkPosX = '"+ pos.getX() +"' AND ChunkPosZ = '"+ pos.getZ() +"'"; }
+	protected String CreateParameterizedWhereString() { return "ChunkPosX = ? AND ChunkPosZ = ?"; }
+	
+	@Override
+	protected int setPreparedStatementWhereClause(PreparedStatement statement, int index, DhChunkPos pos) throws SQLException
+	{
+		statement.setInt(index++, pos.getX());
+		statement.setInt(index++, pos.getZ());
+		return index;
+	}
 	
 	
 	
@@ -62,13 +73,14 @@ public class ChunkHashRepo extends AbstractDhRepo<DhChunkPos, ChunkHashDTO>
 	// repo required methods //
 	//=======================//
 	
-	@Override 
-	public ChunkHashDTO convertDictionaryToDto(Map<String, Object> objectMap) throws ClassCastException
+	@Override
+	@Nullable
+	public ChunkHashDTO convertResultSetToDto(ResultSet resultSet) throws ClassCastException, SQLException
 	{
-		int posX = (Integer) objectMap.get("ChunkPosX");
-		int posZ = (Integer) objectMap.get("ChunkPosZ");
+		int posX = resultSet.getInt("ChunkPosX");
+		int posZ = resultSet.getInt("ChunkPosZ");
 		
-		int chunkHash = (Integer) objectMap.get("ChunkHash");
+		int chunkHash = resultSet.getInt("ChunkHash");
 		
 		
 		ChunkHashDTO dto = new ChunkHashDTO(new DhChunkPos(posX, posZ), chunkHash);

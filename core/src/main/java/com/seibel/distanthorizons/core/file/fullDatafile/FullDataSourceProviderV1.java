@@ -121,9 +121,8 @@ public class FullDataSourceProviderV1<TDhLevel extends IDhLevel>
 	public FullDataSourceV1 get(Long pos)
 	{
 		FullDataSourceV1 dataSource = null;
-		try
+		try (FullDataSourceV1DTO dto = this.repo.getByKey(pos))
 		{
-			FullDataSourceV1DTO dto = this.repo.getByKey(pos);
 			if (dto != null)
 			{
 				// load from file

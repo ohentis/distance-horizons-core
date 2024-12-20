@@ -27,7 +27,6 @@ import com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.LodQuad
 import com.seibel.distanthorizons.core.dataObjects.transformers.FullDataToRenderDataTransformer;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.enums.EDhDirection;
-import com.seibel.distanthorizons.core.file.DataSourcePool;
 import com.seibel.distanthorizons.core.file.fullDatafile.FullDataSourceProviderV2;
 import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
@@ -632,7 +631,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	
 	/**
 	 * Used to keep track of whether a {@link ColumnRenderSource} {@link CompletableFuture}
-	 * is in use or not, and if not in use returns the data source to the {@link DataSourcePool}. <br> <br>
+	 * is in use or not. <br> <br>
 	 *
 	 * This reduces GC overhead by pooling shared {@link ColumnRenderSource}.
 	 */
@@ -687,7 +686,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 					ColumnRenderSource source = this.future.getNow(null);
 					if (source != null)
 					{
-						ColumnRenderSource.DATA_SOURCE_POOL.returnPooledDataSource(source);
+						source.close();
 					}
 				}
 			}

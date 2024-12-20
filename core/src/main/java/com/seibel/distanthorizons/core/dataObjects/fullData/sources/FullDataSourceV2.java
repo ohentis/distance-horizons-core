@@ -26,18 +26,16 @@ import com.seibel.distanthorizons.api.objects.data.IDhApiFullDataSource;
 import com.seibel.distanthorizons.core.dataObjects.fullData.FullDataPointIdMap;
 import com.seibel.distanthorizons.core.dataObjects.transformers.LodDataBuilder;
 import com.seibel.distanthorizons.core.file.AbstractDataSourceHandler;
-import com.seibel.distanthorizons.core.file.DataSourcePool;
 import com.seibel.distanthorizons.core.file.IDataSource;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.pooling.PhantomArrayListParent;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
-import com.seibel.distanthorizons.core.util.DhApiTerrainDataPointUtil;
-import com.seibel.distanthorizons.core.util.FullDataPointUtil;
-import com.seibel.distanthorizons.core.util.LodUtil;
-import com.seibel.distanthorizons.core.util.RenderDataPointUtil;
+import com.seibel.distanthorizons.core.util.*;
 import com.seibel.distanthorizons.core.util.objects.DataCorruptedException;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
+import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -53,7 +51,9 @@ import java.util.List;
  * @see FullDataPointUtil
  * @see FullDataSourceV1
  */
-public class FullDataSourceV2 implements IDataSource<IDhLevel>, IDhApiFullDataSource
+public class FullDataSourceV2 
+		extends PhantomArrayListParent
+		implements IDataSource<IDhLevel>, IDhApiFullDataSource
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	/** useful for debugging, but can slow down update operations quite a bit due to being called so often. */
@@ -72,13 +72,11 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>, IDhApiFullDataSo
 	
 	public static final byte DATA_FORMAT_VERSION = 1;
 	
-	public static final DataSourcePool<FullDataSourceV2, IDhLevel> DATA_SOURCE_POOL = new DataSourcePool<>(FullDataSourceV2::createEmpty, FullDataSourceV2::prepPooledDataSource);
-	
 	
 	
 	private int cachedHashCode = 0;
 	
-	private long pos;
+	private final long pos;
 	@Override
 	public Long getKey() { return this.pos; }
 	@Override
@@ -98,13 +96,13 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>, IDhApiFullDataSo
 	 *
 	 * @see EDhApiWorldGenerationStep
 	 */
-	public byte[] columnGenerationSteps;
+	public final ByteArrayList columnGenerationSteps;
 	/** 
 	 * stores what world compression was used for each column.
 	 *
 	 * @see EDhApiWorldCompressionMode
 	 */
-	public byte[] columnWorldCompressionMode;
+	public final ByteArrayList columnWorldCompressionMode;
 	
 	/** 
 	 * stored x/z, y <br>
@@ -112,12 +110,12 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>, IDhApiFullDataSo
 	 * TODO that ordering feels weird, it'd be nice to reverse that order, unfortunately
 	 *      there's something in the render data logic that expects this order so we can't change it right now
 	 */
-	public LongArrayList[] dataPoints;
+	public final LongArrayList[] dataPoints;
 	
 	public boolean isEmpty;
 	public boolean applyToParent = false;
 	
-	/** should only be used by methods exposed by the DH API */
+	/** should only be used by methods exposed via the DH API */
 	private boolean runApiChunkValidation = false;
 	
 	
@@ -125,34 +123,6 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>, IDhApiFullDataSo
 	//==============//
 	// constructors //
 	//==============//
-	
-	public static FullDataSourceV2 createEmpty(long pos) { return new FullDataSourceV2(pos); }
-	private FullDataSourceV2(long pos) 
-	{
-		this.pos = pos;
-		this.dataPoints = new LongArrayList[WIDTH * WIDTH];
-		this.mapping = new FullDataPointIdMap(pos);
-		this.isEmpty = true;
-		
-		// doesn't need to be populated since nothing has been generated yet
-		// the default value of all 0's is adequate
-		this.columnGenerationSteps = new byte[WIDTH * WIDTH];
-		this.columnWorldCompressionMode = new byte[WIDTH * WIDTH];
-	}
-	
-	public static FullDataSourceV2 createWithData(long pos, FullDataPointIdMap mapping, LongArrayList[] data, byte[] columnGenerationStep, byte[] columnWorldCompressionMode) { return new FullDataSourceV2(pos, mapping, data, columnGenerationStep, columnWorldCompressionMode); }
-	private FullDataSourceV2(long pos, FullDataPointIdMap mapping, LongArrayList[] data, byte[] columnGenerationSteps, byte[] columnWorldCompressionMode)
-	{
-		LodUtil.assertTrue(data.length == WIDTH * WIDTH);
-		
-		this.pos = pos;
-		this.dataPoints = data;
-		this.mapping = mapping;
-		this.isEmpty = false;
-		
-		this.columnGenerationSteps = columnGenerationSteps;
-		this.columnWorldCompressionMode = columnWorldCompressionMode;
-	}
 	
 	public static FullDataSourceV2 createFromChunk(IChunkWrapper chunkWrapper) { return LodDataBuilder.createFromChunk(chunkWrapper); }
 	
@@ -223,6 +193,84 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>, IDhApiFullDataSo
 		
 		FullDataSourceV2 fullDataSource = FullDataSourceV2.createWithData(legacyData.getPos(), legacyData.mapping, dataPoints, columnGenerationSteps, columnWorldCompressionMode);
 		return fullDataSource;
+	}
+	
+	public static FullDataSourceV2 createEmpty(long pos)
+	{
+		return new FullDataSourceV2(
+				pos, new FullDataPointIdMap(pos),
+				// data points, genSteps, and columnCompression are all null since
+				// nothing has been generated yet.
+				// Using the default value of all 0's is adequate
+				null,
+				null, null,
+				true);
+	}
+	
+	public static FullDataSourceV2 createWithData(long pos, FullDataPointIdMap mapping, LongArrayList[] data, byte[] columnGenerationStep, byte[] columnWorldCompressionMode)
+	{ return new FullDataSourceV2(pos, mapping, data, columnGenerationStep, columnWorldCompressionMode, false); }
+	
+	private FullDataSourceV2(
+			long pos,
+			FullDataPointIdMap mapping, @Nullable LongArrayList[] data,
+			@Nullable byte[] columnGenerationSteps, @Nullable byte[] columnWorldCompressionMode,
+			boolean empty)
+	{
+		super(2, 0, WIDTH * WIDTH);
+		
+		LodUtil.assertTrue(data == null || data.length == WIDTH * WIDTH);
+		
+		
+		
+		this.pos = pos;
+		this.mapping = mapping;
+		this.isEmpty = empty;
+		
+		
+		// pooled data arrays
+		this.dataPoints = new LongArrayList[WIDTH * WIDTH];
+		for (int i = 0; i < WIDTH * WIDTH; i++)
+		{
+			// size defaulting to 0 since we don't know how many datapoints
+			// will be in this column yet
+			this.dataPoints[i] = this.pooledArraysCheckout.getLongArray(i, 0);
+		}
+		
+		// use incoming data if present
+		if (data != null)
+		{
+			for (int i = 0; i < WIDTH * WIDTH; i++)
+			{
+				this.dataPoints[i].addAll(data[i]);
+			}
+		}
+		
+		// pooled generation step array
+		this.columnGenerationSteps = this.pooledArraysCheckout.getByteArray(0);
+		if (columnGenerationSteps != null)
+		{
+			this.columnGenerationSteps.addElements(0, columnGenerationSteps);
+		}
+		else
+		{
+			ListUtil.clearAndSetSize(this.columnGenerationSteps, WIDTH * WIDTH);
+		}
+		
+		// pooled column compression array
+		this.columnWorldCompressionMode = this.pooledArraysCheckout.getByteArray(1);
+		if (columnWorldCompressionMode != null)
+		{
+			this.columnWorldCompressionMode.addElements(0, columnWorldCompressionMode);
+		}
+		else
+		{
+			ListUtil.clearAndSetSize(this.columnWorldCompressionMode, WIDTH * WIDTH);
+		}
+		
+		
+		// the pooled arrays have all been set,
+		// the checkout object is no longer needed
+		this.pooledArraysCheckout = null;
 	}
 	
 	
@@ -300,8 +348,8 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>, IDhApiFullDataSo
 				LongArrayList inputDataArray = inputDataSource.dataPoints[index];
 				if (inputDataArray != null)
 				{
-					byte thisGenState = this.columnGenerationSteps[index];
-					byte inputGenState = inputDataSource.columnGenerationSteps[index];
+					byte thisGenState = this.columnGenerationSteps.getByte(index);
+					byte inputGenState = inputDataSource.columnGenerationSteps.getByte(index);
 					
 					if (inputGenState != EDhApiWorldGenerationStep.EMPTY.value
 						&& thisGenState <= inputGenState)
@@ -352,9 +400,9 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>, IDhApiFullDataSo
 						}
 						
 						
-						this.columnGenerationSteps[index] = inputGenState;
+						this.columnGenerationSteps.set(index, inputGenState);
 						// always overwrite the compression mode since we're replacing this column
-						this.columnWorldCompressionMode[index] = inputDataSource.columnWorldCompressionMode[index];
+						this.columnWorldCompressionMode.set(index, inputDataSource.columnWorldCompressionMode.getByte(index));
 						this.isEmpty = false;
 					}
 				}
@@ -397,12 +445,12 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>, IDhApiFullDataSo
 				
 				// world gen //
 				byte inputGenStep = determineMinWorldGenStepForTwoByTwoColumn(inputDataSource.columnGenerationSteps, x, z);
-				this.columnGenerationSteps[recipientIndex] = inputGenStep;
+				this.columnGenerationSteps.set(recipientIndex, inputGenStep);
 				
 				
 				// world compression //
 				byte worldCompressionMode = determineHighestWorldCompressionForTwoByTwoColumn(inputDataSource.columnWorldCompressionMode, x, z);
-				this.columnWorldCompressionMode[recipientIndex] = worldCompressionMode;
+				this.columnWorldCompressionMode.set(recipientIndex, worldCompressionMode);
 				
 				
 				
@@ -461,7 +509,7 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>, IDhApiFullDataSo
 	 * The minimum value is used because we don't want to accidentally record that
 	 * something was generated when it wasn't.
 	 */
-	private static byte determineMinWorldGenStepForTwoByTwoColumn(byte[] columnGenerationSteps, int relX, int relZ)
+	private static byte determineMinWorldGenStepForTwoByTwoColumn(ByteArrayList columnGenerationSteps, int relX, int relZ)
 	{
 		// TODO merge similar logic with determineHighestWorldCompressionForTwoByTwoColumn
 		byte minWorldGenStepValue = Byte.MAX_VALUE;
@@ -470,7 +518,7 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>, IDhApiFullDataSo
 			for (int z = 0; z < 2; z++)
 			{
 				int index = relativePosToIndex(x + relX, z + relZ);
-				byte worldGenStepValue = columnGenerationSteps[index];
+				byte worldGenStepValue = columnGenerationSteps.getByte(index);
 				minWorldGenStepValue = (byte) Math.min(minWorldGenStepValue, worldGenStepValue);
 			}
 		}
@@ -480,7 +528,7 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>, IDhApiFullDataSo
 	 * The minimum value is used because we don't want to accidentally record that
 	 * something was generated when it wasn't.
 	 */
-	private static byte determineHighestWorldCompressionForTwoByTwoColumn(byte[] columnCompressionMode, int relX, int relZ)
+	private static byte determineHighestWorldCompressionForTwoByTwoColumn(ByteArrayList columnCompressionMode, int relX, int relZ)
 	{
 		// TODO merge similar logic with determineMinWorldGenStepForTwoByTwoColumn
 		byte minWorldGenStepValue = Byte.MIN_VALUE;
@@ -489,7 +537,7 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>, IDhApiFullDataSo
 			for (int z = 0; z < 2; z++)
 			{
 				int index = relativePosToIndex(x + relX, z + relZ);
-				byte worldGenStepValue = columnCompressionMode[index];
+				byte worldGenStepValue = columnCompressionMode.getByte(index);
 				minWorldGenStepValue = (byte) Math.max(minWorldGenStepValue, worldGenStepValue);
 			}
 		}
@@ -855,37 +903,6 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>, IDhApiFullDataSo
 	
 	
 	
-	//=========//
-	// pooling //
-	//=========//
-	
-	private static void prepPooledDataSource(long pos, boolean clearData, FullDataSourceV2 dataSource)
-	{
-		dataSource.pos = pos;
-		
-		if (clearData)
-		{
-			dataSource.mapping.clear(pos);
-			
-			for (int i = 0; i < dataSource.dataPoints.length; i++)
-			{
-				if (dataSource.dataPoints[i] != null)
-				{
-					dataSource.dataPoints[i].clear();
-				}
-			}
-			
-			Arrays.fill(dataSource.columnGenerationSteps, (byte) 0);
-			Arrays.fill(dataSource.columnWorldCompressionMode, (byte) 0);
-		}
-		
-		// default to API validation disabled so it's opt-in
-		// to reduce the chance of performance loss with unnecessary validation
-		dataSource.setRunApiChunkValidation(false);
-	}
-	
-	
-	
 	//=====================//
 	// setters and getters //
 	//=====================//
@@ -899,15 +916,15 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>, IDhApiFullDataSo
 	public EDhApiWorldGenerationStep getWorldGenStepAtRelativePos(int relX, int relZ) 
 	{
 		int index = relativePosToIndex(relX, relZ);
-		return EDhApiWorldGenerationStep.fromValue(this.columnGenerationSteps[index]); 
+		return EDhApiWorldGenerationStep.fromValue(this.columnGenerationSteps.getByte(index)); 
 	}
 	
 	public void setSingleColumn(LongArrayList longArray, int relX, int relZ, EDhApiWorldGenerationStep worldGenStep, EDhApiWorldCompressionMode worldCompressionMode)
 	{
 		int index = relativePosToIndex(relX, relZ);
 		this.dataPoints[index] = longArray;
-		this.columnGenerationSteps[index] = worldGenStep.value;
-		this.columnWorldCompressionMode[index] = worldCompressionMode.value;
+		this.columnGenerationSteps.set(index, worldGenStep.value);
+		this.columnWorldCompressionMode.set(index, worldCompressionMode.value);
 		
 		
 		if (RUN_UPDATE_DEV_VALIDATION)
@@ -1002,8 +1019,8 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>, IDhApiFullDataSo
 	{
 		int result = DhSectionPos.hashCode(this.pos);
 		result = 31 * result + Arrays.deepHashCode(this.dataPoints);
-		result = 17 * result + Arrays.hashCode(this.columnGenerationSteps);
-		result = 43 * result + Arrays.hashCode(this.columnWorldCompressionMode);
+		result = 17 * result + this.columnGenerationSteps.hashCode();
+		result = 43 * result + this.columnWorldCompressionMode.hashCode();
 		
 		this.cachedHashCode = result;
 	}
@@ -1030,8 +1047,6 @@ public class FullDataSourceV2 implements IDataSource<IDhLevel>, IDhApiFullDataSo
 		}
 	}
 	
-	@Override
-	public void close() throws Exception
-	{ DATA_SOURCE_POOL.returnPooledDataSource(this); }
+	
 	
 }

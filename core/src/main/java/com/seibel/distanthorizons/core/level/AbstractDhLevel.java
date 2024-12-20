@@ -27,7 +27,6 @@ import com.seibel.distanthorizons.core.generation.DhLightingEngine;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
-import com.seibel.distanthorizons.core.render.renderer.generic.BeaconRenderHandler;
 import com.seibel.distanthorizons.core.render.renderer.generic.CloudRenderHandler;
 import com.seibel.distanthorizons.core.render.renderer.generic.GenericObjectRenderer;
 import com.seibel.distanthorizons.core.sql.dto.BeaconBeamDTO;
@@ -147,27 +146,30 @@ public abstract class AbstractDhLevel implements IDhLevel
 	@Override
 	public void updateChunkAsync(IChunkWrapper chunkWrapper, int chunkHash)
 	{
-		FullDataSourceV2 dataSource = FullDataSourceV2.createFromChunk(chunkWrapper);
-		if (dataSource == null)
+		// data source synchronously written to memory so it can be safely closed
+		try (FullDataSourceV2 dataSource = FullDataSourceV2.createFromChunk(chunkWrapper))
 		{
-			// This can happen if, among other reasons, a chunk save is superseded by a later event
-			return;
-		}
-		
-		
-		this.updatedChunkPosSetBySectionPos.compute(dataSource.getPos(), (dataSourcePos, chunkPosSet) -> 
-		{
-			if (chunkPosSet == null)
+			if (dataSource == null)
 			{
-				chunkPosSet = new HashSet<>();
+				// This can happen if, among other reasons, a chunk save is superseded by a later event
+				return;
 			}
-			chunkPosSet.add(chunkWrapper.getChunkPos());
-			return chunkPosSet;
-		});
-		this.updatedChunkHashesByChunkPos.put(chunkWrapper.getChunkPos(), chunkHash);
-		
-		// batch updates to reduce overhead when flying around or breaking/placing a lot of blocks in an area
-		this.delayedFullDataSourceSaveCache.queueDataSourceForUpdateAndSave(dataSource);
+			
+			
+			this.updatedChunkPosSetBySectionPos.compute(dataSource.getPos(), (dataSourcePos, chunkPosSet) ->
+			{
+				if (chunkPosSet == null)
+				{
+					chunkPosSet = new HashSet<>();
+				}
+				chunkPosSet.add(chunkWrapper.getChunkPos());
+				return chunkPosSet;
+			});
+			this.updatedChunkHashesByChunkPos.put(chunkWrapper.getChunkPos(), chunkHash);
+			
+			// batch updates to reduce overhead when flying around or breaking/placing a lot of blocks in an area
+			this.delayedFullDataSourceSaveCache.writeDataSourceToMemoryAndQueueSave(dataSource);
+		}
 	}
 	
 	private void onDataSourceSave(FullDataSourceV2 fullDataSource)

@@ -22,8 +22,10 @@ package com.seibel.distanthorizons.core.util;
 import com.google.common.annotations.VisibleForTesting;
 import com.seibel.distanthorizons.core.dataObjects.render.columnViews.ColumnArrayView;
 import com.seibel.distanthorizons.core.dataObjects.render.columnViews.IColumnDataView;
+import com.seibel.distanthorizons.core.pooling.PhantomArrayListParent;
 import com.seibel.distanthorizons.core.util.LodUtil.AssertFailureException;
-import it.unimi.dsi.fastutil.longs.LongArrays;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
+import it.unimi.dsi.fastutil.shorts.ShortArrayList;
 import it.unimi.dsi.fastutil.shorts.ShortArrays;
 
 /**
@@ -43,7 +45,7 @@ import it.unimi.dsi.fastutil.shorts.ShortArrays;
  *
  * @author Builderb0y
  */
-public class RenderDataPointReducingList 
+public class RenderDataPointReducingList extends PhantomArrayListParent
 {
 
 	/**
@@ -97,7 +99,7 @@ public class RenderDataPointReducingList
 	 */
 	private short lowest, highest, smallest, biggest;
 	private short sizeWithAir, sizeWithoutAir;
-	private final long[] links, data;
+	private final LongArrayList links, data;
 	/**
 	 * a temporary array to be used for sorting nodes.
 	 * the array is first populated such that every index
@@ -106,7 +108,7 @@ public class RenderDataPointReducingList
 	 * finally, the nodes are re-linked according
 	 * to the order of elements in this array.
 	 */
-	private final short[] sortingArray;
+	private final ShortArrayList sortingArray;
 	
 	
 	
@@ -116,6 +118,8 @@ public class RenderDataPointReducingList
 	
 	public RenderDataPointReducingList(IColumnDataView view) 
 	{
+		super(0, 1, 2);
+		
 		int size = view.size();
 		if (size == 0) 
 		{
@@ -123,10 +127,12 @@ public class RenderDataPointReducingList
 			this.setHighest(NULL);
 			this.setSmallest(NULL);
 			this.setBiggest(NULL);
-			this.links = LongArrays.EMPTY_ARRAY;
-			this.data = LongArrays.EMPTY_ARRAY;
-			this.sortingArray = ShortArrays.EMPTY_ARRAY;
+			this.links = this.pooledArraysCheckout.getLongArray(0);
+			this.data = this.pooledArraysCheckout.getLongArray(1);
+			this.sortingArray = this.pooledArraysCheckout.getShortArray(0);
 			if (ASSERTS) this.checkLinks();
+			
+			this.pooledArraysCheckout = null;
 			
 			return;
 		}
@@ -138,10 +144,13 @@ public class RenderDataPointReducingList
 		// We will use this array for sorting the nodes,
 		// first by lowest-to-highest, then by smallest-to-biggest.
 		int arrayCapacity = (size << 1) - 1;
-		this.sortingArray = new short[arrayCapacity];
-		this.links = new long[arrayCapacity];
-		java.util.Arrays.fill(this.links, DEFAULT_LINKS);
-		this.data = new long[arrayCapacity];
+		this.sortingArray = this.pooledArraysCheckout.getShortArray(0, arrayCapacity);
+		this.links = this.pooledArraysCheckout.getLongArray(0, arrayCapacity);
+		java.util.Arrays.fill(this.links.elements(), DEFAULT_LINKS);
+		this.data = this.pooledArraysCheckout.getLongArray(1, arrayCapacity);
+		
+		this.pooledArraysCheckout = null;
+		
 		int sizeWithoutAir = 0;
 		for (int index = 0; index < size; index++) 
 		{
@@ -219,8 +228,8 @@ public class RenderDataPointReducingList
 				throw new IllegalArgumentException(RenderDataPointUtil.toString(lowerData) + " overlaps with " + RenderDataPointUtil.toString(higherData));
 			}
 		}
-		this.lowest  = this.sortingArray[0];
-		this.highest = this.sortingArray[sizeWithoutAir - 1];
+		this.lowest  = this.sortingArray.getShort(0);
+		this.highest = this.sortingArray.getShort(sizeWithoutAir - 1);
 
 		// now sort by size.
 		this.sortBySize(sizeWithAir);
@@ -232,8 +241,8 @@ public class RenderDataPointReducingList
 			this.setSmaller(biggerIndex, smallerIndex);
 		}
 		
-		this.smallest = this.sortingArray[0];
-		this.biggest = this.sortingArray[sizeWithAir - 1];
+		this.smallest = this.sortingArray.getShort(0);
+		this.biggest = this.sortingArray.getShort(sizeWithAir - 1);
 
 		this.setSizeWithAir(sizeWithAir);
 		this.setSizeWithoutAir(sizeWithoutAir);
@@ -389,7 +398,7 @@ public class RenderDataPointReducingList
 		else this.setBiggest(smaller);
 		
 		this.setData(index, DEFAUlT_DATA);
-		this.links[index] = DEFAULT_LINKS;
+		this.links.set(index, DEFAULT_LINKS);
 		this.sizeWithAir--;
 		
 		if (isAlphaVisible(alpha)) this.sizeWithoutAir--;
@@ -415,11 +424,11 @@ public class RenderDataPointReducingList
 		}
 		
 		
-		long[] datas = this.data;
+		LongArrayList datas = this.data;
 		int writeIndex = 0;
 		for (int readIndex = this.getLowest(); readIndex != NULL; readIndex = this.getHigher(readIndex)) 
 		{
-			if (datas[readIndex] != DEFAUlT_DATA) 
+			if (datas.getLong(readIndex) != DEFAUlT_DATA) 
 			{
 				this.setSortingIndex(writeIndex++, readIndex);
 			}
@@ -434,8 +443,8 @@ public class RenderDataPointReducingList
 			this.setBigger(smaller, bigger);
 		}
 		
-		this.smallest = this.sortingArray[0];
-		this.biggest = this.sortingArray[writeIndex - 1];
+		this.smallest = this.sortingArray.getShort(0);
+		this.biggest = this.sortingArray.getShort(writeIndex - 1);
 		this.setSmaller(this.getSmallest(), NULL);
 		this.setBigger(this.getBiggest(), NULL);
 	}
@@ -447,7 +456,7 @@ public class RenderDataPointReducingList
 	@VisibleForTesting
 	public void sortBySize(int size) 
 	{
-		short[] array = this.sortingArray;
+		ShortArrayList array = this.sortingArray;
 		it.unimi.dsi.fastutil.Arrays.quickSort(
 			0,
 			size,
@@ -462,7 +471,7 @@ public class RenderDataPointReducingList
 			// swapper
 			(int index1, int index2) -> 
 			{
-				ShortArrays.swap(array, index1, index2);
+				ShortArrays.swap(array.elements(), index1, index2);
 			}
 		);
 	}
@@ -474,7 +483,7 @@ public class RenderDataPointReducingList
 	@VisibleForTesting
 	public void sortByPosition(int size) 
 	{
-		short[] array = this.sortingArray;
+		ShortArrayList array = this.sortingArray;
 		it.unimi.dsi.fastutil.Arrays.quickSort(
 			0,
 			size,
@@ -489,7 +498,7 @@ public class RenderDataPointReducingList
 			// swapper
 			(int index1, int index2) -> 
 			{
-				ShortArrays.swap(array, index1, index2);
+				ShortArrays.swap(array.elements(), index1, index2);
 			}
 		);
 	}
@@ -913,15 +922,15 @@ public class RenderDataPointReducingList
 	public int getSizeWithAir() { return Short.toUnsignedInt(this.sizeWithAir); }
 	public int getSizeWithoutAir() { return Short.toUnsignedInt(this.sizeWithoutAir); }
 	
-	public int getSortingIndex(int index) { return Short.toUnsignedInt(this.sortingArray[index]); }
+	public int getSortingIndex(int index) { return Short.toUnsignedInt(this.sortingArray.getShort(index)); }
 	
-	public int getLower(int index) { return ((int) (this.links[index] >>> LOWER_SHIFT)) & LINK_MASK; }
-	public int getHigher(int index) { return ((int) (this.links[index] >>> HIGHER_SHIFT)) & LINK_MASK; }
+	public int getLower(int index) { return ((int) (this.links.getLong(index) >>> LOWER_SHIFT)) & LINK_MASK; }
+	public int getHigher(int index) { return ((int) (this.links.getLong(index) >>> HIGHER_SHIFT)) & LINK_MASK; }
 	
-	public int getSmaller(int index) { return ((int) (this.links[index] >>> SMALLER_SHIFT)) & LINK_MASK; }
-	public int getBigger(int index) { return ((int) (this.links[index] >>> BIGGER_SHIFT)) & LINK_MASK; }
+	public int getSmaller(int index) { return ((int) (this.links.getLong(index) >>> SMALLER_SHIFT)) & LINK_MASK; }
+	public int getBigger(int index) { return ((int) (this.links.getLong(index) >>> BIGGER_SHIFT)) & LINK_MASK; }
 	
-	public long getData(int index) { return this.data[index]; }
+	public long getData(int index) { return this.data.getLong(index); }
 	
 	public int getMinY(int index) { return RenderDataPointUtil.getYMin(this.getData(index)); }
 	public int getMaxY(int index) { return RenderDataPointUtil.getYMax(this.getData(index)); }
@@ -955,62 +964,62 @@ public class RenderDataPointReducingList
 	public void setSizeWithAir(int sizeWithAir) { this.sizeWithAir = (short)(sizeWithAir); }
 	public void setSizeWithoutAir(int sizeWithoutAir) { this.sizeWithoutAir = (short)(sizeWithoutAir); }
 
-	public void setSortingIndex(int index, int to) { this.sortingArray[index] = (short)(to); }
+	public void setSortingIndex(int index, int to) { this.sortingArray.set(index, (short)to); }
 
 	public void setLower(int index, int lowerIndex) 
 	{
-		this.links[index] = (this.links[index] & ~(((long)(LINK_MASK)) << LOWER_SHIFT)) | (((long)(lowerIndex & LINK_MASK)) << LOWER_SHIFT);
+		this.links.set(index, (this.links.getLong(index) & ~(((long)(LINK_MASK)) << LOWER_SHIFT)) | (((long)(lowerIndex & LINK_MASK)) << LOWER_SHIFT));
 	}
 	public void setHigher(int index, int higherIndex) 
 	{
-		this.links[index] = (this.links[index] & ~(((long)(LINK_MASK)) << HIGHER_SHIFT)) | (((long)(higherIndex & LINK_MASK)) << HIGHER_SHIFT);
+		this.links.set(index, (this.links.getLong(index) & ~(((long)(LINK_MASK)) << HIGHER_SHIFT)) | (((long)(higherIndex & LINK_MASK)) << HIGHER_SHIFT));
 	}
 
 	public void setSmaller(int index, int smallerIndex)
 	{
-		this.links[index] = (this.links[index] & ~(((long)(LINK_MASK)) << SMALLER_SHIFT)) | (((long)(smallerIndex & LINK_MASK)) << SMALLER_SHIFT);
+		this.links.set(index, (this.links.getLong(index) & ~(((long)(LINK_MASK)) << SMALLER_SHIFT)) | (((long)(smallerIndex & LINK_MASK)) << SMALLER_SHIFT));
 	}
 	public void setBigger(int index, int biggerIndex) 
 	{
-		this.links[index] = (this.links[index] & ~(((long)(LINK_MASK)) << BIGGER_SHIFT)) | (((long)(biggerIndex & LINK_MASK)) << BIGGER_SHIFT);
+		this.links.set(index, (this.links.getLong(index) & ~(((long)(LINK_MASK)) << BIGGER_SHIFT)) | (((long)(biggerIndex & LINK_MASK)) << BIGGER_SHIFT));
 	}
 
-	public void setData(int index, long data) { this.data[index] = data; }
+	public void setData(int index, long data) { this.data.set(index, data); }
 
 	public void setMinY(int index, int minY) 
 	{
-		this.data[index] = (this.data[index] & ~RenderDataPointUtil.DEPTH_SHIFTED_MASK) | ((minY & RenderDataPointUtil.DEPTH_MASK) << RenderDataPointUtil.DEPTH_SHIFT);
+		this.data.set(index, (this.data.getLong(index) & ~RenderDataPointUtil.DEPTH_SHIFTED_MASK) | ((minY & RenderDataPointUtil.DEPTH_MASK) << RenderDataPointUtil.DEPTH_SHIFT));
 	}
 	public void setMaxY(int index, int maxY) 
 	{
-		this.data[index] = (this.data[index] & ~RenderDataPointUtil.HEIGHT_SHIFTED_MASK) | ((maxY & RenderDataPointUtil.HEIGHT_MASK) << RenderDataPointUtil.HEIGHT_SHIFT);
+		this.data.set(index, (this.data.getLong(index) & ~RenderDataPointUtil.HEIGHT_SHIFTED_MASK) | ((maxY & RenderDataPointUtil.HEIGHT_MASK) << RenderDataPointUtil.HEIGHT_SHIFT));
 	}
 
 	public void setRed(int index, int red) 
 	{
-		this.data[index] = (this.data[index] & ~(RenderDataPointUtil.RED_MASK << RenderDataPointUtil.RED_SHIFT)) | ((red & RenderDataPointUtil.RED_MASK) << RenderDataPointUtil.RED_SHIFT);
+		this.data.set(index, (this.data.getLong(index) & ~(RenderDataPointUtil.RED_MASK << RenderDataPointUtil.RED_SHIFT)) | ((red & RenderDataPointUtil.RED_MASK) << RenderDataPointUtil.RED_SHIFT));
 	}
 	public void setGreen(int index, int green) 
 	{
-		this.data[index] = (this.data[index] & ~(RenderDataPointUtil.GREEN_MASK << RenderDataPointUtil.GREEN_SHIFT)) | ((green & RenderDataPointUtil.GREEN_MASK) << RenderDataPointUtil.GREEN_SHIFT);
+		this.data.set(index, (this.data.getLong(index) & ~(RenderDataPointUtil.GREEN_MASK << RenderDataPointUtil.GREEN_SHIFT)) | ((green & RenderDataPointUtil.GREEN_MASK) << RenderDataPointUtil.GREEN_SHIFT));
 	}
 
 	public void setBlue(int index, int blue) {
-		this.data[index] = (this.data[index] & ~(RenderDataPointUtil.BLUE_MASK << RenderDataPointUtil.BLUE_SHIFT)) | ((blue & RenderDataPointUtil.BLUE_MASK) << RenderDataPointUtil.BLUE_SHIFT);
+		this.data.set(index, (this.data.getLong(index) & ~(RenderDataPointUtil.BLUE_MASK << RenderDataPointUtil.BLUE_SHIFT)) | ((blue & RenderDataPointUtil.BLUE_MASK) << RenderDataPointUtil.BLUE_SHIFT));
 	}
 	public void setAlpha(int index, int alpha) 
 	{
 		alpha >>>= RenderDataPointUtil.ALPHA_DOWNSIZE_SHIFT;
-		this.data[index] = (this.data[index] & ~(RenderDataPointUtil.ALPHA_MASK << RenderDataPointUtil.ALPHA_SHIFT)) | ((alpha & RenderDataPointUtil.ALPHA_MASK) << RenderDataPointUtil.ALPHA_SHIFT);
+		this.data.set(index, (this.data.getLong(index) & ~(RenderDataPointUtil.ALPHA_MASK << RenderDataPointUtil.ALPHA_SHIFT)) | ((alpha & RenderDataPointUtil.ALPHA_MASK) << RenderDataPointUtil.ALPHA_SHIFT));
 	}
 	
 	public void setBlockLight(int index, int blockLight) 
 	{
-		this.data[index] = (this.data[index] & ~(RenderDataPointUtil.BLOCK_LIGHT_MASK << RenderDataPointUtil.BLOCK_LIGHT_SHIFT)) | ((blockLight & RenderDataPointUtil.BLOCK_LIGHT_MASK) << RenderDataPointUtil.BLOCK_LIGHT_SHIFT);
+		this.data.set(index, (this.data.getLong(index) & ~(RenderDataPointUtil.BLOCK_LIGHT_MASK << RenderDataPointUtil.BLOCK_LIGHT_SHIFT)) | ((blockLight & RenderDataPointUtil.BLOCK_LIGHT_MASK) << RenderDataPointUtil.BLOCK_LIGHT_SHIFT));
 	}
 	public void setSkyLight(int index, int skyLight) 
 	{
-		this.data[index] = (this.data[index] & ~(RenderDataPointUtil.SKY_LIGHT_MASK << RenderDataPointUtil.SKY_LIGHT_SHIFT)) | ((skyLight & RenderDataPointUtil.SKY_LIGHT_MASK) << RenderDataPointUtil.SKY_LIGHT_SHIFT);
+		this.data.set(index, (this.data.getLong(index) & ~(RenderDataPointUtil.SKY_LIGHT_MASK << RenderDataPointUtil.SKY_LIGHT_SHIFT)) | ((skyLight & RenderDataPointUtil.SKY_LIGHT_MASK) << RenderDataPointUtil.SKY_LIGHT_SHIFT));
 	}
 	
 	

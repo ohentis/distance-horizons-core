@@ -45,10 +45,11 @@ public class FullDataPayload implements INetworkObject, AutoCloseable
 		try
 		{
 			EDhApiDataCompressionMode compressionMode = Config.Common.LodBuilding.dataCompression.get();
-			FullDataSourceV2DTO dataSourceDto = FullDataSourceV2DTO.CreateFromDataSource(fullDataSource, compressionMode);
-			
-			this.dtoBuffer = ByteBufAllocator.DEFAULT.buffer();
-			dataSourceDto.encode(this.dtoBuffer);
+			try (FullDataSourceV2DTO dataSourceDto = FullDataSourceV2DTO.CreateFromDataSource(fullDataSource, compressionMode))
+			{
+				this.dtoBuffer = ByteBufAllocator.DEFAULT.buffer();
+				dataSourceDto.encode(this.dtoBuffer);
+			}
 		}
 		catch (IOException e)
 		{

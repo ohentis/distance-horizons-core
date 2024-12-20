@@ -434,6 +434,7 @@ public class DhSectionPos
 	// Base methods //
 	//==============//
 	
+	/** Example: "6*1,-3" */
 	public static String toString(long pos) { return getDetailLevel(pos) + "*" + getX(pos) + "," + getZ(pos); }
 	public static int hashCode(long pos) { return Long.hashCode(pos); }
 	

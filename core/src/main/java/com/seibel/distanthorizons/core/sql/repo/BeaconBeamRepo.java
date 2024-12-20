@@ -26,10 +26,12 @@ import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.sql.dto.BeaconBeamDTO;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.Nullable;
 
 import java.awt.*;
 import java.io.File;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -60,7 +62,16 @@ public class BeaconBeamRepo extends AbstractDhRepo<DhBlockPos, BeaconBeamDTO>
 	public String getTableName() { return "BeaconBeam"; }
 	
 	@Override
-	public String createWhereStatement(DhBlockPos pos) { return "BlockPosX = "+ pos.getX() +" AND BlockPosY = "+ pos.getY() +" AND BlockPosZ = "+ pos.getZ(); }
+	protected String CreateParameterizedWhereString() { return "BlockPosX = ? AND BlockPosY = ? AND BlockPosZ = ?"; }
+	
+	@Override
+	protected int setPreparedStatementWhereClause(PreparedStatement statement, int index, DhBlockPos pos) throws SQLException
+	{
+		statement.setInt(index++, pos.getX());
+		statement.setInt(index++, pos.getY());
+		statement.setInt(index++, pos.getZ());
+		return index;
+	}
 	
 	
 	
@@ -69,15 +80,16 @@ public class BeaconBeamRepo extends AbstractDhRepo<DhBlockPos, BeaconBeamDTO>
 	//=======================//
 	
 	@Override 
-	public BeaconBeamDTO convertDictionaryToDto(Map<String, Object> objectMap) throws ClassCastException
+	@Nullable
+	public BeaconBeamDTO convertResultSetToDto(ResultSet resultSet) throws ClassCastException, SQLException
 	{
-		int posX = (Integer) objectMap.get("BlockPosX");
-		int posY = (Integer) objectMap.get("BlockPosY");
-		int posZ = (Integer) objectMap.get("BlockPosZ");
+		int posX = resultSet.getInt("BlockPosX");
+		int posY = resultSet.getInt("BlockPosY");
+		int posZ = resultSet.getInt("BlockPosZ");
 		
-		int red = (Integer) objectMap.get("ColorR");
-		int green = (Integer) objectMap.get("ColorG");
-		int blue = (Integer) objectMap.get("ColorB");
+		int red = resultSet.getInt("ColorR");
+		int green = resultSet.getInt("ColorG");
+		int blue = resultSet.getInt("ColorB");
 		
 		
 		BeaconBeamDTO dto = new BeaconBeamDTO(new DhBlockPos(posX, posY, posZ), new Color(red, green, blue));
@@ -98,18 +110,23 @@ public class BeaconBeamRepo extends AbstractDhRepo<DhBlockPos, BeaconBeamDTO>
 			"    ?, ? \n" +
 			");";
 		PreparedStatement statement = this.createPreparedStatement(sql);
+		if (statement == null)
+		{
+			return null;
+		}
+		
 		
 		int i = 1;
-		statement.setObject(i++, dto.blockPos.getX());
-		statement.setObject(i++, dto.blockPos.getY());
-		statement.setObject(i++, dto.blockPos.getZ());
+		statement.setInt(i++, dto.blockPos.getX());
+		statement.setInt(i++, dto.blockPos.getY());
+		statement.setInt(i++, dto.blockPos.getZ());
 		
-		statement.setObject(i++, dto.color.getRed());
-		statement.setObject(i++, dto.color.getGreen());
-		statement.setObject(i++, dto.color.getBlue());
+		statement.setInt(i++, dto.color.getRed());
+		statement.setInt(i++, dto.color.getGreen());
+		statement.setInt(i++, dto.color.getBlue());
 		
-		statement.setObject(i++, System.currentTimeMillis()); // last modified unix time
-		statement.setObject(i++, System.currentTimeMillis()); // created unix time
+		statement.setLong(i++, System.currentTimeMillis()); // last modified unix time
+		statement.setLong(i++, System.currentTimeMillis()); // created unix time
 		
 		return statement;
 	}
@@ -124,17 +141,21 @@ public class BeaconBeamRepo extends AbstractDhRepo<DhBlockPos, BeaconBeamDTO>
 			"    LastModifiedUnixDateTime = ? \n" +
 			"WHERE BlockPosX = ? AND BlockPosY = ? AND BlockPosZ = ?";
 		PreparedStatement statement = this.createPreparedStatement(sql);
+		if (statement == null)
+		{
+			return null;
+		}
 		
 		int i = 1;
-		statement.setObject(i++, dto.color.getRed());
-		statement.setObject(i++, dto.color.getGreen());
-		statement.setObject(i++, dto.color.getBlue());
+		statement.setInt(i++, dto.color.getRed());
+		statement.setInt(i++, dto.color.getGreen());
+		statement.setInt(i++, dto.color.getBlue());
 		
-		statement.setObject(i++, System.currentTimeMillis()); // last modified unix time
+		statement.setLong(i++, System.currentTimeMillis()); // last modified unix time
 		
-		statement.setObject(i++, dto.blockPos.getX());
-		statement.setObject(i++, dto.blockPos.getY());
-		statement.setObject(i++, dto.blockPos.getZ());
+		statement.setInt(i++, dto.blockPos.getX());
+		statement.setInt(i++, dto.blockPos.getY());
+		statement.setInt(i++, dto.blockPos.getZ());
 		
 		return statement;
 	}
@@ -171,22 +192,44 @@ public class BeaconBeamRepo extends AbstractDhRepo<DhBlockPos, BeaconBeamDTO>
 			);
 	}
 	
+	private final String getAllBeamsInRangeTemplate =
+			"SELECT * " +
+			"FROM "+this.getTableName()+" " +
+			"WHERE " +
+			"? <= BlockPosX AND BlockPosX <= ? AND " +
+			"? <= BlockPosZ AND BlockPosZ <= ?";
 	public List<BeaconBeamDTO> getAllBeamsInBlockPosRange(
 			int minBlockX, int minBlockZ,
 			int maxBlockX, int maxBlockZ
 		)
 	{
-		List<Map<String, Object>> objectMapList = this.queryDictionary(
-				"SELECT * " +
-						"FROM "+this.getTableName()+" " +
-						"WHERE " +
-						minBlockX+" <= BlockPosX AND BlockPosX <= "+maxBlockX+" AND " +
-						minBlockZ+" <= BlockPosZ AND BlockPosZ <= "+maxBlockZ);
-		
 		ArrayList<BeaconBeamDTO> beamList = new ArrayList<>();
-		for (Map<String, Object> objectMap : objectMapList)
+		
+		try(PreparedStatement statement = this.createPreparedStatement(this.getAllBeamsInRangeTemplate))
 		{
-			beamList.add(this.convertDictionaryToDto(objectMap));
+			if(statement == null)
+			{
+				return beamList;
+			}
+			
+			int i = 1;
+			statement.setInt(i++, minBlockX);
+			statement.setInt(i++, minBlockZ);
+			statement.setInt(i++, maxBlockX);
+			statement.setInt(i++, maxBlockZ);
+			
+			
+			try (ResultSet result = this.query(statement))
+			{
+				while (result != null && result.next())
+				{
+					beamList.add(this.convertResultSetToDto(result));
+				}
+			}
+		}
+		catch (Exception e)
+		{
+			throw new RuntimeException(e);
 		}
 		
 		return beamList;

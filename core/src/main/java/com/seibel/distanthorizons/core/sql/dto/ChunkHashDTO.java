@@ -26,6 +26,7 @@ import com.seibel.distanthorizons.core.dataObjects.fullData.FullDataPointIdMap;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos;
 import com.seibel.distanthorizons.core.util.FullDataPointUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.objects.DataCorruptedException;
@@ -68,5 +69,11 @@ public class ChunkHashDTO implements IBaseDTO<DhChunkPos>
 	
 	@Override 
 	public DhChunkPos getKey() { return this.pos; }
+	
+	@Override
+	public void close()
+	{ /* no closing needed */ }
+	
+	
 	
 }

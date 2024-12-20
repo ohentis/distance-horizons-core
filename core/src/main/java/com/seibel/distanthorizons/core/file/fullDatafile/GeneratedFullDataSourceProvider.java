@@ -29,6 +29,8 @@ import com.seibel.distanthorizons.core.generation.tasks.IWorldGenTaskTracker;
 import com.seibel.distanthorizons.core.generation.tasks.WorldGenResult;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.pooling.PhantomArrayListCheckout;
+import com.seibel.distanthorizons.core.pooling.PhantomArrayListPool;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
@@ -36,6 +38,7 @@ import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.coreapi.util.BitShiftUtil;
+import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -288,10 +291,10 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 	public int getUnsavedDataSourceCount() { return this.delayedFullDataSourceSaveCache.getUnsavedCount(); }
 	
 	
-	public boolean isFullyGenerated(byte[] columnGenerationSteps)
+	public boolean isFullyGenerated(ByteArrayList columnGenerationSteps)
 	{
-		return IntStream.range(0, columnGenerationSteps.length)
-				.noneMatch(i -> columnGenerationSteps[i] == EDhApiWorldGenerationStep.EMPTY.value);
+		return IntStream.range(0, columnGenerationSteps.size())
+				.noneMatch(i -> columnGenerationSteps.getByte(i) == EDhApiWorldGenerationStep.EMPTY.value);
 	}
 	
 	@Override
@@ -307,25 +310,28 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 		// don't check any child positions if this position is already fully generated 
 		if (this.repo.existsWithKey(pos))
 		{
-			byte[] columnGenerationSteps = this.repo.getColumnGenerationStepForPos(pos);
-			// shouldn't happen, but just in case
-			if (columnGenerationSteps != null)
+			try(PhantomArrayListCheckout checkout = PhantomArrayListPool.INSTANCE.checkoutArrays(1, 0, 0))
 			{
-				boolean positionFullyGenerated = true;
-				
-				// check if any positions are ungenerated
-				for (int i = 0; i < columnGenerationSteps.length; i++)
+				ByteArrayList columnGenStepArray = checkout.getByteArray(0);
+				this.repo.getColumnGenerationStepForPos(pos, columnGenStepArray);
+				if (!columnGenStepArray.isEmpty())
 				{
-					if (columnGenerationSteps[i] == EDhApiWorldGenerationStep.EMPTY.value)
+					boolean positionFullyGenerated = true;
+					
+					// check if any positions are ungenerated
+					for (int i = 0; i < columnGenStepArray.size(); i++)
 					{
-						positionFullyGenerated = false;
-						break;
+						if (columnGenStepArray.getByte(i) == EDhApiWorldGenerationStep.EMPTY.value)
+						{
+							positionFullyGenerated = false;
+							break;
+						}
 					}
-				}
-				
-				if (positionFullyGenerated)
-				{
-					return new LongArrayList();
+					
+					if (positionFullyGenerated)
+					{
+						return new LongArrayList();
+					}
 				}
 			}
 		}
@@ -349,36 +355,42 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 			}
 			else
 			{
-				byte[] columnGenerationSteps = this.repo.getColumnGenerationStepForPos(genPos);
-				if (columnGenerationSteps == null)
-				{
-					// shouldn't happen, but just in case
-					return;
-				}
-				
 				
 				EDhApiWorldGenerationStep currentMinWorldGenStep = EDhApiWorldGenerationStep.LIGHT;
-				checkWorldGenLoop:
-				for (int x = 0; x < FullDataSourceV2.WIDTH; x++)
+				try(PhantomArrayListCheckout checkout = PhantomArrayListPool.INSTANCE.checkoutArrays(1, 0, 0))
 				{
-					for (int z = 0; z < FullDataSourceV2.WIDTH; z++)
+					ByteArrayList columnGenerationSteps = checkout.getByteArray(0);
+					this.repo.getColumnGenerationStepForPos(genPos, columnGenerationSteps);
+					if (columnGenerationSteps.isEmpty())
 					{
-						int index = FullDataSourceV2.relativePosToIndex(x, z);
-						byte genStepValue = columnGenerationSteps[index];
-						
-						if (genStepValue < currentMinWorldGenStep.value)
+						// shouldn't happen, but just in case
+						return;
+					}
+					
+					
+					
+					checkWorldGenLoop:
+					for (int x = 0; x < FullDataSourceV2.WIDTH; x++)
+					{
+						for (int z = 0; z < FullDataSourceV2.WIDTH; z++)
 						{
-							EDhApiWorldGenerationStep newWorldGenStep = EDhApiWorldGenerationStep.fromValue(genStepValue);
-							if (newWorldGenStep != null && newWorldGenStep.value < currentMinWorldGenStep.value)
+							int index = FullDataSourceV2.relativePosToIndex(x, z);
+							byte genStepValue = columnGenerationSteps.getByte(index);
+							
+							if (genStepValue < currentMinWorldGenStep.value)
 							{
-								currentMinWorldGenStep = newWorldGenStep;
+								EDhApiWorldGenerationStep newWorldGenStep = EDhApiWorldGenerationStep.fromValue(genStepValue);
+								if (newWorldGenStep != null && newWorldGenStep.value < currentMinWorldGenStep.value)
+								{
+									currentMinWorldGenStep = newWorldGenStep;
+								}
 							}
-						}
-						
-						if (currentMinWorldGenStep == EDhApiWorldGenerationStep.EMPTY)
-						{
-							// queue the task
-							break checkWorldGenLoop;
+							
+							if (currentMinWorldGenStep == EDhApiWorldGenerationStep.EMPTY)
+							{
+								// queue the task
+								break checkWorldGenLoop;
+							}
 						}
 					}
 				}
@@ -447,7 +459,7 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 		{
 			return (dataSource) ->
 			{
-				GeneratedFullDataSourceProvider.this.delayedFullDataSourceSaveCache.queueDataSourceForUpdateAndSave(dataSource);
+				GeneratedFullDataSourceProvider.this.delayedFullDataSourceSaveCache.writeDataSourceToMemoryAndQueueSave(dataSource);
 			};
 		}
 		

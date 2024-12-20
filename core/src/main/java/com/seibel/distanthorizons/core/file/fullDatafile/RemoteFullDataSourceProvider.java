@@ -25,7 +25,9 @@ import com.seibel.distanthorizons.core.file.structure.ISaveStructure;
 import com.seibel.distanthorizons.core.generation.RemoteWorldRetrievalQueue;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.level.WorldGenModule;
+import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.multiplayer.client.SyncOnLoadRequestQueue;
+import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
@@ -39,6 +41,8 @@ import java.util.concurrent.TimeUnit;
  */
 public class RemoteFullDataSourceProvider extends GeneratedFullDataSourceProvider
 {
+	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	
 	@Nullable
 	private final SyncOnLoadRequestQueue syncOnLoadRequestQueue;
 	private final Set<Long> visitedPositions = Collections.newSetFromMap(CacheBuilder.newBuilder()
@@ -95,7 +99,7 @@ public class RemoteFullDataSourceProvider extends GeneratedFullDataSourceProvide
 		Long timestamp = this.getTimestampForPos(pos);
 		if (timestamp != null)
 		{
-			this.syncOnLoadRequestQueue.submitRequest(pos, timestamp, this.delayedFullDataSourceSaveCache::queueDataSourceForUpdateAndSave);
+			this.syncOnLoadRequestQueue.submitRequest(pos, timestamp, this.delayedFullDataSourceSaveCache::writeDataSourceToMemoryAndQueueSave);
 		}
 		
 		return super.get(pos);

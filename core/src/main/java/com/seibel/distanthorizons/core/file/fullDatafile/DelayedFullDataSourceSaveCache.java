@@ -45,14 +45,18 @@ public class DelayedFullDataSourceSaveCache
 	// update queue //
 	//==============//
 	
-	public void queueDataSourceForUpdateAndSave(FullDataSourceV2 inputDataSource)
+	/**
+	 * Writing into memory is done synchronously so inputDataSource can 
+	 * be closed after this method finishes.
+	 */
+	public void writeDataSourceToMemoryAndQueueSave(FullDataSourceV2 inputDataSource)
 	{
 		long dataSourcePos = inputDataSource.getPos();
 		this.dataSourceByPosition.compute(dataSourcePos, (inputPos, temporaryDataSource) ->
 		{
 			if (temporaryDataSource == null)
 			{
-				temporaryDataSource = FullDataSourceV2.DATA_SOURCE_POOL.getPooledSource(inputPos);
+				temporaryDataSource = FullDataSourceV2.createEmpty(inputPos);
 			}
 			temporaryDataSource.update(inputDataSource);
 			

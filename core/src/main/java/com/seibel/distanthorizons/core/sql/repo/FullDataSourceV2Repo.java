@@ -26,19 +26,17 @@ import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.sql.DbConnectionClosedException;
 import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV2DTO;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataInputStream;
+import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2DTO>
 {
@@ -65,71 +63,98 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 	public String getTableName() { return "FullData"; }
 	
 	@Override
-	public String createWhereStatement(Long pos) 
+	protected String CreateParameterizedWhereString() { return "DetailLevel = ? AND PosX = ? AND PosZ = ?"; }
+	
+	@Override
+	protected int setPreparedStatementWhereClause(PreparedStatement statement, int index, Long pos) throws SQLException
 	{
 		int detailLevel = DhSectionPos.getDetailLevel(pos) - DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL;
-		return "DetailLevel = '"+detailLevel+"' AND PosX = '"+ DhSectionPos.getX(pos)+"' AND PosZ = '"+ DhSectionPos.getZ(pos)+"'"; 
+		
+		statement.setInt(index++, detailLevel);
+		statement.setInt(index++, DhSectionPos.getX(pos));
+		statement.setInt(index++, DhSectionPos.getZ(pos));
+		
+		return index;
 	}
 	
 	
 	
-	//=======================//
-	// repo required methods //
-	//=======================//
-	
-	@Override 
-	public FullDataSourceV2DTO convertDictionaryToDto(Map<String, Object> objectMap) throws ClassCastException
+	@Nullable
+	public FullDataSourceV2DTO convertResultSetToDto(ResultSet resultSet) throws ClassCastException, IOException, SQLException
 	{
-		byte detailLevel = (Byte) objectMap.get("DetailLevel");
+		//======================//
+		// get statement values //
+		//======================//
+		
+		byte detailLevel = resultSet.getByte("DetailLevel");
 		byte sectionDetailLevel = (byte) (detailLevel + DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
-		int posX = (Integer) objectMap.get("PosX");
-		int posZ = (Integer) objectMap.get("PosZ");
+		int posX = resultSet.getInt("PosX");
+		int posZ = resultSet.getInt("PosZ");
 		long pos = DhSectionPos.encode(sectionDetailLevel, posX, posZ);
 		
-		int minY = (Integer) objectMap.get("MinY");
-		int dataChecksum = (Integer) objectMap.get("DataChecksum");
-		
-		byte[] dataByteArray = (byte[]) objectMap.get("Data");
-		byte[] columnGenStepByteArray = (byte[]) objectMap.get("ColumnGenerationStep");
-		byte[] columnWorldCompressionByteArray = (byte[]) objectMap.get("ColumnWorldCompressionMode");
-		byte[] mappingByteArray = (byte[]) objectMap.get("Mapping");
+		int minY = resultSet.getInt("MinY");
+		int dataChecksum = resultSet.getInt("DataChecksum");
 		
 		
-		byte dataFormatVersion = (Byte) objectMap.get("DataFormatVersion");
-		byte compressionModeValue = (Byte) objectMap.get("CompressionMode");
+		byte dataFormatVersion = resultSet.getByte("DataFormatVersion");
+		byte compressionModeValue = resultSet.getByte("CompressionMode");
 		
-		boolean applyToParent = ((int) objectMap.get("ApplyToParent")) == 1;
+		boolean applyToParent = (resultSet.getInt("ApplyToParent")) == 1;
 		
-		long lastModifiedUnixDateTime = (Long) objectMap.get("LastModifiedUnixDateTime");
-		long createdUnixDateTime = (Long) objectMap.get("CreatedUnixDateTime");
+		long lastModifiedUnixDateTime = resultSet.getLong("LastModifiedUnixDateTime");
+		long createdUnixDateTime = resultSet.getLong("CreatedUnixDateTime");
 		
-		FullDataSourceV2DTO dto = new FullDataSourceV2DTO(
-				pos,
-				dataChecksum, columnGenStepByteArray, columnWorldCompressionByteArray, dataFormatVersion, compressionModeValue, dataByteArray,
-				lastModifiedUnixDateTime, createdUnixDateTime,
-				mappingByteArray, applyToParent,
-				minY);
+		
+		
+		//===================//
+		// set DTO variables //
+		//===================//
+		
+		FullDataSourceV2DTO dto = FullDataSourceV2DTO.CreateEmptyDataSourceForDecoding();
+		
+		// set pooled arrays
+		dto.compressedDataByteArray = putAllBytes(resultSet.getBinaryStream("Data"), dto.compressedDataByteArray);
+		dto.compressedColumnGenStepByteArray = putAllBytes(resultSet.getBinaryStream("ColumnGenerationStep"), dto.compressedColumnGenStepByteArray);
+		dto.compressedWorldCompressionModeByteArray = putAllBytes(resultSet.getBinaryStream("ColumnWorldCompressionMode"), dto.compressedWorldCompressionModeByteArray);
+		dto.compressedMappingByteArray = putAllBytes(resultSet.getBinaryStream("Mapping"), dto.compressedMappingByteArray);
+		
+		// set individual variables
+		{
+			dto.pos = pos;
+			dto.dataChecksum = dataChecksum;
+			dto.dataFormatVersion = dataFormatVersion;
+			dto.compressionModeValue = compressionModeValue;
+			dto.lastModifiedUnixDateTime = lastModifiedUnixDateTime;
+			dto.createdUnixDateTime = createdUnixDateTime;
+			dto.applyToParent = applyToParent;
+			dto.levelMinY = minY;
+		}
 		return dto;
 	}
 	
+	private final String insertSqlTemplate =
+		"INSERT INTO "+this.getTableName() + " (\n" +
+		"   DetailLevel, PosX, PosZ, \n" +
+		"   MinY, DataChecksum, \n" +
+		"   Data, ColumnGenerationStep, ColumnWorldCompressionMode, Mapping, \n" +
+		"   DataFormatVersion, CompressionMode, ApplyToParent, \n" +
+		"   LastModifiedUnixDateTime, CreatedUnixDateTime) \n" +
+		"VALUES( \n" +
+		"    ?, ?, ?, \n" +
+		"    ?, ?, \n" +
+		"    ?, ?, ?, ?, \n" +
+		"    ?, ?, ?, \n" +
+		"    ?, ? \n" +
+		");";
 	@Override
 	public PreparedStatement createInsertStatement(FullDataSourceV2DTO dto) throws SQLException
 	{
-		String sql =
-			"INSERT INTO "+this.getTableName() + " (\n" +
-			"   DetailLevel, PosX, PosZ, \n" +
-			"   MinY, DataChecksum, \n" +
-			"   Data, ColumnGenerationStep, ColumnWorldCompressionMode, Mapping, \n" +
-			"   DataFormatVersion, CompressionMode, ApplyToParent, \n" +
-			"   LastModifiedUnixDateTime, CreatedUnixDateTime) \n" +
-			"VALUES( \n" +
-			"    ?, ?, ?, \n" +
-			"    ?, ?, \n" +
-			"    ?, ?, ?, ?, \n" +
-			"    ?, ?, ?, \n" +
-			"    ?, ? \n" +
-			");";
-		PreparedStatement statement = this.createPreparedStatement(sql);
+		PreparedStatement statement = this.createPreparedStatement(this.insertSqlTemplate);
+		if (statement == null)
+		{
+			return null;
+		}
+		
 		
 		int i = 1;
 		statement.setObject(i++, DhSectionPos.getDetailLevel(dto.pos) - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
@@ -139,10 +164,10 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 		statement.setObject(i++, dto.levelMinY);
 		statement.setObject(i++, dto.dataChecksum);
 		
-		statement.setObject(i++, dto.compressedDataByteArray);
-		statement.setObject(i++, dto.compressedColumnGenStepByteArray);
-		statement.setObject(i++, dto.compressedWorldCompressionModeByteArray);
-		statement.setObject(i++, dto.compressedMappingByteArray);
+		statement.setBinaryStream(i++, new ByteArrayInputStream(dto.compressedDataByteArray.elements()), dto.compressedDataByteArray.size());
+		statement.setBinaryStream(i++, new ByteArrayInputStream(dto.compressedColumnGenStepByteArray.elements()), dto.compressedColumnGenStepByteArray.size());
+		statement.setBinaryStream(i++, new ByteArrayInputStream(dto.compressedWorldCompressionModeByteArray.elements()), dto.compressedWorldCompressionModeByteArray.size());
+		statement.setBinaryStream(i++, new ByteArrayInputStream(dto.compressedMappingByteArray.elements()), dto.compressedMappingByteArray.size());
 		
 		statement.setObject(i++, dto.dataFormatVersion);
 		statement.setObject(i++, dto.compressionModeValue);
@@ -154,38 +179,43 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 		return statement;
 	}
 	
-	@Override
-	public PreparedStatement createUpdateStatement(FullDataSourceV2DTO dto) throws SQLException
-	{
-		String sql =
+	private final String updateSqlTemplate =
 			"UPDATE "+this.getTableName()+" \n" +
 			"SET \n" +
 			"    MinY = ? \n" +
 			"   ,DataChecksum = ? \n" +
-					
+			
 			"   ,Data = ? \n" +
 			"   ,ColumnGenerationStep = ? \n" +
 			"   ,ColumnWorldCompressionMode = ? \n" +
 			"   ,Mapping = ? \n" +
-					
+			
 			"   ,DataFormatVersion = ? \n" +
 			"   ,CompressionMode = ? \n" +
 			"   ,ApplyToParent = ? \n" +
-					
+			
 			"   ,LastModifiedUnixDateTime = ? \n" +
 			"   ,CreatedUnixDateTime = ? \n" +
-					
-			"WHERE DetailLevel = ? AND PosX = ? AND PosZ = ?";
-		PreparedStatement statement = this.createPreparedStatement(sql);
+			
+			"WHERE DetailLevel = ? AND PosX = ? AND PosZ = ?"; 
+	@Override
+	public PreparedStatement createUpdateStatement(FullDataSourceV2DTO dto) throws SQLException
+	{
+		PreparedStatement statement = this.createPreparedStatement(this.updateSqlTemplate);
+		if (statement == null)
+		{
+			return null;
+		}
+		
 		
 		int i = 1;
 		statement.setObject(i++, dto.levelMinY);
 		statement.setObject(i++, dto.dataChecksum);
 		
-		statement.setObject(i++, dto.compressedDataByteArray);
-		statement.setObject(i++, dto.compressedColumnGenStepByteArray);
-		statement.setObject(i++, dto.compressedWorldCompressionModeByteArray);
-		statement.setObject(i++, dto.compressedMappingByteArray);
+		statement.setBinaryStream(i++, new ByteArrayInputStream(dto.compressedDataByteArray.elements()), dto.compressedDataByteArray.size());
+		statement.setBinaryStream(i++, new ByteArrayInputStream(dto.compressedColumnGenStepByteArray.elements()), dto.compressedColumnGenStepByteArray.size());
+		statement.setBinaryStream(i++, new ByteArrayInputStream(dto.compressedWorldCompressionModeByteArray.elements()), dto.compressedWorldCompressionModeByteArray.size());
+		statement.setBinaryStream(i++, new ByteArrayInputStream(dto.compressedMappingByteArray.elements()), dto.compressedMappingByteArray.size());
 		
 		statement.setObject(i++, dto.dataFormatVersion);
 		statement.setObject(i++, dto.compressionModeValue);
@@ -207,82 +237,134 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 	// updates //
 	//=========//
 	
-	public void setApplyToParent(long pos, boolean applyToParent) throws SQLException
-	{
-		int detailLevel = DhSectionPos.getDetailLevel(pos) - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL;
-		
-		String sql =
+	private final String setApplyToParentSql = 
 			"UPDATE "+this.getTableName()+" \n" +
-			"SET ApplyToParent = "+applyToParent+" \n" +
-			"WHERE DetailLevel = "+detailLevel+" AND PosX = "+ DhSectionPos.getX(pos)+" AND PosZ = "+ DhSectionPos.getZ(pos);
+			"SET ApplyToParent = ? \n" +
+			"WHERE DetailLevel = ? AND PosX = ? AND PosZ = ?";
+	public void setApplyToParent(long pos, boolean applyToParent)
+	{
+		PreparedStatement statement = this.createPreparedStatement(this.setApplyToParentSql);
+		if (statement == null)
+		{
+			return;
+		}
 		
-		this.queryDictionaryFirst(sql);
+		
+		try
+		{
+			int i = 1;
+			statement.setBoolean(i++, applyToParent);
+			
+			int detailLevel = DhSectionPos.getDetailLevel(pos) - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL;
+			statement.setInt(i++, detailLevel);
+			statement.setInt(i++, DhSectionPos.getX(pos));
+			statement.setInt(i++, DhSectionPos.getZ(pos));
+			
+			this.query(statement);
+		}
+		catch (SQLException e)
+		{
+			throw new RuntimeException(e);
+		}
 	}
 	
+	private final String getPositionsToUpdateSql =
+			"SELECT DetailLevel, PosX, PosZ, " +
+			"   (sqrt(pow(PosX - ?, 2) + pow(PosZ - ?, 2))) AS Distance " +
+			"FROM "+this.getTableName()+" " +
+			"WHERE ApplyToParent = 1 " +
+			"ORDER BY Distance ASC " +
+			"LIMIT ?; ";
 	public LongArrayList getPositionsToUpdate(int targetBlockPosX, int targetBlockPosZ, int returnCount)
 	{
 		LongArrayList list = new LongArrayList();
 		
-		List<Map<String, Object>> resultMapList = this.queryDictionary(
-				"SELECT DetailLevel, PosX, PosZ, " +
-						"(sqrt(pow(PosX - "+targetBlockPosX+", 2) + pow(PosZ - "+targetBlockPosZ+", 2))) AS Distance " +
-					"FROM "+this.getTableName()+" " +
-					"WHERE ApplyToParent = 1 " +
-					"ORDER BY Distance ASC " +
-					"LIMIT "+returnCount+"; "
-		);
 		
-		for (Map<String, Object> resultMap : resultMapList)
+		PreparedStatement statement = this.createPreparedStatement(this.getPositionsToUpdateSql);
+		if (statement == null)
 		{
-			byte detailLevel = (Byte) resultMap.get("DetailLevel");
-			byte sectionDetailLevel = (byte) (detailLevel + DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
-			int posX = (Integer) resultMap.get("PosX");
-			int posZ = (Integer) resultMap.get("PosZ");
-			
-			long pos = DhSectionPos.encode(sectionDetailLevel, posX, posZ);
-			list.add(pos);
+			return list;
 		}
 		
-		return list;
+		try
+		{
+			int i = 1;
+			statement.setInt(i++, targetBlockPosX);
+			statement.setInt(i++, targetBlockPosZ);
+			
+			statement.setInt(i++, returnCount);
+			
+			ResultSet result = this.query(statement);
+			while (result != null && result.next())
+			{
+				byte detailLevel = result.getByte("DetailLevel");
+				byte sectionDetailLevel = (byte) (detailLevel + DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
+				int posX = result.getInt("PosX");
+				int posZ = result.getInt("PosZ");
+				
+				long pos = DhSectionPos.encode(sectionDetailLevel, posX, posZ);
+				list.add(pos);
+			}
+			
+			return list;
+		}
+		catch (SQLException e)
+		{
+			throw new RuntimeException(e);
+		}
 	}
 	
+	
+	private final String getColumnGenerationStepSql =
+			"select ColumnGenerationStep, CompressionMode " +
+			"from "+this.getTableName()+" " +
+			"WHERE DetailLevel = ? AND PosX = ? AND PosZ = ?";
 	/** @return null if nothing exists for this position */
-	public byte[] getColumnGenerationStepForPos(long pos)
+	public void getColumnGenerationStepForPos(long pos, ByteArrayList outputByteArray)
 	{
-		int detailLevel = DhSectionPos.getDetailLevel(pos) - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL;
-		
-		Map<String, Object> resultMap = this.queryDictionaryFirst(
-				"select ColumnGenerationStep, CompressionMode " +
-						"from "+this.getTableName()+" " +
-						"WHERE DetailLevel = "+detailLevel+" AND PosX = "+ DhSectionPos.getX(pos)+" AND PosZ = "+ DhSectionPos.getZ(pos));
-		
-		if (resultMap != null)
+		PreparedStatement statement = this.createPreparedStatement(this.getColumnGenerationStepSql);
+		if (statement == null)
 		{
-			byte[] compressedByteArray = (byte[]) resultMap.get("ColumnGenerationStep");
+			return;
+		}
+		
+		
+		try
+		{
+			int detailLevel = DhSectionPos.getDetailLevel(pos) - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL;
 			
-			byte compressionModeEnumValue = (byte) resultMap.get("CompressionMode");
+			
+			
+			int i = 1;
+			statement.setInt(i++, detailLevel);
+			statement.setInt(i++, DhSectionPos.getX(pos));
+			statement.setInt(i++, DhSectionPos.getZ(pos));
+			
+			
+			ResultSet result = this.query(statement);
+			if (result == null || !result.next())
+			{
+				return;
+			}
+			
+			
+			byte compressionModeEnumValue = result.getByte("CompressionMode");
 			EDhApiDataCompressionMode compressionModeEnum = EDhApiDataCompressionMode.getFromValue(compressionModeEnumValue);
 			
 			try
 			{
 				// decompress the data
-				ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(compressedByteArray);
-				DhDataInputStream compressedIn = new DhDataInputStream(byteArrayInputStream, compressionModeEnum);
-				
-				byte[] columnGenStepByteArray = new byte[FullDataSourceV2.WIDTH * FullDataSourceV2.WIDTH];
-				compressedIn.readFully(columnGenStepByteArray);
-				
-				return columnGenStepByteArray;
+				DhDataInputStream compressedIn = new DhDataInputStream(result.getBinaryStream("ColumnGenerationStep"), compressionModeEnum);
+				putAllBytes(compressedIn, outputByteArray);
 			}
 			catch (IOException e)
 			{
 				LOGGER.warn("Decompression issue when getting column gen steps for pos: [" + DhSectionPos.toString(pos) + "]", e);
-				return null;
 			}
 		}
-		else
+		catch (SQLException e)
 		{
-			return null;
+			throw new RuntimeException(e);
 		}
 	}
 	
@@ -292,26 +374,36 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 	// multiplayer //
 	//=============//
 	
+	private final String getTimestampForPosSql =
+			"SELECT LastModifiedUnixDateTime " +
+			"FROM " + this.getTableName() + " " +
+			"WHERE DetailLevel = ? " +
+			"AND PosX = ? " +
+			"AND PosZ = ?;";
 	@Nullable
 	public Long getTimestampForPos(long pos)
 	{
 		try
 		{
-			PreparedStatement preparedStatement = this.createPreparedStatement(
-					"SELECT LastModifiedUnixDateTime " +
-						"FROM " + this.getTableName() + " " +
-						"WHERE DetailLevel = ? " +
-							"AND PosX = ? " +
-							"AND PosZ = ?;"
-			);
+			PreparedStatement preparedStatement = this.createPreparedStatement(this.getTimestampForPosSql);
+			if (preparedStatement == null)
+			{
+				return null;
+			}
+			
 			
 			int i = 1;
 			preparedStatement.setInt(i++, DhSectionPos.getDetailLevel(pos) - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
 			preparedStatement.setInt(i++, DhSectionPos.getX(pos));
 			preparedStatement.setInt(i++, DhSectionPos.getZ(pos));
 			
-			List<Map<String, Object>> row = this.queryDictionary(preparedStatement);
-			return !row.isEmpty() ? (Long) row.get(0).get("LastModifiedUnixDateTime") : null;
+			ResultSet result = this.query(preparedStatement);
+			if (result == null || !result.next())
+			{
+				return null;
+			}
+			
+			return result.getLong("LastModifiedUnixDateTime");
 		}
 		catch (DbConnectionClosedException e)
 		{
@@ -323,17 +415,22 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 		}
 	}
 	
+	private final String getTimestampForRangeSql =
+			"SELECT PosX, PosZ, LastModifiedUnixDateTime " +
+			"FROM " + this.getTableName() + " " +
+			"WHERE DetailLevel = ? " +
+			"AND PosX BETWEEN ? AND ? " +
+			"AND PosZ BETWEEN ? AND ?;";
 	public Map<Long, Long> getTimestampsForRange(byte detailLevel, int startPosX, int startPosZ, int endPosX, int endPosZ)
 	{
 		try
 		{
-			PreparedStatement preparedStatement = this.createPreparedStatement(
-					"SELECT PosX, PosZ, LastModifiedUnixDateTime " +
-						"FROM " + this.getTableName() + " " +
-						"WHERE DetailLevel = ? " +
-							"AND PosX BETWEEN ? AND ? " +
-							"AND PosZ BETWEEN ? AND ?;"
-			);
+			PreparedStatement preparedStatement = this.createPreparedStatement(this.getTimestampForRangeSql);
+			if (preparedStatement == null)
+			{
+				return new HashMap<>();
+			}
+			
 			
 			int i = 1;
 			preparedStatement.setInt(i++, detailLevel - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
@@ -342,15 +439,18 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 			preparedStatement.setInt(i++, startPosZ);
 			preparedStatement.setInt(i++, endPosZ - 1);
 			
-			return this.queryDictionary(preparedStatement)
-				.stream().collect(Collectors.toMap(
-					row -> DhSectionPos.encode(detailLevel, (int) row.get("PosX"), (int) row.get("PosZ")),
-					row -> (long) row.get("LastModifiedUnixDateTime"))
-				);
-		}
-		catch (DbConnectionClosedException e)
-		{
-			return new HashMap<>();
+			
+			ResultSet result = this.query(preparedStatement);
+			HashMap<Long, Long> returnMap = new HashMap<>();
+			while (result != null && result.next())
+			{
+				long key = DhSectionPos.encode(detailLevel, result.getInt("PosX"), result.getInt("PosZ"));
+				long value = result.getLong("LastModifiedUnixDateTime");
+				
+				returnMap.put(key, value);
+			}
+			
+			return returnMap;
 		}
 		catch (SQLException e)
 		{
@@ -364,29 +464,48 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 	// compression tests //
 	//===================//
 	
+	private final String getAllPositionsSql = 
+			"select DetailLevel, PosX, PosZ " +
+			"from "+this.getTableName()+"; ";
 	/** @return every position in this database */
 	public LongArrayList getAllPositions()
 	{
 		LongArrayList list = new LongArrayList();
 
-		List<Map<String, Object>> resultMapList = this.queryDictionary(
-				"select DetailLevel, PosX, PosZ " +
-						"from "+this.getTableName()+"; ");
-
-		for (Map<String, Object> resultMap : resultMapList)
+		PreparedStatement statement = this.createPreparedStatement(getAllPositionsSql);
+		if (statement == null)
 		{
-			byte detailLevel = (Byte) resultMap.get("DetailLevel");
-			byte sectionDetailLevel = (byte) (detailLevel + DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
-			int posX = (Integer) resultMap.get("PosX");
-			int posZ = (Integer) resultMap.get("PosZ");
-
-			long pos = DhSectionPos.encode(sectionDetailLevel, posX, posZ);
-			list.add(pos);
+			return list;
 		}
-
-		return list;
+		
+		
+		try
+		{
+			ResultSet result = this.query(statement);
+			while (result != null && result.next())
+			{
+				byte detailLevel = result.getByte("DetailLevel");
+				byte sectionDetailLevel = (byte) (detailLevel + DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
+				int posX = result.getInt("PosX");
+				int posZ = result.getInt("PosZ");
+				
+				long pos = DhSectionPos.encode(sectionDetailLevel, posX, posZ);
+				list.add(pos);
+			}
+			
+			return list;
+		}
+		catch (SQLException e)
+		{
+			throw new RuntimeException(e);
+		}
 	}
 	
+	
+	private final String getDataSizeInBytesSql =
+			"select LENGTH(Data) as dataSize " +
+			"from "+this.getTableName()+" " +
+			"WHERE DetailLevel = ? AND PosX = ? AND PosZ = ?";
 	/** 
 	 * @return the size of the full data at the given position 
 	 *          (doesn't include the size of the mapping or any other column)
@@ -394,45 +513,91 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 	public long getDataSizeInBytes(long pos)
 	{
 		int detailLevel = DhSectionPos.getDetailLevel(pos) - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL;
-
-		Map<String, Object> resultMap = this.queryDictionaryFirst(
-				"select LENGTH(Data) as dataSize " +
-						"from "+this.getTableName()+" " +
-						"WHERE DetailLevel = "+detailLevel+" AND PosX = "+ DhSectionPos.getX(pos)+" AND PosZ = "+ DhSectionPos.getZ(pos));
 		
-		if (resultMap != null && resultMap.get("dataSize") != null)
+		PreparedStatement statement = this.createPreparedStatement(this.getDataSizeInBytesSql);
+		if (statement == null)
 		{
-			// Number cast is necessary because the returned number can be an int or long
-			Number resultNumber = (Number) resultMap.get("dataSize");
-			long dataLength = resultNumber.longValue();
-			return dataLength;
-			
+			return 0L;
 		}
-		else
+		
+		try
 		{
-			return 0;
+			int i = 1;
+			statement.setInt(i++, detailLevel);
+			statement.setInt(i++, DhSectionPos.getX(pos));
+			statement.setInt(i++, DhSectionPos.getZ(pos));
+			
+			
+			ResultSet result = this.query(statement);
+			if (result == null || !result.next())
+			{
+				return 0L;
+			}
+			
+			return result.getLong("dataSize");
+		}
+		catch (SQLException e)
+		{
+			throw new RuntimeException(e);
 		}
 	}
 	
+	private final String getTotalDataSizeInBytesSql =
+			"select SUM(LENGTH(Data)) as dataSize " +
+			"from "+this.getTableName()+"; ";
 	/** @return the total size in bytes of the full data for this entire database */
 	public long getTotalDataSizeInBytes()
 	{
-		Map<String, Object> resultMap = this.queryDictionaryFirst(
-				"select SUM(LENGTH(Data)) as dataSize " +
-						"from "+this.getTableName()+"; ");
+		PreparedStatement statement = this.createPreparedStatement(this.getTotalDataSizeInBytesSql);
 		
-		if (resultMap != null && resultMap.get("dataSize") != null)
+		try
 		{
-			Number resultNumber = (Number) resultMap.get("dataSize");
-			long dataLength = resultNumber.longValue();
-			return dataLength;
+			ResultSet result = this.query(statement);
+			if (result == null || !result.next())
+			{
+				return 0;
+			}
 			
+			return result.getLong("dataSize");
+		}
+		catch (SQLException e)
+		{
+			throw new RuntimeException(e);
+		}
+	}
+	
+	
+	
+	//===============//
+	// helper method //
+	//===============//
+	
+	private static ByteArrayList putAllBytes(InputStream inputStream, @Nullable ByteArrayList existingArrayList) throws IOException
+	{
+		if (existingArrayList == null)
+		{
+			existingArrayList = new ByteArrayList(inputStream.available());
 		}
 		else
 		{
-			return 0;
+			existingArrayList.clear();
+			existingArrayList.ensureCapacity(inputStream.available());
 		}
+		
+		try
+		{
+			int nextByte = inputStream.read();
+			while (nextByte != -1)
+			{
+				existingArrayList.add((byte) nextByte);
+				nextByte = inputStream.read();
+			}
+		}
+		catch (EOFException ignore) { /* shouldn't happen, but just in case */ }
+		
+		return existingArrayList;
 	}
+	
 	
 	
 }

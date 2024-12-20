@@ -20,10 +20,13 @@
 package testItems.sql;
 
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
+import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.sql.repo.AbstractDhRepo;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Map;
 
@@ -45,22 +48,33 @@ public class TestCompoundKeyRepo extends AbstractDhRepo<DhChunkPos, TestCompound
 				"\n" +
 				",PRIMARY KEY (XPos, ZPos)" +
 				");";
-		this.queryDictionaryFirst(createTableSql);
+		PreparedStatement createTableStatement = this.createPreparedStatement(createTableSql);
+		this.query(createTableStatement);
 	}
 	
 	
 	@Override
 	public String getTableName() { return "TestCompound"; }
-	@Override 
-	public String createWhereStatement(DhChunkPos key) { return "XPos = '"+key.getX()+"' AND ZPos = '"+key.getZ()+"'"; }
+	@Override
+	protected String CreateParameterizedWhereString() { return "XPos = ? AND ZPos = ?"; }
 	
-	
-	@Override 
-	public TestCompoundKeyDto convertDictionaryToDto(Map<String, Object> objectMap) throws ClassCastException
+	@Override
+	protected int setPreparedStatementWhereClause(PreparedStatement statement, int index, DhChunkPos pos) throws SQLException
 	{
-		int xPos = (int) objectMap.get("XPos");
-		int zPos = (int) objectMap.get("ZPos");
-		String value = (String) objectMap.get("Value");
+		statement.setInt(index++, pos.getX());
+		statement.setInt(index++, pos.getZ());
+		return index;
+	}
+	
+	
+	
+	@Override
+	@Nullable
+	public TestCompoundKeyDto convertResultSetToDto(ResultSet result) throws ClassCastException, SQLException
+	{
+		int xPos = result.getInt("XPos");
+		int zPos = result.getInt("ZPos");
+		String value = result.getString("Value");
 		
 		return new TestCompoundKeyDto(new DhChunkPos(xPos, zPos), value);
 	}

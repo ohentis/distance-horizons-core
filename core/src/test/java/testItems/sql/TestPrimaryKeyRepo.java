@@ -19,10 +19,13 @@
 
 package testItems.sql;
 
+import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.sql.repo.AbstractDhRepo;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Map;
 
@@ -43,24 +46,33 @@ public class TestPrimaryKeyRepo extends AbstractDhRepo<Integer, TestSingleKeyDto
 				",LongValue BIGINT NULL\n" +
 				",ByteValue TINYINT NULL\n" +
 				");";
-		this.queryDictionaryFirst(createTableSql);
+		PreparedStatement createTableStatement = this.createPreparedStatement(createTableSql);
+		this.query(createTableStatement);
 	}
 	
 	
 	
 	@Override
 	public String getTableName() { return "Test"; }
-	@Override 
-	public String createWhereStatement(Integer keyString) { return "Id = '"+keyString+"'"; }
+	@Override
+	protected String CreateParameterizedWhereString() { return "Id = ?"; }
 	
-	
-	@Override 
-	public TestSingleKeyDto convertDictionaryToDto(Map<String, Object> objectMap) throws ClassCastException
+	@Override
+	protected int setPreparedStatementWhereClause(PreparedStatement statement, int index, Integer id) throws SQLException
 	{
-		int id = (int) objectMap.get("Id");
-		String value = (String) objectMap.get("Value");
-		long longValue = (Long) objectMap.get("LongValue");
-		byte byteValue = (Byte) objectMap.get("ByteValue");
+		statement.setInt(index++, id);
+		return index;
+	}
+	
+	
+	@Override
+	@Nullable
+	public TestSingleKeyDto convertResultSetToDto(ResultSet result) throws ClassCastException, SQLException
+	{
+		int id = result.getInt("Id");
+		String value = result.getString("Value");
+		long longValue = result.getLong("LongValue");
+		byte byteValue = result.getByte("ByteValue");
 		
 		return new TestSingleKeyDto(id, value, longValue, byteValue);
 	}

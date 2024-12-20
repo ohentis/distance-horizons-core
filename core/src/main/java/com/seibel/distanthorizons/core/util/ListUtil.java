@@ -1,5 +1,9 @@
 package com.seibel.distanthorizons.core.util;
 
+import it.unimi.dsi.fastutil.bytes.ByteArrayList;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
+import it.unimi.dsi.fastutil.shorts.ShortArrayList;
+
 import java.util.ArrayList;
 
 public class ListUtil
@@ -14,6 +18,42 @@ public class ListUtil
 		}
 		return list;
 	}
+	
+	
+	/**
+	 * Unlike {@link LongArrayList#ensureCapacity(int)} this method
+	 * will populate the list with zeros up to the given size 
+	 * so get and set methods won't cause {@link IndexOutOfBoundsException}'s.
+	 */
+	public static void clearAndSetSize(LongArrayList arrayList, int size)
+	{
+		arrayList.clear();
+		for (int i = 0; i < size; i++)
+		{
+			arrayList.add(0L);
+		}
+	}
+	
+	/** @see ListUtil#clearAndSetSize(LongArrayList, int) */
+	public static void clearAndSetSize(ShortArrayList arrayList, int size)
+	{
+		arrayList.clear();
+		for (int i = 0; i < size; i++)
+		{
+			arrayList.add((short)0);
+		}
+	}
+	
+	/** @see ListUtil#clearAndSetSize(LongArrayList, int) */
+	public static void clearAndSetSize(ByteArrayList arrayList, int size)
+	{
+		arrayList.clear();
+		for (int i = 0; i < size; i++)
+		{
+			arrayList.add((byte)0);
+		}
+	}
+	
 	
 	
 }

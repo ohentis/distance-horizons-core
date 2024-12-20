@@ -382,7 +382,7 @@ public class FullDataSourceV1 implements IDataSource<IDhLevel>
 	//==================//
 	
 	@Override
-	public void close() throws Exception
+	public void close()
 	{ /* not currently needed */ }
 	
 	

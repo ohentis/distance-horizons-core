@@ -61,4 +61,10 @@ public class TestCompoundKeyDto implements IBaseDTO<DhChunkPos>
 		return this.id + ", " + this.value;
 	}
 	
+	@Override
+	public void close()
+	{ /* no closing needed */ }
+	
+	
+	
 }

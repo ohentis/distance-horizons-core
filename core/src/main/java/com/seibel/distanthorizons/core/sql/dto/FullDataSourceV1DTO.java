@@ -85,5 +85,8 @@ public class FullDataSourceV1DTO implements IBaseDTO<Long>
 	@Override
 	public String getKeyDisplayString() { return DhSectionPos.toString(this.pos); }
 	
+	@Override 
+	public void close()
+	{ /* no closing needed */ }
 	
 }

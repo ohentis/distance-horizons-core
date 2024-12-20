@@ -53,7 +53,7 @@ public class LzmaArrayCache extends ArrayCache
 	public byte[] getByteArray(int size, boolean fillWithZeros) 
 	{
 		ArrayList<byte[]> cacheList = this.byteCache.computeIfAbsent(size, (newSize) -> new ArrayList<>(4));
-		if (cacheList.size() == 0)
+		if (cacheList.isEmpty())
 		{
 			return new byte[size];
 		}

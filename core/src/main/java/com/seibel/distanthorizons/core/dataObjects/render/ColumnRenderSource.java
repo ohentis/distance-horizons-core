@@ -22,9 +22,9 @@ package com.seibel.distanthorizons.core.dataObjects.render;
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.dataObjects.transformers.FullDataToRenderDataTransformer;
-import com.seibel.distanthorizons.core.file.DataSourcePool;
 import com.seibel.distanthorizons.core.file.IDataSource;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.pooling.PhantomArrayListParent;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.coreapi.ModInfo;
@@ -37,7 +37,6 @@ import com.seibel.distanthorizons.core.util.RenderDataPointUtil;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.apache.logging.log4j.Logger;
 
-import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -45,7 +44,9 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @see RenderDataPointUtil
  */
-public class ColumnRenderSource implements IDataSource<IDhClientLevel>
+public class ColumnRenderSource
+		extends PhantomArrayListParent
+		implements IDataSource<IDhClientLevel>
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
@@ -53,8 +54,6 @@ public class ColumnRenderSource implements IDataSource<IDhClientLevel>
 	public static final byte SECTION_SIZE_OFFSET = DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL;
 	/** width of this data in columns */
 	public static final int SECTION_SIZE = BitShiftUtil.powerOfTwo(SECTION_SIZE_OFFSET); // 64
-	
-	public static final DataSourcePool<ColumnRenderSource, IDhClientLevel> DATA_SOURCE_POOL = new DataSourcePool<>(ColumnRenderSource::createEmptyRenderSource, null /* data source prep/cleanup needs to be done outside the pool since it requires additional inputs */);
 	
 	
 	
@@ -77,40 +76,8 @@ public class ColumnRenderSource implements IDataSource<IDhClientLevel>
 	// constructors //
 	//==============//
 	
-	/** 
-	 * This is separate from {@link DataSourcePool#getPooledSource(long, boolean)} 
-	 * because we need to pass in a couple extra values, 
-	 * specifically maxVerticalSize and yOffset.
-	 */
-	public static ColumnRenderSource getPooledRenderSource(long pos, int maxVerticalSize, int yOffset, boolean clearData)
-	{
-		ColumnRenderSource renderSource = DATA_SOURCE_POOL.getPooledSource(pos);
-		
-		// set necessary properties
-		renderSource.pos = pos;
-		renderSource.verticalDataCount = maxVerticalSize;
-		renderSource.yOffset = yOffset;
-		
-		
-		// resize the array if necessary
-		int dataArraySize = SECTION_SIZE * SECTION_SIZE * maxVerticalSize;
-		renderSource.renderDataContainer.ensureCapacity(dataArraySize);
-		while (renderSource.renderDataContainer.size() < dataArraySize)
-		{
-			renderSource.renderDataContainer.add(0);
-		}
-		
-		if (clearData)
-		{
-			Arrays.fill(renderSource.renderDataContainer.elements(), 0);
-			Arrays.fill(renderSource.debugSourceFlags, null);
-		}
-		
-		return renderSource;
-	}
-	
-	
-	private static ColumnRenderSource createEmptyRenderSource(long sectionPos) { return new ColumnRenderSource(sectionPos, 0, 0); }
+	public static ColumnRenderSource createEmpty(long pos, int maxVerticalSize, int yOffset)
+	{ return new ColumnRenderSource(pos, maxVerticalSize, yOffset); }
 	/**
 	 * Creates an empty ColumnRenderSource.
 	 *
@@ -119,11 +86,16 @@ public class ColumnRenderSource implements IDataSource<IDhClientLevel>
 	 */
 	private ColumnRenderSource(long pos, int maxVerticalSize, int yOffset)
 	{
-		this.verticalDataCount = maxVerticalSize;
-		this.renderDataContainer = new LongArrayList(new long[SECTION_SIZE * SECTION_SIZE * this.verticalDataCount]);
-		this.debugSourceFlags = new DebugSourceFlag[SECTION_SIZE * SECTION_SIZE];
+		super(0, 0, 1);
+		
 		this.pos = pos;
 		this.yOffset = yOffset;
+		
+		this.verticalDataCount = maxVerticalSize;
+		
+		this.renderDataContainer = this.pooledArraysCheckout.getLongArray(0, SECTION_SIZE * SECTION_SIZE * this.verticalDataCount);
+		
+		this.debugSourceFlags = new DebugSourceFlag[SECTION_SIZE * SECTION_SIZE];
 	}
 	
 	
@@ -325,12 +297,6 @@ public class ColumnRenderSource implements IDataSource<IDhClientLevel>
 				stringBuilder.append(LINE_DELIMITER);
 		}
 		return stringBuilder.toString();
-	}
-	
-	@Override
-	public void close() throws Exception
-	{
-		DATA_SOURCE_POOL.returnPooledDataSource(this);
 	}
 	
 	

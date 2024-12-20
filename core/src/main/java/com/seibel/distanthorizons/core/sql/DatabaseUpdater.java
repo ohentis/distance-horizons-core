@@ -26,9 +26,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.Scanner;
@@ -130,17 +128,23 @@ public class DatabaseUpdater
 					}
 					catch (SQLException e)
 					{
-						connection.rollback();
-						LOGGER.error(
-							"Unexpected SQL Error: ["+e.getMessage()+"] " +
-									"returned for auto update script: [" + resource.name + "], " +
-									"query: [" + fileUpdateSqlArray[sqlIndex] + "]. " +
-									"Changes should have been rolled back.", new SQLException());
+						LOGGER.error("Unexpected SQL Error: ["+e.getMessage()+"] \n" +
+							"returned for auto update script: [" + resource.name + "], \n" +
+							"query: [" + fileUpdateSqlArray[sqlIndex] + "]. \n" +
+							"Changes should have been rolled back.",
+							new SQLException()
+						);
+						
+						if (transactScript)
+						{
+							connection.rollback();
+						}
 						throw e;
 					}
 					
 					if (transactScript)
-					{
+					{ 
+						// revert to default setting
 						connection.setAutoCommit(true);
 					}
 				}

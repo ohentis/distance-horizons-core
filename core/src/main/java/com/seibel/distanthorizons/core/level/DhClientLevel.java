@@ -145,7 +145,7 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 				}
 				
 				this.beaconBeamDataHandler.setBeaconBeamsForPos(dataSourceDto.pos, message.payload.beaconBeams);
-				this.updateDataSourcesAsync(dataSourceDto.createPooledDataSource(this.levelWrapper));
+				this.updateDataSourcesAsync(dataSourceDto.createDataSource(this.levelWrapper));
 			}
 			catch (Exception e)
 			{

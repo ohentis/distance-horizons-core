@@ -5,6 +5,7 @@ import com.seibel.distanthorizons.core.file.structure.ISaveStructure;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV2DTO;
 import com.seibel.distanthorizons.core.sql.repo.AbstractDhRepo;
 import com.seibel.distanthorizons.core.sql.dto.IBaseDTO;
 import com.seibel.distanthorizons.core.util.LodUtil;
@@ -138,9 +139,8 @@ public abstract class AbstractDataSourceHandler
 	public TDataSource get(long pos)
 	{
 		TDataSource dataSource = null;
-		try
+		try(TDTO dto = this.repo.getByKey(pos))
 		{
-			TDTO dto = this.repo.getByKey(pos);
 			if (dto != null)
 			{
 				try
@@ -152,10 +152,10 @@ public abstract class AbstractDataSourceHandler
 				{
 					// Only log each message type once.
 					// This is done to prevent logging "No compression mode with the value [2]" 10,000 times 
-					// if the user is migrating from a nightly build and used ZStd. 
+					// if the user is migrating from a nightly build and used ZStd.
 					if (CORRUPT_DATA_ERRORS_LOGGED.add(e.getMessage()))
 					{
-						LOGGER.warn("Corrupted data found at pos [" + DhSectionPos.toString(pos) + "]. Data at position will be deleted so it can be re-generated to prevent issues. Future errors with this same message won't be logged. Error: " + e.getMessage(), e);
+						LOGGER.warn("Corrupted data found at pos [" + DhSectionPos.toString(pos) + "]. Data at position will be deleted so it can be re-generated to prevent issues. Future errors with this same message won't be logged. Error: [" + e.getMessage() + "].", e);
 					}
 					
 					this.repo.deleteWithKey(pos);
@@ -252,8 +252,10 @@ public abstract class AbstractDataSourceHandler
 					if (dataModified)
 					{
 						// save the updated data to the database
-						TDTO dto = this.createDtoFromDataSource(recipientDataSource);
-						this.repo.save(dto);
+						try (TDTO dto = this.createDtoFromDataSource(recipientDataSource))
+						{
+							this.repo.save(dto);
+						}
 						
 						
 						for (IDataSourceUpdateFunc<TDataSource> listener : this.dateSourceUpdateListeners)

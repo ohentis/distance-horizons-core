@@ -28,13 +28,11 @@ import com.seibel.distanthorizons.core.dataObjects.render.columnViews.ColumnArra
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos;
+import com.seibel.distanthorizons.core.pooling.PhantomArrayListCheckout;
+import com.seibel.distanthorizons.core.pooling.PhantomArrayListPool;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPosMutable;
-import com.seibel.distanthorizons.core.util.ColorUtil;
-import com.seibel.distanthorizons.core.util.FullDataPointUtil;
-import com.seibel.distanthorizons.core.util.LodUtil;
-import com.seibel.distanthorizons.core.util.RenderDataPointUtil;
+import com.seibel.distanthorizons.core.util.*;
 import com.seibel.distanthorizons.core.wrapperInterfaces.IWrapperFactory;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
@@ -43,6 +41,7 @@ import com.seibel.distanthorizons.coreapi.util.BitShiftUtil;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.HashSet;
 
@@ -64,6 +63,7 @@ public class FullDataToRenderDataTransformer
 	// public transformer interface //
 	//==============================//
 	
+	@Nullable
 	public static ColumnRenderSource transformFullDataToRenderSource(FullDataSourceV2 fullDataSource, IDhClientLevel level)
 	{
 		if (fullDataSource == null)
@@ -109,7 +109,7 @@ public class FullDataToRenderDataTransformer
 		
 		
 		
-		final ColumnRenderSource columnSource = ColumnRenderSource.getPooledRenderSource(pos, vertSize, level.getMinY(), true);
+		final ColumnRenderSource columnSource = ColumnRenderSource.createEmpty(pos, vertSize, level.getMinY());
 		if (fullDataSource.isEmpty)
 		{
 			return columnSource;
@@ -162,10 +162,21 @@ public class FullDataToRenderDataTransformer
 		}
 		else
 		{
-			// expand the ColumnArrayView to fit the new larger max vertical size
-			ColumnArrayView newColumnArrayView = new ColumnArrayView(new LongArrayList(new long[fullDataLength]), fullDataLength, 0, fullDataLength);
-			setRenderColumnView(level, fullDataMapping, blockX, blockZ, newColumnArrayView, fullDataColumn);
-			columnArrayView.changeVerticalSizeFrom(newColumnArrayView);
+			// new LongArrayList(new long[fullDataLength])
+			PhantomArrayListCheckout checkout = PhantomArrayListPool.INSTANCE.checkoutArrays(0, 0, 1);
+			LongArrayList dataArrayList = checkout.getLongArray(0, fullDataLength);
+			
+			try
+			{
+				// expand the ColumnArrayView to fit the new larger max vertical size
+				ColumnArrayView newColumnArrayView = new ColumnArrayView(dataArrayList, fullDataLength, 0, fullDataLength);
+				setRenderColumnView(level, fullDataMapping, blockX, blockZ, newColumnArrayView, fullDataColumn);
+				columnArrayView.changeVerticalSizeFrom(newColumnArrayView);
+			}
+			finally
+			{
+				PhantomArrayListPool.INSTANCE.returnCheckout(checkout);
+			}
 		}
 	}
 	private static void setRenderColumnView(

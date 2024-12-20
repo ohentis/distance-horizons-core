@@ -23,6 +23,7 @@ import com.seibel.distanthorizons.core.api.internal.SharedApi;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.jar.ModJarInfo;
 import com.seibel.distanthorizons.core.level.IDhLevel;
+import com.seibel.distanthorizons.core.pooling.PhantomArrayListPool;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.render.RenderBufferHandler;
 import com.seibel.distanthorizons.core.render.renderer.generic.GenericObjectRenderer;
@@ -30,7 +31,6 @@ import com.seibel.distanthorizons.core.util.threading.RateLimitedThreadPoolExecu
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.world.AbstractDhWorld;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
-import com.seibel.distanthorizons.coreapi.DependencyInjection.DependencyInjector;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.coreapi.util.StringUtil;
 import org.apache.logging.log4j.LogManager;
@@ -106,6 +106,9 @@ public class F3Screen
 		messageList.add(getThreadPoolStatString("Update Propagator", updatePool));
 		messageList.add(getThreadPoolStatString("LOD Builder", lodBuilderPool));
 		messageList.add(getThreadPoolStatString("Buffer Builder", bufferBuilderPool));
+		messageList.add("");
+		// object pools
+		PhantomArrayListPool.INSTANCE.addDebugMenuStringsToList(messageList);
 		messageList.add("");
 		// chunk updates
 		messageList.add(SharedApi.INSTANCE.getDebugMenuString());

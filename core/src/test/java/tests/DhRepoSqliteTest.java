@@ -31,6 +31,7 @@ import testItems.sql.TestPrimaryKeyRepo;
 import testItems.sql.TestSingleKeyDto;
 
 import java.io.File;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Map;
 
@@ -71,8 +72,10 @@ public class DhRepoSqliteTest
 			//==========================//
 			
 			// check that the schema table is created
-			Map<String, Object> autoUpdateTablePresentResult = primaryKeyRepo.queryDictionaryFirst("SELECT name FROM sqlite_master WHERE type='table' AND name='"+DatabaseUpdater.SCHEMA_TABLE_NAME+"';");
-			if (autoUpdateTablePresentResult == null || autoUpdateTablePresentResult.get("name") == null)
+			ResultSet autoUpdateTablePresentResult = primaryKeyRepo.query(primaryKeyRepo.createPreparedStatement("SELECT name FROM sqlite_master WHERE type='table' AND name='"+DatabaseUpdater.SCHEMA_TABLE_NAME+"';"));
+			if (autoUpdateTablePresentResult == null 
+				|| !autoUpdateTablePresentResult.next() 
+				|| autoUpdateTablePresentResult.getString("name") == null)
 			{
 				Assert.fail("Auto DB update table missing.");
 			}

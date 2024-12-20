@@ -26,6 +26,7 @@ import com.seibel.distanthorizons.coreapi.ModInfo;
 import net.jpountz.lz4.LZ4FrameInputStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.tukaani.xz.ResettableArrayCache;
 import org.tukaani.xz.XZInputStream;
 
 import java.io.*;
@@ -42,6 +43,8 @@ import java.io.*;
  */
 public class DhDataInputStream extends DataInputStream
 {
+	private static final ThreadLocal<ResettableArrayCache> LZMA_RESETTABLE_ARRAY_CACHE_GETTER = ThreadLocal.withInitial(() -> new ResettableArrayCache(new LzmaArrayCache()));
+	
 	private static final Logger LOGGER = LogManager.getLogger();
 	
 	
@@ -60,8 +63,12 @@ public class DhDataInputStream extends DataInputStream
 				case LZ4:
 					return new LZ4FrameInputStream(stream);
 				case LZMA2:
+					// using an array cache significantly reduces GC pressure
+					ResettableArrayCache arrayCache = LZMA_RESETTABLE_ARRAY_CACHE_GETTER.get();
+					arrayCache.reset();
+					
 					// Note: all LZMA/XZ compressors can be decompressed using this same InputStream
-					return new XZInputStream(stream);
+					return new XZInputStream(stream, arrayCache);
 				
 				default:
 					throw new IllegalArgumentException("No compressor defined for [" + compressionMode + "]");
@@ -72,6 +79,23 @@ public class DhDataInputStream extends DataInputStream
 			// Should only happen if there's a library issue
 			LOGGER.error("Unexpected error when wrapping DhDataInputStream, error: ["+e.getMessage()+"].", e);
 			throw e;
+		}
+	}
+	
+	
+	@Override 
+	public int read() throws IOException
+	{
+		try
+		{
+			return super.read();
+		}
+		catch (EOFException ignore) 
+		{
+			// there's a bug with XZInputStream
+			// where it throws an EOFException instead
+			// of returning -1 as defined by DataInputStream.read()
+			return -1;
 		}
 	}
 	

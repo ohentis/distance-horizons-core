@@ -71,7 +71,7 @@ public class LodDataBuilder
 		int sectionPosZ = getXOrZSectionPosFromChunkPos(chunkWrapper.getChunkPos().getZ());
 		long pos = DhSectionPos.encode(DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL, sectionPosX, sectionPosZ);
 		
-		FullDataSourceV2 dataSource = FullDataSourceV2.DATA_SOURCE_POOL.getPooledSource(pos);
+		FullDataSourceV2 dataSource = FullDataSourceV2.createEmpty(pos);
 		dataSource.isEmpty = false;
 		
 		
@@ -140,7 +140,18 @@ public class LodDataBuilder
 			{
 				for (int relBlockZ = 0; relBlockZ < LodUtil.CHUNK_WIDTH; relBlockZ++)
 				{
-					LongArrayList longs = new LongArrayList(chunkWrapper.getHeight() / 4);
+					LongArrayList longs =  dataSource.get(
+							relBlockX + chunkOffsetX,
+							relBlockZ + chunkOffsetZ);
+					if (longs == null)
+					{
+						longs = new LongArrayList(chunkWrapper.getHeight() / 4);
+					}
+					else
+					{
+						longs.clear();
+					}
+					
 					int lastY = chunkWrapper.getExclusiveMaxBuildHeight();
 					IBiomeWrapper biome = chunkWrapper.getBiome(relBlockX, lastY, relBlockZ);
 					IBlockStateWrapper blockState = AIR;
@@ -388,7 +399,7 @@ public class LodDataBuilder
 		int relSourceBlockX = Math.floorMod(apiChunk.chunkPosX, 4) * LodUtil.CHUNK_WIDTH;
 		int relSourceBlockZ = Math.floorMod(apiChunk.chunkPosZ, 4) * LodUtil.CHUNK_WIDTH;
 		
-		FullDataSourceV2 dataSource = FullDataSourceV2.DATA_SOURCE_POOL.getPooledSource(pos);
+		FullDataSourceV2 dataSource = FullDataSourceV2.createEmpty(pos);
 		for (int relBlockZ = 0; relBlockZ < LodUtil.CHUNK_WIDTH; relBlockZ++)
 		{
 			for (int relBlockX = 0; relBlockX < LodUtil.CHUNK_WIDTH; relBlockX++)

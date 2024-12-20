@@ -20,6 +20,7 @@
 package com.seibel.distanthorizons.core.sql.repo;
 
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.sql.DatabaseUpdater;
 import com.seibel.distanthorizons.core.sql.DbConnectionClosedException;
 import com.seibel.distanthorizons.core.sql.dto.IBaseDTO;
@@ -179,13 +180,20 @@ public abstract class AbstractDhRepo<TKey, TDTO extends IBaseDTO<TKey>> implemen
 	
 	public TDTO getByKey(TKey primaryKey)
 	{
-		Map<String, Object> objectMap = this.queryDictionaryFirst(this.createSelectByKeySql(primaryKey));
-		if (objectMap != null && !objectMap.isEmpty())
+		try(ResultSet resultSet = this.query(this.createSelectStatementByKey(primaryKey)))
 		{
-			return this.convertDictionaryToDto(objectMap);
+			if (resultSet != null && resultSet.next())
+			{
+				return this.convertResultSetToDto(resultSet);
+			}
+			else 
+			{
+				return null;
+			}
 		}
-		else
+		catch (SQLException | IOException e)
 		{
+			LOGGER.warn("Unexpected issue deserializing DTO ["+this.dtoClass.getSimpleName()+"] with primary key ["+primaryKey+"]. Error: ["+e.getMessage()+"].", e);
 			return null;
 		}
 	}
@@ -228,7 +236,7 @@ public abstract class AbstractDhRepo<TKey, TDTO extends IBaseDTO<TKey>> implemen
 		}
 		catch (SQLException e)
 		{
-			String message = "Unexpected insert statement error: ["+e.getMessage()+"].";
+			String message = "Unexpected DTO insert error: ["+e.getMessage()+"].";
 			LOGGER.error(message);
 			throw new RuntimeException(message, e);
 		}
@@ -245,7 +253,7 @@ public abstract class AbstractDhRepo<TKey, TDTO extends IBaseDTO<TKey>> implemen
 		}
 		catch (SQLException e)
 		{
-			String message = "Unexpected update statement error: ["+e.getMessage()+"].";
+			String message = "Unexpected DTO update error: ["+e.getMessage()+"].";
 			LOGGER.error(message);
 			throw new RuntimeException(message, e);
 		}
@@ -255,55 +263,67 @@ public abstract class AbstractDhRepo<TKey, TDTO extends IBaseDTO<TKey>> implemen
 	public void delete(TDTO dto) { this.deleteWithKey(dto.getKey()); }
 	public void deleteWithKey(TKey key) 
 	{
-		String whereEqualStatement = this.createWhereStatement(key);
-		this.queryDictionaryFirst("DELETE FROM "+this.getTableName()+" WHERE "+whereEqualStatement); 
+		try (PreparedStatement statement = this.createDeleteStatementByKey(key))
+		{
+			this.query(statement);
+		}
+		catch (SQLException e)
+		{
+			throw new RuntimeException(e);
+		}
 	}
 	
 	/** With great power comes great responsibility... */
-	public void deleteAll() { this.queryDictionaryFirst("DELETE FROM "+this.getTableName()); }
+	public void deleteAll() 
+	{ 
+		String sql = "DELETE FROM " + this.getTableName();
+		try (PreparedStatement statement = this.createPreparedStatement(sql))
+		{
+			this.query(statement);
+		}
+		catch (SQLException e)
+		{
+			throw new RuntimeException(e);
+		}
+	}
 	
 	
 	public boolean exists(TDTO dto) { return this.existsWithKey(dto.getKey()); }
 	public boolean existsWithKey(TKey key) 
 	{
-		String whereEqualStatement = this.createWhereStatement(key);
-		Map<String, Object> result = this.queryDictionaryFirst("SELECT EXISTS(SELECT 1 FROM "+this.getTableName()+" WHERE "+whereEqualStatement+") as 'existingCount';"); 
-		return result != null && (int)result.get("existingCount") != 0;
+		try
+		{
+			try (PreparedStatement statement = this.createExistsStatementByKey(key);
+				ResultSet result = this.query(statement))
+			{
+				return result != null && result.getInt("existingCount") != 0;
+			}
+		}
+		catch (SQLException e)
+		{
+			return false;
+		}
 	}
+	
 	
 	
 	//==============//
 	// low level DB //
 	//==============//
 	
-	public List<Map<String, Object>> queryDictionary(String sql)
-	{
-		try
-		{
-			return this.query(sql);
-		}
-		catch (DbConnectionClosedException e)
-		{
-			return new ArrayList<>();
-		}
-	}
-	public List<Map<String, Object>> queryDictionary(PreparedStatement preparedStatement)
-	{
-		try
-		{
-			return this.query(preparedStatement);
-		}
-		catch (DbConnectionClosedException e)
-		{
-			return new ArrayList<>();
-		}
-	}
+	/** 
+	 * This can only run 1 command at a time. <br><br>
+	 * 
+	 * Note: {@link AbstractDhRepo#query(PreparedStatement)} with a {@link PreparedStatement}
+	 * should be used if the query will be run often.
+	 * This reduces GC pressure due to the {@link String} and {@link Map} allocation cost.
+	 */
 	@Nullable
 	public Map<String, Object> queryDictionaryFirst(String sql) 
 	{
 		try
 		{
-			List<Map<String, Object>> objectList = this.query(sql);
+			List<Map<String, Object>> objectList = this.queryDictionary(sql);
 			return !objectList.isEmpty() ? objectList.get(0) : null;
 		}
 		catch (DbConnectionClosedException e)
@@ -311,54 +331,14 @@ public abstract class AbstractDhRepo<TKey, TDTO extends IBaseDTO<TKey>> implemen
 			return null;
 		}
 	}
-	@Nullable
-	public Map<String, Object> queryDictionaryFirst(PreparedStatement preparedStatement)
-	{
-		try
-		{
-			List<Map<String, Object>> objectList = this.query(preparedStatement);
-			return !objectList.isEmpty() ? objectList.get(0) : null;
-		}
-		catch (DbConnectionClosedException e)
-		{
-			return null;
-		}
-	}
-	
-	
-	/** note: this can only handle 1 command at a time */
-	private List<Map<String, Object>> query(PreparedStatement statement) throws RuntimeException, DbConnectionClosedException
-	{
-		try
-		{
-			statement.setQueryTimeout(TIMEOUT_SECONDS);
-			
-			// Note: this can only handle 1 command at a time
-			boolean resultSetPresent = statement.execute();
-			try (ResultSet resultSet = statement.getResultSet())
-			{
-				return this.parseQueryResult(resultSet, resultSetPresent);
-			}
-		}
-		catch(SQLException e)
-		{
-			// SQL exceptions generally only happen when something is wrong with 
-			// the database or the query and should cause the system to blow up to notify the developer
-			
-			if (DbConnectionClosedException.IsClosedException(e))
-			{
-				throw new DbConnectionClosedException(e);
-			}
-			else
-			{
-				String message = "Unexpected Query error: [" + e.getMessage() + "], for prepared statement: [" + statement + "].";
-				LOGGER.error(message);
-				throw new RuntimeException(message, e);
-			}
-		}
-	}
-	/** note: this can only handle 1 command at a time */
-	private List<Map<String, Object>> query(String sql) throws RuntimeException, DbConnectionClosedException
+	/**
+	 * This can only run 1 command at a time. <br><br>
+	 * 
+	 * Note: {@link AbstractDhRepo#query(PreparedStatement)} with a {@link PreparedStatement}
+	 * should be used if the query will be run often.
+	 * This reduces GC pressure due to the {@link String} and {@link Map} allocation cost.
+	 */
+	private List<Map<String, Object>> queryDictionary(String sql) throws RuntimeException, DbConnectionClosedException
 	{
 		try (Statement statement = this.connection.createStatement())
 		{
@@ -368,7 +348,7 @@ public abstract class AbstractDhRepo<TKey, TDTO extends IBaseDTO<TKey>> implemen
 			boolean resultSetPresent = statement.execute(sql);
 			try (ResultSet resultSet = statement.getResultSet())
 			{
-				return this.parseQueryResult(resultSet, resultSetPresent);
+				return this.convertResultSetToDictionaryList(resultSet, resultSetPresent);
 			}
 		}
 		catch(SQLException e)
@@ -383,32 +363,71 @@ public abstract class AbstractDhRepo<TKey, TDTO extends IBaseDTO<TKey>> implemen
 			else
 			{
 				String message = "Unexpected Query error: [" + e.getMessage() + "], for script: [" + sql + "].";
+				LOGGER.error(message, e);
+				throw new RuntimeException(message, e);
+			}
+		}
+	}
+	
+	
+	
+	/** 
+	 * Warning: both the returned {@link ResultSet} and incoming {@link PreparedStatement} 
+	 * must be wrapped in a try-resource block to prevent memory
+	 * leaks and issues with the DB becoming locked.
+	 */
+	@Nullable
+	public ResultSet query(@Nullable PreparedStatement statement) throws RuntimeException
+	{
+		// This is done so we don't have to add "if null" checks everywhere.
+		// Normally this should only happen once the DB has been closed.
+		if (statement == null)
+		{
+			return null;
+		}
+		
+		
+		try
+		{
+			statement.setQueryTimeout(TIMEOUT_SECONDS);
+			
+			// Note: this can only handle 1 command at a time
+			boolean resultSetPresent = statement.execute();
+			if (resultSetPresent)
+			{
+				return statement.getResultSet();
+			}
+			else
+			{
+				return null;
+			}
+		}
+		catch(SQLException e)
+		{
+			// SQL exceptions generally only happen when something is wrong with 
+			// the database or the query and should cause the system to blow up to notify the developer
+			
+			if (DbConnectionClosedException.IsClosedException(e))
+			{
+				return null;
+			}
+			else
+			{
+				String message = "Unexpected Query error: [" + e.getMessage() + "], for prepared statement: [" + statement + "].";
 				LOGGER.error(message);
 				throw new RuntimeException(message, e);
 			}
 		}
 	}
-	private List<Map<String, Object>> parseQueryResult(ResultSet resultSet, boolean resultSetPresent) throws SQLException
-	{
-		if (resultSetPresent)
-		{
-			List<Map<String, Object>> resultList = convertResultSetToDictionaryList(resultSet);
-			resultSet.close();
-			return resultList;
-		}
-		else
-		{
-			if (resultSet != null)
-			{
-				resultSet.close();
-			}
-			
-			return new ArrayList<>();
-		}
-	}
 	
 	
-	public PreparedStatement createPreparedStatement(String sql) throws DbConnectionClosedException
+	
+	/** 
+	 * @return Null if the database was closed
+	 * @throws RuntimeException if there was a problem with the given SQL string
+	 */
+	@Nullable
+	public PreparedStatement createPreparedStatement(String sql) throws RuntimeException
 	{
 		try
 		{
@@ -420,7 +439,7 @@ public abstract class AbstractDhRepo<TKey, TDTO extends IBaseDTO<TKey>> implemen
 		{
 			if (DbConnectionClosedException.IsClosedException(e))
 			{
-				throw new DbConnectionClosedException(e);
+				return null;
 			}
 			else
 			{
@@ -525,9 +544,25 @@ public abstract class AbstractDhRepo<TKey, TDTO extends IBaseDTO<TKey>> implemen
 	// helper methods //
 	//================//
 	
-	public String createWhereStatement(TDTO dto) { return this.createWhereStatement(dto.getKey()); }
-	
-	public static List<Map<String, Object>> convertResultSetToDictionaryList(ResultSet resultSet) throws SQLException
+	private List<Map<String, Object>> convertResultSetToDictionaryList(ResultSet resultSet, boolean resultSetPresent) throws SQLException
+	{
+		if (resultSetPresent)
+		{
+			List<Map<String, Object>> resultList = convertResultSetToDictionaryList(resultSet);
+			resultSet.close();
+			return resultList;
+		}
+		else
+		{
+			if (resultSet != null)
+			{
+				resultSet.close();
+			}
+			
+			return new ArrayList<>();
+		}
+	}
+	private static List<Map<String, Object>> convertResultSetToDictionaryList(ResultSet resultSet) throws SQLException
 	{
 		List<Map<String, Object>> list = new ArrayList<>();
 		
@@ -540,7 +575,7 @@ public abstract class AbstractDhRepo<TKey, TDTO extends IBaseDTO<TKey>> implemen
 			for (int columnIndex = 1; columnIndex <= resultColumnCount; columnIndex++) // column indices start at 1
 			{
 				String columnName = resultMetaData.getColumnName(columnIndex);
-				if (columnName == null || columnName.equals(""))
+				if (columnName == null || columnName.isEmpty())
 				{
 					throw new RuntimeException("SQL result set is missing a column name for column ["+resultMetaData.getTableName(columnIndex)+"."+columnIndex+"].");
 				}
@@ -585,18 +620,85 @@ public abstract class AbstractDhRepo<TKey, TDTO extends IBaseDTO<TKey>> implemen
 	public abstract String getTableName();
 	
 	@Nullable
-	public abstract TDTO convertDictionaryToDto(Map<String, Object> objectMap) throws ClassCastException;
+	public abstract TDTO convertResultSetToDto(ResultSet resultSet) throws ClassCastException, IOException, SQLException;
 	
-	public String createSelectByKeySql(TKey key) { return "SELECT * FROM "+this.getTableName()+" WHERE "+this.createWhereStatement(key); }
+	
+	
 	/** 
-	 * Example: 
-	 * <code> Id = '0' </code> 
-	 * <code> ColOne = '0' AND ColTwo = '2' </code>
+	 * should NOT start with WHERE 
+	 * Example: TODO 
 	 */
-	public abstract String createWhereStatement(TKey key);
+	protected abstract String CreateParameterizedWhereString();
 	
+	protected void setPreparedStatementWhereClause(PreparedStatement statement, TKey key) throws SQLException { this.setPreparedStatementWhereClause(statement, 1, key); }
+	protected abstract int setPreparedStatementWhereClause(PreparedStatement statement, int parameterIndex, TKey key) throws SQLException;
+	
+	
+	private String selectSqlTemplate = null;
+	public PreparedStatement createSelectStatementByKey(TKey key) throws SQLException
+	{
+		// create shared template string
+		if (this.selectSqlTemplate == null)
+		{
+			this.selectSqlTemplate = "SELECT * FROM "+this.getTableName() + " WHERE " + this.CreateParameterizedWhereString();
+		}
+		
+		PreparedStatement statement = this.createPreparedStatement(this.selectSqlTemplate);
+		if (statement == null)
+		{
+			return null;
+		}
+		this.setPreparedStatementWhereClause(statement, key);
+		
+		return statement;
+	}
+	
+	private String existsSqlTemplate = null;
+	public PreparedStatement createExistsStatementByKey(TKey key) throws SQLException
+	{
+		// create shared template string
+		if (this.existsSqlTemplate == null)
+		{
+			this.existsSqlTemplate = "SELECT EXISTS(SELECT 1 FROM "+this.getTableName()+" WHERE "+this.CreateParameterizedWhereString()+") as 'existingCount'";
+		}
+		
+		PreparedStatement statement = this.createPreparedStatement(this.existsSqlTemplate);
+		if (statement == null)
+		{
+			return null;
+		}
+		this.setPreparedStatementWhereClause(statement, key);
+		
+		return statement;
+	}
+	
+	private String deleteSqlTemplate = null;
+	public PreparedStatement createDeleteStatementByKey(TKey key) throws SQLException
+	{
+		// create shared template string
+		if (this.deleteSqlTemplate == null)
+		{
+			this.deleteSqlTemplate = "DELETE FROM "+this.getTableName()+" WHERE " + this.CreateParameterizedWhereString();
+		}
+		
+		PreparedStatement statement = this.createPreparedStatement(this.deleteSqlTemplate);
+		if (statement == null)
+		{
+			return null;
+		}
+		this.setPreparedStatementWhereClause(statement, key);
+		
+		return statement;
+	}
+	
+	
+	
+	@Nullable
 	public abstract PreparedStatement createInsertStatement(TDTO dto) throws SQLException;
+	@Nullable
 	public abstract PreparedStatement createUpdateStatement(TDTO dto) throws SQLException;
+	
+	
 	
 	
 }

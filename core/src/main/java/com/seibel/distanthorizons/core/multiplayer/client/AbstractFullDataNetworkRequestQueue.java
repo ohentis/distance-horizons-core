@@ -20,7 +20,6 @@ import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
 import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV2DTO;
 import com.seibel.distanthorizons.core.util.LodUtil;
-import com.seibel.distanthorizons.core.util.objects.DataCorruptedException;
 import com.seibel.distanthorizons.core.util.ratelimiting.SupplierBasedRateLimiter;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.world.DhApiWorldProxy;
@@ -30,7 +29,6 @@ import org.apache.logging.log4j.LogManager;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import java.awt.*;
-import java.io.IOException;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.*;
@@ -235,11 +233,12 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 						try
 						{
 							this.level.getBeaconBeamDataHandler().setBeaconBeamsForPos(dataSourceDto.pos, response.payload.beaconBeams);
-							FullDataSourceV2 fullDataSource = dataSourceDto.createPooledDataSource(this.level.getLevelWrapper());
-							entry.dataSourceConsumer.accept(fullDataSource);
-							FullDataSourceV2.DATA_SOURCE_POOL.returnPooledDataSource(fullDataSource);
+							try (FullDataSourceV2 fullDataSource = dataSourceDto.createDataSource(this.level.getLevelWrapper()))
+							{
+								entry.dataSourceConsumer.accept(fullDataSource);
+							}
 						}
-						catch (IOException | DataCorruptedException | InterruptedException e)
+						catch (Exception e)
 						{
 							throw new RuntimeException(e);
 						}

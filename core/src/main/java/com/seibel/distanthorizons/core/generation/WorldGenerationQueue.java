@@ -392,13 +392,20 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 						try
 						{
 							IChunkWrapper chunk = WRAPPER_FACTORY.createChunkWrapper(generatedObjectArray);
-							FullDataSourceV2 dataSource = LodDataBuilder.createFromChunk(chunk);
-							LodUtil.assertTrue(dataSource != null);
-							dataSourceConsumer.accept(dataSource);
+							try (FullDataSourceV2 dataSource = LodDataBuilder.createFromChunk(chunk))
+							{
+								LodUtil.assertTrue(dataSource != null);
+								dataSourceConsumer.accept(dataSource);
+							}
 						}
 						catch (ClassCastException e)
 						{
 							LOGGER.error("World generator return type incorrect. Error: [" + e.getMessage() + "]. World generator disabled.", e);
+							Config.Common.WorldGenerator.enableDistantGeneration.set(false);
+						}
+						catch (Exception e)
+						{
+							LOGGER.error("Unexpected world generator error. Error: [" + e.getMessage() + "]. World generator disabled.", e);
 							Config.Common.WorldGenerator.enableDistantGeneration.set(false);
 						}
 					}
@@ -435,7 +442,7 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 			case API_DATA_SOURCES:
 			{
 				// done to reduce GC overhead
-				FullDataSourceV2 pooledDataSource = FullDataSourceV2.DATA_SOURCE_POOL.getPooledSource(requestPos);
+				FullDataSourceV2 pooledDataSource = FullDataSourceV2.createEmpty(requestPos);
 				// set here so the API user doesn't have to pass in this value anywhere themselves
 				pooledDataSource.setRunApiChunkValidation(this.generator.runApiValidation());
 				
