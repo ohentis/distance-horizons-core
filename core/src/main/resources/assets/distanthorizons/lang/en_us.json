@@ -565,6 +565,10 @@
     "Pull Lighting For Pre-generated Chunks",
   "distanthorizons.config.common.lodBuilding.pullLightingForPregeneratedChunks.@tooltip":
     "If true LOD generation for pre-existing chunks will attempt to pull the lighting data \nsaved in Minecraft's Region files. \nIf false DH will pull in chunks without lighting and re-light them. \n\nSetting this to true will result in faster LOD generation \nfor already generated worlds, but is broken by most lighting mods. \n\nSet this to false if LODs are black.",
+  "distanthorizons.config.common.lodBuilding.assumePreExistingChunksAreFinished":
+    "Assume Pre-Existing Chunks Are Finished",
+  "distanthorizons.config.common.lodBuilding.assumePreExistingChunksAreFinished.@tooltip":
+    "Setting this to true may solve some issues when using DH with a pre-generated world.",
   "distanthorizons.config.common.lodBuilding.dataCompression":
     "Data Compression",
   "distanthorizons.config.common.lodBuilding.dataCompression.@tooltip":

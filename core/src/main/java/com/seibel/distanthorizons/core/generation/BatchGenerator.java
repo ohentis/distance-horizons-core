@@ -118,7 +118,10 @@ public class BatchGenerator implements IDhApiWorldGenerator
 		Consumer<IChunkWrapper> consumerWrapper = (chunkWrapper) -> resultConsumer.accept(new Object[]{chunkWrapper});
 		try
 		{
-			return this.generationEnvironment.generateChunks(chunkPosMinX, chunkPosMinZ, generationRequestChunkWidthCount, targetStep, worldGeneratorThreadPool, consumerWrapper);
+			return this.generationEnvironment.generateChunks(
+					chunkPosMinX, chunkPosMinZ, generationRequestChunkWidthCount, 
+					generatorMode, targetStep, 
+					worldGeneratorThreadPool, consumerWrapper);
 		}
 		catch (Exception e)
 		{

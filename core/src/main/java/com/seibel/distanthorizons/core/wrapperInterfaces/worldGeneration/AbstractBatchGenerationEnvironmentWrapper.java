@@ -19,6 +19,7 @@
 
 package com.seibel.distanthorizons.core.wrapperInterfaces.worldGeneration;
 
+import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiDistantGeneratorMode;
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
@@ -38,7 +39,7 @@ public abstract class AbstractBatchGenerationEnvironmentWrapper
 	public abstract void stop();
 	
 	public abstract CompletableFuture<Void> generateChunks(
-			int minX, int minZ, int genSize, EDhApiWorldGenerationStep targetStep,
+			int minX, int minZ, int genSize, EDhApiDistantGeneratorMode generatorMode, EDhApiWorldGenerationStep targetStep,
 			ExecutorService worldGeneratorThreadPool, Consumer<IChunkWrapper> resultConsumer);
 	
 }

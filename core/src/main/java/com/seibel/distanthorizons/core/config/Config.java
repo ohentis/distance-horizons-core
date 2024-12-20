@@ -1279,6 +1279,22 @@ public class Config
 							+ "")
 					.build();
 			
+			public static ConfigEntry<Boolean> assumePreExistingChunksAreFinished = new ConfigEntry.Builder<Boolean>()
+					.set(false)
+					.comment(""
+							+ "When DH pulls in pre-existing chunks it will attempt to \n"
+							+ "run any missing world generation steps; for example: \n"
+							+ "if a chunk has the status SURFACE, DH will skip BIOMES \n"
+							+ "and SURFACE, but will run FEATURES. \n"
+							+ " \n"
+							+ "However if for some reason the chunks are malformed \n"
+							+ "or there's some other issue that causes the status \n"
+							+ "to be incorrect that can either cause world gen \n"
+							+ "lock-ups and/or crashes. \n"
+							+ "If either of those happen try setting this to True. \n"
+							+ "")
+					.build();
+			
 		}
 		
 		public static class MultiThreading
