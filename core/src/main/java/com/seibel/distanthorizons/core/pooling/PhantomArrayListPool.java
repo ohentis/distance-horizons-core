@@ -258,7 +258,27 @@ public class PhantomArrayListPool
 		{
 			// Object overhead + capacity of underlying array * size of Long (8 bytes)
 			long overhead = Byte.SIZE * 4;
-			long arraySize = (long)pool.get(i).size() * elementSizeInBytes;
+			T array = pool.get(i);
+			
+			long elementCount;
+			if (array instanceof ByteArrayList)
+			{
+				elementCount = ((ByteArrayList)array).elements().length;
+			}
+			else if (array instanceof ShortArrayList)
+			{
+				elementCount = ((ShortArrayList)array).elements().length;
+			}
+			else if (array instanceof LongArrayList)
+			{
+				elementCount = ((LongArrayList)array).elements().length;
+			}
+			else
+			{
+				throw new UnsupportedOperationException("Not implemented for type ["+array.getClass().getSimpleName()+"].");
+			}
+			
+			long arraySize = elementCount * elementSizeInBytes;
 			longByteSize += overhead + arraySize;
 		}
 		return longByteSize;
