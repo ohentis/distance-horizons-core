@@ -64,7 +64,7 @@ public class FullDataToRenderDataTransformer
 	//==============================//
 	
 	@Nullable
-	public static ColumnRenderSource transformFullDataToRenderSource(FullDataSourceV2 fullDataSource, IDhClientLevel level)
+	public static ColumnRenderSource transformFullDataToRenderSource(@Nullable FullDataSourceV2 fullDataSource, @Nullable IDhClientLevel level)
 	{
 		if (fullDataSource == null)
 		{

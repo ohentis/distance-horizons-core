@@ -61,53 +61,6 @@ public class ColumnRenderBufferBuilder
 	// vbo building //
 	//==============//
 	
-	public static CompletableFuture<LodQuadBuilder> buildBuffersAsync(
-			IDhClientLevel clientLevel,
-			ColumnRenderSource renderSource, ColumnRenderSource[] adjData, boolean[] isSameDetailLevel
-		)
-	{
-		ThreadPoolExecutor bufferBuilderExecutor = ThreadPoolUtil.getBufferBuilderExecutor();
-		if (bufferBuilderExecutor == null || bufferBuilderExecutor.isTerminated())
-		{
-			// one or more of the thread pools has been shut down
-			CompletableFuture<LodQuadBuilder> future = new CompletableFuture<>();
-			future.cancel(true);
-			return future;
-		}
-		
-		
-		try
-		{
-			return CompletableFuture.supplyAsync(() ->
-				{
-					try
-					{
-						boolean enableTransparency = Config.Client.Advanced.Graphics.Quality.transparency.get().transparencyEnabled;
-						LodQuadBuilder builder = new LodQuadBuilder(enableTransparency, clientLevel.getClientLevelWrapper());
-						makeLodRenderData(builder, renderSource, clientLevel, adjData, isSameDetailLevel);
-						return builder;
-					}
-					catch (UncheckedInterruptedException e)
-					{
-						throw e;
-					}
-					catch (Throwable e3)
-					{
-						LOGGER.error("LodNodeBufferBuilder was unable to build quads for pos ["+DhSectionPos.toString(renderSource.pos)+"], error: ["+ e3.getMessage()+"].", e3);
-						throw e3;
-					}
-				}, bufferBuilderExecutor);
-		}
-		catch (RejectedExecutionException ignore)
-		{
-			// the thread pool was probably shut down because it's size is being changed, just wait a sec and it should be back
-			
-			CompletableFuture<LodQuadBuilder> future = new CompletableFuture<>();
-			future.cancel(true);
-			return future;
-		}
-	}
-	
 	/** @link adjData should be null for adjacent sections that cross detail level boundaries */
 	public static CompletableFuture<ColumnRenderBuffer> uploadBuffersAsync(
 			IDhClientLevel clientLevel,
@@ -127,7 +80,7 @@ public class ColumnRenderBufferBuilder
 		});
 		return uploadFuture;
 	}
-	private static void makeLodRenderData(
+	public static void makeLodRenderData(
 			LodQuadBuilder quadBuilder, ColumnRenderSource renderSource, IDhClientLevel clientLevel,
 			ColumnRenderSource[] adjRegions, boolean[] isSameDetailLevel)
 	{
