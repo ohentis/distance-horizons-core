@@ -26,6 +26,7 @@ import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGeneratio
 import com.seibel.distanthorizons.core.dataObjects.fullData.FullDataPointIdMap;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.pooling.PhantomArrayListParent;
+import com.seibel.distanthorizons.core.pooling.PhantomArrayListPool;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.network.INetworkObject;
 import com.seibel.distanthorizons.core.util.FullDataPointUtil;
@@ -75,6 +76,9 @@ public class FullDataSourceV2DTO
 	public long createdUnixDateTime;
 	
 	
+	public static final PhantomArrayListPool ARRAY_LIST_POOL = new PhantomArrayListPool("V2DTO");
+	
+	
 	
 	//==============//
 	// constructors //
@@ -109,12 +113,14 @@ public class FullDataSourceV2DTO
 	public static FullDataSourceV2DTO CreateEmptyDataSourceForDecoding() { return new FullDataSourceV2DTO(); }
 	private FullDataSourceV2DTO() 
 	{
-		super(4, 0, 0);
+		super(ARRAY_LIST_POOL, 4, 0, 0);
 		
-		this.compressedDataByteArray = this.pooledArraysCheckout.getByteArray(0);
-		this.compressedColumnGenStepByteArray = this.pooledArraysCheckout.getByteArray(1);
-		this.compressedWorldCompressionModeByteArray = this.pooledArraysCheckout.getByteArray(2);
-		this.compressedMappingByteArray = this.pooledArraysCheckout.getByteArray(3);
+		// Expected sizes here are 0 since we don't know how big these arrays need to be,
+		// they depend on compression settings and world complexity.
+		this.compressedDataByteArray = this.pooledArraysCheckout.getByteArray(0, 0);
+		this.compressedColumnGenStepByteArray = this.pooledArraysCheckout.getByteArray(1, 0);
+		this.compressedWorldCompressionModeByteArray = this.pooledArraysCheckout.getByteArray(2, 0);
+		this.compressedMappingByteArray = this.pooledArraysCheckout.getByteArray(3, 0);
 		
 		this.pooledArraysCheckout = null;
 	}

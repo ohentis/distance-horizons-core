@@ -23,6 +23,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.seibel.distanthorizons.core.dataObjects.render.columnViews.ColumnArrayView;
 import com.seibel.distanthorizons.core.dataObjects.render.columnViews.IColumnDataView;
 import com.seibel.distanthorizons.core.pooling.PhantomArrayListParent;
+import com.seibel.distanthorizons.core.pooling.PhantomArrayListPool;
 import com.seibel.distanthorizons.core.util.LodUtil.AssertFailureException;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.shorts.ShortArrayList;
@@ -86,6 +87,10 @@ public class RenderDataPointReducingList extends PhantomArrayListParent
 	/** the default element of {@link #links} to indicate that a node is not linked to any other nodes. */
 	public static final long DEFAULT_LINKS = -1L;
 	
+	
+	public static final PhantomArrayListPool ARRAY_LIST_POOL = new PhantomArrayListPool("Render Reducer");
+	
+	
 	/**
 	 * indexes of the nodes at the ends of this list.
 	 * access these fields through the getters,
@@ -118,7 +123,7 @@ public class RenderDataPointReducingList extends PhantomArrayListParent
 	
 	public RenderDataPointReducingList(IColumnDataView view) 
 	{
-		super(0, 1, 2);
+		super(ARRAY_LIST_POOL, 0, 1, 2);
 		
 		int size = view.size();
 		if (size == 0) 
@@ -127,9 +132,9 @@ public class RenderDataPointReducingList extends PhantomArrayListParent
 			this.setHighest(NULL);
 			this.setSmallest(NULL);
 			this.setBiggest(NULL);
-			this.links = this.pooledArraysCheckout.getLongArray(0);
-			this.data = this.pooledArraysCheckout.getLongArray(1);
-			this.sortingArray = this.pooledArraysCheckout.getShortArray(0);
+			this.links = this.pooledArraysCheckout.getLongArray(0, 0);
+			this.data = this.pooledArraysCheckout.getLongArray(1, 0);
+			this.sortingArray = this.pooledArraysCheckout.getShortArray(0, 0);
 			if (ASSERTS) this.checkLinks();
 			
 			this.pooledArraysCheckout = null;

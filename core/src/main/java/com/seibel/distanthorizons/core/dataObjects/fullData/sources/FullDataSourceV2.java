@@ -30,6 +30,7 @@ import com.seibel.distanthorizons.core.file.IDataSource;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pooling.PhantomArrayListParent;
+import com.seibel.distanthorizons.core.pooling.PhantomArrayListPool;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.util.*;
 import com.seibel.distanthorizons.core.util.objects.DataCorruptedException;
@@ -71,6 +72,8 @@ public class FullDataSourceV2
 	public static final int NUMB_OF_CHUNKS_WIDE = WIDTH / LodUtil.CHUNK_WIDTH;
 	
 	public static final byte DATA_FORMAT_VERSION = 1;
+	
+	public static final PhantomArrayListPool ARRAY_LIST_POOL = new PhantomArrayListPool("FullDataV2");
 	
 	
 	
@@ -216,7 +219,7 @@ public class FullDataSourceV2
 			@Nullable byte[] columnGenerationSteps, @Nullable byte[] columnWorldCompressionMode,
 			boolean empty)
 	{
-		super(2, 0, WIDTH * WIDTH);
+		super(ARRAY_LIST_POOL, 2, 0, WIDTH * WIDTH);
 		
 		LodUtil.assertTrue(data == null || data.length == WIDTH * WIDTH);
 		
@@ -246,7 +249,7 @@ public class FullDataSourceV2
 		}
 		
 		// pooled generation step array
-		this.columnGenerationSteps = this.pooledArraysCheckout.getByteArray(0);
+		this.columnGenerationSteps = this.pooledArraysCheckout.getByteArray(0, 0); // initial size is 0 so we can simply add the existing array if present
 		if (columnGenerationSteps != null)
 		{
 			this.columnGenerationSteps.addElements(0, columnGenerationSteps);
@@ -257,7 +260,7 @@ public class FullDataSourceV2
 		}
 		
 		// pooled column compression array
-		this.columnWorldCompressionMode = this.pooledArraysCheckout.getByteArray(1);
+		this.columnWorldCompressionMode = this.pooledArraysCheckout.getByteArray(1, 0);
 		if (columnWorldCompressionMode != null)
 		{
 			this.columnWorldCompressionMode.addElements(0, columnWorldCompressionMode);

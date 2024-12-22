@@ -57,6 +57,8 @@ public class FullDataToRenderDataTransformer
 	
 	private static final LongOpenHashSet brokenPos = new LongOpenHashSet();
 	
+	public static final PhantomArrayListPool ARRAY_LIST_POOL = new PhantomArrayListPool("Data Transformer");
+	
 	
 	
 	//==============================//
@@ -163,7 +165,7 @@ public class FullDataToRenderDataTransformer
 		else
 		{
 			// new LongArrayList(new long[fullDataLength])
-			PhantomArrayListCheckout checkout = PhantomArrayListPool.INSTANCE.checkoutArrays(0, 0, 1);
+			PhantomArrayListCheckout checkout = ARRAY_LIST_POOL.checkoutArrays(0, 0, 1);
 			LongArrayList dataArrayList = checkout.getLongArray(0, fullDataLength);
 			
 			try
@@ -175,7 +177,7 @@ public class FullDataToRenderDataTransformer
 			}
 			finally
 			{
-				PhantomArrayListPool.INSTANCE.returnCheckout(checkout);
+				ARRAY_LIST_POOL.returnCheckout(checkout);
 			}
 		}
 	}

@@ -2,15 +2,20 @@ package com.seibel.distanthorizons.core.pooling;
 
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
+import com.seibel.distanthorizons.core.util.ThreadUtil;
 import com.seibel.distanthorizons.coreapi.util.StringUtil;
 import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.shorts.ShortArrayList;
 import org.apache.logging.log4j.Logger;
 
+import java.lang.ref.Reference;
+import java.lang.ref.ReferenceQueue;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
@@ -38,7 +43,27 @@ public class PhantomArrayListPool
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
-	public static final PhantomArrayListPool INSTANCE = new PhantomArrayListPool();
+	/** 
+	 * the recycler thread needs to be triggered relatively often to prevent
+	 * build up of GC'ed arrays.
+	 */
+	private static final int PHANTOM_REF_CHECK_TIME_IN_MS = 1_000;
+	private static final ThreadPoolExecutor RECYCLER_THREAD = ThreadUtil.makeSingleThreadPool("Phantom Array Recycler");
+	private static final ArrayList<PhantomArrayListPool> POOL_LIST = new ArrayList<>();
+	
+	/** if enabled the number of GC'ed arrays will be logged */
+	private static final boolean LOG_ARRAY_RECOVERY = false;
+	
+	
+	
+	/** used for debugging and tracking what the pool contains */
+	public final String name;
+	
+	public final ConcurrentHashMap<Reference<? extends PhantomArrayListParent>, PhantomArrayListCheckout>
+			phantomRefToCheckout = new ConcurrentHashMap<>();
+	public final ReferenceQueue<PhantomArrayListParent> phantomRefQueue = new ReferenceQueue<>();
+	
+	
 	
 	
 	/** needed since our pools aren't thread safe */
@@ -68,12 +93,82 @@ public class PhantomArrayListPool
 	// constructor //
 	//=============//
 	
-	private PhantomArrayListPool()
+	// shared setup used by all pools
+	static
 	{
-		// create initial arrays
-		PhantomArrayListCheckout checkout = this.checkoutArrays(2_000, 100, 100_000);
-		this.returnCheckout(checkout);
+		RECYCLER_THREAD.execute(() -> runPhantomReferenceCleanupLoop());
 	}
+	private static void runPhantomReferenceCleanupLoop()
+	{
+		while (true)
+		{
+			try
+			{
+				try
+				{
+					Thread.sleep(PHANTOM_REF_CHECK_TIME_IN_MS);
+				}
+				catch (InterruptedException ignore) { }
+				
+				
+				for (int i = 0; i < POOL_LIST.size(); i++)
+				{
+					PhantomArrayListPool pool = POOL_LIST.get(i);
+					
+					int returnedByteArrayCount = 0;
+					int returnedShortArrayCount = 0;
+					int returnedLongArrayCount = 0;
+					Reference<? extends PhantomArrayListParent> phantomRef = pool.phantomRefQueue.poll();
+					while (phantomRef != null)
+					{
+						// return the pooled arrays
+						PhantomArrayListCheckout checkout = pool.phantomRefToCheckout.remove(phantomRef);
+						if (checkout != null)
+						{
+							returnedByteArrayCount += checkout.getByteArrayCount();
+							returnedShortArrayCount += checkout.getShortArrayCount();
+							returnedLongArrayCount += checkout.getLongArrayCount();
+							pool.returnCheckout(checkout);
+						}
+						else
+						{
+							// shouldn't happen, but just in case
+							LOGGER.warn("Pool: ["+pool.name+"]. Unable to find checkout for phantom reference ["+phantomRef+"], arrays will need to be recreated.");
+						}
+						
+						phantomRef = pool.phantomRefQueue.poll();
+					}
+					
+					if (LOG_ARRAY_RECOVERY)
+					{
+						if (returnedByteArrayCount != 0
+								&& returnedShortArrayCount != 0
+								&& returnedLongArrayCount != 0)
+						{
+							// we only want to log when arrays have been returned
+							LOGGER.info("Pool: ["+pool.name+"]. Returned byte:["+F3Screen.NUMBER_FORMAT.format(returnedByteArrayCount)+"], short:["+F3Screen.NUMBER_FORMAT.format(returnedShortArrayCount)+"], long:["+F3Screen.NUMBER_FORMAT.format(returnedLongArrayCount)+"].");
+						}
+					}
+					
+					// since this is just for debugging it only needs to be recalculated once in a while
+					pool.recalculateSizeForDebugging();
+				}
+			}
+			catch (Exception e)
+			{
+				LOGGER.error("Unexpected error in phantom pool return thread, error: [" + e.getMessage() + "].", e);
+			}
+		}
+	}
+	
+	
+	public PhantomArrayListPool(String name)
+	{
+		POOL_LIST.add(this);
+		this.name = name;
+	}
+	
+	
 	
 	
 	
@@ -87,24 +182,24 @@ public class PhantomArrayListPool
 		{
 			this.poolLock.lock();
 			
-			PhantomArrayListCheckout checkout = new PhantomArrayListCheckout();
+			PhantomArrayListCheckout checkout = new PhantomArrayListCheckout(this);
 			
 			// byte
 			for (int i = 0; i < byteArrayCount; i++)
 			{
-				checkout.addByteArrayList(getPooledArray(this.pooledByteArrays, this::createEmptyByteArrayList));
+				checkout.addByteArrayList(getPooledArray(this.pooledByteArrays, () -> this.createEmptyByteArrayList()));
 			}
 			
 			// short
 			for (int i = 0; i < shortArrayCount; i++)
 			{
-				checkout.addShortArrayList(getPooledArray(this.pooledShortArrays, this::createEmptyShortArrayList));
+				checkout.addShortArrayList(getPooledArray(this.pooledShortArrays, () -> this.createEmptyShortArrayList()));
 			}
 			
 			// long
 			for (int i = 0; i < longArrayCount; i++)
 			{
-				checkout.addLongArrayList(getPooledArray(this.pooledLongArrays, this::createEmptyLongArrayList));
+				checkout.addLongArrayList(getPooledArray(this.pooledLongArrays, () -> this.createEmptyLongArrayList()));
 			}
 			
 			return checkout;
@@ -122,19 +217,19 @@ public class PhantomArrayListPool
 	{
 		//LOGGER.error("created new byte array");
 		this.totalByteArrayCountRef.getAndIncrement();
-		return new ByteArrayList();
+		return new ByteArrayList(0);
 	}
 	private ShortArrayList createEmptyShortArrayList()
 	{
 		//LOGGER.error("created new short array");
 		this.totalShortArrayCountRef.getAndIncrement();
-		return new ShortArrayList();
+		return new ShortArrayList(0);
 	}
-	private LongArrayList createEmptyLongArrayList()
+	public LongArrayList createEmptyLongArrayList()
 	{
 		//LOGGER.error("created new long array");
 		this.totalLongArrayCountRef.getAndIncrement();
-		return new LongArrayList();
+		return new LongArrayList(0);
 	}
 	
 	
@@ -174,7 +269,7 @@ public class PhantomArrayListPool
 		try
 		{
 			// In James' testing pooling the checkout object wasn't necessary
-			// since it is relatively small and short lived it appears
+			// since it is relatively small and short lived, thus
 			// the GC can handle quickly discarding it.
 			
 			this.pooledByteArrays.addAll(checkout.getAllByteArrays());
@@ -195,34 +290,89 @@ public class PhantomArrayListPool
 	// debug methods //
 	//===============//
 	
+	public static void addDebugMenuStringsToListForCombinedPools(List<String> messageList)
+	{
+		int totalByteArrayCount = 0, totalShortArrayCount = 0, totalLongArrayCount = 0;
+		int pooledByteArraySize = 0, pooledShortArraySize = 0, pooledLongArraySize = 0;
+		long lastBytePoolSizeInBytes = 0, lastShortPoolSizeInBytes = 0, lastLongPoolSizeInBytes = 0;
+		
+		for (int i = 0; i < POOL_LIST.size(); i++)
+		{
+			PhantomArrayListPool pool = POOL_LIST.get(i);
+			
+			totalByteArrayCount += pool.totalByteArrayCountRef.get();
+			totalShortArrayCount += pool.totalShortArrayCountRef.get();
+			totalLongArrayCount += pool.totalLongArrayCountRef.get();
+			
+			pooledByteArraySize += pool.pooledByteArrays.size();
+			pooledShortArraySize += pool.pooledShortArrays.size();
+			pooledLongArraySize += pool.pooledLongArrays.size();
+			
+			lastBytePoolSizeInBytes += pool.lastBytePoolSizeInBytes;
+			lastShortPoolSizeInBytes += pool.lastShortPoolSizeInBytes;
+			lastLongPoolSizeInBytes += pool.lastLongPoolSizeInBytes;
+		}
+		
+		addDebugMenuStringsToList(messageList,
+			"Combined",
+			totalByteArrayCount, totalShortArrayCount, totalLongArrayCount,
+			pooledByteArraySize, pooledShortArraySize, pooledLongArraySize,
+			lastBytePoolSizeInBytes, lastShortPoolSizeInBytes, lastLongPoolSizeInBytes
+		);
+	}
+	
 	public void addDebugMenuStringsToList(List<String> messageList)
 	{
+		addDebugMenuStringsToList(messageList,
+			this.name,
+			this.totalByteArrayCountRef.get(), this.totalShortArrayCountRef.get(), this.totalLongArrayCountRef.get(),
+			this.pooledByteArrays.size(), this.pooledShortArrays.size(), this.pooledLongArrays.size(),
+			this.lastBytePoolSizeInBytes, this.lastShortPoolSizeInBytes, this.lastLongPoolSizeInBytes
+		);
+	}
+	private static void addDebugMenuStringsToList(List<String> messageList, 
+			String name,
+			int totalByteArrayCount, int totalShortArrayCount, int totalLongArrayCount,
+			int numbOfByteArraysInPool, int numbOfShortArraysInPool, int numbOfLongArraysInPool,
+			long lastBytePoolSizeInBytes, long lastShortPoolSizeInBytes, long lastLongPoolSizeInBytes)
+	{
 		// total (all time created) count
-		String byteArrayTotalCount = F3Screen.NUMBER_FORMAT.format(this.totalByteArrayCountRef.get());
-		String shortArrayTotalCount = F3Screen.NUMBER_FORMAT.format(this.totalShortArrayCountRef.get());
-		String longArrayTotalCount = F3Screen.NUMBER_FORMAT.format(this.totalLongArrayCountRef.get());
+		String byteArrayTotalCount = F3Screen.NUMBER_FORMAT.format(totalByteArrayCount);
+		String shortArrayTotalCount = F3Screen.NUMBER_FORMAT.format(totalShortArrayCount);
+		String longArrayTotalCount = F3Screen.NUMBER_FORMAT.format(totalLongArrayCount);
 		
 		// inactive items in pool
-		String bytePoolCount = F3Screen.NUMBER_FORMAT.format(this.pooledByteArrays.size());
-		String shortPoolCount = F3Screen.NUMBER_FORMAT.format(this.pooledShortArrays.size());
-		String longPoolCount = F3Screen.NUMBER_FORMAT.format(this.pooledLongArrays.size());
+		String bytePoolCount = F3Screen.NUMBER_FORMAT.format(numbOfByteArraysInPool);
+		String shortPoolCount = F3Screen.NUMBER_FORMAT.format(numbOfShortArraysInPool);
+		String longPoolCount = F3Screen.NUMBER_FORMAT.format(numbOfLongArraysInPool);
 		
 		// pool byte size
-		String bytePoolSizeInBytes = (this.lastBytePoolSizeInBytes != -1) 
-				? " ~" + StringUtil.convertBytesToHumanReadable(this.lastBytePoolSizeInBytes)
+		String bytePoolSizeInBytes = (lastBytePoolSizeInBytes != -1)
+				? " ~" + StringUtil.convertBytesToHumanReadable(lastBytePoolSizeInBytes)
 				: "";
-		String shortPoolSizeInBytes = (this.lastShortPoolSizeInBytes != -1)
-				? " ~" + StringUtil.convertBytesToHumanReadable(this.lastShortPoolSizeInBytes)
+		String shortPoolSizeInBytes = (lastShortPoolSizeInBytes != -1)
+				? " ~" + StringUtil.convertBytesToHumanReadable(lastShortPoolSizeInBytes)
 				: "";
-		String longPoolSizeInBytes = (this.lastLongPoolSizeInBytes != -1)
-				? " ~" + StringUtil.convertBytesToHumanReadable(this.lastLongPoolSizeInBytes)
+		String longPoolSizeInBytes = (lastLongPoolSizeInBytes != -1)
+				? " ~" + StringUtil.convertBytesToHumanReadable(lastLongPoolSizeInBytes)
 				: "";
 		
-		messageList.add("Pools:");
-		messageList.add("byte[]: "+bytePoolCount+"/"+byteArrayTotalCount + bytePoolSizeInBytes);
-		messageList.add("short[]: "+shortPoolCount+"/"+shortArrayTotalCount + shortPoolSizeInBytes);
-		messageList.add("long[]: "+longPoolCount+"/"+longArrayTotalCount + longPoolSizeInBytes);
+		
+		messageList.add(name + " - Pools:");
+		if (totalByteArrayCount != 0)
+		{
+			messageList.add("byte[]: " + bytePoolCount + "/" + byteArrayTotalCount + bytePoolSizeInBytes);
+		}
+		if (totalShortArrayCount != 0)
+		{
+			messageList.add("short[]: " + shortPoolCount + "/" + shortArrayTotalCount + shortPoolSizeInBytes);
+		}
+		if (totalLongArrayCount != 0)
+		{
+			messageList.add("long[]: " + longPoolCount + "/" + longArrayTotalCount + longPoolSizeInBytes);
+		}
 	}
+	
 	
 	/**
 	 *  shouldn't be called on the render thread as it can
@@ -244,6 +394,7 @@ public class PhantomArrayListPool
 			// long
 			long longPoolByteSize = estimateMemoryUsage(this.pooledLongArrays, Long.BYTES);
 			this.lastLongPoolSizeInBytes = Math.max(longPoolByteSize, this.lastLongPoolSizeInBytes);
+			
 		}
 		finally
 		{

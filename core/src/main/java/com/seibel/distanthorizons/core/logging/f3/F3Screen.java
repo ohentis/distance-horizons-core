@@ -108,7 +108,7 @@ public class F3Screen
 		messageList.add(getThreadPoolStatString("Buffer Builder", bufferBuilderPool));
 		messageList.add("");
 		// object pools
-		PhantomArrayListPool.INSTANCE.addDebugMenuStringsToList(messageList);
+		PhantomArrayListPool.addDebugMenuStringsToListForCombinedPools(messageList);
 		messageList.add("");
 		// chunk updates
 		messageList.add(SharedApi.INSTANCE.getDebugMenuString());

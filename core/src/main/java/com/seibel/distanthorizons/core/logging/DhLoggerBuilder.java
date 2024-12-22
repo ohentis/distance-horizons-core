@@ -60,6 +60,12 @@ public class DhLoggerBuilder
 	/** Attempts to return the logger for this containing class. */
 	public static Logger getLogger()
 	{
+		return LogManager.getLogger(ModInfo.NAME + "-" + getCallingClassName());
+	}
+	
+	/** @return "??" if no name could be found */
+	public static String getCallingClassName()
+	{
 		StackTraceElement[] stElements = Thread.currentThread().getStackTrace();
 		String callerClassName = "??";
 		for (int i = 1; i < stElements.length; i++)
@@ -72,7 +78,9 @@ public class DhLoggerBuilder
 				break;
 			}
 		}
-		return LogManager.getLogger(ModInfo.NAME + "-" + callerClassName);
+		
+		return callerClassName;
 	}
+	
 	
 }

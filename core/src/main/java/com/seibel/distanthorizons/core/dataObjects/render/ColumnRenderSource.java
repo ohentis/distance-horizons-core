@@ -25,8 +25,10 @@ import com.seibel.distanthorizons.core.dataObjects.transformers.FullDataToRender
 import com.seibel.distanthorizons.core.file.IDataSource;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pooling.PhantomArrayListParent;
+import com.seibel.distanthorizons.core.pooling.PhantomArrayListPool;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.util.ListUtil;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.core.dataObjects.render.columnViews.ColumnArrayView;
 import com.seibel.distanthorizons.core.dataObjects.render.columnViews.ColumnQuadView;
@@ -55,6 +57,8 @@ public class ColumnRenderSource
 	/** width of this data in columns */
 	public static final int SECTION_SIZE = BitShiftUtil.powerOfTwo(SECTION_SIZE_OFFSET); // 64
 	
+	public static final PhantomArrayListPool ARRAY_LIST_POOL = new PhantomArrayListPool("Render Source");
+	
 	
 	
 	/** will be zero if an empty data source was created */
@@ -62,7 +66,7 @@ public class ColumnRenderSource
 	public long pos;
 	public int yOffset;
 	
-	public LongArrayList renderDataContainer;
+	public final LongArrayList renderDataContainer;
 	
 	public final DebugSourceFlag[] debugSourceFlags;
 	
@@ -86,7 +90,7 @@ public class ColumnRenderSource
 	 */
 	private ColumnRenderSource(long pos, int maxVerticalSize, int yOffset)
 	{
-		super(0, 0, 1);
+		super(ARRAY_LIST_POOL, 0, 0, 1);
 		
 		this.pos = pos;
 		this.yOffset = yOffset;

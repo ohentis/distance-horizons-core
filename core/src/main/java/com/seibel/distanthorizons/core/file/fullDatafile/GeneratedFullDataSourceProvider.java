@@ -297,6 +297,9 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 				.noneMatch(i -> columnGenerationSteps.getByte(i) == EDhApiWorldGenerationStep.EMPTY.value);
 	}
 	
+	public static final PhantomArrayListPool ARRAY_LIST_POOL = new PhantomArrayListPool("Generated Provider");
+	
+	
 	@Override
 	public LongArrayList getPositionsToRetrieve(Long pos)
 	{
@@ -310,9 +313,9 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 		// don't check any child positions if this position is already fully generated 
 		if (this.repo.existsWithKey(pos))
 		{
-			try(PhantomArrayListCheckout checkout = PhantomArrayListPool.INSTANCE.checkoutArrays(1, 0, 0))
+			try(PhantomArrayListCheckout checkout = ARRAY_LIST_POOL.checkoutArrays(1, 0, 0))
 			{
-				ByteArrayList columnGenStepArray = checkout.getByteArray(0);
+				ByteArrayList columnGenStepArray = checkout.getByteArray(0, FullDataSourceV2.WIDTH*FullDataSourceV2.WIDTH);
 				this.repo.getColumnGenerationStepForPos(pos, columnGenStepArray);
 				if (!columnGenStepArray.isEmpty())
 				{
@@ -357,9 +360,9 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 			{
 				
 				EDhApiWorldGenerationStep currentMinWorldGenStep = EDhApiWorldGenerationStep.LIGHT;
-				try(PhantomArrayListCheckout checkout = PhantomArrayListPool.INSTANCE.checkoutArrays(1, 0, 0))
+				try(PhantomArrayListCheckout checkout = ARRAY_LIST_POOL.checkoutArrays(1, 0, 0))
 				{
-					ByteArrayList columnGenerationSteps = checkout.getByteArray(0);
+					ByteArrayList columnGenerationSteps = checkout.getByteArray(0, FullDataSourceV2.WIDTH*FullDataSourceV2.WIDTH);
 					this.repo.getColumnGenerationStepForPos(genPos, columnGenerationSteps);
 					if (columnGenerationSteps.isEmpty())
 					{
