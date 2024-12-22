@@ -20,6 +20,7 @@
 package com.seibel.distanthorizons.core.logging.f3;
 
 import com.seibel.distanthorizons.core.api.internal.SharedApi;
+import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.jar.ModJarInfo;
 import com.seibel.distanthorizons.core.level.IDhLevel;
@@ -88,52 +89,87 @@ public class F3Screen
 		Iterable<? extends IDhLevel> levelIterator = world.getAllLoadedLevels();
 		
 		
+		// DH version
 		messageList.add("");
 		messageList.add(ModInfo.READABLE_NAME+": "+ModInfo.VERSION);
 		if (ModInfo.IS_DEV_BUILD)
 		{
 			messageList.add("Build: " + StringUtil.shortenString(ModJarInfo.Git_Commit, 8) + " (" + ModJarInfo.Git_Branch + ")");
 		}
-		if (MC_CLIENT != null)
+		
+		// player pos
+		if (Config.Client.Advanced.Debugging.F3Screen.showPlayerPos.get())
 		{
-			// player pos
-			messageList.add("LOD Pos: " + DhSectionPos.toString(DhSectionPos.encodeContaining(DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL,  MC_CLIENT.getPlayerChunkPos())) );
-		}
-		messageList.add("");
-		// thread pools
-		messageList.add(getThreadPoolStatString("World Gen/Pull Chunk", worldGenPool));//"World Gen Tasks: 40/5304, (in progress: 7)");
-		messageList.add(getThreadPoolStatString("File Handler", fileHandlerPool));
-		messageList.add(getThreadPoolStatString("Update Propagator", updatePool));
-		messageList.add(getThreadPoolStatString("LOD Builder", lodBuilderPool));
-		messageList.add(getThreadPoolStatString("Buffer Builder", bufferBuilderPool));
-		messageList.add("");
-		// object pools
-		PhantomArrayListPool.addDebugMenuStringsToListForCombinedPools(messageList);
-		messageList.add("");
-		// chunk updates
-		messageList.add(SharedApi.INSTANCE.getDebugMenuString());
-		messageList.add("");
-		// world / levels
-		world.addDebugMenuStringsToList(messageList);
-		for (IDhLevel level : levelIterator)
-		{
-			level.addDebugMenuStringsToList(messageList);
-			// LOD rendering
-			RenderBufferHandler renderBufferHandler = level.getRenderBufferHandler();
-			if (renderBufferHandler != null)
+			if (MC_CLIENT != null)
 			{
-				messageList.add(renderBufferHandler.getVboRenderDebugMenuString());
-				String showPassString = renderBufferHandler.getShadowPassRenderDebugMenuString();
-				if (showPassString != null)
-				{
-					messageList.add(showPassString);
-				}
+				byte requestedDetailLevel = Config.Client.Advanced.Debugging.F3Screen.playerPosSectionDetailLevel.get().byteValue();
+				long sectionPos = DhSectionPos.encodeContaining(requestedDetailLevel, MC_CLIENT.getPlayerChunkPos());
+				
+				int detailLevel = DhSectionPos.getDetailLevel(sectionPos);
+				int posX = DhSectionPos.getX(sectionPos);
+				int posZ = DhSectionPos.getZ(sectionPos);
+				messageList.add("LOD Pos: " + detailLevel + "*"+posX+","+posZ);
 			}
-			// Generic rendering
-			GenericObjectRenderer genericRenderer = level.getGenericRenderer();
-			if (genericRenderer != null)
+			messageList.add("");
+		}
+		
+		// thread pools
+		if (Config.Client.Advanced.Debugging.F3Screen.showThreadPools.get())
+		{
+			messageList.add(getThreadPoolStatString("World Gen/Pull Chunk", worldGenPool));//"World Gen Tasks: 40/5304, (in progress: 7)");
+			messageList.add(getThreadPoolStatString("File Handler", fileHandlerPool));
+			messageList.add(getThreadPoolStatString("Update Propagator", updatePool));
+			messageList.add(getThreadPoolStatString("LOD Builder", lodBuilderPool));
+			messageList.add(getThreadPoolStatString("Buffer Builder", bufferBuilderPool));
+			messageList.add("");
+		}
+		
+		// combined object pools
+		if (Config.Client.Advanced.Debugging.F3Screen.showCombinedObjectPools.get())
+		{
+			PhantomArrayListPool.addDebugMenuStringsToListForCombinedPools(messageList);
+			messageList.add("");
+		}
+		// separated object pools
+		if (Config.Client.Advanced.Debugging.F3Screen.showSeparatedObjectPools.get())
+		{
+			PhantomArrayListPool.addDebugMenuStringsToListForSeparatePools(messageList);
+			messageList.add("");
+		}
+		
+		// chunk updates
+		if (Config.Client.Advanced.Debugging.F3Screen.showQueuedChunkUpdateCount.get())
+		{
+			messageList.add(SharedApi.INSTANCE.getDebugMenuString());
+			messageList.add("");
+		}
+		
+		// world / levels
+		if (Config.Client.Advanced.Debugging.F3Screen.showLevelStatus.get())
+		{
+			world.addDebugMenuStringsToList(messageList);
+			messageList.add("");
+			for (IDhLevel level : levelIterator)
 			{
-				messageList.add(genericRenderer.getVboRenderDebugMenuString());
+				level.addDebugMenuStringsToList(messageList);
+				// LOD rendering
+				RenderBufferHandler renderBufferHandler = level.getRenderBufferHandler();
+				if (renderBufferHandler != null)
+				{
+					messageList.add(renderBufferHandler.getVboRenderDebugMenuString());
+					String showPassString = renderBufferHandler.getShadowPassRenderDebugMenuString();
+					if (showPassString != null)
+					{
+						messageList.add(showPassString);
+					}
+				}
+				// Generic rendering
+				GenericObjectRenderer genericRenderer = level.getGenericRenderer();
+				if (genericRenderer != null)
+				{
+					messageList.add(genericRenderer.getVboRenderDebugMenuString());
+				}
+				messageList.add("");
 			}
 		}
 	}

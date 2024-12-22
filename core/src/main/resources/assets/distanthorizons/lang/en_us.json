@@ -495,6 +495,26 @@
 
 
 
+  "distanthorizons.config.client.advanced.debugging.f3Screen":
+    "F3 Screen",
+
+  "distanthorizons.config.client.advanced.debugging.f3Screen.showPlayerPos":
+    "Show Player Pos",
+  "distanthorizons.config.client.advanced.debugging.f3Screen.playerPosSectionDetailLevel":
+    "Player Section Pos Detail Level",
+  "distanthorizons.config.client.advanced.debugging.f3Screen.showThreadPools":
+    "Show Thread Pools",
+  "distanthorizons.config.client.advanced.debugging.f3Screen.showCombinedObjectPools":
+    "Show Combined Object Pools",
+  "distanthorizons.config.client.advanced.debugging.f3Screen.showSeparatedObjectPools":
+    "Show Separated Object Pools",
+  "distanthorizons.config.client.advanced.debugging.f3Screen.showQueuedChunkUpdateCount":
+    "Show Queued Chunk Update Count",
+  "distanthorizons.config.client.advanced.debugging.f3Screen.showLevelStatus":
+    "Show Level Status",
+
+
+  
   "distanthorizons.config.client.advanced.debugging.exampleConfigScreen":
     "Debug Config Screen",
 

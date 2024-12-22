@@ -321,6 +321,15 @@ public class PhantomArrayListPool
 		);
 	}
 	
+	public static void addDebugMenuStringsToListForSeparatePools(List<String> messageList)
+	{
+		for (int i = 0; i < POOL_LIST.size(); i++)
+		{
+			PhantomArrayListPool pool = POOL_LIST.get(i);
+			pool.addDebugMenuStringsToList(messageList);
+		}
+	}
+	
 	public void addDebugMenuStringsToList(List<String> messageList)
 	{
 		addDebugMenuStringsToList(messageList,

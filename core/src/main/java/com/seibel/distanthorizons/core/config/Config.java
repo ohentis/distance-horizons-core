@@ -936,6 +936,7 @@ public class Config
 				public static ConfigCategory debugWireframe = new ConfigCategory.Builder().set(DebugWireframe.class).build();
 				public static ConfigCategory openGl = new ConfigCategory.Builder().set(OpenGl.class).build();
 				public static ConfigCategory columnBuilderDebugging = new ConfigCategory.Builder().set(ColumnBuilderDebugging.class).build();
+				public static ConfigCategory f3Screen = new ConfigCategory.Builder().set(F3Screen.class).build();
 				public static ConfigCategory exampleConfigScreen = new ConfigCategory.Builder().set(ExampleConfigScreen.class).build();
 				
 				
@@ -1046,6 +1047,46 @@ public class Config
 							.set(-1)
 							.setAppearance(EConfigEntryAppearance.ONLY_IN_GUI)
 							.addListener(ReloadLodsConfigEventHandler.INSTANCE)
+							.build();
+					
+				}
+				
+				public static class F3Screen
+				{
+					public static ConfigEntry<Boolean> showPlayerPos = new ConfigEntry.Builder<Boolean>()
+							.set(true)
+							.comment("Shows info about each thread pool.")
+							.build();
+					public static ConfigEntry<Integer> playerPosSectionDetailLevel = new ConfigEntry.Builder<Integer>()
+							.setMinDefaultMax(6, 6, 16)
+							.comment("" +
+									"Defines what internal detail level the player position will be shown as. \n" +
+									"Internal detail level means: 6 = 1x1 block, 7 = 2x2 blocks, etc. \n" +
+									"")
+							.build();
+					
+					public static ConfigEntry<Boolean> showThreadPools = new ConfigEntry.Builder<Boolean>()
+							.set(true)
+							.comment("Shows info about each thread pool.")
+							.build();
+					
+					public static ConfigEntry<Boolean> showCombinedObjectPools = new ConfigEntry.Builder<Boolean>()
+							.set(false)
+							.comment("Shows the combined memory use and array counts for all DH pooled objects.")
+							.build();
+					public static ConfigEntry<Boolean> showSeparatedObjectPools = new ConfigEntry.Builder<Boolean>()
+							.set(false)
+							.comment("Shows the memory use and array counts for each DH object pool.")
+							.build();
+					
+					public static ConfigEntry<Boolean> showQueuedChunkUpdateCount = new ConfigEntry.Builder<Boolean>()
+							.set(true)
+							.comment("Shows how many chunks are queud for processing and the max count that can be queued.")
+							.build();
+					
+					public static ConfigEntry<Boolean> showLevelStatus = new ConfigEntry.Builder<Boolean>()
+							.set(true)
+							.comment("Shows what levels are loaded and world gen/rendering info about those levels.")
 							.build();
 					
 				}
