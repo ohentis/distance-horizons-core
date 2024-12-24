@@ -73,7 +73,7 @@ public class ColumnRenderBufferBuilder
 		uploadFuture.whenComplete((uploadedBuffer, exception) -> 
 		{
 			// clean up if not uploaded
-			if (!uploadedBuffer.buffersUploaded)
+			if (uploadedBuffer != null && !uploadedBuffer.buffersUploaded)
 			{
 				uploadedBuffer.close();
 			}

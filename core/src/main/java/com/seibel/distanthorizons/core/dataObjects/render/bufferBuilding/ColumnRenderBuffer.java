@@ -84,9 +84,11 @@ public class ColumnRenderBuffer implements AutoCloseable
 	/** Should be run on a DH thread. */
 	public synchronized CompletableFuture<ColumnRenderBuffer> makeAndUploadBuffersAsync(LodQuadBuilder builder, EDhApiGpuUploadMethod gpuUploadMethod)
 	{
-		if (this.uploadFuture != null)
+		// separate variable to prevent race condition when checking null
+		CompletableFuture<ColumnRenderBuffer> future = this.uploadFuture;
+		if (future != null)
 		{
-			return this.uploadFuture;
+			return future;
 		}
 		this.uploadFuture = new CompletableFuture<>();
 		
