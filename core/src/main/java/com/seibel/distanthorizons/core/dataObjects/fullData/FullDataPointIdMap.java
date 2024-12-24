@@ -564,16 +564,16 @@ public class FullDataPointIdMap
 		
 		public String serialize() { return this.biome.getSerialString() + BLOCK_STATE_SEPARATOR_STRING + this.blockState.getSerialString(); }
 		
-		public static Entry deserialize(String str, ILevelWrapper levelWrapper) throws IOException, DataCorruptedException
+		public static Entry deserialize(String str, ILevelWrapper levelWrapper) throws DataCorruptedException
 		{
-			String[] stringArray = str.split(BLOCK_STATE_SEPARATOR_STRING);
-			if (stringArray.length != 2)
+			int separatorIndex = str.indexOf(BLOCK_STATE_SEPARATOR_STRING);
+			if (separatorIndex == -1)
 			{
-				throw new DataCorruptedException("Failed to deserialize BiomeBlockStateEntry");
+				throw new DataCorruptedException("Failed to deserialize BiomeBlockStateEntry ["+str+"], unable to find separator.");
 			}
 			
-			IBiomeWrapper biome = WRAPPER_FACTORY.deserializeBiomeWrapperOrGetDefault(stringArray[0], levelWrapper);
-			IBlockStateWrapper blockState = WRAPPER_FACTORY.deserializeBlockStateWrapperOrGetDefault(stringArray[1], levelWrapper);
+			IBiomeWrapper biome = WRAPPER_FACTORY.deserializeBiomeWrapperOrGetDefault(str.substring(0, separatorIndex), levelWrapper);
+			IBlockStateWrapper blockState = WRAPPER_FACTORY.deserializeBlockStateWrapperOrGetDefault(str.substring(separatorIndex+BLOCK_STATE_SEPARATOR_STRING.length()), levelWrapper);
 			return Entry.getEntry(biome, blockState);
 		}
 		
