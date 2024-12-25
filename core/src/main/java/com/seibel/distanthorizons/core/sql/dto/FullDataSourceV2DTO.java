@@ -362,36 +362,27 @@ public class FullDataSourceV2DTO
 	@Override
 	public void encode(ByteBuf out)
 	{
-		try
-		{
-			out.writeLong(this.pos);
-			out.writeInt(this.dataChecksum);
-			
-			out.writeInt(this.compressedDataByteArray.size());
-			// writing a stream can throw an IO Exception, however since this is just a array wrapper
-			// nothing should be thrown unless we have the size wrong
-			out.writeBytes(new ByteArrayInputStream(this.compressedDataByteArray.elements()), this.compressedDataByteArray.size());
-			
-			out.writeInt(this.compressedColumnGenStepByteArray.size());
-			out.writeBytes(new ByteArrayInputStream(this.compressedColumnGenStepByteArray.elements()), this.compressedColumnGenStepByteArray.size());
-			out.writeInt(this.compressedWorldCompressionModeByteArray.size());
-			out.writeBytes(new ByteArrayInputStream(this.compressedWorldCompressionModeByteArray.elements()), this.compressedWorldCompressionModeByteArray.size());
-			
-			out.writeInt(this.compressedMappingByteArray.size());
-			out.writeBytes(new ByteArrayInputStream(this.compressedMappingByteArray.elements()), this.compressedMappingByteArray.size());
-			
-			out.writeByte(this.dataFormatVersion);
-			out.writeByte(this.compressionModeValue);
-			
-			out.writeBoolean(this.applyToParent);
-			
-			out.writeLong(this.lastModifiedUnixDateTime);
-			out.writeLong(this.createdUnixDateTime);
-		}
-		catch (IOException e)
-		{
-			throw new RuntimeException(e);
-		}
+		out.writeLong(this.pos);
+		out.writeInt(this.dataChecksum);
+		
+		out.writeInt(this.compressedDataByteArray.size());
+		out.writeBytes(this.compressedDataByteArray.elements(), 0, this.compressedDataByteArray.size());
+		
+		out.writeInt(this.compressedColumnGenStepByteArray.size());
+		out.writeBytes(this.compressedColumnGenStepByteArray.elements(), 0, this.compressedColumnGenStepByteArray.size());
+		out.writeInt(this.compressedWorldCompressionModeByteArray.size());
+		out.writeBytes(this.compressedWorldCompressionModeByteArray.elements(), 0, this.compressedWorldCompressionModeByteArray.size());
+		
+		out.writeInt(this.compressedMappingByteArray.size());
+		out.writeBytes(this.compressedMappingByteArray.elements(), 0, this.compressedMappingByteArray.size());
+		
+		out.writeByte(this.dataFormatVersion);
+		out.writeByte(this.compressionModeValue);
+		
+		out.writeBoolean(this.applyToParent);
+		
+		out.writeLong(this.lastModifiedUnixDateTime);
+		out.writeLong(this.createdUnixDateTime);
 	}
 	
 	@Override
@@ -400,16 +391,16 @@ public class FullDataSourceV2DTO
 		this.pos = in.readLong();
 		this.dataChecksum = in.readInt();
 		
-		ListUtil.clearAndSetSize(this.compressedDataByteArray, in.readInt());
-		in.readBytes(this.compressedDataByteArray.elements());
+		this.compressedDataByteArray.size(in.readInt());
+		in.readBytes(this.compressedDataByteArray.elements(), 0, this.compressedDataByteArray.size());
 		
-		ListUtil.clearAndSetSize(this.compressedColumnGenStepByteArray, in.readInt());
-		in.readBytes(this.compressedColumnGenStepByteArray.elements());
-		ListUtil.clearAndSetSize(this.compressedWorldCompressionModeByteArray, in.readInt());
-		in.readBytes(this.compressedWorldCompressionModeByteArray.elements());
+		this.compressedColumnGenStepByteArray.size(in.readInt());
+		in.readBytes(this.compressedColumnGenStepByteArray.elements(), 0, this.compressedColumnGenStepByteArray.size());
+		this.compressedWorldCompressionModeByteArray.size(in.readInt());
+		in.readBytes(this.compressedWorldCompressionModeByteArray.elements(), 0, this.compressedWorldCompressionModeByteArray.size());
 		
-		ListUtil.clearAndSetSize(this.compressedMappingByteArray, in.readInt());
-		in.readBytes(this.compressedMappingByteArray.elements());
+		this.compressedMappingByteArray.size(in.readInt());
+		in.readBytes(this.compressedMappingByteArray.elements(), 0, this.compressedMappingByteArray.size());
 		
 		this.dataFormatVersion = in.readByte();
 		this.compressionModeValue = in.readByte();
