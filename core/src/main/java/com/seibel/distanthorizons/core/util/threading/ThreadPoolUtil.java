@@ -41,17 +41,17 @@ public class ThreadPoolUtil
 	// standalone thread pools all handle independent systems
 	// and don't interfere with any other pool
 	
-	public static final DhThreadFactory FILE_HANDLER_THREAD_FACTORY = new DhThreadFactory("File Handler", Thread.MIN_PRIORITY);
+	public static final DhThreadFactory FILE_HANDLER_THREAD_FACTORY = new DhThreadFactory("File Handler", Thread.MIN_PRIORITY, false);
 	private static ConfigThreadPool fileHandlerThreadPool;
 	@Nullable
 	public static ThreadPoolExecutor getFileHandlerExecutor() { return fileHandlerThreadPool.executor; }
 	
-	public static final DhThreadFactory UPDATE_PROPAGATOR_THREAD_FACTORY = new DhThreadFactory("LOD Update Propagator", Thread.MIN_PRIORITY);
+	public static final DhThreadFactory UPDATE_PROPAGATOR_THREAD_FACTORY = new DhThreadFactory("LOD Update Propagator", Thread.MIN_PRIORITY, false);
 	private static ConfigThreadPool updatePropagatorThreadPool;
 	@Nullable
 	public static ThreadPoolExecutor getUpdatePropagatorExecutor() { return updatePropagatorThreadPool.executor; }
 	
-	public static final DhThreadFactory WORLD_GEN_THREAD_FACTORY = new DhThreadFactory("World Gen", Thread.MIN_PRIORITY);
+	public static final DhThreadFactory WORLD_GEN_THREAD_FACTORY = new DhThreadFactory("World Gen", Thread.MIN_PRIORITY, false);
 	private static ConfigThreadPool worldGenThreadPool;
 	@Nullable
 	public static ThreadPoolExecutor getWorldGenExecutor() { return worldGenThreadPool.executor; }
@@ -66,7 +66,7 @@ public class ThreadPoolUtil
 	@Nullable
 	public static ThreadPoolExecutor getBeaconCullingExecutor() { return beaconCullingThreadPool; }
 	
-	public static final DhThreadFactory NETWORK_COMPRESSION_THREAD_FACTORY = new DhThreadFactory("Network Compression", Thread.MIN_PRIORITY);
+	public static final DhThreadFactory NETWORK_COMPRESSION_THREAD_FACTORY = new DhThreadFactory("Network Compression", Thread.MIN_PRIORITY, false);
 	private static ConfigThreadPool networkCompressionThreadPool;
 	@Nullable
 	public static ThreadPoolExecutor getNetworkCompressionExecutor() { return networkCompressionThreadPool.executor; }
@@ -81,12 +81,12 @@ public class ThreadPoolUtil
 	// and all share an underlying number of threads.
 	// WARNING: great care should be used when setting up these threads since deadlock can occur if they are handled poorly.
 	
-	public static final DhThreadFactory CHUNK_TO_LOD_BUILDER_THREAD_FACTORY = new DhThreadFactory("LOD Builder - Chunk to Lod Builder", Thread.MIN_PRIORITY);
+	public static final DhThreadFactory CHUNK_TO_LOD_BUILDER_THREAD_FACTORY = new DhThreadFactory("LOD Builder - Chunk to Lod Builder", Thread.MIN_PRIORITY, false);
 	private static ConfigThreadPool chunkToLodBuilderThreadPool;
 	@Nullable
 	public static ThreadPoolExecutor getChunkToLodBuilderExecutor() { return (chunkToLodBuilderThreadPool != null) ? chunkToLodBuilderThreadPool.executor : null; }
 	
-	public static final DhThreadFactory BUFFER_BUILDER_THREAD_FACTORY = new DhThreadFactory("LOD Builder - Buffer Builder", Thread.MIN_PRIORITY);
+	public static final DhThreadFactory BUFFER_BUILDER_THREAD_FACTORY = new DhThreadFactory("LOD Builder - Buffer Builder", Thread.MIN_PRIORITY, false);
 	private static ConfigThreadPool bufferBuilderThreadPool;
 	@Nullable
 	public static ThreadPoolExecutor getBufferBuilderExecutor() { return (bufferBuilderThreadPool != null) ? bufferBuilderThreadPool.executor : null; }

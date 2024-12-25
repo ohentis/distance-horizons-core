@@ -58,7 +58,7 @@ public class GLBuffer implements AutoCloseable
 	private static final HashMap<Integer, Reference<? extends GLBuffer>> BUFFER_ID_TO_PHANTOM = new HashMap<>();
 	private static final ReferenceQueue<GLBuffer> PHANTOM_REFERENCE_QUEUE = new ReferenceQueue<>();
 	/** TODO we should make a global cleanup thread that handles all phantom references */
-	private static final ThreadPoolExecutor CLEANUP_THREAD = ThreadUtil.makeSingleThreadPool("GLBuffer Cleanup");
+	private static final ThreadPoolExecutor CLEANUP_THREAD = ThreadUtil.makeSingleDaemonThreadPool("GLBuffer Cleanup");
 	
 	
 	protected int id;

@@ -19,7 +19,6 @@
 
 package com.seibel.distanthorizons.core.util.threading;
 
-import java.lang.invoke.MethodHandles;
 import java.lang.ref.WeakReference;
 import java.util.LinkedList;
 import java.util.concurrent.ThreadFactory;
@@ -39,6 +38,7 @@ public class DhThreadFactory implements ThreadFactory
 	
 	public final String threadName;
 	public final int priority;
+	public final boolean isDaemon;
 	private int threadCount = 0;
 	private final LinkedList<WeakReference<Thread>> threads = new LinkedList<>();
 	
@@ -48,7 +48,8 @@ public class DhThreadFactory implements ThreadFactory
 	// constructor //
 	//=============//
 	
-	public DhThreadFactory(String newThreadName, int priority)
+	/** @param isDaemon should be set to true for static/cleanup threads that aren't manually shut down. */
+	public DhThreadFactory(String newThreadName, int priority, boolean isDaemon)
 	{
 		if (priority < Thread.MIN_PRIORITY || priority > Thread.MAX_PRIORITY)
 		{
@@ -57,6 +58,7 @@ public class DhThreadFactory implements ThreadFactory
 		
 		this.threadName = ThreadUtil.THREAD_NAME_PREFIX + newThreadName + " Thread";
 		this.priority = priority;
+		this.isDaemon = isDaemon;
 	}
 	
 	@Override
@@ -64,6 +66,7 @@ public class DhThreadFactory implements ThreadFactory
 	{
 		Thread thread = new Thread(runnable, this.threadName + "[" + (this.threadCount++) + "]");
 		thread.setPriority(this.priority);
+		thread.setDaemon(this.isDaemon);
 		this.threads.add(new WeakReference<>(thread));
 		return thread;
 	}

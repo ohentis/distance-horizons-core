@@ -48,7 +48,7 @@ public class PhantomArrayListPool
 	 * build up of GC'ed arrays.
 	 */
 	private static final int PHANTOM_REF_CHECK_TIME_IN_MS = 1_000;
-	private static final ThreadPoolExecutor RECYCLER_THREAD = ThreadUtil.makeSingleThreadPool("Phantom Array Recycler");
+	private static final ThreadPoolExecutor RECYCLER_THREAD = ThreadUtil.makeSingleDaemonThreadPool("Phantom Array Recycler");
 	private static final ArrayList<PhantomArrayListPool> POOL_LIST = new ArrayList<>();
 	
 	/** if enabled the number of GC'ed arrays will be logged */
