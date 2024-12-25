@@ -28,30 +28,21 @@ public class ListUtil
 	public static void clearAndSetSize(LongArrayList arrayList, int size)
 	{
 		arrayList.clear();
-		for (int i = 0; i < size; i++)
-		{
-			arrayList.add(0L);
-		}
+		arrayList.size(size);
 	}
 	
 	/** @see ListUtil#clearAndSetSize(LongArrayList, int) */
 	public static void clearAndSetSize(ShortArrayList arrayList, int size)
 	{
 		arrayList.clear();
-		for (int i = 0; i < size; i++)
-		{
-			arrayList.add((short)0);
-		}
+		arrayList.size(size);
 	}
 	
 	/** @see ListUtil#clearAndSetSize(LongArrayList, int) */
 	public static void clearAndSetSize(ByteArrayList arrayList, int size)
 	{
 		arrayList.clear();
-		for (int i = 0; i < size; i++)
-		{
-			arrayList.add((byte)0);
-		}
+		arrayList.size(size);
 	}
 	
 	
