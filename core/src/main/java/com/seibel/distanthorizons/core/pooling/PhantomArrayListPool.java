@@ -14,7 +14,9 @@ import java.lang.ref.ReferenceQueue;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
@@ -66,12 +68,9 @@ public class PhantomArrayListPool
 	
 	
 	
-	/** needed since our pools aren't thread safe */
-	private final ReentrantLock poolLock = new ReentrantLock();
-	
-	private final ArrayList<ByteArrayList> pooledByteArrays = new ArrayList<>();
-	private final ArrayList<ShortArrayList> pooledShortArrays = new ArrayList<>();
-	private final ArrayList<LongArrayList> pooledLongArrays = new ArrayList<>();
+	private final ConcurrentLinkedQueue<ByteArrayList> pooledByteArrays = new ConcurrentLinkedQueue<>();
+	private final ConcurrentLinkedQueue<ShortArrayList> pooledShortArrays = new ConcurrentLinkedQueue<>();
+	private final ConcurrentLinkedQueue<LongArrayList> pooledLongArrays = new ConcurrentLinkedQueue<>();
 	
 	/** counts how many byte arrays have been created by this pool */
 	private final AtomicInteger totalByteArrayCountRef = new AtomicInteger(0);
@@ -178,36 +177,27 @@ public class PhantomArrayListPool
 	
 	public PhantomArrayListCheckout checkoutArrays(int byteArrayCount, int shortArrayCount, int longArrayCount)
 	{
-		try
+		PhantomArrayListCheckout checkout = new PhantomArrayListCheckout(this);
+		
+		// byte
+		for (int i = 0; i < byteArrayCount; i++)
 		{
-			this.poolLock.lock();
-			
-			PhantomArrayListCheckout checkout = new PhantomArrayListCheckout(this);
-			
-			// byte
-			for (int i = 0; i < byteArrayCount; i++)
-			{
-				checkout.addByteArrayList(getPooledArray(this.pooledByteArrays, () -> this.createEmptyByteArrayList()));
-			}
-			
-			// short
-			for (int i = 0; i < shortArrayCount; i++)
-			{
-				checkout.addShortArrayList(getPooledArray(this.pooledShortArrays, () -> this.createEmptyShortArrayList()));
-			}
-			
-			// long
-			for (int i = 0; i < longArrayCount; i++)
-			{
-				checkout.addLongArrayList(getPooledArray(this.pooledLongArrays, () -> this.createEmptyLongArrayList()));
-			}
-			
-			return checkout;
+			checkout.addByteArrayList(getPooledArray(this.pooledByteArrays, () -> this.createEmptyByteArrayList()));
 		}
-		finally
+		
+		// short
+		for (int i = 0; i < shortArrayCount; i++)
 		{
-			this.poolLock.unlock();
+			checkout.addShortArrayList(getPooledArray(this.pooledShortArrays, () -> this.createEmptyShortArrayList()));
 		}
+		
+		// long
+		for (int i = 0; i < longArrayCount; i++)
+		{
+			checkout.addLongArrayList(getPooledArray(this.pooledLongArrays, () -> this.createEmptyLongArrayList()));
+		}
+		
+		return checkout;
 	}
 	
 	
@@ -235,19 +225,18 @@ public class PhantomArrayListPool
 	
 	// internal pool handler //
 	
-	private static <T extends List<?>> T getPooledArray(ArrayList<T> pool, Supplier<T> emptyArrayCreatorFunc)
+	private static <T extends List<?>> T getPooledArray(ConcurrentLinkedQueue<T> pool, Supplier<T> emptyArrayCreatorFunc)
 	{
-		int index = pool.size() - 1;
-		if (index == -1)
+		T array = pool.poll();
+		if (array != null)
 		{
-			// no pooled sources exist
-			return emptyArrayCreatorFunc.get();
+			array.clear();
+			return array;
 		}
 		else
 		{
-			T array = pool.remove(index);
-			array.clear();
-			return array;
+			// no pooled sources exist
+			return emptyArrayCreatorFunc.get();
 		}
 	}
 	
@@ -264,24 +253,16 @@ public class PhantomArrayListPool
 			throw new IllegalArgumentException("Null phantom checkout, memory leak in progress...");
 		}
 		
-		this.poolLock.lock();
 		
-		try
-		{
-			// In James' testing pooling the checkout object wasn't necessary
-			// since it is relatively small and short lived, thus
-			// the GC can handle quickly discarding it.
-			
-			this.pooledByteArrays.addAll(checkout.getAllByteArrays());
-			this.pooledShortArrays.addAll(checkout.getAllShortArrays());
-			this.pooledLongArrays.addAll(checkout.getAllLongArrays());
-			
-			//LOGGER.info("Returned ["+checkout.byteArrayLists.size()+"/"+this.pooledByteArrays.size()+"] bytes and ["+checkout.longArrayLists.size()+"/"+this.pooledLongArrays.size()+"] longs.");\
-		}
-		finally
-		{
-			this.poolLock.unlock();
-		}
+		// In James' testing pooling the checkout object wasn't necessary
+		// since it is relatively small and short lived, thus
+		// the GC can handle quickly discarding it.
+		
+		this.pooledByteArrays.addAll(checkout.getAllByteArrays());
+		this.pooledShortArrays.addAll(checkout.getAllShortArrays());
+		this.pooledLongArrays.addAll(checkout.getAllLongArrays());
+		
+		//LOGGER.info("Returned ["+checkout.byteArrayLists.size()+"/"+this.pooledByteArrays.size()+"] bytes and ["+checkout.longArrayLists.size()+"/"+this.pooledLongArrays.size()+"] longs.");\
 	}
 
 	
@@ -389,36 +370,26 @@ public class PhantomArrayListPool
 	 */
 	public void recalculateSizeForDebugging()
 	{
-		this.poolLock.lock();
-		try
-		{
-			// byte
-			long bytePoolByteSize = estimateMemoryUsage(this.pooledByteArrays, Byte.BYTES);
-			this.lastBytePoolSizeInBytes = Math.max(bytePoolByteSize, this.lastBytePoolSizeInBytes);
-			
-			// short
-			long shortPoolByteSize = estimateMemoryUsage(this.pooledShortArrays, Short.BYTES);
-			this.lastShortPoolSizeInBytes = Math.max(shortPoolByteSize, this.lastShortPoolSizeInBytes);
-			
-			// long
-			long longPoolByteSize = estimateMemoryUsage(this.pooledLongArrays, Long.BYTES);
-			this.lastLongPoolSizeInBytes = Math.max(longPoolByteSize, this.lastLongPoolSizeInBytes);
-			
-		}
-		finally
-		{
-			this.poolLock.unlock();
-		}
+		// byte
+		long bytePoolByteSize = estimateMemoryUsage(this.pooledByteArrays, Byte.BYTES);
+		this.lastBytePoolSizeInBytes = Math.max(bytePoolByteSize, this.lastBytePoolSizeInBytes);
+		
+		// short
+		long shortPoolByteSize = estimateMemoryUsage(this.pooledShortArrays, Short.BYTES);
+		this.lastShortPoolSizeInBytes = Math.max(shortPoolByteSize, this.lastShortPoolSizeInBytes);
+		
+		// long
+		long longPoolByteSize = estimateMemoryUsage(this.pooledLongArrays, Long.BYTES);
+		this.lastLongPoolSizeInBytes = Math.max(longPoolByteSize, this.lastLongPoolSizeInBytes);
 	}
 	
-	private static <T extends Collection<?>> long estimateMemoryUsage(ArrayList<T> pool, long elementSizeInBytes)
+	private static <T extends Collection<?>> long estimateMemoryUsage(ConcurrentLinkedQueue<T> pool, long elementSizeInBytes)
 	{
 		long longByteSize = 0;
-		for (int i = 0; i < pool.size(); i++)
+		for (T array : pool)
 		{
 			// Object overhead + capacity of underlying array * size of Long (8 bytes)
 			long overhead = Byte.SIZE * 4;
-			T array = pool.get(i);
 			
 			long elementCount;
 			if (array instanceof ByteArrayList)
