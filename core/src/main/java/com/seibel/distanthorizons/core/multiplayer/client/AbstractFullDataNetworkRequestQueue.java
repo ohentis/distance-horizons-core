@@ -122,15 +122,22 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 			{
 				this.waitingTasksBySectionPos.remove(sectionPos);
 				
-				if (requestResult != RequestResult.REQUIRES_SPLITTING)
+				switch (requestResult)
 				{
-					this.finishedRequests.incrementAndGet();
-				}
-				
-				if ((requestResult == null || requestResult == RequestResult.FAILED)
-						|| (throwable != null && !(throwable instanceof CancellationException)))
-				{
-					this.failedRequests.incrementAndGet();
+					case SUCCEEDED:
+						this.finishedRequests.incrementAndGet();
+						return;
+					case REQUIRES_SPLITTING:
+						return;
+					case FAILED:
+						this.failedRequests.incrementAndGet();
+						return;
+					default:
+						if (throwable != null && !(throwable instanceof CancellationException))
+						{
+							this.failedRequests.incrementAndGet();
+						}
+						break;
 				}
 			});
 			
