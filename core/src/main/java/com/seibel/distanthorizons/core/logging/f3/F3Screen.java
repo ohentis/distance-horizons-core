@@ -203,7 +203,7 @@ public class F3Screen
 			}
 			else
 			{
-				runTimeAvgStr = ">0";
+				runTimeAvgStr = "<0";
 			}
 			
 			message += ", Avg: "+runTimeAvgStr+"ms";
