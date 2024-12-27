@@ -5,6 +5,8 @@ import com.seibel.distanthorizons.core.config.listeners.ConfigChangeListener;
 import com.seibel.distanthorizons.core.level.AbstractDhServerLevel;
 import com.seibel.distanthorizons.core.multiplayer.config.SessionConfig;
 import com.seibel.distanthorizons.core.multiplayer.fullData.FullDataPayloadSender;
+import com.seibel.distanthorizons.core.network.event.internal.IncompatibleMessageInternalEvent;
+import com.seibel.distanthorizons.core.network.messages.base.CloseReasonMessage;
 import com.seibel.distanthorizons.core.network.messages.base.LevelInitMessage;
 import com.seibel.distanthorizons.core.network.messages.base.SessionConfigMessage;
 import com.seibel.distanthorizons.core.network.event.internal.CloseInternalEvent;
@@ -60,6 +62,13 @@ public class ServerPlayerState implements Closeable
 		
 		this.networkSession.registerHandler(CloseInternalEvent.class, event -> {
 			// No-op. prevents "Unhandled message" log entries
+		});
+		
+		this.networkSession.registerHandler(IncompatibleMessageInternalEvent.class, event ->
+		{
+			// Client won't understand this message, but it's still enough to display incompatible protocol error
+			this.networkSession.sendMessage(new CloseReasonMessage("Incompatible protocol version"));
+			this.close();
 		});
 	}
 	
