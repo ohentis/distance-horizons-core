@@ -236,7 +236,7 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 			return true;
 		}
 		
-		int worldGenThreadCount = Math.max(Config.Common.MultiThreading.numberOfWorldGenerationThreads.get(), 1);
+		int worldGenThreadCount = Math.max(Config.Common.MultiThreading.numberOfThreads.get(), 1);
 		int maxWorldGenTaskCount = worldGenThreadCount * MAX_QUEUED_TASKS_PER_THREAD;
 		return executor.getQueue().size() > maxWorldGenTaskCount;
 	}

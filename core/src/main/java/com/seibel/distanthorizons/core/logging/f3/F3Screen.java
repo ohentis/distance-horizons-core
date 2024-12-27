@@ -83,7 +83,6 @@ public class F3Screen
 		ThreadPoolExecutor fileHandlerPool = ThreadPoolUtil.getFileHandlerExecutor();
 		ThreadPoolExecutor updatePool = ThreadPoolUtil.getUpdatePropagatorExecutor();
 		ThreadPoolExecutor lodBuilderPool = ThreadPoolUtil.getChunkToLodBuilderExecutor();
-		ThreadPoolExecutor bufferBuilderPool = ThreadPoolUtil.getBufferBuilderExecutor();
 		
 		AbstractDhWorld world = SharedApi.getAbstractDhWorld();
 		Iterable<? extends IDhLevel> levelIterator = world.getAllLoadedLevels();
@@ -120,7 +119,6 @@ public class F3Screen
 			messageList.add(getThreadPoolStatString("File Handler", fileHandlerPool));
 			messageList.add(getThreadPoolStatString("Update Propagator", updatePool));
 			messageList.add(getThreadPoolStatString("LOD Builder", lodBuilderPool));
-			messageList.add(getThreadPoolStatString("Buffer Builder", bufferBuilderPool));
 			messageList.add("");
 		}
 		
@@ -191,6 +189,12 @@ public class F3Screen
 		{
 			RateLimitedThreadPoolExecutor rateLimitedPool = ((RateLimitedThreadPoolExecutor) pool);
 			
+			// active threads
+			int activeThreadCount = rateLimitedPool.semaphoresAcquired.get();
+			int threadCount = ThreadPoolUtil.getThreadCount();
+			message += ", Active: "+activeThreadCount+"/"+threadCount;
+			
+			// thread runtime
 			String runTimeAvgStr;
 			double runTimeAvgInMs = rateLimitedPool.getAverageRunTimeInMs();
 			if (!Double.isNaN(runTimeAvgInMs))

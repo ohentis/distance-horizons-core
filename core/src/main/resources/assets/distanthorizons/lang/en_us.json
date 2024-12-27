@@ -609,53 +609,13 @@
   "distanthorizons.config.common.multiThreading":
     "Multi-Threading",
 
-  "distanthorizons.config.common.multiThreading.numberOfWorldGenerationThreads":
-    "NO. of world generation threads",
-  "distanthorizons.config.common.multiThreading.numberOfWorldGenerationThreads.@tooltip":
-    "How many threads should be used when generating LODs \n outside the normal render distance?\n\nIf you experience stuttering when generating distant LODs, \ndecrease  this number. If you want to increase LOD \ngeneration speed, increase this number.",
-  "distanthorizons.config.common.multiThreading.runTimeRatioForWorldGenerationThreads":
-    "Runtime % for world generation threads",
+  "distanthorizons.config.common.multiThreading.numberOfThreads":
+    "NO. of threads",
+  "distanthorizons.config.common.multiThreading.numberOfThreads.@tooltip":
+    "How many threads DH will use.",
+  "distanthorizons.config.common.multiThreading.threadRunTimeRatio":
+    "Runtime % for threads",
 
-  "distanthorizons.config.common.multiThreading.numberOfBufferBuilderThreads":
-    "NO. of buffer builder threads",
-  "distanthorizons.config.common.multiThreading.numberOfBufferBuilderThreads.@tooltip":
-    "The number of threads used when building geometry data. \nCan only be between 1 and your CPU's processor count.",
-  "distanthorizons.config.common.multiThreading.runTimeRatioForBufferBuilderThreads":
-    "Runtime % for buffer builder threads",
-
-  "distanthorizons.config.common.multiThreading.numberOfFileHandlerThreads":
-    "NO. of file handler threads",
-  "distanthorizons.config.common.multiThreading.numberOfFileHandlerThreads.@tooltip":
-    "The number of threads used when reading/writing LOD data to/from the disk. \nCan only be between 1 and your CPU's processor count.",
-  "distanthorizons.config.common.multiThreading.runTimeRatioForFileHandlerThreads":
-    "Runtime % for file handler threads",
-
-  "distanthorizons.config.common.multiThreading.numberOfUpdatePropagatorThreads":
-    "NO. of update propagator threads",
-  "distanthorizons.config.common.multiThreading.numberOfUpdatePropagatorThreads.@tooltip":
-    "How many threads should be used when applying LOD updates? \nAn LOD update is the operation of down-sampling a high detail LOD \ninto a lower detail one. \n\nThis config can have a much higher number of threads \nassigned and much lower run time ratio vs other thread pools \nbecause the amount of time any particular thread may run is relatively low.",
-  "distanthorizons.config.common.multiThreading.runTimeRatioForUpdatePropagatorThreads":
-    "Runtime % for update propagator threads",
-
-  "distanthorizons.config.common.multiThreading.numberOfNetworkCompressionThreads":
-    "NO. of Network Compression threads",
-  "distanthorizons.config.common.multiThreading.numberOfNetworkCompressionThreads.@tooltip":
-    "How many threads should be used when (de)compressing LODs \nthat are received/sent over the network?",
-  "distanthorizons.config.common.multiThreading.runTimeRatioForNetworkCompressionThreads":
-    "Runtime % for Network Compression threads",
-
-  "distanthorizons.config.common.multiThreading.numberOfLodBuilderThreads":
-    "NO. of LOD builder threads",
-  "distanthorizons.config.common.multiThreading.numberOfLodBuilderThreads.@tooltip":
-    "The number of threads used when building LODs. \nThese threads run when terrain is generated, when \ncertain graphics settings are changed, and when moving around the world.",
-  "distanthorizons.config.common.multiThreading.runTimeRatioForLodBuilderThreads":
-    "Runtime % for LOD builder threads",
-  
-  "distanthorizons.config.common.multiThreading.enableLodBuilderThreadLimiting":
-    "Enable LOD builder thread limiting",
-  "distanthorizons.config.common.multiThreading.enableLodBuilderThreadLimiting.@tooltip":
-    "Should only be disabled if deadlock occurs and LODs refuse to update. \nThis will cause CPU usage to drastically increase for the Lod Builder threads. \nNote that if a deadlock did occur restarting MC may be necessary to stop the locked threads.",
-  
 
 
   "distanthorizons.config.common.logging":

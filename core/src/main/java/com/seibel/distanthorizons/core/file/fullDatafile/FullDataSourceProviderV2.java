@@ -39,6 +39,7 @@ import com.seibel.distanthorizons.core.sql.repo.AbstractDhRepo;
 import com.seibel.distanthorizons.core.sql.repo.FullDataSourceV2Repo;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
 import com.seibel.distanthorizons.core.util.objects.DataCorruptedException;
+import com.seibel.distanthorizons.core.util.threading.PrioritySemaphore;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
@@ -67,14 +68,13 @@ public class FullDataSourceProviderV2
 	
 	protected static final int NUMBER_OF_PARENT_UPDATE_TASKS_PER_THREAD = 50;
 	/** how many parent update tasks can be in the queue at once */
-	protected static final int MAX_UPDATE_TASK_COUNT = NUMBER_OF_PARENT_UPDATE_TASKS_PER_THREAD * Config.Common.MultiThreading.numberOfFileHandlerThreads.get();
+	protected static final int MAX_UPDATE_TASK_COUNT = NUMBER_OF_PARENT_UPDATE_TASKS_PER_THREAD * Config.Common.MultiThreading.numberOfThreads.get();
 	
 	/** indicates how long the update queue thread should wait between queuing ticks */
 	protected static final int UPDATE_QUEUE_THREAD_DELAY_IN_MS = 250;
 	
 	/** how many data sources should be pulled down for migration at once */
 	private static final int MIGRATION_BATCH_COUNT = NUMBER_OF_PARENT_UPDATE_TASKS_PER_THREAD;
-	private static final String MIGRATION_THREAD_NAME_PREFIX = "Full Data Migration Thread: ";
 	/** 
 	 * 5 minutes <br>
 	 * This should be much longer than any update should take. This is just
@@ -83,8 +83,8 @@ public class FullDataSourceProviderV2
 	private static final int MIGRATION_MAX_UPDATE_TIMEOUT_IN_MS = 5 * 60 * 1_000;
 	
 	
-	protected final ThreadPoolExecutor migrationThreadPool;
-	/** 
+	
+	/**
 	 * Interrupting the migration thread pool doesn't work well and may corrupt the database
 	 * vs gracefully shutting down the thread ourselves. 
 	 */
@@ -132,8 +132,16 @@ public class FullDataSourceProviderV2
 		String levelId = level.getLevelWrapper().getDhIdentifier();
 		
 		// start migrating any legacy data sources present in the background
-		this.migrationThreadPool = ThreadUtil.makeRateLimitedThreadPool(1, MIGRATION_THREAD_NAME_PREFIX + "["+levelId+"]", Config.Common.MultiThreading.runTimeRatioForUpdatePropagatorThreads.get(), Thread.MIN_PRIORITY, (Semaphore) null);
-		this.migrationThreadPool.execute(this::convertLegacyDataSources);
+		ThreadPoolExecutor executor = ThreadPoolUtil.getFullDataMigrationExecutor();
+		if (executor != null)
+		{
+			executor.execute(this::convertLegacyDataSources);
+		}
+		else
+		{
+			// shouldn't happen, but just in case
+			LOGGER.error("Unable to start migration for level: ["+levelId+"] due to missing executor.");
+		}
 		
 		// update propagation doesn't need to be run on the server since only the highest detail level is needed
 		this.updateQueueProcessor = ThreadUtil.makeSingleThreadPool("Parent Update Queue [" + levelId + "]");
@@ -339,170 +347,180 @@ public class FullDataSourceProviderV2
 	
 	private void convertLegacyDataSources()
 	{
-		String levelId = this.level.getLevelWrapper().getDhIdentifier();
-		LOGGER.info("Attempting to migrate data sources for: ["+levelId+"]-["+this.saveDir+"]...");
-		
-		
-		
-		//============================//
-		// delete unused data sources //
-		//============================//
-		
-		// this could be done all at once via SQL, 
-		// but doing it in chunks prevents locking the database for long periods of time 
-		long unusedCount = 0;
-		long totalDeleteCount = this.legacyFileHandler.repo.getUnusedDataSourceCount();
-		if (totalDeleteCount != 0)
+		try
 		{
-			// this should only be shown once per session but should be shown during 
-			// either when the deletion or migration phases start
-			this.showMigrationStartMessage();
+			String levelId = this.level.getLevelWrapper().getDhIdentifier();
+			LOGGER.info("Attempting to migrate data sources for: [" + levelId + "]-[" + this.saveDir + "]...");
+			this.migrationThreadRunning.set(true);
 			
 			
-			LOGGER.info("deleting [" + levelId + "] - ["+totalDeleteCount+"] unused data sources...");
-			this.legacyDeletionCount = totalDeleteCount;
 			
-			ArrayList<String> unusedDataPosList = this.legacyFileHandler.repo.getUnusedDataSourcePositionStringList(50);
-			while (unusedDataPosList.size() != 0)
+			//============================//
+			// delete unused data sources //
+			//============================//
+			
+			// this could be done all at once via SQL, 
+			// but doing it in chunks prevents locking the database for long periods of time 
+			long unusedCount = 0;
+			long totalDeleteCount = this.legacyFileHandler.repo.getUnusedDataSourceCount();
+			if (totalDeleteCount != 0)
 			{
-				unusedCount += unusedDataPosList.size();
-				this.legacyDeletionCount -= unusedDataPosList.size();
+				// this should only be shown once per session but should be shown during 
+				// either when the deletion or migration phases start
+				this.showMigrationStartMessage();
 				
 				
-				long startTime = System.currentTimeMillis();
+				LOGGER.info("deleting [" + levelId + "] - [" + totalDeleteCount + "] unused data sources...");
+				this.legacyDeletionCount = totalDeleteCount;
 				
-				// delete batch and get next batch 
-				this.legacyFileHandler.repo.deleteUnusedLegacyData(unusedDataPosList);
-				unusedDataPosList = this.legacyFileHandler.repo.getUnusedDataSourcePositionStringList(50);
+				ArrayList<String> unusedDataPosList = this.legacyFileHandler.repo.getUnusedDataSourcePositionStringList(50);
+				while (unusedDataPosList.size() != 0)
+				{
+					unusedCount += unusedDataPosList.size();
+					this.legacyDeletionCount -= unusedDataPosList.size();
+					
+					
+					long startTime = System.currentTimeMillis();
+					
+					// delete batch and get next batch 
+					this.legacyFileHandler.repo.deleteUnusedLegacyData(unusedDataPosList);
+					unusedDataPosList = this.legacyFileHandler.repo.getUnusedDataSourcePositionStringList(50);
+					
+					long endStart = System.currentTimeMillis();
+					long deleteTime = endStart - startTime;
+					LOGGER.info("Deleting [" + levelId + "] - [" + unusedCount + "/" + totalDeleteCount + "] in [" + deleteTime + "]ms ...");
+					
+					
+					// a slight delay is added to prevent accidentally locking the database when deleting a lot of rows
+					// (that shouldn't be the case since we're using WAL journaling, but just in case)
+					try
+					{
+						// use the delete time so we don't make powerful computers wait super long
+						// and weak computers wait no time at all
+						Thread.sleep(deleteTime / 2);
+					}
+					catch (InterruptedException ignore)
+					{
+					}
+				}
+				LOGGER.info("Done deleting [" + levelId + "] - [" + totalDeleteCount + "] unused data sources.");
 				
-				long endStart = System.currentTimeMillis();
-				long deleteTime = endStart - startTime;
-				LOGGER.info("Deleting [" + levelId + "] - [" + unusedCount + "/" + totalDeleteCount + "] in ["+deleteTime+"]ms ...");
+			}
+			
+			
+			
+			//===========//
+			// migration //
+			//===========//
+			
+			long totalMigrationCount = this.legacyFileHandler.getDataSourceMigrationCount();
+			this.migrationCount = totalMigrationCount;
+			LOGGER.info("Found [" + totalMigrationCount + "] data sources that need migration.");
+			
+			ArrayList<FullDataSourceV1> legacyDataSourceList = this.legacyFileHandler.getDataSourcesToMigrate(MIGRATION_BATCH_COUNT);
+			if (!legacyDataSourceList.isEmpty())
+			{
+				this.showMigrationStartMessage();
 				
-				
-				// a slight delay is added to prevent accidentally locking the database when deleting a lot of rows
-				// (that shouldn't be the case since we're using WAL journaling, but just in case)
 				try
 				{
-					// use the delete time so we don't make powerful computers wait super long
-					// and weak computers wait no time at all
-					Thread.sleep(deleteTime / 2);
-				}
-				catch (InterruptedException ignore){}
-			}
-			LOGGER.info("Done deleting [" + levelId + "] - ["+totalDeleteCount+"] unused data sources.");
-			
-		}
-		
-		
-		
-		//===========//
-		// migration //
-		//===========//
-		
-		long totalMigrationCount = this.legacyFileHandler.getDataSourceMigrationCount();
-		this.migrationCount = totalMigrationCount;
-		LOGGER.info("Found ["+totalMigrationCount+"] data sources that need migration.");
-		
-		ArrayList<FullDataSourceV1> legacyDataSourceList = this.legacyFileHandler.getDataSourcesToMigrate(MIGRATION_BATCH_COUNT);
-		if (!legacyDataSourceList.isEmpty())
-		{
-			this.showMigrationStartMessage();
-			
-			try
-			{
-				// keep going until every data source has been migrated
-				int progressCount = 0;
-				while (!legacyDataSourceList.isEmpty() && this.migrationThreadRunning.get())
-				{
-					LOGGER.info("Migrating [" + levelId + "] - [" + progressCount + "/" + totalMigrationCount + "]...");
-					
-					ArrayList<CompletableFuture<Void>> updateFutureList = new ArrayList<>();
-					for (int i = 0; i < legacyDataSourceList.size() && this.migrationThreadRunning.get(); i++)
+					// keep going until every data source has been migrated
+					int progressCount = 0;
+					while (!legacyDataSourceList.isEmpty() && this.migrationThreadRunning.get())
 					{
-						FullDataSourceV1 legacyDataSource = legacyDataSourceList.get(i);
+						LOGGER.info("Migrating [" + levelId + "] - [" + progressCount + "/" + totalMigrationCount + "]...");
+						
+						ArrayList<CompletableFuture<Void>> updateFutureList = new ArrayList<>();
+						for (int i = 0; i < legacyDataSourceList.size() && this.migrationThreadRunning.get(); i++)
+						{
+							FullDataSourceV1 legacyDataSource = legacyDataSourceList.get(i);
+							
+							try
+							{
+								// convert the legacy data source to the new format,
+								// this is a relatively cheap operation
+								FullDataSourceV2 newDataSource = FullDataSourceV2.createFromLegacyDataSourceV1(legacyDataSource);
+								newDataSource.applyToParent = true;
+								
+								// the actual update process can be moderately expensive due to having to update
+								// the render data along with the full data, so running it async on the update threads gains us a good bit of speed
+								CompletableFuture<Void> future = this.updateDataSourceAsync(newDataSource);
+								updateFutureList.add(future);
+								future.thenRun(() ->
+								{
+									// after the update finishes the legacy data source can be safely deleted
+									this.legacyFileHandler.repo.deleteWithKey(legacyDataSource.getPos());
+									
+									try
+									{
+										newDataSource.close();
+									}
+									catch (Exception ignore)
+									{
+									}
+								});
+							}
+							catch (Exception e)
+							{
+								Long migrationPos = legacyDataSource.getPos();
+								LOGGER.warn("Unexpected issue migrating data source at pos " + migrationPos + ". Error: " + e.getMessage(), e);
+								this.legacyFileHandler.markMigrationFailed(migrationPos);
+							}
+						}
+						
 						
 						try
 						{
-							// convert the legacy data source to the new format,
-							// this is a relatively cheap operation
-							FullDataSourceV2 newDataSource = FullDataSourceV2.createFromLegacyDataSourceV1(legacyDataSource);
-							newDataSource.applyToParent = true;
-							
-							// the actual update process can be moderately expensive due to having to update
-							// the render data along with the full data, so running it async on the update threads gains us a good bit of speed
-							CompletableFuture<Void> future = this.updateDataSourceAsync(newDataSource);
-							updateFutureList.add(future);
-							future.thenRun(() ->
-							{
-								// after the update finishes the legacy data source can be safely deleted
-								this.legacyFileHandler.repo.deleteWithKey(legacyDataSource.getPos());
-								
-								try
-								{
-									newDataSource.close();
-								}
-								catch (Exception ignore) { }
-							});
+							// wait for each thread to finish updating
+							CompletableFuture<Void> combinedFutures = CompletableFuture.allOf(updateFutureList.toArray(new CompletableFuture[0]));
+							combinedFutures.get(MIGRATION_MAX_UPDATE_TIMEOUT_IN_MS, TimeUnit.MILLISECONDS);
 						}
-						catch (Exception e)
+						catch (InterruptedException | TimeoutException e)
 						{
-							Long migrationPos = legacyDataSource.getPos();
-							LOGGER.warn("Unexpected issue migrating data source at pos " + migrationPos + ". Error: " + e.getMessage(), e);
-							this.legacyFileHandler.markMigrationFailed(migrationPos);
+							LOGGER.warn("Migration update timed out after [" + MIGRATION_MAX_UPDATE_TIMEOUT_IN_MS + "] milliseconds. Migration will re-try the same positions again in a moment..", e);
 						}
+						catch (ExecutionException e)
+						{
+							LOGGER.warn("Migration update failed. Migration will re-try the same positions again. Error:" + e.getMessage(), e);
+						}
+						
+						legacyDataSourceList = this.legacyFileHandler.getDataSourcesToMigrate(MIGRATION_BATCH_COUNT);
+						
+						progressCount += legacyDataSourceList.size();
+						this.migrationCount -= legacyDataSourceList.size();
 					}
-					
-					
-					try
-					{
-						// wait for each thread to finish updating
-						CompletableFuture<Void> combinedFutures = CompletableFuture.allOf(updateFutureList.toArray(new CompletableFuture[0]));
-						combinedFutures.get(MIGRATION_MAX_UPDATE_TIMEOUT_IN_MS, TimeUnit.MILLISECONDS);
-					}
-					catch (InterruptedException | TimeoutException e)
-					{
-						LOGGER.warn("Migration update timed out after [" + MIGRATION_MAX_UPDATE_TIMEOUT_IN_MS + "] milliseconds. Migration will re-try the same positions again in a moment..", e);
-					}
-					catch (ExecutionException e)
-					{
-						LOGGER.warn("Migration update failed. Migration will re-try the same positions again. Error:" + e.getMessage(), e);
-					}
-					
-					legacyDataSourceList = this.legacyFileHandler.getDataSourcesToMigrate(MIGRATION_BATCH_COUNT);
-					
-					progressCount += legacyDataSourceList.size();
-					this.migrationCount -= legacyDataSourceList.size();
 				}
-			}
-			catch (Exception e)
-			{
-				LOGGER.info("migration stopped due to error for: ["+levelId+"]-["+this.saveDir+"], error: ["+e.getMessage()+"].", e);
-				this.showMigrationEndMessage(false);
-				this.migrationStoppedWithError = true;
-			}
-			finally
-			{
-				if (this.migrationThreadRunning.get())
+				catch (Exception e)
 				{
-					LOGGER.info("migration complete for: ["+levelId+"]-["+this.saveDir+"].");
-					this.showMigrationEndMessage(true);
-					this.migrationCount = 0;
-				}
-				else
-				{
-					LOGGER.info("migration stopped for: ["+levelId+"]-["+this.saveDir+"].");
+					LOGGER.info("migration stopped due to error for: [" + levelId + "]-[" + this.saveDir + "], error: [" + e.getMessage() + "].", e);
 					this.showMigrationEndMessage(false);
 					this.migrationStoppedWithError = true;
 				}
+				finally
+				{
+					if (this.migrationThreadRunning.get())
+					{
+						LOGGER.info("migration complete for: [" + levelId + "]-[" + this.saveDir + "].");
+						this.showMigrationEndMessage(true);
+						this.migrationCount = 0;
+					}
+					else
+					{
+						LOGGER.info("migration stopped for: [" + levelId + "]-[" + this.saveDir + "].");
+						this.showMigrationEndMessage(false);
+						this.migrationStoppedWithError = true;
+					}
+				}
+			}
+			else
+			{
+				LOGGER.info("No migration necessary.");
 			}
 		}
-		else
+		finally
 		{
-			LOGGER.info("No migration necessary.");
+			this.migrationThreadRunning.set(false);
 		}
-		
-		this.migrationThreadRunning.set(false);
 	}
 	
 	public long getLegacyDeletionCount() { return this.legacyDeletionCount; }
@@ -657,7 +675,6 @@ public class FullDataSourceProviderV2
 		this.legacyFileHandler.close();
 		
 		this.migrationThreadRunning.set(false);
-		this.migrationThreadPool.shutdown();
 	}
 	
 }

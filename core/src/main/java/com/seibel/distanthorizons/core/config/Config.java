@@ -1340,139 +1340,29 @@ public class Config
 		
 		public static class MultiThreading
 		{
-			public static final String THREAD_NOTE = ""
-					+ "Multi-threading Note: \n"
-					+ "If the total thread count in Distant Horizon's config is more threads than your CPU has cores, \n"
-					+ "CPU performance may suffer if Distant Horizons has a lot to load or generate. \n"
-					+ "This can be an issue when first loading into a world, when flying, and/or when generating new terrain.";
-			
-			public static final String THREAD_RUN_TIME_RATIO_NOTE = ""
-					+ "A value between 1.0 and 0.0 that represents the percentage \n"
-					+ "of time each thread can run before going idle. \n"
-					+ "\n"
-					+ "This can be used to reduce CPU usage if the thread count \n"
-					+ "is already set to 1 for the given option, or more finely \n"
-					+ "tune CPU performance.";
-			
-			
-			public static final ConfigEntry<Integer> numberOfWorldGenerationThreads = new ConfigEntry.Builder<Integer>()
-					.setServersideShortName("numberOfWorldGenerationThreads")
+			public static final ConfigEntry<Integer> numberOfThreads = new ConfigEntry.Builder<Integer>()
+					.setServersideShortName("numberOfThreads")
 					.setMinDefaultMax(1,
-							ThreadPresetConfigEventHandler.getWorldGenDefaultThreadCount(),
+							ThreadPresetConfigEventHandler.getDefaultThreadCount(),
 							Runtime.getRuntime().availableProcessors())
 					.comment(""
-							+ "How many threads should be used when generating LOD \n"
-							+ "chunks outside the normal render distance? \n"
-							+ "\n"
-							+ "If you experience stuttering when generating distant LODs, \n"
-							+ "decrease this number. \n"
-							+ "If you want to increase LOD \n"
-							+ "generation speed, increase this number. \n"
-							+ "\n"
-							+ THREAD_NOTE)
-					.build();
-			public static final ConfigEntry<Double> runTimeRatioForWorldGenerationThreads = new ConfigEntry.Builder<Double>()
-					.setServersideShortName("runTimeRatioForWorldGenerationThreads")
-					.setMinDefaultMax(0.01, ThreadPresetConfigEventHandler.getWorldGenDefaultRunTimeRatio(), 1.0)
-					.comment(THREAD_RUN_TIME_RATIO_NOTE)
-					.build();
-			
-			public static final ConfigEntry<Integer> numberOfFileHandlerThreads = new ConfigEntry.Builder<Integer>()
-					.setServersideShortName("numberOfFileHandlerThreads")
-					.setMinDefaultMax(1,
-							ThreadPresetConfigEventHandler.getFileHandlerDefaultThreadCount(),
-							Runtime.getRuntime().availableProcessors())
-					.comment(""
-							+ "How many threads should be used when reading/writing LOD data to/from disk? \n"
-							+ "\n"
-							+ "Increasing this number will cause LODs to load in faster, \n"
-							+ "but may cause lag when loading a new world or when \n"
-							+ "quickly flying through existing LODs. \n"
-							+ "\n"
-							+ THREAD_NOTE)
-					.build();
-			public static final ConfigEntry<Double> runTimeRatioForFileHandlerThreads = new ConfigEntry.Builder<Double>()
-					.setServersideShortName("runTimeRatioForFileHandlerThreads")
-					.setMinDefaultMax(0.01, ThreadPresetConfigEventHandler.getFileHandlerDefaultRunTimeRatio(), 1.0)
-					.comment(THREAD_RUN_TIME_RATIO_NOTE)
-					.build();
-			
-			public static final ConfigEntry<Integer> numberOfUpdatePropagatorThreads = new ConfigEntry.Builder<Integer>()
-					.setServersideShortName("numberOfUpdatePropagatorThreads")
-					.setMinDefaultMax(1,
-							ThreadPresetConfigEventHandler.getUpdatePropagatorDefaultThreadCount(),
-							Runtime.getRuntime().availableProcessors())
-					.comment(""
-							+ "How many threads should be used when applying LOD updates? \n"
-							+ "An LOD update is the operation of down-sampling a high detail LOD \n"
-							+ "into a lower detail one.\n"
-							+ "\n"
-							+ "This config can have a much higher number of threads \n"
-							+ "assigned and much lower run time ratio vs other thread pools \n"
-							+ "because the amount of time any particular thread may run is relatively low.\n"
-							+ "\n"
-							+ "This is because LOD updating only only partially thread safe, \n"
-							+ "so between 40% and 60% of the time a given thread may end up \n"
-							+ "waiting on another thread to finish updating the same LOD it also wants\n"
-							+ "to work on.\n"
-							+ "\n"
-							+ THREAD_NOTE)
-					.build();
-			public static final ConfigEntry<Double> runTimeRatioForUpdatePropagatorThreads = new ConfigEntry.Builder<Double>()
-					.setServersideShortName("runTimeRatioForUpdatePropagatorThreads")
-					.setMinDefaultMax(0.01, ThreadPresetConfigEventHandler.getUpdatePropagatorDefaultRunTimeRatio(), 1.0)
-					.comment(THREAD_RUN_TIME_RATIO_NOTE)
-					.build();
-			
-			public static final ConfigEntry<Integer> numberOfNetworkCompressionThreads = new ConfigEntry.Builder<Integer>()
-					.setServersideShortName("numberOfNetworkCompressionThreads")
-					.setMinDefaultMax(1,
-							ThreadPresetConfigEventHandler.getNetworkCompressionDefaultThreadCount(),
-							Runtime.getRuntime().availableProcessors())
-					.comment(""
-							+ "How many threads should be used when (de)compressing LODs \n"
-							+ "that are received/sent over the network?\n"
-							+ "\n"
-							+ "This pool doesn't do anything in singleplayer or when connected \n"
-							+ "to a server that doesn't support DH networking. \n"
-							+ "\n"
-							+ THREAD_NOTE)
-					.build();
-			public static final ConfigEntry<Double> runTimeRatioForNetworkCompressionThreads = new ConfigEntry.Builder<Double>()
-					.setServersideShortName("runTimeRatioForNetworkCompressionThreads")
-					.setMinDefaultMax(0.01, ThreadPresetConfigEventHandler.getNetworkCompressionDefaultRunTimeRatio(), 1.0)
-					.comment(THREAD_RUN_TIME_RATIO_NOTE)
-					.build();
-			
-			public static final ConfigEntry<Integer> numberOfLodBuilderThreads = new ConfigEntry.Builder<Integer>()
-					.setServersideShortName("numberOfLodBuilderThreads")
-					.setMinDefaultMax(1,
-							ThreadPresetConfigEventHandler.getLodBuilderDefaultThreadCount(),
-							Runtime.getRuntime().availableProcessors())
-					.comment(""
-							+ "How many threads should be used when building LODs? \n"
-							+ "\n"
-							+ "These threads run when terrain is generated, when\n"
-							+ "certain graphics settings are changed, and when moving around the world. \n"
-							+ "\n"
-							+ THREAD_NOTE)
-					.build();
-			public static final ConfigEntry<Double> runTimeRatioForLodBuilderThreads = new ConfigEntry.Builder<Double>()
-					.setServersideShortName("runTimeRatioForLodBuilderThreads")
-					.setMinDefaultMax(0.01, ThreadPresetConfigEventHandler.getLodBuilderDefaultRunTimeRatio(), 1.0)
-					.comment(THREAD_RUN_TIME_RATIO_NOTE)
-					.build();
-			
-			public static final ConfigEntry<Boolean> enableLodBuilderThreadLimiting = new ConfigEntry.Builder<Boolean>()
-					.setServersideShortName("enableLodBuilderThreadLimiting")
-					.set(true)
-					.comment(""
-							+ "Should only be disabled if deadlock occurs and LODs refuse to update. \n"
-							+ "This will cause CPU usage to drastically increase for the Lod Builder threads. \n"
-							+ "\n"
-							+ "Note that if deadlock did occur restarting MC may be necessary to stop the locked threads. \n"
+							+ "How many threads should be used by Distant Horizons? \n"
 							+ "")
 					.build();
+			public static final ConfigEntry<Double> threadRunTimeRatio = new ConfigEntry.Builder<Double>()
+					.setServersideShortName("threadRunTimeRatio")
+					.setMinDefaultMax(0.01, ThreadPresetConfigEventHandler.getDefaultRunTimeRatio(), 1.0)
+					.comment(""
+							+ "A value between 1.0 and 0.0 that represents the percentage \n"
+							+ "of time each thread can run before going idle. \n"
+							+ "\n"
+							+ "This can be used to reduce CPU usage if the thread count \n"
+							+ "is already set to 1 for the given option, or more finely \n"
+							+ "tune CPU performance. \n" +
+							"")
+					.build();
+			
+			
 			
 		}
 		

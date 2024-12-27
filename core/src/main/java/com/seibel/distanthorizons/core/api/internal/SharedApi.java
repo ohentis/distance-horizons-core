@@ -283,7 +283,7 @@ public class SharedApi
 		}
 		
 		UPDATE_POS_MANAGER.maxSize = MAX_UPDATING_CHUNK_COUNT_PER_THREAD
-				* Config.Common.MultiThreading.numberOfLodBuilderThreads.get()
+				* Config.Common.MultiThreading.numberOfThreads.get()
 				* (playerCount + 1);
 		
 		UpdateChunkData updateData = new UpdateChunkData(chunkWrapper, neighbourChunkList, dhLevel, lightUpdateOnly);

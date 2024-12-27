@@ -23,7 +23,8 @@ import com.seibel.distanthorizons.core.config.listeners.ConfigChangeListener;
 import com.seibel.distanthorizons.core.config.types.ConfigEntry;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
 
-import java.util.concurrent.Semaphore;
+import java.util.List;
+import java.util.Queue;
 
 /**
  * Handles thread pools with config values for their
@@ -32,11 +33,12 @@ import java.util.concurrent.Semaphore;
 public class ConfigThreadPool
 {
 	/** Caution must be used to prevent deadlock */
-	private final Semaphore activeThreadCountSemaphore;
+	private final PrioritySemaphore threadSemaphore;
+	/** higher numbers run first */
+	private final int priority;
 	
 	public RateLimitedThreadPoolExecutor executor = null;
 	private int threadCount = 0;
-	public int getThreadCount() { return this.threadCount; }
 	
 	public final DhThreadFactory threadFactory;
 	
@@ -50,10 +52,11 @@ public class ConfigThreadPool
 	// constructor //
 	//=============//
 	
-	public ConfigThreadPool(DhThreadFactory threadFactory, ConfigEntry<Integer> threadCountConfig, ConfigEntry<Double> runTimeRatioConfig, Semaphore activeThreadCountSemaphore)
+	public ConfigThreadPool(DhThreadFactory threadFactory, ConfigEntry<Integer> threadCountConfig, ConfigEntry<Double> runTimeRatioConfig, PrioritySemaphore threadSemaphore, int priority)
 	{
 		this.threadFactory = threadFactory;
-		this.activeThreadCountSemaphore = activeThreadCountSemaphore;
+		this.threadSemaphore = threadSemaphore;
+		this.priority = priority;
 		
 		this.threadCountConfig = threadCountConfig;
 		this.threadCountConfigListener = new ConfigChangeListener<>(threadCountConfig, 
@@ -72,14 +75,24 @@ public class ConfigThreadPool
 	
 	public void setThreadPoolSize(int threadPoolSize)
 	{
+		Queue<Runnable> incompleteRunnableQueue = null;
 		if (this.executor != null)
 		{
 			// close the previous thread pool if one exists
-			this.executor.shutdown();
+			this.executor.shutdown(); // don't do shutdown now since we don't want to throw any interrupt exceptions
+			incompleteRunnableQueue = this.executor.getQueue(); 
 		}
 		
 		this.threadCount = threadPoolSize;
-		this.executor = ThreadUtil.makeRateLimitedThreadPool(this.threadCount, this.threadFactory, this.runTimeRatioConfig, this.activeThreadCountSemaphore);
+		this.executor = ThreadUtil.makeRateLimitedThreadPool(this.threadCount, this.threadFactory, this.runTimeRatioConfig, this.threadSemaphore, this.priority);
+		
+		if (incompleteRunnableQueue != null)
+		{
+			for (Runnable runnable : incompleteRunnableQueue)
+			{
+				this.executor.execute(runnable);
+			}
+		}
 	}
 	
 	/**
@@ -90,7 +103,6 @@ public class ConfigThreadPool
 	{
 		if (this.executor != null)
 		{
-			//LOGGER.info("Stopping thread pool");
 			this.executor.shutdownNow();
 		}
 		

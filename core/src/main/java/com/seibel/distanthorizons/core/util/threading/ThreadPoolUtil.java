@@ -24,7 +24,6 @@ import com.seibel.distanthorizons.core.config.listeners.ConfigChangeListener;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.ThreadPoolExecutor;
 
 /**
@@ -73,31 +72,24 @@ public class ThreadPoolUtil
 	
 	
 	
-	//======================//
-	// worker threads pools //
-	//======================//
+	public static final String FULL_DATA_MIGRATION_THREAD_NAME = "Full Data Migration";
+	private static ThreadPoolExecutor fullDataMigrationThreadPool;
+	@Nullable
+	public static ThreadPoolExecutor getFullDataMigrationExecutor() { return fullDataMigrationThreadPool; }
 	
-	// worker thread pools are generally related with LOD building
-	// and all share an underlying number of threads.
-	// WARNING: great care should be used when setting up these threads since deadlock can occur if they are handled poorly.
 	
 	public static final DhThreadFactory CHUNK_TO_LOD_BUILDER_THREAD_FACTORY = new DhThreadFactory("LOD Builder - Chunk to Lod Builder", Thread.MIN_PRIORITY, false);
 	private static ConfigThreadPool chunkToLodBuilderThreadPool;
 	@Nullable
 	public static ThreadPoolExecutor getChunkToLodBuilderExecutor() { return (chunkToLodBuilderThreadPool != null) ? chunkToLodBuilderThreadPool.executor : null; }
 	
-	public static final DhThreadFactory BUFFER_BUILDER_THREAD_FACTORY = new DhThreadFactory("LOD Builder - Buffer Builder", Thread.MIN_PRIORITY, false);
-	private static ConfigThreadPool bufferBuilderThreadPool;
-	@Nullable
-	public static ThreadPoolExecutor getBufferBuilderExecutor() { return (bufferBuilderThreadPool != null) ? bufferBuilderThreadPool.executor : null; }
 	
 	
-	/** how many total worker threads can be used */
-	private static int workerThreadSemaphoreCount = Config.Common.MultiThreading.numberOfLodBuilderThreads.get();
-	public static int getWorkerThreadCount() { return workerThreadSemaphoreCount; }
-	
-	private static Semaphore workerThreadSemaphore = null;
-	private static ConfigChangeListener<Integer> workerThreadSemaphoreConfigListener = null;
+	/** how many total threads can be used */
+	private static int threadSemaphoreCount = Config.Common.MultiThreading.numberOfThreads.get();
+	public static int getThreadCount() { return threadSemaphoreCount; }
+	private static PrioritySemaphore threadSemaphore = null;
+	private static ConfigChangeListener<Integer> threadSemaphoreConfigListener = null;
 	
 	
 	
@@ -107,43 +99,40 @@ public class ThreadPoolUtil
 	
 	public static void setupThreadPools()
 	{
-		// standalone threads //
+		// create thread semaphore
+		threadSemaphoreCount = Config.Common.MultiThreading.numberOfThreads.get();
+		threadSemaphore = new PrioritySemaphore(threadSemaphoreCount);
+		threadSemaphoreConfigListener = new ConfigChangeListener<>(Config.Common.MultiThreading.numberOfThreads, (val) ->
+		{
+			threadSemaphore.changePermitCount(val);
+			threadSemaphoreCount = val;
+		});
 		
-		fileHandlerThreadPool = new ConfigThreadPool(FILE_HANDLER_THREAD_FACTORY, Config.Common.MultiThreading.numberOfFileHandlerThreads, Config.Common.MultiThreading.runTimeRatioForFileHandlerThreads, null);
-		updatePropagatorThreadPool = new ConfigThreadPool(UPDATE_PROPAGATOR_THREAD_FACTORY, Config.Common.MultiThreading.numberOfUpdatePropagatorThreads, Config.Common.MultiThreading.runTimeRatioForUpdatePropagatorThreads, null);
-		worldGenThreadPool = new ConfigThreadPool(WORLD_GEN_THREAD_FACTORY, Config.Common.MultiThreading.numberOfWorldGenerationThreads, Config.Common.MultiThreading.runTimeRatioForWorldGenerationThreads, null);
-		networkCompressionThreadPool = new ConfigThreadPool(NETWORK_COMPRESSION_THREAD_FACTORY, Config.Common.MultiThreading.numberOfNetworkCompressionThreads, Config.Common.MultiThreading.runTimeRatioForNetworkCompressionThreads, null);
+		
+		
+		// thread pools
+		chunkToLodBuilderThreadPool = new ConfigThreadPool(CHUNK_TO_LOD_BUILDER_THREAD_FACTORY,
+				Config.Common.MultiThreading.numberOfThreads, Config.Common.MultiThreading.threadRunTimeRatio,
+				threadSemaphore, 3); // We want to make sure any chunk changes are found
+		fileHandlerThreadPool = new ConfigThreadPool(FILE_HANDLER_THREAD_FACTORY,
+				Config.Common.MultiThreading.numberOfThreads, Config.Common.MultiThreading.threadRunTimeRatio,
+				threadSemaphore, 2); // loading in new LODs is second highest priority
+		updatePropagatorThreadPool = new ConfigThreadPool(UPDATE_PROPAGATOR_THREAD_FACTORY,
+				Config.Common.MultiThreading.numberOfThreads, Config.Common.MultiThreading.threadRunTimeRatio,
+				threadSemaphore, 1); // update propagation needs to be slightly higher priority than world gen
+		worldGenThreadPool = new ConfigThreadPool(WORLD_GEN_THREAD_FACTORY, 
+				Config.Common.MultiThreading.numberOfThreads, Config.Common.MultiThreading.threadRunTimeRatio,
+				threadSemaphore, 0); // higher priorities mean the threads will run first
+		networkCompressionThreadPool = new ConfigThreadPool(NETWORK_COMPRESSION_THREAD_FACTORY, 
+				Config.Common.MultiThreading.numberOfThreads, Config.Common.MultiThreading.threadRunTimeRatio,
+				threadSemaphore, 0); // networking can probably have similar priority to world gen since they work similarly
+		
+		
+		
+		// single thread pools
 		cleanupThreadPool = ThreadUtil.makeSingleThreadPool(CLEANUP_THREAD_NAME);
 		beaconCullingThreadPool = ThreadUtil.makeSingleThreadPool(BEACON_CULLING_THREAD_NAME);
-		
-		
-		
-		// worker threads //
-		
-		// create thread semaphore
-		if (Config.Common.MultiThreading.enableLodBuilderThreadLimiting.get())
-		{
-			workerThreadSemaphoreCount = Config.Common.MultiThreading.numberOfLodBuilderThreads.get();
-			workerThreadSemaphore = new Semaphore(workerThreadSemaphoreCount);
-			
-			workerThreadSemaphoreConfigListener = new ConfigChangeListener<>(Config.Common.MultiThreading.numberOfLodBuilderThreads, (val) ->
-			{
-				int changePermit = val - workerThreadSemaphoreCount;
-				if (changePermit > 0)
-				{
-					workerThreadSemaphore.release(changePermit);
-				}
-				else
-				{
-					workerThreadSemaphore.acquireUninterruptibly(changePermit * -1);
-				}
-				workerThreadSemaphoreCount = workerThreadSemaphoreCount + changePermit;
-			});
-		}
-		
-		// create thread pools
-		chunkToLodBuilderThreadPool = new ConfigThreadPool(CHUNK_TO_LOD_BUILDER_THREAD_FACTORY, Config.Common.MultiThreading.numberOfLodBuilderThreads, Config.Common.MultiThreading.runTimeRatioForLodBuilderThreads, workerThreadSemaphore);
-		bufferBuilderThreadPool = new ConfigThreadPool(BUFFER_BUILDER_THREAD_FACTORY, Config.Common.MultiThreading.numberOfLodBuilderThreads, Config.Common.MultiThreading.runTimeRatioForLodBuilderThreads, workerThreadSemaphore);
+		fullDataMigrationThreadPool = ThreadUtil.makeSingleThreadPool(FULL_DATA_MIGRATION_THREAD_NAME);
 		
 	}
 	
@@ -156,18 +145,15 @@ public class ThreadPoolUtil
 		networkCompressionThreadPool.shutdownExecutorService();
 		cleanupThreadPool.shutdown();
 		beaconCullingThreadPool.shutdown();
+		fullDataMigrationThreadPool.shutdown();
+		chunkToLodBuilderThreadPool.shutdownExecutorService();
 		
+		threadSemaphore = null;
 		
-		// worker threads
-		ThreadPoolUtil.chunkToLodBuilderThreadPool.shutdownExecutorService();
-		ThreadPoolUtil.bufferBuilderThreadPool.shutdownExecutorService();
-		
-		workerThreadSemaphore = null;
-		
-		if (workerThreadSemaphoreConfigListener != null)
+		if (threadSemaphoreConfigListener != null)
 		{
-			workerThreadSemaphoreConfigListener.close();
-			workerThreadSemaphoreConfigListener = null;
+			threadSemaphoreConfigListener.close();
+			threadSemaphoreConfigListener = null;
 		}
 	}
 	
