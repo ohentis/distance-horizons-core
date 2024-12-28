@@ -72,8 +72,9 @@ public class PrioritySemaphore
 			int priority = executor.priority + this.random.nextInt(11) - 5;
 			
 			// this thread will be run when a permit is available
-			thread.wait();
 			this.queue.put(new ThreadWithPriority(thread,priority));
+			
+			thread.wait();
 		}
 	}
 	
