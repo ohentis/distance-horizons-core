@@ -79,10 +79,17 @@ public class F3Screen
 	 */
 	public static void addStringToDisplay(List<String> messageList)
 	{
+		// multi thread pools
 		ThreadPoolExecutor worldGenPool = ThreadPoolUtil.getWorldGenExecutor();
 		ThreadPoolExecutor fileHandlerPool = ThreadPoolUtil.getFileHandlerExecutor();
 		ThreadPoolExecutor updatePool = ThreadPoolUtil.getUpdatePropagatorExecutor();
 		ThreadPoolExecutor lodBuilderPool = ThreadPoolUtil.getChunkToLodBuilderExecutor();
+		ThreadPoolExecutor networkPool = ThreadPoolUtil.getNetworkCompressionExecutor();
+		
+		// single thread pools
+		ThreadPoolExecutor cleanupPool = ThreadPoolUtil.getCleanupExecutor();
+		ThreadPoolExecutor beaconCullingPool = ThreadPoolUtil.getBeaconCullingExecutor();
+		ThreadPoolExecutor migrationPool = ThreadPoolUtil.getFullDataMigrationExecutor();
 		
 		AbstractDhWorld world = SharedApi.getAbstractDhWorld();
 		Iterable<? extends IDhLevel> levelIterator = world.getAllLoadedLevels();
@@ -115,10 +122,16 @@ public class F3Screen
 		// thread pools
 		if (Config.Client.Advanced.Debugging.F3Screen.showThreadPools.get())
 		{
+			// multi thread pools
 			messageList.add(getThreadPoolStatString("World Gen/Pull Chunk", worldGenPool));//"World Gen Tasks: 40/5304, (in progress: 7)");
 			messageList.add(getThreadPoolStatString("File Handler", fileHandlerPool));
 			messageList.add(getThreadPoolStatString("Update Propagator", updatePool));
 			messageList.add(getThreadPoolStatString("LOD Builder", lodBuilderPool));
+			messageList.add(getThreadPoolStatString("Networking", networkPool));
+			//// single thread pools
+			//messageList.add(getThreadPoolStatString("Cleanup", cleanupPool));
+			//messageList.add(getThreadPoolStatString("Beacon Culling", beaconCullingPool));
+			//messageList.add(getThreadPoolStatString("Migration", migrationPool));
 			messageList.add("");
 		}
 		
