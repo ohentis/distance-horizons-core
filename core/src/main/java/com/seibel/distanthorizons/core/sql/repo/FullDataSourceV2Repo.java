@@ -25,10 +25,12 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.sql.DbConnectionClosedException;
 import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV2DTO;
+import com.seibel.distanthorizons.core.util.ListUtil;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataInputStream;
 import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.core.util.ArrayUtils;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
@@ -359,7 +361,10 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 			}
 			catch (IOException e)
 			{
-				LOGGER.warn("Decompression issue when getting column gen steps for pos: [" + DhSectionPos.toString(pos) + "]", e);
+				LOGGER.warn("Decompression issue when getting column gen steps for pos: [" + DhSectionPos.toString(pos) + "], deleting corrupted data.", e);
+				
+				this.deleteWithKey(pos);
+				ListUtil.clearAndSetSize(outputByteArray, FullDataSourceV2.WIDTH * FullDataSourceV2.WIDTH);
 			}
 		}
 		catch (SQLException e)
@@ -576,12 +581,12 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 	{
 		if (existingArrayList == null)
 		{
-			existingArrayList = new ByteArrayList(inputStream.available());
+			// inputStream.available() can throw a null pointer due to a bug with LZMA stream so we have to estimate the array size
+			existingArrayList = new ByteArrayList(64);
 		}
 		else
 		{
 			existingArrayList.clear();
-			existingArrayList.ensureCapacity(inputStream.available());
 		}
 		
 		try
