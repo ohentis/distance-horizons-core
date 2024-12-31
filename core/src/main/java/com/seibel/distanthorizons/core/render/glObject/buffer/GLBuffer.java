@@ -38,6 +38,7 @@ import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -54,8 +55,8 @@ public class GLBuffer implements AutoCloseable
 	public static AtomicInteger bufferCount = new AtomicInteger(0);
 	
 	private static final int PHANTOM_REF_CHECK_TIME_IN_MS = 5 * 1000;
-	private static final HashMap<Reference<? extends GLBuffer>, Integer> PHANTOM_TO_BUFFER_ID = new HashMap<>();
-	private static final HashMap<Integer, Reference<? extends GLBuffer>> BUFFER_ID_TO_PHANTOM = new HashMap<>();
+	private static final ConcurrentHashMap<PhantomReference<? extends GLBuffer>, Integer> PHANTOM_TO_BUFFER_ID = new ConcurrentHashMap<>();
+	private static final ConcurrentHashMap<Integer, PhantomReference<? extends GLBuffer>> BUFFER_ID_TO_PHANTOM = new ConcurrentHashMap<>();
 	private static final ReferenceQueue<GLBuffer> PHANTOM_REFERENCE_QUEUE = new ReferenceQueue<>();
 	/** TODO we should make a global cleanup thread that handles all phantom references */
 	private static final ThreadPoolExecutor CLEANUP_THREAD = ThreadUtil.makeSingleDaemonThreadPool("GLBuffer Cleanup");
@@ -104,6 +105,13 @@ public class GLBuffer implements AutoCloseable
 			LodUtil.assertNotReach("Thread ["+Thread.currentThread()+"] tried to create a GLBuffer outside the MC render thread.");
 		}
 		
+		// destroy the old buffer if one is present
+		// (as of 2024-12-31 James didn't see this happen, but just in case)
+		if (this.id != 0)
+		{
+			destroyBufferIdAsync(this.id);
+		}
+		
 		this.id = GLMC.glGenBuffers();
 		this.bufferStorage = asBufferStorage;
 		bufferCount.getAndIncrement();
@@ -129,29 +137,35 @@ public class GLBuffer implements AutoCloseable
 	}
 	private static void destroyBufferIdAsync(int id)
 	{
+		// remove and clear the phantom reference if present
+		if (BUFFER_ID_TO_PHANTOM.containsKey(id))
+		{
+			Reference<? extends GLBuffer> phantom = BUFFER_ID_TO_PHANTOM.get(id);
+			
+			// if we are manually closing this buffer, we don't want the phantom reference to accidentally close it again
+			// this can cause a race condition were we accidentally delete an in-use buffer and cause NVIDIA
+			// to throw an EXCEPTION_ACCESS_VIOLATION when we attempt to render it
+			phantom.clear();
+			
+			PHANTOM_TO_BUFFER_ID.remove(phantom);
+			BUFFER_ID_TO_PHANTOM.remove(id);
+		}
+		
 		GLProxy.getInstance().queueRunningOnRenderThread(() -> 
+		{
+			// destroy the buffer if it exists,
+			// the buffer may not exist if the destroy method is called twice
+			if (GL32.glIsBuffer(id))
 			{
-				// remove the phantom references
-				if (BUFFER_ID_TO_PHANTOM.containsKey(id))
-				{
-					Reference<? extends GLBuffer> phantom = BUFFER_ID_TO_PHANTOM.get(id);
-					PHANTOM_TO_BUFFER_ID.remove(phantom);
-					BUFFER_ID_TO_PHANTOM.remove(id);
-				}
+				GLMC.glDeleteBuffers(id);
+				bufferCount.decrementAndGet();
 				
-				// destroy the buffer if it exists,
-				// the buffer may not exist if the destroy method is called twice
-				if (GL32.glIsBuffer(id))
+				if (Config.Client.Advanced.Debugging.logBufferGarbageCollection.get())
 				{
-					GLMC.glDeleteBuffers(id);
-					bufferCount.decrementAndGet();
-					
-					if (Config.Client.Advanced.Debugging.logBufferGarbageCollection.get())
-					{
-						LOGGER.info("destroyed buffer [" + id + "], remaining: [" + BUFFER_ID_TO_PHANTOM.size() + "]");
-					}
+					LOGGER.info("destroyed buffer [" + id + "], remaining: [" + BUFFER_ID_TO_PHANTOM.size() + "]");
 				}
-			});
+			}
+		});
 	}
 	
 	
