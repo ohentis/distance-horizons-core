@@ -472,7 +472,11 @@
     "OpenGL Error Handling Mode",
   "distanthorizons.config.client.advanced.debugging.openGl.glErrorHandlingMode.@tooltip":
     "Defines how OpenGL errors are handled. \n Requires rebooting Minecraft to apply. \nMay incorrectly catch OpenGL errors thrown by other mods.",
-
+  "distanthorizons.config.client.advanced.debugging.openGl.validateBufferIdsBeforeRendering":
+    "Validate Buffer IDs Before Rendering",
+  "distanthorizons.config.client.advanced.debugging.openGl.validateBufferIdsBeforeRendering.@tooltip":
+    "Massively reduces FPS. \nShould only be used if mysterious EXCEPTION_ACCESS_VIOLATION crashes are happening in DH's rendering code and you're attempting to troubleshoot it.",
+  
 
   
   "distanthorizons.config.client.advanced.debugging.columnBuilderDebugging":

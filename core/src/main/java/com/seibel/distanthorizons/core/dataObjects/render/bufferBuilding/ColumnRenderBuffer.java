@@ -240,8 +240,7 @@ public class ColumnRenderBuffer implements AutoCloseable
 			}
 			
 			hasRendered = true;
-			renderContext.drawVbo(vbo);
-			//LodRenderer.tickLogger.info("Vertex buffer: {}", vbo);
+			renderContext.drawVbo(vbo, this);
 		}
 		return hasRendered;
 	}
@@ -269,8 +268,7 @@ public class ColumnRenderBuffer implements AutoCloseable
 				}
 				
 				hasRendered = true;
-				renderContext.drawVbo(vbo);
-				//LodRenderer.tickLogger.info("Vertex buffer: {}", vbo);
+				renderContext.drawVbo(vbo, this);
 			}
 		}
 		catch (IllegalStateException e)
@@ -307,6 +305,8 @@ public class ColumnRenderBuffer implements AutoCloseable
 		
 		return count;
 	}
+	
+	public boolean uploadInProgress() { return this.uploadFuture != null; }
 	
 	public void debugDumpStats(StatsMap statsMap)
 	{

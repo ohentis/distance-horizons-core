@@ -33,7 +33,6 @@ import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos;
 import com.seibel.distanthorizons.core.render.DhApiRenderProxy;
 import com.seibel.distanthorizons.core.render.RenderBufferHandler;
 import com.seibel.distanthorizons.core.render.glObject.GLProxy;
-import com.seibel.distanthorizons.core.render.glObject.GLState;
 import com.seibel.distanthorizons.core.render.glObject.buffer.GLVertexBuffer;
 import com.seibel.distanthorizons.core.render.glObject.buffer.QuadElementBuffer;
 import com.seibel.distanthorizons.core.render.glObject.texture.*;
@@ -69,7 +68,7 @@ public class LodRenderer
 {
 	public static final ConfigBasedLogger EVENT_LOGGER = new ConfigBasedLogger(LogManager.getLogger(LodRenderer.class),
 			() -> Config.Common.Logging.logRendererBufferEvent.get());
-	public static ConfigBasedSpamLogger tickLogger = new ConfigBasedSpamLogger(LogManager.getLogger(LodRenderer.class),
+	public static final ConfigBasedSpamLogger SPAM_LOGGER = new ConfigBasedSpamLogger(LogManager.getLogger(LodRenderer.class),
 			() -> Config.Common.Logging.logRendererBufferEvent.get(), 1);
 	
 	private static final IIrisAccessor IRIS_ACCESSOR = ModAccessorInjector.INSTANCE.get(IIrisAccessor.class);
@@ -423,7 +422,7 @@ public class LodRenderer
 			
 			// end of internal LOD profiling
 			profiler.pop();
-			tickLogger.incLogTries();
+			SPAM_LOGGER.incLogTries();
 			
 		}
 		finally
@@ -466,31 +465,36 @@ public class LodRenderer
 		ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeBufferRenderEvent.class, new DhApiBeforeBufferRenderEvent.EventParam(renderEventParam, modelPos));
 	}
 	
-	public void drawVbo(GLVertexBuffer vbo)
+	public void drawVbo(GLVertexBuffer vbo, ColumnRenderBuffer parentBufferContainer)
 	{
-		//// can be uncommented to add additional debug validation to prevent crashes if invalid buffers are being created
-		//// shouldn't be used in production due to the performance hit
-		//if (GL32.glIsBuffer(vbo.getId()))
+		// this should only be enabled for debugging
+		if (Config.Client.Advanced.Debugging.OpenGl.validateBufferIdsBeforeRendering.get())
 		{
-			IDhApiShaderProgram shaderProgram = this.lodRenderProgram;
-			IDhApiShaderProgram shaderProgramOverride = OverrideInjector.INSTANCE.get(IDhApiShaderProgram.class);
-			if (shaderProgramOverride != null && shaderProgram.overrideThisFrame())
+			// this is a fairly slow call and enabling it will reduce FPS significantly
+			if (!GL32.glIsBuffer(vbo.getId()))
 			{
-				shaderProgram = shaderProgramOverride;
+				if (SPAM_LOGGER.canMaybeLog())
+				{
+					SPAM_LOGGER.warn("Attempted to draw invalid buffer: [" + vbo.getId() + "], expected size: ["+vbo.getSize()+"], upload complete: [" + parentBufferContainer.buffersUploaded + "], upload in progress: [" + parentBufferContainer.uploadInProgress() + "], buffer blockPos: ["+parentBufferContainer.blockPos+"].");
+				}
+				return;
 			}
-			
-			
-			vbo.bind();
-			shaderProgram.bindVertexBuffer(vbo.getId());
-			GL32.glDrawElements(GL32.GL_TRIANGLES, (vbo.getVertexCount() / 4) * 6, // TODO what does the 4 and 6 here represent?
-					this.quadIBO.getType(), 0);
-			vbo.unbind();
 		}
-		//else
-		//{
-		//	// will spam the log if uncommented, but helpful for validation
-		//	//LOGGER.warn("Unable to draw VBO: "+vbo.getId());
-		//}
+		
+		
+		IDhApiShaderProgram shaderProgram = this.lodRenderProgram;
+		IDhApiShaderProgram shaderProgramOverride = OverrideInjector.INSTANCE.get(IDhApiShaderProgram.class);
+		if (shaderProgramOverride != null && shaderProgram.overrideThisFrame())
+		{
+			shaderProgram = shaderProgramOverride;
+		}
+		
+		
+		vbo.bind();
+		shaderProgram.bindVertexBuffer(vbo.getId());
+		GL32.glDrawElements(GL32.GL_TRIANGLES, (vbo.getVertexCount() / 4) * 6, // TODO what does the 4 and 6 here represent?
+				this.quadIBO.getType(), 0);
+		vbo.unbind();
 	}
 	
 	
@@ -652,7 +656,7 @@ public class LodRenderer
 			if(this.framebuffer.getStatus() != GL32.GL_FRAMEBUFFER_COMPLETE)
 			{
 				// This generally means something wasn't bound, IE missing either the color or depth texture
-				tickLogger.warn("FrameBuffer ["+this.framebuffer.getId()+"] isn't complete.");
+				SPAM_LOGGER.warn("FrameBuffer ["+this.framebuffer.getId()+"] isn't complete.");
 			}
 			
 			
