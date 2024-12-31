@@ -520,8 +520,9 @@ public abstract class AbstractDhRepo<TKey, TDTO extends IBaseDTO<TKey>> implemen
 					
 					if (!this.connection.isClosed())
 					{
-						LOGGER.info("Closing database connection: [" + this.connectionString + "]");
+						LOGGER.info("Closing database connection: [" + this.connectionString + "]...");
 						this.connection.close();
+						LOGGER.info("Finished closing database connection: [" + this.connectionString + "]");
 					}
 					else
 					{
