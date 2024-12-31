@@ -30,6 +30,7 @@ import com.seibel.distanthorizons.core.file.AbstractDataSourceHandler;
 import com.seibel.distanthorizons.core.generation.tasks.WorldGenResult;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.logging.f3.F3Screen;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
@@ -50,6 +51,7 @@ import java.awt.*;
 import java.io.File;
 import java.io.IOException;
 import java.sql.SQLException;
+import java.text.NumberFormat;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -428,7 +430,8 @@ public class FullDataSourceProviderV2
 					int progressCount = 0;
 					while (!legacyDataSourceList.isEmpty() && this.migrationThreadRunning.get())
 					{
-						LOGGER.info("Migrating [" + levelId + "] - [" + progressCount + "/" + totalMigrationCount + "]...");
+						NumberFormat numFormat = F3Screen.NUMBER_FORMAT;
+						LOGGER.info("Migrating [" + levelId + "] - [" + numFormat.format(progressCount) + "/" + numFormat.format(totalMigrationCount) + "]...");
 						
 						ArrayList<CompletableFuture<Void>> updateFutureList = new ArrayList<>();
 						for (int i = 0; i < legacyDataSourceList.size() && this.migrationThreadRunning.get(); i++)
@@ -463,7 +466,7 @@ public class FullDataSourceProviderV2
 							catch (Exception e)
 							{
 								Long migrationPos = legacyDataSource.getPos();
-								LOGGER.warn("Unexpected issue migrating data source at pos " + migrationPos + ". Error: " + e.getMessage(), e);
+								LOGGER.warn("Unexpected issue migrating data source at pos [" + DhSectionPos.toString(migrationPos) + "]. Error: " + e.getMessage(), e);
 								this.legacyFileHandler.markMigrationFailed(migrationPos);
 							}
 						}
@@ -477,7 +480,7 @@ public class FullDataSourceProviderV2
 						}
 						catch (InterruptedException | TimeoutException e)
 						{
-							LOGGER.warn("Migration update timed out after [" + MIGRATION_MAX_UPDATE_TIMEOUT_IN_MS + "] milliseconds. Migration will re-try the same positions again in a moment..", e);
+							LOGGER.warn("Migration update timed out after [" + MIGRATION_MAX_UPDATE_TIMEOUT_IN_MS + "] milliseconds. Migration will re-try the same positions again in a moment.", e);
 						}
 						catch (ExecutionException e)
 						{
