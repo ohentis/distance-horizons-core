@@ -87,7 +87,7 @@ public class Config
 				.build();
 		
 		public static ConfigEntry<EDhApiThreadPreset> threadPresetSetting = new ConfigEntry.Builder<EDhApiThreadPreset>()
-				.setServersideShortName("threadPreset")
+				.setServersideShortName("common.threadPreset")
 				.set(EDhApiThreadPreset.BALANCED) // the default value is set via the listener when accessed
 				.comment(""
 						+ "Changing this setting will modify a number of different settings that will change \n"
@@ -1188,7 +1188,7 @@ public class Config
 		public static class WorldGenerator
 		{
 			public static ConfigEntry<Boolean> enableDistantGeneration = new ConfigEntry.Builder<Boolean>()
-					.setServersideShortName("enableDistantGeneration")
+					.setServersideShortName("generation.enable")
 					.set(true)
 					.comment(""
 							+ " Should Distant Horizons slowly generate LODs \n"
@@ -1196,7 +1196,7 @@ public class Config
 					.build();
 			
 			public static ConfigEntry<EDhApiDistantGeneratorMode> distantGeneratorMode = new ConfigEntry.Builder<EDhApiDistantGeneratorMode>()
-					.setServersideShortName("distantGeneratorMode")
+					.setServersideShortName("generation.mode")
 					.set(EDhApiDistantGeneratorMode.FEATURES)
 					.comment(""
 							+ "How detailed should LODs be generated outside the vanilla render distance? \n"
@@ -1348,7 +1348,7 @@ public class Config
 		public static class MultiThreading
 		{
 			public static final ConfigEntry<Integer> numberOfThreads = new ConfigEntry.Builder<Integer>()
-					.setServersideShortName("numberOfThreads")
+					.setServersideShortName("threading.numberOfThreads")
 					.setMinDefaultMax(1,
 							ThreadPresetConfigEventHandler.getDefaultThreadCount(),
 							Runtime.getRuntime().availableProcessors())
@@ -1357,7 +1357,7 @@ public class Config
 							+ "")
 					.build();
 			public static final ConfigEntry<Double> threadRunTimeRatio = new ConfigEntry.Builder<Double>()
-					.setServersideShortName("threadRunTimeRatio")
+					.setServersideShortName("threading.threadRunTimeRatio")
 					.setMinDefaultMax(0.01, ThreadPresetConfigEventHandler.getDefaultRunTimeRatio(), 1.0)
 					.comment(""
 							+ "A value between 1.0 and 0.0 that represents the percentage \n"
@@ -1378,7 +1378,7 @@ public class Config
 			// TODO add change all option
 			// TODO default to error chat and info file
 			public static ConfigEntry<EDhApiLoggerMode> logWorldGenEvent = new ConfigEntry.Builder<EDhApiLoggerMode>()
-					.setServersideShortName("logWorldGenEvent")
+					.setServersideShortName("logging.logWorldGenEvent")
 					.set(EDhApiLoggerMode.LOG_ERROR_TO_CHAT_AND_INFO_TO_FILE)
 					.comment(""
 							+ "If enabled, the mod will log information about the world generation process. \n"
@@ -1386,7 +1386,7 @@ public class Config
 					.build();
 			
 			public static ConfigEntry<EDhApiLoggerMode> logWorldGenPerformance = new ConfigEntry.Builder<EDhApiLoggerMode>()
-					.setServersideShortName("logWorldGenPerformance")
+					.setServersideShortName("logging.logWorldGenPerformance")
 					.set(EDhApiLoggerMode.LOG_ERROR_TO_CHAT_AND_INFO_TO_FILE)
 					.comment(""
 							+ "If enabled, the mod will log performance about the world generation process. \n"
@@ -1394,7 +1394,7 @@ public class Config
 					.build();
 			
 			public static ConfigEntry<EDhApiLoggerMode> logWorldGenLoadEvent = new ConfigEntry.Builder<EDhApiLoggerMode>()
-					.setServersideShortName("logWorldGenPerformance")
+					.setServersideShortName("logging.logWorldGenPerformance")
 					.set(EDhApiLoggerMode.LOG_ERROR_TO_CHAT_AND_INFO_TO_FILE)
 					.comment(""
 							+ "If enabled, the mod will log information about the world generation process. \n"
@@ -1416,7 +1416,7 @@ public class Config
 					.build();
 			
 			public static ConfigEntry<EDhApiLoggerMode> logNetworkEvent = new ConfigEntry.Builder<EDhApiLoggerMode>()
-					.setServersideShortName("logNetworkEvent")
+					.setServersideShortName("logging.logNetworkEvent")
 					.set(EDhApiLoggerMode.LOG_ERROR_TO_CHAT_AND_INFO_TO_FILE)
 					.comment(""
 							+ "If enabled, the mod will log information about network operations. \n"
@@ -1471,7 +1471,7 @@ public class Config
 	{
 		// Level keys
 		public static ConfigEntry<Boolean> sendLevelKeys = new ConfigEntry.Builder<Boolean>()
-				.setServersideShortName("sendLevelKeys")
+				.setServersideShortName("levelKeys.send")
 				.setAppearance(EConfigEntryAppearance.ONLY_IN_FILE)
 				.set(true)
 				.comment(""
@@ -1481,7 +1481,7 @@ public class Config
 				.build();
 		
 		public static ConfigEntry<String> levelKeyPrefix = new ConfigEntry.Builder<String>()
-				.setServersideShortName("levelKeyPrefix")
+				.setServersideShortName("levelKeys.prefix")
 				.set("")
 				.comment(""
 						+ "Prefix of the level keys sent to the clients.\n"
@@ -1493,7 +1493,7 @@ public class Config
 		
 		// Generation
 		public static ConfigEntry<Integer> generationRequestRateLimit = new ConfigEntry.Builder<Integer>()
-				.setServersideShortName("generationRequestRateLimit")
+				.setServersideShortName("generation.requestRateLimit")
 				.setMinDefaultMax(1, 20, 100)
 				.comment(""
 						+ "How many LOD generation requests per second should a client send? \n"
@@ -1502,7 +1502,7 @@ public class Config
 				.build();
 		
 		public static ConfigEntry<Integer> maxGenerationRequestDistance = new ConfigEntry.Builder<Integer>()
-				.setServersideShortName("maxGenerationRequestDistance")
+				.setServersideShortName("generation.maxRequestDistance")
 				.setMinDefaultMax(256, 4096, 4096)
 				.comment("" +
 						"Defines the distance allowed to generate around the player." +
@@ -1513,7 +1513,7 @@ public class Config
 		
 		// Real-time updates
 		public static ConfigEntry<Boolean> enableRealTimeUpdates = new ConfigEntry.Builder<Boolean>()
-				.setServersideShortName("enableRealTimeUpdates")
+				.setServersideShortName("realTimeUpdates.enable")
 				.set(true)
 				.comment(""
 						+ "If true, clients will receive real-time LOD updates for chunks outside the client's render distance."
@@ -1521,7 +1521,7 @@ public class Config
 				.build();
 		
 		public static ConfigEntry<Integer> realTimeUpdateDistanceRadiusInChunks = new ConfigEntry.Builder<Integer>()
-				.setServersideShortName("realTimeUpdateDistanceRadius")
+				.setServersideShortName("realTimeUpdates.playerDistance")
 				.setMinDefaultMax(32, 256, 4096)
 				.comment("" +
 						"Defines the distance the player will receive updates around." +
@@ -1532,7 +1532,7 @@ public class Config
 		
 		// Sync on load
 		public static ConfigEntry<Boolean> synchronizeOnLoad = new ConfigEntry.Builder<Boolean>()
-				.setServersideShortName("synchronizeOnLoad")
+				.setServersideShortName("syncOnLoad.enable")
 				.set(true)
 				.comment(""
 						+ "If true, clients will receive updated LODs when joining or loading new LODs. \n"
@@ -1540,7 +1540,7 @@ public class Config
 				.build();
 		
 		public static ConfigEntry<Integer> syncOnLoadRateLimit = new ConfigEntry.Builder<Integer>()
-				.setServersideShortName("syncOnLoadRateLimit")
+				.setServersideShortName("syncOnLoad.rateLimit")
 				.setMinDefaultMax(1, 50, 100)
 				.comment(""
 						+ "How many LOD sync requests per second should a client send? \n"
@@ -1549,7 +1549,7 @@ public class Config
 				.build();
 		
 		public static ConfigEntry<Integer> maxSyncOnLoadRequestDistance = new ConfigEntry.Builder<Integer>()
-				.setServersideShortName("maxSyncOnLoadRequestDistance")
+				.setServersideShortName("syncOnLoad.maxRequestDistance")
 				.setMinDefaultMax(256, 4096, 4096)
 				.comment("" +
 						"Defines the distance allowed to be synchronized around the player. \n" +
@@ -1561,7 +1561,7 @@ public class Config
 		
 		// Common
 		public static ConfigEntry<Integer> maxDataTransferSpeed = new ConfigEntry.Builder<Integer>()
-				.setServersideShortName("maxDataTransferSpeed")
+				.setServersideShortName("common.maxDataTransferSpeed")
 				.setMinDefaultMax(0, 500, 1000000 /* 1 GB/s */)
 				.comment(""
 						+ "Maximum speed for uploading LODs to the clients, in KB/s.\n"
