@@ -186,7 +186,7 @@ public class FullDataSourceRequestHandler
 				continue;
 			}
 			
-			LOGGER.debug("[" + this.getLevelIdentifier() + "] Fulfilled request group [" + entry.getKey() + "]");
+			LOGGER.debug("[" + this.getLevelIdentifier() + "] Fulfilled request group [" + DhSectionPos.toString(entry.getKey()) + "]");
 			
 			// Make this group unavailable for adding into
 			this.requestGroupsByPos.remove(entry.getKey());
