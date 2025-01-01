@@ -30,6 +30,8 @@ public interface IServerLevelWrapper extends ILevelWrapper
 {
 	File getMcSaveFolder();
 	
+	String getWorldFolderName();
+	
 	default String getKeyedLevelDimensionName()
 	{
 		String dimensionName = this.getDhIdentifier();
@@ -40,7 +42,7 @@ public interface IServerLevelWrapper extends ILevelWrapper
 			
 			if (SharedApi.getEnvironment() == EWorldEnvironment.CLIENT_SERVER)
 			{
-				String cleanWorldFolderName = this.getMcSaveFolder().getParentFile().getName()
+				String cleanWorldFolderName = this.getWorldFolderName()
 						.replaceAll("[^" + LevelInitMessage.PART_ALLOWED_CHARS_REGEX + " ]", "")
 						.replaceAll(" ", "_");
 				
