@@ -84,10 +84,10 @@ public class SessionConfig implements INetworkObject
 	
 	private static <T> void registerConfigEntry(ConfigEntry<T> configEntry, BiFunction<T, T, T> valueConstrainer)
 	{
-		CONFIG_ENTRIES.compute(Objects.requireNonNull(configEntry.getServersideShortName()), (key, existingEntry) -> {
+		CONFIG_ENTRIES.compute(Objects.requireNonNull(configEntry.getChatCommandName()), (key, existingEntry) -> {
 			if (existingEntry != null)
 			{
-				throw new IllegalArgumentException("Attempted to register config entry with duplicate serversideShortName: " + key);
+				throw new IllegalArgumentException("Attempted to register config entry with duplicate chatCommandName: " + key);
 			}
 			
 			return new Entry(configEntry, valueConstrainer);
@@ -100,7 +100,7 @@ public class SessionConfig implements INetworkObject
 	// internal getters //
 	//==================//
 	
-	private <T> T getValue(ConfigEntry<T> configEntry) { return this.getValue(configEntry.getServersideShortName()); }
+	private <T> T getValue(ConfigEntry<T> configEntry) { return this.getValue(configEntry.getChatCommandName()); }
 	@SuppressWarnings("unchecked")
 	private <T> T getValue(String name)
 	{

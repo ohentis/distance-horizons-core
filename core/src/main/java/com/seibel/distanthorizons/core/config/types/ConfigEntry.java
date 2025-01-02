@@ -44,7 +44,7 @@ public class ConfigEntry<T> extends AbstractConfigType<T, ConfigEntry<T>> implem
 	private T min;
 	private T max;
 	private final ArrayList<IConfigListener> listenerList;
-	private final String serversideShortName;
+	private final String chatCommandName;
 	
 	private final EConfigEntryPerformance performance;
 	
@@ -62,7 +62,7 @@ public class ConfigEntry<T> extends AbstractConfigType<T, ConfigEntry<T>> implem
 	private ConfigEntry(
 			EConfigEntryAppearance appearance, 
 			T value, String comment, T min, T max, 
-			String serversideShortName, boolean allowApiOverride, 
+			String chatCommandName, boolean allowApiOverride, 
 			EConfigEntryPerformance performance, 
 			ArrayList<IConfigListener> listenerList)
 	{
@@ -71,7 +71,7 @@ public class ConfigEntry<T> extends AbstractConfigType<T, ConfigEntry<T>> implem
 		this.comment = comment;
 		this.min = min;
 		this.max = max;
-		this.serversideShortName = serversideShortName;
+		this.chatCommandName = chatCommandName;
 		this.allowApiOverride = allowApiOverride;
 		this.performance = performance;
 		this.listenerList = listenerList;
@@ -188,7 +188,7 @@ public class ConfigEntry<T> extends AbstractConfigType<T, ConfigEntry<T>> implem
 	}
 	
 	// TODO is this for command line use?
-	public String getServersideShortName() { return this.serversideShortName; }
+	public String getChatCommandName() { return this.chatCommandName; }
 	
 	@Override
 	public String getComment() { return this.comment; }
@@ -326,7 +326,7 @@ public class ConfigEntry<T> extends AbstractConfigType<T, ConfigEntry<T>> implem
 		private String tmpComment = null;
 		private T tmpMin = null;
 		private T tmpMax = null;
-		protected String tmpServersideShortName = null;
+		protected String tmpChatCommandName = null;
 		private boolean tmpUseApiOverwrite = true;
 		private EConfigEntryPerformance tmpPerformance = EConfigEntryPerformance.DONT_SHOW;
 		protected ArrayList<IConfigListener> tmpIConfigListener = new ArrayList<>();
@@ -364,9 +364,9 @@ public class ConfigEntry<T> extends AbstractConfigType<T, ConfigEntry<T>> implem
 			return this;
 		}
 		
-		public Builder<T> setServersideShortName(String name)
+		public Builder<T> setChatCommandName(String name)
 		{
-			this.tmpServersideShortName = name;
+			this.tmpChatCommandName = name;
 			return this;
 		}
 		
@@ -415,7 +415,7 @@ public class ConfigEntry<T> extends AbstractConfigType<T, ConfigEntry<T>> implem
 			return new ConfigEntry<>(
 					this.tmpAppearance, 
 					this.tmpValue, this.tmpComment, this.tmpMin, this.tmpMax, 
-					this.tmpServersideShortName, this.tmpUseApiOverwrite, 
+					this.tmpChatCommandName, this.tmpUseApiOverwrite, 
 					this.tmpPerformance, this.tmpIConfigListener);
 		}
 		
