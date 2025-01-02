@@ -824,6 +824,7 @@ public class Config
 						.set(false)
 						.comment(""
 								+ "Should Distant Horizons silently, automatically download and install new versions? \n"
+								+ "This setting is force disabled on dedicated servers for stability reasons. \n"
 								+ "")
 						.build();
 				

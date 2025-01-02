@@ -129,14 +129,20 @@ public class SelfUpdater
 			// Auto-update mod
 			updateMod(mcVersion, newFileLocation);
 			return false;
-		} // else
+		}
+		else
+		{
+			LOGGER.info("Download link: " + ModrinthGetter.getLatestDownloadForVersion(mcVersion));
+		}
 		return true;
 	}
 	
 	public static boolean onNightlyStart()
 	{
 		if (GitlabGetter.INSTANCE.projectPipelines.size() == 0)
+		{
 			return false;
+		}
 		com.electronwill.nightconfig.core.Config pipeline = GitlabGetter.INSTANCE.projectPipelines.get(0);
 		
 		if (!pipeline.get("ref").equals(ModJarInfo.Git_Branch))
@@ -160,7 +166,9 @@ public class SelfUpdater
 		String latestCommit = pipeline.get("sha");
 		
 		if (ModJarInfo.Git_Commit.equals(latestCommit)) // If we are already on the latest commit, then dont update
+		{
 			return false;
+		}
 		
 		
 		LOGGER.info("New version (" + latestCommit + ") of " + ModInfo.READABLE_NAME + " is available");
@@ -170,6 +178,10 @@ public class SelfUpdater
 			// Auto-update mod
 			updateMod(mcVersion, newFileLocation);
 			return false;
+		}
+		else
+		{
+			LOGGER.info("Download link: " + GitlabGetter.getLatestForVersion(mcVersion));
 		}
 		return true;
 	}
@@ -244,7 +256,9 @@ public class SelfUpdater
 	public static boolean updateNightlyMod(String minecraftVersion, File file)
 	{
 		if (GitlabGetter.INSTANCE.projectPipelines.size() == 0)
+		{
 			return false;
+		}
 		
 		try
 		{

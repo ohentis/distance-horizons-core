@@ -117,7 +117,9 @@ public class GitlabGetter
 			for (Config cfg : currentPipelineInfo)
 			{
 				if (!cfg.get("stage").equals("build"))
+				{
 					continue;
+				}
 				downloads.put(
 						((String) cfg.get("name")).split("\\[|\\]")[1], // Regex to extract the Minecraft version from the text
 						new URL(this.GitProjID + "jobs/" + cfg.get("id") + "/artifacts")
@@ -145,7 +147,7 @@ public class GitlabGetter
 	public static URL getLatestForVersion(String mcVer)
 	{
 		try {
-			return new URL("https://gitlab.com/jeseibel/distant-horizons/-/jobs/artifacts/main/download?job=build:%20[" + mcVer + "]");
+			return new URL("https://gitlab.com/distant-horizons-team/distant-horizons/-/jobs/artifacts/main/download?job=build:%20%5B" + mcVer + "%5D");
 		} catch (Exception e) { e.printStackTrace(); return null; } // This should always be safe (unless you stuff up **badly** somewhere)
 	}
 }
