@@ -31,6 +31,7 @@ import testItems.sql.TestPrimaryKeyRepo;
 import testItems.sql.TestSingleKeyDto;
 
 import java.io.File;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Map;
@@ -72,13 +73,18 @@ public class DhRepoSqliteTest
 			//==========================//
 			
 			// check that the schema table is created
-			ResultSet autoUpdateTablePresentResult = primaryKeyRepo.query(primaryKeyRepo.createPreparedStatement("SELECT name FROM sqlite_master WHERE type='table' AND name='"+DatabaseUpdater.SCHEMA_TABLE_NAME+"';"));
-			if (autoUpdateTablePresentResult == null 
-				|| !autoUpdateTablePresentResult.next() 
-				|| autoUpdateTablePresentResult.getString("name") == null)
+			try(PreparedStatement statement = primaryKeyRepo.createPreparedStatement(
+					"SELECT name FROM sqlite_master WHERE type='table' AND name='"+DatabaseUpdater.SCHEMA_TABLE_NAME+"';");
+				ResultSet autoUpdateTablePresentResult = primaryKeyRepo.query(statement))
 			{
-				Assert.fail("Auto DB update table missing.");
+				if (autoUpdateTablePresentResult == null
+						|| !autoUpdateTablePresentResult.next()
+						|| autoUpdateTablePresentResult.getString("name") == null)
+				{
+					Assert.fail("Auto DB update table missing.");
+				}
 			}
+			
 			
 			// check that the update scripts aren't run multiple times
 			TestPrimaryKeyRepo altDataRepoOne = new TestPrimaryKeyRepo(DATABASE_TYPE, new File(DB_FILE_NAME));

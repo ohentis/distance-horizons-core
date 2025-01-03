@@ -27,6 +27,7 @@ import com.seibel.distanthorizons.core.sql.dto.IBaseDTO;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
+import javax.swing.plaf.nimbus.State;
 import java.io.File;
 import java.io.IOException;
 import java.sql.*;
@@ -180,7 +181,8 @@ public abstract class AbstractDhRepo<TKey, TDTO extends IBaseDTO<TKey>> implemen
 	
 	public TDTO getByKey(TKey primaryKey)
 	{
-		try(ResultSet resultSet = this.query(this.createSelectStatementByKey(primaryKey)))
+		try(PreparedStatement statement = this.createSelectStatementByKey(primaryKey);
+			ResultSet resultSet = this.query(statement))
 		{
 			if (resultSet != null && resultSet.next())
 			{

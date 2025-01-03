@@ -22,36 +22,29 @@ package tests;
 import com.seibel.distanthorizons.api.enums.config.EDhApiDataCompressionMode;
 import com.seibel.distanthorizons.core.dataObjects.fullData.FullDataPointIdMap;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
-import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
-import com.seibel.distanthorizons.core.sql.DatabaseUpdater;
 import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV2DTO;
-import com.seibel.distanthorizons.core.sql.repo.AbstractDhRepo;
 import com.seibel.distanthorizons.core.sql.repo.FullDataSourceV2Repo;
 import com.seibel.distanthorizons.core.util.FullDataPointUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
-import com.seibel.distanthorizons.core.util.objects.DataCorruptedException;
-import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
+import com.seibel.distanthorizons.core.util.ThreadUtil;
 import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import testItems.sql.TestCompoundKeyDto;
-import testItems.sql.TestCompoundKeyRepo;
-import testItems.sql.TestPrimaryKeyRepo;
-import testItems.sql.TestSingleKeyDto;
 
 import java.io.File;
 import java.io.IOException;
-import java.sql.SQLException;
 import java.util.Arrays;
-import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ThreadPoolExecutor;
 
 /**
- * Validates {@link AbstractDhRepo} is set up correctly.
+ * Can also be used to test if there are memory leaks in SQLite
+ * and if the {@link FullDataSourceV2DTO}/{@link FullDataSourceV2}'s are using pooled objects correctly
  */
-public class DhFullDataSourceCacheTest
+public class DhFullDataSourceRepoTests
 {
 	public static String DATABASE_TYPE = "jdbc:sqlite";
 	public static String DB_FILE_NAME = "test.sqlite";
@@ -73,10 +66,8 @@ public class DhFullDataSourceCacheTest
 	@Test
 	public void test()
 	{
-		FullDataSourceV2Repo repo = null;
-		try
+		try (final FullDataSourceV2Repo repo = new FullDataSourceV2Repo(DATABASE_TYPE, new File(DB_FILE_NAME)))
 		{
-			repo = new FullDataSourceV2Repo(DATABASE_TYPE, new File(DB_FILE_NAME));
 			
 			
 			
@@ -157,31 +148,54 @@ public class DhFullDataSourceCacheTest
 			{
 				System.out.println("Initial save/get success, starting long update test for GC validation...");
 				
-				for (int i = 0; i < 1_000_000; i++)
+				int poolSize = Runtime.getRuntime().availableProcessors();
+				CompletableFuture<?>[] futures = new CompletableFuture[poolSize];
+				ThreadPoolExecutor pool = ThreadUtil.makeThreadPool(poolSize, "test pool");
+				for (int threadIndex = 0; threadIndex < poolSize; threadIndex++)
 				{
-					repo.save(originalDto);
-					try (FullDataSourceV2DTO pooledDto = repo.getByKey(pos))
+					final int finalThreadIndex = threadIndex;
+					futures[threadIndex] = CompletableFuture.runAsync(() ->
 					{
-						Assert.assertNotNull(savedDto);
-						Assert.assertEquals(originalDto.pos, savedDto.pos);
-						assertArraysAreEqual(originalDto.compressedDataByteArray, savedDto.compressedDataByteArray);
-						assertArraysAreEqual(originalDto.compressedColumnGenStepByteArray, savedDto.compressedColumnGenStepByteArray);
-						assertArraysAreEqual(originalDto.compressedWorldCompressionModeByteArray, savedDto.compressedWorldCompressionModeByteArray);
-					}
+						// create a new DTO so each thread can have their own to work with,
+						// otherwise they'll get stuck on locks for interacting with the same row
+						FullDataSourceV2DTO threadDto = null;
+						try
+						{
+							threadDto = FullDataSourceV2DTO.CreateFromDataSource(originalDataSource, EDhApiDataCompressionMode.LZMA2);
+						}
+						catch (IOException e)
+						{
+							throw new RuntimeException(e);
+						}
+						
+						// new position so each DTO is different and saved to a different row in the DB
+						long threadPos = DhSectionPos.encode((byte)0, finalThreadIndex, 0);
+						threadDto.pos = threadPos;
+						
+						// run for a long time
+						for (int j = 0; j < 1_000_000; j++)
+						{
+							repo.save(threadDto); // runs significantly faster if we don't save
+							
+							try (FullDataSourceV2DTO pooledDto = repo.getByKey(threadPos))
+							{
+								Assert.assertNotNull(threadDto);
+								Assert.assertEquals(pooledDto.pos, threadDto.pos);
+								assertArraysAreEqual(pooledDto.compressedDataByteArray, threadDto.compressedDataByteArray);
+								assertArraysAreEqual(pooledDto.compressedColumnGenStepByteArray, threadDto.compressedColumnGenStepByteArray);
+								assertArraysAreEqual(pooledDto.compressedWorldCompressionModeByteArray, threadDto.compressedWorldCompressionModeByteArray);
+							}
+						}
+					}, pool);
 				}
+				
+				CompletableFuture.allOf(futures).join();
 			}
 		}
 		catch (Exception e)
 		{
 			e.printStackTrace();
 			Assert.fail(e.getMessage());
-		}
-		finally
-		{
-			if (repo != null)
-			{
-				repo.close();
-			}
 		}
 	}
 	

@@ -46,8 +46,10 @@ public class TestPrimaryKeyRepo extends AbstractDhRepo<Integer, TestSingleKeyDto
 				",LongValue BIGINT NULL\n" +
 				",ByteValue TINYINT NULL\n" +
 				");";
-		PreparedStatement createTableStatement = this.createPreparedStatement(createTableSql);
-		this.query(createTableStatement);
+		try (PreparedStatement createTableStatement = this.createPreparedStatement(createTableSql))
+		{
+			this.query(createTableStatement);
+		}
 	}
 	
 	
