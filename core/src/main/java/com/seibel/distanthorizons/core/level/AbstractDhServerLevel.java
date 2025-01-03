@@ -51,8 +51,6 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 	
 	private final FullDataSourceRequestHandler requestHandler = new FullDataSourceRequestHandler(this);
 	
-	private final boolean NSizedGenerationSupported = false;
-	
 	
 	//=============//
 	// constructor //
@@ -216,8 +214,6 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 	//===========//
 	// world gen //
 	//===========//
-	
-	public boolean isNSizedGenerationSupported() { return this.NSizedGenerationSupported; }
 	
 	@Override
 	public void onWorldGenTaskComplete(long pos)
