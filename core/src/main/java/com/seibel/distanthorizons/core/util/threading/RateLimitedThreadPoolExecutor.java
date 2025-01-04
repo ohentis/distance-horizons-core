@@ -89,8 +89,6 @@ public class RateLimitedThreadPoolExecutor extends ThreadPoolExecutor implements
 	@Override
 	protected void beforeExecute(Thread thread, Runnable runnable)
 	{
-		super.beforeExecute(thread, runnable);
-		
 		long deltaMs = TimeUnit.NANOSECONDS.toMillis(this.lastRunDurationNanoTimeRef.get());
 		this.runTimeInMsRollingAverage.addValue(deltaMs);
 		
@@ -121,12 +119,15 @@ public class RateLimitedThreadPoolExecutor extends ThreadPoolExecutor implements
 		
 		
 		this.runStartNanoTimeRef.set(System.nanoTime());
+		
+		super.beforeExecute(thread, runnable);
 	}
 	
 	@Override
 	protected void afterExecute(Runnable runnable, Throwable throwable)
 	{
 		super.afterExecute(runnable, throwable);
+		
 		this.lastRunDurationNanoTimeRef.set(System.nanoTime() - this.runStartNanoTimeRef.get());
 		
 		
