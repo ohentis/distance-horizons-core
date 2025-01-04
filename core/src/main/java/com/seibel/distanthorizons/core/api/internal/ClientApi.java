@@ -219,6 +219,7 @@ public class ClientApi
 			if (world != null)
 			{
 				world.unloadLevel(level);
+				SharedApi.INSTANCE.clearQueuedChunkUpdates();
 				ApiEventInjector.INSTANCE.fireAllEvents(DhApiLevelUnloadEvent.class, new DhApiLevelUnloadEvent.EventParam(level));
 			}
 			else

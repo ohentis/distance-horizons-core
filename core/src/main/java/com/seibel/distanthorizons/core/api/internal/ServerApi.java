@@ -125,6 +125,7 @@ public class ServerApi
 		if (serverWorld != null)
 		{
 			serverWorld.unloadLevel(level);
+			SharedApi.INSTANCE.clearQueuedChunkUpdates();
 			ApiEventInjector.INSTANCE.fireAllEvents(DhApiLevelUnloadEvent.class, new DhApiLevelUnloadEvent.EventParam(level));
 		}
 	}
