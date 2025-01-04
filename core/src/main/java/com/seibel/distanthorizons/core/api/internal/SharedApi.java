@@ -286,24 +286,23 @@ public class SharedApi
 	{ queueChunkUpdate(chunkWrapper, neighbourChunkList, dhLevel,false); }
 	private static void queueChunkUpdate(IChunkWrapper chunkWrapper, @Nullable ArrayList<IChunkWrapper> neighbourChunkList, IDhLevel dhLevel, boolean lightUpdateOnly)
 	{
-		int playerCount;
+		int maxUpdateSizeMultiplier;
 		if (MC_CLIENT != null && MC_CLIENT.playerExists())
 		{
-			// Multiplayer & local world
+			// Local worlds & multiplayer
 			UPDATE_POS_MANAGER.setCenter(MC_CLIENT.getPlayerChunkPos());
-			
-			// Exclude yourself in local worlds
-			playerCount = MC_CLIENT.clientConnectedToDedicatedServer() ? 0 : MC_SHARED.getPlayerCount() - 1;
+			maxUpdateSizeMultiplier = MC_CLIENT.clientConnectedToDedicatedServer() ? 1 : MC_SHARED.getPlayerCount();
 		}
 		else
 		{
-			// Dedicated server
-			playerCount = MC_SHARED.getPlayerCount();
+			// Dedicated servers
+			// Also includes spawn chunks since they're likely to be intentionally utilized with updates
+			maxUpdateSizeMultiplier = 1 + MC_SHARED.getPlayerCount();
 		}
 		
 		UPDATE_POS_MANAGER.maxSize = MAX_UPDATING_CHUNK_COUNT_PER_THREAD_AND_PLAYER
 				* Config.Common.MultiThreading.numberOfThreads.get()
-				* Math.max(playerCount, 1);
+				* maxUpdateSizeMultiplier;
 		
 		UpdateChunkData updateData = new UpdateChunkData(chunkWrapper, neighbourChunkList, dhLevel, lightUpdateOnly);
 		if(lightUpdateOnly)
