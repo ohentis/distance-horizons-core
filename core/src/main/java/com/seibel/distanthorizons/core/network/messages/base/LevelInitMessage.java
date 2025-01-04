@@ -13,7 +13,7 @@ public class LevelInitMessage extends AbstractNetworkMessage
 	// prefix@namespace:path
 	// 1-150 characters in total, all parts except namespace can be omitted
 	public static final String VALIDATION_REGEX = String.format("^(?=.{1,%s}$)([%s]+@)?[%s]+(:[%s]+)?$",
-+			MAX_LENGTH, PART_ALLOWED_CHARS_REGEX, PART_ALLOWED_CHARS_REGEX, PART_ALLOWED_CHARS_REGEX);
+			MAX_LENGTH, PART_ALLOWED_CHARS_REGEX, PART_ALLOWED_CHARS_REGEX, PART_ALLOWED_CHARS_REGEX);
 	
 	
 	public String levelKey;
