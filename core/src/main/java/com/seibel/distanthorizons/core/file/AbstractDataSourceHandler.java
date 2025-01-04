@@ -5,7 +5,6 @@ import com.seibel.distanthorizons.core.file.structure.ISaveStructure;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
-import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV2DTO;
 import com.seibel.distanthorizons.core.sql.repo.AbstractDhRepo;
 import com.seibel.distanthorizons.core.sql.dto.IBaseDTO;
 import com.seibel.distanthorizons.core.util.LodUtil;
@@ -69,6 +68,8 @@ public abstract class AbstractDataSourceHandler
 	public final TRepo repo;
 	
 	public final ArrayList<IDataSourceUpdateFunc<TDataSource>> dateSourceUpdateListeners = new ArrayList<>();
+	
+	public final ConcurrentHashMap<Long, CompletableFuture<Void>> updateDataSourceFutureByPos = new ConcurrentHashMap<>();
 	
 	
 	
@@ -187,7 +188,7 @@ public abstract class AbstractDataSourceHandler
 	
 	public CompletableFuture<Void> updateDataSourceAsync(@NotNull FullDataSourceV2 inputDataSource)
 	{
-		ThreadPoolExecutor executor = ThreadPoolUtil.getUpdatePropagatorExecutor();
+		ThreadPoolExecutor executor = ThreadPoolUtil.getChunkToLodBuilderExecutor();
 		if (executor == null || executor.isTerminated())
 		{
 			return CompletableFuture.completedFuture(null);
@@ -196,23 +197,35 @@ public abstract class AbstractDataSourceHandler
 		
 		try
 		{
-			// run file handling on a separate thread
-			this.markUpdateStart(inputDataSource.getPos());
-			return CompletableFuture.runAsync(() ->
+			return this.updateDataSourceFutureByPos.compute(inputDataSource.getPos(), (Long newPos, CompletableFuture<Void> future) -> 
 			{
-				try
+				if (future != null)
 				{
-					this.updateDataSourceAtPos(inputDataSource.getPos(), inputDataSource, true);
+					future.cancel(false);
+					this.markUpdateEnd(newPos);
 				}
-				catch (Exception e)
+				
+				// run file handling on a separate thread
+				this.markUpdateStart(newPos);
+				future = CompletableFuture.runAsync(() ->
 				{
-					LOGGER.error("Unexpected error in async data source update, error: "+e.getMessage(), e);
-				}
-				finally
-				{
-					this.markUpdateEnd(inputDataSource.getPos());
-				}
-			}, executor);
+					try
+					{
+						this.updateDataSourceAtPos(newPos, inputDataSource, true);
+					}
+					catch (Exception e)
+					{
+						LOGGER.error("Unexpected error in async data source update at pos: ["+DhSectionPos.toString(newPos)+"], error: ["+e.getMessage()+"].", e);
+					}
+					finally
+					{
+						this.markUpdateEnd(newPos);
+						this.updateDataSourceFutureByPos.remove(newPos);
+					}
+				}, executor);
+				
+				return future;
+			});
 		}
 		catch (RejectedExecutionException ignore)
 		{

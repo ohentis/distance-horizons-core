@@ -45,6 +45,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 public abstract class AbstractDhLevel implements IDhLevel
@@ -144,7 +145,7 @@ public abstract class AbstractDhLevel implements IDhLevel
 	public int getUnsavedDataSourceCount() { return this.delayedFullDataSourceSaveCache.getUnsavedCount(); }
 	
 	@Override
-	public void updateChunkAsync(IChunkWrapper chunkWrapper, int chunkHash)
+	public CompletableFuture<Void> updateChunkAsync(IChunkWrapper chunkWrapper, int chunkHash)
 	{
 		// data source synchronously written to memory so it can be safely closed
 		try (FullDataSourceV2 dataSource = FullDataSourceV2.createFromChunk(chunkWrapper))
@@ -152,7 +153,7 @@ public abstract class AbstractDhLevel implements IDhLevel
 			if (dataSource == null)
 			{
 				// This can happen if, among other reasons, a chunk save is superseded by a later event
-				return;
+				return CompletableFuture.completedFuture(null);
 			}
 			
 			
@@ -168,7 +169,7 @@ public abstract class AbstractDhLevel implements IDhLevel
 			this.updatedChunkHashesByChunkPos.put(chunkWrapper.getChunkPos(), chunkHash);
 			
 			// batch updates to reduce overhead when flying around or breaking/placing a lot of blocks in an area
-			this.delayedFullDataSourceSaveCache.writeDataSourceToMemoryAndQueueSave(dataSource);
+			return this.delayedFullDataSourceSaveCache.writeDataSourceToMemoryAndQueueSave(dataSource);
 		}
 	}
 	

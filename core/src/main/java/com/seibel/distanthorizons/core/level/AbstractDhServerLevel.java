@@ -237,23 +237,16 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 	@Override
 	public CompletableFuture<Void> updateDataSourcesAsync(FullDataSourceV2 data)
 	{
-		if (!Config.Server.enableRealTimeUpdates.get())
-		{
-			return this.getFullDataProvider().updateDataSourceAsync(data);
-		}
-		
-		ThreadPoolExecutor executor = ThreadPoolUtil.getNetworkCompressionExecutor();
-		if (executor == null)
-		{
-			LOGGER.warn("Unable to send FullDataPartialUpdateMessage - getNetworkCompressionExecutor() is null");
-			return this.getFullDataProvider().updateDataSourceAsync(data);
-		}
-		
-		try
-		{
-			CompletableFuture.runAsync(() ->
+		return this.getFullDataProvider()
+			.updateDataSourceAsync(data)
+			.thenRun(() -> 
 			{
-				Objects.requireNonNull(this.beaconBeamRepo);
+				if (!Config.Server.enableRealTimeUpdates.get())
+				{
+					return;
+				}
+				
+				LodUtil.assertTrue(this.beaconBeamRepo != null, "beaconBeamRepo should not be null");
 				try (FullDataPayload payload = new FullDataPayload(data, this.beaconBeamRepo.getAllBeamsForPos(data.getPos())))
 				{
 					for (ServerPlayerState serverPlayerState : this.serverPlayerStateManager.getReadyPlayers())
@@ -280,15 +273,7 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 						}
 					}
 				}
-			}, executor);
-		}
-		catch (RejectedExecutionException ignore)
-		{
-			// the executor was shut down, it should be back up shortly and able to accept new jobs
-		}
-		
-		
-		return this.getFullDataProvider().updateDataSourceAsync(data);
+				});
 	}
 	
 	

@@ -113,15 +113,6 @@ public class DhClientServerLevel extends AbstractDhServerLevel implements IDhCli
 	@Override
 	public void clearRenderCache() { this.clientside.clearRenderCache(); }
 	
-	@Override
-	public CompletableFuture<Void> updateDataSourcesAsync(FullDataSourceV2 data)
-	{
-		return CompletableFuture.allOf(
-				super.updateDataSourcesAsync(data),
-				this.clientside.updateDataSourcesAsync(data)
-		);
-	}
-	
 	
 	
 	//===========//

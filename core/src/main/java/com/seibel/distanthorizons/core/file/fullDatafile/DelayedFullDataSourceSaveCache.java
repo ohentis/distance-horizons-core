@@ -8,6 +8,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -23,6 +24,7 @@ public class DelayedFullDataSourceSaveCache
 	
 	public final ConcurrentHashMap<Long, FullDataSourceV2> dataSourceByPosition = new ConcurrentHashMap<>();
 	private final ConcurrentHashMap<Long, TimerTask> saveTimerTasksBySectionPos = new ConcurrentHashMap<>();
+	private final ConcurrentHashMap<Long, CompletableFuture<Void>> futureBySectionPos = new ConcurrentHashMap<>();
 	
 	private final ISaveDataSourceFunc onSaveTimeoutFunc;
 	private final int saveDelayInMs;
@@ -49,16 +51,20 @@ public class DelayedFullDataSourceSaveCache
 	 * Writing into memory is done synchronously so inputDataSource can 
 	 * be closed after this method finishes.
 	 */
-	public void writeDataSourceToMemoryAndQueueSave(FullDataSourceV2 inputDataSource)
+	public CompletableFuture<Void> writeDataSourceToMemoryAndQueueSave(FullDataSourceV2 inputDataSource)
 	{
 		long dataSourcePos = inputDataSource.getPos();
-		this.dataSourceByPosition.compute(dataSourcePos, (inputPos, temporaryDataSource) ->
+		
+		CompletableFuture<Void> future = this.futureBySectionPos.computeIfAbsent(dataSourcePos, (inputPos) -> new CompletableFuture<>());
+		
+		this.dataSourceByPosition.compute(dataSourcePos, (inputPos, memoryDataSource) ->
 		{
-			if (temporaryDataSource == null)
+			if (memoryDataSource == null)
 			{
-				temporaryDataSource = FullDataSourceV2.createEmpty(inputPos);
+				// should not be closed since it will be used by other threads 
+				memoryDataSource = FullDataSourceV2.createEmpty(inputPos);
 			}
-			temporaryDataSource.update(inputDataSource);
+			memoryDataSource.update(inputDataSource);
 			
 			
 			TimerTask timerTask = new TimerTask()
@@ -80,6 +86,14 @@ public class DelayedFullDataSourceSaveCache
 					{
 						LOGGER.error("Failed to save updated data for section ["+dataSourcePos+"], error: ["+e.getMessage()+"]", e);
 					}
+					finally
+					{
+						CompletableFuture<Void> future = DelayedFullDataSourceSaveCache.this.futureBySectionPos.remove(dataSourcePos);
+						if (future != null)
+						{
+							future.complete(null);
+						}
+					}
 				}
 			};
 			try
@@ -90,7 +104,7 @@ public class DelayedFullDataSourceSaveCache
 			{
 				// James isn't sure why this is possible since this logic is inside a lock, 
 				// maybe the timer is just async enough that there can be problems?
-				LOGGER.warn("Attempted to queue an already canceled task. Pos: ["+dataSourcePos+"], task already queued for pos: ["+this.saveTimerTasksBySectionPos.containsKey(dataSourcePos)+"]");
+				//LOGGER.warn("Attempted to queue an already canceled task. Pos: ["+dataSourcePos+"], task already queued for pos: ["+this.saveTimerTasksBySectionPos.containsKey(dataSourcePos)+"]");
 			}
 			
 			
@@ -102,8 +116,10 @@ public class DelayedFullDataSourceSaveCache
 				oldTask.cancel();
 			}
 			
-			return temporaryDataSource;
+			return memoryDataSource;
 		});
+		
+		return future;
 	}
 	
 	public int getUnsavedCount() { return this.dataSourceByPosition.size(); }
