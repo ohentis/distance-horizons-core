@@ -643,7 +643,11 @@
   "distanthorizons.config.common.logging.warning":
     "Warnings",
   "distanthorizons.config.common.logging.warning.showLowMemoryWarningOnStartup":
-    "Show Low Memory Warning",
+    "Show Low Memory Warning On Startup",
+  "distanthorizons.config.common.logging.warning.showPoolInsufficientMemoryWarning":
+    "Show Pool Insufficient Memory Warning",
+  "distanthorizons.config.common.logging.warning.showPoolInsufficientMemoryWarning.@tooltip":
+    "If DH detects that pooled objects are being garbage collected this will send a chat warning.",
   "distanthorizons.config.common.logging.warning.showReplayWarningOnStartup":
     "Show Replay Warning",
   "distanthorizons.config.common.logging.warning.showUpdateQueueOverloadedChatWarning":

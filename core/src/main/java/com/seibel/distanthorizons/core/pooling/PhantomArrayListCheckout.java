@@ -2,10 +2,10 @@ package com.seibel.distanthorizons.core.pooling;
 
 import com.seibel.distanthorizons.core.util.ListUtil;
 import it.unimi.dsi.fastutil.bytes.ByteArrayList;
-import it.unimi.dsi.fastutil.ints.Int2ReferenceArrayMap;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.shorts.ShortArrayList;
 
+import java.lang.ref.SoftReference;
 import java.util.ArrayList;
 
 /**
@@ -23,6 +23,7 @@ public class PhantomArrayListCheckout implements AutoCloseable
 	private final ArrayList<ByteArrayList> byteArrayLists = new ArrayList<>();
 	private final ArrayList<ShortArrayList> shortArrayLists = new ArrayList<>();
 	private final ArrayList<LongArrayList> longArrayLists = new ArrayList<>();
+	private final ArrayList<SoftReference<LongArrayList>> longArrayRefLists = new ArrayList<>();
 	
 	
 	
@@ -43,7 +44,11 @@ public class PhantomArrayListCheckout implements AutoCloseable
 	
 	public void addByteArrayList(ByteArrayList list) { this.byteArrayLists.add(list); }
 	public void addShortArrayList(ShortArrayList list) { this.shortArrayLists.add(list); }
-	public void addLongArrayList(LongArrayList list) { this.longArrayLists.add(list); }
+	public void addLongArrayListRef(LongArrayList list, SoftReference<LongArrayList> listRef) 
+	{
+		this.longArrayLists.add(list);
+		this.longArrayRefLists.add(listRef); 
+	}
 	
 	
 	
@@ -79,6 +84,7 @@ public class PhantomArrayListCheckout implements AutoCloseable
 	public ArrayList<ByteArrayList> getAllByteArrays() { return this.byteArrayLists; }
 	public ArrayList<ShortArrayList> getAllShortArrays() { return this.shortArrayLists; }
 	public ArrayList<LongArrayList> getAllLongArrays() { return this.longArrayLists; }
+	public ArrayList<SoftReference<LongArrayList>> getAllLongArrayRefs() { return this.longArrayRefLists; }
 	
 	
 	

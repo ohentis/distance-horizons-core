@@ -1439,6 +1439,14 @@ public class Config
 								+ "")
 						.build();
 				
+				public static ConfigEntry<Boolean> showPoolInsufficientMemoryWarning = new ConfigEntry.Builder<Boolean>()
+						.set(true)
+						.comment(""
+								+ "If enabled, a chat message will be displayed if DH detects \n"
+								+ "that any pooled objects have been garbage collected. \n"
+								+ "")
+						.build();
+				
 				public static ConfigEntry<Boolean> showReplayWarningOnStartup = new ConfigEntry.Builder<Boolean>()
 						.set(true)
 						.comment(""
