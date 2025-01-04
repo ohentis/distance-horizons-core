@@ -2,9 +2,7 @@ package com.seibel.distanthorizons.core.util.threading;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Comparator;
 import java.util.Random;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.locks.ReentrantLock;
@@ -67,12 +65,10 @@ public class PrioritySemaphore
 		// this has to be outside the try-finally to prevent holding the lock while waiting
 		synchronized (thread)
 		{
-			// random value between -5 and +5 is used to prevent task starvation
-			// while still allowing higher priority tasks to run sooner
-			int priority = executor.priority + this.random.nextInt(11) - 5;
+			int priority = (int) ((executor.priority + 1) * executor.getTaskCount() * 100000 / executor.getAverageRunTimeInMs());
 			
 			// this thread will be run when a permit is available
-			this.queue.put(new ThreadWithPriority(thread,priority));
+			this.queue.put(new ThreadWithPriority(thread, priority));
 			
 			thread.wait();
 		}
