@@ -40,10 +40,7 @@ import org.apache.logging.log4j.Logger;
 
 import javax.annotation.WillNotClose;
 import java.awt.*;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -426,7 +423,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 			if (positionsToRequeue.contains(pos))
 			{
 				// don't attempt to re-load positions that are already in the process of reloading
-				break;
+				continue;
 			}
 			
 			try
@@ -450,7 +447,6 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 							// if we don't trigger it again the LOD will be out of date
 							// and may be invisible/missing
 							positionsToRequeue.add(pos);
-							break;
 						}
 					}
 				}
