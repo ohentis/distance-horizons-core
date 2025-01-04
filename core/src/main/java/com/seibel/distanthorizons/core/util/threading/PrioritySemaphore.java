@@ -65,6 +65,12 @@ public class PrioritySemaphore
 		// this has to be outside the try-finally to prevent holding the lock while waiting
 		synchronized (thread)
 		{
+			// Calculation rules:
+			// - Executors with higher priority need less tasks to run before other executors
+			//   If one executor has the priority of 3 and other if of 4,
+			//   the latter one will need 1/4 fewer tasks in queue to get its tasks running
+			// - Executors with short-lived tasks run before longer lived ones
+			// 100k value is a multiplier to prevent precision loss
 			int priority = (int) ((executor.priority + 1) * executor.getTaskCount() * 100000 / executor.getAverageRunTimeInMs());
 			
 			// this thread will be run when a permit is available
