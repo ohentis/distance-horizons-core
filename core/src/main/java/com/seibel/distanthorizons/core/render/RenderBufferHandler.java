@@ -451,18 +451,7 @@ public class RenderBufferHandler implements AutoCloseable
 	//=========//
 	
 	@Override
-	public void close()
-	{
-		Iterator<QuadNode<LodRenderSection>> nodeIterator = this.lodQuadTree.nodeIterator();
-		while (nodeIterator.hasNext())
-		{
-			LodRenderSection renderSection = nodeIterator.next().value;
-			if (renderSection != null)
-			{
-				renderSection.close();
-			}
-		}
-	}
+	public void close() { this.lodQuadTree.close(); }
 	
 	
 	

@@ -47,10 +47,7 @@ import org.jetbrains.annotations.Nullable;
 import javax.annotation.WillNotClose;
 import java.awt.*;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.function.Supplier;
 
 /**
@@ -137,6 +134,13 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		
 		ThreadPoolExecutor executor = ThreadPoolUtil.getFileHandlerExecutor();
 		if (executor == null || executor.isTerminated())
+		{
+			return;
+		}
+		
+		// don't queue up an infinite number of tasks
+		// doing so will cause memory use to balloon when swapping between dimensions
+		if (executor.getQueue().size() > executor.getPoolSize())
 		{
 			return;
 		}
@@ -423,6 +427,10 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		// cancel all in-progress futures since they aren't needed any more
 		if (this.getAndBuildRenderDataFuture != null)
 		{
+			// Note to self:
+			// canceling a task prevents it from running, but doesn't allow
+			// us to purge it from the executor it was queued in.
+			// As far as James can tell this appears to be a Java bug.
 			this.getAndBuildRenderDataFuture.cancel(true);
 		}
 		if (this.bufferUploadFuture != null)
