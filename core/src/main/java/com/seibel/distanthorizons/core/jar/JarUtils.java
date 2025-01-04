@@ -139,7 +139,8 @@ public class JarUtils
 	}
 	
 	/**
-	 * Checks the checksum of a file given an algorithm
+	 * Checks the checksum of a file given an algorithm <br>
+	 * source: https://howtodoinjava.com/java/java-security/sha-md5-file-checksum-hash/
 	 *
 	 * @param digest What algorithm to use <br>
 	 * Eg. <br>
@@ -148,7 +149,6 @@ public class JarUtils
 	 * @param file Location of the file
 	 * @return Checksum
 	 */
-	// Stolen from https://howtodoinjava.com/java/java-security/sha-md5-file-checksum-hash/
 	public static String getFileChecksum(MessageDigest digest, File file) throws IOException
 	{
 		//Get file input stream for reading the file content
