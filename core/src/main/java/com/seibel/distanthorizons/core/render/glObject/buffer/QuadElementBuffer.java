@@ -132,8 +132,9 @@ public class QuadElementBuffer extends GLElementBuffer
 			throw new IllegalArgumentException("quadCount must be greater than 0");
 		}
 		if (quadCount == 0) return; // FIXME: This doesn't happens yet, but just add this since everything will break if it does
-		indicesCount = quadCount * 6; // 2 triangles per quad
-		if (indicesCount >= getCapacity() && indicesCount < getCapacity() * BUFFER_SHRINK_TRIGGER)
+		
+		this.indicesCount = quadCount * 6; // 2 triangles per quad
+		if (this.indicesCount >= this.getCapacity() && this.indicesCount < this.getCapacity() * BUFFER_SHRINK_TRIGGER)
 		{
 			return;
 		}
@@ -142,33 +143,32 @@ public class QuadElementBuffer extends GLElementBuffer
 		
 		if (vertexCount < 255)
 		{ // Reserve 1 for the reset index
-			type = GL32.GL_UNSIGNED_BYTE;
+			this.type = GL32.GL_UNSIGNED_BYTE;
 		}
 		else if (vertexCount < 65535)
 		{  // Reserve 1 for the reset index
-			type = GL32.GL_UNSIGNED_SHORT;
+			this.type = GL32.GL_UNSIGNED_SHORT;
 		}
 		else
 		{
-			type = GL32.GL_UNSIGNED_INT;
+			this.type = GL32.GL_UNSIGNED_INT;
 		}
-		LOGGER.info("Quad IBO Resizing from [" + getCapacity() + "] to [" + quadCount + "]" + " with type: " +
-				GLEnums.getString(type));
+		//LOGGER.info("Quad IBO Resizing from [" + getCapacity() + "] to [" + quadCount + "]" + " with type: [" + GLEnums.getString(this.type) + "].");
 		
-		ByteBuffer buffer = MemoryUtil.memAlloc(indicesCount * GLEnums.getTypeSize(type));
-		buildBuffer(quadCount, buffer, type);
+		ByteBuffer buffer = MemoryUtil.memAlloc(this.indicesCount * GLEnums.getTypeSize(this.type));
+		buildBuffer(quadCount, buffer, this.type);
 		if (!gl.bufferStorageSupported)
 		{
 			
-			bind();
+			this.bind();
 			super.uploadBuffer(buffer, EDhApiGpuUploadMethod.DATA,
-					indicesCount * GLEnums.getTypeSize(type), GL32.GL_STATIC_DRAW);
+					this.indicesCount * GLEnums.getTypeSize(this.type), GL32.GL_STATIC_DRAW);
 		}
 		else
 		{
-			bind();
+			this.bind();
 			super.uploadBuffer(buffer, EDhApiGpuUploadMethod.BUFFER_STORAGE,
-					indicesCount * GLEnums.getTypeSize(type), 0);
+					this.indicesCount * GLEnums.getTypeSize(this.type), 0);
 		}
 		
 		MemoryUtil.memFree(buffer);
