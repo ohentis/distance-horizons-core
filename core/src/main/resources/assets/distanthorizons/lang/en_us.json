@@ -67,7 +67,7 @@
   "distanthorizons.config.client.threadPresetSetting":
     "CPU Load",
   "distanthorizons.config.client.threadPresetSetting.@tooltip":
-    "Modifies how many threads Distant Horizons' will use. \n\nIncreasing this setting will improve the Distant Generator speed and LOD loading speed, \nbut will also increase CPU/memory usage and may introduce stuttering. \n\nNote: on CPUs with 4 cores or less these settings will be less effective \nand some settings will give similar results.",
+    "Modifies how many threads Distant Horizons' will use. \n\nIncreasing this setting will improve the Distant Generator speed and LOD loading speed, \nbut will also increase CPU/memory usage and may introduce stuttering. \n\nNote: This is a CPU relative setting. \nIt should put an equal amount of strain on a 2 core CPU as a 64 core CPU.",
     
   "distanthorizons.config.client.optionsButton":
     "Show The Options Button",

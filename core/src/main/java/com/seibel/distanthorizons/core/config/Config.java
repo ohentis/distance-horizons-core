@@ -96,8 +96,8 @@ public class Config
 						+ "Higher options will improve LOD generation and loading speed, \n"
 						+ "but will increase CPU load and may introduce stuttering.\n"
 						+ "\n"
-						+ "Note: on CPUs with 4 cores or less these settings will be less effective \n"
-						+ "      and some settings will give similar results. \n"
+						+ "Note: This is a CPU relative setting. \n"
+						+ "It should put an equal amount of strain on a 2 core CPU as a 64 core CPU.\n"
 						+ "")
 				.setAppearance(EConfigEntryAppearance.ONLY_IN_GUI)
 				.addListener(ThreadPresetConfigEventHandler.INSTANCE)
