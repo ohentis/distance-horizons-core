@@ -40,7 +40,7 @@ public final class ModInfo
 	public static final String READABLE_NAME = "Distant Horizons";
 	public static final String VERSION = "2.3.0-b-dev";
 	/** Returns true if the current build is an unstable developer build, false otherwise. */
-	public static boolean IS_DEV_BUILD = VERSION.toLowerCase().contains("dev");
+	public static final boolean IS_DEV_BUILD = VERSION.toLowerCase().contains("dev");
 	
 	/** This version should only be updated when breaking changes are introduced to the DH API */
 	public static final int API_MAJOR_VERSION = 4;
@@ -54,5 +54,7 @@ public final class ModInfo
 	
 	/** All DH owned threads should start with this string to allow for easier debugging and profiling. */
 	public static final String THREAD_NAME_PREFIX = "DH-";
+	
+	
 	
 }
