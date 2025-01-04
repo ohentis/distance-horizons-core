@@ -25,8 +25,11 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ConcurrentModificationException;
+import java.util.Iterator;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 
 /**
  * Can be used to more finely control CPU usage and
@@ -155,6 +158,20 @@ public class RateLimitedThreadPoolExecutor extends ThreadPoolExecutor implements
 				LOGGER.info("terminated, released ["+this.semaphoresAcquired+"], available count: ["+this.threadSemaphore.availablePermits()+"]");
 			}
 		}
+	}
+	
+	/** 
+	 * Deprecated since most of the time this doesn't do what we want or need.
+	 * In James testing any tasks started with {@link CompletableFuture#runAsync(Runnable, Executor)}
+	 * or {@link CompletableFuture#supplyAsync(Supplier, Executor)} converted the {@link Runnable}
+	 * and {@link CompletableFuture} into objects that didn't support being cancled and removed
+	 * from the queue. The canceled tasks were correctly never run, but couldn't be purged.
+	 */
+	@Deprecated
+	@Override
+	public void purge()
+	{
+		super.purge();
 	}
 	
 	
