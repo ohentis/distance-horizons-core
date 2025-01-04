@@ -65,8 +65,11 @@ public class SharedApi
 	private static final IMinecraftSharedWrapper MC_SHARED = SingletonInjector.INSTANCE.get(IMinecraftSharedWrapper.class);
 	
 	private static final UpdateChunkPosManager UPDATE_POS_MANAGER = new UpdateChunkPosManager();
-	/** how many chunks can be queued for updating per thread, used to prevent updates from infinitely pilling up if the user flies around extremely fast */
-	private static final int MAX_UPDATING_CHUNK_COUNT_PER_THREAD = 1_000;
+	/** 
+	 * how many chunks can be queued for updating per thread + player (in multiplayer), 
+	 * used to prevent updates from infinitely pilling up if the user flies around extremely fast 
+	 */
+	private static final int MAX_UPDATING_CHUNK_COUNT_PER_THREAD_AND_PLAYER = 1_000;
 	
 	/** how many milliseconds must pass before an overloaded message can be sent in chat or the log */
 	private static final int MIN_MS_BETWEEN_OVERLOADED_LOG_MESSAGE = 30_000;
@@ -298,9 +301,9 @@ public class SharedApi
 			playerCount = MC_SHARED.getPlayerCount();
 		}
 		
-		UPDATE_POS_MANAGER.maxSize = MAX_UPDATING_CHUNK_COUNT_PER_THREAD
+		UPDATE_POS_MANAGER.maxSize = MAX_UPDATING_CHUNK_COUNT_PER_THREAD_AND_PLAYER
 				* Config.Common.MultiThreading.numberOfThreads.get()
-				* (playerCount + 1);
+				* Math.max(playerCount, 1);
 		
 		UpdateChunkData updateData = new UpdateChunkData(chunkWrapper, neighbourChunkList, dhLevel, lightUpdateOnly);
 		if(lightUpdateOnly)
@@ -319,7 +322,7 @@ public class SharedApi
 				String message = "\u00A76" + "Distant Horizons overloaded, too many chunks queued for LOD processing. " + "\u00A7r" +
 						"\nThis may result in holes in your LODs. " +
 						"\nFix: move through the world slower, decrease your vanilla render distance, slow down your world pre-generator (IE Chunky), or increase the Distant Horizons' CPU thread counts. " +
-						"\nMax queue count ["+UPDATE_POS_MANAGER.maxSize+"] (["+MAX_UPDATING_CHUNK_COUNT_PER_THREAD+"] per thread).";
+						"\nMax queue count ["+UPDATE_POS_MANAGER.maxSize+"] (["+ MAX_UPDATING_CHUNK_COUNT_PER_THREAD_AND_PLAYER +"] per thread+players).";
 				
 				boolean showWarningInChat = Config.Common.Logging.Warning.showUpdateQueueOverloadedChatWarning.get();
 				if (showWarningInChat)
