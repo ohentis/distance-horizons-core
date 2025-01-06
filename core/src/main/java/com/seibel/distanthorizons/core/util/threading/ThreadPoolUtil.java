@@ -89,11 +89,17 @@ public class ThreadPoolUtil
 	{
 		// thread pools
 		taskPicker = new PriorityTaskPicker();
-		networkCompressionThreadPool = taskPicker.createExecutor(3); // Data should never pile up waiting to be sent
-		fileHandlerThreadPool = taskPicker.createExecutor(3); // loading in new LODs is second-highest priority
-		chunkToLodBuilderThreadPool = taskPicker.createExecutor(2); // We want to make sure any chunk changes are found
-		updatePropagatorThreadPool = taskPicker.createExecutor(2); // update propagation needs to be slightly higher priority than world gen
-		worldGenThreadPool = taskPicker.createExecutor(1); // higher priorities mean the threads will run first
+		
+		// IO should never be stuck waiting for something else to complete
+		networkCompressionThreadPool = taskPicker.createExecutor(3);
+		fileHandlerThreadPool = taskPicker.createExecutor(3);
+		
+		// Normal priority tasks
+		chunkToLodBuilderThreadPool = taskPicker.createExecutor(2);
+		updatePropagatorThreadPool = taskPicker.createExecutor(2);
+		
+		// World gen tasks are heavy and nothing strictly depends on them, so it may wait a bit
+		worldGenThreadPool = taskPicker.createExecutor(1);
 		
 		
 		
