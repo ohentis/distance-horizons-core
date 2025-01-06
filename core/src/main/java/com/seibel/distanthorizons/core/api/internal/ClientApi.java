@@ -31,6 +31,7 @@ import com.seibel.distanthorizons.core.render.DhApiRenderProxy;
 import com.seibel.distanthorizons.core.render.renderer.FadeRenderer;
 import com.seibel.distanthorizons.core.util.TimerUtil;
 import com.seibel.distanthorizons.core.util.objects.Pair;
+import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
 import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.config.Config;
@@ -81,11 +82,21 @@ public class ClientApi
 	public static final TestRenderer TEST_RENDERER = new TestRenderer();
 	
 	private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
+	private static final IMinecraftRenderWrapper MC_RENDER = SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
 	
 	public static final long SPAM_LOGGER_FLUSH_NS = TimeUnit.NANOSECONDS.convert(1, TimeUnit.SECONDS);
 	
-	private boolean configOverrideReminderPrinted = false;
+	/** this includes the is dev build message and low allocated memory warning */
+	private static final int MS_BETWEEN_STATIC_STARTUP_MESSAGES = 4_000;
+	
+	
+	
+	private boolean isDevBuildMessagePrinted = false;
 	private boolean lowMemoryWarningPrinted = false;
+	private boolean highVanillaRenderDistanceWarningPrinted = false;
+	
+	/** when the last static */
+	private long lastStaticWarningMessageSentMsTime = 0L;
 	
 	private final Queue<String> chatMessageQueueForNextFrame = new LinkedBlockingQueue<>();
 	
@@ -601,24 +612,54 @@ public class ClientApi
 	
 	private void sendQueuedChatMessages()
 	{
-		// dev build
-		if (ModInfo.IS_DEV_BUILD && !this.configOverrideReminderPrinted && MC_CLIENT.playerExists())
+		// this includes if the current build is a dev build
+		// and configuration warnings (IE Java memory amount and MC settings)
+		this.detectAndSendBootTimeWarnings();
+		
+		// Don't send any generic messages until the static ones have been sent.
+		// This makes sure the more critical messages are seen first.
+		if (this.staticStartupMessageSentRecently())
 		{
-			this.configOverrideReminderPrinted = true;
+			return;
+		}
+			
+		
+		// generic messages
+		while (!this.chatMessageQueueForNextFrame.isEmpty())
+		{
+			String message = this.chatMessageQueueForNextFrame.poll();
+			if (message == null)
+			{
+				// done to prevent potential null pointers
+				message = "";
+			}
+			MC_CLIENT.sendChatMessage(message);
+		}
+	}
+	private void detectAndSendBootTimeWarnings()
+	{
+		// dev build
+		if (ModInfo.IS_DEV_BUILD && !this.isDevBuildMessagePrinted && MC_CLIENT.playerExists())
+		{
+			this.isDevBuildMessagePrinted = true;
+			this.lastStaticWarningMessageSentMsTime = System.currentTimeMillis();
 			
 			// remind the user that this is a development build
-			String message = 
+			String message =
 					// green text
 					"\u00A72" + "Distant Horizons: nightly/unstable build, version: [" + ModInfo.VERSION+"]." + "\u00A7r\n" +
-					"Issues may occur with this version.\n" +
-					"Here be dragons!\n";
+							"Issues may occur with this version.\n" +
+							"Here be dragons!\n";
 			MC_CLIENT.sendChatMessage(message);
 		}
 		
+		
 		// memory
+		if (this.staticStartupMessageSentRecently()) return;
 		if (!this.lowMemoryWarningPrinted && Config.Common.Logging.Warning.showLowMemoryWarningOnStartup.get())
 		{
 			this.lowMemoryWarningPrinted = true;
+			this.lastStaticWarningMessageSentMsTime = System.currentTimeMillis();
 			
 			// 4 GB
 			long minimumRecommendedMemoryInBytes = 4L * 1_000_000_000L;
@@ -637,18 +678,43 @@ public class ClientApi
 			}
 		}
 		
-		// generic messages
-		while (!this.chatMessageQueueForNextFrame.isEmpty())
+		
+		// high vanilla render distance
+		if (this.staticStartupMessageSentRecently()) return;
+		if (!this.highVanillaRenderDistanceWarningPrinted && Config.Common.Logging.Warning.showHighVanillaRenderDistanceWarning.get())
 		{
-			String message = this.chatMessageQueueForNextFrame.poll();
-			if (message == null)
+			// DH generally doesn't need a vanilla render distance above 12 
+			if (MC_RENDER.getRenderDistance() > 12)
 			{
-				// done to prevent potential null pointers
-				message = "";
+				this.highVanillaRenderDistanceWarningPrinted = true;
+				this.lastStaticWarningMessageSentMsTime = System.currentTimeMillis();
+				
+				String message =
+						// yellow text
+						"\u00A7e" + "Distant Horizons: High vanilla render distance detected." + "\u00A7r \n" +
+						"Using a high vanilla render distance uses a lot of CPU power \n" +
+						"and doesn't improve graphics much after about 12.\n" +
+						"Lowing your vanilla render distance will give you better FPS\n" +
+						"and reduce stuttering at a similar visual quality.\n" +
+						// gray text		
+						"\u00A77" + "A vanilla render distance of 8 is recommended." + "\u00A7r \n" +
+						"This message can be disabled in DH's config under Advanced -> Logging.\n";
+				MC_CLIENT.sendChatMessage(message);
 			}
-			MC_CLIENT.sendChatMessage(message);
 		}
 	}
+	/** done to prevent sending a bunch of startup messages all at once, causing some to be missed. */
+	private boolean staticStartupMessageSentRecently()
+	{
+		if (this.lastStaticWarningMessageSentMsTime == 0)
+		{
+			return true;
+		}
+		
+		long timeSinceLastMessage = System.currentTimeMillis() - this.lastStaticWarningMessageSentMsTime; 
+		return timeSinceLastMessage <= MS_BETWEEN_STATIC_STARTUP_MESSAGES;
+	}
+	
 	
 	/** 
 	 * Queues the given message to appear in chat the next valid frame.

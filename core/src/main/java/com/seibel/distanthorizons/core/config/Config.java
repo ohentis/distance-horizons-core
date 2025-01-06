@@ -1453,6 +1453,14 @@ public class Config
 								+ "")
 						.build();
 				
+				public static ConfigEntry<Boolean> showHighVanillaRenderDistanceWarning = new ConfigEntry.Builder<Boolean>()
+						.set(true)
+						.comment(""
+								+ "If enabled, a chat message will be displayed if vanilla MC's \n"
+								+ "render distance is higher than the recommended amount. \n"
+								+ "")
+						.build();
+				
 				public static ConfigEntry<Boolean> showReplayWarningOnStartup = new ConfigEntry.Builder<Boolean>()
 						.set(true)
 						.comment(""
