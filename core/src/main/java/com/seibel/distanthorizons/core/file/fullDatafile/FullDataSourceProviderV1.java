@@ -18,6 +18,7 @@ import java.io.File;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -96,7 +97,7 @@ public class FullDataSourceProviderV1<TDhLevel extends IDhLevel>
 	 */
 	public CompletableFuture<FullDataSourceV1> getAsync(long pos)
 	{
-		ThreadPoolExecutor executor = ThreadPoolUtil.getFileHandlerExecutor();
+		AbstractExecutorService executor = ThreadPoolUtil.getFileHandlerExecutor();
 		if (executor == null || executor.isTerminated())
 		{
 			return CompletableFuture.completedFuture(null);

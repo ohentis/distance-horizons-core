@@ -40,7 +40,7 @@ import com.seibel.distanthorizons.core.sql.repo.AbstractDhRepo;
 import com.seibel.distanthorizons.core.sql.repo.FullDataSourceV2Repo;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
 import com.seibel.distanthorizons.core.util.objects.DataCorruptedException;
-import com.seibel.distanthorizons.core.util.threading.PrioritySemaphore;
+import com.seibel.distanthorizons.core.util.threading.PriorityTaskPicker;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
@@ -209,7 +209,7 @@ public class FullDataSourceProviderV2
 			{
 				Thread.sleep(UPDATE_QUEUE_THREAD_DELAY_IN_MS);
 				
-				ThreadPoolExecutor executor = ThreadPoolUtil.getUpdatePropagatorExecutor();
+				PriorityTaskPicker.Executor executor = ThreadPoolUtil.getUpdatePropagatorExecutor();
 				if (executor == null || executor.isTerminated())
 				{
 					continue;
@@ -226,7 +226,7 @@ public class FullDataSourceProviderV2
 				}
 				
 				// queue parent updates
-				if (executor.getQueue().size() < MAX_UPDATE_TASK_COUNT
+				if (executor.getQueueSize() < MAX_UPDATE_TASK_COUNT
 					&& this.parentUpdatingPosSet.size() < MAX_UPDATE_TASK_COUNT)
 				{
 					// get the positions that need to be applied to their parents

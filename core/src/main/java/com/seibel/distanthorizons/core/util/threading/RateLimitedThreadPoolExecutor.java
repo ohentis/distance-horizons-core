@@ -19,49 +19,26 @@
 
 package com.seibel.distanthorizons.core.util.threading;
 
+import com.seibel.distanthorizons.core.config.Config;
+import com.seibel.distanthorizons.core.config.types.ConfigEntry;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.util.objects.RollingAverage;
 import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
-import java.util.ConcurrentModificationException;
-import java.util.Iterator;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 /**
  * Can be used to more finely control CPU usage and
  * reduce CPU usage if only 1 thread is already assigned.
  */
-public class RateLimitedThreadPoolExecutor extends ThreadPoolExecutor implements Comparable<RateLimitedThreadPoolExecutor>
+public class RateLimitedThreadPoolExecutor extends ThreadPoolExecutor
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
-	/** logs include the thread name by default which can help diagnose deadlocks */
-	private static final boolean LOG_SEMAPHORE_ACTIONS = false;
 	
-	
-	public volatile double runTimeRatio;
+	public final ConfigEntry<Double> runTimeRatioConfig = Config.Common.MultiThreading.threadRunTimeRatio;
 	
 	/** When this thread started running its last task */
-	private final ThreadLocal<Long> runStartNanoTimeRef = ThreadLocal.withInitial(() -> -1L);
-	/** How long it took this thread to run its last task */
-	private final ThreadLocal<Long> lastRunDurationNanoTimeRef = ThreadLocal.withInitial(() -> -1L);
-	
-	/**
-	 * Does nothing if {@link RateLimitedThreadPoolExecutor#threadSemaphore}
-	 * is null. <br>
-	 * Higher numbers have higher priority. 
-	 */
-	public final int priority;
-	/** if null this thread pool will run independently of other pools */
-	@Nullable
-	public final PrioritySemaphore threadSemaphore;
-	/** will always be zero if no semaphore is present */
-	public final AtomicInteger semaphoresAcquired = new AtomicInteger(0);
-	
-	private final RollingAverage runTimeInMsRollingAverage = new RollingAverage(200);
+	private final ThreadLocal<Long> runStartTime = ThreadLocal.withInitial(() -> -1L);
 	
 	
 	
@@ -69,18 +46,12 @@ public class RateLimitedThreadPoolExecutor extends ThreadPoolExecutor implements
 	// constructors //
 	//==============//
 	
-	public RateLimitedThreadPoolExecutor(
-			int corePoolSize, double runTimeRatio, ThreadFactory threadFactory,
-			@Nullable PrioritySemaphore prioritySemaphore, int priority)
+	public RateLimitedThreadPoolExecutor(int poolSize, ThreadFactory threadFactory, BlockingQueue<Runnable> workQueue)
 	{
-		super(corePoolSize, corePoolSize,
+		super(poolSize, poolSize,
 				0L, TimeUnit.MILLISECONDS,
-				new LinkedBlockingQueue<>(), // TODO using a PriorityBlockingQueue would be nice to allow for prioritizing tasks, but then all tasks must be Comparable
+				workQueue,
 				threadFactory);
-		
-		this.runTimeRatio = runTimeRatio;
-		this.priority = priority;
-		this.threadSemaphore = prioritySemaphore;
 	}
 	
 	
@@ -92,36 +63,7 @@ public class RateLimitedThreadPoolExecutor extends ThreadPoolExecutor implements
 	@Override
 	protected void beforeExecute(Thread thread, Runnable runnable)
 	{
-		long deltaMs = TimeUnit.NANOSECONDS.toMillis(this.lastRunDurationNanoTimeRef.get());
-		this.runTimeInMsRollingAverage.addValue(deltaMs);
-		
-		if (this.runTimeRatio < 1.0 && this.lastRunDurationNanoTimeRef.get() != -1)
-		{
-			try
-			{
-				Thread.sleep((long) (deltaMs / this.runTimeRatio - deltaMs));
-			}
-			catch (InterruptedException ignored) { }
-		}
-		
-		if (this.threadSemaphore != null)
-		{
-			try
-			{
-				// Warning, this can cause deadlock if one thread calls another.
-				this.threadSemaphore.acquire(this);
-				this.semaphoresAcquired.getAndAdd(1);
-				
-				if (LOG_SEMAPHORE_ACTIONS)
-				{
-					LOGGER.debug("acquired, available count: ["+this.threadSemaphore.availablePermits()+"]");
-				}
-			}
-			catch (InterruptedException ignore) { }
-		}
-		
-		
-		this.runStartNanoTimeRef.set(System.nanoTime());
+		this.runStartTime.set(System.nanoTime());
 		
 		super.beforeExecute(thread, runnable);
 	}
@@ -131,18 +73,14 @@ public class RateLimitedThreadPoolExecutor extends ThreadPoolExecutor implements
 	{
 		super.afterExecute(runnable, throwable);
 		
-		this.lastRunDurationNanoTimeRef.set(System.nanoTime() - this.runStartNanoTimeRef.get());
-		
-		
-		if (this.threadSemaphore != null)
+		try
 		{
-			this.threadSemaphore.release();
-			this.semaphoresAcquired.getAndAdd(-1);
-			
-			if (LOG_SEMAPHORE_ACTIONS)
-			{
-				LOGGER.debug("released, available count: ["+this.threadSemaphore.availablePermits()+"]");
-			}
+			long runTime = System.nanoTime() - this.runStartTime.get();
+			Thread.sleep(TimeUnit.NANOSECONDS.toMillis((long) (runTime / this.runTimeRatioConfig.get() - runTime)));
+		}
+		catch (InterruptedException e)
+		{
+			throw new RuntimeException(e);
 		}
 	}
 	
@@ -150,15 +88,6 @@ public class RateLimitedThreadPoolExecutor extends ThreadPoolExecutor implements
 	protected void terminated() 
 	{
 		super.terminated();
-		
-		// release all held semaphores (shouldn't normally be necessary, but just in case)
-		if (this.threadSemaphore != null)
-		{
-			if (LOG_SEMAPHORE_ACTIONS)
-			{
-				LOGGER.info("terminated, released ["+this.semaphoresAcquired+"], available count: ["+this.threadSemaphore.availablePermits()+"]");
-			}
-		}
 	}
 	
 	/** 
@@ -174,29 +103,5 @@ public class RateLimitedThreadPoolExecutor extends ThreadPoolExecutor implements
 	{
 		super.purge();
 	}
-	
-	
-	
-	//==============//
-	// running time //
-	//==============//
-	
-	/** will return Nan if nothing has been submitted yet */
-	public double getAverageRunTimeInMs() { return this.runTimeInMsRollingAverage.getAverage(); }
-	
-	
-	
-	//============//
-	// comparison //
-	//============//
-	
-	@Override
-	public int compareTo(@NotNull RateLimitedThreadPoolExecutor other)
-	{
-		// highest number first
-		return Integer.compare(other.priority, this.priority);
-	}
-	
-	
 	
 }
