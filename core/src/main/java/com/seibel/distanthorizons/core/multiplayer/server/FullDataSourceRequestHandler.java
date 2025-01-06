@@ -1,5 +1,6 @@
 package com.seibel.distanthorizons.core.multiplayer.server;
 
+import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiDistantGeneratorMode;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.file.fullDatafile.GeneratedFullDataSourceProvider;
 import com.seibel.distanthorizons.core.level.AbstractDhServerLevel;
@@ -227,7 +228,10 @@ public class FullDataSourceRequestHandler
 			{
 				requestGroup.fullDataSource = fullDataSource;
 			}
-			else if (DhSectionPos.getDetailLevel(pos) > this.serverLevel.serverside.fullDataFileHandler.lowestDataDetailLevel())
+			else if (
+					Config.Common.WorldGenerator.distantGeneratorMode.get() == EDhApiDistantGeneratorMode.INTERNAL_SERVER
+							|| DhSectionPos.getDetailLevel(pos) > this.serverLevel.serverside.fullDataFileHandler.lowestDataDetailLevel()
+			)
 			{
 				// Make this group unavailable for adding into
 				this.requestGroupsByPos.remove(pos);
