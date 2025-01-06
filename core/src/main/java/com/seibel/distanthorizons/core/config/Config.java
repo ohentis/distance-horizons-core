@@ -1533,6 +1533,14 @@ public class Config
 				.setPerformance(EConfigEntryPerformance.HIGH)
 				.build();
 		
+		public static ConfigEntry<Boolean> generateOnlyInHighestDetail = new ConfigEntry.Builder<Boolean>()
+				.setChatCommandName("generation.highestDetailOnly")
+				.set(false)
+				.comment(""
+						+ "Makes the server reject all generation requests for detail levels below the highest one.\n"
+						+ "")
+				.build();
+		
 		
 		// Real-time updates
 		public static ConfigEntry<Boolean> enableRealTimeUpdates = new ConfigEntry.Builder<Boolean>()
