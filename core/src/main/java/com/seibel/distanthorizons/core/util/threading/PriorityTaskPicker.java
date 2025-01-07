@@ -71,14 +71,18 @@ public class PriorityTaskPicker
 				// Exit if there's no longer a need to pick a task
 				if (!this.shouldPickTask.compareAndSet(true, false))
 				{
+					// There is a small chance for a task to end up in a 'limbo' state,
+					// when this.shouldPickTask got set to true right here and this.taskPickerLock is not unlocked yet,
+					// but we'll disregard that since tasks get added often enough for this to not be an issue
+					
 					return;
 				}
 				
 				// Iterate over the executors in the queue, attempting to start tasks
 				for (
-						int counter = 0;
-						counter < this.executorQueue.size() && this.occupiedThreads.get() < this.threadCountConfig.get();
-						counter++, this.nextExecutorQueuePos = (this.nextExecutorQueuePos + 1) % this.executorQueue.size()
+						int taskPickAttempts = 0;
+						taskPickAttempts < this.executorQueue.size() && this.occupiedThreads.get() < this.threadCountConfig.get();
+						taskPickAttempts++, this.nextExecutorQueuePos = (this.nextExecutorQueuePos + 1) % this.executorQueue.size()
 				)
 				{
 					Executor executor = this.executorQueue.get(this.nextExecutorQueuePos);
@@ -91,7 +95,7 @@ public class PriorityTaskPicker
 						executor.runningTasks.getAndIncrement();
 						
 						// Prevent exiting early since there might be more than this.executorQueue.size() tasks waiting in queue
-						counter--;
+						taskPickAttempts = 0;
 						
 						this.threadPoolExecutor.execute(task);
 					}
