@@ -19,11 +19,7 @@
 
 package com.seibel.distanthorizons.core.util;
 
-import com.seibel.distanthorizons.core.config.listeners.ConfigChangeListener;
-import com.seibel.distanthorizons.core.config.types.ConfigEntry;
 import com.seibel.distanthorizons.core.util.threading.DhThreadFactory;
-import com.seibel.distanthorizons.core.util.threading.PrioritySemaphore;
-import com.seibel.distanthorizons.core.util.threading.RateLimitedThreadPoolExecutor;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import org.apache.logging.log4j.LogManager;
@@ -43,52 +39,7 @@ public class ThreadUtil
 	
 	public static final String THREAD_NAME_PREFIX = ModInfo.THREAD_NAME_PREFIX;
 	
-	/** used to track and remove old listeners for certain pools if the thread pool is recreated. */
-	private static final ConcurrentHashMap<String, ConfigChangeListener<Double>> THREAD_CHANGE_LISTENERS_BY_THREAD_NAME = new ConcurrentHashMap<>();
-	
 	// TODO move all "Runtime.getRuntime().availableProcessors()" calls here
-	
-	
-	
-	//===================//
-	// rate limited pool //
-	//===================//
-	
-	public static RateLimitedThreadPoolExecutor makeRateLimitedThreadPool(int poolSize, DhThreadFactory threadFactory, ConfigEntry<Double> runTimeRatioConfigEntry, PrioritySemaphore activeThreadCountSemaphore, int priority)
-	{
-		// remove the old listener if one exists
-		if (THREAD_CHANGE_LISTENERS_BY_THREAD_NAME.containsKey(threadFactory.threadName))
-		{
-			// note: this assumes only one thread pool exists with a given name
-			THREAD_CHANGE_LISTENERS_BY_THREAD_NAME.get(threadFactory.threadName).close();
-			THREAD_CHANGE_LISTENERS_BY_THREAD_NAME.remove(threadFactory.threadName);
-		}
-		
-		if (!threadFactory.threadName.startsWith(THREAD_NAME_PREFIX))
-		{
-			// this will only happen if a ThreadFactory is passed in that doesn't have the correct thread name
-			LOGGER.warn("Thread pool with the name ["+threadFactory.threadName+"] is missing the expected Distant Horizons thread prefix ["+THREAD_NAME_PREFIX+"].");
-		}
-		
-		
-		RateLimitedThreadPoolExecutor executor = makeRateLimitedThreadPool(poolSize, runTimeRatioConfigEntry.get(), threadFactory, activeThreadCountSemaphore, priority);
-		
-		ConfigChangeListener<Double> changeListener = new ConfigChangeListener<>(runTimeRatioConfigEntry, (newRunTimeRatio) -> { executor.runTimeRatio = newRunTimeRatio; });
-		THREAD_CHANGE_LISTENERS_BY_THREAD_NAME.put(threadFactory.threadName, changeListener);
-		
-		return executor;
-	}
-	
-	
-	/** should only be used if there isn't a config controlling the run time ratio of this thread pool */
-	public static RateLimitedThreadPoolExecutor makeRateLimitedThreadPool(int poolSize, String name, Double runTimeRatio, int threadPriority, PrioritySemaphore activeThreadCountSemaphore, int priority) 
-	{
-		return new RateLimitedThreadPoolExecutor(poolSize, runTimeRatio, new DhThreadFactory(name, threadPriority, false), activeThreadCountSemaphore, priority);
-	}
-	public static RateLimitedThreadPoolExecutor makeRateLimitedThreadPool(int poolSize, Double runTimeRatio, DhThreadFactory threadFactory, PrioritySemaphore activeThreadCountSemaphore, int priority) 
-	{
-		return new RateLimitedThreadPoolExecutor(poolSize, runTimeRatio, threadFactory, activeThreadCountSemaphore, priority);
-	}
 	
 	
 	

@@ -228,7 +228,7 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 				{
 					FullDataSourceV2DTO dataSourceDto = this.networkState.fullDataPayloadReceiver.decodeDataSourceAndReleaseBuffer(response.payload);
 					
-					ThreadPoolExecutor executor = ThreadPoolUtil.getNetworkCompressionExecutor();
+					AbstractExecutorService executor = ThreadPoolUtil.getNetworkCompressionExecutor();
 					if (executor == null)
 					{
 						LOGGER.warn("Unable to handle FullDataPayload - getNetworkCompressionExecutor() is null");
