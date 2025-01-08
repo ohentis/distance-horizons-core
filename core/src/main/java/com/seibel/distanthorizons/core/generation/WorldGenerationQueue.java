@@ -45,6 +45,7 @@ import com.seibel.distanthorizons.core.util.objects.DataCorruptedException;
 import com.seibel.distanthorizons.core.util.objects.RollingAverage;
 import com.seibel.distanthorizons.core.util.objects.UncheckedInterruptedException;
 import com.seibel.distanthorizons.core.util.LodUtil;
+import com.seibel.distanthorizons.core.util.threading.PriorityTaskPicker;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.world.DhApiWorldProxy;
 import com.seibel.distanthorizons.core.wrapperInterfaces.IWrapperFactory;
@@ -234,7 +235,7 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 	}
 	public boolean isGeneratorBusy()
 	{
-		ThreadPoolExecutor executor = ThreadPoolUtil.getWorldGenExecutor();
+		PriorityTaskPicker.Executor executor = ThreadPoolUtil.getWorldGenExecutor();
 		if (executor == null)
 		{
 			// shouldn't happen, but just in case, don't queue more tasks
@@ -243,7 +244,7 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 		
 		int worldGenThreadCount = Math.max(Config.Common.MultiThreading.numberOfThreads.get(), 1);
 		int maxWorldGenTaskCount = worldGenThreadCount * MAX_QUEUED_TASKS_PER_THREAD;
-		return executor.getQueue().size() > maxWorldGenTaskCount;
+		return executor.getQueueSize() > maxWorldGenTaskCount;
 	}
 	
 	/**
@@ -603,7 +604,7 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 		try
 		{
 			int waitTimeInSeconds = 3;
-			ThreadPoolExecutor executor = ThreadPoolUtil.getWorldGenExecutor();
+			AbstractExecutorService executor = ThreadPoolUtil.getWorldGenExecutor();
 			if (executor != null && !executor.awaitTermination(waitTimeInSeconds, TimeUnit.SECONDS))
 			{
 				LOGGER.warn("World generator thread pool shutdown didn't complete after [" + waitTimeInSeconds + "] seconds. Some world generator requests may still be running.");

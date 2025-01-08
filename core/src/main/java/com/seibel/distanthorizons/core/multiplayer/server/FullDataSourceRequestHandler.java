@@ -17,10 +17,7 @@ import org.apache.logging.log4j.LogManager;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class FullDataSourceRequestHandler
@@ -76,7 +73,7 @@ public class FullDataSourceRequestHandler
 		}
 		
 		
-		ThreadPoolExecutor executor = ThreadPoolUtil.getNetworkCompressionExecutor();
+		AbstractExecutorService executor = ThreadPoolUtil.getNetworkCompressionExecutor();
 		if (executor == null)
 		{
 			// shouldn't normally happen, but just in case
@@ -196,7 +193,7 @@ public class FullDataSourceRequestHandler
 				continue;
 			}
 			
-			ThreadPoolExecutor executor = ThreadPoolUtil.getNetworkCompressionExecutor();
+			AbstractExecutorService executor = ThreadPoolUtil.getNetworkCompressionExecutor();
 			if (executor == null)
 			{
 				LOGGER.warn("Unable to send FullDataSourceResponseMessage - getNetworkCompressionExecutor() is null");

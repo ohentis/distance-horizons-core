@@ -34,6 +34,7 @@ import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.sql.repo.AbstractDhRepo;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.objects.Pair;
+import com.seibel.distanthorizons.core.util.threading.PriorityTaskPicker;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.world.*;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
@@ -344,8 +345,8 @@ public class SharedApi
 		// queue updates up to the number of CPU cores allocated for the job
 		// (this prevents doing extra work queuing tasks that may not be necessary)
 		// and makes sure the chunks closest to the player are updated first
-		ThreadPoolExecutor executor = ThreadPoolUtil.getChunkToLodBuilderExecutor();
-		if (executor != null && executor.getQueue().size() < executor.getCorePoolSize())
+		PriorityTaskPicker.Executor executor = ThreadPoolUtil.getChunkToLodBuilderExecutor();
+		if (executor != null && executor.getQueueSize() < executor.getPoolSize())
 		{
 			try
 			{
@@ -432,7 +433,7 @@ public class SharedApi
 		finally
 		{
 			// queue the next position if there are still positions to process
-			ThreadPoolExecutor executor = ThreadPoolUtil.getChunkToLodBuilderExecutor();
+			AbstractExecutorService executor = ThreadPoolUtil.getChunkToLodBuilderExecutor();
 			if (executor != null && !UPDATE_POS_MANAGER.updateDataByChunkPos.isEmpty())
 			{
 				try

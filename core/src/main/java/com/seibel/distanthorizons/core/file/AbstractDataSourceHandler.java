@@ -114,7 +114,7 @@ public abstract class AbstractDataSourceHandler
 	 */
 	public CompletableFuture<TDataSource> getAsync(long pos)
 	{
-		ThreadPoolExecutor executor = ThreadPoolUtil.getFileHandlerExecutor();
+		AbstractExecutorService executor = ThreadPoolUtil.getFileHandlerExecutor();
 		if (executor == null || executor.isTerminated())
 		{
 			return CompletableFuture.completedFuture(null);
@@ -188,7 +188,7 @@ public abstract class AbstractDataSourceHandler
 	
 	public CompletableFuture<Void> updateDataSourceAsync(@NotNull FullDataSourceV2 inputDataSource)
 	{
-		ThreadPoolExecutor executor = ThreadPoolUtil.getChunkToLodBuilderExecutor();
+		AbstractExecutorService executor = ThreadPoolUtil.getChunkToLodBuilderExecutor();
 		if (executor == null || executor.isTerminated())
 		{
 			return CompletableFuture.completedFuture(null);

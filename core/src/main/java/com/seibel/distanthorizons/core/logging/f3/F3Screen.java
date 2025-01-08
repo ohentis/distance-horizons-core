@@ -28,7 +28,7 @@ import com.seibel.distanthorizons.core.pooling.PhantomArrayListPool;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.render.RenderBufferHandler;
 import com.seibel.distanthorizons.core.render.renderer.generic.GenericObjectRenderer;
-import com.seibel.distanthorizons.core.util.threading.RateLimitedThreadPoolExecutor;
+import com.seibel.distanthorizons.core.util.threading.PriorityTaskPicker;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.world.AbstractDhWorld;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
@@ -80,11 +80,11 @@ public class F3Screen
 	public static void addStringToDisplay(List<String> messageList)
 	{
 		// multi thread pools
-		ThreadPoolExecutor worldGenPool = ThreadPoolUtil.getWorldGenExecutor();
-		ThreadPoolExecutor fileHandlerPool = ThreadPoolUtil.getFileHandlerExecutor();
-		ThreadPoolExecutor updatePool = ThreadPoolUtil.getUpdatePropagatorExecutor();
-		ThreadPoolExecutor lodBuilderPool = ThreadPoolUtil.getChunkToLodBuilderExecutor();
-		ThreadPoolExecutor networkPool = ThreadPoolUtil.getNetworkCompressionExecutor();
+		PriorityTaskPicker.Executor worldGenPool = ThreadPoolUtil.getWorldGenExecutor();
+		PriorityTaskPicker.Executor fileHandlerPool = ThreadPoolUtil.getFileHandlerExecutor();
+		PriorityTaskPicker.Executor updatePool = ThreadPoolUtil.getUpdatePropagatorExecutor();
+		PriorityTaskPicker.Executor lodBuilderPool = ThreadPoolUtil.getChunkToLodBuilderExecutor();
+		PriorityTaskPicker.Executor networkPool = ThreadPoolUtil.getNetworkCompressionExecutor();
 		
 		// single thread pools
 		ThreadPoolExecutor cleanupPool = ThreadPoolUtil.getCleanupExecutor();
@@ -191,25 +191,23 @@ public class F3Screen
 	// helper methods //
 	//================//
 	
-	private static String getThreadPoolStatString(String name, ThreadPoolExecutor pool)
+	private static String getThreadPoolStatString(String name, PriorityTaskPicker.Executor pool)
 	{
-		String queueSize = (pool != null) ? NUMBER_FORMAT.format(pool.getQueue().size()) : "-";
+		String queueSize = (pool != null) ? NUMBER_FORMAT.format(pool.getQueueSize()) : "-";
 		String completedCount = (pool != null) ? NUMBER_FORMAT.format(pool.getCompletedTaskCount()) : "-";
 		
 		String message = name+", Tasks: "+queueSize+", Done: "+completedCount;
 		
-		if (pool != null && pool.getClass() == RateLimitedThreadPoolExecutor.class)
+		if (pool != null)
 		{
-			RateLimitedThreadPoolExecutor rateLimitedPool = ((RateLimitedThreadPoolExecutor) pool);
-			
 			// active threads
-			int activeThreadCount = rateLimitedPool.semaphoresAcquired.get();
-			int threadCount = ThreadPoolUtil.getThreadCount();
+			int activeThreadCount = pool.getRunningTaskCount();
+			int threadCount = pool.getPoolSize();
 			message += ", Active: "+activeThreadCount+"/"+threadCount;
 			
 			// thread runtime
 			String runTimeAvgStr;
-			double runTimeAvgInMs = rateLimitedPool.getAverageRunTimeInMs();
+			double runTimeAvgInMs = pool.getAverageRunTimeInMs();
 			if (!Double.isNaN(runTimeAvgInMs))
 			{
 				runTimeAvgStr = NUMBER_FORMAT.format(runTimeAvgInMs);

@@ -38,6 +38,7 @@ import com.seibel.distanthorizons.core.render.glObject.GLProxy;
 import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
 import com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.ColumnRenderBuffer;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
+import com.seibel.distanthorizons.core.util.threading.PriorityTaskPicker;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
@@ -132,7 +133,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 			return;
 		}
 		
-		ThreadPoolExecutor executor = ThreadPoolUtil.getFileHandlerExecutor();
+		PriorityTaskPicker.Executor executor = ThreadPoolUtil.getFileHandlerExecutor();
 		if (executor == null || executor.isTerminated())
 		{
 			return;
@@ -140,7 +141,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		
 		// don't queue up an infinite number of tasks
 		// doing so will cause memory use to balloon when swapping between dimensions
-		if (executor.getQueue().size() > executor.getPoolSize())
+		if (executor.getQueueSize() > executor.getPoolSize())
 		{
 			return;
 		}
