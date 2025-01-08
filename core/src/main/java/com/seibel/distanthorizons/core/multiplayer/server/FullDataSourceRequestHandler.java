@@ -226,8 +226,9 @@ public class FullDataSourceRequestHandler
 				requestGroup.fullDataSource = fullDataSource;
 			}
 			else if (
-					Config.Common.WorldGenerator.distantGeneratorMode.get() == EDhApiDistantGeneratorMode.INTERNAL_SERVER
-							|| DhSectionPos.getDetailLevel(pos) > this.serverLevel.serverside.fullDataFileHandler.lowestDataDetailLevel()
+					DhSectionPos.getDetailLevel(pos) > (Config.Common.WorldGenerator.distantGeneratorMode.get() == EDhApiDistantGeneratorMode.INTERNAL_SERVER
+							? DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL
+							: this.serverLevel.serverside.fullDataFileHandler.lowestDataDetailLevel())
 			)
 			{
 				// Make this group unavailable for adding into
