@@ -32,6 +32,8 @@ public class PriorityTaskPicker
 	// Tracks the number of active threads
 	private final AtomicInteger occupiedThreads = new AtomicInteger(0);
 	
+	private volatile boolean isShutDown = false;
+	
 	/**
 	 * Creates an executor with a specific priority.
 	 * Higher priority executors have more entries in the distribution queue, giving them a greater chance to run tasks.
@@ -90,14 +92,31 @@ public class PriorityTaskPicker
 					Runnable task = executor.tasks.poll();
 					if (task != null)
 					{
-						// Update variables related to task status
-						this.occupiedThreads.getAndIncrement();
-						executor.runningTasks.getAndIncrement();
-						
-						// Prevent exiting early since there might be more than this.executorQueue.size() tasks waiting in queue
-						taskPickAttempts = 0;
-						
-						this.threadPoolExecutor.execute(task);
+						try
+						{
+							// Attempt to start another task
+							this.threadPoolExecutor.execute(task);
+							
+							// Update variables related to task status
+							this.occupiedThreads.getAndIncrement();
+							executor.runningTasks.getAndIncrement();
+							
+							// Prevent exiting early since there might be more than this.executorQueue.size() tasks waiting in queue
+							taskPickAttempts = 0;
+						}
+						catch (RejectedExecutionException e)
+						{
+							if (this.isShutDown)
+							{
+								// Clear executor's tasks since we no longer expect anything to execute
+								// Tasks from other executors will be cleared by the outer for loop
+								executor.tasks.clear();
+							}
+							else
+							{
+								throw e;
+							}
+						}
 					}
 				}
 			}
@@ -115,7 +134,8 @@ public class PriorityTaskPicker
 	 */
 	public void shutdown()
 	{
-		this.threadPoolExecutor.shutdownNow();
+		this.isShutDown = true;
+		this.threadPoolExecutor.shutdown();
 	}
 	
 	
