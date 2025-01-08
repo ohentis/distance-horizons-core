@@ -118,32 +118,33 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	// render data generation and uploading //
 	//======================================//
 	
-	public synchronized void uploadRenderDataToGpuAsync()
+	/** @return true if the upload started, false if it wasn't able to for any reason */
+	public synchronized boolean uploadRenderDataToGpuAsync()
 	{
 		if (!GLProxy.hasInstance())
 		{
 			// it's possible to try uploading buffers before the GLProxy has been initialized
 			// which would cause the system to crash
-			return;
+			return false;
 		}
 		
 		if (this.getAndBuildRenderDataFuture != null)
 		{
 			// don't accidentally queue multiple uploads at the same time
-			return;
+			return false;
 		}
 		
 		PriorityTaskPicker.Executor executor = ThreadPoolUtil.getFileHandlerExecutor();
 		if (executor == null || executor.isTerminated())
 		{
-			return;
+			return false;
 		}
 		
 		// don't queue up an infinite number of tasks
 		// doing so will cause memory use to balloon when swapping between dimensions
 		if (executor.getQueueSize() > executor.getPoolSize())
 		{
-			return;
+			return false;
 		}
 		
 		try
@@ -206,9 +207,14 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 					this.getAndBuildRenderDataFuture = null;
 				}
 			}, executor);
+			
+			return true;
 		}
 		catch (RejectedExecutionException ignore)
-		{ /* the thread pool was probably shut down because it's size is being changed, just wait a sec and it should be back */ }
+		{ 
+			/* the thread pool was probably shut down because it's size is being changed, just wait a sec and it should be back */
+			return false;
+		}
 	}
 	@Nullable
 	@MustBeClosed

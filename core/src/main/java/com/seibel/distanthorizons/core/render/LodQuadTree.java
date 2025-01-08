@@ -437,13 +437,11 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 					
 					if (renderSection.canRender())
 					{
-						if (!renderSection.gpuUploadInProgress())
+						if (renderSection.gpuUploadInProgress()
+							|| !renderSection.uploadRenderDataToGpuAsync())
 						{
-							renderSection.uploadRenderDataToGpuAsync();
-						}
-						else
-						{
-							// if a section is already loading we need to wait to trigger it again
+							// if a section is already loading or failed to start upload
+							// we need to wait to trigger it again
 							// if we don't trigger it again the LOD will be out of date
 							// and may be invisible/missing
 							positionsToRequeue.add(pos);
