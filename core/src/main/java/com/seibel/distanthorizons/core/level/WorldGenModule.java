@@ -29,6 +29,7 @@ import com.seibel.distanthorizons.core.logging.f3.F3Screen;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
 import com.seibel.distanthorizons.core.util.objects.RollingAverage;
+import com.seibel.distanthorizons.core.util.threading.PriorityTaskPicker;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.world.DhApiWorldProxy;
 import org.apache.logging.log4j.Logger;
@@ -348,11 +349,18 @@ public class WorldGenModule implements Closeable
 			}
 			
 			
+			PriorityTaskPicker.Executor executor = ThreadPoolUtil.getWorldGenExecutor();
+			int threadCount = 1;
+			if (executor != null)
+			{
+				threadCount = executor.getPoolSize();
+			}
+			
 			// convert chunk generation time in milliseconds to chunks per second
 			double chunksPerSecond = (1 / avg.getAverage()) * 1_000;
 			// estimate the number of chunks that can be processed per second by all threads
 			// Note: this is probably higher than the actual number, we might want to drop this by 1 or 2 to give a more realistic estimate
-			chunksPerSecond = ThreadPoolUtil.getThreadCount() * chunksPerSecond;
+			chunksPerSecond = threadCount * chunksPerSecond;
 			
 			return chunksPerSecond;
 		}
