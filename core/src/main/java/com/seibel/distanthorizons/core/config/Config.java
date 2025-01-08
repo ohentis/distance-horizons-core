@@ -965,6 +965,11 @@ public class Config
 							.comment("Render queued world gen tasks?")
 							.build();
 					
+					public static ConfigEntry<Boolean> showSyncOnLoadQueue = new ConfigEntry.Builder<Boolean>()
+							.set(false)
+							.comment("Render queued sync on load tasks?")
+							.build();
+					
 					public static ConfigEntry<Boolean> showRenderSectionStatus = new ConfigEntry.Builder<Boolean>()
 							.set(false)
 							.comment("Render LOD section status?")
