@@ -52,7 +52,7 @@ import java.util.zip.ZipInputStream;
  */
 public class SelfUpdater
 {
-	private static final Logger LOGGER = DhLoggerBuilder.getLogger(SelfUpdater.class.getSimpleName());
+	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
 	/** As we cannot delete(or replace) the jar while the mod is running, we just have this to delete it once the game closes */
 	public static boolean deleteOldJarOnJvmShutdown = false;
@@ -71,7 +71,7 @@ public class SelfUpdater
 	 */
 	public static boolean onStart()
 	{
-		LOGGER.info("Checking for DH update");
+		LOGGER.info("Checking for Distant Horizons update");
 		
 		try
 		{
@@ -79,7 +79,7 @@ public class SelfUpdater
 		}
 		catch (Exception e)
 		{
-			e.printStackTrace();
+			LOGGER.error("Unable to get existing jar checksum, error: ["+e.getMessage()+"].", e);
 			return false;
 		}
 		
@@ -95,13 +95,13 @@ public class SelfUpdater
 		}
 		return returnValue;
 	}
-	
-	public static boolean onStableStart()
+	private static boolean onStableStart()
 	{
 		// Some init stuff
 		// We use sha1 to check the version as our versioning system is different to the one on modrinth
 		if (!ModrinthGetter.init())
 		{
+			LOGGER.warn("Unable to find any nightly build pipelines, auto update will be unavailable.");
 			return false;
 		}
 		if (!ModrinthGetter.mcVersions.contains(mcVersion))
@@ -110,20 +110,30 @@ public class SelfUpdater
 			return false;
 		}
 		
+		try
+		{
+			newFileLocation = JarUtils.jarFile.getParentFile().toPath().resolve("update").resolve(ModInfo.NAME + "-" + ModrinthGetter.getLatestNameForVersion(mcVersion) + "-" + mcVersion + ".jar").toFile();
+		}
+		catch (Exception e)
+		{
+			LOGGER.warn("Unable to get file location to download auto updated file to.", e);
+			return false;
+		}
+		
 		// Check the sha's of both our stuff
 		if (currentJarSha.equals(ModrinthGetter.getLatestShaForVersion(mcVersion)))
 		{
+			LOGGER.info("Distant Horizons already up to date.");
 			return false;
 		}
 		if (JarUtils.jarFile == null)
 		{
-			LOGGER.warn("Unable to get the DH jar file, self updating disabled.");
+			LOGGER.warn("Unable to get the Distant Horizons jar file, self updating disabled.");
 			return false;
 		}
 		
 		
-		LOGGER.info("New version (" + ModrinthGetter.getLatestNameForVersion(mcVersion) + ") of " + ModInfo.READABLE_NAME + " is available");
-		newFileLocation = JarUtils.jarFile.getParentFile().toPath().resolve("update").resolve(ModInfo.NAME + "-" + ModrinthGetter.getLatestNameForVersion(mcVersion) + "-" + mcVersion + ".jar").toFile();
+		LOGGER.info("New version (" + ModrinthGetter.getLatestNameForVersion(mcVersion) + ") of Distant Horizons is available");
 		if (Config.Client.Advanced.AutoUpdater.enableSilentUpdates.get())
 		{
 			// Auto-update mod
@@ -136,18 +146,18 @@ public class SelfUpdater
 		}
 		return true;
 	}
-	
-	public static boolean onNightlyStart()
+	private static boolean onNightlyStart()
 	{
 		if (GitlabGetter.INSTANCE.projectPipelines.size() == 0)
 		{
+			LOGGER.info("Unable to find any nightly build pipelines, auto update will be unavailable.");
 			return false;
 		}
 		com.electronwill.nightconfig.core.Config pipeline = GitlabGetter.INSTANCE.projectPipelines.get(0);
 		
 		if (!pipeline.get("ref").equals(ModJarInfo.Git_Branch))
 		{
-			//LOGGER.warn("Latest pipeline was found for branch ["+ pipeline.get("ref") +"], but we are on branch ["+ ModGitInfo.Git_Main_Branch +"].");
+			LOGGER.warn("Latest pipeline was found for branch ["+ pipeline.get("ref") +"], but we are on branch ["+ ModJarInfo.Git_Branch +"].");
 			return false;
 		}
 		
@@ -164,15 +174,25 @@ public class SelfUpdater
 		}
 		
 		String latestCommit = pipeline.get("sha");
-		
-		if (ModJarInfo.Git_Commit.equals(latestCommit)) // If we are already on the latest commit, then dont update
+		try
 		{
+			newFileLocation = JarUtils.jarFile.getParentFile().toPath().resolve("update").resolve(ModInfo.NAME + "-" + latestCommit + ".jar").toFile();
+		}
+		catch (Exception e)
+		{
+			LOGGER.warn("Unable to get file location to download auto updated file to.", e);
 			return false;
 		}
 		
 		
-		LOGGER.info("New version (" + latestCommit + ") of " + ModInfo.READABLE_NAME + " is available");
-		newFileLocation = JarUtils.jarFile.getParentFile().toPath().resolve("update").resolve(ModInfo.NAME + "-" + latestCommit + ".jar").toFile();
+		if (ModJarInfo.Git_Commit.equals(latestCommit)) // If we are already on the latest commit, then dont update
+		{
+			LOGGER.info("Distant Horizons already up to date.");
+			return false;
+		}
+		
+		
+		LOGGER.info("New version [" + latestCommit + "] of Distant Horizons is available");
 		if (Config.Client.Advanced.AutoUpdater.enableSilentUpdates.get())
 		{
 			// Auto-update mod
@@ -199,24 +219,27 @@ public class SelfUpdater
 	}
 	public static boolean updateMod(String minecraftVersion, File file)
 	{
-		boolean returnValue = false;
-		switch (Config.Client.Advanced.AutoUpdater.updateBranch.get())
+		EDhApiUpdateBranch updateBranch = EDhApiUpdateBranch.convertAutoToStableOrNightly(Config.Client.Advanced.AutoUpdater.updateBranch.get());
+		if (updateBranch == EDhApiUpdateBranch.STABLE)
 		{
-			case STABLE:
-				returnValue = updateStableMod(minecraftVersion, file);
-				break;
-			case NIGHTLY:
-				returnValue = updateNightlyMod(minecraftVersion, file);
-				break;
-		};
-		return returnValue;
+			return updateStableMod(minecraftVersion, file);
+		}
+		else if (updateBranch == EDhApiUpdateBranch.NIGHTLY)
+		{
+			return updateNightlyMod(minecraftVersion, file);
+		}
+		else
+		{
+			LOGGER.error("Unable to update due to unimplemented update branch ["+updateBranch+"].");
+			return false;
+		}
 	}
 	
 	public static boolean updateStableMod(String minecraftVersion, File file)
 	{
 		try
 		{
-			LOGGER.info("Attempting to auto update " + ModInfo.READABLE_NAME);
+			LOGGER.info("Attempting to auto update Distant Horizons");
 			
 			Files.createDirectories(file.getParentFile().toPath());
 			WebDownloader.downloadAsFile(ModrinthGetter.getLatestDownloadForVersion(minecraftVersion), file);
@@ -224,16 +247,16 @@ public class SelfUpdater
 			// Check if the checksum of the downloaded jar is correct (not required, but good to have to prevent corruption or interception)
 			if (!JarUtils.getFileChecksum(MessageDigest.getInstance("SHA"), file).equals(ModrinthGetter.getLatestShaForVersion(minecraftVersion)))
 			{
-				LOGGER.warn("DH update checksum failed, aborting install");
+				LOGGER.warn("Distant Horizons update checksum failed, aborting install");
 				throw new Exception("Checksum failed");
 			}
 			
 			deleteOldJarOnJvmShutdown = true;
 			
-			LOGGER.info(ModInfo.READABLE_NAME + " successfully updated. It will apply on game's relaunch");
+			LOGGER.info("Distant Horizons successfully updated. It will apply on game's relaunch");
 			new Thread(() -> 
 			{
-				String message = ModInfo.READABLE_NAME + " updated, this will be applied on game restart.";
+				String message = "Distant Horizons updated, this will be applied on game restart.";
 				if (!GraphicsEnvironment.isHeadless())
 				{
 					TinyFileDialogs.tinyfd_messageBox(ModInfo.READABLE_NAME, message, "ok", "info", false);
@@ -247,7 +270,7 @@ public class SelfUpdater
 		}
 		catch (Exception e)
 		{
-			LOGGER.warn("Failed to update " + ModInfo.READABLE_NAME + " to version " + ModrinthGetter.getLatestNameForVersion(minecraftVersion));
+			LOGGER.warn("Failed to update Distant Horizons to version [" + ModrinthGetter.getLatestNameForVersion(minecraftVersion) + "].");
 			e.printStackTrace();
 			return false;
 		}
@@ -257,12 +280,14 @@ public class SelfUpdater
 	{
 		if (GitlabGetter.INSTANCE.projectPipelines.size() == 0)
 		{
+			LOGGER.warn("Failed to find any nightly builds for the minecraft version ["+minecraftVersion+"] update canceled.");
 			return false;
 		}
 		
+		
 		try
 		{
-			LOGGER.info("Attempting to auto update " + ModInfo.READABLE_NAME);
+			LOGGER.info("Attempting to auto update Distant Horizons.");
 			
 			Files.createDirectories(file.getParentFile().toPath());
 			
@@ -288,10 +313,10 @@ public class SelfUpdater
 					
 					deleteOldJarOnJvmShutdown = true;
 					
-					LOGGER.info(ModInfo.READABLE_NAME + " successfully updated. It will apply on game's relaunch");
+					LOGGER.info("Distant Horizons successfully updated. It will apply on game's relaunch");
 					new Thread(() -> 
 					{
-						String message = ModInfo.READABLE_NAME + " updated, this will be applied on game restart.";
+						String message = "Distant Horizons updated, this will be applied on game restart.";
 						if (!GraphicsEnvironment.isHeadless())
 						{
 							TinyFileDialogs.tinyfd_messageBox(ModInfo.READABLE_NAME, message, "ok", "info", false);
@@ -316,8 +341,7 @@ public class SelfUpdater
 		}
 		catch (Exception e)
 		{
-			LOGGER.warn("Failed to update " + ModInfo.READABLE_NAME + " to version " + GitlabGetter.INSTANCE.projectPipelines.get(0).get("sha"));
-			e.printStackTrace();
+			LOGGER.warn("Failed to update [" + ModInfo.READABLE_NAME + "] to version [" + GitlabGetter.INSTANCE.projectPipelines.get(0).get("sha") + "].", e);
 			return false;
 		}
 	}
@@ -422,7 +446,7 @@ public class SelfUpdater
 		{
 			LOGGER.warn("Failed to delete old jar using bootstrap method, doing backup 'Files.deleteOnExit()' method", e);
 			JarUtils.jarFile.deleteOnExit();
-			LOGGER.warn("If the old DH file didnt delete, delete it manually at [" + JarUtils.jarFile + "]");
+			LOGGER.warn("If the old Distant Horizons file didn't delete, delete it manually at [" + JarUtils.jarFile + "]");
 		}
 	}
 	

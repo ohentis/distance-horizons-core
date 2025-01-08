@@ -21,6 +21,8 @@ package com.seibel.distanthorizons.core.jar.installer;
 
 import com.electronwill.nightconfig.core.Config;
 import com.electronwill.nightconfig.json.JsonFormat;
+import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import org.apache.logging.log4j.Logger;
 
 import javax.net.ssl.HttpsURLConnection;
 import java.io.*;
@@ -38,6 +40,9 @@ import java.util.ArrayList;
  */
 public class WebDownloader
 {
+	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	
+	
 	public static boolean netIsAvailable()
 	{
 		try
@@ -85,7 +90,7 @@ public class WebDownloader
 					if (percent != newPercent)
 					{
 						percent = newPercent;
-						System.out.println(String.valueOf(percent) +"% downloaded");
+						LOGGER.info(percent +"% downloaded");
 					}
 				}
 			}

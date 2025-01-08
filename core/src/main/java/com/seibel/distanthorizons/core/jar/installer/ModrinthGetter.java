@@ -21,6 +21,9 @@ package com.seibel.distanthorizons.core.jar.installer;
 
 import com.electronwill.nightconfig.core.Config;
 import com.electronwill.nightconfig.json.JsonFormat;
+import com.seibel.distanthorizons.core.jar.updater.SelfUpdater;
+import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import org.apache.logging.log4j.Logger;
 
 import java.net.URL;
 import java.util.*;
@@ -32,6 +35,9 @@ import java.util.*;
  */
 public class ModrinthGetter
 {
+	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	
+	
 	public static final String ModrinthAPI = "https://api.modrinth.com/v2/project/";
 	public static final String projectID = "distanthorizons";
 	/** Functions should only be accessed once this is true */
@@ -80,7 +86,7 @@ public class ModrinthGetter
 				}
 				catch (Exception e)
 				{
-					e.printStackTrace();
+					LOGGER.error("Unable get modrinth version list, error: ["+e.getMessage()+"]", e);
 				}
 				
 				// Get all the mc versions this mod is available for
@@ -103,7 +109,7 @@ public class ModrinthGetter
 		}
 		catch (Exception e)
 		{
-			e.printStackTrace();
+			LOGGER.error("Unable to set up Modrinth access, error: ["+e.getMessage()+"]", e);
 			return false;
 		}
 	}
