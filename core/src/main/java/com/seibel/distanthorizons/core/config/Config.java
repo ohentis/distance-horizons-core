@@ -106,6 +106,11 @@ public class Config
 		
 		public static ConfigUiLinkedEntry quickEnableWorldGenerator = new ConfigUiLinkedEntry(Common.WorldGenerator.enableDistantGeneration);
 		
+		public static ConfigEntry<Boolean> quickShowWorldGenProgress = new ConfigEntry.Builder<Boolean>()
+				.set(true)
+				.setAppearance(EConfigEntryAppearance.ONLY_IN_GUI)
+				.build();
+		
 		public static ConfigUiLinkedEntry quickLodCloudRendering = new ConfigUiLinkedEntry(Advanced.Graphics.GenericRendering.enableCloudRendering);
 		
 		public static ConfigEntry<Boolean> showDhOptionsButtonInMinecraftUi = new ConfigEntry.Builder<Boolean>()
@@ -1653,6 +1658,7 @@ public class Config
 				ThreadPresetConfigEventHandler.INSTANCE.setUiOnlyConfigValues();
 				RenderQualityPresetConfigEventHandler.INSTANCE.setUiOnlyConfigValues();
 				QuickRenderToggleConfigEventHandler.INSTANCE.setUiOnlyConfigValues();
+				QuickShowWorldGenProgressConfigEventHandler.INSTANCE.setUiOnlyConfigValues();
 				RenderCacheConfigEventHandler.getInstance();
 			}
 			catch (Exception e)

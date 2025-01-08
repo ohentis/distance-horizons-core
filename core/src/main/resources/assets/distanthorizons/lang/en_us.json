@@ -60,6 +60,11 @@
   "distanthorizons.config.client.quickEnableRendering.@tooltip":
     "Determines if Distant Horizons Renders LODs.",
   
+  "distanthorizons.config.client.quickShowWorldGenProgress":
+    "Show LOD Gen/Import Progress",
+  "distanthorizons.config.client.quickShowWorldGenProgress.@tooltip":
+    "If true then the world gen/importing progress will be displayed on the screen when running.",
+  
   "distanthorizons.config.client.qualityPresetSetting":
     "Quality Preset",
   "distanthorizons.config.client.qualityPresetSetting.@tooltip":
