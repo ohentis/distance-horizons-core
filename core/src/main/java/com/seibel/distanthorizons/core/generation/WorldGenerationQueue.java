@@ -42,6 +42,7 @@ import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
 import com.seibel.distanthorizons.core.util.LodUtil.AssertFailureException;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
 import com.seibel.distanthorizons.core.util.objects.DataCorruptedException;
+import com.seibel.distanthorizons.core.util.objects.RollingAverage;
 import com.seibel.distanthorizons.core.util.objects.UncheckedInterruptedException;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
@@ -98,7 +99,11 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 	private DhBlockPos2D generationTargetPos = DhBlockPos2D.ZERO;
 		
 	/** just used for rendering to the F3 menu */
-	private int estimatedTotalTaskCount = 0;
+	private int estimatedRemainingTaskCount = 0;
+	private int estimatedRemainingChunkCount = 0;
+	
+	private final RollingAverage rollingAverageChunkGenTimeInMs = new RollingAverage(1_000);
+	public RollingAverage getRollingAverageChunkGenTimeInMs() { return this.rollingAverageChunkGenTimeInMs; }
 	
 	
 	
@@ -247,7 +252,7 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 	 */
 	private boolean startNextWorldGenTask(DhBlockPos2D targetPos)
 	{
-		if (this.waitingTasks.size() == 0)
+		if (this.waitingTasks.isEmpty())
 		{
 			return false;
 		}
@@ -333,7 +338,19 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 		long taskPos = newTaskGroup.group.pos;
 		LodUtil.assertTrue(taskDetailLevel >= this.highestDataDetail && taskDetailLevel <= this.lowestDataDetail);
 		
-		newTaskGroup.genFuture = this.startGenerationEvent(taskPos, taskDetailLevel, newTaskGroup.group::consumeDataSource);
+		int generationRequestChunkWidthCount = BitShiftUtil.powerOfTwo(DhSectionPos.getDetailLevel(taskPos) - taskDetailLevel - 4); // minus 4 is equal to dividing by 16 to convert to chunk scale
+		
+		long generationStartMsTime = System.currentTimeMillis();
+		CompletableFuture<Void> generationFuture = this.startGenerationEvent(taskPos, taskDetailLevel, generationRequestChunkWidthCount, newTaskGroup.group::consumeDataSource);
+		generationFuture.thenRun(() -> 
+		{
+			long totalGenTimeInMs = System.currentTimeMillis() - generationStartMsTime;
+			int chunkCount = generationRequestChunkWidthCount * generationRequestChunkWidthCount;
+			double timePerChunk = (double)totalGenTimeInMs / (double)chunkCount;
+			this.rollingAverageChunkGenTimeInMs.addValue(timePerChunk);
+		});
+		
+		newTaskGroup.genFuture = generationFuture;
 		LodUtil.assertTrue(newTaskGroup.genFuture != null);
 		
 		newTaskGroup.genFuture.whenComplete((voidObj, exception) ->
@@ -369,11 +386,11 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 	private CompletableFuture<Void> startGenerationEvent(
 		long requestPos, 
 		byte targetDataDetail,
+		int generationRequestChunkWidthCount,
 		Consumer<FullDataSourceV2> dataSourceConsumer
 		)
 	{
 		DhChunkPos chunkPosMin = new DhChunkPos(DhSectionPos.getSectionBBoxPos(requestPos).getCornerBlockPos());
-		int generationRequestChunkWidthCount = BitShiftUtil.powerOfTwo(DhSectionPos.getDetailLevel(requestPos) - targetDataDetail - 4); // minus 4 is equal to dividing by 16 to convert to chunk scale
 		
 		EDhApiDistantGeneratorMode generatorMode = Config.Common.WorldGenerator.distantGeneratorMode.get();
 		EDhApiWorldGeneratorReturnType returnType = this.generator.getReturnType();
@@ -495,11 +512,30 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 	public byte highestDataDetail() { return this.highestDataDetail; }
 	
 	@Override
-	public int getEstimatedTotalTaskCount() { return this.estimatedTotalTaskCount; }
+	public int getEstimatedRemainingTaskCount() { return this.estimatedRemainingTaskCount; }
 	@Override
-	public void setEstimatedTotalTaskCount(int newEstimate) { this.estimatedTotalTaskCount = newEstimate; }
+	public void setEstimatedRemainingTaskCount(int newEstimate) { this.estimatedRemainingTaskCount = newEstimate; }
 	
-	@Override public void addDebugMenuStringsToList(List<String> messageList) { }
+	@Override
+	public int getRetrievalEstimatedRemainingChunkCount() { return this.estimatedRemainingChunkCount; }
+	@Override
+	public void setRetrievalEstimatedRemainingChunkCount(int newEstimate) { this.estimatedRemainingChunkCount = newEstimate; }
+	
+	@Override 
+	public void addDebugMenuStringsToList(List<String> messageList) { }
+	
+	@Override
+	public int getQueuedChunkCount()
+	{
+		int chunkCount = 0;
+		for (long pos : this.waitingTasks.keySet())
+		{
+			int chunkWidth = DhSectionPos.getBlockWidth(pos) / LodUtil.CHUNK_WIDTH;
+			chunkCount += (chunkWidth * chunkWidth);
+		}
+		
+		return chunkCount;
+	}
 	
 	
 	

@@ -11,6 +11,7 @@ import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
 import com.seibel.distanthorizons.core.util.LodUtil;
+import com.seibel.distanthorizons.core.util.objects.RollingAverage;
 import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
@@ -21,7 +22,11 @@ public class RemoteWorldRetrievalQueue extends AbstractFullDataNetworkRequestQue
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
-	private int estimatedTotalTaskCount;
+	private int estimatedRemainingTaskCount;
+	private int estimatedTotalChunkCount;
+	
+	private final RollingAverage rollingAverageChunkGenTimeInMs = new RollingAverage(1_000);
+	public RollingAverage getRollingAverageChunkGenTimeInMs() { return this.rollingAverageChunkGenTimeInMs; }
 	
 	
 	
@@ -49,9 +54,18 @@ public class RemoteWorldRetrievalQueue extends AbstractFullDataNetworkRequestQue
 	@Override
 	public CompletableFuture<WorldGenResult> submitRetrievalTask(long sectionPos, byte requiredDataDetail, IWorldGenTaskTracker tracker)
 	{
+		long generationStartMsTime = System.currentTimeMillis();
+		
 		return super.submitRequest(sectionPos, tracker.getDataSourceConsumer())
 				.thenApply(requestResult ->
 				{
+					long totalGenTimeInMs = System.currentTimeMillis() - generationStartMsTime;
+					
+					int chunkWidth = DhSectionPos.getChunkWidth(sectionPos);
+					int chunkCount = chunkWidth * chunkWidth;
+					double timePerChunk = (double)totalGenTimeInMs / (double)chunkCount;
+					this.rollingAverageChunkGenTimeInMs.addValue(timePerChunk);
+					
 					switch (requestResult)
 					{
 						case SUCCEEDED:
@@ -94,10 +108,17 @@ public class RemoteWorldRetrievalQueue extends AbstractFullDataNetworkRequestQue
 	//===============//
 	
 	@Override
-	public int getEstimatedTotalTaskCount() { return this.estimatedTotalTaskCount; }
+	public int getEstimatedRemainingTaskCount() { return this.estimatedRemainingTaskCount; }
 	@Override
-	public void setEstimatedTotalTaskCount(int newEstimate) { this.estimatedTotalTaskCount = newEstimate; }
+	public void setEstimatedRemainingTaskCount(int newEstimate) { this.estimatedRemainingTaskCount = newEstimate; }
 	
+	@Override
+	public int getRetrievalEstimatedRemainingChunkCount() { return this.estimatedTotalChunkCount; }
+	@Override
+	public void setRetrievalEstimatedRemainingChunkCount(int newEstimate) { this.estimatedTotalChunkCount = newEstimate; }
+	
+	@Override 
+	public int getQueuedChunkCount() { return 0; }
 	
 	
 }

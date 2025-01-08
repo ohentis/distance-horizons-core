@@ -24,6 +24,7 @@ import com.seibel.distanthorizons.api.enums.config.*;
 import com.seibel.distanthorizons.api.enums.config.quickOptions.*;
 import com.seibel.distanthorizons.api.enums.rendering.*;
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiDistantGeneratorMode;
+import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiDistantGeneratorProgressDisplayLocation;
 import com.seibel.distanthorizons.core.config.eventHandlers.*;
 import com.seibel.distanthorizons.core.config.eventHandlers.presets.*;
 import com.seibel.distanthorizons.core.config.listeners.ConfigChangeListener;
@@ -1193,7 +1194,10 @@ public class Config
 					.set(true)
 					.comment(""
 							+ " Should Distant Horizons slowly generate LODs \n"
-							+ " outside the vanilla render distance?")
+							+ " outside the vanilla render distance? \n"
+							+ "Depending on the generator mode, this will import existing chunks \n"
+							+ "and/or generating missing chunks."
+							+ "")
 					.build();
 			
 			public static ConfigEntry<EDhApiDistantGeneratorMode> distantGeneratorMode = new ConfigEntry.Builder<EDhApiDistantGeneratorMode>()
@@ -1234,6 +1238,25 @@ public class Config
 							+ "but may cause server/simulation lag. \n"
 							+ "Note: unlike other modes this option DOES save generated chunks to \n"
 							+ "Minecraft's region files. \n"
+							+ "")
+					.build();
+			
+			public static ConfigEntry<EDhApiDistantGeneratorProgressDisplayLocation> showGenerationProgress = new ConfigEntry.Builder<EDhApiDistantGeneratorProgressDisplayLocation>()
+					.set(EDhApiDistantGeneratorProgressDisplayLocation.OVERLAY)
+					.comment(""
+							+ "How should distant generator progress be displayed? \n"
+							+ "\n"
+							+ EDhApiDistantGeneratorProgressDisplayLocation.OVERLAY + ": may be the same as "+EDhApiDistantGeneratorProgressDisplayLocation.CHAT+" for some Minecraft versions \n"
+							+ EDhApiDistantGeneratorProgressDisplayLocation.CHAT + " \n"
+							+ EDhApiDistantGeneratorProgressDisplayLocation.LOG + " \n"
+							+ EDhApiDistantGeneratorProgressDisplayLocation.DISABLED + " \n"
+							+ "")
+					.build();
+			
+			public static ConfigEntry<Integer> generationProgressDisplayIntervalInSeconds = new ConfigEntry.Builder<Integer>()
+					.setMinDefaultMax(1, 2, 60 * 60 * 4) // max = 4 hours
+					.comment(""
+							+ "How often should the distant generator progress be displayed? \n"
 							+ "")
 					.build();
 			

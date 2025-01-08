@@ -100,6 +100,8 @@ public interface IMinecraftClientWrapper extends IBindable
 	ArrayList<ILevelWrapper> getAllServerWorlds();
 	
 	void sendChatMessage(String string);
+	/** Will default to sending a chat message if not supported by the current MC version */
+	void sendOverlayMessage(String string);
 	
 	/** Sends the given message to chat with a formatted prefix and color based on the log level. */
 	default void logToChat(Level logLevel, String message)

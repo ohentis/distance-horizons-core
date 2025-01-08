@@ -628,22 +628,33 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 				renderSection.tryQueuingMissingLodRetrieval();
 			}
 			
-			// calculate an estimate for the max number of tasks for the queue
-			int totalWorldGenCount = 0;
+			// calculate an estimate for the max number of chunks for the queue
+			int totalWorldGenChunkCount = 0;
+			int totalWorldGenTaskCount = 0;
 			for (int i = 0; i < nodeList.size(); i++)
 			{
 				LodRenderSection renderSection = nodeList.get(i);
 				if (!renderSection.missingPositionsCalculated())
 				{
-					// may be higher than the actual amount
-					totalWorldGenCount += this.fullDataSourceProvider.getMaxPossibleRetrievalPositionCountForPos(renderSection.pos);
+					// chunk count
+					int sectionWidthInChunks = DhSectionPos.getChunkWidth(renderSection.pos);
+					totalWorldGenChunkCount += sectionWidthInChunks * sectionWidthInChunks;
+					
+					// task count
+					totalWorldGenTaskCount += renderSection.ungeneratedPositionCount();
 				}
 				else
 				{
-					totalWorldGenCount += renderSection.ungeneratedPositionCount();
+					totalWorldGenChunkCount += renderSection.ungeneratedChunkCount();
+					
+					// 1 since we assume the position can be generated in a single go
+					// TODO this is a bad assumption, can we determine what the world gen supports and determine it from that?
+					totalWorldGenTaskCount += 1;
 				}
 			}
-			this.fullDataSourceProvider.setTotalRetrievalPositionCount(totalWorldGenCount);
+			
+			this.fullDataSourceProvider.setEstimatedRemainingRetrievalChunkCount(totalWorldGenChunkCount);
+			this.fullDataSourceProvider.setTotalRetrievalPositionCount(totalWorldGenTaskCount);
 		}
 		catch (Exception e)
 		{

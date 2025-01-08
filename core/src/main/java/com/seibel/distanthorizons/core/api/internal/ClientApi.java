@@ -99,6 +99,7 @@ public class ClientApi
 	private long lastStaticWarningMessageSentMsTime = 0L;
 	
 	private final Queue<String> chatMessageQueueForNextFrame = new LinkedBlockingQueue<>();
+	private final Queue<String> overlayMessageQueueForNextFrame = new LinkedBlockingQueue<>();
 	
 	public boolean rendererDisabledBecauseOfExceptions = false;
 	
@@ -624,7 +625,7 @@ public class ClientApi
 		}
 			
 		
-		// generic messages
+		// chat messages
 		while (!this.chatMessageQueueForNextFrame.isEmpty())
 		{
 			String message = this.chatMessageQueueForNextFrame.poll();
@@ -634,6 +635,18 @@ public class ClientApi
 				message = "";
 			}
 			MC_CLIENT.sendChatMessage(message);
+		}
+		
+		// overlay messages
+		while (!this.overlayMessageQueueForNextFrame.isEmpty())
+		{
+			String message = this.overlayMessageQueueForNextFrame.poll();
+			if (message == null)
+			{
+				// done to prevent potential null pointers
+				message = "";
+			}
+			MC_CLIENT.sendOverlayMessage(message);
 		}
 	}
 	private void detectAndSendBootTimeWarnings()
@@ -721,5 +734,10 @@ public class ClientApi
 	 * Useful for queueing up messages that may be triggered before the user has loaded into the world. 
 	 */
 	public void showChatMessageNextFrame(String chatMessage) { this.chatMessageQueueForNextFrame.add(chatMessage); }
+	
+	/**
+	 * Similar to {@link ClientApi#showChatMessageNextFrame(String)} but appears above the toolbar.
+	 */
+	public void showOverlayMessageNextFrame(String message) { this.overlayMessageQueueForNextFrame.add(message); }
 	
 }

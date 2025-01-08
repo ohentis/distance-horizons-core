@@ -330,6 +330,23 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		LongArrayList missingGenerationPos = this.getMissingGenerationPos();
 		return missingGenerationPos != null ? missingGenerationPos.size() : 0;
 	}
+	public int ungeneratedChunkCount()
+	{
+		LongArrayList missingGenerationPos = this.getMissingGenerationPos();
+		if (missingGenerationPos == null)
+		{
+			return 0;
+		}
+		
+		int chunkCount = 0;
+		// get the number of chunks each position contains
+		for (int i = 0; i < missingGenerationPos.size(); i++)
+		{
+			int chunkWidth = DhSectionPos.getChunkWidth(missingGenerationPos.getLong(i));
+			chunkCount += (chunkWidth * chunkWidth);
+		}
+		return chunkCount;
+	}
 	
 	public void tryQueuingMissingLodRetrieval()
 	{

@@ -123,7 +123,7 @@ public class F3Screen
 		if (Config.Client.Advanced.Debugging.F3Screen.showThreadPools.get())
 		{
 			// multi thread pools
-			messageList.add(getThreadPoolStatString("World Gen/Pull Chunk", worldGenPool));//"World Gen Tasks: 40/5304, (in progress: 7)");
+			messageList.add(getThreadPoolStatString("World Gen/Import", worldGenPool));
 			messageList.add(getThreadPoolStatString("File Handler", fileHandlerPool));
 			messageList.add(getThreadPoolStatString("Update Propagator", updatePool));
 			messageList.add(getThreadPoolStatString("LOD Builder", lodBuilderPool));

@@ -40,7 +40,6 @@ import com.seibel.distanthorizons.core.sql.repo.AbstractDhRepo;
 import com.seibel.distanthorizons.core.sql.repo.FullDataSourceV2Repo;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
 import com.seibel.distanthorizons.core.util.objects.DataCorruptedException;
-import com.seibel.distanthorizons.core.util.threading.PrioritySemaphore;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
@@ -611,12 +610,7 @@ public class FullDataSourceProviderV2
 	 */
 	@Nullable
 	public LongArrayList getPositionsToRetrieve(Long pos) { return null; }
-	/**
-	 * Returns how many positions could potentially be generated for this position assuming the position is empty.
-	 * Used when estimating the total number of retrieval requests.
-	 */
-	public int getMaxPossibleRetrievalPositionCountForPos(Long pos) { return -1; }
-	
+		
 	/** @return true if the position was queued, false if not */
 	@Nullable
 	public CompletableFuture<WorldGenResult> queuePositionForRetrieval(Long genPos) { return null; }
@@ -628,6 +622,8 @@ public class FullDataSourceProviderV2
 	
 	/** Can be used to display how many total retrieval requests might be available. */
 	public void setTotalRetrievalPositionCount(int newCount) { }
+	/** Can be used to display how many total chunk retrieval requests should be available. */
+	public void setEstimatedRemainingRetrievalChunkCount(int newCount) { }
 	
 	/** 
 	 * Returns how many data sources are currently in memory and haven't

@@ -24,6 +24,8 @@ import com.seibel.distanthorizons.core.generation.tasks.WorldGenResult;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.render.LodQuadTree;
+import com.seibel.distanthorizons.core.util.objects.RollingAverage;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.Closeable;
 import java.util.List;
@@ -113,11 +115,22 @@ public interface IFullDataSourceRetrievalQueue extends Closeable
 	int getWaitingTaskCount();
 	int getInProgressTaskCount();
 	
+	/** returns how many chunks are currently queued for retrieval */
+	int getQueuedChunkCount();
+	
 	/** used for rendering to the F3 menu */
-	int getEstimatedTotalTaskCount();
-	void setEstimatedTotalTaskCount(int newEstimate);
+	int getEstimatedRemainingTaskCount();
+	void setEstimatedRemainingTaskCount(int newEstimate);
+	
+	/** used for displaying a progress update to the user */
+	int getRetrievalEstimatedRemainingChunkCount();
+	void setRetrievalEstimatedRemainingChunkCount(int newEstimate);
 
 	void addDebugMenuStringsToList(List<String> messageList);
+	
+	/** Can be used to determine roughly how fast the world generator is running. */
+	RollingAverage getRollingAverageChunkGenTimeInMs();
+	
 	
 	
 }

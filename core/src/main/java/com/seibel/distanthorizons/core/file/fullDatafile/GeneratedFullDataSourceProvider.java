@@ -37,7 +37,6 @@ import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
-import com.seibel.distanthorizons.coreapi.util.BitShiftUtil;
 import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.apache.logging.log4j.Logger;
@@ -168,12 +167,12 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 	public boolean canRetrieveMissingDataSources() { return true; }
 	
 	@Override
-	public void setTotalRetrievalPositionCount(int newCount) 
+	public void setEstimatedRemainingRetrievalChunkCount(int newCount) 
 	{
 		IFullDataSourceRetrievalQueue worldGenQueue = this.worldGenQueueRef.get();
 		if (worldGenQueue != null)
 		{
-			worldGenQueue.setEstimatedTotalTaskCount(newCount);
+			worldGenQueue.setRetrievalEstimatedRemainingChunkCount(newCount);
 		}
 	}
 	
@@ -409,21 +408,6 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 		});
 		
 		return generationList;
-	}
-	
-	@Override
-	public int getMaxPossibleRetrievalPositionCountForPos(Long pos)  
-	{
-		IFullDataSourceRetrievalQueue worldGenQueue = this.worldGenQueueRef.get();
-		if (worldGenQueue == null)
-		{
-			return -1;
-		}
-		
-		int minGeneratorSectionDetailLevel = worldGenQueue.highestDataDetail() + DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL;
-		int detailLevelDiff = DhSectionPos.getDetailLevel(pos) - minGeneratorSectionDetailLevel;
-		
-		return BitShiftUtil.powerOfTwo(detailLevelDiff);
 	}
 	
 	

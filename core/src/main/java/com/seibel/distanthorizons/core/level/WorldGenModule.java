@@ -19,21 +19,25 @@
 
 package com.seibel.distanthorizons.core.level;
 
+import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiDistantGeneratorProgressDisplayLocation;
+import com.seibel.distanthorizons.core.api.internal.ClientApi;
+import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.file.fullDatafile.GeneratedFullDataSourceProvider;
 import com.seibel.distanthorizons.core.generation.IFullDataSourceRetrievalQueue;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
+import com.seibel.distanthorizons.core.util.ThreadUtil;
+import com.seibel.distanthorizons.core.util.objects.RollingAverage;
+import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.world.DhApiWorldProxy;
 import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.Nullable;
 
 import java.io.Closeable;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 /**
@@ -188,10 +192,20 @@ public class WorldGenModule implements Closeable
 		}
 		
 		
+		// estimated tasks
 		String waitingCountStr = F3Screen.NUMBER_FORMAT.format(worldGenState.worldGenerationQueue.getWaitingTaskCount());
 		String inProgressCountStr = F3Screen.NUMBER_FORMAT.format(worldGenState.worldGenerationQueue.getInProgressTaskCount());
-		String totalCountEstimateStr = F3Screen.NUMBER_FORMAT.format(worldGenState.worldGenerationQueue.getEstimatedTotalTaskCount());
-		messageList.add("World Gen/Pull Chunk Tasks: "+waitingCountStr+"/"+totalCountEstimateStr+" (in progress "+inProgressCountStr+")");
+		String totalCountEstimateStr = F3Screen.NUMBER_FORMAT.format(worldGenState.worldGenerationQueue.getRetrievalEstimatedRemainingChunkCount());
+		String message = "World Gen/Import Tasks: "+waitingCountStr+"/"+totalCountEstimateStr+" (in progress "+inProgressCountStr+")";
+		
+		// estimated chunks/sec
+		double chunksPerSec = worldGenState.getEstimatedChunksPerSecond();
+		if (chunksPerSec > -1)
+		{
+			message += ", " + F3Screen.NUMBER_FORMAT.format(chunksPerSec) + " chunks/sec";
+		}
+		
+		messageList.add(message);
 		
 		worldGenState.worldGenerationQueue.addDebugMenuStringsToList(messageList);
 	}
@@ -207,8 +221,15 @@ public class WorldGenModule implements Closeable
 	{
 		public IFullDataSourceRetrievalQueue worldGenerationQueue;
 		
+		private static final ThreadPoolExecutor PROGRESS_UPDATER_THREAD = ThreadUtil.makeSingleThreadPool("World Gen Progress Updater");
+		private boolean progressUpdateThreadRunning = false;
+		
+		
 		CompletableFuture<Void> closeAsync(boolean doInterrupt)
 		{
+			// this should stop the updater thread
+			this.progressUpdateThreadRunning = false;
+			
 			return this.worldGenerationQueue.startClosingAsync(true, doInterrupt)
 				.exceptionally(e ->
 				{
@@ -225,7 +246,119 @@ public class WorldGenModule implements Closeable
 		
 		/** @param targetPosForGeneration the position that world generation should be centered around */
 		public void startGenerationQueueAndSetTargetPos(DhBlockPos2D targetPosForGeneration) 
-		{ this.worldGenerationQueue.startAndSetTargetPos(targetPosForGeneration); }
+		{ 
+			this.worldGenerationQueue.startAndSetTargetPos(targetPosForGeneration);
+			this.startProgressUpdateThread();
+		}
+		private void startProgressUpdateThread()
+		{
+			// only start the thread once
+			if (!this.progressUpdateThreadRunning)
+			{
+				this.progressUpdateThreadRunning = true;
+				
+				PROGRESS_UPDATER_THREAD.execute(() -> 
+				{
+					while (this.progressUpdateThreadRunning)
+					{
+						try
+						{
+							this.sendRetrievalProgress();
+							
+							// sleep so we only see an update once in a while
+							int sleepTimeInSec = Config.Common.WorldGenerator.generationProgressDisplayIntervalInSeconds.get();
+							Thread.sleep(sleepTimeInSec * 1_000L);
+						}
+						catch (Exception e)
+						{
+							LOGGER.error("Unexpected issue displaying chunk retrieval progress [" + e.getMessage() + "].", e);
+						}
+					}
+				});
+			}
+		}
+		private void sendRetrievalProgress()
+		{
+			int remainingChunkCount = this.worldGenerationQueue.getRetrievalEstimatedRemainingChunkCount();
+			remainingChunkCount += this.worldGenerationQueue.getQueuedChunkCount();
+			String remainingChunkCountStr = F3Screen.NUMBER_FORMAT.format(remainingChunkCount);
+			
+			String message = "DH Gen/Import: " + remainingChunkCountStr + " chunks";
+			
+			
+			double chunksPerSec = this.getEstimatedChunksPerSecond();
+			if (chunksPerSec > 0)
+			{
+				long estimatedRemainingTime = (long) (remainingChunkCount / chunksPerSec);
+				message += " Estimated Time: " + formatSeconds(estimatedRemainingTime); // at " + F3Screen.NUMBER_FORMAT.format(chunksPerSec) + " chunks/sec";
+			}
+			
+			
+			if (remainingChunkCount != 0)
+			{
+				EDhApiDistantGeneratorProgressDisplayLocation displayLocation = Config.Common.WorldGenerator.showGenerationProgress.get();
+				if (displayLocation == EDhApiDistantGeneratorProgressDisplayLocation.OVERLAY)
+				{
+					ClientApi.INSTANCE.showOverlayMessageNextFrame(message);
+				}
+				else if (displayLocation == EDhApiDistantGeneratorProgressDisplayLocation.CHAT)
+				{
+					ClientApi.INSTANCE.showChatMessageNextFrame(message);
+				}
+				else if (displayLocation == EDhApiDistantGeneratorProgressDisplayLocation.LOG)
+				{
+					LOGGER.info(message);
+				}
+				
+			}
+		}
+		private static String formatSeconds(long totalSeconds) 
+		{
+			long days = totalSeconds / (24 * 3600);  // 24 hours in a day
+			long hours = (totalSeconds % (24 * 3600)) / 3600;  // Hours
+			long minutes = (totalSeconds % 3600) / 60;  // Minutes
+			long seconds = totalSeconds % 60;  // Seconds
+			
+			
+			String timeString = "";
+			if (days > 0)
+			{
+				timeString += days+" ";
+			}
+			if (hours > 0)
+			{
+				timeString += hours+":";
+			}
+			if (minutes > 0)
+			{
+				timeString += String.format("%02d", minutes)+":";
+			}
+			timeString += String.format("%02d", seconds);
+			
+			return timeString;
+		}
+		
+		/** @return -1 if this method isn't supported or available */
+		public double getEstimatedChunksPerSecond()
+		{
+			RollingAverage avg = this.worldGenerationQueue.getRollingAverageChunkGenTimeInMs();
+			if (avg == null)
+			{
+				return -1;
+			}
+			
+			
+			// convert chunk generation time in milliseconds to chunks per second
+			double chunksPerSecond = (1 / avg.getAverage()) * 1_000;
+			// estimate the number of chunks that can be processed per second by all threads
+			// Note: this is probably higher than the actual number, we might want to drop this by 1 or 2 to give a more realistic estimate
+			chunksPerSecond = ThreadPoolUtil.getThreadCount() * chunksPerSecond;
+			
+			return chunksPerSecond;
+		}
+		
 	}
+	
+	
 	
 }

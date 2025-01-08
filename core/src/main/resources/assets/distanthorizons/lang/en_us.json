@@ -567,15 +567,19 @@
   "distanthorizons.config.common.worldGenerator.enableDistantGeneration":
     "Enable Distant Generation",
   "distanthorizons.config.common.worldGenerator.enableDistantGeneration.@tooltip":
-    "§6True:§r in single player LODs will be generated outside the vanilla render distance.\nNote: this can use a large amount of CPU.\n\n§6False:§r LODs will only generate within the vanilla render distance.",
+    "§6True:§r in single player LODs will be created outside the vanilla render distance.\nDepending on the Generator Mode pre-existing chunks will be important and/o\nmissing chunks will be generated.\nNote: this can use a large amount of CPU.\n\n§6False:§r LODs will only generate within the vanilla render distance.",
   "distanthorizons.config.common.worldGenerator.distantGeneratorMode":
     "Distance Generator Mode",
   "distanthorizons.config.common.worldGenerator.distantGeneratorMode.@tooltip":
     "How complicated the generation should be when generating LODs outside the vanilla render distance.",
-  "distanthorizons.config.common.worldGenerator.worldGenerationTimeoutLengthInSeconds":
-    "Timeout Length In Seconds",
-  "distanthorizons.config.common.worldGenerator.worldGenerationTimeoutLengthInSeconds.@tooltip":
-    "How long should a world generator thread run for before timing out? \nNote: If you are experiencing timeout errors it is better to lower your CPU usage first \nvia the thread config before changing this value.",
+  "distanthorizons.config.common.worldGenerator.showGenerationProgress":
+    "Show Generation Progress",
+  "distanthorizons.config.common.worldGenerator.showGenerationProgress.@tooltip":
+    "Determines how should distant generator progress be displayed.",
+  "distanthorizons.config.common.worldGenerator.generationProgressDisplayIntervalInSeconds":
+    "Progress Display Interval In Seconds",
+  "distanthorizons.config.common.worldGenerator.generationProgressDisplayIntervalInSeconds.@tooltip":
+    "Determines how long between progress update displays.",
 
 
   "distanthorizons.config.common.lodBuilding":
@@ -877,6 +881,15 @@
     "Features",
   "distanthorizons.config.enum.EDhApiDistantGeneratorMode.INTERNAL_SERVER":
     "Internal Server",
+  
+  "distanthorizons.config.enum.EDhApiDistantGeneratorProgressDisplayLocation.OVERLAY":
+    "Overlay",
+  "distanthorizons.config.enum.EDhApiDistantGeneratorProgressDisplayLocation.CHAT":
+    "Chat",
+  "distanthorizons.config.enum.EDhApiDistantGeneratorProgressDisplayLocation.LOG":
+    "Log",
+  "distanthorizons.config.enum.EDhApiDistantGeneratorProgressDisplayLocation.DISABLED":
+    "Disabled",
     
   "distanthorizons.config.enum.EDhApiDataCompressionMode.UNCOMPRESSED":
     "Uncompressed",

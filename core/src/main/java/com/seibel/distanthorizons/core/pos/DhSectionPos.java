@@ -224,7 +224,9 @@ public class DhSectionPos
 
 	/** @return how wide this section is in blocks */
 	public static int getBlockWidth(long pos) { return BitShiftUtil.powerOfTwo(getDetailLevel(pos)); }
-
+	/** @return how wide this section is in chunks */
+	public static int getChunkWidth(long pos) { return DhSectionPos.getBlockWidth(pos) / LodUtil.CHUNK_WIDTH; }
+	
 
 	public static DhBlockPos2D getCenterBlockPos(long pos) { return new DhBlockPos2D(getCenterBlockPosX(pos), getCenterBlockPosZ(pos)); }
 
