@@ -91,15 +91,15 @@ public class ThreadPoolUtil
 		taskPicker = new PriorityTaskPicker();
 		
 		// IO should never be stuck waiting for something else to complete
-		networkCompressionThreadPool = taskPicker.createExecutor(3);
-		fileHandlerThreadPool = taskPicker.createExecutor(3);
+		networkCompressionThreadPool = taskPicker.createExecutor(4);
+		fileHandlerThreadPool = taskPicker.createExecutor(4);
 		
 		// Normal priority tasks
-		chunkToLodBuilderThreadPool = taskPicker.createExecutor(2);
+		chunkToLodBuilderThreadPool = taskPicker.createExecutor(3);
 		updatePropagatorThreadPool = taskPicker.createExecutor(2);
 		
-		// World gen tasks are heavy and nothing strictly depends on them, so it may wait a bit
-		worldGenThreadPool = taskPicker.createExecutor(1);
+		// World gen tasks are heavy and nothing strictly depends on them, so they may wait a bit
+		worldGenThreadPool = taskPicker.createExecutor(0);
 		
 		
 		

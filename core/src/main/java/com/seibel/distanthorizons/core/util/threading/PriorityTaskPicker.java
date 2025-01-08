@@ -36,7 +36,7 @@ public class PriorityTaskPicker
 	
 	/**
 	 * Creates an executor with a specific priority.
-	 * Higher priority executors have more entries in the distribution queue, giving them a greater chance to run tasks.
+	 * Higher priority executors have more exponentially entries in the distribution queue, giving them a greater chance to run tasks.
 	 *
 	 * @param priority the priority level of the executor
 	 * @return a newly created Executor
@@ -45,7 +45,7 @@ public class PriorityTaskPicker
 	{
 		Executor executor = new Executor();
 		
-		int entriesToAdd = priority + 1;
+		int entriesToAdd = 1 << priority;
 		int gapBetweenEntries = (int) (1 / (double) entriesToAdd * this.executorQueue.size());
 		
 		// Distribute the executor's entries in the queue, ensuring fair distribution
@@ -135,7 +135,19 @@ public class PriorityTaskPicker
 	public void shutdown()
 	{
 		this.isShutDown = true;
-		this.threadPoolExecutor.shutdown();
+		
+		try
+		{
+			this.threadPoolExecutor.shutdown();
+			if (!this.threadPoolExecutor.awaitTermination(5, TimeUnit.SECONDS))
+			{
+				this.threadPoolExecutor.shutdownNow();
+			}
+		}
+		catch (InterruptedException e)
+		{
+			throw new RuntimeException(e);
+		}
 	}
 	
 	
