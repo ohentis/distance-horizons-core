@@ -20,6 +20,8 @@
 package com.seibel.distanthorizons.core.jar.installer;
 
 import com.electronwill.nightconfig.core.Config;
+import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import org.apache.logging.log4j.Logger;
 
 import java.net.URL;
 import java.util.*;
@@ -31,6 +33,8 @@ import java.util.*;
  */
 public class GitlabGetter
 {
+	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	
 	/** DH's instance of the Gitlab getter */
 	public static GitlabGetter INSTANCE = new GitlabGetter();
 	
@@ -74,7 +78,7 @@ public class GitlabGetter
 			}
 			catch (Exception e)
 			{
-				e.printStackTrace();
+				LOGGER.error("Unable to get commit info for project ["+this.GitProjID+"], commit: ["+commit+"], error: ["+e.getMessage()+"].", e);
 				// Return empty
 				return Config.inMemory();
 			}
