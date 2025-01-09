@@ -6,6 +6,8 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
+import com.seibel.distanthorizons.core.util.objects.Pair;
+import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.coreapi.util.StringUtil;
 import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
@@ -50,15 +52,17 @@ public class PhantomArrayListPool
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
 	/** 
-	 * the recycler thread needs to be triggered relatively often to prevent
+	 * the recycler thread needs to be triggered relatively frequently to prevent
 	 * build up of GC'ed arrays.
+	 * However, some JVM's will wait a while before collecting lost objects,
+	 * so in general it is still much better to use the try-finally.
 	 */
-	private static final int PHANTOM_REF_CHECK_TIME_IN_MS = 1_000;
+	private static final int PHANTOM_REF_CHECK_TIME_IN_MS = 5_000;
 	private static final ThreadPoolExecutor RECYCLER_THREAD = ThreadUtil.makeSingleDaemonThreadPool("Phantom Array Recycler");
 	private static final ArrayList<PhantomArrayListPool> POOL_LIST = new ArrayList<>();
 	
 	/** if enabled the number of GC'ed arrays will be logged */
-	private static final boolean LOG_ARRAY_RECOVERY = false;
+	private static final boolean LOG_ARRAY_RECOVERY = ModInfo.IS_DEV_BUILD;
 	
 	
 	private static boolean lowMemoryWarningLogged = false; 
@@ -67,11 +71,16 @@ public class PhantomArrayListPool
 	
 	/** used for debugging and tracking what the pool contains */
 	public final String name;
+	/** 
+	 * Getting stack traces is very slow.
+	 * If we know which pool is leaking objects we can enable tracking for that specific
+	 * pool and prevent slow-downs in other pools.
+	 */
+	public final boolean logGarbageCollectedStacks;
 	
 	public final ConcurrentHashMap<Reference<? extends PhantomArrayListParent>, PhantomArrayListCheckout>
 			phantomRefToCheckout = new ConcurrentHashMap<>();
 	public final ReferenceQueue<PhantomArrayListParent> phantomRefQueue = new ReferenceQueue<>();
-	
 	
 	
 	
@@ -98,86 +107,24 @@ public class PhantomArrayListPool
 	
 	
 	
-	//=============//
-	// constructor //
-	//=============//
+	//==============//
+	// constructors //
+	//==============//
 	
 	// shared setup used by all pools
 	static
 	{
 		RECYCLER_THREAD.execute(() -> runPhantomReferenceCleanupLoop());
 	}
-	private static void runPhantomReferenceCleanupLoop()
-	{
-		while (true)
-		{
-			try
-			{
-				try
-				{
-					Thread.sleep(PHANTOM_REF_CHECK_TIME_IN_MS);
-				}
-				catch (InterruptedException ignore) { }
-				
-				
-				for (int i = 0; i < POOL_LIST.size(); i++)
-				{
-					PhantomArrayListPool pool = POOL_LIST.get(i);
-					
-					int returnedByteArrayCount = 0;
-					int returnedShortArrayCount = 0;
-					int returnedLongArrayCount = 0;
-					Reference<? extends PhantomArrayListParent> phantomRef = pool.phantomRefQueue.poll();
-					while (phantomRef != null)
-					{
-						// return the pooled arrays
-						PhantomArrayListCheckout checkout = pool.phantomRefToCheckout.remove(phantomRef);
-						if (checkout != null)
-						{
-							returnedByteArrayCount += checkout.getByteArrayCount();
-							returnedShortArrayCount += checkout.getShortArrayCount();
-							returnedLongArrayCount += checkout.getLongArrayCount();
-							pool.returnCheckout(checkout);
-						}
-						else
-						{
-							// shouldn't happen, but just in case
-							LOGGER.warn("Pool: ["+pool.name+"]. Unable to find checkout for phantom reference ["+phantomRef+"], arrays will need to be recreated.");
-						}
-						
-						phantomRef = pool.phantomRefQueue.poll();
-					}
-					
-					if (LOG_ARRAY_RECOVERY)
-					{
-						if (returnedByteArrayCount != 0
-								&& returnedShortArrayCount != 0
-								&& returnedLongArrayCount != 0)
-						{
-							// we only want to log when arrays have been returned
-							LOGGER.info("Pool: ["+pool.name+"]. Returned byte:["+F3Screen.NUMBER_FORMAT.format(returnedByteArrayCount)+"], short:["+F3Screen.NUMBER_FORMAT.format(returnedShortArrayCount)+"], long:["+F3Screen.NUMBER_FORMAT.format(returnedLongArrayCount)+"].");
-						}
-					}
-					
-					// since this is just for debugging it only needs to be recalculated once in a while
-					pool.recalculateSizeForDebugging();
-				}
-			}
-			catch (Exception e)
-			{
-				LOGGER.error("Unexpected error in phantom pool return thread, error: [" + e.getMessage() + "].", e);
-			}
-		}
-	}
 	
 	
-	public PhantomArrayListPool(String name)
+	public PhantomArrayListPool(String name) { this(name, false); }
+	public PhantomArrayListPool(String name, boolean logGarbageCollectedStacks)
 	{
 		POOL_LIST.add(this);
 		this.name = name;
+		this.logGarbageCollectedStacks = logGarbageCollectedStacks;
 	}
-	
-	
 	
 	
 	
@@ -319,6 +266,137 @@ public class PhantomArrayListPool
 		}
 		
 		putArrayFunc.accept(array, arrayRef);
+	}
+	
+	
+	
+	//==================//
+	// phantom recovery //
+	//==================//
+	
+	private static void runPhantomReferenceCleanupLoop()
+	{
+		while (true)
+		{
+			// these arrays are stored here so they don't have to be re-allocated each loop
+			ArrayList<Pair<String, AtomicInteger>> allocationStackTraceCountPairList = new ArrayList<>();
+			
+			try
+			{
+				try
+				{
+					Thread.sleep(PHANTOM_REF_CHECK_TIME_IN_MS);
+				}
+				catch (InterruptedException ignore) { }
+				
+				
+				for (int poolIndex = 0; poolIndex < POOL_LIST.size(); poolIndex++)
+				{
+					PhantomArrayListPool pool = POOL_LIST.get(poolIndex);
+					
+					int returnedByteArrayCount = 0;
+					int returnedShortArrayCount = 0;
+					int returnedLongArrayCount = 0;
+					int checkoutCount = 0;
+					
+					allocationStackTraceCountPairList.clear();
+					
+					Reference<? extends PhantomArrayListParent> phantomRef = pool.phantomRefQueue.poll();
+					while (phantomRef != null)
+					{
+						// return the pooled arrays
+						PhantomArrayListCheckout checkout = pool.phantomRefToCheckout.remove(phantomRef);
+						if (checkout != null)
+						{
+							returnedByteArrayCount += checkout.getByteArrayCount();
+							returnedShortArrayCount += checkout.getShortArrayCount();
+							returnedLongArrayCount += checkout.getLongArrayCount();
+							checkoutCount++;
+							pool.returnCheckout(checkout);
+							
+							if (pool.logGarbageCollectedStacks
+									&& checkout.allocationStackTrace != null) // stack trace shouldn't be null, but just in case
+							{
+								putAndIncrementTrackingString(checkout.allocationStackTrace, allocationStackTraceCountPairList);
+							}
+						}
+						else
+						{
+							// shouldn't happen, but just in case
+							LOGGER.warn("Pool: ["+pool.name+"]. Unable to find checkout for phantom reference ["+phantomRef+"], arrays will need to be recreated.");
+						}
+						
+						phantomRef = pool.phantomRefQueue.poll();
+					}
+					
+					if (LOG_ARRAY_RECOVERY || pool.logGarbageCollectedStacks)
+					{
+						// we only want to log when something has been returned
+						if (checkoutCount != 0
+								|| returnedByteArrayCount != 0
+								|| returnedShortArrayCount != 0
+								|| returnedLongArrayCount != 0)
+						{
+							LOGGER.warn("Pool: ["+ pool.name+"] phantom recovery. Returned checkouts:["+F3Screen.NUMBER_FORMAT.format(checkoutCount)+"], byte:["+F3Screen.NUMBER_FORMAT.format(returnedByteArrayCount)+"], short:["+F3Screen.NUMBER_FORMAT.format(returnedShortArrayCount)+"], long:["+F3Screen.NUMBER_FORMAT.format(returnedLongArrayCount)+"].");
+							
+							// log stack traces if present
+							if (pool.logGarbageCollectedStacks)
+							{
+								// high numbers first
+								allocationStackTraceCountPairList.sort((a, b) -> Integer.compare(b.second.get(), a.second.get()));
+								
+								StringBuilder stringBuilder = new StringBuilder();
+								for (int j = 0; j < allocationStackTraceCountPairList.size(); j++)
+								{
+									int count = allocationStackTraceCountPairList.get(j).second.get();
+									String stack = allocationStackTraceCountPairList.get(j).first;
+									
+									stringBuilder.append(count).append(". ").append(stack).append("\n");
+								}
+								LOGGER.warn("Stacks: ["+ allocationStackTraceCountPairList.size()+"]\n" + stringBuilder.toString());
+							}
+						}
+					}
+					
+					// since this is just for debugging it only needs to be recalculated once in a while
+					pool.recalculateSizeForDebugging();
+				}
+			}
+			catch (Exception e)
+			{
+				LOGGER.error("Unexpected error in phantom pool return thread, error: [" + e.getMessage() + "].", e);
+			}
+		}
+	}
+	/**
+	 * This was separated out so it could be used for other string pair lists.
+	 * James originally had an idea to add a shorter static string
+	 * ID to each allocated {@link PhantomArrayListCheckout} as a simpler version of the stack trace,
+	 * however it became a bit more difficult and messy than he wanted to deal with, so for now we just
+	 * have the stack trace.
+	 */
+	private static void putAndIncrementTrackingString(
+			String key,
+			ArrayList<Pair<String, AtomicInteger>> allocationStackTraceCountPairList)
+	{
+		// sequential search, for the number of elements we're dealing with (less than 20)
+		// this should be sufficiently fast
+		boolean pairFound = false;
+		for (int i = 0; i < allocationStackTraceCountPairList.size(); i++)
+		{
+			Pair<String, AtomicInteger> possiblePair = allocationStackTraceCountPairList.get(i);
+			if (possiblePair.first.equals(key))
+			{
+				possiblePair.second.getAndIncrement();
+				pairFound = true;
+				break;
+			}
+		}
+		
+		if (!pairFound)
+		{
+			allocationStackTraceCountPairList.add(new Pair<>(key, new AtomicInteger(1)));
+		}
 	}
 	
 	

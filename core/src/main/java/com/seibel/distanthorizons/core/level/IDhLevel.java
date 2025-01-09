@@ -62,12 +62,6 @@ public interface IDhLevel extends AutoCloseable, GeneratedFullDataSourceProvider
 	
 	CompletableFuture<Void> updateDataSourcesAsync(FullDataSourceV2 data);
 	
-	/** 
-	 * this number is generally related to how many data sources have been updated 
-	 * due to chunk modifications or loads.
-	 */
-	int getUnsavedDataSourceCount();
-	
 	void addDebugMenuStringsToList(List<String> messageList);
 	
 	/** 

@@ -44,7 +44,6 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.awt.*;
 import java.io.File;
 import java.util.*;
 import java.util.concurrent.*;
@@ -70,8 +69,6 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 	
 	private final AtomicReference<IFullDataSourceRetrievalQueue> worldGenQueueRef = new AtomicReference<>(null);
 	private final ArrayList<IOnWorldGenCompleteListener> onWorldGenTaskCompleteListeners = new ArrayList<>();
-	
-	protected final DelayedFullDataSourceSaveCache delayedFullDataSourceSaveCache = new DelayedFullDataSourceSaveCache(this::onDataSourceSave, 5_000);
 	
 	
 	
@@ -214,17 +211,6 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 		
 		int maxQueueCount = MAX_WORLD_GEN_REQUESTS_PER_THREAD * Config.Common.MultiThreading.numberOfThreads.get();
 		
-		if (this.delayedFullDataSourceSaveCache.getUnsavedCount() >= maxQueueCount)
-		{
-			// flushing since we're waiting for this timer to expire anyway
-			this.delayedFullDataSourceSaveCache.flush();
-			
-			// don't queue additional world gen requests if there are
-			// a lot of data sources in memory 
-			// (this is done to prevent infinite memory growth)
-			return false;
-		}
-		
 		int availableTaskSlots = maxQueueCount - worldGenQueue.getWaitingTaskCount();
 		if (availableTaskSlots <= 0)
 		{
@@ -286,9 +272,6 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 	
 	@Override
 	public void clearRetrievalQueue() { this.worldGenQueueRef.set(null); }
-	
-	@Override
-	public int getUnsavedDataSourceCount() { return this.delayedFullDataSourceSaveCache.getUnsavedCount(); }
 	
 	
 	public boolean isFullyGenerated(ByteArrayList columnGenerationSteps)
@@ -413,22 +396,6 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 	
 	
 	
-	//=======//
-	// debug //
-	//=======//
-	
-	@Override
-	public void debugRender(DebugRenderer renderer)
-	{
-		super.debugRender(renderer);
-		
-		this.delayedFullDataSourceSaveCache.dataSourceByPosition
-				.forEach((pos, dataSource) -> { renderer.renderBox(new DebugRenderer.Box(pos, -32f, 80f, 0.20f, Color.green.darker())); });
-	}
-	
-	
-	
-	
 	//================//
 	// helper classes //
 	//================//
@@ -447,7 +414,7 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 		{
 			return (dataSource) ->
 			{
-				GeneratedFullDataSourceProvider.this.delayedFullDataSourceSaveCache.writeDataSourceToMemoryAndQueueSave(dataSource);
+				GeneratedFullDataSourceProvider.this.onDataSourceSave(dataSource);
 			};
 		}
 		
@@ -459,7 +426,7 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 		// allows us to reduce cross-chunk lighting issues by lighting the whole 4x4 LOD at once
 		DhLightingEngine.INSTANCE.bakeDataSourceSkyLight(fullDataSource, LodUtil.MAX_MC_LIGHT);
 		
-		GeneratedFullDataSourceProvider.this.updateDataSourceAsync(fullDataSource); 
+		this.updateDataSource(fullDataSource);
 	}
 	
 	

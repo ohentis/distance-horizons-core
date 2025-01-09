@@ -1,9 +1,11 @@
 package com.seibel.distanthorizons.core.pooling;
 
 import com.seibel.distanthorizons.core.util.ListUtil;
+import com.seibel.distanthorizons.coreapi.util.StringUtil;
 import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.shorts.ShortArrayList;
+import org.jetbrains.annotations.Nullable;
 
 import java.lang.ref.SoftReference;
 import java.util.ArrayList;
@@ -19,6 +21,9 @@ public class PhantomArrayListCheckout implements AutoCloseable
 {
 	/** defines which pool the arrays should be returned too */
 	private final PhantomArrayListPool owningPool;
+	/** Will be null if the parent pool doesn't want leak stack tracing */
+	@Nullable
+	public final String allocationStackTrace;
 	
 	private final ArrayList<ByteArrayList> byteArrayLists = new ArrayList<>();
 	private final ArrayList<ShortArrayList> shortArrayLists = new ArrayList<>();
@@ -33,6 +38,17 @@ public class PhantomArrayListCheckout implements AutoCloseable
 	
 	public PhantomArrayListCheckout(PhantomArrayListPool owningPool)
 	{
+		if (owningPool.logGarbageCollectedStacks)
+		{
+			// TODO remove the top 4 or so lines since those will always be the same (relating to the phantom allocations)
+			//  and aren't helpful when debugging
+			this.allocationStackTrace = StringUtil.join("\n", Thread.currentThread().getStackTrace());
+		}
+		else
+		{
+			this.allocationStackTrace = null;
+		}
+		
 		this.owningPool = owningPool;
 	}
 	

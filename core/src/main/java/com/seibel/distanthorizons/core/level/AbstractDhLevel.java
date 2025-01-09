@@ -59,8 +59,7 @@ public abstract class AbstractDhLevel implements IDhLevel
 	@Nullable
 	public BeaconBeamRepo beaconBeamRepo;
 	
-	protected final DelayedFullDataSourceSaveCache delayedFullDataSourceSaveCache = new DelayedFullDataSourceSaveCache(this::onDataSourceSave, 500);
-	/** contains the {@link DhChunkPos} for each {@link DhSectionPos} that are queued to save via {@link AbstractDhLevel#delayedFullDataSourceSaveCache} */
+	/** contains the {@link DhChunkPos} for each {@link DhSectionPos} that are queued to save */
 	protected final ConcurrentHashMap<Long, HashSet<DhChunkPos>> updatedChunkPosSetBySectionPos = new ConcurrentHashMap<>();
 	protected final ConcurrentHashMap<DhChunkPos, Integer> updatedChunkHashesByChunkPos = new ConcurrentHashMap<>();
 	
@@ -142,38 +141,36 @@ public abstract class AbstractDhLevel implements IDhLevel
 	//=================//
 	
 	@Override
-	public int getUnsavedDataSourceCount() { return this.delayedFullDataSourceSaveCache.getUnsavedCount(); }
-	
-	@Override
 	public CompletableFuture<Void> updateChunkAsync(IChunkWrapper chunkWrapper, int chunkHash)
 	{
-		// data source synchronously written to memory so it can be safely closed
-		try (FullDataSourceV2 dataSource = FullDataSourceV2.createFromChunk(chunkWrapper))
+		FullDataSourceV2 dataSource = FullDataSourceV2.createFromChunk(chunkWrapper);
+		if (dataSource == null)
 		{
-			if (dataSource == null)
-			{
-				// This can happen if, among other reasons, a chunk save is superseded by a later event
-				return CompletableFuture.completedFuture(null);
-			}
-			
-			
-			this.updatedChunkPosSetBySectionPos.compute(dataSource.getPos(), (dataSourcePos, chunkPosSet) ->
-			{
-				if (chunkPosSet == null)
-				{
-					chunkPosSet = new HashSet<>();
-				}
-				chunkPosSet.add(chunkWrapper.getChunkPos());
-				return chunkPosSet;
-			});
-			this.updatedChunkHashesByChunkPos.put(chunkWrapper.getChunkPos(), chunkHash);
-			
-			// batch updates to reduce overhead when flying around or breaking/placing a lot of blocks in an area
-			return this.delayedFullDataSourceSaveCache.writeDataSourceToMemoryAndQueueSave(dataSource);
+			// This can happen if, among other reasons, a chunk save is superseded by a later event
+			return CompletableFuture.completedFuture(null);
 		}
+		
+		
+		this.updatedChunkPosSetBySectionPos.compute(dataSource.getPos(), (dataSourcePos, chunkPosSet) ->
+		{
+			if (chunkPosSet == null)
+			{
+				chunkPosSet = new HashSet<>();
+			}
+			chunkPosSet.add(chunkWrapper.getChunkPos());
+			return chunkPosSet;
+		});
+		this.updatedChunkHashesByChunkPos.put(chunkWrapper.getChunkPos(), chunkHash);
+		
+		return this.onDataSourceSaveAsync(dataSource)
+			.handle((voidObj, throwable) -> 
+			{
+				dataSource.close();
+				return null;
+			});
 	}
 	
-	private void onDataSourceSave(FullDataSourceV2 fullDataSource)
+	private CompletableFuture<Void> onDataSourceSaveAsync(FullDataSourceV2 fullDataSource)
 	{
 		// block lights should have been populated at the chunkWrapper stage
 		// waiting to populate the data source's skylight at this stage prevents re-lighting and
@@ -181,7 +178,8 @@ public abstract class AbstractDhLevel implements IDhLevel
 		DhLightingEngine.INSTANCE.bakeDataSourceSkyLight(fullDataSource, this.hasSkyLight() ? LodUtil.MAX_MC_LIGHT : LodUtil.MIN_MC_LIGHT);
 		
 		
-		this.updateDataSourcesAsync(fullDataSource).thenRun(() -> 
+		return this.updateDataSourcesAsync(fullDataSource)
+				.thenRun(() -> 
 		{
 			HashSet<DhChunkPos> updatedChunkPosSet = this.updatedChunkPosSetBySectionPos.remove(fullDataSource.getPos());
 			if (updatedChunkPosSet != null)

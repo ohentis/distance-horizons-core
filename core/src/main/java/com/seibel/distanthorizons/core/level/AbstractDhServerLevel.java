@@ -277,7 +277,7 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 						}
 					}
 				}
-				});
+			});
 	}
 	
 	

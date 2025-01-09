@@ -69,8 +69,6 @@ public abstract class AbstractDataSourceHandler
 	
 	public final ArrayList<IDataSourceUpdateFunc<TDataSource>> dateSourceUpdateListeners = new ArrayList<>();
 	
-	public final ConcurrentHashMap<Long, CompletableFuture<Void>> updateDataSourceFutureByPos = new ConcurrentHashMap<>();
-	
 	
 	
 	//=============//
@@ -186,6 +184,17 @@ public abstract class AbstractDataSourceHandler
 	// data updating //
 	//===============//
 	
+	/** 
+	 * Can be used if the same thread is already handling IO and/or LOD generation.
+	 * Otherwise the async version {@link AbstractDataSourceHandler#updateDataSourceAsync(FullDataSourceV2)} may be a better choice.
+	 */
+	public void updateDataSource(@NotNull FullDataSourceV2 inputDataSource)
+	{ this.updateDataSourceAtPos(inputDataSource.getPos(), inputDataSource, true); }
+	
+	/**
+	 * Can be used if you don't want to lock the current thread
+	 * Otherwise the sync version {@link AbstractDataSourceHandler#updateDataSource(FullDataSourceV2)} may be a better choice.
+	 */
 	public CompletableFuture<Void> updateDataSourceAsync(@NotNull FullDataSourceV2 inputDataSource)
 	{
 		AbstractExecutorService executor = ThreadPoolUtil.getChunkToLodBuilderExecutor();
@@ -197,35 +206,22 @@ public abstract class AbstractDataSourceHandler
 		
 		try
 		{
-			return this.updateDataSourceFutureByPos.compute(inputDataSource.getPos(), (Long newPos, CompletableFuture<Void> future) -> 
+			this.markUpdateStart(inputDataSource.getPos());
+			return CompletableFuture.runAsync(() ->
 			{
-				if (future != null)
+				try
 				{
-					future.cancel(false);
-					this.markUpdateEnd(newPos);
+					this.updateDataSourceAtPos(inputDataSource.getPos(), inputDataSource, true);
 				}
-				
-				// run file handling on a separate thread
-				this.markUpdateStart(newPos);
-				future = CompletableFuture.runAsync(() ->
+				catch (Exception e)
 				{
-					try
-					{
-						this.updateDataSourceAtPos(newPos, inputDataSource, true);
-					}
-					catch (Exception e)
-					{
-						LOGGER.error("Unexpected error in async data source update at pos: ["+DhSectionPos.toString(newPos)+"], error: ["+e.getMessage()+"].", e);
-					}
-					finally
-					{
-						this.markUpdateEnd(newPos);
-						this.updateDataSourceFutureByPos.remove(newPos);
-					}
-				}, executor);
-				
-				return future;
-			});
+					LOGGER.error("Unexpected error in async data source update at pos: ["+DhSectionPos.toString(inputDataSource.getPos())+"], error: ["+e.getMessage()+"].", e);
+				}
+				finally
+				{
+					this.markUpdateEnd(inputDataSource.getPos());
+				}
+			}, executor);
 		}
 		catch (RejectedExecutionException ignore)
 		{

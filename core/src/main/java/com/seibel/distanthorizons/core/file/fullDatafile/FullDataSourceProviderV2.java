@@ -453,14 +453,7 @@ public class FullDataSourceProviderV2
 								{
 									// after the update finishes the legacy data source can be safely deleted
 									this.legacyFileHandler.repo.deleteWithKey(legacyDataSource.getPos());
-									
-									try
-									{
-										newDataSource.close();
-									}
-									catch (Exception ignore)
-									{
-									}
+									newDataSource.close();
 								});
 							}
 							catch (Exception e)
@@ -625,13 +618,6 @@ public class FullDataSourceProviderV2
 	public void setTotalRetrievalPositionCount(int newCount) { }
 	/** Can be used to display how many total chunk retrieval requests should be available. */
 	public void setEstimatedRemainingRetrievalChunkCount(int newCount) { }
-	
-	/** 
-	 * Returns how many data sources are currently in memory and haven't
-	 * been saved to the database.
-	 * Returns -1 if this provider never stores data sources to memory.
-	 */
-	public int getUnsavedDataSourceCount() { return -1; }
 	
 	public boolean fileExists(long pos) { return this.repo.getDataSizeInBytes(pos) > 0; }
 	

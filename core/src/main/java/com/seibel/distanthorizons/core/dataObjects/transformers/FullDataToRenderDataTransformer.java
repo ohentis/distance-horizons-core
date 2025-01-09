@@ -164,7 +164,6 @@ public class FullDataToRenderDataTransformer
 		}
 		else
 		{
-			// new LongArrayList(new long[fullDataLength])
 			PhantomArrayListCheckout checkout = ARRAY_LIST_POOL.checkoutArrays(0, 0, 1);
 			LongArrayList dataArrayList = checkout.getLongArray(0, fullDataLength);
 			
