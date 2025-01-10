@@ -48,7 +48,7 @@ public interface IDhLevel extends AutoCloseable, GeneratedFullDataSourceProvider
 	
 	/** @return 0 if no hash is known */
 	int getChunkHash(DhChunkPos pos);
-	CompletableFuture<Void> updateChunkAsync(IChunkWrapper chunk, int newChunkHash);
+	void updateChunkAsync(IChunkWrapper chunk, int newChunkHash);
 	
 	void loadBeaconBeamsInPos(long pos);
 	void updateBeaconBeamsForChunk(IChunkWrapper chunkToUpdate, ArrayList<IChunkWrapper> nearbyChunkList);

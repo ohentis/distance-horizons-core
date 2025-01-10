@@ -20,6 +20,7 @@
 package com.seibel.distanthorizons.core.file.fullDatafile;
 
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
+import com.seibel.distanthorizons.core.api.internal.SharedApi;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.file.structure.ISaveStructure;
@@ -69,6 +70,8 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 	
 	private final AtomicReference<IFullDataSourceRetrievalQueue> worldGenQueueRef = new AtomicReference<>(null);
 	private final ArrayList<IOnWorldGenCompleteListener> onWorldGenTaskCompleteListeners = new ArrayList<>();
+	
+	protected final DelayedFullDataSourceSaveCache delayedFullDataSourceSaveCache = new DelayedFullDataSourceSaveCache(this::onDataSourceSaveAsync, 10_000);
 	
 	
 	
@@ -209,9 +212,27 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 		}
 		
 		
-		int maxQueueCount = MAX_WORLD_GEN_REQUESTS_PER_THREAD * Config.Common.MultiThreading.numberOfThreads.get();
+		int maxQueuedChunkCount = MAX_WORLD_GEN_REQUESTS_PER_THREAD * Config.Common.MultiThreading.numberOfThreads.get(); // for now we're just using the same logic as the world gen threads, it works well enough
+		if (SharedApi.INSTANCE.getQueuedChunkUpdateCount() >= maxQueuedChunkCount)
+		{
+			// don't queue additional world gen requests if there are
+			// a lot of chunks waiting to update
+			// (this is done to reduce thread starvation for chunk updates)
+			return false;
+		}
 		
-		int availableTaskSlots = maxQueueCount - worldGenQueue.getWaitingTaskCount();
+		
+		int maxWorldGenQueueCount = MAX_WORLD_GEN_REQUESTS_PER_THREAD * Config.Common.MultiThreading.numberOfThreads.get();
+
+		if (this.delayedFullDataSourceSaveCache.getUnsavedCount() >= maxWorldGenQueueCount)
+		{
+			// don't queue additional world gen requests if there are
+			// a lot of data sources in memory 
+			// (this is done to prevent infinite memory growth)
+			return false;
+		}
+		
+		int availableTaskSlots = maxWorldGenQueueCount - worldGenQueue.getWaitingTaskCount();
 		if (availableTaskSlots <= 0)
 		{
 			if (pruneWaitingTasksAboveLimit)
@@ -414,19 +435,19 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 		{
 			return (dataSource) ->
 			{
-				GeneratedFullDataSourceProvider.this.onDataSourceSave(dataSource);
+				GeneratedFullDataSourceProvider.this.delayedFullDataSourceSaveCache.writeDataSourceToMemoryAndQueueSave(dataSource);
 			};
 		}
 		
 	}
-	private void onDataSourceSave(FullDataSourceV2 fullDataSource) 
+	private CompletableFuture<Void> onDataSourceSaveAsync(FullDataSourceV2 fullDataSource) 
 	{
 		// block lights should have been populated at the chunkWrapper stage
 		// waiting to populate the data source's skylight at this stage prevents re-lighting and
 		// allows us to reduce cross-chunk lighting issues by lighting the whole 4x4 LOD at once
 		DhLightingEngine.INSTANCE.bakeDataSourceSkyLight(fullDataSource, LodUtil.MAX_MC_LIGHT);
 		
-		this.updateDataSource(fullDataSource);
+		return this.updateDataSourceAsync(fullDataSource);
 	}
 	
 	

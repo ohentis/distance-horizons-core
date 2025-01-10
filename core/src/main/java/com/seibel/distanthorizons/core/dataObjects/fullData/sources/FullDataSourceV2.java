@@ -73,7 +73,7 @@ public class FullDataSourceV2
 	
 	public static final byte DATA_FORMAT_VERSION = 1;
 	
-	public static final PhantomArrayListPool ARRAY_LIST_POOL = new PhantomArrayListPool("FullDataV2");
+	public static final PhantomArrayListPool ARRAY_LIST_POOL = new PhantomArrayListPool("FullDataV2", false);
 	
 	
 	

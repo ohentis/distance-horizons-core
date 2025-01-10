@@ -1,40 +1,33 @@
 package com.seibel.distanthorizons.core.file.fullDatafile;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.RemovalCause;
+import com.google.common.cache.RemovalNotification;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.util.TimerUtil;
+import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Used to batch together multiple data source updates that all
  * affect the same position.
- * 
- * @deprecated due to causing data source leaks, however we may still want to re-visit this 
- * if saving directly is too slow for certain operations (specifically modifying nearby chunks).
  */
-@Deprecated
 public class DelayedFullDataSourceSaveCache
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
-	private static final Timer DELAY_UPDATE_TIMER = TimerUtil.CreateTimer("Delayed Full Datasource Save Timer");
 	
-	
-	public final ConcurrentHashMap<Long, FullDataSourceV2> dataSourceByPosition = new ConcurrentHashMap<>();
-	private final ConcurrentHashMap<Long, TimerTask> saveTimerTasksBySectionPos = new ConcurrentHashMap<>();
-	private final ConcurrentHashMap<Long, CompletableFuture<Void>> futureBySectionPos = new ConcurrentHashMap<>();
+	private final Cache<Long, FullDataSourceV2> dataSourceByPosition;
 	
 	protected final ReentrantLock[] saveLockArray;
 	/** Based on the stack overflow post: https://stackoverflow.com/a/45909920 */
 	protected ReentrantLock getSaveLockForPos(long pos) { return this.saveLockArray[Math.abs(Long.hashCode(pos)) % this.saveLockArray.length]; }
-	
 	
 	private final ISaveDataSourceFunc onSaveTimeoutAsyncFunc;
 	private final int saveDelayInMs;
@@ -49,6 +42,14 @@ public class DelayedFullDataSourceSaveCache
 	{
 		this.onSaveTimeoutAsyncFunc = onSaveTimeoutAsyncFunc;
 		this.saveDelayInMs = saveDelayInMs;
+		
+		
+		this.dataSourceByPosition =
+			CacheBuilder.newBuilder()
+				.expireAfterAccess(this.saveDelayInMs, TimeUnit.MILLISECONDS)
+				.expireAfterWrite(this.saveDelayInMs, TimeUnit.MILLISECONDS)
+				.removalListener(this::handleDataSourceRemoval)
+				.<Long, FullDataSourceV2>build();
 		
 		
 		// the lock array's length is 2x the number of CPU cores so the number of collisions
@@ -71,103 +72,65 @@ public class DelayedFullDataSourceSaveCache
 	 * Writing into memory is done synchronously so inputDataSource can 
 	 * be closed after this method finishes.
 	 */
-	public CompletableFuture<Void> writeDataSourceToMemoryAndQueueSave(FullDataSourceV2 inputDataSource)
+	public void writeDataSourceToMemoryAndQueueSave(FullDataSourceV2 inputDataSource)
 	{
+		long inputPos = inputDataSource.getPos();
 		
-		boolean saveNow = true;
-		if (saveNow)
+		ReentrantLock lock = this.getSaveLockForPos(inputPos);
+		try
 		{
-			// TODO this doesn't leak, but also doesn't delay the save any
-			FullDataSourceV2 memoryDataSource = FullDataSourceV2.createEmpty(inputDataSource.getPos());
-			memoryDataSource.update(inputDataSource);
-			return this.onSaveTimeoutAsyncFunc.saveAsync(memoryDataSource)
-				.handle((voidObj, exception) -> 
-				{
-					memoryDataSource.close();
-					return null;
-				});
-		}
-		else
-		{
-			long dataSourcePos = inputDataSource.getPos();
+			lock.lock();
 			
-			CompletableFuture<Void> future = this.futureBySectionPos.computeIfAbsent(dataSourcePos, (inputPos) -> new CompletableFuture<>());
-			
-			this.dataSourceByPosition.compute(dataSourcePos, (inputPos, memoryDataSource) ->
+			FullDataSourceV2 memoryDataSource = this.dataSourceByPosition.getIfPresent(inputPos);
+			if (memoryDataSource == null)
 			{
-				if (memoryDataSource == null)
-				{
-					// should not be closed since it will be used by other threads 
-					memoryDataSource = FullDataSourceV2.createEmpty(inputPos);
-				}
-				memoryDataSource.update(inputDataSource);
-				
-				
-				TimerTask timerTask = new TimerTask()
-				{
-					@Override
-					public void run()
+				memoryDataSource = FullDataSourceV2.createEmpty(inputPos);
+			}
+			memoryDataSource.update(inputDataSource);
+			this.dataSourceByPosition.put(inputPos, memoryDataSource);
+		}
+		finally
+		{
+			lock.unlock();
+		}
+	}
+	
+	public int getUnsavedCount() { return (int)this.dataSourceByPosition.size(); }
+	
+	
+	public void handleDataSourceRemoval(RemovalNotification<Long, FullDataSourceV2> removalNotification)
+	{
+		RemovalCause cause = removalNotification.getCause();
+		if (cause == RemovalCause.EXPIRED
+			|| cause == RemovalCause.COLLECTED
+			|| cause == RemovalCause.SIZE)
+		{
+			// close the data source after it has expired from the cache
+			FullDataSourceV2 dataSource = removalNotification.getValue();
+			if (dataSource != null)
+			{
+				this.onSaveTimeoutAsyncFunc.saveAsync(dataSource)
+					.handle((voidObj, throwable) ->
 					{
-						DelayedFullDataSourceSaveCache.this.saveTimerTasksBySectionPos.remove(dataSourcePos);
-						
 						try
 						{
-							FullDataSourceV2 dataSourceToSave = DelayedFullDataSourceSaveCache.this.dataSourceByPosition.remove(dataSourcePos);
-							if (dataSourceToSave != null)
-							{
-								DelayedFullDataSourceSaveCache.this.onSaveTimeoutAsyncFunc.saveAsync(dataSourceToSave);
-							}
+							dataSource.close();
 						}
-						catch (Exception e) // this can throw errors (not exceptions) when installed in Iris' dev environment for some reason due to an issue with LZ4's compression library
+						catch (Exception e)
 						{
-							LOGGER.error("Failed to save updated data for section ["+dataSourcePos+"], error: ["+e.getMessage()+"]", e);
+							LOGGER.error("Unable to close datasource ["+ DhSectionPos.toString(dataSource.getPos()) +"], removal cause: ["+cause+"], error: ["+e.getMessage()+"].", e);
 						}
-						finally
-						{
-							CompletableFuture<Void> future = DelayedFullDataSourceSaveCache.this.futureBySectionPos.remove(dataSourcePos);
-							if (future != null)
-							{
-								future.complete(null);
-							}
-						}
-					}
-				};
-				try
-				{
-					DELAY_UPDATE_TIMER.schedule(timerTask, this.saveDelayInMs);
-				}
-				catch (IllegalStateException ignore)
-				{
-					// James isn't sure why this is possible since this logic is inside a lock, 
-					// maybe the timer is just async enough that there can be problems?
-					//LOGGER.warn("Attempted to queue an already canceled task. Pos: ["+dataSourcePos+"], task already queued for pos: ["+this.saveTimerTasksBySectionPos.containsKey(dataSourcePos)+"]");
-				}
-				
-				
-				// cancel the old save timer if present
-				// (this is equivalent to restarting the timer)
-				TimerTask oldTask = this.saveTimerTasksBySectionPos.put(dataSourcePos, timerTask);
-				if (oldTask != null)
-				{
-					oldTask.cancel();
-				}
-				
-				return memoryDataSource;
-			});
-			
-			return future;
+						
+						return null;
+					});
+			}
+			else
+			{
+				LOGGER.error("Unable to close null cached data source.");
+			}
 		}
 	}
 	
-	public int getUnsavedCount() { return this.dataSourceByPosition.size(); }
-	
-	public void flush()
-	{
-		this.saveTimerTasksBySectionPos.forEach((pos, timerTask)-> 
-		{
-			timerTask.run();
-		});
-	}
 	
 	
 	

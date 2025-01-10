@@ -176,6 +176,8 @@ public class SharedApi
 	 */
 	public void clearQueuedChunkUpdates() { UPDATE_POS_MANAGER.clear(); }
 	
+	public int getQueuedChunkUpdateCount() { return UPDATE_POS_MANAGER.closestQueue.size(); }
+	
 	
 	
 	/** handles both block place and break events */

@@ -59,6 +59,7 @@ public abstract class AbstractDhLevel implements IDhLevel
 	@Nullable
 	public BeaconBeamRepo beaconBeamRepo;
 	
+	protected final DelayedFullDataSourceSaveCache delayedFullDataSourceSaveCache = new DelayedFullDataSourceSaveCache(this::onDataSourceSaveAsync, 3_000);
 	/** contains the {@link DhChunkPos} for each {@link DhSectionPos} that are queued to save */
 	protected final ConcurrentHashMap<Long, HashSet<DhChunkPos>> updatedChunkPosSetBySectionPos = new ConcurrentHashMap<>();
 	protected final ConcurrentHashMap<DhChunkPos, Integer> updatedChunkHashesByChunkPos = new ConcurrentHashMap<>();
@@ -141,33 +142,32 @@ public abstract class AbstractDhLevel implements IDhLevel
 	//=================//
 	
 	@Override
-	public CompletableFuture<Void> updateChunkAsync(IChunkWrapper chunkWrapper, int chunkHash)
+	public void updateChunkAsync(IChunkWrapper chunkWrapper, int chunkHash)
 	{
-		FullDataSourceV2 dataSource = FullDataSourceV2.createFromChunk(chunkWrapper);
-		if (dataSource == null)
+		try (FullDataSourceV2 dataSource = FullDataSourceV2.createFromChunk(chunkWrapper))
 		{
-			// This can happen if, among other reasons, a chunk save is superseded by a later event
-			return CompletableFuture.completedFuture(null);
-		}
-		
-		
-		this.updatedChunkPosSetBySectionPos.compute(dataSource.getPos(), (dataSourcePos, chunkPosSet) ->
-		{
-			if (chunkPosSet == null)
+			if (dataSource == null)
 			{
-				chunkPosSet = new HashSet<>();
+				// This can happen if, among other reasons, a chunk save is superseded by a later event
+				return;
 			}
-			chunkPosSet.add(chunkWrapper.getChunkPos());
-			return chunkPosSet;
-		});
-		this.updatedChunkHashesByChunkPos.put(chunkWrapper.getChunkPos(), chunkHash);
-		
-		return this.onDataSourceSaveAsync(dataSource)
-			.handle((voidObj, throwable) -> 
+			
+			
+			this.updatedChunkPosSetBySectionPos.compute(dataSource.getPos(), (dataSourcePos, chunkPosSet) ->
 			{
-				dataSource.close();
-				return null;
+				if (chunkPosSet == null)
+				{
+					chunkPosSet = new HashSet<>();
+				}
+				chunkPosSet.add(chunkWrapper.getChunkPos());
+				return chunkPosSet;
 			});
+			this.updatedChunkHashesByChunkPos.put(chunkWrapper.getChunkPos(), chunkHash);
+			
+			// merging writes together in memory significantly improves throughput, since most
+			// chunk modifications will be right next to each other, IE effecting the same LODs
+			this.delayedFullDataSourceSaveCache.writeDataSourceToMemoryAndQueueSave(dataSource);
+		}
 	}
 	
 	private CompletableFuture<Void> onDataSourceSaveAsync(FullDataSourceV2 fullDataSource)
@@ -179,26 +179,26 @@ public abstract class AbstractDhLevel implements IDhLevel
 		
 		
 		return this.updateDataSourcesAsync(fullDataSource)
-				.thenRun(() -> 
-		{
-			HashSet<DhChunkPos> updatedChunkPosSet = this.updatedChunkPosSetBySectionPos.remove(fullDataSource.getPos());
-			if (updatedChunkPosSet != null)
+			.thenRun(() -> 
 			{
-				for (DhChunkPos chunkPos : updatedChunkPosSet)
+				HashSet<DhChunkPos> updatedChunkPosSet = this.updatedChunkPosSetBySectionPos.remove(fullDataSource.getPos());
+				if (updatedChunkPosSet != null)
 				{
-					// save after the data source has been updated to prevent saving the hash without the associated datasource
-					Integer chunkHash = this.updatedChunkHashesByChunkPos.remove(chunkPos);
-					if (this.chunkHashRepo != null && chunkHash != null)
+					for (DhChunkPos chunkPos : updatedChunkPosSet)
 					{
-						this.chunkHashRepo.save(new ChunkHashDTO(chunkPos, chunkHash));
+						// save after the data source has been updated to prevent saving the hash without the associated datasource
+						Integer chunkHash = this.updatedChunkHashesByChunkPos.remove(chunkPos);
+						if (this.chunkHashRepo != null && chunkHash != null)
+						{
+							this.chunkHashRepo.save(new ChunkHashDTO(chunkPos, chunkHash));
+						}
+						
+						ApiEventInjector.INSTANCE.fireAllEvents(
+								DhApiChunkModifiedEvent.class,
+								new DhApiChunkModifiedEvent.EventParam(this.getLevelWrapper(), chunkPos.getX(), chunkPos.getZ()));
 					}
-					
-					ApiEventInjector.INSTANCE.fireAllEvents(
-							DhApiChunkModifiedEvent.class,
-							new DhApiChunkModifiedEvent.EventParam(this.getLevelWrapper(), chunkPos.getX(), chunkPos.getZ()));
 				}
-			}
-		});
+			});
 	}
 	
 	
