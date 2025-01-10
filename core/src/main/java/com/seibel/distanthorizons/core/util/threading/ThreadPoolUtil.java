@@ -20,6 +20,7 @@
 package com.seibel.distanthorizons.core.util.threading;
 
 import com.seibel.distanthorizons.core.util.ThreadUtil;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.concurrent.*;
@@ -54,8 +55,9 @@ public class ThreadPoolUtil
 	public static PriorityTaskPicker.Executor getWorldGenExecutor() { return worldGenThreadPool; }
 	
 	public static final String CLEANUP_THREAD_NAME = "Cleanup";
-	private static ThreadPoolExecutor cleanupThreadPool;
-	@Nullable
+	private static final ThreadPoolExecutor cleanupThreadPool = ThreadUtil.makeSingleThreadPool(CLEANUP_THREAD_NAME);
+	/** not null since cleanup always needs to be run even when DH has been shut down */
+	@NotNull
 	public static ThreadPoolExecutor getCleanupExecutor() { return cleanupThreadPool; }
 	
 	public static final String BEACON_CULLING_THREAD_NAME = "Beacon Culling";
@@ -104,7 +106,6 @@ public class ThreadPoolUtil
 		
 		
 		// single thread pools
-		cleanupThreadPool = ThreadUtil.makeSingleThreadPool(CLEANUP_THREAD_NAME);
 		beaconCullingThreadPool = ThreadUtil.makeSingleThreadPool(BEACON_CULLING_THREAD_NAME);
 		fullDataMigrationThreadPool = ThreadUtil.makeSingleThreadPool(FULL_DATA_MIGRATION_THREAD_NAME);
 		
@@ -114,7 +115,6 @@ public class ThreadPoolUtil
 	{
 		// standalone threads
 		taskPicker.shutdown();
-		cleanupThreadPool.shutdown();
 		beaconCullingThreadPool.shutdown();
 		fullDataMigrationThreadPool.shutdown();
 	}

@@ -82,6 +82,12 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	 */
 	private CompletableFuture<Void> getAndBuildRenderDataFuture = null;
 	/** 
+	 * used alongside {@link LodRenderSection#getAndBuildRenderDataFuture} so we can remove
+	 * unnecessary tasks from the executor.
+	 */
+	private Runnable getAndBuildRenderDataRunnable = null;
+	
+	/** 
 	 * Represents just uploading the {@link LodQuadBuilder} to the GPU. <br>
 	 * Separate from {@link LodRenderSection#getAndBuildRenderDataFuture} because they run on
 	 * different threads (buffer uploading is on the MC render thread) and need to be canceled separately.
@@ -140,80 +146,92 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 			return false;
 		}
 		
-		// don't queue up an infinite number of tasks
-		// doing so will cause memory use to balloon when swapping between dimensions
-		if (executor.getQueueSize() > executor.getPoolSize())
-		{
-			return false;
-		}
-		
 		try
 		{
-			this.getAndBuildRenderDataFuture = CompletableFuture.runAsync(() ->
+			// we want to queue all the build/upload tasks so they have a higher priority then
+			// other tasks, which allows the world to load in faster
+			// (this seems like a slightly odd way to handle it, but it works)
+			
+			CompletableFuture<Void> future = new CompletableFuture<>();
+			this.getAndBuildRenderDataFuture = future;
+			this.getAndBuildRenderDataRunnable = () ->
 			{
-				try
-				{
-					try (ColumnRenderSource renderSource = this.getRenderSourceForPos(this.pos))
-					{
-						if (renderSource == null)
-						{
-							// nothing needs to be rendered
-							// TODO how doesn't this cause infinite file handler loops?
-							//  to trigger an upload we check if the buffer is null, and we aren't
-							//  setting the render buffer here
-							this.getAndBuildRenderDataFuture = null;
-							return;
-						}
-						
-						
-						boolean enableTransparency = Config.Client.Advanced.Graphics.Quality.transparency.get().transparencyEnabled;
-						LodQuadBuilder lodQuadBuilder = new LodQuadBuilder(enableTransparency, this.level.getClientLevelWrapper());
-						
-						// Getting adjacent data sources without caching 
-						// (IE each position must pull down it's 4 neighbors even if those neighbors
-						// are used by another position)
-						// roughly doubles the total time to load vs just loading the center position; 
-						// however, caching the ColumnRenderSource's in memory is extremely
-						// difficult to do without either memory leaks or explosive memory costs.
-						// So, we're just going to do it this way.
-						try (ColumnRenderSource northRenderSource = this.getRenderSourceForPos(DhSectionPos.getAdjacentPos(this.pos, EDhDirection.NORTH));
-								ColumnRenderSource southRenderSource = this.getRenderSourceForPos(DhSectionPos.getAdjacentPos(this.pos, EDhDirection.SOUTH));
-								ColumnRenderSource eastRenderSource = this.getRenderSourceForPos(DhSectionPos.getAdjacentPos(this.pos, EDhDirection.EAST));
-								ColumnRenderSource westRenderSource = this.getRenderSourceForPos(DhSectionPos.getAdjacentPos(this.pos, EDhDirection.WEST)))
-						{
-							ColumnRenderSource[] adjacentRenderSections = new ColumnRenderSource[EDhDirection.ADJ_DIRECTIONS.length];
-							adjacentRenderSections[EDhDirection.NORTH.ordinal() - 2] = northRenderSource;
-							adjacentRenderSections[EDhDirection.SOUTH.ordinal() - 2] = southRenderSource;
-							adjacentRenderSections[EDhDirection.EAST.ordinal() - 2] = eastRenderSource;
-							adjacentRenderSections[EDhDirection.WEST.ordinal() - 2] = westRenderSource;
-							
-							boolean[] adjIsSameDetailLevel = new boolean[EDhDirection.ADJ_DIRECTIONS.length];
-							adjIsSameDetailLevel[EDhDirection.NORTH.ordinal() - 2] = this.isAdjacentPosSameDetailLevel(EDhDirection.NORTH);
-							adjIsSameDetailLevel[EDhDirection.SOUTH.ordinal() - 2] = this.isAdjacentPosSameDetailLevel(EDhDirection.SOUTH);
-							adjIsSameDetailLevel[EDhDirection.EAST.ordinal() - 2] = this.isAdjacentPosSameDetailLevel(EDhDirection.EAST);
-							adjIsSameDetailLevel[EDhDirection.WEST.ordinal() - 2] = this.isAdjacentPosSameDetailLevel(EDhDirection.WEST);
-							
-							// the render sources are only needed in this synchronous method,
-							// then they can be closed
-							ColumnRenderBufferBuilder.makeLodRenderData(lodQuadBuilder, renderSource, this.level, adjacentRenderSections, adjIsSameDetailLevel);
-						}
-						
-						this.uploadToGpuAsync(lodQuadBuilder);
-					}
-				}
-				catch (Exception e)
-				{
-					LOGGER.error("Unexpected error while loading LodRenderSection ["+DhSectionPos.toString(this.pos)+"], Error: [" + e.getMessage() + "].", e);
-					this.getAndBuildRenderDataFuture = null;
-				}
-			}, executor);
+				this.getAndUploadRenderDataToGpu();
+				
+				// the future is passed in separate to prevent any possible race condition null pointers
+				future.complete(null);
+				// the task is done, we don't need to track these anymore
+				this.getAndBuildRenderDataFuture = null;
+				this.getAndBuildRenderDataRunnable = null;
+			};
+			executor.execute(this.getAndBuildRenderDataRunnable);
 			
 			return true;
 		}
 		catch (RejectedExecutionException ignore)
-		{ 
+		{
+			this.getAndBuildRenderDataFuture.complete(null);
+			this.getAndBuildRenderDataFuture = null;
+			this.getAndBuildRenderDataRunnable = null;
+			
 			/* the thread pool was probably shut down because it's size is being changed, just wait a sec and it should be back */
 			return false;
+		}
+	}
+	private void getAndUploadRenderDataToGpu()
+	{
+		try
+		{
+			try (ColumnRenderSource renderSource = this.getRenderSourceForPos(this.pos))
+			{
+				if (renderSource == null)
+				{
+					// nothing needs to be rendered
+					// TODO how doesn't this cause infinite file handler loops?
+					//  to trigger an upload we check if the buffer is null, and we aren't
+					//  setting the render buffer here
+					return;
+				}
+				
+				
+				boolean enableTransparency = Config.Client.Advanced.Graphics.Quality.transparency.get().transparencyEnabled;
+				LodQuadBuilder lodQuadBuilder = new LodQuadBuilder(enableTransparency, this.level.getClientLevelWrapper());
+				
+				// Getting adjacent data sources without caching 
+				// (IE each position must pull down it's 4 neighbors even if those neighbors
+				// are used by another position)
+				// roughly doubles the total time to load vs just loading the center position; 
+				// however, caching the ColumnRenderSource's in memory is extremely
+				// difficult to do without either memory leaks or explosive memory costs.
+				// So, we're just going to do it this way.
+				try (ColumnRenderSource northRenderSource = this.getRenderSourceForPos(DhSectionPos.getAdjacentPos(this.pos, EDhDirection.NORTH));
+						ColumnRenderSource southRenderSource = this.getRenderSourceForPos(DhSectionPos.getAdjacentPos(this.pos, EDhDirection.SOUTH));
+						ColumnRenderSource eastRenderSource = this.getRenderSourceForPos(DhSectionPos.getAdjacentPos(this.pos, EDhDirection.EAST));
+						ColumnRenderSource westRenderSource = this.getRenderSourceForPos(DhSectionPos.getAdjacentPos(this.pos, EDhDirection.WEST)))
+				{
+					ColumnRenderSource[] adjacentRenderSections = new ColumnRenderSource[EDhDirection.ADJ_DIRECTIONS.length];
+					adjacentRenderSections[EDhDirection.NORTH.ordinal() - 2] = northRenderSource;
+					adjacentRenderSections[EDhDirection.SOUTH.ordinal() - 2] = southRenderSource;
+					adjacentRenderSections[EDhDirection.EAST.ordinal() - 2] = eastRenderSource;
+					adjacentRenderSections[EDhDirection.WEST.ordinal() - 2] = westRenderSource;
+					
+					boolean[] adjIsSameDetailLevel = new boolean[EDhDirection.ADJ_DIRECTIONS.length];
+					adjIsSameDetailLevel[EDhDirection.NORTH.ordinal() - 2] = this.isAdjacentPosSameDetailLevel(EDhDirection.NORTH);
+					adjIsSameDetailLevel[EDhDirection.SOUTH.ordinal() - 2] = this.isAdjacentPosSameDetailLevel(EDhDirection.SOUTH);
+					adjIsSameDetailLevel[EDhDirection.EAST.ordinal() - 2] = this.isAdjacentPosSameDetailLevel(EDhDirection.EAST);
+					adjIsSameDetailLevel[EDhDirection.WEST.ordinal() - 2] = this.isAdjacentPosSameDetailLevel(EDhDirection.WEST);
+					
+					// the render sources are only needed in this synchronous method,
+					// then they can be closed
+					ColumnRenderBufferBuilder.makeLodRenderData(lodQuadBuilder, renderSource, this.level, adjacentRenderSections, adjIsSameDetailLevel);
+				}
+				
+				this.uploadToGpuAsync(lodQuadBuilder);
+			}
+		}
+		catch (Exception e)
+		{
+			LOGGER.error("Unexpected error while loading LodRenderSection ["+DhSectionPos.toString(this.pos)+"], Error: [" + e.getMessage() + "].", e);
 		}
 	}
 	@Nullable
@@ -448,36 +466,43 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 			this.renderBuffer.close();
 		}
 		
-		// cancel all in-progress futures since they aren't needed any more
-		if (this.getAndBuildRenderDataFuture != null)
+		// removes any in-progress futures since they aren't needed any more
+		CompletableFuture<Void> buildFuture = this.getAndBuildRenderDataFuture;
+		if (buildFuture != null)
 		{
 			// Note to self:
 			// canceling a task prevents it from running, but doesn't allow
 			// us to purge it from the executor it was queued in.
 			// As far as James can tell this appears to be a Java bug.
-			this.getAndBuildRenderDataFuture.cancel(true);
+			buildFuture.cancel(true);
+			
+			
+			// remove the task from our executor if present
+			PriorityTaskPicker.Executor executor = ThreadPoolUtil.getFileHandlerExecutor();
+			if (executor != null && !executor.isTerminated())
+			{
+				Runnable runnable = this.getAndBuildRenderDataRunnable;
+				if (runnable != null)
+				{
+					executor.remove(runnable);
+				}
+			}
 		}
-		if (this.bufferUploadFuture != null)
+		
+		CompletableFuture<ColumnRenderBuffer> uploadFuture = this.bufferUploadFuture;
+		if (uploadFuture != null)
 		{
-			this.bufferUploadFuture.cancel(true);
+			uploadFuture.cancel(true);
+			this.bufferUploadFuture = null;
 		}
 		
 		
 		
 		// remove any active world gen requests that may be for this position
 		ThreadPoolExecutor executor = ThreadPoolUtil.getCleanupExecutor();
-		if (executor != null && !executor.isTerminated())
-		{
-			// while this should generally be a fast operation 
-			// this is run on a separate thread to prevent lag on the render thread
-			
-			try
-			{
-				executor.execute(() -> this.fullDataSourceProvider.removeRetrievalRequestIf((genPos) -> DhSectionPos.contains(this.pos, genPos)));
-			}
-			catch (RejectedExecutionException ignore)
-			{ /* If this happens that means everything is already shut down and no additional cleanup will be necessary */ }
-		}
+		// while this should generally be a fast operation 
+		// this is run on a separate thread to prevent lag on the render thread
+		executor.execute(() -> this.fullDataSourceProvider.removeRetrievalRequestIf((genPos) -> DhSectionPos.contains(this.pos, genPos)));
 	}
 	
 	

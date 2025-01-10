@@ -3,6 +3,7 @@ package com.seibel.distanthorizons.core.util.threading;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.config.types.ConfigEntry;
 import com.seibel.distanthorizons.core.util.objects.RollingAverage;
+import com.seibel.distanthorizons.coreapi.util.BitShiftUtil;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -45,7 +46,7 @@ public class PriorityTaskPicker
 	{
 		Executor executor = new Executor();
 		
-		int entriesToAdd = 1 << priority;
+		int entriesToAdd = BitShiftUtil.powerOfTwo(priority);
 		int gapBetweenEntries = (int) (1 / (double) entriesToAdd * this.executorQueue.size());
 		
 		// Distribute the executor's entries in the queue, ensuring fair distribution
@@ -89,9 +90,10 @@ public class PriorityTaskPicker
 				{
 					Executor executor = this.executorQueue.get(this.nextExecutorQueuePos);
 					
-					Runnable task = executor.tasks.poll();
-					if (task != null)
+					TrackableRunnerContainer runnableContainer = executor.tasks.poll();
+					if (runnableContainer != null)
 					{
+						Runnable task = runnableContainer.wrappedRunnable;
 						try
 						{
 							// Attempt to start another task
@@ -153,7 +155,7 @@ public class PriorityTaskPicker
 	
 	public class Executor extends AbstractExecutorService
 	{
-		private final Queue<Runnable> tasks = new ConcurrentLinkedQueue<>();
+		private final Queue<TrackableRunnerContainer> tasks = new ConcurrentLinkedQueue<>();
 		
 		private final AtomicInteger runningTasks = new AtomicInteger(0);
 		private final AtomicInteger completedTasks = new AtomicInteger(0);
@@ -163,7 +165,8 @@ public class PriorityTaskPicker
 		@Override
 		public void execute(@NotNull Runnable command)
 		{
-			this.tasks.add(() -> {
+			Runnable wrappedRunnable = () ->
+			{
 				long startTime = System.nanoTime();
 				try
 				{
@@ -182,7 +185,9 @@ public class PriorityTaskPicker
 					// Attempt to start another task
 					PriorityTaskPicker.this.tryStartNextTask();
 				}
-			});
+			};
+			this.tasks.add(new TrackableRunnerContainer(command, wrappedRunnable));
+			
 			
 			// Attempt to pick up the task immediately
 			PriorityTaskPicker.this.tryStartNextTask();
@@ -198,6 +203,10 @@ public class PriorityTaskPicker
 		public double getAverageRunTimeInMs() { return this.runTimeInMsRollingAverage.getAverage(); }
 		
 		
+		/** The passed in {@link Runnable} must be exactly the same as the one passed into {@link PriorityTaskPicker.Executor#execute(Runnable)} */
+		public void remove(@NotNull Runnable command)
+		{ this.tasks.removeIf((pair) -> pair.originalRunnable.equals(command)); }
+		
 		@Override
 		public void shutdown() { throw new UnsupportedOperationException(); }
 		
@@ -211,6 +220,25 @@ public class PriorityTaskPicker
 		
 		@Override
 		public boolean awaitTermination(long timeout, @NotNull TimeUnit unit) { return false; }
+		
+	}
+	
+	/** used so we can {@link PriorityTaskPicker.Executor#remove(Runnable)} using the original {@link Runnable} */
+	private static class TrackableRunnerContainer
+	{
+		/** the runnable passed into {@link PriorityTaskPicker.Executor#execute(Runnable)} */
+		public final Runnable originalRunnable;
+		/** 
+		 * the runnable actually triggered by the {@link PriorityTaskPicker.Executor}
+		 * contains additional logic necessary to run the exector.
+		 */
+		public final Runnable wrappedRunnable;
+		
+		public TrackableRunnerContainer(Runnable originalRunnable, Runnable wrappedRunnable)
+		{
+			this.originalRunnable = originalRunnable;
+			this.wrappedRunnable = wrappedRunnable;
+		}
 		
 	}
 	

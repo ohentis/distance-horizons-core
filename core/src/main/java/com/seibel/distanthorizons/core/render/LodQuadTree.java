@@ -34,6 +34,8 @@ import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
 import com.seibel.distanthorizons.core.util.objects.quadTree.QuadNode;
 import com.seibel.distanthorizons.core.util.objects.quadTree.QuadTree;
+import com.seibel.distanthorizons.core.util.threading.PriorityTaskPicker;
+import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.coreapi.util.MathUtil;
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import org.apache.logging.log4j.Logger;
@@ -728,16 +730,23 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 		
 		DebugRenderer.unregister(this, Config.Client.Advanced.Debugging.DebugWireframe.showQuadTreeRenderStatus);
 		
-		Iterator<QuadNode<LodRenderSection>> nodeIterator = this.nodeIterator();
-		while (nodeIterator.hasNext())
+		ThreadPoolExecutor executor = ThreadPoolUtil.getCleanupExecutor();
+		// closing each node make take a few moments
+		// so this is run on a separate thread to prevent lagging the render thread
+		executor.execute(() -> 
 		{
-			QuadNode<LodRenderSection> quadNode = nodeIterator.next();
-			if (quadNode.value != null)
+			Iterator<QuadNode<LodRenderSection>> nodeIterator = this.nodeIterator();
+			while (nodeIterator.hasNext())
 			{
-				quadNode.value.close();
-				quadNode.value = null;
+				QuadNode<LodRenderSection> quadNode = nodeIterator.next();
+				if (quadNode.value != null)
+				{
+					quadNode.value.close();
+					quadNode.value = null;
+				}
 			}
-		}
+		});
+		
 		
 		LOGGER.info("Finished shutting down " + LodQuadTree.class.getSimpleName());
 	}
