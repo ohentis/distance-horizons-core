@@ -22,6 +22,8 @@ package com.seibel.distanthorizons.core.config.file;
 import com.electronwill.nightconfig.core.Config;
 import com.electronwill.nightconfig.core.io.ParsingMode;
 import com.electronwill.nightconfig.json.JsonFormat;
+import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import org.apache.logging.log4j.Logger;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -34,6 +36,8 @@ import java.util.Map;
  */
 public class ConfigTypeConverters
 {
+	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	
 	// Once you've made a converter add it to here where the first value is the type you want to convert and the 2nd value is the converter
 	public static final Map<Class<?>, ConverterBase> convertObjects = new HashMap<Class<?>, ConverterBase>()
 	{{
@@ -180,18 +184,18 @@ public class ConfigTypeConverters
 		}
 		
 		@Override
-		public Map<String, Object> convertFromString(String s)
+		public Map<String, Object> convertFromString(String str)
 		{
 			Map<String, Object> map = new HashMap<>();
 			
 			Config jsonObject = Config.inMemory();
 			try
 			{
-				JsonFormat.minimalInstance().createParser().parse(s, jsonObject, ParsingMode.REPLACE);
+				JsonFormat.minimalInstance().createParser().parse(str, jsonObject, ParsingMode.REPLACE);
 			}
 			catch (Exception e)
 			{
-				e.printStackTrace();
+				LOGGER.error("Unable to convert config string value ["+str+"] to a Map, error: ["+e.getMessage()+"].", e);
 			}
 			
 			return jsonObject.valueMap();

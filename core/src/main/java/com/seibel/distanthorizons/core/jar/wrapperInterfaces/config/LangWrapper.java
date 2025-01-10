@@ -48,8 +48,7 @@ public class LangWrapper implements ILangWrapper
 		}
 		catch (Exception e)
 		{
-			logger.error("Failed to read lang file");
-			e.printStackTrace();
+			logger.error("Failed to read lang file, error: ["+e.getMessage()+"]", e);
 		}
 	}
 	

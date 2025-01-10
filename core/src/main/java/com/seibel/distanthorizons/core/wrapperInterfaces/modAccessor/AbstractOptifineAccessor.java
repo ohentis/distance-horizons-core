@@ -21,7 +21,9 @@ package com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor;
 
 import com.seibel.distanthorizons.api.enums.rendering.EDhApiFogDrawMode;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
+import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
+import org.apache.logging.log4j.Logger;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -35,6 +37,9 @@ import java.lang.reflect.InvocationTargetException;
  */
 public abstract class AbstractOptifineAccessor implements IOptifineAccessor
 {
+	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	
+	
 	public Field ofFogField = null;
 	public Object mcOptionsObject = null;
 	
@@ -94,7 +99,7 @@ public abstract class AbstractOptifineAccessor implements IOptifineAccessor
 		}
 		catch (IllegalArgumentException | IllegalAccessException e)
 		{
-			e.printStackTrace();
+			LOGGER.error("Unable to get project fog draw mode from Optifine, error: ["+e.getMessage()+"].", e);
 		}
 
 		switch (returnNum)

@@ -22,6 +22,7 @@ package com.seibel.distanthorizons.core.jar.installer;
 import com.electronwill.nightconfig.core.Config;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.Nullable;
 
 import java.net.URL;
 import java.util.*;
@@ -65,7 +66,7 @@ public class GitlabGetter
 		{
 			this.projectPipelines = WebDownloader.parseWebJsonList(this.GitProjID + "pipelines");
 		}
-		catch (Exception e) { e.printStackTrace(); }
+		catch (Exception e) { LOGGER.error("Unable to get project pipelines, error: ["+e.getMessage()+"].", e); }
 	}
 	
 	public Config getCommitInfo(String commit)
@@ -97,7 +98,8 @@ public class GitlabGetter
 			}
 			catch (Exception e)
 			{
-				e.printStackTrace();
+				LOGGER.error("Unable to get ["+pipeline+"]'s pipeline info, error: ["+e.getMessage()+"].", e);
+				
 				// Return empty
 				return new ArrayList<>();
 			}
@@ -130,7 +132,7 @@ public class GitlabGetter
 				);
 			}
 		}
-		catch (Exception e) { e.printStackTrace(); }
+		catch (Exception e) { LOGGER.error("Unable to get downloads for pipeline ["+pipelineID+"], error: ["+e.getMessage()+"].", e); }
 		
 		return downloads;
 	}
@@ -148,10 +150,17 @@ public class GitlabGetter
 	 * A simple url getter for the latest jar of a version
 	 * @apiNote Not dependent on the instance of this object, will just download the one for the base mod
 	 */
+	@Nullable
 	public static URL getLatestForVersion(String mcVer)
 	{
-		try {
+		try
+		{
 			return new URL("https://gitlab.com/distant-horizons-team/distant-horizons/-/jobs/artifacts/main/download?job=build:%20%5B" + mcVer + "%5D");
-		} catch (Exception e) { e.printStackTrace(); return null; } // This should always be safe (unless you stuff up **badly** somewhere)
+		}
+		catch (Exception e)
+		{
+			LOGGER.error("Unable to get latest URL for MC version ["+mcVer+"], error: ["+e.getMessage()+"].", e);
+			return null;
+		} // This should always be safe (unless you stuff up **badly** somewhere)
 	}
 }

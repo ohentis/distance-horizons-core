@@ -24,6 +24,7 @@ import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.config.ConfigBase;
 import com.seibel.distanthorizons.core.config.types.AbstractConfigType;
 import com.seibel.distanthorizons.core.config.types.ConfigEntry;
+import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftSharedWrapper;
 import org.apache.logging.log4j.LogManager;
@@ -42,6 +43,7 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class ConfigFileHandling
 {
+	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	private static final IMinecraftSharedWrapper MC_SHARED = SingletonInjector.INSTANCE.get(IMinecraftSharedWrapper.class);
 	
 	
@@ -369,9 +371,9 @@ public class ConfigFileHandling
 			}
 			Files.createFile(path);
 		}
-		catch (IOException ex)
+		catch (IOException e)
 		{
-			ex.printStackTrace();
+			LOGGER.error("Unable to recreate config file, error: ["+e.getMessage()+"].", e);
 		}
 	}
 	

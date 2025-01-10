@@ -145,10 +145,9 @@ public class DeleteOnUnlock
 			{
 				stackTrace += stackTraceElement.toString() + "\n";
 			}
-			log("Unexpected exception occurred: " + e.getMessage() + "\n\n" + stackTrace);
-			
-			
-			e.printStackTrace();
+			String message = "Unexpected exception occurred: " + e.getMessage() + "\n\n" + stackTrace;
+			log(message);
+			System.err.println(message);
 			System.exit(ERROR_EXIT_CODE);
 		}
 	}

@@ -270,8 +270,7 @@ public class SelfUpdater
 		}
 		catch (Exception e)
 		{
-			LOGGER.warn("Failed to update Distant Horizons to version [" + ModrinthGetter.getLatestNameForVersion(minecraftVersion) + "].");
-			e.printStackTrace();
+			LOGGER.warn("Failed to update Distant Horizons to version [" + ModrinthGetter.getLatestNameForVersion(minecraftVersion) + "], error: ["+e.getMessage()+"].", e);
 			return false;
 		}
 	}
