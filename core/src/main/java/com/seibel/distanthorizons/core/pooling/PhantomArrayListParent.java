@@ -67,10 +67,9 @@ public abstract class PhantomArrayListParent implements AutoCloseable
 		}
 		catch (Exception e)
 		{
-			LOGGER.error("", e);
+			LOGGER.error("Unable to close Phantom Array", e);
 		}
 	}
-	
 	
 	
 }

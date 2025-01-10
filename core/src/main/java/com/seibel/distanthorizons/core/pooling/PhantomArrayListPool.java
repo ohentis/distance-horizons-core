@@ -409,7 +409,7 @@ public class PhantomArrayListPool
 	{
 		if (checkout == null)
 		{
-			throw new IllegalArgumentException("Null phantom checkout, memory leak in progress...");
+			throw new IllegalArgumentException("Null phantom checkout, object is being closed multiple times.");
 		}
 		
 		
