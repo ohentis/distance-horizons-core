@@ -7,6 +7,7 @@ import com.google.common.cache.RemovalNotification;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.util.KeyedLockContainer;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
@@ -25,9 +26,8 @@ public class DelayedFullDataSourceSaveCache
 	
 	private final Cache<Long, FullDataSourceV2> dataSourceByPosition;
 	
-	protected final ReentrantLock[] saveLockArray;
-	/** Based on the stack overflow post: https://stackoverflow.com/a/45909920 */
-	protected ReentrantLock getSaveLockForPos(long pos) { return this.saveLockArray[Math.abs(Long.hashCode(pos)) % this.saveLockArray.length]; }
+	/* don't let two threads load the same position at the same time */
+	protected final KeyedLockContainer<Long> saveLockContainer = new KeyedLockContainer<>();
 	
 	private final ISaveDataSourceFunc onSaveTimeoutAsyncFunc;
 	private final int saveDelayInMs;
@@ -51,15 +51,6 @@ public class DelayedFullDataSourceSaveCache
 				.removalListener(this::handleDataSourceRemoval)
 				.<Long, FullDataSourceV2>build();
 		
-		
-		// the lock array's length is 2x the number of CPU cores so the number of collisions
-		// should be relatively low without having too many extra locks
-		int lockCount = Runtime.getRuntime().availableProcessors() * 2;
-		this.saveLockArray = new ReentrantLock[lockCount];
-		for (int i = 0; i < lockCount; i++)
-		{
-			this.saveLockArray[i] = new ReentrantLock();
-		}
 	}
 	
 	
@@ -76,7 +67,7 @@ public class DelayedFullDataSourceSaveCache
 	{
 		long inputPos = inputDataSource.getPos();
 		
-		ReentrantLock lock = this.getSaveLockForPos(inputPos);
+		ReentrantLock lock = this.saveLockContainer.getLockForPos(inputPos);
 		try
 		{
 			lock.lock();
