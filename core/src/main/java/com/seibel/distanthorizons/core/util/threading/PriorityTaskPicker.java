@@ -35,6 +35,12 @@ public class PriorityTaskPicker
 	
 	private volatile boolean isShutDown = false;
 	
+	
+	
+	//==================//
+	// executor methods //
+	//==================//
+	
 	/**
 	 * Creates an executor with a specific priority.
 	 * Higher priority executors have more exponentially entries in the distribution queue, giving them a greater chance to run tasks.
@@ -151,6 +157,11 @@ public class PriorityTaskPicker
 		}
 	}
 	
+	
+	
+	//================//
+	// helper classes //
+	//================//
 	
 	public class Executor extends AbstractExecutorService
 	{
