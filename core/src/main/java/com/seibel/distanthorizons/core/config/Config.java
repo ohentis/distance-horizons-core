@@ -428,7 +428,7 @@ public class Config
 							.build();
 					
 					public static ConfigEntry<Integer> beaconRenderHeight = new ConfigEntry.Builder<Integer>()
-							.set(6000)
+							.setMinDefaultMax(1, 6000, Integer.MAX_VALUE)
 							.comment(""
 									+ "Sets the maximum height at which beacons will render."
 									+ "This will only affect new beacons coming into LOD render distance."
