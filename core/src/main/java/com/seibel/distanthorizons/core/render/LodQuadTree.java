@@ -85,7 +85,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 	
 	
 	/** don't let two threads load the same position at the same time */
-	protected static final KeyedLockContainer<Long> RENDER_LOAD_LOCK_CONTAINER = new KeyedLockContainer<>();
+	protected final KeyedLockContainer<Long> renderLoadLockContainer = new KeyedLockContainer<>();
 	
 	/**
 	 * caching is done at the QuadTree level to prevent caching LODs for different levels.
@@ -116,7 +116,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 						ColumnRenderSource renderSource = removalNotification.getValue();
 						if (renderSource != null)
 						{
-							ReentrantLock lock = RENDER_LOAD_LOCK_CONTAINER.getLockForPos(renderSource.getPos());
+							ReentrantLock lock = renderLoadLockContainer.getLockForPos(renderSource.getPos());
 							try
 							{
 								lock.lock();
@@ -246,7 +246,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 			long rootPos = rootPosIterator.nextLong();
 			if (this.getNode(rootPos) == null)
 			{
-				this.setValue(rootPos, new LodRenderSection(rootPos, this, this.cachedRenderSourceByPos, this.level, this.fullDataSourceProvider));
+				this.setValue(rootPos, new LodRenderSection(rootPos, this, this.level, this.fullDataSourceProvider, this.cachedRenderSourceByPos, this.renderLoadLockContainer));
 			}
 			
 			QuadNode<LodRenderSection> rootNode = this.getNode(rootPos);
@@ -285,7 +285,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 		// create the node
 		if (quadNode == null && this.isSectionPosInBounds(sectionPos)) // the position bounds should only fail when at the edge of the user's render distance
 		{
-			rootNode.setValue(sectionPos, new LodRenderSection(sectionPos, this, this.cachedRenderSourceByPos, this.level, this.fullDataSourceProvider));
+			rootNode.setValue(sectionPos, new LodRenderSection(sectionPos, this, this.level, this.fullDataSourceProvider, this.cachedRenderSourceByPos, this.renderLoadLockContainer));
 			quadNode = rootNode.getNode(sectionPos);
 		}
 		if (quadNode == null)
@@ -298,7 +298,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 		LodRenderSection renderSection = quadNode.value;
 		if (renderSection == null)
 		{
-			renderSection = new LodRenderSection(sectionPos, this, this.cachedRenderSourceByPos, this.level, this.fullDataSourceProvider);
+			renderSection = new LodRenderSection(sectionPos, this, this.level, this.fullDataSourceProvider, this.cachedRenderSourceByPos, this.renderLoadLockContainer);
 			quadNode.setValue(sectionPos, renderSection);
 		}
 		

@@ -21,9 +21,6 @@ package com.seibel.distanthorizons.core.render;
 
 import com.google.common.base.Suppliers;
 import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.RemovalCause;
-import com.google.common.cache.RemovalNotification;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSource;
@@ -74,6 +71,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	private final FullDataSourceProviderV2 fullDataSourceProvider;
 	private final LodQuadTree quadTree;
 	private final Cache<Long, ColumnRenderSource> cachedRenderSourceByPos;
+	private final KeyedLockContainer<Long> renderLoadLockContainer;
 	
 	
 	
@@ -115,11 +113,16 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	// constructor //
 	//=============//
 	
-	public LodRenderSection(long pos, LodQuadTree quadTree, Cache<Long, ColumnRenderSource> cachedRenderSourceByPos, IDhClientLevel level, FullDataSourceProviderV2 fullDataSourceProvider)
+	public LodRenderSection(
+			long pos, 
+			LodQuadTree quadTree, 
+			IDhClientLevel level, FullDataSourceProviderV2 fullDataSourceProvider, 
+			Cache<Long, ColumnRenderSource> cachedRenderSourceByPos, KeyedLockContainer<Long> renderLoadLockContainer)
 	{
 		this.pos = pos;
 		this.quadTree = quadTree;
 		this.cachedRenderSourceByPos = cachedRenderSourceByPos;
+		this.renderLoadLockContainer = renderLoadLockContainer;
 		this.level = level;
 		this.fullDataSourceProvider = fullDataSourceProvider;
 		
@@ -238,14 +241,14 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	@Nullable
 	private ColumnRenderSource getRenderSourceForPos(long pos) 
 	{
-		ReentrantLock lock = RENDER_LOAD_LOCK_CONTAINER.getLockForPos(pos);
+		ReentrantLock lock = this.renderLoadLockContainer.getLockForPos(pos);
 		try
 		{
 			// we don't want multiple threads attempting to load the same position at the same time
 			lock.lock();
 			
 			// use the cached data if possible
-			ColumnRenderSource renderSource = CACHED_RENDER_SOURCE_BY_POS.getIfPresent(pos);
+			ColumnRenderSource renderSource = this.cachedRenderSourceByPos.getIfPresent(pos);
 			if (renderSource != null)
 			{
 				return renderSource;
@@ -257,7 +260,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 				// only add valid data to the cache (to prevent null pointers)
 				if (renderSource != null)
 				{
-					CACHED_RENDER_SOURCE_BY_POS.put(pos, renderSource);
+					this.cachedRenderSourceByPos.put(pos, renderSource);
 				}
 			}
 			
