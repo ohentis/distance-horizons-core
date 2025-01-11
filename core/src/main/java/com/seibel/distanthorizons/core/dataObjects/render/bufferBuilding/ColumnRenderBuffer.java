@@ -88,9 +88,13 @@ public class ColumnRenderBuffer implements AutoCloseable
 		CompletableFuture<ColumnRenderBuffer> future = this.uploadFuture;
 		if (future != null)
 		{
+			// upload already in process
 			return future;
 		}
-		this.uploadFuture = new CompletableFuture<>();
+		
+		// new upload needed
+		future = new CompletableFuture<>();
+		this.uploadFuture = future;
 		
 		
 		
@@ -150,7 +154,7 @@ public class ColumnRenderBuffer implements AutoCloseable
 			}
 		});
 		
-		return this.uploadFuture;
+		return future;
 	}
 	private static GLVertexBuffer[] resizeBuffer(GLVertexBuffer[] vbos, int newSize)
 	{
