@@ -1623,6 +1623,17 @@ public class Config
 				.build();
 		
 		
+		// Pregen
+		public static ConfigEntry<Integer> pregenLogIntervalSeconds = new ConfigEntry.Builder<Integer>()
+				.setChatCommandName("pregen.logInterval")
+				.setMinDefaultMax(0, 5, 300 /* 5 minutes */)
+				.comment(""
+						+ "Interval between pre-generation log messages, in seconds.\n"
+						+ "Value of 0 will log at every generation task."
+						+ "")
+				.build();
+		
+		
 		// Common
 		public static ConfigEntry<Integer> maxDataTransferSpeed = new ConfigEntry.Builder<Integer>()
 				.setChatCommandName("common.maxDataTransferSpeed")

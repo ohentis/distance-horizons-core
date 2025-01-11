@@ -21,9 +21,11 @@ package com.seibel.distanthorizons.core.level;
 
 import com.seibel.distanthorizons.core.file.structure.ISaveStructure;
 import com.seibel.distanthorizons.core.multiplayer.server.ServerPlayerStateManager;
+import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.render.RenderBufferHandler;
 import com.seibel.distanthorizons.core.render.renderer.generic.GenericObjectRenderer;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
@@ -49,7 +51,16 @@ public class DhServerLevel extends AbstractDhServerLevel
 	{
 		return true; //todo;
 	}
-	
+	@Override
+	public @Nullable DhBlockPos2D getTargetPosForGeneration()
+	{
+		DhBlockPos2D targetPos = super.getTargetPosForGeneration();
+		if (targetPos == null)
+		{
+			return DhBlockPos2D.ZERO;
+		}
+		return targetPos;
+	}
 	
 	
 	//=========//
