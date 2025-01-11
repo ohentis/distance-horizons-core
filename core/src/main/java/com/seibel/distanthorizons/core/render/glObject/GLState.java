@@ -215,7 +215,7 @@ public class GLState
 			GLMC.disableDepthMask();
 		}
 		
-		//GL32.glBlendFunc(this.blendSrcColor, this.blendDstColor);
+		GLMC.glBlendFunc(this.blendSrcColor, this.blendDstColor);
 		GL32.glBlendEquationSeparate(this.blendEqRGB, this.blendEqAlpha);
 		GLMC.glBlendFuncSeparate(this.blendSrcColor, this.blendDstColor, this.blendSrcAlpha, this.blendDstAlpha);
 		
