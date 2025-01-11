@@ -203,13 +203,16 @@
 
   "distanthorizons.config.client.advanced.graphics.genericRendering":
     "Generic Object Rendering",
-
   "distanthorizons.config.client.advanced.graphics.genericRendering.enableGenericRendering":
     "Enable Rendering",
   "distanthorizons.config.client.advanced.graphics.genericRendering.enableGenericRendering.@tooltip":
     "If true non terrain objects will be rendered in DH's terrain. \nThis includes beacon beams and clouds.",
   "distanthorizons.config.client.advanced.graphics.genericRendering.enableBeaconRendering":
     "Enable Beacon Rendering",
+  "distanthorizons.config.client.advanced.graphics.genericRendering.beaconRenderHeight": 
+    "Beacon render height",
+  "distanthorizons.config.client.advanced.graphics.genericRendering.beaconRenderHeight.@tooltip":
+    "Sets the maximum height at which beacons will render. \nThis will only affect new beacons coming into LOD render distance. \nBeacons currently visible in LOD chunks will not be affected.",
   "distanthorizons.config.client.advanced.graphics.genericRendering.enableBeaconRendering.@tooltip":
     "If true LOD beacon beams will be rendered.",
   "distanthorizons.config.client.advanced.graphics.genericRendering.enableCloudRendering":
