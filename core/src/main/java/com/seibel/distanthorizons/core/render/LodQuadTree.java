@@ -19,6 +19,10 @@
 
 package com.seibel.distanthorizons.core.render;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.RemovalCause;
+import com.google.common.cache.RemovalNotification;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSource;
 import com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.ColumnRenderBuffer;
@@ -30,11 +34,11 @@ import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
+import com.seibel.distanthorizons.core.util.KeyedLockContainer;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
 import com.seibel.distanthorizons.core.util.objects.quadTree.QuadNode;
 import com.seibel.distanthorizons.core.util.objects.quadTree.QuadTree;
-import com.seibel.distanthorizons.core.util.threading.PriorityTaskPicker;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.coreapi.util.MathUtil;
 import it.unimi.dsi.fastutil.longs.LongIterator;
@@ -78,6 +82,61 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 	private ArrayList<LodRenderSection> debugRenderSections = new ArrayList<>();
 	private ArrayList<LodRenderSection> altDebugRenderSections = new ArrayList<>();
 	private final ReentrantLock debugRenderSectionLock = new ReentrantLock();
+	
+	
+	/** don't let two threads load the same position at the same time */
+	protected static final KeyedLockContainer<Long> RENDER_LOAD_LOCK_CONTAINER = new KeyedLockContainer<>();
+	
+	/**
+	 * caching is done at the QuadTree level to prevent caching LODs for different levels.
+	 * (Although the incorrect terrain that renders is quite entertaining). <br><br>
+	 * 
+	 * caching the loaded positions significantly improves initial loading performance
+	 * since the same position doesn't need to be loaded 5 times.
+	 */
+	private final Cache<Long, ColumnRenderSource> cachedRenderSourceByPos
+			= CacheBuilder.newBuilder()
+			// availableProcessors() : each process may need to be loading a render source
+			// +1 : add 1 thread count buffer to reduce the chance of accidentally unloading a render source before it's used
+			// *5 : each render source needs it's 4 adjacent sides, so a total of 5 render sources are needed per load
+			.maximumSize((Runtime.getRuntime().availableProcessors() + 1) * 5L)
+			.removalListener((RemovalNotification<Long, ColumnRenderSource> removalNotification) ->
+			{
+				RemovalCause cause = removalNotification.getCause();
+				if (cause == RemovalCause.EXPIRED
+						|| cause == RemovalCause.COLLECTED
+						|| cause == RemovalCause.SIZE
+						|| cause == RemovalCause.EXPLICIT)
+				{
+					// cleanup needs to be handled on a different thread to prevent locking up the main loading threads
+					ThreadPoolExecutor executor = ThreadPoolUtil.getCleanupExecutor();
+					executor.execute(() ->
+					{
+						// close the render source after it's been 
+						ColumnRenderSource renderSource = removalNotification.getValue();
+						if (renderSource != null)
+						{
+							ReentrantLock lock = RENDER_LOAD_LOCK_CONTAINER.getLockForPos(renderSource.getPos());
+							try
+							{
+								lock.lock();
+								renderSource.close();
+							}
+							finally
+							{
+								lock.unlock();
+							}
+						}
+						else
+						{
+							// shouldn't happen, but just in case
+							LOGGER.error("Unable to close null cached render source.");
+						}
+					});
+				}
+			})
+			.<Long, ColumnRenderSource>build();
+	
 	
 	/** the smallest numerical detail level number that can be rendered */
 	private byte maxRenderDetailLevel;
@@ -187,7 +246,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 			long rootPos = rootPosIterator.nextLong();
 			if (this.getNode(rootPos) == null)
 			{
-				this.setValue(rootPos, new LodRenderSection(rootPos, this, this.level, this.fullDataSourceProvider));
+				this.setValue(rootPos, new LodRenderSection(rootPos, this, this.cachedRenderSourceByPos, this.level, this.fullDataSourceProvider));
 			}
 			
 			QuadNode<LodRenderSection> rootNode = this.getNode(rootPos);
@@ -226,7 +285,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 		// create the node
 		if (quadNode == null && this.isSectionPosInBounds(sectionPos)) // the position bounds should only fail when at the edge of the user's render distance
 		{
-			rootNode.setValue(sectionPos, new LodRenderSection(sectionPos, this, this.level, this.fullDataSourceProvider));
+			rootNode.setValue(sectionPos, new LodRenderSection(sectionPos, this, this.cachedRenderSourceByPos, this.level, this.fullDataSourceProvider));
 			quadNode = rootNode.getNode(sectionPos);
 		}
 		if (quadNode == null)
@@ -239,7 +298,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 		LodRenderSection renderSection = quadNode.value;
 		if (renderSection == null)
 		{
-			renderSection = new LodRenderSection(sectionPos, this, this.level, this.fullDataSourceProvider);
+			renderSection = new LodRenderSection(sectionPos, this, this.cachedRenderSourceByPos, this.level, this.fullDataSourceProvider);
 			quadNode.setValue(sectionPos, renderSection);
 		}
 		
@@ -583,6 +642,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 	 */
 	public void reloadPos(long pos)
 	{
+		this.cachedRenderSourceByPos.invalidate(pos);
 		this.sectionsToReload.add(pos);
 		
 		// the adjacent locations also need to be updated to make sure lighting
@@ -590,7 +650,9 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 		// and lights may not show up over LOD borders
 		for (EDhDirection direction : EDhDirection.ADJ_DIRECTIONS)
 		{
-			this.sectionsToReload.add(DhSectionPos.getAdjacentPos(pos, direction));
+			long adjacentPos = DhSectionPos.getAdjacentPos(pos, direction);
+			this.cachedRenderSourceByPos.invalidate(adjacentPos);
+			this.sectionsToReload.add(adjacentPos);
 		}
 	}
 	

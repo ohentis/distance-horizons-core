@@ -65,41 +65,6 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	private static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	
-	/** 
-	 * caching the loaded positions significantly improves initial loading performance
-	 * since the same position doesn't need to be loaded 5 times.
-	 */
-	private static final Cache<Long, ColumnRenderSource> CACHED_RENDER_SOURCE_BY_POS
-			= CacheBuilder.newBuilder()
-				// availableProcessors() : each process may need to be loading a render source
-				// +1 : add 1 thread count buffer to reduce the chance of accidentally unloading a render source before it's used
-				// *5 : each render source needs it's 4 adjacent sides, so a total of 5 render sources are needed per load
-				.maximumSize((Runtime.getRuntime().availableProcessors() + 1) * 5L)
-				.removalListener((RemovalNotification<Long, ColumnRenderSource> removalNotification) ->
-				{
-					RemovalCause cause = removalNotification.getCause();
-					if (cause == RemovalCause.EXPIRED
-						|| cause == RemovalCause.COLLECTED
-						|| cause == RemovalCause.SIZE)
-					{
-						// close the render source after it's been 
-						ColumnRenderSource renderSource = removalNotification.getValue();
-						if (renderSource != null)
-						{
-							renderSource.close();
-						}
-						else
-						{
-							LOGGER.error("Unable to close null cached render source.");
-						}
-					}
-				})
-				.<Long, ColumnRenderSource>build();
-	
-	/** don't let two threads load the same position at the same time */
-	protected static final KeyedLockContainer<Long> RENDER_LOAD_LOCK_CONTAINER = new KeyedLockContainer<>();
-	
-	
 	
 	
 	public final long pos;
@@ -108,6 +73,8 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	@WillNotClose
 	private final FullDataSourceProviderV2 fullDataSourceProvider;
 	private final LodQuadTree quadTree;
+	private final Cache<Long, ColumnRenderSource> cachedRenderSourceByPos;
+	
 	
 	
 	private boolean renderingEnabled = false;
@@ -148,10 +115,11 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	// constructor //
 	//=============//
 	
-	public LodRenderSection(long pos, LodQuadTree quadTree, IDhClientLevel level, FullDataSourceProviderV2 fullDataSourceProvider)
+	public LodRenderSection(long pos, LodQuadTree quadTree, Cache<Long, ColumnRenderSource> cachedRenderSourceByPos, IDhClientLevel level, FullDataSourceProviderV2 fullDataSourceProvider)
 	{
 		this.pos = pos;
 		this.quadTree = quadTree;
+		this.cachedRenderSourceByPos = cachedRenderSourceByPos;
 		this.level = level;
 		this.fullDataSourceProvider = fullDataSourceProvider;
 		
