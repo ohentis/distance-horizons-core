@@ -1264,7 +1264,8 @@ public class Config
 					.build();
 			
 			public static ConfigEntry<Integer> generationProgressDisplayIntervalInSeconds = new ConfigEntry.Builder<Integer>()
-					.setMinDefaultMax(1, 2, 60 * 60 * 4) // max = 4 hours
+					.setChatCommandName("generation.logInterval")
+					.setMinDefaultMax(1, 5, 60 * 60 * 4) // max = 4 hours
 					.comment(""
 							+ "How often should the distant generator progress be displayed? \n"
 							+ "")
@@ -1620,17 +1621,6 @@ public class Config
 						"Should be the same or larger than maxGenerationRequestDistance in most cases." +
 						"")
 				.setPerformance(EConfigEntryPerformance.HIGH)
-				.build();
-		
-		
-		// Pregen
-		public static ConfigEntry<Integer> pregenLogIntervalSeconds = new ConfigEntry.Builder<Integer>()
-				.setChatCommandName("pregen.logInterval")
-				.setMinDefaultMax(0, 5, 300 /* 5 minutes */)
-				.comment(""
-						+ "Interval between pre-generation log messages, in seconds.\n"
-						+ "Value of 0 will log at every generation task."
-						+ "")
 				.build();
 		
 		
