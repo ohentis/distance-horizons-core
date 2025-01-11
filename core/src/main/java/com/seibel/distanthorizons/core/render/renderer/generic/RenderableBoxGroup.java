@@ -41,8 +41,9 @@ public class RenderableBoxGroup
 		/** If false the boxes will be positioned relative to the level's origin */
 		public final boolean positionBoxesRelativeToGroupOrigin;
 		
-		private final ArrayList<DhApiRenderableBox> boxList;
-		
+		private final List<DhApiRenderableBox> boxList;
+		/** backup list which allows for uploading the boxes even it the main list is being modified on a different thread. */
+		private final List<DhApiRenderableBox> uploadBoxList;
 		private final DhApiVec3d originBlockPos;
 		
 		
@@ -136,7 +137,8 @@ public class RenderableBoxGroup
 			this.resourceLocationPath = splitResourceLocation[1];
 			
 			this.id = NEXT_ID_ATOMIC_INT.getAndIncrement();
-			this.boxList = new ArrayList<>(boxList);
+			this.boxList = Collections.synchronizedList(new ArrayList<>(boxList));
+			this.uploadBoxList = Collections.synchronizedList(new ArrayList<>(boxList));
 			
 			this.originBlockPos = originBlockPos;
 			this.positionBoxesRelativeToGroupOrigin = positionBoxesRelativeToGroupOrigin;
@@ -211,7 +213,7 @@ public class RenderableBoxGroup
 		@Override 
 		public void replaceAll(UnaryOperator<DhApiRenderableBox> operator) { this.boxList.replaceAll(operator); }
 		@Override 
-		public void sort(Comparator<? super DhApiRenderableBox> c) { this.boxList.sort(c); }
+		public void sort(Comparator<? super DhApiRenderableBox> comparator) { this.boxList.sort(comparator); }
 		@Override 
 		public void forEach(Consumer<? super DhApiRenderableBox> action) { this.boxList.forEach(action); }
 		@Override 
@@ -222,6 +224,7 @@ public class RenderableBoxGroup
 		public Stream<DhApiRenderableBox> parallelStream() { return this.boxList.parallelStream(); }
 		@Override 
 		public void clear() { this.boxList.clear(); }
+		
 		
 		
 		//===================//
@@ -246,7 +249,15 @@ public class RenderableBoxGroup
 				this.instanceMaterialVbo = GLMC.glGenBuffers();
 			}
 			
-			int boxCount = this.size();
+			// copy over the box list so we can upload without concurrent modification issues
+			this.uploadBoxList.clear();
+			synchronized (this.uploadBoxList)
+			{
+				this.uploadBoxList.addAll(this.boxList);
+			}
+			
+			
+			int boxCount = this.uploadBoxList.size();
 			this.uploadedBoxCount = boxCount;
 			
 			
@@ -257,7 +268,7 @@ public class RenderableBoxGroup
 			float[] scalingData = RenderBoxArrayCache.getCachedFloatArray(boxCount * 3, 2);
 			for (int i = 0; i < boxCount; i++)
 			{
-				DhApiRenderableBox box = this.get(i);
+				DhApiRenderableBox box = this.uploadBoxList.get(i);
 				
 				int dataIndex = i * 3;
 				
@@ -281,7 +292,7 @@ public class RenderableBoxGroup
 			int[] materialData = RenderBoxArrayCache.getCachedIntArray(boxCount, 4);
 			for (int i = 0; i < boxCount; i++)
 			{
-				DhApiRenderableBox box = this.get(i);
+				DhApiRenderableBox box = this.uploadBoxList.get(i);
 				Color color = box.color;
 				int colorIndex = i * 4;
 				colorData[colorIndex] = color.getRed() / 255.0f;

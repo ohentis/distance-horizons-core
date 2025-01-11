@@ -434,36 +434,55 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		Collection<RenderableBoxGroup> boxList = this.boxGroupById.values();
 		for (RenderableBoxGroup boxGroup : boxList)
 		{
-			// skip boxes that shouldn't render this pass
-			if (boxGroup.ssaoEnabled == renderingWithSsao)
+			// validation //
+			
+			// shouldn't happen, but just in case
+			if (boxGroup == null)
 			{
-				profiler.popPush("render prep");
-				boxGroup.preRender(renderEventParam);
-				
-				// ignore inactive groups
-				if (boxGroup.active)
-				{
-					boolean cancelRendering = ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeGenericObjectRenderEvent.class, new DhApiBeforeGenericObjectRenderEvent.EventParam(renderEventParam, boxGroup));
-					if (!cancelRendering)
-					{
-						profiler.popPush("rendering");
-						profiler.push(boxGroup.getResourceLocationNamespace());
-						profiler.push(boxGroup.getResourceLocationPath());
-						if (useInstancedRendering)
-						{
-							this.renderBoxGroupInstanced(shaderProgram, renderEventParam, boxGroup, camPos, profiler);
-						}
-						else
-						{
-							this.renderBoxGroupDirect(shaderProgram, renderEventParam, boxGroup, camPos);
-						}
-						profiler.pop(); // resource path
-						profiler.pop(); // resource namespace
-						
-						boxGroup.postRender(renderEventParam);
-					}
-				}
+				continue;
 			}
+			
+			// skip boxes that shouldn't render this pass
+			if (boxGroup.ssaoEnabled != renderingWithSsao)
+			{
+				continue;
+			}
+			
+			profiler.popPush("render prep");
+			boxGroup.preRender(renderEventParam); // called even if the group is inactive, so the group can be activate if desired
+
+			// ignore inactive groups
+			if (!boxGroup.active)
+			{
+				continue;
+			}
+			
+			// allow API users to cancel this object's rendering
+			boolean cancelRendering = ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeGenericObjectRenderEvent.class, new DhApiBeforeGenericObjectRenderEvent.EventParam(renderEventParam, boxGroup));
+			if (cancelRendering)
+			{
+				continue;
+			}
+			
+			
+			
+			// render //
+			
+			profiler.popPush("rendering");
+			profiler.push(boxGroup.getResourceLocationNamespace());
+			profiler.push(boxGroup.getResourceLocationPath());
+			if (useInstancedRendering)
+			{
+				this.renderBoxGroupInstanced(shaderProgram, renderEventParam, boxGroup, camPos, profiler);
+			}
+			else
+			{
+				this.renderBoxGroupDirect(shaderProgram, renderEventParam, boxGroup, camPos);
+			}
+			profiler.pop(); // resource path
+			profiler.pop(); // resource namespace
+			
+			boxGroup.postRender(renderEventParam);
 		}
 		
 		
