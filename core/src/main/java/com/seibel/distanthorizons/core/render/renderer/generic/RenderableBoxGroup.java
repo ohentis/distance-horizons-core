@@ -5,8 +5,10 @@ import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhAp
 import com.seibel.distanthorizons.api.objects.math.DhApiVec3d;
 import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBox;
 import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBoxGroupShading;
+import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.render.glObject.GLProxy;
 import com.seibel.distanthorizons.core.util.LodUtil;
+import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftGLWrapper;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.opengl.GL32;
 
@@ -15,6 +17,7 @@ import java.io.Closeable;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
@@ -24,6 +27,8 @@ public class RenderableBoxGroup
 			extends AbstractList<DhApiRenderableBox> 
 			implements IDhApiRenderableBoxGroup, Closeable
 	{
+		private static final IMinecraftGLWrapper GLMC = SingletonInjector.INSTANCE.get(IMinecraftGLWrapper.class);
+		
 		public static final AtomicInteger NEXT_ID_ATOMIC_INT = new AtomicInteger(0);
 		
 		
@@ -234,11 +239,11 @@ public class RenderableBoxGroup
 			
 			if (this.instanceChunkPosVbo == 0)
 			{
-				this.instanceChunkPosVbo = GL32.glGenBuffers();
-				this.instanceSubChunkPosVbo = GL32.glGenBuffers();
-				this.instanceScaleVbo = GL32.glGenBuffers();
-				this.instanceColorVbo = GL32.glGenBuffers();
-				this.instanceMaterialVbo = GL32.glGenBuffers();
+				this.instanceChunkPosVbo = GLMC.glGenBuffers();
+				this.instanceSubChunkPosVbo = GLMC.glGenBuffers();
+				this.instanceScaleVbo = GLMC.glGenBuffers();
+				this.instanceColorVbo = GLMC.glGenBuffers();
+				this.instanceMaterialVbo = GLMC.glGenBuffers();
 			}
 			
 			int boxCount = this.size();
@@ -321,31 +326,31 @@ public class RenderableBoxGroup
 			{
 				if (this.instanceChunkPosVbo != 0)
 				{
-					GL32.glDeleteBuffers(this.instanceChunkPosVbo);
+					GLMC.glDeleteBuffers(this.instanceChunkPosVbo);
 					this.instanceChunkPosVbo = 0;
 				}
 				
 				if (this.instanceSubChunkPosVbo != 0)
 				{
-					GL32.glDeleteBuffers(this.instanceSubChunkPosVbo);
+					GLMC.glDeleteBuffers(this.instanceSubChunkPosVbo);
 					this.instanceSubChunkPosVbo = 0;
 				}
 				
 				if (this.instanceScaleVbo != 0)
 				{
-					GL32.glDeleteBuffers(this.instanceScaleVbo);
+					GLMC.glDeleteBuffers(this.instanceScaleVbo);
 					this.instanceScaleVbo = 0;
 				}
 				
 				if (this.instanceColorVbo != 0)
 				{
-					GL32.glDeleteBuffers(this.instanceColorVbo);
+					GLMC.glDeleteBuffers(this.instanceColorVbo);
 					this.instanceColorVbo = 0;
 				}
 				
 				if (this.instanceMaterialVbo != 0)
 				{
-					GL32.glDeleteBuffers(this.instanceMaterialVbo);
+					GLMC.glDeleteBuffers(this.instanceMaterialVbo);
 					this.instanceMaterialVbo = 0;
 				}
 			});
