@@ -1,5 +1,6 @@
 package com.seibel.distanthorizons.core.generation;
 
+import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.RemovalCause;
 import com.seibel.distanthorizons.core.api.internal.SharedApi;
@@ -9,30 +10,30 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.util.LodUtil;
+import com.seibel.distanthorizons.core.util.objects.RollingAverage;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.Collections;
-import java.util.Set;
+import java.text.MessageFormat;
+import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
 
 public class PregenManager
 {
 	protected static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
-	private final AtomicReference<CompletableFuture<Void>> pregenFuture = new AtomicReference<>();
+	private final AtomicReference<PregenState> pregenFuture = new AtomicReference<>();
 	
 	
 	public CompletableFuture<Void> startPregen(
 			IServerLevelWrapper levelWrapper,
 			DhBlockPos2D origin,
-			int chunkRadius,
-			Consumer<String> progressUpdater
+			int chunkRadius
 	)
 	{
 		PregenState pregenState = new PregenState(
@@ -41,8 +42,7 @@ public class PregenManager
 						DhSectionPos.encode(LodUtil.BLOCK_DETAIL_LEVEL, origin.x, origin.z),
 						DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL
 				),
-				(int) Math.pow(Math.ceil((double) chunkRadius / 4 * 2), 2),
-				progressUpdater
+				(int) Math.pow(Math.ceil((double) chunkRadius / 4 * 2), 2)
 		);
 		
 		if (!this.pregenFuture.compareAndSet(null, pregenState))
@@ -63,35 +63,55 @@ public class PregenManager
 		return this.pregenFuture.get();
 	}
 	
+	@Nullable
+	public String getStatusString()
+	{
+		PregenState pregenState = this.pregenFuture.get();
+		if (pregenState != null)
+		{
+			return pregenState.getStatusString();
+		}
+		
+		return null;
+	}
+	
 	
 	private static class PregenState extends CompletableFuture<Void>
 	{
 		private final GeneratedFullDataSourceProvider fullDataSourceProvider;
 		private final long originSectionPos;
 		private final int sectionsToGenerate;
-		private final Consumer<String> progressUpdater;
 		
 		private final AtomicInteger nextSectionSpiralIndex = new AtomicInteger(0);
+		
+		private final AtomicLong lastTaskStartTime = new AtomicLong(System.currentTimeMillis());
+		private final RollingAverage averageTaskCompletionIntervalMs = new RollingAverage(200);
+		
 		private final AtomicLong lastLogTime = new AtomicLong();
 		
-		private final Set<Long> pendingGenerations = Collections.newSetFromMap(CacheBuilder.newBuilder()
+		
+		@SuppressWarnings("DataFlowIssue")
+		private final Cache<Long, Long> pendingGenerations = CacheBuilder.newBuilder()
 				.expireAfterWrite(2, TimeUnit.MINUTES)
-				.<Long, Boolean>removalListener(removalNotification -> {
+				.<Long, Long>removalListener(removalNotification -> {
 					if (removalNotification.getCause() == RemovalCause.EXPIRED)
 					{
-						//noinspection DataFlowIssue
 						LOGGER.warn("Generation for section " + DhSectionPos.toString(removalNotification.getKey()) + " has expired!");
 					}
+					
+					long timeSinceLastTaskStart = System.currentTimeMillis() - this.lastTaskStartTime.getAndSet(System.currentTimeMillis());
+					this.averageTaskCompletionIntervalMs.addValue(timeSinceLastTaskStart);
+					
+					PregenState.this.fillPendingQueue();
 				})
-				.build().asMap());
+				.build();
 		
 		
-		public PregenState(GeneratedFullDataSourceProvider fullDataSourceProvider, long originSectionPos, int sectionsToGenerate, Consumer<String> progressUpdater)
+		public PregenState(GeneratedFullDataSourceProvider fullDataSourceProvider, long originSectionPos, int sectionsToGenerate)
 		{
 			this.fullDataSourceProvider = fullDataSourceProvider;
 			this.originSectionPos = originSectionPos;
 			this.sectionsToGenerate = sectionsToGenerate;
-			this.progressUpdater = progressUpdater;
 		}
 		
 		
@@ -109,32 +129,27 @@ public class PregenManager
 				long nextSectionPos = this.sectionPosOnSpiral(nextSpiralIndex);
 				
 				long lastLogTime = this.lastLogTime.get();
-				if (Config.Server.pregenLogIntervalSeconds.get() == 0
-						|| (System.currentTimeMillis() - lastLogTime > TimeUnit.SECONDS.toMillis(Config.Server.pregenLogIntervalSeconds.get()) && this.lastLogTime.compareAndSet(lastLogTime, System.currentTimeMillis()))
-				)
+				if (System.currentTimeMillis() - lastLogTime >= TimeUnit.SECONDS.toMillis(Config.Common.WorldGenerator.generationProgressDisplayIntervalInSeconds.get())
+						&& this.lastLogTime.compareAndSet(lastLogTime, System.currentTimeMillis()))
 				{
-					this.progressUpdater.accept("Next section: " + DhSectionPos.toString(nextSectionPos) + ", generated: " + nextSpiralIndex + " / " + this.sectionsToGenerate);
+					LOGGER.info(this.getStatusString());
 				}
 				
-				this.pendingGenerations.add(nextSectionPos);
+				this.pendingGenerations.put(nextSectionPos, System.currentTimeMillis());
 				this.fullDataSourceProvider.getAsync(nextSectionPos).thenAccept(fullDataSource -> {
 					if (this.fullDataSourceProvider.isFullyGenerated(fullDataSource.columnGenerationSteps))
 					{
-						this.pendingGenerations.remove(fullDataSource.getPos());
-						PregenState.this.fillPendingQueue();
+						this.pendingGenerations.invalidate(fullDataSource.getPos());
 					}
 					else
 					{
 						this.fullDataSourceProvider.queuePositionForRetrieval(fullDataSource.getPos()).thenAccept(result -> {
-							if (result.success)
-							{
-								this.pendingGenerations.remove(fullDataSource.getPos());
-								PregenState.this.fillPendingQueue();
-							}
-							else
+							if (!result.success)
 							{
 								LOGGER.warn("Failed to generate section " + DhSectionPos.toString(result.pos));
 							}
+							
+							this.pendingGenerations.invalidate(result.pos);
 						});
 					}
 					
@@ -143,20 +158,32 @@ public class PregenManager
 			}
 		}
 		
-		private long sectionPosOnSpiral(int pos)
+		public String getStatusString()
 		{
-			if (pos == 0)
+			double etaMs = this.averageTaskCompletionIntervalMs.getAverage() * (this.sectionsToGenerate - this.nextSectionSpiralIndex.get());
+			
+			return MessageFormat.format("Generated radius: {0,number,#.#} / {1,number,#.#} chunks ({2,number,#.#%}), ETA: {3}",
+					Math.sqrt(this.nextSectionSpiralIndex.get()) / 2 * 4,
+					Math.sqrt(this.sectionsToGenerate) / 2 * 4,
+					(double) this.nextSectionSpiralIndex.get() / this.sectionsToGenerate,
+					Duration.ofMillis((long) etaMs).toString()
+							.substring(2)
+							.replaceAll("(\\d[HMS])(?!$)", "$1 ")
+							.replaceAll("\\.\\d+", "")
+							.toLowerCase()
+			);
+		}
+		
+		private long sectionPosOnSpiral(int index)
+		{
+			if (index == 0)
 			{
 				return this.originSectionPos;
 			}
-			pos--;
+			index--;
 			
-			int ringNumber = 1;
-			while (pos >= ringNumber * 8)
-			{
-				pos -= ringNumber * 8;
-				ringNumber++;
-			}
+			int ringNumber = (int) Math.round(Math.sqrt(Math.floor((double) index / 4) + 1));
+			index -= ringNumber * 8 * (ringNumber - 1) / 2;
 			
 			// 0 <= pos <= (ringNumber * 8) - 1
 			// ringNumber * 8 - full ring
@@ -164,10 +191,10 @@ public class PregenManager
 			// ringNumber * 2 - quarter-ring, i.e. one side of it
 			// ringNumber - half of quarter-ring
 			
-			int x = -ringNumber + 1 + Math.min(pos % (ringNumber * 4), ringNumber * 2 - 1);
-			int z = ringNumber - Math.max(0, pos % (ringNumber * 4) - ringNumber * 2 + 1);
+			int x = -ringNumber + 1 + Math.min(index % (ringNumber * 4), ringNumber * 2 - 1);
+			int z = ringNumber - Math.max(0, index % (ringNumber * 4) - ringNumber * 2 + 1);
 			
-			if (pos >= ringNumber * 4)
+			if (index >= ringNumber * 4)
 			{
 				x = -x;
 				z = -z;
