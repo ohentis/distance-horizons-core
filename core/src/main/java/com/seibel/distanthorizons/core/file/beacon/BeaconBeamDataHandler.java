@@ -7,6 +7,7 @@ import com.seibel.distanthorizons.core.render.renderer.generic.BeaconRenderHandl
 import com.seibel.distanthorizons.core.render.renderer.generic.GenericObjectRenderer;
 import com.seibel.distanthorizons.core.sql.dto.BeaconBeamDTO;
 import com.seibel.distanthorizons.core.sql.repo.BeaconBeamRepo;
+import com.seibel.distanthorizons.core.util.KeyedLockContainer;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import org.jetbrains.annotations.NotNull;
 
@@ -14,6 +15,7 @@ import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class BeaconBeamDataHandler
 {
@@ -21,6 +23,8 @@ public class BeaconBeamDataHandler
 	
 	@Nullable
 	private BeaconRenderHandler beaconRenderHandler;
+	
+	private final KeyedLockContainer<Long> updateLockContainer = new KeyedLockContainer<>();
 	
 	
 	
@@ -52,9 +56,12 @@ public class BeaconBeamDataHandler
 	
 	public void setBeaconBeamsForPos(long sectionPos, List<BeaconBeamDTO> activeBeamList)
 	{
-		// synchronized to prevent two threads from updating the same chunk at the same time
-		synchronized (this)
+		// locked to prevent two threads from updating the same section at the same time
+		ReentrantLock lock = this.updateLockContainer.getLockForPos(sectionPos);
+		try
 		{
+			lock.lock();
+			
 			HashSet<DhBlockPos> allPosSet = new HashSet<>();
 			
 			// sort new beams
@@ -124,6 +131,10 @@ public class BeaconBeamDataHandler
 				}
 				
 			}
+		}
+		finally
+		{
+			lock.unlock();
 		}
 	}
 	
