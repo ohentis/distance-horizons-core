@@ -47,6 +47,7 @@ import org.apache.logging.log4j.Logger;
 import javax.annotation.WillNotClose;
 import java.awt.*;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -103,10 +104,10 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 			.removalListener((RemovalNotification<Long, ColumnRenderSource> removalNotification) ->
 			{
 				RemovalCause cause = removalNotification.getCause();
-				if (cause == RemovalCause.EXPIRED
-						|| cause == RemovalCause.COLLECTED
-						|| cause == RemovalCause.SIZE
-						|| cause == RemovalCause.EXPLICIT)
+				if (cause == RemovalCause.EXPLICIT
+					|| cause == RemovalCause.EXPIRED
+					|| cause == RemovalCause.COLLECTED
+					|| cause == RemovalCause.SIZE)
 				{
 					// cleanup needs to be handled on a different thread to prevent locking up the main loading threads
 					ThreadPoolExecutor executor = ThreadPoolUtil.getCleanupExecutor();
@@ -788,29 +789,69 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 	@Override
 	public void close()
 	{
-		LOGGER.info("Shutting down " + LodQuadTree.class.getSimpleName() + "...");
+		LOGGER.info("Shutting down LodQuadTree...");
 		
 		DebugRenderer.unregister(this, Config.Client.Advanced.Debugging.DebugWireframe.showQuadTreeRenderStatus);
 		
-		ThreadPoolExecutor executor = ThreadPoolUtil.getCleanupExecutor();
-		// closing each node make take a few moments
+		ThreadPoolExecutor mainCleanupExecutor = ThreadPoolUtil.getCleanupExecutor();
+		// closing every node may take a few moments
 		// so this is run on a separate thread to prevent lagging the render thread
-		executor.execute(() -> 
+		mainCleanupExecutor.execute(() -> 
 		{
-			Iterator<QuadNode<LodRenderSection>> nodeIterator = this.nodeIterator();
-			while (nodeIterator.hasNext())
+			this.treeReadWriteLock.lock();
+			try
 			{
-				QuadNode<LodRenderSection> quadNode = nodeIterator.next();
-				if (quadNode.value != null)
+				// walk through each node
+				Iterator<QuadNode<LodRenderSection>> nodeIterator = this.nodeIterator();
+				ArrayList<CompletableFuture<Void>> renderDataBuildFutures = new ArrayList<>();
+				while (nodeIterator.hasNext())
 				{
-					quadNode.value.close();
-					quadNode.value = null;
+					QuadNode<LodRenderSection> quadNode = nodeIterator.next();
+					LodRenderSection renderSection = quadNode.value;
+					if (renderSection != null)
+					{
+						// we need to wait for the render data to finish building before we can close the cache
+						CompletableFuture<Void> future = renderSection.getRenderDataBuildFuture();
+						if (future != null)
+						{
+							renderDataBuildFutures.add(future);
+						}
+						
+						renderSection.close();
+						quadNode.value = null;
+					}
 				}
+				
+				
+				// close the render cache after it is done being used
+				LOGGER.info("waiting for ["+renderDataBuildFutures.size()+"] futures before closing render cache...");
+				CompletableFuture.allOf(renderDataBuildFutures.toArray(new CompletableFuture[0]))
+					.handle((voidObj, throwable) ->
+					{
+						// run on a separate thread so we don't lock up the main cleanup thread
+						// with the sleep() call
+						new Thread(() -> 
+						{
+							// Sleep shouldn't be necessary, but James found a few cases where
+							// the futures incorrectly claimed they were done.
+							// Sleeping solved those issues.
+							try { Thread.sleep(5_000); } catch (InterruptedException ignore) {  }
+
+							LOGGER.debug("closing render cache");
+							this.cachedRenderSourceByPos.invalidateAll();
+						}).start();
+						
+						return null;
+					});
+			}
+			finally
+			{
+				this.treeReadWriteLock.unlock();
 			}
 		});
 		
 		
-		LOGGER.info("Finished shutting down " + LodQuadTree.class.getSimpleName());
+		LOGGER.info("Finished shutting down LodQuadTree");
 	}
 	
 	

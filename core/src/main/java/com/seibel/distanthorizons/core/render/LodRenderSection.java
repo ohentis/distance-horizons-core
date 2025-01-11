@@ -70,8 +70,8 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	@WillNotClose
 	private final FullDataSourceProviderV2 fullDataSourceProvider;
 	private final LodQuadTree quadTree;
-	private final Cache<Long, ColumnRenderSource> cachedRenderSourceByPos;
 	private final KeyedLockContainer<Long> renderLoadLockContainer;
+	private final Cache<Long, ColumnRenderSource> cachedRenderSourceByPos;
 	
 	
 	
@@ -86,6 +86,9 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	 * up to the point when geometry data is uploaded to the GPU.
 	 */
 	private CompletableFuture<Void> getAndBuildRenderDataFuture = null;
+	@Nullable
+	public CompletableFuture<Void> getRenderDataBuildFuture() { return this.getAndBuildRenderDataFuture; } 
+	
 	/** 
 	 * used alongside {@link LodRenderSection#getAndBuildRenderDataFuture} so we can remove
 	 * unnecessary tasks from the executor.
@@ -254,6 +257,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 				return renderSource;
 			}
 			
+			// generate new render source
 			try (FullDataSourceV2 fullDataSource = this.fullDataSourceProvider.get(pos))
 			{
 				renderSource = FullDataToRenderDataTransformer.transformFullDataToRenderSource(fullDataSource, this.level);
@@ -498,14 +502,8 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		CompletableFuture<Void> buildFuture = this.getAndBuildRenderDataFuture;
 		if (buildFuture != null)
 		{
-			// Note to self:
-			// canceling a task prevents it from running, but doesn't allow
-			// us to purge it from the executor it was queued in.
-			// As far as James can tell this appears to be a Java bug.
-			buildFuture.cancel(true);
-			
-			
 			// remove the task from our executor if present
+			// note: don't cancel the task since that prevents cleanup, we just don't want it to run
 			PriorityTaskPicker.Executor executor = ThreadPoolUtil.getFileHandlerExecutor();
 			if (executor != null && !executor.isTerminated())
 			{
@@ -521,7 +519,6 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		if (uploadFuture != null)
 		{
 			uploadFuture.cancel(true);
-			this.bufferUploadFuture = null;
 		}
 		
 		

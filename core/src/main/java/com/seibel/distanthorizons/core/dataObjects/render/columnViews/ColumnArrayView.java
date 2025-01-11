@@ -25,6 +25,7 @@ import com.seibel.distanthorizons.core.util.RenderDataPointUtil;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 
 import java.util.Arrays;
+import java.util.ConcurrentModificationException;
 
 public final class ColumnArrayView implements IColumnDataView
 {
@@ -53,12 +54,18 @@ public final class ColumnArrayView implements IColumnDataView
 	// constructor //
 	//=============//
 	
-	public ColumnArrayView(LongArrayList data, int size, int offset, int verticalSize)
+	/** @throws IllegalArgumentException if the offset is greater than the data's size */
+	public ColumnArrayView(LongArrayList data, int size, int offset, int verticalSize) throws IllegalArgumentException
 	{
 		this.data = data;
 		this.size = size;
 		this.offset = offset;
 		this.verticalSize = verticalSize;
+		
+		if (this.data.size() < this.offset)
+		{
+			throw new IllegalArgumentException("data size ["+this.data.size()+"] is shorter than offset ["+this.offset+"].");
+		}
 	}
 	
 	
@@ -68,7 +75,20 @@ public final class ColumnArrayView implements IColumnDataView
 	//=====================//
 	
 	@Override
-	public long get(int index) { return data.getLong(index + offset); }
+	public long get(int index) 
+	{
+		try
+		{
+			return this.data.getLong(index + this.offset);
+		}
+		catch (IndexOutOfBoundsException e)
+		{
+			// we can fairly confidently say this is a concurrent exception over an actual
+			// index out of bounds, since we're generally iterating over the whole
+			// array any time we use this getter.
+			throw new ConcurrentModificationException("Potential concurrent modification detected. Make sure the parent ColumnRenderSource isn't being closed before the ColumnArrayView processing is complete.", e);
+		}
+	}
 	public void set(int index, long value) { data.set(index + offset, value); }
 	
 	@Override
