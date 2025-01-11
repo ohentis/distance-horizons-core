@@ -681,13 +681,15 @@ public class Config
 				public static class Culling
 				{
 					public static ConfigEntry<Double> overdrawPrevention = new ConfigEntry.Builder<Double>()
-							.setMinDefaultMax(0.0, 0.4, 1.0)
+							.setMinDefaultMax(0.0, 0.0, 1.0)
 							.comment(""
 									+ "Determines how far from the camera Distant Horizons will start rendering. \n"
 									+ "Measured as a percentage of the vanilla render distance.\n"
 									+ "\n"
+									+ "0 = auto, overdraw will change based on the vanilla render distance.\n"
+									+ "\n"
 									+ "Higher values will prevent LODs from rendering behind vanilla blocks at a higher distance,\n"
-									+ "but may cause holes to appear in the LODs. \n"
+									+ "but may cause holes in the world. \n"
 									+ "Holes are most likely to appear when flying through unloaded terrain. \n"
 									+ "\n"
 									+ "Increasing the vanilla render distance increases the effectiveness of this setting."

@@ -86,7 +86,46 @@ public class RenderUtil
 		return mcModelViewMat.copy();
 	}
 	
-	public static float getNearClipPlaneDistanceInBlocks(float partialTicks)
+	public static float getNearClipPlaneDistanceInBlocks(float partialTicks) 
+	{ 
+		// 0.2 should provide a decent distance so the clip plane isn't visible
+		// but far enough the fading will rarely overlap (IE only at extreme FOV)
+		return getNearClipPlaneDistanceInBlocks(partialTicks, 0.2f); 
+	}
+	public static float getNearClipPlaneInBlocksForFading(float partialTicks)
+	{
+		float overdraw = Config.Client.Advanced.Graphics.Culling.overdrawPrevention.get().floatValue();
+		
+		// 0 or less 
+		if (overdraw <= 0)
+		{
+			// at low render distances this hides the vanilla RD border
+			int chunkRenderDistance = MC_RENDER.getRenderDistance();
+			if (chunkRenderDistance <= 2)
+			{
+				overdraw = 0.2f;
+			}
+			else if (chunkRenderDistance <= 4)
+			{
+				overdraw = 0.3f;
+			}
+			else if (chunkRenderDistance <= 6)
+			{
+				overdraw = 0.6f;
+			}
+			else if (chunkRenderDistance <= 10)
+			{
+				overdraw = 0.8f;
+			}
+			else
+			{
+				overdraw = 0.9f;
+			}
+		}
+		
+		return getNearClipPlaneDistanceInBlocks(partialTicks, overdraw);
+	}
+	private static float getNearClipPlaneDistanceInBlocks(float partialTicks, float overdrawPreventionPercent)
 	{
 		int chunkRenderDistance = MC_RENDER.getRenderDistance();
 		int vanillaBlockRenderedDistance = chunkRenderDistance * LodUtil.CHUNK_WIDTH;
@@ -102,8 +141,8 @@ public class RenderUtil
 			//  If the player is flying quickly, lower the near clip plane to account for slow chunk loading.
 			//  If the player is moving quickly they are less likely to notice overdraw.
 			
-			nearClipPlane = Config.Client.Advanced.Graphics.Culling.overdrawPrevention.get().floatValue();
-			nearClipPlane *= vanillaBlockRenderedDistance; 
+			nearClipPlane = vanillaBlockRenderedDistance;
+			nearClipPlane *= overdrawPreventionPercent; 
 			
 			// the near clip plane should never be closer than 1/10th of a block,
 			// otherwise Z-fighting and other issues may occur

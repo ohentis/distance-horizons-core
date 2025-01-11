@@ -195,7 +195,7 @@ public class DhTerrainShaderProgram extends ShaderProgram implements IDhApiShade
 		this.setUniform(this.uWhiteWorld, Config.Client.Advanced.Debugging.enableWhiteWorld.get());
 		
 		// Clip Uniform
-		float dhNearClipDistance = RenderUtil.getNearClipPlaneDistanceInBlocks(renderParameters.partialTicks);
+		float dhNearClipDistance = RenderUtil.getNearClipPlaneInBlocksForFading(renderParameters.partialTicks);
 		if (!Config.Client.Advanced.Debugging.lodOnlyMode.get())
 		{
 			// this added value prevents the near clip plane and discard circle from touching, which looks bad
