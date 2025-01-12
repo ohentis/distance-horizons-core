@@ -3,7 +3,7 @@
  *    licensed under the GNU LGPL v3 License.
  *
  *    Copyright (C) 2022  Tom Lee (TomTheFurry)
- *    Copyright (C) 2020-2023 James Seibel
+ *    Copyright (C) 2020 James Seibel
  *
  *    This program is free software: you can redistribute it and/or modify
  *    it under the terms of the GNU Lesser General Public License as published by
