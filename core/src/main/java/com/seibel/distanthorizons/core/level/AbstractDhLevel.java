@@ -271,6 +271,8 @@ public abstract class AbstractDhLevel implements IDhLevel
 		{
 			this.beaconBeamRepo.close();
 		}
+		
+		this.delayedFullDataSourceSaveCache.close();
 	}
 	
 }

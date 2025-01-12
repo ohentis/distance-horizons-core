@@ -8,20 +8,34 @@ import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSour
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.util.KeyedLockContainer;
+import com.seibel.distanthorizons.core.util.ThreadUtil;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
+import java.lang.ref.WeakReference;
+import java.util.Collections;
+import java.util.Set;
+import java.util.concurrent.*;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Used to batch together multiple data source updates that all
  * affect the same position.
  */
-public class DelayedFullDataSourceSaveCache
+public class DelayedFullDataSourceSaveCache implements AutoCloseable
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	
+	/** 
+	 * a cache won't automatically clean itself unless we trigger it's clean method
+	 * if not done then we'd only see the cache invalidate when new inserts happen,
+	 * which causes weird behavior when placing/breaking blocks.
+	 */
+	private static final ThreadPoolExecutor BACKGROUND_CLEAN_UP_THREAD = ThreadUtil.makeSingleDaemonThreadPool("delayed save cache cleaner");
+	private static final Set<WeakReference<DelayedFullDataSourceSaveCache>> SAVE_CACHE_SET = Collections.newSetFromMap(new ConcurrentHashMap<>());
+	/** how long between clean up checks */
+	private static final int CLEANUP_CHECK_TIME_IN_MS = 1_000;
+	
 	
 	
 	private final Cache<Long, FullDataSourceV2> dataSourceByPosition;
@@ -38,6 +52,11 @@ public class DelayedFullDataSourceSaveCache
 	// constructor //
 	//=============//
 	
+	static
+	{
+		BACKGROUND_CLEAN_UP_THREAD.execute(() -> runCleanupLoop());
+	}
+	
 	public DelayedFullDataSourceSaveCache(@NotNull ISaveDataSourceFunc onSaveTimeoutAsyncFunc, int saveDelayInMs)
 	{
 		this.onSaveTimeoutAsyncFunc = onSaveTimeoutAsyncFunc;
@@ -51,6 +70,7 @@ public class DelayedFullDataSourceSaveCache
 				.removalListener(this::handleDataSourceRemoval)
 				.<Long, FullDataSourceV2>build();
 		
+		SAVE_CACHE_SET.add(new WeakReference<>(this));
 	}
 	
 	
@@ -122,6 +142,63 @@ public class DelayedFullDataSourceSaveCache
 		}
 	}
 	
+	
+	
+	//================//
+	// static cleanup //
+	//================//
+	
+	private static void runCleanupLoop()
+	{
+		while (true)
+		{
+			try
+			{
+				try
+				{
+					Thread.sleep(CLEANUP_CHECK_TIME_IN_MS);
+				}
+				catch (InterruptedException ignore) { }
+				
+				SAVE_CACHE_SET.forEach((cacheRef) ->
+				{
+					DelayedFullDataSourceSaveCache cache = cacheRef.get();
+					if (cache == null)
+					{
+						// shouldn't be necessary, but if we forget to manually close a cache, this will prevent leaking
+						SAVE_CACHE_SET.remove(cacheRef);
+					}
+					else
+					{
+						cache.dataSourceByPosition.cleanUp();
+					}
+				});
+			}
+			catch (Exception e)
+			{
+				LOGGER.error("Unexpected error in cleanup thread: [" + e.getMessage() + "].", e);
+			}
+		}
+	}
+	
+	
+	
+	//================//
+	// base overrides //
+	//================//
+	
+	@Override
+	public void close()
+	{
+		// not the fastest way to handle removing,
+		// but we shouldn't have more than 20 or so at once
+		// so this should be just fine
+		SAVE_CACHE_SET.removeIf((cacheRef) -> 
+		{
+			DelayedFullDataSourceSaveCache cache = cacheRef.get();
+			return cache != null && cache.equals(this);
+		});
+	}
 	
 	
 	

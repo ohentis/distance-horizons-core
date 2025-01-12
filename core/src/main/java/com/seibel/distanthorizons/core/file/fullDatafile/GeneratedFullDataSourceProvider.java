@@ -418,6 +418,22 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 	
 	
 	//================//
+	// base overrides //
+	//================//
+	
+	@Override 
+	public void close()
+	{
+		super.close();
+		
+		this.delayedFullDataSourceSaveCache.close();
+	}
+	
+	
+	
+	
+	
+	//================//
 	// helper classes //
 	//================//
 	
