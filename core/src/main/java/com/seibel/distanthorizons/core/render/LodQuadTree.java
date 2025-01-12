@@ -643,7 +643,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 	 */
 	public void reloadPos(long pos)
 	{
-		this.cachedRenderSourceByPos.invalidate(pos);
+		this.cachedRenderSourceByPos.invalidate(pos); // TODO will this cause issues? we may need to lock this invalidation if the cached data source is currently in use
 		this.sectionsToReload.add(pos);
 		
 		// the adjacent locations also need to be updated to make sure lighting
@@ -652,7 +652,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 		for (EDhDirection direction : EDhDirection.ADJ_DIRECTIONS)
 		{
 			long adjacentPos = DhSectionPos.getAdjacentPos(pos, direction);
-			this.cachedRenderSourceByPos.invalidate(adjacentPos);
+			this.cachedRenderSourceByPos.invalidate(adjacentPos); // TODO will this cause issues? we may need to lock this invalidation if the cached data source is currently in use
 			this.sectionsToReload.add(adjacentPos);
 		}
 	}
