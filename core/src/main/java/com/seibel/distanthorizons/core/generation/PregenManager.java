@@ -84,10 +84,13 @@ public class PregenManager
 		
 		private final AtomicInteger nextSectionSpiralIndex = new AtomicInteger(0);
 		
-		private final AtomicLong lastTaskStartTime = new AtomicLong(System.currentTimeMillis());
+		private final AtomicLong lastTaskFinishTime = new AtomicLong(System.currentTimeMillis());
 		private final RollingAverage averageTaskCompletionIntervalMs = new RollingAverage(200);
 		
 		private final AtomicLong lastLogTime = new AtomicLong();
+		
+		private final DynamicNumberFormat generatedRadius = new DynamicNumberFormat(3);
+		private final DynamicNumberFormat generatedPercentage = new DynamicNumberFormat(5);
 		
 		
 		@SuppressWarnings("DataFlowIssue")
@@ -99,8 +102,8 @@ public class PregenManager
 						LOGGER.warn("Generation for section " + DhSectionPos.toString(removalNotification.getKey()) + " has expired!");
 					}
 					
-					long timeSinceLastTaskStart = System.currentTimeMillis() - this.lastTaskStartTime.getAndSet(System.currentTimeMillis());
-					this.averageTaskCompletionIntervalMs.addValue(timeSinceLastTaskStart);
+					long timeSincePreviousTaskFinish = System.currentTimeMillis() - this.lastTaskFinishTime.getAndSet(System.currentTimeMillis());
+					this.averageTaskCompletionIntervalMs.addValue(timeSincePreviousTaskFinish);
 					
 					PregenState.this.fillPendingQueue();
 				})
@@ -160,12 +163,16 @@ public class PregenManager
 		
 		public String getStatusString()
 		{
+			this.generatedRadius.update(Math.sqrt(this.nextSectionSpiralIndex.get()) / 2 * 4);
+			this.generatedPercentage.update((double) this.nextSectionSpiralIndex.get() / this.sectionsToGenerate);
+			
+			double chunksToGenerate = Math.ceil(Math.sqrt(this.sectionsToGenerate) / 2 * 4 * 10) / 10; // ceil to nearest 0.1
 			double etaMs = this.averageTaskCompletionIntervalMs.getAverage() * (this.sectionsToGenerate - this.nextSectionSpiralIndex.get());
 			
-			return MessageFormat.format("Generated radius: {0,number,#.#} / {1,number,#.#} chunks ({2,number,#.#%}), ETA: {3}",
-					Math.sqrt(this.nextSectionSpiralIndex.get()) / 2 * 4,
-					Math.sqrt(this.sectionsToGenerate) / 2 * 4,
-					(double) this.nextSectionSpiralIndex.get() / this.sectionsToGenerate,
+			return MessageFormat.format("Generated radius: {0,number,#.###} / {1,number,#.#} chunks ({2,number,#.###%}), ETA: {3}",
+					this.generatedRadius.getValue(),
+					chunksToGenerate,
+					this.generatedPercentage.getValue(),
 					Duration.ofMillis((long) etaMs).toString()
 							.substring(2)
 							.replaceAll("(\\d[HMS])(?!$)", "$1 ")
@@ -204,6 +211,49 @@ public class PregenManager
 			z += DhSectionPos.getZ(this.originSectionPos);
 			
 			return DhSectionPos.encode(DhSectionPos.getDetailLevel(this.originSectionPos), x, z);
+		}
+		
+	}
+	
+	private static class DynamicNumberFormat
+	{
+		private final int maxPrecision;
+		
+		private double value = 0;
+		private int lastPrecision = 0;
+		
+		private DynamicNumberFormat(int maxPrecision)
+		{
+			this.maxPrecision = maxPrecision;
+		}
+		
+		public synchronized void update(double newValue)
+		{
+			int precision = 0;
+			
+			while (precision < this.maxPrecision && (int) (newValue * Math.pow(10, precision)) == (int) (this.value * Math.pow(10, precision)))
+			{
+				precision++;
+			}
+			
+			// Filter momentary false attempts to decrease precision
+			if (precision < this.lastPrecision)
+			{
+				int tmpPrecision = this.lastPrecision;
+				this.lastPrecision = precision;
+				precision = tmpPrecision;
+			}
+			else
+			{
+				this.lastPrecision = precision;
+			}
+			
+			this.value = (double) Math.round(newValue * Math.pow(10, precision)) / Math.pow(10, precision);
+		}
+		
+		public double getValue()
+		{
+			return this.value;
 		}
 		
 	}
