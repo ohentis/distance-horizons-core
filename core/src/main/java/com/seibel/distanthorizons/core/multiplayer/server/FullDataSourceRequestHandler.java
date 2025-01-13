@@ -85,6 +85,8 @@ public class FullDataSourceRequestHandler
 		{
 			try (FullDataPayload payload = new FullDataPayload(fullDataSource, this.getAllBeamsForPos(message.sectionPos)))
 			{
+				fullDataSource.close();
+				
 				serverPlayerState.fullDataPayloadSender.sendInChunks(payload, () ->
 				{
 					message.sendResponse(new FullDataSourceResponseMessage(payload));
@@ -203,6 +205,8 @@ public class FullDataSourceRequestHandler
 			{
 				try (FullDataPayload payload = new FullDataPayload(requestGroup.fullDataSource, this.getAllBeamsForPos(entry.getKey())))
 				{
+					requestGroup.fullDataSource.close();
+					
 					for (DataSourceRequestGroup.RequestData requestData : requestGroup.requestMessages.values())
 					{
 						this.requestGroupsByFutureId.remove(requestData.futureId());
@@ -224,12 +228,14 @@ public class FullDataSourceRequestHandler
 			if (this.fullDataSourceProvider().isFullyGenerated(fullDataSource.columnGenerationSteps))
 			{
 				requestGroup.fullDataSource = fullDataSource;
+				return;
 			}
-			else if (
-					DhSectionPos.getDetailLevel(pos) > (Config.Common.WorldGenerator.distantGeneratorMode.get() == EDhApiDistantGeneratorMode.INTERNAL_SERVER
-							? DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL
-							: this.serverLevel.serverside.fullDataFileHandler.lowestDataDetailLevel())
-			)
+			
+			fullDataSource.close();
+			
+			if (DhSectionPos.getDetailLevel(pos) > (Config.Common.WorldGenerator.distantGeneratorMode.get() == EDhApiDistantGeneratorMode.INTERNAL_SERVER
+					? DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL
+					: this.serverLevel.serverside.fullDataFileHandler.lowestDataDetailLevel()))
 			{
 				// Make this group unavailable for adding into
 				this.requestGroupsByPos.remove(pos);
