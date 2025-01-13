@@ -24,14 +24,19 @@ import com.seibel.distanthorizons.core.sql.DatabaseUpdater;
 import com.seibel.distanthorizons.core.sql.DbConnectionClosedException;
 import com.seibel.distanthorizons.core.sql.dto.IBaseDTO;
 import com.seibel.distanthorizons.core.util.KeyedLockContainer;
+import com.seibel.distanthorizons.core.util.ThreadUtil;
+import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
+import javax.swing.plaf.nimbus.State;
 import java.io.File;
 import java.io.IOException;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -50,6 +55,8 @@ public abstract class AbstractDhRepo<TKey, TDTO extends IBaseDTO<TKey>> implemen
 	private static final ConcurrentHashMap<String, Connection> CONNECTIONS_BY_CONNECTION_STRING = new ConcurrentHashMap<>();
 	private static final ConcurrentHashMap<AbstractDhRepo<?, ?>, String> ACTIVE_CONNECTION_STRINGS_BY_REPO = new ConcurrentHashMap<>();
 	
+	private static final ThreadPoolExecutor WAL_FLUSH_THREAD = ThreadUtil.makeSingleDaemonThreadPool("Abstract Repo WAL Flush");
+	private static final AtomicBoolean FLUSH_THREAD_QUEUED = new AtomicBoolean(false);
 	
 	
 	private final String connectionString;
@@ -211,6 +218,7 @@ public abstract class AbstractDhRepo<TKey, TDTO extends IBaseDTO<TKey>> implemen
 		finally
 		{
 			saveLock.unlock();
+			//this.tryTriggerWalFlush();
 		}
 	}
 	private void insert(TDTO dto) 
@@ -260,6 +268,10 @@ public abstract class AbstractDhRepo<TKey, TDTO extends IBaseDTO<TKey>> implemen
 		{
 			throw new RuntimeException(e);
 		}
+		//finally
+		//{
+		//	this.tryTriggerWalFlush();
+		//}
 	}
 	
 	/** With great power comes great responsibility... */
@@ -293,6 +305,67 @@ public abstract class AbstractDhRepo<TKey, TDTO extends IBaseDTO<TKey>> implemen
 			return false;
 		}
 	}
+	
+	
+	protected void tryTriggerWalFlush()
+	{
+		if (FLUSH_THREAD_QUEUED.compareAndSet(false, true))
+		{
+			WAL_FLUSH_THREAD.execute(() -> 
+			{
+				try
+				{
+					Thread.sleep(10_000);
+					this.triggerWalFlush();
+				}
+				catch (InterruptedException ignore) { }
+				finally
+				{
+					FLUSH_THREAD_QUEUED.set(false);
+				}
+			});
+		}
+	}
+	protected void triggerWalFlush()
+	{
+		try (PreparedStatement statement = this.createPreparedStatement("PRAGMA wal_checkpoint(PASSIVE)"))
+		{
+			try (ResultSet result = this.query(statement))
+			{
+				if (result == null)
+				{
+					return;
+				}
+				
+				int busyInt = result.getInt("busy"); // usually 0 but will be 1 if a RESTART or FULL or TRUNCATE checkpoint was blocked from completing
+				boolean checkpointWasBlocked = (busyInt == 1);
+				int modifiedPageCount = result.getInt("log"); // number of modified pages that have been written to the write-ahead log file
+				int numberOfPagesWrittenToDb = result.getInt("checkpointed"); // number of pages in the write-ahead log file that have been successfully moved back into the database file at the conclusion of the checkpoint
+				
+				if (!checkpointWasBlocked)
+				{
+					LOGGER.info("WAL flushed, modified pages: ["+modifiedPageCount+"], written pages: ["+numberOfPagesWrittenToDb+"].");
+				}
+				else
+				{
+					LOGGER.warn("WAL flush blocked, modified pages: ["+modifiedPageCount+"], written pages: ["+numberOfPagesWrittenToDb+"].");
+				}
+			}
+		}
+		catch (Exception e)
+		{
+			if (e instanceof SQLException && DbConnectionClosedException.IsClosedException((SQLException)e))
+			{
+				LOGGER.warn("DB closed");
+			}
+			else
+			{
+				LOGGER.error("unexpected error", e);
+			}
+		}
+	}
+	
+	
 	
 	
 	
