@@ -50,6 +50,7 @@ import javax.annotation.WillNotClose;
 import java.awt.*;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 
@@ -61,6 +62,15 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	private static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
+	
+	/**
+	 * Used to limit how many upload tasks are queued at once.
+	 * If all the upload tasks are queued at once, they will start uploading nearest
+	 * to the player, however if the player moves, that order is no longer valid and holes may appear
+	 * as further sections are loaded before closer ones.
+	 * Only queuing a few of the sections at a time solves this problem.
+	 */
+	public static final AtomicInteger GLOBAL_UPLOAD_TASKS_COUNT_REF = new AtomicInteger(0);
 	
 	
 	
@@ -160,14 +170,28 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 			return false;
 		}
 		
+		// Only queue a some of the upload tasks at a time,
+		// this means the closer (higher priority) tasks will load first.
+		// This also prevents issues where the nearby tasks are canceled due to
+		// LOD detail level changing, and having holes in the world
+		LOGGER.info("upload: "+ GLOBAL_UPLOAD_TASKS_COUNT_REF.get());
+		if (GLOBAL_UPLOAD_TASKS_COUNT_REF.getAndIncrement() > executor.getPoolSize())
+		{
+			GLOBAL_UPLOAD_TASKS_COUNT_REF.decrementAndGet();
+			return false;
+		}
+		
 		try
 		{
-			// we want to queue all the build/upload tasks so they have a higher priority then
-			// other tasks, which allows the world to load in faster
-			// (this seems like a slightly odd way to handle it, but it works)
-			
 			CompletableFuture<Void> future = new CompletableFuture<>();
 			this.getAndBuildRenderDataFuture = future;
+			future.handle((voidObj, throwable) -> 
+			{
+				// this has to fire are the end of every added future, otherwise we'll lock up and nothing will load
+				GLOBAL_UPLOAD_TASKS_COUNT_REF.decrementAndGet(); 
+				return null; 
+			});
+			
 			this.getAndBuildRenderDataRunnable = () ->
 			{
 				this.getAndUploadRenderDataToGpu();
