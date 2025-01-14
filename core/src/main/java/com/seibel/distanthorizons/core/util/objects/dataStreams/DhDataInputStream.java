@@ -97,6 +97,19 @@ public class DhDataInputStream extends DataInputStream
 			// of returning -1 as defined by DataInputStream.read()
 			return -1;
 		}
+		catch (IOException e)
+		{
+			// LZ4 has the same bug as XZ (listed above)
+			// just with a slightly different exception and error message
+			if (e.getMessage().equals("Stream ended prematurely"))
+			{
+				return -1;
+			}
+			else
+			{
+				throw e;
+			}
+		}
 	}
 	
 	@Override
