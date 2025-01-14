@@ -48,9 +48,10 @@ public class TestCompoundKeyRepo extends AbstractDhRepo<DhChunkPos, TestCompound
 				"\n" +
 				",PRIMARY KEY (XPos, ZPos)" +
 				");";
-		try (PreparedStatement createTableStatement = this.createPreparedStatement(createTableSql))
+		try (PreparedStatement createTableStatement = this.createPreparedStatement(createTableSql);
+			 ResultSet result = this.query(createTableStatement))
 		{
-			this.query(createTableStatement);
+			
 		}
 	}
 	

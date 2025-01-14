@@ -262,7 +262,10 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 			statement.setInt(i++, DhSectionPos.getX(pos));
 			statement.setInt(i++, DhSectionPos.getZ(pos));
 			
-			this.query(statement);
+			try (ResultSet result = this.query(statement))
+			{
+				
+			}
 		}
 		catch (SQLException e)
 		{
@@ -296,16 +299,18 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 			
 			statement.setInt(i++, returnCount);
 			
-			ResultSet result = this.query(statement);
-			while (result != null && result.next())
+			try (ResultSet result = this.query(statement))
 			{
-				byte detailLevel = result.getByte("DetailLevel");
-				byte sectionDetailLevel = (byte) (detailLevel + DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
-				int posX = result.getInt("PosX");
-				int posZ = result.getInt("PosZ");
-				
-				long pos = DhSectionPos.encode(sectionDetailLevel, posX, posZ);
-				list.add(pos);
+				while (result != null && result.next())
+				{
+					byte detailLevel = result.getByte("DetailLevel");
+					byte sectionDetailLevel = (byte) (detailLevel + DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
+					int posX = result.getInt("PosX");
+					int posZ = result.getInt("PosZ");
+					
+					long pos = DhSectionPos.encode(sectionDetailLevel, posX, posZ);
+					list.add(pos);
+				}
 			}
 			
 			return list;
@@ -343,28 +348,30 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 			statement.setInt(i++, DhSectionPos.getZ(pos));
 			
 			
-			ResultSet result = this.query(statement);
-			if (result == null || !result.next())
+			try (ResultSet result = this.query(statement))
 			{
-				return;
-			}
-			
-			
-			byte compressionModeEnumValue = result.getByte("CompressionMode");
-			EDhApiDataCompressionMode compressionModeEnum = EDhApiDataCompressionMode.getFromValue(compressionModeEnumValue);
-			
-			try
-			{
-				// decompress the data
-				DhDataInputStream compressedIn = new DhDataInputStream(result.getBinaryStream("ColumnGenerationStep"), compressionModeEnum);
-				putAllBytes(compressedIn, outputByteArray);
-			}
-			catch (IOException e)
-			{
-				LOGGER.warn("Decompression issue when getting column gen steps for pos: [" + DhSectionPos.toString(pos) + "], deleting corrupted data.", e);
+				if (result == null || !result.next())
+				{
+					return;
+				}
 				
-				this.deleteWithKey(pos);
-				ListUtil.clearAndSetSize(outputByteArray, FullDataSourceV2.WIDTH * FullDataSourceV2.WIDTH);
+				
+				byte compressionModeEnumValue = result.getByte("CompressionMode");
+				EDhApiDataCompressionMode compressionModeEnum = EDhApiDataCompressionMode.getFromValue(compressionModeEnumValue);
+				
+				try
+				{
+					// decompress the data
+					DhDataInputStream compressedIn = new DhDataInputStream(result.getBinaryStream("ColumnGenerationStep"), compressionModeEnum);
+					putAllBytes(compressedIn, outputByteArray);
+				}
+				catch (IOException e)
+				{
+					LOGGER.warn("Decompression issue when getting column gen steps for pos: [" + DhSectionPos.toString(pos) + "], deleting corrupted data.", e);
+					
+					this.deleteWithKey(pos);
+					ListUtil.clearAndSetSize(outputByteArray, FullDataSourceV2.WIDTH * FullDataSourceV2.WIDTH);
+				}
 			}
 		}
 		catch (SQLException e)
@@ -402,13 +409,15 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 			preparedStatement.setInt(i++, DhSectionPos.getX(pos));
 			preparedStatement.setInt(i++, DhSectionPos.getZ(pos));
 			
-			ResultSet result = this.query(preparedStatement);
-			if (result == null || !result.next())
+			try (ResultSet result = this.query(preparedStatement))
 			{
-				return null;
+				if (result == null || !result.next())
+				{
+					return null;
+				}
+				
+				return result.getLong("LastModifiedUnixDateTime");
 			}
-			
-			return result.getLong("LastModifiedUnixDateTime");
 		}
 		catch (DbConnectionClosedException e)
 		{
@@ -445,17 +454,19 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 			preparedStatement.setInt(i++, endPosZ - 1);
 			
 			
-			ResultSet result = this.query(preparedStatement);
-			HashMap<Long, Long> returnMap = new HashMap<>();
-			while (result != null && result.next())
+			try (ResultSet result = this.query(preparedStatement))
 			{
-				long key = DhSectionPos.encode(detailLevel, result.getInt("PosX"), result.getInt("PosZ"));
-				long value = result.getLong("LastModifiedUnixDateTime");
+				HashMap<Long, Long> returnMap = new HashMap<>();
+				while (result != null && result.next())
+				{
+					long key = DhSectionPos.encode(detailLevel, result.getInt("PosX"), result.getInt("PosZ"));
+					long value = result.getLong("LastModifiedUnixDateTime");
+					
+					returnMap.put(key, value);
+				}
 				
-				returnMap.put(key, value);
+				return returnMap;
 			}
-			
-			return returnMap;
 		}
 		catch (SQLException e)
 		{
@@ -484,9 +495,8 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 		}
 		
 		
-		try
+		try(ResultSet result = this.query(statement))
 		{
-			ResultSet result = this.query(statement);
 			while (result != null && result.next())
 			{
 				byte detailLevel = result.getByte("DetailLevel");
@@ -533,13 +543,15 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 			statement.setInt(i++, DhSectionPos.getZ(pos));
 			
 			
-			ResultSet result = this.query(statement);
-			if (result == null || !result.next())
+			try (ResultSet result = this.query(statement)) // TODO check other query's
 			{
-				return 0L;
+				if (result == null || !result.next())
+				{
+					return 0L;
+				}
+				
+				return result.getLong("dataSize");
 			}
-			
-			return result.getLong("dataSize");
 		}
 		catch (SQLException e)
 		{
@@ -555,9 +567,8 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 	{
 		PreparedStatement statement = this.createPreparedStatement(this.getTotalDataSizeInBytesSql);
 		
-		try
+		try(ResultSet result = this.query(statement))
 		{
-			ResultSet result = this.query(statement);
 			if (result == null || !result.next())
 			{
 				return 0;

@@ -223,9 +223,9 @@ public abstract class AbstractDhRepo<TKey, TDTO extends IBaseDTO<TKey>> implemen
 	}
 	private void insert(TDTO dto) 
 	{
-		try(PreparedStatement statement = this.createInsertStatement(dto))
+		try(PreparedStatement statement = this.createInsertStatement(dto);
+			ResultSet result = this.query(statement))
 		{
-			this.query(statement);
 		}
 		catch (DbConnectionClosedException ignored) 
 		{
@@ -240,9 +240,10 @@ public abstract class AbstractDhRepo<TKey, TDTO extends IBaseDTO<TKey>> implemen
 	}
 	private void update(TDTO dto)
 	{
-		try(PreparedStatement statement = this.createUpdateStatement(dto))
+		try(PreparedStatement statement = this.createUpdateStatement(dto);
+			ResultSet result = this.query(statement))
 		{
-			this.query(statement);
+			
 		}
 		catch (DbConnectionClosedException e)
 		{
@@ -260,9 +261,10 @@ public abstract class AbstractDhRepo<TKey, TDTO extends IBaseDTO<TKey>> implemen
 	public void delete(TDTO dto) { this.deleteWithKey(dto.getKey()); }
 	public void deleteWithKey(TKey key) 
 	{
-		try (PreparedStatement statement = this.createDeleteStatementByKey(key))
+		try (PreparedStatement statement = this.createDeleteStatementByKey(key);
+			ResultSet result = this.query(statement))
 		{
-			this.query(statement);
+			
 		}
 		catch (SQLException e)
 		{
@@ -278,9 +280,10 @@ public abstract class AbstractDhRepo<TKey, TDTO extends IBaseDTO<TKey>> implemen
 	public void deleteAll() 
 	{ 
 		String sql = "DELETE FROM " + this.getTableName();
-		try (PreparedStatement statement = this.createPreparedStatement(sql))
+		try (PreparedStatement statement = this.createPreparedStatement(sql);
+			ResultSet result = this.query(statement))
 		{
-			this.query(statement);
+			
 		}
 		catch (SQLException e)
 		{
@@ -328,28 +331,26 @@ public abstract class AbstractDhRepo<TKey, TDTO extends IBaseDTO<TKey>> implemen
 	}
 	protected void triggerWalFlush()
 	{
-		try (PreparedStatement statement = this.createPreparedStatement("PRAGMA wal_checkpoint(PASSIVE)"))
+		try (PreparedStatement statement = this.createPreparedStatement("PRAGMA wal_checkpoint(PASSIVE)");
+			ResultSet result = this.query(statement))
 		{
-			try (ResultSet result = this.query(statement))
+			if (result == null)
 			{
-				if (result == null)
-				{
-					return;
-				}
-				
-				int busyInt = result.getInt("busy"); // usually 0 but will be 1 if a RESTART or FULL or TRUNCATE checkpoint was blocked from completing
-				boolean checkpointWasBlocked = (busyInt == 1);
-				int modifiedPageCount = result.getInt("log"); // number of modified pages that have been written to the write-ahead log file
-				int numberOfPagesWrittenToDb = result.getInt("checkpointed"); // number of pages in the write-ahead log file that have been successfully moved back into the database file at the conclusion of the checkpoint
-				
-				if (!checkpointWasBlocked)
-				{
-					LOGGER.info("WAL flushed, modified pages: ["+modifiedPageCount+"], written pages: ["+numberOfPagesWrittenToDb+"].");
-				}
-				else
-				{
-					LOGGER.warn("WAL flush blocked, modified pages: ["+modifiedPageCount+"], written pages: ["+numberOfPagesWrittenToDb+"].");
-				}
+				return;
+			}
+			
+			int busyInt = result.getInt("busy"); // usually 0 but will be 1 if a RESTART or FULL or TRUNCATE checkpoint was blocked from completing
+			boolean checkpointWasBlocked = (busyInt == 1);
+			int modifiedPageCount = result.getInt("log"); // number of modified pages that have been written to the write-ahead log file
+			int numberOfPagesWrittenToDb = result.getInt("checkpointed"); // number of pages in the write-ahead log file that have been successfully moved back into the database file at the conclusion of the checkpoint
+			
+			if (!checkpointWasBlocked)
+			{
+				LOGGER.info("WAL flushed, modified pages: ["+modifiedPageCount+"], written pages: ["+numberOfPagesWrittenToDb+"].");
+			}
+			else
+			{
+				LOGGER.warn("WAL flush blocked, modified pages: ["+modifiedPageCount+"], written pages: ["+numberOfPagesWrittenToDb+"].");
 			}
 		}
 		catch (Exception e)
