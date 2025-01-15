@@ -85,7 +85,7 @@ public class PregenManager
 		private final AtomicInteger nextSectionSpiralIndex = new AtomicInteger(0);
 		
 		private final AtomicLong lastTaskFinishTime = new AtomicLong(System.currentTimeMillis());
-		private final RollingAverage averageTaskCompletionIntervalMs = new RollingAverage(200);
+		private final RollingAverage averageTaskCompletionIntervalMs = new RollingAverage(1000);
 		
 		private final AtomicLong lastLogTime = new AtomicLong();
 		
