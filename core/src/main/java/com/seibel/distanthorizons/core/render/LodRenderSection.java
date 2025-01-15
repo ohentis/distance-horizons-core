@@ -174,7 +174,6 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		// this means the closer (higher priority) tasks will load first.
 		// This also prevents issues where the nearby tasks are canceled due to
 		// LOD detail level changing, and having holes in the world
-		LOGGER.info("upload: "+ GLOBAL_UPLOAD_TASKS_COUNT_REF.get());
 		if (GLOBAL_UPLOAD_TASKS_COUNT_REF.getAndIncrement() > executor.getPoolSize())
 		{
 			GLOBAL_UPLOAD_TASKS_COUNT_REF.decrementAndGet();
