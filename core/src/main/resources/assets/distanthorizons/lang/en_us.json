@@ -455,6 +455,8 @@
     "If enabled, various wireframes for debugging internal functions will be drawn.",
   "distanthorizons.config.client.advanced.debugging.debugWireframe.showWorldGenQueue":
     "Show World Gen Queue",
+  "distanthorizons.config.client.advanced.debugging.debugWireframe.showNetworkSyncOnLoadQueue":
+    "Show Network Sync On Load Queue",
   "distanthorizons.config.client.advanced.debugging.debugWireframe.showRenderSectionStatus":
     "Show Render Section Status",
   "distanthorizons.config.client.advanced.debugging.debugWireframe.showRenderSectionToggling":

@@ -21,7 +21,7 @@ public class SyncOnLoadRequestQueue extends AbstractFullDataNetworkRequestQueue
 	//=============//
 	
 	public SyncOnLoadRequestQueue(DhClientLevel level, ClientNetworkState networkState)
-	{ super(networkState, level, true, Config.Client.Advanced.Debugging.DebugWireframe.showSyncOnLoadQueue); }
+	{ super(networkState, level, true, Config.Client.Advanced.Debugging.DebugWireframe.showNetworkSyncOnLoadQueue); }
 	
 	
 	
