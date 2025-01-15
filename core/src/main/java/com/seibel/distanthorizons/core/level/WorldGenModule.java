@@ -222,7 +222,7 @@ public class WorldGenModule implements Closeable
 	{
 		public IFullDataSourceRetrievalQueue worldGenerationQueue;
 		
-		private static final ThreadPoolExecutor PROGRESS_UPDATER_THREAD = ThreadUtil.makeSingleThreadPool("World Gen Progress Updater");
+		private static final ThreadPoolExecutor PROGRESS_UPDATER_THREAD = ThreadUtil.makeSingleDaemonThreadPool("World Gen Progress Updater");
 		private boolean progressUpdateThreadRunning = false;
 		
 		
