@@ -291,7 +291,7 @@ public class WorldGenModule implements Closeable
 			if (chunksPerSec > 0)
 			{
 				long estimatedRemainingTime = (long) (remainingChunkCount / chunksPerSec);
-				message += " Estimated Time: " + formatSeconds(estimatedRemainingTime); // at " + F3Screen.NUMBER_FORMAT.format(chunksPerSec) + " chunks/sec";
+				message += " Estimated Time: " + formatSeconds(estimatedRemainingTime);//+ " at " + F3Screen.NUMBER_FORMAT.format(chunksPerSec) + " chunks/sec";
 			}
 			
 			
