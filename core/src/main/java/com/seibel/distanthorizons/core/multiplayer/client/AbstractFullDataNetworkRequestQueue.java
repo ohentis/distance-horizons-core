@@ -232,6 +232,7 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 					if (executor == null)
 					{
 						LOGGER.warn("Unable to handle FullDataPayload - getNetworkCompressionExecutor() is null");
+						dataSourceDto.close();
 						return null;
 					}
 					
@@ -248,6 +249,10 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 						catch (Exception e)
 						{
 							throw new RuntimeException(e);
+						}
+						finally
+						{
+							dataSourceDto.close();
 						}
 					}, executor);
 				}
