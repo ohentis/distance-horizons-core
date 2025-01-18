@@ -276,7 +276,7 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 			}
 			catch (RateLimitedException e)
 			{
-				LOGGER.warn("Rate limited by server, re-queueing task [" + DhSectionPos.toString(sectionPos) + "]: " + e.getMessage());
+				LOGGER.info("Rate limited by server, re-queueing task [" + DhSectionPos.toString(sectionPos) + "]: " + e.getMessage());
 				
 				// Skip all requests for 1 second
 				this.rateLimiter.acquireAll();
