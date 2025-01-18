@@ -95,7 +95,7 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 	//==================//
 	
 	protected abstract int getRequestRateLimit();
-	protected abstract int getMaxRequestDistance();
+	protected abstract boolean isSectionAllowedToGenerate(long sectionPos, DhBlockPos2D targetPos);
 	
 	protected abstract String getQueueName();
 	
@@ -197,7 +197,7 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 		long sectionPos = mapEntry.getKey();
 		RequestQueueEntry entry = mapEntry.getValue();
 		
-		if (DhSectionPos.getChebyshevSignedBlockDistance(sectionPos, targetPos) > this.getMaxRequestDistance() * 16)
+		if (!this.isSectionAllowedToGenerate(sectionPos, targetPos))
 		{
 			entry.future.cancel(false);
 			this.pendingTasksSemaphore.release();
@@ -406,7 +406,7 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 		{
 			renderer.renderBox(new DebugRenderer.Box(mapEntry.getKey(), -32f, 64f, 0.05f,
 					mapEntry.getValue().networkDataSourceFuture != null ? Color.red
-							: DhSectionPos.getChebyshevSignedBlockDistance(mapEntry.getKey(), Objects.requireNonNull(this.level.getTargetPosForGeneration())) <= this.getMaxRequestDistance() * 16 ? Color.gray
+							: this.isSectionAllowedToGenerate(mapEntry.getKey(), Objects.requireNonNull(this.level.getTargetPosForGeneration())) ? Color.gray
 							: Color.darkGray
 			));
 		}

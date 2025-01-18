@@ -33,6 +33,9 @@ public class SessionConfig implements INetworkObject
 		
 		registerConfigEntry(Config.Common.WorldGenerator.enableDistantGeneration, Boolean::logicalAnd);
 		registerConfigEntry(Config.Server.maxGenerationRequestDistance, Math::min);
+		registerConfigEntry(Config.Server.generationBoundsX, (x, y) -> x);
+		registerConfigEntry(Config.Server.generationBoundsZ, (x, y) -> x);
+		registerConfigEntry(Config.Server.generationBoundsRadius, (x, y) -> x);
 		registerConfigEntry(Config.Server.generationRequestRateLimit, Math::min);
 		
 		registerConfigEntry(Config.Server.enableRealTimeUpdates, Boolean::logicalAnd);
@@ -65,6 +68,9 @@ public class SessionConfig implements INetworkObject
 	
 	public boolean isDistantGenerationEnabled() { return this.getValue(Config.Common.WorldGenerator.enableDistantGeneration); }
 	public int getMaxGenerationRequestDistance() { return this.getValue(Config.Server.maxGenerationRequestDistance); }
+	public Integer getGenerationBoundsX() { return this.getValue(Config.Server.generationBoundsX); }
+	public Integer getGenerationBoundsZ() { return this.getValue(Config.Server.generationBoundsZ); }
+	public Integer getGenerationBoundsRadius() { return this.getValue(Config.Server.generationBoundsRadius); }
 	public int getGenerationRequestRateLimit() { return this.getValue(Config.Server.generationRequestRateLimit); }
 	
 	public boolean isRealTimeUpdatesEnabled() { return this.getValue(Config.Server.enableRealTimeUpdates); }

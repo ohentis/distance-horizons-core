@@ -26,7 +26,7 @@ public class RemoteWorldRetrievalQueue extends AbstractFullDataNetworkRequestQue
 	private int estimatedTotalChunkCount;
 	
 	private final RollingAverage rollingAverageChunkGenTimeInMs = new RollingAverage(1_000);
-	public RollingAverage getRollingAverageChunkGenTimeInMs() { return this.rollingAverageChunkGenTimeInMs; }
+	@Override public RollingAverage getRollingAverageChunkGenTimeInMs() { return this.rollingAverageChunkGenTimeInMs; }
 	
 	
 	
@@ -96,7 +96,21 @@ public class RemoteWorldRetrievalQueue extends AbstractFullDataNetworkRequestQue
 	@Override
 	protected int getRequestRateLimit() { return this.networkState.sessionConfig.getGenerationRequestRateLimit(); }
 	@Override
-	protected int getMaxRequestDistance() { return this.networkState.sessionConfig.getMaxGenerationRequestDistance(); }
+	protected boolean isSectionAllowedToGenerate(long sectionPos, DhBlockPos2D targetPos)
+	{
+		if (this.networkState.sessionConfig.getGenerationBoundsRadius() > 0)
+		{
+			if (DhSectionPos.getChebyshevSignedBlockDistance(sectionPos, new DhBlockPos2D(
+					this.networkState.sessionConfig.getGenerationBoundsX(),
+					this.networkState.sessionConfig.getGenerationBoundsZ()
+			)) > this.networkState.sessionConfig.getGenerationBoundsRadius())
+			{
+				return false;
+			}
+		}
+		
+		return DhSectionPos.getChebyshevSignedBlockDistance(sectionPos, targetPos) <= this.networkState.sessionConfig.getMaxGenerationRequestDistance() * 16;
+	}
 	
 	@Override
 	protected String getQueueName() { return "World Remote Generation Queue"; }
