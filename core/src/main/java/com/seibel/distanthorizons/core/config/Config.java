@@ -1437,7 +1437,7 @@ public class Config
 					.build();
 			
 			public static ConfigEntry<EDhApiLoggerMode> logWorldGenLoadEvent = new ConfigEntry.Builder<EDhApiLoggerMode>()
-					.setChatCommandName("logging.logWorldGenPerformance")
+					.setChatCommandName("logging.logWorldGenLoadEvent")
 					.set(EDhApiLoggerMode.LOG_ERROR_TO_CHAT_AND_INFO_TO_FILE)
 					.comment(""
 							+ "If enabled, the mod will log information about the world generation process. \n"

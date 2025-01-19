@@ -134,17 +134,18 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 				return;
 			}
 			
-			try
+			try (FullDataSourceV2DTO dataSourceDto = this.networkState.fullDataPayloadReceiver.decodeDataSourceAndReleaseBuffer(message.payload))
 			{
-				FullDataSourceV2DTO dataSourceDto = this.networkState.fullDataPayloadReceiver.decodeDataSourceAndReleaseBuffer(message.payload);
-				
 				if (!message.isSameLevelAs(this.levelWrapper))
 				{
 					return;
 				}
 				
 				this.updateBeaconBeamsForSectionPos(dataSourceDto.pos, message.payload.beaconBeams);
-				this.updateDataSourcesAsync(dataSourceDto.createDataSource(this.levelWrapper));
+				try (FullDataSourceV2 fullDataSource = dataSourceDto.createDataSource(this.levelWrapper))
+				{
+					this.updateDataSourcesAsync(fullDataSource);
+				}
 			}
 			catch (Exception e)
 			{

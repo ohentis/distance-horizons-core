@@ -232,6 +232,7 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 					if (executor == null)
 					{
 						LOGGER.warn("Unable to handle FullDataPayload - getNetworkCompressionExecutor() is null");
+						dataSourceDto.close();
 						return null;
 					}
 					
@@ -248,6 +249,10 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 						catch (Exception e)
 						{
 							throw new RuntimeException(e);
+						}
+						finally
+						{
+							dataSourceDto.close();
 						}
 					}, executor);
 				}
@@ -271,7 +276,7 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 			}
 			catch (RateLimitedException e)
 			{
-				LOGGER.warn("Rate limited by server, re-queueing task [" + DhSectionPos.toString(sectionPos) + "]: " + e.getMessage());
+				LOGGER.info("Rate limited by server, re-queueing task [" + DhSectionPos.toString(sectionPos) + "]: " + e.getMessage());
 				
 				// Skip all requests for 1 second
 				this.rateLimiter.acquireAll();
