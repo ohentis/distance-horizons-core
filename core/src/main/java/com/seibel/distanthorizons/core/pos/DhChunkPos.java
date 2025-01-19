@@ -83,6 +83,19 @@ public class DhChunkPos
 	public int getMinBlockX() { return this.x << 4; }
 	public int getMinBlockZ() { return this.z << 4; }
 	
+	public int getMaxBlockX() 
+	{
+		int minBlockPos = this.getMinBlockX() + LodUtil.CHUNK_WIDTH;
+		minBlockPos += (minBlockPos < 0) ? -1 : 0;
+		return minBlockPos;
+	}
+	public int getMaxBlockZ() 
+	{
+		int minBlockPos = this.getMinBlockZ() + LodUtil.CHUNK_WIDTH;
+		minBlockPos += (minBlockPos < 0) ? -1 : 0;
+		return minBlockPos;
+	}
+	
 	public DhBlockPos2D getMinBlockPos() { return new DhBlockPos2D(this.x << 4, this.z << 4); }
 	
 	public boolean contains(DhBlockPos pos)
@@ -92,8 +105,8 @@ public class DhChunkPos
 		int maxBlockX = minBlockX + LodUtil.CHUNK_WIDTH;
 		int maxBlockZ = minBlockZ + LodUtil.CHUNK_WIDTH;
 		
-		return minBlockX <= pos.getX() && pos.getX() < maxBlockX
-				&& minBlockZ <= pos.getZ() && pos.getZ() < maxBlockZ;
+		return minBlockX >= pos.getX() && pos.getX() < maxBlockX
+				&& minBlockZ >= pos.getZ() && pos.getZ() < maxBlockZ;
 	}
 	
 	public double distance(DhChunkPos other)
