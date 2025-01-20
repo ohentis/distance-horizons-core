@@ -151,6 +151,17 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 					return;
 				}
 				
+				if (Config.Server.generationBoundsRadius.get() > 0)
+				{
+					if (DhSectionPos.getChebyshevSignedBlockDistance(message.sectionPos, new DhBlockPos2D(
+							Config.Server.generationBoundsX.get(), Config.Server.generationBoundsZ.get()
+					)) > Config.Server.generationBoundsRadius.get())
+					{
+						message.sendResponse(new RequestOutOfRangeException("Section out of allowed bounds"));
+						return;
+					}
+				}
+				
 				if (Config.Server.generateOnlyInHighestDetail.get() && DhSectionPos.getDetailLevel(message.sectionPos) != DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL)
 				{
 					message.sendResponse(new SectionRequiresSplittingException("Only highest-detail sections are allowed"));
