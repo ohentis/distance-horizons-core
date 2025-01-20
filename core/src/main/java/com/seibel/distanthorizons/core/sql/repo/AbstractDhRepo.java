@@ -318,65 +318,6 @@ public abstract class AbstractDhRepo<TKey, TDTO extends IBaseDTO<TKey>> implemen
 	}
 	
 	
-	protected void tryTriggerWalFlush()
-	{
-		if (FLUSH_THREAD_QUEUED.compareAndSet(false, true))
-		{
-			WAL_FLUSH_THREAD.execute(() -> 
-			{
-				try
-				{
-					Thread.sleep(10_000);
-					this.triggerWalFlush();
-				}
-				catch (InterruptedException ignore) { }
-				finally
-				{
-					FLUSH_THREAD_QUEUED.set(false);
-				}
-			});
-		}
-	}
-	protected void triggerWalFlush()
-	{
-		try (PreparedStatement statement = this.createPreparedStatement("PRAGMA wal_checkpoint(PASSIVE)");
-			ResultSet result = this.query(statement))
-		{
-			if (result == null)
-			{
-				return;
-			}
-			
-			int busyInt = result.getInt("busy"); // usually 0 but will be 1 if a RESTART or FULL or TRUNCATE checkpoint was blocked from completing
-			boolean checkpointWasBlocked = (busyInt == 1);
-			int modifiedPageCount = result.getInt("log"); // number of modified pages that have been written to the write-ahead log file
-			int numberOfPagesWrittenToDb = result.getInt("checkpointed"); // number of pages in the write-ahead log file that have been successfully moved back into the database file at the conclusion of the checkpoint
-			
-			if (!checkpointWasBlocked)
-			{
-				LOGGER.info("WAL flushed, modified pages: ["+modifiedPageCount+"], written pages: ["+numberOfPagesWrittenToDb+"].");
-			}
-			else
-			{
-				LOGGER.warn("WAL flush blocked, modified pages: ["+modifiedPageCount+"], written pages: ["+numberOfPagesWrittenToDb+"].");
-			}
-		}
-		catch (Exception e)
-		{
-			if (e instanceof SQLException && DbConnectionClosedException.IsClosedException((SQLException)e))
-			{
-				LOGGER.warn("DB closed");
-			}
-			else
-			{
-				LOGGER.error("unexpected error", e);
-			}
-		}
-	}
-	
-	
-	
-	
 	
 	//==============//
 	// low level DB //
