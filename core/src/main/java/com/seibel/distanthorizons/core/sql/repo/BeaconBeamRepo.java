@@ -174,8 +174,8 @@ public class BeaconBeamRepo extends AbstractDhRepo<DhBlockPos, BeaconBeamDTO>
 		int maxBlockZ = minBlockZ + LodUtil.CHUNK_WIDTH;
 		
 		return this.getAllBeamsInBlockPosRange(
-				minBlockX, minBlockZ,
-				maxBlockX, maxBlockZ
+				minBlockX, maxBlockX,
+				minBlockZ, maxBlockZ
 		);
 	}
 	
@@ -187,8 +187,8 @@ public class BeaconBeamRepo extends AbstractDhRepo<DhBlockPos, BeaconBeamDTO>
 		int maxBlockZ = minBlockZ + DhSectionPos.getBlockWidth(pos);
 		
 		return this.getAllBeamsInBlockPosRange(
-				minBlockX, minBlockZ,
-				maxBlockX, maxBlockZ
+				minBlockX, maxBlockX,
+				minBlockZ, maxBlockZ
 			);
 	}
 	
@@ -199,8 +199,8 @@ public class BeaconBeamRepo extends AbstractDhRepo<DhBlockPos, BeaconBeamDTO>
 			"? <= BlockPosX AND BlockPosX <= ? AND " +
 			"? <= BlockPosZ AND BlockPosZ <= ?";
 	public List<BeaconBeamDTO> getAllBeamsInBlockPosRange(
-			int minBlockX, int minBlockZ,
-			int maxBlockX, int maxBlockZ
+			int minBlockX, int maxBlockX,
+			int minBlockZ, int maxBlockZ
 		)
 	{
 		ArrayList<BeaconBeamDTO> beamList = new ArrayList<>();
@@ -214,8 +214,8 @@ public class BeaconBeamRepo extends AbstractDhRepo<DhBlockPos, BeaconBeamDTO>
 			
 			int i = 1;
 			statement.setInt(i++, minBlockX);
-			statement.setInt(i++, minBlockZ);
 			statement.setInt(i++, maxBlockX);
+			statement.setInt(i++, minBlockZ);
 			statement.setInt(i++, maxBlockZ);
 			
 			

@@ -34,6 +34,8 @@ import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
+import com.seibel.distanthorizons.core.render.renderer.generic.BeaconRenderHandler;
+import com.seibel.distanthorizons.core.render.renderer.generic.GenericObjectRenderer;
 import com.seibel.distanthorizons.core.util.KeyedLockContainer;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
@@ -43,6 +45,7 @@ import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.coreapi.util.MathUtil;
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.WillNotClose;
 import java.awt.*;
@@ -138,6 +141,9 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 			})
 			.<Long, ColumnRenderSource>build();
 	
+	@Nullable
+	public final BeaconRenderHandler beaconRenderHandler;
+	
 	
 	/** the smallest numerical detail level number that can be rendered */
 	private byte maxRenderDetailLevel;
@@ -167,6 +173,10 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 		this.level = level;
 		this.fullDataSourceProvider = fullDataSourceProvider;
 		this.blockRenderDistanceDiameter = viewDiameterInBlocks;
+		
+		GenericObjectRenderer genericObjectRenderer = this.level.getGenericRenderer();
+		this.beaconRenderHandler = (genericObjectRenderer != null) ? new BeaconRenderHandler(genericObjectRenderer) : null;
+		
 	}
 	
 	
@@ -340,9 +350,11 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 			}
 			else
 			{
-				// onRenderingDisabled() needs to be fired before the children are enabled so beacons render correctly
+				// children are all loaded, unload this and parents
+				
 				if (renderSection.getRenderingEnabled())
 				{
+					// needs to be fired before the children are enabled so beacons render correctly
 					renderSection.onRenderingDisabled();
 					
 					
@@ -463,7 +475,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 						}
 					});
 					
-					// onRenderingEnabled() needs to be fired after the children are disabled so beacons render correctly
+					// needs to be fired after the children are disabled so beacons render correctly
 					renderSection.onRenderingEnabled();
 					
 				}
