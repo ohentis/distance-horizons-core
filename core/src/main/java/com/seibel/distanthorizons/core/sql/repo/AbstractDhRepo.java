@@ -25,11 +25,9 @@ import com.seibel.distanthorizons.core.sql.DbConnectionClosedException;
 import com.seibel.distanthorizons.core.sql.dto.IBaseDTO;
 import com.seibel.distanthorizons.core.util.KeyedLockContainer;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
-import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
-import javax.swing.plaf.nimbus.State;
 import java.io.File;
 import java.io.IOException;
 import java.sql.*;
@@ -190,7 +188,7 @@ public abstract class AbstractDhRepo<TKey, TDTO extends IBaseDTO<TKey>> implemen
 		catch (SQLException | IOException e)
 		{
 			if (e instanceof SQLException 
-				&& DbConnectionClosedException.IsClosedException((SQLException)e))
+				&& DbConnectionClosedException.isClosedException((SQLException)e))
 			{
 				//LOGGER.warn("Attempted to get ["+this.dtoClass.getSimpleName()+"] with primary key ["+primaryKey+"] on closed repo ["+this.connectionString+"].");	
 			}
@@ -368,7 +366,7 @@ public abstract class AbstractDhRepo<TKey, TDTO extends IBaseDTO<TKey>> implemen
 			// SQL exceptions generally only happen when something is wrong with 
 			// the database or the query and should cause the system to blow up to notify the developer
 			
-			if (DbConnectionClosedException.IsClosedException(e))
+			if (DbConnectionClosedException.isClosedException(e))
 			{
 				throw new DbConnectionClosedException(e);
 			}
@@ -419,7 +417,7 @@ public abstract class AbstractDhRepo<TKey, TDTO extends IBaseDTO<TKey>> implemen
 			// SQL exceptions generally only happen when something is wrong with 
 			// the database or the query and should cause the system to blow up to notify the developer
 			
-			if (DbConnectionClosedException.IsClosedException(e))
+			if (DbConnectionClosedException.isClosedException(e))
 			{
 				return null;
 			}
@@ -449,7 +447,7 @@ public abstract class AbstractDhRepo<TKey, TDTO extends IBaseDTO<TKey>> implemen
 		}
 		catch(SQLException e)
 		{
-			if (DbConnectionClosedException.IsClosedException(e))
+			if (DbConnectionClosedException.isClosedException(e))
 			{
 				return null;
 			}
