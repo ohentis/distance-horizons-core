@@ -128,8 +128,8 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 
 	/** should be an empty array if no positions need to be generated */
 	@Nullable
-	private Supplier<LongArrayList> missingGenerationPos;
-	private LongArrayList getMissingGenerationPos() { return this.missingGenerationPos != null ? this.missingGenerationPos.get() : null; }
+	private Supplier<LongArrayList> missingGenerationPosFunc;
+	private LongArrayList getMissingGenerationPos() { return this.missingGenerationPosFunc != null ? this.missingGenerationPosFunc.get() : null; }
 	
 	private boolean checkedIfFullDataSourceExists = false;
 	private boolean fullDataSourceExists = false;
@@ -452,10 +452,10 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		if (this.fullDataSourceProvider.canRetrieveMissingDataSources() && this.fullDataSourceProvider.canQueueRetrieval())
 		{
 			// calculate the missing positions if not already done
-			if (this.missingGenerationPos == null)
+			if (this.missingGenerationPosFunc == null)
 			{
 				//this.missingGenerationPos = Suppliers.memoize(() -> this.fullDataSourceProvider.getPositionsToRetrieve(this.pos));
-				this.missingGenerationPos = Suppliers.memoizeWithExpiration(() -> this.fullDataSourceProvider.getPositionsToRetrieve(this.pos), 1, TimeUnit.MINUTES);
+				this.missingGenerationPosFunc = Suppliers.memoizeWithExpiration(() -> this.fullDataSourceProvider.getPositionsToRetrieve(this.pos), 1, TimeUnit.MINUTES);
 			}
 			
 			LongArrayList missingGenerationPos = this.getMissingGenerationPos();
