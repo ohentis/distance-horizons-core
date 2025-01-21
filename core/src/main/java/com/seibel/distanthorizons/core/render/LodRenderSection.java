@@ -23,6 +23,7 @@ import com.google.common.base.Suppliers;
 import com.google.common.cache.Cache;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
+import com.seibel.distanthorizons.core.dataObjects.render.CachedColumnRenderSource;
 import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSource;
 import com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.ColumnRenderBufferBuilder;
 import com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.LodQuadBuilder;
@@ -85,7 +86,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	private final FullDataSourceProviderV2 fullDataSourceProvider;
 	private final LodQuadTree quadTree;
 	private final KeyedLockContainer<Long> renderLoadLockContainer;
-	private final Cache<Long, ColumnRenderSource> cachedRenderSourceByPos;
+	private final Cache<Long, CachedColumnRenderSource> cachedRenderSourceByPos;
 	
 	/** 
 	 * contains the list of beacons currently being rendered in this section 
@@ -143,7 +144,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 			long pos, 
 			LodQuadTree quadTree, 
 			IDhClientLevel level, FullDataSourceProviderV2 fullDataSourceProvider, 
-			Cache<Long, ColumnRenderSource> cachedRenderSourceByPos, KeyedLockContainer<Long> renderLoadLockContainer)
+			Cache<Long, CachedColumnRenderSource> cachedRenderSourceByPos, KeyedLockContainer<Long> renderLoadLockContainer)
 	{
 		this.pos = pos;
 		this.quadTree = quadTree;
@@ -234,10 +235,9 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	}
 	private void getAndUploadRenderDataToGpu()
 	{
-		try
+		try(CachedColumnRenderSource cachedRenderSource = this.getRenderSourceForPos(this.pos))
 		{
-			ColumnRenderSource renderSource = this.getRenderSourceForPos(this.pos);
-			if (renderSource == null)
+			if (cachedRenderSource == null)
 			{
 				// nothing needs to be rendered
 				// TODO how doesn't this cause infinite file handler loops?
@@ -245,23 +245,23 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 				//  setting the render buffer here
 				return;
 			}
+			ColumnRenderSource thisRenderSource = cachedRenderSource.columnRenderSource;
 			
 			
 			boolean enableTransparency = Config.Client.Advanced.Graphics.Quality.transparency.get().transparencyEnabled;
 			LodQuadBuilder lodQuadBuilder = new LodQuadBuilder(enableTransparency, this.level.getClientLevelWrapper());
 			
 			// load adjacent render sources
+			try(CachedColumnRenderSource northRenderSource = this.getRenderSourceForPos(DhSectionPos.getAdjacentPos(this.pos, EDhDirection.NORTH));
+				CachedColumnRenderSource southRenderSource = this.getRenderSourceForPos(DhSectionPos.getAdjacentPos(this.pos, EDhDirection.SOUTH));
+				CachedColumnRenderSource eastRenderSource = this.getRenderSourceForPos(DhSectionPos.getAdjacentPos(this.pos, EDhDirection.EAST));
+				CachedColumnRenderSource westRenderSource = this.getRenderSourceForPos(DhSectionPos.getAdjacentPos(this.pos, EDhDirection.WEST)))
 			{
-				ColumnRenderSource northRenderSource = this.getRenderSourceForPos(DhSectionPos.getAdjacentPos(this.pos, EDhDirection.NORTH));
-				ColumnRenderSource southRenderSource = this.getRenderSourceForPos(DhSectionPos.getAdjacentPos(this.pos, EDhDirection.SOUTH));
-				ColumnRenderSource eastRenderSource = this.getRenderSourceForPos(DhSectionPos.getAdjacentPos(this.pos, EDhDirection.EAST));
-				ColumnRenderSource westRenderSource = this.getRenderSourceForPos(DhSectionPos.getAdjacentPos(this.pos, EDhDirection.WEST));
-				
 				ColumnRenderSource[] adjacentRenderSections = new ColumnRenderSource[EDhDirection.ADJ_DIRECTIONS.length];
-				adjacentRenderSections[EDhDirection.NORTH.ordinal() - 2] = northRenderSource;
-				adjacentRenderSections[EDhDirection.SOUTH.ordinal() - 2] = southRenderSource;
-				adjacentRenderSections[EDhDirection.EAST.ordinal() - 2] = eastRenderSource;
-				adjacentRenderSections[EDhDirection.WEST.ordinal() - 2] = westRenderSource;
+				adjacentRenderSections[EDhDirection.NORTH.ordinal() - 2] = (northRenderSource != null) ? northRenderSource.columnRenderSource : null;
+				adjacentRenderSections[EDhDirection.SOUTH.ordinal() - 2] = (southRenderSource != null) ? southRenderSource.columnRenderSource : null;
+				adjacentRenderSections[EDhDirection.EAST.ordinal() - 2] = (eastRenderSource != null) ? eastRenderSource.columnRenderSource : null;
+				adjacentRenderSections[EDhDirection.WEST.ordinal() - 2] = (westRenderSource != null) ? westRenderSource.columnRenderSource : null;
 				
 				boolean[] adjIsSameDetailLevel = new boolean[EDhDirection.ADJ_DIRECTIONS.length];
 				adjIsSameDetailLevel[EDhDirection.NORTH.ordinal() - 2] = this.isAdjacentPosSameDetailLevel(EDhDirection.NORTH);
@@ -269,9 +269,9 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 				adjIsSameDetailLevel[EDhDirection.EAST.ordinal() - 2] = this.isAdjacentPosSameDetailLevel(EDhDirection.EAST);
 				adjIsSameDetailLevel[EDhDirection.WEST.ordinal() - 2] = this.isAdjacentPosSameDetailLevel(EDhDirection.WEST);
 				
-				// the render sources are only needed in this synchronous method,
+				// the render sources are only needed by this synchronous method,
 				// then they can be closed
-				ColumnRenderBufferBuilder.makeLodRenderData(lodQuadBuilder, renderSource, this.level, adjacentRenderSections, adjIsSameDetailLevel);
+				ColumnRenderBufferBuilder.makeLodRenderData(lodQuadBuilder, thisRenderSource, this.level, adjacentRenderSections, adjIsSameDetailLevel);
 			}
 			
 			this.uploadToGpuAsync(lodQuadBuilder);
@@ -282,33 +282,36 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		}
 	}
 	@Nullable
-	private ColumnRenderSource getRenderSourceForPos(long pos) 
+	private CachedColumnRenderSource getRenderSourceForPos(long pos) 
 	{
 		ReentrantLock lock = this.renderLoadLockContainer.getLockForPos(pos);
 		try
 		{
-			// we don't want multiple threads attempting to load the same position at the same time
+			// we don't want multiple threads attempting to load the same position at the same time,
+			// and we don't want to access the cache while invalidating it on a different thread
 			lock.lock();
 			
 			// use the cached data if possible
-			ColumnRenderSource renderSource = this.cachedRenderSourceByPos.getIfPresent(pos);
-			if (renderSource != null)
+			CachedColumnRenderSource cachedRenderSource = this.cachedRenderSourceByPos.getIfPresent(pos);
+			if (cachedRenderSource != null)
 			{
-				return renderSource;
+				cachedRenderSource.markInUse();
+				return cachedRenderSource;
 			}
 			
 			// generate new render source
 			try (FullDataSourceV2 fullDataSource = this.fullDataSourceProvider.get(pos))
 			{
-				renderSource = FullDataToRenderDataTransformer.transformFullDataToRenderSource(fullDataSource, this.level);
+				ColumnRenderSource renderSource = FullDataToRenderDataTransformer.transformFullDataToRenderSource(fullDataSource, this.level);
 				// only add valid data to the cache (to prevent null pointers)
 				if (renderSource != null)
 				{
-					this.cachedRenderSourceByPos.put(pos, renderSource);
+					cachedRenderSource = new CachedColumnRenderSource(renderSource, lock, this.cachedRenderSourceByPos);
+					this.cachedRenderSourceByPos.put(pos, cachedRenderSource);
 				}
 			}
 			
-			return renderSource;
+			return cachedRenderSource;
 		}
 		finally
 		{

@@ -24,6 +24,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.RemovalCause;
 import com.google.common.cache.RemovalNotification;
 import com.seibel.distanthorizons.core.config.Config;
+import com.seibel.distanthorizons.core.dataObjects.render.CachedColumnRenderSource;
 import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSource;
 import com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.ColumnRenderBuffer;
 import com.seibel.distanthorizons.core.enums.EDhDirection;
@@ -98,48 +99,16 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 	 * caching the loaded positions significantly improves initial loading performance
 	 * since the same position doesn't need to be loaded 5 times.
 	 */
-	private final Cache<Long, ColumnRenderSource> cachedRenderSourceByPos
+	private final Cache<Long, CachedColumnRenderSource> cachedRenderSourceByPos
 			= CacheBuilder.newBuilder()
 			// availableProcessors() : each process may need to be loading a render source
 			// +1 : add 1 thread count buffer to reduce the chance of accidentally unloading a render source before it's used
 			// *5 : each render source needs it's 4 adjacent sides, so a total of 5 render sources are needed per load
 			.maximumSize((Runtime.getRuntime().availableProcessors() + 1) * 5L)
-			.removalListener((RemovalNotification<Long, ColumnRenderSource> removalNotification) ->
-			{
-				RemovalCause cause = removalNotification.getCause();
-				if (cause == RemovalCause.EXPLICIT
-					|| cause == RemovalCause.EXPIRED
-					|| cause == RemovalCause.COLLECTED
-					|| cause == RemovalCause.SIZE)
-				{
-					// cleanup needs to be handled on a different thread to prevent locking up the main loading threads
-					ThreadPoolExecutor executor = ThreadPoolUtil.getCleanupExecutor();
-					executor.execute(() ->
-					{
-						// close the render source after it's been 
-						ColumnRenderSource renderSource = removalNotification.getValue();
-						if (renderSource != null)
-						{
-							ReentrantLock lock = renderLoadLockContainer.getLockForPos(renderSource.getPos());
-							try
-							{
-								lock.lock();
-								renderSource.close();
-							}
-							finally
-							{
-								lock.unlock();
-							}
-						}
-						else
-						{
-							// shouldn't happen, but just in case
-							LOGGER.error("Unable to close null cached render source.");
-						}
-					});
-				}
-			})
-			.<Long, ColumnRenderSource>build();
+			// No closing logic since the CachedColumnRenderSource is in charge
+			// of freeing the underlying ColumnRenderSource.
+			// That way we don't have to worry about accidentally closing an in-use object.
+			.<Long, CachedColumnRenderSource>build();
 	
 	@Nullable
 	public final BeaconRenderHandler beaconRenderHandler;
@@ -655,7 +624,22 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 	 */
 	public void reloadPos(long pos)
 	{
-		this.cachedRenderSourceByPos.invalidate(pos); // TODO will this cause issues? we may need to lock this invalidation if the cached data source is currently in use
+		// clear cache //
+		
+		this.clearRenderCacheForPos(pos);
+		for (EDhDirection direction : EDhDirection.ADJ_DIRECTIONS)
+		{
+			long adjacentPos = DhSectionPos.getAdjacentPos(pos, direction);
+			this.clearRenderCacheForPos(adjacentPos);
+		}
+		
+		
+		// queue reloads //
+		
+		// only queue each section for reloading
+		// after the cache has been cleared,
+		// this is done to prevent accidentally using old cached data
+		
 		this.sectionsToReload.add(pos);
 		
 		// the adjacent locations also need to be updated to make sure lighting
@@ -664,8 +648,22 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 		for (EDhDirection direction : EDhDirection.ADJ_DIRECTIONS)
 		{
 			long adjacentPos = DhSectionPos.getAdjacentPos(pos, direction);
-			this.cachedRenderSourceByPos.invalidate(adjacentPos); // TODO will this cause issues? we may need to lock this invalidation if the cached data source is currently in use
 			this.sectionsToReload.add(adjacentPos);
+		}
+	}
+	private void clearRenderCacheForPos(long pos)
+	{
+		// locking is needed to prevent another thread
+		// from accessing the cache while it's being cleared
+		ReentrantLock lock = this.renderLoadLockContainer.getLockForPos(pos);
+		try
+		{
+			lock.lock();
+			this.cachedRenderSourceByPos.invalidate(pos);
+		}
+		finally
+		{
+			lock.unlock();
 		}
 	}
 	
