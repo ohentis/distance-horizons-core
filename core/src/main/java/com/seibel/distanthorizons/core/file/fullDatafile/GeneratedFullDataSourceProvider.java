@@ -34,7 +34,6 @@ import com.seibel.distanthorizons.core.pooling.PhantomArrayListCheckout;
 import com.seibel.distanthorizons.core.pooling.PhantomArrayListPool;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
-import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.threading.PriorityTaskPicker;
@@ -453,6 +452,23 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 			{
 				GeneratedFullDataSourceProvider.this.delayedFullDataSourceSaveCache.writeDataSourceToMemoryAndQueueSave(dataSource);
 			};
+		}
+		
+		@Override
+		public CompletableFuture<Boolean> shouldGenerateSplitChild(long pos)
+		{
+			return GeneratedFullDataSourceProvider.this.getAsync(pos).thenApply(fullDataSource ->
+			{
+				//noinspection TryFinallyCanBeTryWithResources
+				try
+				{
+					return !GeneratedFullDataSourceProvider.this.isFullyGenerated(fullDataSource.columnGenerationSteps);
+				}
+				finally
+				{
+					fullDataSource.close();
+				}
+			});
 		}
 		
 	}

@@ -74,7 +74,14 @@ public class RemoteWorldRetrievalQueue extends AbstractFullDataNetworkRequestQue
 							return WorldGenResult.CreateFail();
 						case REQUIRES_SPLITTING:
 							List<CompletableFuture<WorldGenResult>> childFutures = new ArrayList<>(4);
-							DhSectionPos.forEachChild(sectionPos, childPos -> childFutures.add(this.submitRetrievalTask(childPos, requiredDataDetail, tracker)));
+							DhSectionPos.forEachChild(sectionPos, childPos -> {
+								tracker.shouldGenerateSplitChild(childPos).thenAccept(shouldGenerate -> {
+									if (shouldGenerate)
+									{
+										childFutures.add(this.submitRetrievalTask(childPos, requiredDataDetail, tracker));
+									}
+								});
+							});
 							return WorldGenResult.CreateSplit(childFutures);
 					}
 					
