@@ -587,6 +587,10 @@
     "Progress Display Interval In Seconds",
   "distanthorizons.config.common.worldGenerator.generationProgressDisplayIntervalInSeconds.@tooltip":
     "Determines how long between progress update displays.",
+  "distanthorizons.config.common.worldGenerator.generationProgressDisableMessageDisplayTimeInSeconds":
+    "Seconds To Show Progress Hiding Instructions",
+  "distanthorizons.config.common.worldGenerator.generationProgressDisableMessageDisplayTimeInSeconds.@tooltip":
+    "For how many seconds should instructions for disabling the distant generator progress be displayed? \nSetting this to 0 hides the instructional message so the world gen progress is shown immediately when it starts.",
 
 
   "distanthorizons.config.common.lodBuilding":

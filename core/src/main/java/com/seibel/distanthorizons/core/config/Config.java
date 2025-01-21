@@ -1273,6 +1273,15 @@ public class Config
 							+ "")
 					.build();
 			
+			public static ConfigEntry<Integer> generationProgressDisableMessageDisplayTimeInSeconds = new ConfigEntry.Builder<Integer>()
+					.setChatCommandName("generation.disableInstructionLogTime")
+					.setMinDefaultMax(0, 20, 60 * 60) // max = 1 hour
+					.comment(""
+							+ "For how many seconds should instructions for disabling the distant generator progress be displayed? \n"
+							+ "Setting this to 0 hides the instructional message so the world gen progress is shown immediately when it starts. \n"
+							+ "")
+					.build();
+			
 		}
 		
 		public static class LodBuilding

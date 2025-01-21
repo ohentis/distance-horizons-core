@@ -220,6 +220,9 @@ public class WorldGenModule implements Closeable
 	/** Handles the {@link IFullDataSourceRetrievalQueue} and any other necessary world gen information. */
 	public static abstract class AbstractWorldGenState
 	{
+		/** static so we only send the disable message once per session */
+		private static long firstProgressMessageSentMs = 0;
+		
 		public IFullDataSourceRetrievalQueue worldGenerationQueue;
 		
 		private static final ThreadPoolExecutor PROGRESS_UPDATER_THREAD = ThreadUtil.makeSingleDaemonThreadPool("World Gen Progress Updater");
@@ -280,6 +283,7 @@ public class WorldGenModule implements Closeable
 		}
 		private void sendRetrievalProgress()
 		{
+			// format the remaining chunks
 			int remainingChunkCount = this.worldGenerationQueue.getRetrievalEstimatedRemainingChunkCount();
 			remainingChunkCount += this.worldGenerationQueue.getQueuedChunkCount();
 			String remainingChunkCountStr = F3Screen.NUMBER_FORMAT.format(remainingChunkCount);
@@ -287,6 +291,7 @@ public class WorldGenModule implements Closeable
 			String message = "DH Gen/Import: " + remainingChunkCountStr + " chunks";
 			
 			
+			// add the remaining time estimate if available
 			double chunksPerSec = this.getEstimatedChunksPerSecond();
 			if (chunksPerSec > 0)
 			{
@@ -295,8 +300,28 @@ public class WorldGenModule implements Closeable
 			}
 			
 			
+			
+			// show a message about how to disable progress logging if requested
+			int msToShowDisableInstructions = Config.Common.WorldGenerator.generationProgressDisableMessageDisplayTimeInSeconds.get() * 1_000;
+			if (msToShowDisableInstructions > 0)
+			{
+				long timeSinceFirstMessageInMs = (System.currentTimeMillis() - firstProgressMessageSentMs);
+				// always show this message for the first tick
+				if (firstProgressMessageSentMs == 0
+					// show this message if there is still time
+					|| timeSinceFirstMessageInMs < msToShowDisableInstructions)
+				{
+					// replace the current message
+					message = "DH Gen/Import progress can be hidden in the DH config ["+remainingChunkCountStr+"]";
+				}
+			}
+			
+			
+			
+			// only log if there are chunks needing to be generated
 			if (remainingChunkCount != 0)
 			{
+				// determine where to log
 				EDhApiDistantGeneratorProgressDisplayLocation displayLocation = Config.Common.WorldGenerator.showGenerationProgress.get();
 				if (displayLocation == EDhApiDistantGeneratorProgressDisplayLocation.OVERLAY)
 				{
@@ -311,6 +336,12 @@ public class WorldGenModule implements Closeable
 					LOGGER.info(message);
 				}
 				
+				
+				// mark when the first message was sent
+				if (firstProgressMessageSentMs == 0)
+				{
+					firstProgressMessageSentMs = System.currentTimeMillis();
+				}
 			}
 		}
 		private static String formatSeconds(long totalSeconds) 
