@@ -35,6 +35,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
@@ -63,15 +64,12 @@ public class FullDataPointIdMap
 	private static final String BLOCK_STATE_SEPARATOR_STRING = "_DH-BSW_";
 	
 	
-	/** used when the data point map is running normally */
-	private final ReentrantReadWriteLock readWriteLock = new ReentrantReadWriteLock();
-	
 	/** should only be used for debugging */
 	private long pos;
 	
 	/** The index should be the same as the Entry's ID */
 	private final ArrayList<Entry> entryList = new ArrayList<>();
-	private final HashMap<Entry, Integer> idMap = new HashMap<>();
+	private final ConcurrentHashMap<Entry, Integer> idMap = new ConcurrentHashMap<>();
 	
 	private int cachedHashCode = 0;
 	
@@ -89,34 +87,25 @@ public class FullDataPointIdMap
 	// getters //
 	//=========//
 	
-	/** @throws IndexOutOfBoundsException if the given ID isn't in the {@link FullDataPointIdMap#entryList} */
-	private Entry getEntry(int id) throws IndexOutOfBoundsException
-	{
-		try
-		{
-			this.readWriteLock.readLock().lock();
-			Entry entry;
-			try
-			{
-				entry = this.entryList.get(id);
-			}
-			catch (IndexOutOfBoundsException e)
-			{
-				throw new IndexOutOfBoundsException("FullData ID Map out of sync for pos: "+this.pos+". ID: ["+id+"] greater than the number of known ID's: ["+this.entryList.size()+"].");
-			}
-			
-			return entry;
-		}
-		finally
-		{
-			this.readWriteLock.readLock().unlock();
-		}
-	}
-	
 	/** @see FullDataPointIdMap#getEntry(int) */
 	public IBiomeWrapper getBiomeWrapper(int id) throws IndexOutOfBoundsException { return this.getEntry(id).biome; }
 	/** @see FullDataPointIdMap#getEntry(int) */
 	public IBlockStateWrapper getBlockStateWrapper(int id) throws IndexOutOfBoundsException { return this.getEntry(id).blockState; }
+	/** @throws IndexOutOfBoundsException if the given ID isn't in the {@link FullDataPointIdMap#entryList} */
+	private Entry getEntry(int id) throws IndexOutOfBoundsException
+	{
+		Entry entry;
+		try
+		{
+			entry = this.entryList.get(id);
+		}
+		catch (IndexOutOfBoundsException e)
+		{
+			throw new IndexOutOfBoundsException("FullData ID Map out of sync for pos: "+this.pos+". ID: ["+id+"] greater than the number of known ID's: ["+this.entryList.size()+"].");
+		}
+		
+		return entry;
+	}
 	
 	
 	/** @return -1 if the list is empty */
@@ -137,73 +126,36 @@ public class FullDataPointIdMap
 	 * If an entry with the given values already exists nothing will
 	 * be added but the existing item's ID will still be returned.
 	 */
-	public int addIfNotPresentAndGetId(IBiomeWrapper biome, IBlockStateWrapper blockState) { return this.addIfNotPresentAndGetId(Entry.getEntry(biome, blockState), true); }
-	/** @param useWriteLocks should only be false if this method is already in a write lock to prevent unlocking at the wrong time */
-	private int addIfNotPresentAndGetId(Entry biomeBlockStateEntry, boolean useWriteLocks)
+	public int addIfNotPresentAndGetId(IBiomeWrapper biome, IBlockStateWrapper blockState) { return this.addIfNotPresentAndGetId(Entry.getEntry(biome, blockState)); }
+	private int addIfNotPresentAndGetId(Entry biomeBlockStateEntry)
 	{
-		try
+		// try getting the existing ID
+		Integer nullableId = this.idMap.get(biomeBlockStateEntry);
+		if (nullableId != null)
 		{
-			if (useWriteLocks)
-			{
-				this.readWriteLock.writeLock().lock();
-			}
-			
-			
-			int id;
-			if (this.idMap.containsKey(biomeBlockStateEntry))
-			{
-				// use the existing ID
-				id = this.idMap.get(biomeBlockStateEntry);
-			}
-			else
-			{
-				// Add the new ID
-				id = this.entryList.size();
-				this.entryList.add(biomeBlockStateEntry);
-				this.idMap.put(biomeBlockStateEntry, id);
-				
-				// invalidate the cached hash code
-				this.cachedHashCode = 0;
-			}
-			
-			return id;
+			return nullableId;
 		}
-		finally
+		
+		
+		// create the new ID
+		return this.idMap.compute(biomeBlockStateEntry, (Entry newBiomeBlockStateEntry, Integer currentId) -> 
 		{
-			if (useWriteLocks)
+			if (currentId != null)
 			{
-				this.readWriteLock.writeLock().unlock();
-			}
-		}
-	}
-	
-	/** allows for adding duplicate {@link Entry} */
-	private void add(Entry biomeBlockStateEntry, boolean useWriteLocks)
-	{
-		try
-		{
-			if (useWriteLocks)
-			{
-				this.readWriteLock.writeLock().lock();
+				return currentId;
 			}
 			
 			
-			int id = this.entryList.size();
+			// Add the new ID
+			currentId = this.entryList.size();
 			this.entryList.add(biomeBlockStateEntry);
-			this.idMap.put(biomeBlockStateEntry, id);
 			
 			// invalidate the cached hash code
 			this.cachedHashCode = 0;
-		}
-		finally
-		{
-			if (useWriteLocks)
-			{
-				this.readWriteLock.writeLock().unlock();
-			}
-		}
+			
+			return currentId;
+		});
 	}
-	
 	
 	/**
 	 * Adds every {@link Entry} from inputMap into this map. <br>
@@ -216,27 +168,22 @@ public class FullDataPointIdMap
 	 */
 	public void addAll(FullDataPointIdMap inputMap)
 	{
-		try
+		ArrayList<Entry> entriesToMerge = inputMap.entryList;
+		for (int i = 0; i < entriesToMerge.size(); i++)
 		{
-			//LOGGER.trace("adding {" + this.pos + ", " + this.entryList.size() + "} and {" + inputMap.pos + ", " + inputMap.entryList.size() + "}");
-			
-			inputMap.readWriteLock.readLock().lock();
-			this.readWriteLock.writeLock().lock();
-			
-			ArrayList<Entry> entriesToMerge = inputMap.entryList;
-			for (int i = 0; i < entriesToMerge.size(); i++)
-			{
-				Entry entity = entriesToMerge.get(i);
-				this.add(entity, false);
-			}
+			Entry entity = entriesToMerge.get(i);
+			this.add(entity);
 		}
-		finally
-		{
-			this.readWriteLock.writeLock().unlock();
-			inputMap.readWriteLock.readLock().unlock();
-			
-			//LOGGER.trace("finished merging {" + this.pos + ", " + this.entryList.size() + "} and {" + inputMap.pos + ", " + inputMap.entryList.size() + "}");
-		}
+	}
+	/** allows for adding duplicate {@link Entry} */
+	private void add(Entry biomeBlockStateEntry)
+	{
+		int id = this.entryList.size();
+		this.entryList.add(biomeBlockStateEntry);
+		this.idMap.put(biomeBlockStateEntry, id);
+		
+		// invalidate the cached hash code
+		this.cachedHashCode = 0;
 	}
 	
 	/**
@@ -250,31 +197,16 @@ public class FullDataPointIdMap
 	 */
 	public int[] mergeAndReturnRemappedEntityIds(FullDataPointIdMap inputMap)
 	{
-		try
+		ArrayList<Entry> entriesToMerge = inputMap.entryList;
+		int[] remappedEntryIds = new int[entriesToMerge.size()];
+		for (int i = 0; i < entriesToMerge.size(); i++)
 		{
-			//LOGGER.trace("merging {" + this.pos + ", " + this.entryList.size() + "} and {" + inputMap.pos + ", " + inputMap.entryList.size() + "}");
-			
-			inputMap.readWriteLock.readLock().lock();
-			this.readWriteLock.writeLock().lock();
-			
-			ArrayList<Entry> entriesToMerge = inputMap.entryList;
-			int[] remappedEntryIds = new int[entriesToMerge.size()];
-			for (int i = 0; i < entriesToMerge.size(); i++)
-			{
-				Entry entity = entriesToMerge.get(i);
-				int id = this.addIfNotPresentAndGetId(entity, false);
-				remappedEntryIds[i] = id;
-			}
-			
-			return remappedEntryIds;
+			Entry entity = entriesToMerge.get(i);
+			int id = this.addIfNotPresentAndGetId(entity);
+			remappedEntryIds[i] = id;
 		}
-		finally
-		{
-			this.readWriteLock.writeLock().unlock();
-			inputMap.readWriteLock.readLock().unlock();
-			
-			//LOGGER.trace("finished merging {" + this.pos + ", " + this.entryList.size() + "} and {" + inputMap.pos + ", " + inputMap.entryList.size() + "}");
-		}
+		
+		return remappedEntryIds;
 	}
 	
 	/** Should only be used if this map is going to be reused, otherwise bad things will happen. */
@@ -295,37 +227,28 @@ public class FullDataPointIdMap
 	/** Serializes all contained entries into the given stream, formatted in UTF */
 	public void serialize(DhDataOutputStream outputStream) throws IOException
 	{
-		try
+		outputStream.writeInt(this.entryList.size());
+		
+		// only used when debugging
+		HashMap<String, FullDataPointIdMap.Entry> dataPointEntryBySerialization = new HashMap<>();
+		
+		for (Entry entry : this.entryList)
 		{
-			this.readWriteLock.readLock().lock();
-			outputStream.writeInt(this.entryList.size());
+			String entryString = entry.serialize();
+			outputStream.writeUTF(entryString);
 			
-			// only used when debugging
-			HashMap<String, FullDataPointIdMap.Entry> dataPointEntryBySerialization = new HashMap<>();
-			
-			for (Entry entry : this.entryList)
+			if (RUN_SERIALIZATION_DUPLICATE_VALIDATION)
 			{
-				String entryString = entry.serialize();
-				outputStream.writeUTF(entryString);
-				
-				if (RUN_SERIALIZATION_DUPLICATE_VALIDATION)
+				if (dataPointEntryBySerialization.containsKey(entryString))
 				{
-					if (dataPointEntryBySerialization.containsKey(entryString))
-					{
-						LOGGER.error("Duplicate serialized entry found with serial: " + entryString);
-					}
-					if (dataPointEntryBySerialization.containsValue(entry))
-					{
-						LOGGER.error("Duplicate serialized entry found with value: " + entry.serialize());
-					}
-					dataPointEntryBySerialization.put(entryString, entry);
+					LOGGER.error("Duplicate serialized entry found with serial: " + entryString);
 				}
+				if (dataPointEntryBySerialization.containsValue(entry))
+				{
+					LOGGER.error("Duplicate serialized entry found with value: " + entry.serialize());
+				}
+				dataPointEntryBySerialization.put(entryString, entry);
 			}
-		}
-		finally
-		{
-			this.readWriteLock.readLock().unlock();
-			//LOGGER.trace("serialize " + this.pos + " " + this.entryList.size());
 		}
 	}
 	
@@ -429,7 +352,7 @@ public class FullDataPointIdMap
 	{
 		private static final IWrapperFactory WRAPPER_FACTORY = SingletonInjector.INSTANCE.get(IWrapperFactory.class);
 		
-		private static final Int2ReferenceOpenHashMap<ArrayList<Entry>> ENTRY_POOL = new Int2ReferenceOpenHashMap<>();
+		private static final ConcurrentHashMap<Integer, Entry> ENTRY_BY_HASH = new ConcurrentHashMap<>();
 		/** lock is necessary since {@link Int2ReferenceOpenHashMap} isn't concurrent and concurrent threads can cause infinite loops */
 		private static final ReentrantReadWriteLock ENTRY_POOL_LOCK = new ReentrantReadWriteLock();
 		
@@ -437,6 +360,7 @@ public class FullDataPointIdMap
 		public final IBlockStateWrapper blockState;
 		
 		private Integer hashCode = null;
+		private String serialString = null;
 		
 		
 		
@@ -446,62 +370,25 @@ public class FullDataPointIdMap
 		
 		public static Entry getEntry(IBiomeWrapper biome, IBlockStateWrapper blockState)
 		{
-			int entryHash = getHashCode(biome, blockState);
+			int entryHash = generateHashCode(biome, blockState);
 			
-			// try getting the existing entry
-			try
+			// try getting the existing Entry
+			Entry entry = ENTRY_BY_HASH.get(entryHash);
+			if (entry != null)
 			{
-				ENTRY_POOL_LOCK.readLock().lock();
-				
-				// check if an entry already exists
-				ArrayList<Entry> entryList = ENTRY_POOL.get(entryHash);
-				if (entryList != null)
-				{
-					// at least one entry exists with this hash code
-					for (int i = 0; i < entryList.size(); i++)
-					{
-						Entry entry = entryList.get(i);
-						if (entry.biome.equals(biome) && entry.blockState.equals(blockState))
-						{
-							return entry;
-						}
-					}
-					
-					// if we got here, then there was a hash collision and this entry wasn't present in the array
-				}
-			}
-			finally
-			{
-				ENTRY_POOL_LOCK.readLock().unlock();
+				return entry;
 			}
 			
-			
-			// no entry exists,
-			// create a new one
-			try
+			// create the missing entry
+			return ENTRY_BY_HASH.compute(entryHash, (Integer newHash, Entry currentEntry) ->
 			{
-				ENTRY_POOL_LOCK.writeLock().lock();
-				
-				ArrayList<Entry> entryList = ENTRY_POOL.get(entryHash);
-				if (entryList == null)
+				if (currentEntry != null)
 				{
-					// no entries exist for this hash code
-					
-					// we assume that hash collisions should basically never happen, 
-					// so the array starts with an initial capacity of 1.
-					// However, since collisions will eventually happen, using an arrayList prevents unexpected bugs caused by collisions.
-					entryList = new ArrayList<>(1);
-					ENTRY_POOL.put(entryHash, entryList);
+					return currentEntry;
 				}
 				
-				Entry newEntry = new Entry(biome, blockState);
-				entryList.add(newEntry);
-				return newEntry;
-			}
-			finally
-			{
-				ENTRY_POOL_LOCK.writeLock().unlock();
-			}
+				return new Entry(biome, blockState);
+			});
 		}
 		private Entry(IBiomeWrapper biome, IBlockStateWrapper blockState)
 		{
@@ -515,8 +402,19 @@ public class FullDataPointIdMap
 		// overrides //
 		//===========//
 		
-		public static int getHashCode(Entry entry) { return getHashCode(entry.biome, entry.blockState); }
-		public static int getHashCode(IBiomeWrapper biome, IBlockStateWrapper blockState)
+		@Override
+		public int hashCode()
+		{
+			// cache the hash code to improve speed
+			if (this.hashCode == null)
+			{
+				this.hashCode = generateHashCode(this);
+			}
+			
+			return this.hashCode;
+		}
+		private static int generateHashCode(Entry entry) { return generateHashCode(entry.biome, entry.blockState); }
+		private static int generateHashCode(IBiomeWrapper biome, IBlockStateWrapper blockState)
 		{
 			final int prime = 31;
 			
@@ -526,17 +424,6 @@ public class FullDataPointIdMap
 			result = prime * result + (biome == null ? 0 : biome.hashCode());
 			result = prime * result + (blockState == null ? 0 : blockState.hashCode());
 			return result;
-		}
-		@Override
-		public int hashCode()
-		{
-			// cache the hash code to improve speed
-			if (this.hashCode == null)
-			{
-				this.hashCode = getHashCode(this);
-			}
-			
-			return this.hashCode;
 		}
 		
 		@Override
@@ -562,7 +449,15 @@ public class FullDataPointIdMap
 		// (de)serializing //
 		//=================//
 		
-		public String serialize() { return this.biome.getSerialString() + BLOCK_STATE_SEPARATOR_STRING + this.blockState.getSerialString(); }
+		public String serialize() 
+		{
+			if (this.serialString == null)
+			{
+				this.serialString = this.biome.getSerialString() + BLOCK_STATE_SEPARATOR_STRING + this.blockState.getSerialString();
+			}
+			
+			return this.serialString;
+		}
 		
 		public static Entry deserialize(String str, ILevelWrapper levelWrapper) throws DataCorruptedException
 		{
