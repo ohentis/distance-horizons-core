@@ -889,6 +889,11 @@ public class FullDataSourceV2
 	 */
 	private static void ensureDataColumnOrder(LongArrayList dataColumn)
 	{
+		if (dataColumn.size() < 2)
+		{
+			return;
+		}
+		
 		long firstDataPoint = dataColumn.getLong(0);
 		int firstBottomY = FullDataPointUtil.getBottomY(firstDataPoint);
 		
