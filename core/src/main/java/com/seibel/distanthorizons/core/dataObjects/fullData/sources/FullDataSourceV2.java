@@ -866,6 +866,11 @@ public class FullDataSourceV2
 	 */
 	public static void throwIfDataColumnInWrongOrder(long pos, LongArrayList dataArray) throws IllegalStateException
 	{
+		if (dataArray.size() < 2)
+		{
+			return;
+		}
+		
 		long firstDataPoint = dataArray.getLong(0);
 		int firstBottomY = FullDataPointUtil.getBottomY(firstDataPoint);
 		
