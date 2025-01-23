@@ -16,6 +16,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.*;
 
 public class RemoteWorldRetrievalQueue extends AbstractFullDataNetworkRequestQueue implements IFullDataSourceRetrievalQueue, IDebugRenderable
@@ -56,7 +57,11 @@ public class RemoteWorldRetrievalQueue extends AbstractFullDataNetworkRequestQue
 	{
 		long generationStartMsTime = System.currentTimeMillis();
 		
-		return super.submitRequest(sectionPos, tracker.getDataSourceConsumer())
+		
+		return super.submitRequest(sectionPos, fullDataSource -> {
+					Objects.requireNonNull(tracker.getDataSourceConsumer()).accept(fullDataSource);
+					fullDataSource.close();
+				})
 				.thenApply(requestResult ->
 				{
 					long totalGenTimeInMs = System.currentTimeMillis() - generationStartMsTime;

@@ -241,10 +241,9 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 						try
 						{
 							this.level.updateBeaconBeamsForSectionPos(dataSourceDto.pos, response.payload.beaconBeams);
-							try (FullDataSourceV2 fullDataSource = dataSourceDto.createDataSource(this.level.getLevelWrapper()))
-							{
-								entry.dataSourceConsumer.accept(fullDataSource);
-							}
+							
+							FullDataSourceV2 fullDataSource = dataSourceDto.createDataSource(this.level.getLevelWrapper());
+							entry.dataSourceConsumer.accept(fullDataSource);
 						}
 						catch (Exception e)
 						{

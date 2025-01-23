@@ -99,7 +99,10 @@ public class RemoteFullDataSourceProvider extends GeneratedFullDataSourceProvide
 		Long timestamp = this.getTimestampForPos(pos);
 		if (timestamp != null)
 		{
-			this.syncOnLoadRequestQueue.submitRequest(pos, timestamp, this::updateDataSource);
+			this.syncOnLoadRequestQueue.submitRequest(pos, timestamp, fullDataSource ->
+			{
+				this.updateDataSourceAsync(fullDataSource).whenComplete((result, throwable) -> fullDataSource.close());
+			});
 		}
 		
 		return super.get(pos);
