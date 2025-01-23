@@ -283,6 +283,8 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 		return (renderState != null) ? renderState.renderBufferHandler : null;
 	}
 	
+	public boolean shouldProcessLocalChunkUpdates() { return this.networkState == null || !this.networkState.sessionConfig.isRealTimeUpdatesEnabled(); }
+	
 	
 	
 	//===========//

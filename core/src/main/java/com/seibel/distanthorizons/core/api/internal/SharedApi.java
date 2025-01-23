@@ -25,6 +25,7 @@ import com.seibel.distanthorizons.core.Initializer;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.generation.DhLightingEngine;
+import com.seibel.distanthorizons.core.level.DhClientLevel;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
@@ -229,6 +230,14 @@ public class SharedApi
 			}
 			
 			return;
+		}
+		
+		if (dhLevel instanceof DhClientLevel)
+		{
+			if (!((DhClientLevel) dhLevel).shouldProcessLocalChunkUpdates())
+			{
+				return;
+			}
 		}
 		
 		// shoudln't normally happen, but just in case
