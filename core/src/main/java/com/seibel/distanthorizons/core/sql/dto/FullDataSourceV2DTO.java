@@ -97,7 +97,9 @@ public class FullDataSourceV2DTO
 		// populate individual variables
 		{
 			dto.pos = dataSource.getPos();
-			dto.dataChecksum = (dataSource.mapping.hashCode() * 4217) + dataSource.hashCode();
+			// the mapping hash isn't included since it takes significantly longer to calculate and 
+			// as of the time of this comment (2025-1-22) the checksum isn't used for anything so changing it shouldn't cause any issues
+			dto.dataChecksum = dataSource.hashCode();
 			dto.dataFormatVersion = FullDataSourceV2.DATA_FORMAT_VERSION;
 			dto.compressionModeValue = compressionModeEnum.value;
 			dto.lastModifiedUnixDateTime = dataSource.lastModifiedUnixDateTime;
