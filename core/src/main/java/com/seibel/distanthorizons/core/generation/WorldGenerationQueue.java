@@ -439,9 +439,8 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 					ThreadPoolUtil.getWorldGenExecutor(),
 					(DhApiChunk dataPoints) ->
 					{
-						try
+						try(FullDataSourceV2 dataSource = LodDataBuilder.createFromApiChunkData(dataPoints, this.generator.runApiValidation()))
 						{
-							FullDataSourceV2 dataSource = LodDataBuilder.createFromApiChunkData(dataPoints, this.generator.runApiValidation());
 							dataSourceConsumer.accept(dataSource);
 						}
 						catch (DataCorruptedException | IllegalArgumentException e)
@@ -471,11 +470,19 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 						pooledDataSource,
 						generatorMode,
 						ThreadPoolUtil.getWorldGenExecutor(),
-						(IDhApiFullDataSource dataSource) ->
+						(IDhApiFullDataSource apiDataSource) ->
 						{
 							try
 							{
-								dataSourceConsumer.accept((FullDataSourceV2)dataSource);
+								FullDataSourceV2 fullDataSource = (FullDataSourceV2) apiDataSource;
+								try
+								{
+									dataSourceConsumer.accept(fullDataSource);
+								}
+								finally
+								{
+									fullDataSource.close();
+								}
 							}
 							catch (IllegalArgumentException e)
 							{
