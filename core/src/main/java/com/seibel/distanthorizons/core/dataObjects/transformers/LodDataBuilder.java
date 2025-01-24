@@ -175,7 +175,12 @@ public class LodDataBuilder
 					
 					
 					// determine the starting Y Pos
-					int y = chunkWrapper.getLightBlockingHeightMapValue(relBlockX, relBlockZ);
+					int y = Math.max(
+							// max between both heightmaps to account for solid invisible blocks (glass)
+							// and non-solid opaque blocks (at one point this was stairs, not sure what would fit this now)
+							chunkWrapper.getLightBlockingHeightMapValue(relBlockX, relBlockZ),
+							chunkWrapper.getSolidHeightMapValue(relBlockX, relBlockZ)
+						);
 					// go up until we reach open air or the world limit
 					IBlockStateWrapper topBlockState = previousBlockState = chunkWrapper.getBlockState(relBlockX, y, relBlockZ, mcBlockPos, previousBlockState);
 					while (!topBlockState.isAir() && y < chunkWrapper.getExclusiveMaxBuildHeight())
