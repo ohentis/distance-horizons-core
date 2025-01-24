@@ -87,8 +87,20 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 	// event listeners //
 	//=================//
 	
-	public void addWorldGenCompleteListener(IOnWorldGenCompleteListener listener) { this.onWorldGenTaskCompleteListeners.add(listener); }
-	public void removeWorldGenCompleteListener(IOnWorldGenCompleteListener listener) { this.onWorldGenTaskCompleteListeners.remove(listener); }
+	public void addWorldGenCompleteListener(IOnWorldGenCompleteListener listener) 
+	{
+		synchronized (this.onWorldGenTaskCompleteListeners)
+		{
+			this.onWorldGenTaskCompleteListeners.add(listener);
+		}
+	}
+	public void removeWorldGenCompleteListener(IOnWorldGenCompleteListener listener) 
+	{
+		synchronized (this.onWorldGenTaskCompleteListeners)
+		{
+			this.onWorldGenTaskCompleteListeners.remove(listener);
+		}
+	}
 	
 	
 	
@@ -128,10 +140,14 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 	// TODO only fire after the section has finished generated or once every X seconds
 	private void fireOnGenPosSuccessListeners(long pos)
 	{
-		// fire the event listeners 
-		for (IOnWorldGenCompleteListener listener : this.onWorldGenTaskCompleteListeners)
+		// synchronized to prevent a rare issue where the world generator is being shut down while this listener is firing
+		synchronized (this.onWorldGenTaskCompleteListeners)
 		{
-			listener.onWorldGenTaskComplete(pos);
+			// fire the event listeners 
+			for (IOnWorldGenCompleteListener listener : this.onWorldGenTaskCompleteListeners)
+			{
+				listener.onWorldGenTaskComplete(pos);
+			}
 		}
 	}
 	
