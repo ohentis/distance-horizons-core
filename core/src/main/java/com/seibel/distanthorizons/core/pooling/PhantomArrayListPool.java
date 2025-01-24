@@ -4,7 +4,6 @@ import com.seibel.distanthorizons.core.api.internal.ClientApi;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
-import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
 import com.seibel.distanthorizons.core.util.objects.Pair;
 import com.seibel.distanthorizons.coreapi.ModInfo;
@@ -14,7 +13,9 @@ import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.shorts.ShortArrayList;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
+import java.lang.ref.PhantomReference;
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.SoftReference;
@@ -25,8 +26,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.BiConsumer;
-import java.util.function.Supplier;
 
 /**
  * DH uses a lot of potentially large arrays of {@link Byte}s and {@link Long}s.
@@ -46,6 +45,12 @@ import java.util.function.Supplier;
  * This is less efficient since it may allow a lot of additional arrays to
  * be created while we wait for the garbage collector to run, but 
  * does prevent any leaks from {@link PhantomArrayListParent} that weren't closed.
+ * 
+ * <br><br>
+ * <strong>Use Notes: </strong><br>
+ * If possible all checkouts for a given pool should be the same size,
+ * since {@link PhantomArrayListCheckout}'s are shared, getting the same size checkout each time
+ * prevents accidentally returning a larger checkout than necessary, which wastes memory.
  */
 public class PhantomArrayListPool
 {
@@ -83,10 +88,7 @@ public class PhantomArrayListPool
 	public final ReferenceQueue<PhantomArrayListParent> phantomRefQueue = new ReferenceQueue<>();
 	
 	
-	
-	private final ConcurrentLinkedQueue<ByteArrayList> pooledByteArrays = new ConcurrentLinkedQueue<>();
-	private final ConcurrentLinkedQueue<ShortArrayList> pooledShortArrays = new ConcurrentLinkedQueue<>();
-	private final ConcurrentLinkedQueue<SoftReference<LongArrayList>> pooledLongArrays = new ConcurrentLinkedQueue<>();
+	private final ConcurrentLinkedQueue<SoftReference<PhantomArrayListCheckout>> pooledCheckoutsRefs = new ConcurrentLinkedQueue<>();
 	
 	/** counts how many byte arrays have been created by this pool */
 	private final AtomicInteger totalByteArrayCountRef = new AtomicInteger(0);
@@ -101,6 +103,15 @@ public class PhantomArrayListPool
 	private long lastShortPoolSizeInBytes = -1;
 	/** used for debugging, represents an estimate for how many bytes the long[] pool contains */
 	private long lastLongPoolSizeInBytes = -1;
+	
+	/** used for debugging, represents an estimate for how many byte[]'s are currently in this pool*/
+	private int lastBytePoolCount = 0;
+	/** used for debugging, represents an estimate for how many short[]'s are currently in this pool*/
+	private int lastShortPoolCount = 0;
+	/** used for debugging, represents an estimate for how many long[]'s are currently in this pool*/
+	private int lastLongPoolCount = 0;
+	/** used for debugging, represents an estimate for how many checkouts are currently in this pool*/
+	private int lastCheckoutPoolCount = 0;
 	
 	/** For pools backed by {@link SoftReference}'s we may need to decrease the size when elements are garbage collected */
 	private boolean clearLastRefPoolSizes = false;
@@ -132,30 +143,77 @@ public class PhantomArrayListPool
 	// get checkout //
 	//==============//
 	
+	/** 
+	 * If possible all checkouts for a given pool should be the same size,
+	 * since {@link PhantomArrayListCheckout}'s are shared, returning the same size
+	 * prevents accidentally returning a larger checkout than necessary, which wastes memory.
+	 */
 	public PhantomArrayListCheckout checkoutArrays(int byteArrayCount, int shortArrayCount, int longArrayCount)
 	{
-		PhantomArrayListCheckout checkout = new PhantomArrayListCheckout(this);
+		PhantomArrayListCheckout checkout = null;
+		while (checkout == null)
+		{
+			SoftReference<PhantomArrayListCheckout> checkoutRef = this.pooledCheckoutsRefs.poll();
+			if (checkoutRef == null)
+			{
+				// pool is empty, create new checkout
+				checkout = new PhantomArrayListCheckout(this);
+			}
+			else
+			{
+				checkout = checkoutRef.get();
+				if (checkout != null)
+				{
+					// use pooled checkout
+				}
+				else
+				{
+					// this reference is pointing to null,
+					// the checkout must have been garbage collected,
+					// that means we don't have enough memory
+					if (!lowMemoryWarningLogged)
+					{
+						lowMemoryWarningLogged = true;
+						
+						// orange text
+						String message = "\u00A76" + "Distant Horizons: Insufficient memory detected." + "\u00A7r \n" +
+								"This may cause stuttering or crashing. \n" +
+								"Potential causes: \n" +
+								"1. your allocated memory isn't high enough \n" +
+								"2. your DH CPU preset is too high \n" +
+								"3. your DH quality preset is too high";
+						
+						LOGGER.warn(message);
+						if (Config.Common.Logging.Warning.showPoolInsufficientMemoryWarning.get())
+						{
+							ClientApi.INSTANCE.showChatMessageNextFrame(message);
+						}
+					}
+					
+					this.clearLastRefPoolSizes = true;
+				}
+			}
+		}
+		
+		
+		// get any missing arrays
 		
 		// byte
-		for (int i = 0; i < byteArrayCount; i++)
+		for (int i = checkout.getByteArrayCount(); i < byteArrayCount; i++)
 		{
-			checkout.addByteArrayList(getPooledArray(this.pooledByteArrays, () -> this.createEmptyByteArrayList()));
+			checkout.addByteArrayList(this.createEmptyByteArrayList());
 		}
 		
 		// short
-		for (int i = 0; i < shortArrayCount; i++)
+		for (int i = checkout.getShortArrayCount(); i < shortArrayCount; i++)
 		{
-			checkout.addShortArrayList(getPooledArray(this.pooledShortArrays, () -> this.createEmptyShortArrayList()));
+			checkout.addShortArrayList(this.createEmptyShortArrayList());
 		}
 		
 		// long
-		for (int i = 0; i < longArrayCount; i++)
+		for (int i = checkout.getLongArrayCount(); i < longArrayCount; i++)
 		{
-			addRefPooledArray(
-					this.pooledLongArrays,
-					this::createEmptyLongArrayList,
-					this::onLongArrayListGarbageCollected,
-					checkout::addLongArrayListRef);
+			checkout.addLongArrayListRef(this.createEmptyLongArrayList());
 		}
 		
 		return checkout;
@@ -181,91 +239,6 @@ public class PhantomArrayListPool
 		//LOGGER.error("created new long array");
 		this.totalLongArrayCountRef.getAndIncrement();
 		return new LongArrayList(0);
-	}
-	
-	
-	// garbage collection handlers //
-	
-	/** should only happen if Java doesn't have enough memory */
-	private void onLongArrayListGarbageCollected()
-	{
-		this.clearLastRefPoolSizes = true;
-		this.totalLongArrayCountRef.getAndDecrement();
-	}
-	
-	
-	// internal pool handlers //
-	
-	private static <T extends List<?>> T getPooledArray(ConcurrentLinkedQueue<T> pool, Supplier<T> emptyArrayCreatorFunc)
-	{
-		T array = pool.poll();
-		if (array != null)
-		{
-			array.clear();
-			return array;
-		}
-		else
-		{
-			// no pooled sources exist
-			return emptyArrayCreatorFunc.get();
-		}
-	}
-	private static <T extends List<?>> void addRefPooledArray(
-			ConcurrentLinkedQueue<SoftReference<T>> arrayPool, 
-			Supplier<T> emptyArrayCreatorFunc,
-			Runnable arrayGarbageCollectedFunc,
-			BiConsumer<T, SoftReference<T>> putArrayFunc)
-	{
-		T array = null;
-		SoftReference<T> arrayRef = arrayPool.poll();
-		
-		// find the first non-null pooled array
-		while (arrayRef != null && array == null)
-		{
-			array = arrayRef.get();
-			if (array == null)
-			{
-				// this reference is pointing to null,
-				// the array must have been garbage collected,
-				// that means we don't have enough memory
-				if (!lowMemoryWarningLogged)
-				{
-					lowMemoryWarningLogged = true;
-					
-					// orange text
-					String message = "\u00A76" + "Distant Horizons: Insufficient memory detected." + "\u00A7r \n" +
-							"This may cause stuttering or crashing. \n" +
-							"Either: your allocated memory isn't high enough, \n" +
-							"your DH CPU preset is too high, or your DH quality preset is too high.";
-					
-					LOGGER.warn(message);
-					if (Config.Common.Logging.Warning.showPoolInsufficientMemoryWarning.get())
-					{
-						ClientApi.INSTANCE.showChatMessageNextFrame(message);
-					}
-				}
-				
-				arrayGarbageCollectedFunc.run();
-				
-				// try the next reference
-				arrayRef = arrayPool.poll();
-			}
-		}
-		
-		
-		if (array != null)
-		{
-			LodUtil.assertTrue(arrayRef != null, "How did we get an array without it's reference?");
-			array.clear();
-		}
-		else
-		{
-			// no pooled sources exist
-			array = emptyArrayCreatorFunc.get();
-			arrayRef = new SoftReference<>(array);
-		}
-		
-		putArrayFunc.accept(array, arrayRef);
 	}
 	
 	
@@ -405,21 +378,29 @@ public class PhantomArrayListPool
 	// return checkout //
 	//=================//
 	
-	public void returnCheckout(PhantomArrayListCheckout checkout)
+	public void returnParentPhantomRef(@NotNull PhantomReference<PhantomArrayListParent> parentRef)
 	{
+		try
+		{
+			parentRef.clear();
+			// will be null if the this parent has already been returned
+			PhantomArrayListCheckout checkout = this.phantomRefToCheckout.remove(parentRef);
+			this.returnCheckout(checkout);
+		}
+		catch (Exception e)
+		{
+			LOGGER.error("Unable to close Phantom Array, error: ["+e.getMessage()+"].", e);
+		}
+	}
+	public void returnCheckout(@Nullable PhantomArrayListCheckout checkout)
+	{ 
 		if (checkout == null)
 		{
 			throw new IllegalArgumentException("Null phantom checkout, object is being closed multiple times.");
 		}
 		
-		
-		// In James' testing pooling the checkout object wasn't necessary
-		// since it is relatively small and short lived, thus
-		// the GC can handle quickly discarding it.
-		
-		this.pooledByteArrays.addAll(checkout.getAllByteArrays());
-		this.pooledShortArrays.addAll(checkout.getAllShortArrays());
-		this.pooledLongArrays.addAll(checkout.getAllLongArrayRefs());
+		SoftReference<PhantomArrayListCheckout> checkoutRef = checkout.ownerSoftReference;
+		this.pooledCheckoutsRefs.add(checkoutRef);
 		
 		//LOGGER.info("Returned ["+checkout.byteArrayLists.size()+"/"+this.pooledByteArrays.size()+"] bytes and ["+checkout.longArrayLists.size()+"/"+this.pooledLongArrays.size()+"] longs.");\
 	}
@@ -444,9 +425,9 @@ public class PhantomArrayListPool
 			totalShortArrayCount += pool.totalShortArrayCountRef.get();
 			totalLongArrayCount += pool.totalLongArrayCountRef.get();
 			
-			pooledByteArraySize += pool.pooledByteArrays.size();
-			pooledShortArraySize += pool.pooledShortArrays.size();
-			pooledLongArraySize += pool.pooledLongArrays.size();
+			pooledByteArraySize += pool.lastBytePoolCount;
+			pooledShortArraySize += pool.lastShortPoolCount;
+			pooledLongArraySize += pool.lastLongPoolCount;
 			
 			lastBytePoolSizeInBytes += pool.lastBytePoolSizeInBytes;
 			lastShortPoolSizeInBytes += pool.lastShortPoolSizeInBytes;
@@ -475,7 +456,7 @@ public class PhantomArrayListPool
 		addDebugMenuStringsToList(messageList,
 			this.name,
 			this.totalByteArrayCountRef.get(), this.totalShortArrayCountRef.get(), this.totalLongArrayCountRef.get(),
-			this.pooledByteArrays.size(), this.pooledShortArrays.size(), this.pooledLongArrays.size(),
+			this.lastBytePoolCount, this.lastShortPoolCount, this.lastLongPoolCount,
 			this.lastBytePoolSizeInBytes, this.lastShortPoolSizeInBytes, this.lastLongPoolSizeInBytes
 		);
 	}
@@ -529,25 +510,60 @@ public class PhantomArrayListPool
 	 */
 	public void recalculateSizeForDebugging()
 	{
-		// byte
-		long bytePoolByteSize = estimateMemoryUsage(this.pooledByteArrays, Byte.BYTES);
-		this.lastBytePoolSizeInBytes = Math.max(bytePoolByteSize, this.lastBytePoolSizeInBytes);
+		long bytePoolByteSize = 0;
+		long shortPoolByteSize = 0;
+		long longPoolByteSize = 0;
 		
-		// short
-		long shortPoolByteSize = estimateMemoryUsage(this.pooledShortArrays, Short.BYTES);
-		this.lastShortPoolSizeInBytes = Math.max(shortPoolByteSize, this.lastShortPoolSizeInBytes);
+		int bytePoolCount = 0;
+		int shortPoolCount = 0;
+		int longPoolCount = 0;
 		
-		// long
+		
+		// checkouts //
+		for (SoftReference<PhantomArrayListCheckout> pooledCheckoutRef : this.pooledCheckoutsRefs)
+		{
+			PhantomArrayListCheckout pooledCheckout = pooledCheckoutRef.get();
+			if (pooledCheckout == null)
+			{
+				continue;
+			}
+			
+			bytePoolByteSize += estimateMemoryUsage(pooledCheckout.getAllByteArrays(), Byte.BYTES);
+			bytePoolCount += pooledCheckout.getAllByteArrays().size();
+			shortPoolByteSize += estimateMemoryUsage(pooledCheckout.getAllShortArrays(), Short.BYTES);
+			shortPoolCount += pooledCheckout.getAllShortArrays().size();
+			longPoolByteSize += estimateMemoryUsage(pooledCheckout.getAllLongArrays(), Long.BYTES);
+			longPoolCount += pooledCheckout.getAllLongArrays().size();
+		}
+		
+		
+		// clear old values if something was garbage collected
 		if (this.clearLastRefPoolSizes)
 		{
+			this.lastBytePoolSizeInBytes = 0;
+			this.lastShortPoolSizeInBytes = 0;
 			this.lastLongPoolSizeInBytes = 0;
 			this.clearLastRefPoolSizes = false;
 		}
-		long longPoolByteSize = estimateRefMemoryUsage(this.pooledLongArrays, Long.BYTES);
+		
+		this.lastCheckoutPoolCount = this.pooledCheckoutsRefs.size();
+		
+		// byte //
+		// math.max is used since the pool should only grow until a soft reference is freed, 
+		// and it's easier to understand if this constantly grows instead of jumping around
+		this.lastBytePoolSizeInBytes = Math.max(bytePoolByteSize, this.lastBytePoolSizeInBytes);
+		this.lastBytePoolCount = bytePoolCount;
+		
+		// short //
+		this.lastShortPoolSizeInBytes = Math.max(shortPoolByteSize, this.lastShortPoolSizeInBytes);
+		this.lastShortPoolCount = shortPoolCount;
+		
+		// long //
 		this.lastLongPoolSizeInBytes = Math.max(longPoolByteSize, this.lastLongPoolSizeInBytes);
+		this.lastLongPoolCount = longPoolCount;
 	}
 	
-	private static <T extends Collection<?>> long estimateMemoryUsage(ConcurrentLinkedQueue<T> pool, long elementSizeInBytes)
+	private static <T extends Collection<?>> long estimateMemoryUsage(Iterable<T> pool, long elementSizeInBytes)
 	{
 		long longByteSize = 0;
 		for (T array : pool)

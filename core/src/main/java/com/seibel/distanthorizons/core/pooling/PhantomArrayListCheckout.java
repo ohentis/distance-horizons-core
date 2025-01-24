@@ -5,10 +5,12 @@ import com.seibel.distanthorizons.coreapi.util.StringUtil;
 import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.shorts.ShortArrayList;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.ref.SoftReference;
 import java.util.ArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * This keeps track of all the poolable
@@ -20,7 +22,16 @@ import java.util.ArrayList;
 public class PhantomArrayListCheckout implements AutoCloseable
 {
 	/** defines which pool the arrays should be returned too */
+	@NotNull
 	private final PhantomArrayListPool owningPool;
+
+	/** 
+	 * soft reference used by the {@link PhantomArrayListPool} so this checkout can be
+	 * freed if there isn't enough memory.
+	 */
+	@NotNull
+	public final SoftReference<PhantomArrayListCheckout> ownerSoftReference;
+	
 	/** Will be null if the parent pool doesn't want leak stack tracing */
 	@Nullable
 	public final String allocationStackTrace;
@@ -28,7 +39,6 @@ public class PhantomArrayListCheckout implements AutoCloseable
 	private final ArrayList<ByteArrayList> byteArrayLists = new ArrayList<>();
 	private final ArrayList<ShortArrayList> shortArrayLists = new ArrayList<>();
 	private final ArrayList<LongArrayList> longArrayLists = new ArrayList<>();
-	private final ArrayList<SoftReference<LongArrayList>> longArrayRefLists = new ArrayList<>();
 	
 	
 	
@@ -36,7 +46,7 @@ public class PhantomArrayListCheckout implements AutoCloseable
 	// constructor //
 	//=============//
 	
-	public PhantomArrayListCheckout(PhantomArrayListPool owningPool)
+	public PhantomArrayListCheckout(@NotNull PhantomArrayListPool owningPool)
 	{
 		if (owningPool.logGarbageCollectedStacks)
 		{
@@ -50,6 +60,7 @@ public class PhantomArrayListCheckout implements AutoCloseable
 		}
 		
 		this.owningPool = owningPool;
+		this.ownerSoftReference = new SoftReference<>(this);
 	}
 	
 	
@@ -60,11 +71,7 @@ public class PhantomArrayListCheckout implements AutoCloseable
 	
 	public void addByteArrayList(ByteArrayList list) { this.byteArrayLists.add(list); }
 	public void addShortArrayList(ShortArrayList list) { this.shortArrayLists.add(list); }
-	public void addLongArrayListRef(LongArrayList list, SoftReference<LongArrayList> listRef) 
-	{
-		this.longArrayLists.add(list);
-		this.longArrayRefLists.add(listRef); 
-	}
+	public void addLongArrayListRef(LongArrayList list) { this.longArrayLists.add(list); }
 	
 	
 	
@@ -100,7 +107,6 @@ public class PhantomArrayListCheckout implements AutoCloseable
 	public ArrayList<ByteArrayList> getAllByteArrays() { return this.byteArrayLists; }
 	public ArrayList<ShortArrayList> getAllShortArrays() { return this.shortArrayLists; }
 	public ArrayList<LongArrayList> getAllLongArrays() { return this.longArrayLists; }
-	public ArrayList<SoftReference<LongArrayList>> getAllLongArrayRefs() { return this.longArrayRefLists; }
 	
 	
 	
@@ -109,10 +115,7 @@ public class PhantomArrayListCheckout implements AutoCloseable
 	//================//
 	
 	@Override 
-	public void close()
-	{
-		this.owningPool.returnCheckout(this);
-	}
+	public void close() { this.owningPool.returnCheckout(this); }
 	
 	
 	

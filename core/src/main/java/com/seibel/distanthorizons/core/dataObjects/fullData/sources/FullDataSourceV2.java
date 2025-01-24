@@ -73,7 +73,7 @@ public class FullDataSourceV2
 	
 	public static final byte DATA_FORMAT_VERSION = 1;
 	
-	public static final PhantomArrayListPool ARRAY_LIST_POOL = new PhantomArrayListPool("FullDataV2", false);
+	public static final PhantomArrayListPool ARRAY_LIST_POOL = new PhantomArrayListPool("FullDataV2");
 	
 	
 	
@@ -269,11 +269,6 @@ public class FullDataSourceV2
 		{
 			ListUtil.clearAndSetSize(this.columnWorldCompressionMode, WIDTH * WIDTH);
 		}
-		
-		
-		// the pooled arrays have all been set,
-		// the checkout object is no longer needed
-		this.pooledArraysCheckout = null;
 	}
 	
 	

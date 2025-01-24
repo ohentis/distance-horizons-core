@@ -123,8 +123,6 @@ public class FullDataSourceV2DTO
 		this.compressedColumnGenStepByteArray = this.pooledArraysCheckout.getByteArray(1, 0);
 		this.compressedWorldCompressionModeByteArray = this.pooledArraysCheckout.getByteArray(2, 0);
 		this.compressedMappingByteArray = this.pooledArraysCheckout.getByteArray(3, 0);
-		
-		this.pooledArraysCheckout = null;
 	}
 	
 	

@@ -28,7 +28,7 @@ public abstract class PhantomArrayListParent implements AutoCloseable
 	 * It's recommended to set this as null after the child's constructor 
 	 * finishes to show the pooled arrays have all been accessed 
 	 */
-	protected PhantomArrayListCheckout pooledArraysCheckout; 
+	protected final PhantomArrayListCheckout pooledArraysCheckout; 
 	
 	
 	
@@ -57,19 +57,7 @@ public abstract class PhantomArrayListParent implements AutoCloseable
 	//================//
 	
 	@Override 
-	public void close() //throws Exception
-	{
-		try
-		{
-			this.phantomReference.clear();
-			PhantomArrayListCheckout checkout = this.phantomArrayListPool.phantomRefToCheckout.remove(this.phantomReference);
-			this.phantomArrayListPool.returnCheckout(checkout);
-		}
-		catch (Exception e)
-		{
-			LOGGER.error("Unable to close Phantom Array", e);
-		}
-	}
+	public void close() { this.phantomArrayListPool.returnParentPhantomRef(this.phantomReference); }
 	
 	
 }

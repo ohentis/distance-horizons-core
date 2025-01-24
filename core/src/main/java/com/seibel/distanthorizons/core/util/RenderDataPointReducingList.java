@@ -137,8 +137,6 @@ public class RenderDataPointReducingList extends PhantomArrayListParent
 			this.sortingArray = this.pooledArraysCheckout.getShortArray(0, 0);
 			if (ASSERTS) this.checkLinks();
 			
-			this.pooledArraysCheckout = null;
-			
 			return;
 		}
 		
@@ -153,8 +151,6 @@ public class RenderDataPointReducingList extends PhantomArrayListParent
 		this.links = this.pooledArraysCheckout.getLongArray(0, arrayCapacity);
 		java.util.Arrays.fill(this.links.elements(), DEFAULT_LINKS);
 		this.data = this.pooledArraysCheckout.getLongArray(1, arrayCapacity);
-		
-		this.pooledArraysCheckout = null;
 		
 		int sizeWithoutAir = 0;
 		for (int index = 0; index < size; index++) 
