@@ -278,8 +278,7 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 						
 						Vec3d playerPosition = serverPlayerState.getServerPlayer().getPosition();
 						int distanceFromPlayer = DhSectionPos.getChebyshevSignedBlockDistance(data.getPos(), new DhBlockPos2D((int) playerPosition.x, (int) playerPosition.z)) / 16;
-						if (distanceFromPlayer >= serverPlayerState.getServerPlayer().getViewDistance()
-								&& distanceFromPlayer <= serverPlayerState.sessionConfig.getMaxUpdateDistanceRadius())
+						if (distanceFromPlayer <= serverPlayerState.sessionConfig.getMaxUpdateDistanceRadius())
 						{
 							serverPlayerState.fullDataPayloadSender.sendInChunks(payload, () ->
 							{
