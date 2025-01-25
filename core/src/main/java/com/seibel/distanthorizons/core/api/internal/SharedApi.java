@@ -50,7 +50,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.locks.ReentrantLock;
 
 /** Contains code and variables used by both {@link ClientApi} and {@link ServerApi} */
 public class SharedApi
@@ -500,11 +499,9 @@ public class SharedApi
 	/** keeps track of which chunks need to be updated */
 	private static class UpdateChunkPosManager
 	{
-		private final PriorityQueue<DhChunkPos> closestQueue;
-		private final PriorityQueue<DhChunkPos> furthestQueue;
-		private final HashMap<DhChunkPos, UpdateChunkData> updateDataByChunkPos;
-		
-		private final ReentrantLock lock = new ReentrantLock();
+		private final PriorityBlockingQueue<DhChunkPos> closestQueue;
+		private final PriorityBlockingQueue<DhChunkPos> furthestQueue;
+		private final ConcurrentHashMap<DhChunkPos, UpdateChunkData> updateDataByChunkPos;
 		
 		private DhChunkPos center;
 		private int maxSize = 500;
@@ -517,9 +514,9 @@ public class SharedApi
 		
 		public UpdateChunkPosManager()
 		{
-			this.closestQueue = new PriorityQueue<>(Comparator.comparingDouble(pos -> pos.squaredDistance(this.center)));
-			this.furthestQueue = new PriorityQueue<>(Comparator.comparingDouble(pos -> ((DhChunkPos)pos).squaredDistance(this.center)).reversed());
-			this.updateDataByChunkPos = new HashMap<>();
+			this.closestQueue = new PriorityBlockingQueue<>(500, Comparator.comparingDouble(pos -> pos.squaredDistance(this.center)));
+			this.furthestQueue = new PriorityBlockingQueue<>(500, Comparator.comparingDouble(pos -> ((DhChunkPos)pos).squaredDistance(this.center)).reversed());
+			this.updateDataByChunkPos = new ConcurrentHashMap<>();
 			// defaulting to 0,0 is fine since it'll be updated once we start adding items 
 			this.center = new DhChunkPos(0, 0);
 		}
@@ -530,50 +527,20 @@ public class SharedApi
 		// list/set methods //
 		//==================//
 		
-		public boolean contains(DhChunkPos pos)
-		{
-			try
-			{
-				this.lock.lock();
-				
-				return this.updateDataByChunkPos.containsKey(pos);
-			}
-			finally
-			{
-				this.lock.unlock();
-			}
-		}
+		public boolean contains(DhChunkPos pos) { return this.updateDataByChunkPos.containsKey(pos); }
 		
 		public void clear()
 		{
-			try
-			{
-				this.lock.lock();
-				
-				this.updateDataByChunkPos.clear();
-				this.closestQueue.clear();
-				this.furthestQueue.clear();
-			}
-			finally
-			{
-				this.lock.unlock();
-			}
+			this.updateDataByChunkPos.clear();
+			this.closestQueue.clear();
+			this.furthestQueue.clear();
 		}
 		
 		public void removeItem(DhChunkPos pos)
 		{
-			try
-			{
-				this.lock.lock();
-				
-				this.updateDataByChunkPos.remove(pos);
-				this.closestQueue.remove(pos);
-				this.furthestQueue.remove(pos);
-			}
-			finally
-			{
-				this.lock.unlock();
-			}
+			this.updateDataByChunkPos.remove(pos);
+			this.closestQueue.remove(pos);
+			this.furthestQueue.remove(pos);
 		}
 		
 		/**
@@ -584,35 +551,26 @@ public class SharedApi
 		 */
 		public int addItem(DhChunkPos pos, UpdateChunkData updateData)
 		{
-			try
+			int remainingSlots = this.maxSize - this.updateDataByChunkPos.size();
+			if (this.updateDataByChunkPos.containsKey(pos))
 			{
-				this.lock.lock();
-				
-				int remainingSlots = this.maxSize - this.updateDataByChunkPos.size();
-				if (this.updateDataByChunkPos.containsKey(pos))
-				{
-					// Chunk is already present in queue, no need to insert
-					return remainingSlots;
-				}
-				
-				// If no slots are left, get one by removing the item furthest from the center
-				if (remainingSlots <= 0)
-				{
-					DhChunkPos furthest = this.furthestQueue.poll();
-					this.closestQueue.remove(furthest);
-					this.updateDataByChunkPos.remove(furthest);
-				}
-				
-				this.updateDataByChunkPos.put(pos, updateData);
-				this.closestQueue.add(pos);
-				this.furthestQueue.add(pos);
-				
+				// Chunk is already present in queue, no need to insert
 				return remainingSlots;
 			}
-			finally
+			
+			// If no slots are left, get one by removing the item furthest from the center
+			if (remainingSlots <= 0)
 			{
-				this.lock.unlock();
+				DhChunkPos furthest = this.furthestQueue.poll();
+				this.closestQueue.remove(furthest);
+				this.updateDataByChunkPos.remove(furthest);
 			}
+			
+			this.updateDataByChunkPos.put(pos, updateData);
+			this.closestQueue.add(pos);
+			this.furthestQueue.add(pos);
+			
+			return remainingSlots;
 		}
 		
 		
@@ -631,46 +589,28 @@ public class SharedApi
 				return;
 			}
 			
-			try
+			this.center = newCenter;
+			
+			// rebuild the priority queues to match the new center
+			this.closestQueue.clear();
+			this.furthestQueue.clear();
+			for (DhChunkPos pos : this.updateDataByChunkPos.keySet())
 			{
-				this.lock.lock();
-				
-				this.center = newCenter;
-				
-				// rebuild the priority queues to match the new center
-				this.closestQueue.clear();
-				this.furthestQueue.clear();
-				for (DhChunkPos pos : this.updateDataByChunkPos.keySet())
-				{
-					this.closestQueue.add(pos);
-					this.furthestQueue.add(pos);
-				}
-			}
-			finally
-			{
-				this.lock.unlock();
+				this.closestQueue.add(pos);
+				this.furthestQueue.add(pos);
 			}
 		}
 		
 		public UpdateChunkData popClosest()
 		{
-			try
+			if (this.closestQueue.isEmpty())
 			{
-				this.lock.lock();
-				
-				if (this.closestQueue.isEmpty())
-				{
-					return null;
-				}
-				
-				DhChunkPos closest = this.closestQueue.poll();
-				this.furthestQueue.remove(closest);
-				return this.updateDataByChunkPos.remove(closest);
+				return null;
 			}
-			finally
-			{
-				this.lock.unlock();
-			}
+			
+			DhChunkPos closest = this.closestQueue.poll();
+			this.furthestQueue.remove(closest);
+			return this.updateDataByChunkPos.remove(closest);
 		}
 		
 	}
