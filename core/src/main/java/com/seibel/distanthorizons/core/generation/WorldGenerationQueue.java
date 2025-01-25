@@ -103,7 +103,7 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 	private int estimatedRemainingTaskCount = 0;
 	private int estimatedRemainingChunkCount = 0;
 	
-	private final RollingAverage rollingAverageChunkGenTimeInMs = new RollingAverage(1_000);
+	private final RollingAverage rollingAverageChunkGenTimeInMs = new RollingAverage(Runtime.getRuntime().availableProcessors() * 500);
 	public RollingAverage getRollingAverageChunkGenTimeInMs() { return this.rollingAverageChunkGenTimeInMs; }
 	
 	
