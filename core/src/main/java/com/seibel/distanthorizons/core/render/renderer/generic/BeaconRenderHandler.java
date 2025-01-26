@@ -50,8 +50,6 @@ public class BeaconRenderHandler
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	private static final IMinecraftRenderWrapper MC_RENDER = SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
 	
-	private static final int BEAM_TOP_Y = 6_000;
-	
 	/** how often should we check if a beacon should be culled? */
 	private static final int MAX_CULLING_FREQUENCY_IN_MS = 1_000;
 	
@@ -100,7 +98,7 @@ public class BeaconRenderHandler
 			{
 				DhApiRenderableBox beaconBox = new DhApiRenderableBox(
 						new DhApiVec3d(beacon.blockPos.getX(), beacon.blockPos.getY() + 1, beacon.blockPos.getZ()),
-						new DhApiVec3d(beacon.blockPos.getX() + 1, BEAM_TOP_Y, beacon.blockPos.getZ() + 1),
+						new DhApiVec3d(beacon.blockPos.getX() + 1, Config.Client.Advanced.Graphics.GenericRendering.beaconRenderHeight.get(), beacon.blockPos.getZ() + 1),
 						beacon.color,
 						EDhApiBlockMaterial.ILLUMINATED
 				);

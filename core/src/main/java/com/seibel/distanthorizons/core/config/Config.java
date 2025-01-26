@@ -427,6 +427,15 @@ public class Config
 									+ "")
 							.build();
 					
+					public static ConfigEntry<Integer> beaconRenderHeight = new ConfigEntry.Builder<Integer>()
+							.setMinDefaultMax(1, 6000, Integer.MAX_VALUE)
+							.comment(""
+									+ "Sets the maximum height at which beacons will render."
+									+ "This will only affect new beacons coming into LOD render distance."
+									+ "Beacons currently visible in LOD chunks will not be affected."
+									+ "")
+							.build();
+					
 					public static ConfigEntry<Boolean> enableCloudRendering = new ConfigEntry.Builder<Boolean>()
 							.set(true)
 							.comment(""
