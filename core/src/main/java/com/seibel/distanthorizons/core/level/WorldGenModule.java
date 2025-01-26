@@ -312,7 +312,7 @@ public class WorldGenModule implements Closeable
 					|| timeSinceFirstMessageInMs < msToShowDisableInstructions)
 				{
 					// replace the current message
-					message = "DH Gen/Import progress can be hidden in the DH config ["+remainingChunkCountStr+"]";
+					message = "DH Gen/Import progress. This message can be hidden in the DH config. ["+remainingChunkCountStr+"]";
 				}
 			}
 			
