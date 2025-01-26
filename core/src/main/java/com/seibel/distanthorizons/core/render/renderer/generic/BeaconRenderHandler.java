@@ -96,9 +96,10 @@ public class BeaconRenderHandler
 			
 			if (this.beaconBlockPosSet.add(beacon.blockPos))
 			{
+				int maxBeaconBeamHeight = Config.Client.Advanced.Graphics.GenericRendering.beaconRenderHeight.get();
 				DhApiRenderableBox beaconBox = new DhApiRenderableBox(
 						new DhApiVec3d(beacon.blockPos.getX(), beacon.blockPos.getY() + 1, beacon.blockPos.getZ()),
-						new DhApiVec3d(beacon.blockPos.getX() + 1, Config.Client.Advanced.Graphics.GenericRendering.beaconRenderHeight.get(), beacon.blockPos.getZ() + 1),
+						new DhApiVec3d(beacon.blockPos.getX() + 1, maxBeaconBeamHeight, beacon.blockPos.getZ() + 1),
 						beacon.color,
 						EDhApiBlockMaterial.ILLUMINATED
 				);
