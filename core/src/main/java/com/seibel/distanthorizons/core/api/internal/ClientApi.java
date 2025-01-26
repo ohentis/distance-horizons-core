@@ -685,7 +685,7 @@ public class ClientApi
 						// orange text		
 						"\u00A76" + "Distant Horizons: Low memory detected." + "\u00A7r \n" +
 						"Stuttering or low FPS may occur. \n" +
-						"Please increase Minecraft's available memory to 4 gigabytes. \n" +
+						"Please increase Minecraft's available memory to 4 GB or more. \n" +
 						"This warning can be disabled in DH's config under Advanced -> Logging. \n";
 				MC_CLIENT.sendChatMessage(message);
 			}
