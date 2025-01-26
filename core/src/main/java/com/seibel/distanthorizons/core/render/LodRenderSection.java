@@ -211,13 +211,15 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 			this.getAndBuildRenderDataRunnable = () ->
 			{
 				this.getAndRefreshRenderingBeacons();
-				this.getAndUploadRenderDataToGpu();
-				
-				// the future is passed in separate to prevent any possible race condition null pointers
-				future.complete(null);
-				// the task is done, we don't need to track these anymore
-				this.getAndBuildRenderDataFuture = null;
-				this.getAndBuildRenderDataRunnable = null;
+				this.getAndUploadRenderDataToGpuAsync()
+					.thenRun(() -> 
+					{
+						// the future is passed in separately (IE not using the local var) to prevent any possible race condition null pointers
+						future.complete(null);
+						// the task is done, we don't need to track these anymore
+						this.getAndBuildRenderDataFuture = null;
+						this.getAndBuildRenderDataRunnable = null;
+					});
 			};
 			executor.execute(this.getAndBuildRenderDataRunnable);
 			
@@ -233,56 +235,80 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 			return false;
 		}
 	}
-	private void getAndUploadRenderDataToGpu()
+	private CompletableFuture<Void> getAndUploadRenderDataToGpuAsync()
 	{
-		try(CachedColumnRenderSource cachedRenderSource = this.getRenderSourceForPos(this.pos))
-		{
-			if (cachedRenderSource == null)
+		// get the center pos data
+		return this.getRenderSourceForPosAsync(this.pos)
+			.thenCompose((CachedColumnRenderSource cachedRenderSource) -> 
 			{
-				// nothing needs to be rendered
-				// TODO how doesn't this cause infinite file handler loops?
-				//  to trigger an upload we check if the buffer is null, and we aren't
-				//  setting the render buffer here
-				return;
-			}
-			ColumnRenderSource thisRenderSource = cachedRenderSource.columnRenderSource;
-			
-			
-			boolean enableTransparency = Config.Client.Advanced.Graphics.Quality.transparency.get().transparencyEnabled;
-			LodQuadBuilder lodQuadBuilder = new LodQuadBuilder(enableTransparency, this.level.getClientLevelWrapper());
-			
-			// load adjacent render sources
-			try(CachedColumnRenderSource northRenderSource = this.getRenderSourceForPos(DhSectionPos.getAdjacentPos(this.pos, EDhDirection.NORTH));
-				CachedColumnRenderSource southRenderSource = this.getRenderSourceForPos(DhSectionPos.getAdjacentPos(this.pos, EDhDirection.SOUTH));
-				CachedColumnRenderSource eastRenderSource = this.getRenderSourceForPos(DhSectionPos.getAdjacentPos(this.pos, EDhDirection.EAST));
-				CachedColumnRenderSource westRenderSource = this.getRenderSourceForPos(DhSectionPos.getAdjacentPos(this.pos, EDhDirection.WEST)))
-			{
-				ColumnRenderSource[] adjacentRenderSections = new ColumnRenderSource[EDhDirection.ADJ_DIRECTIONS.length];
-				adjacentRenderSections[EDhDirection.NORTH.ordinal() - 2] = (northRenderSource != null) ? northRenderSource.columnRenderSource : null;
-				adjacentRenderSections[EDhDirection.SOUTH.ordinal() - 2] = (southRenderSource != null) ? southRenderSource.columnRenderSource : null;
-				adjacentRenderSections[EDhDirection.EAST.ordinal() - 2] = (eastRenderSource != null) ? eastRenderSource.columnRenderSource : null;
-				adjacentRenderSections[EDhDirection.WEST.ordinal() - 2] = (westRenderSource != null) ? westRenderSource.columnRenderSource : null;
-				
-				boolean[] adjIsSameDetailLevel = new boolean[EDhDirection.ADJ_DIRECTIONS.length];
-				adjIsSameDetailLevel[EDhDirection.NORTH.ordinal() - 2] = this.isAdjacentPosSameDetailLevel(EDhDirection.NORTH);
-				adjIsSameDetailLevel[EDhDirection.SOUTH.ordinal() - 2] = this.isAdjacentPosSameDetailLevel(EDhDirection.SOUTH);
-				adjIsSameDetailLevel[EDhDirection.EAST.ordinal() - 2] = this.isAdjacentPosSameDetailLevel(EDhDirection.EAST);
-				adjIsSameDetailLevel[EDhDirection.WEST.ordinal() - 2] = this.isAdjacentPosSameDetailLevel(EDhDirection.WEST);
-				
-				// the render sources are only needed by this synchronous method,
-				// then they can be closed
-				ColumnRenderBufferBuilder.makeLodRenderData(lodQuadBuilder, thisRenderSource, this.level, adjacentRenderSections, adjIsSameDetailLevel);
-			}
-			
-			this.uploadToGpuAsync(lodQuadBuilder);
-		}
-		catch (Exception e)
-		{
-			LOGGER.error("Unexpected error while loading LodRenderSection ["+DhSectionPos.toString(this.pos)+"], Error: [" + e.getMessage() + "].", e);
-		}
+				try
+				{
+					if (cachedRenderSource == null || cachedRenderSource.columnRenderSource == null)
+					{
+						// nothing needs to be rendered
+						// TODO how doesn't this cause infinite file handler loops?
+						//  to trigger an upload we check if the buffer is null, and we aren't
+						//  setting the render buffer here
+						return CompletableFuture.completedFuture(null);
+					}
+					ColumnRenderSource thisRenderSource = cachedRenderSource.columnRenderSource;
+					
+					
+					boolean enableTransparency = Config.Client.Advanced.Graphics.Quality.transparency.get().transparencyEnabled;
+					LodQuadBuilder lodQuadBuilder = new LodQuadBuilder(enableTransparency, this.level.getClientLevelWrapper());
+					
+					
+					// get the adjacent positions
+					// needs to be done async to prevent threads waiting on the same positions to be processed
+					final CompletableFuture<CachedColumnRenderSource>[] adjacentLoadFutures = new CompletableFuture[4];
+					adjacentLoadFutures[0] = this.getRenderSourceForPosAsync(DhSectionPos.getAdjacentPos(this.pos, EDhDirection.NORTH));
+					adjacentLoadFutures[1] = this.getRenderSourceForPosAsync(DhSectionPos.getAdjacentPos(this.pos, EDhDirection.SOUTH));
+					adjacentLoadFutures[2] = this.getRenderSourceForPosAsync(DhSectionPos.getAdjacentPos(this.pos, EDhDirection.EAST));
+					adjacentLoadFutures[3] = this.getRenderSourceForPosAsync(DhSectionPos.getAdjacentPos(this.pos, EDhDirection.WEST));
+					return CompletableFuture.allOf(adjacentLoadFutures).thenRun(() ->
+					{
+						try (CachedColumnRenderSource northRenderSource = adjacentLoadFutures[0].get();
+								CachedColumnRenderSource southRenderSource = adjacentLoadFutures[1].get();
+								CachedColumnRenderSource eastRenderSource = adjacentLoadFutures[2].get();
+								CachedColumnRenderSource westRenderSource = adjacentLoadFutures[3].get())
+						{
+							ColumnRenderSource[] adjacentRenderSections = new ColumnRenderSource[EDhDirection.ADJ_DIRECTIONS.length];
+							adjacentRenderSections[EDhDirection.NORTH.ordinal() - 2] = (northRenderSource != null) ? northRenderSource.columnRenderSource : null;
+							adjacentRenderSections[EDhDirection.SOUTH.ordinal() - 2] = (southRenderSource != null) ? southRenderSource.columnRenderSource : null;
+							adjacentRenderSections[EDhDirection.EAST.ordinal() - 2] = (eastRenderSource != null) ? eastRenderSource.columnRenderSource : null;
+							adjacentRenderSections[EDhDirection.WEST.ordinal() - 2] = (westRenderSource != null) ? westRenderSource.columnRenderSource : null;
+							
+							boolean[] adjIsSameDetailLevel = new boolean[EDhDirection.ADJ_DIRECTIONS.length];
+							adjIsSameDetailLevel[EDhDirection.NORTH.ordinal() - 2] = this.isAdjacentPosSameDetailLevel(EDhDirection.NORTH);
+							adjIsSameDetailLevel[EDhDirection.SOUTH.ordinal() - 2] = this.isAdjacentPosSameDetailLevel(EDhDirection.SOUTH);
+							adjIsSameDetailLevel[EDhDirection.EAST.ordinal() - 2] = this.isAdjacentPosSameDetailLevel(EDhDirection.EAST);
+							adjIsSameDetailLevel[EDhDirection.WEST.ordinal() - 2] = this.isAdjacentPosSameDetailLevel(EDhDirection.WEST);
+							
+							// the render sources are only needed by this synchronous method,
+							// then they can be closed
+							ColumnRenderBufferBuilder.makeLodRenderData(lodQuadBuilder, thisRenderSource, this.level, adjacentRenderSections, adjIsSameDetailLevel);
+							this.uploadToGpuAsync(lodQuadBuilder);
+						}
+						catch (Exception e)
+						{
+							LOGGER.error("Unexpected error while loading LodRenderSection [" + DhSectionPos.toString(this.pos) + "] adjacent data, Error: [" + e.getMessage() + "].", e);
+						}
+						finally
+						{
+							// can only be closed after the data has been processed and uploaded to the GPU
+							cachedRenderSource.close();
+						}
+					});
+				}
+				catch (Exception e)
+				{
+					LOGGER.error("Unexpected error while loading LodRenderSection ["+DhSectionPos.toString(this.pos)+"], Error: [" + e.getMessage() + "].", e);
+					return CompletableFuture.completedFuture(null);
+				}
+			});
 	}
-	@Nullable
-	private CachedColumnRenderSource getRenderSourceForPos(long pos) 
+	/** async is done so each thread can run without waiting on others */
+	private CompletableFuture<CachedColumnRenderSource> getRenderSourceForPosAsync(long pos) 
 	{
 		ReentrantLock lock = this.renderLoadLockContainer.getLockForPos(pos);
 		try
@@ -292,26 +318,55 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 			lock.lock();
 			
 			// use the cached data if possible
-			CachedColumnRenderSource cachedRenderSource = this.cachedRenderSourceByPos.getIfPresent(pos);
-			if (cachedRenderSource != null)
+			CachedColumnRenderSource existingCachedRenderSource = this.cachedRenderSourceByPos.getIfPresent(pos);
+			if (existingCachedRenderSource != null)
 			{
-				cachedRenderSource.markInUse();
-				return cachedRenderSource;
+				existingCachedRenderSource.markInUse();
+				return existingCachedRenderSource.loadFuture;
 			}
 			
-			// generate new render source
-			try (FullDataSourceV2 fullDataSource = this.fullDataSourceProvider.get(pos))
+			
+			
+			PriorityTaskPicker.Executor executor = ThreadPoolUtil.getFileHandlerExecutor();
+			if (executor == null || executor.isTerminated())
 			{
-				ColumnRenderSource renderSource = FullDataToRenderDataTransformer.transformFullDataToRenderSource(fullDataSource, this.level);
-				// only add valid data to the cache (to prevent null pointers)
-				if (renderSource != null)
+				// should only happen if the threadpool is actively being re-sized
+				return CompletableFuture.completedFuture(null);
+			}
+			
+			
+			// queue loading the render data
+			CompletableFuture<CachedColumnRenderSource> loadFuture = new CompletableFuture<>();
+			final CachedColumnRenderSource newCachedRenderSource = new CachedColumnRenderSource(loadFuture, lock, this.cachedRenderSourceByPos);
+			executor.execute(() ->
+			{
+				// generate new render source
+				try (FullDataSourceV2 fullDataSource = this.fullDataSourceProvider.get(pos))
 				{
-					cachedRenderSource = new CachedColumnRenderSource(renderSource, lock, this.cachedRenderSourceByPos);
-					this.cachedRenderSourceByPos.put(pos, cachedRenderSource);
+					newCachedRenderSource.columnRenderSource = FullDataToRenderDataTransformer.transformFullDataToRenderSource(fullDataSource, this.level);
 				}
-			}
+				catch (Exception e)
+				{
+					LOGGER.error("Unexpected issue creating render data for pos: ["+DhSectionPos.toString(pos)+"], error: ["+e.getMessage()+"].", e);
+				}
+				finally
+				{
+					loadFuture.complete(newCachedRenderSource);
+				}
+			});
+			this.cachedRenderSourceByPos.put(pos, newCachedRenderSource);
 			
-			return cachedRenderSource;
+			return loadFuture;
+		}
+		catch (RejectedExecutionException ignore)
+		{
+			// the thread pool was probably shut down because it's size is being changed, just wait a sec and it should be back
+			return CompletableFuture.completedFuture(null);
+		}
+		catch (Exception e)
+		{
+			LOGGER.error("Unexpected issue getting and creating render data for pos: ["+DhSectionPos.toString(pos)+"], error: ["+e.getMessage()+"].", e);
+			return CompletableFuture.completedFuture(null);
 		}
 		finally
 		{
