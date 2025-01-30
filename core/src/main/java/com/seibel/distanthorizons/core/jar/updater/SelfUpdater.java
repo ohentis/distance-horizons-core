@@ -42,8 +42,10 @@ import java.net.URLEncoder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
+import java.util.zip.ZipFile;
 
 /**
  * Used to update the mod automatically
@@ -277,7 +279,7 @@ public class SelfUpdater
 	
 	public static boolean updateNightlyMod(String minecraftVersion, File file)
 	{
-		if (GitlabGetter.INSTANCE.projectPipelines.size() == 0)
+		if (GitlabGetter.INSTANCE.projectPipelines.isEmpty())
 		{
 			LOGGER.warn("Failed to find any nightly builds for the minecraft version ["+minecraftVersion+"] update canceled.");
 			return false;
@@ -290,53 +292,40 @@ public class SelfUpdater
 			
 			Files.createDirectories(file.getParentFile().toPath());
 			
-			File mergedZip = file.getParentFile().toPath().resolve("merged.zip").toFile();
+			Path mergedZip = file.getParentFile().toPath().resolve("merged.zip");
+			WebDownloader.downloadAsFile(GitlabGetter.INSTANCE.getDownloads(GitlabGetter.INSTANCE.projectPipelines.get(0).get("id")).get(minecraftVersion), mergedZip.toFile());
 			
-			WebDownloader.downloadAsFile(GitlabGetter.INSTANCE.getDownloads(GitlabGetter.INSTANCE.projectPipelines.get(0).get("id")).get(minecraftVersion), mergedZip);
-			
-			ZipInputStream zis = new ZipInputStream(new FileInputStream(mergedZip));
-			ZipEntry zipEntry = zis.getNextEntry();
-			while (zipEntry != null)
+			try (ZipFile zipFile = new ZipFile(mergedZip.toFile()))
 			{
-				if (!zipEntry.isDirectory() && zipEntry.getName().contains("Merged")) // Look until the merged jar is found
-				{
-					// write file content
-					FileOutputStream fos = new FileOutputStream(file);
-					byte[] buffer = new byte[1024];
-					
-					int len;
-					while ((len = zis.read(buffer)) > 0) {
-						fos.write(buffer, 0, len);
-					}
-					fos.close();
-					
-					deleteOldJarOnJvmShutdown = true;
-					
-					LOGGER.info("Distant Horizons successfully updated. It will apply on game's relaunch");
-					new Thread(() -> 
-					{
-						String message = "Distant Horizons updated, this will be applied on game restart.";
-						if (!GraphicsEnvironment.isHeadless())
-						{
-							TinyFileDialogs.tinyfd_messageBox(ModInfo.READABLE_NAME, message, "ok", "info", false);
-						}
-						else
-						{
-							LOGGER.info(message);
-						}
-					}).start();
-					
-					zis.close();
-					Files.deleteIfExists(newFileLocation.getParentFile().toPath().resolve("merged.zip"));
-					
-					return true;
-				}
+				ZipEntry zipEntry = Collections.list(zipFile.entries()).stream()
+						.max(Comparator.comparingInt(entry -> entry.getName().length()))
+						.get();
 				
-				zipEntry = zis.getNextEntry();
+				// write file content
+				byte[] buffer = new byte[(int) zipEntry.getSize()];
+				zipFile.getInputStream(zipEntry).read(buffer);
+				Files.write(file.toPath(), buffer);
 			}
-			zis.close();
 			
-			return false;
+			Files.deleteIfExists(mergedZip);
+			
+			deleteOldJarOnJvmShutdown = true;
+			
+			LOGGER.info("Distant Horizons successfully updated. It will apply on game's relaunch");
+			new Thread(() ->
+			{
+				String message = "Distant Horizons updated, this will be applied on game restart.";
+				if (!GraphicsEnvironment.isHeadless())
+				{
+					TinyFileDialogs.tinyfd_messageBox(ModInfo.READABLE_NAME, message, "ok", "info", false);
+				}
+				else
+				{
+					LOGGER.info(message);
+				}
+			}).start();
+			
+			return true;
 		}
 		catch (Exception e)
 		{
