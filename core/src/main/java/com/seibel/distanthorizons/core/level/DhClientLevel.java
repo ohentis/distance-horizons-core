@@ -19,6 +19,7 @@
 
 package com.seibel.distanthorizons.core.level;
 
+import com.google.common.cache.CacheBuilder;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
 import com.seibel.distanthorizons.core.config.AppliedConfigState;
 import com.seibel.distanthorizons.core.config.Config;
@@ -33,6 +34,7 @@ import com.seibel.distanthorizons.core.multiplayer.client.ClientNetworkState;
 import com.seibel.distanthorizons.core.multiplayer.client.SyncOnLoadRequestQueue;
 import com.seibel.distanthorizons.core.network.event.ScopedNetworkEventSource;
 import com.seibel.distanthorizons.core.network.messages.fullData.FullDataPartialUpdateMessage;
+import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos;
 import com.seibel.distanthorizons.core.render.RenderBufferHandler;
 import com.seibel.distanthorizons.core.render.renderer.generic.GenericObjectRenderer;
@@ -51,8 +53,11 @@ import org.jetbrains.annotations.Nullable;
 import javax.annotation.CheckForNull;
 import java.awt.*;
 import java.io.File;
+import java.util.*;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 /** The level used when connected to a server */
 public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
@@ -69,6 +74,13 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 	private final ClientNetworkState networkState;
 	@Nullable
 	private final ScopedNetworkEventSource networkEventSource;
+	
+	private final Set<DhChunkPos> loadedOnceChunks = Collections.newSetFromMap(
+			CacheBuilder.newBuilder()
+					.expireAfterWrite(10, TimeUnit.MINUTES)
+					.<DhChunkPos, Boolean>build()
+					.asMap()
+	);
 	
 	public final WorldGenModule worldGenModule;
 	public final AppliedConfigState<Boolean> worldGeneratorEnabledConfig;
@@ -283,14 +295,14 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 		return (renderState != null) ? renderState.renderBufferHandler : null;
 	}
 	
-	public boolean shouldProcessLocalChunkUpdates()
+	public boolean shouldProcessChunkUpdate(DhChunkPos chunkPos)
 	{
 		if (this.networkState == null || !this.networkState.isReady())
 		{
 			return true;
 		}
 		
-		return !this.networkState.sessionConfig.isRealTimeUpdatesEnabled();
+		return !this.networkState.sessionConfig.isRealTimeUpdatesEnabled() || this.loadedOnceChunks.add(chunkPos);
 	}
 	
 	

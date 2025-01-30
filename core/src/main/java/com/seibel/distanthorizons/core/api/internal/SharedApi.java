@@ -233,7 +233,7 @@ public class SharedApi
 		
 		if (dhLevel instanceof DhClientLevel)
 		{
-			if (!((DhClientLevel) dhLevel).shouldProcessLocalChunkUpdates())
+			if (!((DhClientLevel) dhLevel).shouldProcessChunkUpdate(chunkWrapper.getChunkPos()))
 			{
 				return;
 			}
