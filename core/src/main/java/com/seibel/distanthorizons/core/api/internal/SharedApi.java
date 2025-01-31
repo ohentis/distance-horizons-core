@@ -609,6 +609,11 @@ public class SharedApi
 			}
 			
 			DhChunkPos closest = this.closestQueue.poll();
+			if (closest == null)
+			{
+				return null;
+			}
+			
 			this.furthestQueue.remove(closest);
 			return this.updateDataByChunkPos.remove(closest);
 		}
