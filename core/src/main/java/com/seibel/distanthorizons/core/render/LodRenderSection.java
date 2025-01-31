@@ -510,7 +510,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 			if (this.missingGenerationPosFunc == null)
 			{
 				//this.missingGenerationPos = Suppliers.memoize(() -> this.fullDataSourceProvider.getPositionsToRetrieve(this.pos));
-				this.missingGenerationPosFunc = Suppliers.memoizeWithExpiration(() -> this.fullDataSourceProvider.getPositionsToRetrieve(this.pos), 1, TimeUnit.MINUTES);
+				this.missingGenerationPosFunc = Suppliers.memoizeWithExpiration(() -> this.fullDataSourceProvider.getPositionsToRetrieve(this.pos), 15, TimeUnit.SECONDS);
 			}
 			
 			LongArrayList missingGenerationPos = this.getMissingGenerationPos();
