@@ -1283,7 +1283,6 @@ public class Config
 					.build();
 			
 			public static ConfigEntry<Integer> generationProgressDisableMessageDisplayTimeInSeconds = new ConfigEntry.Builder<Integer>()
-					.setChatCommandName("generation.disableInstructionLogTime")
 					.setMinDefaultMax(0, 20, 60 * 60) // max = 1 hour
 					.comment(""
 							+ "For how many seconds should instructions for disabling the distant generator progress be displayed? \n"
