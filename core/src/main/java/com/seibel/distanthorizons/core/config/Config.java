@@ -1592,6 +1592,7 @@ public class Config
 				.set(false)
 				.comment(""
 						+ "Makes the server reject all generation requests for detail levels below the highest one.\n"
+						+ "When enabled on the client, makes it only request highest detail LODs.\n"
 						+ "")
 				.build();
 		

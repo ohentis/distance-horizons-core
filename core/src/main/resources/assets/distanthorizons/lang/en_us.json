@@ -703,6 +703,11 @@
   "distanthorizons.config.server.maxGenerationRequestDistance.@tooltip":
     "Defines the distance allowed to generate around the player.",
 
+  "distanthorizons.config.server.generateOnlyInHighestDetail":
+    "Generate Only in Highest Detail",
+  "distanthorizons.config.server.generateOnlyInHighestDetail.@tooltip":
+    "Makes the server reject all generation requests for detail levels below the highest one.\nWhen enabled on the client, makes it only request highest detail LODs.",
+
   "distanthorizons.config.server.enableRealTimeUpdates":
     "Enable Real-time Updates",
   "distanthorizons.config.server.enableRealTimeUpdates.@tooltip":
