@@ -48,7 +48,12 @@ public class RemoteWorldRetrievalQueue extends AbstractFullDataNetworkRequestQue
 	public void startAndSetTargetPos(DhBlockPos2D targetPos) { super.tick(targetPos); }
 	
 	@Override
-	public byte lowestDataDetail() { return LodUtil.BLOCK_DETAIL_LEVEL + 12; } // TODO should be the same as what the server's update propgator can provide
+	public byte lowestDataDetail()
+	{
+		return Config.Server.generateOnlyInHighestDetail.get()
+				? LodUtil.BLOCK_DETAIL_LEVEL
+				: LodUtil.BLOCK_DETAIL_LEVEL + 12;
+	} // TODO should be the same as what the server's update propagator can provide
 	@Override
 	public byte highestDataDetail() { return LodUtil.BLOCK_DETAIL_LEVEL; }
 	
