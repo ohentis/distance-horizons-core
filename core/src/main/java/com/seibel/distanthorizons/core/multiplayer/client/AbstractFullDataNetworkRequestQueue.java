@@ -1,6 +1,7 @@
 package com.seibel.distanthorizons.core.multiplayer.client;
 
 import com.google.common.base.Stopwatch;
+import com.google.common.cache.CacheBuilder;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.config.types.ConfigEntry;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
@@ -71,6 +72,11 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 	
 	private final SupplierBasedRateLimiter<Void> rateLimiter = new SupplierBasedRateLimiter<>(this::getRequestRateLimit);
 	
+	private final Set<Long> visitedPositions = Collections.newSetFromMap(CacheBuilder.newBuilder()
+			.expireAfterWrite(20, TimeUnit.MINUTES)
+			.<Long, Boolean>build()
+			.asMap());
+	
 	
 	
 	//=============//
@@ -109,8 +115,13 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 	{ return this.submitRequest(sectionPos, null, dataSourceConsumer); }
 	public CompletableFuture<ERequestResult> submitRequest(long sectionPos, @Nullable Long clientTimestamp, Consumer<FullDataSourceV2> dataSourceConsumer)
 	{
+		if (this.visitedPositions.contains(sectionPos))
+		{
+			return CompletableFuture.completedFuture(RequestResult.FAILED);
+		}
+		
 		AtomicBoolean added = new AtomicBoolean(false);
-		RequestQueueEntry entry = this.waitingTasksBySectionPos.compute(sectionPos, (k, existingQueueEntry) ->
+		RequestQueueEntry entry = this.waitingTasksBySectionPos.compute(sectionPos, (pos, existingQueueEntry) ->
 		{
 			if (existingQueueEntry != null)
 			{
@@ -126,6 +137,7 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 				{
 					case SUCCEEDED:
 						this.finishedRequests.incrementAndGet();
+						this.visitedPositions.add(pos);
 						return;
 					case REQUIRES_SPLITTING:
 						return;
