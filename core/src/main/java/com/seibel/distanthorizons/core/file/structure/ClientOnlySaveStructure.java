@@ -106,6 +106,19 @@ public class ClientOnlySaveStructure implements ISaveStructure
 		});
 	}
 	
+	@Override
+	public File getPre23SaveFolder(ILevelWrapper levelWrapper)
+	{
+		// Allow API users to override the save folder
+		IDhApiSaveStructure saveStructureOverride = OverrideInjector.INSTANCE.get(IDhApiSaveStructure.class);
+		if (saveStructureOverride != null)
+		{
+			return this.getSaveFolder(levelWrapper);
+		}
+		
+		return getSaveFolderByLevelId(levelWrapper.getDimensionType().getName());
+	}
+	
 	
 	
 	//================//

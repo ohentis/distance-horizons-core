@@ -27,6 +27,8 @@ public interface IDimensionTypeWrapper extends IDhApiDimensionTypeWrapper, IBind
 	@Override
 	boolean hasCeiling();
 	
+	String getName();
+	
 	@Override
 	boolean hasSkyLight();
 	

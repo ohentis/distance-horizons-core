@@ -75,6 +75,8 @@ public class LocalSaveStructure implements ISaveStructure
 		});
 	}
 	
+	@Override
+	public File getPre23SaveFolder(ILevelWrapper levelWrapper) { return this.getSaveFolder(levelWrapper); }
 	
 	
 	//==================//

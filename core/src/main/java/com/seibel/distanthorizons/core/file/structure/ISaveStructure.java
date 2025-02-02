@@ -34,5 +34,7 @@ public interface ISaveStructure extends AutoCloseable
 	 */
 	File getSaveFolder(ILevelWrapper levelWrapper);
 	
+	File getPre23SaveFolder(ILevelWrapper levelWrapper);
+	
 }
 
