@@ -92,18 +92,11 @@ public class ThreadPoolUtil
 		// thread pools
 		taskPicker = new PriorityTaskPicker();
 		
-		// IO should never be stuck waiting for something else to complete
-		networkCompressionThreadPool = taskPicker.createExecutor(4);
-		fileHandlerThreadPool = taskPicker.createExecutor(4);
-		
-		// Normal priority tasks
-		chunkToLodBuilderThreadPool = taskPicker.createExecutor(3);
-		updatePropagatorThreadPool = taskPicker.createExecutor(2);
-		
-		// World gen tasks are heavy and nothing strictly depends on them, so they may wait a bit
-		worldGenThreadPool = taskPicker.createExecutor(0);
-		
-		
+		networkCompressionThreadPool = taskPicker.createExecutor();
+		fileHandlerThreadPool = taskPicker.createExecutor();
+		chunkToLodBuilderThreadPool = taskPicker.createExecutor();
+		updatePropagatorThreadPool = taskPicker.createExecutor();
+		worldGenThreadPool = taskPicker.createExecutor();
 		
 		// single thread pools
 		beaconCullingThreadPool = ThreadUtil.makeSingleThreadPool(BEACON_CULLING_THREAD_NAME);
