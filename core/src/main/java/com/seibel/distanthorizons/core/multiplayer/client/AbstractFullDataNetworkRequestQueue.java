@@ -117,7 +117,7 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 	{
 		if (this.visitedPositions.contains(sectionPos))
 		{
-			return CompletableFuture.completedFuture(RequestResult.FAILED);
+			return CompletableFuture.completedFuture(ERequestResult.FAILED);
 		}
 		
 		AtomicBoolean added = new AtomicBoolean(false);
