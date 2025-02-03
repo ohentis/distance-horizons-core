@@ -35,8 +35,17 @@ public class QuickRenderToggleConfigEventHandler
 	/** private since we only ever need one handler at a time */
 	private QuickRenderToggleConfigEventHandler()
 	{
-		this.quickRenderChangeListener = new ConfigChangeListener<>(Config.Client.quickEnableRendering, (val) -> { Config.Client.Advanced.Debugging.rendererMode.set(Config.Client.quickEnableRendering.get() ? EDhApiRendererMode.DEFAULT : EDhApiRendererMode.DISABLED); });
-		this.rendererModeChangeListener = new ConfigChangeListener<>(Config.Client.Advanced.Debugging.rendererMode, (val) -> { Config.Client.quickEnableRendering.set(Config.Client.Advanced.Debugging.rendererMode.get() != EDhApiRendererMode.DISABLED); });
+		this.quickRenderChangeListener = new ConfigChangeListener<>(Config.Client.quickEnableRendering,
+				(val) -> {
+					Config.Client.Advanced.Debugging.rendererMode.set(Config.Client.quickEnableRendering.get()
+							? EDhApiRendererMode.DEFAULT
+							: EDhApiRendererMode.DISABLED);
+				});
+		this.rendererModeChangeListener = new ConfigChangeListener<>(Config.Client.Advanced.Debugging.rendererMode,
+				(val) -> {
+					Config.Client.quickEnableRendering.set(
+							Config.Client.Advanced.Debugging.rendererMode.get() != EDhApiRendererMode.DISABLED);
+				});
 	}
 	
 	/**
@@ -45,7 +54,8 @@ public class QuickRenderToggleConfigEventHandler
 	 */
 	public void setUiOnlyConfigValues()
 	{
-		Config.Client.quickEnableRendering.set(Config.Client.Advanced.Debugging.rendererMode.get() != EDhApiRendererMode.DISABLED);
+		boolean enableRendering = Config.Client.Advanced.Debugging.rendererMode.get() != EDhApiRendererMode.DISABLED;
+		Config.Client.quickEnableRendering.set(enableRendering);
 	}
 	
 }
