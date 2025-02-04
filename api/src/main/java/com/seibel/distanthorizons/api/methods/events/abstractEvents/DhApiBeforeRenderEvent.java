@@ -25,11 +25,16 @@ import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhAp
 
 /**
  * Called before Distant Horizons starts rendering a frame. <br>
- * Canceling the event will prevent DH from rendering that frame.
+ * Canceling the event will prevent DH from rendering that frame. <br> <br>
+ * 
+ * This is called before DH starts modifying the GL state.
+ * If you want to inject into DH's rendering pass, use {@link DhApiBeforeRenderPassEvent} instead.
  *
  * @author James Seibel
  * @version 2023-6-23
  * @since API 1.0.0
+ * 
+ * @see DhApiBeforeRenderPassEvent
  */
 public abstract class DhApiBeforeRenderEvent implements IDhApiCancelableEvent<DhApiRenderParam>
 {
