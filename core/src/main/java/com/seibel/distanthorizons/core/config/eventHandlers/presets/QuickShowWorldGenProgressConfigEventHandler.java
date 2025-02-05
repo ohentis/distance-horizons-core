@@ -56,7 +56,8 @@ public class QuickShowWorldGenProgressConfigEventHandler
 	 */
 	public void setUiOnlyConfigValues()
 	{
-		Config.Client.quickEnableRendering.set(Config.Common.WorldGenerator.showGenerationProgress.get() != EDhApiDistantGeneratorProgressDisplayLocation.DISABLED);
+		boolean showProgress = Config.Common.WorldGenerator.showGenerationProgress.get() != EDhApiDistantGeneratorProgressDisplayLocation.DISABLED;
+		Config.Client.quickShowWorldGenProgress.set(showProgress);
 	}
 	
 }
