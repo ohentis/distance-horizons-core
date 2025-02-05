@@ -30,7 +30,6 @@ import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataInputStrea
 import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.core.util.ArrayUtils;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
@@ -159,24 +158,24 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 		
 		
 		int i = 1;
-		statement.setObject(i++, DhSectionPos.getDetailLevel(dto.pos) - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
-		statement.setObject(i++, DhSectionPos.getX(dto.pos));
-		statement.setObject(i++, DhSectionPos.getZ(dto.pos));
+		statement.setInt(i++, DhSectionPos.getDetailLevel(dto.pos) - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
+		statement.setInt(i++, DhSectionPos.getX(dto.pos));
+		statement.setInt(i++, DhSectionPos.getZ(dto.pos));
 		
-		statement.setObject(i++, dto.levelMinY);
-		statement.setObject(i++, dto.dataChecksum);
+		statement.setInt(i++, dto.levelMinY);
+		statement.setInt(i++, dto.dataChecksum);
 		
 		statement.setBinaryStream(i++, new ByteArrayInputStream(dto.compressedDataByteArray.elements()), dto.compressedDataByteArray.size());
 		statement.setBinaryStream(i++, new ByteArrayInputStream(dto.compressedColumnGenStepByteArray.elements()), dto.compressedColumnGenStepByteArray.size());
 		statement.setBinaryStream(i++, new ByteArrayInputStream(dto.compressedWorldCompressionModeByteArray.elements()), dto.compressedWorldCompressionModeByteArray.size());
 		statement.setBinaryStream(i++, new ByteArrayInputStream(dto.compressedMappingByteArray.elements()), dto.compressedMappingByteArray.size());
 		
-		statement.setObject(i++, dto.dataFormatVersion);
-		statement.setObject(i++, dto.compressionModeValue);
+		statement.setByte(i++, dto.dataFormatVersion);
+		statement.setByte(i++, dto.compressionModeValue);
 		statement.setObject(i++, dto.applyToParent);
 		
-		statement.setObject(i++, System.currentTimeMillis()); // last modified unix time
-		statement.setObject(i++, System.currentTimeMillis()); // created unix time
+		statement.setLong(i++, System.currentTimeMillis()); // last modified unix time
+		statement.setLong(i++, System.currentTimeMillis()); // created unix time
 		
 		return statement;
 	}
@@ -211,24 +210,24 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 		
 		
 		int i = 1;
-		statement.setObject(i++, dto.levelMinY);
-		statement.setObject(i++, dto.dataChecksum);
+		statement.setInt(i++, dto.levelMinY);
+		statement.setInt(i++, dto.dataChecksum);
 		
 		statement.setBinaryStream(i++, new ByteArrayInputStream(dto.compressedDataByteArray.elements()), dto.compressedDataByteArray.size());
 		statement.setBinaryStream(i++, new ByteArrayInputStream(dto.compressedColumnGenStepByteArray.elements()), dto.compressedColumnGenStepByteArray.size());
 		statement.setBinaryStream(i++, new ByteArrayInputStream(dto.compressedWorldCompressionModeByteArray.elements()), dto.compressedWorldCompressionModeByteArray.size());
 		statement.setBinaryStream(i++, new ByteArrayInputStream(dto.compressedMappingByteArray.elements()), dto.compressedMappingByteArray.size());
 		
-		statement.setObject(i++, dto.dataFormatVersion);
-		statement.setObject(i++, dto.compressionModeValue);
+		statement.setByte(i++, dto.dataFormatVersion);
+		statement.setByte(i++, dto.compressionModeValue);
 		statement.setObject(i++, dto.applyToParent);
 		
-		statement.setObject(i++, System.currentTimeMillis()); // last modified unix time
-		statement.setObject(i++, dto.createdUnixDateTime);
+		statement.setLong(i++, System.currentTimeMillis()); // last modified unix time
+		statement.setLong(i++, dto.createdUnixDateTime);
 		
-		statement.setObject(i++, DhSectionPos.getDetailLevel(dto.pos) - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
-		statement.setObject(i++, DhSectionPos.getX(dto.pos));
-		statement.setObject(i++, DhSectionPos.getZ(dto.pos));
+		statement.setInt(i++, DhSectionPos.getDetailLevel(dto.pos) - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
+		statement.setInt(i++, DhSectionPos.getX(dto.pos));
+		statement.setInt(i++, DhSectionPos.getZ(dto.pos));
 		
 		return statement;
 	}
