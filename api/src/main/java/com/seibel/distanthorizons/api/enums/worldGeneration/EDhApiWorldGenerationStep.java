@@ -20,6 +20,8 @@
 package com.seibel.distanthorizons.api.enums.worldGeneration;
 
 /**
+ * DOWN_SAMPLED, <br>
+ * 
  * EMPTY, <br>
  * STRUCTURE_START, <br>
  * STRUCTURE_REFERENCE, <br>
@@ -37,6 +39,14 @@ package com.seibel.distanthorizons.api.enums.worldGeneration;
  */
 public enum EDhApiWorldGenerationStep
 {
+	/** 
+	 * Only used when using N-sized world generators or server-side retrieval.
+	 * This denotes that the given datasource was created using lower quality LOD data from above it in the quad tree. <br>
+	 * 
+	 * This isn't a valid option for queuing world generation.
+	 */
+	DOWN_SAMPLED(-1, "down_sampled"),
+	
 	EMPTY(0, "empty"),
 	STRUCTURE_START(1, "structure_start"),
 	STRUCTURE_REFERENCE(2, "structure_reference"),

@@ -116,7 +116,12 @@ public class FullDataSourceV2
 	public final LongArrayList[] dataPoints;
 	
 	public boolean isEmpty;
-	public boolean applyToParent = false;
+	/** Will be null if we don't want to update this value in the DB */
+	@Nullable
+	public Boolean applyToParent = null;
+	/** Will be null if we don't want to update this value in the DB */
+	@Nullable
+	public Boolean applyToChildren = null;
 	
 	/** should only be used by methods exposed via the DH API */
 	private boolean runApiChunkValidation = false;
@@ -301,10 +306,47 @@ public class FullDataSourceV2
 		if (inputDetailLevel == thisDetailLevel)
 		{
 			dataChanged = this.updateFromSameDetailLevel(inputDataSource, remappedIds);
+			
+			// same detail level, propagate parent/children update flags from input
+			if (this.applyToParent != null || inputDataSource.applyToParent != null)
+			{
+				this.applyToParent =
+						// copy over application flag if either are set to continue propagating
+						(BoolUtil.falseIfNull(this.applyToParent) || BoolUtil.falseIfNull(inputDataSource.applyToParent))
+						// don't propagate past the top of the tree
+						&& (DhSectionPos.getDetailLevel(this.pos) < AbstractDataSourceHandler.TOP_SECTION_DETAIL_LEVEL);
+			}
+			
+			// null check to prevent setting a flag we don't want to save in the DB
+			if (this.applyToChildren != null || inputDataSource.applyToChildren != null)
+			{
+				this.applyToChildren =
+						(BoolUtil.falseIfNull(this.applyToChildren) || BoolUtil.falseIfNull(inputDataSource.applyToChildren))
+						// don't propagate past the bottom of the tree
+						&& (DhSectionPos.getDetailLevel(this.pos) > AbstractDataSourceHandler.MIN_SECTION_DETAIL_LEVEL);
+			}
 		}
 		else if (inputDetailLevel + 1 == thisDetailLevel)
 		{
 			dataChanged = this.updateFromOneBelowDetailLevel(inputDataSource, remappedIds);
+			
+			// propagating up, parent will need changes
+			this.applyToParent =
+					dataChanged
+					&& (BoolUtil.falseIfNull(this.applyToParent) || BoolUtil.falseIfNull(inputDataSource.applyToParent))
+					&& (DhSectionPos.getDetailLevel(this.pos) < AbstractDataSourceHandler.TOP_SECTION_DETAIL_LEVEL);
+			
+		}
+		else if (inputDetailLevel - 1 == thisDetailLevel)
+		{
+			dataChanged = this.downsampleFromOneAboveDetailLevel(inputDataSource, remappedIds);
+			
+			// propagating down, children will need changes
+			
+			this.applyToChildren =
+					dataChanged
+					&& (BoolUtil.falseIfNull(this.applyToChildren) || BoolUtil.falseIfNull(inputDataSource.applyToChildren))
+					&& (DhSectionPos.getDetailLevel(this.pos) > AbstractDataSourceHandler.MIN_SECTION_DETAIL_LEVEL);
 		}
 		else
 		{
@@ -312,11 +354,8 @@ public class FullDataSourceV2
 			// and would lead to edge cases that don't necessarily need to be supported 
 			// (IE what do you do when the input is smaller than a single datapoint in the receiving data source?)
 			// instead it's better to just percolate the updates up
-			throw new UnsupportedOperationException("Unsupported data source update. Expected input detail level of ["+thisDetailLevel+"] or ["+(thisDetailLevel+1)+"], received detail level ["+inputDetailLevel+"].");
+			throw new UnsupportedOperationException("Unsupported data source update. Expected input detail level of ["+(thisDetailLevel-1)+"], ["+thisDetailLevel+"], or ["+(thisDetailLevel+1)+"], received detail level ["+inputDetailLevel+"].");
 		}
-		
-		// determine if this data source should be applied to its parent
-		this.applyToParent = (dataChanged && DhSectionPos.getDetailLevel(this.pos) < AbstractDataSourceHandler.TOP_SECTION_DETAIL_LEVEL);
 		
 		if (dataChanged)
 		{
@@ -326,6 +365,7 @@ public class FullDataSourceV2
 		
 		return dataChanged;
 	}
+	
 	public boolean updateFromSameDetailLevel(FullDataSourceV2 inputDataSource, int[] remappedIds)
 	{
 		// both data sources should have the same detail level
@@ -348,9 +388,31 @@ public class FullDataSourceV2
 				{
 					byte thisGenState = this.columnGenerationSteps.getByte(index);
 					byte inputGenState = inputDataSource.columnGenerationSteps.getByte(index);
+				
 					
-					if (inputGenState != EDhApiWorldGenerationStep.EMPTY.value
-						&& thisGenState <= inputGenState)
+					// determine if this column should be updated
+					boolean genStateAllowsUpdating = false;
+					// if the input is downsampled, we only want to replace empty or downsampled values
+					if (inputGenState == EDhApiWorldGenerationStep.DOWN_SAMPLED.value
+						&&
+						(
+							thisGenState == EDhApiWorldGenerationStep.EMPTY.value
+							|| thisGenState == EDhApiWorldGenerationStep.DOWN_SAMPLED.value
+						))
+					{
+						genStateAllowsUpdating = true;
+					}
+					// if the input is any other non-empty value,
+					// replace anything that is less-complete
+					else if (inputGenState != EDhApiWorldGenerationStep.EMPTY.value
+							&& thisGenState <= inputGenState)
+					{
+						// don't apply less-complete generation data
+						genStateAllowsUpdating = true;
+					}
+					
+					
+					if (genStateAllowsUpdating)
 					{
 						// check if the data changed
 						if (this.dataPoints[index] == null)
@@ -830,6 +892,101 @@ public class FullDataSourceV2
 		return value;
 	}
 	
+	/** 
+	 * Only downsamples into a given column if this data source doesn't
+	 * already contain data in that column.
+	 * This is done to prevent accidentally downsampling onto already present higher-detail data.
+	 */
+	public boolean downsampleFromOneAboveDetailLevel(FullDataSourceV2 inputDataSource, int[] remappedIds)
+	{
+		if (DhSectionPos.getDetailLevel(inputDataSource.pos) - 1 != DhSectionPos.getDetailLevel(this.pos))
+		{
+			throw new IllegalArgumentException("Input data source must be exactly 1 detail level above this data source. Expected [" + (DhSectionPos.getDetailLevel(this.pos) - 1) + "], received [" + DhSectionPos.getDetailLevel(inputDataSource.pos) + "].");
+		}
+		
+		// input is one detail level higher (lower detail)
+		// so 1x1 input data points will be converted into 2x2 recipient data point
+		
+		
+		// determine where in this data source should be read from
+		// since the input is one detail level above this will be one of input position's 4 children
+		int minParentXPos = DhSectionPos.getX(DhSectionPos.getChildByIndex(inputDataSource.pos, 0));
+		int inputOffsetX = (DhSectionPos.getX(this.pos) == minParentXPos) ? 0 : (WIDTH / 2);
+		int minParentZPos = DhSectionPos.getZ(DhSectionPos.getChildByIndex(inputDataSource.pos, 0));
+		int inputOffsetZ = (DhSectionPos.getZ(this.pos) == minParentZPos) ? 0 : (WIDTH / 2);
+		
+		
+		
+		// merge the input's data points
+		// into this data source's
+		boolean dataChanged = false;
+		for (int x = 0; x < WIDTH; x++)
+		{
+			for (int z = 0; z < WIDTH; z++)
+			{
+				// recipient index is 1-to-1
+				int recipientIndex = relativePosToIndex(x, z);
+				
+				int inputX = (x / 2) + inputOffsetX;
+				int inputZ = (z / 2) + inputOffsetZ;
+				int inputIndex = relativePosToIndex(inputX, inputZ);
+				
+				
+				// world gen //
+				
+				// a separate generation step needs to be used so can replace
+				// this data with higher-quality data when it is available
+				byte inputGenStep = EDhApiWorldGenerationStep.DOWN_SAMPLED.value;
+				this.columnGenerationSteps.set(recipientIndex, inputGenStep);
+				
+				
+				// world compression //
+				byte worldCompressionMode = inputDataSource.columnWorldCompressionMode.getByte(recipientIndex);
+				this.columnWorldCompressionMode.set(recipientIndex, worldCompressionMode);
+				
+				
+				
+				// data points //
+				
+				// check if this column should be downsampled
+				boolean downSampleColumn;
+				if (this.dataPoints[recipientIndex] == null)
+				{
+					downSampleColumn = true;
+				}
+				else
+				{
+					downSampleColumn = true; // assume empty until we find non-empty data
+					for (long dataPoint : this.dataPoints[recipientIndex])
+					{
+						if (dataPoint != FullDataPointUtil.EMPTY_DATA_POINT)
+						{
+							downSampleColumn = false;
+							break;
+						}
+					}
+				}
+				
+				if (downSampleColumn)
+				{
+					LongArrayList inputDataArray = inputDataSource.dataPoints[inputIndex];
+					this.dataPoints[recipientIndex] = inputDataArray;
+					this.remapDataColumn(recipientIndex, remappedIds);
+					
+					if (RUN_DATA_ORDER_VALIDATION)
+					{
+						throwIfDataColumnInWrongOrder(inputDataSource.pos, this.dataPoints[recipientIndex]);
+					}
+					
+					dataChanged = true;
+				}
+				
+				this.isEmpty = false;
+			}
+		}
+		
+		return dataChanged;
+	}
 	
 	
 	//================//
@@ -977,7 +1134,7 @@ public class FullDataSourceV2
 			LongArrayList packedDataPoints = LodDataBuilder.convertApiDataPointListToPackedLongArray(columnDataPoints, this, 0);
 			
 			// TODO there should be an "unknown" compression and generation step, or be defined via the datapoints
-			this.setSingleColumn(packedDataPoints, relX, relZ, EDhApiWorldGenerationStep.LIGHT, EDhApiWorldCompressionMode.MERGE_SAME_BLOCKS);
+			this.setSingleColumn(packedDataPoints, relX, relZ, EDhApiWorldGenerationStep.SURFACE, EDhApiWorldCompressionMode.MERGE_SAME_BLOCKS);
 			
 			return columnDataPoints;
 		}

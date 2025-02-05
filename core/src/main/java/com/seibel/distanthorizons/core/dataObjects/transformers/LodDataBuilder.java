@@ -73,6 +73,8 @@ public class LodDataBuilder
 		
 		FullDataSourceV2 dataSource = FullDataSourceV2.createEmpty(pos);
 		dataSource.isEmpty = false;
+		// chunk updates always propagate up
+		dataSource.applyToParent = true;
 		
 		
 		

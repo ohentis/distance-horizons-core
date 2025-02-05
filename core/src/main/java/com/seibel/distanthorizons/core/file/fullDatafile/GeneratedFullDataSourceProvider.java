@@ -211,7 +211,7 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 		
 		
 		PriorityTaskPicker.Executor updateExecutor = ThreadPoolUtil.getUpdatePropagatorExecutor();
-		if (updateExecutor == null || updateExecutor.getQueueSize() >= MAX_UPDATE_TASK_COUNT / 2)
+		if (updateExecutor == null || updateExecutor.getQueueSize() >= getMaxUpdateTaskCount() / 2)
 		{
 			// don't queue additional world gen requests if the updater is behind
 			return false;
@@ -219,7 +219,7 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 		
 		
 		PriorityTaskPicker.Executor fileExecutor = ThreadPoolUtil.getFileHandlerExecutor();
-		if (fileExecutor == null || fileExecutor.getQueueSize() >= MAX_UPDATE_TASK_COUNT / 2)
+		if (fileExecutor == null || fileExecutor.getQueueSize() >= getMaxUpdateTaskCount() / 2)
 		{
 			// don't queue additional world gen requests if the file handler is overwhelmed,
 			// otherwise LODs may not load in properly
@@ -313,7 +313,12 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 	public boolean isFullyGenerated(ByteArrayList columnGenerationSteps)
 	{
 		return IntStream.range(0, columnGenerationSteps.size())
-				.noneMatch(i -> columnGenerationSteps.getByte(i) == EDhApiWorldGenerationStep.EMPTY.value);
+				.noneMatch(i ->
+				{
+					byte value = columnGenerationSteps.getByte(i);
+					return value == EDhApiWorldGenerationStep.EMPTY.value
+							|| value == EDhApiWorldGenerationStep.DOWN_SAMPLED.value;
+				});
 	}
 	
 	public static final PhantomArrayListPool ARRAY_LIST_POOL = new PhantomArrayListPool("Generated Provider");
@@ -343,7 +348,8 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 					// check if any positions are ungenerated
 					for (int i = 0; i < columnGenStepArray.size(); i++)
 					{
-						if (columnGenStepArray.getByte(i) == EDhApiWorldGenerationStep.EMPTY.value)
+						if (columnGenStepArray.getByte(i) == EDhApiWorldGenerationStep.EMPTY.value
+							|| columnGenStepArray.getByte(i) == EDhApiWorldGenerationStep.DOWN_SAMPLED.value)
 						{
 							positionFullyGenerated = false;
 							break;
@@ -408,7 +414,8 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 								}
 							}
 							
-							if (currentMinWorldGenStep == EDhApiWorldGenerationStep.EMPTY)
+							if (currentMinWorldGenStep == EDhApiWorldGenerationStep.EMPTY 
+								|| currentMinWorldGenStep == EDhApiWorldGenerationStep.DOWN_SAMPLED)
 							{
 								// queue the task
 								break checkWorldGenLoop;
@@ -417,7 +424,8 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 					}
 				}
 				
-				if (currentMinWorldGenStep != EDhApiWorldGenerationStep.EMPTY)
+				if (currentMinWorldGenStep != EDhApiWorldGenerationStep.EMPTY
+					&& currentMinWorldGenStep != EDhApiWorldGenerationStep.DOWN_SAMPLED)
 				{
 					// no world gen needed for this position
 					return;

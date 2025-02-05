@@ -110,7 +110,7 @@ public class BatchGenerator implements IDhApiWorldGenerator
 				targetStep = EDhApiWorldGenerationStep.FEATURES;
 				break;
 			case INTERNAL_SERVER:
-				targetStep = EDhApiWorldGenerationStep.LIGHT;  // TODO using something other than LIGHT would be good for clarity
+				targetStep = EDhApiWorldGenerationStep.LIGHT;
 				break;
 		}
 		

@@ -26,6 +26,7 @@ import com.seibel.distanthorizons.api.objects.data.DhApiChunk;
 import com.seibel.distanthorizons.api.objects.data.IDhApiFullDataSource;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
+import com.seibel.distanthorizons.core.file.AbstractDataSourceHandler;
 import com.seibel.distanthorizons.core.generation.tasks.IWorldGenTaskTracker;
 import com.seibel.distanthorizons.core.generation.tasks.InProgressWorldGenTaskGroup;
 import com.seibel.distanthorizons.core.generation.tasks.WorldGenResult;
@@ -462,6 +463,11 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 				FullDataSourceV2 pooledDataSource = FullDataSourceV2.createEmpty(requestPos);
 				// set here so the API user doesn't have to pass in this value anywhere themselves
 				pooledDataSource.setRunApiChunkValidation(this.generator.runApiValidation());
+				
+				// only apply to children if we aren't at the bottom of the tree
+				pooledDataSource.applyToChildren = DhSectionPos.getDetailLevel(pooledDataSource.getPos()) > DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL;
+				pooledDataSource.applyToParent = DhSectionPos.getDetailLevel(pooledDataSource.getPos()) < DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL + 12;
+				
 				
 				return this.generator.generateLod(
 						chunkPosMin.getX(), chunkPosMin.getZ(),

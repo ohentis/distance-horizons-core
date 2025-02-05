@@ -29,6 +29,7 @@ import com.seibel.distanthorizons.core.pooling.PhantomArrayListParent;
 import com.seibel.distanthorizons.core.pooling.PhantomArrayListPool;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.network.INetworkObject;
+import com.seibel.distanthorizons.core.util.BoolUtil;
 import com.seibel.distanthorizons.core.util.FullDataPointUtil;
 import com.seibel.distanthorizons.core.util.ListUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
@@ -40,6 +41,7 @@ import io.netty.buffer.ByteBuf;
 import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
 
@@ -70,7 +72,12 @@ public class FullDataSourceV2DTO
 	public byte dataFormatVersion;
 	public byte compressionModeValue;
 	
-	public boolean applyToParent;
+	/** Will be null if we don't want to update this value in the DB */
+	@Nullable
+	public Boolean applyToParent;
+	/** Will be null if we don't want to update this value in the DB */
+	@Nullable
+	public Boolean applyToChildren;
 	
 	public long lastModifiedUnixDateTime;
 	public long createdUnixDateTime;
@@ -105,6 +112,7 @@ public class FullDataSourceV2DTO
 			dto.lastModifiedUnixDateTime = dataSource.lastModifiedUnixDateTime;
 			dto.createdUnixDateTime = dataSource.createdUnixDateTime;
 			dto.applyToParent = dataSource.applyToParent;
+			dto.applyToChildren = dataSource.applyToChildren;
 			dto.levelMinY = dataSource.levelMinY;
 		}
 		
@@ -194,6 +202,15 @@ public class FullDataSourceV2DTO
 		dataSource.levelMinY = this.levelMinY;
 		
 		dataSource.isEmpty = false;
+		
+		if (this.applyToParent != null)
+		{
+			dataSource.applyToParent = this.applyToParent;
+		}
+		if (this.applyToChildren != null)
+		{
+			dataSource.applyToChildren = this.applyToChildren;
+		}
 		
 		return dataSource;
 	}
@@ -379,7 +396,8 @@ public class FullDataSourceV2DTO
 		out.writeByte(this.dataFormatVersion);
 		out.writeByte(this.compressionModeValue);
 		
-		out.writeBoolean(this.applyToParent);
+		out.writeBoolean(BoolUtil.falseIfNull(this.applyToParent));
+		out.writeBoolean(BoolUtil.falseIfNull(this.applyToChildren));
 		
 		out.writeLong(this.lastModifiedUnixDateTime);
 		out.writeLong(this.createdUnixDateTime);
@@ -406,6 +424,7 @@ public class FullDataSourceV2DTO
 		this.compressionModeValue = in.readByte();
 		
 		this.applyToParent = in.readBoolean();
+		this.applyToChildren = in.readBoolean();
 		
 		this.lastModifiedUnixDateTime = in.readLong();
 		this.createdUnixDateTime = in.readLong();
@@ -444,6 +463,7 @@ public class FullDataSourceV2DTO
 				.add("dataFormatVersion", this.dataFormatVersion)
 				.add("compressionModeValue", this.compressionModeValue)
 				.add("applyToParent", this.applyToParent)
+				.add("applyToChildren", this.applyToChildren)
 				.add("lastModifiedUnixDateTime", this.lastModifiedUnixDateTime)
 				.add("createdUnixDateTime", this.createdUnixDateTime)
 				.toString();
