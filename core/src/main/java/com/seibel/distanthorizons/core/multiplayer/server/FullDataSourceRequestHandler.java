@@ -64,7 +64,7 @@ public class FullDataSourceRequestHandler
 		// the server timestamp will be null if no LOD data exists for this position
 		Long serverTimestamp = this.fullDataSourceProvider().getTimestampForPos(message.sectionPos);
 		if (serverTimestamp == null
-				|| serverTimestamp <= clientTimestamp)
+			|| serverTimestamp <= clientTimestamp)
 		{
 			// either no data exists to sync, or the client is already up to date
 			rateLimiterSet.syncOnLoginRateLimiter.release();
@@ -92,6 +92,10 @@ public class FullDataSourceRequestHandler
 					message.sendResponse(new FullDataSourceResponseMessage(payload));
 					rateLimiterSet.syncOnLoginRateLimiter.release();
 				});
+			}
+			catch (Exception e)
+			{
+				LOGGER.error("Unexpected issue getting request for pos ["+DhSectionPos.toString(message.sectionPos)+"], error: ["+e.getMessage()+"].", e);
 			}
 		}, executor);
 	}
