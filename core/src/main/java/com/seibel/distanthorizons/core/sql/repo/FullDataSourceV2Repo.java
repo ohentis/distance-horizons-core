@@ -81,7 +81,7 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 	
 	
 	
-	@Nullable
+	@Override @Nullable
 	public FullDataSourceV2DTO convertResultSetToDto(ResultSet resultSet) throws ClassCastException, IOException, SQLException
 	{
 		//======================//
@@ -313,7 +313,7 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 	/** should be be very similar to {@link FullDataSourceV2Repo#getChildPositionsToUpdateSql} */
 	private final String getParentPositionsToUpdateSql =
 			"SELECT DetailLevel, PosX, PosZ, " +
-			"   (sqrt(pow(PosX - ?, 2) + pow(PosZ - ?, 2))) AS Distance " +
+					"   abs((PosX << (6 + DetailLevel)) - ?) + abs((PosZ << (6 + DetailLevel)) - ?) AS Distance " +
 			"FROM "+this.getTableName()+" " +
 			"WHERE ApplyToParent = 1 " +
 			"ORDER BY Distance ASC " +
@@ -324,7 +324,7 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 	/** should be be very similar to {@link FullDataSourceV2Repo#getParentPositionsToUpdateSql} */
 	private final String getChildPositionsToUpdateSql =
 			"SELECT DetailLevel, PosX, PosZ, " +
-			"   (sqrt(pow(PosX - ?, 2) + pow(PosZ - ?, 2))) AS Distance " +
+					"   abs((PosX << (6 + DetailLevel)) - ?) + abs((PosZ << (6 + DetailLevel)) - ?) AS Distance " +
 			"FROM "+this.getTableName()+" " +
 			"WHERE ApplyToChildren = 1 " +
 			"ORDER BY Distance ASC " +
@@ -540,8 +540,8 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 	public LongArrayList getAllPositions()
 	{
 		LongArrayList list = new LongArrayList();
-
-		PreparedStatement statement = this.createPreparedStatement(getAllPositionsSql);
+		
+		PreparedStatement statement = this.createPreparedStatement(this.getAllPositionsSql);
 		if (statement == null)
 		{
 			return list;

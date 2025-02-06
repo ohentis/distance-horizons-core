@@ -68,7 +68,7 @@ public class FullDataSourceProviderV2
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	
-	protected static final int NUMBER_OF_PARENT_UPDATE_TASKS_PER_THREAD = 50;
+	protected static final int NUMBER_OF_PARENT_UPDATE_TASKS_PER_THREAD = 5;
 	/** how many parent update tasks can be in the queue at once */
 	protected static int getMaxUpdateTaskCount() { return NUMBER_OF_PARENT_UPDATE_TASKS_PER_THREAD* Config.Common.MultiThreading.numberOfThreads.get(); } 
 	
