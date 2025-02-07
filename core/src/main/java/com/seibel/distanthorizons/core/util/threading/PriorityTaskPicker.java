@@ -2,17 +2,23 @@ package com.seibel.distanthorizons.core.util.threading;
 
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.config.types.ConfigEntry;
+import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.util.objects.RollingAverage;
+import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class PriorityTaskPicker
 {
+	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	
+	
 	private final ConfigEntry<Integer> threadCountConfig = Config.Common.MultiThreading.numberOfThreads;
 	
 	private final RateLimitedThreadPoolExecutor threadPoolExecutor = new RateLimitedThreadPoolExecutor(
@@ -29,7 +35,7 @@ public class PriorityTaskPicker
 	// Tracks the number of active threads
 	private final AtomicInteger occupiedThreads = new AtomicInteger(0);
 	
-	private volatile boolean isShutDown = false;
+	private final AtomicBoolean isShutDownRef = new AtomicBoolean(false);
 	
 	
 	
@@ -76,7 +82,7 @@ public class PriorityTaskPicker
 						}
 						catch (RejectedExecutionException e)
 						{
-							if (this.isShutDown)
+							if (this.isShutDownRef.get())
 							{
 								// Clear executor's tasks since we no longer expect anything to execute
 								// Tasks from other executors will be cleared by the outer for loop
@@ -99,12 +105,11 @@ public class PriorityTaskPicker
 		}
 	}
 	
-	/**
-	 * Shuts down the thread pool immediately, stopping all tasks.
-	 */
+	/** Shuts down the thread pool immediately, stopping all tasks. */
 	public void shutdown()
 	{
-		this.isShutDown = true;
+		LOGGER.info("Shutting down PriorityTaskPicker thread pool...");
+		this.isShutDownRef.set(true);
 		
 		try
 		{
