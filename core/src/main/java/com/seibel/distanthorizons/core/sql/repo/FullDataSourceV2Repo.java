@@ -314,10 +314,10 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 	private final String getParentPositionsToUpdateSql =
 			"SELECT DetailLevel, PosX, PosZ, " +
 					"   abs((PosX << (6 + DetailLevel)) - ?) + abs((PosZ << (6 + DetailLevel)) - ?) AS Distance " +
-			"FROM "+this.getTableName()+" " +
-			"WHERE ApplyToParent = 1 " +
-			"ORDER BY Distance ASC " +
-			"LIMIT ?; ";
+					"FROM " + this.getTableName() + " " +
+					"WHERE ApplyToParent = 1 " +
+					"ORDER BY DetailLevel ASC, Distance ASC " +
+					"LIMIT ?; ";
 	public LongArrayList getPositionsToUpdate(int targetBlockPosX, int targetBlockPosZ, int returnCount)
 	{ return this.getPositionsToUpdate(targetBlockPosX, targetBlockPosZ, returnCount, true); }
 	
@@ -325,10 +325,10 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 	private final String getChildPositionsToUpdateSql =
 			"SELECT DetailLevel, PosX, PosZ, " +
 					"   abs((PosX << (6 + DetailLevel)) - ?) + abs((PosZ << (6 + DetailLevel)) - ?) AS Distance " +
-			"FROM "+this.getTableName()+" " +
-			"WHERE ApplyToChildren = 1 " +
-			"ORDER BY Distance ASC " +
-			"LIMIT ?; ";
+					"FROM " + this.getTableName() + " " +
+					"WHERE ApplyToChildren = 1 " +
+					"ORDER BY DetailLevel ASC, Distance ASC " +
+					"LIMIT ?; ";
 	public LongArrayList getChildPositionsToUpdate(int targetBlockPosX, int targetBlockPosZ, int returnCount)
 	{ return this.getPositionsToUpdate(targetBlockPosX, targetBlockPosZ, returnCount, false); }
 	
