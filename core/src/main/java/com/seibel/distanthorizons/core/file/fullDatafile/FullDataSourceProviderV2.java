@@ -384,10 +384,15 @@ public class FullDataSourceProviderV2
 			{
 				// stop if there are already a bunch of updates queued
  				if (this.updatingPosSet.size() > maxUpdateTaskCount
-				    || executor.getQueueSize() > maxUpdateTaskCount
-					|| !this.updatingPosSet.add(parentUpdatePos))
+					    || executor.getQueueSize() > maxUpdateTaskCount)
 				{
 					break;
+				}
+				
+				// skip already updating positions
+				if (!this.updatingPosSet.add(parentUpdatePos))
+				{
+					continue;
 				}
 				
 				try

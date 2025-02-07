@@ -210,14 +210,6 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 		}
 		
 		
-		PriorityTaskPicker.Executor updateExecutor = ThreadPoolUtil.getUpdatePropagatorExecutor();
-		if (updateExecutor == null || updateExecutor.getQueueSize() >= getMaxUpdateTaskCount() / 2)
-		{
-			// don't queue additional world gen requests if the updater is behind
-			return false;
-		}
-		
-		
 		PriorityTaskPicker.Executor fileExecutor = ThreadPoolUtil.getFileHandlerExecutor();
 		if (fileExecutor == null || fileExecutor.getQueueSize() >= getMaxUpdateTaskCount() / 2)
 		{
