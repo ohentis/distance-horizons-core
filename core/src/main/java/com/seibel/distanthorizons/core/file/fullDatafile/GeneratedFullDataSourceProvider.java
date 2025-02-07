@@ -244,6 +244,11 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 			// don't queue additional world gen requests if there are
 			// a lot of data sources in memory 
 			// (this is done to prevent infinite memory growth)
+			
+			// clear out the data sources that are in memory so
+			// we can start queuing new world gen tasks
+			this.delayedFullDataSourceSaveCache.flush();
+			
 			return false;
 		}
 		

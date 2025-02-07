@@ -106,14 +106,12 @@ public class DelayedFullDataSourceSaveCache implements AutoCloseable
 		}
 	}
 	
-	public int getUnsavedCount() { return (int)this.dataSourceByPosition.size(); }
-	
-	
 	public void handleDataSourceRemoval(RemovalNotification<Long, FullDataSourceV2> removalNotification)
 	{
 		RemovalCause cause = removalNotification.getCause();
 		if (cause == RemovalCause.EXPIRED
 			|| cause == RemovalCause.COLLECTED
+			|| cause == RemovalCause.EXPLICIT
 			|| cause == RemovalCause.SIZE)
 		{
 			// close the data source after it has expired from the cache
@@ -139,6 +137,35 @@ public class DelayedFullDataSourceSaveCache implements AutoCloseable
 			{
 				LOGGER.error("Unable to close null cached data source.");
 			}
+		}
+	}
+	
+	
+	
+	//==============//
+	// List methods //
+	//==============//
+	
+	public int getUnsavedCount() { return (int)this.dataSourceByPosition.size(); }
+	
+	/** Removes everything from the memory cache and fires the {@link DelayedFullDataSourceSaveCache#onSaveTimeoutAsyncFunc} for each. */
+	public void flush()
+	{
+		Set<Long> keySet = this.dataSourceByPosition.asMap().keySet();
+		for (Long pos : keySet)
+		{
+			ReentrantLock lock = this.saveLockContainer.getLockForPos(pos);
+			try
+			{
+				lock.lock();
+				
+				this.dataSourceByPosition.invalidate(pos);
+			}
+			finally
+			{
+				lock.unlock();
+			}
+			
 		}
 	}
 	
