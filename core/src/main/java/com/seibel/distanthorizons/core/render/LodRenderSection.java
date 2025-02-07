@@ -126,8 +126,13 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	 */
 	private CompletableFuture<ColumnRenderBuffer> bufferUploadFuture = null;
 
-	/** should be an empty array if no positions need to be generated */
+	/** 
+	 * should be an empty array if no positions need to be generated
+	 * 
+	 * @deprecated see the comment where this variable is set
+	 */
 	@Nullable
+	@Deprecated
 	private Supplier<LongArrayList> missingGenerationPosFunc;
 	private LongArrayList getMissingGenerationPos() { return this.missingGenerationPosFunc != null ? this.missingGenerationPosFunc.get() : null; }
 	
@@ -509,8 +514,19 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 			// calculate the missing positions if not already done
 			if (this.missingGenerationPosFunc == null)
 			{
-				//this.missingGenerationPos = Suppliers.memoize(() -> this.fullDataSourceProvider.getPositionsToRetrieve(this.pos));
-				this.missingGenerationPosFunc = Suppliers.memoizeWithExpiration(() -> this.fullDataSourceProvider.getPositionsToRetrieve(this.pos), 15, TimeUnit.SECONDS);
+				// TODO memoization may not be needed anymore.
+				//  The expiring cache was originally used to fix a bug with N-sized multiplayer retrieval.
+				//  In multiplayer, when moving into new chunks, DH would generate the highest quality LOD, causing it to load,
+				//  and since said LOD was incomplete, there were holes, and the LOD wouldn't be queued for additional
+				//  retrieval.
+				//  However this doesn't appear to be the case as of 2025-2-7, so we might be able to just retrieve the
+				//  positions once and keep them in memory forever.
+				//  Currently the timeout is set to 10 minutes to test if memoization is actually needed.
+				//  10 minutes allows for the LODs to eventually refresh while allowing us
+				//  to test if the memoization is actually needed.
+				this.missingGenerationPosFunc = Suppliers.memoizeWithExpiration(
+						() -> this.fullDataSourceProvider.getPositionsToRetrieve(this.pos),
+						10, TimeUnit.MINUTES);
 			}
 			
 			LongArrayList missingGenerationPos = this.getMissingGenerationPos();
