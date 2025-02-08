@@ -562,8 +562,11 @@ public class SharedApi
 			if (remainingSlots <= 0)
 			{
 				DhChunkPos furthest = this.furthestQueue.poll();
-				this.closestQueue.remove(furthest);
-				this.updateDataByChunkPos.remove(furthest);
+				if (furthest != null)
+				{
+					this.closestQueue.remove(furthest);
+					this.updateDataByChunkPos.remove(furthest);
+				}
 			}
 			
 			this.updateDataByChunkPos.put(pos, updateData);
