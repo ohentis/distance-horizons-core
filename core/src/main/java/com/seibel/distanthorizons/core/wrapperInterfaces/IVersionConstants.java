@@ -31,19 +31,6 @@ import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IBindab
  */
 public interface IVersionConstants extends IBindable
 {
-	/** @return the minimum height blocks can be generated */
-	@Deprecated // This changes per world!
-	int getMinimumWorldHeight();
-	
-	/** @return the number of generations call per thread. */
-	@Deprecated // No longer used
-	default int getWorldGenerationCountPerThread()
-	{
-		return 8;
-	}
-	
-	boolean isVanillaRenderedChunkSquare();
-	
 	String getMinecraftVersion();
 	
 }
