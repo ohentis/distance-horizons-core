@@ -28,6 +28,7 @@ import com.seibel.distanthorizons.core.jar.installer.GitlabGetter;
 import com.seibel.distanthorizons.core.jar.installer.ModrinthGetter;
 import com.seibel.distanthorizons.core.jar.installer.WebDownloader;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.logging.f3.F3Screen;
 import com.seibel.distanthorizons.core.wrapperInterfaces.IVersionConstants;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.coreapi.util.StringUtil;
@@ -42,8 +43,10 @@ import java.net.URLEncoder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
+import java.text.NumberFormat;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.zip.CRC32;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -255,24 +258,40 @@ public class SelfUpdater
 			
 			deleteOldJarOnJvmShutdown = true;
 			
-			LOGGER.info("Distant Horizons successfully updated. It will apply on game's relaunch");
+			String message = "Distant Horizons successfully updated. It will apply on game's relaunch"; 
+			LOGGER.info(message);
 			new Thread(() -> 
 			{
-				String message = "Distant Horizons updated, this will be applied on game restart.";
-				if (!GraphicsEnvironment.isHeadless())
+				try
 				{
 					TinyFileDialogs.tinyfd_messageBox(ModInfo.READABLE_NAME, message, "ok", "info", false);
 				}
-				else
-				{
-					LOGGER.info(message);
-				}
+				catch (Exception ignore) { }
 			}).start();
 			return true;
 		}
 		catch (Exception e)
 		{
-			LOGGER.warn("Failed to update Distant Horizons to version [" + ModrinthGetter.getLatestNameForVersion(minecraftVersion) + "], error: ["+e.getMessage()+"].", e);
+			// delete the update file to prevent issues with a corrupt jar floating around
+			try
+			{
+				Files.deleteIfExists(file.toPath());
+			}
+			catch (Exception deleteCorruptFileException)
+			{
+				LOGGER.error("Unable to delete corrupted update file at ["+file.toPath()+"], error: ["+deleteCorruptFileException.getMessage()+"].", deleteCorruptFileException);
+			}
+			
+			
+			String message = "Failed to update Distant Horizons to version [" + ModrinthGetter.getLatestNameForVersion(minecraftVersion) + "], error: ["+e.getMessage()+"].";
+			
+			LOGGER.error(message, e);
+			try
+			{
+				TinyFileDialogs.tinyfd_messageBox(ModInfo.READABLE_NAME, message, "ok", "error", false);
+			}
+			catch (Exception ignore) { }
+			
 			return false;
 		}
 	}
@@ -286,50 +305,130 @@ public class SelfUpdater
 		}
 		
 		
+		Path mergedZipPath = null;
 		try
 		{
 			LOGGER.info("Attempting to auto update Distant Horizons.");
 			
 			Files.createDirectories(file.getParentFile().toPath());
 			
-			Path mergedZip = file.getParentFile().toPath().resolve("merged.zip");
-			WebDownloader.downloadAsFile(GitlabGetter.INSTANCE.getDownloads(GitlabGetter.INSTANCE.projectPipelines.get(0).get("id")).get(minecraftVersion), mergedZip.toFile());
+			mergedZipPath = file.getParentFile().toPath().resolve("merged.zip");
+			WebDownloader.downloadAsFile(GitlabGetter.INSTANCE.getDownloads(GitlabGetter.INSTANCE.projectPipelines.get(0).get("id")).get(minecraftVersion), mergedZipPath.toFile());
 			
-			try (ZipFile zipFile = new ZipFile(mergedZip.toFile()))
+			try (ZipFile zipFile = new ZipFile(mergedZipPath.toFile()))
 			{
-				ZipEntry zipEntry = Collections.list(zipFile.entries()).stream()
+				ZipEntry zipEntry = 
+						Collections.list(zipFile.entries()).stream()
 						.max(Comparator.comparingInt(entry -> entry.getName().length()))
-						.get();
+						// shouldn't happen, but just in case
+						.orElseThrow(() -> new Exception("Unable to find jar in zip. Is the downloaded zip empty?"));
 				
-				// write file content
-				byte[] buffer = new byte[(int) zipEntry.getSize()];
-				zipFile.getInputStream(zipEntry).read(buffer);
+				// expected values as defined by the zip
+				long expectedCheckSum = zipEntry.getCrc();
+				int expectedSize = (int)zipEntry.getSize();
+				
+				
+				// read in the file content
+				byte[] buffer = new byte[expectedSize];
+				CRC32 crcCheckSumGenerator = new CRC32();
+				InputStream inputStream = zipFile.getInputStream(zipEntry);
+				
+				int byteReadIndex = 0;
+				try
+				{
+					NumberFormat outputFormat = NumberFormat.getNumberInstance();
+					
+					int nextByte = inputStream.read();
+					while (nextByte != -1)
+					{
+						buffer[byteReadIndex] = (byte) nextByte;
+						crcCheckSumGenerator.update(nextByte);
+						nextByte = inputStream.read();
+						byteReadIndex++;
+						
+						// TODO it would be better to change this divisor based on the expected size,
+						//  so it would always be split up into 100 1% increments
+						//  but this will work for now when the expected size is about 17 MB, this will log about 170 times
+						if (byteReadIndex % 100_000 == 0)
+						{
+							LOGGER.info("Decompressing ["+outputFormat.format(((double)byteReadIndex / expectedSize)*100.0)+"]%");
+						}
+					}
+				}
+				catch (EOFException ignore) { /* shouldn't happen, but just in case */ }
+				
+				// confirm we read the whole file
+				if (byteReadIndex != expectedSize) // +1 on the index isn't necessary since the readIndex will always end +1 from where it started
+				{
+					LOGGER.warn("Distant Horizons update decompression failed, aborting install");
+					throw new Exception("Decompression failed");
+				}
+				
+				// confirm the checksum is correct (IE we decompressed correctly)
+				long actualChecksum = crcCheckSumGenerator.getValue();
+				if (actualChecksum != expectedCheckSum)
+				{
+					LOGGER.warn("Distant Horizons checksum mismatch, aborting install");
+					throw new Exception("Checksum Mismatch");
+				}
+				
 				Files.write(file.toPath(), buffer);
 			}
 			
-			Files.deleteIfExists(mergedZip);
+			Files.deleteIfExists(mergedZipPath);
 			
 			deleteOldJarOnJvmShutdown = true;
 			
-			LOGGER.info("Distant Horizons successfully updated. It will apply on game's relaunch");
+			
+			String message = "Distant Horizons updated, this will be applied on game restart.";
+			LOGGER.info(message);
 			new Thread(() ->
 			{
-				String message = "Distant Horizons updated, this will be applied on game restart.";
-				if (!GraphicsEnvironment.isHeadless())
+				try
 				{
 					TinyFileDialogs.tinyfd_messageBox(ModInfo.READABLE_NAME, message, "ok", "info", false);
 				}
-				else
-				{
-					LOGGER.info(message);
-				}
+				catch (Exception ignore) { }
 			}).start();
 			
 			return true;
 		}
 		catch (Exception e)
 		{
-			LOGGER.warn("Failed to update [" + ModInfo.READABLE_NAME + "] to version [" + GitlabGetter.INSTANCE.projectPipelines.get(0).get("sha") + "].", e);
+			// delete the update jar to prevent issues with a corrupt jar floating around
+			try
+			{
+				Files.deleteIfExists(file.toPath());
+			}
+			catch (Exception deleteCorruptFileException)
+			{
+				LOGGER.error("Unable to delete corrupted update jar file at ["+file.toPath()+"], error: ["+deleteCorruptFileException.getMessage()+"].", deleteCorruptFileException);
+			}
+			
+			// delete the update zip so we can clean up
+			try
+			{
+				if (mergedZipPath != null)
+				{
+					Files.deleteIfExists(mergedZipPath);
+				}
+			}
+			catch (Exception deleteCorruptFileException)
+			{
+				LOGGER.error("Unable to delete corrupted update zip file at ["+mergedZipPath+"], error: ["+deleteCorruptFileException.getMessage()+"].", deleteCorruptFileException);
+			}
+			
+			
+			
+			String message = "Failed to update [" + ModInfo.READABLE_NAME + "] to version [" + GitlabGetter.INSTANCE.projectPipelines.get(0).get("sha") + "], error: ["+e.getMessage()+"].";
+			
+			LOGGER.error(message, e);
+			try
+			{
+				TinyFileDialogs.tinyfd_messageBox(ModInfo.READABLE_NAME, message, "ok", "error", false);
+			}
+			catch (Exception ignore) { }
+			
 			return false;
 		}
 	}
