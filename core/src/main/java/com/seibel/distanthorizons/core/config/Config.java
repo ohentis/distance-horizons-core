@@ -708,16 +708,15 @@ public class Config
 					
 					public static ConfigEntry<Boolean> enableCaveCulling = new ConfigEntry.Builder<Boolean>()
 							.set(true)
+							.setPerformance(EConfigEntryPerformance.HIGH)
 							.comment(""
-									+ "If enabled caves will be culled \n"
+									+ "If enabled caves won't be rendered. \n"
 									+ "\n"
-									+ "NOTE: This feature is under development and \n"
-									+ " it is VERY experimental! Please don't report \n"
-									+ " any issues related to this feature. \n"
-									+ "\n"
-									+ "Additional Info: Currently this cull all faces \n"
-									+ " with skylight value of 0 in dimensions that \n"
-									+ " does not have a ceiling.")
+									+ " Note: for some world types this can cause \n"
+									+ " overhangs or walls for floating objects. \n"
+									+ " Tweaking the caveCullingHeight, can resolve some \n"
+									+ " of those issues. \n"
+									+ "")
 							.addListener(ReloadLodsConfigEventHandler.INSTANCE)
 							.build();
 					
@@ -1403,6 +1402,30 @@ public class Config
 							+ "")
 					.build();
 			
+			public static ConfigCategory experimental = new ConfigCategory.Builder().set(Experimental.class).build();
+			
+			
+			
+			public static class Experimental
+			{
+				public static ConfigEntry<Boolean> upsampleLowerDetailLodsToFillHoles = new ConfigEntry.Builder<Boolean>()
+						.set(false)
+						.comment(""
+								+ "When active DH will attempt to fill missing LOD data \n"
+								+ "with any data that is present in the tree, preventing holes when moving \n"
+								+ "when a N-sized generator (or server) is active. \n"
+								+ "\n"
+								+ "This is only used when N-sized world generation is available \n"
+								+ "and/or when on a server where [generateOnlyInHighestDetail] is false. \n"
+								+ "\n"
+								+ "Experimental:\n"
+								+ "Enabling this option will increase CPU and harddrive use\n"
+								+ "and may cause rendering bugs.\n"
+								+ "\n"
+								+ "")
+						.build();
+			}
+			
 		}
 		
 		public static class MultiThreading
@@ -1586,15 +1609,6 @@ public class Config
 				.setPerformance(EConfigEntryPerformance.HIGH)
 				.build();
 		
-		public static ConfigEntry<Boolean> generateOnlyInHighestDetail = new ConfigEntry.Builder<Boolean>()
-				.setChatCommandName("generation.highestDetailOnly")
-				.set(false)
-				.comment(""
-						+ "Makes the server reject all generation requests for detail levels below the highest one.\n"
-						+ "When enabled on the client, makes it only request highest detail LODs.\n"
-						+ "")
-				.build();
-		
 		public static ConfigEntry<Integer> generationBoundsX = new ConfigEntry.Builder<Integer>()
 				.setChatCommandName("generation.bounds.x")
 				.setAppearance(EConfigEntryAppearance.ONLY_IN_FILE)
@@ -1679,6 +1693,28 @@ public class Config
 						+ "Value of 0 disables the limit."
 						+ "")
 				.build();
+		
+		public static ConfigCategory experimental = new ConfigCategory.Builder().set(Experimental.class).build();
+		
+		
+		
+		public static class Experimental
+		{
+			public static ConfigEntry<Boolean> generateOnlyInHighestDetail = new ConfigEntry.Builder<Boolean>()
+					.setChatCommandName("generation.highestDetailOnly")
+					.set(true)
+					.comment(""
+							+ "Makes the server reject all generation requests for detail levels below the highest one.\n"
+							+ "When enabled on the client, makes it only request highest detail LODs.\n"
+							+ "\n"
+							+ "Experimental:\n"
+							+ "Enabling this option may cause holes in the LODs when moving or teleporting.\n"
+							+ "Also enabling the [upsampleLowerDetailLodsToFillHoles] option may\n"
+							+ "reduce that problem at the cost of increased hard drive use. \n"
+							+ "\n"
+							+ "")
+					.build();
+		}
 		
 	}
 	

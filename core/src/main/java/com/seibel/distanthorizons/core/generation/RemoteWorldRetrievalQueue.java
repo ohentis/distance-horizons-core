@@ -50,7 +50,7 @@ public class RemoteWorldRetrievalQueue extends AbstractFullDataNetworkRequestQue
 	@Override
 	public byte lowestDataDetail()
 	{
-		return Config.Server.generateOnlyInHighestDetail.get()
+		return Config.Server.Experimental.generateOnlyInHighestDetail.get()
 				? LodUtil.BLOCK_DETAIL_LEVEL
 				: LodUtil.BLOCK_DETAIL_LEVEL + 12;
 	} // TODO should be the same as what the server's update propagator can provide

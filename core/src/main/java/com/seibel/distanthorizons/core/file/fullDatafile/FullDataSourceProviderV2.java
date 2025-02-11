@@ -226,7 +226,11 @@ public class FullDataSourceProviderV2
 				}
 				
 				this.runParentUpdates(executor, targetBlockPos);
-				this.runChildUpdates(executor, targetBlockPos);
+				
+				if (Config.Common.LodBuilding.Experimental.upsampleLowerDetailLodsToFillHoles.get())
+				{
+					this.runChildUpdates(executor, targetBlockPos);
+				}
 				
 			}
 			catch (InterruptedException ignored)

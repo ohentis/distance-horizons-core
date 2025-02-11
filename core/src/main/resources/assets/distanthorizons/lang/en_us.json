@@ -626,6 +626,16 @@
   "distanthorizons.config.common.lodBuilding.showMigrationChatWarning":
     "Log Migration In Chat",
 
+  
+  "distanthorizons.config.common.lodBuilding.experimental":
+    "Experimental",
+
+  "distanthorizons.config.common.lodBuilding.experimental.upsampleLowerDetailLodsToFillHoles":
+    "Upsample Lower Detail LODs To Fill Holes",
+  "distanthorizons.config.common.lodBuilding.experimental.upsampleLowerDetailLodsToFillHoles.@tooltip":
+    "When active DH will attempt to fill missing LOD data \nwith any data that is present in the tree, preventing holes when moving \nwhen a N-sized generator (or server) is active. \n\n§6EXPERIMENTAL§r Will increase harddrive use and may cause rendering issues. \nSee the config file for more details.",
+
+
 
 
   "distanthorizons.config.common.multiThreading":
@@ -703,11 +713,6 @@
   "distanthorizons.config.server.maxGenerationRequestDistance.@tooltip":
     "Defines the distance allowed to generate around the player.",
 
-  "distanthorizons.config.server.generateOnlyInHighestDetail":
-    "Generate Only in Highest Detail",
-  "distanthorizons.config.server.generateOnlyInHighestDetail.@tooltip":
-    "Makes the server reject all generation requests for detail levels below the highest one.\nWhen enabled on the client, makes it only request highest detail LODs.",
-
   "distanthorizons.config.server.enableRealTimeUpdates":
     "Enable Real-time Updates",
   "distanthorizons.config.server.enableRealTimeUpdates.@tooltip":
@@ -737,6 +742,15 @@
     "Maximum Data Transfer Speed, KB/s",
   "distanthorizons.config.server.maxDataTransferSpeed.@tooltip":
     "Maximum speed for uploading LODs to the clients, in KB/s.\nValue of 0 disables the limit.",
+
+
+  "distanthorizons.config.server.experimental":
+    "Experimental",
+
+  "distanthorizons.config.server.experimental.generateOnlyInHighestDetail":
+    "Generate Only in Highest Detail",
+  "distanthorizons.config.server.experimental.generateOnlyInHighestDetail.@tooltip":
+    "Makes the server reject all generation requests for detail levels below the highest one.\nWhen enabled on the client, makes it only request highest detail LODs. \n\n§6EXPERIMENTAL§r May cause holes and other rendering issues. \nSee the config file for more details.",
 
 
   

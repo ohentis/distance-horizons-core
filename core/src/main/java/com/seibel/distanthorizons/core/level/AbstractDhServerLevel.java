@@ -162,7 +162,7 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 					}
 				}
 				
-				if (Config.Server.generateOnlyInHighestDetail.get() && DhSectionPos.getDetailLevel(message.sectionPos) != DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL)
+				if (Config.Server.Experimental.generateOnlyInHighestDetail.get() && DhSectionPos.getDetailLevel(message.sectionPos) != DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL)
 				{
 					message.sendResponse(new SectionRequiresSplittingException("Only highest-detail sections are allowed"));
 					return;
