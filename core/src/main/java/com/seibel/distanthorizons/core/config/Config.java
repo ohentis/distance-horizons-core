@@ -1700,18 +1700,13 @@ public class Config
 		
 		public static class Experimental
 		{
-			public static ConfigEntry<Boolean> generateOnlyInHighestDetail = new ConfigEntry.Builder<Boolean>()
-					.setChatCommandName("generation.highestDetailOnly")
-					.set(true)
+			public static ConfigEntry<Boolean> enableNSizedGeneration = new ConfigEntry.Builder<Boolean>()
+					.setChatCommandName("generation.nSized")
+					.set(false)
 					.comment(""
-							+ "Makes the server reject all generation requests for detail levels below the highest one.\n"
-							+ "When enabled on the client, makes it only request highest detail LODs.\n"
-							+ "\n"
-							+ "Experimental:\n"
-							+ "Enabling this option may cause holes in the LODs when moving or teleporting.\n"
-							+ "Also enabling the [upsampleLowerDetailLodsToFillHoles] option may\n"
-							+ "reduce that problem at the cost of increased hard drive use. \n"
-							+ "\n"
+							+ "When enabled on the client, this allows loading lower detail levels as needed to speed up terrain generation.\n"
+							+ "This must also be enabled on the server; otherwise, it will have no effect.\n"
+							+ "For better performance when switching LOD detail levels, enabling [upsampleLowerDetailLodsToFillHoles] is recommended.\n"
 							+ "")
 					.build();
 		}

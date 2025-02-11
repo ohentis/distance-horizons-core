@@ -747,10 +747,10 @@
   "distanthorizons.config.server.experimental":
     "Experimental",
 
-  "distanthorizons.config.server.experimental.generateOnlyInHighestDetail":
-    "Generate Only in Highest Detail",
-  "distanthorizons.config.server.experimental.generateOnlyInHighestDetail.@tooltip":
-    "Makes the server reject all generation requests for detail levels below the highest one.\nWhen enabled on the client, makes it only request highest detail LODs. \n\n§6EXPERIMENTAL§r May cause holes and other rendering issues. \nSee the config file for more details.",
+  "distanthorizons.config.server.experimental.enableNSizedGeneration":
+    "Enable N-sized generation",
+  "distanthorizons.config.server.experimental.enableNSizedGeneration.@tooltip":
+    "When enabled on the client, this allows loading lower detail levels as needed to speed up terrain generation.\nThis must also be enabled on the server; otherwise, it will have no effect.\nFor better performance when switching LOD detail levels, enabling [upsampleLowerDetailLodsToFillHoles] is recommended.",
 
 
   
