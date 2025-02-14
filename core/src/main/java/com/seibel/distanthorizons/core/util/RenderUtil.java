@@ -223,6 +223,9 @@ public class RenderUtil
 			return "No Client World Loaded";
 		}
 		
+		// TODO changing to getOrLoadClientLevel() fixes Immersive Portals only rendering the level the user starts in
+		//  however this may break how other level handling is done so James doesn't want to change it.
+		//  Special handling may be necessary when Immersive Portals is present, although additional testing is needed.
 		IDhClientLevel level = clientWorld.getClientLevel(levelWrapper);
 		if (level == null)
 		{
