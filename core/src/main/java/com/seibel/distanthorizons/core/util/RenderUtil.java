@@ -92,7 +92,9 @@ public class RenderUtil
 		// but far enough the fading will rarely overlap (IE only at extreme FOV)
 		return getNearClipPlaneDistanceInBlocks(partialTicks, 0.2f); 
 	}
-	public static float getNearClipPlaneInBlocksForFading(float partialTicks)
+	/** TODO this should be moved into the config file or something, this is confusing and obtuse to use */
+	@Deprecated
+	public static float getAutoOverdrawPrevention()
 	{
 		float overdraw = Config.Client.Advanced.Graphics.Culling.overdrawPrevention.get().floatValue();
 		
@@ -123,6 +125,11 @@ public class RenderUtil
 			}
 		}
 		
+		return overdraw;
+	}
+	public static float getNearClipPlaneInBlocksForFading(float partialTicks)
+	{
+		float overdraw = getAutoOverdrawPrevention();
 		return getNearClipPlaneDistanceInBlocks(partialTicks, overdraw);
 	}
 	private static float getNearClipPlaneDistanceInBlocks(float partialTicks, float overdrawPreventionPercent)
