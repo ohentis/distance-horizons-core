@@ -270,7 +270,7 @@ public class FullDataToRenderDataTransformer
 			//====================//
 			
 			boolean ignoreBlock = blockStatesToIgnore.contains(block);
-			boolean caveBlock = caveBlockStatesToIgnore.contains(block);
+			boolean caveBlock = caveBlockStatesToIgnore.contains(block); // TODO caves should also ignore transparent/non-solid blocks (IE grass and plants) wthout each being defined
 			if (caveBlock)
 			{
 				if (caveCullingEnabled

@@ -761,20 +761,26 @@ public class Config
 									+ "Disable this if shadows render incorrectly.")
 							.build();
 					
-					public static ConfigEntry<String> ignoredRenderBlockCsv = new ConfigEntry.Builder<String>()
+					public static ConfigEntry<String> ignoredRenderBlockCsv = new ConfigEntry.Builder<String>() // TODO accept wildcards
 							.set("minecraft:barrier,minecraft:structure_void,minecraft:light,minecraft:tripwire,minecraft:brown_mushroom")
+							.setAppearance(EConfigEntryAppearance.ONLY_IN_FILE) // only shown in file since the UI has a character limit
 							.comment(""
 									+ "A comma separated list of block resource locations that won't be rendered by DH. \n"
-									+ "Note: air is always included in this list. \n"
+									+ "Air is always included in this list. \n"
+									+ "Requires a restart to change. \n"
 									+ "")
 							.build();
 					
-					public static ConfigEntry<String> ignoredRenderCaveBlockCsv = new ConfigEntry.Builder<String>()
-							.set("minecraft:glow_lichen,minecraft:rail,minecraft:water,minecraft:lava,minecraft:bubble_column")
+					public static ConfigEntry<String> ignoredRenderCaveBlockCsv = new ConfigEntry.Builder<String>() // TODO accept wildcards
+							.set("minecraft:glow_lichen,minecraft:rail,minecraft:water,minecraft:lava,minecraft:bubble_column," +
+									"minecraft:cave_vines_plant,minecraft:vine,minecraft:cave_vines,minecraft:short_grass,minecraft:tall_grass," +
+									"minecraft:small_dripleaf,minecraft:big_dripleaf,minecraft:big_dripleaf_stem,minecraft:sculk_vein")
+							.setAppearance(EConfigEntryAppearance.ONLY_IN_FILE) // only shown in file since the UI has a character limit
 							.comment(""
 									+ "A comma separated list of block resource locations that shouldn't be rendered \n"
 									+ "if they are in a 0 sky light underground area. \n"
-									+ "Note: air is always included in this list. \n"
+									+ "Air is always included in this list. \n"
+									+ "Requires a restart to change. \n"
 									+ "")
 							.build();
 					
