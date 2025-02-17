@@ -5,6 +5,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.Set;
@@ -84,8 +85,16 @@ public class AutoClosableTrackingWrapper implements InvocationHandler
 			return null;
 		}
 		
-		// Delegate all other methods to the wrapped object
-		return method.invoke(this.wrappedClosable, args);
+		try
+		{
+			// Delegate all other methods to the wrapped object
+			return method.invoke(this.wrappedClosable, args);	
+		}
+		catch (InvocationTargetException e)
+		{
+			// get the target so we can filter the exception correctly up-stream
+			throw e.getTargetException();
+		}
 	}
 	
 	
