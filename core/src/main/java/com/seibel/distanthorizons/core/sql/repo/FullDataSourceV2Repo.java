@@ -280,15 +280,14 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 	private void setApplyToFlag(long pos, boolean applyFlag, boolean applyToParent)
 	{
 		String sql = applyToParent ? this.setApplyToParentSql : this.setApplyToChildrenSql;
-		PreparedStatement statement = this.createPreparedStatement(sql);
-		if (statement == null)
+		try (PreparedStatement statement = this.createPreparedStatement(sql))
 		{
-			return;
-		}
-		
-		
-		try
-		{
+			if (statement == null)
+			{
+				return;
+			}
+			
+			
 			int i = 1;
 			statement.setBoolean(i++, applyFlag);
 			
@@ -337,14 +336,14 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 		LongArrayList list = new LongArrayList();
 		
 		String sql = getParentUpdates ? this.getParentPositionsToUpdateSql : this.getChildPositionsToUpdateSql;
-		PreparedStatement statement = this.createPreparedStatement(sql);
-		if (statement == null)
+		try (PreparedStatement statement = this.createPreparedStatement(sql))
 		{
-			return list;
-		}
-		
-		try
-		{
+			if (statement == null)
+			{
+				return list;
+			}
+			
+			
 			int i = 1;
 			statement.setInt(i++, targetBlockPosX);
 			statement.setInt(i++, targetBlockPosZ);
@@ -382,15 +381,14 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 	/** @return null if nothing exists for this position */
 	public void getColumnGenerationStepForPos(long pos, ByteArrayList outputByteArray)
 	{
-		PreparedStatement statement = this.createPreparedStatement(this.getColumnGenerationStepSql);
-		if (statement == null)
+		try (PreparedStatement statement = this.createPreparedStatement(this.getColumnGenerationStepSql))
 		{
-			return;
-		}
-		
-		
-		try
-		{
+			if (statement == null)
+			{
+				return;
+			}
+			
+			
 			int detailLevel = DhSectionPos.getDetailLevel(pos) - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL;
 			
 			
