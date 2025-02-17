@@ -19,9 +19,11 @@
 
 package tests;
 
+import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.sql.DatabaseUpdater;
 import com.seibel.distanthorizons.core.sql.repo.AbstractDhRepo;
+import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -34,13 +36,14 @@ import java.io.File;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Map;
 
 /**
  * Validates {@link AbstractDhRepo} is set up correctly.
  */
 public class DhRepoSqliteTest
 {
+	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	
 	public static String DATABASE_TYPE = "jdbc:sqlite";
 	public static String DB_FILE_NAME = "test.sqlite";
 	
@@ -204,6 +207,129 @@ public class DhRepoSqliteTest
 			if (compoundKeyRepo != null)
 			{
 				compoundKeyRepo.close();
+			}
+		}
+	}
+	
+	/** 
+	 * leak detection is done to make sure {@link ResultSet} and {@link PreparedStatement}'s
+	 * are properly cleaned up.
+	 */
+	@Test
+	public void testRepoLeakDetection()
+	{
+		TestPrimaryKeyRepo primaryKeyRepo = null;
+		try
+		{
+			primaryKeyRepo = new TestPrimaryKeyRepo(DATABASE_TYPE, new File(DB_FILE_NAME));
+			
+			int insertCount = 10;
+			int readCount = 10;
+			
+			
+			
+			Assert.assertEquals(0, primaryKeyRepo.openClosables.size());
+			
+			
+			//=============================//
+			// correctly closed statements //
+			//=============================//
+			
+			{
+				// insert
+				for (int i = 0; i < insertCount; i++)
+				{
+					TestSingleKeyDto insertDto = new TestSingleKeyDto(i, "a", 0L, (byte) 0);
+					
+					try (PreparedStatement statement = primaryKeyRepo.createInsertStatement(insertDto))
+					{
+						primaryKeyRepo.query(statement);
+						
+						if (i % 1_000 == 0)
+						{
+							System.out.println(i + " / " + insertCount);
+						}
+					}
+				}
+				
+				Assert.assertEquals("Insert leaks", 0, primaryKeyRepo.openClosables.size());
+				
+				
+				
+				// read
+				TestSingleKeyDto expectedReadDto = new TestSingleKeyDto(1, "a", 0L, (byte) 0);
+				for (int i = 0; i < readCount; i++)
+				{
+					try (PreparedStatement statement = primaryKeyRepo.createSelectStatementByKey(1);
+						ResultSet resultSet = primaryKeyRepo.query(statement))
+					{
+						TestSingleKeyDto readDto = primaryKeyRepo.convertResultSetToDto(resultSet);
+						Assert.assertEquals(expectedReadDto.id, readDto.id);
+						
+						if (i % 1_000 == 0)
+						{
+							System.out.println(i + " / " + readCount);
+						}
+					}
+				}
+				
+				Assert.assertEquals("read leaks", 0, primaryKeyRepo.openClosables.size());
+			}
+			
+			
+			
+			//===================//
+			// leaked statements //
+			//===================//
+			{	
+				// nuke the DB so we can insert without worries
+				primaryKeyRepo.deleteAll();
+				
+				// insert
+				for (int i = 0; i < insertCount; i++)
+				{
+					TestSingleKeyDto insertDto = new TestSingleKeyDto(i, "a", 0L, (byte) 0);
+					PreparedStatement statement = primaryKeyRepo.createInsertStatement(insertDto);
+					primaryKeyRepo.query(statement);
+					
+					if (i % 1_000 == 0)
+					{
+						System.out.println(i + " / " + insertCount);
+					}
+				}
+				
+				Assert.assertNotEquals(0, primaryKeyRepo.openClosables.size());
+				primaryKeyRepo.openClosables.clear();
+				
+				
+				
+				// read
+				for (int i = 0; i < readCount; i++)
+				{
+					PreparedStatement statement = primaryKeyRepo.createSelectStatementByKey(1);
+					ResultSet resultSet = primaryKeyRepo.query(statement);
+					
+					TestSingleKeyDto readDto = primaryKeyRepo.convertResultSetToDto(resultSet);
+					Assert.assertEquals(1, readDto.id);
+					
+					if (i % 1_000 == 0)
+					{
+						System.out.println(i + " / " + readCount);
+					}
+				}
+				
+				Assert.assertNotEquals(0, primaryKeyRepo.openClosables.size());
+			}
+		}
+		catch (SQLException e)
+		{
+			Assert.fail(e.getMessage());
+		}
+		finally
+		{
+			if (primaryKeyRepo != null)
+			{
+				primaryKeyRepo.close();
 			}
 		}
 	}
