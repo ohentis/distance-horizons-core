@@ -102,6 +102,7 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 	
 	protected abstract int getRequestRateLimit();
 	protected abstract boolean isSectionAllowedToGenerate(long sectionPos, DhBlockPos2D targetPos);
+	protected abstract boolean onBeforeRequest(long sectionPos, CompletableFuture<ERequestResult> future);
 	
 	protected abstract String getQueueName();
 	
@@ -212,6 +213,12 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 		if (!this.isSectionAllowedToGenerate(sectionPos, targetPos))
 		{
 			entry.future.cancel(false);
+			this.pendingTasksSemaphore.release();
+			return;
+		}
+		
+		if (!this.onBeforeRequest(sectionPos, entry.future))
+		{
 			this.pendingTasksSemaphore.release();
 			return;
 		}
