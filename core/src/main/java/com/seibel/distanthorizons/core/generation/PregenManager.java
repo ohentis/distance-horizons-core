@@ -169,9 +169,11 @@ public class PregenManager
 			double chunksToGenerate = Math.ceil(Math.sqrt(this.sectionsToGenerate) / 2 * 4 * 10) / 10; // ceil to nearest 0.1
 			double etaMs = this.averageTaskCompletionIntervalMs.getAverage() * (this.sectionsToGenerate - this.nextSectionSpiralIndex.get());
 			
-			return MessageFormat.format("Generated radius: {0,number,#.###} / {1,number,#.#} chunks ({2,number,#.###%}), ETA: {3}",
+			return MessageFormat.format("Generated radius: {0,number,#.###} / {1,number,#.#} chunks ({2} / {3} sections, {4,number,#.###%}), ETA: {5}",
 					this.generatedRadius.getValue(),
 					chunksToGenerate,
+					this.nextSectionSpiralIndex.get(),
+					this.sectionsToGenerate,
 					this.generatedPercentage.getValue(),
 					Duration.ofMillis((long) etaMs).toString()
 							.substring(2)
