@@ -209,7 +209,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 			future.handle((voidObj, throwable) -> 
 			{
 				// this has to fire are the end of every added future, otherwise we'll lock up and nothing will load
-				GLOBAL_UPLOAD_TASKS_COUNT_REF.decrementAndGet(); 
+				GLOBAL_UPLOAD_TASKS_COUNT_REF.decrementAndGet(); // TODO there is an issue where this variable isn't decremented properly, preventing LODs from loading in, or loading much slower
 				return null; 
 			});
 			
