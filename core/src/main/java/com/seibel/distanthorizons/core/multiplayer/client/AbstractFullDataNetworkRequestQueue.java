@@ -72,7 +72,12 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 	
 	private final SupplierBasedRateLimiter<Void> rateLimiter = new SupplierBasedRateLimiter<>(this::getRequestRateLimit);
 	
-	private final Set<Long> visitedPositions = Collections.newSetFromMap(CacheBuilder.newBuilder()
+	private final Set<Long> succeededPositions = Collections.newSetFromMap(CacheBuilder.newBuilder()
+			.expireAfterWrite(20, TimeUnit.MINUTES)
+			.<Long, Boolean>build()
+			.asMap());
+	
+	private final Set<Long> requiresSplittingPositions = Collections.newSetFromMap(CacheBuilder.newBuilder()
 			.expireAfterWrite(20, TimeUnit.MINUTES)
 			.<Long, Boolean>build()
 			.asMap());
@@ -116,9 +121,14 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 	{ return this.submitRequest(sectionPos, null, dataSourceConsumer); }
 	public CompletableFuture<ERequestResult> submitRequest(long sectionPos, @Nullable Long clientTimestamp, Consumer<FullDataSourceV2> dataSourceConsumer)
 	{
-		if (this.visitedPositions.contains(sectionPos))
+		if (this.succeededPositions.contains(sectionPos))
 		{
 			return CompletableFuture.completedFuture(ERequestResult.FAILED);
+		}
+		
+		if (this.requiresSplittingPositions.contains(sectionPos))
+		{
+			return CompletableFuture.completedFuture(ERequestResult.REQUIRES_SPLITTING);
 		}
 		
 		AtomicBoolean added = new AtomicBoolean(false);
@@ -138,9 +148,10 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 				{
 					case SUCCEEDED:
 						this.finishedRequests.incrementAndGet();
-						this.visitedPositions.add(pos);
+						this.succeededPositions.add(pos);
 						return;
 					case REQUIRES_SPLITTING:
+						this.requiresSplittingPositions.add(sectionPos);
 						return;
 					case FAILED:
 						this.failedRequests.incrementAndGet();
