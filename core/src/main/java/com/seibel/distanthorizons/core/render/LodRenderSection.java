@@ -68,15 +68,6 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	private static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	
-	/**
-	 * Used to limit how many upload tasks are queued at once.
-	 * If all the upload tasks are queued at once, they will start uploading nearest
-	 * to the player, however if the player moves, that order is no longer valid and holes may appear
-	 * as further sections are loaded before closer ones.
-	 * Only queuing a few of the sections at a time solves this problem.
-	 */
-	public static final AtomicInteger GLOBAL_UPLOAD_TASKS_COUNT_REF = new AtomicInteger(0);
-	
 	
 	
 	public final long pos;
@@ -87,6 +78,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	private final LodQuadTree quadTree;
 	private final KeyedLockContainer<Long> renderLoadLockContainer;
 	private final Cache<Long, CachedColumnRenderSource> cachedRenderSourceByPos;
+	private final AtomicInteger uploadTaskCountRef;
 	
 	/** 
 	 * contains the list of beacons currently being rendered in this section 
@@ -148,7 +140,8 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	public LodRenderSection(
 			long pos, 
 			LodQuadTree quadTree, 
-			IDhClientLevel level, FullDataSourceProviderV2 fullDataSourceProvider, 
+			IDhClientLevel level, FullDataSourceProviderV2 fullDataSourceProvider,
+			AtomicInteger uploadTaskCountRef,
 			Cache<Long, CachedColumnRenderSource> cachedRenderSourceByPos, KeyedLockContainer<Long> renderLoadLockContainer)
 	{
 		this.pos = pos;
@@ -157,6 +150,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		this.renderLoadLockContainer = renderLoadLockContainer;
 		this.level = level;
 		this.fullDataSourceProvider = fullDataSourceProvider;
+		this.uploadTaskCountRef = uploadTaskCountRef;
 		
 		this.beaconRenderHandler = this.quadTree.beaconRenderHandler;
 		this.beaconBeamRepo = this.level.getBeaconBeamRepo();
@@ -196,20 +190,20 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		// this means the closer (higher priority) tasks will load first.
 		// This also prevents issues where the nearby tasks are canceled due to
 		// LOD detail level changing, and having holes in the world
-		if (GLOBAL_UPLOAD_TASKS_COUNT_REF.getAndIncrement() > executor.getPoolSize())
+		if (this.uploadTaskCountRef.getAndIncrement() > executor.getPoolSize())
 		{
-			GLOBAL_UPLOAD_TASKS_COUNT_REF.decrementAndGet();
+			this.uploadTaskCountRef.decrementAndGet();
 			return false;
 		}
 		
 		try
 		{
 			CompletableFuture<Void> future = new CompletableFuture<>();
-			this.getAndBuildRenderDataFuture = future;
+			this.getAndBuildRenderDataFuture = future; // TODO should use a setter/getter to guard against replacing an incomplete future
 			future.handle((voidObj, throwable) -> 
 			{
 				// this has to fire are the end of every added future, otherwise we'll lock up and nothing will load
-				GLOBAL_UPLOAD_TASKS_COUNT_REF.decrementAndGet(); // TODO there is an issue where this variable isn't decremented properly, preventing LODs from loading in, or loading much slower
+				this.uploadTaskCountRef.decrementAndGet(); // TODO there is an issue where this variable isn't decremented properly, preventing LODs from loading in, or loading much slower
 				return null; 
 			});
 			
