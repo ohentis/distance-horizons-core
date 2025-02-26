@@ -113,8 +113,8 @@ public class RemoteWorldRetrievalQueue extends AbstractFullDataNetworkRequestQue
 		if (this.networkState.sessionConfig.getGenerationBoundsRadius() > 0)
 		{
 			if (DhSectionPos.getChebyshevSignedBlockDistance(sectionPos, new DhBlockPos2D(
-					this.networkState.sessionConfig.getGenerationBoundsX(),
-					this.networkState.sessionConfig.getGenerationBoundsZ()
+					(int) (this.networkState.sessionConfig.getGenerationBoundsX() / this.level.levelWrapper.getDimensionType().getCoordinateScale()),
+					(int) (this.networkState.sessionConfig.getGenerationBoundsZ() / this.level.levelWrapper.getDimensionType().getCoordinateScale())
 			)) > this.networkState.sessionConfig.getGenerationBoundsRadius())
 			{
 				return false;
