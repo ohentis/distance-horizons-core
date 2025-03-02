@@ -69,19 +69,21 @@ public class FullDataPayloadReceiver implements AutoCloseable
 		});
 	}
 	
-	public FullDataSourceV2DTO decodeDataSourceAndReleaseBuffer(FullDataPayload msg)
+	public FullDataSourceV2DTO decodeDataSourceAndReleaseBuffer(FullDataPayload payload)
 	{
-		CompositeByteBuf compositeByteBuffer = this.buffersById.get(msg.dtoBufferId);
+		CompositeByteBuf compositeByteBuffer = this.buffersById.get(payload.dtoBufferId);
 		LodUtil.assertTrue(compositeByteBuffer != null);
 		
 		try
 		{
-			return INetworkObject.decodeToInstance(FullDataSourceV2DTO.CreateEmptyDataSourceForDecoding(), compositeByteBuffer);
+			FullDataSourceV2DTO dataSourceDto = INetworkObject.decodeToInstance(FullDataSourceV2DTO.CreateEmptyDataSourceForDecoding(), compositeByteBuffer);
+			LOGGER.debug("Buffer {} DTO: {}", payload.dtoBufferId, dataSourceDto);
+			return dataSourceDto;
 		}
 		finally
 		{
 			// Releasing the buffer is handled by cache
-			this.buffersById.remove(msg.dtoBufferId);
+			this.buffersById.remove(payload.dtoBufferId);
 		}
 	}
 	
