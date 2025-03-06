@@ -298,7 +298,8 @@ public class DhRepoSqliteTest
 					}
 				}
 				
-				//Assert.assertNotEquals(0, primaryKeyRepo.openClosables.size()); // TODO fails when built for release due to tracking being disabled
+				// TODO fails when built for release due to tracking being disabled
+				Assert.assertNotEquals(0, primaryKeyRepo.openClosables.size());
 				primaryKeyRepo.openClosables.clear();
 				
 				
@@ -318,7 +319,7 @@ public class DhRepoSqliteTest
 					}
 				}
 				
-				//Assert.assertNotEquals(0, primaryKeyRepo.openClosables.size());
+				Assert.assertNotEquals(0, primaryKeyRepo.openClosables.size());
 			}
 		}
 		catch (SQLException e)
