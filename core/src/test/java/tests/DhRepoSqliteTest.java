@@ -23,6 +23,7 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.sql.DatabaseUpdater;
 import com.seibel.distanthorizons.core.sql.repo.AbstractDhRepo;
+import com.seibel.distanthorizons.core.sql.repo.phantoms.AutoClosableTrackingWrapper;
 import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -218,6 +219,12 @@ public class DhRepoSqliteTest
 	@Test
 	public void testRepoLeakDetection()
 	{
+		if (!AutoClosableTrackingWrapper.TRACK_WRAPPERS)
+		{
+			System.out.println("Skipping repo leak detection unit test. Leak tracking is disabled.");
+			return;
+		}
+		
 		TestPrimaryKeyRepo primaryKeyRepo = null;
 		try
 		{
