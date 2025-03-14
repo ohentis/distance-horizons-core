@@ -1281,7 +1281,7 @@ public class Config
 			
 			public static ConfigEntry<Integer> generationProgressDisplayIntervalInSeconds = new ConfigEntry.Builder<Integer>()
 					.setChatCommandName("generation.logInterval")
-					.setMinDefaultMax(1, 5, 60 * 60 * 4) // max = 4 hours
+					.setMinDefaultMax(1, 2, 60 * 60 * 4) // max = 4 hours
 					.comment(""
 							+ "How often should the distant generator progress be displayed? \n"
 							+ "")
