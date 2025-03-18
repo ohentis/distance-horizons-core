@@ -28,6 +28,7 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.util.objects.GLMessages.*;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
+import com.seibel.distanthorizons.coreapi.util.StringUtil;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.glfw.GLFW;
@@ -268,6 +269,7 @@ public class GLProxy
 	// logging //
 	//=========//
 	
+	/** this method is called on the render thread at the point of the GL Error */
 	private static void logMessage(GLMessage msg)
 	{
 		EDhApiGLErrorHandlingMode errorHandlingMode = Config.Client.Advanced.Debugging.OpenGl.glErrorHandlingMode.get();
@@ -277,26 +279,27 @@ public class GLProxy
 		}
 		
 		
+		// create an exception so we get a stacktrace of where the message was triggered from
+		RuntimeException exception = new RuntimeException("GL ERROR [" + msg.id + "] from [" + msg.source + "]: [" + msg.message + "].");
 		
 		if (msg.type == EGLMessageType.ERROR || msg.type == EGLMessageType.UNDEFINED_BEHAVIOR)
 		{
 			// critical error
 			
-			GL_LOGGER.error("GL ERROR [" + msg.id + "] from [" + msg.source + "]: [" + msg.message + "].");
+			GL_LOGGER.error(exception.getMessage(), exception);
 			
 			if (errorHandlingMode == EDhApiGLErrorHandlingMode.LOG_THROW)
 			{
-				throw new RuntimeException("GL ERROR: " + msg);
+				// will probably crash the game,
+				// good for quickly checking if there's a problem while preventing log spam
+				throw exception;
 			}
-			
 		}
 		else
 		{
 			// non-critical log
 			
 			EGLMessageSeverity severity = msg.severity;
-			RuntimeException exception = new RuntimeException("GL MESSAGE: " + msg);
-			
 			if (severity == null)
 			{
 				// just in case the message was malformed
