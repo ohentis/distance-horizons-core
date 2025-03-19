@@ -35,7 +35,7 @@ public class GLState
 	public int vao;
 	public int vbo;
 	public int ebo;
-	public int[] fbo;
+	public int fbo;
 	public int texture2D;
 	/** IE: GL_TEXTURE0, GL_TEXTURE1, etc. */
 	public int activeTextureNumber;
@@ -68,12 +68,7 @@ public class GLState
 	
 	
 	
-	public GLState() 
-	{
-		this.fbo = new int[FBO_MAX];
-		
-		this.saveState();
-	}
+	public GLState() { this.saveState(); }
 	
 	public void saveState()
 	{
@@ -82,7 +77,7 @@ public class GLState
 		this.vbo = GL32.glGetInteger(GL32.GL_ARRAY_BUFFER_BINDING);
 		this.ebo = GL32.glGetInteger(GL32.GL_ELEMENT_ARRAY_BUFFER_BINDING);
 		
-		GL32.glGetIntegerv(GL32.GL_FRAMEBUFFER_BINDING, this.fbo);
+		this.fbo = GL32.glGetInteger(GL32.GL_FRAMEBUFFER_BINDING);
 		
 		this.texture2D = GL32.glGetInteger(GL32.GL_TEXTURE_BINDING_2D);
 		this.activeTextureNumber = GL32.glGetInteger(GL32.GL_ACTIVE_TEXTURE);
@@ -101,9 +96,19 @@ public class GLState
 		
 		GLMC.glActiveTexture(this.activeTextureNumber);
 		
-		this.frameBufferTexture0 = GL32.glGetFramebufferAttachmentParameteri(GL32.GL_FRAMEBUFFER, GL32.GL_COLOR_ATTACHMENT0, GL32.GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME);
-		this.frameBufferTexture1 = GL32.glGetFramebufferAttachmentParameteri(GL32.GL_FRAMEBUFFER, GL32.GL_COLOR_ATTACHMENT1, GL32.GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME);
-		this.frameBufferDepthTexture = GL32.glGetFramebufferAttachmentParameteri(GL32.GL_FRAMEBUFFER, GL32.GL_DEPTH_ATTACHMENT, GL32.GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME);
+		if (this.fbo != 0)
+		{
+			this.frameBufferTexture0 = GL32.glGetFramebufferAttachmentParameteri(GL32.GL_FRAMEBUFFER, GL32.GL_COLOR_ATTACHMENT0, GL32.GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME);
+			this.frameBufferTexture1 = GL32.glGetFramebufferAttachmentParameteri(GL32.GL_FRAMEBUFFER, GL32.GL_COLOR_ATTACHMENT1, GL32.GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME);
+			this.frameBufferDepthTexture = GL32.glGetFramebufferAttachmentParameteri(GL32.GL_FRAMEBUFFER, GL32.GL_DEPTH_ATTACHMENT, GL32.GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME);
+		}
+		else
+		{
+			// attempting to get values from the default framebuffer can throw errors on Linux
+			this.frameBufferTexture0 = 0;
+			this.frameBufferTexture1 = 0;
+			this.frameBufferDepthTexture = 0;
+		}
 		
 		this.blend = GL32.glIsEnabled(GL32.GL_BLEND);
 		this.scissor = GL32.glIsEnabled(GL32.GL_SCISSOR_TEST);
@@ -131,7 +136,7 @@ public class GLState
 	public String toString()
 	{
 		return "GLState{" +
-				"program=" + this.program + ", vao=" + this.vao + ", vbo=" + this.vbo + ", ebo=" + this.ebo + ", fbo=" + this.fbo[0] +
+				"program=" + this.program + ", vao=" + this.vao + ", vbo=" + this.vbo + ", ebo=" + this.ebo + ", fbo=" + this.fbo +
 				", text=" + GLEnums.getString(this.texture2D) + "@" + this.activeTextureNumber + ", text0=" + GLEnums.getString(this.texture0) +
 				", FB text0=" + this.frameBufferTexture0 +
 				", FB text1=" + this.frameBufferTexture1 +
@@ -152,19 +157,10 @@ public class GLState
 		GLMC.glBindFramebuffer(GL32.GL_FRAMEBUFFER, 0);
 		boolean frameBufferSet = false;
 		
-		for (int i = 0; i < FBO_MAX; i++)
+		if (GL32.glIsFramebuffer(this.fbo))
 		{
-			int buffer = this.fbo[i];
-			if (i > 0 && buffer == 0)
-			{
-				break;
-			}
-			
-			if (GL32.glIsFramebuffer(buffer))
-			{
-				GLMC.glBindFramebuffer(GL32.GL_FRAMEBUFFER, buffer);
-				frameBufferSet = true;
-			}
+			GLMC.glBindFramebuffer(GL32.GL_FRAMEBUFFER, this.fbo);
+			frameBufferSet = true;
 		}
 		
 		
