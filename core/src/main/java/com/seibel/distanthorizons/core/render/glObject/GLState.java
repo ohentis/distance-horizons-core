@@ -157,7 +157,7 @@ public class GLState
 		GLMC.glBindFramebuffer(GL32.GL_FRAMEBUFFER, 0);
 		boolean frameBufferSet = false;
 		
-		if (GL32.glIsFramebuffer(this.fbo))
+		if (this.fbo != 0 && GL32.glIsFramebuffer(this.fbo))
 		{
 			GLMC.glBindFramebuffer(GL32.GL_FRAMEBUFFER, this.fbo);
 			frameBufferSet = true;
