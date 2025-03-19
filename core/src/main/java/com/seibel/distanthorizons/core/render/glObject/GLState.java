@@ -146,23 +146,27 @@ public class GLState
 				'}';
 	}
 	
-	public void RestoreFrameBuffer()
+	public void restore()
 	{
 		// explicitly unbinding the frame buffer is necessary to prevent GL_CLEAR calls from hitting the wrong buffer
 		GLMC.glBindFramebuffer(GL32.GL_FRAMEBUFFER, 0);
+		boolean frameBufferSet = false;
 		
 		for (int i = 0; i < FBO_MAX; i++)
 		{
 			int buffer = this.fbo[i];
-			if (i > 0 && buffer == 0) break;
+			if (i > 0 && buffer == 0)
+			{
+				break;
+			}
 			
-			GLMC.glBindFramebuffer(GL32.GL_FRAMEBUFFER, GL32.glIsFramebuffer(buffer) ? buffer : 0);
+			if (GL32.glIsFramebuffer(buffer))
+			{
+				GLMC.glBindFramebuffer(GL32.GL_FRAMEBUFFER, buffer);
+				frameBufferSet = true;
+			}
 		}
-	}
-	
-	public void restore()
-	{
-		this.RestoreFrameBuffer();
+		
 		
 		if (this.blend)
 		{
@@ -197,9 +201,13 @@ public class GLState
 		GLMC.glActiveTexture(this.activeTextureNumber);
 		GLMC.glBindTexture(GL32.glIsTexture(this.texture2D) ? this.texture2D : 0);
 		
-		GL32.glFramebufferTexture2D(GL32.GL_FRAMEBUFFER, GL32.GL_COLOR_ATTACHMENT0, GL32.GL_TEXTURE_2D, this.frameBufferTexture0, 0);
-		GL32.glFramebufferTexture2D(GL32.GL_FRAMEBUFFER, GL32.GL_COLOR_ATTACHMENT1, GL32.GL_TEXTURE_2D, this.frameBufferTexture1, 0);
-		GL32.glFramebufferTexture2D(GL32.GL_FRAMEBUFFER, GL32.GL_DEPTH_ATTACHMENT, GL32.GL_TEXTURE_2D, this.frameBufferDepthTexture, 0);
+		// attempting to set textures on the default frame buffer (ID 0) will throw errors
+		if (frameBufferSet)
+		{
+			GL32.glFramebufferTexture2D(GL32.GL_FRAMEBUFFER, GL32.GL_COLOR_ATTACHMENT0, GL32.GL_TEXTURE_2D, this.frameBufferTexture0, 0);
+			GL32.glFramebufferTexture2D(GL32.GL_FRAMEBUFFER, GL32.GL_COLOR_ATTACHMENT1, GL32.GL_TEXTURE_2D, this.frameBufferTexture1, 0);
+			GL32.glFramebufferTexture2D(GL32.GL_FRAMEBUFFER, GL32.GL_DEPTH_ATTACHMENT, GL32.GL_TEXTURE_2D, this.frameBufferDepthTexture, 0);
+		}
 		
 		GL32.glBindVertexArray(GL32.glIsVertexArray(this.vao) ? this.vao : 0);
 		GL32.glBindBuffer(GL32.GL_ARRAY_BUFFER, GL32.glIsBuffer(this.vbo) ? this.vbo : 0);
