@@ -1015,9 +1015,23 @@ public class Config
 				public static class OpenGl
 				{
 					public static ConfigEntry<Boolean> overrideVanillaGLLogger = new ConfigEntry.Builder<Boolean>()
-							.set(ModInfo.IS_DEV_BUILD)
+							.set(true)
 							.comment(""
-									+ "Requires a reboot to change. \n"
+									+ "Defines how OpenGL errors are handled. \n "
+									+ "Requires rebooting Minecraft to change. \n"
+									+ "Will catch OpenGL errors thrown by other mods. \n"
+									+ "")
+							.build();
+					
+					public static ConfigEntry<Boolean> onlyLogGlErrorsOnce = new ConfigEntry.Builder<Boolean>()
+							.set(true)
+							.comment(""
+									+ "If true each Open GL error will only be logged once. \n"
+									+ "Enabling this may cause some error logs to be missed. \n"
+									+ "Does nothing if overrideVanillaGLLogger is set to false. \n"
+									+ " \n"
+									+ "Generally this can be kept as 'true' to prevent log spam. \n"
+									+ "However, Please set this to 'false' if a developer needs your log to debug a GL issue. \n"
 									+ "")
 							.build();
 					

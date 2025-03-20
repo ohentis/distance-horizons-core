@@ -477,7 +477,11 @@
   "distanthorizons.config.client.advanced.debugging.openGl.overrideVanillaGLLogger":
     "Override Vanilla GL Logger",
   "distanthorizons.config.client.advanced.debugging.openGl.overrideVanillaGLLogger.@tooltip":
-    "Defines how OpenGL errors are handled. \n Requires rebooting Minecraft to apply. \nMay incorrectly catch OpenGL errors thrown by other mods.",
+    "Defines how OpenGL errors are handled. \nRequires rebooting Minecraft to change. \nWill catch OpenGL errors thrown by other mods.",
+  "distanthorizons.config.client.advanced.debugging.openGl.onlyLogGlErrorsOnce":
+    "Only Log GL Errors Once",
+  "distanthorizons.config.client.advanced.debugging.openGl.onlyLogGlErrorsOnce.@tooltip":
+    "If true each Open GL error will only be logged once. \nTEnabling this may cause some error logs to be missed. \nDoes nothing if overrideVanillaGLLogger is set to false. \n\nGenerally this can be kept as 'true' to prevent log spam. \nHowever, Please set this to 'false' if a developer needs your log to debug a GL issue. \n",
   "distanthorizons.config.client.advanced.debugging.openGl.glErrorHandlingMode":
     "OpenGL Error Handling Mode",
   "distanthorizons.config.client.advanced.debugging.openGl.glErrorHandlingMode.@tooltip":

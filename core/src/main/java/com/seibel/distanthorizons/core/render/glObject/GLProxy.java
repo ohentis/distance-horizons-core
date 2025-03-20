@@ -38,6 +38,10 @@ import org.lwjgl.opengl.GLCapabilities;
 import org.lwjgl.opengl.GLUtil;
 
 import java.io.PrintStream;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
@@ -51,6 +55,10 @@ public class GLProxy
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	public static final ConfigBasedLogger GL_LOGGER = new ConfigBasedLogger(LogManager.getLogger(GLProxy.class),
 			() -> Config.Common.Logging.logRendererGLEvent.get());
+	
+	public static final Set<String> LOGGED_GL_MESSAGES = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
+	
+	
 	
 	private static GLProxy instance = null;
 	
@@ -279,8 +287,19 @@ public class GLProxy
 		}
 		
 		
+		
+		boolean onlyLogOnce = Config.Client.Advanced.Debugging.OpenGl.onlyLogGlErrorsOnce.get();
+		String errorMessage = "GL ERROR [" + msg.id + "] from [" + msg.source + "]: [" + msg.message + "]"+(onlyLogOnce ? " this message will only be logged once" : "")+".";
+		if (onlyLogOnce
+			&& !LOGGED_GL_MESSAGES.add(errorMessage))
+		{
+			// this message has already been logged
+			return;
+		}
+		
+		
 		// create an exception so we get a stacktrace of where the message was triggered from
-		RuntimeException exception = new RuntimeException("GL ERROR [" + msg.id + "] from [" + msg.source + "]: [" + msg.message + "].");
+		RuntimeException exception = new RuntimeException(errorMessage);
 		
 		if (msg.type == EGLMessageType.ERROR || msg.type == EGLMessageType.UNDEFINED_BEHAVIOR)
 		{
