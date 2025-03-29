@@ -510,10 +510,13 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 			{
 				// TODO memoization is needed for multiplayer, otherwise
 				//  new retrieval requests won't be submitted.
-				//  TODO why is that the case? Shouldn't the missing positions be un-changing?
+				// TODO why is that the case? Shouldn't the missing positions be un-changing?
+				// TODO setting this value to low can cause world gen to slow down significantly
+				//  due to a race condition where the world gen thinks it is finished, but the results
+				//  haven't been saved to file yet, causing the gen to fire again
 				this.missingGenerationPosFunc = Suppliers.memoizeWithExpiration(
 						() -> this.fullDataSourceProvider.getPositionsToRetrieve(this.pos),
-						15, TimeUnit.SECONDS);
+						10, TimeUnit.MINUTES);
 			}
 			
 			LongArrayList missingGenerationPos = this.getMissingGenerationPos();
