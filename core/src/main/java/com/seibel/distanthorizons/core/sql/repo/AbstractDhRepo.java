@@ -25,6 +25,7 @@ import com.seibel.distanthorizons.core.sql.DbConnectionClosedException;
 import com.seibel.distanthorizons.core.sql.dto.IBaseDTO;
 import com.seibel.distanthorizons.core.sql.repo.phantoms.AutoClosableTrackingWrapper;
 import com.seibel.distanthorizons.core.util.KeyedLockContainer;
+import com.seibel.distanthorizons.coreapi.ModInfo;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
@@ -501,7 +502,12 @@ public abstract class AbstractDhRepo<TKey, TDTO extends IBaseDTO<TKey>> implemen
 					}
 					else
 					{
-						LOGGER.warn("Attempting to close already closed database connection: [" + connectionString + "]");
+						// these warnings can be ignored in release builds, as long as the connection is closed it doesn't really matter
+						// TODO fix duplicate closes
+						if (ModInfo.IS_DEV_BUILD)
+						{
+							LOGGER.warn("Attempting to close already closed database connection: [" + connectionString + "]");
+						}
 					}
 				}
 			}
@@ -562,7 +568,12 @@ public abstract class AbstractDhRepo<TKey, TDTO extends IBaseDTO<TKey>> implemen
 					}
 					else
 					{
-						LOGGER.warn("Attempting to close already closed database connection: [" + this.connectionString + "]");
+						// these warnings can be ignored in release builds, as long as the connection is closed it doesn't really matter
+						// TODO fix duplicate closes
+						if (ModInfo.IS_DEV_BUILD)
+						{
+							LOGGER.warn("Attempting to close already closed database connection: [" + this.connectionString + "]");
+						}
 					}
 				}
 				ACTIVE_CONNECTION_STRINGS_BY_REPO.remove(this);
