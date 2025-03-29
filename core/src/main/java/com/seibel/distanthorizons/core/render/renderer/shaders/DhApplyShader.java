@@ -44,7 +44,6 @@ public class DhApplyShader extends AbstractShaderRenderer
 	
 	// uniforms
 	public int gDhColorTextureUniform;
-	public int gDepthMapUniform;
 	
 	
 	
@@ -61,7 +60,6 @@ public class DhApplyShader extends AbstractShaderRenderer
 		
 		// uniform setup
 		this.gDhColorTextureUniform = this.shader.getUniformLocation("gDhColorTexture");
-		this.gDepthMapUniform = this.shader.getUniformLocation("gDhDepthTexture");
 		
 	}
 	
@@ -76,6 +74,18 @@ public class DhApplyShader extends AbstractShaderRenderer
 	@Override
 	protected void onRender()
 	{
+		if (MC_RENDER.mcRendersToFrameBuffer())
+		{
+			this.renderToFrameBuffer();
+		}
+		else
+		{
+			this.renderToMcTexture();
+		}
+	}
+	// TODO merge duplicate code between these to render methods
+	private void renderToFrameBuffer()
+	{
 		int targetFrameBuffer = MC_RENDER.getTargetFrameBuffer();
 		if (targetFrameBuffer == -1)
 		{
@@ -87,17 +97,12 @@ public class DhApplyShader extends AbstractShaderRenderer
 		
 		GLMC.disableDepthTest();
 		
-		GLMC.enableBlend();
-		GL32.glBlendEquation(GL32.GL_FUNC_ADD);
-		GLMC.glBlendFunc(GL32.GL_ONE, GL32.GL_ONE_MINUS_SRC_ALPHA);
+		// blending isn't needed, we're just directly merging the MC and DH textures
+		GLMC.disableBlend();
 		
 		GLMC.glActiveTexture(GL32.GL_TEXTURE0);
 		GLMC.glBindTexture(LodRenderer.getActiveColorTextureId());
 		GL32.glUniform1i(this.gDhColorTextureUniform, 0);
-		
-		GLMC.glActiveTexture(GL32.GL_TEXTURE1);
-		GLMC.glBindTexture(LodRenderer.getActiveDepthTextureId());
-		GL32.glUniform1i(this.gDepthMapUniform, 1);
 		
 		// Copy to MC's framebuffer
 		GLMC.glBindFramebuffer(GL32.GL_FRAMEBUFFER, targetFrameBuffer);
@@ -110,5 +115,55 @@ public class DhApplyShader extends AbstractShaderRenderer
 		GLMC.glBindFramebuffer(GL32.GL_FRAMEBUFFER, targetFrameBuffer);
 		
 	}
+	private void renderToMcTexture()
+	{
+		int targetColorTextureId = MC_RENDER.getColorTextureId();
+		if (targetColorTextureId == -1)
+		{
+			return;
+		}
+		
+		int dhFrameBufferId = LodRenderer.getActiveFramebufferId();
+		if (dhFrameBufferId == -1)
+		{
+			return;
+		}
+		
+		int mcFrameBufferId = MC_RENDER.getTargetFrameBuffer();
+		if (mcFrameBufferId == -1)
+		{
+			return;
+		}
+		
+		
+		
+		GLState state = new GLState();
+		
+		GLMC.disableDepthTest();
+		
+		// blending isn't needed, we're just directly merging the MC and DH textures
+		GLMC.disableBlend();
+		
+		GLMC.glActiveTexture(GL32.GL_TEXTURE0);
+		GLMC.glBindTexture(LodRenderer.getActiveColorTextureId());
+		GL32.glUniform1i(this.gDhColorTextureUniform, 0);
+		
+		
+		
+		GL32.glFramebufferTexture(GL32.GL_DRAW_FRAMEBUFFER, GL32.GL_COLOR_ATTACHMENT0, targetColorTextureId, 0);
+		
+		// Copy to MC's texture via MC's framebuffer
+		GLMC.glBindFramebuffer(GL32.GL_FRAMEBUFFER, dhFrameBufferId);
+		
+		ScreenQuad.INSTANCE.render();
+		
+		
+		// restore everything, except at this point the MC framebuffer should now be used instead
+		state.restore();
+		GLMC.glBindFramebuffer(GL32.GL_FRAMEBUFFER, mcFrameBufferId);
+		
+	}
+	
+	
 	
 }
