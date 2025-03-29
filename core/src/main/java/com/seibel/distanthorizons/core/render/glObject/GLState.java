@@ -57,10 +57,10 @@ public class GLState
 	public boolean depth;
 	public boolean writeToDepthBuffer;
 	public int depthFunc;
-	//public boolean stencil;
-	//public int stencilFunc;
-	//public int stencilRef;
-	//public int stencilMask;
+	public boolean stencil;
+	public int stencilFunc;
+	public int stencilRef;
+	public int stencilMask;
 	public int[] view;
 	public boolean cull;
 	public int cullMode;
@@ -121,10 +121,10 @@ public class GLState
 		this.depth = GL32.glIsEnabled(GL32.GL_DEPTH_TEST);
 		this.writeToDepthBuffer = GL32.glGetInteger(GL32.GL_DEPTH_WRITEMASK) == GL32.GL_TRUE;
 		this.depthFunc = GL32.glGetInteger(GL32.GL_DEPTH_FUNC);
-		//this.stencil = GL32.glIsEnabled(GL32.GL_STENCIL_TEST);
-		//this.stencilFunc = GL32.glGetInteger(GL32.GL_STENCIL_FUNC);
-		//this.stencilRef = GL32.glGetInteger(GL32.GL_STENCIL_REF);
-		//this.stencilMask = GL32.glGetInteger(GL32.GL_STENCIL_VALUE_MASK);
+		this.stencil = GL32.glIsEnabled(GL32.GL_STENCIL_TEST);
+		this.stencilFunc = GL32.glGetInteger(GL32.GL_STENCIL_FUNC);
+		this.stencilRef = GL32.glGetInteger(GL32.GL_STENCIL_REF);
+		this.stencilMask = GL32.glGetInteger(GL32.GL_STENCIL_VALUE_MASK);
 		this.view = new int[4];
 		GL32.glGetIntegerv(GL32.GL_VIEWPORT, this.view);
 		this.cull = GL32.glIsEnabled(GL32.GL_CULL_FACE);
@@ -143,11 +143,11 @@ public class GLState
 				", FB depth=" + this.frameBufferDepthTexture +
 				", blend=" + this.blend + ", scissor=" + this.scissor + ", blendMode=" + GLEnums.getString(this.blendSrcColor) + "," + GLEnums.getString(this.blendDstColor) +
 				", depth=" + this.depth +
-				//", depthFunc=" + GLEnums.getString(this.depthFunc) + ", stencil=" + this.stencil + ", stencilFunc=" +
-				//GLEnums.getString(this.stencilFunc) + ", stencilRef=" + this.stencilRef + ", stencilMask=" + this.stencilMask +
+				", depthFunc=" + GLEnums.getString(this.depthFunc) + ", stencil=" + this.stencil +
+				", stencilFunc=" + GLEnums.getString(this.stencilFunc) + ", stencilRef=" + this.stencilRef + ", stencilMask=" + this.stencilMask +
 				", view={x:" + this.view[0] + ", y:" + this.view[1] +
-				", w:" + this.view[2] + ", h:" + this.view[3] + "}" + ", cull=" + this.cull + ", cullMode="
-				+ GLEnums.getString(this.cullMode) + ", polyMode=" + GLEnums.getString(this.polyMode) +
+				", w:" + this.view[2] + ", h:" + this.view[3] + "}" + ", cull=" + this.cull +
+				", cullMode=" + GLEnums.getString(this.cullMode) + ", polyMode=" + GLEnums.getString(this.polyMode) +
 				'}';
 	}
 	
@@ -233,15 +233,15 @@ public class GLState
 		}
 		GLMC.glDepthFunc(this.depthFunc);
 		
-		//if (this.stencil)
-		//{
-		//	GL32.glEnable(GL32.GL_STENCIL_TEST);
-		//}
-		//else
-		//{
-		//	GL32.glDisable(GL32.GL_STENCIL_TEST);
-		//}
-		//GL32.glStencilFunc(this.stencilFunc, this.stencilRef, this.stencilMask);
+		if (this.stencil)
+		{
+			GL32.glEnable(GL32.GL_STENCIL_TEST);
+		}
+		else
+		{
+			GL32.glDisable(GL32.GL_STENCIL_TEST);
+		}
+		GL32.glStencilFunc(this.stencilFunc, this.stencilRef, this.stencilMask);
 		
 		GL32.glViewport(this.view[0], this.view[1], this.view[2], this.view[3]);
 		if (this.cull)
