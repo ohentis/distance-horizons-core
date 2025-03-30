@@ -45,6 +45,7 @@ public class FogApplyShader extends AbstractShaderRenderer
 	
 	// uniforms
 	public int colorTextureUniform;
+	public int depthTextureUniform;
 	
 	
 	
@@ -63,6 +64,7 @@ public class FogApplyShader extends AbstractShaderRenderer
 		
 		// uniform setup
 		this.colorTextureUniform = this.shader.getUniformLocation("uColorTexture");
+		this.depthTextureUniform = this.shader.getUniformLocation("uDepthTexture");
 		
 	}
 	
@@ -78,6 +80,11 @@ public class FogApplyShader extends AbstractShaderRenderer
 		GLMC.glActiveTexture(GL32.GL_TEXTURE0);
 		GLMC.glBindTexture(this.fogTexture);
 		GL32.glUniform1i(this.colorTextureUniform, 0);
+		
+		GLMC.glActiveTexture(GL32.GL_TEXTURE1);
+		GLMC.glBindTexture(LodRenderer.getActiveDepthTextureId());
+		GL32.glUniform1i(this.depthTextureUniform, 1);
+		
 	}
 	
 	

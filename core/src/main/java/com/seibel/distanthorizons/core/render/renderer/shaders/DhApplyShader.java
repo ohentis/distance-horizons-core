@@ -44,6 +44,7 @@ public class DhApplyShader extends AbstractShaderRenderer
 	
 	// uniforms
 	public int gDhColorTextureUniform;
+	public int gDepthMapUniform;
 	
 	
 	
@@ -60,6 +61,7 @@ public class DhApplyShader extends AbstractShaderRenderer
 		
 		// uniform setup
 		this.gDhColorTextureUniform = this.shader.getUniformLocation("gDhColorTexture");
+		this.gDepthMapUniform = this.shader.getUniformLocation("gDhDepthTexture");
 		
 	}
 	
@@ -97,12 +99,23 @@ public class DhApplyShader extends AbstractShaderRenderer
 		
 		GLMC.disableDepthTest();
 		
-		// blending isn't needed, we're just directly merging the MC and DH textures
+		// blending isn't needed, we're manually merging the MC and DH textures
+		// Note: this prevents the sun/moon and stars from rendering through transparent LODs,
+		// however this also fixes transparent LODs from glowing when rendered against the sky during the day
 		GLMC.disableBlend();
+		
+		// old blending logic in case it's ever needed:
+		//GLMC.enableBlend();
+		//GL32.glBlendEquation(GL32.GL_FUNC_ADD);
+		//GLMC.glBlendFunc(GL32.GL_ONE, GL32.GL_ONE_MINUS_SRC_ALPHA);
 		
 		GLMC.glActiveTexture(GL32.GL_TEXTURE0);
 		GLMC.glBindTexture(LodRenderer.getActiveColorTextureId());
 		GL32.glUniform1i(this.gDhColorTextureUniform, 0);
+		
+		GLMC.glActiveTexture(GL32.GL_TEXTURE1);
+		GLMC.glBindTexture(LodRenderer.getActiveDepthTextureId());
+		GL32.glUniform1i(this.gDepthMapUniform, 1);
 		
 		// Copy to MC's framebuffer
 		GLMC.glBindFramebuffer(GL32.GL_FRAMEBUFFER, targetFrameBuffer);
@@ -142,11 +155,22 @@ public class DhApplyShader extends AbstractShaderRenderer
 		GLMC.disableDepthTest();
 		
 		// blending isn't needed, we're just directly merging the MC and DH textures
+		// Note: this prevents the sun/moon and stars from rendering through transparent LODs,
+		// however this also fixes
 		GLMC.disableBlend();
+		
+		// old blending logic in case it's ever needed:
+		//GLMC.enableBlend();
+		//GL32.glBlendEquation(GL32.GL_FUNC_ADD);
+		//GLMC.glBlendFunc(GL32.GL_ONE, GL32.GL_ONE_MINUS_SRC_ALPHA);
 		
 		GLMC.glActiveTexture(GL32.GL_TEXTURE0);
 		GLMC.glBindTexture(LodRenderer.getActiveColorTextureId());
 		GL32.glUniform1i(this.gDhColorTextureUniform, 0);
+		
+		GLMC.glActiveTexture(GL32.GL_TEXTURE1);
+		GLMC.glBindTexture(LodRenderer.getActiveDepthTextureId());
+		GL32.glUniform1i(this.gDepthMapUniform, 1);
 		
 		
 		
