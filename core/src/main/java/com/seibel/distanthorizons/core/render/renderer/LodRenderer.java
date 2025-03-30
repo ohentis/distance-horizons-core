@@ -571,6 +571,10 @@ public class LodRenderer
 		GLMC.glDepthFunc(GL32.GL_LESS);
 		GLMC.enableDepthMask();
 		
+		// This is required for MC versions 1.21.5+
+		// due to MC updating the lightmap by changing the viewport size
+		GL32.glViewport(0, 0, this.cachedWidth, this.cachedHeight);
+		
 		/*---------Bind required objects--------*/
 		// Setup LodRenderProgram and the LightmapTexture if it has not yet been done
 		// also binds LightmapTexture, VAO, and ShaderProgram
