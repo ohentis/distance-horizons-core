@@ -733,25 +733,6 @@ public class LodRenderer
 	
 	
 	
-	private Color getFogColor(float partialTicks)
-	{
-		Color fogColor;
-		
-		if (Config.Client.Advanced.Graphics.Fog.colorMode.get() == EDhApiFogColorMode.USE_SKY_COLOR)
-		{
-			fogColor = MC_RENDER.getSkyColor();
-		}
-		else
-		{
-			fogColor = MC_RENDER.getFogColor(partialTicks);
-		}
-		
-		return fogColor;
-	}
-	private Color getSpecialFogColor(float partialTicks) { return MC_RENDER.getSpecialFogColor(partialTicks); }
-	
-	
-	
 	//===============//
 	// API functions //
 	//===============//
