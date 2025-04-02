@@ -290,7 +290,7 @@ public class WorldGenModule implements Closeable
 			remainingChunkCount += this.worldGenerationQueue.getQueuedChunkCount();
 			String remainingChunkCountStr = F3Screen.NUMBER_FORMAT.format(remainingChunkCount);
 			
-			String message = "DH Gen/Import: " + remainingChunkCountStr + " chunks left.";
+			String message = "DH is loading chunks. " + remainingChunkCountStr + " left.";
 			
 			// show a message about how to disable progress logging if requested
 			int msToShowDisableInstructions = Config.Common.WorldGenerator.generationProgressDisableMessageDisplayTimeInSeconds.get() * 1_000;
