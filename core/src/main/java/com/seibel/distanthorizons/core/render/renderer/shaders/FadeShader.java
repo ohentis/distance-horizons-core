@@ -165,6 +165,7 @@ public class FadeShader extends AbstractShaderRenderer
 		GL32.glUniform1i(this.uMcDepthTexture, 0);
 		
 		GLMC.glActiveTexture(GL32.GL_TEXTURE1);
+		// FIXME it's possible for this to return an invalid texture ID if the renderer is being re-built at the same time
 		GLMC.glBindTexture(LodRenderer.getActiveDepthTextureId());
 		GL32.glUniform1i(this.uDhDepthTexture, 1);
 		

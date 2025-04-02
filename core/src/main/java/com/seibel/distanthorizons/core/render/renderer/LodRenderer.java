@@ -746,7 +746,10 @@ public class LodRenderer
 	public static int getActiveColorTextureId() { return activeColorTextureId; }
 	
 	private void setActiveDepthTextureId(int depthTextureId) { activeDepthTextureId = depthTextureId; }
-	/** Returns -1 if no texture has been bound yet */
+	/**
+	 * FIXME it's possible for this to return an invalid texture ID if the renderer is being re-built at the same time 
+	 * Returns -1 if no texture has been bound yet 
+	 */
 	public static int getActiveDepthTextureId() { return activeDepthTextureId; }
 	
 	
