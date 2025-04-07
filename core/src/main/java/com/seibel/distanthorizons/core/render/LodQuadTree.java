@@ -399,9 +399,11 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 			// prepare this section for rendering
 			if (!renderSection.gpuUploadInProgress()
 				&& renderSection.renderBuffer == null
+				// TODO this is commented out since some users reported LODs refusing to
+				//  load at their expected higher-detail levels
 				// this check is specifically for N-sized world generators where the higher quality
 				// data source may not exist yet, this is done to prevent holes while waiting for said generator
-				&& renderSection.getFullDataSourceExists()
+				//&& renderSection.getFullDataSourceExists()
 				)
 			{
 				nodesNeedingLoading.add(renderSection);
