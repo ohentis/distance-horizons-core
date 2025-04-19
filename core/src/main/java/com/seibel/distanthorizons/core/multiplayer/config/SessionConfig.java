@@ -18,7 +18,7 @@ public class SessionConfig implements INetworkObject
 	private static final LinkedHashMap<String, Entry> CONFIG_ENTRIES = new LinkedHashMap<>();
 	
 	
-	private final LinkedHashMap<String, Object> values = new LinkedHashMap<>();
+	private final HashMap<String, Object> values = new HashMap<>();
 	public SessionConfig constrainingConfig;
 	
 	
@@ -106,7 +106,7 @@ public class SessionConfig implements INetworkObject
 	// internal getters //
 	//==================//
 	
-	private <T> T getValue(ConfigEntry<T> configEntry) { return this.getValue(configEntry.getChatCommandName()); }
+	public <T> T getValue(ConfigEntry<T> configEntry) { return this.getValue(configEntry.getChatCommandName()); }
 	@SuppressWarnings("unchecked")
 	private <T> T getValue(String name)
 	{
@@ -121,6 +121,12 @@ public class SessionConfig implements INetworkObject
 		return (this.constrainingConfig != null
 				? (T) entry.valueConstrainer.apply(value, this.constrainingConfig.getValue(name))
 				: value);
+	}
+	
+	public <T> void overrideValue(ConfigEntry<T> configEntry, T value) { this.overrideValue(configEntry.getChatCommandName(), value); }
+	private void overrideValue(String name, Object value)
+	{
+		this.values.put(name, value);
 	}
 	
 	private Map<String, ?> getValues()

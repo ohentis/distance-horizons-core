@@ -56,6 +56,12 @@ public class ClientNetworkState implements Closeable
 	private long serverTimeOffset = 0;
 	public long getServerTimeOffset() { return this.serverTimeOffset; }
 	
+	private final ClientCongestionControl congestionControl = new ClientCongestionControl(
+			() -> this.sessionConfig.getMaxDataTransferSpeed(),
+			this.fullDataPayloadReceiver::hasIncompleteBuffers,
+			x -> this.sendConfigMessage(false)
+	);
+	
 	
 	
 	//=============//
@@ -116,6 +122,7 @@ public class ClientNetworkState implements Closeable
 			});
 			
 			this.networkSession.registerHandler(FullDataSplitMessage.class, this.fullDataPayloadReceiver::receiveChunk);
+			this.networkSession.registerHandler(FullDataSplitMessage.class, this.congestionControl::onPayloadReceived);
 		}
 	}
 	
@@ -127,10 +134,18 @@ public class ClientNetworkState implements Closeable
 	
 	
 	
-	public void sendConfigMessage()
+	public void sendConfigMessage() { this.sendConfigMessage(true); }
+	public void sendConfigMessage(boolean blocking)
 	{
-		this.configReceived = false;
-		this.getSession().sendMessage(new SessionConfigMessage(new SessionConfig()));
+		SessionConfig sessionConfig = new SessionConfig();
+		sessionConfig.overrideValue(Config.Server.maxDataTransferSpeed, (int) this.congestionControl.getCurrentRate() / 1000);
+		
+		if (blocking)
+		{
+			this.configReceived = false;
+		}
+		
+		this.getSession().sendMessage(new SessionConfigMessage(sessionConfig));
 	}
 	
 	
