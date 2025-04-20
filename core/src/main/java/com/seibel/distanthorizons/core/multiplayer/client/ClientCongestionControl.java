@@ -16,65 +16,63 @@ public class ClientCongestionControl
 	private final AtomicLong bytesReceived = new AtomicLong(0);
 	private volatile double lastIntervalThroughput = 0;
 	
-	private double currentRate = 50000;
+	private double desiredRate = 50000;
 	private long lastAdjustTime = System.currentTimeMillis();
 	
-	private final IntSupplier currentMaxRateSupplier;
-	private final BooleanSupplier hasIncompleteBuffersSupplier;
-	private final IntConsumer rateUpdateConsumer;
+	private final IntSupplier currentRateSupplier;
+	private final Runnable rateUpdateHandler;
 	
 	
 	public ClientCongestionControl(
-			IntSupplier currentMaxRateSupplier,
-			BooleanSupplier hasIncompleteBuffersSupplier,
-			IntConsumer rateUpdateConsumer
+			IntSupplier currentRateSupplier,
+			Runnable rateUpdateHandler
 	)
 	{
-		this.currentMaxRateSupplier = currentMaxRateSupplier;
-		this.hasIncompleteBuffersSupplier = hasIncompleteBuffersSupplier;
-		this.rateUpdateConsumer = rateUpdateConsumer;
+		this.currentRateSupplier = currentRateSupplier;
+		this.rateUpdateHandler = rateUpdateHandler;
 	}
 	
 	
 	public void onPayloadReceived(FullDataSplitMessage message)
 	{
-		this.bytesReceived.addAndGet(message.buffer.readableBytes());
-		
 		long now = System.currentTimeMillis();
 		if (now - this.lastAdjustTime >= INTERVAL_MS)
 		{
 			this.adjustRate(now);
 		}
+		
+		this.bytesReceived.addAndGet(message.buffer.readableBytes());
 	}
 	
 	private void adjustRate(long now)
 	{
+		this.desiredRate = this.currentRateSupplier.getAsInt() * 1000;
 		double throughput = this.bytesReceived.getAndSet(0);
 		
 		if (throughput != 0 && throughput >= this.lastIntervalThroughput)
 		{
-			this.currentRate = Math.min(this.currentRate, this.currentMaxRateSupplier.getAsInt() * 1000) + ADDITIVE_INCREASE;
+			this.desiredRate += ADDITIVE_INCREASE;
 		}
-		else if (this.hasIncompleteBuffersSupplier.getAsBoolean())
+		else
 		{
-			this.currentRate *= MULTIPLICATIVE_DECREASE;
+			this.desiredRate *= MULTIPLICATIVE_DECREASE;
 			throughput *= MULTIPLICATIVE_DECREASE;
 			
-			if (this.currentRate < 1)
+			if (this.desiredRate < 1)
 			{
-				this.currentRate = 1;
+				this.desiredRate = 1;
 			}
 		}
 		
 		this.lastIntervalThroughput = throughput;
 		this.lastAdjustTime = now;
 		
-		this.rateUpdateConsumer.accept((int) this.currentRate / 1000);
+		this.rateUpdateHandler.run();
 	}
 	
-	public double getCurrentRate()
+	public int getDesiredRate()
 	{
-		return this.currentRate;
+		return (int) (this.desiredRate / 1000);
 	}
 	
 }

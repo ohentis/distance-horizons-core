@@ -34,9 +34,6 @@ public class FullDataPayloadReceiver implements AutoCloseable
 			})
 			.build().asMap();
 	
-	
-	public boolean hasIncompleteBuffers() { return !this.buffersById.isEmpty(); }
-	
 	@Override
 	public void close()
 	{

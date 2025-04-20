@@ -1,6 +1,7 @@
 package com.seibel.distanthorizons.core.multiplayer.client;
 
 import com.seibel.distanthorizons.core.config.Config;
+import com.seibel.distanthorizons.core.config.listeners.ConfigChangeListener;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
 import com.seibel.distanthorizons.core.multiplayer.config.SessionConfig;
@@ -58,9 +59,14 @@ public class ClientNetworkState implements Closeable
 	
 	private final ClientCongestionControl congestionControl = new ClientCongestionControl(
 			() -> this.sessionConfig.getMaxDataTransferSpeed(),
-			this.fullDataPayloadReceiver::hasIncompleteBuffers,
-			x -> this.sendConfigMessage(false)
+			() -> {
+				if (Config.Server.enableAdaptiveTransferSpeed.get())
+				{
+					this.sendConfigMessage(false);
+				}
+			}
 	);
+	private final ConfigChangeListener<Boolean> adaptiveTransferSpeedListener = new ConfigChangeListener<>(Config.Server.enableAdaptiveTransferSpeed, this::sendConfigMessage);
 	
 	
 	
@@ -138,7 +144,11 @@ public class ClientNetworkState implements Closeable
 	public void sendConfigMessage(boolean blocking)
 	{
 		SessionConfig sessionConfig = new SessionConfig();
-		sessionConfig.overrideValue(Config.Server.maxDataTransferSpeed, (int) this.congestionControl.getCurrentRate() / 1000);
+		
+		if (Config.Server.enableAdaptiveTransferSpeed.get())
+		{
+			sessionConfig.constrainValue(Config.Server.maxDataTransferSpeed, this.congestionControl.getDesiredRate());
+		}
 		
 		if (blocking)
 		{
@@ -181,6 +191,7 @@ public class ClientNetworkState implements Closeable
 	public void close()
 	{
 		this.fullDataPayloadReceiver.close();
+		this.adaptiveTransferSpeedListener.close();
 		this.configAnyChangeListener.close();
 		this.networkSession.close();
 	}

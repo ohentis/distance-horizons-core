@@ -746,6 +746,10 @@
     "Maximum Data Transfer Speed, KB/s",
   "distanthorizons.config.server.maxDataTransferSpeed.@tooltip":
     "Maximum speed for uploading LODs to the clients, in KB/s.\nValue of 0 disables the limit.",
+  "distanthorizons.config.server.enableAdaptiveTransferSpeed":
+    "Enable Adaptive Transfer Speed",
+  "distanthorizons.config.server.enableAdaptiveTransferSpeed.@tooltip":
+    "Enables adaptive transfer speed based on client performance.\nIf true, DH will automatically adjust transfer rate to minimize connection lag.\nIf false, transfer speed will remain fixed.",
 
 
   "distanthorizons.config.server.experimental":

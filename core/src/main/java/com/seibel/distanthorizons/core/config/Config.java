@@ -1713,6 +1713,15 @@ public class Config
 						+ "Value of 0 disables the limit."
 						+ "")
 				.build();
+		public static ConfigEntry<Boolean> enableAdaptiveTransferSpeed = new ConfigEntry.Builder<Boolean>()
+				.set(true)
+				.comment(""
+						+ "Enables adaptive transfer speed based on client performance.\n"
+						+ "If true, DH will automatically adjust transfer rate to minimize connection lag.\n"
+						+ "If false, transfer speed will remain fixed.\n"
+						+ "")
+				.build();
+		
 		
 		public static ConfigCategory experimental = new ConfigCategory.Builder().set(Experimental.class).build();
 		

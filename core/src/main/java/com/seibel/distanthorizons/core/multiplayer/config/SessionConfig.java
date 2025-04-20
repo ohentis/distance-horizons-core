@@ -106,7 +106,7 @@ public class SessionConfig implements INetworkObject
 	// internal getters //
 	//==================//
 	
-	public <T> T getValue(ConfigEntry<T> configEntry) { return this.getValue(configEntry.getChatCommandName()); }
+	private <T> T getValue(ConfigEntry<T> configEntry) { return this.getValue(configEntry.getChatCommandName()); }
 	@SuppressWarnings("unchecked")
 	private <T> T getValue(String name)
 	{
@@ -123,10 +123,11 @@ public class SessionConfig implements INetworkObject
 				: value);
 	}
 	
-	public <T> void overrideValue(ConfigEntry<T> configEntry, T value) { this.overrideValue(configEntry.getChatCommandName(), value); }
-	private void overrideValue(String name, Object value)
+	public <T> void constrainValue(ConfigEntry<T> configEntry, T value) { this.constrainValue(configEntry.getChatCommandName(), value); }
+	private void constrainValue(String name, Object value)
 	{
-		this.values.put(name, value);
+		Entry entry = CONFIG_ENTRIES.get(name);
+		this.values.put(name, entry.valueConstrainer.apply(this.getValue(name), value));
 	}
 	
 	private Map<String, ?> getValues()
