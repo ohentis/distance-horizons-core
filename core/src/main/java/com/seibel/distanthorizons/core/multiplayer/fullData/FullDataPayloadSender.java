@@ -13,7 +13,7 @@ import java.util.function.*;
 
 public class FullDataPayloadSender implements AutoCloseable
 {
-	private static final int TICK_RATE = 4;
+	private static final int TICK_RATE = 20;
 	
 	/** 1 Mebibyte minus 576 bytes for other info */
 	public static final int FULL_DATA_SPLIT_SIZE_IN_BYTES = 1_048_000;
