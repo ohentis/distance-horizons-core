@@ -10,26 +10,29 @@ import java.util.function.IntSupplier;
 public class ClientCongestionControl
 {
 	private static final double ADDITIVE_INCREASE = 50000;
-	private static final double MULTIPLICATIVE_DECREASE = 0.75;
 	private static final long INTERVAL_MS = 1000;
 	
-	private final AtomicLong bytesReceived = new AtomicLong(0);
-	private volatile double lastIntervalThroughput = 0;
-	
-	private double desiredRate = 50000;
-	private long lastAdjustTime = System.currentTimeMillis();
-	
-	private final IntSupplier currentRateSupplier;
 	private final Runnable rateUpdateHandler;
+	
+	private final AtomicLong bytesReceived = new AtomicLong(0);
+	
+	private double desiredRate;
+	private long lastAdjustTime;
 	
 	
 	public ClientCongestionControl(
-			IntSupplier currentRateSupplier,
 			Runnable rateUpdateHandler
 	)
 	{
-		this.currentRateSupplier = currentRateSupplier;
 		this.rateUpdateHandler = rateUpdateHandler;
+		this.reset();
+	}
+	
+	public void reset()
+	{
+		this.desiredRate = ADDITIVE_INCREASE;
+		this.lastAdjustTime = System.currentTimeMillis();
+		this.bytesReceived.set(0);
 	}
 	
 	
@@ -46,27 +49,17 @@ public class ClientCongestionControl
 	
 	private void adjustRate(long now)
 	{
-		this.desiredRate = this.currentRateSupplier.getAsInt() * 1000;
 		double throughput = this.bytesReceived.getAndSet(0);
-		
-		if (throughput != 0 && throughput >= this.lastIntervalThroughput)
+		if (throughput >= this.desiredRate)
 		{
 			this.desiredRate += ADDITIVE_INCREASE;
 		}
 		else
 		{
-			this.desiredRate *= MULTIPLICATIVE_DECREASE;
-			throughput *= MULTIPLICATIVE_DECREASE;
-			
-			if (this.desiredRate < 1)
-			{
-				this.desiredRate = 1;
-			}
+			this.desiredRate = Math.max(throughput - ADDITIVE_INCREASE / 2, 1000);
 		}
 		
-		this.lastIntervalThroughput = throughput;
 		this.lastAdjustTime = now;
-		
 		this.rateUpdateHandler.run();
 	}
 	

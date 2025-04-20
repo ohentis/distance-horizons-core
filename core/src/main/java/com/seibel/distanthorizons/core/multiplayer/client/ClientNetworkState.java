@@ -58,7 +58,6 @@ public class ClientNetworkState implements Closeable
 	public long getServerTimeOffset() { return this.serverTimeOffset; }
 	
 	private final ClientCongestionControl congestionControl = new ClientCongestionControl(
-			() -> this.sessionConfig.getMaxDataTransferSpeed(),
 			() -> {
 				if (Config.Server.enableAdaptiveTransferSpeed.get())
 				{
@@ -66,7 +65,14 @@ public class ClientNetworkState implements Closeable
 				}
 			}
 	);
-	private final ConfigChangeListener<Boolean> adaptiveTransferSpeedListener = new ConfigChangeListener<>(Config.Server.enableAdaptiveTransferSpeed, this::sendConfigMessage);
+	private final ConfigChangeListener<Boolean> adaptiveTransferSpeedListener = new ConfigChangeListener<>(Config.Server.enableAdaptiveTransferSpeed, isEnabled -> {
+		if (isEnabled)
+		{
+			this.congestionControl.reset();
+		}
+		
+		this.sendConfigMessage();
+	});
 	
 	
 	
