@@ -61,3 +61,11 @@ shadowJar {
 //    relocate "it.unimi.dsi.fastutil", "${librariesLocation}.unimi.dsi.fastutil"
     mergeServiceFiles()
 }
+
+distTar {
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+}
+
+distZip {
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+}
