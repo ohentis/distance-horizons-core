@@ -33,9 +33,9 @@ public class SessionConfig implements INetworkObject
 		
 		registerConfigEntry(Config.Common.WorldGenerator.enableDistantGeneration, Boolean::logicalAnd);
 		registerConfigEntry(Config.Server.maxGenerationRequestDistance, Math::min);
-		registerConfigEntry(Config.Server.generationBoundsX, (x, y) -> x);
-		registerConfigEntry(Config.Server.generationBoundsZ, (x, y) -> x);
-		registerConfigEntry(Config.Server.generationBoundsRadius, (x, y) -> x);
+		registerConfigEntry(Config.Server.generationBoundsX, (x, y) -> y);
+		registerConfigEntry(Config.Server.generationBoundsZ, (x, y) -> y);
+		registerConfigEntry(Config.Server.generationBoundsRadius, (x, y) -> y);
 		registerConfigEntry(Config.Server.generationRequestRateLimit, Math::min);
 		
 		registerConfigEntry(Config.Server.enableRealTimeUpdates, Boolean::logicalAnd);
@@ -119,7 +119,7 @@ public class SessionConfig implements INetworkObject
 		}
 		
 		return (this.constrainingConfig != null
-				? (T) entry.valueConstrainer.apply(value, this.constrainingConfig.getValue(name))
+				? (T) entry.valueConstrainer.apply(this.constrainingConfig.getValue(name), value)
 				: value);
 	}
 	

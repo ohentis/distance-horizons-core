@@ -151,10 +151,9 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 				
 				if (Config.Server.generationBoundsRadius.get() > 0)
 				{
-					double coordinateScale = this.serverLevelWrapper.getDimensionType().getCoordinateScale();
 					if (DhSectionPos.getChebyshevSignedBlockDistance(message.sectionPos, new DhBlockPos2D(
-							(int) (Config.Server.generationBoundsX.get() / coordinateScale),
-							(int) (Config.Server.generationBoundsZ.get() / coordinateScale)
+							serverPlayerState.sessionConfig.getGenerationBoundsX(),
+							serverPlayerState.sessionConfig.getGenerationBoundsZ()
 					)) > Config.Server.generationBoundsRadius.get())
 					{
 						message.sendResponse(new RequestOutOfRangeException("Section out of allowed bounds"));
