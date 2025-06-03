@@ -59,45 +59,61 @@ public class FullDataSourceRequestHandler
 		}
 		
 		
-		// the client timestamp will be null if we want to retrieve the LOD regardless of when it was last updated
-		long clientTimestamp = (message.clientTimestamp != null) ? message.clientTimestamp : -1;
-		// the server timestamp will be null if no LOD data exists for this position
-		Long serverTimestamp = this.fullDataSourceProvider().getTimestampForPos(message.sectionPos);
-		if (serverTimestamp == null
-			|| serverTimestamp <= clientTimestamp)
+		
+		AbstractExecutorService fileHandlerExecutor = ThreadPoolUtil.getFileHandlerExecutor();
+		if (fileHandlerExecutor == null)
 		{
-			// either no data exists to sync, or the client is already up to date
-			rateLimiterSet.syncOnLoginRateLimiter.release();
-			message.sendResponse(new FullDataSourceResponseMessage(null));
+			// shouldn't normally happen, but just in case
+			LOGGER.warn("Unable to send FullDataSourceResponseMessage - getFileHandlerExecutor() is null");
 			return;
 		}
 		
-		
-		AbstractExecutorService executor = ThreadPoolUtil.getNetworkCompressionExecutor();
-		if (executor == null)
+		AbstractExecutorService networkCompressionExecutor = ThreadPoolUtil.getNetworkCompressionExecutor();
+		if (networkCompressionExecutor == null)
 		{
 			// shouldn't normally happen, but just in case
 			LOGGER.warn("Unable to send FullDataSourceResponseMessage - getNetworkCompressionExecutor() is null");
 			return;
 		}
 		
-		this.fullDataSourceProvider().getAsync(message.sectionPos).thenAcceptAsync(fullDataSource ->
-		{
-			try (FullDataPayload payload = new FullDataPayload(fullDataSource, this.getAllBeamsForPos(message.sectionPos)))
-			{
-				fullDataSource.close();
-				
-				serverPlayerState.fullDataPayloadSender.sendInChunks(payload, () ->
-				{
-					message.sendResponse(new FullDataSourceResponseMessage(payload));
-					rateLimiterSet.syncOnLoginRateLimiter.release();
+		CompletableFuture.completedFuture(null)
+				.thenComposeAsync(v -> {
+					// the client timestamp will be null if we want to retrieve the LOD regardless of when it was last updated
+					long clientTimestamp = (message.clientTimestamp != null) ? message.clientTimestamp : -1;
+					// the server timestamp will be null if no LOD data exists for this position
+					Long serverTimestamp = this.fullDataSourceProvider().getTimestampForPos(message.sectionPos);
+					if (serverTimestamp == null
+							|| serverTimestamp <= clientTimestamp)
+					{
+						// either no data exists to sync, or the client is already up to date
+						rateLimiterSet.syncOnLoginRateLimiter.release();
+						message.sendResponse(new FullDataSourceResponseMessage(null));
+						return null;
+					}
+					
+					return this.fullDataSourceProvider().getAsync(message.sectionPos);
+				}, fileHandlerExecutor)
+				.thenAcceptAsync(fullDataSource -> {
+					if (fullDataSource == null)
+					{
+						return;
+					}
+					
+					try (FullDataPayload payload = new FullDataPayload(fullDataSource, this.getAllBeamsForPos(message.sectionPos)))
+					{
+						fullDataSource.close();
+						
+						serverPlayerState.fullDataPayloadSender.sendInChunks(payload, () ->
+						{
+							message.sendResponse(new FullDataSourceResponseMessage(payload));
+							rateLimiterSet.syncOnLoginRateLimiter.release();
+						});
+					}
+				}, networkCompressionExecutor)
+				.exceptionally(e -> {
+					LOGGER.error("Unexpected issue getting request for pos [" + DhSectionPos.toString(message.sectionPos) + "], error: [" + e.getMessage() + "].", e);
+					return null;
 				});
-			}
-			catch (Exception e)
-			{
-				LOGGER.error("Unexpected issue getting request for pos ["+DhSectionPos.toString(message.sectionPos)+"], error: ["+e.getMessage()+"].", e);
-			}
-		}, executor);
 	}
 	
 	public void queueWorldGenForRequestMessage(ServerPlayerState serverPlayerState, FullDataSourceRequestMessage message, ServerPlayerState.RateLimiterSet rateLimiterSet)
