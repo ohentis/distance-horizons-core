@@ -23,6 +23,7 @@ import com.seibel.distanthorizons.api.interfaces.override.rendering.IDhApiFrameb
 import com.seibel.distanthorizons.api.interfaces.override.rendering.IDhApiShaderProgram;
 import com.seibel.distanthorizons.api.methods.events.abstractEvents.*;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
+import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiTextureCreatedParam;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.ColumnRenderBuffer;
 import com.seibel.distanthorizons.core.dependencyInjection.ModAccessorInjector;
@@ -692,12 +693,15 @@ public class LodRenderer
 		this.cachedWidth = MC_RENDER.getTargetFrameBufferViewportWidth();
 		this.cachedHeight = MC_RENDER.getTargetFrameBufferViewportHeight();
 		
+		DhApiTextureCreatedParam textureCreatedParam = new DhApiTextureCreatedParam(
+				oldWidth, oldHeight,
+				this.cachedWidth, this.cachedHeight
+		);
 		
-		ApiEventInjector.INSTANCE.fireAllEvents(DhApiColorDepthTextureCreatedEvent.class, 
-				new DhApiColorDepthTextureCreatedEvent.EventParam(
-						oldWidth, oldHeight,
-						this.cachedWidth, this.cachedHeight
-				));
+		
+		
+		ApiEventInjector.INSTANCE.fireAllEvents(DhApiColorDepthTextureCreatedEvent.class, new DhApiColorDepthTextureCreatedEvent.EventParam(textureCreatedParam));
+		ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeColorDepthTextureCreatedEvent.class, textureCreatedParam);
 				
 		
 		// also update the override if present
@@ -729,6 +733,9 @@ public class LodRenderer
 		{
 			this.nullableColorTexture = null;
 		}
+		
+		
+		ApiEventInjector.INSTANCE.fireAllEvents(DhApiAfterColorDepthTextureCreatedEvent.class, textureCreatedParam);
 	}
 	
 	
