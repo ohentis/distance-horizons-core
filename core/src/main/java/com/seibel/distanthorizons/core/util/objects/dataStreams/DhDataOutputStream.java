@@ -69,7 +69,7 @@ public class DhDataOutputStream extends DataOutputStream
 					arrayCache.reset();
 					// Note: if the LZMA2Options are changed the array cache may need to be re-tested.
 					// the array cache was specifically tested and tuned for LZMA preset 3/4
-					return new XZOutputStream(stream, new LZMA2Options(3), 
+					return new XZOutputStream(stream, new LZMA2Options(3),
 							XZ.CHECK_CRC64, arrayCache);
 				
 				default:
