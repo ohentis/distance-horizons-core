@@ -110,7 +110,7 @@ public class RenderQualityPresetConfigEventHandler extends AbstractPresetConfigE
 			{{
 				this.put(EDhApiQualityPreset.MINIMUM, true);
 				this.put(EDhApiQualityPreset.LOW, true);
-				this.put(EDhApiQualityPreset.MEDIUM, false);
+				this.put(EDhApiQualityPreset.MEDIUM, true);
 				this.put(EDhApiQualityPreset.HIGH, false);
 				this.put(EDhApiQualityPreset.EXTREME, false);
 			}});
