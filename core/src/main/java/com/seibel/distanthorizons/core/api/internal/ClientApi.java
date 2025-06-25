@@ -389,7 +389,7 @@ public class ClientApi
 	// rendering //
 	//===========//
 	
-	/** Should be called before {@link ClientApi#renderDeferredLods} */
+	/** Should be called before {@link ClientApi#renderDeferredLodsForShaders} */
 	public void renderLods(IClientLevelWrapper levelWrapper, Mat4f mcModelViewMatrix, Mat4f mcProjectionMatrix, float partialTicks)
 	{ this.renderLodLayer(levelWrapper, mcModelViewMatrix, mcProjectionMatrix, partialTicks, false); }
 	
@@ -397,8 +397,9 @@ public class ClientApi
 	 * Only necessary when Shaders are in use.
 	 * Should be called after {@link ClientApi#renderLods} 
 	 */
-	public void renderDeferredLods(IClientLevelWrapper levelWrapper, Mat4f mcModelViewMatrix, Mat4f mcProjectionMatrix, float partialTicks)
+	public void renderDeferredLodsForShaders(IClientLevelWrapper levelWrapper, Mat4f mcModelViewMatrix, Mat4f mcProjectionMatrix, float partialTicks)
 	{ this.renderLodLayer(levelWrapper, mcModelViewMatrix, mcProjectionMatrix, partialTicks, true); }
+	
 	
 	private void renderLodLayer(
 			IClientLevelWrapper levelWrapper, Mat4f mcModelViewMatrix, Mat4f mcProjectionMatrix, float partialTicks,
@@ -442,6 +443,25 @@ public class ClientApi
 						RenderUtil.createLodProjectionMatrix(mcProjectionMatrix, partialTicks), RenderUtil.createLodModelViewMatrix(mcModelViewMatrix),
 						levelWrapper.getMinHeight()
 				);
+		
+		
+		
+		//Mat4f mcCombined = mcModelViewMatrix.copy();
+		//mcCombined.multiply(mcProjectionMatrix);
+		//
+		//com.seibel.distanthorizons.api.objects.math.DhApiMat4f dhCombined = renderEventParam.dhModelViewMatrix.copy();
+		//dhCombined.multiply(renderEventParam.dhProjectionMatrix);
+		//
+		//LOGGER.info("\n\n" +
+		//		"API\n" +
+		//		"Mc MVM: \n" + mcModelViewMatrix.toString() + "\n" +
+		//		"Mc Proj: \n" + mcProjectionMatrix + "\n" +
+		//		"Mc Combined:\n" + mcCombined.toString() + "\n" +
+		//		"\n" +
+		//		"DH MVM: \n" + renderEventParam.dhModelViewMatrix.toString() + "\n" +
+		//		"DH Proj: \n" + renderEventParam.dhProjectionMatrix + "\n" +
+		//		"DH Combined:\n" + mcCombined.toString()
+		//);
 		
 		
 		
