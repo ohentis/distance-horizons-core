@@ -89,6 +89,15 @@ public class ClientApi
 	/** this includes the is dev build message and low allocated memory warning */
 	private static final int MS_BETWEEN_STATIC_STARTUP_MESSAGES = 4_000;
 	
+	/** 
+	 * This isn't the cleanest way of storing variables before passing them to the LOD renderer, 
+	 * but due to how mixins work and the inconsistency between MC versions,
+	 * having a static object that stores a single frame's data
+	 * is often the easiest solution. <br><br>
+	 * 
+	 * Only downside is making sure each variable is populated before rendering.
+	 */
+	public static final RenderState RENDER_STATE = new RenderState();
 	
 	
 	private boolean isDevBuildMessagePrinted = false;
@@ -759,5 +768,48 @@ public class ClientApi
 	 * Similar to {@link ClientApi#showChatMessageNextFrame(String)} but appears above the toolbar.
 	 */
 	public void showOverlayMessageNextFrame(String message) { this.overlayMessageQueueForNextFrame.add(message); }
+	
+	
+	
+	//================//
+	// helper classes //
+	//================//
+	
+	public static class RenderState
+	{
+		public Mat4f mcModelViewMatrix = null;
+		public Mat4f mcProjectionMatrix = null;
+		public float frameTime = -1;
+		
+		
+		public void canRenderOrThrow() throws IllegalStateException
+		{
+			String errorReasons = "";
+			
+			if (this.mcModelViewMatrix == null)
+			{
+				errorReasons += "no MVM Matrix, ";
+			}
+			
+			if (this.mcProjectionMatrix == null)
+			{
+				errorReasons += "no Projection Matrix, ";
+			}
+			
+			if (this.frameTime == -1)
+			{
+				errorReasons += "no Frame Time, ";
+			}
+			
+			
+			if (!errorReasons.isEmpty())
+			{
+				throw new IllegalStateException(errorReasons);
+			}
+			
+		}
+	}
+	
+	
 	
 }
