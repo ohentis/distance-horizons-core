@@ -681,7 +681,8 @@ public class ClientApi
 	private void detectAndSendBootTimeWarnings()
 	{
 		// dev build
-		if (ModInfo.IS_DEV_BUILD && !this.isDevBuildMessagePrinted && MC_CLIENT.playerExists())
+		if (ModInfo.IS_DEV_BUILD 
+			&& !this.isDevBuildMessagePrinted && MC_CLIENT.playerExists())
 		{
 			this.isDevBuildMessagePrinted = true;
 			this.lastStaticWarningMessageSentMsTime = System.currentTimeMillis();
@@ -698,7 +699,8 @@ public class ClientApi
 		
 		// memory
 		if (this.staticStartupMessageSentRecently()) return;
-		if (!this.lowMemoryWarningPrinted && Config.Common.Logging.Warning.showLowMemoryWarningOnStartup.get())
+		if (!this.lowMemoryWarningPrinted 
+			&& Config.Common.Logging.Warning.showLowMemoryWarningOnStartup.get())
 		{
 			this.lowMemoryWarningPrinted = true;
 			this.lastStaticWarningMessageSentMsTime = System.currentTimeMillis();
@@ -723,7 +725,8 @@ public class ClientApi
 		
 		// high vanilla render distance
 		if (this.staticStartupMessageSentRecently()) return;
-		if (!this.highVanillaRenderDistanceWarningPrinted && Config.Common.Logging.Warning.showHighVanillaRenderDistanceWarning.get())
+		if (!this.highVanillaRenderDistanceWarningPrinted 
+			&& Config.Common.Logging.Warning.showHighVanillaRenderDistanceWarning.get())
 		{
 			// DH generally doesn't need a vanilla render distance above 12 
 			if (MC_RENDER.getRenderDistance() > 12)
@@ -750,7 +753,8 @@ public class ClientApi
 	{
 		if (this.lastStaticWarningMessageSentMsTime == 0)
 		{
-			return true;
+			// no static message has ever been sent
+			return false;
 		}
 		
 		long timeSinceLastMessage = System.currentTimeMillis() - this.lastStaticWarningMessageSentMsTime; 
