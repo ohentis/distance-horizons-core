@@ -921,7 +921,7 @@
   "distanthorizons.config.enum.EDhApiDistantGeneratorMode.FEATURES":
     "Features",
   "distanthorizons.config.enum.EDhApiDistantGeneratorMode.INTERNAL_SERVER":
-    "Internal Server",
+    "Full - Save Chunks",
   
   "distanthorizons.config.enum.EDhApiDistantGeneratorProgressDisplayLocation.OVERLAY":
     "Overlay",
