@@ -804,6 +804,9 @@ public class LodRenderer
 				if (this.depthTexture != null)
 					this.depthTexture.destroy();
 				
+				this.setActiveDepthTextureId(-1);
+				this.setActiveColorTextureId(-1);
+				
 				EVENT_LOGGER.info("Renderer Cleanup Complete");
 			});
 		}
