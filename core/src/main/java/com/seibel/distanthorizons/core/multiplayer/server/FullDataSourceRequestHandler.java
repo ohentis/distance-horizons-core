@@ -2,6 +2,7 @@ package com.seibel.distanthorizons.core.multiplayer.server;
 
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiDistantGeneratorMode;
 import com.seibel.distanthorizons.core.config.Config;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.file.fullDatafile.GeneratedFullDataSourceProvider;
 import com.seibel.distanthorizons.core.level.AbstractDhServerLevel;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
@@ -76,14 +77,19 @@ public class FullDataSourceRequestHandler
 			return;
 		}
 		
-		CompletableFuture.completedFuture(null)
-				.thenComposeAsync(v -> {
+		
+		// get the data requested by the client
+		CompletableFuture<FullDataSourceV2> getServerDatasourceFuture = CompletableFuture.supplyAsync(() -> 
+			{
+				try
+				{
 					// the client timestamp will be null if we want to retrieve the LOD regardless of when it was last updated
 					long clientTimestamp = (message.clientTimestamp != null) ? message.clientTimestamp : -1;
+					
 					// the server timestamp will be null if no LOD data exists for this position
 					Long serverTimestamp = this.fullDataSourceProvider().getTimestampForPos(message.sectionPos);
 					if (serverTimestamp == null
-							|| serverTimestamp <= clientTimestamp)
+						|| serverTimestamp <= clientTimestamp)
 					{
 						// either no data exists to sync, or the client is already up to date
 						rateLimiterSet.syncOnLoginRateLimiter.release();
@@ -91,14 +97,28 @@ public class FullDataSourceRequestHandler
 						return null;
 					}
 					
-					return this.fullDataSourceProvider().getAsync(message.sectionPos);
-				}, fileHandlerExecutor)
-				.thenAcceptAsync(fullDataSource -> {
+					// get the server's datasource
+					return this.fullDataSourceProvider().get(message.sectionPos);
+				}
+				catch (Exception e)
+				{
+					LOGGER.error("Unexpected issue getting server-side LOD for request at pos [" + DhSectionPos.toString(message.sectionPos) + "], error: [" + e.getMessage() + "].", e);
+					return null;
+				}
+			}, fileHandlerExecutor);
+		
+		// send the found data
+		getServerDatasourceFuture.thenAcceptAsync(fullDataSource ->
+			{
+				try
+				{
+					// no server data source found
 					if (fullDataSource == null)
 					{
 						return;
 					}
 					
+					// send the found data source to client
 					try (FullDataPayload payload = new FullDataPayload(fullDataSource, this.getAllBeamsForPos(message.sectionPos)))
 					{
 						fullDataSource.close();
@@ -109,11 +129,13 @@ public class FullDataSourceRequestHandler
 							rateLimiterSet.syncOnLoginRateLimiter.release();
 						});
 					}
-				}, networkCompressionExecutor)
-				.exceptionally(e -> {
-					LOGGER.error("Unexpected issue getting request for pos [" + DhSectionPos.toString(message.sectionPos) + "], error: [" + e.getMessage() + "].", e);
-					return null;
-				});
+				}
+				catch (Exception e)
+				{
+					LOGGER.error("Unexpected issue sending request for pos [" + DhSectionPos.toString(message.sectionPos) + "], error: [" + e.getMessage() + "].", e);
+				}
+			}, networkCompressionExecutor);
+		
 	}
 	
 	public void queueWorldGenForRequestMessage(ServerPlayerState serverPlayerState, FullDataSourceRequestMessage message, ServerPlayerState.RateLimiterSet rateLimiterSet)
