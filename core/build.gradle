@@ -61,3 +61,9 @@ shadowJar {
 //    relocate "it.unimi.dsi.fastutil", "${librariesLocation}.unimi.dsi.fastutil"
     mergeServiceFiles()
 }
+
+test {
+    // this is necessary specifically for the Compression tests since those
+    // need more than the default 512 MB of RAM
+    jvmArgs '-Xmx4096m'
+}
