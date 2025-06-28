@@ -935,9 +935,11 @@
   "distanthorizons.config.enum.EDhApiDataCompressionMode.UNCOMPRESSED":
     "Uncompressed",
   "distanthorizons.config.enum.EDhApiDataCompressionMode.LZ4":
-    "Fast/Big - LZ4",
+    "Fastest/Big - LZ4",
+  "distanthorizons.config.enum.EDhApiDataCompressionMode.Z_STD":
+    "Fast/Small - Z_STD",
   "distanthorizons.config.enum.EDhApiDataCompressionMode.LZMA2":
-    "Slow/Small - LZMA2",
+    "Slow/Smallest - LZMA2",
     
   "distanthorizons.config.enum.EDhApiWorldCompressionMode.MERGE_SAME_BLOCKS":
     "1. Merge Same Blocks",

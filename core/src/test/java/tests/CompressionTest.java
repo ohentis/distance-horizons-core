@@ -25,11 +25,11 @@ import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV2DTO;
 import com.seibel.distanthorizons.core.sql.repo.FullDataSourceV2Repo;
 import com.seibel.distanthorizons.coreapi.util.StringUtil;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
+import org.apache.commons.compress.compressors.zstandard.ZstdCompressorOutputStream;
 import org.junit.Assert;
+import org.junit.Test;
 
 import java.io.*;
-import java.text.CharacterIterator;
-import java.text.StringCharacterIterator;
 
 /**
  * <strong>Note:</strong>
@@ -47,21 +47,13 @@ import java.text.StringCharacterIterator;
  */
 public class CompressionTest
 {
-	public static String TEST_DIR = "C:\\DistantHorizonsWorkspace\\distant-horizons\\run\\saves\\Arcapelago\\data";
+	public static String TEST_DIR = "C:\\DistantHorizonsWorkspace\\distant-horizons\\run\\client\\saves\\Archipelego\\data";
 	public static String DB_FILE_NAME_PREFIX = "DistantHorizons";
-	public static String UNCOMPRESSED_DB_FILE_NAME = "DistantHorizons.sqlite";
+	public static String UNCOMPRESSED_DB_FILE_NAME = "DistantHorizons_uncompressed.sqlite";
 	
 	/** -1 will test all of them */
 	public static int MAX_DTO_TEST_COUNT = -1;
 	
-	
-	
-	//@Test
-	public void NoCompression()
-	{
-		String compressorName = "Uncompressed";
-		this.testCompressor(compressorName, EDhApiDataCompressionMode.UNCOMPRESSED);
-	}
 	
 	// collapse the following commented out code when looking at tests
 	
@@ -132,17 +124,6 @@ public class CompressionTest
 	//}
 	
 	
-	//@Test
-	//public void Zstd()
-	//{
-	//	String compressorName = "Zstd";
-	//	
-	//	DhDataInputStream.CreateInputStreamFunc createInputStreamFunc = (inputStream) -> new ZstdInputStream(inputStream);
-	//	DhDataOutputStream.CreateOutputStreamFunc createOutputStreamFunc = (outputStream) -> new ZstdOutputStream(outputStream);
-	//	
-	//	this.testCompressor(compressorName, createInputStreamFunc, createOutputStreamFunc);
-	//}
-	
 	////@Test
 	//public void ZstdDictionary() throws SQLException // isn't any better than normal Zstd
 	//{
@@ -206,6 +187,13 @@ public class CompressionTest
 	//}
 	
 	//@Test
+	public void NoCompression()
+	{
+		String compressorName = "Uncompressed";
+		this.testCompressor(compressorName, EDhApiDataCompressionMode.UNCOMPRESSED);
+	}
+	
+	//@Test
 	public void Lz4() // fast, poor compression
 	{
 		String compressorName = "LZ4";
@@ -213,11 +201,11 @@ public class CompressionTest
 	}
 	
 	//@Test
-	//public void Zstd() // middle of the road
-	//{
-	//	String compressorName = "Zstd";
-	//	this.testCompressor(compressorName, EDhApiDataCompressionMode.Z_STD);
-	//}
+	public void Zstd() // middle of the road
+	{
+		String compressorName = "Zstd";
+		this.testCompressor(compressorName, EDhApiDataCompressionMode.Z_STD);
+	}
 	
 	//@Test
 	public void LZMA2() // very slow, very good compression though
@@ -254,13 +242,15 @@ public class CompressionTest
 		long totalCompressedFileSizeInBytes;
 		
 		
+		FullDataSourceV2Repo uncompressedRepo = null;
+		FullDataSourceV2Repo compressedRepo = null;
 		try
 		{
 			String uncompressedDatabaseFilePath = TEST_DIR + "/" + UNCOMPRESSED_DB_FILE_NAME;
 			File uncompressedDatabaseFile = new File(uncompressedDatabaseFilePath);
 			Assert.assertTrue(uncompressedDatabaseFile.exists());
 			
-			FullDataSourceV2Repo uncompressedRepo = new FullDataSourceV2Repo("jdbc:sqlite", uncompressedDatabaseFile);
+			uncompressedRepo = new FullDataSourceV2Repo("jdbc:sqlite", uncompressedDatabaseFile);
 			
 			
 			String compressedDatabaseFilePath = TEST_DIR + "/output/" + DB_FILE_NAME_PREFIX + "_" + compressorName + ".sqlite";
@@ -268,7 +258,7 @@ public class CompressionTest
 			compressedDatabaseFile.mkdirs();
 			compressedDatabaseFile.delete();
 			Assert.assertTrue(!compressedDatabaseFile.exists());
-			FullDataSourceV2Repo compressedRepo = new FullDataSourceV2Repo("jdbc:sqlite", uncompressedDatabaseFile);
+			compressedRepo = new FullDataSourceV2Repo("jdbc:sqlite", compressedDatabaseFile);
 			
 			
 			
@@ -292,47 +282,47 @@ public class CompressionTest
 					
 					// uncompressed input //
 					
-					FullDataSourceV2DTO uncompressedDto = uncompressedRepo.getByKey(pos);
-					Assert.assertEquals(uncompressedDto.compressionModeValue, EDhApiDataCompressionMode.UNCOMPRESSED.value);
-					FullDataSourceV2 uncompressedDataSource = uncompressedDto.createUnitTestDataSource();
-					
-					long uncompressedDtoSize = uncompressedRepo.getDataSizeInBytes(pos);
-					minUncompressedDtoSizeInBytes = Math.min(uncompressedDtoSize, minUncompressedDtoSizeInBytes);
-					maxUncompressedDtoSizeInBytes = Math.max(uncompressedDtoSize, maxUncompressedDtoSizeInBytes);
-					avgUncompressedDtoSizeInBytes += uncompressedDtoSize;
-					
-					
-					
-					// compress file //
-					
-					long startWriteNanoTime = System.nanoTime();
-					
-					FullDataSourceV2DTO compressedDto = FullDataSourceV2DTO.CreateFromDataSource(uncompressedDataSource, compressionMode);
-					compressedRepo.save(compressedDto);
-					
-					long endWriteNanoTime = System.nanoTime();
-					totalWriteTimeInNano += (endWriteNanoTime - startWriteNanoTime);
-					
-					
-					long compressedDtoSize = compressedRepo.getDataSizeInBytes(pos);
-					minCompressedDtoSizeInBytes = Math.min(compressedDtoSize, minCompressedDtoSizeInBytes);
-					maxCompressedDtoSizeInBytes = Math.max(compressedDtoSize, maxCompressedDtoSizeInBytes);
-					avgCompressedDtoSizeInBytes += compressedDtoSize;
-					
-					
-					
-					// read compressed file //
-					
-					long startReadNanoTime = System.nanoTime();
-					
-					compressedDto = compressedRepo.getByKey(pos);
-					FullDataSourceV2 compressedDataSource = compressedDto.createUnitTestDataSource();
-					
-					long endReadMsTime = System.nanoTime();
-					totalReadTimeInNano += (endReadMsTime - startReadNanoTime);
-					
-					
-					processedDtoCount++;
+					try (FullDataSourceV2DTO uncompressedDto = uncompressedRepo.getByKey(pos))
+					{
+						Assert.assertEquals(uncompressedDto.compressionModeValue, EDhApiDataCompressionMode.UNCOMPRESSED.value);
+						FullDataSourceV2 uncompressedDataSource = uncompressedDto.createUnitTestDataSource();
+						
+						long uncompressedDtoSize = uncompressedRepo.getDataSizeInBytes(pos);
+						minUncompressedDtoSizeInBytes = Math.min(uncompressedDtoSize, minUncompressedDtoSizeInBytes);
+						maxUncompressedDtoSizeInBytes = Math.max(uncompressedDtoSize, maxUncompressedDtoSizeInBytes);
+						avgUncompressedDtoSizeInBytes += uncompressedDtoSize;
+						
+						
+						// compress file //
+						
+						long startWriteNanoTime = System.nanoTime();
+						
+						FullDataSourceV2DTO compressedDto = FullDataSourceV2DTO.CreateFromDataSource(uncompressedDataSource, compressionMode);
+						compressedRepo.save(compressedDto);
+						
+						long endWriteNanoTime = System.nanoTime();
+						totalWriteTimeInNano += (endWriteNanoTime - startWriteNanoTime);
+						
+						
+						long compressedDtoSize = compressedRepo.getDataSizeInBytes(pos);
+						minCompressedDtoSizeInBytes = Math.min(compressedDtoSize, minCompressedDtoSizeInBytes);
+						maxCompressedDtoSizeInBytes = Math.max(compressedDtoSize, maxCompressedDtoSizeInBytes);
+						avgCompressedDtoSizeInBytes += compressedDtoSize;
+						
+						
+						// read compressed file //
+						
+						long startReadNanoTime = System.nanoTime();
+						
+						compressedDto = compressedRepo.getByKey(pos);
+						FullDataSourceV2 compressedDataSource = compressedDto.createUnitTestDataSource();
+						
+						long endReadMsTime = System.nanoTime();
+						totalReadTimeInNano += (endReadMsTime - startReadNanoTime);
+						
+						
+						processedDtoCount++;
+					}
 				}
 				catch (Exception | Error e)
 				{
@@ -370,6 +360,18 @@ public class CompressionTest
 		{
 			e.printStackTrace();
 			Assert.fail(e.getMessage());
+		}
+		finally
+		{
+			if(uncompressedRepo != null)
+			{
+				uncompressedRepo.close();
+			}
+			
+			if(compressedRepo != null)
+			{
+				compressedRepo.close();
+			}
 		}
 	}
 	
