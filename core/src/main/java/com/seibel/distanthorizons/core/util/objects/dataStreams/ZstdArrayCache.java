@@ -1,6 +1,6 @@
 package com.seibel.distanthorizons.core.util.objects.dataStreams;
 
-import com.github.luben.zstd.BufferPool;
+//import com.github.luben.zstd.BufferPool;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceArrayMap;
 import org.apache.logging.log4j.Logger;
@@ -14,7 +14,7 @@ import java.util.function.IntUnaryOperator;
 /** 
  * LZMA requires a custom object to cache it's backend arrays. 
  */
-public class ZstdArrayCache implements BufferPool
+public class ZstdArrayCache //implements BufferPool
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
@@ -43,7 +43,7 @@ public class ZstdArrayCache implements BufferPool
 	// byte arrays //
 	//=============//
 	
-	@Override
+	//@Override
 	public ByteBuffer get(int size)
 	{
 		ArrayList<ByteBuffer> cacheList = this.bufferCache.computeIfAbsent(size, (newSize) -> new ArrayList<>(4));
@@ -61,7 +61,7 @@ public class ZstdArrayCache implements BufferPool
 		return array;
 	}
 	
-	@Override
+	//@Override
 	public void release(ByteBuffer buffer)
 	{
 		int size = buffer.array().length;

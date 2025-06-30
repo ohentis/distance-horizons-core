@@ -55,15 +55,15 @@ public enum EDhApiDataCompressionMode
 	 */
 	LZ4(1),
 	
-	/**
-	 * Decent speed and good compression. <br><br> 
-	 *
-	 * Read Speed: 9.31 MS / DTO <br>
-	 * Write Speed: 15.13 MS / DTO <br>
-	 * Compression ratio: 0.2606 <br>
-	 */
-	//@DisallowSelectingViaConfigGui
-	Z_STD(2),
+	///**
+	// * Decent speed and good compression. <br><br> 
+	// *
+	// * Read Speed: 9.31 MS / DTO <br>
+	// * Write Speed: 15.13 MS / DTO <br>
+	// * Compression ratio: 0.2606 <br>
+	// */
+	////@DisallowSelectingViaConfigGui
+	//Z_STD(2),
 	
 	
 	/** 

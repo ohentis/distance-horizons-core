@@ -25,7 +25,7 @@ import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV2DTO;
 import com.seibel.distanthorizons.core.sql.repo.FullDataSourceV2Repo;
 import com.seibel.distanthorizons.coreapi.util.StringUtil;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
-import org.apache.commons.compress.compressors.zstandard.ZstdCompressorOutputStream;
+//import org.apache.commons.compress.compressors.zstandard.ZstdCompressorOutputStream;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -203,8 +203,8 @@ public class CompressionTest
 	//@Test
 	public void Zstd() // middle of the road
 	{
-		String compressorName = "Zstd";
-		this.testCompressor(compressorName, EDhApiDataCompressionMode.Z_STD);
+		//String compressorName = "Zstd";
+		//this.testCompressor(compressorName, EDhApiDataCompressionMode.Z_STD);
 	}
 	
 	//@Test

@@ -20,11 +20,8 @@
 package com.seibel.distanthorizons.core.util.objects.dataStreams;
 
 import com.seibel.distanthorizons.api.enums.config.EDhApiDataCompressionMode;
-import com.seibel.distanthorizons.core.Initializer;
-import com.seibel.distanthorizons.core.util.objects.DataCorruptedException;
-import com.seibel.distanthorizons.coreapi.ModInfo;
 import net.jpountz.lz4.LZ4FrameInputStream;
-import org.apache.commons.compress.compressors.zstandard.ZstdCompressorInputStream;
+//import org.apache.commons.compress.compressors.zstandard.ZstdCompressorInputStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.tukaani.xz.ResettableArrayCache;
@@ -45,7 +42,7 @@ import java.io.*;
 public class DhDataInputStream extends DataInputStream
 {
 	private static final ThreadLocal<ResettableArrayCache> LZMA_RESETTABLE_ARRAY_CACHE_GETTER = ThreadLocal.withInitial(() -> new ResettableArrayCache(new LzmaArrayCache()));
-	private static final ThreadLocal<ZstdArrayCache> ZSTD_RESETTABLE_ARRAY_CACHE_GETTER = ThreadLocal.withInitial(() -> new ZstdArrayCache());
+	//private static final ThreadLocal<ZstdArrayCache> ZSTD_RESETTABLE_ARRAY_CACHE_GETTER = ThreadLocal.withInitial(() -> new ZstdArrayCache());
 	
 	private static final Logger LOGGER = LogManager.getLogger();
 	
@@ -64,8 +61,8 @@ public class DhDataInputStream extends DataInputStream
 					return stream;
 				case LZ4:
 					return new LZ4FrameInputStream(stream);
-				case Z_STD:
-					return new ZstdCompressorInputStream(stream, ZSTD_RESETTABLE_ARRAY_CACHE_GETTER.get());
+				//case Z_STD:
+				//	return new ZstdCompressorInputStream(stream, ZSTD_RESETTABLE_ARRAY_CACHE_GETTER.get());
 				case LZMA2:
 					// using an array cache significantly reduces GC pressure
 					ResettableArrayCache arrayCache = LZMA_RESETTABLE_ARRAY_CACHE_GETTER.get();
