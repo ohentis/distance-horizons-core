@@ -1714,7 +1714,7 @@ public class Config
 						+ "")
 				.build();
 		public static ConfigEntry<Boolean> enableAdaptiveTransferSpeed = new ConfigEntry.Builder<Boolean>()
-				.set(true)
+				.set(false)
 				.comment(""
 						+ "Enables adaptive transfer speed based on client performance.\n"
 						+ "If true, DH will automatically adjust transfer rate to minimize connection lag.\n"
