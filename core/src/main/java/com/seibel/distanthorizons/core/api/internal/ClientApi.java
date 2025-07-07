@@ -584,25 +584,26 @@ public class ClientApi
 	public void renderFadeOpaque(Mat4f mcModelViewMatrix, Mat4f mcProjectionMatrix, float partialTicks, IClientLevelWrapper level)
 	{
 		// only fade when DH is rendering
-		if (Config.Client.Advanced.Debugging.rendererMode.get() == EDhApiRendererMode.DEFAULT)
+		if (Config.Client.Advanced.Debugging.rendererMode.get() == EDhApiRendererMode.DEFAULT
+			// only fade when requested
+			&& Config.Client.Advanced.Graphics.Quality.vanillaFadeMode.get() == EDhApiMcRenderingFadeMode.DOUBLE_PASS
+			// don't fade when Iris shaders are active, otherwise the rendering can get weird
+			&& !DhApiRenderProxy.INSTANCE.getDeferTransparentRendering())
 		{
-			if (Config.Client.Advanced.Graphics.Quality.vanillaFadeMode.get() == EDhApiMcRenderingFadeMode.DOUBLE_PASS)
-			{
-				FadeRenderer.INSTANCE.render(mcModelViewMatrix, mcProjectionMatrix, partialTicks, level);
-			}
+			FadeRenderer.INSTANCE.render(mcModelViewMatrix, mcProjectionMatrix, partialTicks, level);
 		}
 	}
 	/** should be called after DH and MC finish rendering so we can smooth the transition between the two */
 	public void renderFade(Mat4f mcModelViewMatrix, Mat4f mcProjectionMatrix, float partialTicks, IClientLevelWrapper level)
 	{
 		// only fade when DH is rendering
-		if (Config.Client.Advanced.Debugging.rendererMode.get() == EDhApiRendererMode.DEFAULT)
+		if (Config.Client.Advanced.Debugging.rendererMode.get() == EDhApiRendererMode.DEFAULT
+			// only fade when requested
+			&& Config.Client.Advanced.Graphics.Quality.vanillaFadeMode.get() != EDhApiMcRenderingFadeMode.NONE
+			// don't fade when Iris shaders are active, otherwise the rendering can get weird
+			&& !DhApiRenderProxy.INSTANCE.getDeferTransparentRendering())
 		{
-			// fade if any level fading is active
-			if (Config.Client.Advanced.Graphics.Quality.vanillaFadeMode.get() != EDhApiMcRenderingFadeMode.NONE)
-			{
-				FadeRenderer.INSTANCE.render(mcModelViewMatrix, mcProjectionMatrix, partialTicks, level);
-			}
+			FadeRenderer.INSTANCE.render(mcModelViewMatrix, mcProjectionMatrix, partialTicks, level);
 		}
 	}
 	
