@@ -25,9 +25,15 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.ByteBuffer;
 
 import com.seibel.distanthorizons.core.render.glObject.GLProxy;
+import org.lwjgl.PointerBuffer;
 import org.lwjgl.opengl.GL32;
+import org.lwjgl.opengl.GL32C;
+import org.lwjgl.system.MemoryStack;
+import org.lwjgl.system.MemoryUtil;
+import org.lwjgl.system.NativeType;
 
 /**
  * This object holds a OpenGL reference to a shader
@@ -63,7 +69,7 @@ public class Shader
 		}
 		
 		StringBuilder source = loadFile(path, absoluteFilePath, new StringBuilder());
-		GL32.glShaderSource(this.id, source);
+		safeShaderSource(this.id, source);
 		
 		GL32.glCompileShader(this.id);
 		// check if the shader compiled
@@ -93,7 +99,7 @@ public class Shader
 			throw new IllegalArgumentException("Failed to create shader with type ["+type+"] and Source: \n["+sourceString+"].");
 		}
 		
-		GL32.glShaderSource(this.id, sourceString);
+		safeShaderSource(this.id, sourceString);
 		GL32.glCompileShader(this.id);
 		// check if the shader compiled
 		int status = GL32.glGetShaderi(this.id, GL32.GL_COMPILE_STATUS);
@@ -113,6 +119,37 @@ public class Shader
 	//=========//
 	// helpers //
 	//=========//
+	
+	/**
+	 * Identical in function to {@link GL32C#glShaderSource(int, CharSequence)} but
+	 * passes a null pointer for string length to force the driver to rely on the null
+	 * terminator for string length.  This is a workaround for an apparent flaw with some
+	 * AMD drivers that don't receive or interpret the length correctly, resulting in
+	 * an access violation when the driver tries to read past the string memory.
+	 *
+	 * <p>Hat tip to fewizz for the find and the fix.
+	 * 
+	 * <p>Source: https://github.com/vram-guild/canvas/commit/820bf754092ccaf8d0c169620c2ff575722d7d96
+	 */
+	private static void safeShaderSource(@NativeType("GLuint") int glId, @NativeType("GLchar const **") CharSequence source)
+	{
+		final MemoryStack stack = MemoryStack.stackGet();
+		final int stackPointer = stack.getPointer();
+
+		try
+		{
+			final ByteBuffer sourceBuffer = MemoryUtil.memUTF8(source, true);
+			final PointerBuffer pointers = stack.mallocPointer(1);
+			pointers.put(sourceBuffer);
+
+			GL32.nglShaderSource(glId, 1, pointers.address0(), 0);
+			org.lwjgl.system.APIUtil.apiArrayFree(pointers.address0(), 1);
+		}
+		finally
+		{
+			stack.setPointer(stackPointer);
+		}
+	}
 	
 	public void free() { GL32.glDeleteShader(this.id); }
 	
@@ -150,5 +187,7 @@ public class Shader
 		}
 		return stringBuilder;
 	}
+	
+	
 	
 }
