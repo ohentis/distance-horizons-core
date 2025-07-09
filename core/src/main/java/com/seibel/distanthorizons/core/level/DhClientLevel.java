@@ -42,6 +42,7 @@ import com.seibel.distanthorizons.core.render.renderer.generic.GenericObjectRend
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV2DTO;
+import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrapper;
@@ -58,7 +59,7 @@ import java.io.File;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
 /** The level used when connected to a server */
@@ -162,6 +163,7 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 				return;
 			}
 			
+			
 			try (FullDataSourceV2DTO dataSourceDto = this.networkState.fullDataPayloadReceiver.decodeDataSourceAndReleaseBuffer(message.payload))
 			{
 				boolean isSameLevel = message.isSameLevelAs(this.levelWrapper);
@@ -171,10 +173,26 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 					return;
 				}
 				
-				this.updateBeaconBeamsForSectionPos(dataSourceDto.pos, message.payload.beaconBeams);
 				
-				FullDataSourceV2 fullDataSource = dataSourceDto.createDataSource(this.levelWrapper);
-				this.updateDataSourcesAsync(fullDataSource).whenComplete((result, e) -> fullDataSource.close());
+				Executor executor = ThreadPoolUtil.getFileHandlerExecutor();
+				if (executor != null)
+				{
+					executor.execute(() ->
+					{
+						try
+						{
+							// TODO this has a lock which can cause stuttering/lag issues
+							this.updateBeaconBeamsForSectionPos(dataSourceDto.pos, message.payload.beaconBeams);
+							
+							FullDataSourceV2 fullDataSource = dataSourceDto.createDataSource(this.levelWrapper);
+							this.updateDataSourcesAsync(fullDataSource).whenComplete((result, e) -> fullDataSource.close());
+						}
+						catch (Exception e)
+						{
+							LOGGER.error("Unexpected erorr while updating full data source, error: ["+e.getMessage()+"].", e);
+						}
+					});
+				}
 			}
 			catch (Exception e)
 			{
