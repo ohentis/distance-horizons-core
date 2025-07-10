@@ -139,7 +139,7 @@ public class FullDataToRenderDataTransformer
 		}
 		
 		columnSource.fillDebugFlag(0, 0, ColumnRenderSource.SECTION_SIZE, ColumnRenderSource.SECTION_SIZE, ColumnRenderSource.DebugSourceFlag.FULL);
-			
+		
 		return columnSource;
 	}
 	
