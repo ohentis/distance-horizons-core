@@ -164,7 +164,7 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 			}
 			
 			
-			try (FullDataSourceV2DTO dataSourceDto = this.networkState.fullDataPayloadReceiver.decodeDataSourceAndReleaseBuffer(message.payload))
+			try(FullDataSourceV2DTO dataSourceDto = this.networkState.fullDataPayloadReceiver.decodeDataSourceAndReleaseBuffer(message.payload))
 			{
 				boolean isSameLevel = message.isSameLevelAs(this.levelWrapper);
 				NETWORK_LOGGER.debug("Buffer {} isSameLevel: {}", message.payload.dtoBufferId, isSameLevel);
@@ -183,9 +183,6 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 						{
 							// TODO this has a lock which can cause stuttering/lag issues
 							this.updateBeaconBeamsForSectionPos(dataSourceDto.pos, message.payload.beaconBeams);
-							
-							FullDataSourceV2 fullDataSource = dataSourceDto.createDataSource(this.levelWrapper);
-							this.updateDataSourcesAsync(fullDataSource).whenComplete((result, e) -> fullDataSource.close());
 						}
 						catch (Exception e)
 						{
@@ -193,6 +190,11 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 						}
 					});
 				}
+				
+				
+				FullDataSourceV2 fullDataSource = dataSourceDto.createDataSource(this.levelWrapper);
+				this.updateDataSourcesAsync(fullDataSource)
+						.whenComplete((result, e) -> fullDataSource.close());
 			}
 			catch (Exception e)
 			{
