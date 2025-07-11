@@ -142,7 +142,16 @@ public class FullDataSourceV2DTO
 	public FullDataSourceV2 createDataSource(@NotNull ILevelWrapper levelWrapper) throws IOException, InterruptedException, DataCorruptedException
 	{
 		FullDataSourceV2 dataSource = FullDataSourceV2.createEmpty(this.pos);
-		this.internalPopulateDataSource(dataSource, levelWrapper, false);
+		try
+		{	
+			this.internalPopulateDataSource(dataSource, levelWrapper, false);
+		}
+		catch (Exception e)
+		{
+			dataSource.close();
+			throw e;
+		}
+		
 		return dataSource;
 	}
 	
