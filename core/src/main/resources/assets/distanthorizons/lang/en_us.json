@@ -1022,6 +1022,8 @@
     "File: Info, Chat: Warning",
   "distanthorizons.config.enum.EDhApiLoggerMode.LOG_ERROR_TO_CHAT_AND_INFO_TO_FILE":
     "File: Info, Chat: Error",
+  "distanthorizons.config.enum.EDhApiLoggerMode.LOG_ERROR_TO_CHAT_AND_WARNING_TO_FILE":
+    "File: Warning, Chat: Error",
     
   "distanthorizons.config.enum.EDhApiGpuUploadMethod.AUTO":
     "Auto",

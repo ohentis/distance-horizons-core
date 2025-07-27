@@ -1520,7 +1520,7 @@ public class Config
 			
 			public static ConfigEntry<EDhApiLoggerMode> logNetworkEvent = new ConfigEntry.Builder<EDhApiLoggerMode>()
 					.setChatCommandName("logging.logNetworkEvent")
-					.set(EDhApiLoggerMode.LOG_ERROR_TO_CHAT_AND_INFO_TO_FILE)
+					.set(EDhApiLoggerMode.LOG_ERROR_TO_CHAT_AND_WARNING_TO_FILE)
 					.comment(""
 							+ "If enabled, the mod will log information about network operations. \n"
 							+ "This can be useful for debugging.")
