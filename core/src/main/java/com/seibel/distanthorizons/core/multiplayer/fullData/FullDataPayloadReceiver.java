@@ -9,8 +9,8 @@ import com.seibel.distanthorizons.core.network.INetworkObject;
 import com.seibel.distanthorizons.core.network.messages.fullData.FullDataSplitMessage;
 import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV2DTO;
 import com.seibel.distanthorizons.core.util.LodUtil;
-import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.CompositeByteBuf;
+import io.netty.buffer.Unpooled;
 import org.apache.logging.log4j.LogManager;
 
 import java.util.Objects;
@@ -24,15 +24,7 @@ public class FullDataPayloadReceiver implements AutoCloseable
 	
 	private final ConcurrentMap<Integer, CompositeByteBuf> buffersById = CacheBuilder.newBuilder()
 			.expireAfterAccess(10, TimeUnit.SECONDS)
-			.removalListener((RemovalNotification<Integer, CompositeByteBuf> notification) ->
-			{
-				// If an entry was replaced without removing, the buffer has to be released manually
-				if (notification.getCause() != RemovalCause.REPLACED)
-				{
-					Objects.requireNonNull(notification.getValue()).release();
-				}
-			})
-			.build().asMap();
+			.<Integer, CompositeByteBuf>build().asMap();
 	
 	@Override
 	public void close()
@@ -46,13 +38,7 @@ public class FullDataPayloadReceiver implements AutoCloseable
 		{
 			if (message.isFirst)
 			{
-				if (composite != null)
-				{
-					composite.release();
-					LOGGER.debug("Released existing full data buffer [" + message.bufferId + "]");
-				}
-				
-				composite = ByteBufAllocator.DEFAULT.compositeBuffer();
+				composite = Unpooled.compositeBuffer();
 				LOGGER.debug("Created new full data buffer [" + message.bufferId + "]: [" + composite + "]");
 			}
 			else if (composite == null)
@@ -67,7 +53,7 @@ public class FullDataPayloadReceiver implements AutoCloseable
 		});
 	}
 	
-	public FullDataSourceV2DTO decodeDataSourceAndReleaseBuffer(FullDataPayload payload)
+	public FullDataSourceV2DTO decodeDataSource(FullDataPayload payload)
 	{
 		CompositeByteBuf compositeByteBuffer = this.buffersById.get(payload.dtoBufferId);
 		LodUtil.assertTrue(compositeByteBuffer != null);

@@ -38,12 +38,6 @@ public class FullDataPayloadSender implements AutoCloseable
 	public void close()
 	{
 		this.tickTimerTask.cancel();
-		
-		PendingTransfer pendingTransfer;
-		while ((pendingTransfer = this.transferQueue.poll()) != null)
-		{
-			pendingTransfer.close();
-		}
 	}
 	
 	
@@ -78,34 +72,23 @@ public class FullDataPayloadSender implements AutoCloseable
 			if (pendingTransfer.buffer.readableBytes() == 0)
 			{
 				pendingTransfer.sendFinalMessage.run();
-				pendingTransfer.close();
 				this.transferQueue.poll();
 			}
 		}
 	}
 	
 	
-	private static class PendingTransfer implements AutoCloseable
+	private static class PendingTransfer
 	{
 		public final int bufferId;
 		public final ByteBuf buffer;
 		public final Runnable sendFinalMessage;
-		private final AtomicBoolean isClosed = new AtomicBoolean();
 		
 		private PendingTransfer(FullDataPayload payload, Runnable sendFinalMessage)
 		{
 			this.bufferId = payload.dtoBufferId;
-			this.buffer = payload.dtoBuffer.retainedDuplicate().readerIndex(0);
+			this.buffer = payload.dtoBuffer.duplicate().readerIndex(0);
 			this.sendFinalMessage = sendFinalMessage;
-		}
-		
-		@Override
-		public void close()
-		{
-			if (this.isClosed.compareAndSet(false, true))
-			{
-				this.buffer.release();
-			}
 		}
 		
 	}

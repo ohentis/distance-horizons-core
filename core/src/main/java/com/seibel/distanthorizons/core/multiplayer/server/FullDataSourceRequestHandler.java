@@ -119,16 +119,14 @@ public class FullDataSourceRequestHandler
 					}
 					
 					// send the found data source to client
-					try (FullDataPayload payload = new FullDataPayload(fullDataSource, this.getAllBeamsForPos(message.sectionPos)))
+					FullDataPayload payload = new FullDataPayload(fullDataSource, this.getAllBeamsForPos(message.sectionPos));
+					fullDataSource.close();
+					
+					serverPlayerState.fullDataPayloadSender.sendInChunks(payload, () ->
 					{
-						fullDataSource.close();
-						
-						serverPlayerState.fullDataPayloadSender.sendInChunks(payload, () ->
-						{
-							message.sendResponse(new FullDataSourceResponseMessage(payload));
-							rateLimiterSet.syncOnLoginRateLimiter.release();
-						});
-					}
+						message.sendResponse(new FullDataSourceResponseMessage(payload));
+						rateLimiterSet.syncOnLoginRateLimiter.release();
+					});
 				}
 				catch (Exception e)
 				{
@@ -245,19 +243,17 @@ public class FullDataSourceRequestHandler
 			}
 			CompletableFuture.runAsync(() ->
 			{
-				try (FullDataPayload payload = new FullDataPayload(requestGroup.fullDataSource, this.getAllBeamsForPos(entry.getKey())))
+				FullDataPayload payload = new FullDataPayload(requestGroup.fullDataSource, this.getAllBeamsForPos(entry.getKey()));
+				requestGroup.fullDataSource.close();
+				
+				for (DataSourceRequestGroup.RequestData requestData : requestGroup.requestMessages.values())
 				{
-					requestGroup.fullDataSource.close();
+					this.requestGroupsByFutureId.remove(requestData.futureId());
 					
-					for (DataSourceRequestGroup.RequestData requestData : requestGroup.requestMessages.values())
-					{
-						this.requestGroupsByFutureId.remove(requestData.futureId());
-						
-						requestData.serverPlayerState.fullDataPayloadSender.sendInChunks(payload, () -> {
-							requestData.message.sendResponse(new FullDataSourceResponseMessage(payload));
-							requestData.rateLimiterSet.generationRequestRateLimiter.release();
-						});
-					}
+					requestData.serverPlayerState.fullDataPayloadSender.sendInChunks(payload, () -> {
+						requestData.message.sendResponse(new FullDataSourceResponseMessage(payload));
+						requestData.rateLimiterSet.generationRequestRateLimiter.release();
+					});
 				}
 			}, executor);
 		}

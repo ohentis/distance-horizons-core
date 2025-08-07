@@ -261,29 +261,27 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 				}
 				
 				LodUtil.assertTrue(this.beaconBeamRepo != null, "beaconBeamRepo should not be null");
-				try (FullDataPayload payload = new FullDataPayload(data, this.beaconBeamRepo.getAllBeamsForPos(data.getPos())))
+				FullDataPayload payload = new FullDataPayload(data, this.beaconBeamRepo.getAllBeamsForPos(data.getPos()));
+				for (ServerPlayerState serverPlayerState : this.serverPlayerStateManager.getReadyPlayers())
 				{
-					for (ServerPlayerState serverPlayerState : this.serverPlayerStateManager.getReadyPlayers())
+					if (serverPlayerState.getServerPlayer().getLevel() != this.serverLevelWrapper)
 					{
-						if (serverPlayerState.getServerPlayer().getLevel() != this.serverLevelWrapper)
+						continue;
+					}
+					
+					if (!serverPlayerState.sessionConfig.isRealTimeUpdatesEnabled())
+					{
+						continue;
+					}
+					
+					Vec3d playerPosition = serverPlayerState.getServerPlayer().getPosition();
+					int distanceFromPlayer = DhSectionPos.getChebyshevSignedBlockDistance(data.getPos(), new DhBlockPos2D((int) playerPosition.x, (int) playerPosition.z)) / 16;
+					if (distanceFromPlayer <= serverPlayerState.sessionConfig.getMaxUpdateDistanceRadius())
+					{
+						serverPlayerState.fullDataPayloadSender.sendInChunks(payload, () ->
 						{
-							continue;
-						}
-						
-						if (!serverPlayerState.sessionConfig.isRealTimeUpdatesEnabled())
-						{
-							continue;
-						}
-						
-						Vec3d playerPosition = serverPlayerState.getServerPlayer().getPosition();
-						int distanceFromPlayer = DhSectionPos.getChebyshevSignedBlockDistance(data.getPos(), new DhBlockPos2D((int) playerPosition.x, (int) playerPosition.z)) / 16;
-						if (distanceFromPlayer <= serverPlayerState.sessionConfig.getMaxUpdateDistanceRadius())
-						{
-							serverPlayerState.fullDataPayloadSender.sendInChunks(payload, () ->
-							{
-								serverPlayerState.networkSession.sendMessage(new FullDataPartialUpdateMessage(this.serverLevelWrapper, payload));
-							});
-						}
+							serverPlayerState.networkSession.sendMessage(new FullDataPartialUpdateMessage(this.serverLevelWrapper, payload));
+						});
 					}
 				}
 			});
