@@ -81,13 +81,20 @@ public class ClientOnlySaveStructure implements ISaveStructure
 			{
 				IServerKeyedClientLevel keyedClientLevel = (IServerKeyedClientLevel) newLevelWrapper;
 				LOGGER.info("Loading level [" + newLevelWrapper.getDhIdentifier() + "] with key: [" + keyedClientLevel.getServerLevelKey() + "].");
-				// This world was identified by the server directly, so we can know for sure which folder to use.
-				saveFolder = getSaveFolderByLevelId(keyedClientLevel.getServerLevelKey());
+				
+				String serverKey = keyedClientLevel.getServerKey();
+				if (serverKey.isEmpty())
+				{
+					serverKey = getServerFolderName();
+				}
+				
+				// This world was identified by the server directly, so we can know for sure which folder to use.				
+				saveFolder = getSaveFolderByLevelId(serverKey, keyedClientLevel.getServerLevelKey());
 			}
 			else
 			{
 				// get the default folder
-				saveFolder = getSaveFolderByLevelId(levelWrapper.getDhIdentifier());
+				saveFolder = getSaveFolderByLevelId(getServerFolderName(), levelWrapper.getDhIdentifier());
 			}
 			
 			// Allow API users to override the save folder
@@ -116,7 +123,7 @@ public class ClientOnlySaveStructure implements ISaveStructure
 			return this.getSaveFolder(levelWrapper);
 		}
 		
-		return getSaveFolderByLevelId(levelWrapper.getDimensionType().getName());
+		return getSaveFolderByLevelId(getServerFolderName(), levelWrapper.getDimensionType().getName());
 	}
 	
 	
@@ -173,11 +180,11 @@ public class ClientOnlySaveStructure implements ISaveStructure
 	}
 	
 	
-	private static File getSaveFolderByLevelId(String dimensionName)
+	private static File getSaveFolderByLevelId(String folderName, String dimensionName)
 	{
 		String path = MC_SHARED.getInstallationDirectory().getPath() + File.separatorChar
 				+ SERVER_DATA_FOLDER_NAME + File.separatorChar
-				+ getServerFolderName() + File.separatorChar
+				+ folderName + File.separatorChar
 				+ dimensionName.replaceAll(":", "@@");
 		
 		return new File(path);

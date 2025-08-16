@@ -27,6 +27,10 @@ public class ServerPlayerState implements Closeable
 	private final SessionConfig.AnyChangeListener configAnyChangeListener = new SessionConfig.AnyChangeListener(this::sendConfigMessage);
 	
 	
+	private final String serverKeyWithoutId = Config.Server.serverKey.get();
+	private final String serverKey = (this.serverKeyWithoutId.isEmpty() ? "" : Config.Server.serverId.get() + "_" + this.serverKeyWithoutId.trim())
+			.replaceAll("[^" + LevelInitMessage.PART_ALLOWED_CHARS_REGEX + " ]", "")
+			.replaceAll(" ", "_");
 	private String lastLevelKey = "";
 	
 	
@@ -89,7 +93,7 @@ public class ServerPlayerState implements Closeable
 			if (!levelKey.equals(this.lastLevelKey))
 			{
 				this.lastLevelKey = levelKey;
-				this.networkSession.sendMessage(new LevelInitMessage(levelKey));
+				this.networkSession.sendMessage(new LevelInitMessage(this.serverKey, levelKey));
 			}
 		}
 	}
