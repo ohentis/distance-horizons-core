@@ -1332,7 +1332,7 @@ public class Config
 					.build();
 			
 			public static ConfigEntry<EDhApiDataCompressionMode> dataCompression = new ConfigEntry.Builder<EDhApiDataCompressionMode>()
-					.set(EDhApiDataCompressionMode.LZMA2)
+					.set(EDhApiDataCompressionMode.Z_STD)
 					.comment(""
 							+ "What algorithm should be used to compress new LOD data? \n"
 							+ "This setting will only affect new or updated LOD data, \n"
@@ -1342,14 +1342,20 @@ public class Config
 							+ EDhApiDataCompressionMode.UNCOMPRESSED + " \n"
 							+ "Should only be used for testing, is worse in every way vs ["+EDhApiDataCompressionMode.LZ4+"].\n"
 							+ "Expected Compression Ratio: 1.0\n"
-							+ "Estimated average DTO read speed: 3.25 milliseconds\n"
-							+ "Estimated average DTO write speed: 5.99 milliseconds\n"
+							+ "Estimated average DTO read speed: 6.09 milliseconds\n"
+							+ "Estimated average DTO write speed: 6.01 milliseconds\n"
 							+ "\n"
 							+ EDhApiDataCompressionMode.LZ4 + " \n"
 							+ "A good option if you're CPU limited and have plenty of hard drive space.\n"
-							+ "Expected Compression Ratio: 0.26\n"
-							+ "Estimated average DTO read speed: 1.85 ms\n"
-							+ "Estimated average DTO write speed: 9.46 ms\n"
+							+ "Expected Compression Ratio: 0.4513\n"
+							+ "Estimated average DTO read speed: 3.25 ms\n"
+							+ "Estimated average DTO write speed: 5.99 ms\n"
+							+ "\n"
+							+ EDhApiDataCompressionMode.Z_STD + " \n"
+							+ "A good option if you're CPU limited and have plenty of hard drive space.\n"
+							+ "Expected Compression Ratio: 0.2606\n"
+							+ "Estimated average DTO read speed: 9.31 ms\n"
+							+ "Estimated average DTO write speed: 15.13 ms\n"
 							+ "\n"
 							+ EDhApiDataCompressionMode.LZMA2 + " \n"
 							+ "Slow but very good compression.\n"

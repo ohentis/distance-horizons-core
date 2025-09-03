@@ -19,11 +19,11 @@
 
 package com.seibel.distanthorizons.core.util.objects.dataStreams;
 
+import com.github.luben.zstd.ZstdOutputStream;
 import com.seibel.distanthorizons.api.enums.config.EDhApiDataCompressionMode;
 import net.jpountz.lz4.LZ4Factory;
 import net.jpountz.lz4.LZ4FrameOutputStream;
 import net.jpountz.xxhash.XXHashFactory;
-//import org.apache.commons.compress.compressors.zstandard.ZstdCompressorOutputStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.tukaani.xz.*;
@@ -55,8 +55,8 @@ public class DhDataOutputStream extends DataOutputStream
 				case UNCOMPRESSED:
 					return stream;
 				
-				//case Z_STD:
-				//	return new ZstdCompressorOutputStream(stream, 3, true, true);
+				case Z_STD:
+					return new ZstdOutputStream(stream, 3, true, true);
 				case LZ4:
 					return new LZ4FrameOutputStream(stream, 
 							LZ4FrameOutputStream.BLOCKSIZE.SIZE_64KB, -1L,
