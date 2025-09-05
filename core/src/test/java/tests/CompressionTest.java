@@ -47,7 +47,7 @@ import java.io.*;
  */
 public class CompressionTest
 {
-	public static String TEST_DIR = "C:\\DistantHorizonsWorkspace\\distant-horizons\\run\\client\\saves\\Archipelego\\data";
+	public static String TEST_DIR = "C:/Users/James_Seibel/Desktop/DH Files/test files";
 	public static String DB_FILE_NAME_PREFIX = "DistantHorizons";
 	public static String UNCOMPRESSED_DB_FILE_NAME = "DistantHorizons_uncompressed.sqlite";
 	
@@ -203,8 +203,8 @@ public class CompressionTest
 	//@Test
 	public void Zstd() // middle of the road
 	{
-		//String compressorName = "Zstd";
-		//this.testCompressor(compressorName, EDhApiDataCompressionMode.Z_STD);
+		String compressorName = "Zstd";
+		this.testCompressor(compressorName, EDhApiDataCompressionMode.Z_STD);
 	}
 	
 	//@Test
