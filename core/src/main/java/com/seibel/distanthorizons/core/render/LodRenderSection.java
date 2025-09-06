@@ -178,7 +178,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		
 		// pseudo random color (should be consistent for a given position)
 		int randomColorModifier = (DhSectionPos.hashCode(this.pos) % 30) - 15;
-		int randomGrayColorValue = 90 + randomColorModifier;
+		int randomGrayColorValue = 180 + randomColorModifier;
 		randomGrayColorValue = MathUtil.clamp(1, randomGrayColorValue, 256); // clamp to prevent accidental out-of-range colors
 		
 		
