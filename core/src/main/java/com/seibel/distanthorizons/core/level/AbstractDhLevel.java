@@ -21,7 +21,9 @@ package com.seibel.distanthorizons.core.level;
 
 import com.seibel.distanthorizons.api.interfaces.render.IDhApiRenderableBoxGroup;
 import com.seibel.distanthorizons.api.methods.events.abstractEvents.DhApiChunkModifiedEvent;
+import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
 import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBoxGroupShading;
+import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.file.fullDatafile.DelayedFullDataSourceSaveCache;
 import com.seibel.distanthorizons.core.generation.DhLightingEngine;
@@ -384,6 +386,11 @@ public abstract class AbstractDhLevel implements IDhLevel
 			this.unexploredFogRenderableBoxGroup.setSkyLight(LodUtil.MAX_MC_LIGHT);
 			this.unexploredFogRenderableBoxGroup.setSsaoEnabled(true);
 			this.unexploredFogRenderableBoxGroup.setShading(DhApiRenderableBoxGroupShading.getDefaultShaded());
+			this.unexploredFogRenderableBoxGroup.setPreRenderFunc((DhApiRenderParam param) -> 
+			{
+				boolean renderingEnabled = Config.Client.Advanced.Graphics.GenericRendering.enableUnexploredFogRendering.get();
+				this.unexploredFogRenderableBoxGroup.setActive(renderingEnabled);
+			});
 			
 			GenericObjectRenderer genericRenderer = this.getGenericRenderer();
 			if (genericRenderer != null)

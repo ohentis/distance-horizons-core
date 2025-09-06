@@ -444,6 +444,13 @@ public class Config
 									+ "")
 							.build();
 					
+					public static ConfigEntry<Boolean> enableUnexploredFogRendering = new ConfigEntry.Builder<Boolean>()
+							.set(true)
+							.comment(""
+									+ "If true unexplored/ungenerated LODs will be rendered as large dark gray boxes. \n"
+									+ "")
+							.build();
+					
 					public static ConfigEntry<Boolean> enableInstancedRendering = new ConfigEntry.Builder<Boolean>()
 							.set(true)
 							.comment(""

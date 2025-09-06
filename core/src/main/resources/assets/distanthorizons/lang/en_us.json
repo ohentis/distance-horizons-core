@@ -219,6 +219,10 @@
     "Enable Cloud Rendering",
   "distanthorizons.config.client.advanced.graphics.genericRendering.enableCloudRendering.@tooltip":
     "If true LOD clouds will be rendered.",
+  "distanthorizons.config.client.advanced.graphics.genericRendering.enableUnexploredFogRendering":
+    "Enable Unexplored Fog Rendering",
+  "distanthorizons.config.client.advanced.graphics.genericRendering.enableUnexploredFogRendering.@tooltip":
+    "If true unexplored/ungenerated LODs will be rendered as large dark gray boxes.",
   "distanthorizons.config.client.advanced.graphics.genericRendering.enableInstancedRendering":
     "Enable Instanced Rendering",
   "distanthorizons.config.client.advanced.graphics.genericRendering.enableInstancedRendering.@tooltip":
