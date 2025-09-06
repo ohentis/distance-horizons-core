@@ -174,7 +174,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		// pseudo random height (should be consistent for a given position)
 		int fogHeightRange = (int) ((this.level.getMaxY() - this.level.getMinY()) * 0.25);
 		int halfFogHeightRange = fogHeightRange / 2;
-		float randomHeightModifier = (float) (DhSectionPos.hashCode(this.pos) % fogHeightRange) - halfFogHeightRange;
+		float randomHeightModifier = (float) (DhSectionPos.hashCode(this.pos) % halfFogHeightRange) - fogHeightRange;
 		
 		// pseudo random color (should be consistent for a given position)
 		int randomColorModifier = (DhSectionPos.hashCode(this.pos) % 30) - 15;
@@ -185,7 +185,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		return new DhApiRenderableBox(
 				// min pos
 				new DhApiVec3d(DhSectionPos.getMinCornerBlockX(this.pos),
-						0,
+						this.level.getMinY(),
 						DhSectionPos.getMinCornerBlockZ(this.pos)),
 				// max pos
 				new DhApiVec3d(DhSectionPos.getMinCornerBlockX(this.pos) + fogWidthInBlocks,
