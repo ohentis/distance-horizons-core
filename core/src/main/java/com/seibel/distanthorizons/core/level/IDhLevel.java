@@ -41,6 +41,7 @@ public interface IDhLevel extends AutoCloseable, GeneratedFullDataSourceProvider
 	void worldGenTick();
 	
 	int getMinY();
+	int getMaxY();
 	
 	/**
 	 * May return either a client or server level wrapper. <br>

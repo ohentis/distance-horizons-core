@@ -21,6 +21,11 @@ package com.seibel.distanthorizons.core.render;
 
 import com.google.common.base.Suppliers;
 import com.google.common.cache.Cache;
+import com.seibel.distanthorizons.api.DhApi;
+import com.seibel.distanthorizons.api.enums.rendering.EDhApiBlockMaterial;
+import com.seibel.distanthorizons.api.interfaces.render.IDhApiRenderableBoxGroup;
+import com.seibel.distanthorizons.api.objects.math.DhApiVec3d;
+import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBox;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.dataObjects.render.CachedColumnRenderSource;
@@ -40,12 +45,15 @@ import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
 import com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.ColumnRenderBuffer;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.render.renderer.generic.BeaconRenderHandler;
+import com.seibel.distanthorizons.core.render.renderer.generic.RenderableBoxGroup;
 import com.seibel.distanthorizons.core.sql.dto.BeaconBeamDTO;
 import com.seibel.distanthorizons.core.sql.repo.BeaconBeamRepo;
 import com.seibel.distanthorizons.core.util.KeyedLockContainer;
 import com.seibel.distanthorizons.core.util.threading.PriorityTaskPicker;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
+import com.seibel.distanthorizons.coreapi.ModInfo;
+import com.seibel.distanthorizons.coreapi.util.MathUtil;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
@@ -79,6 +87,8 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	private final KeyedLockContainer<Long> renderLoadLockContainer;
 	private final Cache<Long, CachedColumnRenderSource> cachedRenderSourceByPos;
 	private final AtomicInteger uploadTaskCountRef;
+	
+	private final IDhApiRenderableBoxGroup fogRenderableBoxGroup;
 	
 	/** 
 	 * contains the list of beacons currently being rendered in this section 
@@ -151,6 +161,31 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		this.level = level;
 		this.fullDataSourceProvider = fullDataSourceProvider;
 		this.uploadTaskCountRef = uploadTaskCountRef;
+		
+		
+		// width
+		float fogWidthInBlocks = (float) DhSectionPos.getBlockWidth(this.pos);
+		
+		// random height
+		int fogHeightRange = (int) ((this.level.getMaxY() - this.level.getMinY()) * 0.25);
+		int halfFogHeightRange = fogHeightRange / 2;
+		float randomHeightModifier = (float) (DhSectionPos.hashCode(this.pos) % fogHeightRange) - halfFogHeightRange;
+		
+		// random color
+		int randomColorModifier = (DhSectionPos.hashCode(this.pos) % 30) - 15;
+		int randomGrayColorValue = 90 + randomColorModifier;
+		randomGrayColorValue = MathUtil.clamp(1, randomGrayColorValue, 256); // clamp to prevent accidental out-of-range colors
+				
+		ArrayList<DhApiRenderableBox> boxList = new ArrayList<>();
+		boxList.add(new DhApiRenderableBox(
+				new DhApiVec3d(0,0,0), 
+				new DhApiVec3d(fogWidthInBlocks, this.level.getMaxY() + randomHeightModifier, fogWidthInBlocks),
+				new Color(randomGrayColorValue, randomGrayColorValue, randomGrayColorValue), EDhApiBlockMaterial.UNKNOWN));
+		
+		this.fogRenderableBoxGroup = new RenderableBoxGroup(
+				ModInfo.NAME + ":UnexploredFog", 
+				new DhApiVec3d(DhSectionPos.getMinCornerBlockX(this.pos), level.getMinY(), DhSectionPos.getMinCornerBlockZ(this.pos)), 
+				boxList, true);
 		
 		this.beaconRenderHandler = this.quadTree.beaconRenderHandler;
 		this.beaconBeamRepo = this.level.getBeaconBeamRepo();
@@ -424,11 +459,19 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	public void setRenderingEnabled(boolean enabled) { this.renderingEnabled = enabled;}
 	
 	/** @see LodRenderSection#setRenderingEnabled */
-	public void onRenderingEnabled() { this.startRenderingBeacons(); }
+	public void onRenderingEnabled() 
+	{ 
+		this.startRenderingBeacons();
+		if (!this.getFullDataSourceExists())
+		{
+			this.level.getGenericRenderer().add(this.fogRenderableBoxGroup);
+		}
+	}
 	/** @see LodRenderSection#setRenderingEnabled */
 	public void onRenderingDisabled() 
 	{
 		this.stopRenderingBeacons();
+		this.level.getGenericRenderer().remove(this.fogRenderableBoxGroup.getId());
 		
 		if (Config.Client.Advanced.Debugging.DebugWireframe.showRenderSectionStatus.get())
 		{
@@ -674,6 +717,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		
 		
 		this.stopRenderingBeacons();
+		this.level.getGenericRenderer().remove(this.fogRenderableBoxGroup.getId());
 		
 		if (this.renderBuffer != null)
 		{

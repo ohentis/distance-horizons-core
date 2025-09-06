@@ -314,6 +314,8 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 	
 	@Override
 	public int getMinY() { return this.levelWrapper.getMinHeight(); }
+	@Override
+	public int getMaxY() { return this.levelWrapper.getMaxHeight(); }
 	
 	@Override
 	public FullDataSourceProviderV2 getFullDataProvider() { return this.dataFileHandler; }
