@@ -32,6 +32,7 @@ import com.seibel.distanthorizons.core.generation.tasks.InProgressWorldGenTaskGr
 import com.seibel.distanthorizons.core.generation.tasks.WorldGenResult;
 import com.seibel.distanthorizons.core.generation.tasks.WorldGenTask;
 import com.seibel.distanthorizons.core.generation.tasks.WorldGenTaskGroup;
+import com.seibel.distanthorizons.core.level.IDhServerLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
@@ -76,6 +77,7 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 	
 	
 	private final IDhApiWorldGenerator generator;
+	private final IDhServerLevel level;
 	
 	/** contains the positions that need to be generated */
 	private final ConcurrentHashMap<Long, WorldGenTask> waitingTasks = new ConcurrentHashMap<>();
@@ -113,10 +115,11 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 	// constructors //
 	//==============//
 	
-	public WorldGenerationQueue(IDhApiWorldGenerator generator)
+	public WorldGenerationQueue(IDhApiWorldGenerator generator, IDhServerLevel level)
 	{
 		LOGGER.info("Creating world gen queue");
 		this.generator = generator;
+		this.level = level;
 		this.lowestDataDetail = generator.getLargestDataDetailLevel();
 		this.highestDataDetail = generator.getSmallestDataDetailLevel();
 		
@@ -655,8 +658,35 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 	@Override
 	public void debugRender(DebugRenderer renderer)
 	{
-		this.waitingTasks.keySet().forEach((pos) -> { renderer.renderBox(new DebugRenderer.Box(pos, -32f, 64f, 0.05f, Color.blue)); });
-		this.inProgressGenTasksByLodPos.forEach((pos, t) -> { renderer.renderBox(new DebugRenderer.Box(pos, -32f, 64f, 0.05f, Color.red)); });
+		// determine the height the wireframe should render at
+		final int maxY;
+		if (Config.Client.Advanced.Graphics.GenericRendering.enableUnexploredFogRendering.get())
+		{
+			// if unexplored fog is enabled, make sure the wireframe can be seen over it
+			maxY = this.level.getMaxY();
+		}
+		else
+		{
+			// if unexplored fog is disabled, show the wireframe a bit lower
+			// since most worlds don't render all the way up to the max height
+			int levelHeightRange = (this.level.getMaxY() - this.level.getMinY());
+			maxY = this.level.getMaxY() - (levelHeightRange / 2);
+		}
+		
+		
+		// blue - queued
+		this.waitingTasks.keySet().forEach((pos) -> 
+		{ 
+			renderer.renderBox(
+					new DebugRenderer.Box(pos, this.level.getMinY(), maxY, 0.05f, Color.blue)); 
+		});
+		
+		// red - in progress
+		this.inProgressGenTasksByLodPos.forEach((pos, t) -> 
+		{ 
+			renderer.renderBox(
+					new DebugRenderer.Box(pos, this.level.getMinY(), maxY, 0.05f, Color.red)); 
+		});
 	}
 	
 	
