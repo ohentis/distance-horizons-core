@@ -371,8 +371,12 @@ public abstract class AbstractDhLevel implements IDhLevel
 	// unexplored fog //
 	//================//
 	
-	public IDhApiRenderableBoxGroup getUnexploredFogRenderableBoxGroup()
+	// TODO potentially merge how this and getGenericRenderer() are handled
+	// synchronized to prevent issues with two threads getting the same un-initalized group at the same time
+	public synchronized IDhApiRenderableBoxGroup getUnexploredFogRenderableBoxGroup()
 	{
+		// lazy setup to prevent issues on server levels and
+		// prevent order issues with the genericRenderer
 		if (this.unexploredFogRenderableBoxGroup == null)
 		{
 			this.unexploredFogRenderableBoxGroup = GenericRenderObjectFactory.INSTANCE.createAbsolutePositionedGroup(ModInfo.NAME+":UnexploredFog", new ArrayList<>(512));
