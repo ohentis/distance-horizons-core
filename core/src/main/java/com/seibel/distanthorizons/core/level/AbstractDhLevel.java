@@ -19,7 +19,9 @@
 
 package com.seibel.distanthorizons.core.level;
 
+import com.seibel.distanthorizons.api.interfaces.render.IDhApiRenderableBoxGroup;
 import com.seibel.distanthorizons.api.methods.events.abstractEvents.DhApiChunkModifiedEvent;
+import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBoxGroupShading;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.file.fullDatafile.DelayedFullDataSourceSaveCache;
 import com.seibel.distanthorizons.core.generation.DhLightingEngine;
@@ -29,6 +31,7 @@ import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos;
 import com.seibel.distanthorizons.core.render.renderer.generic.CloudRenderHandler;
 import com.seibel.distanthorizons.core.render.renderer.generic.GenericObjectRenderer;
+import com.seibel.distanthorizons.core.render.renderer.generic.GenericRenderObjectFactory;
 import com.seibel.distanthorizons.core.sql.dto.BeaconBeamDTO;
 import com.seibel.distanthorizons.core.sql.dto.ChunkHashDTO;
 import com.seibel.distanthorizons.core.sql.repo.AbstractDhRepo;
@@ -38,6 +41,7 @@ import com.seibel.distanthorizons.core.util.KeyedLockContainer;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
+import com.seibel.distanthorizons.coreapi.ModInfo;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
@@ -73,13 +77,15 @@ public abstract class AbstractDhLevel implements IDhLevel
 	@Nullable
 	protected CloudRenderHandler cloudRenderHandler;
 	
+	private IDhApiRenderableBoxGroup unexploredFogRenderableBoxGroup;
+	
 	
 	
 	//=============//
 	// constructor //
 	//=============//
 	
-	protected AbstractDhLevel() {  }
+	protected AbstractDhLevel() { }
 	
 	/** 
 	 * Creating the repos requires access to the level file, which isn't
@@ -362,6 +368,32 @@ public abstract class AbstractDhLevel implements IDhLevel
 	
 	
 	//================//
+	// unexplored fog //
+	//================//
+	
+	public IDhApiRenderableBoxGroup getUnexploredFogRenderableBoxGroup()
+	{
+		if (this.unexploredFogRenderableBoxGroup == null)
+		{
+			this.unexploredFogRenderableBoxGroup = GenericRenderObjectFactory.INSTANCE.createAbsolutePositionedGroup(ModInfo.NAME+":UnexploredFog", new ArrayList<>(512));
+			this.unexploredFogRenderableBoxGroup.setBlockLight(LodUtil.MIN_MC_LIGHT);
+			this.unexploredFogRenderableBoxGroup.setSkyLight(LodUtil.MAX_MC_LIGHT);
+			this.unexploredFogRenderableBoxGroup.setSsaoEnabled(true);
+			this.unexploredFogRenderableBoxGroup.setShading(DhApiRenderableBoxGroupShading.getDefaultShaded());
+			
+			GenericObjectRenderer genericRenderer = this.getGenericRenderer();
+			if (genericRenderer != null)
+			{
+				genericRenderer.add(this.unexploredFogRenderableBoxGroup);
+			}
+		}
+		
+		return this.unexploredFogRenderableBoxGroup;
+	}
+	
+	
+	
+	//================//
 	// base overrides //
 	//================//
 	
@@ -376,6 +408,15 @@ public abstract class AbstractDhLevel implements IDhLevel
 		{
 			this.beaconBeamRepo.close();
 		}
+		
+		
+		GenericObjectRenderer genericRenderer = this.getGenericRenderer();
+		if (genericRenderer != null 
+			&& this.unexploredFogRenderableBoxGroup != null)
+		{
+			genericRenderer.remove(this.unexploredFogRenderableBoxGroup.getId());
+		}
+		
 		
 		this.delayedFullDataSourceSaveCache.close();
 	}

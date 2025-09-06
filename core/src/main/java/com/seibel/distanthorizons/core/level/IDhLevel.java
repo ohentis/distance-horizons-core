@@ -19,6 +19,7 @@
 
 package com.seibel.distanthorizons.core.level;
 
+import com.seibel.distanthorizons.api.interfaces.render.IDhApiRenderableBoxGroup;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.file.fullDatafile.FullDataSourceProviderV2;
 import com.seibel.distanthorizons.core.file.fullDatafile.GeneratedFullDataSourceProvider;
@@ -61,8 +62,13 @@ public interface IDhLevel extends AutoCloseable, GeneratedFullDataSourceProvider
 	void updateBeaconBeamsForChunkPos(DhChunkPos chunkPos, List<BeaconBeamDTO> activeBeamList);
 	void updateBeaconBeamsForSectionPos(long sectionPos, List<BeaconBeamDTO> activeBeamList);
 	
+	/** @return null on server-only levels */
 	@Nullable
 	BeaconBeamRepo getBeaconBeamRepo();
+	
+	/** @return null on server-only levels */
+	@Nullable
+	IDhApiRenderableBoxGroup getUnexploredFogRenderableBoxGroup();
 	
 	FullDataSourceProviderV2 getFullDataProvider();
 	
