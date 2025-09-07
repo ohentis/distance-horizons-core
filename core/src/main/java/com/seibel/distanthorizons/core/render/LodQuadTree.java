@@ -21,8 +21,6 @@ package com.seibel.distanthorizons.core.render;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.RemovalCause;
-import com.google.common.cache.RemovalNotification;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.render.CachedColumnRenderSource;
 import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSource;

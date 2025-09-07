@@ -50,6 +50,7 @@ import com.seibel.distanthorizons.core.util.KeyedLockContainer;
 import com.seibel.distanthorizons.core.util.threading.PriorityTaskPicker;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.coreapi.util.MathUtil;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.apache.logging.log4j.Logger;
@@ -78,6 +79,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	public final long pos;
 	
 	private final IDhClientLevel level;
+	private final IClientLevelWrapper levelWrapper;
 	@WillNotClose
 	private final FullDataSourceProviderV2 fullDataSourceProvider;
 	private final LodQuadTree quadTree;
@@ -156,6 +158,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		this.cachedRenderSourceByPos = cachedRenderSourceByPos;
 		this.renderLoadLockContainer = renderLoadLockContainer;
 		this.level = level;
+		this.levelWrapper = level.getClientLevelWrapper();
 		this.fullDataSourceProvider = fullDataSourceProvider;
 		this.uploadTaskCountRef = uploadTaskCountRef;
 		
@@ -309,6 +312,10 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 					adjacentLoadFutures[1] = this.getRenderSourceForPosAsync(DhSectionPos.getAdjacentPos(this.pos, EDhDirection.SOUTH));
 					adjacentLoadFutures[2] = this.getRenderSourceForPosAsync(DhSectionPos.getAdjacentPos(this.pos, EDhDirection.EAST));
 					adjacentLoadFutures[3] = this.getRenderSourceForPosAsync(DhSectionPos.getAdjacentPos(this.pos, EDhDirection.WEST));
+					//adjacentLoadFutures[0] = CompletableFuture.completedFuture(null);
+					//adjacentLoadFutures[1] = CompletableFuture.completedFuture(null);
+					//adjacentLoadFutures[2] = CompletableFuture.completedFuture(null);
+					//adjacentLoadFutures[3] = CompletableFuture.completedFuture(null);
 					return CompletableFuture.allOf(adjacentLoadFutures).thenRun(() ->
 					{
 						try (CachedColumnRenderSource northRenderSource = adjacentLoadFutures[0].get();
@@ -387,7 +394,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 				// generate new render source
 				try (FullDataSourceV2 fullDataSource = this.fullDataSourceProvider.get(pos))
 				{
-					newCachedRenderSource.columnRenderSource = FullDataToRenderDataTransformer.transformFullDataToRenderSource(fullDataSource, this.level);
+					newCachedRenderSource.columnRenderSource = FullDataToRenderDataTransformer.transformFullDataToRenderSource(fullDataSource, this.levelWrapper);
 				}
 				catch (Exception e)
 				{
