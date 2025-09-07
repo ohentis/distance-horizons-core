@@ -1113,7 +1113,7 @@ public class Config
 				{
 					public static ConfigEntry<Boolean> showPlayerPos = new ConfigEntry.Builder<Boolean>()
 							.set(true)
-							.comment("Shows info about each thread pool.")
+							.comment("Shows the player's LOD position.")
 							.build();
 					public static ConfigEntry<Integer> playerPosSectionDetailLevel = new ConfigEntry.Builder<Integer>()
 							.setMinDefaultMax(6, 6, 16)
