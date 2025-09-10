@@ -26,6 +26,7 @@ import com.seibel.distanthorizons.api.objects.data.DhApiChunk;
 import com.seibel.distanthorizons.api.objects.data.IDhApiFullDataSource;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
+import com.seibel.distanthorizons.core.enums.EUnexploredTerrainType;
 import com.seibel.distanthorizons.core.file.AbstractDataSourceHandler;
 import com.seibel.distanthorizons.core.generation.tasks.IWorldGenTaskTracker;
 import com.seibel.distanthorizons.core.generation.tasks.InProgressWorldGenTaskGroup;
@@ -660,14 +661,15 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 	{
 		// determine the height the wireframe should render at
 		final int maxY;
-		if (Config.Client.Advanced.Graphics.GenericRendering.enableUnexploredFogRendering.get())
+		if (Config.Client.Advanced.Graphics.GenericRendering.enableUnexploredFogRendering.get()
+			&& this.level.getUnexploredTerrainType() == EUnexploredTerrainType.FOG_WALL)
 		{
 			// if unexplored fog is enabled, make sure the wireframe can be seen over it
 			maxY = this.level.getMaxY();
 		}
 		else
 		{
-			// if unexplored fog is disabled, show the wireframe a bit lower
+			// if unexplored fog is disabled or is an ocean, show the wireframe a bit lower
 			// since most worlds don't render all the way up to the max height
 			int levelHeightRange = (this.level.getMaxY() - this.level.getMinY());
 			maxY = this.level.getMaxY() - (levelHeightRange / 2);

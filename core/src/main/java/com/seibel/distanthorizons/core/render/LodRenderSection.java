@@ -21,9 +21,7 @@ package com.seibel.distanthorizons.core.render;
 
 import com.google.common.base.Suppliers;
 import com.google.common.cache.Cache;
-import com.seibel.distanthorizons.api.enums.rendering.EDhApiBlockMaterial;
 import com.seibel.distanthorizons.api.interfaces.render.IDhApiRenderableBoxGroup;
-import com.seibel.distanthorizons.api.objects.math.DhApiVec3d;
 import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBox;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
@@ -51,7 +49,6 @@ import com.seibel.distanthorizons.core.util.threading.PriorityTaskPicker;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
-import com.seibel.distanthorizons.coreapi.util.MathUtil;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
@@ -165,37 +162,9 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		this.beaconRenderHandler = this.quadTree.beaconRenderHandler;
 		this.beaconBeamRepo = this.level.getBeaconBeamRepo();
 		
-		this.unexploredFogRenderableBox = this.createUnexploredFogRenderableBox();
+		this.unexploredFogRenderableBox = this.level.createUnexploredTerrainRenderableBox(this.pos, this.levelWrapper);
 				
 		DebugRenderer.register(this, Config.Client.Advanced.Debugging.DebugWireframe.showRenderSectionStatus);
-	}
-	private DhApiRenderableBox createUnexploredFogRenderableBox()
-	{
-		// width
-		float fogWidthInBlocks = (float) DhSectionPos.getBlockWidth(this.pos);
-		
-		// pseudo random height (should be consistent for a given position)
-		int fogHeightRange = (int) ((this.level.getMaxY() - this.level.getMinY()) * 0.25);
-		int halfFogHeightRange = fogHeightRange / 2;
-		float randomHeightModifier = (float) (DhSectionPos.hashCode(this.pos) % halfFogHeightRange) - fogHeightRange;
-		
-		// pseudo random color (should be consistent for a given position)
-		int randomColorModifier = (DhSectionPos.hashCode(this.pos) % 30) - 15;
-		int randomGrayColorValue = 180 + randomColorModifier;
-		randomGrayColorValue = MathUtil.clamp(1, randomGrayColorValue, 256); // clamp to prevent accidental out-of-range colors
-		
-		
-		return new DhApiRenderableBox(
-				// min pos
-				new DhApiVec3d(DhSectionPos.getMinCornerBlockX(this.pos),
-						this.level.getMinY(),
-						DhSectionPos.getMinCornerBlockZ(this.pos)),
-				// max pos
-				new DhApiVec3d(DhSectionPos.getMinCornerBlockX(this.pos) + fogWidthInBlocks,
-						this.level.getMaxY() + randomHeightModifier,
-						DhSectionPos.getMinCornerBlockZ(this.pos) + fogWidthInBlocks),
-				new Color(randomGrayColorValue, randomGrayColorValue, randomGrayColorValue), EDhApiBlockMaterial.UNKNOWN);
-		
 	}
 	
 	
@@ -682,7 +651,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	
 	private void startRenderingUnexploredFog()
 	{
-		IDhApiRenderableBoxGroup boxGroup = this.level.getUnexploredFogRenderableBoxGroup();
+		IDhApiRenderableBoxGroup boxGroup = this.level.getUnexploredTerrainRenderableBoxGroup();
 		if (boxGroup != null) // box group will be null for server levels, that shouldn't be a problem here, but just in case
 		{
 			boxGroup.add(this.unexploredFogRenderableBox);
@@ -692,7 +661,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	
 	private void stopRenderingUnexploredFog()
 	{
-		IDhApiRenderableBoxGroup boxGroup = this.level.getUnexploredFogRenderableBoxGroup();
+		IDhApiRenderableBoxGroup boxGroup = this.level.getUnexploredTerrainRenderableBoxGroup();
 		if (boxGroup != null) // box group will be null for server levels, that shouldn't be a problem here, but just in case
 		{
 			if (boxGroup.remove(this.unexploredFogRenderableBox))

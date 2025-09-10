@@ -66,6 +66,8 @@ public interface ILevelWrapper extends IDhApiLevelWrapper, IBindable
 	@Override
 	default int getMinHeight() { return 0; }
 	
+	int getSeaLevel();
+	
 	default IChunkWrapper tryGetChunk(DhChunkPos pos) { return null; }
 	
 	boolean hasChunkLoaded(int chunkX, int chunkZ);
