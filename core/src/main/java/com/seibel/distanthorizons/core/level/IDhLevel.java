@@ -22,7 +22,6 @@ package com.seibel.distanthorizons.core.level;
 import com.seibel.distanthorizons.api.interfaces.render.IDhApiRenderableBoxGroup;
 import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBox;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
-import com.seibel.distanthorizons.core.enums.EUnexploredTerrainType;
 import com.seibel.distanthorizons.core.file.fullDatafile.FullDataSourceProviderV2;
 import com.seibel.distanthorizons.core.file.fullDatafile.GeneratedFullDataSourceProvider;
 import com.seibel.distanthorizons.core.file.structure.ISaveStructure;
@@ -68,15 +67,6 @@ public interface IDhLevel extends AutoCloseable, GeneratedFullDataSourceProvider
 	/** @return null on server-only levels */
 	@Nullable
 	BeaconBeamRepo getBeaconBeamRepo();
-	
-	/** @return null on server-only levels */
-	@Nullable
-	IDhApiRenderableBoxGroup getUnexploredTerrainRenderableBoxGroup();
-	
-	/** should only be used for client levels */
-	DhApiRenderableBox createUnexploredTerrainRenderableBox(long pos, IClientLevelWrapper levelWrapper);
-	
-	EUnexploredTerrainType getUnexploredTerrainType();
 	
 	FullDataSourceProviderV2 getFullDataProvider();
 	

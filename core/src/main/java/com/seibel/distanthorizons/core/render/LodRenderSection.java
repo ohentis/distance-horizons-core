@@ -84,8 +84,6 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	private final Cache<Long, CachedColumnRenderSource> cachedRenderSourceByPos;
 	private final AtomicInteger uploadTaskCountRef;
 	
-	private final DhApiRenderableBox unexploredFogRenderableBox;
-	
 	/** 
 	 * contains the list of beacons currently being rendered in this section 
 	 * if this list is modified the {@link LodRenderSection#beaconRenderHandler} should be updated to match.
@@ -161,9 +159,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		
 		this.beaconRenderHandler = this.quadTree.beaconRenderHandler;
 		this.beaconBeamRepo = this.level.getBeaconBeamRepo();
-		
-		this.unexploredFogRenderableBox = this.level.createUnexploredTerrainRenderableBox(this.pos, this.levelWrapper);
-				
+			
 		DebugRenderer.register(this, Config.Client.Advanced.Debugging.DebugWireframe.showRenderSectionStatus);
 	}
 	
@@ -218,14 +214,6 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 			
 			this.getAndBuildRenderDataRunnable = () ->
 			{
-				// reset the fog
-				this.stopRenderingUnexploredFog();
-				if (!this.getFullDataSourceExists())
-				{
-					// no render data is present, fill the area with "fog"
-					this.startRenderingUnexploredFog();
-				}
-				
 				this.getAndRefreshRenderingBeacons();
 				this.getAndUploadRenderDataToGpuAsync()
 					.thenRun(() -> 
@@ -450,7 +438,6 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	public void onRenderingDisabled() 
 	{
 		this.stopRenderingBeacons();
-		this.stopRenderingUnexploredFog();
 		
 		if (Config.Client.Advanced.Debugging.DebugWireframe.showRenderSectionStatus.get())
 		{
@@ -645,34 +632,6 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	
 	
 	
-	//================//
-	// unexplored fog //
-	//================//
-	
-	private void startRenderingUnexploredFog()
-	{
-		IDhApiRenderableBoxGroup boxGroup = this.level.getUnexploredTerrainRenderableBoxGroup();
-		if (boxGroup != null) // box group will be null for server levels, that shouldn't be a problem here, but just in case
-		{
-			boxGroup.add(this.unexploredFogRenderableBox);
-			boxGroup.triggerBoxChange();
-		}
-	}
-	
-	private void stopRenderingUnexploredFog()
-	{
-		IDhApiRenderableBoxGroup boxGroup = this.level.getUnexploredTerrainRenderableBoxGroup();
-		if (boxGroup != null) // box group will be null for server levels, that shouldn't be a problem here, but just in case
-		{
-			if (boxGroup.remove(this.unexploredFogRenderableBox))
-			{
-				boxGroup.triggerBoxChange();
-			}
-		}
-	}
-	
-	
-	
 	//==============//
 	// base methods //
 	//==============//
@@ -723,7 +682,6 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		
 		
 		this.stopRenderingBeacons();
-		this.stopRenderingUnexploredFog();
 		
 		if (this.renderBuffer != null)
 		{

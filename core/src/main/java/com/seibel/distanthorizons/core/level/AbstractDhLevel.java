@@ -28,7 +28,6 @@ import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBox;
 import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBoxGroupShading;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
-import com.seibel.distanthorizons.core.enums.EUnexploredTerrainType;
 import com.seibel.distanthorizons.core.file.fullDatafile.DelayedFullDataSourceSaveCache;
 import com.seibel.distanthorizons.core.generation.DhLightingEngine;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
@@ -88,7 +87,6 @@ public abstract class AbstractDhLevel implements IDhLevel
 	protected CloudRenderHandler cloudRenderHandler;
 	
 	private IDhApiRenderableBoxGroup unexploredFogRenderableBoxGroup;
-	private EUnexploredTerrainType unexploredTerrainType = null;
 	
 	
 	
@@ -375,133 +373,6 @@ public abstract class AbstractDhLevel implements IDhLevel
 	@Override
 	@Nullable
 	public BeaconBeamRepo getBeaconBeamRepo() { return this.beaconBeamRepo; }
-	
-	
-	
-	//====================//
-	// unexplored terrain //
-	//====================//
-	
-	// TODO potentially merge how this and getGenericRenderer() are handled
-	// synchronized to prevent issues with two threads getting the same un-initalized group at the same time
-	public synchronized IDhApiRenderableBoxGroup getUnexploredTerrainRenderableBoxGroup()
-	{
-		// lazy setup to prevent issues on server levels and
-		// prevent order issues with the genericRenderer
-		if (this.unexploredFogRenderableBoxGroup == null)
-		{
-			// ocean looks better without SSAO
-			boolean enableSsao = (this.getUnexploredTerrainType() == EUnexploredTerrainType.FOG_WALL);
-			
-			this.unexploredFogRenderableBoxGroup = GenericRenderObjectFactory.INSTANCE.createAbsolutePositionedGroup(ModInfo.NAME+":UnexploredFog", new ArrayList<>(512));
-			this.unexploredFogRenderableBoxGroup.setBlockLight(LodUtil.MIN_MC_LIGHT);
-			this.unexploredFogRenderableBoxGroup.setSkyLight(LodUtil.MAX_MC_LIGHT);
-			this.unexploredFogRenderableBoxGroup.setSsaoEnabled(enableSsao);
-			this.unexploredFogRenderableBoxGroup.setShading(DhApiRenderableBoxGroupShading.getDefaultShaded());
-			this.unexploredFogRenderableBoxGroup.setPreRenderFunc((DhApiRenderParam param) -> 
-			{
-				boolean renderingEnabled = Config.Client.Advanced.Graphics.GenericRendering.enableUnexploredFogRendering.get();
-				this.unexploredFogRenderableBoxGroup.setActive(renderingEnabled);
-			});
-			
-			GenericObjectRenderer genericRenderer = this.getGenericRenderer();
-			if (genericRenderer != null)
-			{
-				genericRenderer.add(this.unexploredFogRenderableBoxGroup);
-			}
-		}
-		
-		return this.unexploredFogRenderableBoxGroup;
-	}
-	
-	@Override
-	public EUnexploredTerrainType getUnexploredTerrainType()
-	{
-		// use cached value to prevent repeat string/levelWrapper operations
-		if (this.unexploredTerrainType != null)
-		{
-			return this.unexploredTerrainType;
-		}
-		
-		// determine if we should use an infinite ocean or a fog wall
-		boolean hasCeiling = this.getLevelWrapper().hasCeiling();
-		String dimensionName = this.getLevelWrapper().getDimensionName().toLowerCase();
-		boolean dimensionHasOcean =
-				!hasCeiling
-				&& !dimensionName.contains("the_end")
-				&& !dimensionName.contains("nether");
-		
-		this.unexploredTerrainType = dimensionHasOcean ? EUnexploredTerrainType.OCEAN : EUnexploredTerrainType.FOG_WALL;
-		return this.unexploredTerrainType;
-	}
-	
-	/** 
-	 * @param levelWrapper is passed in due to how levelWrapper caching is poorly handled in most
-	 *                      {@link IDhLevel}'s. If that's ever fixed we can just use the local {@link IClientLevelWrapper} 
-	 *                      getter instead.
-	 */
-	@Override
-	public DhApiRenderableBox createUnexploredTerrainRenderableBox(long pos, IClientLevelWrapper levelWrapper)
-	{
-		EUnexploredTerrainType terrainType = this.getUnexploredTerrainType();
-		if (terrainType == EUnexploredTerrainType.OCEAN)
-		{
-			return createUnexploredOceanRenderableBox(pos, levelWrapper);
-		}
-		else
-		{
-			return createUnexploredFogWallRenderableBox(pos, levelWrapper);
-		}
-	}
-	private static DhApiRenderableBox createUnexploredOceanRenderableBox(long pos, IClientLevelWrapper levelWrapper)
-	{
-		// width
-		float fogWidthInBlocks = (float) DhSectionPos.getBlockWidth(pos);
-		
-		int seaLevel = levelWrapper.getSeaLevel();
-		
-		Color waterColor = ColorUtil.toColorObjRGB(levelWrapper.getWaterBlockColor());
-		
-		
-		return new DhApiRenderableBox(
-				// min pos
-				new DhApiVec3d(DhSectionPos.getMinCornerBlockX(pos),
-						levelWrapper.getMinHeight(),
-						DhSectionPos.getMinCornerBlockZ(pos)),
-				// max pos
-				new DhApiVec3d(DhSectionPos.getMinCornerBlockX(pos) + fogWidthInBlocks,
-						seaLevel,
-						DhSectionPos.getMinCornerBlockZ(pos) + fogWidthInBlocks),
-				waterColor, EDhApiBlockMaterial.UNKNOWN);
-		
-	}
-	private static DhApiRenderableBox createUnexploredFogWallRenderableBox(long pos, IClientLevelWrapper levelWrapper)
-	{
-		// width
-		float fogWidthInBlocks = (float) DhSectionPos.getBlockWidth(pos);
-		
-		// pseudo random height (should be consistent for a given position)
-		int fogHeightRange = (int) ((levelWrapper.getMaxHeight() - levelWrapper.getMinHeight()) * 0.25);
-		int halfFogHeightRange = fogHeightRange / 2;
-		float randomHeightModifier = (float) (DhSectionPos.hashCode(pos) % halfFogHeightRange) - fogHeightRange;
-		
-		// pseudo random color (should be consistent for a given position)
-		int randomColorModifier = (DhSectionPos.hashCode(pos) % 30) - 15;
-		int randomGrayColorValue = 180 + randomColorModifier;
-		randomGrayColorValue = MathUtil.clamp(1, randomGrayColorValue, 256); // clamp to prevent accidental out-of-range colors
-		
-		
-		return new DhApiRenderableBox(
-				// min pos
-				new DhApiVec3d(DhSectionPos.getMinCornerBlockX(pos),
-						levelWrapper.getMinHeight(),
-						DhSectionPos.getMinCornerBlockZ(pos)),
-				// max pos
-				new DhApiVec3d(DhSectionPos.getMinCornerBlockX(pos) + fogWidthInBlocks,
-						levelWrapper.getMaxHeight() + randomHeightModifier,
-						DhSectionPos.getMinCornerBlockZ(pos) + fogWidthInBlocks),
-				new Color(randomGrayColorValue, randomGrayColorValue, randomGrayColorValue), EDhApiBlockMaterial.UNKNOWN);
-	}
 	
 	
 	
