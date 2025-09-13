@@ -37,6 +37,7 @@ import java.io.File;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Validates {@link AbstractDhRepo} is set up correctly.
@@ -341,6 +342,54 @@ public class DhRepoSqliteTest
 			}
 		}
 	}
+	
+	
+	// can be uncommented to compare different update methods performance
+	//@Test
+	public void testBulkUpdatePerformance()
+	{
+		TestPrimaryKeyRepo primaryKeyRepo = null;
+		try
+		{
+			primaryKeyRepo = new TestPrimaryKeyRepo(DATABASE_TYPE, new File(DB_FILE_NAME));
+			final TestPrimaryKeyRepo finalRepoRef = primaryKeyRepo;
+			
+			
+			long startMs = System.currentTimeMillis();
+			
+			// run two threads that try to update
+			// the same DTO to test locks
+			CompletableFuture<Void> f1 = CompletableFuture.runAsync(() -> bulkSameDtoUpdate(finalRepoRef, 0, 2_000));
+			CompletableFuture<Void> f2 = CompletableFuture.runAsync(() -> bulkSameDtoUpdate(finalRepoRef, 2_000, 4_000));
+			
+			CompletableFuture.allOf(f1, f2).join();
+			
+			long endMs = System.currentTimeMillis();
+			System.out.println("Bulk update took ["+(endMs - startMs)+"] ms");
+		}
+		catch (SQLException e)
+		{
+			Assert.fail(e.getMessage());
+		}
+		finally
+		{
+			if (primaryKeyRepo != null)
+			{
+				primaryKeyRepo.close();
+			}
+		}
+	}
+	private static void bulkSameDtoUpdate(TestPrimaryKeyRepo repo, int startIndex, int endIndex)
+	{
+		TestSingleKeyDto dto = new TestSingleKeyDto(0, "a", 0L, (byte) 0);
+		for (int i = startIndex; i < endIndex; i++)
+		{
+			dto.longValue = i;
+			repo.save(dto);
+		}
+	}
+	
+	
 	
 	
 }
