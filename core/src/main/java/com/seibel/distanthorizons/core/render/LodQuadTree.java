@@ -243,8 +243,10 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 		}
 		
 		
-		// full data retrieval (world gen)
-		if (!this.fullDataRetrievalQueueRunning.get())
+		// queue full data retrieval (world gen) requests if needed
+		if (nodesNeedingRetrieval.size() != 0
+			&& !this.fullDataRetrievalQueueRunning.get()
+			&& this.fullDataSourceProvider.canQueueRetrieval())
 		{
 			this.fullDataRetrievalQueueRunning.set(true);
 			FULL_DATA_RETRIEVAL_QUEUE_THREAD.execute(() -> this.queueFullDataRetrievalTasks(playerPos, nodesNeedingRetrieval));
@@ -683,9 +685,6 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 	{
 		try
 		{
-			// add a slight delay since we don't need to check the world gen queue every tick
-			Thread.sleep(WORLD_GEN_QUEUE_UPDATE_DELAY_IN_MS);
-			
 			// sort the nodes from nearest to farthest
 			ArrayList<LodRenderSection> nodeList = new ArrayList<>(nodesNeedingRetrieval);
 			nodeList.sort((a, b) ->

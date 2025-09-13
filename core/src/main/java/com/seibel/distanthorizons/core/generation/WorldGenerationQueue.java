@@ -187,44 +187,39 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 		// update the target pos
 		this.generationTargetPos = targetPos;
 		
-		// ensure the queuing thread is running
-		if (!this.generationQueueRunning)
-		{
-			this.startWorldGenQueuingThread();
-		}
+		// needs to be called at least once to start the queue
+		this.tryQueueNewWorldGenRequestsAsync();
 	}
-	private void startWorldGenQueuingThread()
+	private synchronized void tryQueueNewWorldGenRequestsAsync()
 	{
+		if (!DhApiWorldProxy.INSTANCE.worldLoaded()
+			|| DhApiWorldProxy.INSTANCE.getReadOnly())
+		{
+			return;
+		}
+		
+		if (this.generationQueueRunning)
+		{
+			return;
+		}
 		this.generationQueueRunning = true;
+		
+		
 		
 		// queue world generation tasks on its own thread since this process is very slow and would lag the server thread
 		this.queueingThread.execute(() ->
 		{
 			try
 			{
-				// loop until the generator is shutdown
-				while (!Thread.interrupted() && DhApiWorldProxy.INSTANCE.worldLoaded() && !DhApiWorldProxy.INSTANCE.getReadOnly())
+				this.generator.preGeneratorTaskStart();
+			
+				// queue generation tasks until the generator is full, or there are no more tasks to generate
+				boolean taskStarted = true;
+				while (!this.isGeneratorBusy()
+						&& taskStarted)
 				{
-					this.generator.preGeneratorTaskStart();
-					
-					// queue generation tasks until the generator is full, or there are no more tasks to generate
-					boolean taskStarted = true;
-					while (!this.isGeneratorBusy() && taskStarted)
-					{
-						taskStarted = this.startNextWorldGenTask(this.generationTargetPos);
-						if (!taskStarted)
-						{
-							int debugPointOne = 0;
-						}
-					}
-					
-					// if there aren't any new tasks, wait a second before checking again // TODO replace with a listener instead
-					Thread.sleep(1000);
+					taskStarted = this.startNextWorldGenTask(this.generationTargetPos);
 				}
-			}
-			catch (InterruptedException e)
-			{
-				/* do nothing, this means the thread is being shut down */
 			}
 			catch (Exception e)
 			{
@@ -236,7 +231,7 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 			}
 		});
 	}
-	public boolean isGeneratorBusy()
+	private boolean isGeneratorBusy()
 	{
 		PriorityTaskPicker.Executor executor = ThreadPoolUtil.getWorldGenExecutor();
 		if (executor == null)
@@ -249,7 +244,6 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 		int maxWorldGenTaskCount = worldGenThreadCount * MAX_QUEUED_TASKS_PER_THREAD;
 		return executor.getQueueSize() > maxWorldGenTaskCount;
 	}
-	
 	/**
 	 * @param targetPos the position to center the generation around
 	 * @return false if no tasks were found to generate
@@ -382,6 +376,10 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 			{
 				LOGGER.error("Unexpected error completing world gen task at pos: ["+DhSectionPos.toString(taskPos)+"].", e);
 			}
+			finally
+			{
+				this.tryQueueNewWorldGenRequestsAsync();
+			}
 		});
 		
 		this.inProgressGenTasksByLodPos.put(taskPos, newTaskGroup);
@@ -467,6 +465,7 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 				pooledDataSource.setRunApiChunkValidation(this.generator.runApiValidation());
 				
 				// only apply to children if we aren't at the bottom of the tree
+				
 				pooledDataSource.applyToChildren = DhSectionPos.getDetailLevel(pooledDataSource.getPos()) > DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL;
 				pooledDataSource.applyToParent = DhSectionPos.getDetailLevel(pooledDataSource.getPos()) < DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL + 12;
 				

@@ -512,7 +512,8 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	
 	public void tryQueuingMissingLodRetrieval()
 	{
-		if (this.fullDataSourceProvider.canRetrieveMissingDataSources() && this.fullDataSourceProvider.canQueueRetrieval())
+		if (this.fullDataSourceProvider.canRetrieveMissingDataSources() 
+			&& this.fullDataSourceProvider.canQueueRetrieval())
 		{
 			// calculate the missing positions if not already done
 			if (this.missingGenerationPosFunc == null)
