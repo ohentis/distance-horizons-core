@@ -602,6 +602,10 @@
     "Seconds To Show Progress Hiding Instructions",
   "distanthorizons.config.common.worldGenerator.generationProgressDisableMessageDisplayTimeInSeconds.@tooltip":
     "For how many seconds should instructions for disabling the distant generator progress be displayed? \nSetting this to 0 hides the instructional message so the world gen progress is shown immediately when it starts.",
+  "distanthorizons.config.common.worldGenerator.generationProgressIncludeChunksPerSecond":
+    "Show Generation Speed in Chunks/Second",
+  "distanthorizons.config.common.worldGenerator.generationProgressIncludeChunksPerSecond.@tooltip":
+    "When logging generation progress also include the rate at which chunks \nare being generated. \nThis can be useful for troubleshooting performance.",
 
 
   "distanthorizons.config.common.lodBuilding":

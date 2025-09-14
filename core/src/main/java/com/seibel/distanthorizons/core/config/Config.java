@@ -1311,6 +1311,15 @@ public class Config
 							+ "")
 					.build();
 			
+			public static ConfigEntry<Boolean> generationProgressIncludeChunksPerSecond = new ConfigEntry.Builder<Boolean>()
+					.set(true)
+					.comment(""
+							+ "When logging generation progress also include the rate at which chunks \n"
+							+ "are being generated. \n"
+							+ "This can be useful for troubleshooting performance. \n"
+							+ "")
+					.build();
+			
 		}
 		
 		public static class LodBuilding
