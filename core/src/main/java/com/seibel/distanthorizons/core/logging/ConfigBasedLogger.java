@@ -62,6 +62,11 @@ public class ConfigBasedLogger
 		loggers.add(new WeakReference<>(this));
 	}
 	
+	private static boolean isLessSpecificThan(Level _this, Level other)
+	{
+		return _this.intLevel() >= other.intLevel();
+	}
+	
 	private String _throwableToDetailString(Throwable t)
 	{
 		StringBuilder sb = new StringBuilder();
@@ -95,16 +100,16 @@ public class ConfigBasedLogger
 				: this.logger.getMessageFactory().newMessage("{}", str);
 		
 		String msgStr = msg.getFormattedMessage();
-		if (mode.levelForFile.isLessSpecificThan(level))
+		if (isLessSpecificThan(mode.levelForFile, level))
 		{
-			Level logLevel = level.isLessSpecificThan(Level.INFO) ? Level.INFO : level;
+			Level logLevel = isLessSpecificThan(level, Level.INFO) ? Level.INFO : level;
 			if (param.length > 0 && param[param.length - 1] instanceof Throwable)
 				logger.log(logLevel, msgStr, (Throwable) param[param.length - 1]);
 			else
 				logger.log(logLevel, msgStr);
 		}
 		
-		if (MC != null && mode.levelForChat.isLessSpecificThan(level))
+		if (MC != null && isLessSpecificThan(mode.levelForChat, level))
 		{
 			if (param.length > 0 && param[param.length - 1] instanceof Throwable)
 				MC.logToChat(level, msgStr + "\n" +
