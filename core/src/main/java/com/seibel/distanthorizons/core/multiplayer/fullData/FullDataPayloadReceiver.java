@@ -11,6 +11,7 @@ import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV2DTO;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
+import io.netty.buffer.UnpooledByteBufAllocator;
 import org.apache.logging.log4j.LogManager;
 
 import java.util.Objects;
@@ -38,7 +39,7 @@ public class FullDataPayloadReceiver implements AutoCloseable
 		{
 			if (message.isFirst)
 			{
-				composite = Unpooled.compositeBuffer();
+				composite = UnpooledByteBufAllocator.DEFAULT.compositeBuffer();
 				LOGGER.debug("Created new full data buffer [" + message.bufferId + "]: [" + composite + "]");
 			}
 			else if (composite == null)
@@ -47,7 +48,8 @@ public class FullDataPayloadReceiver implements AutoCloseable
 				return null;
 			}
 			
-			composite.addComponent(true, message.buffer);
+			composite.addComponent(message.buffer);
+			composite.writerIndex(composite.writerIndex() + message.buffer.writerIndex());
 			LOGGER.debug("Updated full data buffer [" + message.bufferId + "]: [" + composite + "].");
 			return composite;
 		});

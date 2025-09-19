@@ -64,7 +64,7 @@ public class FullDataPayloadSender implements AutoCloseable
 			int chunkSize = Math.min(Math.min(bytesToSend, FULL_DATA_SPLIT_SIZE_IN_BYTES), pendingTransfer.buffer.readableBytes());
 			boolean isFirstChunk = pendingTransfer.buffer.readerIndex() == 0;
 			
-			FullDataSplitMessage chunkMessage = new FullDataSplitMessage(pendingTransfer.bufferId, pendingTransfer.buffer.readRetainedSlice(chunkSize), isFirstChunk);
+			FullDataSplitMessage chunkMessage = new FullDataSplitMessage(pendingTransfer.bufferId, pendingTransfer.buffer.readSlice(chunkSize).retain(), isFirstChunk);
 			this.session.sendMessage(chunkMessage);
 			
 			bytesToSend -= chunkSize;
