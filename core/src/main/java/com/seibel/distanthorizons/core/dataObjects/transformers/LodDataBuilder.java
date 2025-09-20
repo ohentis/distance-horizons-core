@@ -285,6 +285,12 @@ public class LodDataBuilder
 						continue;
 					}
 					
+					// the lowest/bedrock segment should not be culled
+					if (centerIndex + 1 == centerColumn.size())
+					{
+						continue;
+					}
+					
 					posXIndex = checkOcclusion(dataSource, currentPoint, posXColumn, posXIndex);
 					if (posXIndex < 0)
 					{
