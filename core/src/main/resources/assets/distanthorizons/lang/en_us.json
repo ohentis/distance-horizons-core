@@ -494,6 +494,10 @@
     "Validate Buffer IDs Before Rendering",
   "distanthorizons.config.client.advanced.debugging.openGl.validateBufferIdsBeforeRendering.@tooltip":
     "Massively reduces FPS. \nShould only be used if mysterious EXCEPTION_ACCESS_VIOLATION crashes are happening in DH's rendering code and you're attempting to troubleshoot it.",
+  "distanthorizons.config.client.advanced.debugging.openGl.enableMacosStateValidation":
+    "Enable MacOS State Validation",
+  "distanthorizons.config.client.advanced.debugging.openGl.enableMacosStateValidation.@tooltip":
+    "Experimental option \nMay reduce crashing when Sodium is installed on Mac, may reduce performance, may do nothing.",
   
 
   

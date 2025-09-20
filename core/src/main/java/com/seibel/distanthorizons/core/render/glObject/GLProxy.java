@@ -23,6 +23,7 @@ import com.seibel.distanthorizons.api.enums.config.EDhApiGLErrorHandlingMode;
 import com.seibel.distanthorizons.api.enums.config.EDhApiGpuUploadMethod;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
+import com.seibel.distanthorizons.core.jar.EPlatform;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.util.objects.GLMessages.*;
@@ -32,10 +33,7 @@ import com.seibel.distanthorizons.coreapi.util.StringUtil;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.glfw.GLFW;
-import org.lwjgl.opengl.GL;
-import org.lwjgl.opengl.GL32;
-import org.lwjgl.opengl.GLCapabilities;
-import org.lwjgl.opengl.GLUtil;
+import org.lwjgl.opengl.*;
 
 import java.io.PrintStream;
 import java.util.Collections;
@@ -184,6 +182,25 @@ public class GLProxy
 			this.preferredUploadMethod = this.bufferStorageSupported ? EDhApiGpuUploadMethod.BUFFER_STORAGE : EDhApiGpuUploadMethod.DATA;
 		}
 		GL_LOGGER.info("GPU Vendor [" + vendor + "], Preferred upload method is [" + this.preferredUploadMethod + "].");
+		
+		
+		// experimental Mac OS 
+		if (Config.Client.Advanced.Debugging.OpenGl.enableMacosStateValidation.get())
+		{
+			EPlatform platform = EPlatform.get();
+			if (platform == EPlatform.MACOS)
+			{
+				GL_LOGGER.info("Attempting to enable kCGLCEStateValidation.");
+				CGL.CGLEnable(CGL.CGLGetCurrentContext(), CGL.kCGLCEStateValidation);
+				// according to some testing by IMS this may reduce issues with Mac OS,
+				// however according to the 
+				// https://leopard-adc.pepas.com/documentation/GraphicsImaging/Reference/CGL_OpenGL/CGL_OpenGL.pdf#:~:text=If%20enabled%2C%20OpenGL%20inspects%20the,a%20virtual%20screen%20number%20different
+			}
+			else
+			{
+				GL_LOGGER.info("Unable to enable kCGLCEStateValidation due to OS being ["+platform.name()+"].");
+			}
+		}
 		
 		
 		
