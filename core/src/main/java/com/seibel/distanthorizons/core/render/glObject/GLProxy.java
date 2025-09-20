@@ -184,7 +184,7 @@ public class GLProxy
 		GL_LOGGER.info("GPU Vendor [" + vendor + "], Preferred upload method is [" + this.preferredUploadMethod + "].");
 		
 		
-		// experimental Mac OS 
+		// experimental Mac OS validation option
 		if (Config.Client.Advanced.Debugging.OpenGl.enableMacosStateValidation.get())
 		{
 			EPlatform platform = EPlatform.get();
@@ -193,8 +193,10 @@ public class GLProxy
 				GL_LOGGER.info("Attempting to enable kCGLCEStateValidation.");
 				CGL.CGLEnable(CGL.CGLGetCurrentContext(), CGL.kCGLCEStateValidation);
 				// according to some testing by IMS this may reduce issues with Mac OS,
-				// however according to the 
+				// however according to the documentation here:
 				// https://leopard-adc.pepas.com/documentation/GraphicsImaging/Reference/CGL_OpenGL/CGL_OpenGL.pdf#:~:text=If%20enabled%2C%20OpenGL%20inspects%20the,a%20virtual%20screen%20number%20different
+				// it doesn't make much sense that this validation would fix crashing
+				// unless Mac's GL implementation does something funky
 			}
 			else
 			{
