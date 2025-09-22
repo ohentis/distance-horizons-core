@@ -195,12 +195,12 @@ public class ConfigBase
 	
 	
 	/**
-	 * Used for checking that all the lang files for the config exist
+	 * Used for checking that all the lang files for the config exist.
+	 * This is just to re-format the lang or check if there is something in the lang that is missing
 	 *
 	 * @param onlyShowNew If disabled then it would basically remake the config lang
 	 * @param checkEnums Checks if all the lang for the enum's exist
 	 */
-	// This is just to re-format the lang or check if there is something in the lang that is missing
 	@SuppressWarnings("unchecked")
 	public String generateLang(boolean onlyShowNew, boolean checkEnums)
 	{
@@ -221,6 +221,7 @@ public class ConfigBase
 			{ // Put it in an enum list to work with at the end
 				enumList.add((Class<? extends Enum<?>>) entry.getType());
 			}
+			
 			if (!onlyShowNew || langWrapper.langExists(entryPrefix))
 			{
 				if (!ConfigUiLinkedEntry.class.isAssignableFrom(entry.getClass()))
@@ -232,6 +233,7 @@ public class ConfigBase
 							+ ending
 					;
 				}
+				
 				// Adds tooltips
 				if (langWrapper.langExists(entryPrefix + ".@tooltip"))
 				{
@@ -246,13 +248,14 @@ public class ConfigBase
 				}
 			}
 		}
+		
 		if (!enumList.isEmpty())
 		{
 			generatedLang += "\n"; // Separate the main lang with the enum's
 			
 			for (Class<? extends Enum> anEnum : enumList)
 			{
-				for (Object enumStr : new ArrayList<>(EnumSet.allOf(anEnum)))
+				for (Object enumStr : new ArrayList<Object>(EnumSet.allOf(anEnum)))
 				{
 					String enumPrefix = "lod.config.enum." + anEnum.getSimpleName() + "." + enumStr.toString();
 					
@@ -268,6 +271,11 @@ public class ConfigBase
 				}
 			}
 		}
+		
+		// trim to remove any newlines/spaces
+		// that may be present when no lang entries need changing
+		// then we can check length != 0 if any items are missing and need adding 
+		generatedLang = generatedLang.trim();
 		
 		return generatedLang;
 	}
