@@ -1059,14 +1059,6 @@ public class Config
 									+ "")
 							.build();
 					
-					public static ConfigEntry<Boolean> enableMacosStateValidation = new ConfigEntry.Builder<Boolean>()
-							.set(false)
-							.comment(""
-									+ "Experimental option \n"
-									+ "May reduce crashing when Sodium is installed on Mac, may reduce performance, may do nothing. \n"
-									+ "")
-							.build();
-					
 				}
 				
 				public static class ColumnBuilderDebugging
