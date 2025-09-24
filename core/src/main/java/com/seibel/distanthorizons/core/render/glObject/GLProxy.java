@@ -23,6 +23,7 @@ import com.seibel.distanthorizons.api.enums.config.EDhApiGLErrorHandlingMode;
 import com.seibel.distanthorizons.api.enums.config.EDhApiGpuUploadMethod;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
+import com.seibel.distanthorizons.core.jar.EPlatform;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.util.objects.GLMessages.*;
@@ -173,17 +174,26 @@ public class GLProxy
 		
 		// get the best automatic upload method
 		String vendor = GL32.glGetString(GL32.GL_VENDOR).toUpperCase(); // example return: "NVIDIA CORPORATION"
-		if (vendor.contains("NVIDIA") || vendor.contains("GEFORCE"))
+		if (EPlatform.get() != EPlatform.MACOS)
 		{
-			// NVIDIA card
-			this.preferredUploadMethod = this.bufferStorageSupported ? EDhApiGpuUploadMethod.BUFFER_STORAGE : EDhApiGpuUploadMethod.SUB_DATA;
+			if (vendor.contains("NVIDIA") || vendor.contains("GEFORCE"))
+			{
+				// NVIDIA card
+				this.preferredUploadMethod = this.bufferStorageSupported ? EDhApiGpuUploadMethod.BUFFER_STORAGE : EDhApiGpuUploadMethod.SUB_DATA;
+			}
+			else
+			{
+				// AMD or Intel card
+				this.preferredUploadMethod = this.bufferStorageSupported ? EDhApiGpuUploadMethod.BUFFER_STORAGE : EDhApiGpuUploadMethod.DATA;
+			}
 		}
 		else
 		{
-			// AMD or Intel card
-			this.preferredUploadMethod = this.bufferStorageSupported ? EDhApiGpuUploadMethod.BUFFER_STORAGE : EDhApiGpuUploadMethod.DATA;
+			// Mac may have an issue with Buffer Storage, so default to the most basic
+			// form of uploading
+			this.preferredUploadMethod = EDhApiGpuUploadMethod.DATA;
 		}
-		GL_LOGGER.info("GPU Vendor [" + vendor + "], Preferred upload method is [" + this.preferredUploadMethod + "].");
+		GL_LOGGER.info("GPU Vendor [" + vendor + "] with OS [" + EPlatform.get().getName() + "], Preferred upload method is [" + this.preferredUploadMethod + "].");
 		
 		
 		
