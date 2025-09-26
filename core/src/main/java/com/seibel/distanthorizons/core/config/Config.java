@@ -1722,11 +1722,19 @@ public class Config
 		
 		
 		// Common
-		public static ConfigEntry<Integer> maxDataTransferSpeed = new ConfigEntry.Builder<Integer>()
-				.setChatCommandName("common.maxDataTransferSpeed")
+		public static ConfigEntry<Integer> playerBandwidthLimit = new ConfigEntry.Builder<Integer>()
+				.setChatCommandName("common.playerBandwidthLimit")
 				.setMinDefaultMax(0, 500, 1000000 /* 1 GB/s */)
 				.comment(""
-						+ "Maximum speed for uploading LODs to the clients, in KB/s.\n"
+						+ "Maximum per-player speed for uploading LODs to the clients, in KB/s.\n"
+						+ "Value of 0 disables the limit."
+						+ "")
+				.build();
+		public static ConfigEntry<Integer> globalBandwidthLimit = new ConfigEntry.Builder<Integer>()
+				.setChatCommandName("common.globalBandwidthLimit")
+				.setMinDefaultMax(0, 0, 10000000 /* 10 GB/s */)
+				.comment(""
+						+ "Maximum global speed for uploading LODs to the clients, in KB/s.\n"
 						+ "Value of 0 disables the limit."
 						+ "")
 				.build();
