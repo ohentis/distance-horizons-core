@@ -36,7 +36,8 @@ public interface IConfigEntry<T>
 	
 	void setApiValue(T newApiValue);
 	T getApiValue();
-	boolean apiValuePresent();
+	/** @return true if this config is able to be overridden by the API and an API user has set it */
+	boolean apiIsOverriding();
 	
 	/** Returns true if this config can be set via the API. */
 	boolean getAllowApiOverride();
