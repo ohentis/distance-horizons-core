@@ -22,6 +22,12 @@
     "Cancel",
   "distanthorizons.general.reset":
     "Reset",
+  "distanthorizons.general.spacer":
+    "",
+  "distanthorizons.general.apiOverride":
+    "API LOCK",
+  "distanthorizons.general.disabledByApi.@tooltip":
+    "This option is controlled by another mod via DH's API \nso it cannot be changed via the UI or config file.",
 
 
 

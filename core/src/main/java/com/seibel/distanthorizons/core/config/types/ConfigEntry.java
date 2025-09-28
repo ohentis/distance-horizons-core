@@ -94,6 +94,8 @@ public class ConfigEntry<T> extends AbstractConfigType<T, ConfigEntry<T>> implem
 	}
 	@Override
 	public T getApiValue() { return this.apiValue; }
+	@Override 
+	public boolean apiValuePresent() { return this.apiValue != null; }
 	@Override
 	public boolean getAllowApiOverride() { return this.allowApiOverride; }
 	

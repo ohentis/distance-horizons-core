@@ -20,11 +20,9 @@
 package com.seibel.distanthorizons.core.config;
 
 import com.seibel.distanthorizons.core.config.file.ConfigFileHandling;
+import com.seibel.distanthorizons.core.config.types.*;
+import com.seibel.distanthorizons.core.config.types.enums.EConfigEntryAppearance;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
-import com.seibel.distanthorizons.core.config.types.AbstractConfigType;
-import com.seibel.distanthorizons.core.config.types.ConfigCategory;
-import com.seibel.distanthorizons.core.config.types.ConfigEntry;
-import com.seibel.distanthorizons.core.config.types.ConfigUiLinkedEntry;
 import com.seibel.distanthorizons.core.wrapperInterfaces.config.ILangWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftSharedWrapper;
 import org.apache.logging.log4j.LogManager;
@@ -41,7 +39,7 @@ import java.util.*;
  * @author Ran
  * @version 2023-8-26
  */
-// Init the config after singletons have been blinded
+// Init the config after singletons have been bound
 public class ConfigBase
 {
 	/** Our own config instance, don't modify unless you are the DH mod */
@@ -198,11 +196,11 @@ public class ConfigBase
 	 * Used for checking that all the lang files for the config exist.
 	 * This is just to re-format the lang or check if there is something in the lang that is missing
 	 *
-	 * @param onlyShowNew If disabled then it would basically remake the config lang
+	 * @param onlyShowMissing If false then this will remake the entire config lang
 	 * @param checkEnums Checks if all the lang for the enum's exist
 	 */
 	@SuppressWarnings("unchecked")
-	public String generateLang(boolean onlyShowNew, boolean checkEnums)
+	public String generateLang(boolean onlyShowMissing, boolean checkEnums)
 	{
 		ILangWrapper langWrapper = SingletonInjector.INSTANCE.get(ILangWrapper.class);
 		List<Class<? extends Enum<?>>> enumList = new ArrayList<>();
@@ -213,42 +211,74 @@ public class ConfigBase
 		String separator = "\":\n    \"";
 		String ending = "\",\n";
 		
+		// config entries
 		for (AbstractConfigType<?, ?> entry : this.entries)
 		{
-			String entryPrefix = "lod.config." + entry.getNameWCategory();
+			String entryPrefix = "distanthorizons.config." + entry.getNameWCategory();
 			
-			if (checkEnums && entry.getType().isEnum() && !enumList.contains(entry.getType()))
-			{ // Put it in an enum list to work with at the end
+			if (checkEnums 
+				&& entry.getType().isEnum() 
+				&& !enumList.contains(entry.getType()))
+			{ 
+				// Put it in an enum list to work with at the end
 				enumList.add((Class<? extends Enum<?>>) entry.getType());
 			}
 			
-			if (!onlyShowNew || langWrapper.langExists(entryPrefix))
+			
+			// config file items don't need lang entries
+			if (!entry.getAppearance().showInGui)
 			{
-				if (!ConfigUiLinkedEntry.class.isAssignableFrom(entry.getClass()))
-				{ // If it is a linked item, dont generate the base lang
-					generatedLang += starter
-							+ entryPrefix
-							+ separator
-							+ langWrapper.getLang(entryPrefix)
-							+ ending
-					;
-				}
-				
-				// Adds tooltips
-				if (langWrapper.langExists(entryPrefix + ".@tooltip"))
-				{
-					generatedLang += starter
-							+ entryPrefix + ".@tooltip"
-							+ separator
-							+ langWrapper.getLang(entryPrefix + ".@tooltip")
-							.replaceAll("\n", "\\\\n")
-							.replaceAll("\"", "\\\\\"")
-							+ ending
-					;
-				}
+				continue;
+			}
+			
+			// some entries don't need localization
+			if (ConfigUiLinkedEntry.class.isAssignableFrom(entry.getClass())
+				|| ConfigUISpacer.class.isAssignableFrom(entry.getClass()))
+			{
+				continue;
+			}
+			
+			if (ConfigUIComment.class.isAssignableFrom(entry.getClass())
+				&& ((ConfigUIComment)entry).parentConfigPath != null)
+			{
+				// TODO this could potentially add the same item multiple times
+				entryPrefix = "distanthorizons.config." + ((ConfigUIComment)entry).parentConfigPath;
+			}
+			
+			
+			if (langWrapper.langExists(entryPrefix)
+				&& onlyShowMissing)
+			{
+				continue;
+			}
+			
+			
+			generatedLang += starter
+					+ entryPrefix
+					+ separator
+					+ langWrapper.getLang(entryPrefix)
+					+ ending
+			;
+			
+			// only add tooltips for entries that are also missing
+			// their primary lang
+			// this is done since not all menu items need a tooltip
+			if (!langWrapper.langExists(entryPrefix + ".@tooltip") 
+				|| !onlyShowMissing)
+			{
+				generatedLang += starter
+						+ entryPrefix + ".@tooltip"
+						+ separator
+						+ langWrapper.getLang(entryPrefix + ".@tooltip")
+						.replaceAll("\n", "\\\\n")
+						.replaceAll("\"", "\\\\\"")
+						+ ending
+				;
 			}
 		}
 		
+		
+		// enums
 		if (!enumList.isEmpty())
 		{
 			generatedLang += "\n"; // Separate the main lang with the enum's
@@ -257,9 +287,10 @@ public class ConfigBase
 			{
 				for (Object enumStr : new ArrayList<Object>(EnumSet.allOf(anEnum)))
 				{
-					String enumPrefix = "lod.config.enum." + anEnum.getSimpleName() + "." + enumStr.toString();
+					String enumPrefix = "distanthorizons.config.enum." + anEnum.getSimpleName() + "." + enumStr.toString();
 					
-					if (!onlyShowNew || langWrapper.langExists(enumPrefix))
+					if (!langWrapper.langExists(enumPrefix) 
+						|| !onlyShowMissing)
 					{
 						generatedLang += starter
 								+ enumPrefix
@@ -271,11 +302,6 @@ public class ConfigBase
 				}
 			}
 		}
-		
-		// trim to remove any newlines/spaces
-		// that may be present when no lang entries need changing
-		// then we can check length != 0 if any items are missing and need adding 
-		generatedLang = generatedLang.trim();
 		
 		return generatedLang;
 	}
