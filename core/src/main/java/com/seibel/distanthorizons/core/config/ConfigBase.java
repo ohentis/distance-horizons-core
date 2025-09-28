@@ -19,44 +19,38 @@
 
 package com.seibel.distanthorizons.core.config;
 
-import com.seibel.distanthorizons.core.config.file.ConfigFileHandling;
+import com.seibel.distanthorizons.core.config.file.ConfigFileHandler;
 import com.seibel.distanthorizons.core.config.types.*;
-import com.seibel.distanthorizons.core.config.types.enums.EConfigEntryAppearance;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
+import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.wrapperInterfaces.config.ILangWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftSharedWrapper;
+import com.seibel.distanthorizons.coreapi.ModInfo;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Field;
 import java.nio.file.Path;
 import java.util.*;
 
 /**
- * Indexes and sets everything up for the file handling and gui
+ * Indexes and sets everything up for the file handling and gui.
+ * This should be init after singletons have been bound
  *
  * @author coolGi
  * @author Ran
  * @version 2023-8-26
  */
-// Init the config after singletons have been bound
 public class ConfigBase
 {
 	/** Our own config instance, don't modify unless you are the DH mod */
 	public static ConfigBase INSTANCE;
-	public ConfigFileHandling configFileINSTANCE;
 	
-	private final Logger logger;
-	public final String modID;
-	public final String modName;
-	public final int configVersion;
-	
-	public boolean isLoaded = false;
-	
-	
+	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
 	/**
-	 *      What the config works with
+	 * What the config works with
 	 * <br> 
 	 * <br> {@link Enum}
 	 * <br> {@link Boolean}
@@ -75,61 +69,74 @@ public class ConfigBase
 	 * <br> Map<String, T>
 	 * <br> HashMap<String, T>
 	 */
-	public static final List<Class<?>> acceptableInputs = new ArrayList<Class<?>>()
+	public static final List<Class<?>> ACCEPTABLE_INPUTS = new ArrayList<Class<?>>()
 	{{
-		add(Boolean.class);
-		add(Byte.class);
-		add(Integer.class);
-		add(Double.class);
-		add(Short.class);
-		add(Long.class);
-		add(Float.class);
-		add(String.class);
+		this.add(Boolean.class);
+		this.add(Byte.class);
+		this.add(Integer.class);
+		this.add(Double.class);
+		this.add(Short.class);
+		this.add(Long.class);
+		this.add(Float.class);
+		this.add(String.class);
 		
 		// TODO[CONFIG]: Check the type of these is valid
-		add(List.class);
-		add(ArrayList.class);
-		add(Map.class);
-		add(HashMap.class);
+		this.add(List.class);
+		this.add(ArrayList.class);
+		this.add(Map.class);
+		this.add(HashMap.class);
 	}};
+	
+	
+	
+	public ConfigFileHandler configFileHandler;
+	
+	public final int configVersion;
+	
+	public boolean isLoaded = false;
 	
 	/** Disables the minimum and maximum of any variable */
 	public boolean disableMinMax = false; // Very fun to use, but should always be disabled by default
 	public final List<AbstractConfigType<?, ?>> entries = new ArrayList<>();
 	
 	
-	public ConfigBase(String modID, String modName, Class<?> configClass)
+	
+	//=============//
+	// constructor //
+	//=============//
+	
+	public static void RunFirstTimeSetup()
 	{
-		this(modID, modName, configClass, getConfigPath(modName), -1);
-	}
-	public ConfigBase(String modID, String modName, Class<?> configClass, Path configPath)
-	{
-		this(modID, modName, configClass, configPath, -1);
-	}
-	public ConfigBase(String modID, String modName, Class<?> configClass, int configVersion)
-	{
-		this(modID, modName, configClass, getConfigPath(modName), configVersion);
+		if (INSTANCE != null)
+		{
+			LOGGER.debug("ConfigBase setup already run, ignoring.");
+			return;
+		}
+		
+		INSTANCE = new ConfigBase(Config.class, ModInfo.CONFIG_FILE_VERSION);
 	}
 	
-	public ConfigBase(String modID, String modName, Class<?> configClass, Path configPath, int configVersion)
+	private ConfigBase(Class<?> configClass, int configVersion)
 	{
-		this.logger = LogManager.getLogger(this.getClass().getSimpleName() + ", " + modID);
+		LOGGER.info("Initialising config for [" + ModInfo.NAME + "]");
 		
-		this.logger.info("Initialising config for " + modName);
-		this.modID = modID;
-		this.modName = modName;
 		this.configVersion = configVersion;
 		
 		this.initNestedClass(configClass, ""); // Init root category
 		
-		// File handling (load from file)
-		this.configFileINSTANCE = new ConfigFileHandling(this, configPath);
-		this.configFileINSTANCE.loadFromFile();
+		Path configPath = getConfigPath(ModInfo.NAME);
+		this.configFileHandler = new ConfigFileHandler(this, configPath);
+		this.configFileHandler.loadFromFile();
 		
 		this.isLoaded = true;
-		this.logger.info("Config for " + modName + " initialised");
+		LOGGER.info("Config for [" + ModInfo.NAME + "] initialised");
 	}
-	
+	/** Gets the default config path given a mod name */
+	private static Path getConfigPath(String modName)
+	{
+		return SingletonInjector.INSTANCE.get(IMinecraftSharedWrapper.class)
+				.getInstallationDirectory().toPath().resolve("config").resolve(modName + ".toml");
+	}
 	private void initNestedClass(Class<?> configClass, String category)
 	{
 		// Put all the entries in entries
@@ -144,7 +151,7 @@ public class ConfigBase
 				}
 				catch (IllegalAccessException exception)
 				{
-					this.logger.warn(exception);
+					LOGGER.warn(exception);
 				}
 				
 				AbstractConfigType<?, ?> entry = this.entries.get(this.entries.size() - 1);
@@ -153,11 +160,12 @@ public class ConfigBase
 				entry.configBase = this;
 				
 				if (ConfigEntry.class.isAssignableFrom(field.getType()))
-				{ // If item is type ConfigEntry
+				{ 
+					// If item is type ConfigEntry
 					if (!isAcceptableType(entry.getType()))
 					{
-						this.logger.error("Invalid variable type at [" + (category.isEmpty() ? "" : category + ".") + field.getName() + "].");
-						this.logger.error("Type [" + entry.getType() + "] is not one of these types [" + acceptableInputs.toString() + "]");
+						LOGGER.error("Invalid variable type at [" + (category.isEmpty() ? "" : category + ".") + field.getName() + "].");
+						LOGGER.error("Type [" + entry.getType() + "] is not one of these types [" + ACCEPTABLE_INPUTS.toString() + "]");
 						this.entries.remove(this.entries.size() - 1); // Delete the entry if it is invalid so the game can still run
 					}
 				}
@@ -175,22 +183,21 @@ public class ConfigBase
 			}
 		}
 	}
-	
 	private static boolean isAcceptableType(Class<?> Clazz)
 	{
 		if (Clazz.isEnum())
+		{
 			return true;
-		return acceptableInputs.contains(Clazz);
+		}
+		
+		return ACCEPTABLE_INPUTS.contains(Clazz);
 	}
 	
 	
-	/** Gets the default config path given a mod name */
-	public static Path getConfigPath(String modName)
-	{
-		return SingletonInjector.INSTANCE.get(IMinecraftSharedWrapper.class)
-				.getInstallationDirectory().toPath().resolve("config").resolve(modName + ".toml");
-	}
 	
+	//===============//
+	// lang handling //
+	//===============//
 	
 	/**
 	 * Used for checking that all the lang files for the config exist.
@@ -305,5 +312,7 @@ public class ConfigBase
 		
 		return generatedLang;
 	}
+	
+	
 	
 }
