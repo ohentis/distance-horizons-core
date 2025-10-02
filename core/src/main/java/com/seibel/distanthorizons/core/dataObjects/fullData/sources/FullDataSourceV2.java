@@ -35,6 +35,7 @@ import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.util.*;
 import com.seibel.distanthorizons.core.util.objects.DataCorruptedException;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
@@ -132,7 +133,7 @@ public class FullDataSourceV2
 	// constructors //
 	//==============//
 	
-	public static FullDataSourceV2 createFromChunk(IChunkWrapper chunkWrapper) { return LodDataBuilder.createFromChunk(chunkWrapper); }
+	public static FullDataSourceV2 createFromChunk(ILevelWrapper levelWrapper, IChunkWrapper chunkWrapper) { return LodDataBuilder.createFromChunk(levelWrapper, chunkWrapper); }
 	
 	public static FullDataSourceV2 createFromLegacyDataSourceV1(FullDataSourceV1 legacyData)
 	{

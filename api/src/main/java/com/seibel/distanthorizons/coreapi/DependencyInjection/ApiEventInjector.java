@@ -148,14 +148,18 @@ public class ApiEventInjector extends DependencyInjector<IDhApiEvent> implements
 					T input = eventInput;
 					if (eventInput instanceof IDhApiEventParam)
 					{
-						try
+						IDhApiEventParam dhApiEventParam = (IDhApiEventParam) eventInput;
+						if (dhApiEventParam.getCopyBeforeFire())
 						{
-							//noinspection unchecked
-							input = (T) ((IDhApiEventParam) eventInput).copy();
-						}
-						catch (Exception e)
-						{
-							LOGGER.error("Unable to clone event parameter ["+eventInput.getClass().getSimpleName()+"], error: ["+e.getMessage()+"].", e);
+							try
+							{
+								//noinspection unchecked
+								input = (T) dhApiEventParam.copy();
+							}
+							catch (Exception e)
+							{
+								LOGGER.error("Unable to clone event parameter [" + eventInput.getClass().getSimpleName() + "], error: [" + e.getMessage() + "].", e);
+							}
 						}
 					}
 					
