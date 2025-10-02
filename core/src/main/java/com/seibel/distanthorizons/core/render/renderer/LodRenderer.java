@@ -106,7 +106,7 @@ public class LodRenderer
 	// The shader program
 	private IDhApiShaderProgram lodRenderProgram = null;
 	public QuadElementBuffer quadIBO = null;
-	public boolean isSetupComplete = false;
+	private boolean isSetupComplete = false;
 	
 	// frameBuffer and texture ID's for this renderer
 	private IDhApiFramebuffer framebuffer;
@@ -252,6 +252,11 @@ public class LodRenderer
 			
 			ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeRenderSetupEvent.class, renderEventParam);
 			this.setupGLStateAndRenderObjects(profiler, renderEventParam, renderingFirstPass);
+			if (!this.isSetupComplete)
+			{
+				// this shouldn't normally happen, but just in case
+				return;
+			}
 			
 			lightmap.bind();
 			this.quadIBO.bind();
@@ -633,7 +638,7 @@ public class LodRenderer
 			EVENT_LOGGER.warn("Renderer setup called but it has already completed setup!");
 			return;
 		}
-		if (GLProxy.getInstance() == null)
+		if (!GLProxy.hasInstance())
 		{
 			// shouldn't normally happen, but just in case
 			EVENT_LOGGER.warn("Renderer setup called but GLProxy has not yet been setup!");
@@ -646,7 +651,6 @@ public class LodRenderer
 			
 			
 			EVENT_LOGGER.info("Setting up renderer");
-			this.isSetupComplete = true;
 			this.lodRenderProgram = new DhTerrainShaderProgram();
 			
 			this.quadIBO = new QuadElementBuffer();
@@ -675,9 +679,11 @@ public class LodRenderer
 			{
 				// This generally means something wasn't bound, IE missing either the color or depth texture
 				EVENT_LOGGER.warn("FrameBuffer ["+this.framebuffer.getId()+"] isn't complete.");
+				return;
 			}
 			
 			
+			this.isSetupComplete = true;
 			EVENT_LOGGER.info("Renderer setup complete");
 		}
 		finally
@@ -771,7 +777,7 @@ public class LodRenderer
 	 */
 	private void cleanup()
 	{
-		if (GLProxy.getInstance() == null)
+		if (!GLProxy.hasInstance())
 		{
 			// shouldn't normally happen, but just in case
 			EVENT_LOGGER.warn("Renderer Cleanup called but the GLProxy has never been initialized!");

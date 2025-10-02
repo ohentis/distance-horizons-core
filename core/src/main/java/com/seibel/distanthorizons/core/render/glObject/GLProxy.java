@@ -29,7 +29,6 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.util.objects.GLMessages.*;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
-import com.seibel.distanthorizons.coreapi.util.StringUtil;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.glfw.GLFW;
@@ -40,7 +39,6 @@ import org.lwjgl.opengl.GLUtil;
 
 import java.io.PrintStream;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -212,7 +210,8 @@ public class GLProxy
 	//=========//
 	
 	public static boolean hasInstance() { return instance != null; }
-	public static GLProxy getInstance()
+	/** @throws IllegalStateException if the Proxy hasn't been created yet and this is called outside the render thread */
+	public static GLProxy getInstance() throws IllegalStateException
 	{
 		if (instance == null)
 		{
