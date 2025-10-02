@@ -33,9 +33,4 @@ public interface IServerPlayerWrapper extends IDhApiUnsafeWrapper
 	
 	Vec3d getPosition();
 	
-	/** measured in chunks */
-	int getViewDistance();
-	
-	SocketAddress getRemoteAddress();
-	
 }
