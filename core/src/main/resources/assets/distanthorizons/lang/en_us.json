@@ -273,7 +273,7 @@
   "distanthorizons.config.client.advanced.graphics.fog.farFogFalloff":
     "Fog Falloff",
   "distanthorizons.config.client.advanced.graphics.fog.farFogFalloff.@tooltip":
-    "How should the fog thickness should be calculated? \n\nLINEAR: Linear based on distance (will ignore 'density')\nEXPONENTIAL: 1/(e^(distance*density)) \nEXPONENTIAL_SQUARED: 1/(e^((distance*density)^2) \n",
+    "How should the fog thickness should be calculated? \n\nLINEAR: Linear based on distance (will ignore 'density')\nEXPONENTIAL: 1/(e^(distance*density)) \nEXPONENTIAL_SQUARED: 1/(e^((distance*density)^2)) \n",
   "distanthorizons.config.client.advanced.graphics.fog.farFogDensity":
     "Fog Density",
   "distanthorizons.config.client.advanced.graphics.fog.farFogDensity.@tooltip":
@@ -315,7 +315,7 @@
   "distanthorizons.config.client.advanced.graphics.fog.heightFog.heightFogFalloff":
     "Height Fog Falloff",
   "distanthorizons.config.client.advanced.graphics.fog.heightFog.heightFogFalloff.@tooltip":
-    "How should the height fog thickness should be calculated? \n\nLINEAR: Linear based on height (will ignore 'density')\nEXPONENTIAL: 1/(e^(height*density)) \nEXPONENTIAL_SQUARED: 1/(e^((height*density)^2) \n",
+    "How should the height fog thickness should be calculated? \n\nLINEAR: Linear based on height (will ignore 'density')\nEXPONENTIAL: 1/(e^(height*density)) \nEXPONENTIAL_SQUARED: 1/(e^((height*density)^2)) \n",
   "distanthorizons.config.client.advanced.graphics.fog.heightFog.heightFogDensity":
     "Height Fog Density",
   "distanthorizons.config.client.advanced.graphics.fog.heightFog.heightFogDensity.@tooltip":
