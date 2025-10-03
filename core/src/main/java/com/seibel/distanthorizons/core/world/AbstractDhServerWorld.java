@@ -67,14 +67,21 @@ public abstract class AbstractDhServerWorld<TDhServerLevel extends AbstractDhSer
 	@Override
 	public void removePlayer(IServerPlayerWrapper serverPlayer)
 	{
-		IServerLevelWrapper level = serverPlayer.getLevel();
-		if (level == null)
+		IServerLevelWrapper playerLevel = serverPlayer.getLevel();
+		if (playerLevel == null)
 		{
 			// can happen during server shutdown
 			return;
 		}
 		
-		this.getLevel(level).removePlayer(serverPlayer);
+		TDhServerLevel serverLevel = this.getLevel(playerLevel);
+		if (serverLevel == null)
+		{
+			// can happen during server shutdown
+			return;
+		}
+		
+		serverLevel.removePlayer(serverPlayer);
 		this.serverPlayerStateManager.unregisterLeftPlayer(serverPlayer);
 		
 		// If player's left, session is already closed
