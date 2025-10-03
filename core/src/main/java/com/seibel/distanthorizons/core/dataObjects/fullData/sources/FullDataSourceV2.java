@@ -29,7 +29,8 @@ import com.seibel.distanthorizons.core.file.AbstractDataSourceHandler;
 import com.seibel.distanthorizons.core.file.IDataSource;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.pooling.PhantomArrayListParent;
+import com.seibel.distanthorizons.core.pooling.AbstractPhantomArrayList;
+import com.seibel.distanthorizons.core.pooling.PhantomArrayListCheckout;
 import com.seibel.distanthorizons.core.pooling.PhantomArrayListPool;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.util.*;
@@ -54,7 +55,7 @@ import java.util.List;
  * @see FullDataSourceV1
  */
 public class FullDataSourceV2 
-		extends PhantomArrayListParent
+		extends AbstractPhantomArrayList
 		implements IDataSource<IDhLevel>, IDhApiFullDataSource
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
@@ -1161,6 +1162,15 @@ public class FullDataSourceV2
 		
 		return apiList;
 	}
+	
+	
+	
+	//============//
+	// unit tests //
+	//============//
+	
+	public PhantomArrayListCheckout getPhantomArrayCheckoutForUnitTesting()
+	{ return this.pooledArraysCheckout; }
 	
 	
 	

@@ -25,7 +25,7 @@ import com.seibel.distanthorizons.api.enums.config.EDhApiWorldCompressionMode;
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
 import com.seibel.distanthorizons.core.dataObjects.fullData.FullDataPointIdMap;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
-import com.seibel.distanthorizons.core.pooling.PhantomArrayListParent;
+import com.seibel.distanthorizons.core.pooling.AbstractPhantomArrayList;
 import com.seibel.distanthorizons.core.pooling.PhantomArrayListPool;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.network.INetworkObject;
@@ -47,7 +47,7 @@ import java.io.*;
 
 /** handles storing {@link FullDataSourceV2}'s in the database. */
 public class FullDataSourceV2DTO 
-		extends PhantomArrayListParent
+		extends AbstractPhantomArrayList
 		implements IBaseDTO<Long>, INetworkObject, AutoCloseable
 {
 	public static final boolean VALIDATE_INPUT_DATAPOINTS = true;
