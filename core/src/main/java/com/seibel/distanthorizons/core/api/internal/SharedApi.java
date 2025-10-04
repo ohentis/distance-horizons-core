@@ -78,6 +78,7 @@ public class SharedApi
 	public static final int MIN_MS_BETWEEN_OVERLOADED_LOG_MESSAGE = 30_000;
 	
 	
+	@Nullable
 	private static AbstractDhWorld currentWorld;
 	private static int lastWorldGenTickDelta = 0;
 	
@@ -150,6 +151,7 @@ public class SharedApi
 		}
 	}
 	
+	@Nullable
 	public static AbstractDhWorld getAbstractDhWorld() { return currentWorld; }
 	/** returns null if the {@link SharedApi#currentWorld} isn't a {@link DhClientServerWorld} */
 	public static DhClientServerWorld getDhClientServerWorld() { return (currentWorld instanceof DhClientServerWorld) ? (DhClientServerWorld) currentWorld : null; }
