@@ -92,6 +92,11 @@ public class F3Screen
 		ThreadPoolExecutor migrationPool = ThreadPoolUtil.getFullDataMigrationExecutor();
 		
 		AbstractDhWorld world = SharedApi.getAbstractDhWorld();
+		if (world == null)
+		{
+			return;
+		}
+		
 		Iterable<? extends IDhLevel> levelIterator = world.getAllLoadedLevels();
 		
 		
