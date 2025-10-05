@@ -347,19 +347,17 @@ public class Config
 							.addListener(ReloadLodsConfigEventHandler.DELAYED_INSTANCE)
 							.build();
 					
-					// TODO fixme
-					//public static ConfigEntry<Integer> lodBiomeBlending = new ConfigEntry.Builder<Integer>()
-					//		.setMinDefaultMax(0,1,7)
-					//		.comment(""
-					//				+ "This is the same as vanilla Biome Blending settings for Lod area. \n"
-					//				+ "    Note that anything other than '0' will greatly effect Lod building time \n"
-					//				+ "     and increase triangle count. The cost on chunk generation speed is also \n"
-					//				+ "     quite large if set too high.\n"
-					//				+ "\n"
-					//				+ "    '0' equals to Vanilla Biome Blending of '1x1' or 'OFF', \n"
-					//				+ "    '1' equals to Vanilla Biome Blending of '3x3', \n"
-					//				+ "    '2' equals to Vanilla Biome Blending of '5x5'...")
-					//		.build();	
+					public static ConfigEntry<Integer> lodBiomeBlending = new ConfigEntry.Builder<Integer>()
+							.setMinDefaultMax(0,3,3) // going higher than 3 causes banding issues for blending across LOD borders and an exponential increase in load times
+							.comment(""
+									+ "This is the same as vanilla Biome Blending settings for Lod area. \n"
+									+ "    Note that anything other than '0' will greatly effect Lod building time. \n"
+									+ "\n"
+									+ "    '0' equals to Vanilla Biome Blending of '1x1' or 'OFF', \n"
+									+ "    '1' equals to Vanilla Biome Blending of '3x3', \n"
+									+ "    '2' equals to Vanilla Biome Blending of '5x5'...")
+							.addListener(ReloadLodsConfigEventHandler.DELAYED_INSTANCE)
+							.build();	
 				}
 				
 				public static class Ssao
