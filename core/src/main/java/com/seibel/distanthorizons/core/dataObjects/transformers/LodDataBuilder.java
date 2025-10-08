@@ -66,7 +66,7 @@ public class LodDataBuilder
 	public static FullDataSourceV2 createFromChunk(ILevelWrapper levelWrapper, IChunkWrapper chunkWrapper)
 	{
 		// only block lighting is needed here, sky lighting is populated at the data source stage
-		LodUtil.assertTrue(chunkWrapper.isDhBlockLightingCorrect());
+		LodUtil.assertTrue(chunkWrapper.isDhBlockLightingCorrect(), "Provided chunk's DH Block lighting hasn't been baked.");
 		
 		int chunkPosX = chunkWrapper.getChunkPos().getX();
 		int chunkPosZ = chunkWrapper.getChunkPos().getZ();
