@@ -80,9 +80,9 @@ public class PriorityTaskPicker
 				// start tasks until we're running as many threads as acceptable by the config,
 				// or until this executor is empty,
 				// or until we should move on to the next executor
-				while (this.occupiedThreadsRef.get() < Config.Common.MultiThreading.numberOfThreads.get() 
-						&& (task = executor.taskQueue.poll()) != null
-						&& queuedTaskCount <= maxQueuedBeforeOverflow)
+				while (this.occupiedThreadsRef.get() < Config.Common.MultiThreading.numberOfThreads.get()
+						&& queuedTaskCount <= maxQueuedBeforeOverflow
+						&& (task = executor.taskQueue.poll()) != null)
 				{
 					queuedTaskCount++;
 					
