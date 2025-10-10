@@ -1333,7 +1333,7 @@ public class Config
 					.build();
 			
 			public static ConfigEntry<EDhApiDistantGeneratorProgressDisplayLocation> showGenerationProgress = new ConfigEntry.Builder<EDhApiDistantGeneratorProgressDisplayLocation>()
-					.set(EDhApiDistantGeneratorProgressDisplayLocation.OVERLAY)
+					.set(EDhApiDistantGeneratorProgressDisplayLocation.DISABLED)
 					.comment(""
 							+ "How should distant generator progress be displayed? \n"
 							+ "\n"
