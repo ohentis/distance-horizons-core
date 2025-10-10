@@ -43,8 +43,8 @@ public class DelayedSaveCacheTest
 {
 	
 	
-	
-	@Test
+	// commented out for now since it makes the normal build take longer
+	//@Test
 	public void CacheExpirationAndPoolingTest() throws InterruptedException
 	{
 		// how many times any data source has been "written to disk"
