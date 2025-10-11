@@ -587,7 +587,10 @@ public class ClientApi
 		}
 	}
 	
-	/** should be called after DH and MC finish rendering so we can smooth the transition between the two */
+	/** 
+	 * The first fade pass.
+	 * Called after MC finishes rendering the opaque passes. 
+	 */
 	public void renderFadeOpaque()
 	{
 		// only fade when DH is rendering
@@ -600,8 +603,12 @@ public class ClientApi
 			FadeRenderer.INSTANCE.render(RENDER_STATE.mcModelViewMatrix, RENDER_STATE.mcProjectionMatrix, RENDER_STATE.frameTime, RENDER_STATE.clientLevelWrapper);
 		}
 	}
-	/** should be called after DH and MC finish rendering so we can smooth the transition between the two */
-	public void renderFade()
+	/** 
+	 * The second fade pass.
+	 * Called after MC finishes rendering both opaque
+	 * and transparent passes. 
+	 */
+	public void renderFadeTransparent()
 	{
 		// only fade when DH is rendering
 		if (Config.Client.Advanced.Debugging.rendererMode.get() == EDhApiRendererMode.DEFAULT)
