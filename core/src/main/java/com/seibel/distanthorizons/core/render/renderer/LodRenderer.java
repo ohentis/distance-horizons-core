@@ -547,17 +547,17 @@ public class LodRenderer
 			activeFrameBuffer = framebufferOverride;
 		}
 		
-		this.setActiveFramebufferId(activeFrameBuffer.getId());
-		this.setActiveDepthTextureId(this.depthTexture.getTextureId());
+		activeFramebufferId = activeFrameBuffer.getId();
+		activeDepthTextureId = this.depthTexture.getTextureId();
 		if (this.nullableColorTexture != null)
 		{
-			this.setActiveColorTextureId(this.nullableColorTexture.getTextureId());
+			activeColorTextureId = this.nullableColorTexture.getTextureId();
 		}
 		else
 		{
 			// get MC's color texture
 			int mcColorTextureId = GL32.glGetFramebufferAttachmentParameteri(GL32.GL_FRAMEBUFFER, GL32.GL_COLOR_ATTACHMENT0, GL32.GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME);
-			this.setActiveColorTextureId(mcColorTextureId);
+			activeColorTextureId = mcColorTextureId;
 		}
 		// Bind LOD frame buffer
 		activeFrameBuffer.bind();
@@ -750,15 +750,12 @@ public class LodRenderer
 	// API functions //
 	//===============//
 	
-	private void setActiveFramebufferId(int frameBufferId) { activeFramebufferId = frameBufferId; }
 	/** Returns -1 if no frame buffer has been bound yet */
 	public static int getActiveFramebufferId() { return activeFramebufferId; }
 	
-	private void setActiveColorTextureId(int colorTextureId) { activeColorTextureId = colorTextureId; }
 	/** Returns -1 if no texture has been bound yet */
 	public static int getActiveColorTextureId() { return activeColorTextureId; }
 	
-	private void setActiveDepthTextureId(int depthTextureId) { activeDepthTextureId = depthTextureId; }
 	/**
 	 * FIXME it's possible for this to return an invalid texture ID if the renderer is being re-built at the same time 
 	 * Returns -1 if no texture has been bound yet 
@@ -810,8 +807,9 @@ public class LodRenderer
 				if (this.depthTexture != null)
 					this.depthTexture.destroy();
 				
-				this.setActiveDepthTextureId(-1);
-				this.setActiveColorTextureId(-1);
+				activeFramebufferId = -1;
+				activeColorTextureId = -1;
+				activeDepthTextureId = -1;
 				
 				EVENT_LOGGER.info("Renderer Cleanup Complete");
 			});
