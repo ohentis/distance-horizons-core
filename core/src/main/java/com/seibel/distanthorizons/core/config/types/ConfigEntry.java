@@ -26,7 +26,6 @@ import com.seibel.distanthorizons.core.config.file.ConfigFileHandler;
 import com.seibel.distanthorizons.core.config.listeners.ConfigChangeListener;
 import com.seibel.distanthorizons.core.config.listeners.IConfigListener;
 import com.seibel.distanthorizons.core.config.types.enums.EConfigEntryAppearance;
-import com.seibel.distanthorizons.core.config.types.enums.EConfigEntryPerformance;
 import com.seibel.distanthorizons.core.config.types.enums.EConfigValidity;
 import org.jetbrains.annotations.Nullable;
 
@@ -46,8 +45,6 @@ public class ConfigEntry<T> extends AbstractConfigBase<T>
 	private T max;
 	private final ArrayList<IConfigListener> listenerList;
 	private final String chatCommandName;
-	
-	private final EConfigEntryPerformance performance;
 	
 	/**
 	 * If true this config can be controlled by the API <br>
@@ -69,7 +66,6 @@ public class ConfigEntry<T> extends AbstractConfigBase<T>
 			String comment, String chatCommandName, 
 			T value, T min, T max,
 			boolean allowApiOverride, 
-			EConfigEntryPerformance performance, 
 			ArrayList<IConfigListener> listenerList)
 	{
 		super(appearance, value);
@@ -79,7 +75,6 @@ public class ConfigEntry<T> extends AbstractConfigBase<T>
 		this.max = max;
 		this.chatCommandName = chatCommandName;
 		this.allowApiOverride = allowApiOverride;
-		this.performance = performance;
 		this.listenerList = listenerList;
 	}
 	
@@ -93,9 +88,6 @@ public class ConfigEntry<T> extends AbstractConfigBase<T>
 	public String getChatCommandName() { return this.chatCommandName; }
 	
 	public String getComment() { return this.comment; }
-	
-	/** Gets the performance impact of an option */
-	public EConfigEntryPerformance getPerformance() { return this.performance; }
 	
 	/**
 	 * If true this config can be controlled by the API <br>
@@ -315,7 +307,6 @@ public class ConfigEntry<T> extends AbstractConfigBase<T>
 		private T tmpMax = null;
 		protected String tmpChatCommandName = null;
 		private boolean tmpUseApiOverwrite = true;
-		private EConfigEntryPerformance tmpPerformance = EConfigEntryPerformance.DONT_SHOW;
 		protected ArrayList<IConfigListener> tmpIConfigListener = new ArrayList<>();
 		
 		
@@ -365,12 +356,6 @@ public class ConfigEntry<T> extends AbstractConfigBase<T>
 			return this;
 		}
 		
-		public Builder<T> setPerformance(EConfigEntryPerformance newPerformance)
-		{
-			this.tmpPerformance = newPerformance;
-			return this;
-		}
-		
 		
 		
 		public Builder<T> replaceListeners(ArrayList<IConfigListener> newConfigListener)
@@ -407,7 +392,7 @@ public class ConfigEntry<T> extends AbstractConfigBase<T>
 					this.tmpAppearance,
 					this.tmpComment, this.tmpChatCommandName, this.tmpValue, this.tmpMin, this.tmpMax,
 					this.tmpUseApiOverwrite, 
-					this.tmpPerformance, this.tmpIConfigListener);
+					this.tmpIConfigListener);
 		}
 		
 	}

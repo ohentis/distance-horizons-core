@@ -185,7 +185,6 @@ public class Config
 							.comment("" +
 									"The radius of the mod's render distance. (measured in chunks)\n" +
 									"")
-							.setPerformance(EConfigEntryPerformance.HIGH)
 							.build();
 					
 					public static ConfigEntry<EDhApiHorizontalQuality> horizontalQuality = new ConfigEntry.Builder<EDhApiHorizontalQuality>()
@@ -194,7 +193,6 @@ public class Config
 									+ "This indicates how quickly LODs decrease in quality the further away they are. \n"
 									+ "Higher settings will render higher quality fake chunks farther away, \n"
 									+ "but will increase memory and GPU usage.")
-							.setPerformance(EConfigEntryPerformance.MEDIUM)
 							.build();
 					
 					public static ConfigEntry<EDhApiMaxHorizontalResolution> maxHorizontalResolution = new ConfigEntry.Builder<EDhApiMaxHorizontalResolution>()
@@ -211,7 +209,6 @@ public class Config
 									+ "\n"
 									+ "Lowest Quality: " + EDhApiMaxHorizontalResolution.CHUNK + "\n"
 									+ "Highest Quality: " + EDhApiMaxHorizontalResolution.BLOCK)
-							.setPerformance(EConfigEntryPerformance.MEDIUM)
 							.addListener(ReloadLodsConfigEventHandler.DELAYED_INSTANCE)
 							.build();
 					
@@ -225,7 +222,6 @@ public class Config
 									+ "\n"
 									+ "Lowest Quality: " + EDhApiVerticalQuality.HEIGHT_MAP + "\n"
 									+ "Highest Quality: " + EDhApiVerticalQuality.EXTREME)
-							.setPerformance(EConfigEntryPerformance.VERY_HIGH)
 							.addListener(ReloadLodsConfigEventHandler.DELAYED_INSTANCE)
 							.build();
 					
@@ -238,7 +234,6 @@ public class Config
 									+ EDhApiTransparency.FAKE + ": LODs will be opaque, but shaded to match the blocks underneath. \n"
 									+ EDhApiTransparency.DISABLED + ": LODs will be opaque. \n"
 									+ "")
-							.setPerformance(EConfigEntryPerformance.MEDIUM)
 							.addListener(ReloadLodsConfigEventHandler.DELAYED_INSTANCE)
 							.build();
 					
@@ -250,7 +245,6 @@ public class Config
 									+ EDhApiBlocksToAvoid.NONE + ": Represent all blocks in the LODs \n"
 									+ EDhApiBlocksToAvoid.NON_COLLIDING + ": Only represent solid blocks in the LODs (tall grass, torches, etc. won't count for a LOD's height) \n"
 									+ "")
-							.setPerformance(EConfigEntryPerformance.NONE)
 							.addListener(ReloadLodsConfigEventHandler.DELAYED_INSTANCE)
 							.build();
 					
@@ -262,7 +256,6 @@ public class Config
 									+ "True: a red flower will tint the grass below it red. \n"
 									+ "False: skipped blocks will not change color of surface below them. "
 									+ "")
-							.setPerformance(EConfigEntryPerformance.NONE)
 							.addListener(ReloadLodsConfigEventHandler.DELAYED_INSTANCE)
 							.build();
 					
@@ -283,7 +276,6 @@ public class Config
 									+ "              Can be used to force LOD shading when using some shaders. \n"
 									+ EDhApiLodShading.DISABLED + ": All LOD sides will be rendered with the same brightness. \n"
 									+ "")
-							.setPerformance(EConfigEntryPerformance.NONE)
 							.addListener(ReloadLodsConfigEventHandler.DELAYED_INSTANCE)
 							.build();
 					
@@ -296,7 +288,6 @@ public class Config
 									+ EDhApiGrassSideRendering.FADE_TO_DIRT + ": sides fade from grass to dirt. \n"
 									+ EDhApiGrassSideRendering.AS_DIRT + ": sides render entirely as dirt. \n"
 									+ "")
-							.setPerformance(EConfigEntryPerformance.NONE)
 							.addListener(ReloadLodsConfigEventHandler.DELAYED_INSTANCE)
 							.build();
 					
@@ -307,7 +298,6 @@ public class Config
 									+ "If false LODs will cut off abruptly at a set distance from the camera. \n"
 									+ "This setting is affected by the vanilla overdraw prevention config. \n"
 									+ "")
-							.setPerformance(EConfigEntryPerformance.LOW)
 							.build();
 					
 					public static ConfigEntry<EDhApiMcRenderingFadeMode> vanillaFadeMode = new ConfigEntry.Builder<EDhApiMcRenderingFadeMode>()
@@ -319,7 +309,6 @@ public class Config
 									+ EDhApiMcRenderingFadeMode.SINGLE_PASS + ": Fades after MC's transparent pass, opaque blocks underwater won't be faded. \n"
 									+ EDhApiMcRenderingFadeMode.DOUBLE_PASS + ": Slowest, fades after both MC's opaque and transparent passes, provides the smoothest transition. \n"
 									+ "")
-							.setPerformance(EConfigEntryPerformance.LOW)
 							.build();
 					
 					public static ConfigEntry<Double> brightnessMultiplier = new ConfigEntry.Builder<Double>() // TODO: Make this a float (the ClassicConfigGUI doesnt support floats)
@@ -364,7 +353,6 @@ public class Config
 					public static ConfigEntry<Boolean> enableSsao = new ConfigEntry.Builder<Boolean>()
 							.set(true)
 							.comment("Enable Screen Space Ambient Occlusion")
-							.setPerformance(EConfigEntryPerformance.MEDIUM)
 							.build();
 					
 					public static ConfigEntry<Integer> sampleCount = new ConfigEntry.Builder<Integer>()
@@ -373,7 +361,6 @@ public class Config
 									"Determines how many points in space are sampled for the occlusion test. \n" +
 									"Higher numbers will improve quality and reduce banding, but will increase GPU load." +
 									"")
-							.setPerformance(EConfigEntryPerformance.MEDIUM)
 							.build();
 					
 					public static ConfigEntry<Double> radius = new ConfigEntry.Builder<Double>()
@@ -381,7 +368,6 @@ public class Config
 							.comment("" +
 									"Determines the radius Screen Space Ambient Occlusion is applied, measured in blocks." +
 									"")
-							.setPerformance(EConfigEntryPerformance.NONE)
 							.build();
 					
 					public static ConfigEntry<Double> strength = new ConfigEntry.Builder<Double>()
@@ -389,7 +375,6 @@ public class Config
 							.comment("" +
 									"Determines how dark the Screen Space Ambient Occlusion effect will be." +
 									"")
-							.setPerformance(EConfigEntryPerformance.NONE)
 							.build();
 					
 					public static ConfigEntry<Double> bias = new ConfigEntry.Builder<Double>()
@@ -397,7 +382,6 @@ public class Config
 							.comment("" +
 									"Increasing the value can reduce banding at the cost of reducing the strength of the effect." +
 									"")
-							.setPerformance(EConfigEntryPerformance.NONE)
 							.build();
 					
 					public static ConfigEntry<Double> minLight = new ConfigEntry.Builder<Double>()
@@ -407,7 +391,6 @@ public class Config
 									"0 = totally black at the corners \n" +
 									"1 = no shadow" +
 									"")
-							.setPerformance(EConfigEntryPerformance.NONE)
 							.build();
 					
 					public static ConfigEntry<Integer> blurRadius = new ConfigEntry.Builder<Integer>()
@@ -416,7 +399,6 @@ public class Config
 									"The radius, measured in pixels, that blurring is calculated for the SSAO. \n" +
 									"Higher numbers will reduce banding at the cost of GPU performance." +
 									"")
-							.setPerformance(EConfigEntryPerformance.HIGH)
 							.build();
 					
 				}
@@ -479,7 +461,6 @@ public class Config
 							.comment(""
 									+ "Determines if fog is drawn on DH LODs. \n"
 									+ "")
-							.setPerformance(EConfigEntryPerformance.MEDIUM)
 							.build();
 					
 					public static ConfigEntry<EDhApiFogColorMode> colorMode = new ConfigEntry.Builder<EDhApiFogColorMode>()
@@ -489,7 +470,6 @@ public class Config
 									+ "\n"
 									+ EDhApiFogColorMode.USE_WORLD_FOG_COLOR + ": Use the world's fog color. \n"
 									+ EDhApiFogColorMode.USE_SKY_COLOR + ": Use the sky's color.")
-							.setPerformance(EConfigEntryPerformance.NONE)
 							.build();
 					
 					public static ConfigEntry<Boolean> enableVanillaFog = new ConfigEntry.Builder<Boolean>()
@@ -724,12 +704,10 @@ public class Config
 									+ "\n"
 									+ "Increasing the vanilla render distance increases the effectiveness of this setting."
 									+ "")
-							.setPerformance(EConfigEntryPerformance.NONE)
 							.build();
 					
 					public static ConfigEntry<Boolean> enableCaveCulling = new ConfigEntry.Builder<Boolean>()
 							.set(true)
-							.setPerformance(EConfigEntryPerformance.HIGH)
 							.comment(""
 									+ "If enabled caves won't be rendered. \n"
 									+ "\n"
@@ -1698,7 +1676,6 @@ public class Config
 				.comment("" +
 						"Defines the distance allowed to generate around the player." +
 						"")
-				.setPerformance(EConfigEntryPerformance.HIGH)
 				.build();
 		
 		public static ConfigEntry<Integer> generationBoundsX = new ConfigEntry.Builder<Integer>()
@@ -1743,7 +1720,6 @@ public class Config
 				.comment("" +
 						"Defines the distance the player will receive updates around." +
 						"")
-				.setPerformance(EConfigEntryPerformance.HIGH)
 				.build();
 		
 		
@@ -1772,7 +1748,6 @@ public class Config
 						"Defines the distance allowed to be synchronized around the player. \n" +
 						"Should be the same or larger than maxGenerationRequestDistance in most cases." +
 						"")
-				.setPerformance(EConfigEntryPerformance.HIGH)
 				.build();
 		
 		
