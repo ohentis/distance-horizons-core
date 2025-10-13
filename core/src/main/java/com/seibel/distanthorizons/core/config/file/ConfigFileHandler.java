@@ -101,7 +101,7 @@ public class ConfigFileHandler
 			this.loadNightConfig(nightConfig);
 			
 			
-			for (AbstractConfigBase<?> entry : ConfigHandler.INSTANCE.configEntryList)
+			for (AbstractConfigBase<?> entry : ConfigHandler.INSTANCE.configBaseList)
 			{
 				if (ConfigEntry.class.isAssignableFrom(entry.getClass()))
 				{
@@ -139,7 +139,7 @@ public class ConfigFileHandler
 		{
 			this.readWriteLock.lock();
 			
-			int currentCfgVersion = ConfigHandler.INSTANCE.configVersion;
+			int currentCfgVersion = ModInfo.CONFIG_FILE_VERSION;
 			try
 			{
 				// Dont load the real `this.nightConfig`, instead create a tempoary one
@@ -151,13 +151,13 @@ public class ConfigFileHandler
 			}
 			catch (Exception ignored) { }
 			
-			if (currentCfgVersion == ConfigHandler.INSTANCE.configVersion)
+			if (currentCfgVersion == ModInfo.CONFIG_FILE_VERSION)
 			{
 				// handle normally
 			}
-			else if (currentCfgVersion > ConfigHandler.INSTANCE.configVersion)
+			else if (currentCfgVersion > ModInfo.CONFIG_FILE_VERSION)
 			{
-				this.logger.warn("Found config version [" + currentCfgVersion + "] which is newer than current mods config version of [" + ConfigHandler.INSTANCE.configVersion + "]. You may have downgraded the mod and items may have been moved, you have been warned");
+				this.logger.warn("Found config version [" + currentCfgVersion + "] which is newer than current mods config version of [" + ModInfo.CONFIG_FILE_VERSION + "]. You may have downgraded the mod and items may have been moved, you have been warned");
 			}
 			else // if (currentCfgVersion < configBase.configVersion)
 			{
@@ -173,7 +173,7 @@ public class ConfigFileHandler
 			}
 			
 			this.loadFromFile(this.nightConfig);
-			this.nightConfig.set("_version", ConfigHandler.INSTANCE.configVersion);
+			this.nightConfig.set("_version", ModInfo.CONFIG_FILE_VERSION);
 		}
 		finally
 		{
@@ -199,7 +199,7 @@ public class ConfigFileHandler
 		
 		
 		// Load all the entries
-		for (AbstractConfigBase<?> entry : ConfigHandler.INSTANCE.configEntryList)
+		for (AbstractConfigBase<?> entry : ConfigHandler.INSTANCE.configBaseList)
 		{
 			if (ConfigEntry.class.isAssignableFrom(entry.getClass())
 				&& entry.getAppearance().showInFile)

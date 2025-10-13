@@ -79,7 +79,7 @@ public class ConfigHandler
 		this.add(Float.class);
 		this.add(String.class);
 		
-		// TODO[CONFIG]: Check the type of these is valid
+		// partially implemented but not entirely
 		this.add(List.class);
 		this.add(ArrayList.class);
 		this.add(Map.class);
@@ -88,11 +88,10 @@ public class ConfigHandler
 	
 	
 	
-	public static ConfigHandler INSTANCE;
+	public static final ConfigHandler INSTANCE = new ConfigHandler();
 	
-	public final ConfigFileHandler configFileHandler;
-	public final int configVersion;
-	public final List<AbstractConfigBase<?>> configEntryList = new ArrayList<>();
+	public final ConfigFileHandler configFileHandler = new ConfigFileHandler(getConfigPath());
+	public final List<AbstractConfigBase<?>> configBaseList = new ArrayList<>();
 	
 	public boolean isLoaded = false;
 	/** 
@@ -107,30 +106,26 @@ public class ConfigHandler
 	// constructor //
 	//=============//
 	
-	public static void RunFirstTimeSetup()
+	public static void tryRunFirstTimeSetup()
 	{
-		if (INSTANCE != null)
+		if (INSTANCE.isLoaded)
 		{
 			LOGGER.debug("ConfigHandler setup already run, ignoring.");
 			return;
 		}
 		
-		INSTANCE = new ConfigHandler(Config.class, ModInfo.CONFIG_FILE_VERSION);
+		INSTANCE.runFirstTimeSetup();
 	}
-	private ConfigHandler(Class<?> configClass, int configVersion)
+	private void runFirstTimeSetup()
 	{
 		LOGGER.info("Initialising config for [" + ModInfo.NAME + "]");
 		
-		this.configVersion = configVersion;
+		this.initNestedClass(Config.class, ""); // Init root category
 		
-		this.initNestedClass(configClass, ""); // Init root category
-		
-		Path configPath = getConfigPath();
-		this.configFileHandler = new ConfigFileHandler(configPath);
 		this.configFileHandler.loadFromFile();
 		
 		this.isLoaded = true;
-		LOGGER.info("Config for [" + ModInfo.NAME + "] initialised");
+		LOGGER.info("[" + ModInfo.NAME + "] Config initialised");
 	}
 	/** Gets the default config path given a mod name */
 	private static Path getConfigPath()
@@ -143,10 +138,11 @@ public class ConfigHandler
 	/** Put all the config entries into configEntryList */
 	private void initNestedClass(Class<?> configClass, String category)
 	{
-		for (Field field : configClass.getFields())
+		Field[] fields = configClass.getFields();
+		for (Field field : fields)
 		{
 			// ignore any non-config variables
-			if (AbstractConfigBase.class.isAssignableFrom(field.getType()))
+			if (!AbstractConfigBase.class.isAssignableFrom(field.getType()))
 			{
 				continue;
 			}
@@ -155,7 +151,7 @@ public class ConfigHandler
 			// add this config to the master list
 			try
 			{
-				this.configEntryList.add((AbstractConfigBase<?>) field.get(field.getType()));
+				this.configBaseList.add((AbstractConfigBase<?>) field.get(field.getType()));
 			}
 			catch (IllegalAccessException e)
 			{
@@ -165,7 +161,7 @@ public class ConfigHandler
 			
 			
 			// set any necessary variables in this config
-			AbstractConfigBase<?> configBase = this.configEntryList.get(this.configEntryList.size() - 1);
+			AbstractConfigBase<?> configBase = this.configBaseList.get(this.configBaseList.size() - 1);
 			configBase.category = category;
 			configBase.name = field.getName();
 			
@@ -177,7 +173,7 @@ public class ConfigHandler
 				{
 					LOGGER.error("Invalid variable type at [" + (category.isEmpty() ? "" : category + ".") + field.getName() + "].");
 					LOGGER.error("Type [" + configBase.getType() + "] is not one of these types [" + ACCEPTABLE_INPUTS.toString() + "]");
-					this.configEntryList.remove(this.configEntryList.size() - 1); // Delete the entry if it is invalid so the game can still run
+					this.configBaseList.remove(this.configBaseList.size() - 1); // Delete the entry if it is invalid so the game can still run
 				}
 			}
 			
@@ -235,7 +231,7 @@ public class ConfigHandler
 		String ending = "\",\n";
 		
 		// config entries
-		for (AbstractConfigBase<?> entry : this.configEntryList)
+		for (AbstractConfigBase<?> entry : this.configBaseList)
 		{
 			String entryPrefix = "distanthorizons.config." + entry.getNameAndCategory();
 			
