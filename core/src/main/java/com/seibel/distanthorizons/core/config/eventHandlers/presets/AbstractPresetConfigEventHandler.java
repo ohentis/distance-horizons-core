@@ -39,8 +39,7 @@ public abstract class AbstractPresetConfigEventHandler<TPresetEnum extends Enum<
 	private static final long MS_DELAY_BEFORE_APPLYING_PRESET = 3_000;
 	
 	@Nullable
-	private static IConfigGui configGui = SingletonInjector.INSTANCE.get(IConfigGui.class);
-	private static boolean guiListenersAdded = false;
+	private static final IConfigGui CONFIG_GUI = SingletonInjector.INSTANCE.get(IConfigGui.class);
 	
 	protected final ArrayList<ConfigPresetOptions<TPresetEnum, ?>> configList = new ArrayList<>();
 	/** this timer is used so each preset isn't applied while a user is clicking through the config options */
@@ -59,9 +58,9 @@ public abstract class AbstractPresetConfigEventHandler<TPresetEnum extends Enum<
 	public AbstractPresetConfigEventHandler()
 	{
 		// don't update the UI when running on a server
-		if (configGui != null) 
+		if (CONFIG_GUI != null) 
 		{
-			configGui.addOnScreenChangeListener(this::onConfigUiClosed);
+			CONFIG_GUI.addOnScreenChangeListener(this::onConfigUiClosed);
 		}
 	}
 	

@@ -19,6 +19,7 @@
 
 package com.seibel.distanthorizons.core.config.types;
 
+import com.seibel.distanthorizons.core.config.gui.IConfigGuiInfo;
 import com.seibel.distanthorizons.core.config.types.enums.EConfigEntryAppearance;
 
 /**
@@ -34,8 +35,11 @@ public abstract class AbstractConfigBase<T>
 	protected final boolean isFloatingPointNumber;
 	protected T value;
 	
-	@Deprecated
-	public Object guiValue; // This is a storage variable something like the gui can use
+	/** 
+	 * This stores information related to the GUI state.
+	 * This is set during config UI setup.
+	 */
+	public IConfigGuiInfo guiValue;
 	
 	protected EConfigEntryAppearance appearance;
 	

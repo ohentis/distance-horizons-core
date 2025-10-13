@@ -223,7 +223,7 @@ public class ConfigEntry<T> extends AbstractConfigBase<T>
 	/** Checks if the given value is valid */
 	public EConfigValidity getValidity(@Nullable T value, @Nullable T min, @Nullable T max)
 	{
-		if (ConfigHandler.INSTANCE.runMinMaxValidation)
+		if (!ConfigHandler.INSTANCE.runMinMaxValidation)
 		{
 			return EConfigValidity.VALID;
 		}
