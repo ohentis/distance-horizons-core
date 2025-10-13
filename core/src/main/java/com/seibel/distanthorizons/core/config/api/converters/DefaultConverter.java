@@ -17,26 +17,30 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.seibel.distanthorizons.coreapi.util.converters;
+package com.seibel.distanthorizons.core.config.api.converters;
 
-import com.seibel.distanthorizons.api.enums.rendering.EDhApiRendererMode;
 import com.seibel.distanthorizons.coreapi.interfaces.config.IConverter;
 
+
 /**
- * Used for simplifying the fake chunk rendering on/off setting.
+ * Returns the object passed in, doesn't do any conversion. <br>
+ * Helpful as the default converter in some cases.
  *
  * @author James Seibel
  * @version 2022-6-30
  */
-public class RenderModeEnabledConverter implements IConverter<EDhApiRendererMode, Boolean>
+public class DefaultConverter<T> implements IConverter<T, T>
 {
+	@Override
+	public T convertToCoreType(T apiObject)
+	{
+		return apiObject;
+	}
 	
-	@Override 
-	public EDhApiRendererMode convertToCoreType(Boolean renderingEnabled)
-	{ return renderingEnabled ? EDhApiRendererMode.DEFAULT : EDhApiRendererMode.DISABLED; }
-	
-	@Override 
-	public Boolean convertToApiType(EDhApiRendererMode renderingMode)
-	{ return renderingMode == EDhApiRendererMode.DEFAULT; }
+	@Override
+	public T convertToApiType(T coreObject)
+	{
+		return coreObject;
+	}
 	
 }

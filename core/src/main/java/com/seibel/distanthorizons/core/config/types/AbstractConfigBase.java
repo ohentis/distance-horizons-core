@@ -19,24 +19,22 @@
 
 package com.seibel.distanthorizons.core.config.types;
 
-import com.seibel.distanthorizons.core.config.ConfigBase;
 import com.seibel.distanthorizons.core.config.types.enums.EConfigEntryAppearance;
 
 /**
- * The class where all config options should extend
+ * The class all config options should extend
  *
  * @author coolGi
  */
-// Note for devs: The "S" is the class that is extending this
-public abstract class AbstractConfigType<T, S>
+public abstract class AbstractConfigBase<T>
 {
 	public String category = "";    // This should only be set once in the init
 	public String name;            // This should only be set once in the init
 	protected final T defaultValue;
 	protected final boolean isFloatingPointNumber;
 	protected T value;
-	public ConfigBase configBase;
 	
+	@Deprecated
 	public Object guiValue; // This is a storage variable something like the gui can use
 	
 	protected EConfigEntryAppearance appearance;
@@ -47,7 +45,7 @@ public abstract class AbstractConfigType<T, S>
 	// constructor //
 	//=============//
 	
-	protected AbstractConfigType(EConfigEntryAppearance appearance, T defaultValue)
+	protected AbstractConfigBase(EConfigEntryAppearance appearance, T defaultValue)
 	{
 		this.defaultValue = defaultValue;
 		this.value = defaultValue;
@@ -74,7 +72,7 @@ public abstract class AbstractConfigType<T, S>
 	
 	public String getCategory() { return this.category; }
 	public String getName() { return this.name; }
-	public String getNameWCategory() { return (this.category.isEmpty() ? "" : this.category + ".") + this.name; }
+	public String getNameAndCategory() { return (this.category.isEmpty() ? "" : this.category + ".") + this.name; }
 	
 	
 	/** Gets the class of T */

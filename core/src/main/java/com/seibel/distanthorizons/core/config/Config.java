@@ -45,14 +45,11 @@ import java.util.*;
 import java.util.List;
 
 /**
- * This handles any configuration the user has access to. <br><br>
- *
- * Note: <br>
- * Only add simpler listeners here (IE listeners that only depend on 1 config entry).
- * For listeners that depend on 2 or more config entries, add them before the config menu is opened.
- * Otherwise, you will have issues where only some of the config entries will exist when your listener is created.
+ * This handles any configuration the user has access to.
  *
  * @author coolGi
+ * 
+ * @see ConfigHandler
  */
 @SuppressWarnings("ConcatenationWithEmptyString")
 public class Config
@@ -1849,7 +1846,6 @@ public class Config
 			
 			try
 			{
-				// TODO automatically get all instances of AbstractPresetConfigEventHandler and fire "setUiOnlyConfigValues"
 				ThreadPresetConfigEventHandler.INSTANCE.setUiOnlyConfigValues();
 				RenderQualityPresetConfigEventHandler.INSTANCE.setUiOnlyConfigValues();
 				QuickRenderToggleConfigEventHandler.INSTANCE.setUiOnlyConfigValues();

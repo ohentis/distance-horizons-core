@@ -21,7 +21,6 @@ package com.seibel.distanthorizons.core.level;
 
 import com.google.common.cache.CacheBuilder;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
-import com.seibel.distanthorizons.core.config.AppliedConfigState;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
@@ -86,7 +85,6 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 	);
 	
 	public final WorldGenModule worldGenModule;
-	public final AppliedConfigState<Boolean> worldGeneratorEnabledConfig;
 	
 	@Nullable
 	private final SyncOnLoadRequestQueue syncOnLoadRequestQueue;
@@ -134,7 +132,6 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 		}
 		
 		this.dataFileHandler = new RemoteFullDataSourceProvider(this, saveStructure, fullDataSaveDirOverride, this.syncOnLoadRequestQueue);
-		this.worldGeneratorEnabledConfig = new AppliedConfigState<>(Config.Common.WorldGenerator.enableDistantGeneration);
 		this.worldGenModule = new WorldGenModule(this, this.dataFileHandler, () -> new WorldGenState(this, networkState));
 		
 		this.clientside = new ClientLevelModule(this);

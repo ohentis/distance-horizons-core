@@ -17,38 +17,26 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.seibel.distanthorizons.core.config;
+package com.seibel.distanthorizons.core.config.api.converters;
 
-import com.seibel.distanthorizons.core.config.types.ConfigEntry;
+import com.seibel.distanthorizons.api.enums.rendering.EDhApiRendererMode;
+import com.seibel.distanthorizons.coreapi.interfaces.config.IConverter;
 
-// TODO: Make this integrate with the config system
-public class AppliedConfigState<T>
+/**
+ * Used for simplifying the fake chunk rendering on/off setting.
+ *
+ * @author James Seibel
+ * @version 2022-6-30
+ */
+public class RenderModeEnabledConverter implements IConverter<EDhApiRendererMode, Boolean>
 {
-	final ConfigEntry<T> entry;
-	T activeValue;
 	
+	@Override 
+	public EDhApiRendererMode convertToCoreType(Boolean renderingEnabled)
+	{ return renderingEnabled ? EDhApiRendererMode.DEFAULT : EDhApiRendererMode.DISABLED; }
 	
-	
-	public AppliedConfigState(ConfigEntry<T> entryToWatch)
-	{
-		this.entry = entryToWatch;
-		this.activeValue = entryToWatch.get();
-	}
-	
-	
-	
-	/** Returns true if the value was changed */
-	public boolean pollNewValue()
-	{
-		T newValue = this.entry.get();
-		if (newValue.equals(this.activeValue))
-		{
-			return false;
-		}
-		this.activeValue = newValue;
-		return true;
-	}
-	
-	public T get() { return this.activeValue; }
+	@Override 
+	public Boolean convertToApiType(EDhApiRendererMode renderingMode)
+	{ return renderingMode == EDhApiRendererMode.DEFAULT; }
 	
 }

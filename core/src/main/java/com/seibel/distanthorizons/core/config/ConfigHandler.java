@@ -26,28 +26,27 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.wrapperInterfaces.config.ILangWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftSharedWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
-import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Field;
 import java.nio.file.Path;
 import java.util.*;
 
 /**
- * Indexes and sets everything up for the file handling and gui.
- * This should be init after singletons have been bound
+ * Sets up everything in {@link Config} for the file/GUI and keeps track of all
+ * entries therein. <br>
+ * This should be run after the singletons have been bound.
  *
  * @author coolGi
  * @author Ran
- * @version 2023-8-26
+ * 
+ * @see Config
  */
-public class ConfigBase
+public class ConfigHandler
 {
-	/** Our own config instance, don't modify unless you are the DH mod */
-	public static ConfigBase INSTANCE;
-	
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	
+	private static final IMinecraftSharedWrapper MC_SHARED = SingletonInjector.INSTANCE.get(IMinecraftSharedWrapper.class);
 	
 	/**
 	 * What the config works with
@@ -69,7 +68,7 @@ public class ConfigBase
 	 * <br> Map<String, T>
 	 * <br> HashMap<String, T>
 	 */
-	public static final List<Class<?>> ACCEPTABLE_INPUTS = new ArrayList<Class<?>>()
+	private static final List<Class<?>> ACCEPTABLE_INPUTS = new ArrayList<Class<?>>()
 	{{
 		this.add(Boolean.class);
 		this.add(Byte.class);
@@ -89,15 +88,18 @@ public class ConfigBase
 	
 	
 	
-	public ConfigFileHandler configFileHandler;
+	public static ConfigHandler INSTANCE;
 	
+	public final ConfigFileHandler configFileHandler;
 	public final int configVersion;
+	public final List<AbstractConfigBase<?>> configEntryList = new ArrayList<>();
 	
 	public boolean isLoaded = false;
-	
-	/** Disables the minimum and maximum of any variable */
-	public boolean disableMinMax = false; // Very fun to use, but should always be disabled by default
-	public final List<AbstractConfigType<?, ?>> entries = new ArrayList<>();
+	/** 
+	 * Disables the minimum and maximum validation. <Br>
+	 * Fun to use, but should be disabled by default.
+	 */
+	public boolean runMinMaxValidation = true;
 	
 	
 	
@@ -109,14 +111,13 @@ public class ConfigBase
 	{
 		if (INSTANCE != null)
 		{
-			LOGGER.debug("ConfigBase setup already run, ignoring.");
+			LOGGER.debug("ConfigHandler setup already run, ignoring.");
 			return;
 		}
 		
-		INSTANCE = new ConfigBase(Config.class, ModInfo.CONFIG_FILE_VERSION);
+		INSTANCE = new ConfigHandler(Config.class, ModInfo.CONFIG_FILE_VERSION);
 	}
-	
-	private ConfigBase(Class<?> configClass, int configVersion)
+	private ConfigHandler(Class<?> configClass, int configVersion)
 	{
 		LOGGER.info("Initialising config for [" + ModInfo.NAME + "]");
 		
@@ -124,73 +125,88 @@ public class ConfigBase
 		
 		this.initNestedClass(configClass, ""); // Init root category
 		
-		Path configPath = getConfigPath(ModInfo.NAME);
-		this.configFileHandler = new ConfigFileHandler(this, configPath);
+		Path configPath = getConfigPath();
+		this.configFileHandler = new ConfigFileHandler(configPath);
 		this.configFileHandler.loadFromFile();
 		
 		this.isLoaded = true;
 		LOGGER.info("Config for [" + ModInfo.NAME + "] initialised");
 	}
 	/** Gets the default config path given a mod name */
-	private static Path getConfigPath(String modName)
+	private static Path getConfigPath()
 	{
-		return SingletonInjector.INSTANCE.get(IMinecraftSharedWrapper.class)
-				.getInstallationDirectory().toPath().resolve("config").resolve(modName + ".toml");
+		return MC_SHARED
+				.getInstallationDirectory().toPath()
+				.resolve("config")
+				.resolve(ModInfo.NAME + ".toml");
 	}
+	/** Put all the config entries into configEntryList */
 	private void initNestedClass(Class<?> configClass, String category)
 	{
-		// Put all the entries in entries
-		
 		for (Field field : configClass.getFields())
 		{
-			if (AbstractConfigType.class.isAssignableFrom(field.getType()))
+			// ignore any non-config variables
+			if (AbstractConfigBase.class.isAssignableFrom(field.getType()))
 			{
-				try
+				continue;
+			}
+			
+			
+			// add this config to the master list
+			try
+			{
+				this.configEntryList.add((AbstractConfigBase<?>) field.get(field.getType()));
+			}
+			catch (IllegalAccessException e)
+			{
+				LOGGER.warn("Unable to add config ["+field.getType().getName()+"], error: ["+e.getMessage()+"].", e);
+				continue;
+			}
+			
+			
+			// set any necessary variables in this config
+			AbstractConfigBase<?> configBase = this.configEntryList.get(this.configEntryList.size() - 1);
+			configBase.category = category;
+			configBase.name = field.getName();
+			
+			
+			// validate the config's input type
+			if (ConfigEntry.class.isAssignableFrom(field.getType()))
+			{
+				if (!isAcceptableType(configBase.getType()))
 				{
-					this.entries.add((AbstractConfigType<?, ?>) field.get(field.getType()));
+					LOGGER.error("Invalid variable type at [" + (category.isEmpty() ? "" : category + ".") + field.getName() + "].");
+					LOGGER.error("Type [" + configBase.getType() + "] is not one of these types [" + ACCEPTABLE_INPUTS.toString() + "]");
+					this.configEntryList.remove(this.configEntryList.size() - 1); // Delete the entry if it is invalid so the game can still run
 				}
-				catch (IllegalAccessException exception)
+			}
+			
+			// recursively add deeper categories if present
+			if (ConfigCategory.class.isAssignableFrom(field.getType()))
+			{
+				ConfigCategory configCategory = (ConfigCategory) configBase;
+				
+				if (configCategory.getDestination() == null)
 				{
-					LOGGER.warn(exception);
+					configCategory.destination = configBase.getNameAndCategory();
 				}
 				
-				AbstractConfigType<?, ?> entry = this.entries.get(this.entries.size() - 1);
-				entry.category = category;
-				entry.name = field.getName();
-				entry.configBase = this;
-				
-				if (ConfigEntry.class.isAssignableFrom(field.getType()))
-				{ 
-					// If item is type ConfigEntry
-					if (!isAcceptableType(entry.getType()))
-					{
-						LOGGER.error("Invalid variable type at [" + (category.isEmpty() ? "" : category + ".") + field.getName() + "].");
-						LOGGER.error("Type [" + entry.getType() + "] is not one of these types [" + ACCEPTABLE_INPUTS.toString() + "]");
-						this.entries.remove(this.entries.size() - 1); // Delete the entry if it is invalid so the game can still run
-					}
-				}
-				
-				if (ConfigCategory.class.isAssignableFrom(field.getType()))
-				{ // If it's a category then init the stuff inside it and put it in the category list
-					assert entry instanceof ConfigCategory;
-					if (((ConfigCategory) entry).getDestination() == null)
-						((ConfigCategory) entry).destination = entry.getNameWCategory();
-					if (entry.get() != null)
-					{
-						this.initNestedClass(((ConfigCategory) entry).get(), ((ConfigCategory) entry).getDestination());
-					}
+				// shouldn't happen, but just in case
+				if (configBase.get() != null)
+				{
+					this.initNestedClass(configCategory.get(), configCategory.getDestination());
 				}
 			}
 		}
 	}
-	private static boolean isAcceptableType(Class<?> Clazz)
+	private static boolean isAcceptableType(Class<?> inputClass)
 	{
-		if (Clazz.isEnum())
+		if (inputClass.isEnum())
 		{
 			return true;
 		}
 		
-		return ACCEPTABLE_INPUTS.contains(Clazz);
+		return ACCEPTABLE_INPUTS.contains(inputClass);
 	}
 	
 	
@@ -219,9 +235,9 @@ public class ConfigBase
 		String ending = "\",\n";
 		
 		// config entries
-		for (AbstractConfigType<?, ?> entry : this.entries)
+		for (AbstractConfigBase<?> entry : this.configEntryList)
 		{
-			String entryPrefix = "distanthorizons.config." + entry.getNameWCategory();
+			String entryPrefix = "distanthorizons.config." + entry.getNameAndCategory();
 			
 			if (checkEnums 
 				&& entry.getType().isEnum() 

@@ -24,7 +24,7 @@ import com.seibel.distanthorizons.core.config.types.ConfigEntry;
 import java.util.HashMap;
 import java.util.HashSet;
 
-public class ConfigEntryWithPresetOptions<TQuickEnum, TConfig>
+public class ConfigPresetOptions<TQuickEnum, TConfig>
 {
 	public final ConfigEntry<TConfig> configEntry;
 	
@@ -32,13 +32,21 @@ public class ConfigEntryWithPresetOptions<TQuickEnum, TConfig>
 	
 	
 	
-	public ConfigEntryWithPresetOptions(ConfigEntry<TConfig> configEntry, HashMap<TQuickEnum, TConfig> configOptionByQualityOption)
+	//=============//
+	// constructor //
+	//=============//
+	
+	public ConfigPresetOptions(ConfigEntry<TConfig> configEntry, HashMap<TQuickEnum, TConfig> configOptionByQualityOption)
 	{
 		this.configEntry = configEntry;
 		this.configOptionByQualityOption = configOptionByQualityOption;
 	}
 	
 	
+	
+	//=========//
+	// methods //
+	//=========//
 	
 	public void updateConfigEntry(TQuickEnum quickQuality)
 	{

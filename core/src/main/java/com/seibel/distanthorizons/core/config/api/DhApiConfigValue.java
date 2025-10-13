@@ -17,12 +17,12 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.seibel.distanthorizons.api.objects.config;
+package com.seibel.distanthorizons.core.config.api;
 
 import com.seibel.distanthorizons.api.interfaces.config.IDhApiConfigValue;
-import com.seibel.distanthorizons.coreapi.interfaces.config.IConfigEntry;
+import com.seibel.distanthorizons.core.config.types.ConfigEntry;
 import com.seibel.distanthorizons.coreapi.interfaces.config.IConverter;
-import com.seibel.distanthorizons.coreapi.util.converters.DefaultConverter;
+import com.seibel.distanthorizons.core.config.api.converters.DefaultConverter;
 
 import java.util.function.Consumer;
 
@@ -41,7 +41,7 @@ import java.util.function.Consumer;
  */
 public class DhApiConfigValue<coreType, apiType> implements IDhApiConfigValue<apiType>
 {
-	private final IConfigEntry<coreType> configEntry;
+	private final ConfigEntry<coreType> configBase;
 	
 	private final IConverter<coreType, apiType> configConverter;
 	
@@ -53,9 +53,9 @@ public class DhApiConfigValue<coreType, apiType> implements IDhApiConfigValue<ap
 	 * Uses the default object converter, this requires coreType and apiType to be the same.
 	 */
 	@SuppressWarnings("unchecked") // DefaultConverter's cast is safe
-	public DhApiConfigValue(IConfigEntry<coreType> newConfigEntry)
+	public DhApiConfigValue(ConfigEntry<coreType> configBase)
 	{
-		this.configEntry = newConfigEntry;
+		this.configBase = configBase;
 		this.configConverter = (IConverter<coreType, apiType>) new DefaultConverter<coreType>();
 	}
 	
@@ -63,22 +63,22 @@ public class DhApiConfigValue<coreType, apiType> implements IDhApiConfigValue<ap
 	 * This constructor should only be called internally. <br>
 	 * There is no reason for API users to create this object. <br><br>
 	 */
-	public DhApiConfigValue(IConfigEntry<coreType> newConfigEntry, IConverter<coreType, apiType> newConverter)
+	public DhApiConfigValue(ConfigEntry<coreType> configBase, IConverter<coreType, apiType> newConverter)
 	{
-		this.configEntry = newConfigEntry;
+		this.configBase = configBase;
 		this.configConverter = newConverter;
 	}
 	
 	
-	public apiType getValue() { return this.configConverter.convertToApiType(this.configEntry.get()); }
-	public apiType getTrueValue() { return this.configConverter.convertToApiType(this.configEntry.getTrueValue()); }
-	public apiType getApiValue() { return this.configConverter.convertToApiType(this.configEntry.getApiValue()); }
+	public apiType getValue() { return this.configConverter.convertToApiType(this.configBase.get()); }
+	public apiType getTrueValue() { return this.configConverter.convertToApiType(this.configBase.getTrueValue()); }
+	public apiType getApiValue() { return this.configConverter.convertToApiType(this.configBase.getApiValue()); }
 	
 	public boolean setValue(apiType newValue)
 	{
-		if (this.configEntry.getAllowApiOverride())
+		if (this.configBase.getAllowApiOverride())
 		{
-			this.configEntry.setApiValue(this.configConverter.convertToCoreType(newValue));
+			this.configBase.setApiValue(this.configConverter.convertToCoreType(newValue));
 			return true;
 		}
 		else
@@ -89,11 +89,11 @@ public class DhApiConfigValue<coreType, apiType> implements IDhApiConfigValue<ap
 	
 	public boolean clearValue()
 	{
-		if (this.configEntry.getAllowApiOverride())
+		if (this.configBase.getAllowApiOverride())
 		{
 			// no converter should be used here since null objects may need to be handled differently
 			// TODO the API should just have a bool to keep track of whether the API value is in use instead of using NULL
-			this.configEntry.setApiValue(null);
+			this.configBase.setApiValue(null);
 			return true;
 		}
 		else
@@ -102,16 +102,16 @@ public class DhApiConfigValue<coreType, apiType> implements IDhApiConfigValue<ap
 		}
 	}
 	
-	public boolean getCanBeOverrodeByApi() { return this.configEntry.getAllowApiOverride(); }
+	public boolean getCanBeOverrodeByApi() { return this.configBase.getAllowApiOverride(); }
 	
-	public apiType getDefaultValue() { return this.configConverter.convertToApiType(this.configEntry.getDefaultValue()); }
-	public apiType getMaxValue() { return this.configConverter.convertToApiType(this.configEntry.getMax()); }
-	public apiType getMinValue() { return this.configConverter.convertToApiType(this.configEntry.getMin()); }
+	public apiType getDefaultValue() { return this.configConverter.convertToApiType(this.configBase.getDefaultValue()); }
+	public apiType getMaxValue() { return this.configConverter.convertToApiType(this.configBase.getMax()); }
+	public apiType getMinValue() { return this.configConverter.convertToApiType(this.configBase.getMin()); }
 	
 	
 	public void addChangeListener(Consumer<apiType> onValueChangeFunc) 
 	{
-		this.configEntry.addValueChangeListener((coreValue) -> 
+		this.configBase.addValueChangeListener((coreValue) -> 
 		{
 			apiType apiValue = this.configConverter.convertToApiType(coreValue);
 			onValueChangeFunc.accept(apiValue);

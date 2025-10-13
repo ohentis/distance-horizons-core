@@ -17,7 +17,7 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.seibel.distanthorizons.coreapi.util.converters;
+package com.seibel.distanthorizons.core.config.api.converters;
 
 import com.seibel.distanthorizons.api.enums.rendering.EDhApiFogDrawMode;
 import com.seibel.distanthorizons.coreapi.interfaces.config.IConverter;
