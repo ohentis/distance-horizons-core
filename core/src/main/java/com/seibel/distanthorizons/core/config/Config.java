@@ -104,7 +104,7 @@ public class Config
 		public static ConfigUiLinkedEntry quickEnableWorldGenerator = new ConfigUiLinkedEntry(Common.WorldGenerator.enableDistantGeneration);
 		
 		public static ConfigEntry<Boolean> quickShowWorldGenProgress = new ConfigEntry.Builder<Boolean>()
-				.set(true)
+				.set(false) // TODO should be set by the underlying world gen progress button, not a static default
 				.setAppearance(EConfigEntryAppearance.ONLY_IN_GUI)
 				.build();
 		

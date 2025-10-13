@@ -39,14 +39,17 @@ public class QuickShowWorldGenProgressConfigEventHandler
 		this.quickChangeListener = new ConfigChangeListener<>(Config.Client.quickShowWorldGenProgress, 
 				(val) -> 
 				{
-					Config.Common.WorldGenerator.showGenerationProgress.set(Config.Client.quickShowWorldGenProgress.get() 
-							? Config.Common.WorldGenerator.showGenerationProgress.getDefaultValue()
+					boolean quickShowProgress = Config.Client.quickShowWorldGenProgress.get();
+					Config.Common.WorldGenerator.showGenerationProgress.set(
+							quickShowProgress
+							? EDhApiDistantGeneratorProgressDisplayLocation.OVERLAY
 							: EDhApiDistantGeneratorProgressDisplayLocation.DISABLED); 
 				});
 		this.fullChangeListener = new ConfigChangeListener<>(Config.Common.WorldGenerator.showGenerationProgress, 
 				(val) -> 
 				{
-					Config.Client.quickShowWorldGenProgress.set(Config.Common.WorldGenerator.showGenerationProgress.get() != EDhApiDistantGeneratorProgressDisplayLocation.DISABLED); 
+					boolean showProgress = Config.Common.WorldGenerator.showGenerationProgress.get() != EDhApiDistantGeneratorProgressDisplayLocation.DISABLED;
+					Config.Client.quickShowWorldGenProgress.setWithoutFiringEvents(showProgress); 
 				});
 	}
 	
