@@ -12,7 +12,7 @@ import com.seibel.distanthorizons.core.util.objects.DataCorruptedException;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataInputStream;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
-import org.apache.logging.log4j.Logger;
+import com.seibel.distanthorizons.core.logging.DhLogger;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
@@ -27,7 +27,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public class FullDataSourceProviderV1<TDhLevel extends IDhLevel>
 		implements AutoCloseable
 {
-	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
 	
 	protected final ReentrantLock closeLock = new ReentrantLock();
 	protected volatile boolean isShutdown = false;

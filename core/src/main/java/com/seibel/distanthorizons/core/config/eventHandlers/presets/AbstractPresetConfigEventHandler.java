@@ -24,18 +24,19 @@ import com.seibel.distanthorizons.core.config.ConfigPresetOptions;
 import com.seibel.distanthorizons.core.config.listeners.IConfigListener;
 import com.seibel.distanthorizons.core.config.types.AbstractConfigBase;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
+import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.util.TimerUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.config.IConfigGui;
 import com.seibel.distanthorizons.coreapi.util.StringUtil;
 import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.seibel.distanthorizons.core.logging.DhLogger;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
 public abstract class AbstractPresetConfigEventHandler<TPresetEnum extends Enum<?>> implements IConfigListener
 {
-	private static final Logger LOGGER = LogManager.getLogger();
+	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
 	private static final long MS_DELAY_BEFORE_APPLYING_PRESET = 3_000;
 	
 	@Nullable
@@ -139,7 +140,7 @@ public abstract class AbstractPresetConfigEventHandler<TPresetEnum extends Enum<
 		
 		
 		
-		LOGGER.info("changing preset to: " + newPresetEnum);
+		LOGGER.debug("changing preset to: [" + newPresetEnum + "].");
 		this.changingPreset = true;
 		
 		// update the controlled config values
@@ -151,7 +152,7 @@ public abstract class AbstractPresetConfigEventHandler<TPresetEnum extends Enum<
 		this.setUiOnlyConfigValues();
 		
 		this.changingPreset = false;
-		LOGGER.info("preset active: " + newPresetEnum);
+		LOGGER.debug("preset active: [" + newPresetEnum + "].");
 	}
 	
 	/**

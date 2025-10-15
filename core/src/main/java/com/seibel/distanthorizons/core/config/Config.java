@@ -36,7 +36,7 @@ import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.wrapperInterfaces.IWrapperFactory;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftSharedWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
-import org.apache.logging.log4j.Logger;
+import com.seibel.distanthorizons.core.logging.DhLogger;
 import org.lwjgl.util.tinyfd.TinyFileDialogs;
 
 import java.awt.*;
@@ -54,7 +54,7 @@ import java.util.List;
 @SuppressWarnings("ConcatenationWithEmptyString")
 public class Config
 {
-	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
 	
 	public static ConfigCategory client = new ConfigCategory.Builder().set(Client.class).build();
 	
@@ -1527,49 +1527,74 @@ public class Config
 		{
 			public static ConfigUIComment loggingHeader = new ConfigUIComment.Builder().setParentConfigClass(Logging.class).build();
 			
-			// TODO add change all option
-			// TODO default to error chat and info file
-			public static ConfigEntry<EDhApiLoggerMode> logWorldGenEvent = new ConfigEntry.Builder<EDhApiLoggerMode>()
+			
+			public static ConfigEntry<EDhApiLoggerLevel> globalFileMaxLevel = new ConfigEntry.Builder<EDhApiLoggerLevel>()
+					.setChatCommandName("logging.globalFileMaxLevel")
+					.set(EDhApiLoggerLevel.INFO)
+					.comment(""
+							+ ""
+							+ "")
+					.build();
+			
+			public static ConfigEntry<EDhApiLoggerLevel> globalChatMaxLevel = new ConfigEntry.Builder<EDhApiLoggerLevel>()
+					.setChatCommandName("logging.globalChatMaxLevel")
+					.set(EDhApiLoggerLevel.ERROR)
+					.comment(""
+							+ ""
+							+ "")
+					.build();
+			
+			public static ConfigUISpacer globalLoggingSpacer = new ConfigUISpacer.Builder().build();
+			
+			
+			public static ConfigEntry<EDhApiLoggerLevel> logWorldGenEventToFile = new ConfigEntry.Builder<EDhApiLoggerLevel>()
 					.setChatCommandName("logging.logWorldGenEvent")
-					.set(EDhApiLoggerMode.LOG_ERROR_TO_CHAT_AND_INFO_TO_FILE)
+					.set(EDhApiLoggerLevel.INFO)
 					.comment(""
 							+ "If enabled, the mod will log information about the world generation process. \n"
 							+ "This can be useful for debugging.")
 					.build();
 			
-			public static ConfigEntry<EDhApiLoggerMode> logWorldGenPerformance = new ConfigEntry.Builder<EDhApiLoggerMode>()
+			public static ConfigEntry<EDhApiLoggerLevel> logWorldGenPerformanceToFile = new ConfigEntry.Builder<EDhApiLoggerLevel>()
 					.setChatCommandName("logging.logWorldGenPerformance")
-					.set(EDhApiLoggerMode.LOG_ERROR_TO_CHAT_AND_INFO_TO_FILE)
+					.set(EDhApiLoggerLevel.INFO)
 					.comment(""
 							+ "If enabled, the mod will log performance about the world generation process. \n"
 							+ "This can be useful for debugging.")
 					.build();
 			
-			public static ConfigEntry<EDhApiLoggerMode> logWorldGenLoadEvent = new ConfigEntry.Builder<EDhApiLoggerMode>()
+			public static ConfigEntry<EDhApiLoggerLevel> logWorldGenChunkLoadEventToFile = new ConfigEntry.Builder<EDhApiLoggerLevel>()
 					.setChatCommandName("logging.logWorldGenLoadEvent")
-					.set(EDhApiLoggerMode.LOG_ERROR_TO_CHAT_AND_INFO_TO_FILE)
+					.set(EDhApiLoggerLevel.INFO)
 					.comment(""
 							+ "If enabled, the mod will log information about the world generation process. \n"
 							+ "This can be useful for debugging.")
 					.build();
 			
-			public static ConfigEntry<EDhApiLoggerMode> logRendererBufferEvent = new ConfigEntry.Builder<EDhApiLoggerMode>()
-					.set(EDhApiLoggerMode.LOG_ERROR_TO_CHAT_AND_INFO_TO_FILE)
+			public static ConfigEntry<EDhApiLoggerLevel> logRendererEventToFile = new ConfigEntry.Builder<EDhApiLoggerLevel>()
+					.set(EDhApiLoggerLevel.INFO)
 					.comment(""
-							+ "If enabled, the mod will log information about the renderer buffer process. \n"
+							+ "If enabled, the mod will log information about the renderer setup, cleanup, and any issues it may encounter. \n"
 							+ "This can be useful for debugging.")
 					.build();
 			
-			public static ConfigEntry<EDhApiLoggerMode> logRendererGLEvent = new ConfigEntry.Builder<EDhApiLoggerMode>()
-					.set(EDhApiLoggerMode.LOG_ERROR_TO_CHAT_AND_INFO_TO_FILE)
+			public static ConfigEntry<EDhApiLoggerLevel> logRendererGLEventToFile = new ConfigEntry.Builder<EDhApiLoggerLevel>()
+					.set(EDhApiLoggerLevel.INFO)
 					.comment(""
 							+ "If enabled, the mod will log information about the renderer OpenGL process. \n"
 							+ "This can be useful for debugging.")
 					.build();
 			
-			public static ConfigEntry<EDhApiLoggerMode> logNetworkEvent = new ConfigEntry.Builder<EDhApiLoggerMode>()
+			public static ConfigEntry<EDhApiLoggerLevel> logRendererGLEventToChat = new ConfigEntry.Builder<EDhApiLoggerLevel>()
+					.set(EDhApiLoggerLevel.ERROR)
+					.comment(""
+							+ "If enabled, the mod will log information about the renderer OpenGL process. \n"
+							+ "This can be useful for debugging.")
+					.build();
+			
+			public static ConfigEntry<EDhApiLoggerLevel> logNetworkEventToFile = new ConfigEntry.Builder<EDhApiLoggerLevel>()
 					.setChatCommandName("logging.logNetworkEvent")
-					.set(EDhApiLoggerMode.LOG_ERROR_TO_CHAT_AND_WARNING_TO_FILE)
+					.set(EDhApiLoggerLevel.INFO)
 					.comment(""
 							+ "If enabled, the mod will log information about network operations. \n"
 							+ "This can be useful for debugging.")

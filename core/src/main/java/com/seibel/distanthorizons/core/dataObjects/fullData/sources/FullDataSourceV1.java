@@ -22,6 +22,7 @@ package com.seibel.distanthorizons.core.dataObjects.fullData.sources;
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
 import com.seibel.distanthorizons.core.file.IDataSource;
 import com.seibel.distanthorizons.core.level.IDhLevel;
+import com.seibel.distanthorizons.core.logging.DhLogger;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV1DTO;
@@ -33,7 +34,7 @@ import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataOutputStre
 import com.seibel.distanthorizons.core.dataObjects.fullData.FullDataPointIdMap;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.coreapi.util.BitShiftUtil;
-import org.apache.logging.log4j.Logger;
+import com.seibel.distanthorizons.core.logging.DhLogger;
 
 import java.io.*;
 import java.util.Arrays;
@@ -49,7 +50,7 @@ import java.util.Arrays;
  */
 public class FullDataSourceV1 implements IDataSource<IDhLevel>
 {
-	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
 	
 	public static final byte SECTION_SIZE_OFFSET = DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL;
 	/** measured in dataPoints */
@@ -206,19 +207,19 @@ public class FullDataSourceV1 implements IDataSource<IDhLevel>
 		int dataDetail = inputStream.readInt();
 		if (dataDetail != dto.dataDetailLevel)
 		{
-			throw new IOException(LodUtil.formatLog("Data level mismatch. Expected: ["+dto.dataDetailLevel+"], found ["+dataDetail+"]."));
+			throw new IOException("Data level mismatch. Expected: ["+dto.dataDetailLevel+"], found ["+dataDetail+"].");
 		}
 		
 		int width = inputStream.readInt();
 		if (width != WIDTH)
 		{
-			throw new IOException(LodUtil.formatLog("Section width mismatch: " + width + " != " + WIDTH + " (Currently only 1 section width is supported)"));
+			throw new IOException("Section width mismatch: [" + width + "] != [" + WIDTH + "] (Currently only 1 section width is supported)");
 		}
 		
 		int minY = inputStream.readInt();
 		if (minY != level.getMinY())
 		{
-			LOGGER.warn("Data minY mismatch: " + minY + " != " + level.getMinY() + ". Will ignore data's y level");
+			LOGGER.warn("Data minY mismatch: [" + minY + "] != [" + level.getMinY() + "]. Will ignore data's y level");
 		}
 		
 		byte worldGenByte = inputStream.readByte();

@@ -21,7 +21,7 @@ package com.seibel.distanthorizons.core.jar.installer;
 
 import com.electronwill.nightconfig.core.Config;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import org.apache.logging.log4j.Logger;
+import com.seibel.distanthorizons.core.logging.DhLogger;
 import org.jetbrains.annotations.Nullable;
 
 import java.net.URL;
@@ -34,7 +34,7 @@ import java.util.*;
  */
 public class GitlabGetter
 {
-	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
 	
 	/** DH's instance of the Gitlab getter */
 	public static GitlabGetter INSTANCE = new GitlabGetter();

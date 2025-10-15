@@ -36,7 +36,7 @@ import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
-import org.apache.logging.log4j.Logger;
+import com.seibel.distanthorizons.core.logging.DhLogger;
 
 import javax.annotation.WillNotClose;
 import java.io.Closeable;
@@ -45,7 +45,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class ClientLevelModule implements Closeable, AbstractDataSourceHandler.IDataSourceUpdateFunc<FullDataSourceV2>
 {
-	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
 	private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	
 	private final IDhClientLevel clientLevel;
@@ -288,7 +288,7 @@ public class ClientLevelModule implements Closeable, AbstractDataSourceHandler.I
 	
 	public static class ClientRenderState implements Closeable
 	{
-		private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+		private static final DhLogger LOGGER = new DhLoggerBuilder().build();
 		
 		public final IClientLevelWrapper clientLevelWrapper;
 		public final LodQuadTree quadtree;

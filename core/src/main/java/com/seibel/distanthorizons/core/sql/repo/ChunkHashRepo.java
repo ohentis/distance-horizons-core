@@ -22,7 +22,7 @@ package com.seibel.distanthorizons.core.sql.repo;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.sql.dto.ChunkHashDTO;
-import org.apache.logging.log4j.Logger;
+import com.seibel.distanthorizons.core.logging.DhLogger;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
@@ -32,7 +32,7 @@ import java.sql.SQLException;
 
 public class ChunkHashRepo extends AbstractDhRepo<DhChunkPos, ChunkHashDTO>
 {
-	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
 	
 	
 	

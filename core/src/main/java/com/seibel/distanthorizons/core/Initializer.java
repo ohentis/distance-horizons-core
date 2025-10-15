@@ -21,6 +21,7 @@ package com.seibel.distanthorizons.core;
 
 import com.github.luben.zstd.ZstdOutputStream;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
+import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.render.renderer.generic.GenericRenderObjectFactory;
 import com.seibel.distanthorizons.core.sql.DatabaseUpdater;
 import com.seibel.distanthorizons.core.wrapperInterfaces.IWrapperFactory;
@@ -33,7 +34,7 @@ import com.seibel.distanthorizons.api.DhApi;
 import com.seibel.distanthorizons.core.render.DhApiRenderProxy;
 import net.jpountz.lz4.LZ4FrameOutputStream;
 import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.seibel.distanthorizons.core.logging.DhLogger;
 import org.sqlite.SQLiteJDBCLoader;
 import org.sqlite.util.OSInfo;
 import org.tukaani.xz.XZOutputStream;
@@ -44,8 +45,7 @@ import java.io.File;
 /** Handles first time Core setup. */
 public class Initializer
 {
-	private static final Logger LOGGER = LogManager.getLogger(ModInfo.NAME + "-" + Initializer.class.getSimpleName());
-	private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
+	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
 	
 	
 	public static void init()

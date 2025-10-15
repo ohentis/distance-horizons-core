@@ -21,7 +21,7 @@ package com.seibel.distanthorizons.core.util.objects;
 
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.coreapi.ModInfo;
-import org.apache.logging.log4j.Logger;
+import com.seibel.distanthorizons.core.logging.DhLogger;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -29,7 +29,7 @@ import java.util.concurrent.ExecutorService;
 
 public class EventLoop implements AutoCloseable
 {
-	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
 	
 	private final boolean PAUSE_ON_ERROR = ModInfo.IS_DEV_BUILD;
 	private final ExecutorService executorService;

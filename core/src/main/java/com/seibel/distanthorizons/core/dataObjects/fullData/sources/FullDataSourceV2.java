@@ -28,6 +28,7 @@ import com.seibel.distanthorizons.core.dataObjects.transformers.LodDataBuilder;
 import com.seibel.distanthorizons.core.file.AbstractDataSourceHandler;
 import com.seibel.distanthorizons.core.file.IDataSource;
 import com.seibel.distanthorizons.core.level.IDhLevel;
+import com.seibel.distanthorizons.core.logging.DhLogger;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pooling.AbstractPhantomArrayList;
 import com.seibel.distanthorizons.core.pooling.PhantomArrayListCheckout;
@@ -42,7 +43,7 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
-import org.apache.logging.log4j.Logger;
+import com.seibel.distanthorizons.core.logging.DhLogger;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
@@ -60,7 +61,7 @@ public class FullDataSourceV2
 		extends AbstractPhantomArrayList
 		implements IDataSource<IDhLevel>, IDhApiFullDataSource
 {
-	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
 	/** useful for debugging, but can slow down update operations quite a bit due to being called so often. */
 	private static final boolean RUN_UPDATE_DEV_VALIDATION = false;
 	/** 
@@ -824,7 +825,7 @@ public class FullDataSourceV2
 					catch (DataCorruptedException e)
 					{
 						// shouldn't happen, (especially if validation is disabled) but just in case
-						LOGGER.warn("Skipping corrupt datapoint for pos "+inputDataSource.pos+" at relative position ["+x+","+z+"] with data: ID["+lastId+"], Height["+height+"], minY["+minY+"], lastBlockLight["+lastBlockLight+"], lastSkyLight["+lastSkyLight+"].");
+						LOGGER.warn("Skipping corrupt datapoint for pos ["+DhSectionPos.toString(inputDataSource.pos)+"] at relative position ["+x+","+z+"] with data: ID["+lastId+"], Height["+height+"], minY["+minY+"], lastBlockLight["+lastBlockLight+"], lastSkyLight["+lastSkyLight+"].");
 					}
 				}
 				
@@ -846,7 +847,7 @@ public class FullDataSourceV2
 			catch (DataCorruptedException e)
 			{
 				// shouldn't happen, (especially if validation is disabled) but just in case
-				LOGGER.warn("Skipping corrupt datapoint for pos "+inputDataSource.pos+" at relative position ["+x+","+z+"] with data: ID["+lastId+"], Height["+height+"], minY["+minY+"], lastBlockLight["+lastBlockLight+"], lastSkyLight["+lastSkyLight+"].");
+				LOGGER.warn("Skipping corrupt datapoint for pos ["+DhSectionPos.toString(inputDataSource.pos)+"] at relative position ["+x+","+z+"] with data: ID["+lastId+"], Height["+height+"], minY["+minY+"], lastBlockLight["+lastBlockLight+"], lastSkyLight["+lastSkyLight+"].");
 			}
 		}
 		

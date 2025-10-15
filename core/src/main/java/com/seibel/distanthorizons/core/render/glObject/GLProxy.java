@@ -24,13 +24,11 @@ import com.seibel.distanthorizons.api.enums.config.EDhApiGpuUploadMethod;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.jar.EPlatform;
-import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
+import com.seibel.distanthorizons.core.logging.DhLogger;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.util.objects.GLMessages.*;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL32;
@@ -51,9 +49,10 @@ public class GLProxy
 {
 	private static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	
-	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
-	public static final ConfigBasedLogger GL_LOGGER = new ConfigBasedLogger(LogManager.getLogger(GLProxy.class),
-			() -> Config.Common.Logging.logRendererGLEvent.get());
+	public static final DhLogger LOGGER = new DhLoggerBuilder()
+			.fileLevelConfig(Config.Common.Logging.logRendererGLEventToFile)
+			.chatLevelConfig(Config.Common.Logging.logRendererGLEventToChat)
+			.build();
 	
 	public static final Set<String> LOGGED_GL_MESSAGES = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
 	
@@ -113,8 +112,8 @@ public class GLProxy
 			throw new IllegalStateException(GLProxy.class.getSimpleName() + " was created outside the render thread!");
 		}
 		
-		GL_LOGGER.info("Creating " + GLProxy.class.getSimpleName() + "... If this is the last message you see there must have been an OpenGL error.");
-		GL_LOGGER.info("Lod Render OpenGL version [" + GL32.glGetString(GL32.GL_VERSION) + "].");
+		LOGGER.info("Creating " + GLProxy.class.getSimpleName() + "... If this is the last message you see there must have been an OpenGL error.");
+		LOGGER.info("Lod Render OpenGL version [" + GL32.glGetString(GL32.GL_VERSION) + "].");
 		
 		
 		
@@ -137,7 +136,7 @@ public class GLProxy
 					"Additional info:\n" + supportedVersionInfo;
 			MC.crashMinecraft(errorMessage, new UnsupportedOperationException("Distant Horizon OpenGL requirements not met"));
 		}
-	 	GL_LOGGER.info("minecraftGlCapabilities:\n" + this.versionInfoToString(this.glCapabilities));
+	 	LOGGER.info("minecraftGlCapabilities:\n" + this.versionInfoToString(this.glCapabilities));
 		
 		if (Config.Client.Advanced.Debugging.OpenGl.overrideVanillaGLLogger.get())
 		{
@@ -158,7 +157,7 @@ public class GLProxy
 		this.bufferStorageSupported = this.glCapabilities.glBufferStorage != 0L; // Nullptr
 		if (!this.bufferStorageSupported)
 		{
-			GL_LOGGER.info("This GPU doesn't support Buffer Storage (OpenGL 4.4), falling back to using other methods.");
+			LOGGER.info("This GPU doesn't support Buffer Storage (OpenGL 4.4), falling back to using other methods.");
 		}
 		
 		// Check if we can use the make-over version of Vertex Attribute, which is available in GL4.3 or after
@@ -191,7 +190,7 @@ public class GLProxy
 			// form of uploading
 			this.preferredUploadMethod = EDhApiGpuUploadMethod.DATA;
 		}
-		GL_LOGGER.info("GPU Vendor [" + vendor + "] with OS [" + EPlatform.get().getName() + "], Preferred upload method is [" + this.preferredUploadMethod + "].");
+		LOGGER.info("GPU Vendor [" + vendor + "] with OS [" + EPlatform.get().getName() + "], Preferred upload method is [" + this.preferredUploadMethod + "].");
 		
 		
 		
@@ -200,7 +199,7 @@ public class GLProxy
 		//==========//
 		
 		// GLProxy creation success
-		GL_LOGGER.info(GLProxy.class.getSimpleName() + " creation successful. OpenGL smiles upon you this day.");
+		LOGGER.info(GLProxy.class.getSimpleName() + " creation successful. OpenGL smiles upon you this day.");
 	}
 	
 	
@@ -244,14 +243,13 @@ public class GLProxy
 	{
 		try
 		{
-			// ...run the actual code...
 			renderCall.run();
 		}
 		catch (Exception e)
 		{
-			RuntimeException error = new RuntimeException("Uncaught Exception during execution:", e);
+			RuntimeException error = new RuntimeException("Uncaught Exception during GL call execution:", e);
 			error.setStackTrace(stackTrace);
-			GL_LOGGER.error(Thread.currentThread().getName() + " ran into a issue: ", error);
+			LOGGER.error("[" + Thread.currentThread().getName() + "] ran into an unexpected error running a GL call, Error: ["+ e.getMessage() +"].", error);
 		}
 	}
 	
@@ -314,7 +312,7 @@ public class GLProxy
 		{
 			// critical error
 			
-			GL_LOGGER.error(exception.getMessage(), exception);
+			LOGGER.error(exception.getMessage(), exception);
 			
 			if (errorHandlingMode == EDhApiGLErrorHandlingMode.LOG_THROW)
 			{
@@ -337,16 +335,16 @@ public class GLProxy
 			switch (severity)
 			{
 				case HIGH:
-					GL_LOGGER.error(exception.getMessage(), exception);
+					LOGGER.error(exception.getMessage(), exception);
 					break;
 				case MEDIUM:
-					GL_LOGGER.warn(exception.getMessage(), exception);
+					LOGGER.warn(exception.getMessage(), exception);
 					break;
 				case LOW:
-					GL_LOGGER.info(exception.getMessage(), exception);
+					LOGGER.info(exception.getMessage(), exception);
 					break;
 				case NOTIFICATION:
-					GL_LOGGER.debug(exception.getMessage(), exception);
+					LOGGER.debug(exception.getMessage(), exception);
 					break;
 			}
 		}

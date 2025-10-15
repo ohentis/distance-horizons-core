@@ -7,7 +7,8 @@ import com.seibel.distanthorizons.core.config.types.ConfigEntry;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.level.DhClientLevel;
-import com.seibel.distanthorizons.core.logging.ConfigBasedSpamLogger;
+import com.seibel.distanthorizons.core.logging.DhLogger;
+import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.network.exceptions.RateLimitedException;
 import com.seibel.distanthorizons.core.network.exceptions.RequestOutOfRangeException;
 import com.seibel.distanthorizons.core.network.exceptions.RequestRejectedException;
@@ -25,7 +26,6 @@ import com.seibel.distanthorizons.core.util.ratelimiting.SupplierBasedRateLimite
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.world.DhApiWorldProxy;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
-import org.apache.logging.log4j.LogManager;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
@@ -39,8 +39,10 @@ import java.util.function.Consumer;
 
 public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRenderable, AutoCloseable
 {
-	private static final ConfigBasedSpamLogger LOGGER = new ConfigBasedSpamLogger(LogManager.getLogger(),
-			() -> Config.Common.Logging.logNetworkEvent.get(), 3);
+	private static final DhLogger LOGGER = new DhLoggerBuilder()
+			.fileLevelConfig(Config.Common.Logging.logNetworkEventToFile)
+			.maxCountPerSecond(3)
+			.build();
 	
 	private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	
@@ -364,7 +366,7 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 			
 			if (removeIf.accept(pos))
 			{
-				LOGGER.debug("Removing request  " + mapEntry.getKey() + "...");
+				LOGGER.debug("Removing request  [" + mapEntry.getKey() + "]...");
 				
 				entry.future.cancel(false);
 				if (entry.networkDataSourceFuture != null)

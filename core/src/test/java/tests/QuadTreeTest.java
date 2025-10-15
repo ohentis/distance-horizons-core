@@ -29,7 +29,7 @@ import com.seibel.distanthorizons.core.util.objects.quadTree.QuadNode;
 import com.seibel.distanthorizons.core.util.objects.quadTree.QuadTree;
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.Logger;
+import com.seibel.distanthorizons.core.logging.DhLogger;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
@@ -42,7 +42,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class QuadTreeTest
 {
-	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
 	
 	
 	static

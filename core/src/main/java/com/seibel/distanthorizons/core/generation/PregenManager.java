@@ -13,7 +13,7 @@ import com.seibel.distanthorizons.core.util.FormatUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.objects.RollingAverage;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
-import org.apache.logging.log4j.Logger;
+import com.seibel.distanthorizons.core.logging.DhLogger;
 import org.jetbrains.annotations.Nullable;
 
 import java.text.MessageFormat;
@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class PregenManager
 {
-	protected static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	protected static final DhLogger LOGGER = new DhLoggerBuilder().build();
 	
 	private final AtomicReference<PregenState> pregenFuture = new AtomicReference<>();
 	

@@ -20,12 +20,11 @@
 package com.seibel.distanthorizons.core.render.renderer;
 
 import com.seibel.distanthorizons.api.enums.config.EDhApiGpuUploadMethod;
-import com.seibel.distanthorizons.api.enums.config.EDhApiLoggerMode;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.config.types.ConfigEntry;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
-import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
-import com.seibel.distanthorizons.core.logging.ConfigBasedSpamLogger;
+import com.seibel.distanthorizons.core.logging.DhLogger;
+import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhLodPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
@@ -59,8 +58,10 @@ public class DebugRenderer
 {
 	public static DebugRenderer INSTANCE = new DebugRenderer();
 	
-	public static final ConfigBasedLogger LOGGER = new ConfigBasedLogger(LogManager.getLogger(DebugRenderer.class), () -> EDhApiLoggerMode.LOG_ALL_TO_CHAT);
-	public static final ConfigBasedSpamLogger SPAM_LOGGER = new ConfigBasedSpamLogger(LogManager.getLogger(DebugRenderer.class), () -> EDhApiLoggerMode.LOG_ALL_TO_CHAT, 1);
+	public static final DhLogger LOGGER = new DhLoggerBuilder().build();
+	public static final DhLogger RATE_LIMITED_LOGGER = new DhLoggerBuilder()
+			.maxCountPerSecond(1)
+			.build();
 	
 	private static final IMinecraftRenderWrapper MC_RENDER = SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
 	private static final IMinecraftGLWrapper GLMC = SingletonInjector.INSTANCE.get(IMinecraftGLWrapper.class);
@@ -504,7 +505,7 @@ public class DebugRenderer
 				}
 				catch (Exception e)
 				{
-					SPAM_LOGGER.error("Unexpected Debug renderer error, Error: "+e.getMessage(), e);
+					RATE_LIMITED_LOGGER.error("Unexpected Debug renderer error, Error: "+e.getMessage(), e);
 				}
 			}
 		}

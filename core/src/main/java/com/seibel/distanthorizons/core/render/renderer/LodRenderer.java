@@ -26,10 +26,9 @@ import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhAp
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiTextureCreatedParam;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.ColumnRenderBuffer;
-import com.seibel.distanthorizons.core.dependencyInjection.ModAccessorInjector;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
-import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
-import com.seibel.distanthorizons.core.logging.ConfigBasedSpamLogger;
+import com.seibel.distanthorizons.core.logging.DhLogger;
+import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos;
 import com.seibel.distanthorizons.core.render.DhApiRenderProxy;
 import com.seibel.distanthorizons.core.render.RenderBufferHandler;
@@ -40,24 +39,18 @@ import com.seibel.distanthorizons.core.render.glObject.texture.*;
 import com.seibel.distanthorizons.core.render.renderer.generic.GenericObjectRenderer;
 import com.seibel.distanthorizons.core.render.renderer.shaders.*;
 import com.seibel.distanthorizons.core.util.math.Mat4f;
-import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftGLWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.ILightMapWrapper;
-import com.seibel.distanthorizons.api.enums.rendering.EDhApiFogColorMode;
 import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.AbstractOptifineAccessor;
-import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.IIrisAccessor;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.OverrideInjector;
 import com.seibel.distanthorizons.core.util.math.Vec3d;
 import com.seibel.distanthorizons.core.util.math.Vec3f;
-import org.apache.logging.log4j.LogManager;
 import org.lwjgl.opengl.GL32;
 
-import java.awt.*;
-import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -67,14 +60,15 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class LodRenderer
 {
-	public static final ConfigBasedLogger EVENT_LOGGER = new ConfigBasedLogger(LogManager.getLogger(LodRenderer.class),
-			() -> Config.Common.Logging.logRendererBufferEvent.get());
-	public static final ConfigBasedSpamLogger SPAM_LOGGER = new ConfigBasedSpamLogger(LogManager.getLogger(LodRenderer.class),
-			() -> Config.Common.Logging.logRendererBufferEvent.get(), 1);
+	public static final DhLogger LOGGER = new DhLoggerBuilder()
+			.fileLevelConfig(Config.Common.Logging.logRendererEventToFile)
+			.build();
 	
-	private static final IIrisAccessor IRIS_ACCESSOR = ModAccessorInjector.INSTANCE.get(IIrisAccessor.class);
+	public static final DhLogger RATE_LIMITED_LOGGER = new DhLoggerBuilder()
+			.fileLevelConfig(Config.Common.Logging.logRendererEventToFile)
+			.maxCountPerSecond(4)
+			.build();
 	
-	private static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	private static final IMinecraftRenderWrapper MC_RENDER = SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
 	private static final IMinecraftGLWrapper GLMC = SingletonInjector.INSTANCE.get(IMinecraftGLWrapper.class);
 	
@@ -136,7 +130,7 @@ public class LodRenderer
 	{
 		if (this.rendererClosed)
 		{
-			EVENT_LOGGER.warn("close() called twice!");
+			LOGGER.warn("close() called twice!");
 			return;
 		}
 		
@@ -147,12 +141,12 @@ public class LodRenderer
 		renderLock.lock();
 		try
 		{
-			EVENT_LOGGER.info("Shutting down " + LodRenderer.class.getSimpleName() + "...");
+			LOGGER.info("Shutting down " + LodRenderer.class.getSimpleName() + "...");
 			
 			this.cleanup();
 			this.bufferHandler.close();
 			
-			EVENT_LOGGER.info("Finished shutting down " + LodRenderer.class.getSimpleName());
+			LOGGER.info("Finished shutting down " + LodRenderer.class.getSimpleName());
 		}
 		finally
 		{
@@ -218,7 +212,7 @@ public class LodRenderer
 		
 		if (this.rendererClosed)
 		{
-			EVENT_LOGGER.error("LOD rendering attempted after the renderer has been shut down!");
+			RATE_LIMITED_LOGGER.error("LOD rendering attempted after the renderer has been shut down!");
 			return;
 		}
 		
@@ -428,7 +422,6 @@ public class LodRenderer
 			
 			// end of internal LOD profiling
 			profiler.pop();
-			SPAM_LOGGER.incLogTries();
 			
 		}
 		finally
@@ -479,9 +472,9 @@ public class LodRenderer
 			// this is a fairly slow call and enabling it will reduce FPS significantly
 			if (!GL32.glIsBuffer(vbo.getId()))
 			{
-				if (SPAM_LOGGER.canMaybeLog())
+				if (RATE_LIMITED_LOGGER.canLog()) // can log check to prevent creating a bunch of strings unnecessarily
 				{
-					SPAM_LOGGER.warn("Attempted to draw invalid buffer: [" + vbo.getId() + "], expected size: ["+vbo.getSize()+"], upload complete: [" + parentBufferContainer.buffersUploaded + "], upload in progress: [" + parentBufferContainer.uploadInProgress() + "], buffer blockPos: ["+parentBufferContainer.blockPos+"].");
+					RATE_LIMITED_LOGGER.warn("Attempted to draw invalid buffer: [" + vbo.getId() + "], expected size: ["+vbo.getSize()+"], upload complete: [" + parentBufferContainer.buffersUploaded + "], upload in progress: [" + parentBufferContainer.uploadInProgress() + "], buffer blockPos: ["+parentBufferContainer.blockPos+"].");
 				}
 				return;
 			}
@@ -635,13 +628,13 @@ public class LodRenderer
 	{
 		if (this.isSetupComplete)
 		{
-			EVENT_LOGGER.warn("Renderer setup called but it has already completed setup!");
+			LOGGER.warn("Renderer setup called but it has already completed setup!");
 			return;
 		}
 		if (!GLProxy.hasInstance())
 		{
 			// shouldn't normally happen, but just in case
-			EVENT_LOGGER.warn("Renderer setup called but GLProxy has not yet been setup!");
+			LOGGER.warn("Renderer setup called but GLProxy has not yet been setup!");
 			return;
 		}
 		
@@ -650,7 +643,7 @@ public class LodRenderer
 			this.setupLock.lock();
 			
 			
-			EVENT_LOGGER.info("Setting up renderer");
+			LOGGER.info("Setting up renderer");
 			this.lodRenderProgram = new DhTerrainShaderProgram();
 			
 			this.quadIBO = new QuadElementBuffer();
@@ -678,13 +671,13 @@ public class LodRenderer
 			if(this.framebuffer.getStatus() != GL32.GL_FRAMEBUFFER_COMPLETE)
 			{
 				// This generally means something wasn't bound, IE missing either the color or depth texture
-				EVENT_LOGGER.warn("FrameBuffer ["+this.framebuffer.getId()+"] isn't complete.");
+				LOGGER.warn("FrameBuffer ["+this.framebuffer.getId()+"] isn't complete.");
 				return;
 			}
 			
 			
 			this.isSetupComplete = true;
-			EVENT_LOGGER.info("Renderer setup complete");
+			LOGGER.info("Renderer setup complete");
 		}
 		finally
 		{
@@ -777,7 +770,7 @@ public class LodRenderer
 		if (!GLProxy.hasInstance())
 		{
 			// shouldn't normally happen, but just in case
-			EVENT_LOGGER.warn("Renderer Cleanup called but the GLProxy has never been initialized!");
+			LOGGER.warn("Renderer Cleanup called but the GLProxy has never been initialized!");
 			return;
 		}
 		
@@ -785,10 +778,10 @@ public class LodRenderer
 		{
 			this.setupLock.lock();
 			
-			EVENT_LOGGER.info("Queuing Renderer Cleanup for main render thread");
+			LOGGER.info("Queuing Renderer Cleanup for main render thread");
 			GLProxy.getInstance().queueRunningOnRenderThread(() ->
 			{
-				EVENT_LOGGER.info("Renderer Cleanup Started");
+				LOGGER.info("Renderer Cleanup Started");
 				
 				if (this.lodRenderProgram != null)
 				{
@@ -811,7 +804,7 @@ public class LodRenderer
 				activeColorTextureId = -1;
 				activeDepthTextureId = -1;
 				
-				EVENT_LOGGER.info("Renderer Cleanup Complete");
+				LOGGER.info("Renderer Cleanup Complete");
 			});
 		}
 		catch (Exception e)
@@ -820,36 +813,6 @@ public class LodRenderer
 		}
 	}
 	
-	
-	
-	//================//
-	// helper classes //
-	//================//
-	
-	// TODO move
-	public static class LagSpikeCatcher
-	{
-		long timer = System.nanoTime();
-		
-		public LagSpikeCatcher() { }
-		
-		public void end(String source)
-		{
-			if (!ENABLE_DRAW_LAG_SPIKE_LOGGING)
-			{
-				return;
-			}
-			
-			this.timer = System.nanoTime() - this.timer;
-			if (this.timer > DRAW_LAG_SPIKE_THRESHOLD_NS)
-			{
-				//4 ms
-				EVENT_LOGGER.debug("NOTE: " + source + " took " + Duration.ofNanos(this.timer) + "!");
-			}
-			
-		}
-		
-	}
 	
 	
 }

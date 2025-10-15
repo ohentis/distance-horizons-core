@@ -26,7 +26,7 @@ import com.seibel.distanthorizons.core.util.math.Vec3d;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
-import org.apache.logging.log4j.Logger;
+import com.seibel.distanthorizons.core.logging.DhLogger;
 
 import javax.annotation.Nullable;
 import java.util.List;
@@ -34,7 +34,7 @@ import java.util.concurrent.*;
 
 public abstract class AbstractDhServerLevel extends AbstractDhLevel implements IDhServerLevel
 {
-	protected static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	protected static final DhLogger LOGGER = new DhLoggerBuilder().build();
 	
 	public final ServerLevelModule serverside;
 	protected final IServerLevelWrapper serverLevelWrapper;

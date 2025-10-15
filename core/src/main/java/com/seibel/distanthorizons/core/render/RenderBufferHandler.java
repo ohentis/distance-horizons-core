@@ -28,6 +28,7 @@ import com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.ColumnR
 import com.seibel.distanthorizons.core.dependencyInjection.ModAccessorInjector;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.enums.EDhDirection;
+import com.seibel.distanthorizons.core.logging.DhLogger;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
 import com.seibel.distanthorizons.core.pos.DhLodPos;
@@ -46,7 +47,7 @@ import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IOverri
 import com.seibel.distanthorizons.core.util.math.Mat4f;
 import com.seibel.distanthorizons.core.util.math.Vec3d;
 import com.seibel.distanthorizons.core.util.math.Vec3f;
-import org.apache.logging.log4j.Logger;
+import com.seibel.distanthorizons.core.logging.DhLogger;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fc;
 import org.lwjgl.opengl.GL32;
@@ -62,7 +63,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class RenderBufferHandler implements AutoCloseable
 {
-	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
 	
 	private static final IMinecraftRenderWrapper MC_RENDER = SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
 	private static final IMinecraftGLWrapper GLMC = SingletonInjector.INSTANCE.get(IMinecraftGLWrapper.class);
@@ -421,7 +422,7 @@ public class RenderBufferHandler implements AutoCloseable
 		{
 			countText += "/" + F3Screen.NUMBER_FORMAT.format(this.visibleBufferCount + this.culledBufferCount);
 		}
-		return LodUtil.formatLog("VBO Render Count: " + countText);
+		return "VBO Render Count: [" + countText + "]";
 	}
 	public String getShadowPassRenderDebugMenuString()
 	{
@@ -436,7 +437,7 @@ public class RenderBufferHandler implements AutoCloseable
 		{
 			countText += "/" + F3Screen.NUMBER_FORMAT.format(this.shadowVisibleBufferCount + this.shadowCulledBufferCount);
 		}
-		return LodUtil.formatLog("Shadow VBO Render Count: " + countText);
+		return "Shadow VBO Render Count: [" + countText + "]";
 	}
 	
 	

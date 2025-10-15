@@ -673,18 +673,25 @@
   "distanthorizons.config.common.logging.@tooltip":
     "Controls how logging should be handled.",
 
-  "distanthorizons.config.common.logging.logWorldGenEvent":
-    "World Gen Events",
-  "distanthorizons.config.common.logging.logWorldGenPerformance":
-    "World Gen Performance",
-  "distanthorizons.config.common.logging.logWorldGenLoadEvent":
-    "World Gen Load Events",
-  "distanthorizons.config.common.logging.logRendererBufferEvent":
-    "Renderer Buffer Events",
-  "distanthorizons.config.common.logging.logRendererGLEvent":
-    "OpenGL Events",
-  "distanthorizons.config.common.logging.logNetworkEvent":
-    "Network Events",
+  "distanthorizons.config.common.logging.globalFileMaxLevel":
+    "Global File Max",
+  "distanthorizons.config.common.logging.globalChatMaxLevel":
+    "Global Chat Max",
+    
+  "distanthorizons.config.common.logging.logWorldGenEventToFile":
+    "World Gen Events - File",
+  "distanthorizons.config.common.logging.logWorldGenPerformanceToFile":
+    "World Gen Performance - File",
+  "distanthorizons.config.common.logging.logWorldGenChunkLoadEventToFile":
+    "World Gen Load Events - File",
+  "distanthorizons.config.common.logging.logRendererEventToFile":
+    "Renderer Events - File",
+  "distanthorizons.config.common.logging.logRendererGLEventToFile":
+    "OpenGL Events - File",
+  "distanthorizons.config.common.logging.logRendererGLEventToChat":
+    "OpenGL Events - Chat",
+  "distanthorizons.config.common.logging.logNetworkEventToFile":
+    "Network Events - File",
 
   "distanthorizons.config.common.logging.warning":
     "Warnings",
@@ -1014,34 +1021,19 @@
   "distanthorizons.config.enum.EDhApiGlProfileMode.ANY":
     "Any",
     
-  "distanthorizons.config.enum.EDhApiLoggerMode.DISABLED":
-    "Disabled",
-  "distanthorizons.config.enum.EDhApiLoggerMode.LOG_ALL_TO_FILE":
-    "File: All, Chat: Off",
-  "distanthorizons.config.enum.EDhApiLoggerMode.LOG_ERROR_TO_CHAT":
-    "File: All, Chat: Error",
-  "distanthorizons.config.enum.EDhApiLoggerMode.LOG_WARNING_TO_CHAT":
-    "File: All, Chat: Warning",
-  "distanthorizons.config.enum.EDhApiLoggerMode.LOG_INFO_TO_CHAT":
-    "File: All, Chat: Info",
-  "distanthorizons.config.enum.EDhApiLoggerMode.LOG_DEBUG_TO_CHAT":
-    "File: All, Chat: Debug",
-  "distanthorizons.config.enum.EDhApiLoggerMode.LOG_ALL_TO_CHAT":
-    "File: All, Chat: All",
-  "distanthorizons.config.enum.EDhApiLoggerMode.LOG_ERROR_TO_CHAT_AND_FILE":
-    "File: Error, Chat: Error",
-  "distanthorizons.config.enum.EDhApiLoggerMode.LOG_WARNING_TO_CHAT_AND_FILE":
-    "File: Warning, Chat: Warning",
-  "distanthorizons.config.enum.EDhApiLoggerMode.LOG_INFO_TO_CHAT_AND_FILE":
-    "File: Info, Chat: Info",
-  "distanthorizons.config.enum.EDhApiLoggerMode.LOG_DEBUG_TO_CHAT_AND_FILE":
-    "File: Debug, Chat: Debug",
-  "distanthorizons.config.enum.EDhApiLoggerMode.LOG_WARNING_TO_CHAT_AND_INFO_TO_FILE":
-    "File: Info, Chat: Warning",
-  "distanthorizons.config.enum.EDhApiLoggerMode.LOG_ERROR_TO_CHAT_AND_INFO_TO_FILE":
-    "File: Info, Chat: Error",
-  "distanthorizons.config.enum.EDhApiLoggerMode.LOG_ERROR_TO_CHAT_AND_WARNING_TO_FILE":
-    "File: Warning, Chat: Error",
+  "distanthorizons.config.enum.EDhApiLoggerLevel.ALL":
+    "1. All",
+  "distanthorizons.config.enum.EDhApiLoggerLevel.DEBUG":
+    "2. Debug",
+  "distanthorizons.config.enum.EDhApiLoggerLevel.INFO":
+    "3. Info",
+  "distanthorizons.config.enum.EDhApiLoggerLevel.WARN":
+    "4. Warn",
+  "distanthorizons.config.enum.EDhApiLoggerLevel.ERROR":
+    "5. Error",
+  "distanthorizons.config.enum.EDhApiLoggerLevel.DISABLED":
+    "6. Disabled",
+    
     
   "distanthorizons.config.enum.EDhApiGpuUploadMethod.AUTO":
     "Auto",

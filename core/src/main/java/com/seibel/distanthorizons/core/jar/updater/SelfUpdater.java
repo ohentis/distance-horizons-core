@@ -33,7 +33,7 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.IVersionConstants;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.coreapi.util.StringUtil;
 import com.seibel.distanthorizons.coreapi.util.jar.DeleteOnUnlock;
-import org.apache.logging.log4j.Logger;
+import com.seibel.distanthorizons.core.logging.DhLogger;
 import org.lwjgl.util.tinyfd.TinyFileDialogs;
 
 import javax.swing.*;
@@ -57,7 +57,7 @@ import java.util.zip.ZipFile;
  */
 public class SelfUpdater
 {
-	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
 	
 	/** As we cannot delete(or replace) the jar while the mod is running, we just have this to delete it once the game closes */
 	public static boolean deleteOldJarOnJvmShutdown = false;
@@ -96,7 +96,7 @@ public class SelfUpdater
 		}
 		catch (Exception e) // Shouldn't be needed, but just in case
 		{
-			LOGGER.warn(e);
+			LOGGER.warn("Unexpected updater startup error: ["+e.getMessage()+"].", e);
 		}
 		return returnValue;
 	}
@@ -258,13 +258,14 @@ public class SelfUpdater
 			
 			deleteOldJarOnJvmShutdown = true;
 			
-			String message = "Distant Horizons successfully updated. It will apply on game's relaunch"; 
-			LOGGER.info(message);
+			// TODO one of these messages contains something TinyFd doesn't like, find it and fix it
+			String successMessage = "Distant Horizons successfully updated. It will apply on game's relaunch"; 
+			LOGGER.info(successMessage);
 			new Thread(() -> 
 			{
 				try
 				{
-					TinyFileDialogs.tinyfd_messageBox(ModInfo.READABLE_NAME, message, "ok", "info", false);
+					TinyFileDialogs.tinyfd_messageBox(ModInfo.READABLE_NAME, successMessage, "ok", "info", false);
 				}
 				catch (Exception ignore) { }
 			}).start();
@@ -283,12 +284,11 @@ public class SelfUpdater
 			}
 			
 			
-			String message = "Failed to update Distant Horizons to version [" + ModrinthGetter.getLatestNameForVersion(minecraftVersion) + "], error: ["+e.getMessage()+"].";
-			
-			LOGGER.error(message, e);
+			String failMessage = "Failed to update Distant Horizons to version [" + ModrinthGetter.getLatestNameForVersion(minecraftVersion) + "], error: ["+e.getMessage()+"].";
+			LOGGER.error(failMessage, e);
 			try
 			{
-				TinyFileDialogs.tinyfd_messageBox(ModInfo.READABLE_NAME, message, "ok", "error", false);
+				TinyFileDialogs.tinyfd_messageBox(ModInfo.READABLE_NAME, failMessage, "ok", "error", false);
 			}
 			catch (Exception ignore) { }
 			
@@ -380,13 +380,13 @@ public class SelfUpdater
 			deleteOldJarOnJvmShutdown = true;
 			
 			
-			String message = "Distant Horizons updated, this will be applied on game restart.";
-			LOGGER.info(message);
+			String successMessage = "Distant Horizons updated, this will be applied on game restart.";
+			LOGGER.info(successMessage);
 			new Thread(() ->
 			{
 				try
 				{
-					TinyFileDialogs.tinyfd_messageBox(ModInfo.READABLE_NAME, message, "ok", "info", false);
+					TinyFileDialogs.tinyfd_messageBox(ModInfo.READABLE_NAME, successMessage, "ok", "info", false);
 				}
 				catch (Exception ignore) { }
 			}).start();
@@ -419,13 +419,12 @@ public class SelfUpdater
 			}
 			
 			
-			
-			String message = "Failed to update [" + ModInfo.READABLE_NAME + "] to version [" + GitlabGetter.INSTANCE.projectPipelines.get(0).get("sha") + "], error: ["+e.getMessage()+"].";
-			
-			LOGGER.error(message, e);
+			String versionHash = GitlabGetter.INSTANCE.projectPipelines.get(0).get("sha");
+			String failMessage = "Failed to update [" + ModInfo.READABLE_NAME + "] to version [" + versionHash + "], error: ["+e.getMessage()+"].";
+			LOGGER.error(failMessage, e);
 			try
 			{
-				TinyFileDialogs.tinyfd_messageBox(ModInfo.READABLE_NAME, message, "ok", "error", false);
+				TinyFileDialogs.tinyfd_messageBox(ModInfo.READABLE_NAME, failMessage, "ok", "error", false);
 			}
 			catch (Exception ignore) { }
 			

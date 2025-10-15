@@ -12,7 +12,7 @@ import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.objects.RollingAverage;
-import org.apache.logging.log4j.Logger;
+import com.seibel.distanthorizons.core.logging.DhLogger;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,7 +21,7 @@ import java.util.concurrent.*;
 
 public class RemoteWorldRetrievalQueue extends AbstractFullDataNetworkRequestQueue implements IFullDataSourceRetrievalQueue, IDebugRenderable
 {
-	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
 	
 	private int estimatedRemainingTaskCount;
 	private int estimatedTotalChunkCount;
@@ -90,7 +90,7 @@ public class RemoteWorldRetrievalQueue extends AbstractFullDataNetworkRequestQue
 							return WorldGenResult.CreateSplit(childFutures);
 					}
 					
-					LodUtil.assertNotReach();
+					LodUtil.assertNotReach("Unexpected and unhandled request response result: ["+requestResult+"]");
 					return WorldGenResult.CreateFail();
 				});
 	}
