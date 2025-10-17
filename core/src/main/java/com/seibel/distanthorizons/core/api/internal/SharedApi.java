@@ -491,6 +491,7 @@ public class SharedApi
 		
 		IChunkWrapper chunkWrapper = updateData.chunkWrapper;
 		IDhLevel dhLevel = updateData.dhLevel;
+		ILevelWrapper levelWrapper = dhLevel.getLevelWrapper();
 		// having a list of the nearby chunks is needed for lighting and beacon generation
 		@Nullable ArrayList<IChunkWrapper> nearbyChunkList = updateData.neighborChunkList; 
 		
@@ -504,7 +505,7 @@ public class SharedApi
 		try
 		{
 			// sky lighting is populated later at the data source level
-			DhLightingEngine.INSTANCE.bakeChunkBlockLighting(chunkWrapper, nearbyChunkList, dhLevel.hasSkyLight() ? LodUtil.MAX_MC_LIGHT : LodUtil.MIN_MC_LIGHT);
+			DhLightingEngine.INSTANCE.bakeChunkBlockLighting(chunkWrapper, nearbyChunkList, levelWrapper.hasSkyLight() ? LodUtil.MAX_MC_LIGHT : LodUtil.MIN_MC_LIGHT);
 			
 			dhLevel.updateBeaconBeamsForChunk(chunkWrapper, nearbyChunkList);
 			

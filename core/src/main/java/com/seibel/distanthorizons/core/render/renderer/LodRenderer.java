@@ -474,7 +474,7 @@ public class LodRenderer
 			{
 				if (RATE_LIMITED_LOGGER.canLog()) // can log check to prevent creating a bunch of strings unnecessarily
 				{
-					RATE_LIMITED_LOGGER.warn("Attempted to draw invalid buffer: [" + vbo.getId() + "], expected size: ["+vbo.getSize()+"], upload complete: [" + parentBufferContainer.buffersUploaded + "], upload in progress: [" + parentBufferContainer.uploadInProgress() + "], buffer blockPos: ["+parentBufferContainer.blockPos+"].");
+					RATE_LIMITED_LOGGER.warn("Attempted to draw invalid buffer: [" + vbo.getId() + "], expected size: ["+vbo.getSize()+"], upload complete: [" + parentBufferContainer.buffersUploaded + "], upload in progress: [" + parentBufferContainer.uploadInProgress() + "], buffer blockPos: ["+parentBufferContainer.minCornerBlockPos +"].");
 				}
 				return;
 			}

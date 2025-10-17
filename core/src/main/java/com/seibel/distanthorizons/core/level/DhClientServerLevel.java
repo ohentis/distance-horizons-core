@@ -41,7 +41,7 @@ import java.awt.*;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
-/** The level used on a singleplayer world */
+/** The level used for a singleplayer world */
 public class DhClientServerLevel extends AbstractDhServerLevel implements IDhClientLevel
 {
 	private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);

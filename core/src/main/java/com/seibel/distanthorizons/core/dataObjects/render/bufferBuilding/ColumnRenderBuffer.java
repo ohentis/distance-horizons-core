@@ -29,7 +29,6 @@ import com.seibel.distanthorizons.core.render.renderer.LodRenderer;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.objects.StatsMap;
 import com.seibel.distanthorizons.api.enums.config.EDhApiGpuUploadMethod;
-import com.seibel.distanthorizons.core.logging.DhLogger;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
@@ -53,8 +52,8 @@ public class ColumnRenderBuffer implements AutoCloseable
 	public static final int FULL_SIZED_BUFFER = MAX_QUADS_PER_BUFFER * QUADS_BYTE_SIZE;
 	
 	
-	
-	public final DhBlockPos blockPos;
+	/** the position closest to minimum X/Z infinity and the level's lowest Y */
+	public final DhBlockPos minCornerBlockPos;
 	
 	public boolean buffersUploaded = false;
 	
@@ -69,9 +68,9 @@ public class ColumnRenderBuffer implements AutoCloseable
 	// constructors //
 	//==============//
 	
-	public ColumnRenderBuffer(DhBlockPos blockPos)
+	public ColumnRenderBuffer(DhBlockPos minCornerBlockPos)
 	{
-		this.blockPos = blockPos;
+		this.minCornerBlockPos = minCornerBlockPos;
 		this.vbos = new GLVertexBuffer[0];
 		this.vbosTransparent = new GLVertexBuffer[0];
 	}
@@ -134,7 +133,7 @@ public class ColumnRenderBuffer implements AutoCloseable
 			}
 			catch (Exception e)
 			{
-				LOGGER.error("Unexpected issue uploading buffer ["+this.blockPos +"], error: ["+e.getMessage()+"].", e);
+				LOGGER.error("Unexpected issue uploading buffer ["+this.minCornerBlockPos +"], error: ["+e.getMessage()+"].", e);
 				
 				this.uploadFuture.completeExceptionally(e);
 				this.uploadFuture = null;
@@ -231,7 +230,7 @@ public class ColumnRenderBuffer implements AutoCloseable
 	public boolean renderOpaque(LodRenderer renderContext, DhApiRenderParam renderEventParam)
 	{
 		boolean hasRendered = false;
-		renderContext.setModelViewMatrixOffset(this.blockPos, renderEventParam);
+		renderContext.setModelViewMatrixOffset(this.minCornerBlockPos, renderEventParam);
 		for (GLVertexBuffer vbo : this.vbos)
 		{
 			if (vbo == null)
@@ -258,7 +257,7 @@ public class ColumnRenderBuffer implements AutoCloseable
 		try
 		{
 			// can throw an IllegalStateException if the GL program was freed before it should've been
-			renderContext.setModelViewMatrixOffset(this.blockPos, renderEventParam);
+			renderContext.setModelViewMatrixOffset(this.minCornerBlockPos, renderEventParam);
 			
 			for (GLVertexBuffer vbo : this.vbosTransparent)
 			{
@@ -278,7 +277,7 @@ public class ColumnRenderBuffer implements AutoCloseable
 		}
 		catch (IllegalStateException e)
 		{
-			LOGGER.error("renderContext program doesn't exist for pos: "+this.blockPos, e);
+			LOGGER.error("renderContext program doesn't exist for pos: "+this.minCornerBlockPos, e);
 		}
 		
 		return hasRendered;

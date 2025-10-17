@@ -89,7 +89,7 @@ public class ColumnBox
 		int caveCullingMaxY = Integer.MIN_VALUE;
 		if (Config.Client.Advanced.Graphics.Culling.enableCaveCulling.get())
 		{
-			caveCullingMaxY = Config.Client.Advanced.Graphics.Culling.caveCullingHeight.get() - clientLevel.getMinY();
+			caveCullingMaxY = Config.Client.Advanced.Graphics.Culling.caveCullingHeight.get() - clientLevel.getLevelWrapper().getMinHeight();
 		}
 		
 		

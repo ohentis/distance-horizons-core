@@ -45,6 +45,7 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftCli
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.CheckForNull;
@@ -76,6 +77,7 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 	@Nullable
 	private final ScopedNetworkEventSource networkEventSource;
 	
+	/** used when connected to a DH supported server so we don't process the same chunks multiple times */
 	private final Set<DhChunkPos> loadedOnceChunks = Collections.newSetFromMap(
 			CacheBuilder.newBuilder()
 					.expireAfterWrite(10, TimeUnit.MINUTES)
@@ -297,24 +299,17 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 	public void clearRenderCache() { this.clientside.clearRenderCache(); }
 	
 	@Override
+	@NotNull
 	public ILevelWrapper getLevelWrapper() { return this.levelWrapper; }
 	
 	@Override
 	public CompletableFuture<Void> updateDataSourcesAsync(FullDataSourceV2 data) { return this.clientside.updateDataSourcesAsync(data); }
 	
 	@Override
-	public int getMinY() { return this.levelWrapper.getMinHeight(); }
-	@Override
-	public int getMaxY() { return this.levelWrapper.getMaxHeight(); }
-	
-	@Override
 	public FullDataSourceProviderV2 getFullDataProvider() { return this.dataFileHandler; }
 	
 	@Override
 	public ISaveStructure getSaveStructure() { return this.saveStructure; }
-	
-	@Override
-	public boolean hasSkyLight() { return this.levelWrapper.hasSkyLight(); }
 	
 	@Override
 	public GenericObjectRenderer getGenericRenderer() { return this.clientside.genericRenderer; }

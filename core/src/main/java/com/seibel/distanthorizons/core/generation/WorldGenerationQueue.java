@@ -416,7 +416,7 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 							// but this should work for now
 							ArrayList<IChunkWrapper> nearbyChunkList = new ArrayList<IChunkWrapper>();
 							nearbyChunkList.add(chunkWrapper);
-							DhLightingEngine.INSTANCE.bakeChunkBlockLighting(chunkWrapper, nearbyChunkList, this.level.hasSkyLight() ? LodUtil.MAX_MC_LIGHT : LodUtil.MIN_MC_LIGHT);
+							DhLightingEngine.INSTANCE.bakeChunkBlockLighting(chunkWrapper, nearbyChunkList, this.level.getLevelWrapper().hasSkyLight() ? LodUtil.MAX_MC_LIGHT : LodUtil.MIN_MC_LIGHT);
 							
 							try (FullDataSourceV2 dataSource = LodDataBuilder.createFromChunk(this.level.getLevelWrapper(), chunkWrapper))
 							{
@@ -663,24 +663,27 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 	@Override
 	public void debugRender(DebugRenderer renderer)
 	{
+		int levelMinY = this.level.getLevelWrapper().getMinHeight();
+		int levelMaxY = this.level.getLevelWrapper().getMaxHeight();
+		
 		// show the wireframe a bit lower than world max height,
 		// since most worlds don't render all the way up to the max height
-		int levelHeightRange = (this.level.getMaxY() - this.level.getMinY());
-		int maxY = this.level.getMaxY() - (levelHeightRange / 2);
+		int levelHeightRange = (levelMaxY - levelMinY);
+		int maxY = levelMaxY - (levelHeightRange / 2);
 		
 		
 		// blue - queued
 		this.waitingTasks.keySet().forEach((pos) -> 
 		{ 
 			renderer.renderBox(
-					new DebugRenderer.Box(pos, this.level.getMinY(), maxY, 0.05f, Color.blue)); 
+					new DebugRenderer.Box(pos, levelMinY, maxY, 0.05f, Color.blue)); 
 		});
 		
 		// red - in progress
 		this.inProgressGenTasksByLodPos.forEach((pos, t) -> 
 		{ 
 			renderer.renderBox(
-					new DebugRenderer.Box(pos, this.level.getMinY(), maxY, 0.05f, Color.red)); 
+					new DebugRenderer.Box(pos, levelMinY, maxY, 0.05f, Color.red)); 
 		});
 	}
 	

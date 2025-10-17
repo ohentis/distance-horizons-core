@@ -86,8 +86,6 @@ public abstract class AbstractDhLevel implements IDhLevel
 	@Nullable
 	protected CloudRenderHandler cloudRenderHandler;
 	
-	private IDhApiRenderableBoxGroup unexploredFogRenderableBoxGroup;
-	
 	
 	
 	//=============//
@@ -187,7 +185,7 @@ public abstract class AbstractDhLevel implements IDhLevel
 		// block lights should have been populated at the chunkWrapper stage
 		// waiting to populate the data source's skylight at this stage prevents re-lighting and
 		// allows us to reduce cross-chunk lighting issues by lighting the whole 4x4 LOD at once 
-		DhLightingEngine.INSTANCE.bakeDataSourceSkyLight(fullDataSource, this.hasSkyLight() ? LodUtil.MAX_MC_LIGHT : LodUtil.MIN_MC_LIGHT);
+		DhLightingEngine.INSTANCE.bakeDataSourceSkyLight(fullDataSource, this.getLevelWrapper().hasSkyLight() ? LodUtil.MAX_MC_LIGHT : LodUtil.MIN_MC_LIGHT);
 		
 		
 		return this.updateDataSourcesAsync(fullDataSource)
@@ -393,15 +391,10 @@ public abstract class AbstractDhLevel implements IDhLevel
 		}
 		
 		
-		GenericObjectRenderer genericRenderer = this.getGenericRenderer();
-		if (genericRenderer != null 
-			&& this.unexploredFogRenderableBoxGroup != null)
-		{
-			genericRenderer.remove(this.unexploredFogRenderableBoxGroup.getId());
-		}
-		
 		
 		this.delayedFullDataSourceSaveCache.close();
 	}
+	
+	
 	
 }

@@ -43,7 +43,7 @@ public interface IServerLevelWrapper extends ILevelWrapper
 			if (SharedApi.getEnvironment() == EWorldEnvironment.CLIENT_SERVER)
 			{
 				String cleanWorldFolderName = this.getWorldFolderName()
-						.replaceAll("[^" + LevelInitMessage.PART_ALLOWED_CHARS_REGEX + " ]", "")
+						.replaceAll("[^" + LevelInitMessage.ALLOWED_CHARS_REGEX + " ]", "")
 						.replaceAll(" ", "_");
 				
 				levelKeyPrefix += (!levelKeyPrefix.isEmpty() ? "_" : "") + cleanWorldFolderName

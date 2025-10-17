@@ -198,7 +198,7 @@ public class FullDataSourceV1 implements IDataSource<IDhLevel>
 	{
 		outputStream.writeInt(this.getDataDetailLevel());
 		outputStream.writeInt(WIDTH);
-		outputStream.writeInt(level.getMinY());
+		outputStream.writeInt(level.getLevelWrapper().getMinHeight());
 		outputStream.writeByte(this.worldGenStep.value);
 		
 	}
@@ -217,9 +217,9 @@ public class FullDataSourceV1 implements IDataSource<IDhLevel>
 		}
 		
 		int minY = inputStream.readInt();
-		if (minY != level.getMinY())
+		if (minY != level.getLevelWrapper().getMinHeight())
 		{
-			LOGGER.warn("Data minY mismatch: [" + minY + "] != [" + level.getMinY() + "]. Will ignore data's y level");
+			LOGGER.warn("Data minY mismatch: [" + minY + "] != [" + level.getLevelWrapper().getMinHeight() + "]. Will ignore data's y level");
 		}
 		
 		byte worldGenByte = inputStream.readByte();

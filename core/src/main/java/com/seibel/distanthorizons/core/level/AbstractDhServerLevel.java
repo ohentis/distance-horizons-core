@@ -27,6 +27,7 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapp
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
 import com.seibel.distanthorizons.core.logging.DhLogger;
+import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
 import java.util.List;
@@ -327,14 +328,10 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 	//=========//
 	
 	@Override
-	public int getMinY() { return this.getLevelWrapper().getMinHeight(); }
-	@Override
-	public int getMaxY() { return this.getLevelWrapper().getMaxHeight(); }
-	
-	@Override
 	public IServerLevelWrapper getServerLevelWrapper() { return this.serverLevelWrapper; }
 	
 	@Override
+	@NotNull
 	public ILevelWrapper getLevelWrapper() { return this.getServerLevelWrapper(); }
 	
 	@Override
@@ -342,9 +339,6 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 	
 	@Override
 	public ISaveStructure getSaveStructure() { return this.serverside.saveStructure; }
-	
-	@Override
-	public boolean hasSkyLight() { return this.serverLevelWrapper.hasSkyLight(); }
 	
 	
 	

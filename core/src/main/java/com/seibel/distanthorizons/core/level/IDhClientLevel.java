@@ -27,6 +27,10 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import org.jetbrains.annotations.Nullable;
 
+/**
+ * Used when running in singleplayer
+ * or when connected to a server.
+ */
 public interface IDhClientLevel extends IDhLevel
 {
 	void clientTick();
