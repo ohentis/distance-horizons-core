@@ -20,7 +20,6 @@
 package com.seibel.distanthorizons.core.level;
 
 import com.google.common.cache.CacheBuilder;
-import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
@@ -42,7 +41,6 @@ import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV2DTO;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
-import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import org.jetbrains.annotations.NotNull;
@@ -97,8 +95,8 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 	//=============//
 	
 	public DhClientLevel(ISaveStructure saveStructure, IClientLevelWrapper clientLevelWrapper, @Nullable ClientNetworkState networkState) 
-	{ this(saveStructure, clientLevelWrapper, null, true, networkState); }
-	public DhClientLevel(ISaveStructure saveStructure, IClientLevelWrapper clientLevelWrapper, @Nullable File fullDataSaveDirOverride, boolean enableRendering, @Nullable ClientNetworkState networkState)
+	{ this(saveStructure, clientLevelWrapper, null, networkState); }
+	public DhClientLevel(ISaveStructure saveStructure, IClientLevelWrapper clientLevelWrapper, @Nullable File fullDataSaveDirOverride, @Nullable ClientNetworkState networkState)
 	{
 		File saveFolder = saveStructure.getSaveFolder(clientLevelWrapper);
 		File pre23Folder = saveStructure.getPre23SaveFolder(clientLevelWrapper);
@@ -116,7 +114,7 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 		}
 		
 		this.levelWrapper = clientLevelWrapper;
-		this.levelWrapper.setParentLevel(this);
+		this.levelWrapper.setDhLevel(this);
 		this.saveStructure = saveStructure;
 		
 		this.networkState = networkState;
@@ -140,11 +138,8 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 		this.createAndSetSupportingRepos(this.dataFileHandler.repo.databaseFile);
 		this.runRepoReliantSetup();
 		
-		if (enableRendering)
-		{
-			this.clientside.startRenderer(clientLevelWrapper);
-			LOGGER.info("Started DHLevel for " + this.levelWrapper + " with saves at " + this.saveStructure);
-		}
+		this.clientside.startRenderer();
+		LOGGER.info("Started DHLevel for " + this.levelWrapper + " with saves at " + this.saveStructure);
 	}
 	private void registerNetworkHandlers()
 	{
@@ -242,30 +237,12 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 	
 	@Override
 	@Nullable
-	public DhBlockPos2D getTargetPosForGeneration()
-	{
-		return new DhBlockPos2D(MC_CLIENT.getPlayerBlockPos());
-	}
+	public DhBlockPos2D getTargetPosForGeneration() { return new DhBlockPos2D(MC_CLIENT.getPlayerBlockPos()); }
 	
 	@Override
-	public void worldGenTick()
-	{
-		this.worldGenModule.worldGenTick();
-	}
+	public void worldGenTick() { this.worldGenModule.worldGenTick(); }
 	
-	
-	
-	//===========//
-	// rendering //
-	//===========//
-	
-	@Override
-	public void render(DhApiRenderParam renderEventParam, IProfilerWrapper profiler)
-	{ this.clientside.render(renderEventParam, profiler); }
-	
-	@Override
-	public void renderDeferred(DhApiRenderParam renderEventParam, IProfilerWrapper profiler)
-	{ this.clientside.renderDeferred(renderEventParam, profiler); }
+	public void startRenderer() { this.clientside.startRenderer(); }
 	
 	
 	
@@ -398,7 +375,7 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 			this.networkEventSource.close();
 		}
 		
-		this.levelWrapper.setParentLevel(null);
+		this.levelWrapper.setDhLevel(null);
 		this.clientside.close();
 		super.close();
 		this.dataFileHandler.close();

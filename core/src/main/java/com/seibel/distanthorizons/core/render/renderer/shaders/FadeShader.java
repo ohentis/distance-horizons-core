@@ -158,8 +158,8 @@ public class FadeShader extends AbstractShaderRenderer
 	@Override
 	protected void onRender()
 	{
-		int depthTextureId = LodRenderer.getActiveDepthTextureId();
-		int colorTextureId = LodRenderer.getActiveColorTextureId();
+		int depthTextureId = LodRenderer.INSTANCE.getActiveDepthTextureId();
+		int colorTextureId = LodRenderer.INSTANCE.getActiveColorTextureId();
 		
 		if (depthTextureId == -1
 			|| colorTextureId == -1)

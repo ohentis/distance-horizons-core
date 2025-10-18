@@ -23,16 +23,11 @@ import com.google.common.io.BaseEncoding;
 import com.google.common.primitives.Longs;
 import com.seibel.distanthorizons.api.DhApi;
 import com.seibel.distanthorizons.api.interfaces.world.IDhApiLevelWrapper;
-import com.seibel.distanthorizons.core.api.internal.ClientApi;
-import com.seibel.distanthorizons.core.api.internal.ServerApi;
-import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.level.IDhLevel;
-import com.seibel.distanthorizons.core.level.IDhServerLevel;
-import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
-import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IBindable;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * A Level wrapper handles all MC related logic related to a given MC level.
@@ -95,7 +90,9 @@ public interface ILevelWrapper extends IDhApiLevelWrapper, IBindable
 	 * Used so we can access DH related methods/objects
 	 * from the {@link DhApi}.
 	 */
-	void setParentLevel(IDhLevel parentLevel);
+	void setDhLevel(IDhLevel parentLevel);
+	@Nullable
+	IDhLevel getDhLevel();
 	
 	
 	

@@ -79,10 +79,13 @@ public class ColumnBox
 		byte skyLightTop = skyLight;
 		byte skyLightBot = RenderDataPointUtil.doesDataPointExist(bottomData) ? RenderDataPointUtil.getLightSky(bottomData) : 0;
 		
-		boolean isTransparent = ColorUtil.getAlpha(color) < 255 && LodRenderer.transparencyEnabled;
+		boolean transparencyEnabled = Config.Client.Advanced.Graphics.Quality.transparency.get().transparencyEnabled;
+		boolean fakeOceanFloor = Config.Client.Advanced.Graphics.Quality.transparency.get().fakeTransparencyEnabled;
+		
+		boolean isTransparent = ColorUtil.getAlpha(color) < 255 && transparencyEnabled;
 		boolean overVoid = !RenderDataPointUtil.doesDataPointExist(bottomData);
-		boolean isTopTransparent = RenderDataPointUtil.getAlpha(topData) < 255 && LodRenderer.transparencyEnabled;
-		boolean isBottomTransparent = RenderDataPointUtil.getAlpha(bottomData) < 255 && LodRenderer.transparencyEnabled;
+		boolean isTopTransparent = RenderDataPointUtil.getAlpha(topData) < 255 && transparencyEnabled;
+		boolean isBottomTransparent = RenderDataPointUtil.getAlpha(bottomData) < 255 && transparencyEnabled;
 		
 		// defaulting to a value far below what we can normally render means we
 		// don't need to have an additional "is cave culling enabled" check
@@ -103,7 +106,7 @@ public class ColumnBox
 		
 		
 		// fake ocean transparency
-		if (LodRenderer.transparencyEnabled && LodRenderer.fakeOceanFloor)
+		if (transparencyEnabled && fakeOceanFloor)
 		{
 			if (!isTransparent && isTopTransparent && RenderDataPointUtil.doesDataPointExist(topData))
 			{
@@ -246,6 +249,8 @@ public class ColumnBox
 		// based on it's neighbors   //
 		//===========================//
 		
+		boolean transparencyEnabled = Config.Client.Advanced.Graphics.Quality.transparency.get().transparencyEnabled;
+		
 		short yMax = (short) (yMin + ySize); // min is inclusive, max is exclusive
 		byte[] skyLightAtInputPos = THREAD_LOCAL_SKY_LIGHT_ARRAY.get();
 		
@@ -283,7 +288,7 @@ public class ColumnBox
 				// if the adjacent data point is over the void
 				// don't consider it as transparent
 				boolean adjOverVoid = !RenderDataPointUtil.doesDataPointExist(adjBelowPoint);
-				boolean adjTransparent = !adjOverVoid && RenderDataPointUtil.getAlpha(adjPoint) < 255 && LodRenderer.transparencyEnabled;
+				boolean adjTransparent = !adjOverVoid && RenderDataPointUtil.getAlpha(adjPoint) < 255 && transparencyEnabled;
 				
 				
 				
@@ -352,7 +357,7 @@ public class ColumnBox
 			// create vertical faces //
 			//=======================//
 			
-			boolean inputTransparent = ColorUtil.getAlpha(color) < 255 && LodRenderer.transparencyEnabled;
+			boolean inputTransparent = ColorUtil.getAlpha(color) < 255 && transparencyEnabled;
 			byte lastSkyLight = skyLightAtInputPos[yMin];
 			int quadBottomY = yMin;
 			int quadTopY = -1;

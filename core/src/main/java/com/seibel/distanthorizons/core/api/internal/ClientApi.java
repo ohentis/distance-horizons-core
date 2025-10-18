@@ -31,6 +31,7 @@ import com.seibel.distanthorizons.core.network.messages.MessageRegistry;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.render.DhApiRenderProxy;
 import com.seibel.distanthorizons.core.render.renderer.FadeRenderer;
+import com.seibel.distanthorizons.core.render.renderer.LodRenderer;
 import com.seibel.distanthorizons.core.util.TimerUtil;
 import com.seibel.distanthorizons.core.util.objects.Pair;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
@@ -328,9 +329,9 @@ public class ClientApi
 	
 	
 	
-	//===============//
-	// render events //
-	//===============//
+	//============//
+	// clint tick //
+	//============//
 	
 	public void clientTickEvent()
 	{
@@ -516,7 +517,7 @@ public class ClientApi
 					this.renderingCancelledForThisFrame = ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeRenderEvent.class, renderEventParam);
 					if (!this.renderingCancelledForThisFrame)
 					{
-						level.render(renderEventParam, profiler);
+						LodRenderer.INSTANCE.render(level, levelWrapper, renderEventParam, profiler);
 					}
 					
 					if (!DhApi.Delayed.renderProxy.getDeferTransparentRendering())
@@ -536,7 +537,7 @@ public class ClientApi
 				boolean renderingCancelled = ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeDeferredRenderEvent.class, renderEventParam);
 				if (!renderingCancelled)
 				{
-					level.renderDeferred(renderEventParam, profiler);
+					LodRenderer.INSTANCE.renderDeferred(level, levelWrapper, renderEventParam, profiler);
 				}
 				
 				

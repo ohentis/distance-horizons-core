@@ -76,8 +76,6 @@ public class RenderBufferHandler implements AutoCloseable
 	// TODO: Make sorting go into the update loop instead of the render loop as it doesn't need to be done every frame
 	private SortedArraySet<LoadedRenderBuffer> loadedNearToFarBuffers = null;
 	
-	private final AtomicBoolean rebuildAllBuffers = new AtomicBoolean(false);
-	
 	private int visibleBufferCount;
 	private int culledBufferCount;
 	private int shadowVisibleBufferCount;
@@ -334,8 +332,6 @@ public class RenderBufferHandler implements AutoCloseable
 			this.visibleBufferCount = this.loadedNearToFarBuffers.size();
 		}
 	}
-	
-	public void MarkAllBuffersDirty() { this.rebuildAllBuffers.set(true); }
 	
 	
 	

@@ -111,11 +111,11 @@ public class DhApplyShader extends AbstractShaderRenderer
 		//GLMC.glBlendFunc(GL32.GL_ONE, GL32.GL_ONE_MINUS_SRC_ALPHA);
 		
 		GLMC.glActiveTexture(GL32.GL_TEXTURE0);
-		GLMC.glBindTexture(LodRenderer.getActiveColorTextureId());
+		GLMC.glBindTexture(LodRenderer.INSTANCE.getActiveColorTextureId());
 		GL32.glUniform1i(this.gDhColorTextureUniform, 0);
 		
 		GLMC.glActiveTexture(GL32.GL_TEXTURE1);
-		GLMC.glBindTexture(LodRenderer.getActiveDepthTextureId());
+		GLMC.glBindTexture(LodRenderer.INSTANCE.getActiveDepthTextureId());
 		GL32.glUniform1i(this.gDepthMapUniform, 1);
 		
 		// Copy to MC's framebuffer
@@ -137,7 +137,7 @@ public class DhApplyShader extends AbstractShaderRenderer
 			return;
 		}
 		
-		int dhFrameBufferId = LodRenderer.getActiveFramebufferId();
+		int dhFrameBufferId = LodRenderer.INSTANCE.getActiveFramebufferId();
 		if (dhFrameBufferId == -1)
 		{
 			return;
@@ -166,11 +166,11 @@ public class DhApplyShader extends AbstractShaderRenderer
 		//GLMC.glBlendFunc(GL32.GL_ONE, GL32.GL_ONE_MINUS_SRC_ALPHA);
 		
 		GLMC.glActiveTexture(GL32.GL_TEXTURE0);
-		GLMC.glBindTexture(LodRenderer.getActiveColorTextureId());
+		GLMC.glBindTexture(LodRenderer.INSTANCE.getActiveColorTextureId());
 		GL32.glUniform1i(this.gDhColorTextureUniform, 0);
 		
 		GLMC.glActiveTexture(GL32.GL_TEXTURE1);
-		GLMC.glBindTexture(LodRenderer.getActiveDepthTextureId());
+		GLMC.glBindTexture(LodRenderer.INSTANCE.getActiveDepthTextureId());
 		GL32.glUniform1i(this.gDepthMapUniform, 1);
 		
 		

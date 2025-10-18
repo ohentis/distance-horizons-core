@@ -82,8 +82,6 @@ public class ClientLevelModule implements Closeable, AbstractDataSourceHandler.I
 	// tick methods //
 	//==============//
 	
-	private EDhApiDebugRendering lastDebugRendering = EDhApiDebugRendering.OFF;
-	
 	public void clientTick()
 	{
 		// can be false if the level is unloading
@@ -97,6 +95,7 @@ public class ClientLevelModule implements Closeable, AbstractDataSourceHandler.I
 		{
 			return;
 		}
+		
 		// TODO this should probably be handled via a config change listener
 		// recreate the RenderState if the render distance changes
 		if (clientRenderState.quadtree.blockRenderDistanceDiameter != Config.Client.Advanced.Graphics.Quality.lodChunkRenderDistanceRadius.get() * LodUtil.CHUNK_WIDTH * 2)
@@ -106,14 +105,8 @@ public class ClientLevelModule implements Closeable, AbstractDataSourceHandler.I
 				return;
 			}
 			
-			IClientLevelWrapper clientLevelWrapper = this.clientLevel.getClientLevelWrapper();
-			if (clientLevelWrapper == null)
-			{
-				return;
-			}
-			
 			clientRenderState.close();
-			clientRenderState = new ClientRenderState(this.clientLevel, clientLevelWrapper, this.clientLevel.getFullDataProvider(), this.genericRenderer);
+			clientRenderState = new ClientRenderState(this.clientLevel, this.clientLevel.getFullDataProvider());
 			if (!this.ClientRenderStateRef.compareAndSet(null, clientRenderState))
 			{
 				//FIXME: How to handle this?
@@ -122,69 +115,28 @@ public class ClientLevelModule implements Closeable, AbstractDataSourceHandler.I
 				return;
 			}
 		}
-		clientRenderState.quadtree.tick(new DhBlockPos2D(MC_CLIENT.getPlayerBlockPos()));
 		
-		boolean isBuffersDirty = false;
-		EDhApiDebugRendering newDebugRendering = Config.Client.Advanced.Debugging.debugRendering.get();
-		if (newDebugRendering != lastDebugRendering)
-		{
-			lastDebugRendering = newDebugRendering;
-			isBuffersDirty = true;
-		}
-		if (isBuffersDirty)
-		{
-			clientRenderState.lodRenderer.bufferHandler.MarkAllBuffersDirty();
-		}
+		clientRenderState.quadtree.tick(new DhBlockPos2D(MC_CLIENT.getPlayerBlockPos()));
 	}
+	
 	
 	
 	//========//
 	// render //
 	//========//
 	
-	/** @return if the {@link ClientRenderState} was successfully swapped */
-	public boolean startRenderer(IClientLevelWrapper clientLevelWrapper)
+	// TODO start rendering during frame request
+	public void startRenderer()
 	{
-		// TODO why are we passing in a level wrapper? Our client level is already defined.
-		ClientRenderState ClientRenderState = new ClientRenderState(this.clientLevel, clientLevelWrapper, this.clientLevel.getFullDataProvider(), this.genericRenderer);
+		ClientRenderState ClientRenderState = new ClientRenderState(this.clientLevel, this.clientLevel.getFullDataProvider());
 		if (!this.ClientRenderStateRef.compareAndSet(null, ClientRenderState))
 		{
 			LOGGER.warn("Failed to start renderer due to concurrency");
 			ClientRenderState.close();
-			return false;
-		}
-		else
-		{
-			return true;
 		}
 	}
 	
-	public boolean isRendering()
-	{
-		return this.ClientRenderStateRef.get() != null;
-	}
-	
-	public void render(DhApiRenderParam renderEventParam, IProfilerWrapper profiler)
-	{
-		ClientRenderState ClientRenderState = this.ClientRenderStateRef.get();
-		if (ClientRenderState == null)
-		{
-			// either the renderer hasn't been started yet, or is being reloaded
-			return;
-		}
-		ClientRenderState.lodRenderer.drawLods(ClientRenderState.clientLevelWrapper, renderEventParam, profiler);
-	}
-	
-	public void renderDeferred(DhApiRenderParam renderEventParam, IProfilerWrapper profiler)
-	{
-		ClientRenderState ClientRenderState = this.ClientRenderStateRef.get();
-		if (ClientRenderState == null)
-		{
-			// either the renderer hasn't been started yet, or is being reloaded
-			return;
-		}
-		ClientRenderState.lodRenderer.drawDeferredLods(ClientRenderState.clientLevelWrapper, renderEventParam, profiler);
-	}
+	public boolean isRendering() { return this.ClientRenderStateRef.get() != null; }
 	
 	public void stopRenderer()
 	{
@@ -290,10 +242,8 @@ public class ClientLevelModule implements Closeable, AbstractDataSourceHandler.I
 	{
 		private static final DhLogger LOGGER = new DhLoggerBuilder().build();
 		
-		public final IClientLevelWrapper clientLevelWrapper;
 		public final LodQuadTree quadtree;
 		public final RenderBufferHandler renderBufferHandler;
-		public final LodRenderer lodRenderer;
 		
 		
 		
@@ -302,19 +252,17 @@ public class ClientLevelModule implements Closeable, AbstractDataSourceHandler.I
 		//=============//
 		
 		public ClientRenderState(
-				IDhClientLevel dhClientLevel, IClientLevelWrapper clientLevelWrapper, 
-				FullDataSourceProviderV2 fullDataSourceProvider,
-				GenericObjectRenderer genericRenderer)
+				IDhClientLevel dhClientLevel, 
+				FullDataSourceProviderV2 fullDataSourceProvider)
 		{
-			this.clientLevelWrapper = clientLevelWrapper;
-			
-			this.quadtree = new LodQuadTree(dhClientLevel, Config.Client.Advanced.Graphics.Quality.lodChunkRenderDistanceRadius.get() * LodUtil.CHUNK_WIDTH * 2,
+			this.quadtree = new LodQuadTree(
+					dhClientLevel, 
+					Config.Client.Advanced.Graphics.Quality.lodChunkRenderDistanceRadius.get() * LodUtil.CHUNK_WIDTH * 2,
 					// initial position is (0,0) just in case the player hasn't loaded in yet, the tree will be moved once the level starts ticking
 					0, 0,
 					fullDataSourceProvider);
 			
 			this.renderBufferHandler = new RenderBufferHandler(this.quadtree);
-			this.lodRenderer = new LodRenderer(this.renderBufferHandler, genericRenderer);
 		}
 		
 		
@@ -327,8 +275,6 @@ public class ClientLevelModule implements Closeable, AbstractDataSourceHandler.I
 		public void close()
 		{
 			LOGGER.info("Shutting down " + ClientRenderState.class.getSimpleName());
-			
-			this.lodRenderer.close();
 			this.quadtree.close();
 		}
 		

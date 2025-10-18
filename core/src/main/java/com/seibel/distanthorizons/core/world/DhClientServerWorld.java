@@ -89,8 +89,8 @@ public class DhClientServerWorld extends AbstractDhServerWorld<DhClientServerLev
 					return null;
 				}
 				
-				level.startRenderer(clientLevelWrapper);
-				clientLevelWrapper.setParentLevel(level);
+				level.startRenderer();
+				clientLevelWrapper.setDhLevel(level);
 				return level;
 			});
 		}

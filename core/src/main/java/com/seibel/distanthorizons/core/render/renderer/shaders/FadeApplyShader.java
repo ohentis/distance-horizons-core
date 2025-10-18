@@ -87,7 +87,7 @@ public class FadeApplyShader extends AbstractShaderRenderer
 		GL32.glUniform1i(this.uFadeColorTextureUniform, 0);
 		
 		GLMC.glActiveTexture(GL32.GL_TEXTURE1);
-		GLMC.glBindTexture(LodRenderer.getActiveDepthTextureId());
+		GLMC.glBindTexture(LodRenderer.INSTANCE.getActiveDepthTextureId());
 		GL32.glUniform1i(this.uDhDepthTextureUniform, 1);
 		
 		GLMC.glActiveTexture(GL32.GL_TEXTURE2);
