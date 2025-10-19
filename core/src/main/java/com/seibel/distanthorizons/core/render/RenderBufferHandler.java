@@ -22,7 +22,6 @@ package com.seibel.distanthorizons.core.render;
 import com.seibel.distanthorizons.api.DhApi;
 import com.seibel.distanthorizons.api.interfaces.override.rendering.IDhApiCullingFrustum;
 import com.seibel.distanthorizons.api.interfaces.override.rendering.IDhApiShadowCullingFrustum;
-import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.LodBufferContainer;
 import com.seibel.distanthorizons.core.dependencyInjection.ModAccessorInjector;
@@ -40,7 +39,6 @@ import com.seibel.distanthorizons.core.util.objects.quadTree.QuadNode;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftGLWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.IIrisAccessor;
-import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IOverrideInjector;
 import com.seibel.distanthorizons.core.util.math.Mat4f;
 import com.seibel.distanthorizons.core.util.math.Vec3d;
@@ -48,7 +46,6 @@ import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fc;
 
-import java.util.Comparator;
 import java.util.Iterator;
 
 /**
@@ -66,9 +63,7 @@ public class RenderBufferHandler implements AutoCloseable
 	/** contains all relevant data */
 	public final LodQuadTree lodQuadTree;
 	
-	// TODO: Make sorting go into the update loop instead of the render loop as it doesn't need to be done every frame
-	@Nullable
-	private SortedArraySet<LodBufferContainer> loadedNearToFarBuffers = null;
+	private final SortedArraySet<LodBufferContainer> loadedNearToFarBuffers;
 	
 	private int visibleBufferCount;
 	private int culledBufferCount;
@@ -97,6 +92,19 @@ public class RenderBufferHandler implements AutoCloseable
 		{
 			DhApi.overrides.bind(IDhApiShadowCullingFrustum.class, new NeverCullFrustum());
 		}
+		
+		this.loadedNearToFarBuffers = new SortedArraySet<>(this::sortBufferContainersNearToFar);
+	}
+	private int sortBufferContainersNearToFar(LodBufferContainer loadedBufferA, LodBufferContainer loadedBufferB)
+	{
+		Pos2D aPos = DhSectionPos.getCenterBlockPos(loadedBufferA.pos).toPos2D();
+		Pos2D bPos = DhSectionPos.getCenterBlockPos(loadedBufferB.pos).toPos2D();
+		
+		Pos2D centerPos = this.lodQuadTree.getCenterBlockPos().toPos2D();
+		
+		int aManhattanDistance = aPos.manhattanDist(centerPos);
+		int bManhattanDistance = bPos.manhattanDist(centerPos);
+		return aManhattanDistance - bManhattanDistance;
 	}
 	
 	
@@ -111,21 +119,8 @@ public class RenderBufferHandler implements AutoCloseable
 	 */
 	public void buildRenderList(RenderParams renderParams)
 	{
-		Pos2D centerPos = this.lodQuadTree.getCenterBlockPos().toPos2D();
-		
-		// Now that we have the axis directions, we can sort the render list
-		Comparator<LodBufferContainer> farToNearComparator = (loadedBufferA, loadedBufferB) ->
-		{
-			Pos2D aPos = DhSectionPos.getCenterBlockPos(loadedBufferA.pos).toPos2D();
-			Pos2D bPos = DhSectionPos.getCenterBlockPos(loadedBufferB.pos).toPos2D();
-			
-			int aManhattanDistance = aPos.manhattanDist(centerPos);
-			int bManhattanDistance = bPos.manhattanDist(centerPos);
-			return bManhattanDistance - aManhattanDistance;
-		};
-		
-		// TODO is the comparator named wrong?
-		this.loadedNearToFarBuffers = new SortedArraySet<>((a, b) -> -farToNearComparator.compare(a, b));
+		// clear the old list so we can start fresh
+		this.loadedNearToFarBuffers.clear();
 		
 		
 		

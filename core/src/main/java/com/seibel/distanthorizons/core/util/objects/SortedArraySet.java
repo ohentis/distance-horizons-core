@@ -54,7 +54,7 @@ public class SortedArraySet<E>
 	
 	public void add(E element)
 	{
-		if (!this.set.contains(element))
+		if (this.set.add(element))
 		{
 			this.list.add(element);
 		}
