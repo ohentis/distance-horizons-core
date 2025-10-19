@@ -193,6 +193,7 @@ public class Config
 									+ "This indicates how quickly LODs decrease in quality the further away they are. \n"
 									+ "Higher settings will render higher quality fake chunks farther away, \n"
 									+ "but will increase memory and GPU usage.")
+							.addListener(ReloadLodsConfigEventHandler.DELAYED_INSTANCE)
 							.build();
 					
 					public static ConfigEntry<EDhApiMaxHorizontalResolution> maxHorizontalResolution = new ConfigEntry.Builder<EDhApiMaxHorizontalResolution>()
