@@ -77,7 +77,7 @@ public class ClientPluginChannelApi
 	
 	private void onLevelInitMessage(LevelInitMessage msg)
 	{
-		if (!msg.serverKey.matches(LevelInitMessage.SERVER_KEY_REGEX))
+		if (!msg.serverKey.isEmpty() && !msg.serverKey.matches(LevelInitMessage.SERVER_KEY_REGEX))
 		{
 			throw new IllegalArgumentException("Server sent invalid server key.");
 		}
