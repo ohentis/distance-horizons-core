@@ -19,16 +19,14 @@
 
 package com.seibel.distanthorizons.core.render.renderer;
 
-import com.seibel.distanthorizons.api.enums.rendering.EDhApiRenderPass;
 import com.seibel.distanthorizons.api.interfaces.override.rendering.IDhApiFramebuffer;
 import com.seibel.distanthorizons.api.interfaces.override.rendering.IDhApiShaderProgram;
 import com.seibel.distanthorizons.api.methods.events.abstractEvents.*;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiTextureCreatedParam;
 import com.seibel.distanthorizons.core.config.Config;
-import com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.ColumnRenderBuffer;
+import com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.LodBufferContainer;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
-import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.logging.DhLogger;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos;
@@ -41,20 +39,18 @@ import com.seibel.distanthorizons.core.render.glObject.texture.*;
 import com.seibel.distanthorizons.core.render.renderer.generic.GenericObjectRenderer;
 import com.seibel.distanthorizons.core.render.renderer.shaders.*;
 import com.seibel.distanthorizons.core.util.math.Mat4f;
+import com.seibel.distanthorizons.core.util.math.Vec3d;
+import com.seibel.distanthorizons.core.util.objects.SortedArraySet;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftGLWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.ILightMapWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.AbstractOptifineAccessor;
-import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.OverrideInjector;
-import com.seibel.distanthorizons.core.util.math.Vec3d;
 import com.seibel.distanthorizons.core.util.math.Vec3f;
+import org.jetbrains.annotations.Nullable;
 import org.lwjgl.opengl.GL32;
-
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * This is where all the magic happens. <br>
@@ -82,20 +78,18 @@ public class LodRenderer
 	private int activeFramebufferId = -1;
 	private int activeColorTextureId = -1;
 	private int activeDepthTextureId = -1;
-	private int cachedWidth;
-	private int cachedHeight;
-	
-	private final ReentrantLock setupLock = new ReentrantLock();
+	private int textureWidth;
+	private int textureHeight;
 	
 	
-	// The shader program
 	private IDhApiShaderProgram lodRenderProgram = null;
 	public QuadElementBuffer quadIBO = null;
-	private boolean isSetupComplete = false;
+	private boolean renderObjectsCreated = false;
 	
 	// frameBuffer and texture ID's for this renderer
 	private IDhApiFramebuffer framebuffer;
 	/** will be null if MC's framebuffer is being used since MC already has a color texture */
+	@Nullable
 	private DhColorTexture nullableColorTexture;
 	private DHDepthTexture depthTexture;
 	/** 
@@ -110,10 +104,7 @@ public class LodRenderer
 	// constructor //
 	//=============//
 	
-	private LodRenderer()
-	{
-		
-	}
+	private LodRenderer() { }
 	
 	
 	
@@ -126,16 +117,8 @@ public class LodRenderer
 	 * {@link DhApiRenderProxy#getDeferTransparentRendering()} is false,
 	 * otherwise it will only render opaque LODs.
 	 */
-	public void render(
-			IDhClientLevel clientLevel, IClientLevelWrapper clientLevelWrapper,
-			DhApiRenderParam renderEventParam, IProfilerWrapper profiler)
-	{ 
-		this.renderLodPass(
-			clientLevel, clientLevelWrapper,
-			renderEventParam,
-			profiler,
-			false); 
-	}
+	public void render(RenderParams renderParams, IProfilerWrapper profiler)
+	{  this.renderLodPass(renderParams, profiler, false);  }
 	
 	/**
 	 * This method is designed for Iris to be able 
@@ -143,59 +126,32 @@ public class LodRenderer
 	 * It needs to be updated with any major changes, 
 	 * but shouldn't be activated as per deferWaterRendering.
 	 */
-	public void renderDeferred(
-			IDhClientLevel clientLevel, IClientLevelWrapper clientLevelWrapper,
-			DhApiRenderParam renderEventParam, IProfilerWrapper profiler)
-	{
-		this.renderLodPass(
-				clientLevel, clientLevelWrapper,
-				renderEventParam,
-				profiler,
-				true);
-	}
+	public void renderDeferred(RenderParams renderParams, IProfilerWrapper profiler)
+	{ this.renderLodPass(renderParams, profiler, true); }
 	
-	private void renderLodPass(
-			IDhClientLevel clientLevel, IClientLevelWrapper clientLevelWrapper,
-			DhApiRenderParam renderEventParam,
-			IProfilerWrapper profiler,
-			boolean runningDeferredPass)
+	private void renderLodPass(RenderParams renderParams, IProfilerWrapper profiler, boolean runningDeferredPass)
 	{
 		//====================//
 		// validate rendering //
 		//====================//
 		
 		boolean deferTransparentRendering = DhApiRenderProxy.INSTANCE.getDeferTransparentRendering();
-		if (runningDeferredPass && !deferTransparentRendering)
+		if (runningDeferredPass 
+			&& !deferTransparentRendering)
 		{
 			return;
 		}
 		boolean firstPass = !runningDeferredPass;
 		
-		if (AbstractOptifineAccessor.optifinePresent() 
-			&& MC_RENDER.getTargetFrameBuffer() == -1)
+		// RenderParams parameter validation should be done before this
+		if (!renderParams.validationRun)
 		{
-			// wait for MC to finish setting up their renderer
-			return;
+			throw new IllegalArgumentException("Render parameters validation");
 		}
 		
-		ILightMapWrapper lightmap = MC_RENDER.getLightmapWrapper(clientLevelWrapper);
-		if (lightmap == null)
-		{
-			// this shouldn't normally happen, but just in case
-			return;
-		}
-		
-		RenderBufferHandler renderBufferHandler = clientLevel.getRenderBufferHandler();
-		if (renderBufferHandler == null)
-		{
-			return;
-		}
-		
-		GenericObjectRenderer genericRenderer = clientLevel.getGenericRenderer();
-		if (genericRenderer == null)
-		{
-			return;
-		}
+		RenderBufferHandler renderBufferHandler = renderParams.renderBufferHandler;
+		GenericObjectRenderer genericRenderer = renderParams.genericRenderer;
+		ILightMapWrapper lightmap = renderParams.lightmap;
 		
 		
 		
@@ -203,22 +159,39 @@ public class LodRenderer
 		// rendering setup //
 		//=================//
 		
-		ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeRenderSetupEvent.class, renderEventParam);
-		this.setupGLStateAndRenderObjects(profiler, renderEventParam, firstPass);
-		if (!this.isSetupComplete)
+		ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeRenderSetupEvent.class, renderParams);
+		profiler.push("LOD GL setup");
+		
+		if (!this.renderObjectsCreated)
 		{
-			// this shouldn't normally happen, but just in case
-			return;
+			boolean setupSuccess = this.createRenderObjects();
+			if (!setupSuccess)
+			{
+				// shouldn't normally happen, but just in case
+				return;
+			}
+			
+			this.renderObjectsCreated = true;
 		}
+		
+		this.setGLState(renderParams, firstPass);
 		
 		lightmap.bind();
 		this.quadIBO.bind();
 		
 		if (firstPass)
 		{
-			renderBufferHandler.buildRenderListAndUpdateSections(clientLevelWrapper, renderEventParam, MC_RENDER.getLookAtVector());
+			// we only need to sort/cull the LODs during the first frame 
+			profiler.popPush("LOD build render list");
+			renderBufferHandler.buildRenderList(renderParams);
 		}
 		
+		IDhApiShaderProgram lodShaderProgram = this.lodRenderProgram;
+		IDhApiShaderProgram lodShaderProgramOverride = OverrideInjector.INSTANCE.get(IDhApiShaderProgram.class);
+		if (lodShaderProgramOverride != null && lodShaderProgram.overrideThisFrame())
+		{
+			lodShaderProgram = lodShaderProgramOverride;
+		}
 		
 		
 		
@@ -228,65 +201,54 @@ public class LodRenderer
 		
 		if (!runningDeferredPass)
 		{
-			//=================================//
-			// opaque (non-deferred) rendering //
-			//=================================//
+			//=========================//
+			// opaque and non-deferred //
+			// transparent rendering   //
+			//=========================//
 			
-			
-			// Disable blending for opaque rendering
-			GLMC.disableBlend();
-			
-			
-			// terrain
+			// opaque LODs
 			profiler.popPush("LOD Opaque");
-			ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeRenderPassEvent.class, renderEventParam);
-			
-			
-			renderBufferHandler.renderOpaque(this, renderEventParam);
-			
-			
+			this.renderLodPass(lodShaderProgram, renderBufferHandler, renderParams, /*opaquePass*/ true);
 			
 			// custom objects with SSAO
 			if (Config.Client.Advanced.Graphics.GenericRendering.enableGenericRendering.get())
 			{
 				profiler.popPush("Custom Objects");
-				genericRenderer.render(renderEventParam, profiler, true);
+				genericRenderer.render(renderParams, profiler, true);
 			}
-			
 			
 			// SSAO
 			if (Config.Client.Advanced.Graphics.Ssao.enableSsao.get())
 			{
 				profiler.popPush("LOD SSAO");
-				SSAORenderer.INSTANCE.render(new Mat4f(renderEventParam.dhProjectionMatrix), renderEventParam.partialTicks);
+				SSAORenderer.INSTANCE.render(new Mat4f(renderParams.dhProjectionMatrix), renderParams.partialTicks);
 			}
-			
 			
 			// custom objects without SSAO
 			if (Config.Client.Advanced.Graphics.GenericRendering.enableGenericRendering.get())
 			{
 				profiler.popPush("Custom Objects");
-				genericRenderer.render(renderEventParam, profiler, false);
+				genericRenderer.render(renderParams, profiler, false);
 			}
 			
-			
+			// combined pass transparent rendering
 			if (!deferTransparentRendering 
 				&& Config.Client.Advanced.Graphics.Quality.transparency.get().transparencyEnabled)
 			{
-				this.renderTransparentBuffersAndFireApiEvent(profiler, renderEventParam, renderBufferHandler);
+				profiler.popPush("LOD Transparent");
+				this.renderLodPass(lodShaderProgram, renderBufferHandler, renderParams, /*opaquePass*/ false);
 			}
 			
-			
+			// fog
 			if (Config.Client.Advanced.Graphics.Fog.enableDhFog.get())
 			{
 				profiler.popPush("LOD Fog");
 				
-				Mat4f combinedMatrix = new Mat4f(renderEventParam.dhProjectionMatrix);
-				combinedMatrix.multiply(renderEventParam.dhModelViewMatrix);
+				Mat4f combinedMatrix = new Mat4f(renderParams.dhProjectionMatrix);
+				combinedMatrix.multiply(renderParams.dhModelViewMatrix);
 				
-				FogRenderer.INSTANCE.render(combinedMatrix, renderEventParam.partialTicks);
+				FogRenderer.INSTANCE.render(combinedMatrix, renderParams.partialTicks);
 			}
-			
 			
 			
 			
@@ -298,16 +260,18 @@ public class LodRenderer
 			{
 				profiler.popPush("Debug wireframes");
 				
-				Mat4f combinedMatrix = new Mat4f(renderEventParam.dhProjectionMatrix);
-				combinedMatrix.multiply(renderEventParam.dhModelViewMatrix);
+				Mat4f combinedMatrix = new Mat4f(renderParams.dhProjectionMatrix);
+				combinedMatrix.multiply(renderParams.dhModelViewMatrix);
 				
 				// Note: this can be very slow if a lot of boxes are being rendered 
 				DebugRenderer.INSTANCE.render(combinedMatrix);
 			}
 			
-			profiler.popPush("LOD cleanup");
 			
 			
+			//===================//
+			// optifine clean up //
+			//===================//
 			
 			if (this.usingMcFrameBuffer)
 			{
@@ -322,13 +286,13 @@ public class LodRenderer
 			// Apply to the MC FrameBuffer //
 			//=============================//
 			
-			boolean cancelApplyShader = ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeApplyShaderRenderEvent.class, renderEventParam);
+			boolean cancelApplyShader = ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeApplyShaderRenderEvent.class, renderParams);
 			if (!cancelApplyShader)
 			{
 				profiler.popPush("LOD Apply");
 				
 				// Copy the LOD framebuffer to Minecraft's framebuffer
-				DhApplyShader.INSTANCE.render(renderEventParam.partialTicks);
+				DhApplyShader.INSTANCE.render(renderParams.partialTicks);
 			}
 		}
 		else
@@ -340,18 +304,17 @@ public class LodRenderer
 			if (Config.Client.Advanced.Graphics.Quality.transparency.get().transparencyEnabled)
 			{
 				profiler.popPush("LOD Transparent");
-				
-				this.renderTransparentBuffersAndFireApiEvent(profiler, renderEventParam, renderBufferHandler);
+				this.renderLodPass(lodShaderProgram, renderBufferHandler, renderParams, /*opaquePass*/ false);
 				
 				
 				if (Config.Client.Advanced.Graphics.Fog.enableDhFog.get())
 				{
 					profiler.popPush("LOD Fog");
 					
-					Mat4f combinedMatrix = new Mat4f(renderEventParam.dhProjectionMatrix);
-					combinedMatrix.multiply(renderEventParam.dhModelViewMatrix);
+					Mat4f combinedMatrix = new Mat4f(renderParams.dhProjectionMatrix);
+					combinedMatrix.multiply(renderParams.dhModelViewMatrix);
 					
-					FogRenderer.INSTANCE.render(combinedMatrix, renderEventParam.partialTicks);
+					FogRenderer.INSTANCE.render(combinedMatrix, renderParams.partialTicks);
 				}
 			}
 		}
@@ -363,93 +326,16 @@ public class LodRenderer
 		//================//
 		
 		profiler.popPush("LOD cleanup");
-		ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeRenderCleanupEvent.class, renderEventParam);
+		ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeRenderCleanupEvent.class, renderParams);
 		
 		lightmap.unbind();
 		this.quadIBO.unbind();
-		
-		IDhApiShaderProgram shaderProgram = this.lodRenderProgram;
-		IDhApiShaderProgram shaderProgramOverride = OverrideInjector.INSTANCE.get(IDhApiShaderProgram.class);
-		if (shaderProgramOverride != null && shaderProgram.overrideThisFrame())
-		{
-			shaderProgram = shaderProgramOverride;
-		}
-		shaderProgram.unbind();
+		lodShaderProgram.unbind();
 		
 		
 		// end of internal LOD profiling
 		profiler.pop();
 	}
-	
-	private void renderTransparentBuffersAndFireApiEvent(
-			IProfilerWrapper profiler, 
-			DhApiRenderParam renderEventParam, 
-			RenderBufferHandler renderBufferHandler) 
-	{
-		profiler.popPush("LOD Transparent");
-		
-		GLMC.enableBlend();
-		GLMC.enableDepthTest();
-		GL32.glBlendEquation(GL32.GL_FUNC_ADD);
-		GLMC.glBlendFuncSeparate(GL32.GL_SRC_ALPHA, GL32.GL_ONE_MINUS_SRC_ALPHA, GL32.GL_ONE, GL32.GL_ONE_MINUS_SRC_ALPHA);
-		
-		ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeRenderPassEvent.class, renderEventParam);
-		
-		renderBufferHandler.renderTransparent(this, renderEventParam);
-	}
-	
-	/** called by each {@link ColumnRenderBuffer} before rendering */
-	public void setModelViewMatrixOffset(DhBlockPos pos, DhApiRenderParam renderEventParam) throws IllegalStateException
-	{
-		Vec3d cam = MC_RENDER.getCameraExactPosition();
-		Vec3f modelPos = new Vec3f((float) (pos.getX() - cam.x), (float) (pos.getY() - cam.y), (float) (pos.getZ() - cam.z));
-		
-		
-		IDhApiShaderProgram shaderProgram = this.lodRenderProgram;
-		IDhApiShaderProgram shaderProgramOverride = OverrideInjector.INSTANCE.get(IDhApiShaderProgram.class);
-		if (shaderProgramOverride != null && shaderProgram.overrideThisFrame())
-		{
-			shaderProgram = shaderProgramOverride;
-		}
-		
-		shaderProgram.bind();
-		shaderProgram.setModelOffsetPos(modelPos);
-		
-		ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeBufferRenderEvent.class, new DhApiBeforeBufferRenderEvent.EventParam(renderEventParam, modelPos));
-	}
-	
-	public void drawVbo(GLVertexBuffer vbo, ColumnRenderBuffer parentBufferContainer)
-	{
-		// this should only be enabled for debugging
-		if (Config.Client.Advanced.Debugging.OpenGl.validateBufferIdsBeforeRendering.get())
-		{
-			// this is a fairly slow call and enabling it will reduce FPS significantly
-			if (!GL32.glIsBuffer(vbo.getId()))
-			{
-				if (RATE_LIMITED_LOGGER.canLog()) // can log check to prevent creating a bunch of strings unnecessarily
-				{
-					RATE_LIMITED_LOGGER.warn("Attempted to draw invalid buffer: [" + vbo.getId() + "], expected size: ["+vbo.getSize()+"], upload complete: [" + parentBufferContainer.buffersUploaded + "], upload in progress: [" + parentBufferContainer.uploadInProgress() + "], buffer blockPos: ["+parentBufferContainer.minCornerBlockPos +"].");
-				}
-				return;
-			}
-		}
-		
-		
-		IDhApiShaderProgram shaderProgram = this.lodRenderProgram;
-		IDhApiShaderProgram shaderProgramOverride = OverrideInjector.INSTANCE.get(IDhApiShaderProgram.class);
-		if (shaderProgramOverride != null && shaderProgram.overrideThisFrame())
-		{
-			shaderProgram = shaderProgramOverride;
-		}
-		
-		
-		vbo.bind();
-		shaderProgram.bindVertexBuffer(vbo.getId());
-		GL32.glDrawElements(GL32.GL_TRIANGLES, (vbo.getVertexCount() / 4) * 6, // TODO what does the 4 and 6 here represent?
-				this.quadIBO.getType(), 0);
-		vbo.unbind();
-	}
-	
 	
 	
 	
@@ -457,59 +343,29 @@ public class LodRenderer
 	// Setup Functions //
 	//=================//
 	
-	private void setupGLStateAndRenderObjects(
-			IProfilerWrapper profiler,
+	private void setGLState(
 			DhApiRenderParam renderEventParam,
 			boolean firstPass)
 	{
 		//===================//
-		// draw params setup //
+		// framebuffer setup //
 		//===================//
 		
-		profiler.push("LOD draw setup");
-		
-		if (!this.isSetupComplete)
-		{
-			this.setupRenderObjects();
-			
-			// shouldn't normally happen, but just in case
-			if (!this.isSetupComplete)
-			{
-				return;
-			}
-		}
-		
-		if (MC_RENDER.getTargetFrameBufferViewportWidth() != this.cachedWidth 
-			|| MC_RENDER.getTargetFrameBufferViewportHeight() != this.cachedHeight)
-		{
-			// just resizing the textures doesn't work when Optifine is present,
-			// so recreate the textures with the new size instead
-			this.createColorAndDepthTextures();
-		}
-		
-		
-		IDhApiFramebuffer activeFrameBuffer = this.framebuffer;
+		// get the active framebuffer
+		IDhApiFramebuffer frameBuffer = this.framebuffer;
 		IDhApiFramebuffer framebufferOverride = OverrideInjector.INSTANCE.get(IDhApiFramebuffer.class);
 		if (framebufferOverride != null && framebufferOverride.overrideThisFrame())
 		{
-			activeFrameBuffer = framebufferOverride;
+			frameBuffer = framebufferOverride;
 		}
+		this.activeFramebufferId = frameBuffer.getId();
+		frameBuffer.bind();
 		
-		this.activeFramebufferId = activeFrameBuffer.getId();
-		this.activeDepthTextureId = this.depthTexture.getTextureId();
-		if (this.nullableColorTexture != null)
-		{
-			this.activeColorTextureId = this.nullableColorTexture.getTextureId();
-		}
-		else
-		{
-			// get MC's color texture
-			int mcColorTextureId = GL32.glGetFramebufferAttachmentParameteri(GL32.GL_FRAMEBUFFER, GL32.GL_COLOR_ATTACHMENT0, GL32.GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME);
-			this.activeColorTextureId = mcColorTextureId;
-		}
-		// Bind LOD frame buffer
-		activeFrameBuffer.bind();
 		
+		
+		//==========//
+		// bindings //
+		//==========//
 		
 		// by default draw everything as triangles
 		GL32.glPolygonMode(GL32.GL_FRONT_AND_BACK, GL32.GL_FILL);
@@ -527,20 +383,15 @@ public class LodRenderer
 		
 		// This is required for MC versions 1.21.5+
 		// due to MC updating the lightmap by changing the viewport size
-		GL32.glViewport(0, 0, this.cachedWidth, this.cachedHeight);
+		GL32.glViewport(0, 0, this.textureWidth, this.textureHeight);
 		
-		/*---------Bind required objects--------*/
-		// Setup LodRenderProgram and the LightmapTexture if it has not yet been done
-		// also binds LightmapTexture, VAO, and ShaderProgram
-		if (!this.isSetupComplete)
-		{
-			this.setupRenderObjects();
-		}
-		else
-		{
-			this.lodRenderProgram.bind();
-		}
+		this.lodRenderProgram.bind();
 		
+		
+		
+		//==========//
+		// uniforms //
+		//==========//
 		
 		IDhApiShaderProgram shaderProgramOverride = OverrideInjector.INSTANCE.get(IDhApiShaderProgram.class);
 		if (shaderProgramOverride != null)
@@ -549,6 +400,37 @@ public class LodRenderer
 		}
 		
 		this.lodRenderProgram.fillUniformData(renderEventParam);
+		
+		
+		
+		
+		//===============//
+		// texture setup //
+		//===============//
+		
+		// resize the textures if needed
+		if (MC_RENDER.getTargetFrameBufferViewportWidth() != this.textureWidth
+				|| MC_RENDER.getTargetFrameBufferViewportHeight() != this.textureHeight)
+		{
+			// just resizing the textures doesn't work when Optifine is present,
+			// so recreate the textures with the new size instead
+			this.createAndBindTextures();
+		}
+		
+		
+		// set the active textures
+		this.activeDepthTextureId = this.depthTexture.getTextureId();
+		
+		if (this.nullableColorTexture != null)
+		{
+			this.activeColorTextureId = this.nullableColorTexture.getTextureId();
+		}
+		else
+		{
+			// get MC's color texture
+			int mcColorTextureId = GL32.glGetFramebufferAttachmentParameteri(GL32.GL_FRAMEBUFFER, GL32.GL_COLOR_ATTACHMENT0, GL32.GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME);
+			this.activeColorTextureId = mcColorTextureId;
+		}
 		
 		
 		// needs to be fired after all the textures have been created/bound
@@ -565,7 +447,7 @@ public class LodRenderer
 			{
 				// Due to using MC/Optifine's framebuffer we need to re-bind the depth texture,
 				// otherwise we'll be writing to MC/Optifine's depth texture which causes rendering issues
-				activeFrameBuffer.addDepthAttachment(this.depthTexture.getTextureId(), EDhDepthBufferFormat.DEPTH32F.isCombinedStencil());
+				frameBuffer.addDepthAttachment(this.depthTexture.getTextureId(), EDhDepthBufferFormat.DEPTH32F.isCombinedStencil());
 				
 				
 				// don't clear the color texture, that removes the sky 
@@ -576,92 +458,88 @@ public class LodRenderer
 				GL32.glClear(GL32.GL_COLOR_BUFFER_BIT | GL32.GL_DEPTH_BUFFER_BIT);
 			}
 		}
+		
+		
 	}
 	
-	/** Setup all render objects - MUST be called on the render thread */
-	private void setupRenderObjects()
+	private boolean createRenderObjects()
 	{
-		if (this.isSetupComplete)
+		if (this.renderObjectsCreated)
 		{
 			LOGGER.warn("Renderer setup called but it has already completed setup!");
-			return;
+			return false;
 		}
+		
 		if (!GLProxy.hasInstance())
 		{
 			// shouldn't normally happen, but just in case
 			LOGGER.warn("Renderer setup called but GLProxy has not yet been setup!");
-			return;
+			return false;
 		}
 		
-		try
+		
+		
+		LOGGER.info("Setting up renderer");
+		this.lodRenderProgram = new DhTerrainShaderProgram();
+		
+		this.quadIBO = new QuadElementBuffer();
+		this.quadIBO.reserve(LodBufferContainer.MAX_QUADS_PER_BUFFER);
+		
+		
+		// create or get the frame buffer
+		if (AbstractOptifineAccessor.optifinePresent())
 		{
-			this.setupLock.lock();
-			
-			
-			LOGGER.info("Setting up renderer");
-			this.lodRenderProgram = new DhTerrainShaderProgram();
-			
-			this.quadIBO = new QuadElementBuffer();
-			this.quadIBO.reserve(ColumnRenderBuffer.MAX_QUADS_PER_BUFFER);
-			
-			
-			// create or get the frame buffer
-			if (AbstractOptifineAccessor.optifinePresent())
-			{
-				// use MC/Optifine's default FrameBuffer so shaders won't remove the LODs
-				int currentFrameBufferId = MC_RENDER.getTargetFrameBuffer();
-				this.framebuffer = new DhFramebuffer(currentFrameBufferId);
-				this.usingMcFrameBuffer = true;
-			}
-			else 
-			{
-				// normal use case
-				this.framebuffer = new DhFramebuffer();
-				this.usingMcFrameBuffer = false;
-			}
-			
-			// create and bind the necessary textures
-			this.createColorAndDepthTextures();
-			
-			if(this.framebuffer.getStatus() != GL32.GL_FRAMEBUFFER_COMPLETE)
-			{
-				// This generally means something wasn't bound, IE missing either the color or depth texture
-				LOGGER.warn("FrameBuffer ["+this.framebuffer.getId()+"] isn't complete.");
-				return;
-			}
-			
-			
-			this.isSetupComplete = true;
-			LOGGER.info("Renderer setup complete");
+			// use MC/Optifine's default FrameBuffer so shaders won't remove the LODs
+			int currentFrameBufferId = MC_RENDER.getTargetFrameBuffer();
+			this.framebuffer = new DhFramebuffer(currentFrameBufferId);
+			this.usingMcFrameBuffer = true;
 		}
-		finally
+		else 
 		{
-			this.setupLock.unlock();
+			// normal use case
+			this.framebuffer = new DhFramebuffer();
+			this.usingMcFrameBuffer = false;
 		}
+		
+		// create and bind the necessary textures
+		this.createAndBindTextures();
+		
+		if(this.framebuffer.getStatus() != GL32.GL_FRAMEBUFFER_COMPLETE)
+		{
+			// This generally means something wasn't bound, IE missing either the color or depth texture
+			LOGGER.warn("FrameBuffer ["+this.framebuffer.getId()+"] isn't complete.");
+			return false;
+		}
+		
+		
+		
+		LOGGER.info("Renderer setup complete");
+		return true;
 	}
-	/** also binds the new textures to the {@link LodRenderer#framebuffer} */
-	private void createColorAndDepthTextures()
+	
+	private void createAndBindTextures()
 	{
-		int oldWidth = this.cachedWidth;
-		int oldHeight = this.cachedHeight;
-		this.cachedWidth = MC_RENDER.getTargetFrameBufferViewportWidth();
-		this.cachedHeight = MC_RENDER.getTargetFrameBufferViewportHeight();
+		int oldWidth = this.textureWidth;
+		int oldHeight = this.textureHeight;
+		this.textureWidth = MC_RENDER.getTargetFrameBufferViewportWidth();
+		this.textureHeight = MC_RENDER.getTargetFrameBufferViewportHeight();
 		
 		DhApiTextureCreatedParam textureCreatedParam = new DhApiTextureCreatedParam(
 				oldWidth, oldHeight,
-				this.cachedWidth, this.cachedHeight
+				this.textureWidth, this.textureHeight
 		);
 		
 		
-		
+		// DhApiColorDepthTextureCreatedEvent needs to be kept around since old versions of Iris need it
 		ApiEventInjector.INSTANCE.fireAllEvents(DhApiColorDepthTextureCreatedEvent.class, new DhApiColorDepthTextureCreatedEvent.EventParam(textureCreatedParam));
 		ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeColorDepthTextureCreatedEvent.class, textureCreatedParam);
-				
 		
-		// also update the override if present
+		
+		// also update the framebuffer override if present
 		IDhApiFramebuffer framebufferOverride = OverrideInjector.INSTANCE.get(IDhApiFramebuffer.class);
 		
-		this.depthTexture = new DHDepthTexture(this.cachedWidth, this.cachedHeight, EDhDepthBufferFormat.DEPTH32F);
+		
+		this.depthTexture = new DHDepthTexture(this.textureWidth, this.textureHeight, EDhDepthBufferFormat.DEPTH32F);
 		this.framebuffer.addDepthAttachment(this.depthTexture.getTextureId(), EDhDepthBufferFormat.DEPTH32F.isCombinedStencil());
 		if (framebufferOverride != null)
 		{
@@ -671,7 +549,7 @@ public class LodRenderer
 		// if we are using MC's frame buffer, a color texture is already present and shouldn't need to be bound
 		if (!this.usingMcFrameBuffer)
 		{
-			this.nullableColorTexture = DhColorTexture.builder().setDimensions(this.cachedWidth, this.cachedHeight)
+			this.nullableColorTexture = DhColorTexture.builder().setDimensions(this.textureWidth, this.textureHeight)
 					.setInternalFormat(EDhInternalTextureFormat.RGBA8)
 					.setPixelType(EDhPixelType.UNSIGNED_BYTE)
 					.setPixelFormat(EDhPixelFormat.RGBA)
@@ -695,19 +573,128 @@ public class LodRenderer
 	
 	
 	//===============//
+	// LOD rendering //
+	//===============//
+	
+	private void renderLodPass(IDhApiShaderProgram shaderProgram, RenderBufferHandler lodBufferHandler, RenderParams renderEventParam, boolean opaquePass)
+	{
+		//=======================//
+		// debug wireframe setup //
+		//=======================//
+		
+		// TODO move this logic into LodRenderer so all the GL states can be handled there
+		boolean renderWireframe = Config.Client.Advanced.Debugging.renderWireframe.get();
+		if (renderWireframe)
+		{
+			GL32.glPolygonMode(GL32.GL_FRONT_AND_BACK, GL32.GL_LINE);
+			GLMC.disableFaceCulling();
+		}
+		else
+		{
+			GL32.glPolygonMode(GL32.GL_FRONT_AND_BACK, GL32.GL_FILL);
+			GLMC.enableFaceCulling();
+		}
+		
+		if (!opaquePass)
+		{
+			GLMC.enableBlend();
+			GLMC.enableDepthTest();
+			GL32.glBlendEquation(GL32.GL_FUNC_ADD);
+			GLMC.glBlendFuncSeparate(GL32.GL_SRC_ALPHA, GL32.GL_ONE_MINUS_SRC_ALPHA, GL32.GL_ONE, GL32.GL_ONE_MINUS_SRC_ALPHA);
+		}
+		else
+		{
+			GLMC.disableBlend();
+		}
+		
+		
+		
+		
+		//===========//
+		// rendering //
+		//===========//
+		
+		ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeRenderPassEvent.class, renderEventParam);
+		
+		SortedArraySet<LodBufferContainer> lodBufferContainer = lodBufferHandler.getColumnRenderBuffers();
+		if (lodBufferContainer != null)
+		{
+			for (int lodIndex = 0; lodIndex < lodBufferContainer.size(); lodIndex++)
+			{
+				LodBufferContainer bufferContainer = lodBufferContainer.get(lodIndex);
+				this.setShaderProgramMvmOffset(bufferContainer.minCornerBlockPos, shaderProgram, renderEventParam);
+				
+				GLVertexBuffer[] vbos = opaquePass ? bufferContainer.vbos : bufferContainer.vbosTransparent;
+				for (int vboIndex = 0; vboIndex < vbos.length; vboIndex++)
+				{
+					GLVertexBuffer vbo = vbos[vboIndex];
+					if (vbo == null)
+					{
+						continue;
+					}
+					
+					if (vbo.getVertexCount() == 0)
+					{
+						continue;
+					}
+					
+					vbo.bind();
+					shaderProgram.bindVertexBuffer(vbo.getId());
+					GL32.glDrawElements(
+							GL32.GL_TRIANGLES,
+							(vbo.getVertexCount() / 4) * 6, // TODO what does the 4 and 6 here represent?
+							this.quadIBO.getType(), 0);
+					vbo.unbind();
+				}
+			}
+		}
+		
+		
+		
+		//=========================//
+		// debug wireframe cleanup //
+		//=========================//
+		
+		if (renderWireframe)
+		{
+			// default back to GL_FILL since all other rendering uses it 
+			GL32.glPolygonMode(GL32.GL_FRONT_AND_BACK, GL32.GL_FILL);
+			GLMC.enableFaceCulling();
+		}
+		
+	}
+	
+	/**
+	 * the MVM offset is needed so LODs can be rendered anywhere in the MC world
+	 * without running into floating point percision loss.
+	 */
+	private void setShaderProgramMvmOffset(DhBlockPos pos, IDhApiShaderProgram shaderProgram, RenderParams renderEventParam) throws IllegalStateException
+	{
+		Vec3d camPos = renderEventParam.exactCameraPosition;
+		Vec3f modelPos = new Vec3f(
+				(float) (pos.getX() - camPos.x),
+				(float) (pos.getY() - camPos.y),
+				(float) (pos.getZ() - camPos.z));
+		
+		shaderProgram.bind();
+		shaderProgram.setModelOffsetPos(modelPos);
+		
+		ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeBufferRenderEvent.class, new DhApiBeforeBufferRenderEvent.EventParam(renderEventParam, modelPos));
+	}
+	
+	
+	
+	//===============//
 	// API functions //
 	//===============//
 	
-	/** Returns -1 if no frame buffer has been bound yet */
+	/** @return -1 if no frame buffer has been bound yet */
 	public int getActiveFramebufferId() { return this.activeFramebufferId; }
 	
-	/** Returns -1 if no texture has been bound yet */
+	/** @return -1 if no texture has been bound yet */
 	public int getActiveColorTextureId() { return this.activeColorTextureId; }
 	
-	/**
-	 * FIXME it's possible for this to return an invalid texture ID if the renderer is being re-built at the same time 
-	 * Returns -1 if no texture has been bound yet 
-	 */
+	/** @return -1 if no texture has been bound yet */
 	public int getActiveDepthTextureId() { return this.activeDepthTextureId; }
 	
 	

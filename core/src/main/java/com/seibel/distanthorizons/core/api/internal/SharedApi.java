@@ -153,12 +153,14 @@ public class SharedApi
 	
 	@Nullable
 	public static AbstractDhWorld getAbstractDhWorld() { return currentWorld; }
-	/** returns null if the {@link SharedApi#currentWorld} isn't a {@link DhClientServerWorld} */
-	public static DhClientServerWorld getDhClientServerWorld() { return (currentWorld instanceof DhClientServerWorld) ? (DhClientServerWorld) currentWorld : null; }
+	
 	/** returns null if the {@link SharedApi#currentWorld} isn't a {@link DhClientWorld} or {@link DhClientServerWorld} */
-	public static IDhClientWorld getIDhClientWorld() { return (currentWorld instanceof IDhClientWorld) ? (IDhClientWorld) currentWorld : null; }
+	@Nullable
+	public static IDhClientWorld tryGetDhClientWorld() { return (currentWorld instanceof IDhClientWorld) ? (IDhClientWorld) currentWorld : null; }
+	
 	/** returns null if the {@link SharedApi#currentWorld} isn't a {@link DhServerWorld} or {@link DhClientServerWorld} */
-	public static IDhServerWorld getIDhServerWorld() { return (currentWorld instanceof IDhServerWorld) ? (IDhServerWorld) currentWorld : null; }
+	@Nullable
+	public static IDhServerWorld tryGetDhServerWorld() { return (currentWorld instanceof IDhServerWorld) ? (IDhServerWorld) currentWorld : null; }
 	
 	
 	

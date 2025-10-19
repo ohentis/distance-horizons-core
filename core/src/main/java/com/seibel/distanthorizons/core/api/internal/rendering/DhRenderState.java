@@ -9,7 +9,7 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapp
  * 
  * @see ClientApi
  */
-public class RenderState
+public class DhRenderState
 {
 	public Mat4f mcModelViewMatrix = null;
 	public Mat4f mcProjectionMatrix = null;

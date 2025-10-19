@@ -24,10 +24,9 @@ import com.seibel.distanthorizons.api.interfaces.override.rendering.IDhApiCullin
 import com.seibel.distanthorizons.api.interfaces.override.rendering.IDhApiShadowCullingFrustum;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
 import com.seibel.distanthorizons.core.config.Config;
-import com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.ColumnRenderBuffer;
+import com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.LodBufferContainer;
 import com.seibel.distanthorizons.core.dependencyInjection.ModAccessorInjector;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
-import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.logging.DhLogger;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
@@ -35,8 +34,7 @@ import com.seibel.distanthorizons.core.pos.DhLodPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.pos.Pos2D;
 import com.seibel.distanthorizons.core.render.renderer.LodRenderer;
-import com.seibel.distanthorizons.core.util.LodUtil;
-import com.seibel.distanthorizons.core.util.objects.RollingAverage;
+import com.seibel.distanthorizons.core.render.renderer.RenderParams;
 import com.seibel.distanthorizons.core.util.objects.SortedArraySet;
 import com.seibel.distanthorizons.core.util.objects.quadTree.QuadNode;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftGLWrapper;
@@ -46,20 +44,15 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapp
 import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IOverrideInjector;
 import com.seibel.distanthorizons.core.util.math.Mat4f;
 import com.seibel.distanthorizons.core.util.math.Vec3d;
-import com.seibel.distanthorizons.core.util.math.Vec3f;
-import com.seibel.distanthorizons.core.logging.DhLogger;
+import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fc;
-import org.lwjgl.opengl.GL32;
 
 import java.util.Comparator;
 import java.util.Iterator;
-import java.util.ListIterator;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * This object tells the {@link LodRenderer} what buffers to render
- * TODO rename this class, maybe RenderBufferOrganizer or something more specific?
  */
 public class RenderBufferHandler implements AutoCloseable
 {
@@ -74,7 +67,8 @@ public class RenderBufferHandler implements AutoCloseable
 	public final LodQuadTree lodQuadTree;
 	
 	// TODO: Make sorting go into the update loop instead of the render loop as it doesn't need to be done every frame
-	private SortedArraySet<LoadedRenderBuffer> loadedNearToFarBuffers = null;
+	@Nullable
+	private SortedArraySet<LodBufferContainer> loadedNearToFarBuffers = null;
 	
 	private int visibleBufferCount;
 	private int culledBufferCount;
@@ -113,71 +107,14 @@ public class RenderBufferHandler implements AutoCloseable
 	
 	/**
 	 * The following buildRenderList sorting method is based on the following reddit post: <br>
-	 * <a href="https://www.reddit.com/r/VoxelGameDev/comments/a0l8zc/correct_depthordering_for_translucent_discrete/">correct_depth_ordering_for_translucent_discrete</a> <br><br>
-	 *
-	 * TODO: This might get locked by update() causing move() call. Is there a way to avoid this?
-	 *       Maybe dupe the base list and use atomic swap on render? Or is this not worth it?
+	 * <a href="https://www.reddit.com/r/VoxelGameDev/comments/a0l8zc/correct_depthordering_for_translucent_discrete/">correct_depth_ordering_for_translucent_discrete</a>
 	 */
-	public void buildRenderListAndUpdateSections(IClientLevelWrapper clientLevelWrapper, DhApiRenderParam renderEventParam, Vec3f lookForwardVector)
+	public void buildRenderList(RenderParams renderParams)
 	{
-		EDhDirection[] axisDirections = new EDhDirection[3];
-		
-		// Do the axis that are the longest first (i.e. the largest absolute value of the lookForwardVector),
-		// with the sign being the opposite of the respective lookForwardVector component's sign
-		float absX = Math.abs(lookForwardVector.x);
-		float absY = Math.abs(lookForwardVector.y);
-		float absZ = Math.abs(lookForwardVector.z);
-		EDhDirection xDir = lookForwardVector.x < 0 ? EDhDirection.EAST : EDhDirection.WEST;
-		EDhDirection yDir = lookForwardVector.y < 0 ? EDhDirection.UP : EDhDirection.DOWN;
-		EDhDirection zDir = lookForwardVector.z < 0 ? EDhDirection.SOUTH : EDhDirection.NORTH;
-		
-		if (absX >= absY && absX >= absZ)
-		{
-			axisDirections[0] = xDir;
-			if (absY >= absZ)
-			{
-				axisDirections[1] = yDir;
-				axisDirections[2] = zDir;
-			}
-			else
-			{
-				axisDirections[1] = zDir;
-				axisDirections[2] = yDir;
-			}
-		}
-		else if (absY >= absX && absY >= absZ)
-		{
-			axisDirections[0] = yDir;
-			if (absX >= absZ)
-			{
-				axisDirections[1] = xDir;
-				axisDirections[2] = zDir;
-			}
-			else
-			{
-				axisDirections[1] = zDir;
-				axisDirections[2] = xDir;
-			}
-		}
-		else
-		{
-			axisDirections[0] = zDir;
-			if (absX >= absY)
-			{
-				axisDirections[1] = xDir;
-				axisDirections[2] = yDir;
-			}
-			else
-			{
-				axisDirections[1] = yDir;
-				axisDirections[2] = xDir;
-			}
-		}
-		
 		Pos2D centerPos = this.lodQuadTree.getCenterBlockPos().toPos2D();
 		
 		// Now that we have the axis directions, we can sort the render list
-		Comparator<LoadedRenderBuffer> farToNearComparator = (loadedBufferA, loadedBufferB) ->
+		Comparator<LodBufferContainer> farToNearComparator = (loadedBufferA, loadedBufferB) ->
 		{
 			Pos2D aPos = DhSectionPos.getCenterBlockPos(loadedBufferA.pos).toPos2D();
 			Pos2D bPos = DhSectionPos.getCenterBlockPos(loadedBufferB.pos).toPos2D();
@@ -186,7 +123,9 @@ public class RenderBufferHandler implements AutoCloseable
 			int bManhattanDistance = bPos.manhattanDist(centerPos);
 			return bManhattanDistance - aManhattanDistance;
 		};
-		this.loadedNearToFarBuffers = new SortedArraySet<>((a, b) -> -farToNearComparator.compare(a, b)); // TODO is the comparator named wrong?
+		
+		// TODO is the comparator named wrong?
+		this.loadedNearToFarBuffers = new SortedArraySet<>((a, b) -> -farToNearComparator.compare(a, b));
 		
 		
 		
@@ -213,17 +152,20 @@ public class RenderBufferHandler implements AutoCloseable
 		// update the frustum if necessary
 		if (enableFrustumCulling)
 		{
-			int worldMinY = clientLevelWrapper.getMinHeight();
-			int worldHeight = clientLevelWrapper.getMaxHeight();
+			int worldMinY = renderParams.clientLevelWrapper.getMinHeight();
+			int worldHeight = renderParams.clientLevelWrapper.getMaxHeight();
 			
 			Vec3d cameraPos = MC_RENDER.getCameraExactPosition();
 			
 			Matrix4fc matWorldView = new Matrix4f()
-					.setTransposed(renderEventParam.mcModelViewMatrix.getValuesAsArray())
-					.translate(-(float) cameraPos.x, -(float) cameraPos.y, -(float) cameraPos.z);
+					.setTransposed(renderParams.mcModelViewMatrix.getValuesAsArray())
+					.translate(
+							-(float) cameraPos.x, 
+							-(float) cameraPos.y, 
+							-(float) cameraPos.z);
 			
 			Matrix4fc matWorldViewProjection = new Matrix4f()
-					.setTransposed(renderEventParam.dhProjectionMatrix.getValuesAsArray())
+					.setTransposed(renderParams.dhProjectionMatrix.getValuesAsArray())
 					.mul(matWorldView);
 			
 			frustum.update(worldMinY, worldMinY + worldHeight, new Mat4f(matWorldViewProjection));
@@ -308,14 +250,14 @@ public class RenderBufferHandler implements AutoCloseable
 			
 			try
 			{
-				ColumnRenderBuffer buffer = renderSection.renderBuffer;
-				if (buffer == null 
+				LodBufferContainer bufferContainer = renderSection.bufferContainer;
+				if (bufferContainer == null 
 					|| !renderSection.getRenderingEnabled())
 				{
 					continue;
 				}
 				
-				this.loadedNearToFarBuffers.add(new LoadedRenderBuffer(buffer, sectionPos));
+				this.loadedNearToFarBuffers.add(bufferContainer);
 			}
 			catch (Exception e)
 			{
@@ -339,71 +281,7 @@ public class RenderBufferHandler implements AutoCloseable
 	// render methods //
 	//================//
 	
-	public void renderOpaque(LodRenderer renderContext,DhApiRenderParam renderEventParam)
-	{ this.renderPass(renderContext, renderEventParam, true); }
-	public void renderTransparent(LodRenderer renderContext, DhApiRenderParam renderEventParam)
-	{ this.renderPass(renderContext, renderEventParam, false); }
-	
-	private void renderPass(LodRenderer renderContext, DhApiRenderParam renderEventParam, boolean opaquePass)
-	{
-		//=======================//
-		// debug wireframe setup //
-		//=======================//
-		
-		// TODO move this logic into LodRenderer so all the GL states can be handled there
-		boolean renderWireframe = Config.Client.Advanced.Debugging.renderWireframe.get();
-		if (renderWireframe)
-		{
-			GL32.glPolygonMode(GL32.GL_FRONT_AND_BACK, GL32.GL_LINE);
-			GLMC.disableFaceCulling();
-		}
-		else
-		{
-			GL32.glPolygonMode(GL32.GL_FRONT_AND_BACK, GL32.GL_FILL);
-			GLMC.enableFaceCulling();
-		}
-		
-		
-		//===========//
-		// rendering //
-		//===========//
-		
-		if (opaquePass)
-		{
-			// TODO why can these sometimes be null when teleporting between multiverses
-			if (this.loadedNearToFarBuffers != null)
-			{
-				this.loadedNearToFarBuffers.forEach(loadedBuffer -> loadedBuffer.buffer.renderOpaque(renderContext, renderEventParam));
-			}
-		}
-		else
-		{
-			// TODO why can these sometimes be null when teleporting between multiverses
-			if (this.loadedNearToFarBuffers != null)
-			{
-				ListIterator<LoadedRenderBuffer> iter = this.loadedNearToFarBuffers.listIterator(this.loadedNearToFarBuffers.size());
-				while (iter.hasPrevious())
-				{
-					LoadedRenderBuffer loadedBuffer = iter.previous();
-					loadedBuffer.buffer.renderTransparent(renderContext, renderEventParam);
-				}
-			}
-		}
-		
-		
-		
-		//=========================//
-		// debug wireframe cleanup //
-		//=========================//
-		
-		if (renderWireframe)
-		{
-			// default back to GL_FILL since all other rendering uses it 
-			GL32.glPolygonMode(GL32.GL_FRONT_AND_BACK, GL32.GL_FILL);
-			GLMC.enableFaceCulling();
-		}
-		
-	}
+	public SortedArraySet<LodBufferContainer> getColumnRenderBuffers() { return this.loadedNearToFarBuffers; }
 	
 	
 	
@@ -446,22 +324,5 @@ public class RenderBufferHandler implements AutoCloseable
 	public void close() { this.lodQuadTree.close(); }
 	
 	
-	
-	//================//
-	// helper classes //
-	//================//
-	
-	private static class LoadedRenderBuffer
-	{
-		public final ColumnRenderBuffer buffer;
-		public final long pos;
-		
-		LoadedRenderBuffer(ColumnRenderBuffer buffer, long pos)
-		{
-			this.buffer = buffer;
-			this.pos = pos;
-		}
-		
-	}
 	
 }

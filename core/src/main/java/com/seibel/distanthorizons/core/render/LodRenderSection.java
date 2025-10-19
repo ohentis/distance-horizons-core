@@ -39,7 +39,7 @@ import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.render.glObject.GLProxy;
 import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
-import com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.ColumnRenderBuffer;
+import com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.LodBufferContainer;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.render.renderer.generic.BeaconRenderHandler;
 import com.seibel.distanthorizons.core.sql.dto.BeaconBeamDTO;
@@ -50,7 +50,6 @@ import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
-import com.seibel.distanthorizons.core.logging.DhLogger;
 import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.WillNotClose;
@@ -97,7 +96,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	private boolean renderingEnabled = false;
 	
 	/** this reference is necessary so we can determine what VBO to render */
-	public ColumnRenderBuffer renderBuffer; 
+	public LodBufferContainer bufferContainer; 
 	
 	
 	/** 
@@ -119,7 +118,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	 * Separate from {@link LodRenderSection#getAndBuildRenderDataFuture} because they run on
 	 * different threads (buffer uploading is on the MC render thread) and need to be canceled separately.
 	 */
-	private CompletableFuture<ColumnRenderBuffer> bufferUploadFuture = null;
+	private CompletableFuture<LodBufferContainer> bufferUploadFuture = null;
 
 	/** 
 	 * should be an empty array if no positions need to be generated
@@ -400,15 +399,15 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		this.bufferUploadFuture.thenAccept((buffer) ->
 		{
 			// needed to clean up the old data
-			ColumnRenderBuffer previousBuffer = this.renderBuffer;
+			LodBufferContainer previousContainer = this.bufferContainer;
 			
 			// upload complete
-			this.renderBuffer = buffer.buffersUploaded ? buffer : null;
+			this.bufferContainer = buffer.buffersUploaded ? buffer : null;
 			this.getAndBuildRenderDataFuture = null;
 			
-			if (previousBuffer != null)
+			if (previousContainer != null)
 			{
-				previousBuffer.close();
+				previousContainer.close();
 			}
 		});
 	}
@@ -419,7 +418,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	// getters and properties //
 	//========================//
 	
-	public boolean canRender() { return this.renderBuffer != null; }
+	public boolean canRender() { return this.bufferContainer != null; }
 	
 	public boolean getRenderingEnabled() { return this.renderingEnabled; }
 	/**
@@ -683,9 +682,9 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		
 		this.stopRenderingBeacons();
 		
-		if (this.renderBuffer != null)
+		if (this.bufferContainer != null)
 		{
-			this.renderBuffer.close();
+			this.bufferContainer.close();
 		}
 		
 		// removes any in-progress futures since they aren't needed any more
@@ -705,7 +704,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 			}
 		}
 		
-		CompletableFuture<ColumnRenderBuffer> uploadFuture = this.bufferUploadFuture;
+		CompletableFuture<LodBufferContainer> uploadFuture = this.bufferUploadFuture;
 		if (uploadFuture != null)
 		{
 			uploadFuture.cancel(true);

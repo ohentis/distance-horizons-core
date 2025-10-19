@@ -280,7 +280,7 @@ public class LodQuadBuilder
 				// create a new buffer
 				if (buffer == null || !buffer.hasRemaining())
 				{
-					buffer = MemoryUtil.memAlloc(ColumnRenderBuffer.FULL_SIZED_BUFFER);
+					buffer = MemoryUtil.memAlloc(LodBufferContainer.FULL_SIZED_BUFFER);
 					byteBufferList.add(buffer);
 				}
 				
@@ -451,7 +451,7 @@ public class LodQuadBuilder
 	}
 	
 	/** Returns how many GpuBuffers will be needed to render opaque quads in this builder. */
-	public int getCurrentNeededOpaqueVertexBufferCount() { return MathUtil.ceilDiv(this.getCurrentOpaqueQuadsCount(), ColumnRenderBuffer.MAX_QUADS_PER_BUFFER); }
+	public int getCurrentNeededOpaqueVertexBufferCount() { return MathUtil.ceilDiv(this.getCurrentOpaqueQuadsCount(), LodBufferContainer.MAX_QUADS_PER_BUFFER); }
 	/** Returns how many GpuBuffers will be needed to render transparent quads in this builder. */
 	public int getCurrentNeededTransparentVertexBufferCount()
 	{
@@ -460,7 +460,7 @@ public class LodQuadBuilder
 			return 0;
 		}
 		
-		return MathUtil.ceilDiv(this.getCurrentTransparentQuadsCount(), ColumnRenderBuffer.MAX_QUADS_PER_BUFFER);
+		return MathUtil.ceilDiv(this.getCurrentTransparentQuadsCount(), LodBufferContainer.MAX_QUADS_PER_BUFFER);
 	}
 	
 }

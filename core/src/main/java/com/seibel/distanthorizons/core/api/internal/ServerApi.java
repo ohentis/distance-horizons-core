@@ -61,7 +61,7 @@ public class ServerApi
 	{
 		try
 		{
-			IDhServerWorld serverWorld = SharedApi.getIDhServerWorld();
+			IDhServerWorld serverWorld = SharedApi.tryGetDhServerWorld();
 			if (serverWorld != null)
 			{
 				serverWorld.serverTick();
@@ -152,7 +152,7 @@ public class ServerApi
 			return;
 		}
 		
-		IDhServerWorld serverWorld = SharedApi.getIDhServerWorld();
+		IDhServerWorld serverWorld = SharedApi.tryGetDhServerWorld();
 		LOGGER.info("Player ["+player.getName()+"] joined.");
 		if (serverWorld != null)
 		{
@@ -166,7 +166,7 @@ public class ServerApi
 			return;
 		}
 		
-		IDhServerWorld serverWorld = SharedApi.getIDhServerWorld();
+		IDhServerWorld serverWorld = SharedApi.tryGetDhServerWorld();
 		LOGGER.info("Player ["+player.getName()+"] disconnected.");
 		if (serverWorld != null)
 		{
@@ -180,7 +180,7 @@ public class ServerApi
 			return;
 		}
 		
-		IDhServerWorld serverWorld = SharedApi.getIDhServerWorld();
+		IDhServerWorld serverWorld = SharedApi.tryGetDhServerWorld();
 		LOGGER.info("Player ["+player.getName()+"] changed level: ["+originLevel.getKeyedLevelDimensionName()+"] -> ["+destinationLevel.getKeyedLevelDimensionName()+"].");
 		if (serverWorld != null)
 		{
@@ -200,7 +200,7 @@ public class ServerApi
 			return;
 		}
 		
-		IDhServerWorld serverWorld = SharedApi.getIDhServerWorld();
+		IDhServerWorld serverWorld = SharedApi.tryGetDhServerWorld();
 		if (serverWorld != null)
 		{
 			serverWorld.getServerPlayerStateManager().handlePluginMessage(player, message);

@@ -19,6 +19,7 @@
 
 package com.seibel.distanthorizons.core.logging.f3;
 
+import com.seibel.distanthorizons.core.api.internal.ClientApi;
 import com.seibel.distanthorizons.core.api.internal.SharedApi;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
@@ -109,6 +110,13 @@ public class F3Screen
 		{
 			messageList.add("Build: " + StringUtil.shortenString(ModJarInfo.Git_Commit, 8) + " (" + ModJarInfo.Git_Branch + ")");
 		}
+		
+		// render validation error
+		if (ClientApi.INSTANCE.lastRenderParamValidationMessage != null)
+		{
+			messageList.add("Render Validation Err: " + ClientApi.INSTANCE.lastRenderParamValidationMessage);
+		}
+		
 		
 		// player pos
 		if (Config.Client.Advanced.Debugging.F3Screen.showPlayerPos.get())

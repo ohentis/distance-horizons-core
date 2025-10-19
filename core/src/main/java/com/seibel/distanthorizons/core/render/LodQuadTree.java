@@ -24,7 +24,7 @@ import com.google.common.cache.CacheBuilder;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.render.CachedColumnRenderSource;
 import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSource;
-import com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.ColumnRenderBuffer;
+import com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.LodBufferContainer;
 import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.file.fullDatafile.FullDataSourceProviderV2;
 import com.seibel.distanthorizons.core.level.IDhClientLevel;
@@ -44,7 +44,6 @@ import com.seibel.distanthorizons.core.util.objects.quadTree.QuadTree;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.coreapi.util.MathUtil;
 import it.unimi.dsi.fastutil.longs.LongIterator;
-import com.seibel.distanthorizons.core.logging.DhLogger;
 import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.WillNotClose;
@@ -353,11 +352,11 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 								// onRenderDisabled doesn't need to be 
 								// called since these sections shouldn't be loaded
 								parentRenderSection.setRenderingEnabled(false);
-								ColumnRenderBuffer buffer = parentRenderSection.renderBuffer;
+								LodBufferContainer buffer = parentRenderSection.bufferContainer;
 								if (buffer != null)
 								{
 									buffer.close();
-									parentRenderSection.renderBuffer = null;
+									parentRenderSection.bufferContainer = null;
 								}
 							}
 						}
@@ -398,7 +397,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 			
 			// prepare this section for rendering
 			if (!renderSection.gpuUploadInProgress()
-				&& renderSection.renderBuffer == null
+				&& renderSection.bufferContainer == null
 				// TODO this is commented out since some users reported LODs refusing to
 				//  load at their expected higher-detail levels
 				// this check is specifically for N-sized world generators where the higher quality
@@ -518,7 +517,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 		for (int i = 0; i < loadSectionList.size(); i++)
 		{
 			LodRenderSection renderSection = loadSectionList.get(i);
-			if (!renderSection.gpuUploadInProgress() && renderSection.renderBuffer == null)
+			if (!renderSection.gpuUploadInProgress() && renderSection.bufferContainer == null)
 			{
 				renderSection.uploadRenderDataToGpuAsync();
 			}
@@ -768,14 +767,14 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 				{
 					color = Color.ORANGE;
 				}
-				else if (renderSection.renderBuffer == null)
+				else if (renderSection.bufferContainer == null)
 				{
 					// uploaded but the buffer is missing
 					color = Color.PINK;
 				}
-				else if (renderSection.renderBuffer.hasNonNullVbos())
+				else if (renderSection.bufferContainer.hasNonNullVbos())
 				{
-					if (renderSection.renderBuffer.vboBufferCount() != 0)
+					if (renderSection.bufferContainer.vboBufferCount() != 0)
 					{
 						color = Color.GREEN;
 					}

@@ -26,6 +26,7 @@ import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IBindab
 import com.seibel.distanthorizons.core.util.math.Vec3d;
 import com.seibel.distanthorizons.core.util.math.Vec3f;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -79,7 +80,7 @@ public interface IMinecraftRenderWrapper extends IBindable
 	
 	/** Can return null if the given level hasn't had a light map assigned to it */
 	@Nullable
-	ILightMapWrapper getLightmapWrapper(ILevelWrapper level);
+	ILightMapWrapper getLightmapWrapper(@NotNull ILevelWrapper level);
 	
 	
 }

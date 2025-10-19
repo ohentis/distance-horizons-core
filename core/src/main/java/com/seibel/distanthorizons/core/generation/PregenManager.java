@@ -38,7 +38,7 @@ public class PregenManager
 	)
 	{
 		PregenState pregenState = new PregenState(
-				(GeneratedFullDataSourceProvider) SharedApi.getIDhServerWorld().getLevel(levelWrapper).getFullDataProvider(),
+				(GeneratedFullDataSourceProvider) SharedApi.tryGetDhServerWorld().getLevel(levelWrapper).getFullDataProvider(),
 				DhSectionPos.convertToDetailLevel(
 						DhSectionPos.encode(LodUtil.BLOCK_DETAIL_LEVEL, origin.x, origin.z),
 						DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL

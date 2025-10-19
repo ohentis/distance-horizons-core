@@ -38,7 +38,7 @@ public class DhApiRenderParam implements IDhApiEventParam
 	/** Indicates how far into this tick the frame is. */
 	public final float partialTicks;
 	
-	/** 
+	/**
 	 * Indicates DH's near clip plane, measured in blocks. 
 	 * Note: this may change based on time, player speed, and other factors. 
 	 */
@@ -67,7 +67,6 @@ public class DhApiRenderParam implements IDhApiEventParam
 	// constructors //
 	//==============//
 	
-	
 	public DhApiRenderParam(DhApiRenderParam parent)
 	{
 		this(
@@ -86,7 +85,7 @@ public class DhApiRenderParam implements IDhApiEventParam
 			DhApiMat4f newMcProjectionMatrix, DhApiMat4f newMcModelViewMatrix,
 			DhApiMat4f newDhProjectionMatrix, DhApiMat4f newDhModelViewMatrix,
 			int worldYOffset
-			)
+		)
 	{
 		this.renderPass = renderPass;
 		
@@ -111,10 +110,9 @@ public class DhApiRenderParam implements IDhApiEventParam
 	// base overrides //
 	//================//
 	
-	@Override 
-	public DhApiRenderParam copy()
-	{
-		return new DhApiRenderParam(this); 
-	}
+	@Override
+	public DhApiRenderParam copy() { return new DhApiRenderParam(this); }
+	
+	
 	
 }

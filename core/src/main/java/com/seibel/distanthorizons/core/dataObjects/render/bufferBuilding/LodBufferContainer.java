@@ -19,13 +19,11 @@
 
 package com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding;
 
-import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
 import com.seibel.distanthorizons.core.logging.DhLogger;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos;
 import com.seibel.distanthorizons.core.render.glObject.GLProxy;
 import com.seibel.distanthorizons.core.render.glObject.buffer.GLVertexBuffer;
-import com.seibel.distanthorizons.core.render.renderer.LodRenderer;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.objects.StatsMap;
 import com.seibel.distanthorizons.api.enums.config.EDhApiGpuUploadMethod;
@@ -40,7 +38,7 @@ import java.util.concurrent.*;
  *
  * @see ColumnRenderBufferBuilder
  */
-public class ColumnRenderBuffer implements AutoCloseable
+public class LodBufferContainer implements AutoCloseable
 {
 	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
 	
@@ -54,13 +52,14 @@ public class ColumnRenderBuffer implements AutoCloseable
 	
 	/** the position closest to minimum X/Z infinity and the level's lowest Y */
 	public final DhBlockPos minCornerBlockPos;
+	public final long pos;
 	
 	public boolean buffersUploaded = false;
 	
-	private GLVertexBuffer[] vbos;
-	private GLVertexBuffer[] vbosTransparent;
+	public GLVertexBuffer[] vbos;
+	public GLVertexBuffer[] vbosTransparent;
 	
-	private CompletableFuture<ColumnRenderBuffer> uploadFuture = null;
+	private CompletableFuture<LodBufferContainer> uploadFuture = null;
 	
 	
 	
@@ -68,8 +67,9 @@ public class ColumnRenderBuffer implements AutoCloseable
 	// constructors //
 	//==============//
 	
-	public ColumnRenderBuffer(DhBlockPos minCornerBlockPos)
+	public LodBufferContainer(long pos, DhBlockPos minCornerBlockPos)
 	{
+		this.pos = pos;
 		this.minCornerBlockPos = minCornerBlockPos;
 		this.vbos = new GLVertexBuffer[0];
 		this.vbosTransparent = new GLVertexBuffer[0];
@@ -82,10 +82,10 @@ public class ColumnRenderBuffer implements AutoCloseable
 	//==================//
 	
 	/** Should be run on a DH thread. */
-	public synchronized CompletableFuture<ColumnRenderBuffer> makeAndUploadBuffersAsync(LodQuadBuilder builder, EDhApiGpuUploadMethod gpuUploadMethod)
+	public synchronized CompletableFuture<LodBufferContainer> makeAndUploadBuffersAsync(LodQuadBuilder builder, EDhApiGpuUploadMethod gpuUploadMethod)
 	{
 		// separate variable to prevent race condition when checking null
-		CompletableFuture<ColumnRenderBuffer> future = this.uploadFuture;
+		CompletableFuture<LodBufferContainer> future = this.uploadFuture;
 		if (future != null)
 		{
 			// upload already in process
@@ -218,69 +218,6 @@ public class ColumnRenderBuffer implements AutoCloseable
 		{
 			throw new RuntimeException("Too few vertex buffers!!");
 		}
-	}
-	
-	
-	
-	//========//
-	// render //
-	//========//
-	
-	/** @return true if something was rendered, false otherwise */
-	public boolean renderOpaque(LodRenderer renderContext, DhApiRenderParam renderEventParam)
-	{
-		boolean hasRendered = false;
-		renderContext.setModelViewMatrixOffset(this.minCornerBlockPos, renderEventParam);
-		for (GLVertexBuffer vbo : this.vbos)
-		{
-			if (vbo == null)
-			{
-				continue;
-			}
-			
-			if (vbo.getVertexCount() == 0)
-			{
-				continue;
-			}
-			
-			hasRendered = true;
-			renderContext.drawVbo(vbo, this);
-		}
-		return hasRendered;
-	}
-	
-	/** @return true if something was rendered, false otherwise */
-	public boolean renderTransparent(LodRenderer renderContext, DhApiRenderParam renderEventParam)
-	{
-		boolean hasRendered = false;
-		
-		try
-		{
-			// can throw an IllegalStateException if the GL program was freed before it should've been
-			renderContext.setModelViewMatrixOffset(this.minCornerBlockPos, renderEventParam);
-			
-			for (GLVertexBuffer vbo : this.vbosTransparent)
-			{
-				if (vbo == null)
-				{
-					continue;
-				}
-				
-				if (vbo.getVertexCount() == 0)
-				{
-					continue;
-				}
-				
-				hasRendered = true;
-				renderContext.drawVbo(vbo, this);
-			}
-		}
-		catch (IllegalStateException e)
-		{
-			LOGGER.error("renderContext program doesn't exist for pos: "+this.minCornerBlockPos, e);
-		}
-		
-		return hasRendered;
 	}
 	
 	

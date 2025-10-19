@@ -23,8 +23,7 @@ import com.seibel.distanthorizons.api.DhApi;
 import com.seibel.distanthorizons.api.enums.config.EDhApiMcRenderingFadeMode;
 import com.seibel.distanthorizons.api.enums.rendering.EDhApiRenderPass;
 import com.seibel.distanthorizons.api.methods.events.abstractEvents.*;
-import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
-import com.seibel.distanthorizons.core.api.internal.rendering.RenderState;
+import com.seibel.distanthorizons.core.api.internal.rendering.DhRenderState;
 import com.seibel.distanthorizons.core.file.structure.ClientOnlySaveStructure;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.network.messages.MessageRegistry;
@@ -32,11 +31,11 @@ import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.render.DhApiRenderProxy;
 import com.seibel.distanthorizons.core.render.renderer.FadeRenderer;
 import com.seibel.distanthorizons.core.render.renderer.LodRenderer;
+import com.seibel.distanthorizons.core.render.renderer.RenderParams;
 import com.seibel.distanthorizons.core.util.TimerUtil;
 import com.seibel.distanthorizons.core.util.objects.Pair;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
-import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.network.messages.AbstractNetworkMessage;
 import com.seibel.distanthorizons.core.network.session.NetworkSession;
@@ -45,10 +44,8 @@ import com.seibel.distanthorizons.api.enums.rendering.EDhApiDebugRendering;
 import com.seibel.distanthorizons.api.enums.rendering.EDhApiRendererMode;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.level.IServerKeyedClientLevel;
-import com.seibel.distanthorizons.core.util.math.Mat4f;
 import com.seibel.distanthorizons.core.render.glObject.GLProxy;
 import com.seibel.distanthorizons.core.render.renderer.TestRenderer;
-import com.seibel.distanthorizons.core.util.RenderUtil;
 import com.seibel.distanthorizons.core.world.AbstractDhWorld;
 import com.seibel.distanthorizons.core.world.DhClientServerWorld;
 import com.seibel.distanthorizons.core.world.DhClientWorld;
@@ -57,15 +54,14 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
-import org.apache.logging.log4j.LogManager;
 import com.seibel.distanthorizons.core.logging.DhLogger;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
 
 import java.io.File;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
 
 /**
  * This holds the methods that should be called
@@ -95,22 +91,19 @@ public class ClientApi
 	 * 
 	 * Only downside is making sure each variable is populated before rendering.
 	 */
-	public static final RenderState RENDER_STATE = new RenderState();
+	public static final DhRenderState RENDER_STATE = new DhRenderState();
 	
 	
 	private boolean isDevBuildMessagePrinted = false;
 	private boolean lowMemoryWarningPrinted = false;
 	private boolean highVanillaRenderDistanceWarningPrinted = false;
 	
-	/** when the last static */
 	private long lastStaticWarningMessageSentMsTime = 0L;
 	
 	private final Queue<String> chatMessageQueueForNextFrame = new LinkedBlockingQueue<>();
 	private final Queue<String> overlayMessageQueueForNextFrame = new LinkedBlockingQueue<>();
 	
 	public boolean rendererDisabledBecauseOfExceptions = false;
-	
-	private long lastFlushNanoTime = 0;
 	
 	private final ClientPluginChannelApi pluginChannelApi = new ClientPluginChannelApi(this::clientLevelLoadEvent, this::clientLevelUnloadEvent);
 	
@@ -123,8 +116,8 @@ public class ClientApi
 	/** Holds any chunks that were loaded before the {@link ClientApi#clientLevelLoadEvent(IClientLevelWrapper)} was fired. */
 	public final HashMap<Pair<IClientLevelWrapper, DhChunkPos>, IChunkWrapper> waitingChunkByClientLevelAndPos = new HashMap<>();
 	
-	/** re-set every frame during the opaque rendering stage */
-	private boolean renderingCancelledForThisFrame;
+	@Nullable
+	public String lastRenderParamValidationMessage = null;
 	
 	
 	
@@ -333,6 +326,7 @@ public class ClientApi
 	// clint tick //
 	//============//
 	
+	@Deprecated
 	public void clientTickEvent()
 	{
 		IProfilerWrapper profiler = MC_CLIENT.getProfiler();
@@ -340,7 +334,7 @@ public class ClientApi
 		
 		try
 		{
-			IDhClientWorld clientWorld = SharedApi.getIDhClientWorld();
+			IDhClientWorld clientWorld = SharedApi.tryGetDhClientWorld();
 			if (clientWorld != null)
 			{
 				clientWorld.clientTick();
@@ -383,9 +377,9 @@ public class ClientApi
 	
 	
 	
-	//===========//
-	// rendering //
-	//===========//
+	//===============//
+	// LOD rendering //
+	//===============//
 	
 	/** Should be called before {@link ClientApi#renderDeferredLodsForShaders} */
 	public void renderLods() { this.renderLodLayer(false); }
@@ -398,18 +392,9 @@ public class ClientApi
 	
 	private void renderLodLayer(boolean renderingDeferredLayer)
 	{
-		// A global render state variable is used since MC has split up their
-		// render prep and actual rendering into different threads/methods
-		// this is annoying since it's possible to start a render with only
-		// partially complete info, but there isn't a better option at the moment
-		IClientLevelWrapper levelWrapper = RENDER_STATE.clientLevelWrapper;
-		Mat4f mcModelViewMatrix = RENDER_STATE.mcModelViewMatrix;
-		Mat4f mcProjectionMatrix = RENDER_STATE.mcProjectionMatrix;
-		float partialTicks = RENDER_STATE.frameTime;
-		
-		
-		
+		//=========//
 		// logging //
+		//=========//
 		
 		this.sendQueuedChatMessages();
 		
@@ -419,7 +404,33 @@ public class ClientApi
 		
 		
 		
-		// render parameter setup //
+		//=====================//
+		// render thread tasks //
+		//=====================//
+		
+		// only run these tasks once per frame
+		if (!renderingDeferredLayer)
+		{
+			profiler.push("DH render thread tasks");
+			
+			try
+			{
+				// these tasks always need to be called, regardless of whether the renderer is enabled or not to prevent memory leaks
+				GLProxy.getInstance().runRenderThreadTasks();
+			}
+			catch (Exception e)
+			{
+				LOGGER.error("Unexpected issue running render thread tasks, error: [" + e.getMessage() + "].", e);
+			}
+			
+			profiler.pop();
+		}
+		
+		
+		
+		//=================//
+		// parameter setup //
+		//=================//
 		
 		EDhApiRenderPass renderPass;
 		if (DhApiRenderProxy.INSTANCE.getDeferTransparentRendering())
@@ -438,86 +449,67 @@ public class ClientApi
 			renderPass = EDhApiRenderPass.OPAQUE_AND_TRANSPARENT;
 		}
 		
-		DhApiRenderParam renderEventParam =
-				new DhApiRenderParam(
-						renderPass,
-						partialTicks,
-						RenderUtil.getNearClipPlaneDistanceInBlocks(partialTicks), RenderUtil.getFarClipPlaneDistanceInBlocks(),
-						mcProjectionMatrix, mcModelViewMatrix,
-						RenderUtil.createLodProjectionMatrix(mcProjectionMatrix, partialTicks), RenderUtil.createLodModelViewMatrix(mcModelViewMatrix),
-						levelWrapper.getMinHeight()
-				);
+		// A global render state variable is used since MC has split up their
+		// render prep and actual rendering into different threads/methods
+		// this is annoying since it's possible to start a render with only
+		// partially complete info, but there isn't a better option at the moment
+		RenderParams renderParams =
+			new RenderParams(
+				renderPass,
+				RENDER_STATE.frameTime,
+				RENDER_STATE.mcProjectionMatrix, RENDER_STATE.mcModelViewMatrix,
+				RENDER_STATE.clientLevelWrapper
+			);
 		
 		
 		
-		//Mat4f mcCombined = mcModelViewMatrix.copy();
-		//mcCombined.multiply(mcProjectionMatrix);
-		//
-		//com.seibel.distanthorizons.api.objects.math.DhApiMat4f dhCombined = renderEventParam.dhModelViewMatrix.copy();
-		//dhCombined.multiply(renderEventParam.dhProjectionMatrix);
-		//
-		//LOGGER.info("\n\n" +
-		//		"API\n" +
-		//		"Mc MVM: \n" + mcModelViewMatrix.toString() + "\n" +
-		//		"Mc Proj: \n" + mcProjectionMatrix + "\n" +
-		//		"Mc Combined:\n" + mcCombined.toString() + "\n" +
-		//		"\n" +
-		//		"DH MVM: \n" + renderEventParam.dhModelViewMatrix.toString() + "\n" +
-		//		"DH Proj: \n" + renderEventParam.dhProjectionMatrix + "\n" +
-		//		"DH Combined:\n" + mcCombined.toString()
-		//);
+		//============//
+		// validation //
+		//============//
+		
+		// TODO write this message to the F3 menu so people can see when a different mod screws with the lightmap
+		String validationMessage = renderParams.getValidationErrorMessage();
+		if (validationMessage != null)
+		{
+			this.lastRenderParamValidationMessage = validationMessage;
+			return;
+		}
+		else
+		{
+			this.lastRenderParamValidationMessage = null;
+		}
+		
+		if (this.rendererDisabledBecauseOfExceptions)
+		{
+			// re-enable rendering if the user toggles DH rendering
+			if (!Config.Client.quickEnableRendering.get())
+			{
+				LOGGER.info("DH Renderer re-enabled after exception. Some rendering issues may occur. Please reboot Minecraft if you see any rendering issues.");
+				this.rendererDisabledBecauseOfExceptions = false;
+				Config.Client.quickEnableRendering.set(true);
+			}
+			
+			return;
+		}
 		
 		
 		
-		// render validation //
+		//===========//
+		// rendering //
+		//===========//
 		
 		try
 		{
-			// TODO write this message to the F3 menu so people can see when a different mod screws with the lightmap
-			String reasonLodsCannotRender = RenderUtil.shouldLodsRender(levelWrapper, renderEventParam);
-			if (reasonLodsCannotRender != null)
-			{
-				return;
-			}
-			
-			IDhClientWorld dhClientWorld = SharedApi.getIDhClientWorld();
-			if (dhClientWorld == null)
-			{
-				return;
-			}
-			
-			IDhClientLevel level = (IDhClientLevel) dhClientWorld.getLevel(levelWrapper);
-			if (level == null)
-			{
-				return;
-			}
-			
-			
-			if (this.rendererDisabledBecauseOfExceptions)
-			{
-				// re-enable rendering if the user toggles DH rendering
-				if (!Config.Client.quickEnableRendering.get())
-				{
-					LOGGER.info("DH Renderer re-enabled after exception. Some rendering issues may occur. Please reboot Minecraft if you see any rendering issues.");
-					this.rendererDisabledBecauseOfExceptions = false;
-					Config.Client.quickEnableRendering.set(true);
-				}
-				
-				return;
-			}
-			
-			
-			
 			// render pass //
 			
 			if (!renderingDeferredLayer)
 			{
 				if (Config.Client.Advanced.Debugging.rendererMode.get() == EDhApiRendererMode.DEFAULT)
 				{
-					this.renderingCancelledForThisFrame = ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeRenderEvent.class, renderEventParam);
-					if (!this.renderingCancelledForThisFrame)
+					boolean renderingCancelledForThisFrame = ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeRenderEvent.class, renderParams);
+					if (!renderingCancelledForThisFrame)
 					{
-						LodRenderer.INSTANCE.render(level, levelWrapper, renderEventParam, profiler);
+						LodRenderer.INSTANCE.render(renderParams, profiler);
 					}
 					
 					if (!DhApi.Delayed.renderProxy.getDeferTransparentRendering())
@@ -534,10 +526,10 @@ public class ClientApi
 			}
 			else
 			{
-				boolean renderingCancelled = ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeDeferredRenderEvent.class, renderEventParam);
+				boolean renderingCancelled = ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeDeferredRenderEvent.class, renderParams);
 				if (!renderingCancelled)
 				{
-					LodRenderer.INSTANCE.renderDeferred(level, levelWrapper, renderEventParam, profiler);
+					LodRenderer.INSTANCE.renderDeferred(renderParams, profiler);
 				}
 				
 				
@@ -557,23 +549,18 @@ public class ClientApi
 			MC_CLIENT.sendChatMessage("\u00A74Toggle DH rendering via the config UI to re-activate DH rendering.");
 			MC_CLIENT.sendChatMessage("\u00A74Error: " + e);
 		}
-		finally
-		{
-			try
-			{
-				// these tasks always need to be called, regardless of whether the renderer is enabled or not to prevent memory leaks
-				GLProxy.getInstance().runRenderThreadTasks();
-			}
-			catch (Exception e)
-			{
-				LOGGER.error("Unexpected issue running render thread tasks.", e);
-			}
-			
-			
-			profiler.pop(); // end LOD
-			profiler.push("terrain"); // go back into "terrain"
-		}
+		
+		
+		
+		profiler.pop(); // end LOD
+		profiler.push("terrain"); // go back into "terrain"
 	}
+	
+	
+	
+	//================//
+	// fade rendering //
+	//================//
 	
 	/** 
 	 * The first fade pass.
@@ -616,7 +603,6 @@ public class ClientApi
 			}
 		}
 	}
-	
 	
 	
 	

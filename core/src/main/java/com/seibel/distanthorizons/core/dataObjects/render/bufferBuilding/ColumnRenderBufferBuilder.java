@@ -55,14 +55,15 @@ public class ColumnRenderBufferBuilder
 	//==============//
 	
 	/** @link adjData should be null for adjacent sections that cross detail level boundaries */
-	public static CompletableFuture<ColumnRenderBuffer> uploadBuffersAsync(
+	public static CompletableFuture<LodBufferContainer> uploadBuffersAsync(
 			IDhClientLevel clientLevel,
 			long pos,
 			LodQuadBuilder quadBuilder
 		)
 	{
-		ColumnRenderBuffer buffer = new ColumnRenderBuffer(new DhBlockPos(DhSectionPos.getMinCornerBlockX(pos), clientLevel.getLevelWrapper().getMinHeight(), DhSectionPos.getMinCornerBlockZ(pos)));
-		CompletableFuture<ColumnRenderBuffer> uploadFuture = buffer.makeAndUploadBuffersAsync(quadBuilder, GLProxy.getInstance().getGpuUploadMethod());
+		DhBlockPos minBlockPos = new DhBlockPos(DhSectionPos.getMinCornerBlockX(pos), clientLevel.getLevelWrapper().getMinHeight(), DhSectionPos.getMinCornerBlockZ(pos));
+		LodBufferContainer bufferContainer = new LodBufferContainer(pos, minBlockPos);
+		CompletableFuture<LodBufferContainer> uploadFuture = bufferContainer.makeAndUploadBuffersAsync(quadBuilder, GLProxy.getInstance().getGpuUploadMethod());
 		uploadFuture.whenComplete((uploadedBuffer, exception) -> 
 		{
 			// clean up if not uploaded

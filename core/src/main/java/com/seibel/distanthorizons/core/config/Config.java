@@ -1061,14 +1061,6 @@ public class Config
 									+ "")
 							.build();
 					
-					public static ConfigEntry<Boolean> validateBufferIdsBeforeRendering = new ConfigEntry.Builder<Boolean>()
-							.set(false)
-							.comment(""
-									+ "Massively reduces FPS. \n"
-									+ "Should only be used if mysterious EXCEPTION_ACCESS_VIOLATION crashes are happening in DH's rendering code for troubleshooting. \n"
-									+ "")
-							.build();
-					
 				}
 				
 				public static class ColumnBuilderDebugging
