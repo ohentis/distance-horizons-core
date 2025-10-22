@@ -100,7 +100,7 @@ public class FullDataPointIdMap
 		}
 		catch (IndexOutOfBoundsException e)
 		{
-			throw new IndexOutOfBoundsException("FullData ID Map out of sync for pos: "+this.pos+". ID: ["+id+"] greater than the number of known ID's: ["+this.entryList.size()+"].");
+			throw new IndexOutOfBoundsException("FullData ID Map out of sync for pos: "+DhSectionPos.toString(this.pos)+". ID: ["+id+"] greater than the number of known ID's: ["+this.entryList.size()+"].");
 		}
 		
 		return entry;

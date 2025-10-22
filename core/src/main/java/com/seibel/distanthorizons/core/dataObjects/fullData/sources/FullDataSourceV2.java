@@ -23,7 +23,9 @@ import com.seibel.distanthorizons.api.enums.config.EDhApiWorldCompressionMode;
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
 import com.seibel.distanthorizons.api.objects.data.DhApiTerrainDataPoint;
 import com.seibel.distanthorizons.api.objects.data.IDhApiFullDataSource;
+import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.FullDataPointIdMap;
+import com.seibel.distanthorizons.core.dataObjects.transformers.FullDataOcclusionCuller;
 import com.seibel.distanthorizons.core.dataObjects.transformers.LodDataBuilder;
 import com.seibel.distanthorizons.core.file.AbstractDataSourceHandler;
 import com.seibel.distanthorizons.core.file.IDataSource;
@@ -45,8 +47,8 @@ import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import com.seibel.distanthorizons.core.logging.DhLogger;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -283,12 +285,24 @@ public class FullDataSourceV2
 	
 	
 	
-	//======//
+	//=========//
 	// getters //
-	//======//
+	//=========//
 	
 	public LongArrayList get(int relX, int relZ) throws IndexOutOfBoundsException 
 	{ return this.dataPoints[relativePosToIndex(relX, relZ)]; }
+	
+	@Nullable
+	public LongArrayList tryGet(int relX, int relZ)
+	{
+		int index = tryGetRelativePosToIndex(relX, relZ);
+		if (index == -1)
+		{
+			return null;
+		}
+		
+		return this.dataPoints[index];
+	}
 	
 	/** 
 	 * returns {@link FullDataPointUtil#EMPTY_DATA_POINT} if the given {@link DhBlockPos}
@@ -435,8 +449,31 @@ public class FullDataSourceV2
 			throw new UnsupportedOperationException("Unsupported data source update. Expected input detail level of ["+(thisDetailLevel-1)+"], ["+thisDetailLevel+"], or ["+(thisDetailLevel+1)+"], received detail level ["+inputDetailLevel+"].");
 		}
 		
+		
+		
+		
+		
 		if (dataChanged)
 		{
+			EDhApiWorldCompressionMode worldCompressionMode = Config.Common.LodBuilding.worldCompression.get();
+			boolean cullHiddenBlocks = (worldCompressionMode != EDhApiWorldCompressionMode.MERGE_SAME_BLOCKS);
+			if (cullHiddenBlocks)
+			{
+				for (int x = 0; x < WIDTH; x++)
+				{
+					for (int z = 0; z < WIDTH; z++)
+					{
+						LongArrayList dataColumn = this.get(x, z);
+						if (dataColumn != null
+							&& dataColumn.size() > 1)
+						{
+							FullDataOcclusionCuller.cullHiddenDatapointsInColumn(this, x, z);
+						}
+					}
+				}
+			}
+			
+			
 			// update the hash code
 			this.generateHashCode();
 		}
@@ -1075,16 +1112,33 @@ public class FullDataSourceV2
 	/** 
 	 * Usually this should just be used internally, but there may be instances
 	 * where the raw data arrays are available without the data source object.
+	 * 	 
+	 * @return -1 if given an out-of-bounds relative position 
+	 */
+	public static int tryGetRelativePosToIndex(int relX, int relZ)
+	{
+		if (relX < 0 || relZ < 0
+				|| relX >= WIDTH || relZ >= WIDTH)
+		{
+			return -1;
+		}
+		
+		return (relX * WIDTH) + relZ;
+	}
+	
+	/** 
+	 * Usually this should just be used internally, but there may be instances
+	 * where the raw data arrays are available without the data source object.
 	 */
 	public static int relativePosToIndex(int relX, int relZ) throws IndexOutOfBoundsException
 	{ 
-		if (relX < 0 || relZ < 0 ||
-			relX > WIDTH || relZ > WIDTH)
+		int index = tryGetRelativePosToIndex(relX, relZ);
+		if (index < 0)
 		{
-			throw new IndexOutOfBoundsException("Relative data source positions must be between [0] and ["+WIDTH+"] (inclusive) the relative pos: ["+relX+","+relZ+"] is outside of those boundaries.");
+			throw new IndexOutOfBoundsException("Relative data source positions must be between [0] (inclusive) and ["+WIDTH+"] (exclusive) the relative pos: ["+relX+","+relZ+"] is outside those boundaries.");
 		}
 		
-		return (relX * WIDTH) + relZ; 
+		return index; 
 	}
 	
 	/** 
