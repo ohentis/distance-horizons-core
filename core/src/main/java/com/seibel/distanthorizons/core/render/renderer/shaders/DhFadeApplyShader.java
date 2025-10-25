@@ -48,8 +48,6 @@ public class DhFadeApplyShader extends AbstractShaderRenderer
 	
 	// uniforms
 	public int uFadeColorTextureUniform = -1;
-	public int uDhDepthTextureUniform = -1;
-	public int uMcDepthTextureUniform = -1;
 	
 	
 	
@@ -62,14 +60,12 @@ public class DhFadeApplyShader extends AbstractShaderRenderer
 	{
 		this.shader = new ShaderProgram(
 				"shaders/normal.vert",
-				"shaders/dhFade/apply.frag",
+				"shaders/fade/apply.frag",
 				"fragColor",
 				new String[]{ "vPosition" });
 		
 		// uniform setup
 		this.uFadeColorTextureUniform = this.shader.getUniformLocation("uFadeColorTextureUniform");
-		this.uDhDepthTextureUniform = this.shader.getUniformLocation("uDhDepthTextureUniform");
-		this.uMcDepthTextureUniform = this.shader.getUniformLocation("uMcDepthTextureUniform");
 		
 	}
 	
@@ -85,14 +81,6 @@ public class DhFadeApplyShader extends AbstractShaderRenderer
 		GLMC.glActiveTexture(GL32.GL_TEXTURE0);
 		GLMC.glBindTexture(this.fadeTexture);
 		GL32.glUniform1i(this.uFadeColorTextureUniform, 0);
-		
-		GLMC.glActiveTexture(GL32.GL_TEXTURE1);
-		GLMC.glBindTexture(LodRenderer.INSTANCE.getActiveDepthTextureId());
-		GL32.glUniform1i(this.uDhDepthTextureUniform, 1);
-		
-		GLMC.glActiveTexture(GL32.GL_TEXTURE2);
-		GLMC.glBindTexture(MC_RENDER.getDepthTextureId());
-		GL32.glUniform1i(this.uMcDepthTextureUniform, 2);
 		
 	}
 	
