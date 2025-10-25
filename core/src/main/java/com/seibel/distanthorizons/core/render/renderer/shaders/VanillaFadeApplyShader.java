@@ -21,7 +21,7 @@ package com.seibel.distanthorizons.core.render.renderer.shaders;
 
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.render.glObject.shader.ShaderProgram;
-import com.seibel.distanthorizons.core.render.renderer.FadeRenderer;
+import com.seibel.distanthorizons.core.render.renderer.VanillaFadeRenderer;
 import com.seibel.distanthorizons.core.render.renderer.LodRenderer;
 import com.seibel.distanthorizons.core.render.renderer.ScreenQuad;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftGLWrapper;
@@ -32,12 +32,12 @@ import org.lwjgl.opengl.GL32;
  * Draws the Fade texture onto Minecraft's FrameBuffer. <br><br>
  * 
  * See Also: <br>
- * {@link FadeRenderer} - Parent to this shader. <br>
- * {@link FadeShader} - draws the Fade texture. <br>
+ * {@link VanillaFadeRenderer} - Parent to this shader. <br>
+ * {@link VanillaFadeShader} - draws the Fade texture. <br>
  */
-public class FadeApplyShader extends AbstractShaderRenderer
+public class VanillaFadeApplyShader extends AbstractShaderRenderer
 {
-	public static FadeApplyShader INSTANCE = new FadeApplyShader();
+	public static VanillaFadeApplyShader INSTANCE = new VanillaFadeApplyShader();
 	
 	private static final IMinecraftRenderWrapper MC_RENDER = SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
 	private static final IMinecraftGLWrapper GLMC = SingletonInjector.INSTANCE.get(IMinecraftGLWrapper.class);
@@ -62,7 +62,7 @@ public class FadeApplyShader extends AbstractShaderRenderer
 	{
 		this.shader = new ShaderProgram(
 				"shaders/normal.vert",
-				"shaders/fade/apply.frag",
+				"shaders/vanillaFade/apply.frag",
 				"fragColor",
 				new String[]{ "vPosition" });
 		
@@ -119,7 +119,7 @@ public class FadeApplyShader extends AbstractShaderRenderer
 		
 		
 		// apply the rendered Fade to Minecraft's framebuffer
-		GLMC.glBindFramebuffer(GL32.GL_READ_FRAMEBUFFER, FadeShader.INSTANCE.frameBuffer);
+		GLMC.glBindFramebuffer(GL32.GL_READ_FRAMEBUFFER, VanillaFadeShader.INSTANCE.frameBuffer);
 		GLMC.glBindFramebuffer(GL32.GL_DRAW_FRAMEBUFFER, MC_RENDER.getTargetFramebuffer());
 		
 		ScreenQuad.INSTANCE.render();

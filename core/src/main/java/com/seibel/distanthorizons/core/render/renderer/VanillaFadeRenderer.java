@@ -22,8 +22,8 @@ package com.seibel.distanthorizons.core.render.renderer;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.render.glObject.GLState;
-import com.seibel.distanthorizons.core.render.renderer.shaders.FadeApplyShader;
-import com.seibel.distanthorizons.core.render.renderer.shaders.FadeShader;
+import com.seibel.distanthorizons.core.render.renderer.shaders.VanillaFadeApplyShader;
+import com.seibel.distanthorizons.core.render.renderer.shaders.VanillaFadeShader;
 import com.seibel.distanthorizons.core.util.math.Mat4f;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftGLWrapper;
@@ -36,14 +36,14 @@ import org.lwjgl.opengl.GL32;
 import java.nio.ByteBuffer;
 
 /**
- * Handles fading MC and DH together via {@link FadeShader} and {@link FadeApplyShader}. <br><br>
+ * Handles fading MC and DH together via {@link VanillaFadeShader} and {@link VanillaFadeApplyShader}. <br><br>
  * 
- * {@link FadeShader} - draws the Fade to a texture. <br>
- * {@link FadeApplyShader} - draws the Fade texture to MC's FrameBuffer. <br>
+ * {@link VanillaFadeShader} - draws the Fade to a texture. <br>
+ * {@link VanillaFadeApplyShader} - draws the Fade texture to MC's FrameBuffer. <br>
  */
-public class FadeRenderer
+public class VanillaFadeRenderer
 {
-	public static FadeRenderer INSTANCE = new FadeRenderer();
+	public static VanillaFadeRenderer INSTANCE = new VanillaFadeRenderer();
 	
 	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
 	
@@ -66,15 +66,15 @@ public class FadeRenderer
 	// constructor //
 	//=============//
 	
-	private FadeRenderer() { }
+	private VanillaFadeRenderer() { }
 	
 	public void init()
 	{
 		if (this.init) return;
 		this.init = true;
 		
-		FadeShader.INSTANCE.init();
-		FadeApplyShader.INSTANCE.init();
+		VanillaFadeShader.INSTANCE.init();
+		VanillaFadeApplyShader.INSTANCE.init();
 	}
 	
 	private void createFramebuffer(int width, int height)
@@ -144,10 +144,10 @@ public class FadeRenderer
 			}
 			
 			
-			FadeShader.INSTANCE.frameBuffer = this.fadeFramebuffer;
-			FadeShader.INSTANCE.setProjectionMatrix(mcModelViewMatrix, mcProjectionMatrix, partialTicks);
-			FadeShader.INSTANCE.setLevelMaxHeight(level.getMaxHeight());
-			FadeShader.INSTANCE.render(partialTicks);
+			VanillaFadeShader.INSTANCE.frameBuffer = this.fadeFramebuffer;
+			VanillaFadeShader.INSTANCE.setProjectionMatrix(mcModelViewMatrix, mcProjectionMatrix, partialTicks);
+			VanillaFadeShader.INSTANCE.setLevelMaxHeight(level.getMaxHeight());
+			VanillaFadeShader.INSTANCE.render(partialTicks);
 			
 			// restored so we can write the fade texture to the main frame buffer
 			//mcState.restore();
@@ -158,8 +158,8 @@ public class FadeRenderer
 			// otherwise we can directly render to their texture
 			if (MC_RENDER.mcRendersToFrameBuffer())
 			{
-				FadeApplyShader.INSTANCE.fadeTexture = this.fadeTexture;
-				FadeApplyShader.INSTANCE.render(partialTicks);
+				VanillaFadeApplyShader.INSTANCE.fadeTexture = this.fadeTexture;
+				VanillaFadeApplyShader.INSTANCE.render(partialTicks);
 			}
 			
 			profiler.pop(); 
@@ -178,8 +178,8 @@ public class FadeRenderer
 	
 	public void free()
 	{
-		FadeShader.INSTANCE.free();
-		FadeApplyShader.INSTANCE.free();
+		VanillaFadeShader.INSTANCE.free();
+		VanillaFadeApplyShader.INSTANCE.free();
 	}
 	
 }

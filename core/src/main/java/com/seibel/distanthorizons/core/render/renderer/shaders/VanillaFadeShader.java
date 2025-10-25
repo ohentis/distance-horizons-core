@@ -21,21 +21,18 @@ package com.seibel.distanthorizons.core.render.renderer.shaders;
 
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
-import com.seibel.distanthorizons.core.render.glObject.GLState;
 import com.seibel.distanthorizons.core.render.glObject.shader.ShaderProgram;
 import com.seibel.distanthorizons.core.render.renderer.LodRenderer;
 import com.seibel.distanthorizons.core.render.renderer.ScreenQuad;
-import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.RenderUtil;
 import com.seibel.distanthorizons.core.util.math.Mat4f;
-import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftGLWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
 import org.lwjgl.opengl.GL32;
 
-public class FadeShader extends AbstractShaderRenderer
+public class VanillaFadeShader extends AbstractShaderRenderer
 {
-	public static FadeShader INSTANCE = new FadeShader();
+	public static VanillaFadeShader INSTANCE = new VanillaFadeShader();
 	
 	private static final IMinecraftRenderWrapper MC_RENDER = SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
 	private static final IMinecraftGLWrapper GLMC = SingletonInjector.INSTANCE.get(IMinecraftGLWrapper.class);
@@ -70,13 +67,13 @@ public class FadeShader extends AbstractShaderRenderer
 	// constructor //
 	//=============//
 	
-	public FadeShader() {  }
+	public VanillaFadeShader() {  }
 
 	@Override
 	public void onInit()
 	{
 		this.shader = new ShaderProgram(
-				"shaders/normal.vert", "shaders/fade/fade.frag",
+				"shaders/normal.vert", "shaders/vanillaFade/fade.frag",
 				"fragColor", new String[]{"vPosition"}
 		);
 		
