@@ -100,8 +100,6 @@ public class DhFadeShader extends AbstractShaderRenderer
 		
 		
 		float dhFarClipDistance = RenderUtil.getFarClipPlaneDistanceInBlocks();
-		
-		// measured in blocks
 		float fadeStartDistance = dhFarClipDistance * 0.5f;
 		float fadeEndDistance = dhFarClipDistance * 0.9f;
 		

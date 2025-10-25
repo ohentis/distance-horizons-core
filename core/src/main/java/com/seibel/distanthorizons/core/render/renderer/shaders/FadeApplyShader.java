@@ -22,7 +22,6 @@ package com.seibel.distanthorizons.core.render.renderer.shaders;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.render.glObject.shader.ShaderProgram;
 import com.seibel.distanthorizons.core.render.renderer.VanillaFadeRenderer;
-import com.seibel.distanthorizons.core.render.renderer.LodRenderer;
 import com.seibel.distanthorizons.core.render.renderer.ScreenQuad;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftGLWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
@@ -35,9 +34,9 @@ import org.lwjgl.opengl.GL32;
  * {@link VanillaFadeRenderer} - Parent to this shader. <br>
  * {@link VanillaFadeShader} - draws the Fade texture. <br>
  */
-public class VanillaFadeApplyShader extends AbstractShaderRenderer
+public class FadeApplyShader extends AbstractShaderRenderer
 {
-	public static VanillaFadeApplyShader INSTANCE = new VanillaFadeApplyShader();
+	public static FadeApplyShader INSTANCE = new FadeApplyShader();
 	
 	private static final IMinecraftRenderWrapper MC_RENDER = SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
 	private static final IMinecraftGLWrapper GLMC = SingletonInjector.INSTANCE.get(IMinecraftGLWrapper.class);
@@ -45,6 +44,9 @@ public class VanillaFadeApplyShader extends AbstractShaderRenderer
 	
 	
 	public int fadeTexture;
+	
+	public int readFramebuffer;
+	public int drawFramebuffer;
 	
 	// uniforms
 	public int uFadeColorTextureUniform = -1;
@@ -93,12 +95,6 @@ public class VanillaFadeApplyShader extends AbstractShaderRenderer
 	@Override
 	protected void onRender()
 	{
-		if (!MC_RENDER.mcRendersToFrameBuffer())
-		{
-			throw new IllegalStateException("If Minecraft is directly rendering to a texture the apply shader isn't needed, just draw the fade directly to the MC color texture.");
-		}
-		
-		
 		GLMC.disableBlend();
 		
 		// Depth testing must be disabled otherwise this application shader won't apply anything.
@@ -108,8 +104,8 @@ public class VanillaFadeApplyShader extends AbstractShaderRenderer
 		
 		
 		// apply the rendered Fade to Minecraft's framebuffer
-		GLMC.glBindFramebuffer(GL32.GL_READ_FRAMEBUFFER, VanillaFadeShader.INSTANCE.frameBuffer);
-		GLMC.glBindFramebuffer(GL32.GL_DRAW_FRAMEBUFFER, MC_RENDER.getTargetFramebuffer());
+		GLMC.glBindFramebuffer(GL32.GL_READ_FRAMEBUFFER, this.readFramebuffer);
+		GLMC.glBindFramebuffer(GL32.GL_DRAW_FRAMEBUFFER, this.drawFramebuffer);
 		
 		ScreenQuad.INSTANCE.render();
 		

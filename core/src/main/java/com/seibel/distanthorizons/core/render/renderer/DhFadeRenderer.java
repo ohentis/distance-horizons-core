@@ -23,23 +23,22 @@ import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.DhLogger;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.render.glObject.GLState;
-import com.seibel.distanthorizons.core.render.renderer.shaders.DhFadeApplyShader;
 import com.seibel.distanthorizons.core.render.renderer.shaders.DhFadeShader;
+import com.seibel.distanthorizons.core.render.renderer.shaders.FadeApplyShader;
 import com.seibel.distanthorizons.core.util.math.Mat4f;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftGLWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrapper;
-import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import org.lwjgl.opengl.GL32;
 
 import java.nio.ByteBuffer;
 
 /**
- * Handles fading MC and DH together via {@link DhFadeShader} and {@link DhFadeApplyShader}. <br><br>
+ * Handles fading MC and DH together via {@link DhFadeShader} and {@link FadeApplyShader}. <br><br>
  * 
  * {@link DhFadeShader} - draws the Fade to a texture. <br>
- * {@link DhFadeApplyShader} - draws the Fade texture to MC's FrameBuffer. <br>
+ * {@link FadeApplyShader} - draws the Fade texture to DH's framebuffer. <br>
  */
 public class DhFadeRenderer
 {
@@ -74,7 +73,7 @@ public class DhFadeRenderer
 		this.init = true;
 		
 		DhFadeShader.INSTANCE.init();
-		DhFadeApplyShader.INSTANCE.init();
+		FadeApplyShader.INSTANCE.init();
 	}
 	
 	private void createFramebuffer(int width, int height)
@@ -139,8 +138,10 @@ public class DhFadeRenderer
 			
 			profiler.popPush("Fade Apply");
 			
-			DhFadeApplyShader.INSTANCE.fadeTexture = this.fadeTexture;
-			DhFadeApplyShader.INSTANCE.render(partialTicks);
+			FadeApplyShader.INSTANCE.fadeTexture = this.fadeTexture;
+			FadeApplyShader.INSTANCE.readFramebuffer = DhFadeShader.INSTANCE.frameBuffer;
+			FadeApplyShader.INSTANCE.drawFramebuffer = LodRenderer.INSTANCE.getActiveFramebufferId();
+			FadeApplyShader.INSTANCE.render(partialTicks);
 		}
 		catch (Exception e)
 		{
