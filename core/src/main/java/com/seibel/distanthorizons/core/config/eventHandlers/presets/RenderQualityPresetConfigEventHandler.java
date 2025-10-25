@@ -30,7 +30,6 @@ import com.seibel.distanthorizons.core.config.ConfigPresetOptions;
 import com.seibel.distanthorizons.core.config.listeners.ConfigChangeListener;
 import com.seibel.distanthorizons.core.config.types.AbstractConfigBase;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import org.apache.logging.log4j.LogManager;
 import com.seibel.distanthorizons.core.logging.DhLogger;
 
 import java.util.*;
@@ -97,6 +96,15 @@ public class RenderQualityPresetConfigEventHandler extends AbstractPresetConfigE
 				this.put(EDhApiQualityPreset.HIGH, EDhApiMcRenderingFadeMode.DOUBLE_PASS);
 				this.put(EDhApiQualityPreset.EXTREME, EDhApiMcRenderingFadeMode.DOUBLE_PASS);
 			}});
+	private final ConfigPresetOptions<EDhApiQualityPreset, Boolean> dhFadeFarClipPlane = new ConfigPresetOptions<>(Config.Client.Advanced.Graphics.Quality.dhFadeFarClipPlane,
+			new HashMap<EDhApiQualityPreset, Boolean>()
+			{{
+				this.put(EDhApiQualityPreset.MINIMUM, false);
+				this.put(EDhApiQualityPreset.LOW, false);
+				this.put(EDhApiQualityPreset.MEDIUM, true);
+				this.put(EDhApiQualityPreset.HIGH, true);
+				this.put(EDhApiQualityPreset.EXTREME, true);
+			}});
 	private final ConfigPresetOptions<EDhApiQualityPreset, Boolean> dhDither = new ConfigPresetOptions<>(Config.Client.Advanced.Graphics.Quality.ditherDhFade,
 			new HashMap<EDhApiQualityPreset, Boolean>()
 			{{
@@ -140,6 +148,7 @@ public class RenderQualityPresetConfigEventHandler extends AbstractPresetConfigE
 		this.configList.add(this.horizontalQuality);
 		this.configList.add(this.transparency);
 		this.configList.add(this.ssaoEnabled);
+		this.configList.add(this.dhFadeFarClipPlane);
 		this.configList.add(this.vanillaFade);
 		this.configList.add(this.dhDither);
 		this.configList.add(this.caveCulling);

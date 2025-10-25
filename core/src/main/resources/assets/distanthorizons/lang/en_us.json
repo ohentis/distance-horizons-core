@@ -158,6 +158,10 @@
     "Vanilla Fade Mode",
   "distanthorizons.config.client.advanced.graphics.quality.vanillaFadeMode.@tooltip":
     "How should vanilla Minecraft fade into Distant Horizons LODs? \n\nNONE: Fastest, there will be a pronounced border between DH and MC rendering. \nSINGLE_PASS: Fades after MC's transparent pass, opaque blocks underwater won't be faded. \nDOUBLE_PASS: Slowest, fades after both MC's opaque and transparent passes, provides the smoothest transition.",
+  "distanthorizons.config.client.advanced.graphics.quality.dhFadeFarClipPlane":
+    "Fade Before Far Clip Plane",
+  "distanthorizons.config.client.advanced.graphics.quality.dhFadeFarClipPlane.@tooltip":
+    "Should DH fade out before reaching the far plane? \nThis is helpful to prevent DH clouds from cutting off in the distance.",
   "distanthorizons.config.client.advanced.graphics.quality.brightnessMultiplier":
     "Brightness Multiplier",
   "distanthorizons.config.client.advanced.graphics.quality.brightnessMultiplier.@tooltip":

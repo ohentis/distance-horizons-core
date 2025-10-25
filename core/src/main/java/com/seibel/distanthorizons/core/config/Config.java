@@ -312,6 +312,14 @@ public class Config
 									+ "")
 							.build();
 					
+					public static ConfigEntry<Boolean> dhFadeFarClipPlane = new ConfigEntry.Builder<Boolean>()
+							.set(true)
+							.comment(""
+									+ "Should DH fade out before reaching the far clip plane? \n"
+									+ "This is helpful to prevent DH clouds from cutting off in the distance. \n"
+									+ "")
+							.build();
+					
 					public static ConfigEntry<Double> brightnessMultiplier = new ConfigEntry.Builder<Double>() // TODO: Make this a float (the ClassicConfigGUI doesnt support floats)
 							.set(1.0)
 							.comment(""

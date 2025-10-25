@@ -242,6 +242,15 @@ public class LodRenderer
 				this.renderLodPass(lodShaderProgram, renderBufferHandler, renderParams, /*opaquePass*/ false);
 			}
 			
+			// far plane clip fading
+			if (Config.Client.Advanced.Graphics.Quality.dhFadeFarClipPlane.get())
+			{
+				profiler.popPush("Fade Far Clip Fade");
+				DhFadeRenderer.INSTANCE.render(
+						new Mat4f(renderParams.mcModelViewMatrix), new Mat4f(renderParams.mcProjectionMatrix),
+						renderParams.partialTicks, profiler);
+			}
+			
 			// fog
 			if (Config.Client.Advanced.Graphics.Fog.enableDhFog.get())
 			{

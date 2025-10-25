@@ -20,31 +20,31 @@
 package com.seibel.distanthorizons.core.render.renderer;
 
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
+import com.seibel.distanthorizons.core.logging.DhLogger;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.render.glObject.GLState;
-import com.seibel.distanthorizons.core.render.renderer.shaders.VanillaFadeApplyShader;
-import com.seibel.distanthorizons.core.render.renderer.shaders.VanillaFadeShader;
+import com.seibel.distanthorizons.core.render.renderer.shaders.DhFadeApplyShader;
+import com.seibel.distanthorizons.core.render.renderer.shaders.DhFadeShader;
 import com.seibel.distanthorizons.core.util.math.Mat4f;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftGLWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
-import com.seibel.distanthorizons.core.logging.DhLogger;
 import org.lwjgl.opengl.GL32;
 
 import java.nio.ByteBuffer;
 
 /**
- * Handles fading MC and DH together via {@link VanillaFadeShader} and {@link VanillaFadeApplyShader}. <br><br>
+ * Handles fading MC and DH together via {@link DhFadeShader} and {@link DhFadeApplyShader}. <br><br>
  * 
- * {@link VanillaFadeShader} - draws the Fade to a texture. <br>
- * {@link VanillaFadeApplyShader} - draws the Fade texture to MC's FrameBuffer. <br>
+ * {@link DhFadeShader} - draws the Fade to a texture. <br>
+ * {@link DhFadeApplyShader} - draws the Fade texture to MC's FrameBuffer. <br>
  */
-public class VanillaFadeRenderer
+public class DhFadeRenderer
 {
-	public static VanillaFadeRenderer INSTANCE = new VanillaFadeRenderer();
 	
+	public static DhFadeRenderer INSTANCE = new DhFadeRenderer();
 	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
 	
 	private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
@@ -66,15 +66,15 @@ public class VanillaFadeRenderer
 	// constructor //
 	//=============//
 	
-	private VanillaFadeRenderer() { }
+	private DhFadeRenderer() { }
 	
 	public void init()
 	{
 		if (this.init) return;
 		this.init = true;
 		
-		VanillaFadeShader.INSTANCE.init();
-		VanillaFadeApplyShader.INSTANCE.init();
+		DhFadeShader.INSTANCE.init();
+		DhFadeApplyShader.INSTANCE.init();
 	}
 	
 	private void createFramebuffer(int width, int height)
@@ -89,27 +89,18 @@ public class VanillaFadeRenderer
 		GLMC.glBindFramebuffer(GL32.GL_FRAMEBUFFER, this.fadeFramebuffer);
 		
 		
-		// Applying the fade texture is only needed if MC is drawing to their own frame buffer,
-		// otherwise we can directly render to their texture
-		if (MC_RENDER.mcRendersToFrameBuffer())
+		if (this.fadeTexture != -1)
 		{
-			if (this.fadeTexture != -1)
-			{
-				GLMC.glDeleteTextures(this.fadeTexture);
-				this.fadeTexture = -1;
-			}
-			
-			this.fadeTexture = GL32.glGenTextures();
-			GLMC.glBindTexture(this.fadeTexture);
-			GL32.glTexImage2D(GL32.GL_TEXTURE_2D, 0, GL32.GL_RGBA16, width, height, 0, GL32.GL_RGBA, GL32.GL_UNSIGNED_SHORT_4_4_4_4, (ByteBuffer) null);
-			GL32.glTexParameteri(GL32.GL_TEXTURE_2D, GL32.GL_TEXTURE_MIN_FILTER, GL32.GL_LINEAR);
-			GL32.glTexParameteri(GL32.GL_TEXTURE_2D, GL32.GL_TEXTURE_MAG_FILTER, GL32.GL_LINEAR);
-			GL32.glFramebufferTexture2D(GL32.GL_FRAMEBUFFER, GL32.GL_COLOR_ATTACHMENT0, GL32.GL_TEXTURE_2D, this.fadeTexture, 0);
+			GLMC.glDeleteTextures(this.fadeTexture);
+			this.fadeTexture = -1;
 		}
-		else
-		{
-			GL32.glFramebufferTexture2D(GL32.GL_FRAMEBUFFER, GL32.GL_COLOR_ATTACHMENT0, GL32.GL_TEXTURE_2D, MC_RENDER.getColorTextureId(), 0);
-		}
+		
+		this.fadeTexture = GL32.glGenTextures();
+		GLMC.glBindTexture(this.fadeTexture);
+		GL32.glTexImage2D(GL32.GL_TEXTURE_2D, 0, GL32.GL_RGBA16, width, height, 0, GL32.GL_RGBA, GL32.GL_UNSIGNED_SHORT_4_4_4_4, (ByteBuffer) null);
+		GL32.glTexParameteri(GL32.GL_TEXTURE_2D, GL32.GL_TEXTURE_MIN_FILTER, GL32.GL_LINEAR);
+		GL32.glTexParameteri(GL32.GL_TEXTURE_2D, GL32.GL_TEXTURE_MAG_FILTER, GL32.GL_LINEAR);
+		GL32.glFramebufferTexture2D(GL32.GL_FRAMEBUFFER, GL32.GL_COLOR_ATTACHMENT0, GL32.GL_TEXTURE_2D, this.fadeTexture, 0);
 	}
 	
 	
@@ -118,18 +109,13 @@ public class VanillaFadeRenderer
 	// render //
 	//========//
 	
-	public void render(Mat4f mcModelViewMatrix, Mat4f mcProjectionMatrix, float partialTicks, IClientLevelWrapper level)
+	public void render(Mat4f mcModelViewMatrix, Mat4f mcProjectionMatrix, float partialTicks, IProfilerWrapper profiler)
 	{
-		IProfilerWrapper profiler = MC_CLIENT.getProfiler();
-		profiler.pop(); // get out of "terrain"
-		profiler.push("DH-Vanilla Fade");
-		
-		
 		GLState mcState = new GLState();
 		
 		try
 		{
-			profiler.push("Vanilla Fade Generate");
+			profiler.push("Fade Generate");
 			
 			this.init();
 			
@@ -144,22 +130,17 @@ public class VanillaFadeRenderer
 			}
 			
 			
-			VanillaFadeShader.INSTANCE.frameBuffer = this.fadeFramebuffer;
-			VanillaFadeShader.INSTANCE.setProjectionMatrix(mcModelViewMatrix, mcProjectionMatrix, partialTicks);
-			VanillaFadeShader.INSTANCE.setLevelMaxHeight(level.getMaxHeight());
-			VanillaFadeShader.INSTANCE.render(partialTicks);
+			DhFadeShader.INSTANCE.frameBuffer = this.fadeFramebuffer;
+			DhFadeShader.INSTANCE.setProjectionMatrix(mcModelViewMatrix, mcProjectionMatrix, partialTicks);
+			DhFadeShader.INSTANCE.render(partialTicks);
 			
-			profiler.popPush("Vanilla Fade Apply");
+			// restored so we can write the fade texture to the main frame buffer
+			//mcState.restore();
 			
-			// Applying the fade texture is only needed if MC is drawing to their own frame buffer,
-			// otherwise we can directly render to their texture
-			if (MC_RENDER.mcRendersToFrameBuffer())
-			{
-				VanillaFadeApplyShader.INSTANCE.fadeTexture = this.fadeTexture;
-				VanillaFadeApplyShader.INSTANCE.render(partialTicks);
-			}
+			profiler.popPush("Fade Apply");
 			
-			profiler.pop(); 
+			DhFadeApplyShader.INSTANCE.fadeTexture = this.fadeTexture;
+			DhFadeApplyShader.INSTANCE.render(partialTicks);
 		}
 		catch (Exception e)
 		{
@@ -170,13 +151,11 @@ public class VanillaFadeRenderer
 			// make sure we always revert to MC's state to prevent GL state corruption
 			// this is especially important on MC 1.16.5 or when other rendering mods are present
 			mcState.restore();
+			
+			profiler.pop();
 		}
 	}
 	
-	public void free()
-	{
-		VanillaFadeShader.INSTANCE.free();
-		VanillaFadeApplyShader.INSTANCE.free();
-	}
+	
 	
 }
