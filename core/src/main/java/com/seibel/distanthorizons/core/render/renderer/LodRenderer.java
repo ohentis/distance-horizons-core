@@ -86,7 +86,7 @@ public class LodRenderer
 	public QuadElementBuffer quadIBO = null;
 	private boolean renderObjectsCreated = false;
 	
-	// frameBuffer and texture ID's for this renderer
+	// framebuffer and texture ID's for this renderer
 	private IDhApiFramebuffer framebuffer;
 	/** will be null if MC's framebuffer is being used since MC already has a color texture */
 	@Nullable
@@ -96,7 +96,7 @@ public class LodRenderer
 	 * If true the {@link LodRenderer#framebuffer} is the same as MC's.
 	 * This should only be true in the case of Optifine so LODs won't be overwritten when shaders are enabled.
 	 */
-	private boolean usingMcFrameBuffer = false;
+	private boolean usingMcFramebuffer = false;
 	
 	
 	
@@ -273,7 +273,7 @@ public class LodRenderer
 			// optifine clean up //
 			//===================//
 			
-			if (this.usingMcFrameBuffer)
+			if (this.usingMcFramebuffer)
 			{
 				// If MC's framebuffer is being used the depth needs to be cleared to prevent rendering on top of MC.
 				// This should only happen when Optifine shaders are being used.
@@ -283,7 +283,7 @@ public class LodRenderer
 			
 			
 			//=============================//
-			// Apply to the MC FrameBuffer //
+			// Apply to the MC Framebuffer //
 			//=============================//
 			
 			boolean cancelApplyShader = ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeApplyShaderRenderEvent.class, renderParams);
@@ -352,14 +352,14 @@ public class LodRenderer
 		//===================//
 		
 		// get the active framebuffer
-		IDhApiFramebuffer frameBuffer = this.framebuffer;
+		IDhApiFramebuffer framebuffer = this.framebuffer;
 		IDhApiFramebuffer framebufferOverride = OverrideInjector.INSTANCE.get(IDhApiFramebuffer.class);
 		if (framebufferOverride != null && framebufferOverride.overrideThisFrame())
 		{
-			frameBuffer = framebufferOverride;
+			framebuffer = framebufferOverride;
 		}
-		this.activeFramebufferId = frameBuffer.getId();
-		frameBuffer.bind();
+		this.activeFramebufferId = framebuffer.getId();
+		framebuffer.bind();
 		
 		
 		
@@ -409,8 +409,8 @@ public class LodRenderer
 		//===============//
 		
 		// resize the textures if needed
-		if (MC_RENDER.getTargetFrameBufferViewportWidth() != this.textureWidth
-				|| MC_RENDER.getTargetFrameBufferViewportHeight() != this.textureHeight)
+		if (MC_RENDER.getTargetFramebufferViewportWidth() != this.textureWidth
+				|| MC_RENDER.getTargetFramebufferViewportHeight() != this.textureHeight)
 		{
 			// just resizing the textures doesn't work when Optifine is present,
 			// so recreate the textures with the new size instead
@@ -427,9 +427,8 @@ public class LodRenderer
 		}
 		else
 		{
-			// get MC's color texture
-			int mcColorTextureId = GL32.glGetFramebufferAttachmentParameteri(GL32.GL_FRAMEBUFFER, GL32.GL_COLOR_ATTACHMENT0, GL32.GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME);
-			this.activeColorTextureId = mcColorTextureId;
+			// get MC's color texture 
+			this.activeColorTextureId = GL32.glGetFramebufferAttachmentParameteri(GL32.GL_FRAMEBUFFER, GL32.GL_COLOR_ATTACHMENT0, GL32.GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME);
 		}
 		
 		
@@ -443,11 +442,11 @@ public class LodRenderer
 			GL32.glGetFloatv(GL32.GL_COLOR_CLEAR_VALUE, clearColorValues);
 			GL32.glClearColor(clearColorValues[0], clearColorValues[1], clearColorValues[2], 1.0f);
 			
-			if (this.usingMcFrameBuffer && framebufferOverride == null)
+			if (this.usingMcFramebuffer && framebufferOverride == null)
 			{
 				// Due to using MC/Optifine's framebuffer we need to re-bind the depth texture,
 				// otherwise we'll be writing to MC/Optifine's depth texture which causes rendering issues
-				frameBuffer.addDepthAttachment(this.depthTexture.getTextureId(), EDhDepthBufferFormat.DEPTH32F.isCombinedStencil());
+				framebuffer.addDepthAttachment(this.depthTexture.getTextureId(), EDhDepthBufferFormat.DEPTH32F.isCombinedStencil());
 				
 				
 				// don't clear the color texture, that removes the sky 
@@ -489,16 +488,16 @@ public class LodRenderer
 		// create or get the frame buffer
 		if (AbstractOptifineAccessor.optifinePresent())
 		{
-			// use MC/Optifine's default FrameBuffer so shaders won't remove the LODs
-			int currentFrameBufferId = MC_RENDER.getTargetFrameBuffer();
-			this.framebuffer = new DhFramebuffer(currentFrameBufferId);
-			this.usingMcFrameBuffer = true;
+			// use MC/Optifine's default Framebuffer so shaders won't remove the LODs
+			int currentFramebufferId = MC_RENDER.getTargetFramebuffer();
+			this.framebuffer = new DhFramebuffer(currentFramebufferId);
+			this.usingMcFramebuffer = true;
 		}
 		else 
 		{
 			// normal use case
 			this.framebuffer = new DhFramebuffer();
-			this.usingMcFrameBuffer = false;
+			this.usingMcFramebuffer = false;
 		}
 		
 		// create and bind the necessary textures
@@ -507,7 +506,7 @@ public class LodRenderer
 		if(this.framebuffer.getStatus() != GL32.GL_FRAMEBUFFER_COMPLETE)
 		{
 			// This generally means something wasn't bound, IE missing either the color or depth texture
-			LOGGER.warn("FrameBuffer ["+this.framebuffer.getId()+"] isn't complete.");
+			LOGGER.warn("Framebuffer ["+this.framebuffer.getId()+"] isn't complete.");
 			return false;
 		}
 		
@@ -517,12 +516,13 @@ public class LodRenderer
 		return true;
 	}
 	
+	@SuppressWarnings( "deprecation" )
 	private void createAndBindTextures()
 	{
 		int oldWidth = this.textureWidth;
 		int oldHeight = this.textureHeight;
-		this.textureWidth = MC_RENDER.getTargetFrameBufferViewportWidth();
-		this.textureHeight = MC_RENDER.getTargetFrameBufferViewportHeight();
+		this.textureWidth = MC_RENDER.getTargetFramebufferViewportWidth();
+		this.textureHeight = MC_RENDER.getTargetFramebufferViewportHeight();
 		
 		DhApiTextureCreatedParam textureCreatedParam = new DhApiTextureCreatedParam(
 				oldWidth, oldHeight,
@@ -547,7 +547,7 @@ public class LodRenderer
 		}
 		
 		// if we are using MC's frame buffer, a color texture is already present and shouldn't need to be bound
-		if (!this.usingMcFrameBuffer)
+		if (!this.usingMcFramebuffer)
 		{
 			this.nullableColorTexture = DhColorTexture.builder().setDimensions(this.textureWidth, this.textureHeight)
 					.setInternalFormat(EDhInternalTextureFormat.RGBA8)
@@ -582,7 +582,6 @@ public class LodRenderer
 		// debug wireframe setup //
 		//=======================//
 		
-		// TODO move this logic into LodRenderer so all the GL states can be handled there
 		boolean renderWireframe = Config.Client.Advanced.Debugging.renderWireframe.get();
 		if (renderWireframe)
 		{

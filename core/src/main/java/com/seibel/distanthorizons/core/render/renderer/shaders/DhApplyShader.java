@@ -26,11 +26,8 @@ import com.seibel.distanthorizons.core.render.glObject.shader.ShaderProgram;
 import com.seibel.distanthorizons.core.render.renderer.LodRenderer;
 import com.seibel.distanthorizons.core.render.renderer.ScreenQuad;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftGLWrapper;
-import org.apache.logging.log4j.LogManager;
 import com.seibel.distanthorizons.core.logging.DhLogger;
 import org.lwjgl.opengl.GL32;
-
-import java.nio.ByteBuffer;
 
 /**
  * Copies {@link LodRenderer}'s currently active color and depth texture to Minecraft's framebuffer. 
@@ -89,7 +86,7 @@ public class DhApplyShader extends AbstractShaderRenderer
 	// TODO merge duplicate code between these to render methods
 	private void renderToFrameBuffer()
 	{
-		int targetFrameBuffer = MC_RENDER.getTargetFrameBuffer();
+		int targetFrameBuffer = MC_RENDER.getTargetFramebuffer();
 		if (targetFrameBuffer == -1)
 		{
 			return;
@@ -143,7 +140,7 @@ public class DhApplyShader extends AbstractShaderRenderer
 			return;
 		}
 		
-		int mcFrameBufferId = MC_RENDER.getTargetFrameBuffer();
+		int mcFrameBufferId = MC_RENDER.getTargetFramebuffer();
 		if (mcFrameBufferId == -1)
 		{
 			return;

@@ -99,8 +99,8 @@ public class SSAOApplyShader extends AbstractShaderRenderer
 		if (this.gViewSizeUniform >= 0)
 		{
 			GL32.glUniform2f(this.gViewSizeUniform,
-					MC_RENDER.getTargetFrameBufferViewportWidth(),
-					MC_RENDER.getTargetFrameBufferViewportHeight());
+					MC_RENDER.getTargetFramebufferViewportWidth(),
+					MC_RENDER.getTargetFramebufferViewportHeight());
 		}
 		
 		if (this.gNearUniform >= 0)

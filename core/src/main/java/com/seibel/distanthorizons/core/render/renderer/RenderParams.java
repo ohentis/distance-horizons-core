@@ -142,7 +142,7 @@ public class RenderParams extends DhApiRenderParam
 		}
 		
 		if (AbstractOptifineAccessor.optifinePresent()
-			&& MC_RENDER.getTargetFrameBuffer() == -1)
+			&& MC_RENDER.getTargetFramebuffer() == -1)
 		{
 			// wait for MC to finish setting up their renderer
 			return "Optifine Target Frame Buffer not set";

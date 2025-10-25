@@ -20,7 +20,6 @@
 package com.seibel.distanthorizons.core.render.renderer.shaders;
 
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
-import com.seibel.distanthorizons.core.render.glObject.GLState;
 import com.seibel.distanthorizons.core.render.glObject.shader.ShaderProgram;
 import com.seibel.distanthorizons.core.render.renderer.FadeRenderer;
 import com.seibel.distanthorizons.core.render.renderer.LodRenderer;
@@ -121,7 +120,7 @@ public class FadeApplyShader extends AbstractShaderRenderer
 		
 		// apply the rendered Fade to Minecraft's framebuffer
 		GLMC.glBindFramebuffer(GL32.GL_READ_FRAMEBUFFER, FadeShader.INSTANCE.frameBuffer);
-		GLMC.glBindFramebuffer(GL32.GL_DRAW_FRAMEBUFFER, MC_RENDER.getTargetFrameBuffer());
+		GLMC.glBindFramebuffer(GL32.GL_DRAW_FRAMEBUFFER, MC_RENDER.getTargetFramebuffer());
 		
 		ScreenQuad.INSTANCE.render();
 		

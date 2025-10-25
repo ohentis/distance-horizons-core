@@ -104,8 +104,8 @@ public class TestRenderer
 		// TODO fix for MC 1.21.5+
 		this.init();
 		
-		GLMC.glBindFramebuffer(GL32.GL_FRAMEBUFFER, MC_RENDER.getTargetFrameBuffer());
-		GL32.glViewport(0, 0, MC_RENDER.getTargetFrameBufferViewportWidth(), MC_RENDER.getTargetFrameBufferViewportHeight());
+		GLMC.glBindFramebuffer(GL32.GL_FRAMEBUFFER, MC_RENDER.getTargetFramebuffer());
+		GL32.glViewport(0, 0, MC_RENDER.getTargetFramebufferViewportWidth(), MC_RENDER.getTargetFramebufferViewportHeight());
 		GL32.glPolygonMode(GL32.GL_FRONT_AND_BACK, GL32.GL_FILL);
 		
 		GLMC.disableFaceCulling();

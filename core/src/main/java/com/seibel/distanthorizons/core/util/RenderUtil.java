@@ -19,18 +19,13 @@
 
 package com.seibel.distanthorizons.core.util;
 
-import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
-import com.seibel.distanthorizons.core.api.internal.SharedApi;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
-import com.seibel.distanthorizons.core.level.IDhClientLevel;
-import com.seibel.distanthorizons.core.world.IDhClientWorld;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.coreapi.util.MathUtil;
 import com.seibel.distanthorizons.core.util.math.Mat4f;
-import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 
 /**
  * This holds miscellaneous helper code
@@ -177,7 +172,7 @@ public class RenderUtil
 		// therefore, the FOV is left at a fixed value of 70 (MC's default)
 		double fov = 70;
 		
-		double aspectRatio = (double) MC_RENDER.getTargetFrameBufferViewportWidth() / MC_RENDER.getTargetFrameBufferViewportHeight();
+		double aspectRatio = (double) MC_RENDER.getTargetFramebufferViewportWidth() / MC_RENDER.getTargetFramebufferViewportHeight();
 		
 		// source: https://stackoverflow.com/questions/8101119/how-do-i-methodically-choose-the-near-clip-plane-distance-for-a-perspective-proj/8101234#8101234
 		return (float) (nearClipPlane

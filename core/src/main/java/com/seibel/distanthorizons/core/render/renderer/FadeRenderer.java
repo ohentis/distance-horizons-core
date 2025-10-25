@@ -30,7 +30,6 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftGLW
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
-import org.apache.logging.log4j.LogManager;
 import com.seibel.distanthorizons.core.logging.DhLogger;
 import org.lwjgl.opengl.GL32;
 
@@ -135,8 +134,8 @@ public class FadeRenderer
 			this.init();
 			
 			// resize the framebuffer if necessary
-			int width = MC_RENDER.getTargetFrameBufferViewportWidth();
-			int height = MC_RENDER.getTargetFrameBufferViewportHeight();
+			int width = MC_RENDER.getTargetFramebufferViewportWidth();
+			int height = MC_RENDER.getTargetFramebufferViewportHeight();
 			if (this.width != width || this.height != height)
 			{
 				this.width = width;

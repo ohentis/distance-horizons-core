@@ -108,8 +108,8 @@ public class FogRenderer
 		this.init();
 		
 		// resize the framebuffer if necessary
-		int width = MC_RENDER.getTargetFrameBufferViewportWidth();
-		int height = MC_RENDER.getTargetFrameBufferViewportHeight();
+		int width = MC_RENDER.getTargetFramebufferViewportWidth();
+		int height = MC_RENDER.getTargetFramebufferViewportHeight();
 		if (this.width != width || this.height != height)
 		{
 			this.width = width;
