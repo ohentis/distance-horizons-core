@@ -185,19 +185,9 @@ public final class ColumnArrayView implements IColumnDataView
 		{
 			for (int i = 0; i < this.dataCount(); i++)
 			{
-				RenderDataPointUtil.mergeMultiData(source.subView(i, 1), subView(i, 1));
+				RenderDataPointUtil.mergeMultiData(source.subView(i, 1), this.subView(i, 1));
 			}
 		}
-	}
-	
-	public void mergeMultiDataFrom(IColumnDataView source)
-	{
-		if (dataCount() != 1)
-		{
-			throw new IllegalArgumentException("output dataCount must be 1");
-		}
-		
-		RenderDataPointUtil.mergeMultiData(source, this);
 	}
 	
 	
@@ -210,15 +200,15 @@ public final class ColumnArrayView implements IColumnDataView
 	public String toString()
 	{
 		StringBuilder sb = new StringBuilder();
-		sb.append("S:").append(size);
-		sb.append(" V:").append(verticalSize);
-		sb.append(" O:").append(offset);
+		sb.append("S:").append(this.size);
+		sb.append(" V:").append(this.verticalSize);
+		sb.append(" O:").append(this.offset);
 		
 		sb.append(" [");
-		for (int i = 0; i < size; i++)
+		for (int i = 0; i < this.size; i++)
 		{
-			sb.append(RenderDataPointUtil.toString(data.getLong(offset + i)));
-			if (i < size - 1)
+			sb.append(RenderDataPointUtil.toString(this.data.getLong(this.offset + i)));
+			if (i < this.size - 1)
 			{
 				sb.append(",\n");
 			}
@@ -229,11 +219,7 @@ public final class ColumnArrayView implements IColumnDataView
 	}
 	
 	
-	public int getDataHash()
-	{
-		return arrayHash(data, offset, size);
-	}
-	
+	public int getDataHash() { return arrayHash(this.data, this.offset, this.size); }
 	private static int arrayHash(LongArrayList a, int offset, int length)
 	{
 		if (a == null)
@@ -251,5 +237,7 @@ public final class ColumnArrayView implements IColumnDataView
 		}
 		return result;
 	}
+	
+	
 	
 }

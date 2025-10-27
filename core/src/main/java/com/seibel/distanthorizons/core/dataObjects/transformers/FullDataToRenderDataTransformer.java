@@ -368,7 +368,9 @@ public class FullDataToRenderDataTransformer
 			//=============================//
 			
 			// check if they share a top-bottom face and if they have same color
-			if (color == lastColor && bottomY + blockHeight == lastBottom  && renderDataIndex > 0)
+			if (color == lastColor 
+				&& bottomY + blockHeight == lastBottom  
+				&& renderDataIndex > 0)
 			{
 				//replace the previous block with new bottom
 				long columnData = renderColumnData.get(renderDataIndex - 1);

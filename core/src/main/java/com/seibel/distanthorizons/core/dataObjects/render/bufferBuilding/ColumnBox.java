@@ -270,7 +270,7 @@ public class ColumnBox
 				
 				// skip empty adjacent datapoints
 				if (!RenderDataPointUtil.doesDataPointExist(adjPoint)
-						|| RenderDataPointUtil.isVoid(adjPoint))
+					|| RenderDataPointUtil.isVoid(adjPoint))
 				{
 					continue;
 				}
@@ -288,7 +288,9 @@ public class ColumnBox
 				// if the adjacent data point is over the void
 				// don't consider it as transparent
 				boolean adjOverVoid = !RenderDataPointUtil.doesDataPointExist(adjBelowPoint);
-				boolean adjTransparent = !adjOverVoid && RenderDataPointUtil.getAlpha(adjPoint) < 255 && transparencyEnabled;
+				boolean adjTransparent = !adjOverVoid 
+						&& RenderDataPointUtil.getAlpha(adjPoint) < 255 
+						&& transparencyEnabled;
 				
 				
 				
