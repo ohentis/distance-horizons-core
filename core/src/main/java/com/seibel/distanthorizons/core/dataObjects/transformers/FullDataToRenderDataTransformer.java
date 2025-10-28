@@ -125,8 +125,6 @@ public class FullDataToRenderDataTransformer
 		{
 			for (int z = 0; z < FullDataSourceV2.WIDTH; z++)
 			{
-				throwIfThreadInterrupted();
-				
 				ColumnArrayView columnArrayView = columnSource.getVerticalDataPointView(x, z);
 				LongArrayList dataColumn = fullDataSource.get(x, z);
 				
