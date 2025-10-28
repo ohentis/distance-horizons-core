@@ -38,6 +38,7 @@ import com.seibel.distanthorizons.core.render.renderer.generic.BeaconRenderHandl
 import com.seibel.distanthorizons.core.render.renderer.generic.GenericObjectRenderer;
 import com.seibel.distanthorizons.core.util.KeyedLockContainer;
 import com.seibel.distanthorizons.core.util.LodUtil;
+import com.seibel.distanthorizons.core.util.PerfRecorder;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
 import com.seibel.distanthorizons.core.util.objects.quadTree.QuadNode;
 import com.seibel.distanthorizons.core.util.objects.quadTree.QuadTree;
@@ -121,6 +122,9 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 	@Nullable
 	public final BeaconRenderHandler beaconRenderHandler;
 	
+	// TODO should be removed once James is done testing
+	@Deprecated
+	public static final PerfRecorder FILE_PERF_RECORDER = new PerfRecorder("File");
 	
 	/** the smallest numerical detail level number that can be rendered */
 	private byte maxRenderDetailLevel;
@@ -153,6 +157,8 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 		
 		GenericObjectRenderer genericObjectRenderer = this.level.getGenericRenderer();
 		this.beaconRenderHandler = (genericObjectRenderer != null) ? new BeaconRenderHandler(genericObjectRenderer) : null;
+		
+		FILE_PERF_RECORDER.clear();
 		
 	}
 	
