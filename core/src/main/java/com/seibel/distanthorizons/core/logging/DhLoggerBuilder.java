@@ -75,7 +75,7 @@ public class DhLoggerBuilder
 	
 	public DhLoggerBuilder name(String name)
 	{
-		this.name = ModInfo.NAME + "-" + name;
+		this.name = name;
 		return this;
 	}
 	
