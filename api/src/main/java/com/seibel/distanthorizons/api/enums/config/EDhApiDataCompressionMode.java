@@ -22,7 +22,8 @@ package com.seibel.distanthorizons.api.enums.config;
 /**
  * UNCOMPRESSED <br>
  * LZ4 <br>
- * XZ <br><br>
+ * Z_STD <br>
+ * LZMA2 <br><br>
  * 
  * Note: speed and compression ratios are examples
  * and should only be used for estimated comparisons.
