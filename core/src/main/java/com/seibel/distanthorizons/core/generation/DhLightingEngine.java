@@ -314,7 +314,7 @@ public class DhLightingEngine
 			
 			
 			// propagate the lighting in each cardinal direction, IE: -x, +x, -y, +y, -z, +z
-			for (EDhDirection direction : EDhDirection.CARDINAL_DIRECTIONS) // since this is an array instead of an ArrayList this advanced for-loop shouldn't cause any GC issues
+			for (EDhDirection direction : EDhDirection.ALL) // since this is an array instead of an ArrayList this advanced for-loop shouldn't cause any GC issues
 			{
 				lightPos.mutateOffset(direction, neighbourBlockPos);
 				neighbourBlockPos.mutateToChunkRelativePos(relNeighbourBlockPos);

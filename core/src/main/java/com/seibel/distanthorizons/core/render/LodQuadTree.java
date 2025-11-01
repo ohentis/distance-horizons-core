@@ -640,7 +640,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 		// clear cache //
 		
 		this.clearRenderCacheForPos(pos);
-		for (EDhDirection direction : EDhDirection.ADJ_DIRECTIONS)
+		for (EDhDirection direction : EDhDirection.CARDINAL_COMPASS)
 		{
 			long adjacentPos = DhSectionPos.getAdjacentPos(pos, direction);
 			this.clearRenderCacheForPos(adjacentPos);
@@ -658,7 +658,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 		// the adjacent locations also need to be updated to make sure lighting
 		// and water updates correctly, otherwise oceans may have walls
 		// and lights may not show up over LOD borders
-		for (EDhDirection direction : EDhDirection.ADJ_DIRECTIONS)
+		for (EDhDirection direction : EDhDirection.CARDINAL_COMPASS)
 		{
 			long adjacentPos = DhSectionPos.getAdjacentPos(pos, direction);
 			this.sectionsToReload.add(adjacentPos);

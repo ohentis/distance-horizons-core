@@ -150,13 +150,13 @@ public class ColumnRenderBufferBuilder
 				// get adjacent render data columns //
 				//==================================//
 				
-				ColumnArrayView[] adjColumnViews = new ColumnArrayView[EDhDirection.ADJ_DIRECTIONS.length];
-				for (EDhDirection lodDirection : EDhDirection.ADJ_DIRECTIONS)
+				ColumnArrayView[] adjColumnViews = new ColumnArrayView[EDhDirection.CARDINAL_COMPASS.length];
+				for (EDhDirection lodDirection : EDhDirection.CARDINAL_COMPASS)
 				{
 					try
 					{
-						int xAdj = relX + lodDirection.getNormal().x;
-						int zAdj = relZ + lodDirection.getNormal().z;
+						int xAdj = relX + lodDirection.normal.x;
+						int zAdj = relZ + lodDirection.normal.z;
 						boolean isCrossRenderSourceBoundary =
 								(xAdj < 0 || xAdj >= ColumnRenderSource.SECTION_SIZE) ||
 								(zAdj < 0 || zAdj >= ColumnRenderSource.SECTION_SIZE);

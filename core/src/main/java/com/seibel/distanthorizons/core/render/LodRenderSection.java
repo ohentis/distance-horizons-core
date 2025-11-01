@@ -296,13 +296,13 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 								CachedColumnRenderSource eastRenderSource = adjacentLoadFutures[2].get();
 								CachedColumnRenderSource westRenderSource = adjacentLoadFutures[3].get())
 						{
-							ColumnRenderSource[] adjacentRenderSections = new ColumnRenderSource[EDhDirection.ADJ_DIRECTIONS.length];
+							ColumnRenderSource[] adjacentRenderSections = new ColumnRenderSource[EDhDirection.CARDINAL_COMPASS.length];
 							adjacentRenderSections[EDhDirection.NORTH.ordinal() - 2] = (northRenderSource != null) ? northRenderSource.columnRenderSource : null;
 							adjacentRenderSections[EDhDirection.SOUTH.ordinal() - 2] = (southRenderSource != null) ? southRenderSource.columnRenderSource : null;
 							adjacentRenderSections[EDhDirection.EAST.ordinal() - 2] = (eastRenderSource != null) ? eastRenderSource.columnRenderSource : null;
 							adjacentRenderSections[EDhDirection.WEST.ordinal() - 2] = (westRenderSource != null) ? westRenderSource.columnRenderSource : null;
 							
-							boolean[] adjIsSameDetailLevel = new boolean[EDhDirection.ADJ_DIRECTIONS.length];
+							boolean[] adjIsSameDetailLevel = new boolean[EDhDirection.CARDINAL_COMPASS.length];
 							adjIsSameDetailLevel[EDhDirection.NORTH.ordinal() - 2] = this.isAdjacentPosSameDetailLevel(EDhDirection.NORTH);
 							adjIsSameDetailLevel[EDhDirection.SOUTH.ordinal() - 2] = this.isAdjacentPosSameDetailLevel(EDhDirection.SOUTH);
 							adjIsSameDetailLevel[EDhDirection.EAST.ordinal() - 2] = this.isAdjacentPosSameDetailLevel(EDhDirection.EAST);

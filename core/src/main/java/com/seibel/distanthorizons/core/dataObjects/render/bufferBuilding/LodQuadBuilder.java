@@ -304,7 +304,7 @@ public class LodQuadBuilder
 		short widthEastWest = quad.widthEastWest;
 		short widthNorthSouth = quad.widthNorthSouthOrUpDown;
 		byte normalIndex = (byte) quad.direction.ordinal();
-		EDhDirection.Axis axis = quad.direction.getAxis();
+		EDhDirection.Axis axis = quad.direction.axis;
 		for (int i = 0; i < quadBase.length; i++)
 		{
 			short dx, dy, dz;
@@ -352,7 +352,7 @@ public class LodQuadBuilder
 					if (this.grassSideRenderingMode != EDhApiGrassSideRendering.AS_GRASS)
 					{
 						// only change the vertex color if it's on the side or bottom
-						if (quad.direction.getAxis().isHorizontal() || quad.direction == EDhDirection.DOWN)
+						if (quad.direction.axis.isHorizontal() || quad.direction == EDhDirection.DOWN)
 						{
 							if (this.grassSideRenderingMode == EDhApiGrassSideRendering.AS_DIRT
 									// if we want the color to fade, only apply the dirt color to the bottom vertices
