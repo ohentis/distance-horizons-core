@@ -143,45 +143,47 @@ public abstract class AbstractDataSourceHandler
 	@Nullable
 	public TDataSource get(long pos)
 	{
-		TDataSource dataSource = null;
 		try(TDTO dto = this.repo.getByKey(pos))
 		{
-			if (dto != null)
+			if (dto == null)
 			{
-				try
-				{
-					// load from database
-					dataSource = this.createDataSourceFromDto(dto);
-				}
-				catch (DataCorruptedException e)
-				{
-					// there's a rare issue where the exception doesn't
-					// have a message, which can cause problems
-					String message = (e.getMessage() == null) ? e.getMessage() : "No Error message for exception ["+e.getClass().getSimpleName()+"]";
-					
-					// Only log each message type once.
-					// This is done to prevent logging "No compression mode with the value [2]" 10,000 times 
-					// if the user is migrating from a nightly build and used ZStd.
-					if (CORRUPT_DATA_ERRORS_LOGGED.add(message))
-					{
-						LOGGER.warn("Corrupted data found at pos [" + DhSectionPos.toString(pos) + "]. Data at position will be deleted so it can be re-generated to prevent issues. Future errors with this same message won't be logged. Error: [" + message + "].", e);
-					}
-					
-					this.repo.deleteWithKey(pos);
-				}
+				return this.makeEmptyDataSource(pos);
 			}
-			else
+			
+			try
 			{
-				dataSource = this.makeEmptyDataSource(pos);
+				// load from database
+				return this.createDataSourceFromDto(dto);
+			}
+			catch (DataCorruptedException e)
+			{
+				this.tryLogCorruptedDataError(DhSectionPos.toString(pos), e);
+				this.repo.deleteWithKey(pos);
 			}
 		}
 		catch (InterruptedException ignore) { }
 		catch (IOException e)
 		{
-			LOGGER.warn("File read Error for pos ["+ DhSectionPos.toString(pos)+"], error: "+e.getMessage(), e);
+			LOGGER.warn("File read Error for pos ["+DhSectionPos.toString(pos)+"], error: "+e.getMessage(), e);
 		}
 		
-		return dataSource;
+		// an error occurred
+		return null;
+	}
+	
+	protected void tryLogCorruptedDataError(String whereClause, Exception e)
+	{
+		// there's a rare issue where the exception doesn't
+		// have a message, which can cause problems
+		String message = (e.getMessage() == null) ? e.getMessage() : "No Error message for exception ["+e.getClass().getSimpleName()+"]";
+		
+		// Only log each message type once.
+		// This is done to prevent logging "No compression mode with the value [2]" 10,000 times 
+		// if the user is migrating from a nightly build and used ZStd.
+		if (CORRUPT_DATA_ERRORS_LOGGED.add(message))
+		{
+			LOGGER.warn("Corrupted data found at [" + whereClause + "]. Data at will be deleted so it can be re-generated to prevent issues. Future errors with this same message won't be logged. Error: [" + message + "].", e);
+		}
 	}
 	
 	
