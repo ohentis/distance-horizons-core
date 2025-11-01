@@ -32,7 +32,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @see GeneratedFullDataSourceProvider
  */
 public abstract class AbstractDataSourceHandler
-		<TDataSource extends IDataSource<TDhLevel>, 
+		<TDataSource extends IDataSource, 
 				TDTO extends IBaseDTO<Long>,
 				TRepo extends AbstractDhRepo<Long, TDTO>,
 				TDhLevel extends IDhLevel>
@@ -74,7 +74,7 @@ public abstract class AbstractDataSourceHandler
 	
 	public final TRepo repo;
 	
-	public final ArrayList<IDataSourceUpdateFunc<TDataSource>> dateSourceUpdateListeners = new ArrayList<>();
+	public final ArrayList<IDataSourceUpdateListenerFunc<TDataSource>> dateSourceUpdateListeners = new ArrayList<>();
 	
 	
 	
@@ -89,7 +89,6 @@ public abstract class AbstractDataSourceHandler
 		this.saveDir = (saveDirOverride == null) ? saveStructure.getSaveFolder(level.getLevelWrapper()) : saveDirOverride;
 		this.repo = this.createRepo();
 	}
-	
 	
 	
 	
@@ -265,7 +264,7 @@ public abstract class AbstractDataSourceHandler
 			{
 				if (recipientDataSource != null)
 				{
-					boolean dataModified = recipientDataSource.update(inputData, this.level);
+					boolean dataModified = recipientDataSource.update(inputData);
 					if (dataModified)
 					{
 						// save the updated data to the database
@@ -275,7 +274,7 @@ public abstract class AbstractDataSourceHandler
 						}
 						
 						
-						for (IDataSourceUpdateFunc<TDataSource> listener : this.dateSourceUpdateListeners)
+						for (IDataSourceUpdateListenerFunc<TDataSource> listener : this.dateSourceUpdateListeners)
 						{
 							if (listener != null)
 							{
@@ -302,9 +301,9 @@ public abstract class AbstractDataSourceHandler
 	
 	
 	
-	//================//
-	// helper methods //
-	//================//
+	//==================//
+	// debugger methods //
+	//==================//
 	
 	/** used for debugging to track which positions are queued for updating */
 	private void markUpdateStart(long dataSourcePos)
@@ -368,7 +367,7 @@ public abstract class AbstractDataSourceHandler
 	//================//
 	
 	@FunctionalInterface
-	public interface IDataSourceUpdateFunc<TDataSource>
+	public interface IDataSourceUpdateListenerFunc<TDataSource>
 	{
 		void OnDataSourceUpdated(TDataSource updatedFullDataSource);
 	}

@@ -48,7 +48,7 @@ import java.util.Arrays;
  * @see FullDataPointUtil
  * @see FullDataSourceV2
  */
-public class FullDataSourceV1 implements IDataSource<IDhLevel>
+public class FullDataSourceV1 implements IDataSource
 {
 	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
 	
@@ -103,7 +103,7 @@ public class FullDataSourceV1 implements IDataSource<IDhLevel>
 	
 	@Deprecated
 	@Override
-	public boolean update(FullDataSourceV2 dataSource, IDhLevel level) { throw new UnsupportedOperationException("Deprecated"); }
+	public boolean update(FullDataSourceV2 dataSource) { throw new UnsupportedOperationException("Deprecated"); }
 	
 	
 	

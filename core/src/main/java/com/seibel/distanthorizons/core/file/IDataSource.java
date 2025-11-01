@@ -8,16 +8,14 @@ import com.seibel.distanthorizons.core.sql.dto.IBaseDTO;
 /**
  * Base for all data sources. <br><br>
  * 
- * AutoCloseable Can be implemented to allow for disposing of pooled data sources. <br><br>
- * 
- * @param <TDhLevel> there are times when we need specifically a client level vs a more generic level
+ * AutoCloseable Can be implemented to allow for disposing of pooled data sources.
  */
-public interface IDataSource<TDhLevel extends IDhLevel> extends IBaseDTO<Long>, AutoCloseable
+public interface IDataSource extends IBaseDTO<Long>, AutoCloseable
 {
 	long getPos();
 	
 	/** @return true if the data was changed */
-	boolean update(FullDataSourceV2 chunkData, TDhLevel level);
+	boolean update(FullDataSourceV2 chunkData);
 	
 	
 	

@@ -61,7 +61,7 @@ import java.util.List;
  */
 public class FullDataSourceV2 
 		extends AbstractPhantomArrayList
-		implements IDataSource<IDhLevel>, IDhApiFullDataSource
+		implements IDataSource, IDhApiFullDataSource
 {
 	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
 	/** useful for debugging, but can slow down update operations quite a bit due to being called so often. */
@@ -375,7 +375,6 @@ public class FullDataSourceV2
 	//==========//
 	
 	@Override
-	public boolean update(@NotNull FullDataSourceV2 inputDataSource, @Nullable IDhLevel level) { return this.update(inputDataSource); }
 	public boolean update(@NotNull FullDataSourceV2 inputDataSource)
 	{
 		// don't try updating if the input is empty
