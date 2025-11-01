@@ -116,9 +116,7 @@ public class FullDataSourceV2
 	
 	/** 
 	 * stored x/z, y <br>
-	 * The y data should be sorted from top to bottom <br>
-	 * TODO that ordering feels weird, it'd be nice to reverse that order, unfortunately
-	 *      there's something in the render data logic that expects this order so we can't change it right now
+	 * The y data should be sorted from top to bottom
 	 */
 	public final LongArrayList[] dataPoints;
 	

@@ -716,10 +716,7 @@ public abstract class AbstractDhRepo<TKey, TDTO extends IBaseDTO<TKey>> implemen
 	
 	
 	
-	/** 
-	 * should NOT start with WHERE 
-	 * Example: TODO 
-	 */
+	/** should not start with WHERE */
 	protected abstract String CreateParameterizedWhereString();
 	
 	protected void setPreparedStatementWhereClause(PreparedStatement statement, TKey key) throws SQLException { this.setPreparedStatementWhereClause(statement, 1, key); }
