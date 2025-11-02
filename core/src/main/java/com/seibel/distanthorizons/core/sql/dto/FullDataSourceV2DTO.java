@@ -121,6 +121,7 @@ public class FullDataSourceV2DTO
 	
 	/** Should only be used for subsequent decoding */
 	public static FullDataSourceV2DTO CreateEmptyDataSourceForDecoding() { return new FullDataSourceV2DTO(); }
+	
 	private FullDataSourceV2DTO() 
 	{
 		super(ARRAY_LIST_POOL, 4, 0, 0);

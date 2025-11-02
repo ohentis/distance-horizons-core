@@ -27,9 +27,7 @@ import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.FullDataPointIdMap;
 import com.seibel.distanthorizons.core.dataObjects.transformers.FullDataOcclusionCuller;
 import com.seibel.distanthorizons.core.dataObjects.transformers.LodDataBuilder;
-import com.seibel.distanthorizons.core.file.AbstractDataSourceHandler;
-import com.seibel.distanthorizons.core.file.IDataSource;
-import com.seibel.distanthorizons.core.level.IDhLevel;
+import com.seibel.distanthorizons.core.file.fullDatafile.FullDataSourceProviderV2;
 import com.seibel.distanthorizons.core.logging.DhLogger;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pooling.AbstractPhantomArrayList;
@@ -45,7 +43,6 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
-import com.seibel.distanthorizons.core.logging.DhLogger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -61,7 +58,7 @@ import java.util.List;
  */
 public class FullDataSourceV2 
 		extends AbstractPhantomArrayList
-		implements IDataSource, IDhApiFullDataSource
+		implements IDhApiFullDataSource
 {
 	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
 	/** useful for debugging, but can slow down update operations quite a bit due to being called so often. */
@@ -87,10 +84,6 @@ public class FullDataSourceV2
 	private int cachedHashCode = 0;
 	
 	private final long pos;
-	@Override
-	public Long getKey() { return this.pos; }
-	@Override
-	public String getKeyDisplayString() { return DhSectionPos.toString(this.pos); }
 	
 	
 	public final FullDataPointIdMap mapping;
@@ -226,7 +219,7 @@ public class FullDataSourceV2
 	private FullDataSourceV2(
 			long pos,
 			FullDataPointIdMap mapping, @Nullable LongArrayList[] data,
-			@Nullable byte[] columnGenerationSteps, @Nullable byte[] columnWorldCompressionMode,
+			byte @Nullable [] columnGenerationSteps, byte @Nullable [] columnWorldCompressionMode,
 			boolean empty)
 	{
 		super(ARRAY_LIST_POOL, 2, 0, WIDTH * WIDTH);
@@ -287,11 +280,11 @@ public class FullDataSourceV2
 	// getters //
 	//=========//
 	
-	public LongArrayList get(int relX, int relZ) throws IndexOutOfBoundsException 
+	public LongArrayList getColumnAtRelPos(int relX, int relZ) throws IndexOutOfBoundsException 
 	{ return this.dataPoints[relativePosToIndex(relX, relZ)]; }
 	
 	@Nullable
-	public LongArrayList tryGet(int relX, int relZ)
+	public LongArrayList tryGetColumnAtRelPos(int relX, int relZ)
 	{
 		int index = tryGetRelativePosToIndex(relX, relZ);
 		if (index == -1)
@@ -306,7 +299,7 @@ public class FullDataSourceV2
 	 * returns {@link FullDataPointUtil#EMPTY_DATA_POINT} if the given {@link DhBlockPos}
 	 * is outside this data source's boundaries.
 	 */
-	public long getAtBlockPos(DhBlockPos blockPos)
+	public long getDataPointAtBlockPos(DhBlockPos blockPos)
 	{
 		DhLodPos requestedPos = new DhLodPos(LodUtil.BLOCK_DETAIL_LEVEL, blockPos.getX(), blockPos.getZ());
 		
@@ -330,7 +323,7 @@ public class FullDataSourceV2
 		DhLodPos relativePos = requestedPos.getDhSectionRelativePositionForDetailLevel(requestDetailLevel);
 		
 		// get the data column
-		LongArrayList dataColumn = this.get(relativePos.x, relativePos.z);
+		LongArrayList dataColumn = this.getColumnAtRelPos(relativePos.x, relativePos.z);
 		if (dataColumn == null)
 		{
 			return FullDataPointUtil.EMPTY_DATA_POINT;
@@ -374,8 +367,7 @@ public class FullDataSourceV2
 	// updating //
 	//==========//
 	
-	@Override
-	public boolean update(@NotNull FullDataSourceV2 inputDataSource)
+	public boolean updateFromChunk(@NotNull FullDataSourceV2 inputDataSource)
 	{
 		// don't try updating if the input is empty
 		if (inputDataSource.mapping.isEmpty())
@@ -403,7 +395,7 @@ public class FullDataSourceV2
 						// copy over application flag if either are set to continue propagating
 						(BoolUtil.falseIfNull(this.applyToParent) || BoolUtil.falseIfNull(inputDataSource.applyToParent))
 						// don't propagate past the top of the tree
-						&& (DhSectionPos.getDetailLevel(this.pos) < AbstractDataSourceHandler.TOP_SECTION_DETAIL_LEVEL);
+						&& (DhSectionPos.getDetailLevel(this.pos) < FullDataSourceProviderV2.TOP_SECTION_DETAIL_LEVEL);
 			}
 			
 			// null check to prevent setting a flag we don't want to save in the DB
@@ -412,7 +404,7 @@ public class FullDataSourceV2
 				this.applyToChildren =
 						(BoolUtil.falseIfNull(this.applyToChildren) || BoolUtil.falseIfNull(inputDataSource.applyToChildren))
 						// don't propagate past the bottom of the tree
-						&& (DhSectionPos.getDetailLevel(this.pos) > AbstractDataSourceHandler.MIN_SECTION_DETAIL_LEVEL);
+						&& (DhSectionPos.getDetailLevel(this.pos) > FullDataSourceProviderV2.MIN_SECTION_DETAIL_LEVEL);
 			}
 		}
 		else if (inputDetailLevel + 1 == thisDetailLevel)
@@ -423,7 +415,7 @@ public class FullDataSourceV2
 			this.applyToParent =
 					dataChanged
 					&& (BoolUtil.falseIfNull(this.applyToParent) || BoolUtil.falseIfNull(inputDataSource.applyToParent))
-					&& (DhSectionPos.getDetailLevel(this.pos) < AbstractDataSourceHandler.TOP_SECTION_DETAIL_LEVEL);
+					&& (DhSectionPos.getDetailLevel(this.pos) < FullDataSourceProviderV2.TOP_SECTION_DETAIL_LEVEL);
 			
 		}
 		else if (inputDetailLevel - 1 == thisDetailLevel)
@@ -435,7 +427,7 @@ public class FullDataSourceV2
 			this.applyToChildren =
 					dataChanged
 					&& (BoolUtil.falseIfNull(this.applyToChildren) || BoolUtil.falseIfNull(inputDataSource.applyToChildren))
-					&& (DhSectionPos.getDetailLevel(this.pos) > AbstractDataSourceHandler.MIN_SECTION_DETAIL_LEVEL);
+					&& (DhSectionPos.getDetailLevel(this.pos) > FullDataSourceProviderV2.MIN_SECTION_DETAIL_LEVEL);
 		}
 		else
 		{
@@ -460,7 +452,7 @@ public class FullDataSourceV2
 				{
 					for (int z = 0; z < WIDTH; z++)
 					{
-						LongArrayList dataColumn = this.get(x, z);
+						LongArrayList dataColumn = this.getColumnAtRelPos(x, z);
 						if (dataColumn != null
 							&& dataColumn.size() > 1)
 						{
@@ -1202,17 +1194,9 @@ public class FullDataSourceV2
 	// setters and getters //
 	//=====================//
 	
-	@Override
 	public long getPos() { return this.pos; }
 	
-	@Override
 	public byte getDataDetailLevel() { return (byte) (DhSectionPos.getDetailLevel(this.pos) - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL); }
-	
-	public EDhApiWorldGenerationStep getWorldGenStepAtRelativePos(int relX, int relZ) 
-	{
-		int index = relativePosToIndex(relX, relZ);
-		return EDhApiWorldGenerationStep.fromValue(this.columnGenerationSteps.getByte(index)); 
-	}
 	
 	public void setSingleColumn(LongArrayList longArray, int relX, int relZ, EDhApiWorldGenerationStep worldGenStep, EDhApiWorldCompressionMode worldCompressionMode)
 	{
@@ -1277,7 +1261,7 @@ public class FullDataSourceV2
 	@Override 
 	public List<DhApiTerrainDataPoint> getApiDataPointColumn(int relX, int relZ) throws IndexOutOfBoundsException
 	{
-		LongArrayList dataColumn = this.get(relX, relZ);
+		LongArrayList dataColumn = this.getColumnAtRelPos(relX, relZ);
 		
 		ArrayList<DhApiTerrainDataPoint> apiList = new ArrayList<>();
 		for (int i = 0; i < dataColumn.size(); i++)

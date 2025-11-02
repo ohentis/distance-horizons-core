@@ -413,7 +413,7 @@ public class DhLightingEngine
 		{
 			for (int x = 0; x < FullDataSourceV2.WIDTH; x++)
 			{
-				LongArrayList dataPoints = dataSource.get(x, z);
+				LongArrayList dataPoints = dataSource.getColumnAtRelPos(x, z);
 				if (dataPoints != null && !dataPoints.isEmpty())
 				{
 					// iterate through the data points in this column top-down
@@ -564,7 +564,7 @@ public class DhLightingEngine
 			// check if the adjacent position is within the bounds of this data source...
 			if (adjacentX >= 0 && adjacentX < FullDataSourceV2.WIDTH && adjacentZ >= 0 && adjacentZ < FullDataSourceV2.WIDTH)
 			{
-				LongArrayList adjacentDataPoints = chunk.get(adjacentX, adjacentZ);
+				LongArrayList adjacentDataPoints = chunk.getColumnAtRelPos(adjacentX, adjacentZ);
 				// ...and also check to make sure we have some data points
 				// (potentially transparent ones) to propagate through in the adjacent column.
 				if (adjacentDataPoints != null)

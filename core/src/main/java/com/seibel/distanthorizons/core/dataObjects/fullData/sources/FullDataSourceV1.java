@@ -20,7 +20,6 @@
 package com.seibel.distanthorizons.core.dataObjects.fullData.sources;
 
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
-import com.seibel.distanthorizons.core.file.IDataSource;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLogger;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
@@ -34,7 +33,6 @@ import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataOutputStre
 import com.seibel.distanthorizons.core.dataObjects.fullData.FullDataPointIdMap;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.coreapi.util.BitShiftUtil;
-import com.seibel.distanthorizons.core.logging.DhLogger;
 
 import java.io.*;
 import java.util.Arrays;
@@ -48,7 +46,7 @@ import java.util.Arrays;
  * @see FullDataPointUtil
  * @see FullDataSourceV2
  */
-public class FullDataSourceV1 implements IDataSource
+public class FullDataSourceV1
 {
 	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
 	
@@ -95,28 +93,13 @@ public class FullDataSourceV1 implements IDataSource
 	}
 	
 	
-	
-	
-	//======//
-	// data //
-	//======//
-	
-	@Deprecated
-	@Override
-	public boolean update(FullDataSourceV2 dataSource) { throw new UnsupportedOperationException("Deprecated"); }
-	
-	
-	
 	//=====================//
 	// setters and getters //
 	//=====================//
 	
-	@Override
 	public Long getKey() { return this.pos; }
-	@Override
 	public String getKeyDisplayString() { return DhSectionPos.toString(this.pos); }
 	
-	@Override
 	public long getPos() { return this.pos; }
 	
 	public void resizeDataStructuresForRepopulation(long pos)
@@ -125,7 +108,6 @@ public class FullDataSourceV1 implements IDataSource
 		this.pos = pos;
 	}
 	
-	@Override
 	public byte getDataDetailLevel() { return (byte) (DhSectionPos.getDetailLevel(this.pos) - SECTION_SIZE_OFFSET); }
 	
 	public boolean isEmpty() { return this.isEmpty; }
@@ -376,15 +358,6 @@ public class FullDataSourceV1 implements IDataSource
 		return FullDataPointIdMap.deserialize(inputStream, this.pos, levelWrapper);
 	}
 	public void setIdMapping(FullDataPointIdMap mappings) { this.mapping.mergeAndReturnRemappedEntityIds(mappings); }
-	
-	
-	//==================//
-	// override methods //
-	//==================//
-	
-	@Override
-	public void close()
-	{ /* not currently needed */ }
 	
 	
 	
