@@ -23,7 +23,7 @@ import com.google.common.cache.CacheBuilder;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
-import com.seibel.distanthorizons.core.file.fullDatafile.FullDataSourceProviderV2;
+import com.seibel.distanthorizons.core.file.fullDatafile.V2.FullDataSourceProviderV2;
 import com.seibel.distanthorizons.core.file.fullDatafile.RemoteFullDataSourceProvider;
 import com.seibel.distanthorizons.core.file.structure.ISaveStructure;
 import com.seibel.distanthorizons.core.generation.RemoteWorldRetrievalQueue;
@@ -68,7 +68,7 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 	public final ClientLevelModule clientside;
 	public final IClientLevelWrapper levelWrapper;
 	public final ISaveStructure saveStructure;
-	public final RemoteFullDataSourceProvider dataFileHandler;
+	public final RemoteFullDataSourceProvider remoteDataSourceProvider;
 	
 	@CheckForNull
 	private final ClientNetworkState networkState;
@@ -130,12 +130,12 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 			this.syncOnLoadRequestQueue = null;
 		}
 		
-		this.dataFileHandler = new RemoteFullDataSourceProvider(this, saveStructure, fullDataSaveDirOverride, this.syncOnLoadRequestQueue);
-		this.worldGenModule = new WorldGenModule(this, this.dataFileHandler, () -> new WorldGenState(this, networkState));
+		this.remoteDataSourceProvider = new RemoteFullDataSourceProvider(this, saveStructure, fullDataSaveDirOverride, this.syncOnLoadRequestQueue);
+		this.worldGenModule = new WorldGenModule(this, this.remoteDataSourceProvider, () -> new WorldGenState(this, networkState));
 		
 		this.clientside = new ClientLevelModule(this);
 		
-		this.createAndSetSupportingRepos(this.dataFileHandler.repo.databaseFile);
+		this.createAndSetSupportingRepos(this.remoteDataSourceProvider.repo.databaseFile);
 		this.runRepoReliantSetup();
 		
 		this.clientside.startRenderer();
@@ -283,7 +283,7 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 	public CompletableFuture<Void> updateDataSourcesAsync(FullDataSourceV2 data) { return this.clientside.updateDataSourcesAsync(data); }
 	
 	@Override
-	public FullDataSourceProviderV2 getFullDataProvider() { return this.dataFileHandler; }
+	public FullDataSourceProviderV2 getFullDataProvider() { return this.remoteDataSourceProvider; }
 	
 	@Override
 	public ISaveStructure getSaveStructure() { return this.saveStructure; }
@@ -321,24 +321,7 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 		messageList.add("["+dimName+"] rendering: "+(rendering ? "yes" : "no"));
 		
 		
-		boolean migrationErrored = this.dataFileHandler.getMigrationStoppedWithError();
-		if (!migrationErrored)
-		{
-			long legacyDeletionCount = this.dataFileHandler.getLegacyDeletionCount();
-			if (legacyDeletionCount > 0)
-			{
-				messageList.add("  Migrating - Deleting #: " + legacyDeletionCount);
-			}
-			long migrationCount = this.dataFileHandler.getTotalMigrationCount();
-			if (migrationCount > 0)
-			{
-				messageList.add("  Migrating - Conversion #: " + migrationCount);
-			}
-		}
-		else
-		{
-			messageList.add("  Migration Failed");
-		}
+		this.remoteDataSourceProvider.addDebugMenuStringsToList(messageList);
 		
 		
 		// world gen
@@ -378,7 +361,7 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 		this.levelWrapper.setDhLevel(null);
 		this.clientside.close();
 		super.close();
-		this.dataFileHandler.close();
+		this.remoteDataSourceProvider.close();
 		LOGGER.info("Closed [" + DhClientLevel.class.getSimpleName() + "] for [" + this.levelWrapper + "]");
 	}
 	

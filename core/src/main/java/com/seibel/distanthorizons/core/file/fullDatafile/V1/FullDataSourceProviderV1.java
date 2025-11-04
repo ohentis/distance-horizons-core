@@ -1,4 +1,4 @@
-package com.seibel.distanthorizons.core.file.fullDatafile;
+package com.seibel.distanthorizons.core.file.fullDatafile.V1;
 
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV1;
 import com.seibel.distanthorizons.core.file.structure.ISaveStructure;
@@ -43,10 +43,10 @@ public class FullDataSourceProviderV1<TDhLevel extends IDhLevel>
 	// constructor //
 	//=============//
 	
-	public FullDataSourceProviderV1(TDhLevel level, ISaveStructure saveStructure, @Nullable File saveDirOverride)
+	public FullDataSourceProviderV1(TDhLevel level, File saveDir)
 	{
 		this.level = level;
-		this.saveDir = (saveDirOverride == null) ? saveStructure.getSaveFolder(level.getLevelWrapper()) : saveDirOverride;
+		this.saveDir = saveDir;
 		if (!this.saveDir.exists() && !this.saveDir.mkdirs())
 		{
 			LOGGER.warn("Unable to create full data folder, file saving may fail.");
