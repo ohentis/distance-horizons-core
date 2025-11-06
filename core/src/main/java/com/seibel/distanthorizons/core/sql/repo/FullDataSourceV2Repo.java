@@ -356,12 +356,6 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 					"   WHERE DetailLevel = ? AND PosX = ? AND PosZ = ?; \n";
 	public PreparedStatement createNoAdjSelectStatementByKey(Long key) throws SQLException
 	{
-		//// create shared template string
-		//if (this.selectSqlTemplate == null)
-		//{
-		//	this.selectSqlTemplate = this.limitedSelectSqlTemplate;
-		//}
-		
 		PreparedStatement statement = this.createPreparedStatement(this.noAdjSelectSqlTemplate);
 		if (statement == null)
 		{

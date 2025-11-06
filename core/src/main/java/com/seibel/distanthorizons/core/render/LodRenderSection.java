@@ -356,7 +356,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 				try (FullDataSourceV2 fullDataSource =
 						// no direction means get the center LOD		
 						(direction == null)
-						? this.fullDataSourceProvider.getCenter(finalPos)
+						? this.fullDataSourceProvider.get(finalPos)
 						: this.fullDataSourceProvider.getAdjForDirection(finalPos, direction.opposite()))
 				{
 					getFull.end();

@@ -489,7 +489,7 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 		@Override
 		public CompletableFuture<Boolean> shouldGenerateSplitChild(long pos)
 		{
-			return GeneratedFullDataSourceProvider.this.getAsync(pos, false).thenApply(fullDataSource ->
+			return GeneratedFullDataSourceProvider.this.getAsync(pos).thenApply(fullDataSource ->
 			{
 				//noinspection TryFinallyCanBeTryWithResources
 				try

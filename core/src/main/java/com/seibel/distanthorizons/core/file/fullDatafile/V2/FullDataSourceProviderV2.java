@@ -171,7 +171,7 @@ public class FullDataSourceProviderV2 implements IDebugRenderable, AutoCloseable
 	 *
 	 * This call is concurrent. I.e. it supports being called by multiple threads at the same time.
 	 */
-	public CompletableFuture<FullDataSourceV2> getAsync(long pos, boolean includeAdjacentData)
+	public CompletableFuture<FullDataSourceV2> getAsync(long pos)
 	{
 		AbstractExecutorService executor = ThreadPoolUtil.getFileHandlerExecutor();
 		if (executor == null || executor.isTerminated())
@@ -182,7 +182,7 @@ public class FullDataSourceProviderV2 implements IDebugRenderable, AutoCloseable
 		
 		try
 		{
-			return CompletableFuture.supplyAsync(() -> this.get(pos, includeAdjacentData), executor);
+			return CompletableFuture.supplyAsync(() -> this.get(pos), executor);
 		}
 		catch (RejectedExecutionException ignore)
 		{
@@ -193,14 +193,12 @@ public class FullDataSourceProviderV2 implements IDebugRenderable, AutoCloseable
 	/**
 	 * Should only be used in internal file handler methods where we are already running on a file handler thread.
 	 * Can return null if the repo is in the process of being shut down
-	 * @see FullDataSourceProviderV2#getAsync(long, boolean)
+	 * @see FullDataSourceProviderV2#getAsync(long)
 	 */
 	@Nullable
-	public FullDataSourceV2 get(long pos, boolean includeAdjacentData)
+	public FullDataSourceV2 get(long pos)
 	{
-		try(FullDataSourceV2DTO dto = includeAdjacentData 
-				? this.repo.getByKey(pos)
-				: this.repo.getByPosNoAdj(pos))
+		try(FullDataSourceV2DTO dto = this.repo.getByPosNoAdj(pos))
 		{
 			if (dto == null)
 			{
@@ -245,10 +243,16 @@ public class FullDataSourceProviderV2 implements IDebugRenderable, AutoCloseable
 	
 	
 	
-	//
-	// TODO name?
-	//
+	//=================//
+	// partial getters //
+	//=================//
 	
+	/** 
+	 * Only returns the data row/column for the given compass-cardinal
+	 * direction. <br>
+	 * This is generally used for generating LOD render data
+	 * where we only need the adjacent data, not the full thing.
+	 */
 	public FullDataSourceV2 getAdjForDirection(long pos, EDhDirection direction)
 	{
 		try(FullDataSourceV2DTO dto = this.repo.getAdjByPosAndDirection(pos, direction))
@@ -262,36 +266,6 @@ public class FullDataSourceProviderV2 implements IDebugRenderable, AutoCloseable
 			{
 				// load from database
 				return this.createAdjDataSourceFromDto(dto, direction);
-			}
-			catch (DataCorruptedException e)
-			{
-				this.tryLogCorruptedDataError(DhSectionPos.toString(pos), e);
-				this.repo.deleteWithKey(pos);
-			}
-		}
-		catch (InterruptedException ignore) { }
-		catch (IOException e)
-		{
-			LOGGER.warn("File read Error for pos ["+DhSectionPos.toString(pos)+"], error: "+e.getMessage(), e);
-		}
-		
-		// an error occurred
-		return null;
-	}
-	
-	public FullDataSourceV2 getCenter(long pos)
-	{
-		try(FullDataSourceV2DTO dto = this.repo.getByPosNoAdj(pos))
-		{
-			if (dto == null)
-			{
-				return FullDataSourceV2.createEmpty(pos);
-			}
-			
-			try
-			{
-				// load from database
-				return this.createDataSourceFromDto(dto);
 			}
 			catch (DataCorruptedException e)
 			{

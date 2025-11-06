@@ -122,7 +122,7 @@ public class FullDataUpdaterV2 implements IDebugRenderable, AutoCloseable
 			
 			
 			// get or create the data source
-			try (FullDataSourceV2 recipientDataSource = this.provider.get(updatePos, false))
+			try (FullDataSourceV2 recipientDataSource = this.provider.get(updatePos))
 			{
 				if (recipientDataSource != null)
 				{
