@@ -66,7 +66,8 @@ public class FullDataToRenderDataTransformer
 	//==============================//
 	
 	@Nullable
-	public static ColumnRenderSource transformFullDataToRenderSource(@Nullable FullDataSourceV2 fullDataSource, @Nullable IClientLevelWrapper levelWrapper)
+	public static ColumnRenderSource transformFullDataToRenderSource(
+			@Nullable FullDataSourceV2 fullDataSource, @Nullable IClientLevelWrapper levelWrapper)
 	{
 		if (fullDataSource == null)
 		{
@@ -102,7 +103,8 @@ public class FullDataToRenderDataTransformer
 	 * @throws InterruptedException Can be caused by interrupting the thread upstream.
 	 * Generally thrown if the method is running after the client leaves the current world.
 	 */
-	private static ColumnRenderSource transformCompleteFullDataToColumnData(IClientLevelWrapper levelWrapper, FullDataSourceV2 fullDataSource) throws InterruptedException
+	private static ColumnRenderSource transformCompleteFullDataToColumnData(
+			IClientLevelWrapper levelWrapper, FullDataSourceV2 fullDataSource) throws InterruptedException
 	{
  		final long pos = fullDataSource.getPos();
 		final byte dataDetail = fullDataSource.getDataDetailLevel();

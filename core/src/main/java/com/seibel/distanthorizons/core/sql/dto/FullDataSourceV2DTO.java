@@ -25,10 +25,12 @@ import com.seibel.distanthorizons.api.enums.config.EDhApiWorldCompressionMode;
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
 import com.seibel.distanthorizons.core.dataObjects.fullData.FullDataPointIdMap;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
+import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.pooling.AbstractPhantomArrayList;
 import com.seibel.distanthorizons.core.pooling.PhantomArrayListPool;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.network.INetworkObject;
+import com.seibel.distanthorizons.core.sql.dto.util.FullDataMinMaxPosUtil;
 import com.seibel.distanthorizons.core.util.BoolUtil;
 import com.seibel.distanthorizons.core.util.FullDataPointUtil;
 import com.seibel.distanthorizons.core.util.ListUtil;
@@ -61,6 +63,10 @@ public class FullDataSourceV2DTO
 	public int dataChecksum;
 	
 	public ByteArrayList compressedDataByteArray;
+	public ByteArrayList compressedNorthAdjDataByteArray;
+	public ByteArrayList compressedSouthAdjDataByteArray;
+	public ByteArrayList compressedEastAdjDataByteArray;
+	public ByteArrayList compressedWestAdjDataByteArray;
 	
 	/** @see EDhApiWorldGenerationStep */
 	public ByteArrayList compressedColumnGenStepByteArray;
@@ -100,6 +106,11 @@ public class FullDataSourceV2DTO
 		writeGenerationStepsToBlob(dataSource.columnGenerationSteps, dto.compressedColumnGenStepByteArray, compressionModeEnum);
 		writeWorldCompressionModeToBlob(dataSource.columnWorldCompressionMode, dto.compressedWorldCompressionModeByteArray, compressionModeEnum);
 		writeDataMappingToBlob(dataSource.mapping, dto.compressedMappingByteArray, compressionModeEnum);
+		// adjacent full data
+		writeDataSourceAdjacentDataArrayToBlob(dataSource.dataPoints, dto.compressedNorthAdjDataByteArray, EDhDirection.NORTH, compressionModeEnum);
+		writeDataSourceAdjacentDataArrayToBlob(dataSource.dataPoints, dto.compressedSouthAdjDataByteArray, EDhDirection.SOUTH, compressionModeEnum);
+		writeDataSourceAdjacentDataArrayToBlob(dataSource.dataPoints, dto.compressedEastAdjDataByteArray, EDhDirection.EAST, compressionModeEnum);
+		writeDataSourceAdjacentDataArrayToBlob(dataSource.dataPoints, dto.compressedWestAdjDataByteArray, EDhDirection.WEST, compressionModeEnum);
 		
 		// populate individual variables
 		{
@@ -124,7 +135,7 @@ public class FullDataSourceV2DTO
 	
 	private FullDataSourceV2DTO() 
 	{
-		super(ARRAY_LIST_POOL, 4, 0, 0);
+		super(ARRAY_LIST_POOL, 8, 0, 0);
 		
 		// Expected sizes here are 0 since we don't know how big these arrays need to be,
 		// they depend on compression settings and world complexity.
@@ -132,6 +143,11 @@ public class FullDataSourceV2DTO
 		this.compressedColumnGenStepByteArray = this.pooledArraysCheckout.getByteArray(1, 0);
 		this.compressedWorldCompressionModeByteArray = this.pooledArraysCheckout.getByteArray(2, 0);
 		this.compressedMappingByteArray = this.pooledArraysCheckout.getByteArray(3, 0);
+		
+		this.compressedNorthAdjDataByteArray = this.pooledArraysCheckout.getByteArray(4, 0);
+		this.compressedSouthAdjDataByteArray = this.pooledArraysCheckout.getByteArray(5, 0);
+		this.compressedEastAdjDataByteArray = this.pooledArraysCheckout.getByteArray(6, 0);
+		this.compressedWestAdjDataByteArray = this.pooledArraysCheckout.getByteArray(7, 0);
 	}
 	
 	
@@ -140,12 +156,12 @@ public class FullDataSourceV2DTO
 	// data source population //
 	//========================//
 	
-	public FullDataSourceV2 createDataSource(@NotNull ILevelWrapper levelWrapper) throws IOException, InterruptedException, DataCorruptedException
+	public FullDataSourceV2 createDataSource(@NotNull ILevelWrapper levelWrapper, EDhDirection direction) throws IOException, InterruptedException, DataCorruptedException
 	{
 		FullDataSourceV2 dataSource = FullDataSourceV2.createEmpty(this.pos);
 		try
 		{	
-			this.internalPopulateDataSource(dataSource, levelWrapper, false);
+			this.internalPopulateDataSource(dataSource, levelWrapper, direction, false);
 		}
 		catch (Exception e)
 		{
@@ -156,14 +172,19 @@ public class FullDataSourceV2DTO
 		return dataSource;
 	}
 	
+	public FullDataSourceV2 createUnitTestDataSource() throws IOException, InterruptedException, DataCorruptedException
+	{ return this.createUnitTestDataSource(null); }
 	/** 
 	 * May be missing one or more data fields. <br>
 	 * Designed to be used without access to Minecraft or any supporting objects. 
 	 */
-	public FullDataSourceV2 createUnitTestDataSource() throws IOException, InterruptedException, DataCorruptedException 
-	{ return this.internalPopulateDataSource(FullDataSourceV2.createEmpty(this.pos), null, true); }
+	public FullDataSourceV2 createUnitTestDataSource(EDhDirection direction) throws IOException, InterruptedException, DataCorruptedException 
+	{ return this.internalPopulateDataSource(FullDataSourceV2.createEmpty(this.pos), null, direction,true); }
 	
-	private FullDataSourceV2 internalPopulateDataSource(FullDataSourceV2 dataSource, ILevelWrapper levelWrapper, boolean unitTest) throws IOException, InterruptedException, DataCorruptedException
+	private FullDataSourceV2 internalPopulateDataSource(
+			FullDataSourceV2 dataSource, ILevelWrapper levelWrapper,
+			@Nullable EDhDirection direction,
+			boolean unitTest) throws IOException, InterruptedException, DataCorruptedException
 	{
 		if (FullDataSourceV2.DATA_FORMAT_VERSION != this.dataFormatVersion)
 		{
@@ -183,10 +204,21 @@ public class FullDataSourceV2DTO
 			throw new DataCorruptedException(e);
 		}
 		
-		
-		readBlobToGenerationSteps(this.compressedColumnGenStepByteArray, dataSource.columnGenerationSteps, compressionModeEnum);
-		readBlobToWorldCompressionMode(this.compressedWorldCompressionModeByteArray, dataSource.columnWorldCompressionMode, compressionModeEnum);
-		readBlobToDataSourceDataArray(this.compressedDataByteArray, dataSource.dataPoints, compressionModeEnum);
+		if (direction == null)
+		{
+			readBlobToGenerationSteps(this.compressedColumnGenStepByteArray, dataSource.columnGenerationSteps, compressionModeEnum);
+			readBlobToWorldCompressionMode(this.compressedWorldCompressionModeByteArray, dataSource.columnWorldCompressionMode, compressionModeEnum);
+			readBlobToDataSourceDataArray(this.compressedDataByteArray, dataSource.dataPoints, compressionModeEnum);
+		}
+		else
+		{
+			// adjacent data is stored in the same byte array
+			// as the normal data,
+			// this is done so data sources down-stream
+			// can all be handled identically regardless of
+			// whether they're a full or partial data source
+			readDataSourceAdjacentDataArrayToBlob(this.compressedDataByteArray, dataSource.dataPoints, direction, compressionModeEnum);	
+		}
 		
 		dataSource.mapping.clear(dataSource.getPos());
 		// should only be null when used in a unit test
@@ -231,7 +263,111 @@ public class FullDataSourceV2DTO
 	// (de)serializing //
 	//=================//
 	
-	private static void writeDataSourceDataArrayToBlob(LongArrayList[] inputDataArray, ByteArrayList outputByteArray, EDhApiDataCompressionMode compressionModeEnum) throws IOException
+	private static void writeDataSourceAdjacentDataArrayToBlob(
+			LongArrayList[] wholeInputDataArray, ByteArrayList outputByteArray,
+			EDhDirection direction,
+			EDhApiDataCompressionMode compressionModeEnum) throws IOException
+	{
+		// write the outputs to a stream to prep for writing to the database
+		ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+		
+		// normally a DhStream should be the topmost stream to prevent closing the stream accidentally, 
+		// but since this stream will be closed immediately after writing anyway, it won't be an issue
+		try (DhDataOutputStream compressedOut = new DhDataOutputStream(byteArrayOutputStream, compressionModeEnum))
+		{
+			long encodedMinMaxPos = FullDataMinMaxPosUtil.getEncodedMinMaxPos(direction);
+			int minX = FullDataMinMaxPosUtil.getAdjMinX(encodedMinMaxPos);
+			int maxX = FullDataMinMaxPosUtil.getAdjMaxX(encodedMinMaxPos);
+			int minZ = FullDataMinMaxPosUtil.getAdjMinZ(encodedMinMaxPos);
+			int maxZ = FullDataMinMaxPosUtil.getAdjMaxZ(encodedMinMaxPos);
+			
+			for (int x = minX; x < maxX; x++)
+			{
+				for (int z = minZ; z < maxZ; z++)
+				{
+					int index = FullDataSourceV2.relativePosToIndex(x, z);
+					LongArrayList dataColumn = wholeInputDataArray[index];
+					
+					// write column length
+					short columnLength = (dataColumn != null) ? (short) dataColumn.size() : 0;
+					// a short is used instead of an int because at most we store 4096 vertical slices and a 
+					// short fits that with less wasted spaces vs an int (short has max value of 32,767 vs int's max of 2 billion)
+					compressedOut.writeShort(columnLength);
+					
+					// write column data (will be skipped if no data was present)
+					for (int y = 0; y < columnLength; y++)
+					{
+						compressedOut.writeLong(dataColumn.getLong(y));
+					}
+				}
+			}
+			
+			
+			// generate the checksum (currently unused)
+			compressedOut.flush();
+			byteArrayOutputStream.close();
+			outputByteArray.addElements(0, byteArrayOutputStream.toByteArray());
+		}
+	}
+	private static void readDataSourceAdjacentDataArrayToBlob(
+			@NotNull ByteArrayList inputCompressedDataByteArray, @NotNull LongArrayList[] outputDataLongArray,
+			@NotNull EDhDirection direction,
+			EDhApiDataCompressionMode compressionModeEnum) throws IOException, DataCorruptedException
+	{
+		ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(inputCompressedDataByteArray.elements());
+		try (DhDataInputStream compressedIn = new DhDataInputStream(byteArrayInputStream, compressionModeEnum))
+		{
+			for (int i = 0; i < FullDataSourceV2.WIDTH * FullDataSourceV2.WIDTH; i++)
+			{
+				@NotNull LongArrayList array = outputDataLongArray[i];
+				array.clear();
+				array.add(FullDataPointUtil.EMPTY_DATA_POINT);
+			}
+			
+			
+			long encodedMinMaxPos = FullDataMinMaxPosUtil.getEncodedMinMaxPos(direction);
+			int minX = FullDataMinMaxPosUtil.getAdjMinX(encodedMinMaxPos);
+			int maxX = FullDataMinMaxPosUtil.getAdjMaxX(encodedMinMaxPos);
+			int minZ = FullDataMinMaxPosUtil.getAdjMinZ(encodedMinMaxPos);
+			int maxZ = FullDataMinMaxPosUtil.getAdjMaxZ(encodedMinMaxPos);
+			
+			for (int x = minX; x < maxX; x++)
+			{
+				for (int z = minZ; z < maxZ; z++)
+				{
+					int index = FullDataSourceV2.relativePosToIndex(x, z);
+					LongArrayList dataColumn = outputDataLongArray[index];
+					
+					// read the column length
+					short dataColumnLength = compressedIn.readShort(); // separate variables are used for debugging and in case validation wants to be added later 
+					if (dataColumnLength < 0)
+					{
+						throw new DataCorruptedException("Read DataSource adj[" + direction + "] Blob data at index [" + index + "], column length [" + dataColumnLength + "] should be greater than zero.");
+					}
+					
+					
+					ListUtil.clearAndSetSize(dataColumn, dataColumnLength);
+					
+					// read column data (will be skipped if no data was present)
+					for (int y = 0; y < dataColumnLength; y++)
+					{
+						long dataPoint = compressedIn.readLong();
+						if (VALIDATE_INPUT_DATAPOINTS)
+						{
+							FullDataPointUtil.validateDatapoint(dataPoint);
+						}
+						dataColumn.set(y, dataPoint);
+					}
+				}
+			}
+			
+		}
+	}
+	
+	
+	private static void writeDataSourceDataArrayToBlob(
+			LongArrayList[] inputDataArray, ByteArrayList outputByteArray, 
+			EDhApiDataCompressionMode compressionModeEnum) throws IOException
 	{
 		// write the outputs to a stream to prep for writing to the database
 		ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
@@ -266,7 +402,9 @@ public class FullDataSourceV2DTO
 			outputByteArray.addElements(0, byteArrayOutputStream.toByteArray());
 		}
 	}
-	private static void readBlobToDataSourceDataArray(ByteArrayList inputCompressedDataByteArray, LongArrayList[] outputDataLongArray, EDhApiDataCompressionMode compressionModeEnum) throws IOException, DataCorruptedException
+	private static void readBlobToDataSourceDataArray(
+			ByteArrayList inputCompressedDataByteArray, LongArrayList[] outputDataLongArray, 
+			EDhApiDataCompressionMode compressionModeEnum) throws IOException, DataCorruptedException
 	{
 		ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(inputCompressedDataByteArray.elements());
 		try (DhDataInputStream compressedIn = new DhDataInputStream(byteArrayInputStream, compressionModeEnum))
@@ -448,7 +586,8 @@ public class FullDataSourceV2DTO
 	// helper methods //
 	//================//
 	
-	public EDhApiDataCompressionMode getCompressionMode() throws IllegalArgumentException { return EDhApiDataCompressionMode.getFromValue(this.compressionModeValue); }
+	public EDhApiDataCompressionMode getCompressionMode() throws IllegalArgumentException 
+	{ return EDhApiDataCompressionMode.getFromValue(this.compressionModeValue); }
 	
 	
 	

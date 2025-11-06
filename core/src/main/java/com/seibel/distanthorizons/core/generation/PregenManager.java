@@ -140,7 +140,9 @@ public class PregenManager
 				}
 				
 				this.pendingGenerations.put(nextSectionPos, System.currentTimeMillis());
-				this.fullDataSourceProvider.getAsync(nextSectionPos).thenAccept(fullDataSource -> {
+				this.fullDataSourceProvider.getAsync(nextSectionPos, false)
+					.thenAccept(fullDataSource -> 
+				{
 					if (this.fullDataSourceProvider.isFullyGenerated(fullDataSource.columnGenerationSteps))
 					{
 						this.pendingGenerations.invalidate(fullDataSource.getPos());

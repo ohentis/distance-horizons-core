@@ -1,5 +1,7 @@
 package com.seibel.distanthorizons.core.file.fullDatafile.V2;
 
+import com.seibel.distanthorizons.api.enums.config.EDhApiDataCompressionMode;
+import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.file.fullDatafile.IDataSourceUpdateListenerFunc;
 import com.seibel.distanthorizons.core.logging.DhLogger;
@@ -13,6 +15,7 @@ import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Set;
 import java.util.concurrent.*;
@@ -119,7 +122,7 @@ public class FullDataUpdaterV2 implements IDebugRenderable, AutoCloseable
 			
 			
 			// get or create the data source
-			try (FullDataSourceV2 recipientDataSource = this.provider.get(updatePos))
+			try (FullDataSourceV2 recipientDataSource = this.provider.get(updatePos, false))
 			{
 				if (recipientDataSource != null)
 				{
@@ -127,9 +130,12 @@ public class FullDataUpdaterV2 implements IDebugRenderable, AutoCloseable
 					if (dataModified)
 					{
 						// save the updated data to the database
-						try (FullDataSourceV2DTO dto = this.provider.createDtoFromDataSource(recipientDataSource))
+						try (FullDataSourceV2DTO dto = this.createDtoFromDataSource(recipientDataSource))
 						{
-							this.provider.repo.save(dto);
+							if (dto != null)
+							{
+								this.provider.repo.save(dto);
+							}
 						}
 						
 						
@@ -157,6 +163,22 @@ public class FullDataUpdaterV2 implements IDebugRenderable, AutoCloseable
 			}
 		}
 	}
+	
+	private FullDataSourceV2DTO createDtoFromDataSource(FullDataSourceV2 dataSource)
+	{
+		try
+		{
+			// when creating new data use the compressor currently selected in the config
+			EDhApiDataCompressionMode compressionModeEnum = Config.Common.LodBuilding.dataCompression.get();
+			return FullDataSourceV2DTO.CreateFromDataSource(dataSource, compressionModeEnum);
+		}
+		catch (IOException e)
+		{
+			LOGGER.warn("Unable to create DTO, error: ["+e.getMessage() + "].", e);
+			return null;
+		}
+	}
+	
 	
 	
 	

@@ -183,7 +183,7 @@ public class FullDataUpdatePropagatorV2 implements IDebugRenderable, AutoCloseab
 								parentLocked = true;
 								this.dataUpdater.lockedPosSet.add(parentUpdatePos);
 								
-								try (FullDataSourceV2 parentDataSource = this.provider.get(parentUpdatePos))
+								try (FullDataSourceV2 parentDataSource = this.provider.get(parentUpdatePos, false))
 								{
 									// will return null if the file handler is shutting down
 									if (parentDataSource != null)
@@ -197,7 +197,7 @@ public class FullDataUpdatePropagatorV2 implements IDebugRenderable, AutoCloseab
 												childReadLock.lock();
 												this.dataUpdater.lockedPosSet.add(childPos);
 												
-												try (FullDataSourceV2 childDataSource = this.provider.get(childPos))
+												try (FullDataSourceV2 childDataSource = this.provider.get(childPos, false))
 												{
 													// can return null when the file handler is being shut down
 													if (childDataSource != null)
@@ -299,7 +299,7 @@ public class FullDataUpdatePropagatorV2 implements IDebugRenderable, AutoCloseab
 								parentLocked = true;
 								this.dataUpdater.lockedPosSet.add(parentUpdatePos);
 								
-								try (FullDataSourceV2 parentDataSource = this.provider.get(parentUpdatePos))
+								try (FullDataSourceV2 parentDataSource = this.provider.get(parentUpdatePos, false))
 								{
 									// will return null if the file handler is shutting down
 									if (parentDataSource != null)
@@ -315,7 +315,7 @@ public class FullDataUpdatePropagatorV2 implements IDebugRenderable, AutoCloseab
 												childWriteLock.lock();
 												this.dataUpdater.lockedPosSet.add(childPos);
 												
-												try (FullDataSourceV2 childDataSource = this.provider.get(childPos))
+												try (FullDataSourceV2 childDataSource = this.provider.get(childPos, false))
 												{
 													// will return null if the file handler is shutting down
 													if (childDataSource != null)

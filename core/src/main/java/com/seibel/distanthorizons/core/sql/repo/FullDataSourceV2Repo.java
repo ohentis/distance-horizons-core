@@ -21,6 +21,7 @@ package com.seibel.distanthorizons.core.sql.repo;
 
 import com.seibel.distanthorizons.api.enums.config.EDhApiDataCompressionMode;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
+import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.logging.DhLogger;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
@@ -31,7 +32,6 @@ import com.seibel.distanthorizons.core.util.ListUtil;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataInputStream;
 import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
-import com.seibel.distanthorizons.core.logging.DhLogger;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
@@ -84,6 +84,9 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 	
 	@Override @Nullable
 	public FullDataSourceV2DTO convertResultSetToDto(ResultSet resultSet) throws ClassCastException, IOException, SQLException
+	{ return this.convertResultSetToDto(resultSet, true); }
+	
+	public FullDataSourceV2DTO convertResultSetToDto(ResultSet resultSet, boolean includeAdjacent) throws ClassCastException, IOException, SQLException
 	{
 		//======================//
 		// get statement values //
@@ -123,6 +126,15 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 		dto.compressedWorldCompressionModeByteArray = putAllBytes(resultSet.getBinaryStream("ColumnWorldCompressionMode"), dto.compressedWorldCompressionModeByteArray);
 		dto.compressedMappingByteArray = putAllBytes(resultSet.getBinaryStream("Mapping"), dto.compressedMappingByteArray);
 		
+		// adjacent full data
+		if (includeAdjacent)
+		{
+			dto.compressedNorthAdjDataByteArray = putAllBytes(resultSet.getBinaryStream("NorthAdjData"), dto.compressedNorthAdjDataByteArray);
+			dto.compressedSouthAdjDataByteArray = putAllBytes(resultSet.getBinaryStream("SouthAdjData"), dto.compressedSouthAdjDataByteArray);
+			dto.compressedEastAdjDataByteArray = putAllBytes(resultSet.getBinaryStream("EastAdjData"), dto.compressedEastAdjDataByteArray);
+			dto.compressedWestAdjDataByteArray = putAllBytes(resultSet.getBinaryStream("WestAdjData"), dto.compressedWestAdjDataByteArray);
+		}
+		
 		// set individual variables
 		{
 			dto.pos = pos;
@@ -138,16 +150,74 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 		return dto;
 	}
 	
+	@Nullable
+	public FullDataSourceV2DTO convertResultSetToAdjDto(long pos, EDhDirection direction, ResultSet resultSet) throws ClassCastException, IOException, SQLException
+	{
+		//======================//
+		// get statement values //
+		//======================//
+		
+		int minY = resultSet.getInt("MinY");
+		int dataChecksum = resultSet.getInt("DataChecksum");
+		
+		
+		byte dataFormatVersion = resultSet.getByte("DataFormatVersion");
+		byte compressionModeValue = resultSet.getByte("CompressionMode");
+		
+		// while these values can be null in the DB, null would just equate to false
+		boolean applyToParent = (resultSet.getInt("ApplyToParent")) == 1;
+		boolean applyToChildren = (resultSet.getInt("ApplyToChildren")) == 1;
+		
+		long lastModifiedUnixDateTime = resultSet.getLong("LastModifiedUnixDateTime");
+		long createdUnixDateTime = resultSet.getLong("CreatedUnixDateTime");
+		
+		
+		
+		//===================//
+		// set DTO variables //
+		//===================//
+		
+		FullDataSourceV2DTO dto = FullDataSourceV2DTO.CreateEmptyDataSourceForDecoding();
+		// dto.compressedNorthAdjDataByteArray = putAllBytes(resultSet.getBinaryStream("NorthAdjData"), dto.compressedNorthAdjDataByteArray);
+		// set pooled arrays
+		dto.compressedDataByteArray = putAllBytes(resultSet.getBinaryStream("AdjData"), dto.compressedDataByteArray);
+		dto.compressedColumnGenStepByteArray = putAllBytes(resultSet.getBinaryStream("ColumnGenerationStep"), dto.compressedColumnGenStepByteArray);
+		dto.compressedWorldCompressionModeByteArray = putAllBytes(resultSet.getBinaryStream("ColumnWorldCompressionMode"), dto.compressedWorldCompressionModeByteArray);
+		dto.compressedMappingByteArray = putAllBytes(resultSet.getBinaryStream("Mapping"), dto.compressedMappingByteArray);
+		// adjacent full data
+		//dto.compressedNorthAdjDataByteArray = putAllBytes(resultSet.getBinaryStream("NorthAdjData"), dto.compressedNorthAdjDataByteArray);
+		//dto.compressedSouthAdjDataByteArray = putAllBytes(resultSet.getBinaryStream("SouthAdjData"), dto.compressedSouthAdjDataByteArray);
+		//dto.compressedEastAdjDataByteArray = putAllBytes(resultSet.getBinaryStream("EastAdjData"), dto.compressedEastAdjDataByteArray);
+		//dto.compressedWestAdjDataByteArray = putAllBytes(resultSet.getBinaryStream("WestAdjData"), dto.compressedWestAdjDataByteArray);
+		
+		// set individual variables
+		{
+			dto.pos = pos;
+			dto.dataChecksum = dataChecksum;
+			dto.dataFormatVersion = dataFormatVersion;
+			dto.compressionModeValue = compressionModeValue;
+			dto.lastModifiedUnixDateTime = lastModifiedUnixDateTime;
+			dto.createdUnixDateTime = createdUnixDateTime;
+			dto.applyToParent = applyToParent;
+			dto.applyToChildren = applyToChildren;
+			dto.levelMinY = minY;
+		}
+		return dto;
+	}
+	
+	
 	private final String insertSqlTemplate =
 		"INSERT INTO "+this.getTableName() + " (\n" +
 		"   DetailLevel, PosX, PosZ, \n" +
 		"   MinY, DataChecksum, \n" +
 		"   Data, ColumnGenerationStep, ColumnWorldCompressionMode, Mapping, \n" +
+		"   NorthAdjData, SouthAdjData, EastAdjData, WestAdjData, \n" +
 		"   DataFormatVersion, CompressionMode, ApplyToParent, ApplyToChildren, \n" +
 		"   LastModifiedUnixDateTime, CreatedUnixDateTime) \n" +
 		"VALUES( \n" +
 		"    ?, ?, ?, \n" +
 		"    ?, ?, \n" +
+		"    ?, ?, ?, ?, \n" +
 		"    ?, ?, ?, ?, \n" +
 		"    ?, ?, ?, ?, \n" +
 		"    ?, ? \n" +
@@ -174,6 +244,11 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 		statement.setBinaryStream(i++, new ByteArrayInputStream(dto.compressedColumnGenStepByteArray.elements()), dto.compressedColumnGenStepByteArray.size());
 		statement.setBinaryStream(i++, new ByteArrayInputStream(dto.compressedWorldCompressionModeByteArray.elements()), dto.compressedWorldCompressionModeByteArray.size());
 		statement.setBinaryStream(i++, new ByteArrayInputStream(dto.compressedMappingByteArray.elements()), dto.compressedMappingByteArray.size());
+		// adjacent full data
+		statement.setBinaryStream(i++, new ByteArrayInputStream(dto.compressedNorthAdjDataByteArray.elements()), dto.compressedNorthAdjDataByteArray.size());
+		statement.setBinaryStream(i++, new ByteArrayInputStream(dto.compressedSouthAdjDataByteArray.elements()), dto.compressedSouthAdjDataByteArray.size());
+		statement.setBinaryStream(i++, new ByteArrayInputStream(dto.compressedEastAdjDataByteArray.elements()), dto.compressedEastAdjDataByteArray.size());
+		statement.setBinaryStream(i++, new ByteArrayInputStream(dto.compressedWestAdjDataByteArray.elements()), dto.compressedWestAdjDataByteArray.size());
 		
 		statement.setByte(i++, dto.dataFormatVersion);
 		statement.setByte(i++, dto.compressionModeValue);
@@ -204,6 +279,7 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 				"   ,ColumnGenerationStep = ? \n" +
 				"   ,ColumnWorldCompressionMode = ? \n" +
 				"   ,Mapping = ? \n" +
+				"   ,NorthAdjData = ?, SouthAdjData = ?, EastAdjData = ?, WestAdjData = ? \n" +
 				
 				"   ,DataFormatVersion = ? \n" +
 				"   ,CompressionMode = ? \n" +
@@ -234,6 +310,12 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 		statement.setBinaryStream(i++, new ByteArrayInputStream(dto.compressedColumnGenStepByteArray.elements()), dto.compressedColumnGenStepByteArray.size());
 		statement.setBinaryStream(i++, new ByteArrayInputStream(dto.compressedWorldCompressionModeByteArray.elements()), dto.compressedWorldCompressionModeByteArray.size());
 		statement.setBinaryStream(i++, new ByteArrayInputStream(dto.compressedMappingByteArray.elements()), dto.compressedMappingByteArray.size());
+		// adjacent full data
+		statement.setBinaryStream(i++, new ByteArrayInputStream(dto.compressedNorthAdjDataByteArray.elements()), dto.compressedNorthAdjDataByteArray.size());
+		statement.setBinaryStream(i++, new ByteArrayInputStream(dto.compressedSouthAdjDataByteArray.elements()), dto.compressedSouthAdjDataByteArray.size());
+		statement.setBinaryStream(i++, new ByteArrayInputStream(dto.compressedEastAdjDataByteArray.elements()), dto.compressedEastAdjDataByteArray.size());
+		statement.setBinaryStream(i++, new ByteArrayInputStream(dto.compressedWestAdjDataByteArray.elements()), dto.compressedWestAdjDataByteArray.size());
+		
 		
 		statement.setByte(i++, dto.dataFormatVersion);
 		statement.setByte(i++, dto.compressionModeValue);
@@ -254,6 +336,152 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 		statement.setInt(i++, DhSectionPos.getZ(dto.pos));
 		
 		return statement;
+	}
+	
+	
+	
+	//=================//
+	// partial selects //
+	//=================//
+	
+	private final String noAdjSelectSqlTemplate =
+			"SELECT \n" +
+					"   DetailLevel, PosX, PosZ, \n" +
+					"   MinY, DataChecksum, \n" +
+					"   ColumnGenerationStep, ColumnWorldCompressionMode, Mapping, \n" +
+					"   DataFormatVersion, CompressionMode, ApplyToParent, ApplyToChildren, \n" +
+					"   LastModifiedUnixDateTime, CreatedUnixDateTime, \n" +
+					"   Data \n" +
+					"FROM "+this.getTableName() + "\n" +
+					"   WHERE DetailLevel = ? AND PosX = ? AND PosZ = ?; \n";
+	public PreparedStatement createNoAdjSelectStatementByKey(Long key) throws SQLException
+	{
+		//// create shared template string
+		//if (this.selectSqlTemplate == null)
+		//{
+		//	this.selectSqlTemplate = this.limitedSelectSqlTemplate;
+		//}
+		
+		PreparedStatement statement = this.createPreparedStatement(this.noAdjSelectSqlTemplate);
+		if (statement == null)
+		{
+			return null;
+		}
+		this.setPreparedStatementWhereClause(statement, key);
+		
+		return statement;
+	}
+	
+	public FullDataSourceV2DTO getByPosNoAdj(Long primaryKey)
+	{
+		try(PreparedStatement statement = this.createNoAdjSelectStatementByKey(primaryKey);
+				ResultSet resultSet = this.query(statement))
+		{
+			if (resultSet != null && resultSet.next())
+			{
+				return this.convertResultSetToDto(resultSet, false);
+			}
+			else
+			{
+				return null;
+			}
+		}
+		catch (SQLException | IOException e)
+		{
+			if (e instanceof SQLException
+					&& DbConnectionClosedException.isClosedException((SQLException)e))
+			{
+				//LOGGER.warn("Attempted to get ["+this.dtoClass.getSimpleName()+"] with primary key ["+primaryKey+"] on closed repo ["+this.connectionString+"].");	
+			}
+			else
+			{
+				LOGGER.warn("Unexpected issue deserializing DTO ["+this.dtoClass.getSimpleName()+"] with primary key ["+primaryKey+"]. Error: ["+e.getMessage()+"].", e);
+			}
+			return null;
+		}
+	}
+	
+	
+	
+	private final String getAdjForDirectionSqlTemplate =
+			"SELECT \n" +
+					"   MinY, DataChecksum, \n" +
+					"   ColumnGenerationStep, ColumnWorldCompressionMode, Mapping, \n" +
+					"   DataFormatVersion, CompressionMode, ApplyToParent, ApplyToChildren, \n" +
+					"   LastModifiedUnixDateTime, CreatedUnixDateTime, \n" +
+					"   DIRECTION_ENUM as AdjData \n" +
+					"FROM "+this.getTableName() + "\n" +
+					"   WHERE DetailLevel = ? AND PosX = ? AND PosZ = ?; \n";
+	private final String getAdjForNorthDirTemplate = this.getAdjForDirectionSqlTemplate.replace("DIRECTION_ENUM", "NorthAdjData");
+	private final String getAdjForSouthDirTemplate = this.getAdjForDirectionSqlTemplate.replace("DIRECTION_ENUM", "SouthAdjData");
+	private final String getAdjForEastDirTemplate = this.getAdjForDirectionSqlTemplate.replace("DIRECTION_ENUM", "EastAdjData");
+	private final String getAdjForWestDirTemplate = this.getAdjForDirectionSqlTemplate.replace("DIRECTION_ENUM", "WestAdjData");
+	
+	public FullDataSourceV2DTO getAdjByPosAndDirection(long pos, EDhDirection direction)
+	{
+		// parameters don't work in the select, doing so causes
+		// JDBC to return the wrong binary data,
+		// so we need to hard code the direction enum
+		String sql;
+		switch (direction)
+		{
+			case NORTH:
+				sql = this.getAdjForNorthDirTemplate;
+				break;
+			case SOUTH:
+				sql = this.getAdjForSouthDirTemplate;
+				break;
+			case EAST:
+				sql = this.getAdjForEastDirTemplate;
+				break;
+			case WEST:
+				sql = this.getAdjForWestDirTemplate;
+				break;
+			
+			default:
+				throw new IllegalArgumentException();
+		}
+		try(PreparedStatement statement = this.createPreparedStatement(sql))
+		{
+			if (statement == null)
+			{
+				return null;
+			}
+			
+			
+			
+			int i = 1;
+			statement.setInt(i++, DhSectionPos.getDetailLevel(pos) - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
+			statement.setInt(i++, DhSectionPos.getX(pos));
+			statement.setInt(i++, DhSectionPos.getZ(pos));
+			
+			
+			try(ResultSet resultSet = this.query(statement))
+			{
+				if (resultSet != null
+						&& resultSet.next())
+				{
+					return this.convertResultSetToAdjDto(pos, direction, resultSet);
+				}
+				else
+				{
+					return null;
+				}
+			}
+		}
+		catch (SQLException | IOException e)
+		{
+			if (e instanceof SQLException
+					&& DbConnectionClosedException.isClosedException((SQLException)e))
+			{
+				//LOGGER.warn("Attempted to get ["+this.dtoClass.getSimpleName()+"] with primary key ["+primaryKey+"] on closed repo ["+this.connectionString+"].");	
+			}
+			else
+			{
+				LOGGER.warn("Unexpected issue deserializing DTO ["+this.dtoClass.getSimpleName()+"] with pos ["+DhSectionPos.toString(pos)+"] and direction ["+direction+"]. Error: ["+e.getMessage()+"].", e);
+			}
+			return null;
+		}
 	}
 	
 	
@@ -633,11 +861,11 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 	
 	
 	
-	//===============//
-	// helper method //
-	//===============//
+	//================//
+	// helper methods //
+	//================//
 	
-	private static ByteArrayList putAllBytes(InputStream inputStream, @Nullable ByteArrayList existingArrayList) throws IOException
+	private static ByteArrayList putAllBytes(@Nullable InputStream inputStream, @Nullable ByteArrayList existingArrayList) throws IOException
 	{
 		if (existingArrayList == null)
 		{
@@ -651,11 +879,14 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 		
 		try
 		{
-			int nextByte = inputStream.read();
-			while (nextByte != -1)
+			if (inputStream != null)
 			{
-				existingArrayList.add((byte) nextByte);
-				nextByte = inputStream.read();
+				int nextByte = inputStream.read();
+				while (nextByte != -1)
+				{
+					existingArrayList.add((byte) nextByte);
+					nextByte = inputStream.read();
+				}
 			}
 		}
 		catch (EOFException ignore) { /* shouldn't happen, but just in case */ }

@@ -238,7 +238,7 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 			if (dataSource == null)
 			{
 				// attempt to get/generate the data source for this section
-				dataSource = level.getFullDataProvider().getAsync(sectionPos).get();
+				dataSource = level.getFullDataProvider().getAsync(sectionPos, false).get();
 				if (dataSource == null)
 				{
 					return DhApiResult.createFail("Unable to find/generate any data at the " + DhSectionPos.class.getSimpleName() + " [" + DhSectionPos.toString(sectionPos) + "].");

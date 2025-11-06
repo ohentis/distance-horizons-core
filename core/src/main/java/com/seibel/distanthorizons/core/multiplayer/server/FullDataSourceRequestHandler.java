@@ -99,7 +99,7 @@ public class FullDataSourceRequestHandler
 					}
 					
 					// get the server's datasource
-					return this.fullDataSourceProvider().get(message.sectionPos);
+					return this.fullDataSourceProvider().get(message.sectionPos, false);
 				}
 				catch (Exception e)
 				{
@@ -262,7 +262,7 @@ public class FullDataSourceRequestHandler
 	
 	private void tryFulfillDataSourceRequestGroup(DataSourceRequestGroup requestGroup, long pos)
 	{
-		this.fullDataSourceProvider().getAsync(pos).thenAccept(fullDataSource ->
+		this.fullDataSourceProvider().getAsync(pos, false).thenAccept(fullDataSource ->
 		{
 			if (this.fullDataSourceProvider().isFullyGenerated(fullDataSource.columnGenerationSteps))
 			{

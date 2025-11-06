@@ -239,7 +239,7 @@ public class JarMain
 	
 	private static void exportLodDataAtPosition(FullDataSourceV2Repo repo, File exportFile, long pos)
 	{
-		FullDataSourceV2DTO dto = repo.getByKey(pos);
+		FullDataSourceV2DTO dto = repo.getByPosNoAdj(pos);
 		if (dto == null)
 		{
 			LOGGER.error("Unable to find any data at the position ["+DhSectionPos.toString(pos)+"].");

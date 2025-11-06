@@ -75,18 +75,18 @@ public class RemoteFullDataSourceProvider extends GeneratedFullDataSourceProvide
 	
 	@Override
 	@Nullable
-	public FullDataSourceV2 get(long pos)
+	public FullDataSourceV2 get(long pos, boolean includeAdjacentData)
 	{
 		if (this.syncOnLoadRequestQueue == null)
 		{
 			// we have local data, but networking is unavailable.
-			return super.get(pos);
+			return super.get(pos, includeAdjacentData);
 		}
 		
 		if (!this.visitedPositions.add(pos))
 		{
 			// This position has already been accessed before
-			return super.get(pos);
+			return super.get(pos, includeAdjacentData);
 		}
 		
 		
@@ -105,7 +105,7 @@ public class RemoteFullDataSourceProvider extends GeneratedFullDataSourceProvide
 			});
 		}
 		
-		return super.get(pos);
+		return super.get(pos, includeAdjacentData);
 	}
 	
 	

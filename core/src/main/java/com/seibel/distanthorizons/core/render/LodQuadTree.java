@@ -22,7 +22,6 @@ package com.seibel.distanthorizons.core.render;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.seibel.distanthorizons.core.config.Config;
-import com.seibel.distanthorizons.core.dataObjects.render.CachedColumnRenderSource;
 import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSource;
 import com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.LodBufferContainer;
 import com.seibel.distanthorizons.core.enums.EDhDirection;
@@ -86,28 +85,6 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 	private ArrayList<LodRenderSection> debugRenderSections = new ArrayList<>();
 	private ArrayList<LodRenderSection> altDebugRenderSections = new ArrayList<>();
 	private final ReentrantLock debugRenderSectionLock = new ReentrantLock();
-	
-	
-	/** don't let two threads load the same position at the same time */
-	protected final KeyedLockContainer<Long> renderLoadLockContainer = new KeyedLockContainer<>();
-	
-	/**
-	 * caching is done at the QuadTree level to prevent caching LODs for different levels.
-	 * (Although the incorrect terrain that renders is quite entertaining). <br><br>
-	 * 
-	 * caching the loaded positions significantly improves initial loading performance
-	 * since the same position doesn't need to be loaded 5 times.
-	 */
-	private final Cache<Long, CachedColumnRenderSource> cachedRenderSourceByPos
-			= CacheBuilder.newBuilder()
-			// availableProcessors() : each process may need to be loading a render source
-			// +1 : add 1 thread count buffer to reduce the chance of accidentally unloading a render source before it's used
-			// *5 : each render source needs it's 4 adjacent sides, so a total of 5 render sources are needed per load
-			.maximumSize((Runtime.getRuntime().availableProcessors() + 1) * 5L)
-			// No closing logic since the CachedColumnRenderSource is in charge
-			// of freeing the underlying ColumnRenderSource.
-			// That way we don't have to worry about accidentally closing an in-use object.
-			.<Long, CachedColumnRenderSource>build();
 	
 	/**
 	 * Used to limit how many upload tasks are queued at once.
@@ -240,7 +217,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 			long rootPos = rootPosIterator.nextLong();
 			if (this.getNode(rootPos) == null)
 			{
-				this.setValue(rootPos, new LodRenderSection(rootPos, this, this.level, this.fullDataSourceProvider, this.uploadTaskCountRef, this.cachedRenderSourceByPos, this.renderLoadLockContainer));
+				this.setValue(rootPos, new LodRenderSection(rootPos, this, this.level, this.fullDataSourceProvider, this.uploadTaskCountRef));
 			}
 			
 			QuadNode<LodRenderSection> rootNode = this.getNode(rootPos);
@@ -281,7 +258,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 		// create the node
 		if (quadNode == null && this.isSectionPosInBounds(sectionPos)) // the position bounds should only fail when at the edge of the user's render distance
 		{
-			rootNode.setValue(sectionPos, new LodRenderSection(sectionPos, this, this.level, this.fullDataSourceProvider, this.uploadTaskCountRef, this.cachedRenderSourceByPos, this.renderLoadLockContainer));
+			rootNode.setValue(sectionPos, new LodRenderSection(sectionPos, this, this.level, this.fullDataSourceProvider, this.uploadTaskCountRef));
 			quadNode = rootNode.getNode(sectionPos);
 		}
 		if (quadNode == null)
@@ -294,7 +271,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 		LodRenderSection renderSection = quadNode.value;
 		if (renderSection == null)
 		{
-			renderSection = new LodRenderSection(sectionPos, this, this.level, this.fullDataSourceProvider, this.uploadTaskCountRef, this.cachedRenderSourceByPos, this.renderLoadLockContainer);
+			renderSection = new LodRenderSection(sectionPos, this, this.level, this.fullDataSourceProvider, this.uploadTaskCountRef);
 			quadNode.setValue(sectionPos, renderSection);
 		}
 		
@@ -636,17 +613,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 	 * This should be called whenever a world generation task is completed or if the connected server has new data to show.
 	 */
 	public void reloadPos(long pos)
-	{
-		// clear cache //
-		
-		this.clearRenderCacheForPos(pos);
-		for (EDhDirection direction : EDhDirection.CARDINAL_COMPASS)
-		{
-			long adjacentPos = DhSectionPos.getAdjacentPos(pos, direction);
-			this.clearRenderCacheForPos(adjacentPos);
-		}
-		
-		
+	{		
 		// queue reloads //
 		
 		// only queue each section for reloading
@@ -664,22 +631,6 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 			this.sectionsToReload.add(adjacentPos);
 		}
 	}
-	private void clearRenderCacheForPos(long pos)
-	{
-		// locking is needed to prevent another thread
-		// from accessing the cache while it's being cleared
-		ReentrantLock lock = this.renderLoadLockContainer.getLockForPos(pos);
-		try
-		{
-			lock.lock();
-			this.cachedRenderSourceByPos.invalidate(pos);
-		}
-		finally
-		{
-			lock.unlock();
-		}
-	}
-	
 	
 	
 	//=================================//
@@ -830,39 +781,10 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 					LodRenderSection renderSection = quadNode.value;
 					if (renderSection != null)
 					{
-						// we need to wait for the render data to finish building before we can close the cache
-						CompletableFuture<Void> future = renderSection.getRenderDataBuildFuture();
-						if (future != null)
-						{
-							renderDataBuildFutures.add(future);
-						}
-						
 						renderSection.close();
 						quadNode.value = null;
 					}
 				}
-				
-				
-				// close the render cache after it is done being used
-				LOGGER.info("waiting for ["+renderDataBuildFutures.size()+"] futures before closing render cache...");
-				CompletableFuture.allOf(renderDataBuildFutures.toArray(new CompletableFuture[0]))
-					.handle((voidObj, throwable) ->
-					{
-						// run on a separate thread so we don't lock up the main cleanup thread
-						// with the sleep() call
-						new Thread(() -> 
-						{
-							// Sleep shouldn't be necessary, but James found a few cases where
-							// the futures incorrectly claimed they were done.
-							// Sleeping solved those issues.
-							try { Thread.sleep(5_000); } catch (InterruptedException ignore) {  }
-
-							LOGGER.debug("closing render cache");
-							this.cachedRenderSourceByPos.invalidateAll();
-						}).start();
-						
-						return null;
-					});
 			}
 			finally
 			{

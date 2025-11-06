@@ -19,9 +19,9 @@
 
 package com.seibel.distanthorizons.core.file.fullDatafile.V2;
 
-import com.seibel.distanthorizons.api.enums.config.EDhApiDataCompressionMode;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
+import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.file.fullDatafile.IDataSourceUpdateListenerFunc;
 import com.seibel.distanthorizons.core.file.structure.ISaveStructure;
 import com.seibel.distanthorizons.core.generation.tasks.WorldGenResult;
@@ -129,33 +129,6 @@ public class FullDataSourceProviderV2 implements IDebugRenderable, AutoCloseable
 	
 	
 	
-	//====================//
-	// Abstract overrides //
-	//====================//
-	
-	public FullDataSourceV2DTO createDtoFromDataSource(FullDataSourceV2 dataSource)
-	{
-		try
-		{
-			// when creating new data use the compressor currently selected in the config
-			EDhApiDataCompressionMode compressionModeEnum = Config.Common.LodBuilding.dataCompression.get();
-			return FullDataSourceV2DTO.CreateFromDataSource(dataSource, compressionModeEnum);
-		}
-		catch (IOException e)
-		{
-			LOGGER.warn("Unable to create DTO, error: "+e.getMessage(), e);
-			return null;
-		}
-	}
-	
-	protected FullDataSourceV2 createDataSourceFromDto(FullDataSourceV2DTO dto) throws InterruptedException, IOException, DataCorruptedException
-	{ return dto.createDataSource(this.level.getLevelWrapper()); }
-	
-	protected FullDataSourceV2 makeEmptyDataSource(long pos) 
-	{ return FullDataSourceV2.createEmpty(pos); }
-	
-	
-	
 	//=================//
 	// event listeners //
 	//=================//
@@ -177,6 +150,17 @@ public class FullDataSourceProviderV2 implements IDebugRenderable, AutoCloseable
 	
 	
 	
+	//================//
+	// DTO converters //
+	//================//
+	
+	protected FullDataSourceV2 createDataSourceFromDto(FullDataSourceV2DTO dto) throws InterruptedException, IOException, DataCorruptedException
+	{ return dto.createDataSource(this.level.getLevelWrapper(), null); }
+	protected FullDataSourceV2 createAdjDataSourceFromDto(FullDataSourceV2DTO dto, EDhDirection direction) throws InterruptedException, IOException, DataCorruptedException
+	{ return dto.createDataSource(this.level.getLevelWrapper(), direction); }
+	
+	
+	
 	//=========================//
 	// basic DataSource getter //
 	//=========================//
@@ -187,7 +171,7 @@ public class FullDataSourceProviderV2 implements IDebugRenderable, AutoCloseable
 	 *
 	 * This call is concurrent. I.e. it supports being called by multiple threads at the same time.
 	 */
-	public CompletableFuture<FullDataSourceV2> getAsync(long pos)
+	public CompletableFuture<FullDataSourceV2> getAsync(long pos, boolean includeAdjacentData)
 	{
 		AbstractExecutorService executor = ThreadPoolUtil.getFileHandlerExecutor();
 		if (executor == null || executor.isTerminated())
@@ -198,7 +182,7 @@ public class FullDataSourceProviderV2 implements IDebugRenderable, AutoCloseable
 		
 		try
 		{
-			return CompletableFuture.supplyAsync(() -> this.get(pos), executor);
+			return CompletableFuture.supplyAsync(() -> this.get(pos, includeAdjacentData), executor);
 		}
 		catch (RejectedExecutionException ignore)
 		{
@@ -209,16 +193,18 @@ public class FullDataSourceProviderV2 implements IDebugRenderable, AutoCloseable
 	/**
 	 * Should only be used in internal file handler methods where we are already running on a file handler thread.
 	 * Can return null if the repo is in the process of being shut down
-	 * @see FullDataSourceProviderV2#getAsync(long)
+	 * @see FullDataSourceProviderV2#getAsync(long, boolean)
 	 */
 	@Nullable
-	public FullDataSourceV2 get(long pos)
+	public FullDataSourceV2 get(long pos, boolean includeAdjacentData)
 	{
-		try(FullDataSourceV2DTO dto = this.repo.getByKey(pos))
+		try(FullDataSourceV2DTO dto = includeAdjacentData 
+				? this.repo.getByKey(pos)
+				: this.repo.getByPosNoAdj(pos))
 		{
 			if (dto == null)
 			{
-				return this.makeEmptyDataSource(pos);
+				return FullDataSourceV2.createEmpty(pos);
 			}
 			
 			try
@@ -255,6 +241,72 @@ public class FullDataSourceProviderV2 implements IDebugRenderable, AutoCloseable
 		{
 			LOGGER.warn("Corrupted data found at [" + whereClause + "]. Data at will be deleted so it can be re-generated to prevent issues. Future errors with this same message won't be logged. Error: [" + message + "].", e);
 		}
+	}
+	
+	
+	
+	//
+	// TODO name?
+	//
+	
+	public FullDataSourceV2 getAdjForDirection(long pos, EDhDirection direction)
+	{
+		try(FullDataSourceV2DTO dto = this.repo.getAdjByPosAndDirection(pos, direction))
+		{
+			if (dto == null)
+			{
+				return FullDataSourceV2.createEmpty(pos);
+			}
+			
+			try
+			{
+				// load from database
+				return this.createAdjDataSourceFromDto(dto, direction);
+			}
+			catch (DataCorruptedException e)
+			{
+				this.tryLogCorruptedDataError(DhSectionPos.toString(pos), e);
+				this.repo.deleteWithKey(pos);
+			}
+		}
+		catch (InterruptedException ignore) { }
+		catch (IOException e)
+		{
+			LOGGER.warn("File read Error for pos ["+DhSectionPos.toString(pos)+"], error: "+e.getMessage(), e);
+		}
+		
+		// an error occurred
+		return null;
+	}
+	
+	public FullDataSourceV2 getCenter(long pos)
+	{
+		try(FullDataSourceV2DTO dto = this.repo.getByPosNoAdj(pos))
+		{
+			if (dto == null)
+			{
+				return FullDataSourceV2.createEmpty(pos);
+			}
+			
+			try
+			{
+				// load from database
+				return this.createDataSourceFromDto(dto);
+			}
+			catch (DataCorruptedException e)
+			{
+				this.tryLogCorruptedDataError(DhSectionPos.toString(pos), e);
+				this.repo.deleteWithKey(pos);
+			}
+		}
+		catch (InterruptedException ignore) { }
+		catch (IOException e)
+		{
+			LOGGER.warn("File read Error for pos ["+DhSectionPos.toString(pos)+"], error: "+e.getMessage(), e);
+		}
+		
+		// an error occurred
+		return null;
 	}
 	
 	
