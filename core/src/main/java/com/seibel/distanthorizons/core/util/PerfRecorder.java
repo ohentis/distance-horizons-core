@@ -175,7 +175,14 @@ public class PerfRecorder
 			long endTime = System.nanoTime();
 			long totalNano = endTime - this.startTime;
 			
-			LongAdder nsAdder = PerfRecorder.this.nanoPerId.computeIfAbsent(this.id, (String id) -> new LongAdder());
+			LongAdder nsAdder = PerfRecorder.this.nanoPerId.get(this.id);
+			if (nsAdder != null)
+			{
+				nsAdder.add(totalNano);
+				return;
+			}
+			
+			nsAdder = PerfRecorder.this.nanoPerId.computeIfAbsent(this.id, (String id) -> new LongAdder());
 			nsAdder.add(totalNano);
 		}
 	}
