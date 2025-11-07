@@ -19,6 +19,7 @@
 
 package com.seibel.distanthorizons.core.file.fullDatafile.V2;
 
+import com.seibel.distanthorizons.api.enums.config.EDhApiDataCompressionMode;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.enums.EDhDirection;
@@ -207,8 +208,19 @@ public class FullDataSourceProviderV2 implements IDebugRenderable, AutoCloseable
 			
 			try
 			{
-				// load from database
-				return this.createDataSourceFromDto(dto);
+				FullDataSourceV2 dataSource = this.createDataSourceFromDto(dto);
+				
+				// automatically create and save adjacent data if missing
+				if (dto.dataFormatVersion == FullDataSourceV2DTO.DATA_FORMAT.V1_NO_ADJACENT_DATA)
+				{
+					EDhApiDataCompressionMode compressionMode = Config.Common.LodBuilding.dataCompression.get();
+					try(FullDataSourceV2DTO updatedDto = FullDataSourceV2DTO.CreateFromDataSource(dataSource, compressionMode))
+					{
+						this.repo.save(updatedDto);
+					}
+				}
+				
+				return dataSource; 
 			}
 			catch (DataCorruptedException e)
 			{
@@ -260,6 +272,19 @@ public class FullDataSourceProviderV2 implements IDebugRenderable, AutoCloseable
 			if (dto == null)
 			{
 				return FullDataSourceV2.createEmpty(pos);
+			}
+			
+			// migrate to the V2 format first if needed
+			if (dto.dataFormatVersion == FullDataSourceV2DTO.DATA_FORMAT.V1_NO_ADJACENT_DATA)
+			{
+				// get automatically converts from V1 to V2
+				FullDataSourceV2 migratedDataSource = this.get(pos);
+				if (migratedDataSource != null)
+				{
+					migratedDataSource.clearAllNonAdjData(direction);
+				}
+				
+				return migratedDataSource;
 			}
 			
 			try
@@ -346,14 +371,12 @@ public class FullDataSourceProviderV2 implements IDebugRenderable, AutoCloseable
 	
 	
 	
-	//
-	// TODO
-	//
+	//=============//
+	// data update //
+	//=============//
 	
 	public CompletableFuture<Void> updateDataSourceAsync(@NotNull FullDataSourceV2 inputData)
-	{
-		return this.dataUpdater.updateDataSourceAsync(inputData);
-	}
+	{ return this.dataUpdater.updateDataSourceAsync(inputData); }
 	
 	
 	

@@ -27,6 +27,7 @@ import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.FullDataPointIdMap;
 import com.seibel.distanthorizons.core.dataObjects.transformers.FullDataOcclusionCuller;
 import com.seibel.distanthorizons.core.dataObjects.transformers.LodDataBuilder;
+import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.file.fullDatafile.V2.FullDataSourceProviderV2;
 import com.seibel.distanthorizons.core.logging.DhLogger;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
@@ -36,6 +37,7 @@ import com.seibel.distanthorizons.core.pooling.PhantomArrayListPool;
 import com.seibel.distanthorizons.core.pos.DhLodPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos;
+import com.seibel.distanthorizons.core.sql.dto.util.FullDataMinMaxPosUtil;
 import com.seibel.distanthorizons.core.util.*;
 import com.seibel.distanthorizons.core.util.objects.DataCorruptedException;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
@@ -74,8 +76,6 @@ public class FullDataSourceV2
 	public static final int WIDTH = 64;
 	/** how many chunks wide this datasource is at detail level 0. */
 	public static final int NUMB_OF_CHUNKS_WIDE = WIDTH / LodUtil.CHUNK_WIDTH;
-	
-	public static final byte DATA_FORMAT_VERSION = 1;
 	
 	public static final PhantomArrayListPool ARRAY_LIST_POOL = new PhantomArrayListPool("FullDataV2");
 	
@@ -1092,6 +1092,38 @@ public class FullDataSourceV2
 		return dataChanged;
 	}
 	
+	
+	
+	//===================//
+	// adjacent clearing //
+	//===================//
+	
+	/** Removes any non-adjacent data from the given direction. */
+	public void clearAllNonAdjData(EDhDirection direction)
+	{
+		long encodedMinMaxPos = FullDataMinMaxPosUtil.getEncodedMinMaxPos(direction);
+		int minX = FullDataMinMaxPosUtil.getAdjMinX(encodedMinMaxPos);
+		int maxX = FullDataMinMaxPosUtil.getAdjMaxX(encodedMinMaxPos);
+		int minZ = FullDataMinMaxPosUtil.getAdjMinZ(encodedMinMaxPos);
+		int maxZ = FullDataMinMaxPosUtil.getAdjMaxZ(encodedMinMaxPos);
+		
+		for (int relX = 0; relX < FullDataSourceV2.WIDTH; relX++)
+		{
+			for (int relZ = 0; relZ < FullDataSourceV2.WIDTH; relZ++)
+			{
+				// skip non-adjacent data
+				if (relX >= minX && relX < maxX
+						&& relZ >= minZ && relZ < maxZ)
+				{
+					continue;
+				}
+				
+				LongArrayList dataColumn = this.getColumnAtRelPos(relX, relZ);
+				dataColumn.clear();
+				dataColumn.add(FullDataPointUtil.EMPTY_DATA_POINT);
+			}
+		}
+	}
 	
 	
 	//================//

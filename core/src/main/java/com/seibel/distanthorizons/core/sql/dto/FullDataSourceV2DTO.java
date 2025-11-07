@@ -54,6 +54,13 @@ public class FullDataSourceV2DTO
 {
 	public static final boolean VALIDATE_INPUT_DATAPOINTS = true;
 	
+	public static class DATA_FORMAT
+	{
+		public static final int V1_NO_ADJACENT_DATA = 1;
+		public static final int V2_LATEST = 2;
+	}
+	
+	
 	
 	public long pos;
 	
@@ -118,7 +125,7 @@ public class FullDataSourceV2DTO
 			// the mapping hash isn't included since it takes significantly longer to calculate and 
 			// as of the time of this comment (2025-1-22) the checksum isn't used for anything so changing it shouldn't cause any issues
 			dto.dataChecksum = dataSource.hashCode();
-			dto.dataFormatVersion = FullDataSourceV2.DATA_FORMAT_VERSION;
+			dto.dataFormatVersion = DATA_FORMAT.V2_LATEST;
 			dto.compressionModeValue = compressionModeEnum.value;
 			dto.lastModifiedUnixDateTime = dataSource.lastModifiedUnixDateTime;
 			dto.createdUnixDateTime = dataSource.createdUnixDateTime;
@@ -161,7 +168,7 @@ public class FullDataSourceV2DTO
 		FullDataSourceV2 dataSource = FullDataSourceV2.createEmpty(this.pos);
 		try
 		{	
-			this.internalPopulateDataSource(dataSource, levelWrapper, direction, false);
+			this.populateDataSource(dataSource, levelWrapper, direction, false);
 		}
 		catch (Exception e)
 		{
@@ -172,37 +179,56 @@ public class FullDataSourceV2DTO
 		return dataSource;
 	}
 	
+	/**
+	 * May be missing one or more data fields. <br>
+	 * Designed to be used without access to Minecraft. 
+	 */
 	public FullDataSourceV2 createUnitTestDataSource() throws IOException, InterruptedException, DataCorruptedException
 	{ return this.createUnitTestDataSource(null); }
 	/** 
 	 * May be missing one or more data fields. <br>
-	 * Designed to be used without access to Minecraft or any supporting objects. 
+	 * Designed to be used without access to Minecraft. 
 	 */
 	public FullDataSourceV2 createUnitTestDataSource(EDhDirection direction) throws IOException, InterruptedException, DataCorruptedException 
-	{ return this.internalPopulateDataSource(FullDataSourceV2.createEmpty(this.pos), null, direction,true); }
+	{ return this.populateDataSource(FullDataSourceV2.createEmpty(this.pos), null, direction,true); }
 	
-	private FullDataSourceV2 internalPopulateDataSource(
+	private FullDataSourceV2 populateDataSource(
 			FullDataSourceV2 dataSource, ILevelWrapper levelWrapper,
 			@Nullable EDhDirection direction,
 			boolean unitTest) throws IOException, InterruptedException, DataCorruptedException
 	{
-		if (FullDataSourceV2.DATA_FORMAT_VERSION != this.dataFormatVersion)
+		// format validation //
+		
+		if (DATA_FORMAT.V1_NO_ADJACENT_DATA != this.dataFormatVersion
+			&& DATA_FORMAT.V2_LATEST != this.dataFormatVersion)
 		{
-			throw new IllegalStateException("There should only be one data format ["+FullDataSourceV2.DATA_FORMAT_VERSION+"].");
+			throw new IllegalStateException("Data source population only supports formats: ["+DATA_FORMAT.V1_NO_ADJACENT_DATA +","+DATA_FORMAT.V2_LATEST +"], data format found: ["+this.dataFormatVersion+"].");
 		}
 		
+		if (direction != null
+			&& this.dataFormatVersion == DATA_FORMAT.V1_NO_ADJACENT_DATA)
+		{
+			throw new IllegalStateException("Data format ["+this.dataFormatVersion+"] doesn't support adjacent data. Automatic conversion must be done.");
+		}
+		
+		
+		
+		// compression //
 		
 		EDhApiDataCompressionMode compressionModeEnum;
 		try
 		{
-			compressionModeEnum = this.getCompressionMode();
+			compressionModeEnum = EDhApiDataCompressionMode.getFromValue(this.compressionModeValue);
 		}
 		catch (IllegalArgumentException e)
 		{
-			// may happen if ZStd was used (which was added and removed during the nightly builds)
-			// or if the compressor value is changed to an invalid option
+			// may happen if the compressor value was changed to an invalid option
 			throw new DataCorruptedException(e);
 		}
+		
+		
+		
+		// data //
 		
 		if (direction == null)
 		{
@@ -219,6 +245,9 @@ public class FullDataSourceV2DTO
 			// whether they're a full or partial data source
 			readDataSourceAdjacentDataArrayToBlob(this.compressedDataByteArray, dataSource.dataPoints, direction, compressionModeEnum);	
 		}
+		
+		
+		// mapping //
 		
 		dataSource.mapping.clear(dataSource.getPos());
 		// should only be null when used in a unit test
@@ -237,6 +266,10 @@ public class FullDataSourceV2DTO
 				LodUtil.assertNotReach("ID maps out of sync for pos: "+this.pos);
 			}
 		}
+		
+		
+		
+		// individual properties //
 		
 		dataSource.lastModifiedUnixDateTime = this.lastModifiedUnixDateTime;
 		dataSource.createdUnixDateTime = this.createdUnixDateTime;
@@ -579,15 +612,6 @@ public class FullDataSourceV2DTO
 		this.lastModifiedUnixDateTime = in.readLong();
 		this.createdUnixDateTime = in.readLong();
 	}
-	
-	
-	
-	//================//
-	// helper methods //
-	//================//
-	
-	public EDhApiDataCompressionMode getCompressionMode() throws IllegalArgumentException 
-	{ return EDhApiDataCompressionMode.getFromValue(this.compressionModeValue); }
 	
 	
 	
