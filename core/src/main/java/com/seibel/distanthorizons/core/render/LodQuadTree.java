@@ -279,9 +279,8 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 		// and disabling render sections //
 		//===============================//
 		
-		//byte expectedDetailLevel = DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL + 3; // can be used instead of the following logic for testing
 		byte expectedDetailLevel = this.calculateExpectedDetailLevel(playerPos, sectionPos);
-		expectedDetailLevel = (byte) Math.min(expectedDetailLevel, this.minRenderDetailLevel);
+		expectedDetailLevel = (byte) Math.min(expectedDetailLevel, this.minRootRenderDetailLevel);
 		expectedDetailLevel += DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL;
 		
 		if (DhSectionPos.getDetailLevel(sectionPos) > expectedDetailLevel)
@@ -529,11 +528,11 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 		
 		
 		int detailLevel = (int) (Math.log(distance / this.detailDropOffDistanceUnit) / this.detailDropOffLogBase);
-		return (byte) MathUtil.clamp(this.maxRenderDetailLevel, detailLevel, Byte.MAX_VALUE - 1);
+		return (byte) MathUtil.clamp(this.maxLeafRenderDetailLevel, detailLevel, Byte.MAX_VALUE - 1);
 	}
 	private double getDrawDistanceFromDetail(int detail)
 	{
-		if (detail <= this.maxRenderDetailLevel)
+		if (detail <= this.maxLeafRenderDetailLevel)
 		{
 			return 0;
 		}
@@ -552,14 +551,14 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 		this.detailDropOffDistanceUnit = Config.Client.Advanced.Graphics.Quality.horizontalQuality.get().distanceUnitInBlocks * LodUtil.CHUNK_WIDTH;
 		this.detailDropOffLogBase = Math.log(Config.Client.Advanced.Graphics.Quality.horizontalQuality.get().quadraticBase);
 		
-		this.maxRenderDetailLevel = Config.Client.Advanced.Graphics.Quality.maxHorizontalResolution.get().detailLevel;
+		this.maxLeafRenderDetailLevel = Config.Client.Advanced.Graphics.Quality.maxHorizontalResolution.get().detailLevel;
 		
 		// The minimum detail level is done to prevent single corner sections rendering 1 detail level lower than the others.
 		// If not done corners may not be flush with the other LODs, which looks bad.
 		byte minSectionDetailLevel = this.getDetailLevelFromDistance(this.blockRenderDistanceDiameter); // get the minimum allowed detail level
 		minSectionDetailLevel -= 1; // -1 so corners can't render lower than their adjacent neighbors. space
 		minSectionDetailLevel = (byte) Math.min(minSectionDetailLevel, this.treeRootDetailLevel); // don't allow rendering lower detail sections than what the tree contains
-		this.minRenderDetailLevel = (byte) Math.max(minSectionDetailLevel, this.maxRenderDetailLevel); // respect the user's selected max resolution if it is lower detail (IE they want 2x2 block, but minSectionDetailLevel is specifically for 1x1 block render resolution)
+		this.minRootRenderDetailLevel = (byte) Math.max(minSectionDetailLevel, this.maxLeafRenderDetailLevel); // respect the user's selected max resolution if it is lower detail (IE they want 2x2 block, but minSectionDetailLevel is specifically for 1x1 block render resolution)
 	}
 	
 	

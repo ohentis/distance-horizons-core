@@ -63,17 +63,17 @@ public class FullDataSourceProviderV2 implements IDebugRenderable, AutoCloseable
 	 * The highest numerical detail level possible. 
 	 * Used when determining which positions to update. 
 	 *
-	 * @see FullDataSourceProviderV2#MIN_SECTION_DETAIL_LEVEL
+	 * @see FullDataSourceProviderV2#LEAF_SECTION_DETAIL_LEVEL
 	 */
-	public static final byte TOP_SECTION_DETAIL_LEVEL
+	public static final byte ROOT_SECTION_DETAIL_LEVEL
 			= DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL
-			+ LodUtil.REGION_DETAIL_LEVEL; // TODO how big do we need to go?
+			+ LodUtil.REGION_DETAIL_LEVEL;
 	/**
 	 * The lowest numerical detail level possible. 
 	 *
-	 * @see FullDataSourceProviderV2#TOP_SECTION_DETAIL_LEVEL
+	 * @see FullDataSourceProviderV2#ROOT_SECTION_DETAIL_LEVEL
 	 */
-	public static final byte MIN_SECTION_DETAIL_LEVEL = DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL;
+	public static final byte LEAF_SECTION_DETAIL_LEVEL = DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL;
 	
 	
 	

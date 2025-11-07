@@ -59,7 +59,7 @@ public class QuadTree<T>
 	 */
 	public final byte treeLeafDetailLevel;
 	
-	private final int diameterInBlocks; // diameterInBlocks
+	private final int diameterInBlocks;
 	
 	/** contain the actual data in the quad tree structure */
 	private final MovableGridRingList<QuadNode<T>> topRingList;

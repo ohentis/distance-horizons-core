@@ -395,7 +395,7 @@ public class FullDataSourceV2
 						// copy over application flag if either are set to continue propagating
 						(BoolUtil.falseIfNull(this.applyToParent) || BoolUtil.falseIfNull(inputDataSource.applyToParent))
 						// don't propagate past the top of the tree
-						&& (DhSectionPos.getDetailLevel(this.pos) < FullDataSourceProviderV2.TOP_SECTION_DETAIL_LEVEL);
+						&& (DhSectionPos.getDetailLevel(this.pos) < FullDataSourceProviderV2.ROOT_SECTION_DETAIL_LEVEL);
 			}
 			
 			// null check to prevent setting a flag we don't want to save in the DB
@@ -404,7 +404,7 @@ public class FullDataSourceV2
 				this.applyToChildren =
 						(BoolUtil.falseIfNull(this.applyToChildren) || BoolUtil.falseIfNull(inputDataSource.applyToChildren))
 						// don't propagate past the bottom of the tree
-						&& (DhSectionPos.getDetailLevel(this.pos) > FullDataSourceProviderV2.MIN_SECTION_DETAIL_LEVEL);
+						&& (DhSectionPos.getDetailLevel(this.pos) > FullDataSourceProviderV2.LEAF_SECTION_DETAIL_LEVEL);
 			}
 		}
 		else if (inputDetailLevel + 1 == thisDetailLevel)
@@ -415,7 +415,7 @@ public class FullDataSourceV2
 			this.applyToParent =
 					dataChanged
 					&& (BoolUtil.falseIfNull(this.applyToParent) || BoolUtil.falseIfNull(inputDataSource.applyToParent))
-					&& (DhSectionPos.getDetailLevel(this.pos) < FullDataSourceProviderV2.TOP_SECTION_DETAIL_LEVEL);
+					&& (DhSectionPos.getDetailLevel(this.pos) < FullDataSourceProviderV2.ROOT_SECTION_DETAIL_LEVEL);
 			
 		}
 		else if (inputDetailLevel - 1 == thisDetailLevel)
@@ -427,7 +427,7 @@ public class FullDataSourceV2
 			this.applyToChildren =
 					dataChanged
 					&& (BoolUtil.falseIfNull(this.applyToChildren) || BoolUtil.falseIfNull(inputDataSource.applyToChildren))
-					&& (DhSectionPos.getDetailLevel(this.pos) > FullDataSourceProviderV2.MIN_SECTION_DETAIL_LEVEL);
+					&& (DhSectionPos.getDetailLevel(this.pos) > FullDataSourceProviderV2.LEAF_SECTION_DETAIL_LEVEL);
 		}
 		else
 		{

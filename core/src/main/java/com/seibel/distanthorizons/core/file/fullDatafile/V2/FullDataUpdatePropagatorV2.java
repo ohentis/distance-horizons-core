@@ -218,7 +218,7 @@ public class FullDataUpdatePropagatorV2 implements IDebugRenderable, AutoCloseab
 										}
 										
 										
-										if (DhSectionPos.getDetailLevel(parentUpdatePos) < FullDataSourceProviderV2.TOP_SECTION_DETAIL_LEVEL)
+										if (DhSectionPos.getDetailLevel(parentUpdatePos) < FullDataSourceProviderV2.ROOT_SECTION_DETAIL_LEVEL)
 										{
 											parentDataSource.applyToParent = true;
 										}
