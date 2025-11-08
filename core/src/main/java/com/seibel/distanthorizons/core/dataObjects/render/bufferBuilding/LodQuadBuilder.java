@@ -166,18 +166,23 @@ public class LodQuadBuilder
 	// XZ
 	public void addQuadUp(short minX, short maxY, short minZ, short widthEastWest, short widthNorthSouthOrUpDown, int color, byte irisBlockMaterialId, byte skylight, byte blocklight) // TODO argument names are wrong
 	{
-		BufferQuad quad = new BufferQuad(minX, maxY, minZ, widthEastWest, widthNorthSouthOrUpDown, color, irisBlockMaterialId, skylight, blocklight, EDhDirection.UP);
 		boolean isTransparent = (this.doTransparency && ColorUtil.getAlpha(color) < 255);
-		ArrayList<BufferQuad> quadList = isTransparent ? this.transparentQuads[EDhDirection.UP.ordinal()] : this.opaqueQuads[EDhDirection.UP.ordinal()];
+		ArrayList<BufferQuad> quadList = isTransparent 
+				? this.transparentQuads[EDhDirection.UP.ordinal()] 
+				: this.opaqueQuads[EDhDirection.UP.ordinal()];
+		
+		BufferQuad quad = new BufferQuad(minX, maxY, minZ, widthEastWest, widthNorthSouthOrUpDown, color, irisBlockMaterialId, skylight, blocklight, EDhDirection.UP);
 		quadList.add(quad);
 	}
 	
 	public void addQuadDown(short x, short y, short z, short width, short wz, int color, byte irisBlockMaterialId, byte skylight, byte blocklight)
 	{
+		ArrayList<BufferQuad> quadArray = (this.doTransparency && ColorUtil.getAlpha(color) < 255)
+				? this.transparentQuads[EDhDirection.DOWN.ordinal()]
+				: this.opaqueQuads[EDhDirection.DOWN.ordinal()];
+		
 		BufferQuad quad = new BufferQuad(x, y, z, width, wz, color, irisBlockMaterialId, skylight, blocklight, EDhDirection.DOWN);
-		ArrayList<BufferQuad> qs = (this.doTransparency && ColorUtil.getAlpha(color) < 255)
-				? this.transparentQuads[EDhDirection.DOWN.ordinal()] : this.opaqueQuads[EDhDirection.DOWN.ordinal()];
-		qs.add(quad);
+		quadArray.add(quad);
 	}
 	
 	
