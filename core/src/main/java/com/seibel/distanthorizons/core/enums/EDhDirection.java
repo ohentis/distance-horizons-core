@@ -32,17 +32,17 @@ import com.seibel.distanthorizons.core.util.math.Vec3i;
 public enum EDhDirection
 {
 	/** negative Y */
-	DOWN("down", EDhDirection.AxisDirection.NEGATIVE, EDhDirection.Axis.Y, new Vec3i(0, -1, 0)),
+	DOWN("down", EDhDirection.AxisDirection.NEGATIVE, EDhDirection.Axis.Y, new Vec3i(0, -1, 0), -1),
 	/** positive Y */
-	UP("up", EDhDirection.AxisDirection.POSITIVE, EDhDirection.Axis.Y, new Vec3i(0, 1, 0)),
+	UP("up", EDhDirection.AxisDirection.POSITIVE, EDhDirection.Axis.Y, new Vec3i(0, 1, 0), -1),
 	/** negative Z */
-	NORTH("north", EDhDirection.AxisDirection.NEGATIVE, EDhDirection.Axis.Z, new Vec3i(0, 0, -1)),
+	NORTH("north", EDhDirection.AxisDirection.NEGATIVE, EDhDirection.Axis.Z, new Vec3i(0, 0, -1), 0),
 	/** positive Z */
-	SOUTH("south", EDhDirection.AxisDirection.POSITIVE, EDhDirection.Axis.Z, new Vec3i(0, 0, 1)),
+	SOUTH("south", EDhDirection.AxisDirection.POSITIVE, EDhDirection.Axis.Z, new Vec3i(0, 0, 1), 1),
 	/** negative X */
-	WEST("west", EDhDirection.AxisDirection.NEGATIVE, EDhDirection.Axis.X, new Vec3i(-1, 0, 0)),
+	WEST("west", EDhDirection.AxisDirection.NEGATIVE, EDhDirection.Axis.X, new Vec3i(-1, 0, 0), 2),
 	/** positive X */
-	EAST("east", EDhDirection.AxisDirection.POSITIVE, EDhDirection.Axis.X, new Vec3i(1, 0, 0));
+	EAST("east", EDhDirection.AxisDirection.POSITIVE, EDhDirection.Axis.X, new Vec3i(1, 0, 0), 3);
 	
 	
 	/** Up, Down, West, East, North, South */
@@ -69,6 +69,8 @@ public enum EDhDirection
 	public final EDhDirection.Axis axis;
 	public final EDhDirection.AxisDirection axisDirection;
 	public final Vec3i normal;
+	/** -1 if not a {@link EDhDirection#CARDINAL_COMPASS} direction */
+	public final int compassIndex;
 	
 	
 	
@@ -76,12 +78,13 @@ public enum EDhDirection
 	// constructor //
 	//=============//
 		
-	EDhDirection(String name, EDhDirection.AxisDirection axisDirection, EDhDirection.Axis axis, Vec3i normal)
+	EDhDirection(String name, EDhDirection.AxisDirection axisDirection, EDhDirection.Axis axis, Vec3i normal, int compassIndex)
 	{
 		this.name = name;
 		this.axis = axis;
 		this.axisDirection = axisDirection;
 		this.normal = normal;
+		this.compassIndex = compassIndex;
 	}
 	
 	
