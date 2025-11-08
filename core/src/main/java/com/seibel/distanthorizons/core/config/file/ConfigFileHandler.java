@@ -240,7 +240,7 @@ public class ConfigFileHandler
 		else if (entry.getTrueValue() == null)
 		{
 			// TODO when can this happen?
-			throw new IllegalArgumentException("Entry [" + entry.getNameAndCategory() + "] is null, this may be a problem with [" + ModInfo.NAME + "]. Please contact the authors.");
+			throw new IllegalArgumentException("BlockBiomeWrapperPair [" + entry.getNameAndCategory() + "] is null, this may be a problem with [" + ModInfo.NAME + "]. Please contact the authors.");
 		}
 		
 		workConfig.set(entry.getNameAndCategory(), ConfigTypeConverters.attemptToConvertToString(entry.getType(), entry.getTrueValue()));
@@ -287,13 +287,13 @@ public class ConfigFileHandler
 			
 			if (entry.getTrueValue() == null) 
 			{
-				LOGGER.warn("Entry [" + entry.getNameAndCategory() + "] returned as null from the config. Using default value.");
+				LOGGER.warn("BlockBiomeWrapperPair [" + entry.getNameAndCategory() + "] returned as null from the config. Using default value.");
 				entry.setWithoutFiringEvents(entry.getDefaultValue());
 			}
 		}
 		catch (Exception e)
 		{
-			LOGGER.warn("Entry [" + entry.getNameAndCategory() + "] had an invalid value when loading the config. Using default value.");
+			LOGGER.warn("BlockBiomeWrapperPair [" + entry.getNameAndCategory() + "] had an invalid value when loading the config. Using default value.");
 			entry.setWithoutFiringEvents(entry.getDefaultValue());
 		}
 	}
