@@ -138,7 +138,8 @@ public class LodQuadBuilder
 	//===========//
 	
 	public void addQuadAdj(
-			EDhDirection dir, short x, short y, short z,
+			EDhDirection dir, 
+			short x, short y, short z,
 			short widthEastWest, short widthNorthSouthOrUpDown,
 			int color, byte irisBlockMaterialId, byte skyLight, byte blockLight)
 	{
@@ -149,11 +150,11 @@ public class LodQuadBuilder
 		
 		BufferQuad quad = new BufferQuad(x, y, z, widthEastWest, widthNorthSouthOrUpDown, color, irisBlockMaterialId, skyLight, blockLight, dir);
 		ArrayList<BufferQuad> quadList = (this.doTransparency && ColorUtil.getAlpha(color) < 255) ? this.transparentQuads[dir.ordinal()] : this.opaqueQuads[dir.ordinal()];
-		if (!quadList.isEmpty() &&
-				(
-						quadList.get(quadList.size() - 1).tryMerge(quad, BufferMergeDirectionEnum.EastWest)
-								|| quadList.get(quadList.size() - 1).tryMerge(quad, BufferMergeDirectionEnum.NorthSouthOrUpDown))
-		)
+		if (!quadList.isEmpty()
+			&& (
+				quadList.get(quadList.size() - 1).tryMerge(quad, BufferMergeDirectionEnum.EastWest)
+				|| quadList.get(quadList.size() - 1).tryMerge(quad, BufferMergeDirectionEnum.NorthSouthOrUpDown))
+			)
 		{
 			this.premergeCount++;
 			return;
@@ -174,8 +175,8 @@ public class LodQuadBuilder
 	public void addQuadDown(short x, short y, short z, short width, short wz, int color, byte irisBlockMaterialId, byte skylight, byte blocklight)
 	{
 		BufferQuad quad = new BufferQuad(x, y, z, width, wz, color, irisBlockMaterialId, skylight, blocklight, EDhDirection.DOWN);
-		ArrayList<BufferQuad> qs = (doTransparency && ColorUtil.getAlpha(color) < 255)
-				? transparentQuads[EDhDirection.DOWN.ordinal()] : opaqueQuads[EDhDirection.DOWN.ordinal()];
+		ArrayList<BufferQuad> qs = (this.doTransparency && ColorUtil.getAlpha(color) < 255)
+				? this.transparentQuads[EDhDirection.DOWN.ordinal()] : this.opaqueQuads[EDhDirection.DOWN.ordinal()];
 		qs.add(quad);
 	}
 	

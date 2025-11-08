@@ -33,7 +33,6 @@ import com.seibel.distanthorizons.core.render.glObject.GLProxy;
 import com.seibel.distanthorizons.core.util.ColorUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.RenderDataPointUtil;
-import com.seibel.distanthorizons.core.util.objects.UncheckedInterruptedException;
 import com.seibel.distanthorizons.core.dataObjects.render.columnViews.ColumnArrayView;
 import com.seibel.distanthorizons.coreapi.util.BitShiftUtil;
 
@@ -106,18 +105,15 @@ public class ColumnRenderBufferBuilder
 		//===================//
 		
 		byte thisDetailLevel = renderSource.getDataDetailLevel();
-		for (int relX = 0; relX < ColumnRenderSource.SECTION_SIZE; relX++)
+		for (int relX = 0; relX < ColumnRenderSource.WIDTH; relX++)
 		{
-			for (int relZ = 0; relZ < ColumnRenderSource.SECTION_SIZE; relZ++)
+			for (int relZ = 0; relZ < ColumnRenderSource.WIDTH; relZ++)
 			{
-				// stop the builder if requested
-				UncheckedInterruptedException.throwIfInterrupted();
-				
 				// ignore empty/null columns
 				ColumnArrayView columnRenderData = renderSource.getVerticalDataPointView(relX, relZ);
 				if (columnRenderData.size() == 0
-						|| !RenderDataPointUtil.doesDataPointExist(columnRenderData.get(0))
-						|| RenderDataPointUtil.isVoid(columnRenderData.get(0)))
+					|| !RenderDataPointUtil.doesDataPointExist(columnRenderData.get(0))
+					|| RenderDataPointUtil.hasZeroHeight(columnRenderData.get(0)))
 				{
 					continue;
 				}
@@ -158,8 +154,8 @@ public class ColumnRenderBufferBuilder
 						int xAdj = relX + lodDirection.normal.x;
 						int zAdj = relZ + lodDirection.normal.z;
 						boolean isCrossRenderSourceBoundary =
-								(xAdj < 0 || xAdj >= ColumnRenderSource.SECTION_SIZE) ||
-								(zAdj < 0 || zAdj >= ColumnRenderSource.SECTION_SIZE);
+								(xAdj < 0 || xAdj >= ColumnRenderSource.WIDTH) ||
+								(zAdj < 0 || zAdj >= ColumnRenderSource.WIDTH);
 						
 						ColumnRenderSource adjRenderSource;
 						byte adjDetailLevel;
@@ -196,20 +192,20 @@ public class ColumnRenderBufferBuilder
 								
 								if (xAdj < 0)
 								{
-									xAdj += ColumnRenderSource.SECTION_SIZE;
+									xAdj += ColumnRenderSource.WIDTH;
 								}
-								if (xAdj >= ColumnRenderSource.SECTION_SIZE)
+								if (xAdj >= ColumnRenderSource.WIDTH)
 								{
-									xAdj -= ColumnRenderSource.SECTION_SIZE;
+									xAdj -= ColumnRenderSource.WIDTH;
 								}
 								
 								if (zAdj < 0)
 								{
-									zAdj += ColumnRenderSource.SECTION_SIZE;
+									zAdj += ColumnRenderSource.WIDTH;
 								}
-								if (zAdj >= ColumnRenderSource.SECTION_SIZE)
+								if (zAdj >= ColumnRenderSource.WIDTH)
 								{
-									zAdj -= ColumnRenderSource.SECTION_SIZE;
+									zAdj -= ColumnRenderSource.WIDTH;
 								}
 							}
 						}
@@ -244,15 +240,14 @@ public class ColumnRenderBufferBuilder
 				
 				ColumnRenderSource.DebugSourceFlag debugSourceFlag = renderSource.debugGetFlag(relX, relZ);
 				
-				// We render every vertical lod present in this position
-				// We only stop when we find a block that is void or non-existing block
 				for (int i = 0; i < columnRenderData.size(); i++)
 				{
 					// can be uncommented to limit which vertical LOD is generated
 					if (Config.Client.Advanced.Debugging.ColumnBuilderDebugging.columnBuilderDebugEnable.get())
 					{
 						int wantedColumnIndex = Config.Client.Advanced.Debugging.ColumnBuilderDebugging.columnBuilderDebugColumnIndex.get();
-						if (wantedColumnIndex >= 0 && i != wantedColumnIndex)
+						if (wantedColumnIndex >= 0 
+							&& i != wantedColumnIndex)
 						{
 							continue;
 						}
@@ -261,7 +256,8 @@ public class ColumnRenderBufferBuilder
 					long data = columnRenderData.get(i);
 					// If the data is not render-able (Void or non-existing) we stop since there is
 					// no data left in this position
-					if (RenderDataPointUtil.isVoid(data) || !RenderDataPointUtil.doesDataPointExist(data))
+					if (RenderDataPointUtil.hasZeroHeight(data) 
+						|| !RenderDataPointUtil.doesDataPointExist(data))
 					{
 						break;
 					}
@@ -269,7 +265,7 @@ public class ColumnRenderBufferBuilder
 					long topDataPoint = (i - 1) >= 0 ? columnRenderData.get(i - 1) : RenderDataPointUtil.EMPTY_DATA;
 					long bottomDataPoint = (i + 1) < columnRenderData.size() ? columnRenderData.get(i + 1) : RenderDataPointUtil.EMPTY_DATA;
 					
-					addLodToBuffer(
+					addRenderDataPointToBuilder(
 							clientLevel,
 							data, topDataPoint, bottomDataPoint, 
 							adjColumnViews, isSameDetailLevel,
@@ -282,31 +278,31 @@ public class ColumnRenderBufferBuilder
 		
 		quadBuilder.mergeQuads();
 	}
-	private static void addLodToBuffer(
+	private static void addRenderDataPointToBuilder(
 			IDhClientLevel clientLevel,
-			long data, long topData, long bottomData, 
+			long renderData, long topRenderData, long bottomRenderData, 
 			ColumnArrayView[] adjColumnViews, boolean[] isSameDetailLevel,
 			byte detailLevel, int renderSourceOffsetPosX, int renderSourceOffsetPosZ, 
 			LodQuadBuilder quadBuilder, ColumnRenderSource.DebugSourceFlag debugSource)
 	{
 		long sectionPos = DhSectionPos.encode(detailLevel, renderSourceOffsetPosX, renderSourceOffsetPosZ);
 		
-		short width = (short) BitShiftUtil.powerOfTwo(detailLevel);
-		short xMin = (short) DhSectionPos.getMinCornerBlockX(sectionPos);
-		short yMin = RenderDataPointUtil.getYMin(data);
-		short zMin = (short) DhSectionPos.getMinCornerBlockZ(sectionPos);
-		short ySize = (short) (RenderDataPointUtil.getYMax(data) - yMin);
+		short blockWidth = (short) DhSectionPos.getDetailLevelWidthInBlocks(detailLevel);
+		short blockMinX = (short) DhSectionPos.getMinCornerBlockX(sectionPos);
+		short blockMinY = RenderDataPointUtil.getYMin(renderData);
+		short blockMinZ = (short) DhSectionPos.getMinCornerBlockZ(sectionPos);
+		short blockMaxY = (short) (RenderDataPointUtil.getYMax(renderData) - blockMinY);
 		
-		if (ySize == 0)
+		if (blockMaxY == 0)
 		{
 			return;
 		}
-		else if (ySize < 0)
+		else if (blockMaxY < 0)
 		{
-			throw new IllegalArgumentException("Negative y size for the data! Data: [" + RenderDataPointUtil.toString(data) + "].");
+			throw new IllegalArgumentException("Negative y size for the renderDataPoint! Data: [" + RenderDataPointUtil.toString(renderData) + "].");
 		}
 		
-		byte blockMaterialId = RenderDataPointUtil.getBlockMaterialId(data);
+		byte blockMaterialId = RenderDataPointUtil.getBlockMaterialId(renderData);
 		
 		
 		
@@ -321,11 +317,11 @@ public class ColumnRenderBufferBuilder
 				float brightnessMultiplier = Config.Client.Advanced.Graphics.Quality.brightnessMultiplier.get().floatValue();
 				if (saturationMultiplier == 1.0 && brightnessMultiplier == 1.0)
 				{
-					color = RenderDataPointUtil.getColor(data);
+					color = RenderDataPointUtil.getColor(renderData);
 				}
 				else
 				{
-					float[] ahsv = ColorUtil.argbToAhsv(RenderDataPointUtil.getColor(data));
+					float[] ahsv = ColorUtil.argbToAhsv(RenderDataPointUtil.getColor(renderData));
 					color = ColorUtil.ahsvToArgb(ahsv[0], ahsv[1], ahsv[2] * saturationMultiplier, ahsv[3] * brightnessMultiplier);
 				}
 				break;
@@ -416,13 +412,13 @@ public class ColumnRenderBufferBuilder
 		
 		ColumnBox.addBoxQuadsToBuilder(
 				quadBuilder, clientLevel,
-				width, ySize, width,
-				xMin, yMin, zMin,
+				blockWidth, blockMaxY,
+				blockMinX, blockMinY, blockMinZ,
 				color,
 				blockMaterialId,
-				RenderDataPointUtil.getLightSky(data),
-				fullBright ? 15 : RenderDataPointUtil.getLightBlock(data),
-				topData, bottomData, adjColumnViews, isSameDetailLevel);
+				RenderDataPointUtil.getLightSky(renderData),
+				fullBright ? LodUtil.MAX_MC_LIGHT : RenderDataPointUtil.getLightBlock(renderData),
+				topRenderData, bottomRenderData, adjColumnViews, isSameDetailLevel);
 	}
 	
 }

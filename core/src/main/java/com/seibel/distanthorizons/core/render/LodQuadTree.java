@@ -59,8 +59,6 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRenderable, AutoCloseable
 {
-	public static final byte TREE_LOWEST_DETAIL_LEVEL = ColumnRenderSource.SECTION_SIZE_OFFSET;
-	
 	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
 	/** there should only ever be one {@link LodQuadTree} so having the thread static should be fine */
 	private static final ThreadPoolExecutor FULL_DATA_RETRIEVAL_QUEUE_THREAD = ThreadUtil.makeSingleThreadPool("QuadTree Full Data Retrieval Queue Populator");
@@ -99,11 +97,13 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 	// TODO should be removed once James is done testing
 	@Deprecated
 	public static final PerfRecorder FILE_PERF_RECORDER = new PerfRecorder("File");
+	@Deprecated
+	public static final PerfRecorder TRANSFORM_PERF_RECORDER = new PerfRecorder("Transform");
 	
 	/** the smallest numerical detail level number that can be rendered */
-	private byte maxRenderDetailLevel;
+	private byte maxLeafRenderDetailLevel;
 	/** the largest numerical detail level number that can be rendered */
-	private byte minRenderDetailLevel;
+	private byte minRootRenderDetailLevel;
 	
 	/** used to calculate when a detail drop will occur */
 	private double detailDropOffDistanceUnit;
@@ -121,7 +121,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 			int initialPlayerBlockX, int initialPlayerBlockZ,
 			FullDataSourceProviderV2 fullDataSourceProvider)
 	{
-		super(viewDiameterInBlocks, new DhBlockPos2D(initialPlayerBlockX, initialPlayerBlockZ), TREE_LOWEST_DETAIL_LEVEL);
+		super(viewDiameterInBlocks, new DhBlockPos2D(initialPlayerBlockX, initialPlayerBlockZ), DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
 		
 		DebugRenderer.register(this, Config.Client.Advanced.Debugging.DebugWireframe.showQuadTreeRenderStatus);
 		
@@ -133,6 +133,8 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 		this.beaconRenderHandler = (genericObjectRenderer != null) ? new BeaconRenderHandler(genericObjectRenderer) : null;
 		
 		FILE_PERF_RECORDER.clear();
+		TRANSFORM_PERF_RECORDER.clear();
+		COL_BOX_PERF_RECORDER.clear();
 		
 	}
 	
@@ -156,6 +158,10 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 			return;
 		}
 		
+		
+		FILE_PERF_RECORDER.tryLog();
+		TRANSFORM_PERF_RECORDER.tryLog();
+		COL_BOX_PERF_RECORDER.tryLog();
 		
 		
 		// this shouldn't be updated while the tree is being iterated through
