@@ -98,7 +98,7 @@ public class ConfigHandler
 	 * Disables the minimum and maximum validation. <Br>
 	 * Fun to use, but should be disabled by default.
 	 */
-	public boolean runMinMaxValidation = true;
+	public boolean runMinMaxValidation = Config.Client.Advanced.Debugging.allowUnsafeValues.get();
 	
 	
 	
