@@ -98,7 +98,7 @@ public class ConfigHandler
 	 * Disables the minimum and maximum validation. <Br>
 	 * Fun to use, but should be disabled by default.
 	 */
-	public boolean runMinMaxValidation = Config.Client.Advanced.Debugging.allowUnsafeValues.get();
+	public boolean runMinMaxValidation = true;
 	
 	
 	
@@ -123,6 +123,7 @@ public class ConfigHandler
 		this.initNestedClass(Config.class, ""); // Init root category
 		
 		this.configFileHandler.loadFromFile();
+		this.runMinMaxValidation = !Config.Client.Advanced.Debugging.allowUnsafeValues.get();
 		
 		this.isLoaded = true;
 		LOGGER.info("[" + ModInfo.NAME + "] Config initialised");
