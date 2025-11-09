@@ -287,16 +287,16 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 							ColumnRenderSource westRenderSource = adjacentLoadFutures[3].get())
 						{
 							ColumnRenderSource[] adjacentRenderSections = new ColumnRenderSource[EDhDirection.CARDINAL_COMPASS.length];
-							adjacentRenderSections[EDhDirection.NORTH.ordinal() - 2] = northRenderSource;
-							adjacentRenderSections[EDhDirection.SOUTH.ordinal() - 2] = southRenderSource;
-							adjacentRenderSections[EDhDirection.EAST.ordinal() - 2] = eastRenderSource;
-							adjacentRenderSections[EDhDirection.WEST.ordinal() - 2] = westRenderSource;
+							adjacentRenderSections[EDhDirection.NORTH.compassIndex] = northRenderSource;
+							adjacentRenderSections[EDhDirection.SOUTH.compassIndex] = southRenderSource;
+							adjacentRenderSections[EDhDirection.EAST.compassIndex] = eastRenderSource;
+							adjacentRenderSections[EDhDirection.WEST.compassIndex] = westRenderSource;
 							
 							boolean[] adjIsSameDetailLevel = new boolean[EDhDirection.CARDINAL_COMPASS.length];
-							adjIsSameDetailLevel[EDhDirection.NORTH.ordinal() - 2] = this.isAdjacentPosSameDetailLevel(EDhDirection.NORTH);
-							adjIsSameDetailLevel[EDhDirection.SOUTH.ordinal() - 2] = this.isAdjacentPosSameDetailLevel(EDhDirection.SOUTH);
-							adjIsSameDetailLevel[EDhDirection.EAST.ordinal() - 2] = this.isAdjacentPosSameDetailLevel(EDhDirection.EAST);
-							adjIsSameDetailLevel[EDhDirection.WEST.ordinal() - 2] = this.isAdjacentPosSameDetailLevel(EDhDirection.WEST);
+							adjIsSameDetailLevel[EDhDirection.NORTH.compassIndex] = this.isAdjacentPosSameDetailLevel(EDhDirection.NORTH);
+							adjIsSameDetailLevel[EDhDirection.SOUTH.compassIndex] = this.isAdjacentPosSameDetailLevel(EDhDirection.SOUTH);
+							adjIsSameDetailLevel[EDhDirection.EAST.compassIndex] = this.isAdjacentPosSameDetailLevel(EDhDirection.EAST);
+							adjIsSameDetailLevel[EDhDirection.WEST.compassIndex] = this.isAdjacentPosSameDetailLevel(EDhDirection.WEST);
 							
 							// the render sources are only needed by this synchronous method,
 							// then they can be closed

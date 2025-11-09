@@ -23,19 +23,16 @@ import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.level.IDhClientLevel;
+import com.seibel.distanthorizons.core.pooling.PhantomArrayListCheckout;
 import com.seibel.distanthorizons.core.pooling.PhantomArrayListPool;
-import com.seibel.distanthorizons.core.render.LodQuadTree;
 import com.seibel.distanthorizons.core.util.ColorUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
-import com.seibel.distanthorizons.core.util.PerfRecorder;
 import com.seibel.distanthorizons.core.util.RenderDataPointUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.dataObjects.render.columnViews.ColumnArrayView;
 import com.seibel.distanthorizons.coreapi.util.MathUtil;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.ArrayList;
-import java.util.Arrays;
 
 public class ColumnBox
 {
@@ -47,8 +44,6 @@ public class ColumnBox
 	 */
 	private static final byte SKYLIGHT_COVERED = -1;
 	
-	public static final PhantomArrayListPool ARRAY_LIST_POOL = new PhantomArrayListPool("Column Box");
-	
 	
 	
 	
@@ -57,7 +52,7 @@ public class ColumnBox
 	//=========//
 	
 	public static void addBoxQuadsToBuilder(
-			LodQuadBuilder builder, IDhClientLevel clientLevel,
+			LodQuadBuilder builder, PhantomArrayListCheckout phantomArrayCheckout, IDhClientLevel clientLevel,
 			short width, short yHeight,
 			short minX, short minY, short minZ,
 			int color, byte irisBlockMaterialId, byte skyLight, byte blockLight,
@@ -122,20 +117,26 @@ public class ColumnBox
 		// add top and bottom faces //
 		//==========================//
 		
-		boolean skipTop = RenderDataPointUtil.doesDataPointExist(topData) 
-				&& (RenderDataPointUtil.getYMin(topData) == maxY) 
-				&& !isTopTransparent;
-		if (!skipTop)
+		// top face
 		{
-			builder.addQuadUp(minX, maxY, minZ, width, width, ColorUtil.applyShade(color, MC.getShade(EDhDirection.UP)), irisBlockMaterialId, skyLightTop, blockLight);
+			boolean skipTop = RenderDataPointUtil.doesDataPointExist(topData)
+					&& (RenderDataPointUtil.getYMin(topData) == maxY)
+					&& !isTopTransparent;
+			if (!skipTop)
+			{
+				builder.addQuadUp(minX, maxY, minZ, width, width, ColorUtil.applyShade(color, MC.getShade(EDhDirection.UP)), irisBlockMaterialId, skyLightTop, blockLight);
+			}
 		}
 		
-		boolean skipBottom = RenderDataPointUtil.doesDataPointExist(bottomData) 
-				&& (RenderDataPointUtil.getYMax(bottomData) == minY) 
-				&& !isBottomTransparent;
-		if (!skipBottom)
+		// bottom face 
 		{
-			builder.addQuadDown(minX, minY, minZ, width, width, ColorUtil.applyShade(color, MC.getShade(EDhDirection.DOWN)), irisBlockMaterialId, skyLightBot, blockLight);
+			boolean skipBottom = RenderDataPointUtil.doesDataPointExist(bottomData)
+					&& (RenderDataPointUtil.getYMax(bottomData) == minY)
+					&& !isBottomTransparent;
+			if (!skipBottom)
+			{
+				builder.addQuadDown(minX, minY, minZ, width, width, ColorUtil.applyShade(color, MC.getShade(EDhDirection.DOWN)), irisBlockMaterialId, skyLightBot, blockLight);
+			}
 		}
 		
 		
@@ -146,84 +147,119 @@ public class ColumnBox
 		
 		// NORTH face
 		{
-			ColumnArrayView adjCol = adjData[EDhDirection.NORTH.ordinal() - 2]; // TODO can we use something other than ordinal-2?
-			boolean adjSameDetailLevel = isAdjDataSameDetailLevel[EDhDirection.NORTH.ordinal() - 2];
+			ColumnArrayView adjCol = adjData[EDhDirection.NORTH.compassIndex];
+			boolean adjSameDetailLevel = isAdjDataSameDetailLevel[EDhDirection.NORTH.compassIndex];
 			// if the adjacent column is null that generally means the adjacent area hasn't been generated yet
 			if (adjCol == null)
 			{
 				// Add an adjacent face if this is opaque face or transparent over the void.
 				if (!isTransparent || overVoid)
 				{
-					builder.addQuadAdj(EDhDirection.NORTH, minX, minY, minZ, width, yHeight, color, irisBlockMaterialId, LodUtil.MAX_MC_LIGHT, blockLight);
+					builder.addQuadAdj(
+							EDhDirection.NORTH, 
+							minX, minY, minZ, 
+							width, yHeight, 
+							color, irisBlockMaterialId, LodUtil.MAX_MC_LIGHT, blockLight);
 				}
 			}
 			else
 			{
-				makeAdjVerticalQuad(builder, adjCol, adjSameDetailLevel, caveCullingMaxY, EDhDirection.NORTH, minX, minY, minZ, width, yHeight,
+				makeAdjVerticalQuad(
+						builder, phantomArrayCheckout, 
+						adjCol, adjSameDetailLevel, caveCullingMaxY, EDhDirection.NORTH, 
+						minX, minY, minZ, width, yHeight,
 						color, irisBlockMaterialId, blockLight);
 			}
 		}
 		
 		// SOUTH face
 		{
-			ColumnArrayView adjCol = adjData[EDhDirection.SOUTH.ordinal() - 2];
-			boolean adjSameDetailLevel = isAdjDataSameDetailLevel[EDhDirection.SOUTH.ordinal() - 2];
+			ColumnArrayView adjCol = adjData[EDhDirection.SOUTH.compassIndex];
+			boolean adjSameDetailLevel = isAdjDataSameDetailLevel[EDhDirection.SOUTH.compassIndex];
 			if (adjCol == null)
 			{
 				if (!isTransparent || overVoid)
 				{
-					builder.addQuadAdj(EDhDirection.SOUTH, minX, minY, maxZ, width, yHeight, color, irisBlockMaterialId, LodUtil.MAX_MC_LIGHT, blockLight);
+					builder.addQuadAdj(
+							EDhDirection.SOUTH, 
+							minX, minY, maxZ, 
+							width, yHeight, 
+							color, irisBlockMaterialId, LodUtil.MAX_MC_LIGHT, blockLight);
 				}
 			}
 			else
 			{
-				makeAdjVerticalQuad(builder, adjCol, adjSameDetailLevel, caveCullingMaxY, EDhDirection.SOUTH, minX, minY, maxZ, width, yHeight,
+				makeAdjVerticalQuad(
+						builder, phantomArrayCheckout,
+						adjCol, adjSameDetailLevel, caveCullingMaxY, EDhDirection.SOUTH,
+						minX, minY, maxZ, width, yHeight,
 						color, irisBlockMaterialId, blockLight);
 			}
 		}
 		
 		// WEST face
 		{
-			ColumnArrayView adjCol = adjData[EDhDirection.WEST.ordinal() - 2];
-			boolean adjSameDetailLevel = isAdjDataSameDetailLevel[EDhDirection.WEST.ordinal() - 2];
+			ColumnArrayView adjCol = adjData[EDhDirection.WEST.compassIndex];
+			boolean adjSameDetailLevel = isAdjDataSameDetailLevel[EDhDirection.WEST.compassIndex];
 			if (adjCol == null)
 			{
 				if (!isTransparent || overVoid)
 				{
-					builder.addQuadAdj(EDhDirection.WEST, minX, minY, minZ, width, yHeight, color, irisBlockMaterialId, LodUtil.MAX_MC_LIGHT, blockLight);
+					builder.addQuadAdj(
+							EDhDirection.WEST, 
+							minX, minY, minZ, 
+							width, yHeight, 
+							color, irisBlockMaterialId, LodUtil.MAX_MC_LIGHT, blockLight);
 				}
 			}
 			else
 			{
-				makeAdjVerticalQuad(builder, adjCol, adjSameDetailLevel, caveCullingMaxY, EDhDirection.WEST, minX, minY, minZ, width, yHeight,
+				makeAdjVerticalQuad(
+						builder, phantomArrayCheckout,
+						adjCol, adjSameDetailLevel, caveCullingMaxY, EDhDirection.WEST, 
+						minX, minY, minZ, width, yHeight,
 						color, irisBlockMaterialId, blockLight);
 			}
 		}
 		
 		// EAST face
 		{
-			ColumnArrayView adjCol = adjData[EDhDirection.EAST.ordinal() - 2];
-			boolean adjSameDetailLevel = isAdjDataSameDetailLevel[EDhDirection.EAST.ordinal() - 2];
+			ColumnArrayView adjCol = adjData[EDhDirection.EAST.compassIndex];
+			boolean adjSameDetailLevel = isAdjDataSameDetailLevel[EDhDirection.EAST.compassIndex];
 			if (adjCol == null)
 			{
 				if (!isTransparent || overVoid)
 				{
-					builder.addQuadAdj(EDhDirection.EAST, maxX, minY, minZ, width, yHeight, color, irisBlockMaterialId, LodUtil.MAX_MC_LIGHT, blockLight);
+					builder.addQuadAdj(
+							EDhDirection.EAST, 
+							maxX, minY, minZ, 
+							width, yHeight, 
+							color, irisBlockMaterialId, LodUtil.MAX_MC_LIGHT, blockLight);
 				}
 			}
 			else
 			{
-				makeAdjVerticalQuad(builder, adjCol, adjSameDetailLevel, caveCullingMaxY, EDhDirection.EAST, maxX, minY, minZ, width, yHeight,
+				makeAdjVerticalQuad(
+						builder, phantomArrayCheckout,
+						adjCol, adjSameDetailLevel, caveCullingMaxY, EDhDirection.EAST, 
+						maxX, minY, minZ, width, yHeight,
 						color, irisBlockMaterialId, blockLight);
 			}
 		}
 	}
 	
 	private static void makeAdjVerticalQuad(
-			LodQuadBuilder builder, @NotNull ColumnArrayView adjColumnView, boolean adjacentIsSameDetailLevel, int caveCullingMaxY, EDhDirection direction,
+			LodQuadBuilder builder, PhantomArrayListCheckout phantomArrayCheckout,
+			@NotNull ColumnArrayView adjColumnView, boolean adjacentIsSameDetailLevel, int caveCullingMaxY, EDhDirection direction,
 			short x, short yMin, short z, short horizontalWidth, short ySize,
 			int color, byte irisBlockMaterialId, byte blockLight)
 	{
+		// pooled arrays
+		LongArrayList segments = phantomArrayCheckout.getLongArray(0, 0);
+		LongArrayList newSegments = phantomArrayCheckout.getLongArray(1, 0);
+		
+		
+		
 		//==================//
 		// create face with //
 		// no adjacent data //
@@ -240,36 +276,36 @@ public class ColumnBox
 		
 		
 		
-		//===========================//
-		// Build Y-range segments    //
-		// with their sky light      //
-		//===========================//
+		//=================================//
+		// determine face visibility/light //
+		//=================================//
 		
 		boolean transparencyEnabled = Config.Client.Advanced.Graphics.Quality.transparency.get().transparencyEnabled;
 		boolean inputTransparent = ColorUtil.getAlpha(color) < 255 && transparencyEnabled;
 		short yMax = (short) (yMin + ySize);
 		
-		// List to store segments: [startY, endY, skyLight]
-		ArrayList<YSegment> segments = new ArrayList<>();
 		
 		int adjCount = adjColumnView.size();
 		
 		// Start with the entire range at max light
-		segments.add(new YSegment(yMin, yMax, LodUtil.MAX_MC_LIGHT));
+		segments.add(YSegmentUtil.encode(yMin, yMax, LodUtil.MAX_MC_LIGHT));
 		
-		// Process each adjacent datapoint and split/update segments
+		// Process each adjacent datapoint and split segments as needed
 		for (int adjIndex = 0; adjIndex < adjCount; adjIndex++)
 		{
 			long adjPoint = adjColumnView.get(adjIndex);
 			short adjMinY = RenderDataPointUtil.getYMin(adjPoint);
 			short adjMaxY = RenderDataPointUtil.getYMax(adjPoint);
 			
+			// skip empty adjacent points
+			// or points below this one
 			if (!RenderDataPointUtil.doesDataPointExist(adjPoint)
 				|| RenderDataPointUtil.hasZeroHeight(adjPoint)
 				|| yMax <= adjMinY)
 			{
 				continue;
 			}
+			
 			
 			long adjAbovePoint = (adjIndex != 0) ? adjColumnView.get(adjIndex - 1) : RenderDataPointUtil.EMPTY_DATA;
 			long adjBelowPoint = (adjIndex + 1 < adjCount) ? adjColumnView.get(adjIndex + 1) : RenderDataPointUtil.EMPTY_DATA;
@@ -306,13 +342,13 @@ public class ColumnBox
 			
 			
 			// Apply light to the range [adjMinY, adjMaxY)
-			applyLightToRange(segments, adjMinY, adjMaxY, lightToApply);
+			applyLightToRange(segments, newSegments, adjMinY, adjMaxY, lightToApply);
 			
 			// Fill overhang area [adjMaxY, adjAboveMinY) with adjSkyLight
-			int adjAboveMinY = RenderDataPointUtil.getYMin(adjAbovePoint);
+			short adjAboveMinY = RenderDataPointUtil.getYMin(adjAbovePoint);
 			if (adjMaxY < adjAboveMinY)
 			{
-				applyLightToRange(segments, adjMaxY, adjAboveMinY, adjSkyLight);
+				applyLightToRange(segments, newSegments, adjMaxY, adjAboveMinY, adjSkyLight);
 			}
 		}
 		
@@ -323,27 +359,42 @@ public class ColumnBox
 		// from segments         //
 		//=======================//
 		
-		for (YSegment seg : segments)
+		for (int i = 0; i < segments.size(); i++)
 		{
+			long segment = segments.getLong(i);
 			tryAddVerticalFaceWithSkyLightToBuilder(
 					builder, direction,
 					x, z, horizontalWidth,
 					color, irisBlockMaterialId, blockLight,
-					seg.skyLight, inputTransparent, seg.endY, seg.startY
+					YSegmentUtil.getSkyLight(segment), inputTransparent, YSegmentUtil.getEndY(segment), YSegmentUtil.getStartY(segment)
 			);
 		}
 	}
 	
-	// Apply a light value to a Y range, splitting segments as needed
-	private static void applyLightToRange(ArrayList<YSegment> segments, int rangeStart, int rangeEnd, byte newLight)
+	/**
+	 * Apply the new light value over the given y range,
+	 * splitting segments as needed
+	 * <p>
+	 * source: claude.ai
+	 */
+	private static void applyLightToRange(
+			LongArrayList segments, LongArrayList newSegments, 
+			short rangeStart, short rangeEnd, 
+			byte newLight)
 	{
-		ArrayList<YSegment> newSegments = new ArrayList<>();
+		// clear the pooled array that the new segments will go into
+		newSegments.clear();
 		
-		for (YSegment seg : segments)
+		for (int i = 0; i < segments.size(); i++)
 		{
+			long seg = segments.getLong(i);
+			short endY = YSegmentUtil.getEndY(seg);
+			short startY = YSegmentUtil.getStartY(seg);
+			byte skyLight = YSegmentUtil.getSkyLight(seg);
+			
 			// No overlap
-			if (seg.endY <= rangeStart 
-				|| seg.startY >= rangeEnd)
+			if (endY <= rangeStart 
+				|| startY >= rangeEnd)
 			{
 				newSegments.add(seg);
 				continue;
@@ -352,21 +403,21 @@ public class ColumnBox
 			// Partial or complete overlap - need to split
 			
 			// Part before the range
-			if (seg.startY < rangeStart)
+			if (startY < rangeStart)
 			{
-				newSegments.add(new YSegment(seg.startY, rangeStart, seg.skyLight));
+				newSegments.add(YSegmentUtil.encode(startY, rangeStart, skyLight));
 			}
 			
 			// Overlapping part - take minimum light
-			int overlapStart = Math.max(seg.startY, rangeStart);
-			int overlapEnd = Math.min(seg.endY, rangeEnd);
-			byte minLight = (byte) Math.min(newLight, seg.skyLight);
-			newSegments.add(new YSegment(overlapStart, overlapEnd, minLight));
+			short overlapStart = (short)Math.max(startY, rangeStart);
+			short overlapEnd = (short)Math.min(endY, rangeEnd);
+			byte minLight = (byte) Math.min(newLight, skyLight);
+			newSegments.add(YSegmentUtil.encode(overlapStart, overlapEnd, minLight));
 			
 			// Part after the range
-			if (seg.endY > rangeEnd)
+			if (endY > rangeEnd)
 			{
-				newSegments.add(new YSegment(rangeEnd, seg.endY, seg.skyLight));
+				newSegments.add(YSegmentUtil.encode(rangeEnd, endY, skyLight));
 			}
 		}
 		
@@ -412,23 +463,13 @@ public class ColumnBox
 	
 	
 	
-	private static class YSegment
-	{
-		int startY;
-		int endY;
-		byte skyLight;
-
-		YSegment(int startY, int endY, byte skyLight)
-		{
-			this.startY = startY;
-			this.endY = endY;
-			this.skyLight = skyLight;
-		}
-	}
+	//================//
+	// helper classes //
+	//================//
 	
-	
-	/**
-	 * @see com.seibel.distanthorizons.core.util.FullDataPointUtil
+	/** 
+	 * encodes height/light data into a long
+	 * to reduce object allocations.
 	 */
 	private static class YSegmentUtil
 	{
@@ -456,10 +497,9 @@ public class ColumnBox
 		
 		public static short getStartY(long data) { return (short) ((data >> START_Y_OFFSET) & START_Y_MASK); }
 		public static short getEndY(long data) { return (short) ((data >> END_Y_OFFSET) & END_Y_MASK); }
-		public static short getSkyLight(long data) { return (short) ((data >> SKY_LIGHT_OFFSET) & SKY_LIGHT_MASK); }
+		public static byte getSkyLight(long data) { return (byte) ((data >> SKY_LIGHT_OFFSET) & SKY_LIGHT_MASK); }
 		
 	}
-	
 	
 	
 	

@@ -175,9 +175,7 @@ public class FullDataToRenderDataTransformer
 				ColumnArrayView newColumnArrayView = new ColumnArrayView(dataArrayList, fullDataLength, 0, fullDataLength);
 				setRenderColumnView(levelWrapper, fullDataSource, blockX, blockZ, newColumnArrayView, fullDataColumn);
 				
-				PerfRecorder.Timer vertSize = LodQuadTree.TRANSFORM_PERF_RECORDER.start("vertSize");
 				columnArrayView.changeVerticalSizeFrom(newColumnArrayView);
-				vertSize.end();
 			}
 			finally
 			{
@@ -190,8 +188,6 @@ public class FullDataToRenderDataTransformer
 			int blockX, int blockZ,
 			ColumnArrayView renderColumnData, LongArrayList fullColumnData)
 	{
-		PerfRecorder.Timer prep = LodQuadTree.TRANSFORM_PERF_RECORDER.start("prep");
-		
 		//===============//
 		// config values //
 		//===============//
@@ -223,8 +219,6 @@ public class FullDataToRenderDataTransformer
 		int blocklightToApplyToNextBlock = -1;
 		int renderDataIndex = 0;
 		
-		prep.end();
-		
 		
 		
 		//==================================//
@@ -238,8 +232,6 @@ public class FullDataToRenderDataTransformer
 		// goes from the top down
 		for (int fullDataIndex = 0; fullDataIndex < fullColumnData.size(); fullDataIndex++)
 		{
-			PerfRecorder.Timer fullParse = LodQuadTree.TRANSFORM_PERF_RECORDER.start("fullParse");
-			
 			long fullData = fullColumnData.getLong(fullDataIndex);
 			
 			int bottomY = FullDataPointUtil.getBottomY(fullData);
@@ -275,8 +267,6 @@ public class FullDataToRenderDataTransformer
 				continue;
 			}
 			
-			fullParse.end();
-			
 			
 			
 			//====================//
@@ -284,57 +274,48 @@ public class FullDataToRenderDataTransformer
 			// cave culling check //
 			//====================//
 			
-			PerfRecorder.Timer caveCull = LodQuadTree.TRANSFORM_PERF_RECORDER.start("caveCull");
-			
-			try
+			boolean ignoreBlock = blockStatesToIgnore.contains(block);
+			boolean caveBlock = caveBlockStatesToIgnore.contains(block); // TODO caves should also ignore transparent/non-solid blocks (IE grass and plants) wthout each being defined
+			if (caveBlock)
 			{
-				boolean ignoreBlock = blockStatesToIgnore.contains(block);
-				boolean caveBlock = caveBlockStatesToIgnore.contains(block); // TODO caves should also ignore transparent/non-solid blocks (IE grass and plants) wthout each being defined
-				if (caveBlock)
+				if (caveCullingEnabled
+						// assume this data point is underground if it has no sky-light
+						&& skyLight == LodUtil.MIN_MC_LIGHT
+						// ignore caves above a certain height to prevent floating islands from having walls underneath them
+						&& topY < caveCullingMaxY
+						// cave culling shouldn't happen when at the top of the world
+						&& renderDataIndex != 0 && fullDataIndex != 0
+						// cave culling can't happen when at the bottom of the world
+						&& (fullDataIndex + 1) < fullColumnData.size())
 				{
-					if (caveCullingEnabled
-							// assume this data point is underground if it has no sky-light
-							&& skyLight == LodUtil.MIN_MC_LIGHT
-							// ignore caves above a certain height to prevent floating islands from having walls underneath them
-							&& topY < caveCullingMaxY
-							// cave culling shouldn't happen when at the top of the world
-							&& renderDataIndex != 0 && fullDataIndex != 0
-							// cave culling can't happen when at the bottom of the world
-							&& (fullDataIndex + 1) < fullColumnData.size())
+					// we need to get the next sky/block lights because
+					// the air block here will always have a light of 0/0 due to only the top of the LOD's light being saved.
+					long nextFullData = fullColumnData.getLong(fullDataIndex + 1);
+					int nextSkyLight = FullDataPointUtil.getSkyLight(nextFullData);
+					
+					if (nextSkyLight == LodUtil.MIN_MC_LIGHT
+							&& ColorUtil.getAlpha(lastColor) == 255)
 					{
-						// we need to get the next sky/block lights because
-						// the air block here will always have a light of 0/0 due to only the top of the LOD's light being saved.
-						long nextFullData = fullColumnData.getLong(fullDataIndex + 1);
-						int nextSkyLight = FullDataPointUtil.getSkyLight(nextFullData);
-						
-						if (nextSkyLight == LodUtil.MIN_MC_LIGHT
-								&& ColorUtil.getAlpha(lastColor) == 255)
-						{
-							// replace the previous block with new bottom
-							long columnData = renderColumnData.get(renderDataIndex - 1);
-							columnData = RenderDataPointUtil.setYMin(columnData, bottomY);
-							renderColumnData.set(renderDataIndex - 1, columnData);
-						}
-						
-						continue;
+						// replace the previous block with new bottom
+						long columnData = renderColumnData.get(renderDataIndex - 1);
+						columnData = RenderDataPointUtil.setYMin(columnData, bottomY);
+						renderColumnData.set(renderDataIndex - 1, columnData);
 					}
 					
-					
-					if (ignoreBlock)
-					{
-						// this is a merged block and a cave block, so it should never be rendered
-						continue;
-					}
+					continue;
 				}
-				else if (ignoreBlock)
+				
+				
+				if (ignoreBlock)
 				{
-					// this is an ignored block, but shouldn't be merged like a cave block
+					// this is a merged block and a cave block, so it should never be rendered
 					continue;
 				}
 			}
-			finally
+			else if (ignoreBlock)
 			{
-				caveCull.end();
+				// this is an ignored block, but shouldn't be merged like a cave block
+				continue;
 			}
 			
 			
@@ -350,9 +331,7 @@ public class FullDataToRenderDataTransformer
 			{
 				if (colorBelowWithAvoidedBlocks)
 				{
-					PerfRecorder.Timer nonSolid = LodQuadTree.TRANSFORM_PERF_RECORDER.start("color-NonSolid");
 					int tempColor = levelWrapper.getBlockColor(mutableBlockPos, biome, fullDataSource, block);
-					nonSolid.end();
 					
 					// don't transfer the color when alpha is 0
 					// this prevents issues if grass is transparent
@@ -372,10 +351,8 @@ public class FullDataToRenderDataTransformer
 			int color;
 			if (colorToApplyToNextBlock == -1)
 			{
-				PerfRecorder.Timer colorTimer = LodQuadTree.TRANSFORM_PERF_RECORDER.start("color");
 				// use this block's color
 				color = levelWrapper.getBlockColor(mutableBlockPos, biome, fullDataSource, block);
-				colorTimer.end();
 			}
 			else
 			{
@@ -391,7 +368,6 @@ public class FullDataToRenderDataTransformer
 			//=============================//
 			// merge same-colored adjacent //
 			//=============================//
-			PerfRecorder.Timer mergeSame = LodQuadTree.TRANSFORM_PERF_RECORDER.start("mergeSame");
 			
 			// check if they share a top-bottom face and if they have same color
 			if (color == lastColor 
@@ -413,8 +389,6 @@ public class FullDataToRenderDataTransformer
 			}
 			lastBottom = bottomY;
 			lastColor = color;
-			
-			mergeSame.end();
 		}
 		
 		

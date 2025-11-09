@@ -27,6 +27,8 @@ import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSource;
 import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.logging.DhLogger;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.pooling.PhantomArrayListCheckout;
+import com.seibel.distanthorizons.core.pooling.PhantomArrayListPool;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.render.glObject.GLProxy;
@@ -34,7 +36,6 @@ import com.seibel.distanthorizons.core.util.ColorUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.RenderDataPointUtil;
 import com.seibel.distanthorizons.core.dataObjects.render.columnViews.ColumnArrayView;
-import com.seibel.distanthorizons.coreapi.util.BitShiftUtil;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -46,6 +47,8 @@ import java.util.concurrent.CompletableFuture;
 public class ColumnRenderBufferBuilder
 {
 	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
+	
+	public static final PhantomArrayListPool ARRAY_LIST_POOL = new PhantomArrayListPool("Column Buffer Builder");
 	
 	
 	
@@ -104,182 +107,186 @@ public class ColumnRenderBufferBuilder
 		// build each column //
 		//===================//
 		
-		byte thisDetailLevel = renderSource.getDataDetailLevel();
-		for (int relX = 0; relX < ColumnRenderSource.WIDTH; relX++)
+		// pooled arrays for ColumnBox use
+		try (PhantomArrayListCheckout phantomArrayCheckout = ARRAY_LIST_POOL.checkoutArrays(0, 0, 2))
 		{
-			for (int relZ = 0; relZ < ColumnRenderSource.WIDTH; relZ++)
+			byte thisDetailLevel = renderSource.getDataDetailLevel();
+			for (int relX = 0; relX < ColumnRenderSource.WIDTH; relX++)
 			{
-				// ignore empty/null columns
-				ColumnArrayView columnRenderData = renderSource.getVerticalDataPointView(relX, relZ);
-				if (columnRenderData.size() == 0
-					|| !RenderDataPointUtil.doesDataPointExist(columnRenderData.get(0))
-					|| RenderDataPointUtil.hasZeroHeight(columnRenderData.get(0)))
+				for (int relZ = 0; relZ < ColumnRenderSource.WIDTH; relZ++)
 				{
-					continue;
-				}
-				
-				
-				
-				//=============//
-				// debug limit //
-				//=============//
-				
-				// can be used to limit the buffer building to a specific relative position.
-				// useful for debugging a single column
-				if (columnBuilderDebugEnabled)
-				{
-					int wantedX = Config.Client.Advanced.Debugging.ColumnBuilderDebugging.columnBuilderDebugXRow.get();
-					if (wantedX >= 0 && relX != wantedX)
+					// ignore empty/null columns
+					ColumnArrayView columnRenderData = renderSource.getVerticalDataPointView(relX, relZ);
+					if (columnRenderData.size() == 0
+							|| !RenderDataPointUtil.doesDataPointExist(columnRenderData.get(0))
+							|| RenderDataPointUtil.hasZeroHeight(columnRenderData.get(0)))
 					{
 						continue;
 					}
-					int wantedZ = Config.Client.Advanced.Debugging.ColumnBuilderDebugging.columnBuilderDebugZRow.get();
-					if (wantedZ >= 0 && relZ != wantedZ)
+					
+					
+					
+					//=============//
+					// debug limit //
+					//=============//
+					
+					// can be used to limit the buffer building to a specific relative position.
+					// useful for debugging a single column
+					if (columnBuilderDebugEnabled)
 					{
-						continue;
-					}
-				}
-				
-				
-				
-				//==================================//
-				// get adjacent render data columns //
-				//==================================//
-				
-				ColumnArrayView[] adjColumnViews = new ColumnArrayView[EDhDirection.CARDINAL_COMPASS.length];
-				for (EDhDirection lodDirection : EDhDirection.CARDINAL_COMPASS)
-				{
-					try
-					{
-						int xAdj = relX + lodDirection.normal.x;
-						int zAdj = relZ + lodDirection.normal.z;
-						boolean isCrossRenderSourceBoundary =
-								(xAdj < 0 || xAdj >= ColumnRenderSource.WIDTH) ||
-								(zAdj < 0 || zAdj >= ColumnRenderSource.WIDTH);
-						
-						ColumnRenderSource adjRenderSource;
-						byte adjDetailLevel;
-						
-						
-						
-						//=========================//
-						// get the adjacent render //
-						// source if present       //
-						//=========================//
-						
-						if (!isCrossRenderSourceBoundary)
+						int wantedX = Config.Client.Advanced.Debugging.ColumnBuilderDebugging.columnBuilderDebugXRow.get();
+						if (wantedX >= 0 && relX != wantedX)
 						{
-							// the adjacent position is inside this same render source
-							adjRenderSource = renderSource;
-							adjDetailLevel = thisDetailLevel;
+							continue;
 						}
-						else
-						{
-							// the adjacent position is outside this render source
-							
-							// skip empty sections
-							adjRenderSource = adjRegions[lodDirection.ordinal() - 2];
-							if (adjRenderSource == null)
-							{
-								continue;
-							}
-							
-							adjDetailLevel = adjRenderSource.getDataDetailLevel();
-							if (adjDetailLevel == thisDetailLevel)
-							{
-								// if the adjacent position is outside this render source,
-								// wrap the position around so it's inside the adjacent source
-								
-								if (xAdj < 0)
-								{
-									xAdj += ColumnRenderSource.WIDTH;
-								}
-								if (xAdj >= ColumnRenderSource.WIDTH)
-								{
-									xAdj -= ColumnRenderSource.WIDTH;
-								}
-								
-								if (zAdj < 0)
-								{
-									zAdj += ColumnRenderSource.WIDTH;
-								}
-								if (zAdj >= ColumnRenderSource.WIDTH)
-								{
-									zAdj -= ColumnRenderSource.WIDTH;
-								}
-							}
-						}
-						
-						
-						
-						//========================//
-						// get the adjacent views //
-						//========================//
-						
-						// the old logic handled additional cases, but they never appeared to fire,
-						// so just these two cases should be fine
-						boolean expectedDetailLevels = (adjDetailLevel == thisDetailLevel) || (adjDetailLevel > thisDetailLevel);
-						if (!expectedDetailLevels)
-						{
-							LodUtil.assertNotReach("Mismatch between adjacent detail level ["+adjDetailLevel+"] and this render source's detail level ["+thisDetailLevel+"]. Detail levels should be adj >= this.");	
-						}
-						
-						adjColumnViews[lodDirection.ordinal() - 2] = adjRenderSource.getVerticalDataPointView(xAdj, zAdj);
-					}
-					catch (RuntimeException e)
-					{
-						LOGGER.warn("Failed to get adj data for relative pos: [" + thisDetailLevel + ":" + relX + "," + relZ + "] at [" + lodDirection + "], Error: [" + e.getMessage() + "].", e);
-					}
-				} // for adjacent directions
-				
-				
-				
-				//==========================//
-				// build this render column //
-				//==========================//
-				
-				ColumnRenderSource.DebugSourceFlag debugSourceFlag = renderSource.debugGetFlag(relX, relZ);
-				
-				for (int i = 0; i < columnRenderData.size(); i++)
-				{
-					// can be uncommented to limit which vertical LOD is generated
-					if (Config.Client.Advanced.Debugging.ColumnBuilderDebugging.columnBuilderDebugEnable.get())
-					{
-						int wantedColumnIndex = Config.Client.Advanced.Debugging.ColumnBuilderDebugging.columnBuilderDebugColumnIndex.get();
-						if (wantedColumnIndex >= 0 
-							&& i != wantedColumnIndex)
+						int wantedZ = Config.Client.Advanced.Debugging.ColumnBuilderDebugging.columnBuilderDebugZRow.get();
+						if (wantedZ >= 0 && relZ != wantedZ)
 						{
 							continue;
 						}
 					}
 					
-					long data = columnRenderData.get(i);
-					// If the data is not render-able (Void or non-existing) we stop since there is
-					// no data left in this position
-					if (RenderDataPointUtil.hasZeroHeight(data) 
-						|| !RenderDataPointUtil.doesDataPointExist(data))
+					
+					
+					//==================================//
+					// get adjacent render data columns //
+					//==================================//
+					
+					ColumnArrayView[] adjColumnViews = new ColumnArrayView[EDhDirection.CARDINAL_COMPASS.length];
+					for (EDhDirection direction : EDhDirection.CARDINAL_COMPASS)
 					{
-						break;
+						try
+						{
+							int xAdj = relX + direction.normal.x;
+							int zAdj = relZ + direction.normal.z;
+							boolean isCrossRenderSourceBoundary =
+									(xAdj < 0 || xAdj >= ColumnRenderSource.WIDTH) ||
+											(zAdj < 0 || zAdj >= ColumnRenderSource.WIDTH);
+							
+							ColumnRenderSource adjRenderSource;
+							byte adjDetailLevel;
+							
+							
+							
+							//=========================//
+							// get the adjacent render //
+							// source if present       //
+							//=========================//
+							
+							if (!isCrossRenderSourceBoundary)
+							{
+								// the adjacent position is inside this same render source
+								adjRenderSource = renderSource;
+								adjDetailLevel = thisDetailLevel;
+							}
+							else
+							{
+								// the adjacent position is outside this render source
+								
+								// skip empty sections
+								adjRenderSource = adjRegions[direction.compassIndex];
+								if (adjRenderSource == null)
+								{
+									continue;
+								}
+								
+								adjDetailLevel = adjRenderSource.getDataDetailLevel();
+								if (adjDetailLevel == thisDetailLevel)
+								{
+									// if the adjacent position is outside this render source,
+									// wrap the position around so it's inside the adjacent source
+									
+									if (xAdj < 0)
+									{
+										xAdj += ColumnRenderSource.WIDTH;
+									}
+									if (xAdj >= ColumnRenderSource.WIDTH)
+									{
+										xAdj -= ColumnRenderSource.WIDTH;
+									}
+									
+									if (zAdj < 0)
+									{
+										zAdj += ColumnRenderSource.WIDTH;
+									}
+									if (zAdj >= ColumnRenderSource.WIDTH)
+									{
+										zAdj -= ColumnRenderSource.WIDTH;
+									}
+								}
+							}
+							
+							
+							
+							//========================//
+							// get the adjacent views //
+							//========================//
+							
+							// the old logic handled additional cases, but they never appeared to fire,
+							// so just these two cases should be fine
+							boolean expectedDetailLevels = (adjDetailLevel == thisDetailLevel) || (adjDetailLevel > thisDetailLevel);
+							if (!expectedDetailLevels)
+							{
+								LodUtil.assertNotReach("Mismatch between adjacent detail level ["+adjDetailLevel+"] and this render source's detail level ["+thisDetailLevel+"]. Detail levels should be adj >= this.");
+							}
+							
+							adjColumnViews[direction.compassIndex] = adjRenderSource.getVerticalDataPointView(xAdj, zAdj);
+						}
+						catch (RuntimeException e)
+						{
+							LOGGER.warn("Failed to get adj data for relative pos: [" + thisDetailLevel + ":" + relX + "," + relZ + "] at [" + direction + "], Error: [" + e.getMessage() + "].", e);
+						}
+					} // for adjacent directions
+					
+					
+					
+					//==========================//
+					// build this render column //
+					//==========================//
+					
+					ColumnRenderSource.DebugSourceFlag debugSourceFlag = renderSource.debugGetFlag(relX, relZ);
+					
+					for (int i = 0; i < columnRenderData.size(); i++)
+					{
+						// can be uncommented to limit which vertical LOD is generated
+						if (Config.Client.Advanced.Debugging.ColumnBuilderDebugging.columnBuilderDebugEnable.get())
+						{
+							int wantedColumnIndex = Config.Client.Advanced.Debugging.ColumnBuilderDebugging.columnBuilderDebugColumnIndex.get();
+							if (wantedColumnIndex >= 0
+									&& i != wantedColumnIndex)
+							{
+								continue;
+							}
+						}
+						
+						long data = columnRenderData.get(i);
+						// If the data is not render-able (Void or non-existing) we stop since there is
+						// no data left in this position
+						if (RenderDataPointUtil.hasZeroHeight(data)
+								|| !RenderDataPointUtil.doesDataPointExist(data))
+						{
+							break;
+						}
+						
+						long topDataPoint = (i - 1) >= 0 ? columnRenderData.get(i - 1) : RenderDataPointUtil.EMPTY_DATA;
+						long bottomDataPoint = (i + 1) < columnRenderData.size() ? columnRenderData.get(i + 1) : RenderDataPointUtil.EMPTY_DATA;
+						
+						addRenderDataPointToBuilder(
+								clientLevel, phantomArrayCheckout,
+								data, topDataPoint, bottomDataPoint,
+								adjColumnViews, isSameDetailLevel,
+								thisDetailLevel, relX, relZ,
+								quadBuilder, debugSourceFlag);
 					}
 					
-					long topDataPoint = (i - 1) >= 0 ? columnRenderData.get(i - 1) : RenderDataPointUtil.EMPTY_DATA;
-					long bottomDataPoint = (i + 1) < columnRenderData.size() ? columnRenderData.get(i + 1) : RenderDataPointUtil.EMPTY_DATA;
-					
-					addRenderDataPointToBuilder(
-							clientLevel,
-							data, topDataPoint, bottomDataPoint, 
-							adjColumnViews, isSameDetailLevel,
-							thisDetailLevel, relX, relZ, 
-							quadBuilder, debugSourceFlag);
-				}
-				
-			}// for z
-		}// for x
+				}// for z
+			}// for x
+		}// phantom checkout
 		
 		quadBuilder.mergeQuads();
 	}
 	private static void addRenderDataPointToBuilder(
-			IDhClientLevel clientLevel,
+			IDhClientLevel clientLevel, PhantomArrayListCheckout phantomArrayCheckout,
 			long renderData, long topRenderData, long bottomRenderData, 
 			ColumnArrayView[] adjColumnViews, boolean[] isSameDetailLevel,
 			byte detailLevel, int renderSourceOffsetPosX, int renderSourceOffsetPosZ, 
@@ -411,7 +418,7 @@ public class ColumnRenderBufferBuilder
 		}
 		
 		ColumnBox.addBoxQuadsToBuilder(
-				quadBuilder, clientLevel,
+				quadBuilder, phantomArrayCheckout, clientLevel,
 				blockWidth, blockMaxY,
 				blockMinX, blockMinY, blockMinZ,
 				color,
