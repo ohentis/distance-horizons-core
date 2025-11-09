@@ -94,10 +94,6 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 	@Nullable
 	public final BeaconRenderHandler beaconRenderHandler;
 	
-	// TODO should be removed once James is done testing
-	@Deprecated
-	public static final PerfRecorder FILE_PERF_RECORDER = new PerfRecorder("File");
-	
 	/** the smallest numerical detail level number that can be rendered */
 	private byte maxLeafRenderDetailLevel;
 	/** the largest numerical detail level number that can be rendered */
@@ -130,8 +126,6 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 		GenericObjectRenderer genericObjectRenderer = this.level.getGenericRenderer();
 		this.beaconRenderHandler = (genericObjectRenderer != null) ? new BeaconRenderHandler(genericObjectRenderer) : null;
 		
-		FILE_PERF_RECORDER.clear();
-		
 	}
 	
 	
@@ -154,8 +148,6 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 			return;
 		}
 		
-		
-		FILE_PERF_RECORDER.tryLog();
 		
 		
 		// this shouldn't be updated while the tree is being iterated through

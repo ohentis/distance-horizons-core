@@ -128,9 +128,6 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	private boolean checkedIfFullDataSourceExists = false;
 	private boolean fullDataSourceExists = false;
 	
-	@Deprecated
-	public final PerfRecorder filePerfRecorder = LodQuadTree.FILE_PERF_RECORDER;
-	
 	
 	
 	//=============//
@@ -254,8 +251,6 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 					LodQuadBuilder lodQuadBuilder = new LodQuadBuilder(enableTransparency, this.level.getClientLevelWrapper());
 					
 					
-					PerfRecorder.Timer getAdj = this.filePerfRecorder.start("getAdj");
-					
 					// get the adjacent positions
 					// needs to be done async to prevent threads waiting on the same positions to be processed
 					final CompletableFuture<ColumnRenderSource>[] adjacentLoadFutures = new CompletableFuture[4];
@@ -279,8 +274,6 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 					
 					return CompletableFuture.allOf(adjacentLoadFutures).thenRun(() ->
 					{
-						getAdj.end();
-						
 						try (ColumnRenderSource northRenderSource = adjacentLoadFutures[0].get();
 							ColumnRenderSource southRenderSource = adjacentLoadFutures[1].get();
 							ColumnRenderSource eastRenderSource = adjacentLoadFutures[2].get();
@@ -300,13 +293,8 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 							
 							// the render sources are only needed by this synchronous method,
 							// then they can be closed
-							PerfRecorder.Timer makeRender = this.filePerfRecorder.start("makeRender");
 							ColumnRenderBufferBuilder.makeLodRenderData(lodQuadBuilder, thisRenderSource, this.level, adjacentRenderSections, adjIsSameDetailLevel);
-							makeRender.end();
-							
-							PerfRecorder.Timer upload = this.filePerfRecorder.start("upload");
 							this.uploadToGpuAsync(lodQuadBuilder);
-							upload.end();
 						}
 						catch (Exception e)
 						{
@@ -350,8 +338,6 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 			CompletableFuture<ColumnRenderSource> loadFuture = new CompletableFuture<>();
 			executor.execute(() ->
 			{
-				PerfRecorder.Timer getFull = this.filePerfRecorder.start("getFull");
-				
 				// generate new render source
 				try (FullDataSourceV2 fullDataSource =
 						// no direction means get the center LOD		
@@ -359,12 +345,8 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 						? this.fullDataSourceProvider.get(finalPos)
 						: this.fullDataSourceProvider.getAdjForDirection(finalPos, direction.opposite()))
 				{
-					getFull.end();
-					
-					PerfRecorder.Timer transform = this.filePerfRecorder.start("transform");
 					ColumnRenderSource columnRenderSource = FullDataToRenderDataTransformer.transformFullDataToRenderSource(fullDataSource, this.levelWrapper);
 					loadFuture.complete(columnRenderSource);
-					transform.end();
 				}
 				catch (Exception e)
 				{
