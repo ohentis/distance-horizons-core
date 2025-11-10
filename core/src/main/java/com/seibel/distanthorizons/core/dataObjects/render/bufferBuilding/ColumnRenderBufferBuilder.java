@@ -65,7 +65,7 @@ public class ColumnRenderBufferBuilder
 	{
 		DhBlockPos minBlockPos = new DhBlockPos(DhSectionPos.getMinCornerBlockX(pos), clientLevel.getLevelWrapper().getMinHeight(), DhSectionPos.getMinCornerBlockZ(pos));
 		LodBufferContainer bufferContainer = new LodBufferContainer(pos, minBlockPos);
-		CompletableFuture<LodBufferContainer> uploadFuture = bufferContainer.makeAndUploadBuffersAsync(quadBuilder, GLProxy.getInstance().getGpuUploadMethod());
+		CompletableFuture<LodBufferContainer> uploadFuture = bufferContainer.makeAndUploadBuffersAsync(quadBuilder);
 		uploadFuture.whenComplete((uploadedBuffer, exception) -> 
 		{
 			// clean up if not uploaded
