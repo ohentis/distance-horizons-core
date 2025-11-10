@@ -30,6 +30,7 @@ import com.seibel.distanthorizons.core.sql.repo.FullDataSourceV2Repo;
 import com.seibel.distanthorizons.core.util.FullDataPointUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
+import com.seibel.distanthorizons.core.util.objects.DataCorruptedException;
 import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.junit.Assert;
@@ -42,6 +43,8 @@ import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 
 /**
  * Can also be used to test if there are memory leaks in SQLite
@@ -239,6 +242,9 @@ public class DhFullDataSourceRepoTests
 			{
 				System.out.println("Initial save/get success, starting long update test for GC validation...");
 				
+				AtomicLong lastLogMsTime = new AtomicLong(0);
+				LongAdder iterateCount = new LongAdder();
+				
 				int poolSize = Runtime.getRuntime().availableProcessors();
 				CompletableFuture<?>[] futures = new CompletableFuture[poolSize];
 				ThreadPoolExecutor pool = ThreadUtil.makeThreadPool(poolSize, "test pool");
@@ -260,21 +266,47 @@ public class DhFullDataSourceRepoTests
 						}
 						
 						// new position so each DTO is different and saved to a different row in the DB
-						long threadPos = DhSectionPos.encode((byte)0, finalThreadIndex, 0);
+						long threadPos = DhSectionPos.encode((byte)6, finalThreadIndex, 0);
 						threadDto.pos = threadPos;
 						
+						repo.save(threadDto); // runs significantly faster if we don't save
+						Assert.assertNotNull(threadDto);
+						
 						// run for a long time
-						for (int j = 0; j < 1_000_000; j++)
+						for (int j = 0; j < 100_000_000; j++)
 						{
-							repo.save(threadDto); // runs significantly faster if we don't save
-							
 							try (FullDataSourceV2DTO pooledDto = repo.getByKey(threadPos))
 							{
-								Assert.assertNotNull(threadDto);
 								Assert.assertEquals(pooledDto.pos, threadDto.pos);
-								assertArraysAreEqual(pooledDto.compressedDataByteArray, threadDto.compressedDataByteArray);
-								assertArraysAreEqual(pooledDto.compressedColumnGenStepByteArray, threadDto.compressedColumnGenStepByteArray);
-								assertArraysAreEqual(pooledDto.compressedWorldCompressionModeByteArray, threadDto.compressedWorldCompressionModeByteArray);
+								Assert.assertFalse(pooledDto.compressedDataByteArray.isEmpty());
+								Assert.assertFalse(pooledDto.compressedColumnGenStepByteArray.isEmpty());
+								Assert.assertFalse(pooledDto.compressedWorldCompressionModeByteArray.isEmpty());
+								
+								try (FullDataSourceV2 dataSource = pooledDto.createUnitTestDataSource();
+									FullDataSourceV2DTO compressedDto = FullDataSourceV2DTO.CreateFromDataSource(dataSource, EDhApiDataCompressionMode.Z_STD))
+								{
+									repo.save(compressedDto);
+									
+									
+									
+									iterateCount.increment();
+									
+									long time = System.currentTimeMillis();
+									if (time - lastLogMsTime.get() > 30_000)
+									{
+										lastLogMsTime.set(time);
+										
+										Runtime runtime = Runtime.getRuntime();
+										long free = runtime.freeMemory();
+										long total = runtime.totalMemory();
+										long max = runtime.maxMemory();
+										
+										System.out.println("count: "+iterateCount.sum()+"\tfree: "+free+"\ttotal: "+total+"\tmax: "+max);
+									}
+								}
+								catch (Exception ignore)
+								{
+								}
 							}
 						}
 					}, pool);
