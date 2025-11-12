@@ -87,16 +87,23 @@ public class DhFullDataSourceRepoTests
             
 			Random seededRandom = new Random(3);
 			
-			for (int i = 0; i < FullDataSourceV2.WIDTH * FullDataSourceV2.WIDTH; i++)
+			for (int arrayIndex = 0; arrayIndex < FullDataSourceV2.WIDTH * FullDataSourceV2.WIDTH; arrayIndex++)
 			{
-				fullDataArray[i] = new LongArrayList(1);
+				fullDataArray[arrayIndex] = new LongArrayList(1);
 				
 				// random column heights so we can differentiate
 				// columns from each other
 				int columnCount = Math.abs(seededRandom.nextInt() % 31) + 1;
-				for (int j = 0; j < columnCount; j++)
+				for (int colIndex = 0; colIndex < columnCount; colIndex++)
 				{
-					fullDataArray[i].add(FullDataPointUtil.encode(j, 1, j, LodUtil.MAX_MC_LIGHT, LodUtil.MAX_MC_LIGHT));
+					long datapoint = FullDataPointUtil.encode(
+							colIndex, // id 
+							1, // height
+							colIndex, // relative min Y
+							(byte)(colIndex % LodUtil.MAX_MC_LIGHT), // block light 
+							(byte)((colIndex + 2) % LodUtil.MAX_MC_LIGHT) // sky light
+					);
+					fullDataArray[arrayIndex].add(datapoint);
 				}
 			}
 			
@@ -111,6 +118,18 @@ public class DhFullDataSourceRepoTests
 			FullDataSourceV2 originalDataSource = FullDataSourceV2.createWithData(pos, dataMapping, fullDataArray, columnGenStep, columnWorldCompressionMode);
 			FullDataSourceV2DTO originalDto = FullDataSourceV2DTO.CreateFromDataSource(originalDataSource, EDhApiDataCompressionMode.LZMA2);
 			repo.save(originalDto);
+			
+			
+			// also create format-1 encoded version to ensure backwards compatibility
+			long posV1 = DhSectionPos.encode((byte) 6, 2, 3);
+			FullDataSourceV2 dataSourceFormatV1 = FullDataSourceV2.createWithData(posV1, dataMapping, fullDataArray, columnGenStep, columnWorldCompressionMode);
+			FullDataSourceV2DTO dtoFormatV1 = FullDataSourceV2DTO.CreateFromDataSource(dataSourceFormatV1, EDhApiDataCompressionMode.LZMA2);
+			FullDataSourceV2DTO.writeDataSourceDataArrayToBlobV1(
+					dataSourceFormatV1.dataPoints,
+					dtoFormatV1.compressedDataByteArray,
+					EDhApiDataCompressionMode.LZMA2);
+			dtoFormatV1.dataFormatVersion = FullDataSourceV2DTO.DATA_FORMAT.V1_NO_ADJACENT_DATA;
+			repo.save(dtoFormatV1);
 			
 			
 			
@@ -146,6 +165,21 @@ public class DhFullDataSourceRepoTests
 				assertArraysAreEqual(originalDataSource.columnGenerationSteps, savedDataSource.columnGenerationSteps);
 				assertArraysAreEqual(originalDataSource.columnWorldCompressionMode, savedDataSource.columnWorldCompressionMode);
 				Assert.assertEquals(originalDataSource.dataPoints.length, savedDataSource.dataPoints.length);
+				for (int i = 0; i < FullDataSourceV2.WIDTH * FullDataSourceV2.WIDTH; i++)
+				{
+					assertArraysAreEqual(originalDataSource.dataPoints[i], savedDataSource.dataPoints[i]);
+				}
+			}
+			
+			// check that we have proper backwards compatability to V1
+			try (FullDataSourceV2 savedDataSource = repo.getByKey(posV1).createUnitTestDataSource())
+			{
+				Assert.assertNotNull("Failed to create DataSource", savedDataSource);
+				assertArraysAreEqual(originalDataSource.columnGenerationSteps, savedDataSource.columnGenerationSteps);
+				assertArraysAreEqual(originalDataSource.columnWorldCompressionMode,
+						savedDataSource.columnWorldCompressionMode);
+				Assert.assertTrue(originalDataSource.dataPoints.length == savedDataSource.dataPoints.length);
+				
 				for (int i = 0; i < FullDataSourceV2.WIDTH * FullDataSourceV2.WIDTH; i++)
 				{
 					assertArraysAreEqual(originalDataSource.dataPoints[i], savedDataSource.dataPoints[i]);

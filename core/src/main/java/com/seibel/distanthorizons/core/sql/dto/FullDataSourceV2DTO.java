@@ -31,6 +31,7 @@ import com.seibel.distanthorizons.core.pooling.PhantomArrayListPool;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.network.INetworkObject;
 import com.seibel.distanthorizons.core.sql.dto.util.FullDataMinMaxPosUtil;
+import com.seibel.distanthorizons.core.sql.dto.util.VarintUtil;
 import com.seibel.distanthorizons.core.util.BoolUtil;
 import com.seibel.distanthorizons.core.util.FullDataPointUtil;
 import com.seibel.distanthorizons.core.util.ListUtil;
@@ -109,7 +110,7 @@ public class FullDataSourceV2DTO
 		FullDataSourceV2DTO dto = FullDataSourceV2DTO.CreateEmptyDataSourceForDecoding();
 		
 		// populate arrays
-		writeDataSourceDataArrayToBlob(dataSource.dataPoints, dto.compressedDataByteArray, compressionModeEnum);
+		writeDataSourceDataArrayToBlobV2(dataSource.dataPoints, dto.compressedDataByteArray, compressionModeEnum);
 		writeGenerationStepsToBlob(dataSource.columnGenerationSteps, dto.compressedColumnGenStepByteArray, compressionModeEnum);
 		writeWorldCompressionModeToBlob(dataSource.columnWorldCompressionMode, dto.compressedWorldCompressionModeByteArray, compressionModeEnum);
 		writeDataMappingToBlob(dataSource.mapping, dto.compressedMappingByteArray, compressionModeEnum);
@@ -199,8 +200,8 @@ public class FullDataSourceV2DTO
 	{
 		// format validation //
 		
-		if (DATA_FORMAT.V1_NO_ADJACENT_DATA != this.dataFormatVersion
-			&& DATA_FORMAT.V2_LATEST != this.dataFormatVersion)
+		if (this.dataFormatVersion != DATA_FORMAT.V1_NO_ADJACENT_DATA 
+			&& this.dataFormatVersion != DATA_FORMAT.V2_LATEST)
 		{
 			throw new IllegalStateException("Data source population only supports formats: ["+DATA_FORMAT.V1_NO_ADJACENT_DATA +","+DATA_FORMAT.V2_LATEST +"], data format found: ["+this.dataFormatVersion+"].");
 		}
@@ -234,7 +235,15 @@ public class FullDataSourceV2DTO
 		{
 			readBlobToGenerationSteps(this.compressedColumnGenStepByteArray, dataSource.columnGenerationSteps, compressionModeEnum);
 			readBlobToWorldCompressionMode(this.compressedWorldCompressionModeByteArray, dataSource.columnWorldCompressionMode, compressionModeEnum);
-			readBlobToDataSourceDataArray(this.compressedDataByteArray, dataSource.dataPoints, compressionModeEnum);
+			
+			if (this.dataFormatVersion == 1)
+			{
+				readBlobToDataSourceDataArrayV1(this.compressedDataByteArray, dataSource.dataPoints, compressionModeEnum);
+			}
+			else
+			{
+				readBlobToDataSourceDataArrayV2(this.compressedDataByteArray, dataSource.dataPoints, compressionModeEnum);
+			}
 		}
 		else
 		{
@@ -398,7 +407,7 @@ public class FullDataSourceV2DTO
 	}
 	
 	
-	private static void writeDataSourceDataArrayToBlob(
+	public static void writeDataSourceDataArrayToBlobV1(
 			LongArrayList[] inputDataArray, ByteArrayList outputByteArray, 
 			EDhApiDataCompressionMode compressionModeEnum) throws IOException
 	{
@@ -435,7 +444,7 @@ public class FullDataSourceV2DTO
 			outputByteArray.addElements(0, byteArrayOutputStream.toByteArray());
 		}
 	}
-	private static void readBlobToDataSourceDataArray(
+	private static void readBlobToDataSourceDataArrayV1(
 			ByteArrayList inputCompressedDataByteArray, LongArrayList[] outputDataLongArray, 
 			EDhApiDataCompressionMode compressionModeEnum) throws IOException, DataCorruptedException
 	{
@@ -467,6 +476,206 @@ public class FullDataSourceV2DTO
 					dataColumn.set(y, dataPoint);
 				}
 			}
+		}
+	}
+	
+	private static void writeDataSourceDataArrayToBlobV2(
+			LongArrayList[] inputDataArray, ByteArrayList outputByteArray,
+			EDhApiDataCompressionMode compressionModeEnum) throws IOException
+	{
+		ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+		try (DhDataOutputStream compressedOut = new DhDataOutputStream(byteArrayOutputStream, compressionModeEnum))
+		{
+			int dataArrayLength = FullDataSourceV2.WIDTH * FullDataSourceV2.WIDTH;
+			
+			// this method would be simpler if we allocated a bunch of temporary arrays,
+			// but we're trying to avoid garbage.
+			
+			// 1. column lengths
+			for (int xz = 0; xz < dataArrayLength; xz++)
+			{
+				LongArrayList col = inputDataArray[xz];
+				int size = col != null ? col.size() : 0;
+				VarintUtil.writeVarint(compressedOut, size);
+			}
+			
+			// 2. column ids, with "is lit" and "is discontinuous" bits
+			int previousBottomY = 0;
+			
+			for (int xz = 0; xz < dataArrayLength; xz++)
+			{
+				LongArrayList col = inputDataArray[xz];
+				int size = col != null ? col.size() : 0;
+				for (int y = 0; y < size; y++)
+				{
+					long data = col.getLong(y);
+					
+					int id = FullDataPointUtil.getId(data);
+					int height = FullDataPointUtil.getHeight(data);
+					int bottomY = FullDataPointUtil.getBottomY(data);
+					
+					boolean hasLight = (FullDataPointUtil.getBlockLight(data) | FullDataPointUtil.getSkyLight(data)) != LodUtil.MIN_MC_LIGHT;
+					
+					// all datapoints are contiguous, with no gaps
+					// so having both height and bottomY is redundant. We could store the prediction
+					// in an array, but it's much cheaper to just recompute it later.
+					int expectedBottomY = previousBottomY - height;
+					boolean hasDiscontinuity = bottomY != expectedBottomY;
+					previousBottomY = bottomY;
+					
+					VarintUtil.writeVarint(compressedOut, (id << 2) | (hasLight ? 2 : 0) | (hasDiscontinuity ? 1 : 0));
+				}
+			}
+			
+			// 3. heights
+			for (int xz = 0; xz < dataArrayLength; xz++)
+			{
+				LongArrayList col = inputDataArray[xz];
+				int size = (col != null) ? col.size() : 0;
+				for (int y = 0; y < size; y++)
+				{
+					long data = col.getLong(y);
+					VarintUtil.writeVarint(compressedOut, FullDataPointUtil.getHeight(data));
+				}
+			}
+			
+			// 4. bottomY (only the mis-predicted ones)
+			previousBottomY = 0;
+			for (int xz = 0; xz < dataArrayLength; xz++)
+			{
+				LongArrayList col = inputDataArray[xz];
+				int size = (col != null) ? col.size() : 0;
+				for (int y = 0; y < size; y++)
+				{
+					long data = col.getLong(y);
+					
+					int height = FullDataPointUtil.getHeight(data);
+					int bottomY = FullDataPointUtil.getBottomY(data);
+					
+					int expectedBottomY = previousBottomY - height;
+					if (bottomY != expectedBottomY)
+					{
+						VarintUtil.writeVarint(compressedOut, VarintUtil.zigzagEncode(bottomY - expectedBottomY));
+					}
+					previousBottomY = bottomY;
+				}
+			}
+			
+			// 5. packed Light (only lit sections)
+			for (int xz = 0; xz < dataArrayLength; xz++)
+			{
+				LongArrayList col = inputDataArray[xz];
+				int size = col != null ? col.size() : 0;
+				for (int y = 0; y < size; y++)
+				{
+					long data = col.getLong(y);
+					int blockLight = FullDataPointUtil.getBlockLight(data);
+					int skyLight = FullDataPointUtil.getSkyLight(data);
+					byte packedLight = (byte) ((blockLight << 4) | skyLight);
+					if (packedLight != 0)
+					{
+						compressedOut.writeByte(packedLight);
+					}
+				}
+			}
+			
+			compressedOut.flush();
+			byteArrayOutputStream.close();
+			outputByteArray.addElements(0, byteArrayOutputStream.toByteArray());
+		}
+	}
+	private static void readBlobToDataSourceDataArrayV2(
+			ByteArrayList inputCompressedDataByteArray,
+			LongArrayList[] outputDataLongArray, EDhApiDataCompressionMode compressionModeEnum)
+			throws IOException, DataCorruptedException
+	{
+		ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(inputCompressedDataByteArray.elements());
+		try (DhDataInputStream compressedIn = new DhDataInputStream(byteArrayInputStream, compressionModeEnum))
+		{
+			// 1. column counts, preallocate
+			int numColumns = FullDataSourceV2.WIDTH * FullDataSourceV2.WIDTH;
+			for (int i = 0; i < numColumns; i++)
+			{
+				int count = VarintUtil.readVarint(compressedIn);
+				ListUtil.clearAndSetSize(outputDataLongArray[i], count);
+			}
+			
+			// 2. ids and flags for min_y and light
+			for (LongArrayList col : outputDataLongArray)
+			{
+				for (int i = 0; i < col.size(); i++)
+				{
+					int encodedId = VarintUtil.readVarint(compressedIn);
+					col.set(i, FullDataPointUtil.encode(encodedId >> 2, 1, encodedId & 1, (byte) (encodedId & 2), (byte) 0));
+				}
+			}
+			
+			// 3. height
+			for (LongArrayList col : outputDataLongArray)
+			{
+				for (int i = 0; i < col.size(); i++)
+				{
+					int height = VarintUtil.readVarint(compressedIn);
+					long data = col.getLong(i);
+					col.set(i, FullDataPointUtil.setHeight(data, height));
+				}
+			}
+			
+			// 4. bottomY
+			int previousBottomY = 0;
+			for (LongArrayList col : outputDataLongArray)
+			{
+				for (int i = 0; i < col.size(); i++)
+				{
+					long data = col.getLong(i);
+					int error = 0;
+					if (FullDataPointUtil.getBottomY(data) != 0)
+					{
+						error = VarintUtil.zigzagDecode(VarintUtil.readVarint(compressedIn));
+					}
+					int bottomY = previousBottomY - FullDataPointUtil.getHeight(data) + error;
+					col.set(i, FullDataPointUtil.setBottomY(data, bottomY));
+					previousBottomY = bottomY;
+				}
+			}
+			
+			// 5. lights
+			for (LongArrayList col : outputDataLongArray)
+			{
+				for (int i = 0; i < col.size(); i++)
+				{
+					long data = col.getLong(i);
+					boolean hasLight = FullDataPointUtil.getBlockLight(data) != 0;
+					byte skyLight = 0;
+					byte blockLight = 0;
+					if (hasLight)
+					{
+						byte packedLight = compressedIn.readByte();
+						skyLight = (byte) (packedLight & 0xF);
+						blockLight = (byte) (packedLight >> 4);
+					}
+					
+					col.set(i, FullDataPointUtil.setSkyLight(
+							FullDataPointUtil.setBlockLight(data, blockLight),
+							skyLight));
+				}
+			}
+			
+			if (FullDataPointUtil.RUN_VALIDATION)
+			{
+				// These points all bypassed validation because of using setters.
+				for (LongArrayList col : outputDataLongArray)
+				{
+					for (int i = 0; i < col.size(); i++)
+					{
+						FullDataPointUtil.validateDatapoint(col.getLong(i));
+					}
+				}
+			}
+		}
+		catch (EOFException e)
+		{
+			throw new DataCorruptedException(e);
 		}
 	}
 	
