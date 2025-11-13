@@ -165,9 +165,14 @@ public class DhFullDataSourceRepoTests
 				assertArraysAreEqual(originalDataSource.columnGenerationSteps, savedDataSource.columnGenerationSteps);
 				assertArraysAreEqual(originalDataSource.columnWorldCompressionMode, savedDataSource.columnWorldCompressionMode);
 				Assert.assertEquals(originalDataSource.dataPoints.length, savedDataSource.dataPoints.length);
-				for (int i = 0; i < FullDataSourceV2.WIDTH * FullDataSourceV2.WIDTH; i++)
+				
+				for (int x = 0; x < FullDataSourceV2.WIDTH; x++)
 				{
-					assertArraysAreEqual(originalDataSource.dataPoints[i], savedDataSource.dataPoints[i]);
+					for (int z = 0; z < FullDataSourceV2.WIDTH; z++)
+					{
+						int index = FullDataSourceV2.relativePosToIndex(x, z);
+						assertArraysAreEqual("Saved data column at rel pos ["+x+","+z+"] ", originalDataSource.dataPoints[index], savedDataSource.dataPoints[index]);
+					}
 				}
 			}
 			
@@ -375,15 +380,17 @@ public class DhFullDataSourceRepoTests
 	}
 	
 	private static void assertArraysAreEqual(LongArrayList expectedArray, LongArrayList actualArray)
+	{ assertArraysAreEqual(null, expectedArray, actualArray); }
+	private static void assertArraysAreEqual(String message, LongArrayList expectedArray, LongArrayList actualArray)
 	{
-		Assert.assertEquals("size mismatch", expectedArray.size(), actualArray.size());
+		Assert.assertEquals(message + "size mismatch", expectedArray.size(), actualArray.size());
 		
 		for (int i = 0; i < expectedArray.size(); i++)
 		{
 			long expectedNumb = expectedArray.getLong(i);
 			long actualNumb = actualArray.getLong(i);
 			
-			Assert.assertEquals("value mismatch at index ["+i+"]", expectedNumb, actualNumb);
+			Assert.assertEquals(message + "value mismatch at index ["+i+"]", expectedNumb, actualNumb);
 		}
 	}
 	

@@ -344,59 +344,6 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 	// partial selects //
 	//=================//
 	
-	private final String noAdjSelectSqlTemplate =
-			"SELECT \n" +
-					"   DetailLevel, PosX, PosZ, \n" +
-					"   MinY, DataChecksum, \n" +
-					"   ColumnGenerationStep, ColumnWorldCompressionMode, Mapping, \n" +
-					"   DataFormatVersion, CompressionMode, ApplyToParent, ApplyToChildren, \n" +
-					"   LastModifiedUnixDateTime, CreatedUnixDateTime, \n" +
-					"   Data \n" +
-					"FROM "+this.getTableName() + "\n" +
-					"   WHERE DetailLevel = ? AND PosX = ? AND PosZ = ?; \n";
-	public PreparedStatement createNoAdjSelectStatementByKey(Long key) throws SQLException
-	{
-		PreparedStatement statement = this.createPreparedStatement(this.noAdjSelectSqlTemplate);
-		if (statement == null)
-		{
-			return null;
-		}
-		this.setPreparedStatementWhereClause(statement, key);
-		
-		return statement;
-	}
-	
-	public FullDataSourceV2DTO getByPosNoAdj(Long primaryKey)
-	{
-		try(PreparedStatement statement = this.createNoAdjSelectStatementByKey(primaryKey);
-				ResultSet resultSet = this.query(statement))
-		{
-			if (resultSet != null && resultSet.next())
-			{
-				return this.convertResultSetToDto(resultSet, false);
-			}
-			else
-			{
-				return null;
-			}
-		}
-		catch (SQLException | IOException e)
-		{
-			if (e instanceof SQLException
-					&& DbConnectionClosedException.isClosedException((SQLException)e))
-			{
-				//LOGGER.warn("Attempted to get ["+this.dtoClass.getSimpleName()+"] with primary key ["+primaryKey+"] on closed repo ["+this.connectionString+"].");	
-			}
-			else
-			{
-				LOGGER.warn("Unexpected issue deserializing DTO ["+this.dtoClass.getSimpleName()+"] with primary key ["+primaryKey+"]. Error: ["+e.getMessage()+"].", e);
-			}
-			return null;
-		}
-	}
-	
-	
-	
 	private final String getAdjForDirectionSqlTemplate =
 			"SELECT \n" +
 					"   MinY, DataChecksum, \n" +

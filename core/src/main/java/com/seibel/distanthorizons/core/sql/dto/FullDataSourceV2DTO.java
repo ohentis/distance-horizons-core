@@ -110,15 +110,15 @@ public class FullDataSourceV2DTO
 		FullDataSourceV2DTO dto = FullDataSourceV2DTO.CreateEmptyDataSourceForDecoding();
 		
 		// populate arrays
-		writeDataSourceDataArrayToBlobV2(dataSource.dataPoints, dto.compressedDataByteArray, compressionModeEnum);
+		writeDataSourceDataArrayToBlobV2(dataSource.dataPoints, dto.compressedDataByteArray, null, compressionModeEnum);
 		writeGenerationStepsToBlob(dataSource.columnGenerationSteps, dto.compressedColumnGenStepByteArray, compressionModeEnum);
 		writeWorldCompressionModeToBlob(dataSource.columnWorldCompressionMode, dto.compressedWorldCompressionModeByteArray, compressionModeEnum);
 		writeDataMappingToBlob(dataSource.mapping, dto.compressedMappingByteArray, compressionModeEnum);
 		// adjacent full data
-		writeDataSourceAdjacentDataArrayToBlob(dataSource.dataPoints, dto.compressedNorthAdjDataByteArray, EDhDirection.NORTH, compressionModeEnum);
-		writeDataSourceAdjacentDataArrayToBlob(dataSource.dataPoints, dto.compressedSouthAdjDataByteArray, EDhDirection.SOUTH, compressionModeEnum);
-		writeDataSourceAdjacentDataArrayToBlob(dataSource.dataPoints, dto.compressedEastAdjDataByteArray, EDhDirection.EAST, compressionModeEnum);
-		writeDataSourceAdjacentDataArrayToBlob(dataSource.dataPoints, dto.compressedWestAdjDataByteArray, EDhDirection.WEST, compressionModeEnum);
+		writeDataSourceDataArrayToBlobV2(dataSource.dataPoints, dto.compressedNorthAdjDataByteArray, EDhDirection.NORTH, compressionModeEnum);
+		writeDataSourceDataArrayToBlobV2(dataSource.dataPoints, dto.compressedSouthAdjDataByteArray, EDhDirection.SOUTH, compressionModeEnum);
+		writeDataSourceDataArrayToBlobV2(dataSource.dataPoints, dto.compressedEastAdjDataByteArray, EDhDirection.EAST, compressionModeEnum);
+		writeDataSourceDataArrayToBlobV2(dataSource.dataPoints, dto.compressedWestAdjDataByteArray, EDhDirection.WEST, compressionModeEnum);
 		
 		// populate individual variables
 		{
@@ -140,7 +140,6 @@ public class FullDataSourceV2DTO
 	
 	/** Should only be used for subsequent decoding */
 	public static FullDataSourceV2DTO CreateEmptyDataSourceForDecoding() { return new FullDataSourceV2DTO(); }
-	
 	private FullDataSourceV2DTO() 
 	{
 		super(ARRAY_LIST_POOL, 8, 0, 0);
@@ -231,6 +230,14 @@ public class FullDataSourceV2DTO
 		
 		// data //
 		
+		// clear any old data so we can start fresh
+		for (int i = 0; i < FullDataSourceV2.WIDTH * FullDataSourceV2.WIDTH; i++)
+		{
+			@NotNull LongArrayList array = dataSource.dataPoints[i];
+			array.clear();
+			array.add(FullDataPointUtil.EMPTY_DATA_POINT);
+		}
+		
 		if (direction == null)
 		{
 			readBlobToGenerationSteps(this.compressedColumnGenStepByteArray, dataSource.columnGenerationSteps, compressionModeEnum);
@@ -242,7 +249,13 @@ public class FullDataSourceV2DTO
 			}
 			else
 			{
-				readBlobToDataSourceDataArrayV2(this.compressedDataByteArray, dataSource.dataPoints, compressionModeEnum);
+				// doesn't include adjacent (ie edge) data
+				readBlobToDataSourceDataArrayV2(this.compressedDataByteArray, dataSource.dataPoints, null, compressionModeEnum);
+				
+				readBlobToDataSourceDataArrayV2(this.compressedNorthAdjDataByteArray, dataSource.dataPoints, EDhDirection.NORTH, compressionModeEnum);
+				readBlobToDataSourceDataArrayV2(this.compressedSouthAdjDataByteArray, dataSource.dataPoints, EDhDirection.SOUTH, compressionModeEnum);
+				readBlobToDataSourceDataArrayV2(this.compressedEastAdjDataByteArray, dataSource.dataPoints, EDhDirection.EAST, compressionModeEnum);
+				readBlobToDataSourceDataArrayV2(this.compressedWestAdjDataByteArray, dataSource.dataPoints, EDhDirection.WEST, compressionModeEnum);
 			}
 		}
 		else
@@ -252,7 +265,7 @@ public class FullDataSourceV2DTO
 			// this is done so data sources down-stream
 			// can all be handled identically regardless of
 			// whether they're a full or partial data source
-			readDataSourceAdjacentDataArrayToBlob(this.compressedDataByteArray, dataSource.dataPoints, direction, compressionModeEnum);	
+			readBlobToDataSourceDataArrayV2(this.compressedDataByteArray, dataSource.dataPoints, direction, compressionModeEnum);	
 		}
 		
 		
@@ -304,108 +317,6 @@ public class FullDataSourceV2DTO
 	//=================//
 	// (de)serializing //
 	//=================//
-	
-	private static void writeDataSourceAdjacentDataArrayToBlob(
-			LongArrayList[] wholeInputDataArray, ByteArrayList outputByteArray,
-			EDhDirection direction,
-			EDhApiDataCompressionMode compressionModeEnum) throws IOException
-	{
-		// write the outputs to a stream to prep for writing to the database
-		ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-		
-		// normally a DhStream should be the topmost stream to prevent closing the stream accidentally, 
-		// but since this stream will be closed immediately after writing anyway, it won't be an issue
-		try (DhDataOutputStream compressedOut = new DhDataOutputStream(byteArrayOutputStream, compressionModeEnum))
-		{
-			long encodedMinMaxPos = FullDataMinMaxPosUtil.getEncodedMinMaxPos(direction);
-			int minX = FullDataMinMaxPosUtil.getAdjMinX(encodedMinMaxPos);
-			int maxX = FullDataMinMaxPosUtil.getAdjMaxX(encodedMinMaxPos);
-			int minZ = FullDataMinMaxPosUtil.getAdjMinZ(encodedMinMaxPos);
-			int maxZ = FullDataMinMaxPosUtil.getAdjMaxZ(encodedMinMaxPos);
-			
-			for (int x = minX; x < maxX; x++)
-			{
-				for (int z = minZ; z < maxZ; z++)
-				{
-					int index = FullDataSourceV2.relativePosToIndex(x, z);
-					LongArrayList dataColumn = wholeInputDataArray[index];
-					
-					// write column length
-					short columnLength = (dataColumn != null) ? (short) dataColumn.size() : 0;
-					// a short is used instead of an int because at most we store 4096 vertical slices and a 
-					// short fits that with less wasted spaces vs an int (short has max value of 32,767 vs int's max of 2 billion)
-					compressedOut.writeShort(columnLength);
-					
-					// write column data (will be skipped if no data was present)
-					for (int y = 0; y < columnLength; y++)
-					{
-						compressedOut.writeLong(dataColumn.getLong(y));
-					}
-				}
-			}
-			
-			
-			// generate the checksum (currently unused)
-			compressedOut.flush();
-			byteArrayOutputStream.close();
-			outputByteArray.addElements(0, byteArrayOutputStream.toByteArray());
-		}
-	}
-	private static void readDataSourceAdjacentDataArrayToBlob(
-			@NotNull ByteArrayList inputCompressedDataByteArray, @NotNull LongArrayList[] outputDataLongArray,
-			@NotNull EDhDirection direction,
-			EDhApiDataCompressionMode compressionModeEnum) throws IOException, DataCorruptedException
-	{
-		ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(inputCompressedDataByteArray.elements());
-		try (DhDataInputStream compressedIn = new DhDataInputStream(byteArrayInputStream, compressionModeEnum))
-		{
-			for (int i = 0; i < FullDataSourceV2.WIDTH * FullDataSourceV2.WIDTH; i++)
-			{
-				@NotNull LongArrayList array = outputDataLongArray[i];
-				array.clear();
-				array.add(FullDataPointUtil.EMPTY_DATA_POINT);
-			}
-			
-			
-			long encodedMinMaxPos = FullDataMinMaxPosUtil.getEncodedMinMaxPos(direction);
-			int minX = FullDataMinMaxPosUtil.getAdjMinX(encodedMinMaxPos);
-			int maxX = FullDataMinMaxPosUtil.getAdjMaxX(encodedMinMaxPos);
-			int minZ = FullDataMinMaxPosUtil.getAdjMinZ(encodedMinMaxPos);
-			int maxZ = FullDataMinMaxPosUtil.getAdjMaxZ(encodedMinMaxPos);
-			
-			for (int x = minX; x < maxX; x++)
-			{
-				for (int z = minZ; z < maxZ; z++)
-				{
-					int index = FullDataSourceV2.relativePosToIndex(x, z);
-					LongArrayList dataColumn = outputDataLongArray[index];
-					
-					// read the column length
-					short dataColumnLength = compressedIn.readShort(); // separate variables are used for debugging and in case validation wants to be added later 
-					if (dataColumnLength < 0)
-					{
-						throw new DataCorruptedException("Read DataSource adj[" + direction + "] Blob data at index [" + index + "], column length [" + dataColumnLength + "] should be greater than zero.");
-					}
-					
-					
-					ListUtil.clearAndSetSize(dataColumn, dataColumnLength);
-					
-					// read column data (will be skipped if no data was present)
-					for (int y = 0; y < dataColumnLength; y++)
-					{
-						long dataPoint = compressedIn.readLong();
-						if (VALIDATE_INPUT_DATAPOINTS)
-						{
-							FullDataPointUtil.validateDatapoint(dataPoint);
-						}
-						dataColumn.set(y, dataPoint);
-					}
-				}
-			}
-			
-		}
-	}
-	
 	
 	public static void writeDataSourceDataArrayToBlobV1(
 			LongArrayList[] inputDataArray, ByteArrayList outputByteArray, 
@@ -481,100 +392,141 @@ public class FullDataSourceV2DTO
 	
 	private static void writeDataSourceDataArrayToBlobV2(
 			LongArrayList[] inputDataArray, ByteArrayList outputByteArray,
-			EDhApiDataCompressionMode compressionModeEnum) throws IOException
+			@Nullable EDhDirection direction, EDhApiDataCompressionMode compressionModeEnum) throws IOException
 	{
+		int minX, maxX, minZ, maxZ;
+		if (direction != null)
+		{
+			long encodedMinMaxPos = FullDataMinMaxPosUtil.getEncodedMinMaxPos(direction);
+			minX = FullDataMinMaxPosUtil.getAdjMinX(encodedMinMaxPos);
+			maxX = FullDataMinMaxPosUtil.getAdjMaxX(encodedMinMaxPos);
+			minZ = FullDataMinMaxPosUtil.getAdjMinZ(encodedMinMaxPos);
+			maxZ = FullDataMinMaxPosUtil.getAdjMaxZ(encodedMinMaxPos);
+		}
+		else
+		{
+			// skip the border data so we don't duplicate the adjacent data
+			minX = 1;
+			maxX = FullDataSourceV2.WIDTH-1;
+			minZ = 1;
+			maxZ = FullDataSourceV2.WIDTH-1;
+		}
+		
 		ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
 		try (DhDataOutputStream compressedOut = new DhDataOutputStream(byteArrayOutputStream, compressionModeEnum))
 		{
-			int dataArrayLength = FullDataSourceV2.WIDTH * FullDataSourceV2.WIDTH;
-			
 			// this method would be simpler if we allocated a bunch of temporary arrays,
 			// but we're trying to avoid garbage.
 			
 			// 1. column lengths
-			for (int xz = 0; xz < dataArrayLength; xz++)
+			for (int x = minX; x < maxX; x++)
 			{
-				LongArrayList col = inputDataArray[xz];
-				int size = col != null ? col.size() : 0;
-				VarintUtil.writeVarint(compressedOut, size);
+				for (int z = minZ; z < maxZ; z++)
+				{
+					int index = FullDataSourceV2.relativePosToIndex(x,z);
+					
+					LongArrayList col = inputDataArray[index];
+					int size = (col != null) ? col.size() : 0;
+					VarintUtil.writeVarint(compressedOut, size);
+				}
 			}
 			
 			// 2. column ids, with "is lit" and "is discontinuous" bits
 			int previousBottomY = 0;
 			
-			for (int xz = 0; xz < dataArrayLength; xz++)
+			for (int x = minX; x < maxX; x++)
 			{
-				LongArrayList col = inputDataArray[xz];
-				int size = col != null ? col.size() : 0;
-				for (int y = 0; y < size; y++)
+				for (int z = minZ; z < maxZ; z++)
 				{
-					long data = col.getLong(y);
+					int index = FullDataSourceV2.relativePosToIndex(x, z);
 					
-					int id = FullDataPointUtil.getId(data);
-					int height = FullDataPointUtil.getHeight(data);
-					int bottomY = FullDataPointUtil.getBottomY(data);
-					
-					boolean hasLight = (FullDataPointUtil.getBlockLight(data) | FullDataPointUtil.getSkyLight(data)) != LodUtil.MIN_MC_LIGHT;
-					
-					// all datapoints are contiguous, with no gaps
-					// so having both height and bottomY is redundant. We could store the prediction
-					// in an array, but it's much cheaper to just recompute it later.
-					int expectedBottomY = previousBottomY - height;
-					boolean hasDiscontinuity = bottomY != expectedBottomY;
-					previousBottomY = bottomY;
-					
-					VarintUtil.writeVarint(compressedOut, (id << 2) | (hasLight ? 2 : 0) | (hasDiscontinuity ? 1 : 0));
+					LongArrayList col = inputDataArray[index];
+					int size = col != null ? col.size() : 0;
+					for (int y = 0; y < size; y++)
+					{
+						long data = col.getLong(y);
+						
+						int id = FullDataPointUtil.getId(data);
+						int height = FullDataPointUtil.getHeight(data);
+						int bottomY = FullDataPointUtil.getBottomY(data);
+						
+						boolean hasLight = (FullDataPointUtil.getBlockLight(data) | FullDataPointUtil.getSkyLight(data)) != LodUtil.MIN_MC_LIGHT;
+						
+						// all datapoints are contiguous, with no gaps
+						// so having both height and bottomY is redundant. We could store the prediction
+						// in an array, but it's much cheaper to just recompute it later.
+						int expectedBottomY = previousBottomY - height;
+						boolean hasDiscontinuity = bottomY != expectedBottomY;
+						previousBottomY = bottomY;
+						
+						VarintUtil.writeVarint(compressedOut, (id << 2) | (hasLight ? 2 : 0) | (hasDiscontinuity ? 1 : 0));
+					}
 				}
 			}
 			
 			// 3. heights
-			for (int xz = 0; xz < dataArrayLength; xz++)
+			for (int x = minX; x < maxX; x++)
 			{
-				LongArrayList col = inputDataArray[xz];
-				int size = (col != null) ? col.size() : 0;
-				for (int y = 0; y < size; y++)
+				for (int z = minZ; z < maxZ; z++)
 				{
-					long data = col.getLong(y);
-					VarintUtil.writeVarint(compressedOut, FullDataPointUtil.getHeight(data));
+					int index = FullDataSourceV2.relativePosToIndex(x, z);
+					
+					LongArrayList col = inputDataArray[index];
+					int size = (col != null) ? col.size() : 0;
+					for (int y = 0; y < size; y++)
+					{
+						long data = col.getLong(y);
+						VarintUtil.writeVarint(compressedOut, FullDataPointUtil.getHeight(data));
+					}
 				}
 			}
 			
 			// 4. bottomY (only the mis-predicted ones)
 			previousBottomY = 0;
-			for (int xz = 0; xz < dataArrayLength; xz++)
+			for (int x = minX; x < maxX; x++)
 			{
-				LongArrayList col = inputDataArray[xz];
-				int size = (col != null) ? col.size() : 0;
-				for (int y = 0; y < size; y++)
+				for (int z = minZ; z < maxZ; z++)
 				{
-					long data = col.getLong(y);
+					int index = FullDataSourceV2.relativePosToIndex(x, z);
 					
-					int height = FullDataPointUtil.getHeight(data);
-					int bottomY = FullDataPointUtil.getBottomY(data);
-					
-					int expectedBottomY = previousBottomY - height;
-					if (bottomY != expectedBottomY)
+					LongArrayList col = inputDataArray[index];
+					int size = (col != null) ? col.size() : 0;
+					for (int y = 0; y < size; y++)
 					{
-						VarintUtil.writeVarint(compressedOut, VarintUtil.zigzagEncode(bottomY - expectedBottomY));
+						long data = col.getLong(y);
+						
+						int height = FullDataPointUtil.getHeight(data);
+						int bottomY = FullDataPointUtil.getBottomY(data);
+						
+						int expectedBottomY = previousBottomY - height;
+						if (bottomY != expectedBottomY)
+						{
+							VarintUtil.writeVarint(compressedOut, VarintUtil.zigzagEncode(bottomY - expectedBottomY));
+						}
+						previousBottomY = bottomY;
 					}
-					previousBottomY = bottomY;
 				}
 			}
 			
 			// 5. packed Light (only lit sections)
-			for (int xz = 0; xz < dataArrayLength; xz++)
+			for (int x = minX; x < maxX; x++)
 			{
-				LongArrayList col = inputDataArray[xz];
-				int size = col != null ? col.size() : 0;
-				for (int y = 0; y < size; y++)
+				for (int z = minZ; z < maxZ; z++)
 				{
-					long data = col.getLong(y);
-					int blockLight = FullDataPointUtil.getBlockLight(data);
-					int skyLight = FullDataPointUtil.getSkyLight(data);
-					byte packedLight = (byte) ((blockLight << 4) | skyLight);
-					if (packedLight != 0)
+					int index = FullDataSourceV2.relativePosToIndex(x, z);
+					
+					LongArrayList col = inputDataArray[index];
+					int size = (col != null) ? col.size() : 0;
+					for (int y = 0; y < size; y++)
 					{
-						compressedOut.writeByte(packedLight);
+						long data = col.getLong(y);
+						int blockLight = FullDataPointUtil.getBlockLight(data);
+						int skyLight = FullDataPointUtil.getSkyLight(data);
+						byte packedLight = (byte) ((blockLight << 4) | skyLight);
+						if (packedLight != 0)
+						{
+							compressedOut.writeByte(packedLight);
+						}
 					}
 				}
 			}
@@ -586,89 +538,142 @@ public class FullDataSourceV2DTO
 	}
 	private static void readBlobToDataSourceDataArrayV2(
 			ByteArrayList inputCompressedDataByteArray,
-			LongArrayList[] outputDataLongArray, EDhApiDataCompressionMode compressionModeEnum)
+			LongArrayList[] outputDataLongArray,
+			@Nullable EDhDirection direction, EDhApiDataCompressionMode compressionModeEnum)
 			throws IOException, DataCorruptedException
 	{
+		int minX, maxX, minZ, maxZ;
+		if (direction != null)
+		{
+			long encodedMinMaxPos = FullDataMinMaxPosUtil.getEncodedMinMaxPos(direction);
+			minX = FullDataMinMaxPosUtil.getAdjMinX(encodedMinMaxPos);
+			maxX = FullDataMinMaxPosUtil.getAdjMaxX(encodedMinMaxPos);
+			minZ = FullDataMinMaxPosUtil.getAdjMinZ(encodedMinMaxPos);
+			maxZ = FullDataMinMaxPosUtil.getAdjMaxZ(encodedMinMaxPos);
+		}
+		else
+		{
+			// skip the border data so we don't duplicate the adjacent data
+			minX = 1;
+			maxX = FullDataSourceV2.WIDTH-1;
+			minZ = 1;
+			maxZ = FullDataSourceV2.WIDTH-1;
+		}
+		
 		ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(inputCompressedDataByteArray.elements());
 		try (DhDataInputStream compressedIn = new DhDataInputStream(byteArrayInputStream, compressionModeEnum))
 		{
 			// 1. column counts, preallocate
-			int numColumns = FullDataSourceV2.WIDTH * FullDataSourceV2.WIDTH;
-			for (int i = 0; i < numColumns; i++)
+			for (int x = minX; x < maxX; x++)
 			{
-				int count = VarintUtil.readVarint(compressedIn);
-				ListUtil.clearAndSetSize(outputDataLongArray[i], count);
+				for (int z = minZ; z < maxZ; z++)
+				{
+					int index = FullDataSourceV2.relativePosToIndex(x, z);
+					
+					int count = VarintUtil.readVarint(compressedIn);
+					ListUtil.clearAndSetSize(outputDataLongArray[index], count);
+				}
 			}
 			
 			// 2. ids and flags for min_y and light
-			for (LongArrayList col : outputDataLongArray)
+			for (int x = minX; x < maxX; x++)
 			{
-				for (int i = 0; i < col.size(); i++)
+				for (int z = minZ; z < maxZ; z++)
 				{
-					int encodedId = VarintUtil.readVarint(compressedIn);
-					col.set(i, FullDataPointUtil.encode(encodedId >> 2, 1, encodedId & 1, (byte) (encodedId & 2), (byte) 0));
+					int index = FullDataSourceV2.relativePosToIndex(x, z);
+					LongArrayList col = outputDataLongArray[index];
+					
+					for (int i = 0; i < col.size(); i++)
+					{
+						int encodedId = VarintUtil.readVarint(compressedIn);
+						col.set(i, FullDataPointUtil.encode(encodedId >> 2, 1, encodedId & 1, (byte) (encodedId & 2), (byte) 0));
+					}
 				}
 			}
 			
 			// 3. height
-			for (LongArrayList col : outputDataLongArray)
+			for (int x = minX; x < maxX; x++)
 			{
-				for (int i = 0; i < col.size(); i++)
+				for (int z = minZ; z < maxZ; z++)
 				{
-					int height = VarintUtil.readVarint(compressedIn);
-					long data = col.getLong(i);
-					col.set(i, FullDataPointUtil.setHeight(data, height));
+					int index = FullDataSourceV2.relativePosToIndex(x, z);
+					LongArrayList col = outputDataLongArray[index];
+					
+					for (int i = 0; i < col.size(); i++)
+					{
+						int height = VarintUtil.readVarint(compressedIn);
+						long data = col.getLong(i);
+						col.set(i, FullDataPointUtil.setHeight(data, height));
+					}
 				}
 			}
 			
 			// 4. bottomY
 			int previousBottomY = 0;
-			for (LongArrayList col : outputDataLongArray)
+			for (int x = minX; x < maxX; x++)
 			{
-				for (int i = 0; i < col.size(); i++)
+				for (int z = minZ; z < maxZ; z++)
 				{
-					long data = col.getLong(i);
-					int error = 0;
-					if (FullDataPointUtil.getBottomY(data) != 0)
+					int index = FullDataSourceV2.relativePosToIndex(x, z);
+					LongArrayList col = outputDataLongArray[index];
+					
+					for (int i = 0; i < col.size(); i++)
 					{
-						error = VarintUtil.zigzagDecode(VarintUtil.readVarint(compressedIn));
+						long data = col.getLong(i);
+						int error = 0;
+						if (FullDataPointUtil.getBottomY(data) != 0)
+						{
+							error = VarintUtil.zigzagDecode(VarintUtil.readVarint(compressedIn));
+						}
+						int bottomY = previousBottomY - FullDataPointUtil.getHeight(data) + error;
+						col.set(i, FullDataPointUtil.setBottomY(data, bottomY));
+						previousBottomY = bottomY;
 					}
-					int bottomY = previousBottomY - FullDataPointUtil.getHeight(data) + error;
-					col.set(i, FullDataPointUtil.setBottomY(data, bottomY));
-					previousBottomY = bottomY;
 				}
 			}
 			
 			// 5. lights
-			for (LongArrayList col : outputDataLongArray)
+			for (int x = minX; x < maxX; x++)
 			{
-				for (int i = 0; i < col.size(); i++)
+				for (int z = minZ; z < maxZ; z++)
 				{
-					long data = col.getLong(i);
-					boolean hasLight = FullDataPointUtil.getBlockLight(data) != 0;
-					byte skyLight = 0;
-					byte blockLight = 0;
-					if (hasLight)
-					{
-						byte packedLight = compressedIn.readByte();
-						skyLight = (byte) (packedLight & 0xF);
-						blockLight = (byte) (packedLight >> 4);
-					}
+					int index = FullDataSourceV2.relativePosToIndex(x, z);
+					LongArrayList col = outputDataLongArray[index];
 					
-					col.set(i, FullDataPointUtil.setSkyLight(
-							FullDataPointUtil.setBlockLight(data, blockLight),
-							skyLight));
+					for (int i = 0; i < col.size(); i++)
+					{
+						long data = col.getLong(i);
+						boolean hasLight = FullDataPointUtil.getBlockLight(data) != 0;
+						byte skyLight = 0;
+						byte blockLight = 0;
+						if (hasLight)
+						{
+							byte packedLight = compressedIn.readByte();
+							skyLight = (byte) (packedLight & 0xF);
+							blockLight = (byte) (packedLight >> 4);
+						}
+						
+						col.set(i, FullDataPointUtil.setSkyLight(
+								FullDataPointUtil.setBlockLight(data, blockLight),
+								skyLight));
+					}
 				}
 			}
 			
 			if (FullDataPointUtil.RUN_VALIDATION)
 			{
 				// These points all bypassed validation because of using setters.
-				for (LongArrayList col : outputDataLongArray)
+				for (int x = minX; x < maxX; x++)
 				{
-					for (int i = 0; i < col.size(); i++)
+					for (int z = minZ; z < maxZ; z++)
 					{
-						FullDataPointUtil.validateDatapoint(col.getLong(i));
+						int index = FullDataSourceV2.relativePosToIndex(x, z);
+						LongArrayList col = outputDataLongArray[index];
+						
+						for (int i = 0; i < col.size(); i++)
+						{
+							FullDataPointUtil.validateDatapoint(col.getLong(i));
+						}
 					}
 				}
 			}

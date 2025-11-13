@@ -199,7 +199,7 @@ public class FullDataSourceProviderV2 implements IDebugRenderable, AutoCloseable
 	@Nullable
 	public FullDataSourceV2 get(long pos)
 	{
-		try(FullDataSourceV2DTO dto = this.repo.getByPosNoAdj(pos))
+		try(FullDataSourceV2DTO dto = this.repo.getByKey(pos))
 		{
 			if (dto == null)
 			{
