@@ -32,4 +32,6 @@ public interface IMinecraftSharedWrapper extends IBindable
 	
 	int getPlayerCount();
 	
+	void setPreventAutoPause(boolean preventAutoPause);
+	
 }
