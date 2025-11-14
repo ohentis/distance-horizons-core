@@ -23,6 +23,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class FullDataUpdatePropagatorV2 implements IDebugRenderable, AutoCloseable
@@ -41,9 +42,6 @@ public class FullDataUpdatePropagatorV2 implements IDebugRenderable, AutoCloseab
 	{ return NUMBER_OF_PARENT_UPDATE_TASKS_PER_THREAD * Config.Common.MultiThreading.numberOfThreads.get(); }
 	
 	
-	private final FullDataSourceProviderV2 provider;
-	private final FullDataUpdaterV2 dataUpdater;
-	
 	
 	/**
 	 * Tracks which positions are currently being updated
@@ -59,7 +57,12 @@ public class FullDataUpdatePropagatorV2 implements IDebugRenderable, AutoCloseab
 	@Nullable
 	public final ThreadPoolExecutor updateQueueProcessor;
 	
+	private final AtomicBoolean isShutdownRef = new AtomicBoolean(false);
 	private final String levelId;
+	
+	
+	private final FullDataSourceProviderV2 provider;
+	private final FullDataUpdaterV2 dataUpdater;
 	
 	
 	
@@ -125,8 +128,6 @@ public class FullDataUpdatePropagatorV2 implements IDebugRenderable, AutoCloseab
 				LOGGER.error("Unexpected error in the parent update queue thread. Error: " + e.getMessage(), e);
 			}
 		}
-		
-		LOGGER.info("Update thread ["+Thread.currentThread().getName()+"] terminated.");
 	}
 	/** will always apply updates */
 	private void runParentUpdates(PriorityTaskPicker.Executor executor, DhBlockPos targetBlockPos)
@@ -387,20 +388,10 @@ public class FullDataUpdatePropagatorV2 implements IDebugRenderable, AutoCloseab
 	@Override
 	public void close()
 	{
-		try
+		if (this.updateQueueProcessor != null)
 		{
-			//LOGGER.info("Closing [" + this.getClass().getSimpleName() + "] for level: [" + this.levelId + "].");
-			
-			if (this.updateQueueProcessor != null)
-			{
-				this.updateQueueProcessor.shutdownNow();
-			}
-			
-			// wait a moment so any queued saves can finish queuing, 
-			// otherwise we might not see everything that needs saving and attempt to use a closed repo
-			Thread.sleep(200);
+			this.updateQueueProcessor.shutdownNow();
 		}
-		catch (InterruptedException ignore) { }
 	}
 	
 	

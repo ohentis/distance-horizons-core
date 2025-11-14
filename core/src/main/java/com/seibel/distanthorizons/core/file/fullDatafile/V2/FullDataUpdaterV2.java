@@ -19,16 +19,13 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Set;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class FullDataUpdaterV2 implements IDebugRenderable, AutoCloseable
 {
 	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
-	
-	
-	private final FullDataSourceProviderV2 provider;
-	
 	
 	protected final PositionalLockProvider updateLockProvider = new PositionalLockProvider();
 	/**
@@ -41,6 +38,9 @@ public class FullDataUpdaterV2 implements IDebugRenderable, AutoCloseable
 	public final ArrayList<IDataSourceUpdateListenerFunc<FullDataSourceV2>> dateSourceUpdateListeners = new ArrayList<>();
 	
 	private final String levelId;
+	private final AtomicBoolean isShutdownRef = new AtomicBoolean(false);
+	
+	private final FullDataSourceProviderV2 provider;
 	
 	
 	
@@ -67,6 +67,11 @@ public class FullDataUpdaterV2 implements IDebugRenderable, AutoCloseable
 	 */
 	public CompletableFuture<Void> updateDataSourceAsync(@NotNull FullDataSourceV2 inputDataSource)
 	{
+		if (this.isShutdownRef.get())
+		{
+			return CompletableFuture.completedFuture(null);
+		}
+		
 		AbstractExecutorService executor = ThreadPoolUtil.getChunkToLodBuilderExecutor();
 		if (executor == null || executor.isTerminated())
 		{
@@ -104,6 +109,12 @@ public class FullDataUpdaterV2 implements IDebugRenderable, AutoCloseable
 	/** After this method returns the inputData will be written to file. */
 	public void updateDataSource(@NotNull FullDataSourceV2 inputData, boolean lockOnUpdatePos)
 	{
+		if (this.isShutdownRef.get())
+		{
+			return;
+		}
+		
+		
 		long updatePos = inputData.getPos();
 		
 		boolean methodLocked = false;
@@ -231,7 +242,7 @@ public class FullDataUpdaterV2 implements IDebugRenderable, AutoCloseable
 	@Override
 	public void close()
 	{
-		//LOGGER.info("Closing [" + this.getClass().getSimpleName() + "] for level: [" + this.levelId + "].");
+		this.isShutdownRef.set(true);
 	}
 	
 	

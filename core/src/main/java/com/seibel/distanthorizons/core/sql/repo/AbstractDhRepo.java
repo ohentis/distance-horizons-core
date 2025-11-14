@@ -369,7 +369,7 @@ public abstract class AbstractDhRepo<TKey, TDTO extends IBaseDTO<TKey>> implemen
 			
 			if (DbConnectionClosedException.isClosedException(e))
 			{
-				throw new DbConnectionClosedException(e);
+				return new ArrayList<>();
 			}
 			else
 			{

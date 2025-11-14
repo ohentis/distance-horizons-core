@@ -98,10 +98,6 @@ public class PriorityTaskPicker
 							// Clear this executor's tasks since we no longer expect anything to execute.
 							executor.taskQueue.clear();
 						}
-						else
-						{
-							throw e;
-						}
 					}
 				}
 			}

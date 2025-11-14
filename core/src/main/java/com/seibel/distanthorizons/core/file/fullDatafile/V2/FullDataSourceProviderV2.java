@@ -47,6 +47,7 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -76,14 +77,11 @@ public class FullDataSourceProviderV2 implements IDebugRenderable, AutoCloseable
 	public static final byte LEAF_SECTION_DETAIL_LEVEL = DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL;
 	
 	
-	
-	protected final ReentrantLock closeLock = new ReentrantLock();
-	protected volatile boolean isShutdown = false;
-	
-	protected final File saveDir;
-	
 	public final FullDataSourceV2Repo repo;
 	
+	
+	protected final AtomicBoolean isShutdownRef = new AtomicBoolean(false);
+	protected final File saveDir;
 	protected final IDhLevel level;
 	protected final String levelId;
 	
@@ -174,6 +172,11 @@ public class FullDataSourceProviderV2 implements IDebugRenderable, AutoCloseable
 	 */
 	public CompletableFuture<FullDataSourceV2> getAsync(long pos)
 	{
+		if (this.isShutdownRef.get())
+		{
+			return CompletableFuture.completedFuture(null);
+		}
+		
 		AbstractExecutorService executor = ThreadPoolUtil.getFileHandlerExecutor();
 		if (executor == null || executor.isTerminated())
 		{
@@ -199,6 +202,11 @@ public class FullDataSourceProviderV2 implements IDebugRenderable, AutoCloseable
 	@Nullable
 	public FullDataSourceV2 get(long pos)
 	{
+		if (this.isShutdownRef.get())
+		{
+			return null;
+		}
+		
 		try(FullDataSourceV2DTO dto = this.repo.getByKey(pos))
 		{
 			if (dto == null)
@@ -267,6 +275,11 @@ public class FullDataSourceProviderV2 implements IDebugRenderable, AutoCloseable
 	 */
 	public FullDataSourceV2 getAdjForDirection(long pos, EDhDirection direction)
 	{
+		if (this.isShutdownRef.get())
+		{
+			return null;
+		}
+		
 		try(FullDataSourceV2DTO dto = this.repo.getAdjByPosAndDirection(pos, direction))
 		{
 			if (dto == null)
@@ -386,7 +399,14 @@ public class FullDataSourceProviderV2 implements IDebugRenderable, AutoCloseable
 	
 	@Nullable
 	public Long getTimestampForPos(long pos)
-	{ return this.repo.getTimestampForPos(pos); }
+	{
+		if (this.isShutdownRef.get())
+		{
+			return null;
+		}
+		
+		return this.repo.getTimestampForPos(pos); 
+	}
 	
 	
 	
@@ -416,28 +436,15 @@ public class FullDataSourceProviderV2 implements IDebugRenderable, AutoCloseable
 	@Override 
 	public void close()
 	{
-		try
-		{
-			LOGGER.debug("Closing [" + this.getClass().getSimpleName() + "] for level: [" + this.levelId + "].");
-			
-			this.closeLock.lock();
-			this.isShutdown = true;
-			
-			this.dataUpdater.close();
-			this.updatePropagator.close();
-			this.dataMigratorV1.close();
-						
-			// wait a moment so any queued saves can finish queuing, 
-			// otherwise we might not see everything that needs saving and attempt to use a closed repo
-			Thread.sleep(200);
-			
-			this.repo.close();
-		}
-		catch (InterruptedException ignore) { }
-		finally
-		{
-			this.closeLock.unlock();
-		}
+		LOGGER.debug("Closing [" + this.getClass().getSimpleName() + "] for level: [" + this.levelId + "].");
+		
+		this.isShutdownRef.set(true);
+		
+		this.dataUpdater.close();
+		this.updatePropagator.close();
+		this.dataMigratorV1.close();
+		
+		this.repo.close();
 	}
 	
 	
