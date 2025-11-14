@@ -621,19 +621,13 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 		LodUtil.assertTrue(this.generatorClosingFuture != null);
 		
 		
-		LOGGER.info("Awaiting world generator thread pool termination...");
-		try
+		LOGGER.info("Shutting down world generator thread pool...");
+		
+		AbstractExecutorService executor = ThreadPoolUtil.getWorldGenExecutor();
+		if (executor != null)
 		{
-			int waitTimeInSeconds = 3;
-			AbstractExecutorService executor = ThreadPoolUtil.getWorldGenExecutor();
-			if (executor != null && !executor.awaitTermination(waitTimeInSeconds, TimeUnit.SECONDS))
-			{
-				LOGGER.warn("World generator thread pool shutdown didn't complete after [" + waitTimeInSeconds + "] seconds. Some world generator requests may still be running.");
-			}
-		}
-		catch (InterruptedException e)
-		{
-			LOGGER.warn("World generator thread pool shutdown interrupted! Ignoring child threads...", e);
+			List<Runnable> tasks = executor.shutdownNow();
+			LOGGER.info("World generator thread pool shutdown with [" + tasks.size() + "] incomplete tasks.");
 		}
 		
 		

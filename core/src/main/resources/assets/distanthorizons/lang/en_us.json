@@ -509,6 +509,10 @@
     "Validate Buffer IDs Before Rendering",
   "distanthorizons.config.client.advanced.debugging.openGl.validateBufferIdsBeforeRendering.@tooltip":
     "Massively reduces FPS. \nShould only be used if mysterious EXCEPTION_ACCESS_VIOLATION crashes are happening in DH's rendering code and you're attempting to troubleshoot it.",
+  "distanthorizons.config.client.advanced.debugging.openGl.glUploadMode":
+    "Uploade Mode",
+  "distanthorizons.config.client.advanced.debugging.openGl.glUploadMode.@tooltip":
+    "Only for debugging",
   
 
   
@@ -1046,6 +1050,8 @@
     
   "distanthorizons.config.enum.EDhApiGpuUploadMethod.AUTO":
     "Auto",
+  "distanthorizons.config.enum.EDhApiGpuUploadMethod.NONE":
+    "None",
   "distanthorizons.config.enum.EDhApiGpuUploadMethod.BUFFER_STORAGE":
     "Buffer storage",
   "distanthorizons.config.enum.EDhApiGpuUploadMethod.SUB_DATA":

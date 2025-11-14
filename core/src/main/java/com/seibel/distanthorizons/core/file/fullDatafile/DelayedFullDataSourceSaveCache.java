@@ -104,7 +104,7 @@ public class DelayedFullDataSourceSaveCache implements AutoCloseable
 			}
 			
 			// write the new data into memory
-			memoryDataSource.update(inputDataSource);
+			memoryDataSource.updateFromChunk(inputDataSource);
 			// keep track of when the last time we saved something was
 			pair.updateLastWrittenTimestamp();
 		}

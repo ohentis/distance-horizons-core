@@ -25,10 +25,13 @@ import com.seibel.distanthorizons.api.enums.config.EDhApiWorldCompressionMode;
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
 import com.seibel.distanthorizons.core.dataObjects.fullData.FullDataPointIdMap;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
+import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.pooling.AbstractPhantomArrayList;
 import com.seibel.distanthorizons.core.pooling.PhantomArrayListPool;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.network.INetworkObject;
+import com.seibel.distanthorizons.core.sql.dto.util.FullDataMinMaxPosUtil;
+import com.seibel.distanthorizons.core.sql.dto.util.VarintUtil;
 import com.seibel.distanthorizons.core.util.BoolUtil;
 import com.seibel.distanthorizons.core.util.FullDataPointUtil;
 import com.seibel.distanthorizons.core.util.ListUtil;
@@ -52,6 +55,13 @@ public class FullDataSourceV2DTO
 {
 	public static final boolean VALIDATE_INPUT_DATAPOINTS = true;
 	
+	public static class DATA_FORMAT
+	{
+		public static final int V1_NO_ADJACENT_DATA = 1;
+		public static final int V2_LATEST = 2;
+	}
+	
+	
 	
 	public long pos;
 	
@@ -61,6 +71,10 @@ public class FullDataSourceV2DTO
 	public int dataChecksum;
 	
 	public ByteArrayList compressedDataByteArray;
+	public ByteArrayList compressedNorthAdjDataByteArray;
+	public ByteArrayList compressedSouthAdjDataByteArray;
+	public ByteArrayList compressedEastAdjDataByteArray;
+	public ByteArrayList compressedWestAdjDataByteArray;
 	
 	/** @see EDhApiWorldGenerationStep */
 	public ByteArrayList compressedColumnGenStepByteArray;
@@ -96,10 +110,15 @@ public class FullDataSourceV2DTO
 		FullDataSourceV2DTO dto = FullDataSourceV2DTO.CreateEmptyDataSourceForDecoding();
 		
 		// populate arrays
-		writeDataSourceDataArrayToBlob(dataSource.dataPoints, dto.compressedDataByteArray, compressionModeEnum);
+		writeDataSourceDataArrayToBlobV2(dataSource.dataPoints, dto.compressedDataByteArray, null, compressionModeEnum);
 		writeGenerationStepsToBlob(dataSource.columnGenerationSteps, dto.compressedColumnGenStepByteArray, compressionModeEnum);
 		writeWorldCompressionModeToBlob(dataSource.columnWorldCompressionMode, dto.compressedWorldCompressionModeByteArray, compressionModeEnum);
 		writeDataMappingToBlob(dataSource.mapping, dto.compressedMappingByteArray, compressionModeEnum);
+		// adjacent full data
+		writeDataSourceDataArrayToBlobV2(dataSource.dataPoints, dto.compressedNorthAdjDataByteArray, EDhDirection.NORTH, compressionModeEnum);
+		writeDataSourceDataArrayToBlobV2(dataSource.dataPoints, dto.compressedSouthAdjDataByteArray, EDhDirection.SOUTH, compressionModeEnum);
+		writeDataSourceDataArrayToBlobV2(dataSource.dataPoints, dto.compressedEastAdjDataByteArray, EDhDirection.EAST, compressionModeEnum);
+		writeDataSourceDataArrayToBlobV2(dataSource.dataPoints, dto.compressedWestAdjDataByteArray, EDhDirection.WEST, compressionModeEnum);
 		
 		// populate individual variables
 		{
@@ -107,7 +126,7 @@ public class FullDataSourceV2DTO
 			// the mapping hash isn't included since it takes significantly longer to calculate and 
 			// as of the time of this comment (2025-1-22) the checksum isn't used for anything so changing it shouldn't cause any issues
 			dto.dataChecksum = dataSource.hashCode();
-			dto.dataFormatVersion = FullDataSourceV2.DATA_FORMAT_VERSION;
+			dto.dataFormatVersion = DATA_FORMAT.V2_LATEST;
 			dto.compressionModeValue = compressionModeEnum.value;
 			dto.lastModifiedUnixDateTime = dataSource.lastModifiedUnixDateTime;
 			dto.createdUnixDateTime = dataSource.createdUnixDateTime;
@@ -123,7 +142,7 @@ public class FullDataSourceV2DTO
 	public static FullDataSourceV2DTO CreateEmptyDataSourceForDecoding() { return new FullDataSourceV2DTO(); }
 	private FullDataSourceV2DTO() 
 	{
-		super(ARRAY_LIST_POOL, 4, 0, 0);
+		super(ARRAY_LIST_POOL, 8, 0, 0);
 		
 		// Expected sizes here are 0 since we don't know how big these arrays need to be,
 		// they depend on compression settings and world complexity.
@@ -131,6 +150,11 @@ public class FullDataSourceV2DTO
 		this.compressedColumnGenStepByteArray = this.pooledArraysCheckout.getByteArray(1, 0);
 		this.compressedWorldCompressionModeByteArray = this.pooledArraysCheckout.getByteArray(2, 0);
 		this.compressedMappingByteArray = this.pooledArraysCheckout.getByteArray(3, 0);
+		
+		this.compressedNorthAdjDataByteArray = this.pooledArraysCheckout.getByteArray(4, 0);
+		this.compressedSouthAdjDataByteArray = this.pooledArraysCheckout.getByteArray(5, 0);
+		this.compressedEastAdjDataByteArray = this.pooledArraysCheckout.getByteArray(6, 0);
+		this.compressedWestAdjDataByteArray = this.pooledArraysCheckout.getByteArray(7, 0);
 	}
 	
 	
@@ -139,12 +163,12 @@ public class FullDataSourceV2DTO
 	// data source population //
 	//========================//
 	
-	public FullDataSourceV2 createDataSource(@NotNull ILevelWrapper levelWrapper) throws IOException, InterruptedException, DataCorruptedException
+	public FullDataSourceV2 createDataSource(@NotNull ILevelWrapper levelWrapper, EDhDirection direction) throws IOException, InterruptedException, DataCorruptedException
 	{
 		FullDataSourceV2 dataSource = FullDataSourceV2.createEmpty(this.pos);
 		try
 		{	
-			this.internalPopulateDataSource(dataSource, levelWrapper, false);
+			this.populateDataSource(dataSource, levelWrapper, direction, false);
 		}
 		catch (Exception e)
 		{
@@ -155,37 +179,97 @@ public class FullDataSourceV2DTO
 		return dataSource;
 	}
 	
+	/**
+	 * May be missing one or more data fields. <br>
+	 * Designed to be used without access to Minecraft. 
+	 */
+	public FullDataSourceV2 createUnitTestDataSource() throws IOException, InterruptedException, DataCorruptedException
+	{ return this.createUnitTestDataSource(null); }
 	/** 
 	 * May be missing one or more data fields. <br>
-	 * Designed to be used without access to Minecraft or any supporting objects. 
+	 * Designed to be used without access to Minecraft. 
 	 */
-	public FullDataSourceV2 createUnitTestDataSource() throws IOException, InterruptedException, DataCorruptedException 
-	{ return this.internalPopulateDataSource(FullDataSourceV2.createEmpty(this.pos), null, true); }
+	public FullDataSourceV2 createUnitTestDataSource(EDhDirection direction) throws IOException, InterruptedException, DataCorruptedException 
+	{ return this.populateDataSource(FullDataSourceV2.createEmpty(this.pos), null, direction,true); }
 	
-	private FullDataSourceV2 internalPopulateDataSource(FullDataSourceV2 dataSource, ILevelWrapper levelWrapper, boolean unitTest) throws IOException, InterruptedException, DataCorruptedException
+	private FullDataSourceV2 populateDataSource(
+			FullDataSourceV2 dataSource, ILevelWrapper levelWrapper,
+			@Nullable EDhDirection direction,
+			boolean unitTest) throws IOException, InterruptedException, DataCorruptedException
 	{
-		if (FullDataSourceV2.DATA_FORMAT_VERSION != this.dataFormatVersion)
+		// format validation //
+		
+		if (this.dataFormatVersion != DATA_FORMAT.V1_NO_ADJACENT_DATA 
+			&& this.dataFormatVersion != DATA_FORMAT.V2_LATEST)
 		{
-			throw new IllegalStateException("There should only be one data format ["+FullDataSourceV2.DATA_FORMAT_VERSION+"].");
+			throw new IllegalStateException("Data source population only supports formats: ["+DATA_FORMAT.V1_NO_ADJACENT_DATA +","+DATA_FORMAT.V2_LATEST +"], data format found: ["+this.dataFormatVersion+"].");
 		}
 		
+		if (direction != null
+			&& this.dataFormatVersion == DATA_FORMAT.V1_NO_ADJACENT_DATA)
+		{
+			throw new IllegalStateException("Data format ["+this.dataFormatVersion+"] doesn't support adjacent data. Automatic conversion must be done.");
+		}
+		
+		
+		
+		// compression //
 		
 		EDhApiDataCompressionMode compressionModeEnum;
 		try
 		{
-			compressionModeEnum = this.getCompressionMode();
+			compressionModeEnum = EDhApiDataCompressionMode.getFromValue(this.compressionModeValue);
 		}
 		catch (IllegalArgumentException e)
 		{
-			// may happen if ZStd was used (which was added and removed during the nightly builds)
-			// or if the compressor value is changed to an invalid option
+			// may happen if the compressor value was changed to an invalid option
 			throw new DataCorruptedException(e);
 		}
 		
 		
-		readBlobToGenerationSteps(this.compressedColumnGenStepByteArray, dataSource.columnGenerationSteps, compressionModeEnum);
-		readBlobToWorldCompressionMode(this.compressedWorldCompressionModeByteArray, dataSource.columnWorldCompressionMode, compressionModeEnum);
-		readBlobToDataSourceDataArray(this.compressedDataByteArray, dataSource.dataPoints, compressionModeEnum);
+		
+		// data //
+		
+		// clear any old data so we can start fresh
+		for (int i = 0; i < FullDataSourceV2.WIDTH * FullDataSourceV2.WIDTH; i++)
+		{
+			@NotNull LongArrayList array = dataSource.dataPoints[i];
+			array.clear();
+			array.add(FullDataPointUtil.EMPTY_DATA_POINT);
+		}
+		
+		if (direction == null)
+		{
+			readBlobToGenerationSteps(this.compressedColumnGenStepByteArray, dataSource.columnGenerationSteps, compressionModeEnum);
+			readBlobToWorldCompressionMode(this.compressedWorldCompressionModeByteArray, dataSource.columnWorldCompressionMode, compressionModeEnum);
+			
+			if (this.dataFormatVersion == 1)
+			{
+				readBlobToDataSourceDataArrayV1(this.compressedDataByteArray, dataSource.dataPoints, compressionModeEnum);
+			}
+			else
+			{
+				// doesn't include adjacent (ie edge) data
+				readBlobToDataSourceDataArrayV2(this.compressedDataByteArray, dataSource.dataPoints, null, compressionModeEnum);
+				
+				readBlobToDataSourceDataArrayV2(this.compressedNorthAdjDataByteArray, dataSource.dataPoints, EDhDirection.NORTH, compressionModeEnum);
+				readBlobToDataSourceDataArrayV2(this.compressedSouthAdjDataByteArray, dataSource.dataPoints, EDhDirection.SOUTH, compressionModeEnum);
+				readBlobToDataSourceDataArrayV2(this.compressedEastAdjDataByteArray, dataSource.dataPoints, EDhDirection.EAST, compressionModeEnum);
+				readBlobToDataSourceDataArrayV2(this.compressedWestAdjDataByteArray, dataSource.dataPoints, EDhDirection.WEST, compressionModeEnum);
+			}
+		}
+		else
+		{
+			// adjacent data is stored in the same byte array
+			// as the normal data,
+			// this is done so data sources down-stream
+			// can all be handled identically regardless of
+			// whether they're a full or partial data source
+			readBlobToDataSourceDataArrayV2(this.compressedDataByteArray, dataSource.dataPoints, direction, compressionModeEnum);	
+		}
+		
+		
+		// mapping //
 		
 		dataSource.mapping.clear(dataSource.getPos());
 		// should only be null when used in a unit test
@@ -204,6 +288,10 @@ public class FullDataSourceV2DTO
 				LodUtil.assertNotReach("ID maps out of sync for pos: "+this.pos);
 			}
 		}
+		
+		
+		
+		// individual properties //
 		
 		dataSource.lastModifiedUnixDateTime = this.lastModifiedUnixDateTime;
 		dataSource.createdUnixDateTime = this.createdUnixDateTime;
@@ -230,7 +318,9 @@ public class FullDataSourceV2DTO
 	// (de)serializing //
 	//=================//
 	
-	private static void writeDataSourceDataArrayToBlob(LongArrayList[] inputDataArray, ByteArrayList outputByteArray, EDhApiDataCompressionMode compressionModeEnum) throws IOException
+	public static void writeDataSourceDataArrayToBlobV1(
+			LongArrayList[] inputDataArray, ByteArrayList outputByteArray, 
+			EDhApiDataCompressionMode compressionModeEnum) throws IOException
 	{
 		// write the outputs to a stream to prep for writing to the database
 		ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
@@ -265,7 +355,9 @@ public class FullDataSourceV2DTO
 			outputByteArray.addElements(0, byteArrayOutputStream.toByteArray());
 		}
 	}
-	private static void readBlobToDataSourceDataArray(ByteArrayList inputCompressedDataByteArray, LongArrayList[] outputDataLongArray, EDhApiDataCompressionMode compressionModeEnum) throws IOException, DataCorruptedException
+	private static void readBlobToDataSourceDataArrayV1(
+			ByteArrayList inputCompressedDataByteArray, LongArrayList[] outputDataLongArray, 
+			EDhApiDataCompressionMode compressionModeEnum) throws IOException, DataCorruptedException
 	{
 		ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(inputCompressedDataByteArray.elements());
 		try (DhDataInputStream compressedIn = new DhDataInputStream(byteArrayInputStream, compressionModeEnum))
@@ -295,6 +387,300 @@ public class FullDataSourceV2DTO
 					dataColumn.set(y, dataPoint);
 				}
 			}
+		}
+	}
+	
+	private static void writeDataSourceDataArrayToBlobV2(
+			LongArrayList[] inputDataArray, ByteArrayList outputByteArray,
+			@Nullable EDhDirection direction, EDhApiDataCompressionMode compressionModeEnum) throws IOException
+	{
+		int minX, maxX, minZ, maxZ;
+		if (direction != null)
+		{
+			long encodedMinMaxPos = FullDataMinMaxPosUtil.getEncodedMinMaxPos(direction);
+			minX = FullDataMinMaxPosUtil.getAdjMinX(encodedMinMaxPos);
+			maxX = FullDataMinMaxPosUtil.getAdjMaxX(encodedMinMaxPos);
+			minZ = FullDataMinMaxPosUtil.getAdjMinZ(encodedMinMaxPos);
+			maxZ = FullDataMinMaxPosUtil.getAdjMaxZ(encodedMinMaxPos);
+		}
+		else
+		{
+			// skip the border data so we don't duplicate the adjacent data
+			minX = 1;
+			maxX = FullDataSourceV2.WIDTH-1;
+			minZ = 1;
+			maxZ = FullDataSourceV2.WIDTH-1;
+		}
+		
+		ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+		try (DhDataOutputStream compressedOut = new DhDataOutputStream(byteArrayOutputStream, compressionModeEnum))
+		{
+			// this method would be simpler if we allocated a bunch of temporary arrays,
+			// but we're trying to avoid garbage.
+			
+			// 1. column lengths
+			for (int x = minX; x < maxX; x++)
+			{
+				for (int z = minZ; z < maxZ; z++)
+				{
+					int index = FullDataSourceV2.relativePosToIndex(x,z);
+					
+					LongArrayList col = inputDataArray[index];
+					int size = (col != null) ? col.size() : 0;
+					VarintUtil.writeVarint(compressedOut, size);
+				}
+			}
+			
+			// 2. column ids, with "is lit" and "is discontinuous" bits
+			int previousBottomY = 0;
+			
+			for (int x = minX; x < maxX; x++)
+			{
+				for (int z = minZ; z < maxZ; z++)
+				{
+					int index = FullDataSourceV2.relativePosToIndex(x, z);
+					
+					LongArrayList col = inputDataArray[index];
+					int size = col != null ? col.size() : 0;
+					for (int y = 0; y < size; y++)
+					{
+						long data = col.getLong(y);
+						
+						int id = FullDataPointUtil.getId(data);
+						int height = FullDataPointUtil.getHeight(data);
+						int bottomY = FullDataPointUtil.getBottomY(data);
+						
+						boolean hasLight = (FullDataPointUtil.getBlockLight(data) | FullDataPointUtil.getSkyLight(data)) != LodUtil.MIN_MC_LIGHT;
+						
+						// all datapoints are contiguous, with no gaps
+						// so having both height and bottomY is redundant. We could store the prediction
+						// in an array, but it's much cheaper to just recompute it later.
+						int expectedBottomY = previousBottomY - height;
+						boolean hasDiscontinuity = bottomY != expectedBottomY;
+						previousBottomY = bottomY;
+						
+						VarintUtil.writeVarint(compressedOut, (id << 2) | (hasLight ? 2 : 0) | (hasDiscontinuity ? 1 : 0));
+					}
+				}
+			}
+			
+			// 3. heights
+			for (int x = minX; x < maxX; x++)
+			{
+				for (int z = minZ; z < maxZ; z++)
+				{
+					int index = FullDataSourceV2.relativePosToIndex(x, z);
+					
+					LongArrayList col = inputDataArray[index];
+					int size = (col != null) ? col.size() : 0;
+					for (int y = 0; y < size; y++)
+					{
+						long data = col.getLong(y);
+						VarintUtil.writeVarint(compressedOut, FullDataPointUtil.getHeight(data));
+					}
+				}
+			}
+			
+			// 4. bottomY (only the mis-predicted ones)
+			previousBottomY = 0;
+			for (int x = minX; x < maxX; x++)
+			{
+				for (int z = minZ; z < maxZ; z++)
+				{
+					int index = FullDataSourceV2.relativePosToIndex(x, z);
+					
+					LongArrayList col = inputDataArray[index];
+					int size = (col != null) ? col.size() : 0;
+					for (int y = 0; y < size; y++)
+					{
+						long data = col.getLong(y);
+						
+						int height = FullDataPointUtil.getHeight(data);
+						int bottomY = FullDataPointUtil.getBottomY(data);
+						
+						int expectedBottomY = previousBottomY - height;
+						if (bottomY != expectedBottomY)
+						{
+							VarintUtil.writeVarint(compressedOut, VarintUtil.zigzagEncode(bottomY - expectedBottomY));
+						}
+						previousBottomY = bottomY;
+					}
+				}
+			}
+			
+			// 5. packed Light (only lit sections)
+			for (int x = minX; x < maxX; x++)
+			{
+				for (int z = minZ; z < maxZ; z++)
+				{
+					int index = FullDataSourceV2.relativePosToIndex(x, z);
+					
+					LongArrayList col = inputDataArray[index];
+					int size = (col != null) ? col.size() : 0;
+					for (int y = 0; y < size; y++)
+					{
+						long data = col.getLong(y);
+						int blockLight = FullDataPointUtil.getBlockLight(data);
+						int skyLight = FullDataPointUtil.getSkyLight(data);
+						byte packedLight = (byte) ((blockLight << 4) | skyLight);
+						if (packedLight != 0)
+						{
+							compressedOut.writeByte(packedLight);
+						}
+					}
+				}
+			}
+			
+			compressedOut.flush();
+			byteArrayOutputStream.close();
+			outputByteArray.addElements(0, byteArrayOutputStream.toByteArray());
+		}
+	}
+	private static void readBlobToDataSourceDataArrayV2(
+			ByteArrayList inputCompressedDataByteArray,
+			LongArrayList[] outputDataLongArray,
+			@Nullable EDhDirection direction, EDhApiDataCompressionMode compressionModeEnum)
+			throws IOException, DataCorruptedException
+	{
+		int minX, maxX, minZ, maxZ;
+		if (direction != null)
+		{
+			long encodedMinMaxPos = FullDataMinMaxPosUtil.getEncodedMinMaxPos(direction);
+			minX = FullDataMinMaxPosUtil.getAdjMinX(encodedMinMaxPos);
+			maxX = FullDataMinMaxPosUtil.getAdjMaxX(encodedMinMaxPos);
+			minZ = FullDataMinMaxPosUtil.getAdjMinZ(encodedMinMaxPos);
+			maxZ = FullDataMinMaxPosUtil.getAdjMaxZ(encodedMinMaxPos);
+		}
+		else
+		{
+			// skip the border data so we don't duplicate the adjacent data
+			minX = 1;
+			maxX = FullDataSourceV2.WIDTH-1;
+			minZ = 1;
+			maxZ = FullDataSourceV2.WIDTH-1;
+		}
+		
+		ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(inputCompressedDataByteArray.elements());
+		try (DhDataInputStream compressedIn = new DhDataInputStream(byteArrayInputStream, compressionModeEnum))
+		{
+			// 1. column counts, preallocate
+			for (int x = minX; x < maxX; x++)
+			{
+				for (int z = minZ; z < maxZ; z++)
+				{
+					int index = FullDataSourceV2.relativePosToIndex(x, z);
+					
+					int count = VarintUtil.readVarint(compressedIn);
+					ListUtil.clearAndSetSize(outputDataLongArray[index], count);
+				}
+			}
+			
+			// 2. ids and flags for min_y and light
+			for (int x = minX; x < maxX; x++)
+			{
+				for (int z = minZ; z < maxZ; z++)
+				{
+					int index = FullDataSourceV2.relativePosToIndex(x, z);
+					LongArrayList col = outputDataLongArray[index];
+					
+					for (int i = 0; i < col.size(); i++)
+					{
+						int encodedId = VarintUtil.readVarint(compressedIn);
+						col.set(i, FullDataPointUtil.encode(encodedId >> 2, 1, encodedId & 1, (byte) (encodedId & 2), (byte) 0));
+					}
+				}
+			}
+			
+			// 3. height
+			for (int x = minX; x < maxX; x++)
+			{
+				for (int z = minZ; z < maxZ; z++)
+				{
+					int index = FullDataSourceV2.relativePosToIndex(x, z);
+					LongArrayList col = outputDataLongArray[index];
+					
+					for (int i = 0; i < col.size(); i++)
+					{
+						int height = VarintUtil.readVarint(compressedIn);
+						long data = col.getLong(i);
+						col.set(i, FullDataPointUtil.setHeight(data, height));
+					}
+				}
+			}
+			
+			// 4. bottomY
+			int previousBottomY = 0;
+			for (int x = minX; x < maxX; x++)
+			{
+				for (int z = minZ; z < maxZ; z++)
+				{
+					int index = FullDataSourceV2.relativePosToIndex(x, z);
+					LongArrayList col = outputDataLongArray[index];
+					
+					for (int i = 0; i < col.size(); i++)
+					{
+						long data = col.getLong(i);
+						int error = 0;
+						if (FullDataPointUtil.getBottomY(data) != 0)
+						{
+							error = VarintUtil.zigzagDecode(VarintUtil.readVarint(compressedIn));
+						}
+						int bottomY = previousBottomY - FullDataPointUtil.getHeight(data) + error;
+						col.set(i, FullDataPointUtil.setBottomY(data, bottomY));
+						previousBottomY = bottomY;
+					}
+				}
+			}
+			
+			// 5. lights
+			for (int x = minX; x < maxX; x++)
+			{
+				for (int z = minZ; z < maxZ; z++)
+				{
+					int index = FullDataSourceV2.relativePosToIndex(x, z);
+					LongArrayList col = outputDataLongArray[index];
+					
+					for (int i = 0; i < col.size(); i++)
+					{
+						long data = col.getLong(i);
+						boolean hasLight = FullDataPointUtil.getBlockLight(data) != 0;
+						byte skyLight = 0;
+						byte blockLight = 0;
+						if (hasLight)
+						{
+							byte packedLight = compressedIn.readByte();
+							skyLight = (byte) (packedLight & 0xF);
+							blockLight = (byte) (packedLight >> 4);
+						}
+						
+						col.set(i, FullDataPointUtil.setSkyLight(
+								FullDataPointUtil.setBlockLight(data, blockLight),
+								skyLight));
+					}
+				}
+			}
+			
+			if (FullDataPointUtil.RUN_VALIDATION)
+			{
+				// These points all bypassed validation because of using setters.
+				for (int x = minX; x < maxX; x++)
+				{
+					for (int z = minZ; z < maxZ; z++)
+					{
+						int index = FullDataSourceV2.relativePosToIndex(x, z);
+						LongArrayList col = outputDataLongArray[index];
+						
+						for (int i = 0; i < col.size(); i++)
+						{
+							FullDataPointUtil.validateDatapoint(col.getLong(i));
+						}
+					}
+				}
+			}
+		}
+		catch (EOFException e)
+		{
+			throw new DataCorruptedException(e);
 		}
 	}
 	
@@ -440,14 +826,6 @@ public class FullDataSourceV2DTO
 		this.lastModifiedUnixDateTime = in.readLong();
 		this.createdUnixDateTime = in.readLong();
 	}
-	
-	
-	
-	//================//
-	// helper methods //
-	//================//
-	
-	public EDhApiDataCompressionMode getCompressionMode() throws IllegalArgumentException { return EDhApiDataCompressionMode.getFromValue(this.compressionModeValue); }
 	
 	
 	

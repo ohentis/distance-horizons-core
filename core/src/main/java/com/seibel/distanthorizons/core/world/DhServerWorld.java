@@ -64,7 +64,7 @@ public class DhServerWorld extends AbstractDhServerWorld<DhServerLevel>
 		
 		if (this.dhLevelByLevelWrapper.containsKey(wrapper))
 		{
-			LOGGER.info("Unloading level {} ", this.dhLevelByLevelWrapper.get(wrapper));
+			DhServerLevel level = this.dhLevelByLevelWrapper.get(wrapper);
 			wrapper.onUnload();
 			this.dhLevelByLevelWrapper.remove(wrapper).close();
 		}

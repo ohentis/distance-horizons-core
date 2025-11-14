@@ -101,9 +101,7 @@ public final class ColumnArrayView implements IColumnDataView
 	
 	@Override
 	public ColumnArrayView subView(int dataIndexStart, int dataCount)
-	{
-		return new ColumnArrayView(data, dataCount * verticalSize, offset + dataIndexStart * verticalSize, verticalSize);
-	}
+	{ return new ColumnArrayView(data, dataCount * verticalSize, offset + dataIndexStart * verticalSize, verticalSize); }
 	
 	public void fill(long value) { Arrays.fill(data.elements(), offset, offset + size, value); }
 	

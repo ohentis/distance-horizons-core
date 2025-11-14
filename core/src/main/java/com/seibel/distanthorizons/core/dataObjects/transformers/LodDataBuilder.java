@@ -24,8 +24,6 @@ import java.util.List;
 
 import com.seibel.distanthorizons.api.enums.config.EDhApiWorldCompressionMode;
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
-import com.seibel.distanthorizons.api.interfaces.block.IDhApiBiomeWrapper;
-import com.seibel.distanthorizons.api.interfaces.block.IDhApiBlockStateWrapper;
 import com.seibel.distanthorizons.api.methods.events.abstractEvents.DhApiChunkProcessingEvent;
 import com.seibel.distanthorizons.api.objects.data.DhApiChunk;
 import com.seibel.distanthorizons.api.objects.data.DhApiTerrainDataPoint;
@@ -47,7 +45,6 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import com.seibel.distanthorizons.core.logging.DhLogger;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public class LodDataBuilder
@@ -142,7 +139,7 @@ public class LodDataBuilder
 					int columnZ = relBlockZ + chunkOffsetZ;
 					
 					// Get column data
-					LongArrayList longs = dataSource.get(columnX, columnZ);
+					LongArrayList longs = dataSource.getColumnAtRelPos(columnX, columnZ);
 					if (longs == null)
 					{
 						longs = new LongArrayList(dataCapacity);

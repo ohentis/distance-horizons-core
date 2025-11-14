@@ -29,7 +29,9 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapp
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 
@@ -127,14 +129,11 @@ public class DhClientWorld extends AbstractDhWorld implements IDhClientWorld
 	public void close()
 	{
 		this.networkState.close();
-		
 		this.dhTickerThread.shutdownNow();
 		
-		
+		ArrayList<CompletableFuture<Void>> closeFutures = new ArrayList<>();
 		for (DhClientLevel dhClientLevel : this.levels.values())
 		{
-			LOGGER.info("Unloading level [" + dhClientLevel.getLevelWrapper().getDhIdentifier() + "].");
-			
 			// level wrapper shouldn't be null, but just in case
 			IClientLevelWrapper clientLevelWrapper = dhClientLevel.getClientLevelWrapper();
 			if (clientLevelWrapper != null)
@@ -142,7 +141,23 @@ public class DhClientWorld extends AbstractDhWorld implements IDhClientWorld
 				clientLevelWrapper.onUnload();
 			}
 			
-			dhClientLevel.close();
+			
+			// close levels asynchronously to speed up
+			// shutdown on servers with a lot of levels
+			CompletableFuture<Void> closeFuture = new CompletableFuture<>();
+			Thread closeThread = new Thread(() ->
+			{
+				dhClientLevel.close();
+				closeFuture.complete(null);
+			}, "level shutdown");
+			closeThread.start();
+			closeFutures.add(closeFuture);
+		}
+		
+		// wait for all the levels to finish closing
+		for (CompletableFuture<Void> future : closeFutures)
+		{
+			future.join();
 		}
 		
 		this.levels.clear();

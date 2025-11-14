@@ -31,6 +31,7 @@ import com.seibel.distanthorizons.core.pooling.PhantomArrayListCheckout;
 import com.seibel.distanthorizons.core.pooling.PhantomArrayListPool;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPosMutable;
+import com.seibel.distanthorizons.core.render.LodQuadTree;
 import com.seibel.distanthorizons.core.util.*;
 import com.seibel.distanthorizons.core.wrapperInterfaces.IWrapperFactory;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
@@ -66,7 +67,8 @@ public class FullDataToRenderDataTransformer
 	//==============================//
 	
 	@Nullable
-	public static ColumnRenderSource transformFullDataToRenderSource(@Nullable FullDataSourceV2 fullDataSource, @Nullable IClientLevelWrapper levelWrapper)
+	public static ColumnRenderSource transformFullDataToRenderSource(
+			@Nullable FullDataSourceV2 fullDataSource, @Nullable IClientLevelWrapper levelWrapper)
 	{
 		if (fullDataSource == null)
 		{
@@ -102,7 +104,8 @@ public class FullDataToRenderDataTransformer
 	 * @throws InterruptedException Can be caused by interrupting the thread upstream.
 	 * Generally thrown if the method is running after the client leaves the current world.
 	 */
-	private static ColumnRenderSource transformCompleteFullDataToColumnData(IClientLevelWrapper levelWrapper, FullDataSourceV2 fullDataSource) throws InterruptedException
+	private static ColumnRenderSource transformCompleteFullDataToColumnData(
+			IClientLevelWrapper levelWrapper, FullDataSourceV2 fullDataSource) throws InterruptedException
 	{
  		final long pos = fullDataSource.getPos();
 		final byte dataDetail = fullDataSource.getDataDetailLevel();
@@ -126,7 +129,7 @@ public class FullDataToRenderDataTransformer
 			for (int z = 0; z < FullDataSourceV2.WIDTH; z++)
 			{
 				ColumnArrayView columnArrayView = columnSource.getVerticalDataPointView(x, z);
-				LongArrayList dataColumn = fullDataSource.get(x, z);
+				LongArrayList dataColumn = fullDataSource.getColumnAtRelPos(x, z);
 				
 				updateOrReplaceRenderDataViewColumnWithFullDataColumn(
 						levelWrapper, fullDataSource, 
@@ -136,7 +139,7 @@ public class FullDataToRenderDataTransformer
 			}
 		}
 		
-		columnSource.fillDebugFlag(0, 0, ColumnRenderSource.SECTION_SIZE, ColumnRenderSource.SECTION_SIZE, ColumnRenderSource.DebugSourceFlag.FULL);
+		columnSource.fillDebugFlag(0, 0, ColumnRenderSource.WIDTH, ColumnRenderSource.WIDTH, ColumnRenderSource.DebugSourceFlag.FULL);
 		
 		return columnSource;
 	}
@@ -171,6 +174,7 @@ public class FullDataToRenderDataTransformer
 				// expand the ColumnArrayView to fit the new larger max vertical size
 				ColumnArrayView newColumnArrayView = new ColumnArrayView(dataArrayList, fullDataLength, 0, fullDataLength);
 				setRenderColumnView(levelWrapper, fullDataSource, blockX, blockZ, newColumnArrayView, fullDataColumn);
+				
 				columnArrayView.changeVerticalSizeFrom(newColumnArrayView);
 			}
 			finally
@@ -275,18 +279,18 @@ public class FullDataToRenderDataTransformer
 			if (caveBlock)
 			{
 				if (caveCullingEnabled
-					// assume this data point is underground if it has no sky-light
-					&& skyLight == LodUtil.MIN_MC_LIGHT	
-					// ignore caves above a certain height to prevent floating islands from having walls underneath them
-					&& topY < caveCullingMaxY
-					// cave culling shouldn't happen when at the top of the world
-					&& renderDataIndex != 0 && fullDataIndex != 0
-					// cave culling can't happen when at the bottom of the world
-					&& (fullDataIndex+1) < fullColumnData.size())
+						// assume this data point is underground if it has no sky-light
+						&& skyLight == LodUtil.MIN_MC_LIGHT
+						// ignore caves above a certain height to prevent floating islands from having walls underneath them
+						&& topY < caveCullingMaxY
+						// cave culling shouldn't happen when at the top of the world
+						&& renderDataIndex != 0 && fullDataIndex != 0
+						// cave culling can't happen when at the bottom of the world
+						&& (fullDataIndex + 1) < fullColumnData.size())
 				{
 					// we need to get the next sky/block lights because
 					// the air block here will always have a light of 0/0 due to only the top of the LOD's light being saved.
-					long nextFullData = fullColumnData.getLong(fullDataIndex+1);
+					long nextFullData = fullColumnData.getLong(fullDataIndex + 1);
 					int nextSkyLight = FullDataPointUtil.getSkyLight(nextFullData);
 					
 					if (nextSkyLight == LodUtil.MIN_MC_LIGHT
@@ -320,10 +324,10 @@ public class FullDataToRenderDataTransformer
 			// non-solid block check //
 			//=======================//
 			
-			if (ignoreNonCollidingBlocks 
-				&& !block.isSolid() 
-				&& !block.isLiquid() 
-				&& block.getOpacity() != LodUtil.BLOCK_FULLY_OPAQUE)
+			if (ignoreNonCollidingBlocks
+					&& !block.isSolid()
+					&& !block.isLiquid()
+					&& block.getOpacity() != LodUtil.BLOCK_FULLY_OPAQUE)
 			{
 				if (colorBelowWithAvoidedBlocks)
 				{
@@ -333,7 +337,7 @@ public class FullDataToRenderDataTransformer
 					// this prevents issues if grass is transparent
 					if (ColorUtil.getAlpha(tempColor) != 0)
 					{
-						colorToApplyToNextBlock = ColorUtil.setAlpha(tempColor,255);
+						colorToApplyToNextBlock = ColorUtil.setAlpha(tempColor, 255);
 						skylightToApplyToNextBlock = skyLight;
 						blocklightToApplyToNextBlock = blockLight;
 					}
@@ -395,22 +399,5 @@ public class FullDataToRenderDataTransformer
 	}
 	
 	
-	
-	//================//
-	// helper methods //
-	//================//
-	
-	/**
-	 * Called in loops that may run for an extended period of time. <br>
-	 * This is necessary to allow canceling these transformers since running
-	 * them after the client has left a given world will throw exceptions.
-	 */
-	private static void throwIfThreadInterrupted() throws InterruptedException
-	{
-		if (Thread.interrupted())
-		{
-			throw new InterruptedException(FullDataToRenderDataTransformer.class.getSimpleName() + " task interrupted.");
-		}
-	}
 	
 }

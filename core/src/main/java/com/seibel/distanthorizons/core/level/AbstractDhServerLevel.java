@@ -2,10 +2,9 @@ package com.seibel.distanthorizons.core.level;
 
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
-import com.seibel.distanthorizons.core.file.fullDatafile.FullDataSourceProviderV2;
+import com.seibel.distanthorizons.core.file.fullDatafile.V2.FullDataSourceProviderV2;
 import com.seibel.distanthorizons.core.file.structure.ISaveStructure;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.logging.f3.F3Screen;
 import com.seibel.distanthorizons.core.multiplayer.server.FullDataSourceRequestHandler;
 import com.seibel.distanthorizons.core.multiplayer.server.ServerPlayerState;
 import com.seibel.distanthorizons.core.multiplayer.server.ServerPlayerStateManager;
@@ -297,27 +296,7 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 	@Override
 	public void addDebugMenuStringsToList(List<String> messageList)
 	{
-		// migration
-		boolean migrationErrored = this.serverside.fullDataFileHandler.getMigrationStoppedWithError();
-		if (!migrationErrored)
-		{
-			long legacyDeletionCount = this.serverside.fullDataFileHandler.getLegacyDeletionCount();
-			if (legacyDeletionCount > 0)
-			{
-				messageList.add("  Migrating - Deleting #: " + F3Screen.NUMBER_FORMAT.format(legacyDeletionCount));
-			}
-			long migrationCount = this.serverside.fullDataFileHandler.getTotalMigrationCount();
-			if (migrationCount > 0)
-			{
-				messageList.add("  Migrating - Conversion #: " + F3Screen.NUMBER_FORMAT.format(migrationCount));
-			}
-		}
-		else
-		{
-			messageList.add("  Migration Failed");
-		}
-		
-		// world gen
+		this.serverside.fullDataFileHandler.addDebugMenuStringsToList(messageList);
 		this.serverside.worldGenModule.addDebugMenuStringsToList(messageList);
 	}
 	

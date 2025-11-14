@@ -123,6 +123,7 @@ public class ConfigHandler
 		this.initNestedClass(Config.class, ""); // Init root category
 		
 		this.configFileHandler.loadFromFile();
+		this.runMinMaxValidation = !Config.Client.Advanced.Debugging.allowUnsafeValues.get();
 		
 		this.isLoaded = true;
 		LOGGER.info("[" + ModInfo.NAME + "] Config initialised");

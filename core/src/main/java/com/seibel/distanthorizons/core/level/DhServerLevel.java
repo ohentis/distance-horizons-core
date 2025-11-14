@@ -107,7 +107,6 @@ public class DhServerLevel extends AbstractDhServerLevel
 	{
 		super.close();
 		this.serverside.close();
-		LOGGER.info("Closed DHLevel for ["+this.getLevelWrapper()+"].");
 	}
 	
 }

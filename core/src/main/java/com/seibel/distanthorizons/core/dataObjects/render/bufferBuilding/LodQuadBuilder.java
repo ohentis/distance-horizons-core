@@ -138,7 +138,8 @@ public class LodQuadBuilder
 	//===========//
 	
 	public void addQuadAdj(
-			EDhDirection dir, short x, short y, short z,
+			EDhDirection dir, 
+			short x, short y, short z,
 			short widthEastWest, short widthNorthSouthOrUpDown,
 			int color, byte irisBlockMaterialId, byte skyLight, byte blockLight)
 	{
@@ -149,11 +150,11 @@ public class LodQuadBuilder
 		
 		BufferQuad quad = new BufferQuad(x, y, z, widthEastWest, widthNorthSouthOrUpDown, color, irisBlockMaterialId, skyLight, blockLight, dir);
 		ArrayList<BufferQuad> quadList = (this.doTransparency && ColorUtil.getAlpha(color) < 255) ? this.transparentQuads[dir.ordinal()] : this.opaqueQuads[dir.ordinal()];
-		if (!quadList.isEmpty() &&
-				(
-						quadList.get(quadList.size() - 1).tryMerge(quad, BufferMergeDirectionEnum.EastWest)
-								|| quadList.get(quadList.size() - 1).tryMerge(quad, BufferMergeDirectionEnum.NorthSouthOrUpDown))
-		)
+		if (!quadList.isEmpty()
+			&& (
+				quadList.get(quadList.size() - 1).tryMerge(quad, BufferMergeDirectionEnum.EastWest)
+				|| quadList.get(quadList.size() - 1).tryMerge(quad, BufferMergeDirectionEnum.NorthSouthOrUpDown))
+			)
 		{
 			this.premergeCount++;
 			return;
@@ -165,18 +166,23 @@ public class LodQuadBuilder
 	// XZ
 	public void addQuadUp(short minX, short maxY, short minZ, short widthEastWest, short widthNorthSouthOrUpDown, int color, byte irisBlockMaterialId, byte skylight, byte blocklight) // TODO argument names are wrong
 	{
-		BufferQuad quad = new BufferQuad(minX, maxY, minZ, widthEastWest, widthNorthSouthOrUpDown, color, irisBlockMaterialId, skylight, blocklight, EDhDirection.UP);
 		boolean isTransparent = (this.doTransparency && ColorUtil.getAlpha(color) < 255);
-		ArrayList<BufferQuad> quadList = isTransparent ? this.transparentQuads[EDhDirection.UP.ordinal()] : this.opaqueQuads[EDhDirection.UP.ordinal()];
+		ArrayList<BufferQuad> quadList = isTransparent 
+				? this.transparentQuads[EDhDirection.UP.ordinal()] 
+				: this.opaqueQuads[EDhDirection.UP.ordinal()];
+		
+		BufferQuad quad = new BufferQuad(minX, maxY, minZ, widthEastWest, widthNorthSouthOrUpDown, color, irisBlockMaterialId, skylight, blocklight, EDhDirection.UP);
 		quadList.add(quad);
 	}
 	
 	public void addQuadDown(short x, short y, short z, short width, short wz, int color, byte irisBlockMaterialId, byte skylight, byte blocklight)
 	{
+		ArrayList<BufferQuad> quadArray = (this.doTransparency && ColorUtil.getAlpha(color) < 255)
+				? this.transparentQuads[EDhDirection.DOWN.ordinal()]
+				: this.opaqueQuads[EDhDirection.DOWN.ordinal()];
+		
 		BufferQuad quad = new BufferQuad(x, y, z, width, wz, color, irisBlockMaterialId, skylight, blocklight, EDhDirection.DOWN);
-		ArrayList<BufferQuad> qs = (doTransparency && ColorUtil.getAlpha(color) < 255)
-				? transparentQuads[EDhDirection.DOWN.ordinal()] : opaqueQuads[EDhDirection.DOWN.ordinal()];
-		qs.add(quad);
+		quadArray.add(quad);
 	}
 	
 	
@@ -304,7 +310,7 @@ public class LodQuadBuilder
 		short widthEastWest = quad.widthEastWest;
 		short widthNorthSouth = quad.widthNorthSouthOrUpDown;
 		byte normalIndex = (byte) quad.direction.ordinal();
-		EDhDirection.Axis axis = quad.direction.getAxis();
+		EDhDirection.Axis axis = quad.direction.axis;
 		for (int i = 0; i < quadBase.length; i++)
 		{
 			short dx, dy, dz;
@@ -352,7 +358,7 @@ public class LodQuadBuilder
 					if (this.grassSideRenderingMode != EDhApiGrassSideRendering.AS_GRASS)
 					{
 						// only change the vertex color if it's on the side or bottom
-						if (quad.direction.getAxis().isHorizontal() || quad.direction == EDhDirection.DOWN)
+						if (quad.direction.axis.isHorizontal() || quad.direction == EDhDirection.DOWN)
 						{
 							if (this.grassSideRenderingMode == EDhApiGrassSideRendering.AS_DIRT
 									// if we want the color to fade, only apply the dirt color to the bottom vertices

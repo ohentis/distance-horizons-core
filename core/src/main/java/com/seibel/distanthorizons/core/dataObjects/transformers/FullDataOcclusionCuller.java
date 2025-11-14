@@ -22,11 +22,11 @@ public class FullDataOcclusionCuller
 			int relX, int relZ
 	)
 	{
-		LongArrayList centerColumn = dataSource.get(relX, relZ);
-		LongArrayList posXColumn = dataSource.tryGet(relX + 1, relZ);
-		LongArrayList negXColumn = dataSource.tryGet(relX - 1, relZ);
-		LongArrayList posZColumn = dataSource.tryGet(relX, relZ + 1);
-		LongArrayList negZColumn = dataSource.tryGet(relX, relZ - 1);
+		LongArrayList centerColumn = dataSource.getColumnAtRelPos(relX, relZ);
+		LongArrayList posXColumn = dataSource.tryGetColumnAtRelPos(relX + 1, relZ);
+		LongArrayList negXColumn = dataSource.tryGetColumnAtRelPos(relX - 1, relZ);
+		LongArrayList posZColumn = dataSource.tryGetColumnAtRelPos(relX, relZ + 1);
+		LongArrayList negZColumn = dataSource.tryGetColumnAtRelPos(relX, relZ - 1);
 		
 		if (posXColumn == null || posXColumn.size() == 0
 			|| negXColumn == null || negXColumn.size() == 0

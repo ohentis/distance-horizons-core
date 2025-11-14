@@ -1083,6 +1083,13 @@ public class Config
 									+ "")
 							.build();
 					
+					public static ConfigEntry<EDhApiGpuUploadMethod> glUploadMode = new ConfigEntry.Builder<EDhApiGpuUploadMethod>()
+							.set(EDhApiGpuUploadMethod.AUTO)
+							.comment(""
+									+ "\n"
+									+ "")
+							.build();
+					
 				}
 				
 				public static class ColumnBuilderDebugging

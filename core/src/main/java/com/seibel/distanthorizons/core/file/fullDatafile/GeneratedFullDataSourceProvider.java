@@ -23,6 +23,8 @@ import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGeneratio
 import com.seibel.distanthorizons.core.api.internal.SharedApi;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
+import com.seibel.distanthorizons.core.file.fullDatafile.V2.FullDataSourceProviderV2;
+import com.seibel.distanthorizons.core.file.fullDatafile.V2.FullDataUpdatePropagatorV2;
 import com.seibel.distanthorizons.core.file.structure.ISaveStructure;
 import com.seibel.distanthorizons.core.generation.DhLightingEngine;
 import com.seibel.distanthorizons.core.generation.IFullDataSourceRetrievalQueue;
@@ -41,7 +43,6 @@ import com.seibel.distanthorizons.core.util.threading.PriorityTaskPicker;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
-import com.seibel.distanthorizons.core.logging.DhLogger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -80,7 +81,16 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 	//=============//
 	
 	public GeneratedFullDataSourceProvider(IDhLevel level, ISaveStructure saveStructure) { super(level, saveStructure); }
-	public GeneratedFullDataSourceProvider(IDhLevel level, ISaveStructure saveStructure, @Nullable File saveDirOverride) { super(level, saveStructure, saveDirOverride); }
+	public GeneratedFullDataSourceProvider(IDhLevel level, ISaveStructure saveStructure, @Nullable File saveDirOverride) 
+	{
+		super(level, saveStructure, saveDirOverride);
+		
+		this.addDataSourceUpdateListener((@NotNull FullDataSourceV2 updatedData) ->
+		{
+			this.onWorldGenTaskComplete(WorldGenResult.CreateSuccess(updatedData.getPos()), null);
+		});
+		
+	}
 	
 	
 	
@@ -177,7 +187,7 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 	{
 		boolean oldQueueExists = this.worldGenQueueRef.compareAndSet(null, newWorldGenQueue);
 		LodUtil.assertTrue(oldQueueExists, "previous world gen queue is still here!");
-		LOGGER.info("Set world gen queue for level [" + this.level.getLevelWrapper().getDhIdentifier() + "].");
+		LOGGER.info("Set world gen queue for level [" + this.levelId + "].");
 	}
 	
 	@Override
@@ -213,7 +223,7 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 		
 		PriorityTaskPicker.Executor renderLoadExecutor = ThreadPoolUtil.getRenderLoadingExecutor();
 		if (renderLoadExecutor == null 
-			|| renderLoadExecutor.getQueueSize() >= getMaxUpdateTaskCount() / 2)
+			|| renderLoadExecutor.getQueueSize() >= FullDataUpdatePropagatorV2.getMaxPropagateTaskCount() / 2)
 		{
 			// don't queue additional world gen requests if the render loader handler is overwhelmed,
 			// otherwise LODs may not load in properly
@@ -222,7 +232,7 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 		
 		PriorityTaskPicker.Executor fileHandlerExecutor = ThreadPoolUtil.getFileHandlerExecutor();
 		if (fileHandlerExecutor == null 
-			|| fileHandlerExecutor.getQueueSize() >= getMaxUpdateTaskCount() / 2)
+			|| fileHandlerExecutor.getQueueSize() >= FullDataUpdatePropagatorV2.getMaxPropagateTaskCount() / 2)
 		{
 			// don't queue additional world gen requests if the file handler is overwhelmed,
 			// otherwise LODs may not load in properly
@@ -292,17 +302,6 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 		});
 		
 		return worldGenFuture;
-	}
-	
-	@Override
-	protected void updateDataSourceAtPos(long updatePos, @NotNull FullDataSourceV2 inputData, boolean lockOnUpdatePos)
-	{
-		super.updateDataSourceAtPos(updatePos, inputData, lockOnUpdatePos);
-		
-		//if (SharedApi.getEnvironment() != EWorldEnvironment.CLIENT_ONLY)
-		//	LOGGER.info("updated ["+DhSectionPos.toString(updatePos)+"]");
-		
-		this.onWorldGenTaskComplete(WorldGenResult.CreateSuccess(updatePos), null);
 	}
 	
 	@Override

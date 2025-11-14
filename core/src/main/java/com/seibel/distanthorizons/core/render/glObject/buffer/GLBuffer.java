@@ -27,7 +27,6 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.render.glObject.GLProxy;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
-import com.seibel.distanthorizons.core.util.math.UnitBytes;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftGLWrapper;
 import org.lwjgl.opengl.GL32;
 import org.lwjgl.opengl.GL44;
@@ -187,7 +186,6 @@ public class GLBuffer implements AutoCloseable
 		{ 
 			LodUtil.assertNotReach("maxExpansionSize is [" + maxExpansionSize + "] but buffer size is [" + bbSize + "]!"); 
 		}
-		GLProxy.LOGGER.debug("Uploading buffer with ["+new UnitBytes(bbSize)+"].");
 		
 		// Don't upload an empty buffer
 		if (bbSize == 0)
@@ -200,6 +198,8 @@ public class GLBuffer implements AutoCloseable
 		
 		switch (uploadMethod)
 		{
+			case NONE:
+				return;
 			case AUTO:
 				LodUtil.assertNotReach("GpuUploadMethod AUTO must be resolved before call to uploadBuffer()!");
 			case BUFFER_STORAGE:
@@ -379,6 +379,7 @@ public class GLBuffer implements AutoCloseable
 					{
 						int id = PHANTOM_TO_BUFFER_ID.get(phantomRef);
 						destroyBufferIdAsync(id);
+						LOGGER.warn("Buffer Phantom collected, ID: ["+id+"]");
 					}
 					
 					phantomRef = PHANTOM_REFERENCE_QUEUE.poll();
@@ -386,7 +387,7 @@ public class GLBuffer implements AutoCloseable
 			}
 			catch (Exception e)
 			{
-				LOGGER.error("Unexpected error in cleanup thread: [" + e.getMessage() + "].", e);
+				LOGGER.error("Unexpected error in buffer cleanup thread: [" + e.getMessage() + "].", e);
 			}
 		}
 	}

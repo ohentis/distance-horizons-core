@@ -82,7 +82,7 @@ public class LodBufferContainer implements AutoCloseable
 	//==================//
 	
 	/** Should be run on a DH thread. */
-	public synchronized CompletableFuture<LodBufferContainer> makeAndUploadBuffersAsync(LodQuadBuilder builder, EDhApiGpuUploadMethod gpuUploadMethod)
+	public synchronized CompletableFuture<LodBufferContainer> makeAndUploadBuffersAsync(LodQuadBuilder builder)
 	{
 		// separate variable to prevent race condition when checking null
 		CompletableFuture<LodBufferContainer> future = this.uploadFuture;
@@ -116,6 +116,8 @@ public class LodBufferContainer implements AutoCloseable
 				{
 					throw new InterruptedException();
 				}
+				
+				EDhApiGpuUploadMethod gpuUploadMethod = GLProxy.getInstance().getGpuUploadMethod();
 				
 				// upload on the render thread
 				uploadBuffersDirect(this.vbos, opaqueBuffers, gpuUploadMethod);
@@ -177,7 +179,9 @@ public class LodBufferContainer implements AutoCloseable
 		}
 		return newVbos;
 	}
-	private static void uploadBuffersDirect(GLVertexBuffer[] vbos, ArrayList<ByteBuffer> byteBuffers, EDhApiGpuUploadMethod method) throws InterruptedException
+	private static void uploadBuffersDirect(
+			GLVertexBuffer[] vbos, ArrayList<ByteBuffer> byteBuffers, 
+			EDhApiGpuUploadMethod uploadMethod) throws InterruptedException
 	{
 		int vboIndex = 0;
 		for (int i = 0; i < byteBuffers.size(); i++)
@@ -191,7 +195,7 @@ public class LodBufferContainer implements AutoCloseable
 			// get or create the VBO
 			if (vbos[vboIndex] == null)
 			{
-				vbos[vboIndex] = new GLVertexBuffer(method.useBufferStorage);
+				vbos[vboIndex] = new GLVertexBuffer(uploadMethod.useBufferStorage);
 			}
 			GLVertexBuffer vbo = vbos[vboIndex];
 			
@@ -202,13 +206,13 @@ public class LodBufferContainer implements AutoCloseable
 			try
 			{
 				vbo.bind();
-				vbo.uploadBuffer(buffer, size / LodUtil.LOD_VERTEX_FORMAT.getByteSize(), method, FULL_SIZED_BUFFER);
+				vbo.uploadBuffer(buffer, size / LodUtil.LOD_VERTEX_FORMAT.getByteSize(), uploadMethod, FULL_SIZED_BUFFER);
 			}
 			catch (Exception e)
 			{
 				vbos[vboIndex] = null;
 				vbo.close();
-				LOGGER.error("Failed to upload buffer: ", e);
+				LOGGER.error("Failed to upload buffer. Error: ["+e.getMessage()+"].", e);
 			}
 			
 			vboIndex++;

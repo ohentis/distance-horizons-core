@@ -21,17 +21,15 @@ package com.seibel.distanthorizons.core.render;
 
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
-import com.google.common.cache.Cache;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
-import com.seibel.distanthorizons.core.dataObjects.render.CachedColumnRenderSource;
 import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSource;
 import com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.ColumnRenderBufferBuilder;
 import com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.LodQuadBuilder;
 import com.seibel.distanthorizons.core.dataObjects.transformers.FullDataToRenderDataTransformer;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.enums.EDhDirection;
-import com.seibel.distanthorizons.core.file.fullDatafile.FullDataSourceProviderV2;
+import com.seibel.distanthorizons.core.file.fullDatafile.V2.FullDataSourceProviderV2;
 import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.logging.DhLogger;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
@@ -44,7 +42,6 @@ import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.render.renderer.generic.BeaconRenderHandler;
 import com.seibel.distanthorizons.core.sql.dto.BeaconBeamDTO;
 import com.seibel.distanthorizons.core.sql.repo.BeaconBeamRepo;
-import com.seibel.distanthorizons.core.util.KeyedLockContainer;
 import com.seibel.distanthorizons.core.util.PerfRecorder;
 import com.seibel.distanthorizons.core.util.threading.PriorityTaskPicker;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
@@ -59,7 +56,6 @@ import java.util.*;
 import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * A render section represents an area that could be rendered.
@@ -79,8 +75,6 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	@WillNotClose
 	private final FullDataSourceProviderV2 fullDataSourceProvider;
 	private final LodQuadTree quadTree;
-	private final KeyedLockContainer<Long> renderLoadLockContainer;
-	private final Cache<Long, CachedColumnRenderSource> cachedRenderSourceByPos;
 	private final AtomicInteger uploadTaskCountRef;
 	
 	/** 
@@ -134,9 +128,6 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	private boolean checkedIfFullDataSourceExists = false;
 	private boolean fullDataSourceExists = false;
 	
-	@Deprecated
-	public final PerfRecorder filePerfRecorder = LodQuadTree.FILE_PERF_RECORDER;
-	
 	
 	
 	//=============//
@@ -147,13 +138,10 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 			long pos, 
 			LodQuadTree quadTree, 
 			IDhClientLevel level, FullDataSourceProviderV2 fullDataSourceProvider,
-			AtomicInteger uploadTaskCountRef,
-			Cache<Long, CachedColumnRenderSource> cachedRenderSourceByPos, KeyedLockContainer<Long> renderLoadLockContainer)
+			AtomicInteger uploadTaskCountRef)
 	{
 		this.pos = pos;
 		this.quadTree = quadTree;
-		this.cachedRenderSourceByPos = cachedRenderSourceByPos;
-		this.renderLoadLockContainer = renderLoadLockContainer;
 		this.level = level;
 		this.levelWrapper = level.getClientLevelWrapper();
 		this.fullDataSourceProvider = fullDataSourceProvider;
@@ -245,11 +233,11 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	{
 		// get the center pos data
 		return this.getRenderSourceForPosAsync(this.pos, null)
-			.thenCompose((CachedColumnRenderSource cachedRenderSource) -> 
+			.thenCompose((ColumnRenderSource thisRenderSource) -> 
 			{
 				try
 				{
-					if (cachedRenderSource == null || cachedRenderSource.columnRenderSource == null)
+					if (thisRenderSource == null)
 					{
 						// nothing needs to be rendered
 						// TODO how doesn't this cause infinite file handler loops?
@@ -257,18 +245,15 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 						//  setting the render buffer here
 						return CompletableFuture.completedFuture(null);
 					}
-					ColumnRenderSource thisRenderSource = cachedRenderSource.columnRenderSource;
 					
 					
 					boolean enableTransparency = Config.Client.Advanced.Graphics.Quality.transparency.get().transparencyEnabled;
 					LodQuadBuilder lodQuadBuilder = new LodQuadBuilder(enableTransparency, this.level.getClientLevelWrapper());
 					
 					
-					PerfRecorder.Timer getAdj = this.filePerfRecorder.start("getAdj");
-					
 					// get the adjacent positions
 					// needs to be done async to prevent threads waiting on the same positions to be processed
-					final CompletableFuture<CachedColumnRenderSource>[] adjacentLoadFutures = new CompletableFuture[4];
+					final CompletableFuture<ColumnRenderSource>[] adjacentLoadFutures = new CompletableFuture[4];
 					
 					if (Config.Client.Advanced.Graphics.Experimental.onlyLoadCenterLods.get())
 					{
@@ -289,34 +274,27 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 					
 					return CompletableFuture.allOf(adjacentLoadFutures).thenRun(() ->
 					{
-						getAdj.end();
-						
-						try (CachedColumnRenderSource northRenderSource = adjacentLoadFutures[0].get();
-								CachedColumnRenderSource southRenderSource = adjacentLoadFutures[1].get();
-								CachedColumnRenderSource eastRenderSource = adjacentLoadFutures[2].get();
-								CachedColumnRenderSource westRenderSource = adjacentLoadFutures[3].get())
+						try (ColumnRenderSource northRenderSource = adjacentLoadFutures[0].get();
+							ColumnRenderSource southRenderSource = adjacentLoadFutures[1].get();
+							ColumnRenderSource eastRenderSource = adjacentLoadFutures[2].get();
+							ColumnRenderSource westRenderSource = adjacentLoadFutures[3].get())
 						{
-							ColumnRenderSource[] adjacentRenderSections = new ColumnRenderSource[EDhDirection.ADJ_DIRECTIONS.length];
-							adjacentRenderSections[EDhDirection.NORTH.ordinal() - 2] = (northRenderSource != null) ? northRenderSource.columnRenderSource : null;
-							adjacentRenderSections[EDhDirection.SOUTH.ordinal() - 2] = (southRenderSource != null) ? southRenderSource.columnRenderSource : null;
-							adjacentRenderSections[EDhDirection.EAST.ordinal() - 2] = (eastRenderSource != null) ? eastRenderSource.columnRenderSource : null;
-							adjacentRenderSections[EDhDirection.WEST.ordinal() - 2] = (westRenderSource != null) ? westRenderSource.columnRenderSource : null;
+							ColumnRenderSource[] adjacentRenderSections = new ColumnRenderSource[EDhDirection.CARDINAL_COMPASS.length];
+							adjacentRenderSections[EDhDirection.NORTH.compassIndex] = northRenderSource;
+							adjacentRenderSections[EDhDirection.SOUTH.compassIndex] = southRenderSource;
+							adjacentRenderSections[EDhDirection.EAST.compassIndex] = eastRenderSource;
+							adjacentRenderSections[EDhDirection.WEST.compassIndex] = westRenderSource;
 							
-							boolean[] adjIsSameDetailLevel = new boolean[EDhDirection.ADJ_DIRECTIONS.length];
-							adjIsSameDetailLevel[EDhDirection.NORTH.ordinal() - 2] = this.isAdjacentPosSameDetailLevel(EDhDirection.NORTH);
-							adjIsSameDetailLevel[EDhDirection.SOUTH.ordinal() - 2] = this.isAdjacentPosSameDetailLevel(EDhDirection.SOUTH);
-							adjIsSameDetailLevel[EDhDirection.EAST.ordinal() - 2] = this.isAdjacentPosSameDetailLevel(EDhDirection.EAST);
-							adjIsSameDetailLevel[EDhDirection.WEST.ordinal() - 2] = this.isAdjacentPosSameDetailLevel(EDhDirection.WEST);
+							boolean[] adjIsSameDetailLevel = new boolean[EDhDirection.CARDINAL_COMPASS.length];
+							adjIsSameDetailLevel[EDhDirection.NORTH.compassIndex] = this.isAdjacentPosSameDetailLevel(EDhDirection.NORTH);
+							adjIsSameDetailLevel[EDhDirection.SOUTH.compassIndex] = this.isAdjacentPosSameDetailLevel(EDhDirection.SOUTH);
+							adjIsSameDetailLevel[EDhDirection.EAST.compassIndex] = this.isAdjacentPosSameDetailLevel(EDhDirection.EAST);
+							adjIsSameDetailLevel[EDhDirection.WEST.compassIndex] = this.isAdjacentPosSameDetailLevel(EDhDirection.WEST);
 							
 							// the render sources are only needed by this synchronous method,
 							// then they can be closed
-							PerfRecorder.Timer makeRender = this.filePerfRecorder.start("makeRender");
 							ColumnRenderBufferBuilder.makeLodRenderData(lodQuadBuilder, thisRenderSource, this.level, adjacentRenderSections, adjIsSameDetailLevel);
-							makeRender.end();
-							
-							PerfRecorder.Timer upload = this.filePerfRecorder.start("upload");
 							this.uploadToGpuAsync(lodQuadBuilder);
-							upload.end();
 						}
 						catch (Exception e)
 						{
@@ -325,7 +303,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 						finally
 						{
 							// can only be closed after the data has been processed and uploaded to the GPU
-							cachedRenderSource.close();
+							thisRenderSource.close();
 						}
 					});
 				}
@@ -337,7 +315,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 			});
 	}
 	/** async is done so each thread can run without waiting on others */
-	private CompletableFuture<CachedColumnRenderSource> getRenderSourceForPosAsync(long pos, @Nullable EDhDirection direction) 
+	private CompletableFuture<ColumnRenderSource> getRenderSourceForPosAsync(long pos, @Nullable EDhDirection direction) 
 	{
 		if (direction != null)
 		{
@@ -346,23 +324,8 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		final long finalPos = pos;
 		
 		
-		ReentrantLock lock = this.renderLoadLockContainer.getLockForPos(finalPos);
 		try
 		{
-			// we don't want multiple threads attempting to load the same position at the same time,
-			// and we don't want to access the cache while invalidating it on a different thread
-			lock.lock();
-			
-			// use the cached data if possible
-			CachedColumnRenderSource existingCachedRenderSource = this.cachedRenderSourceByPos.getIfPresent(finalPos);
-			if (existingCachedRenderSource != null)
-			{
-				existingCachedRenderSource.markInUse();
-				return existingCachedRenderSource.loadFuture;
-			}
-			
-			
-			
 			PriorityTaskPicker.Executor executor = ThreadPoolUtil.getRenderLoadingExecutor();
 			if (executor == null || executor.isTerminated())
 			{
@@ -372,31 +335,24 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 			
 			
 			// queue loading the render data
-			CompletableFuture<CachedColumnRenderSource> loadFuture = new CompletableFuture<>();
-			final CachedColumnRenderSource newCachedRenderSource = new CachedColumnRenderSource(loadFuture, lock, this.cachedRenderSourceByPos);
+			CompletableFuture<ColumnRenderSource> loadFuture = new CompletableFuture<>();
 			executor.execute(() ->
 			{
-				PerfRecorder.Timer getFull = this.filePerfRecorder.start("getFull");
-				
 				// generate new render source
-				try (FullDataSourceV2 fullDataSource = this.fullDataSourceProvider.get(finalPos))
+				try (FullDataSourceV2 fullDataSource =
+						// no direction means get the center LOD		
+						(direction == null)
+						? this.fullDataSourceProvider.get(finalPos)
+						: this.fullDataSourceProvider.getAdjForDirection(finalPos, direction.opposite()))
 				{
-					getFull.end();
-					
-					PerfRecorder.Timer transform = this.filePerfRecorder.start("transform");
-					newCachedRenderSource.columnRenderSource = FullDataToRenderDataTransformer.transformFullDataToRenderSource(fullDataSource, this.levelWrapper);
-					transform.end();
+					ColumnRenderSource columnRenderSource = FullDataToRenderDataTransformer.transformFullDataToRenderSource(fullDataSource, this.levelWrapper);
+					loadFuture.complete(columnRenderSource);
 				}
 				catch (Exception e)
 				{
 					LOGGER.error("Unexpected issue creating render data for pos: ["+DhSectionPos.toString(finalPos)+"], error: ["+e.getMessage()+"].", e);
 				}
-				finally
-				{
-					loadFuture.complete(newCachedRenderSource);
-				}
 			});
-			this.cachedRenderSourceByPos.put(pos, newCachedRenderSource);
 			
 			return loadFuture;
 		}
@@ -409,10 +365,6 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		{
 			LOGGER.error("Unexpected issue getting and creating render data for pos: ["+DhSectionPos.toString(pos)+"], error: ["+e.getMessage()+"].", e);
 			return CompletableFuture.completedFuture(null);
-		}
-		finally
-		{
-			lock.unlock();
 		}
 	}
 	private boolean isAdjacentPosSameDetailLevel(EDhDirection direction)

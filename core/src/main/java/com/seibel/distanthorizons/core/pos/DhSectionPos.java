@@ -344,8 +344,8 @@ public class DhSectionPos
 		}
 		
 		return DhSectionPos.encode(getDetailLevel(pos),
-				getX(pos) + dir.getNormal().x,
-				getZ(pos) + dir.getNormal().z);
+				getX(pos) + dir.normal.x,
+				getZ(pos) + dir.normal.z);
 	}
 	
 	@Deprecated
