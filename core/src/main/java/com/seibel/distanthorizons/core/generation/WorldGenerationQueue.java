@@ -242,7 +242,7 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 		
 		int worldGenThreadCount = Math.max(Config.Common.MultiThreading.numberOfThreads.get(), 1);
 		int maxWorldGenTaskCount = worldGenThreadCount * MAX_QUEUED_TASKS_PER_THREAD;
-		return executor.getQueueSize() > maxWorldGenTaskCount;
+		return this.inProgressGenTasksByLodPos.size() > maxWorldGenTaskCount;
 	}
 	/**
 	 * @param targetPos the position to center the generation around
@@ -596,9 +596,10 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 					exception = exception.getCause();
 				}
 				
-				if (!UncheckedInterruptedException.isInterrupt(exception) && !(exception instanceof CancellationException))
+				if (!UncheckedInterruptedException.isInterrupt(exception) 
+					&& !(exception instanceof CancellationException))
 				{
-					LOGGER.error("Error when terminating data generation for section " + runningTaskGroup.group.pos, exception);
+					LOGGER.error("Error when terminating data generation for pos: ["+DhSectionPos.toString(runningTaskGroup.group.pos)+"], error: ["+exception.getMessage()+"].", exception);
 				}
 				
 				return null;
@@ -623,12 +624,16 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 		
 		LOGGER.info("Shutting down world generator thread pool...");
 		
-		AbstractExecutorService executor = ThreadPoolUtil.getWorldGenExecutor();
+		PriorityTaskPicker.Executor executor = ThreadPoolUtil.getWorldGenExecutor();
 		if (executor != null)
 		{
-			List<Runnable> tasks = executor.shutdownNow();
-			LOGGER.info("World generator thread pool shutdown with [" + tasks.size() + "] incomplete tasks.");
+			int queueSize = executor.getQueueSize();
+			executor.clearQueue();
+			LOGGER.info("World generator thread pool shutdown with [" + queueSize + "] incomplete tasks.");
 		}
+		
+		this.inProgressGenTasksByLodPos.values().forEach((inProgressWorldGenTaskGroup) -> inProgressWorldGenTaskGroup.genFuture.cancel(true));
+		this.waitingTasks.values().forEach((worldGenTask) -> worldGenTask.future.cancel(true));
 		
 		
 		this.generator.close();
