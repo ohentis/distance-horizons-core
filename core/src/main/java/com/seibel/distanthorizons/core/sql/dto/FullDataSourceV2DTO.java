@@ -779,14 +779,27 @@ public class FullDataSourceV2DTO
 		out.writeLong(this.pos);
 		out.writeInt(this.dataChecksum);
 		
+		// data
 		out.writeInt(this.compressedDataByteArray.size());
 		out.writeBytes(this.compressedDataByteArray.elements(), 0, this.compressedDataByteArray.size());
 		
+		// adj data
+		out.writeInt(this.compressedNorthAdjDataByteArray.size());
+		out.writeBytes(this.compressedNorthAdjDataByteArray.elements(), 0, this.compressedNorthAdjDataByteArray.size());
+		out.writeInt(this.compressedSouthAdjDataByteArray.size());
+		out.writeBytes(this.compressedSouthAdjDataByteArray.elements(), 0, this.compressedSouthAdjDataByteArray.size());
+		out.writeInt(this.compressedEastAdjDataByteArray.size());
+		out.writeBytes(this.compressedEastAdjDataByteArray.elements(), 0, this.compressedEastAdjDataByteArray.size());
+		out.writeInt(this.compressedWestAdjDataByteArray.size());
+		out.writeBytes(this.compressedWestAdjDataByteArray.elements(), 0, this.compressedWestAdjDataByteArray.size());
+		
+		// world gen
 		out.writeInt(this.compressedColumnGenStepByteArray.size());
 		out.writeBytes(this.compressedColumnGenStepByteArray.elements(), 0, this.compressedColumnGenStepByteArray.size());
 		out.writeInt(this.compressedWorldCompressionModeByteArray.size());
 		out.writeBytes(this.compressedWorldCompressionModeByteArray.elements(), 0, this.compressedWorldCompressionModeByteArray.size());
 		
+		// compression type
 		out.writeInt(this.compressedMappingByteArray.size());
 		out.writeBytes(this.compressedMappingByteArray.elements(), 0, this.compressedMappingByteArray.size());
 		
@@ -806,14 +819,27 @@ public class FullDataSourceV2DTO
 		this.pos = in.readLong();
 		this.dataChecksum = in.readInt();
 		
+		// data
 		this.compressedDataByteArray.size(in.readInt());
 		in.readBytes(this.compressedDataByteArray.elements(), 0, this.compressedDataByteArray.size());
 		
+		// adj data
+		this.compressedNorthAdjDataByteArray.size(in.readInt());
+		in.readBytes(this.compressedNorthAdjDataByteArray.elements(), 0, this.compressedNorthAdjDataByteArray.size());
+		this.compressedSouthAdjDataByteArray.size(in.readInt());
+		in.readBytes(this.compressedSouthAdjDataByteArray.elements(), 0, this.compressedSouthAdjDataByteArray.size());
+		this.compressedEastAdjDataByteArray.size(in.readInt());
+		in.readBytes(this.compressedEastAdjDataByteArray.elements(), 0, this.compressedEastAdjDataByteArray.size());
+		this.compressedWestAdjDataByteArray.size(in.readInt());
+		in.readBytes(this.compressedWestAdjDataByteArray.elements(), 0, this.compressedWestAdjDataByteArray.size());
+		
+		// world gen
 		this.compressedColumnGenStepByteArray.size(in.readInt());
 		in.readBytes(this.compressedColumnGenStepByteArray.elements(), 0, this.compressedColumnGenStepByteArray.size());
 		this.compressedWorldCompressionModeByteArray.size(in.readInt());
 		in.readBytes(this.compressedWorldCompressionModeByteArray.elements(), 0, this.compressedWorldCompressionModeByteArray.size());
 		
+		// compression type
 		this.compressedMappingByteArray.size(in.readInt());
 		in.readBytes(this.compressedMappingByteArray.elements(), 0, this.compressedMappingByteArray.size());
 		
