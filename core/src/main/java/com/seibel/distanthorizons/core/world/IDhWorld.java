@@ -39,6 +39,4 @@ public interface IDhWorld extends Closeable
 	
 	void unloadLevel(@NotNull ILevelWrapper levelWrapper);
 	
-	void worldGenTick();
-	
 }

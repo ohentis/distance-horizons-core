@@ -141,16 +141,6 @@ public class SharedApi
 		}
 	}
 	
-	public static void worldGenTick(Runnable worldGenRunnable)
-	{
-		lastWorldGenTickDelta--;
-		if (lastWorldGenTickDelta <= 0)
-		{
-			worldGenRunnable.run();
-			lastWorldGenTickDelta = 20;
-		}
-	}
-	
 	@Nullable
 	public static AbstractDhWorld getAbstractDhWorld() { return currentWorld; }
 	

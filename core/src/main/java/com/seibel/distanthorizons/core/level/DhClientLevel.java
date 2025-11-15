@@ -83,7 +83,7 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 					.asMap()
 	);
 	
-	public final WorldGenModule worldGenModule;
+	public final LodRequestModule lodRequestModule;
 	
 	@Nullable
 	private final SyncOnLoadRequestQueue syncOnLoadRequestQueue;
@@ -131,7 +131,7 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 		}
 		
 		this.remoteDataSourceProvider = new RemoteFullDataSourceProvider(this, saveStructure, fullDataSaveDirOverride, this.syncOnLoadRequestQueue);
-		this.worldGenModule = new WorldGenModule(this, this.remoteDataSourceProvider, () -> new WorldGenState(this, networkState));
+		this.lodRequestModule = new LodRequestModule(this,this, this.remoteDataSourceProvider, () -> new LodRequestState(this, networkState));
 		
 		this.clientside = new ClientLevelModule(this);
 		
@@ -239,11 +239,6 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 	@Nullable
 	public DhBlockPos2D getTargetPosForGeneration() { return new DhBlockPos2D(MC_CLIENT.getPlayerBlockPos()); }
 	
-	@Override
-	public void worldGenTick() { this.worldGenModule.worldGenTick(); }
-	
-	public void startRenderer() { this.clientside.startRenderer(); }
-	
 	
 	
 	//===========//
@@ -325,7 +320,7 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 		
 		
 		// world gen
-		this.worldGenModule.addDebugMenuStringsToList(messageList);
+		this.lodRequestModule.addDebugMenuStringsToList(messageList);
 		if (this.syncOnLoadRequestQueue != null)
 		{
 			assert this.networkState != null;
@@ -348,9 +343,9 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 	@Override
 	public void close()
 	{
-		if (this.worldGenModule != null)
+		if (this.lodRequestModule != null)
 		{
-			this.worldGenModule.close();
+			this.lodRequestModule.close();
 		}
 		
 		if (this.networkEventSource != null)
@@ -371,11 +366,11 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 	// helper classes //
 	//================//
 	
-	private static class WorldGenState extends WorldGenModule.AbstractWorldGenState
+	private static class LodRequestState extends LodRequestModule.AbstractLodRequestState
 	{
-		WorldGenState(DhClientLevel level, ClientNetworkState networkState)
+		LodRequestState(DhClientLevel level, ClientNetworkState networkState)
 		{
-			this.worldGenerationQueue = new RemoteWorldRetrievalQueue(networkState, level);
+			this.retrievalQueue = new RemoteWorldRetrievalQueue(networkState, level);
 		}
 	}
 	

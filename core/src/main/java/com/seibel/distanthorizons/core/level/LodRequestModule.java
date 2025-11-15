@@ -47,16 +47,17 @@ import java.util.function.Supplier;
  * Handles both single-player/server-side world gen and client side LOD requests.
  * TODO rename
  */
-public class WorldGenModule implements Closeable
+public class LodRequestModule implements Closeable
 {
 	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
 	
 	private final GeneratedFullDataSourceProvider.IOnWorldGenCompleteListener onWorldGenCompleteListener;
+	private final ThreadPoolExecutor tickerThread;
 	
 	private final GeneratedFullDataSourceProvider dataSourceProvider;
-	private final Supplier<? extends AbstractWorldGenState> worldGenStateSupplier;
+	private final Supplier<? extends AbstractLodRequestState> worldGenStateSupplier;
 	
-	private final AtomicReference<AbstractWorldGenState> worldGenStateRef = new AtomicReference<>();
+	private final AtomicReference<AbstractLodRequestState> lodRequestStateRef = new AtomicReference<>();
 	
 	
 	
@@ -64,59 +65,41 @@ public class WorldGenModule implements Closeable
 	// constructor //
 	//=============//
 	
-	public WorldGenModule(
+	public LodRequestModule(
+			IDhLevel level,
 			GeneratedFullDataSourceProvider.IOnWorldGenCompleteListener onWorldGenCompleteListener,
 			GeneratedFullDataSourceProvider dataSourceProvider,
-			Supplier<? extends AbstractWorldGenState> worldGenStateSupplier
+			Supplier<? extends AbstractLodRequestState> worldGenStateSupplier
 		)
 	{
 		this.onWorldGenCompleteListener = onWorldGenCompleteListener;
 		this.dataSourceProvider = dataSourceProvider;
 		this.worldGenStateSupplier = worldGenStateSupplier;
-	}
-	
-	
-	
-	//===================//
-	// world gen control //
-	//===================//
-	
-	public void startWorldGen(GeneratedFullDataSourceProvider dataFileHandler, AbstractWorldGenState newWgs)
-	{
-		// create the new world generator
-		if (!this.worldGenStateRef.compareAndSet(null, newWgs))
-		{
-			LOGGER.warn("Failed to start world gen due to concurrency");
-			newWgs.closeAsync(false);
-		}
-		dataFileHandler.addWorldGenCompleteListener(this.onWorldGenCompleteListener);
-		dataFileHandler.setWorldGenerationQueue(newWgs.worldGenerationQueue);
-	}
-	
-	public void stopWorldGen(GeneratedFullDataSourceProvider dataFileHandler)
-	{
-		AbstractWorldGenState worldGenState = this.worldGenStateRef.get();
-		if (worldGenState == null)
-		{
-			LOGGER.warn("Attempted to stop world gen when it was not running");
-			return;
-		}
 		
-		// shut down the world generator
-		while (!this.worldGenStateRef.compareAndSet(worldGenState, null))
+		String levelId = level.getLevelWrapper().getDhIdentifier();
+		this.tickerThread = ThreadUtil.makeSingleDaemonThreadPool("Request Module Ticker ["+levelId+"]");
+		this.tickerThread.execute(this::tickLoop);
+	}
+	
+	
+	
+	//=========//
+	// ticking //
+	//=========//
+	
+	private void tickLoop()
+	{
+		try
 		{
-			worldGenState = this.worldGenStateRef.get();
-			if (worldGenState == null)
+			while (!Thread.interrupted())
 			{
-				return;
+				Thread.sleep(20);
+				this.tick();
 			}
 		}
-		dataFileHandler.clearRetrievalQueue();
-		worldGenState.closeAsync(true).join(); //TODO: Make it async.
-		dataFileHandler.removeWorldGenCompleteListener(this.onWorldGenCompleteListener);
+		catch (InterruptedException ignore) { }
 	}
-	
-	public void worldGenTick()
+	private void tick()
 	{
 		boolean shouldDoWorldGen = this.onWorldGenCompleteListener.shouldDoWorldGen();
 		// if the world is read only don't generate anything
@@ -136,16 +119,58 @@ public class WorldGenModule implements Closeable
 		
 		if (this.isWorldGenRunning())
 		{
-			AbstractWorldGenState worldGenState = this.worldGenStateRef.get();
-			if (worldGenState != null)
+			AbstractLodRequestState lodRequestState = this.lodRequestStateRef.get();
+			if (lodRequestState != null)
 			{
 				DhBlockPos2D targetPosForGeneration = this.onWorldGenCompleteListener.getTargetPosForGeneration();
 				if (targetPosForGeneration != null)
 				{
-					worldGenState.startGenerationQueueAndSetTargetPos(targetPosForGeneration);
+					lodRequestState.startRequestQueueAndSetTargetPos(targetPosForGeneration);
 				}
 			}
 		}
+	}
+	
+	
+	
+	//===================//
+	// world gen control //
+	//===================//
+	
+	public void startWorldGen(GeneratedFullDataSourceProvider dataFileHandler, AbstractLodRequestState newWgs)
+	{
+		// create the new world generator
+		if (!this.lodRequestStateRef.compareAndSet(null, newWgs))
+		{
+			LOGGER.warn("Failed to start world gen due to concurrency");
+			newWgs.closeAsync(false);
+		}
+		
+		dataFileHandler.addWorldGenCompleteListener(this.onWorldGenCompleteListener);
+		dataFileHandler.setWorldGenerationQueue(newWgs.retrievalQueue);
+	}
+	
+	public void stopWorldGen(GeneratedFullDataSourceProvider dataFileHandler)
+	{
+		AbstractLodRequestState worldGenState = this.lodRequestStateRef.get();
+		if (worldGenState == null)
+		{
+			LOGGER.warn("Attempted to stop world gen when it was not running");
+			return;
+		}
+		
+		// shut down the world generator
+		while (!this.lodRequestStateRef.compareAndSet(worldGenState, null))
+		{
+			worldGenState = this.lodRequestStateRef.get();
+			if (worldGenState == null)
+			{
+				return;
+			}
+		}
+		dataFileHandler.clearRetrievalQueue();
+		worldGenState.closeAsync(true).join(); //TODO: Make it async.
+		dataFileHandler.removeWorldGenCompleteListener(this.onWorldGenCompleteListener);
 	}
 	
 	
@@ -157,13 +182,15 @@ public class WorldGenModule implements Closeable
 	@Override
 	public void close()
 	{
+		this.tickerThread.shutdownNow();
+		
 		// shutdown the world-gen
-		AbstractWorldGenState worldGenState = this.worldGenStateRef.get();
+		AbstractLodRequestState worldGenState = this.lodRequestStateRef.get();
 		if (worldGenState != null)
 		{
-			while (!this.worldGenStateRef.compareAndSet(worldGenState, null))
+			while (!this.lodRequestStateRef.compareAndSet(worldGenState, null))
 			{
-				worldGenState = this.worldGenStateRef.get();
+				worldGenState = this.lodRequestStateRef.get();
 				if (worldGenState == null)
 				{
 					break;
@@ -183,12 +210,12 @@ public class WorldGenModule implements Closeable
 	// getters //
 	//=========//
 	
-	public boolean isWorldGenRunning() { return this.worldGenStateRef.get() != null; }
+	public boolean isWorldGenRunning() { return this.lodRequestStateRef.get() != null; }
 	
 	/** mutates a list so it can be added to an existing {@link IDhLevel}'s debug list  */
 	public void addDebugMenuStringsToList(List<String> messageList)
 	{
-		AbstractWorldGenState worldGenState = this.worldGenStateRef.get();
+		AbstractLodRequestState worldGenState = this.lodRequestStateRef.get();
 		if (worldGenState == null)
 		{
 			return;
@@ -196,9 +223,9 @@ public class WorldGenModule implements Closeable
 		
 		
 		// estimated tasks
-		String waitingCountStr = F3Screen.NUMBER_FORMAT.format(worldGenState.worldGenerationQueue.getWaitingTaskCount());
-		String inProgressCountStr = F3Screen.NUMBER_FORMAT.format(worldGenState.worldGenerationQueue.getInProgressTaskCount());
-		String totalCountEstimateStr = F3Screen.NUMBER_FORMAT.format(worldGenState.worldGenerationQueue.getRetrievalEstimatedRemainingChunkCount());
+		String waitingCountStr = F3Screen.NUMBER_FORMAT.format(worldGenState.retrievalQueue.getWaitingTaskCount());
+		String inProgressCountStr = F3Screen.NUMBER_FORMAT.format(worldGenState.retrievalQueue.getInProgressTaskCount());
+		String totalCountEstimateStr = F3Screen.NUMBER_FORMAT.format(worldGenState.retrievalQueue.getRetrievalEstimatedRemainingChunkCount());
 		String message = "World Gen/Import Tasks: "+waitingCountStr+"/"+totalCountEstimateStr+" (in progress "+inProgressCountStr+")";
 		
 		// estimated chunks/sec
@@ -210,7 +237,7 @@ public class WorldGenModule implements Closeable
 		
 		messageList.add(message);
 		
-		worldGenState.worldGenerationQueue.addDebugMenuStringsToList(messageList);
+		worldGenState.retrievalQueue.addDebugMenuStringsToList(messageList);
 	}
 	
 	
@@ -220,40 +247,22 @@ public class WorldGenModule implements Closeable
 	//================//
 	
 	/** Handles the {@link IFullDataSourceRetrievalQueue} and any other necessary world gen information. */
-	public static abstract class AbstractWorldGenState
+	public static abstract class AbstractLodRequestState
 	{
 		/** static so we only send the disable message once per session */
 		private static long firstProgressMessageSentMs = 0;
 		
-		public IFullDataSourceRetrievalQueue worldGenerationQueue;
+		public IFullDataSourceRetrievalQueue retrievalQueue;
 		
 		private static final ThreadPoolExecutor PROGRESS_UPDATER_THREAD = ThreadUtil.makeSingleDaemonThreadPool("World Gen Progress Updater");
 		private boolean progressUpdateThreadRunning = false;
 		
 		
-		CompletableFuture<Void> closeAsync(boolean doInterrupt)
-		{
-			// this should stop the updater thread
-			this.progressUpdateThreadRunning = false;
-			
-			return this.worldGenerationQueue.startClosingAsync(true, doInterrupt)
-				.exceptionally(e ->
-				{
-					LOGGER.error("Error during first stage of generation queue shutdown, Error: ["+e.getMessage()+"].", e);
-					return null;
-				}
-				).thenRun(this.worldGenerationQueue::close)
-				.exceptionally(e ->
-				{
-					LOGGER.error("Error during second stage of generation queue shutdown, Error: ["+e.getMessage()+"].", e);
-					return null;
-				});
-		}
 		
-		/** @param targetPosForGeneration the position that world generation should be centered around */
-		public void startGenerationQueueAndSetTargetPos(DhBlockPos2D targetPosForGeneration) 
+		/** @param targetPosForRequest the position that world generation should be centered around */
+		public void startRequestQueueAndSetTargetPos(DhBlockPos2D targetPosForRequest) 
 		{ 
-			this.worldGenerationQueue.startAndSetTargetPos(targetPosForGeneration);
+			this.retrievalQueue.startAndSetTargetPos(targetPosForRequest);
 			this.startProgressUpdateThread();
 		}
 		private void startProgressUpdateThread()
@@ -286,8 +295,8 @@ public class WorldGenModule implements Closeable
 		private void sendRetrievalProgress()
 		{
 			// format the remaining chunks
-			int remainingChunkCount = this.worldGenerationQueue.getRetrievalEstimatedRemainingChunkCount();
-			remainingChunkCount += this.worldGenerationQueue.getQueuedChunkCount();
+			int remainingChunkCount = this.retrievalQueue.getRetrievalEstimatedRemainingChunkCount();
+			remainingChunkCount += this.retrievalQueue.getQueuedChunkCount();
 			String remainingChunkCountStr = F3Screen.NUMBER_FORMAT.format(remainingChunkCount);
 			
 			String message = "DH is generating chunks. " + remainingChunkCountStr + " left.";
@@ -350,7 +359,7 @@ public class WorldGenModule implements Closeable
 		/** @return -1 if this method isn't supported or available */
 		public double getEstimatedChunksPerSecond()
 		{
-			RollingAverage avg = this.worldGenerationQueue.getRollingAverageChunkGenTimeInMs();
+			RollingAverage avg = this.retrievalQueue.getRollingAverageChunkGenTimeInMs();
 			if (avg == null)
 			{
 				return -1;
@@ -372,6 +381,27 @@ public class WorldGenModule implements Closeable
 			
 			return chunksPerSecond;
 		}
+		
+		
+		CompletableFuture<Void> closeAsync(boolean doInterrupt)
+		{
+			// this should stop the updater thread
+			this.progressUpdateThreadRunning = false;
+			
+			return this.retrievalQueue.startClosingAsync(true, doInterrupt)
+					.exceptionally(e ->
+							{
+								LOGGER.error("Error during first stage of generation queue shutdown, Error: ["+e.getMessage()+"].", e);
+								return null;
+							}
+					).thenRun(this.retrievalQueue::close)
+					.exceptionally(e ->
+					{
+						LOGGER.error("Error during second stage of generation queue shutdown, Error: ["+e.getMessage()+"].", e);
+						return null;
+					});
+		}
+		
 		
 	}
 	

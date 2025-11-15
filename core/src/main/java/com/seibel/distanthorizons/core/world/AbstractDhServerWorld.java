@@ -117,18 +117,6 @@ public abstract class AbstractDhServerWorld<TDhServerLevel extends AbstractDhSer
 	
 	
 	
-	//==============//
-	// tick methods //
-	//==============//
-	
-	@Override
-	public void serverTick() { this.dhLevelByLevelWrapper.values().forEach(TDhServerLevel::serverTick); }
-	
-	@Override
-	public void worldGenTick() { this.dhLevelByLevelWrapper.values().forEach(TDhServerLevel::worldGenTick); }
-	
-	
-	
 	//================//
 	// base overrides //
 	//================//

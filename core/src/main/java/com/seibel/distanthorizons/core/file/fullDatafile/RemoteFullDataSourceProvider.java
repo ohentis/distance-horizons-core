@@ -24,7 +24,7 @@ import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSour
 import com.seibel.distanthorizons.core.file.structure.ISaveStructure;
 import com.seibel.distanthorizons.core.generation.RemoteWorldRetrievalQueue;
 import com.seibel.distanthorizons.core.level.IDhLevel;
-import com.seibel.distanthorizons.core.level.WorldGenModule;
+import com.seibel.distanthorizons.core.level.LodRequestModule;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.multiplayer.client.SyncOnLoadRequestQueue;
 import com.seibel.distanthorizons.core.logging.DhLogger;
@@ -37,7 +37,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Only handles {@link SyncOnLoadRequestQueue} requests (IE updating existing LODs based on a timestamp).
- * Missing data is handled by {@link WorldGenModule} and {@link RemoteWorldRetrievalQueue}.
+ * Missing data is handled by {@link LodRequestModule} and {@link RemoteWorldRetrievalQueue}.
  */
 public class RemoteFullDataSourceProvider extends GeneratedFullDataSourceProvider
 {

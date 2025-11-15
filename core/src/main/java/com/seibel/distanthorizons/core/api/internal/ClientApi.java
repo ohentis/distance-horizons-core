@@ -338,12 +338,6 @@ public class ClientApi
 			if (clientWorld != null)
 			{
 				clientWorld.clientTick();
-				
-				// Ignore local world gen, as it's managed by server ticking
-				if (!(clientWorld instanceof DhClientServerWorld))
-				{
-					SharedApi.worldGenTick(clientWorld::worldGenTick);
-				}
 			}
 		}
 		catch (Exception e)

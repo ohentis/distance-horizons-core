@@ -32,7 +32,6 @@ public interface IDhServerWorld extends IDhWorld
 	void addPlayer(IServerPlayerWrapper serverPlayer);
 	void removePlayer(IServerPlayerWrapper serverPlayer);
 	void changePlayerLevel(IServerPlayerWrapper player, IServerLevelWrapper originLevel, IServerLevelWrapper destinationLevel);
-	void serverTick();
 	
 	default IDhServerLevel getOrLoadServerLevel(ILevelWrapper levelWrapper) { return (IDhServerLevel) this.getOrLoadLevel(levelWrapper); }
 	

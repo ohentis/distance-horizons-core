@@ -56,9 +56,6 @@ import java.util.concurrent.CompletableFuture;
  */
 public interface IDhLevel extends AutoCloseable, GeneratedFullDataSourceProvider.IOnWorldGenCompleteListener
 {
-	@Deprecated
-	void worldGenTick();
-	
 	/**
 	 * May return either a client or server level wrapper. <br>
 	 * Should not return null

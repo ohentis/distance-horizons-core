@@ -53,30 +53,6 @@ public class ServerApi
 	
 	
 	
-	//=============//
-	// tick events //
-	//=============//
-	
-	public void serverTickEvent()
-	{
-		try
-		{
-			IDhServerWorld serverWorld = SharedApi.tryGetDhServerWorld();
-			if (serverWorld != null)
-			{
-				serverWorld.serverTick();
-				SharedApi.worldGenTick(serverWorld::worldGenTick);
-			}
-		}
-		catch (Exception e)
-		{
-			// try catch is necessary to prevent crashing the internal server when an exception is thrown
-			LOGGER.error("ServerTickEvent error: " + e.getMessage(), e);
-		}
-	}
-	
-	
-	
 	//===============//
 	// server events //
 	//===============//

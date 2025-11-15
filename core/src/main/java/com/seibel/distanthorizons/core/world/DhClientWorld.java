@@ -115,9 +115,6 @@ public class DhClientWorld extends AbstractDhWorld implements IDhClientWorld
 	@Override 
 	public void clientTick() { this.eventLoop.tick(); }
 	
-	@Override 
-	public void worldGenTick() { this.levels.values().forEach(DhClientLevel::worldGenTick); }
-	
 	@Override
 	public void addDebugMenuStringsToList(List<String> messageList)
 	{

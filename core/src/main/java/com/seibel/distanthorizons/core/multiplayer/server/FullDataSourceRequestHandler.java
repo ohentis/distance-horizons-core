@@ -14,6 +14,7 @@ import com.seibel.distanthorizons.core.network.messages.fullData.FullDataSourceR
 import com.seibel.distanthorizons.core.network.messages.fullData.FullDataSourceResponseMessage;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.sql.dto.BeaconBeamDTO;
+import com.seibel.distanthorizons.core.util.ThreadUtil;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 
 import java.util.List;
@@ -21,7 +22,7 @@ import java.util.Map;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class FullDataSourceRequestHandler
+public class FullDataSourceRequestHandler implements AutoCloseable
 {
 	private static final DhLogger LOGGER = new DhLoggerBuilder()
 			.fileLevelConfig(Config.Common.Logging.logNetworkEventToFile)
@@ -29,6 +30,8 @@ public class FullDataSourceRequestHandler
 	
 	
 	private final AbstractDhServerLevel serverLevel;
+	private final ThreadPoolExecutor tickerThread;
+	
 	private String getLevelIdentifier() { return this.serverLevel.getLevelWrapper().getDhIdentifier(); }
 	private GeneratedFullDataSourceProvider fullDataSourceProvider() { return this.serverLevel.serverside.fullDataFileHandler; }
 	private List<BeaconBeamDTO> getAllBeamsForPos(long pos) { return this.serverLevel.beaconBeamRepo.getAllBeamsForPos(pos); }
@@ -37,10 +40,20 @@ public class FullDataSourceRequestHandler
 	private final ConcurrentMap<Long, DataSourceRequestGroup> requestGroupsByFutureId = new ConcurrentHashMap<>();
 	
 	
+	
+	//=============//
+	// constructor //
+	//=============//
+	
 	public FullDataSourceRequestHandler(AbstractDhServerLevel serverLevel)
 	{
 		this.serverLevel = serverLevel;
+		
+		String levelId = this.serverLevel.getServerLevelWrapper().getDhIdentifier();
+		this.tickerThread = ThreadUtil.makeSingleDaemonThreadPool("DataSource Request Ticker ["+levelId+"]");
+		this.tickerThread.execute(this::tickLoop);
 	}
+	
 	
 	
 	//==================//
@@ -214,52 +227,6 @@ public class FullDataSourceRequestHandler
 		}
 	}
 	
-	
-	public void tick()
-	{
-		// Send finished data source requests
-		for (Map.Entry<Long, DataSourceRequestGroup> entry : this.requestGroupsByPos.entrySet())
-		{
-			DataSourceRequestGroup requestGroup = entry.getValue();
-			
-			if (requestGroup.fullDataSource == null)
-			{
-				continue;
-			}
-			
-			LOGGER.debug("[" + this.getLevelIdentifier() + "] Fulfilled request group [" + DhSectionPos.toString(entry.getKey()) + "]");
-			
-			// Make this group unavailable for adding into
-			this.requestGroupsByPos.remove(entry.getKey());
-			if (!requestGroup.tryClose())
-			{
-				continue;
-			}
-			
-			AbstractExecutorService executor = ThreadPoolUtil.getNetworkCompressionExecutor();
-			if (executor == null)
-			{
-				LOGGER.warn("Unable to send FullDataSourceResponseMessage - getNetworkCompressionExecutor() is null");
-				continue;
-			}
-			CompletableFuture.runAsync(() ->
-			{
-				FullDataPayload payload = new FullDataPayload(requestGroup.fullDataSource, this.getAllBeamsForPos(entry.getKey()));
-				requestGroup.fullDataSource.close();
-				
-				for (DataSourceRequestGroup.RequestData requestData : requestGroup.requestMessages.values())
-				{
-					this.requestGroupsByFutureId.remove(requestData.futureId());
-					
-					requestData.serverPlayerState.fullDataPayloadSender.sendInChunks(payload, () -> {
-						requestData.message.sendResponse(new FullDataSourceResponseMessage(payload));
-						requestData.rateLimiterSet.generationRequestRateLimiter.release();
-					});
-				}
-			}, executor);
-		}
-	}
-	
 	private void tryFulfillDataSourceRequestGroup(DataSourceRequestGroup requestGroup, long pos)
 	{
 		this.fullDataSourceProvider().getAsync(pos).thenAccept(fullDataSource ->
@@ -312,5 +279,81 @@ public class FullDataSourceRequestHandler
 			this.tryFulfillDataSourceRequestGroup(requestGroup, pos);
 		}
 	}
+	
+	
+	
+	//=========//
+	// ticking //
+	//=========//
+	
+	private void tickLoop()
+	{
+		try
+		{
+			while (!Thread.interrupted())
+			{
+				Thread.sleep(20);
+				this.tick();
+			}
+		}
+		catch (InterruptedException ignore) { }
+	}
+	private void tick()
+	{
+		// Send finished data source requests
+		for (Map.Entry<Long, DataSourceRequestGroup> entry : this.requestGroupsByPos.entrySet())
+		{
+			DataSourceRequestGroup requestGroup = entry.getValue();
+			if (requestGroup.fullDataSource == null)
+			{
+				continue;
+			}
+			
+			LOGGER.debug("[" + this.getLevelIdentifier() + "] Fulfilled request group [" + DhSectionPos.toString(entry.getKey()) + "]");
+			
+			// Make this group unavailable for adding into
+			this.requestGroupsByPos.remove(entry.getKey());
+			if (!requestGroup.tryClose())
+			{
+				continue;
+			}
+			
+			AbstractExecutorService executor = ThreadPoolUtil.getNetworkCompressionExecutor();
+			if (executor == null)
+			{
+				LOGGER.warn("Unable to send FullDataSourceResponseMessage - getNetworkCompressionExecutor() is null");
+				continue;
+			}
+			CompletableFuture.runAsync(() ->
+			{
+				FullDataPayload payload = new FullDataPayload(requestGroup.fullDataSource, this.getAllBeamsForPos(entry.getKey()));
+				requestGroup.fullDataSource.close();
+				
+				for (DataSourceRequestGroup.RequestData requestData : requestGroup.requestMessages.values())
+				{
+					this.requestGroupsByFutureId.remove(requestData.futureId());
+					
+					requestData.serverPlayerState.fullDataPayloadSender.sendInChunks(payload, () -> {
+						requestData.message.sendResponse(new FullDataSourceResponseMessage(payload));
+						requestData.rateLimiterSet.generationRequestRateLimiter.release();
+					});
+				}
+			}, executor);
+		}
+	}
+	
+	
+	
+	//================//
+	// base overrides //
+	//================//
+	
+	@Override 
+	public void close()
+	{
+		this.tickerThread.shutdownNow();
+	}
+	
+	
 	
 }

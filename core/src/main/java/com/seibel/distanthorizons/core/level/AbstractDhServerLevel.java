@@ -48,7 +48,8 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 	 */
 	protected final ConcurrentLinkedQueue<IServerPlayerWrapper> worldGenPlayerCenteringQueue = new ConcurrentLinkedQueue<>();
 	
-	private final FullDataSourceRequestHandler requestHandler = new FullDataSourceRequestHandler(this);
+	private final FullDataSourceRequestHandler requestHandler;
+	
 	
 	
 	//=============//
@@ -81,6 +82,7 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 		LOGGER.info("Started "+this.getClass().getSimpleName()+" for ["+serverLevelWrapper+"] at ["+saveStructure+"].");
 		
 		this.serverPlayerStateManager = serverPlayerStateManager;
+		this.requestHandler = new FullDataSourceRequestHandler(this);
 	}
 	
 	
@@ -88,12 +90,6 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 	//=======//
 	// ticks //
 	//=======//
-	
-	@Override
-	public void serverTick()
-	{
-		this.requestHandler.tick();
-	}
 	
 	@Override
 	public boolean shouldDoWorldGen()
@@ -117,9 +113,6 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 		Vec3d position = firstPlayer.getPosition();
 		return new DhBlockPos2D((int) position.x, (int) position.z);
 	}
-	
-	@Override 
-	public void worldGenTick() { this.serverside.worldGenModule.worldGenTick(); }
 	
 	
 	
@@ -297,7 +290,7 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 	public void addDebugMenuStringsToList(List<String> messageList)
 	{
 		this.serverside.fullDataFileHandler.addDebugMenuStringsToList(messageList);
-		this.serverside.worldGenModule.addDebugMenuStringsToList(messageList);
+		this.serverside.lodRequestModule.addDebugMenuStringsToList(messageList);
 	}
 	
 	
@@ -330,7 +323,10 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 	{
 		super.close();
 		this.serverside.close();
+		this.requestHandler.close();
 		LOGGER.info("Closed DHLevel for [" + this.getLevelWrapper() + "].");
 	}
+	
+	
 	
 }
