@@ -49,7 +49,7 @@ public class GitlabGetter
 	/** Commit sha; Commit info */
 	private static final Map<String, Config> commitInfo = new HashMap<>();
 	/** Pipeline ID; Pipeline info */
-	private static final Map<Integer, ArrayList<Config>> pipelineInfo = new HashMap<>();
+	private static final Map<Number, ArrayList<Config>> pipelineInfo = new HashMap<>();
 	
 	/** Uses our projectID to init this */
 	public GitlabGetter()
@@ -88,7 +88,7 @@ public class GitlabGetter
 		return commitInfo.get(commit);
 	}
 	
-	public ArrayList<Config> getPipelineInfo(int pipeline)
+	public ArrayList<Config> getPipelineInfo(Number pipeline)
 	{
 		if (!pipelineInfo.containsKey(pipeline))
 		{
@@ -111,9 +111,10 @@ public class GitlabGetter
 	/**
 	 * Gets all the Minecraft download links to a pipeline ID
 	 * 
+	 * @param pipelineID Uses {@link Number} instead of a specific value due to the possibility of receiving Integer or Long
 	 * @return Minecraft version; Download URL
 	 */
-	public Map<String, URL> getDownloads(int pipelineID)
+	public Map<String, URL> getDownloads(Number pipelineID)
 	{
 		Map<String, URL> downloads = new HashMap<>();
 		ArrayList<Config> currentPipelineInfo = this.getPipelineInfo(pipelineID);
