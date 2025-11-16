@@ -30,7 +30,6 @@ import com.seibel.distanthorizons.core.sql.repo.FullDataSourceV2Repo;
 import com.seibel.distanthorizons.core.util.FullDataPointUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
-import com.seibel.distanthorizons.core.util.objects.DataCorruptedException;
 import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.junit.Assert;
@@ -50,7 +49,7 @@ import java.util.concurrent.atomic.LongAdder;
  * Can also be used to test if there are memory leaks in SQLite
  * and if the {@link FullDataSourceV2DTO}/{@link FullDataSourceV2}'s are using pooled objects correctly
  */
-public class DhFullDataSourceRepoTests
+public class DataSourceRepoTests
 {
 	public static String DATABASE_TYPE = "jdbc:sqlite";
 	public static String DB_FILE_NAME = "test.sqlite";
@@ -393,6 +392,7 @@ public class DhFullDataSourceRepoTests
 			Assert.assertEquals(message + "value mismatch at index ["+i+"]", expectedNumb, actualNumb);
 		}
 	}
+	
 	
 	
 }
