@@ -137,7 +137,7 @@ public class FullDataUpdaterV2 implements IDebugRenderable, AutoCloseable
 			{
 				if (recipientDataSource != null)
 				{
-					boolean dataModified = recipientDataSource.updateFromChunk(inputData);
+					boolean dataModified = recipientDataSource.updateFromDataSource(inputData);
 					if (dataModified)
 					{
 						// save the updated data to the database

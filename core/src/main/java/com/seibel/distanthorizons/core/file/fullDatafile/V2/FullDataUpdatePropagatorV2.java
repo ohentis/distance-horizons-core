@@ -203,7 +203,7 @@ public class FullDataUpdatePropagatorV2 implements IDebugRenderable, AutoCloseab
 													// can return null when the file handler is being shut down
 													if (childDataSource != null)
 													{
-														parentDataSource.updateFromChunk(childDataSource);
+														parentDataSource.updateFromDataSource(childDataSource);
 													}
 												}
 											}
@@ -321,7 +321,7 @@ public class FullDataUpdatePropagatorV2 implements IDebugRenderable, AutoCloseab
 													// will return null if the file handler is shutting down
 													if (childDataSource != null)
 													{
-														childDataSource.updateFromChunk(parentDataSource);
+														childDataSource.updateFromDataSource(parentDataSource);
 														
 														// don't propagate child updates past the bottom of the tree
 														if (DhSectionPos.getDetailLevel(childPos) != DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL)

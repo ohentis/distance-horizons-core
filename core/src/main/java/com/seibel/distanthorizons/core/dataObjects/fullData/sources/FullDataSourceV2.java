@@ -364,7 +364,7 @@ public class FullDataSourceV2
 	// updating //
 	//==========//
 	
-	public boolean updateFromChunk(@NotNull FullDataSourceV2 inputDataSource)
+	public boolean updateFromDataSource(@NotNull FullDataSourceV2 inputDataSource)
 	{
 		// don't try updating if the input is empty
 		if (inputDataSource.mapping.isEmpty())
@@ -467,7 +467,7 @@ public class FullDataSourceV2
 		return dataChanged;
 	}
 	
-	public boolean updateFromSameDetailLevel(FullDataSourceV2 inputDataSource, int[] remappedIds)
+	private boolean updateFromSameDetailLevel(FullDataSourceV2 inputDataSource, int[] remappedIds)
 	{
 		// both data sources should have the same detail level
 		if (DhSectionPos.getDetailLevel(inputDataSource.pos) != DhSectionPos.getDetailLevel(this.pos))
@@ -483,96 +483,103 @@ public class FullDataSourceV2
 			for (int z = 0; z < WIDTH; z++)
 			{
 				int index = relativePosToIndex(x, z);
-				
 				LongArrayList inputDataArray = inputDataSource.dataPoints[index];
-				if (inputDataArray != null)
+				if (inputDataArray == null)
 				{
-					byte thisGenState = this.columnGenerationSteps.getByte(index);
-					byte inputGenState = inputDataSource.columnGenerationSteps.getByte(index);
+					continue;
+				}
 				
-					
-					// determine if this column should be updated
-					boolean genStateAllowsUpdating = false;
-					// if the input is downsampled, we only want to replace empty or downsampled values
-					if (inputGenState == EDhApiWorldGenerationStep.DOWN_SAMPLED.value
-						&&
-						(
-							thisGenState == EDhApiWorldGenerationStep.EMPTY.value
-							|| thisGenState == EDhApiWorldGenerationStep.DOWN_SAMPLED.value
-						))
+				
+				
+				byte thisGenState = this.columnGenerationSteps.getByte(index);
+				byte inputGenState = inputDataSource.columnGenerationSteps.getByte(index);
+				
+				
+				// determine if this column should be updated
+				boolean genStateAllowsUpdating = false;
+				// if the input is downsampled, we only want to replace empty or downsampled values
+				if (inputGenState == EDhApiWorldGenerationStep.DOWN_SAMPLED.value
+					&&
+					(
+						thisGenState == EDhApiWorldGenerationStep.EMPTY.value
+						|| thisGenState == EDhApiWorldGenerationStep.DOWN_SAMPLED.value
+					))
+				{
+					genStateAllowsUpdating = true;
+				}
+				// if the input is any other non-empty value,
+				// replace anything that is less-complete
+				else if (inputGenState != EDhApiWorldGenerationStep.EMPTY.value
+					&& thisGenState <= inputGenState)
+				{
+					// don't apply less-complete generation data
+					genStateAllowsUpdating = true;
+				}
+				
+				if (!genStateAllowsUpdating)
+				{
+					continue;
+				}
+				
+				
+				
+				// check if the data changed
+				if (this.dataPoints[index] == null)
+				{
+					// no data was present previously
+					this.dataPoints[index] = new LongArrayList(inputDataArray);
+					dataChanged = true;
+				}
+				else if (this.dataPoints[index].size() != inputDataArray.size())
+				{
+					// data is present, but the size is different
+					dataChanged = true;
+				}
+				
+				int oldDataHash = 0;
+				if (!dataChanged)
+				{
+					// some old data existed with the same length,
+					// we'll have to compare the caches
+					oldDataHash = this.dataPoints[index].hashCode();
+				}
+				
+				
+				// copy over the new data
+				this.dataPoints[index].clear();
+				this.dataPoints[index].addAll(inputDataArray);
+				this.remapDataColumn(index, remappedIds);
+				
+				if (RUN_DATA_ORDER_VALIDATION)
+				{
+					throwIfDataColumnInWrongOrder(inputDataSource.pos, this.dataPoints[index]);
+				}
+				
+				
+				
+				if (!dataChanged)
+				{
+					// check if the identical length data column hashes are the same
+					// hashes need to be compared after the ID's have been remapped otherwise the ID's won't match even if the data is the same
+					if (oldDataHash != this.dataPoints[index].hashCode())
 					{
-						genStateAllowsUpdating = true;
-					}
-					// if the input is any other non-empty value,
-					// replace anything that is less-complete
-					else if (inputGenState != EDhApiWorldGenerationStep.EMPTY.value
-							&& thisGenState <= inputGenState)
-					{
-						// don't apply less-complete generation data
-						genStateAllowsUpdating = true;
-					}
-					
-					
-					if (genStateAllowsUpdating)
-					{
-						// check if the data changed
-						if (this.dataPoints[index] == null)
-						{
-							// no data was present previously
-							this.dataPoints[index] = new LongArrayList(inputDataArray);
-							dataChanged = true;
-						}
-						else if (this.dataPoints[index].size() != inputDataArray.size())
-						{
-							// data is present, but the size is different
-							dataChanged = true;
-						}
-						
-						int oldDataHash = 0;
-						if (!dataChanged)
-						{
-							// some old data existed with the same length,
-							// we'll have to compare the caches
-							oldDataHash = this.dataPoints[index].hashCode();
-						}
-						
-						
-						// copy over the new data
-						this.dataPoints[index].clear();
-						this.dataPoints[index].addAll(inputDataArray);
-						this.remapDataColumn(index, remappedIds);
-						
-						if (RUN_DATA_ORDER_VALIDATION)
-						{
-							throwIfDataColumnInWrongOrder(inputDataSource.pos, this.dataPoints[index]);
-						}
-						
-						
-						
-						if (!dataChanged)
-						{
-							// check if the identical length data column hashes are the same
-							// hashes need to be compared after the ID's have been remapped otherwise the ID's won't match even if the data is the same
-							if (oldDataHash != this.dataPoints[index].hashCode())
-							{
-								// the hashes are different, something was changed
-								dataChanged = true;
-							}
-						}
-						
-						
-						this.columnGenerationSteps.set(index, inputGenState);
-						// always overwrite the compression mode since we're replacing this column
-						this.columnWorldCompressionMode.set(index, inputDataSource.columnWorldCompressionMode.getByte(index));
-						this.isEmpty = false;
+						// the hashes are different, something was changed
+						dataChanged = true;
 					}
 				}
+				
+				
+				this.columnGenerationSteps.set(index, inputGenState);
+				// always overwrite the compression mode since we're replacing this column
+				this.columnWorldCompressionMode.set(index, inputDataSource.columnWorldCompressionMode.getByte(index));
+				this.isEmpty = false;
 			}
 		}
 		
 		return dataChanged;
 	}
-	public boolean updateFromOneBelowDetailLevel(FullDataSourceV2 inputDataSource, int[] remappedIds)
+	
+	private boolean updateFromOneBelowDetailLevel(FullDataSourceV2 inputDataSource, int[] remappedIds)
 	{
 		if (DhSectionPos.getDetailLevel(inputDataSource.pos) + 1 != DhSectionPos.getDetailLevel(this.pos))
 		{
