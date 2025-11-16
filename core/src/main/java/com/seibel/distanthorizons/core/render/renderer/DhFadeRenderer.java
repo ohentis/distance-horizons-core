@@ -110,8 +110,6 @@ public class DhFadeRenderer
 	
 	public void render(Mat4f mcModelViewMatrix, Mat4f mcProjectionMatrix, float partialTicks, IProfilerWrapper profiler)
 	{
-		GLState mcState = new GLState();
-		
 		try
 		{
 			profiler.push("Fade Generate");
@@ -149,10 +147,6 @@ public class DhFadeRenderer
 		}
 		finally
 		{
-			// make sure we always revert to MC's state to prevent GL state corruption
-			// this is especially important on MC 1.16.5 or when other rendering mods are present
-			mcState.restore();
-			
 			profiler.pop();
 		}
 	}

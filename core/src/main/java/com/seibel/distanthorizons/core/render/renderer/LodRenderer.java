@@ -243,7 +243,10 @@ public class LodRenderer
 			}
 			
 			// far plane clip fading
-			if (Config.Client.Advanced.Graphics.Quality.dhFadeFarClipPlane.get())
+			if (Config.Client.Advanced.Graphics.Quality.dhFadeFarClipPlane.get()
+				// the fade shader messes with the GL state in a way Iris doesn't like,
+				// so skip it if a shader is active
+				&& !IRIS_ACCESSOR.isShaderPackInUse())
 			{
 				profiler.popPush("Fade Far Clip Fade");
 				DhFadeRenderer.INSTANCE.render(
