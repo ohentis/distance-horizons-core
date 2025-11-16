@@ -65,8 +65,6 @@ public class FullDataSourceV2DTO
 	
 	public long pos;
 	
-	public int levelMinY;
-	
 	/** only for the data array */
 	public int dataChecksum;
 	
@@ -132,7 +130,6 @@ public class FullDataSourceV2DTO
 			dto.createdUnixDateTime = dataSource.createdUnixDateTime;
 			dto.applyToParent = dataSource.applyToParent;
 			dto.applyToChildren = dataSource.applyToChildren;
-			dto.levelMinY = dataSource.levelMinY;
 		}
 		
 		return dto;
@@ -295,8 +292,6 @@ public class FullDataSourceV2DTO
 		
 		dataSource.lastModifiedUnixDateTime = this.lastModifiedUnixDateTime;
 		dataSource.createdUnixDateTime = this.createdUnixDateTime;
-		
-		dataSource.levelMinY = this.levelMinY;
 		
 		dataSource.isEmpty = false;
 		
@@ -868,7 +863,6 @@ public class FullDataSourceV2DTO
 	public String toString()
 	{
 		return MoreObjects.toStringHelper(this)
-				.add("levelMinY", this.levelMinY)
 				.add("pos", DhSectionPos.toString(this.pos))
 				.add("dataChecksum", this.dataChecksum)
 				.add("compressedDataByteArray length", this.compressedDataByteArray.size())

@@ -98,7 +98,6 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 		int posZ = resultSet.getInt("PosZ");
 		long pos = DhSectionPos.encode(sectionDetailLevel, posX, posZ);
 		
-		int minY = resultSet.getInt("MinY");
 		int dataChecksum = resultSet.getInt("DataChecksum");
 		
 		
@@ -145,19 +144,17 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 			dto.createdUnixDateTime = createdUnixDateTime;
 			dto.applyToParent = applyToParent;
 			dto.applyToChildren = applyToChildren;
-			dto.levelMinY = minY;
 		}
 		return dto;
 	}
 	
 	@Nullable
-	public FullDataSourceV2DTO convertResultSetToAdjDto(long pos, EDhDirection direction, ResultSet resultSet) throws ClassCastException, IOException, SQLException
+	public FullDataSourceV2DTO convertResultSetToAdjDto(long pos, ResultSet resultSet) throws ClassCastException, IOException, SQLException
 	{
 		//======================//
 		// get statement values //
 		//======================//
 		
-		int minY = resultSet.getInt("MinY");
 		int dataChecksum = resultSet.getInt("DataChecksum");
 		
 		
@@ -178,17 +175,11 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 		//===================//
 		
 		FullDataSourceV2DTO dto = FullDataSourceV2DTO.CreateEmptyDataSourceForDecoding();
-		// dto.compressedNorthAdjDataByteArray = putAllBytes(resultSet.getBinaryStream("NorthAdjData"), dto.compressedNorthAdjDataByteArray);
 		// set pooled arrays
 		dto.compressedDataByteArray = putAllBytes(resultSet.getBinaryStream("AdjData"), dto.compressedDataByteArray);
 		dto.compressedColumnGenStepByteArray = putAllBytes(resultSet.getBinaryStream("ColumnGenerationStep"), dto.compressedColumnGenStepByteArray);
 		dto.compressedWorldCompressionModeByteArray = putAllBytes(resultSet.getBinaryStream("ColumnWorldCompressionMode"), dto.compressedWorldCompressionModeByteArray);
 		dto.compressedMappingByteArray = putAllBytes(resultSet.getBinaryStream("Mapping"), dto.compressedMappingByteArray);
-		// adjacent full data
-		//dto.compressedNorthAdjDataByteArray = putAllBytes(resultSet.getBinaryStream("NorthAdjData"), dto.compressedNorthAdjDataByteArray);
-		//dto.compressedSouthAdjDataByteArray = putAllBytes(resultSet.getBinaryStream("SouthAdjData"), dto.compressedSouthAdjDataByteArray);
-		//dto.compressedEastAdjDataByteArray = putAllBytes(resultSet.getBinaryStream("EastAdjData"), dto.compressedEastAdjDataByteArray);
-		//dto.compressedWestAdjDataByteArray = putAllBytes(resultSet.getBinaryStream("WestAdjData"), dto.compressedWestAdjDataByteArray);
 		
 		// set individual variables
 		{
@@ -200,7 +191,6 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 			dto.createdUnixDateTime = createdUnixDateTime;
 			dto.applyToParent = applyToParent;
 			dto.applyToChildren = applyToChildren;
-			dto.levelMinY = minY;
 		}
 		return dto;
 	}
@@ -237,7 +227,10 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 		statement.setInt(i++, DhSectionPos.getX(dto.pos));
 		statement.setInt(i++, DhSectionPos.getZ(dto.pos));
 		
-		statement.setInt(i++, dto.levelMinY);
+		statement.setInt(i++, 0); // deprecated MinY column
+		// MinY is deprecated due to a bug introduced sometime before 2.3.6 where was always set to "0"
+		// and due to being unused wasn't noticed until 2.3.7-dev (2025-11-15)
+		
 		statement.setInt(i++, dto.dataChecksum);
 		
 		statement.setBinaryStream(i++, new ByteArrayInputStream(dto.compressedDataByteArray.elements()), dto.compressedDataByteArray.size());
@@ -272,8 +265,7 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 		String updateSqlTemplate = (
 				"UPDATE "+this.getTableName()+" \n" +
 				"SET \n" +
-				"    MinY = ? \n" +
-				"   ,DataChecksum = ? \n" +
+				"   DataChecksum = ? \n" +
 				
 				"   ,Data = ? \n" +
 				"   ,ColumnGenerationStep = ? \n" +
@@ -303,7 +295,6 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 		
 		
 		int i = 1;
-		statement.setInt(i++, dto.levelMinY);
 		statement.setInt(i++, dto.dataChecksum);
 		
 		statement.setBinaryStream(i++, new ByteArrayInputStream(dto.compressedDataByteArray.elements()), dto.compressedDataByteArray.size());
@@ -346,7 +337,7 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 	
 	private final String getAdjForDirectionSqlTemplate =
 			"SELECT \n" +
-					"   MinY, DataChecksum, \n" +
+					"   DataChecksum, \n" +
 					"   ColumnGenerationStep, ColumnWorldCompressionMode, Mapping, \n" +
 					"   DataFormatVersion, CompressionMode, ApplyToParent, ApplyToChildren, \n" +
 					"   LastModifiedUnixDateTime, CreatedUnixDateTime, \n" +
@@ -400,9 +391,9 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 			try(ResultSet resultSet = this.query(statement))
 			{
 				if (resultSet != null
-						&& resultSet.next())
+					&& resultSet.next())
 				{
-					return this.convertResultSetToAdjDto(pos, direction, resultSet);
+					return this.convertResultSetToAdjDto(pos, resultSet);
 				}
 				else
 				{

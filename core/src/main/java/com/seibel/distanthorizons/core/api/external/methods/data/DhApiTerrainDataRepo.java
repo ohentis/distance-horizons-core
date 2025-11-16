@@ -277,7 +277,7 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 					if (!getSpecificYCoordinate)
 					{
 						// if we aren't look for a specific datapoint, add each datapoint to the return array
-						returnArray[i] = DhApiTerrainDataPointUtil.createApiDatapoint(levelWrapper, mapping, requestedDetailLevel, dataPoint);
+						returnArray[i] = DhApiTerrainDataPointUtil.createApiDatapoint(levelWrapper.getMinHeight(), mapping, requestedDetailLevel, dataPoint);
 					}
 					else
 					{
@@ -294,7 +294,7 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 							if (bottomY <= requestedY && requestedY < topY) // blockPositions start from the bottom of the block, thus "<=" for bottomY, just "<" for topY
 							{
 								// this datapoint contains the requested block position, return it
-								DhApiTerrainDataPoint apiTerrainData = DhApiTerrainDataPointUtil.createApiDatapoint(levelWrapper, mapping, requestedDetailLevel, dataPoint);
+								DhApiTerrainDataPoint apiTerrainData = DhApiTerrainDataPointUtil.createApiDatapoint(levelWrapper.getMinHeight(), mapping, requestedDetailLevel, dataPoint);
 								return DhApiResult.createSuccess(new DhApiTerrainDataPoint[]{apiTerrainData});
 							}
 						}
@@ -345,7 +345,10 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 			@Nullable
 			IDhApiTerrainDataCache dataCache)
 	{
-		return this.raycastLodData(levelWrapper, new Vec3d(rayOriginX, rayOriginY, rayOriginZ), new Vec3f(rayDirectionX, rayDirectionY, rayDirectionZ), maxRayBlockLength, dataCache);
+		return this.raycastLodData(levelWrapper, 
+				new Vec3d(rayOriginX, rayOriginY, rayOriginZ), 
+				new Vec3f(rayDirectionX, rayDirectionY, rayDirectionZ), 
+				maxRayBlockLength, dataCache);
 	}
 	
 	/**
@@ -363,8 +366,8 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 	{
 		rayDirection.normalize();
 		
-		int minBlockHeight = levelWrapper.getMinHeight();
-		int maxBlockHeight = levelWrapper.getMaxHeight();
+		int minLevelBlockHeight = levelWrapper.getMinHeight();
+		int maxLevelBlockHeight = levelWrapper.getMaxHeight();
 		
 		
 		
@@ -380,7 +383,8 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 		DhApiRaycastResult closetFoundDataPoint = null;
 		
 		
-		while (blockPos.y >= minBlockHeight && blockPos.y < maxBlockHeight
+		while (blockPos.y >= minLevelBlockHeight 
+				&& blockPos.y < maxLevelBlockHeight
 				&& currentLength <= maxRayBlockLength)
 		{
 			// get the LOD columns around this position
@@ -403,7 +407,8 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 					{
 						// does this LOD contain the given Y position?
 						Vec3i dataPointPos = new Vec3i(columnPos.x, dataPoint.bottomYBlockPos, columnPos.z);
-						if (exactPos.y >= dataPoint.bottomYBlockPos && exactPos.y <= dataPoint.topYBlockPos)
+						if (exactPos.y >= dataPoint.bottomYBlockPos 
+							&& exactPos.y <= dataPoint.topYBlockPos)
 						{
 							if (closetFoundDataPoint == null)
 							{
@@ -572,12 +577,16 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 					}
 					
 					// draw raycast position
-					if (rayCast.success && rayCast.payload != null)
+					if (rayCast.success 
+						&& rayCast.payload != null)
 					{
 						DebugRenderer.makeParticle(
 							new DebugRenderer.BoxParticle(
 								new DebugRenderer.Box(
-									DhSectionPos.encode((byte) 0, rayCast.payload.pos.x, rayCast.payload.pos.z), rayCast.payload.dataPoint.bottomYBlockPos, rayCast.payload.dataPoint.topYBlockPos, -0.1f, Color.RED),
+									DhSectionPos.encode((byte) 0, rayCast.payload.pos.x, rayCast.payload.pos.z), 
+										rayCast.payload.dataPoint.bottomYBlockPos, 
+										rayCast.payload.dataPoint.topYBlockPos, 
+										-0.1f, Color.RED),
 							1.0, 0f
 							)
 						);

@@ -92,8 +92,6 @@ public class FullDataSourceV2
 	public long lastModifiedUnixDateTime;
 	public long createdUnixDateTime;
 	
-	public int levelMinY;
-	
 	/** 
 	 * stores how far each column has been generated should start with {@link EDhApiWorldGenerationStep#EMPTY}
 	 *
@@ -299,9 +297,9 @@ public class FullDataSourceV2
 	 * returns {@link FullDataPointUtil#EMPTY_DATA_POINT} if the given {@link DhBlockPos}
 	 * is outside this data source's boundaries.
 	 */
-	public long getDataPointAtBlockPos(DhBlockPos blockPos)
+	public long getDataPointAtBlockPos(int blockPosX, int relBlockPosY, int blockPosZ)
 	{
-		DhLodPos requestedPos = new DhLodPos(LodUtil.BLOCK_DETAIL_LEVEL, blockPos.getX(), blockPos.getZ());
+		DhLodPos requestedPos = new DhLodPos(LodUtil.BLOCK_DETAIL_LEVEL, blockPosX, blockPosZ);
 		
 		// stop if the requested blockPos is outside this datasource
 		{
@@ -345,14 +343,13 @@ public class FullDataSourceV2
 			
 			
 			
-			int requestedY = blockPos.getY();
-			int bottomY = FullDataPointUtil.getBottomY(dataPoint) + this.levelMinY;
+			int bottomY = FullDataPointUtil.getBottomY(dataPoint);
 			int height = FullDataPointUtil.getHeight(dataPoint);
 			int topY = bottomY + height;
 			
 			// does this datapoint contain the requested Y position? 
-			if (bottomY <= requestedY
-				&& requestedY < topY) // blockPositions start from the bottom of the block, thus "<=" for bottomY, just "<" for topY
+			if (bottomY <= relBlockPosY
+				&& relBlockPosY < topY) // blockPositions start from the bottom of the block, thus "<=" for bottomY, just "<" for topY
 			{
 				return dataPoint;
 			}
@@ -1300,7 +1297,7 @@ public class FullDataSourceV2
 		{
 			long datapoint = dataColumn.getLong(i);
 			
-			DhApiTerrainDataPoint apiDataPoint = DhApiTerrainDataPointUtil.createApiDatapoint(this.levelMinY, this.mapping, DhSectionPos.getDetailLevel(this.pos), datapoint);
+			DhApiTerrainDataPoint apiDataPoint = DhApiTerrainDataPointUtil.createApiDatapoint(0, this.mapping, DhSectionPos.getDetailLevel(this.pos), datapoint);
 			apiList.add(apiDataPoint);
 		}
 		

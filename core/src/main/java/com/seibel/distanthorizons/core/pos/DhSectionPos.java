@@ -42,6 +42,8 @@ import java.util.function.LongConsumer;
  * <strong>Too big</strong>, and the LOD dropoff will be very noticeable.<br>
  * With those thoughts in mind we decided on a smallest section size of 64 data points square (IE 4x4 chunks).
  *
+ * TODO absolute vs section detail levels
+ * 
  * @author Leetom
  */
 public class DhSectionPos
