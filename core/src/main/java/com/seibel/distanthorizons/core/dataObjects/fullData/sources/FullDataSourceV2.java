@@ -44,6 +44,7 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import it.unimi.dsi.fastutil.bytes.ByteArrayList;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -715,176 +716,221 @@ public class FullDataSourceV2
 	{
 		LongArrayList newColumnList = new LongArrayList();
 		
-		// special numbers:
-		// -2 = the column's height hasn't been determined yet
-		// -1 = we've reached the end of the column
-		int[] currentDatapointIndex = new int[] { -2, -2, -2, -2 };
+		
+		//=========================//
+		// get the 4 input columns //
+		//=========================//
+		
+		LongArrayList[] inputColumns = new LongArrayList[4];
+		int colIndex = 0;
+		for (int inputX = x; inputX < x + 2; inputX++)
+		{
+			for (int inputZ = z; inputZ < z + 2; inputZ++, colIndex++)
+			{
+				inputColumns[colIndex] = inputDataSource.dataPoints[relativePosToIndex(inputX, inputZ)];
+				if (inputColumns[colIndex] != null 
+					&& RUN_DATA_ORDER_VALIDATION)
+				{
+					throwIfDataColumnInWrongOrder(inputDataSource.pos, inputColumns[colIndex]);
+				}
+			}
+		}
+		
+		
+		
+		//========================================//
+		// find all y levels where changes happen //
+		//========================================//
+		
+		IntArrayList yTransitions = new IntArrayList();
+		for (int i = 0; i < 4; i++)
+		{
+			if (inputColumns[i] == null 
+				|| inputColumns[i].isEmpty())
+			{
+				continue;
+			}
+			
+			for (int j = 0; j < inputColumns[i].size(); j++)
+			{
+				long datapoint = inputColumns[i].getLong(j);
+				int minY = FullDataPointUtil.getBottomY(datapoint);
+				int maxY = minY + FullDataPointUtil.getHeight(datapoint);
+				
+				if (!yTransitions.contains(minY))
+				{
+					yTransitions.add(minY);
+				}
+				
+				if (!yTransitions.contains(maxY))
+				{
+					yTransitions.add(maxY);
+				}
+			}
+		}
+		
+		// can happen if the columns are empty
+		if (yTransitions.isEmpty())
+		{
+			return newColumnList;
+		}
+		
+		// sort the transitions from bottom to top // TODO
+		yTransitions.sort(null);
+		
+		// create index trackers for each column, 
+		// starting with the top-most datapoint
+		int[] currentIndices = new int[4];
+		for (int i = 0; i < 4; i++)
+		{
+			if (inputColumns[i] != null 
+				&& !inputColumns[i].isEmpty())
+			{
+				currentIndices[i] = inputColumns[i].size() - 1;
+			}
+			else
+			{
+				currentIndices[i] = -1;
+			}
+		}
+		
+		
+		
+		//=======================//
+		// process each Y change //
+		//=======================//
 		
 		int lastId = 0;
 		byte lastBlockLight = 0;
 		byte lastSkyLight = 0;
-		int height = 0;
-		int minY = 0;
+		int currentMinY = yTransitions.getInt(0);
+		int accumulatedHeight = 0;
 		
-		
-		// these arrays will be reused quite often, so re-using them helps reduce some GC pressure
-		long[] datapointsForYSlice = new long[4];
 		int[] mergeIds = new int[4];
 		int[] mergeBlockLights = new int[4];
 		int[] mergeSkyLights = new int[4];
 		
-		
-		for (int blockY = 0; blockY < RenderDataPointUtil.MAX_WORLD_Y_SIZE; blockY++, height++)
+		for (int yIndex = 0; yIndex < yTransitions.size() - 1; yIndex++)
 		{
-			// if each column has reached the end of their data, nothing more needs to be done
-			if (currentDatapointIndex[0] == -1
-				&& currentDatapointIndex[1] == -1
-				&& currentDatapointIndex[2] == -1
-				&& currentDatapointIndex[3] == -1
-				)
-			{
-				break;
-			}
+			int sliceMinY = yTransitions.getInt(yIndex);
+			int sliceMaxY = yTransitions.getInt(yIndex + 1);
+			int sliceHeight = sliceMaxY - sliceMinY;
 			
+			// Sample at the midpoint of this slice
+			int sampleY = sliceMinY + (sliceHeight / 2);
 			
-			// scary double loop but, 
-			// this will only ever loop 4 times, 
-			// once for each of the 4 input columns
-			Arrays.fill(datapointsForYSlice, 0L);
-			int colIndex = 0;
-			for (int inputX = x; inputX < x + 2; inputX++)
-			{
-				for (int inputZ = z; inputZ < z + 2; inputZ++, colIndex++)
-				{
-					// TODO throw an assertion if the column isn't in top-down order or just fix it...
-					LongArrayList inputDataArray = inputDataSource.dataPoints[relativePosToIndex(inputX, inputZ)];
-					if (inputDataArray == null || inputDataArray.size() == 0)
-					{
-						currentDatapointIndex[colIndex] = -1;
-						continue;
-					}
-					
-					// determine the last index (the lowest data point) for each column
-					if (currentDatapointIndex[colIndex] == -2)
-					{
-						currentDatapointIndex[colIndex] = inputDataArray.size() - 1;
-						
-						if (RUN_DATA_ORDER_VALIDATION)
-						{
-							throwIfDataColumnInWrongOrder(inputDataSource.pos, inputDataArray);
-						}
-					}
-					
-					
-					int dataPointIndex = currentDatapointIndex[colIndex];
-					if (dataPointIndex == -1)
-					{
-						// went over the end 
-						continue;
-					}
-					long datapoint = inputDataArray.getLong(dataPointIndex);
-					
-					int datapointMinY = FullDataPointUtil.getBottomY(datapoint);
-					int numbOfBlocksTall = FullDataPointUtil.getHeight(datapoint);
-					int datapointMaxY = (datapointMinY + numbOfBlocksTall);
-					
-					
-					// check if y position is inside this datapoint
-					if (blockY < datapointMinY)
-					{
-						// this y-slice is below this datapoint, nothing can be added
-						continue;
-					}
-					else if (blockY >= datapointMaxY)
-					{
-						// this y-slice is above the current datapoint,
-						// try the next data point
-						
-						int newDatapointIndex = currentDatapointIndex[colIndex] - 1;
-						if (newDatapointIndex < 0)
-						{
-							// went to far, no additional data present
-							newDatapointIndex = -1;
-						}
-						currentDatapointIndex[colIndex] = newDatapointIndex;
-						
-						
-						// try again with the next data point
-						inputZ--;
-						colIndex--;
-						continue;
-					}
-					
-					
-					
-					datapointsForYSlice[colIndex] = datapoint;
-				}
-			}
-			
-			
-			
+			// Get data from each column at this Y level
 			Arrays.fill(mergeIds, 0);
 			Arrays.fill(mergeBlockLights, 0);
 			Arrays.fill(mergeSkyLights, 0);
+			
 			for (int i = 0; i < 4; i++)
 			{
-				mergeIds[i] = FullDataPointUtil.getId(datapointsForYSlice[i]);
-				mergeBlockLights[i] = FullDataPointUtil.getBlockLight(datapointsForYSlice[i]);
-				mergeSkyLights[i] = FullDataPointUtil.getSkyLight(datapointsForYSlice[i]);
+				// skip columns that are empty or where we have already reached the bottom
+				if (currentIndices[i] == -1)
+				{
+					continue;
+				}
+				
+				
+				LongArrayList column = inputColumns[i];
+				if (column == null)
+				{
+					continue;
+				}
+				
+				// move the index down if we've passed the current datapoint
+				while (currentIndices[i] >= 0)
+				{
+					long datapoint = column.getLong(currentIndices[i]);
+					int inputMinY = FullDataPointUtil.getBottomY(datapoint);
+					int inputMaxY = inputMinY + FullDataPointUtil.getHeight(datapoint);
+					
+					if (sampleY >= inputMaxY)
+					{
+						// Sample point is above this datapoint, move to next (lower) one
+						currentIndices[i]--;
+					}
+					else if (sampleY >= inputMinY 
+							&& sampleY < inputMaxY)
+					{
+						// Sample point is within this datapoint
+						mergeIds[i] = FullDataPointUtil.getId(datapoint);
+						mergeBlockLights[i] = FullDataPointUtil.getBlockLight(datapoint);
+						mergeSkyLights[i] = FullDataPointUtil.getSkyLight(datapoint);
+						break;
+					}
+					else
+					{
+						// Sample point is below this datapoint
+						break;
+					}
+				}
 			}
 			
 			
-			// determine the most common values for this slice
-			int id = determineMostValueInColumnSlice(mergeIds, inputDataSource.mapping);
+			
+			// Determine merged values for this slice
+			int id = determineMostCommonValueInColumnSlice(mergeIds, inputDataSource.mapping);
 			byte blockLight = (byte) determineAverageValueInColumnSlice(mergeBlockLights);
 			byte skyLight = (byte) determineAverageValueInColumnSlice(mergeSkyLights);
 			
-			// if this slice is different then the last one, create a new one
-			if (id != lastId
-				// block and sky light might not be necessary
-				|| blockLight != lastBlockLight
-				|| skyLight != lastSkyLight)
+			// Check if we need to start a new datapoint
+			if (accumulatedHeight == 0)
 			{
-				if (height != 0)
-				{
-					try
-					{
-						long datapoint = FullDataPointUtil.encode(lastId, height, minY, lastBlockLight, lastSkyLight);
-						newColumnList.add(datapoint);
-					}
-					catch (DataCorruptedException e)
-					{
-						// shouldn't happen, (especially if validation is disabled) but just in case
-						LOGGER.warn("Skipping corrupt datapoint for pos ["+DhSectionPos.toString(inputDataSource.pos)+"] at relative position ["+x+","+z+"] with data: ID["+lastId+"], Height["+height+"], minY["+minY+"], lastBlockLight["+lastBlockLight+"], lastSkyLight["+lastSkyLight+"].");
-					}
-				}
-				
+				// first datapoint
 				lastId = id;
 				lastBlockLight = blockLight;
 				lastSkyLight = skyLight;
-				height = 0;
-				minY = blockY;
+				currentMinY = sliceMinY;
+				accumulatedHeight = sliceHeight;
+			}
+			else if (id != lastId 
+					|| blockLight != lastBlockLight 
+					|| skyLight != lastSkyLight)
+			{
+				// the data changed, create a new datapoint
+				try
+				{
+					long datapoint = FullDataPointUtil.encode(lastId, accumulatedHeight, currentMinY, lastBlockLight, lastSkyLight);
+					newColumnList.add(datapoint);
+				}
+				catch (DataCorruptedException e)
+				{
+					LOGGER.warn("Skipping corrupt datapoint for pos ["+DhSectionPos.toString(inputDataSource.pos)+"] at relative position ["+x+","+z+"] with data: ID["+lastId+"], Height["+accumulatedHeight+"], minY["+currentMinY+"], lastBlockLight["+lastBlockLight+"], lastSkyLight["+lastSkyLight+"].");
+				}
+				
+				// start the next datapoint
+				lastId = id;
+				lastBlockLight = blockLight;
+				lastSkyLight = skyLight;
+				currentMinY = sliceMinY;
+				accumulatedHeight = sliceHeight;
+			}
+			else
+			{
+				// this datapoint is the same as the last one, 
+				// just extend it's height
+				accumulatedHeight += sliceHeight;
 			}
 		}
 		
-		// add the last slice if present
-		if (height != 0)
+		
+		// add the final datapoint if needed
+		if (accumulatedHeight > 0)
 		{
 			try
 			{
-				newColumnList.add(FullDataPointUtil.encode(lastId, height, minY, lastBlockLight, lastSkyLight));
+				newColumnList.add(FullDataPointUtil.encode(lastId, accumulatedHeight, currentMinY, lastBlockLight, lastSkyLight));
 			}
 			catch (DataCorruptedException e)
 			{
-				// shouldn't happen, (especially if validation is disabled) but just in case
-				LOGGER.warn("Skipping corrupt datapoint for pos ["+DhSectionPos.toString(inputDataSource.pos)+"] at relative position ["+x+","+z+"] with data: ID["+lastId+"], Height["+height+"], minY["+minY+"], lastBlockLight["+lastBlockLight+"], lastSkyLight["+lastSkyLight+"].");
+				LOGGER.warn("Skipping corrupt datapoint for pos ["+DhSectionPos.toString(inputDataSource.pos)+"] at relative position ["+x+","+z+"] with data: ID["+lastId+"], Height["+accumulatedHeight+"], minY["+currentMinY+"], lastBlockLight["+lastBlockLight+"], lastSkyLight["+lastSkyLight+"].");
 			}
 		}
 		
 		
-		// flip the array if necessary
-		// TODO why is this sometimes necessary? What did I (James) screw up that causes the mergedInputDataArray
-		//  to sometimes be in a different order? Is it potentially related to what detail level is coming in?
+		// confirm the array is in the correct order
 		ensureDataColumnOrder(newColumnList);
 		
 		return newColumnList;
@@ -902,23 +948,8 @@ public class FullDataSourceV2
 			dataColumn.set(i, FullDataPointUtil.remap(remappedIds, dataColumn.getLong(i)));
 		}
 	}
-	private static boolean areDataColumnsDifferent(long[] oldDataArray, long[] newDataArray)
-	{
-		if (oldDataArray == null || oldDataArray.length != newDataArray.length)
-		{
-			// new data was added/removed
-			return true;
-		}
-		else
-		{
-			// check if the new column data is different
-			int oldArrayHash = Arrays.hashCode(oldDataArray);
-			int newArrayHash = Arrays.hashCode(newDataArray);
-			return (newArrayHash != oldArrayHash);
-		}
-	}
 	/** @param mapping can be included to ignore air ID's, otherwise all 4 values are treated equally */
-	private static int determineMostValueInColumnSlice(int[] sliceArray, @Nullable FullDataPointIdMap mapping)
+	private static int determineMostCommonValueInColumnSlice(int[] sliceArray, @Nullable FullDataPointIdMap mapping)
 	{
 		if (RUN_UPDATE_DEV_VALIDATION)
 		{
@@ -962,7 +993,7 @@ public class FullDataSourceV2
 			}
 		}
 		
-		// return the most common occurance
+		// return the most common occurrence
 		int maxCount = Math.max(count0, Math.max(count1, Math.max(count2, count3)));
 		if (maxCount == count0)
 		// if the max count is 1 then we'll just go with the first column
