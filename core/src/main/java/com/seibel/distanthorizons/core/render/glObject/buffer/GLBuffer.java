@@ -379,7 +379,7 @@ public class GLBuffer implements AutoCloseable
 					{
 						int id = PHANTOM_TO_BUFFER_ID.get(phantomRef);
 						destroyBufferIdAsync(id);
-						LOGGER.warn("Buffer Phantom collected, ID: ["+id+"]");
+						//LOGGER.warn("Buffer Phantom collected, ID: ["+id+"]");
 					}
 					
 					phantomRef = PHANTOM_REFERENCE_QUEUE.poll();
