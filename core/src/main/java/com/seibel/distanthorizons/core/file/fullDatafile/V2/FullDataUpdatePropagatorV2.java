@@ -184,7 +184,7 @@ public class FullDataUpdatePropagatorV2 implements IDebugRenderable, AutoCloseab
 								parentLocked = true;
 								this.dataUpdater.lockedPosSet.add(parentUpdatePos);
 								
-								try (FullDataSourceV2 parentDataSource = this.provider.get(parentUpdatePos))
+								try (FullDataSourceV2 parentDataSource = this.provider.get(parentUpdatePos)) // TODO can we cache anything in memory to speed up the propagation process? Compression/Disk IO is by far the slowest part of this process
 								{
 									// will return null if the file handler is shutting down
 									if (parentDataSource != null)
@@ -213,6 +213,8 @@ public class FullDataUpdatePropagatorV2 implements IDebugRenderable, AutoCloseab
 											}
 											finally
 											{
+												this.provider.repo.setApplyToParent(childPos, false);
+												
 												childReadLock.unlock();
 												this.dataUpdater.lockedPosSet.remove(childPos);
 											}
@@ -225,10 +227,6 @@ public class FullDataUpdatePropagatorV2 implements IDebugRenderable, AutoCloseab
 										}
 										
 										this.dataUpdater.updateDataSource(parentDataSource, false);
-										for (Long childPos : updatePosByParentPos.get(parentUpdatePos))
-										{
-											this.provider.repo.setApplyToParent(childPos, false);
-										}
 									}
 								}
 							}
@@ -339,12 +337,12 @@ public class FullDataUpdatePropagatorV2 implements IDebugRenderable, AutoCloseab
 											}
 											finally
 											{
+												this.provider.repo.setApplyToChild(parentUpdatePos, false);
+												
 												childWriteLock.unlock();
 												this.dataUpdater.lockedPosSet.remove(childPos);
 											}
 										}
-										
-										this.provider.repo.setApplyToChild(parentUpdatePos, false);
 									}
 								}
 							}
