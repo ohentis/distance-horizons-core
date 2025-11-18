@@ -182,7 +182,8 @@ public class PhantomArrayListPool
 								"Potential causes: \n" +
 								"1. your allocated memory isn't high enough \n" +
 								"2. your DH CPU preset is too high \n" +
-								"3. your DH quality preset is too high";
+								"3. your DH quality preset is too high \n" +
+								"4. you have other memory hungry mod(s)";
 						
 						LOGGER.warn(message);
 						if (Config.Common.Logging.Warning.showPoolInsufficientMemoryWarning.get())
