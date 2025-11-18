@@ -97,10 +97,9 @@ public class DhApiGraphicsConfig implements IDhApiGraphicsConfig
 	public IDhApiConfigValue<Boolean> tintWithAvoidedBlocks()
 	{ return new DhApiConfigValue<Boolean, Boolean>(Config.Client.Advanced.Graphics.Quality.tintWithAvoidedBlocks); }
 	
-	// TODO re-implement
-//	@Override
-//	public IDhApiConfigValue<Integer> getBiomeBlending()
-//	{ return new DhApiConfigValue<Integer, Integer>(Quality.lodBiomeBlending); }
+	@Override
+	public IDhApiConfigValue<Integer> getBiomeBlending()
+	{ return new DhApiConfigValue<Integer, Integer>(Config.Client.Advanced.Graphics.Quality.lodBiomeBlending); }
 	
 	
 	
