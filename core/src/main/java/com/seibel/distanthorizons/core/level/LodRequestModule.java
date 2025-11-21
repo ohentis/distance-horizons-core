@@ -45,7 +45,6 @@ import java.util.function.Supplier;
 
 /**
  * Handles both single-player/server-side world gen and client side LOD requests.
- * TODO rename
  */
 public class LodRequestModule implements Closeable
 {

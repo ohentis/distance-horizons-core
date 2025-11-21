@@ -24,6 +24,7 @@ import com.seibel.distanthorizons.api.interfaces.override.worldGenerator.IDhApiW
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.util.ExceptionUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IOverrideInjector;
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiDistantGeneratorMode;
@@ -125,7 +126,10 @@ public class BatchGenerator implements IDhApiWorldGenerator
 		}
 		catch (Exception e)
 		{
-			if (!LodUtil.isInterruptOrReject(e)) LOGGER.error("Error starting future for chunk generation", e);
+			if (!ExceptionUtil.isInterruptOrReject(e))
+			{
+				LOGGER.error("Error starting future for chunk generation", e);
+			}
 			CompletableFuture<Void> future = new CompletableFuture<>();
 			future.completeExceptionally(e);
 			return future;

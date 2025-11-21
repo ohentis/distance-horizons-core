@@ -40,6 +40,7 @@ import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.transformers.LodDataBuilder;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
+import com.seibel.distanthorizons.core.util.ExceptionUtil;
 import com.seibel.distanthorizons.core.util.LodUtil.AssertFailureException;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
 import com.seibel.distanthorizons.core.util.objects.DataCorruptedException;
@@ -358,7 +359,7 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 				if (exception != null)
 				{
 					// don't log the shutdown exceptions
-					if (!LodUtil.isInterruptOrReject(exception))
+					if (!ExceptionUtil.isInterruptOrReject(exception))
 					{
 						LOGGER.error("Error generating data for pos: " + DhSectionPos.toString(taskPos), exception);
 					}
