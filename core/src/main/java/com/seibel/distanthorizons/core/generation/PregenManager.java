@@ -111,7 +111,7 @@ public class PregenManager
 					}
 					
 					long timeSincePreviousTaskFinish = System.currentTimeMillis() - this.lastTaskFinishTime.getAndSet(System.currentTimeMillis());
-					this.averageTaskCompletionIntervalMs.addValue(timeSincePreviousTaskFinish);
+					this.averageTaskCompletionIntervalMs.add(timeSincePreviousTaskFinish);
 					
 					PregenState.this.fillPendingQueue();
 				})

@@ -346,7 +346,7 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 			long totalGenTimeInMs = System.currentTimeMillis() - generationStartMsTime;
 			int chunkCount = generationRequestChunkWidthCount * generationRequestChunkWidthCount;
 			double timePerChunk = (double)totalGenTimeInMs / (double)chunkCount;
-			this.rollingAverageChunkGenTimeInMs.addValue(timePerChunk);
+			this.rollingAverageChunkGenTimeInMs.add(timePerChunk);
 		});
 		
 		newTaskGroup.genFuture = generationFuture;

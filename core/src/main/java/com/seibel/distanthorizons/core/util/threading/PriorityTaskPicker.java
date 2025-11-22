@@ -320,7 +320,7 @@ public class PriorityTaskPicker
 			finally
 			{
 				long timeElapsed = System.nanoTime() - startTime;
-				this.executor.runTimeInMsRollingAverage.addValue(TimeUnit.NANOSECONDS.toMillis(timeElapsed));
+				this.executor.runTimeInMsRollingAverage.add(TimeUnit.NANOSECONDS.toMillis(timeElapsed));
 				
 				// Update variables related to task status
 				this.parentTaskPicker.occupiedThreadsRef.getAndDecrement();
