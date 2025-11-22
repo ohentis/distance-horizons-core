@@ -92,7 +92,7 @@ public class BatchGenerator implements IDhApiWorldGenerator
 	public CompletableFuture<Void> generateChunks(
 			int chunkPosMinX,
 			int chunkPosMinZ,
-			int generationRequestChunkWidthCount,
+			int chunkWidthCount,
 			byte targetDataDetail,
 			EDhApiDistantGeneratorMode generatorMode,
 			ExecutorService worldGeneratorThreadPool,
@@ -123,8 +123,8 @@ public class BatchGenerator implements IDhApiWorldGenerator
 		Consumer<IChunkWrapper> consumerWrapper = (chunkWrapper) -> resultConsumer.accept(new Object[]{chunkWrapper});
 		try
 		{
-			return this.generationEnvironment.generateChunks(
-					chunkPosMinX, chunkPosMinZ, generationRequestChunkWidthCount, 
+			return this.generationEnvironment.queueGenEvent(
+					chunkPosMinX, chunkPosMinZ, chunkWidthCount, 
 					generatorMode, targetStep, 
 					worldGeneratorThreadPool, consumerWrapper);
 		}

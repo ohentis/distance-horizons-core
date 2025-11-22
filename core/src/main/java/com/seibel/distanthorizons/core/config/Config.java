@@ -1576,14 +1576,6 @@ public class Config
 							+ "This can be useful for debugging.")
 					.build();
 			
-			public static ConfigEntry<EDhApiLoggerLevel> logWorldGenPerformanceToFile = new ConfigEntry.Builder<EDhApiLoggerLevel>()
-					.setChatCommandName("logging.logWorldGenPerformance")
-					.set(EDhApiLoggerLevel.INFO)
-					.comment(""
-							+ "If enabled, the mod will log performance about the world generation process. \n"
-							+ "This can be useful for debugging.")
-					.build();
-			
 			public static ConfigEntry<EDhApiLoggerLevel> logWorldGenChunkLoadEventToFile = new ConfigEntry.Builder<EDhApiLoggerLevel>()
 					.setChatCommandName("logging.logWorldGenLoadEvent")
 					.set(EDhApiLoggerLevel.INFO)

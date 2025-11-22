@@ -21,7 +21,6 @@ package com.seibel.distanthorizons.core.wrapperInterfaces.worldGeneration;
 
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiDistantGeneratorMode;
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
-import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 
 import java.util.concurrent.CompletableFuture;
@@ -32,7 +31,7 @@ public interface IBatchGeneratorEnvironmentWrapper extends AutoCloseable
 {
 	void updateAllFutures();
 	
-	CompletableFuture<Void> generateChunks(
+	CompletableFuture<Void> queueGenEvent(
 			int minX, int minZ, int genSize, 
 			EDhApiDistantGeneratorMode generatorMode, EDhApiWorldGenerationStep targetStep,
 			ExecutorService worldGeneratorThreadPool, Consumer<IChunkWrapper> resultConsumer);
