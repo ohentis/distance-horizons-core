@@ -41,34 +41,38 @@ public class EventTimer
 	
 	public EventTimer(String firstEventName)
 	{
-		lastEventNs = System.nanoTime();
-		events.add(new Event(firstEventName));
+		this.lastEventNs = System.nanoTime();
+		this.events.add(new Event(firstEventName));
 	}
 	
 	public void nextEvent(String name)
 	{
 		long timeNs = System.nanoTime();
-		if (lastEventNs != -1 && !events.isEmpty() && events.get(events.size() - 1).timeNs == -1)
+		if (this.lastEventNs != -1
+			&& !this.events.isEmpty() 
+			&& this.events.get(this.events.size() - 1).timeNs == -1)
 		{
-			events.get(events.size() - 1).timeNs = timeNs - lastEventNs;
+			this.events.get(this.events.size() - 1).timeNs = timeNs - this.lastEventNs;
 		}
-		lastEventNs = timeNs;
-		events.add(new Event(name));
+		this.lastEventNs = timeNs;
+		this.events.add(new Event(name));
 	}
 	
 	public void complete()
 	{
 		long timeNs = System.nanoTime();
-		if (lastEventNs != -1 && !events.isEmpty() && events.get(events.size() - 1).timeNs == -1)
+		if (this.lastEventNs != -1 
+			&& !this.events.isEmpty() 
+			&& this.events.get(this.events.size() - 1).timeNs == -1)
 		{
-			events.get(events.size() - 1).timeNs = timeNs - lastEventNs;
+			this.events.get(this.events.size() - 1).timeNs = timeNs - this.lastEventNs;
 		}
-		lastEventNs = -1;
+		this.lastEventNs = -1;
 	}
 	
 	public long getEventTimeNs(String name)
 	{
-		for (Event e : events)
+		for (Event e : this.events)
 		{
 			if (e.name.equals(name))
 			{
@@ -81,7 +85,7 @@ public class EventTimer
 	public long getTotalTimeNs()
 	{
 		long total = 0;
-		for (Event e : events)
+		for (Event e : this.events)
 		{
 			if (e.timeNs != -1)
 			{
@@ -94,7 +98,7 @@ public class EventTimer
 	public String toString()
 	{
 		StringBuilder sb = new StringBuilder();
-		for (Event e : events)
+		for (Event e : this.events)
 		{
 			if (e.timeNs != -1)
 			{
