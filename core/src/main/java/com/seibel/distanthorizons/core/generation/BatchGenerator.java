@@ -26,11 +26,11 @@ import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.util.ExceptionUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.worldGeneration.IBatchGeneratorEnvironmentWrapper;
 import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IOverrideInjector;
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiDistantGeneratorMode;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.IWrapperFactory;
-import com.seibel.distanthorizons.core.wrapperInterfaces.worldGeneration.AbstractBatchGenerationEnvironmentWrapper;
 import com.seibel.distanthorizons.core.logging.DhLogger;
 
 import java.util.concurrent.CompletableFuture;
@@ -43,10 +43,10 @@ import java.util.function.Consumer;
  */
 public class BatchGenerator implements IDhApiWorldGenerator
 {
-	private static final IWrapperFactory FACTORY = SingletonInjector.INSTANCE.get(IWrapperFactory.class);
+	private static final IWrapperFactory WRAPPER_FACTORY = SingletonInjector.INSTANCE.get(IWrapperFactory.class);
 	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
 	
-	public AbstractBatchGenerationEnvironmentWrapper generationEnvironment;
+	public IBatchGeneratorEnvironmentWrapper generationEnvironment;
 	public IDhLevel targetDhLevel;
 	
 	
@@ -58,7 +58,7 @@ public class BatchGenerator implements IDhApiWorldGenerator
 	public BatchGenerator(IDhLevel targetDhLevel)
 	{
 		this.targetDhLevel = targetDhLevel;
-		this.generationEnvironment = FACTORY.createBatchGenerator(targetDhLevel);
+		this.generationEnvironment = WRAPPER_FACTORY.createBatchGenerator(targetDhLevel);
 		LOGGER.info("Batch Chunk Generator initialized");
 	}
 	
@@ -84,15 +84,19 @@ public class BatchGenerator implements IDhApiWorldGenerator
 	
 	
 	
-	
 	//===================//
 	// generator methods //
 	//===================//
 	
 	@Override
 	public CompletableFuture<Void> generateChunks(
-			int chunkPosMinX, int chunkPosMinZ, int generationRequestChunkWidthCount, byte targetDataDetail, EDhApiDistantGeneratorMode generatorMode,
-			ExecutorService worldGeneratorThreadPool, Consumer<Object[]> resultConsumer)
+			int chunkPosMinX,
+			int chunkPosMinZ,
+			int generationRequestChunkWidthCount,
+			byte targetDataDetail,
+			EDhApiDistantGeneratorMode generatorMode,
+			ExecutorService worldGeneratorThreadPool,
+			Consumer<Object[]> resultConsumer)
 	{
 		EDhApiWorldGenerationStep targetStep = null;
 		switch (generatorMode)
@@ -105,7 +109,7 @@ public class BatchGenerator implements IDhApiWorldGenerator
 			//	targetStep = EDhApiWorldGenerationStep.NOISE; // Stone only. Requires a fake surface
 			//	break;
 			case SURFACE:
-				targetStep = EDhApiWorldGenerationStep.SURFACE;
+				targetStep = EDhApiWorldGenerationStep.SURFACE; // TODO could we ignore adjacent chunks for a speedup?
 				break;
 			case FEATURES:
 				targetStep = EDhApiWorldGenerationStep.FEATURES;
@@ -128,8 +132,9 @@ public class BatchGenerator implements IDhApiWorldGenerator
 		{
 			if (!ExceptionUtil.isInterruptOrReject(e))
 			{
-				LOGGER.error("Error starting future for chunk generation", e);
+				LOGGER.error("Error starting future for chunk generation, error: ["+e.getMessage()+"].", e);
 			}
+			
 			CompletableFuture<Void> future = new CompletableFuture<>();
 			future.completeExceptionally(e);
 			return future;
@@ -148,9 +153,10 @@ public class BatchGenerator implements IDhApiWorldGenerator
 	@Override
 	public void close()
 	{
-		LOGGER.info(BatchGenerator.class.getSimpleName() + " shutting down...");
-		this.generationEnvironment.stop();
+		LOGGER.info("["+BatchGenerator.class.getSimpleName()+"] shutting down...");
+		this.generationEnvironment.close();
 	}
+	
 	
 	
 }
