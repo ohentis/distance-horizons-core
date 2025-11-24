@@ -56,10 +56,7 @@ public class DhDataInputStream extends DataInputStream
 	//=============//
 	
 	public static DhDataInputStream create(ByteArrayList byteArrayList, EDhApiDataCompressionMode compressionMode) throws IOException
-	{
-		return create(byteArrayList.toByteArray(), compressionMode);
-	}
-	
+	{ return create(byteArrayList.toByteArray(), compressionMode); }
 	public static DhDataInputStream create(byte[] byteArray, EDhApiDataCompressionMode compressionMode) throws IOException
 	{
 		// Z_Std handling compression outside the stream provides a significant performance boost

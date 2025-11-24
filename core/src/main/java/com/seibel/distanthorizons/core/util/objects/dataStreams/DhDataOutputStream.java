@@ -73,11 +73,8 @@ public class DhDataOutputStream extends DataOutputStream
 		{
 			switch (compressionMode)
 			{
-				case Z_STD:
-					// Z_Std handling compression outside the stream provides a significant performance boost
 				case UNCOMPRESSED:
-					return stream;
-				
+					return stream;	
 				case LZ4:
 					return new LZ4FrameOutputStream(stream, 
 							LZ4FrameOutputStream.BLOCKSIZE.SIZE_64KB, -1L,
@@ -88,6 +85,10 @@ public class DhDataOutputStream extends DataOutputStream
 							//LZ4Factory.nativeInstance().fastCompressor(),
 							//XXHashFactory.nativeInstance().hash32(),
 							LZ4FrameOutputStream.FLG.Bits.BLOCK_INDEPENDENCE);
+				case Z_STD:
+					// ZStd compression should be handled after the stream is closed
+					// just return the stream
+					return stream;
 				case LZMA2:
 					// using an array cache significantly reduces GC pressure
 					ResettableArrayCache arrayCache = LZMA_RESETTABLE_ARRAY_CACHE_GETTER.get();
@@ -98,7 +99,8 @@ public class DhDataOutputStream extends DataOutputStream
 							XZ.CHECK_CRC64, arrayCache);
 				
 				case Z_STD_STREAM: // deprecated, only used for legacy support
-					throw new UnsupportedOperationException("Z_Std streams is deprecated and shouldn't be used for encoding. The faster block encoding format should be used instead.");
+					//return new ZstdOutputStream(stream, 3, true, true);
+					throw new UnsupportedOperationException("Z_STD_STREAM is deprecated and shouldn't be used for encoding. The faster block encoding format should be used instead.");
 					
 				default:
 					throw new IllegalArgumentException("No compressor defined for ["+compressionMode+"]");
