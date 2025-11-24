@@ -50,6 +50,16 @@ public class DhDataInputStream extends DataInputStream
 	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
 	
 	
+	
+	//=============//
+	// constructor //
+	//=============//
+	
+	public static DhDataInputStream create(ByteArrayList byteArrayList, EDhApiDataCompressionMode compressionMode) throws IOException
+	{
+		return create(byteArrayList.toByteArray(), compressionMode);
+	}
+	
 	public static DhDataInputStream create(byte[] byteArray, EDhApiDataCompressionMode compressionMode) throws IOException
 	{
 		// Z_Std handling compression outside the stream provides a significant performance boost
@@ -103,6 +113,11 @@ public class DhDataInputStream extends DataInputStream
 	}
 	
 	
+	
+	//================//
+	// base overrides //
+	//================//
+	
 	@Override 
 	public int read() throws IOException
 	{
@@ -132,10 +147,6 @@ public class DhDataInputStream extends DataInputStream
 		}
 	}
 	
-	// TODO at one point closing the streams caused errors, is that due to a bug with LZMA streams or some bug in DH's code that was since fixed?
-	//  if streams aren't closed that cause cause higher-than-expected native memory use if the GC decides
-	//  it doesn't want to clear the stream objects
-	//@Override
-	//public void close() throws IOException { /* Do nothing. */ }
+	
 	
 }

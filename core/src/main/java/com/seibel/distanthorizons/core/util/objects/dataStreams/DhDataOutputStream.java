@@ -19,9 +19,11 @@
 
 package com.seibel.distanthorizons.core.util.objects.dataStreams;
 
+import com.github.luben.zstd.Zstd;
 import com.github.luben.zstd.ZstdOutputStream;
 import com.seibel.distanthorizons.api.enums.config.EDhApiDataCompressionMode;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import net.jpountz.lz4.LZ4Factory;
 import net.jpountz.lz4.LZ4FrameOutputStream;
 import net.jpountz.xxhash.XXHashFactory;
@@ -41,24 +43,40 @@ public class DhDataOutputStream extends DataOutputStream
 	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
 	private static final ThreadLocal<ResettableArrayCache> LZMA_RESETTABLE_ARRAY_CACHE_GETTER = ThreadLocal.withInitial(() -> new ResettableArrayCache(new LzmaArrayCache()));
 	
+	private final ByteArrayList outputByteArray;
+	private final ByteArrayOutputStream wrappedByteStream;
+	private final EDhApiDataCompressionMode compressionMode;
 	
 	
-	public DhDataOutputStream(OutputStream stream, EDhApiDataCompressionMode compressionMode) throws IOException
+	
+	//=============//
+	// constructor //
+	//=============//
+	
+	/**
+	 * @param outputByteArray where the contents of this stream will be written to when done
+	 */
+	public static DhDataOutputStream create(EDhApiDataCompressionMode compressionMode, ByteArrayList outputByteArray) throws IOException
+	{ return new DhDataOutputStream(new ByteArrayOutputStream(), compressionMode, outputByteArray); }
+	private DhDataOutputStream(ByteArrayOutputStream wrappedByteStream, EDhApiDataCompressionMode compressionMode, ByteArrayList outputByteArray) throws IOException
 	{ 
-		super(warpStream(new BufferedOutputStream(stream), compressionMode)); 
+		super(warpStream(wrappedByteStream, compressionMode));
+
+		this.wrappedByteStream = wrappedByteStream;
+		this.outputByteArray = outputByteArray;
+		this.compressionMode = compressionMode;
 	}
-	private static OutputStream warpStream(OutputStream stream, EDhApiDataCompressionMode compressionMode) throws IOException
+	private static OutputStream warpStream(ByteArrayOutputStream stream, EDhApiDataCompressionMode compressionMode) throws IOException
 	{
 		try
 		{
 			switch (compressionMode)
 			{
+				case Z_STD:
+					// Z_Std handling compression outside the stream provides a significant performance boost
 				case UNCOMPRESSED:
 					return stream;
 				
-				case Z_STD:
-					//return new ZstdOutputStream(stream, 3, true, true);
-					return stream;
 				case LZ4:
 					return new LZ4FrameOutputStream(stream, 
 							LZ4FrameOutputStream.BLOCKSIZE.SIZE_64KB, -1L,
@@ -91,10 +109,29 @@ public class DhDataOutputStream extends DataOutputStream
 	}
 	
 	
-	// TODO at one point closing the streams caused errors, is that due to a bug with LZMA streams or some bug in DH's code that was since fixed?
-	//  if streams aren't closed that cause cause higher-than-expected native memory use if the GC decides
-	//  it doesn't want to clear the stream objects
-	//@Override
-	//public void close() throws IOException { /* Do nothing. */ }
+	
+	//================//
+	// base overrides //
+	//================//
+	
+	@Override
+	public void close() throws IOException 
+	{
+		super.close();
+		
+		
+		this.outputByteArray.clear();
+		if (this.compressionMode == EDhApiDataCompressionMode.Z_STD)
+		{
+			this.outputByteArray.addElements(0, Zstd.compress(this.wrappedByteStream.toByteArray(), 3));
+		}
+		else
+		{
+			this.outputByteArray.addElements(0, this.wrappedByteStream.toByteArray());
+		}
+		
+	}
+	
+	
 	
 }

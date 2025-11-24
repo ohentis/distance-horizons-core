@@ -577,7 +577,7 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 				{
 					ByteArrayList byteArrayList = new ByteArrayList();
 					putAllBytes(result.getBinaryStream("ColumnGenerationStep"), byteArrayList);
-					try(DhDataInputStream compressedIn = DhDataInputStream.create(byteArrayList.toByteArray(), compressionModeEnum))
+					try(DhDataInputStream compressedIn = DhDataInputStream.create(byteArrayList, compressionModeEnum))
 					{
 						putAllBytes(compressedIn, outputByteArray);
 					}

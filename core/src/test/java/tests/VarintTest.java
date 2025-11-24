@@ -63,8 +63,8 @@ public class VarintTest
 	private static void testSingleVarint(int value)
 	{
 		// write to stream
-		ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-		try (DhDataOutputStream outputStream = new DhDataOutputStream(byteArrayOutputStream, EDhApiDataCompressionMode.UNCOMPRESSED))
+		ByteArrayList byteArrayList = new ByteArrayList();
+		try (DhDataOutputStream outputStream = DhDataOutputStream.create(EDhApiDataCompressionMode.UNCOMPRESSED, byteArrayList))
 		{
 			int encodedValue = VarintUtil.zigzagEncode(value);
 			VarintUtil.writeVarint(outputStream, encodedValue); // varint requires zig-zag encoding to function
@@ -77,7 +77,7 @@ public class VarintTest
 		
 		
 		// read stream
-		try (DhDataInputStream inputStream = DhDataInputStream.create(byteArrayOutputStream.toByteArray(), EDhApiDataCompressionMode.UNCOMPRESSED))
+		try (DhDataInputStream inputStream = DhDataInputStream.create(byteArrayList, EDhApiDataCompressionMode.UNCOMPRESSED))
 		{
 			int encodedValue = VarintUtil.readVarint(inputStream);
 			int decodedValue = VarintUtil.zigzagDecode(encodedValue);
