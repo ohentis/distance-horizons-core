@@ -63,7 +63,17 @@ public enum EDhApiDataCompressionMode
 	 * Write Speed: 15.13 MS / DTO <br>
 	 * Compression ratio: 0.2606 <br>
 	 */
-	Z_STD(2),
+	Z_STD(4),
+	
+	/**
+	 * Similar to {@link EDhApiDataCompressionMode#Z_STD}
+	 * except slower.
+	 * <br>
+	 * This option is only provided for legacy support when processing old databases.
+	 */
+	@Deprecated
+	@DisallowSelectingViaConfigGui
+	Z_STD_STREAM(2),
 	
 	
 	/** 

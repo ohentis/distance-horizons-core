@@ -572,7 +572,6 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 				EDhApiDataCompressionMode compressionModeEnum = EDhApiDataCompressionMode.getFromValue(compressionModeEnumValue);
 				
 				// decompress the data
-				
 				try
 				{
 					ByteArrayList byteArrayList = new ByteArrayList();

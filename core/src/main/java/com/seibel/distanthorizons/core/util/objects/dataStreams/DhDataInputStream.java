@@ -79,27 +79,31 @@ public class DhDataInputStream extends DataInputStream
 	{ 
 		super(warpStream(stream, compressionMode)); 
 	}
+	@SuppressWarnings("deprecation")
 	private static InputStream warpStream(ByteArrayInputStream stream, EDhApiDataCompressionMode compressionMode) throws IOException
 	{
 		try
 		{
 			switch (compressionMode)
 			{
-				case Z_STD:
-					// ZStd compression should be handled before this point
-					// just return the stream
 				case UNCOMPRESSED:
 					return stream;
 				case LZ4:
 					return new LZ4FrameInputStream(stream);
+				case Z_STD:
+					// ZStd compression should be handled before this point
+					// just return the stream
+					return stream;
 				case LZMA2:
 					// using an array cache significantly reduces GC pressure
 					ResettableArrayCache arrayCache = LZMA_RESETTABLE_ARRAY_CACHE_GETTER.get();
 					arrayCache.reset();
-					
 					// Note: all LZMA/XZ compressors can be decompressed using this same InputStream
 					return new XZInputStream(stream, arrayCache);
 				
+				case Z_STD_STREAM: // deprecated, only used for legacy support
+					return new ZstdInputStream(stream, RecyclingBufferPool.INSTANCE);
+					
 				default:
 					throw new IllegalArgumentException("No compressor defined for [" + compressionMode + "]");
 			}

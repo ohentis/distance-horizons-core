@@ -66,6 +66,7 @@ public class DhDataOutputStream extends DataOutputStream
 		this.outputByteArray = outputByteArray;
 		this.compressionMode = compressionMode;
 	}
+	@SuppressWarnings("deprecation")
 	private static OutputStream warpStream(ByteArrayOutputStream stream, EDhApiDataCompressionMode compressionMode) throws IOException
 	{
 		try
@@ -96,6 +97,9 @@ public class DhDataOutputStream extends DataOutputStream
 					return new XZOutputStream(stream, new LZMA2Options(3),
 							XZ.CHECK_CRC64, arrayCache);
 				
+				case Z_STD_STREAM: // deprecated, only used for legacy support
+					throw new UnsupportedOperationException("Z_Std streams is deprecated and shouldn't be used for encoding. The faster block encoding format should be used instead.");
+					
 				default:
 					throw new IllegalArgumentException("No compressor defined for ["+compressionMode+"]");
 				}
