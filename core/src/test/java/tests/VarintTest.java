@@ -24,6 +24,7 @@ import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV2DTO;
 import com.seibel.distanthorizons.core.sql.dto.util.VarintUtil;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataInputStream;
 import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataOutputStream;
+import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -43,12 +44,12 @@ public class VarintTest
 		// zig zag encoding is needed for varint handling, so test it first
 		for (int i = -256; i < 256; i++)
 		{
-			//testZigZagEncoding(i);
+			testZigZagEncoding(i);
 		}
 		
 		for (int i = -256; i < 256; i++)
 		{
-			//testSingleVarint(i);
+			testSingleVarint(i);
 		}
 	}
 	
