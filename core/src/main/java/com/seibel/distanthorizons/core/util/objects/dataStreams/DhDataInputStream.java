@@ -63,7 +63,8 @@ public class DhDataInputStream extends DataInputStream
 				case LZ4:
 					return new LZ4FrameInputStream(stream);
 				case Z_STD:
-					return new ZstdInputStream(stream, RecyclingBufferPool.INSTANCE);
+					//return new ZstdInputStream(stream, RecyclingBufferPool.INSTANCE);
+					return stream;
 				case LZMA2:
 					// using an array cache significantly reduces GC pressure
 					ResettableArrayCache arrayCache = LZMA_RESETTABLE_ARRAY_CACHE_GETTER.get();

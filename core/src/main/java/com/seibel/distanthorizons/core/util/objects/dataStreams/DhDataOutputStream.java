@@ -57,7 +57,8 @@ public class DhDataOutputStream extends DataOutputStream
 					return stream;
 				
 				case Z_STD:
-					return new ZstdOutputStream(stream, 3, true, true);
+					//return new ZstdOutputStream(stream, 3, true, true);
+					return stream;
 				case LZ4:
 					return new LZ4FrameOutputStream(stream, 
 							LZ4FrameOutputStream.BLOCKSIZE.SIZE_64KB, -1L,
