@@ -354,17 +354,7 @@ public class FullDataSourceV2DTO
 			ByteArrayList inputCompressedDataByteArray, LongArrayList[] outputDataLongArray, 
 			EDhApiDataCompressionMode compressionModeEnum) throws IOException, DataCorruptedException
 	{
-		ByteArrayInputStream byteArrayInputStream;
-		if (compressionModeEnum == EDhApiDataCompressionMode.Z_STD)
-		{
-			byteArrayInputStream = new ByteArrayInputStream(Zstd.decompress(inputCompressedDataByteArray.toByteArray()));
-		}
-		else
-		{
-			byteArrayInputStream = new ByteArrayInputStream(inputCompressedDataByteArray.elements());
-		}
-		
-		try (DhDataInputStream compressedIn = new DhDataInputStream(byteArrayInputStream, compressionModeEnum))
+		try (DhDataInputStream compressedIn = DhDataInputStream.create(inputCompressedDataByteArray.toByteArray(), compressionModeEnum))
 		{
 			// read the data
 			int dataArrayLength = FullDataSourceV2.WIDTH * FullDataSourceV2.WIDTH;
@@ -569,17 +559,8 @@ public class FullDataSourceV2DTO
 			maxZ = FullDataSourceV2.WIDTH-1;
 		}
 		
-		ByteArrayInputStream byteArrayInputStream;
-		if (compressionModeEnum == EDhApiDataCompressionMode.Z_STD)
-		{
-			byteArrayInputStream = new ByteArrayInputStream(Zstd.decompress(inputCompressedDataByteArray.toByteArray()));
-		}
-		else
-		{
-			byteArrayInputStream = new ByteArrayInputStream(inputCompressedDataByteArray.elements());
-		}
 		
-		try (DhDataInputStream compressedIn = new DhDataInputStream(byteArrayInputStream, compressionModeEnum))
+		try (DhDataInputStream compressedIn = DhDataInputStream.create(inputCompressedDataByteArray.toByteArray(), compressionModeEnum))
 		{
 			// 1. column counts, preallocate
 			for (int x = minX; x < maxX; x++)
@@ -725,17 +706,7 @@ public class FullDataSourceV2DTO
 	}
 	private static void readBlobToGenerationSteps(ByteArrayList inputCompressedDataByteArray, ByteArrayList outputByteArray, EDhApiDataCompressionMode compressionModeEnum) throws IOException, DataCorruptedException
 	{
-		ByteArrayInputStream byteArrayInputStream;
-		if (compressionModeEnum == EDhApiDataCompressionMode.Z_STD)
-		{
-			byteArrayInputStream = new ByteArrayInputStream(Zstd.decompress(inputCompressedDataByteArray.toByteArray()));
-		}
-		else
-		{
-			byteArrayInputStream = new ByteArrayInputStream(inputCompressedDataByteArray.elements());
-		}
-		
-		try(DhDataInputStream compressedIn = new DhDataInputStream(byteArrayInputStream, compressionModeEnum))
+		try(DhDataInputStream compressedIn = DhDataInputStream.create(inputCompressedDataByteArray.toByteArray(), compressionModeEnum))
 		{
 			compressedIn.readFully(outputByteArray.elements(), 0, FullDataSourceV2.WIDTH * FullDataSourceV2.WIDTH);
 		}
@@ -768,17 +739,7 @@ public class FullDataSourceV2DTO
 	}
 	private static void readBlobToWorldCompressionMode(ByteArrayList inputCompressedDataByteArray, ByteArrayList outputByteArray, EDhApiDataCompressionMode compressionModeEnum) throws IOException, DataCorruptedException
 	{
-		ByteArrayInputStream byteArrayInputStream;
-		if (compressionModeEnum == EDhApiDataCompressionMode.Z_STD)
-		{
-			byteArrayInputStream = new ByteArrayInputStream(Zstd.decompress(inputCompressedDataByteArray.toByteArray()));
-		}
-		else
-		{
-			byteArrayInputStream = new ByteArrayInputStream(inputCompressedDataByteArray.elements());
-		}
-		
-		try(DhDataInputStream compressedIn = new DhDataInputStream(byteArrayInputStream, compressionModeEnum))
+		try(DhDataInputStream compressedIn = DhDataInputStream.create(inputCompressedDataByteArray.toByteArray(), compressionModeEnum))
 		{
 			compressedIn.readFully(outputByteArray.elements(), 0, FullDataSourceV2.WIDTH * FullDataSourceV2.WIDTH);
 		}
@@ -808,17 +769,7 @@ public class FullDataSourceV2DTO
 	}
 	private static FullDataPointIdMap readBlobToDataMapping(ByteArrayList inputCompressedDataByteArray, long pos, @NotNull ILevelWrapper levelWrapper, EDhApiDataCompressionMode compressionModeEnum) throws IOException, InterruptedException, DataCorruptedException
 	{
-		ByteArrayInputStream byteArrayInputStream;
-		if (compressionModeEnum == EDhApiDataCompressionMode.Z_STD)
-		{
-			byteArrayInputStream = new ByteArrayInputStream(Zstd.decompress(inputCompressedDataByteArray.toByteArray()));
-		}
-		else
-		{
-			byteArrayInputStream = new ByteArrayInputStream(inputCompressedDataByteArray.elements());
-		}
-		
-		try (DhDataInputStream compressedIn = new DhDataInputStream(byteArrayInputStream, compressionModeEnum))
+		try (DhDataInputStream compressedIn = DhDataInputStream.create(inputCompressedDataByteArray.toByteArray(), compressionModeEnum))
 		{
 			FullDataPointIdMap mapping = FullDataPointIdMap.deserialize(compressedIn, pos, levelWrapper);
 			return mapping;

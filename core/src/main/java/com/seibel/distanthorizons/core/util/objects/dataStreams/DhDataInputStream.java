@@ -20,9 +20,11 @@
 package com.seibel.distanthorizons.core.util.objects.dataStreams;
 
 import com.github.luben.zstd.RecyclingBufferPool;
+import com.github.luben.zstd.Zstd;
 import com.github.luben.zstd.ZstdInputStream;
 import com.seibel.distanthorizons.api.enums.config.EDhApiDataCompressionMode;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import net.jpountz.lz4.LZ4FrameInputStream;
 import org.apache.logging.log4j.LogManager;
 import com.seibel.distanthorizons.core.logging.DhLogger;
@@ -48,23 +50,38 @@ public class DhDataInputStream extends DataInputStream
 	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
 	
 	
-	public DhDataInputStream(InputStream stream, EDhApiDataCompressionMode compressionMode) throws IOException
-	{ 
-		super(warpStream(new BufferedInputStream(stream), compressionMode)); 
+	public static DhDataInputStream create(byte[] byteArray, EDhApiDataCompressionMode compressionMode) throws IOException
+	{
+		// Z_Std handling compression outside the stream provides a significant performance boost
+		ByteArrayInputStream byteArrayInputStream;
+		if (compressionMode == EDhApiDataCompressionMode.Z_STD)
+		{
+			byteArrayInputStream = new ByteArrayInputStream(Zstd.decompress(byteArray));
+		}
+		else
+		{
+			byteArrayInputStream = new ByteArrayInputStream(byteArray);
+		}
+		
+		return new DhDataInputStream(byteArrayInputStream, compressionMode);
 	}
-	private static InputStream warpStream(InputStream stream, EDhApiDataCompressionMode compressionMode) throws IOException
+	private DhDataInputStream(ByteArrayInputStream stream, EDhApiDataCompressionMode compressionMode) throws IOException
+	{ 
+		super(warpStream(stream, compressionMode)); 
+	}
+	private static InputStream warpStream(ByteArrayInputStream stream, EDhApiDataCompressionMode compressionMode) throws IOException
 	{
 		try
 		{
 			switch (compressionMode)
 			{
+				case Z_STD:
+					// ZStd compression should be handled before this point
+					// just return the stream
 				case UNCOMPRESSED:
 					return stream;
 				case LZ4:
 					return new LZ4FrameInputStream(stream);
-				case Z_STD:
-					//return new ZstdInputStream(stream, RecyclingBufferPool.INSTANCE);
-					return stream;
 				case LZMA2:
 					// using an array cache significantly reduces GC pressure
 					ResettableArrayCache arrayCache = LZMA_RESETTABLE_ARRAY_CACHE_GETTER.get();

@@ -77,9 +77,7 @@ public class VarintTest
 		
 		
 		// read stream
-		byte[] byteArray = byteArrayOutputStream.toByteArray();
-		ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(byteArray);
-		try (DhDataInputStream inputStream = new DhDataInputStream(byteArrayInputStream, EDhApiDataCompressionMode.UNCOMPRESSED))
+		try (DhDataInputStream inputStream = DhDataInputStream.create(byteArrayOutputStream.toByteArray(), EDhApiDataCompressionMode.UNCOMPRESSED))
 		{
 			int encodedValue = VarintUtil.readVarint(inputStream);
 			int decodedValue = VarintUtil.zigzagDecode(encodedValue);
