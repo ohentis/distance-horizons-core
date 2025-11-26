@@ -975,7 +975,9 @@
   "distanthorizons.config.enum.EDhApiDataCompressionMode.LZ4":
     "Fastest/Big - LZ4",
   "distanthorizons.config.enum.EDhApiDataCompressionMode.Z_STD":
-    "Fast/Small - Z_STD",
+    "Fastest/Small - Z_STD - Block",
+  "distanthorizons.config.enum.EDhApiDataCompressionMode.Z_STD_STREAM":
+    "Fast/Small - Z_STD - Stream",
   "distanthorizons.config.enum.EDhApiDataCompressionMode.LZMA2":
     "Slow/Smallest - LZMA2",
     
