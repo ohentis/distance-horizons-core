@@ -289,13 +289,13 @@ public class LodDataBuilder
 			for (int relBlockX = 0; relBlockX < LodUtil.CHUNK_WIDTH; relBlockX++)
 			{
 				List<DhApiTerrainDataPoint> columnDataPoints = apiChunk.getDataPoints(relBlockX, relBlockZ);
-				LodDataBuilder.correctDataColumnOrder(columnDataPoints);
+				LodDataBuilder.putListInTopDownOrder(columnDataPoints);
 				if (runAdditionalValidation)
 				{
 					validateOrThrowApiDataColumn(columnDataPoints);
 				}
 				
-				LongArrayList packedDataPoints = convertApiDataPointListToPackedLongArray(columnDataPoints, dataSource, apiChunk.bottomYBlockPos);
+				LongArrayList packedDataPoints = convertApiDataPointListToPackedLongArray(columnDataPoints, dataSource, apiChunk.bottomYBlockPos, runAdditionalValidation);
 				
 				// TODO add the ability for API users to define a different compression mode
 				//  or add a "unkown" compression mode
@@ -317,41 +317,97 @@ public class LodDataBuilder
 	
 	/** @see FullDataPointUtil */
 	public static LongArrayList convertApiDataPointListToPackedLongArray(
-			@Nullable List<DhApiTerrainDataPoint> columnDataPoints, FullDataSourceV2 dataSource,
-			int bottomYBlockPos) throws DataCorruptedException
+			@Nullable List<DhApiTerrainDataPoint> topDownColumnDataPoints, FullDataSourceV2 dataSource,
+			int bottomYBlockPos, boolean runAdditionalValidation) throws DataCorruptedException
 	{
-		// this null check does 2 nice things at the same time:
-		// if columnDataPoints is null,
-		// then packedDataPoints will be of length 0
-		// AND the below loop won't run.
-		int size = (columnDataPoints != null) ? columnDataPoints.size() : 0;
-		
-		// TODO make missing air LODs
-		// TODO merge duplicate datapoints
-		LongArrayList packedDataPoints = new LongArrayList(new long[size]);
-		for (int index = 0; index < size; index++)
+		if (topDownColumnDataPoints == null 
+			|| topDownColumnDataPoints.size() == 0)
 		{
-			DhApiTerrainDataPoint dataPoint = columnDataPoints.get(index);
+			return new LongArrayList(0);
+		}
+		
+		
+		
+		// array to store data
+		int size = topDownColumnDataPoints.size();
+		LongArrayList packedDataPoints = new LongArrayList(size);
+		packedDataPoints.clear();
+		
+		
+		if (runAdditionalValidation)
+		{
+			// check for missing data
+			int lastTopY = Integer.MAX_VALUE;
+			for (int i = 0; i < size; i++)
+			{
+				DhApiTerrainDataPoint apiDataPoint = topDownColumnDataPoints.get(i);
+				
+				if (lastTopY != apiDataPoint.topYBlockPos
+					// the first index won't have a lastTopY value
+					&& i != 0)
+				{
+					throw new DataCorruptedException("LOD data has a gap between ["+lastTopY+"] and ["+apiDataPoint.bottomYBlockPos+"]. Empty areas should be filled with air datapoints so light propagates correctly.");
+				}
+				lastTopY = apiDataPoint.bottomYBlockPos;
+			}
+		}
+		
+		
+		// go through data from top down
+		long lastDataPoint = FullDataPointUtil.EMPTY_DATA_POINT;
+		for (int i = 0; i < size; i++)
+		{
+			DhApiTerrainDataPoint apiDataPoint = topDownColumnDataPoints.get(i);
 			
-			int id = dataSource.mapping.addIfNotPresentAndGetId(
-					(IBiomeWrapper) (dataPoint.biomeWrapper),
-					(IBlockStateWrapper) (dataPoint.blockStateWrapper)
+			int thisId = dataSource.mapping.addIfNotPresentAndGetId(
+					(IBiomeWrapper) (apiDataPoint.biomeWrapper),
+					(IBlockStateWrapper) (apiDataPoint.blockStateWrapper)
 			);
+			int thisHeight = (apiDataPoint.topYBlockPos - apiDataPoint.bottomYBlockPos);
 			
-			packedDataPoints.set(index, FullDataPointUtil.encode(
-					id,
-					dataPoint.topYBlockPos - dataPoint.bottomYBlockPos,
-					dataPoint.bottomYBlockPos - bottomYBlockPos,
-					(byte) (dataPoint.blockLightLevel),
-					(byte) (dataPoint.skyLightLevel)
-			));
+			int lastId = FullDataPointUtil.getId(lastDataPoint);
+			byte lastBlockLight = (byte)FullDataPointUtil.getBlockLight(lastDataPoint);
+			byte lastSkyLight = (byte)FullDataPointUtil.getSkyLight(lastDataPoint);
+			
+			
+			// if the ID and light are the same, merge the height
+			if (thisId == lastId
+				&& apiDataPoint.blockLightLevel == lastBlockLight
+				&& apiDataPoint.skyLightLevel == lastSkyLight
+				// the first index should always be added to the list
+				&& i != 0 )
+			{
+				// add adjacent height
+				int lastHeight = FullDataPointUtil.getHeight(lastDataPoint);
+				int newHeight = (lastHeight + thisHeight);
+				lastDataPoint = FullDataPointUtil.setHeight(lastDataPoint, newHeight);
+				
+				// subtract bottom Y
+				int lastBottomY = FullDataPointUtil.getBottomY(lastDataPoint);
+				int newBottomY = lastBottomY - thisHeight;
+				lastDataPoint = FullDataPointUtil.setBottomY(lastDataPoint, newBottomY);
+				 
+				packedDataPoints.set(packedDataPoints.size()-1, lastDataPoint);
+			}
+			else
+			{
+				// data changed, create a new datapoint
+				long dataPoint = FullDataPointUtil.encode(
+					thisId,
+					thisHeight,
+					apiDataPoint.bottomYBlockPos - bottomYBlockPos,
+					(byte) (apiDataPoint.blockLightLevel),
+					(byte) (apiDataPoint.skyLightLevel)
+				);
+				lastDataPoint = dataPoint;
+				packedDataPoints.add(dataPoint);
+			}
 		}
 		
 		return packedDataPoints;
 	}
 	
-	/** also corrects the order if it's backwards */
-	public static void correctDataColumnOrder(List<DhApiTerrainDataPoint> dataPoints)
+	public static void putListInTopDownOrder(List<DhApiTerrainDataPoint> dataPoints)
 	{
 		// order doesn't need to be checked if there is 0 or 1 items
 		if (dataPoints.size() > 1)

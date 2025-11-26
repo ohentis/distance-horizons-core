@@ -1306,13 +1306,13 @@ public class FullDataSourceV2
 	{
 		try
 		{
-			LodDataBuilder.correctDataColumnOrder(columnDataPoints);
+			LodDataBuilder.putListInTopDownOrder(columnDataPoints);
 			if (this.runApiChunkValidation)
 			{
 				LodDataBuilder.validateOrThrowApiDataColumn(columnDataPoints);
 			}
 			
-			LongArrayList packedDataPoints = LodDataBuilder.convertApiDataPointListToPackedLongArray(columnDataPoints, this, 0);
+			LongArrayList packedDataPoints = LodDataBuilder.convertApiDataPointListToPackedLongArray(columnDataPoints, this, 0, true);
 			
 			// TODO there should be an "unknown" compression and generation step, or be defined via the datapoints
 			this.setSingleColumn(packedDataPoints, relX, relZ, EDhApiWorldGenerationStep.SURFACE, EDhApiWorldCompressionMode.MERGE_SAME_BLOCKS);
