@@ -720,6 +720,8 @@
     "Show Replay Warning",
   "distanthorizons.config.common.logging.warning.showUpdateQueueOverloadedChatWarning":
     "Show Update Queue Overloaded Warning",
+  "distanthorizons.config.common.logging.warning.showSlowWorldGenSettingWarnings":
+    "Show Slow World Gen Warnings",
   "distanthorizons.config.common.logging.warning.showModCompatibilityWarningsOnStartup":
     "Show Mod Compatibility Warnings",
 

@@ -17,34 +17,9 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.seibel.distanthorizons.core.enums.worldGeneration;
+package com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor;
 
-/**
- * MULTI_THREADED, <br>
- * SINGLE_THREADED, <br>
- * SERVER_THREAD, <br>
- *
- * @author James Seibel
- * @version 7-25-2022
- */
-public enum EWorldGenThreadMode
+public interface IC2meAccessor extends IModAccessor
 {
-	/**
-	 * This world generator can be run on an unlimited number
-	 * of concurrent threads.
-	 */
-	MULTI_THREADED,
 	
-	/**
-	 * This world generator can only be run on one thread at
-	 * a time, however that thread can run concurrently
-	 * to Minecraft's server thread.
-	 */
-	SINGLE_THREADED,
-	
-	/**
-	 * This world generator can only be run on Minecraft's
-	 * server thread.
-	 */
-	SERVER_THREAD,
 }

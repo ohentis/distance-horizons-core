@@ -1633,6 +1633,14 @@ public class Config
 								+ "")
 						.build();
 				
+				public static ConfigEntry<Boolean> showSlowWorldGenSettingWarnings = new ConfigEntry.Builder<Boolean>()
+						.set(true)
+						.comment(""
+								+ "If enabled, a chat message will be displayed when DH has too many chunks \n"
+								+ "queued for updating. \n"
+								+ "")
+						.build();
+				
 				public static ConfigEntry<Boolean> showModCompatibilityWarningsOnStartup = new ConfigEntry.Builder<Boolean>()
 						.set(true)
 						.comment(""
