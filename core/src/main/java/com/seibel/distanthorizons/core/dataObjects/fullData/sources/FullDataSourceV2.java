@@ -298,7 +298,7 @@ public class FullDataSourceV2
 	 * returns {@link FullDataPointUtil#EMPTY_DATA_POINT} if the given {@link DhBlockPos}
 	 * is outside this data source's boundaries.
 	 */
-	public long getDataPointAtBlockPos(int blockPosX, int relBlockPosY, int blockPosZ)
+	public long getDataPointAtBlockPos(int blockPosX, int blockPosY, int blockPosZ, int levelMinY)
 	{
 		DhLodPos requestedPos = new DhLodPos(LodUtil.BLOCK_DETAIL_LEVEL, blockPosX, blockPosZ);
 		
@@ -330,6 +330,7 @@ public class FullDataSourceV2
 		
 		
 		// search for a datapoint that contains the given block y position
+		int relBlockPosY = blockPosY - levelMinY;
 		long dataPoint;
 		for (int i = 0; i < dataColumn.size(); i++)
 		{
