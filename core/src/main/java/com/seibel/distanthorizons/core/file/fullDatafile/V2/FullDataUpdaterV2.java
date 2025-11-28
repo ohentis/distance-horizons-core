@@ -150,11 +150,14 @@ public class FullDataUpdaterV2 implements IDebugRenderable, AutoCloseable
 						}
 						
 						
-						for (IDataSourceUpdateListenerFunc<FullDataSourceV2> listener : this.dateSourceUpdateListeners)
+						synchronized (this.dateSourceUpdateListeners)
 						{
-							if (listener != null)
+							for (IDataSourceUpdateListenerFunc<FullDataSourceV2> listener : this.dateSourceUpdateListeners)
 							{
-								listener.OnDataSourceUpdated(recipientDataSource);
+								if (listener != null)
+								{
+									listener.OnDataSourceUpdated(recipientDataSource);
+								}
 							}
 						}
 					}
