@@ -565,8 +565,13 @@ public class ClientApi
 	{
 		// only fade when DH is rendering
 		if (Config.Client.Advanced.Debugging.rendererMode.get() == EDhApiRendererMode.DEFAULT
-			// only fade when requested
-			&& Config.Client.Advanced.Graphics.Quality.vanillaFadeMode.get() == EDhApiMcRenderingFadeMode.DOUBLE_PASS
+			&&
+			(
+				// only fade when requested
+				Config.Client.Advanced.Graphics.Quality.vanillaFadeMode.get() == EDhApiMcRenderingFadeMode.DOUBLE_PASS
+				// or if LOD-only mode is enabled (fading is used to remove the MC render pass)
+				|| Config.Client.Advanced.Debugging.lodOnlyMode.get()
+			)
 			// don't fade when Iris shaders are active, otherwise the rendering can get weird
 			&& !DhApiRenderProxy.INSTANCE.getDeferTransparentRendering())
 		{
