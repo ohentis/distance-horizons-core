@@ -24,7 +24,6 @@ import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.pooling.PhantomArrayListCheckout;
-import com.seibel.distanthorizons.core.pooling.PhantomArrayListPool;
 import com.seibel.distanthorizons.core.util.ColorUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.RenderDataPointUtil;
@@ -43,7 +42,6 @@ public class ColumnBox
 	 * that block position is covered/occluded by an adjacent block/column.
 	 */
 	private static final byte SKYLIGHT_COVERED = -1;
-	
 	
 	
 	
@@ -249,10 +247,10 @@ public class ColumnBox
 	}
 	
 	private static void makeAdjVerticalQuad(
-			LodQuadBuilder builder, PhantomArrayListCheckout phantomArrayCheckout,
-			@NotNull ColumnArrayView adjColumnView, boolean adjacentIsSameDetailLevel, int caveCullingMaxY, EDhDirection direction,
-			short x, short yMin, short z, short horizontalWidth, short ySize,
-			int color, byte irisBlockMaterialId, byte blockLight)
+		LodQuadBuilder builder, PhantomArrayListCheckout phantomArrayCheckout,
+		@NotNull ColumnArrayView adjColumnView, boolean adjacentIsSameDetailLevel, int caveCullingMaxY, EDhDirection direction,
+		short x, short yMin, short z, short horizontalWidth, short ySize,
+		int color, byte irisBlockMaterialId, byte blockLight)
 	{
 		// pooled arrays
 		LongArrayList segments = phantomArrayCheckout.getLongArray(0, 0);
@@ -311,9 +309,10 @@ public class ColumnBox
 			long adjBelowPoint = (adjIndex + 1 < adjCount) ? adjColumnView.get(adjIndex + 1) : RenderDataPointUtil.EMPTY_DATA;
 			
 			boolean adjOverVoid = !RenderDataPointUtil.doesDataPointExist(adjBelowPoint);
-			boolean adjTransparent = !adjOverVoid
-					&& RenderDataPointUtil.getAlpha(adjPoint) < 255
-					&& transparencyEnabled;
+			boolean adjTransparent = 
+				!adjOverVoid
+				&& RenderDataPointUtil.getAlpha(adjPoint) < 255
+				&& transparencyEnabled;
 			
 			byte adjSkyLight = RenderDataPointUtil.getLightSky(adjPoint);
 			byte lightToApply;
@@ -323,14 +322,14 @@ public class ColumnBox
 				// Adjacent is opaque
 				boolean adjacentCoversThis =
 					!adjacentIsSameDetailLevel
-					&& RenderDataPointUtil.getYMax(adjPoint) >= caveCullingMaxY
-					&&
-					(
-						(x == 0 && direction == EDhDirection.WEST)
-						|| (z == 0 && direction == EDhDirection.NORTH)
-						|| (x == 256 && direction == EDhDirection.EAST)
-						|| (z == 256 && direction == EDhDirection.SOUTH)
-					);
+						&& RenderDataPointUtil.getYMax(adjPoint) >= caveCullingMaxY
+						&&
+						(
+							(x == 0 && direction == EDhDirection.WEST)
+							|| (z == 0 && direction == EDhDirection.NORTH)
+							|| (x == 256 && direction == EDhDirection.EAST)
+							|| (z == 256 && direction == EDhDirection.SOUTH)
+						);
 				
 				lightToApply = adjacentCoversThis ? adjSkyLight : SKYLIGHT_COVERED;
 			}
@@ -363,10 +362,10 @@ public class ColumnBox
 		{
 			long segment = segments.getLong(i);
 			tryAddVerticalFaceWithSkyLightToBuilder(
-					builder, direction,
-					x, z, horizontalWidth,
-					color, irisBlockMaterialId, blockLight,
-					YSegmentUtil.getSkyLight(segment), inputTransparent, YSegmentUtil.getEndY(segment), YSegmentUtil.getStartY(segment)
+				builder, direction,
+				x, z, horizontalWidth,
+				color, irisBlockMaterialId, blockLight,
+				YSegmentUtil.getSkyLight(segment), inputTransparent, YSegmentUtil.getEndY(segment), YSegmentUtil.getStartY(segment)
 			);
 		}
 	}
