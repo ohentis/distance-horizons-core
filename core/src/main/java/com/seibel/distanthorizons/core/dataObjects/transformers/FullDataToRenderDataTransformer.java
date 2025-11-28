@@ -31,11 +31,9 @@ import com.seibel.distanthorizons.core.pooling.PhantomArrayListCheckout;
 import com.seibel.distanthorizons.core.pooling.PhantomArrayListPool;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPosMutable;
-import com.seibel.distanthorizons.core.render.LodQuadTree;
 import com.seibel.distanthorizons.core.util.*;
 import com.seibel.distanthorizons.core.wrapperInterfaces.IWrapperFactory;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
-import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.coreapi.util.BitShiftUtil;
@@ -54,11 +52,11 @@ public class FullDataToRenderDataTransformer
 	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
 	
 	private static final IWrapperFactory WRAPPER_FACTORY = SingletonInjector.INSTANCE.get(IWrapperFactory.class);
-	private static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	
-	private static final LongOpenHashSet brokenPos = new LongOpenHashSet();
+	private static final LongOpenHashSet BROKEN_POS_SET = new LongOpenHashSet();
+	private static final PhantomArrayListPool ARRAY_LIST_POOL = new PhantomArrayListPool("Data Transformer");
 	
-	public static final PhantomArrayListPool ARRAY_LIST_POOL = new PhantomArrayListPool("Data Transformer");
+	private static HashSet<IBlockStateWrapper> snowLayerBlockStates = null;
 	
 	
 	
@@ -198,6 +196,16 @@ public class FullDataToRenderDataTransformer
 		HashSet<IBlockStateWrapper> blockStatesToIgnore = WRAPPER_FACTORY.getRendererIgnoredBlocks(levelWrapper);
 		HashSet<IBlockStateWrapper> caveBlockStatesToIgnore = WRAPPER_FACTORY.getRendererIgnoredCaveBlocks(levelWrapper);
 		
+		// build snow block cache if needed
+		if (snowLayerBlockStates == null)
+		{
+			snowLayerBlockStates = new HashSet<>();
+			// ignore snow layers 1-3, everything above should be considered a full block
+			snowLayerBlockStates.add(WRAPPER_FACTORY.deserializeBlockStateWrapperOrGetDefault("minecraft:snow_STATE_{layers:1}", levelWrapper));
+			snowLayerBlockStates.add(WRAPPER_FACTORY.deserializeBlockStateWrapperOrGetDefault("minecraft:snow_STATE_{layers:2}", levelWrapper));
+			snowLayerBlockStates.add(WRAPPER_FACTORY.deserializeBlockStateWrapperOrGetDefault("minecraft:snow_STATE_{layers:3}", levelWrapper));
+		}
+		
 		int caveCullingMaxY = Config.Client.Advanced.Graphics.Culling.caveCullingHeight.get() - levelWrapper.getMinHeight();
 		boolean caveCullingEnabled = 
 			Config.Client.Advanced.Graphics.Culling.enableCaveCulling.get()
@@ -252,9 +260,9 @@ public class FullDataToRenderDataTransformer
 			}
 			catch (IndexOutOfBoundsException e)
 			{
-				if (!brokenPos.contains(fullDataMapping.getPos()))
+				if (!BROKEN_POS_SET.contains(fullDataMapping.getPos()))
 				{
-					brokenPos.add(fullDataMapping.getPos());
+					BROKEN_POS_SET.add(fullDataMapping.getPos());
 					String levelId = levelWrapper.getDhIdentifier();
 					LOGGER.warn("Unable to get data point with id ["+id+"] " +
 							"(Max possible ID: ["+fullDataMapping.getMaxValidId()+"]) " +
@@ -324,10 +332,26 @@ public class FullDataToRenderDataTransformer
 			// non-solid block check //
 			//=======================//
 			
-			if (ignoreNonCollidingBlocks
-					&& !block.isSolid()
-					&& !block.isLiquid()
-					&& block.getOpacity() != LodUtil.BLOCK_FULLY_OPAQUE)
+			boolean ignoreNonSolidBlock =
+				ignoreNonCollidingBlocks
+				&& !block.isSolid()
+				&& !block.isLiquid()
+				&& block.getOpacity() != LodUtil.BLOCK_FULLY_OPAQUE;
+			
+			// merge snow into the block below it
+			if (snowLayerBlockStates.contains(block))
+			{
+				// sometimes a snow datapoint will be multiple blocks tall,
+				// in that case we just want to drop the top by 1
+				blockHeight -= 1;
+				if (blockHeight == 0)
+				{
+					// this snow block was entirely removed, just color the block below it
+					ignoreNonSolidBlock = true;
+				}
+			}
+			
+			if (ignoreNonSolidBlock)
 			{
 				if (colorBelowWithAvoidedBlocks)
 				{
