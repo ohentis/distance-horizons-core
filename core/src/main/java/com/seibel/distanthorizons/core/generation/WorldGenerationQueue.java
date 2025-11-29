@@ -73,7 +73,7 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 	 *  if this is too high it may cause issues when moving,
 	 *  but if it is too low the generator threads won't have enough tasks to work on
 	 */
-	private static final int MAX_QUEUED_TASKS_PER_THREAD = 3;
+	private static final int MAX_QUEUED_TASKS_PER_THREAD = 1;
 	
 	
 	private final IDhApiWorldGenerator generator;
@@ -412,12 +412,15 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 						try
 						{
 							IChunkWrapper chunkWrapper = WRAPPER_FACTORY.createChunkWrapper(generatedObjectArray);
+
+							//// TODO light data should be pulled (if possible) from the ChunkAccess object itself via ChunkFileReader.readLight
+							//// but this should work for now
+							//ArrayList<IChunkWrapper> nearbyChunkList = new ArrayList<>();
+							//nearbyChunkList.add(chunkWrapper);
+							//byte maxSkyLight = this.level.getLevelWrapper().hasSkyLight() ? LodUtil.MAX_MC_LIGHT : LodUtil.MIN_MC_LIGHT;
+							//DhLightingEngine.INSTANCE.bakeChunkBlockLighting(chunkWrapper, nearbyChunkList, maxSkyLight);
 							
-							// TODO light data should be pulled (if possible) from the ChunkAccess object itself via ChunkFileReader.readLight
-							// but this should work for now
-							ArrayList<IChunkWrapper> nearbyChunkList = new ArrayList<IChunkWrapper>();
-							nearbyChunkList.add(chunkWrapper);
-							DhLightingEngine.INSTANCE.bakeChunkBlockLighting(chunkWrapper, nearbyChunkList, this.level.getLevelWrapper().hasSkyLight() ? LodUtil.MAX_MC_LIGHT : LodUtil.MIN_MC_LIGHT);
+							chunkWrapper.setIsDhBlockLightCorrect(true);
 							
 							try (FullDataSourceV2 dataSource = LodDataBuilder.createFromChunk(this.level.getLevelWrapper(), chunkWrapper))
 							{

@@ -101,9 +101,9 @@ public class BatchGenerator implements IDhApiWorldGenerator
 		EDhApiWorldGenerationStep targetStep = null;
 		switch (generatorMode)
 		{
-			case PRE_EXISTING_ONLY: // Only load in existing chunks. Note: this requires the biome generation step in order for biomes to be properly initialized.
+			case PRE_EXISTING_ONLY: // Only load in existing chunks.
 			//case BIOME_ONLY: // No blocks. Require fake height in LodBuilder
-				targetStep = EDhApiWorldGenerationStep.BIOMES; 
+				targetStep = EDhApiWorldGenerationStep.EMPTY; 
 				break;
 			//case BIOME_ONLY_SIMULATE_HEIGHT:
 			//	targetStep = EDhApiWorldGenerationStep.NOISE; // Stone only. Requires a fake surface

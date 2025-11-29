@@ -190,7 +190,7 @@ public class PriorityTaskPicker
 		{
 			return new RateLimitedThreadPoolExecutor(
 					Config.Common.MultiThreading.numberOfThreads.get(),
-					new DhThreadFactory(this.name, Thread.MIN_PRIORITY, false),
+					new DhThreadFactory(this.name, 5, false), // TODO add config, just needs to be a couple higher than C2ME (default 4) for chunky to be mostly usable
 					new ArrayBlockingQueue<>(Runtime.getRuntime().availableProcessors())
 			);
 		}
