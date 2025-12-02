@@ -19,6 +19,7 @@
 
 package com.seibel.distanthorizons.core.sql.repo;
 
+import com.seibel.distanthorizons.core.jar.EPlatform;
 import com.seibel.distanthorizons.core.logging.DhLogger;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.sql.DatabaseUpdater;
@@ -139,9 +140,18 @@ public abstract class AbstractDhRepo<TKey, TDTO extends IBaseDTO<TKey>> implemen
 		// connection setup //
 		//==================//
 		
+		String filePath = this.databaseFile.getPath();
+		if (EPlatform.get() == EPlatform.WINDOWS)
+		{
+			// enable long file paths on windows to prevent edge cases where
+			// users' MC folder has a long file path (IE custom launchers)
+			// https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation?tabs=registry
+			filePath = "\\\\?\\" + filePath;
+		}
+		
 		// get or create the connection,
 		// reusing existing connections reduces the chance of locking the database during trivial queries
-		this.connectionString = this.databaseType+":"+this.databaseFile.getPath();
+		this.connectionString = this.databaseType+":"+filePath;
 		
 		
 		this.connection = CONNECTIONS_BY_CONNECTION_STRING.computeIfAbsent(this.connectionString, (connectionString) ->
