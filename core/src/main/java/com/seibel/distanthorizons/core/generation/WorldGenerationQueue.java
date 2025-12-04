@@ -66,15 +66,6 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
 	private static final IWrapperFactory WRAPPER_FACTORY = SingletonInjector.INSTANCE.get(IWrapperFactory.class);
 	
-	/**
-	 * Defines how many tasks can be queued per thread. <br><br>
-	 *
-	 * TODO the multiplier here should change dynamically based on how fast the generator is vs the queuing thread,
-	 *  if this is too high it may cause issues when moving,
-	 *  but if it is too low the generator threads won't have enough tasks to work on
-	 */
-	private static final int MAX_QUEUED_TASKS_PER_THREAD = 1;
-	
 	
 	private final IDhApiWorldGenerator generator;
 	private final IDhServerLevel level;
@@ -241,9 +232,9 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 			return true;
 		}
 		
+		// queue more tasks if any of the threads are available
 		int worldGenThreadCount = Math.max(Config.Common.MultiThreading.numberOfThreads.get(), 1);
-		int maxWorldGenTaskCount = worldGenThreadCount * MAX_QUEUED_TASKS_PER_THREAD;
-		return this.inProgressGenTasksByLodPos.size() > maxWorldGenTaskCount;
+		return this.inProgressGenTasksByLodPos.size() > worldGenThreadCount;
 	}
 	/**
 	 * @param targetPos the position to center the generation around
@@ -412,15 +403,17 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 						try
 						{
 							IChunkWrapper chunkWrapper = WRAPPER_FACTORY.createChunkWrapper(generatedObjectArray);
-
-							//// TODO light data should be pulled (if possible) from the ChunkAccess object itself via ChunkFileReader.readLight
-							//// but this should work for now
-							//ArrayList<IChunkWrapper> nearbyChunkList = new ArrayList<>();
-							//nearbyChunkList.add(chunkWrapper);
-							//byte maxSkyLight = this.level.getLevelWrapper().hasSkyLight() ? LodUtil.MAX_MC_LIGHT : LodUtil.MIN_MC_LIGHT;
-							//DhLightingEngine.INSTANCE.bakeChunkBlockLighting(chunkWrapper, nearbyChunkList, maxSkyLight);
 							
-							chunkWrapper.setIsDhBlockLightCorrect(true);
+							// only light the chunk here if necessary,
+							// lighting before this point is preferred but for potenial legacy API uses this
+							// check should be done
+							if (!chunkWrapper.isDhBlockLightingCorrect())
+							{
+								ArrayList<IChunkWrapper> nearbyChunkList = new ArrayList<>();
+								nearbyChunkList.add(chunkWrapper);
+								byte maxSkyLight = this.level.getLevelWrapper().hasSkyLight() ? LodUtil.MAX_MC_LIGHT : LodUtil.MIN_MC_LIGHT;
+								DhLightingEngine.INSTANCE.bakeChunkBlockLighting(chunkWrapper, nearbyChunkList, maxSkyLight);
+							}
 							
 							try (FullDataSourceV2 dataSource = LodDataBuilder.createFromChunk(this.level.getLevelWrapper(), chunkWrapper))
 							{

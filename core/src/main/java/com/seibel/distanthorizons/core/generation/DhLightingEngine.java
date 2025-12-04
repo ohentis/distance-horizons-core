@@ -154,14 +154,15 @@ public class DhLightingEngine
 			// and get any necessary info from them
 			for (int chunkIndex = 0; chunkIndex < nearbyChunkList.size(); chunkIndex++) // using iterators in high traffic areas can cause GC issues due to allocating a bunch of iterators, use an indexed for-loop instead
 			{
-				IChunkWrapper chunk = nearbyChunkList.get(chunkIndex);
-				if (chunk != null && requestedAdjacentPositions.contains(chunk.getChunkPos()))
+				IChunkWrapper neighborChunk = nearbyChunkList.get(chunkIndex);
+				if (neighborChunk != null 
+					&& requestedAdjacentPositions.contains(neighborChunk.getChunkPos()))
 				{
 					// remove the newly found position
-					requestedAdjacentPositions.remove(chunk.getChunkPos());
+					requestedAdjacentPositions.remove(neighborChunk.getChunkPos());
 					
 					// add the adjacent chunk
-					adjacentChunkHolder.add(chunk);
+					adjacentChunkHolder.add(neighborChunk);
 					
 					// get and set the adjacent chunk's initial block lights
 					final DhBlockPosMutable relLightBlockPos = PRIMARY_BLOCK_POS_REF.get();
@@ -174,19 +175,19 @@ public class DhLightingEngine
 					
 					if (updateBlockLight)
 					{
-						ArrayList<DhBlockPos> blockLightPosList = chunk.getWorldBlockLightPosList();
+						ArrayList<DhBlockPos> blockLightPosList = neighborChunk.getWorldBlockLightPosList();
 						for (int blockLightIndex = 0; blockLightIndex < blockLightPosList.size(); blockLightIndex++) // using iterators in high traffic areas can cause GC issues due to allocating a bunch of iterators, use an indexed for-loop instead
 						{
 							DhBlockPos blockLightPos = blockLightPosList.get(blockLightIndex);
 							blockLightPos.mutateToChunkRelativePos(relLightBlockPos);
 							
 							// get the light
-							IBlockStateWrapper blockState = chunk.getBlockState(relLightBlockPos);
+							IBlockStateWrapper blockState = neighborChunk.getBlockState(relLightBlockPos);
 							int lightValue = blockState.getLightEmission();
 							blockLightWorldPosQueue.push(blockLightPos.getX(), blockLightPos.getY(), blockLightPos.getZ(), lightValue);
 							
 							// set the light
-							chunk.setDhBlockLight(relLightBlockPos.getX(), relLightBlockPos.getY(), relLightBlockPos.getZ(), lightValue);
+							neighborChunk.setDhBlockLight(relLightBlockPos.getX(), relLightBlockPos.getY(), relLightBlockPos.getZ(), lightValue);
 						}
 					}
 					
@@ -198,23 +199,24 @@ public class DhLightingEngine
 					
 					// get and set the adjacent chunk's initial skylights,
 					// if the dimension has skylights
-					if (updateSkyLight && maxSkyLight > 0)
+					if (updateSkyLight 
+						&& maxSkyLight > 0)
 					{
-						IMutableBlockPosWrapper mcBlockPos = chunk.getMutableBlockPosWrapper();
+						IMutableBlockPosWrapper mcBlockPos = neighborChunk.getMutableBlockPosWrapper();
 						IBlockStateWrapper previousBlockState = null;
 						
-						int maxY = chunk.getMaxNonEmptyHeight();
-						int minY = chunk.getInclusiveMinBuildHeight();
+						int maxY = neighborChunk.getMaxNonEmptyHeight();
+						int minY = neighborChunk.getInclusiveMinBuildHeight();
 						
 						// get the adjacent chunk's sky lights
 						for (int relX = 0; relX < LodUtil.CHUNK_WIDTH; relX++) // relative block pos
 						{
 							for (int relZ = 0; relZ < LodUtil.CHUNK_WIDTH; relZ++)
 							{
-								// set each pos' sky light all the way down until an opaque block is hit
+								// set each pos sky light all the way down until an opaque block is hit
 								for (int y = maxY; y >= minY; y--)
 								{
-									IBlockStateWrapper block = previousBlockState = chunk.getBlockState(relX, y, relZ, mcBlockPos, previousBlockState);
+									IBlockStateWrapper block = previousBlockState = neighborChunk.getBlockState(relX, y, relZ, mcBlockPos, previousBlockState);
 									if (block != null && block.getOpacity() != LodUtil.BLOCK_FULLY_TRANSPARENT)
 									{
 										// keep moving down until we find a non-transparent block
@@ -223,12 +225,12 @@ public class DhLightingEngine
 									
 									
 									// add sky light to the queue
-									DhBlockPos skyLightPos = new DhBlockPos(chunk.getMinBlockX() + relX, y, chunk.getMinBlockZ() + relZ);
+									DhBlockPos skyLightPos = new DhBlockPos(neighborChunk.getMinBlockX() + relX, y, neighborChunk.getMinBlockZ() + relZ);
 									skyLightWorldPosQueue.push(skyLightPos.getX(), skyLightPos.getY(), skyLightPos.getZ(), maxSkyLight);
 									
 									// set the chunk's sky light
 									skyLightPos.mutateToChunkRelativePos(relLightBlockPos);
-									chunk.setDhSkyLight(relLightBlockPos.getX(), relLightBlockPos.getY(), relLightBlockPos.getZ(), maxSkyLight);
+									neighborChunk.setDhSkyLight(relLightBlockPos.getX(), relLightBlockPos.getY(), relLightBlockPos.getZ(), maxSkyLight);
 								}
 							}
 						}
@@ -247,13 +249,12 @@ public class DhLightingEngine
 			if (updateBlockLight)
 			{
 				// done to prevent a rare issue where the light values are incorrectly set to -1
-				// TODO why could that happen?
 				centerChunk.clearDhBlockLighting();
 				
 				this.propagateChunkLightPosList(blockLightWorldPosQueue, adjacentChunkHolder,
-						(neighbourChunk, relBlockPos) -> neighbourChunk.getDhBlockLight(relBlockPos.getX(), relBlockPos.getY(), relBlockPos.getZ()),
-						(neighbourChunk, relBlockPos, newLightValue) -> neighbourChunk.setDhBlockLight(relBlockPos.getX(), relBlockPos.getY(), relBlockPos.getZ(), newLightValue),
-						true);
+					(neighbourChunk, relBlockPos) -> neighbourChunk.getDhBlockLight(relBlockPos.getX(), relBlockPos.getY(), relBlockPos.getZ()),
+					(neighbourChunk, relBlockPos, newLightValue) -> neighbourChunk.setDhBlockLight(relBlockPos.getX(), relBlockPos.getY(), relBlockPos.getZ(), newLightValue),
+					true);
 			}
 			
 			// sky light
@@ -262,9 +263,9 @@ public class DhLightingEngine
 				centerChunk.clearDhSkyLighting();
 				
 				this.propagateChunkLightPosList(skyLightWorldPosQueue, adjacentChunkHolder,
-						(neighbourChunk, relBlockPos) -> neighbourChunk.getDhSkyLight(relBlockPos.getX(), relBlockPos.getY(), relBlockPos.getZ()),
-						(neighbourChunk, relBlockPos, newLightValue) -> neighbourChunk.setDhSkyLight(relBlockPos.getX(), relBlockPos.getY(), relBlockPos.getZ(), newLightValue),
-						false);
+					(neighbourChunk, relBlockPos) -> neighbourChunk.getDhSkyLight(relBlockPos.getX(), relBlockPos.getY(), relBlockPos.getZ()),
+					(neighbourChunk, relBlockPos, newLightValue) -> neighbourChunk.setDhSkyLight(relBlockPos.getX(), relBlockPos.getY(), relBlockPos.getZ(), newLightValue),
+					false);
 			}
 		}
 		catch (Exception e)
@@ -300,8 +301,24 @@ public class DhLightingEngine
 		final DhBlockPosMutable neighbourBlockPos = PRIMARY_BLOCK_POS_REF.get();
 		final DhBlockPosMutable relNeighbourBlockPos = SECONDARY_BLOCK_POS_REF.get();
 		
+		// it doesn't matter what chunk we get the mutable block pos from
 		IMutableBlockPosWrapper mcBlockPos = null;
+		for (int i = 0; i < adjacentChunkHolder.chunkArray.length; i++)
+		{
+			IChunkWrapper chunkWrapper = adjacentChunkHolder.chunkArray[i];
+			if (chunkWrapper != null)
+			{
+				mcBlockPos = chunkWrapper.getMutableBlockPosWrapper();
+				break;
+			}
+		}
+		if (mcBlockPos == null)
+		{
+			LodUtil.assertNotReach("How did we try to light a chunk with no chunks?");
+		}
+		
 		IBlockStateWrapper previousBlockState = null;
+		
 		
 		// update each light position
 		while (!lightPosQueue.isEmpty())
@@ -346,15 +363,9 @@ public class DhLightingEngine
 				}
 				
 				
-				if (mcBlockPos == null)
-				{
-					// it doesn't matter what chunk we get the position object from
-					// TODO move this getter logic out of ChunkWrapper
-					mcBlockPos = neighbourChunk.getMutableBlockPosWrapper();
-				}
+				IBlockStateWrapper neighbourBlockState = neighbourChunk.getBlockState(relNeighbourBlockPos, mcBlockPos, previousBlockState);
+				previousBlockState = neighbourBlockState;
 				
-				
-				IBlockStateWrapper neighbourBlockState = previousBlockState = neighbourChunk.getBlockState(relNeighbourBlockPos, mcBlockPos, previousBlockState);
 				// Math.max(1, ...) is used so that the propagated light level always drops by at least 1, preventing infinite cycles.
 				int targetLevel = lightValue - Math.max(1, neighbourBlockState.getOpacity());
 				if (targetLevel > currentBlockLight)
@@ -370,12 +381,14 @@ public class DhLightingEngine
 		}
 		
 		
-		// can be enable if troubleshooting lighting issues
-		if (RENDER_BLOCK_LIGHT_WIREFRAME && propagatingBlockLights)
+		// can be enabled if troubleshooting lighting issues
+		if (RENDER_BLOCK_LIGHT_WIREFRAME 
+			&& propagatingBlockLights)
 		{
 			RenderDhLightValuesAsWireframe(adjacentChunkHolder, true);
 		}
-		else if (RENDER_SKY_LIGHT_WIREFRAME && !propagatingBlockLights)
+		else if (RENDER_SKY_LIGHT_WIREFRAME 
+			&& !propagatingBlockLights)
 		{
 			RenderDhLightValuesAsWireframe(adjacentChunkHolder, false);
 		}
@@ -462,7 +475,7 @@ public class DhLightingEngine
 							point = FullDataPointUtil.setSkyLight(point, skylight);
 							dataPoints.set(index, point);
 							// now for the propagation.
-							recursivelyLightAdjacentDataPoints(dataSource, airIDs, x, z, point);
+							this.recursivelyLightAdjacentDataPoints(dataSource, airIDs, x, z, point);
 						}
 					}
 				}
@@ -596,7 +609,7 @@ public class DhLightingEngine
 						else if (!airIDs.get(FullDataPointUtil.getId(adjacentDataPoint)))
 						{
 							// assume for now that we cannot propagate into non-transparent data points.
-							continue; // TODO how does this work with water? Do we care?
+							continue;
 						}
 						else
 						{
@@ -610,7 +623,7 @@ public class DhLightingEngine
 								adjacentDataPoint = FullDataPointUtil.setSkyLight(adjacentDataPoint, lightLevel - 1);
 								adjacentDataPoints.set(adjacentIndex, adjacentDataPoint);
 								// if propagation succeeded, recursively propagate again starting at the adjacent data point.
-								recursivelyLightAdjacentDataPoints(chunk, airIDs, adjacentX, adjacentZ, adjacentDataPoint);
+								this.recursivelyLightAdjacentDataPoints(chunk, airIDs, adjacentX, adjacentZ, adjacentDataPoint);
 							}
 						}
 					}

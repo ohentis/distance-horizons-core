@@ -1415,49 +1415,6 @@ public class Config
 							+ "")
 					.build();
 			
-			public static ConfigEntry<Boolean> recalculateChunkHeightmaps = new ConfigEntry.Builder<Boolean>()
-					.set(false)
-					.comment(""
-							+ "True: Recalculate chunk height maps before chunks can be used by DH.\n"
-							+ "      This can fix problems with worlds created by World Painter or \n"
-							+ "      other external tools where the heightmap format may be incorrect. \n"
-							+ "False: Assume any height maps handled by Minecraft are correct. \n"
-							+ "\n"
-							+ "Fastest: False\n"
-							+ "Most Compatible: True\n"
-							+ "")
-					.build();
-			
-			public static ConfigEntry<Boolean> pullLightingForPregeneratedChunks = new ConfigEntry.Builder<Boolean>()
-					.set(false)
-					.comment(""
-							+ "If true LOD generation for pre-existing chunks will attempt to pull the lighting data \n"
-							+ "saved in Minecraft's Region files. \n"
-							+ "If false DH will pull in chunks without lighting and re-light them. \n"
-							+ " \n"
-							+ "Setting this to true will result in faster LOD generation \n"
-							+ "for already generated worlds, but is broken by most lighting mods. \n"
-							+ " \n"
-							+ "Set this to false if LODs are black. \n"
-							+ "")
-					.build();
-			
-			public static ConfigEntry<Boolean> assumePreExistingChunksAreFinished = new ConfigEntry.Builder<Boolean>()
-					.set(false)
-					.comment(""
-							+ "When DH pulls in pre-existing chunks it will attempt to \n"
-							+ "run any missing world generation steps; for example: \n"
-							+ "if a chunk has the status SURFACE, DH will skip BIOMES \n"
-							+ "and SURFACE, but will run FEATURES. \n"
-							+ " \n"
-							+ "However if for some reason the chunks are malformed \n"
-							+ "or there's some other issue that causes the status \n"
-							+ "to be incorrect that can either cause world gen \n"
-							+ "lock-ups and/or crashes. \n"
-							+ "If either of those happen try setting this to True. \n"
-							+ "")
-					.build();
-			
 			public static ConfigCategory experimental = new ConfigCategory.Builder().set(Experimental.class).build();
 			
 			

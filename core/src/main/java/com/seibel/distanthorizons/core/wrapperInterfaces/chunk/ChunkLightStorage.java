@@ -158,6 +158,12 @@ public class ChunkLightStorage
 		lightSection.set(x, y, z, lightLevel);
 	}
 	
+	public boolean isEmpty()
+	{
+		return this.lightSections == null
+			|| this.lightSections.length == 0;
+	}
+	
 	public void clear() 
 	{
 		if (this.lightSections != null)

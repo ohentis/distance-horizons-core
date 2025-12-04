@@ -98,18 +98,14 @@ public class BatchGenerator implements IDhApiWorldGenerator
 			ExecutorService worldGeneratorThreadPool,
 			Consumer<Object[]> resultConsumer)
 	{
-		EDhApiWorldGenerationStep targetStep = null;
+		EDhApiWorldGenerationStep targetStep;
 		switch (generatorMode)
 		{
 			case PRE_EXISTING_ONLY: // Only load in existing chunks.
-			//case BIOME_ONLY: // No blocks. Require fake height in LodBuilder
-				targetStep = EDhApiWorldGenerationStep.EMPTY; 
+				targetStep = EDhApiWorldGenerationStep.EMPTY; // special logic
 				break;
-			//case BIOME_ONLY_SIMULATE_HEIGHT:
-			//	targetStep = EDhApiWorldGenerationStep.NOISE; // Stone only. Requires a fake surface
-			//	break;
 			case SURFACE:
-				targetStep = EDhApiWorldGenerationStep.SURFACE; // TODO could we ignore adjacent chunks for a speedup?
+				targetStep = EDhApiWorldGenerationStep.SURFACE;
 				break;
 			case FEATURES:
 				targetStep = EDhApiWorldGenerationStep.FEATURES;
@@ -117,6 +113,9 @@ public class BatchGenerator implements IDhApiWorldGenerator
 			case INTERNAL_SERVER:
 				targetStep = EDhApiWorldGenerationStep.LIGHT;
 				break;
+				
+			default:
+				throw new IllegalArgumentException("no target step defined for generator mode: ["+generatorMode+"].");
 		}
 		
 		// the consumer needs to be wrapped like this because the API can't use DH core objects (and IChunkWrapper can't be easily put into the API project)
