@@ -74,7 +74,7 @@ public class LodDataBuilder
 		long pos = DhSectionPos.encode(DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL, sectionPosX, sectionPosZ);
 		
 		FullDataSourceV2 dataSource = FullDataSourceV2.createEmpty(pos);
-		dataSource.isEmpty = false;
+		dataSource.isEmpty = false; // this will be set to "true" if any blocks are found
 		// chunk updates always propagate up
 		dataSource.applyToParent = true;
 		
@@ -244,6 +244,15 @@ public class LodDataBuilder
 							blockLight = newBlockLight;
 							skyLight = newSkyLight;
 							lastY = y;
+							
+							
+							// mark the data source as non-empty if we find any non-air blocks
+							if (dataSource.isEmpty
+								&& newBlockState != null 
+								&& !newBlockState.isAir())
+							{
+								dataSource.isEmpty = false;
+							}
 						}
 					}
 					
@@ -261,7 +270,6 @@ public class LodDataBuilder
 			return null;
 		}
 		
-		LodUtil.assertTrue(!dataSource.isEmpty);
 		return dataSource;
 	}
 	
@@ -289,6 +297,22 @@ public class LodDataBuilder
 			for (int relBlockX = 0; relBlockX < LodUtil.CHUNK_WIDTH; relBlockX++)
 			{
 				List<DhApiTerrainDataPoint> columnDataPoints = apiChunk.getDataPoints(relBlockX, relBlockZ);
+				
+				// mark the data source as non-empty if we find any non-air blocks
+				if (dataSource.isEmpty)
+				{
+					for (int i = 0; i < columnDataPoints.size(); i++)
+					{
+						DhApiTerrainDataPoint dataPoint = columnDataPoints.get(i);
+						if (dataPoint.blockStateWrapper != null
+							&& !dataPoint.blockStateWrapper.isAir())
+						{
+							dataSource.isEmpty = false;
+							break;
+						}
+					}
+				}
+				
 				LodDataBuilder.putListInTopDownOrder(columnDataPoints);
 				if (runAdditionalValidation)
 				{
@@ -303,7 +327,6 @@ public class LodDataBuilder
 						packedDataPoints,
 						relBlockX + relSourceBlockX, relBlockZ + relSourceBlockZ,
 						EDhApiWorldGenerationStep.LIGHT, EDhApiWorldCompressionMode.MERGE_SAME_BLOCKS);
-				dataSource.isEmpty = false;
 			}
 		}
 		return dataSource;
