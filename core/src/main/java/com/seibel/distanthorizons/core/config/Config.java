@@ -1456,6 +1456,7 @@ public class Config
 							+ "How many threads should be used by Distant Horizons? \n"
 							+ "")
 					.build();
+			
 			public static final ConfigEntry<Double> threadRunTimeRatio = new ConfigEntry.Builder<Double>()
 					.setChatCommandName("threading.threadRunTimeRatio")
 					.setMinDefaultMax(0.01, ThreadPresetConfigEventHandler.getDefaultRunTimeRatio(), 1.0)
@@ -1468,6 +1469,19 @@ public class Config
 							+ "tune CPU performance. \n" +
 							"")
 					.build();
+			
+			public static final ConfigEntry<Integer> threadPriority = new ConfigEntry.Builder<Integer>()
+				.setAppearance(EConfigEntryAppearance.ONLY_IN_FILE) // only in file since this requires a MC reboot to change
+				.setMinDefaultMax(Thread.MIN_PRIORITY, // 1
+					Thread.NORM_PRIORITY, // 5 (1 higher than C2ME's default priority of 4 which can help reduce issues with Chunky)
+					Thread.MAX_PRIORITY) // 10
+				.comment(""
+					+ "What Java thread priority should DH's primary thread pools run with? \n"
+					+ "\n"
+					+ "You probably don't need to change this unless you are also \n"
+					+ "running C2ME and are seeing thread starvation in either C2ME or DH. \n"
+					+ "")
+				.build();
 			
 			
 			
