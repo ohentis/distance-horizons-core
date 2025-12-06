@@ -24,12 +24,14 @@ import com.seibel.distanthorizons.core.config.ConfigHandler;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.config.types.AbstractConfigBase;
 import com.seibel.distanthorizons.core.config.types.ConfigEntry;
+import com.seibel.distanthorizons.core.jar.EPlatform;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import org.apache.logging.log4j.LogManager;
 import com.seibel.distanthorizons.core.logging.DhLogger;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -62,7 +64,16 @@ public class ConfigFileHandler
 	
 	public ConfigFileHandler(Path configPath)
 	{
-		this.configPath = configPath;
+		String path = configPath.toAbsolutePath().toString(); // relative paths don't work if long file paths are enabled below
+		if (EPlatform.get() == EPlatform.WINDOWS)
+		{
+			// enable long file paths on windows to prevent edge cases where
+			// users' MC folder has a long file path (IE custom launchers)
+			// https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation?tabs=registry
+			path = "\\\\?\\" + path;
+		}
+		this.configPath = new File(path).toPath();
+		
 		
 		this.nightConfig = CommentedFileConfig
 				.builder(this.configPath.toFile())
