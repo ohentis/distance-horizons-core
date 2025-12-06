@@ -121,6 +121,16 @@ public class VanillaFadeRenderer
 	
 	public void render(Mat4f mcModelViewMatrix, Mat4f mcProjectionMatrix, float partialTicks, IClientLevelWrapper level)
 	{
+		int depthTextureId = LodRenderer.INSTANCE.getActiveDepthTextureId();
+		if (depthTextureId == -1)
+		{
+			// the renderer hasn't been set up yet
+			// trying to render fading may cause GL errors
+			return;
+		}
+		
+		
+		
 		IProfilerWrapper profiler = MC_CLIENT.getProfiler();
 		profiler.pop(); // get out of "terrain"
 		profiler.push("DH-Vanilla Fade");
@@ -158,7 +168,7 @@ public class VanillaFadeRenderer
 				
 				FadeApplyShader.INSTANCE.fadeTexture = this.fadeTexture;
 				FadeApplyShader.INSTANCE.readFramebuffer = DhFadeShader.INSTANCE.frameBuffer;
-				FadeApplyShader.INSTANCE.drawFramebuffer = LodRenderer.INSTANCE.getActiveFramebufferId();
+				FadeApplyShader.INSTANCE.drawFramebuffer = MC_RENDER.getTargetFramebuffer();
 				FadeApplyShader.INSTANCE.render(partialTicks);
 			}
 			

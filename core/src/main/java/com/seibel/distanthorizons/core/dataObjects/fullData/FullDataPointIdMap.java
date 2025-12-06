@@ -268,7 +268,7 @@ public class FullDataPointIdMap
 			// necessary to prevent issues with deserializing objects after the level has been closed
 			if (Thread.interrupted())
 			{
-				throw new InterruptedException(FullDataPointIdMap.class.getSimpleName() + " task interrupted.");
+				throw new InterruptedException("[" + FullDataPointIdMap.class.getSimpleName() + "] deserializing interrupted.");
 			}
 			
 			

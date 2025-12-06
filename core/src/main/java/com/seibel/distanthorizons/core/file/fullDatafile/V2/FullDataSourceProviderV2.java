@@ -134,14 +134,14 @@ public class FullDataSourceProviderV2 implements IDebugRenderable, AutoCloseable
 	
 	public void addDataSourceUpdateListener(IDataSourceUpdateListenerFunc<FullDataSourceV2> listener)
 	{
-		synchronized (this.dataUpdater)
+		synchronized (this.dataUpdater.dateSourceUpdateListeners)
 		{
 			this.dataUpdater.dateSourceUpdateListeners.add(listener);
 		}
 	}
 	public void removeDataSourceUpdateListener(IDataSourceUpdateListenerFunc<FullDataSourceV2> listener)
 	{
-		synchronized (this.dataUpdater)
+		synchronized (this.dataUpdater.dateSourceUpdateListeners)
 		{
 			this.dataUpdater.dateSourceUpdateListeners.add(listener);
 		}

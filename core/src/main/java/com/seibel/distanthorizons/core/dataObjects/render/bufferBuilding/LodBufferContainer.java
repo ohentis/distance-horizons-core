@@ -112,7 +112,8 @@ public class LodBufferContainer implements AutoCloseable
 			try
 			{
 				// skip this event if requested
-				if (Thread.interrupted() || this.uploadFuture.isCancelled())
+				if (Thread.interrupted() 
+					|| this.uploadFuture.isCancelled())
 				{
 					throw new InterruptedException();
 				}

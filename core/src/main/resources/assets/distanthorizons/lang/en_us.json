@@ -678,6 +678,10 @@
     "How many threads DH will use.",
   "distanthorizons.config.common.multiThreading.threadRunTimeRatio":
     "Runtime % for threads",
+  "distanthorizons.config.common.multiThreading.threadPriority":
+    "Thread Priority",
+  "distanthorizons.config.common.multiThreading.threadPriority.@tooltip":
+    "What Java thread priority should DH's primary thread pools run with?\n\nYou probably don't need to change this unless you are also \nrunning C2ME and are seeing thread starvation in either C2ME or DH.",
 
 
 
@@ -720,6 +724,8 @@
     "Show Replay Warning",
   "distanthorizons.config.common.logging.warning.showUpdateQueueOverloadedChatWarning":
     "Show Update Queue Overloaded Warning",
+  "distanthorizons.config.common.logging.warning.showSlowWorldGenSettingWarnings":
+    "Show Slow World Gen Warnings",
   "distanthorizons.config.common.logging.warning.showModCompatibilityWarningsOnStartup":
     "Show Mod Compatibility Warnings",
 
@@ -975,7 +981,9 @@
   "distanthorizons.config.enum.EDhApiDataCompressionMode.LZ4":
     "Fastest/Big - LZ4",
   "distanthorizons.config.enum.EDhApiDataCompressionMode.Z_STD":
-    "Fast/Small - Z_STD",
+    "Fastest/Small - Z_STD - Block",
+  "distanthorizons.config.enum.EDhApiDataCompressionMode.Z_STD_STREAM":
+    "Fast/Small - Z_STD - Stream",
   "distanthorizons.config.enum.EDhApiDataCompressionMode.LZMA2":
     "Slow/Smallest - LZMA2",
     

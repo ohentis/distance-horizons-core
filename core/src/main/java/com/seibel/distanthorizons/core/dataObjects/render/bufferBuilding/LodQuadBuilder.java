@@ -148,8 +148,18 @@ public class LodQuadBuilder
 			throw new IllegalArgumentException("addQuadAdj() is only for adj direction! Not UP or Down!");
 		}
 		
+		
+		ArrayList<BufferQuad> quadList;
+		if (this.doTransparency && ColorUtil.getAlpha(color) < 255)
+		{
+			quadList = this.transparentQuads[dir.ordinal()];
+		}
+		else
+		{
+			quadList = this.opaqueQuads[dir.ordinal()]; 
+		}
+		
 		BufferQuad quad = new BufferQuad(x, y, z, widthEastWest, widthNorthSouthOrUpDown, color, irisBlockMaterialId, skyLight, blockLight, dir);
-		ArrayList<BufferQuad> quadList = (this.doTransparency && ColorUtil.getAlpha(color) < 255) ? this.transparentQuads[dir.ordinal()] : this.opaqueQuads[dir.ordinal()];
 		if (!quadList.isEmpty()
 			&& (
 				quadList.get(quadList.size() - 1).tryMerge(quad, BufferMergeDirectionEnum.EastWest)

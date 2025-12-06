@@ -19,6 +19,7 @@
 
 package com.seibel.distanthorizons.core.sql.dto;
 
+import com.github.luben.zstd.Zstd;
 import com.google.common.base.MoreObjects;
 import com.seibel.distanthorizons.api.enums.config.EDhApiDataCompressionMode;
 import com.seibel.distanthorizons.api.enums.config.EDhApiWorldCompressionMode;
@@ -317,12 +318,7 @@ public class FullDataSourceV2DTO
 			LongArrayList[] inputDataArray, ByteArrayList outputByteArray, 
 			EDhApiDataCompressionMode compressionModeEnum) throws IOException
 	{
-		// write the outputs to a stream to prep for writing to the database
-		ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-		
-		// normally a DhStream should be the topmost stream to prevent closing the stream accidentally, 
-		// but since this stream will be closed immediately after writing anyway, it won't be an issue
-		try (DhDataOutputStream compressedOut = new DhDataOutputStream(byteArrayOutputStream, compressionModeEnum))
+		try (DhDataOutputStream compressedOut = DhDataOutputStream.create(compressionModeEnum, outputByteArray))
 		{
 			// write the data
 			int dataArrayLength = FullDataSourceV2.WIDTH * FullDataSourceV2.WIDTH;
@@ -342,20 +338,13 @@ public class FullDataSourceV2DTO
 					compressedOut.writeLong(dataColumn.getLong(y));
 				}
 			}
-			
-			
-			// generate the checksum
-			compressedOut.flush();
-			byteArrayOutputStream.close();
-			outputByteArray.addElements(0, byteArrayOutputStream.toByteArray());
 		}
 	}
 	private static void readBlobToDataSourceDataArrayV1(
 			ByteArrayList inputCompressedDataByteArray, LongArrayList[] outputDataLongArray, 
 			EDhApiDataCompressionMode compressionModeEnum) throws IOException, DataCorruptedException
 	{
-		ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(inputCompressedDataByteArray.elements());
-		try (DhDataInputStream compressedIn = new DhDataInputStream(byteArrayInputStream, compressionModeEnum))
+		try (DhDataInputStream compressedIn = DhDataInputStream.create(inputCompressedDataByteArray, compressionModeEnum))
 		{
 			// read the data
 			int dataArrayLength = FullDataSourceV2.WIDTH * FullDataSourceV2.WIDTH;
@@ -407,8 +396,7 @@ public class FullDataSourceV2DTO
 			maxZ = FullDataSourceV2.WIDTH-1;
 		}
 		
-		ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-		try (DhDataOutputStream compressedOut = new DhDataOutputStream(byteArrayOutputStream, compressionModeEnum))
+		try (DhDataOutputStream compressedOut = DhDataOutputStream.create(compressionModeEnum, outputByteArray))
 		{
 			// this method would be simpler if we allocated a bunch of temporary arrays,
 			// but we're trying to avoid garbage.
@@ -525,10 +513,6 @@ public class FullDataSourceV2DTO
 					}
 				}
 			}
-			
-			compressedOut.flush();
-			byteArrayOutputStream.close();
-			outputByteArray.addElements(0, byteArrayOutputStream.toByteArray());
 		}
 	}
 	private static void readBlobToDataSourceDataArrayV2(
@@ -555,8 +539,8 @@ public class FullDataSourceV2DTO
 			maxZ = FullDataSourceV2.WIDTH-1;
 		}
 		
-		ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(inputCompressedDataByteArray.elements());
-		try (DhDataInputStream compressedIn = new DhDataInputStream(byteArrayInputStream, compressionModeEnum))
+		
+		try (DhDataInputStream compressedIn = DhDataInputStream.create(inputCompressedDataByteArray, compressionModeEnum))
 		{
 			// 1. column counts, preallocate
 			for (int x = minX; x < maxX; x++)
@@ -682,24 +666,17 @@ public class FullDataSourceV2DTO
 	
 	private static void writeGenerationStepsToBlob(ByteArrayList inputColumnGenStepByteArray, ByteArrayList outputByteArray, EDhApiDataCompressionMode compressionModeEnum) throws IOException
 	{
-		ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-		try (DhDataOutputStream compressedOut = new DhDataOutputStream(byteArrayOutputStream, compressionModeEnum))
+		try (DhDataOutputStream compressedOut = DhDataOutputStream.create(compressionModeEnum, outputByteArray))
 		{
 			for (int i = 0; i < inputColumnGenStepByteArray.size(); i++)
 			{
 				compressedOut.writeByte(inputColumnGenStepByteArray.getByte(i));
 			}
-			
-			compressedOut.flush();
-			byteArrayOutputStream.close();
-			outputByteArray.addElements(0, byteArrayOutputStream.toByteArray());
 		}
 	}
 	private static void readBlobToGenerationSteps(ByteArrayList inputCompressedDataByteArray, ByteArrayList outputByteArray, EDhApiDataCompressionMode compressionModeEnum) throws IOException, DataCorruptedException
 	{
-		ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(inputCompressedDataByteArray.elements());
-		
-		try(DhDataInputStream compressedIn = new DhDataInputStream(byteArrayInputStream, compressionModeEnum))
+		try(DhDataInputStream compressedIn = DhDataInputStream.create(inputCompressedDataByteArray, compressionModeEnum))
 		{
 			compressedIn.readFully(outputByteArray.elements(), 0, FullDataSourceV2.WIDTH * FullDataSourceV2.WIDTH);
 		}
@@ -712,24 +689,17 @@ public class FullDataSourceV2DTO
 	
 	private static void writeWorldCompressionModeToBlob(ByteArrayList inputWorldCompressionModeByteArray, ByteArrayList outputByteArray, EDhApiDataCompressionMode compressionModeEnum) throws IOException
 	{
-		ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-		try (DhDataOutputStream compressedOut = new DhDataOutputStream(byteArrayOutputStream, compressionModeEnum))
+		try (DhDataOutputStream compressedOut = DhDataOutputStream.create(compressionModeEnum, outputByteArray))
 		{
 			for (int i = 0; i < inputWorldCompressionModeByteArray.size(); i++)
 			{
 				compressedOut.write(inputWorldCompressionModeByteArray.getByte(i));
 			}
-			
-			compressedOut.flush();
-			byteArrayOutputStream.close();
-			outputByteArray.addElements(0, byteArrayOutputStream.toByteArray());
 		}
 	}
 	private static void readBlobToWorldCompressionMode(ByteArrayList inputCompressedDataByteArray, ByteArrayList outputByteArray, EDhApiDataCompressionMode compressionModeEnum) throws IOException, DataCorruptedException
 	{
-		ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(inputCompressedDataByteArray.elements());
-		
-		try(DhDataInputStream compressedIn = new DhDataInputStream(byteArrayInputStream, compressionModeEnum))
+		try(DhDataInputStream compressedIn = DhDataInputStream.create(inputCompressedDataByteArray, compressionModeEnum))
 		{
 			compressedIn.readFully(outputByteArray.elements(), 0, FullDataSourceV2.WIDTH * FullDataSourceV2.WIDTH);
 		}
@@ -742,20 +712,14 @@ public class FullDataSourceV2DTO
 	
 	private static void writeDataMappingToBlob(FullDataPointIdMap mapping, ByteArrayList outputByteArray, EDhApiDataCompressionMode compressionModeEnum) throws IOException
 	{
-		ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-		try(DhDataOutputStream compressedOut = new DhDataOutputStream(byteArrayOutputStream, compressionModeEnum))
+		try(DhDataOutputStream compressedOut = DhDataOutputStream.create(compressionModeEnum, outputByteArray))
 		{
 			mapping.serialize(compressedOut);
-			
-			compressedOut.flush();
-			byteArrayOutputStream.close();
-			outputByteArray.addElements(0, byteArrayOutputStream.toByteArray());
 		}
 	}
-	private static FullDataPointIdMap readBlobToDataMapping(ByteArrayList compressedMappingByteArray, long pos, @NotNull ILevelWrapper levelWrapper, EDhApiDataCompressionMode compressionModeEnum) throws IOException, InterruptedException, DataCorruptedException
+	private static FullDataPointIdMap readBlobToDataMapping(ByteArrayList inputCompressedDataByteArray, long pos, @NotNull ILevelWrapper levelWrapper, EDhApiDataCompressionMode compressionModeEnum) throws IOException, InterruptedException, DataCorruptedException
 	{
-		ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(compressedMappingByteArray.elements());
-		try (DhDataInputStream compressedIn = new DhDataInputStream(byteArrayInputStream, compressionModeEnum))
+		try (DhDataInputStream compressedIn = DhDataInputStream.create(inputCompressedDataByteArray, compressionModeEnum))
 		{
 			FullDataPointIdMap mapping = FullDataPointIdMap.deserialize(compressedIn, pos, levelWrapper);
 			return mapping;

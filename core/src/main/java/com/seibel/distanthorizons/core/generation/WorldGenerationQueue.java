@@ -40,6 +40,7 @@ import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.transformers.LodDataBuilder;
 import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
+import com.seibel.distanthorizons.core.util.ExceptionUtil;
 import com.seibel.distanthorizons.core.util.LodUtil.AssertFailureException;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
 import com.seibel.distanthorizons.core.util.objects.DataCorruptedException;
@@ -64,15 +65,6 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 {
 	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
 	private static final IWrapperFactory WRAPPER_FACTORY = SingletonInjector.INSTANCE.get(IWrapperFactory.class);
-	
-	/**
-	 * Defines how many tasks can be queued per thread. <br><br>
-	 *
-	 * TODO the multiplier here should change dynamically based on how fast the generator is vs the queuing thread,
-	 *  if this is too high it may cause issues when moving,
-	 *  but if it is too low the generator threads won't have enough tasks to work on
-	 */
-	private static final int MAX_QUEUED_TASKS_PER_THREAD = 3;
 	
 	
 	private final IDhApiWorldGenerator generator;
@@ -240,9 +232,9 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 			return true;
 		}
 		
+		// queue more tasks if any of the threads are available
 		int worldGenThreadCount = Math.max(Config.Common.MultiThreading.numberOfThreads.get(), 1);
-		int maxWorldGenTaskCount = worldGenThreadCount * MAX_QUEUED_TASKS_PER_THREAD;
-		return this.inProgressGenTasksByLodPos.size() > maxWorldGenTaskCount;
+		return this.inProgressGenTasksByLodPos.size() > worldGenThreadCount;
 	}
 	/**
 	 * @param targetPos the position to center the generation around
@@ -345,7 +337,7 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 			long totalGenTimeInMs = System.currentTimeMillis() - generationStartMsTime;
 			int chunkCount = generationRequestChunkWidthCount * generationRequestChunkWidthCount;
 			double timePerChunk = (double)totalGenTimeInMs / (double)chunkCount;
-			this.rollingAverageChunkGenTimeInMs.addValue(timePerChunk);
+			this.rollingAverageChunkGenTimeInMs.add(timePerChunk);
 		});
 		
 		newTaskGroup.genFuture = generationFuture;
@@ -358,7 +350,7 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 				if (exception != null)
 				{
 					// don't log the shutdown exceptions
-					if (!LodUtil.isInterruptOrReject(exception))
+					if (!ExceptionUtil.isInterruptOrReject(exception))
 					{
 						LOGGER.error("Error generating data for pos: " + DhSectionPos.toString(taskPos), exception);
 					}
@@ -412,11 +404,16 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 						{
 							IChunkWrapper chunkWrapper = WRAPPER_FACTORY.createChunkWrapper(generatedObjectArray);
 							
-							// TODO light data should be pulled (if possible) from the ChunkAccess object itself via ChunkFileReader.readLight
-							// but this should work for now
-							ArrayList<IChunkWrapper> nearbyChunkList = new ArrayList<IChunkWrapper>();
-							nearbyChunkList.add(chunkWrapper);
-							DhLightingEngine.INSTANCE.bakeChunkBlockLighting(chunkWrapper, nearbyChunkList, this.level.getLevelWrapper().hasSkyLight() ? LodUtil.MAX_MC_LIGHT : LodUtil.MIN_MC_LIGHT);
+							// only light the chunk here if necessary,
+							// lighting before this point is preferred but for potenial legacy API uses this
+							// check should be done
+							if (!chunkWrapper.isDhBlockLightingCorrect())
+							{
+								ArrayList<IChunkWrapper> nearbyChunkList = new ArrayList<>();
+								nearbyChunkList.add(chunkWrapper);
+								byte maxSkyLight = this.level.getLevelWrapper().hasSkyLight() ? LodUtil.MAX_MC_LIGHT : LodUtil.MIN_MC_LIGHT;
+								DhLightingEngine.INSTANCE.bakeChunkBlockLighting(chunkWrapper, nearbyChunkList, maxSkyLight);
+							}
 							
 							try (FullDataSourceV2 dataSource = LodDataBuilder.createFromChunk(this.level.getLevelWrapper(), chunkWrapper))
 							{

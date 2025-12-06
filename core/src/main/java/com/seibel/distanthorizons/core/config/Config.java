@@ -103,10 +103,7 @@ public class Config
 		
 		public static ConfigUiLinkedEntry quickEnableWorldGenerator = new ConfigUiLinkedEntry(Common.WorldGenerator.enableDistantGeneration);
 		
-		public static ConfigEntry<Boolean> quickShowWorldGenProgress = new ConfigEntry.Builder<Boolean>()
-				.set(false) // TODO should be set by the underlying world gen progress button, not a static default
-				.setAppearance(EConfigEntryAppearance.ONLY_IN_GUI)
-				.build();
+		public static ConfigUiLinkedEntry quickShowWorldGenProgress = new ConfigUiLinkedEntry(Common.WorldGenerator.showGenerationProgress);
 		
 		public static ConfigUiLinkedEntry quickLodCloudRendering = new ConfigUiLinkedEntry(Advanced.Graphics.GenericRendering.enableCloudRendering);
 		
@@ -1391,36 +1388,8 @@ public class Config
 			
 			public static ConfigEntry<EDhApiDataCompressionMode> dataCompression = new ConfigEntry.Builder<EDhApiDataCompressionMode>()
 					.set(EDhApiDataCompressionMode.Z_STD)
-					.comment(""
-							+ "What algorithm should be used to compress new LOD data? \n"
-							+ "This setting will only affect new or updated LOD data, \n"
-							+ "any data already generated when this setting is changed will be\n"
-							+ "unaffected until it needs to be re-written to the database.\n"
-							+ "\n"
-							+ EDhApiDataCompressionMode.UNCOMPRESSED + " \n"
-							+ "Should only be used for testing, is worse in every way vs ["+EDhApiDataCompressionMode.LZ4+"].\n"
-							+ "Expected Compression Ratio: 1.0\n"
-							+ "Estimated average DTO read speed: 6.09 milliseconds\n"
-							+ "Estimated average DTO write speed: 6.01 milliseconds\n"
-							+ "\n"
-							+ EDhApiDataCompressionMode.LZ4 + " \n"
-							+ "A good option if you're CPU limited and have plenty of hard drive space.\n"
-							+ "Expected Compression Ratio: 0.4513\n"
-							+ "Estimated average DTO read speed: 3.25 ms\n"
-							+ "Estimated average DTO write speed: 5.99 ms\n"
-							+ "\n"
-							+ EDhApiDataCompressionMode.Z_STD + " \n"
-							+ "A good option if you're CPU limited and have plenty of hard drive space.\n"
-							+ "Expected Compression Ratio: 0.2606\n"
-							+ "Estimated average DTO read speed: 9.31 ms\n"
-							+ "Estimated average DTO write speed: 15.13 ms\n"
-							+ "\n"
-							+ EDhApiDataCompressionMode.LZMA2 + " \n"
-							+ "Slow but very good compression.\n"
-							+ "Expected Compression Ratio: 0.2\n"
-							+ "Estimated average DTO read speed: 13.29 ms\n"
-							+ "Estimated average DTO write speed: 70.95 ms\n"
-							+ "")
+					// only visible via the API since there is no reason to use any compressor except ZStandard as of 2025-11-24
+					.setAppearance(EConfigEntryAppearance.ONLY_IN_API)
 					.build();
 			
 			public static ConfigEntry<EDhApiWorldCompressionMode> worldCompression = new ConfigEntry.Builder<EDhApiWorldCompressionMode>()
@@ -1440,49 +1409,6 @@ public class Config
 							+ "Only visible block/biome changes are recorded in the database. \n"
 							+ "Hidden blocks (IE ores) are ignored.  \n"
 							+ "Expected Compression Ratio: 0.7\n"
-							+ "")
-					.build();
-			
-			public static ConfigEntry<Boolean> recalculateChunkHeightmaps = new ConfigEntry.Builder<Boolean>()
-					.set(false)
-					.comment(""
-							+ "True: Recalculate chunk height maps before chunks can be used by DH.\n"
-							+ "      This can fix problems with worlds created by World Painter or \n"
-							+ "      other external tools where the heightmap format may be incorrect. \n"
-							+ "False: Assume any height maps handled by Minecraft are correct. \n"
-							+ "\n"
-							+ "Fastest: False\n"
-							+ "Most Compatible: True\n"
-							+ "")
-					.build();
-			
-			public static ConfigEntry<Boolean> pullLightingForPregeneratedChunks = new ConfigEntry.Builder<Boolean>()
-					.set(false)
-					.comment(""
-							+ "If true LOD generation for pre-existing chunks will attempt to pull the lighting data \n"
-							+ "saved in Minecraft's Region files. \n"
-							+ "If false DH will pull in chunks without lighting and re-light them. \n"
-							+ " \n"
-							+ "Setting this to true will result in faster LOD generation \n"
-							+ "for already generated worlds, but is broken by most lighting mods. \n"
-							+ " \n"
-							+ "Set this to false if LODs are black. \n"
-							+ "")
-					.build();
-			
-			public static ConfigEntry<Boolean> assumePreExistingChunksAreFinished = new ConfigEntry.Builder<Boolean>()
-					.set(false)
-					.comment(""
-							+ "When DH pulls in pre-existing chunks it will attempt to \n"
-							+ "run any missing world generation steps; for example: \n"
-							+ "if a chunk has the status SURFACE, DH will skip BIOMES \n"
-							+ "and SURFACE, but will run FEATURES. \n"
-							+ " \n"
-							+ "However if for some reason the chunks are malformed \n"
-							+ "or there's some other issue that causes the status \n"
-							+ "to be incorrect that can either cause world gen \n"
-							+ "lock-ups and/or crashes. \n"
-							+ "If either of those happen try setting this to True. \n"
 							+ "")
 					.build();
 			
@@ -1527,6 +1453,7 @@ public class Config
 							+ "How many threads should be used by Distant Horizons? \n"
 							+ "")
 					.build();
+			
 			public static final ConfigEntry<Double> threadRunTimeRatio = new ConfigEntry.Builder<Double>()
 					.setChatCommandName("threading.threadRunTimeRatio")
 					.setMinDefaultMax(0.01, ThreadPresetConfigEventHandler.getDefaultRunTimeRatio(), 1.0)
@@ -1539,6 +1466,19 @@ public class Config
 							+ "tune CPU performance. \n" +
 							"")
 					.build();
+			
+			public static final ConfigEntry<Integer> threadPriority = new ConfigEntry.Builder<Integer>()
+				.setAppearance(EConfigEntryAppearance.ONLY_IN_FILE) // only in file since this requires a MC reboot to change
+				.setMinDefaultMax(Thread.MIN_PRIORITY, // 1
+					Thread.NORM_PRIORITY, // 5 (1 higher than C2ME's default priority of 4 which can help reduce issues with Chunky)
+					Thread.MAX_PRIORITY) // 10
+				.comment(""
+					+ "What Java thread priority should DH's primary thread pools run with? \n"
+					+ "\n"
+					+ "You probably don't need to change this unless you are also \n"
+					+ "running C2ME and are seeing thread starvation in either C2ME or DH. \n"
+					+ "")
+				.build();
 			
 			
 			
@@ -1573,14 +1513,6 @@ public class Config
 					.set(EDhApiLoggerLevel.INFO)
 					.comment(""
 							+ "If enabled, the mod will log information about the world generation process. \n"
-							+ "This can be useful for debugging.")
-					.build();
-			
-			public static ConfigEntry<EDhApiLoggerLevel> logWorldGenPerformanceToFile = new ConfigEntry.Builder<EDhApiLoggerLevel>()
-					.setChatCommandName("logging.logWorldGenPerformance")
-					.set(EDhApiLoggerLevel.INFO)
-					.comment(""
-							+ "If enabled, the mod will log performance about the world generation process. \n"
 							+ "This can be useful for debugging.")
 					.build();
 			
@@ -1663,6 +1595,14 @@ public class Config
 				
 				public static ConfigEntry<Boolean> showUpdateQueueOverloadedChatWarning = new ConfigEntry.Builder<Boolean>()
 						.set(false)
+						.comment(""
+								+ "If enabled, a chat message will be displayed when DH has too many chunks \n"
+								+ "queued for updating. \n"
+								+ "")
+						.build();
+				
+				public static ConfigEntry<Boolean> showSlowWorldGenSettingWarnings = new ConfigEntry.Builder<Boolean>()
+						.set(true)
 						.comment(""
 								+ "If enabled, a chat message will be displayed when DH has too many chunks \n"
 								+ "queued for updating. \n"
@@ -1892,7 +1832,6 @@ public class Config
 				ThreadPresetConfigEventHandler.INSTANCE.setUiOnlyConfigValues();
 				RenderQualityPresetConfigEventHandler.INSTANCE.setUiOnlyConfigValues();
 				QuickRenderToggleConfigEventHandler.INSTANCE.setUiOnlyConfigValues();
-				QuickShowWorldGenProgressConfigEventHandler.INSTANCE.setUiOnlyConfigValues();
 			}
 			catch (Exception e)
 			{

@@ -3,6 +3,7 @@ package com.seibel.distanthorizons.core.util;
 import com.seibel.distanthorizons.core.util.objects.UncheckedInterruptedException;
 
 import java.nio.channels.ClosedByInterruptException;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.RejectedExecutionException;
 
@@ -27,5 +28,17 @@ public class ExceptionUtil
 				|| throwable instanceof ClosedByInterruptException;
 	}
 	
+	
+	public static boolean isInterruptOrReject(Throwable t)
+	{
+		Throwable unwrapped = ensureUnwrap(t);
+		return UncheckedInterruptedException.isInterrupt(unwrapped) ||
+				unwrapped instanceof RejectedExecutionException ||
+				unwrapped instanceof CancellationException;
+	}
+	public static Throwable ensureUnwrap(Throwable t)
+	{
+		return t instanceof CompletionException ? ensureUnwrap(t.getCause()) : t;
+	}
 	
 }

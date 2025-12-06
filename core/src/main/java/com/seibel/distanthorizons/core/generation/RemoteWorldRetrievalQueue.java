@@ -69,7 +69,7 @@ public class RemoteWorldRetrievalQueue extends AbstractFullDataNetworkRequestQue
 					int chunkWidth = DhSectionPos.getChunkWidth(sectionPos);
 					int chunkCount = chunkWidth * chunkWidth;
 					double timePerChunk = (double)totalGenTimeInMs / (double)chunkCount;
-					this.rollingAverageChunkGenTimeInMs.addValue(timePerChunk);
+					this.rollingAverageChunkGenTimeInMs.add(timePerChunk);
 					
 					switch (requestResult)
 					{

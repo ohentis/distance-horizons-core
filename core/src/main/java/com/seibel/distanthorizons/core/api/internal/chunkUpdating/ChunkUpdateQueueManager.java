@@ -8,6 +8,10 @@ import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.world.EWorldEnvironment;
 import com.seibel.distanthorizons.core.logging.DhLogger;
 
+import java.util.Collections;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
 public class ChunkUpdateQueueManager
 {
 	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
@@ -15,6 +19,7 @@ public class ChunkUpdateQueueManager
 	
 	public final ChunkPosQueue updateQueue;
 	public final ChunkPosQueue preUpdateQueue;
+	public final Set<DhChunkPos> ignoredChunkPosSet = Collections.newSetFromMap(new ConcurrentHashMap<>());
 	
 	public int maxSize = 500;
 	
@@ -38,12 +43,18 @@ public class ChunkUpdateQueueManager
 	// list/set methods //
 	//==================//
 	
-	public boolean contains(DhChunkPos pos) { return this.updateQueue.contains(pos) || this.preUpdateQueue.contains(pos); }
+	public boolean contains(DhChunkPos pos) 
+	{ 
+		return this.updateQueue.contains(pos)
+			|| this.ignoredChunkPosSet.contains(pos)	
+			|| this.preUpdateQueue.contains(pos); 
+	}
 	
 	public void clear()
 	{
 		this.updateQueue.clear();
 		this.preUpdateQueue.clear();
+		this.ignoredChunkPosSet.clear();
 	}
 	public int getQueuedCount() { return this.updateQueue.getQueuedCount() + this.preUpdateQueue.getQueuedCount(); }
 	public boolean isEmpty()
@@ -128,6 +139,15 @@ public class ChunkUpdateQueueManager
 			}
 		}
 	}
+	
+	
+	
+	//=========//
+	// ignores //
+	//=========//
+	
+	public void addPosToIgnore(DhChunkPos chunkPos) { this.ignoredChunkPosSet.add(chunkPos); }
+	public void removePosToIgnore(DhChunkPos chunkPos) { this.ignoredChunkPosSet.remove(chunkPos); }
 	
 	
 	

@@ -157,8 +157,8 @@ public final class BufferQuad
 			return false;
 		
 		// make sure these quads share the same perpendicular axis
-		if ((mergeDirection == BufferMergeDirectionEnum.EastWest && this.y != quad.y) ||
-				(mergeDirection == BufferMergeDirectionEnum.NorthSouthOrUpDown && this.x != quad.x))
+		if ((mergeDirection == BufferMergeDirectionEnum.EastWest && this.y != quad.y)
+			|| (mergeDirection == BufferMergeDirectionEnum.NorthSouthOrUpDown && this.x != quad.x))
 		{
 			return false;
 		}
