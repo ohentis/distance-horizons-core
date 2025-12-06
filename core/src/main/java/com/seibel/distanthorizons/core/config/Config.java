@@ -103,10 +103,7 @@ public class Config
 		
 		public static ConfigUiLinkedEntry quickEnableWorldGenerator = new ConfigUiLinkedEntry(Common.WorldGenerator.enableDistantGeneration);
 		
-		public static ConfigEntry<Boolean> quickShowWorldGenProgress = new ConfigEntry.Builder<Boolean>()
-				.set(false) // TODO should be set by the underlying world gen progress button, not a static default
-				.setAppearance(EConfigEntryAppearance.ONLY_IN_GUI)
-				.build();
+		public static ConfigUiLinkedEntry quickShowWorldGenProgress = new ConfigUiLinkedEntry(Common.WorldGenerator.showGenerationProgress);
 		
 		public static ConfigUiLinkedEntry quickLodCloudRendering = new ConfigUiLinkedEntry(Advanced.Graphics.GenericRendering.enableCloudRendering);
 		
@@ -1835,7 +1832,6 @@ public class Config
 				ThreadPresetConfigEventHandler.INSTANCE.setUiOnlyConfigValues();
 				RenderQualityPresetConfigEventHandler.INSTANCE.setUiOnlyConfigValues();
 				QuickRenderToggleConfigEventHandler.INSTANCE.setUiOnlyConfigValues();
-				QuickShowWorldGenProgressConfigEventHandler.INSTANCE.setUiOnlyConfigValues();
 			}
 			catch (Exception e)
 			{
