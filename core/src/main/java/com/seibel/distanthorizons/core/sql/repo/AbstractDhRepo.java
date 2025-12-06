@@ -140,7 +140,7 @@ public abstract class AbstractDhRepo<TKey, TDTO extends IBaseDTO<TKey>> implemen
 		// connection setup //
 		//==================//
 		
-		String filePath = this.databaseFile.getPath();
+		String filePath = this.databaseFile.getAbsolutePath(); // relative paths don't work if long file paths are enabled below
 		if (EPlatform.get() == EPlatform.WINDOWS)
 		{
 			// enable long file paths on windows to prevent edge cases where
