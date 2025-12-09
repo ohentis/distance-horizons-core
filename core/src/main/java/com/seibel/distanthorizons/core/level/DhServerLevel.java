@@ -27,6 +27,8 @@ import com.seibel.distanthorizons.core.render.renderer.generic.GenericObjectRend
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.IOException;
+import java.sql.SQLException;
 import java.util.List;
 
 public class DhServerLevel extends AbstractDhServerLevel
@@ -35,10 +37,12 @@ public class DhServerLevel extends AbstractDhServerLevel
 	// constructor //
 	//=============//
 	
-	public DhServerLevel(ISaveStructure saveStructure, IServerLevelWrapper serverLevelWrapper, ServerPlayerStateManager serverPlayerStateManager)
-	{
-		super(saveStructure, serverLevelWrapper, serverPlayerStateManager);
-	}
+	public DhServerLevel(
+		ISaveStructure saveStructure, 
+		IServerLevelWrapper serverLevelWrapper, 
+		ServerPlayerStateManager serverPlayerStateManager
+		) throws SQLException, IOException
+	{ super(saveStructure, serverLevelWrapper, serverPlayerStateManager); }
 	
 	
 	

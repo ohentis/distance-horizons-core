@@ -96,11 +96,11 @@ public class FullDataSourceProviderV2 implements IDebugRenderable, AutoCloseable
 	// constructor //
 	//=============//
 	
-	public FullDataSourceProviderV2(IDhLevel level, ISaveStructure saveStructure) { this(level, saveStructure, null); }
-	public FullDataSourceProviderV2(IDhLevel level, ISaveStructure saveStructure, @Nullable File saveDirOverride) 
+	public FullDataSourceProviderV2(IDhLevel level, ISaveStructure saveStructure) throws SQLException, IOException { this(level, saveStructure, null); }
+	public FullDataSourceProviderV2(IDhLevel level, ISaveStructure saveStructure, @Nullable File saveDirOverride) throws SQLException, IOException
 	{
 		this.saveDir = (saveDirOverride == null) ? saveStructure.getSaveFolder(level.getLevelWrapper()) : saveDirOverride;
-		this.repo = this.createRepo();
+		this.repo = new FullDataSourceV2Repo(AbstractDhRepo.DEFAULT_DATABASE_TYPE, new File(this.saveDir.getPath() + File.separator + ISaveStructure.DATABASE_NAME));
 		this.level = level;
 		
 		this.levelId = this.level.getLevelWrapper().getDhIdentifier();
@@ -111,19 +111,6 @@ public class FullDataSourceProviderV2 implements IDebugRenderable, AutoCloseable
 		
 		DebugRenderer.register(this, Config.Client.Advanced.Debugging.DebugWireframe.showFullDataUpdateStatus);
 		
-	}
-	private FullDataSourceV2Repo createRepo()
-	{
-		try
-		{
-			return new FullDataSourceV2Repo(AbstractDhRepo.DEFAULT_DATABASE_TYPE, new File(this.saveDir.getPath() + File.separator + ISaveStructure.DATABASE_NAME));
-		}
-		catch (SQLException e)
-		{
-			// should only happen if there is an issue with the database (it's locked or the folder path is missing) 
-			// or the database update failed
-			throw new RuntimeException(e);
-		}
 	}
 	
 	
@@ -239,7 +226,27 @@ public class FullDataSourceProviderV2 implements IDebugRenderable, AutoCloseable
 		catch (InterruptedException ignore) { }
 		catch (IOException e)
 		{
-			LOGGER.warn("File read Error for pos ["+DhSectionPos.toString(pos)+"], error: "+e.getMessage(), e);
+			String message = e.getMessage();
+			if (CORRUPT_DATA_ERRORS_LOGGED.add(message))
+			{
+				LOGGER.warn("File read Error for pos [" + DhSectionPos.toString(pos) + "], this error message will only be logged once, error: [" + message + "].", e);
+			}
+		}
+		catch (IllegalStateException e)
+		{	
+			String message = e.getMessage();
+			if (CORRUPT_DATA_ERRORS_LOGGED.add(message))
+			{
+				LOGGER.warn("Incorrectly formatted data for: [" + DhSectionPos.toString(pos) + "], this error message will only be logged once, error: [" + message + "].", e);
+			}
+		}
+		catch (Exception e)
+		{
+			String message = e.getMessage();
+			if (CORRUPT_DATA_ERRORS_LOGGED.add(message))
+			{
+				LOGGER.warn("Unexpected error getting: [" + DhSectionPos.toString(pos) + "], this error message will only be logged once, error: [" + message + "].", e);
+			}
 		}
 		
 		// an error occurred

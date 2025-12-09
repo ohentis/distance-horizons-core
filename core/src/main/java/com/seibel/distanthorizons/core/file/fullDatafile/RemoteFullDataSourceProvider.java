@@ -31,6 +31,8 @@ import com.seibel.distanthorizons.core.logging.DhLogger;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
+import java.io.IOException;
+import java.sql.SQLException;
 import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -58,7 +60,8 @@ public class RemoteFullDataSourceProvider extends GeneratedFullDataSourceProvide
 	
 	public RemoteFullDataSourceProvider(
 			IDhLevel level, ISaveStructure saveStructure, @Nullable File saveDirOverride, 
-			@Nullable SyncOnLoadRequestQueue syncOnLoadRequestQueue)
+			@Nullable SyncOnLoadRequestQueue syncOnLoadRequestQueue
+		) throws SQLException, IOException
 	{
 		super(level, saveStructure, saveDirOverride);
 		this.syncOnLoadRequestQueue = syncOnLoadRequestQueue;

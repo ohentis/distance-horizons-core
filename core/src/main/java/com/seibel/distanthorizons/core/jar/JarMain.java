@@ -216,7 +216,7 @@ public class JarMain
 			{
 				repo = new FullDataSourceV2Repo(FullDataSourceV2Repo.DEFAULT_DATABASE_TYPE, dbFile);
 			}
-			catch (SQLException e)
+			catch (SQLException | IOException e)
 			{
 				LOGGER.error("Failed to initialize connection with database: ["+exportFile.getAbsolutePath()+"], error: ["+e.getMessage()+"].", e);
 				return;

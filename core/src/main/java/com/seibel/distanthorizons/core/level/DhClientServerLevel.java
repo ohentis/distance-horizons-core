@@ -33,6 +33,8 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapp
 import org.jetbrains.annotations.Nullable;
 
 import java.awt.*;
+import java.io.IOException;
+import java.sql.SQLException;
 import java.util.List;
 
 /** The level used for a singleplayer world */
@@ -48,7 +50,11 @@ public class DhClientServerLevel extends AbstractDhServerLevel implements IDhCli
 	// constructor //
 	//=============//
 	
-	public DhClientServerLevel(ISaveStructure saveStructure, IServerLevelWrapper serverLevelWrapper, ServerPlayerStateManager serverPlayerStateManager)
+	public DhClientServerLevel(
+		ISaveStructure saveStructure, 
+		IServerLevelWrapper serverLevelWrapper, 
+		ServerPlayerStateManager serverPlayerStateManager
+		) throws SQLException, IOException
 	{
 		super(saveStructure, serverLevelWrapper, serverPlayerStateManager, false);
 		

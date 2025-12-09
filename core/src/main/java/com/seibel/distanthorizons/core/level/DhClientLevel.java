@@ -49,6 +49,8 @@ import org.jetbrains.annotations.Nullable;
 import javax.annotation.CheckForNull;
 import java.awt.*;
 import java.io.File;
+import java.io.IOException;
+import java.sql.SQLException;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -94,9 +96,18 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 	// constructor //
 	//=============//
 	
-	public DhClientLevel(ISaveStructure saveStructure, IClientLevelWrapper clientLevelWrapper, @Nullable ClientNetworkState networkState) 
+	public DhClientLevel(
+		ISaveStructure saveStructure, 
+		IClientLevelWrapper clientLevelWrapper, 
+		@Nullable ClientNetworkState networkState
+		) throws SQLException, IOException
 	{ this(saveStructure, clientLevelWrapper, null, networkState); }
-	public DhClientLevel(ISaveStructure saveStructure, IClientLevelWrapper clientLevelWrapper, @Nullable File fullDataSaveDirOverride, @Nullable ClientNetworkState networkState)
+	public DhClientLevel(
+		ISaveStructure saveStructure, 
+		IClientLevelWrapper clientLevelWrapper, 
+		@Nullable File fullDataSaveDirOverride, 
+		@Nullable ClientNetworkState networkState
+		) throws SQLException, IOException
 	{
 		File saveFolder = saveStructure.getSaveFolder(clientLevelWrapper);
 		File pre23Folder = saveStructure.getPre23SaveFolder(clientLevelWrapper);

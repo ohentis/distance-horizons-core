@@ -29,6 +29,8 @@ import com.seibel.distanthorizons.core.logging.DhLogger;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
+import java.io.IOException;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.concurrent.*;
 
@@ -56,16 +58,19 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 	// constructor //
 	//=============//
 	
-	public AbstractDhServerLevel(ISaveStructure saveStructure, IServerLevelWrapper serverLevelWrapper, ServerPlayerStateManager serverPlayerStateManager)
-	{
-		this(saveStructure, serverLevelWrapper, serverPlayerStateManager, true);
-	}
+	public AbstractDhServerLevel(
+		ISaveStructure saveStructure, 
+		IServerLevelWrapper serverLevelWrapper, 
+		ServerPlayerStateManager serverPlayerStateManager
+		) throws SQLException, IOException
+	{ this(saveStructure, serverLevelWrapper, serverPlayerStateManager, true); }
+	
 	public AbstractDhServerLevel(
 			ISaveStructure saveStructure,
 			IServerLevelWrapper serverLevelWrapper,
 			ServerPlayerStateManager serverPlayerStateManager,
 			boolean runRepoReliantSetup
-		)
+		) throws SQLException, IOException
 	{
 		if (saveStructure.getSaveFolder(serverLevelWrapper).mkdirs())
 		{

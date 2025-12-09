@@ -47,6 +47,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
+import java.io.IOException;
+import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -80,8 +82,8 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 	// constructor //
 	//=============//
 	
-	public GeneratedFullDataSourceProvider(IDhLevel level, ISaveStructure saveStructure) { super(level, saveStructure); }
-	public GeneratedFullDataSourceProvider(IDhLevel level, ISaveStructure saveStructure, @Nullable File saveDirOverride) 
+	public GeneratedFullDataSourceProvider(IDhLevel level, ISaveStructure saveStructure) throws SQLException, IOException { super(level, saveStructure); }
+	public GeneratedFullDataSourceProvider(IDhLevel level, ISaveStructure saveStructure, @Nullable File saveDirOverride) throws SQLException, IOException
 	{
 		super(level, saveStructure, saveDirOverride);
 		

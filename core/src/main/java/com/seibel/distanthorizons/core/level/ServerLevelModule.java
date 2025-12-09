@@ -28,6 +28,9 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.WorldGeneratorInjector;
 import com.seibel.distanthorizons.core.logging.DhLogger;
 
+import java.io.IOException;
+import java.sql.SQLException;
+
 public class ServerLevelModule implements AutoCloseable
 {
 	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
@@ -44,7 +47,7 @@ public class ServerLevelModule implements AutoCloseable
 	// constructor //
 	//=============//
 	
-	public ServerLevelModule(IDhServerLevel parentServerLevel, ISaveStructure saveStructure)
+	public ServerLevelModule(IDhServerLevel parentServerLevel, ISaveStructure saveStructure) throws SQLException, IOException
 	{
 		this.parentServerLevel = parentServerLevel;
 		this.saveStructure = saveStructure;

@@ -34,6 +34,7 @@ import testItems.sql.TestPrimaryKeyRepo;
 import testItems.sql.TestSingleKeyDto;
 
 import java.io.File;
+import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -137,7 +138,7 @@ public class DhRepoSqliteTest
 			Assert.assertFalse("DTO exists failed", primaryKeyRepo.existsWithKey(insertDto.getKey()));
 			
 		}
-		catch (SQLException e)
+		catch (SQLException | IOException e)
 		{
 			Assert.fail(e.getMessage());
 		}
@@ -200,7 +201,7 @@ public class DhRepoSqliteTest
 			Assert.assertFalse("DTO exists failed", compoundKeyRepo.existsWithKey(insertDto.getKey()));
 			
 		}
-		catch (SQLException e)
+		catch (SQLException | IOException e)
 		{
 			Assert.fail(e.getMessage());
 		}
@@ -330,7 +331,7 @@ public class DhRepoSqliteTest
 				Assert.assertNotEquals(0, primaryKeyRepo.openClosables.size());
 			}
 		}
-		catch (SQLException e)
+		catch (SQLException | IOException e)
 		{
 			Assert.fail(e.getMessage());
 		}
@@ -367,7 +368,7 @@ public class DhRepoSqliteTest
 			long endMs = System.currentTimeMillis();
 			System.out.println("Bulk update took ["+(endMs - startMs)+"] ms");
 		}
-		catch (SQLException e)
+		catch (SQLException | IOException e)
 		{
 			Assert.fail(e.getMessage());
 		}

@@ -31,6 +31,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.awt.*;
 import java.io.File;
+import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -47,7 +48,7 @@ public class BeaconBeamRepo extends AbstractDhRepo<DhBlockPos, BeaconBeamDTO>
 	// constructor //
 	//=============//
 	
-	public BeaconBeamRepo(String databaseType, File databaseFile) throws SQLException
+	public BeaconBeamRepo(String databaseType, File databaseFile) throws SQLException, IOException
 	{
 		super(databaseType, databaseFile, BeaconBeamDTO.class);
 	}

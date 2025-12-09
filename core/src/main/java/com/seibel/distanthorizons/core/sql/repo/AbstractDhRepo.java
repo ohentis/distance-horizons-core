@@ -75,7 +75,7 @@ public abstract class AbstractDhRepo<TKey, TDTO extends IBaseDTO<TKey>> implemen
 	//=============//
 	
 	/** @throws SQLException if the repo is unable to access the database or has trouble updating said database. */
-	public AbstractDhRepo(String databaseType, File databaseFile, Class<? extends TDTO> dtoClass) throws SQLException
+	public AbstractDhRepo(String databaseType, File databaseFile, Class<? extends TDTO> dtoClass) throws SQLException, IOException
 	{
 		this.databaseType = databaseType;
 		this.databaseFile = databaseFile;
@@ -107,7 +107,7 @@ public abstract class AbstractDhRepo<TKey, TDTO extends IBaseDTO<TKey>> implemen
 			{
 				if (!parentFolder.mkdirs())
 				{
-					throw new RuntimeException("Unable to create the necessary parent folders for the database file at location ["+databaseFile.getPath()+"].");
+					throw new IOException("Unable to create the necessary parent folders for the database file at location ["+databaseFile.getPath()+"].");
 				}
 			}
 			
@@ -119,18 +119,18 @@ public abstract class AbstractDhRepo<TKey, TDTO extends IBaseDTO<TKey>> implemen
 				}
 				catch (IOException e)
 				{
-					throw new RuntimeException("Unable to create database file at location ["+databaseFile.getPath()+"] due to error: ["+e.getMessage()+"]", e);
+					throw new IOException("Unable to create database file at location ["+databaseFile.getPath()+"] due to error: ["+e.getMessage()+"]", e);
 				}
 			}
 		}
 		
 		if (!databaseFile.canRead())
 		{
-			throw new RuntimeException("Unable to read database file at location ["+databaseFile.getPath()+"], please make sure the folder and file has the correct permissions.");
+			throw new IOException("Unable to read database file at location ["+databaseFile.getPath()+"], please make sure the folder and file has the correct permissions.");
 		}
 		if (!databaseFile.canWrite())
 		{
-			throw new RuntimeException("Unable to write database file at location ["+databaseFile.getPath()+"], please make sure the folder and file aren't set to read-only.");
+			throw new IOException("Unable to write database file at location ["+databaseFile.getPath()+"], please make sure the folder and file aren't set to read-only.");
 		}
 		
 		

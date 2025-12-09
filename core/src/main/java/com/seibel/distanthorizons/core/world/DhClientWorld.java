@@ -19,6 +19,7 @@
 
 package com.seibel.distanthorizons.core.world;
 
+import com.seibel.distanthorizons.core.api.internal.ClientApi;
 import com.seibel.distanthorizons.core.file.structure.ClientOnlySaveStructure;
 import com.seibel.distanthorizons.core.level.DhClientLevel;
 import com.seibel.distanthorizons.core.level.IDhLevel;
@@ -74,8 +75,24 @@ public class DhClientWorld extends AbstractDhWorld implements IDhClientWorld
 			return null;
 		}
 		
-		return this.levels.computeIfAbsent((IClientLevelWrapper) wrapper, 
-				(clientLevelWrapper) -> new DhClientLevel(this.saveStructure, clientLevelWrapper, this.networkState));
+		return this.levels.computeIfAbsent((IClientLevelWrapper) wrapper,
+			(clientLevelWrapper) ->
+			{
+				try
+				{
+					return new DhClientLevel(this.saveStructure, clientLevelWrapper, this.networkState);
+				}
+				catch (Exception e)
+				{
+					LOGGER.fatal("Failed to load client level, error: ["+e.getMessage()+"].", e);
+					
+					ClientApi.INSTANCE.showChatMessageNextFrame(// red text		
+						"\u00A7c" + "Distant Horizons: Client level loading failed." + "\u00A7r \n" +
+							"Unable to load level ["+clientLevelWrapper.getDhIdentifier()+"], LODs may not appear. See log for more information.");
+					
+					return null;
+				}
+			});
 	}
 	
 	@Override
