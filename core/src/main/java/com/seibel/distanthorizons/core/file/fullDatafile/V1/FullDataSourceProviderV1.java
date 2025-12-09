@@ -43,7 +43,7 @@ public class FullDataSourceProviderV1<TDhLevel extends IDhLevel>
 	// constructor //
 	//=============//
 	
-	public FullDataSourceProviderV1(TDhLevel level, File saveDir)
+	public FullDataSourceProviderV1(TDhLevel level, File saveDir) throws SQLException, IOException
 	{
 		this.level = level;
 		this.saveDir = saveDir;
@@ -52,7 +52,7 @@ public class FullDataSourceProviderV1<TDhLevel extends IDhLevel>
 			LOGGER.warn("Unable to create full data folder, file saving may fail.");
 		}
 		
-		this.repo = this.createRepo();
+		this.repo = new FullDataSourceV1Repo(AbstractDhRepo.DEFAULT_DATABASE_TYPE, new File(this.saveDir.getPath() + File.separator + ISaveStructure.DATABASE_NAME));
 	}
 	
 	
@@ -60,21 +60,6 @@ public class FullDataSourceProviderV1<TDhLevel extends IDhLevel>
 	//==================//
 	// abstract methods //
 	//==================//
-	
-	/** When this is called the parent folders should be created */
-	protected FullDataSourceV1Repo createRepo()
-	{
-		try
-		{
-			return new FullDataSourceV1Repo(AbstractDhRepo.DEFAULT_DATABASE_TYPE, new File(this.saveDir.getPath() + File.separator + ISaveStructure.DATABASE_NAME));
-		}
-		catch (SQLException e)
-		{
-			// should only happen if there is an issue with the database (it's locked or can't be created if missing) 
-			// or the database update failed
-			throw new RuntimeException(e);
-		}
-	}
 	
 	protected FullDataSourceV1 createDataSourceFromDto(FullDataSourceV1DTO dto) throws InterruptedException, IOException, DataCorruptedException
 	{

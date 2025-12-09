@@ -55,6 +55,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.awt.*;
 import java.io.File;
+import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -106,9 +107,9 @@ public abstract class AbstractDhLevel implements IDhLevel
 		{
 			newChunkHashRepo = new ChunkHashRepo(AbstractDhRepo.DEFAULT_DATABASE_TYPE, databaseFile);
 		}
-		catch (SQLException e)
+		catch (SQLException | IOException e)
 		{
-			LOGGER.error("Unable to create [ChunkHashRepo], error: ["+e.getMessage()+"].", e);
+			LOGGER.fatal("Unable to create ["+ChunkHashRepo.class.getSimpleName()+"], error: ["+e.getMessage()+"].", e);
 		}
 		this.chunkHashRepo = newChunkHashRepo;
 		
@@ -119,9 +120,9 @@ public abstract class AbstractDhLevel implements IDhLevel
 		{
 			newBeaconBeamRepo = new BeaconBeamRepo(AbstractDhRepo.DEFAULT_DATABASE_TYPE, databaseFile);
 		}
-		catch (SQLException e)
+		catch (SQLException | IOException e)
 		{
-			LOGGER.error("Unable to create [BeaconBeamRepo], error: ["+e.getMessage()+"].", e);
+			LOGGER.error("Unable to create ["+BeaconBeamRepo.class.getSimpleName()+"], error: ["+e.getMessage()+"].", e);
 		}
 		this.beaconBeamRepo = newBeaconBeamRepo;
 	}

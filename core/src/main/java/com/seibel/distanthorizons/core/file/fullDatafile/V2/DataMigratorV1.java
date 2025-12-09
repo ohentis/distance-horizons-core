@@ -14,6 +14,8 @@ import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 
 import java.io.File;
+import java.io.IOException;
+import java.sql.SQLException;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.List;
@@ -62,7 +64,8 @@ public class DataMigratorV1 implements IDebugRenderable, AutoCloseable
 	
 	public DataMigratorV1(
 			FullDataUpdaterV2 dataUpdater,
-			IDhLevel level, String levelId, File saveDir)
+			IDhLevel level, String levelId, File saveDir
+		) throws SQLException, IOException
 	{
 		this.dataUpdater = dataUpdater;
 		this.saveDir = saveDir;

@@ -19,6 +19,7 @@
 
 package com.seibel.distanthorizons.core.world;
 
+import com.seibel.distanthorizons.core.api.internal.ClientApi;
 import com.seibel.distanthorizons.core.level.DhServerLevel;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
@@ -51,7 +52,23 @@ public class DhServerWorld extends AbstractDhServerWorld<DhServerLevel>
 		}
 		
 		return this.dhLevelByLevelWrapper.computeIfAbsent(wrapper, 
-				(serverLevelWrapper) -> new DhServerLevel(this.saveStructure, (IServerLevelWrapper) serverLevelWrapper, this.getServerPlayerStateManager()));
+			(serverLevelWrapper) ->
+			{
+				try
+				{
+					return new DhServerLevel(this.saveStructure, (IServerLevelWrapper) serverLevelWrapper, this.getServerPlayerStateManager());
+				}
+				catch (Exception e)
+				{
+					LOGGER.fatal("Failed to load server level, error: ["+e.getMessage()+"].", e);
+					
+					ClientApi.INSTANCE.showChatMessageNextFrame(// red text		
+						"\u00A7c" + "Distant Horizons: Server level loading failed." + "\u00A7r \n" +
+							"Unable to load level ["+serverLevelWrapper.getDhIdentifier()+"], LODs may not appear. See log for more information.");
+					
+					return null;
+				}
+			});
 	}
 	
 	@Override

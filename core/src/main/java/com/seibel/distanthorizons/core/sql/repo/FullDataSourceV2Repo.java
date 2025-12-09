@@ -51,7 +51,7 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 	// constructor //
 	//=============//
 	
-	public FullDataSourceV2Repo(String databaseType, File databaseFile) throws SQLException
+	public FullDataSourceV2Repo(String databaseType, File databaseFile) throws SQLException, IOException
 	{
 		super(databaseType, databaseFile, FullDataSourceV2DTO.class);
 	}
