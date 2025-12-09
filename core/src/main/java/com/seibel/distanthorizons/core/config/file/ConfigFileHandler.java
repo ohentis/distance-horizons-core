@@ -64,16 +64,7 @@ public class ConfigFileHandler
 	
 	public ConfigFileHandler(Path configPath)
 	{
-		String path = configPath.toAbsolutePath().toString(); // relative paths don't work if long file paths are enabled below
-		if (EPlatform.get() == EPlatform.WINDOWS)
-		{
-			// enable long file paths on windows to prevent edge cases where
-			// users' MC folder has a long file path (IE custom launchers)
-			// https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation?tabs=registry
-			path = "\\\\?\\" + path;
-		}
-		this.configPath = new File(path).toPath();
-		
+		this.configPath = configPath;
 		
 		this.nightConfig = CommentedFileConfig
 				.builder(this.configPath.toFile())
