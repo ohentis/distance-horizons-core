@@ -27,6 +27,7 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftGLW
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
 import com.seibel.distanthorizons.core.util.math.Mat4f;
 import org.lwjgl.opengl.GL32;
+import org.lwjgl.opengl.GL43C;
 
 import java.nio.ByteBuffer;
 
@@ -91,6 +92,11 @@ public class SSAORenderer
 		GL32.glTexImage2D(GL32.GL_TEXTURE_2D, 0, GL32.GL_R16F, width, height, 0, GL32.GL_RED, GL32.GL_HALF_FLOAT, (ByteBuffer) null);
 		GL32.glTexParameteri(GL32.GL_TEXTURE_2D, GL32.GL_TEXTURE_MIN_FILTER, GL32.GL_LINEAR);
 		GL32.glTexParameteri(GL32.GL_TEXTURE_2D, GL32.GL_TEXTURE_MAG_FILTER, GL32.GL_LINEAR);
+		
+		// disable mip-mapping since DH is just going to draw straight to the screen
+		GL43C.glTexParameteri(GL43C.GL_TEXTURE_2D, GL43C.GL_TEXTURE_BASE_LEVEL, 0);
+		GL43C.glTexParameteri(GL43C.GL_TEXTURE_2D, GL43C.GL_TEXTURE_MAX_LEVEL, 0);
+		
 		GL32.glFramebufferTexture2D(GL32.GL_FRAMEBUFFER, GL32.GL_COLOR_ATTACHMENT0, GL32.GL_TEXTURE_2D, this.ssaoTexture, 0);
 	}
 	
