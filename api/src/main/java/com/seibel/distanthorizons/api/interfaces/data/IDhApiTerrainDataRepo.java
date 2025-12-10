@@ -162,8 +162,10 @@ public interface IDhApiTerrainDataRepo
 	
 	/** 
 	 * @return a {@link IDhApiTerrainDataCache} backed by {@link java.lang.ref.SoftReference}'s.
-	 * @since API 3.0.0
+	 * @since API 5.0.0
 	 */
-	IDhApiTerrainDataCache getSoftCache();
+	IDhApiTerrainDataCache createSoftCache();
+	
+	
 	
 }

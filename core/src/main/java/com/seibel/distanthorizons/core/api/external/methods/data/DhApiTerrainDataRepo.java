@@ -521,7 +521,7 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 	//=============//
 	
 	@Override
-	public IDhApiTerrainDataCache getSoftCache() { return new DhApiTerrainDataCache(); }
+	public IDhApiTerrainDataCache createSoftCache() { return new DhApiTerrainDataCache(); }
 	
 	
 	
