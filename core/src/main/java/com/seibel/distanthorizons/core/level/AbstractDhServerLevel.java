@@ -21,6 +21,7 @@ import com.seibel.distanthorizons.core.network.messages.requests.CancelMessage;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.util.LodUtil;
+import com.seibel.distanthorizons.core.util.WorldGenUtil;
 import com.seibel.distanthorizons.core.util.math.Vec3d;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
@@ -147,16 +148,15 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 					return;
 				}
 				
-				if (Config.Server.generationBoundsRadius.get() > 0)
+				boolean posInRange = WorldGenUtil.isPosInWorldGenRange(
+					message.sectionPos,
+					Config.Common.WorldGenerator.generationCenterChunkX.get(), Config.Common.WorldGenerator.generationCenterChunkZ.get(),
+					Config.Common.WorldGenerator.generationMaxChunkRadius.get()
+				);
+				if (!posInRange)
 				{
-					if (DhSectionPos.getChebyshevSignedBlockDistance(message.sectionPos, new DhBlockPos2D(
-							serverPlayerState.sessionConfig.getGenerationBoundsX(),
-							serverPlayerState.sessionConfig.getGenerationBoundsZ()
-					)) > Config.Server.generationBoundsRadius.get())
-					{
-						message.sendResponse(new RequestOutOfRangeException("Section out of allowed bounds"));
-						return;
-					}
+					message.sendResponse(new RequestOutOfRangeException("Section out of allowed bounds"));
+					return;
 				}
 				
 				if (!Config.Server.Experimental.enableNSizedGeneration.get() && DhSectionPos.getDetailLevel(message.sectionPos) != DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL)

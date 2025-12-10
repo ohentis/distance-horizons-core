@@ -1362,6 +1362,37 @@ public class Config
 							+ "")
 					.build();
 			
+			public static ConfigEntry<Integer> generationCenterChunkX = new ConfigEntry.Builder<Integer>()
+				.setChatCommandName("generation.bounds.centerChunk.x")
+				.setAppearance(EConfigEntryAppearance.ONLY_IN_FILE)
+				.setMinDefaultMax(Integer.MIN_VALUE, 0, Integer.MAX_VALUE)
+				.comment("" +
+					"The center X chunk position that the world gen max radius is centered around. \n" +
+					"")
+				.build();
+			public static ConfigEntry<Integer> generationCenterChunkZ = new ConfigEntry.Builder<Integer>()
+				.setChatCommandName("generation.bounds.centerChunk.z")
+				.setAppearance(EConfigEntryAppearance.ONLY_IN_FILE)
+				.setMinDefaultMax(Integer.MIN_VALUE, 0, Integer.MAX_VALUE)
+				.comment("" +
+					"The center Z chunk position that the world gen max radius is centered around. \n" +
+					"")
+				.build();
+			public static ConfigEntry<Integer> generationMaxChunkRadius = new ConfigEntry.Builder<Integer>()
+				.setChatCommandName("generation.bounds.radiusInChunks")
+				.setAppearance(EConfigEntryAppearance.ONLY_IN_FILE)
+				.setMinDefaultMax(0, 0, Integer.MAX_VALUE)
+				.comment("" +
+					"The max radius in chunks around the central point where world generation is allowed. \n" +
+					"If this value is set to 0, generation bounds are disabled and the render distance will be used. \n" +
+					"\n" +
+					"This should only be set if you have a pre-generated world that has a very limited size. \n" +
+					"Setting this on a normal MC world will prevent the world generator from filling \n" +
+					"out your render distance. \n" +
+					"")
+				.build();
+			
+			
 		}
 		
 		public static class LodBuilding
@@ -1683,32 +1714,6 @@ public class Config
 				.setMinDefaultMax(256, 4096, 4096)
 				.comment("" +
 						"Defines the distance allowed to generate around the player." +
-						"")
-				.build();
-		
-		public static ConfigEntry<Integer> generationBoundsX = new ConfigEntry.Builder<Integer>()
-				.setChatCommandName("generation.bounds.x")
-				.setAppearance(EConfigEntryAppearance.ONLY_IN_FILE)
-				.setMinDefaultMax(Integer.MIN_VALUE, 0, Integer.MAX_VALUE)
-				.comment("" +
-						"Defines the X-coordinate of the central point for generation boundaries, in blocks. \n" +
-						"")
-				.build();
-		public static ConfigEntry<Integer> generationBoundsZ = new ConfigEntry.Builder<Integer>()
-				.setChatCommandName("generation.bounds.z")
-				.setAppearance(EConfigEntryAppearance.ONLY_IN_FILE)
-				.setMinDefaultMax(Integer.MIN_VALUE, 0, Integer.MAX_VALUE)
-				.comment("" +
-						"Defines the Z-coordinate of the central point for generation boundaries, in blocks. \n" +
-						"")
-				.build();
-		public static ConfigEntry<Integer> generationBoundsRadius = new ConfigEntry.Builder<Integer>()
-				.setChatCommandName("generation.bounds.radius")
-				.setAppearance(EConfigEntryAppearance.ONLY_IN_FILE)
-				.setMinDefaultMax(0, 0, Integer.MAX_VALUE)
-				.comment("" +
-						"Defines the radius around the central point within which generation is allowed, in blocks. \n" +
-						"If this value is set to 0, generation bounds are disabled." +
 						"")
 				.build();
 		

@@ -102,8 +102,8 @@ public class ServerPlayerState implements Closeable
 	private void sendConfigMessage()
 	{
 		double coordinateScale = this.getServerPlayer().getLevel().getDimensionType().getCoordinateScale();
-		this.sessionConfig.constrainValue(Config.Server.generationBoundsX, (int) (Config.Server.generationBoundsX.get() / coordinateScale));
-		this.sessionConfig.constrainValue(Config.Server.generationBoundsZ, (int) (Config.Server.generationBoundsZ.get() / coordinateScale));
+		this.sessionConfig.constrainValue(Config.Common.WorldGenerator.generationCenterChunkX, (int) (Config.Common.WorldGenerator.generationCenterChunkX.get() / coordinateScale));
+		this.sessionConfig.constrainValue(Config.Common.WorldGenerator.generationCenterChunkZ, (int) (Config.Common.WorldGenerator.generationCenterChunkZ.get() / coordinateScale));
 		
 		this.networkSession.sendMessage(new SessionConfigMessage(this.sessionConfig));
 	}

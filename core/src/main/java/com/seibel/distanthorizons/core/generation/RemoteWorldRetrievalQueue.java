@@ -11,6 +11,7 @@ import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
 import com.seibel.distanthorizons.core.util.LodUtil;
+import com.seibel.distanthorizons.core.util.WorldGenUtil;
 import com.seibel.distanthorizons.core.util.objects.RollingAverage;
 import com.seibel.distanthorizons.core.logging.DhLogger;
 
@@ -110,12 +111,14 @@ public class RemoteWorldRetrievalQueue extends AbstractFullDataNetworkRequestQue
 	@Override
 	protected boolean isSectionAllowedToGenerate(long sectionPos, DhBlockPos2D targetPos)
 	{
-		if (this.networkState.sessionConfig.getGenerationBoundsRadius() > 0)
+		if (this.networkState.sessionConfig.getGenerationMaxChunkRadius() > 0)
 		{
-			if (DhSectionPos.getChebyshevSignedBlockDistance(sectionPos, new DhBlockPos2D(
-					this.networkState.sessionConfig.getGenerationBoundsX(),
-					this.networkState.sessionConfig.getGenerationBoundsZ()
-			)) > this.networkState.sessionConfig.getGenerationBoundsRadius())
+			boolean posInRange = WorldGenUtil.isPosInWorldGenRange(
+				sectionPos,
+				this.networkState.sessionConfig.getGenerationCenterChunkX(), this.networkState.sessionConfig.getGenerationCenterChunkZ(),
+				this.networkState.sessionConfig.getGenerationMaxChunkRadius()
+				);
+			if (!posInRange)
 			{
 				return false;
 			}

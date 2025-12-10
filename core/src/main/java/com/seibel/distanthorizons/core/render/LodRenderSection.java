@@ -42,7 +42,7 @@ import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.render.renderer.generic.BeaconRenderHandler;
 import com.seibel.distanthorizons.core.sql.dto.BeaconBeamDTO;
 import com.seibel.distanthorizons.core.sql.repo.BeaconBeamRepo;
-import com.seibel.distanthorizons.core.util.PerfRecorder;
+import com.seibel.distanthorizons.core.util.WorldGenUtil;
 import com.seibel.distanthorizons.core.util.threading.PriorityTaskPicker;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
@@ -528,6 +528,18 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 					}
 					
 					long pos = missingGenerationPos.removeLong(i);
+					
+					boolean posInRange = WorldGenUtil.isPosInWorldGenRange(
+						pos,
+						Config.Common.WorldGenerator.generationCenterChunkX.get(), Config.Common.WorldGenerator.generationCenterChunkZ.get(),
+						Config.Common.WorldGenerator.generationMaxChunkRadius.get()
+					);
+					if (!posInRange)
+					{
+						continue;
+					}
+					
+					
 					boolean positionQueued = (this.fullDataSourceProvider.queuePositionForRetrieval(pos) != null);
 					if (!positionQueued)
 					{

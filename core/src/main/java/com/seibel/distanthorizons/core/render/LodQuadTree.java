@@ -762,7 +762,6 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 			{
 				// walk through each node
 				Iterator<QuadNode<LodRenderSection>> nodeIterator = this.nodeIterator();
-				ArrayList<CompletableFuture<Void>> renderDataBuildFutures = new ArrayList<>();
 				while (nodeIterator.hasNext())
 				{
 					QuadNode<LodRenderSection> quadNode = nodeIterator.next();
