@@ -26,7 +26,6 @@ import com.seibel.distanthorizons.api.enums.config.EDhApiDataCompressionMode;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import net.jpountz.lz4.LZ4FrameInputStream;
-import org.apache.logging.log4j.LogManager;
 import com.seibel.distanthorizons.core.logging.DhLogger;
 import org.tukaani.xz.ResettableArrayCache;
 import org.tukaani.xz.XZInputStream;
@@ -61,7 +60,7 @@ public class DhDataInputStream extends DataInputStream
 	{
 		// Z_Std handling compression outside the stream provides a significant performance boost
 		ByteArrayInputStream byteArrayInputStream;
-		if (compressionMode == EDhApiDataCompressionMode.Z_STD)
+		if (compressionMode == EDhApiDataCompressionMode.Z_STD_BLOCK)
 		{
 			byteArrayInputStream = new ByteArrayInputStream(Zstd.decompress(byteArray));
 		}
@@ -87,7 +86,7 @@ public class DhDataInputStream extends DataInputStream
 					return stream;
 				case LZ4:
 					return new LZ4FrameInputStream(stream);
-				case Z_STD:
+				case Z_STD_BLOCK:
 					// ZStd compression should be handled before this point
 					// just return the stream
 					return stream;

@@ -1431,7 +1431,7 @@ public class Config
 					.build();
 			
 			public static ConfigEntry<EDhApiDataCompressionMode> dataCompression = new ConfigEntry.Builder<EDhApiDataCompressionMode>()
-					.set(EDhApiDataCompressionMode.Z_STD)
+					.set(EDhApiDataCompressionMode.Z_STD_BLOCK)
 					// only visible via the API since there is no reason to use any compressor except ZStandard as of 2025-11-24
 					.setAppearance(EConfigEntryAppearance.ONLY_IN_API)
 					.build();

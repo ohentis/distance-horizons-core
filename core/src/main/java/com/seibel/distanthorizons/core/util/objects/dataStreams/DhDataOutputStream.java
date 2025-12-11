@@ -20,14 +20,12 @@
 package com.seibel.distanthorizons.core.util.objects.dataStreams;
 
 import com.github.luben.zstd.Zstd;
-import com.github.luben.zstd.ZstdOutputStream;
 import com.seibel.distanthorizons.api.enums.config.EDhApiDataCompressionMode;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import net.jpountz.lz4.LZ4Factory;
 import net.jpountz.lz4.LZ4FrameOutputStream;
 import net.jpountz.xxhash.XXHashFactory;
-import org.apache.logging.log4j.LogManager;
 import com.seibel.distanthorizons.core.logging.DhLogger;
 import org.tukaani.xz.*;
 
@@ -85,7 +83,7 @@ public class DhDataOutputStream extends DataOutputStream
 							//LZ4Factory.nativeInstance().fastCompressor(),
 							//XXHashFactory.nativeInstance().hash32(),
 							LZ4FrameOutputStream.FLG.Bits.BLOCK_INDEPENDENCE);
-				case Z_STD:
+				case Z_STD_BLOCK:
 					// ZStd compression should be handled after the stream is closed
 					// just return the stream
 					return stream;
@@ -127,7 +125,7 @@ public class DhDataOutputStream extends DataOutputStream
 		
 		
 		this.outputByteArray.clear();
-		if (this.compressionMode == EDhApiDataCompressionMode.Z_STD)
+		if (this.compressionMode == EDhApiDataCompressionMode.Z_STD_BLOCK)
 		{
 			this.outputByteArray.addElements(0, Zstd.compress(this.wrappedByteStream.toByteArray(), 3));
 		}

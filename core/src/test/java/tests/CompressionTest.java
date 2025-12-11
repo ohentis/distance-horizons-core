@@ -27,7 +27,6 @@ import com.seibel.distanthorizons.coreapi.util.StringUtil;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 //import org.apache.commons.compress.compressors.zstandard.ZstdCompressorOutputStream;
 import org.junit.Assert;
-import org.junit.Test;
 
 import java.io.*;
 
@@ -204,7 +203,7 @@ public class CompressionTest
 	public void Zstd() // middle of the road
 	{
 		String compressorName = "Zstd";
-		this.testCompressor(compressorName, EDhApiDataCompressionMode.Z_STD);
+		this.testCompressor(compressorName, EDhApiDataCompressionMode.Z_STD_BLOCK);
 	}
 	
 	//@Test

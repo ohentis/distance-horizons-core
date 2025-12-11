@@ -161,6 +161,11 @@ public interface IDhApiTerrainDataRepo
 	//=========//
 	
 	/** 
+	 * Creates a new cache you manage that can be used to speed up repeat
+	 * read operations. <br>
+	 * Without a cache each operation must: hit the backing database file,
+	 * decompress it, and parse it; which is a fairly slow process. <br>
+	 * 
 	 * @return a {@link IDhApiTerrainDataCache} backed by {@link java.lang.ref.SoftReference}'s.
 	 * @since API 5.0.0
 	 */

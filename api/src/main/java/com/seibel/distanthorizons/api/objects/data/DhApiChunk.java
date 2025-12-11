@@ -31,7 +31,7 @@ import java.util.List;
  * Contains a list of {@link DhApiTerrainDataPoint} representing the blocks in a Minecraft chunk.
  *
  * @author Builderb0y, James Seibel
- * @version 2024-7-21
+ * @version 2025-12-11
  * @since API 2.0.0
  * 
  * @see IDhApiWrapperFactory

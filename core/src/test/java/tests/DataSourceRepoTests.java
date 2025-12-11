@@ -321,7 +321,7 @@ public class DataSourceRepoTests
 								Assert.assertFalse(pooledDto.compressedWorldCompressionModeByteArray.isEmpty());
 								
 								try (FullDataSourceV2 dataSource = pooledDto.createUnitTestDataSource();
-									FullDataSourceV2DTO compressedDto = FullDataSourceV2DTO.CreateFromDataSource(dataSource, EDhApiDataCompressionMode.Z_STD))
+									FullDataSourceV2DTO compressedDto = FullDataSourceV2DTO.CreateFromDataSource(dataSource, EDhApiDataCompressionMode.Z_STD_BLOCK))
 								{
 									repo.save(compressedDto);
 									

@@ -198,8 +198,8 @@ public class GLBuffer implements AutoCloseable
 		
 		switch (uploadMethod)
 		{
-			case NONE:
-				return;
+			//case NONE:
+			//	return;
 			case AUTO:
 				LodUtil.assertNotReach("GpuUploadMethod AUTO must be resolved before call to uploadBuffer()!");
 			case BUFFER_STORAGE:
