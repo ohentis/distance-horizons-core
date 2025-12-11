@@ -56,10 +56,8 @@ public class PregenManager
 			return pregenState;
 		}
 		
-		MC_SERVER.setPreventAutoPause(true);
 		pregenState.whenComplete((result, throwable) -> {
 			this.pregenFuture.set(null);
-			MC_SERVER.setPreventAutoPause(false);
 		});
 		
 		pregenState.fillPendingQueue();

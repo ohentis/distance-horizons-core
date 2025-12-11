@@ -21,6 +21,7 @@ package com.seibel.distanthorizons.core.wrapperInterfaces.minecraft;
 
 import java.awt.Color;
 
+import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.ILightMapWrapper;
 import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IBindable;
 import com.seibel.distanthorizons.core.util.math.Vec3d;
@@ -46,8 +47,6 @@ public interface IMinecraftRenderWrapper extends IBindable
 	
 	Color getFogColor(float partialTicks);
 	
-	default Color getSpecialFogColor(float partialTicks) { return getFogColor(partialTicks); }
-	
 	/** Unless you really need to know if the player is blind, use {@link IMinecraftRenderWrapper#isFogStateSpecial()} instead */
 	boolean isFogStateSpecial();
 	
@@ -57,9 +56,6 @@ public interface IMinecraftRenderWrapper extends IBindable
 	
 	/** Measured in chunks */
 	int getRenderDistance();
-	
-	int getScreenWidth();
-	int getScreenHeight();
 	
 	boolean mcRendersToFrameBuffer();
 	boolean runningLegacyOpenGL();
@@ -81,6 +77,9 @@ public interface IMinecraftRenderWrapper extends IBindable
 	/** Can return null if the given level hasn't had a light map assigned to it */
 	@Nullable
 	ILightMapWrapper getLightmapWrapper(@NotNull ILevelWrapper level);
+	
+	float getShade(EDhDirection lodDirection);
+	
 	
 	
 }

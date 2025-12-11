@@ -164,10 +164,11 @@ public class FogShader extends AbstractShaderRenderer
 		
 		
 		// Fog uniforms
-		this.shader.setUniform(this.uFogColor, MC_RENDER.isFogStateSpecial() ? this.getSpecialFogColor(partialTicks) : this.getFogColor(partialTicks));
+		this.shader.setUniform(this.uFogColor, this.getFogColor(partialTicks));
 		this.shader.setUniform(this.uFogScale, 1.f / lodDrawDistance);
 		this.shader.setUniform(this.uFogVerticalScale, 1.f / MC.getWrappedClientLevel().getMaxHeight());
-		this.shader.setUniform(this.uFullFogMode, MC_RENDER.isFogStateSpecial() ? 1 : 0);
+		// only used for debugging
+		this.shader.setUniform(this.uFullFogMode, 0); // 1 = render everything with fog color // 7 = use debug rendering
 		
 		
 		// fog config
@@ -229,7 +230,6 @@ public class FogShader extends AbstractShaderRenderer
 		
 		return fogColor;
 	}
-	private Color getSpecialFogColor(float partialTicks) { return MC_RENDER.getSpecialFogColor(partialTicks); }
 	
 	public void setProjectionMatrix(Mat4f projectionMatrix)
 	{

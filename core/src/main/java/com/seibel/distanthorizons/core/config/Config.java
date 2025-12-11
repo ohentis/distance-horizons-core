@@ -123,7 +123,6 @@ public class Config
 		{
 			// common config links need to have their destination
 			// since they aren't part of "client" config class
-			// TODO determine their destination programically instead of hard coding the value
 			
 			public static ConfigUIComment advancedHeader = new ConfigUIComment.Builder().setParentConfigClass(Advanced.class).build();
 			
@@ -168,6 +167,20 @@ public class Config
 				public static ConfigUiLinkedEntry quickEnableCaveCulling = new ConfigUiLinkedEntry(Culling.enableCaveCulling);
 				public static ConfigCategory culling = new ConfigCategory.Builder().set(Culling.class).build();
 				public static ConfigUISpacer cullingSpacer = new ConfigUISpacer.Builder().build();
+				
+				public static ConfigEntry<Boolean> overrideVanillaGraphicsSettings = new ConfigEntry.Builder<Boolean>()
+					.set(true)
+					.comment("" +
+						"If true some vanilla graphics settings will be automatically changed \n" +
+						"during DH setup to provide a better experience. \n" +
+						" \n" +
+						"IE disabling vanilla clouds (which render on top of DH LODs), \n" +
+						"   and chunk fading (DH already fades MC chunks) \n" +
+						"")
+					.build();
+				public static ConfigUISpacer overrideVanillaSpacer = new ConfigUISpacer.Builder().build();
+				
+				
 				
 				public static ConfigCategory experimental = new ConfigCategory.Builder().set(Experimental.class).build();
 				
@@ -260,7 +273,7 @@ public class Config
 					public static ConfigEntry<Double> lodBias = new ConfigEntry.Builder<Double>()
 							.setMinDefaultMax(0d, 0d, null)
 							.comment(""
-									+ "What the value should vanilla Minecraft's texture LodBias be? \n"
+									+ "What value should vanilla Minecraft's texture LodBias be? \n"
 									+ "If set to 0 the mod wont overwrite vanilla's default (which so happens to also be 0)")
 							.build();
 					

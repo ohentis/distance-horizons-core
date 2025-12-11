@@ -42,6 +42,7 @@ import com.seibel.distanthorizons.core.render.renderer.shaders.*;
 import com.seibel.distanthorizons.core.util.math.Mat4f;
 import com.seibel.distanthorizons.core.util.math.Vec3d;
 import com.seibel.distanthorizons.core.util.objects.SortedArraySet;
+import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftGLWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrapper;
@@ -69,6 +70,7 @@ public class LodRenderer
 			.maxCountPerSecond(4)
 			.build();
 	
+	private static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	private static final IMinecraftRenderWrapper MC_RENDER = SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
 	private static final IMinecraftGLWrapper GLMC = SingletonInjector.INSTANCE.get(IMinecraftGLWrapper.class);
 	private static final IIrisAccessor IRIS_ACCESSOR = ModAccessorInjector.INSTANCE.get(IIrisAccessor.class);
@@ -172,6 +174,13 @@ public class LodRenderer
 			{
 				// shouldn't normally happen, but just in case
 				return;
+			}
+			
+			// only do this once, that way they can still be reverted if desired
+			if (Config.Client.Advanced.Graphics.overrideVanillaGraphicsSettings.get())
+			{
+				MC.disableVanillaClouds();
+				MC.disableVanillaChunkFadeIn();
 			}
 			
 			this.renderObjectsCreated = true;

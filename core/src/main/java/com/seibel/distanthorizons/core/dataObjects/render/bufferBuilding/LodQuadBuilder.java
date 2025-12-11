@@ -32,6 +32,7 @@ import com.seibel.distanthorizons.core.logging.DhLogger;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.util.ColorUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.coreapi.util.MathUtil;
 import org.lwjgl.system.MemoryUtil;
@@ -44,7 +45,7 @@ import org.lwjgl.system.MemoryUtil;
 public class LodQuadBuilder
 {
 	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
-	private static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
+	private static final IMinecraftRenderWrapper MC_RENDER = SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
 	
 	@SuppressWarnings("unchecked")
 	private final ArrayList<BufferQuad>[] opaqueQuads = (ArrayList<BufferQuad>[]) new ArrayList[6];
@@ -379,7 +380,7 @@ public class LodQuadBuilder
 								// for horizontal and bottom faces of grass blocks, use the  dirt color to
 								// prevent green cliff walls
 								color = this.clientLevelWrapper.getDirtBlockColor();
-								color = ColorUtil.applyShade(color, MC.getShade(quad.direction));
+								color = ColorUtil.applyShade(color, MC_RENDER.getShade(quad.direction));
 							}
 						}
 					}

@@ -276,7 +276,7 @@ public class DhLogger implements IConfigListener
 			
 			if (mc_client != null)
 			{
-				mc_client.logToChat(level, msgStr);
+				this.logToChat(level, msgStr);
 				messageLogged = true;
 			}
 		}
@@ -296,6 +296,41 @@ public class DhLogger implements IConfigListener
 	}
 	private static boolean loggingLevelIsLessSpecificThan(Level thisLoggingLevel, Level requestedLogLevel)
 	{ return thisLoggingLevel.intLevel() >= requestedLogLevel.intLevel(); }
+	/** Sends the given message to chat with a formatted prefix and color based on the log level. */
+	private void logToChat(Level logLevel, String message)
+	{
+		String prefix = "[" + ModInfo.READABLE_NAME + "] ";
+		if (logLevel == Level.ERROR)
+		{
+			prefix += "\u00A74";
+		}
+		else if (logLevel == Level.WARN)
+		{
+			prefix += "\u00A76";
+		}
+		else if (logLevel == Level.INFO)
+		{
+			prefix += "\u00A7f";
+		}
+		else if (logLevel == Level.DEBUG)
+		{
+			prefix += "\u00A77";
+		}
+		else if (logLevel == Level.TRACE)
+		{
+			prefix += "\u00A78";
+		}
+		else
+		{
+			prefix += "\u00A7f";
+		}
+		
+		prefix += "\u00A7l\u00A7u";
+		prefix += logLevel.name();
+		prefix += ":\u00A7r ";
+		
+		mc_client.sendChatMessage(prefix + message);
+	}
 	
 	
 	

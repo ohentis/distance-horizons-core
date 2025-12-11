@@ -385,6 +385,11 @@
   "distanthorizons.config.client.advanced.graphics.culling.ignoredRenderCaveBlockCsv.@tooltip":
     "A comma separated list of block resource locations that shouldn't be rendered \nif they are in a 0 sky light underground area. \nNote: air is always included in this list.",
 
+  "distanthorizons.config.client.advanced.graphics.overrideVanillaGraphicsSettings":
+    "Override Vanilla Settings",
+  "distanthorizons.config.client.advanced.graphics.overrideVanillaGraphicsSettings.@tooltip":
+    "If true some vanilla graphics settings will be automatically changed \nduring DH setup to provide a better experience. \n\nIE disabling vanilla clouds (which render on top of DH LODs), \nand chunk fading (DH already fades MC chunks).",
+    
 
 
   "distanthorizons.config.client.advanced.graphics.experimental":
