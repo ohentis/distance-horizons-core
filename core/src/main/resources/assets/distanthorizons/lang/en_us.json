@@ -985,7 +985,7 @@
     "Uncompressed",
   "distanthorizons.config.enum.EDhApiDataCompressionMode.LZ4":
     "Fastest/Big - LZ4",
-  "distanthorizons.config.enum.EDhApiDataCompressionMode.Z_STD":
+  "distanthorizons.config.enum.EDhApiDataCompressionMode.Z_STD_BLOCK":
     "Fastest/Small - Z_STD - Block",
   "distanthorizons.config.enum.EDhApiDataCompressionMode.Z_STD_STREAM":
     "Fast/Small - Z_STD - Stream",
