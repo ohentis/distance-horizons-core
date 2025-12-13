@@ -725,6 +725,8 @@
     "If DH detects that pooled objects are being garbage collected this will send a chat warning.",
   "distanthorizons.config.common.logging.warning.showHighVanillaRenderDistanceWarning":
     "Show High Vanilla Render Distance Warning",
+  "distanthorizons.config.common.logging.warning.showGarbageCollectorWarning":
+    "Show Garbage Collector Warning",
   "distanthorizons.config.common.logging.warning.showReplayWarningOnStartup":
     "Show Replay Warning",
   "distanthorizons.config.common.logging.warning.showUpdateQueueOverloadedChatWarning":

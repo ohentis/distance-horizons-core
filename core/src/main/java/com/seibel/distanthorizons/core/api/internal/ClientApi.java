@@ -56,6 +56,8 @@ import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
 
 import java.io.File;
+import java.lang.management.GarbageCollectorMXBean;
+import java.lang.management.ManagementFactory;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -93,6 +95,7 @@ public class ClientApi
 	private boolean isDevBuildMessagePrinted = false;
 	private boolean lowMemoryWarningPrinted = false;
 	private boolean highVanillaRenderDistanceWarningPrinted = false;
+	private boolean g1GarbageCollectorWarningPrinted = false;
 	
 	private long lastStaticWarningMessageSentMsTime = 0L;
 	
@@ -645,7 +648,8 @@ public class ClientApi
 	{
 		// dev build
 		if (ModInfo.IS_DEV_BUILD 
-			&& !this.isDevBuildMessagePrinted && MC_CLIENT.playerExists())
+			&& !this.isDevBuildMessagePrinted 
+			&& MC_CLIENT.playerExists())
 		{
 			this.isDevBuildMessagePrinted = true;
 			this.lastStaticWarningMessageSentMsTime = System.currentTimeMillis();
@@ -691,10 +695,11 @@ public class ClientApi
 		if (!this.highVanillaRenderDistanceWarningPrinted 
 			&& Config.Common.Logging.Warning.showHighVanillaRenderDistanceWarning.get())
 		{
+			this.highVanillaRenderDistanceWarningPrinted = true;
+			
 			// DH generally doesn't need a vanilla render distance above 12 
 			if (MC_RENDER.getRenderDistance() > 12)
 			{
-				this.highVanillaRenderDistanceWarningPrinted = true;
 				this.lastStaticWarningMessageSentMsTime = System.currentTimeMillis();
 				
 				String message =
@@ -710,6 +715,48 @@ public class ClientApi
 				MC_CLIENT.sendChatMessage(message);
 			}
 		}
+		
+		
+		// print a warning if G1GC is being used
+		// (this garbage collector is known to cause stuttering)
+		if (this.staticStartupMessageSentRecently()) return;
+		if (!this.g1GarbageCollectorWarningPrinted
+			&& Config.Common.Logging.Warning.showGarbageCollectorWarning.get())
+		{
+			this.g1GarbageCollectorWarningPrinted = true;
+			
+			try
+			{
+				boolean g1GcInUse = false;
+				
+				List<GarbageCollectorMXBean> gcMxBeans = ManagementFactory.getGarbageCollectorMXBeans();
+				for (GarbageCollectorMXBean gcMxBean : gcMxBeans)
+				{
+					// "G1 Young Generation" // "G1 Concurrent GC" // "G1 Old Generation"
+					if (gcMxBean.getName().toLowerCase().contains("g1 "))
+					{
+						g1GcInUse = true;
+						break;
+					}
+				}
+				
+				if (g1GcInUse)
+				{
+					ClientApi.INSTANCE.showChatMessageNextFrame(
+						// yellow text
+						"\u00A7e" + "Distant Horizons: G1 Garbage collector detected." + "\u00A7r \n" +
+							"This garbage collector can cause FPS stuttering. \n" +
+							"It's recommended to use a concurrent garbage collector \n" +
+							"like ZGC (Java 21+) for a smoother experience. \n" +
+							"");
+				}
+			}
+			catch (Exception re)
+			{
+				LOGGER.warn("Unable to determine garbage collector type. If stuttering occurs please try a concurrent garbage collector like ZGC.");
+			}
+		}
+		
 	}
 	/** done to prevent sending a bunch of startup messages all at once, causing some to be missed. */
 	private boolean staticStartupMessageSentRecently()

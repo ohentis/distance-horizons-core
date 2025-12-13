@@ -1629,6 +1629,15 @@ public class Config
 								+ "")
 						.build();
 				
+				public static ConfigEntry<Boolean> showGarbageCollectorWarning = new ConfigEntry.Builder<Boolean>()
+						.set(true)
+						.comment(""
+								+ "If enabled, a chat message will be displayed if the garbage \n"
+								+ "collector Java is currently using is known \n"
+								+ "to cause stutters and/or issues. \n"
+								+ "")
+						.build();
+				
 				public static ConfigEntry<Boolean> showReplayWarningOnStartup = new ConfigEntry.Builder<Boolean>()
 						.set(true)
 						.comment(""
