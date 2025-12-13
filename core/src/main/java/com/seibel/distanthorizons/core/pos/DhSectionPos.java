@@ -282,21 +282,23 @@ public class DhSectionPos
 	}
 	
 	
+	/** see: {@link DhSectionPos#getChebyshevSignedBlockDistance(long, int, int)} */
+	public static int getChebyshevSignedBlockDistance(long pos, DhBlockPos  blockPos)
+	{ return getChebyshevSignedBlockDistance(pos, blockPos.getX(), blockPos.getZ()); }
+	/** see: {@link DhSectionPos#getChebyshevSignedBlockDistance(long, int, int)} */
 	public static int getChebyshevSignedBlockDistance(long pos, DhBlockPos2D blockPos)
-	{
-		return getChebyshevSignedBlockDistance(pos, blockPos);
-	}
+	{ return getChebyshevSignedBlockDistance(pos, blockPos.x, blockPos.z); }
 	/**
 	 * Returns the signed distance from a given block to a given section. <br>
 	 * Essentially acts like a distance from the block to the nearest edge of the section,
 	 * except inside the section it's negative. <br>
 	 * Useful for detail level insensitive distance comparisons.
 	 */
-	public static int getChebyshevSignedBlockDistance(long pos, DhBlockPos blockPos)
+	public static int getChebyshevSignedBlockDistance(long pos, int blockPosX, int blockPosZ)
 	{
 		return Math.max(
-				Math.abs(getCenterBlockPosX(pos) - blockPos.getX()),
-				Math.abs(getCenterBlockPosZ(pos) - blockPos.getZ())
+			Math.abs(getCenterBlockPosX(pos) - blockPosX),
+			Math.abs(getCenterBlockPosZ(pos) - blockPosZ)
 		) - getBlockWidth(pos) / 2;
 	}
 	
