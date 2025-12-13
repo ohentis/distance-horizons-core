@@ -24,17 +24,17 @@ import com.seibel.distanthorizons.core.file.structure.ClientOnlySaveStructure;
 import com.seibel.distanthorizons.core.level.DhClientLevel;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.multiplayer.client.ClientNetworkState;
-import com.seibel.distanthorizons.core.util.ThreadUtil;
-import com.seibel.distanthorizons.core.util.objects.EventLoop;
+import com.seibel.distanthorizons.core.util.TimerUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
 
 public class DhClientWorld extends AbstractDhWorld implements IDhClientWorld
 {
@@ -42,8 +42,7 @@ public class DhClientWorld extends AbstractDhWorld implements IDhClientWorld
 	public final ClientOnlySaveStructure saveStructure;
 	public final ClientNetworkState networkState = new ClientNetworkState();
 	
-	public final ExecutorService dhTickerThread = ThreadUtil.makeSingleThreadPool("Client World Ticker");
-	public final EventLoop eventLoop = new EventLoop(this.dhTickerThread, this::_clientTick);
+	private final Timer clientTickTimer = TimerUtil.CreateTimer("ClientTickTimer");
 	
 	
 	
@@ -59,6 +58,15 @@ public class DhClientWorld extends AbstractDhWorld implements IDhClientWorld
 		this.levels = new ConcurrentHashMap<>();
 		
 		LOGGER.info("Started DhWorld of type " + this.environment);
+		
+		this.clientTickTimer.scheduleAtFixedRate(new TimerTask()
+		{
+			@Override
+			public void run()
+			{
+				DhClientWorld.this.levels.values().forEach(DhClientLevel::clientTick);
+			}
+		}, 0, IDhClientWorld.TICK_RATE_IN_MS);
 	}
 	
 	
@@ -127,11 +135,6 @@ public class DhClientWorld extends AbstractDhWorld implements IDhClientWorld
 		}
 	}
 	
-	private void _clientTick() { this.levels.values().forEach(DhClientLevel::clientTick); }
-	
-	@Override 
-	public void clientTick() { this.eventLoop.tick(); }
-	
 	@Override
 	public void addDebugMenuStringsToList(List<String> messageList)
 	{
@@ -143,7 +146,6 @@ public class DhClientWorld extends AbstractDhWorld implements IDhClientWorld
 	public void close()
 	{
 		this.networkState.close();
-		this.dhTickerThread.shutdownNow();
 		
 		ArrayList<CompletableFuture<Void>> closeFutures = new ArrayList<>();
 		for (DhClientLevel dhClientLevel : this.levels.values())
@@ -175,7 +177,7 @@ public class DhClientWorld extends AbstractDhWorld implements IDhClientWorld
 		}
 		
 		this.levels.clear();
-		this.eventLoop.close();
+		this.clientTickTimer.cancel();
 		LOGGER.info("Closed DhWorld of type [" + this.environment + "].");
 	}
 	

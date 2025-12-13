@@ -21,27 +21,21 @@ package com.seibel.distanthorizons.core.world;
 
 import com.seibel.distanthorizons.core.api.internal.ClientApi;
 import com.seibel.distanthorizons.core.level.DhClientServerLevel;
-import com.seibel.distanthorizons.core.util.ThreadUtil;
-import com.seibel.distanthorizons.core.util.objects.EventLoop;
+import com.seibel.distanthorizons.core.util.TimerUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
 
 public class DhClientServerWorld extends AbstractDhServerWorld<DhClientServerLevel> implements IDhClientWorld
 {
 	private final Set<DhClientServerLevel> dhLevels = Collections.synchronizedSet(new HashSet<>());
 	
-	public ExecutorService dhTickerThread = ThreadUtil.makeSingleThreadPool("Client Server World Ticker", 2);
-	public EventLoop eventLoop = new EventLoop(this.dhTickerThread, this::_clientTick); //TODO: Rate-limit the loop
+	private final Timer clientTickTimer = TimerUtil.CreateTimer("ClientTickTimer");
 	
 	
 	
@@ -53,6 +47,15 @@ public class DhClientServerWorld extends AbstractDhServerWorld<DhClientServerLev
 	{
 		super(EWorldEnvironment.CLIENT_SERVER);
 		LOGGER.info("Started DhWorld of type " + this.environment);
+		
+		this.clientTickTimer.scheduleAtFixedRate(new TimerTask() 
+		{
+			@Override 
+			public void run()
+			{
+				DhClientServerWorld.this.dhLevels.forEach(DhClientServerLevel::clientTick);
+			}
+		}, 0, IDhClientWorld.TICK_RATE_IN_MS);
 	}
 	
 	
@@ -136,19 +139,6 @@ public class DhClientServerWorld extends AbstractDhServerWorld<DhClientServerLev
 		}
 	}
 	
-	private void _clientTick()
-	{
-		//LOGGER.info("Client world tick with {} levels", levels.size());
-		this.dhLevels.forEach(DhClientServerLevel::clientTick);
-	}
-	
-	@Override 
-	public void clientTick()
-	{
-		//LOGGER.info("Client world tick");
-		this.eventLoop.tick();
-	}
-	
 	
 	
 	//================//
@@ -194,8 +184,8 @@ public class DhClientServerWorld extends AbstractDhServerWorld<DhClientServerLev
 		
 		
 		this.dhLevelByLevelWrapper.clear();
-		this.eventLoop.close();
-		LOGGER.info("Closed DhWorld of type " + this.environment);
+		this.clientTickTimer.cancel();
+		LOGGER.info("Closed DhWorld of type [" + this.environment + "].");
 	}
 	
 }

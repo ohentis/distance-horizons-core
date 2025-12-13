@@ -319,35 +319,6 @@ public class ClientApi
 	
 	
 	//============//
-	// clint tick //
-	//============//
-	
-	@Deprecated
-	public void clientTickEvent()
-	{
-		IProfilerWrapper profiler = MC_CLIENT.getProfiler();
-		profiler.push("DH-ClientTick");
-		
-		try
-		{
-			IDhClientWorld clientWorld = SharedApi.tryGetDhClientWorld();
-			if (clientWorld != null)
-			{
-				clientWorld.clientTick();
-			}
-		}
-		catch (Exception e)
-		{
-			// handle errors here to prevent blowing up a mixin or API up stream
-			LOGGER.error("Unexpected error in ClientApi.clientTickEvent(), error: "+e.getMessage(), e);
-		}
-		
-		profiler.pop();
-	}
-	
-	
-	
-	//============//
 	// networking //
 	//============//
 	
