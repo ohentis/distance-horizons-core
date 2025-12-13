@@ -227,7 +227,7 @@ public class FullDataUpdatePropagatorV2 implements IDebugRenderable, AutoCloseab
 											parentDataSource.applyToParent = true;
 										}
 										
-										this.dataUpdater.updateDataSource(parentDataSource, false);
+										this.dataUpdater.updateDataSource(parentDataSource);
 									}
 								}
 							}
@@ -328,7 +328,7 @@ public class FullDataUpdatePropagatorV2 implements IDebugRenderable, AutoCloseab
 															childDataSource.applyToChildren = true;
 														}
 														
-														this.dataUpdater.updateDataSource(childDataSource, false);
+														this.dataUpdater.updateDataSource(childDataSource);
 													}
 												}
 											}

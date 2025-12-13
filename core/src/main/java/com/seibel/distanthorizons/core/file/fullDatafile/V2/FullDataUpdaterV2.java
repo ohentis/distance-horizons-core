@@ -63,7 +63,7 @@ public class FullDataUpdaterV2 implements IDebugRenderable, AutoCloseable
 	
 	/**
 	 * Can be used if you don't want to lock the current thread
-	 * Otherwise the sync version {@link FullDataUpdaterV2#updateDataSource(FullDataSourceV2, boolean)} may be a better choice.
+	 * Otherwise the sync version {@link FullDataUpdaterV2#updateDataSource(FullDataSourceV2)} may be a better choice.
 	 */
 	public CompletableFuture<Void> updateDataSourceAsync(@NotNull FullDataSourceV2 inputDataSource)
 	{
@@ -86,7 +86,7 @@ public class FullDataUpdaterV2 implements IDebugRenderable, AutoCloseable
 			{
 				try
 				{
-					this.updateDataSource(inputDataSource, true);
+					this.updateDataSource(inputDataSource);
 				}
 				catch (Exception e)
 				{
@@ -107,7 +107,7 @@ public class FullDataUpdaterV2 implements IDebugRenderable, AutoCloseable
 	}
 	
 	/** After this method returns the inputData will be written to file. */
-	public void updateDataSource(@NotNull FullDataSourceV2 inputData, boolean lockOnUpdatePos)
+	public void updateDataSource(@NotNull FullDataSourceV2 inputData)
 	{
 		if (this.isShutdownRef.get())
 		{
@@ -117,25 +117,20 @@ public class FullDataUpdaterV2 implements IDebugRenderable, AutoCloseable
 		
 		long updatePos = inputData.getPos();
 		
-		boolean methodLocked = false;
 		// a lock is necessary to prevent two threads from writing to the same position at once,
 		// if that happens only the second update will apply and the LOD will end up with hole(s)
 		ReentrantLock updateLock = this.updateLockProvider.getLock(updatePos);
 		
 		try
 		{
-			if (lockOnUpdatePos)
-			{
-				methodLocked = true;
-				updateLock.lock();
-				this.lockedPosSet.add(updatePos);
-			}
+			updateLock.lock();
+			this.lockedPosSet.add(updatePos);
 			
 			
 			// get or create the data source
 			try (FullDataSourceV2 recipientDataSource = this.provider.get(updatePos))
 			{
-				if (recipientDataSource != null)
+				if (recipientDataSource != null) // will be null if the repo was shut down
 				{
 					boolean dataModified = recipientDataSource.updateFromDataSource(inputData);
 					if (dataModified)
@@ -170,11 +165,8 @@ public class FullDataUpdaterV2 implements IDebugRenderable, AutoCloseable
 		}
 		finally
 		{
-			if (methodLocked)
-			{
-				updateLock.unlock();
-				this.lockedPosSet.remove(updatePos);
-			}
+			updateLock.unlock();
+			this.lockedPosSet.remove(updatePos);
 		}
 	}
 	

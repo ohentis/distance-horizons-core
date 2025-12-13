@@ -210,7 +210,7 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 				while (!this.isGeneratorBusy()
 						&& taskStarted)
 				{
-					taskStarted = this.startNextWorldGenTask(this.generationTargetPos);
+					taskStarted = this.tryStartNextWorldGenTask(this.generationTargetPos);
 				}
 			}
 			catch (Exception e)
@@ -240,7 +240,7 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 	 * @param targetPos the position to center the generation around
 	 * @return false if no tasks were found to generate
 	 */
-	private boolean startNextWorldGenTask(DhBlockPos2D targetPos)
+	private boolean tryStartNextWorldGenTask(DhBlockPos2D targetPos)
 	{
 		if (this.waitingTasks.isEmpty())
 		{
@@ -249,23 +249,23 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 		
 		
 		
-		Mapper closestTaskMap = this.waitingTasks.reduceEntries(1024,
-				entry -> new Mapper(entry.getValue(), DhSectionPos.getSectionBBoxPos(entry.getValue().pos).getCenterBlockPos().toPos2D().chebyshevDist(targetPos.toPos2D())),
-				(aMapper, bMapper) -> aMapper.dist < bMapper.dist ? aMapper : bMapper);
+		TaskDistancePair closestTaskPair = this.waitingTasks.reduceEntries(1024,
+				entry -> new TaskDistancePair(entry.getValue(), DhSectionPos.getSectionBBoxPos(entry.getValue().pos).getCenterBlockPos().toPos2D().chebyshevDist(targetPos.toPos2D())),
+				(TaskDistancePair aTaskPair, TaskDistancePair bTaskPair) -> (aTaskPair.dist < bTaskPair.dist) ? aTaskPair : bTaskPair);
 		
-		if (closestTaskMap == null)
+		if (closestTaskPair == null)
 		{
 			// FIXME concurrency issue
 			return false;
 		}
 		
-		WorldGenTask closestTask = closestTaskMap.task;
+		WorldGenTask closestTask = closestTaskPair.task;
 		
 		// remove the task we found, we are going to start it and don't want to run it multiple times
 		this.waitingTasks.remove(closestTask.pos, closestTask);
 		
 		// do we need to modify this task to generate it?
-		if (this.canGeneratePos(closestTask.pos))
+		if (this.canGenerateDetailLevel(DhSectionPos.getDetailLevel(closestTask.pos)))
 		{
 			// detail level is correct for generation, start generation
 			
@@ -276,11 +276,7 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 			{
 				// no task exists for this position, start one
 				InProgressWorldGenTaskGroup newTaskGroup = new InProgressWorldGenTaskGroup(closestTaskGroup);
-				boolean taskStarted = this.tryStartingWorldGenTaskGroup(newTaskGroup);
-				if (!taskStarted)
-				{
-					//LOGGER.trace("Unable to start task: "+closestTask.pos+", skipping. Task position may have already been generated.");
-				}
+				this.startWorldGenTaskGroup(newTaskGroup);
 			}
 			else
 			{
@@ -289,7 +285,7 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 				// 		   the newly selected task, we cannot use it,
 				//         as some chunks may have already been written into.
 				
-				//LOGGER.trace("A task already exists for this position, todo: "+closestTask.pos);
+				//LOGGER.warn("A task already exists for this position, todo: "+DhSectionPos.toString(closestTask.pos));
 			}
 			
 			// a task has been started
@@ -321,8 +317,7 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 			return true;
 		}
 	}
-	/** @return true if the task was started, false otherwise */
-	private boolean tryStartingWorldGenTaskGroup(InProgressWorldGenTaskGroup newTaskGroup)
+	private void startWorldGenTaskGroup(InProgressWorldGenTaskGroup newTaskGroup)
 	{
 		byte taskDetailLevel = newTaskGroup.group.dataDetail;
 		long taskPos = newTaskGroup.group.pos;
@@ -375,7 +370,6 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 		});
 		
 		this.inProgressGenTasksByLodPos.put(taskPos, newTaskGroup);
-		return true;
 	}
 	private CompletableFuture<Void> startGenerationEvent(
 		long requestPos, 
@@ -689,9 +683,9 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 	// helper methods //
 	//================//
 	
-	private boolean canGeneratePos(long taskPos)
+	private boolean canGenerateDetailLevel(byte taskDetailLevel)
 	{
-		byte requestedDetailLevel = (byte) (DhSectionPos.getDetailLevel(taskPos) - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
+		byte requestedDetailLevel = (byte) (taskDetailLevel - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
 		return (this.highestDataDetail <= requestedDetailLevel && requestedDetailLevel <= this.lowestDataDetail);
 	}
 	
@@ -701,11 +695,12 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 	// helper classes //
 	//================//
 	
-	private static class Mapper
+	private static class TaskDistancePair
 	{
 		public final WorldGenTask task;
 		public final int dist;
-		public Mapper(WorldGenTask task, int dist)
+		
+		public TaskDistancePair(WorldGenTask task, int dist)
 		{
 			this.task = task;
 			this.dist = dist;
