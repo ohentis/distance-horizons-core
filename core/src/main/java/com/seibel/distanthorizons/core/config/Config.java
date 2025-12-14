@@ -786,6 +786,11 @@ public class Config
 									+ "A comma separated list of block resource locations that won't be rendered by DH. \n"
 									+ "Air is always included in this list. \n"
 									+ "Requires a restart to change. \n"
+									+ "\n"
+									+ "Note:\n"
+									+ "If you see gaps, or holes you may have to change\n"
+									+ "worldCompression to ["+EDhApiWorldCompressionMode.MERGE_SAME_BLOCKS+"] and re-generate the LODs.\n"
+									+ "Black spots may happen occur to block lighting being zero for covered blocks.\n"
 									+ "")
 							.build();
 					
