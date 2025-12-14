@@ -178,6 +178,14 @@ public class FogShader extends AbstractShaderRenderer
 		float farFogMax = Config.Client.Advanced.Graphics.Fog.farFogMax.get().floatValue();
 		float farFogDensity = Config.Client.Advanced.Graphics.Fog.farFogDensity.get().floatValue();
 		
+		// override fog if underwater
+		if (MC_RENDER.isFogStateSpecial())
+		{
+			// hide everything behind fog
+			farFogStart = 0.0f;
+			farFogEnd = 0.0f;
+		}
+		
 		this.shader.setUniform(this.uFarFogStart, farFogStart);
 		this.shader.setUniform(this.uFarFogLength, farFogEnd - farFogStart);
 		this.shader.setUniform(this.uFarFogMin, farFogMin);
