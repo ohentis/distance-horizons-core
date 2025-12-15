@@ -30,6 +30,7 @@ import com.seibel.distanthorizons.core.api.external.methods.config.DhApiConfig;
 import com.seibel.distanthorizons.core.api.external.methods.data.DhApiTerrainDataRepo;
 import com.seibel.distanthorizons.api.DhApi;
 import com.seibel.distanthorizons.core.render.DhApiRenderProxy;
+import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import net.jpountz.lz4.LZ4FrameOutputStream;
 import com.seibel.distanthorizons.core.logging.DhLogger;
 import org.sqlite.SQLiteJDBCLoader;
@@ -39,6 +40,9 @@ import org.tukaani.xz.XZOutputStream;
 public class Initializer
 {
 	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
+	
+	private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
+	
 	
 	
 	public static void init()
@@ -50,7 +54,17 @@ public class Initializer
 			// will throw an error (not an exception)
 			Class<?> lz4Compressor = LZ4FrameOutputStream.class;
 			Class<?> zstdCompressor = ZstdOutputStream.class;
-			com.github.luben.zstd.Zstd.decompress(new byte [0]);
+			
+			{
+				byte[] testCompressByteArray = new byte[1024];
+				for (int i = 0; i < testCompressByteArray.length; i++)
+				{
+					testCompressByteArray[i] = (byte) (i % 126);
+				}
+				byte[] compressedBytes = com.github.luben.zstd.Zstd.compress(testCompressByteArray);
+				com.github.luben.zstd.Zstd.decompress(compressedBytes);
+			}
+			
 			Class<?> lzmaCompressor = XZOutputStream.class;
 			//Class<?> networking = ByteBuf.class;
 			Class<?> config = com.electronwill.nightconfig.core.Config.class;
@@ -67,9 +81,7 @@ public class Initializer
 		}
 		catch (Throwable e)
 		{
-			LOGGER.fatal("Critical programmer error: One or more libraries aren't present. Error: [" + e.getMessage() + "].", e);
-			// throwing here should crash the game, notifying the developer that something is wrong
-			throw new RuntimeException(e);
+			MC_CLIENT.crashMinecraft("Distant Horizons critical setup error: One or more libraries are either in-accessible, corrupted, or overwritten by another mod. Error: [" + e.getMessage() + "].", e);
 		}
 		
 		// confirm the resource directory is present
