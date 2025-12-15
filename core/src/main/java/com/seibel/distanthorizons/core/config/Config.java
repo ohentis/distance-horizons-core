@@ -33,13 +33,12 @@ import com.seibel.distanthorizons.core.config.types.enums.*;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.util.NativeDialogUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.IWrapperFactory;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftSharedWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.core.logging.DhLogger;
-import org.lwjgl.util.tinyfd.TinyFileDialogs;
 
-import java.awt.*;
 import java.io.File;
 import java.util.*;
 import java.util.List;
@@ -1248,23 +1247,17 @@ public class Config
 							.setAppearance(EConfigEntryAppearance.ONLY_IN_FILE) // no GUI renderer set up currently
 							.build();
 					
-					public static ConfigUIButton uiButtonTest = new ConfigUIButton(() -> 
+					public static ConfigUIButton uiButtonTest = new ConfigUIButton(() ->
 					{
 						// running on a separate thread is necessary to prevent locking
-						new Thread(() -> 
-						{
-							if (!GraphicsEnvironment.isHeadless())
-							{
-								LOGGER.info("Attempting to show tinyfd message box...");
-								boolean buttonPress = TinyFileDialogs.tinyfd_messageBox("Button pressed!", "UITester dialog", "ok", "info", false);
-								LOGGER.info("dialog returned with ["+(buttonPress ? "TRUE" : "FALSE")+"]");
-							}
-							else
-							{
-								LOGGER.info("button pressed!");
-							}
-						}).start();
+						new Thread(() -> onButtonPressed()).start();
 					});
+					public static void onButtonPressed()
+					{
+						LOGGER.info("Attempting to show tinyfd message box...");
+						boolean buttonPress = NativeDialogUtil.showDialog("Button pressed!", "UITester dialog", "ok", "info");
+						LOGGER.info("dialog returned with ["+(buttonPress ? "TRUE" : "FALSE")+"]");
+					}
 					
 					public static ConfigCategory categoryTest = new ConfigCategory.Builder().set(CategoryTest.class).build();
 					

@@ -29,12 +29,12 @@ import com.seibel.distanthorizons.core.jar.installer.ModrinthGetter;
 import com.seibel.distanthorizons.core.jar.installer.WebDownloader;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
+import com.seibel.distanthorizons.core.util.NativeDialogUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.IVersionConstants;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.coreapi.util.StringUtil;
 import com.seibel.distanthorizons.coreapi.util.jar.DeleteOnUnlock;
 import com.seibel.distanthorizons.core.logging.DhLogger;
-import org.lwjgl.util.tinyfd.TinyFileDialogs;
 
 import javax.swing.*;
 import java.awt.*;
@@ -258,14 +258,13 @@ public class SelfUpdater
 			
 			deleteOldJarOnJvmShutdown = true;
 			
-			// TODO one of these messages contains something TinyFd doesn't like, find it and fix it
-			String successMessage = "Distant Horizons successfully updated. It will apply on game's relaunch"; 
+			String successMessage = "Distant Horizons successfully updated. It will apply on game`s relaunch"; 
 			LOGGER.info(successMessage);
 			new Thread(() -> 
 			{
 				try
 				{
-					TinyFileDialogs.tinyfd_messageBox(ModInfo.READABLE_NAME, successMessage, "ok", "info", false);
+					NativeDialogUtil.showDialog(ModInfo.READABLE_NAME, successMessage, "ok", "info");
 				}
 				catch (Exception ignore) { }
 			}).start();
@@ -288,7 +287,7 @@ public class SelfUpdater
 			LOGGER.error(failMessage, e);
 			try
 			{
-				TinyFileDialogs.tinyfd_messageBox(ModInfo.READABLE_NAME, failMessage, "ok", "error", false);
+				NativeDialogUtil.showDialog(ModInfo.READABLE_NAME, failMessage, "ok", "error");
 			}
 			catch (Exception ignore) { }
 			
@@ -386,7 +385,7 @@ public class SelfUpdater
 			{
 				try
 				{
-					TinyFileDialogs.tinyfd_messageBox(ModInfo.READABLE_NAME, successMessage, "ok", "info", false);
+					NativeDialogUtil.showDialog(ModInfo.READABLE_NAME, successMessage, "ok", "info");
 				}
 				catch (Exception ignore) { }
 			}).start();
@@ -424,7 +423,7 @@ public class SelfUpdater
 			LOGGER.error(failMessage, e);
 			try
 			{
-				TinyFileDialogs.tinyfd_messageBox(ModInfo.READABLE_NAME, failMessage, "ok", "error", false);
+				NativeDialogUtil.showDialog(ModInfo.READABLE_NAME, failMessage, "ok", "error");
 			}
 			catch (Exception ignore) { }
 			

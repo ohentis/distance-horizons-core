@@ -23,6 +23,7 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV2DTO;
 import com.seibel.distanthorizons.core.sql.repo.FullDataSourceV2Repo;
+import com.seibel.distanthorizons.core.util.NativeDialogUtil;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.core.jar.gui.BaseJFrame;
 import com.seibel.distanthorizons.core.jar.gui.cusomJObject.JBox;
@@ -31,7 +32,6 @@ import com.seibel.distanthorizons.core.jar.installer.WebDownloader;
 import org.apache.logging.log4j.LogManager;
 import com.seibel.distanthorizons.core.logging.DhLogger;
 import org.apache.logging.log4j.core.LoggerContext;
-import org.lwjgl.util.tinyfd.TinyFileDialogs;
 
 import javax.swing.*;
 import java.awt.*;
@@ -441,7 +441,7 @@ public class JarMain
 		installMod.addActionListener(e -> {
 			if (minecraftDirPop.getSelectedFile() == null)
 			{
-				TinyFileDialogs.tinyfd_messageBox(ModInfo.READABLE_NAME, "Please select your install directory", "ok", "warning", false);
+				NativeDialogUtil.showDialog(ModInfo.READABLE_NAME, "Please select your install directory", "ok", "warning");
 				return;
 			}
 			
@@ -455,11 +455,11 @@ public class JarMain
 								ModInfo.NAME + "-" + ModrinthGetter.releaseNames.get(downloadID.get()) + ".jar"
 						).toFile());
 				
-				TinyFileDialogs.tinyfd_messageBox(ModInfo.READABLE_NAME, "Installation done. \nYou can now close the installer", "ok", "info", false);
+				NativeDialogUtil.showDialog(ModInfo.READABLE_NAME, "Installation done. \nYou can now close the installer", "ok", "info");
 			}
 			catch (Exception f)
 			{
-				TinyFileDialogs.tinyfd_messageBox(ModInfo.READABLE_NAME, "Download failed. Check your internet connection \nStacktrace: " + f.getMessage(), "error", "info", false);
+				NativeDialogUtil.showDialog(ModInfo.READABLE_NAME, "Download failed. Check your internet connection \nStacktrace: " + f.getMessage(), "error", "info");
 			}
 		});
 		frame.add(installMod);
