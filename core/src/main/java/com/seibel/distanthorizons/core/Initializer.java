@@ -50,7 +50,7 @@ public class Initializer
 			// will throw an error (not an exception)
 			Class<?> lz4Compressor = LZ4FrameOutputStream.class;
 			Class<?> zstdCompressor = ZstdOutputStream.class;
-			Runnable zstdBlockDecompress = () -> { com.github.luben.zstd.Zstd.decompress(new byte [0]); };
+			com.github.luben.zstd.Zstd.decompress(new byte [0]);
 			Class<?> lzmaCompressor = XZOutputStream.class;
 			//Class<?> networking = ByteBuf.class;
 			Class<?> config = com.electronwill.nightconfig.core.Config.class;
