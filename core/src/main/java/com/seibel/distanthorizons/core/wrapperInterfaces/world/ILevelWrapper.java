@@ -52,6 +52,10 @@ public interface ILevelWrapper extends IDhApiLevelWrapper, IBindable
 	@Override
 	IDimensionTypeWrapper getDimensionType();
 	
+	/**
+	 * Includes both the namespace and name. <br> 
+	 * example: "minecraft@@overworld" 
+	 */
 	@Override
 	String getDimensionName();
 	
