@@ -174,7 +174,7 @@ public class SelfUpdater
 		
 		if (!GitlabGetter.INSTANCE.getDownloads(pipeline.get("id")).containsKey(mcVersion))
 		{
-			LOGGER.warn("Minecraft version ["+ mcVersion +"] is not findable on Gitlab, findable versions are ["+ StringUtil.join(",", GitlabGetter.INSTANCE.getDownloads(pipeline.get("id")).keySet().toArray()) +"].");
+			LOGGER.warn("Minecraft version ["+ mcVersion +"] is not findable on Gitlab, findable versions are ["+ StringUtil.join(", ", GitlabGetter.INSTANCE.getDownloads(pipeline.get("id")).keySet().toArray()) +"].");
 			return false;
 		}
 		
