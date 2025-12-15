@@ -715,48 +715,6 @@ public class ClientApi
 				MC_CLIENT.sendChatMessage(message);
 			}
 		}
-		
-		
-		// print a warning if G1GC is being used
-		// (this garbage collector is known to cause stuttering)
-		if (this.staticStartupMessageSentRecently()) return;
-		if (!this.g1GarbageCollectorWarningPrinted
-			&& Config.Common.Logging.Warning.showGarbageCollectorWarning.get())
-		{
-			this.g1GarbageCollectorWarningPrinted = true;
-			
-			try
-			{
-				boolean g1GcInUse = false;
-				
-				List<GarbageCollectorMXBean> gcMxBeans = ManagementFactory.getGarbageCollectorMXBeans();
-				for (GarbageCollectorMXBean gcMxBean : gcMxBeans)
-				{
-					// "G1 Young Generation" // "G1 Concurrent GC" // "G1 Old Generation"
-					if (gcMxBean.getName().toLowerCase().contains("g1 "))
-					{
-						g1GcInUse = true;
-						break;
-					}
-				}
-				
-				if (g1GcInUse)
-				{
-					ClientApi.INSTANCE.showChatMessageNextFrame(
-						// yellow text
-						"\u00A7e" + "Distant Horizons: G1 Garbage collector detected." + "\u00A7r \n" +
-							"This garbage collector can cause FPS stuttering. \n" +
-							"It's recommended to use a concurrent garbage collector \n" +
-							"like ZGC (Java 21+) for a smoother experience. \n" +
-							"");
-				}
-			}
-			catch (Exception re)
-			{
-				LOGGER.warn("Unable to determine garbage collector type. If stuttering occurs please try a concurrent garbage collector like ZGC.");
-			}
-		}
-		
 	}
 	/** done to prevent sending a bunch of startup messages all at once, causing some to be missed. */
 	private boolean staticStartupMessageSentRecently()

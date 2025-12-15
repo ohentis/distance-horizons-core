@@ -20,6 +20,7 @@
 package com.seibel.distanthorizons.core;
 
 import com.github.luben.zstd.ZstdOutputStream;
+import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.render.renderer.generic.GenericRenderObjectFactory;
@@ -31,10 +32,15 @@ import com.seibel.distanthorizons.core.api.external.methods.data.DhApiTerrainDat
 import com.seibel.distanthorizons.api.DhApi;
 import com.seibel.distanthorizons.core.render.DhApiRenderProxy;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
+import com.seibel.distanthorizons.coreapi.util.StringUtil;
 import net.jpountz.lz4.LZ4FrameOutputStream;
 import com.seibel.distanthorizons.core.logging.DhLogger;
 import org.sqlite.SQLiteJDBCLoader;
 import org.tukaani.xz.XZOutputStream;
+
+import java.lang.management.GarbageCollectorMXBean;
+import java.lang.management.ManagementFactory;
+import java.util.List;
 
 /** Handles first time Core setup. */
 public class Initializer
@@ -47,6 +53,8 @@ public class Initializer
 	
 	public static void init()
 	{
+		LOGGER.info("Running library validation...");
+		
 		// confirm that all referenced libraries are available to use
 		try
 		{
@@ -95,8 +103,7 @@ public class Initializer
 		}
 		catch (Exception e)
 		{
-			LOGGER.fatal("Critical programmer error: Can't read SQL Scripts resource folder is either missing or malformed. Error: [" + e.getMessage() + "].");
-			throw new RuntimeException(e);
+			MC_CLIENT.crashMinecraft("Critical programmer error: Can't read SQL Scripts resource folder is either missing or malformed. Error: [" + e.getMessage() + "].", e);
 		}
 		
 		// This code has been disabled since it can cause Mac
@@ -125,6 +132,43 @@ public class Initializer
 		if (DhApi.Delayed.wrapperFactory == null)
 		{
 			LOGGER.error("Programmer Error: No ["+IWrapperFactory.class.getSimpleName()+"] assigned to the DhApi.");
+		}
+		
+		// log a warning if G1GC is being used
+		// (this garbage collector is known to cause stuttering)
+		{
+			boolean g1GcInUse = false;
+			
+			StringBuilder garbageCollectorNames = new StringBuilder();
+			List<GarbageCollectorMXBean> gcMxBeans = ManagementFactory.getGarbageCollectorMXBeans();
+			for (GarbageCollectorMXBean gcMxBean : gcMxBeans)
+			{
+				if (!garbageCollectorNames.toString().isEmpty())
+				{
+					garbageCollectorNames.append(", ");
+				}
+				garbageCollectorNames.append(gcMxBean.getName());
+				
+				// "G1 Young Generation" // "G1 Concurrent GC" // "G1 Old Generation"
+				if (gcMxBean.getName().toLowerCase().contains("g1 "))
+				{
+					g1GcInUse = true;
+				}
+			}
+			LOGGER.info("Garbage collectors: ["+garbageCollectorNames+"]");
+			
+			
+			if (g1GcInUse
+				&& Config.Common.Logging.Warning.logGarbageCollectorWarning.get())
+			{
+				LOGGER.warn(
+					"Distant Horizons: G1 Garbage collector detected. \n" +
+					"This garbage collector can cause FPS stuttering. \n" +
+					"It's recommended to use a concurrent garbage collector \n" +
+					"like ZGC (Java 21+) or Shenandoah (Java 8 through 17) for a smoother experience. \n" +
+					"");
+				
+			}
 		}
 		
 	}
