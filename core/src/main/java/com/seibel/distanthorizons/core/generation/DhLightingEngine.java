@@ -118,15 +118,19 @@ public class DhLightingEngine
 	 * @param centerChunk the chunk we want to apply lighting to
 	 * @param nearbyChunkList should also contain centerChunk
 	 * @param maxSkyLight should be a value between 0 and 15
+	 * 
+	 * @return the number of light positions iterated over, can be used for profiling.
 	 */
-	private void lightChunk(
+	private int lightChunk(
 			@NotNull IChunkWrapper centerChunk, @NotNull ArrayList<IChunkWrapper> nearbyChunkList, 
 			int maxSkyLight, boolean updateBlockLight, boolean updateSkyLight)
 	{
 		DhChunkPos centerChunkPos = centerChunk.getChunkPos();
 		AdjacentChunkHolder adjacentChunkHolder = new AdjacentChunkHolder(centerChunk);
 		
-		
+		// how many positions we've walked over, can be used for profiling/debugging
+		int posIterations = 0;
+			
 		// try-finally to handle the stableArray resources
 		StableLightPosStack blockLightWorldPosQueue = null;
 		StableLightPosStack skyLightWorldPosQueue = null;
@@ -245,13 +249,15 @@ public class DhLightingEngine
 				}
 			}
 			
+			
+			
 			// block light
 			if (updateBlockLight)
 			{
 				// done to prevent a rare issue where the light values are incorrectly set to -1
 				centerChunk.clearDhBlockLighting();
 				
-				this.propagateChunkLightPosList(blockLightWorldPosQueue, adjacentChunkHolder,
+				posIterations += this.propagateChunkLightPosList(blockLightWorldPosQueue, adjacentChunkHolder,
 					(neighbourChunk, relBlockPos) -> neighbourChunk.getDhBlockLight(relBlockPos.getX(), relBlockPos.getY(), relBlockPos.getZ()),
 					(neighbourChunk, relBlockPos, newLightValue) -> neighbourChunk.setDhBlockLight(relBlockPos.getX(), relBlockPos.getY(), relBlockPos.getZ(), newLightValue),
 					true);
@@ -262,7 +268,7 @@ public class DhLightingEngine
 			{
 				centerChunk.clearDhSkyLighting();
 				
-				this.propagateChunkLightPosList(skyLightWorldPosQueue, adjacentChunkHolder,
+				posIterations += this.propagateChunkLightPosList(skyLightWorldPosQueue, adjacentChunkHolder,
 					(neighbourChunk, relBlockPos) -> neighbourChunk.getDhSkyLight(relBlockPos.getX(), relBlockPos.getY(), relBlockPos.getZ()),
 					(neighbourChunk, relBlockPos, newLightValue) -> neighbourChunk.setDhSkyLight(relBlockPos.getX(), relBlockPos.getY(), relBlockPos.getZ(), newLightValue),
 					false);
@@ -287,10 +293,12 @@ public class DhLightingEngine
 		{
 			centerChunk.setIsDhSkyLightCorrect(true);
 		}
+		
+		return posIterations;
 	}
 	
 	/** Applies each {@link LightPos} from the queue to the given set of {@link IChunkWrapper}'s. */
-	private void propagateChunkLightPosList(
+	private int propagateChunkLightPosList(
 			StableLightPosStack lightPosQueue, AdjacentChunkHolder adjacentChunkHolder,
 			IGetLightFunc getLightFunc, ISetLightFunc setLightFunc,
 			boolean propagatingBlockLights)
@@ -320,65 +328,88 @@ public class DhLightingEngine
 		IBlockStateWrapper previousBlockState = null;
 		
 		
-		// update each light position
-		while (!lightPosQueue.isEmpty())
+		int iterations = 0;
+		
+		// update each light level
+		for (int currentLightLevel = LodUtil.MAX_MC_LIGHT; currentLightLevel >= LodUtil.MIN_MC_LIGHT; currentLightLevel--)
 		{
-			// since we don't care about the order the positions are processed,
-			// we can grab the last position instead of the first for a slight performance increase (this way the array doesn't need to be shifted over every loop)
-			lightPosQueue.popMutate(lightPos);
+			// Walking down from the top light level to the bottom can reduce iterating over
+			// the same positions multiple times.
+			// At best this seems to behave at roughly 2x the speed of just blindly putting light pos 
+			// in a queue and at worse slightly faster than the blind queue.
 			
-			int lightValue = lightPos.lightValue;
+			lightPos.lightValue = currentLightLevel;
 			
-			
-			// propagate the lighting in each cardinal direction, IE: -x, +x, -y, +y, -z, +z
-			for (EDhDirection direction : EDhDirection.ALL) // since this is an array instead of an ArrayList this advanced for-loop shouldn't cause any GC issues
+			// update each light position
+			while (!lightPosQueue.isLightLevelEmpty(currentLightLevel))
 			{
-				lightPos.mutateOffset(direction, neighbourBlockPos);
-				neighbourBlockPos.mutateToChunkRelativePos(relNeighbourBlockPos);
+				// since we don't care about the order the positions are processed,
+				// we can grab the last position instead of the first for a slight performance increase (this way the array doesn't need to be shifted over every loop)
+				lightPosQueue.popMutate(lightPos, currentLightLevel);
+				iterations++;
+				
+				int lightValue = lightPos.lightValue;
 				
 				
-				// only continue if the light position is inside one of our chunks
-				IChunkWrapper neighbourChunk = adjacentChunkHolder.getByBlockPos(neighbourBlockPos.getX(), neighbourBlockPos.getZ());
-				if (neighbourChunk == null)
+				// propagate the lighting in each cardinal direction, IE: -x, +x, -y, +y, -z, +z
+				for (EDhDirection direction : EDhDirection.ALL) // since this is an array instead of an ArrayList this advanced for-loop shouldn't cause any GC issues
 				{
-					// the light pos is outside our generator's range, ignore it
-					continue;
-				}
-				
-				if (relNeighbourBlockPos.getY() < neighbourChunk.getMinNonEmptyHeight()
-					|| relNeighbourBlockPos.getY() >= neighbourChunk.getExclusiveMaxBuildHeight())
-				{
-					// the light pos is outside the chunk's min/max height,
-					// this can happen if given a chunk that hasn't finished generating
-					continue;
-				}
-				
-				
-				int currentBlockLight = getLightFunc.getLight(neighbourChunk, relNeighbourBlockPos);
-				if (currentBlockLight >= (lightValue - 1))
-				{
-					// short circuit for when the light value at this position
-					// is already greater-than what we could set it
-					continue;
-				}
-				
-				
-				IBlockStateWrapper neighbourBlockState = neighbourChunk.getBlockState(relNeighbourBlockPos, mcBlockPos, previousBlockState);
-				previousBlockState = neighbourBlockState;
-				
-				// Math.max(1, ...) is used so that the propagated light level always drops by at least 1, preventing infinite cycles.
-				int targetLevel = lightValue - Math.max(1, neighbourBlockState.getOpacity());
-				if (targetLevel > currentBlockLight)
-				{
-					// this position is darker than the new light value, update/set it
-					setLightFunc.setLight(neighbourChunk, relNeighbourBlockPos, targetLevel);
+					lightPos.mutateOffset(direction, neighbourBlockPos);
+					neighbourBlockPos.mutateToChunkRelativePos(relNeighbourBlockPos);
 					
-					// now that light has been propagated to this blockPos
-					// we need to queue it up so its neighbours can be propagated as well
-					lightPosQueue.push(neighbourBlockPos.getX(), neighbourBlockPos.getY(), neighbourBlockPos.getZ(), targetLevel);
+					
+					// only continue if the light position is inside one of our chunks
+					IChunkWrapper neighbourChunk = adjacentChunkHolder.getByBlockPos(neighbourBlockPos.getX(), neighbourBlockPos.getZ());
+					if (neighbourChunk == null)
+					{
+						// the light pos is outside our generator's range, ignore it
+						continue;
+					}
+					
+					if (relNeighbourBlockPos.getY() < neighbourChunk.getMinNonEmptyHeight()
+						|| relNeighbourBlockPos.getY() >= neighbourChunk.getExclusiveMaxBuildHeight())
+					{
+						// the light pos is outside the chunk's min/max height,
+						// this can happen if given a chunk that hasn't finished generating
+						continue;
+					}
+					
+					
+					int currentBlockLight = getLightFunc.getLight(neighbourChunk, relNeighbourBlockPos);
+					if (currentBlockLight >= (lightValue - 1))
+					{
+						// short circuit for when the light value at this position
+						// is already greater-than what we could set it
+						continue;
+					}
+					
+					
+					IBlockStateWrapper neighbourBlockState = neighbourChunk.getBlockState(relNeighbourBlockPos, mcBlockPos, previousBlockState);
+					previousBlockState = neighbourBlockState;
+					
+					// Math.max(1, ...) is used so that the propagated light level always drops by at least 1, preventing infinite cycles.
+					int targetLightLevel = lightValue - Math.max(1, neighbourBlockState.getOpacity());
+					if (targetLightLevel > currentBlockLight)
+					{
+						// this position is darker than the new light value, update/set it
+						setLightFunc.setLight(neighbourChunk, relNeighbourBlockPos, targetLightLevel);
+						
+						// now that light has been propagated to this blockPos
+						// we need to queue it up so its neighbours can be propagated as well
+						lightPosQueue.push(neighbourBlockPos.getX(), neighbourBlockPos.getY(), neighbourBlockPos.getZ(), targetLightLevel);
+					}
 				}
 			}
 		}
+		
+		for (int currentLightLevel = LodUtil.MAX_MC_LIGHT; currentLightLevel >= LodUtil.MIN_MC_LIGHT; currentLightLevel--)
+		{
+			if (!lightPosQueue.isLightLevelEmpty(currentLightLevel))
+			{
+				LodUtil.assertNotReach("Non empty light pos queue for light level ["+currentLightLevel+"] after light engine running");
+			}
+		}
+		
 		
 		
 		// can be enabled if troubleshooting lighting issues
@@ -395,6 +426,7 @@ public class DhLightingEngine
 		
 		
 		// propagation complete
+		return iterations;
 	}
 	
 	
@@ -748,16 +780,24 @@ public class DhLightingEngine
 		private static final Queue<StableLightPosStack> lightArrayCache = new ArrayDeque<>();
 		
 		/** the index of the last item in the array, -1 if empty */
-		private int index = -1;
+		private int[] indexByLightLevel = new int[LodUtil.MAX_MC_LIGHT + 1];
 
-		/** x, y, z, and lightValue. */
-		public static final int INTS_PER_LIGHT_POS = 4;
+		/** x, y, z */
+		public static final int INTS_PER_LIGHT_POS = 3;
 		
-		/**
-		 * When tested with a normal 1.20 world James saw a maximum of 36,709 block and 2,355 sky lights,
-		 * so 40,000 should be a good starting point that can contain most lighting tasks.
-		 */
-		private final IntArrayList lightPositions = new IntArrayList(40_000 * INTS_PER_LIGHT_POS);
+		private final IntArrayList[] lightPositionsByLightLevel = new IntArrayList[LodUtil.MAX_MC_LIGHT + 1];
+		
+		
+		public StableLightPosStack()
+		{
+			for (int i = 0; i < this.lightPositionsByLightLevel.length; i++)
+			{
+				// When tested with a normal 1.20 world James saw a maximum of 36,709 block and 2,355 sky lights,
+				// so 40,000 should be a good starting point that can contain most lighting tasks.
+				this.lightPositionsByLightLevel[i] = new IntArrayList(40_000 * INTS_PER_LIGHT_POS);
+				this.indexByLightLevel[i] = -1;
+			}
+		}
 		
 		
 		
@@ -804,45 +844,56 @@ public class DhLightingEngine
 		// stack methods //
 		//===============//
 		
-		public boolean isEmpty() { return this.index == -1; }
-		public int size() { return this.index+1; }
+		public boolean isLightLevelEmpty(int lightLevel) { return this.indexByLightLevel[lightLevel] == -1; }
+		//public int size() { return this.index+1; }
 		
-		public void push(int blockX, int blockY, int blockZ, int lightValue)
+		public void push(int blockX, int blockY, int blockZ, int lightLevel)
 		{
-			this.index++;
-			int subIndex = this.index * INTS_PER_LIGHT_POS;
-			if (subIndex < this.lightPositions.size())
+			IntArrayList lightPositions = this.lightPositionsByLightLevel[lightLevel];
+			
+			this.indexByLightLevel[lightLevel]++;
+			int subIndex = this.indexByLightLevel[lightLevel] * INTS_PER_LIGHT_POS;
+			if (subIndex < lightPositions.size())
 			{
-				this.lightPositions.set(subIndex, blockX);
-				this.lightPositions.set(subIndex + 1, blockY);
-				this.lightPositions.set(subIndex + 2, blockZ);
-				this.lightPositions.set(subIndex + 3, lightValue);
+				lightPositions.set(subIndex, blockX);
+				lightPositions.set(subIndex + 1, blockY);
+				lightPositions.set(subIndex + 2, blockZ);
 			}
 			else
 			{
 				// add a new pos
-				this.lightPositions.add(blockX);
-				this.lightPositions.add(blockY);
-				this.lightPositions.add(blockZ);
-				this.lightPositions.add(lightValue);
+				lightPositions.add(blockX);
+				lightPositions.add(blockY);
+				lightPositions.add(blockZ);
 			}
 		}
 		
 		/** mutates the given {@link LightPos} to match the next {@link LightPos} in the queue. */
-		public void popMutate(LightPos pos)
+		public void popMutate(LightPos pos, int lightLevel)
 		{
-			int subIndex = this.index * INTS_PER_LIGHT_POS;
+			int subIndex = this.indexByLightLevel[lightLevel] * INTS_PER_LIGHT_POS;
+			IntArrayList lightPositions = this.lightPositionsByLightLevel[lightLevel];
 			
-			pos.setX(this.lightPositions.getInt(subIndex));
-			pos.setY(this.lightPositions.getInt(subIndex + 1));
-			pos.setZ(this.lightPositions.getInt(subIndex + 2));
-			pos.lightValue = this.lightPositions.getInt(subIndex + 3);
+			pos.setX(lightPositions.getInt(subIndex));
+			pos.setY(lightPositions.getInt(subIndex + 1));
+			pos.setZ(lightPositions.getInt(subIndex + 2));
 			
-			this.index--;
+			this.indexByLightLevel[lightLevel]--;
 		}
 		
 		@Override
-		public String toString() { return this.index + "/" + (this.lightPositions.size() / INTS_PER_LIGHT_POS); }
+		public String toString() 
+		{ 
+			StringBuilder builder = new StringBuilder();
+			
+			for (int i = 0; i < this.indexByLightLevel.length; i++)
+			{
+				builder.append("light: ").append(i)
+					.append(" size: ").append(this.indexByLightLevel[i]).append("/").append(this.lightPositionsByLightLevel[i].size() / INTS_PER_LIGHT_POS).append("\n");
+			}
+			
+			return builder.toString();
+		}
 		
 	}
 	
