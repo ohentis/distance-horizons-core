@@ -64,7 +64,7 @@ public class DhTerrainShaderProgram extends ShaderProgram implements IDhApiShade
 	public int uNoiseDropoff = -1;
 	
 	// Debug Uniform
-	public int uWhiteWorld = -1;
+	public int uIsWhiteWorld = -1;
 	
 	
 	
@@ -102,7 +102,7 @@ public class DhTerrainShaderProgram extends ShaderProgram implements IDhApiShade
 		this.uNoiseDropoff = this.getUniformLocation("uNoiseDropoff");
 		
 		// Debug Uniform
-		this.uWhiteWorld = this.getUniformLocation("uWhiteWorld");
+		this.uIsWhiteWorld = this.getUniformLocation("uIsWhiteWorld");
 		
 		
 		// TODO: Add better use of the LODFormat thing
@@ -192,7 +192,7 @@ public class DhTerrainShaderProgram extends ShaderProgram implements IDhApiShade
 		this.setUniform(this.uNoiseDropoff, Config.Client.Advanced.Graphics.NoiseTexture.noiseDropoff.get());
 		
 		// Debug
-		this.setUniform(this.uWhiteWorld, Config.Client.Advanced.Debugging.enableWhiteWorld.get());
+		this.setUniform(this.uIsWhiteWorld, Config.Client.Advanced.Debugging.enableWhiteWorld.get());
 		
 		// Clip Uniform
 		float dhNearClipDistance = RenderUtil.getNearClipPlaneInBlocksForFading(renderParameters.partialTicks);

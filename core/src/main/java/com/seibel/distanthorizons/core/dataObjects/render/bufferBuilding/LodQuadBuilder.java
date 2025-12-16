@@ -399,31 +399,33 @@ public class LodQuadBuilder
 	}
 	private void putVertex(ByteBuffer bb, short x, short y, short z, int color, byte normalIndex, byte irisBlockMaterialId, byte skylight, byte blocklight, int mx, int my, int mz)
 	{
-		skylight %= 16;
-		blocklight %= 16;
-		
 		bb.putShort(x);
 		bb.putShort(y);
 		bb.putShort(z);
 		
 		short meta = 0;
-		meta |= (skylight | (blocklight << 4));
-		byte mirco = 0;
-		// mirco offset which is a xyz 2bit value
-		// 0b00 = no offset
-		// 0b01 = positive offset
-		// 0b11 = negative offset
-		// format is: 0b00zzyyxx
-		if (mx != 0) mirco |= mx > 0 ? 0b01 : 0b11;
-		if (my != 0) mirco |= my > 0 ? 0b0100 : 0b1100;
-		if (mz != 0) mirco |= mz > 0 ? 0b010000 : 0b110000;
-		meta |= mirco << 8;
-		
+		{
+			skylight %= 16;
+			blocklight %= 16;
+			meta |= (short) (skylight | (blocklight << 4));
+			
+			byte mircoOffset = 0;
+			// mirco offset which is a xyz 2bit value
+			// 0b00 = no offset
+			// 0b01 = positive offset
+			// 0b11 = negative offset
+			// format is: 0b00zzyyxx
+			if (mx != 0) { mircoOffset |= (byte) (mx > 0 ? 0b01 : 0b11); }
+			if (my != 0) { mircoOffset |= (byte) (my > 0 ? 0b0100 : 0b1100); }
+			if (mz != 0) { mircoOffset |= (byte) (mz > 0 ? 0b010000 : 0b110000); }
+			meta |= (short) (mircoOffset << 8);
+		}
 		bb.putShort(meta);
+		
 		byte r = (byte) ColorUtil.getRed(color);
 		byte g = (byte) ColorUtil.getGreen(color);
 		byte b = (byte) ColorUtil.getBlue(color);
-		byte a = this.doTransparency ? (byte) ColorUtil.getAlpha(color) : (byte) 255; // TODO should this be called here or happen somewhere else?
+		byte a = this.doTransparency ? (byte) ColorUtil.getAlpha(color) : (byte) 255;
 		bb.put(r);
 		bb.put(g);
 		bb.put(b);

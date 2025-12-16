@@ -8,13 +8,12 @@ out vec4 vertexColor;
 out vec3 vertexWorldPos;
 out float vertexYPos;
 
-uniform bool uWhiteWorld;
+uniform bool uIsWhiteWorld;
 
 uniform mat4 uCombinedMatrix;
 uniform vec3 uModelOffset;
 uniform float uWorldYOffset;
 
-uniform int uWorldSkyLight;
 uniform sampler2D uLightMap;
 uniform float uMircoOffset;
 
@@ -57,7 +56,7 @@ void main()
 	float light = (float(lights/16u)+0.5) / 16.0;
 	vertexColor = vec4(texture(uLightMap, vec2(light, light2)).xyz, 1.0);
     
-    if (!uWhiteWorld)
+    if (!uIsWhiteWorld)
     {
         vertexColor *= color;
     }
