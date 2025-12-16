@@ -419,6 +419,14 @@ public class Config
 									"")
 							.build();
 					
+					public static ConfigEntry<Integer> fadeDistanceInBlocks = new ConfigEntry.Builder<Integer>()
+							.setMinDefaultMax(0, 1_600, 30_000_000)
+							.comment("" +
+									"The distance in blocks from the camera where the SSAO will fade out to. \n"+
+									"This is done to prevent banding and noise at extreme distances. \n"+
+									"")
+							.build();
+					
 				}
 				
 				public static class GenericRendering

@@ -208,6 +208,10 @@
     "Blur Radius",
   "distanthorizons.config.client.advanced.graphics.ssao.blurRadius.@tooltip":
     "The radius, measured in pixels, that blurring is calculated for the SSAO. \nHigher numbers will reduce banding at the cost of GPU performance.",
+  "distanthorizons.config.client.advanced.graphics.ssao.fadeDistanceInBlocks":
+    "Fade Distance",
+  "distanthorizons.config.client.advanced.graphics.ssao.fadeDistanceInBlocks.@tooltip":
+    "The distance in blocks from the camera where the SSAO will fade out to. \nThis is done to prevent banding and noise at extreme distances.",
 
 
 
