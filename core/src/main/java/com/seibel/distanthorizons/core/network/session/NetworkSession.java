@@ -92,7 +92,8 @@ public class NetworkSession extends AbstractNetworkEventSource
 		{
 			LOGGER.error("Failed to handle the message. New messages will be ignored.", e);
 			LOGGER.error("Message: ["+message+"]");
-			this.close();
+			
+			this.close(e);
 		}
 	}
 	
