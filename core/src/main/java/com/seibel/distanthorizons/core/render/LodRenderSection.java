@@ -133,6 +133,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	//=============//
 	// constructor //
 	//=============//
+	//region constructor
 	
 	public LodRenderSection(
 			long pos, 
@@ -153,11 +154,14 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		DebugRenderer.register(this, Config.Client.Advanced.Debugging.DebugWireframe.showRenderSectionStatus);
 	}
 	
+	//endregion constructor
+	
 	
 	
 	//======================================//
 	// render data generation and uploading //
 	//======================================//
+	//region render data uploading
 	
 	/** @return true if the upload started, false if it wasn't able to for any reason */
 	public synchronized boolean uploadRenderDataToGpuAsync()
@@ -314,7 +318,10 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 				}
 			});
 	}
-	/** async is done so each thread can run without waiting on others */
+	/** 
+	 * async is done so each thread can run without waiting on others 
+	 * @param direction the direction to load relative to the given position, null will return the given position
+	 */
 	private CompletableFuture<ColumnRenderSource> getRenderSourceForPosAsync(long pos, @Nullable EDhDirection direction) 
 	{
 		if (direction != null)
@@ -400,11 +407,14 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		});
 	}
 	
+	//endregion render data uploading
 	
 	
-	//========================//
-	// getters and properties //
-	//========================//
+	
+	//====================//
+	// enabling rendering //
+	//====================//
+	//region enabling rendering
 	
 	public boolean canRender() { return this.bufferContainer != null; }
 	
@@ -439,11 +449,14 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	
 	public boolean gpuUploadInProgress() { return this.getAndBuildRenderDataFuture != null; }
 	
+	//endregion enabling rendering
+	
 	
 	
 	//=================================//
 	// full data retrieval (world gen) //
 	//=================================//
+	//region full data retrieval
 	
 	public boolean isFullyGenerated()
 	{
@@ -551,11 +564,14 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		}
 	}
 	
+	//endregion full data retrieval
+	
 	
 	
 	//=================//
 	// beacon handling //
 	//=================//
+	//region beacon handling
 	
 	/** gets the active beacon list and stops/starts beacon rendering as necessary */
 	private void getAndRefreshRenderingBeacons()
@@ -629,11 +645,14 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		}
 	}
 	
+	//endregion beacon handling
+	
 	
 	
 	//==============//
 	// base methods //
 	//==============//
+	//region base methods
 	
 	@Override
 	public void debugRender(DebugRenderer debugRenderer)
@@ -719,6 +738,8 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		executor.execute(() -> this.fullDataSourceProvider.removeRetrievalRequestIf((genPos) -> DhSectionPos.contains(this.pos, genPos)));
 		
 	}
+	
+	//endregion base methods
 	
 	
 	
