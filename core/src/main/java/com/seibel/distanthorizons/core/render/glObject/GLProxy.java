@@ -56,12 +56,12 @@ public class GLProxy
 	
 	public static final Set<String> LOGGED_GL_MESSAGES = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
 	
+	private static final ConcurrentLinkedQueue<Runnable> RENDER_THREAD_RUNNABLE_QUEUE = new ConcurrentLinkedQueue<>();
+	
 	
 	
 	private static GLProxy instance = null;
 	
-	
-	private final ConcurrentLinkedQueue<Runnable> renderThreadRunnableQueue = new ConcurrentLinkedQueue<>();
 	
 	/** Minecraft's GL capabilities */
 	public final GLCapabilities glCapabilities;
@@ -231,7 +231,7 @@ public class GLProxy
 		return uploadOverride;
 	}
 	
-	public boolean runningOnRenderThread()
+	public static boolean runningOnRenderThread()
 	{
 		long currentContext = GLFW.glfwGetCurrentContext();
 		return currentContext != 0L; // if the context isn't null, it's the MC context
@@ -243,12 +243,12 @@ public class GLProxy
 	// Worker Thread Runnables //
 	//=========================//
 	
-	public void queueRunningOnRenderThread(Runnable renderCall)
+	public static void queueRunningOnRenderThread(Runnable renderCall)
 	{
 		StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-		this.renderThreadRunnableQueue.add(() -> this.runOpenGlCall(renderCall, stackTrace));
+		RENDER_THREAD_RUNNABLE_QUEUE.add(() -> runOpenGlCall(renderCall, stackTrace));
 	}
-	private void runOpenGlCall(Runnable renderCall, StackTraceElement[] stackTrace)
+	private static void runOpenGlCall(Runnable renderCall, StackTraceElement[] stackTrace)
 	{
 		try
 		{
@@ -266,11 +266,11 @@ public class GLProxy
 	 * Doesn't do any thread/GL Context validation.
 	 * Running this outside of the render thread may cause crashes or other issues. 
 	 */
-	public void runRenderThreadTasks()
+	public static void runRenderThreadTasks()
 	{
 		long startTime = System.nanoTime();
 		
-		Runnable runnable = this.renderThreadRunnableQueue.poll();
+		Runnable runnable = RENDER_THREAD_RUNNABLE_QUEUE.poll();
 		while(runnable != null)
 		{
 			runnable.run();
@@ -283,7 +283,7 @@ public class GLProxy
 				break;
 			}
 			
-			runnable = this.renderThreadRunnableQueue.poll();
+			runnable = RENDER_THREAD_RUNNABLE_QUEUE.poll();
 		}
 	}
 	

@@ -100,7 +100,7 @@ public class GLBuffer implements AutoCloseable
 	
 	protected void create(boolean asBufferStorage)
 	{
-		if (!GLProxy.getInstance().runningOnRenderThread())
+		if (!GLProxy.runningOnRenderThread())
 		{
 			LodUtil.assertNotReach("Thread ["+Thread.currentThread()+"] tried to create a GLBuffer outside the MC render thread.");
 		}
@@ -151,7 +151,7 @@ public class GLBuffer implements AutoCloseable
 			BUFFER_ID_TO_PHANTOM.remove(id);
 		}
 		
-		GLProxy.getInstance().queueRunningOnRenderThread(() -> 
+		GLProxy.queueRunningOnRenderThread(() -> 
 		{
 			// destroy the buffer if it exists,
 			// the buffer may not exist if the destroy method is called twice

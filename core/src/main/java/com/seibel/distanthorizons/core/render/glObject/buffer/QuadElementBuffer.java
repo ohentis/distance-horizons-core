@@ -44,7 +44,7 @@ public class QuadElementBuffer extends GLElementBuffer
 	
 	public int getCapacity()
 	{
-		return super.getSize() / GLEnums.getTypeSize(getType());
+		return super.getSize() / GLEnums.getTypeSize(this.getType());
 	}
 	
 	private static void buildBufferByte(int quadCount, ByteBuffer buffer)
@@ -140,7 +140,6 @@ public class QuadElementBuffer extends GLElementBuffer
 			return;
 		}
 		int vertexCount = quadCount * 4; // 4 vertices per quad
-		GLProxy gl = GLProxy.getInstance();
 		
 		if (vertexCount < 255)
 		{ // Reserve 1 for the reset index
@@ -158,7 +157,7 @@ public class QuadElementBuffer extends GLElementBuffer
 		
 		ByteBuffer buffer = MemoryUtil.memAlloc(this.indicesCount * GLEnums.getTypeSize(this.type));
 		buildBuffer(quadCount, buffer, this.type);
-		if (!gl.bufferStorageSupported)
+		if (!GLProxy.getInstance().bufferStorageSupported)
 		{
 			
 			this.bind();

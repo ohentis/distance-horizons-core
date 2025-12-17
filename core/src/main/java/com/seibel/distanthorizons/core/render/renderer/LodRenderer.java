@@ -493,12 +493,8 @@ public class LodRenderer
 			return false;
 		}
 		
-		if (!GLProxy.hasInstance())
-		{
-			// shouldn't normally happen, but just in case
-			LOGGER.warn("Renderer setup called but GLProxy has not yet been setup!");
-			return false;
-		}
+		// GLProxy should have already been created by this point, but just in case create it now
+		GLProxy.getInstance();
 		
 		
 		

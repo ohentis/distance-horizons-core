@@ -90,7 +90,7 @@ public class ClientPluginChannelApi
 		
 		LOGGER.info("Server level key received: [" + msg.levelKey + "].");
 		
-		GLProxy.getInstance().queueRunningOnRenderThread(() -> 
+		GLProxy.queueRunningOnRenderThread(() -> 
 		{
 			IClientLevelWrapper clientLevel = MC.getWrappedClientLevel(true);
 			IServerKeyedClientLevel existingKeyedClientLevel = KEYED_CLIENT_LEVEL_MANAGER.getServerKeyedLevel();

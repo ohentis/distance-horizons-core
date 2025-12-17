@@ -107,7 +107,7 @@ public class LodBufferContainer implements AutoCloseable
 		
 		
 		// upload on MC's render thread
-		GLProxy.getInstance().queueRunningOnRenderThread(() ->
+		GLProxy.queueRunningOnRenderThread(() ->
 		{
 			try
 			{
@@ -295,7 +295,7 @@ public class LodBufferContainer implements AutoCloseable
 	{
 		this.buffersUploaded = false;
 		
-		GLProxy.getInstance().queueRunningOnRenderThread(() ->
+		GLProxy.queueRunningOnRenderThread(() ->
 		{
 			for (GLVertexBuffer buffer : this.vbos)
 			{
