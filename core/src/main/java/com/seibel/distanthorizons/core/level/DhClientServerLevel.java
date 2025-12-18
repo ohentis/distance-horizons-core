@@ -132,14 +132,6 @@ public class DhClientServerLevel extends AbstractDhServerLevel implements IDhCli
 	public void onWorldGenTaskComplete(long pos)
 	{
 		super.onWorldGenTaskComplete(pos);
-		
-		DebugRenderer.makeParticle(
-				new DebugRenderer.BoxParticle(
-						new DebugRenderer.Box(pos, 128f, 156f, 0.09f, Color.red.darker()),
-						0.2, 32f
-				)
-		);
-		
 		this.clientside.reloadPos(pos);
 	}
 	
