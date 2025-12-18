@@ -126,8 +126,6 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	private Supplier<LongArrayList> missingGenerationPosFunc;
 	private LongArrayList getMissingGenerationPos() { return this.missingGenerationPosFunc != null ? this.missingGenerationPosFunc.get() : null; }
 	
-	private boolean checkedIfFullDataSourceExists = false;
-	private boolean fullDataSourceExists = false;
 	
 	
 	
@@ -458,33 +456,6 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	// full data retrieval (world gen) //
 	//=================================//
 	//region full data retrieval
-	
-	public boolean isFullyGenerated()
-	{
-		LongArrayList missingGenerationPos = this.getMissingGenerationPos();
-		return missingGenerationPos != null && missingGenerationPos.isEmpty();
-	}
-	/** Returns true if an LOD exists, regardless of what data is in it */
-	public boolean getFullDataSourceExists() 
-	{  
-		if (!this.checkedIfFullDataSourceExists)
-		{
-			this.fullDataSourceExists = this.fullDataSourceProvider.repo.existsWithKey(this.pos);
-			this.checkedIfFullDataSourceExists = true;
-		}
-		
-		return this.fullDataSourceExists;
-	}
-	public void updateFullDataSourceExists() 
-	{
-		// we don't have any ability to remove LODs so we only
-		// need to check if an LOD was previously missing
-		if (!this.fullDataSourceExists)
-		{
-			this.checkedIfFullDataSourceExists = false;
-			this.getFullDataSourceExists();
-		}
-	}
 	
 	public boolean missingPositionsCalculated() { return this.getMissingGenerationPos() != null; }
 	public int ungeneratedPositionCount()
