@@ -43,6 +43,7 @@ import com.seibel.distanthorizons.core.render.renderer.generic.BeaconRenderHandl
 import com.seibel.distanthorizons.core.sql.dto.BeaconBeamDTO;
 import com.seibel.distanthorizons.core.sql.repo.BeaconBeamRepo;
 import com.seibel.distanthorizons.core.util.LodUtil;
+import com.seibel.distanthorizons.core.util.WorldGenUtil;
 import com.seibel.distanthorizons.core.util.threading.PriorityTaskPicker;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
@@ -512,7 +513,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	public void tryQueuingMissingLodRetrieval()
 	{
 		if (this.fullDataSourceProvider.canRetrieveMissingDataSources() 
-			&& this.fullDataSourceProvider.canQueueRetrieval())
+			&& this.fullDataSourceProvider.canQueueRetrievalNow())
 		{
 			// calculate the missing positions if not already done
 			if (this.missingGenerationPosFunc == null)
@@ -534,7 +535,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 				// queue from last to first to prevent shifting the array unnecessarily
 				for (int i = missingGenerationPos.size() - 1; i >= 0; i--)
 				{
-					if (!this.fullDataSourceProvider.canQueueRetrieval())
+					if (!this.fullDataSourceProvider.canQueueRetrievalNow())
 					{
 						// the data source provider isn't accepting any more jobs
 						break;
