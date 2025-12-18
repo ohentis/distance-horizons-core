@@ -12,6 +12,7 @@ import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.WorldGenUtil;
+import com.seibel.distanthorizons.core.util.objects.Pair;
 import com.seibel.distanthorizons.core.util.objects.RollingAverage;
 import com.seibel.distanthorizons.core.logging.DhLogger;
 
@@ -59,41 +60,43 @@ public class RemoteWorldRetrievalQueue extends AbstractFullDataNetworkRequestQue
 		long generationStartMsTime = System.currentTimeMillis();
 		
 		
-		return super.submitRequest(sectionPos, fullDataSource -> {
-					Objects.requireNonNull(tracker.getDataSourceConsumer()).accept(fullDataSource);
-					fullDataSource.close();
-				})
-				.thenApply(requestResult ->
+		return super.submitRequest(sectionPos, /* client timestamp */null,
+			(fullDataSource) -> 
+			{
+				tracker.getDataSourceConsumer().accept(fullDataSource);
+				fullDataSource.close(); // TODO can cause issues if the above is async
+			})
+			.thenApply((ERequestResult requestResult) ->
+			{
+				long totalGenTimeInMs = System.currentTimeMillis() - generationStartMsTime;
+				
+				int chunkWidth = DhSectionPos.getChunkWidth(sectionPos);
+				int chunkCount = chunkWidth * chunkWidth;
+				double timePerChunk = (double) totalGenTimeInMs / (double) chunkCount;
+				this.rollingAverageChunkGenTimeInMs.add(timePerChunk);
+				
+				switch (requestResult)
 				{
-					long totalGenTimeInMs = System.currentTimeMillis() - generationStartMsTime;
-					
-					int chunkWidth = DhSectionPos.getChunkWidth(sectionPos);
-					int chunkCount = chunkWidth * chunkWidth;
-					double timePerChunk = (double)totalGenTimeInMs / (double)chunkCount;
-					this.rollingAverageChunkGenTimeInMs.add(timePerChunk);
-					
-					switch (requestResult)
-					{
-						case SUCCEEDED:
-							return WorldGenResult.CreateSuccess(sectionPos);
-						case FAILED:
-							return WorldGenResult.CreateFail();
-						case REQUIRES_SPLITTING:
-							List<CompletableFuture<WorldGenResult>> childFutures = new ArrayList<>(4);
-							DhSectionPos.forEachChild(sectionPos, childPos -> {
-								tracker.shouldGenerateSplitChild(childPos).thenAccept(shouldGenerate -> {
-									if (shouldGenerate)
-									{
-										childFutures.add(this.submitRetrievalTask(childPos, requiredDataDetail, tracker));
-									}
-								});
+					case SUCCEEDED:
+						return WorldGenResult.CreateSuccess(sectionPos);
+					case FAILED:
+						return WorldGenResult.CreateFail();
+					case REQUIRES_SPLITTING:
+						List<CompletableFuture<WorldGenResult>> childFutures = new ArrayList<>(4);
+						DhSectionPos.forEachChild(sectionPos, childPos -> {
+							tracker.shouldGenerateSplitChild(childPos).thenAccept(shouldGenerate -> {
+								if (shouldGenerate)
+								{
+									childFutures.add(this.submitRetrievalTask(childPos, requiredDataDetail, tracker));
+								}
 							});
-							return WorldGenResult.CreateSplit(childFutures);
-					}
-					
-					LodUtil.assertNotReach("Unexpected and unhandled request response result: ["+requestResult+"]");
-					return WorldGenResult.CreateFail();
-				});
+						});
+						return WorldGenResult.CreateSplit(childFutures);
+				}
+				
+				LodUtil.assertNotReach("Unexpected and unhandled request response result: [" + requestResult + "]");
+				return WorldGenResult.CreateFail();
+			});
 	}
 	
 	@Override

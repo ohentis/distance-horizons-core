@@ -207,10 +207,10 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 	}
 	
 	@Override
-	public boolean canQueueRetrieval() { return this.canQueueRetrieval(false); }
-	public boolean canQueueRetrieval(boolean pruneWaitingTasksAboveLimit)
+	public boolean canQueueRetrievalNow() { return this.canQueueRetrievalNow(false); }
+	public boolean canQueueRetrievalNow(boolean pruneWaitingTasksAboveLimit)
 	{
-		if (!super.canQueueRetrieval())
+		if (!super.canQueueRetrievalNow())
 		{
 			return false;
 		}
@@ -275,7 +275,7 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 			if (pruneWaitingTasksAboveLimit)
 			{
 				AtomicInteger tasksToCancel = new AtomicInteger(-availableTaskSlots + 1);
-				worldGenQueue.removeRetrievalRequestIf(x -> tasksToCancel.getAndDecrement() > 0);
+				worldGenQueue.removeRetrievalRequestIf(taskPos -> tasksToCancel.getAndDecrement() > 0);
 			}
 			else
 			{
@@ -382,7 +382,7 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 		LongArrayList generationList = new LongArrayList();
 		
 		byte lowestGeneratorDetailLevel = (byte) Math.min(
-				worldGenQueue.lowestDataDetail()  + DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL,
+				worldGenQueue.lowestDataDetail() + DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL,
 				DhSectionPos.getDetailLevel(pos));
 		
 		DhSectionPos.forEachChildAtDetailLevel(pos, lowestGeneratorDetailLevel, (genPos) ->

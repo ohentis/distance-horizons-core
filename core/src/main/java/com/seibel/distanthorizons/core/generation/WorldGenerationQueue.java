@@ -161,7 +161,12 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 		{
 			if (removeIf.accept(genPos))
 			{
-				this.waitingTasks.remove(genPos);
+				WorldGenTask removedTask = this.waitingTasks.remove(genPos);
+				if (removedTask != null)
+				{
+					// cancel tasks so any waiting future steps can be triggered
+					removedTask.future.cancel(true);
+				}
 			}
 		});
 	}
@@ -556,7 +561,8 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 	// shutdown //
 	//==========//
 	
-	@Override public CompletableFuture<Void> startClosingAsync(boolean cancelCurrentGeneration, boolean alsoInterruptRunning)
+	@Override 
+	public CompletableFuture<Void> startClosingAsync(boolean cancelCurrentGeneration, boolean alsoInterruptRunning)
 	{
 		LOGGER.info("Closing world gen queue");
 		this.queueingThread.shutdownNow();

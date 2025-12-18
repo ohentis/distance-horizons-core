@@ -31,7 +31,6 @@ import java.util.function.Consumer;
  */
 public interface IWorldGenTaskTracker
 {
-	@Nullable
 	Consumer<FullDataSourceV2> getDataSourceConsumer();
 	
 	CompletableFuture<Boolean> shouldGenerateSplitChild(long pos);

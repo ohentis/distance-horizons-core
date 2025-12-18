@@ -33,7 +33,6 @@ import java.awt.*;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
@@ -119,8 +118,6 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 	// request submitting //
 	//====================//
 	
-	public CompletableFuture<ERequestResult> submitRequest(long sectionPos, Consumer<FullDataSourceV2> dataSourceConsumer)
-	{ return this.submitRequest(sectionPos, null, dataSourceConsumer); }
 	public CompletableFuture<ERequestResult> submitRequest(long sectionPos, @Nullable Long clientTimestamp, Consumer<FullDataSourceV2> dataSourceConsumer)
 	{
 		if (this.succeededPositions.contains(sectionPos))
@@ -133,13 +130,14 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 			return CompletableFuture.completedFuture(ERequestResult.REQUIRES_SPLITTING);
 		}
 		
-		AtomicBoolean added = new AtomicBoolean(false);
 		RequestQueueEntry entry = this.waitingTasksBySectionPos.compute(sectionPos, (pos, existingQueueEntry) ->
 		{
+			// ignore already queued tasks
 			if (existingQueueEntry != null)
 			{
 				return existingQueueEntry;
 			}
+			
 			
 			RequestQueueEntry newEntry = new RequestQueueEntry(dataSourceConsumer, clientTimestamp);
 			newEntry.future.whenComplete((requestResult, throwable) ->
@@ -167,14 +165,8 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 				}
 			});
 			
-			added.set(true);
 			return newEntry;
 		});
-		
-		if (!added.get())
-		{
-			return CompletableFuture.completedFuture(ERequestResult.FAILED);
-		}
 		
 		return entry.future;
 	}
@@ -221,31 +213,31 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 		}
 		
 		long sectionPos = mapEntry.getKey();
-		RequestQueueEntry entry = mapEntry.getValue();
+		RequestQueueEntry requestEntry = mapEntry.getValue();
 		
 		if (!this.isSectionAllowedToGenerate(sectionPos, targetPos))
 		{
-			entry.future.cancel(false);
+			requestEntry.future.cancel(false);
 			this.pendingTasksSemaphore.release();
 			return;
 		}
 		
-		if (!this.onBeforeRequest(sectionPos, entry.future))
+		if (!this.onBeforeRequest(sectionPos, requestEntry.future))
 		{
 			this.pendingTasksSemaphore.release();
 			return;
 		}
 		
-		Long offsetEntryTimestamp = entry.updateTimestamp != null
-				? entry.updateTimestamp + this.networkState.getServerTimeOffset()
+		Long offsetEntryTimestamp = requestEntry.updateTimestamp != null
+				? requestEntry.updateTimestamp + this.networkState.getServerTimeOffset()
 				: null;
 		
-		CompletableFuture<FullDataSourceResponseMessage> dataSourceFuture = this.networkState.getSession().sendRequest(
+		CompletableFuture<FullDataSourceResponseMessage> dataSourceNetworkFuture = this.networkState.getSession().sendRequest(
 				new FullDataSourceRequestMessage(this.level.getLevelWrapper(), sectionPos, offsetEntryTimestamp),
 				FullDataSourceResponseMessage.class
 		);
-		entry.networkDataSourceFuture = dataSourceFuture;
-		dataSourceFuture.handle((response, throwable) ->
+		requestEntry.networkDataSourceFuture = dataSourceNetworkFuture;
+		dataSourceNetworkFuture.handle((response, throwable) ->
 		{
 			this.pendingTasksSemaphore.release();
 			
@@ -265,6 +257,7 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 					dataSourceDto.applyToChildren = DhSectionPos.getDetailLevel(dataSourceDto.pos) > DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL;
 					dataSourceDto.applyToParent = DhSectionPos.getDetailLevel(dataSourceDto.pos) < DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL + 12;
 					
+					// TODO what thread is this currently running on? Does saving need to be run async?
 					AbstractExecutorService executor = ThreadPoolUtil.getNetworkCompressionExecutor();
 					if (executor == null)
 					{
@@ -280,7 +273,7 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 							this.level.updateBeaconBeamsForSectionPos(dataSourceDto.pos, response.payload.beaconBeams);
 							
 							FullDataSourceV2 fullDataSource = dataSourceDto.createDataSource(this.level.getLevelWrapper(), null);
-							entry.dataSourceConsumer.accept(fullDataSource);
+							requestEntry.dataSourceConsumer.accept(fullDataSource);
 						}
 						catch (Exception e)
 						{
@@ -299,16 +292,16 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 			}
 			catch (SectionRequiresSplittingException ignored)
 			{
-				return entry.future.complete(ERequestResult.REQUIRES_SPLITTING);
+				return requestEntry.future.complete(ERequestResult.REQUIRES_SPLITTING);
 			}
 			catch (SessionClosedException | CancellationException ignored)
 			{
-				return entry.future.cancel(false);
+				return requestEntry.future.cancel(false);
 			}
 			catch (RequestRejectedException e)
 			{
 				LOGGER.info("Request rejected by the server: " + e.getMessage());
-				return entry.future.complete(ERequestResult.FAILED);
+				return requestEntry.future.complete(ERequestResult.FAILED);
 			}
 			catch (RateLimitedException e)
 			{
@@ -317,34 +310,34 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 				// Skip all requests for 1 second
 				this.rateLimiter.acquireAll();
 				
-				entry.networkDataSourceFuture = null;
+				requestEntry.networkDataSourceFuture = null;
 				return null;
 			}
 			catch (RequestOutOfRangeException e)
 			{
 				LOGGER.debug("Out of range, re-queueing task [" + DhSectionPos.toString(sectionPos) + "]: " + e.getMessage());
 				
-				entry.networkDataSourceFuture = null;
+				requestEntry.networkDataSourceFuture = null;
 				return null;
 			}
 			catch (Throwable e)
 			{
-				entry.retryAttempts--;
-				LOGGER.error("Error while fetching full data source, attempts left: {} / {}", entry.retryAttempts, MAX_RETRY_ATTEMPTS, e);
+				requestEntry.retryAttempts--;
+				LOGGER.error("Unexpected error ["+e.getMessage()+"] while fetching full data source, attempts left: ["+requestEntry.retryAttempts+"] / ["+MAX_RETRY_ATTEMPTS+"]", e);
 				
 				// Retry logic
-				if (entry.retryAttempts > 0)
+				if (requestEntry.retryAttempts > 0)
 				{
-					entry.networkDataSourceFuture = null;
+					requestEntry.networkDataSourceFuture = null;
 					return null;
 				}
 				else
 				{
-					return entry.future.complete(ERequestResult.FAILED);
+					return requestEntry.future.complete(ERequestResult.FAILED);
 				}
 			}
 			
-			return entry.future.complete(ERequestResult.SUCCEEDED);
+			return requestEntry.future.complete(ERequestResult.SUCCEEDED);
 		});
 	}
 	
@@ -366,13 +359,11 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 			
 			if (removeIf.accept(pos))
 			{
-				LOGGER.debug("Removing request  [" + mapEntry.getKey() + "]...");
-				
-				entry.future.cancel(false);
 				if (entry.networkDataSourceFuture != null)
 				{
 					entry.networkDataSourceFuture.cancel(false);
 				}
+				entry.future.cancel(false);
 			}
 		}
 	}

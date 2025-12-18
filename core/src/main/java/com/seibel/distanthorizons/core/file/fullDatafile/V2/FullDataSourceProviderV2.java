@@ -48,7 +48,6 @@ import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Handles reading/writing {@link FullDataSourceV2} 
@@ -360,7 +359,7 @@ public class FullDataSourceProviderV2 implements IDebugRenderable, AutoCloseable
 	 * to the beginning of your override.
 	 * Otherwise, parent retrieval limits will be ignored.
 	 */
-	public boolean canQueueRetrieval()
+	public boolean canQueueRetrievalNow()
 	{
 		// Retrieval shouldn't happen while an unknown number of
 		// legacy data sources are present.
@@ -369,13 +368,13 @@ public class FullDataSourceProviderV2 implements IDebugRenderable, AutoCloseable
 	}
 	
 	/** 
-	 * @return null if this provider can't generate any positions and
+	 * @return null if this provider can't generate any positions or
 	 * an empty array if all positions were generated 
 	 */
 	@Nullable
 	public LongArrayList getPositionsToRetrieve(Long pos) { return null; }
 		
-	/** @return true if the position was queued, false if not */
+	/** @return null if the position couldn't be queued */
 	@Nullable
 	public CompletableFuture<WorldGenResult> queuePositionForRetrieval(Long genPos) { return null; }
 	

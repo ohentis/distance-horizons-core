@@ -74,7 +74,7 @@ public class RemoteFullDataSourceProvider extends GeneratedFullDataSourceProvide
 	//==================//
 	
 	@Override
-	public boolean canQueueRetrieval() { return this.canQueueRetrieval(true); }
+	public boolean canQueueRetrievalNow() { return this.canQueueRetrievalNow(true); }
 	
 	@Override
 	@Nullable
