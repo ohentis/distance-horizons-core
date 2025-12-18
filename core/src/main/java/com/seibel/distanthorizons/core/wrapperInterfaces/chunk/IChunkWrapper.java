@@ -126,8 +126,6 @@ public interface IChunkWrapper extends IBindable
 	
 	IBiomeWrapper getBiome(int relX, int relY, int relZ);
 	
-	boolean isStillValid();
-	
 	
 	
 	//========================//
