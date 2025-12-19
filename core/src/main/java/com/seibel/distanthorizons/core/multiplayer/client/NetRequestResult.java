@@ -17,22 +17,31 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.seibel.distanthorizons.core.generation.tasks;
+package com.seibel.distanthorizons.core.multiplayer.client;
 
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
+import org.jetbrains.annotations.Nullable;
 
-import javax.annotation.Nullable;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Consumer;
-
-/**
- * @author Leetom
- * @version 2022-11-25
- */
-public interface IWorldGenTaskTracker
+public class NetRequestResult
 {
-	Consumer<FullDataSourceV2> getDataSourceConsumer();
+	public final ENetRequestState state;
+	@Nullable
+	public final FullDataSourceV2 receivedDataSource;
 	
-	CompletableFuture<Boolean> shouldGenerateSplitChild(long pos);
+	
+	
+	//==============//
+	// constructors //
+	//==============//
+	
+	public static NetRequestResult CreateFail() { return new NetRequestResult(ENetRequestState.FAIL, null); }
+	public static NetRequestResult CreateSuccess(FullDataSourceV2 receivedDataSource) { return new NetRequestResult(ENetRequestState.SUCCESS, receivedDataSource); }
+	public static NetRequestResult CreateSplit() { return new NetRequestResult(ENetRequestState.REQUIRES_SPLITTING, null); }
+	private NetRequestResult(ENetRequestState state, @Nullable FullDataSourceV2 receivedDataSource)
+	{
+		this.state = state;
+		this.receivedDataSource = receivedDataSource;
+	}
+	
 	
 }

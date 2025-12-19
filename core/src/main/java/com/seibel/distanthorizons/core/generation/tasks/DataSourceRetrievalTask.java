@@ -19,29 +19,37 @@
 
 package com.seibel.distanthorizons.core.generation.tasks;
 
-import com.seibel.distanthorizons.core.file.fullDatafile.GeneratedFullDataSourceProvider;
+import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.coreapi.util.BitShiftUtil;
 
 import java.util.concurrent.CompletableFuture;
 
 /**
- * @author Leetom
- * @version 2022-11-25
+ * @see DataSourceRetrievalResult
  */
-public final class WorldGenTask
+public final class DataSourceRetrievalTask
 {
 	public final long pos;
-	public final byte dataDetailLevel;
-	public final IWorldGenTaskTracker taskTracker;
-	public final CompletableFuture<WorldGenResult> future;
+	/** 
+	 * Usually the same as {@link DataSourceRetrievalTask#pos}, but
+	 * can differ if the task needs something different.
+	 */
+	public final byte requestDetailLevel;
+	public final int widthInChunks;
+	
+	public final CompletableFuture<DataSourceRetrievalResult> future = new CompletableFuture<>();
 	
 	
 	
-	public WorldGenTask(long pos, byte dataDetail, IWorldGenTaskTracker taskTracker, CompletableFuture<WorldGenResult> future)
+	//=============//
+ 	// constructor //
+	//=============//
+	
+	public DataSourceRetrievalTask(long pos, byte dataDetail)
 	{
-		this.dataDetailLevel = dataDetail;
 		this.pos = pos;
-		this.taskTracker = taskTracker;
-		this.future = future;
+		this.requestDetailLevel = dataDetail;
+		this.widthInChunks = BitShiftUtil.powerOfTwo(DhSectionPos.getDetailLevel(this.pos) - this.requestDetailLevel - 4); // minus 4 is equal to dividing by 16 to convert to chunk scale 
 	}
 	
 }

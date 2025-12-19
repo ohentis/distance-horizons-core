@@ -25,7 +25,7 @@ import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSour
 import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.file.fullDatafile.IDataSourceUpdateListenerFunc;
 import com.seibel.distanthorizons.core.file.structure.ISaveStructure;
-import com.seibel.distanthorizons.core.generation.tasks.WorldGenResult;
+import com.seibel.distanthorizons.core.generation.tasks.DataSourceRetrievalResult;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLogger;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
@@ -85,9 +85,9 @@ public class FullDataSourceProviderV2 implements IDebugRenderable, AutoCloseable
 	protected final String levelId;
 	
 	
-	private final FullDataUpdaterV2 dataUpdater;
-	private final FullDataUpdatePropagatorV2 updatePropagator;
-	private final DataMigratorV1 dataMigratorV1;
+	protected final FullDataUpdaterV2 dataUpdater;
+	protected final FullDataUpdatePropagatorV2 updatePropagator;
+	protected final DataMigratorV1 dataMigratorV1;
 	
 	
 	
@@ -372,11 +372,11 @@ public class FullDataSourceProviderV2 implements IDebugRenderable, AutoCloseable
 	 * an empty array if all positions were generated 
 	 */
 	@Nullable
-	public LongArrayList getPositionsToRetrieve(Long pos) { return null; }
+	public LongArrayList getPositionsToRetrieve(long pos) { return null; }
 		
 	/** @return null if the position couldn't be queued */
 	@Nullable
-	public CompletableFuture<WorldGenResult> queuePositionForRetrieval(Long genPos) { return null; }
+	public CompletableFuture<DataSourceRetrievalResult> queuePositionForRetrieval(Long genPos) { return null; }
 	
 	/** does nothing if the given position isn't present in the queue */
 	public void removeRetrievalRequestIf(DhSectionPos.ICancelablePrimitiveLongConsumer removeIf) { }

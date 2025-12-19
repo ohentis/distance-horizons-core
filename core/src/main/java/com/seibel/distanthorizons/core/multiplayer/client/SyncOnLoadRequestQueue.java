@@ -35,12 +35,12 @@ public class SyncOnLoadRequestQueue extends AbstractFullDataNetworkRequestQueue
 	@Override
 	protected int getRequestRateLimit() { return this.networkState.sessionConfig.getSyncOnLoginRateLimit(); }
 	@Override
-	protected boolean isSectionAllowedToGenerate(long sectionPos, DhBlockPos2D targetPos)
+	protected boolean sectionInAllowedGenerationRadius(long sectionPos, DhBlockPos2D targetPos)
 	{
 		return DhSectionPos.getChebyshevSignedBlockDistance(sectionPos, targetPos) <= this.networkState.sessionConfig.getMaxSyncOnLoadDistance() * 16;
 	}
 	@Override
-	protected boolean onBeforeRequest(long sectionPos, CompletableFuture<ERequestResult> future) { return true; }
+	protected boolean onBeforeRequest(long sectionPos, CompletableFuture<NetRequestResult> future) { return true; }
 	
 	@Override
 	protected String getQueueName() { return "Sync On Login Queue"; }

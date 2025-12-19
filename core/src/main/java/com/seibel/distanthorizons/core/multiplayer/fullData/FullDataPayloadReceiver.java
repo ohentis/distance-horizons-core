@@ -55,12 +55,11 @@ public class FullDataPayloadReceiver implements AutoCloseable
 	public FullDataSourceV2DTO decodeDataSource(FullDataPayload payload)
 	{
 		CompositeByteBuf compositeByteBuffer = this.buffersById.get(payload.dtoBufferId);
-		LodUtil.assertTrue(compositeByteBuffer != null);
+		LodUtil.assertTrue(compositeByteBuffer != null, "decoded data source missing byte buffer");
 		
 		try
 		{
 			FullDataSourceV2DTO dataSourceDto = INetworkObject.decodeToInstance(FullDataSourceV2DTO.CreateEmptyDataSourceForDecoding(), compositeByteBuffer);
-			LOGGER.debug("Buffer {} DTO: {}", payload.dtoBufferId, dataSourceDto);
 			return dataSourceDto;
 		}
 		finally

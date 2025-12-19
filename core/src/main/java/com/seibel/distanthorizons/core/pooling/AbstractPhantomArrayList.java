@@ -40,7 +40,9 @@ public abstract class AbstractPhantomArrayList implements AutoCloseable
 	/** The Array counts can be 0 or greater. */
 	public AbstractPhantomArrayList(PhantomArrayListPool phantomArrayListPool, int byteArrayCount, int shortArrayCount, int longArrayCount) 
 	{
-		if (byteArrayCount < 0 || shortArrayCount < 0 || longArrayCount < 0)
+		if (byteArrayCount < 0 
+			|| shortArrayCount < 0 
+			|| longArrayCount < 0)
 		{
 			throw new IllegalArgumentException("Can't get a negative number of pooled arrays.");
 		}

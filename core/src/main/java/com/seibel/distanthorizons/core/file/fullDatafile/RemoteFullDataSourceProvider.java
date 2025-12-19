@@ -26,6 +26,8 @@ import com.seibel.distanthorizons.core.generation.RemoteWorldRetrievalQueue;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.level.LodRequestModule;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.multiplayer.client.ENetRequestState;
+import com.seibel.distanthorizons.core.multiplayer.client.NetRequestResult;
 import com.seibel.distanthorizons.core.multiplayer.client.SyncOnLoadRequestQueue;
 import com.seibel.distanthorizons.core.logging.DhLogger;
 import org.jetbrains.annotations.Nullable;
@@ -102,10 +104,23 @@ public class RemoteFullDataSourceProvider extends GeneratedFullDataSourceProvide
 		Long timestamp = this.getTimestampForPos(pos);
 		if (timestamp != null)
 		{
-			this.syncOnLoadRequestQueue.submitRequest(pos, timestamp, fullDataSource ->
-			{
-				this.updateDataSourceAsync(fullDataSource).whenComplete((result, throwable) -> fullDataSource.close());
-			});
+			this.syncOnLoadRequestQueue.submitRequest(pos, timestamp)
+				.thenAccept((NetRequestResult netRequestResult) ->
+				{
+					if (netRequestResult.state == ENetRequestState.SUCCESS)
+					{
+						FullDataSourceV2 fullDataSource = netRequestResult.receivedDataSource;
+						if (fullDataSource != null)
+						{
+							this.updateDataSourceAsync(fullDataSource)
+								.handle((voidObj, throwable) -> 
+								{
+									fullDataSource.close();
+									return null;
+								});
+						}
+					}
+				});
 		}
 		
 		return super.get(pos);

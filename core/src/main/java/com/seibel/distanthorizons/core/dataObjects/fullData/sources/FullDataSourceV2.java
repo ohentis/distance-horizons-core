@@ -121,7 +121,7 @@ public class FullDataSourceV2
 	public Boolean applyToChildren = null;
 	
 	/** should only be used by methods exposed via the DH API */
-	private boolean runApiChunkValidation = false;
+	private boolean runApiSetterValidation = false;
 	
 	
 	
@@ -1296,7 +1296,7 @@ public class FullDataSourceV2
 	// API methods //
 	//=============//
 	
-	public void setRunApiChunkValidation(boolean runValidation) { this.runApiChunkValidation = runValidation; }
+	public void setRunApiSetterValidation(boolean runValidation) { this.runApiSetterValidation = runValidation; }
 	
 	@Override
 	public int getWidthInDataColumns() { return WIDTH; }
@@ -1308,7 +1308,7 @@ public class FullDataSourceV2
 		try
 		{
 			LodDataBuilder.putListInTopDownOrder(columnDataPoints);
-			if (this.runApiChunkValidation)
+			if (this.runApiSetterValidation)
 			{
 				LodDataBuilder.validateOrThrowApiDataColumn(columnDataPoints);
 			}
