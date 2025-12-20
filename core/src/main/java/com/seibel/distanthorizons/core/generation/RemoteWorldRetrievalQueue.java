@@ -15,6 +15,7 @@ import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.WorldGenUtil;
 import com.seibel.distanthorizons.core.util.objects.RollingAverage;
 import com.seibel.distanthorizons.core.logging.DhLogger;
+import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 
 import java.util.ArrayList;
 import java.util.concurrent.*;
@@ -59,6 +60,12 @@ public class RemoteWorldRetrievalQueue extends AbstractFullDataNetworkRequestQue
 		
 		
 		CompletableFuture<DataSourceRetrievalResult> returnFuture = new CompletableFuture<>();
+		
+		Executor worldGenExecutor = ThreadPoolUtil.getWorldGenExecutor();
+		if (worldGenExecutor == null)
+		{
+			return CompletableFuture.completedFuture(DataSourceRetrievalResult.CreateFail());
+		}
 		
 		CompletableFuture<NetRequestResult> netFuture = super.submitRequest(sectionPos, /* client timestamp */null);
 		netFuture.handle((NetRequestResult netResult, Throwable throwable) ->
@@ -121,7 +128,7 @@ public class RemoteWorldRetrievalQueue extends AbstractFullDataNetworkRequestQue
 			}
 		})
 		// convert the net result
-		.handle((DataSourceRetrievalResult retrievalResult, Throwable throwable) ->
+			.handleAsync((DataSourceRetrievalResult retrievalResult, Throwable throwable) ->
 		{
 			if (throwable != null)
 			{
@@ -133,7 +140,7 @@ public class RemoteWorldRetrievalQueue extends AbstractFullDataNetworkRequestQue
 			}
 			
 			return null;
-		});
+		}, worldGenExecutor);
 		
 		return returnFuture;
 	}
