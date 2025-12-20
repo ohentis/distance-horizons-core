@@ -185,7 +185,7 @@ public class FullDataUpdatePropagatorV2 implements IDebugRenderable, AutoCloseab
 								parentLocked = true;
 								this.dataUpdater.lockedPosSet.add(parentUpdatePos);
 								
-								try (FullDataSourceV2 parentDataSource = this.provider.get(parentUpdatePos)) // TODO can we cache anything in memory to speed up the propagation process? Compression/Disk IO is by far the slowest part of this process
+								try (FullDataSourceV2 parentDataSource = this.provider.get(parentUpdatePos))
 								{
 									// will return null if the file handler is shutting down
 									if (parentDataSource != null)
