@@ -231,7 +231,7 @@ public class FullDataSourceRequestHandler implements AutoCloseable
 	{
 		this.fullDataSourceProvider().getAsync(pos).thenAccept(fullDataSource ->
 		{
-			if (this.fullDataSourceProvider().isFullyGenerated(fullDataSource.columnGenerationSteps))
+			if (this.fullDataSourceProvider().generationStepsAreFullyGenerated(fullDataSource.columnGenerationSteps))
 			{
 				requestGroup.fullDataSource = fullDataSource;
 				return;

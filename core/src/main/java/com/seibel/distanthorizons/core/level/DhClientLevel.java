@@ -247,7 +247,6 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 	}
 	
 	@Override
-	@Nullable
 	public DhBlockPos2D getTargetPosForGeneration() { return new DhBlockPos2D(MC_CLIENT.getPlayerBlockPos()); }
 	
 	
@@ -259,13 +258,6 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 	@Override
 	public void onWorldGenTaskComplete(long pos)
 	{
-		DebugRenderer.makeParticle(
-				new DebugRenderer.BoxParticle(
-						new DebugRenderer.Box(pos, 128f, 156f, 0.09f, Color.red.darker()),
-						0.2, 32f
-				)
-		);
-		
 		this.clientside.reloadPos(pos);
 	}
 	
@@ -379,9 +371,9 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 	
 	private static class LodRequestState extends LodRequestModule.AbstractLodRequestState
 	{
-		LodRequestState(DhClientLevel level, ClientNetworkState networkState)
+		LodRequestState(DhClientLevel clientLevel, ClientNetworkState networkState)
 		{
-			this.retrievalQueue = new RemoteWorldRetrievalQueue(networkState, level);
+			this.retrievalQueue = new RemoteWorldRetrievalQueue(networkState, clientLevel);
 		}
 	}
 	

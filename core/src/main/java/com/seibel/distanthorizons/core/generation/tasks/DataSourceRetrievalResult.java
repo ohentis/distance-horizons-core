@@ -19,27 +19,41 @@
 
 package com.seibel.distanthorizons.core.generation.tasks;
 
-import java.util.Collection;
-import java.util.LinkedList;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.ArrayList;
 import java.util.concurrent.CompletableFuture;
 
-public class WorldGenResult
+/**
+ * @see DataSourceRetrievalTask
+ */
+public class DataSourceRetrievalResult
 {
 	/** true if terrain was generated */
-	public final boolean success;
+	public final boolean success; // TODO reponse enum?
 	/** the position that was generated, will be null if nothing was generated */
 	public final long pos;
+	@Nullable
+	public final FullDataSourceV2 generatedDataSource;
+	
 	/** if a position is too high detail for world generator to handle it, these futures are for its 4 children positions after being split up. */
-	public final LinkedList<CompletableFuture<WorldGenResult>> childFutures = new LinkedList<>();
+	public final ArrayList<CompletableFuture<DataSourceRetrievalResult>> childFutures = new ArrayList<>(4);
 	
 	
-	public static WorldGenResult CreateSplit(Collection<CompletableFuture<WorldGenResult>> siblingFutures) { return new WorldGenResult(false, 0, siblingFutures); }
-	public static WorldGenResult CreateFail() { return new WorldGenResult(false, 0, null); }
-	public static WorldGenResult CreateSuccess(long pos) { return new WorldGenResult(true, pos, null); }
-	private WorldGenResult(boolean success, long pos, Collection<CompletableFuture<WorldGenResult>> childFutures)
+	
+	//==============//
+ 	// constructors //
+	//==============//
+	
+	public static DataSourceRetrievalResult CreateSplit(ArrayList<CompletableFuture<DataSourceRetrievalResult>> siblingFutures) { return new DataSourceRetrievalResult(false, 0, null, siblingFutures); }
+	public static DataSourceRetrievalResult CreateFail() { return new DataSourceRetrievalResult(false, 0, null,null); }
+	public static DataSourceRetrievalResult CreateSuccess(long pos, FullDataSourceV2 generatedDataSource) { return new DataSourceRetrievalResult(true, pos, generatedDataSource, null); }
+	private DataSourceRetrievalResult(boolean success, long pos, @Nullable FullDataSourceV2 generatedDataSource, ArrayList<CompletableFuture<DataSourceRetrievalResult>> childFutures)
 	{
 		this.success = success;
 		this.pos = pos;
+		this.generatedDataSource = generatedDataSource;
 		
 		if (childFutures != null)
 		{

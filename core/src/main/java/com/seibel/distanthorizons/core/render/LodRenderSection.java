@@ -19,8 +19,6 @@
 
 package com.seibel.distanthorizons.core.render;
 
-import com.google.common.base.Supplier;
-import com.google.common.base.Suppliers;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSource;
@@ -42,12 +40,10 @@ import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.render.renderer.generic.BeaconRenderHandler;
 import com.seibel.distanthorizons.core.sql.dto.BeaconBeamDTO;
 import com.seibel.distanthorizons.core.sql.repo.BeaconBeamRepo;
-import com.seibel.distanthorizons.core.util.WorldGenUtil;
 import com.seibel.distanthorizons.core.util.threading.PriorityTaskPicker;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
-import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.WillNotClose;
@@ -114,19 +110,6 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	 * different threads (buffer uploading is on the MC render thread) and need to be canceled separately.
 	 */
 	private CompletableFuture<LodBufferContainer> bufferUploadFuture = null;
-
-	/** 
-	 * should be an empty array if no positions need to be generated
-	 * 
-	 * @deprecated see the comment where this variable is set
-	 */
-	@Nullable
-	@Deprecated
-	private Supplier<LongArrayList> missingGenerationPosFunc;
-	private LongArrayList getMissingGenerationPos() { return this.missingGenerationPosFunc != null ? this.missingGenerationPosFunc.get() : null; }
-	
-	private boolean checkedIfFullDataSourceExists = false;
-	private boolean fullDataSourceExists = false;
 	
 	
 	
@@ -150,7 +133,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		
 		this.beaconRenderHandler = this.quadTree.beaconRenderHandler;
 		this.beaconBeamRepo = this.level.getBeaconBeamRepo();
-			
+		
 		DebugRenderer.register(this, Config.Client.Advanced.Debugging.DebugWireframe.showRenderSectionStatus);
 	}
 	
@@ -453,121 +436,6 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	
 	
 	
-	//=================================//
-	// full data retrieval (world gen) //
-	//=================================//
-	//region full data retrieval
-	
-	public boolean isFullyGenerated()
-	{
-		LongArrayList missingGenerationPos = this.getMissingGenerationPos();
-		return missingGenerationPos != null && missingGenerationPos.isEmpty();
-	}
-	/** Returns true if an LOD exists, regardless of what data is in it */
-	public boolean getFullDataSourceExists() 
-	{  
-		if (!this.checkedIfFullDataSourceExists)
-		{
-			this.fullDataSourceExists = this.fullDataSourceProvider.repo.existsWithKey(this.pos);
-			this.checkedIfFullDataSourceExists = true;
-		}
-		
-		return this.fullDataSourceExists;
-	}
-	public void updateFullDataSourceExists() 
-	{
-		// we don't have any ability to remove LODs so we only
-		// need to check if an LOD was previously missing
-		if (!this.fullDataSourceExists)
-		{
-			this.checkedIfFullDataSourceExists = false;
-			this.getFullDataSourceExists();
-		}
-	}
-	
-	public boolean missingPositionsCalculated() { return this.getMissingGenerationPos() != null; }
-	public int ungeneratedPositionCount()
-	{
-		LongArrayList missingGenerationPos = this.getMissingGenerationPos();
-		return missingGenerationPos != null ? missingGenerationPos.size() : 0;
-	}
-	public int ungeneratedChunkCount()
-	{
-		LongArrayList missingGenerationPos = this.getMissingGenerationPos();
-		if (missingGenerationPos == null)
-		{
-			return 0;
-		}
-		
-		int chunkCount = 0;
-		// get the number of chunks each position contains
-		for (int i = 0; i < missingGenerationPos.size(); i++)
-		{
-			int chunkWidth = DhSectionPos.getChunkWidth(missingGenerationPos.getLong(i));
-			chunkCount += (chunkWidth * chunkWidth);
-		}
-		return chunkCount;
-	}
-	
-	public void tryQueuingMissingLodRetrieval()
-	{
-		if (this.fullDataSourceProvider.canRetrieveMissingDataSources() 
-			&& this.fullDataSourceProvider.canQueueRetrieval())
-		{
-			// calculate the missing positions if not already done
-			if (this.missingGenerationPosFunc == null)
-			{
-				// TODO memoization is needed for multiplayer, otherwise
-				//  new retrieval requests won't be submitted.
-				// TODO why is that the case? Shouldn't the missing positions be un-changing?
-				// TODO setting this value to low can cause world gen to slow down significantly
-				//  due to a race condition where the world gen thinks it is finished, but the results
-				//  haven't been saved to file yet, causing the gen to fire again
-				this.missingGenerationPosFunc = Suppliers.memoizeWithExpiration(
-						() -> this.fullDataSourceProvider.getPositionsToRetrieve(this.pos),
-						10, TimeUnit.MINUTES);
-			}
-			
-			LongArrayList missingGenerationPos = this.getMissingGenerationPos();
-			if (missingGenerationPos != null)
-			{
-				// queue from last to first to prevent shifting the array unnecessarily
-				for (int i = missingGenerationPos.size() - 1; i >= 0; i--)
-				{
-					if (!this.fullDataSourceProvider.canQueueRetrieval())
-					{
-						// the data source provider isn't accepting any more jobs
-						break;
-					}
-					
-					long pos = missingGenerationPos.removeLong(i);
-					
-					boolean posInRange = WorldGenUtil.isPosInWorldGenRange(
-						pos,
-						Config.Common.WorldGenerator.generationCenterChunkX.get(), Config.Common.WorldGenerator.generationCenterChunkZ.get(),
-						Config.Common.WorldGenerator.generationMaxChunkRadius.get()
-					);
-					if (!posInRange)
-					{
-						continue;
-					}
-					
-					
-					boolean positionQueued = (this.fullDataSourceProvider.queuePositionForRetrieval(pos) != null);
-					if (!positionQueued)
-					{
-						// shouldn't normally happen, but just in case
-						missingGenerationPos.add(pos);
-					}
-				}
-			}
-		}
-	}
-	
-	//endregion full data retrieval
-	
-	
-	
 	//=================//
 	// beacon handling //
 	//=================//
@@ -712,13 +580,14 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		{
 			// remove the task from our executor if present
 			// note: don't cancel the task since that prevents cleanup, we just don't want it to run
-			PriorityTaskPicker.Executor executor = ThreadPoolUtil.getRenderLoadingExecutor();
-			if (executor != null && !executor.isTerminated())
+			PriorityTaskPicker.Executor renderLoaderExecutor = ThreadPoolUtil.getRenderLoadingExecutor();
+			if (renderLoaderExecutor != null 
+				&& !renderLoaderExecutor.isTerminated())
 			{
 				Runnable runnable = this.getAndBuildRenderDataRunnable;
 				if (runnable != null)
 				{
-					executor.remove(runnable);
+					renderLoaderExecutor.remove(runnable);
 				}
 			}
 		}
@@ -728,14 +597,6 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		{
 			uploadFuture.cancel(true);
 		}
-		
-		
-		
-		// remove any active world gen requests that may be for this position
-		ThreadPoolExecutor executor = ThreadPoolUtil.getCleanupExecutor();
-		// while this should generally be a fast operation 
-		// this is run on a separate thread to prevent lag on the render thread
-		executor.execute(() -> this.fullDataSourceProvider.removeRetrievalRequestIf((genPos) -> DhSectionPos.contains(this.pos, genPos)));
 		
 	}
 	

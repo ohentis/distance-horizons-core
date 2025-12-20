@@ -56,7 +56,7 @@ public class DhServerLevel extends AbstractDhServerLevel
 		return true; //todo;
 	}
 	@Override
-	public @Nullable DhBlockPos2D getTargetPosForGeneration()
+	public DhBlockPos2D getTargetPosForGeneration()
 	{
 		DhBlockPos2D targetPos = super.getTargetPosForGeneration();
 		if (targetPos == null)

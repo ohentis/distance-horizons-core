@@ -102,13 +102,12 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 	{ return Config.Common.WorldGenerator.enableDistantGeneration.get() && !this.worldGenPlayerCenteringQueue.isEmpty(); }
 	
 	@Override
-	@Nullable
 	public DhBlockPos2D getTargetPosForGeneration()
 	{
 		IServerPlayerWrapper firstPlayer = this.worldGenPlayerCenteringQueue.peek();
 		if (firstPlayer == null)
 		{
-			return null;
+			return DhBlockPos2D.ZERO;
 		}
 		
 		// Put first player in back before removing from front, so it can be removed by other thread without blocking
