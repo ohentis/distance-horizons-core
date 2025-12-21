@@ -159,6 +159,7 @@ public class PhantomArrayListPool
 			{
 				// pool is empty, create new checkout
 				checkout = new PhantomArrayListCheckout(this);
+				checkout.onCheckout();
 			}
 			else
 			{
@@ -166,6 +167,7 @@ public class PhantomArrayListPool
 				if (checkout != null)
 				{
 					// use pooled checkout
+					checkout.onCheckout();
 				}
 				else
 				{
