@@ -42,6 +42,7 @@ import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.coreapi.util.MathUtil;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongIterator;
+import it.unimi.dsi.fastutil.longs.LongOpenCustomHashSet;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import org.jetbrains.annotations.Nullable;
 
@@ -49,6 +50,7 @@ import javax.annotation.WillNotClose;
 import java.awt.*;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -105,8 +107,10 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 	private double detailDropOffLogBase;
 	
 	/** the {@link DhSectionPos} that need to be retrieved/generated */
-	public final LongOpenHashSet missingGenerationPosSet = new LongOpenHashSet();
-	public final LongOpenHashSet queuedGenerationPosSet = new LongOpenHashSet();
+	private final Set<Long> missingGenerationPosSet = Collections.newSetFromMap(new ConcurrentHashMap<>()); // concurrency is annoying but required due to needing to add/remove items in the world gen future
+	private final Set<Long> queuedGenerationPosSet = Collections.newSetFromMap(new ConcurrentHashMap<>());
+	/** cached array to prevent having to re-allocate it each tick */
+	private final ArrayList<Long> sortedMissingPosList = new ArrayList<>();
 	
 	
 	
@@ -660,8 +664,9 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 	private void queueFullDataRetrievalTasks(DhBlockPos2D playerPos)
 	{
 		// sort the nodes from nearest to farthest
-		LongArrayList sortedMissingPosList = new LongArrayList(this.missingGenerationPosSet);
-		sortedMissingPosList.sort((posA, posB) ->
+		this.sortedMissingPosList.clear();
+		this.sortedMissingPosList.addAll(this.missingGenerationPosSet);
+		this.sortedMissingPosList.sort((posA, posB) ->
 		{
 			int aDist = DhSectionPos.getManhattanBlockDistance(posA, playerPos);
 			int bDist = DhSectionPos.getManhattanBlockDistance(posB, playerPos);
@@ -681,7 +686,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 				break;
 			}
 			
-			long missingPos = sortedMissingPosList.getLong(i);
+			long missingPos = this.sortedMissingPosList.get(i);
 			
 			// is this position within acceptable generator range?
 			boolean posInRange = WorldGenUtil.isPosInWorldGenRange(
@@ -733,9 +738,9 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 		// calculate an estimate for the max number of chunks for the queue
 		int totalWorldGenChunkCount = 0;
 		int totalWorldGenTaskCount = 0;
-		for (int i = 0; i < sortedMissingPosList.size(); i++)
+		for (int i = 0; i < this.sortedMissingPosList.size(); i++)
 		{
-			long missingPos = sortedMissingPosList.getLong(i);
+			long missingPos = this.sortedMissingPosList.get(i);
 			
 			// chunk count
 			int sectionWidthInChunks = DhSectionPos.getChunkWidth(missingPos);
