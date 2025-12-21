@@ -242,6 +242,11 @@ public class FullDataSourceProviderV2 implements IDebugRenderable, AutoCloseable
 		catch (Exception e)
 		{
 			String message = e.getMessage();
+			if (message == null)
+			{
+				message = "NULL";
+			}
+			
 			if (CORRUPT_DATA_ERRORS_LOGGED.add(message))
 			{
 				LOGGER.warn("Unexpected error getting: [" + DhSectionPos.toString(pos) + "], this error message will only be logged once, error: [" + message + "].", e);
