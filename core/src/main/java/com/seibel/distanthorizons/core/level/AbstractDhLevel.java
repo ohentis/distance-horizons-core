@@ -192,22 +192,29 @@ public abstract class AbstractDhLevel implements IDhLevel
 		return this.updateDataSourcesAsync(fullDataSource)
 			.thenRun(() -> 
 			{
-				HashSet<DhChunkPos> updatedChunkPosSet = this.updatedChunkPosSetBySectionPos.remove(fullDataSource.getPos());
-				if (updatedChunkPosSet != null)
+				try
 				{
-					for (DhChunkPos chunkPos : updatedChunkPosSet)
+					HashSet<DhChunkPos> updatedChunkPosSet = this.updatedChunkPosSetBySectionPos.remove(fullDataSource.getPos());
+					if (updatedChunkPosSet != null)
 					{
-						// save after the data source has been updated to prevent saving the hash without the associated datasource
-						Integer chunkHash = this.updatedChunkHashesByChunkPos.remove(chunkPos);
-						if (this.chunkHashRepo != null && chunkHash != null)
+						for (DhChunkPos chunkPos : updatedChunkPosSet)
 						{
-							this.chunkHashRepo.save(new ChunkHashDTO(chunkPos, chunkHash));
-						}
-						
-						ApiEventInjector.INSTANCE.fireAllEvents(
+							// save after the data source has been updated to prevent saving the hash without the associated datasource
+							Integer chunkHash = this.updatedChunkHashesByChunkPos.remove(chunkPos);
+							if (this.chunkHashRepo != null && chunkHash != null)
+							{
+								this.chunkHashRepo.save(new ChunkHashDTO(chunkPos, chunkHash));
+							}
+							
+							ApiEventInjector.INSTANCE.fireAllEvents(
 								DhApiChunkModifiedEvent.class,
 								new DhApiChunkModifiedEvent.EventParam(this.getLevelWrapper(), chunkPos.getX(), chunkPos.getZ()));
+						}
 					}
+				}
+				catch (Exception e)
+				{
+					LOGGER.error("Unexpected issue after onDataSourceSaveAsync, error: ["+e.getMessage()+"].", e);
 				}
 			});
 	}
