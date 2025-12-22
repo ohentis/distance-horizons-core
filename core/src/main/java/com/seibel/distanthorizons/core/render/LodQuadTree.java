@@ -444,7 +444,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 					
 					// since this section wants to render
 					// check if it needs any generation to do so
-					this.tryQueueSectionForRetrieval(renderSection);
+					this.tryQueuePosForRetrieval(renderSection.pos);
 				}
 			}
 			
@@ -541,9 +541,10 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 					if (node != null)
 					{
 						LodRenderSection renderSection = node.value;
-						if (renderSection != null && renderSection.getRenderingEnabled())
+						if (renderSection != null 
+							&& renderSection.getRenderingEnabled())
 						{
-							this.tryQueueSectionForRetrieval(renderSection);
+							this.tryQueuePosForRetrieval(renderSection.pos);
 						}
 					}
 				}
@@ -561,9 +562,9 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 		}
 	}
 	
-	private void tryQueueSectionForRetrieval(LodRenderSection renderSection)
+	private void tryQueuePosForRetrieval(long pos)
 	{
-		LongArrayList missingPosList = this.fullDataSourceProvider.getPositionsToRetrieve(renderSection.pos);
+		LongArrayList missingPosList = this.fullDataSourceProvider.getPositionsToRetrieve(pos);
 		if (missingPosList == null)
 		{
 			return;
@@ -780,6 +781,13 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 					if (result.state == ERetrievalResultState.FAIL)
 					{
 						this.missingGenerationPosSet.add(missingPos);
+					}
+					else if (result.state == ERetrievalResultState.REQUIRES_SPLITTING)
+					{
+						DhSectionPos.forEachChild(missingPos, (long childPos) ->
+						{
+							this.tryQueuePosForRetrieval(childPos);
+						});
 					}
 				});
 			}
