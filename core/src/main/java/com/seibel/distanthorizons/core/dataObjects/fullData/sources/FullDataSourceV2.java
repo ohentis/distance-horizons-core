@@ -78,7 +78,7 @@ public class FullDataSourceV2
 	/** how many chunks wide this datasource is at detail level 0. */
 	public static final int NUMB_OF_CHUNKS_WIDE = WIDTH / LodUtil.CHUNK_WIDTH;
 	
-	public static final PhantomArrayListPool ARRAY_LIST_POOL = new PhantomArrayListPool("FullDataV2", true);
+	public static final PhantomArrayListPool ARRAY_LIST_POOL = new PhantomArrayListPool("FullDataV2");
 	
 	
 	
