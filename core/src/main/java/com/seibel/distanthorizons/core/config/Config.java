@@ -1422,7 +1422,7 @@ public class Config
 					.set(false)
 					// enabling this can be quite detrimental to performance,
 					// so hiding it in the config file should reduce people accidentally enabling it
-					.setAppearance(isRunningInDevEnvironment() ? EConfigEntryAppearance.ALL : EConfigEntryAppearance.ONLY_IN_FILE)
+					.setAppearance(EConfigEntryAppearance.ONLY_IN_FILE)
 					.comment(""
 							+ "Enabling this will drastically increase chunk processing time\n"
 							+ "and you may need to increase your CPU load to handle it.\n"
