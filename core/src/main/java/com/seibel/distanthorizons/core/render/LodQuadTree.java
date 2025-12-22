@@ -20,6 +20,7 @@
 package com.seibel.distanthorizons.core.render;
 
 import com.seibel.distanthorizons.core.config.Config;
+import com.seibel.distanthorizons.core.config.listeners.IConfigListener;
 import com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.LodBufferContainer;
 import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.file.fullDatafile.V2.FullDataSourceProviderV2;
@@ -42,8 +43,6 @@ import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.coreapi.util.MathUtil;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongIterator;
-import it.unimi.dsi.fastutil.longs.LongOpenCustomHashSet;
-import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.WillNotClose;
@@ -60,7 +59,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * This quadTree structure is our core data structure and holds
  * all rendering data.
  */
-public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRenderable, AutoCloseable
+public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRenderable, IConfigListener, AutoCloseable
 {
 	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
 	/** there should only ever be one {@link LodQuadTree} so having the thread static should be fine */
@@ -77,7 +76,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 	 */
 	private final ConcurrentLinkedQueue<Long> sectionsToReload = new ConcurrentLinkedQueue<>();
 	private final IDhClientLevel level;
-	private final ReentrantLock treeReadWriteLock = new ReentrantLock();
+	private final ReentrantLock treeLock = new ReentrantLock();
 	
 	private ArrayList<LodRenderSection> debugRenderSections = new ArrayList<>();
 	private ArrayList<LodRenderSection> altDebugRenderSections = new ArrayList<>();
@@ -135,6 +134,8 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 		GenericObjectRenderer genericObjectRenderer = this.level.getGenericRenderer();
 		this.beaconRenderHandler = (genericObjectRenderer != null) ? new BeaconRenderHandler(genericObjectRenderer) : null;
 		
+		Config.Common.WorldGenerator.enableDistantGeneration.addListener(this);
+		
 	}
 	
 	//endregion constructor
@@ -162,7 +163,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 		
 		
 		// don't traverse the tree if it is being modified
-		if (this.treeReadWriteLock.tryLock())
+		if (this.treeLock.tryLock())
 		{
 			// this shouldn't be updated while the tree is being iterated through
 			this.updateDetailLevelVariables();
@@ -190,7 +191,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 			}
 			finally
 			{
-				this.treeReadWriteLock.unlock();
+				this.treeLock.unlock();
 			}
 		}
 	}
@@ -442,19 +443,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 					
 					// since this section wants to render
 					// check if it needs any generation to do so
-					LongArrayList missingPosList = this.fullDataSourceProvider.getPositionsToRetrieve(renderSection.pos);
-					if (missingPosList != null)
-					{
-						for (int i = 0; i < missingPosList.size(); i++)
-						{
-							long missingPos = missingPosList.getLong(i);
-							if (!this.queuedGenerationPosSet.contains(missingPos))
-							{
-								this.missingGenerationPosSet.add(missingPos);
-							}
-						}
-					}
-					
+					this.tryQueueSectionForRetrieval(renderSection);
 				}
 			}
 			
@@ -524,6 +513,72 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 	}
 	
 	//endregion tick update
+	
+	
+	
+	//=================================//
+	// full data retrieval (world gen) //
+	//=================================//
+	//region world gen
+	
+	@Override
+	public void onConfigValueSet()
+	{
+		boolean generatorEnabled = Config.Common.WorldGenerator.enableDistantGeneration.get();
+		if (generatorEnabled)
+		{
+			// generation is enabled, re-populate the queue 
+			
+			try
+			{
+				this.treeLock.lock();
+				
+				Iterator<QuadNode<LodRenderSection>> nodeIterator = this.nodeIterator();
+				while (nodeIterator.hasNext())
+				{
+					QuadNode<LodRenderSection> node = nodeIterator.next();
+					if (node != null)
+					{
+						LodRenderSection renderSection = node.value;
+						if (renderSection != null && renderSection.getRenderingEnabled())
+						{
+							this.tryQueueSectionForRetrieval(renderSection);
+						}
+					}
+				}
+			}
+			finally
+			{
+				this.treeLock.unlock();
+			}
+		}
+		else
+		{
+			// generation is disabled, clear the queues
+			this.missingGenerationPosSet.clear();
+			this.queuedGenerationPosSet.clear();
+		}
+	}
+	
+	private void tryQueueSectionForRetrieval(LodRenderSection renderSection)
+	{
+		LongArrayList missingPosList = this.fullDataSourceProvider.getPositionsToRetrieve(renderSection.pos);
+		if (missingPosList == null)
+		{
+			return;
+		}
+		
+		for (int i = 0; i < missingPosList.size(); i++)
+		{
+			long missingPos = missingPosList.getLong(i);
+			if (!this.queuedGenerationPosSet.contains(missingPos))
+			{
+				this.missingGenerationPosSet.add(missingPos);
+			}
+		}
+	}
+	
+	//endregion world gen
 	
 	
 	
@@ -601,7 +656,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 	{
 		try
 		{
-			this.treeReadWriteLock.lock();
+			this.treeLock.lock();
 			LOGGER.info("Disposing render data...");
 			
 			// clear the tree
@@ -624,7 +679,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 		}
 		finally
 		{
-			this.treeReadWriteLock.unlock();
+			this.treeLock.unlock();
 		}
 	}
 	
@@ -679,7 +734,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 		// add retrieval tasks to the queue //
 		//==================================//
 		
-		for (int i = 0; i < sortedMissingPosList.size(); i++)
+		for (int i = 0; i < this.sortedMissingPosList.size(); i++)
 		{
 			if (!this.fullDataSourceProvider.canQueueRetrievalNow())
 			{
@@ -823,13 +878,15 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 		LOGGER.info("Shutting down LodQuadTree...");
 		
 		DebugRenderer.unregister(this, Config.Client.Advanced.Debugging.DebugWireframe.showQuadTreeRenderStatus);
+		Config.Common.WorldGenerator.enableDistantGeneration.removeListener(this);
+		
 		
 		ThreadPoolExecutor mainCleanupExecutor = ThreadPoolUtil.getCleanupExecutor();
 		// closing every node may take a few moments
 		// so this is run on a separate thread to prevent lagging the render thread
 		mainCleanupExecutor.execute(() -> 
 		{
-			this.treeReadWriteLock.lock();
+			this.treeLock.lock();
 			try
 			{
 				// walk through each node
@@ -847,7 +904,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 			}
 			finally
 			{
-				this.treeReadWriteLock.unlock();
+				this.treeLock.unlock();
 			}
 		});
 		
