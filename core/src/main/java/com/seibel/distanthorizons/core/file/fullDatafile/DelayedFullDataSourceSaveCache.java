@@ -96,7 +96,12 @@ public class DelayedFullDataSourceSaveCache implements AutoCloseable
 				// no data currently in the memory cache for this position
 				memoryDataSource = FullDataSourceV2.createEmpty(inputPos);
 				pair = new DataSourceSavedTimePair(memoryDataSource);
-				this.dataSourceByPosition.put(inputPos, pair);
+				DataSourceSavedTimePair oldPair = this.dataSourceByPosition.put(inputPos, pair);
+				if (oldPair != null)
+				{
+					// shouldn't happen, but just in case
+					this.handleDataSourceRemoval(oldPair.dataSource);
+				}
 			}
 			else
 			{
