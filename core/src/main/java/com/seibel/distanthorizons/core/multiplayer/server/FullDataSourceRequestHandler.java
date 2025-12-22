@@ -174,12 +174,21 @@ public class FullDataSourceRequestHandler implements AutoCloseable
 			DataSourceRequestGroup requestGroup = this.requestGroupsByPos.computeIfAbsent(requestData.sectionPos(), pos ->
 			{
 				DataSourceRequestGroup newGroup = new DataSourceRequestGroup(pos);
-				newGroup.tryAddRequest(requestData);
-				createdNewGroup.set(true);
+				try
+				{
+					newGroup.tryAddRequest(requestData);
+					createdNewGroup.set(true);
+					
+					this.tryFulfillDataSourceRequestGroup(newGroup, pos);
+					
+					LOGGER.debug("[" + this.getLevelIdentifier() + "] Created request group for pos [" + DhSectionPos.toString(pos) + "].");
+					return newGroup;
+				}
+				catch (Exception e)
+				{
+					LOGGER.error("Unable to queue request for pos: ["+DhSectionPos.toString(requestData.sectionPos())+"], error: ["+e.getMessage()+"].", e);
+				}
 				
-				this.tryFulfillDataSourceRequestGroup(newGroup, pos);
-				
-				LOGGER.debug("[" + this.getLevelIdentifier() + "] Created request group for pos [" + DhSectionPos.toString(pos) + "].");
 				return newGroup;
 			});
 			
@@ -229,10 +238,14 @@ public class FullDataSourceRequestHandler implements AutoCloseable
 	
 	private void tryFulfillDataSourceRequestGroup(DataSourceRequestGroup requestGroup, long pos)
 	{
-		this.fullDataSourceProvider().getAsync(pos).thenAccept(fullDataSource ->
+		final GeneratedFullDataSourceProvider provider = this.fullDataSourceProvider();
+		
+		provider.getAsync(pos)
+			.thenAccept((FullDataSourceV2 fullDataSource) ->
 		{
-			if (this.fullDataSourceProvider().generationStepsAreFullyGenerated(fullDataSource.columnGenerationSteps))
+			if (provider.generationStepsAreFullyGenerated(fullDataSource.columnGenerationSteps))
 			{
+				LOGGER.info("sending - complete [" + DhSectionPos.toString(pos) + "]");
 				requestGroup.fullDataSource = fullDataSource;
 				return;
 			}
@@ -247,11 +260,14 @@ public class FullDataSourceRequestHandler implements AutoCloseable
 				this.requestGroupsByPos.remove(pos);
 				if (!requestGroup.tryClose())
 				{
+					//LOGGER.info("closing [" + DhSectionPos.toString(pos) + "]");
 					return;
 				}
 				
 				for (DataSourceRequestGroup.RequestData requestData : requestGroup.requestMessages.values())
 				{
+					//LOGGER.info("sending [" + DhSectionPos.toString(pos) + "] - ["+DhSectionPos.toString(requestData.sectionPos())+"]");
+					
 					this.requestGroupsByFutureId.remove(requestData.futureId());
 					requestData.rateLimiterSet.generationRequestRateLimiter.release();
 					requestData.message.sendResponse(new SectionRequiresSplittingException());
@@ -264,8 +280,8 @@ public class FullDataSourceRequestHandler implements AutoCloseable
 			}
 			else
 			{
-				//LOGGER.info("sending - queueing [" + DhSectionPos.toString(pos) + "]");
-				//this.fullDataSourceProvider().queuePositionForRetrieval(pos);
+				//LOGGER.info("queueing incomplete world gen [" + DhSectionPos.toString(pos) + "]");
+				this.fullDataSourceProvider().queuePositionForRetrieval(pos);
 			}
 		});
 	}
