@@ -245,7 +245,7 @@ public class FullDataSourceRequestHandler implements AutoCloseable
 		{
 			if (provider.generationStepsAreFullyGenerated(fullDataSource.columnGenerationSteps))
 			{
-				LOGGER.info("sending - complete [" + DhSectionPos.toString(pos) + "]");
+				//LOGGER.info("sending - complete [" + DhSectionPos.toString(pos) + "]");
 				requestGroup.fullDataSource = fullDataSource;
 				return;
 			}
