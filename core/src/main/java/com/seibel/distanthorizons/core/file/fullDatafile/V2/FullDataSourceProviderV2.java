@@ -200,9 +200,10 @@ public class FullDataSourceProviderV2 implements IDebugRenderable, AutoCloseable
 				return FullDataSourceV2.createEmpty(pos);
 			}
 			
+			FullDataSourceV2 dataSource = null;
 			try
 			{
-				FullDataSourceV2 dataSource = this.createDataSourceFromDto(dto);
+				dataSource = this.createDataSourceFromDto(dto);
 				
 				// automatically create and save adjacent data if missing
 				if (dto.dataFormatVersion == FullDataSourceV2DTO.DATA_FORMAT.V1_NO_ADJACENT_DATA)
@@ -220,6 +221,15 @@ public class FullDataSourceProviderV2 implements IDebugRenderable, AutoCloseable
 			{
 				this.tryLogCorruptedDataError(DhSectionPos.toString(pos), e);
 				this.repo.deleteWithKey(pos);
+			}
+			catch (Exception e)
+			{
+				if (dataSource != null)
+				{
+					dataSource.close();
+				}
+				
+				throw e;
 			}
 		}
 		catch (InterruptedException ignore) { }
