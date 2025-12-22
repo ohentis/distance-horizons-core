@@ -118,33 +118,45 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 	
 	private void onWorldGenTaskComplete(DataSourceRetrievalResult genTaskResult, Throwable exception)
 	{
-		if (genTaskResult.state == ERetrievalResultState.FAIL)
+		try
 		{
-			LodUtil.assertTrue(genTaskResult.dataSource == null, "Errored retrieval object should not have a datasource.");
-			
-			// don't log shutdown exceptions
-			if (!ExceptionUtil.isInterruptOrReject(exception))
+			if (exception != null)
 			{
-				LOGGER.error("Uncaught Gen Task Exception at ["+genTaskResult.pos+"], error: ["+exception.getMessage()+"].", exception);
+				return;
+			}
+			
+			if (genTaskResult.state == ERetrievalResultState.FAIL)
+			{
+				LodUtil.assertTrue(genTaskResult.dataSource == null, "Errored retrieval object should not have a datasource.");
+				
+				// don't log shutdown exceptions
+				if (!ExceptionUtil.isInterruptOrReject(exception))
+				{
+					LOGGER.error("Uncaught Gen Task Exception at [" + genTaskResult.pos + "], error: [" + exception.getMessage() + "].", exception);
+				}
+			}
+			else if (genTaskResult.state == ERetrievalResultState.SUCCESS)
+			{
+				LodUtil.assertTrue(genTaskResult.dataSource != null, "Successful retrieval object should have a datasource.");
+				
+				this.dataUpdater.updateDataSource(genTaskResult.dataSource);
+				this.fireOnGenPosSuccessListeners(genTaskResult.pos);
+				genTaskResult.dataSource.close();
+			}
+			else if (genTaskResult.state == ERetrievalResultState.REQUIRES_SPLITTING)
+			{
+				// task was split
+				LodUtil.assertTrue(genTaskResult.dataSource == null, "Split retrieval object should not have a datasource.");
+			}
+			else
+			{
+				// shouldn't happen, but just in case
+				LOGGER.warn("Unexpected gen Task state at: [" + DhSectionPos.toString(genTaskResult.pos) + "], state: [" + genTaskResult.state + "], datasource: NULL, exception: NULL.");
 			}
 		}
-		else if (genTaskResult.state == ERetrievalResultState.SUCCESS)
+		catch (Exception e)
 		{
-			LodUtil.assertTrue(genTaskResult.dataSource != null, "Successful retrieval object should have a datasource.");
-			
-			this.dataUpdater.updateDataSource(genTaskResult.dataSource);
-			this.fireOnGenPosSuccessListeners(genTaskResult.pos);
-			genTaskResult.dataSource.close();
-		}
-		else if (genTaskResult.state == ERetrievalResultState.REQUIRES_SPLITTING)
-		{
-			// task was split
-			LodUtil.assertTrue(genTaskResult.dataSource == null, "Split retrieval object should not have a datasource.");
-		}
-		else
-		{
-			// shouldn't happen, but just in case
-			LOGGER.warn("Unexpected gen Task state at: [" + DhSectionPos.toString(genTaskResult.pos) + "], state: ["+genTaskResult.state+"], datasource: NULL, exception: NULL.");
+			LOGGER.error("Unexpected issue during onWorldGenTaskComplete, error: ["+e.getMessage()+"].", e);
 		}
 	}
 	
@@ -267,12 +279,15 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 		
 		
 		int availableTaskSlots = maxWorldGenQueueCount - worldGenQueue.getWaitingTaskCount();
-		if (availableTaskSlots <= 0)
+		if (availableTaskSlots == 0)
 		{
-			//if (false)
+			return false;
+		}
+		else if (availableTaskSlots < 0)
+		{
 			if (pruneWaitingTasksAboveLimit)
 			{
-				AtomicInteger tasksToCancel = new AtomicInteger(-availableTaskSlots + 1);
+				AtomicInteger tasksToCancel = new AtomicInteger(availableTaskSlots * -1);
 				worldGenQueue.removeRetrievalRequestIf(taskPos -> tasksToCancel.getAndDecrement() > 0);
 			}
 			else

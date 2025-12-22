@@ -109,7 +109,7 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 	
 	public CompletableFuture<DataSourceRetrievalResult> submitRequest(long sectionPos, @Nullable Long clientTimestamp)
 	{
-		NetRequestTask requestEntry = this.waitingTasksBySectionPos.compute(sectionPos, (pos, existingNetTask) ->
+		NetRequestTask requestEntry = this.waitingTasksBySectionPos.compute(sectionPos, (Long pos, NetRequestTask existingNetTask) ->
 		{
 			// ignore already queued tasks
 			if (existingNetTask != null)
@@ -123,6 +123,15 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 			{
 				this.waitingTasksBySectionPos.remove(pos);
 				
+				if (throwable != null)
+				{
+					if (!(throwable instanceof CancellationException))
+					{
+						this.failedRequests.incrementAndGet();
+					}
+					return;
+				}
+				
 				switch (requestResult.state)
 				{
 					case SUCCESS:
@@ -132,13 +141,6 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 						break;
 					case FAIL:
 						this.failedRequests.incrementAndGet();
-						break;
-					default:
-						if (throwable != null 
-							&& !(throwable instanceof CancellationException))
-						{
-							this.failedRequests.incrementAndGet();
-						}
 						break;
 				}
 			});
