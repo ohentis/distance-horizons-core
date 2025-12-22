@@ -162,6 +162,34 @@ public class SessionConfig implements INetworkObject
 	
 	
 	
+	//=========//
+ 	// logging //
+ 	//=========//
+	
+	/** 
+	 * example: "common.playerBandwidthLimit:[497], " <br>
+	 * Useful to see what was changed when receiving a new config from the server.
+	 */
+	public String getDifferencesAsString(SessionConfig that)
+	{
+		StringBuilder stringBuilder = new StringBuilder();
+		
+		for (String key : this.values.keySet())
+		{
+			String thisFieldString = this.values.get(key) + "";
+			String thatFieldString = that.values.get(key) + "";
+			
+			if (!thisFieldString.equals(thatFieldString))
+			{
+				stringBuilder.append(key+":["+thisFieldString+"], ");
+			}
+		}
+		
+		return stringBuilder.toString();
+	}
+	
+	
+	
 	//================//
 	// base overrides //
 	//================//

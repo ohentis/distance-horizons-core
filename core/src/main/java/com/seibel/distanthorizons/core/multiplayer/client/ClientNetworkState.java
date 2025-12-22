@@ -18,6 +18,7 @@ import com.seibel.distanthorizons.core.network.messages.fullData.FullDataPartial
 import com.seibel.distanthorizons.core.network.session.NetworkSession;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.Closeable;
@@ -44,6 +45,7 @@ public class ClientNetworkState implements Closeable
 	 */
 	public NetworkSession getSession() { return this.networkSession; }
 	
+	@NotNull
 	public SessionConfig sessionConfig = new SessionConfig();
 	
 	private volatile boolean configReceived = false;
@@ -129,8 +131,9 @@ public class ClientNetworkState implements Closeable
 			{
 				this.serverSupportStatus = EServerSupportStatus.FULL;
 				
-				/// TODO only log changes
-				//LOGGER.info("Connection config has been changed: [" + message.config + "].");
+				String configChanges = this.sessionConfig.getDifferencesAsString(message.config);
+				LOGGER.info("Connection config has been changed: [" + configChanges + "].");
+				
 				this.sessionConfig = message.config;
 				this.configReceived = true;
 			});
