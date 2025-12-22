@@ -155,7 +155,8 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 						this.failedRequests.incrementAndGet();
 						break;
 					default:
-						if (throwable != null && !(throwable instanceof CancellationException))
+						if (throwable != null 
+							&& !(throwable instanceof CancellationException))
 						{
 							this.failedRequests.incrementAndGet();
 						}

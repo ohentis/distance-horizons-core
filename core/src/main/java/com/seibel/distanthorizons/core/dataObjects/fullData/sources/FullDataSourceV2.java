@@ -202,8 +202,9 @@ public class FullDataSourceV2
 	
 	public static FullDataSourceV2 createEmpty(long pos)
 	{
+		FullDataPointIdMap map = new FullDataPointIdMap(pos);
 		return new FullDataSourceV2(
-				pos, new FullDataPointIdMap(pos),
+				pos, map,
 				// data points, genSteps, and columnCompression are all null since
 				// nothing has been generated yet.
 				// Using the default value of all 0's is adequate

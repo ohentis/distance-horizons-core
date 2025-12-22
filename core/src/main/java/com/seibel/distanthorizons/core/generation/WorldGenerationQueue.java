@@ -331,7 +331,7 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 		}
 		
 		
-		// a task has been started or queued
+		// a task has been started or queued,
 		// queue another task
 		return true;
 	}
@@ -360,7 +360,7 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 			this.rollingAverageChunkGenTimeInMs.add(timePerChunk);
 		});
 		
-		generationFuture.handle((fullDataSourceV2, exception) ->
+		generationFuture.handle((FullDataSourceV2 fullDataSource, Throwable exception) ->
 		{
 			try
 			{
