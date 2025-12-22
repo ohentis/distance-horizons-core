@@ -1,13 +1,12 @@
 package com.seibel.distanthorizons.core.generation;
 
 import com.seibel.distanthorizons.core.config.Config;
-import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.generation.tasks.DataSourceRetrievalResult;
+import com.seibel.distanthorizons.core.generation.tasks.ERetrievalResultState;
 import com.seibel.distanthorizons.core.level.DhClientLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.multiplayer.client.AbstractFullDataNetworkRequestQueue;
 import com.seibel.distanthorizons.core.multiplayer.client.ClientNetworkState;
-import com.seibel.distanthorizons.core.multiplayer.client.NetRequestResult;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
@@ -17,7 +16,6 @@ import com.seibel.distanthorizons.core.util.objects.RollingAverage;
 import com.seibel.distanthorizons.core.logging.DhLogger;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 
-import java.util.ArrayList;
 import java.util.concurrent.*;
 
 public class RemoteWorldRetrievalQueue extends AbstractFullDataNetworkRequestQueue implements IFullDataSourceRetrievalQueue, IDebugRenderable
@@ -59,90 +57,23 @@ public class RemoteWorldRetrievalQueue extends AbstractFullDataNetworkRequestQue
 		long generationStartMsTime = System.currentTimeMillis();
 		
 		
-		CompletableFuture<DataSourceRetrievalResult> returnFuture = new CompletableFuture<>();
-		
-		Executor worldGenExecutor = ThreadPoolUtil.getWorldGenExecutor();
-		if (worldGenExecutor == null)
+		CompletableFuture<DataSourceRetrievalResult> future = super.submitRequest(sectionPos, /* client timestamp */null);
+		future.thenAccept((DataSourceRetrievalResult result) -> 
 		{
-			return CompletableFuture.completedFuture(DataSourceRetrievalResult.CreateFail());
-		}
-		
-		CompletableFuture<NetRequestResult> netFuture = super.submitRequest(sectionPos, /* client timestamp */null);
-		netFuture.handle((NetRequestResult netResult, Throwable throwable) ->
-		{
-			try
+			if (result.state == ERetrievalResultState.SUCCESS)
 			{
-				if (throwable != null)
-				{
-					return DataSourceRetrievalResult.CreateFail();
-				}
-				
 				long totalGenTimeInMs = System.currentTimeMillis() - generationStartMsTime;
-				
+
 				int chunkWidth = DhSectionPos.getChunkWidth(sectionPos);
 				int chunkCount = chunkWidth * chunkWidth;
 				double timePerChunk = (double) totalGenTimeInMs / (double) chunkCount;
-				
-				switch (netResult.state)
-				{
-					case SUCCESS:
-						// only add the time on successes
-						// it won't be a perfect estimate but fails will often come back faster, skewing the time faster
-						this.rollingAverageChunkGenTimeInMs.add(timePerChunk);
-						
-						return DataSourceRetrievalResult.CreateSuccess(sectionPos, netResult.receivedDataSource);
-					case FAIL:
-						return DataSourceRetrievalResult.CreateFail();
-					case REQUIRES_SPLITTING:
-						ArrayList<CompletableFuture<DataSourceRetrievalResult>> childFutures = new ArrayList<>(4);
-						DhSectionPos.forEachChild(sectionPos, (long childPos) ->
-						{
-							boolean shouldGenerate;
-							try (FullDataSourceV2 fullDataSource = this.level.remoteDataSourceProvider.get(childPos))
-							{
-								if (fullDataSource != null)
-								{
-									shouldGenerate = !this.level.remoteDataSourceProvider.generationStepsAreFullyGenerated(fullDataSource.columnGenerationSteps);
-								}
-								else
-								{
-									shouldGenerate = true;
-								}
-							}
-							
-							if (shouldGenerate)
-							{
-								childFutures.add(this.submitRetrievalTask(childPos, requiredDataDetail));
-							}
-						});
-						return DataSourceRetrievalResult.CreateSplit(childFutures);
-				}
-				
-				LodUtil.assertNotReach("Unexpected and unhandled request response result: [" + netResult.state + "]");
-				return DataSourceRetrievalResult.CreateFail();
+
+				// only add the time on successes
+				// it won't be a perfect estimate but fails will often come back faster, skewing the time faster
+				this.rollingAverageChunkGenTimeInMs.add(timePerChunk);
 			}
-			catch (Exception e)
-			{
-				LOGGER.error("Unexpected issue in submitRetrievalTask returned future, error: ["+e.getMessage()+"]", e);
-				return DataSourceRetrievalResult.CreateFail();
-			}
-		})
-		// convert the net result
-			.handleAsync((DataSourceRetrievalResult retrievalResult, Throwable throwable) ->
-		{
-			if (throwable != null)
-			{
-				returnFuture.completeExceptionally(throwable);
-			}
-			else
-			{
-				returnFuture.complete(retrievalResult);
-			}
-			
-			return null;
-		}, worldGenExecutor);
-		
-		return returnFuture;
+		});
+		return future;
 	}
 	
 	@Override
@@ -176,13 +107,13 @@ public class RemoteWorldRetrievalQueue extends AbstractFullDataNetworkRequestQue
 		return DhSectionPos.getChebyshevSignedBlockDistance(sectionPos, targetPos) <= this.networkState.sessionConfig.getMaxGenerationRequestDistance() * 16;
 	}
 	@Override
-	protected boolean onBeforeRequest(long sectionPos, CompletableFuture<NetRequestResult> future)
+	protected boolean onBeforeRequest(long sectionPos, CompletableFuture<DataSourceRetrievalResult> future)
 	{
 		// split up large requests if N-sized gen isn't enabled
 		if (!Config.Server.Experimental.enableNSizedGeneration.get()
 			&& DhSectionPos.getDetailLevel(sectionPos) > DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL)
 		{
-			future.complete(NetRequestResult.CreateSplit());
+			future.complete(DataSourceRetrievalResult.CreateSplit());
 			return false;
 		}
 		

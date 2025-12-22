@@ -265,7 +265,7 @@ public class FullDataSourceRequestHandler implements AutoCloseable
 			else
 			{
 				//LOGGER.info("sending - queueing [" + DhSectionPos.toString(pos) + "]");
-				this.fullDataSourceProvider().queuePositionForRetrieval(pos);
+				//this.fullDataSourceProvider().queuePositionForRetrieval(pos);
 			}
 		});
 	}

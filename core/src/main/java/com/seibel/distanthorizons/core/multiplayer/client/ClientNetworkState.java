@@ -129,8 +129,8 @@ public class ClientNetworkState implements Closeable
 			{
 				this.serverSupportStatus = EServerSupportStatus.FULL;
 				
-				// TODO only log changes
-				LOGGER.info("Connection config has been changed: [" + message.config + "].");
+				/// TODO only log changes
+				//LOGGER.info("Connection config has been changed: [" + message.config + "].");
 				this.sessionConfig = message.config;
 				this.configReceived = true;
 			});

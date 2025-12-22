@@ -7,7 +7,9 @@ import com.seibel.distanthorizons.core.api.internal.SharedApi;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.file.fullDatafile.GeneratedFullDataSourceProvider;
+import com.seibel.distanthorizons.core.generation.tasks.DataSourceRetrievalResult;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.generation.tasks.ERetrievalResultState;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.util.FormatUtil;
@@ -154,14 +156,16 @@ public class PregenManager
 					}
 					else
 					{
-						this.fullDataSourceProvider.queuePositionForRetrieval(fullDataSource.getPos()).thenAccept(result -> {
-							if (!result.success)
+						this.fullDataSourceProvider.queuePositionForRetrieval(fullDataSource.getPos())
+							.thenAccept((DataSourceRetrievalResult result) ->
 							{
-								LOGGER.warn("Failed to generate section " + DhSectionPos.toString(result.pos));
-							}
-							
-							this.pendingGenerations.invalidate(result.pos);
-						});
+								if (result.state == ERetrievalResultState.FAIL)
+								{
+									LOGGER.warn("Failed to generate section " + DhSectionPos.toString(result.pos));
+								}
+								
+								this.pendingGenerations.invalidate(result.pos);
+							});
 					}
 					
 					fullDataSource.close();

@@ -25,6 +25,7 @@ import com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.LodBuff
 import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.file.fullDatafile.V2.FullDataSourceProviderV2;
 import com.seibel.distanthorizons.core.generation.tasks.DataSourceRetrievalResult;
+import com.seibel.distanthorizons.core.generation.tasks.ERetrievalResultState;
 import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.logging.DhLogger;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
@@ -776,7 +777,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 					this.queuedGenerationPosSet.remove(missingPos);
 					
 					// if the task failed re-queue so we can try again
-					if (!result.success)
+					if (result.state == ERetrievalResultState.FAIL)
 					{
 						this.missingGenerationPosSet.add(missingPos);
 					}

@@ -316,18 +316,7 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 			// detail level is too high (if the detail level was too low, the generator would've ignored the request),
 			// split up the task
 			
-			
-			// split up the task and add each to the queue
-			ArrayList<CompletableFuture<DataSourceRetrievalResult>> childFutures = new ArrayList<>(4);
-			DhSectionPos.forEachChild(closestTask.pos, (childDhSectionPos) ->
-			{
-				DataSourceRetrievalTask newGenTask = new DataSourceRetrievalTask(childDhSectionPos, DhSectionPos.getDetailLevel(childDhSectionPos));
-				childFutures.add(newGenTask.future);
-				this.waitingTasks.put(newGenTask.pos, newGenTask);
-			});
-			
-			// send the child futures to the future recipient, to notify them of the new tasks
-			closestTask.future.complete(DataSourceRetrievalResult.CreateSplit(childFutures));
+			closestTask.future.complete(DataSourceRetrievalResult.CreateSplit());
 		}
 		
 		
@@ -372,13 +361,16 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 						LOGGER.error("Error generating data for pos: " + DhSectionPos.toString(taskPos), exception);
 					}
 					
+					LodUtil.assertTrue(fullDataSource == null);
 					worldGenTask.future.complete(DataSourceRetrievalResult.CreateFail());
 				}
-				
-				boolean worked = this.inProgressGenTasksByLodPos.remove(taskPos, worldGenTask);
-				LodUtil.assertTrue(worked, "Unable to find in progress generator task with position ["+DhSectionPos.toString(taskPos)+"]");
-				
-				worldGenTask.future.complete(DataSourceRetrievalResult.CreateSuccess(taskPos, fullDataSourceV2));
+				else
+				{
+					boolean taskRemoved = this.inProgressGenTasksByLodPos.remove(taskPos, worldGenTask);
+					LodUtil.assertTrue(taskRemoved, "Unable to find in progress generator task with position ["+DhSectionPos.toString(taskPos)+"]");
+					
+					worldGenTask.future.complete(DataSourceRetrievalResult.CreateSuccess(taskPos, fullDataSource));
+				}
 			}
 			catch (Exception e)
 			{
@@ -692,9 +684,10 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 					LOGGER.error("Error when terminating data generation for pos: ["+DhSectionPos.toString(genTask.pos)+"], error: ["+throwable.getMessage()+"].", throwable);
 				}
 				
-				if (result.generatedDataSource != null)
+				if (result != null 
+					&& result.dataSource != null)
 				{
-					result.generatedDataSource.close();
+					result.dataSource.close();
 				}
 				
 				return null;

@@ -29,6 +29,7 @@ import com.seibel.distanthorizons.core.file.structure.ISaveStructure;
 import com.seibel.distanthorizons.core.generation.DhLightingEngine;
 import com.seibel.distanthorizons.core.generation.IFullDataSourceRetrievalQueue;
 import com.seibel.distanthorizons.core.generation.tasks.DataSourceRetrievalResult;
+import com.seibel.distanthorizons.core.generation.tasks.ERetrievalResultState;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLogger;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
@@ -117,35 +118,33 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 	
 	private void onWorldGenTaskComplete(DataSourceRetrievalResult genTaskResult, Throwable exception)
 	{
-		if (exception != null)
+		if (genTaskResult.state == ERetrievalResultState.FAIL)
 		{
+			LodUtil.assertTrue(genTaskResult.dataSource == null, "Errored retrieval object should not have a datasource.");
+			
 			// don't log shutdown exceptions
 			if (!ExceptionUtil.isInterruptOrReject(exception))
 			{
 				LOGGER.error("Uncaught Gen Task Exception at ["+genTaskResult.pos+"], error: ["+exception.getMessage()+"].", exception);
 			}
 		}
-		else if (genTaskResult.generatedDataSource != null)
+		else if (genTaskResult.state == ERetrievalResultState.SUCCESS)
 		{
-			this.dataUpdater.updateDataSource(genTaskResult.generatedDataSource);
+			LodUtil.assertTrue(genTaskResult.dataSource != null, "Successful retrieval object should have a datasource.");
+			
+			this.dataUpdater.updateDataSource(genTaskResult.dataSource);
 			this.fireOnGenPosSuccessListeners(genTaskResult.pos);
+			genTaskResult.dataSource.close();
 		}
-		else if (exception == null && !genTaskResult.success) // TODO use enum to check type
+		else if (genTaskResult.state == ERetrievalResultState.REQUIRES_SPLITTING)
 		{
 			// task was split
+			LodUtil.assertTrue(genTaskResult.dataSource == null, "Split retrieval object should not have a datasource.");
 		}
 		else
 		{
 			// shouldn't happen, but just in case
-			// TODO is definitely happening
-			LOGGER.warn("Unexpected gen Task state at: [" + DhSectionPos.toString(genTaskResult.pos) + "], success: ["+genTaskResult.success+"], datasource: NULL, exception: NULL.");
-		}
-		
-		
-		// if the generation task was split up into smaller positions, add the on-complete event to them
-		for (CompletableFuture<DataSourceRetrievalResult> siblingFuture : genTaskResult.childFutures)
-		{
-			siblingFuture.whenComplete((siblingGenTaskResult, siblingEx) -> this.onWorldGenTaskComplete(siblingGenTaskResult, siblingEx));
+			LOGGER.warn("Unexpected gen Task state at: [" + DhSectionPos.toString(genTaskResult.pos) + "], state: ["+genTaskResult.state+"], datasource: NULL, exception: NULL.");
 		}
 	}
 	

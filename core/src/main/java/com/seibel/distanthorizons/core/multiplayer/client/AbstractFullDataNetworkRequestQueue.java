@@ -6,6 +6,7 @@ import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.config.types.ConfigEntry;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
+import com.seibel.distanthorizons.core.generation.tasks.DataSourceRetrievalResult;
 import com.seibel.distanthorizons.core.level.DhClientLevel;
 import com.seibel.distanthorizons.core.logging.DhLogger;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
@@ -71,16 +72,6 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 	
 	private final SupplierBasedRateLimiter<Void> rateLimiter = new SupplierBasedRateLimiter<>(this::getRequestRateLimit);
 	
-	private final Set<Long> succeededPositions = Collections.newSetFromMap(CacheBuilder.newBuilder()
-			.expireAfterWrite(20, TimeUnit.MINUTES)
-			.<Long, Boolean>build()
-			.asMap());
-	
-	private final Set<Long> requiresSplittingPositions = Collections.newSetFromMap(CacheBuilder.newBuilder()
-			.expireAfterWrite(20, TimeUnit.MINUTES)
-			.<Long, Boolean>build()
-			.asMap());
-	
 	
 	
 	//=============//
@@ -106,7 +97,7 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 	
 	protected abstract int getRequestRateLimit();
 	protected abstract boolean sectionInAllowedGenerationRadius(long sectionPos, DhBlockPos2D targetPos);
-	protected abstract boolean onBeforeRequest(long sectionPos, CompletableFuture<NetRequestResult> future);
+	protected abstract boolean onBeforeRequest(long sectionPos, CompletableFuture<DataSourceRetrievalResult> future);
 	
 	protected abstract String getQueueName();
 	
@@ -116,18 +107,8 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 	// request submitting //
 	//====================//
 	
-	public CompletableFuture<NetRequestResult> submitRequest(long sectionPos, @Nullable Long clientTimestamp)
+	public CompletableFuture<DataSourceRetrievalResult> submitRequest(long sectionPos, @Nullable Long clientTimestamp)
 	{
-		if (this.succeededPositions.contains(sectionPos))
-		{
-			return CompletableFuture.completedFuture(NetRequestResult.CreateFail());
-		}
-		
-		if (this.requiresSplittingPositions.contains(sectionPos))
-		{
-			return CompletableFuture.completedFuture(NetRequestResult.CreateSplit());
-		}
-		
 		NetRequestTask requestEntry = this.waitingTasksBySectionPos.compute(sectionPos, (pos, existingNetTask) ->
 		{
 			// ignore already queued tasks
@@ -138,7 +119,7 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 			
 			
 			NetRequestTask newRequestEntry = new NetRequestTask(pos, clientTimestamp);
-			newRequestEntry.future.whenComplete((requestResult, throwable) ->
+			newRequestEntry.future.whenComplete((DataSourceRetrievalResult requestResult, Throwable throwable) ->
 			{
 				this.waitingTasksBySectionPos.remove(pos);
 				
@@ -146,10 +127,8 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 				{
 					case SUCCESS:
 						this.finishedRequests.incrementAndGet();
-						this.succeededPositions.add(pos);
 						break;
 					case REQUIRES_SPLITTING:
-						this.requiresSplittingPositions.add(pos);
 						break;
 					case FAIL:
 						this.failedRequests.incrementAndGet();
@@ -274,12 +253,12 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 				this.level.updateBeaconBeamsForSectionPos(dataSourceDto.pos, response.payload.beaconBeams);
 				
 				FullDataSourceV2 fullDataSource = dataSourceDto.createDataSource(this.level.getLevelWrapper(), null);
-				requestTask.future.complete(NetRequestResult.CreateSuccess(fullDataSource));
+				requestTask.future.complete(DataSourceRetrievalResult.CreateSuccess(dataSourceDto.pos, fullDataSource));
 			}
 		}
 		catch (SectionRequiresSplittingException ignored)
 		{
-			requestTask.future.complete(NetRequestResult.CreateSplit());
+			requestTask.future.complete(DataSourceRetrievalResult.CreateSplit());
 		}
 		catch (SessionClosedException | CancellationException ignored)
 		{
@@ -288,7 +267,7 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 		catch (RequestRejectedException e)
 		{
 			LOGGER.info("Request rejected by the server, message: [" + e.getMessage() + "].");
-			requestTask.future.complete(NetRequestResult.CreateFail());
+			requestTask.future.complete(DataSourceRetrievalResult.CreateFail());
 		}
 		catch (RateLimitedException e)
 		{
@@ -317,7 +296,7 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 			}
 			else
 			{
-				requestTask.future.complete(NetRequestResult.CreateFail());
+				requestTask.future.complete(DataSourceRetrievalResult.CreateFail());
 			}
 		}
 	}
@@ -458,7 +437,7 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 		public final long pos;
 		
 		/** encapsulates the entire request, including client side queuing and the actual server request */
-		public final CompletableFuture<NetRequestResult> future = new CompletableFuture<>();
+		public final CompletableFuture<DataSourceRetrievalResult> future = new CompletableFuture<>();
 		/** will be null if we want to retrieve the LOD regardless of when it was last updated */
 		@Nullable
 		public final Long updateTimestamp;

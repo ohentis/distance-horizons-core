@@ -22,23 +22,16 @@ package com.seibel.distanthorizons.core.generation.tasks;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.concurrent.CompletableFuture;
-
 /**
  * @see DataSourceRetrievalTask
  */
 public class DataSourceRetrievalResult
 {
-	/** true if terrain was generated */
-	public final boolean success; // TODO reponse enum?
+	public final ERetrievalResultState state;
 	/** the position that was generated, will be null if nothing was generated */
 	public final long pos;
 	@Nullable
-	public final FullDataSourceV2 generatedDataSource;
-	
-	/** if a position is too high detail for world generator to handle it, these futures are for its 4 children positions after being split up. */
-	public final ArrayList<CompletableFuture<DataSourceRetrievalResult>> childFutures = new ArrayList<>(4);
+	public final FullDataSourceV2 dataSource;
 	
 	
 	
@@ -46,19 +39,14 @@ public class DataSourceRetrievalResult
  	// constructors //
 	//==============//
 	
-	public static DataSourceRetrievalResult CreateSplit(ArrayList<CompletableFuture<DataSourceRetrievalResult>> siblingFutures) { return new DataSourceRetrievalResult(false, 0, null, siblingFutures); }
-	public static DataSourceRetrievalResult CreateFail() { return new DataSourceRetrievalResult(false, 0, null,null); }
-	public static DataSourceRetrievalResult CreateSuccess(long pos, FullDataSourceV2 generatedDataSource) { return new DataSourceRetrievalResult(true, pos, generatedDataSource, null); }
-	private DataSourceRetrievalResult(boolean success, long pos, @Nullable FullDataSourceV2 generatedDataSource, ArrayList<CompletableFuture<DataSourceRetrievalResult>> childFutures)
+	public static DataSourceRetrievalResult CreateSplit() { return new DataSourceRetrievalResult(ERetrievalResultState.REQUIRES_SPLITTING, 0, null); }
+	public static DataSourceRetrievalResult CreateFail() { return new DataSourceRetrievalResult(ERetrievalResultState.FAIL, 0, null); }
+	public static DataSourceRetrievalResult CreateSuccess(long pos, FullDataSourceV2 generatedDataSource) { return new DataSourceRetrievalResult(ERetrievalResultState.SUCCESS, pos, generatedDataSource); }
+	private DataSourceRetrievalResult(ERetrievalResultState state, long pos, @Nullable FullDataSourceV2 dataSource)
 	{
-		this.success = success;
+		this.state = state;
 		this.pos = pos;
-		this.generatedDataSource = generatedDataSource;
-		
-		if (childFutures != null)
-		{
-			this.childFutures.addAll(childFutures);
-		}
+		this.dataSource = dataSource;
 	}
 	
 	
