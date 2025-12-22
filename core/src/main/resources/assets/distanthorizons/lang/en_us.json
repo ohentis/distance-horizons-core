@@ -718,6 +718,8 @@
     "OpenGL Events - Chat",
   "distanthorizons.config.common.logging.logNetworkEventToFile":
     "Network Events - File",
+  "distanthorizons.config.common.logging.logConnectionConfigChangesToFile":
+    "Network Connection Config Changes - File",
 
   "distanthorizons.config.common.logging.warning":
     "Warnings",

@@ -30,6 +30,10 @@ public class ClientNetworkState implements Closeable
 			.fileLevelConfig(Config.Common.Logging.logNetworkEventToFile)
 			.build();
 	
+	protected static final DhLogger CONFIG_CHANGE_LOGGER = new DhLoggerBuilder()
+			.fileLevelConfig(Config.Common.Logging.logConnectionConfigChangesToFile)
+			.build();
+	
 	private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	
 	
@@ -132,7 +136,7 @@ public class ClientNetworkState implements Closeable
 				this.serverSupportStatus = EServerSupportStatus.FULL;
 				
 				String configChanges = this.sessionConfig.getDifferencesAsString(message.config);
-				LOGGER.info("Connection config has been changed: [" + configChanges + "].");
+				CONFIG_CHANGE_LOGGER.info("Connection config has been changed: [" + configChanges + "].");
 				
 				this.sessionConfig = message.config;
 				this.configReceived = true;

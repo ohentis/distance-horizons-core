@@ -1603,6 +1603,14 @@ public class Config
 							+ "This can be useful for debugging.")
 					.build();
 			
+			public static ConfigEntry<EDhApiLoggerLevel> logConnectionConfigChangesToFile = new ConfigEntry.Builder<EDhApiLoggerLevel>()
+					.setChatCommandName("logging.logConnectionConfigChanges")
+					.set(EDhApiLoggerLevel.WARN)
+					.comment(""
+							+ "If enabled, config changes sent by the server will be logged. \n"
+							+ "")
+					.build();
+			
 			public static ConfigCategory warning = new ConfigCategory.Builder().set(Warning.class).build();
 			
 			
