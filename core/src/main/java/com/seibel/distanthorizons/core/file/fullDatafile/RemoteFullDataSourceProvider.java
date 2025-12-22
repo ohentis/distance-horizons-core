@@ -104,37 +104,20 @@ public class RemoteFullDataSourceProvider extends GeneratedFullDataSourceProvide
 		Long timestamp = this.getTimestampForPos(pos);
 		if (timestamp != null)
 		{
-			//this.syncOnLoadRequestQueue.submitRequest(pos, timestamp)
-			//	.thenAccept((DataSourceRetrievalResult result) ->
-			//	{
-			//		//if (result.receivedDataSource != null)
-			//		//{
-			//		//	result.receivedDataSource.close();
-			//		//}
-			//		
-			//		if (result.state == ERetrievalResultState.SUCCESS)
-			//		{
-			//			FullDataSourceV2 dataSource = result.dataSource;
-			//			if (dataSource != null)
-			//			{
-			//				this.updateDataSourceAsync(dataSource)
-			//					.handle((voidObj, throwable) -> 
-			//					{
-			//						dataSource.close();
-			//						return null;
-			//					});
-			//			}
-			//		}
-			//		else
-			//		{
-			//			if (result.dataSource != null)
-			//			{
-			//				int k = 0;
-			//				//result.receivedDataSource.close();
-			//			}
-			//		}
-			//		
-			//	});
+			this.syncOnLoadRequestQueue.submitRequest(pos, timestamp)
+				.thenAccept((DataSourceRetrievalResult result) ->
+				{
+					if (result.state == ERetrievalResultState.SUCCESS
+						&& result.dataSource != null)
+					{
+						this.updateDataSourceAsync(result.dataSource)
+							.handle((voidObj, throwable) ->
+							{
+								result.dataSource.close();
+								return null;
+							});
+					}
+				});
 		}
 		
 		return super.get(pos);
