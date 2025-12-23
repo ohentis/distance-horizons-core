@@ -505,11 +505,6 @@ public class Config
 									+ "Note: Other mods may conflict with this setting. \n"
 									+ "")
 							.build();
-					@Deprecated
-					public static ConfigEntry<Boolean> disableVanillaFog = new ConfigEntry.Builder<Boolean>()
-							.set(!enableVanillaFog.get())
-							.setAppearance(EConfigEntryAppearance.ONLY_IN_API)
-							.build();
 					
 					
 					
@@ -570,14 +565,6 @@ public class Config
 					public static ConfigCategory heightFog = new ConfigCategory.Builder().set(HeightFog.class).build();
 					
 					
-					
-					static
-					{
-						disableVanillaFog.addListener(
-								new ConfigChangeListener<Boolean>(disableVanillaFog,
-								(disableVanillaFog) -> enableVanillaFog.setApiValue(disableVanillaFog))
-						);
-					}
 					
 					public static class HeightFog
 					{
