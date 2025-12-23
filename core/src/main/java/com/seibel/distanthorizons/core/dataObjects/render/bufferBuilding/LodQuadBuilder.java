@@ -372,10 +372,10 @@ public class LodQuadBuilder
 						if (quad.direction.axis.isHorizontal() || quad.direction == EDhDirection.DOWN)
 						{
 							if (this.grassSideRenderingMode == EDhApiGrassSideRendering.AS_DIRT
-									// if we want the color to fade, only apply the dirt color to the bottom vertices
-									|| (this.grassSideRenderingMode == EDhApiGrassSideRendering.FADE_TO_DIRT && quadBase[i][1] == 0)
-									// always render the bottom as dirt
-									|| quad.direction == EDhDirection.DOWN)
+								// if we want the color to fade, only apply the dirt color to the bottom vertices
+								|| (this.grassSideRenderingMode == EDhApiGrassSideRendering.FADE_TO_DIRT && quadBase[i][1] == 0)
+								// always render the bottom as dirt
+								|| quad.direction == EDhDirection.DOWN)
 							{
 								// for horizontal and bottom faces of grass blocks, use the  dirt color to
 								// prevent green cliff walls

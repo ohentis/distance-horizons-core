@@ -23,6 +23,7 @@ import com.seibel.distanthorizons.api.interfaces.override.rendering.IDhApiShader
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
 import com.seibel.distanthorizons.api.objects.math.DhApiVec3f;
 import com.seibel.distanthorizons.core.config.Config;
+import com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.LodQuadBuilder;
 import com.seibel.distanthorizons.core.render.glObject.GLProxy;
 import com.seibel.distanthorizons.core.render.glObject.shader.Shader;
 import com.seibel.distanthorizons.core.render.glObject.shader.ShaderProgram;
@@ -37,6 +38,7 @@ import com.seibel.distanthorizons.core.util.math.Vec3f;
 
 /**
  * Handles rendering the normal LOD terrain.
+ * @see LodQuadBuilder 
  */
 public class DhTerrainShaderProgram extends ShaderProgram implements IDhApiShaderProgram
 {
@@ -112,10 +114,13 @@ public class DhTerrainShaderProgram extends ShaderProgram implements IDhApiShade
 		}
 		this.vao.bind();
 		
-		// TODO comment what each attribute represents
-		this.vao.setVertexAttribute(0, 0, VertexPointer.addUnsignedShortsPointer(4, false, true)); // 2+2+2+2 // TODO probably color, blockpos
-		this.vao.setVertexAttribute(0, 1, VertexPointer.addUnsignedBytesPointer(4, true, false)); // +4 // TODO ?
-		this.vao.setVertexAttribute(0, 2, VertexPointer.addUnsignedBytesPointer(4, true, true)); // +4 // TODO probably normal index and Iris block ID
+		// short: x, y, z, meta
+		//      meta: byte skylight, byte blocklight, byte microOffset
+		this.vao.setVertexAttribute(0, 0, VertexPointer.addUnsignedShortsPointer(4, false, true));
+		// byte: r, g, b, a
+		this.vao.setVertexAttribute(0, 1, VertexPointer.addUnsignedBytesPointer(4, true, false));
+		// byte: iris material ID, normal index, 2 spacers
+		this.vao.setVertexAttribute(0, 2, VertexPointer.addUnsignedBytesPointer(4, true, true));
 		
 		try
 		{
