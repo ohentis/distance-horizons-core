@@ -849,6 +849,20 @@ public class Config
 							.addListener(WorldCurvatureConfigEventHandler.INSTANCE)
 							.build();
 					
+					public static ConfigEntry<String> ignoredDimensionCsv = new ConfigEntry.Builder<String>()
+						.set("")
+						.comment(""
+							+ "A comma separated list of dimension resource locations where DH won't render. \n"
+							+ "\n"
+							+ "Example: \"minecraft:the_nether,minecraft:the_end\"\n"
+							+ "\n"
+							+ "Note:\n"
+							+ "Some DH settings will be disabled and/or changed to improve \n"
+							+ "visuals when DH rendering is disabled. \n"
+							+ "")
+						.addListener(IgnoredDimensionCsvHandler.INSTANCE)
+						.build();
+					
 				}
 				
 			}
@@ -1848,6 +1862,8 @@ public class Config
 				ThreadPresetConfigEventHandler.INSTANCE.setUiOnlyConfigValues();
 				RenderQualityPresetConfigEventHandler.INSTANCE.setUiOnlyConfigValues();
 				QuickRenderToggleConfigEventHandler.INSTANCE.setUiOnlyConfigValues();
+				
+				IgnoredDimensionCsvHandler.INSTANCE.onConfigValueSet();
 			}
 			catch (Exception e)
 			{

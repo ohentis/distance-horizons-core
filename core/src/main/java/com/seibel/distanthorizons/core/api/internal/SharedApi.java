@@ -25,6 +25,7 @@ import com.seibel.distanthorizons.core.Initializer;
 import com.seibel.distanthorizons.core.api.internal.chunkUpdating.ChunkUpdateData;
 import com.seibel.distanthorizons.core.api.internal.chunkUpdating.ChunkUpdateQueueManager;
 import com.seibel.distanthorizons.core.config.Config;
+import com.seibel.distanthorizons.core.config.eventHandlers.IgnoredDimensionCsvHandler;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.generation.DhLightingEngine;
 import com.seibel.distanthorizons.core.level.DhClientLevel;
@@ -237,6 +238,13 @@ public class SharedApi
 			{
 				return;
 			}
+		}
+		
+		// ignore chunk updates for non-rendered levels
+		String dimName = dhLevel.getLevelWrapper().getDimensionName();
+		if (IgnoredDimensionCsvHandler.INSTANCE.dimensionNameShouldBeIgnored(dimName))
+		{
+			return;
 		}
 		
 		// shouldn't normally happen, but just in case

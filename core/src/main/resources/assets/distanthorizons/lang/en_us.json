@@ -403,6 +403,10 @@
     "Earth Curve Ratio",
   "distanthorizons.config.client.advanced.graphics.experimental.earthCurveRatio.@tooltip":
     "A value of 1 is equivalent to the curvature of Earth in real life. \nThe minimum accepted value is 50 and the maximum value is 5000. \nEverything between 1 and 49 will be rounded up to 50.",
+  "distanthorizons.config.client.advanced.graphics.experimental.ignoredDimensionCsv":
+    "Ignored Dimension CSV",
+  "distanthorizons.config.client.advanced.graphics.experimental.ignoredDimensionCsv.@tooltip":
+    "A comma separated list of dimension resource locations where DH won't render. Example: \"minecraft:the_nether,minecraft:the_end\" \n\nNote: \nSome DH settings will be disabled and/or changed to improve \nvisuals when DH rendering is disabled.",
 
 
 

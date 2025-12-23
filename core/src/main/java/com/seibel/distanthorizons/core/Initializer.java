@@ -20,7 +20,9 @@
 package com.seibel.distanthorizons.core;
 
 import com.github.luben.zstd.ZstdOutputStream;
+import com.seibel.distanthorizons.api.methods.events.abstractEvents.DhApiBeforeRenderEvent;
 import com.seibel.distanthorizons.core.config.Config;
+import com.seibel.distanthorizons.core.config.eventHandlers.IgnoredDimensionCsvHandler;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.render.renderer.generic.GenericRenderObjectFactory;
@@ -170,6 +172,8 @@ public class Initializer
 				
 			}
 		}
+		
+		DhApi.events.bind(DhApiBeforeRenderEvent.class, IgnoredDimensionCsvHandler.INSTANCE);
 		
 	}
 	
