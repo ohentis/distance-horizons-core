@@ -45,7 +45,6 @@ import com.seibel.distanthorizons.core.level.IServerKeyedClientLevel;
 import com.seibel.distanthorizons.core.render.glObject.GLProxy;
 import com.seibel.distanthorizons.core.world.AbstractDhWorld;
 import com.seibel.distanthorizons.core.world.DhClientWorld;
-import com.seibel.distanthorizons.core.world.IDhClientWorld;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrapper;
@@ -56,8 +55,6 @@ import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
 
 import java.io.File;
-import java.lang.management.GarbageCollectorMXBean;
-import java.lang.management.ManagementFactory;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -95,7 +92,6 @@ public class ClientApi
 	private boolean isDevBuildMessagePrinted = false;
 	private boolean lowMemoryWarningPrinted = false;
 	private boolean highVanillaRenderDistanceWarningPrinted = false;
-	private boolean g1GarbageCollectorWarningPrinted = false;
 	
 	private long lastStaticWarningMessageSentMsTime = 0L;
 	
@@ -245,7 +241,7 @@ public class ClientApi
 		}
 	}
 	
-	public void clientLevelLoadEvent(IClientLevelWrapper levelWrapper)
+	public void clientLevelLoadEvent(@Nullable IClientLevelWrapper levelWrapper)
 	{
 		// wait a moment before loading the level to give the server a chance to handle the client's login request
 		if (MC_CLIENT.clientConnectedToDedicatedServer())
