@@ -9,7 +9,7 @@ import com.seibel.distanthorizons.core.network.messages.fullData.FullDataSplitMe
 import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV2DTO;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import io.netty.buffer.CompositeByteBuf;
-import io.netty.buffer.UnpooledByteBufAllocator;
+import io.netty.buffer.Unpooled;
 
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
@@ -36,7 +36,7 @@ public class FullDataPayloadReceiver implements AutoCloseable
 		{
 			if (message.isFirst)
 			{
-				composite = UnpooledByteBufAllocator.DEFAULT.compositeBuffer();
+				composite = Unpooled.compositeBuffer();
 				LOGGER.debug("Created new full data buffer [" + message.bufferId + "]: [" + composite + "]");
 			}
 			else if (composite == null)
