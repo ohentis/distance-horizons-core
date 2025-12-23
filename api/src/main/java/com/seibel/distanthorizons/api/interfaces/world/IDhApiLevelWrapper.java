@@ -30,7 +30,7 @@ import java.io.File;
  * A level is equivalent to a dimension in vanilla Minecraft.
  *
  * @author James Seibel
- * @version 2024-7-28
+ * @version 2025-12-23
  * @since API 1.0.0
  */
 public interface IDhApiLevelWrapper extends IDhApiUnsafeWrapper
@@ -53,14 +53,6 @@ public interface IDhApiLevelWrapper extends IDhApiUnsafeWrapper
 	
 	boolean hasSkyLight();
 	
-	/** 
-	 * Deprecated, use {@link IDhApiLevelWrapper#getMaxHeight} instead. <br>
-	 * Returns the max block height of the level.
-	 * 
-	 * @see IDhApiLevelWrapper#getMaxHeight
-	 */
-	@Deprecated
-	default int getHeight() { return this.getMaxHeight(); }
 	/** 
 	 * Returns the max block height of the level 
 	 * @since API 3.0.0 
