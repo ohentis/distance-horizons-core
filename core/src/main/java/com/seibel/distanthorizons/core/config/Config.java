@@ -833,7 +833,7 @@ public class Config
 					public static ConfigUIComment experimentalHeader = new ConfigUIComment.Builder().setParentConfigClass(Experimental.class).build();
 					
 					public static ConfigEntry<Integer> earthCurveRatio = new ConfigEntry.Builder<Integer>()
-							.setMinDefaultMax(0, 0, 5000)
+							.setMinDefaultMax(-5000, 0, 5000)
 							.comment(""
 									+ "This is the earth size ratio when applying the curvature shader effect. \n"
 									+ "Note: Enabling this feature may cause rendering bugs. \n"
@@ -843,7 +843,7 @@ public class Config
 									+ "100 = 1 to 100 (63,710 blocks) \n"
 									+ "10000 = 1 to 10000 (637.1 blocks) \n"
 									+ "\n"
-									+ "Note: Due to current limitations, the min value is 50 \n"
+									+ "Note: Due to current limitations, the min value is ["+WorldCurvatureConfigEventHandler.MIN_VALID_CURVE_VALUE+"] \n"
 									+ "and the max value is 5000. Any values outside this range \n"
 									+ "will be set to 0 (disabled).")
 							.addListener(WorldCurvatureConfigEventHandler.INSTANCE)

@@ -46,16 +46,14 @@ public class DhTerrainShaderProgram extends ShaderProgram implements IDhApiShade
 	public int uCombinedMatrix = -1;
 	public int uModelOffset = -1;
 	public int uWorldYOffset = -1;
-	public int uDitherDhRendering = -1;
 	
 	public int uMircoOffset = -1;
-	
 	public int uEarthRadius = -1;
-	
 	public int uLightMap = -1;
 	
-	// Fog/Clip Uniforms
+	// fragment shader uniforms
 	public int uClipDistance = -1;
+	public int uDitherDhRendering = -1;
 	
 	// Noise Uniforms
 	public int uNoiseEnabled = -1;
@@ -76,19 +74,16 @@ public class DhTerrainShaderProgram extends ShaderProgram implements IDhApiShade
 	public DhTerrainShaderProgram()
 	{
 		super(
-				() -> Shader.loadFile(Config.Client.Advanced.Graphics.Experimental.earthCurveRatio.get() != 0 
-								? "shaders/curve.vert"
-								: "shaders/standard.vert",
-						false, new StringBuilder()).toString(),
-				() -> Shader.loadFile("shaders/flat_shaded.frag", false, new StringBuilder()).toString(),
-				"fragColor", new String[]{"vPosition", "color"});
+			() -> Shader.loadFile("shaders/standard.vert", false, new StringBuilder()).toString(),
+			() -> Shader.loadFile("shaders/flat_shaded.frag", false, new StringBuilder()).toString(),
+			"fragColor", new String[]{"vPosition", "color"});
 		
 		this.uCombinedMatrix = this.getUniformLocation("uCombinedMatrix");
 		this.uModelOffset = this.getUniformLocation("uModelOffset");
-		this.uWorldYOffset = this.tryGetUniformLocation("uWorldYOffset");
-		this.uDitherDhRendering = this.tryGetUniformLocation("uDitherDhRendering");
+		this.uWorldYOffset = this.getUniformLocation("uWorldYOffset");
+		this.uDitherDhRendering = this.getUniformLocation("uDitherDhRendering");
 		this.uMircoOffset = this.getUniformLocation("uMircoOffset");
-		this.uEarthRadius = this.tryGetUniformLocation("uEarthRadius");
+		this.uEarthRadius = this.getUniformLocation("uEarthRadius");
 		
 		this.uLightMap = this.getUniformLocation("uLightMap");
 		
@@ -178,12 +173,21 @@ public class DhTerrainShaderProgram extends ShaderProgram implements IDhApiShade
 		// setUniform(skyLightUniform, skyLight);
 		this.setUniform(this.uLightMap, 0); // TODO this should probably be passed in
 		
-		if (this.uWorldYOffset != -1) this.setUniform(this.uWorldYOffset, (float) renderParameters.worldYOffset);
+		this.setUniform(this.uWorldYOffset, (float) renderParameters.worldYOffset);
 		
-		if (this.uDitherDhRendering != -1) this.setUniform(this.uDitherDhRendering, Config.Client.Advanced.Graphics.Quality.ditherDhFade.get());
+		this.setUniform(this.uDitherDhRendering, Config.Client.Advanced.Graphics.Quality.ditherDhFade.get());
 		
-		if (this.uEarthRadius != -1) this.setUniform(this.uEarthRadius,
-				/*6371KM*/ 6371000.0f / Config.Client.Advanced.Graphics.Experimental.earthCurveRatio.get());
+		float curveRatio = Config.Client.Advanced.Graphics.Experimental.earthCurveRatio.get();
+		if (curveRatio < -1.0f || curveRatio > 1.0f)
+		{
+			curveRatio = /*6371KM*/ 6371000.0f / curveRatio;
+		}
+		else
+		{
+			// disable curvature if the config value is between -1 and 1
+			curveRatio = 0.0f;
+		}
+		this.setUniform(this.uEarthRadius, curveRatio);
 		
 		// Noise Uniforms
 		this.setUniform(this.uNoiseEnabled, Config.Client.Advanced.Graphics.NoiseTexture.enableNoiseTexture.get());
