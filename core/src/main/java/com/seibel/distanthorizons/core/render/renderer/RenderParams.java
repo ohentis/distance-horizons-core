@@ -30,6 +30,7 @@ public class RenderParams extends DhApiRenderParam
 	
 	public IDhClientWorld dhClientWorld;
 	public IDhClientLevel dhClientLevel;
+	/** more specific override of the API value {@link DhApiRenderParam#clientLevelWrapper} */
 	public IClientLevelWrapper clientLevelWrapper;
 	public ILightMapWrapper lightmap;
 	public RenderBufferHandler renderBufferHandler;
@@ -56,7 +57,8 @@ public class RenderParams extends DhApiRenderParam
 			RenderUtil.getNearClipPlaneDistanceInBlocks(newPartialTicks), RenderUtil.getFarClipPlaneDistanceInBlocks(),
 			newMcProjectionMatrix, newMcModelViewMatrix,
 			RenderUtil.createLodProjectionMatrix(newMcProjectionMatrix, newPartialTicks), RenderUtil.createLodModelViewMatrix(newMcModelViewMatrix),
-			clientLevelWrapper.getMinHeight());
+			clientLevelWrapper.getMinHeight(),
+			clientLevelWrapper);
 		
 		
 		this.dhClientWorld = SharedApi.tryGetDhClientWorld();
