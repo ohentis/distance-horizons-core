@@ -53,6 +53,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -90,7 +91,9 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 	 * as further sections are loaded before closer ones.
 	 * Only queuing a few of the sections at a time solves this problem.
 	 */
-	public final AtomicInteger uploadTaskCountRef = new AtomicInteger(0);
+	private final AtomicInteger uploadTaskCountRef = new AtomicInteger(0);
+	private final AtomicBoolean requeueAllRetrievalTasksRef = new AtomicBoolean(false);
+	private final AtomicBoolean queueThreadRunningRef = new AtomicBoolean(false);
 	
 	
 	@Nullable
@@ -237,18 +240,56 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 		}
 		
 		
-		// queue full data retrieval (world gen) requests if needed
-		if (this.missingGenerationPosSet.size() != 0
-			&& this.fullDataSourceProvider.canQueueRetrievalNow())
+		// requeue everything if needed
+		if (this.requeueAllRetrievalTasksRef.get()
+			&& !this.queueThreadRunningRef.get())
 		{
-			try
+			this.queueThreadRunningRef.set(true);
+			this.requeueAllRetrievalTasksRef.set(false);
+			
+			// running on a separate thread allows for faster loading
+			// of finished LODs
+			FULL_DATA_RETRIEVAL_QUEUE_THREAD.execute(() -> 
 			{
-				this.queueFullDataRetrievalTasks(playerPos);
-			}
-			catch (Exception e)
+				try
+				{
+					this.checkAllNodesForRetrievalRequests();
+				}
+				catch (Exception e)
+				{
+					LOGGER.error("Unexpected error getting new queued retrieval tasks, error: [" + e.getMessage() + "].", e);
+				}
+				finally
+				{
+					this.queueThreadRunningRef.set(false);
+				}
+			});
+		}
+		
+		// queue full data retrieval (world gen) requests if needed
+		if (this.missingGenerationPosSet.size() != 0 //
+			&& this.fullDataSourceProvider.canQueueRetrievalNow()
+			&& !this.queueThreadRunningRef.get())
+		{
+			this.queueThreadRunningRef.set(true);
+			
+			// running on a separate thread allows for faster loading
+			// of finished LODs
+			FULL_DATA_RETRIEVAL_QUEUE_THREAD.execute(() -> 
 			{
-				LOGGER.error("Unexpected error queuing retrieval tasks, error: [" + e.getMessage() + "].", e);
-			}
+				try
+				{
+					this.startQueuedRetrievalTasks(playerPos);
+				}
+				catch (Exception e)
+				{
+					LOGGER.error("Unexpected error starting queued retrieval tasks, error: [" + e.getMessage() + "].", e);
+				}
+				finally
+				{
+					this.queueThreadRunningRef.set(false);
+				}
+			});
 		}
 		
 		
@@ -522,46 +563,150 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 	//=================================//
 	//region world gen
 	
+	private void startQueuedRetrievalTasks(DhBlockPos2D playerPos)
+	{
+		// sort the nodes from nearest to farthest
+		this.sortedMissingPosList.clear();
+		this.sortedMissingPosList.addAll(this.missingGenerationPosSet);
+		this.sortedMissingPosList.sort((posA, posB) ->
+		{
+			int aDist = DhSectionPos.getManhattanBlockDistance(posA, playerPos);
+			int bDist = DhSectionPos.getManhattanBlockDistance(posB, playerPos);
+			return Integer.compare(aDist, bDist);
+		});
+		
+		
+		
+		//==================================//
+		// add retrieval tasks to the queue //
+		//==================================//
+		
+		for (int i = 0; i < this.sortedMissingPosList.size(); i++)
+		{
+			if (!this.fullDataSourceProvider.canQueueRetrievalNow())
+			{
+				break;
+			}
+			
+			long missingPos = this.sortedMissingPosList.get(i);
+			
+			// is this position within acceptable generator range?
+			boolean posInRange = WorldGenUtil.isPosInWorldGenRange(
+				missingPos,
+				Config.Common.WorldGenerator.generationCenterChunkX.get(), Config.Common.WorldGenerator.generationCenterChunkZ.get(),
+				Config.Common.WorldGenerator.generationMaxChunkRadius.get()
+			);
+			if (!posInRange)
+			{
+				continue;
+			}
+			
+			CompletableFuture<DataSourceRetrievalResult> genFuture = this.fullDataSourceProvider.queuePositionForRetrieval(missingPos);
+			boolean positionQueued = (genFuture != null && !genFuture.isCompletedExceptionally());
+			if (positionQueued)
+			{
+				this.queuedGenerationPosSet.add(missingPos);
+				this.missingGenerationPosSet.remove(missingPos);
+				
+				genFuture.exceptionally((Throwable throwable) ->
+				{
+					// gen task failed,
+					// requeue so we can try again in the future
+					
+					this.queuedGenerationPosSet.remove(missingPos);
+					this.missingGenerationPosSet.add(missingPos);
+					return null;
+				});
+				genFuture.thenAccept((DataSourceRetrievalResult result) ->
+				{
+					// task finished
+					this.queuedGenerationPosSet.remove(missingPos);
+					
+					// if the task failed re-queue so we can try again
+					if (result.state == ERetrievalResultState.FAIL)
+					{
+						this.missingGenerationPosSet.add(missingPos);
+					}
+					else if (result.state == ERetrievalResultState.REQUIRES_SPLITTING)
+					{
+						DhSectionPos.forEachChild(missingPos, (long childPos) ->
+						{
+							this.tryQueuePosForRetrieval(childPos);
+						});
+					}
+				});
+			}
+		}
+		
+		
+		
+		//==========================//
+		// calc task count estimate //
+		//==========================//
+		
+		// calculate an estimate for the max number of chunks for the queue
+		int totalWorldGenChunkCount = 0;
+		int totalWorldGenTaskCount = 0;
+		for (int i = 0; i < this.sortedMissingPosList.size(); i++)
+		{
+			long missingPos = this.sortedMissingPosList.get(i);
+			
+			// chunk count
+			int sectionWidthInChunks = DhSectionPos.getChunkWidth(missingPos);
+			totalWorldGenChunkCount += sectionWidthInChunks * sectionWidthInChunks;
+			
+			// task count
+			totalWorldGenTaskCount++;
+		}
+		
+		this.fullDataSourceProvider.setEstimatedRemainingRetrievalChunkCount(totalWorldGenChunkCount);
+		this.fullDataSourceProvider.setTotalRetrievalPositionCount(totalWorldGenTaskCount);
+	}
+	
 	@Override
 	public void onConfigValueSet()
 	{
 		boolean generatorEnabled = Config.Common.WorldGenerator.enableDistantGeneration.get();
 		if (generatorEnabled)
 		{
-			// generation is enabled, re-populate the queue 
-			
-			try
-			{
-				this.treeLock.lock();
-				
-				Iterator<QuadNode<LodRenderSection>> nodeIterator = this.nodeIterator();
-				while (nodeIterator.hasNext())
-				{
-					QuadNode<LodRenderSection> node = nodeIterator.next();
-					if (node != null)
-					{
-						LodRenderSection renderSection = node.value;
-						if (renderSection != null 
-							&& renderSection.getRenderingEnabled())
-						{
-							this.tryQueuePosForRetrieval(renderSection.pos);
-						}
-					}
-				}
-			}
-			finally
-			{
-				this.treeLock.unlock();
-			}
+			// world gen tasks will need to be re-queued
+			// since all the render sections will already have been loaded
+			this.requeueAllRetrievalTasksRef.set(true);
 		}
 		else
 		{
 			// generation is disabled, clear the queues
 			this.missingGenerationPosSet.clear();
 			this.queuedGenerationPosSet.clear();
+			
+			this.requeueAllRetrievalTasksRef.set(false);
 		}
 	}
 	
+	/** 
+	 * Needed to get all necessary retrieval requests
+	 * after the quad tree has already been loaded.
+	 */
+	private void checkAllNodesForRetrievalRequests()
+	{
+		Iterator<QuadNode<LodRenderSection>> nodeIterator = this.nodeIterator();
+		while (nodeIterator.hasNext())
+		{
+			QuadNode<LodRenderSection> node = nodeIterator.next();
+			if (node != null)
+			{
+				LodRenderSection renderSection = node.value;
+				if (renderSection != null
+					&& renderSection.getRenderingEnabled())
+				{
+					this.tryQueuePosForRetrieval(renderSection.pos);
+					
+				}
+			}
+		}
+	}
+	
+	/** Does nothing if the missing positions are already queued. */
 	private void tryQueuePosForRetrieval(long pos)
 	{
 		LongArrayList missingPosList = this.fullDataSourceProvider.getPositionsToRetrieve(pos);
@@ -710,115 +855,6 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 	}
 	
 	//endregion external render requests
-	
-	
-	
-	//=================================//
-	// full data retrieval (world gen) //
-	//=================================//
-	//region world gen
-	
-	private void queueFullDataRetrievalTasks(DhBlockPos2D playerPos)
-	{
-		// sort the nodes from nearest to farthest
-		this.sortedMissingPosList.clear();
-		this.sortedMissingPosList.addAll(this.missingGenerationPosSet);
-		this.sortedMissingPosList.sort((posA, posB) ->
-		{
-			int aDist = DhSectionPos.getManhattanBlockDistance(posA, playerPos);
-			int bDist = DhSectionPos.getManhattanBlockDistance(posB, playerPos);
-			return Integer.compare(aDist, bDist);
-		});
-		
-		
-		
-		//==================================//
-		// add retrieval tasks to the queue //
-		//==================================//
-		
-		for (int i = 0; i < this.sortedMissingPosList.size(); i++)
-		{
-			if (!this.fullDataSourceProvider.canQueueRetrievalNow())
-			{
-				break;
-			}
-			
-			long missingPos = this.sortedMissingPosList.get(i);
-			
-			// is this position within acceptable generator range?
-			boolean posInRange = WorldGenUtil.isPosInWorldGenRange(
-				missingPos,
-				Config.Common.WorldGenerator.generationCenterChunkX.get(), Config.Common.WorldGenerator.generationCenterChunkZ.get(),
-				Config.Common.WorldGenerator.generationMaxChunkRadius.get()
-			);
-			if (!posInRange)
-			{
-				continue;
-			}
-			
-			CompletableFuture<DataSourceRetrievalResult> genFuture = this.fullDataSourceProvider.queuePositionForRetrieval(missingPos);
-			boolean positionQueued = (genFuture != null && !genFuture.isCompletedExceptionally());
-			if (positionQueued)
-			{
-				this.queuedGenerationPosSet.add(missingPos);
-				this.missingGenerationPosSet.remove(missingPos);
-				
-				genFuture.exceptionally((Throwable throwable) ->
-				{
-					// gen task failed,
-					// requeue so we can try again in the future
-					
-					this.queuedGenerationPosSet.remove(missingPos);
-					this.missingGenerationPosSet.add(missingPos);
-					return null;
-				});
-				genFuture.thenAccept((DataSourceRetrievalResult result) -> 
-				{
-					// task finished
-					this.queuedGenerationPosSet.remove(missingPos);
-					
-					// if the task failed re-queue so we can try again
-					if (result.state == ERetrievalResultState.FAIL)
-					{
-						this.missingGenerationPosSet.add(missingPos);
-					}
-					else if (result.state == ERetrievalResultState.REQUIRES_SPLITTING)
-					{
-						DhSectionPos.forEachChild(missingPos, (long childPos) ->
-						{
-							this.tryQueuePosForRetrieval(childPos);
-						});
-					}
-				});
-			}
-		}
-		
-		
-		
-		//==========================//
-		// calc task count estimate //
-		//==========================//
-		
-		// calculate an estimate for the max number of chunks for the queue
-		int totalWorldGenChunkCount = 0;
-		int totalWorldGenTaskCount = 0;
-		for (int i = 0; i < this.sortedMissingPosList.size(); i++)
-		{
-			long missingPos = this.sortedMissingPosList.get(i);
-			
-			// chunk count
-			int sectionWidthInChunks = DhSectionPos.getChunkWidth(missingPos);
-			totalWorldGenChunkCount += sectionWidthInChunks * sectionWidthInChunks;
-			
-			// task count
-			totalWorldGenTaskCount++;
-		}
-		
-		this.fullDataSourceProvider.setEstimatedRemainingRetrievalChunkCount(totalWorldGenChunkCount);
-		this.fullDataSourceProvider.setTotalRetrievalPositionCount(totalWorldGenTaskCount);
-	}
-	
-	//endregion world gen
 	
 	
 	
