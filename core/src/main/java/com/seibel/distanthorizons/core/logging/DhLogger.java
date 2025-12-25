@@ -24,6 +24,7 @@ import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.config.listeners.IConfigListener;
 import com.seibel.distanthorizons.core.config.types.ConfigEntry;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
+import com.seibel.distanthorizons.core.enums.EMinecraftColor;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
@@ -302,32 +303,32 @@ public class DhLogger implements IConfigListener
 		String prefix = "[" + ModInfo.READABLE_NAME + "] ";
 		if (logLevel == Level.ERROR)
 		{
-			prefix += "\u00A74";
+			prefix += EMinecraftColor.DARK_RED;
 		}
 		else if (logLevel == Level.WARN)
 		{
-			prefix += "\u00A76";
+			prefix += EMinecraftColor.ORANGE;
 		}
 		else if (logLevel == Level.INFO)
 		{
-			prefix += "\u00A7f";
+			prefix += EMinecraftColor.AQUA;
 		}
 		else if (logLevel == Level.DEBUG)
 		{
-			prefix += "\u00A77";
+			prefix += EMinecraftColor.GREEN;
 		}
 		else if (logLevel == Level.TRACE)
 		{
-			prefix += "\u00A78";
+			prefix += EMinecraftColor.DARK_GRAY;
 		}
 		else
 		{
-			prefix += "\u00A7f";
+			prefix += EMinecraftColor.WHITE;
 		}
 		
-		prefix += "\u00A7l\u00A7u";
+		prefix += EMinecraftColor.BOLD + "" + EMinecraftColor.WHITE;
 		prefix += logLevel.name();
-		prefix += ":\u00A7r ";
+		prefix += EMinecraftColor.CLEAR_FORMATTING + " ";
 		
 		mc_client.sendChatMessage(prefix + message);
 	}
