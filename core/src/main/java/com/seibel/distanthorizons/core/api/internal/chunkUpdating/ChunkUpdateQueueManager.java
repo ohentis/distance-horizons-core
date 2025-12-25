@@ -5,6 +5,7 @@ import com.google.common.cache.CacheBuilder;
 import com.seibel.distanthorizons.core.api.internal.ClientApi;
 import com.seibel.distanthorizons.core.api.internal.SharedApi;
 import com.seibel.distanthorizons.core.config.Config;
+import com.seibel.distanthorizons.core.enums.EMinecraftColor;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.multiplayer.client.SyncOnLoadRequestQueue;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
@@ -94,7 +95,10 @@ public class ChunkUpdateQueueManager
 		if (remainingSlots <= 0)
 		{
 			ChunkUpdateData removedData = queue.popFurthest();
-			this.queuedChunkWrapperByChunkPos.remove(removedData.chunkWrapper.getChunkPos());
+			if (removedData != null)
+			{
+				this.queuedChunkWrapperByChunkPos.remove(removedData.chunkWrapper.getChunkPos());
+			}
 		}
 		
 		queue.addItem(pos,updateData);
@@ -116,7 +120,7 @@ public class ChunkUpdateQueueManager
 		{
 			lastOverloadedLogMessageMsTime = System.currentTimeMillis();
 			
-			String message = "\u00A76" + "Distant Horizons overloaded, too many chunks queued for LOD processing. " + "\u00A7r" +
+			String message = EMinecraftColor.ORANGE + "Distant Horizons overloaded, too many chunks queued for LOD processing. " + EMinecraftColor.CLEAR_FORMATTING +
 					"\nThis may result in holes in your LODs. " +
 					"\nFix: move through the world slower, decrease your vanilla render distance, slow down your world pre-generator (IE Chunky), or increase the Distant Horizons' CPU thread counts. " +
 					"\nMax queue count [" + SharedApi.CHUNK_UPDATE_QUEUE_MANAGER.maxSize + "] ([" + SharedApi.MAX_UPDATING_CHUNK_COUNT_PER_THREAD_AND_PLAYER + "] per thread+players).";
