@@ -104,7 +104,7 @@ public class JarUtils
 	 */
 	public static InputStream accessFile(String resource)
 	{
-		final ClassLoader loader = Thread.currentThread().getContextClassLoader();
+		final ClassLoader loader = JarUtils.class.getClassLoader();
 		// this is the path within the jar file
 		InputStream input = loader.getResourceAsStream(resource);
 		if (input == null)

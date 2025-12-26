@@ -493,7 +493,7 @@ public class CloudRenderHandler
 	
 	private static boolean[][] getCloudsFromTexture() throws FileNotFoundException, IOException
 	{
-		final ClassLoader loader = Thread.currentThread().getContextClassLoader();
+		final ClassLoader loader = CloudRenderHandler.class.getClassLoader();
 		
 		boolean[][] whitePixels = null;
 		try(InputStream imageInputStream = loader.getResourceAsStream(CLOUD_RESOURCE_TEXTURE_PATH))
