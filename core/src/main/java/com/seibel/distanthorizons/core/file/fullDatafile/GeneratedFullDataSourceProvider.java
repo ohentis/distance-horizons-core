@@ -44,6 +44,7 @@ import com.seibel.distanthorizons.core.util.threading.PriorityTaskPicker;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
@@ -116,26 +117,22 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 	// events //
 	//========//
 	
-	private void onWorldGenTaskComplete(DataSourceRetrievalResult genTaskResult, Throwable exception)
+	private void onWorldGenTaskComplete(@NotNull Long genPos, @Nullable DataSourceRetrievalResult genTaskResult, @Nullable Throwable exception)
 	{
 		try
 		{
 			if (exception != null)
 			{
-				return;
-			}
-			
-			if (genTaskResult.state == ERetrievalResultState.FAIL)
-			{
-				LodUtil.assertTrue(genTaskResult.dataSource == null, "Errored retrieval object should not have a datasource.");
-				
 				// don't log shutdown exceptions
 				if (!ExceptionUtil.isInterruptOrReject(exception))
 				{
-					LOGGER.error("Uncaught Gen Task Exception at [" + genTaskResult.pos + "], error: [" + exception.getMessage() + "].", exception);
+					LOGGER.error("Uncaught Gen Task Exception at [" + genPos + "], error: [" + exception.getMessage() + "].", exception);
 				}
+				return;
 			}
-			else if (genTaskResult.state == ERetrievalResultState.SUCCESS)
+			
+			Objects.requireNonNull(genTaskResult);
+			if (genTaskResult.state == ERetrievalResultState.SUCCESS)
 			{
 				LodUtil.assertTrue(genTaskResult.dataSource != null, "Successful retrieval object should have a datasource.");
 				
@@ -310,7 +307,7 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 		}
 		
 		CompletableFuture<DataSourceRetrievalResult> worldGenFuture = worldGenQueue.submitRetrievalTask(genPos, (byte) (DhSectionPos.getDetailLevel(genPos) - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL));
-		worldGenFuture.whenComplete(this::onWorldGenTaskComplete);
+		worldGenFuture.whenComplete((r, e) -> this.onWorldGenTaskComplete(genPos, r, e));
 		
 		return worldGenFuture;
 	}

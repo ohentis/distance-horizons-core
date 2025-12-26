@@ -622,12 +622,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 					// task finished
 					this.queuedGenerationPosSet.remove(missingPos);
 					
-					// if the task failed re-queue so we can try again
-					if (result.state == ERetrievalResultState.FAIL)
-					{
-						this.missingGenerationPosSet.add(missingPos);
-					}
-					else if (result.state == ERetrievalResultState.REQUIRES_SPLITTING)
+					if (result.state == ERetrievalResultState.REQUIRES_SPLITTING)
 					{
 						DhSectionPos.forEachChild(missingPos, (long childPos) ->
 						{

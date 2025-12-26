@@ -139,9 +139,6 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 						break;
 					case REQUIRES_SPLITTING:
 						break;
-					case FAIL:
-						this.failedRequests.incrementAndGet();
-						break;
 				}
 			});
 			
@@ -269,7 +266,7 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 		catch (RequestRejectedException e)
 		{
 			LOGGER.info("Request rejected by the server, message: [" + e.getMessage() + "].");
-			requestTask.future.complete(DataSourceRetrievalResult.CreateFail());
+			requestTask.future.completeExceptionally(e);
 		}
 		catch (RateLimitedException e)
 		{
@@ -298,7 +295,7 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 			}
 			else
 			{
-				requestTask.future.complete(DataSourceRetrievalResult.CreateFail());
+				requestTask.future.completeExceptionally(e);
 			}
 		}
 	}

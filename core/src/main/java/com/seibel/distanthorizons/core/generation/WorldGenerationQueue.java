@@ -92,7 +92,7 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 	private int estimatedRemainingChunkCount = 0;
 	
 	private final RollingAverage rollingAverageChunkGenTimeInMs = new RollingAverage(Runtime.getRuntime().availableProcessors() * 500);
-	public RollingAverage getRollingAverageChunkGenTimeInMs() { return this.rollingAverageChunkGenTimeInMs; }
+	@Override public RollingAverage getRollingAverageChunkGenTimeInMs() { return this.rollingAverageChunkGenTimeInMs; }
 	
 	
 	
@@ -128,7 +128,9 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 		// the generator is shutting down, don't add new tasks
 		if (this.generatorClosingFuture != null)
 		{
-			return CompletableFuture.completedFuture(DataSourceRetrievalResult.CreateFail());
+			CompletableFuture<DataSourceRetrievalResult> f = new CompletableFuture<>();
+			f.completeExceptionally(new CancellationException());
+			return f;
 		}
 		
 		// use the existing task if present
@@ -362,7 +364,7 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 					}
 					
 					LodUtil.assertTrue(fullDataSource == null);
-					worldGenTask.future.complete(DataSourceRetrievalResult.CreateFail());
+					worldGenTask.future.completeExceptionally(exception);
 				}
 				else
 				{
