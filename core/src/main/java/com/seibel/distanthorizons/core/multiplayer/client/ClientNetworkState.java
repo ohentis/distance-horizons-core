@@ -95,6 +95,15 @@ public class ClientNetworkState implements Closeable
 				|| Math.abs(event.protocolVersion - ModInfo.PROTOCOL_VERSION) < this.closestProtocolVersion)
 			{
 				this.closestProtocolVersion = event.protocolVersion;
+				
+				if (ModInfo.PROTOCOL_VERSION < event.protocolVersion)
+				{
+					LOGGER.warn("Your mod is outdated. Update to receive LODs on this server.");
+				}
+				else
+				{
+					LOGGER.warn("The server's mod is outdated. Ask the server's owner to update.");
+				}
 			}
 		});
 		
