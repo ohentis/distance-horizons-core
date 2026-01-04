@@ -1,8 +1,10 @@
 package com.seibel.distanthorizons.core.multiplayer.client;
 
+import com.seibel.distanthorizons.core.api.internal.ClientApi;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.config.listeners.ConfigChangeListener;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
+import com.seibel.distanthorizons.core.enums.EMinecraftColor;
 import com.seibel.distanthorizons.core.logging.DhLogger;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.multiplayer.config.SessionConfig;
@@ -98,11 +100,11 @@ public class ClientNetworkState implements Closeable
 				
 				if (ModInfo.PROTOCOL_VERSION < event.protocolVersion)
 				{
-					LOGGER.warn("Your mod is outdated. Update to receive LODs on this server.");
+					ClientApi.INSTANCE.showChatMessageNextFrame(EMinecraftColor.ORANGE + "Distant Horizons: Your mod is outdated. Update to receive LODs on this server.");
 				}
 				else
 				{
-					LOGGER.warn("The server's mod is outdated. Ask the server's owner to update.");
+					ClientApi.INSTANCE.showChatMessageNextFrame(EMinecraftColor.ORANGE + "Distant Horizons: The server's mod is outdated. Ask the server's owner to update.");
 				}
 			}
 		});
