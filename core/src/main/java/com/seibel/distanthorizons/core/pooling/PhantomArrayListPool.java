@@ -2,7 +2,7 @@ package com.seibel.distanthorizons.core.pooling;
 
 import com.seibel.distanthorizons.core.api.internal.ClientApi;
 import com.seibel.distanthorizons.core.config.Config;
-import com.seibel.distanthorizons.core.enums.EMinecraftColor;
+import com.seibel.distanthorizons.core.enums.MinecraftTextFormat;
 import com.seibel.distanthorizons.core.logging.DhLogger;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
@@ -13,7 +13,6 @@ import com.seibel.distanthorizons.coreapi.util.StringUtil;
 import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.shorts.ShortArrayList;
-import com.seibel.distanthorizons.core.logging.DhLogger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -179,7 +178,7 @@ public class PhantomArrayListPool
 					{
 						lowMemoryWarningLogged = true;
 						
-						String message = EMinecraftColor.ORANGE + "Distant Horizons: Insufficient memory detected." + EMinecraftColor.CLEAR_FORMATTING + "\n" +
+						String message = MinecraftTextFormat.ORANGE + "Distant Horizons: Insufficient memory detected." + MinecraftTextFormat.CLEAR_FORMATTING + "\n" +
 								"This may cause stuttering or crashing. \n" +
 								"Potential causes: \n" +
 								"1. your allocated memory isn't high enough \n" +

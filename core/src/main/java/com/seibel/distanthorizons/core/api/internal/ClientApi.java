@@ -24,7 +24,7 @@ import com.seibel.distanthorizons.api.enums.config.EDhApiMcRenderingFadeMode;
 import com.seibel.distanthorizons.api.enums.rendering.EDhApiRenderPass;
 import com.seibel.distanthorizons.api.methods.events.abstractEvents.*;
 import com.seibel.distanthorizons.core.api.internal.rendering.DhRenderState;
-import com.seibel.distanthorizons.core.enums.EMinecraftColor;
+import com.seibel.distanthorizons.core.enums.MinecraftTextFormat;
 import com.seibel.distanthorizons.core.file.structure.ClientOnlySaveStructure;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.network.messages.MessageRegistry;
@@ -153,10 +153,10 @@ public class ClientApi
 				
 				if (Config.Common.Logging.Warning.showReplayWarningOnStartup.get())
 				{
-					MC_CLIENT.sendChatMessage(EMinecraftColor.ORANGE + "Distant Horizons: Replay detected." + EMinecraftColor.CLEAR_FORMATTING);
+					MC_CLIENT.sendChatMessage(MinecraftTextFormat.ORANGE + "Distant Horizons: Replay detected." + MinecraftTextFormat.CLEAR_FORMATTING);
 					MC_CLIENT.sendChatMessage("DH may behave strangely or have missing functionality.");
 					MC_CLIENT.sendChatMessage("In order to use pre-generated LODs, put your DH database(s) in:");
-					MC_CLIENT.sendChatMessage(EMinecraftColor.GRAY +".Minecraft" + File.separator + ClientOnlySaveStructure.SERVER_DATA_FOLDER_NAME + File.separator + ClientOnlySaveStructure.REPLAY_SERVER_FOLDER_NAME + File.separator + "DIMENSION_NAME"+EMinecraftColor.CLEAR_FORMATTING);
+					MC_CLIENT.sendChatMessage(MinecraftTextFormat.GRAY +".Minecraft" + File.separator + ClientOnlySaveStructure.SERVER_DATA_FOLDER_NAME + File.separator + ClientOnlySaveStructure.REPLAY_SERVER_FOLDER_NAME + File.separator + "DIMENSION_NAME"+ MinecraftTextFormat.CLEAR_FORMATTING);
 					MC_CLIENT.sendChatMessage("This can be disabled in DH's config under Advanced -> Logging.");
 					MC_CLIENT.sendChatMessage("");
 				}
@@ -508,10 +508,10 @@ public class ClientApi
 			this.rendererDisabledBecauseOfExceptions = true;
 			LOGGER.error("Unexpected Renderer error in render pass [" + renderPass + "]. Error: " + e.getMessage(), e);
 			
-			MC_CLIENT.sendChatMessage(EMinecraftColor.DARK_RED + "" + EMinecraftColor.BOLD + "ERROR: Distant Horizons renderer has encountered an exception!" + EMinecraftColor.CLEAR_FORMATTING);
-			MC_CLIENT.sendChatMessage(EMinecraftColor.DARK_RED + "Renderer disabled to try preventing GL state corruption." + EMinecraftColor.CLEAR_FORMATTING);
-			MC_CLIENT.sendChatMessage(EMinecraftColor.DARK_RED + "Toggle DH rendering via the config UI to re-activate DH rendering." + EMinecraftColor.CLEAR_FORMATTING);
-			MC_CLIENT.sendChatMessage(EMinecraftColor.DARK_RED + "Error: " + EMinecraftColor.CLEAR_FORMATTING + e);
+			MC_CLIENT.sendChatMessage(MinecraftTextFormat.DARK_RED + "" + MinecraftTextFormat.BOLD + "ERROR: Distant Horizons renderer has encountered an exception!" + MinecraftTextFormat.CLEAR_FORMATTING);
+			MC_CLIENT.sendChatMessage(MinecraftTextFormat.DARK_RED + "Renderer disabled to try preventing GL state corruption." + MinecraftTextFormat.CLEAR_FORMATTING);
+			MC_CLIENT.sendChatMessage(MinecraftTextFormat.DARK_RED + "Toggle DH rendering via the config UI to re-activate DH rendering." + MinecraftTextFormat.CLEAR_FORMATTING);
+			MC_CLIENT.sendChatMessage(MinecraftTextFormat.DARK_RED + "Error: " + MinecraftTextFormat.CLEAR_FORMATTING + e);
 		}
 		
 		
@@ -656,7 +656,7 @@ public class ClientApi
 			
 			// remind the user that this is a development build
 			String message =
-					EMinecraftColor.DARK_GREEN + "Distant Horizons: nightly/unstable build, version: [" + ModInfo.VERSION+"]." +EMinecraftColor.CLEAR_FORMATTING + "\n" +
+					MinecraftTextFormat.DARK_GREEN + "Distant Horizons: nightly/unstable build, version: [" + ModInfo.VERSION+"]." + MinecraftTextFormat.CLEAR_FORMATTING + "\n" +
 							"Issues may occur with this version.\n" +
 							"Here be dragons!\n";
 			MC_CLIENT.sendChatMessage(message);
@@ -680,7 +680,7 @@ public class ClientApi
 			{
 				String message =
 						// orange text		
-						EMinecraftColor.ORANGE + "Distant Horizons: Low memory detected." + EMinecraftColor.CLEAR_FORMATTING + "\n" +
+						MinecraftTextFormat.ORANGE + "Distant Horizons: Low memory detected." + MinecraftTextFormat.CLEAR_FORMATTING + "\n" +
 						"Stuttering or low FPS may occur. \n" +
 						"Please increase Minecraft's available memory to 4 GB or more. \n" +
 						"This warning can be disabled in DH's config under Advanced -> Logging. \n";
@@ -702,12 +702,12 @@ public class ClientApi
 				this.lastStaticWarningMessageSentMsTime = System.currentTimeMillis();
 				
 				String message =
-					EMinecraftColor.YELLOW + "Distant Horizons: High vanilla render distance detected." + EMinecraftColor.CLEAR_FORMATTING + "\n" +
+					MinecraftTextFormat.YELLOW + "Distant Horizons: High vanilla render distance detected." + MinecraftTextFormat.CLEAR_FORMATTING + "\n" +
 					"Using a high vanilla render distance uses a lot of CPU power \n" +
 					"and doesn't improve graphics much after about 12.\n" +
 					"Lowing your vanilla render distance will give you better FPS\n" +
 					"and reduce stuttering at a similar visual quality.\n" +
-					EMinecraftColor.GRAY + "A vanilla render distance of 8 is recommended." + EMinecraftColor.CLEAR_FORMATTING + "\n" +
+					MinecraftTextFormat.GRAY + "A vanilla render distance of 8 is recommended." + MinecraftTextFormat.CLEAR_FORMATTING + "\n" +
 					"This message can be disabled in DH's config under Advanced -> Logging.\n";
 				MC_CLIENT.sendChatMessage(message);
 			}

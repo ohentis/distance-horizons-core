@@ -1,13 +1,11 @@
 package com.seibel.distanthorizons.core.api.internal.chunkUpdating;
 
-import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.seibel.distanthorizons.core.api.internal.ClientApi;
 import com.seibel.distanthorizons.core.api.internal.SharedApi;
 import com.seibel.distanthorizons.core.config.Config;
-import com.seibel.distanthorizons.core.enums.EMinecraftColor;
+import com.seibel.distanthorizons.core.enums.MinecraftTextFormat;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.multiplayer.client.SyncOnLoadRequestQueue;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.world.EWorldEnvironment;
 import com.seibel.distanthorizons.core.logging.DhLogger;
@@ -120,7 +118,7 @@ public class ChunkUpdateQueueManager
 		{
 			lastOverloadedLogMessageMsTime = System.currentTimeMillis();
 			
-			String message = EMinecraftColor.ORANGE + "Distant Horizons overloaded, too many chunks queued for LOD processing. " + EMinecraftColor.CLEAR_FORMATTING +
+			String message = MinecraftTextFormat.ORANGE + "Distant Horizons overloaded, too many chunks queued for LOD processing. " + MinecraftTextFormat.CLEAR_FORMATTING +
 					"\nThis may result in holes in your LODs. " +
 					"\nFix: move through the world slower, decrease your vanilla render distance, slow down your world pre-generator (IE Chunky), or increase the Distant Horizons' CPU thread counts. " +
 					"\nMax queue count [" + SharedApi.CHUNK_UPDATE_QUEUE_MANAGER.maxSize + "] ([" + SharedApi.MAX_UPDATING_CHUNK_COUNT_PER_THREAD_AND_PLAYER + "] per thread+players).";
