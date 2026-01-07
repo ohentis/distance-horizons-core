@@ -705,7 +705,7 @@ public class ClientApi
 					MinecraftTextFormat.YELLOW + "Distant Horizons: High vanilla render distance detected." + MinecraftTextFormat.CLEAR_FORMATTING + "\n" +
 					"Using a high vanilla render distance uses a lot of CPU power \n" +
 					"and doesn't improve graphics much after about 12.\n" +
-					"Lowing your vanilla render distance will give you better FPS\n" +
+					"Lowering your vanilla render distance will give you better FPS\n" +
 					"and reduce stuttering at a similar visual quality.\n" +
 					MinecraftTextFormat.GRAY + "A vanilla render distance of 8 is recommended." + MinecraftTextFormat.CLEAR_FORMATTING + "\n" +
 					"This message can be disabled in DH's config under Advanced -> Logging.\n";
