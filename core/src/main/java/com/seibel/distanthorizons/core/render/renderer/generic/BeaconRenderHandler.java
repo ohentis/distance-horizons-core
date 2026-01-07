@@ -28,6 +28,7 @@ import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBoxGroupShad
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos;
 import com.seibel.distanthorizons.core.sql.dto.BeaconBeamDTO;
 import com.seibel.distanthorizons.core.util.LodUtil;
@@ -39,8 +40,7 @@ import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.core.logging.DhLogger;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.*;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.locks.ReentrantLock;
@@ -53,6 +53,8 @@ public class BeaconRenderHandler
 	
 	/** how often should we check if a beacon should be culled? */
 	private static final int MAX_CULLING_FREQUENCY_IN_MS = 1_000;
+	
+	private static final Comparator<BeaconBeamDTO> NEGATIVE_BLOCKPOS_COMPARATOR = new NegativeInfiniteBlockPosComparator();
 	
 	
 	
@@ -89,20 +91,74 @@ public class BeaconRenderHandler
 	// render handling //
 	//=================//
 	
-	public void startRenderingBeacon(BeaconBeamDTO beacon)
+	public void startRenderingBeacons(ArrayList<BeaconBeamDTO> beaconList, byte detailLevel)
 	{
 		try
 		{
 			this.updateLock.lock();
 			
-			if (this.beaconBlockPosSet.add(beacon.blockPos))
+			
+			// how wide should each beacon be?
+			int beaconBlockWidth = 1;
+			if (Config.Client.Advanced.Graphics.GenericRendering.expandDistantBeacons.get())
 			{
+				beaconBlockWidth = DhSectionPos.getBlockWidth(detailLevel);
+			}
+			
+			
+			ArrayList<BeaconBeamDTO> sortedBeaconList = new ArrayList<>(beaconList);
+			
+			// merge distant beams if requested
+			if (Config.Client.Advanced.Graphics.GenericRendering.expandDistantBeacons.get())
+			{
+				// sort beacons from neg inf -> pos inf
+				// so we can consistently merge adjacent beacons
+				sortedBeaconList.sort(NEGATIVE_BLOCKPOS_COMPARATOR);
+				
+				// go through each beacon...
+				for (int outerIndex = 0; outerIndex < sortedBeaconList.size(); outerIndex++)
+				{
+					BeaconBeamDTO outerBeacon = sortedBeaconList.get(outerIndex);
+					DhBlockPos outerBlockPos = outerBeacon.blockPos;
+					
+					// ...and remove any beacons that are within the block width to prevent overlaps
+					for (int mergeIndex = outerIndex + 1; mergeIndex < sortedBeaconList.size(); mergeIndex++)
+					{
+						BeaconBeamDTO beaconToMerge = sortedBeaconList.get(mergeIndex);
+						DhBlockPos mergeBlockPos = beaconToMerge.blockPos;
+						
+						int xDiff = mergeBlockPos.getX() - outerBlockPos.getX();
+						int zDiff = mergeBlockPos.getZ() - outerBlockPos.getZ();
+						
+						// merge (remove) this beacon if
+						// it's close to the outer beacon
+						if (xDiff < beaconBlockWidth
+							&& zDiff < beaconBlockWidth)
+						{
+							sortedBeaconList.remove(mergeIndex);
+							mergeIndex--; // minus 1 so we don't go past the end of the array when incrementing in the for loop up top
+						}
+					}
+				}
+			}
+			
+			
+			// add each beacon to the renderer
+			for (int i = 0; i < sortedBeaconList.size(); i++)
+			{
+				BeaconBeamDTO beacon = sortedBeaconList.get(i);
+				if (!this.beaconBlockPosSet.add(beacon.blockPos))
+				{
+					continue;
+				}
+				
+				
 				int maxBeaconBeamHeight = Config.Client.Advanced.Graphics.GenericRendering.beaconRenderHeight.get();
 				DhApiRenderableBox beaconBox = new DhApiRenderableBox(
-						new DhApiVec3d(beacon.blockPos.getX(), beacon.blockPos.getY() + 1, beacon.blockPos.getZ()),
-						new DhApiVec3d(beacon.blockPos.getX() + 1, maxBeaconBeamHeight, beacon.blockPos.getZ() + 1),
-						beacon.color,
-						EDhApiBlockMaterial.ILLUMINATED
+					new DhApiVec3d(beacon.blockPos.getX(), beacon.blockPos.getY() + 1, beacon.blockPos.getZ()),
+					new DhApiVec3d(beacon.blockPos.getX() + beaconBlockWidth, maxBeaconBeamHeight, beacon.blockPos.getZ() + beaconBlockWidth),
+					beacon.color,
+					EDhApiBlockMaterial.ILLUMINATED
 				);
 				
 				this.beaconBoxGroup.add(beaconBox);
@@ -116,19 +172,26 @@ public class BeaconRenderHandler
 		}
 	}
 	
-	public void stopRenderingBeaconAtPos(DhBlockPos beaconPos)
+	public void stopRenderingBeacons(ArrayList<BeaconBeamDTO> beaconList)
 	{
 		try
 		{
 			this.updateLock.lock();
 			
-			if (this.beaconBlockPosSet.remove(beaconPos))
+			for (int i = 0; i < beaconList.size(); i++)
 			{
+				BeaconBeamDTO beacon = beaconList.get(i);
+				DhBlockPos beaconPos = beacon.blockPos;
+				if (!this.beaconBlockPosSet.remove(beaconPos))
+				{
+					continue;
+				}
+				
 				Predicate<DhApiRenderableBox> removePredicate = (DhApiRenderableBox box) ->
 				{
 					return box.minPos.x == beaconPos.getX()
-							&& box.minPos.y == beaconPos.getY() + 1 // plus 1 because the beam starts above the beacon
-							&& box.minPos.z == beaconPos.getZ();
+						&& box.minPos.y == beaconPos.getY() + 1 // plus 1 because the beam starts above the beacon
+						&& box.minPos.z == beaconPos.getZ();
 				};
 				this.beaconBoxGroup.removeIf(removePredicate);
 				this.fullBeaconBoxList.removeIf(removePredicate);
@@ -253,6 +316,30 @@ public class BeaconRenderHandler
 			{ /* If this happens that means everything is already shut down and no culling is necessary */ }
 		}
 	}
+	
+	
+	
+	//================//
+ 	// helper classes //
+ 	//================//
+	
+	private static class NegativeInfiniteBlockPosComparator implements Comparator<BeaconBeamDTO>
+	{
+		@Override
+		public int compare(BeaconBeamDTO beacon1, BeaconBeamDTO beacon2)
+		{
+			DhBlockPos blockPos1 = beacon1.blockPos;
+			DhBlockPos blockPos2 = beacon2.blockPos;
+			
+			// sort by X, then by Z
+			if (blockPos1.getX() != blockPos2.getX())
+			{
+				return Integer.compare(blockPos1.getX(), blockPos2.getX());
+			}
+			return Integer.compare(blockPos1.getZ(), blockPos2.getZ());
+		}
+	}
+	
 	
 	
 }

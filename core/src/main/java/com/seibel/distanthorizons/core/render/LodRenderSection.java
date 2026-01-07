@@ -77,7 +77,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	 * contains the list of beacons currently being rendered in this section 
 	 * if this list is modified the {@link LodRenderSection#beaconRenderHandler} should be updated to match.
 	 */
-	private final List<BeaconBeamDTO> activeBeaconList = new ArrayList<>();
+	private final ArrayList<BeaconBeamDTO> activeBeaconList = new ArrayList<>();
 	@Nullable
 	public final BeaconRenderHandler beaconRenderHandler;
 	@Nullable
@@ -446,20 +446,15 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 			
 			
 			// stop rendering current beacons
-			for (BeaconBeamDTO beam : this.activeBeaconList)
-			{
-				this.beaconRenderHandler.stopRenderingBeaconAtPos(beam.blockPos);
-			}
+			this.beaconRenderHandler.stopRenderingBeacons(this.activeBeaconList);
 			
 			// swap old and new active beacon list
 			this.activeBeaconList.clear();
 			this.activeBeaconList.addAll(activeBeacons);
 			
 			// start rendering new beacon list
-			for (BeaconBeamDTO beam : this.activeBeaconList)
-			{
-				this.beaconRenderHandler.startRenderingBeacon(beam);
-			}
+			byte absoluteDetailLevel = (byte)(DhSectionPos.getDetailLevel(this.pos) - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
+			this.beaconRenderHandler.startRenderingBeacons(this.activeBeaconList, absoluteDetailLevel);
 		}
 	}
 	
@@ -474,10 +469,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		
 		synchronized (this.activeBeaconList)
 		{
-			for (BeaconBeamDTO beam : this.activeBeaconList)
-			{
-				this.beaconRenderHandler.stopRenderingBeaconAtPos(beam.blockPos);
-			}
+			this.beaconRenderHandler.stopRenderingBeacons(this.activeBeaconList);
 		}
 	}
 	
@@ -492,10 +484,8 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		
 		synchronized (this.activeBeaconList)
 		{
-			for (BeaconBeamDTO beam : this.activeBeaconList)
-			{
-				this.beaconRenderHandler.startRenderingBeacon(beam);
-			}
+			byte absoluteDetailLevel = (byte)(DhSectionPos.getDetailLevel(this.pos) - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
+			this.beaconRenderHandler.startRenderingBeacons(this.activeBeaconList, absoluteDetailLevel);
 		}
 	}
 	

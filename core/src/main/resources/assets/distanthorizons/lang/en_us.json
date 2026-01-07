@@ -227,6 +227,10 @@
     "Beacon render height",
   "distanthorizons.config.client.advanced.graphics.genericRendering.beaconRenderHeight.@tooltip":
     "Sets the maximum height at which beacons will render. \nThis will only affect new beacons coming into LOD render distance. \nBeacons currently visible in LOD chunks will not be affected.",
+  "distanthorizons.config.client.advanced.graphics.genericRendering.expandDistantBeacons": 
+    "Expand Distant Beacons",
+  "distanthorizons.config.client.advanced.graphics.genericRendering.expandDistantBeacons.@tooltip":
+    "If true LOD beacon beams will be rendered wider at extreme distances, \nmaking them easier to see. \nIf false all LOD beacon beams will only ever be 1 block wide.",
   "distanthorizons.config.client.advanced.graphics.genericRendering.enableBeaconRendering.@tooltip":
     "If true LOD beacon beams will be rendered.",
   "distanthorizons.config.client.advanced.graphics.genericRendering.enableCloudRendering":

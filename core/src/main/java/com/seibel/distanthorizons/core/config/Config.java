@@ -457,6 +457,15 @@ public class Config
 									+ "")
 							.build();
 					
+					public static ConfigEntry<Boolean> expandDistantBeacons = new ConfigEntry.Builder<Boolean>()
+						.set(true) 
+						.comment(""
+							+ "If true LOD beacon beams will be rendered wider at extreme distances, \n"
+							+ "making them easier to see. \n"
+							+ "If false all LOD beacon beams will only ever be 1 block wide. \n"
+							+ "")
+						.build();
+					
 					public static ConfigEntry<Boolean> enableCloudRendering = new ConfigEntry.Builder<Boolean>()
 							.set(true)
 							.comment(""
