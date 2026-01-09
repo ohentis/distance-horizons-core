@@ -33,6 +33,8 @@ import com.seibel.distanthorizons.core.render.DhApiRenderProxy;
 import com.seibel.distanthorizons.core.render.renderer.*;
 import com.seibel.distanthorizons.core.util.TimerUtil;
 import com.seibel.distanthorizons.core.util.objects.Pair;
+import com.seibel.distanthorizons.core.util.threading.PriorityTaskPicker;
+import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
 import com.seibel.distanthorizons.core.config.Config;
@@ -58,6 +60,8 @@ import org.lwjgl.glfw.GLFW;
 import java.io.File;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * This holds the methods that should be called
@@ -329,10 +333,27 @@ public class ClientApi
 	 */
 	public void pluginMessageReceived(@NotNull AbstractNetworkMessage message)
 	{
-		NetworkSession networkSession = this.pluginChannelApi.networkSession;
-		if (networkSession != null)
+		@Nullable ThreadPoolExecutor executor = ThreadPoolUtil.networkClientHandlerExecutor();
+		if (executor == null)
 		{
-			networkSession.tryHandleMessage(message);
+			LOGGER.warn("warn");
+			return;
+		}
+		
+		try
+		{
+			executor.execute(() ->
+			{
+				NetworkSession networkSession = this.pluginChannelApi.networkSession;
+				if (networkSession != null)
+				{
+					networkSession.tryHandleMessage(message);
+				}
+			});
+		}
+		catch (RejectedExecutionException e)
+		{
+			LOGGER.warn("Plugin message executor rejected");
 		}
 	}
 	

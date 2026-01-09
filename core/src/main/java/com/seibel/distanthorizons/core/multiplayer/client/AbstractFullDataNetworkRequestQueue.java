@@ -24,6 +24,7 @@ import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
 import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV2DTO;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.ratelimiting.SupplierBasedRateLimiter;
+import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.world.DhApiWorldProxy;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 
@@ -217,11 +218,18 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 				FullDataSourceResponseMessage.class
 		);
 		requestTask.networkDataSourceFuture = dataSourceNetworkFuture;
-		dataSourceNetworkFuture.handle((FullDataSourceResponseMessage response, Throwable throwable) ->
+		
+		Executor networkCompressionExecutor = ThreadPoolUtil.getNetworkCompressionExecutor();
+		if (networkCompressionExecutor == null)
+		{
+			return;
+		}
+		
+		dataSourceNetworkFuture.handleAsync((FullDataSourceResponseMessage response, Throwable throwable) ->
 		{
 			this.handleNetResponse(requestTask, response, throwable);
 			return null;
-		});
+		}, networkCompressionExecutor);
 	}
 	private void handleNetResponse(NetRequestTask requestTask, FullDataSourceResponseMessage response, Throwable throwable)
 	{

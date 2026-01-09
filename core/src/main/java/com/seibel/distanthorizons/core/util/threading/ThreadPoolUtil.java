@@ -69,10 +69,14 @@ public class ThreadPoolUtil
 	@Nullable
 	public static ThreadPoolExecutor getBeaconCullingExecutor() { return beaconCullingThreadPool; }
 	
+	// The main distinction between these thread pools is that one for compression has multiple threads and client handler is single-threaded
 	private static PriorityTaskPicker.Executor networkCompressionThreadPool;
 	@Nullable
 	public static PriorityTaskPicker.Executor getNetworkCompressionExecutor() { return networkCompressionThreadPool; }
 	
+	private static ThreadPoolExecutor networkClientHandlerThreadPool;
+	@Nullable
+	public static ThreadPoolExecutor networkClientHandlerExecutor() { return networkClientHandlerThreadPool; }
 	
 	
 	public static final String FULL_DATA_MIGRATION_THREAD_NAME = "Full Data Migration";
@@ -103,7 +107,8 @@ public class ThreadPoolUtil
 		}
 		taskPicker = new PriorityTaskPicker();
 		
-		networkCompressionThreadPool = taskPicker.createExecutor("Network");
+		networkCompressionThreadPool = taskPicker.createExecutor("Network Compression");
+		networkClientHandlerThreadPool = ThreadUtil.makeSingleThreadPool("Network Client Handler");
 		fileHandlerThreadPool = taskPicker.createExecutor("IO");
 		renderSectionLoadThreadPool = taskPicker.createExecutor("Render Loader");
 		chunkToLodBuilderThreadPool = taskPicker.createExecutor("LOD Builder");
@@ -133,6 +138,7 @@ public class ThreadPoolUtil
 	public static void shutdownThreadPools()
 	{
 		// standalone threads
+		networkClientHandlerThreadPool.shutdownNow();
 		taskPicker.shutdownNow();
 		beaconCullingThreadPool.shutdown();
 		fullDataMigrationThreadPool.shutdown();
