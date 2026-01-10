@@ -434,7 +434,7 @@ public class LodRenderer
 		
 		// resize the textures if needed
 		if (MC_RENDER.getTargetFramebufferViewportWidth() != this.textureWidth
-				|| MC_RENDER.getTargetFramebufferViewportHeight() != this.textureHeight)
+			|| MC_RENDER.getTargetFramebufferViewportHeight() != this.textureHeight)
 		{
 			// just resizing the textures doesn't work when Optifine is present,
 			// so recreate the textures with the new size instead
@@ -536,7 +536,7 @@ public class LodRenderer
 		return true;
 	}
 	
-	@SuppressWarnings( "deprecation" )
+	@SuppressWarnings( "deprecation" ) // done to ignore DhApiColorDepthTextureCreatedEvent
 	private void createAndBindTextures()
 	{
 		int oldWidth = this.textureWidth;
