@@ -31,12 +31,10 @@ import com.seibel.distanthorizons.coreapi.util.MathUtil;
 import com.seibel.distanthorizons.core.util.gridList.MovableGridRingList;
 import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
 import it.unimi.dsi.fastutil.longs.LongIterator;
-import com.seibel.distanthorizons.core.logging.DhLogger;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.LongConsumer;
 
 /**
@@ -98,9 +96,27 @@ public class QuadTree<T>
 	// getters and setters //
 	//=====================//
 	
+	/** @return the value at the given section position. Null will be returned if the value is missing or the position is out of bounds. */
+	@Nullable
+	public final T tryGetValue(long pos)
+	{
+		QuadNode<T> node = this.tryGetNode(pos);
+		if (node != null)
+		{
+			return node.value;
+		}
+		return null;
+	}
+	
+	/** @return the node at the given section position, null if out of bounds */
+	@Nullable
+	public final QuadNode<T> tryGetNode(long pos) { return this.getOrSetNode(pos, false, null, false); }
+	
+	
 	/** @return the node at the given section position */
 	@Nullable
 	public final QuadNode<T> getNode(long pos) throws IndexOutOfBoundsException { return this.getOrSetNode(pos, false, null, true); }
+	
 	/** @return the value at the given section position */
 	@Nullable
 	public final T getValue(long pos) throws IndexOutOfBoundsException
@@ -122,16 +138,24 @@ public class QuadTree<T>
 		return previousValue;
 	}
 	
-	/** @param runBoundaryChecks should only ever be set to true internally for removing out of bound nodes */
+	/** @param throwIfOutOfBounds if false returns null */
 	@Nullable
-	protected final QuadNode<T> getOrSetNode(long pos, boolean setNewValue, T newValue, boolean runBoundaryChecks) throws IndexOutOfBoundsException
+	protected final QuadNode<T> getOrSetNode(long pos, boolean setNewValue, T newValue, boolean throwIfOutOfBounds) throws IndexOutOfBoundsException
 	{
-		if (runBoundaryChecks && !this.isSectionPosInBounds(pos))
+		if (!this.isSectionPosInBounds(pos))
 		{
-			int radius = this.diameterInBlocks() / 2;
-			DhBlockPos2D minPos = this.getCenterBlockPos().add(new DhBlockPos2D(-radius, -radius));
-			DhBlockPos2D maxPos = this.getCenterBlockPos().add(new DhBlockPos2D(radius, radius));
-			throw new IndexOutOfBoundsException("QuadTree GetOrSet failed. Position out of bounds, min pos: " + minPos + ", max pos: " + maxPos + ", min detail level: " + this.treeLeafDetailLevel + ", max detail level: " + this.treeRootDetailLevel + ". Given Position: [" + DhSectionPos.toString(pos) + "] = block pos: " + DhSectionPos.convertToDetailLevel(pos, LodUtil.BLOCK_DETAIL_LEVEL));
+			// how should out-of-bounds positions be handled?
+			if (throwIfOutOfBounds)
+			{
+				int radius = this.diameterInBlocks() / 2;
+				DhBlockPos2D minBlockPos = this.getCenterBlockPos().add(new DhBlockPos2D(-radius, -radius));
+				DhBlockPos2D maxBlockPos = this.getCenterBlockPos().add(new DhBlockPos2D(radius, radius));
+				throw new IndexOutOfBoundsException("QuadTree GetOrSet failed. Position out of bounds, min block pos: [" + minBlockPos + "], max block pos: [" + maxBlockPos + "], leaf detail level: [" + this.treeLeafDetailLevel + "], root detail level: [" + this.treeRootDetailLevel + "]. Requested section pos: [" + DhSectionPos.toString(pos) + "].");
+			}
+			else
+			{
+				return null;
+			}
 		}
 		
 		
@@ -278,46 +302,6 @@ public class QuadTree<T>
 				removedItemConsumer.accept(quadNode.value);
 			}
 		});
-
-
-//		// remove out of bound nodes and clean up empty nodes
-//		// Note: this will iterate over a lot of unnecessary nodes, hopefully speed won't be an issue
-//		Iterator<DhSectionPos> rootNodePosIterator = this.rootNodePosIterator();
-//		while (rootNodePosIterator.hasNext())
-//		{
-//			// get the root node (regular nodeIterators won't return them if they are out of bounds)
-//			DhSectionPos rootPos = rootNodePosIterator.next();
-//			QuadNode<T> rootNode = this.getOrSetNode(rootPos, false, null, false);
-//			if (rootNode == null)
-//			{
-//				continue;
-//			}
-//			
-//			// remove any child nodes that are out of bounds
-//			Iterator<QuadNode<T>> nodeIterator = this.nodeIterator();
-//			while (nodeIterator.hasNext())
-//			{
-//				QuadNode<T> node = nodeIterator.next();
-//				if(!this.isSectionPosInBounds(node.sectionPos))
-//				{
-//					// node is out of bounds
-//					
-//					// FIXME(?) this appears to potentially return large nodes that are partially or entirely in bounds
-//					
-//					if (node.getNonNullChildCount() == 0)
-//					{
-//						// no child nodes, can be safely removed
-//						nodeIterator.remove();
-//					}
-//					else
-//					{
-//						// node can't be removed, but its value can be set to null
-//						node.value = null;
-//					}
-//				}
-//			}
-//		}
-		
 	}
 	
 	public final DhBlockPos2D getCenterBlockPos() { return this.centerBlockPos; }
@@ -544,7 +528,9 @@ public class QuadTree<T>
 					&& this.rootNodeIterator.hasNext())
 			{
 				long sectionPos = this.rootNodeIterator.nextLong();
-				QuadNode<T> rootNode = QuadTree.this.getNode(sectionPos);
+				
+				// try-get to prevent concurrency errors if the tree is being moved while we walk through it
+				QuadNode<T> rootNode = QuadTree.this.tryGetNode(sectionPos);
 				if (rootNode != null)
 				{
 					nodeIterator = this.onlyReturnLeaves ? rootNode.getLeafNodeIterator() : rootNode.getNodeIterator(this.stopIteratingFunc);

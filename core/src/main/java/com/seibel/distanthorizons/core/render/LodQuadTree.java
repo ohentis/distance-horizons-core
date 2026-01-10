@@ -78,6 +78,11 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 	 */
 	private final ConcurrentLinkedQueue<Long> sectionsToReload = new ConcurrentLinkedQueue<>();
 	private final IDhClientLevel level;
+	/** 
+	 * Note: this doesn't lock all operations as some other threads/operations
+	 * that may traverse the tree while it's being modified.
+	 * IE {@link RenderBufferHandler} will walk through the tree each frame.
+	 */
 	private final ReentrantLock treeLock = new ReentrantLock();
 	
 	private ArrayList<LodRenderSection> debugRenderSections = new ArrayList<>();
@@ -166,7 +171,8 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 		
 		
 		
-		// don't traverse the tree if it is being modified
+		// don't tick the tree if a modification is still going
+		// TODO is this lock necessary for anything beyond this tick method?
 		if (this.treeLock.tryLock())
 		{
 			// this shouldn't be updated while the tree is being iterated through
@@ -508,28 +514,23 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 				continue;
 			}
 			
-			try
+			// the section only needs to be updated if a buffer is currently present 
+			LodRenderSection renderSection = this.tryGetValue(pos);
+			if (renderSection != null)
 			{
-				// the section only needs to be updated if a buffer is currently present 
-				LodRenderSection renderSection = this.getValue(pos);
-				if (renderSection != null)
+				if (renderSection.canRender())
 				{
-					if (renderSection.canRender())
+					if (renderSection.gpuUploadInProgress()
+						|| !renderSection.uploadRenderDataToGpuAsync())
 					{
-						if (renderSection.gpuUploadInProgress()
-							|| !renderSection.uploadRenderDataToGpuAsync())
-						{
-							// if a section is already loading or failed to start upload
-							// we need to wait to trigger it again
-							// if we don't trigger it again the LOD will be out of date
-							// and may be invisible/missing
-							positionsToRequeue.add(pos);
-						}
+						// if a section is already loading or failed to start upload
+						// we need to wait to trigger it again
+						// if we don't trigger it again the LOD will be out of date
+						// and may be invisible/missing
+						positionsToRequeue.add(pos);
 					}
 				}
 			}
-			catch (IndexOutOfBoundsException e)
-			{ /* the section is now out of bounds, it doesn't need to be reloaded */ }
 		}
 		this.sectionsToReload.addAll(positionsToRequeue);
 	}
