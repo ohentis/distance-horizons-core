@@ -295,24 +295,21 @@ public class LodBufferContainer implements AutoCloseable
 	{
 		this.buffersUploaded = false;
 		
-		GLProxy.queueRunningOnRenderThread(() ->
+		for (GLVertexBuffer buffer : this.vbos)
 		{
-			for (GLVertexBuffer buffer : this.vbos)
+			if (buffer != null)
 			{
-				if (buffer != null)
-				{
-					buffer.destroyAsync();
-				}
+				buffer.destroyAsync();
 			}
-			
-			for (GLVertexBuffer buffer : this.vbosTransparent)
+		}
+		
+		for (GLVertexBuffer buffer : this.vbosTransparent)
+		{
+			if (buffer != null)
 			{
-				if (buffer != null)
-				{
-					buffer.destroyAsync();
-				}
+				buffer.destroyAsync();
 			}
-		});
+		}
 	}
 	
 }
