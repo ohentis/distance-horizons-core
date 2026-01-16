@@ -101,6 +101,7 @@ public class Config
 				.build();
 		
 		public static ConfigUiLinkedEntry quickEnableWorldGenerator = new ConfigUiLinkedEntry(Common.WorldGenerator.enableDistantGeneration);
+		public static ConfigUiLinkedEntry quickEnableServerGeneration = new ConfigUiLinkedEntry(Server.enableServerGeneration);
 		
 		public static ConfigUiLinkedEntry quickShowWorldGenProgress = new ConfigUiLinkedEntry(Common.WorldGenerator.showGenerationProgress);
 		
@@ -1734,6 +1735,16 @@ public class Config
 		
 		
 		// Generation
+		public static ConfigEntry<Boolean> enableServerGeneration = new ConfigEntry.Builder<Boolean>()
+			.set(true)
+			.comment(""
+				+ " Should Distant Horizons slowly generate LODs \n"
+				+ " outside the vanilla render distance? \n"
+				+ "Depending on the generator mode, this will import existing chunks \n"
+				+ "and/or generating missing chunks."
+				+ "")
+			.build();
+		
 		public static ConfigEntry<Integer> generationRequestRateLimit = new ConfigEntry.Builder<Integer>()
 				.setChatCommandName("generation.requestRateLimit")
 				.setMinDefaultMax(1, 20, 100)
