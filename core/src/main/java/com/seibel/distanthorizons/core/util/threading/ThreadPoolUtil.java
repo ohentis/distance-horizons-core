@@ -19,6 +19,8 @@
 
 package com.seibel.distanthorizons.core.util.threading;
 
+import com.seibel.distanthorizons.core.api.internal.ClientApi;
+import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -94,6 +96,7 @@ public class ThreadPoolUtil
 	//=================//
 	// setup / cleanup //
 	//=================//
+	///region
 	
 	public static void setupThreadPools()
 	{
@@ -112,8 +115,9 @@ public class ThreadPoolUtil
 		fileHandlerThreadPool = taskPicker.createExecutor("IO");
 		renderSectionLoadThreadPool = taskPicker.createExecutor("Render Loader");
 		chunkToLodBuilderThreadPool = taskPicker.createExecutor("LOD Builder");
-		updatePropagatorThreadPool = taskPicker.createExecutor("Update Propagator");
-		worldGenThreadPool = taskPicker.createExecutor("World Gen");
+		updatePropagatorThreadPool = taskPicker.createExecutor("Update Propagator", ThreadPoolUtil::onlyRunThreadIfCameraMovingSlowly);
+		worldGenThreadPool = taskPicker.createExecutor("World Gen", ThreadPoolUtil::onlyRunThreadIfCameraMovingSlowly);
+		
 		
 		
 		
@@ -143,5 +147,43 @@ public class ThreadPoolUtil
 		beaconCullingThreadPool.shutdown();
 		fullDataMigrationThreadPool.shutdown();
 	}
+	
+	///endregion
+	
+	
+	
+	//================//
+	// helper methods //
+	//================//
+	///region
+	
+	/**
+	 * Some thread pools are very heavy (IE world gen)
+	 * making LOD load times slower. Pausing those
+	 * threads when the player is moving can provide a better experience. <br><br>
+	 * 
+	 * all speeds are measured in blocks per second 
+	 * 
+	 * @see LodUtil#WALKING_SPEED_IN_BLOCKS_PER_SEC
+	 * @see LodUtil#SPRINTING_SPEED_IN_BLOCKS_PER_SEC
+	 * @see LodUtil#ROCKET_ELYTRA_SPEED_IN_BLOCKS_PER_SEC
+	 * @see LodUtil#MAX_SPECTATOR_SPEED_IN_BLOCKS_PER_SEC
+	 */
+	public static boolean onlyRunThreadIfCameraMovingSlowly()
+	{
+		double cameraSpeed = ClientApi.INSTANCE.cameraSpeedRollingAverage.getAverage();
+		double maxAllowedSpeed = (LodUtil.ROCKET_ELYTRA_SPEED_IN_BLOCKS_PER_SEC - 10.0);
+		if (cameraSpeed > maxAllowedSpeed)
+		{
+			// pause this thread pool if the user is moving too fast
+			return false;
+		}
+		
+		return true;
+	}
+	
+	///endregion
+	
+	
 	
 }

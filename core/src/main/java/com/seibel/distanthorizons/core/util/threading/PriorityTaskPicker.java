@@ -6,6 +6,7 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.util.objects.RollingAverage;
 import com.seibel.distanthorizons.core.logging.DhLogger;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -39,10 +40,12 @@ public class PriorityTaskPicker
 	//==========//
 	// executor //
 	//==========//
+	///region
 	
-	public Executor createExecutor(String name)
+	public Executor createExecutor(String name) { return this.createExecutor(name, null); }
+	public Executor createExecutor(String name, @Nullable PriorityTaskPicker.IExecutorCanRunFunc canRunFunc)
 	{
-		Executor executor = new Executor(this, name);
+		Executor executor = new Executor(this, name, canRunFunc);
 		this.executors.add(executor);
 		return executor;
 	}
@@ -73,6 +76,13 @@ public class PriorityTaskPicker
 			while (iterator.hasNext())
 			{
 				Executor executor = iterator.next();
+				
+				// skip executors that are paused
+				if (!executor.canRun())
+				{
+					continue;
+				}
+				
 				int queuedTaskCount = 0;
 				
 				TrackedRunnable task;
@@ -142,11 +152,14 @@ public class PriorityTaskPicker
 		}
 	}
 	
+	///endregion
+	
 	
 	
 	//================//
 	// helper classes //
 	//================//
+	///region
 	
 	/**
 	 * Each executor handles a specific type of work that DH needs done.
@@ -167,6 +180,9 @@ public class PriorityTaskPicker
 		/** used for performance logging */
 		private final RollingAverage runTimeInMsRollingAverage = new RollingAverage(200);
 		
+		@Nullable
+		private final PriorityTaskPicker.IExecutorCanRunFunc canRunFunc;
+		
 		/** holds the threads this {@link Executor} can run */
 		private RateLimitedThreadPoolExecutor threadPoolExecutor;
 		
@@ -175,11 +191,13 @@ public class PriorityTaskPicker
 		//=============//
 		// constructor //
 		//=============//
+		///region
 		
-		public Executor(PriorityTaskPicker parentTaskPicker, String name)
+		public Executor(PriorityTaskPicker parentTaskPicker, String name, @Nullable PriorityTaskPicker.IExecutorCanRunFunc canRunFunc)
 		{
 			this.parentTaskPicker = parentTaskPicker;
 			this.name = name;
+			this.canRunFunc = canRunFunc;
 			
 			this.threadPoolExecutor = this.createThreadPool();
 			
@@ -195,11 +213,14 @@ public class PriorityTaskPicker
 			);
 		}
 		
+		///endregion
+		
 		
 		
 		//=================//
 		// config handling //
 		//=================//
+		///region
 		
 		@Override
 		public void onConfigValueSet() 
@@ -215,11 +236,14 @@ public class PriorityTaskPicker
 			}
 		}
 		
+		///endregion
+		
 		
 		
 		//=====================//
 		// task queue handling //
 		//=====================//
+		///region
 		
 		@Override
 		public void execute(@NotNull Runnable command)
@@ -258,11 +282,25 @@ public class PriorityTaskPicker
 		
 		public void clearQueue() { this.taskQueue.clear(); }
 		
+		public boolean canRun()
+		{
+			if (this.canRunFunc == null)
+			{
+				return true;
+			}
+			
+			return this.canRunFunc.canRun();
+		}
+		
+		
+		//endregion
+		
 		
 		
 		//==========//
 		// shutdown //
 		//==========//
+		///region
 		
 		@Override
 		public void shutdown() { this.threadPoolExecutor.shutdown(); }
@@ -278,6 +316,8 @@ public class PriorityTaskPicker
 		@Override
 		public boolean awaitTermination(long timeout, @NotNull TimeUnit unit) throws InterruptedException 
 		{ return this.threadPoolExecutor.awaitTermination(timeout, unit); }
+		
+		///endregion
 		
 	}
 	
@@ -333,6 +373,18 @@ public class PriorityTaskPicker
 		}
 		
 	}
+	
+	/**
+	 * Provides a way to dynamically enable/disable
+	 * certain {@link PriorityTaskPicker.Executor}'s.
+	 */
+	@FunctionalInterface
+	public interface IExecutorCanRunFunc
+	{
+		boolean canRun();
+	}
+	
+	///endregion
 	
 	
 	

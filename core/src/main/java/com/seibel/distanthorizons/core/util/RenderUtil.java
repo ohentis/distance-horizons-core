@@ -37,16 +37,18 @@ public class RenderUtil
 	private static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	private static final IMinecraftRenderWrapper MC_RENDER = SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
 	
-	/** all speeds are measured in blocks per second */
+	/** 
+	 * all speeds are measured in blocks per second 
+	 * 
+	 * @see LodUtil#WALKING_SPEED_IN_BLOCKS_PER_SEC
+	 * @see LodUtil#SPRINTING_SPEED_IN_BLOCKS_PER_SEC
+	 * @see LodUtil#ROCKET_ELYTRA_SPEED_IN_BLOCKS_PER_SEC
+	 * @see LodUtil#MAX_SPECTATOR_SPEED_IN_BLOCKS_PER_SEC
+	 */
 	private static class DynamicOverdraw
 	{
-		/**
-		 * A walking player moves around 4.1 blocks/sec
-		 * A sprint jumping player around 7.1 blocks/sec
-		 */
-		public static final float MIN_SPEED = 10.0f;
-		/** a max speed spectator player can move just shy of 100 blocks/sec */
-		public static final float MAX_SPEED = 100.0f;
+		public static final float MIN_SPEED = 10.0f; // a little faster than sprinting (7)
+		public static final float MAX_SPEED = (float)LodUtil.MAX_SPECTATOR_SPEED_IN_BLOCKS_PER_SEC;
 		public static final float MIN_OVERDRAW_RATIO = 0.2f;
 	}
 	

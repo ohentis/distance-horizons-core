@@ -36,7 +36,6 @@ import com.seibel.distanthorizons.core.world.AbstractDhWorld;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.coreapi.util.StringUtil;
-import org.apache.logging.log4j.LogManager;
 import com.seibel.distanthorizons.core.logging.DhLogger;
 
 import java.text.NumberFormat;
@@ -219,7 +218,11 @@ public class F3Screen
 			// active threads
 			int activeThreadCount = pool.getRunningTaskCount();
 			int threadCount = pool.getPoolSize();
-			message += ", Active: "+activeThreadCount+"/"+threadCount;
+			
+			boolean threadPoolActive = pool.canRun();
+			String poolActiveString = threadPoolActive ? "Active" : "Paused";
+			
+			message += ", "+poolActiveString+": "+activeThreadCount+"/"+threadCount;
 			
 			// thread runtime
 			String runTimeAvgStr;

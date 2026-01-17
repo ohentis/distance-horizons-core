@@ -85,17 +85,10 @@ public class LodUtil
 	/** the opacity value returned by {@link IBlockStateWrapper#getOpacity()} if a block is fully opaque */
 	public static final int BLOCK_FULLY_OPAQUE = 16;
 	
-	/**
-	 * List of every block that can be used in a beacon's base. <br> 
-	 * Should be all lowercase 
-	 */
-	public static final List<String> BEACON_BASE_BLOCK_NAME_LIST = Arrays.asList(
-			"iron_block",
-			"gold_block",
-			"diamond_block",
-			"emerald_block",
-			"netherite_block"
-	);
+	public static final double WALKING_SPEED_IN_BLOCKS_PER_SEC = 4.1;
+	public static final double SPRINTING_SPEED_IN_BLOCKS_PER_SEC = 7.1;
+	public static final double ROCKET_ELYTRA_SPEED_IN_BLOCKS_PER_SEC = 30.0;
+	public static final double MAX_SPECTATOR_SPEED_IN_BLOCKS_PER_SEC = 100.0;
 	
 	
 	
