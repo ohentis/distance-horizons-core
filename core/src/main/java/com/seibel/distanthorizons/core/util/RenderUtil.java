@@ -19,6 +19,7 @@
 
 package com.seibel.distanthorizons.core.util;
 
+import com.seibel.distanthorizons.core.api.internal.ClientApi;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
@@ -35,6 +36,19 @@ public class RenderUtil
 {
 	private static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	private static final IMinecraftRenderWrapper MC_RENDER = SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
+	
+	/** all speeds are measured in blocks per second */
+	private static class DynamicOverdraw
+	{
+		/**
+		 * A walking player moves around 4.1 blocks/sec
+		 * A sprint jumping player around 7.1 blocks/sec
+		 */
+		public static final float MIN_SPEED = 10.0f;
+		/** a max speed spectator player can move just shy of 100 blocks/sec */
+		public static final float MAX_SPEED = 100.0f;
+		public static final float MIN_OVERDRAW_RATIO = 0.2f;
+	}
 	
 	
 	
@@ -95,11 +109,12 @@ public class RenderUtil
 	public static float getAutoOverdrawPrevention()
 	{
 		float overdraw = Config.Client.Advanced.Graphics.Culling.overdrawPrevention.get().floatValue();
-		
-		// 0 or less 
-		if (overdraw <= 0)
+		if (overdraw < 0)
 		{
-			// at low render distances this hides the vanilla RD border
+			// automatic mode,
+			// get overdraw based on vanilla render distance.
+			// At low render distances this hides the vanilla RD border
+			
 			int chunkRenderDistance = MC_RENDER.getRenderDistance();
 			if (chunkRenderDistance <= 2)
 			{
@@ -122,12 +137,38 @@ public class RenderUtil
 				overdraw = 0.9f;
 			}
 		}
-		
+		else
+		{
+			// prevent setting an overdraw of 0
+			// since that will cause rendering issues
+			overdraw = MathUtil.clamp(0.05f, overdraw, 1.0f);
+		}
+
 		return overdraw;
 	}
 	public static float getNearClipPlaneInBlocksForFading(float partialTicks)
 	{
 		float overdraw = getAutoOverdrawPrevention();
+		
+		if (Config.Client.Advanced.Graphics.Culling.reduceOverdrawWithFastMovement.get())
+		{
+			double avgSpeed = ClientApi.INSTANCE.cameraSpeedRollingAverage.getAverage();
+			if (avgSpeed >= DynamicOverdraw.MIN_SPEED)
+			{
+				// if the player is moving fast enough,
+				// smoothly decrease the fade distance
+				// to give MC have a chance to load/generate.
+				
+				// convert the speed into a range of 0.0 - 1.0
+				float speedRange = (float)((DynamicOverdraw.MAX_SPEED - avgSpeed) / DynamicOverdraw.MAX_SPEED);
+				// if math.max isn't done here we could completely
+				// remove vanilla rendering at high speeds
+				speedRange = Math.max(speedRange, DynamicOverdraw.MIN_OVERDRAW_RATIO);
+				
+				overdraw *= speedRange;
+			}
+		}
+		
 		return getNearClipPlaneDistanceInBlocks(partialTicks, overdraw);
 	}
 	private static float getNearClipPlaneDistanceInBlocks(float partialTicks, float overdrawPreventionPercent)

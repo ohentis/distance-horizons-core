@@ -32,8 +32,9 @@ import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.render.DhApiRenderProxy;
 import com.seibel.distanthorizons.core.render.renderer.*;
 import com.seibel.distanthorizons.core.util.TimerUtil;
+import com.seibel.distanthorizons.core.util.math.Vec3d;
 import com.seibel.distanthorizons.core.util.objects.Pair;
-import com.seibel.distanthorizons.core.util.threading.PriorityTaskPicker;
+import com.seibel.distanthorizons.core.util.objects.RollingAverage;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
@@ -93,6 +94,13 @@ public class ClientApi
 	 */
 	public static final DhRenderState RENDER_STATE = new DhRenderState();
 	
+	/**
+	 * 50ms = 20 FPS
+	 * @link https://fpstoms.com/ 
+	 * @see ClientApi#cameraSpeedRollingAverage
+	 */
+	private static final long MIN_MS_BETWEEN_SPEED_CHECKS = 50;
+	
 	
 	private boolean isDevBuildMessagePrinted = false;
 	private boolean lowMemoryWarningPrinted = false;
@@ -118,6 +126,21 @@ public class ClientApi
 	
 	@Nullable
 	public String lastRenderParamValidationMessage = null;
+	
+	
+	/** 
+	 * measured in blocks/second <br>
+	 * 
+	 * The number of points tracked here is related
+	 * to the rate at which we check for speed.
+	 * So if the ms_between is changed the number of points
+	 * tracked should also be to keep the ratio roughly the same.
+	 * @see ClientApi#MIN_MS_BETWEEN_SPEED_CHECKS
+	 */
+	public RollingAverage cameraSpeedRollingAverage = new RollingAverage(40);
+	private Vec3d lastCameraPosForSpeedCheck = new Vec3d();
+	private long msSinceLastSpeedCheck = 0L;
+	
 	
 	
 	
@@ -384,12 +407,6 @@ public class ClientApi
 	
 	private void renderLodLayer(boolean renderingDeferredLayer)
 	{
-		//=========//
-		// logging //
-		//=========//
-		
-		this.sendQueuedChatMessages();
-		
 		IProfilerWrapper profiler = MC_CLIENT.getProfiler();
 		profiler.pop(); // get out of "terrain"
 		profiler.push("DH-RenderLevel");
@@ -399,11 +416,26 @@ public class ClientApi
 		//=====================//
 		// render thread tasks //
 		//=====================//
+		///region
 		
 		// only run these tasks once per frame
 		if (!renderingDeferredLayer)
 		{
 			profiler.push("DH render thread tasks");
+			
+			
+			
+			//===============//
+			// chat messages //
+			//===============//
+			
+			this.sendQueuedChatMessages();
+			
+			
+			
+			//======================//
+			// GL Proxy queued jobs //
+			//======================//
 			
 			try
 			{
@@ -418,14 +450,41 @@ public class ClientApi
 				LOGGER.error("Unexpected issue running render thread tasks, error: [" + e.getMessage() + "].", e);
 			}
 			
+			
+			
+			//==============//
+			// camera speed //
+			//==============//
+			
+			long nowMs = System.currentTimeMillis();
+			if (this.msSinceLastSpeedCheck + MIN_MS_BETWEEN_SPEED_CHECKS < nowMs)
+			{
+				// calc time since last check
+				double secSinceLastCheck = (nowMs - this.msSinceLastSpeedCheck) / 1_000.0;
+				this.msSinceLastSpeedCheck = nowMs;
+				
+				// get the distance traveled since last frame
+				Vec3d camPos = MC_RENDER.getCameraExactPosition();
+				double distanceInBlocks = camPos.getDistance(this.lastCameraPosForSpeedCheck);
+				double speed = distanceInBlocks / secSinceLastCheck;
+				
+				// record new values for next check
+				this.cameraSpeedRollingAverage.add(speed);
+				this.lastCameraPosForSpeedCheck = camPos;
+			}
+			
+			
 			profiler.pop();
 		}
+		
+		///endregion
 		
 		
 		
 		//=================//
 		// parameter setup //
 		//=================//
+		///region
 		
 		EDhApiRenderPass renderPass;
 		if (DhApiRenderProxy.INSTANCE.getDeferTransparentRendering())
@@ -451,16 +510,19 @@ public class ClientApi
 		RenderParams renderParams =
 			new RenderParams(
 				renderPass,
-				RENDER_STATE.frameTime,
+				RENDER_STATE.partialTickTime,
 				RENDER_STATE.mcProjectionMatrix, RENDER_STATE.mcModelViewMatrix,
 				RENDER_STATE.clientLevelWrapper
 			);
+		
+		///endregion
 		
 		
 		
 		//============//
 		// validation //
 		//============//
+		///region
 		
 		// TODO write this message to the F3 menu so people can see when a different mod screws with the lightmap
 		String validationMessage = renderParams.getValidationErrorMessage();
@@ -487,11 +549,14 @@ public class ClientApi
 			return;
 		}
 		
+		///endregion
+		
 		
 		
 		//===========//
 		// rendering //
 		//===========//
+		///region
 		
 		try
 		{
@@ -545,6 +610,8 @@ public class ClientApi
 			MC_CLIENT.sendChatMessage(MinecraftTextFormat.DARK_RED + "Error: " + MinecraftTextFormat.CLEAR_FORMATTING + e);
 		}
 		
+		///endregion
+		
 		
 		
 		profiler.pop(); // end LOD
@@ -578,7 +645,7 @@ public class ClientApi
 			// don't fade when Iris shaders are active, otherwise the rendering can get weird
 			&& !DhApiRenderProxy.INSTANCE.getDeferTransparentRendering())
 		{
-			VanillaFadeRenderer.INSTANCE.render(RENDER_STATE.mcModelViewMatrix, RENDER_STATE.mcProjectionMatrix, RENDER_STATE.frameTime, RENDER_STATE.clientLevelWrapper);
+			VanillaFadeRenderer.INSTANCE.render(RENDER_STATE.mcModelViewMatrix, RENDER_STATE.mcProjectionMatrix, RENDER_STATE.partialTickTime, RENDER_STATE.clientLevelWrapper);
 		}
 	}
 	/** 
@@ -602,7 +669,7 @@ public class ClientApi
 				&& !DhApiRenderProxy.INSTANCE.getDeferTransparentRendering();
 			if (renderFade)
 			{
-				VanillaFadeRenderer.INSTANCE.render(RENDER_STATE.mcModelViewMatrix, RENDER_STATE.mcProjectionMatrix, RENDER_STATE.frameTime, RENDER_STATE.clientLevelWrapper);
+				VanillaFadeRenderer.INSTANCE.render(RENDER_STATE.mcModelViewMatrix, RENDER_STATE.mcProjectionMatrix, RENDER_STATE.partialTickTime, RENDER_STATE.clientLevelWrapper);
 			}
 		}
 	}
