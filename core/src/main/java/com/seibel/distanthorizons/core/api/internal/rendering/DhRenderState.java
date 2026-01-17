@@ -13,7 +13,19 @@ public class DhRenderState
 {
 	public Mat4f mcModelViewMatrix = null;
 	public Mat4f mcProjectionMatrix = null;
-	public float frameTime = -1;
+	/** 
+	 * percentage of time into the current client tick. <br><br>
+	 * 
+	 * Can be converted to a millisecond frametime 
+	 * (IE time between frames in milliseconds) using the formula: <br>
+	 * <code>
+	 * (partialTickTime/20*1000)
+	 * </code> <br>
+	 * IE 60 FPS = 16.6 MS <br>
+	 * 
+	 * @link https://fpstoms.com/
+	 */
+	public float partialTickTime = -1; 
 	public IClientLevelWrapper clientLevelWrapper = null;
 	
 	
@@ -38,7 +50,7 @@ public class DhRenderState
 			errorReasons += "no Projection Matrix, ";
 		}
 		
-		if (this.frameTime == -1)
+		if (this.partialTickTime == -1)
 		{
 			errorReasons += "no Frame Time, ";
 		}
