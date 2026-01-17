@@ -132,6 +132,7 @@ public class ClientApi
 	//==============//
 	// world events //
 	//==============//
+	///region
 	
 	/**
 	 * May be fired slightly before or after the associated
@@ -210,11 +211,14 @@ public class ClientApi
 		this.waitingClientLevels.clear();
 	}
 	
+	///endregion
+	
 	
 	
 	//==============//
 	// level events //
 	//==============//
+	///region
 	
 	public void clientLevelUnloadEvent(IClientLevelWrapper level)
 	{
@@ -320,11 +324,14 @@ public class ClientApi
 		}
 	}
 	
+	///endregion
+	
 	
 	
 	//============//
 	// networking //
 	//============//
+	///region
 	
 	/**
 	 * Forwards a decoded message into the registered handlers.
@@ -357,11 +364,14 @@ public class ClientApi
 		}
 	}
 	
+	///endregion
+	
 	
 	
 	//===============//
 	// LOD rendering //
 	//===============//
+	///region
 	
 	/** Should be called before {@link ClientApi#renderDeferredLodsForShaders} */
 	public void renderLods() { this.renderLodLayer(false); }
@@ -541,11 +551,14 @@ public class ClientApi
 		profiler.push("terrain"); // go back into "terrain"
 	}
 	
+	///endregion
+	
 	
 	
 	//================//
 	// fade rendering //
 	//================//
+	///region
 	
 	/** 
 	 * The first fade pass.
@@ -594,11 +607,14 @@ public class ClientApi
 		}
 	}
 	
+	///endregion
 	
 	
-	//=================//
-	//    DEBUG USE    //
-	//=================//
+	
+	//==========//
+	// keyboard //
+	//==========//
+	///region
 	
 	/** Trigger once on key press, with CLIENT PLAYER. */
 	public void keyPressedEvent(int glfwKey)
@@ -626,6 +642,15 @@ public class ClientApi
 			MC_CLIENT.sendChatMessage("P: Debug Pref Logger is " + (prefLoggerEnabled ? "enabled" : "disabled"));
 		}
 	}
+	
+	///endregion
+	
+	
+	
+	//======//
+	// chat //
+	//======//
+	///region
 	
 	private void sendQueuedChatMessages()
 	{
@@ -758,6 +783,8 @@ public class ClientApi
 	 * Similar to {@link ClientApi#showChatMessageNextFrame(String)} but appears above the toolbar.
 	 */
 	public void showOverlayMessageNextFrame(String message) { this.overlayMessageQueueForNextFrame.add(message); }
+	
+	///endregion
 	
 	
 	
