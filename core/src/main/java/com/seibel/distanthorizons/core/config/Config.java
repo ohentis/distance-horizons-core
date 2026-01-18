@@ -101,6 +101,7 @@ public class Config
 				.build();
 		
 		public static ConfigUiLinkedEntry quickEnableWorldGenerator = new ConfigUiLinkedEntry(Common.WorldGenerator.enableDistantGeneration);
+		public static ConfigUiLinkedEntry quickEnableServerGeneration = new ConfigUiLinkedEntry(Server.enableServerGeneration);
 		
 		public static ConfigUiLinkedEntry quickShowWorldGenProgress = new ConfigUiLinkedEntry(Common.WorldGenerator.showGenerationProgress);
 		
@@ -1745,6 +1746,15 @@ public class Config
 		
 		
 		// Generation
+		public static ConfigEntry<Boolean> enableServerGeneration = new ConfigEntry.Builder<Boolean>()
+			.set(true)
+			.comment(""
+				+ "When enabled, Distant Horizons will attempt to download missing LODs from the server.\n"
+				+ "\n"
+				+ "Note: the server must have Distant Generation enabled for it to work."
+				+ "")
+			.build();
+		
 		public static ConfigEntry<Integer> generationRequestRateLimit = new ConfigEntry.Builder<Integer>()
 				.setChatCommandName("generation.requestRateLimit")
 				.setMinDefaultMax(1, 20, 100)
