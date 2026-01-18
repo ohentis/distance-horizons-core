@@ -1738,10 +1738,9 @@ public class Config
 		public static ConfigEntry<Boolean> enableServerGeneration = new ConfigEntry.Builder<Boolean>()
 			.set(true)
 			.comment(""
-				+ " Should Distant Horizons slowly generate LODs \n"
-				+ " outside the vanilla render distance? \n"
-				+ "Depending on the generator mode, this will import existing chunks \n"
-				+ "and/or generating missing chunks."
+				+ "When enabled, Distant Horizons will attempt to download missing LODs from the server.\n"
+				+ "\n"
+				+ "Note: the server must have Distant Generation enabled for it to work."
 				+ "")
 			.build();
 		
