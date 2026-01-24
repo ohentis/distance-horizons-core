@@ -35,7 +35,6 @@ import com.seibel.distanthorizons.core.pos.Pos2D;
 import com.seibel.distanthorizons.core.render.renderer.LodRenderer;
 import com.seibel.distanthorizons.core.render.renderer.RenderParams;
 import com.seibel.distanthorizons.core.util.objects.SortedArraySet;
-import com.seibel.distanthorizons.core.util.objects.quadTree.QuadNode;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftGLWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.IIrisAccessor;
@@ -45,7 +44,7 @@ import com.seibel.distanthorizons.core.util.math.Vec3d;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fc;
 
-import java.util.Iterator;
+import java.util.ArrayList;
 
 /**
  * This object tells the {@link LodRenderer} what buffers to render
@@ -63,6 +62,8 @@ public class RenderBufferHandler implements AutoCloseable
 	public final LodQuadTree lodQuadTree;
 	
 	private final SortedArraySet<LodBufferContainer> loadedNearToFarBuffers;
+	/** temp array to prevent threading issues and prevent re-allocating the same array each frame */
+	private final ArrayList<LodRenderSection> tempProcessNodeList = new ArrayList<>();
 	
 	private int visibleBufferCount;
 	private int culledBufferCount;
@@ -181,17 +182,12 @@ public class RenderBufferHandler implements AutoCloseable
 		}
 		
 		// setup iterator with culling frustum
-		Iterator<QuadNode<LodRenderSection>> nodeIterator = this.lodQuadTree.nodeIteratorWithStoppingFilter((QuadNode<LodRenderSection> node) ->
+		this.lodQuadTree.populateListWithEnabledRenderSections(this.tempProcessNodeList);
+		for (LodRenderSection renderSection : this.tempProcessNodeList)
 		{
-			if (node == null)
-			{
-				return true;
-			}
-			
-			LodRenderSection renderSection = node.value;
 			if (renderSection == null)
 			{
-				return false;
+				continue;
 			}
 			
 			
@@ -214,40 +210,24 @@ public class RenderBufferHandler implements AutoCloseable
 							this.culledBufferCount++;
 						}
 						
-						return true;
+						continue;
 					}
 				}
-				
-				return false;
 			}
 			catch (Exception e)
 			{
-				LOGGER.error("Unexpected issue during culling for node pos: ["+DhSectionPos.toString(node.sectionPos)+"], error: ["+e.getMessage()+"].", e);
-				
 				// don't cull if there was an unexpected issue
-				return false;
+				LOGGER.error("Unexpected issue during culling for node pos: ["+DhSectionPos.toString(renderSection.pos)+"], error: ["+e.getMessage()+"].", e);
 			}
-		});
-		
-		while (nodeIterator.hasNext())
-		{
-			QuadNode<LodRenderSection> node = nodeIterator.next();
-			
-			long sectionPos = node.sectionPos;
-			LodRenderSection renderSection = node.value;
-			if (renderSection == null)
-			{
-				continue;
-			}
-			
 			
 			
 			try
 			{
-				LodBufferContainer bufferContainer = renderSection.bufferContainer;
-				if (bufferContainer == null 
+				LodBufferContainer bufferContainer = renderSection.renderBufferContainer;
+				if (bufferContainer == null
 					|| !renderSection.getRenderingEnabled())
 				{
+					// shouldn't happen, but just in case
 					continue;
 				}
 				

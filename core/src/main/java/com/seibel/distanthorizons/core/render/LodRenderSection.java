@@ -85,9 +85,11 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	
 	
 	private boolean renderingEnabled = false;
+	private boolean beaconsRendering = false;
+	public boolean retreivedMissingSectionsForRetreival = false;
 	
 	/** this reference is necessary so we can determine what VBO to render */
-	public LodBufferContainer bufferContainer; 
+	public LodBufferContainer renderBufferContainer; 
 	
 	
 	/** 
@@ -95,8 +97,6 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	 * up to the point when geometry data is uploaded to the GPU.
 	 */
 	private CompletableFuture<Void> getAndBuildRenderDataFuture = null;
-	@Nullable
-	public CompletableFuture<Void> getRenderDataBuildFuture() { return this.getAndBuildRenderDataFuture; } 
 	
 	/** 
 	 * used alongside {@link LodRenderSection#getAndBuildRenderDataFuture} so we can remove
@@ -191,7 +191,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 			
 			this.getAndBuildRenderDataRunnable = () ->
 			{
-				this.getAndRefreshRenderingBeacons();
+				this.refreshActiveBeaconList();
 				this.getAndUploadRenderDataToGpuAsync()
 					.thenRun(() -> 
 					{
@@ -363,10 +363,10 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		this.bufferUploadFuture.thenAccept((buffer) ->
 		{
 			// needed to clean up the old data
-			LodBufferContainer previousContainer = this.bufferContainer;
+			LodBufferContainer previousContainer = this.renderBufferContainer;
 			
 			// upload complete
-			this.bufferContainer = buffer.buffersUploaded ? buffer : null;
+			this.renderBufferContainer = buffer.buffersUploaded ? buffer : null;
 			this.getAndBuildRenderDataFuture = null;
 			
 			if (previousContainer != null)
@@ -380,29 +380,63 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	
 	
 	
-	//====================//
-	// enabling rendering //
-	//====================//
-	//region enabling rendering
+	//=================//
+	// rendering state //
+	//=================//
+	//region
 	
-	public boolean canRender() { return this.bufferContainer != null; }
+	public boolean gpuUploadComplete() { return this.renderBufferContainer != null; }
 	
 	public boolean getRenderingEnabled() { return this.renderingEnabled; }
-	/**
-	 * Separate from {@link LodRenderSection#onRenderingEnabled} and {@link LodRenderSection#onRenderingDisabled}
-	 * since we need to trigger external changes in disabled -> enabled order
-	 * so beacons are removed and then re-added.
-	 * However, to prevent holes in the world when disabling sections we need to
-	 * enable the new section(s) first before disabling the old one(s).
-	 */
 	public void setRenderingEnabled(boolean enabled) { this.renderingEnabled = enabled;}
 	
-	/** @see LodRenderSection#setRenderingEnabled */
-	public void onRenderingEnabled() { this.startRenderingBeacons(); }
-	/** @see LodRenderSection#setRenderingEnabled */
-	public void onRenderingDisabled() 
+	public boolean gpuUploadInProgress() { return this.getAndBuildRenderDataFuture != null; }
+	
+	//endregion
+	
+	
+	
+	//=================//
+	// beacon handling //
+	//=================//
+	//region beacon handling
+	
+	/** gets the active beacon list and stops/starts beacon rendering as necessary */
+	private void refreshActiveBeaconList()
 	{
-		this.stopRenderingBeacons();
+		// do nothing if beacon rendering or repos are unavailable
+		if (this.beaconBeamRepo == null 
+			|| this.beaconRenderHandler == null)
+		{
+			return;
+		}
+		
+		
+		// Synchronized to prevent two threads for accessing the array at once
+		synchronized (this.activeBeaconList)
+		{
+			List<BeaconBeamDTO> activeBeacons = this.beaconBeamRepo.getAllBeamsForPos(this.pos);
+			
+			// swap old and new active beacon list
+			this.activeBeaconList.clear();
+			this.activeBeaconList.addAll(activeBeacons);
+		}
+	}
+	
+	public void tryDisableBeacons()
+	{
+		// do nothing if beacon rendering is unavailable
+		if (this.beaconRenderHandler == null)
+		{
+			return;
+		}
+		
+		if (!this.beaconsRendering)
+		{
+			return;
+		}
+		this.beaconsRendering = false;
+		
 		
 		if (Config.Client.Advanced.Debugging.DebugWireframe.showRenderSectionStatus.get())
 		{
@@ -414,58 +448,6 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 				)
 			);
 		}
-	}
-	
-	public boolean gpuUploadInProgress() { return this.getAndBuildRenderDataFuture != null; }
-	
-	//endregion enabling rendering
-	
-	
-	
-	//=================//
-	// beacon handling //
-	//=================//
-	//region beacon handling
-	
-	/** gets the active beacon list and stops/starts beacon rendering as necessary */
-	private void getAndRefreshRenderingBeacons()
-	{
-		// do nothing if beacon rendering or repos are unavailable
-		if (this.beaconBeamRepo == null 
-			|| this.beaconRenderHandler == null)
-		{
-			return;
-		}
-		
-		
-		// Synchronized to prevent two threads for starting/stopping rendering at once
-		// Shouldn't be necessary, but just in case.
-		synchronized (this.activeBeaconList)
-		{
-			List<BeaconBeamDTO> activeBeacons = this.beaconBeamRepo.getAllBeamsForPos(this.pos);
-			
-			
-			// stop rendering current beacons
-			this.beaconRenderHandler.stopRenderingBeacons(this.activeBeaconList);
-			
-			// swap old and new active beacon list
-			this.activeBeaconList.clear();
-			this.activeBeaconList.addAll(activeBeacons);
-			
-			// start rendering new beacon list
-			byte absoluteDetailLevel = (byte)(DhSectionPos.getDetailLevel(this.pos) - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
-			this.beaconRenderHandler.startRenderingBeacons(this.activeBeaconList, absoluteDetailLevel);
-		}
-	}
-	
-	private void stopRenderingBeacons()
-	{
-		// do nothing if beacon rendering is unavailable
-		if (this.beaconRenderHandler == null)
-		{
-			return;
-		}
-		
 		
 		synchronized (this.activeBeaconList)
 		{
@@ -473,13 +455,19 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		}
 	}
 	
-	private void startRenderingBeacons()
+	public void tryEnableBeacons()
 	{
 		// do nothing if beacon rendering is unavailable 
 		if (this.beaconRenderHandler == null)
 		{
 			return;
 		}
+		
+		if (this.beaconsRendering)
+		{
+			return;
+		}
+		this.beaconsRendering = true;
 		
 		
 		synchronized (this.activeBeaconList)
@@ -504,18 +492,28 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		Color color = Color.red;
 		if (this.renderingEnabled)
 		{
-			color = Color.green;
+			//color = Color.green;
+			return;
 		}
 		else if (this.getAndBuildRenderDataFuture != null)
 		{
 			color = Color.yellow;
 		}
-		else if (this.canRender())
+		else if (this.gpuUploadComplete())
 		{
-			color = Color.cyan;
+			//color = Color.cyan;
+			return;
 		}
 		
-		debugRenderer.renderBox(new DebugRenderer.Box(this.pos, 400, 8f, Objects.hashCode(this), 0.1f, color));
+		int levelMinY = this.level.getLevelWrapper().getMinHeight();
+		int levelMaxY = this.level.getLevelWrapper().getMaxHeight();
+		
+		// show the wireframe a bit lower than world max height,
+		// since most worlds don't render all the way up to the max height
+		int levelHeightRange = (levelMaxY - levelMinY);
+		int maxY = levelMaxY - (levelHeightRange / 2);
+		
+		debugRenderer.renderBox(new DebugRenderer.Box(this.pos, levelMinY, maxY, 0.01f, color));
 	}
 	
 	@Override
@@ -523,7 +521,9 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	{
 		return  "pos=[" + DhSectionPos.toString(this.pos) + "] " +
 				"enabled=[" + this.renderingEnabled + "] " +
-				"uploading=[" + this.gpuUploadInProgress() + "] ";
+				"canRender=[" + (this.renderBufferContainer != null) + "] " +	
+				"uploading=[" + this.gpuUploadInProgress() + "] "
+				;
 	}
 	
 	@Override
@@ -543,11 +543,11 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		}
 		
 		
-		this.stopRenderingBeacons();
+		this.tryDisableBeacons();
 		
-		if (this.bufferContainer != null)
+		if (this.renderBufferContainer != null)
 		{
-			this.bufferContainer.close();
+			this.renderBufferContainer.close();
 		}
 		
 		// removes any in-progress futures since they aren't needed any more

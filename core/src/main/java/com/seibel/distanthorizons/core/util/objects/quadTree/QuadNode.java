@@ -43,6 +43,7 @@ public class QuadNode<T>
 	 * IE the detail levels that the root nodes in the tree are.
 	 */
 	public final byte parentTreeLeafDetailLevel;
+	@Nullable
 	public T value;
 	
 	
@@ -51,24 +52,28 @@ public class QuadNode<T>
 	 * index 0 <br>
 	 * relative pos (0,0)
 	 */
+	@Nullable
 	public QuadNode<T> nwChild;
 	/**
 	 * North East <br>
 	 * index 1 <br>
 	 * relative (1,0)
 	 */
+	@Nullable
 	public QuadNode<T> neChild;
 	/**
 	 * South West <br>
 	 * index 2 <br>
 	 * relative (0,1)
 	 */
+	@Nullable
 	public QuadNode<T> swChild;
 	/**
 	 * South East <br>
 	 * index 3 <br>
 	 * relative (1,1)
 	 */
+	@Nullable
 	public QuadNode<T> seChild;
 	
 	
@@ -127,18 +132,18 @@ public class QuadNode<T>
 	 *
 	 * @param child0to3 must be an int between 0 and 3
 	 */
-	public QuadNode<T> getChildByIndex(int child0to3) throws IllegalArgumentException
+	public @Nullable QuadNode<T> getChildByIndex(int child0to3) throws IllegalArgumentException
 	{
 		switch (child0to3)
 		{
 			case 0:
-				return nwChild;
+				return this.nwChild;
 			case 1:
-				return swChild;
+				return this.swChild;
 			case 2:
-				return neChild;
+				return this.neChild;
 			case 3:
-				return seChild;
+				return this.seChild;
 			
 			default:
 				throw new IllegalArgumentException("child0to3 must be between 0 and 3");

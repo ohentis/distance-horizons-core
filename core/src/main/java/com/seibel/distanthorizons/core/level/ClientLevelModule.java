@@ -112,7 +112,7 @@ public class ClientLevelModule implements Closeable, IDataSourceUpdateListenerFu
 			}
 		}
 		
-		clientRenderState.quadtree.tick(new DhBlockPos2D(MC_CLIENT.getPlayerBlockPos()));
+		clientRenderState.quadtree.tryTick(new DhBlockPos2D(MC_CLIENT.getPlayerBlockPos()));
 	}
 	
 	
