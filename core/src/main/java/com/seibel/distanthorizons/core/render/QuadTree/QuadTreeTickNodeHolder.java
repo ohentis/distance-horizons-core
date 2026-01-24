@@ -2,8 +2,6 @@ package com.seibel.distanthorizons.core.render.QuadTree;
 
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
-import com.seibel.distanthorizons.core.render.LodQuadTree;
-import com.seibel.distanthorizons.core.render.LodRenderSection;
 import com.seibel.distanthorizons.core.util.objects.quadTree.QuadNode;
 
 import java.util.ArrayList;
