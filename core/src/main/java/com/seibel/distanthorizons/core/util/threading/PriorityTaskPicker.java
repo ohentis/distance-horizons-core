@@ -3,11 +3,13 @@ package com.seibel.distanthorizons.core.util.threading;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.config.listeners.IConfigListener;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.logging.f3.F3Screen;
 import com.seibel.distanthorizons.core.util.objects.RollingAverage;
 import com.seibel.distanthorizons.core.logging.DhLogger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.text.NumberFormat;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -65,11 +67,6 @@ public class PriorityTaskPicker
 		
 		try
 		{
-			// Limit how many tasks can be queued for a given pool before moving to the next pool.
-			// This allows the picker to spread out the work a little more vs having the threads
-			// only work on a single executor's queue at a time
-			int maxQueuedBeforeOverflow = Math.max(1, Config.Common.MultiThreading.numberOfThreads.get() / 2);
-			
 			// fill up executors that have run for less time first,
 			// this prevents long-running tasks from taking up all the CPU time
 			Iterator<Executor> iterator = this.getExecutorIteratorSortedByShortestTotalRunTime();
@@ -91,7 +88,6 @@ public class PriorityTaskPicker
 				// or until this executor is empty,
 				// or until we should move on to the next executor
 				while (this.occupiedThreadsRef.get() < Config.Common.MultiThreading.numberOfThreads.get()
-						&& queuedTaskCount <= maxQueuedBeforeOverflow
 						&& (task = executor.taskQueue.poll()) != null)
 				{
 					queuedTaskCount++;
@@ -106,6 +102,8 @@ public class PriorityTaskPicker
 						if (this.isShutDownRef.get())
 						{
 							// Clear this executor's tasks since we no longer expect anything to execute.
+							// TODO this can cause issues where LOD load tasks are lost (IE LODs stop loading) if
+							//  the thread pool size is changed mid-load
 							executor.taskQueue.clear();
 						}
 					}
@@ -316,6 +314,66 @@ public class PriorityTaskPicker
 		@Override
 		public boolean awaitTermination(long timeout, @NotNull TimeUnit unit) throws InterruptedException 
 		{ return this.threadPoolExecutor.awaitTermination(timeout, unit); }
+		
+		///endregion
+		
+		
+		
+		//===========//
+		// debugging //
+		//===========//
+		///region
+		
+		public static String getThreadPoolStatString(String displayName, PriorityTaskPicker.Executor pool)
+		{
+			NumberFormat numberFormat = F3Screen.NUMBER_FORMAT;
+			
+			String queueSize = (pool != null) ? numberFormat.format(pool.getQueueSize()) : "-";
+			String completedCount = (pool != null) ? numberFormat.format(pool.getCompletedTaskCount()) : "-";
+			
+			String message = displayName+", Tasks: "+queueSize+", Done: "+completedCount;
+			
+			if (pool != null)
+			{
+				// active threads
+				int activeThreadCount = pool.getRunningTaskCount();
+				int threadCount = pool.getPoolSize();
+				
+				boolean threadPoolActive = pool.canRun();
+				String poolActiveString = threadPoolActive ? "Active" : "Paused";
+				
+				message += ", "+poolActiveString+": "+activeThreadCount+"/"+threadCount;
+				
+				// thread runtime
+				String runTimeAvgStr;
+				double runTimeAvgInMs = pool.getAverageRunTimeInMs();
+				if (!Double.isNaN(runTimeAvgInMs))
+				{
+					runTimeAvgStr = numberFormat.format(runTimeAvgInMs);
+				}
+				else
+				{
+					runTimeAvgStr = "<0";
+				}
+				
+				message += ", Avg: "+runTimeAvgStr+"ms";
+			}
+			
+			
+			return message;
+		}
+		
+		///endregion
+		
+		
+		
+		//================//
+		// base overrides //
+		//================//
+		///region
+		
+		@Override 
+		public String toString() { return getThreadPoolStatString(this.name, this); }
 		
 		///endregion
 		

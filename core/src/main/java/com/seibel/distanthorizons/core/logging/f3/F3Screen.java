@@ -137,12 +137,12 @@ public class F3Screen
 		if (Config.Client.Advanced.Debugging.F3Screen.showThreadPools.get())
 		{
 			// multi thread pools
-			messageList.add(getThreadPoolStatString("World Gen/Import", worldGenPool));
-			messageList.add(getThreadPoolStatString("Render Load", renderLoadingPool));
-			messageList.add(getThreadPoolStatString("File Handler", fileHandlerPool));
-			messageList.add(getThreadPoolStatString("Update Propagator", updatePool));
-			messageList.add(getThreadPoolStatString("LOD Builder", lodBuilderPool));
-			messageList.add(getThreadPoolStatString("Networking", networkPool));
+			messageList.add(PriorityTaskPicker.Executor.getThreadPoolStatString("World Gen/Import", worldGenPool));
+			messageList.add(PriorityTaskPicker.Executor.getThreadPoolStatString("Render Load", renderLoadingPool));
+			messageList.add(PriorityTaskPicker.Executor.getThreadPoolStatString("File Handler", fileHandlerPool));
+			messageList.add(PriorityTaskPicker.Executor.getThreadPoolStatString("Update Propagator", updatePool));
+			messageList.add(PriorityTaskPicker.Executor.getThreadPoolStatString("LOD Builder", lodBuilderPool));
+			messageList.add(PriorityTaskPicker.Executor.getThreadPoolStatString("Networking", networkPool));
 			//// single thread pools
 			//messageList.add(getThreadPoolStatString("Cleanup", cleanupPool));
 			//messageList.add(getThreadPoolStatString("Beacon Culling", beaconCullingPool));
@@ -198,49 +198,6 @@ public class F3Screen
 				messageList.add("");
 			}
 		}
-	}
-	
-	
-	
-	//================//
-	// helper methods //
-	//================//
-	
-	private static String getThreadPoolStatString(String name, PriorityTaskPicker.Executor pool)
-	{
-		String queueSize = (pool != null) ? NUMBER_FORMAT.format(pool.getQueueSize()) : "-";
-		String completedCount = (pool != null) ? NUMBER_FORMAT.format(pool.getCompletedTaskCount()) : "-";
-		
-		String message = name+", Tasks: "+queueSize+", Done: "+completedCount;
-		
-		if (pool != null)
-		{
-			// active threads
-			int activeThreadCount = pool.getRunningTaskCount();
-			int threadCount = pool.getPoolSize();
-			
-			boolean threadPoolActive = pool.canRun();
-			String poolActiveString = threadPoolActive ? "Active" : "Paused";
-			
-			message += ", "+poolActiveString+": "+activeThreadCount+"/"+threadCount;
-			
-			// thread runtime
-			String runTimeAvgStr;
-			double runTimeAvgInMs = pool.getAverageRunTimeInMs();
-			if (!Double.isNaN(runTimeAvgInMs))
-			{
-				runTimeAvgStr = NUMBER_FORMAT.format(runTimeAvgInMs);
-			}
-			else
-			{
-				runTimeAvgStr = "<0";
-			}
-			
-			message += ", Avg: "+runTimeAvgStr+"ms";
-		}
-		
-		
-		return message;
 	}
 	
 	
