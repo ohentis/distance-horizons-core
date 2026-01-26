@@ -179,9 +179,11 @@ float exponentialSquaredFog(
 //
 // generated methods //
 // 
+// TODO cleanup comment regions
 
 float getFarFogThickness(float dist)
 {
+    // TODO these uniforms aren't being set
     if (uFogFalloffType == 0) // LINEAR
     {
         return linearFog(dist, uFarFogStart, uFarFogLength, uFarFogMin, uFarFogRange);

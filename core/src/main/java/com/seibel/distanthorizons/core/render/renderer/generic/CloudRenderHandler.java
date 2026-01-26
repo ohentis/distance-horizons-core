@@ -364,7 +364,7 @@ public class CloudRenderHandler
 		// if debug colors are enabled don't change them
 		if (!DEBUG_BORDER_COLORS
 			// don't modify cloud groups that aren't active
-			&& boxGroup.isActive())
+			&& boxGroup.isActive()) // TODO bake generic objects for clouds
 		{
 			// cloud color changes based on the time of day and weather so we need to get it from the level
 			Color newCloudColor = this.level.getClientLevelWrapper().getCloudColor(renderParam.partialTicks);

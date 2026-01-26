@@ -61,7 +61,7 @@ public class DhApiGraphicsConfig implements IDhApiGraphicsConfig
 	
 	@Override
 	public IDhApiConfigValue<Boolean> renderingEnabled()
-	{ return new DhApiConfigValue<EDhApiRendererMode, Boolean>(Config.Client.Advanced.Debugging.rendererMode, new RenderModeEnabledConverter()); }
+	{ return new DhApiConfigValue<EDhApiRendererMode, Boolean>(Config.Client.Advanced.Debugging.rendererMode, new RenderModeEnabledConverter()); } // TODO fix getApiValue not returning null if unset
 	
 	@Override
 	public IDhApiConfigValue<EDhApiRendererMode> renderingMode()

@@ -67,9 +67,13 @@ public final class BufferQuad
 			EDhDirection direction)
 	{
 		if (widthEastWest == 0 || widthNorthSouthOrUpDown == 0)
+		{
 			throw new IllegalArgumentException("Size 0 quad!");
+		}
 		if (widthEastWest < 0 || widthNorthSouthOrUpDown < 0)
+		{
 			throw new IllegalArgumentException("Negative sized quad!");
+		}
 		
 		this.x = x;
 		this.y = y;
