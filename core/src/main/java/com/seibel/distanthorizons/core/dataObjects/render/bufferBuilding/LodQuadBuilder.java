@@ -59,54 +59,57 @@ public class LodQuadBuilder
 	private final EDhApiGrassSideRendering grassSideRenderingMode;
 	
 	
+	
 	public static final int[][][] DIRECTION_VERTEX_IBO_QUAD = new int[][][]
-			{
-					// X,Z //
-					{ // UP
-							{1, 0}, // 0
-							{1, 1}, // 1
-							{0, 1}, // 2
-							{0, 0}, // 3
-					},
-					{ // DOWN
-							{0, 0}, // 0
-							{0, 1}, // 1
-							{1, 1}, // 2
-							{1, 0}, // 3
-					},
-					
-					// X,Y //
-					{ // NORTH
-							{0, 0}, // 0
-							{0, 1}, // 1
-							{1, 1}, // 2
-							
-							{1, 0}, // 3
-					},
-					{ // SOUTH
-							{1, 0}, // 0
-							{1, 1}, // 1
-							{0, 1}, // 2
-							
-							{0, 0}, // 3
-					},
-					
-					// Z,Y //
-					{ // WEST
-							{0, 0}, // 0
-							{1, 0}, // 1
-							{1, 1}, // 2
-							
-							{0, 1}, // 3
-					},
-					{ // EAST
-							{0, 1}, // 0
-							{1, 1}, // 1
-							{1, 0}, // 2
-							
-							{0, 0}, // 3
-					},
-			};
+	///region
+		{
+			// X,Z //
+			{ // UP
+				{1, 0}, // 0
+				{1, 1}, // 1
+				{0, 1}, // 2
+				{0, 0}, // 3
+			},
+			{ // DOWN
+				{0, 0}, // 0
+				{0, 1}, // 1
+				{1, 1}, // 2
+				{1, 0}, // 3
+			},
+			
+			// X,Y //
+			{ // NORTH
+				{0, 0}, // 0
+				{0, 1}, // 1
+				{1, 1}, // 2
+				
+				{1, 0}, // 3
+			},
+			{ // SOUTH
+				{1, 0}, // 0
+				{1, 1}, // 1
+				{0, 1}, // 2
+				
+				{0, 0}, // 3
+			},
+			
+			// Z,Y //
+			{ // WEST
+				{0, 0}, // 0
+				{1, 0}, // 1
+				{1, 1}, // 2
+				
+				{0, 1}, // 3
+			},
+			{ // EAST
+				{0, 1}, // 0
+				{1, 1}, // 1
+				{1, 0}, // 2
+				
+				{0, 0}, // 3
+			},
+		};
+	///endregion
 	
 	private int premergeCount = 0;
 	
@@ -137,6 +140,7 @@ public class LodQuadBuilder
 	//===========//
 	// add quads //
 	//===========//
+	///region
 	
 	public void addQuadAdj(
 			EDhDirection dir, 
@@ -196,11 +200,14 @@ public class LodQuadBuilder
 		quadArray.add(quad);
 	}
 	
+	///endregion
+	
 	
 	
 	//=================//
 	// data finalizing //
 	//=================//
+	///region
 	
 	/** Uses Greedy meshing to merge this builder's Quads. */
 	public void mergeQuads()
@@ -269,11 +276,14 @@ public class LodQuadBuilder
 		return mergeCount;
 	}
 	
+	///endregion
+	
 	
 	
 	//==============//
 	// buffer setup //
 	//==============//
+	///region
 	
 	public ArrayList<ByteBuffer> makeOpaqueVertexBuffers() { return this.makeVertexBuffers(this.opaqueQuads); }
 	public ArrayList<ByteBuffer> makeTransparentVertexBuffers() { return this.makeVertexBuffers(this.transparentQuads); }
@@ -437,11 +447,14 @@ public class LodQuadBuilder
 		bb.putShort((short) 0); // padding to make sure the vertex format as a whole is a multiple of 4
 	}
 	
+	///endregion
+	
 	
 	
 	//=========//
 	// getters //
 	//=========//
+	///region
 	
 	public int getCurrentOpaqueQuadsCount()
 	{
@@ -481,5 +494,9 @@ public class LodQuadBuilder
 		
 		return MathUtil.ceilDiv(this.getCurrentTransparentQuadsCount(), LodBufferContainer.MAX_QUADS_PER_BUFFER);
 	}
+	
+	///endregion
+	
+	
 	
 }
