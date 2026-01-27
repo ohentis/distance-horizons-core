@@ -31,6 +31,7 @@ import com.seibel.distanthorizons.core.file.fullDatafile.V2.FullDataSourceProvid
 import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.logging.DhLogger;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.pooling.PhantomArrayListCheckout;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.render.glObject.GLProxy;
@@ -172,11 +173,11 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		// this means the closer (higher priority) tasks will load first.
 		// This also prevents issues where the nearby tasks are canceled due to
 		// LOD detail level changing, and having holes in the world
-		if (this.uploadTaskCountRef.getAndIncrement() > executor.getPoolSize())
-		{
-			this.uploadTaskCountRef.decrementAndGet();
-			return false;
-		}
+		//if (this.uploadTaskCountRef.getAndIncrement() > executor.getPoolSize() * 50)
+		//{
+		//	this.uploadTaskCountRef.decrementAndGet();
+		//	return false;
+		//}
 		
 		try
 		{
@@ -191,16 +192,14 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 			
 			this.getAndBuildRenderDataRunnable = () ->
 			{
-				this.refreshActiveBeaconList();
-				this.getAndUploadRenderDataToGpuAsync()
-					.thenRun(() -> 
-					{
-						// the future is passed in separately (IE not using the local var) to prevent any possible race condition null pointers
-						future.complete(null);
-						// the task is done, we don't need to track these anymore
-						this.getAndBuildRenderDataFuture = null;
-						this.getAndBuildRenderDataRunnable = null;
-					});
+				//this.refreshActiveBeaconList();
+				this.getAndUploadRenderDataToGpu();
+				
+				// the future is passed in separately (IE not using the local var) to prevent any possible race condition null pointers
+				future.complete(null);
+				// the task is done, we don't need to track these anymore
+				this.getAndBuildRenderDataFuture = null;
+				this.getAndBuildRenderDataRunnable = null;
 			};
 			executor.execute(this.getAndBuildRenderDataRunnable);
 			
@@ -216,82 +215,62 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 			return false;
 		}
 	}
-	private CompletableFuture<Void> getAndUploadRenderDataToGpuAsync()
+	private void getAndUploadRenderDataToGpu()
 	{
-		// get the center pos data
-		return this.getRenderSourceForPosAsync(this.pos, null)
-			.thenCompose((ColumnRenderSource thisRenderSource) -> 
+		try (ColumnRenderSource thisRenderSource = this.getRenderSourceForPos(this.pos, null))
+		{
+			if (thisRenderSource == null)
 			{
-				try
-				{
-					if (thisRenderSource == null)
-					{
-						// nothing needs to be rendered
-						// TODO how doesn't this cause infinite file handler loops?
-						//  to trigger an upload we check if the buffer is null, and we aren't
-						//  setting the render buffer here
-						return CompletableFuture.completedFuture(null);
-					}
-					
-					
-					boolean enableTransparency = Config.Client.Advanced.Graphics.Quality.transparency.get().transparencyEnabled;
-					LodQuadBuilder lodQuadBuilder = new LodQuadBuilder(enableTransparency, this.level.getClientLevelWrapper());
-					
-					
-					// get the adjacent positions
-					// needs to be done async to prevent threads waiting on the same positions to be processed
-					final CompletableFuture<ColumnRenderSource>[] adjacentLoadFutures = new CompletableFuture[4];
-					adjacentLoadFutures[0] = this.getRenderSourceForPosAsync(this.pos, EDhDirection.NORTH);
-					adjacentLoadFutures[1] = this.getRenderSourceForPosAsync(this.pos, EDhDirection.SOUTH);
-					adjacentLoadFutures[2] = this.getRenderSourceForPosAsync(this.pos, EDhDirection.EAST);
-					adjacentLoadFutures[3] = this.getRenderSourceForPosAsync(this.pos, EDhDirection.WEST);
-					return CompletableFuture.allOf(adjacentLoadFutures).thenRun(() ->
-					{
-						try (ColumnRenderSource northRenderSource = adjacentLoadFutures[0].get();
-							ColumnRenderSource southRenderSource = adjacentLoadFutures[1].get();
-							ColumnRenderSource eastRenderSource = adjacentLoadFutures[2].get();
-							ColumnRenderSource westRenderSource = adjacentLoadFutures[3].get())
-						{
-							ColumnRenderSource[] adjacentRenderSections = new ColumnRenderSource[EDhDirection.CARDINAL_COMPASS.length];
-							adjacentRenderSections[EDhDirection.NORTH.compassIndex] = northRenderSource;
-							adjacentRenderSections[EDhDirection.SOUTH.compassIndex] = southRenderSource;
-							adjacentRenderSections[EDhDirection.EAST.compassIndex] = eastRenderSource;
-							adjacentRenderSections[EDhDirection.WEST.compassIndex] = westRenderSource;
-							
-							boolean[] adjIsSameDetailLevel = new boolean[EDhDirection.CARDINAL_COMPASS.length];
-							adjIsSameDetailLevel[EDhDirection.NORTH.compassIndex] = this.isAdjacentPosSameDetailLevel(EDhDirection.NORTH);
-							adjIsSameDetailLevel[EDhDirection.SOUTH.compassIndex] = this.isAdjacentPosSameDetailLevel(EDhDirection.SOUTH);
-							adjIsSameDetailLevel[EDhDirection.EAST.compassIndex] = this.isAdjacentPosSameDetailLevel(EDhDirection.EAST);
-							adjIsSameDetailLevel[EDhDirection.WEST.compassIndex] = this.isAdjacentPosSameDetailLevel(EDhDirection.WEST);
-							
-							// the render sources are only needed by this synchronous method,
-							// then they can be closed
-							ColumnRenderBufferBuilder.makeLodRenderData(lodQuadBuilder, thisRenderSource, this.level, adjacentRenderSections, adjIsSameDetailLevel);
-							this.uploadToGpuAsync(lodQuadBuilder);
-						}
-						catch (Exception e)
-						{
-							LOGGER.error("Unexpected error while loading LodRenderSection [" + DhSectionPos.toString(this.pos) + "] adjacent data, Error: [" + e.getMessage() + "].", e);
-						}
-						finally
-						{
-							// can only be closed after the data has been processed and uploaded to the GPU
-							thisRenderSource.close();
-						}
-					});
-				}
-				catch (Exception e)
-				{
-					LOGGER.error("Unexpected error while loading LodRenderSection ["+DhSectionPos.toString(this.pos)+"], Error: [" + e.getMessage() + "].", e);
-					return CompletableFuture.completedFuture(null);
-				}
-			});
+				// nothing needs to be rendered
+				// TODO how doesn't this cause infinite file handler loops?
+				//  to trigger an upload we check if the buffer is null, and we aren't
+				//  setting the render buffer here
+				return;
+			}
+			
+			
+			boolean enableTransparency = Config.Client.Advanced.Graphics.Quality.transparency.get().transparencyEnabled;
+			LodQuadBuilder lodQuadBuilder = new LodQuadBuilder(enableTransparency, this.level.getClientLevelWrapper());
+			
+			
+			// get the adjacent positions
+			try (ColumnRenderSource northRenderSource = this.getRenderSourceForPos(this.pos, EDhDirection.NORTH);
+				ColumnRenderSource southRenderSource = this.getRenderSourceForPos(this.pos, EDhDirection.SOUTH);
+				ColumnRenderSource eastRenderSource = this.getRenderSourceForPos(this.pos, EDhDirection.EAST);
+				ColumnRenderSource westRenderSource = this.getRenderSourceForPos(this.pos, EDhDirection.WEST))
+			{
+				ColumnRenderSource[] adjacentRenderSections = new ColumnRenderSource[EDhDirection.CARDINAL_COMPASS.length];
+				adjacentRenderSections[EDhDirection.NORTH.compassIndex] = northRenderSource;
+				adjacentRenderSections[EDhDirection.SOUTH.compassIndex] = southRenderSource;
+				adjacentRenderSections[EDhDirection.EAST.compassIndex] = eastRenderSource;
+				adjacentRenderSections[EDhDirection.WEST.compassIndex] = westRenderSource;
+
+				boolean[] adjIsSameDetailLevel = new boolean[EDhDirection.CARDINAL_COMPASS.length];
+				adjIsSameDetailLevel[EDhDirection.NORTH.compassIndex] = this.isAdjacentPosSameDetailLevel(EDhDirection.NORTH);
+				adjIsSameDetailLevel[EDhDirection.SOUTH.compassIndex] = this.isAdjacentPosSameDetailLevel(EDhDirection.SOUTH);
+				adjIsSameDetailLevel[EDhDirection.EAST.compassIndex] = this.isAdjacentPosSameDetailLevel(EDhDirection.EAST);
+				adjIsSameDetailLevel[EDhDirection.WEST.compassIndex] = this.isAdjacentPosSameDetailLevel(EDhDirection.WEST);
+
+				// the render sources are only needed by this synchronous method,
+				// then they can be closed
+				ColumnRenderBufferBuilder.makeLodRenderData(lodQuadBuilder, thisRenderSource, this.level, adjacentRenderSections, adjIsSameDetailLevel);
+				this.uploadToGpuAsync(lodQuadBuilder);
+			}
+			catch (Exception e)
+			{
+				LOGGER.error("Unexpected error while loading LodRenderSection [" + DhSectionPos.toString(this.pos) + "] adjacent data, Error: [" + e.getMessage() + "].", e);
+			}
+		}
+		catch (Exception e)
+		{
+			LOGGER.error("Unexpected error while loading LodRenderSection ["+DhSectionPos.toString(this.pos)+"], Error: [" + e.getMessage() + "].", e);
+		}
 	}
 	/** 
 	 * async is done so each thread can run without waiting on others 
 	 * @param direction the direction to load relative to the given position, null will return the given position
 	 */
-	private CompletableFuture<ColumnRenderSource> getRenderSourceForPosAsync(long pos, @Nullable EDhDirection direction) 
+	private ColumnRenderSource getRenderSourceForPos(long pos, @Nullable EDhDirection direction) 
 	{
 		if (direction != null)
 		{
@@ -300,47 +279,19 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		final long finalPos = pos;
 		
 		
-		try
+		try (FullDataSourceV2 fullDataSource =
+			// no direction means get the center LOD		
+			(direction == null)
+				? this.fullDataSourceProvider.get(finalPos)
+				: this.fullDataSourceProvider.getAdjForDirection(finalPos, direction.opposite()))
 		{
-			PriorityTaskPicker.Executor executor = ThreadPoolUtil.getRenderLoadingExecutor();
-			if (executor == null || executor.isTerminated())
-			{
-				// should only happen if the threadpool is actively being re-sized
-				return CompletableFuture.completedFuture(null);
-			}
-			
-			
-			// queue loading the render data
-			CompletableFuture<ColumnRenderSource> loadFuture = new CompletableFuture<>();
-			executor.execute(() ->
-			{
-				// generate new render source
-				try (FullDataSourceV2 fullDataSource =
-						// no direction means get the center LOD		
-						(direction == null)
-						? this.fullDataSourceProvider.get(finalPos)
-						: this.fullDataSourceProvider.getAdjForDirection(finalPos, direction.opposite()))
-				{
-					ColumnRenderSource columnRenderSource = FullDataToRenderDataTransformer.transformFullDataToRenderSource(fullDataSource, this.levelWrapper);
-					loadFuture.complete(columnRenderSource);
-				}
-				catch (Exception e)
-				{
-					LOGGER.error("Unexpected issue creating render data for pos: ["+DhSectionPos.toString(finalPos)+"], error: ["+e.getMessage()+"].", e);
-				}
-			});
-			
-			return loadFuture;
-		}
-		catch (RejectedExecutionException ignore)
-		{
-			// the thread pool was probably shut down because it's size is being changed, just wait a sec and it should be back
-			return CompletableFuture.completedFuture(null);
+			ColumnRenderSource columnRenderSource = FullDataToRenderDataTransformer.transformFullDataToRenderSource(fullDataSource, this.levelWrapper);
+			return columnRenderSource;
 		}
 		catch (Exception e)
 		{
-			LOGGER.error("Unexpected issue getting and creating render data for pos: ["+DhSectionPos.toString(pos)+"], error: ["+e.getMessage()+"].", e);
-			return CompletableFuture.completedFuture(null);
+			LOGGER.error("Unexpected issue creating render data for pos: ["+DhSectionPos.toString(finalPos)+"], error: ["+e.getMessage()+"].", e);
+			return null;
 		}
 	}
 	private boolean isAdjacentPosSameDetailLevel(EDhDirection direction)
