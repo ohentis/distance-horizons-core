@@ -351,7 +351,7 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 		// don't check any child positions if this position is already fully generated 
 		if (this.repo.existsWithKey(pos))
 		{
-			try(PhantomArrayListCheckout checkout = ARRAY_LIST_POOL.checkoutArrays(1, 0, 0))
+			try(PhantomArrayListCheckout checkout = ARRAY_LIST_POOL.checkoutByteArrays(1))
 			{
 				ByteArrayList columnGenStepArray = checkout.getByteArray(0, FullDataSourceV2.WIDTH*FullDataSourceV2.WIDTH);
 				this.repo.getColumnGenerationStepForPos(pos, columnGenStepArray);
@@ -398,7 +398,7 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 			{
 				
 				EDhApiWorldGenerationStep currentMinWorldGenStep = EDhApiWorldGenerationStep.LIGHT;
-				try(PhantomArrayListCheckout checkout = ARRAY_LIST_POOL.checkoutArrays(1, 0, 0))
+				try(PhantomArrayListCheckout checkout = ARRAY_LIST_POOL.checkoutByteArrays(1))
 				{
 					ByteArrayList columnGenerationSteps = checkout.getByteArray(0, FullDataSourceV2.WIDTH*FullDataSourceV2.WIDTH);
 					this.repo.getColumnGenerationStepForPos(genPos, columnGenerationSteps);

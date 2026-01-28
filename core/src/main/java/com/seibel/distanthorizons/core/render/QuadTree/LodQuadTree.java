@@ -300,7 +300,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 		}
 		
 		// queue full data retrieval (world gen) requests if needed
-		if (this.missingGenerationPosSet.size() != 0 // TODO can stay empty if generation is toggled at the wrong time (IE world gen starts, turn it off, then turn it back on)
+		if (this.missingGenerationPosSet.size() != 0
 			&& this.fullDataSourceProvider.canQueueRetrievalNow()
 			&& !this.queueThreadRunningRef.get())
 		{

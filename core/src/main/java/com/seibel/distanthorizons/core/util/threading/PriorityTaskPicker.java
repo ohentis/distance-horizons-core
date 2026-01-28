@@ -77,10 +77,9 @@ public class PriorityTaskPicker
 				// skip executors that are paused
 				if (!executor.canRun())
 				{
+					// TODO try to re-queue tasks after a timeout
 					continue;
 				}
-				
-				int queuedTaskCount = 0;
 				
 				TrackedRunnable task;
 				
@@ -90,8 +89,6 @@ public class PriorityTaskPicker
 				while (this.occupiedThreadsRef.get() < Config.Common.MultiThreading.numberOfThreads.get()
 						&& (task = executor.taskQueue.poll()) != null)
 				{
-					queuedTaskCount++;
-					
 					try
 					{
 						executor.runTask(task);

@@ -355,7 +355,9 @@ public class FullDataSourceV1
 			throw new IOException("Invalid data content end guard for ID mapping");
 		}
 		
-		return FullDataPointIdMap.deserialize(inputStream, this.pos, levelWrapper);
+		FullDataPointIdMap newMap = new FullDataPointIdMap(this.pos);
+		FullDataPointIdMap.deserialize(newMap, inputStream, this.pos, levelWrapper);
+		return newMap;
 	}
 	public void setIdMapping(FullDataPointIdMap mappings) { this.mapping.mergeAndReturnRemappedEntityIds(mappings); }
 	

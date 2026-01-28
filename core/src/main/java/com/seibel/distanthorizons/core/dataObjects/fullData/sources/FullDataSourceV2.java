@@ -222,7 +222,7 @@ public class FullDataSourceV2
 			byte @Nullable [] columnGenerationSteps, byte @Nullable [] columnWorldCompressionMode,
 			boolean empty)
 	{
-		super(ARRAY_LIST_POOL, 2, 0, WIDTH * WIDTH);
+		super(ARRAY_LIST_POOL, 2, 0, WIDTH * WIDTH, 0);
 		
 		LodUtil.assertTrue(data == null || data.length == WIDTH * WIDTH);
 		

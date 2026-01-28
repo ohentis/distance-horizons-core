@@ -137,8 +137,6 @@ public class FullDataToRenderDataTransformer
 			}
 		}
 		
-		columnSource.fillDebugFlag(0, 0, ColumnRenderSource.WIDTH, ColumnRenderSource.WIDTH, ColumnRenderSource.DebugSourceFlag.FULL);
-		
 		return columnSource;
 	}
 	
@@ -164,20 +162,15 @@ public class FullDataToRenderDataTransformer
 		}
 		else
 		{
-			PhantomArrayListCheckout checkout = ARRAY_LIST_POOL.checkoutArrays(0, 0, 1);
-			LongArrayList dataArrayList = checkout.getLongArray(0, fullDataLength);
-			
-			try
+			try(PhantomArrayListCheckout checkout = ARRAY_LIST_POOL.checkoutLongArrays(1))
 			{
+				LongArrayList dataArrayList = checkout.getLongArray(0, fullDataLength);
+				
 				// expand the ColumnArrayView to fit the new larger max vertical size
 				ColumnArrayView newColumnArrayView = new ColumnArrayView(dataArrayList, fullDataLength, 0, fullDataLength);
 				setRenderColumnView(levelWrapper, fullDataSource, blockX, blockZ, newColumnArrayView, fullDataColumn);
 				
 				columnArrayView.changeVerticalSizeFrom(newColumnArrayView);
-			}
-			finally
-			{
-				ARRAY_LIST_POOL.returnCheckout(checkout);
 			}
 		}
 	}

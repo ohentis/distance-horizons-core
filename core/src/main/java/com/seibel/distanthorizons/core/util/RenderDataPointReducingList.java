@@ -123,7 +123,7 @@ public class RenderDataPointReducingList extends AbstractPhantomArrayList
 	
 	public RenderDataPointReducingList(IColumnDataView view) 
 	{
-		super(ARRAY_LIST_POOL, 0, 1, 2);
+		super(ARRAY_LIST_POOL, 0, 1, 2, 0);
 		
 		int size = view.size();
 		if (size == 0) 

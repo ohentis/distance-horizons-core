@@ -53,8 +53,6 @@ public class ColumnRenderSource extends AbstractPhantomArrayList
 	
 	public final LongArrayList renderDataContainer;
 	
-	public final DebugSourceFlag[] debugSourceFlags;
-	
 	private boolean isEmpty = true;
 	
 	
@@ -73,7 +71,7 @@ public class ColumnRenderSource extends AbstractPhantomArrayList
 	 */
 	private ColumnRenderSource(long pos, int maxVerticalSize, int yOffset)
 	{
-		super(ARRAY_LIST_POOL, 0, 0, 1);
+		super(ARRAY_LIST_POOL, 0, 0, 1, 0);
 		
 		this.pos = pos;
 		this.yOffset = yOffset;
@@ -81,8 +79,6 @@ public class ColumnRenderSource extends AbstractPhantomArrayList
 		this.verticalDataCount = maxVerticalSize;
 		
 		this.renderDataContainer = this.pooledArraysCheckout.getLongArray(0, WIDTH * WIDTH * this.verticalDataCount);
-		
-		this.debugSourceFlags = new DebugSourceFlag[WIDTH * WIDTH];
 	}
 	
 	
@@ -159,26 +155,6 @@ public class ColumnRenderSource extends AbstractPhantomArrayList
 	
 	
 	
-	//=======//
-	// debug //
-	//=======//
-	
-	/** Sets the debug flag for the given area */
-	public void fillDebugFlag(int xStart, int zStart, int xWidth, int zWidth, DebugSourceFlag flag)
-	{
-		for (int x = xStart; x < xStart + xWidth; x++)
-		{
-			for (int z = zStart; z < zStart + zWidth; z++)
-			{
-				this.debugSourceFlags[x * WIDTH + z] = flag;
-			}
-		}
-	}
-	
-	public DebugSourceFlag debugGetFlag(int ox, int oz) { return this.debugSourceFlags[ox * WIDTH + oz]; }
-	
-	
-	
 	//==============//
 	// base methods //
 	//==============//
@@ -218,20 +194,5 @@ public class ColumnRenderSource extends AbstractPhantomArrayList
 	}
 	
 	
-	
-	//==============//
-	// helper enums //
-	//==============//
-	
-	public enum DebugSourceFlag
-	{
-		FULL(ColorUtil.BLUE),
-		DIRECT(ColorUtil.WHITE),
-		FILE(ColorUtil.BROWN);
-		
-		public final int color;
-		
-		DebugSourceFlag(int color) { this.color = color; }
-	}
 	
 }

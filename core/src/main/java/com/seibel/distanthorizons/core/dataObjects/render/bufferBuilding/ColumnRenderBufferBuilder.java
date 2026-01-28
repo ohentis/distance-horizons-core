@@ -108,7 +108,7 @@ public class ColumnRenderBufferBuilder
 		//===================//
 		
 		// pooled arrays for ColumnBox use
-		try (PhantomArrayListCheckout phantomArrayCheckout = ARRAY_LIST_POOL.checkoutArrays(0, 0, 2))
+		try (PhantomArrayListCheckout phantomArrayCheckout = ARRAY_LIST_POOL.checkoutLongArrays(2))
 		{
 			byte thisDetailLevel = renderSource.getDataDetailLevel();
 			for (int relX = 0; relX < ColumnRenderSource.WIDTH; relX++)
@@ -117,9 +117,10 @@ public class ColumnRenderBufferBuilder
 				{
 					// ignore empty/null columns
 					ColumnArrayView columnRenderData = renderSource.getVerticalDataPointView(relX, relZ);
-					if (columnRenderData.size() == 0
-							|| !RenderDataPointUtil.doesDataPointExist(columnRenderData.get(0))
-							|| RenderDataPointUtil.hasZeroHeight(columnRenderData.get(0)))
+					if (columnRenderData == null
+						|| columnRenderData.size() == 0
+						|| !RenderDataPointUtil.doesDataPointExist(columnRenderData.get(0))
+						|| RenderDataPointUtil.hasZeroHeight(columnRenderData.get(0)))
 					{
 						continue;
 					}
@@ -244,8 +245,6 @@ public class ColumnRenderBufferBuilder
 					// build this render column //
 					//==========================//
 					
-					ColumnRenderSource.DebugSourceFlag debugSourceFlag = renderSource.debugGetFlag(relX, relZ);
-					
 					for (int i = 0; i < columnRenderData.size(); i++)
 					{
 						// can be uncommented to limit which vertical LOD is generated
@@ -276,7 +275,7 @@ public class ColumnRenderBufferBuilder
 								data, topDataPoint, bottomDataPoint,
 								adjColumnViews, isSameDetailLevel,
 								thisDetailLevel, relX, relZ,
-								quadBuilder, debugSourceFlag);
+								quadBuilder);
 					}
 					
 				}// for z
@@ -290,7 +289,7 @@ public class ColumnRenderBufferBuilder
 			long renderData, long topRenderData, long bottomRenderData, 
 			ColumnArrayView[] adjColumnViews, boolean[] isSameDetailLevel,
 			byte detailLevel, int renderSourceOffsetPosX, int renderSourceOffsetPosZ, 
-			LodQuadBuilder quadBuilder, ColumnRenderSource.DebugSourceFlag debugSource)
+			LodQuadBuilder quadBuilder)
 	{
 		long sectionPos = DhSectionPos.encode(detailLevel, renderSourceOffsetPosX, renderSourceOffsetPosZ);
 		
@@ -404,12 +403,6 @@ public class ColumnRenderBufferBuilder
 			case SHOW_OVERLAPPING_QUADS:
 			{
 				color = ColorUtil.WHITE;
-				fullBright = true;
-				break;
-			}
-			case SHOW_RENDER_SOURCE_FLAG:
-			{
-				color = debugSource == null ? ColorUtil.RED : debugSource.color;
 				fullBright = true;
 				break;
 			}
