@@ -12,7 +12,7 @@ public class PooledZstdDecompressor
 	 * Replaces {@link Zstd#decompress} so we can use a pooled byte array
 	 * which significantly reduces GC pressure.
 	 */
-	public static byte[] decompressFrame(byte[] src, PhantomArrayListCheckout checkout) throws ZstdException
+	public static ByteArrayList decompressFrame(byte[] src, PhantomArrayListCheckout checkout) throws ZstdException
 	{
 		int compressedSize = (int) Zstd.findFrameCompressedSize(src, 0);
 		int contentSize = (int) Zstd.getFrameContentSize(src, 0, compressedSize);
@@ -30,7 +30,7 @@ public class PooledZstdDecompressor
 		ByteArrayList destination = checkout.getByteArray(0, contentSize);
 		return decompress(src, compressedSize, contentSize, destination);
 	}
-	private static byte[] decompress(byte[] src, int srcSize, int originalSize, ByteArrayList destination) throws ZstdException
+	private static ByteArrayList decompress(byte[] src, int srcSize, int originalSize, ByteArrayList destination) throws ZstdException
 	{
 		if (originalSize < 0)
 		{
@@ -49,7 +49,7 @@ public class PooledZstdDecompressor
 			destination.size(size); // this assumes the size will only be smaller than the expected
 		}
 		
-		return destination.elements();
+		return destination;
 	}
 	
 }

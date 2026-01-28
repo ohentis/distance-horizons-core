@@ -61,7 +61,8 @@ public class DhDataInputStream extends DataInputStream
 		ByteArrayInputStream byteArrayInputStream;
 		if (compressionMode == EDhApiDataCompressionMode.Z_STD_BLOCK)
 		{
-			byteArrayInputStream = new ByteArrayInputStream(PooledZstdDecompressor.decompressFrame(byteArray, checkout));
+			ByteArrayList pooledByteArrayList = PooledZstdDecompressor.decompressFrame(byteArray, checkout);
+			byteArrayInputStream = new ByteArrayInputStream(pooledByteArrayList.elements(), 0, pooledByteArrayList.size());
 		}
 		else
 		{
