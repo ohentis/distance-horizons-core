@@ -299,32 +299,6 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 			}
 		}
 		
-		// queue full data retrieval (world gen) requests if needed
-		if (this.missingGenerationPosSet.size() != 0
-			&& this.fullDataSourceProvider.canQueueRetrievalNow()
-			&& !this.queueThreadRunningRef.get())
-		{
-			this.queueThreadRunningRef.set(true);
-			
-			// running on a separate thread allows for faster loading
-			// of finished LODs
-			FULL_DATA_RETRIEVAL_QUEUE_THREAD.execute(() -> 
-			{
-				try
-				{
-					this.startQueuedRetrievalTasks(playerPos);
-				}
-				catch (Exception e)
-				{
-					LOGGER.error("Unexpected error starting queued retrieval tasks, error: [" + e.getMessage() + "].", e);
-				}
-				finally
-				{
-					this.queueThreadRunningRef.set(false);
-				}
-			});
-		}
-		
 		// reloading is for sections that have been loaded once already
 		this.reloadQueuedSections();
 		
@@ -399,11 +373,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 			node.value.tryDisableBeacons();
 		}
 		
-		// limit the number of world gen tasks we can queue per tick,
-		// for some LOD sections this can be a very slow process, slowing down the load speed
-		int maxQueuesPerTick = 20;
-		int queuesThisTick = 0;
-		for (QuadNode<LodRenderSection> node : this.tickNodeHolder.getEnableDeleteChildrenNodesNearToFar(playerPos))
+		for (QuadNode<LodRenderSection> node : this.tickNodeHolder.getEnableDeleteChildrenNodes())
 		{
 			if (node == null || node.value == null) { continue; }
 			
@@ -416,20 +386,6 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 					childRenderSection.close();
 				}
 			});
-			
-			if (this.tickNodeHolder.getLoadSections().size() == 0
-				&& queuesThisTick < maxQueuesPerTick)
-			{
-				// since this section wants to render
-				// check if it needs any generation to do so
-				if (!node.value.retreivedMissingSectionsForRetreival)
-				{
-					node.value.retreivedMissingSectionsForRetreival = true;
-					this.tryQueuePosForRetrieval(node.value.pos);
-					
-					queuesThisTick++;
-				}
-			}
 		}
 		
 		//endregion
@@ -455,6 +411,59 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 			if (node == null || node.value == null) { continue; }
 			
 			node.value.tryEnableBeacons();
+		}
+		
+		//endregion
+		
+		
+		
+		//===================//
+		// world gen queuing //
+		//===================//
+		//region
+		
+		// queue full data retrieval (world gen) requests if needed
+		if (this.fullDataSourceProvider.canQueueRetrievalNow()
+			&& !this.queueThreadRunningRef.get())
+		{
+			this.queueThreadRunningRef.set(true); // don't run multiple threads at once
+			
+			// needs to be called outside the queue thread to prevent concurrency issues
+			ArrayList<QuadNode<LodRenderSection>> worldGenNodes = this.tickNodeHolder.getWorldGenNodesNearToFar(playerPos);
+			
+			// running on a separate thread allows for faster loading
+			// of finished LODs
+			FULL_DATA_RETRIEVAL_QUEUE_THREAD.execute(() ->
+			{
+				try
+				{
+					for (int i = 0; i < worldGenNodes.size(); i++)
+					{
+						QuadNode<LodRenderSection> node = worldGenNodes.get(i);
+						if (node == null || node.value == null) { continue; }
+						
+						LOGGER.info(i +"/"+worldGenNodes.size());
+						
+						// since this section wants to render
+						// check if it needs any generation to do so
+						if (!node.value.retreivedMissingSectionsForRetreival)
+						{
+							node.value.retreivedMissingSectionsForRetreival = true;
+							this.tryQueuePosForRetrieval(node.value.pos); // can be quite slow
+						}
+					}
+					
+					this.startQueuedRetrievalTasks(playerPos);
+				}
+				catch (Exception e)
+				{
+					LOGGER.error("Unexpected error starting queued retrieval tasks, error: [" + e.getMessage() + "].", e);
+				}
+				finally
+				{
+					this.queueThreadRunningRef.set(false);
+				}
+			});
 		}
 		
 		//endregion

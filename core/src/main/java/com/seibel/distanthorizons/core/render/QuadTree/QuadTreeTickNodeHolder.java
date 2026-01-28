@@ -25,6 +25,13 @@ public class QuadTreeTickNodeHolder
 	private final HashSet<QuadNode<LodRenderSection>> nodesToDisable = new HashSet<>();
 	private final ArrayList<QuadNode<LodRenderSection>> nodesToEnableDeleteChildrenList = new ArrayList<>();
 	
+	/** 
+	 * not included in {@link #clear()} to allow for use on the {@link LodQuadTree}'s
+	 * queuing thread.
+	 * Always generated based on other 
+	 */
+	private final ArrayList<QuadNode<LodRenderSection>> nodesForWorldGen = new ArrayList<>();
+	
 	private final QuadNodeNearComparator quadNodeNearComparator = new QuadNodeNearComparator();
 	
 	
@@ -94,11 +101,16 @@ public class QuadTreeTickNodeHolder
 		}
 	}
 	public ArrayList<QuadNode<LodRenderSection>> getEnableDeleteChildrenNodes() { return this.nodesToEnableDeleteChildrenList; }
-	public ArrayList<QuadNode<LodRenderSection>> getEnableDeleteChildrenNodesNearToFar(DhBlockPos2D centerPos) 
+	public ArrayList<QuadNode<LodRenderSection>> getWorldGenNodesNearToFar(DhBlockPos2D centerPos) 
 	{
 		this.quadNodeNearComparator.centerPos = centerPos;
 		this.nodesToEnableDeleteChildrenList.sort(this.quadNodeNearComparator);
-		return this.nodesToEnableDeleteChildrenList; 
+		
+		// this 
+		this.nodesForWorldGen.clear();
+		this.nodesForWorldGen.addAll(this.nodesToEnableDeleteChildrenList);
+		
+		return this.nodesForWorldGen;
 	}
 	
 	///endregion
