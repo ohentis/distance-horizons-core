@@ -192,7 +192,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 			
 			this.getAndBuildRenderDataRunnable = () ->
 			{
-				//this.refreshActiveBeaconList();
+				this.refreshActiveBeaconList();
 				this.getAndUploadRenderDataToGpu();
 				
 				// the future is passed in separately (IE not using the local var) to prevent any possible race condition null pointers
