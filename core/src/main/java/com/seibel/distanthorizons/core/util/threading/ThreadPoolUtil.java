@@ -55,7 +55,6 @@ public class ThreadPoolUtil
 	@Nullable
 	public static PriorityTaskPicker.Executor getUpdatePropagatorExecutor() { return updatePropagatorThreadPool; }
 	
-	public static final DhThreadFactory WORLD_GEN_THREAD_FACTORY = new DhThreadFactory("World Gen", Thread.MIN_PRIORITY, false);
 	private static PriorityTaskPicker.Executor worldGenThreadPool;
 	@Nullable
 	public static PriorityTaskPicker.Executor getWorldGenExecutor() { return worldGenThreadPool; }
@@ -172,10 +171,19 @@ public class ThreadPoolUtil
 	public static boolean onlyRunThreadIfCameraMovingSlowly()
 	{
 		double cameraSpeed = ClientApi.INSTANCE.cameraSpeedRollingAverage.getAverage();
+		// stop these threads if moving a little bit slower than max elytra speed
 		double maxAllowedSpeed = (LodUtil.ROCKET_ELYTRA_SPEED_IN_BLOCKS_PER_SEC - 10.0);
 		if (cameraSpeed > maxAllowedSpeed)
 		{
-			// pause this thread pool if the user is moving too fast
+			// pause if the user is moving too fast
+			return false;
+		}
+		
+		PriorityTaskPicker.Executor executor = getRenderLoadingExecutor();
+		if (executor != null
+			&& executor.getQueueSize() > 0)
+		{
+			// pause if LODs are being loaded for rendering
 			return false;
 		}
 		

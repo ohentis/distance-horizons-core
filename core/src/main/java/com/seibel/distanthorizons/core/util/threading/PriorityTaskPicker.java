@@ -15,6 +15,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Stream;
 
@@ -25,6 +26,21 @@ import java.util.stream.Stream;
 public class PriorityTaskPicker
 {
 	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
+	
+	private static final ScheduledExecutorService SCHEDULED_EXECUTOR_SERVICE = Executors.newScheduledThreadPool(1, new DhThreadFactory("Task Picker Re-queue Schedule", Thread.NORM_PRIORITY, true));
+	/** 
+	 * If a thread is paused we can end up in a situation where
+	 * all the other pools are done, causing {@link PriorityTaskPicker#tryStartNextTask()}
+	 * to queue nothing, preventing the paused pools from running until
+	 * more work is queued. <br><br>
+	 * 
+	 * This way we can check on those paused threads at a future time
+	 * to queue their work.
+	 */
+	private static final int MS_TO_CHECK_ON_PAUSED_THREADS = 1_000;
+	
+	private final AtomicReference<ScheduledFuture<?>> scheduledFutureRef = new AtomicReference<>();
+	private final Runnable startNextTaskBlockingRunnable = () -> this.startNextTask(true);
 	
 	
 	/** the list of currently registered executors */
@@ -56,17 +72,32 @@ public class PriorityTaskPicker
 	 * Tries to start the next queued task
 	 * for one of the available executors.
 	 */
-	private void tryStartNextTask()
+	private void tryStartNextTask() { this.startNextTask(false); }
+	
+	private void startNextTask(boolean waitForLock)
 	{
 		// only let one thread start the next task to prevent concurrency errors
-		if (!this.taskPickerLock.tryLock())
+		if (waitForLock)
 		{
-			return;
+			// generally this will be done if an executor is paused,
+			// and we want to check up on it later
+			this.taskPickerLock.lock();
+		}
+		else
+		{
+			// most threads won't need to try queuing the next 
+			// task since that means someone else is already working on it
+			if (!this.taskPickerLock.tryLock())
+			{
+				return;
+			}
 		}
 		
 		
 		try
 		{
+			boolean executorPaused = false;
+			
 			// fill up executors that have run for less time first,
 			// this prevents long-running tasks from taking up all the CPU time
 			Iterator<Executor> iterator = this.getExecutorIteratorSortedByShortestTotalRunTime();
@@ -77,7 +108,7 @@ public class PriorityTaskPicker
 				// skip executors that are paused
 				if (!executor.canRun())
 				{
-					// TODO try to re-queue tasks after a timeout
+					executorPaused = true;
 					continue;
 				}
 				
@@ -105,6 +136,27 @@ public class PriorityTaskPicker
 						}
 					}
 				}
+			}
+			
+			
+			// if an executor is paused then we'll
+			// need to check on it again sometime in the future
+			// otherwise we may not start the next task for a while
+			ScheduledFuture<?> newScheduledFuture = null;
+			if (executorPaused)
+			{
+				newScheduledFuture = SCHEDULED_EXECUTOR_SERVICE.schedule(
+					this.startNextTaskBlockingRunnable,
+					MS_TO_CHECK_ON_PAUSED_THREADS, TimeUnit.MILLISECONDS);
+			}
+			
+			ScheduledFuture<?> oldScheduledFuture = this.scheduledFutureRef.getAndSet(newScheduledFuture);
+			if (oldScheduledFuture != null)
+			{
+				// stop the last scheduled check,
+				// we just checked the queue and will want to wait the full
+				// timeout first
+				oldScheduledFuture.cancel(false);
 			}
 		}
 		finally
