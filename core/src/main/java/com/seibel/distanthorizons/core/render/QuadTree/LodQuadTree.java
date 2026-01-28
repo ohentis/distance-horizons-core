@@ -442,8 +442,6 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 						QuadNode<LodRenderSection> node = worldGenNodes.get(i);
 						if (node == null || node.value == null) { continue; }
 						
-						LOGGER.info(i +"/"+worldGenNodes.size());
-						
 						// since this section wants to render
 						// check if it needs any generation to do so
 						if (!node.value.retreivedMissingSectionsForRetreival)
