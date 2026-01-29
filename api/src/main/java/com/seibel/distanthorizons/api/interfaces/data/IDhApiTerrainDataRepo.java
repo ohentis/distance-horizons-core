@@ -42,6 +42,8 @@ public interface IDhApiTerrainDataRepo
 	// getters //
 	//=========//
 	
+	// TODO should we force users to pass in a cache, even if null?
+	
 	/** @see IDhApiTerrainDataRepo#getSingleDataPointAtBlockPos(IDhApiLevelWrapper, int, int, int, IDhApiTerrainDataCache) */
 	default DhApiResult<DhApiTerrainDataPoint> getSingleDataPointAtBlockPos(IDhApiLevelWrapper levelWrapper, int blockPosX, int blockPosY, int blockPosZ) { return this.getSingleDataPointAtBlockPos(levelWrapper, blockPosX, blockPosY, blockPosZ, null); }
 	/** 
