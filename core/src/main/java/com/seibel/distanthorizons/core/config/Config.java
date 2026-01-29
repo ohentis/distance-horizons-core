@@ -699,7 +699,7 @@ public class Config
 									+ "How intense should the noise should be?")
 							.build();
 					
-					public static ConfigEntry<Integer> noiseDropoff = new ConfigEntry.Builder<Integer>()    // TODO: Make this a float (the ClassicConfigGUI doesn't support floats)
+					public static ConfigEntry<Integer> noiseDropoff = new ConfigEntry.Builder<Integer>()
 							.setMinDefaultMax(0, 1024, null)
 							.comment(""
 									+ "Defines how far should the noise texture render before it fades away. (in blocks) \n"
@@ -979,13 +979,15 @@ public class Config
 								+ "")
 						.build();
 				
-				// TODO add LOD-only mode to this
 				public static ConfigEntry<Boolean> enableDebugKeybindings = new ConfigEntry.Builder<Boolean>()
-						.set(false)
-						.comment(""
-								+ "If true the F8 key can be used to cycle through the different debug modes. \n"
-								+ "and the F6 key can be used to enable and disable LOD rendering.")
-						.build();
+					.set(false)
+					.comment(""
+						+ "If true several keys can be used to toggle debug states. \n"
+						+ "F6 - enable/disable LOD rendering \n"
+						+ "F7 - enable/disable LOD only rendering \n"
+						+ "F8 - cycle through the different debug rendering modes \n"
+						+ "")
+					.build();
 				
 				public static ConfigEntry<Boolean> enableWhiteWorld = new ConfigEntry.Builder<Boolean>()
 						.set(false)

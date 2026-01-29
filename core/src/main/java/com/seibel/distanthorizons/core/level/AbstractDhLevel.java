@@ -289,7 +289,7 @@ public abstract class AbstractDhLevel implements IDhLevel
 			int minBlockX, int maxBlockX,
 			int minBlockZ, int maxBlockZ,
 			List<BeaconBeamDTO> activeBeamList
-		) // TODO min/max block pos instead
+		)
 	{
 		if (this.beaconBeamRepo == null)
 		{

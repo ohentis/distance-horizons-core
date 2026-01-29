@@ -73,8 +73,6 @@ public class ClientApi
 {
 	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
 	
-	public static boolean prefLoggerEnabled = false;
-	
 	public static final ClientApi INSTANCE = new ClientApi();
 	public static final TestRenderer TEST_RENDERER = new TestRenderer();
 	
@@ -185,13 +183,12 @@ public class ClientApi
 					MC_CLIENT.sendChatMessage("DH may behave strangely or have missing functionality.");
 					MC_CLIENT.sendChatMessage("In order to use pre-generated LODs, put your DH database(s) in:");
 					MC_CLIENT.sendChatMessage(MinecraftTextFormat.GRAY +".Minecraft" + File.separator + ClientOnlySaveStructure.SERVER_DATA_FOLDER_NAME + File.separator + ClientOnlySaveStructure.REPLAY_SERVER_FOLDER_NAME + File.separator + "DIMENSION_NAME"+ MinecraftTextFormat.CLEAR_FORMATTING);
-					MC_CLIENT.sendChatMessage("This can be disabled in DH's config under Advanced -> Logging.");
+					MC_CLIENT.sendChatMessage("This message can be disabled in DH's config under Advanced -> Logging.");
 					MC_CLIENT.sendChatMessage("");
 				}
 			}
 			
-			// firing after clientLevelLoadEvent
-			// TODO if level has prepped to load it should fire level load event
+			
 			DhClientWorld world = new DhClientWorld();
 			SharedApi.setDhWorld(world);
 			
@@ -693,20 +690,20 @@ public class ClientApi
 		}
 		
 		
-		if (glfwKey == GLFW.GLFW_KEY_F8)
-		{
-			Config.Client.Advanced.Debugging.debugRendering.set(EDhApiDebugRendering.next(Config.Client.Advanced.Debugging.debugRendering.get()));
-			MC_CLIENT.sendChatMessage("F8: Set debug mode to " + Config.Client.Advanced.Debugging.debugRendering.get());
-		}
-		else if (glfwKey == GLFW.GLFW_KEY_F6)
+		if (glfwKey == GLFW.GLFW_KEY_F6)
 		{
 			Config.Client.Advanced.Debugging.rendererMode.set(EDhApiRendererMode.next(Config.Client.Advanced.Debugging.rendererMode.get()));
 			MC_CLIENT.sendChatMessage("F6: Set rendering to " + Config.Client.Advanced.Debugging.rendererMode.get());
 		}
-		else if (glfwKey == GLFW.GLFW_KEY_P)
+		else if (glfwKey == GLFW.GLFW_KEY_F7)
 		{
-			prefLoggerEnabled = !prefLoggerEnabled;
-			MC_CLIENT.sendChatMessage("P: Debug Pref Logger is " + (prefLoggerEnabled ? "enabled" : "disabled"));
+			Config.Client.Advanced.Debugging.lodOnlyMode.set(!Config.Client.Advanced.Debugging.lodOnlyMode.get());
+			MC_CLIENT.sendChatMessage("F7: Set LOD only mode to " + Config.Client.Advanced.Debugging.lodOnlyMode.get());
+		}
+		else if (glfwKey == GLFW.GLFW_KEY_F8)
+		{
+			Config.Client.Advanced.Debugging.debugRendering.set(EDhApiDebugRendering.next(Config.Client.Advanced.Debugging.debugRendering.get()));
+			MC_CLIENT.sendChatMessage("F8: Set debug mode to " + Config.Client.Advanced.Debugging.debugRendering.get());
 		}
 	}
 	

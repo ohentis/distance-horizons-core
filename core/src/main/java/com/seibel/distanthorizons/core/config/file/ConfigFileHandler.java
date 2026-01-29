@@ -241,8 +241,8 @@ public class ConfigFileHandler
 		}
 		else if (entry.getTrueValue() == null)
 		{
-			// TODO when can this happen?
-			throw new IllegalArgumentException("BlockBiomeWrapperPair [" + entry.getNameAndCategory() + "] is null, this may be a problem with [" + ModInfo.NAME + "]. Please contact the authors.");
+			// shouldn't happen, but just in case
+			throw new IllegalArgumentException("ConfigEntry [" + entry.getNameAndCategory() + "] is null, how did this happen?");
 		}
 		
 		workConfig.set(entry.getNameAndCategory(), ConfigTypeConverters.attemptToConvertToString(entry.getType(), entry.getTrueValue()));

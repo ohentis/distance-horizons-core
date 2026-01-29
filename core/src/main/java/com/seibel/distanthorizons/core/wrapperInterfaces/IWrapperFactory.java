@@ -42,7 +42,7 @@ public interface IWrapperFactory extends IDhApiWrapperFactory, IBindable
 	IBatchGeneratorEnvironmentWrapper createBatchGenerator(IDhLevel targetLevel);
 	
 	IBiomeWrapper deserializeBiomeWrapper(String str, ILevelWrapper levelWrapper) throws IOException;
-	IBiomeWrapper getPlainsBiomeWrapper(ILevelWrapper levelWrapper); // TODO it would be nice to remove the level wrapper if possible to put this in line with getAirBlockStateWrapper() but it isn't necessary 
+	IBiomeWrapper getPlainsBiomeWrapper(ILevelWrapper levelWrapper); 
 	default IBiomeWrapper deserializeBiomeWrapperOrGetDefault(String str, ILevelWrapper levelWrapper)
 	{
 		IBiomeWrapper biome;

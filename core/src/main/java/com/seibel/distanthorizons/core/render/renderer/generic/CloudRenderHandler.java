@@ -87,6 +87,7 @@ public class CloudRenderHandler
 	//=============//
 	// constructor //
 	//=============//
+	//region
 	
 	public CloudRenderHandler(IDhClientLevel level, GenericObjectRenderer renderer) 
 	{
@@ -269,6 +270,15 @@ public class CloudRenderHandler
 		}
 	}
 	
+	//endregion
+	
+	
+	
+	//===========//
+ 	// rendering //
+ 	//===========//
+	//region
+	
 	private void preRender(DhApiRenderParam renderParam, CloudParams cloudParams)
 	{
 		IDhApiRenderableBoxGroup boxGroup = this.boxGroupByOffset[cloudParams.instanceOffsetX+CLOUD_INSTANCE_RADIUS_COUNT][cloudParams.instanceOffsetZ+CLOUD_INSTANCE_RADIUS_COUNT];
@@ -399,8 +409,7 @@ public class CloudRenderHandler
 		
 		boxGroup.setOriginBlockPos(new DhApiVec3d(newMinPosX, newMinPosY, newMinPosZ));
 	}
-	
-	private synchronized boolean shouldCloudBeCulled(
+	private boolean shouldCloudBeCulled(
 			float minPosX, float minPosY, float minPosZ,
 			CloudParams cloudParams)
 	{
@@ -484,12 +493,14 @@ public class CloudRenderHandler
 		return allOutsideRenderDistance || allBehindCamera;
 	}
 	
+	//endregion
 	
 	
 	
 	//==================//
 	// texture handling //
 	//==================//
+	//region
 	
 	private static boolean[][] getCloudsFromTexture() throws FileNotFoundException, IOException
 	{
@@ -523,11 +534,14 @@ public class CloudRenderHandler
 		return whitePixels;
 	}
 	
+	//endregion
+	
 	
 	
 	//================//
 	// helper classes //
 	//================//
+	//region
 	
 	private static class CloudParams
 	{
@@ -564,5 +578,9 @@ public class CloudRenderHandler
 		}
 		
 	}
+	
+	//endregion
+	
+	
 	
 }

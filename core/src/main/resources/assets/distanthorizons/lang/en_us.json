@@ -463,7 +463,7 @@
   "distanthorizons.config.client.advanced.debugging.enableDebugKeybindings":
     "Enable debug keybindings",
   "distanthorizons.config.client.advanced.debugging.enableDebugKeybindings.@tooltip":
-    "§6True:§r debug keybindings can be used to change the Debug mode in game.",
+    "If true several keys can be used to toggle debug states. \nF6 - enable/disable LOD rendering \nF7 - enable/disable LOD only rendering \nF8 - cycle through the different debug rendering modes",
   "distanthorizons.config.client.advanced.debugging.enableWhiteWorld":
     "Enable white world",
   "distanthorizons.config.client.advanced.debugging.enableWhiteWorld.@tooltip":
