@@ -658,8 +658,6 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 	}
 	private void loadQueuedSections(DhBlockPos2D playerPos, HashSet<LodRenderSection> nodesNeedingLoading)
 	{
-		// TODO disable world gen while any tasks exist here to speed up loading speed
-		
 		ArrayList<LodRenderSection> loadSectionList = new ArrayList<>(nodesNeedingLoading);
 		loadSectionList.sort((LodRenderSection a, LodRenderSection b) ->
 		{

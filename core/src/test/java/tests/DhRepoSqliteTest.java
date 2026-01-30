@@ -290,6 +290,9 @@ public class DhRepoSqliteTest
 			//===================//
 			// leaked statements //
 			//===================//
+			
+			// don't run these tests in release, leaks aren't tracked and the test will fail
+			if (AutoClosableTrackingWrapper.TRACK_WRAPPERS)
 			{	
 				// nuke the DB so we can insert without worries
 				primaryKeyRepo.deleteAll();
@@ -307,7 +310,6 @@ public class DhRepoSqliteTest
 					}
 				}
 				
-				// TODO fails when built for release due to tracking being disabled
 				Assert.assertNotEquals(0, primaryKeyRepo.openClosables.size());
 				primaryKeyRepo.openClosables.clear();
 				

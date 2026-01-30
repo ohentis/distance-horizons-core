@@ -227,7 +227,10 @@ public class QuadTreeTest
 		
 		
 		// small move //
-		DhBlockPos2D smallMoveBlockPos = new DhBlockPos2D(pseudoRootNodeWidthInBlocks * 2, 0); // move enough that the original root nodes aren't touching the same grid squares they were before, but not far enough as to be garbage collected (TODO reword)
+		
+		// move far enough that the original root nodes aren't touching the same grid 
+		// squares they were before, but not far enough as to be garbage collected
+		DhBlockPos2D smallMoveBlockPos = new DhBlockPos2D(pseudoRootNodeWidthInBlocks * 2, 0);
 		tree.setCenterBlockPos(smallMoveBlockPos);
 		Assert.assertEquals("Tree center incorrect", smallMoveBlockPos, tree.getCenterBlockPos());
 		
@@ -417,7 +420,7 @@ public class QuadTreeTest
 		
 		
 	}
-	private static <T> void assertFilterCount(QuadTree<T> tree, String message, int expectedNodeCount, @Nullable QuadTree.INodeIteratorStoppingFunc<T> stoppingFilterFunc) // TODO functional interface
+	private static <T> void assertFilterCount(QuadTree<T> tree, String message, int expectedNodeCount, @Nullable QuadTree.INodeIteratorStoppingFunc<T> stoppingFilterFunc)
 	{
 		ArrayList<String> foundNodePositionStrings = new ArrayList<>();
 		
