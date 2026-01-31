@@ -437,10 +437,10 @@ public class ClientApi
 			try
 			{
 				// make sure the GLProxy is created for future use
-				GLProxy.getInstance();
+				GLProxy glProxy = GLProxy.getInstance();
 				
 				// these tasks always need to be called, regardless of whether the renderer is enabled or not to prevent memory leaks
-				GLProxy.runRenderThreadTasks();
+				glProxy.runRenderThreadTasks();
 			}
 			catch (Exception e)
 			{

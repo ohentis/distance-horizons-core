@@ -57,6 +57,8 @@ public interface IMinecraftRenderWrapper extends IBindable
 	/** Measured in chunks */
 	int getRenderDistance();
 	
+	int getFrameLimit();
+	
 	boolean mcRendersToFrameBuffer();
 	boolean runningLegacyOpenGL();
 	
