@@ -134,7 +134,7 @@ public class ColumnBox
 					&& !isBottomTransparent;
 			if (!skipBottom)
 			{
-				builder.addQuadDown(minX, minY, minZ, width, width, ColorUtil.applyShade(color, MC_RENDER.getShade(EDhDirection.DOWN)), irisBlockMaterialId, skyLightBot, blockLight);
+				builder.addQuadDown(minX, minY, minZ, width, ColorUtil.applyShade(color, MC_RENDER.getShade(EDhDirection.DOWN)), irisBlockMaterialId, skyLightBot, blockLight);
 			}
 		}
 		
