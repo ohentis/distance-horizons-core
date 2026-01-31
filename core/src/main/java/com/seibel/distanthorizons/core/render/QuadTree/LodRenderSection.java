@@ -31,7 +31,6 @@ import com.seibel.distanthorizons.core.file.fullDatafile.V2.FullDataSourceProvid
 import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.logging.DhLogger;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.pooling.PhantomArrayListCheckout;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.render.glObject.GLProxy;
@@ -168,16 +167,6 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		{
 			return false;
 		}
-		
-		// Only queue a some of the upload tasks at a time,
-		// this means the closer (higher priority) tasks will load first.
-		// This also prevents issues where the nearby tasks are canceled due to
-		// LOD detail level changing, and having holes in the world
-		//if (this.uploadTaskCountRef.getAndIncrement() > executor.getPoolSize() * 50)
-		//{
-		//	this.uploadTaskCountRef.decrementAndGet();
-		//	return false;
-		//}
 		
 		try
 		{
