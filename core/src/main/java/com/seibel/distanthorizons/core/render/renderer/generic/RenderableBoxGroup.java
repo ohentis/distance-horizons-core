@@ -5,28 +5,23 @@ import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhAp
 import com.seibel.distanthorizons.api.objects.math.DhApiVec3d;
 import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBox;
 import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBoxGroupShading;
-import com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.ColumnRenderBufferBuilder;
-import com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.LodBufferContainer;
-import com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.LodQuadBuilder;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
-import com.seibel.distanthorizons.core.enums.EDhDirection;
+import com.seibel.distanthorizons.core.logging.DhLogger;
+import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.render.glObject.GLProxy;
-import com.seibel.distanthorizons.core.util.ColorUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.threading.PriorityTaskPicker;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftGLWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
-import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import org.jetbrains.annotations.Nullable;
-import org.lwjgl.opengl.GL32;
 
 import java.awt.*;
 import java.io.Closeable;
 import java.util.*;
 import java.util.List;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
@@ -36,6 +31,8 @@ public class RenderableBoxGroup
 			extends AbstractList<DhApiRenderableBox> 
 			implements IDhApiRenderableBoxGroup, Closeable
 {
+	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
+	
 	private static final IMinecraftGLWrapper GLMC = SingletonInjector.INSTANCE.get(IMinecraftGLWrapper.class);
 	private static final IMinecraftRenderWrapper MC_RENDER = SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
 	
@@ -70,13 +67,10 @@ public class RenderableBoxGroup
 	public Consumer<DhApiRenderParam> afterRenderFunc;
 	
 	// instance data
-	public int instanceColorVbo = 0;
-	public int instanceMaterialVbo = 0;
-	public int instanceScaleVbo = 0;
-	public int instanceChunkPosVbo = 0;
-	public int instanceSubChunkPosVbo = 0;
+	public InstancedVboContainer instancedVbos = new InstancedVboContainer();
+	/** double buffering for thread safety and to prevent locking the render thread during update */
+	private InstancedVboContainer altInstancedVbos = new InstancedVboContainer(); 
 	
-	public int uploadedBoxCount = -1;
 	
 	
 	//=================//
@@ -194,23 +188,51 @@ public class RenderableBoxGroup
 	@Override
 	public void triggerBoxChange() { this.vertexDataDirty = true; }
 	
-	/** Does nothing if the vertex data is already up-to-date */
-	public void updateVertexAttributeData()
+	/** 
+	 * Does nothing if the vertex data is already up-to-date 
+	 * and is meaningless if using direct rendering.
+	 */
+	public void tryUpdateInstancedDataAsync()
 	{
+		// if the alt container is done, swap it in
+		if (this.altInstancedVbos.state == InstancedVboContainer.EState.READY_TO_UPLOAD)
+		{
+			this.altInstancedVbos.uploadDataToGpu();
+			
+			// swap VBO references for rendering
+			InstancedVboContainer temp = this.instancedVbos;
+			this.instancedVbos = this.altInstancedVbos;
+			this.altInstancedVbos = temp;
+			
+			this.vertexDataDirty = false;
+			
+			return;
+		}
+		
+		
+		
+		// if the vertex data is already up to date, do nothing
 		if (!this.vertexDataDirty)
 		{
 			return;
 		}
-		this.vertexDataDirty = false;
 		
-		if (this.instanceChunkPosVbo == 0)
+		PriorityTaskPicker.Executor executor = ThreadPoolUtil.getRenderLoadingExecutor();
+		if (executor == null || executor.isTerminated())
 		{
-			this.instanceChunkPosVbo = GLMC.glGenBuffers();
-			this.instanceSubChunkPosVbo = GLMC.glGenBuffers();
-			this.instanceScaleVbo = GLMC.glGenBuffers();
-			this.instanceColorVbo = GLMC.glGenBuffers();
-			this.instanceMaterialVbo = GLMC.glGenBuffers();
+			return;
 		}
+		
+		// if the alternate container is already updating, don't double-queue it
+		if (this.altInstancedVbos.state == InstancedVboContainer.EState.UPDATING_DATA)
+		{
+			return;
+		}
+		this.altInstancedVbos.state = InstancedVboContainer.EState.UPDATING_DATA;
+		
+		
+		
+		this.altInstancedVbos.tryRunRenderThreadSetup();
 		
 		// copy over the box list so we can upload without concurrent modification issues
 		this.uploadBoxList.clear();
@@ -219,69 +241,26 @@ public class RenderableBoxGroup
 			this.uploadBoxList.addAll(this.boxList);
 		}
 		
-		
-		int boxCount = this.uploadBoxList.size();
-		this.uploadedBoxCount = boxCount;
-		
-		
-		
-		// transformation / scaling //
-		int[] chunkPosData = RenderBoxArrayCache.getCachedIntArray(boxCount * 3, 0);
-		float[] subChunkPosData = RenderBoxArrayCache.getCachedFloatArray(boxCount * 3, 1);
-		float[] scalingData = RenderBoxArrayCache.getCachedFloatArray(boxCount * 3, 2);
-		for (int i = 0; i < boxCount; i++)
+		try
 		{
-			DhApiRenderableBox box = this.uploadBoxList.get(i);
-			
-			int dataIndex = i * 3;
-			
-			chunkPosData[dataIndex] = LodUtil.getChunkPosFromDouble(box.minPos.x);
-			chunkPosData[dataIndex + 1] = LodUtil.getChunkPosFromDouble(box.minPos.y);
-			chunkPosData[dataIndex + 2] = LodUtil.getChunkPosFromDouble(box.minPos.z);
-			
-			subChunkPosData[dataIndex] = LodUtil.getSubChunkPosFromDouble(box.minPos.x);
-			subChunkPosData[dataIndex + 1] = LodUtil.getSubChunkPosFromDouble(box.minPos.y);
-			subChunkPosData[dataIndex + 2] = LodUtil.getSubChunkPosFromDouble(box.minPos.z);
-			
-			scalingData[dataIndex] = (float) (box.maxPos.x - box.minPos.x);
-			scalingData[dataIndex + 1] = (float) (box.maxPos.y - box.minPos.y);
-			scalingData[dataIndex + 2] = (float) (box.maxPos.z - box.minPos.z);
-			
+			executor.runTask(() ->
+			{
+				try
+				{
+					this.altInstancedVbos.updateVertexData(this.uploadBoxList);
+				}
+				catch (Exception e)
+				{
+					LOGGER.error("Unexpected error updating instanced VBO data for: ["+this+"], error: ["+e.getMessage()+"].", e);
+					this.altInstancedVbos.state = InstancedVboContainer.EState.ERROR;
+				}
+			});
 		}
-		
-		
-		// colors/materials //
-		float[] colorData = RenderBoxArrayCache.getCachedFloatArray(boxCount * 4, 3);
-		int[] materialData = RenderBoxArrayCache.getCachedIntArray(boxCount, 4);
-		for (int i = 0; i < boxCount; i++)
+		catch (RejectedExecutionException ignore) 
 		{
-			DhApiRenderableBox box = this.uploadBoxList.get(i);
-			Color color = box.color;
-			int colorIndex = i * 4;
-			colorData[colorIndex] = color.getRed() / 255.0f;
-			colorData[colorIndex + 1] = color.getGreen() / 255.0f;
-			colorData[colorIndex + 2] = color.getBlue() / 255.0f;
-			colorData[colorIndex + 3] = color.getAlpha() / 255.0f;
-			
-			materialData[i] = box.material;
+			// the executor was shut down, it should be back up shortly and able to accept new jobs
+			this.altInstancedVbos.state = InstancedVboContainer.EState.NEW;
 		}
-		
-		
-		// Upload transformation matrices
-		GL32.glBindBuffer(GL32.GL_ARRAY_BUFFER, this.instanceChunkPosVbo);
-		GL32.glBufferData(GL32.GL_ARRAY_BUFFER, chunkPosData, GL32.GL_DYNAMIC_DRAW);
-		GL32.glBindBuffer(GL32.GL_ARRAY_BUFFER, this.instanceSubChunkPosVbo);
-		GL32.glBufferData(GL32.GL_ARRAY_BUFFER, subChunkPosData, GL32.GL_DYNAMIC_DRAW);
-		GL32.glBindBuffer(GL32.GL_ARRAY_BUFFER, this.instanceScaleVbo);
-		GL32.glBufferData(GL32.GL_ARRAY_BUFFER, scalingData, GL32.GL_DYNAMIC_DRAW);
-		
-		// Upload colors
-		GL32.glBindBuffer(GL32.GL_ARRAY_BUFFER, this.instanceColorVbo);
-		GL32.glBufferData(GL32.GL_ARRAY_BUFFER, colorData, GL32.GL_DYNAMIC_DRAW);
-		
-		// Upload materials
-		GL32.glBindBuffer(GL32.GL_ARRAY_BUFFER, this.instanceMaterialVbo);
-		GL32.glBufferData(GL32.GL_ARRAY_BUFFER, materialData, GL32.GL_DYNAMIC_DRAW);
 	}
 	
 	//endregion
@@ -362,42 +341,15 @@ public class RenderableBoxGroup
 	//region
 	
 	@Override
-	public String toString() { return "ID:["+this.id+"], pos:["+this.originBlockPos.x+","+this.originBlockPos.y+","+this.originBlockPos.z+"], size:["+this.size()+"], active:["+this.active+"]"; }
+	public String toString() { return "["+this.resourceLocationNamespace+":"+this.resourceLocationPath+"]  ID:["+this.id+"], pos:["+this.originBlockPos.x+","+this.originBlockPos.y+","+this.originBlockPos.z+"], size:["+this.size()+"], active:["+this.active+"]"; }
 	
 	@Override 
 	public void close()
 	{
 		GLProxy.queueRunningOnRenderThread(() ->
 		{
-			if (this.instanceChunkPosVbo != 0)
-			{
-				GLMC.glDeleteBuffers(this.instanceChunkPosVbo);
-				this.instanceChunkPosVbo = 0;
-			}
-			
-			if (this.instanceSubChunkPosVbo != 0)
-			{
-				GLMC.glDeleteBuffers(this.instanceSubChunkPosVbo);
-				this.instanceSubChunkPosVbo = 0;
-			}
-			
-			if (this.instanceScaleVbo != 0)
-			{
-				GLMC.glDeleteBuffers(this.instanceScaleVbo);
-				this.instanceScaleVbo = 0;
-			}
-			
-			if (this.instanceColorVbo != 0)
-			{
-				GLMC.glDeleteBuffers(this.instanceColorVbo);
-				this.instanceColorVbo = 0;
-			}
-			
-			if (this.instanceMaterialVbo != 0)
-			{
-				GLMC.glDeleteBuffers(this.instanceMaterialVbo);
-				this.instanceMaterialVbo = 0;
-			}
+			this.instancedVbos.close();
+			this.altInstancedVbos.close();
 		});
 	}
 	
