@@ -56,7 +56,6 @@ public class RenderBufferHandler implements AutoCloseable
 	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
 	
 	private static final IMinecraftRenderWrapper MC_RENDER = SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
-	private static final IMinecraftGLWrapper GLMC = SingletonInjector.INSTANCE.get(IMinecraftGLWrapper.class);
 
 	private static final IIrisAccessor IRIS_ACCESSOR = ModAccessorInjector.INSTANCE.get(IIrisAccessor.class);
 	
@@ -77,6 +76,7 @@ public class RenderBufferHandler implements AutoCloseable
 	//=============//
 	// constructor //
 	//=============//
+	//region
 	
 	public RenderBufferHandler(LodQuadTree lodQuadTree) 
 	{ 
@@ -109,11 +109,14 @@ public class RenderBufferHandler implements AutoCloseable
 		return aManhattanDistance - bManhattanDistance;
 	}
 	
+	//endregion
+	
 	
 	
 	//=================//
 	// render building //
 	//=================//
+	//region
 	
 	/**
 	 * The following buildRenderList sorting method is based on the following reddit post: <br>
@@ -251,19 +254,25 @@ public class RenderBufferHandler implements AutoCloseable
 		}
 	}
 	
+	//endregion
+	
 	
 	
 	//================//
 	// render methods //
 	//================//
+	//region
 	
 	public SortedArraySet<LodBufferContainer> getColumnRenderBuffers() { return this.loadedNearToFarBuffers; }
+	
+	//endregion
 	
 	
 	
 	//=========//
 	// F3 menu //
 	//=========//
+	//region
 	
 	public String getVboRenderDebugMenuString()
 	{
@@ -290,14 +299,19 @@ public class RenderBufferHandler implements AutoCloseable
 		return "Shadow VBO Render Count: [" + countText + "]";
 	}
 	
+	//endregion
+	
 	
 	
 	//=========//
 	// cleanup //
 	//=========//
+	//region
 	
 	@Override
 	public void close() { this.lodQuadTree.close(); }
+	
+	//endregion
 	
 	
 	

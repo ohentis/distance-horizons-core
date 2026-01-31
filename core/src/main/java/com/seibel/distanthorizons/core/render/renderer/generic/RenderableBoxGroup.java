@@ -5,10 +5,19 @@ import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhAp
 import com.seibel.distanthorizons.api.objects.math.DhApiVec3d;
 import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBox;
 import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBoxGroupShading;
+import com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.ColumnRenderBufferBuilder;
+import com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.LodBufferContainer;
+import com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.LodQuadBuilder;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
+import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.render.glObject.GLProxy;
+import com.seibel.distanthorizons.core.util.ColorUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
+import com.seibel.distanthorizons.core.util.threading.PriorityTaskPicker;
+import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftGLWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.opengl.GL32;
 
@@ -28,6 +37,7 @@ public class RenderableBoxGroup
 			implements IDhApiRenderableBoxGroup, Closeable
 	{
 		private static final IMinecraftGLWrapper GLMC = SingletonInjector.INSTANCE.get(IMinecraftGLWrapper.class);
+		private static final IMinecraftRenderWrapper MC_RENDER = SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
 		
 		public static final AtomicInteger NEXT_ID_ATOMIC_INT = new AtomicInteger(0);
 		
@@ -51,8 +61,8 @@ public class RenderableBoxGroup
 		public boolean ssaoEnabled = true;
 		private boolean vertexDataDirty = true;
 		
-		public int skyLight = 15;
-		public int blockLight = 0;
+		public byte skyLight = LodUtil.MAX_MC_LIGHT;
+		public byte blockLight = LodUtil.MIN_MC_LIGHT;
 		public DhApiRenderableBoxGroupShading shading = DhApiRenderableBoxGroupShading.getDefaultShaded();
 		
 		@Nullable
@@ -69,8 +79,10 @@ public class RenderableBoxGroup
 		public int uploadedBoxCount = -1;
 		
 		
-		
-		// setters/getters //
+		//=================//
+		// getters/setters //
+		//=================//
+		//region
 		
 		@Override
 		public long getId() { return this.id; }
@@ -95,11 +107,12 @@ public class RenderableBoxGroup
 		@Override
 		public void setSkyLight(int skyLight) 
 		{
-			if (skyLight < LodUtil.MIN_MC_LIGHT || skyLight > LodUtil.MAX_MC_LIGHT)
+			if (skyLight < LodUtil.MIN_MC_LIGHT 
+				|| skyLight > LodUtil.MAX_MC_LIGHT)
 			{
 				throw new IllegalArgumentException("Sky light ["+skyLight+"] must be between ["+LodUtil.MIN_MC_LIGHT+"] and ["+LodUtil.MAX_MC_LIGHT+"] (inclusive).");
 			}
-			this.skyLight = skyLight; 
+			this.skyLight = (byte)skyLight; 
 		}
 		@Override
 		public int getSkyLight() { return this.skyLight; }
@@ -107,20 +120,45 @@ public class RenderableBoxGroup
 		@Override
 		public void setBlockLight(int blockLight) 
 		{
-			if (blockLight < LodUtil.MIN_MC_LIGHT || blockLight > LodUtil.MAX_MC_LIGHT)
+			if (blockLight < LodUtil.MIN_MC_LIGHT 
+				|| blockLight > LodUtil.MAX_MC_LIGHT)
 			{
 				throw new IllegalArgumentException("Block light ["+blockLight+"] must be between ["+LodUtil.MIN_MC_LIGHT+"] and ["+LodUtil.MAX_MC_LIGHT+"] (inclusive).");
 			}
-			this.blockLight = blockLight; 
+			this.blockLight = (byte)blockLight; 
 		}
 		@Override
 		public int getBlockLight() { return this.blockLight; }
+		
+		@Override
+		public void setPreRenderFunc(Consumer<DhApiRenderParam> func) { this.beforeRenderFunc = func; }
+		
+		@Override
+		public void setPostRenderFunc(Consumer<DhApiRenderParam> func) { this.afterRenderFunc = func; }
+		
+		@Override
+		public void setActive(boolean active) { this.active = active; }
+		@Override
+		public boolean isActive() { return this.active; }
+		
+		@Override
+		public void setSsaoEnabled(boolean ssaoEnabled) { this.ssaoEnabled = ssaoEnabled; }
+		@Override
+		public boolean isSsaoEnabled() { return this.ssaoEnabled; }
+		
+		@Override
+		public void setShading(DhApiRenderableBoxGroupShading shading) { this.shading = shading; }
+		@Override
+		public DhApiRenderableBoxGroupShading getShading() { return this.shading; }
+		
+		//endregion
 		
 		
 		
 		//=============//
 		// constructor //
 		//=============//
+		//region
 		
 		public RenderableBoxGroup(
 				String resourceLocation, 
@@ -144,96 +182,17 @@ public class RenderableBoxGroup
 			this.positionBoxesRelativeToGroupOrigin = positionBoxesRelativeToGroupOrigin;
 		}
 		
+		//endregion
 		
 		
-		// methods //
+		
+		//=================//
+		// render building //
+		//=================//
+		//region
 		
 		@Override
-		public boolean add(DhApiRenderableBox box) { return this.boxList.add(box); }
-		
-		@Override
-		public void setPreRenderFunc(Consumer<DhApiRenderParam> func) { this.beforeRenderFunc = func; }
-		
-		@Override
-		public void setPostRenderFunc(Consumer<DhApiRenderParam> func) { this.afterRenderFunc = func; }
-		
-		@Override 
 		public void triggerBoxChange() { this.vertexDataDirty = true; }
-		
-		@Override
-		public void setActive(boolean active) { this.active = active; }
-		@Override
-		public boolean isActive() { return this.active; }
-		
-		@Override
-		public void setSsaoEnabled(boolean ssaoEnabled) { this.ssaoEnabled = ssaoEnabled; }
-		@Override
-		public boolean isSsaoEnabled() { return this.ssaoEnabled; }
-		
-		/** 
-		 * This is called before every frame, even if {@link this#isActive()} returns false. <br>
-		 * {@link this#isActive()} can be changed at this point before the object is rendered to the frame.
-		 */
-		public void preRender(DhApiRenderParam renderEventParam) 
-		{
-			if (this.beforeRenderFunc != null)
-			{
-				this.beforeRenderFunc.accept(renderEventParam);
-			}
-		}
-		/**
-		 * Called after rendering is completed. <br>
-		 * Can be used to handle any necessary cleanup.
-		 */
-		public void postRender(DhApiRenderParam renderEventParam) 
-		{
-			if (this.afterRenderFunc != null)
-			{
-				this.afterRenderFunc.accept(renderEventParam);
-			}
-		}
-		
-		@Override
-		public void setShading(DhApiRenderableBoxGroupShading shading) { this.shading = shading; }
-		@Override
-		public DhApiRenderableBoxGroupShading getShading() { return this.shading; }
-		
-		
-		
-		//================//
-		// List Overrides //
-		//================//
-		
-		@Override
-		public DhApiRenderableBox get(int index) { return this.boxList.get(index); }
-		@Override 
-		public int size() { return this.boxList.size(); }
-		@Override 
-		public boolean removeIf(Predicate<? super DhApiRenderableBox> filter) { return this.boxList.removeIf(filter); }
-		@Override 
-		public boolean remove(Object obj) { return this.boxList.remove(obj); }
-		@Override 
-		public DhApiRenderableBox remove(int index) { return this.boxList.remove(index); }
-		@Override 
-		public void replaceAll(UnaryOperator<DhApiRenderableBox> operator) { this.boxList.replaceAll(operator); }
-		@Override 
-		public void sort(Comparator<? super DhApiRenderableBox> comparator) { this.boxList.sort(comparator); }
-		@Override 
-		public void forEach(Consumer<? super DhApiRenderableBox> action) { this.boxList.forEach(action); }
-		@Override 
-		public Spliterator<DhApiRenderableBox> spliterator() { return this.boxList.spliterator(); }
-		@Override 
-		public Stream<DhApiRenderableBox> stream() { return this.boxList.stream(); }
-		@Override 
-		public Stream<DhApiRenderableBox> parallelStream() { return this.boxList.parallelStream(); }
-		@Override 
-		public void clear() { this.boxList.clear(); }
-		
-		
-		
-		//===================//
-		// vertex attributes //
-		//===================//
 		
 		/** Does nothing if the vertex data is already up-to-date */
 		public void updateVertexAttributeData()
@@ -325,11 +284,82 @@ public class RenderableBoxGroup
 			GL32.glBufferData(GL32.GL_ARRAY_BUFFER, materialData, GL32.GL_DYNAMIC_DRAW);
 		}
 		
+		//endregion
+		
+		
+		
+		//===============//
+		// render events //
+		//===============//
+		//region
+		
+		/** 
+		 * This is called before every frame, even if {@link this#isActive()} returns false. <br>
+		 * {@link this#isActive()} can be changed at this point before the object is rendered to the frame.
+		 */
+		public void preRender(DhApiRenderParam renderEventParam) 
+		{
+			if (this.beforeRenderFunc != null)
+			{
+				this.beforeRenderFunc.accept(renderEventParam);
+			}
+		}
+		/**
+		 * Called after rendering is completed. <br>
+		 * Can be used to handle any necessary cleanup.
+		 */
+		public void postRender(DhApiRenderParam renderEventParam) 
+		{
+			if (this.afterRenderFunc != null)
+			{
+				this.afterRenderFunc.accept(renderEventParam);
+			}
+		}
+		
+		//endregion
+		
+		
+		
+		//================//
+		// List Overrides //
+		//================//
+		//region
+		
+		@Override
+		public boolean add(DhApiRenderableBox box) { return this.boxList.add(box); }
+		@Override
+		public DhApiRenderableBox get(int index) { return this.boxList.get(index); }
+		@Override 
+		public int size() { return this.boxList.size(); }
+		@Override 
+		public boolean removeIf(Predicate<? super DhApiRenderableBox> filter) { return this.boxList.removeIf(filter); }
+		@Override 
+		public boolean remove(Object obj) { return this.boxList.remove(obj); }
+		@Override 
+		public DhApiRenderableBox remove(int index) { return this.boxList.remove(index); }
+		@Override 
+		public void replaceAll(UnaryOperator<DhApiRenderableBox> operator) { this.boxList.replaceAll(operator); }
+		@Override 
+		public void sort(Comparator<? super DhApiRenderableBox> comparator) { this.boxList.sort(comparator); }
+		@Override 
+		public void forEach(Consumer<? super DhApiRenderableBox> action) { this.boxList.forEach(action); }
+		@Override 
+		public Spliterator<DhApiRenderableBox> spliterator() { return this.boxList.spliterator(); }
+		@Override 
+		public Stream<DhApiRenderableBox> stream() { return this.boxList.stream(); }
+		@Override 
+		public Stream<DhApiRenderableBox> parallelStream() { return this.boxList.parallelStream(); }
+		@Override 
+		public void clear() { this.boxList.clear(); }
+		
+		//endregion
+		
 		
 		
 		//================//
 		// base overrides //
 		//================//
+		//region
 		
 		@Override
 		public String toString() { return "ID:["+this.id+"], pos:["+this.originBlockPos.x+","+this.originBlockPos.y+","+this.originBlockPos.z+"], size:["+this.size()+"], active:["+this.active+"]"; }
@@ -370,6 +400,10 @@ public class RenderableBoxGroup
 				}
 			});
 		}
+		
+		//endregion
+		
+		
 		
 	}
 	
