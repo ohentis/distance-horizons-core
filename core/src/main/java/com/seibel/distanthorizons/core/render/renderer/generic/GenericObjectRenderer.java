@@ -103,6 +103,7 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 	
 	/** A box from 0,0,0 to 1,1,1 */
 	private static final float[] BOX_VERTICES = {
+	//region
 			// Pos x y z
 			
 			// min X, vertical face
@@ -137,9 +138,12 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 			1, 1, 1,
 			1, 1, 0,
 			0, 1, 0,
+	//endregion
 	};
 	
+	
 	private static final int[] BOX_INDICES = {
+	//region
 			// min X, vertical face
 			2, 1, 0,    
 			0, 3, 2,
@@ -160,6 +164,7 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 			// max Y, horizontal face
 			20, 21, 22, 
 			22, 23, 20,
+	//endregion
 	};
 	
 	
@@ -167,6 +172,7 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 	//=============//
 	// constructor //
 	//=============//
+	//region
 	
 	public GenericObjectRenderer() { }
 	
@@ -343,11 +349,14 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		this.add(massRelativePosBoxGroup);
 	}
 	
+	//endregion
+	
 	
 	
 	//==============//
 	// registration //
 	//==============//
+	//region
 	
 	@Override
 	public void add(IDhApiRenderableBoxGroup iBoxGroup) throws IllegalArgumentException 
@@ -373,11 +382,14 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 	
 	public void clear() { this.boxGroupById.clear(); }
 	
+	//endregion
+	
 	
 	
 	//===========//
 	// rendering //
 	//===========//
+	//region
 	
 	/**
 	 * @param renderingWithSsao 
@@ -506,11 +518,14 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		profiler.pop();
 	}
 	
+	//endregion
+	
 	
 	
 	//=====================//
 	// instanced rendering //
 	//=====================//
+	//region
 	
 	private void renderBoxGroupInstanced(
 			IDhApiGenericObjectShaderProgram shaderProgram, DhApiRenderParam renderEventParam, 
@@ -603,12 +618,14 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		}
 	}
 	
+	//endregion
 	
 	
 	
 	//==================//
 	// direct rendering //
 	//==================//
+	//region
 	
 	private void renderBoxGroupDirect(IDhApiGenericObjectShaderProgram shaderProgram, DhApiRenderParam renderEventParam, RenderableBoxGroup boxGroup, Vec3d camPos)
 	{
@@ -649,11 +666,14 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		GL32.glDrawElements(GL32.GL_TRIANGLES, BOX_INDICES.length, GL32.GL_UNSIGNED_INT, 0);
 	}
 	
+	//endregion
+	
 	
 	
 	//=========//
 	// getters //
 	//=========//
+	//region
 	
 	/** @throws IllegalStateException if {@link #init()} function hasn't been called yet */
 	public boolean getInstancedRenderingAvailable() throws IllegalStateException
@@ -666,11 +686,14 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		return this.instancedRenderingAvailable; 
 	}
 	
+	//endregion
+	
 	
 	
 	//=========//
 	// F3 menu //
 	//=========//
+	//region
 	
 	public String getVboRenderDebugMenuString()
 	{
@@ -696,5 +719,9 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		return "Generic Obj #: " + F3Screen.NUMBER_FORMAT.format(activeGroupCount) + "/" + F3Screen.NUMBER_FORMAT.format(totalGroupCount) + ", " +
 				"Cube #: " + F3Screen.NUMBER_FORMAT.format(activeBoxCount) + "/" + F3Screen.NUMBER_FORMAT.format(totalBoxCount);
 	}
+	
+	//endregion
+	
+	
 	
 }
