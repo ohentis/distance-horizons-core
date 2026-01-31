@@ -123,7 +123,7 @@ public class ColumnBox
 					&& !isTopTransparent;
 			if (!skipTop)
 			{
-				builder.addQuadUp(minX, maxY, minZ, width, width, ColorUtil.applyShade(color, MC_RENDER.getShade(EDhDirection.UP)), irisBlockMaterialId, skyLightTop, blockLight);
+				builder.addQuadUp(minX, maxY, minZ, width, ColorUtil.applyShade(color, MC_RENDER.getShade(EDhDirection.UP)), irisBlockMaterialId, skyLightTop, blockLight);
 			}
 		}
 		
