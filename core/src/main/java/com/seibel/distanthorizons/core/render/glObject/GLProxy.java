@@ -103,6 +103,7 @@ public class GLProxy
 	//=============//
 	// constructor //
 	//=============//
+	//region
 	
 	private GLProxy() throws IllegalStateException
 	{
@@ -202,11 +203,14 @@ public class GLProxy
 		LOGGER.info(GLProxy.class.getSimpleName() + " creation successful. OpenGL smiles upon you this day.");
 	}
 	
+	//endregion
+	
 	
 	
 	//=========//
 	// getters //
 	//=========//
+	//region
 	
 	public static boolean hasInstance() { return instance != null; }
 	/** @throws IllegalStateException if the Proxy hasn't been created yet and this is called outside the render thread */
@@ -237,11 +241,14 @@ public class GLProxy
 		return currentContext != 0L; // if the context isn't null, it's the MC context
 	}
 	
+	//endregion
+	
 	
 	
 	//=========================//
 	// Worker Thread Runnables //
 	//=========================//
+	//region
 	
 	public static void queueRunningOnRenderThread(Runnable renderCall)
 	{
@@ -287,11 +294,14 @@ public class GLProxy
 		}
 	}
 	
+	//endregion
+	
 	
 	
 	//=========//
 	// logging //
 	//=========//
+	//region
 	
 	/** this method is called on the render thread at the point of the GL Error */
 	private static void logMessage(GLMessage msg)
@@ -359,11 +369,14 @@ public class GLProxy
 		}
 	}
 	
+	//endregion
+	
 	
 	
 	//================//
 	// helper methods //
 	//================//
+	//region
 	
 	private String getFailedVersionInfo(GLCapabilities c)
 	{
@@ -383,6 +396,8 @@ public class GLProxy
 				"Vertex Attribute Buffer Binding: [" + (c.glVertexAttribBinding != 0) + "] <- optional improvement\n" +
 				"Buffer Storage: [" + (c.glBufferStorage != 0) + "] <- optional improvement\n";
 	}
+	
+	//endregion
 	
 	
 	
