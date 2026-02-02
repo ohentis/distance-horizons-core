@@ -270,13 +270,6 @@ public class Config
 							.addListener(ReloadLodsConfigEventHandler.DELAYED_INSTANCE)
 							.build();
 					
-					public static ConfigEntry<Double> lodBias = new ConfigEntry.Builder<Double>()
-							.setMinDefaultMax(0d, 0d, null)
-							.comment(""
-									+ "What value should vanilla Minecraft's texture LodBias be? \n"
-									+ "If set to 0 the mod wont overwrite vanilla's default (which so happens to also be 0)")
-							.build();
-					
 					public static ConfigEntry<EDhApiLodShading> lodShading = new ConfigEntry.Builder<EDhApiLodShading>()
 							.set(EDhApiLodShading.AUTO)
 							.comment(""

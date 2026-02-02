@@ -151,12 +151,6 @@ public interface IDhApiGraphicsConfig extends IDhApiConfigGroup
 	IDhApiConfigValue<Boolean> lodOnlyMode();
 	
 	/**
-	 * Setting this to a non-zero number will modify vanilla Minecraft's LOD Bias,
-	 * increasing how quickly its textures fade away.
-	 */
-	IDhApiConfigValue<Double> lodBias();
-	
-	/**
 	 * Determines how LODs should be shaded.
 	 *
 	 * @since API 2.0.0

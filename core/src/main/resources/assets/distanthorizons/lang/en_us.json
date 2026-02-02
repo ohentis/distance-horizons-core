@@ -138,10 +138,6 @@
     "Tint With Avoided Blocks",
   "distanthorizons.config.client.advanced.graphics.quality.tintWithAvoidedBlocks.@tooltip":
     "§4Note: makes snow, carpet, and trapdoors look really bad§r\nShould the blocks underneath avoided blocks gain the color of the avoided block?\n§6True:§r a red flower on grass will tint the grass below it red\n§6False:§r skipped blocks will not change color of surface below them",
-  "distanthorizons.config.client.advanced.graphics.quality.lodBias":
-    "LOD Bias §6(Affects vanilla terrain)§r",
-  "distanthorizons.config.client.advanced.graphics.quality.lodBias.@tooltip":
-    "Sets vanilla's lod bias value\nPlease press F3+T to reload your texture packs when changing this value to apply it.",
   "distanthorizons.config.client.advanced.graphics.quality.lodShading":
     "LOD Shading",
   "distanthorizons.config.client.advanced.graphics.quality.lodShading.@tooltip":
