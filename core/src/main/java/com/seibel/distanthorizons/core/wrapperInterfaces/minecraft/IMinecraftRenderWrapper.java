@@ -21,6 +21,7 @@ package com.seibel.distanthorizons.core.wrapperInterfaces.minecraft;
 
 import java.awt.Color;
 
+import com.seibel.distanthorizons.core.api.internal.rendering.DhRenderState;
 import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.ILightMapWrapper;
 import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IBindable;
@@ -42,6 +43,21 @@ public interface IMinecraftRenderWrapper extends IBindable
 	Vec3f getLookAtVector();
 	
 	boolean playerHasBlindingEffect();
+	
+	/**
+	 * percentage of time into the current client tick. <br><br>
+	 *
+	 * Can be converted to a millisecond frametime 
+	 * (IE time between frames in milliseconds) using the formula: <br>
+	 * <code>
+	 * (partialTickTime/20*1000)
+	 * </code> <br>
+	 * IE 60 FPS = 16.6 MS <br>
+	 *
+	 * @link https://fpstoms.com/
+	 * @see DhRenderState#partialTickTime
+	 */
+	float getPartialTickTime();
 	
 	Vec3d getCameraExactPosition();
 	

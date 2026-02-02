@@ -2,6 +2,7 @@ package com.seibel.distanthorizons.core.api.internal.rendering;
 
 import com.seibel.distanthorizons.core.api.internal.ClientApi;
 import com.seibel.distanthorizons.core.util.math.Mat4f;
+import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 
 /**
@@ -24,6 +25,7 @@ public class DhRenderState
 	 * IE 60 FPS = 16.6 MS <br>
 	 * 
 	 * @link https://fpstoms.com/
+	 * @see IMinecraftRenderWrapper#getPartialTickTime()
 	 */
 	public float partialTickTime = -1; 
 	public IClientLevelWrapper clientLevelWrapper = null;
