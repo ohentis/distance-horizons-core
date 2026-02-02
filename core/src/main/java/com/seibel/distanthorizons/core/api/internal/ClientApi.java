@@ -272,6 +272,13 @@ public class ClientApi
 	
 	public void clientLevelLoadEvent(@Nullable IClientLevelWrapper levelWrapper)
 	{
+		// can happen if there was an issue during level load
+		if (levelWrapper == null)
+		{
+			return;
+		}
+		
+		
 		// wait a moment before loading the level to give the server a chance to handle the client's login request
 		if (MC_CLIENT.clientConnectedToDedicatedServer())
 		{
