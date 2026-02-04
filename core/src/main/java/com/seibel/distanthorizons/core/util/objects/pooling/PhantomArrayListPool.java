@@ -1,4 +1,4 @@
-package com.seibel.distanthorizons.core.pooling;
+package com.seibel.distanthorizons.core.util.objects.pooling;
 
 import com.seibel.distanthorizons.core.api.internal.ClientApi;
 import com.seibel.distanthorizons.core.config.Config;

@@ -3,7 +3,7 @@ package com.seibel.distanthorizons.core.util.objects.dataStreams;
 import com.github.luben.zstd.Zstd;
 import com.github.luben.zstd.ZstdDecompressCtx;
 import com.github.luben.zstd.ZstdException;
-import com.seibel.distanthorizons.core.pooling.PhantomArrayListCheckout;
+import com.seibel.distanthorizons.core.util.objects.pooling.PhantomArrayListCheckout;
 import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 
 public class PooledZstdDecompressor

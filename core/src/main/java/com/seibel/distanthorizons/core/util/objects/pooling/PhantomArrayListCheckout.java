@@ -1,4 +1,4 @@
-package com.seibel.distanthorizons.core.pooling;
+package com.seibel.distanthorizons.core.util.objects.pooling;
 
 import com.seibel.distanthorizons.core.util.ListUtil;
 import com.seibel.distanthorizons.coreapi.util.StringUtil;
@@ -14,9 +14,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 /**
- * TODO move into util.objects.pooling
- * TODO split up trackable objects into inner objects to remove duplicate code
- * 
  * This keeps track of all the poolable
  * arrays that can be retrieved via the {@link PhantomArrayListPool}.
  * 

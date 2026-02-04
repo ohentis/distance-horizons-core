@@ -22,7 +22,7 @@ package com.seibel.distanthorizons.core.util.objects.dataStreams;
 import com.github.luben.zstd.*;
 import com.seibel.distanthorizons.api.enums.config.EDhApiDataCompressionMode;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.pooling.PhantomArrayListCheckout;
+import com.seibel.distanthorizons.core.util.objects.pooling.PhantomArrayListCheckout;
 import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import net.jpountz.lz4.LZ4FrameInputStream;
 import com.seibel.distanthorizons.core.logging.DhLogger;
