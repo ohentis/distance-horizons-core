@@ -19,11 +19,13 @@
 
 package com.seibel.distanthorizons.core.render.renderer;
 
+import com.seibel.distanthorizons.api.enums.rendering.EDhApiRendererMode;
 import com.seibel.distanthorizons.api.interfaces.override.rendering.IDhApiFramebuffer;
 import com.seibel.distanthorizons.api.interfaces.override.rendering.IDhApiShaderProgram;
 import com.seibel.distanthorizons.api.methods.events.abstractEvents.*;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiTextureCreatedParam;
+import com.seibel.distanthorizons.core.api.internal.ClientApi;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.LodBufferContainer;
 import com.seibel.distanthorizons.core.dependencyInjection.ModAccessorInjector;
@@ -116,6 +118,7 @@ public class LodRenderer
 	//===========//
 	// rendering //
 	//===========//
+	//region
 	
 	/**
 	 * This will draw both opaque and transparent LODs if 
@@ -361,11 +364,14 @@ public class LodRenderer
 		profiler.pop();
 	}
 	
+	//endregion
+	
 	
 	
 	//=================//
 	// Setup Functions //
 	//=================//
+	//region
 	
 	private void setGLState(
 			DhApiRenderParam renderEventParam,
@@ -590,11 +596,14 @@ public class LodRenderer
 		ApiEventInjector.INSTANCE.fireAllEvents(DhApiAfterColorDepthTextureCreatedEvent.class, textureCreatedParam);
 	}
 	
+	//endregion
+	
 	
 	
 	//===============//
 	// LOD rendering //
 	//===============//
+	//region
 	
 	private void renderLodPass(IDhApiShaderProgram shaderProgram, RenderBufferHandler lodBufferHandler, RenderParams renderEventParam, boolean opaquePass)
 	{
@@ -644,40 +653,49 @@ public class LodRenderer
 			GLMC.enableFaceCulling();
 		}
 		
-		
-		SortedArraySet<LodBufferContainer> lodBufferContainer = lodBufferHandler.getColumnRenderBuffers();
-		if (lodBufferContainer != null)
+		if (Config.Client.Advanced.Debugging.rendererMode.get() == EDhApiRendererMode.DEFAULT)
 		{
-			for (int lodIndex = 0; lodIndex < lodBufferContainer.size(); lodIndex++)
+			// Normal LOD rendering
+			
+			SortedArraySet<LodBufferContainer> lodBufferContainer = lodBufferHandler.getColumnRenderBuffers();
+			if (lodBufferContainer != null)
 			{
-				LodBufferContainer bufferContainer = lodBufferContainer.get(lodIndex);
-				this.setShaderProgramMvmOffset(bufferContainer.minCornerBlockPos, shaderProgram, renderEventParam);
-				
-				GLVertexBuffer[] vbos = opaquePass ? bufferContainer.vbos : bufferContainer.vbosTransparent;
-				for (int vboIndex = 0; vboIndex < vbos.length; vboIndex++)
+				for (int lodIndex = 0; lodIndex < lodBufferContainer.size(); lodIndex++)
 				{
-					GLVertexBuffer vbo = vbos[vboIndex];
-					if (vbo == null)
-					{
-						continue;
-					}
+					LodBufferContainer bufferContainer = lodBufferContainer.get(lodIndex);
+					this.setShaderProgramMvmOffset(bufferContainer.minCornerBlockPos, shaderProgram, renderEventParam);
 					
-					if (vbo.getVertexCount() == 0)
+					GLVertexBuffer[] vbos = opaquePass ? bufferContainer.vbos : bufferContainer.vbosTransparent;
+					for (int vboIndex = 0; vboIndex < vbos.length; vboIndex++)
 					{
-						continue;
-					}
-					
-					vbo.bind();
-					shaderProgram.bindVertexBuffer(vbo.getId());
-					GL32.glDrawElements(
+						GLVertexBuffer vbo = vbos[vboIndex];
+						if (vbo == null)
+						{
+							continue;
+						}
+						
+						if (vbo.getVertexCount() == 0)
+						{
+							continue;
+						}
+						
+						vbo.bind();
+						shaderProgram.bindVertexBuffer(vbo.getId());
+						GL32.glDrawElements(
 							GL32.GL_TRIANGLES,
 							(vbo.getVertexCount() / 4) * 6, // TODO what does the 4 and 6 here represent?
 							this.quadIBO.getType(), 0);
-					vbo.unbind();
+						vbo.unbind();
+					}
 				}
 			}
 		}
-		
+		else
+		{
+			// basic quad rendering
+			
+			TestRenderer.INSTANCE.render();
+		}
 		
 		
 		//=========================//
@@ -711,11 +729,14 @@ public class LodRenderer
 		ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeBufferRenderEvent.class, new DhApiBeforeBufferRenderEvent.EventParam(renderEventParam, modelPos));
 	}
 	
+	//endregion
+	
 	
 	
 	//===============//
 	// API functions //
 	//===============//
+	//region
 	
 	/** @return -1 if no frame buffer has been bound yet */
 	public int getActiveFramebufferId() { return this.activeFramebufferId; }
@@ -725,6 +746,8 @@ public class LodRenderer
 	
 	/** @return -1 if no texture has been bound yet */
 	public int getActiveDepthTextureId() { return this.activeDepthTextureId; }
+	
+	//endregion
 	
 	
 	

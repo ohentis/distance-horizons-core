@@ -74,7 +74,6 @@ public class ClientApi
 	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
 	
 	public static final ClientApi INSTANCE = new ClientApi();
-	public static final TestRenderer TEST_RENDERER = new TestRenderer();
 	
 	private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	private static final IMinecraftRenderWrapper MC_RENDER = SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
@@ -553,6 +552,11 @@ public class ClientApi
 			return;
 		}
 		
+		if (Config.Client.Advanced.Debugging.rendererMode.get() == EDhApiRendererMode.DISABLED)
+		{
+			return;
+		}
+		
 		///endregion
 		
 		
@@ -568,24 +572,15 @@ public class ClientApi
 			
 			if (!renderingDeferredLayer)
 			{
-				if (Config.Client.Advanced.Debugging.rendererMode.get() == EDhApiRendererMode.DEFAULT)
+				boolean renderingCancelled = ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeRenderEvent.class, renderParams);
+				if (!renderingCancelled)
 				{
-					boolean renderingCancelledForThisFrame = ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeRenderEvent.class, renderParams);
-					if (!renderingCancelledForThisFrame)
-					{
-						LodRenderer.INSTANCE.render(renderParams, profiler);
-					}
-					
-					if (!DhApi.Delayed.renderProxy.getDeferTransparentRendering())
-					{
-						ApiEventInjector.INSTANCE.fireAllEvents(DhApiAfterRenderEvent.class, null);
-					}
+					LodRenderer.INSTANCE.render(renderParams, profiler);
 				}
-				else if (Config.Client.Advanced.Debugging.rendererMode.get() == EDhApiRendererMode.DEBUG)
+				
+				if (!DhApi.Delayed.renderProxy.getDeferTransparentRendering())
 				{
-					profiler.push("Render Debug");
-					ClientApi.TEST_RENDERER.render();
-					profiler.pop();
+					ApiEventInjector.INSTANCE.fireAllEvents(DhApiAfterRenderEvent.class, null);
 				}
 			}
 			else
@@ -638,7 +633,7 @@ public class ClientApi
 	public void renderFadeOpaque() // TODO is this actually the transparent pass in MC 1.21.11?
 	{
 		// only fade when DH is rendering
-		if (Config.Client.Advanced.Debugging.rendererMode.get() == EDhApiRendererMode.DEFAULT
+		if (Config.Client.Advanced.Debugging.rendererMode.get() != EDhApiRendererMode.DISABLED
 			&&
 			(
 				// only fade when requested
@@ -660,7 +655,7 @@ public class ClientApi
 	public void renderFadeTransparent() // TODO is this actually the opaque pass in MC 1.21.11?
 	{
 		// only fade when DH is rendering
-		if (Config.Client.Advanced.Debugging.rendererMode.get() == EDhApiRendererMode.DEFAULT)
+		if (Config.Client.Advanced.Debugging.rendererMode.get() != EDhApiRendererMode.DISABLED)
 		{
 			boolean renderFade =
 				(
