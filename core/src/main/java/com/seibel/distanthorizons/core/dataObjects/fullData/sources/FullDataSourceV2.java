@@ -682,7 +682,6 @@ public class FullDataSourceV2
 	 */
 	private static byte determineMinWorldGenStepForTwoByTwoColumn(ByteArrayList columnGenerationSteps, int relX, int relZ)
 	{
-		// TODO merge similar logic with determineHighestWorldCompressionForTwoByTwoColumn
 		byte minWorldGenStepValue = Byte.MAX_VALUE;
 		for (int x = 0; x < 2; x++)
 		{
@@ -701,7 +700,6 @@ public class FullDataSourceV2
 	 */
 	private static byte determineHighestWorldCompressionForTwoByTwoColumn(ByteArrayList columnCompressionMode, int relX, int relZ)
 	{
-		// TODO merge similar logic with determineMinWorldGenStepForTwoByTwoColumn
 		byte minWorldGenStepValue = Byte.MIN_VALUE;
 		for (int x = 0; x < 2; x++)
 		{
@@ -777,7 +775,7 @@ public class FullDataSourceV2
 			return newColumnList;
 		}
 		
-		// sort the transitions from bottom to top // TODO
+		// sort the transitions from bottom to top
 		yTransitions.sort(null);
 		
 		// create index trackers for each column, 
@@ -1316,7 +1314,6 @@ public class FullDataSourceV2
 			
 			LongArrayList packedDataPoints = LodDataBuilder.convertApiDataPointListToPackedLongArray(columnDataPoints, this, 0, true);
 			
-			// TODO there should be an "unknown" compression and generation step, or be defined via the datapoints
 			this.setSingleColumn(packedDataPoints, relX, relZ, EDhApiWorldGenerationStep.SURFACE, EDhApiWorldCompressionMode.MERGE_SAME_BLOCKS);
 			
 			return columnDataPoints;

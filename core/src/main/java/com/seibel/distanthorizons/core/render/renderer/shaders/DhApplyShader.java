@@ -46,6 +46,11 @@ public class DhApplyShader extends AbstractShaderRenderer
 	
 	
 	
+	//=======//
+ 	// setup //
+ 	//=======//
+	//region
+	
 	private DhApplyShader() { }
 	
 	@Override
@@ -66,10 +71,14 @@ public class DhApplyShader extends AbstractShaderRenderer
 	@Override
 	protected void onApplyUniforms(float partialTicks) { }
 	
+	//endregion
+	
+	
 	
 	//========//
 	// render //
 	//========//
+	//region
 	
 	@Override
 	protected void onRender()
@@ -83,7 +92,6 @@ public class DhApplyShader extends AbstractShaderRenderer
 			this.renderToMcTexture();
 		}
 	}
-	// TODO merge duplicate code between these to render methods
 	private void renderToFrameBuffer()
 	{
 		int targetFrameBuffer = MC_RENDER.getTargetFramebuffer();
@@ -185,6 +193,8 @@ public class DhApplyShader extends AbstractShaderRenderer
 		GLMC.glBindFramebuffer(GL32.GL_FRAMEBUFFER, mcFrameBufferId);
 		
 	}
+	
+	//endregion
 	
 	
 	

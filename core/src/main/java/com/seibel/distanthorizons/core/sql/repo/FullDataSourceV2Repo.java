@@ -760,7 +760,7 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 			statement.setInt(i++, DhSectionPos.getZ(pos));
 			
 			
-			try (ResultSet result = this.query(statement)) // TODO check other query's
+			try (ResultSet result = this.query(statement))
 			{
 				if (result == null || !result.next())
 				{
