@@ -138,6 +138,9 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 		DataSourceRetrievalTask existingGenTask = this.waitingTasks.get(pos);
 		if (existingGenTask != null)
 		{
+			// if the same future is returned
+			// the caller shouldn't close the datasource multiple times,
+			// otherwise issues will occur (holes and/or out-of-place LOD data)
 			return existingGenTask.future;
 		}
 		

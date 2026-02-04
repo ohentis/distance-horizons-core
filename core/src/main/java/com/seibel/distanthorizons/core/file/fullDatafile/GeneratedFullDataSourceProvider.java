@@ -64,9 +64,6 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 	 * Having this number too high causes the system to become overwhelmed by
 	 * world gen requests and other jobs won't be done. <br>
 	 * IE: LODs won't update or render because world gen is hogging the CPU.
-	 * <br><br>
-	 * TODO this should be dynamically allocated based on CPU load
-	 *  and abilities.
 	 */
 	public static final int MAX_WORLD_GEN_REQUESTS_PER_THREAD = 20;
 	
@@ -77,6 +74,8 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 	private final ArrayList<IOnWorldGenCompleteListener> onWorldGenTaskCompleteListeners = new ArrayList<>();
 	
 	protected final DelayedFullDataSourceSaveCache delayedFullDataSourceSaveCache = new DelayedFullDataSourceSaveCache(this::onDataSourceSaveAsync, 10_000);
+	
+	private final ConcurrentHashMap<Long, CompletableFuture<DataSourceRetrievalResult>> queuedRetrievalFutureByPos = new ConcurrentHashMap<>();
 	
 	
 	
@@ -136,7 +135,17 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 				LodUtil.assertTrue(genTaskResult.dataSource != null, "Successful retrieval object should have a datasource.");
 				
 				this.dataUpdater.updateDataSource(genTaskResult.dataSource);
-				this.fireOnGenPosSuccessListeners(genTaskResult.pos);
+				
+				// synchronized to prevent a rare issue where the world generator is being shut down while this listener is firing
+				synchronized (this.onWorldGenTaskCompleteListeners)
+				{
+					// fire the event listeners 
+					for (IOnWorldGenCompleteListener listener : this.onWorldGenTaskCompleteListeners)
+					{
+						listener.onWorldGenTaskComplete(genTaskResult.pos);
+					}
+				}
+				
 				genTaskResult.dataSource.close();
 			}
 			else if (genTaskResult.state == ERetrievalResultState.REQUIRES_SPLITTING)
@@ -154,19 +163,9 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 		{
 			LOGGER.error("Unexpected issue during onWorldGenTaskComplete, error: ["+e.getMessage()+"].", e);
 		}
-	}
-	
-	// TODO only fire after the section has finished generated or once every X seconds
-	private void fireOnGenPosSuccessListeners(long pos)
-	{
-		// synchronized to prevent a rare issue where the world generator is being shut down while this listener is firing
-		synchronized (this.onWorldGenTaskCompleteListeners)
+		finally
 		{
-			// fire the event listeners 
-			for (IOnWorldGenCompleteListener listener : this.onWorldGenTaskCompleteListeners)
-			{
-				listener.onWorldGenTaskComplete(pos);
-			}
+			this.queuedRetrievalFutureByPos.remove(genPos);
 		}
 	}
 	
@@ -306,7 +305,14 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 		}
 		
 		CompletableFuture<DataSourceRetrievalResult> worldGenFuture = worldGenQueue.submitRetrievalTask(genPos, (byte) (DhSectionPos.getDetailLevel(genPos) - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL));
-		worldGenFuture.whenComplete((r, e) -> this.onWorldGenTaskComplete(genPos, r, e));
+		
+		// only queue the when-complete once for each world gen task,
+		// otherwise we can end up trying to close the same datasource multiple times 
+		CompletableFuture<DataSourceRetrievalResult> oldWorldGenFuture = this.queuedRetrievalFutureByPos.putIfAbsent(genPos, worldGenFuture);
+		if (oldWorldGenFuture == null)
+		{
+			worldGenFuture.whenComplete((r, e) -> this.onWorldGenTaskComplete(genPos, r, e));
+		}
 		
 		return worldGenFuture;
 	}
