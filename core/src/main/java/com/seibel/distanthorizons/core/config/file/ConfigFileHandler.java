@@ -360,7 +360,8 @@ public class ConfigFileHandler
 		{
 			LOGGER.error("File creation failed at ["+this.configPath+"], error: ["+e.getMessage()+"].", e);
 			
-			// TODO is there a reason this is lazily gotten?
+			// delayed MC getter since this object may be created before
+			// the singleton has been bound
 			IMinecraftClientWrapper mc = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 			mc.crashMinecraft("Loading file and resetting config file failed at path [" + this.configPath + "]. Please check the file is ok and you have the permissions", e);
 		}

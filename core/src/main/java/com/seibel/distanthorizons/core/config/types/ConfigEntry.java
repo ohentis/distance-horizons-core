@@ -43,7 +43,7 @@ public class ConfigEntry<T> extends AbstractConfigBase<T>
 	private final String comment;
 	private T min;
 	private T max;
-	private final ArrayList<IConfigListener> listenerList; // TODO make concurrent
+	private final ArrayList<IConfigListener> listenerList;
 	private final String chatCommandName;
 	
 	/**
