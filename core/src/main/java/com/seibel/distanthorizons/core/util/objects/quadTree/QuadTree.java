@@ -66,6 +66,11 @@ public class QuadTree<T>
 	
 	
 	
+	//=============//
+	// constructor //
+	//=============//
+	//region
+	
 	/**
 	 * Constructor of the quadTree
 	 *
@@ -90,11 +95,80 @@ public class QuadTree<T>
 		
 	}
 	
+	//endregion
 	
 	
-	//=====================//
-	// getters and setters //
-	//=====================//
+	
+	//==================//
+	// property getters //
+	//==================//
+	//region
+	
+	/** @return the number of non-null nodes in the tree */
+	public int nodeCount()
+	{
+		int count = 0;
+		for (QuadNode<T> node : this.topRingList)
+		{
+			if (node == null)
+			{
+				continue;
+			}
+			
+			Iterator<QuadNode<T>> nodeIterator = node.getNodeIterator();
+			while (nodeIterator.hasNext())
+			{
+				if (nodeIterator.next().value != null)
+				{
+					count++;
+				}
+			}
+		}
+		
+		return count;
+	}
+	
+	/** @return the number of leaf nodes in the tree */
+	public int leafNodeCount()
+	{
+		int count = 0;
+		for (QuadNode<T> node : this.topRingList)
+		{
+			if (node == null)
+			{
+				continue;
+			}
+			
+			Iterator<QuadNode<T>> leafNodeIterator = node.getLeafNodeIterator();
+			while (leafNodeIterator.hasNext())
+			{
+				leafNodeIterator.next();
+				count++;
+			}
+		}
+		
+		return count;
+	}
+	
+	
+	/**
+	 * A tree will always have 9 root nodes, 
+	 * this is because the tree will grow all the way up to the top where it is a 3x3 grid.
+	 * If this is ever changed then these values must also change
+	 *
+	 */
+	public int ringListWidth() { return 3; }
+	public int ringListHalfWidth() { return 1; }
+	public int diameterInBlocks() { return this.diameterInBlocks; }
+	
+	//endregion
+	
+	
+	
+	//==========================//
+	// node getters and setters //
+	//==========================//
+	//region
 	
 	/** @return the value at the given section position. Null will be returned if the value is missing or the position is out of bounds. */
 	@Nullable
@@ -256,11 +330,14 @@ public class QuadTree<T>
 		return childCount;
 	}
 	
+	//endregion
+	
 	
 	
 	//===========//
 	// iterators //
 	//===========//
+	//region
 	
 	/** can include null nodes */
 	public LongIterator rootNodePosIterator() { return new QuadTreeRootPosIterator(true, null); }
@@ -270,11 +347,14 @@ public class QuadTree<T>
 	public Iterator<QuadNode<T>> nodeIterator() { return new QuadTreeNodeIterator(false, null); }
 	public Iterator<QuadNode<T>> leafNodeIterator() { return new QuadTreeNodeIterator(true, null); }
 	
+	//endregion
+	
 	
 	
 	//================//
 	// get/set center //
 	//================//
+	//region
 	
 	public void setCenterBlockPos(DhBlockPos2D newCenterPos) { this.setCenterBlockPos(newCenterPos, null); }
 	public void setCenterBlockPos(DhBlockPos2D newCenterPos, Consumer<? super T> removedItemConsumer)
@@ -306,78 +386,16 @@ public class QuadTree<T>
 	
 	public final DhBlockPos2D getCenterBlockPos() { return this.centerBlockPos; }
 	
+	//endregion
+	
 	
 	
 	//==============//
 	// base methods //
 	//==============//
+	//region
 	
 	public boolean isEmpty() { return this.nodeCount() == 0; } // this should be rewritten to short-circuit
-	
-	/** @return the number of non-null nodes in the tree */
-	public int nodeCount()
-	{
-		int count = 0;
-		for (QuadNode<T> node : this.topRingList)
-		{
-			if (node == null)
-			{
-				continue;
-			}
-			
-			Iterator<QuadNode<T>> nodeIterator = node.getNodeIterator();
-			while (nodeIterator.hasNext())
-			{
-				if (nodeIterator.next().value != null)
-				{
-					count++;
-				}
-			}
-		}
-		
-		return count;
-	}
-	
-	/** @return the number of leaf nodes in the tree */
-	public int leafNodeCount()
-	{
-		int count = 0;
-		for (QuadNode<T> node : this.topRingList)
-		{
-			if (node == null)
-			{
-				continue;
-			}
-			
-			Iterator<QuadNode<T>> leafNodeIterator = node.getLeafNodeIterator();
-			while (leafNodeIterator.hasNext())
-			{
-				leafNodeIterator.next();
-				count++;
-			}
-		}
-		
-		return count;
-	}
-	
-	
-	// TODO comment, currently a tree will always have 9 root nodes, because the tree will grow all the way up to the top, if this is ever changed then these values must also change 
-	public int ringListWidth() { return 3; }
-	public int ringListHalfWidth() { return 1; }
-	public int diameterInBlocks() { return this.diameterInBlocks; }
-
-//	public String getDebugString()
-//	{
-//		StringBuilder sb = new StringBuilder();
-//		for (byte i = 0; i < this.ringLists.length; i++)
-//		{
-//			sb.append("Layer ").append(i + TREE_LOWEST_DETAIL_LEVEL).append(":\n");
-//			sb.append(this.ringLists[i].toDetailString());
-//			sb.append("\n");
-//			sb.append("\n");
-//		}
-//		return sb.toString();
-//	}
 	
 	@Override
 	public String toString() 
@@ -388,11 +406,14 @@ public class QuadTree<T>
 				"leaf #: " + this.leafNodeCount(); 
 	}
 	
+	//endregion
+	
 	
 	
 	//==================//
 	// iterator classes //
 	//==================//
+	//region
 	
 	/** @see INodeIteratorStoppingFunc#iteratorShouldStop(QuadNode)  */
 	@FunctionalInterface
@@ -560,6 +581,8 @@ public class QuadTree<T>
 		public void forEachRemaining(Consumer<? super QuadNode<T>> action) { Iterator.super.forEachRemaining(action); }
 		
 	}
+	
+	//endregion
 	
 	
 }

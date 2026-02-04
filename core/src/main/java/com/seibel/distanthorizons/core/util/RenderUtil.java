@@ -188,7 +188,6 @@ public class RenderUtil
 		}
 		
 		
-		// TODO move into method and use to override discard value in shader program
 		float heightOverride = getHeightBasedNearClipOverrideBlockDistance();
 		if (heightOverride != -1.0f)
 		{

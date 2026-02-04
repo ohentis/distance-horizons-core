@@ -21,6 +21,7 @@ package com.seibel.distanthorizons.core.dataObjects.render.columnViews;
 
 
 import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSource;
+import com.seibel.distanthorizons.core.util.RenderDataPointReducingList;
 import com.seibel.distanthorizons.core.util.RenderDataPointUtil;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 
@@ -183,7 +184,40 @@ public final class ColumnArrayView implements IColumnDataView
 		{
 			for (int i = 0; i < this.dataCount(); i++)
 			{
-				RenderDataPointUtil.mergeMultiData(source.subView(i, 1), this.subView(i, 1));
+				mergeMultiData(source.subView(i, 1), this.subView(i, 1));
+			}
+		}
+	}
+	/**
+	 * This method merge column of multiple data together
+	 *
+	 * @param sourceData one or more columns of data
+	 * @param output one column of space for the result to be written to
+	 */
+	private static void mergeMultiData(IColumnDataView sourceData, ColumnArrayView output)
+	{
+		int target = output.verticalSize();
+		if (target <= 0)
+		{
+			// I expect this to never be the case,
+			// but RenderDataPointReducingList handles it sanely,
+			// so I might as well handle it sanely here too.
+			output.fill(RenderDataPointUtil.EMPTY_DATA);
+		}
+		else if (target == 1)
+		{
+			output.set(0, RenderDataPointReducingList.reduceToOne(sourceData));
+			for (int index = 1, size = output.size(); index < size; index++)
+			{
+				output.set(index, RenderDataPointUtil.EMPTY_DATA);
+			}
+		}
+		else
+		{
+			try (RenderDataPointReducingList list = new RenderDataPointReducingList(sourceData))
+			{
+				list.reduce(output.verticalSize());
+				list.copyTo(output);
 			}
 		}
 	}

@@ -130,8 +130,6 @@ public class PriorityTaskPicker
 						if (this.isShutDownRef.get())
 						{
 							// Clear this executor's tasks since we no longer expect anything to execute.
-							// TODO this can cause issues where LOD load tasks are lost (IE LODs stop loading) if
-							//  the thread pool size is changed mid-load
 							executor.taskQueue.clear();
 						}
 					}
