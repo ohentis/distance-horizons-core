@@ -787,7 +787,7 @@ public class Config
 									+ "Disable this if shadows render incorrectly.")
 							.build();
 					
-					public static ConfigEntry<String> ignoredRenderBlockCsv = new ConfigEntry.Builder<String>() // TODO accept wildcards
+					public static ConfigEntry<String> ignoredRenderBlockCsv = new ConfigEntry.Builder<String>()
 							.set("minecraft:barrier,minecraft:structure_void,minecraft:light,minecraft:tripwire,minecraft:brown_mushroom")
 							.setAppearance(EConfigEntryAppearance.ONLY_IN_FILE) // only shown in file since the UI has a character limit
 							.comment(""
@@ -802,10 +802,8 @@ public class Config
 									+ "")
 							.build();
 					
-					public static ConfigEntry<String> ignoredRenderCaveBlockCsv = new ConfigEntry.Builder<String>() // TODO accept wildcards
-							.set("minecraft:glow_lichen,minecraft:rail,minecraft:water,minecraft:lava,minecraft:bubble_column," +
-									"minecraft:cave_vines_plant,minecraft:vine,minecraft:cave_vines,minecraft:short_grass,minecraft:tall_grass," +
-									"minecraft:small_dripleaf,minecraft:big_dripleaf,minecraft:big_dripleaf_stem,minecraft:sculk_vein")
+					public static ConfigEntry<String> ignoredRenderCaveBlockCsv = new ConfigEntry.Builder<String>()
+							.set("") // config is empty since most cave blocks will be automatically ignored due to being: transparent, non-solid, or liquids, but new blocks can be added here if needed
 							.setAppearance(EConfigEntryAppearance.ONLY_IN_FILE) // only shown in file since the UI has a character limit
 							.comment(""
 									+ "A comma separated list of block resource locations that shouldn't be rendered \n"

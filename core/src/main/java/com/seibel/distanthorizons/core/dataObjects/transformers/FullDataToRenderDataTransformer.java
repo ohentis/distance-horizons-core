@@ -276,18 +276,22 @@ public class FullDataToRenderDataTransformer
 			//====================//
 			
 			boolean ignoreBlock = blockStatesToIgnore.contains(block);
-			boolean caveBlock = caveBlockStatesToIgnore.contains(block); // TODO caves should also ignore transparent/non-solid blocks (IE grass and plants) wthout each being defined
-			if (caveBlock)
+			boolean caveBlock = caveBlockStatesToIgnore.contains(block);
+			if (caveBlock
+				// caves also ignore transparent/non-solid blocks (IE grass and plants) without each being defined
+				|| !block.isSolid()
+				|| block.isLiquid()
+				|| block.getOpacity() < LodUtil.BLOCK_FULLY_OPAQUE)
 			{
 				if (caveCullingEnabled
-						// assume this data point is underground if it has no sky-light
-						&& skyLight == LodUtil.MIN_MC_LIGHT
-						// ignore caves above a certain height to prevent floating islands from having walls underneath them
-						&& topY < caveCullingMaxY
-						// cave culling shouldn't happen when at the top of the world
-						&& renderDataIndex != 0 && fullDataIndex != 0
-						// cave culling can't happen when at the bottom of the world
-						&& (fullDataIndex + 1) < fullColumnData.size())
+					// assume this data point is underground if it has no sky-light
+					&& skyLight == LodUtil.MIN_MC_LIGHT
+					// ignore caves above a certain height to prevent floating islands from having walls underneath them
+					&& topY < caveCullingMaxY
+					// cave culling shouldn't happen when at the top of the world
+					&& renderDataIndex != 0 && fullDataIndex != 0
+					// cave culling can't happen when at the bottom of the world
+					&& (fullDataIndex + 1) < fullColumnData.size())
 				{
 					// we need to get the next sky/block lights because
 					// the air block here will always have a light of 0/0 due to only the top of the LOD's light being saved.
@@ -295,7 +299,7 @@ public class FullDataToRenderDataTransformer
 					int nextSkyLight = FullDataPointUtil.getSkyLight(nextFullData);
 					
 					if (nextSkyLight == LodUtil.MIN_MC_LIGHT
-							&& ColorUtil.getAlpha(lastColor) == 255)
+						&& ColorUtil.getAlpha(lastColor) == 255)
 					{
 						// replace the previous block with new bottom
 						long columnData = renderColumnData.get(renderDataIndex - 1);
