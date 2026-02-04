@@ -106,7 +106,7 @@ public class SSAOApplyShader extends AbstractShaderRenderer
 		if (this.gNearUniform >= 0)
 		{
 			GL32.glUniform1f(this.gNearUniform,
-					RenderUtil.getNearClipPlaneDistanceInBlocks(partialTicks));
+					RenderUtil.getNearClipPlaneInBlocks());
 		}
 		
 		if (this.gFarUniform >= 0)

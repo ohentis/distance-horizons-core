@@ -54,7 +54,7 @@ public class RenderParams extends DhApiRenderParam
 	{
 		super(renderPass,
 			newPartialTicks,
-			RenderUtil.getNearClipPlaneDistanceInBlocks(newPartialTicks), RenderUtil.getFarClipPlaneDistanceInBlocks(),
+			RenderUtil.getNearClipPlaneInBlocks(), RenderUtil.getFarClipPlaneDistanceInBlocks(),
 			newMcProjectionMatrix, newMcModelViewMatrix,
 			RenderUtil.createLodProjectionMatrix(newMcProjectionMatrix, newPartialTicks), RenderUtil.createLodModelViewMatrix(newMcModelViewMatrix),
 			clientLevelWrapper.getMinHeight(),

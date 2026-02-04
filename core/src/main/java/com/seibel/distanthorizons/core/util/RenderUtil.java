@@ -57,6 +57,7 @@ public class RenderUtil
 	//=====================//
 	// matrix manipulation //
 	//=====================//
+	//region
 	
 	/**
 	 * create and return a new projection matrix based on MC's modelView and projection matrices
@@ -69,7 +70,7 @@ public class RenderUtil
 		// culling to take effect instead of seeing the near clip plane.
 		float nearClipDist = RenderUtil.getNearClipPlaneDistanceInBlocks(partialTicks);
 		// limit the near clip plane if we are close to the ground
-		if (getHeightBasedNearClipOverride() == -1)
+		if (getHeightBasedNearClipOverrideBlockDistance() == -1)
 		{
 			// min() used to prevent the near clip plane from becoming visible at large vanilla render distances
 			// DH's dithering/discard shader handles everything farther away anyway so the near clip plane
@@ -94,21 +95,16 @@ public class RenderUtil
 		return mcModelViewMat.copy();
 	}
 	
+	//endregion
 	
 	
-	//=============//
-	// clip planes //
-	//=============//
 	
-	public static float getNearClipPlaneDistanceInBlocks(float partialTicks) 
-	{ 
-		// 0.2 should provide a decent distance so the clip plane isn't visible
-		// but far enough the fading will rarely overlap (IE only at extreme FOV)
-		return getNearClipPlaneDistanceInBlocks(partialTicks, 0.2f); 
-	}
-	/** TODO this should be moved into the config file or something, this is confusing and obtuse to use */
-	@Deprecated
-	public static float getAutoOverdrawPrevention()
+	//=================//
+	// near clip plane //
+	//=================//
+	//region
+	
+	public static float getNearClipPlaneInBlocks()
 	{
 		float overdraw = Config.Client.Advanced.Graphics.Culling.overdrawPrevention.get().floatValue();
 		if (overdraw < 0)
@@ -145,12 +141,7 @@ public class RenderUtil
 			// since that will cause rendering issues
 			overdraw = MathUtil.clamp(0.05f, overdraw, 1.0f);
 		}
-
-		return overdraw;
-	}
-	public static float getNearClipPlaneInBlocksForFading(float partialTicks)
-	{
-		float overdraw = getAutoOverdrawPrevention();
+		
 		
 		if (Config.Client.Advanced.Graphics.Culling.reduceOverdrawWithFastMovement.get())
 		{
@@ -171,9 +162,9 @@ public class RenderUtil
 			}
 		}
 		
-		return getNearClipPlaneDistanceInBlocks(partialTicks, overdraw);
+		return getNearClipPlaneDistanceInBlocks(overdraw);
 	}
-	private static float getNearClipPlaneDistanceInBlocks(float partialTicks, float overdrawPreventionPercent)
+	private static float getNearClipPlaneDistanceInBlocks(float overdrawPreventionPercent)
 	{
 		int chunkRenderDistance = MC_RENDER.getRenderDistance();
 		int vanillaBlockRenderedDistance = chunkRenderDistance * LodUtil.CHUNK_WIDTH;
@@ -185,10 +176,6 @@ public class RenderUtil
 		}
 		else
 		{
-			// TODO make this option dependent on player speed.
-			//  If the player is flying quickly, lower the near clip plane to account for slow chunk loading.
-			//  If the player is moving quickly they are less likely to notice overdraw.
-			
 			nearClipPlane = vanillaBlockRenderedDistance;
 			nearClipPlane *= overdrawPreventionPercent; 
 			
@@ -202,7 +189,7 @@ public class RenderUtil
 		
 		
 		// TODO move into method and use to override discard value in shader program
-		float heightOverride = getHeightBasedNearClipOverride();
+		float heightOverride = getHeightBasedNearClipOverrideBlockDistance();
 		if (heightOverride != -1.0f)
 		{
 			nearClipPlane = heightOverride;
@@ -222,19 +209,15 @@ public class RenderUtil
 				/ Math.sqrt(1d + MathUtil.pow2(Math.tan(fov / 180d * Math.PI / 2d))
 				* (MathUtil.pow2(aspectRatio) + 1d)));
 	}
-	public static int getFarClipPlaneDistanceInBlocks()
-	{
-		int lodChunkDist = Config.Client.Advanced.Graphics.Quality.lodChunkRenderDistanceRadius.get();
-		int lodBlockDist = lodChunkDist * LodUtil.CHUNK_WIDTH;
-		// * 2 to prevent clipping when high above the world
-		return (lodBlockDist + LodUtil.REGION_WIDTH) * 2;
-	}
 	
-	/** @return -1 if no override is necessary */
-	public static float getHeightBasedNearClipOverride()
+	/** 
+	 * Returns a new distance if the player is sufficiently far above the world.
+	 * @return -1 if no override is necessary 
+	 */
+	public static float getHeightBasedNearClipOverrideBlockDistance()
 	{
-		// TODO always using the client level like this might cause issues with immersive portals and the like,
-		//  but for now it should work well enough
+		// always using the client level like this might cause issues with immersive portals and the like,
+		// but for now it works well enough
 		IClientLevelWrapper level = MC.getWrappedClientLevel();
 		// a level should always be loaded, but just in case
 		if (level != null)
@@ -251,6 +234,26 @@ public class RenderUtil
 		
 		return -1.0f;
 	}
+	
+	//endregion
+	
+	
+	
+	//================//
+	// far clip plane //
+	//================//
+	
+	//region
+	
+	public static int getFarClipPlaneDistanceInBlocks()
+	{
+		int lodChunkDist = Config.Client.Advanced.Graphics.Quality.lodChunkRenderDistanceRadius.get();
+		int lodBlockDist = lodChunkDist * LodUtil.CHUNK_WIDTH;
+		// * 2 to prevent clipping when high above the world
+		return (lodBlockDist + LodUtil.REGION_WIDTH) * 2;
+	}
+	
+	//endregion
 	
 	
 	
