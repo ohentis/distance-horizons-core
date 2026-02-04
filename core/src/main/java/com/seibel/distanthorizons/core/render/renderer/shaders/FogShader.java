@@ -102,7 +102,7 @@ public class FogShader extends AbstractShaderRenderer
 	public void onInit()
 	{
 		this.shader = new ShaderProgram(
-				"shaders/normal.vert", "shaders/fog/fog.frag",
+				"shaders/quadApply.vert", "shaders/fog/fog.frag",
 				"fragColor", new String[]{"vPosition"}
 		);
 		

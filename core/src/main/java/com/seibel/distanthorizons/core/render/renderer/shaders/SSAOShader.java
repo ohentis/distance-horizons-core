@@ -71,7 +71,7 @@ public class SSAOShader extends AbstractShaderRenderer
 	@Override
 	public void onInit()
 	{
-		this.shader = new ShaderProgram("shaders/normal.vert", "shaders/ssao/ao.frag",
+		this.shader = new ShaderProgram("shaders/quadApply.vert", "shaders/ssao/ao.frag",
 				"fragColor", new String[]{ "vPosition" }
 		);
 		

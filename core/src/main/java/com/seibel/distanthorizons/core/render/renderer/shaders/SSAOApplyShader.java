@@ -63,7 +63,7 @@ public class SSAOApplyShader extends AbstractShaderRenderer
 	public void onInit()
 	{
 		this.shader = new ShaderProgram(
-				"shaders/normal.vert",
+				"shaders/quadApply.vert",
 				"shaders/ssao/apply.frag",
 				"fragColor",
 				new String[]{"vPosition"});

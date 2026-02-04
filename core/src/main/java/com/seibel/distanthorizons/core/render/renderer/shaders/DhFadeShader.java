@@ -66,7 +66,7 @@ public class DhFadeShader extends AbstractShaderRenderer
 	public void onInit()
 	{
 		this.shader = new ShaderProgram(
-				"shaders/normal.vert", 
+				"shaders/quadApply.vert", 
 				"shaders/fade/dhFade.frag",
 				"fragColor", 
 				new String[]{"vPosition"}

@@ -73,7 +73,7 @@ public class VanillaFadeShader extends AbstractShaderRenderer
 	public void onInit()
 	{
 		this.shader = new ShaderProgram(
-				"shaders/normal.vert", 
+				"shaders/quadApply.vert", 
 				"shaders/fade/vanillaFade.frag",
 				"fragColor", 
 				new String[]{"vPosition"}

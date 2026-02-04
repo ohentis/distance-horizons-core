@@ -52,7 +52,7 @@ public class DhApplyShader extends AbstractShaderRenderer
 	public void onInit()
 	{
 		this.shader = new ShaderProgram(
-				"shaders/normal.vert",
+				"shaders/quadApply.vert",
 				"shaders/apply.frag",
 				"fragColor",
 				new String[]{"vPosition"});
