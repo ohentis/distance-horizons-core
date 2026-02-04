@@ -64,11 +64,11 @@ public class RenderUtil
 	 *
 	 * @param mcProjMat Minecraft's current projection matrix
 	 */
-	public static Mat4f createLodProjectionMatrix(Mat4f mcProjMat, float partialTicks)
+	public static Mat4f createLodProjectionMatrix(Mat4f mcProjMat)
 	{
 		// in James' testing a near clip plane distance of 2 blocks is enough to allow the fragment
 		// culling to take effect instead of seeing the near clip plane.
-		float nearClipDist = RenderUtil.getNearClipPlaneDistanceInBlocks(partialTicks);
+		float nearClipDist = RenderUtil.getNearClipPlaneInBlocks();
 		// limit the near clip plane if we are close to the ground
 		if (getHeightBasedNearClipOverrideBlockDistance() == -1)
 		{

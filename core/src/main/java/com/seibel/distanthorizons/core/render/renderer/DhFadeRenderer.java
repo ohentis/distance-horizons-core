@@ -137,7 +137,7 @@ public class DhFadeRenderer
 			
 			
 			DhFadeShader.INSTANCE.frameBuffer = this.fadeFramebuffer;
-			DhFadeShader.INSTANCE.setProjectionMatrix(mcModelViewMatrix, mcProjectionMatrix, partialTicks);
+			DhFadeShader.INSTANCE.setProjectionMatrix(mcModelViewMatrix, mcProjectionMatrix);
 			DhFadeShader.INSTANCE.render(partialTicks);
 			
 			// restored so we can write the fade texture to the main frame buffer

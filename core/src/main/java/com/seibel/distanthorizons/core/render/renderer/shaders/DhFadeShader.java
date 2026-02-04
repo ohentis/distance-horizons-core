@@ -108,9 +108,9 @@ public class DhFadeShader extends AbstractShaderRenderer
 		
 	}
 	
-	public void setProjectionMatrix(Mat4f mcModelViewMatrix, Mat4f mcProjectionMatrix, float partialTicks)
+	public void setProjectionMatrix(Mat4f mcModelViewMatrix, Mat4f mcProjectionMatrix)
 	{
-		Mat4f dhProjectionMatrix = RenderUtil.createLodProjectionMatrix(mcProjectionMatrix, partialTicks);
+		Mat4f dhProjectionMatrix = RenderUtil.createLodProjectionMatrix(mcProjectionMatrix);
 		Mat4f dhModelViewMatrix = RenderUtil.createLodModelViewMatrix(mcModelViewMatrix);
 		
 		Mat4f inverseDhModelViewProjectionMatrix = new Mat4f(dhProjectionMatrix);

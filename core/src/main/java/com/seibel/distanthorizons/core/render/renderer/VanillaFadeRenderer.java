@@ -156,7 +156,7 @@ public class VanillaFadeRenderer
 			
 			
 			VanillaFadeShader.INSTANCE.frameBuffer = this.fadeFramebuffer;
-			VanillaFadeShader.INSTANCE.setProjectionMatrix(mcModelViewMatrix, mcProjectionMatrix, partialTicks);
+			VanillaFadeShader.INSTANCE.setProjectionMatrix(mcModelViewMatrix, mcProjectionMatrix);
 			VanillaFadeShader.INSTANCE.setLevelMaxHeight(level.getMaxHeight());
 			VanillaFadeShader.INSTANCE.render(partialTicks);
 			
