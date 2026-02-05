@@ -44,15 +44,10 @@ uniform float uCameraBlockYPos;
 
 
 
-const vec3 MAGIC = vec3(0.06711056, 0.00583715, 52.9829189);
-
-
-
 //====================//
 // method definitions //
 //====================//
 
-float InterleavedGradientNoise(const in vec2 pixel);
 vec3 calcViewPosition(float fragmentDepth);
 
 float getFarFogThickness(float dist);
@@ -103,10 +98,6 @@ void main()
 
             // test
             //fragColor.a = heightFogThickness;
-
-            // dither fog (to smooth out aliasing)
-            //float dither = InterleavedGradientNoise(gl_FragCoord.xy) - 0.5;
-            //fragColor.a += dither / 255.0;
         }
         else if (fogMode == 1)
         {
@@ -130,15 +121,10 @@ void main()
 }
 
 
-//
-// methods //
-//
 
-float InterleavedGradientNoise(const in vec2 pixel)
-{
-    float x = dot(pixel, MAGIC.xy);
-    return fract(MAGIC.z * fract(x));
-}
+//================//
+// helper methods //
+//================//
 
 vec3 calcViewPosition(float fragmentDepth)
 {
@@ -151,35 +137,9 @@ vec3 calcViewPosition(float fragmentDepth)
 
 
 
-float linearFog(float worldDist, float fogStart, float fogLength, float fogMin, float fogRange)
-{
-    worldDist = (worldDist - fogStart) / fogLength;
-    worldDist = clamp(worldDist, 0.0, 1.0);
-    return fogMin + fogRange * worldDist;
-}
-
-float exponentialFog(
-    float x, float fogStart, float fogLength,
-    float fogMin, float fogRange, float fogDensity)
-{
-    x = max((x-fogStart)/fogLength, 0.0) * fogDensity;
-    return fogMin + fogRange - fogRange/exp(x);
-}
-
-float exponentialSquaredFog(
-    float x, float fogStart, float fogLength,
-    float fogMin, float fogRange, float fogDensity)
-{
-    x = max((x-fogStart)/fogLength, 0.0) * fogDensity;
-    return fogMin + fogRange - fogRange/exp(x*x);
-}
-
-
-
-//
-// generated methods //
-// 
-// TODO cleanup comment regions
+//=========//
+// far fog //
+//=========//
 
 float getFarFogThickness(float dist)
 {
@@ -218,6 +178,35 @@ float getHeightFogThickness(float dist)
         return exponentialSquaredFog(dist, uHeightFogStart, uHeightFogLength, uHeightFogMin, uHeightFogRange, uHeightFogDensity);
     }
 }
+
+float linearFog(float worldDist, float fogStart, float fogLength, float fogMin, float fogRange)
+{
+    worldDist = (worldDist - fogStart) / fogLength;
+    worldDist = clamp(worldDist, 0.0, 1.0);
+    return fogMin + fogRange * worldDist;
+}
+
+float exponentialFog(
+    float x, float fogStart, float fogLength,
+    float fogMin, float fogRange, float fogDensity)
+{
+    x = max((x-fogStart)/fogLength, 0.0) * fogDensity;
+    return fogMin + fogRange - fogRange/exp(x);
+}
+
+float exponentialSquaredFog(
+    float x, float fogStart, float fogLength,
+    float fogMin, float fogRange, float fogDensity)
+{
+    x = max((x-fogStart)/fogLength, 0.0) * fogDensity;
+    return fogMin + fogRange - fogRange/exp(x*x);
+}
+
+
+
+//============//
+// height fog //
+//============//
 
 /** 1 = full fog, 0 = no fog */
 float calculateHeightFogDepth(float worldYPos)
