@@ -6,8 +6,15 @@ import com.github.luben.zstd.ZstdException;
 import com.seibel.distanthorizons.core.util.objects.pooling.PhantomArrayListCheckout;
 import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 
+import java.util.concurrent.ConcurrentLinkedQueue;
+
 public class PooledZstdDecompressor
 {
+	/** reuse the ZStd native context for a minor speed improvement */
+	private static final ConcurrentLinkedQueue<ZstdDecompressCtx> ZSTD_CONTEXT_CACHE = new ConcurrentLinkedQueue<>();
+	
+	
+	
 	/**
 	 * Replaces {@link Zstd#decompress} so we can use a pooled byte array
 	 * which significantly reduces GC pressure.
@@ -37,17 +44,21 @@ public class PooledZstdDecompressor
 			throw new ZstdException(Zstd.errGeneric(), "Original size should not be negative");
 		}
 		
-		int size;
-		try(ZstdDecompressCtx ctx = new ZstdDecompressCtx())
+		// reuse the ZStd native context for a minor speed improvement
+		ZstdDecompressCtx ctx = ZSTD_CONTEXT_CACHE.poll();
+		if (ctx == null)
 		{
-			size = ctx.decompressByteArray(destination.elements(), 0, destination.size(), src, 0, srcSize);
+			ctx = new ZstdDecompressCtx();
 		}
 		
+		int size = ctx.decompressByteArray(destination.elements(), 0, destination.size(), src, 0, srcSize);
 		if (size != originalSize)
 		{
 			//return Arrays.copyOfRange(destination.elements(), 0, size);
 			destination.size(size); // this assumes the size will only be smaller than the expected
 		}
+		
+		ZSTD_CONTEXT_CACHE.add(ctx);
 		
 		return destination;
 	}
