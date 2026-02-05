@@ -102,8 +102,6 @@ public class DhTerrainShaderProgram extends ShaderProgram implements IDhApiShade
 		this.uIsWhiteWorld = this.getUniformLocation("uIsWhiteWorld");
 		
 		
-		// TODO: Add better use of the LODFormat thing
-		int vertexByteCount = LodUtil.LOD_VERTEX_FORMAT.getByteSize();
 		if (GLProxy.getInstance().vertexAttributeBufferBindingSupported)
 		{
 			this.vao = new VertexAttributePostGL43(); // also binds AbstractVertexAttribute
@@ -124,11 +122,12 @@ public class DhTerrainShaderProgram extends ShaderProgram implements IDhApiShade
 		
 		try
 		{
+			int vertexByteCount = LodUtil.DH_VERTEX_FORMAT.getByteSize();
 			this.vao.completeAndCheck(vertexByteCount);
 		}
 		catch (RuntimeException e)
 		{
-			System.out.println(LodUtil.LOD_VERTEX_FORMAT);
+			System.out.println(LodUtil.DH_VERTEX_FORMAT);
 			throw e;
 		}
 		
@@ -175,7 +174,6 @@ public class DhTerrainShaderProgram extends ShaderProgram implements IDhApiShade
 		this.setUniform(this.uCombinedMatrix, combinedMatrix);
 		this.setUniform(this.uMircoOffset, 0.01f); // 0.01 block offset
 		
-		// setUniform(skyLightUniform, skyLight);
 		this.setUniform(this.uLightMap, 0); // TODO this should probably be passed in
 		
 		this.setUniform(this.uWorldYOffset, (float) renderParameters.worldYOffset);

@@ -43,7 +43,7 @@ public class LodBufferContainer implements AutoCloseable
 	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
 	
 	/** number of bytes a single quad takes */
-	public static final int QUADS_BYTE_SIZE = LodUtil.LOD_VERTEX_FORMAT.getByteSize() * 4;
+	public static final int QUADS_BYTE_SIZE = LodUtil.DH_VERTEX_FORMAT.getByteSize() * 4;
 	/** how big a single VBO can be in bytes */
 	public static final int MAX_VBO_BYTE_SIZE = 10 * 1024 * 1024; // 10 MB
 	public static final int MAX_QUADS_PER_BUFFER = MAX_VBO_BYTE_SIZE / QUADS_BYTE_SIZE;
@@ -207,7 +207,7 @@ public class LodBufferContainer implements AutoCloseable
 			try
 			{
 				vbo.bind();
-				vbo.uploadBuffer(buffer, size / LodUtil.LOD_VERTEX_FORMAT.getByteSize(), uploadMethod, FULL_SIZED_BUFFER);
+				vbo.uploadBuffer(buffer, size / LodUtil.DH_VERTEX_FORMAT.getByteSize(), uploadMethod, FULL_SIZED_BUFFER);
 			}
 			catch (Exception e)
 			{
