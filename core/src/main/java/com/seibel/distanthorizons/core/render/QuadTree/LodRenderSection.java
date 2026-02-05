@@ -71,7 +71,6 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	@WillNotClose
 	private final FullDataSourceProviderV2 fullDataSourceProvider;
 	private final LodQuadTree quadTree;
-	private final AtomicInteger uploadTaskCountRef;
 	
 	/** 
 	 * contains the list of beacons currently being rendered in this section 
@@ -121,15 +120,13 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	public LodRenderSection(
 			long pos, 
 			LodQuadTree quadTree, 
-			IDhClientLevel level, FullDataSourceProviderV2 fullDataSourceProvider,
-			AtomicInteger uploadTaskCountRef)
+			IDhClientLevel level, FullDataSourceProviderV2 fullDataSourceProvider)
 	{
 		this.pos = pos;
 		this.quadTree = quadTree;
 		this.level = level;
 		this.levelWrapper = level.getClientLevelWrapper();
 		this.fullDataSourceProvider = fullDataSourceProvider;
-		this.uploadTaskCountRef = uploadTaskCountRef;
 		
 		this.beaconRenderHandler = this.quadTree.beaconRenderHandler;
 		this.beaconBeamRepo = this.level.getBeaconBeamRepo();
@@ -171,24 +168,33 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		try
 		{
 			CompletableFuture<Void> future = new CompletableFuture<>();
-			this.getAndBuildRenderDataFuture = future; // TODO should use a setter/getter to guard against replacing an incomplete future
+			this.getAndBuildRenderDataFuture = future;
 			future.handle((voidObj, throwable) -> 
 			{
-				// this has to fire are the end of every added future, otherwise we'll lock up and nothing will load
-				this.uploadTaskCountRef.decrementAndGet(); // TODO there is an issue where this variable isn't decremented properly, preventing LODs from loading in, or loading much slower
+				// the task is done, we don't need to track these anymore
+				this.getAndBuildRenderDataFuture = null;
+				this.getAndBuildRenderDataRunnable = null;
+				
 				return null; 
 			});
 			
 			this.getAndBuildRenderDataRunnable = () ->
 			{
 				this.refreshActiveBeaconList();
-				this.getAndUploadRenderDataToGpu();
 				
-				// the future is passed in separately (IE not using the local var) to prevent any possible race condition null pointers
-				future.complete(null);
-				// the task is done, we don't need to track these anymore
-				this.getAndBuildRenderDataFuture = null;
-				this.getAndBuildRenderDataRunnable = null;
+				LodQuadBuilder lodQuadBuilder = this.getAndBuildRenderData();
+				if (lodQuadBuilder == null)
+				{
+					future.complete(null);
+					return;
+				}
+				
+				this.uploadToGpuAsync(lodQuadBuilder)
+					.thenRun(() -> 
+					{
+						// the future is passed in separately (IE not using the local var) to prevent any possible race condition null pointers
+						future.complete(null);
+					});
 			};
 			executor.execute(this.getAndBuildRenderDataRunnable);
 			
@@ -197,24 +203,20 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		catch (RejectedExecutionException ignore)
 		{
 			this.getAndBuildRenderDataFuture.complete(null);
-			this.getAndBuildRenderDataFuture = null;
-			this.getAndBuildRenderDataRunnable = null;
 			
 			/* the thread pool was probably shut down because it's size is being changed, just wait a sec and it should be back */
 			return false;
 		}
 	}
-	private void getAndUploadRenderDataToGpu()
+	@Nullable
+	private LodQuadBuilder getAndBuildRenderData()
 	{
 		try (ColumnRenderSource thisRenderSource = this.getRenderSourceForPos(this.pos, null))
 		{
 			if (thisRenderSource == null)
 			{
 				// nothing needs to be rendered
-				// TODO how doesn't this cause infinite file handler loops?
-				//  to trigger an upload we check if the buffer is null, and we aren't
-				//  setting the render buffer here
-				return;
+				return null;
 			}
 			
 			
@@ -243,7 +245,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 				// the render sources are only needed by this synchronous method,
 				// then they can be closed
 				ColumnRenderBufferBuilder.makeLodRenderData(lodQuadBuilder, thisRenderSource, this.level, adjacentRenderSections, adjIsSameDetailLevel);
-				this.uploadToGpuAsync(lodQuadBuilder);
+				return lodQuadBuilder;
 			}
 			catch (Exception e)
 			{
@@ -254,6 +256,8 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		{
 			LOGGER.error("Unexpected error while loading LodRenderSection ["+DhSectionPos.toString(this.pos)+"], Error: [" + e.getMessage() + "].", e);
 		}
+		
+		return null;
 	}
 	/** 
 	 * async is done so each thread can run without waiting on others 
@@ -290,7 +294,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		detailLevel += DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL;
 		return detailLevel == DhSectionPos.getDetailLevel(this.pos);
 	}
-	private void uploadToGpuAsync(LodQuadBuilder lodQuadBuilder)
+	private CompletableFuture<LodBufferContainer> uploadToGpuAsync(LodQuadBuilder lodQuadBuilder)
 	{
 		if (this.bufferUploadFuture != null)
 		{
@@ -299,21 +303,22 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 			this.bufferUploadFuture.cancel(true);
 		}
 		
-		this.bufferUploadFuture = ColumnRenderBufferBuilder.uploadBuffersAsync(this.level, this.pos, lodQuadBuilder);
-		this.bufferUploadFuture.thenAccept((buffer) ->
+		CompletableFuture<LodBufferContainer> future = ColumnRenderBufferBuilder.uploadBuffersAsync(this.level, this.pos, lodQuadBuilder);
+		future.thenAccept((LodBufferContainer buffer) ->
 		{
 			// needed to clean up the old data
 			LodBufferContainer previousContainer = this.renderBufferContainer;
 			
 			// upload complete
 			this.renderBufferContainer = buffer.buffersUploaded ? buffer : null;
-			this.getAndBuildRenderDataFuture = null;
 			
 			if (previousContainer != null)
 			{
 				previousContainer.close();
 			}
 		});
+		this.bufferUploadFuture = future;
+		return future;
 	}
 	
 	//endregion render data uploading

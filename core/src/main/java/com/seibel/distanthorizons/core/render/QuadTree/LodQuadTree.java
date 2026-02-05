@@ -87,14 +87,6 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 	 */
 	private final ReentrantLock treeLock = new ReentrantLock();
 	
-	/**
-	 * Used to limit how many upload tasks are queued at once.
-	 * If all the upload tasks are queued at once, they will start uploading nearest
-	 * to the player, however if the player moves, that order is no longer valid and holes may appear
-	 * as further sections are loaded before closer ones.
-	 * Only queuing a few of the sections at a time solves this problem.
-	 */
-	private final AtomicInteger uploadTaskCountRef = new AtomicInteger(0);
 	private final AtomicBoolean requeueAllRetrievalTasksRef = new AtomicBoolean(false);
 	private final AtomicBoolean queueThreadRunningRef = new AtomicBoolean(false);
 	
@@ -265,7 +257,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 			long rootPos = rootPosIterator.nextLong();
 			if (this.getNode(rootPos) == null)
 			{
-				this.setValue(rootPos, new LodRenderSection(rootPos, this, this.level, this.fullDataSourceProvider, this.uploadTaskCountRef));
+				this.setValue(rootPos, new LodRenderSection(rootPos, this, this.level, this.fullDataSourceProvider));
 			}
 			
 			QuadNode<LodRenderSection> rootNode = this.getNode(rootPos);
@@ -490,7 +482,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 		// create the node
 		if (quadNode == null)
 		{   
-			rootNode.setValue(sectionPos, new LodRenderSection(sectionPos, this, this.level, this.fullDataSourceProvider, this.uploadTaskCountRef));
+			rootNode.setValue(sectionPos, new LodRenderSection(sectionPos, this, this.level, this.fullDataSourceProvider));
 			quadNode = rootNode.getNode(sectionPos);
 		}
 		if (quadNode == null)
@@ -502,7 +494,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 		LodRenderSection renderSection = quadNode.value;
 		if (renderSection == null)
 		{
-			renderSection = new LodRenderSection(sectionPos, this, this.level, this.fullDataSourceProvider, this.uploadTaskCountRef);
+			renderSection = new LodRenderSection(sectionPos, this, this.level, this.fullDataSourceProvider);
 			quadNode.setValue(sectionPos, renderSection);
 		}
 		
