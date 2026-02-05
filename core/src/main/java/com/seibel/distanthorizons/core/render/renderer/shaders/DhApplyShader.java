@@ -101,36 +101,35 @@ public class DhApplyShader extends AbstractShaderRenderer
 		}
 		
 		
-		GLState state = new GLState();
-		
-		GLMC.disableDepthTest();
-		
-		// blending isn't needed, we're manually merging the MC and DH textures
-		// Note: this prevents the sun/moon and stars from rendering through transparent LODs,
-		// however this also fixes transparent LODs from glowing when rendered against the sky during the day
-		GLMC.disableBlend();
-		
-		// old blending logic in case it's ever needed:
-		//GLMC.enableBlend();
-		//GL32.glBlendEquation(GL32.GL_FUNC_ADD);
-		//GLMC.glBlendFunc(GL32.GL_ONE, GL32.GL_ONE_MINUS_SRC_ALPHA);
-		
-		GLMC.glActiveTexture(GL32.GL_TEXTURE0);
-		GLMC.glBindTexture(LodRenderer.INSTANCE.getActiveColorTextureId());
-		GL32.glUniform1i(this.gDhColorTextureUniform, 0);
-		
-		GLMC.glActiveTexture(GL32.GL_TEXTURE1);
-		GLMC.glBindTexture(LodRenderer.INSTANCE.getActiveDepthTextureId());
-		GL32.glUniform1i(this.gDepthMapUniform, 1);
-		
-		// Copy to MC's framebuffer
-		GLMC.glBindFramebuffer(GL32.GL_FRAMEBUFFER, targetFrameBuffer);
-		
-		ScreenQuad.INSTANCE.render();
-		
-		
-		// restore everything, except at this point the MC framebuffer should now be used instead
-		state.restore();
+		try (GLState state = new GLState())
+		{
+			
+			GLMC.disableDepthTest();
+			
+			// blending isn't needed, we're manually merging the MC and DH textures
+			// Note: this prevents the sun/moon and stars from rendering through transparent LODs,
+			// however this also fixes transparent LODs from glowing when rendered against the sky during the day
+			GLMC.disableBlend();
+			
+			// old blending logic in case it's ever needed:
+			//GLMC.enableBlend();
+			//GL32.glBlendEquation(GL32.GL_FUNC_ADD);
+			//GLMC.glBlendFunc(GL32.GL_ONE, GL32.GL_ONE_MINUS_SRC_ALPHA);
+			
+			GLMC.glActiveTexture(GL32.GL_TEXTURE0);
+			GLMC.glBindTexture(LodRenderer.INSTANCE.getActiveColorTextureId());
+			GL32.glUniform1i(this.gDhColorTextureUniform, 0);
+			
+			GLMC.glActiveTexture(GL32.GL_TEXTURE1);
+			GLMC.glBindTexture(LodRenderer.INSTANCE.getActiveDepthTextureId());
+			GL32.glUniform1i(this.gDepthMapUniform, 1);
+			
+			// Copy to MC's framebuffer
+			GLMC.glBindFramebuffer(GL32.GL_FRAMEBUFFER, targetFrameBuffer);
+			
+			ScreenQuad.INSTANCE.render();
+		}
+		// everything's been restored, except at this point the MC framebuffer should now be used instead
 		GLMC.glBindFramebuffer(GL32.GL_FRAMEBUFFER, targetFrameBuffer);
 		
 	}
@@ -156,40 +155,38 @@ public class DhApplyShader extends AbstractShaderRenderer
 		
 		
 		
-		GLState state = new GLState();
-		
-		GLMC.disableDepthTest();
-		
-		// blending isn't needed, we're just directly merging the MC and DH textures
-		// Note: this prevents the sun/moon and stars from rendering through transparent LODs,
-		// however this also fixes
-		GLMC.disableBlend();
-		
-		// old blending logic in case it's ever needed:
-		//GLMC.enableBlend();
-		//GL32.glBlendEquation(GL32.GL_FUNC_ADD);
-		//GLMC.glBlendFunc(GL32.GL_ONE, GL32.GL_ONE_MINUS_SRC_ALPHA);
-		
-		GLMC.glActiveTexture(GL32.GL_TEXTURE0);
-		GLMC.glBindTexture(LodRenderer.INSTANCE.getActiveColorTextureId());
-		GL32.glUniform1i(this.gDhColorTextureUniform, 0);
-		
-		GLMC.glActiveTexture(GL32.GL_TEXTURE1);
-		GLMC.glBindTexture(LodRenderer.INSTANCE.getActiveDepthTextureId());
-		GL32.glUniform1i(this.gDepthMapUniform, 1);
-		
-		
-		
-		GL32.glFramebufferTexture(GL32.GL_DRAW_FRAMEBUFFER, GL32.GL_COLOR_ATTACHMENT0, targetColorTextureId, 0);
-		
-		// Copy to MC's texture via MC's framebuffer
-		GLMC.glBindFramebuffer(GL32.GL_FRAMEBUFFER, dhFrameBufferId);
-		
-		ScreenQuad.INSTANCE.render();
-		
-		
-		// restore everything, except at this point the MC framebuffer should now be used instead
-		state.restore();
+		try (GLState state = new GLState())
+		{
+			GLMC.disableDepthTest();
+			
+			// blending isn't needed, we're just directly merging the MC and DH textures
+			// Note: this prevents the sun/moon and stars from rendering through transparent LODs,
+			// however this also fixes
+			GLMC.disableBlend();
+			
+			// old blending logic in case it's ever needed:
+			//GLMC.enableBlend();
+			//GL32.glBlendEquation(GL32.GL_FUNC_ADD);
+			//GLMC.glBlendFunc(GL32.GL_ONE, GL32.GL_ONE_MINUS_SRC_ALPHA);
+			
+			GLMC.glActiveTexture(GL32.GL_TEXTURE0);
+			GLMC.glBindTexture(LodRenderer.INSTANCE.getActiveColorTextureId());
+			GL32.glUniform1i(this.gDhColorTextureUniform, 0);
+			
+			GLMC.glActiveTexture(GL32.GL_TEXTURE1);
+			GLMC.glBindTexture(LodRenderer.INSTANCE.getActiveDepthTextureId());
+			GL32.glUniform1i(this.gDepthMapUniform, 1);
+			
+			
+			
+			GL32.glFramebufferTexture(GL32.GL_DRAW_FRAMEBUFFER, GL32.GL_COLOR_ATTACHMENT0, targetColorTextureId, 0);
+			
+			// Copy to MC's texture via MC's framebuffer
+			GLMC.glBindFramebuffer(GL32.GL_FRAMEBUFFER, dhFrameBufferId);
+			
+			ScreenQuad.INSTANCE.render();
+		}
+		// everything's been restored, except at this point the MC framebuffer should now be used instead
 		GLMC.glBindFramebuffer(GL32.GL_FRAMEBUFFER, mcFrameBufferId);
 		
 	}
