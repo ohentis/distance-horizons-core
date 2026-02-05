@@ -247,6 +247,7 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 		}
 		
 		
+		// TODO if the number of queued tasks last time was 0 we could increase this by 10?
 		int maxQueuedChunkCount = MAX_WORLD_GEN_REQUESTS_PER_THREAD * Config.Common.MultiThreading.numberOfThreads.get(); // for now we're just using the same logic as the world gen threads, it works well enough
 		if (SharedApi.INSTANCE.getQueuedChunkUpdateCount() >= maxQueuedChunkCount)
 		{
