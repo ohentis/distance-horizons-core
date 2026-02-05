@@ -64,7 +64,8 @@ public class FogShader extends AbstractShaderRenderer
 	public int uFogColor;
 	public int uFogScale;
 	public int uFogVerticalScale;
-	public int uFullFogMode;
+	public int uFogDebugMode;
+	public int uFogFalloffType;
 	
 	// far fog
 	public int uFarFogStart;
@@ -116,7 +117,8 @@ public class FogShader extends AbstractShaderRenderer
 		this.uFogScale = this.shader.getUniformLocation("uFogScale");
 		this.uFogVerticalScale = this.shader.getUniformLocation("uFogVerticalScale");
 		this.uFogColor = this.shader.getUniformLocation("uFogColor");
-		this.uFullFogMode = this.shader.getUniformLocation("uFullFogMode");
+		this.uFogDebugMode = this.shader.getUniformLocation("uFogDebugMode");
+		this.uFogFalloffType = this.shader.getUniformLocation("uFogFalloffType");
 		
 		// fog config
 		this.uFarFogStart = this.shader.getUniformLocation("uFarFogStart");
@@ -168,7 +170,8 @@ public class FogShader extends AbstractShaderRenderer
 		this.shader.setUniform(this.uFogScale, 1.f / lodDrawDistance);
 		this.shader.setUniform(this.uFogVerticalScale, 1.f / MC.getWrappedClientLevel().getMaxHeight());
 		// only used for debugging
-		this.shader.setUniform(this.uFullFogMode, 0); // 1 = render everything with fog color // 7 = use debug rendering
+		this.shader.setUniform(this.uFogDebugMode, 0); // 1 = render everything with fog color // 7 = use debug rendering
+		this.shader.setUniform(this.uFogFalloffType, Config.Client.Advanced.Graphics.Fog.farFogFalloff.get().value);
 		
 		
 		// fog config

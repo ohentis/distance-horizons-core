@@ -14,7 +14,7 @@ uniform mat4 uInvMvmProj;
 uniform vec4 uFogColor;
 uniform float uFogScale;
 uniform float uFogVerticalScale;
-uniform int uFullFogMode;
+uniform int uFogDebugMode;
 uniform int uFogFalloffType;
 
 // fog config
@@ -55,6 +55,10 @@ float getHeightFogThickness(float dist);
 float calculateHeightFogDepth(float worldYPos);
 float mixFogThickness(float far, float height);
 
+float linearFog(float worldDist, float fogStart, float fogLength, float fogMin, float fogRange);
+float exponentialFog(float x, float fogStart, float fogLength, float fogMin, float fogRange, float fogDensity);
+float exponentialSquaredFog(float x, float fogStart, float fogLength, float fogMin, float fogRange, float fogDensity);
+
 
 
 //======//
@@ -74,8 +78,8 @@ void main()
     // we only want to apply Fog to LODs, not to the sky outside the LODs
     if (fragmentDepth < 1.0)
     {
-        int fogMode = uFullFogMode;
-        if (fogMode == 0)
+        int fogDebugMode = uFogDebugMode;
+        if (fogDebugMode == 0)
         {
             // render fog based on distance from the camera
             vec3 vertexWorldPos = calcViewPosition(fragmentDepth);
@@ -95,12 +99,11 @@ void main()
             // combined fog
             float mixedFogThickness = mixFogThickness(farFogThickness, heightFogThickness);
             fragColor.a = clamp(mixedFogThickness, 0.0, 1.0);
-
-            // test
-            //fragColor.a = heightFogThickness;
         }
-        else if (fogMode == 1)
+        else if (fogDebugMode == 1)
         {
+            // test code
+            
             // render everything with the fog color
             fragColor.a = 1.0;
         }
@@ -109,7 +112,8 @@ void main()
             // test code.
 
             // this can be fired by manually changing the fullFogMode to a (normally)
-            // invalid value (like 7). By having a separate if statement defined by
+            // invalid value (like 7). 
+            // By having a separate if statement defined by
             // a uniform we don't have to worry about GLSL optimizing away different
             // options when testing, causing a bunch of headaches if we just want to render the screen red.
 
@@ -143,7 +147,6 @@ vec3 calcViewPosition(float fragmentDepth)
 
 float getFarFogThickness(float dist)
 {
-    // TODO these uniforms aren't being set
     if (uFogFalloffType == 0) // LINEAR
     {
         return linearFog(dist, uFarFogStart, uFarFogLength, uFarFogMin, uFarFogRange);
@@ -232,7 +235,6 @@ float calculateHeightFogDepth(float worldYPos)
 
     if (uHeightFogAppliesDown && uHeightFogAppliesUp)
     {
-        // TODO this aint right
         return abs(worldYPos) * uFogVerticalScale;
     }
     else if (uHeightFogAppliesDown)
