@@ -35,6 +35,7 @@ import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.RenderUtil;
 import com.seibel.distanthorizons.core.util.math.Mat4f;
 import com.seibel.distanthorizons.core.util.math.Vec3f;
+import com.seibel.distanthorizons.core.wrapperInterfaces.misc.ILightMapWrapper;
 
 /**
  * Handles rendering the normal LOD terrain.
@@ -174,7 +175,7 @@ public class DhTerrainShaderProgram extends ShaderProgram implements IDhApiShade
 		this.setUniform(this.uCombinedMatrix, combinedMatrix);
 		this.setUniform(this.uMircoOffset, 0.01f); // 0.01 block offset
 		
-		this.setUniform(this.uLightMap, 0); // TODO this should probably be passed in
+		this.setUniform(this.uLightMap, ILightMapWrapper.BOUND_INDEX);
 		
 		this.setUniform(this.uWorldYOffset, (float) renderParameters.worldYOffset);
 		

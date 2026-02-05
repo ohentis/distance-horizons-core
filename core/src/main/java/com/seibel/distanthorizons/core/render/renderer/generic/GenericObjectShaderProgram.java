@@ -13,6 +13,7 @@ import com.seibel.distanthorizons.core.render.glObject.vertexAttribute.VertexPoi
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.math.Mat4f;
 import com.seibel.distanthorizons.core.util.math.Vec3f;
+import com.seibel.distanthorizons.core.wrapperInterfaces.misc.ILightMapWrapper;
 
 public class GenericObjectShaderProgram extends ShaderProgram implements IDhApiGenericObjectShaderProgram
 {
@@ -157,7 +158,7 @@ public class GenericObjectShaderProgram extends ShaderProgram implements IDhApiG
 		
 		this.setUniform(this.instancedShaderProjectionModelViewMatrixUniform, projectionMvmMatrix);
 		
-		this.setUniform(this.lightMapUniform, 0); // TODO this should probably be passed in
+		this.setUniform(this.lightMapUniform, ILightMapWrapper.BOUND_INDEX);
 		this.setUniform(this.skyLightUniform, boxGroup.getSkyLight());
 		this.setUniform(this.blockLightUniform, boxGroup.getBlockLight());
 		
@@ -180,7 +181,7 @@ public class GenericObjectShaderProgram extends ShaderProgram implements IDhApiG
 			DhApiVec3d camPos)
 	{
 		
-		this.setUniform(this.lightMapUniform, 0); // TODO this should probably be passed in
+		this.setUniform(this.lightMapUniform, ILightMapWrapper.BOUND_INDEX);
 		this.setUniform(this.skyLightUniform, boxGroup.getSkyLight());
 		this.setUniform(this.blockLightUniform, boxGroup.getBlockLight());
 		
