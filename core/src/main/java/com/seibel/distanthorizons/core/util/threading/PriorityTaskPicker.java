@@ -310,11 +310,7 @@ public class PriorityTaskPicker
 		public void remove(@NotNull Runnable command) { this.taskQueue.removeIf(trackedRunnable -> trackedRunnable.command == command); }
 		
 		
-		public void runTask(@NotNull Runnable command)
-		{ 
-			this.threadPoolExecutor.execute(command);
-			this.runningTasksRef.getAndIncrement();
-		}
+		public void runTask(@NotNull Runnable command) { this.threadPoolExecutor.execute(command); }
 		
 		
 		public int getQueueSize() { return this.taskQueue.size(); }
@@ -457,6 +453,8 @@ public class PriorityTaskPicker
 		@Override
 		public void run()
 		{
+			this.executor.runningTasksRef.getAndIncrement();
+			
 			long startTime = System.nanoTime();
 			try
 			{
