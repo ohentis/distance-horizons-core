@@ -38,8 +38,7 @@ public class FullDataUpdatePropagatorV2 implements IDebugRenderable, AutoCloseab
 	public static final int NUMBER_OF_PARENT_UPDATE_TASKS_PER_THREAD = 5;
 	
 	/** how many parent update tasks can be in the queue at once */
-	public static int getMaxPropagateTaskCount() 
-	{ return NUMBER_OF_PARENT_UPDATE_TASKS_PER_THREAD * Config.Common.MultiThreading.numberOfThreads.get(); }
+	public static int getMaxPropagateTaskCount() { return NUMBER_OF_PARENT_UPDATE_TASKS_PER_THREAD * Config.Common.MultiThreading.numberOfThreads.get(); }
 	
 	
 	
@@ -49,12 +48,11 @@ public class FullDataUpdatePropagatorV2 implements IDebugRenderable, AutoCloseab
 	 */
 	private final Set<Long> updatingPosSet = ConcurrentHashMap.newKeySet();
 	
-	// TODO only run thread if modifications happened recently
 	/**
-	 * Will be null on the dedicated server since updates don't need to be propagated,
-	 * only the highest detail level is needed.
+	 * It'd be better if we could be told when changes are available,
+	 * then run the update thread, but having a constantly running background
+	 * thread is simpler to deal with and gets the job done.
 	 */
-	@Nullable
 	public final ThreadPoolExecutor updateQueueProcessor;
 	
 	private final AtomicBoolean isShutdownRef = new AtomicBoolean(false);
@@ -69,6 +67,7 @@ public class FullDataUpdatePropagatorV2 implements IDebugRenderable, AutoCloseab
 	//=============//
 	// constructor //
 	//=============//
+	//region
 	
 	public FullDataUpdatePropagatorV2(FullDataSourceProviderV2 provider, FullDataUpdaterV2 dataUpdater, String levelId)
 	{
@@ -81,11 +80,14 @@ public class FullDataUpdatePropagatorV2 implements IDebugRenderable, AutoCloseab
 		this.updateQueueProcessor.execute(this::runUpdateQueue);
 	}
 	
+	//endregion
+	
 	
 	
 	//================//
 	// parent updates //
 	//================//
+	//region
 	
 	private void runUpdateQueue()
 	{
@@ -100,8 +102,6 @@ public class FullDataUpdatePropagatorV2 implements IDebugRenderable, AutoCloseab
 				{
 					continue;
 				}
-				
-				// TODO it might be worth skipping this logic if no parent updates happened
 				
 				// update positions closest to the player (if not on a server)
 				// to make world gen appear faster
@@ -371,11 +371,14 @@ public class FullDataUpdatePropagatorV2 implements IDebugRenderable, AutoCloseab
 		}
 	}
 	
+	//endregion
+	
 	
 	
 	//===========//
 	// overrides //
 	//===========//
+	//region
 	
 	@Override
 	public void debugRender(DebugRenderer renderer)
@@ -392,6 +395,8 @@ public class FullDataUpdatePropagatorV2 implements IDebugRenderable, AutoCloseab
 			this.updateQueueProcessor.shutdownNow();
 		}
 	}
+	
+	//endregion
 	
 	
 	
