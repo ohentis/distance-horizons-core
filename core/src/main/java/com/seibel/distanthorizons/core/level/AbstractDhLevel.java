@@ -137,8 +137,9 @@ public abstract class AbstractDhLevel implements IDhLevel
 			if (this instanceof IDhClientLevel)
 			{
 				// only add clouds for certain dimension types
-				if (!this.getLevelWrapper().hasCeiling()
-					&& !this.getLevelWrapper().getDimensionType().isTheEnd()) // TODO config value for white/black list
+				String enabledCloudDimensions = Config.Client.Advanced.Graphics.GenericRendering.dimensionEnabledCloudRenderingCsv.get();
+				String dimName = this.getLevelWrapper().getDimensionType().getName();
+				if (enabledCloudDimensions.contains(dimName))
 				{
 					this.cloudRenderHandler = new CloudRenderHandler((IDhClientLevel)this, genericRenderer);
 				}

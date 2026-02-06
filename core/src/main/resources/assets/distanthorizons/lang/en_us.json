@@ -233,6 +233,10 @@
     "Enable Cloud Rendering",
   "distanthorizons.config.client.advanced.graphics.genericRendering.enableCloudRendering.@tooltip":
     "If true LOD clouds will be rendered.",
+  "distanthorizons.config.client.advanced.graphics.genericRendering.dimensionEnabledCloudRenderingCsv":
+    "Enable Cloud Rendering",
+  "distanthorizons.config.client.advanced.graphics.genericRendering.dimensionEnabledCloudRenderingCsv.@tooltip":
+    "A comma separated separated list of dimension resource locations where DH clouds will render. \n\nExample: \"minecraft:overworld,minecraft:the_end\" \n\nChanges will only be seen when the world is re-loaded.",
   "distanthorizons.config.client.advanced.graphics.genericRendering.enableUnexploredFogRendering":
     "Enable Unexplored Fog Rendering",
   "distanthorizons.config.client.advanced.graphics.genericRendering.enableUnexploredFogRendering.@tooltip":

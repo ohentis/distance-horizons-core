@@ -467,6 +467,18 @@ public class Config
 									+ "")
 							.build();
 					
+					public static ConfigEntry<String> dimensionEnabledCloudRenderingCsv = new ConfigEntry.Builder<String>()
+						.set("minecraft:overworld")
+						.setAppearance(EConfigEntryAppearance.ALL)
+						.comment(""
+							+ "A comma separated separated list of dimension resource locations where DH clouds will render.\n"
+							+ "\n"
+							+ "Example: \"minecraft:overworld,minecraft:the_end\"\n"
+							+ "\n"
+							+ "Changes will only be seen when the world is re-loaded.\n"
+							+ "")
+						.build();
+					
 					public static ConfigEntry<Boolean> enableInstancedRendering = new ConfigEntry.Builder<Boolean>()
 							.set(true)
 							.comment(""
