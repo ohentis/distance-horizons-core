@@ -318,8 +318,8 @@ public class ColumnRenderBufferBuilder
 		{
 			case OFF:
 			{
-				float saturationMultiplier = Config.Client.Advanced.Graphics.Quality.saturationMultiplier.get().floatValue();
-				float brightnessMultiplier = Config.Client.Advanced.Graphics.Quality.brightnessMultiplier.get().floatValue();
+				float saturationMultiplier = Config.Client.Advanced.Graphics.Quality.saturationMultiplier.get();
+				float brightnessMultiplier = Config.Client.Advanced.Graphics.Quality.brightnessMultiplier.get();
 				if (saturationMultiplier == 1.0 && brightnessMultiplier == 1.0)
 				{
 					color = RenderDataPointUtil.getColor(renderData);

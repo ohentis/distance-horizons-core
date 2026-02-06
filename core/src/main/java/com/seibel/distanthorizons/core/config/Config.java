@@ -323,8 +323,8 @@ public class Config
 									+ "")
 							.build();
 					
-					public static ConfigEntry<Double> brightnessMultiplier = new ConfigEntry.Builder<Double>() // TODO: Make this a float (the ClassicConfigGUI doesnt support floats)
-							.set(1.0)
+					public static ConfigEntry<Float> brightnessMultiplier = new ConfigEntry.Builder<Float>()
+							.set(1.0f)
 							.comment(""
 									+ "How bright LOD colors are. \n"
 									+ "\n"
@@ -334,8 +334,8 @@ public class Config
 							.addListener(ReloadLodsConfigEventHandler.DELAYED_INSTANCE)
 							.build();
 					
-					public static ConfigEntry<Double> saturationMultiplier = new ConfigEntry.Builder<Double>() // TODO: Make this a float (the ClassicConfigGUI doesnt support floats)
-							.set(1.0)
+					public static ConfigEntry<Float> saturationMultiplier = new ConfigEntry.Builder<Float>()
+							.set(1.0f)
 							.comment(""
 									+ "How saturated LOD colors are. \n"
 									+ "\n"
@@ -490,8 +490,8 @@ public class Config
 				
 				public static class Fog
 				{
-					private static final Double FOG_RANGE_MIN = 0.0;
-					private static final Double FOG_RANGE_MAX = Math.sqrt(2.0);
+					private static final Float FOG_RANGE_MIN = 0.0f;
+					private static final Float FOG_RANGE_MAX = (float)Math.sqrt(2.0);
 					
 					
 					
@@ -523,8 +523,8 @@ public class Config
 					
 					
 					
-					public static ConfigEntry<Double> farFogStart = new ConfigEntry.Builder<Double>()
-							.setMinDefaultMax(FOG_RANGE_MIN, 0.4, FOG_RANGE_MAX)
+					public static ConfigEntry<Float> farFogStart = new ConfigEntry.Builder<Float>()
+							.setMinDefaultMax(FOG_RANGE_MIN, 0.4f, FOG_RANGE_MAX)
 							.comment(""
 									+ "At what distance should the far fog start? \n"
 									+ "\n"
@@ -533,8 +533,8 @@ public class Config
 									+ "1.414: Fog starts at the corner of the vanilla render distance.")
 							.build();
 					
-					public static ConfigEntry<Double> farFogEnd = new ConfigEntry.Builder<Double>()
-							.setMinDefaultMax(FOG_RANGE_MIN, 1.0, FOG_RANGE_MAX)
+					public static ConfigEntry<Float> farFogEnd = new ConfigEntry.Builder<Float>()
+							.setMinDefaultMax(FOG_RANGE_MIN, 1.0f, FOG_RANGE_MAX)
 							.comment(""
 									+ "Where should the far fog end? \n"
 									+ "\n"
@@ -543,8 +543,8 @@ public class Config
 									+ "1.414: Fog ends at the corner of the vanilla render distance.")
 							.build();
 					
-					public static ConfigEntry<Double> farFogMin = new ConfigEntry.Builder<Double>()
-							.setMinDefaultMax(-5.0, 0.0, FOG_RANGE_MAX)
+					public static ConfigEntry<Float> farFogMin = new ConfigEntry.Builder<Float>()
+							.setMinDefaultMax(-5.0f, 0.0f, FOG_RANGE_MAX)
 							.comment(""
 									+ "What is the minimum fog thickness? \n"
 									+ "\n"
@@ -552,8 +552,8 @@ public class Config
 									+ "1.0: Fully opaque fog.")
 							.build();
 					
-					public static ConfigEntry<Double> farFogMax = new ConfigEntry.Builder<Double>()
-							.setMinDefaultMax(FOG_RANGE_MIN, 1.0, 5.0)
+					public static ConfigEntry<Float> farFogMax = new ConfigEntry.Builder<Float>()
+							.setMinDefaultMax(FOG_RANGE_MIN, 1.0f, 5.0f)
 							.comment(""
 									+ "What is the maximum fog thickness? \n"
 									+ "\n"
@@ -571,8 +571,8 @@ public class Config
 									+ EDhApiFogFalloff.EXPONENTIAL_SQUARED + ": 1/(e^((distance*density)^2)")
 							.build();
 					
-					public static ConfigEntry<Double> farFogDensity = new ConfigEntry.Builder<Double>()
-							.setMinDefaultMax(0.01, 2.5, 50.0)
+					public static ConfigEntry<Float> farFogDensity = new ConfigEntry.Builder<Float>()
+							.setMinDefaultMax(0.01f, 2.5f, 50.0f)
 							.comment(""
 									+ "Used in conjunction with the Fog Falloff.")
 							.build();
@@ -618,13 +618,13 @@ public class Config
 										+ EDhApiHeightFogDirection.ABOVE_AND_BELOW_SET_HEIGHT + ": Height fog starts from a set height and goes towards both the sky and void")
 								.build();
 						
-						public static ConfigEntry<Double> heightFogBaseHeight = new ConfigEntry.Builder<Double>()
-								.setMinDefaultMax(-4096.0, 80.0, 4096.0)
+						public static ConfigEntry<Float> heightFogBaseHeight = new ConfigEntry.Builder<Float>()
+								.setMinDefaultMax(-4096.0f, 80.0f, 4096.0f)
 								.comment("If the height fog is calculated around a set height, what is that height position?")
 								.build();
 						
-						public static ConfigEntry<Double> heightFogStart = new ConfigEntry.Builder<Double>()
-								.setMinDefaultMax(FOG_RANGE_MIN, 0.0, FOG_RANGE_MAX)
+						public static ConfigEntry<Float> heightFogStart = new ConfigEntry.Builder<Float>()
+								.setMinDefaultMax(FOG_RANGE_MIN, 0.0f, FOG_RANGE_MAX)
 								.comment(""
 										+ "Should the start of the height fog be offset? \n"
 										+ "\n"
@@ -632,8 +632,8 @@ public class Config
 										+ "1.0: Fog start with offset of the entire world's height. (Includes depth)")
 								.build();
 						
-						public static ConfigEntry<Double> heightFogEnd = new ConfigEntry.Builder<Double>()
-								.setMinDefaultMax(FOG_RANGE_MIN, 0.6, FOG_RANGE_MAX)
+						public static ConfigEntry<Float> heightFogEnd = new ConfigEntry.Builder<Float>()
+								.setMinDefaultMax(FOG_RANGE_MIN, 0.6f, FOG_RANGE_MAX)
 								.comment(""
 										+ "Should the end of the height fog be offset? \n"
 										+ "\n"
@@ -641,8 +641,8 @@ public class Config
 										+ "1.0: Fog end with offset of the entire world's height. (Include depth)")
 								.build();
 						
-						public static ConfigEntry<Double> heightFogMin = new ConfigEntry.Builder<Double>()
-								.setMinDefaultMax(0.0, 0.0, FOG_RANGE_MAX)
+						public static ConfigEntry<Float> heightFogMin = new ConfigEntry.Builder<Float>()
+								.setMinDefaultMax(0.0f, 0.0f, FOG_RANGE_MAX)
 								.comment(""
 										+ "What is the minimum fog thickness? \n"
 										+ "\n"
@@ -650,8 +650,8 @@ public class Config
 										+ "1.0: Fully opaque fog.")
 								.build();
 						
-						public static ConfigEntry<Double> heightFogMax = new ConfigEntry.Builder<Double>()
-								.setMinDefaultMax(FOG_RANGE_MIN, 1.0, 5.0)
+						public static ConfigEntry<Float> heightFogMax = new ConfigEntry.Builder<Float>()
+								.setMinDefaultMax(FOG_RANGE_MIN, 1.0f, 5.0f)
 								.comment(""
 										+ "What is the maximum fog thickness? \n"
 										+ "\n"
@@ -669,8 +669,8 @@ public class Config
 										+ EDhApiFogFalloff.EXPONENTIAL_SQUARED + ": 1/(e^((height*density)^2)")
 								.build();
 						
-						public static ConfigEntry<Double> heightFogDensity = new ConfigEntry.Builder<Double>()
-								.setMinDefaultMax(0.01, 20.0, 50.0)
+						public static ConfigEntry<Float> heightFogDensity = new ConfigEntry.Builder<Float>()
+								.setMinDefaultMax(0.01f, 20.0f, 50.0f)
 								.comment("What is the height fog's density?")
 								.build();
 						
@@ -698,8 +698,8 @@ public class Config
 									+ "")
 							.build();
 					
-					public static ConfigEntry<Double> noiseIntensity = new ConfigEntry.Builder<Double>()    // TODO: Make this a float (the ClassicConfigGUI doesn't support floats)
-							.setMinDefaultMax(0d, 5d, 100d)                    // TODO: Once this becomes a float make it 0-1 instead of 0-100 (I did this cus doubles only allow 2 decimal places)
+					public static ConfigEntry<Float> noiseIntensity = new ConfigEntry.Builder<Float>()
+							.setMinDefaultMax(0f, 0.05f, 1f)
 							.comment(""
 									+ "How intense should the noise should be?")
 							.build();
@@ -718,8 +718,8 @@ public class Config
 				{
 					public static ConfigUIComment cullingHeader = new ConfigUIComment.Builder().setParentConfigClass(Culling.class).build();
 					
-					public static ConfigEntry<Double> overdrawPrevention = new ConfigEntry.Builder<Double>()
-							.setMinDefaultMax(-1.0, -1.0, 1.0)
+					public static ConfigEntry<Float> overdrawPrevention = new ConfigEntry.Builder<Float>()
+							.setMinDefaultMax(-1.0f, -1.0f, 1.0f)
 							.comment(""
 								+ "Determines how far from the camera Distant Horizons will start rendering. \n"
 								+ "Measured as a percentage of the vanilla render distance.\n"

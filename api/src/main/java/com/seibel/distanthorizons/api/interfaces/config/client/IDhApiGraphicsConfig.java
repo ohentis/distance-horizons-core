@@ -124,19 +124,19 @@ public interface IDhApiGraphicsConfig extends IDhApiConfigGroup
 	 * 
 	 * @since API 2.0.0
 	 */
-	IDhApiConfigValue<Double> overdrawPreventionRadius();
+	IDhApiConfigValue<Float> overdrawPreventionRadius();
 	
 	/**
 	 * Modifies how bright fake chunks are. <br>
 	 * This is done when generating the vertex data and is applied before any shaders.
 	 */
-	IDhApiConfigValue<Double> brightnessMultiplier();
+	IDhApiConfigValue<Float> brightnessMultiplier();
 	
 	/**
 	 * Modifies how saturated fake chunks are. <br>
 	 * This is done when generating the vertex data and is applied before any shaders.
 	 */
-	IDhApiConfigValue<Double> saturationMultiplier();
+	IDhApiConfigValue<Float> saturationMultiplier();
 	
 	/** Defines if Distant Horizons should attempt to cull fake chunk cave geometry. */
 	IDhApiConfigValue<Boolean> caveCullingEnabled();

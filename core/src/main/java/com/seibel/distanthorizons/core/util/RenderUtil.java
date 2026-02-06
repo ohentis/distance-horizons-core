@@ -106,7 +106,7 @@ public class RenderUtil
 	
 	public static float getNearClipPlaneInBlocks()
 	{
-		float overdraw = Config.Client.Advanced.Graphics.Culling.overdrawPrevention.get().floatValue();
+		float overdraw = Config.Client.Advanced.Graphics.Culling.overdrawPrevention.get();
 		if (overdraw < 0)
 		{
 			// automatic mode,
