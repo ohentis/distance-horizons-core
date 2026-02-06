@@ -801,7 +801,7 @@ public class Config
 					
 					public static ConfigEntry<String> ignoredRenderBlockCsv = new ConfigEntry.Builder<String>()
 							.set("minecraft:barrier,minecraft:structure_void,minecraft:light,minecraft:tripwire,minecraft:brown_mushroom")
-							.setAppearance(EConfigEntryAppearance.ONLY_IN_FILE) // only shown in file since the UI has a character limit
+							.setAppearance(EConfigEntryAppearance.ALL)
 							.comment(""
 									+ "A comma separated list of block resource locations that won't be rendered by DH. \n"
 									+ "Air is always included in this list. \n"
@@ -816,7 +816,7 @@ public class Config
 					
 					public static ConfigEntry<String> ignoredRenderCaveBlockCsv = new ConfigEntry.Builder<String>()
 							.set("") // config is empty since most cave blocks will be automatically ignored due to being: transparent, non-solid, or liquids, but new blocks can be added here if needed
-							.setAppearance(EConfigEntryAppearance.ONLY_IN_FILE) // only shown in file since the UI has a character limit
+							.setAppearance(EConfigEntryAppearance.ALL)
 							.comment(""
 									+ "A comma separated list of block resource locations that shouldn't be rendered \n"
 									+ "if they are in a 0 sky light underground area. \n"
