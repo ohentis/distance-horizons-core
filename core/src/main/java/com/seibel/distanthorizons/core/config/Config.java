@@ -367,60 +367,6 @@ public class Config
 							.comment("Enable Screen Space Ambient Occlusion")
 							.build();
 					
-					public static ConfigEntry<Integer> sampleCount = new ConfigEntry.Builder<Integer>()
-							.set(6)
-							.comment("" +
-									"Determines how many points in space are sampled for the occlusion test. \n" +
-									"Higher numbers will improve quality and reduce banding, but will increase GPU load." +
-									"")
-							.build();
-					
-					public static ConfigEntry<Double> radius = new ConfigEntry.Builder<Double>()
-							.set(4.0)
-							.comment("" +
-									"Determines the radius Screen Space Ambient Occlusion is applied, measured in blocks." +
-									"")
-							.build();
-					
-					public static ConfigEntry<Double> strength = new ConfigEntry.Builder<Double>()
-							.set(0.2)
-							.comment("" +
-									"Determines how dark the Screen Space Ambient Occlusion effect will be." +
-									"")
-							.build();
-					
-					public static ConfigEntry<Double> bias = new ConfigEntry.Builder<Double>()
-							.set(0.02)
-							.comment("" +
-									"Increasing the value can reduce banding at the cost of reducing the strength of the effect." +
-									"")
-							.build();
-					
-					public static ConfigEntry<Double> minLight = new ConfigEntry.Builder<Double>()
-							.set(0.25)
-							.comment("" +
-									"Determines how dark the occlusion shadows can be. \n" +
-									"0 = totally black at the corners \n" +
-									"1 = no shadow" +
-									"")
-							.build();
-					
-					public static ConfigEntry<Integer> blurRadius = new ConfigEntry.Builder<Integer>()
-							.set(2)
-							.comment("" +
-									"The radius, measured in pixels, that blurring is calculated for the SSAO. \n" +
-									"Higher numbers will reduce banding at the cost of GPU performance." +
-									"")
-							.build();
-					
-					public static ConfigEntry<Integer> fadeDistanceInBlocks = new ConfigEntry.Builder<Integer>()
-							.setMinDefaultMax(0, 1_600, 30_000_000)
-							.comment("" +
-									"The distance in blocks from the camera where the SSAO will fade out to. \n"+
-									"This is done to prevent banding and noise at extreme distances. \n"+
-									"")
-							.build();
-					
 				}
 				
 				public static class GenericRendering

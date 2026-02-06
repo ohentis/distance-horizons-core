@@ -50,7 +50,7 @@ public final class ModInfo
 	public static final int API_PATCH_VERSION = 0;
 	
 	/** If the config file has an older version it'll be re-created from scratch. */
-	public static final int CONFIG_FILE_VERSION = 3;
+	public static final int CONFIG_FILE_VERSION = 4;
 	
 	/** All DH owned threads should start with this string to allow for easier debugging and profiling. */
 	public static final String THREAD_NAME_PREFIX = "DH-";

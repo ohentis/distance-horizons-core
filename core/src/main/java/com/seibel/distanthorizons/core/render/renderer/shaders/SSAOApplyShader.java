@@ -94,7 +94,7 @@ public class SSAOApplyShader extends AbstractShaderRenderer
 		GLMC.glBindTexture(this.ssaoTexture);
 		GL32.glUniform1i(this.gSSAOMapUniform, 1);
 		
-		GL32.glUniform1i(this.gBlurRadiusUniform, Config.Client.Advanced.Graphics.Ssao.blurRadius.get());
+		GL32.glUniform1i(this.gBlurRadiusUniform, 2);
 		
 		if (this.gViewSizeUniform >= 0)
 		{
