@@ -632,7 +632,7 @@ public class ClientApi
 	 * The first fade pass.
 	 * Called after MC finishes rendering the opaque passes. 
 	 */
-	public void renderFadeOpaque() // TODO is this actually the transparent pass in MC 1.21.11?
+	public void renderFadeOpaque()
 	{
 		// only fade when DH is rendering
 		if (Config.Client.Advanced.Debugging.rendererMode.get() != EDhApiRendererMode.DISABLED
@@ -654,7 +654,7 @@ public class ClientApi
 	 * Called after MC finishes rendering both opaque
 	 * and transparent passes. 
 	 */
-	public void renderFadeTransparent() // TODO is this actually the opaque pass in MC 1.21.11?
+	public void renderFadeTransparent()
 	{
 		// only fade when DH is rendering
 		if (Config.Client.Advanced.Debugging.rendererMode.get() != EDhApiRendererMode.DISABLED)
