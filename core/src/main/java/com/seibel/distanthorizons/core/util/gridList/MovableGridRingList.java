@@ -20,6 +20,7 @@
 package com.seibel.distanthorizons.core.util.gridList;
 
 import com.seibel.distanthorizons.core.util.LodUtil;
+import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.coreapi.util.MathUtil;
 
 import java.util.*;
@@ -41,13 +42,14 @@ public class MovableGridRingList<T> extends ArrayList<T> implements List<T>
 	private final ReentrantReadWriteLock moveLock = new ReentrantReadWriteLock();
 	
 	/** used to iterate over each item in the list in an in-to-out order */
-	private Pos2D[] ringPositionIteratorArray = null;
+	private final Pos2D[] ringPositionIteratorArray;
 	
 	
 	
 	//==============//
 	// constructors //
 	//==============//
+	//region
 	
 	public MovableGridRingList(int halfWidth, int centerX, int centerY)
 	{
@@ -56,15 +58,60 @@ public class MovableGridRingList<T> extends ArrayList<T> implements List<T>
 		this.width = halfWidth * 2 + 1;
 		this.halfWidth = halfWidth;
 		this.minPosRef.set(new Pos2D(centerX - halfWidth, centerY - halfWidth));
+		this.ringPositionIteratorArray = this.createRingIteratorList();
+		
 		this.clear();
 	}
+	private Pos2D[] createRingIteratorList()
+	{
+		Pos2D[] posArray = new Pos2D[this.width * this.width];
+		
+		int i = 0;
+		for (int xPos = -this.halfWidth; xPos <= this.halfWidth; xPos++)
+		{
+			for (int zPos = -this.halfWidth; zPos <= this.halfWidth; zPos++)
+			{
+				posArray[i] = new Pos2D(xPos, zPos);
+				i++;
+			}
+		}
+		
+		// sort the positions from nearest to farthest from the world origin
+		Arrays.sort(posArray, (a, b) ->
+		{
+			long disSqrA = (long) a.getX() * a.getX() + (long) a.getY() * a.getY();
+			long disSqrB = (long) b.getX() * b.getX() + (long) b.getY() * b.getY();
+			return Double.compare(disSqrA, disSqrB);
+		});
+		
+		//noinspection SuspiciousNameCombination
+		Pos2D halfPos = new Pos2D(this.halfWidth, this.halfWidth);
+		for (int j = 0; j < posArray.length; j++)
+		{
+			posArray[j] = posArray[j].add(halfPos);
+		}
+		
+		// assert all the positions are in the correct range
+		if (ModInfo.IS_DEV_BUILD)
+		{
+			for (Pos2D pos2D : posArray)
+			{
+				LodUtil.assertTrue(pos2D.getX() >= 0 && pos2D.getX() < this.width);
+				LodUtil.assertTrue(pos2D.getY() >= 0 && pos2D.getY() < this.width);
+			}
+		}
+		
+		return posArray;
+	}
 	
+	//endregion
 	
 	
 	
 	//=====================//
 	// getters and setters //
 	//=====================//
+	//region
 	
 	/** see {@link MovableGridRingList#get(int, int)} for full documentation */
 	public T get(Pos2D pos) { return this.get(pos.getX(), pos.getY()); }
@@ -72,7 +119,7 @@ public class MovableGridRingList<T> extends ArrayList<T> implements List<T>
 	public T get(int x, int y)
 	{
 		Pos2D min = this.minPosRef.get();
-		if (!this._inRangeAcquired(x, y, min))
+		if (!this.inRangeAcquired(x, y, min))
 		{
 			return null;
 		}
@@ -84,12 +131,12 @@ public class MovableGridRingList<T> extends ArrayList<T> implements List<T>
 			// Use EXACT compare here
 			if (min != newMin)
 			{
-				if (!this._inRangeAcquired(x, y, newMin))
+				if (!this.inRangeAcquired(x, y, newMin))
 				{
 					return null;
 				}
 			}
-			return this._getUnsafe(x, y);
+			return this.getUnsafe(x, y);
 		}
 		finally
 		{
@@ -104,7 +151,7 @@ public class MovableGridRingList<T> extends ArrayList<T> implements List<T>
 	public boolean set(int x, int y, T item)
 	{
 		Pos2D min = this.minPosRef.get();
-		if (!this._inRangeAcquired(x, y, min))
+		if (!this.inRangeAcquired(x, y, min))
 		{
 			return false;
 		}
@@ -116,12 +163,12 @@ public class MovableGridRingList<T> extends ArrayList<T> implements List<T>
 			// Use EXACT compare here
 			if (min != newMin)
 			{
-				if (!this._inRangeAcquired(x, y, newMin))
+				if (!this.inRangeAcquired(x, y, newMin))
 				{
 					return false;
 				}
 			}
-			this._setUnsafe(x, y, item);
+			this.setUnsafe(x, y, item);
 			return true;
 		}
 		finally
@@ -130,19 +177,14 @@ public class MovableGridRingList<T> extends ArrayList<T> implements List<T>
 		}
 	}
 	
-	/** see {@link MovableGridRingList#setChained(int, int, T)} for full documentation */
-	public T setChained(Pos2D pos, T item) { return this.setChained(pos.getX(), pos.getY(), item); }
-	/**
-	 * returns null if x,y is outside the grid
-	 * Otherwise, returns the new value
-	 */
-	public T setChained(int x, int y, T item) { return this.set(x, y, item) ? item : null; }
+	//endregion
 	
 	
 	
 	//================//
 	// list modifiers //
 	//================//
+	//region
 	
 	/** see {@link MovableGridRingList#swap(int, int, T)} for full documentation */
 	public T swap(Pos2D pos, T item) { return this.swap(pos.getX(), pos.getY(), item); }
@@ -150,7 +192,7 @@ public class MovableGridRingList<T> extends ArrayList<T> implements List<T>
 	public T swap(int x, int y, T item)
 	{
 		Pos2D min = this.minPosRef.get();
-		if (!this._inRangeAcquired(x, y, min))
+		if (!this.inRangeAcquired(x, y, min))
 		{
 			return item;
 		}
@@ -162,12 +204,12 @@ public class MovableGridRingList<T> extends ArrayList<T> implements List<T>
 			// Use EXACT compare here
 			if (min != newMin)
 			{
-				if (!this._inRangeAcquired(x, y, newMin))
+				if (!this.inRangeAcquired(x, y, newMin))
 				{
 					return item;
 				}
 			}
-			return this._swapUnsafe(x, y, item);
+			return this.swapUnsafe(x, y, item);
 		}
 		finally
 		{
@@ -205,7 +247,7 @@ public class MovableGridRingList<T> extends ArrayList<T> implements List<T>
 			
 			super.clear();
 			super.ensureCapacity(this.width * this.width);
-			// TODO why are we filling the array will nulls? everything should already be null after the clear
+			// fill the array with nulls so we can get/set indicies
 			for (int i = 0; i < this.width * this.width; i++)
 			{
 				super.add(null);
@@ -265,7 +307,7 @@ public class MovableGridRingList<T> extends ArrayList<T> implements List<T>
 								|| x - deltaX >= this.width
 								|| y - deltaY >= this.width)
 						{
-							T item = this._swapUnsafe(itemPos.getX(), itemPos.getY(), null);
+							T item = this.swapUnsafe(itemPos.getX(), itemPos.getY(), null);
 							if (item != null && removedItemConsumer != null)
 							{
 								removedItemConsumer.accept(item);
@@ -293,11 +335,14 @@ public class MovableGridRingList<T> extends ArrayList<T> implements List<T>
 		}
 	}
 	
+	//endregion
+	
 	
 	
 	//==================//
 	// position getters //
 	//==================//
+	//region
 	
 	public Pos2D getCenter() { return new Pos2D(this.minPosRef.get().getX() + this.halfWidth, this.minPosRef.get().getY() + this.halfWidth); }
 	
@@ -307,11 +352,14 @@ public class MovableGridRingList<T> extends ArrayList<T> implements List<T>
 	public int getWidth() { return this.width; }
 	public int getHalfWidth() { return this.halfWidth; }
 	
+	//endregion
+	
 	
 	
 	//================//
 	// helper methods //
 	//================//
+	//region
 	
 	/**
 	 * Warning: Be careful with race conditions!
@@ -326,7 +374,7 @@ public class MovableGridRingList<T> extends ArrayList<T> implements List<T>
 				&& y < minPos.getY() + this.width);
 	}
 	
-	private boolean _inRangeAcquired(int x, int y, Pos2D min)
+	private boolean inRangeAcquired(int x, int y, Pos2D min)
 	{
 		return (x >= min.getX()
 				&& x < min.getX() + this.width
@@ -334,44 +382,20 @@ public class MovableGridRingList<T> extends ArrayList<T> implements List<T>
 				&& y < min.getY() + this.width);
 	}
 	
-	private T _getUnsafe(int x, int y) { return super.get(Math.floorMod(x, this.width) + Math.floorMod(y, this.width) * this.width); }
-	private void _setUnsafe(int x, int y, T item) { super.set(Math.floorMod(x, this.width) + Math.floorMod(y, this.width) * this.width, item); }
-	private T _swapUnsafe(int x, int y, T item) { return super.set(Math.floorMod(x, this.width) + Math.floorMod(y, this.width) * this.width, item); }
+	private T getUnsafe(int x, int y) { return super.get(Math.floorMod(x, this.width) + Math.floorMod(y, this.width) * this.width); }
+	private void setUnsafe(int x, int y, T item) { super.set(Math.floorMod(x, this.width) + Math.floorMod(y, this.width) * this.width, item); }
+	private T swapUnsafe(int x, int y, T item) { return super.set(Math.floorMod(x, this.width) + Math.floorMod(y, this.width) * this.width, item); }
 	
-	
-	// TODO: implement this
-	/*
-	// do a compare and set
-	public boolean compareAndSet(int x, int y, T expected, T toBeSet) {
-		Pos min = pos.get();
-		if (!_inRangeAquired(x, y, min)) return false;
-		moveLock.readLock().lock();
-		try {
-			Pos newMin = pos.get();
-			// Use EXECT compare here
-			if (min!=newMin)
-				if (!_inRangeAquired(x, y, newMin)) return false;
-			return _compareAndSetUnsafe(x, y, expected, toBeSet);
-		} finally {
-			moveLock.readLock().unlock();
-		}
-	}*/
+	//endregion
 	
 	
 	
 	//===========//
 	// iterators //
 	//===========//
+	//region
 	
-	// TODO all iterators should either:
-	//  A. treat nulls the same way, either passing them into the consumers to skipping them
-	//  B. add the option to either skip or pass in nulls
-	
-	
-	/**
-	 * TODO: Use MutablePos2D in the future <br>
-	 * Will pass in null entries
-	 */
+	/** Will pass in null entries */
 	public void forEachPos(BiConsumer<? super T, Pos2D> consumer)
 	{
 		this.moveLock.readLock().lock();
@@ -382,7 +406,7 @@ public class MovableGridRingList<T> extends ArrayList<T> implements List<T>
 			{
 				for (int y = min.getY(); y < min.getY() + this.width; y++)
 				{
-					T t = this._getUnsafe(x, y);
+					T t = this.getUnsafe(x, y);
 					consumer.accept(t, new Pos2D(x, y));
 				}
 			}
@@ -396,19 +420,13 @@ public class MovableGridRingList<T> extends ArrayList<T> implements List<T>
 	/** Will skip null entries */
 	public void forEachOrdered(Consumer<? super T> consumer)
 	{
-		// create the iterator if necessary
-		if (this.ringPositionIteratorArray == null)
-		{
-			this.createRingIteratorList();
-		}
-		
 		this.moveLock.readLock().lock();
 		try
 		{
 			Pos2D min = this.minPosRef.get();
 			for (Pos2D offset : this.ringPositionIteratorArray)
 			{
-				T item = this._getUnsafe(min.getX() + offset.getX(), min.getY() + offset.getY());
+				T item = this.getUnsafe(min.getX() + offset.getX(), min.getY() + offset.getY());
 				if (item != null)
 				{
 					consumer.accept(item);
@@ -424,20 +442,14 @@ public class MovableGridRingList<T> extends ArrayList<T> implements List<T>
 	/** Will pass in null entries */
 	public void forEachPosOrdered(BiConsumer<? super T, Pos2D> consumer)
 	{
-		// create the iterator if necessary
-		if (this.ringPositionIteratorArray == null)
-		{
-			this.createRingIteratorList();
-		}
-		
 		this.moveLock.readLock().lock();
 		try
 		{
 			Pos2D min = this.minPosRef.get();
 			for (Pos2D offset : this.ringPositionIteratorArray)
 			{
-				LodUtil.assertTrue(this._inRangeAcquired(min.getX() + offset.getX(), min.getY() + offset.getY(), min));
-				T item = this._getUnsafe(min.getX() + offset.getX(), min.getY() + offset.getY());
+				LodUtil.assertTrue(this.inRangeAcquired(min.getX() + offset.getX(), min.getY() + offset.getY(), min));
+				T item = this.getUnsafe(min.getX() + offset.getX(), min.getY() + offset.getY());
 				consumer.accept(item, new Pos2D(min.getX() + offset.getX(), min.getY() + offset.getY()));
 			}
 		}
@@ -447,49 +459,7 @@ public class MovableGridRingList<T> extends ArrayList<T> implements List<T>
 		}
 	}
 	
-	
-	
-	/**
-	 * TODO: Check if this needs to be synchronized
-	 * <br>
-	 * FIXME: Make all usage of this class do stuff relative to the minPos instead of the center
-	 */
-	private void createRingIteratorList()
-	{
-		this.ringPositionIteratorArray = null;
-		Pos2D[] posArray = new Pos2D[this.width * this.width];
-		
-		int i = 0;
-		for (int xPos = -this.halfWidth; xPos <= this.halfWidth; xPos++)
-		{
-			for (int zPos = -this.halfWidth; zPos <= this.halfWidth; zPos++)
-			{
-				posArray[i] = new Pos2D(xPos, zPos);
-				i++;
-			}
-		}
-		
-		// sort the positions from nearest to farthest from the world origin
-		Arrays.sort(posArray, (a, b) ->
-		{
-			long disSqrA = (long) a.getX() * a.getX() + (long) a.getY() * a.getY();
-			long disSqrB = (long) b.getX() * b.getX() + (long) b.getY() * b.getY();
-			return Double.compare(disSqrA, disSqrB);
-		});
-		
-		for (int j = 0; j < posArray.length; j++)
-		{
-			posArray[j] = posArray[j].add(new Pos2D(this.halfWidth, this.halfWidth));
-		}
-		for (Pos2D pos2D : posArray)
-		{
-			LodUtil.assertTrue(pos2D.getX() >= 0 && pos2D.getX() < this.width);
-			LodUtil.assertTrue(pos2D.getY() >= 0 && pos2D.getY() < this.width);
-		}
-		
-		this.ringPositionIteratorArray = posArray;
-	}
-	
+	//endregion
 	
 	
 	
