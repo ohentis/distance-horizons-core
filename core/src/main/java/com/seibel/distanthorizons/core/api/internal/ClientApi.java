@@ -27,6 +27,7 @@ import com.seibel.distanthorizons.core.api.internal.rendering.DhRenderState;
 import com.seibel.distanthorizons.core.enums.MinecraftTextFormat;
 import com.seibel.distanthorizons.core.file.structure.ClientOnlySaveStructure;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.logging.f3.F3Screen;
 import com.seibel.distanthorizons.core.network.messages.MessageRegistry;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.render.DhApiRenderProxy;
@@ -121,6 +122,7 @@ public class ClientApi
 	/** Holds any chunks that were loaded before the {@link ClientApi#clientLevelLoadEvent(IClientLevelWrapper)} was fired. */
 	public final HashMap<Pair<IClientLevelWrapper, DhChunkPos>, IChunkWrapper> waitingChunkByClientLevelAndPos = new HashMap<>();
 	
+	/** publicly available so {@link F3Screen} can display the error */
 	@Nullable
 	public String lastRenderParamValidationMessage = null;
 	
@@ -527,10 +529,10 @@ public class ClientApi
 		//============//
 		///region
 		
-		// TODO write this message to the F3 menu so people can see when a different mod screws with the lightmap
 		String validationMessage = renderParams.getValidationErrorMessage();
 		if (validationMessage != null)
 		{
+			// store the error message so it can be seen on the F3 screen
 			this.lastRenderParamValidationMessage = validationMessage;
 			return;
 		}
