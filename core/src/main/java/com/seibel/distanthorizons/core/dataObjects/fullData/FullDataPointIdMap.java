@@ -80,14 +80,18 @@ public class FullDataPointIdMap
 	//=============//
 	// constructor //
 	//=============//
+	//region
 	
 	public FullDataPointIdMap(long pos) { this.pos = pos; }
+	
+	//endregion
 	
 	
 	
 	//=========//
 	// getters //
 	//=========//
+	//region
 	
 	/** @see FullDataPointIdMap#getEntry(int) */
 	public IBiomeWrapper getBiomeWrapper(int id) throws IndexOutOfBoundsException { return this.getEntry(id).biome; }
@@ -118,11 +122,14 @@ public class FullDataPointIdMap
 	
 	public long getPos() { return this.pos; }
 	
+	//endregion
+	
 	
 	
 	//=========//
 	// setters //
 	//=========//
+	//region
 	
 	/**
 	 * If an entry with the given values already exists nothing will
@@ -220,11 +227,14 @@ public class FullDataPointIdMap
 		this.cachedHashCode = 0;
 	}
 	
+	//endregion
+	
 	
 	
 	//=============//
 	// serializing //
 	//=============//
+	//region
 	
 	/** Serializes all contained entries into the given stream, formatted in UTF */
 	public void serialize(DhDataOutputStream outputStream) throws IOException
@@ -387,11 +397,14 @@ public class FullDataPointIdMap
 		}
 	}
 	
+	//endregion
+	
 	
 	
 	//===========//
 	// overrides //
 	//===========//
+	//region
 	
 	@Override
 	public boolean equals(Object other)
@@ -426,6 +439,8 @@ public class FullDataPointIdMap
 		}
 		this.cachedHashCode = result;
 	}
+	
+	//endregion
 	
 	
 	
