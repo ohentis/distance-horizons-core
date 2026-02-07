@@ -594,6 +594,12 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 		}
 		catch (SQLException e)
 		{
+			// done to handle resultSet.get() methods which can throw closed exceptions
+			if (DbConnectionClosedException.isClosedException(e))
+			{
+				return;
+			}
+			
 			throw new RuntimeException(e);
 		}
 	}
