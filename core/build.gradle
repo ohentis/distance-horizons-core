@@ -22,7 +22,7 @@ project.ext.lwjglNatives = "natives-" + os.toFamilyName()
 
 dependencies { // All of these dependencies are in Vanilla Minecraft, but we need to depend on it as we arent importing Minecraft in the core
     // Imports most of lwjgl's libraries (well, only the ones that we need)
-    implementation platform("org.lwjgl:lwjgl-bom:${rootProject.lwjgl_version}") // TODO: Use Minecraft's version for lwjgl_version (which changes in nearly every version) instead of a hard defined version for all versions
+    implementation platform("org.lwjgl:lwjgl-bom:${rootProject.lwjgl_version}")
 
     // REMEMBER: Dont shadow stuff here, these are just the libs that are included in Minecraft so that the core can use
     implementation "org.lwjgl:lwjgl"
