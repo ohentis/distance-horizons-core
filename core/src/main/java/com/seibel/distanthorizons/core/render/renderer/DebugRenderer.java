@@ -138,8 +138,11 @@ public class DebugRenderer
 		// Pos
 		this.va.setVertexAttribute(0, 0, VertexPointer.addVec3Pointer(false));
 		this.va.completeAndCheck(Float.BYTES * 3);
-		this.basicShader = new ShaderProgram("shaders/debug/vert.vert", "shaders/debug/frag.frag",
-				"fragColor", new String[]{"vPosition"});
+		this.basicShader = new ShaderProgram(
+			"shaders/debug/vert.vert",
+			"shaders/debug/frag.frag",
+			"vPosition"
+		);
 		this.createBuffer();
 	}
 	

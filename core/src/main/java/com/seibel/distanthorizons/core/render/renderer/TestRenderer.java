@@ -91,8 +91,9 @@ public class TestRenderer
 		this.va.setVertexAttribute(0, 1, VertexPointer.addVec4Pointer(false));
 		this.va.completeAndCheck(Float.BYTES * 6);
 		this.basicShader = new ShaderProgram(
-			"shaders/test/vert.vert", "shaders/test/frag.frag",
-			"fragColor", new String[]{"vPosition", "color"});
+			"shaders/test/vert.vert",
+			"shaders/test/frag.frag",
+			new String[]{"vPosition", "color"});
 		
 		this.createBuffer();
 	}

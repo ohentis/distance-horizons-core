@@ -103,8 +103,9 @@ public class FogShader extends AbstractShaderRenderer
 	public void onInit()
 	{
 		this.shader = new ShaderProgram(
-				"shaders/quadApply.vert", "shaders/fog/fog.frag",
-				"fragColor", new String[]{"vPosition"}
+			"shaders/quadApply.vert",
+			"shaders/fog/fog.frag",
+			"vPosition"
 		);
 		
 		// all uniforms should be tryGet...

@@ -73,10 +73,9 @@ public class VanillaFadeShader extends AbstractShaderRenderer
 	public void onInit()
 	{
 		this.shader = new ShaderProgram(
-				"shaders/quadApply.vert", 
-				"shaders/fade/vanillaFade.frag",
-				"fragColor", 
-				new String[]{"vPosition"}
+			"shaders/quadApply.vert", 
+			"shaders/fade/vanillaFade.frag",
+			"vPosition"
 		);
 		
 		// all uniforms should be tryGet...

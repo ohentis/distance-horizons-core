@@ -77,9 +77,10 @@ public class DhTerrainShaderProgram extends ShaderProgram implements IDhApiShade
 	public DhTerrainShaderProgram()
 	{
 		super(
-			() -> Shader.loadFile("shaders/standard.vert", false, new StringBuilder()).toString(),
-			() -> Shader.loadFile("shaders/flat_shaded.frag", false, new StringBuilder()).toString(),
-			"fragColor", new String[]{"vPosition", "color"});
+			"shaders/standard.vert",
+			"shaders/flat_shaded.frag",
+			new String[]{"vPosition", "color"}
+		);
 		
 		this.uCombinedMatrix = this.getUniformLocation("uCombinedMatrix");
 		this.uModelOffset = this.getUniformLocation("uModelOffset");

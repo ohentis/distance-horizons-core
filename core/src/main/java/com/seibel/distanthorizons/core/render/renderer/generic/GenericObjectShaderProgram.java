@@ -57,7 +57,8 @@ public class GenericObjectShaderProgram extends ShaderProgram implements IDhApiG
 		super(
 				useInstancedRendering ? VERTEX_SHADER_INSTANCED_PATH : VERTEX_SHADER_DIRECT_PATH,
 				useInstancedRendering ? FRAGMENT_SHADER_INSTANCED_PATH : FRAGMENT_SHADER_DIRECT_PATH,
-				"fragColor", new String[]{"vPosition"});
+				"vPosition"
+		);
 		
 		this.va = AbstractVertexAttribute.create();
 		this.va.bind();

@@ -57,10 +57,10 @@ public class DhApplyShader extends AbstractShaderRenderer
 	public void onInit()
 	{
 		this.shader = new ShaderProgram(
-				"shaders/quadApply.vert",
-				"shaders/apply.frag",
-				"fragColor",
-				new String[]{"vPosition"});
+			"shaders/quadApply.vert",
+			"shaders/apply.frag",
+			"vPosition"
+		);
 		
 		// uniform setup
 		this.gDhColorTextureUniform = this.shader.getUniformLocation("gDhColorTexture");
